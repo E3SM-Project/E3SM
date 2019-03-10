@@ -15,6 +15,11 @@
        description: mediator export
          atm/ocn evaporation water flux
      #
+     - standard_name: Faox_evap_wiso
+       canonical_units: kg m-2 s-1
+       description: mediator export
+         atm/ocn evaporation water flux 16O, 18O, HDO
+     #
      - standard_name: Faox_lat
        alias: mean_laten_heat_flx_atm_into_ocn
        canonical_units: W m-2
@@ -43,21 +48,6 @@
        canonical_units: N m-2
        description: mediator export
      #
-     - standard_name: Faox_evap_16O
-       canonical_units: kg m-2 s-1
-       description: mediator export
-         atm/ocn evaporation water flux 16O
-     #
-     - standard_name: Faox_evap_18O
-       canonical_units: kg m-2 s-1
-       description: mediator export
-         atm/ocn evaporation water flux 18O
-     #
-     - standard_name: Faox_evap_HDO
-       canonical_units: kg m-2 s-1
-       description: mediator export
-         atm/ocn evaporation water flux HDO
-     #
      #-----------------------------------
      # section: land export
      #-----------------------------------
@@ -66,86 +56,23 @@
        canonical_units: kg m-2 s-1
        description: land export
      #
-     - standard_name: Fall_evap_16O
+     - standard_name: Fall_evap_wiso
        canonical_units: kg m-2 s-1
-     #
-     - standard_name: Fall_evap_18O
-       canonical_units: kg m-2 s-1
-       description: land export
-     #
-     - standard_name: Fall_evap_HDO
-       canonical_units: kg m-2 s-1
-       description: land export
+       description: land export 
      #
      - standard_name: Fall_fco2_lnd
        canonical_units: moles m-2 s-1
        description: land export
      #
-     - standard_name: Fall_fire01
+     - standard_name: Fall_fire
        canonical_units: kg/m2/sec
        description: land export
-         wild fire emission fluxes1
+         wild fire emission fluxes (1->10)
      #
-     - standard_name: Fall_fire02
-       canonical_units: kg/m2/sec
-       description: land export
-         wild fire emission fluxes2
-     #
-     - standard_name: Fall_fire03
-       canonical_units: kg/m2/sec
-       description: land export
-         wild fire emission fluxes3
-     #
-     - standard_name: Fall_fire04
-       canonical_units: kg/m2/sec
-       description: land export
-         wild fire emission fluxes4
-     #
-     - standard_name: Fall_fire05
-       canonical_units: kg/m2/sec
-       description: land export
-         wild fire emission fluxes5
-     #
-     - standard_name: Fall_fire06
-       canonical_units: kg/m2/sec
-       description: land export
-         wild fire emission fluxes6
-     #
-     - standard_name: Fall_fire07
-       canonical_units: kg/m2/sec
-       description: land export
-         wild fire emission fluxes7
-     #
-     - standard_name: Fall_fire08
-       canonical_units: kg/m2/sec
-       description: land export
-         wild fire emission fluxes8
-     #
-     - standard_name: Fall_fire09
-       canonical_units: kg/m2/sec
-       description: land export
-         wild fire emission fluxes9
-     #
-     - standard_name: Fall_fire10
-       canonical_units: kg/m2/sec
-       description: land export
-         wild fire emission fluxes10
-     #
-     - standard_name: Fall_flxdst1
+     - standard_name: Fall_flxdst
        canonical_units: kg m-2 s-1
        description: land export
-     #
-     - standard_name: Fall_flxdst2
-       canonical_units: kg m-2 s-1
-       description: land export
-     #
-     - standard_name: Fall_flxdst3
-       canonical_units: kg m-2 s-1
-       description: land export
-     #
-     - standard_name: Fall_flxdst4
-       canonical_units: kg m-2 s-1
-       description: land export
+         dust fluxes from land (sizes 1->4)
      #
      - standard_name: Fall_lat
        canonical_units: W m-2
@@ -171,85 +98,10 @@
        canonical_units: N m-2
        description: land export
      #
-     - standard_name: Fall_voc001
+     - standard_name: Fall_voc
        canonical_units: molecules/m2/sec
        description: land export
-     #
-     - standard_name: Fall_voc002
-       canonical_units: molecules/m2/sec
-       description: land export
-     #
-     - standard_name: Fall_voc003
-       canonical_units: molecules/m2/sec
-       description: land export
-     #
-     - standard_name: Fall_voc004
-       canonical_units: molecules/m2/sec
-       description: land export
-     #
-     - standard_name: Fall_voc005
-       canonical_units: molecules/m2/sec
-       description: land export
-     #
-     - standard_name: Fall_voc006
-       canonical_units: molecules/m2/sec
-       description: land export
-     #
-     - standard_name: Fall_voc007
-       canonical_units: molecules/m2/sec
-       description: land export
-     #
-     - standard_name: Fall_voc008
-       canonical_units: molecules/m2/sec
-       description: land export
-     #
-     - standard_name: Fall_voc009
-       canonical_units: molecules/m2/sec
-       description: land export
-     #
-     - standard_name: Fall_voc010
-       canonical_units: molecules/m2/sec
-       description: land export
-     #
-     - standard_name: Fall_voc011
-       canonical_units: molecules/m2/sec
-       description: land export
-     #
-     - standard_name: Fall_voc012
-       canonical_units: molecules/m2/sec
-       description: land export
-     #
-     - standard_name: Fall_voc013
-       canonical_units: molecules/m2/sec
-       description: land export
-     #
-     - standard_name: Fall_voc014
-       canonical_units: molecules/m2/sec
-       description: land export
-     #
-     - standard_name: Fall_voc015
-       canonical_units: molecules/m2/sec
-       description: land export
-     #
-     - standard_name: Fall_voc016
-       canonical_units: molecules/m2/sec
-       description: land export
-     #
-     - standard_name: Fall_voc017
-       canonical_units: molecules/m2/sec
-       description: land export
-     #
-     - standard_name: Fall_voc018
-       canonical_units: molecules/m2/sec
-       description: land export
-     #
-     - standard_name: Fall_voc019
-       canonical_units: molecules/m2/sec
-       description: land export
-     #
-     - standard_name: Fall_voc020
-       canonical_units: molecules/m2/sec
-       description: land export
+          megan emission fluxes form land (1->20)
      #
      - standard_name: Sl_anidf
        canonical_units: 1
@@ -267,325 +119,9 @@
        canonical_units: 1
        description: land export
      #
-     - standard_name: Sl_dd01
+     - standard_name: Sl_dd
        canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd02
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd03
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd04
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd05
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd06
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd07
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd08
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd09
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd10
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd11
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd12
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd13
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd14
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd15
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd16
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd17
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd18
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd19
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd20
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd21
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd22
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd23
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd24
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd25
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd26
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd27
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd28
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd29
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd30
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd31
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd32
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd33
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd34
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd35
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd36
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd37
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd38
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd39
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd40
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd41
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd42
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd43
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd44
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd45
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd46
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd47
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd48
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd49
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd50
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd51
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd52
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd53
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd54
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd55
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd56
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd57
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd58
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd59
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd60
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd61
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd62
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd63
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd64
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd65
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd66
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd67
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd68
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd69
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd70
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd71
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd72
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd73
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd74
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd75
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd76
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd77
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd78
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd79
-       canonical_units: cm/sec
-       description: land export
-     #
-     - standard_name: Sl_dd80
-       canonical_units: cm/sec
-       description: land export
+       description: land export dry dep fluxes (1->80)
      #
      - standard_name: Sl_fv
        canonical_units: m s-1
@@ -608,15 +144,7 @@
        canonical_units: kg kg-1
        description: land export
      #
-     - standard_name: Sl_qref_16O
-       canonical_units: kg kg-1
-       description: land export
-     #
-     - standard_name: Sl_qref_18O
-       canonical_units: kg kg-1
-       description: land export
-     #
-     - standard_name: Sl_qref_HDO
+     - standard_name: Sl_qref_wiso
        canonical_units: kg kg-1
        description: land export
      #
@@ -628,15 +156,7 @@
        canonical_units: m
        description: land export
      #
-     - standard_name: Sl_snowh_16O
-       canonical_units: m
-       description: land export
-     #
-     - standard_name: Sl_snowh_18O
-       canonical_units: m
-       description: land export
-     #
-     - standard_name: Sl_snowh_HDO
+     - standard_name: Sl_snowh_wiso
        canonical_units: m
        description: land export
      #
@@ -644,105 +164,25 @@
        canonical_units: K
        description: land export
      #
+     - standard_name: Sl_topo_elev
+       canonical_units: m
+       description: land export to mediator in elevation classes (1->glc_nec)
+     #
      - standard_name: Sl_topo
        canonical_units: m
-       description: land export
+       description: mediator export to glc - no levation classes
      #
-     - standard_name: Sl_topo00
-       canonical_units: m
-       description: land export
-     #
-     - standard_name: Sl_topo01
-       canonical_units: m
-       description: land export
-     #
-     - standard_name: Sl_topo02
-       canonical_units: m
-       description: land export
-     #
-     - standard_name: Sl_topo03
-       canonical_units: m
-       description: land export
-     #
-     - standard_name: Sl_topo04
-       canonical_units: m
-       description: land export
-     #
-     - standard_name: Sl_topo05
-       canonical_units: m
-       description: land export
-     #
-     - standard_name: Sl_topo06
-       canonical_units: m
-       description: land export
-     #
-     - standard_name: Sl_topo07
-       canonical_units: m
-       description: land export
-     #
-     - standard_name: Sl_topo08
-       canonical_units: m
-       description: land export
-     #
-     - standard_name: Sl_topo09
-       canonical_units: m
-       description: land export
-     #
-     - standard_name: Sl_topo10
-       canonical_units: m
-       description: land export
-     #
-     - standard_name: Sl_tref
-       canonical_units: K
-       description: land export
+     - standard_name: Sl_tsrf_elev
+       canonical_units: deg C
+       description: land export to mediator in elevation classes (1->glc_nec)
      #
      - standard_name: Sl_tsrf
        canonical_units: deg C
-       description: land export
+       description: mediator export to gcl with no elevation classes
      #
-     - standard_name: Sl_tsrf00
-       canonical_units: deg C
-       description: land export
-     #
-     - standard_name: Sl_tsrf01
-       canonical_units: deg C
-       description: land export
-     #
-     - standard_name: Sl_tsrf02
-       canonical_units: deg C
-       description: land export
-     #
-     - standard_name: Sl_tsrf03
-       canonical_units: deg C
-       description: land export
-     #
-     - standard_name: Sl_tsrf04
-       canonical_units: deg C
-       description: land export
-     #
-     - standard_name: Sl_tsrf05
-       canonical_units: deg C
-       description: land export
-     #
-     - standard_name: Sl_tsrf06
-       canonical_units: deg C
-       description: land export
-     #
-     - standard_name: Sl_tsrf07
-       canonical_units: deg C
-       description: land export
-     #
-     - standard_name: Sl_tsrf08
-       canonical_units: deg C
-       description: land export
-     #
-     - standard_name: Sl_tsrf09
-       canonical_units: deg C
-       description: land export
-     #
-     - standard_name: Sl_tsrf10
-       canonical_units: deg C
-       description: land export
+     - standard_name: Sl_tref
+       canonical_units: K
+       description: mediator export to glc - no levation classes
      #
      - standard_name: Sl_u10
        canonical_units: m
@@ -752,47 +192,19 @@
      # section: atmosphere export
      #-----------------------------------
      #
-     - standard_name: Faxa_bcphidry
+     - standard_name: Faxa_bcph
        canonical_units: kg m-2 s-1
        description: atmosphere export
      #
-     - standard_name: Faxa_bcphiwet
+     - standard_name: Faxa_ocph
        canonical_units: kg m-2 s-1
        description: atmosphere export
      #
-     - standard_name: Faxa_bcphodry
+     - standard_name: Faxa_dstdry
        canonical_units: kg m-2 s-1
        description: atmosphere export
      #
-     - standard_name: Faxa_dstdry1
-       canonical_units: kg m-2 s-1
-       description: atmosphere export
-     #
-     - standard_name: Faxa_dstdry2
-       canonical_units: kg m-2 s-1
-       description: atmosphere export
-     #
-     - standard_name: Faxa_dstdry3
-       canonical_units: kg m-2 s-1
-       description: atmosphere export
-     #
-     - standard_name: Faxa_dstdry4
-       canonical_units: kg m-2 s-1
-       description: atmosphere export
-     #
-     - standard_name: Faxa_dstwet1
-       canonical_units: kg m-2 s-1
-       description: atmosphere export
-     #
-     - standard_name: Faxa_dstwet2
-       canonical_units: kg m-2 s-1
-       description: atmosphere export
-     #
-     - standard_name: Faxa_dstwet3
-       canonical_units: kg m-2 s-1
-       description: atmosphere export
-     #
-     - standard_name: Faxa_dstwet4
+     - standard_name: Faxa_dstwet
        canonical_units: kg m-2 s-1
        description: atmosphere export
      #
@@ -878,15 +290,7 @@
        canonical_units: kg m-2 s-1
        description: atmosphere export
      #
-     - standard_name: Faxa_prec_16O
-       canonical_units: kg m-2 s-1
-       description: atmosphere export
-     #
-     - standard_name: Faxa_prec_18O
-       canonical_units: kg m-2 s-1
-       description: atmosphere export
-     #
-     - standard_name: Faxa_prec_HDO
+     - standard_name: Faxa_prec_wiso
        canonical_units: kg m-2 s-1
        description: atmosphere export
      #
@@ -895,15 +299,7 @@
        canonical_units: kg m-2 s-1
        description: atmosphere export
      #
-     - standard_name: Faxa_rain_16O
-       canonical_units: kg m-2 s-1
-       description: atmosphere export
-     #
-     - standard_name: Faxa_rain_18O
-       canonical_units: kg m-2 s-1
-       description: atmosphere export
-     #
-     - standard_name: Faxa_rain_HDO
+     - standard_name: Faxa_rain_wiso
        canonical_units: kg m-2 s-1
        description: atmosphere export
      #
@@ -911,15 +307,7 @@
        canonical_units: kg m-2 s-1
        description: atmosphere export
      #
-     - standard_name: Faxa_rainc_16O
-       canonical_units: kg m-2 s-1
-       description: atmosphere export
-     #
-     - standard_name: Faxa_rainc_18O
-       canonical_units: kg m-2 s-1
-       description: atmosphere export
-     #
-     - standard_name: Faxa_rainc_HDO
+     - standard_name: Faxa_rainc_wiso
        canonical_units: kg m-2 s-1
        description: atmosphere export
      #
@@ -927,15 +315,7 @@
        canonical_units: kg m-2 s-1
        description: atmosphere export
      #
-     - standard_name: Faxa_rainl_16O
-       canonical_units: kg m-2 s-1
-       description: atmosphere export
-     #
-     - standard_name: Faxa_rainl_18O
-       canonical_units: kg m-2 s-1
-       description: atmosphere export
-     #
-     - standard_name: Faxa_rainl_HDO
+     - standard_name: Faxa_rainl_wiso
        canonical_units: kg m-2 s-1
        description: atmosphere export
      #
@@ -944,15 +324,7 @@
        canonical_units: kg m-2 s-1
        description: atmosphere export
      #
-     - standard_name: Faxa_snow_16O
-       canonical_units: kg m-2 s-1
-       description: atmosphere export
-     #
-     - standard_name: Faxa_snow_18O
-       canonical_units: kg m-2 s-1
-       description: atmosphere export
-     #
-     - standard_name: Faxa_snow_HDO
+     - standard_name: Faxa_snow_wiso
        canonical_units: kg m-2 s-1
        description: atmosphere export
      #
@@ -960,15 +332,7 @@
        canonical_units: kg m-2 s-1
        description: atmosphere export
      #
-     - standard_name: Faxa_snowc_16O
-       canonical_units: kg m-2 s-1
-       description: atmosphere export
-     #
-     - standard_name: Faxa_snowc_18O
-       canonical_units: kg m-2 s-1
-       description: atmosphere export
-     #
-     - standard_name: Faxa_snowc_HDO
+     - standard_name: Faxa_snowc_wiso
        canonical_units: kg m-2 s-1
        description: atmosphere export
      #
@@ -976,15 +340,7 @@
        canonical_units: kg m-2 s-1
        description: atmosphere export
      #
-     - standard_name: Faxa_snowl_16O
-       canonical_units: kg m-2 s-1
-       description: atmosphere export
-     #
-     - standard_name: Faxa_snowl_18O
-       canonical_units: kg m-2 s-1
-       description: atmosphere export
-     #
-     - standard_name: Faxa_snowl_HDO
+     - standard_name: Faxa_snowl_wiso
        canonical_units: kg m-2 s-1
        description: atmosphere export
      #
@@ -1081,20 +437,10 @@
        description: atmosphere export
          bottom layer specific humidity
      #
-     - standard_name: Sa_shum_16O
+     - standard_name: Sa_shum_wiso
        canonical_units: kg kg-1
        description: atmosphere export
-         bottom layer specific humidity 16O (cesm only)
-     #
-     - standard_name: Sa_shum_18O
-       canonical_units: kg kg-1
-       description: atmosphere export
-         bottom layer specific humidity 18O (cesm only)
-     #
-     - standard_name: Sa_shum_HDO
-       canonical_units: kg kg-1
-       description: atmosphere export
-         bottom layer specific humidity HDO (cesm only)
+         bottom layer specific humidity 16O, 18O, HDO (cesm only)
      #
      - standard_name: inst_spec_humid_height2m
        canonical_units: K
@@ -1323,15 +669,7 @@
        canonical_units: kg m-2 s-1
        description: atmosphere import
      #
-     - standard_name: Faxx_evap_16O
-       canonical_units: kg m-2 s-1
-       description: atmosphere import
-     #
-     - standard_name: Faxx_evap_18O
-       canonical_units: kg m-2 s-1
-       description: atmosphere import
-     #
-     - standard_name: Faxx_evap_HDO
+     - standard_name: Faxx_evap_wiso
        canonical_units: kg m-2 s-1
        description: atmosphere import
      #
@@ -1385,14 +723,7 @@
        canonical_units: kg kg-1
        description: atmosphere import
      #
-     - standard_name: Sx_qref_16O
-       canonical_units: kg kg-1
-     #
-     - standard_name: Sx_qref_18O
-       canonical_units: kg kg-1
-       description: atmosphere import
-     #
-     - standard_name: Sx_qref_HDO
+     - standard_name: Sx_qref_wiso
        canonical_units: kg kg-1
        description: atmosphere import
      #
@@ -1420,126 +751,28 @@
        description: land-ice export
          glc frozen runoff_iceberg flux to ice
      #
-     - standard_name: Figg_rofi_16O
+     - standard_name: Figg_rofi_wiso
        canonical_units: kg m-2 s-1
        description: land-ice export
-         glc frozen runoff_iceberg flux to ice for 16O
-     #
-     - standard_name: Figg_rofi_18O
-       canonical_units: kg m-2 s-1
-       description: land-ice export
-         glc frozen runoff_iceberg flux to ice for 18O
-     #
-     - standard_name: Figg_rofi_HDO
-       canonical_units: kg m-2 s-1
-       description: land-ice export
-         glc frozen runoff_iceberg flux to ice for HDO
+         glc frozen runoff_iceberg flux to ice for 16O, 18O, HDO
      #
      - standard_name: Flgg_hflx
        canonical_units: W m-2
-       description: land-ice export
-         Downward heat flux from glacier interior, from glc
-     #
-     - standard_name: Flgg_hflx00
-       canonical_units: W m-2
-       description: land-ice export
+       description: land-ice export to mediator (no elevatino classes)
          Downward heat flux from glacier interior, from mediator, elev class 0
      #
-     - standard_name: Flgg_hflx01
+     - standard_name: Flgg_hflx_elev
        canonical_units: W m-2
-       description: land-ice export
-         Downward heat flux from glacier interior, from mediator, elev class 1
+       description: mediator land-ice export to lnd (elevation classes 1->glc_nec)
+         Downward heat flux from glacier interior, from mediator, elev class 1->glc_nec
      #
-     - standard_name: Flgg_hflx02
-       canonical_units: W m-2
-       description: land-ice export
-         Downward heat flux from glacier interior, from mediator, elev class 2
-     #
-     - standard_name: Flgg_hflx03
-       canonical_units: W m-2
-       description: land-ice export
-         Downward heat flux from glacier interior, from mediator, elev class 3
-     #
-     - standard_name: Flgg_hflx04
-       canonical_units: W m-2
-       description: land-ice export
-         Downward heat flux from glacier interior, from mediator, elev class 4
-     #
-     - standard_name: Flgg_hflx05
-       canonical_units: W m-2
-       description: land-ice export
-         Downward heat flux from glacier interior, from mediator, elev class 5
-     #
-     - standard_name: Flgg_hflx06
-       canonical_units: W m-2
-       description: land-ice export
-         Downward heat flux from glacier interior, from mediator, elev class 6
-     #
-     - standard_name: Flgg_hflx07
-       canonical_units: W m-2
-       description: land-ice export
-         Downward heat flux from glacier interior, from mediator, elev class 7
-     #
-     - standard_name: Flgg_hflx08
-       canonical_units: W m-2
-       description: land-ice export
-         Downward heat flux from glacier interior, from mediator, elev class 8
-     #
-     - standard_name: Flgg_hflx09
-       canonical_units: W m-2
-       description: land-ice export
-         Downward heat flux from glacier interior, from mediator, elev class 8
-     #
-     - standard_name: Flgg_hflx10
-       canonical_units: W m-2
-       description: land-ice export
-         Downward heat flux from glacier interior, from mediator, elev class 10
      - standard_name: Sg_ice_covered
        canonical_units: 1
+       description: land-ice export to mediator (no elevation classes)
      #
-     - standard_name: Sg_ice_covered00
+     - standard_name: Sg_ice_covered_elev
        canonical_units: 1
-       description: land-ice export
-     #
-     - standard_name: Sg_ice_covered01
-       canonical_units: 1
-       description: land-ice export
-     #
-     - standard_name: Sg_ice_covered02
-       canonical_units: 1
-       description: land-ice export
-     #
-     - standard_name: Sg_ice_covered03
-       canonical_units: 1
-       description: land-ice export
-     #
-     - standard_name: Sg_ice_covered04
-       canonical_units: 1
-       description: land-ice export
-     #
-     - standard_name: Sg_ice_covered05
-       canonical_units: 1
-       description: land-ice export
-     #
-     - standard_name: Sg_ice_covered06
-       canonical_units: 1
-       description: land-ice export
-     #
-     - standard_name: Sg_ice_covered07
-       canonical_units: 1
-       description: land-ice export
-     #
-     - standard_name: Sg_ice_covered08
-       canonical_units: 1
-       description: land-ice export
-     #
-     - standard_name: Sg_ice_covered09
-       canonical_units: 1
-       description: land-ice export
-     #
-     - standard_name: Sg_ice_covered10
-       canonical_units: 1
-       description: land-ice export
+       description: mediator land-ice export to lnd (elevation classes 1->glc_nec)
      #
      - standard_name: Sg_icemask
        canonical_units: 1
@@ -1551,91 +784,31 @@
      #
      - standard_name: Sg_topo
        canonical_units: m
-       description: land-ice export
+       description: land-ice export to mediator (no elevation classes)
      #
-     - standard_name: Sg_topo00
+     - standard_name: Sg_topo_elev
        canonical_units: m
-       description: land-ice export
-     #
-     - standard_name: Sg_topo01
-       canonical_units: m
-       description: land-ice export
-     #
-     - standard_name: Sg_topo02
-       canonical_units: m
-       description: land-ice export
-     #
-     - standard_name: Sg_topo03
-       canonical_units: m
-       description: land-ice export
-     #
-     - standard_name: Sg_topo04
-       canonical_units: m
-       description: land-ice export
-     #
-     - standard_name: Sg_topo05
-       canonical_units: m
-       description: land-ice export
-     #
-     - standard_name: Sg_topo06
-       canonical_units: m
-       description: land-ice export
-     #
-     - standard_name: Sg_topo07
-       canonical_units: m
-       description: land-ice export
-     #
-     - standard_name: Sg_topo08
-       canonical_units: m
-       description: land-ice export
-     #
-     - standard_name: Sg_topo09
-       canonical_units: m
-       description: land-ice export
-     #
-     - standard_name: Sg_topo10
-       canonical_units: m
-       description: land-ice export
+       description: mediator land-ice export to lnd (elevation classes 1->glc_nec)
      #
      - standard_name: Fogg_rofi
        canonical_units: kg m-2 s-1
        description: land-ice export
          glacier_frozen_runoff_flux_to_ocean
      #
-     - standard_name: Fogg_rofi_16O
+     - standard_name: Fogg_rofi_wiso
        canonical_units: kg m-2 s-1
        description: land-ice export
-         glacier_frozen_runoff_flux_to_ocean for 16O
-     #
-     - standard_name: Fogg_rofi_18O
-       canonical_units: kg m-2 s-1
-       description: land-ice export
-         glacier_frozen_runoff_flux_to_ocean for 18O
-     #
-     - standard_name: Fogg_rofi_HDO
-       canonical_units: kg m-2 s-1
-       description: land-ice export
-         glacier_frozen_runoff_flux_to_ocean for HDO
+         glacier_frozen_runoff_flux_to_ocean for 16O, 18O, HDO
      #
      - standard_name: Fogg_rofl
        canonical_units: kg m-2 s-1
        description: land-ice export
          glacier liquid runoff flux to ocean
      #
-     - standard_name: Fogg_rofl_16O
+     - standard_name: Fogg_rofl_wiso
        canonical_units: kg m-2 s-1
        description: land-ice export
-         glacier_frozen_runoff_flux_to_ocean for 16O
-     #
-     - standard_name: Fogg_rofl_18O
-       canonical_units: kg m-2 s-1
-       description: land-ice export
-         glacier_frozen_runoff_flux_to_ocean for 18O
-     #
-     - standard_name: Fogg_rofl_HDO
-       canonical_units: kg m-2 s-1
-       description: land-ice export
-         glacier_frozen_runoff_flux_to_ocean for HDO
+         glacier_frozen_runoff_flux_to_ocean for 16O, 18O, HDO
      #
      #-----------------------------------
      # section: sea-ice export
@@ -1646,17 +819,9 @@
        canonical_units: kg m-2 s-1
        description: sea-ice export
      #
-     - standard_name: Faii_evap_16O
+     - standard_name: Faii_evap_wiso
        canonical_units: kg m-2 s-1
-       description: sea-ice export
-     #
-     - standard_name: Faii_evap_18O
-       canonical_units: kg m-2 s-1
-       description: sea-ice export
-     #
-     - standard_name: Faii_evap_HDO
-       canonical_units: kg m-2 s-1
-       description: sea-ice export
+       description: sea-ice export for 16O, 18O, HDO
      #
      - standard_name: Faii_lat
        alias: mean_laten_heat_flx_atm_into_ice
@@ -1713,15 +878,10 @@
        description: sea-ice export to ocean
          net heat flux to ocean
      #
-     - standard_name: Fioi_melth_16O
+     - standard_name: Fioi_melth_wiso
        canonical_units: kg m-2 s-1
        description: sea-ice export to ocean
-         isotope head flux to ocean
-     #
-     - standard_name: Fioi_melth_18O
-       canonical_units: kg m-2 s-1
-       description: sea-ice export to ocean
-         isotope head flux to ocean
+         isotope head flux to ocean for 16O, 18O, HDO
      #
      - standard_name: Fioi_melth_HDO
        canonical_units: kg m-2 s-1
@@ -1734,17 +894,10 @@
        description: sea-ice export to ocean
          fresh water to ocean (h2o flux from melting)
      #
-     - standard_name: Fioi_meltw_16O
+     - standard_name: Fioi_meltw_wiso
        canonical_units: kg m-2 s-1
-       description: sea-ice export
-     #
-     - standard_name: Fioi_meltw_18O
-       canonical_units: kg m-2 s-1
-       description: sea-ice export
-     #
-     - standard_name: Fioi_meltw_HDO
-       canonical_units: kg m-2 s-1
-       description: sea-ice export
+       description: sea-ice export to ocean
+         fresh water to ocean (h2o flux from melting) for 16O, 18O, HDO
      #
      - standard_name: Fioi_salt
        alias: mean_salt_rate
@@ -1840,19 +993,9 @@
        description: sea-ice export to atm
          cesm only
      #
-     - standard_name: Si_qref_16O
+     - standard_name: Si_qref_wiso
        canonical_units: kg kg-1
        description: sea-ice export to atm
-         cesm only
-     #
-     - standard_name: Si_qref_18O
-       canonical_units: kg kg-1
-       description: sea-ice export to atm
-         cesm only
-     #
-     - standard_name: Si_qref_HDO
-       canonical_units: kg kg-1
-       description: sea-ice export
          cesm only
      #
      - standard_name: Si_snowh
@@ -1952,15 +1095,7 @@
        canonical_units: kg kg-1
        description: ocean export
      #
-     - standard_name: So_qref_16O
-       canonical_units: kg kg-1
-       description: ocean export
-     #
-     - standard_name: So_qref_18O
-       canonical_units: kg kg-1
-       description: ocean export
-     #
-     - standard_name: So_qref_HDO
+     - standard_name: So_qref_wiso
        canonical_units: kg kg-1
        description: ocean export
      #
@@ -1968,12 +1103,8 @@
        canonical_units: 1
        description: ocean export
      #
-     - standard_name: So_roce_16O
-       canonical_units: 1
-       description: ocean export
-     #
-     - standard_name: So_roce_HDO
-       canonical_units: 1
+     - standard_name: So_qref_wiso
+       canonical_units: kg kg-1
        description: ocean export
      #
      - standard_name: So_s
@@ -2021,36 +1152,18 @@
        description: river export
          water flux into sea ice due to runoff (frozen)
      #
-     - standard_name: Firr_rofi_16O
+     - standard_name: Firr_rofi_wiso
        canonical_units: kg m-2 s-1
        description: river export
-         water flux into sea ice due to runoff (frozen) for 16O
-     #
-     - standard_name: Firr_rofi_18O
-       canonical_units: kg m-2 s-1
-       description: river export
-         water flux into sea ice due to runoff (frozen) for 18O
-     #
-     - standard_name: Firr_rofi_HDO
-       canonical_units: kg m-2 s-1
-       description: river export
-         water flux into sea ice due to runoff (frozen) for HDO
+         water flux into sea ice due to runoff (frozen) for 16O, 18O, HDO
      #
      - standard_name: Fixx_rofi
        canonical_units: kg m-2 s-1
        description: frozen runoff to ice from river and land-ice
      #
-     - standard_name: Fixx_rofi_16O
+     - standard_name: Fixx_rofi_wiso
        canonical_units: kg m-2 s-1
-       description: frozen runoff to ice from river and land-ice for 16O
-     #
-     - standard_name: Fixx_rofi_18O
-       canonical_units: kg m-2 s-1
-       description: frozen runoff to ice from river and land-ice for 18O
-     #
-     - standard_name: Fixx_rofi_HDO
-       canonical_units: kg m-2 s-1
-       description: frozen runoff to ice from river and land-ice for HDO
+       description: frozen runoff to ice from river and land-ice for 16O, 18O, HDO
      #
      #-----------------------------------
      # section: lnd export to glc
@@ -2058,51 +1171,11 @@
      #
      - standard_name: Flgl_qice
        canonical_units: kg m-2 s-1
-       description: land export to glc
+       description: mediator export to glc no elevation classes
      #
-     - standard_name: Flgl_qice00
+     - standard_name: Flgl_qice_elev
        canonical_units: kg m-2 s-1
-       description: land export to glc
-     #
-     - standard_name: Flgl_qice01
-       canonical_units: kg m-2 s-1
-       description: land export to glc
-     #
-     - standard_name: Flgl_qice02
-       canonical_units: kg m-2 s-1
-       description: land export to glc
-     #
-     - standard_name: Flgl_qice03
-       canonical_units: kg m-2 s-1
-       description: land export to glc
-     #
-     - standard_name: Flgl_qice04
-       canonical_units: kg m-2 s-1
-       description: land export to glc
-     #
-     - standard_name: Flgl_qice05
-       canonical_units: kg m-2 s-1
-       description: land export to glc
-     #
-     - standard_name: Flgl_qice06
-       canonical_units: kg m-2 s-1
-       description: land export to glc
-     #
-     - standard_name: Flgl_qice07
-       canonical_units: kg m-2 s-1
-       description: land export to glc
-     #
-     - standard_name: Flgl_qice08
-       canonical_units: kg m-2 s-1
-       description: land export to glc
-     #
-     - standard_name: Flgl_qice09
-       canonical_units: kg m-2 s-1
-       description: land export to glc
-     #
-     - standard_name: Flgl_qice10
-       canonical_units: kg m-2 s-1
-       description: land export to glc
+       description: land export to mediator  in elevation classes (1->glc_nec)
      #
      #-----------------------------------
      # section: lnd export to river
@@ -2141,100 +1214,50 @@
        description: river export to land
          Water flux due to flooding
      #
-     - standard_name: Flrr_flood_16O
+     - standard_name: Flrr_flood_wiso
        canonical_units: kg m-2 s-1
        description: river export to land
-         Water flux due to flooding for 16O
-     #
-     - standard_name: Flrr_flood_18O
-       canonical_units: kg m-2 s-1
-       description: river export to land
-         Water flux due to flooding for 18O
-     #
-     - standard_name: Flrr_flood_HDO
-       canonical_units: kg m-2 s-1
-       description: river export to land
-         Water flux due to flooding for HDO
+         Water flux due to flooding for 16O, 18O, HDO
      #
      - standard_name: Flrr_volr
        canonical_units: m
        description: river export to land
          River channel total water volume
      #
-     - standard_name: Flrr_volr_16O
+     - standard_name: Flrr_volr_wiso
        canonical_units: m
        description: river export to land
-         River channel total water volume from 16O
-     #
-     - standard_name: Flrr_volr_18O
-       canonical_units: m
-       description: river export to land
-         River channel total water volume from 18O
-     #
-     - standard_name: Flrr_volr_HDO
-       canonical_units: m
-       description: river export to land
-         River channel total water olume from HDO
+         River channel total water volume from 16O, 18O, HDO
      #
      - standard_name: Flrr_volrmch
        canonical_units: m
        description: river export to land
          River channel main channel water volume
      #
-     - standard_name: Flrr_volrmch_16O
+     - standard_name: Flrr_volrmch_wiso
        canonical_units: m
        description: river export to land
-         River channel main channel water volume from 16O
-     #
-     - standard_name: Flrr_volrmch_18O
-       canonical_units: m
-       description: river export to land
-         River channel main channel water volume from 18O
-     #
-     - standard_name: Flrr_volrmch_HDO
-       canonical_units: m
-       description: river export to land
-         River channel main channel water volume from HDO
+         River channel main channel water volume from 16O, 18O, HDO
      #
      - standard_name: Forr_rofi
        canonical_units: kg m-2 s-1
        description: river export to ocean
          Water flux due to runoff (frozen)
      #
-     - standard_name: Forr_rofi_16O
+     - standard_name: Forr_rofi_wiso
        canonical_units: kg m-2 s-1
        description: river export to ocean
-         Water flux due to runoff (frozen) for 16O
-     #
-     - standard_name: Forr_rofi_18O
-       canonical_units: kg m-2 s-1
-       description: river export to ocean
-         Water flux due to runoff (frozen) for 18O
-     #
-     - standard_name: Forr_rofi_HDO
-       canonical_units: kg m-2 s-1
-       description: river export to ocean
-         Water flux due to runoff (frozen) for HDO
+         Water flux due to runoff (frozen) for 16O, 18O, HDO
      #
      - standard_name: Forr_rofl
        canonical_units: kg m-2 s-1
        description: river export to ocean
          Water flux due to runoff (liquid)
      #
-     - standard_name: Forr_rofl_16O
+     - standard_name: Forr_rofl_wiso
        canonical_units: kg m-2 s-1
        description: river export to ocean
-         Water flux due to runoff (frozen) for 16O
-     #
-     - standard_name: Forr_rofl_18O
-       canonical_units: kg m-2 s-1
-       description: river export to ocean
-         Water flux due to runoff (frozen) for 18O
-     #
-     - standard_name: Forr_rofl_HDO
-       canonical_units: kg m-2 s-1
-       description: river export to ocean
-         Water flux due to runoff (frozen) for HDO
+         Water flux due to runoff (frozen) for 16O, 18O, HDO
      #
      #-----------------------------------
      # section: ocean import
@@ -2246,40 +1269,20 @@
        description: ocean import
          specific humidity flux
      #
-     - standard_name: Foxx_evap_16O
+     - standard_name: Foxx_evap_wiso
        canonical_units: kg m-2 s-1
        description: ocean import
-         specific humidity flux 16O
-     #
-     - standard_name: Foxx_evap_18O
-       canonical_units: kg m-2 s-1
-       description: ocean import
-         specific humidity flux 18O
-     #
-     - standard_name: Foxx_evap_HDO
-       canonical_units: kg m-2 s-1
-       description: ocean import
-         specific humidity flux HDO
+         specific humidity flux 16O, 18O, HDO
      #
      - standard_name: Foxx_lat
        canonical_units: W m-2
        description: ocean import
          latent heat flux into ocean (cesm only)
      #
-     - standard_name: Foxx_lat_16O
+     - standard_name: Foxx_lat_wiso
        canonical_units: W m-2
        description: ocean import
-         latent heat flux into ocean for 16O (cesm only)
-     #
-     - standard_name: Foxx_lat_18O
-       canonical_units: W m-2
-       description: ocean import
-         latent heat flux into ocean for 16O (cesm only)
-     #
-     - standard_name: Foxx_lat_HDO
-       canonical_units: W m-2
-       description: ocean import
-         latent heat flux into ocean for 18O (cesm only)
+         latent heat flux into ocean for 16O, 18O, HDO (cesm only)
      #
      - standard_name: Foxx_lat
        canonical_units: W m-2
@@ -2328,20 +1331,10 @@
        description: ocean import
          water flux due to runoff (frozen)
      #
-     - standard_name: Foxx_rofi_16O
+     - standard_name: Foxx_rofi_wiso
        canonical_units: kg m-2 s-1
        description: ocean import
-         water flux due to runoff (frozen) for 16O
-     #
-     - standard_name: Foxx_rofi_18O
-       canonical_units: kg m-2 s-1
-       description: ocean import
-         water flux due to runoff (frozen) for 18O
-     #
-     - standard_name: Foxx_rofi_HDO
-       canonical_units: kg m-2 s-1
-       description: ocean import
-         water flux due to runoff (frozen) for HDO
+         water flux due to runoff (frozen) for 16O, 18O, HDO
      #
      - standard_name: Foxx_rofl
        alias: mean_runoff_rate
@@ -2349,20 +1342,10 @@
        description: ocean import
          water flux due to runoff (liquid)
      #
-     - standard_name: Foxx_rofl_16O
+     - standard_name: Foxx_rofl_wiso
        canonical_units: kg m-2 s-1
        description: ocean import
-         water flux due to runoff (liquid) for 16O
-     #
-     - standard_name: Foxx_rofl_18O
-       canonical_units: kg m-2 s-1
-       description: ocean import
-         water flux due to runoff (liquid) for 18O
-     #
-     - standard_name: Foxx_rofl_HDO
-       canonical_units: kg m-2 s-1
-       description: ocean import
-         water flux due to runoff (liquid) for HDO
+         water flux due to runoff (liquid) for 16O, 18O, HDO
      #
      - standard_name: Foxx_swnet
        alias: mean_net_sw_flx

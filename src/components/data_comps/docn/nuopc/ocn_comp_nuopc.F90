@@ -26,14 +26,13 @@ module ocn_comp_nuopc
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_SetScalar
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_Diagnose
-  use shr_nuopc_grid_mod    , only : shr_nuopc_grid_ArrayToState
-  use shr_nuopc_grid_mod    , only : shr_nuopc_grid_StateToArray
   use shr_strdata_mod       , only : shr_strdata_type
   use shr_const_mod         , only : SHR_CONST_SPVAL
   use dshr_nuopc_mod        , only : fld_list_type, fldsMax, fld_list_realize
   use dshr_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, ModelSetMetaData
   use docn_shr_mod          , only : docn_shr_read_namelists
   use docn_comp_mod         , only : docn_comp_init, docn_comp_run, docn_comp_advertise
+  use docn_comp_mod         , only : docn_comp_import, docn_comp_export
   use mct_mod               , only : mct_Avect, mct_Avect_info
 
   implicit none
@@ -383,7 +382,7 @@ module ocn_comp_nuopc
     ! Set the coupling scalars
     !--------------------------------
 
-    call shr_nuopc_grid_ArrayToState(o2x%rattr, flds_o2x, exportState, grid_option='mesh', rc=rc)
+    call docn_comp_export(o2x, exportState, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call shr_nuopc_methods_State_SetScalar(dble(SDOCN%nxg),flds_scalar_index_nx, exportState,  &
@@ -479,7 +478,7 @@ module ocn_comp_nuopc
     !--------------------------------
 
     if (ocn_prognostic) then
-       call shr_nuopc_grid_StateToArray(importState, x2o%rattr, flds_x2o, grid_option='mesh', rc=rc)
+       call docn_comp_import(importState, x2o, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
@@ -527,7 +526,7 @@ module ocn_comp_nuopc
     ! Pack export state
     !--------------------------------
 
-    call shr_nuopc_grid_ArrayToState(o2x%rattr, flds_o2x, exportState, grid_option='mesh', rc=rc)
+    call docn_comp_export(o2x, exportState, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------

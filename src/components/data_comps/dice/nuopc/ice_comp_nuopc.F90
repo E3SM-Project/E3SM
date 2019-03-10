@@ -26,18 +26,15 @@ module ice_comp_nuopc
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_SetScalar
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_Diagnose
-  use shr_nuopc_grid_mod    , only : shr_nuopc_grid_ArrayToState
-  use shr_nuopc_grid_mod    , only : shr_nuopc_grid_StateToArray
-  use shr_const_mod         , only : SHR_CONST_SPVAL
+  use shr_const_mod         , only : shr_const_spval, shr_const_pi
   use shr_strdata_mod       , only : shr_strdata_type
   use shr_cal_mod           , only : shr_cal_ymd2julian
-  use shr_const_mod         , only : shr_const_pi
-  use dshr_nuopc_mod        , only : fld_list_type, fldsMax, fld_list_realize
+  use dshr_nuopc_mod        , only : fld_list_type, fldsMax, dshr_realize
   use dshr_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, ModelSetMetaData
   use dice_shr_mod          , only : dice_shr_read_namelists
   use dice_comp_mod         , only : dice_comp_init, dice_comp_run, dice_comp_advertise
-  use mct_mod               , only : mct_Avect, mct_Avect_info
-
+  use dice_comp_mod         , only : dice_comp_import, dice_comp_export
+  use mct_mod               , only : mct_Avect
 
   implicit none
   private ! except
@@ -341,7 +338,7 @@ contains
     ! by replacing the advertised fields with the newly created fields of the same name.
     !--------------------------------
 
-    call fld_list_realize( &
+    call dshr_realize( &
          state=ExportState, &
          fldList=fldsFrIce, &
          numflds=fldsFrIce_num, &
@@ -351,7 +348,7 @@ contains
          mesh=Emesh, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call fld_list_realize( &
+    call dshr_realize( &
          state=importState, &
          fldList=fldsToIce, &
          numflds=fldsToIce_num, &
@@ -387,7 +384,7 @@ contains
          calendar, modeldt, current_ymd, current_tod, cosArg)
 
     ! Pack export state
-    call shr_nuopc_grid_ArrayToState(i2x%rattr, flds_i2x, exportState, grid_option='mesh', rc=rc)
+    call dice_comp_export(i2x, exportState, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     nx_global = SDICE%nxg
@@ -480,7 +477,7 @@ contains
     ! Unpack import state
     !--------------------------------
 
-    call shr_nuopc_grid_StateToArray(importState, x2i%rattr, flds_x2i, grid_option='mesh', rc=rc)
+    call dice_comp_import(importState, x2i, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
@@ -529,7 +526,7 @@ contains
     ! Pack export state
     !--------------------------------
 
-    call shr_nuopc_grid_ArrayToState(i2x%rattr, flds_i2x, exportState, grid_option='mesh', rc=rc)
+    call dice_comp_export(i2x, exportState, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------

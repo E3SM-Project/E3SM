@@ -1886,14 +1886,17 @@ module shr_nuopc_methods_mod
       if (geomtype == ESMF_GEOMTYPE_GRID) then
         call ESMF_FieldGet(field, rank=lrank, rc=rc)
         if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
       elseif (geomtype == ESMF_GEOMTYPE_MESH) then
-        lrank = 1
+        call ESMF_FieldGet(field, rank=lrank, rc=rc)
+        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
         call ESMF_FieldGet(field, mesh=lmesh, rc=rc)
         if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
         call ESMF_MeshGet(lmesh, numOwnedNodes=nnodes, numOwnedElements=nelements, rc=rc)
         if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
         if (nnodes == 0 .and. nelements == 0) lrank = 0
-      else  ! geomtype
+
+      else  
          call ESMF_LogWrite(trim(subname)//": ERROR geomtype not supported ", &
               ESMF_LOGMSG_INFO, rc=rc)
         rc = ESMF_FAILURE
@@ -1903,6 +1906,7 @@ module shr_nuopc_methods_mod
       if (lrank == 0) then
          call ESMF_LogWrite(trim(subname)//": no local nodes or elements ", &
               ESMF_LOGMSG_INFO, rc=dbrc)
+
       elseif (lrank == 1) then
         if (.not.present(fldptr1)) then
            call ESMF_LogWrite(trim(subname)//": ERROR missing rank=1 array ", &
@@ -1912,6 +1916,7 @@ module shr_nuopc_methods_mod
         endif
         call ESMF_FieldGet(field, farrayPtr=fldptr1, rc=rc)
         if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
       elseif (lrank == 2) then
         if (.not.present(fldptr2)) then
            call ESMF_LogWrite(trim(subname)//": ERROR missing rank=2 array ", &
@@ -1921,6 +1926,7 @@ module shr_nuopc_methods_mod
         endif
         call ESMF_FieldGet(field, farrayPtr=fldptr2, rc=rc)
         if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
       else
          call ESMF_LogWrite(trim(subname)//": ERROR in rank ", &
               ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)

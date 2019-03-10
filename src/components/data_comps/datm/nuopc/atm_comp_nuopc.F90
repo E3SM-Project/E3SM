@@ -27,16 +27,15 @@ module atm_comp_nuopc
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_SetScalar
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_Diagnose
-  use shr_nuopc_grid_mod    , only : shr_nuopc_grid_ArrayToState
-  use shr_nuopc_grid_mod    , only : shr_nuopc_grid_StateToArray
   use shr_strdata_mod       , only : shr_strdata_type
   use shr_const_mod         , only : SHR_CONST_SPVAL
-  use dshr_nuopc_mod        , only : fld_list_type, fldsMax, fld_list_realize
+  use dshr_nuopc_mod        , only : fld_list_type, fldsMax, dshr_realize
   use dshr_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, ModelSetMetaData
   use datm_shr_mod          , only : datm_shr_read_namelists
   use datm_shr_mod          , only : iradsw, datm_shr_getNextRadCDay
-  use datm_comp_mod         , only : datm_comp_init, datm_comp_run, datm_comp_advertise
-  use mct_mod               , only : mct_Avect, mct_Avect_info
+  use datm_comp_mod         , only : datm_comp_advertise, datm_comp_init, datm_comp_run 
+  use datm_comp_mod         , only : datm_comp_import, datm_comp_export
+  use mct_mod               , only : mct_Avect
 
   implicit none
   private ! except
@@ -76,7 +75,7 @@ module atm_comp_nuopc
   logical                  :: use_esmf_metadata = .false.
   character(*),parameter   :: modName =  "(atm_comp_nuopc)"
   integer, parameter       :: debug_import = 0          ! if > 0 will diagnose import fields
-  integer, parameter       :: debug_export = 0          ! if > 0 will diagnose export fields
+  integer, parameter       :: debug_export = 1          ! if > 0 will diagnose export fields
   character(*),parameter   :: u_FILE_u = &
        __FILE__
 
@@ -403,7 +402,7 @@ contains
     ! by replacing the advertised fields with the newly created fields of the same name.
     !--------------------------------
 
-    call fld_list_realize( &
+    call dshr_realize( &
          state=ExportState, &
          fldList=fldsFrAtm, &
          numflds=fldsFrAtm_num, &
@@ -413,7 +412,7 @@ contains
          mesh=Emesh, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call fld_list_realize( &
+    call dshr_realize( &
          state=importState, &
          fldList=fldsToAtm, &
          numflds=fldsToAtm_num, &
@@ -429,7 +428,7 @@ contains
     ! Set the coupling scalars
     !--------------------------------
 
-    call shr_nuopc_grid_ArrayToState(a2x%rattr, flds_a2x, exportState, grid_option='mesh', rc=rc)
+    call datm_comp_export(a2x, exportState, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call shr_nuopc_methods_State_SetScalar(dble(SDATM%nxg),flds_scalar_index_nx, exportState,  &
@@ -439,7 +438,7 @@ contains
     call shr_nuopc_methods_State_SetScalar(dble(SDATM%nyg),flds_scalar_index_ny, exportState, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
+    
     call shr_nuopc_methods_State_SetScalar(nextsw_cday, flds_scalar_index_nextsw_cday, exportState, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -449,7 +448,7 @@ contains
     !--------------------------------
 
     if (debug_export > 0) then
-       call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
+       call shr_nuopc_methods_State_diagnose(exportState, subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
 
@@ -472,8 +471,10 @@ contains
   !===============================================================================
 
   subroutine ModelAdvance(gcomp, rc)
+
     use shr_nuopc_utils_mod, only : shr_nuopc_log_clock_advance, shr_nuopc_memcheck
     use perf_mod, only : t_startf, t_stopf
+
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -535,7 +536,7 @@ contains
     !--------------------------------
 
     if (atm_prognostic) then
-       call shr_nuopc_grid_StateToArray(importState, x2a%rattr, flds_x2a, grid_option='mesh', rc=rc)
+       call datm_comp_import(importState, x2a, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
@@ -603,7 +604,7 @@ contains
     ! Pack export state
     !--------------------------------
 
-    call shr_nuopc_grid_ArrayToState(a2x%rattr, flds_a2x, exportState, grid_option='mesh', rc=rc)
+    call datm_comp_export(a2x, exportState, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call shr_nuopc_methods_State_SetScalar(nextsw_cday, flds_scalar_index_nextsw_cday, exportState,  &

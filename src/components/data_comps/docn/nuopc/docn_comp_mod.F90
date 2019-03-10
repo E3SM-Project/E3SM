@@ -1,10 +1,10 @@
 #ifdef AIX
 @PROCESS ALIAS_SIZE(805306368)
 #endif
+
 module docn_comp_mod
 
   ! !USES:
-  use shr_pcdf_mod          , only : shr_pcdf_readwrite
   use NUOPC                 , only : NUOPC_Advertise
   use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_State
   use ESMF                  , only : ESMF_Mesh, ESMF_DistGrid, ESMF_MeshGet, ESMF_DistGridGet
@@ -34,7 +34,8 @@ module docn_comp_mod
   use shr_strdata_mod       , only : shr_strdata_print, shr_strdata_restRead
   use shr_strdata_mod       , only : shr_strdata_advance, shr_strdata_restWrite
   use shr_dmodel_mod        , only : shr_dmodel_translateAV
-  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add
+  use shr_pcdf_mod          , only : shr_pcdf_readwrite
+  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_import, dshr_export
   use docn_shr_mod          , only : datamode       ! namelist input
   use docn_shr_mod          , only : aquap_option   ! derived from datamode namelist input
   use docn_shr_mod          , only : rest_file      ! namelist input
@@ -52,6 +53,8 @@ module docn_comp_mod
   public :: docn_comp_advertise
   public :: docn_comp_init
   public :: docn_comp_run
+  public :: docn_comp_import
+  public :: docn_comp_export
 
   private :: prescribed_sst
 
@@ -136,29 +139,29 @@ contains
 
     call dshr_fld_add(model_fld='So_omask', model_fld_concat=flds_o2x, model_fld_index=ksomask, &
          fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
-
     call dshr_fld_add(model_fld='Fioo_q', model_fld_concat=flds_o2x, model_fld_index=kq, &
          fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
 
     ! export fields that have a corresponding stream field
 
-    call dshr_fld_add(data_fld='t', data_fld_array=avifld, model_fld='So_t', model_fld_array=avofld, &
-         model_fld_concat=flds_o2x, model_fld_index=kt, fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
-
-    call dshr_fld_add(data_fld='s', data_fld_array=avifld, model_fld='So_s', model_fld_array=avofld, &
-         model_fld_concat=flds_o2x, model_fld_index=ks, fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
-
-    call dshr_fld_add(data_fld='u', data_fld_array=avifld, model_fld='So_u', model_fld_array=avofld, &
-         model_fld_concat=flds_o2x, model_fld_index=ku, fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
-
-    call dshr_fld_add(data_fld='v', data_fld_array=avifld, model_fld='So_v', model_fld_array=avofld, &
-         model_fld_concat=flds_o2x, model_fld_index=kv, fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
-
-    call dshr_fld_add(data_fld='dhdx', data_fld_array=avifld, model_fld='So_dhdx', model_fld_array=avofld, &
-         model_fld_concat=flds_o2x, model_fld_index=kdhdx, fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
-
-    call dshr_fld_add(data_fld='dhdy', data_fld_array=avifld, model_fld='So_dhdy', model_fld_array=avofld, &
-         model_fld_concat=flds_o2x, model_fld_index=kdhdy, fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
+    call dshr_fld_add(data_fld='t', data_fld_array=avifld, &
+         model_fld='So_t', model_fld_array=avofld, model_fld_concat=flds_o2x, model_fld_index=kt, &
+         fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
+    call dshr_fld_add(data_fld='s', data_fld_array=avifld, &
+         model_fld='So_s', model_fld_array=avofld, model_fld_concat=flds_o2x, model_fld_index=ks, &
+         fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
+    call dshr_fld_add(data_fld='u', data_fld_array=avifld, &
+         model_fld='So_u', model_fld_array=avofld, model_fld_concat=flds_o2x, model_fld_index=ku, &
+         fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
+    call dshr_fld_add(data_fld='v', data_fld_array=avifld, &
+         model_fld='So_v', model_fld_array=avofld, model_fld_concat=flds_o2x, model_fld_index=kv, &
+         fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
+    call dshr_fld_add(data_fld='dhdx', data_fld_array=avifld, &
+         model_fld='So_dhdx', model_fld_array=avofld, model_fld_concat=flds_o2x, model_fld_index=kdhdx, &
+         fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
+    call dshr_fld_add(data_fld='dhdy', data_fld_array=avifld, &
+         model_fld='So_dhdy', model_fld_array=avofld, model_fld_concat=flds_o2x, model_fld_index=kdhdy, &
+         fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
 
     !-------------------
     ! import fields (have no corresponding stream fields)
@@ -867,6 +870,82 @@ contains
     call t_stopf('DOCN_RUN')
 
   end subroutine docn_comp_run
+
+  !===============================================================================
+
+  subroutine docn_comp_import(importState, x2o, rc)
+
+    ! input/output variables
+    type(ESMF_State)     :: importState
+    type(mct_aVect)      :: x2o
+    integer, intent(out) :: rc
+    !----------------------------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    call dshr_import(importState, 'Foxx_swnet', x2o%rattr(kswnet,:), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_import(importState, 'Foxx_lwup', x2o%rattr(klwup,:), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_import(importState, 'Foxx_sen', x2o%rattr(ksen,:), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_import(importState, 'Foxx_lat', x2o%rattr(klat,:), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_import(importState, 'Faxa_lwdn', x2o%rattr(klwdn,:), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_import(importState, 'Faxa_snow', x2o%rattr(ksnow,:), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_import(importState, 'Fioi_melth', x2o%rattr(kmelth,:), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_import(importState, 'Foxx_melth', x2o%rattr(krofi,:), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+  end subroutine docn_comp_import
+
+  !===============================================================================
+
+  subroutine docn_comp_export(o2x, exportState, rc)
+
+    ! input/output variables
+    type(mct_aVect)      :: o2x
+    type(ESMF_State)     :: exportState
+    integer, intent(out) :: rc
+    !----------------------------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    call dshr_export(o2x%rattr(ksomask,:), exportState, 'So_omask', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(o2x%rattr(kt,:), exportState, 'So_t', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(o2x%rattr(ks,:), exportState, 'So_s', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(o2x%rattr(ku,:), exportState, 'So_u', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(o2x%rattr(kv,:), exportState, 'So_v', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(o2x%rattr(kdhdx,:), exportState, 'So_dhdx', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(o2x%rattr(kdhdy,:), exportState, 'So_dhdy', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(o2x%rattr(kq,:), exportState, 'Fioo_q', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+  end subroutine docn_comp_export
 
   !===============================================================================
 

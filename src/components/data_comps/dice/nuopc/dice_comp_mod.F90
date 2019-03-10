@@ -30,7 +30,7 @@ module dice_comp_mod
   use shr_strdata_mod       , only : shr_strdata_print, shr_strdata_restRead
   use shr_strdata_mod       , only : shr_strdata_advance, shr_strdata_restWrite
   use shr_dmodel_mod        , only : shr_dmodel_translateAV
-  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add
+  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_import, dshr_export
   use dice_shr_mod          , only : datamode       ! namelist input
   use dice_shr_mod          , only : rest_file      ! namelist input
   use dice_shr_mod          , only : rest_file_strm ! namelist input
@@ -53,6 +53,8 @@ module dice_comp_mod
   public :: dice_comp_advertise
   public :: dice_comp_init
   public :: dice_comp_run
+  public :: dice_comp_import
+  public :: dice_comp_export
 
   !--------------------------------------------------------------------------
   ! Private data
@@ -150,6 +152,10 @@ contains
     fldsFrIce(1)%stdname = trim(flds_scalar_name)
 
     ! export fields that have a corresponding stream field
+    ! -  model_fld_index sets the module variables kiFrac
+    ! -  model_fld_concat variable sets the output variable flds_i2x
+    ! -  model_fld_array sets the module character array avofld
+    ! -  data_fld_array  sets the module character array avifld
 
     call dshr_fld_add(data_fld='ifrac', data_fld_array=avifld, model_fld='Si_ifrac', model_fld_array=avofld, &
          model_fld_concat=flds_i2x, model_fld_index=kiFrac, fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
@@ -276,47 +282,39 @@ contains
        call dshr_fld_add(model_fld='So_s', model_fld_concat=flds_x2i, model_fld_index=ksalinity, &
             fldlist_num=fldsToIce_num, fldlist=fldsToIce)
 
-       call dshr_fld_add(model_fld='Faxa_bcphidry', model_fld_concat=flds_x2i, model_fld_index=kbcphidry, &
-            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+       !------
 
-       call dshr_fld_add(model_fld='Faxa_bcphodry', model_fld_concat=flds_x2i, model_fld_index=kbcphodry, &
-            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+       call dshr_fld_add(model_fld='Faxa_bcphidry', model_fld_concat=flds_x2i, model_fld_index=kbcphidry)
+       call dshr_fld_add(model_fld='Faxa_bcphodry', model_fld_concat=flds_x2i, model_fld_index=kbcphodry)
+       call dshr_fld_add(model_fld='Faxa_bcphiwet', model_fld_concat=flds_x2i, model_fld_index=kbcphiwet)
+       call dshr_fld_add(med_fld='Faxa_bcph', fldlist_num=fldsFrIce_num, fldlist=fldsFrIce, &
+            ungridded_lbound=1, ungridded_ubound=3)
 
-       call dshr_fld_add(model_fld='Faxa_bcphiwet', model_fld_concat=flds_x2i, model_fld_index=kbcphiwet, &
-            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+       !------
 
-       call dshr_fld_add(model_fld='Faxa_ocphidry', model_fld_concat=flds_x2i, model_fld_index=kocphidry, &
-            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+       call dshr_fld_add(model_fld='Faxa_ocphidry', model_fld_concat=flds_x2i, model_fld_index=kocphidry)
+       call dshr_fld_add(model_fld='Faxa_ocphodry', model_fld_concat=flds_x2i, model_fld_index=kocphodry)
+       call dshr_fld_add(model_fld='Faxa_ocphiwet', model_fld_concat=flds_x2i, model_fld_index=kocphiwet)
+       call dshr_fld_add(med_fld='Faxa_ocph', fldlist_num=fldsFrIce_num, fldlist=fldsFrIce, &
+            ungridded_lbound=1, ungridded_ubound=3)
 
-       call dshr_fld_add(model_fld='Faxa_ocphodry', model_fld_concat=flds_x2i, model_fld_index=kocphodry, &
-            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+       !------
 
-       call dshr_fld_add(model_fld='Faxa_ocphiwet', model_fld_concat=flds_x2i, model_fld_index=kocphiwet, &
-            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+       call dshr_fld_add(model_fld='Faxa_dstdry1', model_fld_concat=flds_x2i, model_fld_index=kdstdry1)
+       call dshr_fld_add(model_fld='Faxa_dstdry2', model_fld_concat=flds_x2i, model_fld_index=kdstdry2)
+       call dshr_fld_add(model_fld='Faxa_dstdry3', model_fld_concat=flds_x2i, model_fld_index=kdstdry3)
+       call dshr_fld_add(model_fld='Faxa_dstdry4', model_fld_concat=flds_x2i, model_fld_index=kdstdry4)
+       call dshr_fld_add(med_fld='Faxa_dstdry', fldlist_num=fldsFrIce_num, fldlist=fldsFrIce, &
+            ungridded_lbound=1, ungridded_ubound=4)
 
-       call dshr_fld_add(model_fld='Faxa_dstdry1', model_fld_concat=flds_x2i, model_fld_index=kdstdry1, &
-            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+       !------
 
-       call dshr_fld_add(model_fld='Faxa_dstdry2', model_fld_concat=flds_x2i, model_fld_index=kdstdry2, &
-            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
-
-       call dshr_fld_add(model_fld='Faxa_dstdry3', model_fld_concat=flds_x2i, model_fld_index=kdstdry3, &
-            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
-
-       call dshr_fld_add(model_fld='Faxa_dstdry4', model_fld_concat=flds_x2i, model_fld_index=kdstdry4, &
-            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
-
-       call dshr_fld_add(model_fld='Faxa_dstwet1', model_fld_concat=flds_x2i, model_fld_index=kdstwet1, &
-            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
-
-       call dshr_fld_add(model_fld='Faxa_dstwet2', model_fld_concat=flds_x2i, model_fld_index=kdstwet2, &
-            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
-
-       call dshr_fld_add(model_fld='Faxa_dstwet3', model_fld_concat=flds_x2i, model_fld_index=kdstwet3, &
-            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
-
-       call dshr_fld_add(model_fld='Faxa_dstwet4', model_fld_concat=flds_x2i, model_fld_index=kdstwet4, &
-            fldlist_num=fldsToIce_num, fldlist=fldsToIce)
+       call dshr_fld_add(model_fld='Faxa_dstwet1', model_fld_concat=flds_x2i, model_fld_index=kdstwet1)
+       call dshr_fld_add(model_fld='Faxa_dstwet2', model_fld_concat=flds_x2i, model_fld_index=kdstwet2)
+       call dshr_fld_add(model_fld='Faxa_dstwet3', model_fld_concat=flds_x2i, model_fld_index=kdstwet3)
+       call dshr_fld_add(model_fld='Faxa_dstwet4', model_fld_concat=flds_x2i, model_fld_index=kdstwet4)
+       call dshr_fld_add(med_fld='Faxa_dstwet', fldlist_num=fldsFrIce_num, fldlist=fldsFrIce, &
+            ungridded_lbound=1, ungridded_ubound=4)
 
     end if
 
@@ -802,7 +800,7 @@ contains
 
        end do
 
-       ! compute atm/ice surface fluxes
+       ! compute ice/ice surface fluxes
        call dice_flux_atmice( &
             iMask              ,x2i%rAttr(kz,:)     ,x2i%rAttr(kua,:)    ,x2i%rAttr(kva,:)  , &
             x2i%rAttr(kptem,:) ,x2i%rAttr(kshum,:)  ,x2i%rAttr(kdens,:)  ,x2i%rAttr(ktbot,:), &
@@ -913,5 +911,175 @@ contains
     call t_stopf('DICE_RUN')
 
   end subroutine dice_comp_run
+
+  !===============================================================================
+
+  subroutine dice_comp_import(importState, x2i, rc)
+
+    ! input/output variables
+    type(ESMF_State)     :: importState
+    type(mct_aVect)      :: x2i
+    integer, intent(out) :: rc
+
+    ! local variables
+    integer :: k
+    !----------------------------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    call dshr_import(importState, 'Sa_z', x2i%rattr(kz,:), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_import(importState, 'Sa_u', x2i%rattr(kua,:), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_import(importState, 'Sa_v', x2i%rattr(kva,:), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_import(importState, 'Sa_ptem', x2i%rattr(kptem,:), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_import(importState, 'Sa_dens', x2i%rattr(kdens,:), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_import(importState, 'Sa_tbot', x2i%rattr(ktbot,:), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_import(importState, 'Sa_shum', x2i%rattr(kshum,:), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_import(importState, 'Faxa_swndr' , x2i%rattr(kswndr,:), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_import(importState, 'Faxa_swndf' , x2i%rattr(kswndf,:), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_import(importState, 'Faxa_swvdr' , x2i%rattr(kswvdr,:), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_import(importState, 'Faxa_swvdf' , x2i%rattr(kswvdf,:), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_import(importState, 'Faxa_swnet' , x2i%rattr(kswnet,:), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_import(importState, 'Faxa_bcph', x2i%rattr(kbcphidry,:), ungridded_index=1, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_import(importState, 'Faxa_bcph', x2i%rattr(kbcphodry,:), ungridded_index=2, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_import(importState, 'Faxa_bcph', x2i%rattr(kbcphiwet,:), ungridded_index=3, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_import(importState, 'Faxa_ocph', x2i%rattr(kocphidry,:), ungridded_index=1, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_import(importState, 'Faxa_ocph', x2i%rattr(kocphodry,:), ungridded_index=2, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_import(importState, 'Faxa_ocph', x2i%rattr(kocphiwet,:), ungridded_index=3, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_import(importState, 'Faxa_dstwet', x2i%rattr(kdstwet1,:), ungridded_index=1, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_import(importState, 'Faxa_dstwet', x2i%rattr(kdstwet2,:), ungridded_index=2, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_import(importState, 'Faxa_dstwet', x2i%rattr(kdstwet3,:), ungridded_index=3, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_import(importState, 'Faxa_dstwet', x2i%rattr(kdstwet4,:), ungridded_index=4, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_import(importState, 'Faxa_dstdry', x2i%rattr(kdstdry1,:), ungridded_index=1, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_import(importState, 'Faxa_dstdry', x2i%rattr(kdstdry2,:), ungridded_index=2, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_import(importState, 'Faxa_dstdry', x2i%rattr(kdstdry3,:), ungridded_index=3, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_import(importState, 'Faxa_dstdry', x2i%rattr(kdstdry4,:), ungridded_index=4, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+  end subroutine dice_comp_import
+
+  !===============================================================================
+
+  subroutine dice_comp_export(i2x, exportState, rc)
+
+    ! input/output variables
+    type(mct_aVect)      :: i2x
+    type(ESMF_State)     :: exportState
+    integer, intent(out) :: rc
+
+    ! local variables
+    integer :: k
+    !----------------------------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    call dshr_export(i2x%rattr(km,:) , exportState, 'Si_imask', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(i2x%rattr(kt,:), exportState, 'Si_t', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(i2x%rattr(ktref,:), exportState, 'Si_tref' , rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(i2x%rattr(kqref,:), exportState, 'Si_qref', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(i2x%rattr(kavsdr,:), exportState, 'Si_avsdr', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(i2x%rattr(kanidr,:), exportState, 'Si_anidr', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(i2x%rattr(kavsdf,:), exportState, 'Si_avsdf', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(i2x%rattr(kanidf,:), exportState, 'Si_anidf', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(i2x%rattr(kswnet,:), exportState, 'Faii_swnet', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(i2x%rattr(ksen,:), exportState, 'Faii_sen', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(i2x%rattr(klat,:), exportState, 'Faii_lat', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(i2x%rattr(klwup,:), exportState, 'Faii_lwup', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(i2x%rattr(kevap,:), exportState, 'Faii_evap', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(i2x%rattr(ktauxa,:), exportState, 'Faii_taux', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(i2x%rattr(ktauya,:), exportState, 'Faii_tauy', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(i2x%rattr(kmelth,:), exportState, 'Fioi_melth', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(i2x%rattr(kmeltw,:), exportState, 'Fioi_meltw', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(i2x%rattr(kswpen,:), exportState, 'Fioi_swpen', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(i2x%rattr(ktauxo,:), exportState, 'Fioi_taux', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(i2x%rattr(ktauyo,:), exportState, 'Fioi_tauy', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(i2x%rattr(ksalt,:), exportState, 'Fioi_salt', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(i2x%rattr(kbcpho,:), exportState, 'Fioi_bcpho', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(i2x%rattr(kbcphi,:), exportState, 'Fioi_bcphi',  rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(i2x%rattr(kflxdst,:), exportState, 'Fioi_flxdst', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+  end subroutine dice_comp_export
 
 end module dice_comp_mod
