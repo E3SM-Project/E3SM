@@ -334,7 +334,7 @@ module CNCarbonFluxType
      ! nitrif_denitrif
      real(r8), pointer :: phr_vr_col                                (:,:)   ! potential hr (not N-limited) (gC/m3/s)
      real(r8), pointer :: fphr_col                                  (:,:)   ! fraction of potential heterotrophic respiration
-
+     real(r8), pointer :: phr_col                                   (:)     ! potential heterotrophic respiration
      ! crop fluxes
      real(r8), pointer :: crop_seedc_to_leaf_patch                  (:)     ! (gC/m2/s) seed source to leaf, for crops
 
@@ -743,7 +743,7 @@ contains
      allocate(this%harvest_c_to_cwdc_col             (begc:endc,1:nlevdecomp_full)); this%harvest_c_to_cwdc_col        (:,:)=nan
      allocate(this%phr_vr_col                        (begc:endc,1:nlevdecomp_full)); this%phr_vr_col                   (:,:)=nan
      allocate(this%fphr_col                          (begc:endc,1:nlevgrnd))       ; this%fphr_col                     (:,:)=nan
-
+     allocate(this%phr_col                           (begc:endc))                  ; this%phr_col                      (:)  =nan
      allocate(this%dwt_frootc_to_litr_met_c_col      (begc:endc,1:nlevdecomp_full)); this%dwt_frootc_to_litr_met_c_col (:,:)=nan
      allocate(this%dwt_frootc_to_litr_cel_c_col      (begc:endc,1:nlevdecomp_full)); this%dwt_frootc_to_litr_cel_c_col (:,:)=nan
      allocate(this%dwt_frootc_to_litr_lig_c_col      (begc:endc,1:nlevdecomp_full)); this%dwt_frootc_to_litr_lig_c_col (:,:)=nan
@@ -3112,6 +3112,11 @@ contains
             avgflag='A', long_name='total heterotrophic respiration', &
             ptr_col=this%hr_col)
 
+       this%phr_col(begc:endc) = spval
+       call hist_addfld1d (fname='PHR', units='gC/m^2/s', &
+            avgflag='A', long_name='total potential heterotrophic respiration', &
+            ptr_col=this%phr_col)
+
        !pflotran
        this%f_co2_soil_col(begc:endc) = spval
        call hist_addfld1d (fname='F_CO2_SOIL', units='gC/m^2/s', &
@@ -4567,6 +4572,7 @@ contains
 
           this%hr_vr_col(i,j)                         = value_column
           this%rr_vr_col(i,j)                         = value_column
+          this%phr_vr_col(i,j)                         = value_column 
        end do
     end do
 
@@ -4623,6 +4629,7 @@ contains
        this%somhr_col(i)                     = value_column
        this%lithr_col(i)                     = value_column
        this%hr_col(i)                        = value_column
+       this%phr_col(i)                       = value_column
        this%sr_col(i)                        = value_column
        this%er_col(i)                        = value_column
        this%litfire_col(i)                   = value_column
@@ -4758,6 +4765,12 @@ contains
          is_cwd    =>    decomp_cascade_con%is_cwd      & ! Input:  [logical (:) ]  TRUE => pool is a cwd pool
          )
 
+
+   do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%somhr_col(c)              = 0._r8
+       this%lithr_col(c)              = 0._r8
+   enddo
    if(.not. (use_pflotran .and. pf_cmode)) then
      ! vertically integrate HR and decomposition cascade fluxes
      do k = 1, ndecomp_cascade_transitions
@@ -5284,8 +5297,6 @@ contains
     ! some zeroing
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       this%somhr_col(c)              = 0._r8
-       this%lithr_col(c)              = 0._r8
        this%decomp_cascade_hr_col(c,1:ndecomp_cascade_transitions)= 0._r8
     enddo
     if(.not. is_active_betr_bgc)call this%summary_bgc_cascade(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
@@ -5298,6 +5309,7 @@ contains
         do fc = 1,num_soilc
           c = filter_soilc(fc)
           this%hr_col(c) = this%hr_col(c) + this%hr_vr_col(c,j) * dzsoi_decomp(j)
+          this%phr_col(c)= this%phr_col(c) + this%phr_vr_col(c,j) * dzsoi_decomp(j)
         end do
       enddo
     endif
