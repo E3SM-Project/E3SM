@@ -428,7 +428,7 @@ for mct, etc.
     <base> -r8 </base>
   </FC_AUTO_R8>
   <FFLAGS>
-    <base>  -i4 -gopt  -time -Mstack_arrays  -Mextend -byteswapio -Mflushz -Kieee  </base>
+    <base>  -i4 -gopt  -time -Mstack_arrays  -Mextend -byteswapio -Mflushz -Kieee -Mallocatable=03 </base>
     <append compile_threaded="false"> </append>
     <append compile_threaded="true"> -mp </append>
     <append DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </append>
@@ -1098,6 +1098,57 @@ for mct, etc.
   </SLIBS>
 </compiler>
 
+<compiler MACH="cori-knl" COMPILER="intel19">
+  <CFLAGS>
+    <base> -O2 -fp-model precise -std=gnu99 </base>
+    <append compile_threaded="true"> -qopenmp </append>
+    <append DEBUG="FALSE"> -O2 -debug minimal </append>
+    <append DEBUG="TRUE"> -O0 -g </append>
+  </CFLAGS>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CPPDEFS>
+    <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</append>
+  </CPPDEFS>
+  <CXX_LDFLAGS>
+    <base> -cxxlib </base>
+  </CXX_LDFLAGS>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <FC_AUTO_R8>
+    <base> -r8 </base>
+  </FC_AUTO_R8>
+  <FFLAGS>
+    <base> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml -fimf-use-svml=false:asin </base>
+    <append compile_threaded="true"> -qopenmp </append>
+    <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </append>
+    <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align </append>
+  </FFLAGS>
+  <FFLAGS_NOOPT>
+    <base> -O0 </base>
+    <append compile_threaded="true"> -qopenmp </append>
+  </FFLAGS_NOOPT>
+  <FIXEDFLAGS>
+    <base> -fixed -132 </base>
+  </FIXEDFLAGS>
+  <FREEFLAGS>
+    <base> -free </base>
+  </FREEFLAGS>
+  <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
+  <LDFLAGS>
+    <append compile_threaded="true"> -qopenmp </append>
+  </LDFLAGS>
+  <PETSC_PATH>$ENV{PETSC_DIR}</PETSC_PATH>
+  <SCC> icc </SCC>
+  <SCXX> icpc </SCXX>
+  <SFC> ifort </SFC>
+  <SLIBS>
+    <append> -L$ENV{NETCDF_DIR} -lnetcdff -Wl,--as-needed,-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf </append>
+    <append> -mkl -lpthread </append>
+  </SLIBS>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+</compiler>
+
 <compiler MACH="eastwind" COMPILER="pgi">
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
@@ -1245,39 +1296,6 @@ for mct, etc.
   </SLIBS>
 </compiler>
 
-<compiler MACH="grizzly" COMPILER="gnu">
-  <CXX_LIBS>
-    <base>-lstdc++ -lmpi_cxx</base>
-  </CXX_LIBS>
-  <MPICC>mpicc</MPICC>
-  <MPICXX>mpic++</MPICXX>
-  <MPIFC>mpif90</MPIFC>
-  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <SCC>gcc</SCC>
-  <SCXX>g++</SCXX>
-  <SFC>gfortran</SFC>
-  <SLIBS>
-    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
-    <append> $ENV{MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a $ENV{MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group $ENV{MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm -z muldefs</append>
-  </SLIBS>
-</compiler>
-
-<compiler MACH="grizzly" COMPILER="intel">
-  <CXX_LIBS>
-    <base>-lstdc++ -lmpi_cxx</base>
-  </CXX_LIBS>
-  <MPICC>mpicc</MPICC>
-  <MPICXX>mpic++</MPICXX>
-  <MPIFC>mpif90</MPIFC>
-  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <SCC>icc</SCC>
-  <SCXX>icpc</SCXX>
-  <SFC>ifort</SFC>
-  <SLIBS>
-    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
-  </SLIBS>
-</compiler>
-
 <compiler MACH="itasca" COMPILER="intel">
   <CFLAGS>
     <base> -O2 -fp-model precise -I/soft/intel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
@@ -1347,6 +1365,39 @@ for mct, etc.
   </SLIBS>
 </compiler>
 
+<compiler MACH="lawrencium-lr6" COMPILER="intel">
+  <CPPDEFS>
+    <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </append>
+  </CPPDEFS>
+  <LAPACK_LIBDIR>/global/software/sl-6.x86_64/modules/intel/2016.1.150/lapack/3.6.0-intel/lib</LAPACK_LIBDIR>
+  <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
+  <SLIBS>
+    <append> -lnetcdff -lnetcdf -mkl</append>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="lawrencium-lr6" COMPILER="gnu">
+  <LAPACK_LIBDIR>$ENV{LAPACK_DIR}/lib</LAPACK_LIBDIR>
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2  </append>
+  </CFLAGS>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CXX_LIBS>
+    <base>-lstdc++ -lmpi_cxx</base>
+  </CXX_LIBS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2  </append>
+    <append > -I$ENV{NETCDF_DIR}/include  </append>
+  </FFLAGS>
+  <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_DIR}</PNETCDF_PATH>
+  <SLIBS>
+    <append> -L/global/software/sl-7.x86_64/modules/gcc/6.3.0/netcdf/4.4.1.1-gcc-p/lib -lnetcdff -lnetcdf -lnetcdf -lblas -llapack </append>
+  </SLIBS>
+</compiler>
+
 <compiler MACH="linux-generic" COMPILER="gnu">
   <NETCDF_PATH> $ENV{NETCDF_PATH}</NETCDF_PATH>
   <PNETCDF_PATH> $ENV{PNETCDF_PATH}</PNETCDF_PATH>
@@ -1367,6 +1418,7 @@ for mct, etc.
 
 <compiler MACH="melvin" COMPILER="gnu">
   <ALBANY_PATH>/projects/install/rhel6-x86_64/ACME/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
+  <KOKKOS_OPTIONS> --with-openmp --with-options=aggressive_vectorization </KOKKOS_OPTIONS>
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
@@ -1374,7 +1426,7 @@ for mct, etc.
     <base> --host=Linux </base>
   </CONFIG_ARGS>
   <CXX_LIBS>
-    <base>-lstdc++ -lmpi_cxx</base>
+    <base>-lstdc++</base>
   </CXX_LIBS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
@@ -1410,14 +1462,19 @@ for mct, etc.
 </compiler>
 
 <compiler COMPILER="gnu" MACH="snl-white">
-  <KOKKOS_PATH>$ENV{KOKKOS_ROOT}</KOKKOS_PATH>
-  <MPICXX>${KOKKOS_ROOT}/bin/nvcc_wrapper</MPICXX>
+  <SCXX>$ENV{E3SM_SRCROOT}/externals/kokkos/bin/nvcc_wrapper</SCXX>
+  <MPICXX>$ENV{E3SM_SRCROOT}/externals/kokkos/bin/nvcc_wrapper</MPICXX>
+  <KOKKOS_OPTIONS> --arch=Pascal60 --with-cuda=$ENV{CUDA_ROOT} --with-cuda-options=enable_lambda </KOKKOS_OPTIONS>
   <CXXFLAGS>
     <append>-expt-extended-lambda -DCUDA_BUILD</append>
   </CXXFLAGS>
   <LDFLAGS>
     <append> -lstdc++ -lcudart </append>
   </LDFLAGS>
+  <NETCDF_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_PATH>
+  <SLIBS>
+    <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -lblas -llapack</append>
+  </SLIBS>
 </compiler>
 
 <compiler COMPILER="intel18" MACH="snl-blake">
@@ -1468,7 +1525,6 @@ for mct, etc.
     <base> -cxxlib </base>
   </CXX_LDFLAGS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
-  <KOKKOS_PATH>$ENV{KOKKOS_ROOT}</KOKKOS_PATH>
 </compiler>
 
 <compiler MACH="mesabi" COMPILER="intel">
@@ -1607,7 +1663,6 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
 
 <compiler MACH="sandiatoss3" COMPILER="intel">
   <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos_06262017/Albany/build/install</ALBANY_PATH>
-  <KOKKOS_PATH>$ENV{KOKKOS_ROOT}</KOKKOS_PATH>
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
@@ -2060,6 +2115,86 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
+<compiler MACH="grizzly" COMPILER="gnu">
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <MPICC>mpicc</MPICC>
+  <MPIFC>mpif90</MPIFC>
+  <MPICXX>mpic++</MPICXX>
+  <SFC>gfortran</SFC>
+  <SCC>gcc</SCC>
+  <SCXX>g++</SCXX>
+  <SLIBS>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
+    <append>$ENV{MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a $ENV{MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group $ENV{MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm -z muldefs</append>
+  </SLIBS>
+  <CXX_LIBS>
+    <base>-lstdc++ -lmpi_cxx</base>
+  </CXX_LIBS>
+</compiler>
+
+<compiler MACH="grizzly" COMPILER="intel">
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <MPICC>mpicc</MPICC>
+  <MPIFC>mpif90</MPIFC>
+  <MPICXX>mpic++</MPICXX>
+  <SFC>ifort</SFC>
+  <SCC>icc</SCC>
+  <SCXX>icpc</SCXX>
+  <SLIBS>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
+    <append>-mkl -lpthread</append>
+  </SLIBS>
+  <CXX_LIBS>
+    <base>-lstdc++ -lmpi_cxx</base>
+  </CXX_LIBS>
+</compiler>
+
+<compiler MACH="badger" COMPILER="gnu">
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <MPICC>mpicc</MPICC>
+  <MPIFC>mpif90</MPIFC>
+  <MPICXX>mpic++</MPICXX>
+  <SFC>gfortran</SFC>
+  <SCC>gcc</SCC>
+  <SCXX>g++</SCXX>
+  <SLIBS>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
+    <append>$ENV{MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a $ENV{MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group $ENV{MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm -z muldefs</append>
+  </SLIBS>
+  <CXX_LIBS>
+    <base>-lstdc++ -lmpi_cxx</base>
+  </CXX_LIBS>
+</compiler>
+
+<compiler MACH="badger" COMPILER="intel">
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <MPICC>mpicc</MPICC>
+  <MPIFC>mpif90</MPIFC>
+  <MPICXX>mpic++</MPICXX>
+  <SFC>ifort</SFC>
+  <SCC>icc</SCC>
+  <SCXX>icpc</SCXX>
+  <SLIBS>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
+    <append>-mkl -lpthread</append>
+  </SLIBS>
+  <CXX_LIBS>
+    <base>-lstdc++ -lmpi_cxx</base>
+  </CXX_LIBS>
+  <CFLAGS>
+    <base>compile_threaded="true"> -qopenmp</base>
+  </CFLAGS>
+  <FFLAGS>
+    <base>compile_threaded="true"> -qopenmp</base>
+  </FFLAGS>
+  <LDFLAGS>
+    <base>compile_threaded="true"> -qopenmp</base>
+  </LDFLAGS>
+  <FFLAGS_NOOPT>
+    <base>compile_threaded="true"> -qopenmp</base>
+  </FFLAGS_NOOPT>
+</compiler>
+
 <compiler MACH="userdefined">
   <CONFIG_ARGS>
     <base/>
@@ -2075,56 +2210,6 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <SLIBS>
     <append># USERDEFINED $SHELL{$NETCDF_PATH/bin/nf-config --flibs}</append>
   </SLIBS>
-</compiler>
-
-<compiler MACH="wolf" COMPILER="gnu">
-  <ALBANY_PATH>$ENV{ALBANY_PATH}</ALBANY_PATH>
-  <CXX_LIBS>
-    <base>-lstdc++ -lmpi_cxx</base>
-  </CXX_LIBS>
-  <MPICC>mpicc</MPICC>
-  <MPICXX>mpic++</MPICXX>
-  <MPIFC>mpif90</MPIFC>
-  <SCC>gcc</SCC>
-  <SCXX>g++</SCXX>
-  <SFC>gfortran</SFC>
-  <SLIBS>
-    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
-  </SLIBS>
-  <TRILINOS_PATH>$ENV{TRILINOS_PATH}</TRILINOS_PATH>
-</compiler>
-
-<compiler MACH="wolf" COMPILER="intel">
-  <MPICC>mpicc</MPICC>
-  <MPICXX>mpic++</MPICXX>
-  <MPIFC>mpif90</MPIFC>
-  <SCC>icc</SCC>
-  <SCXX>icpc</SCXX>
-  <SFC>ifort</SFC>
-  <SLIBS>
-    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
-    <append MPILIB="mpich"> -mkl=cluster </append>
-    <append MPILIB="mpich2"> -mkl=cluster </append>
-    <append MPILIB="mpt"> -mkl=cluster </append>
-    <append MPILIB="openmpi"> -mkl=cluster </append>
-    <append MPILIB="mvapich"> -mkl=cluster </append>
-    <append MPILIB="impi"> -mkl=cluster </append>
-    <append MPILIB="mpi-serial"> -mkl </append>
-  </SLIBS>
-  <TRILINOS_PATH>$ENV{TRILINOS_PATH}</TRILINOS_PATH>
-</compiler>
-
-<compiler MACH="wolf" COMPILER="pgi">
-  <MPICC>mpicc</MPICC>
-  <MPICXX>mpic++</MPICXX>
-  <MPIFC>mpif90</MPIFC>
-  <SCC>pgcc</SCC>
-  <SCXX>pgc++</SCXX>
-  <SFC>pgfortran</SFC>
-  <SLIBS>
-    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
-  </SLIBS>
-  <TRILINOS_PATH>$ENV{TRILINOS_PATH}</TRILINOS_PATH>
 </compiler>
 
 </config_compilers>

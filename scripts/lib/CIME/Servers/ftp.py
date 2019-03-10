@@ -15,6 +15,10 @@ class FTP(GenericServer):
         ftp_server, root_address = address.split('/', 1)
         logger.info("server address {} root path {}".format(ftp_server, root_address))
         self.ftp = FTPpy(ftp_server)
+        if not user:
+            user = ''
+        if not passwd:
+            passwd = ''
 
         self._ftp_server = address
 
