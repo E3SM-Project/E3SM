@@ -1058,14 +1058,14 @@ function minmax_with_level(field, which) result(res)
     endif
     !now add info on level, say level is 71, we need to add 0.00000072
     if(val1 > 0) then
-!print *, 'HOORA+', val1, level, val1 + real(level, real_kind)*gm_rmult2
+!print *, 'and+', val1, level, val1 + real(level, real_kind)*gm_rmult2
        val1 = val1 + real(level, real_kind)*gm_rmult2
-!print *, 'HOORA+ result', val1 ; 
+!print *, 'and+ result', val1 ; 
 !print *, 'now restore ', abs(int(1e8*(val1-floor(val1)))), nint(val1)*gm_rmult1
     elseif(val1 < 0) then
-!print *, 'HOORA-', val1, level, val1 - real(level, real_kind)*1e-8 
+!print *, 'and-', val1, level, val1 - real(level, real_kind)*1e-8 
        val1 = val1 - real(level, real_kind)*gm_rmult2
-!print *, 'HOORA- result', val1 ; 
+!print *, 'and- result', val1 ; 
 !print *, 'now restore ', abs(nint(1e8*(val1-ceiling(val1)))),nint(val1)*gm_rmult1
     else
        val1 = 0.0
