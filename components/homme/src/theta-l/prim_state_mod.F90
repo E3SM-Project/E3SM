@@ -164,7 +164,8 @@ contains
     real (kind=real_kind) :: ddt_tot,ddt_diss, ddt_diss_adj
     integer               :: n0, n0q
     integer               :: npts,n,q
-    real (kind=real_kind) :: current_max, cmdummy
+    real (kind=real_kind) :: current_max, tempmax
+    integer               :: templev
 
     call t_startf('prim_printstate')
     if (hybrid%masterthread) then 
@@ -252,8 +253,7 @@ contains
        if (theta_hydrostatic_mode) then
           wmax_local(ie)    = MAXVAL(elem(ie)%state%w_i(:,:,:,n0))
        else
-          wmax_local(ie)    = minmax_with_level(elem(ie)%state%w_i(:,:,:,n0)*234567.094d0,'min')
-          wmax_local(ie)    = MAXVAL(elem(ie)%state%w_i(:,:,:,n0))
+          wmax_local(ie)    = minmax_with_level(elem(ie)%state%w_i(:,:,:,n0),'max')
        endif
        phimax_local(ie)  = MAXVAL(dphi(:,:,:))
        w_over_dz_local(ie)  = MAXVAL(w_over_dz)
@@ -278,10 +278,6 @@ contains
           Wmin_local(ie)    = MINVAL(elem(ie)%state%w_i(:,:,:,n0))
        else
           Wmin_local(ie)    = minmax_with_level(elem(ie)%state%w_i(:,:,:,n0),'min')
-
-          Wmin_local(ie)    = MINVAL(elem(ie)%state%w_i(:,:,:,n0))
-!print *, 'wminlocal', ie, Wmin_local(ie)
-
        endif
        thetamin_local(ie) = MINVAL(elem(ie)%state%vtheta_dp(:,:,:,n0))
        phimin_local(ie)  = MINVAL(dphi)
@@ -380,17 +376,16 @@ contains
     w_over_dz_p = ParallelMax(w_over_dz_local,hybrid)
 
     if ( .not. theta_hydrostatic_mode ) then
+!restore level and value:
+!for val > 0 : abs(int(1e8*(val1-floor(val1)))), nint(val1)*gm_rmult1
+!for val < 0 : abs(nint(1e8*(val1-ceiling(val1)))),nint(val1)*gm_rmult1
       current_max = max(abs(wmin_p),abs(wmax_p))
-      cmdummy = current_max
-      !now round it:
-      current_max = 1e-4 * nint(current_max * 1e4)
-      !get level number
-      cmdummy = (cmdummy - current_max)*1e8 !aa.12340720
+      templev = int(gm_mult2*(current_max-floor(current_max)))
+      current_max = nint(current_max)*gm_rmult1
       if (global_max_w < current_max) then
          global_max_w = current_max
-         if (nlev < 100) cmdummy = cmdummy/10
-         gm_w_lev = cmdummy
-         !gm_w_time = tl%
+         gm_w_lev = templev
+         !gm_w_time = tl%?
       endif
     endif
 
@@ -432,7 +427,12 @@ contains
     if(hybrid%masterthread) then
        write(iulog,100) "u     = ",umin_p,umax_p,usum_p
        write(iulog,100) "v     = ",vmin_p,vmax_p,vsum_p
-       write(iulog,100) "w     = ",wmin_p,wmax_p,wsum_p
+       if (.not.theta_hydrostatic_mode) then
+          !min max values are affected by multiplier
+          write(iulog,100) "w     =",wmin_p*gm_rmult1,wmax_p*gm_rmult1,wsum_p
+       else
+          write(iulog,100) "w     = ",wmin_p,wmax_p,wsum_p
+       endif
        write(iulog,100) "tdiag = ",tmin_p,tmax_p,tsum_p
        write(iulog,100) "theta = ",thetamin_p,thetamax_p,thetasum_p
        write(iulog,100) "dz(m) = ",phimin_p/g,phimax_p/g,phisum_p/g
@@ -451,7 +451,8 @@ contains
        if(fqmin_p.ne.fqmax_p) write(iulog,100) "fq = ",fqmin_p, fqmax_p, fqsum_p
        if (.not.theta_hydrostatic_mode) then
           write(iulog,'(a,1f10.2)')'min .5*dz/w (CFL condition)',.5/(w_over_dz_p)
-          write(iulog,'(a,1f10.2,a,1f10.2)')'global max w over time: ',global_max_w, ' at level ', gm_w_lev, 'at time (sec)'
+          write(iulog,*)'max abs(w) over time : ',global_max_w, ' at level ', gm_w_lev
+          write(iulog,*)'^not reliable for vals <= 1e-4'
        endif
     end if
  
@@ -1037,15 +1038,10 @@ function minmax_with_level(field, which) result(res)
     real (kind=real_kind)             :: val1, val2
  
     val1 = real(nint(field(1,1,1) * gm_mult1), real_kind)
-
-!print *, 'in function ', which, field(1,1,1), val1
-!print *, 'in more detail', field(1,1,1), field(1,1,1) * 1e4, nint(field(1,1,1)*1e4),val1
-!print *, real(nint(field(1,1,1)*1e4), real_kind)
     level=1
     if ( which == 'min' ) then 
        do k=1,nlevp
           val2 = real(nint(minval(field(:,:,k)) * gm_mult1), real_kind) 
-!print *, 'val2', val2 
                 if (val2 < val1) then
                    val1 = val2
                    level=k
@@ -1054,7 +1050,6 @@ function minmax_with_level(field, which) result(res)
     elseif( which == 'max' ) then
        do k=1,nlevp
           val2 = real(nint(minval(field(:,:,k)) * gm_mult1), real_kind) 
-!print *, 'val2', val2 
                 if (val2 > val1) then
                    val1 = val2
                    level=k
@@ -1063,28 +1058,24 @@ function minmax_with_level(field, which) result(res)
     endif
     !now add info on level, say level is 71, we need to add 0.00000072
     if(val1 > 0) then
-print *, 'HOORA+', val1, level, val1 + real(level, real_kind)*gm_rmult2
+!print *, 'HOORA+', val1, level, val1 + real(level, real_kind)*gm_rmult2
        val1 = val1 + real(level, real_kind)*gm_rmult2
-print *, 'HOORA+ result', val1 ; 
-print *, 'now restore ', abs(int(1e8*(val1-floor(val1)))), nint(val1)*gm_rmult1
-
+!print *, 'HOORA+ result', val1 ; 
+!print *, 'now restore ', abs(int(1e8*(val1-floor(val1)))), nint(val1)*gm_rmult1
     elseif(val1 < 0) then
-print *, 'HOORA-', val1, level, val1 - real(level, real_kind)*1e-8 
+!print *, 'HOORA-', val1, level, val1 - real(level, real_kind)*1e-8 
        val1 = val1 - real(level, real_kind)*gm_rmult2
-print *, 'HOORA- result', val1 ; 
-print *, 'now restore ', abs(nint(1e8*(val1-ceiling(val1)))),nint(val1)*gm_rmult1
-!stop
+!print *, 'HOORA- result', val1 ; 
+!print *, 'now restore ', abs(nint(1e8*(val1-ceiling(val1)))),nint(val1)*gm_rmult1
     else
        val1 = 0.0
     endif
 
-if ( which == 'max' ) val2 = maxval(field(:,:,:))
-if ( which == 'min' ) val2 = minval(field(:,:,:))
-print *, 'compare', val2
+!if ( which == 'max' ) val2 = maxval(field(:,:,:))
+!if ( which == 'min' ) val2 = minval(field(:,:,:))
+!print *, 'compare', val2
 
     res = val1
-!print *, 'in function final', val1
-!print *, 'print example ', real(72.0, real_kind)*1e-8, real(26.0,real_kind)+real(72.0, real_kind)*1e-8 
 end function minmax_with_level
 
 end module prim_state_mod
