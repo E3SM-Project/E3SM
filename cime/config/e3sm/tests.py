@@ -10,6 +10,7 @@
 
 _TESTS = {
 
+<<<<<<< HEAD
     "e3sm_land_developer" : {
         "time"  : "0:45:00",
         "tests" : (
