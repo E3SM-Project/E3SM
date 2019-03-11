@@ -5096,7 +5096,7 @@ contains
     allocate(this%qflx_drain_vr          (begc:endc,1:nlevgrnd))  ; this%qflx_drain_vr        (:,:) = nan
     allocate(this%qflx_h2osfc2topsoi     (begc:endc))             ; this%qflx_h2osfc2topsoi   (:)   = nan
     allocate(this%qflx_snow2topsoi       (begc:endc))             ; this%qflx_snow2topsoi     (:)   = nan
-    allocate(this%qflx_lateral           (begc:endc))             ; this%qflx_lateral         (:)   = nan
+    allocate(this%qflx_lateral           (begc:endc))             ; this%qflx_lateral         (:)   = 0._r8
     allocate(this%snow_sources           (begc:endc))             ; this%snow_sources         (:)   = nan
     allocate(this%snow_sinks             (begc:endc))             ; this%snow_sinks           (:)   = nan
     allocate(this%qflx_irrig             (begc:endc))             ; this%qflx_irrig           (:)   = nan
