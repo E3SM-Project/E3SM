@@ -1094,10 +1094,12 @@ contains
     !      However, these will be in the dynamics decomposition
 
     if (unstructured) then
-      lon_coord => horiz_coord_create('lon', 'ncol', ngcols_p, 'longitude',   &
-           'degrees_east', 1, size(lonvals), lonvals, map=grid_map(3,:))
-      lat_coord => horiz_coord_create('lat', 'ncol', ngcols_p, 'latitude',    &
-           'degrees_north', 1, size(latvals), latvals, map=grid_map(3,:))
+      lon_coord => horiz_coord_create('lon', 'ncol', ngcols_p,                 &
+                                      'longitude', 'degrees_east', 1,          &
+                                      size(lonvals), lonvals, map=grid_map(3,:))
+      lat_coord => horiz_coord_create('lat', 'ncol', ngcols_p,                 &
+                                      'latitude', 'degrees_north', 1,          &
+                                      size(latvals), latvals, map=grid_map(3,:))
     else
 
       allocate(coord_map(size(grid_map, 2)))
