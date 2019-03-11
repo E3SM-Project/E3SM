@@ -221,9 +221,9 @@ CONTAINS
 
 
   subroutine dyn_init2(dyn_in)
-    use dimensions_mod,   only: nlev, nelemd, np
+    use dimensions_mod,   only: nlev, nelemd, np, fv_nphys
     use prim_driver_mod,  only: prim_init2
-    use prim_si_mod,  only: prim_set_mass
+    use prim_si_mod,      only: prim_set_mass
     use hybrid_mod,       only: hybrid_create
     use hycoef,           only: ps0
     use parallel_mod,     only: par
@@ -320,6 +320,19 @@ CONTAINS
     if (inst_index == 1) then
        call write_grid_mapping(par, elem)
     end if
+
+    ! initialize dp3d from ps for FV physics grid
+    ! Normally this is not set until prim_run_subcycle
+    ! but we need it for d_p_coupling() called in stepon_run1()
+    if (fv_nphys>0) then
+      do ie = nets,nete
+        do k = 1,nlev
+          elem(ie)%state%dp3d(:,:,k,TimeLevel%n0)=&
+               ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,TimeLevel%n0)
+        end do
+      end do
+    end if ! fv_nphys>0
 
   end subroutine dyn_init2
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
