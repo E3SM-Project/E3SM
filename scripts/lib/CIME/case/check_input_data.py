@@ -13,42 +13,59 @@ logger = logging.getLogger(__name__)
 chksum_hash = dict()
 local_chksum_file = 'inputdata_checksum.dat'
 
-def _download_checksum_file(server, rundir, chksum_file):
+def _download_checksum_file(rundir):
     """
-    Return True if successfully downloaded
-    server is an object handle of type CIME.Servers
-    rundir is where the file will be downloaded to
-    chksum_file is the file to be downloaded (specified in config_inputdata.xml)
-    user is the user name of the person running the script
+    Download the checksum files from each server and merge them into rundir.
     """
-    success = False
-    rel_path = chksum_file
-    full_path = os.path.join(rundir, local_chksum_file)
-    new_file = full_path + '.raw'
-    protocol = type(server).__name__
-    logging.info("Trying to download file: '{}' to path '{}' using {} protocol.".format(rel_path, new_file, protocol))
-    tmpfile = None
-    if os.path.isfile(full_path):
-        tmpfile = full_path+".tmp"
-        os.rename(full_path, tmpfile)
-    # Use umask to make sure files are group read/writable. As long as parent directories
-    # have +s, then everything should work.
-    with SharedArea():
-        success = server.getfile(rel_path, new_file)
-        if success:
-            _reformat_chksum_file(full_path, new_file)
-            if tmpfile:
-                _merge_chksum_files(full_path, tmpfile)
-            chksum_hash.clear()
+    inputdata = Inputdata()
+    protocol = "svn"
+    # download and merge all available chksum files.
+    while protocol is not None:
+        protocol, address, user, passwd, chksum_file = inputdata.get_next_server()
+        if protocol not in vars(CIME.Servers):
+            logger.warning("Client protocol {} not enabled".format(protocol))
+            continue
+        logger.info("Using protocol {} with user {} and passwd {}".format(protocol, user, passwd))
+        if protocol == "svn":
+            server = CIME.Servers.SVN(address, user, passwd)
+        elif protocol == "gftp":
+            server = CIME.Servers.GridFTP(address, user, passwd)
+        elif protocol == "ftp":
+            server = CIME.Servers.FTP(address, user, passwd)
+        elif protocol == "wget":
+            server = CIME.Servers.WGET(address, user, passwd)
         else:
-            if tmpfile and os.path.isfile(tmpfile):
-                os.rename(tmpfile, full_path)
-                logger.warning("Could not automatically download file "+full_path+
-                           " Restoring existing version.")
+            expect(False, "Unsupported inputdata protocol: {}".format(protocol))
+
+
+        success = False
+        rel_path = chksum_file
+        full_path = os.path.join(rundir, local_chksum_file)
+        new_file = full_path + '.raw'
+        protocol = type(server).__name__
+        logging.info("Trying to download file: '{}' to path '{}' using {} protocol.".format(rel_path, new_file, protocol))
+        tmpfile = None
+        if os.path.isfile(full_path):
+            tmpfile = full_path+".tmp"
+            os.rename(full_path, tmpfile)
+        # Use umask to make sure files are group read/writable. As long as parent directories
+        # have +s, then everything should work.
+        with SharedArea():
+            success = server.getfile(rel_path, new_file)
+            if success:
+                _reformat_chksum_file(full_path, new_file)
+                if tmpfile:
+                    _merge_chksum_files(full_path, tmpfile)
+                chksum_hash.clear()
             else:
-                logger.warning("Could not automatically download file {}".
-                               format(full_path))
-    return success
+                if tmpfile and os.path.isfile(tmpfile):
+                    os.rename(tmpfile, full_path)
+                    logger.warning("Could not automatically download file "+full_path+
+                                   " Restoring existing version.")
+                else:
+                    logger.warning("Could not automatically download file {}".
+                                   format(full_path))
+
 
 def _reformat_chksum_file(chksum_file, server_file):
     """
@@ -93,7 +110,7 @@ def _download_if_in_repo(server, input_data_root, rel_path, isdirectory=False):
     user is the user name of the person running the script
     isdirectory indicates that this is a directory download rather than a single file
     """
-    if not server.fileexists(rel_path):
+    if not (rel_path or server.fileexists(rel_path)):
         return False
 
     full_path = os.path.join(input_data_root, rel_path)
@@ -133,34 +150,14 @@ def check_all_input_data(self, protocol=None, address=None, input_data_root=None
         success = self.check_input_data(protocol=protocol, address=address, download=download,
                                         input_data_root=input_data_root, data_list_dir=data_list_dir, chksum=chksum)
     else:
-        if chksum or download:
-            inputdata = Inputdata()
-            protocol = "svn"
-            success = False
-            while not success and protocol is not None:
-                protocol, address, user, passwd, chksum_file = inputdata.get_next_server()
-                if protocol not in vars(CIME.Servers):
-                    logger.warning("Client protocol {} not enabled".format(protocol))
-                    continue
-                logger.info("Using protocol {} with user {} and passwd {}".format(protocol, user, passwd))
-                if protocol == "svn":
-                    server = CIME.Servers.SVN(address, user, passwd)
-                elif protocol == "gftp":
-                    server = CIME.Servers.GridFTP(address, user, passwd)
-                elif protocol == "ftp":
-                    server = CIME.Servers.FTP(address, user, passwd)
-                elif protocol == "wget":
-                    server = CIME.Servers.WGET(address, user, passwd)
-                else:
-                    expect(False, "Unsupported inputdata protocol: {}".format(protocol))
-
-
-                success = _download_checksum_file(server, self.get_value("RUNDIR"),
-                                                  chksum_file)
+        if chksum:
+            _download_checksum_file(self.get_value("RUNDIR"))
 
         success = self.check_input_data(protocol=protocol, address=address, download=False,
                                         input_data_root=input_data_root, data_list_dir=data_list_dir, chksum=chksum)
         if download and not success:
+            if not chksum:
+                _download_checksum_file(self.get_value("RUNDIR"))
             success = _downloadfromserver(self, input_data_root, data_list_dir)
 
     expect(not download or (download and success), "Could not find all inputdata on any server")
@@ -320,7 +317,6 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
                             no_files_missing = False
                         else:
                             logging.debug("  Found input file: '{}'".format(full_path))
-
                     else:
                         # There are some special values of rel_path that
                         # we need to ignore - some of the component models
