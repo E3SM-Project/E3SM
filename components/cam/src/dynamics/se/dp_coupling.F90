@@ -12,7 +12,7 @@ module dp_coupling
   use element_mod,    only: element_t
   use kinds,          only: real_kind, int_kind
   use shr_kind_mod,   only: r8=>shr_kind_r8
-  use physics_types,  only: physics_state, physics_tend
+  use physics_types,  only: physics_state, physics_tend 
   use ppgrid,         only: begchunk, endchunk, pcols, pver, pverp
   use element_mod,    only: element_t
   use cam_logfile,    only: iulog
@@ -41,47 +41,67 @@ CONTAINS
     use gravity_waves_sources, only: gws_src_fnct
     use dyn_comp,              only: frontgf_idx, frontga_idx, hvcoord
     use phys_control,          only: use_gw_front
+    use derivative_mod,        only: subcell_integration
+
+    ! TEMPORARY - DELETE ME!
+    use, intrinsic :: ieee_arithmetic
+    use quadrature_mod, only: quadrature_t, gausslobatto
+    ! TEMPORARY - DELETE ME!
+
     implicit none
     !---------------------------------------------------------------------------
     ! INPUT PARAMETERS:
-    type(dyn_export_t), intent(inout)  :: dyn_out    ! dynamics export 
-    type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+    type(dyn_export_t), intent(inout)  :: dyn_out         ! dynamics export 
+    type(physics_buffer_desc), pointer :: pbuf2d(:,:)     ! physics buffer
     ! OUTPUT PARAMETERS:
     type(physics_state), intent(inout), dimension(begchunk:endchunk) :: phys_state
     type(physics_tend ), intent(inout), dimension(begchunk:endchunk) :: phys_tend 
     ! LOCAL VARIABLES
-    real (kind=real_kind), allocatable :: ps_tmp(:,:)      ! temp array to hold ps
-    real (kind=real_kind), allocatable :: phis_tmp(:,:)    ! temp array to hold phis  
-    real (kind=real_kind), allocatable :: T_tmp(:,:,:)     ! temp array to hold T
-    real (kind=real_kind), allocatable :: uv_tmp(:,:,:,:)  ! temp array to hold u and v
-    real (kind=real_kind), allocatable :: q_tmp(:,:,:,:)   ! temp to hold advected constituents
-    real (kind=real_kind), allocatable :: omega_tmp(:,:,:) ! temp array to hold omega
-    type(element_t), pointer:: elem(:)                     ! pointer to dyn_out element array
-    integer (kind=int_kind) :: ie                          ! indices over elements
-    integer (kind=int_kind) :: lchnk, icol, ilyr           ! indices over chunks, columns, layers
-    integer                 :: tl_f                        ! time level
-    integer                 :: ncols,ierr                  ! 
-    integer                 :: i,j,m                       ! loop iterators
-    integer (kind=int_kind) :: ioff                        ! column index within block
-    integer                 :: pgcols(pcols)               ! global column indices for chunk
-    integer                 :: idmb1(1)                    ! block id
-    integer                 :: idmb2(1)                    ! column index within block
-    integer                 :: idmb3(1)                    ! local block id
-    integer                 :: tsize                       ! # vars per grid point passed to physics
-    integer,    allocatable :: bpter(:,:)                  ! offsets into block buffer for packing 
-    integer                 :: cpter(pcols,0:pver)         ! offsets into chunk buffer for unpacking 
-    integer                 :: nphys, nphys_sq             ! physics grid parameters
-    real (kind=real_kind)   :: temperature(np,np,nlev)     ! 
-    ! Transpose buffers
-    real (kind=real_kind), allocatable, dimension(:) :: bbuffer 
-    real (kind=real_kind), allocatable, dimension(:) :: cbuffer 
+    real(kind=real_kind), allocatable :: ps_tmp(:,:)      ! temp array to hold ps
+    real(kind=real_kind), allocatable :: zs_tmp(:,:)      ! temp array to hold phis  
+    real(kind=real_kind), allocatable :: T_tmp (:,:,:)    ! temp array to hold T
+    real(kind=real_kind), allocatable :: uv_tmp(:,:,:,:)  ! temp array to hold u and v
+    real(kind=real_kind), allocatable :: q_tmp (:,:,:,:)  ! temp to hold advected constituents
+    real(kind=real_kind), allocatable :: w_tmp (:,:,:)    ! temp array to hold omega
+    type(element_t),          pointer :: elem(:)          ! pointer to dyn_out element array
+    type(physics_buffer_desc),pointer :: pbuf_chnk(:)     ! temporary pbuf pointer
+    integer(kind=int_kind)   :: ie                        ! indices over elements
+    integer(kind=int_kind)   :: lchnk, icol, ilyr         ! indices over chunks, columns, layers
+    integer                  :: tl_f                      ! time level
+    integer                  :: ncols,ierr                ! 
+    integer                  :: i,j,m                     ! loop iterators
+    integer(kind=int_kind)   :: ioff                      ! column index within block
+    integer                  :: pgcols(pcols)             ! global column indices for chunk
+    integer                  :: idmb1(1)                  ! block id
+    integer                  :: idmb2(1)                  ! column index within block
+    integer                  :: idmb3(1)                  ! local block id
+    integer                  :: tsize                     ! # vars per grid point passed to physics
+    integer,     allocatable :: bpter(:,:)                ! offsets into block buffer for packing 
+    integer                  :: cpter(pcols,0:pver)       ! offsets into chunk buffer for unpacking 
+    integer                  :: nphys, nphys_sq           ! physics grid parameters
+    real (kind=real_kind)    :: temperature(np,np,nlev)   ! 
+    real(r8), dimension(np,np)             :: tmp_area
+    real(r8), dimension(fv_nphys,fv_nphys) :: inv_area
+    real(r8), dimension(fv_nphys*fv_nphys) :: inv_area_reshape
+    real(r8), dimension(np,np)             :: dp_gll
+    real(r8), dimension(fv_nphys,fv_nphys) :: dp_fvm
+    real(r8), dimension(fv_nphys*fv_nphys) :: inv_dp_fvm_reshape
     ! Frontogenesis
-    real (kind=real_kind), allocatable :: frontgf(:,:,:) ! frontogenesis function
-    real (kind=real_kind), allocatable :: frontga(:,:,:) ! frontogenesis angle 
-    ! Pointers to pbuf
+    real (kind=real_kind), allocatable :: frontgf(:,:,:)  ! frontogenesis function
+    real (kind=real_kind), allocatable :: frontga(:,:,:)  ! frontogenesis angle 
     real (kind=r8),            pointer :: pbuf_frontgf(:,:)
     real (kind=r8),            pointer :: pbuf_frontga(:,:)
-    type(physics_buffer_desc), pointer :: pbuf_chnk(:)
+    ! Transpose buffers
+    real (kind=real_kind), allocatable, dimension(:) :: bbuffer 
+    real (kind=real_kind), allocatable, dimension(:) :: cbuffer
+
+    ! TEMPORARY - DELETE ME!
+    ! real (kind=real_kind) :: avg_wgt
+    ! type (quadrature_t)   :: gp
+    ! real (kind=r8)        :: gp_sum
+    ! real(kind=real_kind)  :: T_tmp2
+    ! TEMPORARY - DELETE ME!
+
     !---------------------------------------------------------------------------
 
     nullify(pbuf_chnk)
@@ -96,18 +116,17 @@ CONTAINS
     nphys_sq = nphys*nphys
 
     ! Allocate temporary arrays to hold data for physics decomposition
-    allocate(ps_tmp   (nphys_sq,nelemd))
-    allocate(dp3d_tmp (nphys_sq,pver,nelemd))
-    allocate(phis_tmp (nphys_sq,nelemd))
-    allocate(T_tmp    (nphys_sq,pver,nelemd))
-    allocate(uv_tmp   (nphys_sq,2,pver,nelemd))
-    allocate(q_tmp    (nphys_sq,pver,pcnst,nelemd))
-    allocate(omega_tmp(nphys_sq,pver,nelemd))
+    allocate(ps_tmp (nphys_sq,nelemd))
+    allocate(zs_tmp (nphys_sq,nelemd))
+    allocate(T_tmp  (nphys_sq,pver,nelemd))
+    allocate(uv_tmp (nphys_sq,2,pver,nelemd))
+    allocate(q_tmp  (nphys_sq,pver,pcnst,nelemd))
+    allocate(w_tmp  (nphys_sq,pver,nelemd))
 
     if (use_gw_front) then
-       allocate(frontgf(npsq,pver,nelemd), stat=ierr)
+       allocate(frontgf(nphys_sq,pver,nelemd), stat=ierr)
        if (ierr /= 0) call endrun("dp_coupling: Allocate of frontgf failed.")
-       allocate(frontga(npsq,pver,nelemd), stat=ierr)
+       allocate(frontga(nphys_sq,pver,nelemd), stat=ierr)
        if (ierr /= 0) call endrun("dp_coupling: Allocate of frontga failed.")
     end if
 
@@ -116,7 +135,7 @@ CONTAINS
       elem => dyn_out%elem
       tl_f = TimeLevel%n0  ! time split physics (with forward-in-time RK)
 
-      if (use_gw_front) call gws_src_fnct(elem, tl_f, frontgf, frontga)
+      if (use_gw_front) call gws_src_fnct(elem, tl_f, nphys, frontgf, frontga)
 
       if (fv_nphys > 0) then
         
@@ -125,74 +144,53 @@ CONTAINS
         !-----------------------------------------------------------------------
         call t_startf('dyn_to_phys')
 
-         ! call dyn2phys_all_vars(1,nelemd,elem, dyn_out%fvm,&
-         !      pcnst,hyai(1)*ps0,tl_f,                      &
-         !      dp3d_tmp, ps_tmp, q_tmp, T_tmp,              &
-         !      omega_tmp, phis_tmp                          &
-         !      )
-         ! do ie = 1, nelemd
-         !    uv_tmp(:,:,:,ie) = &
-         !       dyn2phys_vector(elem(ie)%state%v(:,:,:,:,tl_f),elem(ie))
-         ! end do
+        tmp_area(:,:) = 1.0_r8
 
-         call t_stopf('dyn_to_phys')
+        do ie = 1,nelemd
 
-        !-----------------------------------------------------------------------
-        ! average over entire element to force physics - only pg1 for now
-        !-----------------------------------------------------------------------
-        ! gp = gausslobatto(np)
-        ! gp_sum = 0.
-        ! do j = 1,np
-        !   do i = 1,np
-        !     gp_sum = gp_sum + gp%weights(i)*gp%weights(j)
-        !   end do
-        ! end do
+          inv_area(:,:) = 1.0_r8/subcell_integration(tmp_area,np,fv_nphys,elem(ie)%metdet(:,:))
+          inv_area_reshape(:) = RESHAPE( inv_area(:,:), (/nphys_sq/) )
 
-        ! do ie = 1,nelemd
-        !   lchnk = begchunk + ie-1
-        !   icol = 1
+          ps_tmp(:,ie) = RESHAPE( subcell_integration(                  &
+                         elem(ie)%state%ps_v(:,:,tl_f),                 &
+                         np, fv_nphys, elem(ie)%metdet(:,:) ) ,         &
+                         (/nphys_sq/)  ) * inv_area_reshape
+          zs_tmp(:,ie) = RESHAPE( subcell_integration(                  &
+                         elem(ie)%state%phis(:,:),                      &
+                         np, fv_nphys, elem(ie)%metdet(:,:) ) ,         &
+                         (/nphys_sq/) ) * inv_area_reshape
 
-        !   phys_state(lchnk)%ps   (icol)     = 0.0_r8
-        !   phys_state(lchnk)%phis (icol)     = 0.0_r8
-        !   phys_state(lchnk)%t    (icol,:)   = 0.0_r8
-        !   phys_state(lchnk)%u    (icol,:)   = 0.0_r8
-        !   phys_state(lchnk)%v    (icol,:)   = 0.0_r8
-        !   phys_state(lchnk)%omega(icol,:)   = 0.0_r8
-        !   phys_state(lchnk)%q    (icol,:,:) = 0.0_r8 
+          do ilyr = 1,pver
+            
+            dp_gll = elem(ie)%state%dp3d(:,:,ilyr,tl_f)
+            dp_fvm = subcell_integration(dp_gll,np,fv_nphys,elem(ie)%metdet(:,:))
+            inv_dp_fvm_reshape = 1.0 / RESHAPE( dp_fvm , (/nphys_sq/) )
 
-        !   if (use_gw_front) then
-        !     pbuf_chnk => pbuf_get_chunk(pbuf2d, lchnk)
-        !     call pbuf_get_field(pbuf_chnk, frontgf_idx, pbuf_frontgf)
-        !     call pbuf_get_field(pbuf_chnk, frontga_idx, pbuf_frontga)
-        !     do ilyr = 1,pver
-        !       pbuf_frontgf(icol,ilyr) = frontgf(icol,ilyr,ie)
-        !       pbuf_frontga(icol,ilyr) = frontga(icol,ilyr,ie)
-        !     end do
-        !   end if ! use_gw_front
+            T_tmp(:,ilyr,ie)      = RESHAPE( subcell_integration(             &
+                                    elem(ie)%state%T(:,:,ilyr,tl_f)*dp_gll,   &
+                                    np, fv_nphys, elem(ie)%metdet(:,:) ) ,    &
+                                    (/nphys_sq/) ) *inv_dp_fvm_reshape
 
-        !   do j = 1,np
-        !     do i = 1,np
-        !       avg_wgt = gp%weights(i)*gp%weights(j) / gp_sum
-        !       phys_state(lchnk)%ps  (icol) = phys_state(lchnk)%ps  (icol) + avg_wgt*elem(ie)%state%ps_v(i,j,tl_f) 
-        !       phys_state(lchnk)%phis(icol) = phys_state(lchnk)%phis(icol) + avg_wgt*elem(ie)%state%phis(i,j)      
-        !     end do ! i
-        !   end do ! j
+            w_tmp(:,ilyr,ie)      = RESHAPE( subcell_integration(             &
+                                    elem(ie)%derived%omega_p(:,:,ilyr),       &
+                                    np, fv_nphys, elem(ie)%metdet(:,:) ) ,    &
+                                    (/nphys_sq/) ) *inv_area_reshape
+            do m = 1,2
+              uv_tmp(:,m,ilyr,ie) = RESHAPE( subcell_integration(             &
+                                    elem(ie)%state%V(:,:,m,ilyr,tl_f),        &
+                                    np, fv_nphys, elem(ie)%metdet(:,:) ) ,    &
+                                    (/nphys_sq/) ) *inv_area_reshape
+            end do
+            do m = 1,pcnst
+              Q_tmp(:,ilyr,m,ie)  = RESHAPE( subcell_integration(             &
+                                    elem(ie)%state%Q(:,:,ilyr,m)*dp_gll,      &
+                                    np, fv_nphys, elem(ie)%metdet(:,:) ) ,    &
+                                    (/nphys_sq/) ) *inv_dp_fvm_reshape
+            end do
 
-        !   do ilyr = 1,pver
-        !     do j = 1,np
-        !       do i = 1,np
-        !         avg_wgt = gp%weights(i)*gp%weights(j) / gp_sum
-        !         phys_state(lchnk)%t    (icol,ilyr) = phys_state(lchnk)%t    (icol,ilyr) + avg_wgt*elem(ie)%state%T        (i,j  ,ilyr,tl_f)
-        !         phys_state(lchnk)%u    (icol,ilyr) = phys_state(lchnk)%u    (icol,ilyr) + avg_wgt*elem(ie)%state%V        (i,j,1,ilyr,tl_f)
-        !         phys_state(lchnk)%v    (icol,ilyr) = phys_state(lchnk)%v    (icol,ilyr) + avg_wgt*elem(ie)%state%V        (i,j,2,ilyr,tl_f)
-        !         phys_state(lchnk)%omega(icol,ilyr) = phys_state(lchnk)%omega(icol,ilyr) + avg_wgt*elem(ie)%derived%omega_p(i,j  ,ilyr)     
-        !         do m=1,pcnst
-        !           phys_state(lchnk)%q(icol,ilyr,m) = phys_state(lchnk)%q(icol,ilyr,m)   + avg_wgt*elem(ie)%state%Q(i,j,ilyr,m)
-        !         end do ! m
-        !       end do ! i
-        !     end do ! j
-        !   end do ! ilyr
-        ! end do ! ie
+          end do ! ilyr
+        end do ! ie
+        call t_stopf('dyn_to_phys')
         !-----------------------------------------------------------------------
         !-----------------------------------------------------------------------
 
@@ -205,13 +203,12 @@ CONTAINS
         do ie=1,nelemd
           ncols = elem(ie)%idxP%NumUniquePts
           call get_temperature(elem(ie),temperature,hvcoord,tl_f)
-          call UniquePoints(elem(ie)%idxP, elem(ie)%state%ps_v(:,:,tl_f), ps_tmp(1:ncols,ie))
-          call UniquePoints(elem(ie)%idxP, elem(ie)%state%phis, phis_tmp(1:ncols,ie))
-          call UniquePoints(elem(ie)%idxP, nlev, temperature, T_tmp(1:ncols,:,ie))
-          call UniquePoints(elem(ie)%idxP, 2, nlev, elem(ie)%state%V(:,:,:,:,tl_f), uv_tmp(1:ncols,:,:,ie))
-          call UniquePoints(elem(ie)%idxP, nlev, elem(ie)%derived%omega_p, omega_tmp(1:ncols,:,ie))
-          call UniquePoints(elem(ie)%idxP, 2, nlev, elem(ie)%state%V(:,:,:,:,tl_f), uv_tmp(1:ncols,:,:,ie))
-          call UniquePoints(elem(ie)%idxP, nlev,pcnst, elem(ie)%state%Q(:,:,:,:), Q_tmp(1:ncols,:,:,ie))
+          call UniquePoints(elem(ie)%idxP,       elem(ie)%state%ps_v(:,:,tl_f), ps_tmp(1:ncols,ie))
+          call UniquePoints(elem(ie)%idxP,       elem(ie)%state%phis,           zs_tmp(1:ncols,ie))
+          call UniquePoints(elem(ie)%idxP,  nlev, temperature,                  T_tmp(1:ncols,:,ie))
+          call UniquePoints(elem(ie)%idxP,  nlev,elem(ie)%derived%omega_p,      w_tmp(1:ncols,:,ie))
+          call UniquePoints(elem(ie)%idxP,2,nlev,elem(ie)%state%V(:,:,:,:,tl_f),uv_tmp(1:ncols,:,:,ie))
+          call UniquePoints(elem(ie)%idxP,nlev,pcnst,elem(ie)%state%Q(:,:,:,:), Q_tmp(1:ncols,:,:,ie))
         end do
         call t_stopf('UniquePoints')
         !-----------------------------------------------------------------------
@@ -224,8 +221,8 @@ CONTAINS
       ps_tmp(:,:)      = 0._r8
       T_tmp(:,:,:)     = 0._r8
       uv_tmp(:,:,:,:)  = 0._r8
-      omega_tmp(:,:,:) = 0._r8
-      phis_tmp(:,:)    = 0._r8
+      w_tmp(:,:,:)     = 0._r8
+      zs_tmp(:,:)      = 0._r8
       Q_tmp(:,:,:,:)   = 0._r8
       if (use_gw_front) then
         frontgf(:,:,:) = 0._r8
@@ -254,12 +251,12 @@ CONTAINS
           ie = idmb3(1)
           ioff = idmb2(1)
           phys_state(lchnk)%ps(icol) = ps_tmp(ioff,ie)
-          phys_state(lchnk)%phis(icol) = phis_tmp(ioff,ie)
+          phys_state(lchnk)%phis(icol) = zs_tmp(ioff,ie)
           do ilyr = 1,pver
-            phys_state(lchnk)%t(icol,ilyr) = T_tmp(ioff,ilyr,ie)	   
-            phys_state(lchnk)%u(icol,ilyr) = uv_tmp(ioff,1,ilyr,ie)
-            phys_state(lchnk)%v(icol,ilyr) = uv_tmp(ioff,2,ilyr,ie)
-            phys_state(lchnk)%omega(icol,ilyr) = omega_tmp(ioff,ilyr,ie)
+            phys_state(lchnk)%t(icol,ilyr)     = T_tmp(ioff,ilyr,ie)	   
+            phys_state(lchnk)%u(icol,ilyr)     = uv_tmp(ioff,1,ilyr,ie)
+            phys_state(lchnk)%v(icol,ilyr)     = uv_tmp(ioff,2,ilyr,ie)
+            phys_state(lchnk)%omega(icol,ilyr) = w_tmp(ioff,ilyr,ie)
             if (use_gw_front) then
               pbuf_frontgf(icol,ilyr) = frontgf(ioff,ilyr,ie)
               pbuf_frontga(icol,ilyr) = frontga(ioff,ilyr,ie)
@@ -297,12 +294,12 @@ CONTAINS
           do icol = 1,ncols
             bbuffer(bpter(icol,0)+2:bpter(icol,0)+tsize-1) = 0.0_r8
             bbuffer(bpter(icol,0))   = ps_tmp(icol,ie)
-            bbuffer(bpter(icol,0)+1) = phis_tmp(icol,ie)
+            bbuffer(bpter(icol,0)+1) = zs_tmp(icol,ie)
             do ilyr = 1,pver
               bbuffer(bpter(icol,ilyr))   = T_tmp(icol,ilyr,ie)
               bbuffer(bpter(icol,ilyr)+1) = uv_tmp(icol,1,ilyr,ie)
               bbuffer(bpter(icol,ilyr)+2) = uv_tmp(icol,2,ilyr,ie)
-              bbuffer(bpter(icol,ilyr)+3) = omega_tmp(icol,ilyr,ie)
+              bbuffer(bpter(icol,ilyr)+3) = w_tmp(icol,ilyr,ie)
               if (use_gw_front) then
                 bbuffer(bpter(icol,ilyr)+4) = frontgf(icol,ilyr,ie)
                 bbuffer(bpter(icol,ilyr)+5) = frontga(icol,ilyr,ie)
@@ -360,12 +357,11 @@ CONTAINS
 
     ! Deallocate the temporary arrays
     deallocate(ps_tmp)
-    deallocate(dp3d_tmp)
-    deallocate(phis_tmp)
+    deallocate(zs_tmp)
     deallocate(T_tmp)
     deallocate(uv_tmp)
     deallocate(q_tmp)
-    deallocate(omega_tmp)
+    deallocate(w_tmp)
 
     call t_startf('derived_phys')
     call derived_phys(phys_state,phys_tend,pbuf2d)
@@ -416,10 +412,11 @@ CONTAINS
     type(element_t), pointer :: elem(:)                    ! pointer to dyn_in element array
     integer(kind=int_kind)   :: ie, iep                    ! indices over elements
     integer(kind=int_kind)   :: lchnk, icol, ilyr          ! indices over chunks, columns, layers
-    real (kind=real_kind), allocatable :: T_tmp(:,:,:)     ! temp array to hold T
+    real (kind=real_kind), allocatable :: T_tmp (:,:,:)    ! temp array to hold T
     real (kind=real_kind), allocatable :: uv_tmp(:,:,:,:)  ! temp array to hold u and v
-    real (kind=real_kind), allocatable :: q_tmp(:,:,:,:)   ! temp to hold advected constituents
+    real (kind=real_kind), allocatable :: q_tmp (:,:,:,:)  ! temp to hold advected constituents
     integer(kind=int_kind)   :: m, i, j, k
+    integer(kind=int_kind)   :: di, dj
     integer(kind=int_kind)   :: pgcols(pcols)
     integer(kind=int_kind)   :: ioff
     integer(kind=int_kind)   :: idmb1(1)
@@ -447,8 +444,7 @@ CONTAINS
 
     allocate(T_tmp  (nphys_sq,pver,nelemd))
     allocate(uv_tmp (nphys_sq,2,pver,nelemd))
-    allocate(dq_tmp (nphys_sq,pver,pcnst,nelemd))
-    allocate(dp_phys(nphys_sq,pver,nelemd))
+    allocate(q_tmp  (nphys_sq,pver,pcnst,nelemd))
 
     T_tmp  = 0.0_r8
     uv_tmp = 0.0_r8
@@ -510,19 +506,20 @@ CONTAINS
       call t_stopf  ('chunk_to_block')
 
       if (par%dynproc) then
-        if (fv_nphys > 0) then
-            allocate(bpter(fv_nphys*fv_nphys,0:pver))
-         else
-            allocate(bpter(npsq,0:pver))
-         end if
+        allocate(bpter(nphys_sq,0:pver))
         !$omp parallel do private (ie, bpter, icol, ilyr, m)
         do ie = 1,nelemd
-          call chunk_to_block_recv_pters(elem(ie)%GlobalID,npsq,pver+1,tsize,bpter)
-          do icol = 1,elem(ie)%idxP%NumUniquePts
+          if (fv_nphys > 0) then
+            ncols = nphys_sq
+          else
+            ncols = elem(ie)%idxP%NumUniquePts
+          end if
+          call chunk_to_block_recv_pters(elem(ie)%GlobalID,nphys_sq,pver+1,tsize,bpter)
+          do icol = 1,ncols
             do ilyr = 1,pver
-              T_tmp   (icol,ilyr,ie)   = bbuffer(bpter(icol,ilyr))
-              uv_tmp  (icol,1,ilyr,ie) = bbuffer(bpter(icol,ilyr)+1)
-              uv_tmp  (icol,2,ilyr,ie) = bbuffer(bpter(icol,ilyr)+2)
+              T_tmp  (icol,ilyr,ie)   = bbuffer(bpter(icol,ilyr))
+              uv_tmp (icol,1,ilyr,ie) = bbuffer(bpter(icol,ilyr)+1)
+              uv_tmp (icol,2,ilyr,ie) = bbuffer(bpter(icol,ilyr)+2)
               do m = 1,pcnst
                 q_tmp(icol,ilyr,m,ie) = bbuffer(bpter(icol,ilyr)+2+m)
               end do
@@ -531,6 +528,7 @@ CONTAINS
         end do ! ie
         deallocate(bpter)
       end if ! par%dynproc
+
       deallocate( bbuffer )
       deallocate( cbuffer )
        
@@ -538,23 +536,80 @@ CONTAINS
     call t_stopf('pd_copy')
 
     if (par%dynproc) then
-      call t_startf('putUniquePoints')
-      do ie = 1,nelemd
-        ncols = elem(ie)%idxP%NumUniquePts
-        call putUniquePoints(elem(ie)%idxP,    nlev,       T_tmp(1:ncols,:,ie),   &
-                             elem(ie)%derived%fT(:,:,:))
-        call putUniquePoints(elem(ie)%idxP, 2, nlev,       uv_tmp(1:ncols,:,:,ie), &
-                             elem(ie)%derived%fM(:,:,:,:))
-        call putUniquePoints(elem(ie)%idxP,    nlev,pcnst, q_tmp(1:ncols,:,:,ie),   &
-                             elem(ie)%derived%fQ(:,:,:,:))
-      end do ! ie
-      call t_stopf('putUniquePoints')
+      if (fv_nphys > 0) then
+
+        do ie = 1,nelemd
+          icol = 0
+          do j = 1,fv_nphys
+            do i = 1,fv_nphys 
+              icol = icol + 1
+              do ilyr = 1,pver
+
+                ! the pg1 case is simple, not sure how to generalize with pg2
+                if (fv_nphys == 1) then
+                  elem(ie)%derived%FT(:,:,  ilyr)   = T_tmp (icol,  ilyr,ie)
+                  elem(ie)%derived%FM(:,:,1,ilyr)   = uv_tmp(icol,1,ilyr,ie)
+                  elem(ie)%derived%FM(:,:,2,ilyr)   = uv_tmp(icol,2,ilyr,ie)
+                  do m = 1,pcnst
+                    elem(ie)%derived%FQ(:,:,ilyr,m) = q_tmp (icol,  ilyr,m,ie)
+                  end do
+                end if ! fv_nphys == 1
+
+                ! for pg2 we need to copy the FV state to GLL quadrants
+                if (fv_nphys == 2) then
+                  if (i==1) di = -1
+                  if (i==2) di =  1
+                  if (j==1) dj = -1
+                  if (j==2) dj =  1
+                  ! temperature
+                  elem(ie)%derived%FT(i+1   ,j+1   ,ilyr) = T_tmp(icol,ilyr,ie)
+                  elem(ie)%derived%FT(i+1+di,j+1+dj,ilyr) = T_tmp(icol,ilyr,ie)
+                  elem(ie)%derived%FT(i+1   ,j+1+dj,ilyr) = T_tmp(icol,ilyr,ie)
+                  elem(ie)%derived%FT(i+1+di,j+1   ,ilyr) = T_tmp(icol,ilyr,ie)
+                  ! zonal wind
+                  elem(ie)%derived%FM(i+1   ,j+1   ,1,ilyr) = uv_tmp(icol,1,ilyr,ie)
+                  elem(ie)%derived%FM(i+1+di,j+1+dj,1,ilyr) = uv_tmp(icol,1,ilyr,ie)
+                  elem(ie)%derived%FM(i+1   ,j+1+dj,1,ilyr) = uv_tmp(icol,1,ilyr,ie)
+                  elem(ie)%derived%FM(i+1+di,j+1   ,1,ilyr) = uv_tmp(icol,1,ilyr,ie)
+                  ! meridional wind
+                  elem(ie)%derived%FM(i+1   ,j+1   ,2,ilyr) = uv_tmp(icol,2,ilyr,ie)
+                  elem(ie)%derived%FM(i+1+di,j+1+dj,2,ilyr) = uv_tmp(icol,2,ilyr,ie)
+                  elem(ie)%derived%FM(i+1   ,j+1+dj,2,ilyr) = uv_tmp(icol,2,ilyr,ie)
+                  elem(ie)%derived%FM(i+1+di,j+1   ,2,ilyr) = uv_tmp(icol,2,ilyr,ie)
+                  ! constituents
+                  do m = 1,pcnst
+                    elem(ie)%derived%FQ(i+1   ,j+1   ,ilyr,m) = q_tmp(icol,ilyr,m,ie)
+                    elem(ie)%derived%FQ(i+1+di,j+1+dj,ilyr,m) = q_tmp(icol,ilyr,m,ie)
+                    elem(ie)%derived%FQ(i+1   ,j+1+dj,ilyr,m) = q_tmp(icol,ilyr,m,ie)
+                    elem(ie)%derived%FQ(i+1+di,j+1   ,ilyr,m) = q_tmp(icol,ilyr,m,ie)
+                  end do
+                end if ! fv_nphys == 2
+
+              end do ! ilyr
+            end do ! i
+          end do ! j
+        end do ! ie
+      
+      else
+
+        call t_startf('putUniquePoints')
+        do ie = 1,nelemd
+          ncols = elem(ie)%idxP%NumUniquePts
+          call putUniquePoints(elem(ie)%idxP,    nlev,       T_tmp(1:ncols,:,ie),   &
+                               elem(ie)%derived%fT(:,:,:))
+          call putUniquePoints(elem(ie)%idxP, 2, nlev,       uv_tmp(1:ncols,:,:,ie), &
+                               elem(ie)%derived%fM(:,:,:,:))
+          call putUniquePoints(elem(ie)%idxP,    nlev,pcnst, q_tmp(1:ncols,:,:,ie),   &
+                               elem(ie)%derived%fQ(:,:,:,:))
+        end do ! ie
+        call t_stopf('putUniquePoints')
+
+      end if ! fv_nphys > 0
     end if ! par%dynproc
 
     deallocate(T_tmp)
     deallocate(uv_tmp)
-    deallocate(dq_tmp)
-    deallocate(dp_phys)
+    deallocate(q_tmp)
 
   end subroutine p_d_coupling
   !=================================================================================================
