@@ -15,11 +15,7 @@ local_chksum_file = 'inputdata_checksum.dat'
 
 def _download_checksum_file(rundir):
     """
-    Return True if successfully downloaded
-    server is an object handle of type CIME.Servers
-    rundir is where the file will be downloaded to
-    chksum_file is the file to be downloaded (specified in config_inputdata.xml)
-    user is the user name of the person running the script
+    Download the checksum files from each server and merge them into rundir.
     """
     inputdata = Inputdata()
     protocol = "svn"
@@ -69,7 +65,7 @@ def _download_checksum_file(rundir):
                 else:
                     logger.warning("Could not automatically download file {}".
                                    format(full_path))
-    return success
+
 
 def _reformat_chksum_file(chksum_file, server_file):
     """
