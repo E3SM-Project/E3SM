@@ -1042,6 +1042,7 @@ class Case(object):
 
         # set up utility files in caseroot/Tools/
         toolfiles = [os.path.join(toolsdir, "check_lockedfiles"),
+                     os.path.join(toolsdir, "get_standard_makefile_args"),
                      os.path.join(toolsdir, "getTiming"),
                      os.path.join(toolsdir, "save_provenance"),
                      os.path.join(toolsdir,"Makefile"),

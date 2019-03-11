@@ -9,6 +9,29 @@ from CIME.locked_files          import lock_file, unlock_file
 
 logger = logging.getLogger(__name__)
 
+def get_standard_makefile_args(case):
+    variables = ["CASEROOT", "CASETOOLS", "CIMEROOT", "COMP_INTERFACE",
+                 "COMPILER", "DEBUG", "EXEROOT", "INCROOT", "LIBROOT",
+                 "MACH", "MPILIB", "NINST_VALUE", "OS", "PIO_VERSION",
+                 "SHAREDLIBROOT", "SMP_PRESENT", "USE_ESMF_LIB", "USE_MOAB",
+                 "CAM_CONFIG_OPTS", "COMPARE_TO_NUOPC", "HOMME_TARGET",
+                 "OCN_SUBMODEL", "CISM_USE_TRILINOS", "USE_ALBANY", "USE_PETSC"]
+
+    make_args = "CIME_MODEL={} ".format(case.get_value("MODEL"))
+    for var in variables:
+        make_args+=xml_to_make_variable(case, var)
+
+    return make_args
+
+def xml_to_make_variable(case, varname):
+    varvalue = case.get_value(varname)
+    if varvalue is None:
+        return ""
+    if type(varvalue) == type(True):
+        varvalue = stringify_bool(varvalue)
+    return "{}=\"{}\" ".format(varname, varvalue)
+
+
 ###############################################################################
 def _build_model(build_threaded, exeroot, incroot, complist,
                  lid, caseroot, cimeroot, compiler, buildlist, comp_interface):
@@ -105,13 +128,12 @@ def _build_checks(case, build_threaded, comp_interface, use_esmf_lib,
     check if a build needs to be done and warn if a clean is warrented first
     returns the relative sharedpath directory for sharedlibraries
     """
-    ninst_value  = case.get_value("NINST_VALUE")
     smp_build    = case.get_value("SMP_BUILD")
     build_status = case.get_value("BUILD_STATUS")
     expect(comp_interface in ("mct", "moab", "nuopc"),
            "Only supporting mct nuopc, or moab comp_interfaces at this time, found {}".format(comp_interface))
     smpstr = ""
-    inststr = ""
+    ninst_value = ""
     for model, _, nthrds, ninst, _ in complist:
         if nthrds > 1:
             build_threaded = True
@@ -119,21 +141,13 @@ def _build_checks(case, build_threaded, comp_interface, use_esmf_lib,
             smpstr += "{}1".format(model[0])
         else:
             smpstr += "{}0".format(model[0])
-        inststr += "{}{:d}".format((model[0]),ninst)
-
-    if build_threaded:
-        os.environ["SMP"] = "TRUE"
-    else:
-        os.environ["SMP"] = "FALSE"
+        ninst_value += "{}{:d}".format((model[0]),ninst)
 
     case.set_value("SMP_VALUE", smpstr)
-    os.environ["SMP_VALUE"] = smpstr
-    case.set_value("NINST_VALUE", inststr)
-    os.environ["NINST_VALUE"] = inststr
-    os.environ["SMP_PRESENT"] = stringify_bool(case.get_value("SMP_PRESENT"))
+    case.set_value("NINST_VALUE", ninst_value)
 
     debugdir = "debug" if debug else "nodebug"
-    threaddir = "threads" if (os.environ["SMP"] == "TRUE" or build_threaded) else "nothreads"
+    threaddir = "threads" if build_threaded else "nothreads"
     sharedpath = os.path.join(compiler, mpilib, debugdir, threaddir, comp_interface)
 
     logger.debug("compiler={} mpilib={} debugdir={} threaddir={}"
@@ -328,21 +342,11 @@ def _clean_impl(case, cleanlist, clean_all, clean_depends):
     else:
         expect((cleanlist is not None and len(cleanlist) > 0) or
                (clean_depends is not None and len(clean_depends)),"Empty cleanlist not expected")
-        debug           = case.get_value("DEBUG")
-        use_esmf_lib    = case.get_value("USE_ESMF_LIB")
-        build_threaded  = case.get_build_threaded()
         gmake           = case.get_value("GMAKE")
-        caseroot        = os.path.abspath(case.get_value("CASEROOT"))
         casetools       = case.get_value("CASETOOLS")
 
-        os.environ["DEBUG"]           = stringify_bool(debug)
-        os.environ["USE_ESMF_LIB"]    = stringify_bool(use_esmf_lib)
-        os.environ["BUILD_THREADED"]  = stringify_bool(build_threaded)
-        os.environ["CASEROOT"]        = caseroot
-        os.environ["COMP_INTERFACE"]  = case.get_value("COMP_INTERFACE")
-        os.environ["PIO_VERSION"]     = str(case.get_value("PIO_VERSION"))
-
         cmd = gmake + " -f " + os.path.join(casetools, "Makefile")
+        cmd += get_standard_makefile_args(case)
         if cleanlist is not None:
             for item in cleanlist:
                 tcmd = cmd + " clean" + item
@@ -395,11 +399,9 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
     if "MODEL" in os.environ:
         del os.environ["MODEL"]
     build_threaded      = case.get_build_threaded()
-    casetools           = case.get_value("CASETOOLS")
     exeroot             = os.path.abspath(case.get_value("EXEROOT"))
     incroot             = os.path.abspath(case.get_value("INCROOT"))
     libroot             = os.path.abspath(case.get_value("LIBROOT"))
-    sharedlibroot       = os.path.abspath(case.get_value("SHAREDLIBROOT"))
     multi_driver = case.get_value("MULTI_DRIVER")
     complist = []
     ninst = 1
@@ -421,8 +423,6 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
         complist.append((comp_class.lower(), comp, thrds, ninst, config_dir ))
         os.environ["COMP_{}".format(comp_class)] = comp
 
-    ocn_submodel        = case.get_value("OCN_SUBMODEL")
-    profile_papi_enable = case.get_value("PROFILE_PAPI_ENABLE")
     compiler            = case.get_value("COMPILER")
     comp_interface      = case.get_value("COMP_INTERFACE")
     mpilib              = case.get_value("MPILIB")
@@ -433,41 +433,10 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
     clm_use_petsc       = case.get_value("CLM_USE_PETSC")
     cism_use_trilinos   = case.get_value("CISM_USE_TRILINOS")
     mali_use_albany     = case.get_value("MALI_USE_ALBANY")
-    use_moab            = case.get_value("USE_MOAB")
-    cam_config_opts     = case.get_value("CAM_CONFIG_OPTS")
-    pio_config_opts     = case.get_value("PIO_CONFIG_OPTS")
-    ninst_value         = case.get_value("NINST_VALUE")
     mach                = case.get_value("MACH")
-    os_                 = case.get_value("OS")
 
     # Load some params into env
-    os.environ["CIMEROOT"]             = cimeroot
-    os.environ["CASETOOLS"]            = casetools
-    os.environ["EXEROOT"]              = exeroot
-    os.environ["INCROOT"]              = incroot
-    os.environ["LIBROOT"]              = libroot
-    os.environ["SHAREDLIBROOT"]        = sharedlibroot
-    os.environ["CASEROOT"]             = caseroot
-    os.environ["COMPILER"]             = compiler
-    os.environ["COMP_INTERFACE"]       = comp_interface
-    os.environ["NINST_VALUE"]          = str(ninst_value)
     os.environ["BUILD_THREADED"]       = stringify_bool(build_threaded)
-    os.environ["MACH"]                 = mach
-    os.environ["USE_ESMF_LIB"]         = stringify_bool(use_esmf_lib)
-    os.environ["MPILIB"]               = mpilib
-    os.environ["DEBUG"]                = stringify_bool(debug)
-    os.environ["OS"]                   = os_
-    os.environ["CAM_CONFIG_OPTS"]      = cam_config_opts     if cam_config_opts     is not None else ""
-    os.environ["PIO_CONFIG_OPTS"]      = pio_config_opts     if pio_config_opts     is not None else ""
-    os.environ["OCN_SUBMODEL"]         = ocn_submodel        if ocn_submodel        is not None else ""
-    os.environ["PROFILE_PAPI_ENABLE"]  = stringify_bool(profile_papi_enable)
-    os.environ["CLM_USE_PETSC"]        = stringify_bool(clm_use_petsc)
-    os.environ["CISM_USE_TRILINOS"]    = stringify_bool(cism_use_trilinos)
-    os.environ["MALI_USE_ALBANY"]      = stringify_bool(mali_use_albany)
-    os.environ["USE_MOAB"]             = stringify_bool(use_moab)
-    os.environ["PIO_VERSION"]          = str(case.get_value("PIO_VERSION"))
-    os.environ["COMPARE_TO_NUOPC"]     = stringify_bool(case.get_value("COMPARE_TO_NUOPC"))
-    os.environ["CIME_MODEL"]           = get_model()
 
     if get_model() == "e3sm" and mach == "titan" and compiler == "pgiacc":
         case.set_value("CAM_TARGET", "preqx_acc")
@@ -488,7 +457,6 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
 
     use_petsc = clm_use_petsc
     case.set_value("USE_PETSC", use_petsc)
-    os.environ["USE_PETSC"] = stringify_bool(use_petsc)
 
     # Set the overall USE_TRILINOS variable to TRUE if any of the
     # *_USE_TRILINOS variables are TRUE.
@@ -498,7 +466,6 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
 
     use_trilinos = False if cism_use_trilinos is None else cism_use_trilinos
     case.set_value("USE_TRILINOS", use_trilinos)
-    os.environ["USE_TRILINOS"] = stringify_bool(use_trilinos)
 
     # Set the overall USE_ALBANY variable to TRUE if any of the
     # *_USE_ALBANY variables are TRUE.
@@ -508,7 +475,6 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
 
     use_albany = stringify_bool(mali_use_albany)
     case.set_value("USE_ALBANY", use_albany)
-    os.environ["USE_ALBANY"] = use_albany
 
     # Load modules
     case.load_env()
