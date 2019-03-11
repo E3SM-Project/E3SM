@@ -39,9 +39,14 @@
 <horiz_grid dyn="se"    hgrid="ne4np4.pg2"  ncol="384"     csne="4"   csnp="4" npg="2" />
 <horiz_grid dyn="se"    hgrid="ne5np8"      ncol="7352"    csne="5"   csnp="8" npg="0" />
 <horiz_grid dyn="se"    hgrid="ne7np8"      ncol="14408"   csne="7"   csnp="8" npg="0" />
+<horiz_grid dyn="se"    hgrid="ne8np4"      ncol="3458"    csne="8"   csnp="4" npg="0" />
+<horiz_grid dyn="se"    hgrid="ne8np4.pg1"  ncol="384"     csne="8"   csnp="4" npg="1" />
+<horiz_grid dyn="se"    hgrid="ne8np4.pg2"  ncol="1536"    csne="8"   csnp="4" npg="2" />
 <horiz_grid dyn="se"    hgrid="ne10np4"     ncol="5402"    csne="10"  csnp="4" npg="0" />
 <horiz_grid dyn="se"    hgrid="ne11np4"     ncol="6536"    csne="11"  csnp="4" npg="0" />
 <horiz_grid dyn="se"    hgrid="ne16np4"     ncol="13826"   csne="16"  csnp="4" npg="0" />
+<horiz_grid dyn="se"    hgrid="ne16np4.pg1" ncol="1536"    csne="16"  csnp="4" npg="1" />
+<horiz_grid dyn="se"    hgrid="ne16np4.pg2" ncol="6144"    csne="16"  csnp="4" npg="2" />
 <horiz_grid dyn="se"    hgrid="ne16np8"     ncol="75266"   csne="16"  csnp="8" npg="0" />
 <horiz_grid dyn="se"    hgrid="ne21np4"     ncol="23816"   csne="21"  csnp="4" npg="0" />
 <horiz_grid dyn="se"    hgrid="ne30np4"     ncol="48602"   csne="30"  csnp="4" npg="0" />
@@ -49,6 +54,8 @@
 <horiz_grid dyn="se"    hgrid="ne30np4.pg2" ncol="21600"   csne="30"  csnp="4" npg="2" />
 <horiz_grid dyn="se"    hgrid="ne30np8"     ncol="264602"  csne="30"  csnp="8" npg="0" />
 <horiz_grid dyn="se"    hgrid="ne60np4"     ncol="194402"  csne="60"  csnp="4" npg="0" />
+<horiz_grid dyn="se"    hgrid="ne60np4.pg1" ncol="21600"   csne="60"  csnp="4" npg="1" />
+<horiz_grid dyn="se"    hgrid="ne60np4.pg2" ncol="86400"   csne="60"  csnp="4" npg="2" />
 <horiz_grid dyn="se"    hgrid="ne120np4"    ncol="777602"  csne="120" csnp="4" npg="0" />
 <horiz_grid dyn="se"    hgrid="ne240np4"    ncol="3110402" csne="240" csnp="4" npg="0" />
 
