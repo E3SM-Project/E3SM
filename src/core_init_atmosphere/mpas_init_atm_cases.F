@@ -2141,6 +2141,11 @@ module init_atm_cases
          vm = 10.
          um = 0.
 
+         do k=1,nz1
+           v_init(k) = vm
+           u_init(k) = um
+         end do
+
          do i=1,nCells
             do k=1,nz1
                ztemp   = .5*(zgrid(k,i)+zgrid(k+1,i))
@@ -2163,15 +2168,7 @@ module init_atm_cases
             do k=1,nz1
                ztemp = .25*( zgrid(k,cell1 )+zgrid(k+1,cell1 )  &
                             +zgrid(k,cell2)+zgrid(k+1,cell2))
-               u(k,i) = vm
-
-               if(i == 1 ) then 
-                 v_init(k) = vm
-                 u_init(k) = 0.
-               end if
-
                u(k,i) =   vm*sin(angleEdge(i)) + um*cos(angleEdge(i))
-                        
             end do
             end if
          end do
