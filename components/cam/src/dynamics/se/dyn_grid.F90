@@ -919,7 +919,7 @@ contains
     integer  :: ibuf
     !---------------------------------------------------------------------------
     if (masterproc) then
-      write(iulog,*) 'INFO: Non-scalable action: Conputing global area in SE dycore.'
+      write(iulog,*) 'INFO: Non-scalable action: Computing global area in SE dycore.'
     end if
 
     if (fv_nphys > 0) then
