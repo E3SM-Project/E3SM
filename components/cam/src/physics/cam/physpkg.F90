@@ -434,7 +434,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
     call infld('vmag_gust', fh_ini, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
          tptr(:,:), found, gridname='physgrid')
     if(.not. found) then
-       tptr(:,:) = 1._r8
+       tptr(:,:) = 0._r8
        if (masterproc) write(iulog,*) 'vmag_gust initialized to 1.'
     end if
     vmag_gust_idx = pbuf_get_index( 'vmag_gust')
