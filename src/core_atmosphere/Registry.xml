@@ -256,22 +256,17 @@
                      description="Maximum w-damping coefficient at model top"
                      possible_values="0 $\leq$ config_xnutr $\leq$ 1"/>
 
-                <nml_option name="config_horiz_absorbing_layer" type="character" default_value="none" in_defaults="false"
-                     units="-"
-                     description="h_diffusion configuration for upper absorbing layer"
-                     possible_values="`none' or `mpas_cam'"/>
-
-                <nml_option name="config_mpas_cam_coef" type="real" default_value="0.2" in_defaults="false"
+                <nml_option name="config_mpas_cam_coef" type="real" default_value="0.0" in_defaults="false"
                      units="-"
                      description="coefficient for scaling the 2nd-order h-mixing in mpas_cam absorbing layer"
-                     possible_values="0 $\leq$ config_mpas_cam_coef $\leq$ 1"/>
+                     possible_values="0 $\leq$ config_mpas_cam_coef $\leq$ 1, standard value is 0.2"/>
 
                 <nml_option name="config_rayleigh_damp_u" type="logical" default_value="false" in_defaults="false"
                      units="-"
                      description="use Rayleigh damping on horizontal velocity topmost model levels"
                      possible_values=".true. or .false."/>
 
-                <nml_option name="config_rayleigh_damp_u_timescale" type="real" default_value="5." in_defaults="false"
+                <nml_option name="config_rayleigh_damp_u_timescale_days" type="real" default_value="5." in_defaults="false"
                      units="days"
                      description="Rayleigh damping timescale in days"
                      possible_values="config_rayleigh_damp_u_timescale must be greater than 0"/>
