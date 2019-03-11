@@ -1575,8 +1575,6 @@ contains
     real(r8) :: area1, area2
     !---------------------------------------------------------------------------
     if (fv_nphys>0) then
-      ! corner_offset_i = (/-1.,-1.,1.,1./)
-      ! corner_offset_j = (/-1.,1.,1.,-1./)
       corner_offset_i = (/-1.,1.,1.,-1./)
       corner_offset_j = (/-1.,-1.,1.,1./)
       
@@ -1604,7 +1602,7 @@ contains
             fv_physgrid(ie)%lon(i,j) = sphere_coord%lon
 
             !-------------------------------------------------------------------
-            ! FV cell corner locations
+            ! cell corner locations
             !-------------------------------------------------------------------
             do c = 1,4
               ref_corner_i = ref_i + corner_offset_i(c)/real(fv_nphys,lng_dbl)
@@ -1618,47 +1616,18 @@ contains
               fv_physgrid(ie)%corner_lon(i,j,c) = sphere_coord%lon
 
               corner_tmp(c) = spherical_to_cart(sphere_coord)
-
-              ! corner_tmp(c)%y = sphere_coord%lat
-              ! corner_tmp(c)%x = sphere_coord%lon
             end do ! c
 
             !-------------------------------------------------------------------
-            ! Calculate Area
+            ! cell area
             !-------------------------------------------------------------------
-
             call sphere_tri_area( corner_tmp(1), &
                                   corner_tmp(2), &
                                   corner_tmp(3), area1 )
             call sphere_tri_area( corner_tmp(3), &
                                   corner_tmp(4), &
                                   corner_tmp(1), area2 )
-
-            fv_physgrid(ie)%area(i,j) = ( area1 + area2 ) 
-
-            ! write(*,666) fv_physgrid(ie)%area(i,j), area1, area2
-! 666 format("fv_physgrid_init - area:",F12.4," area1:",F12.4," area2:",F12.4)
-
-            ! ! Calculate area of whole element
-            ! if ( i==1 .and. j==1 ) then
-            !   ! use 4 triangles and divide by 2 if the corner order is unknown
-            !   call sphere_tri_area( elem(ie)%corners3D(1), &
-            !                         elem(ie)%corners3D(2), &
-            !                         elem(ie)%corners3D(3), area1 )
-            !   call sphere_tri_area( elem(ie)%corners3D(2), &
-            !                         elem(ie)%corners3D(3), &
-            !                         elem(ie)%corners3D(4), area2 )
-            !   call sphere_tri_area( elem(ie)%corners3D(3), &
-            !                         elem(ie)%corners3D(4), &
-            !                         elem(ie)%corners3D(1), area3 )
-            !   call sphere_tri_area( elem(ie)%corners3D(4), &
-            !                         elem(ie)%corners3D(1), &
-            !                         elem(ie)%corners3D(2), area4 )
-            ! end if ! i==1 .and. j==1
-
-            ! ! divide element area equally among FV cells
-            ! area_wgt = 2.*real(fv_nphys,r8)**2
-            ! fv_physgrid(ie)%area(i,j) = ( area1 + area2 + area3 + area4 ) / area_wgt
+            fv_physgrid(ie)%area(i,j) = area1 + area2 
 
             !-------------------------------------------------------------------
           end do ! i
