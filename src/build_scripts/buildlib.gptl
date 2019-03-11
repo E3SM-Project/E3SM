@@ -42,7 +42,6 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
 def buildlib(bldroot, installpath, case):
 ###############################################################################
-    comp_interface = case.get_value("COMP_INTERFACE")
     caseroot = case.get_value("CASEROOT")
     gptl_dir = os.path.join(case.get_value("CIMEROOT"), "src", "share", "timing")
     debug = case.get_value("DEBUG")
