@@ -34,8 +34,8 @@
     <category>setup</category>
     <input_pathname>abs</input_pathname>
     <values>
-      <value runtype="startup">$DIN_LOC_ROOT/wav/ww3/restart.ww3.init.calm</value>
-      <value runtype="hybrid">$DIN_LOC_ROOT/wav/ww3/restart.ww3.init.calm</value>
+      <value runtype="startup">$DIN_LOC_ROOT/wav/ww3/restart.ww3.v5</value>
+      <value runtype="hybrid">$DIN_LOC_ROOT/wav/ww3/restart.ww3.v5</value>
     </values>
     <desc>
       Initial condition file.
@@ -77,7 +77,7 @@
     <category>prestage_only</category>
     <input_pathname>abs</input_pathname>
     <values>
-      <value>$DIN_LOC_ROOT/wav/ww3/G4L1.mod_def.ww3.121031</value>
+      <value>$DIN_LOC_ROOT/wav/ww3/mod_def.ww3.v5</value>
     </values>
     <desc>
       This namelist group is only here to ensure that this file is in $DIN_LOC_ROOT and
