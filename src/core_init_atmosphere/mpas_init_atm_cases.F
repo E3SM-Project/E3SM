@@ -1834,7 +1834,7 @@ module init_atm_cases
       real (kind=RKIND), dimension(nVertLevels ) :: zu, dzw, rdzwp, rdzwm
 
       real (kind=RKIND) :: d1, d2, d3, cof1, cof2
-      real (kind=RKIND) :: um, vm, us, vs, rcp, rcv
+      real (kind=RKIND) :: um, vm,rcp, rcv
       real (kind=RKIND) :: xmid, temp, pres, a_scale
 
       real (kind=RKIND) :: xi, xa, xc, xla, zinv, xn2, xn2m, xn2l, sm, dzh, dzht, dzmin, z_edge, z_edge3 
