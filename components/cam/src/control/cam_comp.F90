@@ -98,6 +98,9 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    use cam_pio_utils,    only: init_pio_subsystem
    use cam_instance,     only: inst_suffix
 
+   use dimensions_mod,       only: fv_nphys
+   use write_grid_scrip_mod, only: write_grid_scrip
+
 #if ( defined SPMD )   
    real(r8) :: mpi_wtime  ! External
 #endif
@@ -194,6 +197,10 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    if (single_column) call scm_intht()
    call intht()
 
+   ! Write scrip file for grid
+   if (fv_nphys>0) then
+      call write_grid_scrip()
+   end if
 
 end subroutine cam_init
 
