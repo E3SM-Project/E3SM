@@ -159,7 +159,7 @@
       USE W3IDATMD, ONLY: TLN, WLEV
       USE W3IDATMD, ONLY: !SB, HML   ! QL, 150525, mixing layer depth
       use w3odatmd, only: w3nout, w3seto, naproc, iaproc, napout, naperr,             &
-                          nogrp, ngrpp, noge, idout, fnmpre, iostyp
+                          nogrp, ngrpp, noge, idout, fnmpre, iostyp, notype
 !/
       use w3initmd, only: w3init 
       use w3wavemd, only: w3wave 
@@ -487,6 +487,7 @@ CONTAINS
       !                    11-15 Id.  for OTYPE = 3; track point output.
       !                    16-20 Id.  for OTYPE = 4; restart files.
       !                    21-25 Id.  for OTYPE = 5; boundary data.
+      !                    31-35 Id.  for OTYPE = 5; coupling data.
       ! FLGRD   L.A.   I   Flags for gridded output.
       ! NPT     Int.   I   Number of output points
       ! X/YPT   R.A.   I   Coordinates of output points.
@@ -496,7 +497,9 @@ CONTAINS
       allocate ( x(1), y(1), pnames(1) )
       pnames(1) = ' '
 
-      do j=1, 7
+      notype = 7
+
+      do j=1, notype
          odat(5*(j-1)+3) = 0
       end do
 
@@ -531,6 +534,7 @@ CONTAINS
       ! Output Type 1: fields of mean wave parameters gridded output
       flogrd2 = .false.
       flogd2  = .false.
+      flogd = .false.
 
       ! 1) Forcing fields
       flogrd(1,1)  = .false. ! Water depth         
