@@ -136,7 +136,6 @@ def check_all_input_data(self, protocol=None, address=None, input_data_root=None
         if chksum or download:
             inputdata = Inputdata()
             protocol = "svn"
-            success = False
             # download and merge all available chksum files.
             while protocol is not None:
                 protocol, address, user, passwd, chksum_file = inputdata.get_next_server()
@@ -156,8 +155,8 @@ def check_all_input_data(self, protocol=None, address=None, input_data_root=None
                     expect(False, "Unsupported inputdata protocol: {}".format(protocol))
 
 
-                success = _download_checksum_file(server, self.get_value("RUNDIR"),
-                                                  chksum_file)
+                _download_checksum_file(server, self.get_value("RUNDIR"),
+                                        chksum_file)
 
         success = self.check_input_data(protocol=protocol, address=address, download=False,
                                         input_data_root=input_data_root, data_list_dir=data_list_dir, chksum=chksum)
