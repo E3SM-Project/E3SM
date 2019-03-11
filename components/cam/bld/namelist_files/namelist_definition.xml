@@ -5920,6 +5920,12 @@ Number of vertical threads.
 Default: 1.
 </entry>
 
+<entry id="cubed_sphere_map" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Mapping mode between the element reference 
+coordinate and the sphere
+Default: Set by build-namelist.
+</entry>
 
 <!-- Physics grid -->
 
