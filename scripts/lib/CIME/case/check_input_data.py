@@ -93,7 +93,7 @@ def _download_if_in_repo(server, input_data_root, rel_path, isdirectory=False):
     user is the user name of the person running the script
     isdirectory indicates that this is a directory download rather than a single file
     """
-    if not server.fileexists(rel_path):
+    if not (rel_path or server.fileexists(rel_path)):
         return False
 
     full_path = os.path.join(input_data_root, rel_path)
@@ -137,7 +137,8 @@ def check_all_input_data(self, protocol=None, address=None, input_data_root=None
             inputdata = Inputdata()
             protocol = "svn"
             success = False
-            while not success and protocol is not None:
+            # download and merge all available chksum files.
+            while protocol is not None:
                 protocol, address, user, passwd, chksum_file = inputdata.get_next_server()
                 if protocol not in vars(CIME.Servers):
                     logger.warning("Client protocol {} not enabled".format(protocol))
