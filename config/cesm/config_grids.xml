@@ -915,6 +915,13 @@
       <mask>gx1v7</mask>
     </model_grid>
 
+    <model_grid alias="ne0CONUSne30x8_ne0CONUSne30x8_mg17" not_compset="_POP">
+      <grid name="atm">ne0np4CONUS.ne30x8</grid>
+      <grid name="lnd">ne0np4CONUS.ne30x8</grid>
+      <grid name="ocnice">ne0np4CONUS.ne30x8</grid>
+      <mask>gx1v7</mask>
+    </model_grid>
+
     <model_grid alias="ne0TESTONLYne5x4_ne0TESTONLYne5x4_mg37" not_compset="_POP">
       <grid name="atm">ne0np4TESTONLY.ne5x4</grid>
       <grid name="lnd">ne0np4TESTONLY.ne5x4</grid>
