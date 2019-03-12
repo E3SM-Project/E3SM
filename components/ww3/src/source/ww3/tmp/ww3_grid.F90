@@ -576,11 +576,23 @@
                                  STDY, STDT, ICEHMIN, ICEHINIT, ICEWIND
       REAL(8)                 :: GSHIFT ! see notes in WMGHGH
       LOGICAL                 :: FLC, ICEDISP
+!
+      INTEGER                 :: SWELLFPAR,SDSISO,SDSBRFDF
       REAL                    :: ZWND, ALPHA0, Z0MAX, BETAMAX, SINTHP,&
-                                 ZALP, SWELLF, FXPM3, FXFM3,          &
-                                 WNMEANPTAIL, WNMEANP, STXFTF, STXFTWN
-      REAL                    :: STXFTFTAIL, SDSC1,                   &
-                                 SDSDELTA1, SDSDELTA2
+                                 ZALP, Z0RAT, TAUWSHELTER, SWELLF,    &
+                                 SWELLF2,SWELLF3,SWELLF4, SWELLF5,    &
+                                 SWELLF6, SWELLF7, FXPM3, FXFM3,      &
+                                 WNMEANPTAIL, WNMEANP, STXFTF,        &
+                                 STXFTWN, SINBR, FXFMAGE, FXINCUT,    &
+                                 FXDSCUT
+      REAL                    :: STXFTFTAIL, SDSC1, SDSC2, SDSCUM,    &
+                                 SDSC4, SDSC5, SDSC6, WHITECAPWIDTH,  &
+                                 SDSSTRAIN, SDSBR, SDSP,              &
+                                 SDSCOS, SDSDTH, SDSBCK, SDSABK,      &
+                                 SDSPBK, SDSBINT, SDSHCK,             &
+                                 SDSBR2, SDSBRF1,                     &
+                                 SDSBM0, SDSBM1, SDSBM2, SDSBM3,      &
+                                 SDSBM4, SDSLFGEN, SDSHFGEN
 !
       REAL                    :: LAMBDA, KDCONV, KDMIN,               &
                                  SNLCS1, SNLCS2, SNLCS3
@@ -594,12 +606,19 @@
            INTEGER                 :: UNSTSCHEMES(4), UNSTSCHEME
 !
       NAMELIST /SLN1/ CLIN, RFPM, RFHF
-      NAMELIST /SIN3/ ZWND, ALPHA0, Z0MAX, BETAMAX, SINTHP, ZALP, &
-                      SWELLF
+      NAMELIST /SIN4/ ZWND, ALPHA0, Z0MAX, BETAMAX, SINTHP, ZALP, &
+                      TAUWSHELTER, SWELLFPAR, SWELLF,                 &
+                      SWELLF2, SWELLF3, SWELLF4, SWELLF5, SWELLF6,    &
+                      SWELLF7, Z0RAT, SINBR
       NAMELIST /SNL1/ LAMBDA, NLPROP, KDCONV, KDMIN,                  &
                       SNLCS1, SNLCS2, SNLCS3
-      NAMELIST /SDS3/ SDSC1, WNMEANP, FXPM3, FXFM3, SDSDELTA1,        &
-                      SDSDELTA2
+      NAMELIST /SDS4/ SDSC1, WNMEANP, WNMEANPTAIL, FXPM3, FXFM3,      &
+                      FXFMAGE, SDSC2, SDSCUM, SDSSTRAIN, SDSC4,       &
+                      SDSC5, SDSC6, SDSBR, SDSBR2, SDSP, SDSISO,      &
+                      SDSBCK, SDSABK, SDSPBK, SDSBINT, SDSHCK,        &
+                      SDSDTH, SDSCOS, SDSBRF1, SDSBRFDF,              &
+                      SDSBM0, SDSBM1, SDSBM2, SDSBM3, SDSBM4,         &
+                      SDSHFGEN, SDSLFGEN, WHITECAPWIDTH, FXINCUT, FXDSCUT
       NAMELIST /SBT1/ GAMMA
       NAMELIST /SDB1/ BJALFA, BJGAM, BJFLAG
 !
@@ -824,6 +843,7 @@
       NRLIN  = NRLIN + 1
 !
       NRSRCE = NRSRCE + 1
+      FLST4  = .TRUE.
 !
       NRNL   = NRNL + 1
 !
@@ -946,22 +966,43 @@
       ZWND   =   10.
       ALPHA0 = 0.0095
       Z0MAX = 0.0
-      BETAMAX  = 1.2       !  default WAM4 / WAM4 + is 1.2 with rhow=1000
-      SINTHP   = 2.
-      SWELLF = 0.
-      ZALP   = 0.0110
+      Z0RAT = 0.04
+      BETAMAX   = 1.43
+      SINTHP    = 2.
+      SWELLF    = 0.66
+      SWELLFPAR = 1
+      SWELLF2 = -0.018
+      SWELLF3 = 0.022
+      SWELLF4 = 1.5E5
+      SWELLF5 = 1.2
+      SWELLF6 = 0.
+      SWELLF7 = 360000.
+      TAUWSHELTER = 0.3
+      ZALP   = 0.006
+      SINBR   = 0.
 !
-      CALL READNL ( NDSS, 'SIN3', STATUS )
+      CALL READNL ( NDSS, 'SIN4', STATUS )
       WRITE (NDSO,920) STATUS
-      WRITE (NDSO,921) ALPHA0, BETAMAX, SINTHP, Z0MAX, ZALP, ZWND, &
-           SWELLF
+      WRITE (NDSO,921) ALPHA0, BETAMAX, SINTHP, Z0MAX, ZALP, ZWND, TAUWSHELTER, &
+           SWELLFPAR, SWELLF, SWELLF2, SWELLF3, SWELLF4, SWELLF5, &
+           SWELLF6, SWELLF7, Z0RAT
       ZZWND  = ZWND
       AALPHA = ALPHA0
       BBETA  = BETAMAX
+      SSINBR  = SINBR
       SSINTHP  = SINTHP
       ZZ0MAX  = Z0MAX
+      ZZ0RAT  = Z0RAT
       ZZALP  = ZALP
+      TTAUWSHELTER = TAUWSHELTER
       SSWELLF(1) = SWELLF
+      SSWELLF(2) = SWELLF2
+      SSWELLF(3) = SWELLF3
+      SSWELLF(4) = SWELLF4
+      SSWELLF(5) = SWELLF5
+      SSWELLF(6) = SWELLF6
+      SSWELLF(7) = SWELLF7
+      SSWELLFPAR = SWELLFPAR
 !
 ! 6.e Define Snl.
 !
@@ -1000,25 +1041,79 @@
 !
 ! 6.f Define Sds.
 !
-      SDSC1  = -2.1 !! This is Bidlot et al. 2005,  Otherwise WAM4 uses -4.5
-      WNMEANP = 0.5 !! This is Bidlot et al. 2005,  Otherwise WAM4 uses -0.5
+      SDSC1  = 0.0     ! not used in ST4, should be cleaned up
+      WNMEANP = 0.5    ! taken from Bidlot et al. 2005
       FXFM3 = 2.5
+      FXFMAGE = 0.
+      FXINCUT = 0.
+      FXDSCUT = 0.
       FXPM3 = 4.
-      WNMEANPTAIL = 0.5
-      SDSDELTA1 = 0.4 !! This is Bidlot et al. 2005,  Otherwise WAM4 uses 0.5
-      SDSDELTA2 = 0.6 !! This is Bidlot et al. 2005,  Otherwise WAM4 uses 0.5
+      WNMEANPTAIL = -0.5
+      SDSC2     = -2.2E-5
+      SDSCUM     = -0.40344
+      SDSC4     = 1.
+      SDSC5     = 0.
+      SDSC6     = 0.3
+      SDSBR     = 0.90E-3
+      SDSBRFDF  = 0
+      SDSBRF1   = 0.5
+      SDSP      = 2.   ! this is now fixed in w3sds4, should be cleaned up
+      SDSDTH    = 80.
+      SDSCOS    = 2.
+      SDSISO    = 2
+      SDSBM0    = 1.
+      SDSBM1    = 0.
+      SDSBM2    = 0.
+      SDSBM3    = 0.
+      SDSBM4    = 0.
+      SDSBR2    = 0.8
+      SDSBCK    = 0.
+      SDSABK    = 1.5
+      SDSPBK    = 4.
+      SDSBINT   = 0.3
+      SDSHCK    = 1.5
+      WHITECAPWIDTH = 0.3
+      SDSSTRAIN = 0.
+      SDSHFGEN  = 0.
+      SDSLFGEN  = 0.
 !
-      CALL READNL ( NDSS, 'SDS3', STATUS )
+      CALL READNL ( NDSS, 'SDS4', STATUS )
       WRITE (NDSO,924) STATUS
-      WRITE (NDSO,925) SDSC1, WNMEANP, SDSDELTA1,  &
-                       SDSDELTA2
-      SSDSC1   = SDSC1
+      WRITE (NDSO,925) SDSC2, SDSBCK, SDSCUM, WNMEANP
+      SSDSC(1)   = SDSLFGEN
+      SSDSC(2)   = SDSC2
+      SSDSC(3)   = SDSCUM
+      SSDSC(4)   = SDSC4
+      SSDSC(5)   = SDSC5
+      SSDSC(6)   = SDSC6
+      SSDSC(7)   = WHITECAPWIDTH
+      SSDSC(8)   = SDSSTRAIN ! Straining constant ...
+      SSDSC(9)   = SDSHFGEN
+      SSDSBR   = SDSBR
+      SSDSBRF1 = SDSBRF1
+      SSDSBRFDF= SDSBRFDF
+      SSDSBM(0)   = SDSBM0
+      SSDSBM(1)   = SDSBM1
+      SSDSBM(2)   = SDSBM2
+      SSDSBM(3)   = SDSBM3
+      SSDSBM(4)   = SDSBM4
+      SSDSBR2  = SDSBR2
+      SSDSISO  = SDSISO
+      SSDSCOS  = SDSCOS
+      SSDSP    = SDSP
+      SSDSDTH  = SDSDTH
       WWNMEANP   = WNMEANP
       FFXFM = FXFM3 * TPI
+      FFXFA = FXFMAGE * TPI
+      FFXFI = FXINCUT * TPI
+      FFXFD = FXDSCUT * TPI
       FFXPM = FXPM3 * GRAV / 28.
       WWNMEANPTAIL   = WNMEANPTAIL
-      DDELTA1   = SDSDELTA1
-      DDELTA2   = SDSDELTA2
+      SSDSBCK   = SDSBCK
+      SSDSABK   = SDSABK
+      SSDSPBK   = SDSPBK
+      SSDSBINT  = SDSBINT
+      SSDSHCK   = SDSHCK
 !
 ! 6.g Define Sbt.
 !
@@ -1322,11 +1417,17 @@
           END IF
 !
           WRITE (NDSO,2920) ZWND, ALPHA0, Z0MAX, BETAMAX, SINTHP, ZALP,   &
-            SWELLF
+            TAUWSHELTER, SWELLFPAR, SWELLF, SWELLF2, SWELLF3, SWELLF4, &
+            SWELLF5, SWELLF6, SWELLF7, Z0RAT, SINBR
           WRITE (NDSO,2922) LAMBDA, NLPROP, KDCONV, KDMIN,       &
                             SNLCS1, SNLCS2, SNLCS3
-          WRITE (NDSO,2924) SDSC1, WNMEANP, FXPM3, FXFM3, SDSDELTA1,  &
-                            SDSDELTA2
+          WRITE (NDSO,2924) SDSC1, SDSC2, SDSCUM, SDSSTRAIN, SDSC4, SDSC5, SDSC6, &
+                    WNMEANP, FXPM3, FXFM3, FXFMAGE, FXINCUT, FXDSCUT, &
+                    SDSBINT, SDSBCK, SDSABK, SDSPBK, SDSHCK,          &
+                    SDSBR, SDSSTRAIN, SDSBR2, SDSP, SDSISO, SDSCOS,   &
+                    SDSDTH, SDSBRF1, SDSBRFDF,                        &
+                    SDSBM0, SDSBM1, SDSBM2, SDSBM3, SDSBM4,           &
+                    WHITECAPWIDTH, SDSLFGEN, SDSHFGEN
           WRITE (NDSO,2926) GAMMA
           IF ( BJFLAG ) THEN
               WRITE (NDSO,2928) BJALFA, BJGAM, '.TRUE.'
@@ -1376,6 +1477,7 @@
       FTWN   = 0.20 * SQRT(GRAV)   * DTH * SIG(NK)
       FTTR   = FTF
       FTWL   = GRAV / 6. / SIG(NK) * DTH * SIG(NK)
+!
       STXFTF      = 1/(FACHF-1.-WNMEANP*2)                       &
                            * SIG(NK)**(2+WNMEANP*2) * DTH
       STXFTFTAIL  = 1/(FACHF-1.-WNMEANPTAIL*2)                   &
@@ -2666,11 +2768,24 @@
                '       z0max                       :',F9.3/           &
                '       zalp                        :',F9.3/           &
                '       Height of input wind (m)    :',F8.2/           &
-               '       swell attenuation factor    :',F9.3/ )
- 2920 FORMAT ( '  &SIN3 ZWND =',F5.1,', ALPHA0 =',F8.5,', Z0MAX =',F8.5,', BETAMAX =', &
+               '       wind stress sheltering      :',F9.3/           &
+               '       swell attenuation param.    :',I5/             &
+               '       swell attenuation factor    :',F9.3/           &
+               '       swell attenuation factor2   :',F9.3/           &
+               '       swell attenuation factor3   :',F9.3/           &
+               '       critical Reynolds number    :',F9.1/           &
+               '       swell attenuation factor5   :',F9.3/           &
+               '       swell attenuation factor6   :',F9.3/           &
+               '       swell attenuation factor7   :',F14.3/          &
+               '       ratio of z0 for orb. & mean :',F9.3/)
+ 2920 FORMAT ( '  &SIN4 ZWND =',F5.1,', ALPHA0 =',F8.5,', Z0MAX =',F8.5,', BETAMAX =', &
                   F8.5,','/                                           &
-              '        SINTHP =',F8.5,', ZALP =',F8.5,','/            &
-              '        SWELLF =',F8.5,'R /'/)
+              '        SINTHP =',F8.5,', ZALP =',F8.5,', TAUWSHELTER =',F8.5,           &
+              ', SWELLFPAR =',I2,','/                                 &
+              '        SWELLF =',F8.5,', SWELLF2 =',F8.5,             &
+              ', SWELLF3 =',F8.5,', SWELLF4 =',F9.1,','/              &
+              '        SWELLF5 =',F8.5,', SWELLF6 =',F8.5,            &
+              ', SWELLF7 =',F12.2,', Z0RAT =',F8.5,', SINBR =',F8.5,'  /')
 !
   922 FORMAT (/'  Nonlinear interactions (DIA) ',A/                   &
                ' --------------------------------------------------')
@@ -2684,15 +2799,30 @@
                '        SNLCS1 =',F7.3,', SNLCS2 =',F7.3,        &
                ', SNLCS3 = ',F7.3,' /')
 !
-  924 FORMAT (/' Dissipation (WAM Cycle 4+) ',A/                 &
+  924 FORMAT (/' Dissipation (Ardhuin et al. 2010) ',A/          &
         ' --------------------------------------------------')
-  925 FORMAT ( '       SDSC1                       :',1E11.3/    &
-               '       Power of k in mean k        :',F8.2/      &
-               '       weights of k and k^2        :',F9.3,F6.3/)
- 2924 FORMAT ( '  &SDS3 SDSC1 =',E12.4,', WNMEANP =',F4.2,       &
-               ', FXPM3 =', F4.2,',FXFM3 =',F4.2,', '/           &
-               '        SDSDELTA1 =', F5.2,', SDSDELTA2 =',F5.2, &
-               ' /')
+  925 FORMAT ( '       SDSC2, SDSBCK, SDSCUM       :',3E11.3/    &
+               '       Power of k in mean k        :',F8.2/)
+ 2924 FORMAT ( '  &SDS4 SDSC1 =',E12.4,', SDSC2 =',E12.4,        &
+               ', SDSCUM =',F6.2,', SDSSTRAIN =',F4.1','/        &
+               '        SDSC4 =',F6.2,', SDSC5 =',E12.4,         &
+               ', SDSC6 =',E12.4,','/                            &
+               '        WNMEANP =',F4.2,', FXPM3 =', F4.2,       &
+               ', FXFM3 =',F4.2,', FXFMAGE =',F6.3,              &
+               ', FXINCUT =',F6.3,', FXDSCUT =',F6.3,', '/       &
+               '        SDSBINT =',E12.4,', SDSBCK =',E12.4,     &
+               ', SDSABK =',F6.3,', SDSPBK =',F6.3,', '/         &
+               '        SDSHCK =',F5.2,', SDSBR = ',E12.4,       &
+               ', SDSSTRAIN =',F6.3,', '/                        &
+               '        SDSBR2 =',F5.2,', SDSP =',F5.2,          &
+               ', SDSISO =',I2, &
+               ', SDSCOS =',F3.1,', SDSDTH =',F5.1,', '/         &
+               '        SDSBRF1 = ',F5.2,', SDSBRFDF =',I2,', '/ &
+               '        SDSBM0 = ',F5.2, ', SDSBM1 =',F5.2,      &
+               ', SDSBM2 =',F5.2,', SDSBM3 =',F5.2,', SDSBM4 =', &
+               F5.2,', '/,                                       &
+               ',       WHITECAPWIDTH =',F5.2,', SDSLFGEN = ',   &
+               F5.2,', SDSHFGEN = ',F5.2,' /')
 !
   926 FORMAT (/'  Bottom friction (JONSWAP) ',A/                 &
                ' --------------------------------------------------')
@@ -3154,12 +3284,12 @@
                       SELECT CASE(NAME)
                         CASE('SLN1')
                           READ (NDS,NML=SLN1,END=801,ERR=802,IOSTAT=J)
-                        CASE('SIN3')
-                          READ (NDS,NML=SIN3,END=801,ERR=802,IOSTAT=J)
+                        CASE('SIN4')
+                          READ (NDS,NML=SIN4,END=801,ERR=802,IOSTAT=J)
                         CASE('SNL1')
                           READ (NDS,NML=SNL1,END=801,ERR=802,IOSTAT=J)
-                        CASE('SDS3')
-                          READ (NDS,NML=SDS3,END=801,ERR=802,IOSTAT=J)
+                        CASE('SDS4')
+                          READ (NDS,NML=SDS4,END=801,ERR=802,IOSTAT=J)
                         CASE('SBT1')
                           READ (NDS,NML=SBT1,END=801,ERR=802,IOSTAT=J)
                         CASE('SDB1')

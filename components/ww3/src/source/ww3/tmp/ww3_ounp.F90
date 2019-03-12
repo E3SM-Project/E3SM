@@ -1241,7 +1241,7 @@
 !
 !/ ------------------------------------------------------------------- /
       USE W3SLN1MD
-      USE W3SRC3MD
+      USE W3SRC4MD, ONLY : W3SPR4, W3SIN4, W3SDS4
       USE W3SNL1MD
       USE W3SBT1MD
       USE W3SDB1MD
@@ -1282,7 +1282,7 @@
       LOGICAL                   :: LASTSTATION=.FALSE.
       LOGICAL                   :: SHORT=.TRUE.
       REAL                    :: AMAX, FMEANS, FMEANWS, TAUWX, TAUWY, &
-                                 TAUWNX, TAUWNY
+                                 TAUWNX, TAUWNY, FMEAN1, WHITECAP(1:4)
            REAL                    :: ICE
       REAL, SAVE                :: HSMIN  = 0.05
       REAL                      :: WN(NK), CG(NK)
@@ -1299,6 +1299,7 @@
       REAL                      :: SIN1(NK), SNL1(NK), SDS1(NK),         &
                                    SBT1(NK), SIS1(NK), STT1(NK), E1ALL(NK,6)
       LOGICAL                 :: LLWS(NSPEC)
+      REAL                    :: LAMBDA(NSPEC)
       CHARACTER*4               :: VAR1(6)
       DOUBLE PRECISION          :: timenc
       INTEGER                   :: iyc,imc,idc,ihc,iminc,isc
@@ -1621,23 +1622,29 @@
               END DO
             END DO
 !
+                LLWS(:)  = .TRUE.
                 ZWND   = ZZWND
                 TAUWX  = 0.
                 TAUWY  = 0.
-                LLWS(:)  = .TRUE.
  
 !
-                CALL W3SPR3 (A, CG, WN, EMEAN, FMEAN, FMEANS,       &
+                CALL W3SPR4 (A, CG, WN, EMEAN, FMEAN, FMEAN1,       &
                              WNMEAN, AMAX, UABS, UDIRR, USTAR, USTD,&
                              TAUWX, TAUWY, CD, Z0, CHARN, LLWS, FMEANWS )
 !
             DO ITT=1, 3
                   IX=1
                   IY=1
-                  CALL W3SIN3 ( A, CG, WN2, UABS, USTAR, DAIR/DWAT,&
-                               ASO(J), UDIRR, Z0, CD, TAUWX, TAUWY,&
-                               TAUWNX, TAUWNY, ICE, XIN, DIA, LLWS, IX, IY )
-                  CALL W3SPR3 (A, CG, WN, EMEAN, FMEAN, FMEANS,       &
+                   CALL W3SDS4 ( A, WN, CG, USTAR,  USTD, DEPTH, XDS,   &
+                      DIA, IX, IY, LAMBDA, WHITECAP )
+                   CALL W3SDS4 ( A, WN, CG, USTAR,  USTD, DEPTH, XDS,   &
+                              DIA, IX, IY, LAMBDA, WHITECAP )
+                   CALL W3SDS4 ( A, WN, CG, USTAR,  USTD, DEPTH, XDS,   &
+                              DIA, IX, IY, LAMBDA, WHITECAP )
+                   CALL W3SIN4 (A, CG, WN2, UABS, USTAR, DAIR/DWAT,     &
+                           ASO(J), UDIRR, Z0, CD, TAUWX, TAUWY, TAUWNX, &
+                           TAUWNY, XIN, DIA, LLWS, IX, IY, LAMBDA )
+                   CALL W3SPR4 (A, CG, WN, EMEAN, FMEAN, FMEAN1,      &
                              WNMEAN, AMAX, UABS, UDIRR, USTAR, USTD,&
                              TAUWX, TAUWY, CD, Z0, CHARN, LLWS, FMEANWS )
             END DO
@@ -1687,35 +1694,37 @@
                 TAUWX  = 0.
                 TAUWY  = 0.
 !
-                CALL W3SPR3 (A, CG, WN, EMEAN, FMEAN, FMEANS,       &
+                CALL W3SPR4 (A, CG, WN, EMEAN, FMEAN,  FMEAN1,        &
                              WNMEAN, AMAX, UABS, UDIRR, USTAR, USTD,&
                              TAUWX, TAUWY, CD, Z0, CHARN, LLWS, FMEANWS )
+                CALL W3SDS4 ( A, WN, CG, USTAR,  USTD, DEPTH, XDS,   &
+                             DIA, IX, IY, LAMBDA, WHITECAP )
 !
             DO ITT=1, 3
-                  CALL W3SPR3 (A, CG, WN, EMEAN, FMEAN, FMEANS,       &
-                             WNMEAN, AMAX, UABS, UDIRR, USTAR, USTD,&
+                  CALL W3SPR4 (A, CG, WN, EMEAN, FMEAN, FMEAN1,       &
+                             WNMEAN, AMAX, UABS, UDIRR, USTAR, USTD,  &
                              TAUWX, TAUWY, CD, Z0, CHARN, LLWS, FMEANWS )
-                  CALL W3SIN3 ( A, CG, WN2, UABS, USTAR, DAIR/DWAT,&
-                                ASO(J), UDIRR, Z0, CD,TAUWX, TAUWY, &
-                                TAUWNX, TAUWNY, ICE, XIN, DIA, LLWS, IX, IY )
+                  CALL W3SIN4 (A, CG, WN2, UABS, USTAR, DAIR/DWAT,    &
+                           ASO(J), UDIRR, Z0, CD, TAUWX, TAUWY,TAUWNX,&
+                           TAUWNY, XIN, DIA, LLWS, IX, IY, LAMBDA )
             END DO
 !
             IF ( FLSRCE(2) ) THEN
                     CALL W3SLN1 (WN, FHIGH, USTAR, UDIRR, XLN )
 !
-                    CALL W3SIN3 ( A, CG, WN2, UABS, USTAR,       &
-                                  DAIR/DWAT, ASO(J), UDIRR,      &
-                            Z0, CD, TAUWX, TAUWY,TAUWNX, TAUWNY, &
-                            ICE, XIN, DIA, LLWS, IX, IY )
-!
+                    CALL W3SDS4 ( A, WN, CG, USTAR,  USTD, DEPTH, XDS,  &
+                              DIA, IX, IY, LAMBDA, WHITECAP )
+                    CALL W3SIN4 (A, CG, WN2, UABS, USTAR, DAIR/DWAT,    &
+                           ASO(J), UDIRR, Z0, CD, TAUWX, TAUWY, TAUWNX, &
+                           TAUWNY, XIN, DIA, LLWS, IX, IY, LAMBDA )
             END IF
             IF ( FLSRCE(3) ) THEN
                     CALL W3SNL1 ( A, CG, WNMEAN*DEPTH,  XNL, DIA )
 !
             END IF
             IF ( FLSRCE(4) ) THEN
-                    CALL W3SDS3 ( A, WN, CG, EMEAN, FMEANS, WNMEAN,  &
-                                  USTAR, USTD, DEPTH, XDS, DIA, IX, IY )
+                    CALL W3SDS4 ( A, WN, CG,  USTAR, USTD, DEPTH, XDS, &
+                                  DIA, IX, IY, LAMBDA, WHITECAP )
 !
                     CALL W3SDB1 ( A, WN2, DEPTH, EMEAN, FMEAN,   &
                                   WNMEAN,               XDB, DIA )

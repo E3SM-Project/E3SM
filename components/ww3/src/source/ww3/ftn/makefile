@@ -15,11 +15,11 @@ $(aPe)/ww3_grid : $(aPo)/w3adatmd.o
 $(aPe)/ww3_grid : $(aPo)/w3idatmd.o
 $(aPe)/ww3_grid : $(aPo)/w3odatmd.o
 $(aPe)/ww3_grid : $(aPo)/w3triamd.o
-$(aPe)/ww3_grid : $(aPo)/w3src3md.o
+$(aPe)/ww3_grid : $(aPo)/w3src4md.o
 $(aPe)/ww3_grid : $(aPo)/w3snl1md.o
 $(aPe)/ww3_grid : $(aPo)/w3iogrmd.o
 $(aPe)/ww3_grid : $(aPo)/ww3_grid.o
-	@$(aPb)/link ww3_grid w3wdatmd w3gdatmd w3adatmd w3idatmd w3odatmd   w3triamd w3src3md w3snl1md   w3iogrmd constants w3servmd w3arrymd w3dispmd w3gsrumd w3timemd
+	@$(aPb)/link ww3_grid w3wdatmd w3gdatmd w3adatmd w3idatmd w3odatmd   w3triamd w3src4md w3snl1md   w3iogrmd constants w3servmd w3arrymd w3dispmd w3gsrumd w3timemd
  
 # Initial conditions program
  
@@ -35,12 +35,12 @@ $(aPe)/ww3_strt : $(aPo)/w3wdatmd.o
 $(aPe)/ww3_strt : $(aPo)/w3adatmd.o
 $(aPe)/ww3_strt : $(aPo)/w3idatmd.o
 $(aPe)/ww3_strt : $(aPo)/w3odatmd.o
-$(aPe)/ww3_strt : $(aPo)/w3src3md.o
+$(aPe)/ww3_strt : $(aPo)/w3src4md.o
 $(aPe)/ww3_strt : $(aPo)/w3snl1md.o
 $(aPe)/ww3_strt : $(aPo)/w3iogrmd.o
 $(aPe)/ww3_strt : $(aPo)/w3iorsmd.o
 $(aPe)/ww3_strt : $(aPo)/ww3_strt.o
-	@$(aPb)/link ww3_strt w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd   w3src3md w3snl1md   w3iogrmd w3iorsmd constants w3triamd w3servmd w3arrymd w3dispmd w3gsrumd w3timemd
+	@$(aPb)/link ww3_strt w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd   w3src4md w3snl1md   w3iogrmd w3iorsmd constants w3triamd w3servmd w3arrymd w3dispmd w3gsrumd w3timemd
  
 # Field preprocessor
  
@@ -57,11 +57,11 @@ $(aPe)/ww3_prep : $(aPo)/w3idatmd.o
 $(aPe)/ww3_prep : $(aPo)/w3odatmd.o
 $(aPe)/ww3_prep : $(aPo)/w3wdatmd.o
 $(aPe)/ww3_prep : $(aPo)/w3triamd.o
-$(aPe)/ww3_prep : $(aPo)/w3src3md.o
+$(aPe)/ww3_prep : $(aPo)/w3src4md.o
 $(aPe)/ww3_prep : $(aPo)/w3snl1md.o
 $(aPe)/ww3_prep : $(aPo)/w3iogrmd.o
 $(aPe)/ww3_prep : $(aPo)/ww3_prep.o
-	@$(aPb)/link ww3_prep w3gdatmd w3adatmd w3idatmd w3odatmd w3wdatmd w3fldsmd  w3triamd w3src3md w3snl1md    w3iogrmd    constants w3servmd w3timemd  w3arrymd w3dispmd w3gsrumd
+	@$(aPb)/link ww3_prep w3gdatmd w3adatmd w3idatmd w3odatmd w3wdatmd w3fldsmd  w3triamd w3src4md w3snl1md    w3iogrmd    constants w3servmd w3timemd  w3arrymd w3dispmd w3gsrumd
  
 # NetCDF field preprocessor
  
@@ -78,11 +78,11 @@ $(aPe)/ww3_prnc : $(aPo)/w3idatmd.o
 $(aPe)/ww3_prnc : $(aPo)/w3odatmd.o
 $(aPe)/ww3_prnc : $(aPo)/w3wdatmd.o
 $(aPe)/ww3_prnc : $(aPo)/w3triamd.o
-$(aPe)/ww3_prnc : $(aPo)/w3src3md.o
+$(aPe)/ww3_prnc : $(aPo)/w3src4md.o
 $(aPe)/ww3_prnc : $(aPo)/w3snl1md.o
 $(aPe)/ww3_prnc : $(aPo)/w3iogrmd.o
 $(aPe)/ww3_prnc : $(aPo)/ww3_prnc.o
-	@$(aPb)/link ww3_prnc w3gdatmd w3adatmd w3idatmd w3odatmd w3wdatmd w3fldsmd  w3triamd w3src3md w3snl1md   w3iogrmd    constants w3servmd w3timemd w3arrymd w3dispmd w3gsrumd 
+	@$(aPb)/link ww3_prnc w3gdatmd w3adatmd w3idatmd w3odatmd w3wdatmd w3fldsmd  w3triamd w3src4md w3snl1md   w3iogrmd    constants w3servmd w3timemd w3arrymd w3dispmd w3gsrumd 
  
 # Generic shell
  
@@ -112,7 +112,7 @@ $(aPe)/ww3_shel : $(aPo)/w3triamd.o
 $(aPe)/ww3_shel : $(aPo)/w3srcemd.o
 $(aPe)/ww3_shel : $(aPo)/w3flx1md.o
 $(aPe)/ww3_shel : $(aPo)/w3sln1md.o
-$(aPe)/ww3_shel : $(aPo)/w3src3md.o
+$(aPe)/ww3_shel : $(aPo)/w3src4md.o
 $(aPe)/ww3_shel : $(aPo)/w3snl1md.o
 $(aPe)/ww3_shel : $(aPo)/w3sbt1md.o
 $(aPe)/ww3_shel : $(aPo)/w3sdb1md.o
@@ -125,7 +125,7 @@ $(aPe)/ww3_shel : $(aPo)/w3iobcmd.o
 $(aPe)/ww3_shel : $(aPo)/w3iosfmd.o
 $(aPe)/ww3_shel : $(aPo)/w3partmd.o
 $(aPe)/ww3_shel : $(aPo)/ww3_shel.o
-	@$(aPb)/link ww3_shel wmmdatmd w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd w3fldsmd w3initmd w3wavemd w3wdasmd w3updtmd w3profsmd w3pro3md w3uqckmd w3triamd w3srcemd  w3flx1md w3sln1md w3src3md w3snl1md w3sbt1md   w3sdb1md      w3iogrmd w3iogomd w3iopomd w3iotrmd w3iorsmd w3iobcmd    w3iosfmd w3partmd constants w3servmd w3timemd  w3arrymd w3dispmd w3cspcmd w3gsrumd  w3namlmd
+	@$(aPb)/link ww3_shel wmmdatmd w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd w3fldsmd w3initmd w3wavemd w3wdasmd w3updtmd w3profsmd w3pro3md w3uqckmd w3triamd w3srcemd  w3flx1md w3sln1md w3src4md w3snl1md w3sbt1md   w3sdb1md      w3iogrmd w3iogomd w3iopomd w3iotrmd w3iorsmd w3iobcmd    w3iosfmd w3partmd constants w3servmd w3timemd  w3arrymd w3dispmd w3cspcmd w3gsrumd  w3namlmd
  
 # Multi-grid shell
  
@@ -162,7 +162,7 @@ $(aPe)/ww3_multi : $(aPo)/w3triamd.o
 $(aPe)/ww3_multi : $(aPo)/w3srcemd.o
 $(aPe)/ww3_multi : $(aPo)/w3flx1md.o
 $(aPe)/ww3_multi : $(aPo)/w3sln1md.o
-$(aPe)/ww3_multi : $(aPo)/w3src3md.o
+$(aPe)/ww3_multi : $(aPo)/w3src4md.o
 $(aPe)/ww3_multi : $(aPo)/w3snl1md.o
 $(aPe)/ww3_multi : $(aPo)/w3sbt1md.o
 $(aPe)/ww3_multi : $(aPo)/w3sdb1md.o
@@ -176,7 +176,7 @@ $(aPe)/ww3_multi : $(aPo)/w3iobcmd.o
 $(aPe)/ww3_multi : $(aPo)/w3iosfmd.o
 $(aPe)/ww3_multi : $(aPo)/w3partmd.o
 $(aPe)/ww3_multi : $(aPo)/ww3_multi.o
-	@$(aPb)/link ww3_multi wmmdatmd w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd wminitmd wmwavemd wmfinlmd wmgridmd wmupdtmd wminiomd w3fldsmd w3initmd w3wavemd w3wdasmd w3updtmd w3profsmd w3pro3md w3uqckmd w3triamd w3srcemd  w3flx1md w3sln1md w3src3md w3snl1md w3sbt1md   w3sdb1md      w3iogrmd w3iogomd w3iopomd wmiopomd w3iotrmd w3iorsmd w3iobcmd w3iosfmd w3partmd    constants  w3servmd w3timemd w3arrymd w3dispmd w3cspcmd w3gsrumd   wmunitmd w3namlmd
+	@$(aPb)/link ww3_multi wmmdatmd w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd wminitmd wmwavemd wmfinlmd wmgridmd wmupdtmd wminiomd w3fldsmd w3initmd w3wavemd w3wdasmd w3updtmd w3profsmd w3pro3md w3uqckmd w3triamd w3srcemd  w3flx1md w3sln1md w3src4md w3snl1md w3sbt1md   w3sdb1md      w3iogrmd w3iogomd w3iopomd wmiopomd w3iotrmd w3iorsmd w3iobcmd w3iosfmd w3partmd    constants  w3servmd w3timemd w3arrymd w3dispmd w3cspcmd w3gsrumd   wmunitmd w3namlmd
  
 # Multi-grid shell sbs version
  
@@ -213,7 +213,7 @@ $(aPe)/ww3_sbs1 : $(aPo)/w3triamd.o
 $(aPe)/ww3_sbs1 : $(aPo)/w3srcemd.o
 $(aPe)/ww3_sbs1 : $(aPo)/w3flx1md.o
 $(aPe)/ww3_sbs1 : $(aPo)/w3sln1md.o
-$(aPe)/ww3_sbs1 : $(aPo)/w3src3md.o
+$(aPe)/ww3_sbs1 : $(aPo)/w3src4md.o
 $(aPe)/ww3_sbs1 : $(aPo)/w3snl1md.o
 $(aPe)/ww3_sbs1 : $(aPo)/w3sbt1md.o
 $(aPe)/ww3_sbs1 : $(aPo)/w3sdb1md.o
@@ -227,7 +227,7 @@ $(aPe)/ww3_sbs1 : $(aPo)/w3iobcmd.o
 $(aPe)/ww3_sbs1 : $(aPo)/w3iosfmd.o
 $(aPe)/ww3_sbs1 : $(aPo)/w3partmd.o
 $(aPe)/ww3_sbs1 : $(aPo)/ww3_sbs1.o
-	@$(aPb)/link ww3_sbs1 wmmdatmd w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd wminitmd wmwavemd wmfinlmd wmgridmd wmupdtmd wminiomd w3fldsmd w3initmd w3wavemd w3wdasmd w3updtmd w3profsmd w3pro3md w3uqckmd w3triamd w3srcemd  w3flx1md w3sln1md w3src3md w3snl1md w3sbt1md w3sdb1md        w3iogrmd w3iogomd w3iopomd wmiopomd w3iotrmd w3iorsmd w3iobcmd w3iosfmd w3partmd    constants w3servmd w3timemd w3arrymd w3dispmd w3cspcmd w3gsrumd    wmunitmd w3namlmd
+	@$(aPb)/link ww3_sbs1 wmmdatmd w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd wminitmd wmwavemd wmfinlmd wmgridmd wmupdtmd wminiomd w3fldsmd w3initmd w3wavemd w3wdasmd w3updtmd w3profsmd w3pro3md w3uqckmd w3triamd w3srcemd  w3flx1md w3sln1md w3src4md w3snl1md w3sbt1md w3sdb1md        w3iogrmd w3iogomd w3iopomd wmiopomd w3iotrmd w3iorsmd w3iobcmd w3iosfmd w3partmd    constants w3servmd w3timemd w3arrymd w3dispmd w3cspcmd w3gsrumd    wmunitmd w3namlmd
  
 # Gridded output
  
@@ -244,12 +244,12 @@ $(aPe)/ww3_outf : $(aPo)/w3wdatmd.o
 $(aPe)/ww3_outf : $(aPo)/w3adatmd.o
 $(aPe)/ww3_outf : $(aPo)/w3idatmd.o
 $(aPe)/ww3_outf : $(aPo)/w3odatmd.o
-$(aPe)/ww3_outf : $(aPo)/w3src3md.o
+$(aPe)/ww3_outf : $(aPo)/w3src4md.o
 $(aPe)/ww3_outf : $(aPo)/w3snl1md.o
 $(aPe)/ww3_outf : $(aPo)/w3iogrmd.o
 $(aPe)/ww3_outf : $(aPo)/w3iogomd.o
 $(aPe)/ww3_outf : $(aPo)/ww3_outf.o
-	@$(aPb)/link ww3_outf wmmdatmd w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd   w3src3md w3snl1md   w3iogrmd w3iogomd constants w3servmd w3timemd w3arrymd w3dispmd w3gsrumd w3namlmd
+	@$(aPb)/link ww3_outf wmmdatmd w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd   w3src4md w3snl1md   w3iogrmd w3iogomd constants w3servmd w3timemd w3arrymd w3dispmd w3gsrumd w3namlmd
  
 # Point output
  
@@ -267,7 +267,7 @@ $(aPe)/ww3_outp : $(aPo)/w3idatmd.o
 $(aPe)/ww3_outp : $(aPo)/w3odatmd.o
 $(aPe)/ww3_outp : $(aPo)/w3flx1md.o
 $(aPe)/ww3_outp : $(aPo)/w3sln1md.o
-$(aPe)/ww3_outp : $(aPo)/w3src3md.o
+$(aPe)/ww3_outp : $(aPo)/w3src4md.o
 $(aPe)/ww3_outp : $(aPo)/w3snl1md.o
 $(aPe)/ww3_outp : $(aPo)/w3sbt1md.o
 $(aPe)/ww3_outp : $(aPo)/w3sdb1md.o
@@ -276,7 +276,7 @@ $(aPe)/ww3_outp : $(aPo)/w3iogrmd.o
 $(aPe)/ww3_outp : $(aPo)/w3iopomd.o
 $(aPe)/ww3_outp : $(aPo)/w3partmd.o
 $(aPe)/ww3_outp : $(aPo)/ww3_outp.o
-	@$(aPb)/link ww3_outp w3triamd w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd   w3flx1md w3sln1md w3src3md w3snl1md w3sbt1md   w3sdb1md     w3bullmd w3iogrmd w3iopomd w3partmd constants w3servmd w3timemd w3arrymd w3dispmd w3gsrumd
+	@$(aPb)/link ww3_outp w3triamd w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd   w3flx1md w3sln1md w3src4md w3snl1md w3sbt1md   w3sdb1md     w3bullmd w3iogrmd w3iopomd w3partmd constants w3servmd w3timemd w3arrymd w3dispmd w3gsrumd
  
 # Track output post
  
@@ -316,12 +316,12 @@ $(aPe)/ww3_grib : $(aPo)/w3wdatmd.o
 $(aPe)/ww3_grib : $(aPo)/w3adatmd.o
 $(aPe)/ww3_grib : $(aPo)/w3idatmd.o
 $(aPe)/ww3_grib : $(aPo)/w3odatmd.o
-$(aPe)/ww3_grib : $(aPo)/w3src3md.o
+$(aPe)/ww3_grib : $(aPo)/w3src4md.o
 $(aPe)/ww3_grib : $(aPo)/w3snl1md.o
 $(aPe)/ww3_grib : $(aPo)/w3iogrmd.o
 $(aPe)/ww3_grib : $(aPo)/w3iogomd.o
 $(aPe)/ww3_grib : $(aPo)/ww3_grib.o
-	@$(aPb)/link ww3_grib wmmdatmd w3triamd w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd   w3src3md w3snl1md   w3iogrmd w3iogomd constants w3servmd w3timemd w3arrymd w3dispmd w3gsrumd w3namlmd
+	@$(aPb)/link ww3_grib wmmdatmd w3triamd w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd   w3src4md w3snl1md   w3iogrmd w3iogomd constants w3servmd w3timemd w3arrymd w3dispmd w3gsrumd w3namlmd
  
 # GrADS input file generation (gridded fields)
  
@@ -339,13 +339,13 @@ $(aPe)/gx_outf : $(aPo)/w3adatmd.o
 $(aPe)/gx_outf : $(aPo)/w3idatmd.o
 $(aPe)/gx_outf : $(aPo)/w3odatmd.o
 $(aPe)/gx_outf : $(aPo)/w3triamd.o
-$(aPe)/gx_outf : $(aPo)/w3src3md.o
+$(aPe)/gx_outf : $(aPo)/w3src4md.o
 $(aPe)/gx_outf : $(aPo)/w3snl1md.o
 $(aPe)/gx_outf : $(aPo)/w3sdb1md.o
 $(aPe)/gx_outf : $(aPo)/w3iogrmd.o
 $(aPe)/gx_outf : $(aPo)/w3iogomd.o
 $(aPe)/gx_outf : $(aPo)/gx_outf.o
-	@$(aPb)/link gx_outf wmmdatmd w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd   w3triamd w3src3md w3snl1md  w3sdb1md     w3iogrmd w3iogomd constants w3servmd w3timemd w3arrymd w3dispmd w3gsrumd w3namlmd
+	@$(aPb)/link gx_outf wmmdatmd w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd   w3triamd w3src4md w3snl1md  w3sdb1md     w3iogrmd w3iogomd constants w3servmd w3timemd w3arrymd w3dispmd w3gsrumd w3namlmd
  
 # GrADS input file generation for point output
  
@@ -363,14 +363,14 @@ $(aPe)/gx_outp : $(aPo)/w3idatmd.o
 $(aPe)/gx_outp : $(aPo)/w3odatmd.o
 $(aPe)/gx_outp : $(aPo)/w3flx1md.o
 $(aPe)/gx_outp : $(aPo)/w3sln1md.o
-$(aPe)/gx_outp : $(aPo)/w3src3md.o
+$(aPe)/gx_outp : $(aPo)/w3src4md.o
 $(aPe)/gx_outp : $(aPo)/w3snl1md.o
 $(aPe)/gx_outp : $(aPo)/w3sbt1md.o
 $(aPe)/gx_outp : $(aPo)/w3sdb1md.o
 $(aPe)/gx_outp : $(aPo)/w3iogrmd.o
 $(aPe)/gx_outp : $(aPo)/w3iopomd.o
 $(aPe)/gx_outp : $(aPo)/gx_outp.o
-	@$(aPb)/link gx_outp w3triamd w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd   w3flx1md w3sln1md w3src3md w3snl1md w3sbt1md   w3sdb1md    w3iogrmd w3iopomd constants w3servmd w3timemd w3arrymd w3dispmd w3gsrumd
+	@$(aPb)/link gx_outp w3triamd w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd   w3flx1md w3sln1md w3src4md w3snl1md w3sbt1md   w3sdb1md    w3iogrmd w3iopomd constants w3servmd w3timemd w3arrymd w3dispmd w3gsrumd
  
 # Gridded NetCDF output
  
@@ -389,14 +389,14 @@ $(aPe)/ww3_ounf : $(aPo)/w3adatmd.o
 $(aPe)/ww3_ounf : $(aPo)/w3idatmd.o
 $(aPe)/ww3_ounf : $(aPo)/w3odatmd.o
 $(aPe)/ww3_ounf : $(aPo)/w3triamd.o
-$(aPe)/ww3_ounf : $(aPo)/w3src3md.o
+$(aPe)/ww3_ounf : $(aPo)/w3src4md.o
 $(aPe)/ww3_ounf : $(aPo)/w3snl1md.o
 $(aPe)/ww3_ounf : $(aPo)/w3iogrmd.o
 $(aPe)/ww3_ounf : $(aPo)/w3iogomd.o
 $(aPe)/ww3_ounf : $(aPo)/w3iorsmd.o
 $(aPe)/ww3_ounf : $(aPo)/w3iopomd.o
 $(aPe)/ww3_ounf : $(aPo)/ww3_ounf.o
-	@$(aPb)/link ww3_ounf wmmdatmd w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd w3initmd  w3triamd w3src3md w3snl1md    w3iogrmd w3iogomd w3iorsmd w3iopomd constants w3servmd w3timemd w3arrymd w3dispmd w3gsrumd w3namlmd
+	@$(aPb)/link ww3_ounf wmmdatmd w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd w3initmd  w3triamd w3src4md w3snl1md    w3iogrmd w3iogomd w3iorsmd w3iopomd constants w3servmd w3timemd w3arrymd w3dispmd w3gsrumd w3namlmd
  
 # Point NetCDF output
  
@@ -414,7 +414,7 @@ $(aPe)/ww3_ounp : $(aPo)/w3idatmd.o
 $(aPe)/ww3_ounp : $(aPo)/w3odatmd.o
 $(aPe)/ww3_ounp : $(aPo)/w3flx1md.o
 $(aPe)/ww3_ounp : $(aPo)/w3sln1md.o
-$(aPe)/ww3_ounp : $(aPo)/w3src3md.o
+$(aPe)/ww3_ounp : $(aPo)/w3src4md.o
 $(aPe)/ww3_ounp : $(aPo)/w3snl1md.o
 $(aPe)/ww3_ounp : $(aPo)/w3sbt1md.o
 $(aPe)/ww3_ounp : $(aPo)/w3sdb1md.o
@@ -423,7 +423,7 @@ $(aPe)/ww3_ounp : $(aPo)/w3iogrmd.o
 $(aPe)/ww3_ounp : $(aPo)/w3iopomd.o
 $(aPe)/ww3_ounp : $(aPo)/w3partmd.o
 $(aPe)/ww3_ounp : $(aPo)/ww3_ounp.o
-	@$(aPb)/link ww3_ounp w3triamd w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd   w3flx1md w3sln1md w3src3md w3snl1md w3sbt1md   w3sdb1md     w3bullmd w3iogrmd w3iopomd w3partmd constants w3servmd w3timemd w3arrymd w3dispmd w3gsrumd
+	@$(aPb)/link ww3_ounp w3triamd w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd   w3flx1md w3sln1md w3src4md w3snl1md w3sbt1md   w3sdb1md     w3bullmd w3iogrmd w3iopomd w3partmd constants w3servmd w3timemd w3arrymd w3dispmd w3gsrumd
  
 # Grid splitting
  
@@ -440,11 +440,11 @@ $(aPe)/ww3_gspl : $(aPo)/w3adatmd.o
 $(aPe)/ww3_gspl : $(aPo)/w3idatmd.o
 $(aPe)/ww3_gspl : $(aPo)/w3odatmd.o
 $(aPe)/ww3_gspl : $(aPo)/w3triamd.o
-$(aPe)/ww3_gspl : $(aPo)/w3src3md.o
+$(aPe)/ww3_gspl : $(aPo)/w3src4md.o
 $(aPe)/ww3_gspl : $(aPo)/w3snl1md.o
 $(aPe)/ww3_gspl : $(aPo)/w3iogrmd.o
 $(aPe)/ww3_gspl : $(aPo)/ww3_gspl.o
-	@$(aPb)/link ww3_gspl w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd w3fldsmd  w3triamd w3src3md w3snl1md   w3iogrmd     constants w3servmd w3timemd w3arrymd w3dispmd w3gsrumd 
+	@$(aPb)/link ww3_gspl w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd w3fldsmd  w3triamd w3src4md w3snl1md   w3iogrmd     constants w3servmd w3timemd w3arrymd w3dispmd w3gsrumd 
  
 # Grid Interpolation
  
@@ -462,12 +462,12 @@ $(aPe)/ww3_gint : $(aPo)/w3wdatmd.o
 $(aPe)/ww3_gint : $(aPo)/w3adatmd.o
 $(aPe)/ww3_gint : $(aPo)/w3idatmd.o
 $(aPe)/ww3_gint : $(aPo)/w3odatmd.o
-$(aPe)/ww3_gint : $(aPo)/w3src3md.o
+$(aPe)/ww3_gint : $(aPo)/w3src4md.o
 $(aPe)/ww3_gint : $(aPo)/w3snl1md.o
 $(aPe)/ww3_gint : $(aPo)/w3iogrmd.o
 $(aPe)/ww3_gint : $(aPo)/w3iogomd.o
 $(aPe)/ww3_gint : $(aPo)/ww3_gint.o
-	@$(aPb)/link ww3_gint wmmdatmd w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd   w3src3md w3snl1md  w3iogrmd w3iogomd constants w3triamd w3servmd  w3arrymd w3dispmd w3timemd w3gsrumd w3namlmd
+	@$(aPb)/link ww3_gint wmmdatmd w3gdatmd w3wdatmd w3adatmd w3idatmd w3odatmd   w3src4md w3snl1md  w3iogrmd w3iogomd constants w3triamd w3servmd  w3arrymd w3dispmd w3timemd w3gsrumd w3namlmd
  
 # boundary conditions program
  
@@ -480,7 +480,7 @@ $(aPe)/ww3_bound : $(aPo)/w3gdatmd.o
 $(aPe)/ww3_bound : $(aPo)/w3wdatmd.o
 $(aPe)/ww3_bound : $(aPo)/w3idatmd.o
 $(aPe)/ww3_bound : $(aPo)/w3odatmd.o
-$(aPe)/ww3_bound : $(aPo)/w3src3md.o
+$(aPe)/ww3_bound : $(aPo)/w3src4md.o
 $(aPe)/ww3_bound : $(aPo)/w3snl1md.o
 $(aPe)/ww3_bound : $(aPo)/w3triamd.o
 $(aPe)/ww3_bound : $(aPo)/w3iobcmd.o
@@ -488,7 +488,7 @@ $(aPe)/ww3_bound : $(aPo)/w3iogrmd.o
 $(aPe)/ww3_bound : $(aPo)/w3dispmd.o
 $(aPe)/ww3_bound : $(aPo)/w3gsrumd.o
 $(aPe)/ww3_bound : $(aPo)/ww3_bound.o
-	@$(aPb)/link ww3_bound w3adatmd w3gdatmd w3wdatmd w3idatmd w3odatmd   w3src3md w3snl1md    w3triamd w3iobcmd w3iogrmd w3dispmd w3gsrumd constants w3servmd w3timemd w3cspcmd
+	@$(aPb)/link ww3_bound w3adatmd w3gdatmd w3wdatmd w3idatmd w3odatmd   w3src4md w3snl1md    w3triamd w3iobcmd w3iogrmd w3dispmd w3gsrumd constants w3servmd w3timemd w3cspcmd
  
 # NetCDF boundary conditions program
  
@@ -501,7 +501,7 @@ $(aPe)/ww3_bounc : $(aPo)/w3gdatmd.o
 $(aPe)/ww3_bounc : $(aPo)/w3wdatmd.o
 $(aPe)/ww3_bounc : $(aPo)/w3idatmd.o
 $(aPe)/ww3_bounc : $(aPo)/w3odatmd.o
-$(aPe)/ww3_bounc : $(aPo)/w3src3md.o
+$(aPe)/ww3_bounc : $(aPo)/w3src4md.o
 $(aPe)/ww3_bounc : $(aPo)/w3snl1md.o
 $(aPe)/ww3_bounc : $(aPo)/w3triamd.o
 $(aPe)/ww3_bounc : $(aPo)/w3iobcmd.o
@@ -509,7 +509,7 @@ $(aPe)/ww3_bounc : $(aPo)/w3iogrmd.o
 $(aPe)/ww3_bounc : $(aPo)/w3dispmd.o
 $(aPe)/ww3_bounc : $(aPo)/w3gsrumd.o
 $(aPe)/ww3_bounc : $(aPo)/ww3_bounc.o
-	@$(aPb)/link ww3_bounc w3adatmd w3gdatmd w3wdatmd w3idatmd w3odatmd   w3src3md w3snl1md    w3triamd w3iobcmd w3iogrmd w3dispmd w3gsrumd constants w3servmd w3timemd w3cspcmd
+	@$(aPb)/link ww3_bounc w3adatmd w3gdatmd w3wdatmd w3idatmd w3odatmd   w3src4md w3snl1md    w3triamd w3iobcmd w3iogrmd w3dispmd w3gsrumd constants w3servmd w3timemd w3cspcmd
  
 # Wave system tracking postprocessor
  
@@ -530,7 +530,7 @@ $(aPo)/constants.o : constants.ftn w3macros.h
 $(aPo)/gx_outf.o : gx_outf.ftn w3macros.h  $(aPo)/w3gdatmd.o $(aPo)/w3wdatmd.o $(aPo)/w3adatmd.o $(aPo)/w3odatmd.o $(aPo)/w3iogrmd.o $(aPo)/w3iogomd.o $(aPo)/constants.o $(aPo)/w3servmd.o $(aPo)/w3timemd.o
 	@$(aPb)/ad3 gx_outf
  
-$(aPo)/gx_outp.o : gx_outp.ftn w3macros.h  $(aPo)/w3gdatmd.o $(aPo)/w3wdatmd.o $(aPo)/w3adatmd.o $(aPo)/w3odatmd.o $(aPo)/w3iogrmd.o $(aPo)/w3iopomd.o $(aPo)/w3sln1md.o $(aPo)/w3src3md.o $(aPo)/w3snl1md.o $(aPo)/w3sbt1md.o $(aPo)/w3sdb1md.o $(aPo)/constants.o $(aPo)/w3servmd.o $(aPo)/w3timemd.o $(aPo)/w3dispmd.o
+$(aPo)/gx_outp.o : gx_outp.ftn w3macros.h  $(aPo)/w3gdatmd.o $(aPo)/w3wdatmd.o $(aPo)/w3adatmd.o $(aPo)/w3odatmd.o $(aPo)/w3iogrmd.o $(aPo)/w3iopomd.o $(aPo)/w3sln1md.o $(aPo)/w3src4md.o $(aPo)/w3snl1md.o $(aPo)/w3sbt1md.o $(aPo)/w3sdb1md.o $(aPo)/constants.o $(aPo)/w3servmd.o $(aPo)/w3timemd.o $(aPo)/w3dispmd.o
 	@$(aPb)/ad3 gx_outp
  
 $(aPo)/w3adatmd.o : w3adatmd.ftn w3macros.h  $(aPo)/w3gdatmd.o $(aPo)/w3odatmd.o $(aPo)/w3idatmd.o $(aPo)/w3servmd.o
@@ -572,7 +572,7 @@ $(aPo)/w3iobcmd.o : w3iobcmd.ftn w3macros.h  $(aPo)/w3cspcmd.o $(aPo)/w3gdatmd.o
 $(aPo)/w3iogomd.o : w3iogomd.ftn w3macros.h  $(aPo)/w3gdatmd.o $(aPo)/w3wdatmd.o $(aPo)/w3adatmd.o $(aPo)/w3odatmd.o $(aPo)/constants.o $(aPo)/w3servmd.o $(aPo)/w3namlmd.o
 	@$(aPb)/ad3 w3iogomd
  
-$(aPo)/w3iogrmd.o : w3iogrmd.ftn w3macros.h  $(aPo)/w3gdatmd.o $(aPo)/w3adatmd.o $(aPo)/w3odatmd.o $(aPo)/w3src3md.o $(aPo)/w3snl1md.o $(aPo)/constants.o $(aPo)/w3servmd.o $(aPo)/w3dispmd.o
+$(aPo)/w3iogrmd.o : w3iogrmd.ftn w3macros.h  $(aPo)/w3gdatmd.o $(aPo)/w3adatmd.o $(aPo)/w3odatmd.o $(aPo)/w3src4md.o $(aPo)/w3snl1md.o $(aPo)/constants.o $(aPo)/w3servmd.o $(aPo)/w3dispmd.o
 	@$(aPb)/ad3 w3iogrmd
  
 $(aPo)/w3iopomd.o : w3iopomd.ftn w3macros.h  $(aPo)/w3gdatmd.o $(aPo)/w3wdatmd.o $(aPo)/w3adatmd.o $(aPo)/w3odatmd.o $(aPo)/constants.o $(aPo)/w3servmd.o $(aPo)/w3gsrumd.o $(aPo)/w3triamd.o
@@ -617,10 +617,10 @@ $(aPo)/w3sln1md.o : w3sln1md.ftn w3macros.h  $(aPo)/w3gdatmd.o $(aPo)/w3odatmd.o
 $(aPo)/w3snl1md.o : w3snl1md.ftn w3macros.h  $(aPo)/w3gdatmd.o $(aPo)/w3adatmd.o $(aPo)/w3odatmd.o $(aPo)/constants.o
 	@$(aPb)/ad3 w3snl1md
  
-$(aPo)/w3src3md.o : w3src3md.ftn w3macros.h  $(aPo)/w3gdatmd.o $(aPo)/w3odatmd.o $(aPo)/constants.o $(aPo)/w3servmd.o $(aPo)/w3dispmd.o
-	@$(aPb)/ad3 w3src3md
+$(aPo)/w3src4md.o : w3src4md.ftn w3macros.h  $(aPo)/w3gdatmd.o $(aPo)/w3odatmd.o $(aPo)/constants.o $(aPo)/w3servmd.o $(aPo)/w3dispmd.o
+	@$(aPb)/ad3 w3src4md
  
-$(aPo)/w3srcemd.o : w3srcemd.ftn w3macros.h  $(aPo)/w3gdatmd.o $(aPo)/w3wdatmd.o $(aPo)/w3odatmd.o $(aPo)/w3idatmd.o $(aPo)/w3sln1md.o $(aPo)/w3src3md.o $(aPo)/w3snl1md.o $(aPo)/w3sbt1md.o $(aPo)/w3sdb1md.o $(aPo)/constants.o $(aPo)/w3dispmd.o
+$(aPo)/w3srcemd.o : w3srcemd.ftn w3macros.h  $(aPo)/w3gdatmd.o $(aPo)/w3wdatmd.o $(aPo)/w3odatmd.o $(aPo)/w3idatmd.o $(aPo)/w3sln1md.o $(aPo)/w3src4md.o $(aPo)/w3snl1md.o $(aPo)/w3sbt1md.o $(aPo)/w3sdb1md.o $(aPo)/constants.o $(aPo)/w3dispmd.o
 	@$(aPb)/ad3 w3srcemd
  
 $(aPo)/w3strkmd.o : w3strkmd.ftn w3macros.h 
@@ -698,13 +698,13 @@ $(aPo)/ww3_multi.o : ww3_multi.ftn w3macros.h  $(aPo)/wminitmd.o $(aPo)/wmwavemd
 $(aPo)/ww3_ounf.o : ww3_ounf.ftn w3macros.h  $(aPo)/w3initmd.o $(aPo)/w3gdatmd.o $(aPo)/w3wdatmd.o $(aPo)/w3adatmd.o $(aPo)/w3odatmd.o $(aPo)/w3iogrmd.o $(aPo)/w3iogomd.o $(aPo)/constants.o $(aPo)/w3servmd.o $(aPo)/w3timemd.o $(aPo)/w3arrymd.o
 	@$(aPb)/ad3 ww3_ounf
  
-$(aPo)/ww3_ounp.o : ww3_ounp.ftn w3macros.h  $(aPo)/w3gdatmd.o $(aPo)/w3wdatmd.o $(aPo)/w3adatmd.o $(aPo)/w3odatmd.o $(aPo)/w3iogrmd.o $(aPo)/w3iopomd.o $(aPo)/w3partmd.o $(aPo)/w3sln1md.o $(aPo)/w3src3md.o $(aPo)/w3snl1md.o $(aPo)/w3sbt1md.o $(aPo)/w3sdb1md.o $(aPo)/constants.o $(aPo)/w3servmd.o $(aPo)/w3timemd.o $(aPo)/w3arrymd.o $(aPo)/w3dispmd.o
+$(aPo)/ww3_ounp.o : ww3_ounp.ftn w3macros.h  $(aPo)/w3gdatmd.o $(aPo)/w3wdatmd.o $(aPo)/w3adatmd.o $(aPo)/w3odatmd.o $(aPo)/w3iogrmd.o $(aPo)/w3iopomd.o $(aPo)/w3partmd.o $(aPo)/w3sln1md.o $(aPo)/w3src4md.o $(aPo)/w3snl1md.o $(aPo)/w3sbt1md.o $(aPo)/w3sdb1md.o $(aPo)/constants.o $(aPo)/w3servmd.o $(aPo)/w3timemd.o $(aPo)/w3arrymd.o $(aPo)/w3dispmd.o
 	@$(aPb)/ad3 ww3_ounp
  
 $(aPo)/ww3_outf.o : ww3_outf.ftn w3macros.h  $(aPo)/w3gdatmd.o $(aPo)/w3wdatmd.o $(aPo)/w3adatmd.o $(aPo)/w3odatmd.o $(aPo)/w3iogrmd.o $(aPo)/w3iogomd.o $(aPo)/constants.o $(aPo)/w3servmd.o $(aPo)/w3timemd.o $(aPo)/w3arrymd.o
 	@$(aPb)/ad3 ww3_outf
  
-$(aPo)/ww3_outp.o : ww3_outp.ftn w3macros.h  $(aPo)/w3gdatmd.o $(aPo)/w3wdatmd.o $(aPo)/w3adatmd.o $(aPo)/w3odatmd.o $(aPo)/w3iogrmd.o $(aPo)/w3iopomd.o $(aPo)/w3partmd.o $(aPo)/w3bullmd.o $(aPo)/w3sln1md.o $(aPo)/w3src3md.o $(aPo)/w3snl1md.o $(aPo)/w3sbt1md.o $(aPo)/w3sdb1md.o $(aPo)/constants.o $(aPo)/w3servmd.o $(aPo)/w3timemd.o $(aPo)/w3arrymd.o $(aPo)/w3dispmd.o
+$(aPo)/ww3_outp.o : ww3_outp.ftn w3macros.h  $(aPo)/w3gdatmd.o $(aPo)/w3wdatmd.o $(aPo)/w3adatmd.o $(aPo)/w3odatmd.o $(aPo)/w3iogrmd.o $(aPo)/w3iopomd.o $(aPo)/w3partmd.o $(aPo)/w3bullmd.o $(aPo)/w3sln1md.o $(aPo)/w3src4md.o $(aPo)/w3snl1md.o $(aPo)/w3sbt1md.o $(aPo)/w3sdb1md.o $(aPo)/constants.o $(aPo)/w3servmd.o $(aPo)/w3timemd.o $(aPo)/w3arrymd.o $(aPo)/w3dispmd.o
 	@$(aPb)/ad3 ww3_outp
  
 $(aPo)/ww3_prep.o : ww3_prep.ftn w3macros.h  $(aPo)/w3fldsmd.o $(aPo)/w3gdatmd.o $(aPo)/w3adatmd.o $(aPo)/w3odatmd.o $(aPo)/w3iogrmd.o $(aPo)/constants.o $(aPo)/w3servmd.o $(aPo)/w3timemd.o $(aPo)/w3arrymd.o $(aPo)/w3gsrumd.o

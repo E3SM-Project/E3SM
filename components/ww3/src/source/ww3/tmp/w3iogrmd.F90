@@ -215,7 +215,10 @@
       USE W3GDATMD
       USE W3ADATMD, ONLY: MPI_COMM_WAVE
       USE W3ODATMD
-      USE W3SRC3MD, ONLY: INSIN3
+      USE W3SRC4MD, ONLY: INSIN4, TAUT, TAUHFT, TAUHFT2, &
+                          DELU, DELTAUW, DELUST, &
+                          DELALP, DELTAIL, &
+                          DIKCUMUL
       USE W3SNL1MD, ONLY: INSNL1
       USE W3SERVMD, ONLY: EXTCDE
       USE W3DISPMD
@@ -236,6 +239,7 @@
 !/ Local parameters
 !/
       INTEGER                 :: IGRD, IERR, I, J, MTH, MK, ISEA, IX, IY
+ INTEGER                 :: IK, ITH, IK2, ITH2
       INTEGER, ALLOCATABLE    :: MAPTMP(:,:)
       INTEGER                 :: IERR_MPI, IP
       LOGICAL                 :: WRITE, FLTEST = .FALSE., TESTLL,     &
@@ -277,7 +281,7 @@
       TNAMEI = '------------------------------'
 !
       TNAME0 = 'Cavaleri and M.-R. (1982)     '
-      TNAME1 = 'WAM cycle 4+                  '
+      TNAME1 = 'Ardhuin et al. (2009+)        '
       TNAME2 = 'Discrete Interaction Approx.  '
       TNAME3 = 'JONSWAP                       '
       TNAME4 = 'Battjes and Janssen (1978)    '
@@ -642,23 +646,34 @@
       IF ( FLTEST ) WRITE (NDST,9049) SLNC1, FSPM, FSHF
 !
       IF ( WRITE ) THEN
+          CALL INSIN4(.TRUE.)
           WRITE (NDSM)                                           &
                 ZZWND, AALPHA, ZZ0MAX, BBETA, SSINTHP, ZZALP,    &
-                SSWELLF, SSDSC1, WWNMEANP, WWNMEANPTAIL, SSTXFTF,&
-                SSTXFTFTAIL, SSTXFTWN,                           &
-                DDELTA1, DDELTA2, SSTXFTF, SSTXFTWN,             &
-                FFXPM, FFXFM
+                TTAUWSHELTER, SSWELLFPAR, SSWELLF, SSINBR,       &
+                ZZ0RAT, SSDSC,                                   &
+                SSDSISO, SSDSBR, SSDSBR2, SSDSBM, SSDSP,         &
+                SSDSCOS, SSDSDTH, WWNMEANP, WWNMEANPTAIL,SSTXFTF,&
+                SSTXFTFTAIL, SSTXFTWN, SSTXFTF, SSTXFTWN,        &
+                SSDSBRF1, SSDSBRF2, SSDSBRFDF,SSDSBCK, SSDSABK,  &
+                SSDSPBK, SSDSBINT, FFXPM, FFXFM, FFXFA, FFXFI,   &
+                FFXFD, SSDSHCK, DELUST, DELTAIL, DELTAUW,        &
+                DELU, DELALP, TAUT, TAUHFT, TAUHFT2,             &
+                IKTAB, DCKI, QBI, SATINDICES, SATWEIGHTS,        &
+                DIKCUMUL, CUMULW
         ELSE
           READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                &
                 ZZWND, AALPHA, ZZ0MAX, BBETA, SSINTHP, ZZALP,    &
-                SSWELLF, SSDSC1, WWNMEANP, WWNMEANPTAIL, SSTXFTF,&
-                SSTXFTFTAIL, SSTXFTWN,                           &
-                DDELTA1, DDELTA2, SSTXFTF, SSTXFTWN,             &
-                FFXPM, FFXFM
-          IF ( .NOT. FLINP ) THEN
-              CALL INSIN3
-              FLINP  = .TRUE.
-            END IF
+                TTAUWSHELTER, SSWELLFPAR, SSWELLF, SSINBR,       &
+                ZZ0RAT, SSDSC,                                   &
+                SSDSISO, SSDSBR, SSDSBR2, SSDSBM, SSDSP,         &
+                SSDSCOS, SSDSDTH, WWNMEANP, WWNMEANPTAIL,SSTXFTF,&
+                SSTXFTFTAIL, SSTXFTWN, SSTXFTF, SSTXFTWN,        &
+                SSDSBRF1, SSDSBRF2, SSDSBRFDF,SSDSBCK, SSDSABK,  &
+                SSDSPBK, SSDSBINT, FFXPM, FFXFM, FFXFA, FFXFI,   &
+                FFXFD, SSDSHCK, DELUST, DELTAIL, DELTAUW,        &
+                DELU, DELALP, TAUT, TAUHFT, TAUHFT2,             &
+                IKTAB, DCKI, QBI, SATINDICES, SATWEIGHTS,        &
+                DIKCUMUL, CUMULW
         END IF
 !
 ! ... Nonlinear interactions

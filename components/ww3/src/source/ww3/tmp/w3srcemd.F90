@@ -351,8 +351,8 @@
       USE W3IDATMD, ONLY: INFLAGS1, INFLAGS2, ICEP2
       USE W3DISPMD
       USE W3SLN1MD
-      USE W3SRC3MD
-      USE W3GDATMD, ONLY : ZZWND, FFXFM, FFXPM
+      USE W3SRC4MD, ONLY : W3SPR4, W3SIN4, W3SDS4
+      USE W3GDATMD, ONLY : ZZWND, FFXFM, FFXPM, FFXFA, FFXFI, FFXFD
       USE W3SNL1MD
       USE W3SBT1MD
       USE W3SDB1MD
@@ -390,7 +390,7 @@
       REAL                    :: EMEAN, FMEAN, WNMEAN, AMAX, CD, Z0, SCAT
       REAL                    :: WN_R(NK), CG_ICE(NK),ALPHA_LIU(NK), ICECOEF2
       DOUBLE PRECISION        :: ATT
-      REAL                    :: FMEANS, FH1, FH2
+      REAL                    :: FMEANS, FH1, FH2, FAGE
       REAL                    :: QCERR  = 0.     !/XNL2 and !/NNT
       REAL                    :: HM, EM
       REAL                    :: EBAND, DIFF, EFINISH, HSTOT, PHINL,       &
@@ -408,6 +408,7 @@
                                  VSDB(NSPEC), VDDB(NSPEC),            &
                                  VS  (NSPEC), VD  (NSPEC), EB(NK)
       LOGICAL                 :: LLWS(NSPEC)
+      REAL                    :: BRLAMBDA(NSPEC)
       REAL                    :: FOUT(NK,NTH), SOUT(NK,NTH), DOUT(NK,NTH)
       LOGICAL, SAVE           :: FLTEST = .FALSE., FLAGNN = .TRUE.
       LOGICAL                 :: SHAVE
@@ -423,6 +424,8 @@
 !
       VSBT = 0.
       VDBT = 0.
+!
+      ZWND   = ZZWND
 !
        DRAT  = DAIR / DWAT
 !
@@ -463,6 +466,7 @@
       TAUBBL(:)= 0.
       TAUICE(:)= 0.
       PHICE  = 0.
+      BRLAMBDA(:)=0.
 !
 ! 1.c Set mean parameters
 !
@@ -472,18 +476,15 @@
           LLWS(:) = .TRUE.
           USTAR=0.
           USTDIR=0.
-        CALL W3SPR3 (SPEC, CG1, WN1, EMEAN, FMEAN, FMEANS, WNMEAN, &
-                   AMAX, U10ABS, U10DIR, USTAR, USTDIR,          &
-                   TAUWX, TAUWY, CD, Z0, CHARN, LLWS, FMEANWS)
       ELSE
-        CALL W3SPR3 (SPEC, CG1, WN1, EMEAN, FMEAN, FMEANS, WNMEAN, &
-                   AMAX, U10ABS, U10DIR, USTAR, USTDIR,          &
+        CALL W3SPR4 (SPEC, CG1, WN1, EMEAN, FMEAN, FMEAN1, WNMEAN, &
+                   AMAX, U10ABS, U10DIR, USTAR, USTDIR,            &
                    TAUWX, TAUWY, CD, Z0, CHARN, LLWS, FMEANWS)
-        CALL W3SIN3 ( SPEC, CG1, WN2, U10ABS, USTAR, DRAT, AS,   &
-                 U10DIR, Z0, CD, TAUWX, TAUWY, TAUWAX, TAUWAY,   &
-                 ICE, VSIN, VDIN, LLWS, IX, IY )
+        CALL W3SIN4 ( SPEC, CG1, WN2, U10ABS, USTAR, DRAT, AS,       &
+                 U10DIR, Z0, CD, TAUWX, TAUWY, TAUWAX, TAUWAY,       &
+                 VSIN, VDIN, LLWS, IX, IY, BRLAMBDA )
         END IF
-      CALL W3SPR3 (SPEC, CG1, WN1, EMEAN, FMEAN, FMEANS, WNMEAN, &
+      CALL W3SPR4 (SPEC, CG1, WN1, EMEAN, FMEAN, FMEAN1, WNMEAN, &
                    AMAX, U10ABS, U10DIR, USTAR, USTDIR,          &
                    TAUWX, TAUWY, CD, Z0, CHARN, LLWS, FMEANWS)
 !
@@ -495,8 +496,10 @@
 !
 ! 1.e Prepare cut-off
 !
-      FHIGH  = MAX(FFXFM * MAX(FMEAN,FMEANWS),FFXPM / USTAR)
 ! !/ST4      FAGE   = FFXFA*TANH(0.3*U10ABS*FMEANWS*TPI/GRAV)
+      FAGE   = 0.
+      FHIGH  = MAX( (FFXFM + FAGE ) * MAX(FMEAN1,FMEANWS),FFXPM / USTAR)
+      FHIGI  = FFXFA * FMEAN1
 !
 ! 1.f Prepare output file for !/NNT option
 !
@@ -512,9 +515,9 @@
 !
         CALL W3SLN1 (       WN1, FHIGH, USTAR, U10DIR , VSLN       )
 !
-        CALL W3SIN3 ( SPEC, CG1, WN2, U10ABS, USTAR, DRAT, AS,       &
+        CALL W3SIN4 ( SPEC, CG1, WN2, U10ABS, USTAR, DRAT, AS,       &
                  U10DIR, Z0, CD, TAUWX, TAUWY, TAUWAX, TAUWAY,       &
-                 ICE, VSIN, VDIN, LLWS, IX, IY )
+                 VSIN, VDIN, LLWS, IX, IY, BRLAMBDA )
 !
 ! 2.b Nonlinear interactions.
 !
@@ -523,8 +526,8 @@
 ! 2.c Dissipation... except for ST4
 ! 2.c1   as in source term package
 !
-        CALL W3SDS3 ( SPEC, WN1, CG1, EMEAN, FMEANS, WNMEAN,              &
-                                  USTAR, USTDIR, DEPTH, VSDS, VDDS, IX, IY )
+        CALL W3SDS4 ( SPEC, WN1, CG1, USTAR, USTDIR, DEPTH, VSDS,    &
+                      VDDS, IX, IY, BRLAMBDA, WHITECAP )
 !
         CALL W3SDB1 ( SPEC, WN2, DEPTH, EMEAN, FMEAN, WNMEAN,        &
                                                         VSDB, VDDB )
@@ -569,6 +572,8 @@
           VDDS(1:NSPECH) = MAX(0.,MIN(1.,1.-ICE)) * VDDS(1:NSPECH)
           END IF
 !
+        NKI    = MAX ( 2 , MIN ( NKH1 ,                           &
+                 INT ( FACTI2 + FACTI1*LOG(MAX(1.E-7,FFXFI* FMEAN1)) ) ) )
         DO IS=IS1, NSPECH
           VS(IS) = VSLN(IS) + VSIN(IS) + VSNL(IS)  &
                  + VSDS(IS) + VSBT(IS)
@@ -657,20 +662,17 @@
 ! 6.  Add tail ------------------------------------------------------- *
 !   a Mean parameters
 !
-        CALL W3SPR3 (SPEC, CG1, WN1, EMEAN, FMEAN, FMEANS,        &
-                     WNMEAN, AMAX, U10ABS, U10DIR, USTAR, USTDIR, &
-                     TAUWX, TAUWY, CD, Z0, CHARN, LLWS, FMEANWS)
+        CALL W3SPR4 (SPEC, CG1, WN1, EMEAN, FMEAN, FMEAN1, WNMEAN,&
+                   AMAX, U10ABS, U10DIR, USTAR, USTDIR,           &
+                   TAUWX, TAUWY, CD, Z0, CHARN, LLWS, FMEANWS)
 !
-        FH1    = FFXFM * FMEAN
+        FAGE   = FFXFA*TANH(0.3*U10ABS*FMEANWS*TPI/GRAV)
+        FH1    = (FFXFM+FAGE) * FMEAN1
+ 
         FH2    = FFXPM / USTAR
         FHIGH  = MIN ( SIG(NK) , MAX ( FH1 , FH2 ) )
         NKH    = MAX ( 2 , MIN ( NKH1 ,                           &
                  INT ( FACTI2 + FACTI1*LOG(MAX(1.E-7,FHIGH)) ) ) )
-!
-        IF ( FLTEST ) WRITE (NDST,9062)                           &
-                      FH1*TPIINV, FH2*TPIINV, FHIGH*TPIINV, NKH
-!
- 
 !
 ! 6.b Limiter for shallow water or Miche style criterion
 !     Last time step only !
@@ -699,9 +701,9 @@
 !
 ! 6.e  Update wave-supported stress----------------------------------- *
 !
-        CALL W3SIN3 ( SPEC, CG1, WN2, U10ABS, USTAR, DRAT, AS,      &
+        CALL W3SIN4 ( SPEC, CG1, WN2, U10ABS, USTAR, DRAT, AS,      &
                       U10DIR, Z0, CD, TAUWX, TAUWY, TAUWAX, TAUWAY, &
-                      ICE, VSIN, VDIN, LLWS, IX, IY )
+                      VSIN, VDIN, LLWS, IX, IY, BRLAMBDA )
  
 !
 ! 7.  Check if integration complete ---------------------------------- *

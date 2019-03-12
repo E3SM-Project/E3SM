@@ -565,6 +565,8 @@
 !
 ! Dimensions of tables for pre-computing of dissipation
 !
+      INTEGER,    PARAMETER   :: NKHS=2000, NKD=1300
+      INTEGER,    PARAMETER   :: NDTAB=2000
 !/
 !/ Data structures
 !/
@@ -663,14 +665,19 @@
 !
       TYPE SRCP
         REAL                       :: WWNMEANPTAIL, SSTXFTFTAIL
-        INTEGER               :: SSDSISO, SSDSBRFDF
+!
+        INTEGER               :: SSWELLFPAR, SSDSISO, SSDSBRFDF
+        INTEGER,  POINTER     :: IKTAB(:,:), SATINDICES(:,:)
+        REAL,     POINTER     :: DCKI(:,:), SATWEIGHTS(:,:),CUMULW(:,:),QBI(:,:)
         REAL                  :: AALPHA, BBETA, ZZ0MAX, ZZ0RAT, ZZALP,&
-                                 SSINTHP, TTAUWSHELTER, SSWELLF(1:6), &
-                                 SSDSC1, SSDSC2, SSDSC3, SSDSBR,      &
+                                 SSINTHP, TTAUWSHELTER, SSWELLF(1:7), &
+                                 SSDSC(1:9), SSDSBR,                  &
                                  SSDSP, WWNMEANP, SSTXFTF, SSTXFTWN,  &
-                                 FFXPM, FFXFM,                        &
-                                 SSDSC4, SSDSC5, SSDSC6, DDELTA1,     &
-                                 DDELTA2, ZZWND
+                                 FFXPM, FFXFM, FFXFA, FFXFI, FFXFD,   &
+                                 SSDSBRF1, SSDSBRF2, SSDSBINT,SSDSBCK,&
+                                 SSDSHCK, SSDSABK, SSDSPBK, SSINBR
+        REAL                  :: ZZWND
+        REAL                  :: SSDSCOS, SSDSDTH, SSDSBR2, SSDSBM(0:4)
 !
       END TYPE SRCP
 !
@@ -831,14 +838,17 @@
 !/
 !/ Data aliasses for structure SRCP(S)
 !/
+      INTEGER, POINTER        :: SSWELLFPAR, SSDSISO,SSDSBRFDF,       &
+                                 IKTAB(:,:), SATINDICES(:,:),SSDSDIK
+      REAL, POINTER           :: DCKI(:,:), SATWEIGHTS(:,:),CUMULW(:,:),QBI(:,:)
       REAL, POINTER           :: ZZWND, AALPHA, BBETA, ZZ0MAX, ZZ0RAT,&
-                                 ZZALP, FFXFM, FFXPM,                 &
-                                 SSINTHP, TTAUWSHELTER, SSWELLF(:),   &
-                                 SSDSC1, SSDSC2, SSDSC3, SSDSBR,      &
+                                 ZZALP, FFXFA, FFXFI, FFXFD,          &
+                                 FFXFM, FFXPM, SSDSBRF1, SSDSBRF2,    &
+                                 SSDSBINT, SSDSBCK, SSDSHCK, SSDSABK, &
+                                 SSDSPBK, SSINBR,SSINTHP,TTAUWSHELTER,&
+                                 SSWELLF(:), SSDSC(:), SSDSBR,        &
                                  SSDSP, WWNMEANP, SSTXFTF, SSTXFTWN,  &
-                                 SSDSC4, SSDSC5, SSDSC6, SSDSBR2,     &
-                                 DDELTA1, DDELTA2,                    &
-                                 SSDSCOS, SSDSDTH, SSDSBM(:)
+                                 SSDSBR2, SSDSCOS, SSDSDTH, SSDSBM(:)
       REAL, POINTER           :: WWNMEANPTAIL, SSTXFTFTAIL
 !/
 !/ Data aliasses for structure SNLP(S)
@@ -1255,6 +1265,7 @@
 !
 !/ ------------------------------------------------------------------- /
       USE W3SERVMD, ONLY: EXTCDE
+  USE CONSTANTS, ONLY: RADE
 !
       IMPLICIT NONE
 !
@@ -1268,6 +1279,7 @@
 !/ Local parameters
 !/
       INTEGER, SAVE           :: MK2, MSPEC
+  INTEGER                  :: SDSNTH
 !/
 !
 ! -------------------------------------------------------------------- /
@@ -1314,6 +1326,17 @@
                  SGRDS(IMOD)%DDEN(MK),                                &
                  SGRDS(IMOD)%DDEN2(MSPEC),                            &
                  STAT=ISTAT                                           )
+      CHECK_ALLOC_STATUS ( ISTAT )
+      ALLOCATE ( MPARS(IMOD)%SRCPS%IKTAB(MK,NDTAB), &
+                 MPARS(IMOD)%SRCPS%DCKI(NKHS,NKD),  &
+                 MPARS(IMOD)%SRCPS%QBI(NKHS,NKD),   &
+                 STAT=ISTAT                         )
+      CHECK_ALLOC_STATUS ( ISTAT )
+      SDSNTH  = MTH/2-1 !MIN(NINT(SSDSDTH/(DTH*RADE)),MTH/2-1)
+      ALLOCATE( MPARS(IMOD)%SRCPS%SATINDICES(2*SDSNTH+1,MTH), &
+                MPARS(IMOD)%SRCPS%SATWEIGHTS(2*SDSNTH+1,MTH), &
+                MPARS(IMOD)%SRCPS%CUMULW(MSPEC,MSPEC),        &
+                 STAT=ISTAT                                   )
       CHECK_ALLOC_STATUS ( ISTAT )
 !
       SGRDS(IMOD)%SINIT  = .TRUE.
@@ -1665,23 +1688,47 @@
       WWNMEANPTAIL=> MPARS(IMOD)%SRCPS%WWNMEANPTAIL
       SSTXFTFTAIL => MPARS(IMOD)%SRCPS%SSTXFTFTAIL
 !
-      ZZWND  => MPARS(IMOD)%SRCPS%ZZWND
-      AALPHA => MPARS(IMOD)%SRCPS%AALPHA
-      BBETA  => MPARS(IMOD)%SRCPS%BBETA
+      ZZWND    => MPARS(IMOD)%SRCPS%ZZWND
+      AALPHA   => MPARS(IMOD)%SRCPS%AALPHA
+      BBETA    => MPARS(IMOD)%SRCPS%BBETA
       SSINTHP  => MPARS(IMOD)%SRCPS%SSINTHP
-      ZZ0MAX  => MPARS(IMOD)%SRCPS%ZZ0MAX
-      ZZ0RAT  => MPARS(IMOD)%SRCPS%ZZ0RAT
-      ZZALP  => MPARS(IMOD)%SRCPS%ZZALP
+      ZZ0MAX   => MPARS(IMOD)%SRCPS%ZZ0MAX
+      ZZ0RAT   => MPARS(IMOD)%SRCPS%ZZ0RAT
+      ZZALP    => MPARS(IMOD)%SRCPS%ZZALP
       TTAUWSHELTER  => MPARS(IMOD)%SRCPS%TTAUWSHELTER
+      SSWELLFPAR  => MPARS(IMOD)%SRCPS%SSWELLFPAR
       SSWELLF  => MPARS(IMOD)%SRCPS%SSWELLF
-      SSDSC1 => MPARS(IMOD)%SRCPS%SSDSC1
+      SSDSC    => MPARS(IMOD)%SRCPS%SSDSC
+      SSDSBR   => MPARS(IMOD)%SRCPS%SSDSBR
+      SSDSBR2  => MPARS(IMOD)%SRCPS%SSDSBR2
+      SSDSBRF1 => MPARS(IMOD)%SRCPS%SSDSBRF1
+      SSDSBRF2 => MPARS(IMOD)%SRCPS%SSDSBRF2
+      SSDSBRFDF  => MPARS(IMOD)%SRCPS%SSDSBRFDF
+      SSDSBM   => MPARS(IMOD)%SRCPS%SSDSBM
+      SSDSBCK  => MPARS(IMOD)%SRCPS%SSDSBCK
+      SSDSABK  => MPARS(IMOD)%SRCPS%SSDSABK
+      SSDSPBK  => MPARS(IMOD)%SRCPS%SSDSPBK
+      SSDSHCK  => MPARS(IMOD)%SRCPS%SSDSHCK
+      SSDSBINT => MPARS(IMOD)%SRCPS%SSDSBINT
+      SSDSP    => MPARS(IMOD)%SRCPS%SSDSP
       WWNMEANP => MPARS(IMOD)%SRCPS%WWNMEANP
-      FFXFM => MPARS(IMOD)%SRCPS%FFXFM
-      FFXPM => MPARS(IMOD)%SRCPS%FFXPM
-      DDELTA1 => MPARS(IMOD)%SRCPS%DDELTA1
-      DDELTA2 => MPARS(IMOD)%SRCPS%DDELTA2
-      SSTXFTF => MPARS(IMOD)%SRCPS%SSTXFTF
+      FFXFM    => MPARS(IMOD)%SRCPS%FFXFM
+      FFXFA    => MPARS(IMOD)%SRCPS%FFXFA
+      FFXFI    => MPARS(IMOD)%SRCPS%FFXFI
+      FFXFD    => MPARS(IMOD)%SRCPS%FFXFD
+      FFXPM    => MPARS(IMOD)%SRCPS%FFXPM
+      SSDSDTH  => MPARS(IMOD)%SRCPS%SSDSDTH
+      SSTXFTF  => MPARS(IMOD)%SRCPS%SSTXFTF
       SSTXFTWN => MPARS(IMOD)%SRCPS%SSTXFTWN
+      SSDSCOS  => MPARS(IMOD)%SRCPS%SSDSCOS
+      SSDSISO  => MPARS(IMOD)%SRCPS%SSDSISO
+      IKTAB    => MPARS(IMOD)%SRCPS%IKTAB
+      DCKI     => MPARS(IMOD)%SRCPS%DCKI
+      QBI      => MPARS(IMOD)%SRCPS%QBI
+      CUMULW   => MPARS(IMOD)%SRCPS%CUMULW
+      SATINDICES    => MPARS(IMOD)%SRCPS%SATINDICES
+      SATWEIGHTS   => MPARS(IMOD)%SRCPS%SATWEIGHTS
+      SSINBR   => MPARS(IMOD)%SRCPS%SSINBR
 !
 !     Structure SRNLS
 !

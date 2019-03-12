@@ -108,7 +108,7 @@
       CHARACTER(LEN=10), PARAMETER   :: WWVER  = '5.16  '
       CHARACTER(LEN=512), PARAMETER  :: SWITCHES  = &
                     'DB1 O5 O3 O2 O1 O0 FLX0 PR3 WNX1 BT1 LRB4 O7 O6 O4 TR0 NL1 UQ MPI NOPA CRT1 MLIM REF0 F90 BS0 WNT1 I' // &
-                    'S0 NOGRB DIST STAB3 NC4 CRX1 ST3 IC0 XX0 LN1' // &
+                    'S0 NOGRB DIST STAB0 NC4 CRX1 ST4 IC0 XX0 LN1' // &
                     ''
 !/
       CONTAINS
