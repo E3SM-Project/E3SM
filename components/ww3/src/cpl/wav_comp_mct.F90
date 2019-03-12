@@ -526,7 +526,7 @@ CONTAINS
       odat(5) = 0           ! HHMMSS for last output
       odat(16) = time(1)    ! YYYYMMDD for first output
       odat(17) = time(2)    ! HHMMSS for first output
-      odat(18) = dtime_sync ! output interval in sec
+      odat(18) = 86400*5    ! output interval in sec
       odat(19) = 99990101   ! YYYYMMDD for last output
       odat(20) = 0          ! HHMMSS for last output
       !DEBUG
