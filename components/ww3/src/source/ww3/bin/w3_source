@@ -57,7 +57,7 @@
 
 # 1.a.1 Setup file
 
-  ww3_env="${HOME}/.wwatch3.env"                           # setup file
+  ww3_env=/users/sbrus/E3SM/components/ww3/src/source/ww3/wwatch3.env
 # The following line must not be removed: it is a switch for local install 
 # so that all bin scripts point to the local wwatch3.env 
 # WW3ENV 
