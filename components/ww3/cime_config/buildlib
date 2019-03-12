@@ -18,12 +18,12 @@ my $GMAKE		= `./xmlquery GMAKE          --value`;
 
 
 chdir "$SRCROOT/components/ww3/src/source/ww3/bin";
-my $sysmod = `export WWATCH3_NETCDF="NC4"`;
-my $sysmod = `export NETCDF_CONFIG="/usr/projects/climate/SHARED_CLIMATE/software/grizzly/netcdf/4.4.1/gcc-5.3.0/bin/nc-config"`;
 $ENV{WWATCH3_NETCDF}='NC4';
-$ENV{NETCDF_CONFIG}='/usr/projects/climate/SHARED_CLIMATE/software/grizzly/netcdf/4.4.1/gcc-5.3.0/bin/nc-config';
-my $sysmod = "./w3_new";
-my $sysmod = "./w3_make";
+$ENV{NETCDF_CONFIG}='/usr/projects/climate/SHARED_CLIMATE/software/grizzly/netcdf/4.4.1/intel-17.0.1/bin/nc-config';
+my $sysmod = `./w3_clean`;
+my $sysmod = `./w3_new`;
+my $sysmod = `./w3_make`;
+print $sysmod;
 
 chdir "$OBJROOT/wav/obj";
 open(file,">Filepath") or die "Could not open file Filepath to write";
