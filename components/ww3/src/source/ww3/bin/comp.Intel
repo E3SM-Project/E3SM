@@ -91,8 +91,8 @@
   # mpi implementation
   if [ "$mpi_mod" = 'yes' ]
   then
-    comp=mpiifort
-    which mpiifort 1> /dev/null 2> /dev/null
+    comp=mpif90
+    which mpif90 1> /dev/null 2> /dev/null
     OK=$?
     if [ $OK != 0 ]
     then 
