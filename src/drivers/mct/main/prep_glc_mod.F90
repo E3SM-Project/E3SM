@@ -918,7 +918,7 @@ contains
       g2x_gx%rAttr(index_g2x_Fogx_qiceho,n) = outOceanHeatFlux(n)        !to ocean
       g2x_gx%rAttr(index_g2x_Fogx_qicelo,n)=  outFreshwaterFlux(n)       !to ocean
       x2g_gx%rAttr(index_x2g_Fogx_qicehi,n) = outIceHeatFlux(n)          !to ice sheet
-      x2g_gx%rAttr(index_x2g_Fogx_qiceli,n) = outFreshwaterFlux(n)       !to ice sheet
+      x2g_gx%rAttr(index_x2g_Fogx_qiceli,n) = -1.0_r8 * outFreshwaterFlux(n)       !to ice sheet
     end do
 
     !Note: remap ocean-side outputs back onto ocean grid done in call to prep_ocn_shelf_calc_g2x_ox
@@ -1604,6 +1604,12 @@ contains
       outIceHeatFlux(iCell) = outIceHeatFlux(iCell) &
         - iceHeatFluxCoeff*(iceTemperature(iCell) - outInterfaceTemperature(iCell))
 
+      if (iCell==72) then
+      write(logunit,*) 'i,oT,oS,oHTV,oSTV', icell, oceanTemperature(iCell),oceanSalinity(iCell),oceanHeatTransferVelocity(iCell), oceanSaltTransferVelocity(iCell)
+      write(logunit,*) 'i,Pr,iT,iTD,msk', iCell,interfacePressure(iCell),iceTemperature(iCell),iceTemperatureDistance(iCell),iceFloatingMask(iCell)
+      write(logunit,*) 'i,intS,intT,melt,ohtflx,ihtflx',iCell, outInterfaceSalinity(iCell),outInterfaceTemperature(iCell),outFreshwaterFlux(iCell), outOceanHeatFlux(iCell), outIceHeatFlux(iCell)
+      endif
+ 
     end do
 
   !--------------------------------------------------------------------
