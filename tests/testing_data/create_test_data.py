@@ -26,8 +26,9 @@ print('WARNING: Downloading about 35GB of data.')
 print('You might want to do this piecewise.')
 
 files_and_vars = []
+
 # Obs climatology files.
-path = 'obs_for_e3sm_diags/climatology/GPCP_v2.2/GPCP_v2.2_ANN_climo.nc'
+path = 'obs_for_e3sm_diags/climatology/GPCP_v2.3/GPCP_v2.3_ANN_climo.nc'
 f_and_v = FileAndVars(
     os.path.join(prefix, path),
     path,
@@ -39,7 +40,7 @@ path = 'obs_for_e3sm_diags/climatology/MERRA2/MERRA2_ANN_198001_201612_climo.nc'
 f_and_v = FileAndVars(
     os.path.join(prefix, path),
     path,
-    ['T']
+    ['ta']
 )
 files_and_vars.append(f_and_v)
 
@@ -55,7 +56,7 @@ files_and_vars.append(f_and_v)
 path = 'obs_for_e3sm_diags/time-series/GPCP_v2.3/PRECT_197901_201712.nc'
 f_and_v = FileAndVars(
     os.path.join(prefix, path),
-    path.replace('2017', '1984'),  # 1979 to 1984.
+    path.replace('2017', '1983'),  # 1979 to 1983.
     ['PRECT'],
     time_slice=(0, 5*12)  # 5 years.
 )
@@ -85,7 +86,7 @@ files_and_vars.append(f_and_v)
 path = 'test_model_data_for_e3sm_diags/time-series/E3SM_v1/PRECC_185001_201312.nc'
 f_and_v = FileAndVars(
     os.path.join(prefix, path),
-    path.replace('2013', '1855'),  # 1850 to 1855.
+    path.replace('2013', '1854'),  # 1850 to 1854.
     ['PRECC'],
     time_slice=(0, 5*12)  # 5 years.
 )
@@ -94,28 +95,26 @@ files_and_vars.append(f_and_v)
 path = 'test_model_data_for_e3sm_diags/time-series/E3SM_v1/PRECL_185001_201312.nc'
 f_and_v = FileAndVars(
     os.path.join(prefix, path),
-    path.replace('2013', '1855'),  # 1850 to 1855.
+    path.replace('2013', '1854'),  # 1850 to 1854.
     ['PRECL'],
     time_slice=(0, 5*12)  # 5 years.
 )
 files_and_vars.append(f_and_v)
-"""
+
 path = 'test_model_data_for_e3sm_diags/time-series/E3SM_v1/T_185001_201312.nc'
 f_and_v = FileAndVars(
     os.path.join(prefix, path),
-    path.replace('2013', '1855'),  # 01-1850 to 12-1850.
+    path.replace('2013', '1850'),  # 01-1850 to 12-1850.
     ['T'],
     time_slice=(0, 12)  # 1 year.
 )
 files_and_vars.append(f_and_v)
-"""
+
 # There's no model timeseries data for cosp variables.
 
 
 
-
 # scp all of these files to the TEMP_DIR.
-
 TEMP_DIR = 'temp'
 if not os.path.exists(TEMP_DIR):
     os.makedirs(TEMP_DIR)

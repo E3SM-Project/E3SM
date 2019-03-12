@@ -7,63 +7,6 @@ import MV2
 import numpy as np
 
 
-def process_derived_var(var_key, derived_vars_dict, nc_file, parameter):
-    """Given a key (var_key) to the derived_vars_dict dict, compute and return
-     whatever is described in derived_vars_dict[var_key] for the nc_file"""
-    if hasattr(parameter, 'derived_variables'):
-        _add_user_derived_vars(derived_vars_dict, parameter)
-    if var_key in derived_vars_dict:
-        return _compute_derived_var(var_key, derived_vars_dict, nc_file)
-    else:
-        raise RuntimeError(
-            'The variable %s was not in the derived variables dictionary' % var_key)
-
-
-def _add_user_derived_vars(derived_vars_dict, parameter):
-    """Append parameter.derived_variables to the correct part of derived_vars_dict"""
-    for key, user_derived_vars in list(parameter.derived_variables.items()):
-        # append the user-defined vars to the already defined ones
-        # add to an existing entry, otherwise create a new one
-        if key in derived_vars_dict:
-            # has user-defined derived vars first
-            new_dict = OrderedDict(user_derived_vars)
-            # add all of the default derived vars to the end of new_dict
-            for k in derived_vars_dict[key]:
-                if k in new_dict:  # don't overwrite the user-defined var with a default derived var
-                    continue
-                new_dict[k] = derived_vars_dict[key][k]
-            derived_vars_dict[key] = new_dict
-        else:
-            derived_vars_dict[key] = user_derived_vars
-
-
-def _compute_derived_var(var_key, derived_vars_dict, nc_file):
-    """Call the first valid derivation from the derived_vars_dict dict."""
-    derived_vars = derived_vars_dict[var_key]
-    # store a list of all inputs visited, so if Exception, we get a good msg.
-    derived_var_inputs = []
-
-    # get the first function and inputs from the derived_vars_dict dict
-    for inputs, func in list(derived_vars.items()):
-        derived_var_inputs.append(inputs)
-        # tuples with a single string [ex: ('pr')] become just a string ['pr']
-        # are all of the variables (inputs) in the nc_file?
-        if isinstance(inputs, str) and inputs in nc_file.variables:
-            args = [nc_file(inputs)(squeeze=1)]
-            return func(*args)
-
-        elif isinstance(inputs, tuple) and set(inputs).issubset(nc_file.variables):
-            args = [nc_file(var)(squeeze=1) for var in inputs]
-            return func(*args)
-
-    # When nc_file is obs, there is var_key in nc_file, i.e. nc_file(var_key)
-    if var_key in nc_file.variables:
-        return nc_file(var_key)(squeeze=1)
-
-    raise RuntimeError('None of the variables (%s) are in the file: %s' % (
-        derived_var_inputs, nc_file.id))
-
-
 def rename(new_name):
     """Given the new name, just return it."""
     return new_name
@@ -90,7 +33,6 @@ def convert_units(var, target_units):
         var.units = target_units
         var = 100.0 * var
     elif not hasattr(var, 'units') and var.id == 'AODVIS':
-        dir(var)
         var.units = target_units
     elif var.id == 'AOD_550_ann':
         var.units =target_units
@@ -148,7 +90,6 @@ def mask_by(input_var, maskvar, low_limit=None, high_limit=None):
 
 
 def qflxconvert_units(var):
-    print(var.units)
     if var.units == 'kg/m2/s' or var.units == 'kg m-2 s-1':
         # need to find a solution for units not included in udunits
         # var = convert_units( var, 'kg/m2/s' )
