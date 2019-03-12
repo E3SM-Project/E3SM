@@ -84,6 +84,17 @@ _CIME_TESTS = {
             )
         },
 
+    "cime_test_share2" : {
+        "time"  : "0:10:00",
+        "share" : True,
+        "tests" : (
+            "SMS_P2.f19_g16_rx1.X",
+            "SMS_P4.f19_g16_rx1.X",
+            "SMS_P8.f19_g16_rx1.X",
+            "SMS_P16.f19_g16_rx1.X",
+            )
+        },
+
     "cime_test_repeat" : {
         "tests" : (
             "TESTRUNPASS_P1.f19_g16_rx1.A",
