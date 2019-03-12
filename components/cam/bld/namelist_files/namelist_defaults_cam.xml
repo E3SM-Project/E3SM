@@ -162,7 +162,13 @@
 
 <!-- E3SM Aquaplanet -->
 <ncdata dyn="se" hgrid="ne4np4"   nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne4np4_L72_c190218.nc</ncdata>
+<ncdata dyn="se" hgrid="ne16np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne16np4_L72_c190311.nc</ncdata>
 <ncdata dyn="se" hgrid="ne30np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne30np4_L72_c190215.nc</ncdata>
+<!-- Need to update these -->
+<ncdata dyn="se" hgrid="ne8np4"   nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne4np4_L72_c190218.nc</ncdata>
+<ncdata dyn="se" hgrid="ne32np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne30np4_L72_c190215.nc</ncdata>
+<ncdata dyn="se" hgrid="ne64np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne30np4_L72_c190215.nc</ncdata>
+
 
 
 <ncdata dyn="se" hgrid="ne240np4" nlev="30"              >atm/cam/inic/homme/cami-mam3_0000-01-ne240np4_L30_c111004.nc</ncdata>
@@ -797,10 +803,13 @@
 
 <!-- Dry Dep surface data file needed by prognostic MAM on unstructured grid only. -->
 <drydep_srf_file hgrid="ne4np4"  >atm/cam/chem/trop_mam/atmsrf_ne4np4_c151204.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne8np4"  >atm/cam/chem/trop_mam/atmsrf_ne4np4_c151204.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne11np4" >atm/cam/chem/trop_mam/atmsrf_ne11np4_c151204.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne16np4" >atm/cam/chem/trop_mam/atmsrf_ne16np4_110920.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne30np4" >atm/cam/chem/trop_mam/atmsrf_ne30np4_110920.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne32np4" >atm/cam/chem/trop_mam/atmsrf_ne30np4_110920.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne60np4" >atm/cam/chem/trop_mam/atmsrf_ne60np4_110920.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne64np4" >atm/cam/chem/trop_mam/atmsrf_ne60np4_110920.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne120np4">atm/cam/chem/trop_mam/atmsrf_ne120np4_110920.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne240np4">atm/cam/chem/trop_mam/atmsrf_ne240np4_110920.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_arm_x8v3_lowcon">atm/cam/chem/trop_mam/atmsrf_armx8v3.nc</drydep_srf_file>
