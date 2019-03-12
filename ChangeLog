@@ -1,5 +1,48 @@
 ======================================================================
 
+Originator: Chris Fischer 
+Date: 03-12-2019
+Tag: cime5.8.0
+Answer Changes: None
+Tests: scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+    - Merge maint-5.6 branch.
+    - Cleanup of build.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+5f939ae Merge pull request #3039 from ESMCI/maint-5.6
+3ebf15e Merge pull request #3024 from jedwards4b/jedwards/standard_makefile_args
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/config_grids_nuopc.xml
+M       config/cesm/machines/config_compilers.xml
+M       config/cesm/machines/config_machines.xml
+M       scripts/Tools/Makefile
+A       scripts/Tools/get_standard_makefile_args
+M       scripts/lib/CIME/Servers/svn.py
+M       scripts/lib/CIME/build.py
+M       scripts/lib/CIME/buildlib.py
+M       scripts/lib/CIME/case/case.py
+M       scripts/lib/CIME/case/check_input_data.py
+M       src/build_scripts/buildlib.csm_share
+M       src/build_scripts/buildlib.gptl
+M       src/build_scripts/buildlib.mct
+M       src/build_scripts/buildlib.mpi-serial
+M       src/build_scripts/buildlib.pio
+M       src/drivers/mct/cime_config/buildexe
+M       src/drivers/nuopc/cime_config/buildexe
+M       src/share/timing/Makefile
+
+
+======================================================================
+
+======================================================================
+
 Originator: Bill Sacks
 Date: 03-08-2019
 Tag: cime5.7.9
