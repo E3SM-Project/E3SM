@@ -11,7 +11,7 @@ module  PhotosynthesisMod
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use abortutils          , only : endrun
-  use clm_varctl          , only : iulog, use_c13, use_c14, use_cn, use_cndv, use_fates
+  use clm_varctl          , only : iulog, use_c13, use_c14, use_cn, use_fates
   use clm_varpar          , only : nlevcan
   use clm_varcon          , only : namep
   use decompMod           , only : bounds_type
@@ -33,8 +33,10 @@ module  PhotosynthesisMod
   use clm_varctl          , only : cnallocate_carbonphosphorus_only
   use clm_varctl          , only : iulog
   use pftvarcon           , only : noveg
-  use SharedParamsMod   , only : ParamsShareInst
-  use TopounitType        , only : top_as  
+  use SharedParamsMod     , only : ParamsShareInst
+  use TopounitDataType    , only : top_as
+  use VegetationDataType  , only : veg_es, veg_ns, veg_ps  
+  
   !
   implicit none
   save
@@ -239,9 +241,9 @@ contains
 
          forc_pbot     => top_as%pbot                              , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                                             
 
-         t_veg         => temperature_vars%t_veg_patch             , & ! Input:  [real(r8) (:)   ]  vegetation temperature (Kelvin)                                       
-         t10           => temperature_vars%t_a10_patch             , & ! Input:  [real(r8) (:)   ]  10-day running mean of the 2 m temperature (K)                        
-         tgcm          => temperature_vars%thm_patch               , & ! Input:  [real(r8) (:)   ]  air temperature at agcm reference height (kelvin)                     
+         t_veg         => veg_es%t_veg             , & ! Input:  [real(r8) (:)   ]  vegetation temperature (Kelvin)                                       
+         t10           => veg_es%t_a10             , & ! Input:  [real(r8) (:)   ]  10-day running mean of the 2 m temperature (K)                        
+         tgcm          => veg_es%thm               , & ! Input:  [real(r8) (:)   ]  air temperature at agcm reference height (kelvin)                     
 
          nrad          => surfalb_vars%nrad_patch                  , & ! Input:  [integer  (:)   ]  pft number of canopy layers, above snow for radiative transfer  
          tlai_z        => surfalb_vars%tlai_z_patch                , & ! Input:  [real(r8) (:,:) ]  pft total leaf area index for canopy layer                              
@@ -266,12 +268,12 @@ contains
          mbb           => photosyns_vars%mbb_patch                 , & ! Output: [real(r8) (:)   ]  Ball-Berry slope of conductance-photosynthesis relationship           
          rh_leaf       => photosyns_vars%rh_leaf_patch             , & ! Output: [real(r8) (:)   ]  fractional humidity at leaf surface (dimensionless)                   
          
-         leafn         => nitrogenstate_vars%leafn_patch           , &
-         leafn_storage => nitrogenstate_vars%leafn_storage_patch   , &
-         leafn_xfer    => nitrogenstate_vars%leafn_xfer_patch      , &
-         leafp         => phosphorusstate_vars%leafp_patch         , &
-         leafp_storage => phosphorusstate_vars%leafp_storage_patch , &
-         leafp_xfer    => phosphorusstate_vars%leafp_xfer_patch    , &
+         leafn         => veg_ns%leafn           , &
+         leafn_storage => veg_ns%leafn_storage   , &
+         leafn_xfer    => veg_ns%leafn_xfer      , &
+         leafp         => veg_ps%leafp         , &
+         leafp_storage => veg_ps%leafp_storage , &
+         leafp_xfer    => veg_ps%leafp_xfer    , &
          i_vcmax       => veg_vp%i_vc                          , &
          s_vcmax       => veg_vp%s_vc                            &
          )

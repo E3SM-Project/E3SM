@@ -7,6 +7,8 @@ module EMI_TemperatureType_ExchangeMod
   use ExternalModelInterfaceDataMod         , only : emi_data_list, emi_data
   use ExternalModelIntefaceDataDimensionMod , only : emi_data_dimension_list_type
   use TemperatureType                       , only : temperature_type
+  use ColumnDataType                        , only : col_es
+  use VegetationDataType                    , only : veg_es
   use EMI_Atm2LndType_Constants
   use EMI_CanopyStateType_Constants
   use EMI_ChemStateType_Constants
@@ -56,9 +58,9 @@ contains
     integer                             :: count
 
     associate(& 
-         t_soisno  => temperature_vars%t_soisno_col  , &
-         t_h2osfc  => temperature_vars%t_h2osfc_col  , &
-         t_soi10cm => temperature_vars%t_soi10cm_col   &
+         t_soisno  => col_es%t_soisno  , &
+         t_h2osfc  => col_es%t_h2osfc  , &
+         t_soi10cm => col_es%t_soi10cm   &
          )
 
     count = 0
@@ -158,7 +160,7 @@ contains
     integer                             :: count
 
     associate(& 
-         t_veg => temperature_vars%t_veg_patch   &
+         t_veg => veg_es%t_veg   &
          )
 
     count = 0
@@ -224,8 +226,8 @@ contains
     integer                             :: count
 
     associate(& 
-         t_soisno => temperature_vars%t_soisno_col , &
-         t_h2osfc => temperature_vars%t_h2osfc_col   &
+         t_soisno => col_es%t_soisno , &
+         t_h2osfc => col_es%t_h2osfc   &
          )
 
     count = 0
