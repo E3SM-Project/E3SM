@@ -1,6 +1,7 @@
 from CIME.utils import run_cmd, run_cmd_no_fail, expect, get_timestamp, CIMEError
 
 import getpass, logging, os
+import stat as osstat
 
 # Constants
 ESMCI_REMOTE_NAME = "esmci_remote_for_split"
@@ -96,6 +97,7 @@ def touches_file(start_range, end_range, filepath, title, skip=None):
 ###############################################################################
 def reset_file(version, srcpath, dstpath):
 ###############################################################################
+    is_exe = os.access(dstpath, os.X_OK)
     os.remove(dstpath)
     try:
         run_cmd_no_fail("git show {}:{} > {}".format(version, srcpath, dstpath))
@@ -103,6 +105,9 @@ def reset_file(version, srcpath, dstpath):
         # If the above failes, then the file was deleted
         run_cmd_no_fail("git rm -f {}".format(dstpath))
     else:
+        if is_exe:
+            os.chmod(dstpath, os.stat(dstpath).st_mode | osstat.S_IXUSR | osstat.S_IXGRP | osstat.S_IXOTH)
+
         run_cmd_no_fail("git add {}".format(dstpath))
 
 ###############################################################################

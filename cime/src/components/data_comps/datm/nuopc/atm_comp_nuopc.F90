@@ -473,6 +473,7 @@ contains
 
   subroutine ModelAdvance(gcomp, rc)
     use shr_nuopc_utils_mod, only : shr_nuopc_log_clock_advance, shr_nuopc_memcheck
+    use perf_mod, only : t_startf, t_stopf
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -503,7 +504,7 @@ contains
     integer                 :: dbrc
     character(len=*),parameter  :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
-
+    call t_startf(subname)
     rc = ESMF_SUCCESS
     call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
 
@@ -628,6 +629,7 @@ contains
     call shr_file_setLogUnit (shrlogunit)
 
     call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call t_stopf(subname)
 
   end subroutine ModelAdvance
 

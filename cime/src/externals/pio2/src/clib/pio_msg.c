@@ -1169,7 +1169,6 @@ int inq_var_fill_handler(iosystem_desc_t *ios)
 
     if (fill_modep)
         LOG((3, "done with inq_var_fill_handler", *fill_modep));
-
     return PIO_NOERR;
 }
 
