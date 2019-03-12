@@ -48,7 +48,7 @@ module micro_p3
        nanew2,f12,f22,thrd,sxth,piov3,piov6,rho_rimeMin,     &
        rho_rimeMax,inv_rho_rimeMax,max_total_Ni,dbrk,nmltratio,clbfact_sub,  &
        clbfact_dep,iparam, isize, densize, rimsize, rcollsize, tabsize, colltabsize, &
-       get_latent_heat, get_precip_fraction, zerodegc, pi=>pi_e3sm, dnu, &
+       get_latent_heat, zerodegc, pi=>pi_e3sm, dnu, &
        micro_p3_utils_init, rainfrze, icenuct, homogfrze, iulog=>iulog_e3sm, &
        masterproc=>masterproc_e3sm, calculate_incloud_mixingratios
 
@@ -373,7 +373,10 @@ contains
     ! INPUT needed for PBUF variables used by other parameterizations
     real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: ast        ! relative humidity cloud fraction
 
-    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: icldm, lcldm, rcldm ! Ice, Liquid and Rain cloud fraction
+    real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: icldm, lcldm, rcldm ! Ice, Liquid and Rain cloud fraction
+    ! AaronDonahue, the following variable (p3_tend_out) is a catch-all for passing P3-specific variables outside of p3_main
+    ! so that they can be written as ouput.  NOTE TO C++ PORT: This variable is entirely optional and doesn't need to be 
+    ! included in the port to C++, or can be changed if desired.
     real(rtype), intent(out),   dimension(its:ite,kts:kte,49)   :: p3_tend_out ! micro physics tendencies
     !----- Local variables and parameters:  -------------------------------------------------!
 
@@ -456,11 +459,9 @@ contains
 
     real(rtype), dimension(its:ite,kts:kte) :: diam_ice
     ! AaronDonahue Added for extra output
-    real(rtype), dimension(its:ite,kts:kte) :: cldm
     real(rtype), dimension(its:ite,kts:kte) :: inv_icldm, inv_lcldm, inv_rcldm
     real(rtype), dimension(its:ite,kts:kte) :: qc_incld, qr_incld, qitot_incld, qirim_incld 
     real(rtype), dimension(its:ite,kts:kte) :: nc_incld, nr_incld, nitot_incld, birim_incld 
-    CHARACTER(len=16) :: precip_frac_method = 'max_overlap'
     ! AaronDonahue -end
 
     real(rtype), dimension(its:ite,kts:kte)      :: inv_dzq,inv_rho,ze_ice,ze_rain,prec,rho,       &
@@ -558,8 +559,6 @@ contains
     diag_rhoi = 0.
     rhorime_c = 400.
 
-    call get_precip_fraction(its,ite,kts,kte,kbot,ktop,kdir,ast,qc,qr,qitot,precip_frac_method, &
-                cldm,icldm,lcldm,rcldm,inv_icldm,inv_lcldm,inv_rcldm)
     cmeiout = 0.
     prain   = 0.
     nevapr  = 0.
@@ -567,6 +566,9 @@ contains
     sflx    = 0.
     p3_tend_out = 0.
 
+    inv_icldm = 1.0_rtype/icldm
+    inv_lcldm = 1.0_rtype/lcldm
+    inv_rcldm = 1.0_rtype/rcldm
     ! AaronDonahue added exner term to replace all instances of th(i,k)/t(i,k), since th(i,k) is updated but t(i,k) is not, and this was
     ! causing energy conservation errors.
     inv_exner = 1./exner        !inverse of Exner expression, used when converting potential temp to temp
@@ -704,6 +706,8 @@ contains
           if (log_exitlevel .and.                                                           &
                ((t(i,k).lt.zerodegc .and. supi(i,k).lt.-0.05) .or.                              &
                (t(i,k).ge.zerodegc .and. sup(i,k) .lt.-0.05))) goto 555   !i.e. skip all process rates
+
+          ! All microphysics tendencies will be computed as IN-CLOUD, they will be mapped back to cell-average later.
 
           ! initialize warm-phase process rates
           qcacc   = 0.;     qrevp   = 0.;     qccon   = 0.
@@ -1465,14 +1469,8 @@ contains
 
           endif
 
-
-          !.................................................................
-          ! conservation of water
-          !.................................................................
-
-          ! The microphysical process rates are computed above, based on the environmental conditions.
-          ! The rates are adjusted here (where necessary) such that the sum of the sinks of mass cannot
-          ! be greater than the sum of the sources, thereby resulting in overdepletion.
+          ! Here we map the microphysics tendency rates back to CELL-AVERAGE quantities for updating
+          ! cell-average quantities.
 
           ! map warm-phase process rates to cell-avg
           qcacc   = qcacc*lcldm(i,k);     qrevp   = qrevp*rcldm(i,k);     qccon   = qccon*lcldm(i,k) 
@@ -1491,6 +1489,14 @@ contains
           ninuc   = ninuc*icldm(i,k);     qidep   = qidep*icldm(i,k)
           nrheti  = nrheti*rcldm(i,k);    nisub   = nisub*icldm(i,k);     qwgrth  = qwgrth*lcldm(i,k)
           qcmul   = qcmul*lcldm(i,k);          
+
+          !.................................................................
+          ! conservation of water
+          !.................................................................
+
+          ! The microphysical process rates are computed above, based on the environmental conditions.
+          ! The rates are adjusted here (where necessary) such that the sum of the sinks of mass cannot
+          ! be greater than the sum of the sources, thereby resulting in overdepletion.
 
           !-- Limit ice process rates to prevent overdepletion of sources such that
           !   the subsequent adjustments are done with maximum possible rates for the

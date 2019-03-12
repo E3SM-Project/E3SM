@@ -23,7 +23,7 @@ module micro_p3_utils
     public :: rtype
 #endif
 
-    public :: get_latent_heat, get_precip_fraction, micro_p3_utils_init, size_dist_param_liq, &
+    public :: get_latent_heat, micro_p3_utils_init, size_dist_param_liq, &
               size_dist_param_basic,avg_diameter, rising_factorial, calculate_incloud_mixingratios
 
     integer, public :: iulog_e3sm
@@ -334,66 +334,6 @@ end interface var_coef
        return
     end subroutine get_latent_heat
 
-!__________________________________________________________________________________________!
-!                                                                                          !
-!__________________________________________________________________________________________!
-    subroutine get_precip_fraction(its,ite,kts,kte,kbot,ktop,kdir,ast,qc,qr,qitot,method, &
-                cldm,icldm,lcldm,rcldm,inv_icldm,inv_lcldm,inv_rcldm)
-      
-       integer,intent(in)                              :: its,ite,kts,kte,kbot,ktop,kdir
-       real(rtype),dimension(its:ite,kts:kte),intent(in)  :: ast, qc, qr, qitot
-       character(len=16),intent(in)                    :: method
-       real(rtype),dimension(its:ite,kts:kte),intent(out) :: cldm, icldm, lcldm, rcldm
-       real(rtype),dimension(its:ite,kts:kte),intent(out) :: inv_icldm, inv_lcldm, inv_rcldm
-
-       integer  :: i,k
-
-       !AaronDonahue TODO: Add namelist variable to switch between using subgrid
-       !cloud variability and not?
-
-       cldm(:,:)  = mincld
-       icldm(:,:) = mincld
-       lcldm(:,:) = mincld
-       do k = kbot,ktop,kdir
-          do i=its,ite
-             cldm(i,k)  = max(ast(i,k), mincld)
-             icldm(i,k) = max(ast(i,k), mincld)
-             lcldm(i,k) = max(ast(i,k), mincld)
-          end do
-       end do
-
-       DO k = ktop,kbot,-kdir  !AaronDonahue TODO: Check to make sure this is correct.  Are we going the correct direction?
-          DO i=its,ite
-       !! 
-       !! precipitation fraction 
-       !! 
-          rcldm(i,k) = cldm(i,k)
-          IF (trim(method) == 'in_cloud') THEN
-             IF (k /= ktop) THEN
-                IF (qc(i,k) .lt. qsmall .and. qitot(i,k) .lt. qsmall) THEN
-                   rcldm(i,k) = rcldm(i,k+kdir)
-                END IF
-             END IF
-          ELSE IF (trim(method) == 'max_overlap') THEN
-          ! calculate precip fraction based on maximum overlap assumption
-
-          ! IF rain or snow mix ratios are smaller than threshold,
-          ! then leave rcldm as cloud fraction at current level
-             IF (k /= ktop) THEN
-                IF (qr(i,k+kdir) .ge. qsmall .or. qitot(i,k+kdir) .ge. qsmall) THEN
-                   rcldm(i,k) = max(cldm(i,k+kdir),rcldm(i,k))
-                END IF
-             END IF
-          END IF
-          inv_icldm(i,k) = 1.0_rtype/icldm(i,k)
-          inv_lcldm(i,k) = 1.0_rtype/lcldm(i,k)
-          inv_rcldm(i,k) = 1.0_rtype/rcldm(i,k)
-          END DO ! i
-       END DO    ! k
-
-
-       return
-    end subroutine get_precip_fraction
 !__________________________________________________________________________________________!
 !                                                                                          !
 !__________________________________________________________________________________________!

@@ -51,6 +51,7 @@ module micro_p3_interface
   !available.
   logical :: use_subcol_microp  ! If true, then are using subcolumns in microphysics
   integer :: num_steps
+  CHARACTER(len=16) :: precip_frac_method = 'max_overlap'  ! AaronDonahue, Hard-coded for now, should be fixed in the future
 
   integer, public ::    &
        ixcldliq = -1,   & ! cloud liquid amount index
@@ -891,7 +892,68 @@ end subroutine micro_p3_readnl
   end subroutine micro_p3_init
 
   !================================================================================================
+    subroutine get_cloud_fraction(its,ite,kts,kte,ast,qc,qr,qitot,method, &
+                  icldm,lcldm,rcldm)
+      
+       use micro_p3_utils, only: mincld, qsmall
 
+       integer,intent(in)                                 :: its,ite,kts,kte
+       real(rtype),dimension(its:ite,kts:kte),intent(in)  :: ast, qc, qr, qitot
+       character(len=16),intent(in)                       :: method
+       real(rtype),dimension(its:ite,kts:kte),intent(out) :: icldm, lcldm, rcldm
+       real(rtype),dimension(its:ite,kts:kte)             :: cldm
+
+       integer  :: i,k
+       integer  :: ktop, kbot, kdir
+
+       !AaronDonahue TODO: Add namelist variable to switch between using subgrid
+       !cloud variability and not?
+       ktop = kts        !k of top level
+       kbot = kte        !k of bottom level
+       kdir = -1         !(k: 1=top, nk=bottom)
+
+       cldm(:,:)  = mincld
+       icldm(:,:) = mincld
+       lcldm(:,:) = mincld
+       do k = kbot,ktop,kdir
+          do i=its,ite
+             cldm(i,k)  = max(ast(i,k), mincld)
+             icldm(i,k) = max(ast(i,k), mincld)
+             lcldm(i,k) = max(ast(i,k), mincld)
+          end do
+       end do
+
+       DO k = ktop,kbot,-kdir  !AaronDonahue TODO: Check to make sure this is correct.  Are we going the correct direction?
+          DO i=its,ite
+       !! 
+       !! precipitation fraction 
+       !! 
+          rcldm(i,k) = cldm(i,k)
+          IF (trim(method) == 'in_cloud') THEN
+             IF (k /= ktop) THEN
+                IF (qc(i,k) .lt. qsmall .and. qitot(i,k) .lt. qsmall) THEN
+                   rcldm(i,k) = rcldm(i,k+kdir)
+                END IF
+             END IF
+          ELSE IF (trim(method) == 'max_overlap') THEN
+          ! calculate precip fraction based on maximum overlap assumption
+
+          ! IF rain or snow mix ratios are smaller than threshold,
+          ! then leave rcldm as cloud fraction at current level
+             IF (k /= ktop) THEN
+                IF (qr(i,k+kdir) .ge. qsmall .or. qitot(i,k+kdir) .ge. qsmall) THEN
+                   rcldm(i,k) = max(cldm(i,k+kdir),rcldm(i,k))
+                END IF
+             END IF
+          END IF
+          END DO ! i
+       END DO    ! k
+
+
+       return
+    end subroutine get_cloud_fraction
+
+  !================================================================================================
   subroutine micro_p3_tend(state, ptend, dtime, pbuf)
 
     use cam_history,    only: outfld
@@ -912,7 +974,7 @@ end subroutine micro_p3_readnl
     !INPUT/OUTPUT VARIABLES
     type(physics_state),         intent(in)    :: state
     type(physics_ptend),         intent(out)   :: ptend
-    real(rtype),                    intent(in)    :: dtime
+    real(rtype),                 intent(in)    :: dtime
     type(physics_buffer_desc),   pointer       :: pbuf(:)
     logical :: lq(pcnst)   !list of what constituents to update
 
@@ -1280,6 +1342,9 @@ end subroutine micro_p3_readnl
     kts     = 1
     kte     = pver
     pres    = state%pmid(:,:)
+    ! Determine the cloud fraction and precip cover
+    call get_cloud_fraction(its,ite,kts,kte,ast,cldliq,rain,ice,precip_frac_method, &
+                icldm,lcldm,rcldm)
     ! CALL P3
     !==============
     ! TODO: get proper value for 'it' from time module
@@ -1324,9 +1389,9 @@ end subroutine micro_p3_readnl
          prer_evap(its:ite,kts:kte),  & ! OUT rain evaporation
          rflx(its:ite,kts:kte+1),     & ! OUT grid-box average rain flux (kg m^-2s^-1) pverp 
          sflx(its:ite,kts:kte+1),     & ! OUT grid-box average ice/snow flux (kgm^-2 s^-1) pverp
-         rcldm(its:ite,kts:kte),      & ! OUT rain cloud fraction
-         lcldm(its:ite,kts:kte),      & ! OUT liquid cloud fraction
-         icldm(its:ite,kts:kte),      & ! OUT ice cloud fraction
+         rcldm(its:ite,kts:kte),      & ! IN rain cloud fraction
+         lcldm(its:ite,kts:kte),      & ! IN liquid cloud fraction
+         icldm(its:ite,kts:kte),      & ! IN ice cloud fraction
          tend_out(its:ite,kts:kte,:)  & ! OUT p3 microphysics tendencies
          )
 
