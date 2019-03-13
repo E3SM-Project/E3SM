@@ -347,7 +347,7 @@ def _clean_impl(case, cleanlist, clean_all, clean_depends):
         casetools       = case.get_value("CASETOOLS")
 
         cmd = gmake + " -f " + os.path.join(casetools, "Makefile")
-        cmd += get_standard_makefile_args(case)
+        cmd += " {}".format(get_standard_makefile_args(case))
         if cleanlist is not None:
             for item in cleanlist:
                 tcmd = cmd + " clean" + item
