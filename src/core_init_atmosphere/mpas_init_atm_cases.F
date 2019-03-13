@@ -3191,6 +3191,15 @@ module init_atm_cases
       do iEdge = 1,nEdges
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
+
+         ! Avoid referencing the garbage cell for exterior edges
+         if (cell1 == nCells+1) then
+            cell1 = cell2
+         end if
+         if (cell2 == nCells+1) then
+            cell2 = cell1
+         end if
+
          if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve ) then
 
             do k = 1, nVertLevels
