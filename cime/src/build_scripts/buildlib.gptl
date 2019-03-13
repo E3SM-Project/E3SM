@@ -44,15 +44,10 @@ def buildlib(bldroot, installpath, case):
 ###############################################################################
     caseroot = case.get_value("CASEROOT")
     gptl_dir = os.path.join(case.get_value("CIMEROOT"), "src", "share", "timing")
-    debug = case.get_value("DEBUG")
     gmake_opts = "-f {gptl}/Makefile install -C {bldroot} MACFILE={macfile} MODEL=gptl GPTL_DIR={gptl} GPTL_LIBDIR={bldroot}"\
         " SHAREDPATH={install} {stdargs} "\
         .format(gptl=gptl_dir, bldroot=bldroot, macfile=os.path.join(caseroot,"Macros.make"),
                 install=installpath, stdargs=get_standard_makefile_args(case))
-    if debug:
-        gmake_opts += " DEBUG=True"
-    if case.get_build_threaded():
-        gmake_opts += " compile_threaded=true "
 
     gmake_cmd = case.get_value("GMAKE")
 
