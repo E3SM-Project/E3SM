@@ -2884,6 +2884,14 @@ module init_atm_cases
             hs(iCell) = 0.
             if(ter(iCell) .ne. 0.) then
                do j = 1,nEdgesOnCell(iCell)
+
+                  ! For smoothing at cells along the boundary of the mesh, set the terrain value
+                  ! for non-existent neighbors, which map to the "garbage cell", to the same as
+                  ! the terrain in the cell being smoothed
+                  if (cellsOnCell(j,iCell) == nCells+1) then
+                     ter(nCells+1) = ter(iCell)
+                  end if
+
                   hs(iCell) = hs(iCell) + dvEdge(edgesOnCell(j,iCell))    &
                                         / dcEdge(edgesOnCell(j,iCell))    &
                                         * (ter(cellsOnCell(j,iCell))-ter(iCell))
@@ -2896,6 +2904,14 @@ module init_atm_cases
             ter(iCell) = 0.
             if(hs(iCell) .ne. 0.) then
                do j = 1,nEdgesOnCell(iCell)
+
+                  ! For smoothing at cells along the boundary of the mesh, set the terrain value
+                  ! for non-existent neighbors, which map to the "garbage cell", to the same as
+                  ! the terrain in the cell being smoothed
+                  if (cellsOnCell(j,iCell) == nCells+1) then
+                     hs(nCells+1) = hs(iCell)
+                  end if
+
                   ter(iCell) = ter(iCell) + dvEdge(edgesOnCell(j,iCell))    &
                                           / dcEdge(edgesOnCell(j,iCell))    &
                                           * (hs(cellsOnCell(j,iCell))-hs(iCell))
