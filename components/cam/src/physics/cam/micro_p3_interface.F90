@@ -761,7 +761,7 @@ end subroutine micro_p3_readnl
    call addfld('P3_ncautr', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in rain number from autoconversion of cloud water')
    ! ice-phase process rates
    call addfld('P3_qccol',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for collection of cloud water by ice')
-   call addfld('P3_qwgrth', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for wet growth rate')
+   call addfld('P3_qwgrth', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 wet growth rate')
    call addfld('P3_qidep',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for vapor deposition')
    call addfld('P3_qrcol',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for collection rain mass by ice')
    call addfld('P3_qinuc',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for deposition/condensation freezing nuc')
@@ -779,7 +779,6 @@ end subroutine micro_p3_readnl
    call addfld('P3_nrheti', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for immersion freezing rain')
    call addfld('P3_nrshdr', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for source for rain number from collision of rain/ice above freezing and shedding')
    call addfld('P3_qcshd',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for source for rain mass due to cloud water/ice collision above freezing and shedding or wet growth and shedding')
-   call addfld('P3_qcmul',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in q, ice multiplication from rime-splitnering of cloud water (not included in the paper)')
    call addfld('P3_ncshdc', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for source for rain number due to cloud water/ice collision above freezing  and shedding (combined with NRSHD in the paper)')
    ! Sedimentation 
    call addfld('P3_sed_CLDLIQ',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for liquid cloud content due to sedimentation')
@@ -869,7 +868,6 @@ end subroutine micro_p3_readnl
       call add_default('P3_nrheti', 1, ' ')
       call add_default('P3_nrshdr', 1, ' ')
       call add_default('P3_qcshd',  1, ' ')
-      call add_default('P3_qcmul',  1, ' ')
       call add_default('P3_ncshdc', 1, ' ')
       ! Sedimentation
       call add_default('P3_sed_CLDLIQ',  1, ' ')
@@ -1751,7 +1749,7 @@ end subroutine micro_p3_readnl
    call outfld('P3_ncautr', tend_out(:,:,14), pcols, lchnk) 
    ! ice-phase process rate
    call outfld('P3_qccol',  tend_out(:,:,15), pcols, lchnk) 
-   call outfld('P3_qwgrth', tend_out(:,:,16), pcols, lchnk) 
+   call outfld('P3_qwgrth', tend_out(:,:,16), pcols, lchnk) ! Not a tendency in itself, it is used to build qccol and qrcol
    call outfld('P3_qidep',  tend_out(:,:,17), pcols, lchnk) 
    call outfld('P3_qrcol',  tend_out(:,:,18), pcols, lchnk) 
    call outfld('P3_qinuc',  tend_out(:,:,19), pcols, lchnk) 
@@ -1769,7 +1767,7 @@ end subroutine micro_p3_readnl
    call outfld('P3_nrheti', tend_out(:,:,31), pcols, lchnk) 
    call outfld('P3_nrshdr', tend_out(:,:,32), pcols, lchnk) 
    call outfld('P3_qcshd',  tend_out(:,:,33), pcols, lchnk) 
-   call outfld('P3_qcmul',  tend_out(:,:,34), pcols, lchnk) 
+!   call outfld('P3_qcmul',  tend_out(:,:,34), pcols, lchnk) ! Not actually used, so not actually recorded.  Commented out here for continuity of the array.
    call outfld('P3_ncshdc', tend_out(:,:,35), pcols, lchnk)
    ! sedimentation 
    call outfld('P3_sed_CLDLIQ',  tend_out(:,:,36), pcols, lchnk)
