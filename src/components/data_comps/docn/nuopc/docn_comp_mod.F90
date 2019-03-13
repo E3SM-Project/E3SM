@@ -904,9 +904,6 @@ contains
     call dshr_import(importState, 'Fioi_melth', x2o%rattr(kmelth,:), rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call dshr_import(importState, 'Foxx_melth', x2o%rattr(krofi,:), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
   end subroutine docn_comp_import
 
   !===============================================================================

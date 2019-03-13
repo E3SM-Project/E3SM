@@ -28,7 +28,7 @@ module ocn_comp_nuopc
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_Diagnose
   use shr_strdata_mod       , only : shr_strdata_type
   use shr_const_mod         , only : SHR_CONST_SPVAL
-  use dshr_nuopc_mod        , only : fld_list_type, fldsMax, fld_list_realize
+  use dshr_nuopc_mod        , only : fld_list_type, fldsMax, dshr_realize
   use dshr_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, ModelSetMetaData
   use docn_shr_mod          , only : docn_shr_read_namelists
   use docn_comp_mod         , only : docn_comp_init, docn_comp_run, docn_comp_advertise
@@ -352,7 +352,7 @@ module ocn_comp_nuopc
 
     if (ocn_present) then
        ! export fields
-       call fld_list_realize( &
+       call dshr_realize( &
             state=ExportState, &
             fldList=fldsFrOcn, &
             numflds=fldsFrOcn_num, &
@@ -364,7 +364,7 @@ module ocn_comp_nuopc
 
        ! import fields
        if (ocn_prognostic) then
-          call fld_list_realize( &
+          call dshr_realize( &
                state=importState, &
                fldList=fldsToOcn, &
                numflds=fldsToOcn_num, &

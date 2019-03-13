@@ -6,9 +6,7 @@ module dshr_nuopc_mod
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
   use shr_nuopc_time_mod    , only : shr_nuopc_time_alarmInit
   use shr_kind_mod          , only : R8=>SHR_KIND_R8, CS=>SHR_KIND_CS
-  use shr_sys_mod           , only : shr_sys_abort
   use shr_string_mod        , only : shr_string_listGetIndex
-  use shr_string_mod        , only : shr_string_listGetName, shr_string_listGetNum
 
   implicit none
   public
@@ -33,6 +31,7 @@ module dshr_nuopc_mod
        dshr_fld_add_model_and_data
   end interface dshr_fld_add
 
+  integer                 :: gridTofieldMap = 2 ! ungridded dimension is innermost
   integer     , parameter :: fldsMax = 100
   integer     , parameter :: dbug = 10
   character(*), parameter :: modName =  "(dhsr_nuopc_mod)"
@@ -54,11 +53,9 @@ contains
 
     ! local variables
     integer :: rc
-    integer :: dbrc
     character(len=*), parameter :: subname='(dshr_nuopc_mod:dshr_fld_add)'
     ! ----------------------------------------------
 
-    write(6,*)'DEBUG: adding field ',trim(med_fld)
     call dshr_fld_list_add(fldlist_num, fldlist, med_fld, ungridded_lbound, ungridded_ubound)
 
   end subroutine dshr_fld_add
@@ -79,14 +76,15 @@ contains
 
     ! local variables
     integer :: rc
-    integer :: dbrc
     character(len=*), parameter :: subname='(dshr_nuopc_mod:dshr_fld_add_model)'
     ! ----------------------------------------------
 
     if (len_trim(model_fld_concat) + len_trim(model_fld) + 1 >= len(model_fld_concat)) then
-       call ESMF_LogWrite(subname//': ERROR: max len of model_fld_concat has been exceeded', &
-            ESMF_LOGMSG_ERROR, line=__LINE__, file= u_FILE_u, rc=dbrc)
+       call ESMF_LogWrite(subname//': ERROR: max len of model_fld_concat has been exceeded', ESMF_LOGMSG_INFO)
+       rc = ESMF_FAILURE
+       return
     end if
+
     if (trim(model_fld_concat) == '') then
        model_fld_concat = trim(model_fld)
     else
@@ -126,7 +124,7 @@ contains
     integer             , optional , intent(in)    :: ungridded_ubound
 
     ! local variables
-    integer                     :: dbrc
+    integer                     :: rc
     integer                     :: n, oldsize, id
     character(len=CS), pointer  :: new_data_fld_array(:)
     character(len=CS), pointer  :: new_model_fld_array(:)
@@ -178,9 +176,9 @@ contains
 
     if (present(model_fld_concat)) then
        if (len_trim(model_fld_concat) + len_trim(model_fld) + 1 >= len(model_fld_concat)) then
-          call ESMF_LogWrite(subname//': ERROR: max len of model_fld_concat has been exceeded', &
-               ESMF_LOGMSG_ERROR, line=__LINE__, file= u_FILE_u, rc=dbrc)
-          call shr_sys_abort()
+          call ESMF_LogWrite(subname//': ERROR: max len of model_fld_concat has been exceeded', ESMF_LOGMSG_INFO)
+          rc = ESMF_FAILURE
+          return
        end if
        if (trim(model_fld_concat) == '') then
           model_fld_concat = trim(model_fld)
@@ -216,7 +214,6 @@ contains
 
     ! local variables
     integer :: rc
-    integer :: dbrc
     character(len=*), parameter :: subname='(dshr_nuopc_mod:fld_list_add)'
     !----------------------------------------------------------------------
 
@@ -224,12 +221,11 @@ contains
 
     num = num + 1
     if (num > fldsMax) then
-      call ESMF_LogWrite(trim(subname)//": ERROR num > fldsMax "//trim(stdname), &
-        ESMF_LOGMSG_ERROR, line=__LINE__, file=__FILE__, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": ERROR num > fldsMax "//trim(stdname), ESMF_LOGMSG_INFO)
+      rc = ESMF_FAILURE
       return
     endif
     fldlist(num)%stdname = trim(stdname)
-    write(6,*)'DEBUG: fldlist(num)%stdname = ',trim(fldlist(num)%stdname)
 
     if (present(ungridded_lbound) .and. present(ungridded_ubound)) then
        fldlist(num)%ungridded_lbound = ungridded_lbound
@@ -253,7 +249,6 @@ contains
     integer             , intent(inout) :: rc
 
     ! local variables
-    integer                :: dbrc
     integer                :: n
     type(ESMF_Field)       :: field
     character(len=80)      :: stdname
@@ -267,7 +262,7 @@ contains
        if (NUOPC_IsConnected(state, fieldName=stdname)) then
           if (stdname == trim(flds_scalar_name)) then
              call ESMF_LogWrite(trim(subname)//trim(tag)//" Field = "//trim(stdname)//" is connected on root pe", &
-                  ESMF_LOGMSG_INFO, rc=dbrc)
+                  ESMF_LOGMSG_INFO)
              ! Create the scalar field
              call SetScalarField(field, flds_scalar_name, flds_scalar_num, rc=rc)
              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
@@ -276,15 +271,14 @@ contains
              if (fldlist(n)%ungridded_lbound > 0 .and. fldlist(n)%ungridded_ubound > 0) then
                 field = ESMF_FieldCreate(mesh, ESMF_TYPEKIND_R8, name=stdname, meshloc=ESMF_MESHLOC_ELEMENT, &
                      ungriddedLbound=(/fldlist(n)%ungridded_lbound/), &
-                     ungriddedUbound=(/fldlist(n)%ungridded_ubound/), rc=rc)
+                     ungriddedUbound=(/fldlist(n)%ungridded_ubound/), gridToFieldMap=(/gridToFieldMap/), rc=rc)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
              else
                 field = ESMF_FieldCreate(mesh, ESMF_TYPEKIND_R8, name=stdname, meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
                 if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
              end if
              call ESMF_LogWrite(trim(subname)//trim(tag)//" Field = "//trim(stdname)//" is connected using mesh", &
-                  ESMF_LOGMSG_INFO, rc=dbrc)
+                  ESMF_LOGMSG_INFO)
           endif
 
           ! NOW call NUOPC_Realize
@@ -293,7 +287,7 @@ contains
        else
           if (stdname /= trim(flds_scalar_name)) then
              call ESMF_LogWrite(subname // trim(tag) // " Field = "// trim(stdname) // " is not connected.", &
-                  ESMF_LOGMSG_INFO, rc=dbrc)
+                  ESMF_LOGMSG_INFO)
              call ESMF_StateRemove(state, (/stdname/), rc=rc)
              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
           end if
@@ -372,14 +366,13 @@ contains
     integer                  :: restart_n            ! Number until restart interval
     integer                  :: restart_ymd          ! Restart date (YYYYMMDD)
     type(ESMF_ALARM)         :: restart_alarm
-    integer                  :: dbrc
     character(len=128)       :: name
     integer                  :: alarmcount
     character(len=*),parameter :: subname='dshr_nuopc_mod:(ModelSetRunClock) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO)
 
     ! query the Component for its clocks
     call NUOPC_ModelGet(gcomp, driverClock=dclock, modelClock=mclock, rc=rc)
@@ -410,7 +403,7 @@ contains
 
        call ESMF_GridCompGet(gcomp, name=name, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call ESMF_LogWrite(subname//'setting alarms for' // trim(name), ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(subname//'setting alarms for' // trim(name), ESMF_LOGMSG_INFO)
 
        call NUOPC_CompAttributeGet(gcomp, name="restart_option", value=restart_option, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -445,7 +438,7 @@ contains
     call ESMF_ClockSet(mclock, currTime=dcurrtime, timeStep=dtimestep, stopTime=mstoptime, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO)
 
   end subroutine ModelSetRunClock
 
@@ -525,7 +518,6 @@ contains
     type(ESMF_Field)  :: lfield
     real(R8), pointer :: farray1d(:)
     real(R8), pointer :: farray2d(:,:)
-    integer           :: dbrc
     character(*),parameter :: subName = "(dshr_nuopc_mod: dshr_export)"
     !----------------------------------------------------------
 
@@ -533,15 +525,21 @@ contains
 
     call ESMF_StateGet(state, itemName=trim(fldname), field=lfield, rc=rc)
     if (.not. shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) then
-       call ESMF_LogWrite(trim(subname)//": fldname = "//trim(fldname)//" copy", ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(trim(subname)//": fldname = "//trim(fldname)//" copy", ESMF_LOGMSG_INFO)
 
        lsize = size(array)
        if (present(ungridded_index)) then
           call ESMF_FieldGet(lfield, farrayPtr=farray2d, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          do n = 1,lsize
-             farray2d(n,ungridded_index) = array(n)
-          enddo
+          if (gridToFieldMap == 1) then
+             do n = 1,lsize
+                farray2d(n,ungridded_index) = array(n)
+             enddo
+          else if (gridToFieldMap == 2) then
+             do n = 1,lsize
+                farray2d(ungridded_index,n) = array(n)
+             end do
+          end if
        else
           call ESMF_FieldGet(lfield, farrayPtr=farray1d, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -573,7 +571,6 @@ contains
     type(ESMF_Field)  :: lfield
     real(R8), pointer :: farray1d(:)
     real(R8), pointer :: farray2d(:,:)
-    integer           :: dbrc
     character(*),parameter :: subName = "(dshr_nuopc_mod: dshr_import)"
     !----------------------------------------------------------
 
@@ -581,18 +578,24 @@ contains
 
     call ESMF_StateGet(state, itemName=trim(fldname), field=lfield, rc=rc)
     if (.not. shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) then
-       call ESMF_LogWrite(trim(subname)//": fldname = "//trim(fldname)//" copy", ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(trim(subname)//": fldname = "//trim(fldname)//" copy", ESMF_LOGMSG_INFO)
 
        lsize = size(array)
        if (present(ungridded_index)) then
           call ESMF_FieldGet(lfield, farrayPtr=farray2d, rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
-          do n = 1,lsize
-             array(n) = farray2d(n,ungridded_index)
-          enddo
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (gridToFieldMap == 1) then
+             do n = 1,lsize
+                array(n) = farray2d(n,ungridded_index)
+             enddo
+          else if (gridToFieldMap == 2) then
+             do n = 1,lsize
+                array(n) = farray2d(ungridded_index,n)
+             enddo
+          end if
        else
-          call ESMF_FieldGet(lfield, farrayPtr=farray1d, rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+          call ESMF_FieldGet(lfield, farrayPtr=farray1d,  rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           do n = 1,lsize
              array(n) = farray1d(n)
           enddo
