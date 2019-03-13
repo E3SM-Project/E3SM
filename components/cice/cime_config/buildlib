@@ -18,7 +18,8 @@ my $MACH         = `./xmlquery MACH         -value`;
 my $CICE_BLCKX   = `./xmlquery CICE_BLCKX   -value`;
 my $CICE_BLCKY   = `./xmlquery CICE_BLCKY   -value`;
 my $CICE_MXBLCKS = `./xmlquery CICE_MXBLCKS -value`;
-my $MAKE_ARGS    = `./get_standard_makefile_args`;
+my $MAKE_ARGS    = `./Tools/get_standard_makefile_args`;
+chomp($MAKE_ARGS);
 
 chdir "${OBJROOT}/ice/obj";
 

@@ -14,7 +14,8 @@ my $OBJROOT   = `./xmlquery OBJROOT   -value`;
 my $LIBROOT   = `./xmlquery LIBROOT   -value`;
 my $GMAKE_J   = `./xmlquery GMAKE_J   -value`;
 my $GMAKE     = `./xmlquery GMAKE     -value`;
-my $MAKE_ARGS = `./get_standard_makefile_args`;
+my $MAKE_ARGS = `./Tools/get_standard_makefile_args`;
+chomp($MAKE_ARGS);
 
 chdir "${OBJROOT}/rof/obj";
 

@@ -24,7 +24,8 @@ my $LIBROOT      = `./xmlquery LIBROOT	    -value`;
 my $GMAKE_J      = `./xmlquery GMAKE_J	    -value`;
 my $GMAKE        = `./xmlquery GMAKE	    -value`;
 my $MACH         = `./xmlquery MACH         -value`;
-my $MAKE_ARGS    = `./get_standard_makefile_args`;
+my $MAKE_ARGS    = `./Tools/get_standard_makefile_args`;
+chomp($MAKE_ARGS);
 
 #---------------------------------------------------------------------------
 # Copy MPASSI source
