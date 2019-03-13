@@ -72,6 +72,11 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     #----------------------------------------------------
     nmlgen.init_defaults(infile, config)
 
+    if case.get_value('MEDIATOR_READ_RESTART'):
+	nmlgen.set_value('mediator_read_restart', value='.true.')
+    else:
+	nmlgen.set_value('mediator_read_restart', value='.false.')
+
     #--------------------------------
     # Overwrite: set brnch_retain_casename
     #--------------------------------
@@ -363,7 +368,7 @@ def _create_runseq(case, coupling_times):
 
         elif (comp_atm == 'fv3gfs' and comp_ocn == "mom" and comp_ice == 'cice'):
             # for NEMS fully coupled
-            if case.get_value("CONTINUE_RUN"):
+            if case.get_value("CONTINUE_RUN") or case.get_value("MEDIATOR_READ_RESTART"):
                 logger.info("NUOPC run sequence: warm start (concurrent)")
                 runseq_input = os.path.join(input_dir, 'nuopc_runseq_NEMS.warm')
             else:

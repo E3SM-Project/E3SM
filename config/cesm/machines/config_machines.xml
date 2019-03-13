@@ -312,7 +312,6 @@ This allows using a different mpirun command to launch unit tests
     <mpirun mpilib="default">
       <executable>mpiexec_mpt</executable>
       <arguments>
-	<!-- for mpt/2.19 the -p needs to preceed -np -->
 	<arg name="labelstdout">-p "%g:"</arg>
 	<arg name="num_tasks"> -np {{ total_tasks }}</arg>
 	<!-- the omplace argument needs to be last -->
@@ -386,13 +385,6 @@ This allows using a different mpirun command to launch unit tests
 	<command name="load">netcdf-mpi/4.6.1</command>
 	<command name="load">pnetcdf/1.11.0</command>
       </modules>
-<!--      <modules mpilib="mpt" compiler="intel" PIO_VERSION="2">
-	<command name="load">pio/2.4.1</command>
-      </modules>
-      <modules mpilib="mpt" compiler="intel" PIO_VERSION="1">
-	<command name="load">pio/1.10.1</command>
-      </modules>
--->
       <modules mpilib="mpt" compiler="pgi">
 	<command name="load">mpt/2.19</command>
 	<command name="load">netcdf-mpi/4.6.1</command>
@@ -426,7 +418,9 @@ This allows using a different mpirun command to launch unit tests
       <env name="ESMFMKFILE">/glade/u/home/dunlap/ESMF-INSTALL/intel19/8.0.0bs32/lib/libg/Linux.intel.64.mpt.default/esmf.mk</env>
       <env name="ESMF_RUNTIME_PROFILE">ON</env>
       <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
-      <env name="UGCSINPUTPATH">/glade/work/dunlap/FV3GFS/benchmark-20181016/</env>
+      <env name="UGCSINPUTPATH">/glade/work/turuncu/FV3GFS/benchmark-inputs/2012040100/gfs/fcst</env>
+      <env name="UGCSFIXEDFILEPATH">/glade/work/turuncu/FV3GFS/benchmark-inputs/fix_am</env>
+      <env name="UGCSADDONPATH">/glade/work/turuncu/FV3GFS/benchmark-inputs/addon</env>
     </environment_variables>
     <environment_variables unit_testing="true">
       <env name="MPI_USE_ARRAY">false</env>

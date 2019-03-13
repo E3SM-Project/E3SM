@@ -587,6 +587,15 @@
     </values>
   </entry>
 
+  <entry id="mediator_read_restart" modify_via_xml="MEDIATOR_READ_RESTART">
+    <type>logical</type>
+    <category>expdef</category>
+    <group>DRIVER_attributes</group>
+    <desc>
+      only have the mediator reads the restart file regardless of start type
+    </desc>
+  </entry>
+
   <entry id="case_name" modify_via_xml="CASE">
     <type>char</type>
     <category>expdef</category>

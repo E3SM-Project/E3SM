@@ -919,6 +919,7 @@ contains
     character(len=32), allocatable :: attrList(:)
     integer                        :: componentCount
     character(len=*), parameter    :: subname = "(esm.F90:AddAttributes)"
+    logical                        :: lvalue = .false.
     !-------------------------------------------
 
     rc = ESMF_Success
