@@ -1328,7 +1328,7 @@ directory, NOT in this subdirectory."""
         Returns True if current settings require a threaded build/run.
         """
         force_threaded = self.get_value("FORCE_BUILD_SMP")
-        smp_present = bool(force_threaded) or self.thread_count > 1
+        smp_present = force_threaded or self.thread_count > 1
         return smp_present
 
     def _check_testlists(self, compset_alias, grid_name, files):
