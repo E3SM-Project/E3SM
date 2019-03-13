@@ -1,6 +1,121 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 3-13-2019
+Tag: cime5.6.13
+Answer Changes: None
+Tests: scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+    - Only download chksum file(s) if requested.
+    - mpiexec_mpt argument fix on cheyenne
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+170db73 Merge pull request #3038 from jedwards4b/chksum_fixes_maint-5.6
+cc6fe0f for mpt/2.19 -p must preceed -np in mpiexec_mpt arguments
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/config_machines.xml
+M       scripts/lib/CIME/Servers/ftp.py
+M       scripts/lib/CIME/Servers/gftp.py
+M       scripts/lib/CIME/Servers/svn.py
+M       scripts/lib/CIME/Servers/wget.py
+M       scripts/lib/CIME/case/check_input_data.py
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer
+Date: 3-7-219
+Tag: cime5.6.12
+Answer Changes: None
+Tests: scripts_regression_tests, code_checker
+Dependencies:
+
+Brief Summary:
+    - Fix issue with chksum option, update cheyenne.
+    - Add checksum support for inputdata.
+    - PIO performance optimization merge.
+    - Move the logic to check and update batch options.
+    - Update Ensemble Consistency Test README.
+    - Update to archive_metadata stand-alone functionality.
+    - Consolidate inputdata for stamepede2 and lonestar5.
+    - Port to tacc system lonestar5.
+    - Initial port to izumi.
+    - Allow specifying directives to use for an unknown queue.
+    - Update bluewaters machine interface.
+    - Minor update to archive_metadata.
+    - Change the default RUN_REFDIR from ccsm4_init to cesm2_init.
+    - cd to correct directory after running create_clone.
+    - List mpi-serial's include directory before any system-level includes.
+    - Fix nag & pgi CAM COSP build.
+    - Do not allow trailing / in filename.
+    - Update the version of ESMF used by the mapping tools on cheyenne.
+    - Update fv1.9x2.5,gx1v7 grids.
+    - _PNETCDF needs to be defined in csm_share build.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+dc2fef7 fix issue with chksum option, update cheyenne
+38b96b6 Merge pull request #3018 from jedwards4b/checksum_inputdata
+852fa8d Merge pull request #3023 from jedwards4b/pio1_merge
+1c0bf27 Merge pull request #3019 from jedwards4b/batch_and_resubmit
+a6e3349 Merge pull request #3012 from ESMCI/fischer/ECT_doc
+e7f2e6f Merge pull request #3004 from bertinia/maint-5.6_archive_metadata
+497dd69 Merge pull request #3005 from jedwards4b/lonestar5-port
+6faac40 Merge pull request #3002 from jedwards4b/lonestar5-port
+277c28c Merge pull request #2999 from jedwards4b/izumi_port_5.6
+766d923 Merge pull request #2995 from billsacks/unknown_queue_maint56
+25f45ac Merge pull request #2996 from ESMCI/jedwards/bluewaters_update
+9416ba8 Merge pull request #2977 from bertinia/maint-5.6_archive_metadata
+bc71697 Merge pull request #2973 from jedwards4b/default_run_refdir
+5a1afac Merge pull request #2961 from billsacks/create_clone_doc
+8f97ec9 Merge pull request #2960 from billsacks/fix_unit_test_mpi_serial
+5e2af84 Merge pull request #2951 from ESMCI/fischer/cosp_fix
+27d9f2f Merge pull request #2938 from jedwards4b/catch_illegal_name
+d699d16 Merge pull request #2940 from mnlevy1981/mlevy/update_esmf_in_mapping-maint5.6
+4f54ec6 Merge pull request #2943 from ESMCI/fischer/f19_gx1v7
+7d9ed6c Merge pull request #2925 from jedwards4b/fix64bit_data_issue
+
+
+Modified files: git diff --name-status [previous_tag]
+M	CMakeLists.txt
+M	config/cesm/config_grids.xml
+M	config/cesm/config_inputdata.xml
+M	config/cesm/machines/config_batch.xml
+M	config/cesm/machines/config_compilers.xml
+M	config/cesm/machines/config_machines.xml
+M	config/xml_schemas/config_batch.xsd
+M	doc/source/misc_tools/ect.rst
+M	doc/source/users_guide/cloning-a-case.rst
+M	scripts/Tools/Makefile
+M	scripts/Tools/archive_metadata
+M	scripts/Tools/check_input_data
+M	scripts/lib/CIME/Servers/ftp.py
+M	scripts/lib/CIME/Servers/wget.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/inputdata.py
+M	scripts/lib/CIME/case/case_submit.py
+M	scripts/lib/CIME/case/check_input_data.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/utils.py
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/externals/pio1/pio/pio_types.F90
+M	src/externals/pio1/pio/piodarray.F90.in
+M	src/externals/pio1/pio/pionfput_mod.F90.in
+M	tools/mapping/gen_mapping_files/gen_ESMF_mapping_file/create_ESMF_map.sh
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 11-29-2018
 Tag: cime_cesm2_1_rel_06
 Answer Changes: None
