@@ -3098,19 +3098,18 @@ module init_atm_cases
                   hs1(iCell) = 0.
                   do j = 1,nEdgesOnCell(iCell)
 
+                     ! For smoothing at cells along the boundary of the mesh, set the hx value
+                     ! for non-existent neighbors, which map to the "garbage cell", to the same as
+                     ! the hx in the cell being smoothed
+                     if (cellsOnCell(j,iCell) == nCells+1) then
+                        hx(k,nCells+1) = hx(k,iCell)
+                     end if
+
                      hs1(iCell) = hs1(iCell) + dvEdge(edgesOnCell(j,iCell))    &
                                            / dcEdge(edgesOnCell(j,iCell))    &
                                            *  (hx(k,cellsOnCell(j,iCell))-hx(k,iCell))
                   end do
-                  hs1(iCell) = hx(k,iCell) + sm*hs1(iCell)
-
-                  hs(iCell) = 0.
-              !    do j = 1,nEdgesOnCell(iCell)
-              !       hs(iCell) = hs(iCell) + dvEdge(edgesOnCell(j,iCell))    &
-              !                             / dcEdge(edgesOnCell(j,iCell))    &
-              !                             *  (hs1(cellsOnCell(j,iCell))-hs1(iCell))
-              !    end do
-                  hs(iCell) = hs1(iCell) - 0.*hs(iCell)
+                  hs(iCell) = hx(k,iCell) + sm*hs1(iCell)
 
                end do
 
