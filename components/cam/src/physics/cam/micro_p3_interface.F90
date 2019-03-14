@@ -1341,8 +1341,9 @@ end subroutine micro_p3_readnl
     kte     = pver
     pres    = state%pmid(:,:)
     ! Determine the cloud fraction and precip cover
-    call get_cloud_fraction(its,ite,kts,kte,ast,cldliq,rain,ice,precip_frac_method, &
-                icldm,lcldm,rcldm)
+    call get_cloud_fraction(its,ite,kts,kte,ast(its:ite,kts:kte),cldliq(its:ite,kts:kte), &
+                rain(its:ite,kts:kte),ice(its:ite,kts:kte),precip_frac_method, &
+                icldm(its:ite,kts:kte),lcldm(its:ite,kts:kte),rcldm(its:ite,kts:kte))
     ! CALL P3
     !==============
     ! TODO: get proper value for 'it' from time module
@@ -1379,8 +1380,7 @@ end subroutine micro_p3_readnl
          log_predictNc,               & ! IN     .true.=prognostic Nc, .false.=specified Nc
          ! AaronDonahue new stuff
          state%pdel(its:ite,kts:kte), & ! IN pressure level thickness for computing total mass
-         exner(its:ite,kts:kte), & ! IN exner values
-         ast(its:ite,kts:kte),        & ! IN relative humidity cloud fraction
+         exner(its:ite,kts:kte),      & ! IN exner values
          cmeiout(its:ite,kts:kte),    & ! OUT Deposition/sublimation rate of cloud ice 
          prain(its:ite,kts:kte),      & ! OUT Total precipitation (rain + snow)
          nevapr(its:ite,kts:kte),     & ! OUT evaporation of total precipitation (rain + snow)

@@ -20,7 +20,7 @@ extern "C" {
                  Real* diag_effc, Real* diag_effi, Real* diag_vmi,
                  Real* diag_di, Real* diag_rhoi,
                  bool log_predictNc,
-                 Real* pdel, Real* exner, Real* ast, Real* cmeiout, Real* prain,
+                 Real* pdel, Real* exner, Real* cmeiout, Real* prain,
                  Real* nevapr, Real* prer_evap,
                  Real* rflx, Real* sflx, // 1 extra column size
                  Real* rcldm, Real* lcldm, Real* icldm, Real* p3_tend_out);
@@ -53,7 +53,6 @@ FortranData::FortranData (Int ncol_, Int nlev_)
   dzq = Array2("vertical grid spacing, m", ncol, nlev);
   pdel = Array2("pressure thickness, Pa", ncol, nlev);
   exner = Array2("Exner expression", ncol, nlev);
-  ast = Array2("relative humidity cloud fraction", ncol, nlev);
   // Out
   prt_liq = Array1("precipitation rate, liquid  m/s", ncol);
   prt_sol = Array1("precipitation rate, solid   m/s", ncol);
@@ -93,7 +92,7 @@ void FortranDataIterator::init (const FortranData::Ptr& dp) {
   fdipb(qirim); fdipb(birim); fdipb(prt_liq); fdipb(prt_sol);
   fdipb(diag_ze); fdipb(diag_effc); fdipb(diag_effi);
   fdipb(diag_vmi); fdipb(diag_di); fdipb(diag_rhoi);
-  fdipb(pdel); fdipb(exner); fdipb(ast); fdipb(cmeiout); fdipb(prain);
+  fdipb(pdel); fdipb(exner); fdipb(cmeiout); fdipb(prain);
   fdipb(nevapr); fdipb(prer_evap);
   fdipb(rflx); fdipb(sflx);
   fdipb(rcldm); fdipb(lcldm); fdipb(icldm); fdipb(p3_tend_out);
@@ -130,7 +129,7 @@ void p3_main (const FortranData& d) {
             d.diag_effc.data(), d.diag_effi.data(), d.diag_vmi.data(),
             d.diag_di.data(), d.diag_rhoi.data(),
             d.log_predictnc,
-            d.pdel.data(), d.exner.data(), d.ast.data(), d.cmeiout.data(), d.prain.data(),
+            d.pdel.data(), d.exner.data(), d.cmeiout.data(), d.prain.data(),
             d.nevapr.data(), d.prer_evap.data(),
             d.rflx.data(), d.sflx.data(),
             d.rcldm.data(), d.lcldm.data(), d.icldm.data(),d.p3_tend_out.data());
