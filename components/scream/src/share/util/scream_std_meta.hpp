@@ -59,17 +59,20 @@ class holder : public holder_base {
 public:
 
   template<typename... Args>
-  explicit holder (const Args&... args)
-   : m_value (std::make_shared<HeldType>(args...))
-  {
-    // Nothing to be done here
+  static holder<HeldType>* create(const Args&... args) {
+    holder* ptr = new holder<HeldType>();
+    ptr->m_value = std::make_shared<HeldType>(args...);
+    return ptr;
   }
 
   template<typename T>
-  explicit holder (typename std::enable_if<std::is_base_of<HeldType,T>::value,std::shared_ptr<T>>::type ptr)
-   : m_value (ptr)
+  static
+  typename std::enable_if<std::is_base_of<HeldType,T>::value,holder<HeldType>*>::type
+  create(std::shared_ptr<T> ptr_in)
   {
-    // Nothing to be done here
+    holder* ptr = new holder<HeldType>();
+    ptr->m_value = ptr_in;
+    return ptr;
   }
 
   const std::type_info& type () const { return typeid(HeldType); }
@@ -77,6 +80,8 @@ public:
   HeldType& value () { return *m_value; }
   std::shared_ptr<HeldType> ptr () const { return m_value; }
 private:
+  holder () = default;
+
   // Note: we store a shared_ptr rather than a HeldType directly,
   //       since we may store multiple copies of the concrete object.
   //       Since we don't know if the actual object is copiable, we need
@@ -93,7 +98,7 @@ public:
 
   template<typename T, typename... Args>
   void reset (Args... args) {
-    m_content.reset( new impl::holder<T>(args...) );
+    m_content.reset( impl::holder<T>::create(args...) );
   }
 
   impl::holder_base& content () const { 
