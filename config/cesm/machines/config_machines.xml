@@ -418,9 +418,9 @@ This allows using a different mpirun command to launch unit tests
       <env name="ESMFMKFILE">/glade/u/home/dunlap/ESMF-INSTALL/intel19/8.0.0bs32/lib/libg/Linux.intel.64.mpt.default/esmf.mk</env>
       <env name="ESMF_RUNTIME_PROFILE">ON</env>
       <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
-      <env name="UGCSINPUTPATH">/glade/work/turuncu/FV3GFS/benchmark-inputs/2012040100/gfs/fcst</env>
-      <env name="UGCSFIXEDFILEPATH">/glade/work/turuncu/FV3GFS/benchmark-inputs/fix_am</env>
-      <env name="UGCSADDONPATH">/glade/work/turuncu/FV3GFS/benchmark-inputs/addon</env>
+      <env name="UGCSINPUTPATH">/glade/work/turuncu/FV3GFS/benchmark-inputs/2012010100/gfs/fcst</env>
+      <env name="UGCSFIXEDFILEPATH">/glade/work/turuncu/FV3GFS/fix_am</env>
+      <env name="UGCSADDONPATH">/glade/work/turuncu/FV3GFS/addon</env>
     </environment_variables>
     <environment_variables unit_testing="true">
       <env name="MPI_USE_ARRAY">false</env>
