@@ -27,7 +27,7 @@ ifdef COMP_INTERFACE
   endif
 endif
 ifdef DEBUG
-  ifeq ("$(DEBUG)", "True")
+  ifeq ("$(DEBUG)", "TRUE")
     CPPDEFS+=-DDEBUG
   endif
 endif
