@@ -43,7 +43,7 @@ def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resub
                "CONTINUE_RUN is true but this case does not appear to have restart files staged in {}".format(rundir))
         # Finally we open the rpointer.drv file and check that it's correct
         casename = case.get_value("CASE")
-        with open(os.path.join(rundir,rpointer, "r") as fd:
+        with open(os.path.join(rundir,rpointer), "r") as fd:
             ncfile = fd.readline().strip()
             expect(ncfile.startswith(casename) and
                    os.path.exists(os.path.join(rundir,ncfile)),
