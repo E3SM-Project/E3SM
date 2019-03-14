@@ -7,11 +7,15 @@
 		<option name="config_AM_sedimentTransport_output_stream">'sedimentTransportOutput'</option>
 		<option name="config_AM_sedimentTransport_directory">'analysis_members'</option>
 		<option name="config_AM_sedimentTransport_grain_size">2.5e-4</option>
+		<option name="config_AM_sedimentTransport_ws_formula">'VanRijn1993'</option>
+		<option name="config_AM_sedimentTransport_bedld_formula">'Soulsby-Damgaard'</option>
+		<option name="config_AM_sedimentTransport_SSC_ref_formula">'Lee2004'</option>
 		<option name="config_AM_sedimentTransport_drag_coefficient">2.5e-3</option>
 		<option name="config_AM_sedimentTransport_grain_porosity">0.5</option>
 		<option name="config_AM_sedimentTransport_erate">5.0e-4</option>
 		<option name="config_AM_sedimentTransport_tau_ce">0.1</option>
 		<option name="config_AM_sedimentTransport_tau_cd">0.1</option>
+		<option name="config_AM_sedimentTransport_Manning_coef">0.022</option>
 		<option name="config_AM_sedimentTransport_grain_density">2650</option>
 		<option name="config_AM_sedimentTransport_water_density">1020</option>
 		<option name="config_AM_sedimentTransport_alpha">1e-3</option>
@@ -34,7 +38,11 @@
 			<attribute name="packages">sedimentTransportAMPKG</attribute>
 			<attribute name="type">output</attribute>
 			<add_contents>
+				<member name="mesh" type="stream"/>
 				<member name="xtime" type="var"/>
+				<member name="ssh" type="var"/>
+				<member name="velocityZonal" type="var"/>
+				<member name="velocityMeridional" type="var"/>
 				<member name="sedimentFallVelocity" type="var"/>
 				<member name="sedimentErosionFlux" type="var"/>
         <member name="sedimentDepositionFlux" type="var"/>
@@ -44,6 +52,8 @@
 				<member name="sedimentFluxVAY" type="var"/>
 				<member name="sedimentFluxBX" type="var"/>
 				<member name="sedimentFluxBY" type="var"/>
+				<member name="sedimentBottomReferenceConcentration" type="var"/>
+				<member name="sedimentConcentration" type="var"/>
 			</add_contents>
 		</stream>
 	</streams>

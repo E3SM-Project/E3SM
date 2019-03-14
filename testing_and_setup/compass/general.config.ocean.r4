@@ -9,23 +9,23 @@
 # init namelists in the default_inputs directory after a successful build of
 # the ocean model.
 [namelists]
-forward = /lustre/scratch4/turquoise/zhendong/MPAS-Model_PRs/default_inputs/namelist.ocean.forward
-init    = /lustre/scratch4/turquoise/zhendong/MPAS-Model_PRs/default_inputs/namelist.ocean.init
+forward = /lustre/scratch4/turquoise/zhendong/MPAS-Model/SedTransp/default_inputs/namelist.ocean.forward
+init    = /lustre/scratch4/turquoise/zhendong/MPAS-Model/SedTransp/default_inputs/namelist.ocean.init
 
 # The streams section defines paths to template streams files that will be used
 # to generate specific streams files. Typically these will point to the forward and
 # init streams files in the default_inputs directory after a successful build of
 # the ocean model.
 [streams]
-forward = /lustre/scratch4/turquoise/zhendong/MPAS-Model_PRs/default_inputs/streams.ocean.forward
-init    = /lustre/scratch4/turquoise/zhendong/MPAS-Model_PRs/default_inputs/streams.ocean.init
+forward = /lustre/scratch4/turquoise/zhendong/MPAS-Model/SedTransp/default_inputs/streams.ocean.forward
+init    = /lustre/scratch4/turquoise/zhendong/MPAS-Model/SedTransp/default_inputs/streams.ocean.init
 
 # The executables section defines paths to required executables. These
 # executables are provided for use by specific test cases.
 # Full paths should be provided in order to access the executables from
 # anywhere on the machine.
 [executables]
-model = /lustre/scratch4/turquoise/zhendong/MPAS-Model_PRs/ocean_model
+model = /lustre/scratch4/turquoise/zhendong/MPAS-Model/SedTransp/ocean_model
 metis = /lustre/scratch4/turquoise/zhendong/metis/gpmetis 
 mesh_converter = /lustre/scratch4/turquoise/zhendong/MPAS-Tools/mesh_tools/mesh_conversion_tools/MpasMeshConverter.x
 cell_culler    = /lustre/scratch4/turquoise/zhendong/MPAS-Tools/mesh_tools/mesh_conversion_tools/MpasCellCuller.x
@@ -42,7 +42,7 @@ mpi_runtime = /usr/bin/srun
 # the same directory, or different directory. Additionally, if they are empty
 # some test cases might download data into them, which will then be reused if
 # the test case is run again later.
-mpas_model = /lustre/scratch4/turquoise/zhendong/MPAS-Model_PRs/
+mpas_model = /lustre/scratch4/turquoise/zhendong/MPAS-Model/SedTransp
 mpas_tools = /lustre/scratch4/turquoise/zhendong/MPAS-Tools 
 geometric_features = /turquoise/usr/projects/climate/mpeterse/repos/geometric_features/master 
 jigsaw-geo-matlab = /lustre/scratch4/turquoise/zhendong/jigsaw-geo-matlab 
