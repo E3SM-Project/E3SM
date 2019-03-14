@@ -1624,7 +1624,7 @@ contains
           if ( fldchk(is_local%wrap%FBexp(compice)         , trim(fldname), rc=rc) .and. &
                fldchk(is_local%wrap%FBImp(compatm,compatm ), trim(fldname), rc=rc)) then
              if (trim(fldname) == 'Sa_u' .or. trim(fldname) == 'Sa_v') then
-                call addmap(fldListFr(compatm)%flds, trim(fldname), compice, mapbilnr, 'one', atm2ice_vmap)
+                call addmap(fldListFr(compatm)%flds, trim(fldname), compice, mappatch, 'one', atm2ice_vmap)
              else
                 call addmap(fldListFr(compatm)%flds, trim(fldname), compice, mapbilnr, 'one', atm2ice_smap)
              end if

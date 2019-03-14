@@ -815,7 +815,7 @@ contains
       integer                       :: dbrc
       character(len=CX)             :: msgString
       character(len=*),parameter :: subname='(module_MEDIATOR:realizeConnectedGrid)'
-
+      !-----------------------------------------------------------
 
       !NOTE: All of the Fields that set their TransferOfferGeomObject Attribute
       !NOTE: to "cannot provide" should now have the accepted Grid available.
@@ -1259,6 +1259,7 @@ contains
       use ESMF                  , only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_FieldGet, ESMF_FieldEmptyComplete
       use ESMF                  , only : ESMF_GeomType_Flag, ESMF_FieldCreate, ESMF_GridToMeshCell, ESMF_GEOMTYPE_GRID
       use ESMF                  , only : ESMF_MeshLoc_Element, ESMF_TYPEKIND_R8, ESMF_FIELDSTATUS_GRIDSET
+      use ESMF                  , only : ESMF_AttributeGet
       use NUOPC                 , only : NUOPC_getStateMemberLists, NUOPC_Realize
       use shr_nuopc_scalars_mod , only : flds_scalar_name, flds_scalar_num
       use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_getNumFields
@@ -1277,7 +1278,12 @@ contains
       type(ESMF_Field),pointer    :: fieldList(:)
       type(ESMF_FieldStatus_Flag) :: fieldStatus
       type(ESMF_GeomType_Flag)    :: geomtype
+      integer                     :: gridToFieldMapCount, ungriddedCount
+      integer, allocatable        :: gridToFieldMap(:)
+      integer, allocatable        :: ungriddedLBound(:), ungriddedUBound(:)
+      logical                     :: isPresent
       character(len=*),parameter  :: subname='(module_MED:completeFieldInitialization)'
+      !-----------------------------------------------------------
 
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
       rc = ESMF_Success
@@ -1309,7 +1315,8 @@ contains
             mesh = ESMF_GridToMeshCell(grid,rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-            meshField = ESMF_FieldCreate(mesh, typekind=ESMF_TYPEKIND_R8, meshloc=ESMF_MESHLOC_ELEMENT, name=fieldName, rc=rc)
+            meshField = ESMF_FieldCreate(mesh, typekind=ESMF_TYPEKIND_R8, &
+                 meshloc=ESMF_MESHLOC_ELEMENT, name=fieldName, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
             ! Swap grid for mesh, at this point, only connected fields are in the state
@@ -1320,14 +1327,36 @@ contains
           if (fieldStatus==ESMF_FIELDSTATUS_GRIDSET) then
             call ESMF_LogWrite(subname//" is allocating field memory for field "//trim(fieldName), &
                  ESMF_LOGMSG_INFO, rc=rc)
-            call ESMF_FieldEmptyComplete(fieldList(n), typekind=ESMF_TYPEKIND_R8, rc=rc)
+
+            call ESMF_AttributeGet(fieldList(n), name="GridToFieldMap", convention="NUOPC", &
+                 purpose="Instance", itemCount=gridToFieldMapCount, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            allocate(gridToFieldMap(gridToFieldMapCount))
+            call ESMF_AttributeGet(fieldList(n), name="GridToFieldMap", convention="NUOPC", &
+                 purpose="Instance", valueList=gridToFieldMap, rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+            ungriddedCount=0  ! initialize in case it was not set
+            call ESMF_AttributeGet(fieldList(n), name="UngriddedLBound", convention="NUOPC", &
+                 purpose="Instance", itemCount=ungriddedCount,  isPresent=isPresent, rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            allocate(ungriddedLBound(ungriddedCount), ungriddedUBound(ungriddedCount))
+
+            if (ungriddedCount > 0) then
+               call ESMF_AttributeGet(fieldList(n), name="UngriddedLBound", convention="NUOPC", &
+                    purpose="Instance", valueList=ungriddedLBound, rc=rc)
+               call ESMF_AttributeGet(fieldList(n), name="UngriddedUBound", convention="NUOPC", &
+                    purpose="Instance", valueList=ungriddedUBound, rc=rc)
+            endif
+
+            call ESMF_FieldEmptyComplete(fieldList(n), typekind=ESMF_TYPEKIND_R8, gridToFieldMap=gridToFieldMap, &
+                 ungriddedLbound=ungriddedLbound, ungriddedUbound=ungriddedUbound, rc=rc)
+
+            deallocate(gridToFieldMap, ungriddedLbound, ungriddedUbound)
           endif   ! fieldStatus
 
-          if (dbug_flag > 1) then
-             call shr_nuopc_methods_Field_GeomPrint(fieldList(n), trim(subname)//':'//trim(fieldName), rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          end if
+          call shr_nuopc_methods_Field_GeomPrint(fieldList(n), trim(subname)//':'//trim(fieldName), rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
         enddo
         deallocate(fieldList)
@@ -1764,9 +1793,11 @@ contains
           deallocate(fieldNameList)
 
           if (LocalDone) then
+             ! This copies NStateImp(n1) TO FBImp(n1, n1)
              call shr_nuopc_methods_FB_copy(is_local%wrap%FBImp(n1,n1), is_local%wrap%NStateImp(n1), rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-             call ESMF_LogWrite(trim(subname)//" MED - Initialize-Data-Dependency Copy Import "//trim(compname(n1)), ESMF_LOGMSG_INFO, rc=rc)
+             call ESMF_LogWrite(trim(subname)//" MED - Initialize-Data-Dependency Copy Import "//&
+                  trim(compname(n1)), ESMF_LOGMSG_INFO, rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
              if (n1 == compocn) ocnDone = .true.
              if (n1 == compatm) atmDone = .true.
