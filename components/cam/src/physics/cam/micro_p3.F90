@@ -306,7 +306,7 @@ contains
   SUBROUTINE p3_main(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,   &
        pres,dzq,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
        diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc, &
-       pdel,exner,ast,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm,p3_tend_out)
+       pdel,exner,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm,p3_tend_out)
 
     !----------------------------------------------------------------------------------------!
     !                                                                                        !
@@ -371,7 +371,6 @@ contains
     real(rtype), intent(out),   dimension(its:ite,kts:kte+1)    :: rflx       ! grid-box average rain flux (kg m^-2 s^-1) pverp
     real(rtype), intent(out),   dimension(its:ite,kts:kte+1)    :: sflx       ! grid-box average ice/snow flux (kg m^-2 s^-1) pverp
     ! INPUT needed for PBUF variables used by other parameterizations
-    real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: ast        ! relative humidity cloud fraction
 
     real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: icldm, lcldm, rcldm ! Ice, Liquid and Rain cloud fraction
     ! AaronDonahue, the following variable (p3_tend_out) is a catch-all for passing P3-specific variables outside of p3_main
