@@ -103,8 +103,8 @@ contains
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte+1)    :: rflx
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte+1)    :: sflx
     real(kind=c_real), intent(in),    dimension(its:ite,kts:kte)      :: ast
-    real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: icldm, lcldm, rcldm
-    real(kind=c_real), intent(out),   dimension(its:ite,kts:kte,35)   :: p3_tend_out
+    real(kind=c_real), intent(in),    dimension(its:ite,kts:kte)      :: icldm, lcldm, rcldm
+    real(kind=c_real), intent(out),   dimension(its:ite,kts:kte,49)   :: p3_tend_out
 
     logical :: log_predictNc
 

@@ -48,9 +48,9 @@ module micro_p3
        nanew2,f12,f22,thrd,sxth,piov3,piov6,rho_rimeMin,     &
        rho_rimeMax,inv_rho_rimeMax,max_total_Ni,dbrk,nmltratio,clbfact_sub,  &
        clbfact_dep,iparam, isize, densize, rimsize, rcollsize, tabsize, colltabsize, &
-       get_latent_heat, get_precip_fraction, zerodegc, pi=>pi_e3sm, dnu, &
+       get_latent_heat, zerodegc, pi=>pi_e3sm, dnu, &
        micro_p3_utils_init, rainfrze, icenuct, homogfrze, iulog=>iulog_e3sm, &
-       masterproc=>masterproc_e3sm
+       masterproc=>masterproc_e3sm, calculate_incloud_mixingratios
 
   implicit none
   save
@@ -73,7 +73,6 @@ module micro_p3
 
   ! lookup table values for rain number- and mass-weighted fallspeeds and ventilation parameters
   real(rtype), private, dimension(300,10) :: vn_table,vm_table,revap_table
-
 contains
 
   !==================================================================================================!
@@ -374,8 +373,11 @@ contains
     ! INPUT needed for PBUF variables used by other parameterizations
     real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: ast        ! relative humidity cloud fraction
 
-    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: icldm, lcldm, rcldm ! Ice, Liquid and Rain cloud fraction
-    real(rtype), intent(out),   dimension(its:ite,kts:kte,35)      :: p3_tend_out ! micro physics tendencies
+    real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: icldm, lcldm, rcldm ! Ice, Liquid and Rain cloud fraction
+    ! AaronDonahue, the following variable (p3_tend_out) is a catch-all for passing P3-specific variables outside of p3_main
+    ! so that they can be written as ouput.  NOTE TO C++ PORT: This variable is entirely optional and doesn't need to be 
+    ! included in the port to C++, or can be changed if desired.
+    real(rtype), intent(out),   dimension(its:ite,kts:kte,49)   :: p3_tend_out ! micro physics tendencies
     !----- Local variables and parameters:  -------------------------------------------------!
 
     real(rtype), dimension(its:ite,kts:kte) :: mu_r  ! shape parameter of rain
@@ -437,7 +439,6 @@ contains
     real(rtype) :: nrheti    ! immersion freezing rain
     real(rtype) :: nrshdr    ! source for rain number from collision of rain/ice above freezing and shedding
     real(rtype) :: qcshd     ! source for rain mass due to cloud water/ice collision above freezing and shedding or wet growth and shedding
-    real(rtype) :: qcmul     ! change in q, ice multiplication from rime-splitnering of cloud water (not included in the paper)
     real(rtype) :: rhorime_c ! density of rime (from cloud)
     real(rtype) :: ncshdc    ! source for rain number due to cloud water/ice collision above freezing  and shedding (combined with NRSHD in the paper)
 
@@ -449,6 +450,7 @@ contains
 !    real(rtype) :: qchetc    ! contact freezing droplets
 !    real(rtype) :: qrhetc    ! contact freezing rain
 !    real(rtype) :: qrmul     ! change in q, ice multiplication from rime-splitnering of rain (not included in the paper)
+!    real(rtype) :: qcmul     ! change in q, ice multiplication from rime-splitnering of cloud water (not included in the paper)
 
     logical   :: log_wetgrowth
 
@@ -456,10 +458,12 @@ contains
     real(rtype) :: eii ! temperature dependent aggregation efficiency
 
     real(rtype), dimension(its:ite,kts:kte) :: diam_ice
-    ! AaronDonahue Added for extra output
-    real(rtype), dimension(its:ite,kts:kte) :: cldm
-    CHARACTER(len=16) :: precip_frac_method = 'max_overlap'
-    ! AaronDonahue -end
+
+    ! Variables needed for in-cloud calculations
+    real(rtype)                             :: ir_cldm, il_cldm, lr_cldm  ! Intersection of cloud fractions for combination of ice (i), rain (r) and liquid (l)
+    real(rtype), dimension(its:ite,kts:kte) :: inv_icldm, inv_lcldm, inv_rcldm ! Inverse cloud fractions (1/cld)
+    real(rtype), dimension(its:ite,kts:kte) :: qc_incld, qr_incld, qitot_incld, qirim_incld ! In cloud mass-mixing ratios
+    real(rtype), dimension(its:ite,kts:kte) :: nc_incld, nr_incld, nitot_incld, birim_incld ! In cloud number concentrations
 
     real(rtype), dimension(its:ite,kts:kte)      :: inv_dzq,inv_rho,ze_ice,ze_rain,prec,rho,       &
          rhofacr,rhofaci,acn,xxls,xxlv,xlf,qvs,qvi,sup,supi,vtrmi1,       &
@@ -556,8 +560,6 @@ contains
     diag_rhoi = 0.
     rhorime_c = 400.
 
-    call get_precip_fraction(its,ite,kts,kte,kbot,ktop,kdir,ast,qc,qr,qitot,precip_frac_method, &
-                cldm,icldm,lcldm,rcldm)
     cmeiout = 0.
     prain   = 0.
     nevapr  = 0.
@@ -565,6 +567,9 @@ contains
     sflx    = 0.
     p3_tend_out = 0.
 
+    inv_icldm = 1.0_rtype/icldm
+    inv_lcldm = 1.0_rtype/lcldm
+    inv_rcldm = 1.0_rtype/rcldm
     ! AaronDonahue added exner term to replace all instances of th(i,k)/t(i,k), since th(i,k) is updated but t(i,k) is not, and this was
     ! causing energy conservation errors.
     inv_exner = 1./exner        !inverse of Exner expression, used when converting potential temp to temp
@@ -670,7 +675,11 @@ contains
              birim(i,k) = 0.
           endif
 
+          call calculate_incloud_mixingratios(qc(i,k),qr(i,k),qitot(i,k),qirim(i,k),nc(i,k),nr(i,k),nitot(i,k),birim(i,k), &
+                  inv_lcldm(i,k),inv_icldm(i,k),inv_rcldm(i,k), &
+                  qc_incld(i,k),qr_incld(i,k),qitot_incld(i,k),qirim_incld(i,k),nc_incld(i,k),nr_incld(i,k),nitot_incld(i,k),birim_incld(i,k)) 
           !===
+
 
        enddo k_loop_1
 
@@ -699,6 +708,8 @@ contains
                ((t(i,k).lt.zerodegc .and. supi(i,k).lt.-0.05) .or.                              &
                (t(i,k).ge.zerodegc .and. sup(i,k) .lt.-0.05))) goto 555   !i.e. skip all process rates
 
+          ! All microphysics tendencies will be computed as IN-CLOUD, they will be mapped back to cell-average later.
+
           ! initialize warm-phase process rates
           qcacc   = 0.;     qrevp   = 0.;     qccon   = 0.
           qcaut   = 0.;     qcevp   = 0.;     qrcon   = 0.
@@ -715,7 +726,16 @@ contains
           ncheti  = 0.;     nrcol   = 0.;     nislf   = 0.
           ninuc   = 0.;     qidep   = 0.
           nrheti  = 0.;     nisub   = 0.;     qwgrth  = 0.
-          qcmul   = 0.;          
+ 
+          ! initialize microphysics processes tendency output
+          p3_tend_out(i,k,42) = qc(i,k)    ! Liq. microphysics tendency, initialize 
+          p3_tend_out(i,k,43) = nc(i,k)    ! Liq. # microphysics tendency, initialize 
+          p3_tend_out(i,k,44) = qr(i,k)    ! Rain microphysics tendency, initialize 
+          p3_tend_out(i,k,45) = nr(i,k)    ! Rain # microphysics tendency, initialize 
+          p3_tend_out(i,k,46) = qitot(i,k) ! Ice  microphysics tendency, initialize 
+          p3_tend_out(i,k,47) = nitot(i,k) ! Ice  # microphysics tendency, initialize 
+          p3_tend_out(i,k,48) = qv(i,k)    ! Vapor  microphysics tendency, initialize 
+          p3_tend_out(i,k,49) = th(i,k)    ! Pot. Temp. microphysics tendency, initialize 
 
           log_wetgrowth = .false.
 
@@ -740,6 +760,7 @@ contains
              ! now do the adjustment
              if (abs(epsilon).ge.1.e-15) then
                 qc(i,k)   = qc(i,k)+epsilon
+                qc_incld(i,k)   = qc(i,k)*inv_lcldm(i,k)
                 qv(i,k)   = qv(i,k)-epsilon
                 th(i,k)   = th(i,k)+epsilon*exner(i,k)*xxlv(i,k)*inv_cp
                 ! recalculate variables if there was adjustment
@@ -756,8 +777,8 @@ contains
 
           ! skip micro process calculations except nucleation/acvtivation if there no hydrometeors are present
           log_exitlevel = .true.
-          if (qc(i,k).ge.qsmall .or. qr(i,k).ge.qsmall) log_exitlevel = .false.
-          if (qitot(i,k).ge.qsmall) log_exitlevel=.false.
+          if (qc_incld(i,k).ge.qsmall .or. qr_incld(i,k).ge.qsmall) log_exitlevel = .false.
+          if (qitot_incld(i,k).ge.qsmall) log_exitlevel=.false.
           if (log_exitlevel) goto 444   !i.e. skip to nucleation
 
           !time/space varying physical variables
@@ -779,36 +800,38 @@ contains
              eii=1.
           end if
 
-          call get_cloud_dsd2(qc(i,k),nc(i,k),mu_c(i,k),rho(i,k),nu(i,k),dnu,lamc(i,k),     &
-               lammin,lammax,cdist(i,k),cdist1(i,k))
+          call get_cloud_dsd2(qc_incld(i,k),nc_incld(i,k),mu_c(i,k),rho(i,k),nu(i,k),dnu,lamc(i,k),     &
+               lammin,lammax,cdist(i,k),cdist1(i,k),lcldm(i,k))
+          nc(i,k) = nc_incld(i,k)*lcldm(i,k)
 
-          call get_rain_dsd2(qr(i,k),nr(i,k),mu_r(i,k),rdumii,dumii,lamr(i,k),mu_r_table,   &
-               cdistr(i,k),logn0r(i,k))
+          call get_rain_dsd2(qr_incld(i,k),nr_incld(i,k),mu_r(i,k),rdumii,dumii,lamr(i,k),mu_r_table,   &
+               cdistr(i,k),logn0r(i,k),rcldm(i,k))
+          nr(i,k) = nr_incld(i,k)*rcldm(i,k)
 
           ! initialize inverse supersaturation relaxation timescale for combined ice categories
           epsi_tot = 0.
 
-          call impose_max_total_Ni(nitot(i,k),max_total_Ni,inv_rho(i,k))
+          call impose_max_total_Ni(nitot_incld(i,k),max_total_Ni,inv_rho(i,k))
 
-          if (qitot(i,k).ge.qsmall) then
+          if (qitot_incld(i,k).ge.qsmall) then
 
              !impose lower limits to prevent taking log of # < 0
-             nitot(i,k) = max(nitot(i,k),nsmall)
-             nr(i,k)         = max(nr(i,k),nsmall)
+             nitot_incld(i,k) = max(nitot_incld(i,k),nsmall)
+             nr_incld(i,k)         = max(nr_incld(i,k),nsmall)
 
              !compute mean-mass ice diameters (estimated; rigorous approach to be implemented later)
              dum2 = 500. !ice density
-             diam_ice(i,k) = ((qitot(i,k)*6.)/(nitot(i,k)*dum2*pi))**thrd
+             diam_ice(i,k) = ((qitot_incld(i,k)*6.)/(nitot_incld(i,k)*dum2*pi))**thrd
 
-             call calc_bulkRhoRime(qitot(i,k),qirim(i,k),birim(i,k),rhop)
+             call calc_bulkRhoRime(qitot_incld(i,k),qirim_incld(i,k),birim_incld(i,k),rhop)
 
-             ! if (.not. tripleMoment_on) zitot(i,k) = diag_mom6(qitot(i,k),nitot(i,k),rho(i,k))
+             ! if (.not. tripleMoment_on) zitot(i,k) = diag_mom6(qitot_incld(i,k),nitot_incld(i,k),rho(i,k))
              call find_lookupTable_indices_1a(dumi,dumjj,dumii,dumzz,dum1,dum4,          &
                   dum5,dum6,isize,rimsize,densize,                &
-                  qitot(i,k),nitot(i,k),qirim(i,k),      &
+                  qitot_incld(i,k),nitot_incld(i,k),qirim_incld(i,k),      &
                   rhop)
-             !qirim(i,k),zitot(i,k),rhop)
-             call find_lookupTable_indices_1b(dumj,dum3,rcollsize,qr(i,k),nr(i,k))
+             !qirim_incld(i,k),zitot(i,k),rhop)
+             call find_lookupTable_indices_1b(dumj,dum3,rcollsize,qr_incld(i,k),nr_incld(i,k))
 
              ! call to lookup table interpolation subroutines to get process rates
              call access_lookup_table(dumjj,dumii,dumi, 2,dum1,dum4,dum5,f1pr02)
@@ -820,7 +843,7 @@ contains
              call access_lookup_table(dumjj,dumii,dumi,10,dum1,dum4,dum5,f1pr14)
 
              ! ice-rain collection processes
-             if (qr(i,k).ge.qsmall) then
+             if (qr_incld(i,k).ge.qsmall) then
                 call access_lookup_table_coll(dumjj,dumii,dumj,dumi,1,dum1,dum3,dum4,dum5,f1pr07)
                 call access_lookup_table_coll(dumjj,dumii,dumj,dumi,2,dum1,dum3,dum4,dum5,f1pr08)
              else
@@ -830,16 +853,16 @@ contains
 
              ! adjust Ni if needed to make sure mean size is in bounds (i.e. apply lambda limiters)
              ! note that the Nmax and Nmin are normalized and thus need to be multiplied by existing N
-             nitot(i,k) = min(nitot(i,k),f1pr09*nitot(i,k))
-             nitot(i,k) = max(nitot(i,k),f1pr10*nitot(i,k))
+             nitot_incld(i,k) = min(nitot_incld(i,k),f1pr09*nitot_incld(i,k))
+             nitot_incld(i,k) = max(nitot_incld(i,k),f1pr10*nitot_incld(i,k))
 
              !PMC nCat delete stuff below!!!
 
              ! Determine additional collection efficiency factor to be applied to ice-ice collection.
              ! The computed values of qicol and nicol are multipiled by Eii_fact to gradually shut off collection
              ! if ice is highly rimed.
-             if (qirim(i,k)>0.) then
-                tmp1 = qirim(i,k)/qitot(i,k)   !rime mass fraction
+             if (qirim_incld(i,k)>0.) then
+                tmp1 = qirim_incld(i,k)/qitot_incld(i,k)   !rime mass fraction
                 if (tmp1.lt.0.6) then
                    Eii_fact=1.
                 else if (tmp1.ge.0.6.and.tmp1.lt.0.9) then
@@ -870,17 +893,17 @@ contains
           ! for T < 273.15, assume collected cloud water is instantly frozen
           ! note 'f1pr' values are normalized, so we need to multiply by N
 
-          if (qitot(i,k).ge.qsmall .and. qc(i,k).ge.qsmall .and. t(i,k).le.zerodegc) then
-             qccol = rhofaci(i,k)*f1pr04*qc(i,k)*eci*rho(i,k)*nitot(i,k)
-             nccol = rhofaci(i,k)*f1pr04*nc(i,k)*eci*rho(i,k)*nitot(i,k)
+          if (qitot_incld(i,k).ge.qsmall .and. qc_incld(i,k).ge.qsmall .and. t(i,k).le.zerodegc) then
+             qccol = rhofaci(i,k)*f1pr04*qc_incld(i,k)*eci*rho(i,k)*nitot_incld(i,k)
+             nccol = rhofaci(i,k)*f1pr04*nc_incld(i,k)*eci*rho(i,k)*nitot_incld(i,k)
           endif
 
           ! for T > 273.15, assume cloud water is collected and shed as rain drops
 
-          if (qitot(i,k).ge.qsmall .and. qc(i,k).ge.qsmall .and. t(i,k).gt.zerodegc) then
+          if (qitot_incld(i,k).ge.qsmall .and. qc_incld(i,k).ge.qsmall .and. t(i,k).gt.zerodegc) then
              ! sink for cloud water mass and number, note qcshed is source for rain mass
-             qcshd = rhofaci(i,k)*f1pr04*qc(i,k)*eci*rho(i,k)*nitot(i,k)
-             nccol = rhofaci(i,k)*f1pr04*nc(i,k)*eci*rho(i,k)*nitot(i,k)
+             qcshd = rhofaci(i,k)*f1pr04*qc_incld(i,k)*eci*rho(i,k)*nitot_incld(i,k)
+             nccol = rhofaci(i,k)*f1pr04*nc_incld(i,k)*eci*rho(i,k)*nitot_incld(i,k)
              ! source for rain number, assume 1 mm drops are shed
              ncshdc = qcshd*1.923e+6
           endif
@@ -898,10 +921,10 @@ contains
 
           ! note 'f1pr' values are normalized, so we need to multiply by N
 
-          if (qitot(i,k).ge.qsmall .and. qr(i,k).ge.qsmall .and. t(i,k).le.zerodegc) then
+          if (qitot_incld(i,k).ge.qsmall .and. qr_incld(i,k).ge.qsmall .and. t(i,k).le.zerodegc) then
              ! note: f1pr08 and logn0r are already calculated as log_10
-             qrcol = 10.**(f1pr08+logn0r(i,k))*rho(i,k)*rhofaci(i,k)*eri*nitot(i,k)
-             nrcol = 10.**(f1pr07+logn0r(i,k))*rho(i,k)*rhofaci(i,k)*eri*nitot(i,k)
+             qrcol = 10.**(f1pr08+logn0r(i,k))*rho(i,k)*rhofaci(i,k)*eri*nitot_incld(i,k)
+             nrcol = 10.**(f1pr07+logn0r(i,k))*rho(i,k)*rhofaci(i,k)*eri*nitot_incld(i,k)
           endif
 
           ! for T > 273.15, assume collected rain number is shed as
@@ -910,11 +933,11 @@ contains
           ! rate of ice mass due to melting
           ! collection of rain above freezing does not impact total rain mass
 
-          if (qitot(i,k).ge.qsmall .and. qr(i,k).ge.qsmall .and. t(i,k).gt.zerodegc) then
+          if (qitot_incld(i,k).ge.qsmall .and. qr_incld(i,k).ge.qsmall .and. t(i,k).gt.zerodegc) then
              ! rain number sink due to collection
-             nrcol  = 10.**(f1pr07 + logn0r(i,k))*rho(i,k)*rhofaci(i,k)*eri*nitot(i,k)
+             nrcol  = 10.**(f1pr07 + logn0r(i,k))*rho(i,k)*rhofaci(i,k)*eri*nitot_incld(i,k)
              ! rain number source due to shedding = collected rain mass/mass of 1 mm drop
-             dum    = 10.**(f1pr08 + logn0r(i,k))*rho(i,k)*rhofaci(i,k)*eri*nitot(i,k)
+             dum    = 10.**(f1pr08 + logn0r(i,k))*rho(i,k)*rhofaci(i,k)*eri*nitot_incld(i,k)
              ! for now neglect shedding of ice collecting rain above freezing, since snow is
              ! not expected to shed in these conditions (though more hevaily rimed ice would be
              ! expected to lead to shedding)
@@ -935,8 +958,8 @@ contains
           ! in the lookup table calculations
           ! note 'f1pr' values are normalized, so we need to multiply by N
 
-          if (qitot(i,k).ge.qsmall) then
-             nislf = f1pr03*rho(i,k)*eii*Eii_fact*rhofaci(i,k)*nitot(i,k)
+          if (qitot_incld(i,k).ge.qsmall) then
+             nislf = f1pr03*rho(i,k)*eii*Eii_fact*rhofaci(i,k)*nitot_incld(i,k)
           endif
 
 
@@ -946,7 +969,7 @@ contains
           ! need to add back accelerated melting due to collection of ice mass by rain (pracsw1)
           ! note 'f1pr' values are normalized, so we need to multiply by N
 
-          if (qitot(i,k).ge.qsmall .and. t(i,k).gt.zerodegc) then
+          if (qitot_incld(i,k).ge.qsmall .and. t(i,k).gt.zerodegc) then
              qsat0 = 0.622*e0/(pres(i,k)-e0)
              !  dum=cpw/xlf(i,k)*(t(i,k)-273.15)*(pracsw1+qcshd)
              ! currently enhanced melting from collision is neglected
@@ -957,9 +980,9 @@ contains
              ! include RH dependence
              qimlt = ((f1pr05+f1pr14*sc**thrd*(rhofaci(i,k)*rho(i,k)/mu)**0.5)*((t(i,k)-   &
                   zerodegc)*kap-rho(i,k)*xxlv(i,k)*dv*(qsat0-qv(i,k)))*2.*pi/xlf(i,k)+     &
-                  dum)*nitot(i,k)
+                  dum)*nitot_incld(i,k)
              qimlt = max(qimlt,0.)
-             nimlt = qimlt*(nitot(i,k)/qitot(i,k))
+             nimlt = qimlt*(nitot_incld(i,k)/qitot_incld(i,k))
           endif
 
           !............................................................
@@ -968,12 +991,12 @@ contains
           ! similar to Musil (1970), JAS
           ! note 'f1pr' values are normalized, so we need to multiply by N
 
-          if (qitot(i,k).ge.qsmall .and. qc(i,k)+qr(i,k).ge.1.e-6 .and. t(i,k).lt.zerodegc) then
+          if (qitot_incld(i,k).ge.qsmall .and. qc_incld(i,k)+qr_incld(i,k).ge.1.e-6 .and. t(i,k).lt.zerodegc) then
 
              qsat0  = 0.622*e0/(pres(i,k)-e0)
              qwgrth = ((f1pr05 + f1pr14*sc**thrd*(rhofaci(i,k)*rho(i,k)/mu)**0.5)*       &
                   2.*pi*(rho(i,k)*xxlv(i,k)*dv*(qsat0-qv(i,k))-(t(i,k)-zerodegc)*           &
-                  kap)/(xlf(i,k)+cpw*(t(i,k)-zerodegc)))*nitot(i,k)
+                  kap)/(xlf(i,k)+cpw*(t(i,k)-zerodegc)))*nitot_incld(i,k)
              qwgrth = max(qwgrth,0.)
              !calculate shedding for wet growth
              dum    = max(0.,(qccol+qrcol)-qwgrth)
@@ -995,9 +1018,9 @@ contains
           !-----------------------------
           ! calcualte total inverse ice relaxation timescale combined for all ice categories
           ! note 'f1pr' values are normalized, so we need to multiply by N
-          if (qitot(i,k).ge.qsmall .and. t(i,k).lt.zerodegc) then
+          if (qitot_incld(i,k).ge.qsmall .and. t(i,k).lt.zerodegc) then
              epsi = ((f1pr05+f1pr14*sc**thrd*(rhofaci(i,k)*rho(i,k)/mu)**0.5)*2.*pi* &
-                  rho(i,k)*dv)*nitot(i,k)
+                  rho(i,k)*dv)*nitot_incld(i,k)
              epsi_tot   = epsi_tot + epsi
           else
              epsi = 0.
@@ -1018,7 +1041,7 @@ contains
           ! Compute rime density: (based on parameterization of Cober and List, 1993 [JAS])
           ! for simplicty use mass-weighted ice and droplet/rain fallspeeds
 
-          ! if (qitot(i,k).ge.qsmall .and. t(i,k).lt.zerodegc) then
+          ! if (qitot_incld(i,k).ge.qsmall .and. t(i,k).lt.zerodegc) then
           !  NOTE:  condition applicable for cloud only; modify when rain is added back
           if (qccol.ge.qsmall .and. t(i,k).lt.zerodegc) then
 
@@ -1027,7 +1050,7 @@ contains
              iTc   = 1./min(-0.001,t(i,k)-zerodegc)
 
              ! cloud:
-             if (qc(i,k).ge.qsmall) then
+             if (qc_incld(i,k).ge.qsmall) then
                 ! droplet fall speed
                 ! (use Stokes' formulation (thus use analytic solution)
                 Vt_qc(i,k) = acn(i,k)*gamma(4.+bcn+mu_c(i,k))/(lamc(i,k)**bcn*gamma(mu_c(i,k)+4.))
@@ -1056,8 +1079,8 @@ contains
           !............................................................
           ! contact and immersion freezing droplets
 
-          if (qc(i,k).ge.qsmall .and. t(i,k).le.rainfrze) then
-             ! for future: calculate gamma(mu_c+4) in one place since its used multiple times
+          if (qc_incld(i,k).ge.qsmall .and. t(i,k).le.rainfrze) then
+             ! for future: calculate gamma(mu_c+4) in one place since its used multiple times  !AaronDonahue, TODO
              dum   = (1./lamc(i,k))**3
              Q_nuc = cons6*cdist1(i,k)*gamma(7.+mu_c(i,k))*exp(aimm*(zerodegc-t(i,k)))*dum**2
              N_nuc = cons5*cdist1(i,k)*gamma(mu_c(i,k)+4.)*exp(aimm*(zerodegc-t(i,k)))*dum
@@ -1070,7 +1093,7 @@ contains
           ! immersion freezing of rain
           ! for future: get rid of log statements below for rain freezing
 
-          if (qr(i,k).ge.qsmall.and.t(i,k).le.rainfrze) then
+          if (qr_incld(i,k).ge.qsmall.and.t(i,k).le.rainfrze) then
              Q_nuc = cons6*exp(log(cdistr(i,k))+log(gamma(7.+mu_r(i,k)))-6.*log(lamr(i,k)))* &
                   exp(aimm*(zerodegc-T(i,k)))
              N_nuc = cons5*exp(log(cdistr(i,k))+log(gamma(mu_r(i,k)+4.))-3.*log(lamr(i,k)))* &
@@ -1092,7 +1115,7 @@ contains
           !   (use semi-analytic formulation)
 
           ! calculate rain evaporation including ventilation
-          if (qr(i,k).ge.qsmall) then
+          if (qr_incld(i,k).ge.qsmall) then
              call find_lookupTable_indices_3(dumii,dumjj,dum1,rdumii,rdumjj,inv_dum3,mu_r(i,k),lamr(i,k))
              !interpolate value at mu_r
 ! bug fix 12/23/18
@@ -1117,7 +1140,7 @@ contains
              epsr = 0.
           endif
 
-          if (qc(i,k).ge.qsmall) then
+          if (qc_incld(i,k).ge.qsmall) then
              epsc = 2.*pi*rho(i,k)*dv*cdist(i,k)
           else
              epsc = 0.
@@ -1174,14 +1197,14 @@ contains
           xx  = max(1.e-20,xx)   ! set lower bound on xx to prevent division by zero
           oxx = 1./xx
 
-          if (qc(i,k).ge.qsmall) &
+          if (qc_incld(i,k).ge.qsmall) &
                qccon = (aaa*epsc*oxx+(ssat(i,k)-aaa*oxx)*odt*epsc*oxx*(1.-dexp(-dble(xx*dt))))/ab
-          if (qr(i,k).ge.qsmall) &
+          if (qr_incld(i,k).ge.qsmall) &
                qrcon = (aaa*epsr*oxx+(ssat(i,k)-aaa*oxx)*odt*epsr*oxx*(1.-dexp(-dble(xx*dt))))/ab
 
           !for very small water contents, evaporate instantly
-          if (sup(i,k).lt.-0.001 .and. qc(i,k).lt.1.e-12)  qccon = -qc(i,k)*odt
-          if (sup(i,k).lt.-0.001 .and. qr(i,k).lt.1.e-12)  qrcon = -qr(i,k)*odt
+          if (sup(i,k).lt.-0.001 .and. qc_incld(i,k).lt.1.e-12)  qccon = -qc_incld(i,k)*odt
+          if (sup(i,k).lt.-0.001 .and. qr_incld(i,k).lt.1.e-12)  qrcon = -qr_incld(i,k)*odt
 
           if (qccon.lt.0.) then
              qcevp = -qccon
@@ -1190,7 +1213,7 @@ contains
 
           if (qrcon.lt.0.) then
              qrevp = -qrcon
-             nrevp = qrevp*(nr(i,k)/qr(i,k))
+             nrevp = qrevp*(nr_incld(i,k)/qr_incld(i,k))
              !nrevp = nrevp*exp(-0.2*mu_r(i,k))  !add mu dependence [Seifert (2008), neglecting size dependence]
              qrcon = 0.
           endif
@@ -1210,21 +1233,21 @@ contains
              qrevp = qrevp*ratio
           endif
 
-          if (qitot(i,k).ge.qsmall.and.t(i,k).lt.zerodegc) then
+          if (qitot_incld(i,k).ge.qsmall.and.t(i,k).lt.zerodegc) then
              qidep = (aaa*epsi*oxx+(ssat(i,k)-aaa*oxx)*odt*epsi*oxx*   &
                   (1.-dexp(-dble(xx*dt))))*oabi+(qvs(i,k)-dumqvi)*epsi*oabi
           endif
 
           !for very small ice contents in dry air, sublimate all ice instantly
-          if (supi(i,k).lt.-0.001 .and. qitot(i,k).lt.1.e-12) &
-               qidep = -qitot(i,k)*odt
+          if (supi(i,k).lt.-0.001 .and. qitot_incld(i,k).lt.1.e-12) &
+               qidep = -qitot_incld(i,k)*odt
 
           if (qidep.lt.0.) then
              !note: limit to saturation adjustment (for dep and subl) is applied later
              qisub = -qidep
              qisub = qisub*clbfact_sub
-             qisub = min(qisub, qitot(i,k)*dt)
-             nisub = qisub*(nitot(i,k)/qitot(i,k))
+             qisub = min(qisub, qitot_incld(i,k)*dt)
+             nisub = qisub*(nitot_incld(i,k)/qitot_incld(i,k))
              qidep = 0.
           else
              qidep = qidep*clbfact_dep
@@ -1236,6 +1259,7 @@ contains
           !................................................................
           ! deposition/condensation-freezing nucleation
           ! allow ice nucleation if < -15 C and > 5% ice supersaturation
+          ! use CELL-AVERAGE values, freezing of vapor
 
           if (t(i,k).lt.icenuct .and. supi(i,k).ge.0.05) then
 
@@ -1261,7 +1285,7 @@ contains
           ! this is not applied at the first time step, since saturation adjustment is applied at the first step
 
           if (.not.(log_predictNc).and.sup(i,k).gt.1.e-6.and.it.gt.1) then
-             dum   = nccnst*inv_rho(i,k)*cons7-qc(i,k)
+             dum   = nccnst*inv_rho(i,k)*cons7-qc_incld(i,k)
              dum   = max(0.,dum)
              dumqvs = qv_sat(t(i,k),pres(i,k),0)
              dqsdt = xxlv(i,k)*dumqvs/(rv*t(i,k)*t(i,k))
@@ -1288,7 +1312,7 @@ contains
                 dum2  = nanew2*0.5*(1.-erf(uu2)) ! activated number in kg-1 mode 2
                 ! make sure this value is not greater than total number of aerosol
                 dum2  = min((nanew1+nanew2),dum1+dum2)
-                dum2  = (dum2-nc(i,k))*odt
+                dum2  = (dum2-nc_incld(i,k))*odt
                 dum2  = max(0.,dum2)
                 ncnuc = dum2
                 ! don't include mass increase from droplet activation during first time step
@@ -1321,46 +1345,46 @@ contains
           !................
           ! autoconversion
 
-          qc_not_small: if (qc(i,k).ge.1.e-8) then
+          qc_not_small: if (qc_incld(i,k).ge.1.e-8) then
 
              if (iparam.eq.1) then
 
                 !Seifert and Beheng (2001)
-                dum   = 1.-qc(i,k)/(qc(i,k)+qr(i,k))
+                dum   = 1.-qc_incld(i,k)/(qc_incld(i,k)+qr_incld(i,k))
                 dum1  = 600.*dum**0.68*(1.-dum**0.68)**3
                 ! qcaut = kc/(20.*2.6e-7)*(nu(i,k)+2.)*(nu(i,k)+4.)/(nu(i,k)+1.)**2*         &
-                !         (rho(i,k)*qc(i,k)/1000.)**4/(rho(i,k)*nc(i,k)/1.e+6)**2*(1.+       &
+                !         (rho(i,k)*qc_incld(i,k)/1000.)**4/(rho(i,k)*nc_incld(i,k)/1.e+6)**2*(1.+       &
                 !         dum1/(1.-dum)**2)*1000.*inv_rho(i,k)
                 ! ncautc = qcaut*2./2.6e-7*1000.
                 qcaut =  kc*1.9230769e-5*(nu(i,k)+2.)*(nu(i,k)+4.)/(nu(i,k)+1.)**2*        &
-                     (rho(i,k)*qc(i,k)*1.e-3)**4/(rho(i,k)*nc(i,k)*1.e-6)**2*(1.+      &
+                     (rho(i,k)*qc_incld(i,k)*1.e-3)**4/(rho(i,k)*nc_incld(i,k)*1.e-6)**2*(1.+      &
                      dum1/(1.-dum)**2)*1000.*inv_rho(i,k)
                 ncautc = qcaut*7.6923076e+9
 
              elseif (iparam.eq.2) then
 
                 !Beheng (1994)
-                if (nc(i,k)*rho(i,k)*1.e-6 .lt. 100.) then
+                if (nc_incld(i,k)*rho(i,k)*1.e-6 .lt. 100.) then
                    qcaut = 6.e+28*inv_rho(i,k)*mu_c(i,k)**(-1.7)*(1.e-6*rho(i,k)*          &
-                        nc(i,k))**(-3.3)*(1.e-3*rho(i,k)*qc(i,k))**4.7
+                        nc_incld(i,k))**(-3.3)*(1.e-3*rho(i,k)*qc_incld(i,k))**4.7
                 else
                    !2D interpolation of tabled logarithmic values
-                   dum   = 41.46 + (nc(i,k)*1.e-6*rho(i,k)-100.)*(37.53-41.46)*5.e-3
-                   dum1  = 39.36 + (nc(i,k)*1.e-6*rho(i,k)-100.)*(30.72-39.36)*5.e-3
+                   dum   = 41.46 + (nc_incld(i,k)*1.e-6*rho(i,k)-100.)*(37.53-41.46)*5.e-3
+                   dum1  = 39.36 + (nc_incld(i,k)*1.e-6*rho(i,k)-100.)*(30.72-39.36)*5.e-3
                    qcaut = dum+(mu_c(i,k)-5.)*(dum1-dum)*0.1
                    ! 1000/rho is for conversion from g cm-3/s to kg/kg
-                   qcaut = exp(qcaut)*(1.e-3*rho(i,k)*qc(i,k))**4.7*1000.*inv_rho(i,k)
+                   qcaut = exp(qcaut)*(1.e-3*rho(i,k)*qc_incld(i,k))**4.7*1000.*inv_rho(i,k)
                 endif
                 ncautc = 7.7e+9*qcaut
 
              elseif (iparam.eq.3) then
 
                 !Khroutdinov and Kogan (2000)
-                dum   = qc(i,k)
-                qcaut = 1350.*dum**2.47*(nc(i,k)*1.e-6*rho(i,k))**(-1.79)
+                dum   = qc_incld(i,k)
+                qcaut = 1350.*dum**2.47*(nc_incld(i,k)*1.e-6*rho(i,k))**(-1.79)
                 ! note: ncautr is change in Nr; ncautc is change in Nc
                 ncautr = qcaut*cons3
-                ncautc = qcaut*nc(i,k)/qc(i,k)
+                ncautc = qcaut*nc_incld(i,k)/qc_incld(i,k)
 
              endif
 
@@ -1372,15 +1396,15 @@ contains
           !............................
           ! self-collection of droplets
 
-          if (qc(i,k).ge.qsmall) then
+          if (qc_incld(i,k).ge.qsmall) then
 
              if (iparam.eq.1) then
                 !Seifert and Beheng (2001)
-                ncslf = -kc*(1.e-3*rho(i,k)*qc(i,k))**2*(nu(i,k)+2.)/(nu(i,k)+1.)*         &
+                ncslf = -kc*(1.e-3*rho(i,k)*qc_incld(i,k))**2*(nu(i,k)+2.)/(nu(i,k)+1.)*         &
                      1.e+6*inv_rho(i,k)+ncautc
              elseif (iparam.eq.2) then
                 !Beheng (994)
-                ncslf = -5.5e+16*inv_rho(i,k)*mu_c(i,k)**(-0.63)*(1.e-3*rho(i,k)*qc(i,k))**2
+                ncslf = -5.5e+16*inv_rho(i,k)*mu_c(i,k)**(-0.63)*(1.e-3*rho(i,k)*qc_incld(i,k))**2
              elseif (iparam.eq.3) then
                 !Khroutdinov and Kogan (2000)
                 ncslf = 0.
@@ -1391,24 +1415,24 @@ contains
           !............................
           ! accretion of cloud by rain
 
-          if (qr(i,k).ge.qsmall .and. qc(i,k).ge.qsmall) then
+          if (qr_incld(i,k).ge.qsmall .and. qc_incld(i,k).ge.qsmall) then
 
              if (iparam.eq.1) then
                 !Seifert and Beheng (2001)
-                dum   = 1.-qc(i,k)/(qc(i,k)+qr(i,k))
+                dum   = 1.-qc_incld(i,k)/(qc_incld(i,k)+qr_incld(i,k))
                 dum1  = (dum/(dum+5.e-4))**4
-                qcacc = kr*rho(i,k)*0.001*qc(i,k)*qr(i,k)*dum1
-                ncacc = qcacc*rho(i,k)*0.001*(nc(i,k)*rho(i,k)*1.e-6)/(qc(i,k)*rho(i,k)*   &
+                qcacc = kr*rho(i,k)*0.001*qc_incld(i,k)*qr_incld(i,k)*dum1
+                ncacc = qcacc*rho(i,k)*0.001*(nc_incld(i,k)*rho(i,k)*1.e-6)/(qc_incld(i,k)*rho(i,k)*   &
                      0.001)*1.e+6*inv_rho(i,k)
              elseif (iparam.eq.2) then
                 !Beheng (994)
-                qcacc = 6.*rho(i,k)*(qc(i,k)*qr(i,k))
-                ncacc = qcacc*rho(i,k)*1.e-3*(nc(i,k)*rho(i,k)*1.e-6)/(qc(i,k)*rho(i,k)*1.e-3)* &
+                qcacc = 6.*rho(i,k)*(qc_incld(i,k)*qr_incld(i,k))
+                ncacc = qcacc*rho(i,k)*1.e-3*(nc_incld(i,k)*rho(i,k)*1.e-6)/(qc_incld(i,k)*rho(i,k)*1.e-3)* &
                      1.e+6*inv_rho(i,k)
              elseif (iparam.eq.3) then
                 !Khroutdinov and Kogan (2000)
-                qcacc = 67.*(qc(i,k)*qr(i,k))**1.15
-                ncacc = qcacc*nc(i,k)/qc(i,k)
+                qcacc = 67.*(qc_incld(i,k)*qr_incld(i,k))**1.15
+                ncacc = qcacc*nc_incld(i,k)/qc_incld(i,k)
              endif
 
              if (qcacc.eq.0.) ncacc = 0.
@@ -1420,7 +1444,7 @@ contains
           ! self-collection and breakup of rain
           ! (breakup following modified Verlinde and Cotton scheme)
 
-          if (qr(i,k).ge.qsmall) then
+          if (qr_incld(i,k).ge.qsmall) then
 
              ! include breakup
              dum1 = 280.e-6
@@ -1431,7 +1455,7 @@ contains
              ! want to keep breakup threshold consistent so 'dum'
              ! is expressed in terms of lambda rather than mass-mean D
 
-             dum2 = (qr(i,k)/(pi*rhow*nr(i,k)))**thrd
+             dum2 = (qr_incld(i,k)/(pi*rhow*nr_incld(i,k)))**thrd
              if (dum2.lt.dum1) then
                 dum = 1.
              else if (dum2.ge.dum1) then
@@ -1439,13 +1463,61 @@ contains
              endif
 
              if (iparam.eq.1.) then
-                nrslf = dum*kr*1.e-3*qr(i,k)*nr(i,k)*rho(i,k)
+                nrslf = dum*kr*1.e-3*qr_incld(i,k)*nr_incld(i,k)*rho(i,k)
              elseif (iparam.eq.2 .or. iparam.eq.3) then
-                nrslf = dum*5.78*nr(i,k)*qr(i,k)*rho(i,k)
+                nrslf = dum*5.78*nr_incld(i,k)*qr_incld(i,k)*rho(i,k)
              endif
 
           endif
 
+          ! Here we map the microphysics tendency rates back to CELL-AVERAGE quantities for updating
+          ! cell-average quantities.
+          ir_cldm = min(icldm(i,k),rcldm(i,k))  ! Intersection of ICE and RAIN cloud
+          il_cldm = min(icldm(i,k),lcldm(i,k))  ! Intersection of ICE and LIQUID cloud
+          lr_cldm = min(lcldm(i,k),rcldm(i,k))  ! Intersection of LIQUID and RAIN cloud
+
+          ! Some process rates take place within the intersection of liquid, rain and ice cloud fractions.
+          ! We calculate the intersection as the minimum between combinations of cloud fractions and use 
+          ! these values to map back to cell-average quantities where applicable.
+          
+          ! map warm-phase process rates to cell-avg
+          qcacc   = qcacc*lr_cldm     ! Accretion of liquid to rain
+          qrevp   = qrevp*rcldm(i,k)  ! Evaporation of rain
+          qccon   = qccon*lcldm(i,k)  ! Condensation of liquid
+          qcaut   = qcaut*lcldm(i,k)  ! Autoconversion of liquid
+          qcevp   = qcevp*lcldm(i,k)  ! Evaporation of liquid, AaronDonahue: there is no equivalent ncevp, this should be investigated
+          qrcon   = qrcon*rcldm(i,k)  ! Condensation of rain
+          ncacc   = ncacc*lr_cldm     ! Number change due to accretion
+          ncslf   = ncslf*lcldm(i,k)  ! Self collection occurs locally in liq. cloud
+          ncautc  = ncautc*lcldm(i,k) ! Impact of autoconversion on number
+          nrslf   = nrslf*rcldm(i,k)  ! Self collection occurs locally in rain cloud
+          nrevp   = nrevp*rcldm(i,k)  ! Change in rain number due to evaporation 
+          ncautr  = ncautr*lr_cldm    ! Autoconversion of rain drops within rain/liq cloud
+            ! AaronDonahue: These variables are related to aerosol activation and their usage will be changed in a later PR.
+          qcnuc   = qcnuc*lcldm(i,k)  ! Impact on liq. from nucleation
+          ncnuc   = ncnuc*lcldm(i,k)  ! Number change due to aerosol activation
+
+          ! map ice-phase  process rates to cell-avg
+          qisub   = qisub*icldm(i,k)  ! Sublimation of ice in ice cloud
+          nrshdr  = nrshdr*il_cldm    ! Rain # increase due to shedding from rain-ice collisions, occurs when ice and liquid interact
+          qcheti  = qcheti*il_cldm    ! Immersion freezing of cloud drops
+          qrcol   = qrcol*ir_cldm     ! Collection of rain mass by ice
+          qcshd   = qcshd*il_cldm     ! Rain mass growth due to shedding of fain drops after collisions with ice, occurs when ice and liquid interact
+          qimlt   = qimlt*icldm(i,k)  ! Melting of ice
+          qccol   = qccol*il_cldm     ! Collection of water by ice
+          qrheti  = qrheti*rcldm(i,k) ! Immersion freezing of rain
+          nimlt   = nimlt*icldm(i,k)  ! Change in number due to melting
+          nccol   = nccol*il_cldm     ! Cloud # change due to collection of cld water by ice
+          ncshdc  = ncshdc*il_cldm    ! Number change due to shedding, occurs when ice and liquid interact
+          ncheti  = ncheti*lcldm(i,k) ! Number change associated with freexzing of cld drops
+          nrcol   = nrcol*ir_cldm     ! Rain number change due to collection from ice
+          nislf   = nislf*icldm(i,k)  ! Ice self collection
+          qidep   = qidep*icldm(i,k)  ! Vapor deposition to ice phase
+          nrheti  = nrheti*rcldm(i,k) ! Change in number due to immersion freezing of rain
+          nisub   = nisub*icldm(i,k)  ! Number change due to sublimation of ice
+            ! AaronDonahue: These variables are related to aerosol activation and their usage will be changed in a later PR.
+          qinuc   = qinuc             ! Deposition and condensation-freezing nucleation, already cell-averaged
+          ninuc   = ninuc             ! Number change due to deposition and condensation-freezing, already cell-averaged
 
           !.................................................................
           ! conservation of water
@@ -1668,9 +1740,23 @@ contains
           p3_tend_out(i,k,31) = nrheti    ! immersion freezing rain
           p3_tend_out(i,k,32) = nrshdr    ! source for rain number from collision of rain/ice above freezing and shedding
           p3_tend_out(i,k,33) = qcshd     ! source for rain mass due to cloud water/ice collision above freezing and shedding or wet growth and shedding
-          p3_tend_out(i,k,34) = qcmul     ! change in q, ice multiplication from rime-splitnering of cloud water (not included in the paper)
+          p3_tend_out(i,k,34) = 0._rtype  ! used to be qcmul, but that has been removed.  Kept at 0.0 as placeholder.
           p3_tend_out(i,k,35) = ncshdc    ! source for rain number due to cloud water/ice collision above freezing  and shedding (combined with NRSHD in the paper) 
+          ! measure microphysics processes tendency output
+          p3_tend_out(i,k,42) = qc(i,k)    - p3_tend_out(i,k,42) ! Liq. microphysics tendency, measure 
+          p3_tend_out(i,k,43) = nc(i,k)    - p3_tend_out(i,k,43) ! Liq. # microphysics tendency, measure 
+          p3_tend_out(i,k,44) = qr(i,k)    - p3_tend_out(i,k,44) ! Rain microphysics tendency, measure 
+          p3_tend_out(i,k,45) = nr(i,k)    - p3_tend_out(i,k,45) ! Rain # microphysics tendency, measure 
+          p3_tend_out(i,k,46) = qitot(i,k) - p3_tend_out(i,k,46) ! Ice  microphysics tendency, measure 
+          p3_tend_out(i,k,47) = nitot(i,k) - p3_tend_out(i,k,47) ! Ice  # microphysics tendency, measure 
+          p3_tend_out(i,k,48) = qv(i,k)    - p3_tend_out(i,k,48) ! Vapor  microphysics tendency, measure 
+          p3_tend_out(i,k,49) = th(i,k)    - p3_tend_out(i,k,49) ! Pot. Temp. microphysics tendency, measure 
           !---------------------------------------------------------------------------------
+
+          ! Recalculate in-cloud values for sedimentation
+          call calculate_incloud_mixingratios(qc(i,k),qr(i,k),qitot(i,k),qirim(i,k),nc(i,k),nr(i,k),nitot(i,k),birim(i,k), &
+                  inv_lcldm(i,k),inv_icldm(i,k),inv_rcldm(i,k), &
+                  qc_incld(i,k),qr_incld(i,k),qitot_incld(i,k),qirim_incld(i,k),nc_incld(i,k),nr_incld(i,k),nitot_incld(i,k),birim_incld(i,k)) 
 
 555       continue
 
@@ -1697,6 +1783,8 @@ contains
 
        !------------------------------------------------------------------------------------------!
        ! Cloud sedimentation:  (adaptive substepping)
+       p3_tend_out(i,:,36) = qc(i,:) ! Liq. sedimentation tendency, initialize 
+       p3_tend_out(i,:,37) = nc(i,:) ! Liq. # sedimentation tendency, initialize 
 
        log_qxpresent = .false.
        k_qxtop       = kbot
@@ -1733,10 +1821,11 @@ contains
 
                 kloop_sedi_c2: do k = k_qxtop,k_qxbot,-kdir
 
-                   qc_notsmall_c2: if (qc(i,k)>qsmall) then
+                   qc_notsmall_c2: if (qc_incld(i,k)>qsmall) then
                       !-- compute Vq, Vn
-                      call get_cloud_dsd2(qc(i,k),nc(i,k),mu_c(i,k),rho(i,k),nu(i,k),dnu,   &
-                           lamc(i,k),lammin,lammax,tmp1,tmp2)
+                      call get_cloud_dsd2(qc_incld(i,k),nc_incld(i,k),mu_c(i,k),rho(i,k),nu(i,k),dnu,   &
+                           lamc(i,k),lammin,lammax,tmp1,tmp2,lcldm(i,k))
+                      nc(i,k) = nc_incld(i,k)*lcldm(i,k)
                       dum = 1./lamc(i,k)**bcn
                       V_qc(k) = acn(i,k)*gamma(4.+bcn+mu_c(i,k))*dum/(gamma(mu_c(i,k)+4.))
                       V_nc(k) = acn(i,k)*gamma(1.+bcn+mu_c(i,k))*dum/(gamma(mu_c(i,k)+1.))
@@ -1794,9 +1883,10 @@ contains
 
                 kloop_sedi_c1: do k = k_qxtop,k_qxbot,-kdir
 
-                   qc_notsmall_c1: if (qc(i,k)>qsmall) then
-                      call get_cloud_dsd2(qc(i,k),nc(i,k),mu_c(i,k),rho(i,k),nu(i,k),dnu,   &
-                           lamc(i,k),lammin,lammax,tmp1,tmp2)
+                   qc_notsmall_c1: if (qc_incld(i,k)>qsmall) then
+                      call get_cloud_dsd2(qc_incld(i,k),nc_incld(i,k),mu_c(i,k),rho(i,k),nu(i,k),dnu,   &
+                           lamc(i,k),lammin,lammax,tmp1,tmp2,lcldm(i,k))
+                      nc(i,k) = nc_incld(i,k)*lcldm(i,k)
                       dum = 1./lamc(i,k)**bcn
                       V_qc(k) = acn(i,k)*gamma(4.+bcn+mu_c(i,k))*dum/(gamma(mu_c(i,k)+4.))
                    endif qc_notsmall_c1
@@ -1841,10 +1931,14 @@ contains
           prt_liq(i) = prt_accum*inv_rhow*odt  !note, contribution from rain is added below
 
        endif qc_present
+       p3_tend_out(i,:,36) = qc(i,:) - p3_tend_out(i,:,36) ! Liq. sedimentation tendency, measure
+       p3_tend_out(i,:,37) = nc(i,:) - p3_tend_out(i,:,37) ! Liq. # sedimentation tendency, measure
 
 
        !------------------------------------------------------------------------------------------!
        ! Rain sedimentation:  (adaptive substepping)
+       p3_tend_out(i,:,38) = qr(i,:) ! Rain sedimentation tendency, initialize
+       p3_tend_out(i,:,39) = nr(i,:) ! Rain # sedimentation tendency, initialize
 
        log_qxpresent = .false.
        k_qxtop       = kbot
@@ -1879,14 +1973,15 @@ contains
 
              kloop_sedi_r1: do k = k_qxtop,k_qxbot,-kdir
 
-                qr_notsmall_r1: if (qr(i,k)>qsmall) then
+                qr_notsmall_r1: if (qr_incld(i,k)>qsmall) then
 
                    !Compute Vq, Vn:
                    nr(i,k)  = max(nr(i,k),nsmall)
-                   call get_rain_dsd2(qr(i,k),nr(i,k),mu_r(i,k),rdumii,dumii,lamr(i,k),     &
-                        mu_r_table,tmp1,tmp2)
+                   call get_rain_dsd2(qr_incld(i,k),nr_incld(i,k),mu_r(i,k),rdumii,dumii,lamr(i,k),     &
+                        mu_r_table,tmp1,tmp2,rcldm(i,k))
                    call find_lookupTable_indices_3(dumii,dumjj,dum1,rdumii,rdumjj,inv_dum3, &
                         mu_r(i,k),lamr(i,k))
+                   nr(i,k) = nr_incld(i,k)*rcldm(i,k)
                    !mass-weighted fall speed:
 ! bug fix 12/23/18
 !                   dum1 = vm_table(dumii,dumjj)+(rdumii-real(dumii))*inv_dum3*             &
@@ -1970,10 +2065,14 @@ contains
           prt_liq(i) = prt_liq(i) + prt_accum*inv_rhow*odt
 
        endif qr_present
+       p3_tend_out(i,:,38) = qr(i,:) - p3_tend_out(i,:,38) ! Rain sedimentation tendency, measure
+       p3_tend_out(i,:,39) = nr(i,:) - p3_tend_out(i,:,39) ! Rain # sedimentation tendency, measure
 
 
        !------------------------------------------------------------------------------------------!
        ! Ice sedimentation:  (adaptive substepping)
+       p3_tend_out(i,:,40) = qitot(i,:) ! Ice sedimentation tendency, initialize
+       p3_tend_out(i,:,41) = nitot(i,:) ! Ice # sedimentation tendency, initialize
 
 
        log_qxpresent = .false.  !note: this applies to ice category 'iice' only
@@ -2010,15 +2109,15 @@ contains
              kloop_sedi_i1: do k = k_qxtop,k_qxbot,-kdir
 
                 !-- compute Vq, Vn (get values from lookup table)
-                qi_notsmall_i1: if (qitot(i,k)>qsmall) then
+                qi_notsmall_i1: if (qitot_incld(i,k)>qsmall) then
 
                    !--Compute Vq, Vn:
-                   nitot(i,k) = max(nitot(i,k),nsmall) !impose lower limits to prevent log(<0)
-                   call calc_bulkRhoRime(qitot(i,k),qirim(i,k),birim(i,k),rhop)
+                   nitot_incld(i,k) = max(nitot_incld(i,k),nsmall) !impose lower limits to prevent log(<0)
+                   call calc_bulkRhoRime(qitot_incld(i,k),qirim_incld(i,k),birim_incld(i,k),rhop)
                    !if (.not. tripleMoment_on) zitot(i,k) = diag_mom6(qitot(i,k),nitot(i,k),rho(i,k))
                    call find_lookupTable_indices_1a(dumi,dumjj,dumii,dumzz,dum1,dum4,    &
                         dum5,dum6,isize,rimsize,densize,          &
-                        qitot(i,k),nitot(i,k),qirim(i,k),&
+                        qitot_incld(i,k),nitot_incld(i,k),qirim_incld(i,k),&
                         rhop)
                    call access_lookup_table(dumjj,dumii,dumi, 1,dum1,dum4,dum5,f1pr01)
                    call access_lookup_table(dumjj,dumii,dumi, 2,dum1,dum4,dum5,f1pr02)
@@ -2026,8 +2125,9 @@ contains
                    call access_lookup_table(dumjj,dumii,dumi, 8,dum1,dum4,dum5,f1pr10)
                    !-impose mean ice size bounds (i.e. apply lambda limiters)
                    ! note that the Nmax and Nmin are normalized and thus need to be multiplied by existing N
-                   nitot(i,k) = min(nitot(i,k),f1pr09*nitot(i,k))
-                   nitot(i,k) = max(nitot(i,k),f1pr10*nitot(i,k))
+                   nitot_incld(i,k) = min(nitot_incld(i,k),f1pr09*nitot_incld(i,k))
+                   nitot_incld(i,k) = max(nitot_incld(i,k),f1pr10*nitot_incld(i,k))
+                   nitot(i,k) = nitot_incld(i,k)*icldm(i,k)
                    !zitot(i,k) = min(zitot(i,k),f1pr020)  !adjust Zi if needed to make sure mu_i is in bounds
                    !zitot(i,k) = max(zitot(i,k),f1pr021)
                    V_qit(k) = f1pr02*rhofaci(i,k)     !mass-weighted  fall speed (with density factor)
@@ -2100,6 +2200,8 @@ contains
           prt_sol(i) = prt_sol(i) + prt_accum*inv_rhow*odt
 
        endif qi_present
+       p3_tend_out(i,:,40) = qitot(i,:) - p3_tend_out(i,:,40) ! Ice sedimentation tendency, measure
+       p3_tend_out(i,:,41) = nitot(i,:) - p3_tend_out(i,:,41) ! Ice # sedimentation tendency, measure
 
        !------------------------------------------------------------------------------------------!
 
@@ -2163,7 +2265,7 @@ contains
           ! cloud:
           if (qc(i,k).ge.qsmall) then
              call get_cloud_dsd2(qc(i,k),nc(i,k),mu_c(i,k),rho(i,k),nu(i,k),dnu,lamc(i,k),  &
-                  lammin,lammax,tmp1,tmp2)
+                  lammin,lammax,tmp1,tmp2,lcldm(i,k))
              diag_effc(i,k) = 0.5*(mu_c(i,k)+3.)/lamc(i,k)
           else
              qv(i,k) = qv(i,k)+qc(i,k)
@@ -2177,7 +2279,7 @@ contains
 
              call get_rain_dsd2(qr(i,k),nr(i,k),mu_r(i,k),rdumii,dumii,lamr(i,k),mu_r_table,   &
                   !                        cdistr(i,k),logn0r(i,k))
-                  tmp1,tmp2)
+                  tmp1,tmp2,rcldm(i,k))
 
              ! hm, turn off soft lambda limiter
              ! impose size limits for rain with 'soft' lambda limiter
@@ -2665,13 +2767,13 @@ contains
 
 
   !===========================================================================================
-  subroutine get_cloud_dsd2(qc,nc,mu_c,rho,nu,dnu,lamc,lammin,lammax,cdist,cdist1)
+  subroutine get_cloud_dsd2(qc,nc,mu_c,rho,nu,dnu,lamc,lammin,lammax,cdist,cdist1,lcldm)
 
     implicit none
 
     !arguments:
     real(rtype), dimension(:), intent(in)  :: dnu
-    real(rtype),     intent(in)            :: qc,rho
+    real(rtype),     intent(in)            :: qc,rho,lcldm
     real(rtype),     intent(inout)         :: nc
     real(rtype),     intent(out)           :: mu_c,nu,lamc,cdist,cdist1
 
@@ -2712,7 +2814,7 @@ contains
        endif
 
        cdist  = nc*(mu_c+1.)/lamc
-       cdist1 = nc/gamma(mu_c+1.)
+       cdist1 = nc*lcldm/gamma(mu_c+1.)
 
     else
 
@@ -2726,7 +2828,7 @@ contains
 
 
   !===========================================================================================
-  subroutine get_rain_dsd2(qr,nr,mu_r,rdumii,dumii,lamr,mu_r_table,cdistr,logn0r)
+  subroutine get_rain_dsd2(qr,nr,mu_r,rdumii,dumii,lamr,mu_r_table,cdistr,logn0r,rcldm)
 
     ! Computes and returns rain size distribution parameters
 
@@ -2734,7 +2836,7 @@ contains
 
     !arguments:
     real(rtype), dimension(:), intent(in)  :: mu_r_table
-    real(rtype),     intent(in)            :: qr
+    real(rtype),     intent(in)            :: qr,rcldm
     real(rtype),     intent(inout)         :: nr
     real(rtype),     intent(out)           :: rdumii,lamr,mu_r,cdistr,logn0r
     integer,  intent(out)           :: dumii
@@ -2782,7 +2884,7 @@ contains
           nr   = exp(3.*log(lamr)+log(qr)+log(gamma(mu_r+1.))-log(gamma(mu_r+4.)))/(cons1)
        endif
 
-       cdistr  = nr/gamma(mu_r+1.)
+       cdistr  = nr*rcldm/gamma(mu_r+1.)
        logn0r  = log10(nr)+(mu_r+1.)*log10(lamr)-log10(gamma(mu_r+1)) !note: logn0r is calculated as log10(n0r)
 
     else

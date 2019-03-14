@@ -51,6 +51,7 @@ module micro_p3_interface
   !available.
   logical :: use_subcol_microp  ! If true, then are using subcolumns in microphysics
   integer :: num_steps
+  CHARACTER(len=16) :: precip_frac_method = 'max_overlap'  ! AaronDonahue, Hard-coded for now, should be fixed in the future
 
   integer, public ::    &
        ixcldliq = -1,   & ! cloud liquid amount index
@@ -760,7 +761,7 @@ end subroutine micro_p3_readnl
    call addfld('P3_ncautr', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in rain number from autoconversion of cloud water')
    ! ice-phase process rates
    call addfld('P3_qccol',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for collection of cloud water by ice')
-   call addfld('P3_qwgrth', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for wet growth rate')
+   call addfld('P3_qwgrth', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 wet growth rate')
    call addfld('P3_qidep',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for vapor deposition')
    call addfld('P3_qrcol',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for collection rain mass by ice')
    call addfld('P3_qinuc',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for deposition/condensation freezing nuc')
@@ -778,8 +779,23 @@ end subroutine micro_p3_readnl
    call addfld('P3_nrheti', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for immersion freezing rain')
    call addfld('P3_nrshdr', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for source for rain number from collision of rain/ice above freezing and shedding')
    call addfld('P3_qcshd',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for source for rain mass due to cloud water/ice collision above freezing and shedding or wet growth and shedding')
-   call addfld('P3_qcmul',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in q, ice multiplication from rime-splitnering of cloud water (not included in the paper)')
    call addfld('P3_ncshdc', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for source for rain number due to cloud water/ice collision above freezing  and shedding (combined with NRSHD in the paper)')
+   ! Sedimentation 
+   call addfld('P3_sed_CLDLIQ',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for liquid cloud content due to sedimentation')
+   call addfld('P3_sed_NUMLIQ',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for liquid cloud number due to sedimentation')
+   call addfld('P3_sed_CLDRAIN', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for rain cloud content due to sedimentation')
+   call addfld('P3_sed_NUMRAIN', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for rain cloud number due to sedimentation')
+   call addfld('P3_sed_CLDICE',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for ice cloud content due to sedimentation')
+   call addfld('P3_sed_NUMICE',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for ice cloud number due to sedimentation')
+   ! Microphysics Processes
+   call addfld('P3_mtend_CLDLIQ',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for liquid cloud content due to micro processes')
+   call addfld('P3_mtend_NUMLIQ',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for liquid cloud number due to micro processes')
+   call addfld('P3_mtend_CLDRAIN', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for rain cloud content due to micro processes')
+   call addfld('P3_mtend_NUMRAIN', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for rain cloud number due to micro processes')
+   call addfld('P3_mtend_CLDICE',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for ice cloud content due to micro processes')
+   call addfld('P3_mtend_NUMICE',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for ice cloud number due to micro processes')
+   call addfld('P3_mtend_Q',       (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for water vapor due to micro processes')
+   call addfld('P3_mtend_TH',      (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for potential temp. number due to micro processes')
 
 
    ! determine the add_default fields
@@ -852,14 +868,90 @@ end subroutine micro_p3_readnl
       call add_default('P3_nrheti', 1, ' ')
       call add_default('P3_nrshdr', 1, ' ')
       call add_default('P3_qcshd',  1, ' ')
-      call add_default('P3_qcmul',  1, ' ')
       call add_default('P3_ncshdc', 1, ' ')
+      ! Sedimentation
+      call add_default('P3_sed_CLDLIQ',  1, ' ')
+      call add_default('P3_sed_NUMLIQ',  1, ' ')
+      call add_default('P3_sed_CLDRAIN', 1, ' ')
+      call add_default('P3_sed_NUMRAIN', 1, ' ')
+      call add_default('P3_sed_CLDICE',  1, ' ')
+      call add_default('P3_sed_NUMICE',  1, ' ')
+      ! Microphysics Processes
+      call add_default('P3_mtend_CLDLIQ',  1, ' ')
+      call add_default('P3_mtend_NUMLIQ',  1, ' ')
+      call add_default('P3_mtend_CLDRAIN', 1, ' ')
+      call add_default('P3_mtend_NUMRAIN', 1, ' ')
+      call add_default('P3_mtend_CLDICE',  1, ' ')
+      call add_default('P3_mtend_NUMICE',  1, ' ')
+      call add_default('P3_mtend_Q',       1, ' ')
+      call add_default('P3_mtend_TH',      1, ' ')
    end if
 
   end subroutine micro_p3_init
 
   !================================================================================================
+    subroutine get_cloud_fraction(its,ite,kts,kte,ast,qc,qr,qitot,method, &
+                  icldm,lcldm,rcldm)
+      
+       use micro_p3_utils, only: mincld, qsmall
 
+       integer,intent(in)                                 :: its,ite,kts,kte
+       real(rtype),dimension(its:ite,kts:kte),intent(in)  :: ast, qc, qr, qitot
+       character(len=16),intent(in)                       :: method
+       real(rtype),dimension(its:ite,kts:kte),intent(out) :: icldm, lcldm, rcldm
+       real(rtype),dimension(its:ite,kts:kte)             :: cldm
+
+       integer  :: i,k
+       integer  :: ktop, kbot, kdir
+
+       !AaronDonahue TODO: Add namelist variable to switch between using subgrid
+       !cloud variability and not?
+       ktop = kts        !k of top level
+       kbot = kte        !k of bottom level
+       kdir = -1         !(k: 1=top, nk=bottom)
+
+       cldm(:,:)  = mincld
+       icldm(:,:) = mincld
+       lcldm(:,:) = mincld
+       do k = kbot,ktop,kdir
+          do i=its,ite
+             cldm(i,k)  = max(ast(i,k), mincld)
+             icldm(i,k) = max(ast(i,k), mincld)
+             lcldm(i,k) = max(ast(i,k), mincld)
+          end do
+       end do
+
+       DO k = ktop,kbot,-kdir  !AaronDonahue TODO: Check to make sure this is correct.  Are we going the correct direction?
+          DO i=its,ite
+       !! 
+       !! precipitation fraction 
+       !! 
+          rcldm(i,k) = cldm(i,k)
+          IF (trim(method) == 'in_cloud') THEN
+             IF (k /= ktop) THEN
+                IF (qc(i,k) .lt. qsmall .and. qitot(i,k) .lt. qsmall) THEN
+                   rcldm(i,k) = rcldm(i,k+kdir)
+                END IF
+             END IF
+          ELSE IF (trim(method) == 'max_overlap') THEN
+          ! calculate precip fraction based on maximum overlap assumption
+
+          ! IF rain or snow mix ratios are smaller than threshold,
+          ! then leave rcldm as cloud fraction at current level
+             IF (k /= ktop) THEN
+                IF (qr(i,k+kdir) .ge. qsmall .or. qitot(i,k+kdir) .ge. qsmall) THEN
+                   rcldm(i,k) = max(cldm(i,k+kdir),rcldm(i,k))
+                END IF
+             END IF
+          END IF
+          END DO ! i
+       END DO    ! k
+
+
+       return
+    end subroutine get_cloud_fraction
+
+  !================================================================================================
   subroutine micro_p3_tend(state, ptend, dtime, pbuf)
 
     use cam_history,    only: outfld
@@ -880,7 +972,7 @@ end subroutine micro_p3_readnl
     !INPUT/OUTPUT VARIABLES
     type(physics_state),         intent(in)    :: state
     type(physics_ptend),         intent(out)   :: ptend
-    real(rtype),                    intent(in)    :: dtime
+    real(rtype),                 intent(in)    :: dtime
     type(physics_buffer_desc),   pointer       :: pbuf(:)
     logical :: lq(pcnst)   !list of what constituents to update
 
@@ -916,7 +1008,7 @@ end subroutine micro_p3_readnl
     real(rtype) :: rcldm(pcols,pver)      !rain cloud fraction
     real(rtype) :: lcldm(pcols,pver)      !liquid cloud fraction
     real(rtype) :: icldm(pcols,pver)      !ice cloud fraction
-    real(rtype) :: tend_out(pcols,pver,35) !microphysical tendencies
+    real(rtype) :: tend_out(pcols,pver,49) !microphysical tendencies
 
     ! PBUF Variables
     real(rtype), pointer :: ast(:,:)      ! Relative humidity cloud fraction
@@ -1248,6 +1340,9 @@ end subroutine micro_p3_readnl
     kts     = 1
     kte     = pver
     pres    = state%pmid(:,:)
+    ! Determine the cloud fraction and precip cover
+    call get_cloud_fraction(its,ite,kts,kte,ast,cldliq,rain,ice,precip_frac_method, &
+                icldm,lcldm,rcldm)
     ! CALL P3
     !==============
     ! TODO: get proper value for 'it' from time module
@@ -1292,9 +1387,9 @@ end subroutine micro_p3_readnl
          prer_evap(its:ite,kts:kte),  & ! OUT rain evaporation
          rflx(its:ite,kts:kte+1),     & ! OUT grid-box average rain flux (kg m^-2s^-1) pverp 
          sflx(its:ite,kts:kte+1),     & ! OUT grid-box average ice/snow flux (kgm^-2 s^-1) pverp
-         rcldm(its:ite,kts:kte),      & ! OUT rain cloud fraction
-         lcldm(its:ite,kts:kte),      & ! OUT liquid cloud fraction
-         icldm(its:ite,kts:kte),      & ! OUT ice cloud fraction
+         rcldm(its:ite,kts:kte),      & ! IN rain cloud fraction
+         lcldm(its:ite,kts:kte),      & ! IN liquid cloud fraction
+         icldm(its:ite,kts:kte),      & ! IN ice cloud fraction
          tend_out(its:ite,kts:kte,:)  & ! OUT p3 microphysics tendencies
          )
 
@@ -1654,7 +1749,7 @@ end subroutine micro_p3_readnl
    call outfld('P3_ncautr', tend_out(:,:,14), pcols, lchnk) 
    ! ice-phase process rate
    call outfld('P3_qccol',  tend_out(:,:,15), pcols, lchnk) 
-   call outfld('P3_qwgrth', tend_out(:,:,16), pcols, lchnk) 
+   call outfld('P3_qwgrth', tend_out(:,:,16), pcols, lchnk) ! Not a tendency in itself, it is used to build qccol and qrcol
    call outfld('P3_qidep',  tend_out(:,:,17), pcols, lchnk) 
    call outfld('P3_qrcol',  tend_out(:,:,18), pcols, lchnk) 
    call outfld('P3_qinuc',  tend_out(:,:,19), pcols, lchnk) 
@@ -1672,8 +1767,24 @@ end subroutine micro_p3_readnl
    call outfld('P3_nrheti', tend_out(:,:,31), pcols, lchnk) 
    call outfld('P3_nrshdr', tend_out(:,:,32), pcols, lchnk) 
    call outfld('P3_qcshd',  tend_out(:,:,33), pcols, lchnk) 
-   call outfld('P3_qcmul',  tend_out(:,:,34), pcols, lchnk) 
-   call outfld('P3_ncshdc', tend_out(:,:,35), pcols, lchnk) 
+!   call outfld('P3_qcmul',  tend_out(:,:,34), pcols, lchnk) ! Not actually used, so not actually recorded.  Commented out here for continuity of the array.
+   call outfld('P3_ncshdc', tend_out(:,:,35), pcols, lchnk)
+   ! sedimentation 
+   call outfld('P3_sed_CLDLIQ',  tend_out(:,:,36), pcols, lchnk)
+   call outfld('P3_sed_NUMLIQ',  tend_out(:,:,37), pcols, lchnk)
+   call outfld('P3_sed_CLDRAIN', tend_out(:,:,38), pcols, lchnk)
+   call outfld('P3_sed_NUMRAIN', tend_out(:,:,39), pcols, lchnk)
+   call outfld('P3_sed_CLDICE',  tend_out(:,:,40), pcols, lchnk)
+   call outfld('P3_sed_NUMICE',  tend_out(:,:,41), pcols, lchnk)
+   ! microphysics processes 
+   call outfld('P3_mtend_CLDLIQ',  tend_out(:,:,42), pcols, lchnk)
+   call outfld('P3_mtend_NUMLIQ',  tend_out(:,:,43), pcols, lchnk)
+   call outfld('P3_mtend_CLDRAIN', tend_out(:,:,44), pcols, lchnk)
+   call outfld('P3_mtend_NUMRAIN', tend_out(:,:,45), pcols, lchnk)
+   call outfld('P3_mtend_CLDICE',  tend_out(:,:,46), pcols, lchnk)
+   call outfld('P3_mtend_NUMICE',  tend_out(:,:,47), pcols, lchnk)
+   call outfld('P3_mtend_Q',       tend_out(:,:,48), pcols, lchnk)
+   call outfld('P3_mtend_TH',      tend_out(:,:,49), pcols, lchnk)
     
     !call outfld('P3_QCAUT',   qcaut,  pcols, lchnk)
 

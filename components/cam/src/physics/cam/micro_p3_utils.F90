@@ -23,8 +23,8 @@ module micro_p3_utils
     public :: rtype
 #endif
 
-    public :: get_latent_heat, get_precip_fraction, micro_p3_utils_init, size_dist_param_liq, &
-              size_dist_param_basic,avg_diameter, rising_factorial
+    public :: get_latent_heat, micro_p3_utils_init, size_dist_param_liq, &
+              size_dist_param_basic,avg_diameter, rising_factorial, calculate_incloud_mixingratios
 
     integer, public :: iulog_e3sm
     logical, public :: masterproc_e3sm
@@ -111,6 +111,10 @@ real(rtype), parameter :: lam_bnd_snow(2) = 1._rtype/[2000.e-6_rtype, 10.e-6_rty
 real(rtype), parameter :: min_mean_mass_liq = 1.e-20_rtype
 real(rtype), parameter :: min_mean_mass_ice = 1.e-20_rtype
 
+! in-cloud values
+REAL(rtype), PARAMETER :: cldm_min   = 1.e-20_rtype !! threshold min value for cloud fraction
+real(rtype), parameter :: incloud_limit = 5.1E-3
+real(rtype), parameter :: precip_limit  = 1.0E-2
 !=========================================================
 ! Utilities that are cheaper if the compiler knows that
 ! some argument is an integer.
@@ -333,56 +337,60 @@ end interface var_coef
 !__________________________________________________________________________________________!
 !                                                                                          !
 !__________________________________________________________________________________________!
-    subroutine get_precip_fraction(its,ite,kts,kte,kbot,ktop,kdir,ast,qc,qr,qitot,method, &
-                cldm,icldm,lcldm,rcldm)
-      
-       integer,intent(in)                              :: its,ite,kts,kte,kbot,ktop,kdir
-       real(rtype),dimension(its:ite,kts:kte),intent(in)  :: ast, qc, qr, qitot
-       character(len=16),intent(in)                    :: method
-       real(rtype),dimension(its:ite,kts:kte),intent(out) :: cldm, icldm, lcldm, rcldm
+    subroutine calculate_incloud_mixingratios(qc,qr,qitot,qirim,nc,nr,nitot,birim, &
+          inv_lcldm,inv_icldm,inv_rcldm, &
+          qc_incld,qr_incld,qitot_incld,qirim_incld,nc_incld,nr_incld,nitot_incld,birim_incld)
 
-       integer  :: i,k
-
-       cldm(:,:)  = mincld
-       icldm(:,:) = mincld
-       lcldm(:,:) = mincld
-       do k = kbot,ktop,kdir
-          do i=its,ite
-             cldm(i,k)  = max(ast(i,k), mincld)
-             icldm(i,k) = max(ast(i,k), mincld)
-             lcldm(i,k) = max(ast(i,k), mincld)
-          end do
-       end do
-
-       DO k = ktop,kbot,-kdir
-          DO i=its,ite
-       !! 
-       !! precipitation fraction 
-       !! 
-          rcldm(i,k) = cldm(i,k)
-          IF (trim(method) == 'in_cloud') THEN
-             IF (k /= ktop) THEN
-                IF (qc(i,k) .lt. qsmall .and. qitot(i,k) .lt. qsmall) THEN
-                   rcldm(i,k) = rcldm(i,k+kdir)
-                END IF
-             END IF
-          ELSE IF (trim(method) == 'max_overlap') THEN
-          ! calculate precip fraction based on maximum overlap assumption
-
-          ! IF rain or snow mix ratios are smaller than threshold,
-          ! then leave rcldm as cloud fraction at current level
-             IF (k /= ktop) THEN
-                IF (qr(i,k+kdir) .ge. qsmall .or. qitot(i,k+kdir) .ge. qsmall) THEN
-                   rcldm(i,k) = max(cldm(i,k+kdir),rcldm(i,k))
-                END IF
-             END IF
-          END IF
-          END DO ! i
-       END DO    ! k
+       real(rtype),intent(in)   :: qc, qr, qitot, qirim
+       real(rtype),intent(in)   :: nc, nr, nitot, birim
+       real(rtype),intent(in)   :: inv_lcldm, inv_icldm, inv_rcldm
+       real(rtype),intent(out)  :: qc_incld, qr_incld, qitot_incld, qirim_incld
+       real(rtype),intent(out)  :: nc_incld, nr_incld, nitot_incld, birim_incld
 
 
-       return
-    end subroutine get_precip_fraction
+       if (qc.ge.qsmall) then
+          qc_incld = qc*inv_lcldm
+          nc_incld = max(nc*inv_lcldm,0.)
+          !AaronDonahue, kai has something about if nccons then nc=ncnst/rho
+       else
+          qc_incld = 0.
+          nc_incld = 0.
+       end if 
+       if (qitot.ge.qsmall) then
+          qitot_incld = qitot*inv_icldm
+          nitot_incld = max(nitot*inv_icldm,0.)
+          !AaronDonahue, kai has something about if nicons then ni=ninst/rho
+       else
+          qitot_incld = 0.
+          nitot_incld = 0.
+       end if 
+       if (qirim.ge.qsmall.and.qitot.ge.qsmall) then
+          qirim_incld = qirim*inv_icldm
+          birim_incld = max(birim*inv_lcldm,0.)
+       else
+          qirim_incld = 0.
+          birim_incld = 0.
+       end if 
+       if (qr.ge.qsmall) then
+          qr_incld = qr*inv_rcldm
+          nr_incld = max(nr*inv_rcldm,0.)
+          !AaronDonahue, kai has something about if nccons then nc=ncnst/rho
+       else
+          qr_incld = 0.
+          nr_incld = 0.
+       end if
+       if (qc_incld.gt.incloud_limit .or.qitot_incld.gt.incloud_limit .or. qr_incld.gt.precip_limit .or.birim_incld.gt.incloud_limit) then
+!          write(errmsg,'(a3,i4,3(a5,1x,e16.8,1x))') 'k: ', k, ', qc:',qc_incld, ', qi:',qitot_incld,', qr:',qr_incld
+          qc_incld    = max(qc_incld,incloud_limit)
+          qitot_incld = max(qitot_incld,incloud_limit)
+          birim_incld = max(birim_incld,incloud_limit)
+          qr_incld    = max(qr_incld,precip_limit)
+!          if (masterproc) write(iulog,*)  errmsg
+
+!          call handle_errmsg('Micro-P3 (Init)',subname='In-cloud mixing
+!          ratio too large',extra_msg=errmsg)
+       end if
+    end subroutine calculate_incloud_mixingratios
 !__________________________________________________________________________________________!
 !                                                                                          !
 !__________________________________________________________________________________________!
