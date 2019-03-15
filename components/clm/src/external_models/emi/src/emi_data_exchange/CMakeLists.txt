@@ -2,6 +2,7 @@ set(EMI_EMI_DATA_EXCHANGE_SOURCES
   EMI_Atm2LndType_ExchangeMod.F90
   EMI_CanopyStateType_ExchangeMod.F90
   EMI_ChemStateType_ExchangeMod.F90
+  EMI_CNCarbonStateType_ExchangeMod.F90
   EMI_ColumnType_ExchangeMod.F90
   EMI_EnergyFluxType_ExchangeMod.F90
   EMI_Filter_ExchangeMod.F90

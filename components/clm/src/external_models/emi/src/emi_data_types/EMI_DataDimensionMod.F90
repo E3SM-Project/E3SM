@@ -8,6 +8,8 @@ module EMI_DataDimensionMod
   use clm_varpar, only : nlevgrnd
   use clm_varpar, only : nlevsoi
   use clm_varpar, only : nlevsno
+  use clm_varpar, only : ndecomp_pools
+  use clm_varpar, only : nlevdecomp_full
   use abortutils, only : endrun
   use clm_varctl, only : iulog
 
@@ -29,6 +31,8 @@ implicit none
     character(*), parameter :: dimname_one               = 'one'
     character(*), parameter :: dimname_two               = 'two'
     character(*), parameter :: dimname_col_one_based_idx = 'endc - begc + 1'
+    character(*), parameter :: dimname_nlevdecomp_full   = 'nlevdecomp_full';
+    character(*), parameter :: dimname_ndecomp_pools     = 'ndecomp_pools';
 
   type emi_data_dimension_type
      character(len=24) :: name ! String labelling this IO type
@@ -133,6 +137,12 @@ contains
     case (dimname_col_one_based_idx)
        dim_value = bounds_clump%endc - bounds_clump%begc + 1
 
+    case (dimname_ndecomp_pools)
+       dim_value = ndecomp_pools;
+
+    case (dimname_nlevdecomp_full)
+       dim_value = nlevdecomp_full;
+
     case default
        write(iulog,*)'dim_name = ',dim_name
        call endrun(msg='Unknown dim_name while trying to get dimension value.')
@@ -174,6 +184,8 @@ contains
     call this%AddDimByName(dimname_one)
     call this%AddDimByName(dimname_two)
     call this%AddDimByName(dimname_col_one_based_idx)
+    call this%AddDimByName(dimname_nlevdecomp_full)
+    call this%AddDimByName(dimname_ndecomp_pools)
 
   end subroutine EMID_Dim_List_Init
 

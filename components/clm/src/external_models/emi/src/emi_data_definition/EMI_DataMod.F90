@@ -1275,6 +1275,8 @@ contains
     use EMI_ColumnType_Constants
     use EMI_Filter_Constants
     use EMI_Landunit_Constants
+    use EMI_CNCarbonStateType_DataMod
+    use EMI_CNCarbonStateType_Constants
     use EMI_DataDimensionMod, only : dimname_begg
     use EMI_DataDimensionMod, only : dimname_endg
     use EMI_DataDimensionMod, only : dimname_begl
@@ -1395,6 +1397,14 @@ contains
 
     if (.not.data_found) then
        call EMI_WaterStateType_DataInfoByID(data_id, id_val, &
+            name_val, long_name_val, units_val, is_int_type, is_real_type, ndim, &
+            dim1_beg_name, dim1_end_name, dim2_beg_name, dim2_end_name, &
+            dim3_beg_name, dim3_end_name, dim4_beg_name, dim4_end_name, &
+            data_found)
+    end if
+
+    if (.not.data_found) then
+       call EMI_CNCarbonStateType_DataInfoByID(data_id, id_val, &
             name_val, long_name_val, units_val, is_int_type, is_real_type, ndim, &
             dim1_beg_name, dim1_end_name, dim2_beg_name, dim2_end_name, &
             dim3_beg_name, dim3_end_name, dim4_beg_name, dim4_end_name, &
