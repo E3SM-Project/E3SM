@@ -25,6 +25,9 @@ module dice_shr_mod
 
   ! Note that model decomp will now come from reading in the mesh directly
 
+  ! stream data type
+  type(shr_strdata_type), public :: SDICE
+
   ! input namelist variables
   character(CL) , public :: restfilm              ! model restart file namelist
   character(CL) , public :: restfils              ! stream restart file namelist
@@ -44,7 +47,7 @@ CONTAINS
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   subroutine dice_shr_read_namelists(filename, mpicom, my_task, master_task, &
-       logunit, SDICE, ice_present, ice_prognostic)
+       logunit, ice_present, ice_prognostic)
 
     ! !DESCRIPTION: Read in dice namelists
     implicit none
@@ -55,7 +58,6 @@ CONTAINS
     integer(IN)            , intent(in)    :: my_task        ! my task in mpi communicator mpicom
     integer(IN)            , intent(in)    :: master_task    ! task number of master task
     integer(IN)            , intent(in)    :: logunit        ! logging unit number
-    type(shr_strdata_type) , intent(inout) :: SDICE
     logical                , intent(out)   :: ice_present    ! flag
     logical                , intent(out)   :: ice_prognostic ! flag
 

@@ -5,8 +5,9 @@ module dshr_nuopc_mod
   use ESMF
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
   use shr_nuopc_time_mod    , only : shr_nuopc_time_alarmInit
-  use shr_kind_mod          , only : R8=>SHR_KIND_R8, CS=>SHR_KIND_CS
+  use shr_kind_mod          , only : r8=>shr_kind_r8, cs=>shr_kind_cs, cxx=>shr_kind_cxx
   use shr_string_mod        , only : shr_string_listGetIndex
+  use shr_sys_mod           , only : shr_sys_abort
 
   implicit none
   public
@@ -175,10 +176,9 @@ contains
     !----------------------------------
 
     if (present(model_fld_concat)) then
-       if (len_trim(model_fld_concat) + len_trim(model_fld) + 1 >= len(model_fld_concat)) then
+       if (len_trim(model_fld_concat) + len_trim(model_fld) + 1 >= cxx) then
           call ESMF_LogWrite(subname//': ERROR: max len of model_fld_concat has been exceeded', ESMF_LOGMSG_INFO)
-          rc = ESMF_FAILURE
-          return
+          call shr_sys_abort()
        end if
        if (trim(model_fld_concat) == '') then
           model_fld_concat = trim(model_fld)

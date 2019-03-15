@@ -39,6 +39,7 @@ module dice_comp_mod
   use dice_shr_mod          , only : flux_Qacc      ! namelist input -activates water accumulation/melt wrt Q
   use dice_shr_mod          , only : flux_Qacc0     ! namelist input -initial water accumulation value
   use dice_shr_mod          , only : nullstr
+  use dice_shr_mod          , only : SDICE
   use dice_flux_atmice_mod  , only : dice_flux_atmice
   use shr_pcdf_mod
 
@@ -59,6 +60,11 @@ module dice_comp_mod
   !--------------------------------------------------------------------------
   ! Private data
   !--------------------------------------------------------------------------
+
+  type(mct_aVect)            :: x2i
+  type(mct_aVect)            :: i2x
+  character(CXX)             :: flds_i2x = ''
+  character(CXX)             :: flds_x2i = ''
 
   integer                    :: debug_import = 0      ! debug level (if > 0 will print all import fields)
   integer                    :: debug_export = 0      ! debug level (if > 0 will print all export fields)
@@ -108,8 +114,6 @@ module dice_comp_mod
   character(len=CS), pointer :: strmifld(:)
   character(len=CS), pointer :: strmofld(:)
   character(len=CXX)         :: flds_strm = ''   ! colon deliminated string of field names
-  character(len=CXX)         :: flds_i2x_mod
-  character(len=CXX)         :: flds_x2i_mod
 
   logical                    :: firstcall = .true. ! first call logical
   character(len=*),parameter :: rpfile = 'rpointer.ice'
@@ -122,8 +126,7 @@ contains
 
   subroutine dice_comp_advertise(importState, exportState, &
        ice_present, ice_prognostic,  &
-       fldsFrIce_num, fldsFrIce, fldsToIce_num, fldsToIce, &
-       flds_i2x, flds_x2i, rc)
+       fldsFrIce_num, fldsFrIce, fldsToIce_num, fldsToIce, rc)
 
     ! input/output arguments
     type(ESMF_State)     , intent(inout) :: importState
@@ -134,8 +137,6 @@ contains
     integer              , intent(out)   :: fldsFrIce_num
     type (fld_list_type) , intent(out)   :: fldsToIce(:)
     type (fld_list_type) , intent(out)   :: fldsFrIce(:)
-    character(len=*)     , intent(out)   :: flds_i2x
-    character(len=*)     , intent(out)   :: flds_x2i
     integer              , intent(out)   :: rc
 
     ! local variables
@@ -324,29 +325,18 @@ contains
        enddo
     end if
 
-    ! Save flds_x2i and flds_i2x as module variables for use in debugging
-
-    flds_x2i_mod = trim(flds_x2i)
-    flds_i2x_mod = trim(flds_i2x)
-
   end subroutine dice_comp_advertise
 
   !===============================================================================
 
-  subroutine dice_comp_init(x2i, i2x, &
-       flds_x2i_fields, flds_i2x_fields, flds_i2o_per_cat, &
-       SDICE, mpicom, compid, my_task, master_task, &
+  subroutine dice_comp_init(flds_i2o_per_cat, mpicom, compid, my_task, master_task, &
        inst_suffix, inst_name, logunit, read_restart, &
-       scmMode, scmlat, scmlon, calendar, mesh)
+       scmMode, scmlat, scmlon, calendar, mesh, nxg, nyg)
 
     ! !DESCRIPTION: initialize dice model
 
     ! input/output parameters:
-    type(mct_aVect)        , intent(inout) :: x2i, i2x         ! input/output attribute vectors
-    character(len=*)       , intent(in)    :: flds_x2i_fields  ! fields from mediator
-    character(len=*)       , intent(in)    :: flds_i2x_fields  ! fields to mediator
     logical                , intent(in)    :: flds_i2o_per_cat ! .true. if select per ice thickness fields from ice
-    type(shr_strdata_type) , intent(inout) :: SDICE            ! dice shr_strdata instance (output)
     integer                , intent(in)    :: mpicom           ! mpi communicator
     integer                , intent(in)    :: compid           ! mct comp id
     integer                , intent(in)    :: my_task          ! my task in mpi communicator mpicom
@@ -360,6 +350,7 @@ contains
     real(R8)               , intent(in)    :: scmLon           ! single column lon
     character(len=*)       , intent(in)    :: calendar         ! calendar type
     type(ESMF_Mesh)        , intent(in)    :: mesh             ! ESMF dice mesh
+    integer                , intent(out)   :: nxg, nyg
 
     !--- local variables ---
     integer                      :: n,k            ! generic counters
@@ -510,7 +501,7 @@ contains
     call t_startf('dice_initmctavs')
     if (my_task == master_task) write(logunit,F00) 'allocate AVs'
 
-    call mct_aVect_init(i2x, rList=flds_i2x_fields, lsize=lsize)
+    call mct_aVect_init(i2x, rList=flds_i2x, lsize=lsize)
     call mct_aVect_zero(i2x)
 
     ! optional per thickness category fields
@@ -519,7 +510,7 @@ contains
        kswpen_iFrac_01 = mct_aVect_indexRA(i2x,'PFioi_swpen_ifrac_01')
     end if
 
-    call mct_aVect_init(x2i, rList=flds_x2i_fields, lsize=lsize)
+    call mct_aVect_init(x2i, rList=flds_x2i, lsize=lsize)
     call mct_aVect_zero(x2i)
 
     allocate(water(lsize))
@@ -531,6 +522,9 @@ contains
     end if
 
     call t_stopf('dice_initmctavs')
+
+    nxg = SDICE%nxg
+    nyg = SDICE%nyg
 
     !----------------------------------------------------------------------------
     ! Read restart
@@ -603,18 +597,14 @@ contains
 
   !===============================================================================
 
-  subroutine dice_comp_run(x2i, i2x, flds_i2o_per_cat, &
-       SDICE, mpicom, my_task, master_task, &
+  subroutine dice_comp_run(flds_i2o_per_cat, mpicom, my_task, master_task, &
        inst_suffix, logunit, read_restart, write_restart, &
        calendar, modeldt, target_ymd, target_tod, cosArg, case_name )
 
     ! !DESCRIPTION: run method for dice model
 
     ! input/output parameters:
-    type(mct_aVect)        , intent(inout) :: x2i
-    type(mct_aVect)        , intent(inout) :: i2x
     logical                , intent(in)    :: flds_i2o_per_cat     ! .true. if select per ice thickness fields from ice
-    type(shr_strdata_type) , intent(inout) :: SDICE
     integer                , intent(in)    :: mpicom               ! mpi communicator
     integer                , intent(in)    :: my_task              ! my task in mpi communicator mpicom
     integer                , intent(in)    :: master_task          ! task number of master task
@@ -650,7 +640,7 @@ contains
 
     if (debug_import > 1 .and. my_task == master_task) then
        do nfld = 1, mct_aVect_nRAttr(x2i)
-          call shr_string_listGetName(trim(flds_x2i_mod), nfld, fldname)
+          call shr_string_listGetName(trim(flds_x2i), nfld, fldname)
           do n = 1, mct_aVect_lsize(x2i)
              write(logunit,F0D)'import: ymd,tod,n  = '// trim(fldname),target_ymd, target_tod, &
                   n, x2i%rattr(nfld,n)
@@ -859,7 +849,7 @@ contains
 
     if (debug_export > 1 .and. my_task == master_task) then
        do nfld = 1, mct_aVect_nRAttr(i2x)
-          call shr_string_listGetName(trim(flds_i2x_mod), nfld, fldname)
+          call shr_string_listGetName(trim(flds_i2x), nfld, fldname)
           do n = 1, mct_aVect_lsize(i2x)
              write(logunit,F0D)'export: ymd,tod,n  = '// trim(fldname),target_ymd, target_tod, &
                   n, i2x%rattr(nfld,n)
@@ -906,11 +896,10 @@ contains
 
   !===============================================================================
 
-  subroutine dice_comp_import(importState, x2i, rc)
+  subroutine dice_comp_import(importState, rc)
 
     ! input/output variables
     type(ESMF_State)     :: importState
-    type(mct_aVect)      :: x2i
     integer, intent(out) :: rc
 
     ! local variables
@@ -984,10 +973,9 @@ contains
 
   !===============================================================================
 
-  subroutine dice_comp_export(i2x, exportState, rc)
+  subroutine dice_comp_export(exportState, rc)
 
     ! input/output variables
-    type(mct_aVect)      :: i2x
     type(ESMF_State)     :: exportState
     integer, intent(out) :: rc
 

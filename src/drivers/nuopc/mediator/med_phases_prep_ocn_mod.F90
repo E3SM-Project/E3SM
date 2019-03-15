@@ -552,8 +552,11 @@ contains
        !--- diagnose output
        !---------------------------------------
 
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compocn), string=trim(subname)//' FBexp(compocn) ', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (dbug_flag > 1) then
+          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compocn), &
+               string=trim(subname)//' FBexp(compocn) ', rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
 
        ! TODO (mvertens, 2018-12-16): document above custom calculation
 
@@ -633,9 +636,11 @@ contains
 
        is_local%wrap%FBExpAccumCnt(compocn) = is_local%wrap%FBExpAccumCnt(compocn) + 1
 
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
-            string=trim(subname)//' FBExpAccum accumulation ', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (dbug_flag > 1) then
+          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
+               string=trim(subname)//' FBExpAccum accumulation ', rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
 
        !---------------------------------------
        !--- clean up
@@ -709,17 +714,21 @@ contains
        !--- average ocn accumulator
        !---------------------------------------
 
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
-            string=trim(subname)//' FBExpAccum(compocn) before avg ', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (dbug_flag > 1) then
+          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
+               string=trim(subname)//' FBExpAccum(compocn) before avg ', rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
 
        call shr_nuopc_methods_FB_average(is_local%wrap%FBExpAccum(compocn), &
             is_local%wrap%FBExpAccumCnt(compocn), rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compocn), &
-            string=trim(subname)//' FBExpAccum(compocn) after avg ', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (dbug_flag > 1) then
+          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compocn), &
+               string=trim(subname)//' FBExpAccum(compocn) after avg ', rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
 
        !---------------------------------------
        !--- copy to FBExp(compocn)

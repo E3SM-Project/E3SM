@@ -46,6 +46,7 @@ module datm_comp_mod
   use datm_shr_mod          , only : iradsw         ! namelist input
   use datm_shr_mod          , only : nullstr
   use datm_shr_mod          , only : presaero
+  use datm_shr_mod          , only : SDATM
 
   ! !PUBLIC TYPES:
 
@@ -65,6 +66,11 @@ module datm_comp_mod
   !--------------------------------------------------------------------------
   ! Private data
   !--------------------------------------------------------------------------
+
+  type(mct_aVect)            :: x2a
+  type(mct_aVect)            :: a2x
+  character(CXX)             :: flds_a2x = ''
+  character(CXX)             :: flds_x2a = ''
 
   integer                    :: debug_import = 0      ! debug level (if > 0 will print all import fields)
   integer                    :: debug_export = 0      ! debug level (if > 0 will print all export fields)
@@ -104,8 +110,6 @@ module datm_comp_mod
   character(len=CL), pointer :: olist_st(:)    ! output character array for translation (stifld->strmofld)
   integer      ,     pointer :: count_st(:)    ! number of fields in translation (stifld->strmofld)
   character(len=CXX)         :: flds_strm = '' ! colon deliminated string of field names
-  character(len=CXX)         :: flds_a2x_mod
-  character(len=CXX)         :: flds_x2a_mod
 
   real(R8), pointer          :: xc(:), yc(:)   ! arrays of model latitudes and longitudes
   real(R8), pointer          :: windFactor(:)
@@ -139,10 +143,8 @@ contains
 !===============================================================================
 
   subroutine datm_comp_advertise(importState, exportState, &
-       atm_prognostic, &
-       flds_wiso_in, flds_co2a_in, flds_co2b_in, flds_co2c_in, &
-       fldsFrAtm_num, fldsFrAtm, fldsToAtm_num, fldsToAtm, &
-       flds_a2x, flds_x2a, rc)
+       atm_prognostic, flds_wiso_in, flds_co2a_in, flds_co2b_in, flds_co2c_in, &
+       fldsFrAtm_num, fldsFrAtm, fldsToAtm_num, fldsToAtm, rc)
 
     ! 1. determine export and import fields to advertise to mediator
     ! 2. determine translation of fields from streams to export/import fields
@@ -160,8 +162,6 @@ contains
     type (fld_list_type) , intent(out) :: fldsFrAtm(:)
     integer              , intent(out) :: fldsToAtm_num
     type (fld_list_type) , intent(out) :: fldsToAtm(:)
-    character(len=*)     , intent(out) :: flds_a2x
-    character(len=*)     , intent(out) :: flds_x2a
     integer              , intent(out) :: rc
 
     ! local variables
@@ -404,13 +404,6 @@ contains
     end if
 
     !-------------------
-    ! Save flds_x2a and flds_a2x as module variables for use in debugging
-    !-------------------
-
-    flds_x2a_mod = trim(flds_x2a)
-    flds_a2x_mod = trim(flds_a2x)
-
-    !-------------------
     ! module character arrays stifld and stofld
     !-------------------
 
@@ -466,22 +459,18 @@ contains
 
   !===============================================================================
 
-  subroutine datm_comp_init(x2a, a2x, &
-       SDATM, mpicom, compid, my_task, master_task, &
+  subroutine datm_comp_init(mpicom, compid, my_task, master_task, &
        inst_suffix, inst_name, logunit, read_restart, &
        scmMode, scmlat, scmlon, &
        orbEccen, orbMvelpp, orbLambm0, orbObliqr, &
        calendar, modeldt, current_ymd, current_tod, current_mon, &
-       atm_prognostic, mesh)
+       atm_prognostic, mesh, nxg, nyg)
 
     use dshr_nuopc_mod, only : dshr_fld_add
 
     ! !DESCRIPTION: initialize data atm model
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(mct_aVect)        , intent(inout) :: x2a
-    type(mct_aVect)        , intent(inout) :: a2x
-    type(shr_strdata_type) , intent(inout) :: SDATM          ! model shr_strdata instance (output)
     integer                , intent(in)    :: mpicom         ! mpi communicator
     integer                , intent(in)    :: compid         ! mct comp id
     integer                , intent(in)    :: my_task        ! my task in mpi communicator mpicom
@@ -504,6 +493,7 @@ contains
     integer                , intent(in)    :: current_mon    ! model month
     logical                , intent(in)    :: atm_prognostic ! if true, need x2a data
     type(ESMF_Mesh)        , intent(inout) :: mesh
+    integer                , intent(out)   :: nxg, nyg
 
     !--- local variables ---
     integer                      :: n,k            ! generic counters
@@ -671,9 +661,9 @@ contains
     call t_startf('datm_initmctavs')
     if (my_task == master_task) write(logunit,F00) 'allocate AVs'
 
-    call mct_aVect_init(a2x, rList=flds_a2x_mod, lsize=lsize)
+    call mct_aVect_init(a2x, rList=flds_a2x, lsize=lsize)
     call mct_aVect_zero(a2x)
-    call mct_aVect_init(x2a, rList=flds_x2a_mod, lsize=lsize)
+    call mct_aVect_init(x2a, rList=flds_x2a, lsize=lsize)
     call mct_aVect_zero(x2a)
 
     ! Initialize internal attribute vectors for optional streams
@@ -753,6 +743,9 @@ contains
 
     call t_stopf('datm_initmctavs')
 
+    nxg = SDATM%nxg
+    nyg = SDATM%nyg
+
     !----------------------------------------------------------------------------
     ! Read restart
     !----------------------------------------------------------------------------
@@ -810,27 +803,11 @@ contains
     !----------------------------------------------------------------------------
 
     call t_adj_detailf(+2)
-    call datm_comp_run(&
-         x2a=x2a, &
-         a2x=a2x, &
-         SDATM=SDATM, &
-         mpicom=mpicom, &
-         compid=compid, &
-         my_task=my_task, &
-         master_task=master_task, &
-         inst_suffix=inst_suffix, &
-         logunit=logunit, &
-         orbEccen=orbEccen, &
-         orbMvelpp=orbMvelpp, &
-         orbLambm0=orbLambm0, &
-         orbObliqr=orbObliqr, &
-         write_restart=.false., &
-         target_ymd=current_ymd, &
-         target_tod=current_tod, &
-         target_mon=current_mon, &
-         calendar=calendar, &
-         modeldt=modeldt, &
-         atm_prognostic=atm_prognostic)
+    call datm_comp_run(mpicom=mpicom, compid=compid, my_task=my_task, &
+         master_task=master_task, inst_suffix=inst_suffix, logunit=logunit, &
+         orbEccen=orbEccen, orbMvelpp=orbMvelpp, orbLambm0=orbLambm0, orbObliqr=orbObliqr, &
+         write_restart=.false., target_ymd=current_ymd, target_tod=current_tod, target_mon=current_mon, &
+         calendar=calendar, modeldt=modeldt, atm_prognostic=atm_prognostic)
     call t_adj_detailf(-2)
 
     call t_stopf('DATM_INIT')
@@ -839,8 +816,7 @@ contains
 
   !===============================================================================
 
-  subroutine datm_comp_run(x2a, a2x, &
-       SDATM, mpicom, compid, my_task, master_task, &
+  subroutine datm_comp_run(mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, &
        orbEccen, orbMvelpp, orbLambm0, orbObliqr, &
        write_restart, target_ymd, target_tod, target_mon, modeldt, calendar, &
@@ -849,9 +825,6 @@ contains
     ! !DESCRIPTION: run method for datm model
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(mct_aVect)        , intent(inout) :: x2a
-    type(mct_aVect)        , intent(inout) :: a2x
-    type(shr_strdata_type) , intent(inout) :: SDATM
     integer                , intent(in)    :: mpicom           ! mpi communicator
     integer                , intent(in)    :: compid           ! mct comp id
     integer                , intent(in)    :: my_task          ! my task in mpi communicator mpicom
@@ -900,7 +873,7 @@ contains
 
     if (debug_import > 0 .and. my_task == master_task .and. atm_prognostic) then
        do nfld = 1, mct_aVect_nRAttr(x2a)
-          call shr_string_listGetName(trim(flds_x2a_mod), nfld, fldname)
+          call shr_string_listGetName(trim(flds_x2a), nfld, fldname)
           do n = 1, mct_aVect_lsize(x2a)
              write(logunit,F0D)'import: ymd,tod,n  = '// trim(fldname),target_ymd, target_tod, &
                   n, x2a%rattr(nfld,n)
@@ -1408,7 +1381,7 @@ contains
 
     if (debug_export > 0 .and. my_task == master_task) then
        do nfld = 1, mct_aVect_nRAttr(a2x)
-          call shr_string_listGetName(trim(flds_a2x_mod), nfld, fldname)
+          call shr_string_listGetName(trim(flds_a2x), nfld, fldname)
           do n = 1, mct_aVect_lsize(a2x)
              write(logunit,F0D)'export: ymd,tod,n  = '// trim(fldname),target_ymd, target_tod, &
                   n, a2x%rattr(nfld,n)
@@ -1451,11 +1424,10 @@ contains
 
   !===============================================================================
 
-  subroutine datm_comp_import(importState, x2a, rc)
+  subroutine datm_comp_import(importState, rc)
 
     ! input/output variables
     type(ESMF_State)     :: importState
-    type(mct_aVect)      :: x2a
     integer, intent(out) :: rc
 
     ! local variables
@@ -1538,10 +1510,9 @@ contains
 
   !===============================================================================
 
-  subroutine datm_comp_export(a2x, exportState, rc)
+  subroutine datm_comp_export(exportState, rc)
 
     ! input/output variables
-    type(mct_aVect)      :: a2x
     type(ESMF_State)     :: exportState
     integer, intent(out) :: rc
 

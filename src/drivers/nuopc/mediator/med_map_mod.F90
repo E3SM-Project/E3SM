@@ -793,34 +793,42 @@ contains
                      zeroregion=ESMF_REGION_TOTAL)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-                ! temp diagnostics
-                call shr_nuopc_methods_FB_Field_diagnose(FBDst, fldname, " --> after nstod: ", rc=rc)
-                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                if (dbug_flag > 1) then
+                   ! temp diagnostics
+                   call shr_nuopc_methods_FB_Field_diagnose(FBDst, fldname, " --> after nstod: ", rc=rc)
+                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                end if
 
                 call shr_nuopc_methods_FB_FieldRegrid(FBSrc, fldname, FBDst, fldname, RouteHandles(mapconsd), rc, &
                      zeroregion=ESMF_REGION_SELECT)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-                ! temp diagnostics
-                call shr_nuopc_methods_FB_Field_diagnose(FBDst, fldname, " --> after consd: ", rc=rc)
-                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                if (dbug_flag > 1) then
+                   ! temp diagnostics
+                   call shr_nuopc_methods_FB_Field_diagnose(FBDst, fldname, " --> after consd: ", rc=rc)
+                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                end if
 
              else if (mapindex == mapnstod_consf) then
                 call shr_nuopc_methods_FB_FieldRegrid(FBSrc, fldname, FBDst, fldname, RouteHandles(mapnstod), rc, &
                      zeroregion=ESMF_REGION_TOTAL)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-                ! temp diagnostics
-                call shr_nuopc_methods_FB_Field_diagnose(FBDst, fldname, " --> after nstod: ", rc=rc)
-                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                if (dbug_flag > 1) then
+                   ! temp diagnostics
+                   call shr_nuopc_methods_FB_Field_diagnose(FBDst, fldname, " --> after nstod: ", rc=rc)
+                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                end if
 
                 call shr_nuopc_methods_FB_FieldRegrid(FBSrc, fldname, FBDst, fldname, RouteHandles(mapconsf), rc, &
                      zeroregion=ESMF_REGION_SELECT)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-                ! temp diagnostics
-                call shr_nuopc_methods_FB_Field_diagnose(FBDst, fldname, " --> after consf: ", rc=rc)
-                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                if (dbug_flag > 1) then
+                   ! temp diagnostics
+                   call shr_nuopc_methods_FB_Field_diagnose(FBDst, fldname, " --> after consf: ", rc=rc)
+                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                end if
              else
 
                 call shr_nuopc_methods_FB_FieldRegrid( FBSrc, trim(fldname), FBDst, fldname, RouteHandles(mapindex), rc)
@@ -918,9 +926,11 @@ contains
                 end if
              end if
 
-             ! temp diagnostics
-             call shr_nuopc_methods_FB_Field_diagnose(FBDst, fldname, " --> after frac: ", rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             if (dbug_flag > 1) then
+                ! temp diagnostics
+                call shr_nuopc_methods_FB_Field_diagnose(FBDst, fldname, " --> after frac: ", rc=rc)
+                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             end if
 
           !-------------------------------------------------
           ! unity or no normalization
@@ -938,34 +948,42 @@ contains
                      zeroregion=ESMF_REGION_TOTAL)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-                ! temp diagnostics
-                call shr_nuopc_methods_FB_Field_diagnose(FBDst, fldname, " --> after nstod: ", rc=rc)
-                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                if (dbug_flag > 1) then
+                   ! temp diagnostics
+                   call shr_nuopc_methods_FB_Field_diagnose(FBDst, fldname, " --> after nstod: ", rc=rc)
+                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                end if
 
                 call shr_nuopc_methods_FB_FieldRegrid(FBSrc, fldname, FBDst, fldname, RouteHandles(mapconsd), rc, &
                      zeroregion=ESMF_REGION_SELECT)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-                ! temp diagnostics
-                call shr_nuopc_methods_FB_Field_diagnose(FBDst, fldname, " --> after consd: ", rc=rc)
-                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                if (dbug_flag > 1) then
+                   ! temp diagnostics
+                   call shr_nuopc_methods_FB_Field_diagnose(FBDst, fldname, " --> after consd: ", rc=rc)
+                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                end if
 
              else if (mapindex == mapnstod_consf) then
                 call shr_nuopc_methods_FB_FieldRegrid(FBSrc, fldname, FBDst, fldname, RouteHandles(mapnstod), rc, &
                      zeroregion=ESMF_REGION_TOTAL)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-                ! temp diagnostics
-                call shr_nuopc_methods_FB_Field_diagnose(FBDst, fldname, " --> after nstod: ", rc=rc)
-                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                if (dbug_flag > 1) then
+                   ! temp diagnostics
+                   call shr_nuopc_methods_FB_Field_diagnose(FBDst, fldname, " --> after nstod: ", rc=rc)
+                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                end if
 
                 call shr_nuopc_methods_FB_FieldRegrid(FBSrc, fldname, FBDst, fldname, RouteHandles(mapconsf), rc, &
                      zeroregion=ESMF_REGION_SELECT)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-                ! temp diagnostics
-                call shr_nuopc_methods_FB_Field_diagnose(FBDst, fldname, " --> after consf: ", rc=rc)
-                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                if (dbug_flag > 1) then
+                   ! temp diagnostics
+                   call shr_nuopc_methods_FB_Field_diagnose(FBDst, fldname, " --> after consf: ", rc=rc)
+                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                end if
 
              else
 
@@ -1011,9 +1029,11 @@ contains
           end if ! mapnorm is 'one' or 'nne'
        end if ! mapindex is not mapfcopy and field exists
 
-       call shr_nuopc_methods_FB_Field_diagnose(FBDst, fldname, &
-            string=trim(subname) //' FBImp('//trim(compname(srccomp))//','//trim(compname(destcomp))//') ', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (dbug_flag > 1) then
+          call shr_nuopc_methods_FB_Field_diagnose(FBDst, fldname, &
+               string=trim(subname) //' FBImp('//trim(compname(srccomp))//','//trim(compname(destcomp))//') ', rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
 
        deallocate(gridToFieldMap)
 
