@@ -1,5 +1,6 @@
 set(EMI_ELM_TYPES_STUB_SOURCES
   CanopyStateType.F90
+  CNCarbonStateType.F90
   ChemStateType.F90
   EnergyFluxType.F90
   SoilHydrologyType.F90

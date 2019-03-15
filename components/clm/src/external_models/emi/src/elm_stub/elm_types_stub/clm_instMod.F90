@@ -2,6 +2,7 @@ module clm_instMod
 
   use atm2lndType       , only : atm2lnd_type
   use CanopyStateType   , only : canopystate_type
+  use CNCarbonStateType , only : carbonstate_type
   use ChemStateType     , only : chemstate_type
   use decompMod         , only : bounds_type
   use EnergyFluxType    , only : energyflux_type
@@ -17,6 +18,7 @@ module clm_instMod
 
   type(atm2lnd_type)       :: atm2lnd_vars
   type(canopystate_type)   :: canopystate_vars
+  type(carbonstate_type)   :: carbonstate_vars
   type(chemstate_type)     :: chemstate_vars
   type(energyflux_type)    :: energyflux_vars
   type(soilhydrology_type) :: soilhydrology_vars
@@ -40,6 +42,7 @@ module clm_instMod
 
     call atm2lnd_vars%Init( bounds_proc )
     call canopystate_vars%init(bounds_proc)
+    call carbonstate_vars%init(bounds_proc)
     call chemstate_vars%Init(bounds_proc)
     call soilstate_vars%init(bounds_proc)
     call soilhydrology_vars%Init(bounds_proc)
