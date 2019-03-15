@@ -379,11 +379,13 @@ contains
       !  hard coded now, it should be a runtime option in the future
       ierr = iMOAB_ApplyScalarProjectionWeights ( mbintxoa, wgtIdef, tagName, tagNameProj)
 
+#ifdef MOABDEBUG
       ! we can also write the ocean mesh to file, just to see the projectd tag
       !      write out the mesh file to disk
       outfile = 'ocn_proj.h5m'//CHAR(0)
       wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
       ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
+#endif
 
     !CHECKRC(ierr, "cannot receive tag values")
     endif
