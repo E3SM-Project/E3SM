@@ -104,8 +104,11 @@ contains
        !--- diagnose output
        !---------------------------------------
 
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compwav), string=trim(subname)//' FBexp(compwav) ', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (dbug_flag > 1) then
+          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compwav), &
+               string=trim(subname)//' FBexp(compwav) ', rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
 
        !---------------------------------------
        !--- custom calculations

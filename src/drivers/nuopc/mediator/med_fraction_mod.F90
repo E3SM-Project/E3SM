@@ -599,12 +599,15 @@ contains
     ! Diagnostic output
     !---------------------------------------
 
-    do n = 1,ncomps
-       if (ESMF_FieldBundleIsCreated(is_local%wrap%FBfrac(n),rc=rc)) then
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBfrac(n), trim(subname) // trim(compname(n)), rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       endif
-    enddo
+    if (dbug_flag > 1) then
+       do n = 1,ncomps
+          if (ESMF_FieldBundleIsCreated(is_local%wrap%FBfrac(n),rc=rc)) then
+             call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBfrac(n), &
+                  trim(subname) // trim(compname(n)), rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          end if
+       end do
+    end if
 
     if (dbug_flag > 20) then
        call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -822,12 +825,15 @@ contains
     ! Diagnostic output
     !---------------------------------------
 
-    do n = 1,ncomps
-       if (ESMF_FieldBundleIsCreated(is_local%wrap%FBfrac(n),rc=rc)) then
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBfrac(n), trim(subname) // trim(compname(n))//' frac', rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       endif
-    enddo
+    if (dbug_flag > 1) then
+       do n = 1,ncomps
+          if (ESMF_FieldBundleIsCreated(is_local%wrap%FBfrac(n),rc=rc)) then
+             call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBfrac(n), &
+                  trim(subname) // trim(compname(n))//' frac', rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          end if
+       enddo
+    end if
 
     if (dbug_flag > 20) then
        call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)

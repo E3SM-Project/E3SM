@@ -7,9 +7,10 @@ module med_connectors_mod
   use ESMF                  , only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_Failure
   use ESMF                  , only : ESMF_State, ESMF_Clock, ESMF_GridComp
   use med_internalstate_mod , only : InternalState
-  use shr_nuopc_utils_mod , only : shr_nuopc_utils_ChkErr
+  use shr_nuopc_utils_mod   , only : shr_nuopc_utils_ChkErr
   use med_constants_mod     , only : spval => med_constants_spval
   use med_constants_mod     , only : czero => med_constants_czero
+  use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
 
   implicit none
   private
@@ -48,6 +49,7 @@ contains
 !-----------------------------------------------------------------------------
 
   subroutine med_connectors_prep_generic(gcomp, type, compid, rc)
+
     use ESMF                  , only : ESMF_GridCompGet, ESMF_VMGet
     use med_infodata_mod      , only : med_infodata_CopyStateToInfodata
     use med_infodata_mod      , only : med_infodata_CopyInfodataToState
@@ -55,6 +57,7 @@ contains
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_reset
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_copy
     use perf_mod              , only : t_startf, t_stopf
+
     ! input/output variables
     type(ESMF_GridComp)          :: gcomp
     character(len=*), intent(in) :: type
@@ -96,14 +99,21 @@ contains
     cpl2comp = "cpl2"//type
 
     is_local%wrap%conn_prep_cnt(compid) = is_local%wrap%conn_prep_cnt(compid) + 1
+
     call shr_nuopc_methods_State_reset(is_local%wrap%NStateExp(compid), value=spval, rc=rc)
     if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
+
     call shr_nuopc_methods_FB_copy(is_local%wrap%NStateExp(compid), is_local%wrap%FBExp(compid), rc=rc)
     if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
-    call med_connectors_diagnose(is_local%wrap%NStateExp(compid), is_local%wrap%conn_prep_cnt(compid), med2comp, rc=rc)
-    if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
+
+    if (dbug_flag > 1) then 
+       call med_connectors_diagnose(is_local%wrap%NStateExp(compid), is_local%wrap%conn_prep_cnt(compid), med2comp, rc=rc)
+       if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
+    end if
+
     call med_infodata_CopyInfodataToState(med_infodata,is_local%wrap%NStateExp(compid), cpl2comp, mytask, rc)
     if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
+
     call med_infodata_CopyInfodataToState(med_infodata,is_local%wrap%NStateImp(compid), cpl2comp, mytask, rc)
     if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
@@ -123,6 +133,7 @@ contains
     use med_infodata_mod      , only : med_infodata
     use med_infodata_mod      , only : med_infodata_CopyStateToInfodata
     use perf_mod              , only : t_startf, t_stopf
+
     ! input/output variables
     type(ESMF_GridComp)           :: gcomp
     character(len=*), intent(in)  :: type
@@ -163,12 +174,18 @@ contains
     comp2cpl = type//"2cpl"
 
     is_local%wrap%conn_post_cnt(compid) = is_local%wrap%conn_post_cnt(compid) + 1
-    call med_connectors_diagnose(is_local%wrap%NStateImp(compid), is_local%wrap%conn_post_cnt(compid),comp2med, rc=rc)
-    if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
+
+    if (dbug_flag > 1) then
+       call med_connectors_diagnose(is_local%wrap%NStateImp(compid), is_local%wrap%conn_post_cnt(compid),comp2med, rc=rc)
+       if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
+    end if
+
     call med_infodata_CopyStateToInfodata(is_local%wrap%NStateImp(compid),med_infodata, comp2cpl ,is_local%wrap%vm,rc)
     if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
+
     call shr_nuopc_methods_FB_reset(is_local%wrap%FBImp(compid,compid), value=czero, rc=rc)
     if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
+
     call shr_nuopc_methods_FB_copy(is_local%wrap%FBImp(compid,compid), is_local%wrap%NStateImp(compid), rc=rc)
     if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 

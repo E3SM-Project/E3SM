@@ -378,7 +378,8 @@ contains
     endif
 
     if (dbug_flag > 1) then
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBMed_ocnalb_o, string=trim(subname)//' FBMed_ocnalb_o', rc=rc)
+       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBMed_ocnalb_o, &
+            string=trim(subname)//' FBMed_ocnalb_o', rc=rc)
        if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
     end if
     call t_stopf('MED:'//subname)
