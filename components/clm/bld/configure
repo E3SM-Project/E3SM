@@ -660,7 +660,7 @@ sub write_filepath_cesmbld
 		     "external_models/mpp/src/mpp/vsfm",
 		     "external_models/emi/src/",
 		     "external_models/emi/src/constants",
-		     "external_models/emi/src/em",
+		     "external_models/emi/src/em/base",
 		     "external_models/emi/src/em/betr",
 		     "external_models/emi/src/em/fates",
 		     "external_models/emi/src/em/ptm",
