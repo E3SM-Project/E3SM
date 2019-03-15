@@ -34,6 +34,7 @@ module ExternalModelInterfaceMod
   use EMI_ColumnType_Exchange               , only : EMI_Pack_ColumnType_for_EM
   use EMI_Filter_Exchange                   , only : EMI_Pack_Filter_for_EM
   use EMI_Landunit_Exchange                 , only : EMI_Pack_Landunit_for_EM
+  use EMI_CNCarbonStateType_ExchangeMod
   !
   implicit none
   !
@@ -146,12 +147,12 @@ contains
 
     if ( masterproc ) then
        write(iulog,*) 'Number of External Models = ', num_em
-       write(iulog,*) '  Is BeTR is present?     ',(index_em_betr     >0)
-       write(iulog,*) '  Is FATES is present?    ',(index_em_fates    >0)
-       write(iulog,*) '  Is PFLOTRAN is present? ',(index_em_pflotran >0)
-       write(iulog,*) '  Is PTM is present?      ',(index_em_ptm      >0)
-       write(iulog,*) '  Is Stub EM is present?  ',(index_em_stub     >0)
-       write(iulog,*) '  Is VSFM is present?     ',(index_em_vsfm     >0)
+       write(iulog,*) '  Is BeTR present?     ',(index_em_betr     >0)
+       write(iulog,*) '  Is FATES present?    ',(index_em_fates    >0)
+       write(iulog,*) '  Is PFLOTRAN present? ',(index_em_pflotran >0)
+       write(iulog,*) '  Is PTM present?      ',(index_em_ptm      >0)
+       write(iulog,*) '  Is Stub EM present?  ',(index_em_stub     >0)
+       write(iulog,*) '  Is VSFM present?     ',(index_em_vsfm     >0)
     endif
 
     if (num_em > 1) then
@@ -703,7 +704,7 @@ contains
        num_filter_lun, filter_lun,                            &
        soilhydrology_vars, soilstate_vars, waterflux_vars,    &
        waterstate_vars, temperature_vars,  atm2lnd_vars,      &
-       canopystate_vars, energyflux_vars)
+       canopystate_vars, energyflux_vars, carbonstate_vars)
     !
     ! !DESCRIPTION:
     !
@@ -722,6 +723,7 @@ contains
     use atm2lndType            , only : atm2lnd_type
     use CanopyStateType        , only : canopystate_type
     use EnergyFluxType         , only : energyflux_type
+    use CNCarbonStateType      , only : carbonstate_type
     use ExternalModelBETRMod   , only : EM_BETR_Solve
     use decompMod              , only : get_clump_bounds
     !
@@ -748,6 +750,7 @@ contains
     type(atm2lnd_type)       , optional , intent(inout) :: atm2lnd_vars
     type(canopystate_type)   , optional , intent(inout) :: canopystate_vars
     type(energyflux_type)    , optional , intent(inout) :: energyflux_vars
+    type(carbonstate_type)   , optional , intent(inout) :: carbonstate_vars
     !
     integer          :: index_em
     real(r8)         :: dtime
@@ -932,6 +935,13 @@ contains
             num_filter_col, filter_col)
     deallocate(filter_col)
 
+    if (present(carbonstate_vars)  .and. &
+         present(num_hydrologyc)   .and. &
+         present(filter_hydrologyc)) then
+       call EMI_Pack_CNCarbonStateType_at_Column_Level_for_EM(l2e_driver_list(iem), em_stage, &
+            num_hydrologyc, filter_hydrologyc, carbonstate_vars)
+    endif
+
     call EMID_Verify_All_Data_Is_Set(l2e_driver_list(iem), em_stage)
 
     ! ------------------------------------------------------------------------
@@ -1036,6 +1046,13 @@ contains
 
        call EMI_Unpack_TemperatureType_at_Column_Level_from_EM(e2l_driver_list(iem), em_stage, &
             num_nolakec_and_nourbanc, filter_nolakec_and_nourbanc, temperature_vars)
+    endif
+
+    if (present(carbonstate_vars)  .and. &
+         present(num_hydrologyc)   .and. &
+         present(filter_hydrologyc)) then
+       call EMI_Unpack_CNCarbonStateType_at_Column_Level_from_EM(e2l_driver_list(iem), em_stage, &
+            num_hydrologyc, filter_hydrologyc, carbonstate_vars)
     endif
 
     if (em_id == EM_ID_STUB) then

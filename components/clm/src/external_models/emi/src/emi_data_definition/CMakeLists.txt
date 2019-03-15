@@ -2,6 +2,7 @@ set(EMI_EMI_DATA_DEFINITION_SOURCES
   EMI_Atm2LndType_DataMod.F90
   EMI_CanopyStateType_DataMod.F90
   EMI_ChemStateType_DataMod.F90
+  EMI_CNCarbonStateType_DataMod.F90
   EMI_EnergyFluxType_DataMod.F90
   EMI_SoilHydrologyType_DataMod.F90
   EMI_SoilStateType_DataMod.F90

@@ -2,6 +2,7 @@ set(EMI_CONSTANTS_SOURCES
   EMI_Atm2LndType_Constants.F90
   EMI_CanopyStateType_Constants.F90
   EMI_ChemStateType_Constants.F90
+  EMI_CNCarbonStateType_Constants.F90
   EMI_ColumnType_Constants.F90
   EMI_EnergyFluxType_Constants.F90
   EMI_Filter_Constants.F90
