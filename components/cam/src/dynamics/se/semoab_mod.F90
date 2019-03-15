@@ -269,12 +269,14 @@ contains
       ierr = iMOAB_UpdateMeshInfo(MHFID)
       if (ierr > 0 )  &
         call endrun('Error: fail to update mesh info')
+#ifdef MOABDEBUG
 !     write out the mesh file to disk, in parallel
       outfile = 'wholeFineATM.h5m'//CHAR(0)
       wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
       ierr = iMOAB_WriteMesh(MHFID, outfile, wopts)
       if (ierr > 0 )  &
         call endrun('Error: fail to write the mesh file')
+#endif
 
      ! deallocate
 !    deallocate(moabvh)
@@ -444,7 +446,7 @@ contains
       tagname='a2oVbot'//CHAR(0) !  atm to ocean V bottom tag
       ierr = iMOAB_DefineTagStorage(MHID, tagname, tagtype, numco,  tagindex )
       if (ierr > 0 )  &
-        call endrun('Error: fail to create atm to ocean U velocity bottom tag')
+        call endrun('Error: fail to create atm to ocean V velocity bottom tag')
 
 
       ! create a new tag, for transfer example ; will use it now for temperature on the surface
@@ -470,12 +472,14 @@ contains
       ierr = iMOAB_UpdateMeshInfo(MHID)
       if (ierr > 0 )  &
         call endrun('Error: fail to update mesh info')
+#ifdef MOABDEBUG
 !     write out the mesh file to disk, in parallel
       outfile = 'wholeATM.h5m'//CHAR(0)
       wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
       ierr = iMOAB_WriteMesh(MHID, outfile, wopts)
       if (ierr > 0 )  &
         call endrun('Error: fail to write the mesh file')
+#endif
 
      ! initialize
      num_calls_export = 0
@@ -551,7 +555,7 @@ contains
     if (ierr > 0 )  &
       call endrun('Error: fail to set a2oUbot tag for coarse elements')
 
-    ! loop now for U velocity ( a2oUbot tag)
+    ! loop now for V velocity ( a2oVbot tag)
     do ie=1,num_elem
       do j=1,np
         do i=1,np
@@ -567,6 +571,7 @@ contains
       call endrun('Error: fail to set a2oVbot tag for coarse elements')
 
 
+#ifdef MOABDEBUG
     !     write out the mesh file to disk, in parallel
     write(lnum,"(I0.2)")num_calls_export
     outfile = 'wholeATM_T_'//trim(lnum)// '.h5m' // CHAR(0)
@@ -574,6 +579,7 @@ contains
     ierr = iMOAB_WriteMesh(MHID, outfile, wopts)
     if (ierr > 0 )  &
       call endrun('Error: fail to write the mesh file')
+#endif
 
     ! for debugging, set the tag on fine mesh too (for visu)
     do ie=1,num_elem
@@ -594,14 +600,15 @@ contains
     if (ierr > 0 )  &
       call endrun('Error: fail to set a2oDBG tag for fine vertices')
 
+#ifdef MOABDEBUG
     !     write out the mesh file to disk, in parallel
-
 
     outfile = 'wholeFineATM_T_'//trim(lnum)// '.h5m' // CHAR(0)
 
     ierr = iMOAB_WriteMesh(MHFID, outfile, wopts)
     if (ierr > 0 )  &
       call endrun('Error: fail to write the fine mesh file, with a temperature on it')
+#endif
 
     deallocate(valuesTag)
   end subroutine moab_export_data

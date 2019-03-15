@@ -1438,6 +1438,7 @@ contains
        ! CHECKRC(ierr, "cannot free buffers used to send projected tag towards the ocean mesh")
     endif
 
+#ifdef MOABDEBUG
     if (mpoid .ge. 0 ) then !  we are on ocean pes, for sure
 
       outfile = 'wholeMPAS_proj.h5m'//CHAR(0)
@@ -1446,6 +1447,7 @@ contains
 
     !CHECKRC(ierr, "cannot receive tag values")
     endif
+#endif
 
   end subroutine prep_ocn_migrate_moab
 
