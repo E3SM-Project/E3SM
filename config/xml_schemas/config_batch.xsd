@@ -162,7 +162,7 @@
   <xs:element name="queue">
     <xs:complexType>
       <xs:simpleContent>
-        <xs:extension base="xs:NCName">
+        <xs:extension base="xs:string">
           <xs:attribute name="default" type="xs:boolean"/>
           <xs:attribute name="strict" type="xs:boolean"/>
           <xs:attribute name="nodemax" type="xs:integer"/>
