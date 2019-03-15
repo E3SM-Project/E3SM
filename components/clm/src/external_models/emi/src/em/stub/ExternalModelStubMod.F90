@@ -14,6 +14,7 @@ module ExternalModelStubMod
   use ExternalModelConstants
   use EMI_Atm2LndType_Constants
   use EMI_CanopyStateType_Constants
+  use EMI_CNCarbonStateType_Constants
   use EMI_ColumnType_Constants
   use EMI_EnergyFluxType_Constants
   use EMI_Filter_Constants
@@ -27,7 +28,9 @@ module ExternalModelStubMod
   implicit none
   !
 
-  integer :: nlevgrnd = 5 ! This data should also be exchanged
+  integer :: nlevgrnd        = 5 ! This data should also be exchanged
+  integer :: nlevdecomp_full = 1 ! This data should also be exchanged
+  integer :: ndecomp_pools   = 8 ! This data should also be exchanged
 
   type, public, extends(em_base_type) :: em_stub_type
      ! ----------------------------------------------------------------------
@@ -46,9 +49,11 @@ module ExternalModelStubMod
      integer :: index_l2e_state_h2osoi_liq
      integer :: index_l2e_state_h2osoi_ice
      integer :: index_l2e_flux_hs_soil
+     integer :: index_l2e_state_decomp_cpools
 
      integer :: index_e2l_state_smp
      integer :: index_e2l_state_temperature_soil_nlevgrnd
+     integer :: index_e2l_state_decomp_cpools
 
    contains
 
@@ -199,6 +204,12 @@ contains
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_flux_hs_soil                    = index
 
+    number_em_stages = 1
+    em_stages(1) = EM_STUB_SOIL_THERMAL_STAGE
+    id                                             = L2E_STATE_CARBON_POOLS_VERTICALLY_RESOLVED
+    call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
+    this%index_l2e_state_decomp_cpools              = index
+
     deallocate(em_stages)
 
     write(iulog,*)'    1.1.3 Stub EM will receive following variables from ELM during timestepping: '
@@ -244,6 +255,12 @@ contains
     id                                             = E2L_STATE_TSOIL_NLEVGRND
     call e2l_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_e2l_state_temperature_soil_nlevgrnd = index
+
+    number_em_stages = 1
+    em_stages(1) = EM_STUB_SOIL_THERMAL_STAGE
+    id                                             = E2L_STATE_CARBON_POOLS_VERTICALLY_RESOLVED
+    call e2l_list%AddDataByID(id, number_em_stages, em_stages, index)
+    this%index_e2l_state_decomp_cpools              = index
 
     deallocate(em_stages)
 
@@ -432,9 +449,11 @@ contains
     real(r8) , pointer                   :: l2e_hs_soil(:)
     real(r8)  , pointer                  :: l2e_h2osoi_liq(:,:)
     real(r8)  , pointer                  :: l2e_h2osoi_ice(:,:)
+    real(r8)  , pointer                  :: l2e_decomp_cpools(:,:,:)
     real(r8) , pointer                   :: e2l_tsoil(:,:)
+    real(r8)  , pointer                  :: e2l_decomp_cpools(:,:,:)
     integer                              :: begc, endc
-    integer                              :: c,j
+    integer                              :: c,j,k
 
     begc     = bounds_clump%begc
     endc     = bounds_clump%endc
@@ -447,9 +466,12 @@ contains
     call l2e_list%GetPointerToReal2D(this%index_l2e_state_h2osoi_liq, l2e_h2osoi_liq)
     call l2e_list%GetPointerToReal2D(this%index_l2e_state_h2osoi_ice, l2e_h2osoi_ice)
 
+    call l2e_list%GetPointerToReal3D(this%index_l2e_state_decomp_cpools, l2e_decomp_cpools)
+
     call Print2DData('l2e_h2osoi_liq', begc, endc, 1, nlevgrnd, l2e_h2osoi_liq)
     call Print2DData('l2e_h2osoi_ice', begc, endc, 1, nlevgrnd, l2e_h2osoi_ice)
     call Print1DData('l2e_hs_soil', begc, endc, l2e_hs_soil)
+    call Print3DData('l2e_decomp_cpools', begc, endc, 1, nlevdecomp_full, 1, ndecomp_pools, l2e_decomp_cpools)
 
     call e2l_list%GetPointerToReal2D(this%index_e2l_state_temperature_soil_nlevgrnd, e2l_tsoil)
     do c = begc, endc
@@ -458,6 +480,14 @@ contains
        enddo
     enddo
 
+    call e2l_list%GetPointerToReal3D(this%index_e2l_state_decomp_cpools, e2l_decomp_cpools)
+    do c = begc, endc
+       do j = 1, nlevdecomp_full
+          do k = 1, ndecomp_pools
+             e2l_decomp_cpools(c,j,k) = l2e_decomp_cpools(c,j,k) + 10.d0
+          end do
+       enddo
+    enddo
     write(iulog,*)''
     write(iulog,*)'     2.3 Value of variables send by Stub EM after'
     write(iulog,*)'         solving the thermal model'
@@ -503,5 +533,28 @@ contains
     enddo
 
   end subroutine Print2DData
+
+  !------------------------------------------------------------------------
+  subroutine Print3DData(data_name, dim1_beg, dim1_end, dim2_beg, dim2_end, &
+       dim3_beg, dim3_end, data)
+    !
+    implicit none
+    !
+    character(len=*) :: data_name
+    integer :: dim1_beg, dim1_end, dim2_beg, dim2_end, dim3_beg, dim3_end
+    real(r8)  , pointer :: data(:,:,:)
+    !
+    integer :: i,j,k
+
+    write(iulog,*)'      variable: ' // trim(data_name) //': '
+    do i = dim1_beg, dim1_end
+       do j = dim2_beg, dim2_end
+          do k = dim3_beg, dim3_end
+             write(iulog,*)'     ',data(i,j,k)
+          end do
+       enddo
+    enddo
+
+  end subroutine Print3DData
 
 end module ExternalModelStubMod

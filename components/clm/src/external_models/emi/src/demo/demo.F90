@@ -6,10 +6,11 @@ program demo
   use clm_instMod               , only : clm_inst_biogeophys
   use clm_varpar                , only : clm_varpar_init
   use clm_varcon                , only : clm_varcon_init
+  use clm_varpar                , only : nlevdecomp_full, ndecomp_pools
   use spmdMod                   , only : spmd_init
   use ExternalModelConstants    , only : EM_ID_STUB, EM_STUB_SOIL_HYDRO_STAGE, EM_STUB_SOIL_THERMAL_STAGE
   use clm_instMod               , only : soilstate_vars, waterstate_vars, waterflux_vars
-  use clm_instMod               , only : energyflux_vars, temperature_vars
+  use clm_instMod               , only : energyflux_vars, temperature_vars, carbonstate_vars
   use shr_kind_mod              , only : r8 => shr_kind_r8, SHR_KIND_CL
 
   implicit none
@@ -56,6 +57,10 @@ program demo
   write(iulog,*)'2. Lets now timestep the Stub EM'
   write(iulog,*)'++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'
 
+  write(*,*)'num_hydrologyc : ',num_hydrologyc
+  write(*,*)'nlevdecomp_full: ',nlevdecomp_full
+  write(*,*)'ndecomp_pools  : ',ndecomp_pools
+
   !$OMP PARALLEL DO PRIVATE (clump_rank, bounds_clump)
   do clump_rank = 1, nclumps
 
@@ -93,10 +98,12 @@ program demo
           waterflux_vars    = waterflux_vars                        , &
           energyflux_vars   = energyflux_vars                       , &
           soilstate_vars    = soilstate_vars                        , &
-          temperature_vars  = temperature_vars)
+          temperature_vars  = temperature_vars                      , &
+          carbonstate_vars  = carbonstate_vars)
   enddo
   !$OMP END PARALLEL DO
 
+  
 end program demo
 
 !-----------------------------------------------------------------------
@@ -191,9 +198,10 @@ subroutine initialize_clm_data_structures(bounds_proc)
 
   use decompMod     , only : bounds_type
   use clm_instMod   , only : soilstate_vars, waterstate_vars, waterflux_vars
-  use clm_instMod   , only : energyflux_vars
+  use clm_instMod   , only : energyflux_vars, carbonstate_vars
   use shr_kind_mod  , only : r8 => shr_kind_r8, SHR_KIND_CL
   use clm_varpar    , only : nlevgrnd
+  use clm_varpar    , only : nlevdecomp_full, ndecomp_pools
   use shr_const_mod , only : SHR_CONST_PI
   !
   implicit none
@@ -201,10 +209,12 @@ subroutine initialize_clm_data_structures(bounds_proc)
   type(bounds_type) :: bounds_proc
   !
   integer :: begc, endc, ncol
-  integer :: c,j
+  integer :: c,j,k
+  real(r8) :: counter
 
   begc = bounds_proc%begc; endc = bounds_proc%endc;
   ncol = endc-begc+1;
+  counter = 0.d0
 
   do c = begc, endc
      do j = 1, nlevgrnd
@@ -215,6 +225,13 @@ subroutine initialize_clm_data_structures(bounds_proc)
         waterflux_vars%mflx_et_col(c,j) = 20._r8*(c**2._r8) + j
      enddo
      energyflux_vars%eflx_hs_soil_col(c) = 30._r8*(c**2._r8)
+     do j = 1, nlevdecomp_full
+        do k = 1, ndecomp_pools
+           carbonstate_vars%decomp_cpools_vr_col(c,j,k) = counter;
+           counter = counter + 1.d0
+        end do
+     end do
+     
   enddo
 
 end subroutine initialize_clm_data_structures
