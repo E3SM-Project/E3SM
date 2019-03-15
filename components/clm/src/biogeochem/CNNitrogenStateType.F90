@@ -1629,9 +1629,11 @@ contains
         this%totpftn_patch(bounds%begp:bounds%endp), &
         this%totpftn_col(bounds%begc:bounds%endc))
 
-   call p2c(bounds, num_soilc, filter_soilc, &
+   if (crop_prog) then
+     call p2c(bounds, num_soilc, filter_soilc, &
         this%cropseedn_deficit_patch(bounds%begp:bounds%endp), &
         cropseedn_deficit_col(bounds%begc:bounds%endc))
+   end if
 
    ! vertically integrate NO3 NH4 N2O pools
    nlev = nlevdecomp
@@ -1851,8 +1853,12 @@ contains
            this%sminn_col(c) + &
            this%prod1n_col(c) + &
            this%ntrunc_col(c)+ &
-           this%plant_n_buffer_col(c) + &
-           cropseedn_deficit_col(c)
+           this%plant_n_buffer_col(c)
+           if ( crop_prog ) then
+               this%totcoln_col(c) = &
+                  this%totcoln_col(c)      + &
+                  cropseedn_deficit_col(c)
+           endif
            
       this%totabgn_col (c) =  &
            this%totpftn_col(c) + &

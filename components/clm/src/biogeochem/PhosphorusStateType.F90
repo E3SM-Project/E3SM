@@ -1636,9 +1636,11 @@ contains
         this%totpftp_patch(bounds%begp:bounds%endp), &
         this%totpftp_col(bounds%begc:bounds%endc))
 
-   call p2c(bounds, num_soilc, filter_soilc, &
+   if (crop_prog) then
+     call p2c(bounds, num_soilc, filter_soilc, &
         this%cropseedp_deficit_patch(bounds%begp:bounds%endp), &
         cropseedp_deficit_col(bounds%begc:bounds%endc))
+   end if
 
    ! vertically integrate soil mineral P pools
 
@@ -1874,8 +1876,12 @@ contains
            this%solutionp_col(c) + &
            this%labilep_col(c) + &
            this%secondp_col(c) + &
-           this%ptrunc_col(c) + &
-           cropseedp_deficit_col(c)
+           this%ptrunc_col(c)
+           if ( crop_prog ) then
+               this%totcolp_col(c) = &
+                  this%totcolp_col(c)      + &
+                  cropseedp_deficit_col(c)
+           endif
    end do
 
  end subroutine Summary

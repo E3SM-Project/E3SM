@@ -3111,9 +3111,11 @@ contains
          this%totvegc_abg_patch(bounds%begp:bounds%endp), &
          this%totvegc_abg_col(bounds%begc:bounds%endc))
 
-    call p2c(bounds, num_soilc, filter_soilc, &
+    if ( crop_prog) then
+      call p2c(bounds, num_soilc, filter_soilc, &
          this%cropseedc_deficit_patch(bounds%begp:bounds%endp), &
          cropseedc_deficit_col(bounds%begc:bounds%endc))
+    endif
 
     ! column level summary
 
@@ -3291,8 +3293,12 @@ contains
             this%totlitc_col(c)  + &
             this%totsomc_col(c)  + &
             this%prod1c_col(c)   + &
-            this%ctrunc_col(c)   + &
-            cropseedc_deficit_col(c)
+            this%ctrunc_col(c)
+            if ( crop_prog ) then
+               this%totcolc_col(c) = &
+                  this%totcolc_col(c)      + &
+                  cropseedc_deficit_col(c)
+            endif
             
        this%totabgc_col(c) = &
             this%totpftc_col(c)  + &
