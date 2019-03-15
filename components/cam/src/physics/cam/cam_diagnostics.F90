@@ -1711,8 +1711,12 @@ end subroutine diag_export
 !
 !-----------------------------------------------------------------------
 !
+print *, "AAA write_inithist: ", write_inithist()
    if( write_inithist() ) then
 
+print *, "AAA itim_old : ", itim_old
+print *, "AAA qcwat_idx tcwat_idx lcwat_idx: ", qcwat_idx,tcwat_idx,lcwat_idx
+print *, "AAA qpert_idx: ", qpert_idx
       !
       ! Associate pointers with physics buffer fields
       !

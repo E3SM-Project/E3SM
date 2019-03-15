@@ -939,16 +939,24 @@ subroutine dropmixnuc( &
          end do
       end do
 
+!$acc data enter copyin(ekkp,ekkm,overlapp,overlapm, pver, dtmix, top_lev) &
+!      copyin(ntot_amode, mam_idx) &
+!      copyin(nsav, nnew, ntemp) &
+!      copyin(qncld, qcld) &
+!      copyin(nact, mact, raercol, raercol_cw, taumix_internal_pver_inv) &
+!      create(srcn, source) 
 
       ! old_cloud_nsubmix_loop
       do n = 1, nsubmix
+!$acc serial
          qncld(:) = qcld(:)
          ! switch nsav, nnew so that nsav is the updated aerosol
          ntemp   = nsav
          nsav    = nnew
          nnew    = ntemp
-         srcn(:) = 0.0_r8
+!$acc end serial
 
+!$acc parallel loop  reduction(+:srcn)
          do m = 1, ntot_amode
             mm = mam_idx(m,0)
 
@@ -963,6 +971,7 @@ subroutine dropmixnuc( &
                  + raercol_cw(pver,mm,nsav)*(nact(pver,m) - taumix_internal_pver_inv)
             srcn(pver) = srcn(pver) + max(0.0_r8,tmpa)
          end do
+!$acc end parallel loop
          call explmix(  &
             qcld, srcn, ekkp, ekkm, overlapp,  &
             overlapm, qncld, zero, zero, pver, &
@@ -975,6 +984,7 @@ subroutine dropmixnuc( &
          !    source terms involve clear air (from below) moving into cloudy air (above).
          !    in theory, the clear-portion mixratio should be used when calculating 
          !    source terms
+!$acc parallel loop private(source)
          do m = 1, ntot_amode
             mm = mam_idx(m,0)
             ! rce-comment -   activation source in layer k involves particles from k+1
@@ -996,7 +1006,7 @@ subroutine dropmixnuc( &
                raercol(:,mm,nnew), source, ekkp, ekkm, overlapp,  &
                overlapm, raercol(:,mm,nsav), zero, flxconv, pver, &
                dtmix, .true., raercol_cw(:,mm,nsav))
-
+!$acc parallel loop private(source)
             do l = 1, nspec_amode(m)
                mm = mam_idx(m,l)
                ! rce-comment -   activation source in layer k involves particles from k+1
@@ -1020,9 +1030,18 @@ subroutine dropmixnuc( &
                   dtmix, .true., raercol_cw(:,mm,nsav))
 
             end do
+!$acc end parallel loop
          end do
+!$acc end parallel loop
 
       end do ! old_cloud_nsubmix_loop
+!$acc exit data delete(ekkp,ekkm,overlapp,overlapm, pver, dtmix, top_lev) &
+!      delete(ntot_amode, mam_idx) &
+!      copyout(qncld, qcld) &
+!      delete(nact, mact) &
+!      copyout(raercol, raercol_cw) &
+!      delete(taumix_internal_pver_inv) &
+!      delete(srcn, source)
 
       ! evaporate particles again if no cloud
 
@@ -1157,6 +1176,13 @@ subroutine dropmixnuc( &
       fluxn,      &
       fluxm       )
 
+if (masterproc) then
+   print *, "BBB ntot_amode, ncnst_tot: ", ntot_amode,ncnst_tot
+   print *, "BBB nspec_amode: ", nspec_amode
+   print *, "BBB mam_idx : ", mam_idx
+   print *, "BBB do_aerocom_ind3, regen_fix: ", do_aerocom_ind3, regen_fix
+   print *, "BBB prog_modal_aero, nsubmix: ", prog_modal_aero, nsubmix
+endif
 end subroutine dropmixnuc
 
 !===============================================================================
@@ -1191,6 +1217,7 @@ subroutine explmix( q, src, ekkp, ekkm, overlapp, overlapm, &
 
    if ( is_unact ) then
       !     the qactold*(1-overlap) terms are resuspension of activated material
+!$acc parallel loop 
       do k=top_lev,pver
          kp1=min(k+1,pver)
          km1=max(k-1,top_lev)
@@ -1204,15 +1231,17 @@ subroutine explmix( q, src, ekkp, ekkm, overlapp, overlapm, &
          q(k)=max(q(k),0._r8)
          !        endif
       end do
+!$acc end parallel loop
 
       !     diffusion loss at base of lowest layer
-      q(pver)=q(pver)-surfrate*qold(pver)*dt+flxconv*dt
+!      q(pver)=q(pver)-surfrate*qold(pver)*dt+flxconv*dt
       !        force to non-negative
       !        if(q(pver)<-1.e-30)then
       !           write(iulog,*)'q=',q(pver),' in explmix'
-      q(pver)=max(q(pver),0._r8)
+!      q(pver)=max(q(pver),0._r8)
       !        endif
    else
+!$acc parallel loop
       do k=top_lev,pver
          kp1=min(k+1,pver)
          km1=max(k-1,top_lev)
@@ -1224,15 +1253,21 @@ subroutine explmix( q, src, ekkp, ekkm, overlapp, overlapm, &
          q(k)=max(q(k),0._r8)
          !        endif
       end do
+!$end parallel loop
       !     diffusion loss at base of lowest layer
-      q(pver)=q(pver)-surfrate*qold(pver)*dt+flxconv*dt
+!      q(pver)=q(pver)-surfrate*qold(pver)*dt+flxconv*dt
       !        force to non-negative
       !        if(q(pver)<-1.e-30)then
       !           write(iulog,*)'q=',q(pver),' in explmix'
-      q(pver)=max(q(pver),0._r8)
+!      q(pver)=max(q(pver),0._r8)
 
    end if
 
+!$acc serial
+   q(pver)=q(pver)-surfrate*qold(pver)*dt+flxconv*dt
+   q(pver)=max(q(pver),0._r8)
+!$end acc serial
+ 
 end subroutine explmix
 
 !===============================================================================

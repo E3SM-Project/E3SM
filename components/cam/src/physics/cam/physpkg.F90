@@ -14,7 +14,7 @@ module physpkg
 
 
   use shr_kind_mod,     only: r8 => shr_kind_r8
-  use spmd_utils,       only: masterproc
+  use spmd_utils,       only: masterproc, iam
   use physconst,        only: latvap, latice, rh2o
   use physics_types,    only: physics_state, physics_tend, physics_state_set_grid, &
        physics_ptend, physics_tend_init,    &
@@ -982,6 +982,11 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 
     call t_stopf ('physpkg_st1')
 
+if (iam == 0) then 
+    print *, "AAA adiabatic, ideal_phys: ", adiabatic, ideal_phys
+    print *, "AAA begchunk, endchunk: ", begchunk, endchunk
+    print *, "AAA single_column, scm_crm_mode: ", single_column, scm_crm_mode
+endif
     if ( adiabatic .or. ideal_phys )then
        call t_startf ('bc_physics')
        call phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
@@ -2011,7 +2016,6 @@ subroutine tphysbc (ztodt,               &
     logical :: l_rad
     !HuiWan (2014/15): added for a short-term time step convergence test ==
 
-
     call phys_getopts( microp_scheme_out      = microp_scheme, &
                        macrop_scheme_out      = macrop_scheme, &
                        use_subcol_microp_out  = use_subcol_microp, &
@@ -2735,6 +2739,23 @@ end if ! l_rad
     call t_startf('diag_export')
     call diag_export(cam_out)
     call t_stopf('diag_export')
+
+if (iam == 0) then 
+    print *, "AAA use_mass_borrower:  ", use_mass_borrower 
+    print *, "AAA state_debug_checks: ", state_debug_checks
+    print *, "AAA l_bc_energy_fix:    ", l_bc_energy_fix
+    print *, "AAA l_tracer_aero: ", l_tracer_aero
+    print *, "AAA l_st_mac, cld_macmic_num_steps: ", l_st_mac, cld_macmic_num_steps
+    print *, "AAA l_st_mic, l_rad : ", l_st_mic, l_rad
+    print *, "AAA micro_do_icesupersat: ", micro_do_icesupersat
+    print *, "AAA is_subcol_on(): ", is_subcol_on()
+    print *, "AAA l_tracer_aero : ", l_tracer_aero
+    print *, "AAA carma_do_cldice carma_do_cldliq : ", carma_do_cldice,carma_do_cldliq
+    print *, "AAA deep_scheme_does_scav_trans(): ", deep_scheme_does_scav_trans()
+    print *, "AAA clim_modal_aero prog_modal_aero: ", clim_modal_aero,prog_modal_aero
+    print *, "AAA do_clubb_sgs carma_do_wetdep: ", do_clubb_sgs, carma_do_wetdep
+    print *, "AAA trigmem : ", trigmem
+endif
 
 end subroutine tphysbc
 
