@@ -1,18 +1,4 @@
-!=================================================================================================================
-!module_mp_wsm6.F was originally copied from ./phys/module_mp_wsm6.F from WRF version 3.8.1.
-!Laura D. Fowler (laura@ucar.edu) / 2016-09-23.
-
-!modifications to sourcecode for MPAS:
-!   * replaced the line "#if ( RWORDSIZE == 4 )" with "#ifdef SINGLE_PRECISION".
-!   * commented out the lines:
-!     USE module_utility, ONLY: WRFU_Clock, WRFU_Alarm
-!     USE module_domain, ONLY : HISTORY_ALARM, Is_alarm_tstep
-!   * changed the declaration of refl_10cm to optional since subroutine refl10cm_wsm6 is called
-!     in mpas_atmphys_driver_microphysics.F.
-!     Laura D. Fowler (laura@ucar.edu) / 2016-10-17.
-
-!=================================================================================================================
-#ifdef SINGLE_PRECISION
+#if ( (defined(wrfmodel) ) && ( RWORDSIZE == 4 ) ) || ( ( defined(mpas) ) && defined(SINGLE_PRECISION) )
 #  define VREC vsrec
 #  define VSQRT vssqrt
 #else
@@ -22,8 +8,6 @@
 
 MODULE module_mp_wsm6
 !
-!  USE module_utility, ONLY: WRFU_Clock, WRFU_Alarm
-!  USE module_domain, ONLY : HISTORY_ALARM, Is_alarm_tstep
    USE module_mp_radar
 !
    REAL, PARAMETER, PRIVATE :: dtcldcr     = 120. ! maximum time step for minor loops
@@ -90,6 +74,9 @@ CONTAINS
                  ,ids,ide, jds,jde, kds,kde                        &
                  ,ims,ime, jms,jme, kms,kme                        &
                  ,its,ite, jts,jte, kts,kte                        &
+#ifdef WRF_CHEM
+                 ,evapprod, rainprod                               &
+#endif
                                                                    )
 !-------------------------------------------------------------------
   IMPLICIT NONE
@@ -145,8 +132,8 @@ CONTAINS
                                                           re_ice, &
                                                          re_snow
 !+---+-----------------------------------------------------------------+
-  REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(INOUT), OPTIONAL::     &  ! GT
-                                                       refl_10cm
+  REAL, DIMENSION(ims:ime, kms:kme, jms:jme), OPTIONAL,           &   ! GT
+        INTENT(INOUT) ::                               refl_10cm
 !+---+-----------------------------------------------------------------+
 
   REAL, DIMENSION( ims:ime , jms:jme ), OPTIONAL,                 &
@@ -155,6 +142,17 @@ CONTAINS
   REAL, DIMENSION( ims:ime , jms:jme ), OPTIONAL,                 &
         INTENT(INOUT) ::                                 graupel, &
                                                       graupelncv
+
+#ifdef WRF_CHEM
+  REAL, DIMENSION( ims:ime , kms:kme, jms:jme ), INTENT(INOUT) :: &
+                                                      rainprod,   &
+                                                      evapprod
+! local variable
+  REAL, DIMENSION( its:ite , kts:kte )                 ::         &
+                                                      rainprod2d, &
+                                                      evapprod2d
+#endif
+
 ! LOCAL VAR
   REAL, DIMENSION( its:ite , kts:kte ) ::   t
   REAL, DIMENSION( its:ite , kts:kte, 2 ) ::   qci
@@ -200,6 +198,9 @@ CONTAINS
                     ,its,ite, jts,jte, kts,kte                     &
                     ,snow,snowncv                                  &
                     ,graupel,graupelncv                            &
+#ifdef WRF_CHEM
+                   ,rainprod2d, evapprod2d                        &
+#endif
                                                                    )
          DO K=kts,kte
          DO I=its,ite
@@ -257,7 +258,14 @@ CONTAINS
           enddo   
         endif     ! has_reqc, etc...
 !+---+-----------------------------------------------------------------+
-
+#ifdef WRF_CHEM
+        do i=its,ite
+          do k=kts,kte
+            rainprod(i,k,j) = rainprod2d(i,k)
+            evapprod(i,k,j) = evapprod2d(i,k)
+          enddo
+        enddo
+#endif
       ENDDO
   END SUBROUTINE wsm6
 !===================================================================
@@ -276,6 +284,9 @@ CONTAINS
                    ,its,ite, jts,jte, kts,kte                     &
                    ,snow,snowncv                                  &
                    ,graupel,graupelncv                            &
+#ifdef WRF_CHEM
+                   ,rainprod2d, evapprod2d                        &
+#endif
                                                                   )
 !-------------------------------------------------------------------
   IMPLICIT NONE
@@ -367,6 +378,13 @@ CONTAINS
   REAL, DIMENSION( ims:ime, jms:jme ), OPTIONAL,                  &
         INTENT(INOUT) ::                                 graupel, &
                                                       graupelncv
+
+#ifdef WRF_CHEM
+  REAL, DIMENSION( its:ite , kts:kte ), INTENT(INOUT)  ::         &
+                                                      rainprod2d, &
+                                                      evapprod2d
+#endif
+
 ! LOCAL VAR
   REAL, DIMENSION( its:ite , kts:kte , 3) ::                      &
                                                               rh, &
@@ -1474,6 +1492,12 @@ CONTAINS
         enddo
       enddo
       enddo                  ! big loops
+
+#ifdef WRF_CHEM
+      rainprod2d = praut+pracw+praci+psaci+pgaci+psacw+pgacw+paacw+psaut
+      evapprod2d = -(prevp+psevp+pgevp+psdep+pgdep)
+#endif
+
   END SUBROUTINE wsm62d
 ! ...................................................................
       REAL FUNCTION rgmma(x)
