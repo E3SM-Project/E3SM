@@ -13,6 +13,8 @@ my $OBJROOT   = `./xmlquery OBJROOT   -value`;
 my $LIBROOT   = `./xmlquery LIBROOT   -value`;
 my $GMAKE_J   = `./xmlquery GMAKE_J   -value`;
 my $GMAKE     = `./xmlquery GMAKE     -value`;
+my $MAKE_ARGS = `./Tools/get_standard_makefile_args`;
+chomp($MAKE_ARGS);
 
 chdir "${OBJROOT}/atm/obj";
 
@@ -33,7 +35,7 @@ if (-f "Filepath") {
 
 my $camdefs = `cat $CASEBUILD/camconf/CCSM_cppdefs`;
 chomp($camdefs);
-my $sysmod = "$GMAKE complib -j ${GMAKE_J} MODEL=cam COMPLIB=${LIBROOT}/libatm.a USER_CPPDEFS=\"${camdefs}\" -f ${CASETOOLS}/Makefile";
+my $sysmod = "$GMAKE complib -j ${GMAKE_J} MODEL=cam COMPLIB=${LIBROOT}/libatm.a USER_CPPDEFS=\"${camdefs}\" -f ${CASETOOLS}/Makefile ${MAKE_ARGS}";
 system($sysmod) == 0 or die "ERROR: cam.buildexe $sysmod failed: $?\n";
 
 exit(0);
