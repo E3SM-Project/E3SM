@@ -1419,7 +1419,7 @@ contains
 
 !OG copied omp pragmas from stepon as is
    if (adjustment) then 
-!if adjustment, blind copy lines in cam/stepon, NO NEGATIVITY CHECK
+!if adjustment, (almost) blind copy lines in cam/stepon, NO NEGATIVITY CHECK
 
 !$omp parallel do private(k)
       do k=1,nlev
@@ -1455,7 +1455,7 @@ contains
                do i=1,np
                   ! make Q consistent now that we have updated ps_v above
                   ! recompute dp, since ps_v was changed above
-                  dp_tmp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                  dp(i,j,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                        ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(i,j,np1)
                   elem%state%Q(i,j,k,ic)= &
                        elem%state%Qdp(i,j,k,ic,np1_qdp)/dp_tmp
@@ -1465,7 +1465,7 @@ contains
         end do
 
      else ! end of adjustment
-
+!if not adjustment
 !blindly copying what homme does
      ! apply forcing to Qdp
         elem%derived%FQps(:,:)=0
