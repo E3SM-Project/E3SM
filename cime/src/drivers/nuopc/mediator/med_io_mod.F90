@@ -60,8 +60,15 @@ module med_io_mod
 !=================================================================================
 contains
 !=================================================================================
+
   logical function med_io_file_exists(vm, iam, filename)
+
+    !---------------
+    ! inquire if i/o file exists
+    !---------------
+
     use ESMF, only : ESMF_VMBroadCast
+
     type(ESMF_VM)                :: vm
     integer,          intent(in) :: iam
     character(len=*), intent(in) :: filename
@@ -73,29 +80,44 @@ contains
     med_io_file_exists = .false.
     if (iam==0) inquire(file=trim(filename),exist=med_io_file_exists)
     if (med_io_file_exists) tmp(1) = 1
+
     call ESMF_VMBroadCast(vm, tmp, 1, 0, rc=rc)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
     if(tmp(1) == 1) med_io_file_exists = .true.
 
   end function med_io_file_exists
 
+  !===============================================================================
   subroutine med_io_init()
-    use seq_comm_mct          , only : CPLID
-    use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype, shr_pio_getioformat
-    io_subsystem => shr_pio_getiosys(CPLID)
-    pio_iotype   =  shr_pio_getiotype(CPLID)
-    pio_ioformat =  shr_pio_getioformat(CPLID)
+
+    !---------------
+    ! initialize pio
+    !---------------
+
+    use shr_pio_mod           , only : shr_pio_getiosys, shr_pio_getiotype, shr_pio_getioformat
+    use med_internalstate_mod , only : med_id
+
+    io_subsystem => shr_pio_getiosys(med_id)
+    pio_iotype   =  shr_pio_getiotype(med_id)
+    pio_ioformat =  shr_pio_getioformat(med_id)
 
   end subroutine med_io_init
 
   !===============================================================================
   subroutine med_io_wopen(filename, vm, iam, clobber, file_ind, model_doi_url)
-    ! !DESCRIPTION: open netcdf file
-    use pio, only : PIO_IOTYPE_PNETCDF, PIO_IOTYPE_NETCDF, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR
-    use pio, only : pio_openfile, pio_createfile, PIO_GLOBAL, pio_enddef, pio_put_att, pio_redef, pio_get_att
-    use pio, only : pio_seterrorhandling, pio_file_is_open, pio_clobber, pio_write, pio_noclobber
-    use shr_sys_mod, only : shr_sys_abort
-    use med_internalstate_mod, only : logunit
+
+    !---------------
+    ! open netcdf file
+    !---------------
+
+    use pio                   , only : PIO_IOTYPE_PNETCDF, PIO_IOTYPE_NETCDF, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR
+    use pio                   , only : pio_openfile, pio_createfile, PIO_GLOBAL, pio_enddef
+    use PIO                   , only : pio_put_att, pio_redef, pio_get_att
+    use pio                   , only : pio_seterrorhandling, pio_file_is_open, pio_clobber, pio_write, pio_noclobber
+    use shr_sys_mod           , only : shr_sys_abort
+    use med_internalstate_mod , only : logunit
+
     ! input/output arguments
     character(*),            intent(in) :: filename
     type(ESMF_VM)                       :: vm
@@ -184,9 +206,11 @@ contains
 
   !===============================================================================
   subroutine med_io_close(filename, iam, file_ind)
+
     use pio, only: pio_file_is_open, pio_closefile
     use med_internalstate_mod, only : logunit
     use shr_sys_mod, only : shr_sys_abort
+
     ! !DESCRIPTION: close netcdf file
 
     ! input/output variables
@@ -297,19 +321,21 @@ contains
        fillval, pre, tavg, use_float, file_ind, rc)
 
     ! !DESCRIPTION: Write FB to netcdf file
-    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
-    use ESMF, only : ESMF_FieldBundleIsCreated, ESMF_FieldBundle, ESMF_Field, ESMF_Mesh, ESMF_DistGrid
-    use ESMF, only : ESMF_FieldBundleGet, ESMF_FieldGet, ESMF_MeshGet, ESMF_DistGridGet
-    use med_constants_mod, only : R4, R8
+    use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use ESMF                  , only : ESMF_FieldBundleIsCreated, ESMF_FieldBundle, ESMF_Field, ESMF_Mesh, ESMF_DistGrid
+    use ESMF                  , only : ESMF_FieldBundleGet, ESMF_FieldGet, ESMF_MeshGet, ESMF_DistGridGet
+!    use ESMF                  , only : ESMF_VMGetCurrent, ESMF_VMGet
+    use med_constants_mod     , only : R4, R8
     use shr_const_mod         , only : fillvalue=>SHR_CONST_SPVAL
-    use pio, only : var_desc_t, io_desc_t, pio_offset_kind
-    use med_constants_mod, only : dbug_flag=>med_constants_dbug_flag
-    use shr_nuopc_methods_mod, only : shr_nuopc_methods_FB_getFieldN
-    use shr_nuopc_methods_mod, only : shr_nuopc_methods_FB_getFldPtr
-    use shr_nuopc_methods_mod, only : shr_nuopc_methods_FB_getNameN
-    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetMetadata
-    use pio, only : pio_def_dim, pio_inq_dimid, pio_real, pio_def_var, pio_put_att, pio_double
-    use pio, only : pio_inq_varid, pio_setframe, pio_write_darray, pio_initdecomp, pio_freedecomp
+    use pio                   , only : var_desc_t, io_desc_t, pio_offset_kind
+    use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFieldN
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFldPtr
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getNameN
+    use esmFlds               , only : shr_nuopc_fldList_GetMetadata
+    use pio                   , only : pio_def_dim, pio_inq_dimid, pio_real, pio_def_var, pio_put_att, pio_double
+    use pio                   , only : pio_inq_varid, pio_setframe, pio_write_darray, pio_initdecomp, pio_freedecomp
+    use pio                   , only : pio_syncfile
     ! input/output variables
     character(len=*),           intent(in) :: filename  ! file
     integer,                    intent(in) :: iam       ! local pet
@@ -330,6 +356,8 @@ contains
     type(ESMF_Field)              :: field
     type(ESMF_Mesh)               :: mesh
     type(ESMF_Distgrid)           :: distgrid
+    type(ESMF_VM)                 :: VM
+    integer                       :: mpicom
     integer                       :: rcode
     integer                       :: nf,ns,ng
     integer                       :: k
@@ -354,7 +382,7 @@ contains
     integer                       :: dimCount, tileCount
     integer, pointer              :: Dof(:)
     integer                       :: lfile_ind
-    real(r8), pointer             :: fldptr1(:)
+    real(r8), pointer             :: fldptr1(:), tmpfldptr(:)
     character(CL)                 :: tmpstr
     integer                       :: dbrc
     character(*),parameter :: subName = '(med_io_write_FB) '
@@ -364,6 +392,9 @@ contains
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=rc)
     endif
     rc = ESMF_Success
+
+!    call ESMF_VMGetCurrent(vm, rc=rc)
+!    call ESMF_VMGet(vm, mpiCommunicator=mpicom, rc=rc)
 
     lfillvalue = fillvalue
     if (present(fillval)) then
@@ -515,6 +546,9 @@ contains
        write(tmpstr,*) subname,' dof = ',ns,size(dof),dof(1),dof(ns)  !,minval(dof),maxval(dof)
        call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=rc)
        call pio_initdecomp(io_subsystem, pio_double, (/lnx,lny/), dof, iodesc)
+
+!       call pio_writedof(lpre, (/lnx,lny/), int(dof,kind=PIO_OFFSET_KIND), mpicom)
+
        deallocate(dof)
 
        do k = 1,nf
@@ -522,7 +556,6 @@ contains
           if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
           call shr_nuopc_methods_FB_getFldPtr(FB, itemc, fldptr1=fldptr1, rc=rc)
           if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
-
           !-------tcraig, this is a temporary mod to NOT write hgt
           if (trim(itemc) /= "hgt") then
              name1 = trim(lpre)//'_'//trim(itemc)
@@ -532,10 +565,10 @@ contains
              !-------tcraig
           endif
        enddo
+       call pio_syncfile(io_file(lfile_ind))
 
        call pio_freedecomp(io_file(lfile_ind), iodesc)
-
-    end if
+    endif
 
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=rc)
@@ -545,8 +578,10 @@ contains
 
   !===============================================================================
   subroutine med_io_write_int(filename, iam, idata, dname, whead, wdata, file_ind)
-    use pio, only : var_desc_t, pio_def_var, pio_put_att, pio_int, pio_inq_varid, pio_put_var
-    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetMetadata
+
+    use pio    , only : var_desc_t, pio_def_var, pio_put_att, pio_int, pio_inq_varid, pio_put_var
+    use esmFlds, only : shr_nuopc_fldList_GetMetadata
+
     ! !DESCRIPTION:  Write scalar integer to netcdf file
 
     ! intput/output variables
@@ -558,6 +593,7 @@ contains
     logical,optional,intent(in) :: wdata    ! write data
     integer,optional,intent(in) :: file_ind
 
+    ! local variables
     integer          :: rcode
     type(var_desc_t) :: varid
     character(CL)    :: cunit       ! var units
@@ -602,9 +638,11 @@ contains
 
   !===============================================================================
   subroutine med_io_write_int1d(filename, iam, idata, dname, whead, wdata, file_ind)
-    use pio, only : var_desc_t, pio_def_dim, pio_def_var, pio_put_att, pio_inq_varid, pio_put_var
-    use pio, only : pio_int, pio_def_var
-    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetMetadata
+
+    use pio     , only : var_desc_t, pio_def_dim, pio_def_var
+    use pio     , only : pio_put_att, pio_inq_varid, pio_put_var
+    use pio     , only : pio_int, pio_def_var
+    use esmFlds , only : shr_nuopc_fldList_GetMetadata
 
     ! !DESCRIPTION: Write 1d integer array to netcdf file
 
@@ -617,6 +655,7 @@ contains
     logical,optional,intent(in) :: wdata    ! write data
     integer,optional,intent(in) :: file_ind
 
+    ! local variables
     integer          :: rcode
     integer          :: dimid(1)
     type(var_desc_t) :: varid
@@ -664,9 +703,12 @@ contains
 
   !===============================================================================
   subroutine med_io_write_r8(filename, iam, rdata, dname, whead, wdata, file_ind)
-    use med_constants_mod, only : R8
-    use pio, only : var_desc_t, pio_def_var, pio_put_att, pio_double, pio_noerr, pio_inq_varid, pio_put_var
-    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetMetadata
+
+    use med_constants_mod , only : R8
+    use pio               , only : var_desc_t, pio_def_var, pio_put_att
+    use pio               , only : pio_double, pio_noerr, pio_inq_varid, pio_put_var
+    use esmFlds           , only : shr_nuopc_fldList_GetMetadata
+
     ! !DESCRIPTION: Write scalar double to netcdf file
 
     ! input/output arguments
@@ -723,10 +765,13 @@ contains
 
   !===============================================================================
   subroutine med_io_write_r81d(filename, iam, rdata, dname, whead, wdata, file_ind)
+
     ! !DESCRIPTION: Write 1d double array to netcdf file
-    use med_constants_mod, only : R8
-    use pio, only : var_desc_t, pio_def_dim, pio_def_var, pio_inq_varid, pio_put_var, pio_double, pio_put_att
-    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetMetadata
+
+    use med_constants_mod , only : R8
+    use pio               , only : var_desc_t, pio_def_dim, pio_def_var
+    use pio               , only : pio_inq_varid, pio_put_var, pio_double, pio_put_att
+    use esmFlds           , only : shr_nuopc_fldList_GetMetadata
 
     ! !INPUT/OUTPUT PARAMETERS:
     character(len=*),intent(in) :: filename ! file
@@ -782,10 +827,13 @@ contains
 
   !===============================================================================
   subroutine med_io_write_char(filename, iam, rdata, dname, whead, wdata, file_ind)
+
     ! !DESCRIPTION:  Write char string to netcdf file
-    use pio, only : var_desc_t, pio_def_dim, pio_put_att, pio_def_var, pio_inq_varid
-    use pio, only : pio_char, pio_put_var
-    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetMetadata
+
+    use pio     , only : var_desc_t, pio_def_dim, pio_put_att, pio_def_var, pio_inq_varid
+    use pio     , only : pio_char, pio_put_var
+    use esmFlds , only : shr_nuopc_fldList_GetMetadata
+
     ! input/output arguments
     character(len=*),intent(in) :: filename ! file
     integer         ,intent(in) :: iam      ! local pet
@@ -842,13 +890,16 @@ contains
   !===============================================================================
   subroutine med_io_write_time(filename, iam, time_units, time_cal, time_val, nt,&
        whead, wdata, tbnds, file_ind)
-    use med_constants_mod, only : R8
-    use shr_cal_mod, only : shr_cal_calMaxLen
-    use shr_cal_mod           , only : shr_cal_noleap
-    use shr_cal_mod           , only : shr_cal_gregorian
-    use shr_cal_mod, only : shr_cal_calendarName
-    use pio, only : var_desc_t, PIO_UNLIMITED, pio_double, pio_def_dim, pio_def_var, pio_put_att
-    use pio, only : pio_inq_varid, pio_put_var
+
+    use med_constants_mod , only : R8
+    use shr_cal_mod       , only : shr_cal_calMaxLen
+    use shr_cal_mod       , only : shr_cal_noleap
+    use shr_cal_mod       , only : shr_cal_gregorian
+    use shr_cal_mod       , only : shr_cal_calendarName
+    use pio               , only : var_desc_t, PIO_UNLIMITED
+    use pio               , only : pio_double, pio_def_dim, pio_def_var, pio_put_att
+    use pio               , only : pio_inq_varid, pio_put_var
+
     ! !DESCRIPTION: Write time variable to netcdf file
 
     ! input/output variables
@@ -935,32 +986,35 @@ contains
   end subroutine med_io_write_time
 
   !===============================================================================
-  subroutine med_io_read_FB(filename, vm, iam, FB, pre, rc)
-    use med_constants_mod, only : R8, CL
-    use shr_const_mod         , only : fillvalue=>SHR_CONST_SPVAL
-    use ESMF, only : ESMF_FieldBundle, ESMF_Field, ESMF_Mesh, ESMF_DistGrid
-    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
-    use ESMF, only : ESMF_LOGMSG_ERROR, ESMF_FAILURE
-    use ESMF, only : ESMF_FieldBundleIsCreated, ESMF_FieldBundleGet
-    use ESMF, only : ESMF_FieldGet, ESMF_MeshGet, ESMF_DistGridGet
-    use pio, only : file_desc_T, var_desc_t, io_desc_t, pio_nowrite, pio_openfile
-    use pio, only : pio_noerr, pio_inq_varndims, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR
-    use pio, only : pio_inq_dimid, pio_inq_dimlen, pio_inq_varid, pio_inq_vardimid
-    use pio, only : pio_double, pio_get_att, pio_seterrorhandling, pio_freedecomp, pio_closefile
-    use pio, only : pio_read_darray, pio_initdecomp
+  subroutine med_io_read_FB(filename, vm, iam, FB, pre, frame, rc)
 
-    use med_constants_mod, only : dbug_flag=>med_constants_dbug_flag
-    use shr_nuopc_methods_mod, only : shr_nuopc_methods_FB_getNameN
-    use shr_nuopc_methods_mod, only : shr_nuopc_methods_FB_getFldPtr
-    use shr_nuopc_methods_mod, only : shr_nuopc_methods_FB_getFieldN
+    use med_constants_mod     , only : R8, CL
+    use shr_const_mod         , only : fillvalue=>SHR_CONST_SPVAL
+    use ESMF                  , only : ESMF_FieldBundle, ESMF_Field, ESMF_Mesh, ESMF_DistGrid
+    use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use ESMF                  , only : ESMF_LOGMSG_ERROR, ESMF_FAILURE
+    use ESMF                  , only : ESMF_FieldBundleIsCreated, ESMF_FieldBundleGet
+    use ESMF                  , only : ESMF_FieldGet, ESMF_MeshGet, ESMF_DistGridGet
+    use pio                   , only : file_desc_T, var_desc_t, io_desc_t, pio_nowrite, pio_openfile
+    use pio                   , only : pio_noerr, pio_inq_varndims, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR
+    use pio                   , only : pio_inq_dimid, pio_inq_dimlen, pio_inq_varid, pio_inq_vardimid
+    use pio                   , only : pio_double, pio_get_att, pio_seterrorhandling, pio_freedecomp, pio_closefile
+    use pio                   , only : pio_read_darray, pio_initdecomp, pio_offset_kind
+    use pio                   , only : pio_setframe
+    use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getNameN
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFldPtr
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFieldN
+
     ! !DESCRIPTION: Read FB to netcdf file
 
     ! !input/output arguments
     character(len=*)          ,intent(in)  :: filename ! file
     type(ESMF_VM)                          :: vm
     integer                   ,intent(in)  :: iam
-    type(ESMF_FieldBundle)    ,intent(in)  :: FB       ! data to be written
+    type(ESMF_FieldBundle)    ,intent(in)  :: FB       ! data to be read
     character(len=*),optional ,intent(in)  :: pre      ! prefix to variable name
+    integer(kind=PIO_OFFSET_KIND),optional ,intent(in)  :: frame
     integer                   ,intent(out) :: rc
 
     ! local variables
@@ -988,7 +1042,7 @@ contains
     integer, pointer    :: Dof(:)
     real(r8), pointer   :: fldptr1(:)
     character(CL)       :: tmpstr
-
+    integer(kind=Pio_Offset_Kind) :: lframe
     character(*),parameter :: subName = '(med_io_read_FB) '
     !-------------------------------------------------------------------------------
     rc = ESMF_Success
@@ -999,7 +1053,11 @@ contains
     if (present(pre)) then
        lpre = trim(pre)
     endif
-
+    if (present(frame)) then
+       lframe = frame
+    else
+       lframe = 1
+    endif
     if (.not. ESMF_FieldBundleIsCreated(FB,rc=rc)) then
        call ESMF_LogWrite(trim(subname)//" FB "//trim(lpre)//" not created", ESMF_LOGMSG_INFO, rc=rc)
        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -1102,7 +1160,7 @@ contains
              call pio_initdecomp(io_subsystem, pio_double, (/lnx,lny/), dof, iodesc)
              deallocate(dof)
           endif
-
+          call pio_setframe(pioid,varid,lframe)
           call pio_read_darray(pioid, varid, iodesc, fldptr1, rcode)
           rcode = pio_get_att(pioid,varid,"_FillValue",lfillvalue)
           if (rcode /= pio_noerr) then
@@ -1151,13 +1209,16 @@ contains
 
   !===============================================================================
   subroutine med_io_read_int1d(filename, vm, iam, idata, dname)
+
     ! !DESCRIPTION: Read 1d integer array from netcdf file
-    use shr_sys_mod, only : shr_sys_abort
-    use med_constants_mod, only : R8
-    use pio, only : var_desc_t, file_desc_t, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR, pio_seterrorhandling
-    use pio, only : pio_get_var, pio_inq_varid, pio_get_att, pio_openfile, pio_nowrite, pio_openfile, pio_global
-    use pio, only : pio_closefile
-    use med_internalstate_mod, only : logunit
+
+    use shr_sys_mod           , only : shr_sys_abort
+    use med_constants_mod     , only : R8
+    use pio                   , only : var_desc_t, file_desc_t, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR, pio_seterrorhandling
+    use pio                   , only : pio_get_var, pio_inq_varid, pio_get_att, pio_openfile
+    use pio                   , only : pio_nowrite, pio_openfile, pio_global
+    use pio                   , only : pio_closefile
+    use med_internalstate_mod , only : logunit
 
     ! input/output arguments
     character(len=*), intent(in)    :: filename ! file

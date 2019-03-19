@@ -675,40 +675,32 @@ class NamelistGenerator(object):
         if data_list_path is not None:
             self._write_input_files(data_list_path)
 
+
     # For MCT
     def add_nmlcontents(self, filename, group, append=True, format_="nmlcontents", sorted_groups=True):
         """ Write only contents of nml group """
         self._namelist.write(filename, groups=[group], append=append, format_=format_, sorted_groups=sorted_groups)
 
-    # For MCT
     def write_seq_maps(self, filename):
-        """ Write out seq_maps.rc"""
+        """ Write mct out seq_maps.rc"""
         self._namelist.write(filename, groups=["seq_maps"], format_="rc")
 
-    # For MCT
     def write_modelio_file(self, filename):
-        """ Write  component modelio files"""
+        """ Write mct component modelio files"""
         self._namelist.write(filename, groups=["modelio", "pio_inparm"], format_="nml")
 
     # For NUOPC
     def write_nuopc_modelio_file(self, filename):
-        """ Write  nuopc component modelio files"""
+        """ Write nuopc component modelio files"""
         self._namelist.write(filename, groups=["pio_inparm"], format_="nml")
 
+
     # For NUOPC
-    def write_nuopc_config_file(self, filename, data_list_path=None,
-                                skip_comps=None, atm_cpl_dt=None, ocn_cpl_dt=None):
+    def write_nuopc_config_file(self, filename, data_list_path=None, skip_comps=None):
         """ Write the nuopc config file"""
         self._definition.validate(self._namelist)
         groups = self._namelist.get_group_names()
-        if "nuopc_runseq" in groups:
-            self._namelist.write(os.path.dirname(filename)+os.sep+"nuopc.runseq", groups=["nuopc_runseq"],
-                                 format_='nuopc',sorted_groups=False,
-                             skip_comps=skip_comps, atm_cpl_dt=atm_cpl_dt, ocn_cpl_dt=ocn_cpl_dt)
-            groups.remove("nuopc_runseq")
-
         self._namelist.write(filename, skip_comps=skip_comps, groups=groups, format_='nuopc', sorted_groups=False)
-
         if data_list_path is not None:
             # append to input_data_list file
             self._write_input_files(data_list_path)

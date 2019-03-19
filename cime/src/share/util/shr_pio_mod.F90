@@ -178,8 +178,8 @@ contains
        end if
        call pio_set_blocksize(pio_blocksize)
     endif
-
-
+    ! Correct the total_comps value which may be lower in nuopc
+    total_comps = size(comp_iamin)
 
 
     allocate(io_compid(total_comps), io_compname(total_comps))
@@ -229,17 +229,11 @@ contains
              if(ret /= PIO_NOERR) then
                 write(shr_log_unit,*) "ERROR: Setting rearranger options failed"
              end if
-             if(comp_comm_iam(i)==0) then
-                write(shr_log_unit,*) io_compname(i),' : pio_numiotasks = ',pio_comp_settings(i)%pio_numiotasks
-                write(shr_log_unit,*) io_compname(i),' : pio_stride = ',pio_comp_settings(i)%pio_stride
-                write(shr_log_unit,*) io_compname(i),' : pio_root = ',pio_comp_settings(i)%pio_root
-                write(shr_log_unit,*) io_compname(i),' : pio_iotype = ',pio_comp_settings(i)%pio_iotype
-             end if
           end if
        end do
     end if
     do i=1,total_comps
-       if(comp_comm_iam(i)==0) then
+       if(comp_iamin(i)) then
           write(shr_log_unit,*) io_compname(i),' : pio_numiotasks = ',pio_comp_settings(i)%pio_numiotasks
           write(shr_log_unit,*) io_compname(i),' : pio_stride = ',pio_comp_settings(i)%pio_stride
           write(shr_log_unit,*) io_compname(i),' : pio_rearranger = ',pio_comp_settings(i)%pio_rearranger
@@ -247,7 +241,6 @@ contains
           write(shr_log_unit,*) io_compname(i),' : pio_iotype = ',pio_comp_settings(i)%pio_iotype
        end if
     enddo
-
 
   end subroutine shr_pio_init2
 

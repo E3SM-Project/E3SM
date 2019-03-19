@@ -22,16 +22,19 @@ module med_phases_prep_ice_mod
     use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
     use ESMF                  , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_ClockPrint
-    use ESMF                  , only : ESMF_FieldBundleGet
+    use ESMF                  , only : ESMF_FieldBundleGet, ESMF_RouteHandleIsCreated
+    use ESMF                  , only : ESMF_LOGMSG_ERROR, ESMF_FAILURE
     use NUOPC                 , only : NUOPC_IsConnected
     use med_constants_mod     , only : CL, CS, R8
     use esmFlds               , only : compatm, compice, comprof, compglc, ncomps, compname
     use esmFlds               , only : fldListFr, fldListTo
+    use esmFlds               , only : mapbilnr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FldChk
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FieldRegrid
     use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
     use med_merge_mod         , only : med_merge_auto
     use med_map_mod           , only : med_map_FB_Regrid_Norm
@@ -147,15 +150,37 @@ module med_phases_prep_ice_mod
     !--- custom calculations
     !---------------------------------------
 
-    ! if air density from atm at lowest model layer is not available - compute it in mediator
-    ! TODO (mvertens, 2018-12-14): don't hard-wire names here
-    if (.not. shr_nuopc_methods_FB_FldChk(is_local%wrap%FBImp(compatm,compice), 'Sa_dens',rc=rc)) then
-       call ESMF_LogWrite(trim(subname)//": computing air density as a custom calculation", ESMF_LOGMSG_INFO, rc=dbrc)
+    ! If either air density or ptem from atm is not available - then need to remp pbot since it will be
+    ! required for either calculation
+    if ( .not. shr_nuopc_methods_FB_FldChk(is_local%wrap%FBImp(compatm,compatm), 'Sa_dens',rc=rc) .or. &
+         .not. shr_nuopc_methods_FB_FldChk(is_local%wrap%FBImp(compatm,compatm), 'Sa_ptem',rc=rc)) then 
 
-       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compice), 'Sa_tbot', temperature, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       ! Determine Sa_pbot on the ice grid and get a pointer to it
+       if (.not. shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compice), 'Sa_pbot',rc=rc)) then
+          if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,compice,mapbilnr))) then
+             call ESMF_LogWrite(trim(subname)//": ERROR bilinr RH not available for atm->ice", &
+                  ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+             rc = ESMF_FAILURE
+             return
+          end if
+          call shr_nuopc_methods_FB_FieldRegrid( &
+               is_local%wrap%FBImp(compatm,compatm), 'Sa_pbot', &
+               is_local%wrap%FBImp(compatm,compice), 'Sa_pbot', &
+               is_local%wrap%RH(compatm,compice,mapbilnr), rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
        call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compice), 'Sa_pbot', pressure, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       ! Get a pointer to Sa_tbot on the ice grid
+       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compice), 'Sa_tbot', temperature, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
+    
+    ! compute air density as a custom calculation
+    if ( .not. shr_nuopc_methods_FB_FldChk(is_local%wrap%FBImp(compatm,compatm), 'Sa_dens',rc=rc)) then
+       call ESMF_LogWrite(trim(subname)//": computing air density as a custom calculation", ESMF_LOGMSG_INFO, rc=dbrc)
+
        call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compice), 'Sa_shum', humidity, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compice), 'Sa_dens', air_density, rc=rc)
@@ -170,15 +195,10 @@ module med_phases_prep_ice_mod
        end do
     end if
 
-    ! if potential temperature from atm at lowest model layer is not available - compute it in mediator
-    ! TODO (mvertens, 2018-12-14): don't hard-wire names here
-    if (.not. shr_nuopc_methods_FB_FldChk(is_local%wrap%FBImp(compatm,compice), 'Sa_ptem',rc=rc)) then
+    ! compute potential temperature as a custom calculation
+    if (.not. shr_nuopc_methods_FB_FldChk(is_local%wrap%FBImp(compatm,compatm), 'Sa_ptem',rc=rc)) then
        call ESMF_LogWrite(trim(subname)//": computing potential temp as a custom calculation", ESMF_LOGMSG_INFO, rc=dbrc)
 
-       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compice), 'Sa_tbot', temperature, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBImp(compatm,compice), 'Sa_pbot', pressure, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compice), 'Sa_ptem', pot_temp, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -187,6 +207,7 @@ module med_phases_prep_ice_mod
        end do
     end if
 
+    ! scale rain, snow and rof to ice by flux_epbalfact
     if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compice), 'Faxa_rain', rc=rc)) then
        call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compice), 'Faxa_rain' , dataptr1, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return

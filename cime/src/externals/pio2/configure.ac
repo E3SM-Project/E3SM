@@ -2,7 +2,7 @@
 ## Ed Hartnett 8/16/17
 
 # Initialize autoconf and automake.
-AC_INIT(pio, 2.3.1)
+AC_INIT(pio, 2.4.0)
 AC_CONFIG_SRCDIR(src/clib/pio_darray.c)
 AM_INIT_AUTOMAKE([foreign serial-tests])
 
@@ -46,8 +46,8 @@ AC_DEFINE([_NETCDF], [1], [netCDF classic library available])
 
 # The PIO version, again.
 AC_DEFINE([PIO_VERSION_MAJOR], [2], [PIO major version])
-AC_DEFINE([PIO_VERSION_MINOR], [3], [PIO minor version])
-AC_DEFINE([PIO_VERSION_PATCH], [1], [PIO patch version])
+AC_DEFINE([PIO_VERSION_MINOR], [4], [PIO minor version])
+AC_DEFINE([PIO_VERSION_PATCH], [0], [PIO patch version])
 
 # ???
 AC_DEFINE([CPRGNU], [1], [defined by CMake build])

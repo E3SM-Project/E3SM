@@ -1131,8 +1131,7 @@ class Namelist(object):
             group_variables[name] = value
         return group_variables
 
-    def write(self, out_file, groups=None, append=False, format_='nml', sorted_groups=True,
-              skip_comps=None, atm_cpl_dt=None, ocn_cpl_dt=None):
+    def write(self, out_file, groups=None, append=False, format_='nml', sorted_groups=True, skip_comps=None):
         """Write a the output data (normally fortran namelist) to the  out_file
 
         As with `parse`, the `out_file` argument can be either a file name, or a
@@ -1154,15 +1153,13 @@ class Namelist(object):
             flag = 'a' if append else 'w'
             with open(out_file, flag) as file_obj:
                 if format_ == 'nuopc':
-                    self._write_nuopc(file_obj, groups, sorted_groups=sorted_groups,
-                                      skip_comps=skip_comps, atm_cpl_dt=atm_cpl_dt, ocn_cpl_dt=ocn_cpl_dt)
+                    self._write_nuopc(file_obj, groups, sorted_groups=sorted_groups, skip_comps=skip_comps)
                 else:
                     self._write(file_obj, groups, format_, sorted_groups=sorted_groups)
         else:
             logger.debug("Writing namelist to file object")
             if format_ == 'nuopc':
-                self._write_nuopc(out_file, groups, sorted_groups=sorted_groups,
-                                  skip_comps=skip_comps, atm_cpl_dt=atm_cpl_dt, ocn_cpl_dt=ocn_cpl_dt)
+                self._write_nuopc(out_file, groups, sorted_groups=sorted_groups, skip_comps=skip_comps)
             else:
                 self._write(out_file, groups, format_, sorted_groups=sorted_groups)
 
@@ -1212,8 +1209,7 @@ class Namelist(object):
             if format_ == 'nmlcontents':
                 out_file.write("\n")
 
-
-    def _write_nuopc(self, out_file, groups, sorted_groups, skip_comps, atm_cpl_dt, ocn_cpl_dt):
+    def _write_nuopc(self, out_file, groups, sorted_groups, skip_comps):
         """Unwrapped version of `write` assuming that a file object is input."""
         if groups is None:
             groups = self._groups.keys()
@@ -1226,13 +1222,13 @@ class Namelist(object):
         for group_name in group_names:
             if "_attributes" not in group_name and "nuopc_" not in group_name:
                 continue
-
             if "_attributes" in group_name:
                 out_file.write("{}::\n".format(group_name))
 
             group = self._groups[group_name]
             for name in sorted(group.keys()):
                 values = group[name]
+
                 if "component_list" in name:
                     for skip_comp in skip_comps:
                         if skip_comp in values[0]:
@@ -1245,9 +1241,7 @@ class Namelist(object):
                     name = re.sub('@.+$', "", name)
 
                 equals = " ="
-                if group_name == 'nuopc_runseq':
-                    equals = '::\n       '
-                elif "_var" in group_name:
+                if "_var" in group_name:
                     equals = ':'
 
                 # To prettify things for long lists of values, build strings
@@ -1271,35 +1265,9 @@ class Namelist(object):
                 lines[-1] += "\n"
                 for line in lines:
                     line = line.replace('"','')
-                    # remove un-needed entries from the nuopc_runseq based
-                    # on the prognostic_comps and skip_comps lists
-                    if group_name == 'nuopc_runseq':
-                        run_entries = line.splitlines()
-                        newline = ""
-                        for run_entry in run_entries:
-                            print_entry = True
-                            for skip_comp in skip_comps:
-                                if "@" not in run_entry:
-                                    if skip_comp in run_entry:
-                                        print_entry = False
-                                        logger.info("Writing nuopc_runseq, skipping {}".format(run_entry))
-                                    elif "_"+skip_comp.lower().strip() in run_entry:
-                                        print_entry = False
-                                        logger.info("Writing nuopc_runseq, skipping {}".format(run_entry))
-                                    elif "2"+skip_comp.lower().strip() in run_entry:
-                                        print_entry = False
-                                        logger.info("Writing nuopc_runseq, skipping {}".format(run_entry))
-                            if print_entry:
-                                if "@atm_cpl_dt" in run_entry:
-                                    run_entry = run_entry.replace("atm_cpl_dt",atm_cpl_dt)
-                                if "@ocn_cpl_dt" in run_entry:
-                                    run_entry = run_entry.replace("ocn_cpl_dt",ocn_cpl_dt)
-                                newline += run_entry + "\n"
-                        out_file.write(newline)
-                    else:
-                        out_file.write(line)
+                    out_file.write(line)
 
-            if "_attribute" in group_name or "runseq" in group_name:
+            if "_attribute" in group_name:
                 out_file.write("::\n\n")
 
 class _NamelistEOF(Exception):

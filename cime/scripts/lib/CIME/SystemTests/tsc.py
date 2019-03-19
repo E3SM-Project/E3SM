@@ -158,4 +158,4 @@ class TSC(SystemTestsCommon):
     def _compare_baseline(self):
         #currently faking it as PENDING
         with self._test_status as ts:
-                    ts.set_status(BASELINE_PHASE, TEST_PEND_STATUS)
+            ts.set_status(BASELINE_PHASE, TEST_PEND_STATUS)

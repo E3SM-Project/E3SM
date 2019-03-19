@@ -611,8 +611,12 @@ class TestScheduler(object):
                     #  (SCM) mode
                     envtest.set_test_parameter("PTS_MODE", "TRUE")
 
-                    # For PTS_MODE, compile with mpi-serial
-                    envtest.set_test_parameter("MPILIB", "mpi-serial")
+                    # For PTS_MODE, set all tasks and threads to 1
+                    comps=["ATM","LND","ICE","OCN","CPL","GLC","ROF","WAV"]
+
+                    for comp in comps:
+                        envtest.set_test_parameter("NTASKS_"+comp, "1")
+                        envtest.set_test_parameter("NTHRDS_"+comp, "1")
 
                 elif (opt.startswith('I') or # Marker to distinguish tests with same name - ignored
                       opt.startswith('M') or # handled in create_newcase
@@ -644,7 +648,7 @@ class TestScheduler(object):
 
             # handle single-exe here, all cases will use the EXEROOT from
             # the first case.
-            first_test = self._tests.keys()[0]
+            first_test = self._first_test()
             if self._single_exe:
                 if test == first_test:
                     self._single_exe_root = case.get_value("EXEROOT")
@@ -675,7 +679,7 @@ class TestScheduler(object):
     ###########################################################################
     def _sharedlib_build_phase(self, test):
     ###########################################################################
-        first_test = self._tests.keys()[0]
+        first_test = self._first_test()
         if self._single_exe and test != first_test:
             if self._get_test_status(first_test, phase=SHAREDLIB_BUILD_PHASE) == TEST_PASS_STATUS:
                 return True, ""
@@ -686,11 +690,16 @@ class TestScheduler(object):
         return self._shell_cmd_for_phase(test, "./case.build --sharedlib-only", SHAREDLIB_BUILD_PHASE, from_dir=test_dir)
 
     ###########################################################################
+    def _first_test(self):
+    ###########################################################################
+        return list(self._tests.keys())[0]
+
+    ###########################################################################
     def _model_build_phase(self, test):
     ###########################################################################
         test_dir = self._get_test_dir(test)
 
-        first_test = self._tests.keys()[0]
+        first_test = self._first_test()
         if self._single_exe and test != first_test:
             if self._get_test_status(first_test, phase=MODEL_BUILD_PHASE) == TEST_PASS_STATUS:
                 with Case(test_dir, read_only=False) as case:
@@ -736,7 +745,7 @@ class TestScheduler(object):
     ###########################################################################
         # If in single_exe mode, we must wait for the first case to complete building
         # before starting other cases.
-        first_test = self._tests.keys()[0]
+        first_test = self._first_test()
         if self._single_exe and test != first_test and \
            self._get_test_status(first_test, phase=MODEL_BUILD_PHASE) == TEST_PEND_STATUS:
             return self._proc_pool + 1
@@ -816,7 +825,7 @@ class TestScheduler(object):
         logger.info(status_str)
 
         if test_phase in [CREATE_NEWCASE_PHASE, XML_PHASE] or \
-           (self._single_exe and test != self._tests.keys()[0] and test_phase in [SHAREDLIB_BUILD_PHASE, MODEL_BUILD_PHASE]):
+           (self._single_exe and test != self._first_test() and test_phase in [SHAREDLIB_BUILD_PHASE, MODEL_BUILD_PHASE]):
             # These are the phases for which TestScheduler is reponsible for
             # updating the TestStatus file
             self._update_test_status_file(test, test_phase, status)

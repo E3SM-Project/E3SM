@@ -23,6 +23,7 @@ module ice_comp_nuopc
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_Clock_TimePrint
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_SetScalar
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_Diagnose
+  use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_GetFldPtr
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_Meshinit
   use dead_nuopc_mod        , only : dead_grid_lat, dead_grid_lon, dead_grid_index
@@ -30,7 +31,7 @@ module ice_comp_nuopc
   use dead_nuopc_mod        , only : fld_list_add, fld_list_realize, fldsMax, fld_list_type
   use dead_nuopc_mod        , only : state_getimport, state_setexport
   use dead_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, Print_FieldExchInfo
-  use med_constants_mod, only : dbug => med_constants_dbug_flag
+  use med_constants_mod     , only : dbug => med_constants_dbug_flag
 
   implicit none
   private ! except
@@ -52,8 +53,6 @@ module ice_comp_nuopc
   integer , allocatable      :: gindex(:)
   real(r8), allocatable      :: x2d(:,:)
   real(r8), allocatable      :: d2x(:,:)
-  character(CXX)             :: flds_i2x = ''
-  character(CXX)             :: flds_x2i = ''
   integer                    :: nxg                  ! global dim i-direction
   integer                    :: nyg                  ! global dim j-direction
   integer                    :: my_task              ! my task in mpi communicator mpicom
@@ -187,33 +186,33 @@ module ice_comp_nuopc
     if (nxg /= 0 .and. nyg /= 0) then
 
        call fld_list_add(fldsFrIce_num, fldsFrIce, trim(flds_scalar_name))
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_imask'      , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_ifrac'      , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_t'          , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_tref'       , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_qref'       , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_snowh'      , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_u10'        , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_avsdr'      , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_anidr'      , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_avsdf'      , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_anidf'      , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_taux'     , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_tauy'     , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_lat'      , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_sen'      , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_lwup'     , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_evap'     , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_swnet'    , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_melth'    , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_swpen'    , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_meltw'    , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_salt'     , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_taux'     , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_tauy'     , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_bcpho'    , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_bcphi'    , flds_concat=flds_i2x)
-       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_flxdst'   , flds_concat=flds_i2x)
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_imask'      )
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_ifrac'      )
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_t'          )
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_tref'       )
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_qref'       )
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_snowh'      )
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_u10'        )
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_avsdr'      )
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_anidr'      )
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_avsdf'      )
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Si_anidf'      )
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_taux'     )
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_tauy'     )
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_lat'      )
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_sen'      )
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_lwup'     )
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_evap'     )
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Faii_swnet'    )
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_melth'    )
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_swpen'    )
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_meltw'    )
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_salt'     )
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_taux'     )
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_tauy'     )
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_bcpho'    )
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_bcphi'    )
+       call fld_list_add(fldsFrIce_num, fldsFrIce, 'Fioi_flxdst'   )
 
        do n = 1,fldsFrIce_num
           if(mastertask) write(logunit,*)'Advertising From Xice ',trim(fldsFrIce(n)%stdname)
@@ -223,38 +222,38 @@ module ice_comp_nuopc
        enddo
 
        call fld_list_add(fldsToIce_num, fldsToIce, trim(flds_scalar_name))
-       call fld_list_add(fldsToIce_num, fldsToIce, 'So_dhdx'       , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'So_dhdy'       , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'So_t'          , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'So_s'          , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'So_u'          , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'So_v'          , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'Fioo_q'        , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'Sa_z'          , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'Sa_u'          , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'Sa_v'          , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'Sa_ptem'       , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'Sa_shum'       , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'Sa_dens'       , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'Sa_tbot'       , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_swvdr'    , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_swndr'    , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_swvdf'    , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_swndf'    , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_lwdn'     , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_rain'     , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_snow'     , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_bcphodry' , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_bcphidry' , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_bcphiwet' , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_dstdry1'  , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_dstdry2'  , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_dstdry3'  , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_dstdry4'  , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_dstwet1'  , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_dstwet2'  , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_dstwet3'  , flds_concat=flds_x2i)
-       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_dstwet4'  , flds_concat=flds_x2i)
+       call fld_list_add(fldsToIce_num, fldsToIce, 'So_dhdx'       )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'So_dhdy'       )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'So_t'          )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'So_s'          )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'So_u'          )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'So_v'          )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'Fioo_q'        )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'Sa_z'          )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'Sa_u'          )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'Sa_v'          )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'Sa_ptem'       )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'Sa_shum'       )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'Sa_dens'       )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'Sa_tbot'       )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_swvdr'    )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_swndr'    )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_swvdf'    )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_swndf'    )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_lwdn'     )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_rain'     )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_snow'     )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_bcphodry' )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_bcphidry' )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_bcphiwet' )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_dstdry1'  )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_dstdry2'  )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_dstdry3'  )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_dstdry4'  )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_dstwet1'  )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_dstwet2'  )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_dstwet3'  )
+       call fld_list_add(fldsToIce_num, fldsToIce, 'Faxa_dstwet4'  )
 
        do n = 1,fldsToIce_num
           if(mastertask) write(logunit,*)'Advertising To Xice ',trim(fldsToIce(n)%stdname)
@@ -399,15 +398,18 @@ module ice_comp_nuopc
 
   subroutine ModelAdvance(gcomp, rc)
     use shr_nuopc_utils_mod, only : shr_nuopc_memcheck, shr_nuopc_log_clock_advance
+
+    ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Clock)         :: clock
-    type(ESMF_State)         :: importState, exportState
-    integer                  :: n
-    integer                  :: shrlogunit     ! original log unit
-    integer                  :: shrloglev      ! original log level
+    type(ESMF_Clock)  :: clock
+    type(ESMF_State)  :: exportState
+    integer           :: n
+    integer           :: shrlogunit     ! original log unit
+    integer           :: shrloglev      ! original log level
+    real(r8), pointer :: dataptr(:)
     character(len=*),parameter  :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
 
@@ -420,36 +422,13 @@ module ice_comp_nuopc
     call shr_file_setLogUnit (logunit)
 
     !--------------------------------
-    ! query the Component for its clock, importState and exportState
-    !--------------------------------
-
-    call NUOPC_ModelGet(gcomp, modelClock=clock, importState=importState, exportState=exportState, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (dbug > 1) then
-      call shr_nuopc_methods_Clock_TimePrint(clock,subname//'clock',rc=rc)
-    endif
-
-    !--------------------------------
-    ! Unpack import state
-    !--------------------------------
-
-    do n = 1, FldsFrIce_num
-       if (fldsFrIce(n)%stdname /= flds_scalar_name) then
-          call state_getimport(importState, trim(fldsToIce(n)%stdname), x2d(n,:), rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       end if
-    end do
-
-    !--------------------------------
-    ! Run model
-    !--------------------------------
-
-    call dead_run_nuopc('ice', d2x, gbuf, flds_i2x)
-
-    !--------------------------------
     ! Pack export state
     !--------------------------------
+
+    call NUOPC_ModelGet(gcomp, modelClock=clock, exportState=exportState, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dead_run_nuopc('ice', d2x, gbuf)
 
     do n = 1, FldsFrIce_num
        if (fldsFrIce(n)%stdname /= flds_scalar_name) then
@@ -458,20 +437,29 @@ module ice_comp_nuopc
        end if
     end do
 
+    ! Reset some fields
+    call shr_nuopc_methods_State_GetFldPtr(exportState, fldname='Si_ifrac', fldptr1=dataptr, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    do n = 1,size(dataptr)
+       dataptr(n) =  min(1.0_R8,max(0.0_R8,dataptr(n)))
+    end do
+
+    call shr_nuopc_methods_State_GetFldPtr(exportState, fldname='Si_imask', fldptr1=dataptr, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    do n = 1,size(dataptr)
+       dataptr(n) = float(nint(min(1.0_R8,max(0.0_R8,dataptr(n)))))
+    end do
+
     !--------------------------------
     ! diagnostics
     !--------------------------------
 
     if (dbug > 1) then
-       if (my_task == master_task) then
-          call Print_FieldExchInfo(values=d2x, logunit=logunit, &
-               fldlist=fldsFrIce, nflds=fldsFrIce_num, istr="ModelAdvance: ice->mediator")
-       end if
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
-    if (my_task == master_task) then
-       call shr_nuopc_log_clock_advance(clock, 'ICE', logunit)
+       if (my_task == master_task) then
+          call shr_nuopc_log_clock_advance(clock, 'ICE', logunit)
+       endif
     endif
 
     call shr_file_setLogLevel(shrloglev)

@@ -72,14 +72,15 @@ using a fortran linker.
     <!-- This should be removed AFTER MOM6 cap is fully unified -->
     <append> -DCESMCOUPLED </append>
     <append MODEL="pop"> -D_USE_FLOW_CONTROL </append>
-    <!-- This is not seem to be the right place for this, should be in a MOM6-specific place - RSD -->
     <append MODEL="fv3gfs"> -DSPMD </append>
   </CPPDEFS>
+
   <INCLDIR>
         <append MODEL="fv3gfs"> -I$(EXEROOT)/atm/obj/FMS </append>
   </INCLDIR>
   <FFLAGS>
     <append MODEL="fv3gfs"> $(FC_AUTO_R8) </append>
+    <append MODEL="mom"> $(FC_AUTO_R8) </append>
   </FFLAGS>
   <SUPPORTS_CXX>FALSE</SUPPORTS_CXX>
 </compiler>
@@ -470,14 +471,53 @@ using a fortran linker.
   </FFLAGS>
 </compiler>
 
+<compiler MACH="athena">
+  <CPPDEFS>
+    <!-- these flags enable nano timers -->
+    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
+  </CPPDEFS>
+  <NETCDF_PATH>$ENV{NETCDF}</NETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
+  <PNETCDF_PATH>$ENV{PNETCDF}</PNETCDF_PATH>
+  <AR>xiar</AR>
+  <ARFLAGS>
+    <base>cru</base>
+  </ARFLAGS>
+</compiler>
+
+<compiler MACH="athena" COMPILER="intel">
+  <CFLAGS>
+    <append>  -xHost </append>
+  </CFLAGS>
+  <CPPDEFS>
+    <append> -DINTEL_MKL -DHAVE_SSE2 </append>
+  </CPPDEFS>
+  <FFLAGS>
+    <append>  -xHost </append>
+  </FFLAGS>
+  <MPICXX MPILIB="mpich2">mpiicpc</MPICXX>
+  <MPICC MPILIB="mpich2">mpiicc</MPICC>
+  <MPIFC MPILIB="mpich2">mpiifort</MPIFC>
+  <SCC>icc</SCC>
+  <SFC>ifort</SFC>
+  <TRILINOS_PATH MPILIB="mpich2">$ENV{TRILINOS_PATH}</TRILINOS_PATH>
+</compiler>
+
 <compiler MACH="bluewaters">
   <CPPDEFS>
     <append MODEL="gptl"> -DHAVE_PAPI </append>
   </CPPDEFS>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
 </compiler>
+
 <compiler MACH="bluewaters" COMPILER="intel">
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
+  <FFLAGS>
+    <append> -dynamic -mkl=sequential -no-fma</append>
+  </FFLAGS>
+  <CFLAGS>
+    <append> -dynamic -mkl=sequential -no-fma</append>
+  </CFLAGS>
 </compiler>
 
 <compiler MACH="bluewaters" COMPILER="pgi">
@@ -511,6 +551,11 @@ using a fortran linker.
   </FFLAGS>
   <SLIBS>
     <append> -L/project/s824/edavin/OASIS3-MCT_2.0/build.cray/lib -lpsmile.MPI1 -lscrip -lmct_oasis -lmpeu_oasis </append>
+  </SLIBS>
+</compiler>
+<compiler MACH="centos7-linux">
+  <SLIBS>
+    <append>-L$(NETCDF_PATH)/lib -Wl,-rpath,$(NETCDF_PATH)/lib -lnetcdff -lnetcdf </append>
   </SLIBS>
 </compiler>
 
@@ -547,15 +592,19 @@ using a fortran linker.
   <PFUNIT_PATH MPILIB="mpt" compile_threaded="true">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.2.8_cheyenne_Intel17.0.1_MPI_openMP</PFUNIT_PATH>
   <!-- Bug in the intel/17.0.1 compiler requires this, remove this line when compiler is updated -->
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
-  <FFLAGS>
-    <append MODEL="mom"> -r8 </append>
-  </FFLAGS>
 </compiler>
 
 <compiler MACH="cheyenne" COMPILER="pgi">
   <SLIBS>
     <append> -llapack -lblas </append>
     <append MPILIB="mpi-serial"> -ldl </append>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="coeus" COMPILER="gnu">
+  <NETCDF_PATH>/vol/apps/hpc/stow/netcdf/4.4.1.1/gcc-6.3.0</NETCDF_PATH>
+  <SLIBS>
+    <base> -L${NETCDF_PATH}/lib -lnetcdf -lnetcdff -lpmi </base>
   </SLIBS>
 </compiler>
 
@@ -819,6 +868,18 @@ using a fortran linker.
   </SLIBS>
 </compiler>
 
+<compiler MACH="izumi">
+  <CPPDEFS>
+    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
+  </CPPDEFS>
+  <LAPACK_LIBDIR> /usr/lib64 </LAPACK_LIBDIR>
+  <MPI_LIB_NAME MPILIB="mvapich2"> mpich</MPI_LIB_NAME>
+  <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH>
+  <SLIBS>
+    <append>-L$NETCDF_PATH/lib -lnetcdff -lnetcdf</append>
+  </SLIBS>
+</compiler>
+
 <compiler MACH="hobart" COMPILER="intel">
   <CFLAGS>
     <append> -lifcore</append>
@@ -839,9 +900,6 @@ using a fortran linker.
     <append MPILIB="mvapich2"> -mkl=cluster </append>
   </SLIBS>
   <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">/fs/cgd/csm/tools/pFUnit/pFUnit3.2.8_hobart_Intel15.0.2_noMPI_noOpenMP</PFUNIT_PATH>
-  <FFLAGS>
-    <append MODEL="mom"> -r8 </append>
-  </FFLAGS>
 </compiler>
 
 <compiler MACH="hobart" COMPILER="nag">
@@ -874,8 +932,7 @@ using a fortran linker.
 
 <compiler MACH="hobart" COMPILER="gnu">
   <SLIBS>
-    <append> -lm </append>
-    <append> -ldl </append>
+    <append> -lm -ldl</append>
   </SLIBS>
 </compiler>
 
@@ -951,7 +1008,7 @@ using a fortran linker.
     <base> --host=Linux </base>
   </CONFIG_ARGS>
   <CXX_LIBS>
-    <base>-lstdc++</base>
+    <base>-lstdc++ -lmpi_cxx</base>
   </CXX_LIBS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
@@ -1091,6 +1148,21 @@ using a fortran linker.
   </SLIBS>
 </compiler>
 
+<compiler MACH="lonestar5">
+  <CPPDEFS>
+    <append> -DHAVE_NANOTIME </append>
+  </CPPDEFS>
+  <NETCDF_PATH>$ENV{TACC_NETCDF_DIR}</NETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <PNETCDF_PATH>$ENV{TACC_PNETCDF_DIR}</PNETCDF_PATH>
+  <LDFLAGS>
+    <append> -Wl,-rpath,${NETCDF_PATH}/lib </append>
+  </LDFLAGS>
+  <SLIBS>
+    <append> -L${NETCDF_PATH}/lib -lnetcdff -lnetcdf</append>
+  </SLIBS>
+</compiler>
+
 <compiler MACH="stampede2-skx">
   <CPPDEFS>
     <append> -DHAVE_NANOTIME </append>
@@ -1150,9 +1222,6 @@ using a fortran linker.
   <MPICXX> mpiicpc </MPICXX>
   <MPIFC> mpiifort </MPIFC>
   <NETCDF_PATH>/apps/netcdf/4.3.0-intel</NETCDF_PATH>
-  <FFLAGS>
-    <append MODEL="mom"> -r8 </append>
-  </FFLAGS>
 </compiler>
 
 <compiler MACH="theta">

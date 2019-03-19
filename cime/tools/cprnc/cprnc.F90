@@ -17,7 +17,8 @@ program piocprnc
   type(file_t) :: file(2)
   type(dim_t) :: dimoptions(12)
   integer :: dimoptioncnt
-  integer :: nvars, ndiffs, nfilldiffs, numnotfound
+  integer :: nvars, ndiffs, nfilldiffs
+  integer :: num_not_found_on_file1, num_not_found_on_file2
   integer :: num_sizes_differ
   integer :: num_not_analyzed
 
@@ -87,10 +88,13 @@ program piocprnc
 
       call compare_dimensions( file(1)%dim, file(2)%dim)
 
-      call match_vars( file(1), file(2) )
+      num_not_found_on_file1 = 0
+      num_not_found_on_file2 = 0
+      call match_vars( file(1), file(2), &
+           num_not_found_on_file1, num_not_found_on_file2)
    end if
    call compare_vars(numcases, file, nvars, ndiffs, nfilldiffs, &
-        num_sizes_differ, num_not_analyzed, numnotfound)
+        num_sizes_differ, num_not_analyzed)
 
 
 !
@@ -110,12 +114,15 @@ program piocprnc
          write(6,700) '               and ',num_sizes_differ,' had different dimension sizes'
          write(6,700) ' A total number of ',num_sizes_differ + num_not_analyzed, &
               ' fields could not be analyzed'
-         write(6,700) ' A total number of ',numnotfound,' fields on file 1 were not found on file2.'
-         if (nvars > 0 .and. ndiffs == 0 .and. nfilldiffs == 0 .and. &
-              num_sizes_differ == 0 .and. num_not_analyzed<nvars) then
-            write(6,700) '  diff_test: the two files seem to be IDENTICAL '
-         else
+         write(6,700) ' A total number of ',num_not_found_on_file2,' fields on file 1 were not found on file 2.'
+         write(6,700) ' A total number of ',num_not_found_on_file1,' fields on file 2 were not found on file 1.'
+         if (nvars == 0 .or. ndiffs > 0 .or. nfilldiffs > 0 .or. &
+              num_sizes_differ > 0 .or. num_not_analyzed >= nvars) then
             write(6,700) '  diff_test: the two files seem to be DIFFERENT '
+         else if (num_not_found_on_file1 > 0 .or. num_not_found_on_file2 > 0) then
+            write(6,'(a)') '  diff_test: the two files DIFFER only in their field lists'
+         else
+            write(6,700) '  diff_test: the two files seem to be IDENTICAL '
          end if
       end if
       write(6,*) ' '

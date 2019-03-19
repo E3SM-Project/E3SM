@@ -318,7 +318,8 @@
 
   <entry id="ROF_NCPL">
     <type>integer</type>
-    <default_value>8</default_value>
+    <!-- TODO: (mvertens, 2019-02-02): for now are setting the rof couping frequency to the atm coupling frequency -->
+    <default_value>$ATM_NCPL</default_value>
     <values match="last">
       <value compset="_DATM.*_POP2.*_DROF">$ATM_NCPL</value>
       <value compset="_DATM.*_DOCN%SOM">$ATM_NCPL</value>

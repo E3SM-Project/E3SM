@@ -235,7 +235,7 @@
 
   <entry id="RUN_REFDIR">
     <type>char</type>
-    <default_value>ccsm4_init</default_value>
+    <default_value>cesm2_init</default_value>
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
     <desc>

@@ -285,7 +285,6 @@ typedef struct io_desc_t
     int ndims;
 
     /** An array of size ndims with the global length of each dimension. */
-
     int *dimlen;
 
     /** The actual number of IO tasks participating. */
@@ -761,6 +760,8 @@ enum PIO_ERROR_HANDLERS
 /** Define error codes for PIO. */
 #define PIO_FIRST_ERROR_CODE (-500)
 #define PIO_EBADIOTYPE  (-500)
+/** variable dimensions do not match in a multivar call */
+#define PIO_EVARDIMMISMATCH (-501)
 
 /** ??? */
 #define PIO_REQ_NULL (NC_REQ_NULL-1)

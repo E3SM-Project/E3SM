@@ -84,11 +84,29 @@ _CIME_TESTS = {
             )
         },
 
+    "cime_test_share2" : {
+        "time"  : "0:10:00",
+        "share" : True,
+        "tests" : (
+            "SMS_P2.f19_g16_rx1.X",
+            "SMS_P4.f19_g16_rx1.X",
+            "SMS_P8.f19_g16_rx1.X",
+            "SMS_P16.f19_g16_rx1.X",
+            )
+        },
+
     "cime_test_repeat" : {
         "tests" : (
             "TESTRUNPASS_P1.f19_g16_rx1.A",
             "TESTRUNPASS_P2.ne30_g16_rx1.A",
             "TESTRUNPASS_P4.f45_g37_rx1.A",
+            )
+        },
+
+    "cime_test_time" : {
+        "time"    : "0:13:00",
+        "tests" : (
+            "TESTRUNPASS_P69.f19_g16_rx1.A.testmod",
             )
         },
 
@@ -298,11 +316,8 @@ def get_recommended_test_time(test_full_name):
     >>> get_recommended_test_time("ERS.f19_g16_rx1.A.melvin_gnu")
     '0:10:00'
 
-    >>> get_recommended_test_time("ERS.f19_f19.ICLM45.melvin_gnu")
-    '0:45:00'
-
-    >>> get_recommended_test_time("SMS_D_Ld1.ne30_oECv3_ICG.A_WCYCL1850S_CMIP6.sandiatoss3_intel.allactive-v1cmip6")
-    '03:00:00'
+    >>> get_recommended_test_time("TESTRUNPASS_P69.f19_g16_rx1.A.melvin_gnu.testmod")
+    '0:13:00'
 
     >>> get_recommended_test_time("PET_Ln20.ne30_ne30.FC5.sandiatoss3_intel.cam-outfrq9s")
     >>>

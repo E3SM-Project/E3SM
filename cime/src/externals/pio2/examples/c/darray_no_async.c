@@ -149,6 +149,7 @@ int check_file(int iosysid, int ntasks, char *filename, int iotype,
     for (int t = 0; t < NUM_TIMESTEPS; t++)
     {
         int varid = 0; /* There's only one var in sample file. */
+
         /* This is the data we expect for this timestep. */
         for (int i = 0; i < elements_per_pe; i++)
             buffer[i] = 100 * t + START_DATA_VAL + my_rank;
@@ -174,6 +175,7 @@ int check_file(int iosysid, int ntasks, char *filename, int iotype,
 }
 
 /* Write, then read, a simple example with darrays.
+
    The sample file created by this program is a small netCDF file. It
    has the following contents (as shown by ncdump):
 

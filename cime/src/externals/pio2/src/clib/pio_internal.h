@@ -362,6 +362,9 @@ extern "C" {
                         int **proc_list, int **my_proc_list);
 
     int pio_sorted_copy(const void *array, void *tmparray, io_desc_t *iodesc, int nvars, int direction);
+
+    int PIOc_inq_att_eh(int ncid, int varid, const char *name, int eh,
+			nc_type *xtypep, PIO_Offset *lenp);
 #if defined(__cplusplus)
 }
 #endif

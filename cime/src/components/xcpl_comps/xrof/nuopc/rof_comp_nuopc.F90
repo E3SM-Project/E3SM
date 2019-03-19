@@ -30,7 +30,7 @@ module rof_comp_nuopc
   use dead_nuopc_mod        , only : fld_list_add, fld_list_realize, fldsMax, fld_list_type
   use dead_nuopc_mod        , only : state_getimport, state_setexport
   use dead_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, Print_FieldExchInfo
-  use med_constants_mod, only : dbug => med_constants_dbug_flag
+  use med_constants_mod     , only : dbug => med_constants_dbug_flag
 
   implicit none
   private ! except
@@ -51,8 +51,6 @@ module rof_comp_nuopc
   integer , allocatable      :: gindex(:)
   real(r8), allocatable      :: x2d(:,:)
   real(r8), allocatable      :: d2x(:,:)
-  character(CXX)             :: flds_r2x = ''
-  character(CXX)             :: flds_x2r = ''
   integer                    :: nxg                  ! global dim i-direction
   integer                    :: nyg                  ! global dim j-direction
   integer                    :: my_task              ! my task in mpi
@@ -346,18 +344,20 @@ contains
 
   subroutine ModelAdvance(gcomp, rc)
     use shr_nuopc_utils_mod, only : shr_nuopc_memcheck, shr_nuopc_log_clock_advance
+
+    ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
     ! local variables
     type(ESMF_Clock)         :: clock
-    type(ESMF_State)         :: importState, exportState
+    type(ESMF_State)         :: exportState
     integer                  :: n
     integer                  :: shrlogunit     ! original log unit
     integer                  :: shrloglev      ! original log level
     character(len=*),parameter  :: subname=trim(modName)//':(ModelAdvance) '
-
     !-------------------------------------------------------------------------------
+
     rc = ESMF_SUCCESS
     call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=rc)
     call shr_nuopc_memcheck(subname, 3, mastertask)
@@ -367,36 +367,13 @@ contains
     call shr_file_setLogUnit (logunit)
 
     !--------------------------------
-    ! query the Component for its clock, importState and exportState
-    !--------------------------------
-
-    call NUOPC_ModelGet(gcomp, modelClock=clock, importState=importState, exportState=exportState, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (dbug > 1) then
-      call shr_nuopc_methods_Clock_TimePrint(clock,subname//'clock',rc=rc)
-    endif
-
-    !--------------------------------
-    ! Unpack import state
-    !--------------------------------
-
-    do n = 1, FldsFrRof_num
-       if (fldsFrRof(n)%stdname /= flds_scalar_name) then
-          call state_getimport(importState, trim(fldsToRof(n)%stdname), x2d(n,:), rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       end if
-    end do
-
-    !--------------------------------
-    ! Run model
-    !--------------------------------
-
-    call dead_run_nuopc('rof', d2x, gbuf, flds_r2x)
-
-    !--------------------------------
     ! Pack export state
     !--------------------------------
+
+    call NUOPC_ModelGet(gcomp, modelClock=clock, exportState=exportState, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dead_run_nuopc('rof', d2x, gbuf)
 
     do n = 1, FldsFrRof_num
        if (fldsFrRof(n)%stdname /= flds_scalar_name) then
@@ -410,15 +387,11 @@ contains
     !--------------------------------
 
     if (dbug > 1) then
-       if (mastertask) then
-          call Print_FieldExchInfo(values=d2x, logunit=logunit, &
-               fldlist=fldsFrRof, nflds=fldsFrRof_num, istr="ModelAdvance: rof->mediator")
-       end if
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
-    if(mastertask) then
-       call shr_nuopc_log_clock_advance(clock, 'ROF', logunit)
+       if (mastertask) then
+          call shr_nuopc_log_clock_advance(clock, 'ROF', logunit)
+       endif
     endif
 
     call shr_file_setLogLevel(shrloglev)

@@ -638,7 +638,9 @@ int write_darray_multi_par(file_desc_t *file, int nvars, int fndims, const int *
                         /* Write, in non-blocking fashion, a list of subarrays. */
                         LOG((3, "about to call ncmpi_iput_varn() varids[%d] = %d rrcnt = %d, llen = %d",
                              nv, varids[nv], rrcnt, llen));
-                        ierr = ncmpi_iput_varn(file->fh, varids[nv], rrcnt, startlist, countlist,
+			for (int i=0; i< rrcnt; i++)
+			    LOG((3, "i %d start %ld count %ld start %ld count %ld\n",i,startlist[i][0], countlist[i][0],startlist[i][1], countlist[i][1]));
+			ierr = ncmpi_iput_varn(file->fh, varids[nv], rrcnt, startlist, countlist,
                                                bufptr, llen, iodesc->mpitype, &vdesc->request[vdesc->nreqs]);
 
                         /* keeps wait calls in sync */
@@ -1213,7 +1215,7 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobu
                 }
             }
 
-#ifdef LOGGING
+#ifdef PIO_ENABLE_LOGGING
             for (int i = 1; i < ndims; i++)
                 LOG((3, "start[%d] %d count[%d] %d", i, start[i], i, count[i]));
 #endif /* LOGGING */

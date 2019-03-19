@@ -19,14 +19,14 @@ MODULE shr_mem_mod
 CONTAINS
   !===============================================================================
 
-  subroutine shr_mem_init(prt)
+  subroutine shr_mem_init(prt, strbuf)
 
     implicit none
 
     !----- arguments -----
 
     logical, optional :: prt
-
+    character(len=*), optional :: strbuf
     !----- local -----
 
     ! --- Memory stats ---
@@ -63,6 +63,12 @@ CONTAINS
        write(s_logunit,'(A,f16.2)') '8 MB memory dealloc in MB is ',(mrss1-mrss2)*mb_blk
        write(s_logunit,'(A,f16.2)') 'Memory block size conversion in bytes is ',mb_blk*1024_shr_kind_r8*1024.0_shr_kind_r8
     endif
+    if (present(strbuf)) then
+       write(strbuf,'(3(A,f16.2))') '8 MB memory   alloc in MB is ',(mrss1-mrss0)*mb_blk, &
+            '\n8 MB memory dealloc in MB is ',(mrss1-mrss2)*mb_blk, &
+            '\nMemory block size conversion in bytes is ',mb_blk*1024_shr_kind_r8*1024.0_shr_kind_r8
+    endif
+
 
   end subroutine shr_mem_init
 

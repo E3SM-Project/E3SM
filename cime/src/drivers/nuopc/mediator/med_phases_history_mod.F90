@@ -34,7 +34,6 @@ contains
     use shr_cal_mod           , only : shr_cal_ymd2date
     use esmFlds               , only : compatm, complnd, compocn, compice, comprof, compglc, ncomps, compname
     use esmFlds               , only : fldListFr, fldListTo
-    use esmFlds               , only : fldListMed_aoflux_a, fldListMed_aoflux_o
     use shr_nuopc_scalars_mod , only : flds_scalar_index_nx, flds_scalar_index_ny
     use shr_nuopc_scalars_mod , only : flds_scalar_name, flds_scalar_num
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr

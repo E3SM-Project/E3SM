@@ -3,6 +3,7 @@
 import glob, re
 from standard_script_setup import *
 from CIME.utils import expect, run_bld_cmd_ensure_logging, safe_copy
+from CIME.build import get_standard_makefile_args
 from CIME.case import Case
 
 logger = logging.getLogger(__name__)
@@ -44,25 +45,21 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 ###############################################################################
 def buildlib(bldroot, installpath, case):
 ###############################################################################
-    pio_version = case.get_value("PIO_VERSION")
-    mpilib = case.get_value("MPILIB")
     caseroot = case.get_value("CASEROOT")
-    exeroot = case.get_value("EXEROOT")
+    pio_version = case.get_value("PIO_VERSION")
     pio_model = "pio{}".format(pio_version)
     pio_dir = os.path.join(bldroot, pio_model)
-    compiler = case.get_value("COMPILER")
-    build_threaded = case.get_build_threaded()
     if not os.path.isdir(pio_dir):
         os.makedirs(pio_dir)
     casetools = case.get_value("CASETOOLS")
     cmake_opts = "\"-D GENF90_PATH=$CIMEROOT/src/externals/genf90 \""
+    stdargs = get_standard_makefile_args(case)
+
     gmake_opts = "{pio_dir}/Makefile -C {pio_dir} CASEROOT={caseroot} MODEL={pio_model} USER_CMAKE_OPTS={cmake_opts} "\
-        "PIO_LIBDIR={pio_dir} CASETOOLS={casetools} PIO_VERSION={pio_version} MPILIB={mpilib} "\
-        "SHAREDLIBROOT={bldroot} EXEROOT={exeroot} COMPILER={compiler} BUILD_THREADED={bt} "\
-        "USER_CPPDEFS=-DTIMING -f {casetools}/Makefile"\
+        "PIO_LIBDIR={pio_dir} CASETOOLS={casetools} "\
+        " USER_CPPDEFS=-DTIMING {stdargs} -f {casetools}/Makefile"\
         .format(pio_dir=pio_dir, caseroot=caseroot, pio_model=pio_model, cmake_opts=cmake_opts,
-                casetools=casetools, pio_version=pio_version, mpilib=mpilib, bldroot=bldroot,
-                exeroot=exeroot, compiler=compiler, bt=build_threaded)
+                casetools=casetools, stdargs=stdargs)
 
     gmake_cmd = case.get_value("GMAKE")
 

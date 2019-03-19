@@ -23,6 +23,7 @@ module ocn_comp_nuopc
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_Clock_TimePrint
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_SetScalar
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_Diagnose
+  use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_GetFldPtr
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
   use shr_nuopc_grid_mod    , only : shr_nuopc_grid_Meshinit
   use dead_nuopc_mod        , only : dead_grid_lat, dead_grid_lon, dead_grid_index
@@ -30,7 +31,7 @@ module ocn_comp_nuopc
   use dead_nuopc_mod        , only : fld_list_add, fld_list_realize, fldsMax, fld_list_type
   use dead_nuopc_mod        , only : state_getimport, state_setexport
   use dead_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, Print_FieldExchInfo
-  use med_constants_mod, only : dbug=> med_constants_dbug_flag
+  use med_constants_mod     , only : dbug=> med_constants_dbug_flag
 
   implicit none
   private ! except
@@ -51,8 +52,6 @@ module ocn_comp_nuopc
   integer , allocatable      :: gindex(:)
   real(r8), allocatable      :: x2d(:,:)
   real(r8), allocatable      :: d2x(:,:)
-  character(CXX)             :: flds_o2x = ''
-  character(CXX)             :: flds_x2o = ''
   integer                    :: nxg                  ! global dim i-direction
   integer                    :: nyg                  ! global dim j-direction
   integer                    :: my_task              ! my task in mpi communicator mpicom
@@ -116,9 +115,11 @@ contains
   !===============================================================================
 
   subroutine InitializeAdvertise(gcomp, importState, exportState, clock, rc)
+
     use shr_nuopc_utils_mod, only : shr_nuopc_set_component_logging
     use shr_nuopc_utils_mod, only : shr_nuopc_get_component_instance
 
+    ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     type(ESMF_State)     :: importState, exportState
     type(ESMF_Clock)     :: clock
@@ -130,7 +131,6 @@ contains
     character(CS)      :: stdname
     integer            :: n
     integer            :: lsize       ! local array size
-    integer            :: ierr        ! error code
     integer            :: shrlogunit  ! original log unit
     integer            :: shrloglev   ! original log level
     logical            :: isPresent
@@ -173,7 +173,6 @@ contains
 
     call dead_init_nuopc('ocn', inst_suffix, logunit, lsize, gbuf, nxg, nyg)
 
-
     allocate(gindex(lsize))
     allocate(lon(lsize))
     allocate(lat(lsize))
@@ -190,15 +189,15 @@ contains
     if (nxg /= 0 .and. nyg /= 0) then
 
        call fld_list_add(fldsFrOcn_num, fldsFrOcn, trim(flds_scalar_name))
-       call fld_list_add(fldsFrOcn_num, fldsFrOcn, "So_omask"      , flds_concat=flds_o2x)
-       call fld_list_add(fldsFrOcn_num, fldsFrOcn, "So_t"          , flds_concat=flds_o2x)
-       call fld_list_add(fldsFrOcn_num, fldsFrOcn, "So_s"          , flds_concat=flds_o2x)
-       call fld_list_add(fldsFrOcn_num, fldsFrOcn, "So_u"          , flds_concat=flds_o2x)
-       call fld_list_add(fldsFrOcn_num, fldsFrOcn, "So_v"          , flds_concat=flds_o2x)
-       call fld_list_add(fldsFrOcn_num, fldsFrOcn, "So_dhdx"       , flds_concat=flds_o2x)
-       call fld_list_add(fldsFrOcn_num, fldsFrOcn, "So_dhdy"       , flds_concat=flds_o2x)
-       call fld_list_add(fldsFrOcn_num, fldsFrOcn, "So_bldepth"    , flds_concat=flds_o2x)
-       call fld_list_add(fldsFrOcn_num, fldsFrOcn, "Fioo_q"        , flds_concat=flds_o2x)
+       call fld_list_add(fldsFrOcn_num, fldsFrOcn, "So_omask"      )
+       call fld_list_add(fldsFrOcn_num, fldsFrOcn, "So_t"          )
+       call fld_list_add(fldsFrOcn_num, fldsFrOcn, "So_s"          )
+       call fld_list_add(fldsFrOcn_num, fldsFrOcn, "So_u"          )
+       call fld_list_add(fldsFrOcn_num, fldsFrOcn, "So_v"          )
+       call fld_list_add(fldsFrOcn_num, fldsFrOcn, "So_dhdx"       )
+       call fld_list_add(fldsFrOcn_num, fldsFrOcn, "So_dhdy"       )
+       call fld_list_add(fldsFrOcn_num, fldsFrOcn, "So_bldepth"    )
+       call fld_list_add(fldsFrOcn_num, fldsFrOcn, "Fioo_q"        )
 
        do n = 1,fldsFrOcn_num
           if(mastertask) write(logunit,*)'Advertising From Xocn ',trim(fldsFrOcn(n)%stdname)
@@ -208,23 +207,23 @@ contains
        enddo
 
        call fld_list_add(fldsToOcn_num, fldsToOcn, trim(flds_scalar_name))
-       call fld_list_add(fldsToOcn_num, fldsToOcn, "Faxa_rain"     , flds_concat=flds_x2o)
-       call fld_list_add(fldsToOcn_num, fldsToOcn, "Faxa_snow"     , flds_concat=flds_x2o)
-       call fld_list_add(fldsToOcn_num, fldsToOcn, "Faxa_lwdn"     , flds_concat=flds_x2o)
-       call fld_list_add(fldsToOcn_num, fldsToOcn, "Faxa_swndr"    , flds_concat=flds_x2o)
-       call fld_list_add(fldsToOcn_num, fldsToOcn, "Faxa_swvdr"    , flds_concat=flds_x2o)
-       call fld_list_add(fldsToOcn_num, fldsToOcn, "Faxa_swndf"    , flds_concat=flds_x2o)
-       call fld_list_add(fldsToOcn_num, fldsToOcn, "Faxa_swvdf"    , flds_concat=flds_x2o)
-       call fld_list_add(fldsToOcn_num, fldsToOcn, "Foxx_taux"     , flds_concat=flds_x2o)
-       call fld_list_add(fldsToOcn_num, fldsToOcn, "Foxx_tauy"     , flds_concat=flds_x2o)
-       call fld_list_add(fldsToOcn_num, fldsToOcn, "Foxx_sen"      , flds_concat=flds_x2o)
-       call fld_list_add(fldsToOcn_num, fldsToOcn, "Foxx_lat"      , flds_concat=flds_x2o)
-       call fld_list_add(fldsToOcn_num, fldsToOcn, "Foxx_lwup"     , flds_concat=flds_x2o)
-       call fld_list_add(fldsToOcn_num, fldsToOcn, "Foxx_evap"     , flds_concat=flds_x2o)
-       call fld_list_add(fldsToOcn_num, fldsToOcn, "Fioi_salt"     , flds_concat=flds_x2o)
-       call fld_list_add(fldsToOcn_num, fldsToOcn, "Foxx_rofl"     , flds_concat=flds_x2o)
-       call fld_list_add(fldsToOcn_num, fldsToOcn, "Foxx_rofi"     , flds_concat=flds_x2o)
-       call fld_list_add(fldsToOcn_num, fldsToOcn, "Sa_pslv"       , flds_concat=flds_x2o)
+       call fld_list_add(fldsToOcn_num, fldsToOcn, "Faxa_rain"     )
+       call fld_list_add(fldsToOcn_num, fldsToOcn, "Faxa_snow"     )
+       call fld_list_add(fldsToOcn_num, fldsToOcn, "Faxa_lwdn"     )
+       call fld_list_add(fldsToOcn_num, fldsToOcn, "Faxa_swndr"    )
+       call fld_list_add(fldsToOcn_num, fldsToOcn, "Faxa_swvdr"    )
+       call fld_list_add(fldsToOcn_num, fldsToOcn, "Faxa_swndf"    )
+       call fld_list_add(fldsToOcn_num, fldsToOcn, "Faxa_swvdf"    )
+       call fld_list_add(fldsToOcn_num, fldsToOcn, "Foxx_taux"     )
+       call fld_list_add(fldsToOcn_num, fldsToOcn, "Foxx_tauy"     )
+       call fld_list_add(fldsToOcn_num, fldsToOcn, "Foxx_sen"      )
+       call fld_list_add(fldsToOcn_num, fldsToOcn, "Foxx_lat"      )
+       call fld_list_add(fldsToOcn_num, fldsToOcn, "Foxx_lwup"     )
+       call fld_list_add(fldsToOcn_num, fldsToOcn, "Foxx_evap"     )
+       call fld_list_add(fldsToOcn_num, fldsToOcn, "Fioi_salt"     )
+       call fld_list_add(fldsToOcn_num, fldsToOcn, "Foxx_rofl"     )
+       call fld_list_add(fldsToOcn_num, fldsToOcn, "Foxx_rofi"     )
+       call fld_list_add(fldsToOcn_num, fldsToOcn, "Sa_pslv"       )
 
        do n = 1,fldsToOcn_num
           if(mastertask) write(logunit,*)'Advertising To Xocn',trim(fldsToOcn(n)%stdname)
@@ -251,6 +250,8 @@ contains
   !===============================================================================
 
   subroutine InitializeRealize(gcomp, importState, exportState, clock, rc)
+
+    ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     type(ESMF_State)     :: importState, exportState
     type(ESMF_Clock)     :: clock
@@ -312,8 +313,7 @@ contains
 
     !--------------------------------
     ! Pack export state
-    ! Copy from d2x to exportState
-    ! Set the coupling scalars
+    ! Copy from d2x to exportState and set the coupling scalars
     !--------------------------------
 
     do n = 1, FldsFrOcn_num
@@ -336,10 +336,6 @@ contains
     !--------------------------------
 
     if (dbug > 1) then
-       if (my_task == master_task) then
-          call Print_FieldExchInfo(values=d2x, logunit=logunit, &
-               fldlist=fldsFrOcn, nflds=fldsFrOcn_num, istr="InitializeRealize: ocn->mediator")
-       end if
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
@@ -367,16 +363,19 @@ contains
   !===============================================================================
 
   subroutine ModelAdvance(gcomp, rc)
+
     use shr_nuopc_utils_mod, only : shr_nuopc_memcheck, shr_nuopc_log_clock_advance
+
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Clock)         :: clock
-    type(ESMF_State)         :: importState, exportState
-    integer                  :: n
-    integer                  :: shrlogunit     ! original log unit
-    integer                  :: shrloglev      ! original log level
+    type(ESMF_Clock)  :: clock
+    type(ESMF_State)  :: exportState
+    integer           :: n
+    integer           :: shrlogunit     ! original log unit
+    integer           :: shrloglev      ! original log level
+    real(r8), pointer :: dataptr(:)
     character(len=*),parameter  :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
 
@@ -389,37 +388,13 @@ contains
     call shr_file_setLogUnit (logunit)
 
     !--------------------------------
-    ! query the Component for its clock, importState and exportState
-    !--------------------------------
-
-    call NUOPC_ModelGet(gcomp, modelClock=clock, importState=importState, exportState=exportState, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (dbug > 1) then
-      call shr_nuopc_methods_Clock_TimePrint(clock,subname//'clock',rc=rc)
-      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
-
-    !--------------------------------
-    ! Unpack import state
-    !--------------------------------
-
-    do n = 1, FldsFrOcn_num
-       if (fldsFrOcn(n)%stdname /= flds_scalar_name) then
-          call state_getimport(importState, trim(fldsToOcn(n)%stdname), x2d(n,:), rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       end if
-    end do
-
-    !--------------------------------
-    ! Run model
-    !--------------------------------
-
-    call dead_run_nuopc('ocn', d2x, gbuf, flds_o2x)
-
-    !--------------------------------
     ! Pack export state
     !--------------------------------
+
+    call dead_run_nuopc('ocn', d2x, gbuf)
+
+    call NUOPC_ModelGet(gcomp, modelClock=clock, exportState=exportState, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     do n = 1, FldsFrOcn_num
        if (fldsFrOcn(n)%stdname /= flds_scalar_name) then
@@ -428,20 +403,24 @@ contains
        end if
     end do
 
+    ! reset So_omask
+    call shr_nuopc_methods_State_GetFldPtr(exportState, fldname='So_omask', fldptr1=dataptr, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    do n = 1,size(dataptr)
+       !dataptr(n) = float(nint(min(1.0_R8,max(0.0_R8,dataptr(n)))))
+       dataptr(n) = 0._r8
+    end do
+
     !--------------------------------
     ! diagnostics
     !--------------------------------
 
     if (dbug > 1) then
-       if (my_task == master_task) then
-          call Print_FieldExchInfo(values=d2x, logunit=logunit, &
-               fldlist=fldsFrOcn, nflds=fldsFrOcn_num, istr="ModelAdvance: ocn->mediator")
-       end if
        call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
-    if(my_task == master_task) then
-       call shr_nuopc_log_clock_advance(clock, 'OCN', logunit)
+       if(my_task == master_task) then
+          call shr_nuopc_log_clock_advance(clock, 'OCN', logunit)
+       endif
     endif
 
     call shr_file_setLogLevel(shrloglev)

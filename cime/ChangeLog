@@ -1,6 +1,467 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 03-12-2019
+Tag: cime5.8.0
+Answer Changes: None
+Tests: scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+    - Merge maint-5.6 branch.
+    - Cleanup of build.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+5f939ae Merge pull request #3039 from ESMCI/maint-5.6
+3ebf15e Merge pull request #3024 from jedwards4b/jedwards/standard_makefile_args
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/config_grids_nuopc.xml
+M       config/cesm/machines/config_compilers.xml
+M       config/cesm/machines/config_machines.xml
+M       scripts/Tools/Makefile
+A       scripts/Tools/get_standard_makefile_args
+M       scripts/lib/CIME/Servers/svn.py
+M       scripts/lib/CIME/build.py
+M       scripts/lib/CIME/buildlib.py
+M       scripts/lib/CIME/case/case.py
+M       scripts/lib/CIME/case/check_input_data.py
+M       src/build_scripts/buildlib.csm_share
+M       src/build_scripts/buildlib.gptl
+M       src/build_scripts/buildlib.mct
+M       src/build_scripts/buildlib.mpi-serial
+M       src/build_scripts/buildlib.pio
+M       src/drivers/mct/cime_config/buildexe
+M       src/drivers/nuopc/cime_config/buildexe
+M       src/share/timing/Makefile
+
+
+======================================================================
+
+======================================================================
+
+Originator: Bill Sacks
+Date: 03-08-2019
+Tag: cime5.7.9
+Answer Changes: roundoff differences and namelist changes in NYF forced cases for mct (from #3020)
+Tests: scripts_regression_tests, CTSM's aux_clm test suite
+Dependencies:
+
+Brief Summary:
+    - Fix cheyenne for recent machine update (from maint-5.6 merge)
+    - New inputdata chksum feature (from maint-5.6 merge)
+    - Update NYF CORE2 DROF data stream file
+    - Update support for CAM-SE grids
+    - Misc changes from E3SM split
+    - Misc additional changes from maint-5.6 branch
+
+User interface changes: none
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+518bddb73 Merge pull request #3030 from ESMCI/fischer/SE_grids
+eb2eb704f Merge branch 'maint-5.6' for PR 3029
+69b5419f5 fix typo
+dedae2335 fix py3 error
+460fac35f fix testing on centos7-linux
+549c8d39b Merge pull request #3021 from ESMCI/jgfouca/branch-for-acme-split-2019-02-28
+e91008eed Fix minor bug in e3sm mgmt
+191289eb0 Merge pull request #3020 from alperaltuntas/fix_core2_nyf_datastream
+5f7029e93 Merge pull request #3016 from colleenRooney/coeus-xml-config
+
+Modified files: git diff --name-status [previous_tag]
+M       ChangeLog
+M       config/cesm/config_grids.xml
+M       config/cesm/config_grids_common.xml
+M       config/cesm/config_grids_mct.xml
+M       config/cesm/config_inputdata.xml
+M       config/cesm/machines/config_batch.xml
+M       config/cesm/machines/config_compilers.xml
+M       config/cesm/machines/config_machines.xml
+M       config/e3sm/allactive/config_pesall.xml
+M       config/e3sm/config_grids.xml
+M       config/e3sm/machines/config_batch.xml
+M       config/e3sm/machines/config_compilers.xml
+M       config/e3sm/machines/config_machines.xml
+M       config/e3sm/machines/config_pio.xml
+M       config/e3sm/tests.py
+M       config/xml_schemas/config_compilers_v2.xsd
+M       doc/source/misc_tools/ect.rst
+M       scripts/Tools/Makefile
+M       scripts/Tools/check_input_data
+M       scripts/create_test
+M       scripts/lib/CIME/BuildTools/cmakemacroswriter.py
+M       scripts/lib/CIME/BuildTools/macrowriterbase.py
+M       scripts/lib/CIME/BuildTools/makemacroswriter.py
+M       scripts/lib/CIME/Servers/ftp.py
+M       scripts/lib/CIME/Servers/wget.py
+M       scripts/lib/CIME/SystemTests/tsc.py
+M       scripts/lib/CIME/XML/generic_xml.py
+M       scripts/lib/CIME/XML/inputdata.py
+M       scripts/lib/CIME/bless_test_results.py
+M       scripts/lib/CIME/build.py
+M       scripts/lib/CIME/case/case_st_archive.py
+M       scripts/lib/CIME/case/case_submit.py
+M       scripts/lib/CIME/case/check_input_data.py
+M       scripts/lib/CIME/test_scheduler.py
+M       scripts/lib/e3sm_cime_mgmt.py
+M       scripts/lib/get_tests.py
+M       scripts/tests/scripts_regression_tests.py
+A       src/build_scripts/buildlib.kokkos
+M       src/components/data_comps/drof/cime_config/namelist_definition_drof.xml
+M       src/externals/pio1/pio/pio_types.F90
+M       src/externals/pio1/pio/piodarray.F90.in
+M       src/externals/pio2/ctest/CTestEnvironment-nwscla.cmake
+M       src/externals/pio2/src/clib/pio_nc.c
+M       src/externals/pio2/tests/cunit/test_async_multi2.c
+M       src/externals/pio2/tests/cunit/test_darray_2sync.c
+M       src/externals/pio2/tests/general/ncdf_simple_tests.F90.in
+M       src/share/timing/gptl.c
+M       src/share/timing/private.h
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer
+Date: 2-25-2019
+Tag: cime5.7.8
+Answer Changes: answer changes in all CORE2 and JRA forced cases (because coldair_outbreak_mod turned off)
+Tests: scripts_regression_tests, SMS_D_Ln9.T42_T42.FSCAM.cheyenne_intel.cam-scam_mpace_outfrq9s
+Dependencies:
+
+Brief Summary:
+    - Split the cesm/config_grids.xml file into 4 parts add new schema.
+    - Add ne30np4 and ne30pg3 grid support
+    - Fix deprecated flag.
+    - Merge to latest pio2 version.
+    - Fix issues with centos7-linux build.
+    - Merge in latest nuopc-cmeps development code.
+    - Merge maint-5.6
+    - Port to athena.
+    - Fix CIME dashboad regression tests.
+    - Port to new cgd system izumi.
+    - Report missing variables in cprnc(cprnc changes on machines backed outed to fix failing tests)
+    - Avoid an error message when CIME_MODEL is cesm - CAM_TARGET is not defined.
+    - Modifications to allow for E3SM developer tests for the SE SCM.
+    - Add a test for tools/configure.
+    - Minor JRA & CORE2 DATM forcing changes
+    - Remove debug print
+    - Fix test issue for cesm.
+    - Better handling of file permissions when copying files.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+5f31182 Merge pull request #3014 from jedwards4b/config_grids_v2.1
+9e2c5e9 Merge pull request #3015 from ESMCI/fischer/ne30_support
+25d2332 fix deprecated flag
+d13fb72 Merge pull request #3009 from jedwards4b/pio2_merge_0c390bf9c
+ed1a6f4 Merge pull request #3013 from jedwards4b/centos7-linux-update
+8c45f67 Merge pull request #3011 from jedwards4b/nuopc-cmeps
+3b76217 Merge pull request #3008 from ESMCI/maint-5.6
+ba09f0a Merge pull request #3006 from ESMCI/jedwards/athena_port
+dd162f2 Merge pull request #3003 from ESMCI/jgfouca/fix_failing_tests
+a4faaf4 Merge pull request #3000 from jedwards4b/izumi_port_5.6
+51ab1c1 Merge pull request #2988 from billsacks/cprnc_report_fieldlist_change
+a5bea3a Merge pull request #2992 from jedwards4b/cam_target_error
+4c79172 Merge pull request #2990 from ESMCI/bogensch/SCM_SE_test
+5fa1832 Merge pull request #2985 from ESMCI/jgfouca/add_test_for_config
+9adff6a Merge pull request #2984 from alperaltuntas/jra_updates
+60b93de remove debug print
+63738cb fix test issue for cesm
+a7938a3 Merge pull request #2983 from ESMCI/jgfouca/better_perm_mgmt_copy
+
+Modified files: git diff --name-status [previous_tag]
+M	CMakeLists.txt
+M	config/cesm/config_files.xml
+M	config/cesm/config_grids.xml
+A	config/cesm/config_grids_common.xml
+A	config/cesm/config_grids_mct.xml
+A	config/cesm/config_grids_nuopc.xml
+M	config/cesm/config_inputdata.xml
+M	config/cesm/machines/config_batch.xml
+M	config/cesm/machines/config_compilers.xml
+M	config/cesm/machines/config_machines.xml
+M	config/e3sm/config_files.xml
+M	config/e3sm/tests.py
+M	config/xml_schemas/config_batch.xsd
+M	config/xml_schemas/config_compilers_v2.xsd
+A	config/xml_schemas/config_grids_v2.1.xsd
+M	doc/source/data_models/data-atm.rst
+M	doc/source/users_guide/cloning-a-case.rst
+M	scripts/Tools/Makefile
+M	scripts/Tools/archive_metadata
+M	scripts/lib/CIME/SystemTests/homme.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/generic_xml.py
+M	scripts/lib/CIME/XML/grids.py
+M	scripts/lib/CIME/case/case.py
+M	scripts/lib/CIME/case/case_cmpgen_namelists.py
+M	scripts/lib/CIME/get_timing.py
+M	scripts/lib/CIME/hist_utils.py
+M	scripts/lib/CIME/namelist.py
+M	scripts/lib/CIME/nmlgen.py
+M	scripts/lib/CIME/provenance.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/utils.py
+M	scripts/tests/scripts_regression_tests.py
+M	src/build_scripts/buildlib.csm_share
+M	src/build_scripts/buildlib.gptl
+M	src/components/data_comps/datm/cime_config/namelist_definition_datm.xml
+M	src/components/data_comps/datm/nuopc/atm_comp_nuopc.F90
+M	src/components/data_comps/dshr_nuopc/dshr_nuopc_mod.F90
+M	src/components/xcpl_comps/xatm/nuopc/atm_comp_nuopc.F90
+M	src/components/xcpl_comps/xglc/nuopc/glc_comp_nuopc.F90
+M	src/components/xcpl_comps/xice/nuopc/ice_comp_nuopc.F90
+M	src/components/xcpl_comps/xlnd/nuopc/lnd_comp_nuopc.F90
+M	src/components/xcpl_comps/xocn/nuopc/ocn_comp_nuopc.F90
+M	src/components/xcpl_comps/xrof/nuopc/rof_comp_nuopc.F90
+M	src/components/xcpl_comps/xshare/nuopc/dead_nuopc_mod.F90
+M	src/components/xcpl_comps/xwav/nuopc/wav_comp_nuopc.F90
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+M	src/drivers/mct/main/cime_comp_mod.F90
+M	src/drivers/mct/main/seq_hist_mod.F90
+M	src/drivers/mct/main/seq_io_mod.F90
+M	src/drivers/nuopc/cime_config/buildexe
+M	src/drivers/nuopc/cime_config/buildnml
+M	src/drivers/nuopc/cime_config/config_component.xml
+M	src/drivers/nuopc/cime_config/config_component_cesm.xml
+D	src/drivers/nuopc/cime_config/config_component_e3sm.xml
+D	src/drivers/nuopc/cime_config/fd.yaml
+M	src/drivers/nuopc/cime_config/namelist_definition_drv.xml
+A	src/drivers/nuopc/cime_config/nuopc_runseq_A
+A	src/drivers/nuopc/cime_config/nuopc_runseq_ADLND
+A	src/drivers/nuopc/cime_config/nuopc_runseq_ADWAV
+A	src/drivers/nuopc/cime_config/nuopc_runseq_B
+A	src/drivers/nuopc/cime_config/nuopc_runseq_C_G_D
+A	src/drivers/nuopc/cime_config/nuopc_runseq_F
+A	src/drivers/nuopc/cime_config/nuopc_runseq_I
+A	src/drivers/nuopc/cime_config/nuopc_runseq_I_mosart
+A	src/drivers/nuopc/cime_config/nuopc_runseq_NEMS
+A	src/drivers/nuopc/cime_config/nuopc_runseq_Q
+A	src/drivers/nuopc/cime_config/nuopc_runseq_X
+A	src/drivers/nuopc/cime_config/nuopc_runseq_default
+M	src/drivers/nuopc/cime_config/testdefs/testlist_drv.xml
+M	src/drivers/nuopc/cime_driver/ensemble_driver.F90
+M	src/drivers/nuopc/cime_driver/esm.F90
+M	src/drivers/nuopc/cime_driver/esmApp.F90
+D	src/drivers/nuopc/cime_flds/esmDict.F90
+M	src/drivers/nuopc/cime_flds/esmFlds.F90
+A	src/drivers/nuopc/cime_flds/esmFldsExchange.F90
+A	src/drivers/nuopc/cime_flds/fd.yaml
+D	src/drivers/nuopc/cime_flds/glc_elevclass_mod.F90
+D	src/drivers/nuopc/cime_flds/seq_drydep_mod.F90
+D	src/drivers/nuopc/cime_flds/shr_carma_mod.F90
+D	src/drivers/nuopc/cime_flds/shr_fire_emis_mod.F90
+D	src/drivers/nuopc/cime_flds/shr_flds_mod.F90
+D	src/drivers/nuopc/cime_flds/shr_megan_mod.F90
+D	src/drivers/nuopc/cime_flds/shr_ndep_mod.F90
+A	src/drivers/nuopc/cime_flds_shr/glc_elevclass_mod.F90
+A	src/drivers/nuopc/cime_flds_shr/seq_drydep_mod.F90
+A	src/drivers/nuopc/cime_flds_shr/shr_carma_mod.F90
+A	src/drivers/nuopc/cime_flds_shr/shr_fire_emis_mod.F90
+A	src/drivers/nuopc/cime_flds_shr/shr_megan_mod.F90
+A	src/drivers/nuopc/cime_flds_shr/shr_ndep_mod.F90
+M	src/drivers/nuopc/mediator/med.F90
+M	src/drivers/nuopc/mediator/med_fraction_mod.F90
+M	src/drivers/nuopc/mediator/med_infodata_mod.F90
+M	src/drivers/nuopc/mediator/med_internalstate_mod.F90
+M	src/drivers/nuopc/mediator/med_io_mod.F90
+M	src/drivers/nuopc/mediator/med_map_mod.F90
+M	src/drivers/nuopc/mediator/med_merge_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_aofluxes_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_history_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_ocnalb_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_prep_atm_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_prep_ice_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_prep_lnd_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_prep_ocn_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_prep_rof_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_profile_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_restart_mod.F90
+D	src/drivers/nuopc/shr/seq_comm_mct.F90
+D	src/drivers/nuopc/shr/shr_nuopc_fldList_mod.F90
+M	src/drivers/nuopc/shr/shr_nuopc_methods_mod.F90
+A	src/drivers/nuopc/shr/shr_nuopc_multiinst_mod.F90
+M	src/externals/pio2/CMakeLists.txt
+M	src/externals/pio2/README.md
+M	src/externals/pio2/cmake/FindNetCDF.cmake
+M	src/externals/pio2/cmake/LibMPI.cmake
+M	src/externals/pio2/cmake/mpiexec.nwscla
+M	src/externals/pio2/configure.ac
+M	src/externals/pio2/ctest/CTestEnvironment-nwscla.cmake
+M	src/externals/pio2/ctest/runcdash-nwscla-intel.sh
+M	src/externals/pio2/doc/Doxyfile.in
+M	src/externals/pio2/examples/c/darray_async.c
+M	src/externals/pio2/examples/c/darray_no_async.c
+M	src/externals/pio2/src/clib/pio.h
+M	src/externals/pio2/src/clib/pio_darray.c
+M	src/externals/pio2/src/clib/pio_darray_int.c
+M	src/externals/pio2/src/clib/pio_getput_int.c
+M	src/externals/pio2/src/clib/pio_internal.h
+M	src/externals/pio2/src/clib/pio_msg.c
+M	src/externals/pio2/src/clib/pio_nc.c
+M	src/externals/pio2/src/clib/pioc.c
+M	src/externals/pio2/src/clib/pioc_support.c
+M	src/externals/pio2/tests/cunit/CMakeLists.txt
+M	src/externals/pio2/tests/cunit/Makefile.am
+M	src/externals/pio2/tests/cunit/test_async_multi2.c
+M	src/externals/pio2/tests/cunit/test_darray.c
+M	src/externals/pio2/tests/cunit/test_darray_1d.c
+M	src/externals/pio2/tests/cunit/test_darray_2sync.c
+M	src/externals/pio2/tests/cunit/test_darray_multi.c
+M	src/externals/pio2/tests/cunit/test_darray_multivar3.c
+M	src/externals/pio2/tests/cunit/test_pioc.c
+M	src/externals/pio2/tests/general/ncdf_simple_tests.F90.in
+M	src/externals/pio2/tests/general/pio_decomp_tests_1d.F90.in
+M	src/share/timing/Makefile
+M	src/share/timing/perf_mod.F90
+M	src/share/util/shr_flux_mod.F90
+M	src/share/util/shr_frz_mod.F90.in
+M	src/share/util/shr_mem_mod.F90
+M	src/share/util/shr_pio_mod.F90
+M	src/share/util/shr_reprosum_mod.F90
+M	tools/cprnc/README
+M	tools/cprnc/compare_vars_mod.F90.in
+M	tools/cprnc/cprnc.F90
+M	tools/cprnc/filestruct.F90
+M	tools/cprnc/run_tests
+M	tools/cprnc/test_inputs/README
+A	tools/cprnc/test_inputs/control_attributes.nc
+A	tools/cprnc/test_inputs/control_char.nc
+A	tools/cprnc/test_inputs/copy_char.nc
+A	tools/cprnc/test_inputs/diffs_in_attribute.nc
+A	tools/cprnc/test_inputs/diffs_in_vals_and_extra_and_missing.nc
+A	tools/cprnc/test_inputs/extra_variables.nc
+A	tools/cprnc/test_inputs/missing_variables.nc
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 1-15-2019
+Tag: cime5.7.7
+Answer Changes: None
+Tests: scripts_regression_tests 
+Dependencies:
+
+Brief Summary:
+    - Minor fix to e3sm_cime_mgmt to properly handle exe files.
+    - Merge branch for acme split 2019-01-14.
+    - e3sm_cime_mgmt: big upgrade/refactor to auto conf handling
+    - Add expected failure annotations to cs.status output.
+    - Bringing the latest nuopc development to master.
+    - Changes for PGI 18.4.
+    - Bring in the latest pio1 from external .
+    - Fix Case context manager enforcement.
+    - Update to pio 130c564.
+    - docn_comp_mod needs fix for optional variable.
+    - Remove support for CLM4.0.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+e5c2368 Minor fix to e3sm_cime_mgmt to properly handle exe files
+222df09 Merge pull request #2979 from ESMCI/jgfouca/branch-for-acme-split-2019-01-14
+20a635a Merge pull request #2980 from ESMCI/jgfouca/e3sm_cime_mgmt_upgrade
+26a18ff Merge pull request #2962 from billsacks/cs_status_expected_fails
+86ab407 Merge pull request #2976 from jedwards4b/nuopc-cmeps
+f560074 Merge pull request #2974 from fvitt/misc_fixes
+e166e75 Merge pull request #2975 from jedwards4b/pio1_update
+71acf83 Merge pull request #2972 from ESMCI/jgfouca/fix_case_ctx_mgr
+0c6f294 Merge pull request #2967 from jedwards4b/pio2_merge_130c564
+aa8b0fa Merge pull request #2970 from jedwards4b/test_fixes
+74d03b7 Merge pull request #2968 from billsacks/cesm_remove_clm4_rebased
+
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/config_files.xml
+M	config/cesm/config_grids.xml
+M	config/cesm/machines/config_compilers.xml
+M	config/cesm/machines/config_machines.xml
+M	config/cesm/machines/config_pio.xml
+M	config/e3sm/machines/config_machines.xml
+M	config/e3sm/machines/syslog.anvil
+D	config/e3sm/machines/syslog.cetus
+M	config/e3sm/machines/syslog.cori-haswell
+M	config/e3sm/machines/syslog.cori-knl
+M	config/e3sm/machines/syslog.edison
+D	config/e3sm/machines/syslog.mira
+M	config/e3sm/machines/syslog.summit
+M	config/e3sm/machines/syslog.theta
+M	config/e3sm/machines/syslog.titan
+M	config/xml_schemas/config_compilers_v2.xsd
+A	config/xml_schemas/expected_fails_file.xsd
+M	scripts/Tools/Makefile
+M	scripts/Tools/cs.status
+M	scripts/create_test
+M	scripts/lib/CIME/SystemTests/README
+M	scripts/lib/CIME/SystemTests/dae.py
+M	scripts/lib/CIME/SystemTests/eri.py
+M	scripts/lib/CIME/SystemTests/pgn.py
+M	scripts/lib/CIME/SystemTests/system_tests_compare_two.py
+M	scripts/lib/CIME/SystemTests/tsc.py
+A	scripts/lib/CIME/XML/expected_fails_file.py
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/case/case.py
+M	scripts/lib/CIME/case/case_clone.py
+M	scripts/lib/CIME/cs_status.py
+A	scripts/lib/CIME/expected_fails.py
+M	scripts/lib/CIME/test_status.py
+A	scripts/lib/CIME/tests/XML/__init__.py
+A	scripts/lib/CIME/tests/XML/test_expected_fails_file.py
+A	scripts/lib/CIME/tests/custom_assertions_test_status.py
+M	scripts/lib/CIME/tests/test_cs_status.py
+A	scripts/lib/CIME/tests/test_custom_assertions_test_status.py
+A	scripts/lib/CIME/tests/test_test_status.py
+M	scripts/lib/e3sm_cime_mgmt.py
+M	scripts/lib/get_tests.py
+D	scripts/testlist_cmeps.xml
+M	scripts/tests/scripts_regression_tests.py
+M	src/components/data_comps/docn/mct/docn_comp_mod.F90
+M	src/drivers/mct/cime_config/config_component_cesm.xml
+M	src/drivers/mct/cime_config/config_component_e3sm.xml
+M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+M	src/drivers/mct/main/cime_comp_mod.F90
+M	src/drivers/mct/shr/seq_comm_mct.F90
+M	src/drivers/nuopc/cime_config/buildnml
+M	src/drivers/nuopc/cime_config/config_component_cesm.xml
+M	src/drivers/nuopc/cime_config/fd.yaml
+M	src/drivers/nuopc/cime_config/namelist_definition_drv.xml
+M	src/drivers/nuopc/cime_config/testdefs/testlist_drv.xml
+M	src/drivers/nuopc/cime_flds/esmFlds.F90
+M	src/drivers/nuopc/mediator/med.F90
+M	src/drivers/nuopc/mediator/med_map_mod.F90
+M	src/drivers/nuopc/mediator/med_merge_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_aofluxes_mod.F90
+D	src/drivers/nuopc/mediator/med_phases_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_prep_atm_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_prep_ice_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_prep_ocn_mod.F90
+M	src/drivers/nuopc/mediator/med_phases_profile_mod.F90
+M	src/drivers/nuopc/shr/shr_nuopc_fldList_mod.F90
+M	src/drivers/nuopc/shr/shr_nuopc_grid_mod.F90
+M	src/drivers/nuopc/shr/shr_nuopc_methods_mod.F90
+M	src/externals/pio1/pio/pionfput_mod.F90.in
+M	src/externals/pio2/ctest/runcdash-nwscla-pgi.sh
+M	src/externals/pio2/src/clib/pio_darray.c
+M	src/externals/pio2/src/clib/pio_darray_int.c
+D	src/externals/pio2/src/clib/pio_varm.c
+M	src/externals/pio2/tests/general/pio_decomp_tests_1d.F90.in
+M	src/share/timing/GPTLprint_memusage.c
+M	src/share/timing/perf_mod.F90
+M	src/share/util/shr_wv_sat_mod.F90
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 01-07-2019
 Tag: cime5.7.6
 Answer Changes: None
