@@ -1387,7 +1387,7 @@ contains
   ! local
   integer :: i,j,k,ie,q,ic
   real (kind=real_kind)  :: v1
-  real (kind=real_kind)  :: dp(np,np,nlev), dp_tmp, fq
+  real (kind=real_kind)  :: dp(np,np,nlev), fq
 #ifdef MODEL_THETA_L
   real (kind=real_kind)  :: pprime(np,np,nlev)
   real (kind=real_kind)  :: vthn1(np,np,nlev)
@@ -1448,7 +1448,7 @@ contains
          end do
       end do
 
-!$omp parallel do private(k, j, i, ic, dp_tmp)
+!!!$omp parallel do private(k, j, i, ic)
       do k=1,nlev
          do ic=1,qsize
             do j=1,np
@@ -1458,7 +1458,7 @@ contains
                   dp(i,j,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                        ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(i,j,np1)
                   elem%state%Q(i,j,k,ic)= &
-                       elem%state%Qdp(i,j,k,ic,np1_qdp)/dp_tmp
+                       elem%state%Qdp(i,j,k,ic,np1_qdp)/dp(i,j,k)
                end do
             end do
           end do
