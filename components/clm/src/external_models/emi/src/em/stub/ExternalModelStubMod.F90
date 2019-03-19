@@ -492,6 +492,7 @@ contains
     write(iulog,*)'     2.3 Value of variables send by Stub EM after'
     write(iulog,*)'         solving the thermal model'
     call Print2DData('e2l_tsoil', begc, endc, 1, nlevgrnd, e2l_tsoil)
+    call Print3DData('e2l_decomp_cpools', begc, endc, 1, nlevdecomp_full, 1, ndecomp_pools, e2l_decomp_cpools)
     write(iulog,*)''
 
   end subroutine EM_Stub_Solve_Soil_Thermal
