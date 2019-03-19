@@ -1300,10 +1300,10 @@ contains
             do j = 1, nlevdecomp
 	       if ( exit_spinup ) then
 		 m = decomp_cascade_con%spinup_factor(k)
-                 if (decomp_cascade_con%spinup_factor(k) > 1) m = m  / cnstate_vars%scalaravg_col(c,j)
+                 if (decomp_cascade_con%spinup_factor(k) > 1._r8 .and. cnstate_vars%scalaravg_col(c,j) > 0._r8) m = m  / cnstate_vars%scalaravg_col(c,j)
                else if ( enter_spinup ) then 
-                 m = 1. / decomp_cascade_con%spinup_factor(k)
-		 if (decomp_cascade_con%spinup_factor(k) > 1) m = m  * cnstate_vars%scalaravg_col(c,j)
+                 m = 1._r8 / decomp_cascade_con%spinup_factor(k)
+		 if (decomp_cascade_con%spinup_factor(k) > 1._r8 .and. cnstate_vars%scalaravg_col(c,j) > 0._r8) m = m  * cnstate_vars%scalaravg_col(c,j)
                end if 
                this%decomp_ppools_vr_col(c,j,k) = this%decomp_ppools_vr_col(c,j,k) * m
              end do

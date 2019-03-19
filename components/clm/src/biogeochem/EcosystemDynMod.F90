@@ -393,14 +393,14 @@ contains
             carbonflux_vars, carbonstate_vars, nitrogenstate_vars)
        call t_stopf('MaintenanceResp')
 
+       
        if ( nu_com .ne. 'RD') then
           ! for P competition purpose, calculate P fluxes that will potentially increase solution P pool
           ! then competitors take up solution P
-          call t_startf('PhosphorusWeathering')
-          call PhosphorusWeathering(num_soilc, filter_soilc, &
-               cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-          call t_stopf('PhosphorusWeathering')
-
+!          call t_startf('PhosphorusWeathering')
+!          call PhosphorusWeathering(num_soilc, filter_soilc, &
+!               cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
+!          call t_stopf('PhosphorusWeathering')
           if (.not. nu_com_phosphatase) then
              call t_startf('PhosphorusBiochemMin')
              call PhosphorusBiochemMin(bounds,num_soilc, filter_soilc, &
