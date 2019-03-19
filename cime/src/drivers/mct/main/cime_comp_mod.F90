@@ -1136,7 +1136,7 @@ contains
     ! Initialize freezing point calculation for all components
     !----------------------------------------------------------
 
-    call shr_frz_freezetemp_init(tfreeze_option)
+    call shr_frz_freezetemp_init(tfreeze_option, iamroot_GLOID)
 
     if (trim(orb_mode) == trim(seq_infodata_orb_variable_year)) then
        call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd)

@@ -48,10 +48,35 @@ def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resub
     # if case.submit is called with the no_batch flag then we assume that this
     # flag will stay in effect for the duration of the RESUBMITs
     env_batch = case.get_env("batch")
-    if resubmit:
-        if env_batch.get_batch_system_type() == "none":
-            no_batch = True
 
+    if resubmit and env_batch.get_batch_system_type() == "none":
+        no_batch = True
+    if no_batch:
+        batch_system = "none"
+    else:
+        batch_system = env_batch.get_batch_system_type()
+
+    case.set_value("BATCH_SYSTEM", batch_system)
+
+    env_batch_has_changed = False
+    try:
+        case.check_lockedfile(os.path.basename(env_batch.filename))
+    except:
+        env_batch_has_changed = True
+
+    if batch_system != "none" and env_batch_has_changed:
+        # May need to regen batch files if user made batch setting changes (e.g. walltime, queue, etc)
+        logger.warning(\
+"""
+env_batch.xml appears to have changed, regenerating batch scripts
+manual edits to these file will be lost!
+""")
+        env_batch.make_all_batch_files(case)
+
+    unlock_file(os.path.basename(env_batch.filename))
+    lock_file(os.path.basename(env_batch.filename))
+
+    if resubmit:
         # This is a resubmission, do not reinitialize test values
         if job == "case.test":
             case.set_value("IS_FIRST_RUN", False)

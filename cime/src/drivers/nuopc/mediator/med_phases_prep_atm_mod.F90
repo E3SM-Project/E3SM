@@ -22,13 +22,12 @@ contains
 
       use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
       use ESMF                  , only : ESMF_FieldBundleGet, ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet
-      use ESMF                  , only : ESMF_FieldBundleIsCreated
       use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time, ESMF_ClockPrint
       use med_constants_mod     , only : R8
       use esmFlds               , only : compatm, compocn, compice, ncomps, compname
       use esmFlds               , only : fldListFr, fldListTo
-      use esmFlds               , only : fldListMed_aoflux_a, fldListMed_aoflux_o
-      use esmFlds               , only : fldListMed_ocnalb_o
+      use esmFlds               , only : fldListMed_aoflux
+      use esmFlds               , only : coupling_mode
       use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
       use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
       use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset
@@ -39,8 +38,8 @@ contains
       use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
       use med_merge_mod         , only : med_merge_auto
       use med_map_mod           , only : med_map_FB_Regrid_Norm
-      use med_phases_ocnalb_mod , only : med_phases_ocnalb_mapo2a
       use med_internalstate_mod , only : InternalState, mastertask
+      use med_phases_ocnalb_mod , only : med_phases_ocnalb_mapo2a
       use perf_mod              , only : t_startf, t_stopf
 
       ! input/output variables
@@ -54,8 +53,6 @@ contains
       type(InternalState)        :: is_local
       real(R8), pointer          :: dataPtr1(:),dataPtr2(:)
       integer                    :: i, j, n, n1, ncnt
-      logical                    :: compute_ocnalb
-      logical                    :: compute_aoflux
       logical,save               :: first_call = .true.
       integer                    :: dbrc
       character(len=*),parameter :: subname='(med_phases_prep_atm)'
@@ -125,28 +122,20 @@ contains
          enddo
 
          !---------------------------------------
-         !--- determine if mediator computes ocean albedos and atm/ocn fluxes
-         !---------------------------------------
-         compute_ocnalb = (.not. ESMF_FieldBundleIsCreated(is_local%wrap%FBMed_ocnalb_o, rc=rc))
-         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-         compute_aoflux = (.not. ESMF_FieldBundleIsCreated(is_local%wrap%FBMed_aoflux_o, rc=rc))
-         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-         !---------------------------------------
          !--- map ocean albedos from ocn to atm grid if appropriate
          !---------------------------------------
-         if (.not. compute_ocnalb .and. is_local%wrap%med_coupling_active(compocn,compatm)) then
+         if (trim(coupling_mode) == 'cesm') then
             call med_phases_ocnalb_mapo2a(gcomp, rc)
          end if
 
          !---------------------------------------
-         !--- map atm/ocn fluxes from ocn to atm grid
+         !--- map atm/ocn fluxes from ocn to atm grid if appropriate
          !---------------------------------------
-         ! TODO: should only do this if the fluxes are computed on the ocean grid
+         ! Assumption here is that fluxes are computed on the ocean grid
 
-         if (.not. compute_aoflux .and. is_local%wrap%med_coupling_active(compocn,compatm)) then
+         if (trim(coupling_mode) == 'cesm' .or. trim(coupling_mode) == 'nems_orig') then
             call med_map_FB_Regrid_Norm(&
-                 fldListMed_aoflux_o%flds, compocn, compatm, &
+                 fldListMed_aoflux%flds, compocn, compatm, &
                  is_local%wrap%FBMed_aoflux_o, &
                  is_local%wrap%FBMed_aoflux_a, &
                  is_local%wrap%FBFrac(compocn), &
@@ -159,20 +148,31 @@ contains
          !---------------------------------------
          !--- merge all fields to atm
          !---------------------------------------
-         if (compute_ocnalb .and. compute_aoflux) then
+         if (trim(coupling_mode) == 'cesm') then
             call med_merge_auto(trim(compname(compatm)), &
                  is_local%wrap%FBExp(compatm), is_local%wrap%FBFrac(compatm), &
                  is_local%wrap%FBImp(:,compatm), fldListTo(compatm), &
+                 FBMed1=is_local%wrap%FBMed_ocnalb_a, &
+                 FBMed2=is_local%wrap%FBMed_aoflux_a, &
                  document=first_call, string='(merge_to_atm)', mastertask=mastertask, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-         else
+         else if (trim(coupling_mode) == 'nems_orig') then
             call med_merge_auto(trim(compname(compatm)), &
                  is_local%wrap%FBExp(compatm), is_local%wrap%FBFrac(compatm), &
                  is_local%wrap%FBImp(:,compatm), fldListTo(compatm), &
-                 FBMed1=is_local%wrap%FBMed_ocnalb_a, FBMed2=is_local%wrap%FBMed_aoflux_a, &
+                 FBMed1=is_local%wrap%FBMed_aoflux_a, &
+                 document=first_call, string='(merge_to_atm)', mastertask=mastertask, rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+         else if (trim(coupling_mode) == 'nems_frac') then
+            call med_merge_auto(trim(compname(compatm)), &
+                 is_local%wrap%FBExp(compatm), is_local%wrap%FBFrac(compatm), &
+                 is_local%wrap%FBImp(:,compatm), fldListTo(compatm), &
                  document=first_call, string='(merge_to_atm)', mastertask=mastertask, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
          end if
+
+         call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compatm), string=trim(subname)//' FBexp(compatm) ', rc=rc)
+         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
          !---------------------------------------
          !--- custom calculations
@@ -206,9 +206,6 @@ contains
                dataptr1(n) = dataptr2(n)
             end do
          end if
-
-         call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compatm), string=trim(subname)//' FBexp(compatm) ', rc=rc)
-         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
          !---------------------------------------
          !--- update local scalar data
