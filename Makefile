@@ -471,12 +471,6 @@ ifneq ($(wildcard $(PIO_LIB)/libgptl\.*), )
 	LIBS += -lgptl
 endif
 
-ifneq "$(PNETCDF)" ""
-	CPPINCLUDES += -I$(PNETCDF)/include
-	FCINCLUDES += -I$(PNETCDF)/include
-	LIBS += -L$(PNETCDF)/lib -lpnetcdf
-endif
-
 ifneq "$(NETCDF)" ""
 	CPPINCLUDES += -I$(NETCDF)/include
 	FCINCLUDES += -I$(NETCDF)/include
@@ -492,6 +486,13 @@ ifneq "$(NETCDF)" ""
 		LIBS += $(NCLIBF)
 	endif
 	LIBS += $(NCLIB)
+endif
+
+
+ifneq "$(PNETCDF)" ""
+	CPPINCLUDES += -I$(PNETCDF)/include
+	FCINCLUDES += -I$(PNETCDF)/include
+	LIBS += -L$(PNETCDF)/lib -lpnetcdf
 endif
 
 RM = rm -f
