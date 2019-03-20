@@ -424,32 +424,51 @@ llvm:
 CPPINCLUDES = 
 FCINCLUDES = 
 LIBS = 
-ifneq ($(wildcard $(PIO)/lib), ) # Check for newer PIO version
+
+#
+# If user has indicated a PIO2 library, define USE_PIO2 pre-processor macro
+#
 ifeq "$(USE_PIO2)" "true"
-	FCINCLUDES = -I$(PIO)/include
 	override CPPFLAGS += -DUSE_PIO2
-	LIBS = -L$(PIO)/lib -lpiof -lpioc
-ifneq ($(wildcard $(PIO)/lib/libgptl.a), ) # Check for GPTL library for PIO2
+endif
+
+#
+# Regardless of PIO library version, look for a lib subdirectory of PIO path
+# NB: PIO_LIB is used later, so we don't just set LIBS directly
+#
+ifneq ($(wildcard $(PIO)/lib), )
+	PIO_LIB = $(PIO)/lib
+else
+	PIO_LIB = $(PIO)
+endif
+LIBS = -L$(PIO_LIB)
+
+#
+# Regardless of PIO library version, look for an include subdirectory of PIO path
+#
+ifneq ($(wildcard $(PIO)/include), )
+	CPPINCLUDES += -I$(PIO)/include
+	FCINCLUDES += -I$(PIO)/include
+else
+	CPPINCLUDES += -I$(PIO)
+	FCINCLUDES += -I$(PIO)
+endif
+
+#
+# Depending on PIO version, libraries may be libpio.a, or libpiof.a and libpioc.a
+# Keep open the possibility of shared libraries in future with, e.g., .so suffix
+#
+ifneq ($(wildcard $(PIO_LIB)/libpio\.*), )
+	LIBS += -lpio
+endif
+ifneq ($(wildcard $(PIO_LIB)/libpiof\.*), )
+	LIBS += -lpiof
+endif
+ifneq ($(wildcard $(PIO_LIB)/libpioc\.*), )
+	LIBS += -lpioc
+endif
+ifneq ($(wildcard $(PIO_LIB)/libgptl\.*), )
 	LIBS += -lgptl
-endif
-else
-	CPPINCLUDES = -I$(PIO)/include
-	FCINCLUDES = -I$(PIO)/include
-	LIBS = -L$(PIO)/lib -lpio
-endif
-else
-ifeq "$(USE_PIO2)" "true"
-	FCINCLUDES = -I$(PIO)/include
-	override CPPFLAGS += -DUSE_PIO2
-	LIBS = -L$(PIO) -lpiof -lpioc
-ifneq ($(wildcard $(PIO)/libgptl.a), ) # Check for GPTL library for PIO2
-	LIBS += -lgptl
-endif
-else
-	CPPINCLUDES = -I$(PIO)
-	FCINCLUDES = -I$(PIO)
-	LIBS = -L$(PIO) -lpio
-endif
 endif
 
 ifneq "$(PNETCDF)" ""
