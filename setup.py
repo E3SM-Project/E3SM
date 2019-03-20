@@ -33,7 +33,7 @@ cosp_histogram_files += get_all_files_in_dir('acme_diags/driver/default_diags/le
 rgb_files = get_all_files_in_dir('acme_diags/plot/colormaps', '*.rgb')
 control_runs_files = get_all_files_in_dir('acme_diags/driver/control_runs', '*.csv')
 
-INSTALL_PATH = os.path.join(sys.prefix, 'share/e3sm_diags/')
+INSTALL_PATH = 'share/e3sm_diags/'
 
 data_files = [
     (os.path.join(INSTALL_PATH, 'zonal_mean_xy'),
@@ -65,7 +65,7 @@ data_files = [
 
 setup(
     name="e3sm_diags",
-    version="1.6.0",
+    version="1.6.1",
     author="Chengzhu (Jill) Zhang, Zeshawn Shaheen",
     author_email="zhang40@llnl.gov, shaheen2@llnl.gov",
     description="E3SM Diagnostics",
