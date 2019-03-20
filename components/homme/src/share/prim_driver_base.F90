@@ -1417,11 +1417,9 @@ contains
    tn1=exner* elem%state%vtheta_dp(:,:,:,np1)*(Rgas/rstarn1) / dp
 #endif
 
-!OG copied omp pragmas from stepon as is
    if (adjustment) then 
 !if adjustment, (almost) blind copy lines in cam/stepon, NO NEGATIVITY CHECK
 
-!$omp parallel do private(k)
       do k=1,nlev
          dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,np1)
@@ -1448,7 +1446,6 @@ contains
          end do
       end do
 
-!!!$omp parallel do private(k, j, i, ic)
       do k=1,nlev
          do ic=1,qsize
             do j=1,np
