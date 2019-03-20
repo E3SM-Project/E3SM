@@ -144,7 +144,7 @@ contains
     type(nitrogenflux_type)        , intent(in)    :: nitrogenflux_vars
     type(photosyns_type)           , intent(in)    :: photosyns_vars
     type(soilhydrology_type)       , intent(in)    :: soilhydrology_vars
-    type(soilstate_type)           , intent(in)    :: soilstate_vars
+    type(soilstate_type)           , intent(inout) :: soilstate_vars
     type(solarabs_type)            , intent(in)    :: solarabs_vars
     type(surfalb_type)             , intent(in)    :: surfalb_vars
     type(temperature_type)         , intent(in)    :: temperature_vars
@@ -312,7 +312,8 @@ contains
        call alm_fates%restart(bounds, ncid, flag='define',  &
              waterstate_inst=waterstate_vars, &
              canopystate_inst=canopystate_vars, &
-             frictionvel_inst=frictionvel_vars)
+             frictionvel_inst=frictionvel_vars, &
+             soilstate_inst=soilstate_vars)
     end if
 
     if (use_betr) then
@@ -466,7 +467,8 @@ contains
        call alm_fates%restart(bounds, ncid, flag='write',  &
              waterstate_inst=waterstate_vars, &
              canopystate_inst=canopystate_vars, &
-             frictionvel_inst=frictionvel_vars)
+             frictionvel_inst=frictionvel_vars, &
+             soilstate_inst=soilstate_vars)
 
     end if
 
@@ -719,7 +721,8 @@ contains
        call alm_fates%restart(bounds, ncid, flag='read',  &
              waterstate_inst=waterstate_vars, &
              canopystate_inst=canopystate_vars, &
-             frictionvel_inst=frictionvel_vars)
+             frictionvel_inst=frictionvel_vars, &
+             soilstate_inst=soilstate_vars)
     end if
 
 
