@@ -22,11 +22,24 @@ module filestruct
      type(dim_t), pointer :: dim(:)
      type(var_t), pointer :: var(:)
      integer :: unlimdimid
+   contains
+     procedure :: has_unlimited_dim  ! logical function; returns true if this file has an unlimited dimension
   end type file_t
 
   logical :: verbose
 
 contains
+  logical function has_unlimited_dim(file)
+    ! Returns true if this file has an unlimited dimension
+    class(file_t), intent(in) :: file
+
+    if (file%unlimdimid == -1) then
+       has_unlimited_dim = .false.
+    else
+       has_unlimited_dim = .true.
+    end if
+  end function has_unlimited_dim
+
   subroutine init_file_struct( file, dimoptions )
 
     type(file_t) :: file
