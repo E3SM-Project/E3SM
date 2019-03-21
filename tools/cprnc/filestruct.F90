@@ -311,6 +311,21 @@ contains
   end subroutine match_vars
 
 
+  function is_time_varying(var, file_has_unlimited_dim, unlimdimid)
+    type(var_t), intent(in) :: var                    ! variable of interest
+    logical    , intent(in) :: file_has_unlimited_dim ! true if the file has an unlimited dimension
+    integer    , intent(in) :: unlimdimid             ! the file's unlimited dim id (if it has one)
+
+    logical :: is_time_varying     ! true if the given variable is time-varying
+
+    if (file_has_unlimited_dim) then
+       is_time_varying = any(var%dimids == unlimdimid)
+    else
+       is_time_varying = .false.
+    end if
+  end function is_time_varying
+
+
   function vdimsize(dims, dimids)
     type(dim_t), intent(in) :: dims(:)
     integer, intent(in) :: dimids(:)
