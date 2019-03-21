@@ -617,6 +617,7 @@ contains
        this%snow_depth_col(c)         = snow_depth_input_col(c)
        this%snow_persistence_col(c)   = 0._r8
        this%snow_layer_unity_col(c,:) = 1._r8
+       this%finundated_col(c)         = 0._r8
     end do
 
     do c = bounds%begc,bounds%endc
