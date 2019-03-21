@@ -48,6 +48,11 @@ contains
     vsizes_differ = 0
     vnot_analyzed = 0
     if(n==2 .and. .not.ignoretime) then
+       ! NOTE(wjs, 2019-03-21) Most of the cprnc code allows the unlimited dimension to be
+       ! named anything - not necessarily 'time'. But this block of code assumes that the
+       ! unlimited dimension is named 'time' in order to find the associated coordinate
+       ! variable. We should probably generalize this by looking for a variable with the
+       ! same name as the unlimited dimension.
        call checknf90(nf90_inq_varid(file(1)%fh, 'time', vid1), &
             err_str='These files don''t have a time dimension, use cprnc with -m')
 
