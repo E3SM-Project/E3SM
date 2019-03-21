@@ -19,12 +19,9 @@ module seq_drydep_mod
   use shr_sys_mod,   only : shr_sys_abort
   use shr_log_mod,   only : s_loglev  => shr_log_Level
   use shr_kind_mod,  only : r8 => shr_kind_r8, CS => SHR_KIND_CS, CX => SHR_KIND_CX
-  use shr_const_mod, only : SHR_CONST_G, SHR_CONST_RDAIR, &
-                            SHR_CONST_CPDAIR, SHR_CONST_MWWV
+  use shr_const_mod, only : SHR_CONST_G, SHR_CONST_RDAIR, SHR_CONST_CPDAIR, SHR_CONST_MWWV
 
   implicit none
-  save
-
   private
 
   ! !PUBLIC MEMBER FUNCTIONS
@@ -35,18 +32,18 @@ module seq_drydep_mod
 
   ! !PRIVATE ARRAY SIZES
 
-  integer, private, parameter :: maxspc = 100              ! Maximum number of species
   integer, public,  parameter :: n_species_table = 77      ! Number of species to work with
+  integer, private, parameter :: maxspc = 100              ! Maximum number of species
   integer, private, parameter :: NSeas = 5                 ! Number of seasons
   integer, private, parameter :: NLUse = 11                ! Number of land-use types
 
   ! !PUBLIC DATA MEMBERS:
 
   ! method specification
-  character(16),public,parameter :: DD_XATM = 'xactive_atm'! dry-dep atmosphere
-  character(16),public,parameter :: DD_XLND = 'xactive_lnd'! dry-dep land
-  character(16),public,parameter :: DD_TABL = 'table'      ! dry-dep table (atm and lnd)
-  character(16),public :: drydep_method = DD_XLND          ! Which option choosen
+  character(16),public,parameter :: DD_XATM = 'xactive_atm' ! dry-dep atmosphere
+  character(16),public,parameter :: DD_XLND = 'xactive_lnd' ! dry-dep land
+  character(16),public,parameter :: DD_TABL = 'table'       ! dry-dep table (atm and lnd)
+  character(16),public           :: drydep_method = DD_XLND ! Which option choosen
 
   real(r8), public, parameter :: ph     = 1.e-5_r8         ! measure of the acidity (dimensionless)
 
@@ -54,11 +51,10 @@ module seq_drydep_mod
   integer, public  :: n_drydep = 0                         ! Number in drypdep list
   character(len=CS), public, dimension(maxspc) :: drydep_list = ''   ! List of dry-dep species
 
-  character(len=CS), public :: drydep_fields_token = ''   ! First drydep fields token
-
   real(r8), public, allocatable, dimension(:) :: foxd      ! reactivity factor for oxidation (dimensioness)
   real(r8), public, allocatable, dimension(:) :: drat      ! ratio of molecular diffusivity (D_H2O/D_species; dimensionless)
   integer,  public, allocatable, dimension(:) :: mapping   ! mapping to species table
+
   ! --- Indices for each species ---
   integer,  public :: h2_ndx, ch4_ndx, co_ndx, pan_ndx, mpan_ndx, so2_ndx, o3_ndx, o3a_ndx, xpan_ndx
 
@@ -504,41 +500,37 @@ CONTAINS
 
 !====================================================================================
 
-  subroutine seq_drydep_readnl(NLFilename, seq_drydep_fields, seq_drydep_nflds)
+  subroutine seq_drydep_readnl(NLFilename, drydep_nflds)
 
     !========================================================================
-    ! reads drydep_inparm namelist and sets up CCSM driver list of fields for
-    ! land-atmosphere communications.
-    !
-    ! !REVISION HISTORY:
-    !  2009-Feb-20 - E. Kluzek - Separate out as subroutine from previous input_init
+    ! reads drydep_inparm namelist and determines the number of drydep velocity
+    ! fields that are sent from the land component
     !========================================================================
-    use ESMF, only : ESMF_VMGetCurrent, ESMF_VM, ESMF_VMGet, ESMF_VMBroadcast
-    use shr_file_mod,only : shr_file_getUnit, shr_file_freeUnit
-    use shr_log_mod, only : s_logunit => shr_log_Unit
-    use shr_mpi_mod, only : shr_mpi_bcast
-    use shr_nl_mod, only : shr_nl_find_group_name
-    implicit none
+
+    use ESMF        , only : ESMF_VMGetCurrent, ESMF_VM, ESMF_VMGet, ESMF_VMBroadcast
+    use shr_file_mod, only : shr_file_getUnit, shr_file_freeUnit
+    use shr_log_mod , only : s_logunit => shr_log_Unit
+    use shr_mpi_mod , only : shr_mpi_bcast
+    use shr_nl_mod  , only : shr_nl_find_group_name
 
     character(len=*), intent(in)  :: NLFilename ! Namelist filename
-    character(len=*), intent(out) :: seq_drydep_fields
-    integer, intent(out)          :: seq_drydep_nflds
+    integer, intent(out)          :: drydep_nflds
+
     !----- local -----
-    integer :: i                ! Indices
-    integer :: unitn            ! namelist unit number
-    integer :: ierr             ! error code
-    logical :: exists           ! if file exists or not
-    character(len=8) :: token   ! dry dep field name to add
+    integer       :: i                ! Indices
+    integer       :: unitn            ! namelist unit number
+    integer       :: ierr             ! error code
+    logical       :: exists           ! if file exists or not
     type(ESMF_VM) :: vm
-    integer :: localPet
-    integer :: tmp(1)
-    integer :: rc
-    !----- formats -----
+    integer       :: localPet
+    integer       :: tmp(1)
+    integer       :: rc
     character(*),parameter :: subName = '(seq_drydep_read) '
     character(*),parameter :: F00   = "('(seq_drydep_read) ',8a)"
     character(*),parameter :: FI1   = "('(seq_drydep_init) ',a,I2)"
 
     namelist /drydep_inparm/ drydep_list, drydep_method
+    !-----------------------------------------------------------------------------
 
     !-----------------------------------------------------------------------------
     ! Read namelist and figure out the drydep field list to pass
@@ -551,7 +543,8 @@ CONTAINS
     end if
     call ESMF_VMGetCurrent(vm, rc=rc)
     call ESMF_VMGet(vm, localPet=localPet, rc=rc)
-    seq_drydep_nflds=0
+
+    drydep_nflds=0
     if (localPet==0) then
        inquire( file=trim(NLFileName), exist=exists)
        if ( exists ) then
@@ -575,41 +568,31 @@ CONTAINS
           call shr_file_freeUnit( unitn )
           do i=1,maxspc
              if(len_trim(drydep_list(i)) > 0) then
-                seq_drydep_nflds=seq_drydep_nflds+1
+                drydep_nflds=drydep_nflds+1
              endif
           enddo
 
        end if
     end if
-    tmp = seq_drydep_nflds
+
+    tmp = drydep_nflds
     call ESMF_VMBroadcast(vm, tmp, 1, 0, rc=rc)
-    seq_drydep_nflds = tmp(1)
-    if(seq_drydep_nflds > 0) then
-       call ESMF_VMBroadcast(vm, drydep_list, CS*seq_drydep_nflds, 0, rc=rc)
+    drydep_nflds = tmp(1)
+    if(drydep_nflds > 0) then
+       call ESMF_VMBroadcast(vm, drydep_list, CS*drydep_nflds, 0, rc=rc)
        call ESMF_VMBroadcast(vm, drydep_method, 16, 0, rc=rc)
     endif
 
-    !--- Loop over species to fill list of fields to communicate for drydep ---
-    seq_drydep_fields = ' '
-    do i=1,seq_drydep_nflds
-       write(token,333) i
-       seq_drydep_fields = trim(seq_drydep_fields)//':'//trim(token)
-       if ( i == 1 ) then
-          seq_drydep_fields = trim(token)
-          drydep_fields_token = trim(token)
-       endif
-    enddo
-
     !--- Make sure method is valid and determine if land is passing drydep fields ---
-    lnd_drydep = seq_drydep_nflds>0 .and. drydep_method == DD_XLND
+    lnd_drydep = drydep_nflds>0 .and. drydep_method == DD_XLND
 
     if (localpet==0) then
        if ( s_loglev > 0 ) then
           write(s_logunit,*) 'seq_drydep_read: drydep_method: ', trim(drydep_method)
-          if ( seq_drydep_nflds == 0 )then
+          if ( drydep_nflds == 0 )then
              write(s_logunit,F00) 'No dry deposition fields will be transfered'
           else
-             write(s_logunit,FI1) 'Number of dry deposition fields transfered is ', seq_drydep_nflds
+             write(s_logunit,FI1) 'Number of dry deposition fields transfered is ', drydep_nflds
           end if
        end if
     end if

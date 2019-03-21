@@ -1,13 +1,9 @@
-!================================================================================
-! This reads the carma_inparm namelist in drv_flds_in and makes the relavent
-! information available to CAM, CLM, and driver. The driver sets up CLM to CAM
-! communication for the  VOC flux fields. CLM needs to know what specific VOC
-! fluxes need to be passed to the coupler and how to assimble the fluxes.
-! CAM needs to know what specific VOC fluxes to expect from CLM.
-!
-! Mariana Vertenstein -- 24 Sep 2012
-!================================================================================
 module shr_carma_mod
+
+  !================================================================================
+  ! This reads the carma_inparm namelist in drv_flds_in and makes the relavent
+  ! information available to CAM, CLM, and driver. 
+  !================================================================================
 
   use shr_kind_mod , only : r8 => shr_kind_r8, CX => SHR_KIND_CX
   use shr_sys_mod  , only : shr_sys_abort
@@ -17,19 +13,23 @@ module shr_carma_mod
   use shr_file_mod , only : shr_file_getUnit, shr_file_freeUnit
 
   implicit none
-  save
   private
 
   public :: shr_carma_readnl ! reads carma_inparm namelist
 
+!-------------------------------------------------------------------------
 contains
+!-------------------------------------------------------------------------
 
-  !-------------------------------------------------------------------------
-  ! This reads the carma_emis_nl namelist group in drv_flds_in and parses the
-  ! namelist information for the driver, CLM, and CAM.
-  !-------------------------------------------------------------------------
   subroutine shr_carma_readnl( NLFileName, carma_fields)
+
+    !-------------------------------------------------------------------------
+    ! This reads the carma_emis_nl namelist group in drv_flds_in and parses the
+    ! namelist information for the driver, CLM, and CAM.
+    !-------------------------------------------------------------------------
+
     use ESMF, only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VMGet, ESMF_VMBroadcast
+
     character(len=*) , intent(in)  :: NLFileName
     character(len=CX), intent(out) :: carma_fields
 

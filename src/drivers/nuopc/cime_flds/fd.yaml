@@ -101,7 +101,7 @@
      - standard_name: Fall_voc
        canonical_units: molecules/m2/sec
        description: land export
-          megan emission fluxes form land (1->20)
+          MEGAN voc emission fluxes from land (1->20)
      #
      - standard_name: Sl_anidf
        canonical_units: 1
@@ -119,9 +119,10 @@
        canonical_units: 1
        description: land export
      #
-     - standard_name: Sl_dd
+     - standard_name: Sl_ddvel
        canonical_units: cm/sec
-       description: land export dry dep fluxes (1->80)
+       description: land export 
+          dry deposition velocities from (1->80)
      #
      - standard_name: Sl_fv
        canonical_units: m s-1
@@ -266,29 +267,10 @@
        description: atmosphere export
          Instataneous net sfc uv+vis diffuse flux (fv3 only)
      #
-     - standard_name: Faxa_nhx
+     - standard_name: Faxa_ndep
        canonical_units: kg(N)/m2/sec
-       description: atmosphere export
-     #
-     - standard_name: Faxa_noy
-       canonical_units: kg(N)/m2/sec
-       description: atmosphere export
-     #
-     - standard_name: Faxa_ocphidry
-       canonical_units: kg m-2 s-1
-       description: atmosphere export
-     #
-     - standard_name: Faxa_ocphiwet
-       canonical_units: kg m-2 s-1
-       description: atmosphere export
-     #
-     - standard_name: Faxa_ocphodry
-       canonical_units: kg m-2 s-1
-       description: atmosphere export
-     #
-     - standard_name: Faxa_prec
-       canonical_units: kg m-2 s-1
-       description: atmosphere export
+       description: atmosphere export to land and ocean
+          currently nhx and noy
      #
      - standard_name: Faxa_prec_wiso
        canonical_units: kg m-2 s-1
@@ -300,6 +282,7 @@
        description: atmosphere export
      #
      - standard_name: Faxa_rain_wiso
+       alias: mean_prec_rate_wiso
        canonical_units: kg m-2 s-1
        description: atmosphere export
      #
@@ -438,6 +421,7 @@
          bottom layer specific humidity
      #
      - standard_name: Sa_shum_wiso
+       alias: inst_spec_humid_height_lowest_wiso
        canonical_units: kg kg-1
        description: atmosphere export
          bottom layer specific humidity 16O, 18O, HDO (cesm only)
@@ -895,6 +879,7 @@
          fresh water to ocean (h2o flux from melting)
      #
      - standard_name: Fioi_meltw_wiso
+       alias: mean_fresh_water_to_ocean_rate_wiso
        canonical_units: kg m-2 s-1
        description: sea-ice export to ocean
          fresh water to ocean (h2o flux from melting) for 16O, 18O, HDO
@@ -913,28 +898,28 @@
      #
      # NOTE: the following alias requires a new name change for CICE export
      - standard_name: Fioi_swpen_vdr
-       alias: mean_net_swpen_vis_dir_flx
+       alias: mean_net_sw_vis_dir_flx
        canonical_units: W m-2
        description: sea-ice export to ocean
          flux of vis dir shortwave through ice to ocean
      #
      # NOTE: the following alias requires a new name change for CICE export
      - standard_name: Fioi_swpen_vdf
-       alias: mean_net_swpen_vis_dif_flx
+       alias: mean_net_sw_vis_dif_flx
        canonical_units: W m-2
        description: sea-ice export to ocean
          flux of vif dir shortwave through ice to ocean
      #
      # NOTE: the following alias requires a new name change for CICE export
      - standard_name: Fioi_swpen_idr
-       alias: mean_net_swpen_ir_dir_flx
+       alias: mean_net_sw_ir_dir_flx
        canonical_units: W m-2
        description: sea-ice export to ocean
          flux of ir dir shortwave through ice to ocean
      #
      # NOTE: the following alias requires a new name change for CICE export
      - standard_name: Fioi_swpen_idf
-       alias: mean_net_swpen_ir_dif_flx
+       alias: mean_net_sw_ir_dif_flx
        canonical_units: W m-2
        description: sea-ice export to ocean
          flux of ir dif shortwave through ice to ocean
@@ -978,6 +963,7 @@
          ice fraction (varies with time)
      #
      - standard_name: Si_ifrac_n
+       alias: ice_fraction_n
        canonical_units: 1
        description: sea-ice export
          ice fraction per category (varies with time) (cesm only)
@@ -1105,6 +1091,10 @@
      #
      - standard_name: So_qref_wiso
        canonical_units: kg kg-1
+       description: ocean export
+     #
+     - standard_name: So_roce_wiso
+       canonical_units: unitless
        description: ocean export
      #
      - standard_name: So_s
@@ -1270,6 +1260,7 @@
          specific humidity flux
      #
      - standard_name: Foxx_evap_wiso
+       alias: mean_evap_rate_wiso
        canonical_units: kg m-2 s-1
        description: ocean import
          specific humidity flux 16O, 18O, HDO
@@ -1395,6 +1386,7 @@
          meridional surface stress
      #
      - standard_name: Fioi_swpen_ifrac_n
+       alias: mean_sw_pen_to_ocn_ifrac_n 
        canonical_units: W m-2
        description: ocean import
          net shortwave radiation penetrating into ice and ocean times ice fraction for thickness category 1

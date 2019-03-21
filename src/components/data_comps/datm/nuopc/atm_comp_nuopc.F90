@@ -69,7 +69,7 @@ module atm_comp_nuopc
   logical                  :: use_esmf_metadata = .false.
   character(*),parameter   :: modName =  "(atm_comp_nuopc)"
   integer, parameter       :: debug_import = 0          ! if > 0 will diagnose import fields
-  integer, parameter       :: debug_export = 1          ! if > 0 will diagnose export fields
+  integer, parameter       :: debug_export = 0          ! if > 0 will diagnose export fields
   character(*),parameter   :: u_FILE_u = &
        __FILE__
 
@@ -532,6 +532,7 @@ contains
     ! Run model
     !--------------------------------
 
+    call t_startf('datm_get_attributes')
     ! Get orbital parameters (these can be changed by the mediator)
     ! TODO: need to put in capability for these to be modified for variable orbitals
     call NUOPC_CompAttributeGet(gcomp, name='orb_eccen', value=cvalue, rc=rc)
@@ -546,8 +547,11 @@ contains
     call NUOPC_CompAttributeGet(gcomp, name='orb_mvelpp', value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) orbMvelpp
+    call t_stopf('datm_get_attributes')
 
     ! Determine if need to write restarts
+
+    call t_startf('datm_get_clockinfo')
 
     call ESMF_ClockGetAlarm(clock, alarmname='alarm_restart', alarm=alarm, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -576,13 +580,17 @@ contains
     call ESMF_TimeIntervalGet( timeStep, s=modeldt, rc=rc )
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+    call t_stopf('datm_get_clockinfo')
+
     ! Advance the model
 
+    call t_startf('datm_run')
     call datm_comp_run( mpicom, compid, my_task, master_task, &
          inst_suffix, logunit, &
          orbEccen, orbMvelpp, orbLambm0, orbObliqr, &
          write_restart, nextYMD, nextTOD, mon, modeldt, calendar, &
          atm_prognostic, case_name)
+    call t_stopf('datm_run')
 
     ! Use nextYMD and nextTOD here since since the component - clock is advance at the END of the time interval
     nextsw_cday = datm_shr_getNextRadCDay( nextYMD, nextTOD, stepno, modeldt, iradsw, calendar )
@@ -591,12 +599,16 @@ contains
     ! Pack export state
     !--------------------------------
 
+    call t_startf('datm_export')
     call datm_comp_export(exportState, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call t_stopf('datm_export')
 
+    call t_startf('datm_export_setscalar')
     call shr_nuopc_methods_State_SetScalar(nextsw_cday, flds_scalar_index_nextsw_cday, exportState,  &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call t_stopf('datm_export_setscalar')
 
     !--------------------------------
     ! diagnostics
@@ -607,7 +619,7 @@ contains
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
     if(my_task == master_task) then
-       call shr_nuopc_log_clock_advance(clock, 'ATM', logunit)
+       call shr_nuopc_log_clock_advance(clock, 'DATM', logunit)
     endif
     !----------------------------------------------------------------------------
     ! Reset shr logging to original values

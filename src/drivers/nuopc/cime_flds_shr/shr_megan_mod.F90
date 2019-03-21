@@ -1,16 +1,18 @@
-!================================================================================
-! Handles MEGAN VOC emissions metadata for CLM produced chemical emissions
-! MEGAN = Model of Emissions of Gases and Aerosols from Nature
-!
-! This reads the megan_emis_nl namelist in drv_flds_in and makes the relavent
-! information available to CAM, CLM, and driver. The driver sets up CLM to CAM
-! communication for the  VOC flux fields. CLM needs to know what specific VOC
-! fluxes need to be passed to the coupler and how to assimble the fluxes.
-! CAM needs to know what specific VOC fluxes to expect from CLM.
-!
-! Francis Vitt -- 26 Oct 2011
-!================================================================================
 module shr_megan_mod
+
+  !================================================================================
+  ! Handles MEGAN VOC emissions metadata for CLM produced chemical emissions
+  ! MEGAN = Model of Emissions of Gases and Aerosols from Nature
+  !
+  ! This reads the megan_emis_nl namelist in drv_flds_in and makes the relavent
+  ! information available to CAM, CLM, and driver. 
+  ! - The driver sets up CLM to CAM communication for the  VOC flux fields. 
+  ! - CLM needs to know what specific VOC fluxes need to be passed to the coupler 
+  !   and how to assemble the fluxes.
+  ! - CAM needs to know what specific VOC fluxes to expect from CLM.
+  !
+  ! Francis Vitt -- 26 Oct 2011
+  !================================================================================
 
   use shr_kind_mod,only : r8 => shr_kind_r8
   use shr_kind_mod,only : CL => SHR_KIND_CL, CX => SHR_KIND_CX, CS => SHR_KIND_CS
@@ -33,9 +35,7 @@ module shr_megan_mod
   public :: shr_megan_comp_ptr
 
   logical          , public :: megan_initialized       = .false. ! true => shr_megan_readnl alreay called
-  character(len=CS), public :: shr_megan_fields_token  = ''      ! First drydep fields token
   character(len=CL), public :: shr_megan_factors_file  = ''
-  character(len=CX), public :: shr_megan_fields        = ''
 
   ! MEGAN compound data structure (or user defined type)
   type shr_megan_megcomp_t
@@ -68,71 +68,76 @@ module shr_megan_mod
   ! switch to use mapped emission factors
   logical :: shr_megan_mapped_emisfctrs = .false.
 
+!--------------------------------------------------------
 contains
+!--------------------------------------------------------
 
-  !-------------------------------------------------------------------------
-  !
-  ! This reads the megan_emis_nl namelist group in drv_flds_in and parses the
-  ! namelist information for the driver, CLM, and CAM.
-  !
-  ! Namelist variables:
-  !   megan_specifier, megan_mapped_emisfctrs, megan_factors_file
-  !
-  ! megan_specifier is a series of strings where each string contains one
-  !  CAM chemistry constituent name (left of = sign) and one or more MEGAN
-  !  compound (separated by + sign if more than one).  Each MEGAN compound
-  !  can be proceeded by a multiplication factor (separated by *).  The
-  !  specification of the MEGAN compounds to the right of the = signs tells
-  !  the MEGAN VOC model within CLM how to construct the VOC fluxes using
-  !  the factors in megan_factors_file and land surface state.
-  !
-  ! megan_factors_file read by CLM contains valid MEGAN compound names,
-  !  MEGAN class groupings and scalar emission factors
-  !
-  ! megan_mapped_emisfctrs switch is used to tell the MEGAN model to use
-  !  mapped emission factors read in from the CLM surface data input file
-  !  rather than the scalar factors from megan_factors_file
-  !
-  ! Example:
-  ! &megan_emis_nl
-  !  megan_specifier = 'ISOP = isoprene',
-  !     'C10H16 = myrcene + sabinene + limonene + carene_3 + ocimene_t_b + pinene_b + ...',
-  !     'CH3OH = methanol',
-  !     'C2H5OH = ethanol',
-  !     'CH2O = formaldehyde',
-  !     'CH3CHO = acetaldehyde',
-  ! ...
-  !  megan_factors_file = '$datapath/megan_emis_factors.nc'
-  ! /
-  !-------------------------------------------------------------------------
-  subroutine shr_megan_readnl( NLFileName, megan_fields, megan_nflds )
-    use ESMF, only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VMBroadcast, ESMF_VMGet
-    use shr_nl_mod,     only : shr_nl_find_group_name
-    use shr_file_mod,   only : shr_file_getUnit, shr_file_freeUnit
+  subroutine shr_megan_readnl( NLFileName, megan_nflds)
 
+    !-------------------------------------------------------------------------
+    !
+    ! This reads the megan_emis_nl namelist group in drv_flds_in and parses the
+    ! namelist information for the driver, CLM, and CAM.
+    !
+    ! Namelist variables:
+    !   megan_specifier, megan_mapped_emisfctrs, megan_factors_file
+    !
+    ! megan_specifier is a series of strings where each string contains one
+    !  CAM chemistry constituent name (left of = sign) and one or more MEGAN
+    !  compound (separated by + sign if more than one).  Each MEGAN compound
+    !  can be proceeded by a multiplication factor (separated by *).  The
+    !  specification of the MEGAN compounds to the right of the = signs tells
+    !  the MEGAN VOC model within CLM how to construct the VOC fluxes using
+    !  the factors in megan_factors_file and land surface state.
+    !
+    ! megan_factors_file read by CLM contains valid MEGAN compound names,
+    !  MEGAN class groupings and scalar emission factors
+    !
+    ! megan_mapped_emisfctrs switch is used to tell the MEGAN model to use
+    !  mapped emission factors read in from the CLM surface data input file
+    !  rather than the scalar factors from megan_factors_file
+    !
+    ! Example:
+    ! &megan_emis_nl
+    !  megan_specifier = 'ISOP = isoprene',
+    !     'C10H16 = myrcene + sabinene + limonene + carene_3 + ocimene_t_b + pinene_b + ...',
+    !     'CH3OH = methanol',
+    !     'C2H5OH = ethanol',
+    !     'CH2O = formaldehyde',
+    !     'CH3CHO = acetaldehyde',
+    ! ...
+    !  megan_factors_file = '$datapath/megan_emis_factors.nc'
+    ! /
+    !-------------------------------------------------------------------------
+    
+    use ESMF         , only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VMBroadcast, ESMF_VMGet
+    use shr_nl_mod   , only : shr_nl_find_group_name
+    use shr_file_mod , only : shr_file_getUnit, shr_file_freeUnit
+
+    ! input/output variables
     character(len=*), intent(in)  :: NLFileName
-    character(len=*), intent(out) :: megan_fields
     integer,          intent(out) :: megan_nflds
 
-    type(ESMF_VM)   :: vm
-    integer :: localPet
-    integer :: unitn            ! namelist unit number
-    integer :: ierr             ! error code
-    logical :: exists           ! if file exists or not
+    ! local variables
+    type(ESMF_VM)       :: vm
+    integer             :: localPet
+    integer             :: unitn            ! namelist unit number
+    integer             :: ierr             ! error code
+    logical             :: exists           ! if file exists or not
     integer, parameter  :: maxspc = 100
     character(len=2*CX) :: megan_specifier(maxspc) = ' '
     logical             :: megan_mapped_emisfctrs = .false.
     character(len=CL)   :: megan_factors_file = ' '
-    integer :: rc
-    integer :: i, tmp(1)
+    integer             :: rc
+    integer             :: i, tmp(1)
     character(*),parameter :: F00   = "('(shr_megan_readnl) ',2a)"
+    !--------------------------------------------------------------
 
     namelist /megan_emis_nl/ megan_specifier, megan_factors_file, megan_mapped_emisfctrs
 
     ! If other processes have already initialized megan - then just return
     ! the megan_fields that have already been set
     if (megan_initialized) then
-       megan_fields = trim(shr_megan_fields)
        megan_nflds = shr_megan_mechcomps_n
        return
     end if
@@ -146,10 +151,8 @@ contains
           open( unitn, file=trim(NLFilename), status='old' )
           if ( loglev > 0 ) write(logunit,F00) &
                'Read in megan_emis_readnl namelist from: ', trim(NLFilename)
-
           call shr_nl_find_group_name(unitn, 'megan_emis_nl', status=ierr)
           ! If ierr /= 0, no namelist present.
-
           if (ierr == 0) then
              read(unitn, megan_emis_nl, iostat=ierr)
 
@@ -157,16 +160,16 @@ contains
                 call shr_sys_abort( 'problem on read of megan_emis_nl namelist in shr_megan_readnl' )
              endif
           endif
-
           close( unitn )
           call shr_file_freeUnit( unitn )
           do i=1,maxspc
-             if(len_trim(megan_specifier(i)) > 0) then
+             if (len_trim(megan_specifier(i)) > 0) then
                 megan_nflds=megan_nflds+1
              endif
           enddo
        end if
     end if
+
     tmp = megan_nflds
     call ESMF_VMBroadcast(vm, tmp, 1, 0, rc=rc)
     megan_nflds = tmp(1)
@@ -174,33 +177,39 @@ contains
        call ESMF_VMBroadcast(vm, megan_specifier, 2*CX*megan_nflds, 0, rc=rc)
        call ESMF_VMBroadcast(vm, megan_factors_file, CL, 0, rc=rc)
        tmp = 0
-       if(megan_mapped_emisfctrs) tmp=1
+       if (megan_mapped_emisfctrs) tmp=1
        call ESMF_VMBroadcast(vm, tmp, 1, 0, rc=rc)
-       if(tmp(1)==1) megan_mapped_emisfctrs=.true.
+       if (tmp(1)==1) megan_mapped_emisfctrs=.true.
     endif
 
     shr_megan_factors_file = megan_factors_file
     shr_megan_mapped_emisfctrs = megan_mapped_emisfctrs
 
     ! parse the namelist info and initialize the module data
-    call shr_megan_init( megan_specifier, megan_fields )
+    call shr_megan_init( megan_specifier )
+
   end subroutine shr_megan_readnl
 
-  !-------------------------------------------------------------------------
-  ! module data initializer
-  !-------------------------------------------------------------------------
-  subroutine shr_megan_init( specifier, megan_fields )
+!-------------------------------------------------------------------------
+! private methods...
+!-------------------------------------------------------------------------
+
+  subroutine shr_megan_init( specifier)
+
+    !-----------------------------------------
+    ! Initialize module data
+    !-----------------------------------------
 
     use shr_expr_parser_mod, only : shr_exp_parse, shr_exp_item_t, shr_exp_list_destroy
 
+    ! input/output variables
     character(len=*), intent(in) :: specifier(:)
-    character(len=*), intent(out) :: megan_fields
 
-    integer :: n_entries
-    integer :: i, j, k
-
+    ! local variables
+    integer                       :: n_entries
+    integer                       :: i, j, k
     type(shr_exp_item_t), pointer :: items_list, item
-    character(len=12) :: token   ! megan field name to add
+    !--------------------------------------------------------------
 
     nullify(shr_megan_linkedlist)
 
@@ -208,8 +217,6 @@ contains
 
     allocate(shr_megan_mechcomps(n_entries))
     shr_megan_mechcomps(:)%n_megan_comps = 0
-
-    megan_fields = ''
 
     item => items_list
     i = 1
@@ -233,34 +240,18 @@ contains
        enddo
        shr_megan_mechcomps_n = shr_megan_mechcomps_n+1
 
-       write(token,333) shr_megan_mechcomps_n
-
-       if ( shr_megan_mechcomps_n == 1 ) then
-          ! do not prepend ":" to the string for the first token
-          megan_fields = trim(token)
-          shr_megan_fields_token = token
-       else
-          megan_fields = trim(megan_fields)//':'//trim(token)
-       endif
-
        item => item%next_item
        i = i+1
+
     enddo
     if (associated(items_list)) call shr_exp_list_destroy(items_list)
 
     megan_initialized = .true.
-    shr_megan_fields = trim(megan_fields)
-
-    ! Need to explicitly add Fl_ based on naming convention
-333 format ('Fall_voc',i3.3)
 
   end subroutine shr_megan_init
 
   !-------------------------------------------------------------------------
-  ! private methods...
 
-  !-------------------------------------------------------------------------
-  !-------------------------------------------------------------------------
   function add_megan_comp( name, coeff ) result(megan_comp)
 
     character(len=16), intent(in) :: name
@@ -290,7 +281,7 @@ contains
   end function add_megan_comp
 
   !-------------------------------------------------------------------------
-  !-------------------------------------------------------------------------
+
   recursive function get_megan_comp_by_name(list_comp, name) result(megan_comp)
 
     type(shr_megan_megcomp_t), pointer  :: list_comp
@@ -310,7 +301,7 @@ contains
   end function get_megan_comp_by_name
 
   !-------------------------------------------------------------------------
-  !-------------------------------------------------------------------------
+
   subroutine add_megan_comp_to_list( new_megan_comp )
 
     type(shr_megan_megcomp_t), target, intent(in) :: new_megan_comp

@@ -192,10 +192,6 @@ module ocn_comp_nuopc
     call docn_shr_read_namelists(filename, mpicom, my_task, master_task, &
          logunit, ocn_present, ocn_prognostic, ocnrof_prognostic)
 
-    ! TODO: - hard wire prognostic for now to get atm/ocn flux
-    ! computation and ocn albedos computed in mediator
-    ocn_prognostic = .true.
-
     !--------------------------------
     ! Advertise import and export fields
     !--------------------------------

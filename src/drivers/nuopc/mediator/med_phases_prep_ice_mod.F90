@@ -123,8 +123,15 @@ contains
        !---------------------------------------
 
        ! application of precipitation factor from ocean
-       call med_infodata_GetData(med_infodata, precip_fact=precip_fact, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       ! TODO (mvertens, 2019-03-18): precip_fact here is not valid if
+       ! the component does not send it - so need to check if it is a
+       ! valid value (determine the ranges)
+       ! For now - hardwire it to 1 until this is resolved
+       ! call med_infodata_GetData(med_infodata, precip_fact=precip_fact, rc=rc)
+       ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       precip_fact = 1.0_R8
+
        if (precip_fact /= 1.0_R8) then
           if (first_precip_fact_call .and. mastertask) then
              write(logunit,'(a)')'(merge_to_ice): Scaling rain, snow, liquid and ice runoff by precip_fact '
@@ -206,10 +213,10 @@ contains
           end do
        end if
 
-       if (dbug_flag > 1) then
+       !if (dbug_flag > 1) then
           call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compice), string=trim(subname)//' FBexp(compice) ', rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       end if
+       !end if
 
        !---------------------------------------
        !--- update local scalar data

@@ -140,11 +140,11 @@ CONTAINS
       if (type == 'atm2cpli') then
         infodata%nextsw_cday = data(flds_scalar_index_nextsw_cday)
       elseif (type == 'ocn2cpli') then
-        infodata%precip_fact=data(flds_scalar_index_precip_fact)
+        infodata%precip_fact= data(flds_scalar_index_precip_fact)
       elseif (type == 'atm2cpl') then
-         infodata%nextsw_cday=data(flds_scalar_index_nextsw_cday)
+         infodata%nextsw_cday = data(flds_scalar_index_nextsw_cday)
       elseif (type == 'ocn2cpl') then
-         infodata%precip_fact=data(flds_scalar_index_precip_fact)
+         infodata%precip_fact = data(flds_scalar_index_precip_fact)
       endif
 
     endif

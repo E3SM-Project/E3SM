@@ -3518,12 +3518,13 @@ contains
     integer          , intent(out) :: rc
 
     ! local variables
-    integer                                  :: n, nfld, nlev
+    integer                                  :: n, nfld, ungridded_index
     integer                                  :: lsize
     real(R8), pointer                        :: dataPtr1d(:)
     real(R8), pointer                        :: dataPtr2d(:,:)
     integer                                  :: fieldCount
     integer                                  :: ungriddedUBound(1)
+    integer                                  :: gridToFieldMap(1)
     character(len=ESMF_MAXSTR)               :: string
     type(ESMF_Field)           , allocatable :: lfields(:)
     integer                    , allocatable :: dimCounts(:)
@@ -3567,23 +3568,31 @@ contains
              if (trim(fieldNameList(nfld)) /= flds_scalar_name .and. dataPtr1d(n) /= 0.) then
                 string = trim(prefix) // ' ymd, tod, index, '// trim(fieldNameList(nfld)) //' = '
                 write(logunit,100) trim(string), ymd, tod, n, dataPtr1d(n)
-100             format(a60,3(i8,2x),d21.14)
              end if
           else if (dimCounts(nfld) == 2) then
+             call ESMF_FieldGet(lfields(nfld), ungriddedUBound=ungriddedUBound, gridtoFieldMap=gridToFieldMap, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
              call ESMF_FieldGet(lfields(nfld), farrayPtr=dataPtr2d, rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-             call ESMF_FieldGet(lfields(nfld), ungriddedUBound=ungriddedUBound, rc=rc)
-             call ESMF_FieldGet(lfields(nfld), farrayPtr=dataPtr2d, rc=rc)
-             do nlev = 1,ungriddedUBound(1)
-                if (trim(fieldNameList(nfld)) /= flds_scalar_name .and. dataPtr2d(n,nlev) /= 0.) then
+             do ungridded_index = 1,ungriddedUBound(1)
+                if (trim(fieldNameList(nfld)) /= flds_scalar_name) then
                    string = trim(prefix) // ' ymd, tod, lev, index, '// trim(fieldNameList(nfld)) //' = '
-                   write(logunit,101) trim(string), ymd, tod, nlev, n, dataPtr2d(n,nlev)
-101                format(a60,4(i8,2x),d21.14)
+                   if (gridToFieldMap(1) == 1) then
+                      if (dataPtr2d(n,ungridded_index) /= 0.) then
+                         write(logunit,101) trim(string), ymd, tod, ungridded_index, n, dataPtr2d(n,ungridded_index)
+                      end if
+                   else if (gridToFieldMap(1) == 2) then
+                      if (dataPtr2d(ungridded_index,n) /= 0.) then
+                         write(logunit,101) trim(string), ymd, tod, ungridded_index, n, dataPtr2d(ungridded_index,n)
+                      end if
+                   end if
                 end if
              end do
           end if
        end do
     end do
+100 format(a60,3(i8,2x),d21.14)
+101 format(a60,4(i8,2x),d21.14)
 
     deallocate(fieldNameList)
     deallocate(lfields)
