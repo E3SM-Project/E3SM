@@ -398,7 +398,7 @@ module ocn_time_integration_split
          call mpas_pool_get_subpool(domain % blocklist % structs, 'diagnostics', diagnosticsPool)
 
          call mpas_threading_barrier()
-         ! ---  update halos for diagnostic ocean boundayr layer depth
+         ! ---  update halos for diagnostic ocean boundary layer depth
          if (config_use_cvmix_kpp) then
             call mpas_timer_start("se halo diag obd")
             call mpas_dmpar_field_halo_exch(domain, 'boundaryLayerDepth')

@@ -2661,7 +2661,7 @@
 			packages="landIceFluxesPKG"
 		/>
 		<var name="topDrag" type="real" dimensions="nEdges Time" units="N m^{-2}"
-			description="Top drag at the surface of the ocean defined at edge midpoints. Magintude in direction of edge normal."
+			description="Top drag at the surface of the ocean defined at edge midpoints. Magnitude in direction of edge normal."
 			packages="landIceFluxesPKG"
 		/>
 		<var name="topDragMagnitude" type="real" dimensions="nCells Time" units="N m^{-2}"
