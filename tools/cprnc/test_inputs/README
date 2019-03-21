@@ -19,7 +19,7 @@ The files here are:
 
 - diffs_in_vals_and_extra_and_missing.nc: one variable has differences in
   values; also, one variable is missing and there is an extra variable. Purpose
-  of this test is to make sure that this cas is reported as a DIFFERENCE rather
+  of this test is to make sure that this case is reported as a DIFFERENCE rather
   than just a warning due to the missing fields.
 
 - diffs_in_fill.nc: one variable has differences in fill pattern
@@ -30,11 +30,11 @@ The files here are:
 - diffs_in_vals_and_fill.nc: a single variable has differences in both
   values and fill pattern
 
-- extra_variables.nc: has two extra variables beyond those in copy.nc
+- extra_variables.nc: has two extra variables beyond those in control.nc
 
 - lon_differs.nc: number of longitude points differs
 
-- missing_variables.nc: missing two variables that are present in copy.nc
+- missing_variables.nc: missing two variables that are present in control.nc
 
 - vals_differ_by_1.1.nc: testvar has values equal to 1.1 times those
   in the control file. This is useful for testing the relative
