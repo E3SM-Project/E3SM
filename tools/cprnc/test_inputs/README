@@ -103,12 +103,24 @@ with time first.
   same for both variables (e.g., RMS errors should be the same for
   both).
 
+- multipleTimes_someTimeless_extra_and_missing.nc: two timeless
+  variables are missing and there is one extra timeless
+  variable. Purpose of this test is to make sure that the results are
+  reported as IDENTICAL when the only diffs in field lists are variables
+  without an unlimited dimension (in a file that has an unlimited
+  dimension).
+
 --- FILES COMPARED AGAINST control_noTime.nc ---
 
 Note: This file has no time (unlimited) dimension.
 
 - noTime_diffs_in_vals_and_fill.nc: a single variable has differences
   in both values and fill pattern
+
+- noTime_extra_and_missing.nc: two variables are missing and there is
+  one extra variable. Purpose of this test is to make sure that even
+  missing fields without an unlimited dimension trigger a DIFFER result
+  if the file doesn't have an unlimited dimension to begin with.
 
 --- FILES COMPARED AGAINST control_0d.nc ---
 
