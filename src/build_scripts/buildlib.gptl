@@ -2,6 +2,7 @@
 from standard_script_setup import *
 from CIME.utils import run_bld_cmd_ensure_logging
 from CIME.case import Case
+from CIME.build import get_standard_makefile_args
 
 logger = logging.getLogger(__name__)
 
@@ -41,18 +42,12 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
 def buildlib(bldroot, installpath, case):
 ###############################################################################
-    comp_interface = case.get_value("COMP_INTERFACE")
     caseroot = case.get_value("CASEROOT")
     gptl_dir = os.path.join(case.get_value("CIMEROOT"), "src", "share", "timing")
-    debug = case.get_value("DEBUG")
     gmake_opts = "-f {gptl}/Makefile install -C {bldroot} MACFILE={macfile} MODEL=gptl GPTL_DIR={gptl} GPTL_LIBDIR={bldroot}"\
-        " SHAREDPATH={install} COMP_INTERFACE={comp_interface}"\
+        " SHAREDPATH={install} {stdargs} "\
         .format(gptl=gptl_dir, bldroot=bldroot, macfile=os.path.join(caseroot,"Macros.make"),
-                install=installpath,comp_interface=comp_interface)
-    if debug:
-        gmake_opts += " DEBUG=True"
-    if case.get_build_threaded():
-        gmake_opts += " compile_threaded=true "
+                install=installpath, stdargs=get_standard_makefile_args(case))
 
     gmake_cmd = case.get_value("GMAKE")
 
