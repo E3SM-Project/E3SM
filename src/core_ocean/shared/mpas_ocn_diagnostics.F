@@ -2167,8 +2167,8 @@ contains
                call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
             end if
 
-            ! Test snowFlow
-            fieldName = 'snowFlow'
+            ! Test snowFlux
+            fieldName = 'snowFlux'
             minValue = HUGE(minValue)
             maxValue = -HUGE(maxValue)
             call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
