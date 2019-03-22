@@ -13,7 +13,8 @@ module physpkg
   !-----------------------------------------------------------------------
 
 
-  use shr_kind_mod,     only: r8 => shr_kind_r8
+  use shr_kind_mod,     only: i8 => SHR_KIND_I8, r8 => shr_kind_r8
+  use shr_sys_mod,      only: shr_sys_irtc
   use spmd_utils,       only: masterproc
   use physconst,        only: latvap, latice, rh2o
   use physics_types,    only: physics_state, physics_tend, physics_state_set_grid, &
@@ -969,7 +970,10 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 #if (! defined SPMD)
     integer :: mpicom = 0
 #endif
-    real(r8):: time_start, time_stop, chunk_cost ! for measuring chunk cost
+    integer(i8) :: beg_count                     ! start time for a chunk
+    integer(i8) :: end_count                     ! stop time for a chunk
+    integer(i8) :: irtc_rate                     ! irtc clock rate
+    real(r8)    :: chunk_cost                    ! measured cost per chunk
     type(physics_buffer_desc), pointer :: phys_buffer_chunk(:)
 
     call t_startf ('physpkg_st1')
@@ -1026,10 +1030,10 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
        call t_startf ('bc_physics')
        !call t_adj_detailf(+1)
 
-!$OMP PARALLEL DO PRIVATE (C, time_start, phys_buffer_chunk, time_stop, chunk_cost)
+!$OMP PARALLEL DO PRIVATE (C, beg_count, phys_buffer_chunk, end_count, chunk_cost)
        do c=begchunk, endchunk
 
-          time_start = MPI_Wtime()
+          beg_count = shr_sys_irtc(irtc_rate)
 
           !
           ! Output physics terms to IC file
@@ -1044,8 +1048,8 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
                        phys_tend(c), phys_buffer_chunk,  fsds(1,c), landm(1,c),          &
                        sgh(1,c), sgh30(1,c), cam_out(c), cam_in(c) )
 
-          time_stop = MPI_Wtime()
-          chunk_cost = (time_stop-time_start)
+          end_count = shr_sys_irtc(irtc_rate)
+          chunk_cost = real( (end_count-beg_count), r8)/real(irtc_rate, r8)
           call update_cost_p(c, chunk_cost)
 
        end do
@@ -1099,8 +1103,10 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
     type(physics_ptend) :: ptend(begchunk:endchunk) ! indivdual parameterization tendencies
     real(r8)            :: flx_heat(pcols) ! effective sensible heat flux
     real(r8)            :: zero(pcols)     ! array of zeros
-    real(r8)            :: time_start      ! start time for a chunk
-    real(r8)            :: time_stop       ! stop time for a chunk
+
+    integer(i8)         :: beg_count       ! start time for a chunk
+    integer(i8)         :: end_count       ! stop time for a chunk
+    integer(i8)         :: irtc_rate       ! irtc clock rate
     real(r8)            :: chunk_cost      ! measured cost per chunk
 
     ! physics buffer field for total energy
@@ -1116,10 +1122,10 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
        first_exec_of_phys_run1_adiabatic_or_ideal  = .FALSE.
     endif
 
-!$OMP PARALLEL DO PRIVATE (C, time_start, FLX_HEAT, time_stop, chunk_cost)
+!$OMP PARALLEL DO PRIVATE (C, beg_count, FLX_HEAT, end_count, chunk_cost)
     do c=begchunk, endchunk
 
-       time_start = MPI_Wtime()
+       beg_count = shr_sys_irtc(irtc_rate)
 
        ! Initialize the physics tendencies to zero.
        call physics_tend_init(phys_tend(c))
@@ -1144,8 +1150,8 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
        ! Save total enery after physics for energy conservation checks
        call pbuf_set_field(pbuf_get_chunk(pbuf2d, c), teout_idx, phys_state(c)%te_cur)
 
-       time_stop = MPI_Wtime()
-       chunk_cost = (time_stop-time_start)
+       end_count = shr_sys_irtc(irtc_rate)
+       chunk_cost = real( (end_count-beg_count), r8)/real(irtc_rate, r8)
        call update_cost_p(c, chunk_cost)
 
     end do
@@ -1202,7 +1208,8 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 #if (! defined SPMD)
     integer :: mpicom = 0
 #endif
-    real(r8):: time_start, time_stop, chunk_cost ! for measuring chunk cost
+    integer(i8) :: beg_count, end_count, irtc_rate ! for measuring chunk cost
+    real(r8):: chunk_cost
     type(physics_buffer_desc),pointer, dimension(:)     :: phys_buffer_chunk
     !
     ! If exit condition just return
@@ -1240,10 +1247,10 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
        call ieflx_gmean(phys_state, phys_tend, pbuf2d, cam_in, cam_out, nstep)
     end if
 
-!$OMP PARALLEL DO PRIVATE (C, time_start, NCOL, phys_buffer_chunk, time_stop, chunk_cost)
+!$OMP PARALLEL DO PRIVATE (C, beg_count, NCOL, phys_buffer_chunk, end_count, chunk_cost)
     do c=begchunk,endchunk
 
-       time_start = MPI_Wtime()
+       beg_count = shr_sys_irtc(irtc_rate)
 
        ncol = get_ncols_p(c)
        phys_buffer_chunk => pbuf_get_chunk(pbuf2d, c)
@@ -1268,8 +1275,8 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
             phys_state(c), phys_tend(c), phys_buffer_chunk,&
             fsds(1,c))
 
-       time_stop = MPI_Wtime()
-       chunk_cost = (time_stop-time_start)
+       end_count = shr_sys_irtc(irtc_rate)
+       chunk_cost = real( (end_count-beg_count), r8)/real(irtc_rate, r8)
        call update_cost_p(c, chunk_cost)
 
     end do                    ! Chunk loop
