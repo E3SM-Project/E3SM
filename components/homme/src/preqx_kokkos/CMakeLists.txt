@@ -34,7 +34,6 @@ SET (TARGET_F90
   ${TARGET_DIR}/model_init_mod.F90
   ${TARGET_DIR}/prim_advection_mod.F90
   ${TARGET_DIR}/prim_driver_mod.F90
-  ${TARGET_DIR}/sl_advection.F90
   ${TARGET_DIR}/viscosity_mod.F90
   ${PREQX_SHARE_DIR}/element_ops.F90
   ${PREQX_SHARE_DIR}/prim_advance_mod.F90
@@ -90,7 +89,16 @@ SET (SRC_SHARE_F90
   ${SRC_SHARE_DIR}/vertremap_base.F90
   ${SRC_SHARE_DIR}/viscosity_base.F90
   ${SRC_SHARE_DIR}/zoltan_mod.F90
+  ${SRC_SHARE_DIR}/sl_advection.F90
+  ${SRC_SHARE_DIR}/compose_mod.F90
+  ${SRC_SHARE_DIR}/compose_test_mod.F90
   ${SRC_SHARE_DIR}/scalable_grid_init_mod.F90
+)
+
+SET(SRC_SHARE_CXX
+  ${SRC_SHARE_DIR}/cedr.cpp
+  ${SRC_SHARE_DIR}/slmm.cpp
+  ${SRC_SHARE_DIR}/compose_test.cpp
 )
 
 SET(TEST_SRC_F90
@@ -140,6 +148,7 @@ SET(PREQX_DEPS_F90
 )
 
 SET(PREQX_DEPS_CXX
+  ${SRC_SHARE_CXX}
   ${SRC_SHARE_DIR}/cxx/CaarFunctor.cpp
   ${SRC_SHARE_DIR}/cxx/CamForcing.cpp
   ${SRC_SHARE_DIR}/cxx/Context.cpp

@@ -50,6 +50,12 @@ SET(THETAL_SRCS_F90
   ${UTILS_SHARE_DIR}/shr_spfn_mod.F90
 )
 
+SET(THETAL_SRCS_CXX
+  ${SRC_SHARE_DIR}/cedr.cpp
+  ${SRC_SHARE_DIR}/slmm.cpp
+  ${SRC_SHARE_DIR}/compose_test.cpp
+)
+
 IF (HOMME_USE_ARKODE)
   SET(THETAL_SRCS_C
     ${ARKODE_DIR}/nvector_external.h
@@ -65,7 +71,7 @@ IF (DEFINED THETA_CUSTOM_FLAGS_FILE)
 ENDIF ()
 
 # Make SRCS global so the tests can access it
-SET(EXEC_SOURCES ${THETAL_SRCS} ${THETAL_SRCS_C} ${THETAL_SRCS_F90} )
+SET(EXEC_SOURCES ${THETAL_SRCS} ${THETAL_SRCS_C} ${THETAL_SRCS_F90} ${THETAL_SRCS_CXX})
 
 # Set up defaults
 IF (NOT PREQX_NP)

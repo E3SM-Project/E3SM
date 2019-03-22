@@ -167,7 +167,6 @@ subroutine prim_run_subcycle(elem,hybrid,nets,nete,dt,tl,hvcoord,nsubstep)
 subroutine prim_step(elem,hybrid,nets,nete,dt,tl,hvcoord,compute_diagnostics,rstep)
 
     use control_mod,        only: statefreq, integration, ftype, qsplit, nu_p, rsplit
-    use control_mod,        only: use_semi_lagrange_transport
     use hybvcoord_mod,      only: hvcoord_t
     use parallel_mod,       only: abortmp
     use prim_advance_mod,   only: prim_advance_exp
