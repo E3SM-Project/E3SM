@@ -157,8 +157,10 @@ program piocprnc
             ! (https://github.com/ESMCI/cime/issues/3007). We could add a flag that you
             ! specify to not count these fields, but there are backwards compatibility
             ! issues with doing so. Eventually it could be good to count these absent
-            ! fields as a DIFFER result, adding a flag that you can specify to not count
-            ! them, then have cime specify this flag when doing the in-test comparison.
+            ! fields as a DIFFER result by default, adding a flag that you can specify to
+            ! not count them, then have cime specify this flag when doing the in-test
+            ! comparison (so absent time-constant fields would result in a DIFFER result
+            ! for cime's baseline comparisons and for interactive use of cprnc).
             write(6,'(a)') '  diff_test: the two files DIFFER only in their field lists'
          else
             write(6,700) '  diff_test: the two files seem to be IDENTICAL '
