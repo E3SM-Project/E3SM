@@ -415,7 +415,8 @@ CONTAINS
     real (kind=real_kind), allocatable :: T_tmp (:,:,:)    ! temp array to hold T
     real (kind=real_kind), allocatable :: uv_tmp(:,:,:,:)  ! temp array to hold u and v
     real (kind=real_kind), allocatable :: q_tmp (:,:,:,:)  ! temp to hold advected constituents
-    integer(kind=int_kind)   :: m, i, j, k
+    integer(kind=int_kind)   :: m, i, j, k                 ! loop iterators
+    integer(kind=int_kind)   :: gi(4), gj(4)               ! index list used to simplify pg2 case
     integer(kind=int_kind)   :: di, dj
     integer(kind=int_kind)   :: pgcols(pcols)
     integer(kind=int_kind)   :: ioff
@@ -555,33 +556,19 @@ CONTAINS
                   end do
                 end if ! fv_nphys == 1
 
-                ! for pg2 we need to copy the FV state to GLL quadrants
+                ! for pg2 we need to copy the FV state to quadrants of GLL grid
                 if (fv_nphys == 2) then
-                  if (i==1) di = -1
-                  if (i==2) di =  1
-                  if (j==1) dj = -1
-                  if (j==2) dj =  1
-                  ! temperature
-                  elem(ie)%derived%FT(i+1   ,j+1   ,ilyr) = T_tmp(icol,ilyr,ie)
-                  elem(ie)%derived%FT(i+1+di,j+1+dj,ilyr) = T_tmp(icol,ilyr,ie)
-                  elem(ie)%derived%FT(i+1   ,j+1+dj,ilyr) = T_tmp(icol,ilyr,ie)
-                  elem(ie)%derived%FT(i+1+di,j+1   ,ilyr) = T_tmp(icol,ilyr,ie)
-                  ! zonal wind
-                  elem(ie)%derived%FM(i+1   ,j+1   ,1,ilyr) = uv_tmp(icol,1,ilyr,ie)
-                  elem(ie)%derived%FM(i+1+di,j+1+dj,1,ilyr) = uv_tmp(icol,1,ilyr,ie)
-                  elem(ie)%derived%FM(i+1   ,j+1+dj,1,ilyr) = uv_tmp(icol,1,ilyr,ie)
-                  elem(ie)%derived%FM(i+1+di,j+1   ,1,ilyr) = uv_tmp(icol,1,ilyr,ie)
-                  ! meridional wind
-                  elem(ie)%derived%FM(i+1   ,j+1   ,2,ilyr) = uv_tmp(icol,2,ilyr,ie)
-                  elem(ie)%derived%FM(i+1+di,j+1+dj,2,ilyr) = uv_tmp(icol,2,ilyr,ie)
-                  elem(ie)%derived%FM(i+1   ,j+1+dj,2,ilyr) = uv_tmp(icol,2,ilyr,ie)
-                  elem(ie)%derived%FM(i+1+di,j+1   ,2,ilyr) = uv_tmp(icol,2,ilyr,ie)
-                  ! constituents
+                  ! define indices of GLL points in quadrant
+                  di = (i-1)+(i-2)  ! either 1=>-1 or 2=>+1
+                  dj = (j-1)+(j-2)  ! either 1=>-1 or 2=>+1
+                  gi(1:4) = (/i+1,i+1   ,i+1+di,i+1+di/)
+                  gj(1:4) = (/j+1,j+1+dj,j+1+dj,j+1   /)
+                  ! copy physics column values to GLL nodes
+                  elem(ie)%derived%FT(gi,gj,ilyr)   = T_tmp(icol,ilyr,ie)
+                  elem(ie)%derived%FM(gi,gj,1,ilyr) = uv_tmp(icol,1,ilyr,ie)
+                  elem(ie)%derived%FM(gi,gj,2,ilyr) = uv_tmp(icol,2,ilyr,ie)
                   do m = 1,pcnst
-                    elem(ie)%derived%FQ(i+1   ,j+1   ,ilyr,m) = q_tmp(icol,ilyr,m,ie)
-                    elem(ie)%derived%FQ(i+1+di,j+1+dj,ilyr,m) = q_tmp(icol,ilyr,m,ie)
-                    elem(ie)%derived%FQ(i+1   ,j+1+dj,ilyr,m) = q_tmp(icol,ilyr,m,ie)
-                    elem(ie)%derived%FQ(i+1+di,j+1   ,ilyr,m) = q_tmp(icol,ilyr,m,ie)
+                    elem(ie)%derived%FQ(gi,gj,ilyr,m) = q_tmp(icol,ilyr,m,ie)
                   end do
                 end if ! fv_nphys == 2
 
@@ -590,7 +577,7 @@ CONTAINS
           end do ! j
         end do ! ie
       
-      else
+      else ! physics is on GLL nodes
 
         call t_startf('putUniquePoints')
         do ie = 1,nelemd

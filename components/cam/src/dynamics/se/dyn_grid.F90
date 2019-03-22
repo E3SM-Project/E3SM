@@ -1555,7 +1555,7 @@ contains
     use kinds,                  only: lng_dbl => longdouble_kind
     use cube_mod,               only: ref2sphere
     use coordinate_systems_mod, only: spherical_polar_t, cartesian3D_t
-    use coordinate_systems_mod, only: sphere_tri_area, spherical_to_cart
+    use coordinate_systems_mod, only: sphere_tri_area, change_coordinates 
     !------------------------------Arguments------------------------------------
     ! type(element_t)         , intent(in   ) :: elem(:)
     ! type(fv_physgrid_struct), intent(inout) :: fv_physgrid(nelemd)
@@ -1568,73 +1568,101 @@ contains
     real(kind=lng_dbl)      :: corner_offset_i(4)
     real(kind=lng_dbl)      :: corner_offset_j(4)
     type(cartesian3D_t)     :: corner_tmp(4)
+    type(cartesian3D_t)     :: center_tmp
     ! integer  :: ncol_fv_gbl, ncol_fv_lcl
     integer  :: ie, sb, eb, i, j, ip, fv_cnt, c
     integer  :: ierr
     integer  :: ibuf
     real(r8) :: area1, area2
     !---------------------------------------------------------------------------
-    if (fv_nphys>0) then
-      corner_offset_i = (/-1.,1.,1.,-1./)
-      corner_offset_j = (/-1.,-1.,1.,1./)
-      
-      ! calculate coordinates and area for local blocks
-      do ie = 1, nelemd
-        do j = 1, fv_nphys
-          do i = 1, fv_nphys
-            !-------------------------------------------------------------------
-            ! FV coordinates are defined on the reference element defined 
-            ! over [-1,1] and then mapped to the sphere using ref2sphere
-            ! The code below is a reduction of a general formula to define
-            ! midpoints m of n cells over a range [a,b]:
-            ! m(i) = a + (b-a)/n * ( i - 0.5 )      where i = 1,n
-            !-------------------------------------------------------------------
-            ref_i = -1._lng_dbl + 2._lng_dbl/real(fv_nphys,lng_dbl) & 
-                                  * ( real(i,lng_dbl) - 0.5_lng_dbl )
-            ref_j = -1._lng_dbl + 2._lng_dbl/real(fv_nphys,lng_dbl) & 
-                                  * ( real(j,lng_dbl) - 0.5_lng_dbl )
+    
+    ! these offsets define the order of the corners, which should 
+    ! be counter clockwise if being written to a scrip file
+    corner_offset_i = (/-1.,1.,1.,-1./)
+    corner_offset_j = (/-1.,-1.,1.,1./)
+    
+    ! calculate coordinates and area for local blocks
+    do ie = 1, nelemd
+      do j = 1, fv_nphys
+        do i = 1, fv_nphys
+          !-------------------------------------------------------------------
+          ! FV coordinates are defined on the reference element defined 
+          ! over [-1,1] and then mapped to the sphere using ref2sphere
+          ! The code below is a reduction of a general formula to define
+          ! midpoints m of n cells over a range [a,b]:
+          ! m(i) = a + (b-a)/n * ( i - 0.5 )      where i = 1,n
+          !-------------------------------------------------------------------
+          ref_i = -1._lng_dbl + 2._lng_dbl/real(fv_nphys,lng_dbl) & 
+                                * ( real(i,lng_dbl) - 0.5_lng_dbl )
+          ref_j = -1._lng_dbl + 2._lng_dbl/real(fv_nphys,lng_dbl) & 
+                                * ( real(j,lng_dbl) - 0.5_lng_dbl )
 
-            sphere_coord = ref2sphere(ref_i, ref_j,                         &
+          !-------------------------------------------------------------------
+          ! Although this is a simpler method of defining cell centers, 
+          ! it is inconsistent with the method used by TempestRemap.
+          ! Instead use the average of cell corner cartesian coordinates.
+          !-------------------------------------------------------------------
+          ! sphere_coord = ref2sphere(ref_i, ref_j,                         &
+          !                           elem(ie)%corners3D, cubed_sphere_map, &
+          !                           elem(ie)%corners, elem(ie)%facenum )
+          ! fv_physgrid(ie)%lat(i,j) = sphere_coord%lat
+          ! fv_physgrid(ie)%lon(i,j) = sphere_coord%lon
+
+          !-------------------------------------------------------------------
+          ! cell corner locations
+          !-------------------------------------------------------------------
+          center_tmp%x = 0.0_lng_dbl
+          center_tmp%y = 0.0_lng_dbl
+          center_tmp%z = 0.0_lng_dbl
+          do c = 1,4
+            ref_corner_i = ref_i + corner_offset_i(c)/real(fv_nphys,lng_dbl)
+            ref_corner_j = ref_j + corner_offset_j(c)/real(fv_nphys,lng_dbl)
+
+            ! change element local reference coordinate to spherical
+            sphere_coord = ref2sphere(ref_corner_i, ref_corner_j,           &
                                       elem(ie)%corners3D, cubed_sphere_map, &
                                       elem(ie)%corners, elem(ie)%facenum )
 
-            fv_physgrid(ie)%lat(i,j) = sphere_coord%lat
-            fv_physgrid(ie)%lon(i,j) = sphere_coord%lon
+            fv_physgrid(ie)%corner_lat(i,j,c) = sphere_coord%lat
+            fv_physgrid(ie)%corner_lon(i,j,c) = sphere_coord%lon
 
-            !-------------------------------------------------------------------
-            ! cell corner locations
-            !-------------------------------------------------------------------
-            do c = 1,4
-              ref_corner_i = ref_i + corner_offset_i(c)/real(fv_nphys,lng_dbl)
-              ref_corner_j = ref_j + corner_offset_j(c)/real(fv_nphys,lng_dbl)
+            ! change spherical to cartesian
+            corner_tmp(c) = change_coordinates(sphere_coord)
 
-              sphere_coord = ref2sphere(ref_corner_i, ref_corner_j,           &
-                                        elem(ie)%corners3D, cubed_sphere_map, &
-                                        elem(ie)%corners, elem(ie)%facenum )
+            ! average corner coordinates to find center
+            center_tmp%x = center_tmp%x + corner_tmp(c)%x/4._lng_dbl
+            center_tmp%y = center_tmp%y + corner_tmp(c)%y/4._lng_dbl
+            center_tmp%z = center_tmp%z + corner_tmp(c)%z/4._lng_dbl
 
-              fv_physgrid(ie)%corner_lat(i,j,c) = sphere_coord%lat
-              fv_physgrid(ie)%corner_lon(i,j,c) = sphere_coord%lon
+          end do ! c
 
-              corner_tmp(c) = spherical_to_cart(sphere_coord)
-            end do ! c
+          !-------------------------------------------------------------------
+          ! define cell centers
+          !-------------------------------------------------------------------
+          ! change cartesian to spherical
+          sphere_coord = change_coordinates(center_tmp)
 
-            !-------------------------------------------------------------------
-            ! cell area
-            !-------------------------------------------------------------------
-            call sphere_tri_area( corner_tmp(1), &
-                                  corner_tmp(2), &
-                                  corner_tmp(3), area1 )
-            call sphere_tri_area( corner_tmp(3), &
-                                  corner_tmp(4), &
-                                  corner_tmp(1), area2 )
-            fv_physgrid(ie)%area(i,j) = area1 + area2 
+          fv_physgrid(ie)%lat(i,j) = sphere_coord%lat
+          fv_physgrid(ie)%lon(i,j) = sphere_coord%lon
 
-            !-------------------------------------------------------------------
-          end do ! i
-        end do ! j
-      end do ! ie
+          !-------------------------------------------------------------------
+          ! cell area
+          !-------------------------------------------------------------------
+          ! area is the sum of 2 triangles defined by the cell corners
+          call sphere_tri_area( corner_tmp(1), &
+                                corner_tmp(2), &
+                                corner_tmp(3), area1 )
+          call sphere_tri_area( corner_tmp(3), &
+                                corner_tmp(4), &
+                                corner_tmp(1), area2 )
 
-    end if ! fv_nphys>0
+          fv_physgrid(ie)%area(i,j) = area1 + area2 
+
+          !-------------------------------------------------------------------
+          !-------------------------------------------------------------------
+        end do ! i
+      end do ! j
+    end do ! ie
 
   end subroutine fv_physgrid_init
   !
