@@ -25,6 +25,14 @@ module reduction_mod
      integer :: ctr
   end type ReductionBuffer_ordered_1d_t
 
+  !type to compute max and index or min and index
+  type, public :: ReductionBuffer_with_index_t
+     real (kind=real_kind), dimension(:,:), pointer :: buf
+     integer :: len=0
+     integer :: ctr
+  end type ReductionBuffer_with_index_t
+
+
   public :: ParallelMin,ParallelMax
 
   !type (ReductionBuffer_ordered_1d_t), public :: red_sum
@@ -33,6 +41,7 @@ module reduction_mod
   type (ReductionBuffer_r_1d_t),       public :: red_sum
   type (ReductionBuffer_r_1d_t),       public :: red_max,red_min
   type (ReductionBuffer_r_1d_t),       public :: red_flops,red_timer
+  type (ReductionBuffer_with_index_t), public :: red_max_index, red_min_index
 
   !JMD new addition
 #ifndef Darwin
@@ -62,6 +71,7 @@ module reduction_mod
   interface InitReductionBuffer
      module procedure InitReductionBuffer_int_1d
      module procedure InitReductionBuffer_r_1d
+     module procedure InitReductionBuffer_r_2d
      module procedure InitReductionBuffer_ordered_1d
   end interface
 
@@ -216,6 +226,25 @@ contains
        red%ctr  = 0
     endif
   end subroutine InitReductionBuffer_r_1d
+  !****************************************************************
+  subroutine InitReductionBuffer_r_2d(red,len)
+    use parallel_mod, only: abortmp
+    use thread_mod,   only: omp_get_num_threads
+    integer, intent(in)                             :: len
+    type (ReductionBuffer_with_index_t),intent(out) :: red
+
+    if (omp_get_num_threads()>1) then
+       call abortmp("Error: attempt to allocate red. buffer RB_with_index_t in threaded region")
+    endif
+
+    if (len > red%len) then
+       if (red%len>0) deallocate(red%buf)
+       red%len  = len
+       allocate(red%buf(len,len))
+       red%buf(:,:)  = 0.0
+       red%ctr  = -1
+    endif
+  end subroutine InitReductionBuffer_r_2d
   !****************************************************************
   subroutine InitReductionBuffer_ordered_1d(red,len,nthread)
     use parallel_mod, only: abortmp

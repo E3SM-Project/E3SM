@@ -465,6 +465,8 @@ contains
     call InitReductionBuffer(red_max_int,1)
     call InitReductionBuffer(red_min,1)
     call initReductionBuffer(red_flops,1)
+    call initReductionBuffer(red_min_index,1)
+    call initReductionBuffer(red_max_index,1)
 
     gp=gausslobatto(np)  ! GLL points
 
