@@ -4,58 +4,62 @@
 
 module compose_test_mod
 
+  implicit none
+
 interface
    subroutine compose_unittest() bind(c)
    end subroutine compose_unittest
 
    subroutine compose_stt_init(np, nlev, qsize, qsize_d, nelemd) bind(c)
-     integer, value, intent(in) :: np, nlev, qsize, qsize_d, nelemd
+     use iso_c_binding, only: c_int
+     integer (kind=c_int), value, intent(in) :: np, nlev, qsize, qsize_d, nelemd
    end subroutine compose_stt_init
 
    subroutine compose_stt_fill_uniform_density(ie, np1, dp3d, dp) bind(c)
-     use kinds, only: real_kind
+     use iso_c_binding, only: c_int, c_double
      use dimensions_mod, only: nlev, np
      use element_state, only: timelevels
-     integer, value, intent(in) :: ie, np1
-     real (kind=real_kind), intent(in) :: dp3d(np,np,nlev,timelevels), &
+     integer (kind=c_int), value, intent(in) :: ie, np1
+     real (kind=c_double), intent(in) :: dp3d(np,np,nlev,timelevels), &
           dp(np,np,nlev)
    end subroutine compose_stt_fill_uniform_density
 
    subroutine compose_stt_fill_ics(ie, p_elem, dp, n0_qdp, qdp) bind(c)
-     use kinds, only: real_kind
+     use iso_c_binding, only: c_int, c_double
      use dimensions_mod, only: nlev, np, qsize_d
      use coordinate_systems_mod, only: spherical_polar_t
-     integer, value, intent(in) :: ie, n0_qdp
+     integer (kind=c_int), value, intent(in) :: ie, n0_qdp
      type(spherical_polar_t), intent(in) :: p_elem(np,np)
-     real (kind=real_kind), intent(in) :: dp(np,np,nlev), &
+     real (kind=c_double), intent(in) :: dp(np,np,nlev), &
           qdp(np,np,nlev,qsize_d,2)
    end subroutine compose_stt_fill_ics
 
    subroutine compose_stt_fill_v(ie, p_elem, t, v) bind(c)
-     use kinds, only: real_kind
+     use iso_c_binding, only: c_int, c_double
      use dimensions_mod, only: nlev, np
      use coordinate_systems_mod, only: spherical_polar_t
-     integer, value, intent(in) :: ie
+     integer (kind=c_int), value, intent(in) :: ie
      type(spherical_polar_t), intent(in) :: p_elem(np,np)
-     real (kind=real_kind), intent(in) :: t, v(np,np,2,nlev)
+     real (kind=c_double), intent(in) :: t, v(np,np,2,nlev)
    end subroutine compose_stt_fill_v
 
    subroutine compose_stt_begin_record() bind(c)
    end subroutine compose_stt_begin_record
 
    subroutine compose_stt_record_q(ie, p_elem, spheremp, np1, dp3d, n0_qdp, qdp) bind(c)
-     use kinds, only: real_kind
+     use iso_c_binding, only: c_int, c_double
      use dimensions_mod, only: nlev, np, qsize_d
      use element_state, only: timelevels
      use coordinate_systems_mod, only: spherical_polar_t
-     integer, value, intent(in) :: ie, np1, n0_qdp
+     integer (kind=c_int), value, intent(in) :: ie, np1, n0_qdp
      type(spherical_polar_t), intent(in) :: p_elem(np,np)
-     real (kind=real_kind), intent(in) :: spheremp(np,np), &
+     real (kind=c_double), intent(in) :: spheremp(np,np), &
           dp3d(np,np,nlev,timelevels), qdp(np,np,nlev,qsize_d,2)
    end subroutine compose_stt_record_q
 
    subroutine compose_stt_finish(comm, root, rank) bind(c)
-     integer, value, intent(in) :: comm, root, rank
+     use iso_c_binding, only: c_int
+     integer (kind=c_int), value, intent(in) :: comm, root, rank
    end subroutine compose_stt_finish
 end interface
 
@@ -70,7 +74,6 @@ contains
     use hybrid_mod, only: hybrid_t, hybrid_create
     use derivative_mod, only: derivative_t, derivinit
     use hybvcoord_mod, only: hvcoord_t
-    implicit none
 
     type (parallel_t), intent(in) :: par
     type (domain1d_t), pointer, intent(in) :: dom_mt(:)
@@ -107,7 +110,7 @@ contains
 
   subroutine print_software_statistics(hybrid, nets, nete)
     use hybrid_mod, only: hybrid_t
-    use kinds, only: real_kind
+    use kinds, only: real_kind, iulog
     use parallel_mod, only: global_shared_buf, global_shared_sum
     use global_norms_mod, only: wrap_repro_sum
     use reduction_mod, only: parallelmax, parallelmin
@@ -152,7 +155,6 @@ contains
     use hybvcoord_mod, only: hvcoord_t
     use perf_mod
     use sl_advection
-    implicit none
 
     type (hybrid_t), intent(in) :: hybrid
     type (derivative_t), intent(in) :: deriv

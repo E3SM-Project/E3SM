@@ -5102,6 +5102,18 @@ void renumber (const Int nrank, const Int nelem, const Int my_rank, const Int* o
   }
 }
 
+void renumber (const Int* sc2gci, const Int* sc2rank,
+               const qlt::tree::Node::Ptr& node) {
+  if (node->nkids)
+    for (Int k = 0; k < node->nkids; ++k)
+      renumber(sc2gci, sc2rank, node->kids[k]);
+  else {
+    const Int ci = node->cellidx;
+    node->cellidx = sc2gci[ci];
+    node->rank = sc2rank[ci];
+  }
+}
+
 // Build a subtree over [0, nsublev).
 void add_sub_levels (const qlt::tree::Node::Ptr& node, const Int nsublev,
                      const Int gci, const Int rank,
@@ -5136,14 +5148,24 @@ void add_sub_levels (const Int my_rank, const qlt::tree::Node::Ptr& node,
 }
 
 qlt::tree::Node::Ptr
-make_tree (const cedr::mpi::Parallel::Ptr& p, const Int nelem,
-           const Int* owned_ids, const Int* rank2sfc, const Int nsublev) {
+make_tree_sgi (const cedr::mpi::Parallel::Ptr& p, const Int nelem,
+               const Int* owned_ids, const Int* rank2sfc, const Int nsublev) {
   // Partition 0:nelem-1, the space-filling curve space.
   auto tree = qlt::tree::make_tree_over_1d_mesh(p, nelem);
   // Renumber so that node->cellidx records the global element number, and
   // associate the correct rank with the element.
   const auto my_rank = p->rank();
   renumber(p->size(), nelem, my_rank, owned_ids, rank2sfc, tree);
+  add_sub_levels(my_rank, tree, nsublev);
+  return tree;
+}
+
+qlt::tree::Node::Ptr
+make_tree_non_sgi (const cedr::mpi::Parallel::Ptr& p, const Int nelem,
+                   const Int* sc2gci, const Int* sc2rank, const Int nsublev) {
+  auto tree = qlt::tree::make_tree_over_1d_mesh(p, nelem);
+  renumber(sc2gci, sc2rank, tree);
+  const auto my_rank = p->rank();
   add_sub_levels(my_rank, tree, nsublev);
   return tree;
 }
@@ -5201,8 +5223,8 @@ struct CDR {
   std::vector<Int> ie2gci; // Map Homme ie to Homme global cell index.
   std::vector<Int> ie2lci; // Map Homme ie to CDR local cell index (lclcellidx).
 
-  CDR (Int cdr_alg_, Int ngblcell_, Int nlclcell_, Int nlev_,
-       const Int* owned_ids, const Int* rank2sfc,
+  CDR (Int cdr_alg_, Int ngblcell_, Int nlclcell_, Int nlev_, bool use_sgi,
+       const Int* gid_data, const Int* rank_data,
        const cedr::mpi::Parallel::Ptr& p_, Int fcomm)
     : alg(Alg::convert(cdr_alg_)), ncell(ngblcell_), nlclcell(nlclcell_),
       nlev(nlev_),
@@ -5211,7 +5233,8 @@ struct CDR {
       p(p_), inited_tracers_(false)
   {
     if (Alg::is_qlt(alg)) {
-      tree = make_tree(p, ncell, owned_ids, rank2sfc, nsublev);
+      tree = use_sgi ? make_tree_sgi(p, ncell, gid_data, rank_data, nsublev) :
+        make_tree_non_sgi(p, ncell, gid_data, rank_data, nsublev);
       cdr = std::make_shared<QLTT>(p, ncell*nsublev, tree);
     } else if (Alg::is_caas(alg)) {
       const auto caas = std::make_shared<CAAST>(
@@ -5708,13 +5731,13 @@ extern "C" void kokkos_finalize () { Kokkos::finalize_all(); }
 static homme::CDR::Ptr g_cdr;
 
 extern "C" void
-cedr_init_impl (const homme::Int fcomm, const homme::Int cdr_alg,
-                const homme::Int** owned_ids, const homme::Int** rank2sfc,
+cedr_init_impl (const homme::Int fcomm, const homme::Int cdr_alg, const bool use_sgi,
+                const homme::Int** gid_data, const homme::Int** rank_data,
                 const homme::Int gbl_ncell, const homme::Int lcl_ncell,
                 const homme::Int nlev) {
   const auto p = cedr::mpi::make_parallel(MPI_Comm_f2c(fcomm));
-  g_cdr = std::make_shared<homme::CDR>(cdr_alg, gbl_ncell, lcl_ncell, nlev,
-                                       *owned_ids, *rank2sfc, p, fcomm);
+  g_cdr = std::make_shared<homme::CDR>(
+    cdr_alg, gbl_ncell, lcl_ncell, nlev, use_sgi, *gid_data, *rank_data, p, fcomm);
 }
 
 extern "C" void cedr_unittest (const homme::Int fcomm, homme::Int* nerrp) {
