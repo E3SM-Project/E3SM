@@ -72,9 +72,9 @@ using a fortran linker.
     <!-- This should be removed AFTER MOM6 cap is fully unified -->
     <append> -DCESMCOUPLED </append>
     <append MODEL="pop"> -D_USE_FLOW_CONTROL </append>
-    <!-- This is not seem to be the right place for this, should be in a MOM6-specific place - RSD -->
     <append MODEL="fv3gfs"> -DSPMD </append>
   </CPPDEFS>
+
   <INCLDIR>
         <append MODEL="fv3gfs"> -I$(EXEROOT)/atm/obj/FMS </append>
   </INCLDIR>

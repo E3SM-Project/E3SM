@@ -35,14 +35,14 @@ complib: $(COMPLIB)  Depends
 # based on the threaded build status
 ifeq ($(strip $(SMP)),TRUE)
    THREADDIR = threads
-   compile_threaded = true
+   compile_threaded = TRUE
 else
    ifeq ($(strip $(SMP_PRESENT)),TRUE)
       THREADDIR = threads
-      compile_threaded = true
+      compile_threaded = TRUE
    else
       THREADDIR = nothreads
-      compile_threaded = false
+      compile_threaded = FALSE
    endif
 endif
 
@@ -62,19 +62,19 @@ endif
 # Determine whether any C++ code will be included in the build;
 # currently, C++ code is included if and only if we're linking to the
 # trilinos library or the Albany library.
-USE_CXX = false
+USE_CXX = FALSE
 ifeq ($(strip $(USE_TRILINOS)), TRUE)
-   USE_CXX = true
+   USE_CXX = TRUE
 endif
 ifeq ($(strip $(USE_ALBANY)), TRUE)
-   USE_CXX = true
+   USE_CXX = TRUE
 endif
 ifeq ($(strip $(USE_KOKKOS)), TRUE)
-   USE_CXX = true
-endif
-
-ifeq ($(strip $(USE_FMS)), TRUE)
-  SLIBS += -lfms
+  include $(INSTALL_SHAREDPATH)/Makefile.kokkos
+  USE_CXX = TRUE
+  SLIBS += $(KOKKOS_LIBS)
+  CFLAGS += $(KOKKOS_CXXFLAGS)
+  CXX_LDFLAGS += $(KOKKOS_LDFLAGS)
 endif
 
 ifndef MOD_SUFFIX
@@ -86,6 +86,8 @@ endif
 #===============================================================================
 
 CPPDEFS := $(USER_CPPDEFS) -D$(OS)
+
+include $(CASEROOT)/Macros.make
 
 # Unless DEBUG mode is enabled, use NDEBUG to turn off assert statements.
 ifeq ($(strip $(DEBUG)),TRUE)
@@ -101,14 +103,6 @@ endif
 
 ifeq ($(COMP_INTERFACE), nuopc)
    CPPDEFS += -DNUOPC_INTERFACE
-   CPPDEFS += -DESMFUSE_$(COMP_ATM)
-   CPPDEFS += -DESMFUSE_$(COMP_LND)
-   CPPDEFS += -DESMFUSE_$(COMP_OCN)
-   CPPDEFS += -DESMFUSE_$(COMP_ICE)
-   CPPDEFS += -DESMFUSE_$(COMP_ROF)
-   CPPDEFS += -DESMFUSE_$(COMP_WAV)
-   CPPDEFS += -DESMFUSE_$(COMP_GLC)
-   CPPDEFS += -DESMFUSE_$(COMP_ESP)
 else
    CPPDEFS += -DMCT_INTERFACE
 endif
@@ -132,14 +126,9 @@ ifeq (,$(SHAREDPATH))
   INSTALL_SHAREDPATH = $(EXEROOT)/$(SHAREDPATH)
 endif
 
-include $(CASEROOT)/Macros.make
-
-ifeq ($(strip $(USE_FMS)), TRUE)
-  SLIBS += -lfms
-endif
 # Decide whether to use a C++ or Fortran linker, based on whether we
 # are using any C++ code and the compiler-dependent CXX_LINKER variable
-ifeq ($(USE_CXX), true)
+ifeq ($(USE_CXX), TRUE)
   # The following is essentially an "if... elseif... else", but gmake
   # 3.80 and earlier doesn't support elseif
   ifeq ($(CXX_LINKER), CXX)
@@ -160,7 +149,7 @@ endif
 
 
 
-ifeq ($(USE_CXX), true)
+ifeq ($(USE_CXX), TRUE)
   ifeq ($(SUPPORTS_CXX), FALSE)
     $(error Fatal attempt to include C++ code on a compiler/machine combo that has not been set up to support C++)
   endif
@@ -187,7 +176,7 @@ ifdef NETCDF_C_PATH
   ifndef NETCDF_FORTRAN_PATH
     $(error "NETCDF_C_PATH specified without NETCDF_FORTRAN_PATH")
   endif
-  NETCDF_SEPARATE:=true
+  NETCDF_SEPARATE:=TRUE
   ifndef INC_NETCDF_C
     INC_NETCDF_C:=$(NETCDF_C_PATH)/include
   endif
@@ -203,7 +192,7 @@ ifdef NETCDF_C_PATH
  else ifdef NETCDF_FORTRAN_PATH
   $(error "NETCDF_FORTRAN_PATH specified without NETCDF_C_PATH")
  else ifdef NETCDF_PATH
-  NETCDF_SEPARATE:=false
+  NETCDF_SEPARATE:=FALSE
   ifndef INC_NETCDF
     INC_NETCDF:=$(NETCDF_PATH)/include
   endif
@@ -289,12 +278,10 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
   include $(ALBANY_PATH)/export_albany.in
 endif
 
-ifeq ($(strip $(USE_KOKKOS)), TRUE)
-  include $(INSTALL_SHAREDPATH)/Makefile.kokkos
-  SLIBS += $(KOKKOS_LIBS)
-  CFLAGS += $(KOKKOS_CXXFLAGS)
-  CXX_LDFLAGS += $(KOKKOS_LDFLAGS)
+ifeq ($(strip $(USE_FMS)), TRUE)
+  SLIBS += -lfms
 endif
+
 
 # Set MOAB info if it is being used
 ifeq ($(strip $(USE_MOAB)), TRUE)
@@ -421,9 +408,9 @@ VPATH+=$(CSM_SHR_INCLUDE)
 #===============================================================================
 INCLDIR += -I$(INSTALL_SHAREDPATH)/include -I$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/include
 
-ifeq ($(NETCDF_SEPARATE), false)
+ifeq ($(NETCDF_SEPARATE), FALSE)
   INCLDIR += -I$(INC_NETCDF)
-else ifeq ($(NETCDF_SEPARATE), true)
+else ifeq ($(NETCDF_SEPARATE), TRUE)
   INCLDIR += -I$(INC_NETCDF_C) -I$(INC_NETCDF_FORTRAN)
 endif
 ifdef MOD_NETCDF
@@ -454,9 +441,9 @@ ifeq ($(MODEL),driver)
 # nagfor requires the weird "-Wl,-Wl,," syntax.
 # If done in config_compilers.xml, we break MCT.
   ifeq ($(strip $(COMPILER)),nag)
-     ifeq ($(NETCDF_SEPARATE), false)
+     ifeq ($(NETCDF_SEPARATE), FALSE)
        SLIBS += -Wl,-Wl,,-rpath=$(LIB_NETCDF)
-     else ifeq ($(NETCDF_SEPARATE), true)
+     else ifeq ($(NETCDF_SEPARATE), TRUE)
        SLIBS += -Wl,-Wl,,-rpath=$(LIB_NETCDF_C)
        SLIBS += -Wl,-Wl,,-rpath=$(LIB_NETCDF_FORTRAN)
      endif
@@ -511,9 +498,9 @@ CONFIG_ARGS +=  CC="$(CC)" FC="$(FC)" MPICC="$(MPICC)" \
                 CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)" \
                 LDFLAGS="$(LDFLAGS)"
 
-ifeq ($(NETCDF_SEPARATE), false)
+ifeq ($(NETCDF_SEPARATE), FALSE)
   CONFIG_ARGS += NETCDF_PATH=$(NETCDF_PATH)
-else ifeq ($(NETCDF_SEPARATE), true)
+else ifeq ($(NETCDF_SEPARATE), TRUE)
   # The mct library needs the NetCDF_C library
   CONFIG_ARGS += NETCDF_PATH=$(NETCDF_C_PATH)
 endif
@@ -561,9 +548,9 @@ endif
 
 # System libraries (netcdf, mpi, pnetcdf, esmf, trilinos, etc.)
 ifndef SLIBS
-  ifeq ($(NETCDF_SEPARATE), false)
+  ifeq ($(NETCDF_SEPARATE), FALSE)
     SLIBS := -L$(LIB_NETCDF) -lnetcdff -lnetcdf
-  else ifeq ($(NETCDF_SEPARATE), true)
+  else ifeq ($(NETCDF_SEPARATE), TRUE)
     SLIBS := -L$(LIB_NETCDF_FORTRAN) -L$(LIB_NETCDF_C) -lnetcdff -lnetcdf
   endif
 endif
@@ -603,7 +590,7 @@ endif
 # Add libraries and flags that we need on the link line when C++ code is included
 # We need to do these additions after CONFIG_ARGS is set, because they can sometimes break configure for mct, etc.,
 # if they are added to LDFLAGS in CONFIG_ARGS.
-ifeq ($(USE_CXX), true)
+ifeq ($(USE_CXX), TRUE)
   ifdef CXX_LIBS
     SLIBS += $(CXX_LIBS)
   endif
@@ -676,9 +663,9 @@ CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(EXTRA_PIO_FPPDEFS) $(IN
 	      -D USER_CMAKE_MODULE_PATH:LIST="$(CIMEROOT)/src/CMake;$(CIMEROOT)/src/externals/pio2/cmake" \
 
 # Allow for separate installations of the NetCDF C and Fortran libraries
-ifeq ($(NETCDF_SEPARATE), false)
+ifeq ($(NETCDF_SEPARATE), FALSE)
   CMAKE_OPTS += -D NetCDF_PATH:PATH=$(NETCDF_PATH)
-else ifeq ($(NETCDF_SEPARATE), true)
+else ifeq ($(NETCDF_SEPARATE), TRUE)
   # NETCDF_Fortran_DIR points to the separate
   # installation of Fortran NetCDF for PIO
   CMAKE_OPTS += -D NetCDF_C_PATH:PATH=$(NETCDF_C_PATH) \
@@ -758,7 +745,6 @@ Filepath:
 
 db_files:
 	@echo " "
-	@echo "* MACFILE := $(MACFILE)"
 	@echo "* VPATH   := $(VPATH)"
 	@echo "* INCS    := $(INCS)"
 	@echo "* OBJS    := $(OBJS)"
@@ -767,7 +753,7 @@ db_flags:
 	@echo "* cc      := $(CC)  $(CFLAGS) $(INCS) $(INCLDIR)"
 	@echo "* .F.o    := $(FC)  $(FFLAGS) $(FIXEDFLAGS) $(INCS) $(INCLDIR)"
 	@echo "* .F90.o  := $(FC)  $(FFLAGS) $(FREEFLAGS) $(INCS) $(INCLDIR)"
-	ifeq ($(USE_CXX), true)
+	ifeq ($(USE_CXX), TRUE)
 	  @echo "* .cpp.o  := $(CXX) $(CXXFLAGS) $(INCS) $(INCLDIR)"
 	endif
 
@@ -777,10 +763,10 @@ db_flags:
 
 test_fc: test_fc.o
 	$(LD) -o $@ test_fc.o $(F90_LDFLAGS)
-ifeq ($(NETCDF_SEPARATE), false)
+ifeq ($(NETCDF_SEPARATE), FALSE)
 test_nc: test_nc.o
 	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF) -lnetcdff -lnetcdf $(F90_LDFLAGS)
-else ifeq ($(NETCDF_SEPARATE), true)
+else ifeq ($(NETCDF_SEPARATE), TRUE)
 test_nc: test_nc.o
 	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF_FORTRAN) -L$(LIB_NETCDF_C) -lnetcdff -lnetcdf $(F90_LDFLAGS)
 endif
