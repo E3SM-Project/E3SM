@@ -424,7 +424,7 @@ contains
 !
 !========================================================================
 !
-   subroutine get_block_gcol_d(blockid,size,cdex)
+   subroutine get_block_gcol_d(blockid,cnt,cdex)
 
 !----------------------------------------------------------------------- 
 ! 
@@ -441,18 +441,18 @@ contains
    implicit none
 !------------------------------Arguments--------------------------------
    integer, intent(in) :: blockid      ! global block id
-   integer, intent(in) :: size         ! array size
+   integer, intent(in) :: cnt          ! array size
 
-   integer, intent(out):: cdex(size)   ! global column indices
+   integer, intent(out):: cdex(cnt)    ! global column indices
 !---------------------------Local workspace-----------------------------
 !
     integer i,j                            ! loop indices
     integer n                              ! column index
 !-----------------------------------------------------------------------
 ! block == latitude slice
-   if (size < plon) then
+   if (cnt < plon) then
       write(iulog,*)'GET_BLOCK_GCOL_D: array not large enough (', &
-                          size,' < ',plon,' ) '
+                          cnt,' < ',plon,' ) '
       call endrun
    else
       n = (blockid-1)*plon
@@ -739,8 +739,8 @@ contains
                                                       !  area
    real(r8), intent(out), optional :: wght_d_out(nxy) ! column integration
                                                       !  weight
-   real(r8), intent(out), optional :: lat_d_out(:)  ! column degree latitudes
-   real(r8), intent(out), optional :: lon_d_out(:)  ! column degree longitudes
+   real(r8), intent(out), optional :: lat_d_out(nxy)  ! column degree latitudes
+   real(r8), intent(out), optional :: lon_d_out(nxy)  ! column degree longitudes
    real(r8), intent(out), optional :: cost_d_out(:) ! column cost
 !---------------------------Local workspace-----------------------------
 !
@@ -881,11 +881,13 @@ contains
     ! just a placeholder for now, until a mechanism for setting cost_d_out
     ! is designed and implemented
     if (present(cost_d_out)) then
-      if (size(cost_d_out) /= nxy) then
-        call endrun('bad cost_d_out array size in dyn_grid')
-      else
-        cost_d_out(:) = 1.0_r8
-      end if
+       if (size(cost_d_out) < ngcols_d) then
+          write(iulog,*)'GET_HORIZ_GRID_D: cost_d_out array not large enough (', &
+               size(cost_d_out),' < ',ngcols_d,' ) '
+          call endrun
+       else
+          cost_d_out(:) = 1.0_r8
+       end if
     end if
 !
     return
