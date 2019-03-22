@@ -243,7 +243,7 @@ CONTAINS
        precip_fact = infodata%precip_fact
        if (precip_fact <= 0.0_R8) then
           !write(logunit,'(2a,e16.6)') trim(subname),' WARNING: negative precip factor from ocn = ',precip_fact
-          write(logunit,'(2a)') trim(subname),' WARNING: resetting precip_fact to 1.0'
+          !write(logunit,'(2a)') trim(subname),' WARNING: resetting precip_fact to 1.0'
           precip_fact = 1.0_R8
        end if
     endif

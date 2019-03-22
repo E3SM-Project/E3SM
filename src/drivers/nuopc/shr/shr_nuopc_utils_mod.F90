@@ -69,7 +69,7 @@ contains
 
     use ESMF              , only : ESMF_GridComp, ESMF_VM, ESMF_VMGet, ESMF_GridCompGet
     use NUOPC             , only : NUOPC_CompAttributeGet
-    use med_constants_mod , only : shr_file_getunit, shr_file_getLogUnit, shr_file_getLogLevel
+    use med_constants_mod , only : shr_file_getunit, shr_file_getLogUnit
     use med_constants_mod , only : shr_file_setLogLevel, CL, shr_file_setlogunit
 
     ! input/output variables
@@ -77,7 +77,7 @@ contains
     logical, intent(in)  :: mastertask
     integer, intent(out) :: logunit
     integer, intent(out) :: shrlogunit
-    integer, intent(out) :: shrloglev
+    integer, intent(out), optional :: shrloglev
 
     ! local variables
     character(len=CL) :: diro
