@@ -13,7 +13,7 @@ module physpkg
   !-----------------------------------------------------------------------
 
 
-  use shr_kind_mod,     only: i8 => SHR_KIND_I8, r8 => shr_kind_r8
+  use shr_kind_mod,     only: i8 => shr_kind_i8, r8 => shr_kind_r8
   use shr_sys_mod,      only: shr_sys_irtc
   use spmd_utils,       only: masterproc
   use physconst,        only: latvap, latice, rh2o
