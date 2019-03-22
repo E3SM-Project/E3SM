@@ -177,4 +177,39 @@ _TESTS = {
             )
         },
 
+    #atmopheric tests for ftypes with 2 builds only
+    #ftype2 is a default and tested in other suites for preqx
+    #ftype1 will be added in ftype1 verification pr
+    #1st: preqx ftype0
+    #2nd: preqx ftype4
+    #3rd: theta-l hy ftype0
+    #4th: theta-l hy ftype2
+    #5th: theta-l hy ftype4
+    #6th: theta-l nh ftype0
+    #7th: theta-l nh ftype2
+    #8th: theta-l nh ftype4
+    "eam_preqx_ftypes" : {
+        "share"    : True,
+        "time"     : "01:00:00",
+        "tests"    : (
+                 "ERP.ne4_ne4.FC5AV1C-H01A.cam-preqx_ftype0",
+                 "ERP.ne4_ne4.FC5AV1C-H01A.cam-preqx_ftype1",
+                 "ERP.ne4_ne4.FC5AV1C-H01A.cam-preqx_ftype4",
+                 )
+        },
+    "eam_theta_ftypes" : {
+        "share"    : True,
+        "time"     : "02:00:00",
+        "tests"    : (
+                 "ERP.ne4_ne4.FC5AV1C-H01A.cam-thetahy_ftype0",
+                 "ERP.ne4_ne4.FC5AV1C-H01A.cam-thetahy_ftype1",
+                 "ERP.ne4_ne4.FC5AV1C-H01A.cam-thetahy_ftype2",
+                 "ERP.ne4_ne4.FC5AV1C-H01A.cam-thetahy_ftype4",
+                 "ERP.ne4_ne4.FC5AV1C-H01A.cam-thetanh_ftype0",
+                 "ERP.ne4_ne4.FC5AV1C-H01A.cam-thetanh_ftype1",
+                 "ERP.ne4_ne4.FC5AV1C-H01A.cam-thetanh_ftype2",
+                 "ERP.ne4_ne4.FC5AV1C-H01A.cam-thetanh_ftype4",
+                 )
+        },
+
 }
