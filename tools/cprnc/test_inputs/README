@@ -3,7 +3,7 @@ This directory contains simple test inputs to test cprnc.
 All comparisons can be run by running the run_tests script in the
 parent directory. Suggestion: run this once from the baseline
 directory, then once from the new directory; compare against baselines
-with, e.g.:
+by doing a directory diff of the two directories, or with, e.g.:
 
     baseline_out=/PATH/TO/BASELINE/OUTPUT
     new_out=/PATH/TO/NEW/OUTPUT
