@@ -2180,8 +2180,12 @@ logical function phys_grid_initialized ()
       do lcid = begchunk, endchunk
          cost_lsum = cost_lsum + lchunks(lcid)%cost
       enddo
+#if ( defined SPMD )
       call MPI_ALLREDUCE(cost_lsum, cost_gsum, 1, MPI_REAL8, MPI_SUM, &
                          mpicom, ierr)
+#else
+      cost_gsum = cost_lsum
+#endif
       if (abs(cost_gsum) > 0.000001_r8) then
          avg_cost = cost_gsum/nchunks
       else
@@ -2209,10 +2213,12 @@ logical function phys_grid_initialized ()
             " owner   lcid    cid  ncols  estcost (norm)  cost (norm)  cost (seconds)"
 
          signal = 1
+#if ( defined SPMD )
       else
          call mpirecv(signal, 1, mpiint, iam-1, iam, mpicom) 
          open( unitn, file=trim(fname), status='OLD', &
                       form='FORMATTED', access='SEQUENTIAL', position='APPEND' )
+#endif
       endif
 
       do lcid = begchunk, endchunk
@@ -2228,9 +2234,11 @@ logical function phys_grid_initialized ()
 
       close(unitn)
 
+#if ( defined SPMD )
       if (iam+1 < npes) then
          call mpisend(signal, 1, mpiint, iam+1, iam+1, mpicom)
       endif
+#endif
 
       call freeunit(unitn)
    endif
