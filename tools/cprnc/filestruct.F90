@@ -267,14 +267,29 @@ contains
 
 
   subroutine match_vars( file1, file2, &
-       num_not_found_on_file1, num_not_found_on_file2 )
+       num_not_found_on_file1, num_not_found_on_file2, &
+       num_not_found_on_file1_timeconst, num_not_found_on_file2_timeconst)
     type(file_t), intent(inout) :: file1, file2
 
-    ! Accumulates count of variables on file2 not found on file1
+    ! Accumulates count of variables on file2 not found on file1; this only considers (a)
+    ! fields with an unlimited (time) dimension, and (b) fields without an unlimited
+    ! (time) dimension on a file that doesn't have an unlimited dimension.
     integer, intent(inout) :: num_not_found_on_file1
 
-    ! Accumulates count of variables on file1 not found on file2
+    ! Accumulates count of variables on file1 not found on file2; this only considers (a)
+    ! fields with an unlimited (time) dimension, and (b) fields without an unlimited
+    ! (time) dimension on a file that doesn't have an unlimited dimension.
     integer, intent(inout) :: num_not_found_on_file2
+
+    ! Accumulates count of variables on file2 not found on file1; this only considers
+    ! fields without an unlimited (time) dimension on a file that has an unlimited
+    ! dimension.
+    integer, intent(inout) :: num_not_found_on_file1_timeconst
+
+    ! Accumulates count of variables on file1 not found on file2; this only considers
+    ! fields without an unlimited (time) dimension on a file that has an unlimited
+    ! dimension.
+    integer, intent(inout) :: num_not_found_on_file2_timeconst
 
     type(var_t), pointer :: varfile1(:),varfile2(:)
 
@@ -299,13 +314,23 @@ contains
     do i=1,vs1
        if(varfile1(i)%matchid<0) then
           print *, 'Could not find match for file1 variable ',trim(varfile1(i)%name), ' in file2'
-          num_not_found_on_file2 = num_not_found_on_file2 + 1
+          if (file1%has_unlimited_dim() .and. &
+               .not. is_time_varying(varfile1(i), file1%has_unlimited_dim(), file1%unlimdimid)) then
+             num_not_found_on_file2_timeconst = num_not_found_on_file2_timeconst + 1
+          else
+             num_not_found_on_file2 = num_not_found_on_file2 + 1
+          end if
        end if
     end do
     do i=1,vs2
        if(varfile2(i)%matchid<0) then
           print *, 'Could not find match for file2 variable ',trim(varfile2(i)%name), ' in file1'
-          num_not_found_on_file1 = num_not_found_on_file1 + 1
+          if (file2%has_unlimited_dim() .and. &
+               .not. is_time_varying(varfile2(i), file2%has_unlimited_dim(), file2%unlimdimid)) then
+             num_not_found_on_file1_timeconst = num_not_found_on_file1_timeconst + 1
+          else
+             num_not_found_on_file1 = num_not_found_on_file1 + 1
+          end if
        end if
     end do
   end subroutine match_vars
