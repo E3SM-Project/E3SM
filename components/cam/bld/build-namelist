@@ -3331,8 +3331,8 @@ if ( $chem ) {
 
     # drydep_srf_file is only needed for prognostic MAM when the grid is unstructured.
     # structured grids can do interpolation on the fly.
-    if ($chem =~ /_mam/ and $dyn =~ /se/) {
-	add_default($nl, 'drydep_srf_file');
+    if ($chem =~ /_mam/ and $dyn =~ /se/ and !$aqua_mode ) {
+      add_default($nl, 'drydep_srf_file');
     }
 }
 
