@@ -679,7 +679,7 @@ contains
     use shr_kind_mod    , only : r8 => shr_kind_r8
     use clm_varpar      , only : nlevsoi, nlevgrnd, nlevdecomp
     use landunit_varcon , only : istsoil, istdlak, istcrop
-    use clm_varctl      , only : iulog
+    use clm_varctl      , only : iulog, fsurdat
     use CH4varcon       , only : allowlakeprod, usephfact, fin_use_fsat
     use spmdMod         , only : masterproc
     use fileutils       , only : getfil
@@ -698,6 +698,7 @@ contains
     real(r8)     ,pointer :: p3_in (:)   ! read in - p3 
     real(r8)     ,pointer :: pH_in (:)   ! read in - pH 
     logical               :: readvar 
+    character(len=256)    :: locfn
     !-----------------------------------------------------------------------
 
     SHR_ASSERT_ALL((ubound(cellorg_col) == (/bounds%endc, nlevgrnd/)), errMsg(__FILE__, __LINE__))
@@ -714,6 +715,8 @@ contains
     ! Methane code parameters for finundated
 
     if (.not. fin_use_fsat) then
+       call getfil (fsurdat, locfn, 0)
+       call ncd_pio_openfile (ncid, locfn, 0)
        call ncd_io(ncid=ncid, varname='ZWT0', flag='read', data=zwt0_in, dim1name=grlnd, readvar=readvar)
        if (.not. readvar) then
           call endrun(msg=' ERROR: Running with CH4 Model but ZWT0 not on surfdata file'//&
