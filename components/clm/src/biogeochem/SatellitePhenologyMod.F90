@@ -9,22 +9,26 @@ module SatellitePhenologyMod
   ! !USES:
   use shr_strdata_mod , only : shr_strdata_type, shr_strdata_create
   use shr_strdata_mod , only : shr_strdata_print, shr_strdata_advance
+  use shr_const_mod   , only : SHR_CONST_TKFRZ
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use shr_kind_mod    , only : CL => shr_kind_CL
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use decompMod       , only : bounds_type
   use abortutils      , only : endrun
   use clm_varctl      , only : scmlat,scmlon,single_column
-  use clm_varctl      , only : iulog, use_lai_streams
+  use clm_varctl      , only : iulog, use_lai_streams, use_cn
   use clm_varcon      , only : grlnd
   use controlMod      , only : NLFilename
   use decompMod       , only : gsmap_lnd_gdc2glo
   use domainMod       , only : ldomain
   use fileutils       , only : getavu, relavu
-  use VegetationType       , only : veg_pp                
+  use GridcellType         , only : grc_pp
+  use VegetationType       , only : veg_pp, veg_es                
   use CanopyStateType , only : canopystate_type
   use WaterstateType  , only : waterstate_type
   use ColumnDataType  , only : col_ws
+  use TemperatureType , only : temperature_type
+  use SoilstateType   , only : soilstate_type
   use perf_mod        , only : t_startf, t_stopf
   use spmdMod         , only : masterproc
   use spmdMod         , only : mpicom, comp_id
@@ -294,48 +298,82 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine SatellitePhenology(bounds, num_nolakep, filter_nolakep, &
-       waterstate_vars, canopystate_vars)
+       waterstate_vars, canopystate_vars, temperature_vars, soilstate_vars)
     !
     ! !DESCRIPTION:
     ! Ecosystem dynamics: phenology, vegetation
-    ! Calculates leaf areas (tlai, elai),  stem areas (tsai, esai) and height (htop).
+    ! Calculates leaf areas (tlai, elai),  stem areas (tsai, esai) and height
+    ! (htop).
     !
     ! !USES:
-    use pftvarcon, only : noveg, nbrdlf_dcd_brl_shrub
+    use clm_time_manager, only : get_curr_date, get_step_size, get_nstep
+    use clm_varcon      , only : secspday
+    use pftvarcon, only : noveg, nbrdlf_dcd_brl_shrub, season_decid, stress_decid
+#if defined HUM_HOL
+    use pftvarcon, only : phen_a, phen_b, phen_c, phen_topt, phen_fstar, phen_tc
+    use pftvarcon, only : phen_cstar, phen_tforce, phen_tchil, phen_pstart, phen_tb, phen_ycrit 
+    use pftvarcon, only : phen_spring, phen_autumn, phen_tbase
+#endif
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds                          
-    integer                , intent(in)    :: num_nolakep                               ! number of column non-lake points in pft filter
+    integer                , intent(in)    :: num_nolakep ! number of column non-lake points in pft filter
     integer                , intent(in)    :: filter_nolakep(bounds%endp-bounds%begp+1) ! patch filter for non-lake points
     type(waterstate_type)  , intent(in)    :: waterstate_vars
+    type(soilstate_type)   , intent(in)    :: soilstate_vars
+    type(temperature_type) , intent(in)    :: temperature_vars
     type(canopystate_type) , intent(inout) :: canopystate_vars
     !
-    ! !LOCAL VARIABLES:
-    integer  :: fp,p,c                            ! indices
+    ! !LOCAL VARIABLES::
+    integer  :: fp,g,p,c                            ! indices
     real(r8) :: ol                                ! thickness of canopy layer covered by snow (m)
     real(r8) :: fb                                ! fraction of canopy layer covered by snow
+    real(r8) :: onset_gdd, fracday, dt, crit_dayl, ndays_on, ndays_off
+    real(r8) :: soilpsi_off, soilpsi_on, crit_onset_swi, crit_offset_swi
+    real(r8) :: crit_offset_fdd, crit_onset_fdd, ws_flag, crit_onset_gdd
+    integer spring_threshold, autumn_threshold
     !-----------------------------------------------------------------------
-
+ 
     associate(                                                           &
          frac_sno           => col_ws%frac_sno   ,          & ! Input:  [real(r8) (:) ] fraction of ground covered by snow (0 to 1)       
          snow_depth         => col_ws%snow_depth ,          & ! Input:  [real(r8) (:) ] snow height (m)                                                       
+         dayl               => grc_pp%dayl,                              & ! Input:  [real(r8)  (:)   ]  daylength (s)
+         prev_dayl          => grc_pp%prev_dayl,                         & ! Input:  [real(r8)  (:)   ]  previous daylength (s)
+         t_ref2m            => temperature_vars%t_ref2m_patch ,          & ! Input:  [real(r8) (:) ] 2-meter air temperature (K)
+         t_soisno           => temperature_vars%t_soisno_col  ,          & ! Input : [real(r8) (:) ] soil temperature (K)      
+         tmean              => veg_es%t_2m3650       ,                   & ! Input:[real(r8) (:)   ]  10-year running mean of the 2 m temperature (K)                    
+         soilpsi            => soilstate_vars%soilpsi_col     ,          & ! Input: [real(r8)  (:,:) ]  soil water potential in each soil layer (MPa) 
          tlai               => canopystate_vars%tlai_patch    ,          & ! Output: [real(r8) (:) ] one-sided leaf area index, no burying by snow 
          tsai               => canopystate_vars%tsai_patch    ,          & ! Output: [real(r8) (:) ] one-sided stem area index, no burying by snow
          elai               => canopystate_vars%elai_patch    ,          & ! Output: [real(r8) (:) ] one-sided leaf area index with burying by snow
          esai               => canopystate_vars%esai_patch    ,          & ! Output: [real(r8) (:) ] one-sided stem area index with burying by snow
          htop               => canopystate_vars%htop_patch    ,          & ! Output: [real(r8) (:) ] canopy top (m)                           
          hbot               => canopystate_vars%hbot_patch    ,          & ! Output: [real(r8) (:) ] canopy bottom (m)                           
-         frac_veg_nosno_alb => canopystate_vars%frac_veg_nosno_alb_patch & ! Output: [integer  (:) ] fraction of vegetation not covered by snow (0 OR 1) [-]
+         frac_veg_nosno_alb => canopystate_vars%frac_veg_nosno_alb_patch,  & ! Output: [integer  (:) ] fraction of vegetation not covered by snow (0 OR 1) [-]
+         sp_gdd             => canopystate_vars%sp_gdd_patch,            & ! Output:
+         sp_chil            => canopystate_vars%sp_chil_patch,           & ! Output:
+         sp_swi_on          => canopystate_vars%sp_swi_on_patch,         & ! Output:
+         sp_swi_off         => canopystate_vars%sp_swi_off_patch,        & ! Output:
+         sp_fdd_off         => canopystate_vars%sp_fdd_off_patch,        & ! Output:
+         sp_onset_day       => canopystate_vars%sp_onset_day_patch,      & ! Output:
+         sp_offset_day      => canopystate_vars%sp_offset_day_patch,     & ! Output:
+         sp_dayl_temp       => canopystate_vars%sp_dayl_temp_patch,      & ! Output:
+         annlai             => canopystate_vars%annlai_patch,            &
+         ivt                => veg_pp%itype                              &
          )
-
+ 
       if (use_lai_streams) then
          call lai_interp(bounds, canopystate_vars)
       endif
+ 
+      dt      = real( get_step_size(), r8 )
+      fracday = dt/secspday
 
       do fp = 1, num_nolakep
          p = filter_nolakep(fp)
+         g = veg_pp%gridcell(p)
          c = veg_pp%column(p)
-
+ 
          ! need to update elai and esai only every albedo time step so do not
          ! have any inconsistency in lai and sai between SurfaceAlbedo calls (i.e.,
          ! if albedos are not done every time step).
@@ -351,9 +389,153 @@ contains
          ! leaf area index SAI  <- msai1 and msai2
          ! top height      HTOP <- mhvt1 and mhvt2
          ! bottom height   HBOT <- mhvb1 and mhvb2
+ 
+         !Parameter values (note - these should be retrieved from the parameter file)
+         ndays_on  = 30._r8
+         ndays_off = 15._r8
+         crit_onset_swi  = 15._r8
+         crit_onset_fdd  = 15._r8  !Functionality not implemented
+         crit_offset_swi = 15._r8
+         crit_offset_fdd = 15._r8
+         soilpsi_off = -2._r8
+         soilpsi_on = -2._r8
 
          if (.not. use_lai_streams) then
             tlai(p) = timwt(1)*mlai2t(p,1) + timwt(2)*mlai2t(p,2)
+            !DMR 10.17.18 - Predict seasonal phenology using max monthly LAI
+            !from Satellite
+            !Check if winter solstice has happened (daylength increasing)
+            if (dayl(g) >= prev_dayl(g)) then
+              ws_flag = 1._r8
+            else
+              ws_flag = 0._r8
+            end if
+            !------ Seasonal deciduous phenology ----------------------
+#if defined HUM_HOL
+            !crit_onset_gdd = exp(4.8_r8 + 0.13_r8*(tmean(p) - SHR_CONST_TKFRZ))
+            crit_onset_gdd = phen_fstar
+            if (.not. use_cn .and. season_decid(ivt(p)) == 1._r8) then
+               tlai(p) = maxval(annlai(:,p))
+               crit_dayl = 39300_r8
+               !Spring phenology
+               !Increment GDD and chilling days, check threshold according to model formulation
+               spring_threshold = 0 
+               if (ws_flag == 1._r8 .and. phen_spring == 0) then 
+                 !Default model
+                 sp_gdd(p) = sp_gdd(p) + max((t_soisno(c,3) - SHR_CONST_TKFRZ)*fracday, 0._r8)
+                 if (sp_gdd(p) .ge. crit_onset_gdd) spring_threshold = 1
+               else if (ws_flag == 1._r8 .and. phen_spring == 1) then 
+                 !PAR model
+                 if (t_ref2m(p) > phen_tbase) sp_gdd(p) = sp_gdd(p) + &
+                   (28.4_r8 / (1._r8 + exp(3.4_r8 - (t_ref2m(p) -SHR_CONST_TKFRZ)*0.185_r8)))*fracday 
+                 if (t_ref2m(p) > phen_topt .and. t_ref2m(p) < (phen_topt + 10.4_r8)) then 
+                   sp_chil(p) = sp_chil(p) + (((t_ref2m(p) - SHR_CONST_TKFRZ)-10.4_r8)/(phen_topt-10.4_r8))*fracday 
+                 end if
+                 if (t_ref2m(p) > phen_topt-3.4_r8 .and. t_ref2m(p) <= phen_topt) then
+                   sp_chil(p) = sp_chil(p) + (((t_ref2m(p) - SHR_CONST_TKFRZ)+3.4_r8)/(phen_topt+3.4_r8))*fracday
+                 end if
+                 if (sp_gdd(p) > phen_a + phen_b * exp(sp_chil(p))) spring_threshold = 1 
+               else if (ws_flag == 1._r8 .and. phen_spring == 2) then
+                 !ALT model
+                 if (t_ref2m(p) > phen_tbase) sp_gdd(p) = sp_gdd(p) + (t_ref2m(p)-phen_tbase)*fracday
+                 if (t_ref2m(p) > 263.0_r8 .and. t_ref2m(p) < phen_tbase) sp_chil(p) = sp_chil(p) + fracday
+                 if (sp_gdd(p) > phen_a + phen_b * exp(phen_c * sp_chil(p))) spring_threshold = 1
+               else if (ws_flag == 1._r8 .and. phen_spring == 3) then 
+                 !SEQ model
+                 if (t_ref2m(p) < phen_tchil .and. t_ref2m(p) > 263._r8) sp_chil(p)=sp_chil(p)+fracday
+                 if (sp_chil(p) > phen_cstar .and. t_ref2m(p) > phen_tforce) then 
+                   sp_gdd(p) = sp_gdd(p) + (t_ref2m(p)-phen_tforce)*fracday
+                 end if
+                 if (sp_gdd(p) > phen_fstar) spring_threshold = 1
+               else if (ws_flag == 1._r8 .and. phen_spring == 4) then
+                 !SW model
+                 sp_gdd(p) = sp_gdd(p) + (28.4_r8 / (1.0_r8 + exp(3.4_r8-(t_ref2m(p)-SHR_CONST_TKFRZ)*0.185_r8)))*fracday
+                 if (sp_gdd(p) .ge. phen_fstar) spring_threshold = 1
+               end if
+               !Increment dayl_temp (DM only)
+               if (tlai(p) > 0._r8 .and. dayl(g) < phen_pstart .and. t_ref2m(p) < phen_tb) then 
+                 sp_dayl_temp(p) = sp_dayl_temp(p) + (phen_tb - t_ref2m(p))**2 * (1.0_r8 -dayl(g)/phen_pstart)**2
+               end if
+             
+               if (ws_flag == 1._r8) then   !Onset period
+                 !Set offset counters to zero
+                 sp_offset_day(p) = 0._r8
+                 sp_dayl_temp(p)  = 0._r8
+                 if (spring_threshold == 1) then  
+                   sp_onset_day(p) = min(sp_onset_day(p)+fracday, ndays_on)
+                   tlai(p) = tlai(p) * sp_onset_day(p) / ndays_on
+                 else
+                   tlai(p) = 0._r8
+                 end if
+               else                         !Offset period
+                 !set onset counters to zero
+                 sp_chil(p)       = 0._r8
+                 sp_onset_day(p)  = 0._r8
+                 sp_gdd(p)        = 0._r8
+                 autumn_threshold = 0
+                 !default senescence model
+                 if (phen_autumn == 0 .and. dayl(g) .lt. crit_dayl) autumn_threshold = 1
+                 !WM
+                 if (phen_autumn == 1 .and. ((dayl(g) .lt. crit_dayl .and. t_soisno(c,3) < phen_tb) .or. &
+                       t_soisno(c,3) < phen_tc)) then
+                   autumn_threshold = 1
+                 end if
+                 !DM
+                 if (phen_autumn == 2 .and. sp_dayl_temp(p) > phen_ycrit) autumn_threshold = 1
+                 if (autumn_threshold == 1) then 
+                   sp_offset_day(p) = sp_offset_day(p)+fracday
+                 end if
+                 tlai(p) = max(tlai(p) * (ndays_off - sp_offset_day(p)) / ndays_off, 0._r8)
+               end if
+               if (p == 4 .and. sp_offset_day(p) .gt. 0 .and. sp_offset_day(p) .lt. 0.5) print*, p, dayl(g), t_ref2m(p), tlai(p), sp_gdd(p), sp_dayl_temp(p)
+            end if
+ 
+            !-------------Stress deciduous phenology ------------------------
+            if (.not. use_cn .and. stress_decid(ivt(p)) == 1._r8) then
+              tlai(p) = 2.0_r8 !maxval(annlai(:,p))
+              crit_dayl = 36000._r8
+              if (dayl(g) .ge. crit_dayl) then
+                sp_gdd(p) = sp_gdd(p) + max((t_soisno(c,3) - SHR_CONST_TKFRZ)*fracday, 0._r8)
+                if (soilpsi(c,3) .ge. soilpsi_on)  sp_swi_on(p)  = sp_swi_on(p) + fracday
+              end if
+              !Stress offset day counters (only allow positive values)
+              if (soilpsi(c,3) .lt. soilpsi_off) sp_swi_off(p) = sp_swi_off(p) + fracday               
+              if (soilpsi(c,3) .ge. soilpsi_off .and. sp_swi_off(p) .lt. crit_offset_swi) sp_swi_off(p) = max(sp_swi_off(p) - fracday, 0._r8)
+              !Adjust LAI (short term leaf mortality for dryness)
+              !tlai(p) = tlai(p) * max((1.0_r8 - 0.5_r8 * sp_swi_off(p) / crit_offset_swi), 0.5_r8)
+
+              if (t_soisno(c,3) .lt. SHR_CONST_TKFRZ) sp_fdd_off(p) = sp_fdd_off(p) + fracday
+              if (t_soisno(c,3) .ge. SHR_CONST_TKFRZ .and. sp_fdd_off(p) .lt. crit_offset_fdd) sp_fdd_off(p) = max(sp_fdd_off(p) - fracday, 0._r8)
+ 
+              !Onset/full LAI period
+              if (sp_gdd(p) .ge. crit_onset_gdd .and. dayl(g) .ge. crit_dayl .and. sp_swi_on(p) .ge. &
+                crit_onset_swi .and. sp_swi_off(p) .lt. crit_offset_swi) then
+                  sp_onset_day(p) = min(sp_onset_day(p)+fracday, ndays_on)
+                tlai(p) = tlai(p) * sp_onset_day(p) / ndays_on
+                if (sp_onset_day(p) .lt. ndays_on) then 
+                  sp_swi_off(p) = 0._r8   !Force offset counters to zero during onset period
+                  sp_fdd_off(p) = 0._r8
+                end if
+              !Offset period
+              else if (sp_gdd(p) .ge. crit_onset_gdd .and. sp_swi_on(p) .ge. crit_onset_swi .and. &
+                     (dayl(g) .lt. crit_dayl .or. sp_swi_off(p) .ge. crit_offset_swi .or. &
+                     sp_fdd_off(p) .ge. crit_offset_fdd)) then 
+                sp_offset_day(p) = sp_offset_day(p)+fracday
+                tlai(p) = tlai(p) * (ndays_off - sp_offset_day(p)) / ndays_off
+              else
+                tlai(p) = 0._r8
+              end if
+              !reset all counters when full senescence occurs
+              if (sp_offset_day(p) .gt. ndays_off) then
+                sp_offset_day(p) = 0._r8
+                sp_onset_day(p)  = 0._r8
+                sp_gdd(p)        = 0._r8
+                sp_swi_on(p)     = 0._r8
+                sp_swi_off(p)    = 0._r8
+                sp_fdd_off(p)    = 0._r8
+              end if
+           endif
+#endif
          endif
 
          tsai(p) = timwt(1)*msai2t(p,1) + timwt(2)*msai2t(p,2)

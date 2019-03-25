@@ -188,6 +188,7 @@ contains
     allocate(this%thm_patch                (begp:endp))                      ; this%thm_patch                (:)   = nan
     allocate(this%t_a10_patch              (begp:endp))                      ; this%t_a10_patch              (:)   = nan
     allocate(this%t_a10min_patch           (begp:endp))                      ; this%t_a10min_patch           (:)   = nan
+
     allocate(this%t_a5min_patch            (begp:endp))                      ; this%t_a5min_patch            (:)   = nan
 
     allocate(this%taf_lun                  (begl:endl))                      ; this%taf_lun                  (:)   = nan
@@ -417,7 +418,6 @@ contains
     real(r8), pointer :: rbufslp(:)  ! temporary
     !---------------------------------------------------------------------
 
-
   end subroutine InitAccVars
 
   !-----------------------------------------------------------------------
@@ -445,7 +445,6 @@ contains
     integer :: begp, endp
     real(r8), pointer :: rbufslp(:)      ! temporary single level - pft level
     !---------------------------------------------------------------------
-
 
   end subroutine UpdateAccVars
 
