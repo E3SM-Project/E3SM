@@ -3,6 +3,7 @@
 from standard_script_setup import *
 from CIME.utils import expect, run_bld_cmd_ensure_logging, run_cmd_no_fail
 from CIME.case import Case
+from CIME.build import get_standard_makefile_args
 
 logger = logging.getLogger(__name__)
 
@@ -50,8 +51,9 @@ def buildlib(bldroot, installpath, case):
     # We want to get the compiler and kokkos_options from Macros.make
     # (generated from config_compilers.xml), but we want to otherwise
     # let kokkos control flags
-    kokkos_options = run_cmd_no_fail("make -f Macros.make -p | grep KOKKOS_OPTIONS").split(":=")[-1].strip()
-    cxx            = run_cmd_no_fail("make -f Macros.make -p | grep SCXX").split(":=")[-1].strip()
+    make_args = get_standard_makefile_args(case)
+    kokkos_options = run_cmd_no_fail("make -f Macros.make {} -p | grep KOKKOS_OPTIONS".format(make_args)).split(":=")[-1].strip()
+    cxx            = run_cmd_no_fail("make -f Macros.make {} -p | grep SCXX".format(make_args)).split(":=")[-1].strip()
 
     gmake_cmd = case.get_value("GMAKE")
     gmake_j = case.get_value("GMAKE_J")
