@@ -284,7 +284,7 @@ contains
 
           if (iamroot_CPLID) then
              write(logunit,*) ' '
-             write(logunit,F00) 'Initializing mapper_Va2o vect'
+             write(logunit,F00) 'Initializing mapper_Va2o vect with vect_map = ',trim(vect_map)
           end if
           call seq_map_initvect(mapper_Va2o, vect_map, atm(1), ocn(1), string='mapper_Va2o initvect')
        endif
@@ -1167,8 +1167,13 @@ contains
 
        call seq_map_map(mapper_Fa2o, a2x_ax, a2x_ox(eai), fldlist=seq_flds_a2x_fluxes, norm=.true.)
 
+#ifdef COMPARE_TO_NUOPC
+       call seq_map_mapvect(mapper_Va2o, vect_map, a2x_ax, a2x_ox(eai), 'Sa_u', 'Sa_v', norm=.true.)
+#else 
        !--- tcx the norm should be true below, it's false for bfb backwards compatability
        call seq_map_mapvect(mapper_Va2o, vect_map, a2x_ax, a2x_ox(eai), 'Sa_u', 'Sa_v', norm=.false.)
+#endif
+
     enddo
     call t_drvstopf  (trim(timer))
 
