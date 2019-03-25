@@ -70,11 +70,7 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
    USE_CXX = TRUE
 endif
 ifeq ($(strip $(USE_KOKKOS)), TRUE)
-  include $(INSTALL_SHAREDPATH)/Makefile.kokkos
   USE_CXX = TRUE
-  SLIBS += $(KOKKOS_LIBS)
-  CFLAGS += $(KOKKOS_CXXFLAGS)
-  CXX_LDFLAGS += $(KOKKOS_LDFLAGS)
 endif
 ifeq ($(strip $(USE_KOKKOS)), TRUE)
    USE_CXX = true
@@ -299,6 +295,13 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
   include $(ALBANY_PATH)/export_albany.in
 endif
 
+ifeq ($(strip $(USE_KOKKOS)), TRUE)
+  include $(INSTALL_SHAREDPATH)/Makefile.kokkos
+  SLIBS += $(KOKKOS_LIBS)
+  CFLAGS += $(KOKKOS_CXXFLAGS)
+  CXX_LDFLAGS += $(KOKKOS_LDFLAGS)
+endif
+
 # Set MOAB info if it is being used
 ifeq ($(strip $(USE_MOAB)), TRUE)
   ifdef MOAB_PATH
@@ -508,7 +511,7 @@ INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include
 # Use the MCT dir for the cache for all configure calls because it is the first one
 #
 CFLAGS+=$(CPPDEFS)
-CXXFLAGS += $(CFLAGS)
+CXXFLAGS+=$(CFLAGS)
 CONFIG_ARGS +=  CC="$(CC)" FC="$(FC)" MPICC="$(MPICC)" \
                 MPIFC="$(MPIFC)" FCFLAGS="$(FFLAGS) $(FREEFLAGS) $(INCLDIR)" \
                 CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)" \
