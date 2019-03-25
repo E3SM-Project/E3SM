@@ -73,7 +73,7 @@ ifeq ($(strip $(USE_KOKKOS)), TRUE)
   USE_CXX = TRUE
 endif
 ifeq ($(strip $(USE_KOKKOS)), TRUE)
-   USE_CXX = true
+   USE_CXX = TRUE
 endif
 
 ifeq ($(strip $(USE_FMS)), TRUE)
