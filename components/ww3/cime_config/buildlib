@@ -16,10 +16,20 @@ my $LIBROOT		= `./xmlquery LIBROOT        --value`;
 my $GMAKE_J		= `./xmlquery GMAKE_J        --value`;
 my $GMAKE		= `./xmlquery GMAKE          --value`;
 
-
-chdir "$SRCROOT/components/ww3/src/source/ww3/bin";
-my $tmpdir = "$SRCROOT/components/ww3/src/source/ww3/tmp";
-my $tarfile = "$SRCROOT/components/ww3/src/source/ww3/work/ww3_shel.tar.gz";
+my $modeldir = "$SRCROOT/components/ww3/src/source/WW3/model";
+my $bindir = "$modeldir/bin";
+chdir $bindir;
+if (not -f "$bindir/wwatch3.env"){
+  open(file,">w3_setup.inp") or die "Could not open file w3_setup.inp to write";
+  print file "n\n";
+  close(file);
+  my $out = `./w3_setup $modeldir -c Gnu -s E3SM < w3_setup.inp`;
+  open(file,">w3_setup.output");
+  print file $out;
+  close(file);
+}
+my $tmpdir = "$modeldir/tmp";
+my $tarfile = "$modeldir/work/ww3_shel.tar.gz";
 `./w3_source ww3_shel`;
 `mv $tarfile $tmpdir`;
 chdir $tmpdir;
@@ -28,7 +38,7 @@ chdir $tmpdir;
 chdir "$OBJROOT/wav/obj";
 open(file,">Filepath") or die "Could not open file Filepath to write";
 print file "${CASEROOT}/SourceMods/src.ww3\n";
-print file "${SRCROOT}/components/ww3/src/source/ww3/tmp\n";
+print file "${tmpdir}\n";
 print file "${SRCROOT}/components/ww3/src/cpl\n";
 close(file);
 my $sysmod = "$GMAKE complib -j $GMAKE_J MODEL=ww3 COMPLIB=$LIBROOT/libwav.a -f $CASETOOLS/Makefile";

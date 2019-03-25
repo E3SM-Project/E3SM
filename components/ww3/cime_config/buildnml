@@ -153,7 +153,7 @@ def buildnml(case, caseroot, compname):
     #if os.path.isfile(file1):
     #    shutil.copy(file1, file2)
 
-    file1 = os.path.join(din_loc_root,"wav","ww3","mod_def.ww3.v5")
+    file1 = os.path.join(din_loc_root,"wav","ww3","mod_def.ww3.v6")
     file2 = os.path.join(rundir,"mod_def.ww3")
     if os.path.isfile(file1):
         shutil.copy(file1, file2)

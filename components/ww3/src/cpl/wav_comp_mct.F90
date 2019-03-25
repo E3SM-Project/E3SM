@@ -697,7 +697,7 @@ CONTAINS
       ! - reads either the initfile if the run is startup or branch
       ! - constructs the filename from the casename variable and the time(:) array
       !   which is set above
-      call w3init ( 1, 'ww3', nds, ntrace, odat, flogrd, flogrd2, flogd, flogd2, npts, x, y,   &
+      call w3init ( 1, .false., 'ww3', nds, ntrace, odat, flogrd, flogrd2, flogd, flogd2, npts, x, y,   &
            pnames, iprt, prtfrm, mpi_comm )
       call shr_sys_flush(ndso)
 
