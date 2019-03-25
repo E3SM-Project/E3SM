@@ -37,6 +37,7 @@ module cime_comp_mod
   use shr_orb_mod,       only: shr_orb_params
   use shr_frz_mod,       only: shr_frz_freezetemp_init
   use shr_reprosum_mod,  only: shr_reprosum_setopts
+  use shr_taskmap_mod,   only: shr_taskmap_write
   use mct_mod            ! mct_ wrappers for mct lib
   use perf_mod
   use ESMF
@@ -59,7 +60,7 @@ module cime_comp_mod
   !----------------------------------------------------------------------------
 
   ! mpi comm data & routines, plus logunit and loglevel
-  use seq_comm_mct, only: CPLID, GLOID, logunit, loglevel
+  use seq_comm_mct, only: CPLID, GLOID, logunit, loglevel, info_taskmap_comp
   use seq_comm_mct, only: ATMID, LNDID, OCNID, ICEID, GLCID, ROFID, WAVID, ESPID
   use seq_comm_mct, only: ALLATMID,ALLLNDID,ALLOCNID,ALLICEID,ALLGLCID,ALLROFID,ALLWAVID,ALLESPID
   use seq_comm_mct, only: CPLALLATMID,CPLALLLNDID,CPLALLOCNID,CPLALLICEID
@@ -150,13 +151,15 @@ module cime_comp_mod
   use seq_flds_mod, only : seq_flds_set
 
   ! component type and accessor functions
-  use component_type_mod , only: component_get_iamin_compid, component_get_suffix
-  use component_type_mod , only: component_get_name, component_get_c2x_cx
-  use component_type_mod , only: atm, lnd, ice, ocn, rof, glc, wav, esp
-  use component_mod      , only: component_init_pre
-  use component_mod      , only: component_init_cc, component_init_cx, component_run, component_final
-  use component_mod      , only: component_init_areacor, component_init_aream
-  use component_mod      , only: component_exch, component_diag
+  use component_type_mod, only: component_get_iamin_compid, component_get_suffix
+  use component_type_mod, only: component_get_iamroot_compid
+  use component_type_mod, only: component_get_name, component_get_c2x_cx
+  use component_type_mod, only: atm, lnd, ice, ocn, rof, glc, wav, esp
+  use component_mod,      only: component_init_pre
+  use component_mod,      only: component_init_cc, component_init_cx
+  use component_mod,      only: component_run, component_final
+  use component_mod,      only: component_init_areacor, component_init_aream
+  use component_mod,      only: component_exch, component_diag
 
   ! prep routines (includes mapping routines between components and merging routines)
   use prep_lnd_mod
@@ -179,8 +182,44 @@ module cime_comp_mod
 
   private
 
-  public cime_pre_init1, cime_pre_init2, cime_init, cime_run, cime_final
-  public timing_dir, mpicom_GLOID
+  ! public data
+  public  :: timing_dir, mpicom_GLOID
+
+  ! public routines
+  public  :: cime_pre_init1
+  public  :: cime_pre_init2
+  public  :: cime_init
+  public  :: cime_run
+  public  :: cime_final
+
+  ! private routines
+  private :: cime_esmf_readnl
+  private :: cime_printlogheader
+  private :: cime_comp_barriers
+  private :: cime_cpl_init
+  private :: cime_run_atmocn_fluxes
+  private :: cime_run_ocn_albedos
+  private :: cime_run_atm_setup_send
+  private :: cime_run_atm_recv_post
+  private :: cime_run_ocn_setup_send
+  private :: cime_run_ocn_recv_post
+  private :: cime_run_atmocn_setup
+  private :: cime_run_lnd_setup_send
+  private :: cime_run_lnd_recv_post
+  private :: cime_run_glc_setup_send
+  private :: cime_run_glc_recv_post
+  private :: cime_run_rof_setup_send
+  private :: cime_run_rof_recv_post
+  private :: cime_run_ice_setup_send
+  private :: cime_run_ice_recv_post
+  private :: cime_run_wav_setup_send
+  private :: cime_run_wav_recv_post
+  private :: cime_run_update_fractions
+  private :: cime_run_calc_budgets1
+  private :: cime_run_calc_budgets2
+  private :: cime_run_calc_budgets3
+  private :: cime_run_write_history
+  private :: cime_run_write_restart
 
 #include <mpif.h>
 
@@ -198,7 +237,7 @@ module cime_comp_mod
   type(mct_aVect) , pointer :: o2x_ox => null()
   type(mct_aVect) , pointer :: a2x_ax => null()
 
-  character(len=CL) :: suffix
+  character(len=CL) :: inst_suffix
   logical           :: iamin_id
   character(len=seq_comm_namelen) :: compname
 
@@ -269,6 +308,7 @@ module cime_comp_mod
   logical  :: t24hr_alarm            ! alarm every twentyfour hours
   logical  :: t1yr_alarm             ! alarm every year, at start of year
   logical  :: pause_alarm            ! pause alarm
+  logical  :: write_hist_alarm       ! alarm to write a history file under multiple conditions
   integer  :: drv_index              ! seq_timemgr index for driver
 
   real(r8) :: days_per_year = 365.0  ! days per year
@@ -417,6 +457,7 @@ module cime_comp_mod
   logical  :: shr_map_dopole         ! logical for dopole in shr_map_mod
   logical  :: domain_check           ! .true.  => check consistency of domains
   logical  :: reprosum_use_ddpdd     ! setup reprosum, use ddpdd
+  logical  :: reprosum_allow_infnan  ! setup reprosum, allow INF and NaN in summands
   real(r8) :: reprosum_diffmax       ! setup reprosum, set rel_diff_max
   logical  :: reprosum_recompute     ! setup reprosum, recompute if tolerance exceeded
 
@@ -468,6 +509,7 @@ module cime_comp_mod
 
   ! --- other ---
 
+  integer  :: driver_id              ! ID for multi-driver setup
   integer  :: ocnrun_count           ! number of times ocn run alarm went on
   logical  :: exists                 ! true if file exists
   integer  :: ierr                   ! MPI error return
@@ -579,19 +621,24 @@ contains
   !*******************************************************************************
   !===============================================================================
 
-  subroutine cime_pre_init1()
+  subroutine cime_pre_init1(esmf_log_option)
     use shr_pio_mod, only : shr_pio_init1, shr_pio_init2
     use seq_comm_mct, only: num_inst_driver
     !----------------------------------------------------------
     !| Initialize MCT and MPI communicators and IO
     !----------------------------------------------------------
 
+    character(CS), intent(out) :: esmf_log_option    ! For esmf_logfile_kind
+
     integer, dimension(num_inst_total) :: comp_id, comp_comm, comp_comm_iam
     logical :: comp_iamin(num_inst_total)
     character(len=seq_comm_namelen) :: comp_name(num_inst_total)
     integer :: it
-    integer :: driver_id
     integer :: driver_comm
+    integer :: npes_CPLID
+    logical :: verbose_taskmap_output
+    character(len=8) :: c_cpl_inst    ! coupler instance number
+    character(len=8) :: c_cpl_npes    ! number of pes in coupler
 
     call mpi_init(ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_init')
@@ -630,11 +677,9 @@ contains
     if (iamroot_GLOID) output_perf = .true.
 
     call seq_comm_getinfo(CPLID,mpicom=mpicom_CPLID,&
-         iamroot=iamroot_CPLID,nthreads=nthreads_CPLID,&
-         iam=comp_comm_iam(it))
+         iamroot=iamroot_CPLID,npes=npes_CPLID, &
+         nthreads=nthreads_CPLID,iam=comp_comm_iam(it))
     if (iamroot_CPLID) output_perf = .true.
-
-    if (iamin_CPLID) complist = trim(complist)//' cpl'
 
     comp_id(it)    = CPLID
     comp_comm(it)  = mpicom_CPLID
@@ -649,9 +694,6 @@ contains
        comp_name(it)  = seq_comm_name(comp_id(it))
        call seq_comm_getinfo(ATMID(eai), mpicom=comp_comm(it), &
             nthreads=nthreads_ATMID, iam=comp_comm_iam(it))
-       if (seq_comm_iamin(ATMID(eai))) then
-          complist = trim(complist)//' '//trim(seq_comm_name(ATMID(eai)))
-       endif
        if (seq_comm_iamroot(ATMID(eai))) output_perf = .true.
     enddo
     call seq_comm_getinfo(CPLALLATMID, mpicom=mpicom_CPLALLATMID)
@@ -664,9 +706,6 @@ contains
        comp_name(it)  = seq_comm_name(comp_id(it))
        call seq_comm_getinfo(LNDID(eli), mpicom=comp_comm(it), &
             nthreads=nthreads_LNDID, iam=comp_comm_iam(it))
-       if (seq_comm_iamin(LNDID(eli))) then
-          complist = trim(complist)//' '//trim(seq_comm_name(LNDID(eli)))
-       endif
        if (seq_comm_iamroot(LNDID(eli))) output_perf = .true.
     enddo
     call seq_comm_getinfo(CPLALLLNDID, mpicom=mpicom_CPLALLLNDID)
@@ -679,9 +718,6 @@ contains
        comp_name(it)  = seq_comm_name(comp_id(it))
        call seq_comm_getinfo(OCNID(eoi), mpicom=comp_comm(it), &
             nthreads=nthreads_OCNID, iam=comp_comm_iam(it))
-       if (seq_comm_iamin (OCNID(eoi))) then
-          complist = trim(complist)//' '//trim(seq_comm_name(OCNID(eoi)))
-       endif
        if (seq_comm_iamroot(OCNID(eoi))) output_perf = .true.
     enddo
     call seq_comm_getinfo(CPLALLOCNID, mpicom=mpicom_CPLALLOCNID)
@@ -694,9 +730,6 @@ contains
        comp_name(it)  = seq_comm_name(comp_id(it))
        call seq_comm_getinfo(ICEID(eii), mpicom=comp_comm(it), &
             nthreads=nthreads_ICEID, iam=comp_comm_iam(it))
-       if (seq_comm_iamin (ICEID(eii))) then
-          complist = trim(complist)//' '//trim(seq_comm_name(ICEID(eii)))
-       endif
        if (seq_comm_iamroot(ICEID(eii))) output_perf = .true.
     enddo
     call seq_comm_getinfo(CPLALLICEID, mpicom=mpicom_CPLALLICEID)
@@ -708,9 +741,6 @@ contains
        comp_iamin(it) = seq_comm_iamin(comp_id(it))
        comp_name(it)  = seq_comm_name(comp_id(it))
        call seq_comm_getinfo(GLCID(egi), mpicom=comp_comm(it), nthreads=nthreads_GLCID, iam=comp_comm_iam(it))
-       if (seq_comm_iamin (GLCID(egi))) then
-          complist = trim(complist)//' '//trim(seq_comm_name(GLCID(egi)))
-       endif
        if (seq_comm_iamroot(GLCID(egi))) output_perf = .true.
     enddo
     call seq_comm_getinfo(CPLALLGLCID, mpicom=mpicom_CPLALLGLCID)
@@ -723,9 +753,6 @@ contains
        comp_name(it)  = seq_comm_name(comp_id(it))
        call seq_comm_getinfo(ROFID(eri), mpicom=comp_comm(it), &
             nthreads=nthreads_ROFID, iam=comp_comm_iam(it))
-       if (seq_comm_iamin(ROFID(eri))) then
-          complist = trim(complist)//' '//trim( seq_comm_name(ROFID(eri)))
-       endif
        if (seq_comm_iamroot(ROFID(eri))) output_perf = .true.
     enddo
     call seq_comm_getinfo(CPLALLROFID, mpicom=mpicom_CPLALLROFID)
@@ -738,9 +765,6 @@ contains
        comp_name(it)  = seq_comm_name(comp_id(it))
        call seq_comm_getinfo(WAVID(ewi), mpicom=comp_comm(it), &
             nthreads=nthreads_WAVID, iam=comp_comm_iam(it))
-       if (seq_comm_iamin(WAVID(ewi))) then
-          complist = trim(complist)//' '//trim(seq_comm_name(WAVID(ewi)))
-       endif
        if (seq_comm_iamroot(WAVID(ewi))) output_perf = .true.
     enddo
     call seq_comm_getinfo(CPLALLWAVID, mpicom=mpicom_CPLALLWAVID)
@@ -753,9 +777,6 @@ contains
        comp_name(it)  = seq_comm_name(comp_id(it))
        call seq_comm_getinfo(ESPID(eei), mpicom=comp_comm(it), &
             nthreads=nthreads_ESPID, iam=comp_comm_iam(it))
-       if (seq_comm_iamin (ESPID(eei))) then
-          complist = trim(complist)//' '//trim(seq_comm_name(ESPID(eei)))
-       endif
     enddo
     ! ESP components do not use the coupler (they are 'external')
 
@@ -778,6 +799,42 @@ contains
     endif
 
     !----------------------------------------------------------
+    !| Output task-to-node mapping data for coupler
+    !----------------------------------------------------------
+
+    if (info_taskmap_comp > 0) then
+       ! Identify SMP nodes and process/SMP mapping for the coupler.
+       ! (Assume that processor names are SMP node names on SMP clusters.)
+
+       if (iamin_CPLID) then
+
+          if (info_taskmap_comp == 1) then
+            verbose_taskmap_output = .false.
+          else
+            verbose_taskmap_output = .true.
+          endif
+
+          write(c_cpl_inst,'(i8)') num_inst_driver
+
+          if (iamroot_CPLID) then
+             write(c_cpl_npes,'(i8)') npes_CPLID
+             write(logunit,'(3A)') trim(adjustl(c_cpl_npes)), &
+                                   ' pes participating in computation of CPL instance #', &
+                                   trim(adjustl(c_cpl_inst))
+             call shr_sys_flush(logunit)
+          endif
+
+          call t_startf("shr_taskmap_write")
+          call shr_taskmap_write(logunit, mpicom_CPLID,                &
+                                 'CPL #'//trim(adjustl(c_cpl_inst)),   &
+                                 verbose=verbose_taskmap_output        )
+          call t_stopf("shr_taskmap_write")
+
+       endif
+
+    endif
+
+    !----------------------------------------------------------
     ! Log info about the environment settings
     !----------------------------------------------------------
 
@@ -792,6 +849,11 @@ contains
             write(logunit,'(2A,I0,A)') subname,' Driver is running with',num_inst_driver,'instances'
     endif
 
+    !----------------------------------------------------------
+    ! Read ESMF namelist settings
+    !----------------------------------------------------------
+    call cime_esmf_readnl(NLFileName, mpicom_GLOID, esmf_log_option)
+
     !
     !  When using io servers (pio_async_interface=.true.) the server tasks do not return from
     !  shr_pio_init2
@@ -799,6 +861,48 @@ contains
     call shr_pio_init2(comp_id,comp_name,comp_iamin,comp_comm,comp_comm_iam)
 
   end subroutine cime_pre_init1
+
+  !===============================================================================
+
+  subroutine cime_esmf_readnl(NLFileName, mpicom, esmf_logfile_kind)
+     use shr_file_mod, only: shr_file_getUnit, shr_file_freeUnit
+
+     character(len=*),  intent(in)  :: NLFileName
+     integer,           intent(in)  :: mpicom
+     character(len=CS), intent(out) :: esmf_logfile_kind
+
+     integer                     :: ierr   ! I/O error code
+     integer                     :: unitn  ! Namelist unit number to read
+     integer                     :: rank
+     character(len=*), parameter :: subname = '(esmf_readnl) '
+
+     namelist /esmf_inparm/ esmf_logfile_kind
+
+     esmf_logfile_kind = 'ESMF_LOGKIND_NONE'
+     call mpi_comm_rank(mpicom, rank, ierr)
+
+     !-------------------------------------------------------------------------
+     ! Read in namelist
+     !-------------------------------------------------------------------------
+     if (rank == 0) then
+        unitn = shr_file_getUnit()
+        write(logunit,"(A)") subname,' read esmf_inparm namelist from: '//trim(NLFileName)
+        open(unitn, file=trim(NLFileName), status='old')
+        ierr = 1
+        do while( ierr /= 0 )
+           read(unitn, nml=esmf_inparm, iostat=ierr)
+           if (ierr < 0) then
+              call shr_sys_abort( subname//':: namelist read returns an'// &
+                   ' end of file or end of record condition' )
+           end if
+        end do
+        close(unitn)
+        call shr_file_freeUnit(unitn)
+     end if
+
+     call mpi_bcast(esmf_logfile_kind, CS, MPI_CHARACTER, 0, mpicom, ierr)
+
+   end subroutine cime_esmf_readnl
 
   !===============================================================================
   !*******************************************************************************
@@ -860,7 +964,7 @@ contains
     ! Print Model heading and copyright message
     !----------------------------------------------------------
 
-    if (iamroot_CPLID) call seq_cime_printlogheader()
+    if (iamroot_CPLID) call cime_printlogheader()
 
     !----------------------------------------------------------
     !| Initialize coupled fields (depends on infodata)
@@ -935,6 +1039,7 @@ contains
          wall_time_limit=wall_time_limit           , &
          force_stop_at=force_stop_at               , &
          reprosum_use_ddpdd=reprosum_use_ddpdd     , &
+         reprosum_allow_infnan=reprosum_allow_infnan, &
          reprosum_diffmax=reprosum_diffmax         , &
          reprosum_recompute=reprosum_recompute, &
          max_cplstep_time=max_cplstep_time)
@@ -946,17 +1051,18 @@ contains
 
     call shr_reprosum_setopts(&
          repro_sum_use_ddpdd_in    = reprosum_use_ddpdd, &
+         repro_sum_allow_infnan_in = reprosum_allow_infnan, &
          repro_sum_rel_diff_max_in = reprosum_diffmax, &
          repro_sum_recompute_in    = reprosum_recompute)
 
     ! Check cpl_seq_option
 
-    if (trim(cpl_seq_option) /= 'CESM1_ORIG' .and. &
-         trim(cpl_seq_option) /= 'CESM1_ORIG_TIGHT' .and. &
-         trim(cpl_seq_option) /= 'CESM1_MOD' .and. &
-         trim(cpl_seq_option) /= 'CESM1_MOD_TIGHT' .and. &
-         trim(cpl_seq_option) /= 'RASM_OPTION1' .and. &
-         trim(cpl_seq_option) /= 'RASM_OPTION2' ) then
+    if (trim(cpl_seq_option) /= 'CESM1_MOD' .and. &
+        trim(cpl_seq_option) /= 'CESM1_MOD_TIGHT' .and. &
+        trim(cpl_seq_option) /= 'RASM_OPTION1' .and. &
+        trim(cpl_seq_option) /= 'RASM_OPTION2' .and. &
+        trim(cpl_seq_option) /= 'NUOPC' .and. &
+        trim(cpl_seq_option) /= 'NUOPC_TIGHT' ) then
        call shr_sys_abort(subname//' invalid cpl_seq_option = '//trim(cpl_seq_option))
     endif
 
@@ -1030,7 +1136,7 @@ contains
     ! Initialize freezing point calculation for all components
     !----------------------------------------------------------
 
-    call shr_frz_freezetemp_init(tfreeze_option)
+    call shr_frz_freezetemp_init(tfreeze_option, iamroot_GLOID)
 
     if (trim(orb_mode) == trim(seq_infodata_orb_variable_year)) then
        call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd)
@@ -1131,9 +1237,6 @@ contains
   !===============================================================================
 
   subroutine cime_init()
-
-    character(CL), allocatable :: comp_resume(:)
-
 
 104 format( A, i10.8, i8)
 
@@ -1444,7 +1547,11 @@ contains
     ! set skip_ocean_run flag, used primarily for ocn run on first timestep
     ! use reading a restart as a surrogate from whether this is a startup run
 
+#ifdef COMPARE_TO_NUOPC
+    skip_ocean_run = .false.
+#else
     skip_ocean_run = .true.
+#endif
     if ( read_restart) skip_ocean_run = .false.
     ocnrun_count = 0
     cpl2ocn_first = .true.
@@ -1700,6 +1807,10 @@ contains
 #endif
     if (single_column) areafact_samegrid = .true.
 
+#ifdef COMPARE_TO_NUOPC
+    areafact_samegrid = .true.
+#endif
+
     call t_startf ('CPL:init_areacor')
     call t_adj_detailf(+2)
 
@@ -1934,7 +2045,8 @@ contains
     !  Data or dead atmosphere may just return on this phase.
     !----------------------------------------------------------
 
-    if (atm_present) then
+    if (atm_prognostic) then
+
        call t_startf('CPL:comp_init_cc_atm2')
        call t_adj_detailf(+2)
 
@@ -2025,22 +2137,6 @@ contains
     endif
 
     !----------------------------------------------------------
-    !| Clear all resume signals
-    !----------------------------------------------------------
-    allocate(comp_resume(num_inst_max))
-    comp_resume = ''
-    call seq_infodata_putData(infodata,          &
-         atm_resume=comp_resume(1:num_inst_atm), &
-         lnd_resume=comp_resume(1:num_inst_lnd), &
-         ocn_resume=comp_resume(1:num_inst_ocn), &
-         ice_resume=comp_resume(1:num_inst_ice), &
-         glc_resume=comp_resume(1:num_inst_glc), &
-         rof_resume=comp_resume(1:num_inst_rof), &
-         wav_resume=comp_resume(1:num_inst_wav), &
-         cpl_resume=comp_resume(1))
-    deallocate(comp_resume)
-
-    !----------------------------------------------------------
     !| Write histinit output file
     !----------------------------------------------------------
 
@@ -2083,21 +2179,25 @@ contains
   !===============================================================================
 
   subroutine cime_run()
-    use seq_comm_mct,   only: atm_layout, lnd_layout, ice_layout, glc_layout,  &
-         rof_layout, ocn_layout, wav_layout, esp_layout
-    use shr_string_mod, only: shr_string_listGetIndexF
-    use seq_comm_mct, only: num_inst_driver
+    use shr_string_mod,      only: shr_string_listGetIndexF
+    use seq_comm_mct,        only: atm_layout, lnd_layout, ice_layout
+    use seq_comm_mct,        only: glc_layout, rof_layout, ocn_layout
+    use seq_comm_mct,        only: wav_layout, esp_layout, num_inst_driver
+    use seq_comm_mct,        only: seq_comm_inst
+    use seq_pauseresume_mod, only: seq_resume_store_comp, seq_resume_get_files
+    use seq_pauseresume_mod, only: seq_resume_free
 
     ! gptl timer lookup variables
-    integer, parameter :: hashcnt=7
-    integer            :: hashint(hashcnt)
-    ! Driver pause/resume
-    logical            :: drv_pause  ! Driver writes pause restart file
-    character(len=CL)  :: drv_resume ! Driver resets state from restart file
+    integer, parameter    :: hashcnt=7
+    integer               :: hashint(hashcnt)
+                                                  ! Driver pause/resume
+    logical               :: drv_pause            ! Driver writes pause restart file
+    character(len=CL)     :: drv_resume           ! Driver resets state from restart file
+    character(len=CL), pointer :: resume_files(:) ! Component resume files
 
-    type(ESMF_Time)    :: etime_curr            ! Current model time
-    real(r8)           :: tbnds1_offset         ! Time offset for call to seq_hist_writeaux
-    logical            :: lnd2glc_averaged_now  ! Whether lnd2glc averages were taken this timestep
+    type(ESMF_Time)       :: etime_curr           ! Current model time
+    real(r8)              :: tbnds1_offset        ! Time offset for call to seq_hist_writeaux
+    logical               :: lnd2glc_averaged_now ! Whether lnd2glc averages were taken this timestep
 
 101 format( A, i10.8, i8, 12A, A, F8.2, A, F8.2 )
 102 format( A, i10.8, i8, A, 8L3 )
@@ -2107,9 +2207,7 @@ contains
 108 format( A, f10.2, A, i8.8)
 109 format( A, 2f10.3)
 
-
     hashint = 0
-
 
     call seq_infodata_putData(infodata,atm_phase=1,lnd_phase=1,ocn_phase=1,ice_phase=1)
     call seq_timemgr_EClockGetData( EClock_d, stepno=begstep)
@@ -2268,7 +2366,6 @@ contains
        !  This will be used later in the ice prep and in the
        !  atm/ocn flux calculation
        !----------------------------------------------------------
-
        if (iamin_CPLID .and. (atm_c2_ocn .or. atm_c2_ice)) then
           call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPRE1_BARRIER')
           call t_drvstartf ('CPL:OCNPRE1',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(3))
@@ -2283,368 +2380,57 @@ contains
        !----------------------------------------------------------
        !| ATM/OCN SETUP (rasm_option1)
        !----------------------------------------------------------
-
-       if ((trim(cpl_seq_option) == 'RASM_OPTION1') .and. &
-            iamin_CPLID .and. ocn_present) then
-
-          call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMOCN1_BARRIER')
-          call t_drvstartf ('CPL:ATMOCN1',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(4))
-          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-
-          if (ocn_prognostic) then
-             ! Map ice to ocn
-             if (ice_c2_ocn) call prep_ocn_calc_i2x_ox(timer='CPL:atmocnp_ice2ocn')
-
-             ! Map wav to ocn
-             if (wav_c2_ocn) call prep_ocn_calc_w2x_ox(timer='CPL:atmocnp_wav2ocn')
-          endif
-
-          !----------------------------------------------------------
-          !| atm/ocn flux on atm grid (rasm_option1 and aoflux='atm')
-          !----------------------------------------------------------
-
-          if (trim(aoflux_grid) == 'atm') then
-             ! compute o2x_ax for flux_atmocn, will be updated before atm merge
-             ! do not use fractions because fractions here are NOT consistent with fractions in atm_mrg
-             if (ocn_c2_atm) call prep_atm_calc_o2x_ax(timer='CPL:atmoca_ocn2atm')
-
-             call t_drvstartf ('CPL:atmocna_fluxa',barrier=mpicom_CPLID)
-             do exi = 1,num_inst_xao
-                eai = mod((exi-1),num_inst_atm) + 1
-                eoi = mod((exi-1),num_inst_ocn) + 1
-                efi = mod((exi-1),num_inst_frc) + 1
-                a2x_ax => component_get_c2x_cx(atm(eai))
-                o2x_ax => prep_atm_get_o2x_ax()    ! array over all instances
-                xao_ax => prep_aoflux_get_xao_ax() ! array over all instances
-                call seq_flux_atmocn_mct(infodata, tod, dtime, a2x_ax, o2x_ax(eoi), xao_ax(exi))
-             enddo
-             call t_drvstopf  ('CPL:atmocna_fluxa')
-
-             if (atm_c2_ocn) call prep_aoflux_calc_xao_ox(timer='CPL:atmocna_atm2ocn')
-          endif  ! aoflux_grid
-
-          !----------------------------------------------------------
-          !| atm/ocn flux on ocn grid (rasm_option1 and aoflux='ocn')
-          !----------------------------------------------------------
-
-          if (trim(aoflux_grid) == 'ocn') then
-             call t_drvstartf ('CPL:atmocnp_fluxo',barrier=mpicom_CPLID,hashint=hashint(6))
-             do exi = 1,num_inst_xao
-                eai = mod((exi-1),num_inst_atm) + 1
-                eoi = mod((exi-1),num_inst_ocn) + 1
-                efi = mod((exi-1),num_inst_frc) + 1
-                a2x_ox => prep_ocn_get_a2x_ox()
-                o2x_ox => component_get_c2x_cx(ocn(eoi))
-                xao_ox => prep_aoflux_get_xao_ox()
-                call seq_flux_atmocn_mct(infodata, tod, dtime, a2x_ox(eai), o2x_ox, xao_ox(exi))
-             enddo
-             call t_drvstopf  ('CPL:atmocnp_fluxo',hashint=hashint(6))
-          endif
-
-          !----------------------------------------------------------
-          !| ocn prep-merge (rasm_option1)
-          !----------------------------------------------------------
-
-          xao_ox => prep_aoflux_get_xao_ox()
-          call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
-
-          ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn)
-          call prep_ocn_accum(timer='CPL:atmocnp_accum')
-
-          !----------------------------------------------------------
-          !| ocn albedos (rasm_option1)
-          !  (MUST BE AFTER prep_ocn_mrg for swnet to ocn to be computed properly
-          !----------------------------------------------------------
-
-          call t_drvstartf ('CPL:atmocnp_ocnalb', barrier=mpicom_CPLID,hashint=hashint(5))
-          do exi = 1,num_inst_xao
-             efi = mod((exi-1),num_inst_frc) + 1
-             eai = mod((exi-1),num_inst_atm) + 1
-             xao_ox => prep_aoflux_get_xao_ox()        ! array over all instances
-             a2x_ox => prep_ocn_get_a2x_ox()
-             call seq_flux_ocnalb_mct(infodata, ocn(1), a2x_ox(eai), fractions_ox(efi), xao_ox(exi))
-          enddo
-          call t_drvstopf  ('CPL:atmocnp_ocnalb',hashint=hashint(5))
-
-          !----------------------------------------------------------
-          !| ocn budget (rasm_option1)
-          !----------------------------------------------------------
-
-          if (do_budgets) then
-             call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
-             call t_drvstartf ('CPL:BUDGET0',budget=.true.,barrier=mpicom_CPLID)
-             xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
-             call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
-                  do_o2x=.true., do_x2o=.true., do_xao=.true.)
-             call t_drvstopf ('CPL:BUDGET0',budget=.true.)
-          endif
-
-          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-          call t_drvstopf  ('CPL:ATMOCN1',cplrun=.true.,hashint=hashint(4))
+       ! The following maps to the ocean, computes atm/ocn fluxes, merges to the ocean,
+       ! accumulates ocn input and computes ocean albedos
+       if (ocn_present) then
+          if (trim(cpl_seq_option) == 'RASM_OPTION1') then
+             call cime_run_atmocn_setup(hashint)
+          end if
        endif
 
        !----------------------------------------------------------
-       !| ATM/OCN SETUP-SEND (cesm1_orig, cesm1_orig_tight, cesm1_mod, cesm1_mod_tight, or rasm_option1)
+       !| OCN SETUP-SEND (cesm1_mod, cesm1_mod_tight, or rasm_option1)
        !----------------------------------------------------------
-
-       if ((trim(cpl_seq_option) == 'CESM1_ORIG' .or. &
-            trim(cpl_seq_option) == 'CESM1_ORIG_TIGHT' .or. &
-            trim(cpl_seq_option) == 'CESM1_MOD'  .or. &
-            trim(cpl_seq_option) == 'CESM1_MOD_TIGHT'  .or. &
-            trim(cpl_seq_option) == 'RASM_OPTION1'  ) .and. &
-            ocn_present .and. ocnrun_alarm) then
-
-          !----------------------------------------------------
-          ! "startup" wait (cesm1_orig, cesm1_mod, or rasm_option1)
-          !----------------------------------------------------
-
-          if (iamin_CPLALLOCNID) then
-             ! want to know the time the ocean pes waited for the cpl pes
-             ! at the first ocnrun_alarm, min ocean wait is wait time
-             ! do not use t_barrierf here since it can be "off", use mpi_barrier
-             do eoi = 1,num_inst_ocn
-                if (ocn(eoi)%iamin_compid) call t_drvstartf ('CPL:C2O_INITWAIT')
-             enddo
-             call mpi_barrier(mpicom_CPLALLOCNID,ierr)
-             do eoi = 1,num_inst_ocn
-                if (ocn(eoi)%iamin_compid) call t_drvstopf  ('CPL:C2O_INITWAIT')
-             enddo
-             cpl2ocn_first = .false.
-          endif
-
-          !----------------------------------------------------
-          !| ocn average (cesm1_orig, cesm1_orig_tight, cesm1_mod, cesm1_mod_tight, or rasm_option1)
-          !----------------------------------------------------
-
-          if (iamin_CPLID .and. ocn_prognostic) then
-             call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPREP_BARRIER')
-             call t_drvstartf ('CPL:OCNPREP',cplrun=.true.,barrier=mpicom_CPLID)
-             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-
-             ! finish accumulating ocean inputs
-             ! reset the value of x2o_ox with the value in x2oacc_ox
-             ! (module variable in prep_ocn_mod)
-             call prep_ocn_accum_avg(timer_accum='CPL:ocnprep_avg')
-
-             call component_diag(infodata, ocn, flow='x2c', comment= 'send ocn', &
-                  info_debug=info_debug, timer_diag='CPL:ocnprep_diagav')
-
-             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-             call t_drvstopf  ('CPL:OCNPREP',cplrun=.true.)
-          endif
-
-          !----------------------------------------------------
-          !| cpl -> ocn (cesm1_orig, cesm1_orig_tight, cesm1_mod, cesm1_mod_tight, or rasm_option1)
-          !----------------------------------------------------
-
-          if (iamin_CPLALLOCNID .and. ocn_prognostic) then
-             call component_exch(ocn, flow='x2c', &
-                  infodata=infodata, infodata_string='cpl2ocn_run', &
-                  mpicom_barrier=mpicom_CPLALLOCNID, run_barriers=run_barriers, &
-                  timer_barrier='CPL:C2O_BARRIER', timer_comp_exch='CPL:C2O', &
-                  timer_map_exch='CPL:c2o_ocnx2ocno', timer_infodata_exch='CPL:c2o_infoexch')
-          endif
-
-       endif ! end of OCN SETUP
+       if (ocn_present .and. ocnrun_alarm) then
+          if (trim(cpl_seq_option) == 'CESM1_MOD'       .or. &
+              trim(cpl_seq_option) == 'CESM1_MOD_TIGHT' .or. &
+              trim(cpl_seq_option) == 'NUOPC_TIGHT'     .or. &
+              trim(cpl_seq_option) == 'RASM_OPTION1') then
+             call cime_run_ocn_setup_send()
+          end if
+       endif
 
        !----------------------------------------------------------
        !| LND SETUP-SEND
        !----------------------------------------------------------
-
        if (lnd_present .and. lndrun_alarm) then
-
-          !----------------------------------------------------
-          !| lnd prep-merge
-          !----------------------------------------------------
-
-          if (iamin_CPLID) then
-             call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:LNDPREP_BARRIER')
-             call t_drvstartf ('CPL:LNDPREP',cplrun=.true.,barrier=mpicom_CPLID)
-             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-
-             if (atm_c2_lnd) then
-                call prep_lnd_calc_a2x_lx(timer='CPL:lndprep_atm2lnd')
-             endif
-
-             if (lnd_prognostic) then
-                call prep_lnd_mrg(infodata, timer_mrg='CPL:lndprep_mrgx2l')
-
-                call component_diag(infodata, lnd, flow='x2c', comment= 'send lnd', &
-                     info_debug=info_debug, timer_diag='CPL:lndprep_diagav')
-             endif
-
-             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-             call t_drvstopf  ('CPL:LNDPREP',cplrun=.true.)
-          endif
-
-          !----------------------------------------------------
-          !| cpl -> lnd
-          !----------------------------------------------------
-
-          if (iamin_CPLALLLNDID) then
-             call component_exch(lnd, flow='x2c', &
-                  infodata=infodata, infodata_string='cpl2lnd_run', &
-                  mpicom_barrier=mpicom_CPLALLLNDID, run_barriers=run_barriers, &
-                  timer_barrier='CPL:C2L_BARRIER', timer_comp_exch='CPL:C2L', &
-                  timer_map_exch='CPL:c2l_lndx2lndl', timer_infodata_exch='CPL:c2l_infoexch')
-          endif
-
+          call cime_run_lnd_setup_send()
        endif
 
        !----------------------------------------------------------
        !| ICE SETUP-SEND
-       !  Note that for atm->ice mapping below will leverage the assumption that the
-       !  ice and ocn are on the same grid and that mapping of atm to ocean is
-       !  done already for use by atmocn flux and ice model prep
        !----------------------------------------------------------
-
        if (ice_present .and. icerun_alarm) then
-
-          !----------------------------------------------------
-          !| ice prep-merge
-          !----------------------------------------------------
-
-          if (iamin_CPLID .and. ice_prognostic) then
-             call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ICEPREP_BARRIER')
-
-             call t_drvstartf ('CPL:ICEPREP',cplrun=.true.,barrier=mpicom_CPLID)
-             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-
-
-             if (ocn_c2_ice) then
-                call prep_ice_calc_o2x_ix(timer='CPL:iceprep_ocn2ice')
-             endif
-
-             if (atm_c2_ice) then
-                ! This is special to avoid remapping atm to ocn
-                ! Note it is constrained that different prep modules cannot
-                ! use or call each other
-                a2x_ox => prep_ocn_get_a2x_ox() ! array
-                call prep_ice_calc_a2x_ix(a2x_ox, timer='CPL:iceprep_atm2ice')
-             endif
-
-             call prep_ice_mrg(infodata, timer_mrg='CPL:iceprep_mrgx2i')
-
-             call component_diag(infodata, ice, flow='x2c', comment= 'send ice', &
-                  info_debug=info_debug, timer_diag='CPL:iceprep_diagav')
-
-             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-             call t_drvstopf  ('CPL:ICEPREP',cplrun=.true.)
-          endif
-
-          !----------------------------------------------------
-          !| cpl -> ice
-          !----------------------------------------------------
-
-          if (iamin_CPLALLICEID .and. ice_prognostic) then
-             call component_exch(ice, flow='x2c', &
-                  infodata=infodata, infodata_string='cpl2ice_run', &
-                  mpicom_barrier=mpicom_CPLALLICEID, run_barriers=run_barriers, &
-                  timer_barrier='CPL:C2I_BARRIER', timer_comp_exch='CPL:C2I', &
-                  timer_map_exch='CPL:c2i_icex2icei', timer_infodata_exch='CPL:ice_infoexch')
-          endif
-
+          call cime_run_ice_setup_send()
        endif
 
        !----------------------------------------------------------
        !| WAV SETUP-SEND
        !----------------------------------------------------------
        if (wav_present .and. wavrun_alarm) then
-
-          !----------------------------------------------------------
-          !| wav prep-merge
-          !----------------------------------------------------------
-
-          if (iamin_CPLID .and. wav_prognostic) then
-             call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:WAVPREP_BARRIER')
-
-             call t_drvstartf ('CPL:WAVPREP',cplrun=.true.,barrier=mpicom_CPLID)
-             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-
-             if (atm_c2_wav) then
-                call prep_wav_calc_a2x_wx(timer='CPL:wavprep_atm2wav')
-             endif
-
-             if (ocn_c2_wav) then
-                call prep_wav_calc_o2x_wx(timer='CPL:wavprep_ocn2wav')
-             endif
-
-             if (ice_c2_wav) then
-                call prep_wav_calc_i2x_wx(timer='CPL:wavprep_ice2wav')
-             endif
-
-             call prep_wav_mrg(infodata, fractions_wx, timer_mrg='CPL:wavprep_mrgx2w')
-
-             call component_diag(infodata, wav, flow='x2c', comment= 'send wav', &
-                  info_debug=info_debug, timer_diag='CPL:wavprep_diagav')
-
-             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-             call t_drvstopf  ('CPL:WAVPREP',cplrun=.true.)
-          endif
-
-          !----------------------------------------------------------
-          !| cpl -> wav
-          !----------------------------------------------------------
-
-          if (iamin_CPLALLWAVID .and. wav_prognostic) then
-             call component_exch(wav, flow='x2c', &
-                  infodata=infodata, infodata_string='cpl2wav_run', &
-                  mpicom_barrier=mpicom_CPLALLWAVID, run_barriers=run_barriers, &
-                  timer_barrier='CPL:C2W_BARRIER', timer_comp_exch='CPL:C2W', &
-                  timer_map_exch='CPL:c2w_wavx2wavw', timer_infodata_exch='CPL:c2w_infoexch')
-          endif
-
+          call cime_run_wav_setup_send()
        endif
 
        !----------------------------------------------------------
        !| ROF SETUP-SEND
        !----------------------------------------------------------
-
        if (rof_present .and. rofrun_alarm) then
-
-          !----------------------------------------------------
-          !| rof prep-merge
-          !----------------------------------------------------
-
-          if (iamin_CPLID .and. rof_prognostic) then
-             call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ROFPREP_BARRIER')
-
-             call t_drvstartf ('CPL:ROFPREP', cplrun=.true., barrier=mpicom_CPLID)
-             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-
-             call prep_rof_accum_avg(timer='CPL:rofprep_l2xavg')
-
-             if (lnd_c2_rof) then
-                call prep_rof_calc_l2r_rx(fractions_lx, timer='CPL:rofprep_lnd2rof')
-             endif
-
-             call prep_rof_mrg(infodata, fractions_rx, timer_mrg='CPL:rofprep_mrgx2r')
-
-             call component_diag(infodata, rof, flow='x2c', comment= 'send rof', &
-                  info_debug=info_debug, timer_diag='CPL:rofprep_diagav')
-
-             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-             call t_drvstopf  ('CPL:ROFPREP',cplrun=.true.)
-          endif
-
-          !----------------------------------------------------
-          !| cpl -> rof
-          !----------------------------------------------------
-
-          if (iamin_CPLALLROFID .and. rof_prognostic) then
-             call component_exch(rof, flow='x2c', &
-                  infodata=infodata, infodata_string='cpl2rof_run', &
-                  mpicom_barrier=mpicom_CPLALLLNDID, run_barriers=run_barriers, &
-                  timer_barrier='CPL:C2R_BARRIER', timer_comp_exch='CPL:C2R', &
-                  timer_map_exch='CPL:c2r_rofx2rofr', timer_infodata_exch='CPL:c2r_infoexch')
-          endif
-
+          call cime_run_rof_setup_send()
        endif
 
        !----------------------------------------------------------
        !| RUN ICE MODEL
        !----------------------------------------------------------
-
        if (ice_present .and. icerun_alarm) then
           call component_run(Eclock_i, ice, ice_run, infodata, &
                seq_flds_x2c_fluxes=seq_flds_x2i_fluxes, &
@@ -2657,7 +2443,6 @@ contains
        !----------------------------------------------------------
        !| RUN LND MODEL
        !----------------------------------------------------------
-
        if (lnd_present .and. lndrun_alarm) then
           call component_run(Eclock_l, lnd, lnd_run, infodata, &
                seq_flds_x2c_fluxes=seq_flds_x2l_fluxes, &
@@ -2670,7 +2455,6 @@ contains
        !----------------------------------------------------------
        !| RUN ROF MODEL
        !----------------------------------------------------------
-
        if (rof_present .and. rofrun_alarm) then
           call component_run(Eclock_r, rof, rof_run, infodata, &
                seq_flds_x2c_fluxes=seq_flds_x2r_fluxes, &
@@ -2683,7 +2467,6 @@ contains
        !----------------------------------------------------------
        !| RUN WAV MODEL
        !----------------------------------------------------------
-
        if (wav_present .and. wavrun_alarm) then
           call component_run(Eclock_w, wav, wav_run, infodata, &
                seq_flds_x2c_fluxes=seq_flds_x2w_fluxes, &
@@ -2694,343 +2477,62 @@ contains
        endif
 
        !----------------------------------------------------------
-       !| RUN OCN MODEL (cesm1_orig_tight or cesm1_mod_tight)
+       !| RUN OCN MODEL (cesm1_mod_tight, nuopc_tight)
        !----------------------------------------------------------
-
-       if ((trim(cpl_seq_option) == 'CESM1_ORIG_TIGHT' .or. &
-            trim(cpl_seq_option) == 'CESM1_MOD_TIGHT'   ) .and. &
-            ocn_present .and. ocnrun_alarm) then
-          call component_run(Eclock_o, ocn, ocn_run, infodata, &
-               seq_flds_x2c_fluxes=seq_flds_x2o_fluxes, &
-               seq_flds_c2x_fluxes=seq_flds_o2x_fluxes, &
-               comp_prognostic=ocn_prognostic, comp_num=comp_num_ocn, &
-               timer_barrier= 'CPL:OCNT_RUN_BARRIER', timer_comp_run='CPL:OCNT_RUN', &
-               run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=ocn_layout)
-       endif
-
-       !----------------------------------------------------------
-       !| OCN RECV-POST (cesm1_orig_tight or cesm1_mod_tight)
-       !----------------------------------------------------------
-
-       if ((trim(cpl_seq_option) == 'CESM1_ORIG_TIGHT' .or. &
-            trim(cpl_seq_option) == 'CESM1_MOD_TIGHT'   ) .and. &
-            ocn_present .and. ocnnext_alarm) then
-
-          !----------------------------------------------------------
-          !| ocn -> cpl (cesm1_orig_tight or cesm1_mod_tight)
-          !----------------------------------------------------------
-
-          if (iamin_CPLALLOCNID) then
-             call component_exch(ocn, flow='c2x', &
-                  infodata=infodata, infodata_string='ocn2cpl_run', &
-                  mpicom_barrier=mpicom_CPLALLOCNID, run_barriers=run_barriers, &
-                  timer_barrier='CPL:O2CT_BARRIER', timer_comp_exch='CPL:O2CT', &
-                  timer_map_exch='CPL:o2c_ocno2ocnx', timer_infodata_exch='CPL:o2c_infoexch')
+       if (ocn_present .and. ocnrun_alarm) then
+          if (trim(cpl_seq_option) == 'CESM1_MOD_TIGHT' .or. trim(cpl_seq_option) == 'NUOPC_TIGHT') then
+             call component_run(Eclock_o, ocn, ocn_run, infodata, &
+                  seq_flds_x2c_fluxes=seq_flds_x2o_fluxes, &
+                  seq_flds_c2x_fluxes=seq_flds_o2x_fluxes, &
+                  comp_prognostic=ocn_prognostic, comp_num=comp_num_ocn, &
+                  timer_barrier= 'CPL:OCNT_RUN_BARRIER', timer_comp_run='CPL:OCNT_RUN', &
+                  run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=ocn_layout)
           endif
-
-          !----------------------------------------------------------
-          !| ocn post (cesm1_orig_tight or cesm1_mod_tight)
-          !----------------------------------------------------------
-
-          if (iamin_CPLID) then
-             call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPOSTT_BARRIER')
-             call t_drvstartf  ('CPL:OCNPOSTT',cplrun=.true.,barrier=mpicom_CPLID)
-             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-
-             call component_diag(infodata, ocn, flow='c2x', comment= 'recv ocn', &
-                  info_debug=info_debug, timer_diag='CPL:ocnpost_diagav')
-
-             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-             call t_drvstopf  ('CPL:OCNPOSTT',cplrun=.true.)
-          endif
-
-       endif
+       end if
 
        !----------------------------------------------------------
-       !| ATM/OCN SETUP (cesm1_orig, cesm1_orig_tight, cesm1_mod or cesm1_mod_tight)
+       !| OCN RECV-POST (cesm1_mod_tight, nuopc_tight)
        !----------------------------------------------------------
-       if ((trim(cpl_seq_option) == 'CESM1_ORIG'       .or. &
-            trim(cpl_seq_option) == 'CESM1_ORIG_TIGHT' .or. &
-            trim(cpl_seq_option) == 'CESM1_MOD'        .or. &
-            trim(cpl_seq_option) == 'CESM1_MOD_TIGHT' ) .and. &
-            iamin_CPLID .and. ocn_present) then
-
-          call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMOCNP_BARRIER')
-          call t_drvstartf ('CPL:ATMOCNP',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(7))
-          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-
-          !----------------------------------------------------------
-          !| ocn prep-merge (cesm1_orig or cesm1_orig_tight)
-          !----------------------------------------------------------
-
-          if (ocn_prognostic) then
-             ! Map ice to ocn
-             if (ice_c2_ocn) call prep_ocn_calc_i2x_ox(timer='CPL:atmocnp_ice2ocn')
-
-             ! Map wav to ocn
-             if (wav_c2_ocn) call prep_ocn_calc_w2x_ox(timer='CPL:atmocnp_wav2ocn')
-
-             if (cpl_seq_option == 'CESM1_ORIG' .or. &
-                  cpl_seq_option == 'CESM1_ORIG_TIGHT') then
-                xao_ox => prep_aoflux_get_xao_ox()
-                call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
-
-                ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn)
-                call prep_ocn_accum(timer='CPL:atmocnp_accum')
-             endif
+       if (ocn_present .and. ocnnext_alarm) then
+          if (trim(cpl_seq_option) == 'CESM1_MOD_TIGHT' .or. trim(cpl_seq_option) == 'NUOPC_TIGHT') then
+             call cime_run_ocn_recv_post()
           endif
+       end if
 
-          !----------------------------------------------------------
-          !| atm/ocn flux on atm grid ((cesm1_orig, cesm1_orig_tight, cesm1_mod or cesm1_mod_tight) and aoflux='atm')
-          !----------------------------------------------------------
-
-          if (trim(aoflux_grid) == 'atm') then
-             ! compute o2x_ax for flux_atmocn, will be updated before atm merge
-             ! do not use fractions because fractions here are NOT consistent with fractions in atm_mrg
-             if (ocn_c2_atm) call prep_atm_calc_o2x_ax(timer='CPL:atmoca_ocn2atm')
-
-             call t_drvstartf ('CPL:atmocna_fluxa',barrier=mpicom_CPLID)
-             do exi = 1,num_inst_xao
-                eai = mod((exi-1),num_inst_atm) + 1
-                eoi = mod((exi-1),num_inst_ocn) + 1
-                efi = mod((exi-1),num_inst_frc) + 1
-                a2x_ax => component_get_c2x_cx(atm(eai))
-                o2x_ax => prep_atm_get_o2x_ax()    ! array over all instances
-                xao_ax => prep_aoflux_get_xao_ax() ! array over all instances
-                call seq_flux_atmocn_mct(infodata, tod, dtime, a2x_ax, o2x_ax(eoi), xao_ax(exi))
-             enddo
-             call t_drvstopf  ('CPL:atmocna_fluxa')
-
-             if (atm_c2_ocn) call prep_aoflux_calc_xao_ox(timer='CPL:atmocna_atm2ocn')
-          endif  ! aoflux_grid
-
-          !----------------------------------------------------------
-          !| atm/ocn flux on ocn grid ((cesm1_orig, cesm1_orig_tight, cesm1_mod or cesm1_mod_tight) and aoflux='ocn')
-          !----------------------------------------------------------
-
-          if (trim(aoflux_grid) == 'ocn') then
-             call t_drvstartf ('CPL:atmocnp_fluxo',barrier=mpicom_CPLID)
-             do exi = 1,num_inst_xao
-                eai = mod((exi-1),num_inst_atm) + 1
-                eoi = mod((exi-1),num_inst_ocn) + 1
-                efi = mod((exi-1),num_inst_frc) + 1
-                a2x_ox => prep_ocn_get_a2x_ox()
-                o2x_ox => component_get_c2x_cx(ocn(eoi))
-                xao_ox => prep_aoflux_get_xao_ox()
-                call seq_flux_atmocn_mct(infodata, tod, dtime, a2x_ox(eai), o2x_ox, xao_ox(exi))
-             enddo
-             call t_drvstopf  ('CPL:atmocnp_fluxo')
-             !         else if (trim(aoflux_grid) == 'atm') then
-             !            !--- compute later ---
-             !
-             !         else if (trim(aoflux_grid) == 'exch') then
-             !            xao_ax   => prep_aoflux_get_xao_ax()
-             !            xao_ox   => prep_aoflux_get_xao_ox()
-             !
-             !            call t_drvstartf ('CPL:atmocnp_fluxe',barrier=mpicom_CPLID)
-             !            call seq_flux_atmocnexch_mct( infodata, atm(eai), ocn(eoi), &
-             !                 fractions_ax(efi), fractions_ox(efi), xao_ax(exi), xao_ox(exi) )
-             !            call t_drvstopf  ('CPL:atmocnp_fluxe')
-          endif  ! aoflux_grid
-
-          !----------------------------------------------------------
-          !| ocn prep-merge (cesm1_mod or cesm1_mod_tight)
-          !----------------------------------------------------------
-
-          if (ocn_prognostic) then
-             if (cpl_seq_option == 'CESM1_MOD' .or. &
-                  cpl_seq_option == 'CESM1_MOD_TIGHT') then
-
-                xao_ox => prep_aoflux_get_xao_ox()
-                call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
-
-                ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn)
-                call prep_ocn_accum(timer='CPL:atmocnp_accum')
-             endif
-          endif
-
-          !----------------------------------------------------------
-          !| ocn albedos (cesm1_orig, cesm1_orig_tight, cesm1_mod or cesm1_mod_tight)
-          !  (MUST BE AFTER prep_ocn_mrg for swnet to ocn to be computed properly
-          !----------------------------------------------------------
-
-          call t_drvstartf ('CPL:atmocnp_ocnalb', barrier=mpicom_CPLID)
-          do exi = 1,num_inst_xao
-             efi = mod((exi-1),num_inst_frc) + 1
-             eai = mod((exi-1),num_inst_atm) + 1
-             xao_ox => prep_aoflux_get_xao_ox()        ! array over all instances
-             a2x_ox => prep_ocn_get_a2x_ox()
-             call seq_flux_ocnalb_mct(infodata, ocn(1), a2x_ox(eai), fractions_ox(efi), xao_ox(exi))
-          enddo
-          call t_drvstopf  ('CPL:atmocnp_ocnalb')
-
-          !----------------------------------------------------------
-          !| ocn budget (cesm1_orig, cesm1_orig_tight, cesm1_mod or cesm1_mod_tight)
-          !----------------------------------------------------------
-
-          if (do_budgets) then
-             call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
-             call t_drvstartf ('CPL:BUDGET0',budget=.true.,barrier=mpicom_CPLID)
-             xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
-             call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
-                  do_o2x=.true., do_x2o=.true., do_xao=.true.)
-             call t_drvstopf ('CPL:BUDGET0',budget=.true.)
-          endif
-
-          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-          call t_drvstopf  ('CPL:ATMOCNP',cplrun=.true.,hashint=hashint(7))
+       !----------------------------------------------------------
+       !| ATM/OCN SETUP (cesm1_mod or cesm1_mod_tight)
+       !----------------------------------------------------------
+       ! The following maps to the ocean, computes atm/ocn fluxes, merges to the ocean,
+       ! accumulates ocn input and computes ocean albedos
+       if (ocn_present) then
+          if (trim(cpl_seq_option) == 'CESM1_MOD'       .or. &
+              trim(cpl_seq_option) == 'CESM1_MOD_TIGHT' .or. &
+              trim(cpl_seq_option) == 'NUOPC'           .or. &
+              trim(cpl_seq_option) == 'NUOPC_TIGHT' ) then
+             call cime_run_atmocn_setup(hashint)
+          end if
        endif
 
        !----------------------------------------------------------
        !| LND RECV-POST
        !----------------------------------------------------------
-
        if (lnd_present .and. lndrun_alarm) then
-
-          !----------------------------------------------------------
-          !| lnd -> cpl
-          !----------------------------------------------------------
-
-          if (iamin_CPLALLLNDID) then
-             call component_exch(lnd, flow='c2x', infodata=infodata, infodata_string='lnd2cpl_run', &
-                  mpicom_barrier=mpicom_CPLALLLNDID, run_barriers=run_barriers, &
-                  timer_barrier='CPL:L2C_BARRIER', timer_comp_exch='CPL:L2C', &
-                  timer_map_exch='CPL:l2c_lndl2lndx', timer_infodata_exch='lnd2cpl_run')
-          endif
-
-          !----------------------------------------------------------
-          !| lnd post
-          !----------------------------------------------------------
-
-          if (iamin_CPLID) then
-             call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:LNDPOST_BARRIER')
-             call t_drvstartf  ('CPL:LNDPOST',cplrun=.true.,barrier=mpicom_CPLID)
-             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-
-             call component_diag(infodata, lnd, flow='c2x', comment='recv lnd', &
-                  info_debug=info_debug, timer_diag='CPL:lndpost_diagav')
-
-             ! Accumulate rof and glc inputs (module variables in prep_rof_mod and prep_glc_mod)
-             if (lnd_c2_rof) then
-                call prep_rof_accum(timer='CPL:lndpost_accl2r')
-             endif
-             if (lnd_c2_glc) then
-                call prep_glc_accum(timer='CPL:lndpost_accl2g' )
-             endif
-
-             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-             call t_drvstopf  ('CPL:LNDPOST',cplrun=.true.)
-          endif
+          call cime_run_lnd_recv_post()
        endif
 
        !----------------------------------------------------------
        !| GLC SETUP-SEND
        !----------------------------------------------------------
-
        if (glc_present .and. glcrun_alarm) then
-
-          !----------------------------------------------------
-          !| glc prep-merge
-          !----------------------------------------------------
-
-          if (iamin_CPLID .and. glc_prognostic) then
-             call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:GLCPREP_BARRIER')
-             call t_drvstartf ('CPL:GLCPREP',cplrun=.true.,barrier=mpicom_CPLID)
-             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-
-             if (lnd_c2_glc) then
-                ! NOTE - only create appropriate input to glc if the avg_alarm is on
-                if (glcrun_avg_alarm) then
-                   call prep_glc_accum_avg(timer='CPL:glcprep_avg')
-                   lnd2glc_averaged_now = .true.
-
-                   ! Note that l2x_gx is obtained from mapping the module variable l2gacc_lx
-                   call prep_glc_calc_l2x_gx(fractions_lx, timer='CPL:glcprep_lnd2glc')
-
-                   call prep_glc_mrg(infodata, fractions_gx, timer_mrg='CPL:glcprep_mrgx2g')
-
-                   call component_diag(infodata, glc, flow='x2c', comment='send glc', &
-                        info_debug=info_debug, timer_diag='CPL:glcprep_diagav')
-
-                else
-                   call prep_glc_zero_fields()
-                end if  ! glcrun_avg_alarm
-             end if  ! lnd_c2_glc
-
-             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-             call t_drvstopf  ('CPL:GLCPREP',cplrun=.true.)
-
-          end if  ! iamin_CPLID .and. glc_prognostic
-
-          ! Set the infodata field on all tasks (not just those with iamin_CPLID).
-          if (glc_prognostic) then
-             if (glcrun_avg_alarm) then
-                call seq_infodata_PutData(infodata, glc_valid_input=.true.)
-             else
-                call seq_infodata_PutData(infodata, glc_valid_input=.false.)
-             end if
-          end if
-
-          !----------------------------------------------------
-          !| cpl -> glc
-          !----------------------------------------------------
-
-          if (iamin_CPLALLGLCID .and. glc_prognostic) then
-             call component_exch(glc, flow='x2c', &
-                  infodata=infodata, infodata_string='cpl2glc_run', &
-                  mpicom_barrier=mpicom_CPLALLGLCID, run_barriers=run_barriers, &
-                  timer_barrier='CPL:C2G_BARRIER', timer_comp_exch='CPL:C2G', &
-                  timer_map_exch='CPL:c2g_glcx2glcg', timer_infodata_exch='CPL:c2g_infoexch')
-          endif
-
+          call cime_run_glc_setup_send(lnd2glc_averaged_now)
        endif
 
        !----------------------------------------------------------
        !| ROF RECV-POST
        !----------------------------------------------------------
-
        if (rof_present .and. rofrun_alarm) then
-
-          !----------------------------------------------------------
-          !| rof -> cpl
-          !----------------------------------------------------------
-
-          if (iamin_CPLALLROFID) then
-             call component_exch(rof, flow='c2x', &
-                  infodata=infodata, infodata_string='rof2cpl_run', &
-                  mpicom_barrier=mpicom_CPLALLROFID, run_barriers=run_barriers, &
-                  timer_barrier='CPL:R2C_BARRIER', timer_comp_exch='CPL:R2C', &
-                  timer_map_exch='CPL:r2c_rofr2rofx', timer_infodata_exch='CPL:r2c_infoexch')
-          endif
-
-          !----------------------------------------------------------
-          !| rof post
-          !----------------------------------------------------------
-
-          if (iamin_CPLID) then
-             call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ROFPOST_BARRIER')
-             call t_drvstartf  ('CPL:ROFPOST',cplrun=.true.,barrier=mpicom_CPLID)
-             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-
-             call component_diag(infodata, rof, flow='c2x', comment= 'recv rof', &
-                  info_debug=info_debug, timer_diag='CPL:rofpost_diagav')
-
-             if (rof_c2_lnd) then
-                call prep_lnd_calc_r2x_lx(timer='CPL:rofpost_rof2lnd')
-             endif
-
-             if (rof_c2_ice) then
-                call prep_ice_calc_r2x_ix(timer='CPL:rofpost_rof2ice')
-             endif
-
-             if (rof_c2_ocn) then
-                call prep_ocn_calc_r2x_ox(timer='CPL:rofpost_rof2ocn')
-             endif
-
-             call t_drvstopf  ('CPL:ROFPOST', cplrun=.true.)
-          endif
+          call cime_run_rof_recv_post()
        endif
-
        if (rof_present) then
           if (iamin_CPLID) then
              call cime_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_ROFPOST_BARRIER')
@@ -3038,347 +2540,86 @@ contains
              if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
              if (do_hist_r2x) then
                 call t_drvstartf ('driver_rofpost_histaux', barrier=mpicom_CPLID)
+                ! Write coupler's hr2x file at 24 hour marks,
+                ! and at the end of the run interval, even if that's not at a 24 hour mark.
+                write_hist_alarm = t24hr_alarm .or. stop_alarm
                 do eri = 1,num_inst_rof
-                   suffix =  component_get_suffix(rof(eri))
+                   inst_suffix =  component_get_suffix(rof(eri))
                    call seq_hist_writeaux(infodata, EClock_d, rof(eri), flow='c2x', &
-                        aname='r2x'//trim(suffix), dname='domrb', &
-                        nx=rof_nx, ny=rof_ny, nt=1, write_now=t24hr_alarm)
+                        aname='r2x',dname='domrb',inst_suffix=trim(inst_suffix),  &
+                        nx=rof_nx, ny=rof_ny, nt=1, write_now=write_hist_alarm)
                 enddo
                 call t_drvstopf ('driver_rofpost_histaux')
              endif
              call t_drvstopf  ('DRIVER_ROFPOST', cplrun=.true.)
           endif
        endif
-
        !----------------------------------------------------------
        !| Budget with old fractions
        !----------------------------------------------------------
-
-       ! WJS (2-17-11): I am just using the first instance for the budgets because we
-       ! don't expect budgets to be conserved for our case (I case). Also note that we
-       ! don't expect budgets to be conserved for the interactive ensemble use case either.
-       ! tcraig (aug 2012): put this after rof->cpl so the budget sees the new r2x_rx.
-       ! it will also use the current r2x_ox here which is the value from the last timestep
-       ! consistent with the ocean coupling
-
-       if (iamin_CPLID .and. do_budgets) then
-          call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET1_BARRIER')
-          call t_drvstartf ('CPL:BUDGET1',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
-          if (lnd_present) then
-             call seq_diag_lnd_mct(lnd(ens1), fractions_lx(ens1), infodata, &
-                  do_l2x=.true., do_x2l=.true.)
-          endif
-          if (rof_present) then
-             call seq_diag_rof_mct(rof(ens1), fractions_rx(ens1), infodata)
-          endif
-          if (ice_present) then
-             call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, &
-                  do_x2i=.true.)
-          endif
-          call t_drvstopf  ('CPL:BUDGET1',cplrun=.true.,budget=.true.)
+       if (do_budgets) then
+          call cime_run_calc_budgets1()
        endif
-
 
        !----------------------------------------------------------
        !| ICE RECV-POST
        !----------------------------------------------------------
-
        if (ice_present .and. icerun_alarm) then
-
-          !----------------------------------------------------------
-          !| ice -> cpl
-          !----------------------------------------------------------
-
-          if (iamin_CPLALLICEID) then
-             call component_exch(ice, flow='c2x', &
-                  infodata=infodata, infodata_string='ice2cpl_run', &
-                  mpicom_barrier=mpicom_CPLALLICEID, run_barriers=run_barriers, &
-                  timer_barrier='CPL:I2C_BARRIER', timer_comp_exch='CPL:I2C', &
-                  timer_map_exch='CPL:i2c_icei2icex', timer_infodata_exch='CPL:i2c_infoexch')
-          endif
-
-          !----------------------------------------------------------
-          !| ice post
-          !----------------------------------------------------------
-
-          if (iamin_CPLID) then
-             call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ICEPOST_BARRIER')
-             call t_drvstartf  ('CPL:ICEPOST',cplrun=.true.,barrier=mpicom_CPLID)
-             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-
-             call component_diag(infodata, ice, flow='c2x', comment= 'recv ice', &
-                  info_debug=info_debug, timer_diag='CPL:icepost_diagav')
-
-             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-             call t_drvstopf  ('CPL:ICEPOST',cplrun=.true.)
-          endif
+          call cime_run_ice_recv_post()
        endif
 
        !----------------------------------------------------------
        !| Update fractions based on new ice fractions
        !----------------------------------------------------------
-
-       if (iamin_CPLID) then
-          call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:FRACSET_BARRIER')
-          call t_drvstartf ('CPL:FRACSET',cplrun=.true.,barrier=mpicom_CPLID)
-          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-          call t_drvstartf ('CPL:fracset_fracset',barrier=mpicom_CPLID)
-
-          do efi = 1,num_inst_frc
-             eii = mod((efi-1),num_inst_ice) + 1
-
-             call seq_frac_set(infodata, ice(eii), &
-                  fractions_ax(efi), fractions_ix(efi), fractions_ox(efi))
-          enddo
-          call t_drvstopf  ('CPL:fracset_fracset')
-
-          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-          call t_drvstopf  ('CPL:FRACSET',cplrun=.true.)
-       endif
+       call cime_run_update_fractions()
 
        !----------------------------------------------------------
        !| ATM/OCN SETUP (rasm_option2)
        !----------------------------------------------------------
-
-       if ((trim(cpl_seq_option) == 'RASM_OPTION2') .and. &
-            iamin_CPLID .and. ocn_present) then
-
-          call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMOCN2_BARRIER')
-          call t_drvstartf ('CPL:ATMOCN2',cplrun=.true.,barrier=mpicom_CPLID)
-          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-
-          if (ocn_prognostic) then
-             ! Map ice to ocn
-             if (ice_c2_ocn) call prep_ocn_calc_i2x_ox(timer='CPL:atmocnp_ice2ocn')
-
-             ! Map wav to ocn
-             if (wav_c2_ocn) call prep_ocn_calc_w2x_ox(timer='CPL:atmocnp_wav2ocn')
-          endif
-
-          !----------------------------------------------------------
-          !| atm/ocn flux on atm grid (rasm_option2 and aoflux_grid='atm')
-          !----------------------------------------------------------
-
-          if (trim(aoflux_grid) == 'atm') then
-             ! compute o2x_ax for flux_atmocn, will be updated before atm merge
-             ! can use fractions because fractions here are consistent with fractions in atm_mrg
-             if (ocn_c2_atm) call prep_atm_calc_o2x_ax(fractions_ox,timer='CPL:atmoca_ocn2atm')
-
-             call t_drvstartf ('CPL:atmocna_fluxa',barrier=mpicom_CPLID)
-             do exi = 1,num_inst_xao
-                eai = mod((exi-1),num_inst_atm) + 1
-                eoi = mod((exi-1),num_inst_ocn) + 1
-                efi = mod((exi-1),num_inst_frc) + 1
-                a2x_ax => component_get_c2x_cx(atm(eai))
-                o2x_ax => prep_atm_get_o2x_ax()    ! array over all instances
-                xao_ax => prep_aoflux_get_xao_ax() ! array over all instances
-                call seq_flux_atmocn_mct(infodata, tod, dtime, a2x_ax, o2x_ax(eoi), xao_ax(exi))
-             enddo
-             call t_drvstopf  ('CPL:atmocna_fluxa')
-
-             if (atm_c2_ocn) call prep_aoflux_calc_xao_ox(timer='CPL:atmocna_atm2ocn')
-          endif  ! aoflux_grid
-
-          !----------------------------------------------------------
-          !| atm/ocn flux on ocn grid (rasm_option2 and aoflux_grid='ocn')
-          !----------------------------------------------------------
-
-          if (trim(aoflux_grid) == 'ocn') then
-             call t_drvstartf ('CPL:atmocnp_fluxo',barrier=mpicom_CPLID)
-             do exi = 1,num_inst_xao
-                eai = mod((exi-1),num_inst_atm) + 1
-                eoi = mod((exi-1),num_inst_ocn) + 1
-                efi = mod((exi-1),num_inst_frc) + 1
-                a2x_ox => prep_ocn_get_a2x_ox()
-                o2x_ox => component_get_c2x_cx(ocn(eoi))
-                xao_ox => prep_aoflux_get_xao_ox()
-                call seq_flux_atmocn_mct(infodata, tod, dtime, a2x_ox(eai), o2x_ox, xao_ox(exi))
-             enddo
-             call t_drvstopf  ('CPL:atmocnp_fluxo')
-          endif  ! aoflux_grid
-
-          !----------------------------------------------------------
-          !| ocn prep-merge (rasm_option2)
-          !----------------------------------------------------------
-
-          xao_ox => prep_aoflux_get_xao_ox()
-          call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
-
-          ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn)
-          call prep_ocn_accum(timer='CPL:atmocnp_accum')
-
-          !----------------------------------------------------------
-          !| ocn albedos (rasm_option2)
-          !  (MUST BE AFTER prep_ocn_mrg for swnet to ocn to be computed properly
-          !----------------------------------------------------------
-
-          call t_drvstartf ('CPL:atmocnp_ocnalb', barrier=mpicom_CPLID)
-          do exi = 1,num_inst_xao
-             efi = mod((exi-1),num_inst_frc) + 1
-             eai = mod((exi-1),num_inst_atm) + 1
-             xao_ox => prep_aoflux_get_xao_ox()        ! array over all instances
-             a2x_ox => prep_ocn_get_a2x_ox()
-             call seq_flux_ocnalb_mct(infodata, ocn(1), a2x_ox(eai), fractions_ox(efi), xao_ox(exi))
-          enddo
-          call t_drvstopf  ('CPL:atmocnp_ocnalb')
-
-          !----------------------------------------------------------
-          !| ocn budget (rasm_option2)
-          !----------------------------------------------------------
-
-          if (do_budgets) then
-             call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
-             call t_drvstartf ('CPL:BUDGET0',budget=.true.,barrier=mpicom_CPLID)
-             xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
-             call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
-                  do_o2x=.true., do_x2o=.true., do_xao=.true.)
-             call t_drvstopf ('CPL:BUDGET0',budget=.true.)
-          endif
-
-          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-          call t_drvstopf  ('CPL:ATMOCN2',cplrun=.true.)
+       ! The following maps to the ocean, computes atm/ocn fluxes, merges to the ocean,
+       ! accumulates ocn input and computes ocean albedos
+       if (ocn_present) then
+          if (trim(cpl_seq_option) == 'RASM_OPTION2') then
+             call cime_run_atmocn_setup(hashint)
+          end if
        endif
 
        !----------------------------------------------------------
        !| OCN SETUP-SEND (rasm_option2)
        !----------------------------------------------------------
-
-       if ((trim(cpl_seq_option) == 'RASM_OPTION2'  ) .and. &
-            ocn_present .and. ocnrun_alarm) then
-
-          !----------------------------------------------------
-          ! "startup" wait (rasm_option2)
-          !----------------------------------------------------
-
-          if (iamin_CPLALLOCNID) then
-             ! want to know the time the ocean pes waited for the cpl pes
-             ! at the first ocnrun_alarm, min ocean wait is wait time
-             ! do not use t_barrierf here since it can be "off", use mpi_barrier
-             do eoi = 1,num_inst_ocn
-                if (ocn(eoi)%iamin_compid) call t_drvstartf ('CPL:C2O_INITWAIT')
-             enddo
-             call mpi_barrier(mpicom_CPLALLOCNID,ierr)
-             do eoi = 1,num_inst_ocn
-                if (ocn(eoi)%iamin_compid) call t_drvstopf  ('CPL:C2O_INITWAIT')
-             enddo
-             cpl2ocn_first = .false.
-          endif
-
-          !----------------------------------------------------
-          !| ocn average (rasm_option2)
-          !----------------------------------------------------
-
-          if (iamin_CPLID .and. ocn_prognostic) then
-             call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPRE2_BARRIER')
-             call t_drvstartf ('CPL:OCNPRE2',cplrun=.true.,barrier=mpicom_CPLID)
-             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-
-             ! finish accumulating ocean inputs
-             ! reset the value of x2o_ox with the value in x2oacc_ox
-             ! (module variable in prep_ocn_mod)
-             call prep_ocn_accum_avg(timer_accum='CPL:ocnprep_avg')
-
-             call component_diag(infodata, ocn, flow='x2c', comment= 'send ocn', &
-                  info_debug=info_debug, timer_diag='CPL:ocnprep_diagav')
-
-             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-             call t_drvstopf  ('CPL:OCNPRE2',cplrun=.true.)
-          endif
-
-          !----------------------------------------------------
-          !| cpl -> ocn (rasm_option2)
-          !----------------------------------------------------
-
-          if (iamin_CPLALLOCNID .and. ocn_prognostic) then
-             call component_exch(ocn, flow='x2c', &
-                  infodata=infodata, infodata_string='cpl2ocn_run', &
-                  mpicom_barrier=mpicom_CPLALLOCNID, run_barriers=run_barriers, &
-                  timer_barrier='CPL:C2O2_BARRIER', timer_comp_exch='CPL:C2O2', &
-                  timer_map_exch='CPL:c2o2_ocnx2ocno', timer_infodata_exch='CPL:c2o2_infoexch')
-          endif
-
+       if (ocn_present .and. ocnrun_alarm) then
+          if (trim(cpl_seq_option) == 'RASM_OPTION2') then
+             call cime_run_ocn_setup_send()
+          end if
        endif
 
        !----------------------------------------------------------
        !| ATM SETUP-SEND
        !----------------------------------------------------------
-
        if (atm_present .and. atmrun_alarm) then
-
-          !----------------------------------------------------------
-          !| atm prep-merge
-          !----------------------------------------------------------
-
-          if (iamin_CPLID .and. atm_prognostic) then
-             call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMPREP_BARRIER')
-             call t_drvstartf ('CPL:ATMPREP',cplrun=.true.,barrier=mpicom_CPLID)
-             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-
-             if (ocn_c2_atm) then
-                if (trim(aoflux_grid) == 'ocn') then
-                   ! map xao_ox states and fluxes to xao_ax if fluxes were computed on ocn grid
-                   call prep_aoflux_calc_xao_ax(fractions_ox, flds='states_and_fluxes', &
-                        timer='CPL:atmprep_xao2atm')
-                endif
-
-                ! recompute o2x_ax now for the merge with fractions associated with merge
-                call prep_atm_calc_o2x_ax(fractions_ox, timer='CPL:atmprep_ocn2atm')
-
-                ! map xao_ox albedos to the atm grid, these are always computed on the ocean grid
-                call prep_aoflux_calc_xao_ax(fractions_ox, flds='albedos', timer='CPL:atmprep_alb2atm')
-             endif
-
-             if (ice_c2_atm) then
-                call prep_atm_calc_i2x_ax(fractions_ix, timer='CPL:atmprep_ice2atm')
-             endif
-
-             if (lnd_c2_atm) then
-                call prep_atm_calc_l2x_ax(fractions_lx, timer='CPL:atmprep_lnd2atm')
-             endif
-
-             if (associated(xao_ax)) then
-                call prep_atm_mrg(infodata, fractions_ax, xao_ax=xao_ax, timer_mrg='CPL:atmprep_mrgx2a')
-             endif
-
-             call component_diag(infodata, atm, flow='x2c', comment= 'send atm', info_debug=info_debug, &
-                  timer_diag='CPL:atmprep_diagav')
-
-             call t_drvstopf  ('CPL:ATMPREP',cplrun=.true.)
-             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-          endif
-
-          !----------------------------------------------------------
-          !| cpl -> atm
-          !----------------------------------------------------------
-
-          if (iamin_CPLALLATMID .and. atm_prognostic) then
-             call component_exch(atm, flow='x2c', infodata=infodata, infodata_string='cpl2atm_run', &
-                  mpicom_barrier=mpicom_CPLALLATMID, run_barriers=run_barriers, &
-                  timer_barrier='CPL:C2A_BARRIER', timer_comp_exch='CPL:C2A', &
-                  timer_map_exch='CPL:c2a_atmx2atmg', timer_infodata_exch='CPL:c2a_infoexch')
-          endif
-
+          call cime_run_atm_setup_send()
        endif
 
        !----------------------------------------------------------
-       !| RUN OCN MODEL (NOT cesm1_orig_tight or cesm1_mod_tight)
+       !| RUN OCN MODEL (NOT cesm1_mod_tight or nuopc_tight)
        !----------------------------------------------------------
-
-       if ((trim(cpl_seq_option) /= 'CESM1_ORIG_TIGHT' .and. &
-            trim(cpl_seq_option) /= 'CESM1_MOD_TIGHT'   ) .and. &
-            ocn_present .and. ocnrun_alarm) then
-          call component_run(Eclock_o, ocn, ocn_run, infodata, &
-               seq_flds_x2c_fluxes=seq_flds_x2o_fluxes, &
-               seq_flds_c2x_fluxes=seq_flds_o2x_fluxes, &
-               comp_prognostic=ocn_prognostic, comp_num=comp_num_ocn, &
-               timer_barrier= 'CPL:OCN_RUN_BARRIER', timer_comp_run='CPL:OCN_RUN', &
-               run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=ocn_layout)
-       endif
+       if (ocn_present .and. ocnrun_alarm) then
+          if (trim(cpl_seq_option) == 'CESM1_MOD'    .or. &
+              trim(cpl_seq_option) == 'RASM_OPTION1' .or. &
+              trim(cpl_seq_option) == 'RASM_OPTION2' .or. &
+              trim(cpl_seq_option) == 'NUOPC') then
+             call component_run(Eclock_o, ocn, ocn_run, infodata, &
+                  seq_flds_x2c_fluxes=seq_flds_x2o_fluxes, &
+                  seq_flds_c2x_fluxes=seq_flds_o2x_fluxes, &
+                  comp_prognostic=ocn_prognostic, comp_num=comp_num_ocn, &
+                  timer_barrier= 'CPL:OCN_RUN_BARRIER', timer_comp_run='CPL:OCN_RUN', &
+                  run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=ocn_layout)
+          endif
+       end if
 
        !----------------------------------------------------------
        !| RUN ATM MODEL
        !----------------------------------------------------------
-
        if (atm_present .and. atmrun_alarm) then
           call component_run(Eclock_a, atm, atm_run, infodata, &
                seq_flds_x2c_fluxes=seq_flds_x2a_fluxes, &
@@ -3391,7 +2632,6 @@ contains
        !----------------------------------------------------------
        !| RUN GLC MODEL
        !----------------------------------------------------------
-
        if (glc_present .and. glcrun_alarm) then
           call component_run(Eclock_g, glc, glc_run, infodata, &
                seq_flds_x2c_fluxes=seq_flds_x2g_fluxes, &
@@ -3404,210 +2644,52 @@ contains
        !----------------------------------------------------------
        !| WAV RECV-POST
        !----------------------------------------------------------
-
        if (wav_present .and. wavrun_alarm) then
-
-          !----------------------------------------------------------
-          !| wav -> cpl
-          !----------------------------------------------------------
-
-          if (iamin_CPLALLWAVID) then
-             call component_exch(wav, flow='c2x', infodata=infodata, infodata_string='wav2cpl_run', &
-                  mpicom_barrier=mpicom_CPLALLWAVID, run_barriers=run_barriers, &
-                  timer_barrier='CPL:W2C_BARRIER', timer_comp_exch='CPL:W2C', &
-                  timer_map_exch='CPL:w2c_wavw2wavx', timer_infodata_exch='CPL:w2c_infoexch')
-          endif
-
-          !----------------------------------------------------------
-          !| wav post
-          !----------------------------------------------------------
-
-          if (iamin_CPLID) then
-             call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:WAVPOST_BARRIER')
-             call t_drvstartf  ('CPL:WAVPOST',cplrun=.true.,barrier=mpicom_CPLID)
-             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-
-             call component_diag(infodata, wav, flow='c2x', comment= 'recv wav', &
-                  info_debug=info_debug, timer_diag='CPL:wavpost_diagav')
-
-             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-             call t_drvstopf  ('CPL:WAVPOST',cplrun=.true.)
-          endif
+          call cime_run_wav_recv_post()
        endif
 
        !----------------------------------------------------------
        !| GLC RECV-POST
        !----------------------------------------------------------
-
        if (glc_present .and. glcrun_alarm) then
-
-          !----------------------------------------------------------
-          !| glc -> cpl
-          !----------------------------------------------------------
-
-          if (iamin_CPLALLGLCID) then
-             call component_exch(glc, flow='c2x', infodata=infodata, infodata_string='glc2cpl_run', &
-                  mpicom_barrier=mpicom_CPLALLGLCID, run_barriers=run_barriers, &
-                  timer_barrier='CPL:G2C_BARRIER', timer_comp_exch='CPL:G2C', &
-                  timer_map_exch='CPL:g2c_glcg2glcx', timer_infodata_exch='CPL:g2c_infoexch')
-          endif
-
-          !----------------------------------------------------------
-          !| glc post
-          !----------------------------------------------------------
-
-          if (iamin_CPLID) then
-             call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:GLCPOST_BARRIER')
-             call t_drvstartf  ('CPL:GLCPOST',cplrun=.true.,barrier=mpicom_CPLID)
-             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-
-             call component_diag(infodata, glc, flow='c2x', comment= 'recv glc', &
-                  info_debug=info_debug, timer_diag='CPL:glcpost_diagav')
-
-             if (glc_c2_lnd) then
-                call prep_lnd_calc_g2x_lx(timer='CPL:glcpost_glc2lnd')
-             endif
-
-             if (glc_c2_ice) then
-                call prep_ice_calc_g2x_ix(timer='CPL:glcpost_glc2ice')
-             endif
-
-             if (glc_c2_ocn) then
-                call prep_ocn_calc_g2x_ox(timer='CPL:glcpost_glc2ocn')
-             endif
-
-             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-             call t_drvstopf  ('CPL:GLCPOST',cplrun=.true.)
-          endif
+          call cime_run_glc_recv_post()
        endif
 
        !----------------------------------------------------------
        !| ATM RECV-POST
        !----------------------------------------------------------
-
        if (atm_present .and. atmrun_alarm) then
-
-          !----------------------------------------------------------
-          !| atm -> cpl
-          !----------------------------------------------------------
-
-          if (iamin_CPLALLATMID) then
-             call component_exch(atm, flow='c2x', infodata=infodata, infodata_string='atm2cpl_run', &
-                  mpicom_barrier=mpicom_CPLALLATMID, run_barriers=run_barriers, &
-                  timer_barrier='CPL:A2C_BARRIER', timer_comp_exch='CPL:A2C', &
-                  timer_map_exch='CPL:a2c_atma2atmx', timer_infodata_exch='CPL:a2c_infoexch')
-          endif
-
-          !----------------------------------------------------------
-          !| atm post
-          !----------------------------------------------------------
-
-          if (iamin_CPLID) then
-             call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMPOST_BARRIER')
-             call t_drvstartf ('CPL:ATMPOST',cplrun=.true.,barrier=mpicom_CPLID)
-             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-
-             call component_diag(infodata, atm, flow='c2x', comment= 'recv atm', &
-                  info_debug=info_debug, timer_diag='CPL:atmpost_diagav')
-
-             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-             call t_drvstopf  ('CPL:ATMPOST',cplrun=.true.)
-          endif
+          call cime_run_atm_recv_post
        endif
 
        !----------------------------------------------------------
        !| Budget with new fractions
        !----------------------------------------------------------
-
-       if (iamin_CPLID .and. do_budgets) then
-          call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET2_BARRIER')
-
-          call t_drvstartf ('CPL:BUDGET2',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
-          if (atm_present) then
-             call seq_diag_atm_mct(atm(ens1), fractions_ax(ens1), infodata, &
-                  do_a2x=.true., do_x2a=.true.)
-          endif
-          if (ice_present) then
-             call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, &
-                  do_i2x=.true.)
-          endif
-          call t_drvstopf  ('CPL:BUDGET2',cplrun=.true.,budget=.true.)
-
-          call t_drvstartf ('CPL:BUDGET3',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
-          call seq_diag_accum_mct()
-          call t_drvstopf  ('CPL:BUDGET3',cplrun=.true.,budget=.true.)
-
-          call t_drvstartf ('CPL:BUDGETF',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
-          if (.not. dead_comps) then
-             call seq_diag_print_mct(EClock_d,stop_alarm,budget_inst, &
-                  budget_daily, budget_month, budget_ann, budget_ltann, budget_ltend)
-          endif
-          call seq_diag_zero_mct(EClock=EClock_d)
-
-          call t_drvstopf  ('CPL:BUDGETF',cplrun=.true.,budget=.true.)
+       if (do_budgets) then
+          call cime_run_calc_budgets2()
        endif
 
        !----------------------------------------------------------
-       !| OCN RECV-POST (NOT cesm1_orig_tight and cesm1_mod_tight)
+       !| OCN RECV-POST (NOT cesm1_mod_tight or nuopc_tight)
        !----------------------------------------------------------
-
-       if ((trim(cpl_seq_option) /= 'CESM1_ORIG_TIGHT' .and. &
-            trim(cpl_seq_option) /= 'CESM1_MOD_TIGHT'   ) .and. &
-            ocn_present .and. ocnnext_alarm) then
-
-          !----------------------------------------------------------
-          !| ocn -> cpl (NOT cesm1_orig_tight and cesm1_mod_tight)
-          !----------------------------------------------------------
-
-          if (iamin_CPLALLOCNID) then
-             call component_exch(ocn, flow='c2x', &
-                  infodata=infodata, infodata_string='ocn2cpl_run', &
-                  mpicom_barrier=mpicom_CPLALLOCNID, run_barriers=run_barriers, &
-                  timer_barrier='CPL:O2C_BARRIER', timer_comp_exch='CPL:O2C', &
-                  timer_map_exch='CPL:o2c_ocno2ocnx', timer_infodata_exch='CPL:o2c_infoexch')
-          endif
-
-          !----------------------------------------------------------
-          !| ocn post (NOT cesm1_orig_tight and cesm1_mod_tight)
-          !----------------------------------------------------------
-
-          if (iamin_CPLID) then
-             call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPOST_BARRIER')
-             call t_drvstartf  ('CPL:OCNPOST',cplrun=.true.,barrier=mpicom_CPLID)
-             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-
-             call component_diag(infodata, ocn, flow='c2x', comment= 'recv ocn', &
-                  info_debug=info_debug, timer_diag='CPL:ocnpost_diagav')
-
-             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-             call t_drvstopf  ('CPL:OCNPOST',cplrun=.true.)
-          endif
-       endif
+       if (ocn_present .and. ocnnext_alarm) then
+          if (trim(cpl_seq_option) == 'CESM1_MOD'    .or. &
+              trim(cpl_seq_option) == 'RASM_OPTION1' .or. &
+              trim(cpl_seq_option) == 'RASM_OPTION2' .or. &
+              trim(cpl_seq_option) == 'NUOPC') then
+             call cime_run_ocn_recv_post()
+          end if
+       end if
 
        !----------------------------------------------------------
        !| Write driver restart file
        !----------------------------------------------------------
-       if ( (restart_alarm .or. drv_pause) .and. iamin_CPLID) then
-          call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:RESTART_BARRIER')
-          call t_drvstartf ('CPL:RESTART',cplrun=.true.,barrier=mpicom_CPLID)
-          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-          if (iamroot_CPLID) then
-             write(logunit,104) ' Write restart file at ',ymd,tod
-             call shr_sys_flush(logunit)
-          endif
-
-          call seq_rest_write(EClock_d, seq_SyncClock, infodata,       &
-               atm, lnd, ice, ocn, rof, glc, wav, esp,                 &
-               fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
-               fractions_rx, fractions_gx, fractions_wx, trim(cpl_inst_tag))
-
-          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-          call t_drvstopf  ('CPL:RESTART',cplrun=.true.)
-       endif
+       call cime_run_write_restart(drv_pause, restart_alarm, drv_resume)
 
        !----------------------------------------------------------
        !| Write history file, only AVs on CPLID
        !----------------------------------------------------------
+       call cime_run_write_history()
 
        if (iamin_CPLID) then
 
@@ -3636,14 +2718,14 @@ contains
 
           if (do_hist_a2x) then
              do eai = 1,num_inst_atm
-                suffix =  component_get_suffix(atm(eai))
+                inst_suffix =  component_get_suffix(atm(eai))
                 if (trim(hist_a2x_flds) == 'all') then
                    call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
-                        aname='a2x'//trim(suffix), dname='doma', &
+                        aname='a2x',dname='doma', inst_suffix=trim(inst_suffix), &
                         nx=atm_nx, ny=atm_ny, nt=ncpl)
                 else
                    call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
-                        aname='a2x'//trim(suffix), dname='doma', &
+                        aname='a2x',dname='doma', inst_suffix=trim(inst_suffix), &
                         nx=atm_nx, ny=atm_ny, nt=ncpl, flds=hist_a2x_flds)
                 endif
              enddo
@@ -3651,14 +2733,14 @@ contains
 
           if (do_hist_a2x1hri .and. t1hr_alarm) then
              do eai = 1,num_inst_atm
-                suffix =  component_get_suffix(atm(eai))
+                inst_suffix =  component_get_suffix(atm(eai))
                 if (trim(hist_a2x1hri_flds) == 'all') then
                    call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
-                        aname='a2x1hi'//trim(suffix), dname='doma', &
+                        aname='a2x1hi',dname='doma',inst_suffix=trim(inst_suffix),  &
                         nx=atm_nx, ny=atm_ny, nt=24)
                 else
                    call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
-                        aname='a2x1hi'//trim(suffix), dname='doma', &
+                        aname='a2x1hi',dname='doma',inst_suffix=trim(inst_suffix),  &
                         nx=atm_nx, ny=atm_ny, nt=24, flds=hist_a2x1hri_flds)
                 endif
              enddo
@@ -3666,14 +2748,14 @@ contains
 
           if (do_hist_a2x1hr) then
              do eai = 1,num_inst_atm
-                suffix =  component_get_suffix(atm(eai))
+                inst_suffix =  component_get_suffix(atm(eai))
                 if (trim(hist_a2x1hr_flds) == 'all') then
                    call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
-                        aname='a2x1h'//trim(suffix), dname='doma', &
+                        aname='a2x1h',dname='doma',inst_suffix=trim(inst_suffix),  &
                         nx=atm_nx, ny=atm_ny, nt=24, write_now=t1hr_alarm)
                 else
                    call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
-                        aname='a2x1h'//trim(suffix), dname='doma', &
+                        aname='a2x1h',dname='doma',inst_suffix=trim(inst_suffix),  &
                         nx=atm_nx, ny=atm_ny, nt=24, write_now=t1hr_alarm, flds=hist_a2x1hr_flds)
                 endif
              enddo
@@ -3681,14 +2763,14 @@ contains
 
           if (do_hist_a2x3hr) then
              do eai = 1,num_inst_atm
-                suffix =  component_get_suffix(atm(eai))
+                inst_suffix =  component_get_suffix(atm(eai))
                 if (trim(hist_a2x3hr_flds) == 'all') then
                    call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
-                        aname='a2x3h'//trim(suffix), dname='doma', &
+                        aname='a2x3h',dname='doma',inst_suffix=trim(inst_suffix),  &
                         nx=atm_nx, ny=atm_ny, nt=8, write_now=t3hr_alarm)
                 else
                    call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
-                        aname='a2x3h'//trim(suffix), dname='doma', &
+                        aname='a2x3h',dname='doma',inst_suffix=trim(inst_suffix),  &
                         nx=atm_nx, ny=atm_ny, nt=8, write_now=t3hr_alarm, flds=hist_a2x3hr_flds)
                 endif
              enddo
@@ -3696,14 +2778,14 @@ contains
 
           if (do_hist_a2x3hrp) then
              do eai = 1,num_inst_atm
-                suffix = component_get_suffix(atm(eai))
+                inst_suffix = component_get_suffix(atm(eai))
                 if (trim(hist_a2x3hrp_flds) == 'all') then
                    call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
-                        aname='a2x3h_prec'//trim(suffix), dname='doma', &
+                        aname='a2x3h_prec',dname='doma',inst_suffix=trim(inst_suffix),  &
                         nx=atm_nx, ny=atm_ny, nt=8, write_now=t3hr_alarm)
                 else
                    call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
-                        aname='a2x3h_prec'//trim(suffix), dname='doma', &
+                        aname='a2x3h_prec',dname='doma',inst_suffix=trim(inst_suffix),  &
                         nx=atm_nx, ny=atm_ny, nt=8, write_now=t3hr_alarm, flds=hist_a2x3hrp_flds)
                 endif
              enddo
@@ -3711,14 +2793,14 @@ contains
 
           if (do_hist_a2x24hr) then
              do eai = 1,num_inst_atm
-                suffix = component_get_suffix(atm(eai))
+                inst_suffix = component_get_suffix(atm(eai))
                 if (trim(hist_a2x24hr_flds) == 'all') then
                    call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
-                        aname='a2x1d'//trim(suffix), dname='doma', &
+                        aname='a2x1d',dname='doma',inst_suffix=trim(inst_suffix),  &
                         nx=atm_nx, ny=atm_ny, nt=1, write_now=t24hr_alarm)
                 else
                    call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
-                        aname='a2x1d'//trim(suffix), dname='doma', &
+                        aname='a2x1d',dname='doma',inst_suffix=trim(inst_suffix),  &
                         nx=atm_nx, ny=atm_ny, nt=1, write_now=t24hr_alarm, flds=hist_a2x24hr_flds)
                 endif
              enddo
@@ -3768,11 +2850,11 @@ contains
                      rdays_offset = tbnds1_offset, &
                      years_offset = -1)
                 do eli = 1,num_inst_lnd
-                   suffix = component_get_suffix(lnd(eli))
+                   inst_suffix = component_get_suffix(lnd(eli))
                    ! Use yr_offset=-1 so the file with fields from year 1 has time stamp
                    ! 0001-01-01 rather than 0002-01-01, etc.
                    call seq_hist_writeaux(infodata, EClock_d, lnd(eli), flow='c2x', &
-                        aname='l2x1yr_glc'//trim(suffix), dname='doml', &
+                        aname='l2x1yr_glc',dname='doml',inst_suffix=trim(inst_suffix),  &
                         nx=lnd_nx, ny=lnd_ny, nt=1, write_now=.true., &
                         tbnds1_offset = tbnds1_offset, yr_offset=-1, &
                         av_to_write=prep_glc_get_l2gacc_lx_one_instance(eli))
@@ -3782,9 +2864,9 @@ contains
 
           if (do_hist_l2x) then
              do eli = 1,num_inst_lnd
-                suffix =  component_get_suffix(lnd(eli))
+                inst_suffix =  component_get_suffix(lnd(eli))
                 call seq_hist_writeaux(infodata, EClock_d, lnd(eli), flow='c2x', &
-                     aname='l2x'//trim(suffix), dname='doml', &
+                     aname='l2x',dname='doml',inst_suffix=trim(inst_suffix),  &
                      nx=lnd_nx, ny=lnd_ny, nt=ncpl)
              enddo
           endif
@@ -3798,21 +2880,105 @@ contains
           ! Make sure that all couplers are here in multicoupler mode before running ESP component
           if (num_inst_driver > 1) then
              call mpi_barrier(global_comm, ierr)
-          endif
-          call component_run(Eclock_e, esp, esp_run, infodata, &
-               comp_prognostic=esp_prognostic, comp_num=comp_num_esp, &
+          end if
+          ! Gather up each instance's 'resume' files (written before 'pause')
+          do eai = 1, num_inst_atm
+             call seq_resume_store_comp(atm(eai)%oneletterid,                 &
+                  atm(eai)%cdata_cc%resume_filename, num_inst_atm,            &
+                  ATMID(eai), component_get_iamroot_compid(atm(eai)))
+          end do
+          do eli = 1, num_inst_lnd
+             call seq_resume_store_comp(lnd(eli)%oneletterid,                 &
+                  lnd(eli)%cdata_cc%resume_filename, num_inst_lnd,            &
+                  LNDID(eli), component_get_iamroot_compid(lnd(eli)))
+          end do
+          do eoi = 1, num_inst_ocn
+             call seq_resume_store_comp(ocn(eoi)%oneletterid,                 &
+                  ocn(eoi)%cdata_cc%resume_filename, num_inst_ocn,            &
+                  OCNID(eoi), component_get_iamroot_compid(ocn(eoi)))
+          end do
+          do eii = 1, num_inst_ice
+             call seq_resume_store_comp(ice(eii)%oneletterid,                 &
+                  ice(eii)%cdata_cc%resume_filename, num_inst_ice,            &
+                  ICEID(eii), component_get_iamroot_compid(ice(eii)))
+          end do
+          do eri = 1, num_inst_rof
+             call seq_resume_store_comp(rof(eri)%oneletterid,                 &
+                  rof(eri)%cdata_cc%resume_filename, num_inst_rof,            &
+                  ROFID(eri), component_get_iamroot_compid(rof(eri)))
+          end do
+          do egi = 1, num_inst_glc
+             call seq_resume_store_comp(glc(egi)%oneletterid,                 &
+                  glc(egi)%cdata_cc%resume_filename, num_inst_glc,            &
+                  GLCID(egi), component_get_iamroot_compid(glc(egi)))
+          end do
+          do ewi = 1, num_inst_wav
+             call seq_resume_store_comp(wav(ewi)%oneletterid,                 &
+                  wav(ewi)%cdata_cc%resume_filename, num_inst_wav,            &
+                  WAVID(ewi), component_get_iamroot_compid(wav(ewi)))
+          end do
+          ! Here we pass 1 as num_inst_driver as num_inst_driver is used inside
+          call seq_resume_store_comp('x', drv_resume, 1,                      &
+               driver_id, iamroot_CPLID)
+          call component_run(Eclock_e, esp, esp_run, infodata,                &
+               comp_prognostic=esp_prognostic, comp_num=comp_num_esp,         &
                timer_barrier= 'CPL:ESP_RUN_BARRIER', timer_comp_run='CPL:ESP_RUN', &
                run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=esp_layout)
+
           !---------------------------------------------------------------------
           !| ESP computes resume options for other components -- update everyone
           !---------------------------------------------------------------------
-          call seq_infodata_exchange(infodata, CPLALLESPID, 'esp2cpl_run')
-       endif
+          call seq_resume_get_files('a', resume_files)
+          if (associated(resume_files)) then
+             do eai = 1, num_inst_atm
+                atm(eai)%cdata_cc%resume_filename = resume_files(ATMID(eai))
+             end do
+          end if
+          call seq_resume_get_files('l', resume_files)
+          if (associated(resume_files)) then
+             do eli = 1, num_inst_lnd
+                lnd(eli)%cdata_cc%resume_filename = resume_files(LNDID(eli))
+             end do
+          end if
+          call seq_resume_get_files('o', resume_files)
+          if (associated(resume_files)) then
+             do eoi = 1, num_inst_ocn
+                ocn(eoi)%cdata_cc%resume_filename = resume_files(OCNID(eoi))
+             end do
+          end if
+          call seq_resume_get_files('i', resume_files)
+          if (associated(resume_files)) then
+             do eii = 1, num_inst_ice
+                ice(eii)%cdata_cc%resume_filename = resume_files(ICEID(eii))
+             end do
+          end if
+          call seq_resume_get_files('r', resume_files)
+          if (associated(resume_files)) then
+             do eri = 1, num_inst_rof
+                rof(eri)%cdata_cc%resume_filename = resume_files(ROFID(eri))
+             end do
+          end if
+          call seq_resume_get_files('g', resume_files)
+          if (associated(resume_files)) then
+             do egi = 1, num_inst_glc
+                glc(egi)%cdata_cc%resume_filename = resume_files(GLCID(egi))
+             end do
+          end if
+          call seq_resume_get_files('w', resume_files)
+          if (associated(resume_files)) then
+             do ewi = 1, num_inst_wav
+                wav(ewi)%cdata_cc%resume_filename = resume_files(WAVID(ewi))
+             end do
+          end if
+          call seq_resume_get_files('x', resume_files)
+          if (associated(resume_files)) then
+             drv_resume = resume_files(driver_id)
+          end if
+       end if
 
        !----------------------------------------------------------
        !| RESUME (read restart) if signaled
        !----------------------------------------------------------
-       call seq_infodata_GetData(infodata, cpl_resume=drv_resume)
        if (len_trim(drv_resume) > 0) then
           if (iamroot_CPLID) then
              write(logunit,103) subname,' Reading restart (resume) file ',trim(drv_resume)
@@ -3826,7 +2992,6 @@ contains
           end if
           ! Clear the resume file so we don't try to read it again
           drv_resume = ' '
-          call seq_infodata_PutData(infodata, cpl_resume=drv_resume)
        end if
 
        !----------------------------------------------------------
@@ -3968,6 +3133,7 @@ contains
     call mpi_barrier(mpicom_GLOID,ierr)
     call t_stopf ('CPL:RUN_LOOP_BSTOP')
 
+    call seq_resume_free()
     Time_end = mpi_wtime()
 
   end subroutine cime_run
@@ -4063,7 +3229,7 @@ contains
   !*******************************************************************************
   !===============================================================================
 
-  subroutine seq_cime_printlogheader()
+  subroutine cime_printlogheader()
 
     !-----------------------------------------------------------------------
     !
@@ -4109,7 +3275,7 @@ contains
     write(logunit,*)' '
     write(logunit,*)' '
 
-  end subroutine seq_cime_printlogheader
+  end subroutine cime_printlogheader
 
   !===============================================================================
 
@@ -4124,6 +3290,8 @@ contains
        call t_drvstopf (trim(timer))
     endif
   end subroutine cime_comp_barriers
+
+  !===============================================================================
 
   subroutine cime_cpl_init(comm_in, comm_out, num_inst_driver, id)
     !-----------------------------------------------------------------------
@@ -4151,7 +3319,7 @@ contains
     call shr_mpi_commsize(comm_in, numpes, ' cime_cpl_init')
 
     num_inst_driver = 1
-    id    = 0
+    id    = 1 ! For compatiblity with component instance numbering
 
     if (mype == 0) then
        ! Read coupler namelist if it exists
@@ -4188,6 +3356,893 @@ contains
        call shr_mpi_chkerr(ierr,subname//' mpi_comm_split')
     end if
     call shr_mpi_commsize(comm_out, drvpes, ' cime_cpl_init')
+
   end subroutine cime_cpl_init
+
+  !===============================================================================
+
+  subroutine cime_run_atmocn_fluxes(hashint)
+    integer, intent(inout) :: hashint(:)
+
+    !----------------------------------------------------------
+    !| atm/ocn flux on atm grid
+    !----------------------------------------------------------
+    if (trim(aoflux_grid) == 'atm') then
+       ! compute o2x_ax for flux_atmocn, will be updated before atm merge
+       ! do not use fractions because fractions here are NOT consistent with fractions in atm_mrg
+       if (ocn_c2_atm) call prep_atm_calc_o2x_ax(timer='CPL:atmoca_ocn2atm')
+
+       call t_drvstartf ('CPL:atmocna_fluxa',barrier=mpicom_CPLID, hashint=hashint(6))
+       do exi = 1,num_inst_xao
+          eai = mod((exi-1),num_inst_atm) + 1
+          eoi = mod((exi-1),num_inst_ocn) + 1
+          efi = mod((exi-1),num_inst_frc) + 1
+          a2x_ax => component_get_c2x_cx(atm(eai))
+          o2x_ax => prep_atm_get_o2x_ax()    ! array over all instances
+          xao_ax => prep_aoflux_get_xao_ax() ! array over all instances
+          call seq_flux_atmocn_mct(infodata, tod, dtime, a2x_ax, o2x_ax(eoi), xao_ax(exi))
+       enddo
+       call t_drvstopf  ('CPL:atmocna_fluxa',hashint=hashint(6))
+
+       if (atm_c2_ocn) call prep_aoflux_calc_xao_ox(timer='CPL:atmocna_atm2ocn')
+    endif  ! aoflux_grid
+
+    !----------------------------------------------------------
+    !| atm/ocn flux on ocn grid
+    !----------------------------------------------------------
+    if (trim(aoflux_grid) == 'ocn') then
+       call t_drvstartf ('CPL:atmocnp_fluxo',barrier=mpicom_CPLID, hashint=hashint(6))
+       do exi = 1,num_inst_xao
+          eai = mod((exi-1),num_inst_atm) + 1
+          eoi = mod((exi-1),num_inst_ocn) + 1
+          efi = mod((exi-1),num_inst_frc) + 1
+          a2x_ox => prep_ocn_get_a2x_ox()
+          o2x_ox => component_get_c2x_cx(ocn(eoi))
+          xao_ox => prep_aoflux_get_xao_ox()
+          call seq_flux_atmocn_mct(infodata, tod, dtime, a2x_ox(eai), o2x_ox, xao_ox(exi))
+       enddo
+       call t_drvstopf  ('CPL:atmocnp_fluxo',hashint=hashint(6))
+    endif  ! aoflux_grid
+
+  end subroutine cime_run_atmocn_fluxes
+
+!----------------------------------------------------------------------------------
+
+  subroutine cime_run_ocn_albedos(hashint)
+    integer, intent(inout) :: hashint(:)
+
+    call t_drvstartf ('CPL:atmocnp_ocnalb', barrier=mpicom_CPLID, hashint=hashint(5))
+    do exi = 1,num_inst_xao
+       efi = mod((exi-1),num_inst_frc) + 1
+       eai = mod((exi-1),num_inst_atm) + 1
+       xao_ox => prep_aoflux_get_xao_ox()        ! array over all instances
+       a2x_ox => prep_ocn_get_a2x_ox()
+       call seq_flux_ocnalb_mct(infodata, ocn(1), a2x_ox(eai), fractions_ox(efi), xao_ox(exi))
+    enddo
+    call t_drvstopf  ('CPL:atmocnp_ocnalb', hashint=hashint(5))
+
+  end subroutine cime_run_ocn_albedos
+
+!----------------------------------------------------------------------------------
+
+  subroutine cime_run_atm_setup_send()
+
+    !----------------------------------------------------------
+    !| atm prep-merge
+    !----------------------------------------------------------
+
+    if (iamin_CPLID .and. atm_prognostic) then
+       call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMPREP_BARRIER')
+       call t_drvstartf ('CPL:ATMPREP',cplrun=.true.,barrier=mpicom_CPLID)
+       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+       if (ocn_c2_atm) then
+          if (trim(aoflux_grid) == 'ocn') then
+             ! map xao_ox states and fluxes to xao_ax if fluxes were computed on ocn grid
+             call prep_aoflux_calc_xao_ax(fractions_ox, flds='states_and_fluxes', &
+                  timer='CPL:atmprep_xao2atm')
+          endif
+
+          ! recompute o2x_ax now for the merge with fractions associated with merge
+          call prep_atm_calc_o2x_ax(fractions_ox, timer='CPL:atmprep_ocn2atm')
+
+          ! map xao_ox albedos to the atm grid, these are always computed on the ocean grid
+          call prep_aoflux_calc_xao_ax(fractions_ox, flds='albedos', timer='CPL:atmprep_alb2atm')
+       endif
+       if (ice_c2_atm) then
+          call prep_atm_calc_i2x_ax(fractions_ix, timer='CPL:atmprep_ice2atm')
+       endif
+       if (lnd_c2_atm) then
+          call prep_atm_calc_l2x_ax(fractions_lx, timer='CPL:atmprep_lnd2atm')
+       endif
+       if (associated(xao_ax)) then
+          call prep_atm_mrg(infodata, fractions_ax, xao_ax=xao_ax, timer_mrg='CPL:atmprep_mrgx2a')
+       endif
+
+       call component_diag(infodata, atm, flow='x2c', comment= 'send atm', info_debug=info_debug, &
+            timer_diag='CPL:atmprep_diagav')
+
+       call t_drvstopf  ('CPL:ATMPREP',cplrun=.true.)
+       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+    endif
+
+    !----------------------------------------------------------
+    !| cpl -> atm
+    !----------------------------------------------------------
+
+    if (iamin_CPLALLATMID .and. atm_prognostic) then
+       call component_exch(atm, flow='x2c', infodata=infodata, infodata_string='cpl2atm_run', &
+            mpicom_barrier=mpicom_CPLALLATMID, run_barriers=run_barriers, &
+            timer_barrier='CPL:C2A_BARRIER', timer_comp_exch='CPL:C2A', &
+            timer_map_exch='CPL:c2a_atmx2atmg', timer_infodata_exch='CPL:c2a_infoexch')
+    endif
+
+  end subroutine cime_run_atm_setup_send
+
+!----------------------------------------------------------------------------------
+
+  subroutine cime_run_atm_recv_post()
+
+    !----------------------------------------------------------
+    !| atm -> cpl
+    !----------------------------------------------------------
+    if (iamin_CPLALLATMID) then
+       call component_exch(atm, flow='c2x', infodata=infodata, infodata_string='atm2cpl_run', &
+            mpicom_barrier=mpicom_CPLALLATMID, run_barriers=run_barriers, &
+            timer_barrier='CPL:A2C_BARRIER', timer_comp_exch='CPL:A2C', &
+            timer_map_exch='CPL:a2c_atma2atmx', timer_infodata_exch='CPL:a2c_infoexch')
+    endif
+
+    !----------------------------------------------------------
+    !| atm post
+    !----------------------------------------------------------
+    if (iamin_CPLID) then
+       call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMPOST_BARRIER')
+       call t_drvstartf ('CPL:ATMPOST',cplrun=.true.,barrier=mpicom_CPLID)
+       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+       call component_diag(infodata, atm, flow='c2x', comment= 'recv atm', &
+            info_debug=info_debug, timer_diag='CPL:atmpost_diagav')
+
+       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+       call t_drvstopf  ('CPL:ATMPOST',cplrun=.true.)
+    endif
+
+  end subroutine cime_run_atm_recv_post
+
+!----------------------------------------------------------------------------------
+
+  subroutine cime_run_ocn_setup_send()
+
+    !----------------------------------------------------
+    ! "startup" wait
+    !----------------------------------------------------
+    if (iamin_CPLALLOCNID) then
+       ! want to know the time the ocean pes waited for the cpl pes
+       ! at the first ocnrun_alarm, min ocean wait is wait time
+       ! do not use t_barrierf here since it can be "off", use mpi_barrier
+       do eoi = 1,num_inst_ocn
+          if (ocn(eoi)%iamin_compid) call t_drvstartf ('CPL:C2O_INITWAIT')
+       enddo
+       call mpi_barrier(mpicom_CPLALLOCNID,ierr)
+       do eoi = 1,num_inst_ocn
+          if (ocn(eoi)%iamin_compid) call t_drvstopf  ('CPL:C2O_INITWAIT')
+       enddo
+       cpl2ocn_first = .false.
+    endif
+
+    !----------------------------------------------------
+    ! ocn average
+    !----------------------------------------------------
+    if (iamin_CPLID .and. ocn_prognostic) then
+       call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPREP_BARRIER')
+       call t_drvstartf ('CPL:OCNPREP',cplrun=.true.,barrier=mpicom_CPLID)
+       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+       ! finish accumulating ocean inputs
+       ! reset the value of x2o_ox with the value in x2oacc_ox (module variable in prep_ocn_mod)
+       call prep_ocn_accum_avg(timer_accum='CPL:ocnprep_avg')
+
+       call component_diag(infodata, ocn, flow='x2c', comment= 'send ocn', &
+            info_debug=info_debug, timer_diag='CPL:ocnprep_diagav')
+
+       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+       call t_drvstopf  ('CPL:OCNPREP',cplrun=.true.)
+    endif
+
+    !----------------------------------------------------
+    ! cpl -> ocn
+    !----------------------------------------------------
+    if (iamin_CPLALLOCNID .and. ocn_prognostic) then
+       call component_exch(ocn, flow='x2c', &
+            infodata=infodata, infodata_string='cpl2ocn_run', &
+            mpicom_barrier=mpicom_CPLALLOCNID, run_barriers=run_barriers, &
+            timer_barrier='CPL:C2O_BARRIER', timer_comp_exch='CPL:C2O', &
+            timer_map_exch='CPL:c2o_ocnx2ocno', timer_infodata_exch='CPL:c2o_infoexch')
+    endif
+
+  end subroutine cime_run_ocn_setup_send
+
+!----------------------------------------------------------------------------------
+
+  subroutine cime_run_ocn_recv_post()
+
+    !----------------------------------------------------------
+    ! ocn -> cpl
+    !----------------------------------------------------------
+    if (iamin_CPLALLOCNID) then
+       call component_exch(ocn, flow='c2x', &
+            infodata=infodata, infodata_string='ocn2cpl_run', &
+            mpicom_barrier=mpicom_CPLALLOCNID, run_barriers=run_barriers, &
+            timer_barrier='CPL:O2CT_BARRIER', timer_comp_exch='CPL:O2CT', &
+            timer_map_exch='CPL:o2c_ocno2ocnx', timer_infodata_exch='CPL:o2c_infoexch')
+    endif
+
+    !----------------------------------------------------------
+    ! ocn post
+    !----------------------------------------------------------
+    if (iamin_CPLID) then
+       call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPOSTT_BARRIER')
+       call t_drvstartf  ('CPL:OCNPOSTT',cplrun=.true.,barrier=mpicom_CPLID)
+       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+       call component_diag(infodata, ocn, flow='c2x', comment= 'recv ocn', &
+            info_debug=info_debug, timer_diag='CPL:ocnpost_diagav')
+
+       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+       call t_drvstopf  ('CPL:OCNPOSTT',cplrun=.true.)
+    endif
+
+  end subroutine cime_run_ocn_recv_post
+
+!----------------------------------------------------------------------------------
+
+  subroutine cime_run_atmocn_setup(hashint)
+    integer, intent(inout) :: hashint(:)
+
+    if (iamin_CPLID) then
+       call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMOCNP_BARRIER')
+       call t_drvstartf ('CPL:ATMOCNP',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(7))
+       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+       if (trim(cpl_seq_option(1:5)) == 'NUOPC') then
+          if (atm_c2_ocn) call prep_ocn_calc_a2x_ox(timer='CPL:atmocnp_atm2ocn')
+       end if
+
+       if (ocn_prognostic) then
+          ! Map to ocn
+          if (ice_c2_ocn) call prep_ocn_calc_i2x_ox(timer='CPL:atmocnp_ice2ocn')
+          if (wav_c2_ocn) call prep_ocn_calc_w2x_ox(timer='CPL:atmocnp_wav2ocn')
+          if (trim(cpl_seq_option(1:5)) == 'NUOPC') then
+             if (rof_c2_ocn) call prep_ocn_calc_r2x_ox(timer='CPL:atmocnp_rof2ocn')
+             if (glc_c2_ocn) call prep_ocn_calc_g2x_ox(timer='CPL:atmocnp_glc2ocn')
+          end if
+       end if
+
+       ! atm/ocn flux on either atm or ocean grid
+       call cime_run_atmocn_fluxes(hashint)
+
+       ! ocn prep-merge (cesm1_mod or cesm1_mod_tight)
+       if (ocn_prognostic) then
+          ! ocn prep-merge
+          xao_ox => prep_aoflux_get_xao_ox()
+          call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
+
+          ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn)
+          call prep_ocn_accum(timer='CPL:atmocnp_accum')
+       end if
+
+       !----------------------------------------------------------
+       ! ocn albedos
+       ! (MUST BE AFTER prep_ocn_mrg for swnet to ocn to be computed properly
+       !----------------------------------------------------------
+       call cime_run_ocn_albedos(hashint)
+
+       !----------------------------------------------------------
+       ! ocn budget
+       !----------------------------------------------------------
+       if (do_budgets) then
+          call cime_run_calc_budgets3()
+       endif
+
+       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+       call t_drvstopf  ('CPL:ATMOCNP',cplrun=.true.,hashint=hashint(7))
+    end if
+
+  end subroutine cime_run_atmocn_setup
+
+!----------------------------------------------------------------------------------
+
+  subroutine cime_run_lnd_setup_send()
+
+    !----------------------------------------------------
+    !| lnd prep-merge
+    !----------------------------------------------------
+    if (iamin_CPLID) then
+       call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:LNDPREP_BARRIER')
+       call t_drvstartf ('CPL:LNDPREP',cplrun=.true.,barrier=mpicom_CPLID)
+       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+       if (atm_c2_lnd) call prep_lnd_calc_a2x_lx(timer='CPL:lndprep_atm2lnd')
+       if (trim(cpl_seq_option(1:5)) == 'NUOPC') then
+          if (glc_c2_lnd) call prep_lnd_calc_g2x_lx(timer='CPL:glcpost_glc2lnd')
+       end if
+
+       if (lnd_prognostic) then
+          call prep_lnd_mrg(infodata, timer_mrg='CPL:lndprep_mrgx2l')
+
+          call component_diag(infodata, lnd, flow='x2c', comment= 'send lnd', &
+               info_debug=info_debug, timer_diag='CPL:lndprep_diagav')
+       endif
+
+       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+       call t_drvstopf  ('CPL:LNDPREP',cplrun=.true.)
+    endif
+
+    !----------------------------------------------------
+    !| cpl -> lnd
+    !----------------------------------------------------
+    if (iamin_CPLALLLNDID) then
+       call component_exch(lnd, flow='x2c', &
+            infodata=infodata, infodata_string='cpl2lnd_run', &
+            mpicom_barrier=mpicom_CPLALLLNDID, run_barriers=run_barriers, &
+            timer_barrier='CPL:C2L_BARRIER', timer_comp_exch='CPL:C2L', &
+            timer_map_exch='CPL:c2l_lndx2lndl', timer_infodata_exch='CPL:c2l_infoexch')
+    endif
+
+  end subroutine cime_run_lnd_setup_send
+
+!----------------------------------------------------------------------------------
+
+  subroutine cime_run_lnd_recv_post()
+
+    !----------------------------------------------------------
+    !| lnd -> cpl
+    !----------------------------------------------------------
+    if (iamin_CPLALLLNDID) then
+       call component_exch(lnd, flow='c2x', infodata=infodata, infodata_string='lnd2cpl_run', &
+            mpicom_barrier=mpicom_CPLALLLNDID, run_barriers=run_barriers, &
+            timer_barrier='CPL:L2C_BARRIER', timer_comp_exch='CPL:L2C', &
+            timer_map_exch='CPL:l2c_lndl2lndx', timer_infodata_exch='lnd2cpl_run')
+    endif
+
+    !----------------------------------------------------------
+    !| lnd post
+    !----------------------------------------------------------
+    if (iamin_CPLID) then
+       call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:LNDPOST_BARRIER')
+       call t_drvstartf  ('CPL:LNDPOST',cplrun=.true.,barrier=mpicom_CPLID)
+       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+       call component_diag(infodata, lnd, flow='c2x', comment='recv lnd', &
+            info_debug=info_debug, timer_diag='CPL:lndpost_diagav')
+
+       ! Accumulate rof and glc inputs (module variables in prep_rof_mod and prep_glc_mod)
+       if (lnd_c2_rof) call prep_rof_accum(timer='CPL:lndpost_accl2r')
+       if (lnd_c2_glc) call prep_glc_accum(timer='CPL:lndpost_accl2g' )
+
+       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+       call t_drvstopf  ('CPL:LNDPOST',cplrun=.true.)
+    endif
+
+  end subroutine cime_run_lnd_recv_post
+
+!----------------------------------------------------------------------------------
+
+  subroutine cime_run_glc_setup_send(lnd2glc_averaged_now)
+
+    logical, intent(inout) :: lnd2glc_averaged_now ! Set to .true. if lnd2glc averages were taken this timestep (otherwise left unchanged)
+
+    !----------------------------------------------------
+    !| glc prep-merge
+    !----------------------------------------------------
+    if (iamin_CPLID .and. glc_prognostic) then
+       call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:GLCPREP_BARRIER')
+       call t_drvstartf ('CPL:GLCPREP',cplrun=.true.,barrier=mpicom_CPLID)
+       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+       if (lnd_c2_glc) then
+          ! NOTE - only create appropriate input to glc if the avg_alarm is on
+          if (glcrun_avg_alarm) then
+             call prep_glc_accum_avg(timer='CPL:glcprep_avg')
+             lnd2glc_averaged_now = .true.
+
+             ! Note that l2x_gx is obtained from mapping the module variable l2gacc_lx
+             call prep_glc_calc_l2x_gx(fractions_lx, timer='CPL:glcprep_lnd2glc')
+
+             call prep_glc_mrg(infodata, fractions_gx, timer_mrg='CPL:glcprep_mrgx2g')
+
+             call component_diag(infodata, glc, flow='x2c', comment='send glc', &
+                  info_debug=info_debug, timer_diag='CPL:glcprep_diagav')
+
+          else
+             call prep_glc_zero_fields()
+          end if  ! glcrun_avg_alarm
+       end if  ! lnd_c2_glc
+
+       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+       call t_drvstopf  ('CPL:GLCPREP',cplrun=.true.)
+
+    end if  ! iamin_CPLID .and. glc_prognostic
+
+    ! Set the infodata field on all tasks (not just those with iamin_CPLID).
+    if (glc_prognostic) then
+       if (glcrun_avg_alarm) then
+          call seq_infodata_PutData(infodata, glc_valid_input=.true.)
+       else
+          call seq_infodata_PutData(infodata, glc_valid_input=.false.)
+       end if
+    end if
+
+    !----------------------------------------------------
+    !| cpl -> glc
+    !----------------------------------------------------
+    if (iamin_CPLALLGLCID .and. glc_prognostic) then
+       call component_exch(glc, flow='x2c', &
+            infodata=infodata, infodata_string='cpl2glc_run', &
+            mpicom_barrier=mpicom_CPLALLGLCID, run_barriers=run_barriers, &
+            timer_barrier='CPL:C2G_BARRIER', timer_comp_exch='CPL:C2G', &
+            timer_map_exch='CPL:c2g_glcx2glcg', timer_infodata_exch='CPL:c2g_infoexch')
+    endif
+
+  end subroutine cime_run_glc_setup_send
+
+!----------------------------------------------------------------------------------
+
+  subroutine cime_run_glc_recv_post()
+
+    !----------------------------------------------------------
+    ! glc -> cpl
+    !----------------------------------------------------------
+    if (iamin_CPLALLGLCID) then
+       call component_exch(glc, flow='c2x', infodata=infodata, infodata_string='glc2cpl_run', &
+            mpicom_barrier=mpicom_CPLALLGLCID, run_barriers=run_barriers, &
+            timer_barrier='CPL:G2C_BARRIER', timer_comp_exch='CPL:G2C', &
+            timer_map_exch='CPL:g2c_glcg2glcx', timer_infodata_exch='CPL:g2c_infoexch')
+    endif
+
+    !----------------------------------------------------------
+    ! glc post
+    !----------------------------------------------------------
+    if (iamin_CPLID) then
+       call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:GLCPOST_BARRIER')
+       call t_drvstartf  ('CPL:GLCPOST',cplrun=.true.,barrier=mpicom_CPLID)
+       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+       call component_diag(infodata, glc, flow='c2x', comment= 'recv glc', &
+            info_debug=info_debug, timer_diag='CPL:glcpost_diagav')
+
+       if (trim(cpl_seq_option(1:5)) /= 'NUOPC') then
+          if (glc_c2_lnd) call prep_lnd_calc_g2x_lx(timer='CPL:glcpost_glc2lnd')
+          if (glc_c2_ocn) call prep_ocn_calc_g2x_ox(timer='CPL:glcpost_glc2ocn')
+          if (glc_c2_ice) call prep_ice_calc_g2x_ix(timer='CPL:glcpost_glc2ice')
+       end if
+
+       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+       call t_drvstopf  ('CPL:GLCPOST',cplrun=.true.)
+    endif
+
+  end subroutine cime_run_glc_recv_post
+
+!----------------------------------------------------------------------------------
+
+  subroutine cime_run_rof_setup_send()
+
+    !----------------------------------------------------
+    ! rof prep-merge
+    !----------------------------------------------------
+    if (iamin_CPLID .and. rof_prognostic) then
+       call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ROFPREP_BARRIER')
+
+       call t_drvstartf ('CPL:ROFPREP', cplrun=.true., barrier=mpicom_CPLID)
+       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+       call prep_rof_accum_avg(timer='CPL:rofprep_l2xavg')
+
+       if (lnd_c2_rof) call prep_rof_calc_l2r_rx(fractions_lx, timer='CPL:rofprep_lnd2rof')
+
+       call prep_rof_mrg(infodata, fractions_rx, timer_mrg='CPL:rofprep_mrgx2r')
+
+       call component_diag(infodata, rof, flow='x2c', comment= 'send rof', &
+            info_debug=info_debug, timer_diag='CPL:rofprep_diagav')
+
+       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+       call t_drvstopf  ('CPL:ROFPREP',cplrun=.true.)
+    endif
+
+    !----------------------------------------------------
+    ! cpl -> rof
+    !----------------------------------------------------
+    if (iamin_CPLALLROFID .and. rof_prognostic) then
+       call component_exch(rof, flow='x2c', &
+            infodata=infodata, infodata_string='cpl2rof_run', &
+            mpicom_barrier=mpicom_CPLALLLNDID, run_barriers=run_barriers, &
+            timer_barrier='CPL:C2R_BARRIER', timer_comp_exch='CPL:C2R', &
+            timer_map_exch='CPL:c2r_rofx2rofr', timer_infodata_exch='CPL:c2r_infoexch')
+    endif
+
+  end subroutine cime_run_rof_setup_send
+
+!----------------------------------------------------------------------------------
+
+  subroutine cime_run_rof_recv_post()
+
+    !----------------------------------------------------------
+    ! rof -> cpl
+    !----------------------------------------------------------
+    if (iamin_CPLALLROFID) then
+       call component_exch(rof, flow='c2x', &
+            infodata=infodata, infodata_string='rof2cpl_run', &
+            mpicom_barrier=mpicom_CPLALLROFID, run_barriers=run_barriers, &
+            timer_barrier='CPL:R2C_BARRIER', timer_comp_exch='CPL:R2C', &
+            timer_map_exch='CPL:r2c_rofr2rofx', timer_infodata_exch='CPL:r2c_infoexch')
+    endif
+
+    !----------------------------------------------------------
+    ! rof post
+    !----------------------------------------------------------
+    if (iamin_CPLID) then
+       call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ROFPOST_BARRIER')
+       call t_drvstartf  ('CPL:ROFPOST',cplrun=.true.,barrier=mpicom_CPLID)
+       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+       call component_diag(infodata, rof, flow='c2x', comment= 'recv rof', &
+            info_debug=info_debug, timer_diag='CPL:rofpost_diagav')
+
+       if (trim(cpl_seq_option(1:5)) /= 'NUOPC') then
+          if (rof_c2_lnd) call prep_lnd_calc_r2x_lx(timer='CPL:rofpost_rof2lnd')
+          if (rof_c2_ice) call prep_ice_calc_r2x_ix(timer='CPL:rofpost_rof2ice')
+          if (rof_c2_ocn) call prep_ocn_calc_r2x_ox(timer='CPL:rofpost_rof2ocn')
+       end if
+       call t_drvstopf  ('CPL:ROFPOST', cplrun=.true.)
+    endif
+
+  end subroutine cime_run_rof_recv_post
+
+!----------------------------------------------------------------------------------
+
+  subroutine cime_run_ice_setup_send()
+
+    !  Note that for atm->ice mapping below will leverage the assumption that the
+    !  ice and ocn are on the same grid and that mapping of atm to ocean is
+    !  done already for use by atmocn flux and ice model prep
+
+    !----------------------------------------------------
+    ! ice prep-merge
+    !----------------------------------------------------
+    if (iamin_CPLID .and. ice_prognostic) then
+       call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ICEPREP_BARRIER')
+
+       call t_drvstartf ('CPL:ICEPREP',cplrun=.true.,barrier=mpicom_CPLID)
+       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+       if (ocn_c2_ice) call prep_ice_calc_o2x_ix(timer='CPL:iceprep_ocn2ice')
+       if (trim(cpl_seq_option(1:5)) == 'NUOPC') then
+          if (rof_c2_ice) call prep_ice_calc_r2x_ix(timer='CPL:rofpost_rof2ice')
+          if (glc_c2_ice) call prep_ice_calc_g2x_ix(timer='CPL:glcpost_glc2ice')
+       end if
+
+       if (atm_c2_ice) then
+          ! This is special to avoid remapping atm to ocn
+          ! Note it is constrained that different prep modules cannot  use or call each other
+          a2x_ox => prep_ocn_get_a2x_ox() ! array
+          call prep_ice_calc_a2x_ix(a2x_ox, timer='CPL:iceprep_atm2ice')
+       endif
+
+       call prep_ice_mrg(infodata, timer_mrg='CPL:iceprep_mrgx2i')
+
+       call component_diag(infodata, ice, flow='x2c', comment= 'send ice', &
+            info_debug=info_debug, timer_diag='CPL:iceprep_diagav')
+
+       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+       call t_drvstopf  ('CPL:ICEPREP',cplrun=.true.)
+    endif
+
+    !----------------------------------------------------
+    ! cpl -> ice
+    !----------------------------------------------------
+    if (iamin_CPLALLICEID .and. ice_prognostic) then
+       call component_exch(ice, flow='x2c', &
+            infodata=infodata, infodata_string='cpl2ice_run', &
+            mpicom_barrier=mpicom_CPLALLICEID, run_barriers=run_barriers, &
+            timer_barrier='CPL:C2I_BARRIER', timer_comp_exch='CPL:C2I', &
+            timer_map_exch='CPL:c2i_icex2icei', timer_infodata_exch='CPL:ice_infoexch')
+    endif
+
+  end subroutine cime_run_ice_setup_send
+
+!----------------------------------------------------------------------------------
+
+  subroutine cime_run_ice_recv_post()
+
+    !----------------------------------------------------------
+    ! ice -> cpl
+    !----------------------------------------------------------
+    if (iamin_CPLALLICEID) then
+       call component_exch(ice, flow='c2x', &
+            infodata=infodata, infodata_string='ice2cpl_run', &
+            mpicom_barrier=mpicom_CPLALLICEID, run_barriers=run_barriers, &
+            timer_barrier='CPL:I2C_BARRIER', timer_comp_exch='CPL:I2C', &
+            timer_map_exch='CPL:i2c_icei2icex', timer_infodata_exch='CPL:i2c_infoexch')
+    endif
+
+    !----------------------------------------------------------
+    ! ice post
+    !----------------------------------------------------------
+    if (iamin_CPLID) then
+       call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ICEPOST_BARRIER')
+       call t_drvstartf  ('CPL:ICEPOST',cplrun=.true.,barrier=mpicom_CPLID)
+       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+       call component_diag(infodata, ice, flow='c2x', comment= 'recv ice', &
+            info_debug=info_debug, timer_diag='CPL:icepost_diagav')
+
+       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+       call t_drvstopf  ('CPL:ICEPOST',cplrun=.true.)
+    endif
+
+  end subroutine cime_run_ice_recv_post
+
+!----------------------------------------------------------------------------------
+
+  subroutine cime_run_wav_setup_send()
+
+    !----------------------------------------------------------
+    ! wav prep-merge
+    !----------------------------------------------------------
+    if (iamin_CPLID .and. wav_prognostic) then
+       call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:WAVPREP_BARRIER')
+
+       call t_drvstartf ('CPL:WAVPREP',cplrun=.true.,barrier=mpicom_CPLID)
+       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+       if (atm_c2_wav) call prep_wav_calc_a2x_wx(timer='CPL:wavprep_atm2wav')
+       if (ocn_c2_wav) call prep_wav_calc_o2x_wx(timer='CPL:wavprep_ocn2wav')
+       if (ice_c2_wav) call prep_wav_calc_i2x_wx(timer='CPL:wavprep_ice2wav')
+
+       call prep_wav_mrg(infodata, fractions_wx, timer_mrg='CPL:wavprep_mrgx2w')
+
+       call component_diag(infodata, wav, flow='x2c', comment= 'send wav', &
+            info_debug=info_debug, timer_diag='CPL:wavprep_diagav')
+
+       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+       call t_drvstopf  ('CPL:WAVPREP',cplrun=.true.)
+    endif
+
+    !----------------------------------------------------------
+    ! cpl -> wav
+    !----------------------------------------------------------
+    if (iamin_CPLALLWAVID .and. wav_prognostic) then
+       call component_exch(wav, flow='x2c', &
+            infodata=infodata, infodata_string='cpl2wav_run', &
+            mpicom_barrier=mpicom_CPLALLWAVID, run_barriers=run_barriers, &
+            timer_barrier='CPL:C2W_BARRIER', timer_comp_exch='CPL:C2W', &
+            timer_map_exch='CPL:c2w_wavx2wavw', timer_infodata_exch='CPL:c2w_infoexch')
+    endif
+
+  end subroutine cime_run_wav_setup_send
+
+!----------------------------------------------------------------------------------
+
+  subroutine cime_run_wav_recv_post()
+
+    !----------------------------------------------------------
+    ! wav -> cpl
+    !----------------------------------------------------------
+    if (iamin_CPLALLWAVID) then
+       call component_exch(wav, flow='c2x', infodata=infodata, infodata_string='wav2cpl_run', &
+            mpicom_barrier=mpicom_CPLALLWAVID, run_barriers=run_barriers, &
+            timer_barrier='CPL:W2C_BARRIER', timer_comp_exch='CPL:W2C', &
+            timer_map_exch='CPL:w2c_wavw2wavx', timer_infodata_exch='CPL:w2c_infoexch')
+    endif
+
+    !----------------------------------------------------------
+    ! wav post
+    !----------------------------------------------------------
+    if (iamin_CPLID) then
+       call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:WAVPOST_BARRIER')
+       call t_drvstartf  ('CPL:WAVPOST',cplrun=.true.,barrier=mpicom_CPLID)
+       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+       call component_diag(infodata, wav, flow='c2x', comment= 'recv wav', &
+            info_debug=info_debug, timer_diag='CPL:wavpost_diagav')
+
+       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+       call t_drvstopf  ('CPL:WAVPOST',cplrun=.true.)
+    endif
+
+  end subroutine cime_run_wav_recv_post
+
+!----------------------------------------------------------------------------------
+
+  subroutine cime_run_update_fractions()
+
+    if (iamin_CPLID) then
+       call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:FRACSET_BARRIER')
+       call t_drvstartf ('CPL:FRACSET',cplrun=.true.,barrier=mpicom_CPLID)
+       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+       call t_drvstartf ('CPL:fracset_fracset',barrier=mpicom_CPLID)
+
+       do efi = 1,num_inst_frc
+          eii = mod((efi-1),num_inst_ice) + 1
+          call seq_frac_set(infodata, ice(eii), fractions_ax(efi), fractions_ix(efi), fractions_ox(efi))
+       enddo
+       call t_drvstopf  ('CPL:fracset_fracset')
+
+       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+       call t_drvstopf  ('CPL:FRACSET',cplrun=.true.)
+    endif
+
+  end subroutine cime_run_update_fractions
+
+!----------------------------------------------------------------------------------
+
+  subroutine cime_run_calc_budgets1()
+
+    !----------------------------------------------------------
+    ! Budget with old fractions
+    !----------------------------------------------------------
+
+    ! WJS (2-17-11): I am just using the first instance for the budgets because we
+    ! don't expect budgets to be conserved for our case (I case). Also note that we
+    ! don't expect budgets to be conserved for the interactive ensemble use case either.
+    ! tcraig (aug 2012): put this after rof->cpl so the budget sees the new r2x_rx.
+    ! it will also use the current r2x_ox here which is the value from the last timestep
+    ! consistent with the ocean coupling
+
+    if (iamin_CPLID) then
+       call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET1_BARRIER')
+       call t_drvstartf ('CPL:BUDGET1',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
+       if (lnd_present) then
+          call seq_diag_lnd_mct(lnd(ens1), fractions_lx(ens1), infodata, do_l2x=.true., do_x2l=.true.)
+       endif
+       if (rof_present) then
+          call seq_diag_rof_mct(rof(ens1), fractions_rx(ens1), infodata)
+       endif
+       if (ice_present) then
+          call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_x2i=.true.)
+       endif
+       call t_drvstopf  ('CPL:BUDGET1',cplrun=.true.,budget=.true.)
+    end if
+  end subroutine cime_run_calc_budgets1
+
+!----------------------------------------------------------------------------------
+
+  subroutine cime_run_calc_budgets2()
+
+    !----------------------------------------------------------
+    ! Budget with new fractions
+    !----------------------------------------------------------
+
+    if (iamin_CPLID) then
+       call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET2_BARRIER')
+
+       call t_drvstartf ('CPL:BUDGET2',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
+       if (atm_present) then
+          call seq_diag_atm_mct(atm(ens1), fractions_ax(ens1), infodata, do_a2x=.true., do_x2a=.true.)
+       endif
+       if (ice_present) then
+          call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_i2x=.true.)
+       endif
+       call t_drvstopf  ('CPL:BUDGET2',cplrun=.true.,budget=.true.)
+
+       call t_drvstartf ('CPL:BUDGET3',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
+       call seq_diag_accum_mct()
+       call t_drvstopf  ('CPL:BUDGET3',cplrun=.true.,budget=.true.)
+
+       call t_drvstartf ('CPL:BUDGETF',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
+       if (.not. dead_comps) then
+          call seq_diag_print_mct(EClock_d,stop_alarm,budget_inst, &
+               budget_daily, budget_month, budget_ann, budget_ltann, &
+               budget_ltend, infodata)
+       endif
+       call seq_diag_zero_mct(EClock=EClock_d)
+
+       call t_drvstopf  ('CPL:BUDGETF',cplrun=.true.,budget=.true.)
+    end if
+  end subroutine cime_run_calc_budgets2
+
+!----------------------------------------------------------------------------------
+
+  subroutine cime_run_calc_budgets3()
+
+    !----------------------------------------------------------
+    ! ocn budget (rasm_option2)
+    !----------------------------------------------------------
+
+    if (iamin_CPLID) then
+       call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
+       call t_drvstartf ('CPL:BUDGET0',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
+       xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
+       call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
+            do_o2x=.true., do_x2o=.true., do_xao=.true.)
+       call t_drvstopf ('CPL:BUDGET0',cplrun=.true.,budget=.true.)
+    end if
+  end subroutine cime_run_calc_budgets3
+
+!----------------------------------------------------------------------------------
+
+  subroutine cime_run_write_history()
+
+    !----------------------------------------------------------
+    ! Write history file, only AVs on CPLID
+    !----------------------------------------------------------
+
+    if (iamin_CPLID) then
+
+       call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:HISTORY_BARRIER')
+       call t_drvstartf ('CPL:HISTORY',cplrun=.true.,barrier=mpicom_CPLID)
+       if ( history_alarm) then
+          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+          if (iamroot_CPLID) then
+             write(logunit,104) ' Write history file at ',ymd,tod
+             call shr_sys_flush(logunit)
+          endif
+
+          call seq_hist_write(infodata, EClock_d, &
+               atm, lnd, ice, ocn, rof, glc, wav, &
+               fractions_ax, fractions_lx, fractions_ix, fractions_ox,     &
+               fractions_rx, fractions_gx, fractions_wx, trim(cpl_inst_tag))
+
+          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+       endif
+
+       if (do_histavg) then
+          call seq_hist_writeavg(infodata, EClock_d, &
+               atm, lnd, ice, ocn, rof, glc, wav, histavg_alarm, &
+               trim(cpl_inst_tag))
+       endif
+
+       call t_drvstopf  ('CPL:HISTORY',cplrun=.true.)
+
+    end if
+
+104 format( A, i10.8, i8)
+  end subroutine cime_run_write_history
+
+!----------------------------------------------------------------------------------
+
+  subroutine cime_run_write_restart(drv_pause, write_restart, drv_resume)
+
+    !----------------------------------------------------------
+    ! Write driver restart file
+    !----------------------------------------------------------
+
+    logical         , intent(in)    :: drv_pause
+    logical         , intent(in)    :: write_restart
+    character(len=*), intent(inout) :: drv_resume ! Driver resets state from restart file
+
+103 format( 5A )
+104 format( A, i10.8, i8)
+
+    if (iamin_CPLID) then
+       if ( (restart_alarm .or. drv_pause)) then
+          call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:RESTART_BARRIER')
+          call t_drvstartf ('CPL:RESTART',cplrun=.true.,barrier=mpicom_CPLID)
+          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+          if (iamroot_CPLID) then
+             write(logunit,104) ' Write restart file at ',ymd,tod
+             call shr_sys_flush(logunit)
+          endif
+
+          call seq_rest_write(EClock_d, seq_SyncClock, infodata,       &
+               atm, lnd, ice, ocn, rof, glc, wav, esp,                 &
+               fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
+               fractions_rx, fractions_gx, fractions_wx,               &
+               trim(cpl_inst_tag), drv_resume)
+
+          if (iamroot_CPLID) then
+             write(logunit,103) ' Restart filename: ',trim(drv_resume)
+             call shr_sys_flush(logunit)
+          endif
+
+          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+          call t_drvstopf  ('CPL:RESTART',cplrun=.true.)
+       else
+          drv_resume = ''
+       endif
+    end if
+
+  end subroutine cime_run_write_restart
 
 end module cime_comp_mod

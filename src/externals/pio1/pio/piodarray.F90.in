@@ -504,8 +504,8 @@ contains
     if(Debug) print *,__PIO_FILE__,__LINE__,' NAME : IAM: ', &
     File%iosystem%comp_rank,' UseRearranger: ',UseRearranger,iodesc%glen, iodesc%iomap%start, len
 #ifdef TIMING
-    call t_startf("PIO:pio_rearrange_write")
     call t_startf("PIO:pre_pio_write_nf")
+    call t_startf("PIO:pio_rearrange_write")
 #endif
     if(UseRearranger) then
        if (IOproc) then
@@ -1249,8 +1249,9 @@ contains
     if(.not. associated(File%data_list_top)) then
        allocate(file%data_list_top)
        ptr => file%data_list_top
+       file%data_list_end => file%data_list_top
     else
-       ptr => file%data_list_top
+       ptr => file%data_list_end
        do while(associated(ptr%next))
           ptr => ptr%next
        end do
@@ -1264,6 +1265,7 @@ contains
     this_buffsize = size(iobuf)*c_sizeof(iobuf(1))
     file%buffsize=file%buffsize+this_buffsize
     total_buffsize = total_buffsize+this_buffsize
+    file%data_list_end => ptr
 #ifdef TIMING
     call t_startf("PIO:allred_add_data_to_buf")
 #endif
@@ -1315,7 +1317,7 @@ contains
 #ifdef _PNETCDF
        ierr  = nfmpi_wait_all(file%fh, cnt-1, array_of_requests, status)
 #endif
-       if(DEBUG) print *,__PIO_FILE__,__LINE__,status, ierr, total_buffsize
+       if(Debug) print *,__PIO_FILE__,__LINE__,status, ierr, total_buffsize
 
        ptr=>file%data_list_top
        do while(associated(ptr))
@@ -1331,6 +1333,7 @@ contains
           deallocate(prevptr)
        end do
        nullify(file%data_list_top)
+       nullify(file%data_list_end)
 
        total_buffsize=total_buffsize-file%buffsize
 
@@ -1553,4 +1556,3 @@ subroutine read_vdc2_real(File, Vardesc, iodesc, array, iostat)
 
 
 end module piodarray
-

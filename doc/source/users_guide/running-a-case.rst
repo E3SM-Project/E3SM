@@ -171,6 +171,8 @@ Below is an example of status messages:
   ``$REST_OPTION``, ``$REST_N`` and/or ``$REST_DATE``, and ``$RESUBMIT``
   before resubmitting.
 
+See the :ref:`basic example<basic_example>` for a complete example of how to run a case.
+
 ---------------------------------
 Troubleshooting a job that fails
 ---------------------------------
@@ -392,7 +394,7 @@ restart files that are required for restart.
 Archiving (referred to as short-term archiving here) is the phase of a model run when output data are
 moved from ``$RUNDIR`` to a local disk area (short-term archiving).
 It has no impact on the production run except to clean up disk space
-in the ``$RUNDIR`` and help manage user quotas.
+in the ``$RUNDIR`` which can help manage user disk quotas.
 
 Several variables in **env_run.xml** control the behavior of
 short-term archiving. This is an example of how to control the

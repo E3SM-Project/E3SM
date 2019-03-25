@@ -216,14 +216,14 @@ class Component(EntryID):
         (False, None)
         >>> obj._get_description_match("1850_DATM_Barn",set(["DATM"]), set(["DATM","CRU","HSI"]), "?")
         (True, ['DATM'])
-        >>> obj._get_description_match("1850_DATM_Barn",set(["DATM"]), set(["DATM","CRU","HSI"]), "1")
+        >>> obj._get_description_match("1850_DATM_Barn",set(["DATM"]), set(["DATM","CRU","HSI"]), "1") # doctest: +IGNORE_EXCEPTION_DETAIL
         Traceback (most recent call last):
         ...
-        SystemExit: ERROR: Expected exactly one modifer found 0 in ['DATM']
-        >>> obj._get_description_match("1850_DATM%CRU%HSI_Barn",set(["DATM"]), set(["DATM","CRU","HSI"]), "1")
+        CIMEError: ERROR: Expected exactly one modifer found 0 in ['DATM']
+        >>> obj._get_description_match("1850_DATM%CRU%HSI_Barn",set(["DATM"]), set(["DATM","CRU","HSI"]), "1") # doctest: +IGNORE_EXCEPTION_DETAIL
         Traceback (most recent call last):
         ...
-        SystemExit: ERROR: Expected exactly one modifer found 2 in ['DATM', 'CRU', 'HSI']
+        CIMEError: ERROR: Expected exactly one modifer found 2 in ['DATM', 'CRU', 'HSI']
         >>> obj._get_description_match("1850_CAM50%WCCM%RCO2_Barn",set(["CAM50", "WCCM"]), set(["CAM50","WCCM","RCO2"]), "*")
         (True, ['CAM50', 'WCCM', 'RCO2'])
 
@@ -282,3 +282,37 @@ class Component(EntryID):
             name = self.get(entry, "id")
             text = self.text(self.get_child("desc", root=entry))
             logger.info("   {:20s} : {}".format(name, text.encode('utf-8')))
+
+    def return_values(self):
+        """
+        return a list of hashes from target config_component.xml file
+        This routine is used by external tools in https://github.com/NCAR/CESM_xml2html
+        """
+        entry_dict = dict()
+        items = list()
+        helpnode = self.get_optional_child("help")
+        if helpnode:
+            helptext = self.text(helpnode)
+        else:
+            helptext = ''
+        entries = self.get_children("entry")
+        for entry in entries:
+            item = dict()
+            name = self.get(entry, "id")
+            datatype = self.text(self.get_child("type", root=entry))
+            valid_values = self.get_valid_values(name)
+            default_value = self.get_default_value(node=entry)
+            group = self.text(self.get_child("group", root=entry))
+            filename = self.text(self.get_child("file", root=entry))
+            text = self.text(self.get_child("desc", root=entry))
+            item = {"name":name,
+                    "datatype":datatype,
+                    "valid_values":valid_values,
+                    "value":default_value,
+                    "group":group,
+                    "filename":filename,
+                    "desc":text.encode('utf-8')}
+            items.append(item)
+        entry_dict = {"items" : items}
+
+        return helptext, entry_dict

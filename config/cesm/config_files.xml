@@ -30,7 +30,7 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of all supported model grids, domains and mapping files (for documentation only - DO NOT EDIT)</desc>
-    <schema>$CIMEROOT/config/xml_schemas/config_grids_v2.xsd</schema>
+    <schema>$CIMEROOT/config/xml_schemas/config_grids_v2.1.xsd</schema>
   </entry>
 
   <entry id="MACHINES_SPEC_FILE">
@@ -101,6 +101,7 @@
       <value component="satm"      >$CIMEROOT/src/components/stub_comps/satm</value>
       <value component="xatm"      >$CIMEROOT/src/components/xcpl_comps/xatm</value>
       <value component="cam"      >$SRCROOT/components/cam/</value>
+      <value component="fv3gfs"      >$SRCROOT/components/fv3/</value>
     </values>
     <group>case_comps</group>
     <file>env_case.xml</file>
@@ -111,9 +112,8 @@
   <entry id="COMP_ROOT_DIR_CPL">
     <type>char</type>
     <values>
-      <value component="mct">$CIMEROOT/src/drivers/mct</value>
-      <value component="drv">$CIMEROOT/src/drivers/mct</value>
-    </values>
+      <value>$CIMEROOT/src/drivers/$COMP_INTERFACE</value>  -->
+    </values> -->
     <group>case_comps</group>
     <file>env_case.xml</file>
     <desc>Root directory of the case driver/coupler component  </desc>
@@ -124,8 +124,8 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="pop"      >$SRCROOT/components/pop/</value>
-      <value component="mom"      >$SRCROOT/components/mom/</value>
+      <value component="pop"       >$SRCROOT/components/pop/</value>
+      <value component="mom"       >$SRCROOT/components/mom/</value>
       <value component="docn"      >$CIMEROOT/src/components/data_comps/docn</value>
       <value component="socn"      >$CIMEROOT/src/components/stub_comps/socn</value>
       <value component="xocn"      >$CIMEROOT/src/components/xcpl_comps/xocn</value>
@@ -232,6 +232,7 @@
       <value component="allactive">$SRCROOT/cime_config/config_compsets.xml</value>
       <value component="drv"      >$COMP_ROOT_DIR_CPL/cime_config/config_compsets.xml</value>
       <value component="cam"      >$COMP_ROOT_DIR_ATM/cime_config/config_compsets.xml</value>
+      <value component="fv3gfs"   >$COMP_ROOT_DIR_ATM/cime_config/config_compsets.xml</value>
       <value component="cism"     >$COMP_ROOT_DIR_GLC/cime_config/config_compsets.xml</value>
       <value component="clm"      >$COMP_ROOT_DIR_LND/cime_config/config_compsets.xml</value>
       <value component="cice"     >$COMP_ROOT_DIR_ICE/cime_config/config_compsets.xml</value>
@@ -251,6 +252,7 @@
       <value component="allactive">$SRCROOT/cime_config/config_pes.xml</value>
       <value component="drv"      >$COMP_ROOT_DIR_CPL/cime_config/config_pes.xml</value>
       <value component="cam"      >$COMP_ROOT_DIR_ATM/cime_config/config_pes.xml</value>
+      <value component="fv3gfs"   >$COMP_ROOT_DIR_ATM/cime_config/config_pes.xml</value>
       <value component="cism"     >$COMP_ROOT_DIR_GLC/cime_config/config_pes.xml</value>
       <value component="clm"      >$COMP_ROOT_DIR_LND/cime_config/config_pes.xml</value>
       <value component="cice"     >$COMP_ROOT_DIR_ICE/cime_config/config_pes.xml</value>
@@ -282,6 +284,8 @@
       <value component="cice"     >$COMP_ROOT_DIR_ICE/cime_config/config_archive.xml</value>
       <value component="pop"      >$COMP_ROOT_DIR_OCN/cime_config/config_archive.xml</value>
       <value component="mom"      >$COMP_ROOT_DIR_OCN/cime_config/config_archive.xml</value>
+      <value component="rtm"      >$COMP_ROOT_DIR_ROF/cime_config/config_archive.xml</value>
+      <value component="mosart"   >$COMP_ROOT_DIR_ROF/cime_config/config_archive.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -373,7 +377,7 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="drv"     >$COMP_ROOT_DIR_CPL/cime_config/namelist_definition_drv.xml</value>
+      <value component="drv"      >$COMP_ROOT_DIR_CPL/cime_config/namelist_definition_drv.xml</value>
       <!-- data model components -->
       <value component="drof">$CIMEROOT/src/components/data_comps/drof/cime_config/namelist_definition_drof.xml</value>
       <value component="datm">$CIMEROOT/src/components/data_comps/datm/cime_config/namelist_definition_datm.xml</value>
@@ -386,8 +390,7 @@
       <value component="cam"      >$COMP_ROOT_DIR_ATM/bld/namelist_files/namelist_definition.xml</value>
       <value component="cism"     >$COMP_ROOT_DIR_GLC/bld/namelist_files/namelist_definition_cism.xml</value>
       <value component="cice"     >$COMP_ROOT_DIR_ICE/cime_config/namelist_definition_cice.xml</value>
-      <value component="clm"      >$COMP_ROOT_DIR_LND/bld/namelist_files/namelist_definition_clm4_5.xml</value>
-      <value component="clm"      >$COMP_ROOT_DIR_LND/bld/namelist_files/namelist_definition_clm4_0.xml</value>
+      <value component="clm"      >$COMP_ROOT_DIR_LND/bld/namelist_files/namelist_definition_ctsm.xml</value>
       <value component="pop"      >$COMP_ROOT_DIR_OCN/bld/namelist_files/namelist_definition_pop.xml</value>
       <value component="mom"      >$COMP_ROOT_DIR_OCN/bld/namelist_files/namelist_definition_mom.xml</value>
       -->
@@ -416,7 +419,9 @@
 
   <entry id="CONFIG_CPL_FILE_MODEL_SPECIFIC">
     <type>char</type>
-    <default_value>$CIMEROOT/src/drivers/mct/cime_config/config_component_$MODEL.xml</default_value>
+    <values>
+      <value>$CIMEROOT/src/drivers/$COMP_INTERFACE/cime_config/config_component_$MODEL.xml</value>
+    </values>
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing all component specific driver configuration variables (for documentation only - DO NOT EDIT)</desc>

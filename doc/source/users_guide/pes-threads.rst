@@ -5,17 +5,7 @@ Controlling processors and threads
 ==================================
 
 Once a compset and resolution for a case has been defined, CIME
-provides ways to define the processor layout the case will use. A
-concept to first understand before reading the following is that of a
-**primary** component. The primary component is the component that
-defines the compset and the processor layout that will be
-created. CIME determines the primary component based on the
-combination of prognostic, data and stub components used in the
-requested compset. As an example, the primary component for a compset
-that has a prognostic atmosphere, land and cice (in prescribed mode)
-and a data ocean is the atmosphere component (for cesm this is CAM).
-In the case that all components are prognostic, the primary component
-is referred to as **allactive**.
+provides ways to define the processor layout the case will use.
 
 CIME cases have significant flexibility with respect to the layout of
 components across different hardware processors. There are up to eight
@@ -30,7 +20,7 @@ pe-settings for a case
 -------------------------
 
 CIME looks at the xml element ``PES_SPEC_FILE`` in the **$CIMEROOT/config/$model/config_files.xml** file to determine where
-to find the supported out-of-the-box model pe-settings for the primary component.
+to find the supported out-of-the-box model pe-settings for the primary component (See :ref:`Compsets<compsets>` for definition of primary component.)
 
 When your run `create_newcase  <../Tools_user/create_newcase.html>`_, CIME identifies the primary component and the setting of the ``PES_SPEC_FILE`` in the standard output.
 
@@ -98,44 +88,41 @@ instances of each component and the layout of the components across
 the hardware processors. The entries in **env_mach_pes.xml** have the
 following meanings:
 
-* ``MAX_MPITASKS_PER_NODE``
-   | The maximum number of MPI tasks per node. This is defined in **config_machines.xml** and therefore given a default setting, but can be user modified.
+.. list-table:: Entries in **env_mach_pes.xml**
+   :widths: 10 40
+   :header-rows: 1
 
-* ``MAX_TASKS_PER_NODE``
-   | The total number of (MPI tasks) * (OpenMP threads) allowed on a node. This is defined in **config_machines.xml** and therefore given a default setting, but can be user modified.
-   | Some computational platforms use a special software customized for the target hardware called symmetric multi-threading (SMT). This allows for over-subscription of the hardware cores. In cases where this is beneficial to model performance, the variable ``MAX_TASKS_PER_NODE`` will be greater than the hardware cores per node as specified by ``MAX_MPITASKS_PER_NODE``.
-
-* ``NTASKS``
-   | Total number of MPI tasks. A negative value indicates nodes rather than tasks, where *MAX_MPITASKS_PER_NODE \* -NTASKS* equals the number of MPI tasks.
-   | ``NTASKS`` can be positive or negative. If it is negative, this indicates nodes rather than tasks.
-
-* ``NTHRDS``
-   | Number of OpenMP threads per MPI task.
-   | ``NTHRDS`` must be greater than or equal to 1. If ``NTHRDS`` = 1, this generally means threading parallelization will be off for the given component.
-
-* ``ROOTPE``
-   | The global MPI task of the component root task; if negative, indicates nodes rather than tasks.
-   | The root processor for each component is set relative to the MPI global communicator.
-
-* ``PSTRID``
-   | The stride of MPI tasks across the global set of pes (for now set to 1). This variable is currently not used and is a placeholder for future development.
-
-* ``NINST``
-   | The number of component instances, which are spread evenly across NTASKS.
-
-* ``COST_PER_NODE``
-   | The numbers of cores/node used for accounting purposes. The user should not normally need to set this - but it is useful for understanding how you will be charged.
+   * - XML variable
+     - Description
+   * - MAX_MPITASKS_PER_NODE
+     - The maximum number of MPI tasks per node. This is defined in **config_machines.xml** and therefore given a default setting, but can be user modified.
+   * - MAX_TASKS_PER_NODE
+     - The total number of (MPI tasks) * (OpenMP threads) allowed on a node. This is defined in **config_machines.xml** and therefore given a default setting, but can be user modified. Some computational platforms use a special software customized for the target hardware called symmetric multi-threading (SMT). This allows for over-subscription of the hardware cores. In cases where this is beneficial to model performance, the variable ``MAX_TASKS_PER_NODE`` will be greater than the hardware cores per node as specified by ``MAX_MPITASKS_PER_NODE``.
+   * - NTASKS
+     - Total number of MPI tasks. A negative value indicates nodes rather than tasks, where *MAX_MPITASKS_PER_NODE \* -NTASKS* equals the number of MPI tasks.
+   * - NTHRDS
+     - Number of OpenMP threads per MPI task. ``NTHRDS`` must be greater than or equal to 1. If ``NTHRDS`` = 1, this generally means threading parallelization will be off for the given component.
+   * - ROOTPE
+     -  The global MPI task of the component root task; if negative, indicates nodes rather than tasks. The root processor for each component is set relative to the MPI global communicator.
+   * - PSTRID
+     - The stride of MPI tasks across the global set of pes (for now set to 1). This variable is currently not used and is a placeholder for future development.
+   * - NINST
+     -  The number of component instances, which are spread evenly across NTASKS.
+   * - COST_PER_NODE
+     -  The numbers of cores/node used for accounting purposes. The user should not normally need to set this - but it is useful for understanding how you will be charged.
 
 Each CIME component has corresponding entries for ``NTASKS``, ``NTHRDS``, ``ROOTPE`` and ``NINST`` in the **env_mach_pes.xml** file. The layout of components on processors has no impact on the science.
-If all components have identical ``NTASKS``, ``NTHRDS``, and ``ROOTPE`` settings, all components will run sequentially on the same hardware processors.
+If all components have identical ``NTASKS``, ``NTHRDS``, and ``ROOTPE`` settings, all components will exectute sequentially on the same hardware processors.
 
-The scientific sequencing is hardwired into the driver. Changing
+.. hint:: To view the current settings, use the `pelayout <../Tools_user/pelayout.html>`_ tool
+
+The time sequencing is hardwired into the driver. Changing
 processor layouts does not change intrinsic coupling lags or coupling
 sequencing.
 
-The coupler component has its own processor specification for doing
+The coupler component has its own processor set for doing
 computations such as mapping, merging, diagnostics, and flux
-calculation.  This is distinct from the driver, which automatically
+calculation.  This is distinct from the driver, which always
 runs on the union of all processors to manage model concurrency and
 sequencing.
 
@@ -148,7 +135,7 @@ with the land and ice components.  Beyond that constraint, the land,
 ice, coupler and ocean models can run concurrently, and the ocean
 model can also run concurrently with the atmosphere model.
 
-.. note:: if **env_mach_pes.xml** is modified after `case.setup <../Tools_user/case.setup.html>`_  has been called, then you must run `case.setup --reset <../Tools_user/case.setup.html>`_ and recompile using  `case.build <../Tools_user/case.build.html>`_.
+.. note:: if **env_mach_pes.xml** is modified after `case.setup <../Tools_user/case.setup.html>`_  has been called, then you must run `case.setup --reset <../Tools_user/case.setup.html>`_ and the call `case.build <../Tools_user/case.build.html>`_.  **case.build** will only recompile any source code that depends on values in **env_mach_pes.xml**
 
 Case Resource Allocation
 ------------------------
@@ -190,10 +177,10 @@ and job submit commands for your case.
 Optimizing processor layout
 ----------------------------
 
-Load balancing is the practice of specifying processor layout for a given model configuration
-(compset, grid, and so on) to optimize throughput and efficiency. For a fixed total number of
-processors, the goal of optimization to achieve maximum throughput. In contrast, for a given
-configuration across varied processor counts, the purpose is to find several "sweet spots" where
+Load balancing is the practice of specifying a processor layout for a given model configuration
+(compset, grid, and so on) to maximize simulation speed while minimizing processor idle time.
+For a fixed total number of processors, the goal of this optimization is to achieve maximum throughput.
+For a set of processor counts, the purpose is to find several "sweet spots" where
 the model is minimally idle, cost is relatively low, and the throughput is relatively high.
 
 As with most models, increasing total processors normally results in both increased throughput
@@ -210,7 +197,7 @@ internal load imbalance within a component.
 
 It is often best to load balance a system with all significant
 run-time I/O turned off because it occurs infrequently, typically just
-one timestep per month. It is best treated as a separate cost as it
+one timestep per simulated  month. It is best treated as a separate cost as it
 can otherwise bias interpretation of the overall balance.  Also, the
 use of OpenMP threading in some or all of the components is dependent
 on the hardware/OS support as well as whether the system supports
@@ -233,6 +220,8 @@ atmosphere model always run sequentially with the ice and land models
 for scientific reasons. As a result, running the atmosphere
 concurrently with the ice and land will result in idle processors at
 some point in the timestepping sequence.
+
+.. hint:: If you need to load balance a fully coupled case, use the :ref:`Load Balancing Tool<load_balancing_tool>`
 
 **One approach to load balancing**
 
@@ -294,4 +283,4 @@ when running with mixed active and data models.
 
 - Assume that hardware performance can vary due to contention on the interconnect, file systems, or other areas. If you are unsure of a timing result, run cases multiple times.
 
-.. todo:: give an example of a fully active case - show the pe-layout and timing file here.
+The pe-layout and the associated timings are found in the  :ref:`timing files <model-timing-data>` generated for your run.

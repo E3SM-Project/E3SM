@@ -50,6 +50,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     config['timer_level'] = 'pos' if case.get_value('TIMER_LEVEL') >= 1 else 'neg'
     config['bfbflag'] = 'on' if case.get_value('BFBFLAG') else 'off'
     config['continue_run'] = '.true.' if case.get_value('CONTINUE_RUN') else '.false.'
+    config['atm_grid'] = case.get_value('ATM_GRID')
 
     if case.get_value('RUN_TYPE') == 'startup':
         config['run_type'] = 'startup'
@@ -113,7 +114,6 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
         atmdt = int(basedt / case.get_value('ATM_NCPL'))
         expect(atmdt == mindt, 'Active atm should match shortest model timestep atmdt={} mindt={}'
                .format(atmdt, mindt))
-            
 
     #--------------------------------
     # Overwrite: set start_ymd
@@ -210,8 +210,6 @@ def write_seq_maps_file(case, nmlgen, confdir):
     # The following is only approriate for config_grids.xml version 2.0 or later
     grid_version = Grids().get_version()
     if grid_version >= 2.0:
-        ignore_idmaps = ["rof2ocn_fmapname", "glc2ice_rmapname",
-                         "glc2ocn_liq_rmapname", "glc2ocn_ice_rmapname"]
         group_variables = nmlgen.get_group_variables("seq_maps")
         for name in group_variables:
             value = group_variables[name]
@@ -221,16 +219,13 @@ def write_seq_maps_file(case, nmlgen, confdir):
                     component1 = name[0:3]
                     component2 = name[4:7]
                     if not ignore_component[component1]  and not ignore_component[component2]:
-                        if name in ignore_idmaps:
-                            logger.warning("   NOTE: ignoring setting of {}=idmap in seq_maps.rc".format(name))
+                        if "rof2ocn_" in name:
+                            if case.get_value("COMP_OCN") == 'docn':
+                                logger.warning("   NOTE: ignoring setting of {}=idmap in seq_maps.rc".format(name))
                         else:
-                            if "rof2ocn_" in name:
-                                if case.get_value("COMP_OCN") == 'docn':
-                                    logger.warning("   NOTE: ignoring setting of {}=idmap in seq_maps.rc".format(name))
-                            else:
-                                expect(gridvalue[component1] == gridvalue[component2],
-                                       "Need to provide valid mapping file between {} and {} in xml variable {} ".\
-                                           format(component1, component2, name))
+                            expect(gridvalue[component1] == gridvalue[component2],
+                                   "Need to provide valid mapping file between {} and {} in xml variable {} ".\
+                                   format(component1, component2, name))
 
     # now write out the file
     seq_maps_file = os.path.join(confdir, "seq_maps.rc")
@@ -362,7 +357,7 @@ def buildnml(case, caseroot, component):
     expect (os.path.isdir(user_xml_dir),
             "user_xml_dir {} does not exist ".format(user_xml_dir))
 
-    files = Files()
+    files = Files(comp_interface="mct")
     definition_file = [files.get_value("NAMELIST_DEFINITION_FILE", {"component": "drv"})]
 
     user_definition = os.path.join(user_xml_dir, "namelist_definition_drv.xml")
