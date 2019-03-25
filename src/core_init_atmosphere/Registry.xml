@@ -485,6 +485,7 @@
                         <var name="zb3" packages="vertical_stage_out;met_stage_out"/>
                         <var name="dss" packages="vertical_stage_out;met_stage_out"/>
                         <var name="u_init" packages="met_stage_out"/>
+                        <var name="v_init" packages="met_stage_out"/>
                         <var name="t_init" packages="met_stage_out"/>
                         <var name="qv_init" packages="met_stage_out"/>
                         <var_array name="scalars" packages="met_stage_out"/>
@@ -782,6 +783,9 @@
 
                 <var name="u_init" type="real" dimensions="nVertLevels" units="m s^{-1}"
                      description="u reference profile"/>
+
+                <var name="v_init" type="real" dimensions="nVertLevels" units="m s^{-1}"
+                     description="v reference profile"/>
 
                 <var name="t_init" type="real" dimensions="nVertLevels nCells" units="K"
                      description="theta reference profile"/>
