@@ -2007,6 +2007,7 @@ subroutine tphysbc (ztodt,               &
     logical :: l_rad
     real(r8):: fmin         ! safe guard for the cloud fraction to aviod devided by zero
     integer :: ql_incld_opt ! options for in-cloud liquid water calculation
+    integer :: lc_tend_opt  ! options for liquid water tendency for condensation
     !HuiWan (2014/15): added for a short-term time step convergence test ==
 
 
@@ -2023,6 +2024,7 @@ subroutine tphysbc (ztodt,               &
                       ,l_rad_out              = l_rad              &
                       ,fmin_out               = fmin               &
                       ,ql_incld_opt_out       = ql_incld_opt       &
+                      ,lc_tend_opt_out        = lc_tend_opt        &
                       )
     
     !-----------------------------------------------------------------------
@@ -2373,7 +2375,7 @@ end if
             dlf, dlf2, & ! detrain
             rliq  , & ! check energy after detrain
             cmfmc,   cmfmc2, &
-            cam_in%ts,      cam_in%sst,        zdu,  fmin,  ql_incld_opt)
+            cam_in%ts,      cam_in%sst,        zdu,  fmin,  ql_incld_opt,  lc_tend_opt)
 
        call physics_update(state, ptend, ztodt, tend)
        call check_energy_chng(state, tend, "cldwat_tend", nstep, ztodt, zero, prec_str(:ncol), snow_str(:ncol), zero)

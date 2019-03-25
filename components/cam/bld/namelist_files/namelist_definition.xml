@@ -2621,6 +2621,12 @@ Options for in-cloud liquid water calculation.
 Default: 0
 </entry>
 
+<entry id="lc_tend_opt" type="integer" category="physc_test"
+       group="phys_ctl_nl" valid_values="" >
+Options for liquid water tendency used for condensation.
+Default: 0
+</entry>
+
 <entry id="fmin" type="real" category="physc_test"
        group="phys_ctl_nl" valid_values="" >
 Safe guard value for cloud fraction to avoid devided by zero

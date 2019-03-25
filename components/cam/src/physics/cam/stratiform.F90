@@ -350,7 +350,7 @@ subroutine stratiform_tend( &
    state, ptend_all, pbuf, dtime, icefrac, &
    landfrac, ocnfrac, landm, snowh, dlf,   &
    dlf2, rliq, cmfmc, cmfmc2, ts,          &
-   sst, zdu, fmin, ql_incld_opt)
+   sst, zdu, fmin, ql_incld_opt,lc_tend_opt)
 
    !-------------------------------------------------------- !  
    !                                                         ! 
@@ -394,6 +394,7 @@ subroutine stratiform_tend( &
    real(r8), intent(in)  :: zdu(pcols,pver)          ! Detrainment rate from deep convection
    real(r8), intent(in)  :: fmin                     ! safe guard value for cloud fraction to aviod devided by zero
    integer,  intent(in)  :: ql_incld_opt             ! options for in-cloud liquid water calculation
+   integer,  intent(in)  :: lc_tend_opt              ! options for liquid water tendency used for condensation
 
   ! Local variables
 
@@ -761,7 +762,7 @@ subroutine stratiform_tend( &
                fsaut, fracw, fsacw, fsaci, ltend,                          &
                rhdfda, rhu00, icefrac, state1%zi, ice2pr, liq2pr,          &
                liq2snow, snowh, rkflxprc, rkflxsnw, pracwo, psacwo, psacio,&
-               fmin, icwat, ql_incld_opt)
+               fmin, icwat, ql_incld_opt,lc_tend_opt)
    call t_stopf('pcond')
 
    lq(:)        = .FALSE.

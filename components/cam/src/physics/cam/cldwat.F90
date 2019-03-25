@@ -264,7 +264,7 @@ subroutine pcond (lchnk   ,ncol    , &
                   fsaut   ,fracw   ,fsacw   ,fsaci   ,lctend  , &
                   rhdfda  ,rhu00   ,seaicef, zi      ,ice2pr, liq2pr, &
                   liq2snow, snowh, rkflxprc, rkflxsnw, pracwo, psacwo, psacio, &
-                  fmin, icwat, ql_incld_opt)
+                  fmin, icwat, ql_incld_opt, lc_tend_opt)
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -294,6 +294,10 @@ subroutine pcond (lchnk   ,ncol    , &
    integer, intent(in) :: lchnk                 ! chunk identifier
    integer, intent(in) :: ncol                  ! number of atmospheric columns
    integer, intent(in) :: ql_incld_opt          ! options for in-cloud liquid water calculation 
+                                                ! ql_incld_opt > = 1 then use the cloud liqudi water in previous step 
+   integer, intent(in) :: lc_tend_opt           ! options for the liquid water tendency in condensation calculation
+                                                ! lc_tend_opt > 1 then lc_tend related term = 0 
+                                                ! when lc_tend < 0 in condensation calculation
 
    real(r8), intent(in) :: fice(pcols,pver)     ! fraction of cwat that is ice
    real(r8), intent(in) :: fsnow(pcols,pver)    ! fraction of rain that freezes to snow
@@ -582,7 +586,7 @@ subroutine pcond (lchnk   ,ncol    , &
 
                   ! Q=C-E=-C1*Al + C2*Aq - C3* At + C4*Er
   
-                  if( ql_incld_opt >= 1 ) then
+                  if( (ql_incld_opt >= 1) .and. (lc_tend_opt >=1) ) then
 
                    cme(i,k) = -cmec1(i)*max(0._r8,lctend(i,k)) + cmec2(i)*qtend(i,k)  &
                               -cmec3(i)*ttend(i,k) + cmec4(i)*evapprec(i,k)
