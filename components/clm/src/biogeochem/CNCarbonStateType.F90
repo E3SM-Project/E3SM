@@ -1205,14 +1205,14 @@ contains
                 this%leafc_storage_patch(p) = 0._r8
              else
                 if (veg_vp%evergreen(veg_pp%itype(p)) == 1._r8) then
-                   this%leafc_patch(p)         = 1._r8 * ratio
+                   this%leafc_patch(p)         = 50._r8 * ratio
                    this%leafc_storage_patch(p) = 0._r8
                 else if (veg_pp%itype(p) >= npcropmin) then ! prognostic crop types
                    this%leafc_patch(p) = 0._r8
                    this%leafc_storage_patch(p) = 0._r8
                 else
                    this%leafc_patch(p) = 0._r8
-                   this%leafc_storage_patch(p) = 1._r8 * ratio
+                   this%leafc_storage_patch(p) = 50._r8 * ratio
                 end if
              end if
              this%leafc_xfer_patch(p) = 0._r8
@@ -3106,10 +3106,11 @@ contains
          this%totvegc_abg_patch(bounds%begp:bounds%endp), &
          this%totvegc_abg_col(bounds%begc:bounds%endc))
 
-    call p2c(bounds, num_soilc, filter_soilc, &
+    if (crop_prog) then 
+      call p2c(bounds, num_soilc, filter_soilc, &
          this%cropseedc_deficit_patch(bounds%begp:bounds%endp), &
          cropseedc_deficit_col(bounds%begc:bounds%endc))
-
+    end if 
     ! column level summary
 
      nlev = nlevdecomp
@@ -3286,9 +3287,11 @@ contains
             this%totlitc_col(c)  + &
             this%totsomc_col(c)  + &
             this%prod1c_col(c)   + &
-            this%ctrunc_col(c)   + &
-            cropseedc_deficit_col(c)
-            
+            this%ctrunc_col(c)   
+       if (crop_prog) then
+            this%totcolc_col(c) = this%totcolc_col(c) + cropseedc_deficit_col(c)
+       end if
+   
        this%totabgc_col(c) = &
             this%totpftc_col(c)  + &
             this%totprodc_col(c) + &

@@ -453,8 +453,8 @@ contains
          end do
       end do
 
-      if ( (use_cn .or. use_fates) .and. &
-         .not.(use_pflotran .and. pf_hmode) ) then
+      !if ( (use_cn .or. use_fates) .and. &
+      if  ( .not.(use_pflotran .and. pf_hmode) )  then
          ! Update soilpsi.
          ! ZMS: Note this could be merged with the following loop updating smp_l in the future.
          do j = 1, nlevgrnd

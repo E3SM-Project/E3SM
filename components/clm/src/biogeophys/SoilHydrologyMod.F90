@@ -52,7 +52,7 @@ contains
     use clm_varctl      , only : use_var_soil_thick
     use abortutils      , only : endrun
 #if (defined HUM_HOL)
-    use pftvarcon       , only : humhol_ht
+    use pftvarcon       , only : humhol_ht !, extcol_ht
 #endif
     use SoilWaterMovementMod, only : zengdecker_2009_with_var_soil_thick
     !
@@ -142,7 +142,6 @@ contains
             else
                icefrac(c,j) = min(1._r8,vol_ice(c,j)/watsat(c,j))
             endif
-
             fracice(c,j) = max(0._r8,exp(-3._r8*(1._r8-icefrac(c,j)))- exp(-3._r8))/(1.0_r8-exp(-3._r8))
          end do
       end do
@@ -537,7 +536,7 @@ contains
 
              ! limit runoff to value of storage above S(pc)
 #if (defined HUM_HOL)
-             if (h2osfc(c) .gt. 0._r8) then
+             if (h2osfc(c) .gt. 0._r8 .and. c .lt. 3) then
                 qflx_h2osfc_surf(c) = min(qflx_h2osfc_surfrate*h2osfc(c)**2.0_r8,h2osfc(c) / dtime)
 #else
              if(h2osfc(c) >= h2osfc_thresh(c) .and. h2osfcflag/=0) then
@@ -618,7 +617,8 @@ contains
                  zwt_ho = zwt_ho - h2osfc(2)/1000._r8   !DMR 4/29/13
                end if
                !DMR 12/4/2015
-               if (icefrac(0,jwt(c)+1) .ge. 0.01_r8 .or. icefrac(1,jwt(c)+1) .ge. 0.01_r8) then
+               if (icefrac(1,min(jwt(1)+1,nlevsoi)) .ge. 0.01_r8 .or. &
+                      icefrac(2,min(jwt(2)+1,nlevsoi)) .ge. 0.01_r8) then
                  !turn off lateral transport if any ice is present at or below
                  !water table
                  qflx_lat_aqu(:) = 0._r8
@@ -1187,7 +1187,7 @@ contains
      real(r8) :: frac                     ! temporary variable for ARNO subsurface runoff calculation
      real(r8) :: rel_moist                ! relative moisture, temporary variable
      real(r8) :: wtsub_vic                ! summation of hk*dzmm for layers in the third VIC layer
-
+     real(r8) :: deep_seep
      !-----------------------------------------------------------------------
 
      associate(                                                            & 
@@ -1494,27 +1494,23 @@ contains
 
 #if (defined HUM_HOL)
           !changes for hummock hollow topography
+          !parameterize deep seepage as 100 mm/yr
+          deep_seep = 100.0_r8 / 365._r8 / 86400._r8  !rate per second
           if (c .eq. 1) then !hummock
-            if (zwt(c) < (0.4_r8 + humhol_ht)) then
-              rsub_top(c)    = imped * rsub_top_max* exp(-fff(c)*zwt(c)) - &
-                imped * rsub_top_max * exp(-fff(c)*(0.4_r8+humhol_ht))
+            if (zwt(c) < (0.7_r8 + 3.0_r8 * humhol_ht/2.0_r8)) then
+              rsub_top(c)    = deep_seep + imped * rsub_top_max* exp(-fff(c)*zwt(c)) - &
+                imped * rsub_top_max * exp(-fff(c)*(0.7_r8+3.0_r8*humhol_ht/2.0_r8))
             else
-              rsub_top(c)    = 0_r8
+              rsub_top(c)    =deep_seep
             endif
           else           !hollow
-            if (zwt(c) < 0.4_r8) then
-              !if (zwt(c) .lt. 0.017) then
-              !    rsub_top(c)    = imped * rsub_top_max*exp(-fff(c)*(zwt(c)+0.3_r8-h2osfc(c)/1000_r8)) - &
-              !    imped * rsub_top_max * exp(-fff(c)*0.7_r8)
-              !else
-                rsub_top(c)    = imped * rsub_top_max* exp(-fff(c)*(zwt(c)+humhol_ht)) - &
-                  imped * rsub_top_max * exp(-fff(c)*(0.4_r8+humhol_ht))
-              !end if
+            if (zwt(c) < 0.7_r8 + humhol_ht/2.0_r8) then
+              rsub_top(c)    = deep_seep + imped * rsub_top_max* exp(-fff(c)*(zwt(c)+humhol_ht)) - &
+                imped * rsub_top_max * exp(-fff(c)*(0.7_r8+3.0_r8*humhol_ht/2.0_r8))
             else
-              rsub_top(c)    = 0_r8
+              rsub_top(c)    = deep_seep
             endif
           endif
-          !print*, c, zwt(c), rsub_top(c)
 #else
 
 
@@ -1534,11 +1530,11 @@ contains
                 ! make sure baseflow isn't negative
                 rsub_top(c) = max(0._r8, rsub_top(c))
              else
-	        if (jwt(c) == nlevbed .and. zengdecker_2009_with_var_soil_thick) then
+                if (jwt(c) == nlevbed .and. zengdecker_2009_with_var_soil_thick) then
                    rsub_top(c)    = 0._r8
                 else
                    rsub_top(c)    = imped * rsub_top_max* exp(-fff(c)*zwt(c))
-		end if
+                end if
              end if
 #endif
              if (use_vsfm) rsub_top(c) = 0._r8
@@ -1550,10 +1546,10 @@ contains
 
              !--  water table is below the soil column  --------------------------------------
              if(jwt(c) == nlevbed) then             
-	        if (zengdecker_2009_with_var_soil_thick) then
-         	   if (-1._r8 * smp_l(c,nlevbed) < 0.5_r8 * dzmm(c,nlevbed)) then
-           	      zwt(c) = z(c,nlevbed) - (smp_l(c,nlevbed) / 1000._r8)
-		   end if
+                if (zengdecker_2009_with_var_soil_thick) then
+                   if (-1._r8 * smp_l(c,nlevbed) < 0.5_r8 * dzmm(c,nlevbed)) then
+                     zwt(c) = z(c,nlevbed) - (smp_l(c,nlevbed) / 1000._r8)
+                   end if
                    rsub_top(c) = imped * rsub_top_max * exp(-fff(c) * zwt(c))
                    rsub_top_tot = - rsub_top(c) * dtime
                    s_y = watsat(c,nlevbed) &
@@ -1568,8 +1564,8 @@ contains
                    else
                       zwt(c) = zi(c,nlevbed)
                    end if
-	           if (rsub_top_tot < 0.) then
-	              rsub_top(c) = rsub_top(c) + rsub_top_tot / dtime
+                   if (rsub_top_tot < 0.) then
+                      rsub_top(c) = rsub_top(c) + rsub_top_tot / dtime
                       rsub_top_tot = 0.
                    end if
                 else

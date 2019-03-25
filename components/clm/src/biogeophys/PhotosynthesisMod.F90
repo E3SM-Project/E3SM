@@ -699,10 +699,12 @@ contains
 #if (defined HUM_HOL)
          !Dessication and submergence scalaers for moss photosynthesis
          if (veg_pp%itype(p) == 12)then
-            wcscaler = (-0.656_r8 + 1.654_r8 *log10(h2o_moss_wc (p)))
-            !DMR 05/11/17 - add scaler for submergence effect
-            !wcscaler = wcscaler * (1.0_r8 - min(h2osfc(c),50.0_r8)/50.0_r8)
-            wcscaler = max(0._r8, min(1.0_r8, wcscaler))
+            if (h2o_moss_wc(p) .gt. 0._r8) then 
+              wcscaler = (-0.656_r8 + 1.654_r8 *log10(h2o_moss_wc (p)))
+              wcscaler = max(0._r8, min(1.0_r8, wcscaler))
+            else
+              wcscaler = 0._r8
+            endif
          endif
 #endif
 
@@ -1467,12 +1469,13 @@ contains
       !Dessication and submergence effects for moss PFT
 #if (defined HUM_HOL)
       if (veg_pp%itype(p) == 12)then
-         wcscaler = (-0.656_r8 + 1.654_r8 *log10(h2o_moss_wc (p)))
-         !DMR 05/11/17 - add scaler for submergence effect
-         !wcscaler = wcscaler * (1.0_r8 - min(h2osfc(c),50.0_r8)/50.0_r8)
-         wcscaler = max(0._r8, min(1.0_r8, wcscaler))
+         if (h2o_moss_wc(p) .gt. 0._r8) then 
+           wcscaler = (-0.656_r8 + 1.654_r8 *log10(h2o_moss_wc (p)))
+           wcscaler = max(0._r8, min(1.0_r8, wcscaler))
+         else
+           wcscaler = 0._r8
+         endif
          ag(p,iv) = ag(p,iv) * wcscaler
-         !if (h2osfc(c) > 0) print*, 'AG', c, h2osfc(c), wcscaler
       endif
 #endif
 

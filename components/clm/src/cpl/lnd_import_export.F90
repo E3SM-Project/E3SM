@@ -27,7 +27,7 @@ contains
     ! !USES:
     use clm_varctl       , only: co2_type, co2_ppmv, iulog, use_c13, create_glacier_mec_landunit, &
                                  metdata_type, metdata_bypass, metdata_biases, co2_file, aero_file
-    use clm_varctl       , only: add_temperature, add_co2
+    use clm_varctl       , only: use_cn, add_temperature, add_co2
     use clm_varctl       , only: startdate_add_temperature, startdate_add_co2
     use clm_varcon       , only: rair, o2_molar_const, c13ratio
     use clm_time_manager , only: get_nstep, get_step_size, get_curr_calday, get_curr_date 
@@ -149,7 +149,7 @@ contains
 
     namelist /ndepdyn_nml/        &
         stream_year_first_ndep,  &
-	stream_year_last_ndep,   &
+        stream_year_last_ndep,   &
         model_year_align_ndep,   &
         ndepmapalgo,             &
         stream_fldFileName_ndep
@@ -385,7 +385,7 @@ contains
                     metdata_fname = 'Princeton_Daymet3_' // trim(metvars(v)) // '_1980-2012_z' // zst(2:3) // '.nc'
                 end if
             else if (atm2lnd_vars%metsource == 4) then 
-                metdata_fname = 'GSWP3.v1_' // trim(metvars(v)) // '_1901-2010_z' // zst(2:3) // '.nc'
+                metdata_fname = 'GSWP3_' // trim(metvars(v)) // '_1901-2014_z' // zst(2:3) // '.nc'
                 if (use_livneh .and. ztoget .ge. 16 .and. ztoget .le. 20) then 
                     metdata_fname = 'GSWP3_Livneh_' // trim(metvars(v)) // '_1950-2010_z' // zst(2:3) // '.nc'                
                 else if (use_daymet .and. ztoget .ge. 16 .and. ztoget .le. 20) then 
@@ -565,13 +565,13 @@ contains
           qsat           = 0.622_r8*e / (atm2lnd_vars%forc_pbot_not_downscaled_grc(g) - 0.378_r8*e)
           atm2lnd_vars%forc_q_not_downscaled_grc(g) = qsat * atm2lnd_vars%forc_q_not_downscaled_grc(g) / 100.0_r8
         end if
-#endif
 
         !use longwave from file if provided
         atm2lnd_vars%forc_lwrad_not_downscaled_grc(g) = ((atm2lnd_vars%atm_input(7,g,1,tindex(7,1))*atm2lnd_vars%scale_factors(7)+ &
                                                       atm2lnd_vars%add_offsets(7))*wt1(7) + (atm2lnd_vars%atm_input(7,g,1,tindex(7,2)) &
                                                       *atm2lnd_vars%scale_factors(7)+atm2lnd_vars%add_offsets(7))*wt2(7)) * &
                                                       atm2lnd_vars%var_mult(7,g,mon) + atm2lnd_vars%var_offset(7,g,mon)  
+
         if (atm2lnd_vars%forc_lwrad_not_downscaled_grc(g) .le. 50 .or. atm2lnd_vars%forc_lwrad_not_downscaled_grc(g) .ge. 600) then 
           !Longwave radiation (calculated from air temperature, humidity)
             e =  atm2lnd_vars%forc_pbot_not_downscaled_grc(g) * atm2lnd_vars%forc_q_not_downscaled_grc(g) / &
@@ -579,6 +579,13 @@ contains
             ea = 0.70_R8 + 5.95e-05_R8 * 0.01_R8 * e * exp(1500.0_R8/tbot)
             atm2lnd_vars%forc_lwrad_not_downscaled_grc(g) = ea * SHR_CONST_STEBOL * tbot**4
         end if 
+#else
+        !Longwave radiation (calculated from air temperature, humidity)
+        e =  atm2lnd_vars%forc_pbot_not_downscaled_grc(g) * atm2lnd_vars%forc_q_not_downscaled_grc(g) / &
+             (0.622_R8 + 0.378_R8 * atm2lnd_vars%forc_q_not_downscaled_grc(g) )
+        ea = 0.70_R8 + 5.95e-05_R8 * 0.01_R8 * e * exp(1500.0_R8/tbot)
+        atm2lnd_vars%forc_lwrad_not_downscaled_grc(g) = ea * SHR_CONST_STEBOL * tbot**4
+#endif
 
         !Shortwave radiation (cosine zenith angle interpolation)
         thishr = (tod-get_step_size()/2)/3600
@@ -692,7 +699,8 @@ contains
         nindex(2) = nindex(1)+1
         if (yr .lt. 1850) nindex(1:2) = 2
         if (yr .ge. 2010) nindex(1:2) = 161
-      
+ 
+        if (use_cn) then       
         if (atm2lnd_vars%loaded_bypassdata == 0 .or. (mon .eq. 1 .and. day .eq. 1 .and. tod .eq. 0)) then  
           if (masterproc .and. i .eq. 1) then 
               ! Read pop_dens streams namelist to get filename
@@ -909,9 +917,10 @@ contains
   
         atm2lnd_vars%forc_ndep_grc(g)    = (atm2lnd_vars%ndep1(atm2lnd_vars%ndepind(g,1),atm2lnd_vars%ndepind(g,2),1)*wt1(1) + &
                                             atm2lnd_vars%ndep2(atm2lnd_vars%ndepind(g,1),atm2lnd_vars%ndepind(g,2),1)*wt2(1)) / (365._r8 * 86400._r8)
+        end if   !end CN
 
    !------------------------------------Aerosol forcing--------------------------------------------------
-       if (atm2lnd_vars%loaded_bypassdata .eq. 0 .or. (mon .eq. 1 .and. day .eq. 1 .and. tod .eq. 0)) then 
+        if (atm2lnd_vars%loaded_bypassdata .eq. 0 .or. (mon .eq. 1 .and. day .eq. 1 .and. tod .eq. 0)) then 
           if (masterproc .and. i .eq. 1) then 
             aerovars(1) = 'BCDEPWET'
             aerovars(2) = 'BCPHODRY'
@@ -946,9 +955,28 @@ contains
           if (i .eq. 1) then 
              call mpi_bcast (atm2lnd_vars%aerodata, 14*144*96*14, MPI_REAL8, 0, mpicom, ier)
           end if
-       end if
+        end if
 
-       !Use ndep grid indices since they're on the same grid
+        if (atm2lnd_vars%loaded_bypassdata .eq. 0 .and. .not. use_cn) then
+          mindist=99999
+          do thisx = 1,144
+            do thisy = 1,96
+              if (ldomain%lonc(g) .lt. 0) then
+                if (smap2_lon(thisx) >= 180) smap2_lon(thisx) = smap2_lon(thisx)-360._r8
+              else if (ldomain%lonc(g) .ge. 180) then
+                 if (smap2_lon(thisx) < 0) smap2_lon(thisx) = smap2_lon(thisx) + 360._r8
+              end if
+              thislon = smap2_lon(thisx)
+              thisdist = 100*((smap2_lat(thisy) - ldomain%latc(g))**2 + &
+                              (thislon - ldomain%lonc(g))**2)**0.5
+              if (thisdist .lt. mindist) then
+                mindist = thisdist
+                atm2lnd_vars%ndepind(g,1) = thisx
+                atm2lnd_vars%ndepind(g,2) = thisy
+              end if
+            end do
+          end do
+        end if
 
         !get weights for interpolation (note this method doesn't get the month boundaries quite right..)
         aindex(1) = mon+1
@@ -985,6 +1013,18 @@ contains
              (yr == sy_addt .and. mon > sm_addt) .or. (yr > sy_addt)) then
            atm2lnd_vars%forc_t_not_downscaled_grc(g) = atm2lnd_vars%forc_t_not_downscaled_grc(g) + add_temperature
            atm2lnd_vars%forc_th_not_downscaled_grc(g) = atm2lnd_vars%forc_th_not_downscaled_grc(g) + add_temperature
+#ifdef HUM_HOL
+           !recalculate longwave given new air temperature
+           e =  atm2lnd_vars%forc_pbot_not_downscaled_grc(g) * atm2lnd_vars%forc_q_not_downscaled_grc(g) / &
+             (0.622_R8 + 0.378_R8 * atm2lnd_vars%forc_q_not_downscaled_grc(g) )
+           ea = 0.70_R8 + 5.95e-05_R8 * 0.01_R8 * e * exp(1500.0_R8/atm2lnd_vars%forc_th_not_downscaled_grc(g)) 
+           atm2lnd_vars%forc_lwrad_not_downscaled_grc(g) = ea * SHR_CONST_STEBOL * &
+           atm2lnd_vars%forc_th_not_downscaled_grc(g)**4
+
+           !adjust longwave for SPRUCE enclosure effects
+           atm2lnd_vars%forc_lwrad_not_downscaled_grc(g) = 0.33_r8*atm2lnd_vars%forc_lwrad_not_downscaled_grc(g)  + &
+                 0.67_r8*(0.95_r8*5.670373e-8_r8* atm2lnd_vars%forc_t_not_downscaled_grc(g)**4)
+#endif
          end if
        end if
 
@@ -1027,7 +1067,52 @@ contains
          top_af%solar(topo) = top_af%solad(topo,2) + top_af%solad(topo,1) + &
                               top_af%solai(topo,2) + top_af%solai(topo,1)
        end do
-     
+
+       !atmospheric CO2
+        if (atm2lnd_vars%loaded_bypassdata .eq. 0) then
+          ierr = nf90_open(trim(co2_file), nf90_nowrite, ncid)
+          ierr = nf90_inq_dimid(ncid, 'time', dimid)
+          ierr = nf90_Inquire_Dimension(ncid, dimid, len = thistimelen)
+          ierr = nf90_inq_varid(ncid, 'CO2', varid)
+          ierr = nf90_get_var(ncid, varid, atm2lnd_vars%co2_input(:,:,1:thistimelen))
+          ierr = nf90_inq_varid(ncid, 'C13O2', varid)
+          ierr = nf90_get_var(ncid, varid, atm2lnd_vars%c13o2_input(:,:,1:thistimelen))
+          ierr = nf90_close(ncid)
+        end if
+
+        !get weights/indices for interpolation (assume values represent annual
+        !averages)
+        nindex(1) = min(max(yr,1850),2100)-1764
+        if (thiscalday .le. 182.5) then
+          nindex(2) = nindex(1)-1
+        else
+          nindex(2) = nindex(1)+1
+        end if
+        wt1(1) = 1._r8 - abs((182.5 - (thiscalday -1._r8))/365._r8)
+        wt2(1) = 1._r8 - wt1(1)
+
+        co2_ppmv_val = atm2lnd_vars%co2_input(1,1,nindex(1))*wt1(1) + &
+           atm2lnd_vars%co2_input(1,1,nindex(2))*wt2(1)
+        if (startdate_add_co2 .ne. '') then
+          if ((yr == sy_addco2 .and. mon == sm_addco2 .and. day >= sd_addco2) .or. &
+              (yr == sy_addco2 .and. mon > sm_addco2) .or. (yr > sy_addco2)) then
+            co2_ppmv_val=co2_ppmv_val + add_co2
+          end if
+        end if
+
+        forc_pbot = atm2lnd_vars%forc_pbot_not_downscaled_grc(g)
+        atm2lnd_vars%forc_pco2_grc(g)   = co2_ppmv_val * 1.e-6_r8 * forc_pbot
+        if (use_c13) then
+          atm2lnd_vars%forc_pc13o2_grc(g) = (atm2lnd_vars%c13o2_input(1,1,nindex(1))*wt1(1) + &
+               atm2lnd_vars%c13o2_input(1,1,nindex(2))*wt2(1)) * 1.e-6_r8 * forc_pbot
+        end if
+        co2_type_idx = 0
+
+        do topo = grc_pp%topi(g), grc_pp%topf(g)
+          top_as%pco2bot(topo)   = atm2lnd_vars%forc_pco2_grc(g) 
+          top_as%pc13o2bot(topo) = atm2lnd_vars%forc_pc13o2_grc(g)
+        end do
+
   !-----------------------------------------------------------------------------------------------------
 #else
 
@@ -1105,8 +1190,6 @@ contains
          top_af%solar(topo) = top_af%solad(topo,2) + top_af%solad(topo,1) + &
                               top_af%solai(topo,2) + top_af%solai(topo,1)
        end do
-         
-#endif
 
        ! Determine optional receive fields
        ! CO2 (and C13O2) concentration: constant, prognostic, or diagnostic
@@ -1150,6 +1233,7 @@ contains
        if (index_x2l_Sa_methane /= 0) then
           atm2lnd_vars%forc_pch4_grc(g) = x2l(index_x2l_Sa_methane,i)
        endif
+#endif
 
        ! Determine derived quantities for required fields
 
@@ -1185,55 +1269,14 @@ contains
        ! Note that the following does unit conversions from ppmv to partial pressures (Pa)
        ! Note that forc_pbot is in Pa
 
-#ifdef CPL_BYPASS
-       co2_type_idx = 2
-#endif
-
+#ifndef CPL_BYPASS
        if (co2_type_idx == 1) then
           co2_ppmv_val = co2_ppmv_prog
        else if (co2_type_idx == 2) then
-#ifdef CPL_BYPASS
-        !atmospheric CO2 (to be used for transient simulations only)
-        if (atm2lnd_vars%loaded_bypassdata .eq. 0) then 
-          ierr = nf90_open(trim(co2_file), nf90_nowrite, ncid)
-          ierr = nf90_inq_dimid(ncid, 'time', dimid)
-          ierr = nf90_Inquire_Dimension(ncid, dimid, len = thistimelen)
-          ierr = nf90_inq_varid(ncid, 'CO2', varid)
-          ierr = nf90_get_var(ncid, varid, atm2lnd_vars%co2_input(:,:,1:thistimelen))
-          ierr = nf90_inq_varid(ncid, 'C13O2', varid)
-          ierr = nf90_get_var(ncid, varid, atm2lnd_vars%c13o2_input(:,:,1:thistimelen))
-          ierr = nf90_close(ncid)
-        end if
-
-        !get weights/indices for interpolation (assume values represent annual averages)
-        nindex(1) = min(max(yr,1850),2100)-1764
-        if (thiscalday .le. 182.5) then 
-          nindex(2) = nindex(1)-1  
-        else
-          nindex(2) = nindex(1)+1
-        end if
-        wt1(1) = 1._r8 - abs((182.5 - (thiscalday -1._r8))/365._r8)
-        wt2(1) = 1._r8 - wt1(1)
-
-        co2_ppmv_val = atm2lnd_vars%co2_input(1,1,nindex(1))*wt1(1) + atm2lnd_vars%co2_input(1,1,nindex(2))*wt2(1)
-        if (startdate_add_co2 .ne. '') then
-          if ((yr == sy_addco2 .and. mon == sm_addco2 .and. day >= sd_addco2) .or. &
-              (yr == sy_addco2 .and. mon > sm_addco2) .or. (yr > sy_addco2)) then
-            co2_ppmv_val=co2_ppmv_val + add_co2
-          end if
-        end if
-
-        if (use_c13) then 
-          atm2lnd_vars%forc_pc13o2_grc(g) = (atm2lnd_vars%c13o2_input(1,1,nindex(1))*wt1(1) + &
-               atm2lnd_vars%c13o2_input(1,1,nindex(2))*wt2(1)) * 1.e-6_r8 * forc_pbot
-        end if
-        co2_type_idx = 1
-#else
           co2_ppmv_val = co2_ppmv_diag 
            if (use_c13) then
              atm2lnd_vars%forc_pc13o2_grc(g) = co2_ppmv_val * c13ratio * 1.e-6_r8 * forc_pbot
            end if
-#endif
        else
           co2_ppmv_val = co2_ppmv
           if (use_c13) then
@@ -1241,14 +1284,6 @@ contains
           end if
        end if
        atm2lnd_vars%forc_pco2_grc(g)   = co2_ppmv_val * 1.e-6_r8 * forc_pbot 
-
-#ifdef CPL_BYPASS
-       do topo = grc_pp%topi(g), grc_pp%topf(g)
-         top_as%pco2bot(topo) = atm2lnd_vars%forc_pco2_grc(g)
-         if (use_c13) then
-            top_as%pc13o2bot(topo) = atm2lnd_vars%forc_pc13o2_grc(g)
-         end if
-       end do
 #endif
       
        ! glc coupling 
