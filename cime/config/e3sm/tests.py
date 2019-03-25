@@ -191,9 +191,9 @@ _TESTS = {
         "share"    : True,
         "time"     : "01:00:00",
         "tests"    : (
-                 "ERP.ne4_ne4.FC5AV1C-H01A.cam-preqx_ftype0",
-                 "ERP.ne4_ne4.FC5AV1C-H01A.cam-preqx_ftype1",
-                 "ERP.ne4_ne4.FC5AV1C-H01A.cam-preqx_ftype4",
+                 "SMS.ne4_ne4.FC5AV1C-H01A.cam-preqx_ftype0",
+                 "SMS.ne4_ne4.FC5AV1C-H01A.cam-preqx_ftype1",
+                 "SMS.ne4_ne4.FC5AV1C-H01A.cam-preqx_ftype4",
                  )
         },
     "eam_theta_ftypes" : {
