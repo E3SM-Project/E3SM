@@ -803,7 +803,7 @@ contains
     !-----------------------------------------------------------
 
     !---------------------------------------
-    ! Document mapping (also add albedo and aoflux) - move this routine to esmFlds.F90
+    ! Document mapping (also add albedo and aoflux) 
     !---------------------------------------
 
     ! Loop over src components

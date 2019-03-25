@@ -108,13 +108,12 @@ contains
 !===============================================================================
 
   subroutine docn_comp_advertise(importState, exportState, &
-       ocn_present, ocn_prognostic, ocnrof_prognostic, &
+       ocn_prognostic, ocnrof_prognostic, &
        fldsFrOcn_num, fldsFrOcn, fldsToOcn_num, fldsToOcn, rc)
 
     ! input/output arguments
     type(ESMF_State)     , intent(inout) :: importState
     type(ESMF_State)     , intent(inout) :: exportState
-    logical              , intent(in)    :: ocn_present
     logical              , intent(in)    :: ocn_prognostic
     logical              , intent(in)    :: ocnrof_prognostic
     integer              , intent(out)   :: fldsToOcn_num
@@ -126,8 +125,6 @@ contains
     ! local variables
     integer         :: n
     !-------------------------------------------------------------------------------
-
-    if (.not. ocn_present) return
 
     !--------------------------------
     ! export fields

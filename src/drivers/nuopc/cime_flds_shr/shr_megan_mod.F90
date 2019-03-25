@@ -21,7 +21,6 @@ module shr_megan_mod
   use shr_log_mod, only : logunit => shr_log_Unit
 
   implicit none
-  save
   private
 
   public :: shr_megan_readnl           ! reads megan_emis_nl namelist
@@ -141,21 +140,21 @@ contains
        megan_nflds = shr_megan_mechcomps_n
        return
     end if
+
     call ESMF_VMGetCurrent(vm, rc=rc)
     call ESMF_VMGet(vm, localpet=localpet, rc=rc)
     megan_nflds = 0
+
     if (localPet==0) then
        inquire( file=trim(NLFileName), exist=exists)
        if ( exists ) then
           unitn = shr_file_getUnit()
           open( unitn, file=trim(NLFilename), status='old' )
-          if ( loglev > 0 ) write(logunit,F00) &
-               'Read in megan_emis_readnl namelist from: ', trim(NLFilename)
+          write(logunit,F00) 'Read in megan_emis_readnl namelist from: ', trim(NLFilename)
           call shr_nl_find_group_name(unitn, 'megan_emis_nl', status=ierr)
-          ! If ierr /= 0, no namelist present.
           if (ierr == 0) then
-             read(unitn, megan_emis_nl, iostat=ierr)
-
+             ! Note that ierr /= 0, no namelist is present.
+             read (unitn, megan_emis_nl, iostat=ierr)
              if (ierr > 0) then
                 call shr_sys_abort( 'problem on read of megan_emis_nl namelist in shr_megan_readnl' )
              endif

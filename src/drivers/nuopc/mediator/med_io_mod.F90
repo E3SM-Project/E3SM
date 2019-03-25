@@ -407,7 +407,7 @@ contains
     integer                       :: lfile_ind
     real(r8), pointer             :: fldptr1(:)
     real(r8), pointer             :: fldptr2(:,:)
-    character(len=number_strlen)  :: cvalue
+    character(len=number_strlen)  :: cnumber
     character(CL)                 :: tmpstr
     type(ESMF_Field)              :: lfield
     integer                       :: rank
@@ -550,15 +550,15 @@ contains
              if (rank == 2) then
                 call ESMF_FieldGet(lfield, ungriddedUBound=ungriddedUBound, rc=rc)
                 if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
-                cvalue = med_io_convert_int_to_string(ungriddedUBound(1))
+                write(cnumber,'(i0)') ungriddedUbound(1)
                 call ESMF_LogWrite(trim(subname)//':'//'field '//trim(itemc)// &
-                     ' has an griddedUBound of  '//trim(cvalue), ESMF_LOGMSG_INFO) 
+                     ' has an griddedUBound of  '//trim(cnumber), ESMF_LOGMSG_INFO) 
 
                 ! Create a new output variable for each element of the undistributed dimension
                 do n = 1,ungriddedUBound(1)
                    if (trim(itemc) /= "hgt") then
-                      cvalue = med_io_convert_int_to_string(n)
-                      name1 = trim(lpre)//'_'//trim(itemc)//trim(cvalue)
+                      write(cnumber,'(i0)') n
+                      name1 = trim(lpre)//'_'//trim(itemc)//trim(cnumber)
                       call shr_nuopc_fldList_GetMetadata(itemc, longname=lname, stdname=sname, units=cunit)
                       call ESMF_LogWrite(trim(subname)//': defining '//trim(name1), ESMF_LOGMSG_INFO)
 
@@ -643,8 +643,8 @@ contains
 
                 ! Output for each ungriddedUbound index
                 do n = 1,ungriddedUBound(1)
-                   cvalue = med_io_convert_int_to_string(n)
-                   name1 = trim(lpre)//'_'//trim(itemc)//trim(cvalue)
+                   write(cnumber,'(i0)') n
+                   name1 = trim(lpre)//'_'//trim(itemc)//trim(cnumber)
                    rcode = pio_inq_varid(io_file(lfile_ind), trim(name1), varid)
                    call pio_setframe(io_file(lfile_ind),varid,frame)
                    
@@ -739,14 +739,14 @@ contains
   !===============================================================================
   subroutine med_io_write_int1d(filename, iam, idata, dname, whead, wdata, file_ind)
 
+    !---------------
+    ! Write 1d integer array to netcdf file
+    !---------------
+
     use pio     , only : var_desc_t, pio_def_dim, pio_def_var
     use pio     , only : pio_put_att, pio_inq_varid, pio_put_var
     use pio     , only : pio_int, pio_def_var
     use esmFlds , only : shr_nuopc_fldList_GetMetadata
-
-    !---------------
-    ! Write 1d integer array to netcdf file
-    !---------------
 
     ! input/output arguments
     character(len=*),intent(in) :: filename ! file
@@ -806,14 +806,14 @@ contains
   !===============================================================================
   subroutine med_io_write_r8(filename, iam, rdata, dname, whead, wdata, file_ind)
 
+    !---------------
+    ! Write scalar double to netcdf file
+    !---------------
+
     use med_constants_mod , only : R8
     use pio               , only : var_desc_t, pio_def_var, pio_put_att
     use pio               , only : pio_double, pio_noerr, pio_inq_varid, pio_put_var
     use esmFlds           , only : shr_nuopc_fldList_GetMetadata
-
-    !---------------
-    ! Write scalar double to netcdf file
-    !---------------
 
     ! input/output arguments
     character(len=*),intent(in) :: filename ! file
@@ -1145,7 +1145,7 @@ contains
     real(r8), pointer             :: fldptr1(:), fldptr1_tmp(:)
     real(r8), pointer             :: fldptr2(:,:)
     character(CL)                 :: tmpstr
-    character(len=number_strlen)  :: cvalue
+    character(len=16)             :: cnumber
     integer(kind=Pio_Offset_Kind) :: lframe
     integer                       :: ungriddedCount
     integer                       :: ungriddedUBound(1) ! currently the size must equal 1 for rank 2 fieldds
@@ -1205,18 +1205,19 @@ contains
     call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
 
     do k = 1,nf
+       ! Get name of field
        call shr_nuopc_methods_FB_getNameN(FB, k, itemc, rc=rc)
        if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
+       ! Get iodesc for all fields based on iodesc of first field (assumes that all fields have
+       ! the same iodesc)
        if (k == 1) then
           call ESMF_FieldBundleGet(FB, itemc,  field=lfield, rc=rc)
           if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
           call ESMF_FieldGet(lfield, rank=rank, rc=rc)
           if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
-
           if (rank == 2) then
-             cvalue = med_io_convert_int_to_string(number=1)
-             name1 = trim(lpre)//'_'//trim(itemc)//trim(cvalue)
+             name1 = trim(lpre)//'_'//trim(itemc)//'1'
           else if (rank == 1) then
              name1 = trim(lpre)//'_'//trim(itemc)
           end if
@@ -1227,13 +1228,16 @@ contains
        call ESMF_LogWrite(trim(subname)//' reading field '//trim(itemc), ESMF_LOGMSG_INFO)
        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+       ! Get pointer to field bundle field
+       ! Field bundle might be 2d or 1d - but field on mediator history or restart file will always be 1d
        call shr_nuopc_methods_FB_getFldPtr(FB, itemc, &
             fldptr1=fldptr1, fldptr2=fldptr2, rank=rank, rc=rc)
        if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
        if (rank == 2) then
 
-          ! Determine the size of the ungridded dimension and the index where the undistributed dimension is located
+          ! Determine the size of the ungridded dimension and the
+          ! index where the undistributed dimension is located
           call ESMF_FieldBundleGet(FB, itemc,  field=lfield, rc=rc)
           if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
           call ESMF_FieldGet(lfield, ungriddedUBound=ungriddedUBound, gridToFieldMap=gridToFieldMap, rc=rc)
@@ -1247,8 +1251,10 @@ contains
           allocate(fldptr1_tmp(lsize))
 
           do n = 1,ungriddedUBound(1)
-             cvalue = med_io_convert_int_to_string(n)
-             name1 = trim(lpre)//'_'//trim(itemc)//trim(cvalue)
+             ! Creat a name for the 1d field on the mediator history or restart file based on the
+             ! ungridded dimension index of the field bundle 2d fiedl
+             write(cnumber,'(i0)') n
+             name1 = trim(lpre)//'_'//trim(itemc)//trim(cnumber)
 
              rcode = pio_inq_varid(pioid, trim(name1), varid)
              if (rcode == pio_noerr) then
@@ -1629,28 +1635,5 @@ contains
 
     call pio_closefile(pioid)
   end subroutine med_io_read_char
-
-  !===============================================================================
-  function med_io_convert_int_to_string(number) result(output_string)
-
-    !---------------
-    ! Returns a string corresponding to a given integer
-    !---------------
-
-    ! input/output variables
-    integer, intent(in)          :: number
-    character(len=number_strlen) :: output_string  ! function result
-    !
-    ! local variables
-    character(len=16)           :: format_string
-    character(len=*), parameter :: subname = 'convert_integer_to_string'
-    !-----------------------------------------------------------------------
-
-    ! e.g., for number_strlen = 2, format_string will be '(i2.2)'
-    write(format_string,'(a,i0,a,i0,a)') '(i', number_strlen, '.', number_strlen, ')'
-
-    write(output_string,trim(format_string)) number
-
-  end function med_io_convert_int_to_string
 
 end module med_io_mod

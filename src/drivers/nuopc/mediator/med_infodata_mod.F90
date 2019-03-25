@@ -42,8 +42,7 @@ module med_infodata_mod
 
      ! Set via components and may be time varying
      real(R8) :: nextsw_cday = -1.0_R8 ! calendar of next atm shortwave
-     real(R8) :: precip_fact =  1.0_R8 ! precip factor (sent by ocean) and 
-                                       ! applied to med->ice and med->ocn fluxes
+     real(R8) :: precip_fact =  1.0_R8 ! precip factor
 
      ! Set by mediator and may be time varying
      logical  :: glc_valid_input = .true. ! is valid accumulated data being sent to prognostic glc
@@ -140,11 +139,11 @@ CONTAINS
       if (type == 'atm2cpli') then
         infodata%nextsw_cday = data(flds_scalar_index_nextsw_cday)
       elseif (type == 'ocn2cpli') then
-        infodata%precip_fact= data(flds_scalar_index_precip_fact)
+        infodata%precip_fact=data(flds_scalar_index_precip_fact)
       elseif (type == 'atm2cpl') then
-         infodata%nextsw_cday = data(flds_scalar_index_nextsw_cday)
+         infodata%nextsw_cday=data(flds_scalar_index_nextsw_cday)
       elseif (type == 'ocn2cpl') then
-         infodata%precip_fact = data(flds_scalar_index_precip_fact)
+         infodata%precip_fact=data(flds_scalar_index_precip_fact)
       endif
 
     endif
@@ -179,6 +178,7 @@ CONTAINS
     type(ESMF_Field)          :: field
     type(ESMF_StateItem_Flag) :: ItemType
     real(R8), pointer         :: farrayptr(:,:)
+    real(R8)                  :: nextsw_cday, precip_fact
     integer                   :: dbrc
     character(len=*), parameter :: subname='(med_infodata_CopyInfodataToState)'
     !----------------------------------------------------------
@@ -222,7 +222,7 @@ CONTAINS
 
     ! Get values out of the infodata object.
 
-    use med_internalstate_mod , only : logunit, loglevel
+    use med_internalstate_mod , only : logunit
     use ESMF                  , only : ESMF_SUCCESS, ESMF_FAILURE, ESMF_LogWrite, ESMF_LOGMSG_INFO
 
     ! !INPUT/OUTPUT PARAMETERS:

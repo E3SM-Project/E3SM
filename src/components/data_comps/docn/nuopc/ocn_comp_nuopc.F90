@@ -16,7 +16,6 @@ module ocn_comp_nuopc
   use med_constants_mod     , only : shr_log_Unit
   use med_constants_mod     , only : shr_cal_ymd2date, shr_cal_noleap, shr_cal_gregorian
   use med_constants_mod     , only : shr_file_getlogunit, shr_file_setlogunit
-  use med_constants_mod     , only : shr_file_getloglevel, shr_file_setloglevel
   use med_constants_mod     , only : shr_file_setIO, shr_file_getUnit
   use shr_nuopc_scalars_mod , only : flds_scalar_name
   use shr_nuopc_scalars_mod , only : flds_scalar_num
@@ -65,7 +64,7 @@ module ocn_comp_nuopc
   character(CL)            :: case_name                 ! case name
   character(len=80)        :: calendar                  ! calendar name
   logical                  :: ocn_present               ! flag
-  logical                  :: ocn_prognostic    ! flag
+  logical                  :: ocn_prognostic            ! flag
   integer                  :: logunit                   ! logging unit number
   logical                  :: use_esmf_metadata = .false.
   character(*),parameter   :: modName =  "(ocn_comp_nuopc)"
@@ -84,7 +83,6 @@ module ocn_comp_nuopc
 
     ! local variables
     integer :: shrlogunit ! original log unit
-    integer :: shrloglev  ! original log level
     character(len=*),parameter  :: subname=trim(modName)//':(SetServices) '
     !-------------------------------------------------------------------------------
 
@@ -148,7 +146,6 @@ module ocn_comp_nuopc
     integer            :: n,nflds
     integer            :: ierr        ! error code
     integer            :: shrlogunit  ! original log unit
-    integer            :: shrloglev   ! original log level
     logical            :: ocnrof_prognostic ! flag
     integer            :: localPet
     character(len=CL)  :: fileName    ! generic file name
@@ -182,7 +179,7 @@ module ocn_comp_nuopc
     ! set logunit and set shr logging to my log file
     !----------------------------------------------------------------------------
 
-    call shr_nuopc_set_component_logging(gcomp, my_task==master_task, logunit, shrlogunit, shrloglev)
+    call shr_nuopc_set_component_logging(gcomp, my_task==master_task, logunit, shrlogunit)
 
     !----------------------------------------------------------------------------
     ! Read input namelists and set present and prognostic flags
@@ -190,14 +187,20 @@ module ocn_comp_nuopc
 
     filename = "docn_in"//trim(inst_suffix)
     call docn_shr_read_namelists(filename, mpicom, my_task, master_task, &
-         logunit, ocn_present, ocn_prognostic, ocnrof_prognostic)
+         logunit, ocn_prognostic, ocnrof_prognostic)
+
+    ! TODO (mvertens, 2019-03-24): the following ocn_prognostic line needs to be removed
+    ! - but removing it seems to introduce roundoff level answers in the output - so this
+    ! needs to be resolved first
+
+    ocn_prognostic = .true.
 
     !--------------------------------
     ! Advertise import and export fields
     !--------------------------------
 
     call docn_comp_advertise(importstate, exportState, &
-       ocn_present, ocn_prognostic, ocnrof_prognostic, &
+       ocn_prognostic, ocnrof_prognostic, &
        fldsFrOcn_num, fldsFrOcn, fldsToOcn_num, fldsToOcn, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -206,7 +209,6 @@ module ocn_comp_nuopc
     !----------------------------------------------------------------------------
 
     call shr_file_setLogUnit (shrlogunit)
-    call shr_file_setLogLevel(shrloglev)
     call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO)
 
   end subroutine InitializeAdvertise
@@ -238,7 +240,6 @@ module ocn_comp_nuopc
     real(R8)                :: scmLat  = shr_const_SPVAL ! single column lat
     real(R8)                :: scmLon  = shr_const_SPVAL ! single column lon
     integer                 :: shrlogunit ! original log unit
-    integer                 :: shrloglev  ! original log level
     integer                 :: nxg, nyg
     character(len=*),parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
@@ -251,8 +252,6 @@ module ocn_comp_nuopc
     !----------------------------------------------------------------------------
 
     call shr_file_getLogUnit (shrlogunit)
-    call shr_file_getLogLevel(shrloglev)
-    call shr_file_setLogLevel(max(shrloglev,1))
     call shr_file_setLogUnit (logUnit)
 
     !--------------------------------
@@ -335,30 +334,28 @@ module ocn_comp_nuopc
     ! by replacing the advertised fields with the newly created fields of the same name.
     !--------------------------------
 
-    if (ocn_present) then
-       ! export fields
+    ! export fields
+    call dshr_realize( &
+         state=ExportState, &
+         fldList=fldsFrOcn, &
+         numflds=fldsFrOcn_num, &
+         flds_scalar_name=flds_scalar_name, &
+         flds_scalar_num=flds_scalar_num, &
+         tag=subname//':docnExport',&
+         mesh=Emesh, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    
+    ! import fields
+    if (ocn_prognostic) then
        call dshr_realize( &
-            state=ExportState, &
-            fldList=fldsFrOcn, &
-            numflds=fldsFrOcn_num, &
+            state=importState, &
+            fldList=fldsToOcn, &
+            numflds=fldsToOcn_num, &
             flds_scalar_name=flds_scalar_name, &
             flds_scalar_num=flds_scalar_num, &
-            tag=subname//':docnExport',&
+            tag=subname//':docnImport',&
             mesh=Emesh, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       ! import fields
-       if (ocn_prognostic) then
-          call dshr_realize( &
-               state=importState, &
-               fldList=fldsToOcn, &
-               numflds=fldsToOcn_num, &
-               flds_scalar_name=flds_scalar_name, &
-               flds_scalar_num=flds_scalar_num, &
-               tag=subname//':docnImport',&
-               mesh=Emesh, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       end if
     end if
 
     !--------------------------------
@@ -390,7 +387,6 @@ module ocn_comp_nuopc
     ! Reset shr logging to original values
     !----------------------------------------------------------------------------
 
-    call shr_file_setLogLevel(shrloglev)
     call shr_file_setLogUnit (shrlogunit)
 
     if (use_esmf_metadata) then
@@ -427,7 +423,6 @@ module ocn_comp_nuopc
     integer                    :: day           ! day in month
     integer                    :: modeldt       ! model timestep
     integer                    :: shrlogunit ! original log unit
-    integer                    :: shrloglev  ! original log level
     character(len=*),parameter :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
 
@@ -441,8 +436,6 @@ module ocn_comp_nuopc
     !--------------------------------
 
     call shr_file_getLogUnit (shrlogunit)
-    call shr_file_getLogLevel(shrloglev)
-    call shr_file_setLogLevel(max(shrloglev,1))
     call shr_file_setLogUnit (logunit)
 
     !--------------------------------
@@ -524,7 +517,6 @@ module ocn_comp_nuopc
     end if
     call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO)
 
-    call shr_file_setLogLevel(shrloglev)
     call shr_file_setLogUnit (shrlogunit)
 
   end subroutine ModelAdvance

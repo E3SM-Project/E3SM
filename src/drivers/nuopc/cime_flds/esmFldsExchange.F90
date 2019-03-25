@@ -378,7 +378,6 @@ contains
     ! ---------------------------------------------------------------------
     if (phase /= 'advertise') then
        if (trim(coupling_mode) == 'cesm' .or. trim(coupling_mode) == 'nems_orig') then
-
           call addfld(fldListFr(compatm)%flds, 'Sa_u')
           call addmap(fldListFr(compatm)%flds, 'Sa_u'   , compocn, mappatch, 'one', atm2ocn_vmap)
 

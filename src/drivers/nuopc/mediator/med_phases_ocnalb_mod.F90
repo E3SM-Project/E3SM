@@ -198,6 +198,7 @@ contains
     use shr_nuopc_scalars_mod , only : flds_scalar_index_nextsw_cday
     use esmFlds               , only : compatm, compocn
     use perf_mod              , only : t_startf, t_stopf
+
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -288,6 +289,7 @@ contains
                flds_scalar_name=flds_scalar_name, flds_scalar_num=flds_scalar_num, &
                scalar_id=flds_scalar_index_nextsw_cday, value=nextsw_cday, rc=rc)
           if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
+          write(6,*)'DEBUG: nextsw_cday = ',nextsw_cday
        end if
 
        first_call = .false.

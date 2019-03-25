@@ -1401,7 +1401,7 @@ contains
     use ESMF                    , only : ESMF_GridComp, ESMF_Clock, ESMF_LogWrite, ESMF_LOGMSG_INFO
     use ESMF                    , only : ESMF_State, ESMF_Time, ESMF_Field, ESMF_StateItem_Flag, ESMF_MAXSTR
     use ESMF                    , only : ESMF_GridCompGet, ESMF_AttributeGet, ESMF_ClockGet, ESMF_Success
-    use ESMF                    , only : ESMF_StateIsCreated, ESMF_StateGet, ESMF_LogFlush
+    use ESMF                    , only : ESMF_StateIsCreated, ESMF_StateGet, ESMF_FieldBundleIsCreated, ESMF_LogFlush
     use NUOPC                   , only : NUOPC_CompAttributeSet, NUOPC_IsAtTime, NUOPC_SetAttribute
     use NUOPC                   , only : NUOPC_CompAttributeGet
     use med_internalstate_mod   , only : InternalState
@@ -1672,6 +1672,7 @@ contains
          enddo ! loop over n2
 
       enddo ! loop over n1
+
       if (mastertask) call shr_sys_flush(logunit)
 
       !---------------------------------------
@@ -1680,6 +1681,10 @@ contains
 
       if ( is_local%wrap%med_coupling_active(compocn,compatm) .or. &
            is_local%wrap%med_coupling_active(compatm,compocn)) then
+
+         if (.not. is_local%wrap%med_coupling_active(compatm,compocn)) then
+            is_local%wrap%med_coupling_active(compatm,compocn) = .true.
+         end if
 
          ! NOTE: the NStateImp(compocn) or NStateImp(compatm) used below
          ! rather than NStateExp(n2), since the export state might only
@@ -1722,6 +1727,18 @@ contains
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
             deallocate(fldnames)
          end if
+
+         ! The following assumes that the mediator atm/ocn flux calculation will be done on the ocean grid
+
+         if (.not. ESMF_FieldBundleIsCreated(is_local%wrap%FBImp(compatm,compocn), rc=rc)) then
+            call ESMF_LogWrite(trim(subname)//' creating field bundle FBImp(compatm,compocn)', ESMF_LOGMSG_INFO)
+            call shr_nuopc_methods_FB_init(is_local%wrap%FBImp(compatm,compocn), flds_scalar_name, &
+                 STgeom=is_local%wrap%NStateImp(compocn), &
+                 STflds=is_local%wrap%NStateImp(compatm), &
+                 name='FBImp'//trim(compname(compatm))//'_'//trim(compname(compocn)), rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+         end if
+
       end if
 
       !---------------------------------------
@@ -1779,6 +1796,7 @@ contains
 
              if (atCorrectTime) then
                 if (fieldNameList(n) == flds_scalar_name) then
+                   write(6,*)'DEBUG: calling copystatetoinfodata'
                    call med_infodata_CopyStateToInfodata(is_local%wrap%NStateImp(n1), med_infodata, &
                         trim(compname(n1))//'2cpli', is_local%wrap%vm, rc)
                    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return

@@ -45,7 +45,7 @@ CONTAINS
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   subroutine docn_shr_read_namelists(filename, mpicom, my_task, master_task, &
-       logunit, ocn_present, ocn_prognostic, ocnrof_prognostic)
+       logunit, ocn_prognostic, ocnrof_prognostic)
 
     ! !DESCRIPTION: Read in docn namelists
     implicit none
@@ -56,7 +56,6 @@ CONTAINS
     integer(IN)            , intent(in)    :: my_task           ! my task in mpi communicator mpicom
     integer(IN)            , intent(in)    :: master_task       ! task number of master task
     integer(IN)            , intent(in)    :: logunit           ! logging unit number
-    logical                , intent(out)   :: ocn_present       ! flag
     logical                , intent(out)   :: ocn_prognostic    ! flag
     logical                , intent(out)   :: ocnrof_prognostic ! flag
 
@@ -149,11 +148,6 @@ CONTAINS
     !----------------------------------------------------------------------------
     ! Determine present and prognostic flag
     !----------------------------------------------------------------------------
-
-    ocn_present = .true.
-    if (trim(datamode) == 'NULL') then
-       ocn_present = .false.
-    end if
 
     ocn_prognostic = .false.
     if (force_prognostic_true) then

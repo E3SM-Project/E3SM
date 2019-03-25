@@ -578,13 +578,13 @@ CONTAINS
     tmp = drydep_nflds
     call ESMF_VMBroadcast(vm, tmp, 1, 0, rc=rc)
     drydep_nflds = tmp(1)
-    if(drydep_nflds > 0) then
+    if (drydep_nflds > 0) then
        call ESMF_VMBroadcast(vm, drydep_list, CS*drydep_nflds, 0, rc=rc)
        call ESMF_VMBroadcast(vm, drydep_method, 16, 0, rc=rc)
     endif
 
     !--- Make sure method is valid and determine if land is passing drydep fields ---
-    lnd_drydep = drydep_nflds>0 .and. drydep_method == DD_XLND
+    lnd_drydep = (drydep_nflds>0 .and. drydep_method == DD_XLND)
 
     if (localpet==0) then
        if ( s_loglev > 0 ) then
@@ -607,9 +607,6 @@ CONTAINS
        end if
        call shr_sys_abort('seq_drydep_read: incorrect dry deposition method specification')
     endif
-
-    ! Need to explicitly add Sl_ based on naming convention
-333 format ('Sl_dd',i3.3)
 
   end subroutine seq_drydep_readnl
 
