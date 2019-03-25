@@ -16,18 +16,20 @@ my $LIBROOT		= `./xmlquery LIBROOT        --value`;
 my $GMAKE_J		= `./xmlquery GMAKE_J        --value`;
 my $GMAKE		= `./xmlquery GMAKE          --value`;
 
+# Define and cd to the WW3 bin directory
 my $modeldir = "$SRCROOT/components/ww3/src/source/WW3/model";
 my $bindir = "$modeldir/bin";
 chdir $bindir;
+
+# Run w3_setup to create wwatch3.env file (if needed)
 if (not -f "$bindir/wwatch3.env"){
   open(file,">w3_setup.inp") or die "Could not open file w3_setup.inp to write";
   print file "n\n";
   close(file);
-  my $out = `./w3_setup $modeldir -c Gnu -s E3SM < w3_setup.inp`;
-  open(file,">w3_setup.output");
-  print file $out;
-  close(file);
+  `./w3_setup $modeldir -c Gnu -s E3SM < w3_setup.inp`;
 }
+
+# Generate pre-processed WW3 source code
 my $tmpdir = "$modeldir/tmp";
 my $tarfile = "$modeldir/work/ww3_shel.tar.gz";
 `./w3_source ww3_shel`;
