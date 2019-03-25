@@ -43,6 +43,7 @@ module TemperatureType
      real(r8), pointer :: thm_patch                (:)   ! patch intermediate variable (forc_t+0.0098*forc_hgt_t_patch)
      real(r8), pointer :: t_a10_patch              (:)   ! patch 10-day running mean of the 2 m temperature (K)
      real(r8), pointer :: t_a10min_patch           (:)   ! patch 10-day running mean of min 2-m temperature
+     real(r8), pointer :: t_a3650_patch            (:)   ! patch 3650-day running mean of min 2-m temperature
      real(r8), pointer :: t_a5min_patch            (:)   ! patch 5-day running mean of min 2-m temperature
 
      real(r8), pointer :: taf_lun                  (:)   ! lun urban canopy air temperature (K)
@@ -192,6 +193,8 @@ contains
     allocate(this%thm_patch                (begp:endp))                      ; this%thm_patch                (:)   = nan
     allocate(this%t_a10_patch              (begp:endp))                      ; this%t_a10_patch              (:)   = nan
     allocate(this%t_a10min_patch           (begp:endp))                      ; this%t_a10min_patch           (:)   = nan
+    allocate(this%t_a3650_patch            (begp:endp))                      ; this%t_a3650_patch            (:)   = nan
+
     allocate(this%t_a5min_patch            (begp:endp))                      ; this%t_a5min_patch            (:)   = nan
 
     allocate(this%taf_lun                  (begl:endl))                      ; this%taf_lun                  (:)   = nan
@@ -943,6 +946,10 @@ contains
          desc='10-day running mean of 2-m temperature', accum_type='runmean', accum_period=-10, &
          subgrid_type='pft', numlev=1,init_value=SHR_CONST_TKFRZ+20._r8)
 
+    call init_accum_field (name='T3650', units='K', &         
+         desc='3650-day running mean of 2-m temperature', accum_type='runmean', accum_period=-3650, &
+         subgrid_type='pft', numlev=1,init_value=SHR_CONST_TKFRZ+10._r8)
+
     if ( crop_prog )then
        call init_accum_field (name='TDM10', units='K', &
             desc='10-day running mean of min 2-m temperature', accum_type='runmean', accum_period=-10, &
@@ -1027,6 +1034,9 @@ contains
 
     call extract_accum_field ('T10', rbufslp, nstep)
     this%t_a10_patch(begp:endp) = rbufslp(begp:endp)
+
+    call extract_accum_field ('T3650', rbufslp, nstep)
+    this%t_a3650_patch(begp:endp) = rbufslp(begp:endp)
 
     if (crop_prog) then
        call extract_accum_field ('TDM10', rbufslp, nstep) 
@@ -1208,6 +1218,9 @@ contains
 
     call update_accum_field  ('T10', this%t_ref2m_patch, nstep)
     call extract_accum_field ('T10', this%t_a10_patch, nstep)
+
+    call update_accum_field  ('T3650', this%t_ref2m_patch, nstep)
+    call extract_accum_field ('T3650', this%t_a3650_patch, nstep)
 
     if ( crop_prog )then
        ! Accumulate and extract TDM10
