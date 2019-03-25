@@ -6,7 +6,7 @@ module prim_state_mod
 
   use kinds,            only: real_kind, iulog
   use dimensions_mod,   only: nlev, np, qsize_d, qsize, nlevp
-  use parallel_mod,     only:  iam, ordered, parallel_t, syncmp
+  use parallel_mod,     only:  iam, ordered, parallel_t, syncmp, abortmp
   use parallel_mod,     only: global_shared_buf, global_shared_sum
   use global_norms_mod, only: wrap_repro_sum
   use hybrid_mod,       only: hybrid_t
@@ -21,7 +21,7 @@ module prim_state_mod
   use element_state,    only: max_itercnt_perstep,max_itererr_perstep,avg_itercnt
   use eos,              only: get_pnh_and_exner
   use viscosity_mod,    only: compute_zeta_C0
-  use reduction_mod,    only: parallelmax,parallelmin
+  use reduction_mod,    only: parallelmax,parallelmin,parallelmaxwithindex
   use perf_mod,         only: t_startf, t_stopf
   use physical_constants, only : p0,Cp,g,Rgas
 
@@ -147,7 +147,7 @@ contains
     real (kind=real_kind) :: fusum_p, fvsum_p, ftsum_p, fqsum_p
     real (kind=real_kind) :: fumin_p, fvmin_p, ftmin_p, fqmin_p
     real (kind=real_kind) :: fumax_p, fvmax_p, ftmax_p, fqmax_p
-    real (kind=real_kind) :: wmax_p, wmin_p, wsum_p, newwmax_local(2), newwmax_p(2)
+    real (kind=real_kind) :: wmax_p, wmin_p, wsum_p, newwmax_local(2)  !, newwmax_p(2)
     real (kind=real_kind) :: phimax_p, phimin_p, phisum_p
 
 
@@ -249,9 +249,7 @@ contains
        !======================================================  
        umax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,1,:,n0))
        vmax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,2,:,n0))
-       if (theta_hydrostatic_mode) then
-          wmax_local(ie)    = MAXVAL(elem(ie)%state%w_i(:,:,:,n0))
-       else
+       if ( .not. theta_hydrostatic_mode) then
           wmax_local(ie)    = minmax_with_level(elem(ie)%state%w_i(:,:,:,n0),'max')
        endif
        phimax_local(ie)  = MAXVAL(dphi(:,:,:))
@@ -273,9 +271,7 @@ contains
 
        umin_local(ie)    = MINVAL(elem(ie)%state%v(:,:,1,:,n0))
        vmin_local(ie)    = MINVAL(elem(ie)%state%v(:,:,2,:,n0))
-       if( theta_hydrostatic_mode ) then
-          Wmin_local(ie)    = MINVAL(elem(ie)%state%w_i(:,:,:,n0))
-       else
+       if( .not. theta_hydrostatic_mode ) then
           Wmin_local(ie)    = minmax_with_level(elem(ie)%state%w_i(:,:,:,n0),'min')
        endif
        thetamin_local(ie) = MINVAL(elem(ie)%state%vtheta_dp(:,:,:,n0))
@@ -335,8 +331,8 @@ contains
     end do
 
     if ( .not. theta_hydrostatic_mode ) then
-       call findExtrema(elem,newmax_local,'w_i','max',n0,nets,nete)
-       newwmax_p = ParallelMaxWithIndex(newwmax_local, hybrid)
+       call findExtrema(elem,newwmax_local,'w_i','max',n0,nets,nete)
+       call ParallelMaxWithIndex(newwmax_local, hybrid)
     endif
 
     !JMD This is a Thread Safe Reduction 
@@ -462,7 +458,7 @@ contains
           write(iulog,*)'max abs(w) over time : ',global_max_w, ' at level ', gm_w_lev
           write(iulog,*)'^not reliable for vals <= 1e-4'
 
-          write(iulog,*)'HERE WE ARE', newwmax_p(1),nint(newwmax_p(2))
+          write(iulog,*)'HERE WE ARE', newwmax_local(1),nint(newwmax_local(2))
        endif
     end if
  
@@ -1038,14 +1034,17 @@ subroutine findExtrema(elem,res,field,operation,n0,nets,nete)
     use kinds, only : real_kind
     use dimensions_mod, only : np, np, nlev, nlevp
     implicit none
-    real (kind=real_kind), intent(inout) :: res(2) ! extrema and level where it happened
+    real (kind=real_kind), intent(inout) :: res(1:2) ! extrema and level where it happened
     character(len=*),      intent(in)    :: field, operation
     integer,               intent(in)    :: nets,nete,n0
     type (element_t),      intent(in), target :: elem(:)
 
-    integer                              :: i,j,k,ksize
-    real (kind=real_kind)                :: column(1:nlevp), val    
+    integer                              :: i,j,k,ie,ksize
+    real (kind=real_kind)                :: column(1:nlevp), val, BIGVAL    
 
+!reuse from a module
+    BIGVAL = 1e15
+    
     !first val is min or max, second value is level for it
     res(2) = -1; 
     if( operation == 'min' )then
@@ -1059,7 +1058,7 @@ subroutine findExtrema(elem,res,field,operation,n0,nets,nete)
     if( field == 'w_i' ) ksize=nlevp
     if( ksize < 1) call abortmp('set ksize in routine findExtrema()')
 
-    do ie=nets:nete
+    do ie=nets,nete
       do j=1,np
         do i=1,np
           do k=1,ksize
@@ -1068,17 +1067,37 @@ subroutine findExtrema(elem,res,field,operation,n0,nets,nete)
             endif
           enddo !k
           !now find min or max
+          !avoid flexibility of maxval/maxloc...
+ 
           if( operation == 'min' )then
-            val = MINVAL(column(1:ksize))
-            if( val < res(1) )then 
-              res(1) = val; res(2) = MINLOC(column(1:ksize))
-            endif
+             res(1) = column(1); res(2) = 1;
+             do k=2,ksize
+                if(column(k) < res(1)) then
+                   res(1) = column(k); res(2) = k;
+                endif
+             enddo
           elseif( operation == 'max' )then
-            val = MAXVAL(column(1:ksize))
-            if( val > res(1) )then
-              res(1) = val; res(2) = MAXLOC(column(1:ksize))
-            endif       
+             res(1) = column(1); res(2) = 1;
+             do k=2,ksize
+                if(column(k) > res(1)) then
+                   res(1) = column(k); res(2) = k;
+                endif
+             enddo
           endif
+
+!          if( operation == 'min' )then
+!            val = MINVAL(column(1:ksize))
+!            if( val < res(1) )then 
+!              res(1) = val; res(2) = MINLOC(column(1:ksize))
+!            endif
+!          elseif( operation == 'max' )then
+!            val = MAXVAL(column(1:ksize))
+!            if( val > res(1) )then
+!              res(1) = val; res(2) = MAXLOC(column(1:ksize))
+!            endif       
+!          endif
+
+
         enddo !j
       enddo !i       
     enddo !ie

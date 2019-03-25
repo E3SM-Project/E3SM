@@ -25,14 +25,6 @@ module reduction_mod
      integer :: ctr
   end type ReductionBuffer_ordered_1d_t
 
-  !type to compute max and index or min and index
-  type, public :: ReductionBuffer_with_index_t
-     real (kind=real_kind), dimension(:,:), pointer :: buf
-     integer :: len=0
-     integer :: ctr
-  end type ReductionBuffer_with_index_t
-
-
   public :: ParallelMin,ParallelMax
 
   !type (ReductionBuffer_ordered_1d_t), public :: red_sum
@@ -41,11 +33,12 @@ module reduction_mod
   type (ReductionBuffer_r_1d_t),       public :: red_sum
   type (ReductionBuffer_r_1d_t),       public :: red_max,red_min
   type (ReductionBuffer_r_1d_t),       public :: red_flops,red_timer
-  type (ReductionBuffer_with_index_t), public :: red_max_index, red_min_index
+  type (ReductionBuffer_r_1d_t),       public :: red_max_index, red_min_index
 
   !JMD new addition
 #ifndef Darwin
-  SAVE red_sum,red_max,red_min,red_flops,red_timer,red_max_int,red_sum_int
+  SAVE red_sum,red_max,red_min,red_flops,red_timer,red_max_int,red_sum_int, &
+       red_max_index, red_min_index
 #endif
   interface ParallelMin
      module procedure ParallelMin1d
@@ -71,13 +64,15 @@ module reduction_mod
   interface InitReductionBuffer
      module procedure InitReductionBuffer_int_1d
      module procedure InitReductionBuffer_r_1d
-     module procedure InitReductionBuffer_r_2d
      module procedure InitReductionBuffer_ordered_1d
   end interface
 
   public :: InitReductionBuffer
   public :: pmax_mt, pmin_mt
   public :: ElementSum_1d
+
+  public :: ParallelMaxWithIndex
+  public :: ParallelMinWithIndex
 
 contains
 
@@ -227,25 +222,6 @@ contains
     endif
   end subroutine InitReductionBuffer_r_1d
   !****************************************************************
-  subroutine InitReductionBuffer_r_2d(red,len)
-    use parallel_mod, only: abortmp
-    use thread_mod,   only: omp_get_num_threads
-    integer, intent(in)                             :: len
-    type (ReductionBuffer_with_index_t),intent(out) :: red
-
-    if (omp_get_num_threads()>1) then
-       call abortmp("Error: attempt to allocate red. buffer RB_with_index_t in threaded region")
-    endif
-
-    if (len > red%len) then
-       if (red%len>0) deallocate(red%buf)
-       red%len  = len
-       allocate(red%buf(len,len))
-       red%buf(:,:)  = 0.0
-       red%ctr  = -1
-    endif
-  end subroutine InitReductionBuffer_r_2d
-  !****************************************************************
   subroutine InitReductionBuffer_ordered_1d(red,len,nthread)
     use parallel_mod, only: abortmp
     use thread_mod, only: omp_get_num_threads
@@ -343,6 +319,7 @@ contains
     red%ctr = hybrid%ithr
     !$OMP END SINGLE
 
+
     ! all other threads now do the max_op wrt the first thread's data
     !$OMP CRITICAL (CRITMAX)
     if (hybrid%ithr /= red%ctr) then
@@ -364,6 +341,108 @@ contains
 #endif
     !$OMP BARRIER
   end subroutine pmax_mt_r_1d
+
+
+!max with location index
+  subroutine ParallelMaxWithIndex(redp,hybrid)
+    use hybrid_mod, only : hybrid_t
+#ifdef _MPI
+    use parallel_mod, only: mpi_maxloc, mpi2real_t
+#endif
+
+!use red_max_index
+!    type (ReductionBuffer_r_1d_t)     :: red     ! shared memory reduction buffer struct
+    real (kind=real_kind), intent(inout) :: redp(2) ! thread private vector of partial sum
+    type (hybrid_t),       intent(in)    :: hybrid  ! parallel handle
+
+    ! Local variables
+    integer ierr, k
+
+    ! the first and fastest thread performs initializing copy
+    !$OMP SINGLE
+    red_max_index%buf(1:2) = redp(1:2)
+    red_max_index%ctr = hybrid%ithr
+    !$OMP END SINGLE
+
+    ! all other threads now do the max_op wrt the first thread's data
+    !$OMP CRITICAL (CRITMAXIND)
+    if (hybrid%ithr /= red_max_index%ctr) then
+       if (red_max_index%buf(1) < redp(1)) then
+          red_max_index%buf(1:2) = redp(1:2)
+       endif
+    end if
+    !$OMP END CRITICAL (CRITMAXIND)
+
+
+!does one need barrier right after critical?
+#ifdef _MPI
+    !$OMP BARRIER
+    if (hybrid%ithr==0) then
+       call MPI_Allreduce(red_max_index%buf(1),redp,1,MPI2real_t, &
+            MPI_MAXLOC,hybrid%par%comm,ierr)
+!       red%buf(1:len)=redp(1:len)
+    end if
+#else
+    redp(1:2) = red_max_index%buf(1:2)
+#endif
+    !$OMP BARRIER
+  end subroutine ParallelMaxWithIndex
+
+
+
+!max with location index
+  subroutine ParallelMinWithIndex(redp,hybrid)
+    use hybrid_mod, only : hybrid_t
+#ifdef _MPI
+    use parallel_mod, only: mpi_minloc, mpi2real_t
+#endif
+
+!use red_min_index
+!    type (ReductionBuffer_r_1d_t)     :: red     ! shared memory reduction
+!    buffer struct
+    real (kind=real_kind), intent(inout) :: redp(2) ! thread private vector of partial sum
+    type (hybrid_t),       intent(in)    :: hybrid  ! parallel handle
+
+    ! Local variables
+    integer ierr, k
+
+    ! the first and fastest thread performs initializing copy
+    !$OMP SINGLE
+    red_min_index%buf(1:2) = redp(1:2)
+    red_min_index%ctr = hybrid%ithr
+    !$OMP END SINGLE
+
+    ! all other threads now do the max_op wrt the first thread's data
+    !$OMP CRITICAL (CRITMAXIND)
+    if (hybrid%ithr /= red_min_index%ctr) then
+       if (red_min_index%buf(1) > redp(1)) then
+          red_min_index%buf(1:2) = redp(1:2)
+       endif
+    end if
+    !$OMP END CRITICAL (CRITMAXIND)
+
+
+!does one need barrier right after critical?
+#ifdef _MPI
+    !$OMP BARRIER
+    if (hybrid%ithr==0) then
+       call MPI_Allreduce(red_min_index%buf(1),redp,1,MPI2real_t, &
+            MPI_MINLOC,hybrid%par%comm,ierr)
+!       red%buf(1:len)=redp(1:len)
+    end if
+#else
+    redp(1:2) = red_min_index%buf(1:2)
+#endif
+    !$OMP BARRIER
+  end subroutine ParallelMinWithIndex
+
+
+
+
+
+
+
+
 
 
 
@@ -471,7 +550,6 @@ contains
                recvcount,displs,MPIreal_t,hybrid%par%root, &
                hybrid%par%comm,ierr)
           if(ierr .ne. MPI_SUCCESS) then 
-             errorcode=ierr
              call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
              print *,'ElementSum_1d: Error after call to MPI_Gatherv: ',errorstring
           endif
