@@ -22,6 +22,8 @@ lat_lon_files += get_all_files_in_dir('acme_diags/driver/default_diags/legacy_di
 lat_lon_files.append('acme_diags/plot/vcs/plot_set_5.json')
 lat_lon_files.append('acme_diags/plot/vcs/plot_set_5_new.json')
 
+lat_lon_vector_files = get_all_files_in_dir('acme_diags/driver/default_diags', 'lat_lon_vector*')
+
 polar_files = get_all_files_in_dir('acme_diags/driver/default_diags', 'polar*')
 polar_files += get_all_files_in_dir('acme_diags/driver/default_diags/legacy_diags', 'polar*')
 polar_files.append('acme_diags/plot/vcs/plot_set_7.json')
@@ -47,6 +49,9 @@ data_files = [
      ),
     (os.path.join(INSTALL_PATH, 'polar'),
      polar_files
+     ),
+    (os.path.join(INSTALL_PATH, 'lat_lon_vector'),
+     lat_lon_vector_files
      ),
     (os.path.join(INSTALL_PATH, 'cosp_histogram'),
      cosp_histogram_files
