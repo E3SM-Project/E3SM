@@ -1889,7 +1889,11 @@ contains
                 ! make sure baseflow isn't negative
                 rsub_top(c) = max(0._r8, rsub_top(c))
              else
-                rsub_top(c)    = imped * rsub_top_max* exp(-fff(c)*zwt(c))
+                if (zwt(c) < zi(c,nlevgrnd)) then
+                   rsub_top(c)    = imped * rsub_top_max* exp(-fff(c)*zwt(c))
+                else
+                   rsub_top(c)    = 0._r8
+                end if
              end if
           endif
 
