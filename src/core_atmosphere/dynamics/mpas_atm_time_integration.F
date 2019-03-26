@@ -58,6 +58,12 @@ module atm_time_integration
    real (kind=RKIND), allocatable, dimension(:,:) :: ke_vertex
    real (kind=RKIND), allocatable, dimension(:,:) :: ke_edge
 
+   ! Used for Rayleigh damping on u
+   ! NB: We do not necessarily want this to vary with calendar, as it is used to set
+   ! a timescale in seconds given a timescale in days, and it could be rather confusing
+   ! if damping in the model changed with the simulation calendar
+   real (kind=RKIND), parameter, private :: seconds_per_day = 86400.0_RKIND
+
       
    contains
 
@@ -4139,10 +4145,10 @@ module atm_time_integration
          rdzu, rdzw, fzm, fzp, qv_init, t_init, cf1, cf2, cf3, r_earth, ur_cell, vr_cell, defc_a, defc_b, &
          tend_w_pgf, tend_w_buoy, coef_3rd_order, c_s, config_mix_full, config_horiz_mixing, config_del4u_div_factor, &
          config_h_mom_eddy_visc2, config_v_mom_eddy_visc2, config_h_theta_eddy_visc2, config_v_theta_eddy_visc2, &
-         config_h_theta_eddy_visc4, config_h_mom_eddy_visc4, config_visc4_2dsmag, config_len_disp, rk_step, &
+         config_h_theta_eddy_visc4, config_h_mom_eddy_visc4, config_visc4_2dsmag, config_len_disp, rk_step, dt, &
          config_mpas_cam_coef, &
          config_rayleigh_damp_u, config_rayleigh_damp_u_timescale_days, config_number_rayleigh_damp_u_levels, &
-         dt, tend_rtheta_adv, rthdynten, &
+         tend_rtheta_adv, rthdynten, &
          cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
          cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
 
@@ -4166,10 +4172,10 @@ module atm_time_integration
       rdzu, rdzw, fzm, fzp, qv_init, t_init, cf1, cf2, cf3, r_earth, ur_cell, vr_cell, defc_a, defc_b, &
       tend_w_pgf, tend_w_buoy, coef_3rd_order, c_s, config_mix_full, config_horiz_mixing, config_del4u_div_factor, &
       config_h_mom_eddy_visc2, config_v_mom_eddy_visc2, config_h_theta_eddy_visc2, config_v_theta_eddy_visc2, &
-      config_h_theta_eddy_visc4, config_h_mom_eddy_visc4, config_visc4_2dsmag, config_len_disp, rk_step, &
+      config_h_theta_eddy_visc4, config_h_mom_eddy_visc4, config_visc4_2dsmag, config_len_disp, rk_step, dt, &
       config_mpas_cam_coef, &
       config_rayleigh_damp_u, config_rayleigh_damp_u_timescale_days, config_number_rayleigh_damp_u_levels, &
-      dt, tend_rtheta_adv, rthdynten, &
+      tend_rtheta_adv, rthdynten, &
       cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
       cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
 
@@ -4285,14 +4291,14 @@ module atm_time_integration
       real (kind=RKIND) :: config_len_disp
       real (kind=RKIND) :: config_h_mom_eddy_visc2, config_v_mom_eddy_visc2, config_h_theta_eddy_visc2, config_v_theta_eddy_visc2
 
+      integer, intent(in) :: rk_step
+      real (kind=RKIND), intent(in) :: dt
+
       real (kind=RKIND) :: config_mpas_cam_coef
 
       logical, intent(in) :: config_rayleigh_damp_u
       real (kind=RKIND), intent(in) :: config_rayleigh_damp_u_timescale_days
       integer, intent(in) :: config_number_rayleigh_damp_u_levels
-
-      integer, intent(in) :: rk_step
-      real (kind=RKIND), intent(in) :: dt
 
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: tend_rtheta_adv
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rthdynten
@@ -4380,16 +4386,16 @@ module atm_time_integration
 
          end if
 
-         if (config_mpas_cam_coef .gt. 0.) then
+         if (config_mpas_cam_coef > 0.0) then
 
             do iCell = cellStart,cellEnd
-              !
-              ! 2nd-order filter for top absorbing layer as in CAM-SE :  WCS 10 May 2017
-              ! From MPAS-CAM V4.0 code, with addition to config-specified coefficient (V4.0_coef = 0.2; SE_coef = 1.0)
-              !
-              kdiff(nVertLevels-2,iCell) = max(kdiff(nVertLevels-2,iCell),   2.0833*config_len_disp*config_mpas_cam_coef)
-              kdiff(nVertLevels-1,iCell) = max(kdiff(nVertLevels-1,iCell),2.*2.0833*config_len_disp*config_mpas_cam_coef)
-              kdiff(nVertLevels  ,iCell) = max(kdiff(nVertLevels  ,iCell),4.*2.0833*config_len_disp*config_mpas_cam_coef)
+               !
+               ! 2nd-order filter for top absorbing layer as in CAM-SE :  WCS 10 May 2017
+               ! From MPAS-CAM V4.0 code, with addition to config-specified coefficient (V4.0_coef = 0.2; SE_coef = 1.0)
+               !
+               kdiff(nVertLevels-2,iCell) = max(kdiff(nVertLevels-2,iCell),    2.0833*config_len_disp*config_mpas_cam_coef)
+               kdiff(nVertLevels-1,iCell) = max(kdiff(nVertLevels-1,iCell),2.0*2.0833*config_len_disp*config_mpas_cam_coef)
+               kdiff(nVertLevels  ,iCell) = max(kdiff(nVertLevels  ,iCell),4.0*2.0833*config_len_disp*config_mpas_cam_coef)
             end do
 
          end if
@@ -4686,13 +4692,19 @@ module atm_time_integration
 
 !  add in mixing and physics tendency for u
 
-!  Rayleigh damping on u coefficient
-
-      if(config_rayleigh_damp_u) then
-         rayleigh_coef_inverse = 1./( real(config_number_rayleigh_damp_u_levels)*(config_rayleigh_damp_u_timescale_days*86400.) )
-         do k=nVertlevels-config_number_rayleigh_damp_u_levels+1,nVertLevels
+!  Rayleigh damping on u
+      if (config_rayleigh_damp_u) then
+         rayleigh_coef_inverse = 1.0 / ( real(config_number_rayleigh_damp_u_levels) &
+                                         * (config_rayleigh_damp_u_timescale_days*seconds_per_day) )
+         do k=nVertLevels-config_number_rayleigh_damp_u_levels+1,nVertLevels
             rayleigh_damp_coef(k) = real(k - (nVertLevels-config_number_rayleigh_damp_u_levels))*rayleigh_coef_inverse
-            rayleigh_damp_coef(k) = max(0.,rayleigh_damp_coef(k))
+         end do
+
+         do iEdge=edgeSolveStart,edgeSolveEnd
+!DIR$ IVDEP
+            do k=nVertlevels-config_number_rayleigh_damp_u_levels+1,nVertLevels
+               tend_u(k,iEdge) = tend_u(k,iEdge) - rho_edge(k,iEdge)*u(k,iEdge)*rayleigh_damp_coef(k)
+            end do
          end do
       end if
 
@@ -4703,17 +4715,6 @@ module atm_time_integration
             tend_u(k,iEdge) = tend_u(k,iEdge) + tend_u_euler(k,iEdge) + tend_ru_physics(k,iEdge)
          end do
       end do
-
-!  Rayleigh damping on u
-
-      if(config_rayleigh_damp_u) then
-         do iEdge=edgeSolveStart,edgeSolveEnd
-!DIR$ IVDEP
-            do k=nVertlevels-config_number_rayleigh_damp_u_levels+1,nVertLevels
-               tend_u(k,iEdge) = tend_u(k,iEdge) - rho_edge(k,iEdge)*u(k,iEdge)*rayleigh_damp_coef(k)
-            end do
-         end do
-      end if
 
 
 !----------- rhs for w

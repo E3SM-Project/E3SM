@@ -258,23 +258,23 @@
 
                 <nml_option name="config_mpas_cam_coef" type="real" default_value="0.0" in_defaults="false"
                      units="-"
-                     description="coefficient for scaling the 2nd-order h-mixing in mpas_cam absorbing layer"
+                     description="Coefficient for scaling the 2nd-order horizontal mixing in the mpas_cam absorbing layer"
                      possible_values="0 $\leq$ config_mpas_cam_coef $\leq$ 1, standard value is 0.2"/>
 
                 <nml_option name="config_rayleigh_damp_u" type="logical" default_value="false" in_defaults="false"
                      units="-"
-                     description="use Rayleigh damping on horizontal velocity topmost model levels"
+                     description="Whether to apply Rayleigh damping on horizontal velocity in the top-most model levels. The number of levels is specified by the config_number_rayleigh_damp_u_levels option, and the damping timescale is specified by the config_rayleigh_damp_u_timescale_days option."
                      possible_values=".true. or .false."/>
 
-                <nml_option name="config_rayleigh_damp_u_timescale_days" type="real" default_value="5." in_defaults="false"
+                <nml_option name="config_rayleigh_damp_u_timescale_days" type="real" default_value="5.0" in_defaults="false"
                      units="days"
-                     description="Rayleigh damping timescale in days"
-                     possible_values="config_rayleigh_damp_u_timescale must be greater than 0"/>
+                     description="Timescale, in days (86400 s), for the Rayleigh damping on horizontal velocity in the top-most model levels."
+                     possible_values="Positive real values"/>
 
                 <nml_option name="config_number_rayleigh_damp_u_levels" type="integer" default_value="6" in_defaults="false"
                      units="-"
-                     description="Number layers at top of domain to damp, linear ramp to zero by layer number from the top"
-                     possible_values="Integer values"/>
+                     description="Number layers in which to apply Rayleigh damping on horizontal velocity at top of model; damping linearly ramps to zero by layer number from the top"
+                     possible_values="Positive integer values"/>
         </nml_record>
 
         <nml_record name="io" in_defaults="true">
