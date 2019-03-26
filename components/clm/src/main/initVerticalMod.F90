@@ -128,6 +128,10 @@ contains
        do j = 1, nlevgrnd
           zsoi(j) = scalez*(exp(0.5_r8*(j-0.5_r8))-1._r8)    !node depths
        enddo
+       zsoi(11) = 4.5_r8
+       do j = 12, nlevgrnd
+          zsoi(j) = zsoi(11) + (j-11) * 3._r8
+       enddo
     end if
 
     dzsoi(1) = 0.5_r8*(zsoi(1)+zsoi(2))             !thickness b/n two interfaces

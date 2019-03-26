@@ -141,7 +141,7 @@ contains
     nlevurb     =  5
     if ( .not. more_vertlayers )then
        nlevsoi     =  nlevsoifl
-       nlevgrnd    =  15
+       nlevgrnd    =  59
     else
        nlevsoi     =  8  + nlev_equalspace
        nlevgrnd    =  15 + nlev_equalspace
