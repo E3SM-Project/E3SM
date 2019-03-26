@@ -14,6 +14,7 @@ module cplcomp_exchange_mod
   use seq_diag_mct
 
   use seq_comm_mct, only : mhid, mpoid, mbaxid, mboxid  ! iMOAB app ids, for atm, ocean, ax mesh, ox mesh
+  use seq_comm_mct, only : mlnid , mlnxid !    iMOAB app id for land , on land pes and coupler pes
   use shr_mpi_mod,  only: shr_mpi_max
 
   implicit none
@@ -997,7 +998,7 @@ contains
     integer, external        :: iMOAB_WriteMesh, iMOAB_DefineTagStorage
     integer                  :: ierr
     character*32             :: appname, outfile, wopts, tagnameProj
-    integer                  :: maxMH, maxMPO ! max pids for moab apps
+    integer                  :: maxMH, maxMPO, maxMLID ! max pids for moab apps atm, ocn, lnd
     integer                  :: tagtype, numco,  tagindex, partMethod
 
     !-----------------------------------------------------
@@ -1023,8 +1024,10 @@ contains
 
     call shr_mpi_max(mhid, maxMH, mpicom_join, all=.true.)
     call shr_mpi_max(mpoid, maxMPO, mpicom_join, all=.true.)
+    call shr_mpi_max(mlnid, maxMLID, mpicom_join, all=.true.)
     if (seq_comm_iamroot(CPLID) ) then
-       write(logunit, *) "MOAB coupling:  maxMH: ", maxMH, " maxMPO: ", maxMPO
+       write(logunit, *) "MOAB coupling:  maxMH: ", maxMH, " maxMPO: ", maxMPO, &
+          " maxMLID: ", maxMLID
     endif
     ! this works now for atmosphere;
     if ( comp%oneletterid == 'a' .and. maxMH /= -1) then
@@ -1040,13 +1043,16 @@ contains
         ! migrated mesh gets another app id, moab atm to coupler (mbax)
         ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_new, id_join, mbaxid)
         ierr = iMOAB_ReceiveMesh(mbaxid, mpicom_join, mpigrp_old, id_old)
+#ifdef MOABDEBUG
         ! debug test
         outfile = 'recMeshAtm.h5m'//CHAR(0)
         wopts   = ';PARALLEL=WRITE_PART'//CHAR(0)
 !      write out the mesh file to disk
         ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
+#endif
       endif
     endif
+    ! ocean
     if (comp%oneletterid == 'o'  .and. maxMPO /= -1) then
       call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
       call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
@@ -1069,9 +1075,6 @@ contains
         ! migrated mesh gets another app id, moab ocean to coupler (mbox)
         ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_new, id_join, mboxid)
         ierr = iMOAB_ReceiveMesh(mboxid, mpicom_join, mpigrp_old, id_old)
-        ! debug test
-        outfile = 'recMeshOcn.h5m'//CHAR(0)
-        wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
 
         ! define here the tag that will be projected from atmosphere
         tagnameProj = 'a2oTbot_proj'//CHAR(0)  ! temperature
@@ -1084,13 +1087,44 @@ contains
         ierr = iMOAB_DefineTagStorage(mboxid, tagnameProj, tagtype, numco,  tagindex )
         tagnameProj = 'a2oVbot_proj'//CHAR(0)  ! V component of velocity
         ierr = iMOAB_DefineTagStorage(mboxid, tagnameProj, tagtype, numco,  tagindex )
-
+#ifdef MOABDEBUG
+!      debug test
+        outfile = 'recMeshOcn.h5m'//CHAR(0)
+        wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
 !      write out the mesh file to disk
         ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
+#endif
       endif
     endif
 
+!   land
+    if (comp%oneletterid == 'l'  .and. maxMLID /= -1) then
+      call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
+      call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
 
+      if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (ocean)
+        !  send mesh to coupler
+#ifdef MOAB_HAVE_ZOLTAN
+        partMethod = 2  !  RCB for point cloud
+#endif
+        ierr = iMOAB_SendMesh(mlnid, mpicom_join, mpigrp_cplid, id_join, partMethod)
+
+      endif
+      if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
+        appname = "COUPLE_LAND"//CHAR(0)
+        ! migrated mesh gets another app id, moab ocean to coupler (mbox)
+        ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_new, id_join, mlnxid)
+        ierr = iMOAB_ReceiveMesh(mlnxid, mpicom_join, mpigrp_old, id_old)
+
+#ifdef MOABDEBUG
+        ! debug test
+        outfile = 'recLand.h5m'//CHAR(0)
+        wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
+!      write out the mesh file to disk
+        ierr = iMOAB_WriteMesh(mlnxid, trim(outfile), trim(wopts))
+#endif
+      endif
+    endif
 
   end subroutine cplcomp_moab_Init
 

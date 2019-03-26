@@ -764,7 +764,8 @@ contains
     type(mct_gGrid),        pointer :: mct_ldom                ! Land model domain data
     integer        , intent(in)    :: lsz     ! land model domain data size
     integer , external :: iMOAB_CreateVertices, iMOAB_WriteMesh, &
-         iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage
+         iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
+         iMOAB_ResolveSharedEntities
     ! local variables to fill in data
     integer, dimension(:), allocatable :: vgids
     !  retrieve everything we need from land domain mct_ldom
@@ -806,6 +807,10 @@ contains
     ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz , ent_type, vgids)
     if (ierr > 0 )  &
       call endrun('Error: fail to set GLOBAL_ID tag ')
+
+    ierr = iMOAB_ResolveSharedEntities( mlnid, lsz, vgids );
+    if (ierr > 0 )  &
+      call endrun('Error: fail to resolve shared entities')
 
     !there are no shared entities, but we will set a special partition tag, in order to see the
     ! partitions ; it will be visible with a Pseudocolor plot in VisIt
@@ -851,14 +856,14 @@ contains
 
     deallocate(moab_vert_coords)
     deallocate(vgids)
-
+#ifdef MOABDEBUG
     !     write out the mesh file to disk, in parallel
     outfile = 'wholeLnd.h5m'//CHAR(0)
     wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
     ierr = iMOAB_WriteMesh(mlnid, outfile, wopts)
     if (ierr > 0 )  &
       call endrun('Error: fail to write the land mesh file')
-
+#endif
 
   end subroutine init_land_moab
 #endif
