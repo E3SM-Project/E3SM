@@ -817,6 +817,8 @@
 
 <!-- AM_eddyProductVariables -->
 <config_AM_eddyProductVariables_enable>.false.</config_AM_eddyProductVariables_enable>
+<config_AM_eddyProductVariables_enable ocn_grid="oEC60to30v3">.true.</config_AM_eddyProductVariables_enable>
+<config_AM_eddyProductVariables_enable ocn_grid="oEC60to30v3wLI">.true.</config_AM_eddyProductVariables_enable>
 <config_AM_eddyProductVariables_enable ocn_grid="oRRS30to10v3">.true.</config_AM_eddyProductVariables_enable>
 <config_AM_eddyProductVariables_enable ocn_grid="oRRS30to10v3wLI">.true.</config_AM_eddyProductVariables_enable>
 <config_AM_eddyProductVariables_enable ocn_grid="oRRS18to6v3">.true.</config_AM_eddyProductVariables_enable>
