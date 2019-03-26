@@ -202,7 +202,7 @@ module seq_comm_mct
   integer, public :: mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
   integer, public :: mboxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes
   integer, public :: mbintxoa ! iMOAB id for intx mesh between ocean and atmosphere
-  integer, public :: mblxid   ! iMOAB id for land mesh migrated to coupler pes
+  integer, public :: mlnxid   ! iMOAB id for land mesh migrated to coupler pes
 
   !=======================================================================
 contains
