@@ -49,7 +49,7 @@ module element_ops
 
   use dimensions_mod, only: np, nlev, nlevp, nelemd
   use element_mod,    only: element_t
-  use element_state,  only: elem_state_t
+  use element_state,  only: elem_state_t, timelevels
   use hybvcoord_mod,  only: hvcoord_t
   use kinds,          only: real_kind, iulog
   use perf_mod,       only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
@@ -583,7 +583,7 @@ contains
      endif
   enddo
   
-  do tl = 2,3
+  do tl = 2,timelevels
     call copy_state(elem,1,tl)
   enddo
 

@@ -404,7 +404,7 @@ contains
   integer, optional,   intent(in)     :: ie ! optional element index, to save initial state
   integer                             :: tl
 
-  do tl=2,3
+  do tl=2,timelevels
     call copy_state(elem,1,tl)
   enddo
   end subroutine tests_finalize
