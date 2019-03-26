@@ -1418,7 +1418,6 @@ for mct, etc.
 
 <compiler MACH="melvin" COMPILER="gnu">
   <ALBANY_PATH>/projects/install/rhel6-x86_64/ACME/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
-  <KOKKOS_OPTIONS> --with-openmp --with-options=aggressive_vectorization </KOKKOS_OPTIONS>
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
