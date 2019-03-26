@@ -580,6 +580,7 @@ contains
     integer                    :: lb1,ub1,lb2,ub2,i,j,n
     logical                    :: wgtfound, FBinfound
     integer                    :: dbrc
+    character(len=CL)          :: errorName
     character(len=*),parameter :: subname='(med_merge_field_2d)'
     ! ----------------------------------------------
 
@@ -630,8 +631,9 @@ contains
        if (.not. FB_FldChk(FBinE, trim(fnameE), rc=rc)) FBinfound = .false.
     endif
     if (.not. FBinfound) then
-       call ESMF_LogWrite(trim(subname)//": WARNING field not found in FBin, skipping merge "//trim(fnameout), &
+       call ESMF_LogWrite(trim(subname)//": ERROR field not found in FBin, skipping merge "//trim(errorName), &
             ESMF_LOGMSG_WARNING, line=__LINE__, file=u_FILE_u, rc=dbrc)
+       rc = ESMF_FAILURE
        return
     endif
 

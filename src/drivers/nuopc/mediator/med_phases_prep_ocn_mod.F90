@@ -514,6 +514,7 @@ contains
           end do
 
           customwgt(:) = wgtm01(:) / const_lhvap
+          ! mean_evap_rate = mean_laten_heat_flux * (1-ice_fraction)/const_lhvap
           call med_merge_field(is_local%wrap%FBExp(compocn),      'Foxx_evap', &
                FBinA=is_local%wrap%FBMed_aoflux_o        , fnameA='Faox_evap', wgtA=ocnwgt1, &
                FBinB=is_local%wrap%FBImp(compatm,compocn), fnameB='Faxa_lat' , wgtB=customwgt, rc=rc)
