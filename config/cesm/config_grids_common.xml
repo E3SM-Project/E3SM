@@ -152,10 +152,6 @@
       <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_tx0.66v1_nnsm_e1000r300_190315.nc</map>
       <map name="ROF2OCN_ICE_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_tx0.66v1_nnsm_e1000r300_190315.nc</map>
     </gridmap>
-    <gridmap rof_grid="rx1" ocn_grid="tx0.66v1" >
-      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_tx0.66v1_nnsm_e1000r300_180604.nc</map>
-      <map name="ROF2OCN_ICE_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_tx0.66v1_nnsm_e1000r300_180604.nc</map>
-    </gridmap>
     <gridmap rof_grid="rx1" ocn_grid="tx0.1v2" >
       <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_rx1_to_tx0.1v2_e1000r200_090624.nc</map>
       <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_rx1_to_tx0.1v2_e1000r200_090624.nc</map>
@@ -210,6 +206,10 @@
     <gridmap rof_grid="r05" ocn_grid="tx0.66v1" >
       <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/r05/map_r05_to_tx0.66v1_e1000r300_190314.nc</map>
       <map name="ROF2OCN_ICE_RMAPNAME">cpl/gridmaps/r05/map_r05_to_tx0.66v1_e1000r300_190314.nc</map>
+    </gridmap>
+    <gridmap rof_grid="JRA025" ocn_grid="tx0.66v1" >
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/rJRA025/map_JRA025m_to_tx0.66v1_nnsm_e333r100_190326.nc</map>
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/gridmaps/rJRA025/map_JRA025m_to_tx0.66v1_nnsm_e333r100_190326.nc</map>
     </gridmap>
 
     <!-- ======================================================== -->
