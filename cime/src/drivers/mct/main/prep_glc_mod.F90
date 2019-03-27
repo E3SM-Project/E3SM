@@ -815,11 +815,12 @@ contains
     if (.not.(glc_present)) return
     !write(logunit,*) 'Starting prep_glc_calculate_subshelf_boundary_fluxes'
 
-    o2x_ox => component_get_c2x_cx(ocn(1))
-    g2x_gx => component_get_c2x_cx(glc(1))
-    x2g_gx => component_get_x2c_cx(glc(1))
+    do egi = 1,num_inst_glc
 
-    !TO DO: CONSIDER HOW ENSEMBLES ARE GOING TO BE IMPLEMENTED (i.e. change hard-coded '1' index to e*i indices
+    o2x_ox => component_get_c2x_cx(ocn(egi))
+    g2x_gx => component_get_c2x_cx(glc(egi))
+    x2g_gx => component_get_x2c_cx(glc(egi))
+
     !Remap relevant ocean variables to ice sheet grid.
     !Done here instead of in glc-frequency mapping so it happens within ocean coupling interval.
     ! Also could map o2x_ox->o2x_gx(1) but using x2g_gx as destination allows us to see
@@ -919,6 +920,8 @@ contains
     end do
 
     !Note: remap ocean-side outputs back onto ocean grid done in call to prep_ocn_shelf_calc_g2x_ox
+
+    end do ! loop over GLC instances
 
   end subroutine prep_glc_calculate_subshelf_boundary_fluxes
 
