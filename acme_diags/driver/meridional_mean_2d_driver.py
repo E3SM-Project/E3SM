@@ -41,22 +41,22 @@ def create_metrics(ref, test, ref_regrid, test_regrid, diff):
     metrics_dict['ref'] = {
         'min': min_cdms(ref),
         'max': max_cdms(ref),
-        'mean': mean(ref, axis='yz')
+        'mean': mean(ref, axis='xz')
     }
     metrics_dict['test'] = {
         'min': min_cdms(test),
         'max': max_cdms(test),
-        'mean': mean(test, axis='yz')
+        'mean': mean(test, axis='xz')
     }
 
     metrics_dict['diff'] = {
         'min': min_cdms(diff),
         'max': max_cdms(diff),
-        'mean': mean(diff, axis='yz')
+        'mean': mean(diff, axis='xz')
     }
     metrics_dict['misc'] = {
-        'rmse': rmse(test_regrid, ref_regrid, axis='yz'),
-        'corr': corr(test_regrid, ref_regrid, axis='yz')
+        'rmse': rmse(test_regrid, ref_regrid, axis='xz'),
+        'corr': corr(test_regrid, ref_regrid, axis='xz')
     }
 
     return metrics_dict
@@ -96,31 +96,6 @@ def run_diag(parameter):
             parameter.viewer_descr[var] = mv1.long_name if hasattr(
                 mv1, 'long_name') else 'No long_name attr in test data.'
 
-            # Special case, cdms didn't properly convert mask with fill value
-            # -999.0, filed issue with Denis.
-            if ref_name == 'WARREN':
-                # This is cdms2 fix for bad mask, Denis' fix should fix this.
-                mv2 = MV2.masked_where(mv2 == -0.9, mv2)
-            # The following should be moved to a derived variable.
-            if ref_name == 'AIRS':
-                # This is cdms2 fix for bad mask, Denis' fix should fix this.
-                mv2 = MV2.masked_where(mv2 > 1e+20, mv2)
-            if ref_name == 'WILLMOTT' or ref_name == 'CLOUDSAT':
-                # This is cdms2 fix for bad mask, Denis' fix should fix this.
-                mv2 = MV2.masked_where(mv2 == -999., mv2)
-
-                # The following should be moved to a derived variable.
-                if var == 'PRECT_LAND':
-                    days_season = {'ANN': 365, 'DJF': 90,
-                                   'MAM': 92, 'JJA': 92, 'SON': 91}
-                    # mv1 = mv1 * days_season[season] * 0.1 # following AMWG
-                    # Approximate way to convert to seasonal cumulative
-                    # precipitation, need to have solution in derived variable,
-                    # unit convert from mm/day to cm.
-                    mv2 = mv2 / days_season[season] / \
-                        0.1  # Convert cm to mm/day instead.
-                    mv2.units = 'mm/day'
-
             # For variables with a z-axis.
             if mv1.getLevel() and mv2.getLevel():
                 plev = numpy.logspace(2.0, 3.0, num=17)
@@ -129,8 +104,11 @@ def run_diag(parameter):
                 mv1_p = utils.general.convert_to_pressure_levels(mv1, plev, test_data, var, season)
                 mv2_p = utils.general.convert_to_pressure_levels(mv2, plev, test_data, var, season)
 
-                mv1_p = cdutil.averager(mv1_p, axis='x')
-                mv2_p = cdutil.averager(mv2_p, axis='x')
+                mv1_p = cdutil.averager(mv1_p, axis='y')
+                mv2_p = cdutil.averager(mv2_p, axis='y')
+              
+                print(mv1_p.shape,'mv1_p')
+                print(mv2_p.shape,'mv2_p')
 
                 parameter.output_file = '-'.join(
                     [ref_name, var, season, parameter.regions[0]])
@@ -139,11 +117,25 @@ def run_diag(parameter):
 
                 # Regrid towards the lower resolution of the two
                 # variables for calculating the difference.
-                if len(mv1_p.getLatitude()) <= len(mv2_p.getLatitude()):
+                if len(mv1_p.getLongitude()) <= len(mv2_p.getLongitude()):
                     mv1_reg = mv1_p
                     lev_out = mv1_p.getLevel()
-                    lat_out = mv1_p.getLatitude()
-                    mv2_reg = mv2_p.crossSectionRegrid(lev_out, lat_out)
+                    lon_out = mv1_p.getLongitude()
+                    # in order to use regrid tool we need to have at least two latitude bands, so generate new grid first
+                    lat = cdms2.createAxis([0])
+                    lat.setBounds(numpy.array([-1,1]))
+                    lat.designateLatitude()
+                    grid = cdms2.createRectGrid(lat,lon_out)
+                    
+                    data_shape = list(mv2_p.shape)
+                    data_shape.append(1)
+                    mv2_reg = MV2.resize(mv2_p, data_shape)
+                    mv2_reg.setAxis(-1,lat)
+                    for i,ax in enumerate(mv2_p.getAxisList()):
+                        mv2_reg.setAxis(i,ax)
+
+                    mv2_reg = mv2_reg.regrid(grid, regridTool = 'regrid2')[...,0]
+                    print(mv2_reg, 'mv2_reg')
                     # Apply the mask back, since crossSectionRegrid
                     # doesn't preserve the mask.
                     mv2_reg = MV2.masked_where(
@@ -151,8 +143,22 @@ def run_diag(parameter):
                 else:
                     mv2_reg = mv2_p
                     lev_out = mv2_p.getLevel()
-                    lat_out = mv2_p.getLatitude()
-                    mv1_reg = mv1_p.crossSectionRegrid(lev_out, lat_out)
+                    lon_out = mv2_p.getLongitude()
+                    mv1_reg = mv1_p.crossSectionRegrid(lev_out, lon_out)
+                    # in order to use regrid tool we need to have at least two latitude bands, so generate new grid first
+                    lat = cdms2.createAxis([0])
+                    lat.setBounds(numpy.array([-1,1]))
+                    lat.designateLatitude()
+                    grid = cdms2.createRectGrid(lat,lon_out)
+                    
+                    data_shape = list(mv1_p.shape)
+                    data_shape.append(1)
+                    mv1_reg = MV2.resize(mv1_p, data_shape)
+                    mv1_reg.setAxis(-1,lat)
+                    for i,ax in enumerate(mv1_p.getAxisList()):
+                        mv1_reg.setAxis(i,ax)
+
+                    mv1_reg = mv1_reg.regrid(grid, regridTool = 'regrid2')[...,0]
                     # Apply the mask back, since crossSectionRegrid
                     # doesn't preserve the mask.
                     mv1_reg = MV2.masked_where(
@@ -171,42 +177,7 @@ def run_diag(parameter):
 
             # For variables without a z-axis.
             elif mv1.getLevel() is None and mv2.getLevel() is None:
-                for region in regions:
-                    print("Selected region: {}".format(region))
-
-                    mv1_domain, mv2_domain = utils.general.select_region(
-                        region, mv1, mv2, land_frac, ocean_frac, parameter)
-
-                    parameter.output_file = '-'.join(
-                        [ref_name, var, season, region])
-                    parameter.main_title = str(' '.join([var, season, region]))
-
-                    # Regrid towards the lower resolution of the two
-                    # variables for calculating the difference.
-                    mv1_reg, mv2_reg = utils.general.regrid_to_lower_res(
-                        mv1_domain, mv2_domain, parameter.regrid_tool, parameter.regrid_method)
-
-                    # Special case.
-                    if var == 'TREFHT_LAND' or var == 'SST':
-                        if ref_name == 'WILLMOTT':
-                            mv2_reg = MV2.masked_where(
-                                mv2_reg == mv2_reg.fill_value, mv2_reg)
-                        land_mask = MV2.logical_or(mv1_reg.mask, mv2_reg.mask)
-                        mv1_reg = MV2.masked_where(land_mask, mv1_reg)
-                        mv2_reg = MV2.masked_where(land_mask, mv2_reg)
-
-                    diff = mv1_reg - mv2_reg
-                    metrics_dict = create_metrics(
-                        mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
-                    parameter.var_region = region
-
-                    plot(parameter.current_set, mv2_domain,
-                         mv1_domain, diff, metrics_dict, parameter)
-                    utils.general.save_ncfiles(parameter.current_set,
-                                       mv1_domain, mv2_domain, diff, parameter)
-
-            else:
                 raise RuntimeError(
-                    "Dimensions of the two variables are different. Aborting.")
+                    "One of or both data doesn't have z dimention. Aborting.")
 
     return parameter
