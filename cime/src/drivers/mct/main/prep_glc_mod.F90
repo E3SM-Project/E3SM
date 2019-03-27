@@ -161,7 +161,6 @@ contains
     type(mct_avect), pointer         :: l2x_lx
     type(mct_avect), pointer         :: x2g_gx
     type(mct_avect), pointer         :: o2x_ox
-    type(mct_avect), pointer         :: g2x_gx
 
     character(*), parameter          :: subname = '(prep_glc_init)'
     character(*), parameter          :: F00 = "('"//subname//" : ', 4A )"
@@ -181,8 +180,6 @@ contains
     allocate(mapper_Fg2l)
 
     smb_renormalize = prep_glc_do_renormalize_smb(infodata)
-
-    g2x_gx => component_get_c2x_cx(glc(1)) !Jer: is this needed here?
 
     if (glc_present .and. lnd_c2_glc) then
 
