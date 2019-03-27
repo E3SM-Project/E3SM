@@ -7,7 +7,8 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
-from cartopy.mpl.ticker import LatitudeFormatter
+import cartopy.crs as ccrs
+from cartopy.mpl.ticker import LongitudeFormatter
 from acme_diags.driver.utils.general import get_output_dir
 from acme_diags.plot import get_colormap
 
@@ -45,8 +46,8 @@ def plot_panel(n, fig, proj, var, clevels, cmap,
     #    var_max = float(var.max())
     #    var_mean = cdutil.averager(var, axis='xy', weights='generate')
     #    var = add_cyclic(var)
-    var.getLongitude()
-    lat = var.getLatitude()
+    lon = var.getLongitude()
+    #lat = var.getLatitude()
     plev = var.getLevel()
     var = ma.squeeze(var.asma())
 
@@ -60,8 +61,8 @@ def plot_panel(n, fig, proj, var, clevels, cmap,
     # Contour plot
     ax = fig.add_axes(panel[n], projection=proj)
     cmap = get_colormap(cmap, parameters)
-    p1 = ax.contourf(lat, plev, var,
-                     # transform=ccrs.PlateCarree(),
+    p1 = ax.contourf(lon, plev, var,
+                     #transform=ccrs.PlateCarree(),
                      norm=norm,
                      levels=levels,
                      cmap=cmap,
@@ -75,14 +76,14 @@ def plot_panel(n, fig, proj, var, clevels, cmap,
         ax.set_title(title[1], fontdict=plotTitle)
     if title[2] is not None:
         ax.set_title(title[2], loc='right', fontdict=plotSideTitle)
-    # ax.set_xticks([0, 60, 120, 180, 240, 300, 359.99], crs=ccrs.PlateCarree())
+    ax.set_xticks([0, 60, 120, 180, 240, 300, 359.99])#, crs=ccrs.PlateCarree())
     # ax.set_xticks([-180, -120, -60, 0, 60, 120, 180], crs=ccrs.PlateCarree())
-    ax.set_xticks([-90, -60, -30, 0, 30, 60, 90])  # , crs=ccrs.PlateCarree())
-    ax.set_xlim(-90, 90)
-    # lon_formatter = LongitudeFormatter(
-    #    zero_direction_label=True, number_format='.0f')
-    LatitudeFormatter()
-    # ax.xaxis.set_major_formatter(lon_formatter)
+    #ax.set_xticks([-90, -60, -30, 0, 30, 60, 90])  # , crs=ccrs.PlateCarree())
+    #ax.set_xlim(-90, 90)
+    lon_formatter = LongitudeFormatter(
+        zero_direction_label=True, number_format='.0f')
+    #LatitudeFormatter()
+    #ax.xaxis.set_major_formatter(lon_formatter)
     # ax.xaxis.set_major_formatter(lat_formatter)
     ax.tick_params(labelsize=8.0, direction='out', width=1)
     ax.xaxis.set_ticks_position('bottom')
@@ -134,7 +135,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
 
     # Create figure, projection
     fig = plt.figure(figsize=parameter.figsize, dpi=parameter.dpi)
-    # proj = ccrs.PlateCarree(central_longitude=180)
+    #proj = ccrs.PlateCarree(central_longitude=180)
     proj = None
 
     # First two panels
