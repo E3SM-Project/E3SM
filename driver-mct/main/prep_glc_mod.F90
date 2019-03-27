@@ -787,7 +787,7 @@ contains
 
     ! Local Variables
 
-    integer :: gsize, n
+    integer :: gsize, n, egi
     type(mct_aVect), pointer :: o2x_ox ! Ocn export, ocn grid, cpl pes
     type(mct_aVect), pointer :: x2g_gx ! Glc import, glc grid, cpl pes
     type(mct_aVect), pointer :: g2x_gx ! Glc import, glc grid, cpl pes
