@@ -36,10 +36,11 @@ subroutine cam_initial(dyn_in, dyn_out, NLFileName)
    if(par%masterproc  ) write(iulog,*) 'Running phys_grid_init()'
    call phys_grid_init( )
 
-   ! Write scrip file for grid
-   if (fv_nphys>0) then
-      call write_grid_scrip()
-   end if
+   ! Write scrip file for grid 
+   ! not needed as TempestRemap can create scrip files now
+   ! if (fv_nphys>0) then
+   !    call write_grid_scrip()
+   ! end if
 
    ! Initialize ghg surface values before default initial distributions
    ! are set in inidat.
