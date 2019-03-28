@@ -911,6 +911,7 @@ contains
     logical     :: read_restart    ! .true. => model starting from restart
     logical     :: ocn_prognostic  ! .true. => ocn is prognostic
     logical     :: flux_diurnal    ! .true. => turn on diurnal cycle in atm/ocn fluxes
+    integer     :: flux_scheme
     logical     :: cold_start      ! .true. to initialize internal fields in shr_flux diurnal
     character(len=256) :: fldlist  ! subset of xao fields
     !
@@ -937,6 +938,7 @@ contains
          ocn_nx=ocn_nx, ocn_ny=ocn_ny,  &
          ocn_prognostic=ocn_prognostic, &
          flux_diurnal=flux_diurnal,     &
+         flux_scheme=flux_scheme,     &
          gust_fac = gust_fac            )
 
     cold_start = .false.   ! use restart data or data from last timestep
@@ -1015,6 +1017,7 @@ contains
             evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
             uGust, lwdn , swdn , swup, prec, &
             fswpen, ocnsal, ocn_prognostic, flux_diurnal,   &
+            flux_scheme, &
             lats , lons , warm , salt , speed, regime,      &
             warmMax, windMax, qSolAvg, windAvg,             &
             warmMaxInc, windMaxInc, qSolInc, windInc, nInc, &
@@ -1028,6 +1031,7 @@ contains
             tocn , emask, sen , lat , lwup , &
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux, tauy, tref, qref , &
+            flux_scheme, &
             duu10n,ustar, re  , ssq , missval = 0.0_r8 )
     endif
 
@@ -1194,6 +1198,7 @@ contains
     logical     :: read_restart    ! .true. => continue run
     logical     :: ocn_prognostic  ! .true. => ocn is prognostic
     logical     :: flux_diurnal    ! .true. => turn on diurnal cycle in atm/ocn fluxes
+    integer     :: flux_scheme
     real(r8)    :: flux_convergence ! convergence criteria for imlicit flux computation
     integer(in) :: flux_max_iteration ! maximum number of iterations for convergence
     logical :: coldair_outbreak_mod !  cold air outbreak adjustment  (Mahrt & Sun 1995,MWR)
@@ -1210,6 +1215,7 @@ contains
          dead_comps=dead_comps, &
          ocn_prognostic=ocn_prognostic, &
          flux_diurnal=flux_diurnal,     &
+         flux_scheme=flux_scheme,     &
          gust_fac = gust_fac            )
 
     cold_start = .false.   ! use restart data or data from last timestep
@@ -1425,6 +1431,7 @@ contains
             evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
             uGust, lwdn , swdn , swup, prec, &
             fswpen, ocnsal, ocn_prognostic, flux_diurnal,    &
+            flux_scheme, & 
             lats, lons , warm , salt , speed, regime,       &
             warmMax, windMax, qSolAvg, windAvg,             &
             warmMaxInc, windMaxInc, qSolInc, windInc, nInc, &
@@ -1441,6 +1448,7 @@ contains
             tocn , emask, sen , lat , lwup , &
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
+            flux_scheme, &
             duu10n,ustar, re  , ssq)
        !missval should not be needed if flux calc
        !consistent with mrgx2a fraction
