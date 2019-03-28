@@ -22,7 +22,8 @@ module lnd_disagg_forc
   use lnd2atmType    , only : lnd2atm_type
   use glc2lndMod     , only : glc2lnd_type
   use GridcellType   , only : grc_pp
-  use TopounitType   , only : top_pp, top_as, top_es        
+  use TopounitType   , only : top_pp
+  use TopounitDataType, only: top_as, top_es        
   use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
   !
@@ -147,7 +148,7 @@ contains
 
        top_as%tbot(t) = tbot_t
 !       top_as%thbot(t) = thbot_t
-!       top_as%vp_atm(t) = es_t
+       top_as%vp_atm(t) = es_t
        top_as%qbot(t) = qbot_t
        top_as%pbot(t) = pbot_t
 
