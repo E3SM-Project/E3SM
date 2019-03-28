@@ -716,38 +716,42 @@ for mct, etc.
 
 <compiler MACH="anvil" COMPILER="gnu">
   <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY</append>
+    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY  </append>
   </CPPDEFS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
   <SLIBS>
-    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
+    <append>$SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --flibs}  -L$ENV{MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm -ldl </append>
   </SLIBS>
 </compiler>
 
 <compiler MACH="anvil" COMPILER="intel">
-  <CFLAGS>
+  <!-- <CFLAGS>
     <append compile_threaded="true"> -static-intel</append>
     <append compile_threaded="true" DEBUG="TRUE">-heap-arrays</append>
-  </CFLAGS>
+  </CFLAGS> -->
   <CPPDEFS>
     <append MODEL="gptl"> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align</append>
-    <append compile_threaded="true"> -static-intel</append>
-    <append compile_threaded="true" DEBUG="TRUE">-heap-arrays</append>
+    <!-- <append compile_threaded="true"> -static-intel</append>
+    <append compile_threaded="true" DEBUG="TRUE">-heap-arrays</append> -->
   </FFLAGS>
-  <FFLAGS_NOOPT>
+  <!-- <FFLAGS_NOOPT>
     <append compile_threaded="true"> -static-intel</append>
   </FFLAGS_NOOPT>
   <LDFLAGS>
     <append compile_threaded="true"> -static-intel</append>
   </LDFLAGS>
-  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
+  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS> -->
   <SLIBS>
-    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -Wl,-rpath -Wl,$ENV{NETCDF_PATH}/lib</append>
+    <append>$SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --flibs} -Wl,-rpath -Wl,$ENV{NETCDF_FORTRAN_PATH}/lib</append>
     <append>-mkl</append>
   </SLIBS>
+  <MPICC MPILIB="impi"> mpiicc  </MPICC>
+  <MPICXX MPILIB="impi"> mpiicpc </MPICXX>
+  <MPIFC MPILIB="impi"> mpiifort </MPIFC>
+
 </compiler>
 
 <compiler MACH="anvil" COMPILER="pgi">
