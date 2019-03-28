@@ -1,0 +1,8 @@
+This is the directory for adding GCAM to ACME.  It is currently under heavy
+development and won't be ready to compile or run for a while.
+
+4/19/18
+
+This subdirectory contains the giac stuff from iESM right now.  It will
+probably need to be reorganized along with the redevelopment, but for now
+none of that has happened.

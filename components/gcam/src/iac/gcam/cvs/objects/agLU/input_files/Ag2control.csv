@@ -1,0 +1,10 @@
+Autogen control file (ag)
+A1C-550
+14
+
+agcase.csv
+text outputfile
+
+
+INPUT_TABLE
+..\cvs\objects\agLU\input_files\AGIN_14.csv

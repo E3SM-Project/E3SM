@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSPY v5 rel. 4 U (http://www.xmlspy.com) by Josh Lurz (PNNL) -->
+<Configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="D:/cvs/Code/Ciam/Configuration.xsd">
+	<Files>
+		<!--START User Modifiable Variables-->
+		<Value name="xmlInputFileName">../cvs/objects/model_data/base/base_input.xml</Value>
+		<Value name="xmlOutputFileName">../output/output.xml</Value>
+		<Value name="BatchFileName">BatchFile.xml</Value>
+		<Value name="sPolicyInputFileName">sPolInput.xml</Value>
+		<!--END User Modifiable variables-->
+		<!--START Developer Only Modifiable Variables-->
+		<Value name="outFileName">../output/outFile.csv</Value>
+		<Value name="climatFileName">gas.emk</Value>
+		<Value name="xmlDebugFileName">../output/debug.xml</Value>
+		<Value name="ObjectSGMFileName">../output/ObjectSGMout.csv</Value>
+		<Value name="ObjectSGMGenFileName">../output/ObjectSGMGen.csv</Value>
+		<Value name="xmldb-location">../output/database.dbxml</Value>
+		<Value name="dbFileName">../output/output.mdb</Value>
+		<Value name="supplyDemandOutputFileName">../output/SDCurves.csv</Value>
+		<Value name="GHGInputFileName">../cvs/objects/magicc/inputs/input_gases.emk</Value>
+		<Value name="dependencyGraphName">../output/DependencyGraph</Value>
+		<Value name="landAllocatorGraphName">../output/LandAllocatorGraph</Value>
+		<Value name="costCurvesOutputFileName">../output/cost_curves.xml</Value>
+		<!--END Developer Only Modifiable Variables-->
+	</Files>
+	<ScenarioComponents>
+		<!--START User Modifiable Variables-->
+		<Value name="B2Calibration">../cvs/objects/model_data/scenario_components/sres_scenarios/b2_calibration.xml</Value>
+		<!--END User Modifiable variables-->
+	</ScenarioComponents>
+	<Strings>
+		<!--START User Modifiable Variables-->
+		<Value name="scenarioName"></Value>
+		<Value name="region-to-graph">USA</Value>
+		<!--END User Modifiable variables-->
+		<!--START Developer Only Modifiable Variables-->
+		<Value name="debug-region">USA</Value>
+		<Value name="AbatedGasForCostCurves">CO2</Value>
+		<Value name="monitorMktName">China</Value>
+		<Value name="monitorMktGood"></Value>
+		<Value name="SolverName">BisectionNRSolver</Value>
+		<!--END Developer Only Modifiable Variables-->
+	</Strings>
+	<Bools>
+		<!--START User Modifiable Variables-->
+		<Value name="CalibrationActive">1</Value>
+		<Value name="createCostCurve">0</Value>
+		<Value name="BatchMode">0</Value>
+		<Value name="find-path">0</Value>
+		<Value name="simple-find-path">0</Value>
+		<Value name="PrintDependencyGraphs">0</Value>
+		<Value name="PrintValuesOnGraphs">0</Value>
+		<Value name="PrintPrices">1</Value>
+		<Value name="write-access-db">1</Value>
+		<Value name="write-xml-db">1</Value>
+		<Value name="agSubsidy">0</Value>
+		<!--END User Modifiable variables-->
+		<!--START Developer Only Modifiable Variables-->
+		<Value name="debugChecking">0</Value>
+		<Value name="agSectorActive">1</Value>
+		<Value name="agBioMarketSet">0</Value>
+		<Value name="simulActive">1</Value>
+		<Value name="debugFindSD">0</Value>
+		<Value name="PrintSectorDependencies">0</Value>
+		<Value name="ShowNullPaths">0</Value>
+		<Value name="mergeFilesOnly">0</Value>
+		<!--END Developer Only Modifiable Variables-->
+	</Bools>
+	<Ints>
+		<Value name="discount-start-year">2005</Value>
+		<Value name="land-use-history-interval">5</Value>
+		<Value name="carbon-stock-output-interval">5</Value>
+		<Value name="carbon-output-start-year">1900</Value>
+		<Value name="climateOutputInterval">15</Value>
+		<!--START Developer Only Modifiable Variables-->
+		<Value name="numMarketsToFindSD">10</Value>
+		<Value name="numPointsForSD">21</Value>
+		<Value name="numPointsForCO2CostCurve">5</Value>
+		<!--END Developer Only Modifiable Variables-->
+	</Ints>
+	<Doubles>
+		<!--START User Modifiable Variables-->
+		<Value name="discountRate">0.05</Value>
+		<Value name="SolutionTolerance">0.001</Value>
+		<Value name="SolutionFloor">0.01</Value>
+		<!--END User Modifiable variables-->
+		<Value name="bracket-interval">0.5</Value>
+		<Value name="DeltaPrice">0.00001</Value>
+	</Doubles>
+</Configuration>

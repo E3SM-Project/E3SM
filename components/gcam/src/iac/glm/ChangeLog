@@ -1,0 +1,169 @@
+================================================================================
+Information on changes to GLM
+Originator(s): jet
+Date: Feb 02, 2013
+Version: v1_0_00_glm2_130102
+One-line Summary: Bug fix for glm
+
+M       glm.future.iesm.c
+	
+================================================================================
+Information on changes to GLM
+Originator(s): jet
+Date: Oct 18, 2012
+Version: v1_0_00_glm2_121018
+One-line Summary: Port to Evergreen
+
+M       ChangeLog
+M       glm_comp_mod.F90
+M       configure.glm
+M       glm.fut.conf
+M       Makefile
+	
+================================================================================
+Information on changes to GLM
+Originator(s): tcraig
+Date: June 12, 2012
+Version: v1_0_00_glm2_120612
+One-line Summary: glm fix for restart from jt
+
+M       glm.future.iesm.c
+
+================================================================================
+Information on changes to GLM
+Originator(s): jet
+Date: Feb 8, 2012
+Version: v1_0_00_glm2_120208
+One-line Summary: error messages for missing files, port to hopper
+
+	M       glm.fut.conf
+	M       glm.future.iesm.c
+	A       glm.fut.conf.nersc
+	A       glm.fut.conf.ornl
+
+================================================================================
+Information on changes to GLM
+Originator(s): jet
+Date: Nov 6, 2011
+Version: v1_0_00_glm2_111106
+One-line Summary: start mods for restarts
+
+M      glm.future.iesm.c
+================================================================================
+Information on changes to GLM
+Originator: jet
+Date: Oct 21, 2011
+Model: glm
+Version: v1_0_00_glm2_111021
+One-line summary: fix glmo for harvest fields
+	
+M      glm.future.iesm.c
+================================================================================
+Information on changes to GLM
+Originator: tcraig
+Date: Oct 12, 2011
+Model: glm
+Version: v1_0_00_glm2_111012
+One-line summary: modify Eclock data type to integer
+	
+M      glm_comp_mod.F90
+================================================================================
+Information on changes to GLM
+Originator: jet
+Date: Sep 09, 2011
+Model: glm
+Version: v1_0_00_glm2_110909
+One-line summary: glm2 update has aez functionality
+
+        M      glm_comp_mod.F90
+	M      configure.glm
+	M      glm.fut.conf
+	A      glm.future.iesm.c
+	M      run_glm.sh
+	M      Makefile
+	
+================================================================================
+Information on changes to GLM
+Originator: tcraig
+Date: May 27, 2011
+Model: glm
+Version: v1_0_00_glm_110527
+One-line summary: Fix divide by zero
+
+M      glm.future.c
+================================================================================
+Information on changes to GLM
+Originator: jet
+Date: May 19, 2011
+Model: glm
+Version: v1_0_00_glm_110519
+One-line summary: Bug fix for coupled glm output
+
+        Fixed bug in timelevel of information being exported from glm as
+	well as included a copy of n+1 level information back to level n
+	in order to begin the next timeloop.
+
+	M      glm.future.c
+	    
+================================================================================
+Information on changes to GLM
+Originator: jet
+Date: May 7, 2011
+Model: glm
+Version: v1_0_00_glm_110507
+One-line summary: Hook GLM future code up to GCAM
+
+	Finished CCSM modification to glm.future.c Added urban as an option to the
+	future code.
+	Updated the interface routines for CCSM.  GLM is coupled to the GCAM output.
+	Created a configuration file for future runs.
+	Added glm.future.c as the default code for building with CCSM
+
+        M      ccsm_glm_interface.c
+	M      glm_comp_mod.F90
+	M      configure.glm
+	M      glm.c
+	M      glm.fut.conf
+	M      glm.future.c
+	M      Makefile
+	    
+================================================================================
+Information on changes to GLM
+Originator: jet
+Date: Feb 4, 2011
+Model: glm
+Version: v1_0_00_glm_110204
+One-line summary: First set of mods for coupling with ccsm
+
+added netcdf routines to read in boundary data
+reduced incore memory size now carries only two time levels of info
+added code to read configuration file
+added restart capability
+restructured top level routines to allow easier coupling to ccsm.
+started validating output logs against origianl implementation
+created simple makefile
+moved netcdf versions of boundary data under /tmp/proj/ccsm/jet
+	
+	D      phbio.average.7states.txt
+	A      iniparser.h
+	A      ccsm_glm_interface.c
+	M      ChangeLog
+	A      glm_comp_mod.F90
+	A      dictionary.h
+	A      configure.glm
+	A      glm.fut.conf
+	M      glm.c
+	A      glm.conf
+	M      glm.future.c
+	A      Makefile
+	
+================================================================================
+Originator: lchini, tcraig
+Date: Dec 1, 2010
+Model: glm
+Version: v1_0_00_glm_101129
+One-line summary: Copy of initial import, glm_101129
+
+import from 2010_11_29_first_import_to_ORNL GLM version
+
+================================================================================

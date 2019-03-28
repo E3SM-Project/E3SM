@@ -1,0 +1,3220 @@
+/*  Compile Albedo and Vegetation Fraction using a Two Stream Radiation Model */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <math.h>
+#include <string.h>
+#include <ctype.h>
+#include <netcdf.h>
+
+#define MAXPFT 16
+#define MAXMONTH 12
+#define MAXSOILCOLOR 20
+#define MAXSOILLAYERS 10
+
+#define BPFT 0
+#define NEMPFT 1
+#define NEBPFT 2
+#define NDBPFT 3
+#define BETPFT 4
+#define BEMPFT 5
+#define BDTPFT 6
+#define BDMPFT 7
+#define BDBPFT 8
+#define SEMPFT 9
+#define SDMPFT 10
+#define SDBPFT 11
+#define GA3PFT 12
+#define GC3PFT 13
+#define GC4PFT 14
+#define CPFT 15
+
+#define PFTVALUES 30
+#define PFTIDINDEX 0
+#define PFTPCTINDEX 1
+#define PFTGROUP1INDEX 2
+#define PFTGROUP2INDEX 3
+#define PFTLAIINDEX 4
+#define PFTSAIINDEX 16
+#define PFTBOTINDEX 28
+#define PFTTOPINDEX 29
+
+#define CLMLAIVAR 23
+
+#define GLMONFLDS 9
+#define PLONFLDS 23
+#define MAXOUTPIX 720
+#define MAXOUTLIN 360
+#define OUTPIXWIDTH 0.5
+#define OUTPIXHEIGHT 0.5
+#define OUTLLX 0.0
+#define OUTLLY -89.75
+
+#define MAXINPIX 7200
+#define MAXINLIN 3600
+#define INPIXSIZE 0.05
+#define INLLX -180.0
+#define INLLY -90.0
+
+#define SEARCHMIN 2
+#define SEARCHMAX 1024
+#define BOXLIMIT 360
+
+#define DAYSINYEAR 365.0
+#define F0 1375.0
+#define TAU0 0.7
+#define PI 4.0*atan(1.0)
+#define SLIMIT 10
+
+double inmask[MAXOUTPIX * MAXOUTLIN];
+double inland[MAXOUTPIX * MAXOUTLIN];
+double inlake[MAXOUTPIX * MAXOUTLIN];
+double inwetland[MAXOUTPIX * MAXOUTLIN];
+double inice[MAXOUTPIX * MAXOUTLIN];
+double invegbare[MAXOUTPIX * MAXOUTLIN];
+
+double insand[MAXSOILLAYERS][MAXOUTPIX * MAXOUTLIN];
+double inclay[MAXSOILLAYERS][MAXOUTPIX * MAXOUTLIN];
+double insoilslope[MAXOUTPIX * MAXOUTLIN];
+
+double incurrentpftid[MAXPFT][MAXOUTPIX * MAXOUTLIN];
+double incurrentpftval[MAXPFT][MAXOUTPIX * MAXOUTLIN];
+double incurrentlaival[MAXMONTH][MAXPFT][MAXOUTPIX * MAXOUTLIN];
+double incurrentsaival[MAXMONTH][MAXPFT][MAXOUTPIX * MAXOUTLIN];
+double incurrentsoilcolor[MAXOUTPIX * MAXOUTLIN];
+
+double inpotvegpftid[MAXPFT][MAXOUTPIX * MAXOUTLIN];
+double inpotvegpftval[MAXPFT][MAXOUTPIX * MAXOUTLIN];
+
+double inhurttbasecrop[MAXOUTPIX * MAXOUTLIN];
+double inhurttbasepasture[MAXOUTPIX * MAXOUTLIN];
+double inhurttcrop[MAXOUTPIX * MAXOUTLIN];
+double inhurttpasture[MAXOUTPIX * MAXOUTLIN];
+
+double inhurttprimary[MAXOUTPIX * MAXOUTLIN];
+double inhurttsecondary[MAXOUTPIX * MAXOUTLIN];
+
+double inhurttvh1[MAXOUTPIX * MAXOUTLIN];
+double inhurttvh2[MAXOUTPIX * MAXOUTLIN];
+double inhurttsh1[MAXOUTPIX * MAXOUTLIN];
+double inhurttsh2[MAXOUTPIX * MAXOUTLIN];
+double inhurttsh3[MAXOUTPIX * MAXOUTLIN];
+
+double outhurttpftid[MAXPFT][MAXOUTPIX * MAXOUTLIN];
+double outhurttpftval[MAXPFT][MAXOUTPIX * MAXOUTLIN];
+double outhurttlaival[MAXMONTH][MAXPFT][MAXOUTPIX * MAXOUTLIN];
+double outhurttsaival[MAXMONTH][MAXPFT][MAXOUTPIX * MAXOUTLIN];
+double outhurttsoilcolor[MAXOUTPIX * MAXOUTLIN];
+
+double outhurttvh1[MAXOUTPIX * MAXOUTLIN];
+double outhurttvh2[MAXOUTPIX * MAXOUTLIN];
+double outhurttsh1[MAXOUTPIX * MAXOUTLIN];
+double outhurttsh2[MAXOUTPIX * MAXOUTLIN];
+double outhurttsh3[MAXOUTPIX * MAXOUTLIN];
+double outhurttgrazing[MAXOUTPIX * MAXOUTLIN];
+
+char *monthname[MAXMONTH] = {"jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"};
+double monthday[12] = {15,46,74,105,135,166,196,227,258,288,319,349};
+
+char *pftnameinfilestr[MAXPFT];
+char *pftname[MAXPFT];
+double pftLAIMax[MAXPFT];
+double pftHeightTop[MAXPFT];
+double pftHeightBot[MAXPFT];
+double pftGroup1[MAXPFT];
+double pftGroup2[MAXPFT];
+
+/* NetCDF Variables */
+
+int  innetcdfid;			
+int  innetcdfstat;
+   
+/* dimension variables */
+int  ndimsp, ndimsp2;
+int  ndimspcnt;
+char dimname[128], dimname2[128];
+size_t dimlen, dimlen2;
+
+/* variable variables */
+int  nvarsp;
+int  nvarspcnt;
+int  isvardim;
+char varname[256];
+nc_type vartype;
+int  vardimsp;
+int  vardimidsp;
+int  varattsp;
+int  varlayers, varlayers2;
+int  selectedvarcnt;
+int  selectedvarnum = -1;
+int  selectedvarids[256];
+
+int  layercnt;
+int  latcnt;
+int  latdim = -1;
+int  latlen = -1;
+int  loncnt;
+int  londim = -1;
+int  lonlen = -1;
+long varindex;
+
+/* attribute variables */
+int  nattsp;
+int  nattspcnt;
+char attname[128];
+nc_type atttype;
+size_t attlen;
+   
+/* unlimited dimension variables */
+int  unlimdimidp;
+
+char *nc_typename[7] = {"no type","signed 1 byte integer",
+                        "ISO/ASCII character",
+	 	        "signed 2 byte integer",
+		        "signed 4 byte integer",
+		        "single precision floating point number",
+		        "double precision floating point number"};
+
+double 
+roundit(double innumber, int inplaces) {
+
+   double newnumber;
+   double multiply;
+   long roundval;
+   long nextroundval;
+   
+   multiply = pow(10.0,inplaces);
+
+   roundval = innumber * multiply;
+   nextroundval = innumber * multiply * 10.0;
+   nextroundval =  nextroundval - roundval * 10;
+   if (nextroundval >= 5) {
+      roundval = roundval + 1;
+   }
+   if (nextroundval <= -5) {
+      roundval = roundval - 1;
+   }
+   newnumber = (double) roundval;
+   newnumber = newnumber / multiply;
+   
+   return newnumber;
+
+}
+
+
+void
+readpftparamfile(char *filenamestr) {
+
+  FILE *pftparamfile;
+  int inpft;
+  char infilename[50], inpftname[50];
+  float inlaimax, inheightbot, inheighttop, ingroup1, ingroup2;
+
+  printf("Reading %s\n",filenamestr);
+  pftparamfile = fopen(filenamestr,"r");
+
+  for (inpft = 0; inpft < MAXPFT; inpft++) {
+      fscanf(pftparamfile,"%s%s%f%f%f%f%f",infilename,inpftname,&inlaimax,&inheightbot,&inheighttop,&ingroup1,&ingroup2);
+      pftnameinfilestr[inpft] = strdup(infilename);
+      pftname[inpft] = strdup(inpftname);
+      pftLAIMax[inpft] = inlaimax;
+      pftHeightTop[inpft] = inheighttop;
+      pftHeightBot[inpft] = inheightbot;
+      pftGroup1[inpft] = ingroup1;
+      pftGroup2[inpft] = ingroup2;
+  }  
+
+}
+
+
+int
+opennetcdf(char *filenamestr) {
+
+  int openstatus = 1;
+  
+   /* open and check the netcdf file */
+   
+  innetcdfstat = nc_open(filenamestr, NC_WRITE, &innetcdfid);
+  if (innetcdfstat != NC_NOERR) {
+      printf("Error no such file %s\n", filenamestr);
+      openstatus = 0;
+   
+   
+   /* find the longitude and latitude dimensions */
+  }
+  else {  
+
+      nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+      if (ndimsp != -1)
+          for (ndimspcnt = 0; ndimspcnt < ndimsp; ndimspcnt ++) {
+              nc_inq_dim(innetcdfid, ndimspcnt, dimname, &dimlen);
+	  
+	      if (strcmp(dimname,"lsmlon") == 0 || strcmp(dimname,"longitude") == 0 || strcmp(dimname,"lon") == 0) {
+	          londim = ndimspcnt;
+	          lonlen = dimlen;
+	      }
+
+	      if (strcmp(dimname,"lsmlat") == 0 || strcmp(dimname,"latitude") == 0 || strcmp(dimname,"lat") == 0) {
+	          latdim = ndimspcnt;
+	          latlen = dimlen;
+              }
+
+      } 
+
+      if (londim == -1) {
+          printf("Error Longitude dimension Not Found\n");
+          openstatus = 0;
+      }
+
+      if (latdim == -1) {
+          printf("Error Latitude dimension Not Found\n");
+          openstatus = 0;
+      }
+    
+      if (lonlen != MAXOUTPIX) {
+          printf("Error Longitude dimension Wrong Size %d Expected %d\n",londim,MAXOUTPIX);
+          openstatus = 0;
+      }
+
+      if (latlen != MAXOUTLIN) {
+          printf("Error Latitude dimension Wrong Size %d Expected %d\n",latdim,MAXOUTLIN);
+          openstatus = 0;
+      }
+  }
+  
+  return openstatus;
+  
+}
+
+
+int
+closenetcdf(char *filenamestr) {
+
+  int closestatus = 1;
+
+  innetcdfstat = nc_close(innetcdfid);
+  if (innetcdfstat != NC_NOERR) {
+      printf("Error closing file %s\n", filenamestr);
+      closestatus = 0;
+  }
+  
+  return closestatus;
+  
+}
+
+
+void
+updatehurttlandfrac() {
+
+  float *landfracvalues;
+  float *landmaskvalues;
+  int outgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"LANDFRAC") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Updating variable: %d %s \n",nvarspcnt,varname);
+      }
+
+      if (strcmp(varname,"LANDMASK") == 0) {
+          selectedvarids[1] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Updating variable: %d %s \n",nvarspcnt,varname);
+      }
+      
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 1;
+  varlayers2 = 1;
+  landfracvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],landfracvalues);
+
+/*  nc_inq_var(innetcdfid, selectedvarids[1], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 1;
+  varlayers2 = 1;
+  landmaskvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[1],landmaskvalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      landmaskvalues[outgrid] = inmask[outgrid] / 100.0;
+      landfracvalues[outgrid] = inland[outgrid];
+  }
+
+  nc_put_var_float(innetcdfid,selectedvarids[0],landfracvalues);
+  nc_put_var_float(innetcdfid,selectedvarids[1],landmaskvalues);
+  free(landfracvalues);
+  free(landmaskvalues);
+  
+}
+
+void
+updatehurttlakefrac() {
+
+  float *lakefracvalues;
+  int outgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"PCT_LAKE") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Updating variable: %d %s \n",nvarspcnt,varname);
+      }
+      
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 1;
+  varlayers2 = 1;
+  lakefracvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],lakefracvalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      lakefracvalues[outgrid] = inlake[outgrid];
+  }
+
+  nc_put_var_float(innetcdfid,selectedvarids[0],lakefracvalues);
+  free(lakefracvalues);
+
+}
+
+
+void
+updatehurttwetlandfrac() {
+
+  float *wetlandfracvalues;
+  int outgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"PCT_WETLAND") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Updating variable: %d %s \n",nvarspcnt,varname);
+      }
+      
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 1;
+  varlayers2 = 1;
+  wetlandfracvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],wetlandfracvalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      wetlandfracvalues[outgrid] = inwetland[outgrid];
+  }
+
+  nc_put_var_float(innetcdfid,selectedvarids[0],wetlandfracvalues);
+  free(wetlandfracvalues);
+  
+}
+
+
+void
+updatehurtticefrac() {
+
+  float *icefracvalues;
+  int outgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"PCT_GLACIER") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Updating variable: %d %s \n",nvarspcnt,varname);
+      }
+      
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 1;
+  varlayers2 = 1;
+  icefracvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],icefracvalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      icefracvalues[outgrid] = inice[outgrid];
+  }
+
+  nc_put_var_float(innetcdfid,selectedvarids[0],icefracvalues);
+  free(icefracvalues);
+
+}
+
+void
+updatehurttsand() {
+
+  float *sandvalues;
+  double vegetatedcount, soilcount;
+  int outgrid, offsetgrid, layer;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"PCT_SAND") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Updating variable: %d %s \n",nvarspcnt,varname);
+      }
+      
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = MAXSOILLAYERS;
+  varlayers2 = 1;
+  sandvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],sandvalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      for (layer = 0; layer < MAXSOILLAYERS; layer++) {
+          offsetgrid = layer * MAXOUTPIX * MAXOUTLIN + outgrid;
+          sandvalues[offsetgrid] = insand[layer][outgrid];
+      }
+  }
+
+  nc_put_var_float(innetcdfid,selectedvarids[0],sandvalues);
+  free(sandvalues);
+  
+}
+
+
+void
+updatehurttclay() {
+
+  float *clayvalues;
+  double vegetatedcount, soilcount;
+  int outgrid, offsetgrid, layer;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"PCT_CLAY") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Updating variable: %d %s \n",nvarspcnt,varname);
+      }
+      
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = MAXSOILLAYERS;
+  varlayers2 = 1;
+  clayvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],clayvalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      for (layer = 0; layer < MAXSOILLAYERS; layer++) {
+          offsetgrid = layer * MAXOUTPIX * MAXOUTLIN + outgrid;
+          clayvalues[offsetgrid] = inclay[layer][outgrid];
+      }
+  }
+
+  nc_put_var_float(innetcdfid,selectedvarids[0],clayvalues);
+  free(clayvalues);
+  
+}
+
+void
+updatehurttsoilslope() {
+
+  float *soilslopevalues;
+  float slopecount, soilslopetopvalue, soilslopebotvalue;
+  int outgrid, offsetgrid, layer;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"SOIL_SLOPE") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Updating variable: %d %s \n",nvarspcnt,varname);
+      }
+      
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 1;
+  varlayers2 = 1;
+  soilslopevalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],soilslopevalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      soilslopevalues[outgrid] = insoilslope[outgrid];
+  }
+
+  nc_put_var_float(innetcdfid,selectedvarids[0],soilslopevalues);
+  free(soilslopevalues);
+  
+}
+
+
+void
+updatehurttsoilcolor() {
+
+  float *soilcolorvalues;
+  float colorcount, soilcolortopvalue, soilcolorbotvalue;
+  int outgrid, offsetgrid, layer;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"SOIL_COLOR") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Updating variable: %d %s \n",nvarspcnt,varname);
+      }
+      
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 1;
+  varlayers2 = 1;
+  soilcolorvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],soilcolorvalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      soilcolorvalues[outgrid] = outhurttsoilcolor[outgrid];
+  }
+
+  nc_put_var_float(innetcdfid,selectedvarids[0],soilcolorvalues);
+  free(soilcolorvalues);
+  
+}
+
+
+void
+updatehurttpftpct() {
+
+  float *pftpctvalues;
+  int outgrid, offsetgrid, inpft, inmonth;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname); 
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"PCT_PFT") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Updating variable: %d %s \n",nvarspcnt,varname);
+      }
+  }
+  
+  varlayers = MAXPFT+1;
+  varlayers2 = 1;
+  pftpctvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],pftpctvalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      for (inpft = 0; inpft < MAXPFT; inpft++) {
+          offsetgrid = inpft * MAXOUTPIX * MAXOUTLIN + outgrid;
+	  pftpctvalues[offsetgrid] = outhurttpftval[inpft][outgrid];
+      }
+      inpft = MAXPFT;
+      offsetgrid = inpft * MAXOUTPIX * MAXOUTLIN + outgrid;
+      pftpctvalues[offsetgrid] = 0.0; 
+  }
+
+  nc_put_var_float(innetcdfid,selectedvarids[0],pftpctvalues);
+
+  free(pftpctvalues);
+
+}
+
+
+void
+updatehurttpftlai() {
+
+  float *pftlaivalues;
+  int outgrid, offsetgrid, inpft, inmonth;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (nvarspcnt == CLMLAIVAR) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  sprintf(varname,"MONTHLY_LAI");
+	  printf("Updating variable: %d %s \n",nvarspcnt,varname);
+      }
+  }
+  
+  varlayers = 12;
+  varlayers2 = MAXPFT+1;
+  pftlaivalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],pftlaivalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      for (inpft = 0; inpft < MAXPFT; inpft++) {
+          for (inmonth = 0; inmonth < MAXMONTH; inmonth++ ) {
+              offsetgrid = inmonth * (MAXPFT+1) * MAXOUTPIX * MAXOUTLIN + inpft * MAXOUTPIX * MAXOUTLIN + outgrid;
+	      if (outhurttpftval[inpft][outgrid] > 0.0) {
+                  pftlaivalues[offsetgrid] = outhurttlaival[inmonth][inpft][outgrid];
+	      }
+	      else {
+                  pftlaivalues[offsetgrid] = 0.0;
+	      }
+	  }
+      }
+      inpft = MAXPFT;
+      for (inmonth = 0; inmonth < MAXMONTH; inmonth++ ) {
+          offsetgrid = inmonth * (MAXPFT+1) * MAXOUTPIX * MAXOUTLIN + inpft * MAXOUTPIX * MAXOUTLIN + outgrid;
+          pftlaivalues[offsetgrid] = 0.0;
+      }
+  }
+
+  nc_put_var_float(innetcdfid,selectedvarids[0],pftlaivalues);
+
+  free(pftlaivalues);
+  
+}
+
+void
+updatehurttpftsai() {
+
+  float *pftsaivalues;
+  int outgrid, offsetgrid, inpft, inmonth;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (nvarspcnt == CLMLAIVAR + 1) {
+	  sprintf(varname,"MONTHLY_SAI");
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Updating variable: %d %s \n",nvarspcnt,varname);
+      }
+  }
+  
+  varlayers = 12;
+  varlayers2 = MAXPFT+1;
+  pftsaivalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],pftsaivalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      for (inpft = 0; inpft < MAXPFT; inpft++) {
+          for (inmonth = 0; inmonth < MAXMONTH; inmonth++ ) {
+	      offsetgrid = inmonth * (MAXPFT+1) * MAXOUTPIX * MAXOUTLIN + inpft * MAXOUTPIX * MAXOUTLIN + outgrid;
+	      if (outhurttpftval[inpft][outgrid] > 0.0) {
+                  pftsaivalues[offsetgrid] = outhurttsaival[inmonth][inpft][outgrid];
+	      }
+	      else {
+                  pftsaivalues[offsetgrid] = 0.0;
+	      }
+	  }
+      }
+      inpft = MAXPFT;
+      for (inmonth = 0; inmonth < MAXMONTH; inmonth++ ) {
+          offsetgrid = inmonth * (MAXPFT+1) * MAXOUTPIX * MAXOUTLIN + inpft * MAXOUTPIX * MAXOUTLIN + outgrid;
+          pftsaivalues[offsetgrid] = 0.0;
+      }
+  }
+
+  nc_put_var_float(innetcdfid,selectedvarids[0],pftsaivalues);
+
+  free(pftsaivalues);
+  
+}
+
+void
+updatehurttpfttop() {
+
+  float *pfttopvalues;
+  int outgrid, offsetgrid, inpft, inmonth;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (nvarspcnt == CLMLAIVAR + 2) {
+	  sprintf(varname,"MONTHLY_HEIGHT_TOP");
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Updating variable: %d %s \n",nvarspcnt,varname);
+      }
+  }
+  
+  varlayers = 12;
+  varlayers2 = MAXPFT+1;
+  pfttopvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],pfttopvalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      for (inpft = 1; inpft <= MAXPFT; inpft++) {
+          for (inmonth = 0; inmonth < MAXMONTH; inmonth++ ) {
+	      offsetgrid = inmonth * (MAXPFT+1) * MAXOUTPIX * MAXOUTLIN + inpft * MAXOUTPIX * MAXOUTLIN + outgrid;
+	      pfttopvalues[offsetgrid] = pftHeightTop[inpft-1];
+	  }
+      }
+      inpft = 0;
+      for (inmonth = 0; inmonth < MAXMONTH; inmonth++ ) {
+          offsetgrid = inmonth * (MAXPFT+1) * MAXOUTPIX * MAXOUTLIN + inpft * MAXOUTPIX * MAXOUTLIN + outgrid;
+          pfttopvalues[offsetgrid] = 0.0;
+      }
+  }
+
+  nc_put_var_float(innetcdfid,selectedvarids[0],pfttopvalues);
+
+  free(pfttopvalues);
+  
+}
+
+void
+updatehurttpftbot() {
+
+  float *pftbotvalues;
+  int outgrid, offsetgrid, inpft, inmonth;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (nvarspcnt == CLMLAIVAR + 3) {
+	  sprintf(varname,"MONTHLY_HEIGHT_BOT");
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Updating variable: %d %s \n",nvarspcnt,varname);
+      }
+  }
+  
+  varlayers = 12;
+  varlayers2 = MAXPFT+1;
+  pftbotvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],pftbotvalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      for (inpft = 1; inpft <= MAXPFT; inpft++) {
+          for (inmonth = 0; inmonth < MAXMONTH; inmonth++ ) {
+	      offsetgrid = inmonth * (MAXPFT+1) * MAXOUTPIX * MAXOUTLIN + inpft * MAXOUTPIX * MAXOUTLIN + outgrid;
+	      pftbotvalues[offsetgrid] = pftHeightBot[inpft-1];
+	  }
+      }
+      inpft = 0;
+      for (inmonth = 0; inmonth < MAXMONTH; inmonth++ ) {
+          offsetgrid = inmonth * (MAXPFT+1) * MAXOUTPIX * MAXOUTLIN + inpft * MAXOUTPIX * MAXOUTLIN + outgrid;
+          pftbotvalues[offsetgrid] = 0.0;
+      }
+  }
+
+  nc_put_var_float(innetcdfid,selectedvarids[0],pftbotvalues);
+
+  free(pftbotvalues);
+  
+}
+
+
+void
+updatehurttvh1() {
+
+  float *vh1values;
+  int outgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"HARVEST_VH1") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Updating variable: %d %s \n",nvarspcnt,varname);
+      }
+      
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 1;
+  varlayers2 = 1;
+  vh1values = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],vh1values);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      vh1values[outgrid] = outhurttvh1[outgrid];
+  }
+
+  nc_put_var_float(innetcdfid,selectedvarids[0],vh1values);
+  free(vh1values);
+
+}
+
+
+void
+updatehurttvh2() {
+
+  float *vh2values;
+  int outgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"HARVEST_VH2") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Updating variable: %d %s \n",nvarspcnt,varname);
+      }
+      
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 1;
+  varlayers2 = 1;
+  vh2values = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],vh2values);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      vh2values[outgrid] = outhurttvh2[outgrid];
+  }
+
+  nc_put_var_float(innetcdfid,selectedvarids[0],vh2values);
+  free(vh2values);
+
+}
+
+
+void
+updatehurttsh1() {
+
+  float *sh1values;
+  int outgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"HARVEST_SH1") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Updating variable: %d %s \n",nvarspcnt,varname);
+      }
+      
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 1;
+  varlayers2 = 1;
+  sh1values = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],sh1values);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      sh1values[outgrid] = outhurttsh1[outgrid];
+  }
+
+  nc_put_var_float(innetcdfid,selectedvarids[0],sh1values);
+  free(sh1values);
+
+}
+
+
+void
+updatehurttsh2() {
+
+  float *sh2values;
+  int outgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"HARVEST_SH2") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Updating variable: %d %s \n",nvarspcnt,varname);
+      }
+      
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 1;
+  varlayers2 = 1;
+  sh2values = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],sh2values);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      sh2values[outgrid] = outhurttsh2[outgrid];
+  }
+
+  nc_put_var_float(innetcdfid,selectedvarids[0],sh2values);
+  free(sh2values);
+
+}
+
+
+void
+updatehurttsh3() {
+
+  float *sh3values;
+  int outgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"HARVEST_SH3") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Updating variable: %d %s \n",nvarspcnt,varname);
+      }
+      
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 1;
+  varlayers2 = 1;
+  sh3values = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],sh3values);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      sh3values[outgrid] = outhurttsh3[outgrid];
+  }
+
+  nc_put_var_float(innetcdfid,selectedvarids[0],sh3values);
+  free(sh3values);
+
+}
+
+
+void
+updatehurttgrazing() {
+
+  float *grazingvalues;
+  int outgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"GRAZING") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Updating variable: %d %s \n",nvarspcnt,varname);
+      }
+      
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 1;
+  varlayers2 = 1;
+  grazingvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],grazingvalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      grazingvalues[outgrid] = outhurttgrazing[outgrid];
+  }
+
+  nc_put_var_float(innetcdfid,selectedvarids[0],grazingvalues);
+  free(grazingvalues);
+
+}
+
+
+void
+readhurttprimary(long hurttbaseyear, long hurttyear) {
+
+  float *primaryvalues;
+  float inprimaryvalue;
+  long outgrid;
+  long offsetgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"GOTHR") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Reading variable: %d %s \n",nvarspcnt,varname);
+      }
+
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 506;
+  varlayers2 = 1;
+  primaryvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],primaryvalues);
+
+  if (hurttyear >= 0) {
+      for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+          offsetgrid = hurttyear * MAXOUTPIX * MAXOUTLIN + outgrid;
+          inprimaryvalue = primaryvalues[offsetgrid];
+          if (inprimaryvalue >= 0.0 && inprimaryvalue <= 1.1) {
+              inhurttprimary[outgrid] = round(inprimaryvalue * 100.0);
+	      if (inhurttprimary[outgrid] > 100.0) {
+	          inhurttprimary[outgrid] = 100.0;
+	      }
+          }
+          else {
+              inhurttprimary[outgrid] = 0.0;
+          }
+      }
+  }
+
+  free(primaryvalues);
+  
+}
+
+
+void
+readhurttsecondary(long hurttbaseyear, long hurttyear) {
+
+  float *secondaryvalues;
+  float insecondaryvalue;
+  long outgrid;
+  long offsetgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"GSECD") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Reading variable: %d %s \n",nvarspcnt,varname);
+      }
+
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 506;
+  varlayers2 = 1;
+  secondaryvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],secondaryvalues);
+
+  if (hurttyear >= 0) {
+      for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+          offsetgrid = hurttyear * MAXOUTPIX * MAXOUTLIN + outgrid;
+          insecondaryvalue = secondaryvalues[offsetgrid];
+          if (insecondaryvalue >= 0.0 && insecondaryvalue <= 1.1) {
+              inhurttsecondary[outgrid] = round(insecondaryvalue * 100.0);
+	      if (inhurttsecondary[outgrid] > 100.0) {
+	          inhurttsecondary[outgrid] = 100.0;
+	      }
+          }
+          else {
+              inhurttsecondary[outgrid] = 0.0;
+          }
+      }
+  }
+
+  free(secondaryvalues);
+  
+}
+
+
+void
+readhurttcrop(long hurttbaseyear, long hurttyear) {
+
+  float *cropvalues;
+  float incropvalue;
+  long outgrid;
+  long offsetgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"GCROP") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Reading variable: %d %s \n",nvarspcnt,varname);
+      }
+
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 506;
+  varlayers2 = 1;
+  cropvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],cropvalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      offsetgrid = hurttbaseyear * MAXOUTPIX * MAXOUTLIN + outgrid;
+      incropvalue = cropvalues[offsetgrid];
+      if (incropvalue >= 0.0 && incropvalue <= 1.1) {
+          inhurttbasecrop[outgrid] = round(incropvalue * 100.0);
+	  if (inhurttbasecrop[outgrid] > 100.0) {
+	      inhurttbasecrop[outgrid] = 100.0;
+	  }
+      }
+      else {
+          inhurttbasecrop[outgrid] = 0.0;
+      }
+  }
+
+  if (hurttyear >= 0) {
+      for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+          offsetgrid = hurttyear * MAXOUTPIX * MAXOUTLIN + outgrid;
+          incropvalue = cropvalues[offsetgrid];
+          if (incropvalue >= 0.0 && incropvalue <= 1.1) {
+              inhurttcrop[outgrid] = round(incropvalue * 100.0);
+	      if (inhurttcrop[outgrid] > 100.0) {
+	          inhurttcrop[outgrid] = 100.0;
+	      }
+          }
+          else {
+              inhurttcrop[outgrid] = 0.0;
+          }
+      }
+  }
+
+  free(cropvalues);
+  
+}
+
+
+void
+readhurttpasture(long hurttbaseyear, long hurttyear) {
+
+  float *pasturevalues;
+  float inpasturevalue;
+  long outgrid;
+  long offsetgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"GPAST") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Reading variable: %d %s \n",nvarspcnt,varname);
+      }
+
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 506;
+  varlayers2 = 1;
+  pasturevalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],pasturevalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      offsetgrid = hurttbaseyear * MAXOUTPIX * MAXOUTLIN + outgrid;
+      inpasturevalue = pasturevalues[offsetgrid];
+      if (inpasturevalue >= 0.0 && inpasturevalue <= 1.1) {
+          inhurttbasepasture[outgrid] = round(inpasturevalue * 100.0);
+	  if (inhurttbasepasture[outgrid] > 100.0) {
+	      inhurttbasepasture[outgrid] = 100.0;
+	  }
+      }
+      else {
+          inhurttbasepasture[outgrid] = 0.0;
+      }
+  }
+
+  if (hurttyear >= 0) {
+      for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+          offsetgrid = hurttyear * MAXOUTPIX * MAXOUTLIN + outgrid;
+          inpasturevalue = pasturevalues[offsetgrid];
+          if (inpasturevalue >= 0.0 && inpasturevalue <= 1.0) {
+              inhurttpasture[outgrid] = round(inpasturevalue * 100.0);
+	      if (inhurttpasture[outgrid] > 100.0) {
+	          inhurttpasture[outgrid] = 100.0;
+	      }
+          }
+          else {
+              inhurttpasture[outgrid] = 0.0;
+          }
+      }
+  }
+
+  free(pasturevalues);
+  
+}
+
+
+void
+readhurttvh1(long hurttbaseyear, long hurttyear) {
+
+  float *vh1values;
+  float invh1value;
+  long outgrid;
+  long offsetgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"GFVH1") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Reading variable: %d %s \n",nvarspcnt,varname);
+      }
+
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 506;
+  varlayers2 = 1;
+  vh1values = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],vh1values);
+
+  if (hurttyear >= 0) {
+      for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+          offsetgrid = hurttyear * MAXOUTPIX * MAXOUTLIN + outgrid;
+          invh1value = vh1values[offsetgrid];
+          if (invh1value >= 0.0 && invh1value <= 1.1) {
+              inhurttvh1[outgrid] = (invh1value * 100.0);
+	      if (inhurttvh1[outgrid] > 100.0) {
+	          inhurttvh1[outgrid] = 100.0;
+	      }
+          }
+          else {
+              inhurttvh1[outgrid] = 0.0;
+          }
+      }
+  }
+
+  free(vh1values);
+  
+}
+
+
+void
+readhurttvh2(long hurttbaseyear, long hurttyear) {
+
+  float *vh2values;
+  float invh2value;
+  long outgrid;
+  long offsetgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"GFVH2") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Reading variable: %d %s \n",nvarspcnt,varname);
+      }
+
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 506;
+  varlayers2 = 1;
+  vh2values = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],vh2values);
+
+  if (hurttyear >= 0) {
+      for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+          offsetgrid = hurttyear * MAXOUTPIX * MAXOUTLIN + outgrid;
+          invh2value = vh2values[offsetgrid];
+          if (invh2value >= 0.0 && invh2value <= 1.1) {
+              inhurttvh2[outgrid] = (invh2value * 100.0);
+	      if (inhurttvh2[outgrid] > 100.0) {
+	          inhurttvh2[outgrid] = 100.0;
+	      }
+          }
+          else {
+              inhurttvh2[outgrid] = 0.0;
+          }
+      }
+  }
+
+  free(vh2values);
+  
+}
+
+
+void
+readhurttsh1(long hurttbaseyear, long hurttyear) {
+
+  float *sh1values;
+  float insh1value;
+  long outgrid;
+  long offsetgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"GFSH1") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Reading variable: %d %s \n",nvarspcnt,varname);
+      }
+
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 506;
+  varlayers2 = 1;
+  sh1values = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],sh1values);
+
+  if (hurttyear >= 0) {
+      for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+          offsetgrid = hurttyear * MAXOUTPIX * MAXOUTLIN + outgrid;
+          insh1value = sh1values[offsetgrid];
+          if (insh1value >= 0.0 && insh1value <= 1.1) {
+              inhurttsh1[outgrid] = (insh1value * 100.0);
+	      if (inhurttsh1[outgrid] > 100.0) {
+	          inhurttsh1[outgrid] = 100.0;
+	      }
+          }
+          else {
+              inhurttsh1[outgrid] = 0.0;
+          }
+      }
+  }
+
+  free(sh1values);
+  
+}
+
+
+void
+readhurttsh2(long hurttbaseyear, long hurttyear) {
+
+  float *sh2values;
+  float insh2value;
+  long outgrid;
+  long offsetgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"GFSH2") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Reading variable: %d %s \n",nvarspcnt,varname);
+      }
+
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 506;
+  varlayers2 = 1;
+  sh2values = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],sh2values);
+
+  if (hurttyear >= 0) {
+      for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+          offsetgrid = hurttyear * MAXOUTPIX * MAXOUTLIN + outgrid;
+          insh2value = sh2values[offsetgrid];
+          if (insh2value >= 0.0 && insh2value <= 1.1) {
+              inhurttsh2[outgrid] = (insh2value * 100.0);
+	      if (inhurttsh2[outgrid] > 100.0) {
+	          inhurttsh2[outgrid] = 100.0;
+	      }
+          }
+          else {
+              inhurttsh2[outgrid] = 0.0;
+          }
+      }
+  }
+
+  free(sh2values);
+  
+}
+
+
+void
+readhurttsh3(long hurttbaseyear, long hurttyear) {
+
+  float *sh3values;
+  float insh3value;
+  long outgrid;
+  long offsetgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"GFSH3") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Reading variable: %d %s \n",nvarspcnt,varname);
+      }
+
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 506;
+  varlayers2 = 1;
+  sh3values = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],sh3values);
+
+  if (hurttyear >= 0) {
+      for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+          offsetgrid = hurttyear * MAXOUTPIX * MAXOUTLIN + outgrid;
+          insh3value = sh3values[offsetgrid];
+          if (insh3value >= 0.0 && insh3value <= 1.1) {
+              inhurttsh3[outgrid] = (insh3value * 100.0);
+	      if (inhurttsh3[outgrid] > 100.0) {
+	          inhurttsh3[outgrid] = 100.0;
+	      }
+          }
+          else {
+              inhurttsh3[outgrid] = 0.0;
+          }
+      }
+  }
+
+  free(sh3values);
+  
+}
+
+void
+readhurttbasecrop(long hurttbaseyear) {
+
+  float *cropvalues;
+  float incropvalue;
+  long outgrid;
+  long offsetgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"GCROP") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Reading variable: %d %s \n",nvarspcnt,varname);
+      }
+
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 506;
+  varlayers2 = 1;
+  cropvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],cropvalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      offsetgrid = hurttbaseyear * MAXOUTPIX * MAXOUTLIN + outgrid;
+      incropvalue = cropvalues[offsetgrid];
+      if (incropvalue >= 0.0 && incropvalue <= 1.1) {
+          inhurttbasecrop[outgrid] = round(incropvalue * 100.0);
+	  if (inhurttbasecrop[outgrid] > 100.0) {
+	      inhurttbasecrop[outgrid] = 100.0;
+	  }
+      }
+      else {
+          inhurttbasecrop[outgrid] = 0.0;
+      }
+  }
+
+  free(cropvalues);
+  
+}
+
+
+void
+readhurttbasepasture(long hurttbaseyear) {
+
+  float *pasturevalues;
+  float inpasturevalue;
+  long outgrid;
+  long offsetgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"GPAST") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Reading variable: %d %s \n",nvarspcnt,varname);
+      }
+
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 506;
+  varlayers2 = 1;
+  pasturevalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],pasturevalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      offsetgrid = hurttbaseyear * MAXOUTPIX * MAXOUTLIN + outgrid;
+      inpasturevalue = pasturevalues[offsetgrid];
+      if (inpasturevalue >= 0.0 && inpasturevalue <= 1.1) {
+          inhurttbasepasture[outgrid] = round(inpasturevalue * 100.0);
+	  if (inhurttbasepasture[outgrid] > 100.0) {
+	      inhurttbasepasture[outgrid] = 100.0;
+	  }
+      }
+      else {
+          inhurttbasepasture[outgrid] = 0.0;
+      }
+  }
+
+  free(pasturevalues);
+  
+}
+
+void
+copyarray(double array[MAXOUTPIX * MAXOUTLIN], int index, double arraypft[][MAXOUTPIX * MAXOUTLIN]) {
+
+  double value;
+  int outgrid;
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      array[outgrid] = arraypft[index][outgrid];
+  }
+}
+
+void
+copyplo(double array[MAXOUTPIX * MAXOUTLIN], int index, double plodata[][PLONFLDS]) {
+
+  double value;
+  int outgrid;
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      array[outgrid] = plodata[outgrid][index];
+  }
+}
+
+void
+copyglmo(double array[MAXOUTPIX * MAXOUTLIN], int index, double glmo[][GLMONFLDS]) {
+
+  double value;
+  int outgrid;
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      value = glmo[outgrid][index];
+      if (value >= 0.0 && value <= 1.1) {
+          array[outgrid] = (value * 100.0);
+          if (index <= 3) {array[outgrid] = round(array[outgrid]);}
+          if (array[outgrid] > 100.0) {
+             array[outgrid] = 100.0;
+	  }
+      }
+      else {
+          array[outgrid] = 0.0;
+      }
+  }
+}
+
+void
+copy2plodata(double plodata[][PLONFLDS]) {
+
+  double value;
+  int outgrid;
+  int inpft;
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      for (inpft = 0; inpft < MAXPFT; inpft++) {
+	  plodata[outgrid][inpft] = outhurttpftval[inpft][outgrid];
+      }
+      inpft = MAXPFT;
+      plodata[outgrid][inpft] = 0.0;
+      inpft = MAXPFT+1;
+      plodata[outgrid][inpft] = outhurttvh1[outgrid];
+      inpft = MAXPFT+2;
+      plodata[outgrid][inpft] = outhurttvh2[outgrid];
+      inpft = MAXPFT+3;
+      plodata[outgrid][inpft] = outhurttsh1[outgrid];
+      inpft = MAXPFT+4;
+      plodata[outgrid][inpft] = outhurttsh2[outgrid];
+      inpft = MAXPFT+5;
+      plodata[outgrid][inpft] = outhurttsh3[outgrid];
+      inpft = MAXPFT+6;
+      plodata[outgrid][inpft] = outhurttgrazing[outgrid];
+  }
+}
+
+void
+writearray(double array[MAXOUTPIX * MAXOUTLIN], const char *tstring) {
+
+  double value;
+  double minval;
+  double maxval;
+  double sum;
+  long outgrid;
+
+  minval = array[1];
+  maxval = array[1];
+  sum = 0.0;
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      value = array[outgrid];
+      sum = sum + value;
+      if (value < minval) minval = value;
+      if (value > maxval) maxval = value;
+  }
+  printf("writearray %s = %f %f %f \n",tstring,minval,maxval,sum);
+
+}
+
+void
+writeinhurtt() {
+
+  char tstring[32];
+
+  strcpy(tstring,"inhurttbasecrop\0");
+  writearray(inhurttbasecrop,tstring);
+
+  strcpy(tstring,"inhurttbasepasture\0");
+  writearray(inhurttbasepasture,tstring);
+
+  strcpy(tstring,"inhurttcrop\0");
+  writearray(inhurttcrop,tstring);
+
+  strcpy(tstring,"inhurttpasture\0");
+  writearray(inhurttpasture,tstring);
+
+  strcpy(tstring,"inhurttprimary\0");
+  writearray(inhurttprimary,tstring);
+
+  strcpy(tstring,"inhurttsecondary\0");
+  writearray(inhurttsecondary,tstring);
+
+  strcpy(tstring,"inhurttvh1\0");
+  writearray(inhurttvh1,tstring);
+
+  strcpy(tstring,"inhurttvh2\0");
+  writearray(inhurttvh2,tstring);
+
+  strcpy(tstring,"inhurttsh1\0");
+  writearray(inhurttsh1,tstring);
+
+  strcpy(tstring,"inhurttsh2\0");
+  writearray(inhurttsh2,tstring);
+
+  strcpy(tstring,"inhurttsh3\0");
+  writearray(inhurttsh3,tstring);
+
+}
+
+void
+writeplodata(double plodata[][PLONFLDS]) {
+
+  char tstring[32];
+  double array[MAXOUTPIX * MAXOUTLIN];
+
+  copyarray(array,0,outhurttpftval);
+  strcpy(tstring,"outhurttpftval0\0");
+  writearray(array,tstring);
+
+  copyplo(array,0,plodata);
+  strcpy(tstring,"plodata0\0");
+  writearray(array,tstring);
+
+  copyarray(array,1,outhurttpftval);
+  strcpy(tstring,"outhurttpftval1\0");
+  writearray(array,tstring);
+
+  copyplo(array,1,plodata);
+  strcpy(tstring,"plodata1\0");
+  writearray(array,tstring);
+
+  copyarray(array,2,outhurttpftval);
+  strcpy(tstring,"outhurttpftval2\0");
+  writearray(array,tstring);
+
+  copyplo(array,2,plodata);
+  strcpy(tstring,"plodata2\0");
+  writearray(array,tstring);
+
+  copyarray(array,3,outhurttpftval);
+  strcpy(tstring,"outhurttpftval3\0");
+  writearray(array,tstring);
+
+  copyplo(array,3,plodata);
+  strcpy(tstring,"plodata3\0");
+  writearray(array,tstring);
+
+  copyarray(array,4,outhurttpftval);
+  strcpy(tstring,"outhurttpftval4\0");
+  writearray(array,tstring);
+
+  copyplo(array,4,plodata);
+  strcpy(tstring,"plodata4\0");
+  writearray(array,tstring);
+
+  copyarray(array,5,outhurttpftval);
+  strcpy(tstring,"outhurttpftval5\0");
+  writearray(array,tstring);
+
+  copyplo(array,5,plodata);
+  strcpy(tstring,"plodata5\0");
+  writearray(array,tstring);
+
+  copyarray(array,6,outhurttpftval);
+  strcpy(tstring,"outhurttpftval6\0");
+  writearray(array,tstring);
+
+  copyplo(array,6,plodata);
+  strcpy(tstring,"plodata6\0");
+  writearray(array,tstring);
+
+  copyarray(array,7,outhurttpftval);
+  strcpy(tstring,"outhurttpftval7\0");
+  writearray(array,tstring);
+
+  copyplo(array,7,plodata);
+  strcpy(tstring,"plodata7\0");
+  writearray(array,tstring);
+
+  copyarray(array,8,outhurttpftval);
+  strcpy(tstring,"outhurttpftval8\0");
+  writearray(array,tstring);
+
+  copyplo(array,8,plodata);
+  strcpy(tstring,"plodata8\0");
+  writearray(array,tstring);
+
+  copyarray(array,9,outhurttpftval);
+  strcpy(tstring,"outhurttpftval9\0");
+  writearray(array,tstring);
+
+  copyplo(array,9,plodata);
+  strcpy(tstring,"plodata9\0");
+  writearray(array,tstring);
+
+  copyarray(array,10,outhurttpftval);
+  strcpy(tstring,"outhurttpftval10\0");
+  writearray(array,tstring);
+
+  copyplo(array,10,plodata);
+  strcpy(tstring,"plodata10\0");
+  writearray(array,tstring);
+
+  copyarray(array,11,outhurttpftval);
+  strcpy(tstring,"outhurttpftval11\0");
+  writearray(array,tstring);
+
+  copyplo(array,11,plodata);
+  strcpy(tstring,"plodata11\0");
+  writearray(array,tstring);
+
+  copyarray(array,12,outhurttpftval);
+  strcpy(tstring,"outhurttpftval12\0");
+  writearray(array,tstring);
+
+  copyplo(array,12,plodata);
+  strcpy(tstring,"plodata12\0");
+  writearray(array,tstring);
+
+  copyarray(array,13,outhurttpftval);
+  strcpy(tstring,"outhurttpftval13\0");
+  writearray(array,tstring);
+
+  copyplo(array,13,plodata);
+  strcpy(tstring,"plodata13\0");
+  writearray(array,tstring);
+
+  copyarray(array,14,outhurttpftval);
+  strcpy(tstring,"outhurttpftval14\0");
+  writearray(array,tstring);
+
+  copyplo(array,14,plodata);
+  strcpy(tstring,"plodata14\0");
+  writearray(array,tstring);
+
+  copyarray(array,15,outhurttpftval);
+  strcpy(tstring,"outhurttpftval15\0");
+  writearray(array,tstring);
+
+  copyplo(array,15,plodata);
+  strcpy(tstring,"plodata15\0");
+  writearray(array,tstring);
+
+  strcpy(tstring,"outhurttvh1\0");
+  writearray(outhurttvh1,tstring);
+
+  copyplo(array,16,plodata);
+  strcpy(tstring,"plodata16\0");
+  writearray(array,tstring);
+
+  copyplo(array,17,plodata);
+  strcpy(tstring,"plodata17\0");
+  writearray(array,tstring);
+
+  strcpy(tstring,"outhurttvh2\0");
+  writearray(outhurttvh2,tstring);
+
+  copyplo(array,18,plodata);
+  strcpy(tstring,"plodata18\0");
+  writearray(array,tstring);
+
+  strcpy(tstring,"outhurttsh1\0");
+  writearray(outhurttsh1,tstring);
+
+  copyplo(array,19,plodata);
+  strcpy(tstring,"plodata19\0");
+  writearray(array,tstring);
+
+  strcpy(tstring,"outhurttsh2\0");
+  writearray(outhurttsh2,tstring);
+
+  copyplo(array,20,plodata);
+  strcpy(tstring,"plodata20\0");
+  writearray(array,tstring);
+
+  strcpy(tstring,"outhurttsh3\0");
+  writearray(outhurttsh3,tstring);
+
+  copyplo(array,21,plodata);
+  strcpy(tstring,"plodata21\0");
+  writearray(array,tstring);
+
+  strcpy(tstring,"outhurttgrazing\0");
+  writearray(outhurttgrazing,tstring);
+
+  copyplo(array,22,plodata);
+  strcpy(tstring,"plodata22\0");
+  writearray(array,tstring);
+
+}
+
+void
+readlandmask() {
+
+  float *landmaskvalues;
+  int outgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"LANDMASK") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Reading variable: %d %s \n",nvarspcnt,varname);
+      }
+
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 1;
+  varlayers2 = 1;
+  landmaskvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],landmaskvalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      inmask[outgrid] = landmaskvalues[outgrid] * 100.0;
+  }
+
+  free(landmaskvalues);
+  
+}
+
+void
+readlandfrac() {
+
+  float *landfracvalues;
+  int outgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"LANDFRAC") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Reading variable: %d %s \n",nvarspcnt,varname);
+      }
+
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 1;
+  varlayers2 = 1;
+  landfracvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],landfracvalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      inland[outgrid] = landfracvalues[outgrid] * 100.0;
+  }
+
+  free(landfracvalues);
+  
+}
+
+void
+readlakefrac() {
+
+  float *lakefracvalues;
+  int outgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"PCT_LAKE") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Reading variable: %d %s \n",nvarspcnt,varname);
+      }
+      
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 1;
+  varlayers2 = 1;
+  lakefracvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],lakefracvalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      inlake[outgrid] = lakefracvalues[outgrid];
+  }
+
+  free(lakefracvalues);
+
+}
+
+
+void
+readwetlandfrac() {
+
+  float *wetlandfracvalues;
+  int outgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"PCT_WETLAND") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Reading variable: %d %s \n",nvarspcnt,varname);
+      }
+      
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 1;
+  varlayers2 = 1;
+  wetlandfracvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],wetlandfracvalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      inwetland[outgrid] = wetlandfracvalues[outgrid];
+  }
+
+  free(wetlandfracvalues);
+  
+}
+
+
+void
+readicefrac() {
+
+  float *icefracvalues;
+  int outgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"PCT_GLACIER") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Reading variable: %d %s \n",nvarspcnt,varname);
+      }
+      
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 1;
+  varlayers2 = 1;
+  icefracvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],icefracvalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      inice[outgrid] = icefracvalues[outgrid];
+  }
+
+  free(icefracvalues);
+
+}
+
+
+void
+readsand() {
+
+  float *sandvalues;
+  int outgrid, layer;
+  long offsetgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"PCT_SAND") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Reading variable: %d %s \n",nvarspcnt,varname);
+      }
+
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = MAXSOILLAYERS;
+  varlayers2 = 1;
+  sandvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],sandvalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      for (layer = 0; layer < MAXSOILLAYERS; layer++) {
+          offsetgrid = layer * MAXOUTPIX * MAXOUTLIN + outgrid;
+          insand[layer][outgrid] = sandvalues[offsetgrid];
+      }
+  }
+
+  free(sandvalues);
+  
+}
+
+
+void
+readclay() {
+
+  float *clayvalues;
+  int outgrid, layer;
+  long offsetgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"PCT_CLAY") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Reading variable: %d %s \n",nvarspcnt,varname);
+      }
+
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = MAXSOILLAYERS;
+  varlayers2 = 1;
+  clayvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],clayvalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      for (layer = 0; layer < MAXSOILLAYERS; layer++) {
+          offsetgrid = layer * MAXOUTPIX * MAXOUTLIN + outgrid;
+          inclay[layer][outgrid] = clayvalues[offsetgrid];
+      }
+  }
+
+  free(clayvalues);
+  
+}
+
+void
+readsoilslope() {
+
+  float *soilslopevalues;
+  int outgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"SOIL_SLOPE") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Reading variable: %d %s \n",nvarspcnt,varname);
+      }
+
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 1;
+  varlayers2 = 1;
+  soilslopevalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],soilslopevalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      insoilslope[outgrid] = soilslopevalues[outgrid];
+  }
+
+  free(soilslopevalues);
+  
+}
+
+void
+readcurrentpft() {
+
+  float outpftid;
+  int outgrid, offsetgrid, inpft, inmonth, barefound;
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      for (inpft = 0; inpft < MAXPFT; inpft++) {
+	  incurrentpftid[inpft][outgrid] = inpft;
+      }
+  }
+    
+}
+
+void
+readcurrentpftpct() {
+
+  float *pftpctvalues;
+  double pfttotal;
+  int outgrid, offsetgrid, inpft, inmonth, outpftid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"PCT_PFT") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Reading variable: %d %s \n",nvarspcnt,varname);
+      }
+  }
+  
+  varlayers = MAXPFT+1;
+  varlayers2 = 1;
+  pftpctvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],pftpctvalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      pfttotal = 0.0;
+      for (inpft = 0; inpft < MAXPFT; inpft++) {
+          offsetgrid = inpft * MAXOUTPIX * MAXOUTLIN + outgrid;
+	  outpftid = incurrentpftid[inpft][outgrid];
+          incurrentpftval[outpftid][outgrid] = pftpctvalues[offsetgrid];
+	  pfttotal = pfttotal + pftpctvalues[offsetgrid];
+      }
+  }
+
+  free(pftpctvalues);
+
+}
+
+void
+readcurrentpftlai() {
+
+  float *pftlaivalues;
+  int outgrid, offsetgrid, inpft, inmonth, outpftid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (nvarspcnt == CLMLAIVAR) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  sprintf(varname,"MONTHLY_LAI");
+	  printf("Reading variable: %d %s \n",nvarspcnt,varname);
+      }
+  }
+  
+  varlayers = 12;
+  varlayers2 = MAXPFT+1;
+  pftlaivalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],pftlaivalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      for (inpft = 0; inpft < MAXPFT; inpft++) {
+          outpftid = inpft;
+          for (inmonth = 0; inmonth < MAXMONTH; inmonth++ ) {
+              offsetgrid = inmonth * (MAXPFT+1) * MAXOUTPIX * MAXOUTLIN + inpft * MAXOUTPIX * MAXOUTLIN + outgrid;
+              incurrentlaival[inmonth][outpftid][outgrid] = pftlaivalues[offsetgrid];
+          }
+      }
+  }
+
+  free(pftlaivalues);
+  
+}
+
+
+void
+readcurrentpftsai() {
+
+  float *pftsaivalues;
+  int outgrid, offsetgrid, inpft, inmonth, outpftid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (nvarspcnt == CLMLAIVAR + 1) {
+	  sprintf(varname,"MONTHLY_SAI");
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Reading variable: %d %s \n",nvarspcnt,varname);
+      }
+  }
+  
+  varlayers = 12;
+  varlayers2 = MAXPFT+1;
+  pftsaivalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],pftsaivalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      for (inpft = 0; inpft < MAXPFT; inpft++) {
+	  outpftid = inpft;
+          for (inmonth = 0; inmonth < MAXMONTH; inmonth++ ) {
+              offsetgrid = inmonth * (MAXPFT+1) * MAXOUTPIX * MAXOUTLIN + inpft * MAXOUTPIX * MAXOUTLIN + outgrid;
+              incurrentsaival[inmonth][outpftid][outgrid] = pftsaivalues[offsetgrid];
+	  }
+      }
+  }
+
+  free(pftsaivalues);
+  
+}
+
+
+void
+readcurrentsoilcolor() {
+
+  float *soilcolorvalues;
+  int outgrid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"SOIL_COLOR") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Reading variable: %d %s \n",nvarspcnt,varname);
+      }
+
+  }
+  
+/*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+  varlayers = 1;
+  varlayers2 = 1;
+  soilcolorvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],soilcolorvalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      incurrentsoilcolor[outgrid] = soilcolorvalues[outgrid];
+  }
+
+  free(soilcolorvalues);
+  
+}
+
+
+void
+readpotvegpft() {
+
+  float outpftid;
+  int outgrid, offsetgrid, inpft, inmonth, barefound;
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      for (inpft = 0; inpft < MAXPFT; inpft++) {
+	  inpotvegpftid[inpft][outgrid] = inpft;
+      }
+  }
+    
+}
+
+void
+readpotvegpftpct() {
+
+  float *pftpctvalues;
+  double pfttotal;
+  int outgrid, offsetgrid, inpft, inmonth, outpftid;
+
+  selectedvarcnt = 0;
+
+  nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+
+  for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+      nc_inq_varname(innetcdfid, nvarspcnt, varname);
+/*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+      if (strcmp(varname,"PCT_PFT") == 0) {
+          selectedvarids[0] = nvarspcnt;
+	  selectedvarcnt++;
+	  printf("Reading variable: %d %s \n",nvarspcnt,varname);
+      }
+  }
+  
+  varlayers = MAXPFT+1;
+  varlayers2 = 1;
+  pftpctvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+  nc_get_var_float(innetcdfid,selectedvarids[0],pftpctvalues);
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      pfttotal = 0.0;
+      for (inpft = 0; inpft < MAXPFT; inpft++) {
+          offsetgrid = inpft * MAXOUTPIX * MAXOUTLIN + outgrid;
+	  outpftid = inpotvegpftid[inpft][outgrid];
+          inpotvegpftval[outpftid][outgrid] = pftpctvalues[offsetgrid];
+	  pfttotal = pfttotal + pftpctvalues[offsetgrid];
+      }
+  }
+
+  free(pftpctvalues);
+
+}
+
+
+void
+setvegbarefrac() {
+
+  int outgrid;
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      if (inmask[outgrid] == 100.0) {
+          invegbare[outgrid] = 100.0 - inice[outgrid] - inlake[outgrid] - inwetland[outgrid];
+      }
+      else {
+          invegbare[outgrid] = 0.0;
+      }
+  }
+
+}
+
+
+long
+findcurrentpftidgrid(long outgrid, int pftid) {
+
+  long searchlength, searchgrid, foundgrid;
+  int pftnotfound;
+  
+  if (incurrentpftval[pftid][outgrid] > 0.0) {
+      foundgrid = outgrid;
+      pftnotfound = 0;
+  }
+  else {
+      pftnotfound = 1;
+  }
+  
+  searchlength = 1;
+  while (pftnotfound == 1) {
+      searchgrid = outgrid + searchlength;
+      if (searchgrid >= 0 && searchgrid < MAXOUTLIN * MAXOUTPIX) {
+          if (incurrentpftval[pftid][searchgrid] > 0.0) {
+	      foundgrid = searchgrid;
+	      pftnotfound = 0;
+	  }
+      }
+      searchgrid = outgrid - searchlength;
+      if (searchgrid >= 0 && searchgrid < MAXOUTLIN * MAXOUTPIX) {
+          if (incurrentpftval[pftid][searchgrid] > 0.0) {
+	      foundgrid = searchgrid;
+	      pftnotfound = 0;
+	  }
+      }
+      searchgrid = outgrid + searchlength * MAXOUTPIX;
+      if (searchgrid >= 0 && searchgrid < MAXOUTLIN * MAXOUTPIX) {
+          if (incurrentpftval[pftid][searchgrid] > 0.0) {
+	      foundgrid = searchgrid;
+	      pftnotfound = 0;
+	  }
+      }
+      searchgrid = outgrid - searchlength * MAXOUTPIX;
+      if (searchgrid >= 0 && searchgrid < MAXOUTLIN * MAXOUTPIX) {
+          if (incurrentpftval[pftid][searchgrid] > 0.0) {
+	      foundgrid = searchgrid;
+	      pftnotfound = 0;
+	  }
+      }
+      searchlength = searchlength + 1;
+  }
+  
+  return foundgrid;
+    
+}
+
+int
+iscurrentpasturegrid(long outgrid) {
+
+  int outpft;
+  double pftsum;
+  
+  pftsum = 0;
+  for (outpft = GA3PFT;outpft <= GC4PFT; outpft++) {
+      pftsum = pftsum + incurrentpftval[outpft][outgrid];
+  }
+  
+  if (pftsum > 0.0) {
+      return 1;
+  }
+  else {
+      return 0;
+  }
+  
+}
+
+long
+findcurrentpasturegrid(long outgrid) {
+
+  long searchlength, searchgrid, foundgrid;
+  int pftnotfound;
+  
+  if (iscurrentpasturegrid(outgrid)) {
+      foundgrid = outgrid;
+      pftnotfound = 0;
+  }
+  else {
+      pftnotfound = 1;
+  }
+  
+  searchlength = 1;
+  while (pftnotfound == 1) {
+      searchgrid = outgrid + searchlength;
+      if (searchgrid >= 0 && searchgrid < MAXOUTLIN * MAXOUTPIX) {
+          if (iscurrentpasturegrid(searchgrid)) {
+	      foundgrid = searchgrid;
+	      pftnotfound = 0;
+	  }
+      }
+      searchgrid = outgrid - searchlength;
+      if (searchgrid >= 0 && searchgrid < MAXOUTLIN * MAXOUTPIX) {
+          if (iscurrentpasturegrid(searchgrid)) {
+	      foundgrid = searchgrid;
+	      pftnotfound = 0;
+	  }
+      }
+      searchgrid = outgrid + searchlength * MAXOUTPIX;
+      if (searchgrid >= 0 && searchgrid < MAXOUTLIN * MAXOUTPIX) {
+          if (iscurrentpasturegrid(searchgrid)) {
+	      foundgrid = searchgrid;
+	      pftnotfound = 0;
+	  }
+      }
+      searchgrid = outgrid - searchlength * MAXOUTPIX;
+      if (searchgrid >= 0 && searchgrid < MAXOUTLIN * MAXOUTPIX) {
+          if (iscurrentpasturegrid(searchgrid)) {
+	      foundgrid = searchgrid;
+	      pftnotfound = 0;
+	  }
+      }
+      searchlength = searchlength + 1;
+  }
+  
+  return foundgrid;
+    
+}
+
+
+void
+sethurttcurrent(int outgrid) {
+
+  int outpft, outmonth;
+
+  for (outpft = 0;outpft < MAXPFT;outpft++) {
+      outhurttpftid[outpft][outgrid] = incurrentpftid[outpft][outgrid];
+      outhurttpftval[outpft][outgrid] = incurrentpftval[outpft][outgrid];
+      for (outmonth = 0;outmonth < MAXMONTH;outmonth++) {
+          outhurttlaival[outmonth][outpft][outgrid] = incurrentlaival[outmonth][outpft][outgrid];
+          outhurttsaival[outmonth][outpft][outgrid] = incurrentsaival[outmonth][outpft][outgrid];
+      }
+  }
+  outhurttsoilcolor[outgrid] = incurrentsoilcolor[outgrid];
+
+}
+
+
+void sethurttcrop(int outgrid, int baseyear, int calcyear) {
+
+  int maxpftid, outpft, outmonth, pftgrid, temppftid;
+  double newcropval, noncroppftsum, treepftsum;
+  double potvegpftsum, potvegtreepftsum, potvegherbaceouspftsum;
+  double maxpftval;
+  double addpftsum, addtreepftsum, addherbaceouspftsum, removepftsum, updatedpftsum;
+  
+  newcropval = inhurttcrop[outgrid];
+  if (outhurttpftval[CPFT][outgrid] > newcropval) {
+      addpftsum = outhurttpftval[CPFT][outgrid] - newcropval;
+      removepftsum = 0.0;
+  }
+  else {
+      addpftsum = 0.0;
+      removepftsum = newcropval - outhurttpftval[CPFT][outgrid];
+  }
+    
+  noncroppftsum = 0.0;
+  for (outpft = NEMPFT;outpft <= GC4PFT;outpft++) {
+      noncroppftsum = noncroppftsum + outhurttpftval[outpft][outgrid];
+  }
+  
+  treepftsum = 0.0;
+  for (outpft = NEMPFT;outpft <= GC4PFT;outpft++) {
+      treepftsum = treepftsum + outhurttpftval[outpft][outgrid];
+  }
+  
+  potvegpftsum = 0.0;
+  for (outpft = NEMPFT;outpft <= GC4PFT;outpft++) {
+      potvegpftsum = potvegpftsum + inpotvegpftval[outpft][outgrid];
+  }
+
+  potvegtreepftsum = 0.0;
+  for (outpft = NEMPFT;outpft <= BDBPFT;outpft++) {
+      potvegtreepftsum = potvegtreepftsum + inpotvegpftval[outpft][outgrid];
+  }
+
+  potvegherbaceouspftsum = potvegpftsum - potvegtreepftsum;
+    
+  if (removepftsum > 0.0) {
+
+      if (noncroppftsum < removepftsum) {
+          if (outhurttpftval[BPFT][outgrid] > (removepftsum - noncroppftsum)) {
+              outhurttpftval[BPFT][outgrid] = outhurttpftval[BPFT][outgrid] - (removepftsum - noncroppftsum);
+	      removepftsum = noncroppftsum;
+	  }
+	  else {
+	      newcropval = newcropval - (removepftsum - noncroppftsum - outhurttpftval[BPFT][outgrid]);
+	      removepftsum = noncroppftsum + outhurttpftval[BPFT][outgrid];
+	      outhurttpftval[BPFT][outgrid] = 0.0;
+          }
+      }
+  
+      if (removepftsum < 0.0 || removepftsum > 100.0) {
+          printf("Error in removepftsum %f\n",removepftsum);
+      }
+
+      if (removepftsum > 0.0) {
+          for (outpft = NEMPFT;outpft <= GC4PFT;outpft++) {
+              outhurttpftval[outpft][outgrid] = round( (outhurttpftval[outpft][outgrid] * (noncroppftsum - removepftsum) / noncroppftsum));
+          }
+    
+      }
+  }
+  else {
+      if (addpftsum > 0.0) {
+
+          if (noncroppftsum + addpftsum + newcropval + outhurttpftval[BPFT][outgrid] > 100.0) {
+              addpftsum = 100.0 - (noncroppftsum + newcropval + outhurttpftval[BPFT][outgrid]);
+          }
+
+          if (potvegpftsum == 0.0) {
+	      outhurttpftval[BPFT][outgrid] = outhurttpftval[BPFT][outgrid] + addpftsum;
+	      addpftsum = 0.0;
+	  }
+	  
+          if (addpftsum < 0.0 || addpftsum > 100.0) {
+              printf("Error in addpftsum %f\n",addpftsum);
+          }
+
+          addtreepftsum = addpftsum * potvegtreepftsum / potvegpftsum;
+          addherbaceouspftsum = addpftsum - addtreepftsum;
+
+          if (addpftsum > 0.0) {
+              for (outpft = NEMPFT;outpft <= GC4PFT;outpft++) {
+	          if (outpft <= BDBPFT && potvegtreepftsum > 0.0) {
+                      outhurttpftval[outpft][outgrid] = round( (outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addtreepftsum / potvegtreepftsum));
+                  }
+	          if (outpft >= SEMPFT && potvegherbaceouspftsum > 0.0) {
+                      outhurttpftval[outpft][outgrid] = round( (outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addherbaceouspftsum / potvegherbaceouspftsum));
+		  }    
+              }    
+          }
+      }
+  }
+  
+  maxpftid = 0;
+  maxpftval = 0.0;
+  updatedpftsum = 0.0;
+
+  for (outpft = BPFT;outpft <= GC4PFT;outpft++) {
+      if (outhurttpftval[outpft][outgrid] < 0.0) {
+          outhurttpftval[outpft][outgrid] = 0.0;
+      }
+      if (outpft > BPFT && maxpftval < outhurttpftval[outpft][outgrid]) {
+          maxpftid = outpft;
+          maxpftval = outhurttpftval[outpft][outgrid];
+      }
+      updatedpftsum = updatedpftsum + outhurttpftval[outpft][outgrid];
+  }
+
+  if ((updatedpftsum + newcropval) < 100.0) {
+      addpftsum = 100.0 - (updatedpftsum + newcropval);
+      if (addpftsum > 1.0) {
+          printf("Crop Addsum = %f ",addpftsum);
+	  for (temppftid = 0; temppftid < MAXPFT-1; temppftid++) {
+	      printf("%f ",outhurttpftval[temppftid][outgrid]);
+	  }
+          printf("%f ",outhurttpftval[CPFT][outgrid] + newcropval);
+	  printf("\n");
+      }
+      outhurttpftval[maxpftid][outgrid] = outhurttpftval[maxpftid][outgrid] + addpftsum;
+      updatedpftsum = updatedpftsum + addpftsum;
+  }
+
+  if ((updatedpftsum + newcropval) > 100.0) {
+      removepftsum = (updatedpftsum + newcropval - 100.0);
+      if (removepftsum > 1.0) {
+          printf("Crop Removesum = %f ",removepftsum);
+	  for (temppftid = 0; temppftid < MAXPFT-1; temppftid++) {
+	      printf("%f ",outhurttpftval[temppftid][outgrid]);
+	  }
+          printf("%f ",outhurttpftval[CPFT][outgrid] + newcropval);
+	  printf("\n");
+      }
+      outhurttpftval[maxpftid][outgrid] = outhurttpftval[maxpftid][outgrid] - removepftsum;
+      if (outhurttpftval[maxpftid][outgrid] < 0.0) {
+          outhurttpftval[BPFT][outgrid] = outhurttpftval[BPFT][outgrid] + outhurttpftval[maxpftid][outgrid];
+          outhurttpftval[maxpftid][outgrid] = 0.0;
+      }
+  }
+
+  outhurttpftval[CPFT][outgrid] = newcropval;
+
+}
+
+
+void sethurttpasture(int outgrid, int baseyear, int calcyear) {
+
+  int maxpftid, outpft, outmonth, pasturegrid, temppftid;
+  double maxpftval, treepftsum, potvegpftsum, potvegtreepftsum;
+  double addpftsum, addtreepftsum, addherbaceouspftsum, removepftsum, updatedpftsum;
+  double herbaceouspftsum, potvegherbaceouspftsum, newpasturepftsum, grasspftsum;
+
+  herbaceouspftsum = 0.0;
+  for (outpft = SEMPFT;outpft <= GC4PFT;outpft++) {
+      herbaceouspftsum = herbaceouspftsum + outhurttpftval[outpft][outgrid];
+  }
+  
+  treepftsum = 0.0;
+  for (outpft = NEMPFT;outpft <= BDBPFT;outpft++) {
+      treepftsum = treepftsum + outhurttpftval[outpft][outgrid];
+  }
+      
+  potvegpftsum = 0.0;
+  for (outpft = NEMPFT;outpft <= GC4PFT;outpft++) {
+      potvegpftsum = potvegpftsum + inpotvegpftval[outpft][outgrid];
+  }
+      
+  potvegtreepftsum = 0.0;
+  for (outpft = NEMPFT;outpft <= BDBPFT;outpft++) {
+      potvegtreepftsum = potvegtreepftsum + inpotvegpftval[outpft][outgrid];
+  }
+      
+  potvegherbaceouspftsum = 0.0;
+  for (outpft = SEMPFT;outpft <= GC4PFT;outpft++) {
+      potvegherbaceouspftsum = potvegherbaceouspftsum + inpotvegpftval[outpft][outgrid];
+  }
+
+  newpasturepftsum = inhurttpasture[outgrid] - inhurttbasepasture[outgrid];
+
+  if (newpasturepftsum > 0.0) {
+      addpftsum = 0.0;
+      if (newpasturepftsum > treepftsum) {
+          newpasturepftsum = treepftsum; 
+      }
+      removepftsum = newpasturepftsum;
+  }
+  else {
+      removepftsum = 0.0;
+      if (-newpasturepftsum > herbaceouspftsum) {
+          newpasturepftsum = -herbaceouspftsum;
+      } 
+      if (treepftsum - newpasturepftsum > potvegtreepftsum) {
+          if (treepftsum < potvegtreepftsum) {
+	      newpasturepftsum = round(treepftsum - potvegtreepftsum);
+	  }
+	  else {
+              newpasturepftsum = 0.0;
+	  }
+      }
+      addpftsum = -newpasturepftsum;
+
+      addtreepftsum = addpftsum * potvegtreepftsum / potvegpftsum;
+      addherbaceouspftsum = addpftsum - addtreepftsum;
+      
+  }
+        
+  if (removepftsum > 0.0) {
+       if (treepftsum > 0.0) {
+          pasturegrid = findcurrentpasturegrid(outgrid);
+          grasspftsum = 0.0;
+          for (outpft = GA3PFT;outpft <= GC4PFT;outpft++) {
+              grasspftsum = grasspftsum + incurrentpftval[outpft][pasturegrid];
+          }
+          for (outpft = NEMPFT;outpft <= GC4PFT;outpft++) {
+              if (outpft >= GA3PFT) {
+                  outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] + incurrentpftval[outpft][pasturegrid] * newpasturepftsum / grasspftsum);
+              }
+	      if (outpft <= BDBPFT) {
+                  outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] * (treepftsum - removepftsum) / treepftsum);
+              }
+          }
+
+      }
+  }
+  else {
+      if (addpftsum > 0.0) { 
+          if (herbaceouspftsum > 0.0 && potvegtreepftsum > 0.0) {
+              for (outpft = NEMPFT;outpft <= GC4PFT;outpft++) {
+	          if (outpft >= SEMPFT) { /* remove current day herbaceous */
+                      outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] * (herbaceouspftsum + newpasturepftsum) / herbaceouspftsum);
+	          }
+	          if (outpft <= BDBPFT && potvegtreepftsum > 0.0) { /* add potveg tree */
+                      outhurttpftval[outpft][outgrid] = round( (outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addtreepftsum / potvegtreepftsum));
+                  }
+	          if (outpft >= SEMPFT && potvegherbaceouspftsum > 0.0) { /* add potveg herbaceous */
+                      outhurttpftval[outpft][outgrid] = round( (outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addherbaceouspftsum / potvegherbaceouspftsum));
+		  }    
+              }
+          }
+      }  
+  }
+  
+  maxpftid = 0;
+  maxpftval = 0.0;
+  updatedpftsum = 0.0;
+
+  for (outpft = BPFT;outpft <= CPFT;outpft++) {
+      if (outhurttpftval[outpft][outgrid] < 0.0) {
+          outhurttpftval[outpft][outgrid] = 0.0;
+      }
+      if (outpft > BPFT && maxpftval < outhurttpftval[outpft][outgrid]) {
+          maxpftid = outpft;
+          maxpftval = outhurttpftval[outpft][outgrid];
+      }
+      updatedpftsum = updatedpftsum + outhurttpftval[outpft][outgrid];
+  }
+
+  if (updatedpftsum < 100.0) {
+      addpftsum = 100.0 - updatedpftsum;
+      if (addpftsum > 1.0) {
+          printf("Pasture Addsum = %f ",addpftsum);
+	  for (temppftid = 0; temppftid < MAXPFT; temppftid++) {
+	      printf("%f ",outhurttpftval[temppftid][outgrid]);
+	  }
+	  printf("\n"); 
+      }
+      outhurttpftval[maxpftid][outgrid] = outhurttpftval[maxpftid][outgrid] + addpftsum;
+      updatedpftsum = updatedpftsum + addpftsum;
+  }
+
+  if (updatedpftsum > 100.0) {
+      removepftsum = updatedpftsum - 100.0;
+      if (removepftsum > 1.0) {
+          printf("Pasture Removesum = %f ",removepftsum);
+	  for (temppftid = 0; temppftid < MAXPFT; temppftid++) {
+	      printf("%f ",outhurttpftval[temppftid][outgrid]);
+	  }
+	  printf("\n");
+      }
+      outhurttpftval[maxpftid][outgrid] = outhurttpftval[maxpftid][outgrid] - removepftsum;
+      if (outhurttpftval[maxpftid][outgrid] < 0.0) {
+          outhurttpftval[BPFT][outgrid] = outhurttpftval[BPFT][outgrid] + outhurttpftval[maxpftid][outgrid];
+          outhurttpftval[maxpftid][outgrid] = 0.0;
+      }
+  }
+    
+}
+
+
+void sethurttlanduse(int outgrid) {
+
+  double herbaceouspftsum, harvestsum;
+  int outpft;
+
+  if ((inhurttprimary[outgrid] + inhurttsecondary[outgrid]) > 0.0) {
+      outhurttvh1[outgrid] = inhurttvh1[outgrid] / (inhurttprimary[outgrid] + inhurttsecondary[outgrid]);
+      outhurttvh2[outgrid] = inhurttvh2[outgrid] / (inhurttprimary[outgrid] + inhurttsecondary[outgrid]);
+      outhurttsh1[outgrid] = inhurttsh1[outgrid] / (inhurttprimary[outgrid] + inhurttsecondary[outgrid]);
+      outhurttsh2[outgrid] = inhurttsh2[outgrid] / (inhurttprimary[outgrid] + inhurttsecondary[outgrid]);
+      outhurttsh3[outgrid] = inhurttsh3[outgrid] / (inhurttprimary[outgrid] + inhurttsecondary[outgrid]);
+  }
+  else {
+      outhurttvh1[outgrid] = 0.0;
+      outhurttvh2[outgrid] = 0.0;
+      outhurttsh1[outgrid] = 0.0;
+      outhurttsh2[outgrid] = 0.0;
+      outhurttsh3[outgrid] = 0.0;
+  }
+  
+  if (outhurttvh1[outgrid] < 0.0) {
+      outhurttvh1[outgrid] = 0.0;
+  }
+  harvestsum = outhurttvh1[outgrid];
+  if (harvestsum > 1.0) {
+      outhurttvh1[outgrid] = 1.0;
+      harvestsum = 1.0;
+  }
+  
+  if (outhurttvh2[outgrid] < 0.0) {
+      outhurttvh2[outgrid] = 0.0;
+  }
+  harvestsum = harvestsum + outhurttvh2[outgrid];
+  if (harvestsum > 1.0) {
+      outhurttvh2[outgrid] = outhurttvh2[outgrid] - (harvestsum - 1.0);
+      harvestsum = 1.0;
+  }
+  
+  if (outhurttsh1[outgrid] < 0.0) {
+      outhurttsh1[outgrid] = 0.0;
+  }
+  harvestsum = harvestsum + outhurttsh1[outgrid];
+  if (harvestsum > 1.0) {
+      outhurttsh1[outgrid] = outhurttsh1[outgrid] - (harvestsum - 1.0);
+      harvestsum = 1.0;
+  }
+
+  if (outhurttsh2[outgrid] < 0.0) {
+      outhurttsh2[outgrid] = 0.0;
+  }
+  harvestsum = harvestsum + outhurttsh2[outgrid];
+  if (harvestsum > 1.0) {
+      outhurttsh2[outgrid] = outhurttsh2[outgrid] - (harvestsum - 1.0);
+      harvestsum = 1.0;
+  }
+
+  if (outhurttsh3[outgrid] < 0.0) {
+      outhurttsh3[outgrid] = 0.0;
+  }
+  harvestsum = harvestsum + outhurttsh3[outgrid];
+  if (harvestsum > 1.0) {
+      outhurttsh3[outgrid] = outhurttsh3[outgrid] - (harvestsum - 1.0);
+      harvestsum = 1.0;
+  }
+
+  herbaceouspftsum = 0.0;
+  for (outpft = SEMPFT;outpft <= GC4PFT;outpft++) {
+      herbaceouspftsum = herbaceouspftsum + outhurttpftval[outpft][outgrid];
+  }
+  
+  if (herbaceouspftsum > 0.0) {
+     outhurttgrazing[outgrid] = inhurttpasture[outgrid] / herbaceouspftsum;
+  }
+  else {
+     outhurttgrazing[outgrid] = 0.0;
+  }
+  
+  if (outhurttgrazing[outgrid] < 0.0) {
+      outhurttgrazing[outgrid] = 0.0;
+  }
+  if (outhurttgrazing[outgrid] > 1.0) {
+      outhurttgrazing[outgrid] = 1.0;
+  }
+
+}
+
+
+void
+calchurtt(int baseyear, int calcyear) {
+
+  int outgrid,outpft;
+  
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      sethurttcurrent(outgrid);
+      if (invegbare[outgrid] > 0.0) {
+          sethurttcrop(outgrid,baseyear,calcyear);
+          sethurttpasture(outgrid,baseyear,calcyear);
+          sethurttlanduse(outgrid);
+      } 
+  }
+
+}
+
+void
+sethurttpotveg() {
+
+   int outgrid;
+
+  for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+      inhurttprimary[outgrid] = 100.0;
+      inhurttsecondary[outgrid] = 0.0;
+      inhurttcrop[outgrid] = 0.0;
+      inhurttpasture[outgrid] = 0.0;
+      inhurttvh1[outgrid] = 0.0;
+      inhurttvh2[outgrid] = 0.0;
+      inhurttsh1[outgrid] = 0.0;
+      inhurttsh2[outgrid] = 0.0;
+      inhurttsh3[outgrid] = 0.0;
+  }
+  
+}
+
+
+void
+updateannuallanduse_main(double glmo[][GLMONFLDS], double plodata[][PLONFLDS], int *inyear) {  
+    
+  char filenamestr[250];
+  long hurttbaseyear, hurttyear;
+  char fout[250];
+  long myear;
+
+  myear = *inyear;
+  sprintf(fout,"mksurf_landuse_iESM_720x360.nc");
+  printf("myear in updateannuallanduse = %d \n",myear);
+
+  hurttbaseyear = 2000 - 1999;  
+  printf("hurttbaseyear %d \n",hurttbaseyear);
+  hurttyear = myear - 1999;
+
+  printf("hurttyear %d \n",hurttyear); 
+  if ((hurttyear < 0 || hurttyear > 102) && hurttyear != -1999) {
+      printf("Invalid Year %d not in range 1999 - 2100\n",hurttyear);
+      return 0;
+  }
+
+  readpftparamfile("pftregridparams.txt");
+/*  readpftparamfile("newpftfile.txt"); */
+
+/*--------- tcx, now coming via glmo 
+!  sprintf(filenamestr,"/tmp/work/tcraig/pftdyn_data/iESM_Expt0_Ref_gfrac.nc");
+!
+!  if (opennetcdf(filenamestr) == 0) {
+!      exit(0);
+!  }
+!
+!  readhurttprimary(hurttbaseyear,hurttyear);
+!  readhurttsecondary(hurttbaseyear,hurttyear);
+!  readhurttcrop(hurttbaseyear,hurttyear);
+!  readhurttpasture(hurttbaseyear,hurttyear);
+!
+!  if (hurttyear == -1999) {
+!      sethurttpotveg();
+!  }
+!  
+!  if (closenetcdf(filenamestr) == 0) {                       
+!      exit(0);
+!  }
+!    
+!  sprintf(filenamestr,"/tmp/work/tcraig/pftdyn_data/iESM_Expt0_Ref_harvest.nc");
+!
+!  if (opennetcdf(filenamestr) == 0) {
+!      exit(0);
+!  }
+!    
+!  readhurttvh1(hurttbaseyear,hurttyear-1);
+!  readhurttvh2(hurttbaseyear,hurttyear-1);
+!  readhurttsh1(hurttbaseyear,hurttyear-1);
+!  readhurttsh2(hurttbaseyear,hurttyear-1);
+!  readhurttsh3(hurttbaseyear,hurttyear-1);
+  
+!  if (closenetcdf(filenamestr) == 0) {                       
+!      exit(0);
+!  }
+
+!  writeinhurtt();
+   ------------- */
+
+  /*--------- tcx, new code */
+
+  sprintf(filenamestr,"/tmp/work/tcraig/pftdyn_data/iESM_Expt0_Ref_gfrac.nc");
+
+  if (opennetcdf(filenamestr) == 0) {
+      exit(0);
+  }
+  readhurttbasepasture(hurttbaseyear);
+  readhurttbasecrop(hurttbaseyear);
+
+  if (closenetcdf(filenamestr) == 0) {                       
+      exit(0);
+  }
+
+  copyglmo(inhurttcrop,0,glmo);
+  copyglmo(inhurttpasture,1,glmo);
+  copyglmo(inhurttprimary,2,glmo);
+  copyglmo(inhurttsecondary,3,glmo);
+
+  if (hurttyear == -1999) {
+      sethurttpotveg();
+  }
+
+  copyglmo(inhurttvh1,4,glmo);
+  copyglmo(inhurttvh2,5,glmo);
+  copyglmo(inhurttsh1,6,glmo);
+  copyglmo(inhurttsh2,7,glmo);
+  copyglmo(inhurttsh3,8,glmo);
+
+  writeinhurtt();
+  /*------------- */
+
+  sprintf(filenamestr,"surfdata_360x720_mcrop2000.nc");
+
+  if (opennetcdf(filenamestr) == 0) {
+      exit(0);
+  }
+    
+  readlandmask();
+  readlandfrac();
+  readlakefrac();
+  readwetlandfrac();
+  readicefrac();
+  setvegbarefrac();
+  
+  readcurrentpft();
+  readcurrentpftpct();
+    
+  if (closenetcdf(filenamestr) == 0) {                       
+      exit(0);
+  }
+  
+  sprintf(filenamestr,"surfdata_360x720_potveg.nc");
+
+  if (opennetcdf(filenamestr) == 0) {
+      exit(0);
+  }
+    
+  readpotvegpft();
+  readpotvegpftpct();
+    
+  if (closenetcdf(filenamestr) == 0) {                       
+      exit(0);
+  }
+  
+  calchurtt(hurttbaseyear,hurttyear);
+
+  if (opennetcdf(fout) == 0) {
+      exit(0);
+  }
+  
+  updatehurttpftpct();
+  updatehurttvh1();
+  updatehurttvh2();
+  updatehurttsh1();
+  updatehurttsh2();
+  updatehurttsh3();
+  updatehurttgrazing();
+
+  if (closenetcdf(fout) == 0) {                       
+      exit(0);
+  } 
+
+  /* ---- fill plodata ---*/
+
+  copy2plodata(plodata);
+
+  writeplodata(plodata);
+  
+
+  return 1;
+}

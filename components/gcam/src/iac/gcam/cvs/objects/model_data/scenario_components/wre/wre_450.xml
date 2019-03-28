@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSPY v5 rel. 4 U (http://www.xmlspy.com) by Son H. Kim (PNNL) -->
+<scenario name="WRE450">
+	<output-meta-data>
+		<summary>WRE 450 Scenario</summary>
+	</output-meta-data>
+	<world>
+		<region name="USA">
+			<ghgpolicy name="CO2">
+				<market>global</market>
+				<constraint year="2020">7625</constraint>
+				<constraint year="2035">6007</constraint>
+				<constraint year="2050">4669</constraint>
+				<constraint year="2065">4035</constraint>
+				<constraint year="2080">3556</constraint>
+				<constraint year="2095">3240</constraint>
+			</ghgpolicy>
+		</region>
+		<region name="Canada">
+			<ghgpolicy name="CO2">
+				<market>global</market>
+			</ghgpolicy>
+		</region>
+		<region name="Western Europe">
+			<ghgpolicy name="CO2">
+				<market>global</market>
+			</ghgpolicy>
+		</region>
+		<region name="Japan">
+			<ghgpolicy name="CO2">
+				<market>global</market>
+			</ghgpolicy>
+		</region>
+		<region name="Australia_NZ">
+			<ghgpolicy name="CO2">
+				<market>global</market>
+			</ghgpolicy>
+		</region>
+		<region name="Former Soviet Union">
+			<ghgpolicy name="CO2">
+				<market>global</market>
+			</ghgpolicy>
+		</region>
+		<region name="China">
+			<ghgpolicy name="CO2">
+				<market>global</market>
+			</ghgpolicy>
+		</region>
+		<region name="Middle East">
+			<ghgpolicy name="CO2">
+				<market>global</market>
+			</ghgpolicy>
+		</region>
+		<region name="Africa">
+			<ghgpolicy name="CO2">
+				<market>global</market>
+			</ghgpolicy>
+		</region>
+		<region name="Latin America">
+			<ghgpolicy name="CO2">
+				<market>global</market>
+			</ghgpolicy>
+		</region>
+		<region name="Southeast Asia">
+			<ghgpolicy name="CO2">
+				<market>global</market>
+			</ghgpolicy>
+		</region>
+		<region name="Eastern Europe">
+			<ghgpolicy name="CO2">
+				<market>global</market>
+			</ghgpolicy>
+		</region>
+		<region name="Korea">
+			<ghgpolicy name="CO2">
+				<market>global</market>
+			</ghgpolicy>
+		</region>
+		<region name="India">
+			<ghgpolicy name="CO2">
+				<market>global</market>
+			</ghgpolicy>
+		</region>
+	</world>
+</scenario>

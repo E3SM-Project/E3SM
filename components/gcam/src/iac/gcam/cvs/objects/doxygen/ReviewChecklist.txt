@@ -1,0 +1,158 @@
+/*!
+\page checklist Code Review Checklist
+
+
+\section DocChecks Documentation Checks
+
+\subsection docItem1 File includes complete file level documentation.
+
+\subsection docItem2 All enums are fully documented. 
+
+\subsection docItem3 All member variables are properly documented in the header file.
+The reviewer should make sure to check that if the documentation is written after the variable definition the correct doxygen comment is used. Link to doxygen faq. 
+
+\subsection docItem4 All functions are documented with a detailed section.
+The detailed section should occur wherever the source of the function is written, not in the header file.
+The detailed section should only occur in the header file if the function it is documenting is abstract
+and thus would have no source.
+
+\subsection docItem5 All function arguments and return types are documented.
+This documentation should occur in the same place as the detailed section. 
+
+\section StyleChecks Style Guideline checks
+
+\subsection styleChecks1 All functions are named according to style guidelines.
+
+\subsection styleChecks2 All arguments to functions are named according to style guidelines.
+
+\subsection styleChecks3 All other style guidelines are followed.
+
+
+\section IncludeChecks Proper File Inclusion Checks
+The reviewer should perform these checks on all files. 
+
+\subsection includeCheck1 Includes the minimum required set of standard library files.
+
+\subsection includeCheck2 Uses standard library versions of c libraries (cmath instead of math.h).
+
+\subsection includeCheck3 Includes the minimum required set of user files.
+
+
+\section HeaderFile Header File Specific Checks
+The reviewer should perform these checks on all header files (.h or .hpp)
+
+\subsection headItem1 File has a header guard that is named correctly.
+A header guard is a macro which protects the header file so that it is not included multiple times.
+Example:
+ #ifndef _HEADER_FILE_NAME_H_ 
+ #define _HEADER_FILE_NAME_H_
+The name of the constant name could be any unique string; however style guidelines mandate the above form.
+
+\subsection headItem2 File does not include source files (*.cpp).
+
+\subsection headItem17 Using namespace statements do not occur.
+While the use of 'using namespace std' or 'using namespace xercesc' is allowed in source files, it is considered poor style to do this in a header file. The reason for this is if any source file included the header file it would have unknowingly declared the use of that namespace.
+This could cause future problems and can be avoided by explicitly scoping each variable which that is in a namespace. 
+Example:
+std::string or std::vector
+
+\subsection headItem18 Forward declared classes are used whenever possible.
+\ref faqitem2
+
+\subsection headItem3 Class has no unused member variables. 
+
+\subsection headItem4 Class has no public variables.
+
+\subsection headItem5 Constructor and destructor are explicitly defined.
+
+\subsection headItem6 Destructor of a base class is declared virtual.
+
+\subsection headItem7 Class has no unused member functions.
+
+\subsection headItem8 All base class functions which are derived from are declared virtual.
+
+\subsection headItem9 All functions specify a return type.
+
+\subsection headItem10 All functions which do not modify member variables are declared constant.
+
+\subsection headItem11 All argument names match names in source file.
+
+\subsection headItem12 Any variable who's value does not change during the course of a function is declared constant.
+
+\subsection headItem13 Any non-elemental variable who's value does not change through the course of a function is passed by constant reference.
+\ref faqitem3
+
+\subsection headItem14 All functions not called from outside the class are declared private. 
+
+\subsection headItem15 Class ends with a semicolon.
+
+\subsection headItem16 Header guard is concluded correctly
+The header guard should be ended with an endif preprocessor statement followed by a comment specifying the name of the previously declared constant.
+#endif // _HEADER_FILE_NAME_H_ 
+
+
+\section SourceFile Source File
+The review should perform these checks on all source files (.cpp)
+
+\subsection sourceItem1 All source files should include Definitions.h before all other includes.
+The definitions.h file has been written to mask compiler deficiencies across platforms and allow better cross-platform compatibility.
+Due to this, it is important it is the first included file so that compilation occurs correctly.
+
+\subsection sourceItem2 File declares use of standard namespace.
+Nearly all of our files use items from the standard library, so it is simpler for consistency to import the namespace into all source files. 
+
+\subsection sourceItem15 File uses minimal number of global variables. 
+
+\subsection sourceItem16 Use Initialization lists in the constructor where possible.
+Link to FAQ Item
+
+\subsection sourceItem3 The constructor initializes all pointer and elemental type variables.
+In C++, pointers and elemental variables such as ints and floats are initialized to garbage values for efficiency reasons. The reviewer should
+check that they are initialized to the default value. STL objects, such as vectors and strings are automatically initialized.
+
+\subsection sourceItem3 The destructor deallocates all dynamically allocated memory.
+Anytime the destructor does not perform this task correctly, a memory leak will result. While it can be difficult to determine in some cases
+exactly what the destructor should deallocate, the reviewer should check at least that all variables constructed with the new() operator are destructed somewhere in the code with the delete() operator.
+
+\subsection sourceItem4 Copy constructor and assignment operator are defined if class contains dynamically allocated memory.
+Currently this is not done and could result in memory leaks or strange errors. Make FAQ item and link it.
+
+\subsection sourceItem5 XMLParse checks for the #text string before checking for any other string.
+The #text string is used to represent white space and comments, so it can be safely ignored. This speeds up parsing and allows the parsing code
+to check for any undefined XML items.
+
+\subsection sourceItem6 XMLParse reads in all input variables. 
+
+\subsection sourceItem7 XMLParse warns when it encounters any unknown variable.
+XMLParse should contain an else block at the end of the parsing section that outputs a warning when it is reached. This can not always be done
+with base class XMLParses.
+
+\subsection sourceItem8 toXML is defined and prints all variables read in by XMLParse.
+The toXML function is used to write a new input file from the input after calibration is done. If a programmer adds a new variable to the input
+file and XMLParse without remembering to add it to the toXML function; when a new input file is generated the new variable will be lost.
+
+\subsection sourceItem9 toDebugXML is defined and prints all useful variables
+
+\subsection sourceItem10 toOutputXML is defined and prints all variables appropriate for output.
+This is currently not implemented and may not be for sometime, but the reviewer should at least make sure an empty function exists.
+
+\subsection sourceItem11 All numerical and string constants are put into constant variables and not used directly.
+
+Example of bad code:
+doFunction(5,6.3) or someVariable = x + 5
+
+Example of better code:
+const int constant1 = 5
+const double constant2 = 6.3
+doFunction( constant1, constant2 )
+
+
+\subsection sourceItem12 Logger class is used instead of output streams.
+The use of the Logger class allows for more fine grained control and simpler code than using built-in output streams. 
+Add link to FAQ here.
+
+\subsection sourceItem13 Use STL style endl instead of \n
+
+\subsection sourceItem14 Functions do not return pointers or references to internal variables
+The reviewer should check that all return values are passed by value, not reference, except in rare circumstances where this is the desired behavior.
+*/

@@ -1,0 +1,3674 @@
+<scenario>
+	<world>
+	<region name="USA">
+         <demographics>
+            <populationSGMRate year="1985">
+               <ageCohort ageGroup="0-4">
+                  <gender type="male">
+                     <population>9081</population>
+                     <survivalRate>0.985633</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <population>8610</population>
+                     <survivalRate>0.988305</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="5-9">
+                  <gender type="male">
+                     <population>8624</population>
+                     <survivalRate>0.998501</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <population>8167</population>
+                     <survivalRate>0.999001</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="10-14">
+                  <gender type="male">
+                     <population>8955</population>
+                     <survivalRate>0.998501</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <population>8448</population>
+                     <survivalRate>0.999001</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="15-19">
+                  <gender type="male">
+                     <population>9432</population>
+                     <survivalRate>0.994512</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <population>9025</population>
+                     <survivalRate>0.997502</survivalRate>
+                     <fertilityRate>0.268</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="20-24">
+                  <gender type="male">
+                     <population>10374</population>
+                     <survivalRate>0.991529</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <population>10234</population>
+                     <survivalRate>0.997004</survivalRate>
+                     <fertilityRate>0.5575</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="25-29">
+                  <gender type="male">
+                     <population>10618</population>
+                     <survivalRate>0.991529</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <population>10692</population>
+                     <survivalRate>0.997004</survivalRate>
+                     <fertilityRate>0.567</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="30-34">
+                  <gender type="male">
+                     <population>9737</population>
+                     <survivalRate>0.990536</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <population>9867</population>
+                     <survivalRate>0.996006</survivalRate>
+                     <fertilityRate>0.3685</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="35-39">
+                  <gender type="male">
+                     <population>8607</population>
+                     <survivalRate>0.988553</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <population>8807</population>
+                     <survivalRate>0.994512</survivalRate>
+                     <fertilityRate>0.1395</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="40-44">
+                  <gender type="male">
+                     <population>6811</population>
+                     <survivalRate>0.984102</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <population>7014</population>
+                     <survivalRate>0.991032</survivalRate>
+                     <fertilityRate>0.024</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="45-49">
+                  <gender type="male">
+                     <population>5590</population>
+                     <survivalRate>0.974269</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <population>5833</population>
+                     <survivalRate>0.985584</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="50-54">
+                  <gender type="male">
+                     <population>5194</population>
+                     <survivalRate>0.958216</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <population>5537</population>
+                     <survivalRate>0.977211</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="55-59">
+                  <gender type="male">
+                     <population>5235</population>
+                     <survivalRate>0.934298</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <population>5772</population>
+                     <survivalRate>0.964029</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="60-64">
+                  <gender type="male">
+                     <population>4987</population>
+                     <survivalRate>0.900237</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <population>5783</population>
+                     <survivalRate>0.94524</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="65-69">
+                  <gender type="male">
+                     <population>3999</population>
+                     <survivalRate>0.854317</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <population>4919</population>
+                     <survivalRate>0.919243</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="70-74">
+                  <gender type="male">
+                     <population>3136</population>
+                     <survivalRate>0.783193</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <population>4267</population>
+                     <survivalRate>0.876586</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="+75">
+                  <gender type="male">
+                     <population>4252</population>
+                     <survivalRate>0.587315</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <population>7921</population>
+                     <survivalRate>0.673936</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+            </populationSGMRate>
+            <populationSGMRate year="1990">
+               <ageCohort ageGroup="0-4">
+                  <gender type="male">
+                     <survivalRate>0.986483</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.989167</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="5-9">
+                  <gender type="male">
+                     <survivalRate>0.998531</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999058</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="10-14">
+                  <gender type="male">
+                     <survivalRate>0.998585</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.99908</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="15-19">
+                  <gender type="male">
+                     <survivalRate>0.99507</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997695</survivalRate>
+                     <fertilityRate>0.150066</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="20-24">
+                  <gender type="male">
+                     <survivalRate>0.992369</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997201</survivalRate>
+                     <fertilityRate>0.589488</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="25-29">
+                  <gender type="male">
+                     <survivalRate>0.992171</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997139</survivalRate>
+                     <fertilityRate>0.684218</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="30-34">
+                  <gender type="male">
+                     <survivalRate>0.991148</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.996234</survivalRate>
+                     <fertilityRate>0.402905</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="35-39">
+                  <gender type="male">
+                     <survivalRate>0.989356</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.994891</survivalRate>
+                     <fertilityRate>0.144517</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="40-44">
+                  <gender type="male">
+                     <survivalRate>0.985194</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.99176</survivalRate>
+                     <fertilityRate>0.038806</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="45-49">
+                  <gender type="male">
+                     <survivalRate>0.975776</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.986774</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="50-54">
+                  <gender type="male">
+                     <survivalRate>0.960881</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.979311</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="55-59">
+                  <gender type="male">
+                     <survivalRate>0.938943</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.967429</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="60-64">
+                  <gender type="male">
+                     <survivalRate>0.90634</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.950132</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="65-69">
+                  <gender type="male">
+                     <survivalRate>0.863396</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.926123</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="70-74">
+                  <gender type="male">
+                     <survivalRate>0.795902</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.886534</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="+75">
+                  <gender type="male">
+                     <survivalRate>0.619402</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.708689</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+            </populationSGMRate>
+            <populationSGMRate year="1995">
+               <ageCohort ageGroup="0-4">
+                  <gender type="male">
+                     <survivalRate>0.987125</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.989859</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="5-9">
+                  <gender type="male">
+                     <survivalRate>0.998539</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.9991</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="10-14">
+                  <gender type="male">
+                     <survivalRate>0.998647</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999145</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="15-19">
+                  <gender type="male">
+                     <survivalRate>0.995549</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997852</survivalRate>
+                     <fertilityRate>0.142031</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="20-24">
+                  <gender type="male">
+                     <survivalRate>0.993087</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997354</survivalRate>
+                     <fertilityRate>0.575243</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="25-29">
+                  <gender type="male">
+                     <survivalRate>0.99269</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997231</survivalRate>
+                     <fertilityRate>0.67014</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="30-34">
+                  <gender type="male">
+                     <survivalRate>0.991623</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.996404</survivalRate>
+                     <fertilityRate>0.385892</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="35-39">
+                  <gender type="male">
+                     <survivalRate>0.989994</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.995191</survivalRate>
+                     <fertilityRate>0.128147</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="40-44">
+                  <gender type="male">
+                     <survivalRate>0.986056</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.992357</survivalRate>
+                     <fertilityRate>0.028547</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="45-49">
+                  <gender type="male">
+                     <survivalRate>0.976913</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.987756</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="50-54">
+                  <gender type="male">
+                     <survivalRate>0.96295</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.981085</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="55-59">
+                  <gender type="male">
+                     <survivalRate>0.942666</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.970319</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="60-64">
+                  <gender type="male">
+                     <survivalRate>0.911067</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.954257</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="65-69">
+                  <gender type="male">
+                     <survivalRate>0.870527</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.931892</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="70-74">
+                  <gender type="male">
+                     <survivalRate>0.805843</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.894834</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="+75">
+                  <gender type="male">
+                     <survivalRate>0.647656</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.740498</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+            </populationSGMRate>
+            <populationSGMRate year="2000">
+               <ageCohort ageGroup="0-4">
+                  <gender type="male">
+                     <survivalRate>0.987767</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.990551</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="5-9">
+                  <gender type="male">
+                     <survivalRate>0.998547</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999143</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="10-14">
+                  <gender type="male">
+                     <survivalRate>0.99871</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.99921</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="15-19">
+                  <gender type="male">
+                     <survivalRate>0.996028</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998009</survivalRate>
+                     <fertilityRate>0.131932</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="20-24">
+                  <gender type="male">
+                     <survivalRate>0.993805</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997507</survivalRate>
+                     <fertilityRate>0.545146</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="25-29">
+                  <gender type="male">
+                     <survivalRate>0.993209</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997322</survivalRate>
+                     <fertilityRate>0.636565</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="30-34">
+                  <gender type="male">
+                     <survivalRate>0.992097</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.996573</survivalRate>
+                     <fertilityRate>0.361297</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="35-39">
+                  <gender type="male">
+                     <survivalRate>0.990632</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.99549</survivalRate>
+                     <fertilityRate>0.113648</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="40-44">
+                  <gender type="male">
+                     <survivalRate>0.986919</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.992954</survivalRate>
+                     <fertilityRate>0.021411</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="45-49">
+                  <gender type="male">
+                     <survivalRate>0.978051</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.988739</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="50-54">
+                  <gender type="male">
+                     <survivalRate>0.965023</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.982862</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="55-59">
+                  <gender type="male">
+                     <survivalRate>0.946401</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.973215</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="60-64">
+                  <gender type="male">
+                     <survivalRate>0.915813</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.958396</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="65-69">
+                  <gender type="male">
+                     <survivalRate>0.877704</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.93769</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="70-74">
+                  <gender type="male">
+                     <survivalRate>0.815882</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.903197</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="+75">
+                  <gender type="male">
+                     <survivalRate>0.676933</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.773439</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+            </populationSGMRate>
+            <populationSGMRate year="2005">
+               <ageCohort ageGroup="0-4">
+                  <gender type="male">
+                     <survivalRate>0.98841</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.991244</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="5-9">
+                  <gender type="male">
+                     <survivalRate>0.998555</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999186</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="10-14">
+                  <gender type="male">
+                     <survivalRate>0.998772</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999274</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="15-19">
+                  <gender type="male">
+                     <survivalRate>0.996507</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998165</survivalRate>
+                     <fertilityRate>0.127559</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="20-24">
+                  <gender type="male">
+                     <survivalRate>0.994523</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.99766</survivalRate>
+                     <fertilityRate>0.527075</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="25-29">
+                  <gender type="male">
+                     <survivalRate>0.993729</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997414</survivalRate>
+                     <fertilityRate>0.615463</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="30-34">
+                  <gender type="male">
+                     <survivalRate>0.992572</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.996743</survivalRate>
+                     <fertilityRate>0.349321</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="35-39">
+                  <gender type="male">
+                     <survivalRate>0.99127</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.995789</survivalRate>
+                     <fertilityRate>0.109881</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="40-44">
+                  <gender type="male">
+                     <survivalRate>0.987782</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.993552</survivalRate>
+                     <fertilityRate>0.020702</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="45-49">
+                  <gender type="male">
+                     <survivalRate>0.97919</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.989722</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="50-54">
+                  <gender type="male">
+                     <survivalRate>0.967099</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.984641</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="55-59">
+                  <gender type="male">
+                     <survivalRate>0.950148</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.976118</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="60-64">
+                  <gender type="male">
+                     <survivalRate>0.920579</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.96255</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="65-69">
+                  <gender type="male">
+                     <survivalRate>0.884929</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.943517</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="70-74">
+                  <gender type="male">
+                     <survivalRate>0.826022</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.911622</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="+75">
+                  <gender type="male">
+                     <survivalRate>0.707258</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.807542</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+            </populationSGMRate>
+            <populationSGMRate year="2010">
+               <ageCohort ageGroup="0-4">
+                  <gender type="male">
+                     <survivalRate>0.989053</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.991937</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="5-9">
+                  <gender type="male">
+                     <survivalRate>0.998564</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999228</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="10-14">
+                  <gender type="male">
+                     <survivalRate>0.998834</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999339</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="15-19">
+                  <gender type="male">
+                     <survivalRate>0.996986</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998322</survivalRate>
+                     <fertilityRate>0.125372</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="20-24">
+                  <gender type="male">
+                     <survivalRate>0.995242</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997814</survivalRate>
+                     <fertilityRate>0.518039</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="25-29">
+                  <gender type="male">
+                     <survivalRate>0.994249</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997506</survivalRate>
+                     <fertilityRate>0.604913</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="30-34">
+                  <gender type="male">
+                     <survivalRate>0.993048</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.996912</survivalRate>
+                     <fertilityRate>0.343332</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="35-39">
+                  <gender type="male">
+                     <survivalRate>0.991909</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.996089</survivalRate>
+                     <fertilityRate>0.107997</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="40-44">
+                  <gender type="male">
+                     <survivalRate>0.988646</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.99415</survivalRate>
+                     <fertilityRate>0.020347</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="45-49">
+                  <gender type="male">
+                     <survivalRate>0.980329</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.990706</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="50-54">
+                  <gender type="male">
+                     <survivalRate>0.969178</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.986422</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="55-59">
+                  <gender type="male">
+                     <survivalRate>0.953907</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.979029</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="60-64">
+                  <gender type="male">
+                     <survivalRate>0.925365</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.966718</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="65-69">
+                  <gender type="male">
+                     <survivalRate>0.892202</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.949373</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="70-74">
+                  <gender type="male">
+                     <survivalRate>0.836262</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.920109</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="+75">
+                  <gender type="male">
+                     <survivalRate>0.738661</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.842838</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+            </populationSGMRate>
+            <populationSGMRate year="2015">
+               <ageCohort ageGroup="0-4">
+                  <gender type="male">
+                     <survivalRate>0.989696</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.992631</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="5-9">
+                  <gender type="male">
+                     <survivalRate>0.998572</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999271</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="10-14">
+                  <gender type="male">
+                     <survivalRate>0.998897</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999404</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="15-19">
+                  <gender type="male">
+                     <survivalRate>0.997465</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998478</survivalRate>
+                     <fertilityRate>0.126101</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="20-24">
+                  <gender type="male">
+                     <survivalRate>0.995961</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997967</survivalRate>
+                     <fertilityRate>0.521051</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="25-29">
+                  <gender type="male">
+                     <survivalRate>0.994768</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997598</survivalRate>
+                     <fertilityRate>0.608429</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="30-34">
+                  <gender type="male">
+                     <survivalRate>0.993523</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997082</survivalRate>
+                     <fertilityRate>0.345329</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="35-39">
+                  <gender type="male">
+                     <survivalRate>0.992548</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.996389</survivalRate>
+                     <fertilityRate>0.108625</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="40-44">
+                  <gender type="male">
+                     <survivalRate>0.98951</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.994749</survivalRate>
+                     <fertilityRate>0.020465</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="45-49">
+                  <gender type="male">
+                     <survivalRate>0.98147</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.991691</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="50-54">
+                  <gender type="male">
+                     <survivalRate>0.971262</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.988207</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="55-59">
+                  <gender type="male">
+                     <survivalRate>0.957678</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.981946</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="60-64">
+                  <gender type="male">
+                     <survivalRate>0.93017</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.970901</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="65-69">
+                  <gender type="male">
+                     <survivalRate>0.899522</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.955258</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="70-74">
+                  <gender type="male">
+                     <survivalRate>0.846604</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.92866</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="+75">
+                  <gender type="male">
+                     <survivalRate>0.771169</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.879357</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+            </populationSGMRate>
+            <populationSGMRate year="2020">
+               <ageCohort ageGroup="0-4">
+                  <gender type="male">
+                     <survivalRate>0.990266</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.993039</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="5-9">
+                  <gender type="male">
+                     <survivalRate>0.998593</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999283</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="10-14">
+                  <gender type="male">
+                     <survivalRate>0.998913</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999413</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="15-19">
+                  <gender type="male">
+                     <survivalRate>0.997634</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.99858</survivalRate>
+                     <fertilityRate>0.12683</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="20-24">
+                  <gender type="male">
+                     <survivalRate>0.996231</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998102</survivalRate>
+                     <fertilityRate>0.524063</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="25-29">
+                  <gender type="male">
+                     <survivalRate>0.995117</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997758</survivalRate>
+                     <fertilityRate>0.611946</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="30-34">
+                  <gender type="male">
+                     <survivalRate>0.993953</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997276</survivalRate>
+                     <fertilityRate>0.347325</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="35-39">
+                  <gender type="male">
+                     <survivalRate>0.993044</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.996629</survivalRate>
+                     <fertilityRate>0.109253</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="40-44">
+                  <gender type="male">
+                     <survivalRate>0.990207</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.995098</survivalRate>
+                     <fertilityRate>0.020583</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="45-49">
+                  <gender type="male">
+                     <survivalRate>0.982696</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.992244</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="50-54">
+                  <gender type="male">
+                     <survivalRate>0.973156</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.988989</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="55-59">
+                  <gender type="male">
+                     <survivalRate>0.960454</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.983141</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="60-64">
+                  <gender type="male">
+                     <survivalRate>0.9347</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.97282</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="65-69">
+                  <gender type="male">
+                     <survivalRate>0.905959</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.958189</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="70-74">
+                  <gender type="male">
+                     <survivalRate>0.856204</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.933286</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="+75">
+                  <gender type="male">
+                     <survivalRate>0.784979</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.887018</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+            </populationSGMRate>
+            <populationSGMRate year="2025">
+               <ageCohort ageGroup="0-4">
+                  <gender type="male">
+                     <survivalRate>0.990837</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.993448</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="5-9">
+                  <gender type="male">
+                     <survivalRate>0.998615</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999294</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="10-14">
+                  <gender type="male">
+                     <survivalRate>0.99893</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999422</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="15-19">
+                  <gender type="male">
+                     <survivalRate>0.997803</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998682</survivalRate>
+                     <fertilityRate>0.124643</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="20-24">
+                  <gender type="male">
+                     <survivalRate>0.9965</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998237</survivalRate>
+                     <fertilityRate>0.515027</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="25-29">
+                  <gender type="male">
+                     <survivalRate>0.995465</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997918</survivalRate>
+                     <fertilityRate>0.601396</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="30-34">
+                  <gender type="male">
+                     <survivalRate>0.994384</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.99747</survivalRate>
+                     <fertilityRate>0.341336</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="35-39">
+                  <gender type="male">
+                     <survivalRate>0.993539</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.99687</survivalRate>
+                     <fertilityRate>0.107369</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="40-44">
+                  <gender type="male">
+                     <survivalRate>0.990903</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.995447</survivalRate>
+                     <fertilityRate>0.020228</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="45-49">
+                  <gender type="male">
+                     <survivalRate>0.983924</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.992796</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="50-54">
+                  <gender type="male">
+                     <survivalRate>0.975054</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.989772</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="55-59">
+                  <gender type="male">
+                     <survivalRate>0.963237</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.984338</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="60-64">
+                  <gender type="male">
+                     <survivalRate>0.939248</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.974742</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="65-69">
+                  <gender type="male">
+                     <survivalRate>0.912432</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.961129</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="70-74">
+                  <gender type="male">
+                     <survivalRate>0.865892</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.93793</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="+75">
+                  <gender type="male">
+                     <survivalRate>0.798987</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.894732</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+            </populationSGMRate>
+            <populationSGMRate year="2030">
+               <ageCohort ageGroup="0-4">
+                  <gender type="male">
+                     <survivalRate>0.991407</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.993856</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="5-9">
+                  <gender type="male">
+                     <survivalRate>0.998636</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999305</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="10-14">
+                  <gender type="male">
+                     <survivalRate>0.998946</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999431</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="15-19">
+                  <gender type="male">
+                     <survivalRate>0.997972</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998783</survivalRate>
+                     <fertilityRate>0.122456</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="20-24">
+                  <gender type="male">
+                     <survivalRate>0.996769</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998373</survivalRate>
+                     <fertilityRate>0.505992</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="25-29">
+                  <gender type="male">
+                     <survivalRate>0.995814</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998077</survivalRate>
+                     <fertilityRate>0.590845</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="30-34">
+                  <gender type="male">
+                     <survivalRate>0.994815</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997664</survivalRate>
+                     <fertilityRate>0.335348</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="35-39">
+                  <gender type="male">
+                     <survivalRate>0.994035</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997111</survivalRate>
+                     <fertilityRate>0.105486</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="40-44">
+                  <gender type="male">
+                     <survivalRate>0.991601</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.995797</survivalRate>
+                     <fertilityRate>0.019873</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="45-49">
+                  <gender type="male">
+                     <survivalRate>0.985153</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.993349</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="50-54">
+                  <gender type="male">
+                     <survivalRate>0.976955</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.990556</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="55-59">
+                  <gender type="male">
+                     <survivalRate>0.966026</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.985535</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="60-64">
+                  <gender type="male">
+                     <survivalRate>0.943813</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.976667</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="65-69">
+                  <gender type="male">
+                     <survivalRate>0.918942</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.964075</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="70-74">
+                  <gender type="male">
+                     <survivalRate>0.875667</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.942593</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="+75">
+                  <gender type="male">
+                     <survivalRate>0.813194</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.9025</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+            </populationSGMRate>
+            <populationSGMRate year="2035">
+               <ageCohort ageGroup="0-4">
+                  <gender type="male">
+                     <survivalRate>0.991978</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.994265</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="5-9">
+                  <gender type="male">
+                     <survivalRate>0.998657</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999317</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="10-14">
+                  <gender type="male">
+                     <survivalRate>0.998962</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.99944</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="15-19">
+                  <gender type="male">
+                     <survivalRate>0.998141</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998885</survivalRate>
+                     <fertilityRate>0.122456</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="20-24">
+                  <gender type="male">
+                     <survivalRate>0.997039</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998508</survivalRate>
+                     <fertilityRate>0.505992</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="25-29">
+                  <gender type="male">
+                     <survivalRate>0.996163</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998237</survivalRate>
+                     <fertilityRate>0.590845</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="30-34">
+                  <gender type="male">
+                     <survivalRate>0.995246</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997858</survivalRate>
+                     <fertilityRate>0.335348</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="35-39">
+                  <gender type="male">
+                     <survivalRate>0.994531</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997352</survivalRate>
+                     <fertilityRate>0.105486</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="40-44">
+                  <gender type="male">
+                     <survivalRate>0.992298</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.996147</survivalRate>
+                     <fertilityRate>0.019873</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="45-49">
+                  <gender type="male">
+                     <survivalRate>0.986382</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.993902</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="50-54">
+                  <gender type="male">
+                     <survivalRate>0.978858</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.99134</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="55-59">
+                  <gender type="male">
+                     <survivalRate>0.968822</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.986734</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="60-64">
+                  <gender type="male">
+                     <survivalRate>0.948396</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.978595</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="65-69">
+                  <gender type="male">
+                     <survivalRate>0.92549</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.967028</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="70-74">
+                  <gender type="male">
+                     <survivalRate>0.88553</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.947275</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="+75">
+                  <gender type="male">
+                     <survivalRate>0.827602</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.910322</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+            </populationSGMRate>
+            <populationSGMRate year="2040">
+               <ageCohort ageGroup="0-4">
+                  <gender type="male">
+                     <survivalRate>0.99255</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.994674</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="5-9">
+                  <gender type="male">
+                     <survivalRate>0.998679</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999328</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="10-14">
+                  <gender type="male">
+                     <survivalRate>0.998979</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999449</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="15-19">
+                  <gender type="male">
+                     <survivalRate>0.99831</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998987</survivalRate>
+                     <fertilityRate>0.120998</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="20-24">
+                  <gender type="male">
+                     <survivalRate>0.997309</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998643</survivalRate>
+                     <fertilityRate>0.499968</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="25-29">
+                  <gender type="male">
+                     <survivalRate>0.996512</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998397</survivalRate>
+                     <fertilityRate>0.583811</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="30-34">
+                  <gender type="male">
+                     <survivalRate>0.995678</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998053</survivalRate>
+                     <fertilityRate>0.331356</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="35-39">
+                  <gender type="male">
+                     <survivalRate>0.995028</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997593</survivalRate>
+                     <fertilityRate>0.10423</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="40-44">
+                  <gender type="male">
+                     <survivalRate>0.992996</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.996496</survivalRate>
+                     <fertilityRate>0.019637</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="45-49">
+                  <gender type="male">
+                     <survivalRate>0.987614</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.994455</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="50-54">
+                  <gender type="male">
+                     <survivalRate>0.980765</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.992125</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="55-59">
+                  <gender type="male">
+                     <survivalRate>0.971624</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.987933</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="60-64">
+                  <gender type="male">
+                     <survivalRate>0.952997</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.980527</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="65-69">
+                  <gender type="male">
+                     <survivalRate>0.932074</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.969989</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="70-74">
+                  <gender type="male">
+                     <survivalRate>0.895481</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.951974</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="+75">
+                  <gender type="male">
+                     <survivalRate>0.842214</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.918197</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+            </populationSGMRate>
+            <populationSGMRate year="2045">
+               <ageCohort ageGroup="0-4">
+                  <gender type="male">
+                     <survivalRate>0.993121</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.995083</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="5-9">
+                  <gender type="male">
+                     <survivalRate>0.9987</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.99934</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="10-14">
+                  <gender type="male">
+                     <survivalRate>0.998995</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999458</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="15-19">
+                  <gender type="male">
+                     <survivalRate>0.998478</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999089</survivalRate>
+                     <fertilityRate>0.120998</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="20-24">
+                  <gender type="male">
+                     <survivalRate>0.997578</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998779</survivalRate>
+                     <fertilityRate>0.499968</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="25-29">
+                  <gender type="male">
+                     <survivalRate>0.99686</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998557</survivalRate>
+                     <fertilityRate>0.583811</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="30-34">
+                  <gender type="male">
+                     <survivalRate>0.996109</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998247</survivalRate>
+                     <fertilityRate>0.331356</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="35-39">
+                  <gender type="male">
+                     <survivalRate>0.995524</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997834</survivalRate>
+                     <fertilityRate>0.10423</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="40-44">
+                  <gender type="male">
+                     <survivalRate>0.993695</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.996846</survivalRate>
+                     <fertilityRate>0.019637</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="45-49">
+                  <gender type="male">
+                     <survivalRate>0.988846</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.995009</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="50-54">
+                  <gender type="male">
+                     <survivalRate>0.982675</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.992911</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="55-59">
+                  <gender type="male">
+                     <survivalRate>0.974433</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.989134</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="60-64">
+                  <gender type="male">
+                     <survivalRate>0.957616</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.982461</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="65-69">
+                  <gender type="male">
+                     <survivalRate>0.938697</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.972957</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="70-74">
+                  <gender type="male">
+                     <survivalRate>0.905522</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.956693</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="+75">
+                  <gender type="male">
+                     <survivalRate>0.857031</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.926127</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+            </populationSGMRate>
+            <populationSGMRate year="2050">
+               <ageCohort ageGroup="0-4">
+                  <gender type="male">
+                     <survivalRate>0.993121</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.995083</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="5-9">
+                  <gender type="male">
+                     <survivalRate>0.9987</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.99934</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="10-14">
+                  <gender type="male">
+                     <survivalRate>0.998995</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999458</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="15-19">
+                  <gender type="male">
+                     <survivalRate>0.998529</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999119</survivalRate>
+                     <fertilityRate>0.118083</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="20-24">
+                  <gender type="male">
+                     <survivalRate>0.997659</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998819</survivalRate>
+                     <fertilityRate>0.487921</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="25-29">
+                  <gender type="male">
+                     <survivalRate>0.996965</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998605</survivalRate>
+                     <fertilityRate>0.569743</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="30-34">
+                  <gender type="male">
+                     <survivalRate>0.996238</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998306</survivalRate>
+                     <fertilityRate>0.323371</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="35-39">
+                  <gender type="male">
+                     <survivalRate>0.995673</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997906</survivalRate>
+                     <fertilityRate>0.101718</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="40-44">
+                  <gender type="male">
+                     <survivalRate>0.993904</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.996951</survivalRate>
+                     <fertilityRate>0.019164</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="45-49">
+                  <gender type="male">
+                     <survivalRate>0.989216</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.995175</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="50-54">
+                  <gender type="male">
+                     <survivalRate>0.983248</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.993146</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="55-59">
+                  <gender type="male">
+                     <survivalRate>0.975277</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.989495</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="60-64">
+                  <gender type="male">
+                     <survivalRate>0.959005</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.983042</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="65-69">
+                  <gender type="male">
+                     <survivalRate>0.940691</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.973849</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="70-74">
+                  <gender type="male">
+                     <survivalRate>0.908552</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.958112</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="+75">
+                  <gender type="male">
+                     <survivalRate>0.861516</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.928517</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+            </populationSGMRate>
+            <populationSGMRate year="2055">
+               <ageCohort ageGroup="0-4">
+                  <gender type="male">
+                     <survivalRate>0.993121</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.995083</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="5-9">
+                  <gender type="male">
+                     <survivalRate>0.9987</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.99934</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="10-14">
+                  <gender type="male">
+                     <survivalRate>0.998995</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999458</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="15-19">
+                  <gender type="male">
+                     <survivalRate>0.99858</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999149</survivalRate>
+                     <fertilityRate>0.118812</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="20-24">
+                  <gender type="male">
+                     <survivalRate>0.997739</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.99886</survivalRate>
+                     <fertilityRate>0.490932</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="25-29">
+                  <gender type="male">
+                     <survivalRate>0.997069</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998654</survivalRate>
+                     <fertilityRate>0.57326</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="30-34">
+                  <gender type="male">
+                     <survivalRate>0.996368</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998364</survivalRate>
+                     <fertilityRate>0.325367</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="35-39">
+                  <gender type="male">
+                     <survivalRate>0.995822</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997979</survivalRate>
+                     <fertilityRate>0.102346</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="40-44">
+                  <gender type="male">
+                     <survivalRate>0.994114</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997056</survivalRate>
+                     <fertilityRate>0.019282</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="45-49">
+                  <gender type="male">
+                     <survivalRate>0.989587</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.995341</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="50-54">
+                  <gender type="male">
+                     <survivalRate>0.983822</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.993382</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="55-59">
+                  <gender type="male">
+                     <survivalRate>0.97612</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.989855</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="60-64">
+                  <gender type="male">
+                     <survivalRate>0.960396</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.983622</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="65-69">
+                  <gender type="male">
+                     <survivalRate>0.942688</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.974742</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="70-74">
+                  <gender type="male">
+                     <survivalRate>0.911589</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.959533</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="+75">
+                  <gender type="male">
+                     <survivalRate>0.86602</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.930912</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+            </populationSGMRate>
+            <populationSGMRate year="2060">
+               <ageCohort ageGroup="0-4">
+                  <gender type="male">
+                     <survivalRate>0.993121</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.995083</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="5-9">
+                  <gender type="male">
+                     <survivalRate>0.9987</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.99934</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="10-14">
+                  <gender type="male">
+                     <survivalRate>0.998995</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999458</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="15-19">
+                  <gender type="male">
+                     <survivalRate>0.99863</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999179</survivalRate>
+                     <fertilityRate>0.118812</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="20-24">
+                  <gender type="male">
+                     <survivalRate>0.99782</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998901</survivalRate>
+                     <fertilityRate>0.490932</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="25-29">
+                  <gender type="male">
+                     <survivalRate>0.997173</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998702</survivalRate>
+                     <fertilityRate>0.57326</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="30-34">
+                  <gender type="male">
+                     <survivalRate>0.996498</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998423</survivalRate>
+                     <fertilityRate>0.325367</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="35-39">
+                  <gender type="male">
+                     <survivalRate>0.995971</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998051</survivalRate>
+                     <fertilityRate>0.102346</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="40-44">
+                  <gender type="male">
+                     <survivalRate>0.994324</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997161</survivalRate>
+                     <fertilityRate>0.019282</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="45-49">
+                  <gender type="male">
+                     <survivalRate>0.989957</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.995507</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="50-54">
+                  <gender type="male">
+                     <survivalRate>0.984396</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.993617</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="55-59">
+                  <gender type="male">
+                     <survivalRate>0.976965</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.990216</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="60-64">
+                  <gender type="male">
+                     <survivalRate>0.961789</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.984204</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="65-69">
+                  <gender type="male">
+                     <survivalRate>0.944688</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.975635</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="70-74">
+                  <gender type="male">
+                     <survivalRate>0.914635</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.960955</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="+75">
+                  <gender type="male">
+                     <survivalRate>0.870543</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.933312</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+            </populationSGMRate>
+            <populationSGMRate year="2065">
+               <ageCohort ageGroup="0-4">
+                  <gender type="male">
+                     <survivalRate>0.993121</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.995083</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="5-9">
+                  <gender type="male">
+                     <survivalRate>0.9987</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.99934</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="10-14">
+                  <gender type="male">
+                     <survivalRate>0.998995</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999458</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="15-19">
+                  <gender type="male">
+                     <survivalRate>0.998681</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999209</survivalRate>
+                     <fertilityRate>0.12027</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="20-24">
+                  <gender type="male">
+                     <survivalRate>0.997901</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998942</survivalRate>
+                     <fertilityRate>0.496956</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="25-29">
+                  <gender type="male">
+                     <survivalRate>0.997277</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.99875</survivalRate>
+                     <fertilityRate>0.580294</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="30-34">
+                  <gender type="male">
+                     <survivalRate>0.996628</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998481</survivalRate>
+                     <fertilityRate>0.32936</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="35-39">
+                  <gender type="male">
+                     <survivalRate>0.996119</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998123</survivalRate>
+                     <fertilityRate>0.103602</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="40-44">
+                  <gender type="male">
+                     <survivalRate>0.994534</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997267</survivalRate>
+                     <fertilityRate>0.019519</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="45-49">
+                  <gender type="male">
+                     <survivalRate>0.990327</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.995673</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="50-54">
+                  <gender type="male">
+                     <survivalRate>0.98497</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.993854</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="55-59">
+                  <gender type="male">
+                     <survivalRate>0.97781</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.990577</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="60-64">
+                  <gender type="male">
+                     <survivalRate>0.963184</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.984785</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="65-69">
+                  <gender type="male">
+                     <survivalRate>0.946692</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.976529</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="70-74">
+                  <gender type="male">
+                     <survivalRate>0.917689</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.962379</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="+75">
+                  <gender type="male">
+                     <survivalRate>0.875085</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.935716</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+            </populationSGMRate>
+            <populationSGMRate year="2070">
+               <ageCohort ageGroup="0-4">
+                  <gender type="male">
+                     <survivalRate>0.993121</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.995083</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="5-9">
+                  <gender type="male">
+                     <survivalRate>0.9987</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.99934</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="10-14">
+                  <gender type="male">
+                     <survivalRate>0.998995</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999458</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="15-19">
+                  <gender type="male">
+                     <survivalRate>0.998732</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999239</survivalRate>
+                     <fertilityRate>0.120998</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="20-24">
+                  <gender type="male">
+                     <survivalRate>0.997982</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998983</survivalRate>
+                     <fertilityRate>0.499968</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="25-29">
+                  <gender type="male">
+                     <survivalRate>0.997382</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998798</survivalRate>
+                     <fertilityRate>0.583811</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="30-34">
+                  <gender type="male">
+                     <survivalRate>0.996757</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.99854</survivalRate>
+                     <fertilityRate>0.331356</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="35-39">
+                  <gender type="male">
+                     <survivalRate>0.996268</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998196</survivalRate>
+                     <fertilityRate>0.10423</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="40-44">
+                  <gender type="male">
+                     <survivalRate>0.994744</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997372</survivalRate>
+                     <fertilityRate>0.019637</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="45-49">
+                  <gender type="male">
+                     <survivalRate>0.990698</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.995839</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="50-54">
+                  <gender type="male">
+                     <survivalRate>0.985545</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.994089</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="55-59">
+                  <gender type="male">
+                     <survivalRate>0.978656</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.990938</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="60-64">
+                  <gender type="male">
+                     <survivalRate>0.96458</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.985367</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="65-69">
+                  <gender type="male">
+                     <survivalRate>0.948699</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.977424</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="70-74">
+                  <gender type="male">
+                     <survivalRate>0.920751</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.963805</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="+75">
+                  <gender type="male">
+                     <survivalRate>0.879646</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.938126</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+            </populationSGMRate>
+            <populationSGMRate year="2075">
+               <ageCohort ageGroup="0-4">
+                  <gender type="male">
+                     <survivalRate>0.993121</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.995083</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="5-9">
+                  <gender type="male">
+                     <survivalRate>0.9987</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.99934</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="10-14">
+                  <gender type="male">
+                     <survivalRate>0.998995</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999458</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="15-19">
+                  <gender type="male">
+                     <survivalRate>0.998783</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999269</survivalRate>
+                     <fertilityRate>0.120998</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="20-24">
+                  <gender type="male">
+                     <survivalRate>0.998062</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999024</survivalRate>
+                     <fertilityRate>0.499968</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="25-29">
+                  <gender type="male">
+                     <survivalRate>0.997486</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998847</survivalRate>
+                     <fertilityRate>0.583811</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="30-34">
+                  <gender type="male">
+                     <survivalRate>0.996887</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998599</survivalRate>
+                     <fertilityRate>0.331356</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="35-39">
+                  <gender type="male">
+                     <survivalRate>0.996417</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998268</survivalRate>
+                     <fertilityRate>0.10423</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="40-44">
+                  <gender type="male">
+                     <survivalRate>0.994954</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997477</survivalRate>
+                     <fertilityRate>0.019637</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="45-49">
+                  <gender type="male">
+                     <survivalRate>0.991069</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.996005</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="50-54">
+                  <gender type="male">
+                     <survivalRate>0.98612</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.994325</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="55-59">
+                  <gender type="male">
+                     <survivalRate>0.979502</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.991299</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="60-64">
+                  <gender type="male">
+                     <survivalRate>0.965977</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.985949</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="65-69">
+                  <gender type="male">
+                     <survivalRate>0.95071</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.978319</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="70-74">
+                  <gender type="male">
+                     <survivalRate>0.923821</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.965232</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="+75">
+                  <gender type="male">
+                     <survivalRate>0.884226</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.94054</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+            </populationSGMRate>
+            <populationSGMRate year="2080">
+               <ageCohort ageGroup="0-4">
+                  <gender type="male">
+                     <survivalRate>0.993121</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.995083</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="5-9">
+                  <gender type="male">
+                     <survivalRate>0.9987</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.99934</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="10-14">
+                  <gender type="male">
+                     <survivalRate>0.998995</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999458</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="15-19">
+                  <gender type="male">
+                     <survivalRate>0.998833</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999299</survivalRate>
+                     <fertilityRate>0.120998</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="20-24">
+                  <gender type="male">
+                     <survivalRate>0.998143</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999065</survivalRate>
+                     <fertilityRate>0.499968</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="25-29">
+                  <gender type="male">
+                     <survivalRate>0.99759</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998895</survivalRate>
+                     <fertilityRate>0.583811</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="30-34">
+                  <gender type="male">
+                     <survivalRate>0.997017</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998657</survivalRate>
+                     <fertilityRate>0.331356</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="35-39">
+                  <gender type="male">
+                     <survivalRate>0.996566</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.99834</survivalRate>
+                     <fertilityRate>0.10423</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="40-44">
+                  <gender type="male">
+                     <survivalRate>0.995164</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997582</survivalRate>
+                     <fertilityRate>0.019637</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="45-49">
+                  <gender type="male">
+                     <survivalRate>0.99144</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.996171</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="50-54">
+                  <gender type="male">
+                     <survivalRate>0.986694</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.994561</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="55-59">
+                  <gender type="male">
+                     <survivalRate>0.980349</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.99166</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="60-64">
+                  <gender type="male">
+                     <survivalRate>0.967377</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.986531</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="65-69">
+                  <gender type="male">
+                     <survivalRate>0.952724</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.979215</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="70-74">
+                  <gender type="male">
+                     <survivalRate>0.9269</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.966661</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="+75">
+                  <gender type="male">
+                     <survivalRate>0.888825</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.942959</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+            </populationSGMRate>
+            <populationSGMRate year="2085">
+               <ageCohort ageGroup="0-4">
+                  <gender type="male">
+                     <survivalRate>0.993121</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.995083</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="5-9">
+                  <gender type="male">
+                     <survivalRate>0.9987</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.99934</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="10-14">
+                  <gender type="male">
+                     <survivalRate>0.998995</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999458</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="15-19">
+                  <gender type="male">
+                     <survivalRate>0.998884</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999329</survivalRate>
+                     <fertilityRate>0.123185</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="20-24">
+                  <gender type="male">
+                     <survivalRate>0.998224</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999106</survivalRate>
+                     <fertilityRate>0.509004</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="25-29">
+                  <gender type="male">
+                     <survivalRate>0.997694</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998943</survivalRate>
+                     <fertilityRate>0.594362</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="30-34">
+                  <gender type="male">
+                     <survivalRate>0.997146</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998716</survivalRate>
+                     <fertilityRate>0.337344</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="35-39">
+                  <gender type="male">
+                     <survivalRate>0.996715</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998413</survivalRate>
+                     <fertilityRate>0.106114</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="40-44">
+                  <gender type="male">
+                     <survivalRate>0.995374</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997687</survivalRate>
+                     <fertilityRate>0.019992</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="45-49">
+                  <gender type="male">
+                     <survivalRate>0.991811</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.996337</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="50-54">
+                  <gender type="male">
+                     <survivalRate>0.98727</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.994797</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="55-59">
+                  <gender type="male">
+                     <survivalRate>0.981197</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.992021</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="60-64">
+                  <gender type="male">
+                     <survivalRate>0.968777</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.987114</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="65-69">
+                  <gender type="male">
+                     <survivalRate>0.954742</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.980112</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="70-74">
+                  <gender type="male">
+                     <survivalRate>0.929986</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.968092</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="+75">
+                  <gender type="male">
+                     <survivalRate>0.893442</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.945384</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+            </populationSGMRate>
+            <populationSGMRate year="2090">
+               <ageCohort ageGroup="0-4">
+                  <gender type="male">
+                     <survivalRate>0.993121</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.995083</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="5-9">
+                  <gender type="male">
+                     <survivalRate>0.9987</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.99934</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="10-14">
+                  <gender type="male">
+                     <survivalRate>0.998995</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999458</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="15-19">
+                  <gender type="male">
+                     <survivalRate>0.998935</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999359</survivalRate>
+                     <fertilityRate>0.12027</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="20-24">
+                  <gender type="male">
+                     <survivalRate>0.998304</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999146</survivalRate>
+                     <fertilityRate>0.496956</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="25-29">
+                  <gender type="male">
+                     <survivalRate>0.997799</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998991</survivalRate>
+                     <fertilityRate>0.580294</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="30-34">
+                  <gender type="male">
+                     <survivalRate>0.997276</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998774</survivalRate>
+                     <fertilityRate>0.32936</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="35-39">
+                  <gender type="male">
+                     <survivalRate>0.996864</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998485</survivalRate>
+                     <fertilityRate>0.103602</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="40-44">
+                  <gender type="male">
+                     <survivalRate>0.995584</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997793</survivalRate>
+                     <fertilityRate>0.019519</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="45-49">
+                  <gender type="male">
+                     <survivalRate>0.992182</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.996503</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="50-54">
+                  <gender type="male">
+                     <survivalRate>0.987845</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.995033</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="55-59">
+                  <gender type="male">
+                     <survivalRate>0.982045</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.992383</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="60-64">
+                  <gender type="male">
+                     <survivalRate>0.97018</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.987697</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="65-69">
+                  <gender type="male">
+                     <survivalRate>0.956763</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.981009</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="70-74">
+                  <gender type="male">
+                     <survivalRate>0.933081</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.969524</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="+75">
+                  <gender type="male">
+                     <survivalRate>0.89808</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.947813</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+            </populationSGMRate>
+            <populationSGMRate year="2095">
+               <ageCohort ageGroup="0-4">
+                  <gender type="male">
+                     <survivalRate>0.993121</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.995083</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="5-9">
+                  <gender type="male">
+                     <survivalRate>0.9987</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.99934</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="10-14">
+                  <gender type="male">
+                     <survivalRate>0.998995</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999458</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="15-19">
+                  <gender type="male">
+                     <survivalRate>0.998985</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999389</survivalRate>
+                     <fertilityRate>0.122456</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="20-24">
+                  <gender type="male">
+                     <survivalRate>0.998385</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.999187</survivalRate>
+                     <fertilityRate>0.505992</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="25-29">
+                  <gender type="male">
+                     <survivalRate>0.997903</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.99904</survivalRate>
+                     <fertilityRate>0.590845</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="30-34">
+                  <gender type="male">
+                     <survivalRate>0.997406</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998833</survivalRate>
+                     <fertilityRate>0.335348</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="35-39">
+                  <gender type="male">
+                     <survivalRate>0.997013</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.998557</survivalRate>
+                     <fertilityRate>0.105486</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="40-44">
+                  <gender type="male">
+                     <survivalRate>0.995795</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.997898</survivalRate>
+                     <fertilityRate>0.019873</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="45-49">
+                  <gender type="male">
+                     <survivalRate>0.992553</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.996669</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="50-54">
+                  <gender type="male">
+                     <survivalRate>0.988421</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.995269</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="55-59">
+                  <gender type="male">
+                     <survivalRate>0.982893</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.992744</survivalRate>
+                     <fertilityRate>0</fertilityRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="60-64">
+                  <gender type="male">
+                     <survivalRate>0.971584</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.98828</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="65-69">
+                  <gender type="male">
+                     <survivalRate>0.958787</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.981907</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="70-74">
+                  <gender type="male">
+                     <survivalRate>0.936184</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.970959</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+               <ageCohort ageGroup="+75">
+                  <gender type="male">
+                     <survivalRate>0.902736</survivalRate>
+                  </gender>
+                  <gender type="female">
+                     <survivalRate>0.950247</survivalRate>
+                     <maleBirthFrac>0.513</maleBirthFrac>
+                  </gender>
+               </ageCohort>
+            </populationSGMRate>
+         </demographics>
+	</region>
+	</world>
+</scenario>

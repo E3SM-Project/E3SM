@@ -1,0 +1,13 @@
+SRES Median Deforestation Emissions,,,,,,,,
+
+
+Global net deforestaiton emissions,,,,,,,,
+GtC,,These are the default until agLU emissions are reasonable,,,,,,
+INPUT_TABLE,,,,,,,,
+Varible ID,,,,,,,,
+170,,,,,,,,
+,DeForest(M),,,,,,,
+,1990,2005,2020,2035,2050,2065,2080,2095
+1,1.3,0.9,1.2,0.8,0.5,0.2,-0.1,0.0
+
+EoF
