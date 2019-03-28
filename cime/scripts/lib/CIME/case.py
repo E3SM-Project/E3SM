@@ -523,8 +523,25 @@ class Case(object):
         # for each component
         self.set_comp_classes(drv_comp.get_valid_model_components())
 
-        if len(self._component_classes) > len(self._components):
-            self._components.append('sesp')
+        # Optional components: if we don't have enough components for
+        # our available component classes, we have to append stuff on
+        # the end.  This is the easiest way to make it extensible
+        # for future new component classes: just add the stub to the
+        # end of this list and it will automatically get appended
+        # to _components as required
+        optional_stubs = ['sesp', 'siac']
+
+        # ncomp should be ncompclass - 1, so find the number missing
+        nmiss=len(self._component_classes) - len(self._components) - 1
+
+        # [-nmiss:] counts nmiss back from the end of the list
+        if nmiss > 0: self._components += optional_stubs[-nmiss:]
+
+        print nmiss
+        print len(self._component_classes)
+        print len(self._components)
+        print self._component_classes
+        print self._components
 
         # put anything in the lookups table into env objects
         for key,value in self.lookups.items():
