@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSPY v5 rel. 4 U (http://www.xmlspy.com) by Son H. Kim (PNNL) -->
+<scenario name="S650">
+	<output-meta-data>
+   		<summary>S650 Scenario</summary>
+	</output-meta-data>
+   <world>
+      <region name="USA">
+         <constraint-policy name="CO2">
+	    <market year="2005" fillout="1">global</market>
+            <constraint year="2005">6459</constraint>
+            <constraint year="2020">7508</constraint>
+            <constraint year="2035">8597</constraint>
+            <constraint year="2050">9436</constraint>
+            <constraint year="2065">10129</constraint>
+            <constraint year="2080">10330</constraint>
+            <constraint year="2095">10206</constraint>
+         </constraint-policy>
+      </region>
+      <region name="Canada">
+         <constraint-policy name="CO2">
+	    <market year="2005" fillout="1">global</market>
+         </constraint-policy>
+      </region>
+      <region name="Western Europe">
+         <constraint-policy name="CO2">
+	    <market year="2005" fillout="1">global</market>
+         </constraint-policy>
+      </region>
+      <region name="Japan">
+         <constraint-policy name="CO2">
+	    <market year="2005" fillout="1">global</market>
+         </constraint-policy>
+      </region>
+      <region name="Australia_NZ">
+         <constraint-policy name="CO2">
+	    <market year="2005" fillout="1">global</market>
+         </constraint-policy>
+      </region>
+      <region name="Former Soviet Union">
+         <constraint-policy name="CO2">
+	    <market year="2005" fillout="1">global</market>
+         </constraint-policy>
+      </region>
+      <region name="China">
+         <constraint-policy name="CO2">
+	    <market year="2005" fillout="1">global</market>
+         </constraint-policy>
+      </region>
+      <region name="Middle East">
+         <constraint-policy name="CO2">
+	    <market year="2005" fillout="1">global</market>
+         </constraint-policy>
+      </region>
+      <region name="Africa">
+         <constraint-policy name="CO2">
+	    <market year="2005" fillout="1">global</market>
+         </constraint-policy>
+      </region>
+      <region name="Latin America">
+         <constraint-policy name="CO2">
+	    <market year="2005" fillout="1">global</market>
+         </constraint-policy>
+      </region>
+      <region name="Southeast Asia">
+         <constraint-policy name="CO2">
+	    <market year="2005" fillout="1">global</market>
+         </constraint-policy>
+      </region>
+      <region name="Eastern Europe">
+         <constraint-policy name="CO2">
+	    <market year="2005" fillout="1">global</market>
+         </constraint-policy>
+      </region>
+      <region name="Korea">
+         <constraint-policy name="CO2">
+	    <market year="2005" fillout="1">global</market>
+         </constraint-policy>
+      </region>
+      <region name="India">
+         <constraint-policy name="CO2">
+	    <market year="2005" fillout="1">global</market>
+         </constraint-policy>
+      </region>
+   </world>
+</scenario>

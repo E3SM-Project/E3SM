@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSPY v5 rel. 4 U (http://www.xmlspy.com) by Son H. Kim (PNNL) -->
+<scenario name="WRE550">
+	<output-meta-data>
+		<summary>WRE 550 Scenario</summary>
+	</output-meta-data>
+	<world>
+		<region name="USA">
+			<ghgpolicy name="CO2">
+				<market>global</market>
+				<constraint year="1990">-1</constraint>
+				<constraint year="1995">-1</constraint>
+				<constraint year="2000">2000</constraint>
+				<constraint year="2005">2000</constraint>
+				<constraint year="2010">2000</constraint>
+				<constraint year="2015">2000</constraint>
+				<constraint year="2020">2000</constraint>
+				<constraint year="2025">2000</constraint>
+				<constraint year="2030">2000</constraint>
+				<constraint year="2035">2000</constraint>
+				<constraint year="2040">2000</constraint>
+				<constraint year="2045">2000</constraint>
+				<constraint year="2050">2000</constraint>
+			</ghgpolicy>
+		</region>
+	</world>
+</scenario>
