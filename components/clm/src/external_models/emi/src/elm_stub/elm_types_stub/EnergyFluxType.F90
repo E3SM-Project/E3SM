@@ -7,10 +7,6 @@ module EnergyFluxType
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use clm_varcon     , only : spval
   use decompMod      , only : bounds_type
-  use LandunitType   , only : lun_pp                
-  use ColumnType     , only : col_pp                
-  use VegetationType      , only : veg_pp                
-  !use AnnualFluxDribbler, only : annual_flux_dribbler_type, annual_flux_dribbler_gridcell
   !
   implicit none
   save
@@ -121,7 +117,6 @@ module EnergyFluxType
 
      procedure, public  :: Init         
      procedure, private :: InitAllocate 
-     procedure, private :: InitCold
 
   end type energyflux_type
   !------------------------------------------------------------------------
@@ -138,7 +133,6 @@ contains
     !SHR_ASSERT_ALL((ubound(t_grnd_col) == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
 
     call this%InitAllocate ( bounds )
-    !call this%InitCold ( bounds, t_grnd_col )
 
   end subroutine Init
 
@@ -259,89 +253,5 @@ contains
     !     units = 'J/m**2')
 
   end subroutine InitAllocate
-
-  !-----------------------------------------------------------------------
-  subroutine InitCold(this, bounds, t_grnd_col)
-    !
-    ! !DESCRIPTION:
-    ! Initialize cold start conditions for module variables
-    !
-    ! !USES:
-    use shr_kind_mod    , only : r8 => shr_kind_r8
-    use shr_const_mod   , only : SHR_CONST_TKFRZ
-    use clm_varpar      , only : nlevsoi, nlevgrnd, nlevsno, nlevlak, nlevurb
-    use clm_varcon      , only : denice, denh2o, sb
-    use landunit_varcon , only : istice, istwet, istsoil, istdlak, istice_mec
-    use column_varcon   , only : icol_road_imperv, icol_roof, icol_sunwall
-    use column_varcon   , only : icol_shadewall, icol_road_perv
-    use clm_varctl      , only : iulog, use_vancouver, use_mexicocity
-    !
-    ! !ARGUMENTS:
-    class(energyflux_type)         :: this
-    type(bounds_type) , intent(in) :: bounds  
-    real(r8)          , intent(in) :: t_grnd_col( bounds%begc: )
-    !
-    ! !LOCAL VARIABLES:
-    integer  :: j,l,c,p,levs,lev
-    !-----------------------------------------------------------------------
-
-    SHR_ASSERT_ALL((ubound(t_grnd_col) == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
-
-    associate(snl => col_pp%snl) ! Output: [integer (:)    ]  number of snow layers   
-
-      do c = bounds%begc, bounds%endc
-         l = col_pp%landunit(c)
-
-         if (lun_pp%urbpoi(l)) then
-            this%eflx_building_heat_col(c) = 0._r8
-            this%eflx_urban_ac_col(c)      = 0._r8
-            this%eflx_urban_heat_col(c)    = 0._r8
-         else
-            this%eflx_building_heat_col(c) = 0._r8
-            this%eflx_urban_ac_col(c)      = 0._r8
-            this%eflx_urban_heat_col(c)    = 0._r8
-         end if
-
-    end do
-
-      do p = bounds%begp, bounds%endp 
-         c = veg_pp%column(p)
-         l = veg_pp%landunit(p)
-
-         if (.not. lun_pp%urbpoi(l)) then ! non-urban
-            this%eflx_lwrad_net_u_patch(p) = spval
-            this%eflx_lwrad_out_u_patch(p) = spval
-            this%eflx_lh_tot_u_patch(p)    = spval
-            this%eflx_sh_tot_u_patch(p)    = spval
-            this%eflx_soil_grnd_u_patch(p) = spval
-         end if
-
-         this%eflx_lwrad_out_patch(p) = sb * (t_grnd_col(c))**4
-      end do
-
-    end associate
-
-    do p = bounds%begp, bounds%endp 
-       l = veg_pp%landunit(p)
-
-       if (.not. lun_pp%urbpoi(l)) then
-          this%eflx_traffic_lun(l)        = spval
-          this%eflx_wasteheat_lun(l)      = spval
-
-          this%eflx_wasteheat_patch(p)    = 0._r8
-          this%eflx_heat_from_ac_patch(p) = 0._r8
-          this%eflx_traffic_patch(p)      = 0._r8
-          this%eflx_anthro_patch(p)       = 0._r8
-       end if
-    end do
-
-    ! initialize rresis, for use in ecosystemdyn
-    do p = bounds%begp,bounds%endp
-       do lev = 1,nlevgrnd
-          this%rresis_patch(p,lev) = 0._r8
-       end do
-    end do 
-
-  end subroutine InitCold
 
 end module EnergyFluxType

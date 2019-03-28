@@ -13,10 +13,7 @@ module CNCarbonStateType
   use decompMod              , only : bounds_type
   use abortutils             , only : endrun
   use spmdMod                , only : masterproc 
-  use LandunitType           , only : lun_pp                
-  use ColumnType             , only : col_pp                
   use clm_varctl             , only : nu_com, use_fates, use_crop
-  use VegetationType         , only : veg_pp
 
   ! bgc interface & pflotran
   use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode

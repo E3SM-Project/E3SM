@@ -7,8 +7,6 @@ Module SoilHydrologyType
   use clm_varpar            , only : nlevgrnd, nlayer, nlayert, nlevsoi 
   use clm_varpar            , only : more_vertlayers, nlevsoifl, toplev_equalspace 
   use clm_varctl            , only : iulog
-  use LandunitType          , only : lun_pp
-  use ColumnType            , only : col_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
