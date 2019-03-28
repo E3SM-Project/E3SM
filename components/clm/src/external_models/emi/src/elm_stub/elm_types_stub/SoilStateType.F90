@@ -15,9 +15,6 @@ module SoilStateType
   use clm_varctl      , only : use_cn, use_lch4,use_dynroot, use_fates
   use clm_varctl      , only : use_var_soil_thick
   use clm_varctl      , only : iulog, fsurdat, hist_wrtch4diag
-  use LandunitType    , only : lun_pp
-  use ColumnType      , only : col_pp                
-  use VegetationType  , only : veg_pp
   use clm_varcon      , only : spval
   !
   implicit none

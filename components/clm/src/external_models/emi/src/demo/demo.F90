@@ -197,8 +197,10 @@ end subroutine decompInit
 subroutine initialize_clm_data_structures(bounds_proc)
 
   use decompMod     , only : bounds_type
-  use clm_instMod   , only : soilstate_vars, waterstate_vars, waterflux_vars
-  use clm_instMod   , only : energyflux_vars, carbonstate_vars
+  use clm_instMod   , only : soilstate_vars!, waterstate_vars, waterflux_vars
+  use clm_instMod   , only : carbonstate_vars
+  !use clm_instMod   , only : energyflux_vars
+  use ColumnDataType, only : col_ws, col_wf, col_ef
   use shr_kind_mod  , only : r8 => shr_kind_r8, SHR_KIND_CL
   use clm_varpar    , only : nlevgrnd
   use clm_varpar    , only : nlevdecomp_full, ndecomp_pools
@@ -220,11 +222,11 @@ subroutine initialize_clm_data_structures(bounds_proc)
      do j = 1, nlevgrnd
         soilstate_vars%hksat_col(c,j)   = 10._r8*(c**2._r8) + j
         soilstate_vars%bsw_col(c,j)     = 0.5_r8*(c**2._r8) + j
-        waterstate_vars%h2osoi_liq_col(c,j) = (0.3_r8*(c**2._r8) + j)/100._r8
-        waterstate_vars%h2osoi_ice_col(c,j) = 1._r8 - (0.3_r8*(c**2._r8) + j)/100._r8
-        waterflux_vars%mflx_et_col(c,j) = 20._r8*(c**2._r8) + j
+        col_ws%h2osoi_liq(c,j) = (0.3_r8*(c**2._r8) + j)/100._r8
+        col_ws%h2osoi_ice(c,j) = 1._r8 - (0.3_r8*(c**2._r8) + j)/100._r8
+        col_wf%mflx_et(c,j) = 20._r8*(c**2._r8) + j
      enddo
-     energyflux_vars%eflx_hs_soil_col(c) = 30._r8*(c**2._r8)
+     col_ef%eflx_hs_soil(c) = 30._r8*(c**2._r8)
      do j = 1, nlevdecomp_full
         do k = 1, ndecomp_pools
            carbonstate_vars%decomp_cpools_vr_col(c,j,k) = counter;

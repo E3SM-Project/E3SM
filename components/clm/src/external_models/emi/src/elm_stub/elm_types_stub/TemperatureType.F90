@@ -10,10 +10,6 @@ module TemperatureType
   use clm_varctl      , only : use_cndv, iulog
   use clm_varpar      , only : nlevsno, nlevgrnd, nlevlak, nlevlak, nlevurb, crop_prog 
   use clm_varcon      , only : spval
-  use GridcellType    , only : grc_pp
-  use LandunitType    , only : lun_pp                
-  use ColumnType      , only : col_pp                
-  use VegetationType       , only : veg_pp                
   !
   implicit none
   save

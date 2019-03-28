@@ -7,10 +7,6 @@ module WaterfluxType
   use shr_kind_mod , only: r8 => shr_kind_r8
   use decompMod    , only : bounds_type, get_proc_global
   use clm_varcon   , only : spval
-  use LandunitType , only : lun_pp                
-  use ColumnType   , only : col_pp                
-  use VegetationType    , only : veg_pp                
-  !use AnnualFluxDribbler, only : annual_flux_dribbler_type, annual_flux_dribbler_gridcell
   !
   implicit none
   save

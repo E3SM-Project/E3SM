@@ -4,8 +4,8 @@ module EMI_WaterStateType_ExchangeMod
   use shr_log_mod                           , only : errMsg => shr_log_errMsg
   use abortutils                            , only : endrun
   use clm_varctl                            , only : iulog
-  use EMI_DataMod         , only : emi_data_list, emi_data
-  use EMI_DataDimensionMod , only : emi_data_dimension_list_type
+  use EMI_DataMod                           , only : emi_data_list, emi_data
+  use EMI_DataDimensionMod                  , only : emi_data_dimension_list_type
   use WaterStateType                        , only : waterstate_type
   use ColumnDataType                        , only : col_ws
   use EMI_Atm2LndType_Constants

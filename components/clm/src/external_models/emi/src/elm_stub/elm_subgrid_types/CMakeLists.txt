@@ -1,9 +1,10 @@
 set(EMI_ELM_SUBGRID_TYPES_SOURCES
   ColumnType.F90
+  ColumnDataType.F90
   GridcellType.F90
   LandunitType.F90
-  TopounitType.F90
-  VegetationType.F90
+  TopounitDataType.F90
+  VegetationDataType.F90
 )
 
 include_directories(${CMAKE_BINARY_DIR}/elm_stub/shr)

@@ -11,7 +11,11 @@ module clm_instMod
   use TemperatureType   , only : temperature_type
   use WaterfluxType     , only : waterflux_type
   use WaterstateType    , only : waterstate_type
-
+  use ColumnDataType    , only : col_ws, col_wf, col_ef, col_es
+  use VegetationDataType, only : veg_wf
+  use TopounitDataType  , only : top_as
+  use ColumnType        , only : col_pp
+  
   implicit none
   save
   public
@@ -40,16 +44,20 @@ module clm_instMod
 
     type(bounds_type), intent(in) :: bounds_proc
 
+    call col_pp%Init(bounds_proc%begc, bounds_proc%endc)
+    call col_ws%Init(bounds_proc%begc, bounds_proc%endc)
+    call col_wf%Init(bounds_proc%begc, bounds_proc%endc)
+    call col_ef%Init(bounds_proc%begc, bounds_proc%endc)
+    call col_es%Init(bounds_proc%begc, bounds_proc%endc)
+    call veg_wf%Init(bounds_proc%begc, bounds_proc%endc)
+    call top_as%Init(bounds_proc%begt, bounds_proc%endt)
+
     call atm2lnd_vars%Init( bounds_proc )
     call canopystate_vars%init(bounds_proc)
     call carbonstate_vars%init(bounds_proc)
     call chemstate_vars%Init(bounds_proc)
     call soilstate_vars%init(bounds_proc)
     call soilhydrology_vars%Init(bounds_proc)
-    call temperature_vars%init(bounds_proc)
-    call energyflux_vars%init(bounds_proc)
-    call waterflux_vars%init(bounds_proc)
-    call waterstate_vars%init(bounds_proc)
 
   end subroutine clm_inst_biogeophys
 

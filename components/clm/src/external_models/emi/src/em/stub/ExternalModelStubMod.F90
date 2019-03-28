@@ -318,7 +318,6 @@ contains
     write(iulog,*)'     1.2.3 Value of variables send by Stub EM'
     call Print2DData('e2l_h2osoi_liq', begc, endc, 1, nlevgrnd, e2l_h2osoi_liq)
     call Print2DData('e2l_h2osoi_ice', begc, endc, 1, nlevgrnd, e2l_h2osoi_ice)
-    write(iulog,*)''
 
   end subroutine EM_Stub_Init
 
