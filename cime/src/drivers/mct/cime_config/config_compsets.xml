@@ -24,6 +24,7 @@
     ROF  = [DROF, SROF, XROF]
     GLC  = [      SGLC      ]
     WAV  = [DWAV, SWAV      ]
+    IAC  = [      SIAC      ]
     ESP  = [DESP, SESP      ]
 
     The OPTIONAL %phys attributes specify submodes of the given system
