@@ -1,5 +1,5 @@
 module compare_vars_mod
-  use filestruct, only : file_t, var_t, vdimsize, dim_t, verbose
+  use filestruct, only : file_t, var_t, is_time_varying, vdimsize, dim_t, verbose
   use prec, only : r4, r8, i4
   use netcdf, only : nf90_char, nf90_int, nf90_double, nf90_float, nf90_get_var, nf90_max_dims, &
        nf90_inq_varid, nf90_get_att, nf90_noerr
@@ -40,7 +40,6 @@ contains
     integer, allocatable :: nsteph(:)
     character(len=132) :: dimstr
     type(dim_t), pointer :: udim
-    logical :: file_has_unlimited_dim
     real(r8), parameter :: timeepsilon = 1.e-9 ! time diff less than this considered insignificant
 
 
@@ -48,6 +47,11 @@ contains
     vsizes_differ = 0
     vnot_analyzed = 0
     if(n==2 .and. .not.ignoretime) then
+       ! NOTE(wjs, 2019-03-21) Most of the cprnc code allows the unlimited dimension to be
+       ! named anything - not necessarily 'time'. But this block of code assumes that the
+       ! unlimited dimension is named 'time' in order to find the associated coordinate
+       ! variable. We should probably generalize this by looking for a variable with the
+       ! same name as the unlimited dimension.
        call checknf90(nf90_inq_varid(file(1)%fh, 'time', vid1), &
             err_str='These files don''t have a time dimension, use cprnc with -m')
 
@@ -70,17 +74,15 @@ contains
     end if
 
     nvars = size(file(1)%var)
-    if (file(1)%unlimdimid == -1) then
-       file_has_unlimited_dim = .false.
+    if (file(1)%has_unlimited_dim()) then
+       udim => file(1)%dim(file(1)%unlimdimid)
+    else
        if (.not. ignoretime) then
           write(6,*) 'ERROR: For files without an unlimited dimension,'
           write(6,*) 'ignore_time needs to be true (via setting the -m flag to cprnc)'
           stop
        end if
-    else
-       file_has_unlimited_dim = .true.
-       udim => file(1)%dim(file(1)%unlimdimid)
-    endif
+    end if
 
     ndiffs = 0
     nfilldiffs = 0
@@ -89,7 +91,7 @@ contains
     do i=1,nvars
        v1 => file(1)%var(i)
 
-       if (.not. is_time_varying(v1, file_has_unlimited_dim, file(1)%unlimdimid)) then
+       if (.not. is_time_varying(v1, file(1)%has_unlimited_dim(), file(1)%unlimdimid)) then
           call get_dimname_str(v1%ndims,v1%dimids,file(1)%dim,dimstr)
           write(6,140) trim(v1%name),trim(dimstr)
           vtotal = vtotal+1
@@ -103,7 +105,7 @@ contains
     end do
 
 ! Now look at variables that DO have unlimdim
-    if (file_has_unlimited_dim) then
+    if (file(1)%has_unlimited_dim()) then
 
        ierr = nf90_inq_varid(file(1)%fh, 'nsteph', vidnsteph)
        if(ierr == NF90_NOERR) then
@@ -146,7 +148,7 @@ contains
 
           do i=1,nvars
              v1 => file(1)%var(i)
-             if (is_time_varying(v1, file_has_unlimited_dim, file(1)%unlimdimid)) then
+             if (is_time_varying(v1, file(1)%has_unlimited_dim(), file(1)%unlimdimid)) then
                 call get_dimname_str(v1%ndims,v1%dimids,file(1)%dim,dimstr)
                 vtotal = vtotal+1
                 write(6,145) trim(v1%name),trim(dimstr), t1, t2
@@ -160,7 +162,7 @@ contains
              end if
           end do
        end do
-    end if     ! if (file_has_unlimited_dim)
+    end if     ! if (file(1)%has_unlimited_dim())
 
 140 format(1x,a,3x,a)
 145 format(1x,a,3x,a,'  t_index = ',2i6)
@@ -604,21 +606,6 @@ contains
     end if
 
   end function translate_loc
-
-
-  function is_time_varying(var, file_has_unlimited_dim, unlimdimid)
-    type(var_t), intent(in) :: var                    ! variable of interest
-    logical    , intent(in) :: file_has_unlimited_dim ! true if the file has an unlimited dimension
-    integer    , intent(in) :: unlimdimid             ! the file's unlimited dim id (if it has one)
-
-    logical :: is_time_varying     ! true if the given variable is time-varying
-
-    if (file_has_unlimited_dim) then
-       is_time_varying = any(var%dimids == unlimdimid)
-    else
-       is_time_varying = .false.
-    end if
-  end function is_time_varying
 
 
 
