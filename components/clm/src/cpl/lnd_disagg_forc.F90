@@ -148,7 +148,7 @@ contains
 
        top_as%tbot(t) = tbot_t
 !       top_as%thbot(t) = thbot_t
-       top_as%vp_atm(t) = es_t
+!       top_as%vp_atm(t) = es_t
        top_as%qbot(t) = qbot_t
        top_as%pbot(t) = pbot_t
 
