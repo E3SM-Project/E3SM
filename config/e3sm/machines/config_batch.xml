@@ -277,14 +277,14 @@
       </queues>
     </batch_system>
 
-    <!-- anvil is PBS -->
-    <batch_system MACH="anvil" type="pbs" >
-      <directives>
+    <!-- anvil is slurm -->
+    <batch_system MACH="anvil" type="slurm" >
+      <!-- <directives>
         <directive>-A {{ PROJECT }}</directive>
         <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-      </directives>
+      </directives> -->
       <queues>
-	<queue walltimemax="01:00:00" default="true">acme</queue>
+	<queue walltimemax="01:00:00" nodemax="2" default="true">acme</queue>
       </queues>
     </batch_system>
 
