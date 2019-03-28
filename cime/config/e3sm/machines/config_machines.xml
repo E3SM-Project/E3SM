@@ -1187,7 +1187,7 @@
 	<command name="load">netcdf-cxx/4.2-crwzy3r</command>
 	<command name="load">netcdf-fortran/4.4.4-fve36ga</command>
 	<command name="load">netcdf/4.6.2-3jynwg5</command>
-	<!-- <command name="load">no-parallel-netcdf!</command> -->
+	<command name="load">parallel-netcdf/1.11.0-e7zc5da</command>
       </modules>
       <modules compiler="intel" mpilib="impi">
 	<command name="load">intel-mpi/2018.4.274-4hmwfl6</command>
