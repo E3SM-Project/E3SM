@@ -231,7 +231,7 @@ subroutine mct_aVect_info(flag,aVect,comm,pe,fld,istr)
 !EOP
 
    !--- local ---
-   integer(IN)          :: k            ! generic indicies
+   integer(IN)          :: i,j,k,n      ! generic indicies
    integer(IN)          :: ks,ke        ! start and stop k indices
    integer(IN)          :: nflds        ! number of flds in AV to diagnose
    integer(IN)          :: nsize        ! grid point size of AV
@@ -252,6 +252,7 @@ subroutine mct_aVect_info(flag,aVect,comm,pe,fld,istr)
    character(*),parameter :: F01 = "('(mct_aVect_info) ',a,i9)"
    character(*),parameter :: F02 = "('(mct_aVect_info) ',240a)"
    character(*),parameter :: F03 = "('(mct_aVect_info) ',a,2es11.3,i4,2x,a)"
+   character(*),parameter :: F04 = "('(mct_aVect_info) ',a,2es11.3,2x,a)"
 
 !-------------------------------------------------------------------------------
 ! NOTE: has hard-coded knowledge/assumptions about mct aVect data type internals
@@ -264,6 +265,7 @@ subroutine mct_aVect_info(flag,aVect,comm,pe,fld,istr)
      peOK = .true.
      pe_loc = pe
    endif
+
    if (present(comm)) then
      commOK = .true.
      comm_loc = comm
@@ -272,8 +274,6 @@ subroutine mct_aVect_info(flag,aVect,comm,pe,fld,istr)
        peOK = .true.
      endif
    endif
-
-   nsize = mct_aVect_lsize(aVect)
 
    if (present(fld)) then
      nflds = 1
@@ -285,62 +285,53 @@ subroutine mct_aVect_info(flag,aVect,comm,pe,fld,istr)
      ke = nflds
    endif
 
-   if (flag >= 1) then
-     if (present(istr)) then
-        if (s_loglev > 0) write(s_logunit,*) trim(istr)
-     endif
-     if (s_loglev > 0) write(s_logunit,F01) "local size =",nsize
-     if (associated(aVect%iList%bf)) then
-        if (s_loglev > 0) write(s_logunit,F02) "iList = ",aVect%iList%bf
-     endif
-     if (associated(aVect%rList%bf)) then
-        if (s_loglev > 0) write(s_logunit,F02) "rList = ",aVect%rList%bf
-     endif
-   endif
-
-   if (flag >= 2) then
-
-     allocate(minl(nflds))
-     allocate(maxl(nflds))
-
-     do k=ks,ke
-       minl(k) = minval(aVect%rAttr(k,:))
-       maxl(k) = maxval(aVect%rAttr(k,:))
-     enddo
-
-     if (flag >= 4 .and. commOK) then
-       allocate(ming(nflds))
-       allocate(maxg(nflds))
-       ming = 0._R8
-       maxg = 0._R8
-       call shr_mpi_min(minl,ming,comm,subName)
-       call shr_mpi_max(maxl,maxg,comm,subName)
-     endif
-
-     do k=ks,ke
-       call mct_aVect_getRList(item,k,aVect)
-       itemc = mct_string_toChar(item)
-       call mct_string_clean(item)
-       if (s_loglev > 0) write(s_logunit,F03) 'l min/max ',minl(k),maxl(k),k,trim(itemc)
-       if (flag >= 3 .and. commOK) then
-         if ((peOK .and. pe_loc == 0) .or. .not.peOK) then
-           if (s_loglev > 0) write(s_logunit,F03) 'g min/max ',ming(k),maxg(k),k,trim(itemc)
+   if ((peOK .and. pe_loc == 0) .or. .not.peOK) then
+      if (flag >= 1) then
+         if (present(istr)) then
+            if (s_loglev > 0) write(s_logunit,*) trim(istr)
          endif
-       endif
-       if (flag >= 4 .and. commOK) then
-         if ((peOK .and. pe_loc == 0) .or. .not.peOK) then
-           if (s_loglev > 0) write(s_logunit,*) trim(subName),'g min/max ',ming(k),maxg(k),k,trim(itemc)
+         if (s_loglev > 0) write(s_logunit,F01) "local size =",mct_aVect_lsize(aVect)
+         if (associated(aVect%iList%bf)) then
+            if (s_loglev > 0) write(s_logunit,F02) "iList = ",aVect%iList%bf
          endif
-       endif
-     enddo
-
-      deallocate(minl)
-      deallocate(maxl)
-      if (flag >= 4 .and. commOK) then
-         deallocate(ming)
-         deallocate(maxg)
+         if (associated(aVect%rList%bf)) then
+            if (s_loglev > 0) write(s_logunit,F02) "rList = ",aVect%rList%bf
+         endif
       endif
 
+      if (flag >= 2) then
+         allocate(minl(nflds), maxl(nflds))
+         do k=ks,ke
+            minl(k) = minval(aVect%rAttr(k,:))
+            maxl(k) = maxval(aVect%rAttr(k,:))
+         enddo
+
+         if (flag >= 4 .and. commOK) then
+            allocate(ming(nflds), maxg(nflds))
+            ming = 0._R8
+            maxg = 0._R8
+            call shr_mpi_min(minl,ming,comm,subName)
+            call shr_mpi_max(maxl,maxg,comm,subName)
+         endif
+
+         do k=ks,ke
+            call mct_aVect_getRList(item,k,aVect)
+            itemc = mct_string_toChar(item)
+            call mct_string_clean(item)
+            if (s_loglev > 0) write(s_logunit,F04) 'l min/max ',minl(k),maxl(k),  trim(itemc)
+            if (flag >= 3 .and. commOK) then
+               if (s_loglev > 0) write(s_logunit,F03) 'g min/max ',ming(k),maxg(k),k,trim(itemc)
+            endif
+            if (flag >= 4 .and. commOK) then
+               if (s_loglev > 0) write(s_logunit,*) trim(subName),'g min/max ',ming(k),maxg(k),k,trim(itemc)
+            endif
+         enddo
+
+         deallocate(minl, maxl)
+         if (flag >= 4 .and. commOK) then
+            deallocate(ming, maxg)
+         endif
+      end if
    endif
 
    call shr_sys_flush(s_logunit)
@@ -988,7 +979,7 @@ subroutine mct_avect_vecmult(av,vec,avlist,mask_spval)
 !EOP
 
    !--- local ---
-   integer(IN) :: n,m            ! generic indicies
+   integer(IN) :: n,m,p          ! generic indicies
    integer(IN) :: npts           ! number of points (local) in an aVect field
    integer(IN) :: nfld           ! number of fields (local) in an aVect field
    integer(IN) :: nptsx          ! number of points (local) in an aVect field
@@ -1016,49 +1007,37 @@ subroutine mct_avect_vecmult(av,vec,avlist,mask_spval)
 
    if (present(avlist)) then
 
-     call mct_list_init(blist,avlist)
+      call mct_list_init(blist,avlist)
 
-     nfld=mct_list_nitem(blist)
+      nfld=mct_list_nitem(blist)
 
-     allocate(kfldin(nfld))
-     do m=1,nfld
-       call mct_list_get(tattr,m,blist)
-       kfldin(m) = mct_aVect_indexRA(av,mct_string_toChar(tattr))
-       call mct_string_clean(tattr)
-     enddo
-     call mct_list_clean(blist)
+      allocate(kfldin(nfld))
+      do m=1,nfld
+         call mct_list_get(tattr,m,blist)
+         kfldin(m) = mct_aVect_indexRA(av,mct_string_toChar(tattr))
+         call mct_string_clean(tattr)
+      enddo
+      call mct_list_clean(blist)
 
-     if (lmspval) then
+      if (lmspval) then
 
-#ifdef CPP_VECTOR
-        do m=1,nfld
-!CDIR SELECT(VECTOR)
-!DIR$ CONCURRENT
-        do n=1,npts
-#else
-        do n=1,npts
-        do m=1,nfld
-#endif
-           if (.not. shr_const_isspval(av%rAttr(kfldin(m),n))) then
-              av%rAttr(kfldin(m),n) = av%rAttr(kfldin(m),n)*vec(n)
-           endif
-        enddo
-        enddo
+         !$omp simd
+         do n = 1, npts
+            do p = 1, nfld
+               if (.not. shr_const_isspval(av%rAttr(kfldin(p),n))) then
+                  av%rAttr(kfldin(p),n) = av%rAttr(kfldin(p),n)*vec(n)
+               end if
+            end do
+        end do
 
      else  ! lmspval
 
-#ifdef CPP_VECTOR
-        do m=1,nfld
-!CDIR SELECT(VECTOR)
-!DIR$ CONCURRENT
-        do n=1,npts
-#else
-        do n=1,npts
-        do m=1,nfld
-#endif
-           av%rAttr(kfldin(m),n) = av%rAttr(kfldin(m),n)*vec(n)
-        enddo
-        enddo
+        !$omp simd
+        do n = 1, npts
+           do p = 1, nfld
+              av%rAttr(kfldin(p),n) = av%rAttr(kfldin(p),n)*vec(n)
+           end do
+        end do
 
      endif  ! lmspval
 
@@ -1070,34 +1049,18 @@ subroutine mct_avect_vecmult(av,vec,avlist,mask_spval)
 
      if (lmspval) then
 
-#ifdef CPP_VECTOR
-        do m=1,nfld
-!CDIR SELECT(VECTOR)
-!DIR$ CONCURRENT
+        !$omp simd
         do n=1,npts
-#else
-        do n=1,npts
-        do m=1,nfld
-#endif
-           if (.not. shr_const_isspval(av%rAttr(m,n))) then
-              av%rAttr(m,n) = av%rAttr(m,n)*vec(n)
-           endif
-        enddo
+	   where (.not. shr_const_isspval(av%rAttr(:,n)))
+              av%rAttr(:,n) = av%rAttr(:,n)*vec(n)
+           endwhere
         enddo
 
      else  ! lmspval
 
-#ifdef CPP_VECTOR
-        do m=1,nfld
-!CDIR SELECT(VECTOR)
-!DIR$ CONCURRENT
+        !$omp simd
         do n=1,npts
-#else
-        do n=1,npts
-        do m=1,nfld
-#endif
-           av%rAttr(m,n) = av%rAttr(m,n)*vec(n)
-        enddo
+           av%rAttr(:,n) = av%rAttr(:,n)*vec(n)
         enddo
 
      endif   ! lmspval

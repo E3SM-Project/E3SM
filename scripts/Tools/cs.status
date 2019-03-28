@@ -1,80 +1,104 @@
 #!/usr/bin/env python
 """
-List test results based on TestStatus files. Returns True if
-no errors occured (not based on test statuses).
+List test results based on TestStatus files.
+
+Typical usage:
+    ./cs.status /path/to/testroot/*.testid/TestStatus
+
+Returns True if no errors occured (not based on test statuses).
 """
 
 from standard_script_setup import *
 import argparse, sys, os, logging, glob
-from CIME.test_status import *
+from CIME.utils import expect
+from CIME.cs_status import cs_status
+from CIME import test_status
+
+_PERFORMANCE_PHASES = [test_status.THROUGHPUT_PHASE,
+                       test_status.MEMCOMP_PHASE]
 
 ###############################################################################
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-usage="""\n{0} <Glob of TestStatus> [<Path/Glob to TestStatus> ...]  [--verbose]
-OR
-{0} --help
-
-\033[1mEXAMPLES:\033[0m
-    \033[1;32m# Wait for all tests in a test area\033[0m
-    > {0} path/to/testarea/*/TestStatus
-""".format(os.path.basename(args[0])),
-
-description=description,
-
-formatter_class=argparse.ArgumentDefaultsHelpFormatter
-)
+        description=description,
+        formatter_class=argparse.RawTextHelpFormatter)
 
     parser.add_argument("paths", nargs="*", help="Paths to TestStatus files.")
 
-    parser.add_argument("-s", "--summary", action="store_true",
-                        help="Only show summary")
+    options_group = parser.add_mutually_exclusive_group()
+
+    options_group.add_argument("-s", "--summary", action="store_true",
+                               help="Only show summary")
+
+    options_group.add_argument("-f", "--fails-only", action="store_true",
+                               help="Only show non-PASSes (this includes PENDs as well as FAILs)")
+
+    parser.add_argument("-c", "--count-fails", action="append", default=[],
+                        metavar="PHASE",
+                        help="For this phase, do not give line-by-line output; instead, just report\n"
+                        "the total number of tests that have not PASSed this phase\n"
+                        "(this includes PENDs as well as FAILs).\n"
+                        "This is typically used with the --fails-only option,\n"
+                        "but it can also be used without that option.\n"
+                        "(However, it cannot be used with the --summary option.)\n"
+                        "(Can be specified multiple times.)")
+
+    performance_fails_equivalent = ' '.join(["--count-fails {}".format(phase)
+                                             for phase in _PERFORMANCE_PHASES])
+    parser.add_argument("-p", "--count-performance-fails", action="store_true",
+                        help="For phases that involve performance comparisons with baseline:\n"
+                        "Do not give line-by-line output; instead, just report the total number\n"
+                        "of tests that have not PASSed this phase.\n"
+                        "(This can be useful because these performance comparisons can be\n"
+                        "subject to machine variability.)\n"
+                        "This is equivalent to specifying:\n"
+                        "{}".format(performance_fails_equivalent))
+
+    parser.add_argument("-x", "--expected-fails-file",
+                        help="Path to XML file listing expected failures for this test suite")
 
     parser.add_argument("-t", "--test-id", action="append", default=[],
-                        help="Only show summary")
+                        help="Include all tests with this test id.\n"
+                        "(Can be specified multiple times.)")
 
     parser.add_argument("-r", "--test-root", default=os.getcwd(),
-                        help="Only show summary")
+                        help="Test root used when --test-id is given")
 
     args = parser.parse_args(args[1:])
 
-    return args.paths, args.summary, args.test_id, args.test_root
+    _validate_args(args)
 
-###############################################################################
-def cs_status(test_paths, summary=False):
-###############################################################################
-    test_id_output = {}
-    for test_path in test_paths:
-        test_dir=os.path.dirname(test_path)
-        ts = TestStatus(test_dir=test_dir)
-        test_id = os.path.basename(test_dir).split(".")[-1]
-        test_name = ts.get_name()
-        status = ts.get_overall_test_status()
-        if not summary:
-            output = "  %s (Overall: %s) details:\n" % (test_name, status)
-            output += ts.phase_statuses_dump(prefix="    ")
-        else:
-            output = "  %s %s\n" % (status, test_name)
+    if args.count_performance_fails:
+        args.count_fails.extend(_PERFORMANCE_PHASES)
 
-        if test_id in test_id_output:
-            test_id_output[test_id] += output
-        else:
-            test_id_output[test_id] = output
+    return args.paths, args.summary, args.fails_only, args.count_fails, args.expected_fails_file, args.test_id, args.test_root
 
-    for test_id in sorted(test_id_output):
-        print(test_id)
-        print(test_id_output[test_id])
-        print(' ')
+def _validate_args(args):
+    expect(not (args.summary and args.count_fails),
+           "--count-fails cannot be specified with --summary")
+    expect(not (args.summary and args.count_performance_fails),
+           "--count-performance-fails cannot be specified with --summary")
+    _validate_phases(args.count_fails, '--count-fails')
+
+def _validate_phases(list_of_phases, arg_name):
+    for phase in list_of_phases:
+        expect(phase in test_status.ALL_PHASES,
+               "Phase {} specified with {} argument is not a valid TestStatus phase".format(
+                   phase, arg_name))
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    test_paths, summary, test_ids, test_root = parse_command_line(sys.argv, description)
+    test_paths, summary, fails_only, count_fails, expected_fails_file, test_ids, test_root = parse_command_line(sys.argv, description)
     for test_id in test_ids:
         test_paths.extend(glob.glob(os.path.join(test_root, "*%s/TestStatus" % test_id)))
 
-    cs_status(test_paths, summary)
+    cs_status(test_paths=test_paths,
+              summary=summary,
+              fails_only=fails_only,
+              count_fails_phase_list=count_fails,
+              expected_fails_filepath=expected_fails_file)
 
 ###############################################################################
 

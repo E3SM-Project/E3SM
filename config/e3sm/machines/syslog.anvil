@@ -10,14 +10,16 @@ set timing = $5
 set dir = $6
 set ncores = 0
 
-# wait until job mapping information is output before saving output file
-# (note that calling script 'touch'es the e3sm log file before spawning this script, so that 'wc' does not fail)
+# Wait until job task-to-node mapping information is output before saving output file.
+# Target length was determined empirically (maximum number of lines before job mapping 
+#  information starts + number of nodes), and it may need to be adjusted in the future.
+# (Note that calling script 'touch'es the e3sm log file before spawning this script, so that 'wc' does not fail.)
 set nnodes = `qstat -f $jid | grep -F Resource_List.nodes | sed 's/ *Resource_List.nodes = *\([0-9]*\):ppn=*\([0-9]*\) */\1/' `
-set ppn = `qstat -f $jid | grep -F Resource_List.nodes | sed 's/ *Resource_List.nodes = *\([0-9]*\):ppn=*\([0-9]*\) */\2/' `
-@ ncores = $nnodes * $ppn
-set outlth = 0
-while ($outlth < $ncores)
-  sleep 10
+@ target_lines = 25 + $nnodes
+sleep 10
+set outlth = `wc \-l $run/e3sm.log.$lid | sed 's/ *\([0-9]*\) *.*/\1/' `
+while ($outlth < $target_lines)
+  sleep 60
   set outlth = `wc \-l $run/e3sm.log.$lid | sed 's/ *\([0-9]*\) *.*/\1/' `
 end
 set remaining = `qstat -f $jid | grep -F Walltime.Remaining | sed 's/ *Walltime.Remaining = *\([0-9]*\) */\1/' `
@@ -25,8 +27,10 @@ cat > $run/Walltime.Remaining <<EOF1
 $remaining $sample_interval
 EOF1
 /bin/cp --preserve=timestamps $run/e3sm.log.$lid $dir/e3sm.log.$lid.$remaining
-qstat -r acme > $dir/qstatr.$lid.$remaining
-qstat -1 -n acme > $dir/qstatn.$lid.$remaining
+if ($remaining <= 0) then
+  qstat -r acme > $dir/qstatr.$lid.$remaining
+  qstat -1 -n acme > $dir/qstatn.$lid.$remaining
+endif
 
 while ($remaining > 0)
   echo "Wallclock time remaining: $remaining" >> $dir/atm.log.$lid.step
@@ -46,7 +50,13 @@ while ($remaining > 0)
   qstat -r acme > $dir/qstatr.$lid.$remaining
   qstat -1 -n acme > $dir/qstatn.$lid.$remaining
   chmod a+r $dir/*
-  sleep $sample_interval
+  # sleep $sample_interval
+  set sleep_remaining = $sample_interval
+  while ($sleep_remaining > 120)
+   sleep 120
+   @ sleep_remaining = $sleep_remaining - 120
+  end
+  sleep $sleep_remaining
   set remaining = `qstat -f $jid | grep -F Walltime.Remaining | sed 's/ *Walltime.Remaining = *\([0-9]*\) */\1/' `
   if ("X$remaining" == "X") set remaining = 0
   cat > $run/Walltime.Remaining << EOF2

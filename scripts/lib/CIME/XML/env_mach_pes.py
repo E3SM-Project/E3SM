@@ -9,13 +9,13 @@ logger = logging.getLogger(__name__)
 
 class EnvMachPes(EnvBase):
 
-    def __init__(self, case_root=None, infile="env_mach_pes.xml", components=None):
+    def __init__(self, case_root=None, infile="env_mach_pes.xml", components=None, read_only=False):
         """
         initialize an object interface to file env_mach_pes.xml in the case directory
         """
         self._components = components
         schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_mach_pes.xsd")
-        EnvBase.__init__(self, case_root, infile, schema=schema)
+        EnvBase.__init__(self, case_root, infile, schema=schema, read_only=read_only)
 
     def add_comment(self, comment):
         if comment is not None:
@@ -29,6 +29,7 @@ class EnvMachPes(EnvBase):
         # Special variable NINST_MAX is used to determine the number of
         # drivers in multi-driver mode.
         if vid == "NINST_MAX":
+            # in the nuopc driver there is only a single NINST value
             value = 1
             for comp in self._components:
                 if comp != "CPL":
@@ -42,7 +43,10 @@ class EnvMachPes(EnvBase):
                 max_mpitasks_per_node = self.get_value("MAX_MPITASKS_PER_NODE")
             if value is not None and value < 0:
                 value = -1*value*max_mpitasks_per_node
-
+        # in the nuopc driver there is only one NINST value
+        # so that NINST_{comp} = NINST
+        if "NINST_" in vid and value is None:
+            value = self.get_value("NINST")
         return value
 
     def set_value(self, vid, value, subgroup=None, ignore_type=False):
@@ -78,12 +82,17 @@ class EnvMachPes(EnvBase):
 
     def get_total_tasks(self, comp_classes):
         total_tasks = 0
-        maxinst = 1
+        maxinst = self.get_value("NINST")
+        if maxinst:
+            comp_interface = "nuopc"
+        else:
+            comp_interface = 'unknown'
+            maxinst = 1
         for comp in comp_classes:
             ntasks = self.get_value("NTASKS", attribute={"compclass":comp})
             rootpe = self.get_value("ROOTPE", attribute={"compclass":comp})
             pstrid = self.get_value("PSTRID", attribute={"compclass":comp})
-            if comp != "CPL":
+            if comp != "CPL" and comp_interface!="nuopc":
                 ninst = self.get_value("NINST", attribute={"compclass":comp})
                 maxinst = max(maxinst, ninst)
             tt = rootpe + (ntasks - 1) * pstrid + 1

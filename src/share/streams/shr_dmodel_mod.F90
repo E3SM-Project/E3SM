@@ -10,9 +10,9 @@ module shr_dmodel_mod
   use shr_log_mod, only: logunit => shr_log_Unit
   use shr_mpi_mod, only: shr_mpi_bcast
   use mct_mod
-  !  use esmf
   use perf_mod
   use pio
+  use m_SparseMatrixPlus, only : exportStrategyToChar
 
   ! !PUBLIC TYPES:
   implicit none
@@ -38,7 +38,7 @@ module shr_dmodel_mod
   end interface shr_dmodel_gsmapCreate
 
   interface shr_dmodel_mapSet; module procedure &
-       !      shr_dmodel_mapSet_dest, &
+      !shr_dmodel_mapSet_dest, &
        shr_dmodel_mapSet_global
   end interface shr_dmodel_mapSet
 
@@ -62,19 +62,11 @@ module shr_dmodel_mod
 
   integer(IN),parameter,public :: iotype_std_netcdf = -99 ! non pio option
 
-  !--------------------------------------------------------------------------
-  ! Private data
-  !--------------------------------------------------------------------------
-
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!===============================================================================
 CONTAINS
-  !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!===============================================================================
 
-  !===============================================================================
-  !===============================================================================
   subroutine shr_dmodel_gsmapCreate_gsize(gsmap,gsize,compid,mpicom,decomp)
-
-    implicit none
 
     type(mct_gsMap), intent(inout) :: gsmap
     integer(IN)    , intent(in)    :: gsize
@@ -83,7 +75,6 @@ CONTAINS
     character(len=*),intent(in)    :: decomp
 
     ! local
-
     integer(IN) :: n,npes,ierr
     integer(IN), pointer :: start(:)     ! for gsmap initialization
     integer(IN), pointer :: length(:)    ! for gsmap initialization
@@ -91,7 +82,6 @@ CONTAINS
     character(*), parameter :: subname = '(shr_dmodel_gsmapCreate_gsize) '
     character(*), parameter :: F00   = "('(shr_dmodel_gsmapCreate_gsize) ',8a)"
     character(*), parameter :: F01   = "('(shr_dmodel_gsmapCreate_gsize) ',a,5i8)"
-
     ! ---------------------------------------------
 
     if (gsize > 0) then
@@ -123,10 +113,10 @@ CONTAINS
     endif
 
   end subroutine shr_dmodel_gsmapCreate_gsize
-  !===============================================================================
-  subroutine shr_dmodel_gsmapCreate_nxnynz(gsmap,nxg,nyg,nzg,compid,mpicom,decomp)
 
-    implicit none
+  !===============================================================================
+
+  subroutine shr_dmodel_gsmapCreate_nxnynz(gsmap,nxg,nyg,nzg,compid,mpicom,decomp)
 
     type(mct_gsMap), intent(inout) :: gsmap
     integer(IN)    , intent(in)    :: nxg,nyg,nzg
@@ -196,68 +186,66 @@ CONTAINS
     endif
 
   end subroutine shr_dmodel_gsmapCreate_nxnynz
+
   !===============================================================================
 
   subroutine shr_dmodel_readgrid( gGrid, gsMap, nxgo, nygo, nzgo, filename, compid, mpicom, &
        decomp, lonname, latname, hgtname, maskname, areaname, fracname, readfrac, &
        scmmode, scmlon, scmlat)
 
-    use shr_flds_mod  , only : seq_flds_dom_coord, seq_flds_dom_other
     use shr_file_mod  , only : shr_file_noprefix, shr_file_queryprefix, shr_file_get
     use shr_string_mod, only : shr_string_lastindex
-    use shr_ncread_mod, only : shr_ncread_domain, shr_ncread_vardimsizes, &
-         shr_ncread_varexists, shr_ncread_vardimnum, &
-         shr_ncread_field4dG
-    implicit none
+    use shr_ncread_mod, only : shr_ncread_domain, shr_ncread_vardimsizes
+    use shr_ncread_mod, only : shr_ncread_varexists, shr_ncread_vardimnum,  shr_ncread_field4dG 
 
     !----- arguments -----
-    type(mct_gGrid), intent(inout) :: gGrid
-    type(mct_gsMap), intent(inout) :: gsMap
-    integer(IN)    , intent(out)   :: nxgo
-    integer(IN)    , intent(out)   :: nygo
-    integer(IN)    , intent(out)   :: nzgo
-    character(len=*),intent(in)    :: filename
-    integer(IN)    , intent(in)    :: compid
-    integer(IN)    , intent(in)    :: mpicom
-    character(len=*),optional,intent(in)    ::   decomp ! decomp strategy for gsmap
-    character(len=*),optional,intent(in)    ::  lonname ! name of  lon variable in file
-    character(len=*),optional,intent(in)    ::  latname ! name of  lat variable in file
-    character(len=*),optional,intent(in)    ::  hgtname ! name of  hgt variable in file
-    character(len=*),optional,intent(in)    :: maskname ! name of mask variable in file
-    character(len=*),optional,intent(in)    :: areaname ! name of area variable in file
-    character(len=*),optional,intent(in)    :: fracname ! name of frac variable in file
-    logical         ,optional,intent(in)    :: readfrac ! T <=> also read frac  in file
-    logical         ,optional,intent(in)    :: scmmode  ! single column mode
-    real(R8)        ,optional,intent(in)    :: scmlon   ! single column lon
-    real(R8)        ,optional,intent(in)    :: scmlat   ! single column lat
+    type(mct_gGrid)  ,          intent(inout) :: gGrid
+    type(mct_gsMap)  ,          intent(inout) :: gsMap
+    integer(IN)      ,          intent(out)   :: nxgo
+    integer(IN)      ,          intent(out)   :: nygo
+    integer(IN)      ,          intent(out)   :: nzgo
+    character(len=*) ,          intent(in)    :: filename
+    integer(IN)      ,          intent(in)    :: compid
+    integer(IN)      ,          intent(in)    :: mpicom
+    character(len=*) ,optional, intent(in)    :: decomp   ! decomp strategy for gsmap
+    character(len=*) ,optional, intent(in)    :: lonname  ! name of  lon variable in file
+    character(len=*) ,optional, intent(in)    :: latname  ! name of  lat variable in file
+    character(len=*) ,optional, intent(in)    :: hgtname  ! name of  hgt variable in file
+    character(len=*) ,optional, intent(in)    :: maskname ! name of mask variable in file
+    character(len=*) ,optional, intent(in)    :: areaname ! name of area variable in file
+    character(len=*) ,optional, intent(in)    :: fracname ! name of frac variable in file
+    logical          ,optional, intent(in)    :: readfrac ! T <=> also read frac  in file
+    logical          ,optional, intent(in)    :: scmmode  ! single column mode
+    real(R8)         ,optional, intent(in)    :: scmlon   ! single column lon
+    real(R8)         ,optional, intent(in)    :: scmlat   ! single column lat
 
     !----- local -----
-    integer(IN)   :: n,k,j,i    ! indices
-    integer(IN)   :: lsize      ! lsize
-    integer(IN)   :: gsize      ! gsize
+    integer(IN)   :: n,k,j,i     ! indices
+    integer(IN)   :: lsize       ! lsize
+    integer(IN)   :: gsize       ! gsize
     integer(IN)   :: my_task, master_task
-    integer(IN)   :: ierr       ! error code
-    logical       :: fileexists !
-    integer(IN)   :: rCode      ! return code
-    character(CL) :: remoteFn   ! input file name (possibly at an archival location)
-    character(CL) :: localFn    ! file name to be opened (possibly a local copy)
-    character(CS) :: prefix     ! file prefix
-    character(CS) ::   ldecomp  ! decomp strategy
-    character(CS) ::  llonname  ! name of  lon variable
-    character(CS) ::  llatname  ! name of  lat variable
-    character(CS) ::  lhgtname  ! name of  hgt variable
-    character(CS) :: lmaskname  ! name of mask variable
-    character(CS) :: lareaname  ! name of area variable
-    character(CS) :: lfracname  ! name of area variable
-    logical       :: lreadfrac  ! read fraction
-    logical       :: maskexists ! is mask on dataset
-    integer(IN)   :: nxg,nyg,nzg  ! size of input fields
-    integer(IN)   :: ndims      ! number of dims
+    integer(IN)   :: ierr        ! error code
+    logical       :: fileexists  !
+    integer(IN)   :: rCode       ! return code
+    character(CL) :: remoteFn    ! input file name (possibly at an archival location)
+    character(CL) :: localFn     ! file name to be opened (possibly a local copy)
+    character(CS) :: prefix      ! file prefix
+    character(CS) :: ldecomp     ! decomp strategy
+    character(CS) :: llonname    ! name of  lon variable
+    character(CS) :: llatname    ! name of  lat variable
+    character(CS) :: lhgtname    ! name of  hgt variable
+    character(CS) :: lmaskname   ! name of mask variable
+    character(CS) :: lareaname   ! name of area variable
+    character(CS) :: lfracname   ! name of area variable
+    logical       :: lreadfrac   ! read fraction
+    logical       :: maskexists  ! is mask on dataset
+    integer(IN)   :: nxg,nyg,nzg ! size of input fields
+    integer(IN)   :: ndims       ! number of dims
     integer(IN)   :: nlon,nlat,narea,nmask,nfrac,nhgt
-    logical       :: lscmmode   ! local scm mode
-    real(R8)      :: dist,mind  ! scmmode point search
-    integer(IN)   :: ni,nj      ! scmmode point search
-    real(R8)      :: lscmlon    ! local copy of scmlon
+    logical       :: lscmmode    ! local scm mode
+    real(R8)      :: dist,mind   ! scmmode point search
+    integer(IN)   :: ni,nj       ! scmmode point search
+    real(R8)      :: lscmlon     ! local copy of scmlon
 
     real   (R8),allocatable ::  lon(:,:) ! temp array for domain lon  info
     real   (R8),allocatable ::  lat(:,:) ! temp array for domain lat  info
@@ -275,7 +263,7 @@ CONTAINS
     character(*), parameter :: F01   = "('(shr_dmodel_readgrid) ',a,5i8)"
 
     !-------------------------------------------------------------------------------
-    ! PURPOSE:  Read MCT ggrid and set gsmap
+    ! PURPOSE:  Read MCT ggrid and set gsmap if not input
     !----------------------------------------------------------------------------
     ! Notes:
     ! o as per shr_file_get(), the file name format is expected to be
@@ -377,10 +365,20 @@ CONTAINS
        if (gsize < 1) return
     endif
 
-    call shr_dmodel_gsmapCreate(gsMap,nxgo,nygo,nzgo,compid,mpicom,trim(ldecomp))
+    ! Create gsmap if input gsmap is not given
+
+    if (trim(ldecomp) == 'use_input_gsmap') then
+       if (my_task == master_task) then
+          write(logunit,*)trim(subname) // ': Using input gsmap'
+       end if
+    else
+       call shr_dmodel_gsmapCreate(gsMap, nxgo, nygo, nzgo, compid, mpicom, trim(ldecomp))
+    end if
+
+    ! Create gGrid using either created or input gsmap
+
     lsize = mct_gsMap_lsize(gsMap, mpicom)
-    call mct_gGrid_init( GGrid=gGrid, CoordChars=trim(seq_flds_dom_coord), &
-         OtherChars=trim(seq_flds_dom_other), lsize=lsize )
+    call mct_gGrid_init(GGrid=Ggrid, CoordChars='lat:lon:hgt', OtherChars='area:aream:mask:frac', lsize=lsize )
 
     ! Determine global gridpoint number attribute, GlobGridNum, automatically in ggrid
 
@@ -543,7 +541,6 @@ CONTAINS
     use shr_file_mod, only : shr_file_noprefix, shr_file_queryprefix, shr_file_get
     use shr_const_mod, only : shr_const_cDay
     use shr_stream_mod
-    implicit none
 
     !----- arguments -----
     type(shr_stream_streamType),intent(inout) :: stream
@@ -720,14 +717,13 @@ CONTAINS
   end subroutine shr_dmodel_readLBUB
 
   !===============================================================================
+
   subroutine shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gsMap, av, mpicom, &
        path, fn, nt, istr, boundstr)
 
     use shr_file_mod, only : shr_file_noprefix, shr_file_queryprefix, shr_file_get
     use shr_stream_mod
-    use shr_ncread_mod, only: shr_ncread_open, shr_ncread_close, shr_ncread_varDimSizes, &
-         shr_ncread_tField
-    implicit none
+    use shr_ncread_mod, only: shr_ncread_open, shr_ncread_close, shr_ncread_varDimSizes, shr_ncread_tField
 
     !----- arguments -----
     type(shr_stream_streamType),intent(inout) :: stream
@@ -931,9 +927,8 @@ CONTAINS
 
     use shr_file_mod, only : shr_file_noprefix, shr_file_queryprefix, shr_file_get
     use shr_stream_mod
-    use shr_ncread_mod, only: shr_ncread_open, shr_ncread_close, shr_ncread_varDimSizes, &
-         shr_ncread_tField
-    implicit none
+    use shr_ncread_mod, only: shr_ncread_open, shr_ncread_close, shr_ncread_varDimSizes
+    use shr_ncread_mod, only: shr_ncread_tField
 
     !----- arguments -----
     type      (shr_stream_streamType) ,intent(inout)         :: stream
@@ -1146,28 +1141,13 @@ CONTAINS
   end subroutine shr_dmodel_readstrm_fullfile
 
   !===============================================================================
-  !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: shr_dmodel_gGridCompare -- returns TRUE if two domains are the same.
-  !
-  ! !DESCRIPTION:
-  !    Returns TRUE if two domains are the the same (within tolerance).
-  !
-  ! !REVISION HISTORY:
-  !    2005-May-03 - B. Kauffman - added mulitiple methods
-  !    2005-May-27 - T. Craig - first version
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
 
   logical function shr_dmodel_gGridCompare(ggrid1,gsmap1,ggrid2,gsmap2,method,mpicom,eps)
 
-    ! !USES:
-
-    implicit none
+    ! !DESCRIPTION:
+    !    Returns TRUE if two domains are the the same (within tolerance).
 
     ! !INPUT/OUTPUT PARAMETERS:
-
     type(mct_gGrid)     ,intent(in)  :: ggrid1   ! 1st ggrid
     type(mct_gsmap)     ,intent(in)  :: gsmap1   ! 1st gsmap
     type(mct_gGrid)     ,intent(in)  :: ggrid2   ! 2nd ggrid
@@ -1175,8 +1155,6 @@ CONTAINS
     integer(IN)         ,intent(in)  :: method   ! selects what to compare
     integer(IN)         ,intent(in)  :: mpicom   ! mpicom
     real(R8)   ,optional,intent(in)  :: eps      ! epsilon compare value
-
-    !EOP
 
     !--- local ---
     real(R8)    :: leps         ! local epsilon
@@ -1195,11 +1173,8 @@ CONTAINS
     type(mct_aVect) :: avG2     ! global av
     integer(IN) :: lmethod      ! local method
     logical     :: maskmethod, maskpoint ! masking on method
-
-    !--- formats ---
     character(*),parameter :: subName = '(shr_dmodel_gGridCompare) '
     character(*),parameter :: F01     = "('(shr_dmodel_gGridCompare) ',4a)"
-
     !-------------------------------------------------------------------------------
     !
     !-------------------------------------------------------------------------------
@@ -1370,11 +1345,13 @@ CONTAINS
 
   !===============================================================================
 
-  subroutine shr_dmodel_mapSet_global(smatp,ggridS,gsmapS,nxgS,nygS,ggridD,gsmapD,nxgD,nygD, &
-       name,type,algo,mask,vect,compid,mpicom,strategy)
+  subroutine shr_dmodel_mapSet_global(smatp,&
+       ggridS,gsmapS,nxgS,nygS,&
+       ggridD,gsmapD,nxgD,nygD, &
+       name,type,algo,mask,vect,&
+       compid,mpicom,strategy)
 
     use shr_map_mod
-    implicit none
 
     !----- arguments -----
     type(mct_sMatP), intent(inout) :: smatp
@@ -1544,7 +1521,6 @@ CONTAINS
        name,type,algo,mask,vect,compid,mpicom,strategy)
 
     use shr_map_mod
-    implicit none
 
     !----- arguments -----
     type(mct_sMatP), intent(inout) :: smatp
@@ -1645,36 +1621,6 @@ CONTAINS
     call mct_avect_init(AVl,rList='lon:lat:mask',lsize=lsizeD)
     call mct_avect_copy(ggridD%data,AVl,rList='lon:lat:mask')
 
-#if (1 == 0)
-    call mct_avect_gather(AVl,AVg,gsmapD,master_task,mpicom)
-
-    if (my_task == master_task) then
-       gsizeD = mct_aVect_lsize(AVg)
-       if (gsizeD /= nxgD*nygD) then
-          write(logunit,F01) ' ERROR: gsizeD ',gsizeD,nxgD,nygD
-          call shr_sys_abort(subname//' ERROR gsizeD')
-       endif
-       allocate(Xdst(nxgD,nygD),Ydst(nxgD,nygD),Mdst(nxgD,nygD))
-
-       nlon = mct_avect_indexRA(AVg,'lon')
-       nlat = mct_avect_indexRA(AVg,'lat')
-       nmsk = mct_avect_indexRA(AVg,'mask')
-
-       n = 0
-       Mdst = 1
-       do j = 1,nygD
-          do i = 1,nxgD
-             n = n + 1
-             Xdst(i,j) = AVg%rAttr(nlon,n)
-             Ydst(i,j) = AVg%rAttr(nlat,n)
-             if (abs(AVg%rAttr(nmsk,n)) < 0.5_R8) Mdst(i,j) = 0
-          enddo
-       enddo
-    endif
-
-    if (my_task == master_task) call mct_aVect_clean(AVg)
-#endif
-
     allocate(Xdst(lsizeD),Ydst(lsizeD),Mdst(lsizeD))
 
     nlon = mct_avect_indexRA(AVl,'lon')
@@ -1734,8 +1680,6 @@ CONTAINS
 
   subroutine shr_dmodel_rearrGGrid( ggridi, ggrido, gsmap, rearr, mpicom )
 
-    implicit none
-
     !----- arguments -----
     type(mct_ggrid), intent(in)    :: ggridi
     type(mct_ggrid), intent(inout) :: ggrido
@@ -1791,8 +1735,6 @@ CONTAINS
   !===============================================================================
 
   subroutine shr_dmodel_translateAV( avi, avo, avifld, avofld, rearr )
-
-    implicit none
 
     !----- arguments -----
     type(mct_aVect), intent(in)    :: avi       ! input av
@@ -1879,8 +1821,6 @@ CONTAINS
 
   subroutine shr_dmodel_translate_list( avi, avo, avifld, avofld, ilist, olist, cnt)
 
-    implicit none
-
     !----- arguments -----
     type(mct_aVect), intent(in)    :: avi       ! input av
     type(mct_aVect), intent(inout) :: avo       ! output av
@@ -1944,8 +1884,6 @@ CONTAINS
   !===============================================================================
 
   subroutine shr_dmodel_translateAV_list( avi, avo, ilist, olist, rearr )
-
-    implicit none
 
     !----- arguments -----
     type(mct_aVect), intent(in)    :: avi       ! input av
