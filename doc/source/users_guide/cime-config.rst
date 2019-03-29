@@ -66,8 +66,8 @@ CIME recognizes a user-created custom configuration directory, ``$HOME/.cime``. 
         <compiler COMPILER="ibm" OS="BGQ">
            <FFLAGS> -g -qfullpath -qmaxmem=-1 -qspillsize=2500 -qextname=flush </FFLAGS>
 	   <ADD_FFLAGS DEBUG="FALSE"> -O3 -qstrict -qinline=auto </ADD_FFLAGS>
-	   <ADD_FFLAGS DEBUG="FALSE" compile_threaded="true"> -qsmp=omp </ADD_FFLAGS>
-	   <ADD_FFLAGS DEBUG="TRUE" compile_threaded="true"> -qsmp=omp:noopt </ADD_FFLAGS>
+	   <ADD_FFLAGS DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp </ADD_FFLAGS>
+	   <ADD_FFLAGS DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </ADD_FFLAGS>
 	   <ADD_CPPDEFS> -DLINUX  </ADD_CPPDEFS>
 	   <CONFIG_ARGS> --build=powerpc-bgp-linux --host=powerpc64-suse-linux </CONFIG_ARGS>
 	   <LDFLAGS>  -Wl,--relax -Wl,--allow-multiple-definition </LDFLAGS>

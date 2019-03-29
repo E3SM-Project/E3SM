@@ -235,7 +235,7 @@ class N_TestUnitTest(unittest.TestCase):
             compiler = Compilers(MACHINE, compiler=default_compiler)
         else:
             compiler = Compilers(MACHINE, compiler=TEST_COMPILER)
-        attrs = {'MPILIB': 'mpi-serial', 'compile_threaded': 'false'}
+        attrs = {'MPILIB': 'mpi-serial', 'compile_threaded': 'FALSE'}
         pfunit_path = compiler.get_optional_compiler_node("PFUNIT_PATH",
                                                           attributes=attrs)
         if pfunit_path is None:
