@@ -915,6 +915,13 @@
       <mask>gx1v7</mask>
     </model_grid>
 
+    <model_grid alias="ne0CONUSne30x8_ne0CONUSne30x8_mg17" not_compset="_POP">
+      <grid name="atm">ne0np4CONUS.ne30x8</grid>
+      <grid name="lnd">ne0np4CONUS.ne30x8</grid>
+      <grid name="ocnice">ne0np4CONUS.ne30x8</grid>
+      <mask>gx1v7</mask>
+    </model_grid>
+
     <model_grid alias="ne0TESTONLYne5x4_ne0TESTONLYne5x4_mg37" not_compset="_POP">
       <grid name="atm">ne0np4TESTONLY.ne5x4</grid>
       <grid name="lnd">ne0np4TESTONLY.ne5x4</grid>
@@ -1361,7 +1368,7 @@
     <domain name="ne0np4CONUS.ne30x8">
       <nx>174098</nx> <ny>1</ny>
       <file grid="atm|lnd" mask="gx1v7">$DIN_LOC_ROOT/share/domains/domain.lnd.ne0CONUSne30x8_gx1v7.190304.nc</file>
-      <file grid="ocnice"  mask="gx1v7">$DIN_LOC_ROOT/share/domains/domain.ocn.ne0CONUSne30x8_gx1v7_190304.nc</file>
+      <file grid="ocnice"  mask="gx1v7">$DIN_LOC_ROOT/share/domains/domain.ocn.ne0CONUSne30x8_gx1v7.190304.nc</file>
       <desc>ne0np4CONUS.ne30x8 is a Spectral Elem 1-deg grid with a 1/8 deg refined region over the continental United States:</desc>
       <support>Test support only</support>
     </domain>

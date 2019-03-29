@@ -72,9 +72,6 @@ endif
 ifeq ($(strip $(USE_KOKKOS)), TRUE)
   USE_CXX = TRUE
 endif
-ifeq ($(strip $(USE_KOKKOS)), TRUE)
-   USE_CXX = TRUE
-endif
 
 ifeq ($(strip $(USE_FMS)), TRUE)
   SLIBS += -lfms
@@ -94,7 +91,7 @@ include $(CASEROOT)/Macros.make
 
 # Unless DEBUG mode is enabled, use NDEBUG to turn off assert statements.
 ifeq ($(strip $(DEBUG)),TRUE)
-   #CPPDEFS += -DDEBUG
+   CPPDEFS += -DDEBUG
 else
    CPPDEFS += -DNDEBUG
 endif
@@ -106,14 +103,6 @@ endif
 
 ifeq ($(COMP_INTERFACE), nuopc)
    CPPDEFS += -DNUOPC_INTERFACE
-   CPPDEFS += -DESMFUSE_$(COMP_ATM)
-   CPPDEFS += -DESMFUSE_$(COMP_LND)
-   CPPDEFS += -DESMFUSE_$(COMP_OCN)
-   CPPDEFS += -DESMFUSE_$(COMP_ICE)
-   CPPDEFS += -DESMFUSE_$(COMP_ROF)
-   CPPDEFS += -DESMFUSE_$(COMP_WAV)
-   CPPDEFS += -DESMFUSE_$(COMP_GLC)
-   CPPDEFS += -DESMFUSE_$(COMP_ESP)
 else
    CPPDEFS += -DMCT_INTERFACE
 endif
@@ -137,12 +126,6 @@ endif
 ifeq (,$(SHAREDPATH))
   SHAREDPATH = $(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)/$(COMP_INTERFACE)
   INSTALL_SHAREDPATH = $(EXEROOT)/$(SHAREDPATH)
-endif
-
-include $(CASEROOT)/Macros.make
-
-ifeq ($(strip $(USE_FMS)), TRUE)
-  SLIBS += -lfms
 endif
 
 # Decide whether to use a C++ or Fortran linker, based on whether we
@@ -297,12 +280,10 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
   include $(ALBANY_PATH)/export_albany.in
 endif
 
-ifeq ($(strip $(USE_KOKKOS)), TRUE)
-  include $(INSTALL_SHAREDPATH)/Makefile.kokkos
-  SLIBS += $(KOKKOS_LIBS)
-  CFLAGS += $(KOKKOS_CXXFLAGS)
-  CXX_LDFLAGS += $(KOKKOS_LDFLAGS)
+ifeq ($(strip $(USE_FMS)), TRUE)
+  SLIBS += -lfms
 endif
+
 
 # Set MOAB info if it is being used
 ifeq ($(strip $(USE_MOAB)), TRUE)
