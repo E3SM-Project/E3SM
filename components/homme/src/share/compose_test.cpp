@@ -537,7 +537,7 @@ struct StandaloneTracersTester {
         for (int q = 0; q < qsize; ++q) {
           printf("COMPOSE>");
           const Real mass0 = wrk_[q], massf = wrk_[qsize + q];
-          printf("mass0 %9.2e mass re %9.2e\n", mass0, (massf - mass0)/mass0);
+          printf(" mass0 %8.2e mass re %9.2e\n", mass0, (massf - mass0)/mass0);
         }
 #ifdef HORIZ_OPENMP
     }

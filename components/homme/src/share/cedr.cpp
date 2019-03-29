@@ -1007,14 +1007,16 @@ Int solve_1eq_bc_qp(const Int n, const Real* w, const Real* a, const Real b,
 KOKKOS_INLINE_FUNCTION
 Int solve_1eq_bc_qp_2d(const Real* w, const Real* a, const Real b,
                        const Real* xlo, const Real* xhi,
-                       const Real* y, Real* x);
+                       const Real* y, Real* x,
+                       const bool clip = true);
 
 // ClipAndAssuredSum. Minimize the 1-norm with w = 1s. Does not check for
 // feasibility.
 KOKKOS_INLINE_FUNCTION
 void caas(const Int n, const Real* a, const Real b,
           const Real* xlo, const Real* xhi,
-          const Real* y, Real* x);
+          const Real* y, Real* x,
+          const bool clip = true);
 
 struct Method { enum Enum { least_squares, caas }; };
 
@@ -1178,7 +1180,7 @@ void calc_r (const Int n, const Real* w, const Real* a, const Real b,
 KOKKOS_INLINE_FUNCTION
 Int solve_1eq_bc_qp_2d (const Real* w, const Real* a, const Real b,
                         const Real* xlo, const Real* xhi, 
-                        const Real* y, Real* x) {
+                        const Real* y, Real* x, const bool clip) {
   Int info;
 #if 0
   const Real r_tol = impl::calc_r_tol(b, a, y, 2);
@@ -1254,22 +1256,22 @@ Int solve_1eq_bc_qp_2d (const Real* w, const Real* a, const Real b,
   const Int ai = ais[objs[0] <= objs[1] ? 0 : 1];
 
   info = 1;
-  Int clipidx = 0;
-  const Real alpha = alphas[ai];
+  Int i0 = 0;
   switch (ai) {
   case 0: case 2:
-    x[0] = x_base[0] + alpha*x_dir[0];
     x[1] = ai == 0 ? xlo[1] : xhi[1];
-    clipidx = 0;
+    i0 = 1;
     break;
   case 1: case 3:
     x[0] = ai == 1 ? xhi[0] : xlo[0];
-    x[1] = x_base[1] + alpha*x_dir[1];
-    clipidx = 1;
+    i0 = 0;
     break;
   default: cedr_kernel_assert(0); info = -2;
   }
-  x[clipidx] = cedr::impl::min(xhi[clipidx], cedr::impl::max(xlo[clipidx], x[clipidx]));
+  const Int i1 = (i0 + 1) % 2;
+  x[i1] = (b - a[i0]*x[i0])/a[i1];
+  if (clip)
+    x[i1] = cedr::impl::min(xhi[i1], cedr::impl::max(xlo[i1], x[i1]));
   return info;
 }
 
@@ -1381,7 +1383,8 @@ Int solve_1eq_bc_qp (const Int n, const Real* w, const Real* a, const Real b,
 KOKKOS_INLINE_FUNCTION
 void caas (const Int n, const Real* a, const Real b,
            const Real* xlo, const Real* xhi,
-           const Real* y, Real* x) {
+           const Real* y, Real* x,
+           const bool clip) {
   Real dm = b;
   for (Int i = 0; i < n; ++i) {
     x[i] = cedr::impl::max(xlo[i], cedr::impl::min(xhi[i], y[i]));
@@ -1408,8 +1411,9 @@ void caas (const Int n, const Real* a, const Real b,
     }
   }
   // Clip again for numerics.
-  for (Int i = 0; i < n; ++i)
-    x[i] = cedr::impl::max(xlo[i], cedr::impl::min(xhi[i], x[i]));
+  if (clip)
+    for (Int i = 0; i < n; ++i)
+      x[i] = cedr::impl::max(xlo[i], cedr::impl::min(xhi[i], x[i]));
 }
 
 KOKKOS_INLINE_FUNCTION
@@ -1587,7 +1591,7 @@ void solve_node_problem (const Real& rhom, const Real* pd, const Real& Qm,
     const Real w[] = {1/rhom0, 1/rhom1};
     Real Qm_kids[] = {k0d[1], k1d[1]};
     local::solve_1eq_bc_qp_2d(w, ones, Qm, Qm_min_kids, Qm_max_kids,
-                              Qm_orig_kids, Qm_kids);
+                              Qm_orig_kids, Qm_kids, false /* clip */);
     Qm0 = Qm_kids[0];
     Qm1 = Qm_kids[1];
   }
@@ -5512,7 +5516,7 @@ void run_local (CDR& cdr, const Data& d, const Real* q_min_r, const Real* q_max_
                 qlo[cnt] = q_min(i,j,k,q,ie0);
                 qhi[cnt] = q_max(i,j,k,q,ie0);
               }
-            for (int trial = 0; trial < 2; ++trial) {
+            for (Int trial = 0; trial < 2; ++trial) {
               int info;
               if (limiter_option == 8) {
                 info = cedr::local::solve_1eq_bc_qp(
@@ -5520,7 +5524,16 @@ void run_local (CDR& cdr, const Data& d, const Real* q_min_r, const Real* q_max_
                 if (info == 1) info = 0;
               } else {
                 info = 0;
-                cedr::local::caas(np2, wa, Qm, qlo, qhi, y, x);
+                cedr::local::caas(np2, wa, Qm, qlo, qhi, y, x, false /* clip */);
+                // Clip for numerics against the cell extrema.
+                const Int n = np*np;
+                Real qlo_s = qlo[0], qhi_s = qhi[0];
+                for (Int i = 1; i < n; ++i) {
+                  qlo_s = std::min(qlo_s, qlo[i]);
+                  qhi_s = std::max(qhi_s, qhi[i]);
+                }
+                for (Int i = 0; i < n; ++i)
+                  x[i] = cedr::impl::max(qlo_s, cedr::impl::min(qhi_s, x[i]));
               }
               if (info == 0 || trial == 1) break;
               const Real q = Qm / rhom;
@@ -5584,7 +5597,13 @@ void check (CDR& cdr, Data& d, const Real* q_min_r, const Real* q_max_r,
               { pr("dp3d Inf:" pu(k) pu(i) pu(j)); fp_issue = true; }
             }
         }
-        for (Int q = 0; q < qsize; ++q)
+        for (Int q = 0; q < qsize; ++q) {
+          Real qlo_s = q_min(0,0,k,q,ie0), qhi_s = q_max(0,0,k,q,ie0);
+          for (Int j = 0; j < np; ++j)
+            for (Int i = 0; i < np; ++i) {
+              qlo_s = std::min(qlo_s, q_min(i,j,k,q,ie0));
+              qhi_s = std::max(qhi_s, q_max(i,j,k,q,ie0));
+            }
           for (Int j = 0; j < np; ++j)
             for (Int i = 0; i < np; ++i) {
               // FP issues.
@@ -5604,13 +5623,11 @@ void check (CDR& cdr, Data& d, const Real* q_min_r, const Real* q_max_r,
               // Mass conservation.
               mass_p(spli,q) += qdp_pc(i,j,k,q,d.n0_qdp) * spheremp(i,j);
               mass_c(spli,q) += qdp_pc(i,j,k,q,d.n1_qdp) * spheremp(i,j);
-              // Local bound constraints.
-              if (q_c(i,j,k,q) < q_min(i,j,k,q,ie0))
-                qd_lo(spli,q) = std::max(qd_lo(spli,q),
-                                         q_min(i,j,k,q,ie0) - q_c(i,j,k,q));
-              if (q_c(i,j,k,q) > q_max(i,j,k,q,ie0))
-                qd_hi(spli,q) = std::max(qd_hi(spli,q),
-                                         q_c(i,j,k,q) - q_max(i,j,k,q,ie0));
+              // Local bound constraints w.r.t. cell-local extrema.
+              if (q_c(i,j,k,q) < qlo_s)
+                qd_lo(spli,q) = std::max(qd_lo(spli,q), qlo_s - q_c(i,j,k,q));
+              if (q_c(i,j,k,q) > qhi_s)
+                qd_hi(spli,q) = std::max(qd_hi(spli,q), q_c(i,j,k,q) - qhi_s);
               // Safety problem bound constraints.
               mass_lo(spli,q) += (q_min(i,j,k,q,ie0) * dp3d_c(i,j,k,d.tl_np1) *
                                   spheremp(i,j));
@@ -5621,6 +5638,7 @@ void check (CDR& cdr, Data& d, const Real* q_min_r, const Real* q_max_r,
               q_min_l(spli,q) = std::min(q_min_l(spli,q), q_min(i,j,k,q,ie0));
               q_max_l(spli,q) = std::max(q_max_l(spli,q), q_max(i,j,k,q,ie0));
             }
+        }
       }
     }
   }
