@@ -18,7 +18,7 @@ def get_standard_makefile_args(case):
                  "OCN_SUBMODEL", "CISM_USE_TRILINOS", "USE_ALBANY", "USE_PETSC"]
 
     make_args = "CIME_MODEL={} ".format(case.get_value("MODEL"))
-    make_args += " compile_threaded={} ".format(case.get_build_threaded())
+    make_args += " compile_threaded={} ".format(stringify_bool(case.get_build_threaded()))
     for var in variables:
         make_args+=xml_to_make_variable(case, var)
 
