@@ -215,6 +215,7 @@ contains
                is_local%wrap%FBImpAccum(complnd,complnd), &
                is_local%wrap%FBImpAccum(complnd,comprof), &
                is_local%wrap%FBFrac(complnd), &
+               is_local%wrap%FBFrac(comprof), &
                is_local%wrap%FBNormOne(complnd,comprof,:), &
                is_local%wrap%RH(complnd,comprof,:), &
                string=trim(compname(complnd))//'2'//trim(compname(comprof)), rc=rc)
@@ -478,7 +479,8 @@ contains
     !     convert to a total irrigation flux on the ROF grid
     ! ------------------------------------------------------------------------
 
-    call med_map_FB_Regrid_Norm((/trim(irrig_normalized_field), trim(irrig_volr0_field)/), &
+    call med_map_FB_Regrid_Norm(&
+         (/trim(irrig_normalized_field), trim(irrig_volr0_field)/), &
          FBlndIrrig, FBrofIrrig, &
          is_local%wrap%FBFrac(complnd), 'lfrin', &
          is_local%wrap%RH(complnd, comprof, mapconsf), &

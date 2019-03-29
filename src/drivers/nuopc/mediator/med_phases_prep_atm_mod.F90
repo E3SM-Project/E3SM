@@ -114,6 +114,7 @@ contains
                     is_local%wrap%FBImp(n1,n1), &
                     is_local%wrap%FBImp(n1,compatm), &
                     is_local%wrap%FBFrac(n1), &
+                    is_local%wrap%FBFrac(compatm), &
                     is_local%wrap%FBNormOne(n1,compatm,:), &
                     is_local%wrap%RH(n1,compatm,:), &
                     string=trim(compname(n1))//'2'//trim(compname(compatm)), rc=rc)
@@ -139,6 +140,7 @@ contains
                  is_local%wrap%FBMed_aoflux_o, &
                  is_local%wrap%FBMed_aoflux_a, &
                  is_local%wrap%FBFrac(compocn), &
+                 is_local%wrap%FBFrac(compatm), &
                  is_local%wrap%FBNormOne(compocn,compatm,:), &
                  is_local%wrap%RH(compocn,compatm,:), &
                  string='FBMed_aoflux_o_To_FBMEd_aoflux_a', rc=rc)

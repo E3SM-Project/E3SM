@@ -289,7 +289,6 @@ contains
                flds_scalar_name=flds_scalar_name, flds_scalar_num=flds_scalar_num, &
                scalar_id=flds_scalar_index_nextsw_cday, value=nextsw_cday, rc=rc)
           if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
-          write(6,*)'DEBUG: nextsw_cday = ',nextsw_cday
        end if
 
        first_call = .false.
@@ -433,6 +432,7 @@ contains
          is_local%wrap%FBMed_ocnalb_o, &
          is_local%wrap%FBMed_ocnalb_a, &
          is_local%wrap%FBFrac(compocn), &
+         is_local%wrap%FBFrac(compatm), &
          is_local%wrap%FBNormOne(compocn,compatm,:), &
          is_local%wrap%RH(compocn,compatm,:), &
          string='FBMed_ocnalb_o_To_FBMed_ocnalb_a', rc=rc)

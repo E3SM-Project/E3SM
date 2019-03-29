@@ -106,6 +106,7 @@ contains
                   is_local%wrap%FBImp(n1,n1), &
                   is_local%wrap%FBImp(n1,compglc), &
                   is_local%wrap%FBFrac(n1), &
+                  is_local%wrap%FBFrac(compglc), &
                   is_local%wrap%FBNormOne(n1,compglc,:), &
                   is_local%wrap%RH(n1,compglc,:), &
                   string=trim(compname(n1))//'2'//trim(compname(compglc)), rc=rc)

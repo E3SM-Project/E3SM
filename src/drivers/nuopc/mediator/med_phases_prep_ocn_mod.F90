@@ -86,6 +86,7 @@ contains
                   is_local%wrap%FBImp(n1,n1), &
                   is_local%wrap%FBImp(n1,compocn), &
                   is_local%wrap%FBFrac(n1), &
+                  is_local%wrap%FBFrac(compocn), &
                   is_local%wrap%FBNormOne(n1,compocn,:), &
                   is_local%wrap%RH(n1,compocn,:), &
                   string=trim(compname(n1))//'2'//trim(compname(compocn)), rc=rc)

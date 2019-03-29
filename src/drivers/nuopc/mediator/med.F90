@@ -1796,7 +1796,6 @@ contains
 
              if (atCorrectTime) then
                 if (fieldNameList(n) == flds_scalar_name) then
-                   write(6,*)'DEBUG: calling copystatetoinfodata'
                    call med_infodata_CopyStateToInfodata(is_local%wrap%NStateImp(n1), med_infodata, &
                         trim(compname(n1))//'2cpli', is_local%wrap%vm, rc)
                    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return

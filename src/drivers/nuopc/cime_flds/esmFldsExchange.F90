@@ -582,6 +582,7 @@ contains
             fldchk(is_local%wrap%FBImp(compglc,compglc) , 'Sg_topo'            , rc=rc) .and. &
             fldchk(is_local%wrap%FBImp(compglc,compglc) , 'Flgg_hflx'          , rc=rc)) then
 
+          ! Custom merges will be done here
           call addmap(FldListFr(compglc)%flds, 'Sg_ice_covered' , complnd, mapconsf, 'unset' , glc2lnd_fmap)
           call addmap(FldListFr(compglc)%flds, 'Sg_topo'        , compglc, mapconsf, 'custom', glc2lnd_fmap)
           call addmap(FldListFr(compglc)%flds, 'Flgg_hflx'      , compglc, mapconsf, 'custom', glc2lnd_fmap)
@@ -1916,21 +1917,22 @@ contains
     ! Note : Sl_topo is sent from lnd -> med, but is NOT sent to glc (only used for the remapping in the mediator)
 
     if (phase == 'advertise') then
-       call addfld(fldListFr(complnd)%flds, 'Flgl_qice_elev') ! glacier ice flux               (1->glc_nec)
-       call addfld(fldListFr(complnd)%flds, 'Sl_tsrf_elev')   ! surface temperature of glacier (1->glc_nec)
-       call addfld(fldListFr(complnd)%flds, 'Sl_topo_elev')   ! surface heights of glacier     (1->glc_nec)
+       call addfld(fldListFr(complnd)%flds, 'Sl_tsrf_elev')   ! surface temperature of glacier (1->glc_nec+1)
+       call addfld(fldListFr(complnd)%flds, 'Sl_topo_elev')   ! surface heights of glacier     (1->glc_nec+1)
+       call addfld(fldListFr(complnd)%flds, 'Flgl_qice_elev') ! glacier ice flux               (1->glc_nec+1)
 
-       call addfld(fldListTo(compglc)%flds, 'Flgl_qice')
        call addfld(fldListTo(compglc)%flds, 'Sl_tsrf')
        call addfld(fldListTo(compglc)%flds, 'Sl_topo')
+       call addfld(fldListTo(compglc)%flds, 'Flgl_qice')
     else
-       if ( fldchk(is_local%wrap%FBExp(complnd)         , 'Flgl_qice_elev', rc=rc) .and. &
-            fldchk(is_local%wrap%FBExp(complnd)         , 'Sl_tsrf_elev'  , rc=rc) .and. &
-            fldchk(is_local%wrap%FBExp(complnd)         , 'Sl_topo_elev'  , rc=rc) .and. &
-            fldchk(is_local%wrap%FBImp(compglc,compglc) , 'Sg_ice_covered', rc=rc) .and. &
-            fldchk(is_local%wrap%FBImp(compglc,compglc) , 'Sg_topo'       , rc=rc) .and. &
-            fldchk(is_local%wrap%FBImp(compglc,compglc) , 'Flgg_hflx'     , rc=rc)) then
+       if ( fldchk(is_local%wrap%FBImp(complnd,complnd) , 'Flgl_qice_elev', rc=rc) .and. &
+            fldchk(is_local%wrap%FBImp(complnd,complnd) , 'Sl_tsrf_elev'  , rc=rc) .and. &
+            fldchk(is_local%wrap%FBImp(complnd,complnd) , 'Sl_topo_elev'  , rc=rc) .and. &
+            fldchk(is_local%wrap%FBExp(compglc)         , 'Sg_ice_covered', rc=rc) .and. &
+            fldchk(is_local%wrap%FBExp(compglc)         , 'Sg_topo'       , rc=rc) .and. &
+            fldchk(is_local%wrap%FBExp(compglc)         , 'Flgg_hflx'     , rc=rc)) then
 
+          ! custom merging will be done here 
           call addmap(FldListFr(complnd)%flds, 'Flgl_qice_elev', compglc, mapconsf, 'none', lnd2glc_fmap)
           call addmap(FldListFr(complnd)%flds, 'Sl_tsrf_elev'  , compglc, mapbilnr, 'none', lnd2glc_smap)
           call addmap(FldListFr(complnd)%flds, 'Sl_topo_elev'  , compglc, mapbilnr, 'none', lnd2glc_smap)

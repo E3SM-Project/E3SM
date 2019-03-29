@@ -82,6 +82,7 @@ contains
                   is_local%wrap%FBImp(n1,n1), &
                   is_local%wrap%FBImp(n1,compwav), &
                   is_local%wrap%FBFrac(n1), &
+                  is_local%wrap%FBFrac(compwav), &
                   is_local%wrap%FBNormOne(n1,compwav,:), &
                   is_local%wrap%RH(n1,compwav,:), &
                   string=trim(compname(n1))//'2'//trim(compname(compwav)), rc=rc)

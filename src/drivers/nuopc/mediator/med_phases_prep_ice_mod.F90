@@ -102,6 +102,7 @@ contains
                   is_local%wrap%FBImp(n1,n1), &
                   is_local%wrap%FBImp(n1,compice), &
                   is_local%wrap%FBFrac(n1), &
+                  is_local%wrap%FBFrac(compice), &
                   is_local%wrap%FBNormOne(n1,compice,:), &
                   is_local%wrap%RH(n1,compice,:), &
                   string=trim(compname(n1))//'2'//trim(compname(compice)), rc=rc)

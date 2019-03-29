@@ -198,6 +198,7 @@ contains
          is_local%wrap%FBImp(compatm,compatm), &
          is_local%wrap%FBImp(compatm,compocn), &
          is_local%wrap%FBFrac(compatm), &
+         is_local%wrap%FBFrac(compocn), &
          is_local%wrap%FBNormOne(compatm,compocn,:), &
          is_local%wrap%RH(compatm,compocn,:), &
          string=trim(compname(compatm))//'2'//trim(compname(compocn)), rc=rc)

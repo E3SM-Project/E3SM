@@ -411,10 +411,8 @@ contains
     character(CL)                 :: tmpstr
     type(ESMF_Field)              :: lfield
     integer                       :: rank
-    integer                       :: ungriddedCount
-    integer                       :: gridToFieldMapCount
-    integer                       :: ungriddedUBound(1) ! currently the size must equal 1 for rank 2 fieldds
-    integer                       :: gridToFieldMap(1)  ! currently the size must equal 1 for rank 2 fieldds
+    integer                       :: ungriddedUBound(1) ! currently the size must equal 1 for rank 2 fields
+    integer                       :: gridToFieldMap(1)  ! currently the size must equal 1 for rank 2 fields
     logical                       :: isPresent
     character(*),parameter :: subName = '(med_io_write_FB) '
     !-------------------------------------------------------------------------------
@@ -1147,9 +1145,7 @@ contains
     character(CL)                 :: tmpstr
     character(len=16)             :: cnumber
     integer(kind=Pio_Offset_Kind) :: lframe
-    integer                       :: ungriddedCount
     integer                       :: ungriddedUBound(1) ! currently the size must equal 1 for rank 2 fieldds
-    integer                       :: gridToFieldMapCount
     integer                       :: gridToFieldMap(1)  ! currently the size must equal 1 for rank 2 fieldds
     character(*),parameter :: subName = '(med_io_read_FB) '
     !-------------------------------------------------------------------------------
