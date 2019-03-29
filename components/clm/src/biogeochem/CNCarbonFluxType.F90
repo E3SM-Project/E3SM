@@ -407,6 +407,7 @@ module CNCarbonFluxType
      real(r8), pointer :: vegfire_col                               (:)     ! column (gC/m2/s) patch-level fire loss (obsolete, mark for removal) (p2c)
      real(r8), pointer :: wood_harvestc_col                         (:)     ! column (p2c)
      real(r8), pointer :: hrv_xsmrpool_to_atm_col                   (:)     ! column excess MR pool harvest mortality (gC/m2/s) (p2c)
+     real(r8), pointer :: rr_vr_col      (:,:)
 
      ! Temporary and annual sums
      real(r8), pointer :: tempsum_litfall_patch       (:) ! temporary annual sum of litfall (gC/m2/yr) (CNDV)
@@ -876,6 +877,7 @@ contains
      allocate(this%cflx_input_litr_cel_vr_col  (begc:endc,1:nlevdecomp_full));this%cflx_input_litr_cel_vr_col(:,:)=nan
      allocate(this%cflx_input_litr_lig_vr_col  (begc:endc,1:nlevdecomp_full));this%cflx_input_litr_lig_vr_col(:,:)=nan
      allocate(this%cflx_input_litr_cwd_vr_col  (begc:endc,1:nlevdecomp_full));this%cflx_input_litr_cwd_vr_col(:,:)=nan
+     allocate(this%rr_vr_col(begc:endc, 1:nlevdecomp_full)); this%rr_vr_col(:,:) = nan
   end subroutine InitAllocate;
 
   !------------------------------------------------------------------------
@@ -3114,6 +3116,11 @@ contains
                avgflag='A', long_name='vertically resolved cwd carbon input', &
                ptr_col=this%cflx_input_litr_cwd_vr_col, default='inactive')
 
+          this%rr_vr_col(begc:endc,:)=spval
+          call hist_addfld2d (fname='RR_vr', units='gC/m^3/s', type2d='levdcmp', &
+               avgflag='A', long_name='vertically resolved root respiration', &
+               ptr_col=this%rr_vr_col, default='inactive')
+
        this%hr_col(begc:endc) = spval
        call hist_addfld1d (fname='HR', units='gC/m^2/s', &
             avgflag='A', long_name='total heterotrophic respiration', &
@@ -4573,6 +4580,7 @@ contains
           this%harvest_c_to_cwdc_col(i,j)             = value_column
 
           this%hr_vr_col(i,j)                         = value_column
+          this%rr_vr_col(i,j)                         = value_column
        end do
     end do
 
@@ -5704,8 +5712,7 @@ subroutine CSummary_interface(this, bounds, num_soilc, filter_soilc)
 end subroutine CSummary_interface
 !-------------------------------------------------------------------------------------------------
 
-  !------------------------------------------------------------
-  subroutine summary_rr(this, bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
+  subroutine summary_rr(this, bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, cnstate_vars)
   !
   ! description
   ! summarize root respiration
@@ -5718,7 +5725,8 @@ end subroutine CSummary_interface
   integer, intent(in) :: filter_soilp(:)
   integer, intent(in) :: num_soilc
   integer, intent(in) :: filter_soilc(:)
-  integer :: fp, p
+  type(cnstate_type), optional, intent(in) :: cnstate_vars
+  integer :: fp, p, fc, pi, c, j
    ! patch loop
   do fp = 1,num_soilp
     p = filter_soilp(fp)
@@ -5739,6 +5747,19 @@ end subroutine CSummary_interface
          this%rr_patch(bounds%begp:bounds%endp), &
          this%rr_col(bounds%begc:bounds%endc))
 
+  if(present(cnstate_vars))then
+    do j = 1, nlevdecomp_full
+      do pi = 1,maxpatch_pft
+        do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          if (pi <=  col_pp%npfts(c)) then
+            p = col_pp%pfti(c) + pi - 1
+            this%rr_vr_col(c,j)=this%rr_vr_col(c,j) + this%rr_patch(p)*cnstate_vars%froot_prof_patch(p,j) * veg_pp%wtcol(p)
+          endif
+        enddo
+      enddo
+    enddo
+  endif
   end subroutine summary_rr
 
 

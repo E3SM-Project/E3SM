@@ -26,7 +26,7 @@ module EcosystemDynMod
   use atm2lndType         , only : atm2lnd_type
   use SoilStateType       , only : soilstate_type
   use CanopyStateType     , only : canopystate_type
-  use TemperatureType     , only : temperature_type 
+  use TemperatureType     , only : temperature_type
   use PhotosynthesisType  , only : photosyns_type
   use CH4Mod              , only : ch4_type
   use EnergyFluxType      , only : energyflux_type
@@ -70,13 +70,13 @@ contains
     !
     ! !ARGUMENTS:
     implicit none
-    type(bounds_type), intent(in) :: bounds      
+    type(bounds_type), intent(in) :: bounds
     !-----------------------------------------------------------------------
 
     call AllocationInit (bounds)
     call PhenologyInit  (bounds)
     call FireInit       (bounds)
-    
+
     if ( use_c14 ) then
        call C14_init_BombSpike()
     end if
@@ -112,10 +112,10 @@ contains
     use perf_mod             , only: t_startf, t_stopf
     use shr_sys_mod          , only: shr_sys_flush
     use PhosphorusDynamicsMod         , only: PhosphorusBiochemMin_balance
-    
+
     !
     ! !ARGUMENTS:
-    type(bounds_type)        , intent(in)    :: bounds  
+    type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_soilc         ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:)   ! filter for soil columns
     integer                  , intent(in)    :: num_soilp         ! number of soil patches in filter
@@ -142,7 +142,7 @@ contains
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
 
     !-----------------------------------------------------------------------
-  
+
     ! only do if ed is off
     if( .not. use_fates) then
        !if(.not.(use_pflotran.and.pf_cmode)) then
@@ -179,7 +179,7 @@ contains
                 !call t_stopf('PhosphorusBiochemMin')
              end if
        !end if
-       
+
        !-----------------------------------------------------------------------
        ! pflotran: when both 'pf-bgc' and 'pf-h' on, no need to call CLM-CN's N leaching module
        if (.not. (pf_cmode .and. pf_hmode)) then
@@ -258,7 +258,7 @@ contains
     !
     ! !USES:
     use NitrogenDynamicsMod         , only: NitrogenDeposition,NitrogenFixation, NitrogenFert, CNSoyfix
-    use PhosphorusDynamicsMod           , only: PhosphorusDeposition   
+    use PhosphorusDynamicsMod           , only: PhosphorusDeposition
     use MaintenanceRespMod             , only: MaintenanceResp
 !    use SoilLittDecompMod            , only: SoilLittDecompAlloc
 !    use PhenologyMod         , only: Phenology
@@ -288,7 +288,7 @@ contains
     use NitrogenDynamicsMod         , only: NitrogenFixation_balance
     use PhosphorusDynamicsMod           , only: PhosphorusWeathering,PhosphorusAdsportion,PhosphorusDesoprtion,PhosphorusOcclusion
     use PhosphorusDynamicsMod           , only: PhosphorusBiochemMin,PhosphorusBiochemMin_balance
-  
+
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -371,7 +371,7 @@ contains
             atm2lnd_vars, nitrogenflux_vars)
        call t_stopf('CNDeposition')
 
-       if (.not. nu_com_nfix) then 
+       if (.not. nu_com_nfix) then
           call t_startf('CNFixation')
           call NitrogenFixation( num_soilc, filter_soilc, &
                waterflux_vars, carbonflux_vars, nitrogenflux_vars)
@@ -612,7 +612,7 @@ contains
        call GrowthResp(num_soilp, filter_soilp, &
             carbonflux_vars)
        call t_stopf('GrowthResp')
-       call carbonflux_vars%summary_rr(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
+       call carbonflux_vars%summary_rr(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, cnstate_vars)
 
        if(use_c13) then
          call c13_carbonflux_vars%summary_rr(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
@@ -850,10 +850,10 @@ contains
        endif
        if( use_c14 ) then
           call c14_carbonflux_vars%summary_cflux_for_ch4(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
-       endif    
+       endif
     end if !end of if not use_fates block
 
   end subroutine EcosystemDynNoLeaching2
 
-  
+
 end  module EcosystemDynMod
