@@ -5,7 +5,7 @@ module CNCarbonFluxType
   use decompMod              , only : bounds_type
   use clm_varpar             , only : ndecomp_cascade_transitions, ndecomp_pools, nlevcan
   use clm_varpar             , only : crop_prog
-  use clm_varpar             , only : nlevdecomp_full, nlevgrnd, nlevdecomp
+  use clm_varpar             , only : nlevdecomp_full, nlevgrnd, nlevdecomp,maxpatch_pft
   use clm_varcon             , only : spval, ispval, dzsoi_decomp
   use landunit_varcon        , only : istsoil, istcrop, istdlak
   use clm_varctl             , only : use_cndv, use_c13, use_fates
@@ -5716,7 +5716,7 @@ end subroutine CSummary_interface
   !
   ! description
   ! summarize root respiration
-
+  use CNStateType         , only : cnstate_type
   use subgridAveMod    , only: p2c
   class(carbonflux_type) :: this
 
