@@ -1179,9 +1179,12 @@ KOKKOS_INLINE_FUNCTION
 Int solve_1eq_bc_qp_2d (const Real* w, const Real* a, const Real b,
                         const Real* xlo, const Real* xhi, 
                         const Real* y, Real* x) {
+  Int info;
+#if 0
   const Real r_tol = impl::calc_r_tol(b, a, y, 2);
-  Int info = impl::check_lu(2, a, b, xlo, xhi, r_tol, x);
-  if (info != 0) return info;
+  info = impl::check_lu(2, a, b, xlo, xhi, r_tol, x);
+  if (info == -1) return info;
+#endif
 
   { // Check if the optimal point ignoring bound constraints is in bounds.
     Real qmass = 0, dm = b;
