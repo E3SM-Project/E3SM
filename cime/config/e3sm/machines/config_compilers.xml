@@ -725,25 +725,25 @@ for mct, etc.
 </compiler>
 
 <compiler MACH="anvil" COMPILER="intel">
-  <!-- <CFLAGS>
+  <CFLAGS>
     <append compile_threaded="true"> -static-intel</append>
     <append compile_threaded="true" DEBUG="TRUE">-heap-arrays</append>
-  </CFLAGS> -->
+  </CFLAGS>
   <CPPDEFS>
     <append MODEL="gptl"> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align</append>
-    <!-- <append compile_threaded="true"> -static-intel</append>
-    <append compile_threaded="true" DEBUG="TRUE">-heap-arrays</append> -->
+    <append compile_threaded="true"> -static-intel</append>
+    <append compile_threaded="true" DEBUG="TRUE">-heap-arrays</append>
   </FFLAGS>
-  <!-- <FFLAGS_NOOPT>
+  <FFLAGS_NOOPT>
     <append compile_threaded="true"> -static-intel</append>
   </FFLAGS_NOOPT>
   <LDFLAGS>
     <append compile_threaded="true"> -static-intel</append>
   </LDFLAGS>
-  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS> -->
+  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
   <SLIBS>
     <append>$SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --flibs} -Wl,-rpath -Wl,$ENV{NETCDF_FORTRAN_PATH}/lib</append>
     <append>-mkl</append>
@@ -751,7 +751,6 @@ for mct, etc.
   <MPICC MPILIB="impi"> mpiicc  </MPICC>
   <MPICXX MPILIB="impi"> mpiicpc </MPICXX>
   <MPIFC MPILIB="impi"> mpiifort </MPIFC>
-
 </compiler>
 
 <compiler MACH="anvil" COMPILER="pgi">
