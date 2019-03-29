@@ -442,8 +442,8 @@ struct StandaloneTracersTester {
 #endif
   }
 #else
-  // Error norm data.
-  std::vector<Real> l2_err_, wrk_;
+  // Error data.
+  std::vector<Real> l2_err_, wrk_, mass0_, massf_;
 
   void record_begin () {
     int nthr = 1;
@@ -454,6 +454,8 @@ struct StandaloneTracersTester {
     {
       l2_err_.resize(2*nlev*qsize*nthr, 0);
       wrk_.resize(np*np*nlev*qsize*nthr);
+      mass0_.resize(qsize*nthr, 0);
+      massf_.resize(qsize*nthr, 0);
     }
 #ifdef HORIZ_OPENMP
 # pragma omp barrier
@@ -475,16 +477,20 @@ struct StandaloneTracersTester {
     const FA4<const Real> qdp(rqdp, np, np, nlev, qsize_d);
     Real* const l2_err = l2_err_.data() + 2*nlev*qsize*tid;
     Real* const wrk = wrk_.data() + np*np*nlev*qsize*tid;
+    Real* const mass0 = mass0_.data() + qsize*tid;
+    Real* const massf = massf_.data() + qsize*tid;
     fill_ics(ie, rp_elem, nullptr, wrk);
-    const FA4<const Real> qdp_t(wrk, np, np, nlev, qsize_d);
+    const FA4<const Real> q0(wrk, np, np, nlev, qsize_d);
     for (Int q = 0; q < qsize; ++q)
       for (Int k = 0; k < nlev; ++k) {
         Real num = 0, den = 0;
         for (Int j = 0; j < np; ++j)
           for (Int i = 0; i < np; ++i) {
             num += spheremp(i,j)*square(qdp(i,j,k,q)/dp(i,j,k) -
-                                        qdp_t(i,j,k,q));
-            den += spheremp(i,j)*square(qdp_t(i,j,k,q));
+                                        q0(i,j,k,q));
+            den += spheremp(i,j)*square(q0(i,j,k,q));
+            mass0[q] += spheremp(i,j)*q0(i,j,k,q) /* times rho = 1 */;
+            massf[q] += spheremp(i,j)*qdp(i,j,k,q);
           }
         l2_err[2*nlev*q + 2*k    ] += num;
         l2_err[2*nlev*q + 2*k + 1] += den;
@@ -505,9 +511,14 @@ struct StandaloneTracersTester {
     {
 #endif
       const int nthr = wrk_.size()/(np*np*nlev*qsize);
-      for (int i = 1; i < nthr; ++i)
+      for (int i = 1; i < nthr; ++i) {
         for (int j = 0; j < nr; ++j)
           l2_err_[j] += l2_err_[nr*i + j];
+        for (int j = 0; j < qsize; ++j) {
+          mass0_[j] += mass0_[qsize*i + j];
+          massf_[j] += massf_[qsize*i + j];
+        }
+      }
       MPI_Reduce(l2_err_.data(), wrk_.data(), nr, MPI_DOUBLE, MPI_SUM,
                  root, comm);
       if (rank == root)
@@ -517,6 +528,16 @@ struct StandaloneTracersTester {
             printf("%9.2e", std::sqrt(wrk_[2*nlev*q + 2*k] /
                                       wrk_[2*nlev*q + 2*k + 1]));
           printf("\n");
+        }
+      MPI_Reduce(mass0_.data(), wrk_.data(), qsize, MPI_DOUBLE, MPI_SUM,
+                 root, comm);
+      MPI_Reduce(massf_.data(), wrk_.data() + qsize, qsize, MPI_DOUBLE, MPI_SUM,
+                 root, comm);
+      if (rank == root)
+        for (int q = 0; q < qsize; ++q) {
+          printf("COMPOSE>");
+          const Real mass0 = wrk_[q], massf = wrk_[qsize + q];
+          printf("mass0 %9.2e mass re %9.2e\n", mass0, (massf - mass0)/mass0);
         }
 #ifdef HORIZ_OPENMP
     }
