@@ -293,14 +293,14 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
         !--- compute some needed quantities ---
         vmag   = max(umin, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) )
         if (use_coldair_outbreak_mod) then
-           ! Cold Air Outbreak Modification:
-           ! Increase windspeed for negative tbot-ts
-           ! based on Mahrt & Sun 1995,MWR
+            ! Cold Air Outbreak Modification:
+            ! Increase windspeed for negative tbot-ts
+            ! based on Mahrt & Sun 1995,MWR
 
-           if (tdiff(n).lt.td0) then
-              vscl=min((1._R8+alpha*(abs(tdiff(n)-td0)**0.5_R8/abs(vmag))),maxscl)
-              vmag=vmag*vscl
-           endif
+            if (tdiff(n).lt.td0) then
+               vscl=min((1._R8+alpha*(abs(tdiff(n)-td0)**0.5_R8/abs(vmag))),maxscl)
+               vmag=vmag*vscl
+            endif
         endif
         ssq    = 0.98_R8 * qsat(ts(n)) / rbot(n)   ! sea surf hum (kg/kg)
         delt   = thbot(n) - ts(n)                  ! pot temp diff (K)
