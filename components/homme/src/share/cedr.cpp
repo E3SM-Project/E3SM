@@ -5511,12 +5511,13 @@ void run_local (CDR& cdr, const Data& d, const Real* q_min_r, const Real* q_max_
               cedr::local::caas(np2, wa, Qm, qlo, qhi, y, x);
             }
           } else {
+            const Int N = std::min(max_np2, np2);
             for (Int j = 0, cnt = 0; j < np; ++j)
               for (Int i = 0; i < np; ++i, ++cnt) {
                 qlo[cnt] = q_min(i,j,k,q,ie0);
                 qhi[cnt] = q_max(i,j,k,q,ie0);
               }
-            for (Int trial = 0; trial < 2; ++trial) {
+            for (Int trial = 0; trial < 3; ++trial) {
               int info;
               if (limiter_option == 8) {
                 info = cedr::local::solve_1eq_bc_qp(
@@ -5526,21 +5527,33 @@ void run_local (CDR& cdr, const Data& d, const Real* q_min_r, const Real* q_max_
                 info = 0;
                 cedr::local::caas(np2, wa, Qm, qlo, qhi, y, x, false /* clip */);
                 // Clip for numerics against the cell extrema.
-                const Int n = np*np;
                 Real qlo_s = qlo[0], qhi_s = qhi[0];
-                for (Int i = 1; i < n; ++i) {
+                for (Int i = 1; i < N; ++i) {
                   qlo_s = std::min(qlo_s, qlo[i]);
                   qhi_s = std::max(qhi_s, qhi[i]);
                 }
-                for (Int i = 0; i < n; ++i)
+                for (Int i = 0; i < N; ++i)
                   x[i] = cedr::impl::max(qlo_s, cedr::impl::min(qhi_s, x[i]));
               }
               if (info == 0 || trial == 1) break;
-              const Real q = Qm / rhom;
-              const Int N = std::min(max_np2, np2);
-              for (Int i = 0; i < N; ++i) qlo[i] = std::min(qlo[i], q);
-              for (Int i = 0; i < N; ++i) qhi[i] = std::max(qhi[i], q);
-            }          
+              switch (trial) {
+              case 0: {
+                Real qlo_s = qlo[0], qhi_s = qhi[0];
+                for (Int i = 1; i < N; ++i) {
+                  qlo_s = std::min(qlo_s, qlo[i]);
+                  qhi_s = std::max(qhi_s, qhi[i]);
+                }
+                const Int N = std::min(max_np2, np2);
+                for (Int i = 0; i < N; ++i) qlo[i] = qlo_s;
+                for (Int i = 0; i < N; ++i) qhi[i] = qhi_s;
+              } break;
+              case 1: {
+                const Real q = Qm / rhom;
+                for (Int i = 0; i < N; ++i) qlo[i] = std::min(qlo[i], q);
+                for (Int i = 0; i < N; ++i) qhi[i] = std::max(qhi[i], q);                
+              } break;
+              }
+            }
           }
         
           for (Int j = 0, cnt = 0; j < np; ++j)
