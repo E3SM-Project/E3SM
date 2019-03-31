@@ -995,15 +995,22 @@ contains
     integer                  :: mpigrp_cplid ! coupler pes
     integer                  :: mpigrp_old   !  component group pes
     integer, external        :: iMOAB_RegisterFortranApplication, iMOAB_ReceiveMesh, iMOAB_SendMesh
-    integer, external        :: iMOAB_WriteMesh, iMOAB_DefineTagStorage
+    integer, external        :: iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_GetMeshInfo
+    integer, external        :: iMOAB_SetIntTagStorage
     integer                  :: ierr
     character*32             :: appname, outfile, wopts, tagnameProj
     integer                  :: maxMH, maxMPO, maxMLID ! max pids for moab apps atm, ocn, lnd
     integer                  :: tagtype, numco,  tagindex, partMethod
+    integer                  :: rank, ent_type
+#ifdef MOABDEBUG
+    integer , dimension(1:3) :: nverts, nelem, nblocks, nsbc, ndbc
+    integer, dimension(:), allocatable ::  vgids
+    character*32             :: tagname
+#endif
 
-    !-----------------------------------------------------
+!-----------------------------------------------------
 
-    call seq_comm_getinfo(CPLID, mpicom=mpicom_CPLID)
+    call seq_comm_getinfo(CPLID, mpicom=mpicom_CPLID, iam=rank)
 
     id_new  = cplid
     id_old  = comp%compid
@@ -1117,10 +1124,21 @@ contains
         ierr = iMOAB_ReceiveMesh(mlnxid, mpicom_join, mpigrp_old, id_old)
 
 #ifdef MOABDEBUG
+        !there are no shared entities, but we will set a special partition tag, in order to see the
+        ! partitions ; it will be visible with a Pseudocolor plot in VisIt
+        tagname='partition'//CHAR(0)
+        tagtype = 0  ! dense, integer
+        numco = 1 !  one value per cell
+        ierr = iMOAB_DefineTagStorage(mlnxid, tagname, tagtype, numco,  tagindex )
+        ierr = iMOAB_GetMeshInfo(mlnxid, nverts, nelem, nblocks, nsbc, ndbc)
+        allocate(vgids(nverts(1)))
+        vgids = rank
+        ent_type = 0 ! vertex type
+        ierr = iMOAB_SetIntTagStorage ( mlnxid, tagname, nverts(1) , ent_type, vgids)
         ! debug test
         outfile = 'recLand.h5m'//CHAR(0)
         wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
-!      write out the mesh file to disk
+!       write out the mesh file to disk
         ierr = iMOAB_WriteMesh(mlnxid, trim(outfile), trim(wopts))
 #endif
       endif
