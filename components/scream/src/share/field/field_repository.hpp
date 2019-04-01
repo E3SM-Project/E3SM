@@ -16,12 +16,6 @@ namespace scream
   *  the memory space of the views.
   */
 
-enum class RepoState {
-  CLEAN,
-  OPEN,
-  CLOSED
-};
-
 template<typename ScalarType, typename Device>
 class FieldRepository {
 public:
@@ -32,6 +26,7 @@ public:
   using field_type      = Field<scalar_type,device_type>;
   using header_type     = typename field_type::header_type;
   using identifier_type = typename header_type::identifier_type;
+  using requests_type   = std::map<std::string,std::vector<identifier_type>>;
   using map_type        = std::map<identifier_type,field_type>;
 
   // Constructor(s)
@@ -60,17 +55,20 @@ public:
 protected:
 
   // The state of the repository
-  RepoState     m_state;
+  RepoState       m_state;
 
-  // The actual repo
-  map_type  m_fields;
+  // The requests
+  requests_type   m_requests;
+
+  // The actual repo.
+  map_type        m_fields;
 };
 
 // ============================== IMPLEMENTATION ============================= //
 
 template<typename ScalarType, typename Device>
 FieldRepository<ScalarType,Device>::FieldRepository ()
- : m_state (RepoState::CLEAN)
+ : m_state (RepoState::Clean)
 {
   // Nothing to be done here
 }
@@ -85,7 +83,7 @@ void FieldRepository<ScalarType,Device>::register_field (const identifier_type& 
                 "the template argument 'ScalarType' of this class or be a Pack type based on ScalarType.\n");
 
   // Sanity checks
-  error::runtime_check(m_state==RepoState::OPEN,"Error! Registration of new fields no longer allowed.\n");
+  error::runtime_check(m_state==RepoState::Open,"Error! Registration of new fields not started or no longer allowed.\n");
 
   // Try to create the field. Allow case where it is already existing.
   auto it_bool = m_fields.emplace(id,field_type(id));
@@ -97,7 +95,7 @@ void FieldRepository<ScalarType,Device>::register_field (const identifier_type& 
 template<typename ScalarType, typename Device>
 typename FieldRepository<ScalarType,Device>::field_type
 FieldRepository<ScalarType,Device>::get_field (const identifier_type& id) const {
-  error::runtime_check(m_state==RepoState::CLOSED,"Error! You are not allowed to grab fields from the repo until after the registration phase is completed.\n");
+  error::runtime_check(m_state==RepoState::Closed,"Error! You are not allowed to grab fields from the repo until after the registration phase is completed.\n");
 
   auto it = m_fields.find(id);
   error::runtime_check(it!=m_fields.end(), "Error! Field not found.\n");
@@ -107,7 +105,7 @@ FieldRepository<ScalarType,Device>::get_field (const identifier_type& id) const 
 template<typename ScalarType, typename Device>
 void FieldRepository<ScalarType,Device>::registration_begins () {
   // Update the state of the repo
-  m_state = RepoState::OPEN;
+  m_state = RepoState::Open;
 }
 
 template<typename ScalarType, typename Device>
@@ -118,15 +116,14 @@ void FieldRepository<ScalarType,Device>::registration_ends () {
   }
 
   // Prohibit further registration of fields
-  m_state = RepoState::CLOSED;
+  m_state = RepoState::Closed;
 }
 
 template<typename ScalarType, typename Device>
 void FieldRepository<ScalarType,Device>::clean_up() {
   m_fields.clear();
-  m_state = RepoState::CLEAN;
+  m_state = RepoState::Clean;
 }
-
 
 } // namespace scream
 

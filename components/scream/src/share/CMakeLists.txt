@@ -5,6 +5,7 @@ set(SHARE_SRC
   field/field_alloc_prop.cpp
   field/field_identifier.cpp
   field/field_header.cpp
+  field/field_layout.cpp
   field/field_tracking.cpp
   mpi/scream_comm.cpp
   util/scream_utils.cpp
@@ -22,6 +23,7 @@ set(SHARE_HEADERS
   field/field_alloc_prop.hpp
   field/field_identifier.hpp
   field/field_header.hpp
+  field/field_layout.hpp
   field/field_repository.hpp
   field/field_tag.hpp
   field/field_tracking.cpp

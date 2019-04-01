@@ -82,7 +82,7 @@ void AtmosphereProcessGroup::register_fields (FieldRepository<Real, device_type>
     atm_proc->register_fields(field_repo);
 
     // Make sure processes are not calling methods they shouldn't on the repo
-    error::runtime_check(field_repo.repository_state()==RepoState::OPEN,
+    error::runtime_check(field_repo.repository_state()==RepoState::Open,
                          "Error! Atmosphere processes are *not* allowed to modify the state of the repository.\n");
 
     // Check that the required fields are indeed in the repo now

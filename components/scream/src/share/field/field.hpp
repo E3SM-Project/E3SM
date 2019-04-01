@@ -12,9 +12,17 @@
 namespace scream
 {
 
+template<typename FieldType>
+struct is_scream_field : public std::false_type {};
+
 // ======================== FIELD ======================== //
 
 // A field should be composed of metadata info (the header) and a pointer to the view
+// TODO: make a FieldBase class, without the view (just meta-data), without templating on
+//       the device type. Then make Field inherit from FieldBase, templating it on the
+//       device type. This way, we can pass FieldBase around, and the individual atm
+//       atm processes will try to cast to Field<Real,MyDeviceType>. This way, we can
+//       allow different atm processes to run on different device types.
 
 template<typename ScalarType, typename Device>
 class Field {
@@ -75,6 +83,9 @@ protected:
   // Keep track of whether the field has been allocated
   bool                            m_allocated;
 };
+
+template<typename ScalarType, typename DeviceType>
+struct is_scream_field<Field<ScalarType,DeviceType>> : public std::true_type {};
 
 // ================================= IMPLEMENTATION ================================== //
 
@@ -145,7 +156,7 @@ Field<ScalarType,Device>::get_reshaped_view () const {
 
   // Get src details
   const auto& alloc_prop = m_header->get_alloc_properties();
-  const auto& id = m_header->get_identifier();
+  const auto& field_layout = m_header->get_identifier().layout();
 
   // Make sure input field is allocated
   error::runtime_check(m_allocated, "Error! Cannot reshape a field that has not been allocated yet.\n");
@@ -159,26 +170,26 @@ Field<ScalarType,Device>::get_reshaped_view () const {
 
   // The destination view type
   using DstView = ko::Unmanaged<typename KokkosTypes<Device>::template view<DT> >;
-  typename DstView::traits::array_layout layout;
+  typename DstView::traits::array_layout kokkos_layout;
 
   const int num_values = alloc_prop.get_alloc_size() / sizeof(DstValueType);
   if (DstRank==1) {
     // We are staying 1d, possibly changing the data type
-    layout.dimension[0] = num_values;
+    kokkos_layout.dimension[0] = num_values;
   } else {
     int num_last_dim_values = num_values;
     // The destination data type is a multi-dimensional array.
-    for (int i=0; i<id.rank()-1; ++i) {
-      layout.dimension[i] = id.dim(i);
+    for (int i=0; i<field_layout.rank()-1; ++i) {
+      kokkos_layout.dimension[i] = field_layout.dim(i);
 
-      // Safety check: id.dim(0)*...*id.dim(id.rank()-2) should divide num_values, so we check
-      error::runtime_check(num_last_dim_values % id.dim(i) == 0, "Error! Something is wrong with the allocation properties.\n");
-      num_last_dim_values /= id.dim(i);
+      // Safety check: field_layout.dim(0)*...*field_layout.dim(field_layout.rank()-2) should divide num_values, so we check
+      error::runtime_check(num_last_dim_values % field_layout.dim(i) == 0, "Error! Something is wrong with the allocation properties.\n");
+      num_last_dim_values /= field_layout.dim(i);
     }
-    layout.dimension[id.rank()-1] = num_last_dim_values;
+    kokkos_layout.dimension[field_layout.rank()-1] = num_last_dim_values;
   }
 
-  return DstView (reinterpret_cast<DstValueType*>(m_view.data()),layout);
+  return DstView (reinterpret_cast<DstValueType*>(m_view.data()),kokkos_layout);
 }
 
 template<typename ScalarType, typename Device>
@@ -192,11 +203,12 @@ void Field<ScalarType,Device>::allocate_view ()
   error::runtime_check(!m_allocated, "Error! View was already allocated.\n");
 
   // Short names
-  const auto& id = m_header->get_identifier();
-  auto& alloc_prop = m_header->get_alloc_properties();
+  const auto& id     = m_header->get_identifier();
+  const auto& layout = id.layout();
+  auto& alloc_prop   = m_header->get_alloc_properties();
 
   // Check the identifier has all the dimensions set
-  error::runtime_check(id.are_dimensions_set(), "Error! Cannot create a field until all the field's dimensions are set.\n");
+  error::runtime_check(layout.are_dimensions_set(), "Error! Cannot create a field until all the field's dimensions are set.\n");
 
   // Commit the allocation properties
   alloc_prop.commit();

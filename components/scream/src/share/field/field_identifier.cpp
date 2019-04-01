@@ -4,44 +4,49 @@ namespace scream
 {
 
 FieldIdentifier::FieldIdentifier (const std::string& name,
+                                  const layout_type& layout)
+ : m_name   (name)
+ , m_layout (layout)
+{
+  update_identifier ();
+}
+
+FieldIdentifier::FieldIdentifier (const std::string& name,
                                   const std::vector<FieldTag>& tags)
- : m_name (name)
- , m_tags (tags)
- , m_rank (tags.size())
- , m_dims (tags.size(),-1)
+ : m_name   (name)
+ , m_layout (tags)
 {
   // Compute identifier string
   update_identifier ();
 }
 
-void FieldIdentifier::set_dimension (const int idim, const int dimension) {
-  error::runtime_check(idim>=0 && idim<m_rank, "Error! Index out of bounds.", -1);
-  error::runtime_check(m_dims[idim] == -1,
-                       "Error! You cannot reset field dimensions once set.\n");
-  error::runtime_check(dimension>0, "Error! Dimensions must be positive.");
-  m_dims[idim] = dimension;
+FieldIdentifier::FieldIdentifier (const std::string& name,
+                                  const std::initializer_list<FieldTag>& tags)
+ : m_name   (name)
+ , m_layout (tags)
+{
+  update_identifier ();
+}
 
+void FieldIdentifier::set_dimension (const int idim, const int dimension) {
+  m_layout.set_dimension(idim,dimension);
   update_identifier ();
 }
 
 void FieldIdentifier::set_dimensions (const std::vector<int>& dims) {
-  // Check, then set dims
-  error::runtime_check(dims.size()==static_cast<size_t>(m_rank),
-                       "Error! Input dimensions vector not properly sized.");
-  for (int idim=0; idim<m_rank; ++idim) {
-    set_dimension(idim,dims[idim]);
-  }
+  m_layout.set_dimensions(dims);
+  update_identifier ();
 }
 
 void FieldIdentifier::update_identifier () {
   // Create a verbose identifier string.
-  m_identifier = m_name + "<" + tag2string(m_tags[0]);
-  for (int dim=1; dim<m_rank; ++dim) {
-    m_identifier += "," + tag2string(m_tags[dim]);
+  m_identifier = m_name + "<" + tag2string(m_layout.tags()[0]);
+  for (int dim=1; dim<m_layout.rank(); ++dim) {
+    m_identifier += "," + tag2string(m_layout.tags()[dim]);
   }
-  m_identifier += ">(" + std::to_string(m_dims[0]);
-  for (int dim=1; dim<m_rank; ++dim) {
-    m_identifier += "," + std::to_string(m_dims[dim]);
+  m_identifier += ">(" + std::to_string(m_layout.dims()[0]);
+  for (int dim=1; dim<m_layout.rank(); ++dim) {
+    m_identifier += "," + std::to_string(m_layout.dims()[dim]);
   }
   m_identifier += ")";
 }

@@ -38,7 +38,7 @@ namespace scream
 class FieldAllocProp {
 public:
 
-  explicit FieldAllocProp (const FieldIdentifier& id);
+  explicit FieldAllocProp (const FieldLayout& layout);
   
   // Request allocation able to accommodate the given ValueType
   template<typename ValueType>
@@ -59,9 +59,9 @@ public:
 
 protected:
 
-  const FieldIdentifier& m_fid;
+  const FieldLayout&  m_layout;
 
-  std::vector<int> m_value_type_sizes;
+  std::vector<int>    m_value_type_sizes;
 
   int         m_scalar_type_size;
   std::string m_scalar_type_name;

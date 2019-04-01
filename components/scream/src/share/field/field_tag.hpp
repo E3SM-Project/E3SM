@@ -32,12 +32,14 @@ namespace scream
 
 enum class FieldTag {
   Element,
-  Level,
+  VerticalLevel,
   Column,
   GaussPoint,
   Component,
-  Tracer,
-  State
+  ComponentX,
+  ComponentY,
+  TimeLevel,
+  Variable
 };
 
 inline std::string tag2string (const FieldTag ft) {
@@ -46,8 +48,11 @@ inline std::string tag2string (const FieldTag ft) {
     case FieldTag::Element:
       name = "Element";
       break;
-    case FieldTag::Level:
-      name = "Level";
+    case FieldTag::VerticalLevel:
+      name = "VerticalLevel";
+      break;
+    case FieldTag::TimeLevel:
+      name = "VerticalLevel";
       break;
     case FieldTag::Column:
       name = "Column";
@@ -58,10 +63,13 @@ inline std::string tag2string (const FieldTag ft) {
     case FieldTag::Component:
       name = "Component";
       break;
-    case FieldTag::Tracer:
-      name = "Tracer";
+    case FieldTag::ComponentX:
+      name = "ComponentX";
       break;
-    case FieldTag::State:
+    case FieldTag::ComponentY:
+      name = "ComponentY";
+      break;
+    case FieldTag::Variable:
       name = "State";
       break;
     default:

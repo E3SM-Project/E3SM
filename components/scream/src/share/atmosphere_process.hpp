@@ -55,10 +55,10 @@ public:
 
   virtual ~AtmosphereProcess () = default;
 
-  // The type of the block (e.g., dynamics or physics)
+  // The type of the process (e.g., dynamics or physics)
   virtual AtmosphereProcessType type () const = 0;
 
-  // The name of the block 
+  // The name of the process
   virtual std::string name () const = 0;
 
   // The communicator associated with this atm process
@@ -83,7 +83,7 @@ public:
 
   // These methods set fields in the atm process. Fields live on device and they are all 1d.
   // If the process *needs* to store the field as n-dimensional field, use the
-  // template functio 'reinterpret_field' (see field.hpp for details).
+  // template function 'get_reshaped_view' (see field.hpp for details).
   void set_required_field (const Field<const Real, device_type>& f) {
     error::runtime_check(requires(f.get_header().get_identifier()),
                          "Error! This atmosphere process does not require this field. "

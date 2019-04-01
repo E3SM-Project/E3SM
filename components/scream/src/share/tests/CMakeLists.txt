@@ -4,7 +4,7 @@ INCLUDE (ScreamUtils)
 CreateUnitTest(array_io "array_io_tests.cpp;unit_test.f90" scream_share)
 
 # Test utilities (c++)
-CreateUnitTest(util_cxx util_tests.cpp scream_share)
+CreateUnitTest(util_cxx "util_tests.cpp" scream_share)
 
 # Test packs
 CreateUnitTest(packs "pack_tests.cpp;pack_kokkos_tests.cpp" scream_share)
