@@ -522,9 +522,10 @@ contains
     implicit none
     integer, intent(in) :: ret
     logical, intent(in), optional :: fatal
-    logical :: fatal_local = .true.
+    logical :: fatal_local
 
     ! Default is to die when error is encountered
+    fatal_local = .true.
     if (present(fatal)) fatal_local = fatal
 
     if (ret /= NF_NOERR) then
