@@ -289,7 +289,7 @@ This allows using a different mpirun command to launch unit tests
     <NODENAME_REGEX>.*.cheyenne.ucar.edu</NODENAME_REGEX>
     <!-- MPT sometimes timesout at model start time, the next two lines cause
     case_run.py to detect the timeout and retry FORCE_SPARE_NODES times -->
-    <MPIRUN_RETRY_REGEX>MPT: xmpi_net_accept_timeo/accept() timeout</MPIRUN_RETRY_REGEX>
+    <MPIRUN_RETRY_REGEX>MPT: Launcher network accept (MPI_LAUNCH_TIMEOUT) timed out</MPIRUN_RETRY_REGEX>
     <MPIRUN_RETRY_COUNT>10</MPIRUN_RETRY_COUNT>
     <OS>LINUX</OS>
     <COMPILERS>intel,gnu,pgi</COMPILERS>
@@ -384,6 +384,12 @@ This allows using a different mpirun command to launch unit tests
 	<command name="load">mpt/2.19</command>
 	<command name="load">netcdf-mpi/4.6.1</command>
 	<command name="load">pnetcdf/1.11.0</command>
+      </modules>
+      <modules mpilib="mpt" compiler="intel" PIO_VERSION="2">
+	<command name="load">pio/2.4.1</command>
+      </modules>
+      <modules mpilib="mpt" compiler="intel" PIO_VERSION="1">
+	<command name="load">pio/1.10.1</command>
       </modules>
       <modules mpilib="mpt" compiler="pgi">
 	<command name="load">mpt/2.19</command>
