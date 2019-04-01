@@ -438,7 +438,7 @@ ifdef INC_MOAB
 endif
 
 ifeq ($(MODEL),driver)
-  INCLDIR += -I$(EXEROOT)/atm/obj -I$(EXEROOT)/ice/obj -I$(EXEROOT)/ocn/obj -I$(EXEROOT)/glc/obj -I$(EXEROOT)/rof/obj -I$(EXEROOT)/wav/obj -I$(EXEROOT)/esp/obj
+  INCLDIR += -I$(EXEROOT)/atm/obj -I$(EXEROOT)/ice/obj -I$(EXEROOT)/ocn/obj -I$(EXEROOT)/glc/obj -I$(EXEROOT)/rof/obj -I$(EXEROOT)/wav/obj -I$(EXEROOT)/esp/obj -I$(EXEROOT)/iac/obj
 # nagfor and gcc have incompatible LDFLAGS.
 # nagfor requires the weird "-Wl,-Wl,," syntax.
 # If done in config_compilers.xml, we break MCT.
@@ -832,6 +832,7 @@ ifeq ($(ULIBDEP),$(null))
      ULIBDEP += $(LIBROOT)/librof.a
      ULIBDEP += $(LIBROOT)/libglc.a
      ULIBDEP += $(LIBROOT)/libwav.a
+     ULIBDEP += $(LIBROOT)/libiac.a
      ULIBDEP += $(LIBROOT)/libesp.a
      ifeq ($(COMP_GLC), cism)
        ULIBDEP += $(CISM_LIBDIR)/libglimmercismfortran.a
@@ -930,6 +931,9 @@ clean_dependsocn:
 clean_dependswav:
 	$(RM) -f $(EXEROOT)/wav/obj/Srcfiles
 
+clean_dependsiac:
+	$(RM) -f $(EXEROOT)/iac/obj/Srcfiles
+
 clean_dependsglc:
 	$(RM) -f $(EXEROOT)/glc/obj/Srcfiles
 
@@ -948,7 +952,7 @@ clean_dependslnd:
 clean_dependscsmshare:
 	$(RM) -f $(SHAREDLIBROOT)/$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share/Srcfiles
 
-clean_depends: clean_dependsatm clean_dependscpl clean_dependswav clean_dependsglc clean_dependsice clean_dependsrof clean_dependslnd clean_dependscsmshare clean_dependsesp
+clean_depends: clean_dependsatm clean_dependscpl clean_dependswav clean_dependsglc clean_dependsice clean_dependsrof clean_dependslnd clean_dependscsmshare clean_dependsesp clean_dependsiac
 
 
 cleanatm:
@@ -965,6 +969,10 @@ cleanocn:
 cleanwav:
 	$(RM) -f $(LIBROOT)/libwav.a
 	$(RM) -fr $(EXEROOT)/wav/obj
+
+cleaniac:
+	$(RM) -f $(LIBROOT)/libiac.a
+	$(RM) -fr $(EXEROOT)/iac/obj
 
 cleanesp:
 	$(RM) -f $(LIBROOT)/libesp.a
@@ -1002,7 +1010,7 @@ cleangptl:
 	$(RM) -f $(GPTLLIB)
 	$(RM) -fr $(SHAREDLIBROOT)/$(SHAREDPATH)/gptl
 
-clean: cleanatm cleanocn cleanwav cleanglc cleanice cleanrof cleanlnd cleanesp
+clean: cleanatm cleanocn cleanwav cleanglc cleanice cleanrof cleanlnd cleanesp cleaniac
 
 realclean: clean cleancsmshare cleanpio cleanmct cleangptl
 
