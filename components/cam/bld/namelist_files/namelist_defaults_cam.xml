@@ -171,7 +171,9 @@
 <ncdata dyn="se" hgrid="ne35np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_dummy.nc</ncdata>
 <ncdata dyn="se" hgrid="ne40np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_dummy.nc</ncdata>
 <ncdata dyn="se" hgrid="ne45np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_dummy.nc</ncdata>
+<ncdata dyn="se" hgrid="ne60np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_dummy.nc</ncdata>
 <ncdata dyn="se" hgrid="ne64np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_dummy.nc</ncdata>
+<ncdata dyn="se" hgrid="ne120np4" nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_dummy.nc</ncdata>
 
 
 
