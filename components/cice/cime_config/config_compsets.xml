@@ -43,18 +43,18 @@
   <compset> 
     <alias>D</alias>
     <support_level>Requires additional user-supplied datasets</support_level>
-    <lname>2000_DATM%NYF_SLND_CICE_DOCN%SOM_DROF%NYF_SGLC_SWAV</lname>
+    <lname>2000_DATM%NYF_SLND_CICE_DOCN%SOM_DROF%NYF_SGLC_SWAV_SIAC</lname>
   </compset>
 
   <compset>
     <alias>DIAF</alias>
     <support_level>Requires additional user-supplied datasets</support_level>
-    <lname>2000_DATM%IAF_SLND_CICE_DOCN%SOM_DROF%IAF_SGLC_SWAV</lname>
+    <lname>2000_DATM%IAF_SLND_CICE_DOCN%SOM_DROF%IAF_SGLC_SWAV_SIAC</lname>
   </compset>
 
   <compset>
     <alias>DTEST</alias>
-    <lname>2000_DATM%NYF_SLND_CICE_DOCN%SOM_DROF%NYF_SGLC_SWAV_TEST</lname>
+    <lname>2000_DATM%NYF_SLND_CICE_DOCN%SOM_DROF%NYF_SGLC_SWAV_SIAC_TEST</lname>
   </compset>
 
 </compsets>
