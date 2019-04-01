@@ -260,6 +260,7 @@ end subroutine wv_sat_final
 
 ! Compute saturation vapor pressure over water
 elemental function svp_water(t) result(es)
+!$acc routine seq
 
   use wv_sat_methods, only: &
        wv_sat_svp_water
@@ -273,6 +274,7 @@ end function svp_water
 
 ! Compute saturation vapor pressure over ice
 elemental function svp_ice(t) result(es)
+!$acc routine seq
 
   use wv_sat_methods, only: &
        wv_sat_svp_ice

@@ -491,7 +491,7 @@ subroutine microp_aero_run ( &
       omega => state%omega,             &
       pmid  => state%pmid               )
 
-if (masterproc) then
+if (masterproc == 10000) then
    print *, "AAA liqcf_fix : ", liqcf_fix
    print *, "AAA clim_modal_aero : ", clim_modal_aero
    print *, "AAA dem_in: ", dem_in
@@ -912,7 +912,7 @@ subroutine subgrid_mean_updraft(ncol, w0, wsig, ww)
 
    !! program begins 
 
-!$acc parallel loop collapse(2) create(kp,wa,zz) copyin(wsig, w0, nbin) copyout(ww)
+!$acc parallel loop collapse(2) create(kp,wa,zz) copyin(wsig, w0, nbin) copyout(ww) 
    do k = 1, pver
    do i = 1, ncol
 

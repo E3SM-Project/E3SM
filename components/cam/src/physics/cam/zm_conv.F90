@@ -906,7 +906,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
    end do
    rliq(:ncol) = rliq(:ncol) /1000._r8
 
-if (masterproc) then
+if (masterproc == 10000) then
    print *, "BBB msg, lengath, pver, ncol: ",msg, lengath, pver, ncol 
    print *, "BBB trigmem, lchnk: ", trigmem, lchnk
 endif

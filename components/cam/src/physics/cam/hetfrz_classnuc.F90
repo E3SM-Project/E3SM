@@ -22,7 +22,7 @@ module hetfrz_classnuc
 
 use shr_kind_mod,  only: r8 => shr_kind_r8
 use wv_saturation, only: svp_water, svp_ice
-use shr_spfn_mod,  only: erf => shr_spfn_erf
+!! use shr_spfn_mod,  only: erf => shr_spfn_erf
 
 implicit none
 private
@@ -37,9 +37,8 @@ real(r8) :: rhoh2o
 real(r8) :: mwh2o
 real(r8) :: tmelt
 real(r8) :: pi
-
 integer  :: iulog
-
+!$acc declare create(rair,cpair,rh2o,rhoh2o,mwh2o,tmelt,iulog,pi)
 !===================================================================================================
 contains
 !===================================================================================================
@@ -65,7 +64,7 @@ subroutine hetfrz_classnuc_init( &
    tmelt  = tmelt_in
    pi     = pi_in
    iulog  = iulog_in
-
+!$acc update device(rair,cpair,rh2o,rhoh2o,mwh2o,tmelt,iulog,pi)
 end subroutine hetfrz_classnuc_init
 
 !===================================================================================================
@@ -80,7 +79,7 @@ subroutine hetfrz_classnuc_calc( &
    hetraer, awcam, awfacm, dstcoat,                   &
    total_aer_num, coated_aer_num, uncoated_aer_num,  &
    total_interstitial_aer_num, total_cloudborne_aer_num, errstring)
-
+!$acc routine 
    real(r8), intent(in) :: deltat            ! timestep [s]
    real(r8), intent(in) :: t                 ! temperature [K]
    real(r8), intent(in) :: p                 ! pressure [Pa]
@@ -107,7 +106,9 @@ subroutine hetfrz_classnuc_calc( &
    real(r8), intent(out) :: frzbcdep           ! het. frz by BC deposition nucleation [cm-3 s-1]
    real(r8), intent(out) :: frzdudep           ! het. frz by dust deposition nucleation [cm-3 s-1]
 
-   character(len=*), intent(out) :: errstring
+!  shan: compiler will trigger internal size_of error for GPU
+!   character(len=*), intent(out) :: errstring
+   character, intent(out) :: errstring(128)
 
    ! local variables
 
@@ -407,6 +408,7 @@ subroutine hetfrz_classnuc_calc( &
          sum_imm_dust_a3 = sum_imm_dust_a3+0.5_r8*((pdf_imm_theta(i)*exp(-dim_Jimm_dust_a3(i)*deltat)+ &
             pdf_imm_theta(i+1)*exp(-dim_Jimm_dust_a3(i+1)*deltat)))*pdf_d_theta
       end do
+      !shan: back here this loop seems not necessary
       do i = i1,i2
       	   if (sum_imm_dust_a1 > 0.99_r8) then
                sum_imm_dust_a1 = 1.0_r8
@@ -592,6 +594,7 @@ subroutine collkernel( &
    r_dust_a1, r_dust_a3,                   &  ! dust modes
    Kcoll_bc,                               &  ! collision kernel [cm3 s-1]
    Kcoll_dust_a1, Kcoll_dust_a3)
+!$acc routine seq
 
    real(r8), intent(in) :: t                ! temperature [K]
    real(r8), intent(in) :: pres             ! pressure [Pa]

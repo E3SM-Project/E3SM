@@ -34,6 +34,7 @@ integer, protected :: num_pr_lev
 real(r8), protected :: trop_cloud_top_press = 0._r8
 ! Top level for troposphere cloud physics
 integer, protected :: trop_cloud_top_lev
+!$acc declare create(trop_cloud_top_lev)
 
 ! Pressure used to set MAM process top (Pa)
 real(r8), protected :: clim_modal_aero_top_press = 0._r8
@@ -119,6 +120,7 @@ subroutine ref_pres_init
   ! Find level corresponding to the top of troposphere clouds.
   trop_cloud_top_lev = press_lim_idx(trop_cloud_top_press, &
        top=.true.)
+!$acc update device(trop_cloud_top_lev)
 
   ! Find level corresponding to the top for MAM processes.
   clim_modal_aero_top_lev = press_lim_idx(clim_modal_aero_top_press, &

@@ -36,6 +36,7 @@ integer, parameter :: r8 = selected_real_kind(12) ! 8 byte real
 real(r8) :: tmelt   ! Melting point of water at 1 atm (K)
 real(r8) :: h2otrip ! Triple point temperature of water (K)
 real(r8) :: tboil   ! Boiling point of water at 1 atm (K)
+!$acc declare create(tmelt,h2otrip,tboil)
 
 real(r8) :: ttrice  ! Ice-water transition range
 
@@ -52,6 +53,7 @@ integer, parameter :: Bolton_idx = 3
 ! Index representing the current default scheme.
 integer, parameter :: initial_default_idx = GoffGratch_idx
 integer :: default_idx = initial_default_idx
+!$acc declare copyin(default_idx)
 
 public wv_sat_methods_init
 public wv_sat_get_scheme_idx
@@ -108,6 +110,7 @@ subroutine wv_sat_methods_init(kind, tmelt_in, h2otrip_in, tboil_in, &
   tboil = tboil_in
   ttrice = ttrice_in
   epsilo = epsilo_in
+!$acc update device(tmelt,h2otrip,tboil)
 
   omeps = 1._r8 - epsilo
 
@@ -270,8 +273,8 @@ end subroutine wv_sat_qsat_trans
 !---------------------------------------------------------------------
 ! SVP INTERFACE FUNCTIONS
 !---------------------------------------------------------------------
-
 elemental function wv_sat_svp_water(t, idx) result(es)
+!$acc routine seq
   real(r8), intent(in) :: t
   integer,  intent(in), optional :: idx
   real(r8) :: es
@@ -298,6 +301,7 @@ elemental function wv_sat_svp_water(t, idx) result(es)
 end function wv_sat_svp_water
 
 elemental function wv_sat_svp_ice(t, idx) result(es)
+!$acc routine seq
   real(r8), intent(in) :: t
   integer,  intent(in), optional :: idx
   real(r8) :: es
@@ -365,8 +369,8 @@ end function wv_sat_svp_trans
 !---------------------------------------------------------------------
 
 ! Goff & Gratch (1946)
-
 elemental function GoffGratch_svp_water(t) result(es)
+!$acc routine seq
   real(r8), intent(in) :: t  ! Temperature in Kelvin
   real(r8) :: es             ! SVP in Pa
 
@@ -378,8 +382,8 @@ elemental function GoffGratch_svp_water(t) result(es)
        log10(1013.246_r8))*100._r8
 
 end function GoffGratch_svp_water
-
 elemental function GoffGratch_svp_ice(t) result(es)
+!$acc routine seq
   real(r8), intent(in) :: t  ! Temperature in Kelvin
   real(r8) :: es             ! SVP in Pa
 
@@ -391,8 +395,8 @@ elemental function GoffGratch_svp_ice(t) result(es)
 end function GoffGratch_svp_ice
 
 ! Murphy & Koop (2005)
-
 elemental function MurphyKoop_svp_water(t) result(es)
+!$acc routine seq
   real(r8), intent(in) :: t  ! Temperature in Kelvin
   real(r8) :: es             ! SVP in Pa
 
@@ -403,8 +407,8 @@ elemental function MurphyKoop_svp_water(t) result(es)
        0.014025_r8 * t)))
 
 end function MurphyKoop_svp_water
-
 elemental function MurphyKoop_svp_ice(t) result(es)
+!$acc routine seq
   real(r8), intent(in) :: t  ! Temperature in Kelvin
   real(r8) :: es             ! SVP in Pa
 
@@ -427,8 +431,8 @@ end function MurphyKoop_svp_ice
 ! A curious fact: although using the melting point of water was
 ! probably a mistake, it mildly improves accuracy for ice svp,
 ! since it compensates for a systematic error in Goff & Gratch.
-
 elemental function OldGoffGratch_svp_water(t) result(es)
+!$acc routine seq
   real(r8), intent(in) :: t
   real(r8) :: es
   real(r8) :: ps, e1, e2, f1, f2, f3, f4, f5, f
@@ -448,6 +452,7 @@ elemental function OldGoffGratch_svp_water(t) result(es)
 end function OldGoffGratch_svp_water
 
 elemental function OldGoffGratch_svp_ice(t) result(es)
+!$acc routine seq
   real(r8), intent(in) :: t
   real(r8) :: es
   real(r8) :: term1, term2, term3
@@ -470,6 +475,7 @@ end function OldGoffGratch_svp_ice
 ! takes Kelvin and internally converts.
 
 elemental function Bolton_svp_water(t) result(es)
+!$acc routine seq
   real(r8),parameter :: c1 = 611.2_r8
   real(r8),parameter :: c2 = 17.67_r8
   real(r8),parameter :: c3 = 243.5_r8

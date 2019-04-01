@@ -982,7 +982,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 
     call t_stopf ('physpkg_st1')
 
-if (iam == 0) then 
+if (iam == 10000) then 
     print *, "AAA adiabatic, ideal_phys: ", adiabatic, ideal_phys
     print *, "AAA begchunk, endchunk: ", begchunk, endchunk
     print *, "AAA single_column, scm_crm_mode: ", single_column, scm_crm_mode
@@ -2740,7 +2740,7 @@ end if ! l_rad
     call diag_export(cam_out)
     call t_stopf('diag_export')
 
-if (iam == 0) then 
+if (iam == 10000) then 
     print *, "AAA use_mass_borrower:  ", use_mass_borrower 
     print *, "AAA state_debug_checks: ", state_debug_checks
     print *, "AAA l_bc_energy_fix:    ", l_bc_energy_fix

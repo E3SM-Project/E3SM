@@ -30,6 +30,7 @@ use error_messages, only: handle_errmsg, alloc_err
 use cam_abortutils, only: endrun
 
 use hetfrz_classnuc,   only: hetfrz_classnuc_init, hetfrz_classnuc_calc
+use perf_mod,       only: t_startf, t_stopf
 
 implicit none
 private
@@ -128,6 +129,17 @@ integer :: pom_pcarbon   ! p-organic in primary carbon mode
 integer :: mom_pcarbon   ! marine-organic in primary carbon mode
 integer :: num_pcarbon   ! number in primary carbon mode
 
+!$acc declare create(ncnst, nmodes, dst_accum, bc_accum, dst_coarse, ncl_coarse)
+!$acc declare create(mom_coarse, bc_coarse, pom_coarse, soa_coarse, num_coarse)
+!$acc declare create(bc_pcarbon, num_finedust, num_coardust, so4_accum)
+!$acc declare create(pom_accum, soa_accum, ncl_accum, mom_accum, num_accum)
+!$acc declare create(specdens_bc, specdens_dust, dst_finedust, dst_coardust)
+!$acc declare create(alnsg_mode_accum, alnsg_mode_coarse)
+!$acc declare create(so4_finedust, so4_coardust)
+!$acc declare create(alnsg_mode_finedust, alnsg_mode_coardust,alnsg_mode_pcarbon)
+!$acc declare create(so4_coarse, pom_pcarbon, mom_pcarbon)
+!$acc declare create(specdens_soa,specdens_mom,specdens_pom,specdens_so4)
+
 ! Index arrays for looping over all constituents
 integer, allocatable :: mode_idx(:)
 integer, allocatable :: spec_idx(:)
@@ -138,6 +150,7 @@ real(r8), allocatable :: aer_cb(:,:,:,:)
 
 ! Copy of interstitial aerosols with basis converted from mass to volume.
 real(r8), allocatable :: aer(:,:,:,:)
+!$acc declare create(aer_cb, aer)
 
 !===============================================================================
 contains
@@ -666,6 +679,18 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
       rair, cpair, rh2o, rhoh2o, mwh2o, &
       tmelt, pi, iulog)
 
+!$acc update device(ncnst, nmodes, dst_accum, bc_accum, dst_coarse, ncl_coarse)
+!$acc update device(mom_coarse, bc_coarse, pom_coarse, soa_coarse, num_coarse)
+!$acc update device(bc_pcarbon, num_finedust, num_coardust, so4_accum)
+!$acc update device(pom_accum, soa_accum, ncl_accum, mom_accum, num_accum)
+!$acc update device(specdens_bc, specdens_dust, dst_finedust, dst_coardust)
+!$acc update device(alnsg_mode_accum, alnsg_mode_coarse)
+!$acc update device(so4_finedust, so4_coardust)
+!$acc update device(alnsg_mode_finedust, alnsg_mode_coardust,alnsg_mode_pcarbon)
+!$acc update device(so4_coarse, pom_pcarbon, mom_pcarbon)
+!$acc update device(specdens_soa,specdens_mom,specdens_pom,specdens_so4)
+
+
 end subroutine hetfrz_classnuc_cam_init
 
 !================================================================================================
@@ -699,17 +724,17 @@ subroutine hetfrz_classnuc_cam_calc( &
    real(r8), pointer :: ptr2d(:,:)
 
    real(r8) :: fn(3)
-   real(r8) :: awcam(pcols,pver,3)
-   real(r8) :: awfacm(pcols,pver,3)
-   real(r8) :: hetraer(pcols,pver,3)
-   real(r8) :: dstcoat(pcols,pver,3)
-   real(r8) :: total_interstitial_aer_num(pcols,pver,3)
-   real(r8) :: total_cloudborne_aer_num(pcols,pver,3)
-   real(r8) :: total_aer_num(pcols,pver,3)
-   real(r8) :: coated_aer_num(pcols,pver,3)
-   real(r8) :: uncoated_aer_num(pcols,pver,3)
+   real(r8) :: awcam(3,pcols,pver)
+   real(r8) :: awfacm(3,pcols,pver)
+   real(r8) :: hetraer(3,pcols,pver)
+   real(r8) :: dstcoat(3,pcols,pver)
+   real(r8) :: total_interstitial_aer_num(3,pcols,pver)
+   real(r8) :: total_cloudborne_aer_num(3,pcols,pver)
+   real(r8) :: total_aer_num(3,pcols,pver)
+   real(r8) :: coated_aer_num(3,pcols,pver)
+   real(r8) :: uncoated_aer_num(3,pcols,pver)
 
-   real(r8) :: fn_cloudborne_aer_num(pcols,pver,3)
+   real(r8) :: fn_cloudborne_aer_num(3,pcols,pver)
 
 
    real(r8) :: con1, r3lx, supersatice
@@ -734,9 +759,10 @@ subroutine hetfrz_classnuc_cam_calc( &
    real(r8) :: na500(pcols,pver)
    real(r8) :: tot_na500(pcols,pver)
 
-   character(128) :: errstring   ! Error status
+   character :: errstring(128)   ! Error status
    !-------------------------------------------------------------------------------
 
+   call t_startf('shan1')
    associate( &
       lchnk => state%lchnk,             &
       ncol  => state%ncol,              &
@@ -778,6 +804,8 @@ subroutine hetfrz_classnuc_cam_calc( &
       end if
       aer(:ncol,:,i,lchnk_zb) = ptr2d(:ncol,:) * rho(:ncol,:)
    end do
+!!!$acc update device(aer(:ncol,:,:,lchnk_zb), aer_cb(:ncol,:,:,lchnk_zb))
+!$acc update device(aer(:,:,:,lchnk_zb), aer_cb(:,:,:,lchnk_zb))
 
    ! Init top levels of outputs of get_aer_num
    total_aer_num              = 0._r8
@@ -811,49 +839,64 @@ subroutine hetfrz_classnuc_cam_calc( &
    nidep_dst(:ncol,:) = 0._r8
 
 
-   ! output aerosols as reference information for heterogeneous freezing
-   do i = 1, ncol
-      do k = top_lev, pver
+! output aerosols as reference information for heterogeneous freezing
+! shan , why K is needed ?
+!$acc enter data copyin(rho) &
+!$acc& create(na500,hetraer,coated_aer_num,awcam,dstcoat,tot_na500)  &
+!$acc& create(total_cloudborne_aer_num,uncoated_aer_num,total_interstitial_aer_num,awfacm) &
+!$acc& create(total_aer_num)
+!$acc kernels loop collapse(2) private(k,i) default(present) 
+   do k = top_lev, pver
+      do i = 1, state%ncol
          call get_aer_num(i, k, ncnst, aer(:,:,:,lchnk_zb), aer_cb(:,:,:,lchnk_zb), rho(i,k), &
-            total_aer_num(i,k,:), coated_aer_num(i,k,:), uncoated_aer_num(i,k,:),       &
-            total_interstitial_aer_num(i,k,:), total_cloudborne_aer_num(i,k,:),         &
-            hetraer(i,k,:), awcam(i,k,:), awfacm(i,k,:), dstcoat(i,k,:),                &
+            total_aer_num(:,i,k), coated_aer_num(:,i,k), uncoated_aer_num(:,i,k),       &
+            total_interstitial_aer_num(:,i,k), total_cloudborne_aer_num(:,i,k),         &
+            hetraer(:,i,k), awcam(:,i,k), awfacm(:,i,k), dstcoat(:,i,k),                &
             na500(i,k), tot_na500(i,k))
+      enddo
+   enddo
+!$acc end kernels loop
 
-         fn_cloudborne_aer_num(i,k,1) = total_aer_num(i,k,1)*factnum(i,k,mode_accum_idx)  ! bc
+!$acc update host(na500,coated_aer_num,tot_na500)  
+!$acc update host(total_cloudborne_aer_num,uncoated_aer_num,total_interstitial_aer_num) 
+!$acc update host(total_aer_num)
+
+   do k = top_lev, pver
+      do i = 1, state%ncol
+         fn_cloudborne_aer_num(1,i,k) = total_aer_num(1,i,k)*factnum(i,k,mode_accum_idx)  ! bc
          if (nmodes == MAM3_nmodes .or. nmodes == MAM4_nmodes) then
-            fn_cloudborne_aer_num(i,k,2) = total_aer_num(i,k,2)*factnum(i,k,mode_accum_idx)  ! dst_a1
-            fn_cloudborne_aer_num(i,k,3) = total_aer_num(i,k,3)*factnum(i,k,mode_coarse_idx) ! dst_a3
+            fn_cloudborne_aer_num(2,i,k) = total_aer_num(2,i,k)*factnum(i,k,mode_accum_idx)  ! dst_a1
+            fn_cloudborne_aer_num(3,i,k) = total_aer_num(3,i,k)*factnum(i,k,mode_coarse_idx) ! dst_a3
          else if (nmodes == MAM7_nmodes) then
-            fn_cloudborne_aer_num(i,k,2) = total_aer_num(i,k,2)*factnum(i,k,mode_finedust_idx) 
-            fn_cloudborne_aer_num(i,k,3) = total_aer_num(i,k,3)*factnum(i,k,mode_coardust_idx) 
+            fn_cloudborne_aer_num(2,i,k) = total_aer_num(2,i,k)*factnum(i,k,mode_finedust_idx) 
+            fn_cloudborne_aer_num(3,i,k) = total_aer_num(3,i,k)*factnum(i,k,mode_coardust_idx) 
          end if
       end do
    end do
 
-   call outfld('bc_num',        total_aer_num(:,:,1),    pcols, lchnk)
-   call outfld('dst1_num',      total_aer_num(:,:,2),    pcols, lchnk)
-   call outfld('dst3_num',      total_aer_num(:,:,3),    pcols, lchnk)
+   call outfld('bc_num',        total_aer_num(1,:,:),    pcols, lchnk)
+   call outfld('dst1_num',      total_aer_num(2,:,:),    pcols, lchnk)
+   call outfld('dst3_num',      total_aer_num(3,:,:),    pcols, lchnk)
 
-   call outfld('bcc_num',       coated_aer_num(:,:,1),   pcols, lchnk)
-   call outfld('dst1c_num',     coated_aer_num(:,:,2),   pcols, lchnk)
-   call outfld('dst3c_num',     coated_aer_num(:,:,3),   pcols, lchnk)
+   call outfld('bcc_num',       coated_aer_num(1,:,:),   pcols, lchnk)
+   call outfld('dst1c_num',     coated_aer_num(2,:,:),   pcols, lchnk)
+   call outfld('dst3c_num',     coated_aer_num(3,:,:),   pcols, lchnk)
 
-   call outfld('bcuc_num',      uncoated_aer_num(:,:,1), pcols, lchnk)
-   call outfld('dst1uc_num',    uncoated_aer_num(:,:,2), pcols, lchnk)
-   call outfld('dst3uc_num',    uncoated_aer_num(:,:,3), pcols, lchnk)
+   call outfld('bcuc_num',      uncoated_aer_num(1,:,:), pcols, lchnk)
+   call outfld('dst1uc_num',    uncoated_aer_num(2,:,:), pcols, lchnk)
+   call outfld('dst3uc_num',    uncoated_aer_num(3,:,:), pcols, lchnk)
 
-   call outfld('bc_a1_num',     total_interstitial_aer_num(:,:,1), pcols, lchnk)
-   call outfld('dst_a1_num',    total_interstitial_aer_num(:,:,2), pcols, lchnk)
-   call outfld('dst_a3_num',    total_interstitial_aer_num(:,:,3), pcols, lchnk)
+   call outfld('bc_a1_num',     total_interstitial_aer_num(1,:,:), pcols, lchnk)
+   call outfld('dst_a1_num',    total_interstitial_aer_num(2,:,:), pcols, lchnk)
+   call outfld('dst_a3_num',    total_interstitial_aer_num(3,:,:), pcols, lchnk)
 
-   call outfld('bc_c1_num',     total_cloudborne_aer_num(:,:,1),   pcols, lchnk)
-   call outfld('dst_c1_num',    total_cloudborne_aer_num(:,:,2),   pcols, lchnk)
-   call outfld('dst_c3_num',    total_cloudborne_aer_num(:,:,3),   pcols, lchnk)
+   call outfld('bc_c1_num',     total_cloudborne_aer_num(1,:,:),   pcols, lchnk)
+   call outfld('dst_c1_num',    total_cloudborne_aer_num(2,:,:),   pcols, lchnk)
+   call outfld('dst_c3_num',    total_cloudborne_aer_num(3,:,:),   pcols, lchnk)
 
-   call outfld('fn_bc_c1_num',  fn_cloudborne_aer_num(:,:,1),      pcols, lchnk)
-   call outfld('fn_dst_c1_num', fn_cloudborne_aer_num(:,:,2),      pcols, lchnk)
-   call outfld('fn_dst_c3_num', fn_cloudborne_aer_num(:,:,3),      pcols, lchnk)
+   call outfld('fn_bc_c1_num',  fn_cloudborne_aer_num(1,:,:),      pcols, lchnk)
+   call outfld('fn_dst_c1_num', fn_cloudborne_aer_num(2,:,:),      pcols, lchnk)
+   call outfld('fn_dst_c3_num', fn_cloudborne_aer_num(3,:,:),      pcols, lchnk)
         
    call outfld('na500',         na500,     pcols, lchnk)
    call outfld('totna500',      tot_na500, pcols, lchnk)
@@ -883,6 +926,16 @@ subroutine hetfrz_classnuc_cam_calc( &
    numice10s_imm_dst(:ncol,:) = 0._r8
    numice10s_imm_bc(:ncol,:)  = 0._r8
 
+   call t_stopf('shan1')
+   call t_startf('shan2')
+
+!$acc  kernels loop collapse(2)  &
+!$acc& private(fn,i,k) &
+!$acc& copyin(nc,factnum,lcldm, r3lx, qc, deltatin, supersatice) &
+!$acc& copy(pmid, t) &
+!$acc& copy(frzbcdep(:,:),frzduimm(:,:),frzdudep(:,:),errstring,frzbcimm(:,:),frzbccnt(:,:),frzducnt(:,:)) &
+!$acc& present(hetraer, rho, coated_aer_num) &
+!$acc& present(dstcoat,awcam,awfacm,uncoated_aer_num,total_interstitial_aer_num,total_cloudborne_aer_num,total_aer_num)
    do i = 1, ncol
       do k = top_lev, pver
 
@@ -907,13 +960,30 @@ subroutine hetfrz_classnuc_cam_calc( &
             call hetfrz_classnuc_calc( &
                deltatin,  t(i,k),  pmid(i,k),  supersatice,   &
                fn,  r3lx,  ncic*rho(i,k)*1.0e-6_r8,  frzbcimm(i,k),  frzduimm(i,k),   &
-               frzbccnt(i,k),  frzducnt(i,k),  frzbcdep(i,k),  frzdudep(i,k),  hetraer(i,k,:), &
-               awcam(i,k,:), awfacm(i,k,:), dstcoat(i,k,:), total_aer_num(i,k,:),  &
-               coated_aer_num(i,k,:), uncoated_aer_num(i,k,:), total_interstitial_aer_num(i,k,:), &
-               total_cloudborne_aer_num(i,k,:), errstring)
+               frzbccnt(i,k),  frzducnt(i,k),  frzbcdep(i,k),  frzdudep(i,k),  hetraer(:,i,k), &
+               awcam(:,i,k), awfacm(:,i,k), dstcoat(:,i,k), total_aer_num(:,i,k),  &
+               coated_aer_num(:,i,k), uncoated_aer_num(:,i,k), total_interstitial_aer_num(:,i,k), &
+               total_cloudborne_aer_num(:,i,k), errstring)
+         end if
 
-            call handle_errmsg(errstring, subname="hetfrz_classnuc_calc")
+!shan comment now, handle later
+!            call handle_errmsg(errstring, subname="hetfrz_classnuc_calc")
 
+      enddo
+   enddo
+!$acc end kernels loop
+
+!$acc  exit data delete(rho,k) &
+!$acc& delete(hetraer, awcam, dstcoat, awfacm) &
+!$acc& delete(na500,coated_aer_num,tot_na500)  &
+!$acc& delete(total_cloudborne_aer_num,uncoated_aer_num,total_interstitial_aer_num) &
+!$acc& delete(total_aer_num)
+
+  call t_stopf('shan2')
+  call t_startf('shan3')
+   do i = 1, ncol
+      do k = top_lev, pver
+         if (t(i,k) > 235.15_r8 .and. t(i,k) < 269.15_r8) then
             frzimm(i,k) = frzbcimm(i,k) + frzduimm(i,k)
             frzcnt(i,k) = frzbccnt(i,k) + frzducnt(i,k)
             frzdep(i,k) = frzbcdep(i,k) + frzdudep(i,k)
@@ -922,10 +992,12 @@ subroutine hetfrz_classnuc_cam_calc( &
             if (frzcnt(i,k) > 0._r8) freqcnt(i,k) = 1._r8
             if (frzdep(i,k) > 0._r8) freqdep(i,k) = 1._r8
             if ((frzimm(i,k) + frzcnt(i,k) + frzdep(i,k)) > 0._r8) freqmix(i,k) = 1._r8
-         else
-            frzimm(i,k) = 0._r8
-            frzcnt(i,k) = 0._r8
-            frzdep(i,k) = 0._r8
+
+! shan, already iniitialized to 0
+!         else
+!            frzimm(i,k) = 0._r8
+!            frzcnt(i,k) = 0._r8
+!            frzdep(i,k) = 0._r8
          end if
 
          nnuccc_bc(i,k) = frzbcimm(i,k)*1.0e6_r8*ast(i,k)
@@ -949,6 +1021,8 @@ subroutine hetfrz_classnuc_cam_calc( &
          numice10s_imm_bc(i,k) = frzbcimm(i,k)*1.0e6_r8*deltatin*(10._r8/deltatin)
       end do
    end do
+!!!!$acc end kernels loop
+   call t_stopf('shan3')
 
    call outfld('FREQIMM', freqimm, pcols, lchnk)
    call outfld('FREQCNT', freqcnt, pcols, lchnk)
@@ -1028,6 +1102,7 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
                        total_cloudborne_aer_num,          &
                        hetraer, awcam, awfacm, dstcoat,   &
                        na500, tot_na500)
+!$acc routine seq
     
    !*****************************************************************************
    ! Purpose: Calculate BC and Dust number, including total number(interstitial+
