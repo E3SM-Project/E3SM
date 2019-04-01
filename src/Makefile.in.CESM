@@ -1,11 +1,11 @@
 # Duplicate logic from Tools/Makefile to set compile_threaded
-compile_threaded = false
+compile_threaded = FALSE
 ifeq ($(strip $(SMP)),TRUE)
-   compile_threaded = true
+   compile_threaded = TRUE
    THREADDIR = threads
 else
    ifeq ($(strip $(BUILD_THREADED)),TRUE)
-      compile_threaded = true
+      compile_threaded = TRUE
       THREADDIR = threads
    else
       THREADDIR = nothreads
@@ -63,7 +63,7 @@ ifeq ($(DEBUG), TRUE)
     override CPPFLAGS += -DMPAS_DEBUG
 endif
 
-ifeq ($(compile_threaded), true)
+ifeq ($(compile_threaded), TRUE)
     override CPPFLAGS += -DMPAS_OPENMP
 endif
 
