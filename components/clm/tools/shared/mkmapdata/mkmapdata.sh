@@ -73,8 +73,8 @@ usage() {
   echo "    Model output grid type"
   echo "    supported values are [regional,global], (default is global)"
   echo "[-p|--phys <CLM-version>]"
-  echo "    Whether to generate mapping files for clm4_0 or clm4_5"
-  echo "    supported values are [clm4_0,clm4_5], (default is clm4_5)"
+  echo "    Model version to generate mapping files for. Currently the only"
+  echo "    supported value is clm4_5."
   echo "[-i|--inputdata-path <inputdata_path>]"
   echo "    Full path to root of inputdata directory"
   echo "[-n|--ntasks <ntasks>]"
@@ -306,22 +306,7 @@ fi
 # Determine all input grid files and output file names 
 #----------------------------------------------------------------------
 
-if [ "$phys" = "clm4_0" ]; then
-    grids=(                             \
-        "0.5x0.5_USGS"                  \
-        "0.5x0.5_AVHRR"                 \
-        "0.5x0.5_MODIS"                 \
-        "3x3min_LandScan2004"           \
-        "3x3min_MODIS"                  \
-        "3x3min_USGS"                   \
-        "5x5min_nomask"                 \
-        "5x5min_IGBP-GSDP"              \
-        "5x5min_ISRIC-WISE"             \
-        "10x10min_nomask"               \
-        "3x3min_GLOBE-Gardner"          \
-        "3x3min_GLOBE-Gardner-mergeGIS" \
-    )
-elif [ "$phys" = "clm4_5" ]; then
+if [ "$phys" = "clm4_5" ]; then
     grids=(                                     \
         "0.5x0.5_AVHRR"                         \
         "0.5x0.5_MODIS"                         \
