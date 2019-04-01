@@ -148,9 +148,12 @@ subroutine stepon_init(dyn_in, dyn_out )
      call add_default(trim(cnst_name(m))//'&IC',0, 'I')
   end do
 
-  call addfld('DYN_T' ,(/ 'ilev' /), 'A', 'K',     'Temperature (dyn grid)', gridname='GLL')
-  call addfld('DYN_Q' ,(/ 'lev' /),  'I', 'kg/kg', 'Water Vapor (dyn grid',  gridname='GLL' )
-  call addfld('DYN_PS',horiz_only,   'I', 'Pa',    'Surface pressure',       gridname='physgrid')
+  call addfld('DYN_T'    ,(/ 'lev' /), 'A', 'K',    'Temperature (dyn grid)', gridname='GLL')
+  call addfld('DYN_Q'    ,(/ 'lev' /), 'A', 'kg/kg','Water Vapor (dyn grid',  gridname='GLL' )
+  call addfld('DYN_U'    ,(/ 'lev' /), 'A', 'm/s',  'Zonal Velocity',         gridname='GLL')
+  call addfld('DYN_V'    ,(/ 'lev' /), 'A', 'm/s',  'Meridional Velocity',    gridname='GLL')
+  call addfld('DYN_OMEGA',(/ 'lev' /), 'A', 'Pa/s', 'Vertical Velocity',      gridname='GLL' )
+  call addfld('DYN_PS'   ,horiz_only,  'A', 'Pa',   'Surface pressure',       gridname='GLL')
 
 end subroutine stepon_init
 
@@ -446,9 +449,12 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    endif
    
    do ie = 1,nelemd
-      call outfld('DYN_T' ,dyn_in%elem(ie)%state%T(:,:,k,tl_f)  ,npsq,ie)
-      call outfld('DYN_Q' ,dyn_in%elem(ie)%state%Q(:,:,k,1)     ,npsq,ie)
-      call outfld('DYN_PS',dyn_in%elem(ie)%state%ps_v (:,:,tl_f),npsq,ie)
+      call outfld('DYN_T'     ,dyn_in%elem(ie)%state%T(:,:,:,tl_f)    ,npsq,ie)
+      call outfld('DYN_Q'     ,dyn_in%elem(ie)%state%Q(:,:,:,1)       ,npsq,ie)
+      call outfld('DYN_U'     ,dyn_in%elem(ie)%state%V(:,:,1,:,tl_f)  ,npsq,ie)
+      call outfld('DYN_V'     ,dyn_in%elem(ie)%state%V(:,:,2,:,tl_f)  ,npsq,ie)
+      call outfld('DYN_OMEGA' ,dyn_in%elem(ie)%derived%omega_p(:,:,:) ,npsq,ie)
+      call outfld('DYN_PS'    ,dyn_in%elem(ie)%state%ps_v(:,:,tl_f)   ,npsq,ie)
    end do
    
    

@@ -416,7 +416,7 @@ CONTAINS
     real (kind=real_kind), allocatable :: uv_tmp(:,:,:,:)  ! temp array to hold u and v
     real (kind=real_kind), allocatable :: q_tmp (:,:,:,:)  ! temp to hold advected constituents
     integer(kind=int_kind)   :: m, i, j, k                 ! loop iterators
-    integer(kind=int_kind)   :: gi(4), gj(4)               ! index list used to simplify pg2 case
+    integer(kind=int_kind)   :: gi(2), gj(2)               ! index list used to simplify pg2 case
     integer(kind=int_kind)   :: di, dj
     integer(kind=int_kind)   :: pgcols(pcols)
     integer(kind=int_kind)   :: ioff
@@ -559,10 +559,13 @@ CONTAINS
                 ! for pg2 we need to copy the FV state to quadrants of GLL grid
                 if (fv_nphys == 2) then
                   ! define indices of GLL points in quadrant
-                  di = (i-1)+(i-2)  ! either 1=>-1 or 2=>+1
-                  dj = (j-1)+(j-2)  ! either 1=>-1 or 2=>+1
-                  gi(1:4) = (/i+1,i+1   ,i+1+di,i+1+di/)
-                  gj(1:4) = (/j+1,j+1+dj,j+1+dj,j+1   /)
+                  di = (i-1)+(i-2)  ! either i=1 & di=-1 or i=2 & di=+1
+                  dj = (j-1)+(j-2)  ! either j=1 & dj=-1 or j=2 & dj=+1
+                  ! gi(1:4) = (/i+1,i+1   ,i+1+di,i+1+di/)
+                  ! gj(1:4) = (/j+1,j+1+dj,j+1+dj,j+1   /)
+                  ! The gi & gj indices give the 4 points in each quadrant
+                  gi(1:2) = (/i+1,i+1+di/)
+                  gj(1:2) = (/j+1,j+1+dj/)
                   ! copy physics column values to GLL nodes
                   elem(ie)%derived%FT(gi,gj,ilyr)   = T_tmp(icol,ilyr,ie)
                   elem(ie)%derived%FM(gi,gj,1,ilyr) = uv_tmp(icol,1,ilyr,ie)
