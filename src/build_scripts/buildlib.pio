@@ -47,6 +47,13 @@ def buildlib(bldroot, installpath, case):
 ###############################################################################
     caseroot = case.get_value("CASEROOT")
     pio_version = case.get_value("PIO_VERSION")
+    installed_pio_version = os.environ.get("PIO_VERSION_MAJOR")
+    logger.info("pio_version_major = {} pio_version = {}".format(installed_pio_version, pio_version))
+    if installed_pio_version is not None and int(installed_pio_version) == pio_version:
+        logger.info("Using installed PIO library")
+        _set_pio_valid_values(case, os.environ.get("PIO_TYPENAME_VALID_VALUES"))
+        return
+
     pio_model = "pio{}".format(pio_version)
     pio_dir = os.path.join(bldroot, pio_model)
     if not os.path.isdir(pio_dir):
@@ -130,7 +137,10 @@ def buildlib(bldroot, installpath, case):
     if netcdf4_parallel_found:
         valid_values += ",netcdf4p,netcdf4c"
     logger.warning("Updating valid_values for PIO_TYPENAME: {}".format(valid_values))
+    _set_pio_valid_values(case, valid_values)
 
+
+def _set_pio_valid_values(case, valid_values):
     case.set_valid_values("PIO_TYPENAME",valid_values)
     # nothing means use the general default
     valid_values += ",nothing"
@@ -142,6 +152,9 @@ def buildlib(bldroot, installpath, case):
         if current_value not in valid_values:
             logger.warning("Resetting PIO_TYPENAME to netcdf for component {}".format(comp))
             case.set_value(comp_pio_typename,"netcdf")
+
+
+
 
 def _main(argv, documentation):
     bldroot, installpath, caseroot = parse_command_line(argv, documentation)
