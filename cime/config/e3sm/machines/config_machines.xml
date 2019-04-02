@@ -1149,7 +1149,7 @@
       <executable>mpiexec</executable>
       <arguments>
         <arg name="num_tasks"> -n {{ total_tasks }} </arg>
-        <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to core</arg>
+        <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket,PE=$ENV{OMP_NUM_THREADS} --bind-to core</arg>
         <!--arg name="label" DEBUG="TRUE">-tag-output -report-bindings</arg-->
       </arguments>
     </mpirun>
