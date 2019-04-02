@@ -1539,8 +1539,7 @@ contains
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           if (cntn1 > 0) then
              do n2 = 1,ncomps
-                if (is_local%wrap%comp_present(n2) .and. &
-                    ESMF_StateIsCreated(is_local%wrap%NStateExp(n2),rc=rc) .and. &
+                if (is_local%wrap%comp_present(n2) .and. ESMF_StateIsCreated(is_local%wrap%NStateExp(n2),rc=rc) .and. &
                     med_coupling_allowed(n1,n2)) then
                    call shr_nuopc_methods_State_GetNumFields(is_local%wrap%NStateExp(n2), cntn2, rc=rc) ! Import Field Count
                    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -1679,6 +1678,14 @@ contains
       ! Initialize field bundles needed for ocn albedo and ocn/atm flux calculations
       !---------------------------------------
 
+      ! NOTE: the NStateImp(compocn) or NStateImp(compatm) used below
+      ! rather than NStateExp(n2), since the export state might only
+      ! contain control data and no grid information if if the target
+      ! component (n2) is not prognostic only receives control data back
+      
+      ! NOTE: this section must be done BEFORE the call to esmFldsExchange
+      ! Create field bundles for mediator ocean albedo computation
+      
       if ( is_local%wrap%med_coupling_active(compocn,compatm) .or. &
            is_local%wrap%med_coupling_active(compatm,compocn)) then
 
@@ -1686,14 +1693,7 @@ contains
             is_local%wrap%med_coupling_active(compatm,compocn) = .true.
          end if
 
-         ! NOTE: the NStateImp(compocn) or NStateImp(compatm) used below
-         ! rather than NStateExp(n2), since the export state might only
-         ! contain control data and no grid information if if the target
-         ! component (n2) is not prognostic only receives control data back
-
-         ! NOTE: this section must be done BEFORE the call to esmFldsExchange
          ! Create field bundles for mediator ocean albedo computation
-
          fieldCount = shr_nuopc_fldList_GetNumFlds(fldListMed_ocnalb)
          if (fieldCount > 0) then
             allocate(fldnames(fieldCount))
@@ -1703,15 +1703,28 @@ contains
             call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_ocnalb_a, flds_scalar_name, &
                  STgeom=is_local%wrap%NStateImp(compatm), fieldnamelist=fldnames, name='FBMed_ocnalb_a', rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            if (mastertask) write(logunit,*) subname,' initializing FB FBMed_ocnalb_a'
 
             call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_ocnalb_o, flds_scalar_name, &
                  STgeom=is_local%wrap%NStateImp(compocn), fieldnamelist=fldnames, name='FBMed_ocnalb_o', rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            if (mastertask) write(logunit,*) subname,' initializing FB FBMed_ocnalb_o'
             deallocate(fldnames)
+
+            ! The following assumes that the mediator atm/ocn flux calculation will be done on the ocean grid
+            if (.not. ESMF_FieldBundleIsCreated(is_local%wrap%FBImp(compatm,compocn), rc=rc)) then
+               call ESMF_LogWrite(trim(subname)//' creating field bundle FBImp(compatm,compocn)', ESMF_LOGMSG_INFO)
+               call shr_nuopc_methods_FB_init(is_local%wrap%FBImp(compatm,compocn), flds_scalar_name, &
+                    STgeom=is_local%wrap%NStateImp(compocn), &
+                    STflds=is_local%wrap%NStateImp(compatm), &
+                    name='FBImp'//trim(compname(compatm))//'_'//trim(compname(compocn)), rc=rc)
+               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            end if
+            if (mastertask) write(logunit,*) subname,' initializing FBs for '// &
+                 trim(compname(compatm))//'_'//trim(compname(compocn))
          end if
 
          ! Create field bundles for mediator ocean/atmosphere flux computation
-
          fieldCount = shr_nuopc_fldList_GetNumFlds(fldListMed_aoflux)
          if (fieldCount > 0) then
             allocate(fldnames(fieldCount))
@@ -1721,24 +1734,14 @@ contains
             call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_aoflux_a, flds_scalar_name, &
                  STgeom=is_local%wrap%NStateImp(compatm), fieldnamelist=fldnames, name='FBMed_aoflux_a', rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            if (mastertask) write(logunit,*) subname,' initializing FB FBMed_aoflux_a'
 
             call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_aoflux_o, flds_scalar_name, &
                  STgeom=is_local%wrap%NStateImp(compocn), fieldnamelist=fldnames, name='FBMed_aoflux_o', rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            if (mastertask) write(logunit,*) subname,' initializing FB FBMed_aoflux_o'
             deallocate(fldnames)
          end if
-
-         ! The following assumes that the mediator atm/ocn flux calculation will be done on the ocean grid
-
-         if (.not. ESMF_FieldBundleIsCreated(is_local%wrap%FBImp(compatm,compocn), rc=rc)) then
-            call ESMF_LogWrite(trim(subname)//' creating field bundle FBImp(compatm,compocn)', ESMF_LOGMSG_INFO)
-            call shr_nuopc_methods_FB_init(is_local%wrap%FBImp(compatm,compocn), flds_scalar_name, &
-                 STgeom=is_local%wrap%NStateImp(compocn), &
-                 STflds=is_local%wrap%NStateImp(compatm), &
-                 name='FBImp'//trim(compname(compatm))//'_'//trim(compname(compocn)), rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-         end if
-
       end if
 
       !---------------------------------------

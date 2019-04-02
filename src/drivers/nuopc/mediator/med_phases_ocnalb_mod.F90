@@ -30,6 +30,7 @@ module med_phases_ocnalb_mod
      real(r8) , pointer :: avsdr (:) ! albedo: visible      , direct
      real(r8) , pointer :: anidf (:) ! albedo: near infrared, diffuse
      real(r8) , pointer :: avsdf (:) ! albedo: visible      , diffuse
+     logical            :: created   ! has memory been allocated here
   end type ocnalb_type
 
   ! Conversion from degrees to radians
@@ -178,7 +179,7 @@ contains
     use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time, ESMF_TimeInterval
     use ESMF                  , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_LogFoundError
-    use ESMF                  , only : ESMF_RouteHandleIsCreated
+    use ESMF                  , only : ESMF_RouteHandleIsCreated, ESMF_FieldBundleIsCreated
     use ESMF                  , only : operator(+)
     use NUOPC                 , only : NUOPC_CompAttributeGet
     use shr_const_mod         , only : shr_const_pi
@@ -239,10 +240,7 @@ contains
     logical                 :: first_call = .true.
     character(len=*)  , parameter :: subname='(med_phases_ocnalb_run)'
     !---------------------------------------
-    call t_startf('MED:'//subname)
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+
     rc = ESMF_SUCCESS
 
     ! Get the internal state from Component.
@@ -250,14 +248,32 @@ contains
     call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
     if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
+    ! Determine if ocnalb data type will be initialized - and if not return
+    if (first_call) then
+       if ( ESMF_FieldBundleIsCreated(is_local%wrap%FBMed_aoflux_a, rc=rc) .and. &
+            ESMF_FieldBundleIsCreated(is_local%wrap%FBMed_aoflux_o, rc=rc)) then
+          ocnalb%created = .true.
+       else
+          ocnalb%created = .false.
+       end if
+    end if
+    if (.not. ocnalb%created) then
+       return
+    end if
+
     ! Note that in the mct version the atm was initialized first so
     ! that nextsw_cday could be passed to the other components - this
     ! assumed that atmosphere component was ALWAYS initialized first.
     ! In the nuopc version it will be easier to assume that on startup
     ! - nextsw_cday is just what cam was setting it as the current calendar day
 
-    if (first_call) then
+    if (dbug_flag > 5) then
+       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+    endif
 
+    call t_startf('MED:'//subname)
+
+    if (first_call) then
        ! Initialize ocean albedo calculation
        call med_phases_ocnalb_init(gcomp, ocnalb, rc)
        if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return

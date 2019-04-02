@@ -2,7 +2,7 @@ module med_phases_aofluxes_mod
 
   use med_constants_mod     , only : R8, CL, CX
   use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag
-  use med_internalstate_mod , only : mastertask
+  use med_internalstate_mod , only : mastertask, logunit
   use shr_nuopc_utils_mod   , only : shr_nuopc_memcheck
   use shr_nuopc_methods_mod , only : chkerr => shr_nuopc_methods_chkerr
   use shr_nuopc_methods_mod , only : fldchk => shr_nuopc_methods_FB_FldChk
@@ -20,7 +20,6 @@ module med_phases_aofluxes_mod
   ! Private routines
   !--------------------------------------------------------------------------
 
-  private :: med_phases_aofluxes_init
   private :: med_aofluxes_init
   private :: med_aofluxes_run
 
@@ -72,6 +71,7 @@ module med_phases_aofluxes_mod
 
      ! Fields that are not obtained via GetFldPtr
      real(R8) , pointer :: uGust       (:) ! wind gust
+     logical            :: created         ! has this data type been created
   end type aoflux_type
 
   ! The following three variables are obtained as attributes from gcomp
@@ -85,71 +85,19 @@ module med_phases_aofluxes_mod
 contains
 !================================================================================
 
-  subroutine med_phases_aofluxes_init(gcomp, aoflux, rc)
-
-    !-----------------------------------------------------------------------
-    ! Initialize ocn/atm flux calculations
-    !-----------------------------------------------------------------------
-
-    use ESMF                  , only : ESMF_GridComp, ESMF_VM, ESMF_VMGet, ESMF_GridCompGet
-    use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_LOGERR_PASSTHRU
-    use ESMF                  , only : ESMF_SUCCESS, ESMF_LogFoundError, ESMF_FieldBundleIsCreated
-    use esmFlds               , only : compatm, compocn, compname
-    use med_internalstate_mod , only : InternalState, mastertask
-    use shr_nuopc_scalars_mod , only : flds_scalar_name
-    use shr_nuopc_scalars_mod , only : flds_scalar_num
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
-    use perf_mod              , only : t_startf, t_stopf
-
-    ! input/output variables
-    type(ESMF_GridComp)               :: gcomp
-    type(aoflux_type) , intent(inout) :: aoflux
-    integer           , intent(out)   :: rc
-
-    ! Local variables
-    type(InternalState) :: is_local
-    character(len=*),parameter :: subname='(med_phases_aofluxes_init)'
-    !---------------------------------------
-    call t_startf('MED:'//subname)
-
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
-    endif
-    rc = ESMF_SUCCESS
-
-    ! Get the internal state from Component.
-    nullify(is_local%wrap)
-    call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-    ! Create FBMed_aoflux_o (mediator atm/ocn field bundle on the ocean grid)
-    call med_aofluxes_init(gcomp, aoflux, &
-         FBAtm=is_local%wrap%FBImp(compatm,compocn), &
-         FBOcn=is_local%wrap%FBImp(compocn,compocn), &
-         FBFrac=is_local%wrap%FBfrac(compocn), &
-         FBMed_aoflux=is_local%wrap%FBMed_aoflux_o, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-    
-    call t_stopf('MED:'//subname)
-
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
-    endif
-
-  end subroutine med_phases_aofluxes_init
-
-!================================================================================
-
   subroutine med_phases_aofluxes_run(gcomp, rc)
 
     use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_GridCompGet
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use ESMF                  , only : ESMF_FieldBundleIsCreated
     use NUOPC                 , only : NUOPC_IsConnected, NUOPC_CompAttributeGet
     use med_internalstate_mod , only : InternalState
     use med_map_mod           , only : med_map_FB_Regrid_Norm
-    use esmFlds               , only : fldListFr
-    use esmFlds               , only : compatm, compocn, compname
+    use esmFlds               , only : shr_nuopc_fldList_GetNumFlds, shr_nuopc_fldList_GetFldNames
+    use esmFlds               , only : fldListFr, fldListMed_aoflux, compatm, compocn, compname
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
+    use shr_nuopc_scalars_mod , only : flds_scalar_name
     use perf_mod              , only : t_startf, t_stopf
 
     !-----------------------------------------------------------------------
@@ -162,33 +110,52 @@ contains
 
     ! local variables
     type(InternalState)     :: is_local
-    type(ESMF_Clock)        :: clock
-    character(CL)           :: cvalue
     type(aoflux_type), save :: aoflux
     logical, save           :: first_call = .true.
     character(len=*),parameter :: subname='(med_phases_aofluxes)'
     !---------------------------------------
-    call t_startf('MED:'//subname)
 
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
-    endif
     rc = ESMF_SUCCESS
-    call shr_nuopc_memcheck(subname, 5, mastertask)
-    ! Get the clock from the mediator Component
-    call ESMF_GridCompGet(gcomp, clock=clock, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Get the internal state from the mediator Component.
     nullify(is_local%wrap)
     call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    ! Initialize aoflux instance
     if (first_call) then
-       call med_phases_aofluxes_init(gcomp, aoflux, rc)
+       ! If field bundles have been created for the ocean/atmosphere flux computation
+       if ( ESMF_FieldBundleIsCreated(is_local%wrap%FBMed_aoflux_a, rc=rc) .and. &
+            ESMF_FieldBundleIsCreated(is_local%wrap%FBMed_aoflux_o, rc=rc)) then
+
+          ! Allocate memoroy for the aoflux module data type (mediator atm/ocn field bundle on the ocean grid)
+          call med_aofluxes_init(gcomp, aoflux, &
+               FBAtm=is_local%wrap%FBImp(compatm,compocn), &
+               FBOcn=is_local%wrap%FBImp(compocn,compocn), &
+               FBFrac=is_local%wrap%FBfrac(compocn), &
+               FBMed_aoflux=is_local%wrap%FBMed_aoflux_o, rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+          aoflux%created = .true.
+       else
+          aoflux%created = .false.
+       end if
+
+       ! Now set first_call to .false.
        first_call = .false.
     end if
+
+    ! Return if there is no aoflux has not been created
+    if (.not. aoflux%created) then
+       RETURN
+    end if
+
+    ! Start time timer
+    call t_startf('MED:'//subname)
+
+    if (dbug_flag > 5) then
+       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
+    endif
+
+    call shr_nuopc_memcheck(subname, 5, mastertask)
 
     ! TODO(mvertens, 2019-01-12): ONLY regrid atm import fields that are needed for the atm/ocn flux calculation
     
@@ -244,7 +211,6 @@ contains
     integer                , intent(out)   :: rc
 
     ! local variables
-    type(ESMF_VM)            :: vm
     integer                  :: iam
     integer                  :: n
     integer                  :: lsize
@@ -256,18 +222,11 @@ contains
     character(*),parameter   :: subName =   '(med_aofluxes_init) '
     !-----------------------------------------------------------------------
 
-    call t_startf('MED:'//subname)
-
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
     call shr_nuopc_memcheck(subname, 5, mastertask)
-    ! The following is for debugging
-    call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_VMGet(vm, localPet=iam, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     !----------------------------------
     ! get attributes that are set as module variables
@@ -482,6 +441,7 @@ contains
     logical,save            :: first_call = .true.
     character(*),parameter  :: subName = '(med_aofluxes_run) '
     !-----------------------------------------------------------------------
+
     call t_startf('MED:'//subname)
 
     !----------------------------------
