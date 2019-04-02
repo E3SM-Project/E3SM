@@ -406,14 +406,14 @@
 
   <batch_system MACH="sandiatoss3" type="slurm" >
     <queues>
-      <queue nodemax="12" walltimemax="04:00:00" strict="true" default="true">short</queue>
+      <queue nodemax="12" walltimemax="04:00:00" strict="true" default="true">short,batch</queue>
       <queue walltimemax="24:00:00">batch</queue>
     </queues>
   </batch_system>
 
   <batch_system MACH="ghost" type="slurm" >
     <queues>
-      <queue nodemax="12" walltimemax="04:00:00" strict="true" default="true">short</queue>
+      <queue nodemax="12" walltimemax="04:00:00" strict="true" default="true">short,batch</queue>
       <queue walltimemax="24:00:00">batch</queue>
     </queues>
   </batch_system>

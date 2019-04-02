@@ -54,6 +54,7 @@ _TESTS = {
             "PEM_Ln5.ne4_ne4.FC5AV1C-L",
             "SMS_D_Ln5.ne4_ne4.FC5AV1C-L.cam-cosplite_nhtfrq5",
             "ERS_Ld5.ne4_ne4.FC5AV1C-L.cam-rrtmgp",
+            "ERS_Ld5.ne4_ne4.FC5AV1C-L.cam-gust_param",
             "REP_Ln5.ne4_ne4.FC5AV1C-L",
             )
         },
@@ -112,6 +113,7 @@ _TESTS = {
             "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
             "SMS.f09_g16_a.IGCLM45_MLI",
             "SMS_P12x2.ne4_oQU240.A_WCYCL1850.allactive-mach_mods",
+            "SMS_B.ne4_ne4.FC5AV1C-L-AQUAP.cam-hommexx",
             )
         },
 
