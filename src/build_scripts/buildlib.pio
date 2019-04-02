@@ -47,6 +47,12 @@ def buildlib(bldroot, installpath, case):
 ###############################################################################
     caseroot = case.get_value("CASEROOT")
     pio_version = case.get_value("PIO_VERSION")
+    # If variable PIO_VERSION_MAJOR is defined in the environment then
+    # we assume that PIO is installed on the system
+    # and expect to find
+    # PIO_LIBDIR, PIO_INCDIR, PIO_TYPENAME_VALID_VALUES
+    # also defined in the environment.  In this case we
+    # will use the installed pio and not build it here.
     installed_pio_version = os.environ.get("PIO_VERSION_MAJOR")
     logger.info("pio_version_major = {} pio_version = {}".format(installed_pio_version, pio_version))
     if installed_pio_version is not None and int(installed_pio_version) == pio_version:
