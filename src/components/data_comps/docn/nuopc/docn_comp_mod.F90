@@ -108,14 +108,12 @@ contains
 !===============================================================================
 
   subroutine docn_comp_advertise(importState, exportState, &
-       ocn_prognostic, ocnrof_prognostic, &
-       fldsFrOcn_num, fldsFrOcn, fldsToOcn_num, fldsToOcn, rc)
+       ocn_prognostic, fldsFrOcn_num, fldsFrOcn, fldsToOcn_num, fldsToOcn, rc)
 
     ! input/output arguments
     type(ESMF_State)     , intent(inout) :: importState
     type(ESMF_State)     , intent(inout) :: exportState
     logical              , intent(in)    :: ocn_prognostic
-    logical              , intent(in)    :: ocnrof_prognostic
     integer              , intent(out)   :: fldsToOcn_num
     integer              , intent(out)   :: fldsFrOcn_num
     type (fld_list_type) , intent(out)   :: fldsToOcn(:)
@@ -165,10 +163,10 @@ contains
     ! import fields (have no corresponding stream fields)
     !-------------------
 
-    if (ocn_prognostic) then
+    fldsToOcn_num=1
+    fldsToOcn(1)%stdname = trim(flds_scalar_name)
 
-       fldsToOcn_num=1
-       fldsToOcn(1)%stdname = trim(flds_scalar_name)
+    if (ocn_prognostic) then
 
        call dshr_fld_add(model_fld='Foxx_swnet', model_fld_concat=flds_x2o, model_fld_index=kswnet, &
             fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
@@ -186,6 +184,7 @@ contains
             fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
        call dshr_fld_add(model_fld='Foxx_rofi', model_fld_concat=flds_x2o, model_fld_index=krofi, &
             fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
+
     end if
 
     !-------------------

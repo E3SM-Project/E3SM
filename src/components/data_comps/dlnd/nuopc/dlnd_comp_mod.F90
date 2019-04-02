@@ -82,16 +82,16 @@ contains
     ! 2. determine translation of fields from streams to export/import fields
 
     ! input/output arguments
-    type(ESMF_State)                   :: importState
-    type(ESMF_State)                   :: exportState
-    integer              , intent(in)  :: glc_nec_in
-    logical              , intent(in)  :: lnd_present
-    logical              , intent(in)  :: lnd_prognostic
-    integer              , intent(out) :: fldsFrLnd_num
-    type (fld_list_type) , intent(out) :: fldsFrLnd(:)
-    integer              , intent(out) :: fldsToLnd_num
-    type (fld_list_type) , intent(out) :: fldsToLnd(:)
-    integer              , intent(out) :: rc
+    type(ESMF_State)                     :: importState
+    type(ESMF_State)                     :: exportState
+    integer              , intent(in)    :: glc_nec_in
+    logical              , intent(in)    :: lnd_present
+    logical              , intent(in)    :: lnd_prognostic
+    integer              , intent(out)   :: fldsFrLnd_num
+    type (fld_list_type) , intent(out)   :: fldsFrLnd(:)
+    integer              , intent(inout) :: fldsToLnd_num
+    type (fld_list_type) , intent(inout) :: fldsToLnd(:)
+    integer              , intent(out)   :: rc
 
     ! local variables
     integer :: n
@@ -172,7 +172,7 @@ contains
   !===============================================================================
 
   subroutine dlnd_comp_init(mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, read_restar, &
+       inst_suffix, logunit, read_restart, &
        scmMode, scmlat, scmlon, calendar, current_ymd, current_tod, mesh, nxg, nyg)
 
     ! !DESCRIPTION: initialize dlnd model

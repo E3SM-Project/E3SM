@@ -1648,7 +1648,7 @@ contains
             if (n1 /= n2 .and. &
                  is_local%wrap%med_coupling_active(n1,n2) .and. &
                  ESMF_StateIsCreated(is_local%wrap%NStateImp(n1),rc=rc) .and. &
-                 ESMF_StateIsCreated(is_local%wrap%NStateExp(n2),rc=rc)) then
+                 ESMF_StateIsCreated(is_local%wrap%NStateImp(n2),rc=rc)) then
 
                if (mastertask) write(logunit,*) subname,' initializing FBs for '//&
                     trim(compname(n1))//'_'//trim(compname(n2))

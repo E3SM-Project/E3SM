@@ -4,9 +4,9 @@ module med_map_mod
   use med_constants_mod , only : ispval_mask => med_constants_ispval_mask
   use med_constants_mod , only : czero => med_constants_czero
   use med_constants_mod , only : dbug_flag => med_constants_dbug_flag
-  use esmFlds               , only : mapbilnr, mapconsf, mapconsd, mappatch, mapfcopy
-  use esmFlds               , only : mapunset, mapfiler, mapnames
-  use esmFlds               , only : mapnstod, mapnstod_consd, mapnstod_consf
+  use esmFlds           , only : mapbilnr, mapconsf, mapconsd, mappatch, mapfcopy
+  use esmFlds           , only : mapunset, mapnames
+  use esmFlds           , only : mapnstod, mapnstod_consd, mapnstod_consf
 
   implicit none
   private
@@ -24,10 +24,10 @@ module med_map_mod
 
   ! private module variables
 
-  character(*)      , parameter :: u_FILE_u    = __FILE__
-  ! should this be a module variable?
-  integer                       :: srcTermProcessing_Value = 0
-  logical                       :: mastertask
+  integer                 :: srcTermProcessing_Value = 0 ! should this be a module variable?
+  logical                 :: mastertask
+  character(*), parameter :: u_FILE_u = &
+       __FILE__
 
 !================================================================================
 contains
@@ -73,9 +73,6 @@ contains
     use NUOPC                 , only : NUOPC_Write
     use esmFlds               , only : ncomps, compice, compocn, compname
     use esmFlds               , only : fldListFr, fldListTo
-    use esmFlds               , only : mapnames
-    use esmFlds               , only : mapbilnr, mapconsf, mapconsd, mappatch, mapfcopy
-    use esmFlds               , only : mapunset, mapfiler, mapnstod, mapnstod_consd, mapnstod_consf
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFieldN
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use med_internalstate_mod , only : InternalState
@@ -189,20 +186,8 @@ contains
                       mapfile  = trim(fldListFr(n1)%flds(nf)%mapfile(n2))
                       string   = trim(rhname)//'_weights'
 
-                      if (mapindex == mapfiler .and. mapfile /= 'unset') then
-                         ! TODO: actually error out if mapfile is unset in this case
-                         if (mastertask) then
-                            write(llogunit,'(4A)') subname,trim(string),' RH '//trim(mapname)//' via input file ',&
-                                 trim(mapfile)
-                         end if
-                         call ESMF_LogWrite(subname // trim(string) //&
-                              ' RH '//trim(mapname)//' via input file '//trim(mapfile), ESMF_LOGMSG_INFO)
-                         call ESMF_FieldSMMStore(fldsrc, flddst, mapfile, &
-                              routehandle=is_local%wrap%RH(n1,n2,mapindex), &
-                              ignoreUnmatchedIndices=.true., &
-                              srcTermProcessing=srcTermProcessing_Value, rc=rc)
-                         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                      else if (mapindex == mapfcopy) then
+                      if (mapindex == mapfcopy) then
+                         ! Create redist route handle
                          if (mastertask) then
                             write(llogunit,'(3A)') subname,trim(string),' RH redist '
                          end if
@@ -212,6 +197,7 @@ contains
                               ignoreUnmatchedIndices = .true., rc=rc)
                          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                       else if (mapfile /= 'unset') then
+                         ! Get route handle from mapping file
                          if (mastertask) then
                             write(llogunit,'(4A)') subname,trim(string),' RH '//trim(mapname)//' via input file ',&
                                  trim(mapfile)
@@ -224,6 +210,7 @@ contains
                               srcTermProcessing=srcTermProcessing_Value, rc=rc)
                          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                       else
+                         ! Create route handle on the fly 
                          if (mastertask) write(llogunit,'(3A)') subname,trim(string),&
                               ' RH regrid for '//trim(mapname)//' computed on the fly'
                          call ESMF_LogWrite(subname // trim(string) //&
@@ -890,7 +877,7 @@ contains
     integer          , intent(out)   :: rc
 
     ! local variables
-    integer           :: n
+    integer           :: i,n
     integer           :: lrank
     real(R8), pointer :: data1d(:)
     real(R8), pointer :: data2d(:,:)
@@ -906,23 +893,35 @@ contains
     if (lrank == 1) then
        call ESMF_FieldGet(dstfield, farrayPtr=data1d, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-       where (frac /= 0._r8)
-          data1d(:) = data1d(:)/frac(:)
-       end where
+       do i= 1,size(data1d)
+          if (frac(i) == 0.0_R8) then
+             data1d(i) = 0.0_R8
+          else
+             data1d(i) = data1d(i)/frac(i)
+          endif
+       enddo
     else if (lrank == 2) then
-       call ESMF_FieldGet(dstfield, ungriddedUBound=ungriddedUBound, &
-            gridToFieldMap=gridToFieldMap, rc=rc)
+       call ESMF_FieldGet(dstfield, ungriddedUBound=ungriddedUBound, gridToFieldMap=gridToFieldMap, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
        call ESMF_FieldGet(dstfield, farrayPtr=data2d, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        do n = 1,ungriddedUbound(1)
           if (gridToFieldMap(1) == 1) then
-             where (frac /= 0._r8)
-                data2d(:,n) = data2d(:,n)/frac(:)
-             end where
+             do i = 1,size(data2d,dim=1)
+                if (frac(i) == 0.0_r8) then
+                   data2d(i,n) = 0.0_r8
+                else
+                   data2d(i,n) = data2d(i,n)/frac(i)
+                end if
+             end do
           else if (gridToFieldMap(1) == 2) then
-             where (frac /= 0._r8)
-                data2d(n,:) = data2d(n,:)/frac(:)
-             end where
+             do i = 1,size(data2d,dim=2)
+                if (frac(i) == 0.0_r8) then
+                   data2d(n,i) = 0.0_r8
+                else
+                   data2d(n,i) = data2d(n,i)/frac(i)
+                end if
+             end do
           end if
        end do
     end if

@@ -199,7 +199,7 @@ contains
     call shr_nuopc_methods_FB_getNumFlds(is_local%wrap%FBExp(compocn), trim(subname)//"FBexp(compocn)", ncnt, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (ncnt >= 0) then
+    if (ncnt > 0) then
 
        !---------------------------------------
        !--- auto merges to ocn

@@ -348,10 +348,8 @@ contains
     ! diagnostics
     !--------------------------------
 
-    if (debug_export > 0) then
-       call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
+    call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call shr_file_setLogLevel(shrloglev)
     call shr_file_setLogUnit (shrlogunit)
@@ -409,7 +407,7 @@ contains
     call NUOPC_ModelGet(gcomp, modelClock=clock, importState=importState, exportState=exportState, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (debug_export > 0 .and. my_task == master_task) then
+    if (my_task == master_task) then
        call shr_nuopc_methods_Clock_TimePrint(clock,subname//'clock',rc=rc)
     endif
 
@@ -466,10 +464,8 @@ contains
     ! diagnostics
     !--------------------------------
 
-    if (debug_export > 0) then
-       call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
+    call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     if (my_task == master_task) then
        call shr_nuopc_log_clock_advance(clock, 'LND', logunit)
     endif

@@ -1438,6 +1438,9 @@ contains
        lstring = trim(string)
     endif
 
+    call ESMF_FieldGet(field, rank=lrank, rc=rc)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
     if (lrank == 0) then
        ! no local data
     elseif (lrank == 1) then

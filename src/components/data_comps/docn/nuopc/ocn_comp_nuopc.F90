@@ -12,11 +12,9 @@ module ocn_comp_nuopc
   use NUOPC_Model           , only : model_label_SetRunClock => label_SetRunClock
   use NUOPC_Model           , only : model_label_Finalize    => label_Finalize
   use NUOPC_Model           , only : NUOPC_ModelGet
-  use med_constants_mod     , only : R8, I8, CL, CXX
-  use med_constants_mod     , only : shr_log_Unit
+  use med_constants_mod     , only : R8, CL
   use med_constants_mod     , only : shr_cal_ymd2date, shr_cal_noleap, shr_cal_gregorian
   use med_constants_mod     , only : shr_file_getlogunit, shr_file_setlogunit
-  use med_constants_mod     , only : shr_file_setIO, shr_file_getUnit
   use shr_nuopc_scalars_mod , only : flds_scalar_name
   use shr_nuopc_scalars_mod , only : flds_scalar_num
   use shr_nuopc_scalars_mod , only : flds_scalar_index_nx
@@ -26,7 +24,6 @@ module ocn_comp_nuopc
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_SetScalar
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_Diagnose
   use shr_strdata_mod       , only : shr_strdata_type
-  use shr_const_mod         , only : SHR_CONST_SPVAL
   use dshr_nuopc_mod        , only : fld_list_type, fldsMax, dshr_realize
   use dshr_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, ModelSetMetaData
   use docn_shr_mod          , only : docn_shr_read_namelists
@@ -141,13 +138,7 @@ module ocn_comp_nuopc
 
     ! local variables
     type(ESMF_VM)      :: vm
-    integer            :: lmpicom
-    character(len=CL)  :: cvalue
-    integer            :: n,nflds
-    integer            :: ierr        ! error code
     integer            :: shrlogunit  ! original log unit
-    logical            :: ocnrof_prognostic ! flag
-    integer            :: localPet
     character(len=CL)  :: fileName    ! generic file name
     character(len=*),parameter :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
@@ -156,17 +147,14 @@ module ocn_comp_nuopc
     call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO)
 
     !----------------------------------------------------------------------------
-    ! generate local mpi comm
+    ! get mpi data
     !----------------------------------------------------------------------------
 
     call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call ESMF_VMGet(vm, mpiCommunicator=lmpicom, localPet=localPet, rc=rc)
+    call ESMF_VMGet(vm, mpiCommunicator=mpicom, localPet=my_task, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call mpi_comm_dup(lmpicom, mpicom, ierr)
-    call mpi_comm_rank(mpicom, my_task, ierr)
 
     !----------------------------------------------------------------------------
     ! determine instance information
@@ -186,22 +174,14 @@ module ocn_comp_nuopc
     !----------------------------------------------------------------------------
 
     filename = "docn_in"//trim(inst_suffix)
-    call docn_shr_read_namelists(filename, mpicom, my_task, master_task, &
-         logunit, ocn_prognostic, ocnrof_prognostic)
-
-    ! TODO (mvertens, 2019-03-24): the following ocn_prognostic line needs to be removed
-    ! - but removing it seems to introduce roundoff level answers in the output - so this
-    ! needs to be resolved first
-
-    ocn_prognostic = .true.
+    call docn_shr_read_namelists(filename, mpicom, my_task, master_task, logunit, ocn_prognostic)
 
     !--------------------------------
     ! Advertise import and export fields
     !--------------------------------
 
     call docn_comp_advertise(importstate, exportState, &
-       ocn_prognostic, ocnrof_prognostic, &
-       fldsFrOcn_num, fldsFrOcn, fldsToOcn_num, fldsToOcn, rc)
+         ocn_prognostic, fldsFrOcn_num, fldsFrOcn, fldsToOcn_num, fldsToOcn, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !----------------------------------------------------------------------------
@@ -216,12 +196,19 @@ module ocn_comp_nuopc
   !===============================================================================
 
   subroutine InitializeRealize(gcomp, importState, exportState, clock, rc)
+
+    use shr_const_mod, only : shr_const_spval
+
+    ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     type(ESMF_State)     :: importState, exportState
     type(ESMF_Clock)     :: clock
     integer, intent(out) :: rc
 
     ! local variables
+    integer                 :: n
+    integer                 :: nxg, nyg
+    character(CL)           :: cvalue
     type(ESMF_Mesh)         :: Emesh
     type(ESMF_Time)         :: currTime
     type(ESMF_TimeInterval) :: timeStep
@@ -233,14 +220,10 @@ module ocn_comp_nuopc
     integer                 :: current_day               ! model day
     integer                 :: current_tod               ! model sec into model date
     integer                 :: modeldt                   ! model timestep
-    integer                 :: n
-    character(CL)           :: cvalue
-    integer                 :: ierr                      ! error code
     logical                 :: scmMode = .false.         ! single column mode
-    real(R8)                :: scmLat  = shr_const_SPVAL ! single column lat
-    real(R8)                :: scmLon  = shr_const_SPVAL ! single column lon
-    integer                 :: shrlogunit ! original log unit
-    integer                 :: nxg, nyg
+    real(R8)                :: scmLat  = shr_const_spval ! single column lat
+    real(R8)                :: scmLon  = shr_const_spval ! single column lon
+    integer                 :: shrlogunit                ! original log unit
     character(len=*),parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
 
@@ -346,17 +329,15 @@ module ocn_comp_nuopc
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     
     ! import fields
-    if (ocn_prognostic) then
-       call dshr_realize( &
-            state=importState, &
-            fldList=fldsToOcn, &
-            numflds=fldsToOcn_num, &
-            flds_scalar_name=flds_scalar_name, &
-            flds_scalar_num=flds_scalar_num, &
-            tag=subname//':docnImport',&
-            mesh=Emesh, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
+    call dshr_realize( &
+         state=importState, &
+         fldList=fldsToOcn, &
+         numflds=fldsToOcn_num, &
+         flds_scalar_name=flds_scalar_name, &
+         flds_scalar_num=flds_scalar_num, &
+         tag=subname//':docnImport',&
+         mesh=Emesh, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
     ! Pack export state
@@ -401,7 +382,10 @@ module ocn_comp_nuopc
   !===============================================================================
 
   subroutine ModelAdvance(gcomp, rc)
+
     use shr_nuopc_utils_mod, only : shr_nuopc_memcheck, shr_nuopc_log_clock_advance
+
+    ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -524,6 +508,7 @@ module ocn_comp_nuopc
   !===============================================================================
 
   subroutine ModelFinalize(gcomp, rc)
+
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 

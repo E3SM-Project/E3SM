@@ -45,7 +45,7 @@ CONTAINS
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   subroutine docn_shr_read_namelists(filename, mpicom, my_task, master_task, &
-       logunit, ocn_prognostic, ocnrof_prognostic)
+       logunit, ocn_prognostic)
 
     ! !DESCRIPTION: Read in docn namelists
     implicit none
@@ -57,7 +57,6 @@ CONTAINS
     integer(IN)            , intent(in)    :: master_task       ! task number of master task
     integer(IN)            , intent(in)    :: logunit           ! logging unit number
     logical                , intent(out)   :: ocn_prognostic    ! flag
-    logical                , intent(out)   :: ocnrof_prognostic ! flag
 
     !--- local variables ---
     integer(IN)   :: nunit       ! unit number
@@ -160,11 +159,6 @@ CONTAINS
        ocn_prognostic = .true.
     endif
 
-    ocnrof_prognostic = .false.
-    if (force_prognostic_true .or. (trim(datamode) == 'IAF')) then
-       ocnrof_prognostic = .true.
-    end if
-       
   end subroutine docn_shr_read_namelists
 
 end module docn_shr_mod

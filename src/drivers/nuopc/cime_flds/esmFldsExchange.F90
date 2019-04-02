@@ -35,7 +35,7 @@ contains
     use esmflds               , only : compmed, compatm, complnd, compocn
     use esmflds               , only : compice, comprof, compwav, compglc, ncomps
     use esmflds               , only : mapbilnr, mapconsf, mapconsd, mappatch
-    use esmflds               , only : mapfcopy, mapfiler, mapnstod, mapnstod_consd, mapnstod_consf
+    use esmflds               , only : mapfcopy, mapnstod, mapnstod_consd, mapnstod_consf
     use esmflds               , only : fldListTo, fldListFr, fldListMed_aoflux, fldListMed_ocnalb
     use esmFlds               , only : coupling_mode
 
@@ -1079,6 +1079,7 @@ contains
        call addfld(fldListTo(compocn)%flds, 'Foxx_swnet_idr')
        call addfld(fldListTo(compocn)%flds, 'Foxx_swnet_idf')
     else
+
        ! Net shortwave ocean (custom calculation in prep_phases_ocn_mod.F90)
        ! export swpent to ocn without bands
        if ( fldchk(is_local%wrap%FBExp(compocn)        , 'Foxx_swnet', rc=rc) .and. &
@@ -1090,11 +1091,12 @@ contains
           call addmap(fldListFr(compatm)%flds, 'Faxa_swvdf', compocn, mapconsf, 'one', atm2ocn_fmap)
           call addmap(fldListFr(compatm)%flds, 'Faxa_swndr', compocn, mapconsf, 'one', atm2ocn_fmap)
           call addmap(fldListFr(compatm)%flds, 'Faxa_swndf', compocn, mapconsf, 'one', atm2ocn_fmap)
+       end if
 
-          ! import swpen from ice without bands
-          if (fldchk(is_local%wrap%FBImp(compice,compice), 'Fioi_swpen', rc=rc)) then
-             call addmap(fldListFr(compice)%flds, 'Fioi_swpen',  compocn, mapfcopy, 'unset', 'unset')
-          end if
+       ! export swpen from ice without bands
+       if ( fldchk(is_local%wrap%FBExp(compocn)        , 'Fioi_swpen', rc=rc) .and. &
+            fldchk(is_local%wrap%FBImp(compice,compice), 'Fioi_swpen', rc=rc)) then 
+          call addmap(fldListFr(compice)%flds, 'Fioi_swpen',  compocn, mapfcopy, 'unset', 'unset')
        end if
 
        ! export swnet to ocn by bands
@@ -1110,18 +1112,24 @@ contains
           call addmap(fldListFr(compatm)%flds, 'Faxa_swvdf', compocn, mapconsf, 'one', atm2ocn_fmap)
           call addmap(fldListFr(compatm)%flds, 'Faxa_swndr', compocn, mapconsf, 'one', atm2ocn_fmap)
           call addmap(fldListFr(compatm)%flds, 'Faxa_swndf', compocn, mapconsf, 'one', atm2ocn_fmap)
-
-          ! import swpen from ice by bands
-          if ( fldchk(is_local%wrap%FBImp(compice,compice), 'Fioi_swpen_vdr', rc=rc) .and. &
-               fldchk(is_local%wrap%FBImp(compice,compice), 'Fioi_swpen_vdf', rc=rc) .and. &
-               fldchk(is_local%wrap%FBImp(compice,compice), 'Fioi_swpen_idr', rc=rc) .and. &
-               fldchk(is_local%wrap%FBImp(compice,compice), 'Fioi_swpen_idf', rc=rc)) then
-             call addmap(fldListFr(compice)%flds, 'Fioi_swpen_vdr', compocn, mapfcopy, 'unset', 'unset')
-             call addmap(fldListFr(compice)%flds, 'Fioi_swpen_vdf', compocn, mapfcopy, 'unset', 'unset')
-             call addmap(fldListFr(compice)%flds, 'Fioi_swpen_idr', compocn, mapfcopy, 'unset', 'unset')
-             call addmap(fldListFr(compice)%flds, 'Fioi_swpen_idf', compocn, mapfcopy, 'unset', 'unset')
-          end if
        end if
+
+       ! export swpen from ice by bands
+       if ( fldchk(is_local%wrap%FBExp(compocn)         , 'Fioi_swpen_vdr', rc=rc) .and. &
+            fldchk(is_local%wrap%FBExp(compocn)         , 'Fioi_swpen_vdf', rc=rc) .and. &
+            fldchk(is_local%wrap%FBExp(compocn)         , 'Fioi_swpen_idr', rc=rc) .and. &
+            fldchk(is_local%wrap%FBExp(compocn)         , 'Fioi_swpen_idf', rc=rc) .and. &
+            fldchk(is_local%wrap%FBImp(compice,compice) , 'Fioi_swpen_vdr', rc=rc) .and. &
+            fldchk(is_local%wrap%FBImp(compice,compice) , 'Fioi_swpen_vdf', rc=rc) .and. &
+            fldchk(is_local%wrap%FBImp(compice,compice) , 'Fioi_swpen_idr', rc=rc) .and. &
+            fldchk(is_local%wrap%FBImp(compice,compice) , 'Fioi_swpen_idf', rc=rc)) then
+            
+          call addmap(fldListFr(compice)%flds, 'Fioi_swpen_vdr', compocn, mapfcopy, 'unset', 'unset')
+          call addmap(fldListFr(compice)%flds, 'Fioi_swpen_vdf', compocn, mapfcopy, 'unset', 'unset')
+          call addmap(fldListFr(compice)%flds, 'Fioi_swpen_idr', compocn, mapfcopy, 'unset', 'unset')
+          call addmap(fldListFr(compice)%flds, 'Fioi_swpen_idf', compocn, mapfcopy, 'unset', 'unset')
+       end if
+
     end if
 
     ! ---------------------------------------------------------------------
@@ -1484,15 +1492,15 @@ contains
           else if ( fldchk(is_local%wrap%FBExp(compocn)         , 'Foxx_rofl' //iso(n), rc=rc) .and. &
                     fldchk(is_local%wrap%FBImp(comprof, comprof), 'Forr_rofl' //iso(n), rc=rc) .and. &
                     fldchk(is_local%wrap%FBImp(comprof, comprof), 'Flrr_flood'//iso(n), rc=rc)) then
-             call addmap(fldListFr(comprof)%flds, 'Flrr_flood'//iso(n), compocn, mapfiler, 'none', rof2ocn_fmap)
-             call addmap(fldListFr(comprof)%flds, 'Forr_rofl' //iso(n), compocn, mapfiler, 'none', rof2ocn_liq_rmap)
+             call addmap(fldListFr(comprof)%flds, 'Flrr_flood'//iso(n), compocn, mapconsf, 'none', rof2ocn_fmap)
+             call addmap(fldListFr(comprof)%flds, 'Forr_rofl' //iso(n), compocn, mapconsf, 'none', rof2ocn_liq_rmap)
              call addmrg(fldListTo(compocn)%flds, 'Foxx_rofl' //iso(n), &
                   mrg_from1=comprof, mrg_fld1='Forr_rofl:Flrr_flood', mrg_type1='sum')
 
           ! liquid from just rof to ocn
           else if ( fldchk(is_local%wrap%FBExp(compocn)         , 'Foxx_rofl'//iso(n), rc=rc) .and. &
                     fldchk(is_local%wrap%FBImp(comprof, comprof), 'Forr_rofl'//iso(n), rc=rc)) then
-             call addmap(fldListFr(comprof)%flds, 'Forr_rofl'//iso(n), compocn, mapfiler, 'none', rof2ocn_liq_rmap)
+             call addmap(fldListFr(comprof)%flds, 'Forr_rofl'//iso(n), compocn, mapconsf, 'none', rof2ocn_liq_rmap)
              call addmrg(fldListTo(compocn)%flds, 'Foxx_rofl'//iso(n), &
                   mrg_from1=comprof, mrg_fld1='Forr_rofl', mrg_type1='copy')
 
@@ -1814,7 +1822,8 @@ contains
     else
        if ( fldchk(is_local%wrap%FBexp(compwav)         , 'Si_ifrac', rc=rc) .and. &
             fldchk(is_local%wrap%FBImp(compice,compice ), 'Si_ifrac', rc=rc)) then
-          call addmap(fldListFr(compice)%flds, 'Si_ifrac', compwav, mapfiler, 'one', ice2wav_smap)
+             ! By default will be using a custom map - but if one is not available, use a generated bilinear instead
+          call addmap(fldListFr(compice)%flds, 'Si_ifrac', compwav, mapbilnr, 'one', ice2wav_smap)
           call addmrg(fldListTo(compwav)%flds, 'Si_ifrac', &
                mrg_from1=compice, mrg_fld1='Si_ifrac', mrg_type1='copy')
        end if
@@ -1836,7 +1845,8 @@ contains
        else
           if ( fldchk(is_local%wrap%FBImp(compocn, compocn), trim(fldname), rc=rc) .and. &
                fldchk(is_local%wrap%FBExp(compwav)         , trim(fldname), rc=rc)) then
-             call addmap(fldListFr(compocn)%flds, trim(fldname), compwav, mapfiler, 'one', ocn2wav_smap)
+             ! By default will be using a custom map - but if one is not available, use a generated bilinear instead
+             call addmap(fldListFr(compocn)%flds, trim(fldname), compwav, mapbilnr, 'one', ocn2wav_smap)
              call addmrg(fldListTo(compwav)%flds, trim(fldname), mrg_from1=compocn, mrg_fld1=trim(fldname), mrg_type1='copy')
           end if
        end if
@@ -1894,7 +1904,7 @@ contains
        else
           if ( fldchk(is_local%wrap%FBImp(complnd, complnd), trim(fldname), rc=rc) .and. &
                fldchk(is_local%wrap%FBExp(comprof)         , trim(fldname), rc=rc)) then
-             call addmap(fldListFr(complnd)%flds, trim(fldname), comprof, mapconsd, 'lfrin', lnd2rof_fmap)
+             call addmap(fldListFr(complnd)%flds, trim(fldname), comprof, mapconsd, 'lfrac', lnd2rof_fmap)
              call addmrg(fldListTo(comprof)%flds, trim(fldname), &
                   mrg_from1=complnd, mrg_fld1=trim(fldname), mrg_type1='copy_with_weights', mrg_fracname1='lfrac')
           end if

@@ -482,7 +482,7 @@ contains
     call med_map_FB_Regrid_Norm(&
          (/trim(irrig_normalized_field), trim(irrig_volr0_field)/), &
          FBlndIrrig, FBrofIrrig, &
-         is_local%wrap%FBFrac(complnd), 'lfrin', &
+         is_local%wrap%FBFrac(complnd), 'lfrac', &
          is_local%wrap%RH(complnd, comprof, mapconsf), &
          string='mapping normalized irrig from lnd to to rof', rc=rc)
 
