@@ -159,9 +159,6 @@ def _set_pio_valid_values(case, valid_values):
             logger.warning("Resetting PIO_TYPENAME to netcdf for component {}".format(comp))
             env_run.set_value(comp_pio_typename,"netcdf")
 
-
-
-
 def _main(argv, documentation):
     bldroot, installpath, caseroot = parse_command_line(argv, documentation)
     with Case(caseroot, read_only=False) as case:
