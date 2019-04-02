@@ -1128,7 +1128,7 @@
     <NODENAME_REGEX>blueslogin.*.lcrc.anl.gov</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel,gnu</COMPILERS>
-    <MPILIBS>mvapich,impi,openmpi</MPILIBS>
+    <MPILIBS>mvapich,openmpi</MPILIBS>
     <PROJECT>condo</PROJECT>
     <SAVE_TIMING_DIR>/lcrc/group/acme</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
@@ -1174,60 +1174,40 @@
       </modules>
       <modules compiler="intel">
         <command name="load">intel/18.0.4-443hhug</command>
-        <command name="load">intel-mkl/2018.4.274-jwaeshj</command>
       </modules>
       <modules compiler="intel" mpilib="mvapich">
 	<command name="load">mvapich2/2.3-verbs-jxfqudp</command>
-	<command name="load">hdf5/1.10.4-b2aw6ri</command>
-	<command name="load">netcdf-cxx/4.2-fevpvbh</command>
-	<command name="load">netcdf-fortran/4.4.4-25yzbsw</command>
-	<command name="load">netcdf/4.6.2-xf4e6n6</command>
-	<command name="load">parallel-netcdf/1.11.0-7kvr6ax</command>
+	<command name="load">parallel-netcdf/1.8.1-zhkvsbx</command>
       </modules>
       <modules compiler="intel" mpilib="openmpi">
 	<command name="load">openmpi/3.1.3-verbs-kqojjbw</command>
-	<command name="load">hdf5/1.10.4-uitg4of</command>
-	<command name="load">netcdf-cxx/4.2-crwzy3r</command>
-	<command name="load">netcdf-fortran/4.4.4-fve36ga</command>
-	<command name="load">netcdf/4.6.2-3jynwg5</command>
-	<command name="load">parallel-netcdf/1.11.0-e7zc5da</command>
+	<command name="load">parallel-netcdf/1.8.1-5ldccd7</command>
       </modules>
-      <modules compiler="intel" mpilib="impi">
-	<command name="load">intel-mpi/2018.4.274-4hmwfl6</command>
-	<command name="load">hdf5/1.10.4-zlri7fo</command>
-	<command name="load">netcdf/4.6.2-64hby3x</command>
-	<command name="load">netcdf-fortran/4.4.4-hr5agu5</command>
-	<command name="load">netcdf-cxx/4.2-efl7ntf</command>
-	<command name="load">parallel-netcdf/1.11.0-acswzws</command>
+      <modules>
+        <command name="load">intel-mkl/2018.4.274-jwaeshj</command>
+	<command name="load">hdf5/1.8.16-n5thgua</command>
+	<command name="load">netcdf/4.4.1-qs32hcj</command>
+	<command name="load">netcdf-cxx/4.2-fevpvbh</command>
+	<command name="load">netcdf-fortran/4.4.4-jy3v3rz</command>
       </modules>
       
       <modules compiler="gnu">
         <command name="load">gcc/8.2.0-g7hppkz</command>
-	<command name="load">intel-mkl/2018.4.274-2amycpi</command>
       </modules>
       <modules compiler="gnu" mpilib="mvapich">
 	<command name="load">mvapich2/2.3-verbs-yyaahvp</command>
-	<command name="load">hdf5/1.10.5-va2annc</command>
-	<command name="load">netcdf/4.6.3-pj7p2s7</command>
-	<command name="load">netcdf-cxx/4.2-gxtq6xt</command>
-	<command name="load">netcdf-fortran/4.4.4-togj5w5</command>
-	<command name="load">parallel-netcdf/1.11.0-e5iciuq</command>
+	<command name="load">parallel-netcdf/1.8.1-m4l6rud</command>
       </modules>
       <modules compiler="gnu" mpilib="openmpi">
         <command name="load">openmpi/3.1.3-verbs-q4swt25</command>
-	<command name="load">hdf5/1.10.5-kuyb5xe</command>
-	<command name="load">netcdf/4.6.3-xcyxt2i</command>
-	<command name="load">netcdf-fortran/4.4.4-tad5qcj</command>
-	<command name="load">netcdf-cxx/4.2-2dftcw4</command>
-	<command name="load">parallel-netcdf/1.11.0-g7mipbc</command>
+	<command name="load">parallel-netcdf/1.8.1-re3um7k</command>
       </modules>
-      <modules compiler="gnu" mpilib="impi">
-	<command name="load">intel-mpi/2018.4.274-ozfo327</command>
-	<command name="load">hdf5/1.10.5-vozfsah</command>
-	<command name="load">netcdf/4.6.3-c2b5ohk</command>
-	<command name="load">netcdf-fortran/4.4.4-x323ez3</command>
-	<command name="load">netcdf-cxx/4.2-skdn4fw</command>
-	<command name="load">parallel-netcdf/1.11.0-filvnis</command>
+      <modules compiler="gnu">
+	<command name="load">intel-mkl/2018.4.274-2amycpi</command>
+	<command name="load">hdf5/1.8.16-mz7lmxh</command>
+	<command name="load">netcdf/4.4.1-xkjcghm</command>
+	<command name="load">netcdf-cxx/4.2-kyva3os</command>
+	<command name="load">netcdf-fortran/4.4.4-mpstomu</command>
       </modules>
       <modules>
         <command name="load">cmake</command>
