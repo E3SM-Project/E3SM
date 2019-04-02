@@ -75,14 +75,15 @@
       <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/gx1v6/map_gx1v6_TO_fv1.9x2.5_aave.130322.nc</map>
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/gx1v6/map_gx1v6_TO_fv1.9x2.5_aave.130322.nc</map>
     </gridmap>
-    <!-- TODO: this is commented out until this grid can be run in DEBUG model with online remapping -->
-    <!-- <gridmap atm_grid="1.9x2.5" ocn_grid="gx1v7"> -->
-    <!--   <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_gx1v7_aave.181205.nc</map> -->
-    <!--   <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_gx1v7_blin.181205.nc</map> -->
-    <!--   <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_gx1v7_patc.181205.nc</map> -->
-    <!--   <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/gx1v7/map_gx1v7_TO_fv1.9x2.5_aave.181205.nc</map> -->
-    <!--   <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/gx1v7/map_gx1v7_TO_fv1.9x2.5_aave.181205.nc</map> -->
-    <!-- </gridmap> -->
+
+    <gridmap atm_grid="1.9x2.5" ocn_grid="gx1v7">
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_gx1v7_aave.181205.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_gx1v7_blin.181205.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_gx1v7_patc.181205.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/gx1v7/map_gx1v7_TO_fv1.9x2.5_aave.181205.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/gx1v7/map_gx1v7_TO_fv1.9x2.5_aave.181205.nc</map>
+    </gridmap>
+
     <gridmap atm_grid="1.9x2.5" ocn_grid="tx1v1">
       <map name="ATM2OCN_FMAPNAME">cpl/cpl6/map_fv1.9x2.5_to_tx1v1_aave_da_090710.nc</map>
       <map name="ATM2OCN_SMAPNAME">cpl/cpl6/map_fv1.9x2.5_to_tx1v1_bilin_da_090710.nc</map>

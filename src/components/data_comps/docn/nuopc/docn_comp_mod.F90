@@ -163,10 +163,10 @@ contains
     ! import fields (have no corresponding stream fields)
     !-------------------
 
-    fldsToOcn_num=1
-    fldsToOcn(1)%stdname = trim(flds_scalar_name)
-
     if (ocn_prognostic) then
+
+       fldsToOcn_num=1
+       fldsToOcn(1)%stdname = trim(flds_scalar_name)
 
        call dshr_fld_add(model_fld='Foxx_swnet', model_fld_concat=flds_x2o, model_fld_index=kswnet, &
             fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)

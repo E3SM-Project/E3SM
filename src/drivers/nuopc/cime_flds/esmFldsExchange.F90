@@ -1079,7 +1079,6 @@ contains
        call addfld(fldListTo(compocn)%flds, 'Foxx_swnet_idr')
        call addfld(fldListTo(compocn)%flds, 'Foxx_swnet_idf')
     else
-
        ! Net shortwave ocean (custom calculation in prep_phases_ocn_mod.F90)
        ! export swpent to ocn without bands
        if ( fldchk(is_local%wrap%FBExp(compocn)        , 'Foxx_swnet', rc=rc) .and. &
@@ -1091,12 +1090,11 @@ contains
           call addmap(fldListFr(compatm)%flds, 'Faxa_swvdf', compocn, mapconsf, 'one', atm2ocn_fmap)
           call addmap(fldListFr(compatm)%flds, 'Faxa_swndr', compocn, mapconsf, 'one', atm2ocn_fmap)
           call addmap(fldListFr(compatm)%flds, 'Faxa_swndf', compocn, mapconsf, 'one', atm2ocn_fmap)
-       end if
 
-       ! export swpen from ice without bands
-       if ( fldchk(is_local%wrap%FBExp(compocn)        , 'Fioi_swpen', rc=rc) .and. &
-            fldchk(is_local%wrap%FBImp(compice,compice), 'Fioi_swpen', rc=rc)) then 
-          call addmap(fldListFr(compice)%flds, 'Fioi_swpen',  compocn, mapfcopy, 'unset', 'unset')
+          ! import swpen from ice without bands
+          if (fldchk(is_local%wrap%FBImp(compice,compice), 'Fioi_swpen', rc=rc)) then
+             call addmap(fldListFr(compice)%flds, 'Fioi_swpen',  compocn, mapfcopy, 'unset', 'unset')
+          end if
        end if
 
        ! export swnet to ocn by bands
@@ -1112,24 +1110,18 @@ contains
           call addmap(fldListFr(compatm)%flds, 'Faxa_swvdf', compocn, mapconsf, 'one', atm2ocn_fmap)
           call addmap(fldListFr(compatm)%flds, 'Faxa_swndr', compocn, mapconsf, 'one', atm2ocn_fmap)
           call addmap(fldListFr(compatm)%flds, 'Faxa_swndf', compocn, mapconsf, 'one', atm2ocn_fmap)
-       end if
 
-       ! export swpen from ice by bands
-       if ( fldchk(is_local%wrap%FBExp(compocn)         , 'Fioi_swpen_vdr', rc=rc) .and. &
-            fldchk(is_local%wrap%FBExp(compocn)         , 'Fioi_swpen_vdf', rc=rc) .and. &
-            fldchk(is_local%wrap%FBExp(compocn)         , 'Fioi_swpen_idr', rc=rc) .and. &
-            fldchk(is_local%wrap%FBExp(compocn)         , 'Fioi_swpen_idf', rc=rc) .and. &
-            fldchk(is_local%wrap%FBImp(compice,compice) , 'Fioi_swpen_vdr', rc=rc) .and. &
-            fldchk(is_local%wrap%FBImp(compice,compice) , 'Fioi_swpen_vdf', rc=rc) .and. &
-            fldchk(is_local%wrap%FBImp(compice,compice) , 'Fioi_swpen_idr', rc=rc) .and. &
-            fldchk(is_local%wrap%FBImp(compice,compice) , 'Fioi_swpen_idf', rc=rc)) then
-            
-          call addmap(fldListFr(compice)%flds, 'Fioi_swpen_vdr', compocn, mapfcopy, 'unset', 'unset')
-          call addmap(fldListFr(compice)%flds, 'Fioi_swpen_vdf', compocn, mapfcopy, 'unset', 'unset')
-          call addmap(fldListFr(compice)%flds, 'Fioi_swpen_idr', compocn, mapfcopy, 'unset', 'unset')
-          call addmap(fldListFr(compice)%flds, 'Fioi_swpen_idf', compocn, mapfcopy, 'unset', 'unset')
+          ! import swpen from ice by bands
+          if ( fldchk(is_local%wrap%FBImp(compice,compice), 'Fioi_swpen_vdr', rc=rc) .and. &
+               fldchk(is_local%wrap%FBImp(compice,compice), 'Fioi_swpen_vdf', rc=rc) .and. &
+               fldchk(is_local%wrap%FBImp(compice,compice), 'Fioi_swpen_idr', rc=rc) .and. &
+               fldchk(is_local%wrap%FBImp(compice,compice), 'Fioi_swpen_idf', rc=rc)) then
+             call addmap(fldListFr(compice)%flds, 'Fioi_swpen_vdr', compocn, mapfcopy, 'unset', 'unset')
+             call addmap(fldListFr(compice)%flds, 'Fioi_swpen_vdf', compocn, mapfcopy, 'unset', 'unset')
+             call addmap(fldListFr(compice)%flds, 'Fioi_swpen_idr', compocn, mapfcopy, 'unset', 'unset')
+             call addmap(fldListFr(compice)%flds, 'Fioi_swpen_idf', compocn, mapfcopy, 'unset', 'unset')
+          end if
        end if
-
     end if
 
     ! ---------------------------------------------------------------------

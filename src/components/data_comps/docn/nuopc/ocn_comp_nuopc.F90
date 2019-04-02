@@ -176,6 +176,8 @@ module ocn_comp_nuopc
     filename = "docn_in"//trim(inst_suffix)
     call docn_shr_read_namelists(filename, mpicom, my_task, master_task, logunit, ocn_prognostic)
 
+    write(6,*)'DEBUG: ocn_prognostic = ',ocn_prognostic
+
     !--------------------------------
     ! Advertise import and export fields
     !--------------------------------
