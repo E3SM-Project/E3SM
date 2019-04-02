@@ -274,7 +274,7 @@ class GenericXML(object):
         return None
 
     def to_string(self, node, method="xml", encoding="us-ascii"):
-        return ET.tostring(node, method=method, encoding=encoding)
+        return ET.tostring(node.xml_element, method=method, encoding=encoding)
 
     #
     # API for operations over the entire file
