@@ -464,16 +464,19 @@ class Case(object):
                     self._compsetname = match
                     logger.info("Compset longname is {}".format(match))
                     logger.info("Compset specification file is {}".format(compsets_filename))
-                    return compset_alias, science_support
+                    break
 
         if compset_alias is None:
             logger.info("Did not find an alias or longname compset match for {} ".format(compset_name))
             self._compsetname = compset_name
-            # if this is a valiid compset longname there will be at least 7 components.
-            components = self.get_compset_components()
-            expect(len(components) > 6, "No compset alias {} found and this does not appear to be a compset longname.".format(compset_name))
 
-        return None, science_support
+        # Fill in compset name
+        self._compsetname = self._valid_compset(files, self._compsetname)
+        # if this is a valiid compset longname there will be at least 7 components.
+        components = self.get_compset_components()
+        expect(len(components) > 6, "No compset alias {} found and this does not appear to be a compset longname.".format(compset_name))
+
+        return compset_alias, science_support
 
     def get_primary_component(self):
         if self._primary_component is None:
@@ -528,6 +531,71 @@ class Case(object):
             primary_component = "drv"
 
         return primary_component
+
+
+    __mod_match_re__ = re.compile(r"([^%]*[^0-9%]+)")
+    def _valid_compset(self, files, compset_name):
+        "Fill in missing stub models, return full compset name"
+        drv_config_file = files.get_value("CONFIG_CPL_FILE")
+        drv_comp = Component(drv_config_file, "CPL")
+        comp_classes = drv_comp.get_valid_model_components()
+        model_hash = {} # Hash model name to component class index
+        model_set = [None]*len(comp_classes)
+        # First, create hash of model names
+        # A note about indexing. Relevant component classes start at 1
+        # because we ignore CPL for finding model components.
+        # Model components would normally start at zero but since we are
+        # dealing with a compset, 0 is reserved for the time field
+        for comp_ind in xrange(1, len(comp_classes)):
+            comp = comp_classes[comp_ind]
+            # Find list of models for component class
+            # List can be in different locations, check CONFIG_XXX_FILE first
+            node_name = 'CONFIG_{}_FILE'.format(comp)
+            models = files.get_components(node_name)
+            if (models is None) or (None in models):
+                # Backup, check COMP_ROOT_DIR_XXX
+                node_name = 'COMP_ROOT_DIR_' + comp
+                models = files.get_components(node_name)
+
+            for model in models:
+                mod_match = Case.__mod_match_re__.match(model.lower()).group(1)
+                model_hash[mod_match] = comp_ind
+
+        # Find the models declared in the compset
+        components = compset_name.split('_')
+        model_set[0] = components[0]
+        # Check for BGC
+        if components[-1][0:3] == 'BGC':
+            bgc = components[-1]
+            last_ind = len(components) - 1
+        else:
+            bgc = None
+            last_ind = len(components)
+
+        for model in components[1:last_ind]:
+            match = Case.__mod_match_re__.match(model.lower())
+            expect(match is not None, "No model match for {}".format(model))
+            mod_match = match.group(1)
+            expect(mod_match in model_hash,
+                   "Unknown model type, {}".format(model))
+            comp_ind = model_hash[mod_match]
+            model_set[comp_ind] = model
+
+        # Fill in missing components with stubs
+        for comp_ind in xrange(1, len(model_set)):
+            if model_set[comp_ind] is None:
+                comp_class = comp_classes[comp_ind]
+                stub = 'S' + comp_class
+                logger.info("Automatically adding {} to compset".format(stub))
+                model_set[comp_ind] = stub
+
+        # Return the completed compset
+        if bgc is not None:
+            model_set.append(bgc)
+
+        self._components = model_set
+        self._compsetname = '_'.join(model_set)
+        return self._compsetname
 
 
     def _set_info_from_primary_component(self, files, pesfile=None):
@@ -632,9 +700,6 @@ class Case(object):
         # loop over all elements of both component_classes and components - and get config_component_file for
         # for each component
         self.set_comp_classes(drv_comp.get_valid_model_components())
-
-        if len(self._component_classes) > len(self._components):
-            self._components.append('sesp')
 
         # will need a change here for new cpl components
         root_dir_node_name = 'COMP_ROOT_DIR_CPL'
@@ -788,6 +853,9 @@ class Case(object):
         #--------------------------------------------
         files = Files(comp_interface=driver)
 
+        #--------------------------------------------
+        # find and/or fill out compset name
+        #--------------------------------------------
         compset_alias, science_support = self._set_compset(compset_name, files, driver)
 
         self._components = self.get_compset_components()
