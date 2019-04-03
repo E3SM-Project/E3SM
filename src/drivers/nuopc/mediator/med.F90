@@ -455,7 +455,7 @@ contains
   subroutine InitializeP0(gcomp, importState, exportState, clock, rc)
 
     use ESMF  , only : ESMF_GridComp, ESMF_State, ESMF_Clock, ESMF_VM, ESMF_SUCCESS
-    use ESMF  , only : ESMF_UtilString2Int, ESMF_GridCompGet, ESMF_VMGet, ESMF_AttributeGet
+    use ESMF  , only : ESMF_GridCompGet, ESMF_VMGet, ESMF_AttributeGet
     use ESMF  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_METHOD_INITIALIZE
     use ESMF  , only : ESMF_GridCompGet
     use NUOPC , only : NUOPC_CompFilterPhaseMap
@@ -488,10 +488,6 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_LogWrite(trim(subname)//": Mediator verbosity is "//trim(value), ESMF_LOGMSG_INFO, rc=dbrc)
-
-    ! dbug_flag = ESMF_UtilString2Int(value, &
-    !      specialStringList=(/"min","max","high"/), specialValueList=(/0,255,255/), rc=rc)
-    ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     write(msgString,'(A,i6)') trim(subname)//' dbug_flag = ',dbug_flag
     call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
@@ -1682,10 +1678,10 @@ contains
       ! rather than NStateExp(n2), since the export state might only
       ! contain control data and no grid information if if the target
       ! component (n2) is not prognostic only receives control data back
-      
+
       ! NOTE: this section must be done BEFORE the call to esmFldsExchange
       ! Create field bundles for mediator ocean albedo computation
-      
+
       if ( is_local%wrap%med_coupling_active(compocn,compatm) .or. &
            is_local%wrap%med_coupling_active(compatm,compocn)) then
 
