@@ -162,7 +162,7 @@ Field<ScalarType,Device>::get_reshaped_view () const {
   error::runtime_check(m_allocated, "Error! Cannot reshape a field that has not been allocated yet.\n");
 
   // Make sure DstDT has an eligible rank: can only reinterpret if the data type rank does not change or if either src or dst have rank 1.
-  constexpr int DstRank = util::GetRanks<DT>::rank==1;
+  constexpr int DstRank = util::GetRanks<DT>::rank;
 
   // Check the reinterpret cast makes sense for the two value types (need integer sizes ratio)
   error::runtime_check(alloc_prop.template is_allocation_compatible_with_value_type<DstValueType>(),
