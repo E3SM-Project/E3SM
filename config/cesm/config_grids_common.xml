@@ -460,16 +460,6 @@
       <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/gland4km/map_gland4km_to_gx3v7_nnsm_e1000r500_180502.nc</map>
       <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/gland4km/map_gland4km_to_gx3v7_nnsm_e1000r500_180502.nc</map>
     </gridmap>
-
-
-
-
-
-
-
-
-
-
     <gridmap ocn_grid="gx1v6" glc_grid="gland5UM" >
       <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/gland5km/map_gland5km_to_gx1v6_nn_open_ocean_nnsm_e1000r300_marginal_sea_171105.nc</map>
       <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/gland5km/map_gland5km_to_gx1v6_nnsm_e1000r300_171105.nc</map>
