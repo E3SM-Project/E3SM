@@ -48,7 +48,6 @@ public:
   void create_comm(const int f_comm);
   Comm& get_comm();
   std::shared_ptr<Connectivity> get_connectivity();
-  BMMap& get_buffers_managers();
   std::shared_ptr<BuffersManager> get_buffers_manager(short int exchange_type);
 
   // Exactly one singleton.

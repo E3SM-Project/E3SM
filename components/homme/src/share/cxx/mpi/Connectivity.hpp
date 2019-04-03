@@ -70,7 +70,7 @@ public:
   void add_connection (const int first_elem_lid,  const int first_elem_gid,  const int first_elem_pos,  const int first_elem_pid,
                        const int second_elem_lid, const int second_elem_gid, const int second_elem_pos, const int second_elem_pid);
 
-  void finalize ();
+  void finalize (const bool sanity_check = true);
 
   void clean_up ();
   //@}
