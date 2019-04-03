@@ -453,8 +453,9 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine InitializeP0(gcomp, importState, exportState, clock, rc)
+
     use ESMF  , only : ESMF_GridComp, ESMF_State, ESMF_Clock, ESMF_VM, ESMF_SUCCESS
-    use ESMF  , only : ESMF_UtilString2Int, ESMF_GridCompGet, ESMF_VMGet, ESMF_AttributeGet
+    use ESMF  , only : ESMF_GridCompGet, ESMF_VMGet, ESMF_AttributeGet
     use ESMF  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_METHOD_INITIALIZE
     use ESMF  , only : ESMF_GridCompGet
     use NUOPC , only : NUOPC_CompFilterPhaseMap
@@ -467,11 +468,11 @@ contains
 
     ! local variables
     type(ESMF_VM)      :: vm
-    character(len=*),parameter :: subname='(module_MED:InitializeP0)'
-    character(len=128)         :: value
+    character(len=128) :: value
     integer            :: dbrc
     integer            :: localPet
-    character(len=CX):: msgString
+    character(len=CX)  :: msgString
+    character(len=*),parameter :: subname='(module_MED:InitializeP0)'
     !-----------------------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -487,10 +488,6 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_LogWrite(trim(subname)//": Mediator verbosity is "//trim(value), ESMF_LOGMSG_INFO, rc=dbrc)
-
-!    dbug_flag = ESMF_UtilString2Int(value, &
-!         specialStringList=(/"min","max","high"/), specialValueList=(/0,255,255/), rc=rc)
-!    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     write(msgString,'(A,i6)') trim(subname)//' dbug_flag = ',dbug_flag
     call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
@@ -632,6 +629,7 @@ contains
              call NUOPC_Advertise(is_local%wrap%NStateExp(ncomp), standardName=stdname, shortname=shortname, name=shortname, &
                   TransferOfferGeomObject=transferOffer)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
              call ESMF_LogWrite(subname//':To_'//trim(compname(ncomp))//': '//trim(shortname), ESMF_LOGMSG_INFO)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           end do
@@ -670,9 +668,6 @@ contains
     type(InternalState)        :: is_local
     real(R8)                   :: intervalSec
     type(ESMF_TimeInterval)    :: timeStep
-    ! tcx XGrid
-    ! type(ESMF_Field)         :: fieldX, fieldA, fieldO
-    ! type(ESMF_XGrid)         :: xgrid
     type(ESMF_VM)              :: vm
     integer                    :: n, n1, n2
     character(CL)              :: cvalue
@@ -816,7 +811,7 @@ contains
       integer                       :: dbrc
       character(len=CX)             :: msgString
       character(len=*),parameter :: subname='(module_MEDIATOR:realizeConnectedGrid)'
-
+      !-----------------------------------------------------------
 
       !NOTE: All of the Fields that set their TransferOfferGeomObject Attribute
       !NOTE: to "cannot provide" should now have the accepted Grid available.
@@ -1260,6 +1255,7 @@ contains
       use ESMF                  , only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_FieldGet, ESMF_FieldEmptyComplete
       use ESMF                  , only : ESMF_GeomType_Flag, ESMF_FieldCreate, ESMF_GridToMeshCell, ESMF_GEOMTYPE_GRID
       use ESMF                  , only : ESMF_MeshLoc_Element, ESMF_TYPEKIND_R8, ESMF_FIELDSTATUS_GRIDSET
+      use ESMF                  , only : ESMF_AttributeGet
       use NUOPC                 , only : NUOPC_getStateMemberLists, NUOPC_Realize
       use shr_nuopc_scalars_mod , only : flds_scalar_name, flds_scalar_num
       use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_getNumFields
@@ -1278,7 +1274,12 @@ contains
       type(ESMF_Field),pointer    :: fieldList(:)
       type(ESMF_FieldStatus_Flag) :: fieldStatus
       type(ESMF_GeomType_Flag)    :: geomtype
+      integer                     :: gridToFieldMapCount, ungriddedCount
+      integer, allocatable        :: gridToFieldMap(:)
+      integer, allocatable        :: ungriddedLBound(:), ungriddedUBound(:)
+      logical                     :: isPresent
       character(len=*),parameter  :: subname='(module_MED:completeFieldInitialization)'
+      !-----------------------------------------------------------
 
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
       rc = ESMF_Success
@@ -1310,7 +1311,8 @@ contains
             mesh = ESMF_GridToMeshCell(grid,rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-            meshField = ESMF_FieldCreate(mesh, typekind=ESMF_TYPEKIND_R8, meshloc=ESMF_MESHLOC_ELEMENT, name=fieldName, rc=rc)
+            meshField = ESMF_FieldCreate(mesh, typekind=ESMF_TYPEKIND_R8, &
+                 meshloc=ESMF_MESHLOC_ELEMENT, name=fieldName, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
             ! Swap grid for mesh, at this point, only connected fields are in the state
@@ -1321,14 +1323,36 @@ contains
           if (fieldStatus==ESMF_FIELDSTATUS_GRIDSET) then
             call ESMF_LogWrite(subname//" is allocating field memory for field "//trim(fieldName), &
                  ESMF_LOGMSG_INFO, rc=rc)
-            call ESMF_FieldEmptyComplete(fieldList(n), typekind=ESMF_TYPEKIND_R8, rc=rc)
+
+            call ESMF_AttributeGet(fieldList(n), name="GridToFieldMap", convention="NUOPC", &
+                 purpose="Instance", itemCount=gridToFieldMapCount, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            allocate(gridToFieldMap(gridToFieldMapCount))
+            call ESMF_AttributeGet(fieldList(n), name="GridToFieldMap", convention="NUOPC", &
+                 purpose="Instance", valueList=gridToFieldMap, rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+            ungriddedCount=0  ! initialize in case it was not set
+            call ESMF_AttributeGet(fieldList(n), name="UngriddedLBound", convention="NUOPC", &
+                 purpose="Instance", itemCount=ungriddedCount,  isPresent=isPresent, rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            allocate(ungriddedLBound(ungriddedCount), ungriddedUBound(ungriddedCount))
+
+            if (ungriddedCount > 0) then
+               call ESMF_AttributeGet(fieldList(n), name="UngriddedLBound", convention="NUOPC", &
+                    purpose="Instance", valueList=ungriddedLBound, rc=rc)
+               call ESMF_AttributeGet(fieldList(n), name="UngriddedUBound", convention="NUOPC", &
+                    purpose="Instance", valueList=ungriddedUBound, rc=rc)
+            endif
+
+            call ESMF_FieldEmptyComplete(fieldList(n), typekind=ESMF_TYPEKIND_R8, gridToFieldMap=gridToFieldMap, &
+                 ungriddedLbound=ungriddedLbound, ungriddedUbound=ungriddedUbound, rc=rc)
+
+            deallocate(gridToFieldMap, ungriddedLbound, ungriddedUbound)
           endif   ! fieldStatus
 
-          if (dbug_flag > 1) then
-             call shr_nuopc_methods_Field_GeomPrint(fieldList(n), trim(subname)//':'//trim(fieldName), rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          end if
+          call shr_nuopc_methods_Field_GeomPrint(fieldList(n), trim(subname)//':'//trim(fieldName), rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
         enddo
         deallocate(fieldList)
@@ -1373,7 +1397,7 @@ contains
     use ESMF                    , only : ESMF_GridComp, ESMF_Clock, ESMF_LogWrite, ESMF_LOGMSG_INFO
     use ESMF                    , only : ESMF_State, ESMF_Time, ESMF_Field, ESMF_StateItem_Flag, ESMF_MAXSTR
     use ESMF                    , only : ESMF_GridCompGet, ESMF_AttributeGet, ESMF_ClockGet, ESMF_Success
-    use ESMF                    , only : ESMF_StateIsCreated, ESMF_StateGet, ESMF_LogFlush
+    use ESMF                    , only : ESMF_StateIsCreated, ESMF_StateGet, ESMF_FieldBundleIsCreated, ESMF_LogFlush
     use NUOPC                   , only : NUOPC_CompAttributeSet, NUOPC_IsAtTime, NUOPC_SetAttribute
     use NUOPC                   , only : NUOPC_CompAttributeGet
     use med_internalstate_mod   , only : InternalState
@@ -1511,8 +1535,7 @@ contains
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           if (cntn1 > 0) then
              do n2 = 1,ncomps
-                if (is_local%wrap%comp_present(n2) .and. &
-                    ESMF_StateIsCreated(is_local%wrap%NStateExp(n2),rc=rc) .and. &
+                if (is_local%wrap%comp_present(n2) .and. ESMF_StateIsCreated(is_local%wrap%NStateExp(n2),rc=rc) .and. &
                     med_coupling_allowed(n1,n2)) then
                    call shr_nuopc_methods_State_GetNumFields(is_local%wrap%NStateExp(n2), cntn2, rc=rc) ! Import Field Count
                    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -1620,7 +1643,7 @@ contains
             if (n1 /= n2 .and. &
                  is_local%wrap%med_coupling_active(n1,n2) .and. &
                  ESMF_StateIsCreated(is_local%wrap%NStateImp(n1),rc=rc) .and. &
-                 ESMF_StateIsCreated(is_local%wrap%NStateExp(n2),rc=rc)) then
+                 ESMF_StateIsCreated(is_local%wrap%NStateImp(n2),rc=rc)) then
 
                if (mastertask) write(logunit,*) subname,' initializing FBs for '//&
                     trim(compname(n1))//'_'//trim(compname(n2))
@@ -1644,23 +1667,29 @@ contains
          enddo ! loop over n2
 
       enddo ! loop over n1
+
       if (mastertask) call shr_sys_flush(logunit)
 
       !---------------------------------------
       ! Initialize field bundles needed for ocn albedo and ocn/atm flux calculations
       !---------------------------------------
 
+      ! NOTE: the NStateImp(compocn) or NStateImp(compatm) used below
+      ! rather than NStateExp(n2), since the export state might only
+      ! contain control data and no grid information if if the target
+      ! component (n2) is not prognostic only receives control data back
+
+      ! NOTE: this section must be done BEFORE the call to esmFldsExchange
+      ! Create field bundles for mediator ocean albedo computation
+
       if ( is_local%wrap%med_coupling_active(compocn,compatm) .or. &
            is_local%wrap%med_coupling_active(compatm,compocn)) then
 
-         ! NOTE: the NStateImp(compocn) or NStateImp(compatm) used below
-         ! rather than NStateExp(n2), since the export state might only
-         ! contain control data and no grid information if if the target
-         ! component (n2) is not prognostic only receives control data back
+         if (.not. is_local%wrap%med_coupling_active(compatm,compocn)) then
+            is_local%wrap%med_coupling_active(compatm,compocn) = .true.
+         end if
 
-         ! NOTE: this section must be done BEFORE the call to esmFldsExchange
          ! Create field bundles for mediator ocean albedo computation
-
          fieldCount = shr_nuopc_fldList_GetNumFlds(fldListMed_ocnalb)
          if (fieldCount > 0) then
             allocate(fldnames(fieldCount))
@@ -1670,15 +1699,28 @@ contains
             call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_ocnalb_a, flds_scalar_name, &
                  STgeom=is_local%wrap%NStateImp(compatm), fieldnamelist=fldnames, name='FBMed_ocnalb_a', rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            if (mastertask) write(logunit,*) subname,' initializing FB FBMed_ocnalb_a'
 
             call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_ocnalb_o, flds_scalar_name, &
                  STgeom=is_local%wrap%NStateImp(compocn), fieldnamelist=fldnames, name='FBMed_ocnalb_o', rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            if (mastertask) write(logunit,*) subname,' initializing FB FBMed_ocnalb_o'
             deallocate(fldnames)
+
+            ! The following assumes that the mediator atm/ocn flux calculation will be done on the ocean grid
+            if (.not. ESMF_FieldBundleIsCreated(is_local%wrap%FBImp(compatm,compocn), rc=rc)) then
+               call ESMF_LogWrite(trim(subname)//' creating field bundle FBImp(compatm,compocn)', ESMF_LOGMSG_INFO)
+               call shr_nuopc_methods_FB_init(is_local%wrap%FBImp(compatm,compocn), flds_scalar_name, &
+                    STgeom=is_local%wrap%NStateImp(compocn), &
+                    STflds=is_local%wrap%NStateImp(compatm), &
+                    name='FBImp'//trim(compname(compatm))//'_'//trim(compname(compocn)), rc=rc)
+               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            end if
+            if (mastertask) write(logunit,*) subname,' initializing FBs for '// &
+                 trim(compname(compatm))//'_'//trim(compname(compocn))
          end if
 
          ! Create field bundles for mediator ocean/atmosphere flux computation
-
          fieldCount = shr_nuopc_fldList_GetNumFlds(fldListMed_aoflux)
          if (fieldCount > 0) then
             allocate(fldnames(fieldCount))
@@ -1688,10 +1730,12 @@ contains
             call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_aoflux_a, flds_scalar_name, &
                  STgeom=is_local%wrap%NStateImp(compatm), fieldnamelist=fldnames, name='FBMed_aoflux_a', rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            if (mastertask) write(logunit,*) subname,' initializing FB FBMed_aoflux_a'
 
             call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_aoflux_o, flds_scalar_name, &
                  STgeom=is_local%wrap%NStateImp(compocn), fieldnamelist=fldnames, name='FBMed_aoflux_o', rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            if (mastertask) write(logunit,*) subname,' initializing FB FBMed_aoflux_o'
             deallocate(fldnames)
          end if
       end if
@@ -1765,9 +1809,11 @@ contains
           deallocate(fieldNameList)
 
           if (LocalDone) then
+             ! This copies NStateImp(n1) TO FBImp(n1, n1)
              call shr_nuopc_methods_FB_copy(is_local%wrap%FBImp(n1,n1), is_local%wrap%NStateImp(n1), rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-             call ESMF_LogWrite(trim(subname)//" MED - Initialize-Data-Dependency Copy Import "//trim(compname(n1)), ESMF_LOGMSG_INFO, rc=rc)
+             call ESMF_LogWrite(trim(subname)//" MED - Initialize-Data-Dependency Copy Import "//&
+                  trim(compname(n1)), ESMF_LOGMSG_INFO, rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
              if (n1 == compocn) ocnDone = .true.
              if (n1 == compatm) atmDone = .true.
