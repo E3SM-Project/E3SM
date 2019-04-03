@@ -67,7 +67,7 @@ struct Baseline {
       p3_init();
       p3_main(*d);
       if (first) {
-        first = false; 
+        first = false;
         nerr += check_against_python(*d);
         if (nerr) std::cout << "Spot-check against Python failed.\n";
       }
@@ -105,7 +105,7 @@ private:
     ic::Factory::IC ic;
     Real dt;
   };
-  
+
   std::vector<ParamSet> params_;
 
   static void write (const FILEPtr& fid, const FortranData::Ptr& d) {
@@ -114,7 +114,7 @@ private:
       const auto& f = fdi.getfield(i);
       util::write(&f.dim, 1, fid);
       util::write(f.extent, f.dim, fid);
-      util::write(f.data, f.size, fid);    
+      util::write(f.data, f.size, fid);
     }
   }
 
@@ -154,7 +154,7 @@ int main (int argc, char** argv) {
       "Options:\n"
       "  -g        Generate baseline file.\n"
       "  -t <tol>  Tolerance for relative error.\n";
-    return -1;
+    return 1;
   }
 
   bool generate = false;
@@ -180,8 +180,8 @@ int main (int argc, char** argv) {
     } else {
       printf("Comparing with %s at tol %1.1e\n", baseline_fn.c_str(), tol);
       nerr += bln.run_and_cmp(baseline_fn, tol);
-    }    
+    }
   } scream::finalize_scream_session();
 
-  return nerr;
+  return nerr != 0 ? 1 : 0;
 }
