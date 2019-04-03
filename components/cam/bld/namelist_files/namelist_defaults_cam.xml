@@ -936,6 +936,7 @@
 <microp_scheme microphys="mg1">  MG</microp_scheme>
 <microp_scheme microphys="mg1.5">MG</microp_scheme>
 <microp_scheme microphys="mg2">  MG</microp_scheme>
+<microp_scheme microphys="p3">   P3</microp_scheme>
 
 <micro_mg_version     microphys="mg1">    1          </micro_mg_version>
 <micro_mg_sub_version microphys="mg1">    0          </micro_mg_sub_version>
@@ -970,6 +971,13 @@
 <mg_prc_coeff_fix     microphys="mg2">  .false.     </mg_prc_coeff_fix>
 <micro_nccons         microphys="mg2">  100.D6      </micro_nccons>
 <micro_nicons         microphys="mg2">  0.1D6       </micro_nicons>
+
+<!-- P3 specific namelist variables -->
+<micro_p3_lookup_dir> atm/cam/physprops </micro_p3_lookup_dir>
+<micro_p3_tableversion   > 2.8.2 </micro_p3_tableversion>
+<micro_aerosolactivation > .true.  </micro_aerosolactivation>
+<micro_subgrid_cloud     > .true.  </micro_subgrid_cloud>
+<micro_tend_output       > .true.  </micro_tend_output>
 
 <rrtmg_temp_fix                      > .false.      </rrtmg_temp_fix>
 
@@ -1114,9 +1122,6 @@
 <!-- sub-column SILHS switches -->
 <subcol_silhs_weight >.true.</subcol_silhs_weight>
 <subcol_silhs_numsubcol >4</subcol_silhs_numsubcol>
-
-<!-- P3 initial files directory -->
-<p3_lookup_dir>atm/cam/physprops</p3_lookup_dir>
 
 <!-- Deep convection scheme -->
 <deep_scheme>ZM</deep_scheme>

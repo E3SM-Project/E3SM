@@ -41,8 +41,10 @@ module micro_p3_interface
   save
 
   public :: micro_p3_init, micro_p3_register, micro_p3_tend, &
-            micro_p3_init_cnst, micro_p3_implements_cnst !&
-            !,micro_p3_readnl
+            micro_p3_init_cnst, micro_p3_implements_cnst &
+            ,micro_p3_readnl
+
+  character(len=16), parameter :: unset_str = 'UNSET'
 
   private
 
@@ -166,10 +168,13 @@ module micro_p3_interface
   real(rtype) :: &             
      ice_sed_ai = 700.0_rtype      ! Fall speed parameter for cloud ice
 
+  character(len=128) :: micro_p3_lookup_dir     = unset_str ! location of p3 input files
+  character(len=16)  :: micro_p3_tableversion   = unset_str ! P3 table version
+  logical            :: micro_aerosolactivation = .false.   ! Use aerosol activation
+  logical            :: micro_subgrid_cloud     = .false.   ! Use subgrid cloudiness
+  logical            :: micro_tend_output       = .false.   ! Default microphysics tendencies to output file
   contains
 !===============================================================================
-#if 0
-!AaronDonahue TODO: Fix this routine to be P3 specific instead of MG specific
 subroutine micro_p3_readnl(nlfile)
 
   use namelist_utils,  only: find_group_name
@@ -178,36 +183,22 @@ subroutine micro_p3_readnl(nlfile)
 
   character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
 
-  ! Namelist variables
-  logical :: micro_mg_do_cldice = .true. ! do_cldice = .true., MG microphysics is prognosing cldice
-  logical :: micro_mg_do_cldliq = .true. ! do_cldliq = .true., MG microphysics is prognosing cldliq
-  logical :: micro_do_nccons    = .false.! micro_do_nccons = .true, MG does NOT predict numliq 
-  logical :: micro_do_nicons    = .false.! micro_do_nicons = .true.,MG does NOT predict numice
-  integer :: micro_mg_num_steps = 1      ! Number of substepping iterations done by MG (1.5 only for now).
-  real(rtype) :: micro_nccons, micro_nicons
-
   ! Local variables
   integer :: unitn, ierr
-  character(len=*), parameter :: subname = 'micro_mg_cam_readnl'
+  character(len=*), parameter :: subname = 'micro_p3_cam_readnl'
 
-  namelist /micro_mg_nl/ micro_mg_version, micro_mg_sub_version, &
-       micro_mg_do_cldice, micro_mg_do_cldliq, micro_mg_num_steps, ice_sed_ai,&
-!!== KZ_DCS
-       micro_mg_dcs_tdep, & 
-!!== KZ_DCS
-       microp_uniform, micro_mg_dcs, micro_mg_precip_frac_method, &
-       micro_mg_mass_gradient_alpha, micro_mg_mass_gradient_beta, &
-       micro_mg_berg_eff_factor, micro_do_nccons, micro_do_nicons, &
-       micro_nccons, micro_nicons
+  namelist /micro_nl/ &
+       micro_p3_tableversion, micro_p3_lookup_dir, micro_aerosolactivation, micro_subgrid_cloud, &
+       micro_tend_output
 
   !-----------------------------------------------------------------------------
 
   if (masterproc) then
      unitn = getunit()
      open( unitn, file=trim(nlfile), status='old' )
-     call find_group_name(unitn, 'micro_mg_nl', status=ierr)
+     call find_group_name(unitn, 'micro_nl', status=ierr)
      if (ierr == 0) then
-        read(unitn, micro_mg_nl, iostat=ierr)
+        read(unitn, micro_nl, iostat=ierr)
         if (ierr /= 0) then
            call endrun(subname // ':: ERROR reading namelist')
         end if
@@ -215,52 +206,47 @@ subroutine micro_p3_readnl(nlfile)
      close(unitn)
      call freeunit(unitn)
 
-     ! set local variables
-     do_cldice = micro_mg_do_cldice
-     do_cldliq = micro_mg_do_cldliq
-     do_nccons = micro_do_nccons
-     do_nicons = micro_do_nicons
-     nccons = micro_nccons
-     nicons = micro_nicons
-     
-     num_steps = micro_mg_num_steps
+     write(iulog,'(A50)') ' ----- P3 Namelist Values: -----'
+     write(iulog,'(A29,1x,A19)') 'micro_p3_tableversion: ', micro_p3_tableversion
+     write(iulog,'(A20,1x,A100)') 'micro_p3_lookup_dir: ',  micro_p3_lookup_dir
+     write(iulog,'(A30,1x,L)') 'micro_aerosolactivation: ', micro_aerosolactivation
+     write(iulog,'(A30,1x,L)') 'micro_subgrid_cloud: ',     micro_subgrid_cloud
+     write(iulog,'(A30,1x,L)') 'micro_tend_output: ',       micro_tend_output
 
   end if
 
 #ifdef SPMD
   ! Broadcast namelist variables
-  call mpibcast(micro_mg_version,            1, mpiint, 0, mpicom)
-  call mpibcast(micro_mg_sub_version,        1, mpiint, 0, mpicom)
-  call mpibcast(do_cldice,                   1, mpilog, 0, mpicom)
-  call mpibcast(do_cldliq,                   1, mpilog, 0, mpicom)
-  call mpibcast(do_nccons,                   1, mpilog, 0, mpicom)
-  call mpibcast(do_nicons,                   1, mpilog, 0, mpicom)
-  call mpibcast(micro_mg_dcs_tdep,           1, mpilog, 0, mpicom)
-  call mpibcast(num_steps,                   1, mpiint, 0, mpicom)
-  call mpibcast(microp_uniform,              1, mpilog, 0, mpicom)
-  call mpibcast(micro_mg_dcs,                1, mpir8,  0, mpicom)
-  call mpibcast(micro_mg_berg_eff_factor,    1, mpir8,  0, mpicom)
-  call mpibcast(ice_sed_ai,                  1, mpir8,  0, mpicom)
-  call mpibcast(nccons,                      1, mpir8,  0, mpicom)
-  call mpibcast(nicons,                      1, mpir8,  0, mpicom)
-  call mpibcast(micro_mg_precip_frac_method, 16, mpichar,0, mpicom)
-  call mpibcast(micro_mg_mass_gradient_alpha, 1, mpir8, 0, mpicom)
-  call mpibcast(micro_mg_mass_gradient_beta, 1, mpir8,  0, mpicom)
+  call mpibcast(micro_p3_tableversion,   len(micro_p3_tableversion), mpichar, 0, mpicom)
+  call mpibcast(micro_p3_lookup_dir,     len(micro_p3_lookup_dir),   mpichar, 0, mpicom)
+  call mpibcast(micro_aerosolactivation, 1,                          mpilog,  0, mpicom)
+  call mpibcast(micro_subgrid_cloud,     1,                          mpilog,  0, mpicom)
+  call mpibcast(micro_tend_output,       1,                          mpilog,  0, mpicom)
 
 #endif
 
-contains
+  ! Check to make sure p3 table version is valid
+  select case (trim(micro_p3_tableversion))
+    case ('2.8.2')
+       ! Version 2.8.2 is valid
+    case default
+       print *, micro_p3_tableversion
+       call bad_version_endrun()
+  end select
 
+  if (masterproc) write(iulog,'(A50)') ' ----- P3 READ NL Finshed: -----'
+
+contains
+ 
   subroutine bad_version_endrun
     ! Endrun wrapper with a more useful error message.
     character(len=128) :: errstring
-    write(errstring,*) "Invalid version number specified for MG microphysics: ", &
-         micro_mg_version,".",micro_mg_sub_version
+    write(errstring,*) "Invalid version number specified for P3 microphysics: ", &
+         micro_p3_tableversion
     call endrun(errstring)
   end subroutine bad_version_endrun
 
 end subroutine micro_p3_readnl
-#endif
   !================================================================================================
 
   subroutine micro_p3_register()
@@ -371,9 +357,9 @@ end subroutine micro_p3_readnl
 
      if (masterproc) write(iulog,'(A20)') '  P3_REG subcol'
      call pbuf_register_subcol('CLDO',        'micro_p3_register', cldo_idx)
-     call pbuf_register_subcol('QME',         'micro_mg_cam_register', qme_idx)
-     call pbuf_register_subcol('PRAIN',       'micro_mg_cam_register', prain_idx)
-     call pbuf_register_subcol('NEVAPR',      'micro_mg_cam_register', nevapr_idx)
+     call pbuf_register_subcol('QME',         'micro_p3_cam_register', qme_idx)
+     call pbuf_register_subcol('PRAIN',       'micro_p3_cam_register', prain_idx)
+     call pbuf_register_subcol('NEVAPR',      'micro_p3_cam_register', nevapr_idx)
      call pbuf_register_subcol('PRER_EVAP',   'micro_p3_register', prer_evap_idx)
      call pbuf_register_subcol('DEI',         'micro_p3_register', dei_idx)
      call pbuf_register_subcol('MU',          'micro_p3_register', mu_idx)
@@ -457,7 +443,8 @@ end subroutine micro_p3_readnl
     use micro_p3_utils, only: micro_p3_utils_init
 
     type(physics_buffer_desc),  pointer :: pbuf2d(:,:)
-    character(128) :: p3_lookup_dir, errstring
+!    character(128) :: p3_lookup_dir  !ASD-DELETE
+    character(128) ::  errstring
     integer        :: m, mm
     integer        :: ierr
     logical :: history_amwg         ! output the variables used by the AMWG diag package
@@ -468,7 +455,7 @@ end subroutine micro_p3_readnl
 
     ! PULL DIRECTORY OF LOOKUP TABLE FROM ATM NAMELIST
     ! =============
-    call phys_getopts(p3_lookup_dir_out = p3_lookup_dir)
+!    call phys_getopts(p3_lookup_dir_out = p3_lookup_dir) ! ASD-DELETE
 
     call micro_p3_utils_init(cpair,rair,rh2o,rhoh2o,mwh2o,mwdry,gravit,latvap,latice, &
              cpliq,tmelt,pi,iulog,masterproc)
@@ -505,9 +492,7 @@ end subroutine micro_p3_readnl
     qrain_idx    = pbuf_get_index('QRAIN', ierr) !! local 
     nrain_idx    = pbuf_get_index('NRAIN', ierr) !! local
 
-    !TODO: add errstring and constants to init function  !DONE
-    call p3_init(p3_lookup_dir)
-    !call handle_errmsg(errstring, subname="micro_p3_init")
+    call p3_init(micro_p3_lookup_dir,micro_p3_tableversion)
 
     ! Initialize physics buffer grid fields for accumulating precip and
     ! condensation
@@ -552,7 +537,6 @@ end subroutine micro_p3_readnl
 
     ! INITIALIZE OUTPUT
     !==============
-    !TODO: put addfld and add_default calls here.  !Done and testing
     do m = 1, ncnst
        call cnst_get_ind(cnst_names(m), mm)
        if ( any(mm == (/ ixcldliq, ixcldice, ixrain, ixcldrim /)) ) then
@@ -831,60 +815,61 @@ end subroutine micro_p3_readnl
       call add_default ('CLOUDFRAC_LIQ_MICRO', 1, ' ')
       call add_default ('CLOUDFRAC_ICE_MICRO', 1, ' ')
       call add_default ('CLOUDFRAC_RAIN_MICRO', 1, ' ')
-      ! Microphysics tendencies !TODO, AaronDonahue, would like to make this a
-      ! namelist option instead of hardcoded as default output
+      ! Microphysics tendencies
       ! warm-phase process rates
-      call add_default('P3_qrcon',  1, ' ')
-      call add_default('P3_qcacc',  1, ' ')
-      call add_default('P3_qcaut',  1, ' ')
-      call add_default('P3_ncacc',  1, ' ')
-      call add_default('P3_ncautc', 1, ' ')
-      call add_default('P3_ncslf',  1, ' ')
-      call add_default('P3_nrslf',  1, ' ')
-      call add_default('P3_ncnuc',  1, ' ')
-      call add_default('P3_qccon',  1, ' ')
-      call add_default('P3_qcnuc',  1, ' ')
-      call add_default('P3_qrevp',  1, ' ')
-      call add_default('P3_qcevp',  1, ' ')
-      call add_default('P3_nrevp',  1, ' ')
-      call add_default('P3_ncautr', 1, ' ')
-      ! ice-phase process rates
-      call add_default('P3_qccol',  1, ' ')
-      call add_default('P3_qwgrth', 1, ' ')
-      call add_default('P3_qidep',  1, ' ')
-      call add_default('P3_qrcol',  1, ' ')
-      call add_default('P3_qinuc',  1, ' ')
-      call add_default('P3_nccol',  1, ' ')
-      call add_default('P3_nrcol',  1, ' ')
-      call add_default('P3_ninuc',  1, ' ')
-      call add_default('P3_qisub',  1, ' ')
-      call add_default('P3_qimlt',  1, ' ')
-      call add_default('P3_nimlt',  1, ' ')
-      call add_default('P3_nisub',  1, ' ')
-      call add_default('P3_nislf',  1, ' ')
-      call add_default('P3_qcheti', 1, ' ')
-      call add_default('P3_qrheti', 1, ' ')
-      call add_default('P3_ncheti', 1, ' ')
-      call add_default('P3_nrheti', 1, ' ')
-      call add_default('P3_nrshdr', 1, ' ')
-      call add_default('P3_qcshd',  1, ' ')
-      call add_default('P3_ncshdc', 1, ' ')
-      ! Sedimentation
-      call add_default('P3_sed_CLDLIQ',  1, ' ')
-      call add_default('P3_sed_NUMLIQ',  1, ' ')
-      call add_default('P3_sed_CLDRAIN', 1, ' ')
-      call add_default('P3_sed_NUMRAIN', 1, ' ')
-      call add_default('P3_sed_CLDICE',  1, ' ')
-      call add_default('P3_sed_NUMICE',  1, ' ')
-      ! Microphysics Processes
-      call add_default('P3_mtend_CLDLIQ',  1, ' ')
-      call add_default('P3_mtend_NUMLIQ',  1, ' ')
-      call add_default('P3_mtend_CLDRAIN', 1, ' ')
-      call add_default('P3_mtend_NUMRAIN', 1, ' ')
-      call add_default('P3_mtend_CLDICE',  1, ' ')
-      call add_default('P3_mtend_NUMICE',  1, ' ')
-      call add_default('P3_mtend_Q',       1, ' ')
-      call add_default('P3_mtend_TH',      1, ' ')
+      if (micro_tend_output) then
+         call add_default('P3_qrcon',  1, ' ')
+         call add_default('P3_qcacc',  1, ' ')
+         call add_default('P3_qcaut',  1, ' ')
+         call add_default('P3_ncacc',  1, ' ')
+         call add_default('P3_ncautc', 1, ' ')
+         call add_default('P3_ncslf',  1, ' ')
+         call add_default('P3_nrslf',  1, ' ')
+         call add_default('P3_ncnuc',  1, ' ')
+         call add_default('P3_qccon',  1, ' ')
+         call add_default('P3_qcnuc',  1, ' ')
+         call add_default('P3_qrevp',  1, ' ')
+         call add_default('P3_qcevp',  1, ' ')
+         call add_default('P3_nrevp',  1, ' ')
+         call add_default('P3_ncautr', 1, ' ')
+         ! ice-phase process rates
+         call add_default('P3_qccol',  1, ' ')
+         call add_default('P3_qwgrth', 1, ' ')
+         call add_default('P3_qidep',  1, ' ')
+         call add_default('P3_qrcol',  1, ' ')
+         call add_default('P3_qinuc',  1, ' ')
+         call add_default('P3_nccol',  1, ' ')
+         call add_default('P3_nrcol',  1, ' ')
+         call add_default('P3_ninuc',  1, ' ')
+         call add_default('P3_qisub',  1, ' ')
+         call add_default('P3_qimlt',  1, ' ')
+         call add_default('P3_nimlt',  1, ' ')
+         call add_default('P3_nisub',  1, ' ')
+         call add_default('P3_nislf',  1, ' ')
+         call add_default('P3_qcheti', 1, ' ')
+         call add_default('P3_qrheti', 1, ' ')
+         call add_default('P3_ncheti', 1, ' ')
+         call add_default('P3_nrheti', 1, ' ')
+         call add_default('P3_nrshdr', 1, ' ')
+         call add_default('P3_qcshd',  1, ' ')
+         call add_default('P3_ncshdc', 1, ' ')
+         ! Sedimentation
+         call add_default('P3_sed_CLDLIQ',  1, ' ')
+         call add_default('P3_sed_NUMLIQ',  1, ' ')
+         call add_default('P3_sed_CLDRAIN', 1, ' ')
+         call add_default('P3_sed_NUMRAIN', 1, ' ')
+         call add_default('P3_sed_CLDICE',  1, ' ')
+         call add_default('P3_sed_NUMICE',  1, ' ')
+         ! Microphysics Processes
+         call add_default('P3_mtend_CLDLIQ',  1, ' ')
+         call add_default('P3_mtend_NUMLIQ',  1, ' ')
+         call add_default('P3_mtend_CLDRAIN', 1, ' ')
+         call add_default('P3_mtend_NUMRAIN', 1, ' ')
+         call add_default('P3_mtend_CLDICE',  1, ' ')
+         call add_default('P3_mtend_NUMICE',  1, ' ')
+         call add_default('P3_mtend_Q',       1, ' ')
+         call add_default('P3_mtend_TH',      1, ' ')
+      end if
    end if
 
   end subroutine micro_p3_init
@@ -904,8 +889,6 @@ end subroutine micro_p3_readnl
        integer  :: i,k
        integer  :: ktop, kbot, kdir
 
-       !AaronDonahue TODO: Add namelist variable to switch between using subgrid
-       !cloud variability and not?
        ktop = kts        !k of top level
        kbot = kte        !k of bottom level
        kdir = -1         !(k: 1=top, nk=bottom)
@@ -1111,6 +1094,7 @@ end subroutine micro_p3_readnl
     integer :: kte                     !near surface level                     -
 
     logical :: log_predictNc           !prognostic droplet concentration or not?
+    logical :: do_subgrid_clouds       !use subgrid cloudiness in tendency calculations?
     integer :: col_type ! Flag to store whether accessing grid or sub-columns in pbuf_get_field
     integer :: icol, ncol, k
     integer :: psetcols, lchnk
@@ -1242,8 +1226,7 @@ end subroutine micro_p3_readnl
 
     ! HANDLE AEROSOL ACTIVATION
     !==============
-    !saving this for later... use prescribed Nd for now.
-    log_predictNc = .true.
+    log_predictNc = micro_aerosolactivation 
 
     ! GET "OLD" VALUES
     !==============
@@ -1341,7 +1324,12 @@ end subroutine micro_p3_readnl
     kte     = pver
     pres    = state%pmid(:,:)
     ! Determine the cloud fraction and precip cover
-    call get_cloud_fraction(its,ite,kts,kte,ast(its:ite,kts:kte),cldliq(its:ite,kts:kte), &
+    icldm(:,:) = 1.0_rtype
+    lcldm(:,:) = 1.0_rtype
+    rcldm(:,:) = 1.0_rtype
+    do_subgrid_clouds = micro_subgrid_cloud
+    if (do_subgrid_clouds) &
+        call get_cloud_fraction(its,ite,kts,kte,ast(its:ite,kts:kte),cldliq(its:ite,kts:kte), &
                 rain(its:ite,kts:kte),ice(its:ite,kts:kte),precip_frac_method, &
                 icldm(its:ite,kts:kte),lcldm(its:ite,kts:kte),rcldm(its:ite,kts:kte))
     ! CALL P3

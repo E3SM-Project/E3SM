@@ -17,8 +17,8 @@ use micro_mg_cam,   only: micro_mg_cam_readnl, micro_mg_cam_register, &
                           micro_mg_cam_implements_cnst, micro_mg_cam_init_cnst, &
                           micro_mg_cam_init, micro_mg_cam_tend
 use micro_p3_interface, only: micro_p3_init, micro_p3_register, micro_p3_tend, &
-                              micro_p3_implements_cnst, micro_p3_init_cnst!, &
-                              !micro_p3_readnl
+                              micro_p3_implements_cnst, micro_p3_init_cnst, &
+                              micro_p3_readnl
 use cam_logfile,    only: iulog
 use cam_abortutils, only: endrun
 use perf_mod,       only: t_startf, t_stopf
@@ -53,7 +53,7 @@ subroutine microp_driver_readnl(nlfile)
    case ('MG')
       call micro_mg_cam_readnl(nlfile)
    case ('P3')
-      call micro_mg_cam_readnl(nlfile)
+      call micro_p3_readnl(nlfile)
    case ('RK')
       ! microp_driver doesn't handle this one
       continue

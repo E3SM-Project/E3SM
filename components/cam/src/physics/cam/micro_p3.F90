@@ -77,7 +77,7 @@ contains
 
   !==================================================================================================!
 
-  SUBROUTINE p3_init(lookup_file_dir)
+  SUBROUTINE p3_init(lookup_file_dir,version_p3)
     !------------------------------------------------------------------------------------------!
     ! This subroutine initializes all physical constants and parameters needed by the P3       !
     ! scheme, including reading in two lookup table files and creating a third.                !
@@ -88,12 +88,13 @@ contains
 
     ! Passed arguments:
     character*(*), intent(in)    :: lookup_file_dir                !directory of the lookup tables
-    character(len=16), parameter :: version_p3  = '2.8.2'          !version number of P3 package
+    !character(len=16), parameter :: version_p3  = '2.8.2'          !version number of P3 package
+    character(len=16), intent(in) :: version_p3  !version number of P3 package
 
     if (masterproc) write(iulog,*) ''
     if (masterproc) write(iulog,*) ' P3 microphysics: v',version_p3
 
-    call p3_init_a(lookup_file_dir)
+    call p3_init_a(lookup_file_dir, version_p3)
     call p3_init_b()
 
     if (masterproc) write(iulog,*) '   P3_INIT DONE.'
@@ -101,15 +102,15 @@ contains
 
   END SUBROUTINE p3_init
 
-  SUBROUTINE p3_init_a(lookup_file_dir)
+  SUBROUTINE p3_init_a(lookup_file_dir,version_p3)
     ! Passed arguments:
-    character*(*), intent(in)    :: lookup_file_dir                !directory of the lookup tables
+    character*(*), intent(in)     :: lookup_file_dir       !directory of the lookup tables
 
-    character(len=16), parameter :: version_p3  = '2.8.2'          !version number of P3 package
-    character(len=1024)          :: lookup_file_1                  !lookup table, main
-    integer                      :: i,j,ii,jj
-    real(rtype)                         :: dum
-    integer                      :: dumi
+    character(len=16), intent(in) :: version_p3            !version number of P3 package
+    character(len=1024)           :: lookup_file_1         !lookup table, main
+    integer                       :: i,j,ii,jj
+    real(rtype)                   :: dum
+    integer                       :: dumi
 
     !------------------------------------------------------------------------------------------!
 
