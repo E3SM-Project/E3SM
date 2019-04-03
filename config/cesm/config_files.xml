@@ -2,7 +2,7 @@
 
 <?xml-stylesheet type="text/xsl" ?>
 
-<entry_id>
+<entry_id version="2.0">
 
   <entry id="MODEL">
     <type>char</type>
@@ -112,8 +112,8 @@
   <entry id="COMP_ROOT_DIR_CPL">
     <type>char</type>
     <values>
-      <value>$CIMEROOT/src/drivers/$COMP_INTERFACE</value>  -->
-    </values> -->
+      <value>$CIMEROOT/src/drivers/$COMP_INTERFACE</value>
+    </values>
     <group>case_comps</group>
     <file>env_case.xml</file>
     <desc>Root directory of the case driver/coupler component  </desc>
