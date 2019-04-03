@@ -67,6 +67,7 @@ protected:
   std::string m_scalar_type_name;
 
   int   m_alloc_size;
+  int   m_last_dim_alloc_size;
 
   bool  m_committed;
 };
@@ -119,7 +120,7 @@ bool FieldAllocProp::is_allocation_compatible_with_value_type () const {
   constexpr int vts = sizeof(ValueType);
 
   return util::TypeName<typename util::ScalarProperties<ValueType>::scalar_type>::name()==m_scalar_type_name
-      && sts==m_scalar_type_size && (m_alloc_size%vts==0);
+      && sts==m_scalar_type_size && (m_last_dim_alloc_size%vts==0);
 }
 
 } // namespace scream

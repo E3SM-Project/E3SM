@@ -24,6 +24,7 @@ void FieldAllocProp::commit ()
   error::runtime_check(m_layout.are_dimensions_set(), "Error! You need all field dimensions set before committing the allocation properties.\n");
 
   // Loop on all value type sizes.
+  m_last_dim_alloc_size = 0;
   for (auto vts : m_value_type_sizes) {
     // The number of scalar_type in a value_type
     const int num_scalars_in_value_type = vts / m_scalar_type_size;
@@ -31,12 +32,14 @@ void FieldAllocProp::commit ()
     // The number of value_type's needed in the fast-striding dimension
     const int num_last_dim_value_types = (m_layout.dims().back() + num_scalars_in_value_type - 1) / num_scalars_in_value_type;
 
-    // The size of such allocation
-    const int value_type_alloc_size = (m_layout.size() / m_layout.dims().back()) // All except the last dimension
-                                    * num_last_dim_value_types*vts;
+    // The size of such allocation (along the last dim only)
+    const int tmp = std::max(m_last_dim_alloc_size, vts * num_last_dim_value_types);
 
-    m_alloc_size = std::max(m_alloc_size, value_type_alloc_size);
+    m_last_dim_alloc_size = std::max(m_alloc_size, tmp);
   }
+
+  m_alloc_size = (m_layout.size() / m_layout.dims().back()) // All except the last dimension
+                 * m_last_dim_alloc_size;
 
   m_committed = true;
 }
