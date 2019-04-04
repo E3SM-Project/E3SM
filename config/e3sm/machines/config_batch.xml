@@ -278,7 +278,7 @@
 
     <batch_system MACH="anvil" type="slurm" >
       <queues>
-	<queue walltimemax="01:00:00" nodemax="2" default="true">acme</queue>
+	<queue walltimemax="01:00:00" default="true">acme</queue>
       </queues>
     </batch_system>
 
