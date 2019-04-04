@@ -121,7 +121,7 @@
     </model_grid>
 
     <!-- Regional, 12km NLDAS grid over the U.S., with the standard NLDAS mask -->
-    <model_grid alias="224x464_nldas_mnldas" compset="DATM.+CLM">
+    <model_grid alias="nldas_mnldas" compset="DATM.+CLM">
       <grid name="atm">224x464_nldas</grid>
       <grid name="lnd">224x464_nldas</grid>
       <grid name="ocnice">224x464_nldas</grid>
