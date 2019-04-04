@@ -14,7 +14,7 @@ int main (int argc, char **argv) {
   scream::initialize_scream_session(argc, argv);
 
   // Run tests
-  int result = Catch::Session().run(argc, argv);
+  int num_failed = Catch::Session().run(argc, argv);
 
   // Finalize scream
   scream::finalize_scream_session();
@@ -23,5 +23,5 @@ int main (int argc, char **argv) {
   MPI_Finalize();
 
   // Return test result
-  return result;
+  return num_failed != 0 ? 1 : 0;
 }
