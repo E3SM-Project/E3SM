@@ -1120,9 +1120,9 @@ end subroutine micro_p3_readnl
     call pbuf_get_field(pbuf,      acgcme_idx,    acgcme                       ) 
     call pbuf_get_field(pbuf,       acnum_idx,     acnum                       ) 
 
-    rd = rair  ! Probably not needed now that we are using Exner
-    cp = cpair ! Probably not needed now that we are using Exner
-    inv_cp = 1./cp ! Dido from above
+    rd = rair 
+    cp = cpair
+    inv_cp = 1./cp 
     
     ncol = state%ncol
     !==============
@@ -1145,34 +1145,19 @@ end subroutine micro_p3_readnl
     lq(ixnumrain) = .true.
     lq(ixrimvol)  = .true.
 
-    call physics_ptend_init(ptend, psetcols, "micro_p3", ls=.true., lq=lq)
-
     ! HANDLE AEROSOL ACTIVATION
     !==============
     log_predictNc = micro_aerosolactivation 
 
     ! GET "OLD" VALUES
     !==============
-    ! TODO: answer question: is_first_step =1 for each submission, or just for type=initial first step?
-    !          does p3 want _old values from last p3 call, or from some other point?
-    ! TODO: Determine what is needed for restarts.  For example, should qv_old
-    ! and th_old be added to the pbuf so that they are written and loaded with
-    ! each restart?
-    ! Aaron- is_first_step=1 only for first step of initial run, per:
-    !      logical function is_first_step()
-    !              Return true on first step of initial run only.
-    do icol = 1,ncol
-       do k = 1,pver
-          exner(icol,k) = 1._rtype/((state%pmid(icol,k)*1.e-5)**(rd*inv_cp))
-          if ( is_first_step() ) then
-             th_old(icol,k)=state%t(icol,k)*exner(icol,k) !/(state%pmid(icol,k)*1.e-5)**(rd*inv_cp)
-             qv_old(icol,k)=state%q(icol,k,1)
-!          else
-!             th_old(icol,k) = th(icol,k) !use th from end of last p3 step
-!             qv_old(icol,k) = qv(icol,k) !use qv from end of last p3 step
-          end if
-       end do
-    end do
+    ! Note: state%exner is currently defined in a way different than the
+    ! traditional definition of exner, so we calculate here.
+    exner(:,:) = 1._rtype/((state%pmid(:,:)*1.e-5)**(rd*inv_cp))
+    if ( is_first_step() ) then
+       th_old(:,:)=state%t(:,:)*exner(:,:)
+       qv_old(:,:)=state%q(:,:,1)
+    end if
 
     ! CONVERT T TO POTENTIAL TEMPERATURE
     !==============
@@ -1307,16 +1292,11 @@ end subroutine micro_p3_readnl
          )
 
     ! UPDATE TH AND QV OLD FOR NEXT P3 STEP
-    do icol = 1,ncol
-       do k = 1,pver
-          th_old(icol,k) = th(icol,k) !use th from end of last p3 step
-          qv_old(icol,k) = qv(icol,k) !use qv from end of last p3 step
-       end do
-    end do
+    th_old(:,:) = th(:,:) 
+    qv_old(:,:) = qv(:,:) 
 
     !MASSAGE OUTPUT TO FIT E3SM EXPECTATIONS
     !============= 
-!    precl=prt_liq+prt_sol
 
     !TODO: figure out what else other E3SM parameterizations need from micro and make sure 
     !they are assigned here. The comments below are a step in that direction.
@@ -1331,24 +1311,41 @@ end subroutine micro_p3_readnl
 
     !BACK OUT TENDENCIES FROM STATE CHANGES
     !=============
-    !Aaron, imbed these calls inside do loops to avoid a series of "floating
-    ! invalid" error messages at runtime
-    do icol = 1,ncol
-       do k = 1,pver
-          temp(icol,k) = th(icol,k)/exner(icol,k) !*(state%pmid(icol,k)*1.e-5)**(rd*inv_cp) !convert theta to 
-          ptend%s(icol,k)           = cpair*(temp(icol,k) - state%t(icol,k))/dtime ! changed cpair to 1005
-          ptend%q(icol,k,1)         = (max(0._rtype,qv(icol,k)     ) - state%q(icol,k,1) )/dtime
-          ptend%q(icol,k,ixcldliq)  = (max(0._rtype,cldliq(icol,k) ) - state%q(icol,k,ixcldliq) )/dtime
-          ptend%q(icol,k,ixnumliq)  = (max(0._rtype,numliq(icol,k) ) - state%q(icol,k,ixnumliq) )/dtime
-          ptend%q(icol,k,ixrain)    = (max(0._rtype,rain(icol,k)   ) - state%q(icol,k,ixrain) )/dtime
-          ptend%q(icol,k,ixnumrain) = (max(0._rtype,numrain(icol,k)) - state%q(icol,k,ixnumrain) )/dtime
-          ptend%q(icol,k,ixcldice)  = (max(0._rtype,ice(icol,k)    ) - state%q(icol,k,ixcldice) )/dtime
-          ptend%q(icol,k,ixnumice)  = (max(0._rtype,numice(icol,k) ) - state%q(icol,k,ixnumice) )/dtime
-          ptend%q(icol,k,ixcldrim)  = (max(0._rtype,rim(icol,k)    ) - state%q(icol,k,ixcldrim) )/dtime
-          ptend%q(icol,k,ixrimvol)  = (max(0._rtype,rimvol(icol,k) ) - state%q(icol,k,ixrimvol) )/dtime
+    call physics_ptend_init(ptend, psetcols, "micro_p3", ls=.true., lq=lq)
+    temp(:,:) = th(:,:)/exner(:,:) 
+    ptend%s(:,:)           = cpair*( temp(:,:) - state%t(:,:) )/dtime 
+    ptend%q(:,:,1)         = ( max(0._rtype,qv(:,:)     ) - state%q(:,:,1)         )/dtime
+    ptend%q(:,:,ixcldliq)  = ( max(0._rtype,cldliq(:,:) ) - state%q(:,:,ixcldliq)  )/dtime
+    ptend%q(:,:,ixnumliq)  = ( max(0._rtype,numliq(:,:) ) - state%q(:,:,ixnumliq)  )/dtime
+    ptend%q(:,:,ixrain)    = ( max(0._rtype,rain(:,:)   ) - state%q(:,:,ixrain)    )/dtime
+    ptend%q(:,:,ixnumrain) = ( max(0._rtype,numrain(:,:)) - state%q(:,:,ixnumrain) )/dtime
+    ptend%q(:,:,ixcldice)  = ( max(0._rtype,ice(:,:)    ) - state%q(:,:,ixcldice)  )/dtime
+    ptend%q(:,:,ixnumice)  = ( max(0._rtype,numice(:,:) ) - state%q(:,:,ixnumice)  )/dtime
+    ptend%q(:,:,ixcldrim)  = ( max(0._rtype,rim(:,:)    ) - state%q(:,:,ixcldrim)  )/dtime
+    ptend%q(:,:,ixrimvol)  = ( max(0._rtype,rimvol(:,:) ) - state%q(:,:,ixrimvol)  )/dtime
 
-       end do
-    end do
+   ! Following MG interface as a template:
+
+   !== Grid-box mean flux_large_scale_cloud at interfaces (kg/m2/s)
+! flxprc and flxsnw are used in COSP to compute precipitation fractional
+! area and derive precipitation (rain and snow) mixing ratios. Including iflx
+! and cflx in precipitation fluxes would result in additional effects of cloud liquid and
+! ice on cosp's smiluated lidar and radar reflectivity signal through the rain/snow
+! portion of calculations that are handled separately from that of cloud liquid
+! and ice. If included, it would not exactly amount to double counting the effect of
+! cloud liquid and ice because the mixing ratio derived from iflx and cflx epected to be much smaller
+! than the actual grid-mean cldliq and cldice, and rain or snow size distribution
+! would be used to compute the lidar/radar signal strength.
+! 
+! Note that it would need to include iflx and cflx to make the values at surface
+! interface consistent with large scale precipitation rates.
+
+    ! array must be zeroed beyond trop_cloud_top_pre otherwise undefined values will be used in cosp.
+    flxprc(:ncol,1:top_lev) = 0.0_rtype ! Rain+Snow
+    flxsnw(:ncol,1:top_lev) = 0.0_rtype ! Snow
+ 
+    flxprc(:ncol,top_lev:pverp) = rflx(:ncol,top_lev:pverp) + sflx(:ncol,top_lev:pverp) ! need output from p3
+    flxsnw(:ncol,top_lev:pverp) = sflx(:ncol,top_lev:pverp) ! need output from p3
 
     ! Net micro_p3 condensation rate
     qme(:ncol,top_lev:pver) = cmeliq(:ncol,top_lev:pver) + cmeiout(:ncol,top_lev:pver)  ! cmeiout is output from p3 micro
@@ -1392,12 +1389,6 @@ end subroutine micro_p3_readnl
       end do                    
    end do
   
-   ! array must be zeroed beyond trop_cloud_top_pre otherwise undefined values will be used in cosp.
-   flxprc(:ncol,1:top_lev) = 0.0_rtype
-   flxsnw(:ncol,1:top_lev) = 0.0_rtype
-
-   flxprc(:ncol,top_lev:pverp) = rflx(:ncol,top_lev:pverp) + sflx(:ncol,top_lev:pverp) ! need output from p3
-   flxsnw(:ncol,top_lev:pverp) = sflx(:ncol,top_lev:pverp) ! need output from p3
 
    cvreffliq(:ncol,top_lev:pver) = 9.0_rtype
    cvreffice(:ncol,top_lev:pver) = 37.0_rtype
