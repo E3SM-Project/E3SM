@@ -33,8 +33,8 @@ int generate_field_halo_exchanges_and_copies(ezxml_t registry);
 int generate_field_inputs(FILE *fd, int curLevel, ezxml_t superStruct);
 int generate_field_outputs(FILE *fd, int curLevel, ezxml_t superStruct);
 int generate_field_reads_and_writes(ezxml_t registry);
+int generate_immutable_streams(ezxml_t registry);
 int push_attributes(ezxml_t currentPosition);
 int merge_structs_and_var_arrays(ezxml_t currentPosition);
 int merge_streams(ezxml_t registry);
 int parse_structs_from_registry(ezxml_t registry);
-
