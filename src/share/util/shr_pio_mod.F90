@@ -233,7 +233,7 @@ contains
        end do
     end if
     do i=1,total_comps
-       if(comp_iamin(i)) then
+       if(comp_iamin(i) .and. (comp_comm_iam(i) == 0)) then
           write(shr_log_unit,*) io_compname(i),' : pio_numiotasks = ',pio_comp_settings(i)%pio_numiotasks
           write(shr_log_unit,*) io_compname(i),' : pio_stride = ',pio_comp_settings(i)%pio_stride
           write(shr_log_unit,*) io_compname(i),' : pio_rearranger = ',pio_comp_settings(i)%pio_rearranger
