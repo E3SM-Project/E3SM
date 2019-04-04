@@ -130,7 +130,7 @@
       <command name="rm">pmi</command>
       <command name="load">pmi/5.0.12</command>
       <command name="rm">cray-mpich</command>
-      <command name="load">pe_archive</command>
+      <command name="load">pe_archive/append-path</command>
       <command name="load">cray-mpich/7.6.0</command>
     </modules>
 
@@ -299,7 +299,7 @@
     <modules compiler="gnu">
       <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.4</command>
       <command name="rm">gcc</command>
-      <command name="load">pe_archive</command>
+      <command name="load">pe_archive/append-path</command>
       <command name="load">gcc/6.3.0</command>
       <command name="rm">cray-libsci</command>
       <command name="load">cray-libsci/17.09.1</command>
@@ -444,7 +444,7 @@
     <modules compiler="gnu">
       <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.4</command>
       <command name="rm">gcc</command>
-      <command name="load">pe_archive</command>
+      <command name="load">pe_archive/append-path</command>
       <command name="load">gcc/6.3.0</command>
       <command name="rm">cray-libsci</command>
       <command name="load">cray-libsci/17.09.1</command>
