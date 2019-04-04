@@ -391,6 +391,7 @@ contains
       call mpas_deallocate_scratch_field(gradHTracerSlopedTopOfCellField, .true.)
       call mpas_deallocate_scratch_field(dTracerdZTopOfCellField, .true.)
       call mpas_deallocate_scratch_field(dTracerdZTopOfEdgeField, .true.)
+      call mpas_deallocate_scratch_field(areaCellSumField, .true.)
 
       call mpas_timer_stop("tracer redi")
 
