@@ -120,7 +120,7 @@
       <grid name="rof">null</grid>
     </model_grid>
 
-    <!-- Regional, 12km NLDAS grid over the U.S., with the standard NLDAS mask -->
+    <!-- Regional NLDAS grid over the U.S. (roughly 12km resolution), with the standard NLDAS mask -->
     <model_grid alias="nldas_mnldas" compset="DATM.+CLM">
       <grid name="atm">224x464_nldas</grid>
       <grid name="lnd">224x464_nldas</grid>
@@ -1106,7 +1106,7 @@
       <nx>464</nx> <ny>224</ny>
       <file grid="atm|lnd" mask="nldas">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.224x464_nldas_224x464_nldas.190403.nc</file>
       <file grid="ocnice"  mask="nldas">$DIN_LOC_ROOT/share/domains/domain.clm/domain.ocn.224x464_nldas.190403.nc</file>
-      <desc>Regional, 12km NLDAS grid over the U.S.</desc>
+      <desc>Regional NLDAS grid over the U.S. (roughly 12km resolution)</desc>
     </domain>
 
     <!-- ATM/LND domains global -->
