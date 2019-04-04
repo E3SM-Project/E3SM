@@ -1,15 +1,15 @@
 #!/bin/bash
 
 ## CVMix Tag for build
-CVMIX_TAG=lt_v1.3
+CVMIX_TAG=v0.94b-beta
 ## Subdirectory in CVMix repo to use
 CVMIX_SUBDIR=src/shared
 
 ## Available protocols for acquiring CVMix source code
-CVMIX_GIT_HTTP_ADDRESS=https://github.com/qingli411/CVMix-src.git
-CVMIX_GIT_SSH_ADDRESS=git@github.com:qingli411/CVMix-src.git
-CVMIX_SVN_ADDRESS=https://github.com/qingli411/CVMix-src/tags
-CVMIX_WEB_ADDRESS=https://github.com/qingli411/CVMix-src/archive
+CVMIX_GIT_HTTP_ADDRESS=https://github.com/CVMix/CVMix-src.git
+CVMIX_GIT_SSH_ADDRESS=git@github.com:CVMix/CVMix-src.git
+CVMIX_SVN_ADDRESS=https://github.com/CVMix/CVMix-src/tags
+CVMIX_WEB_ADDRESS=https://github.com/CVMix/CVMix-src/archive
 
 GIT=`which git`
 SVN=`which svn`
