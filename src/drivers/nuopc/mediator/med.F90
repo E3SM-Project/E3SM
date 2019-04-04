@@ -668,7 +668,6 @@ contains
     type(InternalState)        :: is_local
     real(R8)                   :: intervalSec
     type(ESMF_TimeInterval)    :: timeStep
-    type(ESMF_VM)              :: vm
     integer                    :: n, n1, n2
     character(CL)              :: cvalue
     logical                    :: connected
@@ -684,11 +683,6 @@ contains
     nullify(is_local%wrap)
     call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! Initialize the internal state members
-    is_local%wrap%vm = vm
 
     ! Realize States
     do n = 1,ncomps
@@ -1367,6 +1361,7 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine DataInitialize(gcomp, rc)
+
     !----------------------------------------------------------
     ! Finish initialization and resolve data dependencies
     ! There will be multiple passes
@@ -1398,6 +1393,7 @@ contains
     use ESMF                    , only : ESMF_State, ESMF_Time, ESMF_Field, ESMF_StateItem_Flag, ESMF_MAXSTR
     use ESMF                    , only : ESMF_GridCompGet, ESMF_AttributeGet, ESMF_ClockGet, ESMF_Success
     use ESMF                    , only : ESMF_StateIsCreated, ESMF_StateGet, ESMF_FieldBundleIsCreated, ESMF_LogFlush
+    use ESMF                    , only : ESMF_VM
     use NUOPC                   , only : NUOPC_CompAttributeSet, NUOPC_IsAtTime, NUOPC_SetAttribute
     use NUOPC                   , only : NUOPC_CompAttributeGet
     use med_internalstate_mod   , only : InternalState
@@ -1415,6 +1411,7 @@ contains
     use shr_nuopc_scalars_mod   , only : flds_scalar_name, flds_scalar_num
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_State_getNumFields
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_Init
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_Init_pointer
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_Reset
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_Copy
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_FldChk
@@ -1449,6 +1446,7 @@ contains
 
     ! local variables
     type(InternalState)                :: is_local
+    type(ESMF_VM)                      :: vm
     type(ESMF_Clock)                   :: clock
     type(ESMF_State)                   :: importState, exportState
     type(ESMF_Time)                    :: time
@@ -1589,9 +1587,6 @@ contains
       call ESMF_LogWrite("Starting to Create FBs", ESMF_LOGMSG_INFO)
       call ESMF_LogFlush()
 
-      is_local%wrap%conn_prep_cnt(:) = 0
-      is_local%wrap%conn_post_cnt(:) = 0
-
       !----------------------------------------------------------
       ! Create field bundles FBImp, FBExp, FBImpAccum, FBExpAccum
       !----------------------------------------------------------
@@ -1603,30 +1598,28 @@ contains
 
             if (mastertask) write(logunit,*) subname,' initializing FBs for '//trim(compname(n1))
 
-            call shr_nuopc_methods_FB_init(is_local%wrap%FBImp(n1,n1), flds_scalar_name, &
-                 STgeom=is_local%wrap%NStateImp(n1), &
-                 STflds=is_local%wrap%NStateImp(n1), &
-                 name='FBImp'//trim(compname(n1)), rc=rc)
+            ! Create FBImp(:) with pointers directly into NStateImp(:)
+            call shr_nuopc_methods_FB_init_pointer(is_local%wrap%NStateImp(n1), is_local%wrap%FBImp(n1,n1), &
+                 flds_scalar_name, name='FBImp'//trim(compname(n1)), rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+            ! Create FBExp(:) with pointers directly into NStateExp(:)
+            call shr_nuopc_methods_FB_init_pointer(is_local%wrap%NStateExp(n1), is_local%wrap%FBExp(n1), &
+                 flds_scalar_name, name='FBExp'//trim(compname(n1)), rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+            ! Create import accumulation field bundles
             call shr_nuopc_methods_FB_init(is_local%wrap%FBImpAccum(n1,n1), flds_scalar_name, &
-                 STgeom=is_local%wrap%NStateImp(n1), &
-                 STflds=is_local%wrap%NStateImp(n1), &
+                 STgeom=is_local%wrap%NStateImp(n1), STflds=is_local%wrap%NStateImp(n1), &
                  name='FBImp'//trim(compname(n1)), rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
             call shr_nuopc_methods_FB_reset(is_local%wrap%FBImpAccum(n1,n1), value=czero, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
             is_local%wrap%FBImpAccumCnt(n1) = 0
 
-            call shr_nuopc_methods_FB_init(is_local%wrap%FBExp(n1), flds_scalar_name, &
-                 STgeom=is_local%wrap%NStateExp(n1), &
-                 STflds=is_local%wrap%NStateExp(n1), &
-                 name='FBExp'//trim(compname(n1)), rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
+            ! Create export accumulation field bundles
             call shr_nuopc_methods_FB_init(is_local%wrap%FBExpAccum(n1), flds_scalar_name, &
-                 STgeom=is_local%wrap%NStateExp(n1), &
-                 STflds=is_local%wrap%NStateExp(n1), &
+                 STgeom=is_local%wrap%NStateExp(n1), STflds=is_local%wrap%NStateExp(n1), &
                  name='FBExpAccum'//trim(compname(n1)), rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
             call shr_nuopc_methods_FB_reset(is_local%wrap%FBExpAccum(n1), value=czero, rc=rc)
@@ -1775,6 +1768,9 @@ contains
     ! This is called every loop around DataInitialize
     !---------------------------------------
 
+    call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
+    if (shr_nuopc_methods_chkerr(rc,__LINE__,u_FILE_u)) return
+
     do n1 = 1,ncomps
        LocalDone = .true.
        if (is_local%wrap%comp_present(n1) .and. ESMF_StateIsCreated(is_local%wrap%NStateImp(n1),rc=rc)) then
@@ -1796,7 +1792,7 @@ contains
              if (atCorrectTime) then
                 if (fieldNameList(n) == flds_scalar_name) then
                    call med_infodata_CopyStateToInfodata(is_local%wrap%NStateImp(n1), med_infodata, &
-                        trim(compname(n1))//'2cpli', is_local%wrap%vm, rc)
+                        trim(compname(n1))//'2cpli', vm, rc)
                    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                    call ESMF_LogWrite(trim(subname)//" MED - Initialize-Data-Dependency CSTI "//trim(compname(n1)), &
                         ESMF_LOGMSG_INFO, rc=rc)

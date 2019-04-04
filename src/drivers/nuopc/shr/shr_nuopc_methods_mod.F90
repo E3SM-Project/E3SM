@@ -51,6 +51,7 @@ module shr_nuopc_methods_mod
   public shr_nuopc_methods_FB_accum
   public shr_nuopc_methods_FB_average
   public shr_nuopc_methods_FB_init
+  public shr_nuopc_methods_FB_init_pointer
   public shr_nuopc_methods_FB_reset
   public shr_nuopc_methods_FB_clean
   public shr_nuopc_methods_FB_diagnose
@@ -184,18 +185,165 @@ contains
 
   !-----------------------------------------------------------------------------
 
+  subroutine shr_nuopc_methods_FB_init_pointer(StateIn, FBout, flds_scalar_name, name, rc)
+
+    ! ----------------------------------------------
+    ! Create FBout from StateIn mesh and pointer
+    ! ----------------------------------------------
+
+    use ESMF              , only : ESMF_Field, ESMF_FieldGet, ESMF_FieldCreate
+    use ESMF              , only : ESMF_FieldBundle, ESMF_FieldBundleAdd, ESMF_FieldBundleCreate 
+    use ESMF              , only : ESMF_State, ESMF_StateGet, ESMF_Mesh, ESMF_MeshLoc
+    use ESMF              , only : ESMF_AttributeGet, ESMF_INDEX_DELOCAL
+    use med_constants_mod , only : R8
+
+    ! input/output variables
+    type(ESMF_State)      , intent(in)           :: StateIn          ! input state
+    type(ESMF_FieldBundle), intent(inout)        :: FBout            ! output field bundle 
+    character(len=*)      , intent(in)           :: flds_scalar_name ! name of scalar fields
+    character(len=*)      , intent(in)           :: name
+    integer               , intent(out)          :: rc
+
+    ! local variables
+    logical            :: isPresent 
+    integer            :: n,n1
+    type(ESMF_Field)   :: lfield
+    type(ESMF_Field)   :: newfield
+    type(ESMF_MeshLoc) :: meshloc
+    type(ESMF_Mesh)    :: lmesh
+    integer            :: lrank
+    integer            :: fieldCount
+    integer            :: ungriddedCount
+    integer            :: gridToFieldMapCount
+    integer            :: ungriddedLBound(1)
+    integer            :: ungriddedUBound(1)
+    integer            :: gridToFieldMap(1)
+    real(R8), pointer  :: dataptr1d(:)
+    real(R8), pointer  :: dataptr2d(:,:)
+    character(ESMF_MAXSTR), allocatable :: lfieldNameList(:)
+    character(len=*), parameter :: subname='(shr_nuopc_methods_FB_init_pointer)'
+    ! ----------------------------------------------
+
+    ! Create empty FBout
+    FBout = ESMF_FieldBundleCreate(name=trim(name), rc=rc)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! Get fields from StateIn
+    call ESMF_StateGet(StateIn, itemCount=fieldCount, rc=rc)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    allocate(lfieldNameList(fieldCount))
+    call ESMF_StateGet(StateIn, itemNameList=lfieldNameList, rc=rc)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! Remove scalar field and blank fields from field bundle
+    do n = 1, fieldCount
+      if (trim(lfieldnamelist(n)) == trim(flds_scalar_name) .or. trim(lfieldnamelist(n)) == '') then
+        do n1 = n, fieldCount-1
+          lfieldnamelist(n1) = lfieldnamelist(n1+1)
+        enddo
+        fieldCount = fieldCount - 1
+      endif
+    enddo  ! n
+
+    ! Only create the fieldbundle if the number of non-scalar fields is > 0
+    if (fieldCount > 0) then
+
+       ! Get mesh from first non-scalar field in StateIn (assumes all the fields have the same mesh)
+       call ESMF_StateGet(StateIn, itemName=lfieldNameList(1), field=lfield, rc=rc)
+       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_FieldGet(lfield, mesh=lmesh, meshloc=meshloc, rc=rc)
+       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       ! Loop over fields in StateIn skipping the field with just scalar data
+       do n = 1, fieldCount
+          ! get field from StateIn
+          call ESMF_StateGet(StateIn, itemName=lfieldNameList(n), field=lfield, rc=rc)
+          if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+          ! determine rank of field
+          call ESMF_FieldGet(lfield, rank=lrank, rc=rc)
+          if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+          if (lrank == 2) then
+
+             ! determine ungridded lower and upper bounds for lfield
+             call ESMF_AttributeGet(lfield, name="UngriddedLBound", convention="NUOPC", &
+                  purpose="Instance", itemCount=ungriddedCount,  isPresent=isPresent, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             if (ungriddedCount /= 1) then
+                call ESMF_LogWrite(trim(subname)//": ERROR ungriddedCount for "// &
+                     trim(lfieldnamelist(n))//" must be 1 if rank is 2 ", ESMF_LOGMSG_INFO, rc=rc)
+                rc = ESMF_FAILURE
+                return
+             end if
+
+             ! set ungridded dimensions and GridToFieldMap for field
+             call ESMF_AttributeGet(lfield, name="UngriddedLBound", convention="NUOPC", &
+                  purpose="Instance", valueList=ungriddedLBound, rc=rc)
+             call ESMF_AttributeGet(lfield, name="UngriddedUBound", convention="NUOPC", &
+                  purpose="Instance", valueList=ungriddedUBound, rc=rc)
+             call ESMF_AttributeGet(lfield, name="GridToFieldMap", convention="NUOPC", &
+                  purpose="Instance", valueList=gridToFieldMap, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+             ! get 2d pointer for field
+             call ESMF_FieldGet(lfield, farrayptr=dataptr2d, rc=rc)
+             if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+             ! create new field with an ungridded dimension
+             newfield = ESMF_FieldCreate(lmesh, dataptr2d, ESMF_INDEX_DELOCAL, &
+                  meshloc=meshloc, name=lfieldNameList(n), &
+                  ungriddedLbound=ungriddedLbound, ungriddedUbound=ungriddedUbound, gridToFieldMap=gridtoFieldMap, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+          else if (lrank == 1) then
+
+             ! get 1d pointer for field
+             call ESMF_FieldGet(lfield, farrayptr=dataptr1d, rc=rc)
+             if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+             ! create new field without an ungridded dimension 
+             newfield = ESMF_FieldCreate(lmesh, dataptr1d, ESMF_INDEX_DELOCAL, &
+                  meshloc=meshloc, name=lfieldNameList(n), rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+          else
+
+             call ESMF_LogWrite(trim(subname)//": ERROR only rank1 and rank2 are supported for rank of fields ", &
+                  ESMF_LOGMSG_INFO, rc=rc)
+             rc = ESMF_FAILURE
+             return
+
+          end if
+
+          ! Add new field to FBout
+          call ESMF_FieldBundleAdd(FBout, (/newfield/), rc=rc)
+          if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       end do ! end of loop over input state fields
+    end if  ! end of fieldcount > 0
+
+    deallocate(lfieldNameList)
+
+    if (dbug_flag > 5) then
+       call ESMF_LogWrite(trim(subname)//": FBout from input State and field pointers", ESMF_LOGMSG_INFO, rc=rc)
+    end if
+
+  end subroutine shr_nuopc_methods_FB_init_pointer
+
+  !-----------------------------------------------------------------------------
+
   subroutine shr_nuopc_methods_FB_init(FBout, flds_scalar_name, fieldNameList, FBgeom, STgeom, FBflds, STflds, name, rc)
 
     ! ----------------------------------------------
     ! Create FBout from fieldNameList, FBflds, STflds, FBgeom or STgeom in that order or priority
-    ! Pass in FBgeom OR STgeom, get grid/mesh from that object
+    ! Pass in FBgeom OR STgeom, get mesh from that object
     ! ----------------------------------------------
 
     use ESMF              , only : ESMF_Field, ESMF_FieldBundle, ESMF_FieldBundleCreate, ESMF_FieldBundleGet
-    use ESMF              , only : ESMF_State, ESMF_Grid, ESMF_Mesh, ESMF_StaggerLoc, ESMF_MeshLoc
+    use ESMF              , only : ESMF_State, ESMF_Mesh, ESMF_StaggerLoc, ESMF_MeshLoc
     use ESMF              , only : ESMF_StateGet, ESMF_FieldGet, ESMF_FieldBundleAdd, ESMF_FieldCreate
-    use ESMF              , only : ESMF_TYPEKIND_R8, ESMF_GEOMTYPE_MESH, ESMF_GEOMTYPE_GRID
-    use ESMF              , only : ESMF_FIELDSTATUS_EMPTY, ESMF_AttributeGet
+    use ESMF              , only : ESMF_TYPEKIND_R8, ESMF_FIELDSTATUS_EMPTY, ESMF_AttributeGet
     use med_constants_mod , only : spval_init => med_constants_spval_init
 
     ! input/output variables
@@ -215,7 +363,6 @@ contains
     logical                :: found
     character(ESMF_MAXSTR) :: lname
     type(ESMF_Field)       :: field,lfield
-    type(ESMF_Grid)        :: lgrid
     type(ESMF_Mesh)        :: lmesh
     type(ESMF_StaggerLoc)  :: staggerloc
     type(ESMF_MeshLoc)     :: meshloc
@@ -348,24 +495,23 @@ contains
     enddo  ! n
 
     !---------------------------------
-    ! create the grid (lgrid) or mesh(lmesh)
-    ! that will be used for FBout fields
+    ! create the mesh(lmesh) that will be used for FBout fields
     !---------------------------------
 
     if (fieldcount > 0 .and. fieldcountgeom > 0) then
 
-      ! Look at only the first field in either the FBgeom and STgeom to get the grid
+      ! Look at only the first field in either the FBgeom and STgeom to get the mesh
       if (present(FBgeom)) then
         call shr_nuopc_methods_FB_getFieldN(FBgeom, 1, lfield, rc=rc)
         if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
         if (dbug_flag > 5) then
-           call ESMF_LogWrite(trim(subname)//":"//trim(lname)//" grid/mesh from FBgeom", ESMF_LOGMSG_INFO, rc=rc)
+           call ESMF_LogWrite(trim(subname)//":"//trim(lname)//" mesh from FBgeom", ESMF_LOGMSG_INFO, rc=rc)
         end if
       elseif (present(STgeom)) then
         call shr_nuopc_methods_State_getFieldN(STgeom, 1, lfield, rc=rc)
         if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
         if (dbug_flag > 5) then
-           call ESMF_LogWrite(trim(subname)//":"//trim(lname)//" grid/mesh from STgeom", ESMF_LOGMSG_INFO, rc=rc)
+           call ESMF_LogWrite(trim(subname)//":"//trim(lname)//" mesh from STgeom", ESMF_LOGMSG_INFO, rc=rc)
         end if
       else
         call ESMF_LogWrite(trim(subname)//": ERROR FBgeom or STgeom must be passed", ESMF_LOGMSG_INFO, rc=rc)
@@ -383,27 +529,12 @@ contains
         return
       endif
 
-      ! Determine if first field in either FBgeom or STgeom is on a grid or a mesh
-      call ESMF_FieldGet(lfield, geomtype=geomtype, rc=rc)
+      ! Assume field is on mesh
+      call ESMF_FieldGet(lfield, mesh=lmesh, meshloc=meshloc, rc=rc)
       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-      if (geomtype == ESMF_GEOMTYPE_GRID) then
-        call ESMF_FieldGet(lfield, grid=lgrid, staggerloc=staggerloc, rc=rc)
-        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-        if (dbug_flag > 5) then
-           call ESMF_LogWrite(trim(subname)//":"//trim(lname)//" use grid", ESMF_LOGMSG_INFO, rc=rc)
-        end if
-      elseif (geomtype == ESMF_GEOMTYPE_MESH) then
-        call ESMF_FieldGet(lfield, mesh=lmesh, meshloc=meshloc, rc=rc)
-        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-        if (dbug_flag > 5) then
-           call ESMF_LogWrite(trim(subname)//":"//trim(lname)//" use mesh", ESMF_LOGMSG_INFO, rc=rc)
-        end if
-      else  ! geomtype
-        call ESMF_LogWrite(trim(subname)//": ERROR geomtype not supported ", ESMF_LOGMSG_INFO, rc=rc)
-        rc = ESMF_FAILURE
-        return
-      endif ! geomtype
+      if (dbug_flag > 5) then
+         call ESMF_LogWrite(trim(subname)//":"//trim(lname)//" use mesh", ESMF_LOGMSG_INFO, rc=rc)
+      end if
 
     endif  ! fieldcount > 0
 
@@ -437,7 +568,7 @@ contains
                   purpose="Instance", itemCount=ungriddedCount,  isPresent=isPresent, rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-             ! Create the field on either lgrid or lmesh
+             ! Create the field on a lmesh
              if (ungriddedCount > 0) then
                 ! ungridded dimensions in field
                 allocate(ungriddedLBound(ungriddedCount), ungriddedUBound(ungriddedCount))
@@ -454,40 +585,23 @@ contains
                      purpose="Instance", valueList=gridToFieldMap, rc=rc)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-                if (geomtype == ESMF_GEOMTYPE_GRID) then
-                   field = ESMF_FieldCreate(lgrid, ESMF_TYPEKIND_R8, staggerloc=staggerloc, name=lfieldNameList(n), &
-                        ungriddedLbound=ungriddedLbound, ungriddedUbound=ungriddedUbound, &
-                        gridToFieldMap=gridToFieldMap, rc=rc)
-                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                elseif (geomtype == ESMF_GEOMTYPE_MESH) then
-                   field = ESMF_FieldCreate(lmesh, ESMF_TYPEKIND_R8, meshloc=meshloc, name=lfieldNameList(n), &
-                        ungriddedLbound=ungriddedLbound, ungriddedUbound=ungriddedUbound, &
-                        gridToFieldMap=gridToFieldMap)
-                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                field = ESMF_FieldCreate(lmesh, ESMF_TYPEKIND_R8, meshloc=meshloc, name=lfieldNameList(n), &
+                     ungriddedLbound=ungriddedLbound, ungriddedUbound=ungriddedUbound, &
+                     gridToFieldMap=gridToFieldMap)
+                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-                   deallocate( ungriddedLbound, ungriddedUbound, gridToFieldMap)
-                end if
+                deallocate( ungriddedLbound, ungriddedUbound, gridToFieldMap)
              else
                 ! No ungridded dimensions in field
-                if (geomtype == ESMF_GEOMTYPE_GRID) then
-                   field = ESMF_FieldCreate(lgrid, ESMF_TYPEKIND_R8, staggerloc=staggerloc, name=lfieldNameList(n), rc=rc)
-                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                elseif (geomtype == ESMF_GEOMTYPE_MESH) then
-                   field = ESMF_FieldCreate(lmesh, ESMF_TYPEKIND_R8, meshloc=meshloc, name=lfieldNameList(n), rc=rc)
-                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                end if
+                field = ESMF_FieldCreate(lmesh, ESMF_TYPEKIND_R8, meshloc=meshloc, name=lfieldNameList(n), rc=rc)
+                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
              end if
 
           else if (present(fieldNameList)) then 
              
              ! Assume no ungridded dimensions if just the field name list is give
-             if (geomtype == ESMF_GEOMTYPE_GRID) then
-                field = ESMF_FieldCreate(lgrid, ESMF_TYPEKIND_R8, staggerloc=staggerloc, name=lfieldNameList(n), rc=rc)
-                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-             elseif (geomtype == ESMF_GEOMTYPE_MESH) then
-                field = ESMF_FieldCreate(lmesh, ESMF_TYPEKIND_R8, meshloc=meshloc, name=lfieldNameList(n), rc=rc)
-                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-             end if
+             field = ESMF_FieldCreate(lmesh, ESMF_TYPEKIND_R8, meshloc=meshloc, name=lfieldNameList(n), rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
              
           end if
              
@@ -517,11 +631,13 @@ contains
 
   subroutine shr_nuopc_methods_FB_getNameN(FB, fieldnum, fieldname, rc)
 
+    ! ----------------------------------------------
+    ! Get name of field number fieldnum in input field bundle FB
+    ! ----------------------------------------------
+
     use ESMF, only : ESMF_FieldBundle, ESMF_FieldBundleGet
 
-    ! ----------------------------------------------
-    ! Get name of field number fieldnum in FB
-    ! ----------------------------------------------
+    ! input/output variables
     type(ESMF_FieldBundle), intent(in)    :: FB
     integer               , intent(in)    :: fieldnum
     character(len=*)      , intent(out)   :: fieldname
@@ -567,11 +683,14 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_FB_getFieldN(FB, fieldnum, field, rc)
-    use ESMF, only : ESMF_Field, ESMF_FieldBundle, ESMF_FieldBundleGet
 
     ! ----------------------------------------------
-    ! Get field number fieldnum out of FB
+    ! Get field with number fieldnum in input field bundle FB
     ! ----------------------------------------------
+
+    use ESMF, only : ESMF_Field, ESMF_FieldBundle, ESMF_FieldBundleGet
+
+    ! input/output variables
     type(ESMF_FieldBundle), intent(in)    :: FB
     integer               , intent(in)    :: fieldnum
     type(ESMF_Field)      , intent(inout) :: field
@@ -603,10 +722,14 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_FB_getFieldByName(FB, fieldname, field, rc)
-    use ESMF, only : ESMF_Field, ESMF_FieldBundle, ESMF_FieldBundleGet
+
     ! ----------------------------------------------
     ! Get field associated with fieldname out of FB
     ! ----------------------------------------------
+
+    use ESMF, only : ESMF_Field, ESMF_FieldBundle, ESMF_FieldBundleGet
+
+    ! input/output variables
     type(ESMF_FieldBundle), intent(in)    :: FB
     character(len=*)      , intent(in)    :: fieldname
     type(ESMF_Field)      , intent(inout) :: field
@@ -772,7 +895,6 @@ contains
 
     call ESMF_StateGet(State, itemName=name, field=field, rc=rc)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-
     if (dbug_flag > 10) then
       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
     endif
@@ -1970,15 +2092,18 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_Field_GetFldPtr(field, fldptr1, fldptr2, rank, abort, rc)
+
     ! ----------------------------------------------
     ! for a field, determine rank and return fldptr1 or fldptr2
     ! abort is true by default and will abort if fldptr is not yet allocated in field
     ! rank returns 0, 1, or 2.  0 means fldptr not allocated and abort=false
     ! ----------------------------------------------
+
     use med_constants_mod , only : R8
     use ESMF              , only : ESMF_Field,ESMF_Mesh, ESMF_FieldGet, ESMF_MeshGet
     use ESMF              , only : ESMF_GEOMTYPE_MESH, ESMF_GEOMTYPE_GRID, ESMF_FIELDSTATUS_COMPLETE
 
+    ! input/output variables
     type(ESMF_Field)  , intent(in)              :: field
     real(R8), pointer , intent(inout), optional :: fldptr1(:)
     real(R8), pointer , intent(inout), optional :: fldptr2(:,:)
@@ -2096,12 +2221,14 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_FB_GetFldPtr(FB, fldname, fldptr1, fldptr2, rank, field, rc)
+
     use med_constants_mod , only : R8
     use ESMF              , only : ESMF_FieldBundle, ESMF_FieldBundleGet, ESMF_Field
 
     ! ----------------------------------------------
     ! Get pointer to a field bundle field
     ! ----------------------------------------------
+
     type(ESMF_FieldBundle) , intent(in)              :: FB
     character(len=*)       , intent(in)              :: fldname
     real(R8), pointer      , intent(inout), optional :: fldptr1(:)
@@ -2454,20 +2581,23 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_Field_GeomPrint(field, string, rc)
+
     use med_constants_mod, only : R8
     use ESMF, only : ESMF_Field, ESMF_Grid, ESMF_Mesh
     use ESMF, only : ESMF_FieldGet, ESMF_GEOMTYPE_MESH, ESMF_GEOMTYPE_GRID, ESMF_FIELDSTATUS_EMPTY
 
+    ! input/output variables
     type(ESMF_Field), intent(in)  :: field
     character(len=*), intent(in)  :: string
     integer         , intent(out) :: rc
 
-    type(ESMF_Grid)     :: lgrid
-    type(ESMF_Mesh)     :: lmesh
-    integer             :: lrank
+    ! local variables
+    type(ESMF_Grid)   :: lgrid
+    type(ESMF_Mesh)   :: lmesh
+    integer           :: lrank
     real(R8), pointer :: dataPtr1(:)
     real(R8), pointer :: dataPtr2(:,:)
-    integer :: dbrc
+    integer           :: dbrc
     character(len=*),parameter  :: subname='(shr_nuopc_methods_Field_GeomPrint)'
 
     if (dbug_flag > 10) then
