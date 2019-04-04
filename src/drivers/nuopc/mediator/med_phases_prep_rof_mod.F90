@@ -44,9 +44,11 @@ contains
 
   subroutine med_phases_prep_rof_accum_fast(gcomp, rc)
 
+    !------------------------------------
     ! Carry out fast accumulation for the river (rof) component
-    ! Accumulation and averaging is done on the land input to the river component on the land grid
+    ! Accumulation and averaging is done on the land input on the land grid for the fields that will 
     ! Mapping from the land to the rof grid is then done with the time averaged fields
+    !------------------------------------
 
     use ESMF                  , only : ESMF_GridComp, ESMF_GridCompGet
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
@@ -58,6 +60,7 @@ contains
 
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
+
     integer, intent(out) :: rc
 
     ! local variables
@@ -88,22 +91,23 @@ contains
 
     if (.not. ESMF_FieldBundleIsCreated(is_local%wrap%FBImp(complnd,complnd))) then
        ncnt = 0
+       call ESMF_LogWrite(trim(subname)//": FBImp(complnd,complnd) is not created", &
+            ESMF_LOGMSG_INFO, rc=dbrc)
     else 
        ! The scalar field has been removed from all mediator field bundles - so check if the fieldCount is
        ! 0 and not 1 here
        call ESMF_FieldBundleGet(is_local%wrap%FBImp(complnd,complnd), fieldCount=ncnt, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBimp(complnd), returning", &
+            ESMF_LOGMSG_INFO)
     end if
 
-    if (ncnt == 0) then
-       call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBimp(complnd), returning", &
-            ESMF_LOGMSG_INFO, rc=dbrc)
-    else
-
+    if (ncnt >= 0) then
        !---------------------------------------
        ! Accumulate lnd input on lnd grid to send to rof
        !---------------------------------------
-       call shr_nuopc_methods_FB_accum(is_local%wrap%FBImpAccum(complnd,complnd), &
+       call shr_nuopc_methods_FB_accum(&
+            is_local%wrap%FBImpAccum(complnd,complnd), &
             is_local%wrap%FBImp(complnd,complnd), rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
@@ -114,7 +118,6 @@ contains
                string=trim(subname)//' FBImpAccum(complnd,complnd) ', rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
        end if
-
     end if
 
     if (dbug_flag > 20) then
@@ -128,7 +131,9 @@ contains
 
   subroutine med_phases_prep_rof_avg(gcomp, rc)
 
+    !------------------------------------
     ! Prepare the ROF export Fields from the mediator
+    !------------------------------------
 
     use NUOPC                 , only : NUOPC_IsConnected
     use ESMF                  , only : ESMF_GridComp, ESMF_GridCompGet 
