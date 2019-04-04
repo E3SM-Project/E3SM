@@ -59,7 +59,8 @@ module ocn_diagnostics
              ocn_reconstruct_gm_vectors, &
              ocn_diagnostics_init, &
              ocn_compute_kpp_input_fields, &
-             ocn_validate_state
+             ocn_validate_state, &
+             ocn_build_log_filename
 
    !--------------------------------------------------------------------
    !
@@ -145,8 +146,10 @@ contains
       integer :: timeLevel
       integer, pointer :: indexTemperature, indexSalinity
       logical, pointer :: config_use_cvmix_kpp
+      logical, pointer :: config_use_wetting_drying
       real (kind=RKIND), pointer :: config_apvm_scale_factor,  config_coef_3rd_order, config_cvmix_kpp_surface_layer_averaging
       character (len=StrKIND), pointer :: config_pressure_gradient_type
+      character (len=StrKIND), pointer :: config_thickness_flux_type
 
       real (kind=RKIND), pointer :: config_flux_attenuation_coefficient
       real (kind=RKIND), pointer :: config_flux_attenuation_coefficient_runoff
@@ -173,6 +176,8 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_flux_attenuation_coefficient', config_flux_attenuation_coefficient)
       call mpas_pool_get_config(ocnConfigs, 'config_flux_attenuation_coefficient_runoff',  &
                                              config_flux_attenuation_coefficient_runoff)
+      call mpas_pool_get_config(ocnConfigs, 'config_use_wetting_drying', config_use_wetting_drying)
+      call mpas_pool_get_config(ocnConfigs, 'config_thickness_flux_type', config_thickness_flux_type)
 
       call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
@@ -265,18 +270,45 @@ contains
       nCells = nCellsArray( size(nCellsArray) )
       nVertices = nVerticesArray( size(nVerticesArray) )
 
-
-      !$omp do schedule(runtime) private(cell1, cell2, k)
-      do iEdge = 1, nEdges
-         ! initialize layerThicknessEdge to avoid divide by zero and NaN problems.
-         layerThicknessEdge(:, iEdge) = -1.0e34_RKIND
-         cell1 = cellsOnEdge(1,iEdge)
-         cell2 = cellsOnEdge(2,iEdge)
-         do k = 1, maxLevelEdgeTop(iEdge)
+      if (.not. config_use_wetting_drying .or. (config_use_wetting_drying .and. (trim(config_thickness_flux_type) .eq. 'centered'))) then
+        !$omp do schedule(runtime) private(cell1, cell2, k)
+        do iEdge = 1, nEdges
+          ! initialize layerThicknessEdge to avoid divide by zero and NaN problems.
+          layerThicknessEdge(:, iEdge) = -1.0e34_RKIND
+          cell1 = cellsOnEdge(1,iEdge)
+          cell2 = cellsOnEdge(2,iEdge)
+          do k = 1, maxLevelEdgeTop(iEdge)
+            ! central differenced
             layerThicknessEdge(k,iEdge) = 0.5_RKIND * (layerThickness(k,cell1) + layerThickness(k,cell2))
-         end do
-      end do
-      !$omp end do
+          end do
+        end do
+        !$omp end do
+      else
+        if (config_use_wetting_drying .and. (trim(config_thickness_flux_type) .ne. 'centered')) then
+          if ( trim(config_thickness_flux_type) .eq. 'upwind') then
+            !$omp do schedule(runtime) private(cell1, cell2, k)
+            do iEdge = 1, nEdges
+              ! initialize layerThicknessEdge to avoid divide by zero and NaN problems.
+              layerThicknessEdge(:, iEdge) = -1.0e34_RKIND
+              cell1 = cellsOnEdge(1,iEdge)
+              cell2 = cellsOnEdge(2,iEdge)
+              do k = 1, maxLevelEdgeTop(iEdge)
+                ! upwind
+                if (normalVelocity(k, iEdge) > 0.0_RKIND) then
+                  layerThicknessEdge(k,iEdge) = layerThickness(k,cell1)
+                elseif (normalVelocity(k, iEdge) < 0.0_RKIND) then
+                  layerThicknessEdge(k,iEdge) = layerThickness(k,cell2)
+                else
+                  layerThicknessEdge(k,iEdge) = max(layerThickness(k,cell1), layerThickness(k,cell2))
+                end if
+              end do
+            end do
+            !$omp end do
+          end if
+        else
+          call mpas_log_write('Thickness flux option of ' // trim(config_thickness_flux_type) // 'is not known', MPAS_LOG_CRIT)
+        end if
+      end if
 
       coef_3rd_order = config_coef_3rd_order
 
