@@ -207,11 +207,11 @@ subroutine micro_p3_readnl(nlfile)
      call freeunit(unitn)
 
      write(iulog,'(A50)') ' ----- P3 Namelist Values: -----'
-     write(iulog,'(A29,1x,A19)') 'micro_p3_tableversion: ', micro_p3_tableversion
-     write(iulog,'(A20,1x,A100)') 'micro_p3_lookup_dir: ',  micro_p3_lookup_dir
-     write(iulog,'(A30,1x,L)') 'micro_aerosolactivation: ', micro_aerosolactivation
-     write(iulog,'(A30,1x,L)') 'micro_subgrid_cloud: ',     micro_subgrid_cloud
-     write(iulog,'(A30,1x,L)') 'micro_tend_output: ',       micro_tend_output
+     write(iulog,'(A29,1x,A19)')  'micro_p3_tableversion: ',   micro_p3_tableversion
+     write(iulog,'(A20,1x,A100)') 'micro_p3_lookup_dir: ',     micro_p3_lookup_dir
+     write(iulog,'(A30,1x,L)')    'micro_aerosolactivation: ', micro_aerosolactivation
+     write(iulog,'(A30,1x,L)')    'micro_subgrid_cloud: ',     micro_subgrid_cloud
+     write(iulog,'(A30,1x,L)')    'micro_tend_output: ',       micro_tend_output
 
   end if
 
@@ -254,8 +254,7 @@ end subroutine micro_p3_readnl
   logical :: prog_modal_aero
   logical :: save_subcol_microp ! If true, then need to store sub-columnized fields in pbuf
 
-  if (masterproc) write(iulog,'(A20)') ' P3_REG Start'
-!  if(l_summary_debug) write(6,*) 'micro_p3_register - 001 -'
+  if (masterproc) write(iulog,'(A20)') ' P3 register start ...'
 
    call phys_getopts(use_subcol_microp_out = use_subcol_microp, &
                     prog_modal_aero_out   = prog_modal_aero )
@@ -309,7 +308,7 @@ end subroutine micro_p3_readnl
    call pbuf_add_field('P3_th','global', dtype_r8,(/pcols,pver/),p3_th_idx)
    
    !! module microp_aero
-   call pbuf_add_field('CLDO','global', dtype_r8,(/pcols,pver,dyn_time_lvls/),cldo_idx)
+   call pbuf_add_field('CLDO','global', dtype_r8,(/pcols,pver,dyn_time_lvls/),cldo_idx) 
 
    !! module wetdep 
    call pbuf_add_field('QME',  'physpkg',dtype_r8,(/pcols,pver/), qme_idx)
@@ -352,42 +351,6 @@ end subroutine micro_p3_readnl
    call pbuf_add_field('ICLWPST',    'physpkg',dtype_r8,(/pcols,pver/),iclwpst_idx)
    call pbuf_add_field('ICIWPST',    'physpkg',dtype_r8,(/pcols,pver/),iciwpst_idx)
  
-   ! Register subcolumn pbuf fields
-   if (use_subcol_microp) then
-
-     if (masterproc) write(iulog,'(A20)') '  P3_REG subcol'
-     call pbuf_register_subcol('CLDO',        'micro_p3_register', cldo_idx)
-     call pbuf_register_subcol('QME',         'micro_p3_cam_register', qme_idx)
-     call pbuf_register_subcol('PRAIN',       'micro_p3_cam_register', prain_idx)
-     call pbuf_register_subcol('NEVAPR',      'micro_p3_cam_register', nevapr_idx)
-     call pbuf_register_subcol('PRER_EVAP',   'micro_p3_register', prer_evap_idx)
-     call pbuf_register_subcol('DEI',         'micro_p3_register', dei_idx)
-     call pbuf_register_subcol('MU',          'micro_p3_register', mu_idx)
-     call pbuf_register_subcol('LAMBDAC',     'micro_p3_register', lambdac_idx)
-     call pbuf_register_subcol('REL',         'micro_p3_register', rel_idx)
-     call pbuf_register_subcol('REI',         'micro_p3_register', rei_idx)
-     call pbuf_register_subcol('LS_FLXPRC',   'micro_p3_register', ls_flxprc_idx)
-     call pbuf_register_subcol('LS_FLXSNW',   'micro_p3_register', ls_flxsnw_idx)
-     call pbuf_register_subcol('LS_REFFRAIN', 'micro_p3_register', ls_reffrain_idx)
-     call pbuf_register_subcol('LS_REFFSNOW', 'micro_p3_register', ls_reffsnow_idx)
-     call pbuf_register_subcol('CV_REFFLIQ',  'micro_p3_register', cv_reffliq_idx)
-     call pbuf_register_subcol('CV_REFFICE',  'micro_p3_register', cv_reffice_idx)
-     call pbuf_register_subcol('CC_T',        'micro_p3_register', cc_t_idx)
-     call pbuf_register_subcol('CC_qv',       'micro_p3_register', cc_qv_idx)
-     call pbuf_register_subcol('CC_ql',       'micro_p3_register', cc_ql_idx)
-     call pbuf_register_subcol('CC_qi',       'micro_p3_register', cc_qi_idx)
-     call pbuf_register_subcol('CC_nl',       'micro_p3_register', cc_nl_idx)
-     call pbuf_register_subcol('CC_ni',       'micro_p3_register', cc_ni_idx)
-     call pbuf_register_subcol('CC_qlst',     'micro_p3_register', cc_qlst_idx)
-     call pbuf_register_subcol('ICIWPST',     'micro_p3_register', iciwpst_idx)
-     call pbuf_register_subcol('ICLWPST',     'micro_p3_register', iclwpst_idx)
- 
-     if (prog_modal_aero) then
-       call pbuf_register_subcol('RATE1_CW2PR_ST', 'micro_p3_register', rate1_cw2pr_st_idx)
-     end if
-
-   end if
-
    !! (internal) Precipitation efficiency fields across timesteps.
    call pbuf_add_field('ACPRECL',    'global',dtype_r8,(/pcols/), acprecl_idx)! accumulated precip
    call pbuf_add_field('ACGCME',     'global',dtype_r8,(/pcols/), acgcme_idx) ! accumulated condensation
@@ -403,7 +366,7 @@ end subroutine micro_p3_readnl
       call pbuf_add_field('NRAIN',   'global',dtype_r8,(/pcols,pver/), nrain_idx)
    end if
 
-   if (masterproc) write(iulog,'(A20)') '    P3_REG Finished'
+   if (masterproc) write(iulog,'(A20)') '    P3 register finished'
   end subroutine micro_p3_register
 
   !================================================================================================
@@ -452,10 +415,6 @@ end subroutine micro_p3_readnl
     logical :: history_budget       ! Output tendencies and state variables for CAM4
     integer :: budget_histfile      ! output history file number for budget fields
                                    ! temperature, water vapor, cloud ice and cloud
-
-    ! PULL DIRECTORY OF LOOKUP TABLE FROM ATM NAMELIST
-    ! =============
-!    call phys_getopts(p3_lookup_dir_out = p3_lookup_dir) ! ASD-DELETE
 
     call micro_p3_utils_init(cpair,rair,rh2o,rhoh2o,mwh2o,mwdry,gravit,latvap,latice, &
              cpliq,tmelt,pi,iulog,masterproc)
@@ -521,18 +480,6 @@ end subroutine micro_p3_readnl
        if (qrain_idx > 0)   call pbuf_set_field(pbuf2d, qrain_idx, 0._rtype)
        if (nrain_idx > 0)   call pbuf_set_field(pbuf2d, nrain_idx, 0._rtype)
 
-       ! If sub-columns turned on, need to set the sub-column fields as well
-       if (use_subcol_microp) then
-          call pbuf_set_field(pbuf2d, cldo_idx,   0._rtype, col_type=col_type_subcol)
-          call pbuf_set_field(pbuf2d, cc_t_idx,   0._rtype, col_type=col_type_subcol)
-          call pbuf_set_field(pbuf2d, cc_qv_idx,  0._rtype, col_type=col_type_subcol)
-          call pbuf_set_field(pbuf2d, cc_ql_idx,  0._rtype, col_type=col_type_subcol)
-          call pbuf_set_field(pbuf2d, cc_qi_idx,  0._rtype, col_type=col_type_subcol)
-          call pbuf_set_field(pbuf2d, cc_nl_idx,  0._rtype, col_type=col_type_subcol)
-          call pbuf_set_field(pbuf2d, cc_ni_idx,  0._rtype, col_type=col_type_subcol)
-          call pbuf_set_field(pbuf2d, cc_qlst_idx,0._rtype, col_type=col_type_subcol)
-       end if
-
     end if
 
     ! INITIALIZE OUTPUT
@@ -577,72 +524,24 @@ end subroutine micro_p3_readnl
     call addfld('CLOUDFRAC_RAIN_MICRO', (/ 'lev' /), 'A', 'unitless', 'Grid box rain cloud fraction in microphysics' )
 
     call addfld ('CME', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of cond-evap within the cloud'                      )
-!    call addfld ('PRODPREC', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of conversion of condensate to precip'              )
-!    call addfld ('EVAPPREC', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of evaporation of falling precip'                   )
-!    call addfld ('EVAPSNOW', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of evaporation of falling snow'                     )
-!    call addfld ('HPROGCLD', (/ 'lev' /), 'A', 'W/kg'    , 'Heating from prognostic clouds'                          )
     call addfld ('FICE', (/ 'lev' /), 'A', 'fraction', 'Fractional ice content within cloud'                     )
     call addfld ('ICWMRST', (/ 'lev' /), 'A', 'kg/kg', 'Prognostic in-stratus water mixing ratio'                )
     call addfld ('ICIMRST', (/ 'lev' /), 'A', 'kg/kg', 'Prognostic in-stratus ice mixing ratio'                  )
 
    ! MG microphysics diagnostics
-!    call addfld ('QCSEVAP', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of evaporation of falling cloud water'              )
-!    call addfld ('QISEVAP', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of sublimation of falling cloud ice'                )
-!    call addfld ('QVRES', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of residual condensation term'                      )
     call addfld ('CMEIOUT', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of deposition/sublimation of cloud ice'             )
-!    call addfld ('VTRMC', (/ 'lev' /), 'A', 'm/s', 'Mass-weighted cloud water fallspeed'                     )
-!    call addfld ('VTRMI', (/ 'lev' /), 'A', 'm/s', 'Mass-weighted cloud ice fallspeed'                       )
     call addfld ('QCSEDTEN', (/ 'lev' /), 'A', 'kg/kg/s', 'Cloud water mixing ratio tendency from sedimentation'    )
     call addfld ('QISEDTEN', (/ 'lev' /), 'A', 'kg/kg/s', 'Cloud ice mixing ratio tendency from sedimentation'      )
-!    call addfld ('PRAO', (/ 'lev' /), 'A', 'kg/kg/s', 'Accretion of cloud water by rain'                        )
-!    call addfld ('PRCO', (/ 'lev' /), 'A', 'kg/kg/s', 'Autoconversion of cloud water'                           )
-!    call addfld ('MNUCCCO', (/ 'lev' /), 'A', 'kg/kg/s', 'Immersion freezing of cloud water'                       )
-!    call addfld ('MNUCCTO', (/ 'lev' /), 'A', 'kg/kg/s', 'Contact freezing of cloud water'                         )
-!    call addfld ('MNUCCDO', (/ 'lev' /), 'A', 'kg/kg/s', 'Homogeneous and heterogeneous nucleation from vapor'     )
-!    call addfld ('MNUCCDOhet', (/ 'lev' /), 'A','kg/kg/s', 'Heterogeneous nucleation from vapor'                     )
-!    call addfld ('MSACWIO', (/ 'lev' /), 'A', 'kg/kg/s', 'Conversion of cloud water from rime-splintering'         )
-!    call addfld ('PSACWSO', (/ 'lev' /), 'A', 'kg/kg/s', 'Accretion of cloud water by snow'                        )
-!    call addfld ('BERGSO', (/ 'lev' /), 'A', 'kg/kg/s', 'Conversion of cloud water to snow from bergeron'         )
-!    call addfld ('BERGO', (/ 'lev' /), 'A', 'kg/kg/s', 'Conversion of cloud water to cloud ice from bergeron'    )
-!    call addfld ('MELTO', (/ 'lev' /), 'A', 'kg/kg/s', 'Melting of cloud ice'                                    )
-!    call addfld ('HOMOO', (/ 'lev' /), 'A', 'kg/kg/s', 'Homogeneous freezing of cloud water'                     )
-!    call addfld ('QCRESO', (/ 'lev' /), 'A', 'kg/kg/s', 'Residual condensation term for cloud water'              )
-!    call addfld ('PRCIO', (/ 'lev' /), 'A', 'kg/kg/s', 'Autoconversion of cloud ice'                             )
-!    call addfld ('PRAIO', (/ 'lev' /), 'A', 'kg/kg/s', 'Accretion of cloud ice by rain'                          )
-!    call addfld ('QIRESO', (/ 'lev' /), 'A', 'kg/kg/s', 'Residual deposition term for cloud ice'                  )
-!    call addfld ('MNUCCRO', (/ 'lev' /), 'A', 'kg/kg/s', 'Heterogeneous freezing of rain to snow'                  )
-!    call addfld ('PRACSO', (/ 'lev' /), 'A', 'kg/kg/s', 'Accretion of rain by snow'                               )
-!    call addfld ('MELTSDT', (/ 'lev' /), 'A', 'W/kg', 'Latent heating rate due to melting of snow'              )
-!    call addfld ('FRZRDT', (/ 'lev' /), 'A', 'W/kg', 'Latent heating rate due to homogeneous freezing of rain' )
-   call addfld ('QRSEDTEN', (/ 'lev' /), 'A', 'kg/kg/s', 'Rain mixing ratio tendency from sedimentation'           )
-!    call addfld ('QSSEDTEN', (/ 'lev' /), 'A', 'kg/kg/s', 'Snow mixing ratio tendency from sedimentation'           )
+    call addfld ('QRSEDTEN', (/ 'lev' /), 'A', 'kg/kg/s', 'Rain mixing ratio tendency from sedimentation'           )
 
    ! History variables for CAM5 microphysics
-!    call addfld ('MPDT', (/ 'lev' /), 'A', 'W/kg', 'Heating tendency - Morrison microphysics'                )
-!    call addfld ('MPDQ', (/ 'lev' /), 'A', 'kg/kg/s', 'Q tendency - Morrison microphysics'                      )
-!    call addfld ('MPDLIQ', (/ 'lev' /), 'A', 'kg/kg/s', 'CLDLIQ tendency - Morrison microphysics'                 )
-!    call addfld ('MPDICE', (/ 'lev' /), 'A', 'kg/kg/s', 'CLDICE tendency - Morrison microphysics'                 )
-!    call addfld ('MPDW2V', (/ 'lev' /), 'A', 'kg/kg/s', 'Water <--> Vapor tendency - Morrison microphysics'       )
-!    call addfld ('MPDW2I', (/ 'lev' /), 'A', 'kg/kg/s', 'Water <--> Ice tendency - Morrison microphysics'         )
-!    call addfld ('MPDW2P', (/ 'lev' /), 'A', 'kg/kg/s', 'Water <--> Precip tendency - Morrison microphysics'      )
-!    call addfld ('MPDI2V', (/ 'lev' /), 'A', 'kg/kg/s', 'Ice <--> Vapor tendency - Morrison microphysics'         )
-!    call addfld ('MPDI2W', (/ 'lev' /), 'A', 'kg/kg/s', 'Ice <--> Water tendency - Morrison microphysics'         )
-!    call addfld ('MPDI2P', (/ 'lev' /), 'A', 'kg/kg/s', 'Ice <--> Precip tendency - Morrison microphysics'        )
     call addfld ('ICWNC', (/ 'lev' /), 'A', 'm-3', 'Prognostic in-cloud water number conc'                   )
     call addfld ('ICINC', (/ 'lev' /), 'A', 'm-3', 'Prognostic in-cloud ice number conc'                     )
-!    call addfld ('EFFLIQ_IND', (/ 'lev' /), 'A','Micron', 'Prognostic droplet effective radius (indirect effect)'   )
     call addfld ('CDNUMC', horiz_only,    'A', '1/m2', 'Vertically-integrated droplet concentration'             )
     call addfld ('MPICLWPI', horiz_only,    'A', 'kg/m2', 'Vertically-integrated &
          &in-cloud Initial Liquid WP (Before Micro)' )
     call addfld ('MPICIWPI', horiz_only,    'A', 'kg/m2', 'Vertically-integrated &
          &in-cloud Initial Ice WP (Before Micro)'    )
-
-   ! This is provided as an example on how to write out subcolumn output
-   ! NOTE -- only 'I' should be used for sub-column fields as subc-columns could shift from time-step to time-step
-!   if (use_subcol_microp) then
-!      call addfld('FICE_SCOL', (/'psubcols','lev     '/), 'I', 'fraction', &
-!           'Sub-column fractional ice content within cloud', flag_xyfill=.true., fill_value=1.e30_rtype)
-!   end if
 
    ! Averaging for cloud particle number and size
    call addfld ('AWNC', (/ 'lev' /), 'A', 'm-3', 'Average cloud water number conc'                         )
@@ -654,23 +553,8 @@ end subroutine micro_p3_readnl
    call addfld ('FREQI', (/ 'lev' /), 'A', 'fraction', 'Fractional occurrence of ice'                             )
 
    ! Average cloud top particle size and number (liq, ice) and frequency
-!   call addfld ('ACTREL', horiz_only,    'A', 'Micron', 'Average Cloud Top droplet effective radius'              )
-!   call addfld ('ACTREI', horiz_only,    'A', 'Micron', 'Average Cloud Top ice effective radius'                  )
-!   call addfld ('ACTNL', horiz_only,    'A', 'Micron', 'Average Cloud Top droplet number'                        )
-!   call addfld ('ACTNI', horiz_only,    'A', 'Micron', 'Average Cloud Top ice number'                            )
-
-!   call addfld ('FCTL', horiz_only,    'A', 'fraction', 'Fractional occurrence of cloud top liquid'                )
-!   call addfld ('FCTI', horiz_only,    'A', 'fraction', 'Fractional occurrence of cloud top ice'                   )
-
-!   call addfld ('LS_FLXPRC', (/ 'ilev' /), 'A', 'kg/m2/s', 'ls stratiform gbm interface rain+snow flux')
-!   call addfld ('LS_FLXSNW', (/ 'ilev' /), 'A', 'kg/m2/s', 'ls stratiform gbm interface snow flux')
-
    call addfld ('REL', (/ 'lev' /), 'A', 'micron', 'MG REL stratiform cloud effective radius liquid')
    call addfld ('REI', (/ 'lev' /), 'A', 'micron', 'MG REI stratiform cloud effective radius ice')
-!   call addfld ('LS_REFFRAIN', (/ 'lev' /), 'A', 'micron', 'ls stratiform rain effective radius')
-!   call addfld ('LS_REFFSNOW', (/ 'lev' /), 'A', 'micron', 'ls stratiform snow effective radius')
-!   call addfld ('CV_REFFLIQ', (/ 'lev' /), 'A', 'micron', 'convective cloud liq effective radius')
-!   call addfld ('CV_REFFICE', (/ 'lev' /), 'A', 'micron', 'convective cloud ice effective radius')
 
 !!== KZ_DCS
    call addfld ('DCST',(/ 'lev' /), 'A','m','dcs')
@@ -681,21 +565,6 @@ end subroutine micro_p3_readnl
    call addfld ('NRAIN',(/ 'lev' /), 'A','m-3','Diagnostic grid-mean rain number conc'         )
    call addfld ('NSNOW',(/ 'lev' /), 'A','m-3','Diagnostic grid-mean snow number conc'         )
 
-   ! size of precip
-!   call addfld ('RERCLD',(/ 'lev' /), 'A','m','Diagnostic effective radius of Liquid Cloud and Rain' )
-!   call addfld ('DSNOW',(/ 'lev' /), 'A','m','Diagnostic grid-mean snow diameter'         )
-
-   ! diagnostic radar reflectivity, cloud-averaged
-!   call addfld ('REFL',(/ 'lev' /), 'A','DBz','94 GHz radar reflectivity'       )
-!   call addfld ('AREFL',(/ 'lev' /), 'A','DBz','Average 94 GHz radar reflectivity'       )
-!   call addfld ('FREFL',(/ 'lev' /), 'A','fraction','Fractional occurrence of radar reflectivity'       )
-
-!   call addfld ('CSRFL',(/ 'lev' /), 'A','DBz','94 GHz radar reflectivity (CloudSat thresholds)'       )
-!   call addfld ('ACSRFL',(/ 'lev' /), 'A','DBz','Average 94 GHz radar reflectivity (CloudSat thresholds)'       )
-!   call addfld ('FCSRFL',(/ 'lev' /), 'A','fraction','Fractional occurrence of radar reflectivity (CloudSat thresholds)' &
-!        )
-
-!   call addfld ('AREFLZ',(/ 'lev' /), 'A','mm^6/m^3','Average 94 GHz radar reflectivity'       )
 
    ! Aerosol information
    call addfld ('NCAL',(/ 'lev' /), 'A','1/m3','Number Concentation Activated for Liquid')
@@ -712,20 +581,7 @@ end subroutine micro_p3_readnl
    call addfld ('FREQS',(/ 'lev' /), 'A','fraction','Fractional occurrence of snow'       )
 
    ! precipitation efficiency & other diagnostic fields
-!   call addfld('PE'    ,       horiz_only, 'A', '1', 'Stratiform Precipitation Efficiency  (precip/cmeliq)' )
-!   call addfld('APRL'  ,     horiz_only, 'A', 'm/s', 'Average Stratiform Precip Rate over efficiency calculation' )
-!   call addfld('PEFRAC',       horiz_only, 'A', '1', 'Fraction of timesteps precip efficiency reported' )
-!   call addfld('VPRCO' , horiz_only, 'A', 'kg/kg/s', 'Vertical average of autoconversion rate' )
-!   call addfld('VPRAO' , horiz_only, 'A', 'kg/kg/s', 'Vertical average of accretion rate' )
-!   call addfld('RACAU' , horiz_only, 'A', 'kg/kg/s', 'Accretion/autoconversion ratio from vertical average' )
-
    call addfld('UMR', (/ 'lev' /), 'A',   'm/s', 'Mass-weighted rain  fallspeed'              )
-!      call addfld('UMS', (/ 'lev' /), 'A',   'm/s', 'Mass-weighted snow fallspeed'               )
-
-   ! qc limiter (only output in versions 1.5 and later)
-!   if (.not. (micro_mg_version == 1 .and. micro_mg_sub_version == 0)) then
-!      call addfld('QCRAT', (/ 'lev' /), 'A', 'fraction', 'Qc Limiter: Fraction of qc tendency applied')
-!   end if
 
    ! Record of microphysics tendencies
    ! warm-phase process rates
@@ -780,7 +636,6 @@ end subroutine micro_p3_readnl
    call addfld('P3_mtend_NUMICE',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for ice cloud number due to micro processes')
    call addfld('P3_mtend_Q',       (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for water vapor due to micro processes')
    call addfld('P3_mtend_TH',      (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for potential temp. number due to micro processes')
-
 
    ! determine the add_default fields
    call phys_getopts(history_amwg_out           = history_amwg         , &
@@ -872,6 +727,77 @@ end subroutine micro_p3_readnl
       end if
    end if
 
+!    call addfld ('PRODPREC', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of conversion of condensate to precip'              )
+!    call addfld ('EVAPPREC', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of evaporation of falling precip'                   )
+!    call addfld ('EVAPSNOW', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of evaporation of falling snow'                     )
+!    call addfld ('HPROGCLD', (/ 'lev' /), 'A', 'W/kg'    , 'Heating from prognostic clouds'                          )
+!    call addfld ('QCSEVAP', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of evaporation of falling cloud water'              )
+!    call addfld ('QISEVAP', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of sublimation of falling cloud ice'                )
+!    call addfld ('QVRES', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of residual condensation term'                      )
+!    call addfld ('VTRMC', (/ 'lev' /), 'A', 'm/s', 'Mass-weighted cloud water fallspeed'                     )
+!    call addfld ('VTRMI', (/ 'lev' /), 'A', 'm/s', 'Mass-weighted cloud ice fallspeed'                       )
+!    call addfld ('PRAO', (/ 'lev' /), 'A', 'kg/kg/s', 'Accretion of cloud water by rain'                        )
+!    call addfld ('PRCO', (/ 'lev' /), 'A', 'kg/kg/s', 'Autoconversion of cloud water'                           )
+!    call addfld ('MNUCCCO', (/ 'lev' /), 'A', 'kg/kg/s', 'Immersion freezing of cloud water'                       )
+!    call addfld ('MNUCCTO', (/ 'lev' /), 'A', 'kg/kg/s', 'Contact freezing of cloud water'                         )
+!    call addfld ('MNUCCDO', (/ 'lev' /), 'A', 'kg/kg/s', 'Homogeneous and heterogeneous nucleation from vapor'     )
+!    call addfld ('MNUCCDOhet', (/ 'lev' /), 'A','kg/kg/s', 'Heterogeneous nucleation from vapor'                     )
+!    call addfld ('MSACWIO', (/ 'lev' /), 'A', 'kg/kg/s', 'Conversion of cloud water from rime-splintering'         )
+!    call addfld ('PSACWSO', (/ 'lev' /), 'A', 'kg/kg/s', 'Accretion of cloud water by snow'                        )
+!    call addfld ('BERGSO', (/ 'lev' /), 'A', 'kg/kg/s', 'Conversion of cloud water to snow from bergeron'         )
+!    call addfld ('BERGO', (/ 'lev' /), 'A', 'kg/kg/s', 'Conversion of cloud water to cloud ice from bergeron'    )
+!    call addfld ('MELTO', (/ 'lev' /), 'A', 'kg/kg/s', 'Melting of cloud ice'                                    )
+!    call addfld ('HOMOO', (/ 'lev' /), 'A', 'kg/kg/s', 'Homogeneous freezing of cloud water'                     )
+!    call addfld ('QCRESO', (/ 'lev' /), 'A', 'kg/kg/s', 'Residual condensation term for cloud water'              )
+!    call addfld ('PRCIO', (/ 'lev' /), 'A', 'kg/kg/s', 'Autoconversion of cloud ice'                             )
+!    call addfld ('PRAIO', (/ 'lev' /), 'A', 'kg/kg/s', 'Accretion of cloud ice by rain'                          )
+!    call addfld ('QIRESO', (/ 'lev' /), 'A', 'kg/kg/s', 'Residual deposition term for cloud ice'                  )
+!    call addfld ('MNUCCRO', (/ 'lev' /), 'A', 'kg/kg/s', 'Heterogeneous freezing of rain to snow'                  )
+!    call addfld ('PRACSO', (/ 'lev' /), 'A', 'kg/kg/s', 'Accretion of rain by snow'                               )
+!    call addfld ('MELTSDT', (/ 'lev' /), 'A', 'W/kg', 'Latent heating rate due to melting of snow'              )
+!    call addfld ('FRZRDT', (/ 'lev' /), 'A', 'W/kg', 'Latent heating rate due to homogeneous freezing of rain' )
+!    call addfld ('QSSEDTEN', (/ 'lev' /), 'A', 'kg/kg/s', 'Snow mixing ratio tendency from sedimentation'           )
+!    call addfld ('MPDT', (/ 'lev' /), 'A', 'W/kg', 'Heating tendency - Morrison microphysics'                )
+!    call addfld ('MPDQ', (/ 'lev' /), 'A', 'kg/kg/s', 'Q tendency - Morrison microphysics'                      )
+!    call addfld ('MPDLIQ', (/ 'lev' /), 'A', 'kg/kg/s', 'CLDLIQ tendency - Morrison microphysics'                 )
+!    call addfld ('MPDICE', (/ 'lev' /), 'A', 'kg/kg/s', 'CLDICE tendency - Morrison microphysics'                 )
+!    call addfld ('MPDW2V', (/ 'lev' /), 'A', 'kg/kg/s', 'Water <--> Vapor tendency - Morrison microphysics'       )
+!    call addfld ('MPDW2I', (/ 'lev' /), 'A', 'kg/kg/s', 'Water <--> Ice tendency - Morrison microphysics'         )
+!    call addfld ('MPDW2P', (/ 'lev' /), 'A', 'kg/kg/s', 'Water <--> Precip tendency - Morrison microphysics'      )
+!    call addfld ('MPDI2V', (/ 'lev' /), 'A', 'kg/kg/s', 'Ice <--> Vapor tendency - Morrison microphysics'         )
+!    call addfld ('MPDI2W', (/ 'lev' /), 'A', 'kg/kg/s', 'Ice <--> Water tendency - Morrison microphysics'         )
+!    call addfld ('MPDI2P', (/ 'lev' /), 'A', 'kg/kg/s', 'Ice <--> Precip tendency - Morrison microphysics'        )
+!    call addfld ('EFFLIQ_IND', (/ 'lev' /), 'A','Micron', 'Prognostic droplet effective radius (indirect effect)'   )
+!    call addfld ('ACTREL', horiz_only,    'A', 'Micron', 'Average Cloud Top droplet effective radius'              )
+!    call addfld ('ACTREI', horiz_only,    'A', 'Micron', 'Average Cloud Top ice effective radius'                  )
+!    call addfld ('ACTNL', horiz_only,    'A', 'Micron', 'Average Cloud Top droplet number'                        )
+!    call addfld ('ACTNI', horiz_only,    'A', 'Micron', 'Average Cloud Top ice number'                            )
+!    call addfld ('FCTL', horiz_only,    'A', 'fraction', 'Fractional occurrence of cloud top liquid'                )
+!    call addfld ('FCTI', horiz_only,    'A', 'fraction', 'Fractional occurrence of cloud top ice'                   )
+!    call addfld ('LS_FLXPRC', (/ 'ilev' /), 'A', 'kg/m2/s', 'ls stratiform gbm interface rain+snow flux')
+!    call addfld ('LS_FLXSNW', (/ 'ilev' /), 'A', 'kg/m2/s', 'ls stratiform gbm interface snow flux')
+!    call addfld ('LS_REFFRAIN', (/ 'lev' /), 'A', 'micron', 'ls stratiform rain effective radius')
+!    call addfld ('LS_REFFSNOW', (/ 'lev' /), 'A', 'micron', 'ls stratiform snow effective radius')
+!    call addfld ('CV_REFFLIQ', (/ 'lev' /), 'A', 'micron', 'convective cloud liq effective radius')
+!    call addfld ('CV_REFFICE', (/ 'lev' /), 'A', 'micron', 'convective cloud ice effective radius')
+   ! size of precip
+!    call addfld ('RERCLD',(/ 'lev' /), 'A','m','Diagnostic effective radius of Liquid Cloud and Rain' )
+!    call addfld ('DSNOW',(/ 'lev' /), 'A','m','Diagnostic grid-mean snow diameter'         )
+    ! diagnostic radar reflectivity, cloud-averaged
+!    call addfld ('REFL',(/ 'lev' /), 'A','DBz','94 GHz radar reflectivity'       )
+!    call addfld ('AREFL',(/ 'lev' /), 'A','DBz','Average 94 GHz radar reflectivity'       )
+!    call addfld ('FREFL',(/ 'lev' /), 'A','fraction','Fractional occurrence of radar reflectivity'       )
+!    call addfld ('CSRFL',(/ 'lev' /), 'A','DBz','94 GHz radar reflectivity (CloudSat thresholds)'       )
+!    call addfld ('ACSRFL',(/ 'lev' /), 'A','DBz','Average 94 GHz radar reflectivity (CloudSat thresholds)'       )
+!    call addfld ('FCSRFL',(/ 'lev' /), 'A','fraction','Fractional occurrence of radar reflectivity (CloudSat thresholds)')
+!    call addfld ('AREFLZ',(/ 'lev' /), 'A','mm^6/m^3','Average 94 GHz radar reflectivity'       )
+!    call addfld('PE'    ,       horiz_only, 'A', '1', 'Stratiform Precipitation Efficiency  (precip/cmeliq)' )
+!    call addfld('APRL'  ,     horiz_only, 'A', 'm/s', 'Average Stratiform Precip Rate over efficiency calculation' )
+!    call addfld('PEFRAC',       horiz_only, 'A', '1', 'Fraction of timesteps precip efficiency reported' )
+!    call addfld('VPRCO' , horiz_only, 'A', 'kg/kg/s', 'Vertical average of autoconversion rate' )
+!    call addfld('VPRAO' , horiz_only, 'A', 'kg/kg/s', 'Vertical average of accretion rate' )
+!    call addfld('RACAU' , horiz_only, 'A', 'kg/kg/s', 'Accretion/autoconversion ratio from vertical average' )
+!    call addfld('UMS', (/ 'lev' /), 'A',   'm/s', 'Mass-weighted snow fallspeed'               )
   end subroutine micro_p3_init
 
   !================================================================================================
@@ -1061,8 +987,6 @@ end subroutine micro_p3_readnl
     real(rtype) :: icimrst(pcols,pver) ! stratus ice mixing ratio - on grid
     real(rtype) :: icwmrst(pcols,pver) ! stratus water mixing ratio - on grid
     real(rtype) :: rho(pcols,pver)
-    real(rtype) :: icecldf(state%psetcols,pver) ! Ice cloud fraction
-    real(rtype) :: liqcldf(state%psetcols,pver) ! Liquid cloud fraction (combined into cloud)
     real(rtype) :: ncic(pcols,pver)
     real(rtype) :: niic(pcols,pver)
     real(rtype) :: rel_fn(pcols,pver)    ! Ice effective drop size at fixed number (indirect effect) (microns) - on grid
@@ -1147,6 +1071,19 @@ end subroutine micro_p3_readnl
     call pbuf_get_field(pbuf,    snow_pcw_idx,  snow_pcw,    col_type=col_type)
     !============================ 
     ! All internal PBUF variables
+    !call pbuf_get_field(pbuf,       wsedl_idx,     wsedl,    col_type=col_type) 
+    !call pbuf_get_field(pbuf,         des_idx,       des,    col_type=col_type) 
+    !call pbuf_get_field(pbuf,       icswp_idx,     icswp,    col_type=col_type) 
+    !call pbuf_get_field(pbuf,    cldfsnow_idx,  cldfsnow,    col_type=col_type) 
+    !call pbuf_get_field(pbuf,   ls_mrprc_idx,    flxsnw,    col_type=col_type)
+    !call pbuf_get_field(pbuf,   ls_mrsnw_idx,    flxsnw,    col_type=col_type)
+    !call pbuf_get_field(pbuf,   tnd_qsnow_idx, tnd_qsnow,    col_type=col_type) 
+    !call pbuf_get_field(pbuf,   tnd_nsnow_idx, tnd_nsnow,    col_type=col_type) 
+    !call pbuf_get_field(pbuf,      re_ice_idx,    re_ice,    col_type=col_type) 
+    !call pbuf_get_field(pbuf,       qrain_idx,     qrain,    col_type=col_type) 
+    !call pbuf_get_field(pbuf,       qsnow_idx,     qsnow,    col_type=col_type) 
+    !call pbuf_get_field(pbuf,       nrain_idx,     nrain,    col_type=col_type) 
+    !call pbuf_get_field(pbuf,       nsnow_idx,     nsnow,    col_type=col_type) 
     ! INPUTS
     call pbuf_get_field(pbuf, relvar_idx,      relvar,      col_type=col_type, copy_if_needed=use_subcol_microp) ! Not used in this ver of P3
     call pbuf_get_field(pbuf, accre_enhan_idx, accre_enhan, col_type=col_type, copy_if_needed=use_subcol_microp) ! Not used in this ver of P3
@@ -1159,7 +1096,6 @@ end subroutine micro_p3_readnl
     call pbuf_get_field(pbuf,       prain_idx,     prain,    col_type=col_type)
     call pbuf_get_field(pbuf,      nevapr_idx,    nevapr,    col_type=col_type)
     call pbuf_get_field(pbuf,   prer_evap_idx, prer_evap,    col_type=col_type)
-    !call pbuf_get_field(pbuf,       wsedl_idx,     wsedl,    col_type=col_type) 
     call pbuf_get_field(pbuf,         rei_idx,       rei,    col_type=col_type) ! ice eff. rad
     call pbuf_get_field(pbuf,         rel_idx,       rel,    col_type=col_type) ! liq. eff. rad
     call pbuf_get_field(pbuf,         dei_idx,       dei,    col_type=col_type)
@@ -1167,13 +1103,8 @@ end subroutine micro_p3_readnl
     call pbuf_get_field(pbuf,     lambdac_idx,   lambdac,    col_type=col_type)
     call pbuf_get_field(pbuf,     iciwpst_idx,   iciwpst,    col_type=col_type)
     call pbuf_get_field(pbuf,     iclwpst_idx,   iclwpst,    col_type=col_type)
-    !call pbuf_get_field(pbuf,         des_idx,       des,    col_type=col_type) 
-    !call pbuf_get_field(pbuf,       icswp_idx,     icswp,    col_type=col_type) 
-    !call pbuf_get_field(pbuf,    cldfsnow_idx,  cldfsnow,    col_type=col_type) 
     call pbuf_get_field(pbuf,   ls_flxprc_idx,    flxprc,    col_type=col_type)
     call pbuf_get_field(pbuf,   ls_flxsnw_idx,    flxsnw,    col_type=col_type)
-    !call pbuf_get_field(pbuf,   ls_mrprc_idx,    flxsnw,    col_type=col_type)
-    !call pbuf_get_field(pbuf,   ls_mrsnw_idx,    flxsnw,    col_type=col_type)
     call pbuf_get_field(pbuf, ls_reffrain_idx,  reffrain                      ) 
     call pbuf_get_field(pbuf, ls_reffsnow_idx,  reffsnow                      ) 
     call pbuf_get_field(pbuf,  cv_reffliq_idx, cvreffliq,    col_type=col_type)
@@ -1185,18 +1116,10 @@ end subroutine micro_p3_readnl
     call pbuf_get_field(pbuf, cc_nl_idx,       cc_nl,    start=(/1,1,itim_old/), kount=(/psetcols,pver,1/), col_type=col_type)
     call pbuf_get_field(pbuf, cc_ni_idx,       cc_ni,    start=(/1,1,itim_old/), kount=(/psetcols,pver,1/), col_type=col_type)
     call pbuf_get_field(pbuf, cc_qlst_idx,     cc_qlst,  start=(/1,1,itim_old/), kount=(/psetcols,pver,1/), col_type=col_type)
-    !call pbuf_get_field(pbuf,   tnd_qsnow_idx, tnd_qsnow,    col_type=col_type) 
-    !call pbuf_get_field(pbuf,   tnd_nsnow_idx, tnd_nsnow,    col_type=col_type) 
-    !call pbuf_get_field(pbuf,      re_ice_idx,    re_ice,    col_type=col_type) 
     call pbuf_get_field(pbuf,     acprecl_idx,   acprecl                       ) 
     call pbuf_get_field(pbuf,      acgcme_idx,    acgcme                       ) 
     call pbuf_get_field(pbuf,       acnum_idx,     acnum                       ) 
-    !call pbuf_get_field(pbuf,       qrain_idx,     qrain,    col_type=col_type) 
-    !call pbuf_get_field(pbuf,       qsnow_idx,     qsnow,    col_type=col_type) 
-    !call pbuf_get_field(pbuf,       nrain_idx,     nrain,    col_type=col_type) 
-    !call pbuf_get_field(pbuf,       nsnow_idx,     nsnow,    col_type=col_type) 
 
-    
     rd = rair  ! Probably not needed now that we are using Exner
     cp = cpair ! Probably not needed now that we are using Exner
     inv_cp = 1./cp ! Dido from above
@@ -1442,9 +1365,6 @@ end subroutine micro_p3_readnl
     snow_sed = 0._rtype
     snow_str = snow_pcw + snow_sed
       
-   !icecldf(:ncol,top_lev:pver) = ast(:ncol,top_lev:pver)
-   !liqcldf(:ncol,top_lev:pver) = ast(:ncol,top_lev:pver) ! already an output from p3_main
-
    ! ------------------------------------------------------------ !
    ! Compute in cloud ice and liquid mixing ratios                !
    ! Note that 'iclwp, iciwp' are used for radiation computation. !
