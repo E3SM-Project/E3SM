@@ -501,10 +501,10 @@ This allows using a different mpirun command to launch unit tests
 	<command name="use">/global/project/projectdirs/ccsm1/modulefiles/cori</command>
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial" >
-        <command name="load">esmf/7.1.0r-defio-intel18.0.1.163-mpi-O-cori-haswell</command>
+	<command name="load">esmf/7.1.0r-defio-intel18.0.1.163-mpi-O-cori-haswell</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial" >
-        <command name="load">esmf/7.1.0r-netcdf-intel18.0.1.163-mpiuni-O-haswell</command>
+	<command name="load">esmf/7.1.0r-netcdf-intel18.0.1.163-mpiuni-O-haswell</command>
       </modules>
 
       <modules compiler="cray">
