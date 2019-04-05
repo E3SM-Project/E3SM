@@ -533,35 +533,57 @@ class Case(object):
         return primary_component
 
 
+    # RE to match component type name without optional piece (stuff after %).
+    # Drop any tailing digits (e.g., the 60 in CAM60) to ensure match
+    # Note, this will also drop trailing digits such as in ww3 but since it
+    # is handled consistenly, this should not affect functionality.
     __mod_match_re__ = re.compile(r"([^%]*[^0-9%]+)")
-    def _valid_compset(self, files, compset_name):
-        "Fill in missing stub models, return full compset name"
-        drv_config_file = files.get_value("CONFIG_CPL_FILE")
-        drv_comp = Component(drv_config_file, "CPL")
-        comp_classes = drv_comp.get_valid_model_components()
-        model_hash = {} # Hash model name to component class index
-        model_set = [None]*len(comp_classes)
-        # First, create hash of model names
-        # A note about indexing. Relevant component classes start at 1
-        # because we ignore CPL for finding model components.
-        # Model components would normally start at zero but since we are
-        # dealing with a compset, 0 is reserved for the time field
-        for comp_ind in range(1, len(comp_classes)):
-            comp = comp_classes[comp_ind]
-            # Find list of models for component class
-            # List can be in different locations, check CONFIG_XXX_FILE first
-            node_name = 'CONFIG_{}_FILE'.format(comp)
-            models = files.get_components(node_name)
-            if (models is None) or (None in models):
-                # Backup, check COMP_ROOT_DIR_XXX
-                node_name = 'COMP_ROOT_DIR_' + comp
+    def _valid_compset(self, files, compset_name, model_hash=None):
+        """Fill in missing stub models, return full compset name
+        >>> Case(read_only=False)._valid_compset(None, '2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV', model_hash={'datm':1,'satm':1,'dlnd':2,'slnd':2,'dice':3,'sice':3,'docn':4,'socn':4,'drof':5,'srof':5,'sglc':6,'swav':7,'ww3':7,'sesp':8})
+        '2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV_SESP'
+        >>> Case(read_only=False)._valid_compset(None, '2000_DATM%NYF_DICE%SSMI_DOCN%DOM_DROF%NYF', model_hash={'datm':1,'satm':1,'dlnd':2,'slnd':2,'dice':3,'sice':3,'docn':4,'socn':4,'drof':5,'srof':5,'sglc':6,'swav':7,'ww3':7,'sesp':8})
+        '2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV_SESP'
+        >>> Case(read_only=False)._valid_compset(None, '2000_DICE%SSMI_DOCN%DOM_DATM%NYF_DROF%NYF', model_hash={'datm':1,'satm':1,'dlnd':2,'slnd':2,'dice':3,'sice':3,'docn':4,'socn':4,'drof':5,'srof':5,'sglc':6,'swav':7,'ww3':7,'sesp':8})
+        '2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV_SESP'
+        >>> Case(read_only=False)._valid_compset(None, '1850_CAM60_CLM50%BGC-CROP_CICE_POP2%ECO%ABIO-DIC_MOSART_CISM2%NOEVOLVE_WW3_BGC%BDRD', model_hash={'datm':1,'satm':1, 'cam':1,'dlnd':2,'clm':2,'slnd':2,'cice':3,'dice':3,'sice':3,'pop':4,'docn':4,'socn':4,'mosart':5,'drof':5,'srof':5,'cism':6,'sglc':6,'ww':7,'swav':7,'ww3':7,'sesp':8})
+        '1850_CAM60_CLM50%BGC-CROP_CICE_POP2%ECO%ABIO-DIC_MOSART_CISM2%NOEVOLVE_WW3_SESP_BGC%BDRD'
+        """
+        if model_hash is None:
+            # First, create hash of model names
+            # A note about indexing. Relevant component classes start at 1
+            # because we ignore CPL for finding model components.
+            # Model components would normally start at zero but since we are
+            # dealing with a compset, 0 is reserved for the time field
+            drv_config_file = files.get_value("CONFIG_CPL_FILE")
+            drv_comp = Component(drv_config_file, "CPL")
+            comp_classes = drv_comp.get_valid_model_components()
+            model_hash = {} # Hash model name to component class index
+            for comp_ind in range(1, len(comp_classes)):
+                comp = comp_classes[comp_ind]
+                # Find list of models for component class
+                # List can be in different locations, check CONFIG_XXX_FILE
+                node_name = 'CONFIG_{}_FILE'.format(comp)
                 models = files.get_components(node_name)
+                if (models is None) or (None in models):
+                    # Backup, check COMP_ROOT_DIR_XXX
+                    node_name = 'COMP_ROOT_DIR_' + comp
+                    models = files.get_components(node_name)
 
-            for model in models:
-                mod_match = Case.__mod_match_re__.match(model.lower()).group(1)
-                model_hash[mod_match] = comp_ind
+                expect((models is not None) and (None not in models),
+                       "Unable to find list of supported components")
+
+                for model in models:
+                    mod_match = Case.__mod_match_re__.match(model.lower()).group(1)
+                    model_hash[mod_match] = comp_ind
+
+        else:
+            # Note: this case is only used for testing, normal code should
+            #       not call with model_hash
+            comp_classes = ['CPL', 'ATM', 'LND', 'ICE', 'OCN', 'ROF', 'GLC', 'WAV', 'ESP']
 
         # Find the models declared in the compset
+        model_set = [None]*len(comp_classes)
         components = compset_name.split('_')
         model_set[0] = components[0]
         # Check for BGC
