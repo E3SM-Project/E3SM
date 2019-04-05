@@ -546,7 +546,7 @@ class Case(object):
         # because we ignore CPL for finding model components.
         # Model components would normally start at zero but since we are
         # dealing with a compset, 0 is reserved for the time field
-        for comp_ind in xrange(1, len(comp_classes)):
+        for comp_ind in range(1, len(comp_classes)):
             comp = comp_classes[comp_ind]
             # Find list of models for component class
             # List can be in different locations, check CONFIG_XXX_FILE first
@@ -582,7 +582,7 @@ class Case(object):
             model_set[comp_ind] = model
 
         # Fill in missing components with stubs
-        for comp_ind in xrange(1, len(model_set)):
+        for comp_ind in range(1, len(model_set)):
             if model_set[comp_ind] is None:
                 comp_class = comp_classes[comp_ind]
                 stub = 'S' + comp_class
