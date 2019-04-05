@@ -1121,14 +1121,6 @@ contains
         clon( col_id_global(icol) ) = rbuf(icol)
       end do
 
-!       if (masterproc) then
-!         do icol = 1,ncol_fv_gbl
-!           write(*,1001) icol,clat(icol),(clat(icol)*rad2deg),clon(icol),(clon(icol)*rad2deg)
-!         end do
-! 1001 format("compute_global_coords icol:",I4,"   lat:",F8.4,"  ",F8.4,"    lon: ",F8.4,"  ",F8.4)
-!       end if
-
-
       ! Create version in degrees if requested
       if (present(lat_out)) lat_out(:) = clat(:) * rad2deg
       if (present(lon_out)) lon_out(:) = clon(:) * rad2deg
@@ -1224,7 +1216,7 @@ contains
         sb = displace(iam+1) + 1
         eb = displace(iam+1) + recvcnts(iam+1)
 
-        rbuf(1:recvcnts(iam+1)) = clat(sb:eb)  ! whats going to happen if end=0?
+        rbuf(1:recvcnts(iam+1)) = clat(sb:eb)
         call mpi_allgatherv(rbuf, recvcnts(iam+1), mpi_real8, clat,            &
                recvcnts(:), displace(:), mpi_real8, mpicom, ierr)
         if (present(lat_out)) then
