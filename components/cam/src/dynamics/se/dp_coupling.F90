@@ -14,7 +14,6 @@ module dp_coupling
   use shr_kind_mod,   only: r8=>shr_kind_r8
   use physics_types,  only: physics_state, physics_tend 
   use ppgrid,         only: begchunk, endchunk, pcols, pver, pverp
-  use element_mod,    only: element_t
   use cam_logfile,    only: iulog
   use spmd_dyn,       only: local_dp_map, block_buf_nrecs, chunk_buf_nrecs
   use spmd_utils,     only: mpicom, iam
@@ -33,20 +32,15 @@ CONTAINS
   !=================================================================================================
   !=================================================================================================
   subroutine d_p_coupling(phys_state, phys_tend,  pbuf2d, dyn_out)
-    use physics_buffer,        only: physics_buffer_desc, pbuf_get_chunk, pbuf_get_field
-    use shr_vmath_mod,         only: shr_vmath_exp
-    use time_manager,          only: is_first_step
-    use viscosity_mod,         only: compute_zeta_C0
-    use cam_abortutils,        only: endrun
-    use gravity_waves_sources, only: gws_src_fnct
-    use dyn_comp,              only: frontgf_idx, frontga_idx, hvcoord
-    use phys_control,          only: use_gw_front
-    use derivative_mod,        only: subcell_integration
-
-    ! TEMPORARY - DELETE ME!
-    use, intrinsic :: ieee_arithmetic
-    use quadrature_mod, only: quadrature_t, gausslobatto
-    ! TEMPORARY - DELETE ME!
+    use physics_buffer,          only: physics_buffer_desc, pbuf_get_chunk, pbuf_get_field
+    use shr_vmath_mod,           only: shr_vmath_exp
+    use time_manager,            only: is_first_step
+    use viscosity_mod,           only: compute_zeta_C0
+    use cam_abortutils,          only: endrun
+    use gravity_waves_sources,   only: gws_src_fnct
+    use dyn_comp,                only: frontgf_idx, frontga_idx, hvcoord
+    use phys_control,            only: use_gw_front
+    use fv_physics_coupling_mod, only: dyn_to_fv_phys
 
     implicit none
     !---------------------------------------------------------------------------
@@ -80,12 +74,6 @@ CONTAINS
     integer                  :: cpter(pcols,0:pver)       ! offsets into chunk buffer for unpacking 
     integer                  :: nphys, nphys_sq           ! physics grid parameters
     real (kind=real_kind)    :: temperature(np,np,nlev)   ! 
-    real(r8), dimension(np,np)             :: tmp_area
-    real(r8), dimension(fv_nphys,fv_nphys) :: inv_area
-    real(r8), dimension(fv_nphys*fv_nphys) :: inv_area_reshape
-    real(r8), dimension(np,np)             :: dp_gll
-    real(r8), dimension(fv_nphys,fv_nphys) :: dp_fvm
-    real(r8), dimension(fv_nphys*fv_nphys) :: inv_dp_fvm_reshape
     ! Frontogenesis
     real (kind=real_kind), allocatable :: frontgf(:,:,:)  ! frontogenesis function
     real (kind=real_kind), allocatable :: frontga(:,:,:)  ! frontogenesis angle 
@@ -94,14 +82,6 @@ CONTAINS
     ! Transpose buffers
     real (kind=real_kind), allocatable, dimension(:) :: bbuffer 
     real (kind=real_kind), allocatable, dimension(:) :: cbuffer
-
-    ! TEMPORARY - DELETE ME!
-    ! real (kind=real_kind) :: avg_wgt
-    ! type (quadrature_t)   :: gp
-    ! real (kind=r8)        :: gp_sum
-    ! real(kind=real_kind)  :: T_tmp2
-    ! TEMPORARY - DELETE ME!
-
     !---------------------------------------------------------------------------
 
     nullify(pbuf_chnk)
@@ -138,64 +118,15 @@ CONTAINS
       if (use_gw_front) call gws_src_fnct(elem, tl_f, nphys, frontgf, frontga)
 
       if (fv_nphys > 0) then
-        
         !-----------------------------------------------------------------------
-        ! Physics on FV grid: integrate dynamics field to get phys state
+        ! Map dynamics state to FV physics grid
         !-----------------------------------------------------------------------
-        call t_startf('dyn_to_phys')
-
-        tmp_area(:,:) = 1.0_r8
-
-        do ie = 1,nelemd
-
-          inv_area(:,:) = 1.0_r8/subcell_integration(tmp_area,np,fv_nphys,elem(ie)%metdet(:,:))
-          inv_area_reshape(:) = RESHAPE( inv_area(:,:), (/nphys_sq/) )
-
-          ps_tmp(:,ie) = RESHAPE( subcell_integration(                  &
-                         elem(ie)%state%ps_v(:,:,tl_f),                 &
-                         np, fv_nphys, elem(ie)%metdet(:,:) ) ,         &
-                         (/nphys_sq/)  ) * inv_area_reshape
-          zs_tmp(:,ie) = RESHAPE( subcell_integration(                  &
-                         elem(ie)%state%phis(:,:),                      &
-                         np, fv_nphys, elem(ie)%metdet(:,:) ) ,         &
-                         (/nphys_sq/) ) * inv_area_reshape
-
-          do ilyr = 1,pver
-            
-            dp_gll = elem(ie)%state%dp3d(:,:,ilyr,tl_f)
-            dp_fvm = subcell_integration(dp_gll,np,fv_nphys,elem(ie)%metdet(:,:))
-            inv_dp_fvm_reshape = 1.0 / RESHAPE( dp_fvm , (/nphys_sq/) )
-
-            T_tmp(:,ilyr,ie)      = RESHAPE( subcell_integration(             &
-                                    elem(ie)%state%T(:,:,ilyr,tl_f)*dp_gll,   &
-                                    np, fv_nphys, elem(ie)%metdet(:,:) ) ,    &
-                                    (/nphys_sq/) ) *inv_dp_fvm_reshape
-
-            w_tmp(:,ilyr,ie)      = RESHAPE( subcell_integration(             &
-                                    elem(ie)%derived%omega_p(:,:,ilyr),       &
-                                    np, fv_nphys, elem(ie)%metdet(:,:) ) ,    &
-                                    (/nphys_sq/) ) *inv_area_reshape
-            do m = 1,2
-              uv_tmp(:,m,ilyr,ie) = RESHAPE( subcell_integration(             &
-                                    elem(ie)%state%V(:,:,m,ilyr,tl_f),        &
-                                    np, fv_nphys, elem(ie)%metdet(:,:) ) ,    &
-                                    (/nphys_sq/) ) *inv_area_reshape
-            end do
-            do m = 1,pcnst
-              Q_tmp(:,ilyr,m,ie)  = RESHAPE( subcell_integration(             &
-                                    elem(ie)%state%Q(:,:,ilyr,m)*dp_gll,      &
-                                    np, fv_nphys, elem(ie)%metdet(:,:) ) ,    &
-                                    (/nphys_sq/) ) *inv_dp_fvm_reshape
-            end do
-
-          end do ! ilyr
-        end do ! ie
-        call t_stopf('dyn_to_phys')
+        call t_startf('dyn_to_fv_phys')
+        call dyn_to_fv_phys(elem,ps_tmp,zs_tmp,T_tmp,uv_tmp,w_tmp,Q_tmp)
+        call t_stopf('dyn_to_fv_phys')
         !-----------------------------------------------------------------------
         !-----------------------------------------------------------------------
-
       else ! fv_nphys > 0
-
         !-----------------------------------------------------------------------
         ! Physics on GLL grid: collect unique points before copying
         !-----------------------------------------------------------------------
@@ -213,7 +144,6 @@ CONTAINS
         call t_stopf('UniquePoints')
         !-----------------------------------------------------------------------
         !-----------------------------------------------------------------------
-
       end if ! fv_nphys > 0
 
     else ! par%dynproc
@@ -399,8 +329,9 @@ CONTAINS
   !=================================================================================================
   !=================================================================================================
   subroutine p_d_coupling(phys_state, phys_tend,  dyn_in)
-    use shr_vmath_mod, only: shr_vmath_log
-    use cam_control_mod, only : adiabatic
+    use shr_vmath_mod,           only: shr_vmath_log
+    use cam_control_mod,         only : adiabatic
+    use fv_physics_coupling_mod, only: fv_phys_to_dyn
     implicit none
     ! INPUT PARAMETERS:
     type(physics_state), intent(inout), dimension(begchunk:endchunk) :: phys_state
@@ -539,47 +470,9 @@ CONTAINS
     if (par%dynproc) then
       if (fv_nphys > 0) then
 
-        do ie = 1,nelemd
-          icol = 0
-          do j = 1,fv_nphys
-            do i = 1,fv_nphys 
-              icol = icol + 1
-              do ilyr = 1,pver
+        ! Map FV physics state to dynamics grid
+        call fv_phys_to_dyn(elem,T_tmp,uv_tmp,Q_tmp)
 
-                ! the pg1 case is simple, not sure how to generalize with pg2
-                if (fv_nphys == 1) then
-                  elem(ie)%derived%FT(:,:,  ilyr)   = T_tmp (icol,  ilyr,ie)
-                  elem(ie)%derived%FM(:,:,1,ilyr)   = uv_tmp(icol,1,ilyr,ie)
-                  elem(ie)%derived%FM(:,:,2,ilyr)   = uv_tmp(icol,2,ilyr,ie)
-                  do m = 1,pcnst
-                    elem(ie)%derived%FQ(:,:,ilyr,m) = q_tmp (icol,  ilyr,m,ie)
-                  end do
-                end if ! fv_nphys == 1
-
-                ! for pg2 we need to copy the FV state to quadrants of GLL grid
-                if (fv_nphys == 2) then
-                  ! define indices of GLL points in quadrant
-                  di = (i-1)+(i-2)  ! either i=1 & di=-1 or i=2 & di=+1
-                  dj = (j-1)+(j-2)  ! either j=1 & dj=-1 or j=2 & dj=+1
-                  ! gi(1:4) = (/i+1,i+1   ,i+1+di,i+1+di/)
-                  ! gj(1:4) = (/j+1,j+1+dj,j+1+dj,j+1   /)
-                  ! The gi & gj indices give the 4 points in each quadrant
-                  gi(1:2) = (/i+1,i+1+di/)
-                  gj(1:2) = (/j+1,j+1+dj/)
-                  ! copy physics column values to GLL nodes
-                  elem(ie)%derived%FT(gi,gj,ilyr)   = T_tmp(icol,ilyr,ie)
-                  elem(ie)%derived%FM(gi,gj,1,ilyr) = uv_tmp(icol,1,ilyr,ie)
-                  elem(ie)%derived%FM(gi,gj,2,ilyr) = uv_tmp(icol,2,ilyr,ie)
-                  do m = 1,pcnst
-                    elem(ie)%derived%FQ(gi,gj,ilyr,m) = q_tmp(icol,ilyr,m,ie)
-                  end do
-                end if ! fv_nphys == 2
-
-              end do ! ilyr
-            end do ! i
-          end do ! j
-        end do ! ie
-      
       else ! physics is on GLL nodes
 
         call t_startf('putUniquePoints')
