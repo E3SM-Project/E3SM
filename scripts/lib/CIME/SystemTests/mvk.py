@@ -104,7 +104,7 @@ class MVK(SystemTestsCommon):
             comments = "Generating baselines into '{}'\n".format(basegen_dir)
             num_gen = 0
 
-            model = 'cam'
+            model = 'atm'
             comments += "  generating for model '{}'\n".format(model)
             hists = _get_all_hist_files(testcase, model, rundir)
             logger.debug("mvk_hist_files: {}".format(hists))
