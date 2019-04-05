@@ -71,9 +71,9 @@ module micro_p3_utils
     real(rtype), parameter, public :: rhows = 917._rtype  ! bulk density water solid
 
 
-public :: MGHydrometeorProps
+public :: MicroHydrometeorProps
 
-type :: MGHydrometeorProps
+type :: MicroHydrometeorProps
    ! Density (kg/m^3)
    real(rtype) :: rho
    ! Information for size calculations.
@@ -86,16 +86,16 @@ type :: MGHydrometeorProps
    ! Minimum average particle mass (kg).
    ! Limit is applied at the beginning of the size distribution calculations.
    real(rtype) :: min_mean_mass
-end type MGHydrometeorProps
+end type MicroHydrometeorProps
 
-interface MGHydrometeorProps
-   module procedure NewMGHydrometeorProps
+interface MicroHydrometeorProps
+   module procedure NewMicroHydrometeorProps
 end interface
 
-type(MGHydrometeorProps), public :: mg_liq_props
-type(MGHydrometeorProps), public :: mg_ice_props
-type(MGHydrometeorProps), public :: mg_rain_props
-type(MGHydrometeorProps), public :: mg_snow_props
+type(MicroHydrometeorProps), public :: micro_liq_props
+type(MicroHydrometeorProps), public :: micro_ice_props
+type(MicroHydrometeorProps), public :: micro_rain_props
+type(MicroHydrometeorProps), public :: micro_snow_props
 
 ! particle mass-diameter relationship
 ! currently we assume spherical particles for cloud ice/snow
@@ -295,17 +295,17 @@ end interface var_coef
 
     ! Don't specify lambda bounds for cloud liquid, as they are determined by
     ! pgam dynamically.
-    mg_liq_props = MGHydrometeorProps(rhow, dsph, &
+    micro_liq_props = MicroHydrometeorProps(rhow, dsph, &
          min_mean_mass=min_mean_mass_liq)
   
     ! Mean ice diameter can not grow bigger than twice the autoconversion
     ! threshold for snow.
     ice_lambda_bounds = 1._rtype/[2.*400.e-6_rtype, 10.e-6_rtype] !! dcs 400.e-6
-    mg_ice_props = MGHydrometeorProps(rhoi, dsph, &
+    micro_ice_props = MicroHydrometeorProps(rhoi, dsph, &
          ice_lambda_bounds, min_mean_mass_ice)
   
-    mg_rain_props = MGHydrometeorProps(rhow, dsph, lam_bnd_rain)
-    mg_snow_props = MGHydrometeorProps(rhosn, dsph, lam_bnd_snow)
+    micro_rain_props = MicroHydrometeorProps(rhow, dsph, lam_bnd_rain)
+    micro_snow_props = MicroHydrometeorProps(rhosn, dsph, lam_bnd_snow)
     
     return
     end subroutine micro_p3_utils_init
@@ -396,7 +396,7 @@ end interface var_coef
 !__________________________________________________________________________________________!
 ! get cloud droplet size distribution parameters
 elemental subroutine size_dist_param_liq(props, qcic, ncic, rho, pgam, lamc)
-  type(MGHydrometeorProps), intent(in) :: props
+  type(MicroHydrometeorProps), intent(in) :: props
   real(rtype), intent(in) :: qcic
   real(rtype), intent(inout) :: ncic
   real(rtype), intent(in) :: rho
@@ -404,7 +404,7 @@ elemental subroutine size_dist_param_liq(props, qcic, ncic, rho, pgam, lamc)
   real(rtype), intent(out) :: pgam
   real(rtype), intent(out) :: lamc
 
-  type(MGHydrometeorProps) :: props_loc
+  type(MicroHydrometeorProps) :: props_loc
 
   if (qcic > qsmall) then
 
@@ -458,7 +458,7 @@ end subroutine size_dist_param_liq
 !__________________________________________________________________________________________!
 ! Basic routine for getting size distribution parameters.
 elemental subroutine size_dist_param_basic(props, qic, nic, lam, n0)
-  type(MGHydrometeorProps), intent(in) :: props
+  type(MicroHydrometeorProps), intent(in) :: props
   real(rtype), intent(in) :: qic
   real(rtype), intent(inout) :: nic
 
@@ -513,11 +513,11 @@ end function avg_diameter
 !                                                                                          !
 !__________________________________________________________________________________________!
 ! Constructor for a constituent property object.
-function NewMGHydrometeorProps(rho, eff_dim, lambda_bounds, min_mean_mass) &
+function NewMicroHydrometeorProps(rho, eff_dim, lambda_bounds, min_mean_mass) &
      result(res)
   real(rtype), intent(in) :: rho, eff_dim
   real(rtype), intent(in), optional :: lambda_bounds(2), min_mean_mass
-  type(MGHydrometeorProps) :: res
+  type(MicroHydrometeorProps) :: res
 
   res%rho = rho
   res%eff_dim = eff_dim
@@ -534,7 +534,7 @@ function NewMGHydrometeorProps(rho, eff_dim, lambda_bounds, min_mean_mass) &
 
   res%shape_coef = rho*pi_e3sm*gamma(eff_dim+1._rtype)/6._rtype
 
-end function NewMGHydrometeorProps
+end function NewMicroHydrometeorProps
 !__________________________________________________________________________________________!
 !                                                                                          !
 !__________________________________________________________________________________________!

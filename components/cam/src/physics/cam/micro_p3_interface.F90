@@ -868,8 +868,8 @@ end subroutine micro_p3_readnl
     use micro_p3,       only: p3_main
     use micro_p3_utils, only: size_dist_param_basic, &
                               size_dist_param_liq, &
-                              mg_liq_props, &
-                              mg_ice_props, &
+                              micro_liq_props, &
+                              micro_ice_props, &
                               avg_diameter, &
                               rhoi, &
                               rhosn, &
@@ -1424,7 +1424,7 @@ end subroutine micro_p3_readnl
    !! size distribution 
    
    call size_dist_param_liq( &
-                             mg_liq_props, &
+                             micro_liq_props, &
                              icwmrst(:ngrdcol,top_lev:), &
                              ncic   (:ngrdcol,top_lev:), &
                              rho         (:ngrdcol,top_lev:), &
@@ -1454,7 +1454,7 @@ end subroutine micro_p3_readnl
         max(mincld,lcldm(:ngrdcol,top_lev:))
 
    call size_dist_param_liq(&
-           mg_liq_props, &
+           micro_liq_props, &
            icwmrst(:ngrdcol,top_lev:), & 
            ncic(:ngrdcol,top_lev:), &
            rho(:ngrdcol,top_lev:), &
@@ -1507,7 +1507,7 @@ end subroutine micro_p3_readnl
         max(mincld,icldm(:ngrdcol,top_lev:))
 
    call size_dist_param_basic( &
-           mg_ice_props, &
+           micro_ice_props, &
            icimrst(:ngrdcol,top_lev:), &
            niic(:ngrdcol,top_lev:), &
            rei(:ngrdcol,top_lev:))
