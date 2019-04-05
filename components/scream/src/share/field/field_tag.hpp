@@ -31,6 +31,7 @@ namespace scream
  */
 
 enum class FieldTag {
+  Invalid,
   Element,
   VerticalLevel,
   Column,
@@ -45,6 +46,9 @@ enum class FieldTag {
 inline std::string tag2string (const FieldTag ft) {
   std::string name = "";
   switch(ft) {
+    case FieldTag::Invalid:
+      name = "Invalid";
+      break;
     case FieldTag::Element:
       name = "Element";
       break;
@@ -52,7 +56,7 @@ inline std::string tag2string (const FieldTag ft) {
       name = "VerticalLevel";
       break;
     case FieldTag::TimeLevel:
-      name = "VerticalLevel";
+      name = "TimeLevel";
       break;
     case FieldTag::Column:
       name = "Column";
@@ -70,7 +74,7 @@ inline std::string tag2string (const FieldTag ft) {
       name = "ComponentY";
       break;
     case FieldTag::Variable:
-      name = "State";
+      name = "Variable";
       break;
     default:
       error::runtime_abort("Error! Unrecognized field tag.",-1);

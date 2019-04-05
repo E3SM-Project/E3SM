@@ -7,6 +7,7 @@ set(SHARE_SRC
   field/field_header.cpp
   field/field_layout.cpp
   field/field_tracking.cpp
+  field/remap/remap_utils.cpp
   mpi/scream_comm.cpp
   util/scream_utils.cpp
   util/scream_arch.cpp
@@ -27,6 +28,8 @@ set(SHARE_HEADERS
   field/field_repository.hpp
   field/field_tag.hpp
   field/field_tracking.cpp
+  field/remap/abstract_remapper.hpp
+  field/remap/remap_utils.hpp
   parameter_list.hpp
   scream_session.hpp
   mpi/scream_comm.hpp
