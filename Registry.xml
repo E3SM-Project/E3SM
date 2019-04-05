@@ -771,6 +771,32 @@
 					possible_values="Real Values greater than zero less than bottomDepth"
 		/>
 	</nml_record>
+	<nml_record name="tidal_forcing" mode="init;forward">
+		<nml_option name="config_use_tidal_forcing" type="logical" default_value=".false." units="unitless"
+					description="Controls if tidal forcing is used."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_tidal_forcing_tau" type="real" default_value="10000" units="s"
+					description="Controls time scale for relaxation of tidal forcing."
+					possible_values="Real non-zero value."
+		/>
+		<nml_option name="config_tidal_forcing_type" type="character" default_value="off" units="unitless"
+					description="Selects the mode in which tidal forcing is computed."
+					possible_values="'off','monochromatic'"
+		/>
+		<nml_option name="config_tidal_forcing_monochromatic_amp" type="real" default_value="2.0" units="m"
+					description="Value of amplitude of monochromatic tide."
+					possible_values="Any positive real number."
+		/>
+		<nml_option name="config_tidal_forcing_monochromatic_period" type="real" default_value="0.5" units="days"
+					description="Value of period of monochromatic tide."
+					possible_values="Any positive real number."
+		/>
+		<nml_option name="config_tidal_forcing_monochromatic_baseline" type="real" default_value="0.0" units="days"
+					description="Value of baseline monochromatic tide, e.g., sea level rise."
+					possible_values="Any positive real number."
+		/>
+	</nml_record>
 	<nml_record name="frazil_ice" mode="forward">
 		<nml_option name="config_use_frazil_ice_formation" type="logical" default_value=".false." units="unitless"
 					description="Controls if fluxes related to frazil ice process are computed."
@@ -1252,6 +1278,7 @@
 		<package name="landIceFluxesPKG" description="This package includes varibles required for land ice thickness, momentum and tracer fluxes."/>
 		<package name="landIceCouplingPKG" description="This package includes varibles required for land ice coupling but not land ice fluxes in standalone mode."/>
 		<package name="frazilIce" description="This package includes variables required for frazil ice formation."/>
+		<package name="tidalForcing" description="This package includes variables required for tidal forcing on a boundary."/>
 		<package name="inSituEOS" description="This package includes variables required for to compute in situ equation of state derivatives, like thermal expansion and haline contraction."/>
 		<package name="forwardMode" description="This package controls variables that are intended to be used within the forward run mode of the ocean model."/>
 		<package name="analysisMode" description="This package controls variables that are intended to be used within the analysis run mode of the ocean model."/>
@@ -3001,6 +3028,18 @@
 		<var name="avgEffectiveDensityInLandIce" type="real" dimensions="nCells Time" units="kg m^{-3}"
 			description="The time-averaged effective ocean density within ice shelves based on Archimedes' principle."
 			packages="landIceCouplingPKG"
+		/>
+
+		<!-- Input fields for forcing due to tides -->
+		<var name="tidalInputMask" type="real" dimensions="nCells" units="unitless"
+			 description="Input mask for application of tidal forcing where 1 is applied tidal forcing"
+			 packages="tidalForcing"
+		/>
+
+		<!-- Output fields for forcing due to tides -->
+		<var name="tidalLayerThicknessTendency" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="layer thickness tendency due to tidal forcing"
+			 packages="tidalForcing"
 		/>
 
 		<!-- Input fields for forcing due to frazil ice -->

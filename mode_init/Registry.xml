@@ -13,4 +13,5 @@
 #include "Registry_sea_mount.xml"
 #include "Registry_isomip.xml"
 #include "Registry_isomip_plus.xml"
+#include "Registry_tidal_boundary.xml"
 // #include "Registry_TEMPLATE.xml"
