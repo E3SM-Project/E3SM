@@ -1,88 +1,98 @@
 # Process HOMME.
-SET (HOMME_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/homme)
-SET (HOMME_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/homme)
-ADD_SUBDIRECTORY(homme)
-
-IF (NOT DEFINED HOMME_TARGET)
-  SET (HOMME_TARGET "preqx")
-ENDIF()
-
-# Macro to create the lib for dynamics.
 # NOTE: You must define PREQX_NP, PREQX_PLEV, PREQX_QSIZE_D, PREQX_USE_PIO, and PREQX_USE_ENERGY
 #       BEFORE this point, if you want homme to use custom values (rather than defaults)
-MACRO (CreateDynamicsLib)
-    
+
+SET (HOMME_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/homme)
+SET (HOMME_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/homme)
+
+# Disable all the targets by default
+SET(BUILD_HOMME_SWEQX        OFF CACHE BOOL "")
+SET(BUILD_HOMME_PREQX        OFF CACHE BOOL "")
+SET(BUILD_HOMME_THETA        OFF CACHE BOOL "")
+SET(BUILD_HOMME_PREQX_ACC    OFF CACHE BOOL "")
+SET(BUILD_HOMME_PREQX_KOKKOS OFF CACHE BOOL "")
+SET(BUILD_HOMME_PESE         OFF CACHE BOOL "")
+SET(BUILD_HOMME_SWIM         OFF CACHE BOOL "")
+SET(BUILD_HOMME_PRIM         OFF CACHE BOOL "")
+
+# Default homme target is preqx, for now
+IF (NOT DEFINED HOMME_TARGET)
+  SET (HOMME_TARGET "preqx_kokkos")
+ENDIF()
+STRING (TOLOWER "${HOMME_TARGET}" HOMME_TARGET)
+
+# Enable the requested target
+IF ("${HOMME_TARGET}" STREQUAL "preqx_kokkos")
+  SET (BUILD_HOMME_PREQX_KOKKOS TRUE)
+ELSE ()
+  MESSAGE (FATAL_ERROR "Homme target '${HOMME_TARGET}' is not supported within scream.\n")
+ENDIF()
+
+ADD_SUBDIRECTORY(homme)
+
+MACRO (CreateDynamicsLib libName)
+  ADD_DEFINITIONS(-DHOMMEXX_CONFIG_IS_CMAKE)
   SET (SCREAM_DYNAMICS_SRC_DIR ${SCREAM_SRC_DIR}/dynamics/homme)
 
-  # It seems redundant to redefine these, when we defined them at the top.
-  # However, recall that those variables are local to the folder (and subfolders)
-  # where this CMakeLists resides, while this macro could be called from a folder
-  # outside this directory.
-  SET (HOMME_SOURCE_DIR ${SCREAM_DYNAMICS_SRC_DIR}/homme)
+  # Re-set these, so that they are visible from wherever the macro is called
+  SET (HOMME_SOURCE_DIR ${SCREAM_SOURCE_DIR}/src/dynamics/homme/homme)
   SET (HOMME_BINARY_DIR ${SCREAM_BINARY_DIR}/src/dynamics/homme/homme)
 
-  SET(SCREAM_DYNAMICS_SOURCES
-    ${SCREAM_DYNAMICS_SRC_DIR}/homme_dynamics.cpp
-  )
-
-  # CMake variables needed for the config.h file
-  SET(NUM_POINTS ${PREQX_NP})
-  SET(NUM_PLEV ${PREQX_PLEV})
-  SET(NUM_CELLS ${PREQX_NC}) # unused, but needs to be defined
-  SET(PIO ${PREQX_USE_PIO})
-  SET(PIO_INTERP NOT ${PREQX_USE_PIO})
-  SET(ENERGY_DIAGNOSTICS ${PREQX_USE_ENERGY})
-
-  STRING (TOLOWER "${HOMME_TARGET}" HOMME_TARGET)
-  IF ("${HOMME_TARGET}" STREQUAL "preqx")
+  IF ("${HOMME_TARGET}" STREQUAL "preqx_kokkos")
     # Setup the homme target
     PREQX_KOKKOS_SETUP()
   ELSE ()
-    # TODO: Add theta when ready in homme
-    MESSAGE (FATAL_ERROR "Homme target '${HOMME_TARGET}' not yet supported.")
+    MESSAGE (FATAL_ERROR "Homme target '${HOMME_TARGET}' is not supported within scream.\n \
+                          Did you forget to set 'HOMME_TARGET' before calling 'CreateDynamicsLib'?\n")
   ENDIF()
 
-  # This prevents some macros to be defined, such as nested openmp
-  SET (USE_KOKKOS_KERNELS TRUE)
-  # This informs homme's config files that cmake was used
-  # Note: homme already has this in its main CMakeLists, but the scope of ADD_DEFINITIONS
-  #       is limited to the directory where it's run and below. This needs to be run
-  #       when we create the library, not when we parse homme's directory first
-  ADD_DEFINITIONS(-DHOMMEXX_CONFIG_IS_CMAKE)
+  # Get homme include dirs. This var is set by the ${HOMME_TARGET}_setup macro
+  SET (HOMME_INCLUDE_DIRS ${EXEC_INCLUDE_DIRS})
 
-  # This is needed to compile the library with the correct compile-time options
-  SET(THIS_CONFIG_IN ${HOMME_SOURCE_DIR}/src/preqx_kokkos/config.h.cmake.in)
+  SET (SCREAM_DYNAMICS_SOURCES
+       ${SCREAM_DYNAMICS_SRC_DIR}/atmosphere_dynamics.cpp
+       ${SCREAM_DYNAMICS_SRC_DIR}/homme_dynamics.cpp
+       # ${SCREAM_DYNAMICS_SRC_DIR}/scream_homme_interface.F90
+       ${PREQX_DEPS_CXX}
+       ${PREQX_DEPS_F90}
+  )
+
+  # Append all libraries need byhomme to the list of libraries needed by dynamics
+  SET (SCREAM_DYNAMICS_LINK_LIBRARIES
+       scream_share
+       pio timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES}
+  )
+
+  # Set the variables that need to be expanded by cmake during configure_file
+  SET (NUM_POINTS ${PREQX_NP})
+  SET (NUM_CELLS ${PREQX_NC})
+  SET (NUM_PLEV ${PREQX_PLEV})
+  SET (QSIZE_D ${PREQX_QSIZE_D})
+
+  SET (PIO ${PREQX_USE_PIO})
+  SET (PIO_INTERP NOT ${PREQX_USE_PIO})
+  SET (ENERGY_DIAGNOSTICS ${PREQX_USE_ENERGY})
+
+  # This is needed to compile the test executables with the correct options for homme
+  SET(THIS_CONFIG_IN ${HOMME_SOURCE_DIR}/src/${HOMME_TARGET}/config.h.cmake.in)
   SET(THIS_CONFIG_HC ${CMAKE_CURRENT_BINARY_DIR}/config.h.c)
   SET(THIS_CONFIG_H ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
-  # Configure the file
+  # First configure the file (which formats the file as C)
   HommeConfigFile (${THIS_CONFIG_IN} ${THIS_CONFIG_HC} ${THIS_CONFIG_H} )
 
-  # Append all homme sources to the dynamics sources
-  SET(SCREAM_DYNAMICS_SOURCES
-      ${SCREAM_DYNAMICS_SOURCES}
-      ${PREQX_DEPS_CXX}
-      ${PREQX_DEPS_F90}
+  ADD_DEFINITIONS(-DHAVE_CONFIG_H)
+
+  ADD_LIBRARY(${libName} ${SCREAM_DYNAMICS_SOURCES})
+  SET_TARGET_PROPERTIES (${libName} PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${libName}_modules)
+  TARGET_INCLUDE_DIRECTORIES(
+      ${libName} PUBLIC
+      ${SCREAM_INCLUDE_DIRS}
+      ${SCREAM_TPL_INCLUDE_DIRS}
+      ${EXEC_INCLUDE_DIRS}        # This comes from PREQX_KOKKOS_SETUP
+      ${CMAKE_CURRENT_BINARY_DIR} # For config.h
   )
 
-  # Create the library and set include/link attributes
-  ADD_LIBRARY(scream_dynamics ${SCREAM_DYNAMICS_SOURCES})
-  target_include_directories(
-    scream_dynamics PUBLIC ${SCREAM_SRC_DIR}
-    ${CMAKE_CURRENT_BINARY_DIR} # For homme config.h and config.h.c files
-    ${EXEC_INCLUDE_DIRS}   # This comes from PREQX_KOKKOS_SETUP
-  )
+ENDMACRO(CreateDynamicsLib)
 
-  TARGET_LINK_LIBRARIES(
-    scream_dynamics scream_share
-    -L${SCREAM_LIBRARY_DIRS} -L${SCREAM_TPL_LIBRARY_DIRS} -L${KOKKOS_LIBRARY_DIR}
-    ${SCREAM_TPL_LIBRARIES} ${KOKKOS_TPL_LIBRARIES} ${KOKKOS_LIBRARIES}
-    pio timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} # These come from homme
-  )
-
-  SET_TARGET_PROPERTIES(scream_dynamics PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/scream_dynamics_modules)
-  SET_TARGET_PROPERTIES(scream_dynamics PROPERTIES COMPILE_DEFINITIONS HAVE_CONFIG_H)
-
-ENDMACRO()
-
-ADD_SUBDIRECTORY(tests)
+ADD_SUBDIRECTORY (tests)
