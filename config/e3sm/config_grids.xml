@@ -1735,15 +1735,15 @@
     <domain name="ne4np4.pg1">
       <nx>96</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="oQU240">UNSET</file>
-      <file grid="ice|ocn" mask="oQU240">UNSET</file>
+      <file grid="atm|lnd" mask="oQU240">DUMMY</file>
+      <file grid="ice|ocn" mask="oQU240">DUMMY</file>
       <desc>ne4np4.pg1 is Spectral Elem 7.5-deg grid w/ 1x1 FV physics grid per element:</desc>
     </domain>
     <domain name="ne4np4.pg2">
       <nx>384</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="oQU240">UNSET</file>
-      <file grid="ice|ocn" mask="oQU240">UNSET</file>
+      <file grid="atm|lnd" mask="oQU240">DUMMY</file>
+      <file grid="ice|ocn" mask="oQU240">DUMMY</file>
       <desc>ne4np4.pg2 is Spectral Elem 7.5-deg grid w/ 2x2 FV physics grid per element:</desc>
     </domain>
 
@@ -1752,22 +1752,22 @@
     <domain name="ne8np4">
       <nx>3458</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="oQU240">UNSET</file>
-      <file grid="ice|ocn" mask="oQU240">UNSET</file>
+      <file grid="atm|lnd" mask="oQU240">DUMMY</file>
+      <file grid="ice|ocn" mask="oQU240">DUMMY</file>
       <desc>ne8np4 is Spectral Elem 3-deg grid</desc>
     </domain>
     <domain name="ne8np4.pg1">
       <nx>384</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="oQU240">UNSET</file>
-      <file grid="ice|ocn" mask="oQU240">UNSET</file>
+      <file grid="atm|lnd" mask="oQU240">DUMMY</file>
+      <file grid="ice|ocn" mask="oQU240">DUMMY</file>
       <desc>ne8np4.pg1 is Spectral Elem 3-deg grid w/ 1x1 FV physics grid per element:</desc>
     </domain>
     <domain name="ne8np4.pg2">
       <nx>1536</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="oQU240">UNSET</file>
-      <file grid="ice|ocn" mask="oQU240">UNSET</file>
+      <file grid="atm|lnd" mask="oQU240">DUMMY</file>
+      <file grid="ice|ocn" mask="oQU240">DUMMY</file>
       <desc>ne8np4.pg2 is Spectral Elem 3-deg grid w/ 2x2 FV physics grid per element:</desc>
     </domain>
 
@@ -1795,15 +1795,15 @@
     <domain name="ne16np4.pg1">
       <nx>1536</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="gx1v6">UNSET</file>
-      <file grid="ice|ocn" mask="gx1v6">UNSET</file>
+      <file grid="atm|lnd" mask="gx1v6">DUMMY</file>
+      <file grid="ice|ocn" mask="gx1v6">DUMMY</file>
       <desc>ne16np4.pg1 is Spectral Elem 2-deg grid w/ 1x1 FV physics grid per element:</desc>
     </domain>
     <domain name="ne16np4.pg2">
       <nx>6144</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="gx1v6">UNSET</file>
-      <file grid="ice|ocn" mask="gx1v6">UNSET</file>
+      <file grid="atm|lnd" mask="gx1v6">DUMMY</file>
+      <file grid="ice|ocn" mask="gx1v6">DUMMY</file>
       <desc>ne16np4.pg2 is Spectral Elem 2-deg grid w/ 2x2 FV physics grid per element:</desc>
     </domain>
 
@@ -1838,15 +1838,15 @@
     <domain name="ne30np4.pg1">
       <nx>5400</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="gx1v6">UNSET</file>
-      <file grid="ice|ocn" mask="gx1v6">UNSET</file>
+      <file grid="atm|lnd" mask="gx1v6">DUMMY</file>
+      <file grid="ice|ocn" mask="gx1v6">DUMMY</file>
       <desc>ne30np4.pg1 is Spectral Elem 1-deg grid w/ 1x1 FV physics grid per element:</desc>
     </domain>
     <domain name="ne30np4.pg2">
       <nx>21600</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="gx1v6">UNSET</file>
-      <file grid="ice|ocn" mask="gx1v6">UNSET</file>
+      <file grid="atm|lnd" mask="gx1v6">DUMMY</file>
+      <file grid="ice|ocn" mask="gx1v6">DUMMY</file>
       <desc>ne30np4.pg2 is Spectral Elem 1-deg grid w/ 2x2 FV physics grid per element:</desc>
     </domain>
 
@@ -1862,8 +1862,8 @@
     <domain name="ne32np4.pg2">
       <nx>24576</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="gx1v6">UNSET</file>
-      <file grid="ice|ocn" mask="gx1v6">UNSET</file>
+      <file grid="atm|lnd" mask="gx1v6">DUMMY</file>
+      <file grid="ice|ocn" mask="gx1v6">DUMMY</file>
       <desc>ne30np4.pg2 is Spectral Elem 1-deg grid w/ 2x2 FV physics grid per element:</desc>
     </domain>
 
@@ -1936,15 +1936,15 @@
     <domain name="ne60np4.pg1">
       <nx>21600</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="gx1v6">UNSET</file>
-      <file grid="ice|ocn" mask="gx1v6">UNSET</file>
+      <file grid="atm|lnd" mask="gx1v6">DUMMY</file>
+      <file grid="ice|ocn" mask="gx1v6">DUMMY</file>
       <desc>ne60np4.pg1 is Spectral Elem 1/2-deg grid w/ 1x1 FV physics grid per element:</desc>
     </domain>
     <domain name="ne60np4.pg2">
       <nx>86400</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="gx1v6">UNSET</file>
-      <file grid="ice|ocn" mask="gx1v6">UNSET</file>
+      <file grid="atm|lnd" mask="gx1v6">DUMMY</file>
+      <file grid="ice|ocn" mask="gx1v6">DUMMY</file>
       <desc>ne60np4.pg2 is Spectral Elem 1/2-deg grid w/ 2x2 FV physics grid per element:</desc>
     </domain>
 
@@ -1953,15 +1953,15 @@
     <domain name="ne64np4">
       <nx>221186</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="gx1v6">UNSET</file>
-      <file grid="ice|ocn" mask="gx1v6">UNSET</file>
+      <file grid="atm|lnd" mask="gx1v6">DUMMY</file>
+      <file grid="ice|ocn" mask="gx1v6">DUMMY</file>
       <desc>ne64np4 is Spectral Elem 1/2-deg grid:</desc>
     </domain>
     <domain name="ne64np4.pg2">
       <nx>98304</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="gx1v6">UNSET</file>
-      <file grid="ice|ocn" mask="gx1v6">UNSET</file>
+      <file grid="atm|lnd" mask="gx1v6">DUMMY</file>
+      <file grid="ice|ocn" mask="gx1v6">DUMMY</file>
       <desc>ne64np4 is Spectral Elem 1/2-deg grid:</desc>
     </domain>
 
@@ -1984,8 +1984,8 @@
     <domain name="ne120np4.pg2">
       <nx>345600</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="gx1v6">UNSET</file>
-      <file grid="ice|ocn" mask="gx1v6">UNSET</file>
+      <file grid="atm|lnd" mask="gx1v6">DUMMY</file>
+      <file grid="ice|ocn" mask="gx1v6">DUMMY</file>
       <desc>ne120np4 is Spectral Elem 1/4-deg grid w/ 2x2 FV physics grid</desc>
     </domain>
 
