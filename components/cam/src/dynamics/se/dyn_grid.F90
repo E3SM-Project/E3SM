@@ -657,7 +657,7 @@ contains
     use cam_grid_support, only: horiz_coord_t, horiz_coord_create
     use cam_grid_support, only: cam_grid_register, cam_grid_attribute_register
     !----------------------------Local-Variables--------------------------------
-    character(len=8)             :: latname, lonname, ncolname, areaname
+    character(len=16)            :: gridname, latname, lonname, ncolname, areaname
     type(horiz_coord_t), pointer :: lat_coord
     type(horiz_coord_t), pointer :: lon_coord
     integer(iMap),       pointer :: grid_map_d(:,:)
@@ -673,21 +673,20 @@ contains
     !---------------------------------------------------------------------------
     ! Create grid for data on HOMME GLL nodes
     !---------------------------------------------------------------------------
-    ! When the FV physics grid is used the GLL grid variables will use the '_d' suffix. 
-    ! The physics grid output will always use the normal names.
-
-    !!! This needs to be reinstated when the initial condition file is on the phyics grid
-    ! if (fv_nphys > 0) then
-    !   latname  = 'lat_d'
-    !   lonname  = 'lon_d'
-      ! ncolname = 'ncol_d'
-    !   areaname = 'area_d'
-    ! else
+    ! When the FV physs grid is used the GLL grid output 
+    ! variables will use coordinates with the '_d' suffix.
+    gridname = 'GLL'
+    if (fv_nphys > 0) then
+      latname  = 'lat_d'
+      lonname  = 'lon_d'
+      ncolname = 'ncol_d'
+      areaname = 'area_d'
+    else
       latname  = 'lat'
       lonname  = 'lon'
       ncolname = 'ncol'
       areaname = 'area'
-    ! end if
+    end if
 
     lat_coord => horiz_coord_create(trim(latname), trim(ncolname), ngcols_d,  &
                                     'latitude', 'degrees_north', 1,           &
@@ -710,22 +709,22 @@ contains
     end do
 
     ! The native HOMME GLL grid
-    call cam_grid_register('GLL', dyn_decomp, lat_coord, lon_coord, grid_map_d,&
-                           block_indexed=.false., unstruct=.true.)
+    call cam_grid_register(trim(gridname), dyn_decomp, lat_coord, lon_coord,  &
+                           grid_map_d,block_indexed=.false., unstruct=.true.)
     if (.not.single_column) then
-      call cam_grid_attribute_register('GLL', trim(areaname), 'gll grid areas',&
-                                       trim(ncolname), pearea, pemap)
+      call cam_grid_attribute_register(trim(gridname), trim(areaname),   &
+                                'gll grid areas', trim(ncolname), pearea, pemap)
     else
       ! if single column model, then this attribute has to be handled 
       ! by assigning just the SCM point. Else, the model will bomb out
       ! when writing the header information to history output
       area_scm(1) = 1.0_r8 / elem(1)%rspheremp(1,1)
-      call cam_grid_attribute_register('GLL', trim(areaname), 'gll grid areas',&
-                                       trim(ncolname), area_scm)
+      call cam_grid_attribute_register(trim(gridname), trim(areaname),   &
+                                    'gll grid areas', trim(ncolname), area_scm)
     end if ! .not. single_column
 
-    call cam_grid_attribute_register('GLL', 'np', '', np)
-    call cam_grid_attribute_register('GLL', 'ne', '', ne)
+    call cam_grid_attribute_register(trim(gridname), 'np', '', np)
+    call cam_grid_attribute_register(trim(gridname), 'ne', '', ne)
 
     ! Coordinate values and maps are copied into the coordinate and attribute objects.
     ! Locally allocated storage is no longer needed.
@@ -745,6 +744,7 @@ contains
     ! interpolated to the GLL grid. This ensures consistent treatment of SGH.
     if (fv_nphys>0) then
 
+      gridname = 'physgrid_d'
       latname  = 'lat_p'
       lonname  = 'lon_p'
       ncolname = 'ncol'
@@ -794,13 +794,13 @@ contains
       end do ! j
 
       ! create physics grid object
-      call cam_grid_register('physgrid_d', physgrid_d, lat_coord, lon_coord, &
+      call cam_grid_register(trim(gridname), physgrid_d, lat_coord, lon_coord, &
                              grid_map_p, block_indexed=.false., unstruct=.true.)
-      call cam_grid_attribute_register('physgrid_d', trim(areaname),           &
+      call cam_grid_attribute_register(trim(gridname), trim(areaname),         &
                                        'physics grid areas', trim(ncolname),   &
                                        physgrid_area, map=physgrid_map)
-      call cam_grid_attribute_register('physgrid_d', 'fv_nphys', '', fv_nphys)
-      call cam_grid_attribute_register('physgrid_d', 'ne',       '', ne)
+      call cam_grid_attribute_register(trim(gridname), 'fv_nphys', '', fv_nphys)
+      call cam_grid_attribute_register(trim(gridname), 'ne',       '', ne)
 
       deallocate(physgrid_lat)
       deallocate(physgrid_lon)

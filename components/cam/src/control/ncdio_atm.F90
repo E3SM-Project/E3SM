@@ -167,7 +167,7 @@ contains
       !
       ! Get array dimension id's and sizes
       !
-      ierr = PIO_inq_dimid(ncid, dimname1, arraydimid)
+      if (index(dimname1,'_d')==0) ierr = PIO_inq_dimid(ncid, dimname1, arraydimid)
       arraydimsize(1) = (dim1e - dim1b + 1)
       arraydimsize(2) = (dim2e - dim2b + 1)
       do j = 1, 2
@@ -569,8 +569,9 @@ contains
       !
       ! Get array dimension id's and sizes
       !
-      ierr = PIO_inq_dimid(ncid, dimname1, arraydimids(1))
-      ierr = PIO_inq_dimid(ncid, dimname2, arraydimids(2))
+      ! Only do this check if the dimension name does not include '_d'
+      if (index(dimname1,'_d')==0) ierr = PIO_inq_dimid(ncid, dimname1, arraydimids(1))
+      if (index(dimname2,'_d')==0) ierr = PIO_inq_dimid(ncid, dimname2, arraydimids(2))
       arraydimsize(1) = (dim1e - dim1b + 1)
       arraydimsize(2) = (dim2e - dim2b + 1)
       arraydimsize(3) = (dim3e - dim3b + 1)

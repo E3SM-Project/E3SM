@@ -34,7 +34,7 @@ contains
     use parallel_mod,     only: par
     use bndry_mod,     only: bndry_exchangev
     use constituents, only: cnst_name, cnst_read_iv, qmin
-    use dimensions_mod,     only: nelemd, nlev, np, npsq
+    use dimensions_mod,     only: nelemd, nlev, np, npsq, fv_nphys
     use dof_mod, only           : putUniquePoints
     use edge_mod, only : edgevpack, edgevunpack, InitEdgeBuffer, FreeEdgeBuffer
     use edgetype_mod, only : EdgeBuffer_t
@@ -83,6 +83,8 @@ contains
     integer(iMap), pointer :: ldof(:) => NULL() ! Basic (2D) grid dof
     integer,       pointer :: gcid(:) => NULL() ! ID based on ldof with no holes
 
+    character(len=max_fieldname_len) :: ncol_name
+    character(len=max_fieldname_len) :: grid_name
     integer :: rndm_seed_sz
     integer, allocatable :: rndm_seed(:)
     real(r8) :: pertval
@@ -165,12 +167,19 @@ contains
         call endrun('Could not find closest SCM point on input datafile')
       endif
 
+    endif ! single_column
+
+    grid_name = 'GLL'
+    if (fv_nphys > 0) then
+      ncol_name = 'ncol_d'
+    else
+      ncol_name = 'ncol'
     endif
 
     fieldname = 'U'
     tmp = 0.0_r8
-    call infld(fieldname, ncid_ini, 'ncol', 'lev', 1, npsq,          &
-         1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+    call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
+         1, nlev, 1, nelemd, tmp, found, gridname=grid_name)
     if(.not. found) then
        call endrun('Could not find U field on input datafile')
     end if
@@ -189,8 +198,8 @@ contains
 
     fieldname = 'V'
     tmp = 0.0_r8
-    call infld(fieldname, ncid_ini, 'ncol', 'lev', 1, npsq,          &
-         1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+    call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
+         1, nlev, 1, nelemd, tmp, found, gridname=grid_name)
     if(.not. found) then
        call endrun('Could not find V field on input datafile')
     end if
@@ -208,8 +217,8 @@ contains
 
     fieldname = 'T'
     tmp = 0.0_r8
-    call infld(fieldname, ncid_ini, 'ncol', 'lev', 1, npsq,          &
-         1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+    call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
+         1, nlev, 1, nelemd, tmp, found, gridname=grid_name)
     if(.not. found) then
        call endrun('Could not find T field on input datafile')
     end if
@@ -312,8 +321,8 @@ contains
 	  else
 	    
 	    tmp = 0.0_r8
-            call infld(cnst_name(m_cnst), ncid_ini, 'ncol', 'lev',      &
-                 1, npsq, 1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+            call infld(cnst_name(m_cnst), ncid_ini, ncol_name, 'lev',      &
+                 1, npsq, 1, nlev, 1, nelemd, tmp, found, gridname=grid_name)
 	    
 	  endif
        end if
@@ -407,8 +416,8 @@ contains
 
     fieldname = 'PS'
     tmp(:,1,:) = 0.0_r8
-    call infld(fieldname, ncid_ini, 'ncol',      &
-         1, npsq, 1, nelemd, tmp(:,1,:), found, gridname='GLL')
+    call infld(fieldname, ncid_ini, ncol_name,      &
+         1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
     if(.not. found) then
        call endrun('Could not find PS field on input datafile')
     end if
@@ -439,8 +448,9 @@ contains
     else    
        fieldname = 'PHIS'
        tmp(:,1,:) = 0.0_r8
-       call infld(fieldname, ncid_topo, 'ncol',      &
-            1, npsq, 1, nelemd, tmp(:,1,:), found, gridname='GLL')
+       ! Probably need to change ncol and grid names here so it matches physics grid - Walter Hannah
+       call infld(fieldname, ncid_topo, ncol_name,      &
+            1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
        if(.not. found) then
           call endrun('Could not find PHIS field on input datafile')
        end if
