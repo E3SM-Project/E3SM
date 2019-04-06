@@ -1803,12 +1803,12 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 </append>
     <append>  -Wl,--relax -Wl,--allow-multiple-definition </append>
   </LDFLAGS>
-  <MPICC> mpixlc </MPICC>
-  <MPICXX> mpixlC </MPICXX>
-  <MPIFC> mpixlf </MPIFC>
+  <MPICC> mpicc </MPICC>
+  <MPICXX> mpicxx </MPICXX>
+  <MPIFC> mpif90 </MPIFC>
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
   <SCC> xlc_r </SCC>
-  <SFC> xlf_r </SFC>
+  <SFC> xlf90_r </SFC>
 </compiler>
 
 <compiler MACH="summit" COMPILER="pgi">
