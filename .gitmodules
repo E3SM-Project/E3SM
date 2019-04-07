@@ -43,3 +43,7 @@
 	url = git@github.com:NVlabs/cub.git
 [submodule "Submod"]
 	branch = rljacob/e3smconfig/elm-name
+[submodule "gcam"]
+	path = components/gcam/src
+	url = git@github.com:E3SM-Project/giac
+	branch = working
