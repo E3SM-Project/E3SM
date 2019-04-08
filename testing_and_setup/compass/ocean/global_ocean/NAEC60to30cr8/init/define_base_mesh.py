@@ -91,11 +91,18 @@ def cellWidthVsLatLon():
     cell_width,lon,lat = ct.coastal_refined_mesh(params,cell_width,lon,lat)
 
     print "***Greenland***"
-    Greenland = {"include":[np.array([-49,-45,60,61])],
-                 "exclude":[]}
-    params["region_box"] = Greenland 
+    params["region_box"] = ct.Greenland 
     params["restrict_box"] = ct.Empty
-    params["trans_start"] = 900.0*km
+    params["trans_width"] = 600.0*km
+    params["trans_start"] = 275.0*km
+    cell_width, lon, lat = ct.coastal_refined_mesh(params,cell_width,lon,lat)
+
+    print "***Labrador Sea***" 
+    params["region_box"] = ct.Empty 
+    params["restrict_box"] = ct.Empty
+    params["point_list"] = [np.array([-50.0,55.0])]
+    params["trans_width"] = 600.0*km
+    params["trans_start"] = 400.0*km
     cell_width, lon, lat = ct.coastal_refined_mesh(params,cell_width,lon,lat)
 
     print"***Central America (West Coast)***"
@@ -114,6 +121,7 @@ def cellWidthVsLatLon():
                        "exclude":[]}
     params["region_box"] = Central_America 
     params["restrict_box"] = ct.Empty
+    params["point_list"] = None
     params["trans_width"] = 600.0*km
     params["trans_start"] = 400.0*km
     cell_width, lon, lat = ct.coastal_refined_mesh(params,cell_width,lon,lat)

@@ -94,6 +94,20 @@ Aleutian_Islands_E = {"include": [np.array([-180.0, -151.79, 49.54, 58.83])],
 Aleutian_Islands_W = {"include": [np.array([164.9, 180.0, 50.77, 56.31])],
                       "exclude": [np.array([178.5, 179.5, 51.25, 51.75])]}
 
+Greenland = {"include":[np.array([-81.5,-12.5,60,85])],
+             "exclude":[np.array([[-87.6,58.7],
+                                  [-51.9,56.6],
+                                  [-68.9,75.5], 
+                                  [-107.0,73.3]]),
+                        np.array([[-119.0,74.5],
+                                  [-92.7,75.9],
+                                  [-52.84,83.25],
+                                  [-100.8,84.0]]),
+                        np.array([[-101.3,68.5],
+                                  [-82.4,72.3],
+                                  [-68.7,81.24],
+                                  [-117.29,77.75]]),
+                        np.array([-25.0,-10.0,62.5,67.5])]}  
 
 # Combined coastlines
 CONUS = {"include": [], "exclude": []}
@@ -177,6 +191,7 @@ default_params = {
 
     # Path to bathymetry data and name of file
     "nc_file": "./earth_relief_15s.nc",
+    "nc_vars": ["lon","lat","z"],
 
     # Bounding box of coastal refinement region
     "region_box": Continental_US,
@@ -187,6 +202,7 @@ default_params = {
     "z_contour": 0.0,
     "n_longest": 10,
     "smooth_coastline": 0,
+    "point_list": None,
 
     # Global mesh parameters
     "grd_box": Entire_Globe,
@@ -235,9 +251,11 @@ def coastal_refined_mesh(params, cell_width=None, lon_grd=None, lat_grd=None):  
     # Get coastlines from bathy/topo  data set
     coastlines = extract_coastlines(
         params["nc_file"],
+        params["nc_vars"],
         params["region_box"],
         params["z_contour"],
         params["n_longest"],
+        params["point_list"],
         params["plot_option"],
         params["plot_box"],
         call_count)
@@ -331,7 +349,7 @@ def create_background_mesh(grd_box, ddeg, mesh_type, dx_min, dx_max,  # {{{
 ##############################################################
 
 
-def extract_coastlines(nc_file, region_box, z_contour=0, n_longest=10,   # {{{
+def extract_coastlines(nc_file, nc_vars, region_box, z_contour=0, n_longest=10, point_list=None,   # {{{
                        plot_option=False, plot_box=[], call=None):
 
     print "Extract coastlines"
@@ -339,9 +357,9 @@ def extract_coastlines(nc_file, region_box, z_contour=0, n_longest=10,   # {{{
 
     # Open NetCDF file and read cooordintes
     nc_fid = Dataset(nc_file, "r")
-    lon = nc_fid.variables['lon'][:]
-    lat = nc_fid.variables['lat'][:]
-    bathy_data = nc_fid.variables['z']
+    lon = nc_fid.variables[nc_vars[0]][:]
+    lat = nc_fid.variables[nc_vars[1]][:]
+    bathy_data = nc_fid.variables[nc_vars[2]]
 
     # Get coastlines for refined region
     coastline_list = []
@@ -387,6 +405,14 @@ def extract_coastlines(nc_file, region_box, z_contour=0, n_longest=10,   # {{{
                 coastline_list.append(cpad)
 
         print "   Done"
+
+    # Add in user-specified points
+    if point_list:
+        for i,points in enumerate(point_list):
+            cpad = np.vstack((points, [np.nan, np.nan]))
+            coastline_list.append(cpad)
+                    
+
 
     # Combine coastlines
     coastlines = np.concatenate(coastline_list)
