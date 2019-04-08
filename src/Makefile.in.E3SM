@@ -67,6 +67,10 @@ ifeq ($(compile_threaded), TRUE)
     override CPPFLAGS += -DMPAS_OPENMP
 endif
 
+ifeq ($(GEN_F90), TRUE)
+    override CPPFLAGS += -Uvector
+endif
+
 all:
 	@echo $(CPPINCLUDES)
 	@echo $(FCINCLUDES)
