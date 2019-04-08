@@ -305,9 +305,10 @@ contains
   !==========================================================================================!
 
   SUBROUTINE p3_main(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,   &
-   pres,dzq,npccn,naai,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
-   diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc, &
-   pdel,exner,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm,p3_tend_out)
+       pres,dzq,npccn,naai,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
+       diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc, &
+       pdel,exner,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm,  &
+       pratot,prctot,p3_tend_out)
 
     !----------------------------------------------------------------------------------------!
     !                                                                                        !
@@ -373,6 +374,8 @@ contains
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: prer_evap  ! evaporation of rain
     real(rtype), intent(out),   dimension(its:ite,kts:kte+1)    :: rflx       ! grid-box average rain flux (kg m^-2 s^-1) pverp
     real(rtype), intent(out),   dimension(its:ite,kts:kte+1)    :: sflx       ! grid-box average ice/snow flux (kg m^-2 s^-1) pverp
+    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: pratot     ! accretion of cloud by rain
+    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: prctot     ! autoconversion of cloud to rain
     ! INPUT needed for PBUF variables used by other parameterizations
 
     real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: icldm, lcldm, rcldm ! Ice, Liquid and Rain cloud fraction
@@ -548,6 +551,8 @@ contains
 
     prt_liq   = 0.
     prt_sol   = 0.
+    pratot    = 0.
+    prctot    = 0.
     prec      = 0.
     mu_r      = 0.
     diag_ze   = -99.
@@ -1757,6 +1762,9 @@ contains
           p3_tend_out(i,k,47) = nitot(i,k) - p3_tend_out(i,k,47) ! Ice  # microphysics tendency, measure 
           p3_tend_out(i,k,48) = qv(i,k)    - p3_tend_out(i,k,48) ! Vapor  microphysics tendency, measure 
           p3_tend_out(i,k,49) = th(i,k)    - p3_tend_out(i,k,49) ! Pot. Temp. microphysics tendency, measure 
+          ! Outputs associated with aerocom comparison:
+          pratot(i,k) = qcacc ! cloud drop accretion by rain
+          prctot(i,k) = qcaut ! cloud drop autoconversion to rain 
           !---------------------------------------------------------------------------------
 
           ! Recalculate in-cloud values for sedimentation

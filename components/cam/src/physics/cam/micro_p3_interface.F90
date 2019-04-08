@@ -29,7 +29,7 @@ module micro_p3_interface
                             pbuf_register_subcol, pbuf_set_field, pbuf_get_index, &
                             pbuf_old_tim_idx
   use ref_pres,       only: top_lev=>trop_cloud_top_lev
-  use phys_control,   only: phys_getopts, use_hetfrz_classnuc
+  use phys_control,   only: phys_getopts
 !  use cam_debug,      only: l_debug, l_summary_debug
   use subcol_utils,   only: subcol_get_scheme
   use cam_abortutils, only: endrun
@@ -87,31 +87,13 @@ module micro_p3_interface
       prer_evap_idx,      &
       cmeliq_idx,         &
       relvar_idx,         &
-      accre_enhan_idx,    &
-      iciwpst_idx,        &
-      iclwpst_idx,        &
-      cc_t_idx,           &
-      cc_qv_idx,          &
-      cc_ql_idx,          &
-      cc_qi_idx,          &
-      cc_nl_idx,          &
-      cc_ni_idx,          &
-      cc_qlst_idx
-   ! Index fields for precipitation efficiency.
-   integer :: &
-       acprecl_idx = -1, &
-       acgcme_idx = -1, &
-       acnum_idx = -1
+      accre_enhan_idx     
 
 ! Physics buffer indices for fields registered by other modules
    integer :: &
       ast_idx = -1,            &
       cld_idx = -1,            &
       concld_idx = -1
-! Pbuf fields needed for subcol_SILHS
-   integer :: &
-      qrain_idx=-1, &
-      nrain_idx=-1
 
    integer :: &
       naai_idx = -1,           &
@@ -337,34 +319,10 @@ end subroutine micro_p3_readnl
    call pbuf_add_field('LS_REFFSNOW','physpkg',dtype_r8,(/pcols,pver/), ls_reffsnow_idx)
    call pbuf_add_field('CV_REFFLIQ', 'physpkg',dtype_r8,(/pcols,pver/), cv_reffliq_idx)
    call pbuf_add_field('CV_REFFICE', 'physpkg',dtype_r8,(/pcols,pver/), cv_reffice_idx)
-
-   !! module macrop_driver
-   call pbuf_add_field('CC_T',     'global',  dtype_r8,(/pcols,pver,dyn_time_lvls/), cc_t_idx)
-   call pbuf_add_field('CC_qv',    'global',  dtype_r8,(/pcols,pver,dyn_time_lvls/), cc_qv_idx)
-   call pbuf_add_field('CC_ql',    'global',  dtype_r8,(/pcols,pver,dyn_time_lvls/), cc_ql_idx)
-   call pbuf_add_field('CC_qi',    'global',  dtype_r8,(/pcols,pver,dyn_time_lvls/), cc_qi_idx)
-   call pbuf_add_field('CC_nl',    'global',  dtype_r8,(/pcols,pver,dyn_time_lvls/), cc_nl_idx)
-   call pbuf_add_field('CC_ni',    'global',  dtype_r8,(/pcols,pver,dyn_time_lvls/), cc_ni_idx)
-   call pbuf_add_field('CC_qlst',  'global',  dtype_r8,(/pcols,pver,dyn_time_lvls/), cc_qlst_idx)
  
-   !! (internal) Stratiform only in cloud liquid/ice water path for radiation
-   call pbuf_add_field('ICLWPST',    'physpkg',dtype_r8,(/pcols,pver/),iclwpst_idx)
-   call pbuf_add_field('ICIWPST',    'physpkg',dtype_r8,(/pcols,pver/),iciwpst_idx)
- 
-   !! (internal) Precipitation efficiency fields across timesteps.
-   call pbuf_add_field('ACPRECL',    'global',dtype_r8,(/pcols/), acprecl_idx)! accumulated precip
-   call pbuf_add_field('ACGCME',     'global',dtype_r8,(/pcols/), acgcme_idx) ! accumulated condensation
-   call pbuf_add_field('ACNUM',      'global',dtype_i4,(/pcols/), acnum_idx)  ! counter for accumulated # timesteps
-
    !! module clubb_intr
    call pbuf_add_field('RELVAR',     'global',dtype_r8,(/pcols,pver/), relvar_idx)
    call pbuf_add_field('ACCRE_ENHAN','global',dtype_r8,(/pcols,pver/), accre_enhan_idx)
-
-   ! Diagnostic fields needed for subcol_SILHS, need to be grid-only
-   if (subcol_get_scheme() == 'SILHS') then
-      call pbuf_add_field('QRAIN',   'global',dtype_r8,(/pcols,pver/), qrain_idx)
-      call pbuf_add_field('NRAIN',   'global',dtype_r8,(/pcols,pver/), nrain_idx)
-   end if
 
    if (masterproc) write(iulog,'(A20)') '    P3 register finished'
   end subroutine micro_p3_register
@@ -447,10 +405,6 @@ end subroutine micro_p3_readnl
     prec_pcw_idx = pbuf_get_index('PREC_PCW') !! from physpkg 
     snow_pcw_idx = pbuf_get_index('SNOW_PCW') !! from physpkg 
 
-    !! not used 
-    qrain_idx    = pbuf_get_index('QRAIN', ierr) !! local 
-    nrain_idx    = pbuf_get_index('NRAIN', ierr) !! local
-
     call p3_init(micro_p3_lookup_dir,micro_p3_tableversion)
 
     ! Initialize physics buffer grid fields for accumulating precip and
@@ -462,24 +416,10 @@ end subroutine micro_p3_readnl
        call pbuf_set_field(pbuf2d, p3_th_idx, 0._rtype)
 
        call pbuf_set_field(pbuf2d, cldo_idx,   0._rtype)
-       call pbuf_set_field(pbuf2d, cc_t_idx,   0._rtype)
-       call pbuf_set_field(pbuf2d, cc_qv_idx,  0._rtype)
-       call pbuf_set_field(pbuf2d, cc_ql_idx,  0._rtype)
-       call pbuf_set_field(pbuf2d, cc_qi_idx,  0._rtype)
-       call pbuf_set_field(pbuf2d, cc_nl_idx,  0._rtype)
-       call pbuf_set_field(pbuf2d, cc_ni_idx,  0._rtype)
-       call pbuf_set_field(pbuf2d, cc_qlst_idx,0._rtype)
-       call pbuf_set_field(pbuf2d, acprecl_idx,   0._rtype)
-       call pbuf_set_field(pbuf2d, acgcme_idx, 0._rtype)
-       call pbuf_set_field(pbuf2d, acnum_idx,  0)
        call pbuf_set_field(pbuf2d, relvar_idx, 2._rtype)
        call pbuf_set_field(pbuf2d, accre_enhan_idx, micro_mg_accre_enhan_fac)
        call pbuf_set_field(pbuf2d, prer_evap_idx,  0._rtype)
  
-       !! not used 
-       if (qrain_idx > 0)   call pbuf_set_field(pbuf2d, qrain_idx, 0._rtype)
-       if (nrain_idx > 0)   call pbuf_set_field(pbuf2d, nrain_idx, 0._rtype)
-
     end if
 
     ! INITIALIZE OUTPUT
@@ -877,6 +817,7 @@ end subroutine micro_p3_readnl
                               rhows, &
                               qsmall, &
                               mincld
+    use output_aerocom_aie, only: do_aerocom_ind3
 
     !INPUT/OUTPUT VARIABLES
     type(physics_state),         intent(in)    :: state
@@ -957,25 +898,13 @@ end subroutine micro_p3_readnl
     real(rtype), pointer :: reffsnow(:,:)   ! P3 diagnostic snow effective radius (um)
     real(rtype), pointer :: cvreffliq(:,:)    ! convective cloud liquid effective radius (um)
     real(rtype), pointer :: cvreffice(:,:)    ! convective cloud ice effective radius (um)
-
-    real(rtype), pointer :: iciwpst(:,:)      ! Stratiform in-cloud ice water path for radiation
-    real(rtype), pointer :: iclwpst(:,:)      ! Stratiform in-cloud liquid water path for radiation
+    ! iwipst and iclwpst are pbuf pointers in MG, but appear to only ever be local.  Switching to local arrays for P3
+    real(rtype) :: iciwpst(pcols,pver)      ! Stratiform in-cloud ice water path for radiation
+    real(rtype) :: iclwpst(pcols,pver)      ! Stratiform in-cloud liquid water path for radiation
     !! radiation 
     real(rtype), pointer :: dei(:,:)          ! Ice effective diameter (um)
     real(rtype), pointer :: mu(:,:)           ! Size distribution shape parameter for radiation
     real(rtype), pointer :: lambdac(:,:)      ! Size distribution slope parameter for radiation
-    !! Park-Macro
-    real(rtype), pointer :: cc_t(:,:)
-    real(rtype), pointer :: cc_qv(:,:)
-    real(rtype), pointer :: cc_ql(:,:)
-    real(rtype), pointer :: cc_qi(:,:)
-    real(rtype), pointer :: cc_nl(:,:)
-    real(rtype), pointer :: cc_ni(:,:)
-    real(rtype), pointer :: cc_qlst(:,:)
-    !!
-    real(rtype), pointer, dimension(:) :: acprecl ! accumulated precip across timesteps
-    real(rtype), pointer, dimension(:) :: acgcme  ! accumulated condensation across timesteps
-    integer,  pointer, dimension(:) :: acnum   ! counter for # timesteps accumulated
     ! DONE PBUF
 
     ! Derived Variables
@@ -1030,6 +959,12 @@ end subroutine micro_p3_readnl
     real(rtype), parameter :: mucon  = 5.3_rtype            ! Convective size distribution shape parameter
     real(rtype), parameter :: deicon = 50._rtype            ! Convective ice effective diameter (um)
 
+    ! For aerocom3
+    integer :: autocl_idx, accretl_idx  ! Aerocom IND3
+    integer :: cldliqbf_idx, cldicebf_idx, numliqbf_idx, numicebf_idx
+    real(rtype) :: pratot(pcols,pver) ! accretion of cloud by rain      
+    real(rtype) :: prctot(pcols,pver) ! autoconversion of cloud by rain      
+
     ! For potential temperature conversion
     real(rtype) :: rd, cp, inv_cp
 
@@ -1057,11 +992,6 @@ end subroutine micro_p3_readnl
     call pbuf_get_field(pbuf, rndst_idx,       rndst,       col_type=col_type, copy_if_needed=use_subcol_microp) ! Not used in this ver of P3
     call pbuf_get_field(pbuf, nacon_idx,       nacon,       col_type=col_type, copy_if_needed=use_subcol_microp) ! Not used in this ver of P3
     call pbuf_get_field(pbuf, cmeliq_idx,      cmeliq,      col_type=col_type, copy_if_needed=use_subcol_microp)
-    if (use_hetfrz_classnuc) then ! Not used in this ver of P3 
-       call pbuf_get_field(pbuf, frzimm_idx, frzimm, col_type=col_type, copy_if_needed=use_subcol_microp)
-       call pbuf_get_field(pbuf, frzcnt_idx, frzcnt, col_type=col_type, copy_if_needed=use_subcol_microp)
-       call pbuf_get_field(pbuf, frzdep_idx, frzdep, col_type=col_type, copy_if_needed=use_subcol_microp)
-    end if
     ! OUTPUTS
     call pbuf_get_field(pbuf,    prec_str_idx,  prec_str,    col_type=col_type)
     call pbuf_get_field(pbuf,    snow_str_idx,  snow_str,    col_type=col_type)
@@ -1075,15 +1005,6 @@ end subroutine micro_p3_readnl
     !call pbuf_get_field(pbuf,         des_idx,       des,    col_type=col_type) 
     !call pbuf_get_field(pbuf,       icswp_idx,     icswp,    col_type=col_type) 
     !call pbuf_get_field(pbuf,    cldfsnow_idx,  cldfsnow,    col_type=col_type) 
-    !call pbuf_get_field(pbuf,   ls_mrprc_idx,    flxsnw,    col_type=col_type)
-    !call pbuf_get_field(pbuf,   ls_mrsnw_idx,    flxsnw,    col_type=col_type)
-    !call pbuf_get_field(pbuf,   tnd_qsnow_idx, tnd_qsnow,    col_type=col_type) 
-    !call pbuf_get_field(pbuf,   tnd_nsnow_idx, tnd_nsnow,    col_type=col_type) 
-    !call pbuf_get_field(pbuf,      re_ice_idx,    re_ice,    col_type=col_type) 
-    !call pbuf_get_field(pbuf,       qrain_idx,     qrain,    col_type=col_type) 
-    !call pbuf_get_field(pbuf,       qsnow_idx,     qsnow,    col_type=col_type) 
-    !call pbuf_get_field(pbuf,       nrain_idx,     nrain,    col_type=col_type) 
-    !call pbuf_get_field(pbuf,       nsnow_idx,     nsnow,    col_type=col_type) 
     ! INPUTS
     call pbuf_get_field(pbuf, relvar_idx,      relvar,      col_type=col_type, copy_if_needed=use_subcol_microp) ! Not used in this ver of P3
     call pbuf_get_field(pbuf, accre_enhan_idx, accre_enhan, col_type=col_type, copy_if_needed=use_subcol_microp) ! Not used in this ver of P3
@@ -1101,24 +1022,12 @@ end subroutine micro_p3_readnl
     call pbuf_get_field(pbuf,         dei_idx,       dei,    col_type=col_type)
     call pbuf_get_field(pbuf,          mu_idx,        mu,    col_type=col_type)
     call pbuf_get_field(pbuf,     lambdac_idx,   lambdac,    col_type=col_type)
-    call pbuf_get_field(pbuf,     iciwpst_idx,   iciwpst,    col_type=col_type)
-    call pbuf_get_field(pbuf,     iclwpst_idx,   iclwpst,    col_type=col_type)
     call pbuf_get_field(pbuf,   ls_flxprc_idx,    flxprc,    col_type=col_type)
     call pbuf_get_field(pbuf,   ls_flxsnw_idx,    flxsnw,    col_type=col_type)
     call pbuf_get_field(pbuf, ls_reffrain_idx,  reffrain                      ) 
     call pbuf_get_field(pbuf, ls_reffsnow_idx,  reffsnow                      ) 
     call pbuf_get_field(pbuf,  cv_reffliq_idx, cvreffliq,    col_type=col_type)
     call pbuf_get_field(pbuf,  cv_reffice_idx, cvreffice,    col_type=col_type)
-    call pbuf_get_field(pbuf, cc_t_idx,        cc_t,     start=(/1,1,itim_old/), kount=(/psetcols,pver,1/), col_type=col_type)
-    call pbuf_get_field(pbuf, cc_qv_idx,       cc_qv,    start=(/1,1,itim_old/), kount=(/psetcols,pver,1/), col_type=col_type)
-    call pbuf_get_field(pbuf, cc_ql_idx,       cc_ql,    start=(/1,1,itim_old/), kount=(/psetcols,pver,1/), col_type=col_type)
-    call pbuf_get_field(pbuf, cc_qi_idx,       cc_qi,    start=(/1,1,itim_old/), kount=(/psetcols,pver,1/), col_type=col_type)
-    call pbuf_get_field(pbuf, cc_nl_idx,       cc_nl,    start=(/1,1,itim_old/), kount=(/psetcols,pver,1/), col_type=col_type)
-    call pbuf_get_field(pbuf, cc_ni_idx,       cc_ni,    start=(/1,1,itim_old/), kount=(/psetcols,pver,1/), col_type=col_type)
-    call pbuf_get_field(pbuf, cc_qlst_idx,     cc_qlst,  start=(/1,1,itim_old/), kount=(/psetcols,pver,1/), col_type=col_type)
-    call pbuf_get_field(pbuf,     acprecl_idx,   acprecl                       ) 
-    call pbuf_get_field(pbuf,      acgcme_idx,    acgcme                       ) 
-    call pbuf_get_field(pbuf,       acnum_idx,     acnum                       ) 
 
     rd = rair 
     cp = cpair
@@ -1129,11 +1038,23 @@ end subroutine micro_p3_readnl
     ! Some pre-microphysics INITIALIZATION
     !==============
     cldo(:ncol,top_lev:pver)=ast(:ncol,top_lev:pver)
+    
+    ! If aerocom 3 is used
+    if(do_aerocom_ind3) then  
+      cldliqbf_idx    = pbuf_get_index('cldliqbf')
+      cldicebf_idx    = pbuf_get_index('cldicebf')
+      numliqbf_idx    = pbuf_get_index('numliqbf')
+      numicebf_idx    = pbuf_get_index('numicebf')
+ 
+      call pbuf_set_field(pbuf, cldliqbf_idx, state%q(:, :, ixcldliq))
+      call pbuf_set_field(pbuf, cldicebf_idx, state%q(:, :, ixcldice))
+      call pbuf_set_field(pbuf, numliqbf_idx, state%q(:, :, ixnumliq))
+      call pbuf_set_field(pbuf, numicebf_idx, state%q(:, :, ixnumice))
+    end if
     ! INITIALIZE PTEND
     !==============
     !ptend is an output variable. Since not substepping in micro, don't need 
     !a local copy.
-
     lq            = .false. !initialize all constituents to false.
     lq(1)         = .true.
     lq(ixcldliq)  = .true.
@@ -1144,6 +1065,7 @@ end subroutine micro_p3_readnl
     lq(ixcldrim)  = .true.
     lq(ixnumrain) = .true.
     lq(ixrimvol)  = .true.
+    call physics_ptend_init(ptend, psetcols, "micro_p3", ls=.true., lq=lq)
 
     ! HANDLE AEROSOL ACTIVATION
     !==============
@@ -1153,10 +1075,10 @@ end subroutine micro_p3_readnl
     !==============
     ! Note: state%exner is currently defined in a way different than the
     ! traditional definition of exner, so we calculate here.
-    exner(:,:) = 1._rtype/((state%pmid(:,:)*1.e-5)**(rd*inv_cp))
+    exner(:ncol,:pver) = 1._rtype/((state%pmid(:ncol,:pver)*1.e-5)**(rd*inv_cp))
     if ( is_first_step() ) then
-       th_old(:,:)=state%t(:,:)*exner(:,:)
-       qv_old(:,:)=state%q(:,:,1)
+       th_old(:ncol,:pver)=state%t(:ncol,:pver)*exner(:ncol,:pver)
+       qv_old(:ncol,:pver)=state%q(:ncol,:pver,1)
     end if
 
     ! CONVERT T TO POTENTIAL TEMPERATURE
@@ -1288,6 +1210,8 @@ end subroutine micro_p3_readnl
          rcldm(its:ite,kts:kte),      & ! IN rain cloud fraction
          lcldm(its:ite,kts:kte),      & ! IN liquid cloud fraction
          icldm(its:ite,kts:kte),      & ! IN ice cloud fraction
+         pratot(its:ite,kts:kte),     & ! OUT accretion of cloud by rain
+         prctot(its:ite,kts:kte),     & ! OUT autoconversion of cloud by rain
          tend_out(its:ite,kts:kte,:)  & ! OUT p3 microphysics tendencies
          )
 
@@ -1311,18 +1235,17 @@ end subroutine micro_p3_readnl
 
     !BACK OUT TENDENCIES FROM STATE CHANGES
     !=============
-    call physics_ptend_init(ptend, psetcols, "micro_p3", ls=.true., lq=lq)
-    temp(:,:) = th(:,:)/exner(:,:) 
-    ptend%s(:,:)           = cpair*( temp(:,:) - state%t(:,:) )/dtime 
-    ptend%q(:,:,1)         = ( max(0._rtype,qv(:,:)     ) - state%q(:,:,1)         )/dtime
-    ptend%q(:,:,ixcldliq)  = ( max(0._rtype,cldliq(:,:) ) - state%q(:,:,ixcldliq)  )/dtime
-    ptend%q(:,:,ixnumliq)  = ( max(0._rtype,numliq(:,:) ) - state%q(:,:,ixnumliq)  )/dtime
-    ptend%q(:,:,ixrain)    = ( max(0._rtype,rain(:,:)   ) - state%q(:,:,ixrain)    )/dtime
-    ptend%q(:,:,ixnumrain) = ( max(0._rtype,numrain(:,:)) - state%q(:,:,ixnumrain) )/dtime
-    ptend%q(:,:,ixcldice)  = ( max(0._rtype,ice(:,:)    ) - state%q(:,:,ixcldice)  )/dtime
-    ptend%q(:,:,ixnumice)  = ( max(0._rtype,numice(:,:) ) - state%q(:,:,ixnumice)  )/dtime
-    ptend%q(:,:,ixcldrim)  = ( max(0._rtype,rim(:,:)    ) - state%q(:,:,ixcldrim)  )/dtime
-    ptend%q(:,:,ixrimvol)  = ( max(0._rtype,rimvol(:,:) ) - state%q(:,:,ixrimvol)  )/dtime
+    temp(:ncol,:pver) = th(:ncol,:pver)/exner(:ncol,:pver) 
+    ptend%s(:ncol,:pver)           = cpair*( temp(:ncol,:pver) - state%t(:ncol,:pver) )/dtime 
+    ptend%q(:ncol,:pver,1)         = ( max(0._rtype,qv(:ncol,:pver)     ) - state%q(:ncol,:pver,1)         )/dtime
+    ptend%q(:ncol,:pver,ixcldliq)  = ( max(0._rtype,cldliq(:ncol,:pver) ) - state%q(:ncol,:pver,ixcldliq)  )/dtime
+    ptend%q(:ncol,:pver,ixnumliq)  = ( max(0._rtype,numliq(:ncol,:pver) ) - state%q(:ncol,:pver,ixnumliq)  )/dtime
+    ptend%q(:ncol,:pver,ixrain)    = ( max(0._rtype,rain(:ncol,:pver)   ) - state%q(:ncol,:pver,ixrain)    )/dtime
+    ptend%q(:ncol,:pver,ixnumrain) = ( max(0._rtype,numrain(:ncol,:pver)) - state%q(:ncol,:pver,ixnumrain) )/dtime
+    ptend%q(:ncol,:pver,ixcldice)  = ( max(0._rtype,ice(:ncol,:pver)    ) - state%q(:ncol,:pver,ixcldice)  )/dtime
+    ptend%q(:ncol,:pver,ixnumice)  = ( max(0._rtype,numice(:ncol,:pver) ) - state%q(:ncol,:pver,ixnumice)  )/dtime
+    ptend%q(:ncol,:pver,ixcldrim)  = ( max(0._rtype,rim(:ncol,:pver)    ) - state%q(:ncol,:pver,ixcldrim)  )/dtime
+    ptend%q(:ncol,:pver,ixrimvol)  = ( max(0._rtype,rimvol(:ncol,:pver) ) - state%q(:ncol,:pver,ixrimvol)  )/dtime
 
    ! Following MG interface as a template:
 
@@ -1608,6 +1531,13 @@ end subroutine micro_p3_readnl
    ! note: 1e-6 kgho2/kgair/s * 1000. pa / (9.81 m/s2) / 1000 kgh2o/m3 = 1e-7 m/s
    ! this is 1ppmv of h2o in 10hpa
    ! alternatively: 0.1 mm/day * 1.e-4 m/mm * 1/86400 day/s = 1.e-9
+ 
+   if(do_aerocom_ind3) then
+     autocl_idx = pbuf_get_index('autocl')
+     accretl_idx = pbuf_get_index('accretl')
+     call pbuf_set_field(pbuf, autocl_idx, prctot)
+     call pbuf_set_field(pbuf, accretl_idx, pratot)
+   end if
 
     !WRITE OUTPUT
     !=============
