@@ -1,6 +1,38 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 4-08-2019
+Tag: cime5.6.14
+Answer Changes: None
+Tests: scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+    - Update modules for cori.
+    - Update A compsets to avoid needing a 6GB inputdata file for testing.
+    - Minor bug fixes for xml interface.
+    - Update modules for cheyenne pgi.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+ff65ad0 Merge pull request #3070 from ESMCI/fischer/cori_module_update
+4f5b655 Merge pull request #3069 from ESMCI/fischer/3053
+e3fbee4 Merge pull request #3057 from jedwards4b/maint-5.6-xml_fixes
+398df65 Merge pull request #3049 from ESMCI/fischer/cheyenne_mpt_pgi
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/config_machines.xml
+M       scripts/lib/CIME/XML/entry_id.py
+M       scripts/lib/CIME/XML/generic_xml.py
+M       src/components/data_comps/datm/cime_config/config_component.xml
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 3-13-2019
 Tag: cime5.6.13
 Answer Changes: None
