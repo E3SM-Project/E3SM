@@ -9,7 +9,7 @@
 	<append>-DFORTRANUNDERSCORE -DNO_R16</append>
       </CPPDEFS>
       <LDFLAGS>
-	<append compile_threaded="true"> -fopenmp </append>
+	<append compile_threaded="TRUE"> -fopenmp </append>
       </LDFLAGS>
       <!-- brew install gcc without-multilib cmake mpich hdf5 enable-fortran netcdf enable-fortran -->
       <SFC> /usr/local/bin/gfortran </SFC>

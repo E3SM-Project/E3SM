@@ -31,9 +31,12 @@ my %tests = ('copy.nc' => {control => 'control.nc'},
              'vals_differ_by_varying_amounts2.nc' => {control => 'control.nc'},
 
              'multipleTimes_someTimeless_diffs_in_vals_and_fill.nc' => {control => 'control_multipleTimes_someTimeless.nc'},
+             'multipleTimes_someTimeless_extra_and_missing.nc' => {control => 'control_multipleTimes_someTimeless.nc'},
 
              'noTime_diffs_in_vals_and_fill.nc' => {control => 'control_noTime.nc',
                                                     extra_args => '-m'},
+             'noTime_extra_and_missing.nc' => {control => 'control_noTime.nc',
+                                               extra_args => '-m'},
 
              'diffs_0d.nc' => {control => 'control_0d.nc',
                                extra_args => '-m'},

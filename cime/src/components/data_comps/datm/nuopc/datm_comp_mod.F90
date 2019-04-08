@@ -594,7 +594,7 @@ contains
     ! error check that mesh lats and lons correspond to those on the input domain file
     klon = mct_aVect_indexRA(SDATM%grid%data,'lon')
     do n = 1, lsize
-       if (abs( SDATM%grid%data%rattr(klon,n) - xc(n)) > 1.e-5) then
+       if (abs(mod(SDATM%grid%data%rattr(klon,n) - xc(n),360.0_R8)) > 1.e-5) then
           write(6,*)'ERROR: DATM n, lon(domain), lon(mesh) = ',n, SDATM%grid%data%rattr(klon,n),xc(n)
           write(6,*)'ERROR: DATM lon diff = ',abs(SDATM%grid%data%rattr(klon,n) -  xc(n)),' too large'
           call shr_sys_abort()
