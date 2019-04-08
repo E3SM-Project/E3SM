@@ -117,7 +117,6 @@ contains
     use med_constants_mod     , only : R8, CS
     use med_internalstate_mod , only : InternalState, mastertask, logunit
     use med_merge_mod         , only : med_merge_auto, med_merge_field
-    use med_infodata_mod      , only : med_infodata, med_infodata_GetData
     use esmFlds               , only : fldListTo
     use esmFlds               , only : compocn, compname, compatm, compice
     use esmFlds               , only : coupling_mode
@@ -418,8 +417,7 @@ contains
        !-------------
        ! application of precipitation factor from ocean
        !-------------
-       call med_infodata_GetData(med_infodata, precip_fact=precip_fact, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       precip_fact = 1.0_R8
        if (precip_fact /= 1.0_R8) then
           if (first_precip_fact_call .and. mastertask) then
              write(logunit,'(a)')'(merge_to_ocn): Scaling rain, snow, liquid and ice runoff by precip_fact '

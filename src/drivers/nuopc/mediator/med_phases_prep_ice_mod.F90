@@ -33,9 +33,11 @@ contains
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FieldRegrid
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getNumFlds
-    use med_constants_mod     , only : CS, R8
-    use med_infodata_mod      , only : med_infodata, med_infodata_GetData
-    use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_GetScalar
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_SetScalar
+    use shr_nuopc_scalars_mod , only : flds_scalar_name, flds_scalar_num
+    use shr_nuopc_scalars_mod , only : flds_scalar_index_nextsw_cday
+    use med_constants_mod     , only : CS, R8, dbug_flag=>med_constants_dbug_flag
     use med_merge_mod         , only : med_merge_auto
     use med_map_mod           , only : med_map_FB_Regrid_Norm
     use med_internalstate_mod , only : InternalState, logunit, mastertask
@@ -58,8 +60,8 @@ contains
     real(R8), pointer              :: pot_temp(:)
     real(R8)                       :: precip_fact
     character(len=CS)              :: cvalue
-    integer                        :: dbrc
     character(len=64), allocatable :: fldnames(:)
+    real(r8)                       :: nextsw_cday
     logical                        :: first_precip_fact_call = .true.
     character(len=*),parameter     :: subname='(med_phases_prep_ice)'
     !---------------------------------------
@@ -67,7 +69,7 @@ contains
     call t_startf('MED:'//subname)
 
     if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
@@ -126,11 +128,7 @@ contains
        ! application of precipitation factor from ocean
 
        ! TODO (mvertens, 2019-03-18): precip_fact here is not valid if
-       ! the component does not send it - so need to check if it is a
-       ! valid value (determine the ranges)
-       ! For now - hardwire it to 1 until this is resolved
-       ! call med_infodata_GetData(med_infodata, precip_fact=precip_fact, rc=rc)
-       ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       ! the component does not send it - hardwire it to 1 until this is resolved
        precip_fact = 1.0_R8
 
        if (precip_fact /= 1.0_R8) then
@@ -139,7 +137,7 @@ contains
              first_precip_fact_call = .false.
           end if
           write(cvalue,*) precip_fact
-          call ESMF_LogWrite(trim(subname)//" precip_fact is "//trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
+          call ESMF_LogWrite(trim(subname)//" precip_fact is "//trim(cvalue), ESMF_LOGMSG_INFO)
 
           allocate(fldnames(3))
           fldnames = (/'Faxa_rain', 'Faxa_snow', 'Fixx_rofi'/)
@@ -162,7 +160,7 @@ contains
           if (.not. fldchk(is_local%wrap%FBExp(compice), 'Sa_pbot',rc=rc)) then
              if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compatm,compice,mapbilnr))) then
                 call ESMF_LogWrite(trim(subname)//": ERROR bilinr RH not available for atm->ice", &
-                     ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+                     ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u)
                 rc = ESMF_FAILURE
                 return
              end if
@@ -182,7 +180,7 @@ contains
 
        ! compute air density as a custom calculation
        if ( .not. fldchk(is_local%wrap%FBImp(compatm,compatm), 'Sa_dens',rc=rc)) then
-          call ESMF_LogWrite(trim(subname)//": computing air density as a custom calculation", ESMF_LOGMSG_INFO, rc=dbrc)
+          call ESMF_LogWrite(trim(subname)//": computing air density as a custom calculation", ESMF_LOGMSG_INFO)
 
           call FB_GetFldPtr(is_local%wrap%FBImp(compatm,compice), 'Sa_shum', humidity, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -200,7 +198,7 @@ contains
 
        ! compute potential temperature as a custom calculation
        if (.not. fldchk(is_local%wrap%FBImp(compatm,compatm), 'Sa_ptem',rc=rc)) then
-          call ESMF_LogWrite(trim(subname)//": computing potential temp as a custom calculation", ESMF_LOGMSG_INFO, rc=dbrc)
+          call ESMF_LogWrite(trim(subname)//": computing potential temp as a custom calculation", ESMF_LOGMSG_INFO)
 
           call FB_GetFldPtr(is_local%wrap%FBExp(compice), 'Sa_ptem', pot_temp, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -214,16 +212,27 @@ contains
           end do
        end if
 
-       !if (dbug_flag > 1) then
+       if (dbug_flag > 1) then
           call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compice), string=trim(subname)//' FBexp(compice) ', rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       !end if
+       end if
 
        !---------------------------------------
-       !--- update local scalar data
+       !--- update scalar data
        !---------------------------------------
 
-       !is_local%wrap%scalar_data(1) =
+       ! send nextsw_cday to land - first obtain it from atm import 
+       call shr_nuopc_methods_State_GetScalar(&
+            scalar_value=nextsw_cday, scalar_id=flds_scalar_index_nextsw_cday, &
+            state=is_local%wrap%NstateImp(compatm), flds_scalar_name=flds_scalar_name, &
+            flds_scalar_num=flds_scalar_num, rc=rc)
+       if (shr_nuopc_methods_chkerr(rc,__LINE__,u_FILE_u)) return
+       call shr_nuopc_methods_State_SetScalar(&
+            scalar_value=nextsw_cday, scalar_id=flds_scalar_index_nextsw_cday, &
+            state=is_local%wrap%NstateExp(compice), flds_scalar_name=flds_scalar_name, &
+            flds_scalar_num=flds_scalar_num, rc=rc)
+       if (shr_nuopc_methods_chkerr(rc,__LINE__,u_FILE_u)) return
+
 
        !---------------------------------------
        !--- clean up
@@ -232,7 +241,7 @@ contains
     end if
 
     if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
     call t_stopf('MED:'//subname)
 
