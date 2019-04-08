@@ -1,9 +1,9 @@
 runSeq::
-@1800  # rof coupling step
+@rof_cpl_dt  # rof coupling step
   MED med_phases_prep_rof_avg
   MED -> ROF :remapMethod=redist
   ROF
-  @1800  # atmosphere coupling step
+  @atm_cpl_dt  # atmosphere coupling step
     MED med_phases_prep_lnd
     MED med_connectors_prep_med2lnd
     MED -> LND :remapMethod=redist

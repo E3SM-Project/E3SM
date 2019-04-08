@@ -47,6 +47,7 @@ contains
     !------------------------------------
     ! Carry out fast accumulation for the river (rof) component
     ! Accumulation and averaging is done on the land input on the land grid for the fields that will 
+    ! will be sent to the river component
     ! Mapping from the land to the rof grid is then done with the time averaged fields
     !------------------------------------
 
