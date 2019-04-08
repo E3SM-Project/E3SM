@@ -120,11 +120,12 @@
       <grid name="rof">null</grid>
     </model_grid>
 
-    <!-- Regional NLDAS grid over the U.S. (roughly 12km resolution), with the standard NLDAS mask -->
-    <model_grid alias="nldas_mnldas" compset="DATM.+CLM">
-      <grid name="atm">224x464_nldas</grid>
-      <grid name="lnd">224x464_nldas</grid>
-      <grid name="ocnice">224x464_nldas</grid>
+    <!-- Regional NLDAS-2 grid over the U.S. (0.125 degree resolution;
+         25-53N, 235-293E), with the standard NLDAS-2 mask -->
+    <model_grid alias="nldas2_mnldas2" compset="DATM.+CLM">
+      <grid name="atm">0.125nldas2</grid>
+      <grid name="lnd">0.125nldas2</grid>
+      <grid name="ocnice">0.125nldas2</grid>
       <grid name="rof">null</grid>
       <mask>nldas</mask>
     </model_grid>
@@ -1102,11 +1103,12 @@
       <desc>5x5 Amazon regional case -- only valid for DATM/CLM compset</desc>
     </domain>
 
-    <domain name="224x464_nldas">
+    <domain name="0.125nldas2">
       <nx>464</nx> <ny>224</ny>
-      <file grid="atm|lnd" mask="nldas">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.224x464_nldas_224x464_nldas.190403.nc</file>
-      <file grid="ocnice"  mask="nldas">$DIN_LOC_ROOT/share/domains/domain.clm/domain.ocn.224x464_nldas.190403.nc</file>
-      <desc>Regional NLDAS grid over the U.S. (roughly 12km resolution)</desc>
+      <!-- FIXME: Need to update these domain files (both their names and their masks) -->
+      <file grid="atm|lnd" mask="nldas2">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.224x464_nldas_224x464_nldas.190403.nc</file>
+      <file grid="ocnice"  mask="nldas2">$DIN_LOC_ROOT/share/domains/domain.clm/domain.ocn.224x464_nldas.190403.nc</file>
+      <desc>Regional NLDAS-2 grid over the U.S. (0.125 degree resolution; 25-53N, 235-293E)</desc>
     </domain>
 
     <!-- ATM/LND domains global -->
