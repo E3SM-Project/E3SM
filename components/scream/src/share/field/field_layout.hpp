@@ -55,6 +55,8 @@ protected:
   std::vector<int>      m_dims;
 };
 
+bool operator== (const FieldLayout& fl1, const FieldLayout& fl2);
+
 // ========================== IMPLEMENTATION ======================= //
 
 inline int FieldLayout::dim (const int idim) const {
@@ -88,6 +90,12 @@ inline bool FieldLayout::are_dimensions_set () const {
     }
   }
   return true;
+}
+
+inline bool operator== (const FieldLayout& fl1, const FieldLayout& fl2) {
+  return fl1.rank()==fl2.rank() &&
+         fl1.tags()==fl2.tags() &&
+         fl1.dims()==fl2.dims();
 }
 
 } // namespace scream

@@ -156,7 +156,7 @@ Field<ScalarType,Device>::get_reshaped_view () const {
 
   // Get src details
   const auto& alloc_prop = m_header->get_alloc_properties();
-  const auto& field_layout = m_header->get_identifier().layout();
+  const auto& field_layout = m_header->get_identifier().get_layout();
 
   // Make sure input field is allocated
   error::runtime_check(m_allocated, "Error! Cannot reshape a field that has not been allocated yet.\n");
@@ -204,7 +204,7 @@ void Field<ScalarType,Device>::allocate_view ()
 
   // Short names
   const auto& id     = m_header->get_identifier();
-  const auto& layout = id.layout();
+  const auto& layout = id.get_layout();
   auto& alloc_prop   = m_header->get_alloc_properties();
 
   // Check the identifier has all the dimensions set

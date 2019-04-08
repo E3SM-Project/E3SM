@@ -40,7 +40,7 @@ public:
 
   // Name and layout informations
   const std::string& name   () const { return m_name; }
-  const layout_type& layout () const { return m_layout; }
+  const layout_type& get_layout () const { return m_layout; }
 
   // The identifier string
   const std::string& get_identifier () const { return m_identifier; }
