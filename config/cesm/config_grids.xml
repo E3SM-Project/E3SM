@@ -121,13 +121,13 @@
     </model_grid>
 
     <!-- Regional NLDAS-2 grid over the U.S. (0.125 degree resolution;
-         25-53N, 235-293E), with the standard NLDAS-2 mask -->
+         25-53N, 235-293E), with mask from NLDAS-2 atmospheric drivers -->
     <model_grid alias="nldas2_mnldas2" compset="DATM.+CLM">
       <grid name="atm">0.125nldas2</grid>
       <grid name="lnd">0.125nldas2</grid>
       <grid name="ocnice">0.125nldas2</grid>
       <grid name="rof">null</grid>
-      <mask>nldas</mask>
+      <mask>nldas2</mask>
     </model_grid>
 
     <model_grid alias="hcru_hcru" compset="DATM.+CLM">
