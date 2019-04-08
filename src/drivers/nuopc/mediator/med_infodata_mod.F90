@@ -10,29 +10,18 @@ module med_infodata_mod
   implicit none
   private  ! default private
 
-  ! !PUBLIC TYPES:
-
-  public :: med_infodata_type
-
   ! !PUBLIC MEMBER FUNCTIONS
-
   public :: med_infodata_GetData         ! Get values from infodata object
   public :: med_infodata_CopyStateToInfodata
   public :: med_infodata_CopyInfodataToState
 
-  ! !PUBLIC DATA MEMBERS:
-  public :: med_infodata                  ! instance of infodata datatype
-
-  ! InputInfo derived type
+  ! !PUBLIC TYPES:
   type med_infodata_type
      private
-
      ! Set via components and held fixed after initialization
      integer :: nx(ncomps) = -1              ! global nx
      integer :: ny(ncomps) = -1              ! global ny
      logical :: rofice_present = .false.     ! does rof have iceberg coupling on
-     logical :: rof_prognostic = .false.     ! does rof component need input data
-     logical :: flood_present = .false.      ! does rof have flooding on
      logical :: iceberg_prognostic = .false. ! does the ice model support icebergs
      logical :: glclnd_present = .false.     ! does glc have land coupling fields on
      logical :: glcocn_present = .false.     ! does glc have ocean runoff on
@@ -46,10 +35,9 @@ module med_infodata_mod
 
      ! Set by mediator and may be time varying
      logical  :: glc_valid_input = .true. ! is valid accumulated data being sent to prognostic glc
-
   end type med_infodata_type
 
-  type (med_infodata_type), target :: med_infodata ! single instance for cpl and all comps
+  type (med_infodata_type), target, public :: med_infodata ! single instance for cpl and all comps
 
   ! used/reused in module
 
@@ -93,7 +81,6 @@ CONTAINS
     real(R8), pointer               :: farrayptr(:,:)
     real(R8)                        :: data(flds_scalar_num)
     character(len=32)               :: ntype
-    integer                         :: dbrc
     character(len=1024)             :: msgString
     character(len=*), parameter     :: subname='(med_infodata_CopyStateToInfodata)'
     !----------------------------------------------------------
@@ -107,7 +94,7 @@ CONTAINS
 
     if (itemType == ESMF_STATEITEM_NOTFOUND) then
        call ESMF_LogWrite(trim(subname)//": "//trim(flds_scalar_name)//" not found", ESMF_LOGMSG_INFO, &
-            line=__LINE__, file=u_FILE_u, rc=dbrc)
+            line=__LINE__, file=u_FILE_u)
     else
       call ESMF_StateGet(State, itemName=trim(flds_scalar_name), field=field, rc=rc)
       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -116,7 +103,7 @@ CONTAINS
         call ESMF_FieldGet(field, farrayPtr = farrayptr, rc=rc)
         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
         if (size(data) < flds_scalar_num .or. size(farrayptr) < flds_scalar_num) then
-          call ESMF_LogWrite(trim(subname)//": ERROR on data size", ESMF_LOGMSG_INFO, line=__LINE__, file=u_FILE_u, rc=dbrc)
+          call ESMF_LogWrite(trim(subname)//": ERROR on data size", ESMF_LOGMSG_INFO, line=__LINE__, file=u_FILE_u)
           rc = ESMF_FAILURE
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
         endif
@@ -132,14 +119,14 @@ CONTAINS
             infodata%nx(n) = nint(data(flds_scalar_index_nx))
             infodata%ny(n) = nint(data(flds_scalar_index_ny))
             write(msgString,'(2i8,2l4)') nint(data(flds_scalar_index_nx)),nint(data(flds_scalar_index_ny))
-            call ESMF_LogWrite(trim(subname)//":"//trim(type)//":"//trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
+            call ESMF_LogWrite(trim(subname)//":"//trim(type)//":"//trim(msgString), ESMF_LOGMSG_INFO)
          endif
       enddo
 
       if (type == 'atm2cpli') then
-        infodata%nextsw_cday = data(flds_scalar_index_nextsw_cday)
+         infodata%nextsw_cday = data(flds_scalar_index_nextsw_cday)
       elseif (type == 'ocn2cpli') then
-        infodata%precip_fact=data(flds_scalar_index_precip_fact)
+         infodata%precip_fact=data(flds_scalar_index_precip_fact)
       elseif (type == 'atm2cpl') then
          infodata%nextsw_cday=data(flds_scalar_index_nextsw_cday)
       elseif (type == 'ocn2cpl') then
@@ -154,6 +141,11 @@ CONTAINS
 
   subroutine med_infodata_CopyInfodataToState(infodata, State, type, mytask, rc)
 
+    ! ----------------------------------------------
+    ! Copy local scalar data into State, root only,
+    ! but called on all PETs in component
+    ! ----------------------------------------------
+
     use ESMF                  , only : ESMF_State, ESMF_StateGet, ESMF_Field, ESMF_StateItem_Flag, ESMF_FieldGet
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_STATEITEM_NOTFOUND
     use ESMF                  , only : operator(==), ESMF_FAILURE
@@ -163,11 +155,7 @@ CONTAINS
     use shr_nuopc_scalars_mod , only : flds_scalar_index_precip_fact
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_chkErr
 
-    ! ----------------------------------------------
-    ! Copy local scalar data into State, root only,
-    ! but called on all PETs in component
-    ! ----------------------------------------------
-
+    ! input/output variables
     type(med_infodata_type),intent(in):: infodata
     type(ESMF_State),  intent(inout)  :: State
     character(len=*),  intent(in)     :: type
@@ -179,7 +167,6 @@ CONTAINS
     type(ESMF_StateItem_Flag) :: ItemType
     real(R8), pointer         :: farrayptr(:,:)
     real(R8)                  :: nextsw_cday, precip_fact
-    integer                   :: dbrc
     character(len=*), parameter :: subname='(med_infodata_CopyInfodataToState)'
     !----------------------------------------------------------
 
@@ -191,7 +178,7 @@ CONTAINS
     if (itemType == ESMF_STATEITEM_NOTFOUND) then
 
        call ESMF_LogWrite(trim(subname)//": "//trim(flds_scalar_name)//" not found", &
-            ESMF_LOGMSG_INFO, line=__LINE__, file=u_FILE_u, rc=dbrc)
+            ESMF_LOGMSG_INFO, line=__LINE__, file=u_FILE_u)
 
     else
 
@@ -204,7 +191,7 @@ CONTAINS
 
         if (size(farrayptr) < flds_scalar_num) then
            call ESMF_LogWrite(trim(subname)//": ERROR on data size", &
-                ESMF_LOGMSG_INFO, line=__LINE__, file=u_FILE_u, rc=dbrc)
+                ESMF_LOGMSG_INFO, line=__LINE__, file=u_FILE_u)
           rc = ESMF_FAILURE
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
         endif

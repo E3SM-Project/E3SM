@@ -82,11 +82,6 @@ module med_internalstate_mod
     type(ESMF_FieldBundle) :: FBImpAccum(ncomps,ncomps)          ! Accumulator for various components import
     integer                :: FBImpAccumCnt(ncomps)              ! Accumulator counter for each FBImpAccum
 
-    ! Connectors
-    integer                :: conn_prep_cnt(ncomps)              ! Connector prep count
-    integer                :: conn_post_cnt(ncomps)              ! Connector post count
-    type(ESMF_VM)          :: vm
-
  end type InternalStateStruct
 
   type, public :: InternalState
