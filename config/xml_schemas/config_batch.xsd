@@ -147,6 +147,9 @@
         <xs:element maxOccurs="unbounded" ref="directive"/>
       </xs:sequence>
       <xs:attribute ref="queue"/>
+      <xs:attribute name="compiler"/>
+      <xs:attribute name="mpilib"/>
+      <xs:attribute name="threaded" type="xs:boolean"/>
     </xs:complexType>
   </xs:element>
 
@@ -154,10 +157,6 @@
     <xs:complexType mixed="true">
       <xs:attribute name="default"/>
       <xs:attribute name="prefix"/>
-      <xs:attribute name="compiler"/>
-      <xs:attribute name="mpilib"/>
-      <xs:attribute name="threaded" type="xs:boolean"/>
-      <xs:attribute name="queue"/>
     </xs:complexType>
   </xs:element>
 
@@ -172,7 +171,7 @@
   <xs:element name="queue">
     <xs:complexType>
       <xs:simpleContent>
-        <xs:extension base="xs:NCName">
+        <xs:extension base="xs:string">
           <xs:attribute name="default" type="xs:boolean"/>
           <xs:attribute name="strict" type="xs:boolean"/>
           <xs:attribute name="nodemax" type="xs:integer"/>
