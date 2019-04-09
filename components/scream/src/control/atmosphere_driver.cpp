@@ -60,16 +60,5 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
   m_atm_process_group->finalize( /* inputs ? */ );
 }
 
-// ==================== STUB for testing ================= //
-
-int driver_stub() {
-  // Test that we can at least create an AD...
-  AtmosphereDriver ad;
-  (void) ad;
-
-  // Return the answer to life, universe, everything...
-  return 42;
-}
-
 }  // namespace control
 }  // namespace scream

@@ -53,6 +53,7 @@ public:
   // Clean up the driver (includes cleaning up the parametrizations and the fm's);
   void finalize ( /* inputs */ );
 
+  const FieldRepository<Real,device_type>& get_field_repo () const { return m_device_field_repo; }
 protected:
 
   FieldRepository<Real,device_type>           m_device_field_repo;
@@ -64,8 +65,6 @@ protected:
   // This is the comm containing all (and only) the processes assigned to the atmosphere
   Comm   m_atm_comm;
 };
-
-int driver_stub();
 
 }  // namespace control
 }  // namespace scream
