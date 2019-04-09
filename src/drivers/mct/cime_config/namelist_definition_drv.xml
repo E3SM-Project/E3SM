@@ -1749,6 +1749,18 @@
     </values>
   </entry>
 
+  <entry id="iac_cpl_offset">
+    <type>integer</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      iac coupling interval offset in seconds default: 0
+    </desc>
+    <values>
+      <value>0</value>
+    </values>
+  </entry>
+
   <entry id="esp_cpl_offset">
     <type>integer</type>
     <category>time</category>
@@ -2227,6 +2239,18 @@
     </desc>
     <values>
       <value>$PAUSE_ACTIVE_WAV</value>
+    </values>
+  </entry>
+
+  <entry id="pause_active_iac" modify_via_xml="PAUSE_ACTIVE_IAC">
+    <type>logical</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Pause signals are active for component iac
+    </desc>
+    <values>
+      <value>$PAUSE_ACTIVE_IAC</value>
     </values>
   </entry>
 

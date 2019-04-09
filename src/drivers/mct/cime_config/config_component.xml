@@ -2718,6 +2718,7 @@
       <value compclass="ICE">FALSE</value>
       <value compclass="ROF">FALSE</value>
       <value compclass="LND">FALSE</value>
+      <value compclass="IAC">FALSE</value>
     </values>
   </entry>
 
