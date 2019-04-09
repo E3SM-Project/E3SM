@@ -126,14 +126,14 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime,
                 command)
 
             # Write test case run step
-            suite_script.write("print(' ** Running case {}'\n".format(
+            suite_script.write("print(' ** Running case {}')\n".format(
                 test_name))
             suite_script.write('try:\n')
             suite_script.write('    {}\n'.format(command))
-            suite_script.write("    print('      PASS'\n")
+            suite_script.write("    print('      PASS')\n")
             suite_script.write('except subprocess.CalledProcessError:\n')
             suite_script.write("    print('   ** FAIL (See case_outputs/{} "
-                               "for more information)'\n".format(
+                               "for more information)')\n".format(
                                        case_output_name))
             suite_script.write("    test_failed = True\n")
 
@@ -251,7 +251,7 @@ def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir,
             process_test_setup(child, config_file, work_dir, model_runtime,
                                regression_script, baseline_dir, verbose)
 
-    regression_script.write("print('TEST RUNTIMES:'\n")
+    regression_script.write("print('TEST RUNTIMES:')\n")
     regression_script.write("case_output = '/case_outputs/'\n")
     regression_script.write("totaltime = 0\n")
     regression_script.write("for _, _, files in os.walk(base_path + "
@@ -267,11 +267,11 @@ def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir,
     regression_script.write("        mins = int(np.floor(runtime/60.0))\n")
     regression_script.write("        secs = int(np.ceil(runtime - mins*60))\n")
     regression_script.write("        print('{:02d}:{:02d} {}'.format(mins, "
-                            "secs, afile)\n")
+                            "secs, afile))\n")
     regression_script.write("mins = int(np.floor(totaltime/60.0))\n")
     regression_script.write("secs = int(np.ceil(totaltime - mins*60))\n")
     regression_script.write("print('Total runtime {:02d}:{:02d}'.format(mins, "
-                            "secs)\n")
+                            "secs))\n")
     regression_script.write("\n")
 
     regression_script.write("if test_failed:\n")
