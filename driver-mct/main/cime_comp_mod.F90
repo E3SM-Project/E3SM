@@ -2551,14 +2551,6 @@ contains
           if (ocn_c2_glc) then
              call prep_glc_calc_o2x_gx(timer='CPL:glcprep_ocn2glc') !remap ocean fields to o2x_g at atmospheric timestep
           end if
-          if (lnd_c2_glc) then
-             ! Note that l2x_gx is obtained from mapping the module variable l2gacc_lx
-             call prep_glc_calc_l2x_gx(fractions_lx, timer='CPL:glcprep_lnd2glc')
-                !...and then here is where Bill S. does the new in-coupler downscaling.  I changed this so it's downscaling
-                ! non-accumulated fields.  This means (in theory) that it is called more frequently, but then can be merged 
-                ! and averaged with the other stuff, below.
-             call prep_glc_mrg(infodata, fractions_gx, timer_mrg='CPL:glcprep_mrgx2g')
-          end if
 
           if (glc_c2_ocn) then
              call prep_glc_calculate_subshelf_boundary_fluxes! this outputs
@@ -2585,54 +2577,7 @@ contains
        endif
 
        if (glc_present .and. glcrun_alarm) then
-
-          !----------------------------------------------------
-          !| glc prep-merge
-          !----------------------------------------------------
-
-          if (iamin_CPLID .and. glc_prognostic) then
-             call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:GLCPREP_BARRIER')
-             call t_drvstartf ('CPL:GLCPREP',cplrun=.true.,barrier=mpicom_CPLID)
-             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-
-                ! NOTE - only create appropriate input to glc if the avg_alarm is on
-                if (glcrun_avg_alarm) then
-                   call prep_glc_accum_avg(timer='CPL:glcprep_avg')
-
-                   if (lnd_c2_glc .or. ocn_c2_glc) then
-                      call component_diag(infodata, glc, flow='x2c', comment='send glc', &
-                           info_debug=info_debug, timer_diag='CPL:glcprep_diagav')
-                   endif
-                else
-                   call prep_glc_zero_fields() !Jer: double-check.  I bet this is wrong, as implemented
-                end if  ! glcrun_avg_alarm
-
-             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-             call t_drvstopf  ('CPL:GLCPREP',cplrun=.true.)
-
-          end if  ! iamin_CPLID .and. glc_prognostic
-
-          ! Set the infodata field on all tasks (not just those with iamin_CPLID).
-          if (glc_prognostic) then
-             if (glcrun_avg_alarm) then
-                call seq_infodata_PutData(infodata, glc_valid_input=.true.)
-             else
-                call seq_infodata_PutData(infodata, glc_valid_input=.false.)
-             end if
-          end if
-
-          !----------------------------------------------------
-          !| cpl -> glc
-          !----------------------------------------------------
-
-          if (iamin_CPLALLGLCID .and. glc_prognostic) then
-             call component_exch(glc, flow='x2c', &
-                  infodata=infodata, infodata_string='cpl2glc_run', &
-                  mpicom_barrier=mpicom_CPLALLGLCID, run_barriers=run_barriers, &
-                  timer_barrier='CPL:C2G_BARRIER', timer_comp_exch='CPL:C2G', &
-                  timer_map_exch='CPL:c2g_glcx2glcg', timer_infodata_exch='CPL:c2g_infoexch')
-          endif
-
+          call cime_run_glc_setup_send(lnd2glc_averaged_now)
        endif
 
        !----------------------------------------------------------
@@ -3849,24 +3794,27 @@ contains
        call t_drvstartf ('CPL:GLCPREP',cplrun=.true.,barrier=mpicom_CPLID)
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-       if (lnd_c2_glc) then
-          ! NOTE - only create appropriate input to glc if the avg_alarm is on
-          if (glcrun_avg_alarm) then
-             call prep_glc_accum_avg(timer='CPL:glcprep_avg')
-             lnd2glc_averaged_now = .true.
+       ! NOTE - only create appropriate input to glc if the avg_alarm is on
+       if (glcrun_avg_alarm) then
+          if (lnd_c2_glc .or. ocn_c2_glc) then
+             call prep_glc_accum_avg(lnd_c2_glc, ocn_c2_glc, timer='CPL:glcprep_avg')
 
-             ! Note that l2x_gx is obtained from mapping the module variable l2gacc_lx
-             call prep_glc_calc_l2x_gx(fractions_lx, timer='CPL:glcprep_lnd2glc')
+             if (lnd_c2_glc) then
+                lnd2glc_averaged_now = .true.
+                ! Note that l2x_gx is obtained from mapping the module variable l2gacc_lx
+                call prep_glc_calc_l2x_gx(fractions_lx, timer='CPL:glcprep_lnd2glc')
 
-             call prep_glc_mrg(infodata, fractions_gx, timer_mrg='CPL:glcprep_mrgx2g')
+                call prep_glc_mrg_lnd(infodata, fractions_gx, timer_mrg='CPL:glcprep_mrgx2g')
+             endif
 
              call component_diag(infodata, glc, flow='x2c', comment='send glc', &
                   info_debug=info_debug, timer_diag='CPL:glcprep_diagav')
 
-          else
-             call prep_glc_zero_fields()
-          end if  ! glcrun_avg_alarm
-       end if  ! lnd_c2_glc
+          endif ! lnd_c2_glc or ocn_c2_glc
+
+       else
+          call prep_glc_zero_fields()
+       end if  ! glcrun_avg_alarm
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
        call t_drvstopf  ('CPL:GLCPREP',cplrun=.true.)

@@ -30,7 +30,7 @@ module prep_glc_mod
   !--------------------------------------------------------------------------
 
   public :: prep_glc_init
-  public :: prep_glc_mrg
+  public :: prep_glc_mrg_lnd
 
   public :: prep_glc_accum
   public :: prep_glc_accum_avg
@@ -63,7 +63,7 @@ module prep_glc_mod
 
   private :: prep_glc_do_renormalize_smb
   private :: prep_glc_set_g2x_lx_fields
-  private :: prep_glc_merge
+  private :: prep_glc_merge_lnd_forcing
   private :: prep_glc_map_one_state_field_lnd2glc
   private :: prep_glc_map_qice_conservative_lnd2glc
   private :: prep_glc_renormalize_smb
@@ -398,7 +398,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_glc_accum(lnd_c2_glc, timer)
+  subroutine prep_glc_accum(lnd_c2_glc, ocn_c2_glc, timer)
 
     !---------------------------------------------------------------
     ! Description
@@ -406,6 +406,7 @@ contains
     !
     ! Arguments
     logical         , intent(in) :: lnd_c2_glc ! .true.  => lnd to glc coupling on
+    logical         , intent(in) :: ocn_c2_glc ! .true.  => ocn to glc (iceshelf) coupling on
     character(len=*), intent(in) :: timer
     !
     ! Local Variables
@@ -429,7 +430,7 @@ contains
        l2gacc_lx_cnt = l2gacc_lx_cnt + 1
     end if
 
-    if (glc_present) then
+    if (ocn_c2_glc) then
        do egi = 1,num_inst_glc
           x2g_gx => component_get_x2c_cx(glc(egi))
           if (x2gacc_gx_cnt == 0) then
@@ -491,7 +492,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_glc_mrg(infodata, fractions_gx, timer_mrg)
+  subroutine prep_glc_mrg_lnd(infodata, fractions_gx, timer_mrg)
 
     !---------------------------------------------------------------
     ! Description
@@ -505,7 +506,7 @@ contains
     ! Local Variables
     integer :: egi, eli, efi
     type(mct_avect), pointer :: x2g_gx
-    character(*), parameter  :: subname = '(prep_glc_mrg)'
+    character(*), parameter  :: subname = '(prep_glc_mrg_lnd)'
     !---------------------------------------------------------------
 
     call t_drvstartf (trim(timer_mrg),barrier=mpicom_CPLID)
@@ -515,15 +516,15 @@ contains
        efi = mod((egi-1),num_inst_frc) + 1
 
        x2g_gx => component_get_x2c_cx(glc(egi))
-       call prep_glc_merge(l2x_gx(eli), fractions_gx(efi), x2g_gx)
+       call prep_glc_merge_lnd_forcing(l2x_gx(eli), fractions_gx(efi), x2g_gx)
     enddo
     call t_drvstopf  (trim(timer_mrg))
 
-  end subroutine prep_glc_mrg
+  end subroutine prep_glc_mrg_lnd
 
   !================================================================================================
 
-  subroutine prep_glc_merge( l2x_g, fractions_g, x2g_g )
+  subroutine prep_glc_merge_lnd_forcing( l2x_g, fractions_g, x2g_g )
 
     !-----------------------------------------------------------------------
     ! Description
@@ -554,7 +555,7 @@ contains
     logical, save :: first_time = .true.
     character(CL),allocatable :: mrgstr(:)   ! temporary string
     character(CL) :: field   ! string converted to char
-    character(*), parameter   :: subname = '(prep_glc_merge) '
+    character(*), parameter   :: subname = '(prep_glc_merge_lnd_forcing) '
 
     !-----------------------------------------------------------------------
 
@@ -639,7 +640,7 @@ contains
 
     first_time = .false.
 
-  end subroutine prep_glc_merge
+  end subroutine prep_glc_merge_lnd_forcing
 
 
   subroutine prep_glc_calc_o2x_gx(timer)
