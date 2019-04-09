@@ -25,10 +25,8 @@ module gravity_waves_sources
   type (derivative_t), allocatable   :: deriv(:)
   real(r8) :: psurf_ref
 
-!----------------------------------------------------------------------
 CONTAINS
-!----------------------------------------------------------------------
-
+  !-------------------------------------------------------------------------------------------------
   subroutine gws_init(elem)
     use edge_mod, only       : initEdgeBuffer
     use hycoef, only         : hypi
@@ -36,8 +34,7 @@ CONTAINS
     use parallel_mod, only    : par
     implicit none
     type (element_t), intent(inout), dimension(:) :: elem
-
-    
+    !---------------------------------------------------------------------------
     ! Set up variables similar to dyn_comp and prim_driver_mod initializations
     call initEdgeBuffer(par,edge3,elem,3*nlev)
     allocate(deriv(0:hthreads-1))
@@ -45,7 +42,7 @@ CONTAINS
     psurf_ref = hypi(plev+1)
 
   end subroutine gws_init
-
+  !-------------------------------------------------------------------------------------------------
   subroutine gws_src_fnct(elem, tl, nphys, frontgf, frontga)
     use derivative_mod, only  : derivinit
     use dimensions_mod, only  : npsq, nelemd
@@ -68,7 +65,7 @@ CONTAINS
     integer :: nets, nete, ithr, ncols, ie, k
     real(kind=real_kind), allocatable  ::  frontgf_thr(:,:,:,:)
     real(kind=real_kind), allocatable  ::  frontga_thr(:,:,:,:)
-    
+    !---------------------------------------------------------------------------
     !$OMP PARALLEL NUM_THREADS(hthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid,ie,ncols,frontgf_thr,frontga_thr)
     ithr=omp_get_thread_num()
     nets=dom_mt(ithr)%start
@@ -97,7 +94,7 @@ CONTAINS
     !$OMP END PARALLEL
 
   end subroutine gws_src_fnct
-  
+  !-------------------------------------------------------------------------------------------------
   subroutine compute_frontogenesis(frontgf,frontga,tl,elem,ederiv,hybrid,nets,nete,nphys)
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! compute frontogenesis function F
@@ -139,14 +136,15 @@ CONTAINS
     integer :: k,kptr,i,j,ie,component
     real(kind=real_kind) :: frontgf_gll(np,np,nlev,nets:nete)
     real(kind=real_kind) :: gradth_gll(np,np,2,nlev,nets:nete)  ! grad(theta)
-    real(kind=real_kind) :: gradth_fv(np,np,2)       ! grad(theta)
-    real(kind=real_kind) :: p(np,np)                 ! pressure at mid points
-    real(kind=real_kind) :: theta(np,np)             ! pot. temp. at mid points
+    real(kind=real_kind) :: gradth_fv(fv_nphys,fv_nphys,2)      ! grad(theta)
+    real(kind=real_kind) :: p(np,np)        ! pressure at mid points
+    real(kind=real_kind) :: theta(np,np)    ! potential temperature at mid points
     real(kind=real_kind) :: temperature(np,np,nlev)  ! Temperature
     real(kind=real_kind) :: C(np,np,2)     
     real(r8), dimension(np,np)             :: tmp_area
     real(r8), dimension(fv_nphys,fv_nphys) :: inv_area
-    
+    !---------------------------------------------------------------------------
+
     do ie = nets,nete
       do k = 1,nlev
         ! potential temperature: theta = T (p/p0)^kappa
@@ -201,6 +199,7 @@ CONTAINS
 
           gradth_fv(:,:,2) = subcell_integration(gradth_gll(:,:,2,k,ie),      &
                              np, fv_nphys, elem(ie)%metdet(:,:) ) * inv_area
+
           do j=1,fv_nphys
             do i=1,fv_nphys
               frontga(i,j,k,ie) = atan2 ( gradth_fv(i,j,2) , gradth_fv(i,j,1) + 1.e-10_r8 )
@@ -219,6 +218,5 @@ CONTAINS
     end do ! ie
 
   end subroutine compute_frontogenesis
-
-
+  !-------------------------------------------------------------------------------------------------
 end module gravity_waves_sources
