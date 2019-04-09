@@ -10,7 +10,7 @@ module atm_core
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_dmpar
-   use mpas_log, only : mpas_log_write
+   use mpas_log, only : mpas_log_write, mpas_log_info
 
    type (MPAS_Clock_type), pointer :: clock
 
@@ -76,6 +76,7 @@ module atm_core
       ! Set "local" clock to point to the clock contained in the domain type
       !
       clock => domain % clock
+      mpas_log_info => domain % logInfo
 
 
       call mpas_pool_get_config(domain % blocklist % configs, 'config_do_restart', config_do_restart)
@@ -143,6 +144,17 @@ module atm_core
       call mpas_pool_get_subpool(domain % blocklist % structs, 'state', state)
       call mpas_pool_get_field(state, 'u', u_field, 1)
       call mpas_dmpar_exch_halo_field(u_field)
+
+
+      !
+      ! Perform basic compatibility checks among the fields that were read and the run-time options that were selected
+      !
+      call mpas_atm_run_compatibility(domain % dminfo, domain % blocklist, domain % streamManager, ierr)
+      if (ierr /= 0) then
+          call mpas_log_write('Please correct issues with the model input fields and/or namelist.', messageType=MPAS_LOG_ERR)
+          return
+      end if
+
 
       block => domain % blocklist
       do while (associated(block))
@@ -494,6 +506,9 @@ module atm_core
       real (kind=R8KIND) :: output_start_time, output_stop_time
       
       ierr = 0
+
+      clock => domain % clock
+      mpas_log_info => domain % logInfo
       
       ! Eventually, dt should be domain specific
       call mpas_pool_get_config(domain % blocklist % configs, 'config_dt', dt)
@@ -633,20 +648,6 @@ module atm_core
 
          call mpas_atm_diag_update()
          call mpas_atm_diag_compute()
-
-         if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
-            block_ptr => domain % blocklist
-            do while (associated(block_ptr))
-
-               call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
-               call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
-               call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
-               call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
-               call atm_compute_restart_diagnostics(state, 1, diag, mesh)
-
-               block_ptr => block_ptr % next
-            end do
-         end if
          call mpas_dmpar_get_time(diag_stop_time)
 
          call mpas_dmpar_get_time(output_start_time)
@@ -693,15 +694,10 @@ module atm_core
 
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
-         block_ptr => domain % blocklist
-         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
-         call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
-         call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
-         call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
-
       end do
    
    end function atm_core_run
+
    
    subroutine atm_compute_output_diagnostics(state, time_lev, diag, mesh)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -755,52 +751,6 @@ module atm_core
    end subroutine atm_compute_output_diagnostics
    
    
-   subroutine atm_compute_restart_diagnostics(state, time_lev, diag, mesh)
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! Compute diagnostic fields for a domain to be written to restart files
-   !
-   ! Input: state - contains model prognostic fields
-   !        mesh  - contains grid metadata
-   !
-   ! Output: state - upon returning, diagnostic fields will have be computed
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   
-      use mpas_constants
-   
-      implicit none
-   
-      type (mpas_pool_type), intent(inout) :: state
-      integer, intent(in) :: time_lev                 ! which time level to use from state
-      type (mpas_pool_type), intent(inout) :: diag
-      type (mpas_pool_type), intent(in) :: mesh
-   
-      integer :: iCell, k
-      integer, pointer :: nCells, nVertLevels, index_qv
-      real (kind=RKIND), dimension(:,:), pointer :: theta, rho, theta_m, rho_zz, zz
-      real (kind=RKIND), dimension(:,:,:), pointer :: scalars
-
-      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
-      call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
-      call mpas_pool_get_dimension(state, 'index_qv', index_qv)
-
-      call mpas_pool_get_array(state, 'theta_m', theta_m, time_lev)
-      call mpas_pool_get_array(state, 'rho_zz', rho_zz, time_lev)
-      call mpas_pool_get_array(state, 'scalars', scalars, time_lev)
-
-      call mpas_pool_get_array(diag, 'theta', theta)
-      call mpas_pool_get_array(diag, 'rho', rho)
-
-      call mpas_pool_get_array(mesh, 'zz', zz)
-
-      do iCell=1,nCells
-         do k=1,nVertLevels
-            theta(k,iCell) = theta_m(k,iCell) / (1.0_RKIND + rvord * scalars(index_qv,k,iCell))
-            rho(k,iCell) = rho_zz(k,iCell) * zz(k,iCell)
-         end do
-      end do
-   
-   end subroutine atm_compute_restart_diagnostics
-
    subroutine atm_reset_diagnostics(diag, diag_physics)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! reset some diagnostics after output
@@ -851,6 +801,9 @@ module atm_core
       real (kind=RKIND) :: xtime_s
       integer :: ierr
 
+      clock => domain % clock
+      mpas_log_info => domain % logInfo
+
       startTime = mpas_get_clock_time(clock, MPAS_START_TIME, ierr)
       currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
          
@@ -892,6 +845,9 @@ module atm_core
       integer :: ierr
 
       ierr = 0
+
+      clock => domain % clock
+      mpas_log_info => domain % logInfo
 
       call mpas_atm_diag_cleanup()
 
@@ -1261,6 +1217,46 @@ module atm_core
       zb3_cell(:,:,:) = config_coef_3rd_order * zb3_cell(:,:,:)
 
    end subroutine atm_couple_coef_3rd_order
+
+
+   !-----------------------------------------------------------------------
+   !  routine mpas_atm_run_compatibility
+   !
+   !> \brief Checks input fields and options for compatibility
+   !> \author Michael Duda
+   !> \date   22 October 2018
+   !> \details
+   !>  This routine checks the input fields and run-time options provided
+   !>  by the user for compatibility. For example, two run-time options may
+   !>  be mutually exclusive, or an option may require that a certain input
+   !>  field is provided.
+   !>
+   !>  A value of 0 is returned if there are no incompatibilities among
+   !>  the provided input fields and run-time options, and a non-zero value
+   !>  otherwise.
+   !
+   !-----------------------------------------------------------------------
+   subroutine mpas_atm_run_compatibility(dminfo, blockList, streamManager, ierr)
+
+      use mpas_atmphys_control, only : physics_compatibility_check
+
+      implicit none
+
+      type (dm_info), pointer :: dminfo
+      type (block_type), pointer :: blockList
+      type (MPAS_streamManager_type), pointer :: streamManager
+      integer, intent(out) :: ierr
+
+      integer :: local_ierr
+
+      ierr = 0
+
+      ! Physics specific checks found in /physics/mpas_atmphys_control.F
+      call physics_compatibility_check(dminfo, blockList, streamManager, local_ierr)
+      ierr = ierr + local_ierr
+
+
+   end subroutine mpas_atm_run_compatibility
 
 
 end module atm_core

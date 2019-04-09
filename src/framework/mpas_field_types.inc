@@ -10,10 +10,10 @@
    type field5DReal
   
       ! Back-pointer to the containing block
-      type (block_type), pointer :: block
+      type (block_type), pointer :: block => null()
 
       ! Raw array holding field data on this block
-      real (kind=RKIND), dimension(:,:,:,:,:), pointer :: array
+      real (kind=RKIND), dimension(:,:,:,:,:), pointer :: array => null()
 
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
@@ -30,12 +30,13 @@
       type (att_lists_type), dimension(:), pointer :: attLists => null()     
 
       ! Pointers to the prev and next blocks for this field on this task
-      type (field5DReal), pointer :: prev, next
+      type (field5DReal), pointer :: prev => null()
+      type (field5DReal), pointer :: next => null()
 
       ! Halo communication lists
-      type (mpas_multihalo_exchange_list), pointer :: sendList
-      type (mpas_multihalo_exchange_list), pointer :: recvList
-      type (mpas_multihalo_exchange_list), pointer :: copyList
+      type (mpas_multihalo_exchange_list), pointer :: sendList => null()
+      type (mpas_multihalo_exchange_list), pointer :: recvList => null()
+      type (mpas_multihalo_exchange_list), pointer :: copyList => null()
    end type field5DReal
 
 
@@ -43,10 +44,10 @@
    type field4DReal
   
       ! Back-pointer to the containing block
-      type (block_type), pointer :: block
+      type (block_type), pointer :: block => null()
 
       ! Raw array holding field data on this block
-      real (kind=RKIND), dimension(:,:,:,:), pointer :: array
+      real (kind=RKIND), dimension(:,:,:,:), pointer :: array => null()
 
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
@@ -63,12 +64,13 @@
       type (att_lists_type), dimension(:), pointer :: attLists => null()     
 
       ! Pointers to the prev and next blocks for this field on this task
-      type (field4DReal), pointer :: prev, next
+      type (field4DReal), pointer :: prev => null()
+      type (field4DReal), pointer :: next => null()
 
       ! Halo communication lists
-      type (mpas_multihalo_exchange_list), pointer :: sendList
-      type (mpas_multihalo_exchange_list), pointer :: recvList
-      type (mpas_multihalo_exchange_list), pointer :: copyList
+      type (mpas_multihalo_exchange_list), pointer :: sendList => null()
+      type (mpas_multihalo_exchange_list), pointer :: recvList => null()
+      type (mpas_multihalo_exchange_list), pointer :: copyList => null()
    end type field4DReal
 
 
@@ -77,10 +79,10 @@
    type field3DReal
   
       ! Back-pointer to the containing block
-      type (block_type), pointer :: block
+      type (block_type), pointer :: block => null()
 
       ! Raw array holding field data on this block
-      real (kind=RKIND), dimension(:,:,:), pointer :: array
+      real (kind=RKIND), dimension(:,:,:), pointer :: array => null()
 
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
@@ -97,12 +99,13 @@
       type (att_lists_type), dimension(:), pointer :: attLists => null()     
 
       ! Pointers to the prev and next blocks for this field on this task
-      type (field3DReal), pointer :: prev, next
+      type (field3DReal), pointer :: prev => null()
+      type (field3DReal), pointer :: next => null()
 
       ! Halo communication lists
-      type (mpas_multihalo_exchange_list), pointer :: sendList
-      type (mpas_multihalo_exchange_list), pointer :: recvList
-      type (mpas_multihalo_exchange_list), pointer :: copyList
+      type (mpas_multihalo_exchange_list), pointer :: sendList => null()
+      type (mpas_multihalo_exchange_list), pointer :: recvList => null()
+      type (mpas_multihalo_exchange_list), pointer :: copyList => null()
    end type field3DReal
 
 
@@ -110,10 +113,10 @@
    type field2DReal
   
       ! Back-pointer to the containing block
-      type (block_type), pointer :: block
+      type (block_type), pointer :: block => null()
 
       ! Raw array holding field data on this block
-      real (kind=RKIND), dimension(:,:), pointer :: array
+      real (kind=RKIND), dimension(:,:), pointer :: array => null()
 
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
@@ -130,12 +133,13 @@
       type (att_lists_type), dimension(:), pointer :: attLists => null()     
 
       ! Pointers to the prev and next blocks for this field on this task
-      type (field2DReal), pointer :: prev, next
+      type (field2DReal), pointer :: prev => null()
+      type (field2DReal), pointer :: next => null()
 
       ! Halo communication lists
-      type (mpas_multihalo_exchange_list), pointer :: sendList
-      type (mpas_multihalo_exchange_list), pointer :: recvList
-      type (mpas_multihalo_exchange_list), pointer :: copyList
+      type (mpas_multihalo_exchange_list), pointer :: sendList => null()
+      type (mpas_multihalo_exchange_list), pointer :: recvList => null()
+      type (mpas_multihalo_exchange_list), pointer :: copyList => null()
    end type field2DReal
 
 
@@ -143,10 +147,10 @@
    type field1DReal
   
       ! Back-pointer to the containing block
-      type (block_type), pointer :: block
+      type (block_type), pointer :: block => null()
 
       ! Raw array holding field data on this block
-      real (kind=RKIND), dimension(:), pointer :: array
+      real (kind=RKIND), dimension(:), pointer :: array => null()
 
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
@@ -163,12 +167,13 @@
       type (att_lists_type), dimension(:), pointer :: attLists => null()     
 
       ! Pointers to the prev and next blocks for this field on this task
-      type (field1DReal), pointer :: prev, next
+      type (field1DReal), pointer :: prev => null()
+      type (field1DReal), pointer :: next => null()
 
       ! Halo communication lists
-      type (mpas_multihalo_exchange_list), pointer :: sendList
-      type (mpas_multihalo_exchange_list), pointer :: recvList
-      type (mpas_multihalo_exchange_list), pointer :: copyList
+      type (mpas_multihalo_exchange_list), pointer :: sendList => null()
+      type (mpas_multihalo_exchange_list), pointer :: recvList => null()
+      type (mpas_multihalo_exchange_list), pointer :: copyList => null()
    end type field1DReal
 
 
@@ -176,7 +181,7 @@
    type field0DReal
   
       ! Back-pointer to the containing block
-      type (block_type), pointer :: block
+      type (block_type), pointer :: block => null()
 
       ! Raw array holding field data on this block
       real (kind=RKIND) :: scalar
@@ -193,12 +198,13 @@
       type (att_lists_type), dimension(:), pointer :: attLists => null()     
 
       ! Pointers to the prev and next blocks for this field on this task
-      type (field0DReal), pointer :: prev, next
+      type (field0DReal), pointer :: prev => null()
+      type (field0DReal), pointer :: next => null()
 
       ! Halo communication lists
-      type (mpas_multihalo_exchange_list), pointer :: sendList
-      type (mpas_multihalo_exchange_list), pointer :: recvList
-      type (mpas_multihalo_exchange_list), pointer :: copyList
+      type (mpas_multihalo_exchange_list), pointer :: sendList => null()
+      type (mpas_multihalo_exchange_list), pointer :: recvList => null()
+      type (mpas_multihalo_exchange_list), pointer :: copyList => null()
    end type field0DReal
 
 
@@ -206,10 +212,10 @@
    type field3DInteger
   
       ! Back-pointer to the containing block
-      type (block_type), pointer :: block
+      type (block_type), pointer :: block => null()
 
       ! Raw array holding field data on this block
-      integer, dimension(:,:,:), pointer :: array
+      integer, dimension(:,:,:), pointer :: array => null()
 
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
@@ -226,12 +232,13 @@
       type (att_lists_type), dimension(:), pointer :: attLists => null()     
 
       ! Pointers to the prev and next blocks for this field on this task
-      type (field3DInteger), pointer :: prev, next
+      type (field3DInteger), pointer :: prev => null()
+      type (field3DInteger), pointer :: next => null()
 
       ! Halo communication lists
-      type (mpas_multihalo_exchange_list), pointer :: sendList
-      type (mpas_multihalo_exchange_list), pointer :: recvList
-      type (mpas_multihalo_exchange_list), pointer :: copyList
+      type (mpas_multihalo_exchange_list), pointer :: sendList => null()
+      type (mpas_multihalo_exchange_list), pointer :: recvList => null()
+      type (mpas_multihalo_exchange_list), pointer :: copyList => null()
    end type field3DInteger
 
 
@@ -239,10 +246,10 @@
    type field2DInteger
   
       ! Back-pointer to the containing block
-      type (block_type), pointer :: block
+      type (block_type), pointer :: block => null()
 
       ! Raw array holding field data on this block
-      integer, dimension(:,:), pointer :: array
+      integer, dimension(:,:), pointer :: array => null()
 
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
@@ -259,12 +266,13 @@
       type (att_lists_type), dimension(:), pointer :: attLists => null()     
 
       ! Pointers to the prev and next blocks for this field on this task
-      type (field2DInteger), pointer :: prev, next
+      type (field2DInteger), pointer :: prev => null()
+      type (field2DInteger), pointer :: next => null()
 
       ! Halo communication lists
-      type (mpas_multihalo_exchange_list), pointer :: sendList
-      type (mpas_multihalo_exchange_list), pointer :: recvList
-      type (mpas_multihalo_exchange_list), pointer :: copyList
+      type (mpas_multihalo_exchange_list), pointer :: sendList => null()
+      type (mpas_multihalo_exchange_list), pointer :: recvList => null()
+      type (mpas_multihalo_exchange_list), pointer :: copyList => null()
    end type field2DInteger
 
 
@@ -272,10 +280,10 @@
    type field1DInteger
   
       ! Back-pointer to the containing block
-      type (block_type), pointer :: block
+      type (block_type), pointer :: block => null()
 
       ! Raw array holding field data on this block
-      integer, dimension(:), pointer :: array
+      integer, dimension(:), pointer :: array => null()
 
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
@@ -292,12 +300,13 @@
       type (att_lists_type), dimension(:), pointer :: attLists => null()     
 
       ! Pointers to the prev and next blocks for this field on this task
-      type (field1DInteger), pointer :: prev, next
+      type (field1DInteger), pointer :: prev => null()
+      type (field1DInteger), pointer :: next => null()
 
       ! Halo communication lists
-      type (mpas_multihalo_exchange_list), pointer :: sendList
-      type (mpas_multihalo_exchange_list), pointer :: recvList
-      type (mpas_multihalo_exchange_list), pointer :: copyList
+      type (mpas_multihalo_exchange_list), pointer :: sendList => null()
+      type (mpas_multihalo_exchange_list), pointer :: recvList => null()
+      type (mpas_multihalo_exchange_list), pointer :: copyList => null()
    end type field1DInteger
 
 
@@ -305,7 +314,7 @@
    type field0DInteger
   
       ! Back-pointer to the containing block
-      type (block_type), pointer :: block
+      type (block_type), pointer :: block => null()
 
       ! Raw array holding field data on this block
       integer :: scalar
@@ -322,12 +331,13 @@
       type (att_lists_type), dimension(:), pointer :: attLists => null()     
 
       ! Pointers to the prev and next blocks for this field on this task
-      type (field0DInteger), pointer :: prev, next
+      type (field0DInteger), pointer :: prev => null()
+      type (field0DInteger), pointer :: next => null()
 
       ! Halo communication lists
-      type (mpas_multihalo_exchange_list), pointer :: sendList
-      type (mpas_multihalo_exchange_list), pointer :: recvList
-      type (mpas_multihalo_exchange_list), pointer :: copyList
+      type (mpas_multihalo_exchange_list), pointer :: sendList => null()
+      type (mpas_multihalo_exchange_list), pointer :: recvList => null()
+      type (mpas_multihalo_exchange_list), pointer :: copyList => null()
    end type field0DInteger
 
 
@@ -335,10 +345,10 @@
    type field1DChar
   
       ! Back-pointer to the containing block
-      type (block_type), pointer :: block
+      type (block_type), pointer :: block => null()
 
       ! Raw array holding field data on this block
-      character (len=StrKIND), dimension(:), pointer :: array
+      character (len=StrKIND), dimension(:), pointer :: array => null()
 
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
@@ -355,12 +365,13 @@
       type (att_lists_type), dimension(:), pointer :: attLists => null()     
 
       ! Pointers to the prev and next blocks for this field on this task
-      type (field1DChar), pointer :: prev, next
+      type (field1DChar), pointer :: prev => null()
+      type (field1DChar), pointer :: next => null()
 
       ! Halo communication lists
-      type (mpas_multihalo_exchange_list), pointer :: sendList
-      type (mpas_multihalo_exchange_list), pointer :: recvList
-      type (mpas_multihalo_exchange_list), pointer :: copyList
+      type (mpas_multihalo_exchange_list), pointer :: sendList => null()
+      type (mpas_multihalo_exchange_list), pointer :: recvList => null()
+      type (mpas_multihalo_exchange_list), pointer :: copyList => null()
    end type field1DChar
 
 
@@ -368,7 +379,7 @@
    type field0DChar
   
       ! Back-pointer to the containing block
-      type (block_type), pointer :: block
+      type (block_type), pointer :: block => null()
 
       ! Raw array holding field data on this block
       character (len=StrKIND) :: scalar
@@ -385,12 +396,13 @@
       type (att_lists_type), dimension(:), pointer :: attLists => null()     
 
       ! Pointers to the prev and next blocks for this field on this task
-      type (field0DChar), pointer :: prev, next
+      type (field0DChar), pointer :: prev => null()
+      type (field0DChar), pointer :: next => null()
 
       ! Halo communication lists
-      type (mpas_multihalo_exchange_list), pointer :: sendList
-      type (mpas_multihalo_exchange_list), pointer :: recvList
-      type (mpas_multihalo_exchange_list), pointer :: copyList
+      type (mpas_multihalo_exchange_list), pointer :: sendList => null()
+      type (mpas_multihalo_exchange_list), pointer :: recvList => null()
+      type (mpas_multihalo_exchange_list), pointer :: copyList => null()
    end type field0DChar
 
 
@@ -398,7 +410,7 @@
    type field0DLogical
   
       ! Back-pointer to the containing block
-      type (block_type), pointer :: block
+      type (block_type), pointer :: block => null()
 
       ! Raw array holding field data on this block
       logical :: scalar
@@ -415,11 +427,12 @@
       type (att_lists_type), dimension(:), pointer :: attLists => null()     
 
       ! Pointers to the prev and next blocks for this field on this task
-      type (field0DLogical), pointer :: prev, next
+      type (field0DLogical), pointer :: prev => null()
+      type (field0DLogical), pointer :: next => null()
 
       ! Halo communication lists
-      type (mpas_multihalo_exchange_list), pointer :: sendList
-      type (mpas_multihalo_exchange_list), pointer :: recvList
-      type (mpas_multihalo_exchange_list), pointer :: copyList
+      type (mpas_multihalo_exchange_list), pointer :: sendList => null()
+      type (mpas_multihalo_exchange_list), pointer :: recvList => null()
+      type (mpas_multihalo_exchange_list), pointer :: copyList => null()
    end type field0DLogical
 
