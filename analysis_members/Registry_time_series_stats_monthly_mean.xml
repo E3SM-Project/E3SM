@@ -1,4 +1,4 @@
-	<nml_record name="AM_timeSeriesStatsMonthlyMeanMean" mode="forward;analysis">
+	<nml_record name="AM_timeSeriesStatsMonthlyMean" mode="forward;analysis">
 		<nml_option name="config_AM_timeSeriesStatsMonthlyMean_enable"
 			type="logical"
 			default_value=".false."
