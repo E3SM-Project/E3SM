@@ -46,27 +46,27 @@
 
   <compset>
     <alias>ADSOM</alias>
-    <lname>2000_DATM%NYF_SLND_DICE%SSMI_DOCN%SOM_DROF%NYF_SGLC_SWAV_SIAC_TEST</lname>
+    <lname>2000_DATM%NYF_SLND_DICE%SSMI_DOCN%SOM_DROF%NYF_SGLC_SWAV_TEST</lname>
   </compset>
 
   <compset>
     <alias>ADSOMAQP</alias>
-    <lname>2000_DATM%NYF_SLND_SICE_DOCN%SOMAQP_SROF_SGLC_SWAV_SIAC</lname>
+    <lname>2000_DATM%NYF_SLND_SICE_DOCN%SOMAQP_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
     <alias>ADAQP3</alias>
-    <lname>2000_DATM%NYF_SLND_SICE_DOCN%AQP3_SROF_SGLC_SWAV_SIAC</lname>
+    <lname>2000_DATM%NYF_SLND_SICE_DOCN%AQP3_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
     <alias>ADAQPFILE</alias>
-    <lname>2000_DATM%NYF_SLND_SICE_DOCN%AQPFILE_SROF_SGLC_SWAV_SIAC</lname>
+    <lname>2000_DATM%NYF_SLND_SICE_DOCN%AQPFILE_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
     <alias>A1850DLND</alias>
-    <lname>1850_SATM_DLND%SCPL_SICE_SOCN_SROF_SGLC_SWAV_SIAC</lname>
+    <lname>1850_SATM_DLND%SCPL_SICE_SOCN_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
@@ -76,22 +76,22 @@
 
   <compset>
     <alias>ADESP</alias>
-    <lname>2000_DATM%NYF_SLND_SICE_DOCN%SOMAQP_SROF_SGLC_SWAV_SIAC_DESP%NOOP</lname>
+    <lname>2000_DATM%NYF_SLND_SICE_DOCN%SOMAQP_SROF_SGLC_SWAV_DESP%NOOP</lname>
   </compset>
 
   <compset>
     <alias>ADESP_TEST</alias>
-    <lname>2000_DATM%NYF_SLND_SICE_DOCN%SOMAQP_SROF_SGLC_SWAV_SIAC_DESP%TEST</lname>
+    <lname>2000_DATM%NYF_SLND_SICE_DOCN%SOMAQP_SROF_SGLC_SWAV_DESP%TEST</lname>
   </compset>
 
   <compset>
     <alias>AIAF</alias>
-    <lname>2000_DATM%IAF_SLND_DICE%IAF_DOCN%IAF_DROF%IAF_SGLC_SWAV_SIAC</lname>
+    <lname>2000_DATM%IAF_SLND_DICE%IAF_DOCN%IAF_DROF%IAF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
     <alias>S</alias>
-    <lname>2000_SATM_SLND_SICE_SOCN_SROF_SGLC_SWAV_SIAC_SESP</lname>
+    <lname>2000_SATM_SLND_SICE_SOCN_SROF_SGLC_SWAV_SESP</lname>
   </compset>
 
   <compset>
