@@ -2528,7 +2528,7 @@ int parse_structs_from_registry(ezxml_t registry)/*{{{*/
 	fd = fopen("structs_and_variables.inc", "w+");
 
 	for (structs_xml = ezxml_child(registry, "var_struct"); structs_xml; structs_xml = structs_xml->next){
-		err = parse_struct(fd, registry, structs_xml, 0, '\0', corename);
+		err = parse_struct(fd, registry, structs_xml, 0, "\0", corename);
 	}
 
 	fortprintf(fd, "   subroutine %s_generate_structs(block, structPool, dimensionPool, packagePool)\n", core_string);
