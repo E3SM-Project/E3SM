@@ -16,7 +16,7 @@ FUNCTION(CreateUnitTest target_name target_srcs scream_libs)
   cmake_parse_arguments(CreateUnitTest "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
   # Set link directories (must be done BEFORE add_executable is called)
-  link_directories(${SCREAM_TPL_LIBRARY_DIRS} ${SCREAM_LIBRARY_DIRS})
+  link_directories(${SCREAM_TPL_LIBRARY_DIRS} ${SCREAM_LIBRARY_DIRS} ${UNIT_TEST_EXTRA_LIBRARY_DIRS})
 
   # Create the executable
   add_executable (${target_name} ${target_srcs} ${SCREAM_SRC_DIR}/share/util/scream_catch_main.cpp)
