@@ -72,7 +72,7 @@ module glc_comp_mct
 
   integer  :: nsend, nrecv
 
-  character(len=StrKIND) :: runtype  !< ACME run type: initial, continue, branch
+  character(len=StrKIND) :: runtype  !< E3SM run type: initial, continue, branch
   character(len=StrKIND) :: coupleTimeStamp
 
   type(seq_infodata_type), pointer :: infodata  ! coupler infodata
@@ -342,7 +342,7 @@ contains
     end if
 
     ! Set core specific options here
-    ! Disable output from all but the master task for ACME!
+    ! Disable output from all but the master task for E3SM!
     ! (This overrides the default set by mpas_log_init based on MPAS_DEBUG setting.)
     if (iam /= 0) then
        domain % logInfo % outputLog % isActive = .false.
@@ -798,7 +798,7 @@ contains
 !!  local variables
 !!
 !!-----------------------------------------------------------------------
-! Variables related to ACME coupler
+! Variables related to E3SM coupler
       integer :: shrloglev, shrlogunit
 
 ! Variable related to MALI
@@ -1526,7 +1526,7 @@ contains
        call mpas_log_write('MPAS ymd=$i  MPAS tod=$i', MPAS_LOG_ERR, intArgs=(/ymd, tod/))
        call mpas_log_write('sync ymd=$i  sync tod=$i', MPAS_LOG_ERR, intArgs=(/curr_ymd, curr_tod/))
        call mpas_log_write('Internal mpas clock not in sync with sync clock', MPAS_LOG_ERR)
-       call mpas_log_write("Internal MPAS clock not in sync with ACME sync clock. Aborting...", MPAS_LOG_CRIT)
+       call mpas_log_write("Internal MPAS clock not in sync with E3SM sync clock. Aborting...", MPAS_LOG_CRIT)
     end if
 
    end subroutine check_clocks_sync
