@@ -17,3 +17,6 @@ CreateUnitTest(field "field_tests.cpp" scream_share)
 
 # Test workspace manager
 CreateUnitTest(wsm "workspace_tests.cpp" scream_share THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC})
+
+# Test atmosphere processes
+CreateUnitTest(atm_proc "atm_process_tests.cpp" scream_share)

@@ -56,6 +56,14 @@ public:
   const std::set<FieldIdentifier>&  get_required_fields () const { return m_required_fields; }
   const std::set<FieldIdentifier>&  get_computed_fields () const { return m_computed_fields; }
 
+  // --- Methods specific to AtmosphereProcessGroup --- //
+
+  int get_num_processes () const { return m_atm_processes.size(); }
+
+  atm_proc_ptr_type get_process (const int i) const {
+    return m_atm_processes.at(i);
+  }
+
 protected:
 
   // The methods to set the fields in the process
