@@ -56,7 +56,7 @@ if __name__ == "__main__":
                         help="Test name to search for", metavar="TEST")
     parser.add_argument("-n", "--number", dest="number", type=int,
                         help="If set, script will print the flags to use a "
-                             "the N'th configuraiton.")
+                             "the N'th configuration.")
 
     args = parser.parse_args()
 

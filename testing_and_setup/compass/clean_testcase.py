@@ -25,7 +25,7 @@ if __name__ == "__main__":
             description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
 
     parser.add_argument("-o", "--core", dest="core",
-                        help="Core that conatins configurations to clean",
+                        help="Core that contains configurations to clean",
                         metavar="CORE")
     parser.add_argument("-c", "--configuration", dest="configuration",
                         help="Configuration to clean", metavar="CONFIG")
