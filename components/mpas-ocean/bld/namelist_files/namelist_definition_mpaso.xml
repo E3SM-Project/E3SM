@@ -228,7 +228,7 @@ Default: Defined in namelist_defaults.xml
 	category="init_setup" group="init_setup">
 Name of vertical grid to use in configuration generation
 
-Valid values: 'uniform', '60layerPHC', '42layerWOCE', '100layerACMEv1', '1dCVTgenerator', ...
+Valid values: 'uniform', '60layerPHC', '42layerWOCE', '100layerE3SMv1', '1dCVTgenerator', ...
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1309,7 +1309,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_frazil_heat_of_fusion" type="real"
 	category="frazil_ice" group="frazil_ice">
-Energy per kilogram released when sea water freezes. NOTE: test and make consistent with ACME.
+Energy per kilogram released when sea water freezes. NOTE: test and make consistent with E3SM.
 
 Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
@@ -1317,7 +1317,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_frazil_ice_density" type="real"
 	category="frazil_ice" group="frazil_ice">
-Assumed density of frazil. NOTE: test and make consistent with ACME.
+Assumed density of frazil. NOTE: test and make consistent with E3SM.
 
 Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
@@ -1333,7 +1333,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_specific_heat_sea_water" type="real"
 	category="frazil_ice" group="frazil_ice">
-Energy per kilogram per C needed to raise ocean temperature 1 C. NOTE: test and make consistent with ACME.
+Energy per kilogram per C needed to raise ocean temperature 1 C. NOTE: test and make consistent with E3SM.
 
 Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml

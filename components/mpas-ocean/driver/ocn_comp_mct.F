@@ -374,7 +374,7 @@ contains
     end if
 
     ! Set core specific options here
-    ! Disable output from all but the master task for ACME!
+    ! Disable output from all but the master task for E3SM!
     ! (This overrides the default set by mpas_log_init based on MPAS_DEBUG setting.)
     if (iam /= 0) then
        domain % logInfo % outputLog % isActive = .false.
@@ -2416,7 +2416,7 @@ contains
        call mpas_log_write('MPAS ymd=$i  MPAS tod=$i', MPAS_LOG_ERR, intArgs=(/ymd, tod/))
        call mpas_log_write('sync ymd=$i  sync tod=$i', MPAS_LOG_ERR, intArgs=(/curr_ymd, curr_tod/))
        call mpas_log_write('Internal mpas clock not in sync with sync clock', MPAS_LOG_ERR)
-       call mpas_log_write("Internal MPAS clock not in sync with ACME sync clock. Aborting...", MPAS_LOG_CRIT)
+       call mpas_log_write("Internal MPAS clock not in sync with E3SM sync clock. Aborting...", MPAS_LOG_CRIT)
     end if
 
  end subroutine check_clocks_sync
