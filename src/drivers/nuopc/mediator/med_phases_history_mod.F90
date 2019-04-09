@@ -45,14 +45,12 @@ contains
     use shr_nuopc_time_mod    , only : shr_nuopc_time_alarmInit
     use med_constants_mod     , only : dbug_flag =>med_constants_dbug_flag
     use med_constants_mod     , only : SecPerDay =>med_constants_SecPerDay
-    use med_constants_mod     , only : R8, CL, CS, IN
+    use med_constants_mod     , only : R8, CL, CS
     use med_constants_mod     , only : med_constants_noleap, med_constants_gregorian
-    use med_infodata_mod      , only : med_infodata, med_infodata_GetData
     use med_map_mod           , only : med_map_FB_Regrid_Norm
     use med_internalstate_mod , only : InternalState, mastertask
     use med_io_mod            , only : med_io_write, med_io_wopen, med_io_enddef
-    use med_io_mod            , only : med_io_close, med_io_date2yyyymmdd
-    use med_io_mod            , only : med_io_sec2hms
+    use med_io_mod            , only : med_io_close, med_io_date2yyyymmdd, med_io_sec2hms
     use perf_mod              , only : t_startf, t_stopf
 
     ! input/output variables
@@ -277,15 +275,15 @@ contains
           do n = 1,ncomps
              if (is_local%wrap%comp_present(n)) then
                 if (ESMF_FieldBundleIsCreated(is_local%wrap%FBimp(n,n),rc=rc)) then
-                   call med_infodata_GetData(med_infodata, ncomp=n, nx=nx, ny=ny, rc=rc)
-                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                   nx = is_local%wrap%nx(n)
+                   ny = is_local%wrap%ny(n)
                    call med_io_write(hist_file, iam, is_local%wrap%FBimp(n,n), &
                        nx=nx, ny=ny, nt=1, whead=whead, wdata=wdata, pre=trim(compname(n))//'Imp', rc=rc)
                    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                 endif
                 if (ESMF_FieldBundleIsCreated(is_local%wrap%FBexp(n),rc=rc)) then
-                   call med_infodata_GetData(med_infodata, ncomp=n, nx=nx, ny=ny, rc=rc)
-                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                   nx = is_local%wrap%nx(n)
+                   ny = is_local%wrap%ny(n)
                    call med_io_write(hist_file, iam, is_local%wrap%FBexp(n), &
                        nx=nx, ny=ny, nt=1, whead=whead, wdata=wdata, pre=trim(compname(n))//'Exp', rc=rc)
                    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return

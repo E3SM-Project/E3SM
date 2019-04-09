@@ -103,10 +103,11 @@ contains
             ESMF_LOGMSG_INFO)
     end if
 
-    if (ncnt >= 0) then
-       !---------------------------------------
-       ! Accumulate lnd input on lnd grid to send to rof
-       !---------------------------------------
+    !---------------------------------------
+    !-- Accumulate lnd input on lnd grid to send to rof
+    !---------------------------------------
+
+    if (ncnt > 0) then
        call shr_nuopc_methods_FB_accum(&
             is_local%wrap%FBImpAccum(complnd,complnd), &
             is_local%wrap%FBImp(complnd,complnd), rc=rc)
