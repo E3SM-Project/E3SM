@@ -112,6 +112,9 @@
 !      0.0-eps < fractions_*(*) < 1.0+eps
 !    run time:
 !      fractions_a(lfrac) + fractions_a(ofrac) + fractions_a(ifrac) ~ 1.0
+!bk    1.0 = fractions_a(lfrac) + fractions_a_(gfrac) + fractions_a(ofrac) + fractions_a(ifrac)
+!bk    1.0 = fractions_o(afrac) + fractions_o_(gfrac) + fractions_o(ifrac)
+!bk    max(fractions_i(ifrac) = 1.0 - fractions_i(gfrac)  ! glc shelf displaces ice
 !      0.0-eps < fractions_*(*) < 1.0+eps
 !
 !!
@@ -268,10 +271,15 @@ contains
     integer :: lsize          ! local size of ice av
     integer :: debug_old      ! old debug value
 
-    character(*),parameter :: fraclist_a = 'afrac:ifrac:ofrac:lfrac:lfrin'
-    character(*),parameter :: fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
-    character(*),parameter :: fraclist_i = 'afrac:ifrac:ofrac'
-    character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
+!    character(*),parameter :: fraclist_a = 'afrac:ifrac:ofrac:lfrac:lfrin'
+!    character(*),parameter :: fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
+!    character(*),parameter :: fraclist_i = 'afrac:ifrac:ofrac'
+!    character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
+! from BK: gfrac now time variant
+    character(*),parameter :: fraclist_a = 'afrac:ifrac:ofrac:lfrac:lfrin:gfrac'
+    character(*),parameter :: fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad:gfrac'
+    character(*),parameter :: fraclist_i = 'afrac:ifrac:ofrac:gfrac'
+    character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin:gfrac'
     character(*),parameter :: fraclist_g = 'gfrac:lfrac'
     character(*),parameter :: fraclist_r = 'lfrac:rfrac'
     character(*),parameter :: fraclist_w = 'wfrac'
@@ -324,10 +332,13 @@ contains
        lSize = mct_aVect_lSize(dom_g%data)
        call mct_aVect_init(fractions_g,rList=fraclist_g,lsize=lsize)
        call mct_aVect_zero(fractions_g)
-
+!bk    gfrac must be time-variant output of glc -- dom_g fraction is now MAX possible fraction (1.0)
        kg = mct_aVect_indexRA(fractions_g,"gfrac",perrWith=subName)
        kf = mct_aVect_indexRA(dom_g%data ,"frac" ,perrWith=subName)
-       fractions_g%rAttr(kg,:) = dom_g%data%rAttr(kf,:)
+       fractions_g%rAttr(kg,:) = dom_g%data%rAttr(kf,:) ! BK: todo, use t-variant Sg_ice_covered from glc
+!bk    kg = mct_aVect_indexRA(fractions_g,"gfrac",perrWith=subName)
+!bk    kf = mct_aVect_indexRA(dom_g%data ,"frac" ,perrWith=subName)
+!bk    fractions_g%rAttr(kg,:) = dom_g%data%rAttr(kf,:)  # BK: new,  use t-variant Sg_ice_covered from glc
     end if
 
     ! Initialize fractions on land grid decomp, just an initial "guess", updated later
@@ -510,11 +521,12 @@ contains
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
-  subroutine seq_frac_set(infodata, ice, fractions_a, fractions_i, fractions_o)
+  subroutine seq_frac_set(infodata, ice, glc, fractions_a, fractions_i, fractions_o)
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(seq_infodata_type) , intent(in)    :: infodata
     type(component_type)    , intent(in)    :: ice
+    type(component_type)    , intent(in)    :: glc
     type(mct_aVect)         , intent(inout) :: fractions_a   ! Fractions on atm
     type(mct_aVect)         , intent(inout) :: fractions_i   ! Fractions on ice
     type(mct_aVect)         , intent(inout) :: fractions_o   ! Fractions on ocn
@@ -523,6 +535,7 @@ contains
     !----- local -----
     type(mct_aVect), pointer :: i2x_i
     type(mct_ggrid), pointer :: dom_i
+    type(mct_aVect), pointer :: g2x_g
     logical                  :: atm_present   ! true => atm is present
     logical                  :: ice_present   ! true => ice is present
     logical                  :: ocn_present   ! true => ocn is present
@@ -553,6 +566,9 @@ contains
 
     dom_i => component_get_dom_cx(ice)
     i2x_i => component_get_c2x_cx(ice)
+
+    g2x_g => component_get_c2x_cx(glc)  ! from BK: add glc to API
+!DC g2x_g called in but not used?
 
     if (ice_present) then
        call mct_aVect_copy(i2x_i, fractions_i, "Si_ifrac", "ifrac")

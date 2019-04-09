@@ -2381,6 +2381,11 @@ contains
     attname  = 'Sg_ice_covered'
     call seq_flds_add(g2x_states,trim(name))
     call seq_flds_add(g2x_states_to_lnd,trim(name))
+! from BK
+    call seq_flds_add(x2o_states,trim(name))  !BK glc occupying ocn cell
+    call seq_flds_add(x2i_states,trim(name))  !BK glc occupying ice cell
+    call seq_flds_add(x2l_states,trim(name))  !BK glc occupying lnd cell (any elevation)
+    call seq_flds_add(x2l_states_from_glc,trim(name))  !BK glc occupying lnd cell (any elevation)
     call metadata_set(attname, longname, stdname, units)
     call set_glc_elevclass_field(name, attname, longname, stdname, units, x2l_states)
     call set_glc_elevclass_field(name, attname, longname, stdname, units, x2l_states_from_glc, &

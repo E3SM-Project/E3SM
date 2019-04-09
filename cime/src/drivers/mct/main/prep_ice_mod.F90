@@ -61,6 +61,7 @@ module prep_ice_mod
   type(seq_map), pointer :: mapper_Sg2i
   type(seq_map), pointer :: mapper_Fg2i
   type(seq_map), pointer :: mapper_Rr2i
+  type(seq_map), pointer :: mapper_Sr2i  ! DC from BK, but needed?
 
   ! attribute vectors
   type(mct_aVect), pointer :: a2x_ix(:) ! Atm export, ice grid, cpl pes - allocated in driver
@@ -171,6 +172,14 @@ contains
           call seq_map_init_rcfile(mapper_Rg2i, glc(1), ice(1), &
                'seq_maps.rc','glc2ice_rmapname:','glc2ice_rmaptype:',samegrid_ig, &
                'mapper_Rg2i initialization', esmf_map_flag)
+! DC: BK adds here, but MH has added below - need both. Depends on if using glcshelf_c2_ice
+!          if (iamroot_CPLID) then
+!             write(logunit,*) ' '
+!             write(logunit,F00) 'Initializing mapper_Sg2i'
+!          end if
+!          call seq_map_init_rcfile(mapper_Sg2i, glc(1), ice(1), &
+!               'seq_maps.rc','glc2ice_smapname:','glc2ice_smaptype:',samegrid_ig, &
+!               'mapper_Sg2i initialization', esmf_map_flag)
        endif
 
        if (glcshelf_c2_ice) then
@@ -290,6 +299,8 @@ contains
     integer, save :: index_a2x_Faxa_snowl_HDO
     integer, save :: index_x2i_Faxa_rain_HDO
     integer, save :: index_x2i_Faxa_snow_HDO
+    integer, save :: index_g2x_Sg_ice_covered ! BK
+    integer, save :: index_x2i_Sg_ice_covered ! BK
     logical, save :: first_time = .true.
     logical       :: iamroot
     character(CL),allocatable :: mrgstr(:)   ! temporary string
@@ -338,6 +349,12 @@ contains
        index_a2x_Faxa_rainl_HDO = mct_aVect_indexRA(a2x_i,'Faxa_rainl_HDO', perrWith='quiet')
        index_x2i_Faxa_rain_HDO  = mct_aVect_indexRA(x2i_i,'Faxa_rain_HDO',  perrWith='quiet' )
        index_x2i_Faxa_snow_HDO  = mct_aVect_indexRA(x2i_i,'Faxa_snow_HDO',  perrWith='quiet' )
+
+! DC: from BK, may want to remove debug messages
+       index_g2x_Sg_ice_covered = mct_aVect_indexRA(g2x_i,'Sg_ice_covered', perrWith='quiet' )
+       write(logunit,*) subname // "<DEBUG> index_g2x_Sg_ice_covered = ",index_g2x_Sg_ice_covered
+       index_x2i_Sg_ice_covered = mct_aVect_indexRA(x2i_i,'Sg_ice_covered', perrWith='quiet' )
+       write(logunit,*) subname // "<DEBUG> index_x2i_Sg_ice_covered = ",index_x2i_Sg_ice_covered
 
        do i = 1,niflds
           field = mct_aVect_getRList2c(i, x2i_i)
@@ -419,6 +436,8 @@ contains
        x2i_i%rAttr(index_x2i_Faxa_rain,i) = x2i_i%rAttr(index_x2i_Faxa_rain,i) * flux_epbalfact
        x2i_i%rAttr(index_x2i_Faxa_snow,i) = x2i_i%rAttr(index_x2i_Faxa_snow,i) * flux_epbalfact
        x2i_i%rAttr(index_x2i_Fixx_rofi,i) = x2i_i%rAttr(index_x2i_Fixx_rofi,i) * flux_epbalfact
+
+       x2i_i%rAttr(index_x2i_Sg_ice_covered,i) = g2x_i%rAttr(index_g2x_Sg_ice_covered,i)  ! BK
 
        ! For water isotopes
        if ( index_x2i_Faxa_rain_16O /= 0 ) then
@@ -562,6 +581,8 @@ contains
        g2x_gx => component_get_c2x_cx(glc(egi))
        call seq_map_map(mapper_Rg2i, g2x_gx, g2x_ix(egi), &
                         fldlist='Fixx_rofi', norm=.true.)
+       call seq_map_map(mapper_Sg2i, g2x_gx, g2x_ix(egi), &
+                        fldlist="Sq_ice_covered", norm=.true.)  ! from BK: where ice shelf exists
     enddo
     call t_drvstopf  (trim(timer))
 

@@ -353,6 +353,14 @@ contains
           call seq_map_init_rcfile(mapper_Rg2o_ice, glc(1), ocn(1), &
                'seq_maps.rc', 'glc2ocn_ice_rmapname:', 'glc2ocn_ice_rmaptype:',samegrid_og, &
                'mapper_Rg2o_ice initialization',esmf_map_flag)
+! from BK
+          if (iamroot_CPLID) then
+             write(logunit,*) ' '
+             write(logunit,F00) 'Initializing mapper_Sg2o'
+          end if
+          call seq_map_init_rcfile(mapper_Sg2o, glc(1), ocn(1), &
+               'seq_maps.rc', 'glc2ocn_smapname:', 'glc2ocn_smaptype:',samegrid_og, &
+               'mapper_Sg2o initialization',esmf_map_flag)
        endif
        call shr_sys_flush(logunit)
 
@@ -632,6 +640,8 @@ contains
     integer, save :: index_x2o_Faxa_rain_HDO
     integer, save :: index_x2o_Faxa_snow_HDO
     integer, save :: index_x2o_Faxa_prec_HDO
+    integer, save :: index_g2x_Sg_ice_covered  ! from BK: ocn now needs this
+    integer, save :: index_x2o_Sg_ice_covered  ! from BK: ocn now needs this
     logical :: iamroot
     logical, save, pointer :: amerge(:),imerge(:),xmerge(:)
     integer, save, pointer :: aindx(:), iindx(:), xindx(:)
@@ -682,6 +692,10 @@ contains
        index_x2o_Faxa_prec      = mct_aVect_indexRA(x2o_o,'Faxa_prec')
        index_x2o_Foxx_rofl      = mct_aVect_indexRA(x2o_o,'Foxx_rofl')
        index_x2o_Foxx_rofi      = mct_aVect_indexRA(x2o_o,'Foxx_rofi')
+
+! from BK
+       index_g2x_Sg_ice_covered = mct_aVect_indexRA(g2x_o,'Sg_ice_covered')
+       index_x2o_Sg_ice_covered = mct_aVect_indexRA(x2o_o,'Sg_ice_covered')
 
        if (seq_flds_i2o_per_cat) then
           index_x2o_Sf_afrac          = mct_aVect_indexRA(x2o_o,'Sf_afrac')
@@ -917,7 +931,7 @@ contains
        do i=1,g2x_SharedIndices%shared_real%num_indices
          i1=g2x_SharedIndices%shared_real%aVindices1(i)
          o1=g2x_SharedIndices%shared_real%aVindices2(i)
-         mrgstr(o1) = trim(mrgstr(o1))//' = g2x%'//trim(field_glc(i1))
+         mrgstr(o1) = trim(mrgstr(o1))//' = g2x%'//trim(field_glc(i1))  ! DC: BK had field_rof, which must be a mistake
       enddo
     endif
 
@@ -1306,6 +1320,10 @@ contains
 
        call seq_map_map(mapper_Rg2o_ice, g2x_gx, g2x_ox(egi), &
             fldlist=seq_flds_g2o_ice_fluxes, norm=.false.)
+!DC: BK had this mapper, but hasn't been previously defined
+!       call seq_map_map(mapper_Sg2o_ice, g2x_gx, g2x_ox(egi), &
+       call seq_map_map(mapper_Sg2o, g2x_gx, g2x_ox(egi), &
+            fldlist="Sg_ice_covered", norm=.false.)  ! from BK: ice shelf
     enddo
     call t_drvstopf  (trim(timer))
   end subroutine prep_ocn_calc_g2x_ox
