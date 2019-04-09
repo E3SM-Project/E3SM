@@ -75,29 +75,6 @@ module init_atm_cases
 
       call mpas_pool_get_config(domain % blocklist % configs, 'config_init_case', config_init_case)
 
-      !
-      ! Do some quick checks to make sure compile options are compatible with the chosen test case
-      !
-      if (config_init_case == 6) then
-#ifndef ROTATED_GRID
-         call mpas_log_write('*****************************************************************',  messageType=MPAS_LOG_ERR)
-         call mpas_log_write('To initialize and run the mountain wave test case (case 6),',        messageType=MPAS_LOG_ERR)
-         call mpas_log_write('   please clean and re-compile init_atmosphere with -DROTATED_GRID', messageType=MPAS_LOG_ERR)
-         call mpas_log_write('   added to the specification of MODEL_FORMULATION',                 messageType=MPAS_LOG_ERR)
-         call mpas_log_write('   at the top of the Makefile.',                                     messageType=MPAS_LOG_ERR)
-         call mpas_log_write('*****************************************************************',  messageType=MPAS_LOG_CRIT)
-#endif
-      else
-#ifdef ROTATED_GRID
-         call mpas_log_write('*****************************************************************', messageType=MPAS_LOG_ERR)
-         call mpas_log_write('Only test case 6 should use code compiled with -DROTATED_GRID',     messageType=MPAS_LOG_ERR)
-         call mpas_log_write('   specified in the Makefile.',                                     messageType=MPAS_LOG_ERR)
-         call mpas_log_write('*****************************************************************', messageType=MPAS_LOG_CRIT)
-#endif
-      end if
-
-
-
       if ((config_init_case == 1) .or. (config_init_case == 2) .or. (config_init_case == 3)) then
 
          call mpas_log_write(' Jablonowski and Williamson baroclinic wave test case ')
@@ -204,7 +181,6 @@ module init_atm_cases
                end if
 
                call init_atm_static(mesh, block_ptr % dimensions, block_ptr % configs)
-               call init_atm_static_orogwd(mesh, block_ptr % dimensions, block_ptr % configs)
             end if
 
             if (config_native_gwd_static) then
@@ -967,16 +943,19 @@ module init_atm_cases
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
 
-         do k = 1, nVertLevels
+         
+         ! Avoid a potential divide by zero below if areaCell(nCells+1) is used in the denominator
+         if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve ) then
+            do k = 1, nVertLevels
 
-            if (config_theta_adv_order == 2) then
+               if (config_theta_adv_order == 2) then
 
-               z_edge = (zgrid(k,cell1)+zgrid(k,cell2))/2.
+                  z_edge = (zgrid(k,cell1)+zgrid(k,cell2))/2.
 
-            else if (config_theta_adv_order == 3 .or. config_theta_adv_order ==4) then !theta_adv_order == 3 or 4 
+               else if (config_theta_adv_order == 3 .or. config_theta_adv_order ==4) then !theta_adv_order == 3 or 4 
 
-               d2fdx2_cell1 = deriv_two(1,1,iEdge) * zgrid(k,cell1)
-               d2fdx2_cell2 = deriv_two(1,2,iEdge) * zgrid(k,cell2)
+                  d2fdx2_cell1 = deriv_two(1,1,iEdge) * zgrid(k,cell1)
+                  d2fdx2_cell2 = deriv_two(1,2,iEdge) * zgrid(k,cell2)
 
 !  WCS fix 20120711
 
@@ -989,23 +968,24 @@ module init_atm_cases
                      d2fdx2_cell2 = d2fdx2_cell2 + deriv_two(i+1,2,iEdge) * zgrid(k,cellsOnCell(i,cell2))
                   end do             
 
-               z_edge =  0.5*(zgrid(k,cell1) + zgrid(k,cell2))         &
-                             - (dcEdge(iEdge) **2) * (d2fdx2_cell1 + d2fdx2_cell2) / 12.
+                  z_edge =  0.5*(zgrid(k,cell1) + zgrid(k,cell2))         &
+                                - (dcEdge(iEdge) **2) * (d2fdx2_cell1 + d2fdx2_cell2) / 12.
 
-               if (config_theta_adv_order == 3) then
-                  z_edge3 =  - (dcEdge(iEdge) **2) * (d2fdx2_cell1 - d2fdx2_cell2) / 12.
-               else
-                  z_edge3 = 0.
+                  if (config_theta_adv_order == 3) then
+                     z_edge3 =  - (dcEdge(iEdge) **2) * (d2fdx2_cell1 - d2fdx2_cell2) / 12.
+                  else
+                     z_edge3 = 0.
+                  end if
+
                end if
-
-            end if
 
                zb(k,1,iEdge) = (z_edge-zgrid(k,cell1))*dvEdge(iEdge)/areaCell(cell1)
                zb(k,2,iEdge) = (z_edge-zgrid(k,cell2))*dvEdge(iEdge)/areaCell(cell2)
                zb3(k,1,iEdge)=  z_edge3*dvEdge(iEdge)/areaCell(cell1)
                zb3(k,2,iEdge)=  z_edge3*dvEdge(iEdge)/areaCell(cell2)
 
-         end do
+            end do
+         end if
 
       end do
 
@@ -1857,7 +1837,7 @@ module init_atm_cases
       real (kind=RKIND), dimension(nVertLevels ) :: zu, dzw, rdzwp, rdzwm
 
       real (kind=RKIND) :: d1, d2, d3, cof1, cof2
-      real (kind=RKIND) :: um, us,  rcp, rcv
+      real (kind=RKIND) :: um, vm,rcp, rcv
       real (kind=RKIND) :: xmid, temp, pres, a_scale
 
       real (kind=RKIND) :: xi, xa, xc, xla, zinv, xn2, xn2m, xn2l, sm, dzh, dzht, dzmin, z_edge, z_edge3 
@@ -1879,7 +1859,7 @@ module init_atm_cases
       real (kind=RKIND), pointer :: cf1, cf2, cf3
 
       real (kind=RKIND), dimension(:,:), pointer :: t_init, w, rw, v, rho, theta
-      real (kind=RKIND), dimension(:), pointer :: u_init, angleEdge, fEdge, fVertex
+      real (kind=RKIND), dimension(:), pointer :: u_init, v_init, angleEdge, fEdge, fVertex
 
 
       call mpas_pool_get_array(mesh, 'xCell', xCell)
@@ -1912,6 +1892,7 @@ module init_atm_cases
       call mpas_pool_get_array(mesh, 'deriv_two', deriv_two)
       call mpas_pool_get_array(mesh, 't_init', t_init)
       call mpas_pool_get_array(mesh, 'u_init', u_init)
+      call mpas_pool_get_array(mesh, 'v_init', v_init)
       call mpas_pool_get_array(mesh, 'angleEdge', angleEdge)
       call mpas_pool_get_array(mesh, 'fEdge', fEdge)
       call mpas_pool_get_array(mesh, 'fVertex', fVertex)
@@ -2160,8 +2141,13 @@ module init_atm_cases
          xn2m = 0.0000
          xn2l = 0.0001
 
-         um = 10.
-         us = 0.
+         vm = 10.
+         um = 0.
+
+         do k=1,nz1
+           v_init(k) = vm
+           u_init(k) = um
+         end do
 
          do i=1,nCells
             do k=1,nz1
@@ -2185,13 +2171,7 @@ module init_atm_cases
             do k=1,nz1
                ztemp = .25*( zgrid(k,cell1 )+zgrid(k+1,cell1 )  &
                             +zgrid(k,cell2)+zgrid(k+1,cell2))
-               u(k,i) = um
-               if(i == 1 ) u_init(k) = u(k,i) - us
-#ifdef ROTATED_GRID
-               u(k,i) = sin(angleEdge(i)) * (u(k,i) - us)
-#else
-               u(k,i) = cos(angleEdge(i)) * (u(k,i) - us)
-#endif
+               u(k,i) =   vm*sin(angleEdge(i)) + um*cos(angleEdge(i))
             end do
             end if
          end do
