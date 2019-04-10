@@ -70,11 +70,11 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
    USE_CXX = TRUE
 endif
 ifeq ($(strip $(USE_KOKKOS)), TRUE)
-  include $(INSTALL_SHAREDPATH)/Makefile.kokkos
   USE_CXX = TRUE
-  SLIBS += $(KOKKOS_LIBS)
-  CFLAGS += $(KOKKOS_CXXFLAGS)
-  CXX_LDFLAGS += $(KOKKOS_LDFLAGS)
+endif
+
+ifeq ($(strip $(USE_FMS)), TRUE)
+  SLIBS += -lfms
 endif
 
 ifndef MOD_SUFFIX
@@ -119,6 +119,8 @@ endif
 
 ifeq ($(strip $(PIO_VERSION)),1)
   CPPDEFS += -DPIO1
+else
+  USE_CXX = true
 endif
 
 ifeq (,$(SHAREDPATH))
@@ -467,9 +469,16 @@ ifndef MCT_LIBDIR
   MCT_LIBDIR=$(INSTALL_SHAREDPATH)/lib
 endif
 
-ifndef PIO_LIBDIR
-  PIO_LIBDIR=$(INSTALL_SHAREDPATH)/lib
+ifdef PIO_LIBDIR
+  ifeq ($(PIO_VERSION),$(PIO_VERSION_MAJOR))
+    INCLDIR += -I$(PIO_INCDIR)
+    SLIBS += -L$(PIO_LIBDIR)
+  else
+    # If PIO_VERSION_MAJOR doesnt match, build from source
+    unexport PIO_LIBDIR
+  endif
 endif
+PIO_LIBDIR ?= $(INSTALL_SHAREDPATH)/lib
 
 ifndef GPTL_LIBDIR
   GPTL_LIBDIR=$(INSTALL_SHAREDPATH)/lib
@@ -492,7 +501,7 @@ INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include
 # Use the MCT dir for the cache for all configure calls because it is the first one
 #
 CFLAGS+=$(CPPDEFS)
-CXXFLAGS += $(CFLAGS)
+CXXFLAGS+=$(CFLAGS)
 CONFIG_ARGS +=  CC="$(CC)" FC="$(FC)" MPICC="$(MPICC)" \
                 MPIFC="$(MPIFC)" FCFLAGS="$(FFLAGS) $(FREEFLAGS) $(INCLDIR)" \
                 CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)" \
@@ -660,6 +669,7 @@ CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(EXTRA_PIO_FPPDEFS) $(IN
               -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
               -D GPTL_PATH:STRING=$(INSTALL_SHAREDPATH) \
               -D PIO_ENABLE_TESTS:BOOL=OFF \
+              -D PIO_USE_MALLOC:BOOL=ON \
 	      -D USER_CMAKE_MODULE_PATH:LIST="$(CIMEROOT)/src/CMake;$(CIMEROOT)/src/externals/pio2/cmake" \
 
 # Allow for separate installations of the NetCDF C and Fortran libraries
@@ -672,6 +682,10 @@ else ifeq ($(NETCDF_SEPARATE), TRUE)
                 -D NetCDF_Fortran_PATH:PATH=$(NETCDF_FORTRAN_PATH)
 endif
 
+ifdef HDF5_PATH
+        CMAKE_OPTS += -D HDF5_PATH:STRING="$(HDF5_PATH)"
+endif
+
 ifdef PNETCDF_PATH
 	CMAKE_OPTS += -D PnetCDF_PATH:STRING="$(PNETCDF_PATH)"
 else
@@ -679,6 +693,9 @@ else
 endif
 ifdef PIO_FILESYSTEM_HINTS
 	CMAKE_OPTS += -D PIO_FILESYSTEM_HINTS:STRING="$(PIO_FILESYSTEM_HINTS)"
+endif
+ifeq ($(MPILIB),mpi-serial)
+	CMAKE_OPTS += -D PIO_USE_MPISERIAL=TRUE -D MPISERIAL_PATH=$(INSTALL_SHAREDPATH)
 endif
 
 # This captures the many cism-specific options to cmake

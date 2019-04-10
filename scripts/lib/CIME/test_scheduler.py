@@ -623,7 +623,8 @@ class TestScheduler(object):
                       opt.startswith('P') or # handled in create_newcase
                       opt.startswith('N') or # handled in create_newcase
                       opt.startswith('C') or # handled in create_newcase
-                      opt.startswith('V')):  # handled in create_newcase
+                      opt.startswith('V') or # handled in create_newcase
+                      opt == 'B'):           # handled in run_phase
                     pass
 
                 elif opt.startswith('IOP'):
@@ -716,17 +717,25 @@ class TestScheduler(object):
     ###########################################################################
         test_dir = self._get_test_dir(test)
 
-        cmd = "./case.submit"
-        if not self._allow_pnl:
-            cmd += " --skip-preview-namelist"
-        if self._no_batch:
-            cmd += " --no-batch"
-        if self._mail_user:
-            cmd += " --mail-user={}".format(self._mail_user)
-        if self._mail_type:
-            cmd += " -M={}".format(",".join(self._mail_type))
+        case_opts = parse_test_name(test)[1]
+        if case_opts is not None and "B" in case_opts: # pylint: disable=unsupported-membership-test
+            self._log_output(test, "{} SKIPPED for test '{}'".format(RUN_PHASE, test))
+            self._update_test_status_file(test, SUBMIT_PHASE, TEST_PASS_STATUS)
+            self._update_test_status_file(test, RUN_PHASE,    TEST_PASS_STATUS)
 
-        return self._shell_cmd_for_phase(test, cmd, RUN_PHASE, from_dir=test_dir)
+            return True, "SKIPPED"
+        else:
+            cmd = "./case.submit"
+            if not self._allow_pnl:
+                cmd += " --skip-preview-namelist"
+            if self._no_batch:
+                cmd += " --no-batch"
+            if self._mail_user:
+                cmd += " --mail-user={}".format(self._mail_user)
+            if self._mail_type:
+                cmd += " -M={}".format(",".join(self._mail_type))
+
+            return self._shell_cmd_for_phase(test, cmd, RUN_PHASE, from_dir=test_dir)
 
     ###########################################################################
     def _run_catch_exceptions(self, test, phase, run):

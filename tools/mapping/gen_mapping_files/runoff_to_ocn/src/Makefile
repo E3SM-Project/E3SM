@@ -37,8 +37,8 @@ VPATH    := $(shell pwd)
 SRCFILE  := NONE
 SRCS     := NONE
 DEPGEN   := ./makdep  # an externally provided dependency generator
-#compile_threaded := true
-compile_threaded := false
+#compile_threaded := TRUE
+compile_threaded := FALSE
 
 ifneq ($(VPATH),.)
   # this variable was specified on cmd line or in an env var
