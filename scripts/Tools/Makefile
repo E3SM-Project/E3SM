@@ -72,9 +72,6 @@ endif
 ifeq ($(strip $(USE_KOKKOS)), TRUE)
   USE_CXX = TRUE
 endif
-ifeq ($(strip $(USE_KOKKOS)), TRUE)
-   USE_CXX = TRUE
-endif
 
 ifeq ($(strip $(USE_FMS)), TRUE)
   SLIBS += -lfms
@@ -488,9 +485,16 @@ ifndef MCT_LIBDIR
   MCT_LIBDIR=$(INSTALL_SHAREDPATH)/lib
 endif
 
-ifndef PIO_LIBDIR
-  PIO_LIBDIR=$(INSTALL_SHAREDPATH)/lib
+ifdef PIO_LIBDIR
+  ifeq ($(PIO_VERSION),$(PIO_VERSION_MAJOR))
+    INCLDIR += -I$(PIO_INCDIR)
+    SLIBS += -L$(PIO_LIBDIR)
+  else
+    # If PIO_VERSION_MAJOR doesnt match, build from source
+    unexport PIO_LIBDIR
+  endif
 endif
+PIO_LIBDIR ?= $(INSTALL_SHAREDPATH)/lib
 
 ifndef GPTL_LIBDIR
   GPTL_LIBDIR=$(INSTALL_SHAREDPATH)/lib

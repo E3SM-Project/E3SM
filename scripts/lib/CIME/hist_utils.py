@@ -584,7 +584,7 @@ def get_ts_synopsis(comments):
     >>> get_ts_synopsis('big error\n')
     'big error'
     >>> get_ts_synopsis('stuff\n    File foo had a different field list from bar with suffix baz\nPass\n')
-    'FIELDLIST field lists differ'
+    'FIELDLIST field lists differ (otherwise bit-for-bit)'
     >>> get_ts_synopsis('stuff\n    File foo had no compare counterpart in bar with suffix baz\nPass\n')
     'ERROR BFAIL some baseline files were missing'
     >>> get_ts_synopsis('stuff\n    File foo had a different field list from bar with suffix baz\n    File foo had no compare counterpart in bar with suffix baz\nPass\n')
@@ -631,7 +631,7 @@ def get_ts_synopsis(comments):
                 # line, which we don't want.
                 return "MULTIPLE ISSUES: field lists differ and some baseline files were missing"
             elif has_fieldlist_differences:
-                return "FIELDLIST field lists differ"
+                return "FIELDLIST field lists differ (otherwise bit-for-bit)"
             elif has_bfails:
                 return "ERROR {} some baseline files were missing".format(TEST_NO_BASELINES_COMMENT)
             else:
