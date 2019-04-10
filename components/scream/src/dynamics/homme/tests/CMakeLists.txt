@@ -14,4 +14,4 @@ SET (NEED_LIBS ${dynLibName} scream_share pio timing ${BLAS_LIBRARIES} ${LAPACK_
 SET (UNIT_TEST_EXTRA_LIBRARY_DIRS ${dynLibDir})
 
 # Test dynamics-physics fields remapping
-CreateUnitTest(homme_pd_remap "homme_pd_remap_tests.cpp" "${NEED_LIBS}" CONFIG_DEFS ${EXTRA_CONFIG_DEFS})
+CreateUnitTest(homme_pd_remap "homme_pd_remap_tests.cpp" "${NEED_LIBS}" CONFIG_DEFS ${EXTRA_CONFIG_DEFS} INCLUDE_DIRS ${EXTRA_INCLUDE_DIRS})
