@@ -6,8 +6,8 @@
 
   <entry id="COMP_ICE">
     <type>char</type>
-    <valid_values>mpascice</valid_values>
-    <default_value>mpascice</default_value>
+    <valid_values>mpassi</valid_values>
+    <default_value>mpassi</default_value>
     <group>case_comp</group>
     <file>env_case.xml</file>
     <desc>MPAS sea-ice component</desc>
