@@ -34,11 +34,16 @@ def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resub
         rundir = case.get_value("RUNDIR")
         expect(os.path.isdir(rundir),
                "CONTINUE_RUN is true but RUNDIR {} does not exist".format(rundir))
-        expect(os.path.exists(os.path.join(rundir,"rpointer.drv")),
+        # only checks for the first instance in a multidriver case
+        if case.get_value("MULTI_DRIVER"):
+            rpointer = "rpointer.drv_0001"
+        else:
+            rpointer = "rpointer.drv"
+        expect(os.path.exists(os.path.join(rundir,rpointer)),
                "CONTINUE_RUN is true but this case does not appear to have restart files staged in {}".format(rundir))
         # Finally we open the rpointer.drv file and check that it's correct
         casename = case.get_value("CASE")
-        with open(os.path.join(rundir,"rpointer.drv"), "r") as fd:
+        with open(os.path.join(rundir,rpointer), "r") as fd:
             ncfile = fd.readline().strip()
             expect(ncfile.startswith(casename) and
                    os.path.exists(os.path.join(rundir,ncfile)),

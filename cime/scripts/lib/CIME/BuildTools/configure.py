@@ -68,7 +68,10 @@ def _copy_depends_files(machine_name, machines_dir, output_dir, compiler):
 class FakeCase(object):
 
     def __init__(self, compiler, mpilib, debug, comp_interface):
-        self._vals = {"COMPILER":compiler, "MPILIB":mpilib, "DEBUG":debug, "COMP_INTERFACE":comp_interface}
+        # PIO_VERSION is needed to parse config_machines.xml but isn't otherwise used
+        # by FakeCase
+        self._vals = {"COMPILER":compiler, "MPILIB":mpilib, "DEBUG":debug,
+                      "COMP_INTERFACE":comp_interface, "PIO_VERSION":2}
 
     def get_value(self, attrib):
         expect(attrib in self._vals, "FakeCase does not support getting value of '%s'" % attrib)

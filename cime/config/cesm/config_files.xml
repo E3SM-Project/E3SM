@@ -2,7 +2,7 @@
 
 <?xml-stylesheet type="text/xsl" ?>
 
-<entry_id>
+<entry_id version="2.0">
 
   <entry id="MODEL">
     <type>char</type>
@@ -112,8 +112,8 @@
   <entry id="COMP_ROOT_DIR_CPL">
     <type>char</type>
     <values>
-      <value>$CIMEROOT/src/drivers/$COMP_INTERFACE</value>  -->
-    </values> -->
+      <value>$CIMEROOT/src/drivers/$COMP_INTERFACE</value>
+    </values>
     <group>case_comps</group>
     <file>env_case.xml</file>
     <desc>Root directory of the case driver/coupler component  </desc>
@@ -229,7 +229,7 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="allactive">$SRCROOT/cime_config/config_compsets.xml</value> 
+      <value component="allactive">$SRCROOT/cime_config/config_compsets.xml</value>
       <value component="drv"      >$COMP_ROOT_DIR_CPL/cime_config/config_compsets.xml</value>
       <value component="cam"      >$COMP_ROOT_DIR_ATM/cime_config/config_compsets.xml</value>
       <value component="fv3gfs"   >$COMP_ROOT_DIR_ATM/cime_config/config_compsets.xml</value>

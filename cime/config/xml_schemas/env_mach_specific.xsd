@@ -6,6 +6,7 @@
 <xs:attribute name="lang" type="xs:NCName"/>
 <xs:attribute name="compiler" type="xs:string"/>
 <xs:attribute name="DEBUG" type="upperBoolean"/>
+<xs:attribute name="PIO_VERSION" type="xs:integer"/>
 <xs:attribute name="mpilib" type="xs:string"/>
 <xs:attribute name="comp_interface" type="xs:string"/>
 <xs:attribute name="SMP_PRESENT" type="xs:string"/>
@@ -98,6 +99,7 @@
       </xs:sequence>
       <xs:attribute ref="compiler" />
       <xs:attribute ref="DEBUG" />
+      <xs:attribute ref="PIO_VERSION" />
       <xs:attribute ref="mpilib"/>
       <xs:attribute ref="comp_interface"/>
     </xs:complexType>

@@ -1214,7 +1214,7 @@ else if ( $model_start_type == 'branch' ) then
   cp -s ${restart_files_dir}/${restart_case_name}.cpl.r.${restart_filedate}-00000.nc $case_run_dir
   cp -s ${restart_files_dir}/${restart_case_name}.mosart.r.${restart_filedate}-00000.nc $case_run_dir
   cp -s ${restart_files_dir}/${restart_case_name}.mosart.rh0.${restart_filedate}-00000.nc $case_run_dir
-  cp -s ${restart_files_dir}/mpascice.rst.${restart_filedate}_00000.nc $case_run_dir
+  cp -s ${restart_files_dir}/mpassi.rst.${restart_filedate}_00000.nc $case_run_dir
   cp -s ${restart_files_dir}/mpaso.rst.${restart_filedate}_00000.nc $case_run_dir
   cp -s ${restart_files_dir}/../../atm/hist/${restart_case_name}.cam.h0.${restart_prevdate}.nc $case_run_dir
   cp -s ${restart_files_dir}/../../rof/hist/${restart_case_name}.mosart.h0.${restart_prevdate}.nc $case_run_dir

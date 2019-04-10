@@ -38,9 +38,9 @@ program fmain
   character(LEN=512) :: usercomment ! user comment
   character(LEN= 8)  :: cdate       ! wall clock date
   character(LEN=10)  :: ctime       ! wall clock time
-  real(r8) :: fminval = 0.001_r8    ! min allowable land fraction; frac set to 0 if frac < fminval
-  real(r8) :: fmaxval = 1.000_r8    ! max allowable land fraction; frac set to 1 if frac > fmaxval
-  logical :: set_omask = .false.    ! set ocn mask if not present in input mapping file
+  real(r8) :: fminval               ! min allowable land fraction; frac set to 0 if frac < fminval
+  real(r8) :: fmaxval               ! max allowable land fraction; frac set to 1 if frac > fmaxval
+  logical :: set_omask              ! set ocn mask if not present in input mapping file
   !----------------------------------------------------
 
   ! Initialize options before parsing command line arguments
@@ -49,6 +49,9 @@ program fmain
   fn1_out     = 'null'
   fn2_out     = 'null'
   usercomment = 'null'
+  fminval     = 0.001_r8
+  fmaxval     = 1
+  set_omask   = .false.
 
   ! Make sure we have arguments
   nargs = iargc()
@@ -519,9 +522,10 @@ contains
     implicit none
     integer, intent(in) :: ret
     logical, intent(in), optional :: fatal
-    logical :: fatal_local = .true.
+    logical :: fatal_local
 
     ! Default is to die when error is encountered
+    fatal_local = .true.
     if (present(fatal)) fatal_local = fatal
 
     if (ret /= NF_NOERR) then

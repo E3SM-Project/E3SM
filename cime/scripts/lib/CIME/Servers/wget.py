@@ -15,8 +15,6 @@ class WGET(GenericServer):
             self._args += "--password {} ".format(passwd)
         self._server_loc = address
 
-        self._server_loc = address
-
         err = run_cmd("wget {} --spider {}".format(self._args, address))[0]
         expect(err == 0,"Could not connect to repo '{0}'\nThis is most likely either a proxy, or network issue .")
 
