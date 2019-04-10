@@ -326,13 +326,24 @@ class EnvBatch(EnvBase):
         roots = self.get_children("batch_system")
         queue = self.get_value("JOB_QUEUE", subgroup=job)
         if self._batchtype != "none" and not queue in self._get_all_queue_names():
+            unknown_queue = True
             qnode = self.get_default_queue()
-            queue = self.text(qnode)
+            default_queue = self.text(qnode)
+        else:
+            unknown_queue = False
 
         for root in roots:
             if root is not None:
                 if directive_prefix is None:
                     directive_prefix = self.get_element_text("batch_directive", root=root)
+
+                if unknown_queue:
+                    unknown_queue_directives = self.get_element_text("unknown_queue_directives",
+                                                                     root=root)
+                    if unknown_queue_directives is None:
+                        queue = default_queue
+                    else:
+                        queue = unknown_queue_directives
 
                 dnodes = self.get_children("directives", root=root)
                 for dnode in dnodes:

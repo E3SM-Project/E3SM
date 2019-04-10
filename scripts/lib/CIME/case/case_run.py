@@ -227,7 +227,7 @@ def _resubmit_check(case):
     elif dout_s and mach == 'mira':
         caseroot = case.get_value("CASEROOT")
         cimeroot = case.get_value("CIMEROOT")
-        cmd = "ssh cooleylogin1 'cd {}; CIMEROOT={} ./case.submit {} --job case.st_archive'".format(caseroot, cimeroot, caseroot)
+        cmd = "ssh cooleylogin1 'cd {case}; CIMEROOT={root} ./case.submit {case} --job case.st_archive'".format(case=caseroot, root=cimeroot)
         run_cmd(cmd, verbose=True)
 
     if resubmit:

@@ -25,14 +25,13 @@
 include(FindPackageHandleStandardArgs)
 
 find_program(PFUNIT_PARSER pFUnitParser.py
-  HINTS ${PFUNIT_PATH}/bin)
+  HINTS ${PFUNIT_PATH}/bin $ENV{PFUNIT}/bin)
 
 string(REGEX REPLACE "bin/pFUnitParser\\.py\$" ""
   pfunit_directory ${PFUNIT_PARSER})
 
 find_library(PFUNIT_LIBRARY pfunit
-     HINTS ${PFUNIT_PATH}/lib)
-#  HINTS ${pfunit_directory}/lib)
+     HINTS ${PFUNIT_PATH}/lib ${pfunit_directory}/lib)
 
 find_path(PFUNIT_INCLUDE_DIR driver.F90
   HINTS ${pfunit_directory}/include)

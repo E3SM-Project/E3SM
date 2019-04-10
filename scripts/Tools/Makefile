@@ -308,6 +308,11 @@ else
   EXTRA_PIO_CPPDEFS = -D_NO_MPI_RSEND
 endif
 
+ifdef LIB_PNETCDF
+   CPPDEFS += -D_PNETCDF
+   SLIBS += -L$(LIB_PNETCDF) -lpnetcdf
+endif
+
 ifdef CPRE
   FPPDEFS := $(subst $(comma),\\$(comma),$(CPPDEFS))
   FPPDEFS := $(patsubst -D%,$(CPRE)%,$(FPPDEFS))
@@ -478,8 +483,11 @@ FFLAGS_NOOPT += $(FPPDEFS)
 
 
 ifeq ($(findstring -cosp,$(CAM_CONFIG_OPTS)),-cosp)
-# The following is for the COSP simulator code:
-COSP_LIBDIR:=$(abspath $(EXEROOT)/atm/obj/cosp)
+  # The following is for the COSP simulator code:
+  COSP_LIBDIR:=$(abspath $(EXEROOT)/atm/obj/cosp)
+  ifeq ($(MODEL),driver)
+    INCLDIR+=-I$(COSP_LIBDIR)
+  endif
 endif
 
 ifeq ($(MODEL),cam)
@@ -524,9 +532,6 @@ ifndef SLIBS
   endif
 endif
 
-ifdef LIB_PNETCDF
-   SLIBS += -L$(LIB_PNETCDF) -lpnetcdf
-endif
 ifdef LAPACK_LIBDIR
    SLIBS += -L$(LAPACK_LIBDIR) -llapack -lblas
 endif

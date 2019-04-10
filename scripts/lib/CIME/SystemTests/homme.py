@@ -26,7 +26,7 @@ class HOMME(SystemTestsCommon):
             mach     = self._case.get_value("MACH")
             procs    = self._case.get_value("TOTALPES")
             exeroot  = self._case.get_value("EXEROOT")
-            baseline = self._case.get_value("BASELINE_ROOT")
+            baselinedir = self._case.get_value("BASELINE_ROOT")
             basegen  = self._case.get_value("BASEGEN_CASE")
             basecmp  = self._case.get_value("BASECMP_CASE")
             generate = self._case.get_value("GENERATE_BASELINE")
@@ -34,7 +34,8 @@ class HOMME(SystemTestsCommon):
             cprnc    = self._case.get_value("CCSM_CPRNC")
 
             basename = basegen if generate else basecmp
-            cmake_cmd = "cmake -C {}/components/homme/cmake/machineFiles/{}.cmake -DUSE_NUM_PROCS={} {}/components/homme -DHOMME_BASELINE_DIR={}/{} -DCPRNC_DIR={}/..".format(srcroot, mach, procs, srcroot, baseline, basename, cprnc)
+
+            cmake_cmd = "cmake -C {0}/components/homme/cmake/machineFiles/{1}.cmake -DUSE_NUM_PROCS={2} {0}/components/homme -DHOMME_BASELINE_DIR={3}/{4} -DCPRNC_DIR={5}/..".format(srcroot, mach, procs, baselinedir, basename, cprnc)
 
             run_cmd_no_fail(cmake_cmd, arg_stdout="homme.bldlog", combine_output=True, from_dir=exeroot)
             run_cmd_no_fail("{} -j8".format(gmake), arg_stdout="homme.bldlog", combine_output=True, from_dir=exeroot)

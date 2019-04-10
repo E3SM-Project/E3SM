@@ -138,7 +138,6 @@ class MacroWriterBase(object):
     @abstractmethod
     def environment_variable_string(self, name):
         """Return an environment variable reference."""
-        pass
 
     @abstractmethod
     def shell_command_strings(self, command):
@@ -167,17 +166,14 @@ class MacroWriterBase(object):
         if post is not None:
             writer.write(post)
         """
-        pass
 
     @abstractmethod
     def variable_string(self, name):
         """Return a string to refer to a variable with the given name."""
-        pass
 
     @abstractmethod
     def set_variable(self, name, value):
         """Write out a statement setting a variable to some value."""
-        pass
 
     def append_variable(self, name, value):
         """Write out a statement appending a value to a string variable."""
@@ -191,12 +187,10 @@ class MacroWriterBase(object):
         The arguments to this method are compared, and the block is entered
         only if they are equal.
         """
-        pass
 
     @abstractmethod
     def end_ifeq(self):
         """Write out a statement to end a block started with start_ifeq."""
-        pass
 
 # None class based method for version 1.0
 
@@ -277,7 +271,7 @@ set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING "Choose the type of buil
                                 component = component.replace("NETCDF", "NetCDF").replace("PNETCDF_PATH", "Pnetcdf_PATH")
                                 if is_shell:
                                     fd.write('execute_process(COMMAND {} OUTPUT_VARIABLE TEMP{:d})\n'.format(component, idx))
-                                    fd.write('string(REGEX REPLACE "\\n$" "" TEMP{:d} "${{TEMP{:d}}}")\n'.format(idx, idx))
+                                    fd.write('string(REGEX REPLACE "\\n$" "" TEMP{0:d} "${{TEMP{0:d}}}")\n'.format(idx))
                                 else:
                                     fd.write('set(TEMP{:d} "{}")\n'.format(idx, component))
 

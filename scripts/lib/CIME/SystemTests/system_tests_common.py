@@ -32,6 +32,7 @@ class SystemTestsCommon(object):
         self._init_environment(caseroot)
         self._init_locked_files(caseroot, expected)
         self._skip_pnl = False
+        self._cpllog = 'cpl'
 
     def _init_environment(self, caseroot):
         """
@@ -511,9 +512,9 @@ class TESTRUNPASS(FakeTest):
         script = \
 """
 echo Insta pass
-echo SUCCESSFUL TERMINATION > {}/cpl.log.$LID
-cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
-""".format(rundir, cimeroot, rundir, case)
+echo SUCCESSFUL TERMINATION > {rundir}/{log}.log.$LID
+cp {root}/scripts/tests/cpl.hi1.nc.test {rundir}/{case}.cpl.hi.0.nc
+""".format(rundir=rundir, log=self._cpllog, root=cimeroot, case=case)
         self._set_script(script)
         FakeTest.build_phase(self,
                              sharedlib_only=sharedlib_only, model_only=model_only)
@@ -533,13 +534,13 @@ class TESTRUNDIFF(FakeTest):
         script = \
 """
 echo Insta pass
-echo SUCCESSFUL TERMINATION > {}/cpl.log.$LID
+echo SUCCESSFUL TERMINATION > {rundir}/{log}.log.$LID
 if [ -z "$TESTRUNDIFF_ALTERNATE" ]; then
-  cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
+  cp {root}/scripts/tests/cpl.hi1.nc.test {rundir}/{case}.cpl.hi.0.nc
 else
-  cp {}/scripts/tests/cpl.hi2.nc.test {}/{}.cpl.hi.0.nc
+  cp {root}/scripts/tests/cpl.hi2.nc.test {rundir}/{case}.cpl.hi.0.nc
 fi
-""".format(rundir, cimeroot, rundir, case, cimeroot, rundir, case)
+""".format(rundir=rundir, log=self._cpllog, root=cimeroot, case=case)
         self._set_script(script)
         FakeTest.build_phase(self,
                        sharedlib_only=sharedlib_only, model_only=model_only)
@@ -553,10 +554,10 @@ class TESTTESTDIFF(FakeTest):
         script = \
 """
 echo Insta pass
-echo SUCCESSFUL TERMINATION > {}/cpl.log.$LID
-cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
-cp {}/scripts/tests/cpl.hi2.nc.test {}/{}.cpl.hi.0.nc.rest
-""".format(rundir, cimeroot, rundir, case, cimeroot, rundir, case)
+echo SUCCESSFUL TERMINATION > {rundir}/{log}.log.$LID
+cp {root}/scripts/tests/cpl.hi1.nc.test {rundir}/{case}.cpl.hi.0.nc
+cp {root}/scripts/tests/cpl.hi2.nc.test {rundir}/{case}.cpl.hi.0.nc.rest
+""".format(rundir=rundir, log=self._cpllog, root=cimeroot, case=case)
         self._set_script(script)
         super(TESTTESTDIFF, self).build_phase(sharedlib_only=sharedlib_only,
                                               model_only=model_only)
@@ -575,14 +576,14 @@ class TESTRUNFAIL(FakeTest):
 """
 if [ -z "$TESTRUNFAIL_PASS" ]; then
   echo Insta fail
-  echo model failed > {}/cpl.log.$LID
+  echo model failed > {rundir}/{log}.log.$LID
   exit -1
 else
   echo Insta pass
-  echo SUCCESSFUL TERMINATION > {}/cpl.log.$LID
-  cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
+  echo SUCCESSFUL TERMINATION > {rundir}/{log}.log.$LID
+  cp {root}/scripts/tests/cpl.hi1.nc.test {rundir}/{case}.cpl.hi.0.nc
 fi
-""".format(rundir, rundir, cimeroot, rundir, case)
+""".format(rundir=rundir, log=self._cpllog, root=cimeroot, case=case)
         self._set_script(script)
         FakeTest.build_phase(self,
                              sharedlib_only=sharedlib_only, model_only=model_only)
@@ -617,9 +618,9 @@ class TESTRUNSLOWPASS(FakeTest):
 """
 sleep 300
 echo Slow pass
-echo SUCCESSFUL TERMINATION > {}/cpl.log.$LID
-cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
-""".format(rundir, cimeroot, rundir, case)
+echo SUCCESSFUL TERMINATION > {rundir}/{log}.log.$LID
+cp {root}/scripts/tests/cpl.hi1.nc.test {rundir}/{case}.cpl.hi.0.nc
+""".format(rundir=rundir, log=self._cpllog, root=cimeroot, case=case)
         self._set_script(script)
         FakeTest.build_phase(self,
                         sharedlib_only=sharedlib_only, model_only=model_only)
@@ -633,9 +634,9 @@ class TESTMEMLEAKFAIL(FakeTest):
         script = \
 """
 echo Insta pass
-gunzip -c {} > {}/cpl.log.$LID
-cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
-""".format(testfile, rundir, cimeroot, rundir, case)
+gunzip -c {testfile} > {rundir}/{log}.log.$LID
+cp {root}/scripts/tests/cpl.hi1.nc.test {rundir}/{case}.cpl.hi.0.nc
+""".format(testfile=testfile, rundir=rundir, log=self._cpllog, root=cimeroot, case=case)
         self._set_script(script)
         FakeTest.build_phase(self,
                         sharedlib_only=sharedlib_only, model_only=model_only)
@@ -649,9 +650,9 @@ class TESTMEMLEAKPASS(FakeTest):
         script = \
 """
 echo Insta pass
-gunzip -c {} > {}/cpl.log.$LID
-cp {}/scripts/tests/cpl.hi1.nc.test {}/{}.cpl.hi.0.nc
-""".format(testfile, rundir, cimeroot, rundir, case)
+gunzip -c {testfile} > {rundir}/{log}.log.$LID
+cp {root}/scripts/tests/cpl.hi1.nc.test {rundir}/{case}.cpl.hi.0.nc
+""".format(testfile=testfile, rundir=rundir, log=self._cpllog, root=cimeroot, case=case)
         self._set_script(script)
         FakeTest.build_phase(self,
                         sharedlib_only=sharedlib_only, model_only=model_only)
