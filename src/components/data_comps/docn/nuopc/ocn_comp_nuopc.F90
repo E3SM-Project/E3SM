@@ -12,12 +12,9 @@ module ocn_comp_nuopc
   use NUOPC_Model           , only : model_label_SetRunClock => label_SetRunClock
   use NUOPC_Model           , only : model_label_Finalize    => label_Finalize
   use NUOPC_Model           , only : NUOPC_ModelGet
-  use med_constants_mod     , only : R8, I8, CL, CXX
-  use med_constants_mod     , only : shr_log_Unit
+  use med_constants_mod     , only : R8, CL
   use med_constants_mod     , only : shr_cal_ymd2date, shr_cal_noleap, shr_cal_gregorian
   use med_constants_mod     , only : shr_file_getlogunit, shr_file_setlogunit
-  use med_constants_mod     , only : shr_file_getloglevel, shr_file_setloglevel
-  use med_constants_mod     , only : shr_file_setIO, shr_file_getUnit
   use shr_nuopc_scalars_mod , only : flds_scalar_name
   use shr_nuopc_scalars_mod , only : flds_scalar_num
   use shr_nuopc_scalars_mod , only : flds_scalar_index_nx
@@ -26,15 +23,12 @@ module ocn_comp_nuopc
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_SetScalar
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_Diagnose
-  use shr_nuopc_grid_mod    , only : shr_nuopc_grid_ArrayToState
-  use shr_nuopc_grid_mod    , only : shr_nuopc_grid_StateToArray
   use shr_strdata_mod       , only : shr_strdata_type
-  use shr_const_mod         , only : SHR_CONST_SPVAL
-  use dshr_nuopc_mod        , only : fld_list_type, fldsMax, fld_list_realize
+  use dshr_nuopc_mod        , only : fld_list_type, fldsMax, dshr_realize
   use dshr_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, ModelSetMetaData
   use docn_shr_mod          , only : docn_shr_read_namelists
   use docn_comp_mod         , only : docn_comp_init, docn_comp_run, docn_comp_advertise
-  use mct_mod               , only : mct_Avect, mct_Avect_info
+  use docn_comp_mod         , only : docn_comp_import, docn_comp_export
 
   implicit none
 
@@ -56,9 +50,6 @@ module ocn_comp_nuopc
   type (fld_list_type)     :: fldsToOcn(fldsMax)
   type (fld_list_type)     :: fldsFrOcn(fldsMax)
 
-  type(shr_strdata_type)   :: SDOCN
-  type(mct_aVect)          :: x2o
-  type(mct_aVect)          :: o2x
   integer                  :: compid                    ! mct comp id
   integer                  :: mpicom                    ! mpi communicator
   integer                  :: my_task                   ! my task in mpi communicator mpicom
@@ -70,9 +61,7 @@ module ocn_comp_nuopc
   character(CL)            :: case_name                 ! case name
   character(len=80)        :: calendar                  ! calendar name
   logical                  :: ocn_present               ! flag
-  logical                  :: ocn_prognostic    ! flag
-  character(CXX)           :: flds_o2x = ''
-  character(CXX)           :: flds_x2o = ''
+  logical                  :: ocn_prognostic            ! flag
   integer                  :: logunit                   ! logging unit number
   logical                  :: use_esmf_metadata = .false.
   character(*),parameter   :: modName =  "(ocn_comp_nuopc)"
@@ -91,13 +80,11 @@ module ocn_comp_nuopc
 
     ! local variables
     integer :: shrlogunit ! original log unit
-    integer :: shrloglev  ! original log level
-    integer :: dbrc
     character(len=*),parameter  :: subname=trim(modName)//':(SetServices) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO)
 
     ! the NUOPC gcomp component will register the generic methods
     call NUOPC_CompDerive(gcomp, model_routine_SS, rc=rc)
@@ -132,16 +119,18 @@ module ocn_comp_nuopc
          specRoutine=ModelFinalize, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO)
 
   end subroutine SetServices
 
   !===============================================================================
 
   subroutine InitializeAdvertise(gcomp, importState, exportState, clock, rc)
+
     use shr_nuopc_utils_mod, only : shr_nuopc_set_component_logging
     use shr_nuopc_utils_mod, only : shr_nuopc_get_component_instance
 
+    ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     type(ESMF_State)     :: importState, exportState
     type(ESMF_Clock)     :: clock
@@ -149,38 +138,23 @@ module ocn_comp_nuopc
 
     ! local variables
     type(ESMF_VM)      :: vm
-    integer            :: lmpicom
-    character(len=CL)  :: cvalue
-    logical            :: activefld
-    integer            :: n,nflds
-    integer            :: ierr       ! error code
     integer            :: shrlogunit  ! original log unit
-    integer            :: shrloglev   ! original log level
-    integer            :: dbrc
-    logical            :: isPresent
-    character(len=CL)  :: diro
-    character(len=CL)  :: logfile
-    logical            :: ocnrof_prognostic ! flag
-    integer            :: localPet
     character(len=CL)  :: fileName    ! generic file name
     character(len=*),parameter :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO)
 
     !----------------------------------------------------------------------------
-    ! generate local mpi comm
+    ! get mpi data
     !----------------------------------------------------------------------------
 
     call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call ESMF_VMGet(vm, mpiCommunicator=lmpicom, localPet=localPet, rc=rc)
+    call ESMF_VMGet(vm, mpiCommunicator=mpicom, localPet=my_task, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call mpi_comm_dup(lmpicom, mpicom, ierr)
-    call mpi_comm_rank(mpicom, my_task, ierr)
 
     !----------------------------------------------------------------------------
     ! determine instance information
@@ -193,48 +167,50 @@ module ocn_comp_nuopc
     ! set logunit and set shr logging to my log file
     !----------------------------------------------------------------------------
 
-    call shr_nuopc_set_component_logging(gcomp, my_task==master_task, logunit, shrlogunit, shrloglev)
+    call shr_nuopc_set_component_logging(gcomp, my_task==master_task, logunit, shrlogunit)
 
     !----------------------------------------------------------------------------
     ! Read input namelists and set present and prognostic flags
     !----------------------------------------------------------------------------
 
     filename = "docn_in"//trim(inst_suffix)
-    call docn_shr_read_namelists(filename, mpicom, my_task, master_task, &
-         logunit, SDOCN, ocn_present, ocn_prognostic, ocnrof_prognostic)
+    call docn_shr_read_namelists(filename, mpicom, my_task, master_task, logunit, ocn_prognostic)
 
-    ! TODO: - hard wire prognostic for now to get atm/ocn flux
-    ! computation and ocn albedos computed in mediator
-    ocn_prognostic = .true.
+    write(6,*)'DEBUG: ocn_prognostic = ',ocn_prognostic
 
     !--------------------------------
     ! Advertise import and export fields
     !--------------------------------
 
     call docn_comp_advertise(importstate, exportState, &
-       ocn_present, ocn_prognostic, ocnrof_prognostic, &
-       fldsFrOcn_num, fldsFrOcn, fldsToOcn_num, fldsToOcn, &
-       flds_o2x, flds_x2o, rc)
+         ocn_prognostic, fldsFrOcn_num, fldsFrOcn, fldsToOcn_num, fldsToOcn, rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to original values
     !----------------------------------------------------------------------------
 
     call shr_file_setLogUnit (shrlogunit)
-    call shr_file_setLogLevel(shrloglev)
-    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO)
 
   end subroutine InitializeAdvertise
 
   !===============================================================================
 
   subroutine InitializeRealize(gcomp, importState, exportState, clock, rc)
+
+    use shr_const_mod, only : shr_const_spval
+
+    ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     type(ESMF_State)     :: importState, exportState
     type(ESMF_Clock)     :: clock
     integer, intent(out) :: rc
 
     ! local variables
+    integer                 :: n
+    integer                 :: nxg, nyg
+    character(CL)           :: cvalue
     type(ESMF_Mesh)         :: Emesh
     type(ESMF_Time)         :: currTime
     type(ESMF_TimeInterval) :: timeStep
@@ -246,28 +222,21 @@ module ocn_comp_nuopc
     integer                 :: current_day               ! model day
     integer                 :: current_tod               ! model sec into model date
     integer                 :: modeldt                   ! model timestep
-    integer                 :: n
-    character(CL)           :: cvalue
-    integer                 :: ierr                      ! error code
     logical                 :: scmMode = .false.         ! single column mode
-    real(R8)                :: scmLat  = shr_const_SPVAL ! single column lat
-    real(R8)                :: scmLon  = shr_const_SPVAL ! single column lon
-    integer                 :: dbrc
-    integer                 :: shrlogunit ! original log unit
-    integer                 :: shrloglev  ! original log level
+    real(R8)                :: scmLat  = shr_const_spval ! single column lat
+    real(R8)                :: scmLon  = shr_const_spval ! single column lon
+    integer                 :: shrlogunit                ! original log unit
     character(len=*),parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO)
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to my log file
     !----------------------------------------------------------------------------
 
     call shr_file_getLogUnit (shrlogunit)
-    call shr_file_getLogLevel(shrloglev)
-    call shr_file_setLogLevel(max(shrloglev,1))
     call shr_file_setLogUnit (logUnit)
 
     !--------------------------------
@@ -314,7 +283,7 @@ module ocn_comp_nuopc
     else if (esmf_caltype == ESMF_CALKIND_GREGORIAN) then
        calendar = shr_cal_gregorian
     else
-       call ESMF_LogWrite(subname//" ERROR bad ESMF calendar name "//trim(calendar), ESMF_LOGMSG_ERROR, rc=dbrc)
+       call ESMF_LogWrite(subname//" ERROR bad ESMF calendar name "//trim(calendar), ESMF_LOGMSG_ERROR)
        rc = ESMF_Failure
        return
     end if
@@ -340,10 +309,9 @@ module ocn_comp_nuopc
     ! Initialize model
     !----------------------------------------------------------------------------
 
-    call docn_comp_init(x2o, o2x, &
-         SDOCN, mpicom, compid, my_task, master_task, &
+    call docn_comp_init(mpicom, compid, my_task, master_task, &
          inst_suffix, logunit, read_restart, &
-         scmMode, scmlat, scmlon, calendar, current_ymd, current_tod, modeldt, Emesh)
+         scmMode, scmlat, scmlon, calendar, current_ymd, current_tod, modeldt, Emesh, nxg, nyg)
 
     !--------------------------------
     ! realize the actively coupled fields, now that a mesh is established
@@ -351,46 +319,41 @@ module ocn_comp_nuopc
     ! by replacing the advertised fields with the newly created fields of the same name.
     !--------------------------------
 
-    if (ocn_present) then
-       ! export fields
-       call fld_list_realize( &
-            state=ExportState, &
-            fldList=fldsFrOcn, &
-            numflds=fldsFrOcn_num, &
-            flds_scalar_name=flds_scalar_name, &
-            flds_scalar_num=flds_scalar_num, &
-            tag=subname//':docnExport',&
-            mesh=Emesh, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       ! import fields
-       if (ocn_prognostic) then
-          call fld_list_realize( &
-               state=importState, &
-               fldList=fldsToOcn, &
-               numflds=fldsToOcn_num, &
-               flds_scalar_name=flds_scalar_name, &
-               flds_scalar_num=flds_scalar_num, &
-               tag=subname//':docnImport',&
-               mesh=Emesh, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       end if
-    end if
+    ! export fields
+    call dshr_realize( &
+         state=ExportState, &
+         fldList=fldsFrOcn, &
+         numflds=fldsFrOcn_num, &
+         flds_scalar_name=flds_scalar_name, &
+         flds_scalar_num=flds_scalar_num, &
+         tag=subname//':docnExport',&
+         mesh=Emesh, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    
+    ! import fields
+    call dshr_realize( &
+         state=importState, &
+         fldList=fldsToOcn, &
+         numflds=fldsToOcn_num, &
+         flds_scalar_name=flds_scalar_name, &
+         flds_scalar_num=flds_scalar_num, &
+         tag=subname//':docnImport',&
+         mesh=Emesh, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
     ! Pack export state
-    ! Copy from o2x to exportState
     ! Set the coupling scalars
     !--------------------------------
 
-    call shr_nuopc_grid_ArrayToState(o2x%rattr, flds_o2x, exportState, grid_option='mesh', rc=rc)
+    call docn_comp_export(exportState, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_State_SetScalar(dble(SDOCN%nxg),flds_scalar_index_nx, exportState,  &
+    call shr_nuopc_methods_State_SetScalar(dble(nxg),flds_scalar_index_nx, exportState,  &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_State_SetScalar(dble(SDOCN%nyg),flds_scalar_index_ny, exportState, &
+    call shr_nuopc_methods_State_SetScalar(dble(nyg),flds_scalar_index_ny, exportState, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -407,7 +370,6 @@ module ocn_comp_nuopc
     ! Reset shr logging to original values
     !----------------------------------------------------------------------------
 
-    call shr_file_setLogLevel(shrloglev)
     call shr_file_setLogUnit (shrlogunit)
 
     if (use_esmf_metadata) then
@@ -415,14 +377,17 @@ module ocn_comp_nuopc
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
-    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO)
 
   end subroutine InitializeRealize
 
   !===============================================================================
 
   subroutine ModelAdvance(gcomp, rc)
+
     use shr_nuopc_utils_mod, only : shr_nuopc_memcheck, shr_nuopc_log_clock_advance
+
+    ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -443,14 +408,12 @@ module ocn_comp_nuopc
     integer                    :: mon           ! month
     integer                    :: day           ! day in month
     integer                    :: modeldt       ! model timestep
-    integer                    :: dbrc
     integer                    :: shrlogunit ! original log unit
-    integer                    :: shrloglev  ! original log level
     character(len=*),parameter :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO)
 
     call shr_nuopc_memcheck(subname, 5, my_task==master_task)
 
@@ -459,8 +422,6 @@ module ocn_comp_nuopc
     !--------------------------------
 
     call shr_file_getLogUnit (shrlogunit)
-    call shr_file_getLogLevel(shrloglev)
-    call shr_file_setLogLevel(max(shrloglev,1))
     call shr_file_setLogUnit (logunit)
 
     !--------------------------------
@@ -479,7 +440,7 @@ module ocn_comp_nuopc
     !--------------------------------
 
     if (ocn_prognostic) then
-       call shr_nuopc_grid_StateToArray(importState, x2o%rattr, flds_x2o, grid_option='mesh', rc=rc)
+       call docn_comp_import(importState, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
@@ -518,8 +479,7 @@ module ocn_comp_nuopc
 
     ! Advance the model
 
-    call docn_comp_run(x2o, o2x, &
-         SDOCN, mpicom, compid, my_task, master_task, &
+    call docn_comp_run(mpicom, compid, my_task, master_task, &
          inst_suffix, logunit, read_restart, write_restart, &
          nextYMD, nextTOD, modeldt, case_name=case_name)
 
@@ -527,7 +487,7 @@ module ocn_comp_nuopc
     ! Pack export state
     !--------------------------------
 
-    call shr_nuopc_grid_ArrayToState(o2x%rattr, flds_o2x, exportState, grid_option='mesh', rc=rc)
+    call docn_comp_export(exportState, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
@@ -541,9 +501,8 @@ module ocn_comp_nuopc
     if (my_task == master_task) then
        call shr_nuopc_log_clock_advance(clock, 'OCN', logunit)
     end if
-    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO)
 
-    call shr_file_setLogLevel(shrloglev)
     call shr_file_setLogUnit (shrlogunit)
 
   end subroutine ModelAdvance
@@ -551,11 +510,11 @@ module ocn_comp_nuopc
   !===============================================================================
 
   subroutine ModelFinalize(gcomp, rc)
+
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
     ! local variables
-    integer :: dbrc
     character(*), parameter :: F00   = "('(docn_comp_final) ',8a)"
     character(*), parameter :: F91   = "('(docn_comp_final) ',73('-'))"
     character(len=*),parameter  :: subname=trim(modName)//':(ModelFinalize) '
@@ -567,7 +526,7 @@ module ocn_comp_nuopc
        write(logunit,F00) 'docn : end of main integration loop'
        write(logunit,F91)
     end if
-    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO)
 
   end subroutine ModelFinalize
 
