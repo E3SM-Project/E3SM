@@ -1105,9 +1105,8 @@
 
     <domain name="0.125nldas2">
       <nx>464</nx> <ny>224</ny>
-      <!-- FIXME: Need to update these domain files (both their names and their masks) -->
-      <file grid="atm|lnd" mask="nldas2">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.224x464_nldas_224x464_nldas.190403.nc</file>
-      <file grid="ocnice"  mask="nldas2">$DIN_LOC_ROOT/share/domains/domain.clm/domain.ocn.224x464_nldas.190403.nc</file>
+      <file grid="atm|lnd" mask="nldas2">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.0.125nldas2_0.125nldas2.190410.nc</file>
+      <file grid="ocnice"  mask="nldas2">$DIN_LOC_ROOT/share/domains/domain.clm/domain.ocn.0.125nldas2.190410.nc</file>
       <desc>Regional NLDAS-2 grid over the U.S. (0.125 degree resolution; 25-53N, 235-293E)</desc>
     </domain>
 
