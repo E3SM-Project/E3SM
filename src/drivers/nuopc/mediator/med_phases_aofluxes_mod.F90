@@ -158,7 +158,7 @@ contains
     call shr_nuopc_memcheck(subname, 5, mastertask)
 
     ! TODO(mvertens, 2019-01-12): ONLY regrid atm import fields that are needed for the atm/ocn flux calculation
-    
+
     ! Regrid atm import field bundle from atm to ocn grid as input for ocn/atm flux calculation
     call med_map_FB_Regrid_Norm( &
          fldListFr(compatm)%flds, compatm, compocn, &
@@ -528,7 +528,7 @@ contains
     end if
 
     call shr_flux_atmocn (&
-         lsize, aoflux%zbot, aoflux%ubot, aoflux%vbot, aoflux%thbot, aoflux%prec_gust, gust_fac, &
+         lsize, aoflux%zbot, aoflux%ubot, aoflux%vbot, aoflux%thbot, &
          aoflux%shum, aoflux%shum_16O, aoflux%shum_HDO, aoflux%shum_18O, aoflux%dens , &
          aoflux%tbot, aoflux%uocn, aoflux%vocn, &
          aoflux%tocn, aoflux%mask, aoflux%sen, aoflux%lat, aoflux%lwup, &
