@@ -320,7 +320,8 @@ end subroutine micro_p3_readnl
    call pbuf_add_field('CV_REFFLIQ', 'physpkg',dtype_r8,(/pcols,pver/), cv_reffliq_idx)
    call pbuf_add_field('CV_REFFICE', 'physpkg',dtype_r8,(/pcols,pver/), cv_reffice_idx)
  
-   !! module clubb_intr
+   !! module clubb_intr (AaronDonahue: I think these are for MG only.  Should
+   !  we remove?  If so, then we will have to make changes to CLUBB interface.
    call pbuf_add_field('RELVAR',     'global',dtype_r8,(/pcols,pver/), relvar_idx)
    call pbuf_add_field('ACCRE_ENHAN','global',dtype_r8,(/pcols,pver/), accre_enhan_idx)
 
@@ -1225,10 +1226,6 @@ end subroutine micro_p3_readnl
     !TODO: figure out what else other E3SM parameterizations need from micro and make sure 
     !they are assigned here. The comments below are a step in that direction.
 
-    !cloud_rad_props needs ice effective diameter, which Kai calculates as below:
-    !   dei = rei*diag_rhopo(i,k,iice)/rhows*2._rtype
-    !where rhopo is bulk ice density from table lookup (taken from f1pr16, but not 
-    !done in my ver yet) and rhows=917.0 is a constant parameter.
 
     !cloud_rad_props also uses snow radiative properties which aren't available from 
     !P3 (perhaps because ice phase in p3 includes *all* ice already?).
@@ -1249,31 +1246,10 @@ end subroutine micro_p3_readnl
 
    ! Following MG interface as a template:
 
-   !== Grid-box mean flux_large_scale_cloud at interfaces (kg/m2/s)
-! flxprc and flxsnw are used in COSP to compute precipitation fractional
-! area and derive precipitation (rain and snow) mixing ratios. Including iflx
-! and cflx in precipitation fluxes would result in additional effects of cloud liquid and
-! ice on cosp's smiluated lidar and radar reflectivity signal through the rain/snow
-! portion of calculations that are handled separately from that of cloud liquid
-! and ice. If included, it would not exactly amount to double counting the effect of
-! cloud liquid and ice because the mixing ratio derived from iflx and cflx epected to be much smaller
-! than the actual grid-mean cldliq and cldice, and rain or snow size distribution
-! would be used to compute the lidar/radar signal strength.
-! 
-! Note that it would need to include iflx and cflx to make the values at surface
-! interface consistent with large scale precipitation rates.
-
-    ! array must be zeroed beyond trop_cloud_top_pre otherwise undefined values will be used in cosp.
-    flxprc(:ncol,1:top_lev) = 0.0_rtype ! Rain+Snow
-    flxsnw(:ncol,1:top_lev) = 0.0_rtype ! Snow
- 
-    flxprc(:ncol,top_lev:pverp) = rflx(:ncol,top_lev:pverp) + sflx(:ncol,top_lev:pverp) ! need output from p3
-    flxsnw(:ncol,top_lev:pverp) = sflx(:ncol,top_lev:pverp) ! need output from p3
-
     ! Net micro_p3 condensation rate
     qme(:ncol,top_lev:pver) = cmeliq(:ncol,top_lev:pver) + cmeiout(:ncol,top_lev:pver)  ! cmeiout is output from p3 micro
-
-    ! For precip, accumulate only total precip in prec_pcw and snow_pcw variables.
+!====================== Export variables/Conservation START ======================!
+     !For precip, accumulate only total precip in prec_pcw and snow_pcw variables.
     ! Other precip output variables are set to 0
     ! Do not subscript by ncol here, because in physpkg we divide the whole
     ! array and need to avoid an FPE due to uninitialized data.
@@ -1284,7 +1260,15 @@ end subroutine micro_p3_readnl
     snow_pcw = prt_sol
     snow_sed = 0._rtype
     snow_str = snow_pcw + snow_sed
-      
+!====================== Export variables/Conservation END ======================!
+
+!====================== Radiation Specific Outputs START ======================!
+
+   ! Calculate rho for size distribution
+   ! parameter calculations and average it if needed
+   
+   rho(:ncol,top_lev:) = &
+      state%pmid(:ncol,top_lev:) / (rair*state%t(:ncol,top_lev:))
    ! ------------------------------------------------------------ !
    ! Compute in cloud ice and liquid mixing ratios                !
    ! Note that 'iclwp, iciwp' are used for radiation computation. !
@@ -1311,68 +1295,22 @@ end subroutine micro_p3_readnl
          iclwpst(icol,k)   = min(state%q(icol,k,ixcldliq)/max(mincld,ast(icol,k)),0.005_rtype) * state%pdel(icol,k) / gravit
       end do                    
    end do
-  
-
-   cvreffliq(:ncol,top_lev:pver) = 9.0_rtype
-   cvreffice(:ncol,top_lev:pver) = 37.0_rtype
-
-    !note s=cp*T has units J/kg
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!
    !! derived fields 
    !!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   
-
-   ! Calculate rho (on subcolumns if turned on) for size distribution
-   ! parameter calculations and average it if needed
-   !
-   ! State instead of state_loc to preserve answers for P31 (and in any
-   ! case, it is unlikely to make much difference).
-   
-   rho(:ncol,top_lev:) = &
-      state%pmid(:ncol,top_lev:) / (rair*state%t(:ncol,top_lev:))
-
-   !!
-   !! Effective radius for cloud liquid, fixed number.
-   !!
-   
-   mu = 0._rtype
-   lambdac = 0._rtype
-   rel_fn = 10._rtype
-
-   ncic = 1.e8_rtype
-
-   !! size distribution 
-   
-   call size_dist_param_liq( &
-                             micro_liq_props, &
-                             icwmrst(:ngrdcol,top_lev:), &
-                             ncic   (:ngrdcol,top_lev:), &
-                             rho         (:ngrdcol,top_lev:), &
-                             mu     (:ngrdcol,top_lev:), &
-                             lambdac(:ngrdcol,top_lev:))
-
-   where (icwmrst(:ngrdcol,top_lev:) > qsmall)
-      rel_fn(:ngrdcol,top_lev:) = &
-                    (mu(:ngrdcol,top_lev:) + 3._rtype)/ &
-                    lambdac(:ngrdcol,top_lev:)/2._rtype * 1.e6_rtype
-   end where
-
    !!
    !! Effective radius for cloud liquid, and size parameters
    !! mu and lambdac.
    !!
-   
    mu = 0._rtype
    lambdac = 0._rtype
    rel = 10._rtype
-
    !!
    !! Calculate ncic on the grid
    !!
-   
    ncic(:ngrdcol,top_lev:) = nc(:ngrdcol,top_lev:) / &
         max(mincld,lcldm(:ngrdcol,top_lev:))
 
@@ -1393,33 +1331,6 @@ end subroutine micro_p3_readnl
       ! wherever there is no cloud.
       mu(:ngrdcol,top_lev:) = 0._rtype
    end where
-
-   !!
-   !! Rain/Snow effective diameter
-   !!
-   
-   drout2    = 0._rtype
-   reff_rain = 0._rtype
-   aqrain    = 0._rtype
-   anrain    = 0._rtype
-   freqr     = 0._rtype
-
-      ! Prognostic precipitation
-
-      where (rain(:ngrdcol,top_lev:) >= 1.e-7_rtype)
-         drout2(:ngrdcol,top_lev:) = avg_diameter( &
-              rain(:ngrdcol,top_lev:), &
-              numrain(:ngrdcol,top_lev:) * rho(:ngrdcol,top_lev:), &
-              rho(:ngrdcol,top_lev:), rhow)
-
-         aqrain = rain * rcldm
-         anrain = numrain * rcldm
-         freqr = rcldm
-         reff_rain(:ngrdcol,top_lev:) = drout2(:ngrdcol,top_lev:) * &
-              1.5_rtype * 1.e6_rtype
-      end where
-
-
    !!
    !! Effective radius and diameter for cloud ice
    !!
@@ -1442,6 +1353,9 @@ end subroutine micro_p3_readnl
       rei(:ngrdcol,top_lev:) = 25._rtype
    end where
 
+    !cloud_rad_props needs ice effective diameter, which Kai calculates as below:
+    !   dei = rei*diag_rhopo(i,k,iice)/rhows*2._rtype
+    !where rhopo is bulk ice density from table lookup (taken from f1pr16, here written as rhoi) and rhows=917.0 is a constant parameter.
    dei = rei * rhoi/rhows * 2._rtype
 
    !!
@@ -1458,34 +1372,9 @@ end subroutine micro_p3_readnl
       end do
    end do
 
-   reffrain(:,:) = 0.d0
-   reffsnow(:,:) = 0.d0
-   reffrain(:ngrdcol,top_lev:pver) = reff_rain(:ngrdcol,top_lev:pver)
-   reffsnow(:ngrdcol,top_lev:pver) = 1000._rtype !! dummy value 
-
-   ! ------------------------------------- !
-   ! Precipitation efficiency Calculation  !
-   ! ------------------------------------- !
-
-   !-----------------------------------------------------------------------
-   ! Liquid water path
-
-   ! Compute liquid water paths, and column condensation
-   tgliqwp(:ngrdcol) = 0._rtype
-   tgcmeliq(:ngrdcol) = 0._rtype
-   do k = top_lev, pver
-      do icol = 1, ngrdcol
-         tgliqwp(icol)  = tgliqwp(icol) + iclwpst(icol,k)*cld(icol,k)
-
-         if (cmeliq(icol,k) > 1.e-12_rtype) then
-            !convert cmeliq to right units:  kgh2o/kgair/s  *  kgair/m2  / kgh2o/m3  = m/s
-            tgcmeliq(icol) = tgcmeliq(icol) + cmeliq(icol,k) * &
-                 (state%pdel(icol,k) / gravit) / rhoh2o
-         end if
-      end do
-   end do
-
-   ! Averaging for new output fields
+   !!
+   !! New output fields
+   !!
    efcout      = 0._rtype
    efiout      = 0._rtype
    ncout       = 0._rtype
@@ -1532,6 +1421,61 @@ end subroutine micro_p3_readnl
    ! this is 1ppmv of h2o in 10hpa
    ! alternatively: 0.1 mm/day * 1.e-4 m/mm * 1/86400 day/s = 1.e-9
  
+   !!
+   !! Rain/Snow effective diameter
+   !!
+   drout2    = 0._rtype
+   reff_rain = 0._rtype
+   aqrain    = 0._rtype
+   anrain    = 0._rtype
+   freqr     = 0._rtype
+   ! Prognostic precipitation
+   where (rain(:ngrdcol,top_lev:) >= 1.e-7_rtype)
+      drout2(:ngrdcol,top_lev:) = avg_diameter( &
+           rain(:ngrdcol,top_lev:), &
+           numrain(:ngrdcol,top_lev:) * rho(:ngrdcol,top_lev:), &
+           rho(:ngrdcol,top_lev:), rhow)
+
+      aqrain = rain * rcldm
+      anrain = numrain * rcldm
+      freqr = rcldm
+      reff_rain(:ngrdcol,top_lev:) = drout2(:ngrdcol,top_lev:) * &
+           1.5_rtype * 1.e6_rtype
+   end where
+
+!====================== COSP Specific Outputs START ======================!
+! LS_FLXPRC, LS_FLXSNW, LS_REFFRAIN, LS_REFFSNOW, CV_REFFLIQ, CV_REFFICE
+   !== Grid-box mean flux_large_scale_cloud at interfaces (kg/m2/s)
+! flxprc and flxsnw are used in COSP to compute precipitation fractional
+! area and derive precipitation (rain and snow) mixing ratios. Including iflx
+! and cflx in precipitation fluxes would result in additional effects of cloud liquid and
+! ice on cosp's smiluated lidar and radar reflectivity signal through the rain/snow
+! portion of calculations that are handled separately from that of cloud liquid
+! and ice. If included, it would not exactly amount to double counting the effect of
+! cloud liquid and ice because the mixing ratio derived from iflx and cflx epected to be much smaller
+! than the actual grid-mean cldliq and cldice, and rain or snow size distribution
+! would be used to compute the lidar/radar signal strength.
+! 
+! Note that it would need to include iflx and cflx to make the values at surface
+! interface consistent with large scale precipitation rates.
+
+    ! array must be zeroed beyond trop_cloud_top_pre otherwise undefined values will be used in cosp.
+    flxprc(:ncol,1:top_lev) = 0.0_rtype ! Rain+Snow
+    flxsnw(:ncol,1:top_lev) = 0.0_rtype ! Snow
+ 
+    flxprc(:ncol,top_lev:pverp) = rflx(:ncol,top_lev:pverp) + sflx(:ncol,top_lev:pverp) ! need output from p3
+    flxsnw(:ncol,top_lev:pverp) = sflx(:ncol,top_lev:pverp) ! need output from p3
+
+    cvreffliq(:ncol,top_lev:pver) = 9.0_rtype
+    cvreffice(:ncol,top_lev:pver) = 37.0_rtype
+
+    reffrain(:,:) = 0.d0
+    reffsnow(:,:) = 0.d0
+    reffrain(:ngrdcol,top_lev:pver) = reff_rain(:ngrdcol,top_lev:pver)
+    reffsnow(:ngrdcol,top_lev:pver) = 1000._rtype !! dummy value, the choice here impacts the COSP output variable: CFAD_DBZE94_CS.  TODO: Figure out if this is ok, change if needed.
+
+!====================== COSP Specific Outputs  END ======================!
+
    if(do_aerocom_ind3) then
      autocl_idx = pbuf_get_index('autocl')
      accretl_idx = pbuf_get_index('accretl')
@@ -1544,7 +1488,7 @@ end subroutine micro_p3_readnl
    call outfld('AQRAIN',      aqrain,      psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    call outfld('ANRAIN',      anrain,      psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    call outfld('AREL',        efcout,      pcols, lchnk)
-!   call outfld('AREI',        efiout,      pcols, lchnk) ! AaronDonahue, This seems to lead to NaN in output, need to check this out 
+   call outfld('AREI',        efiout,      pcols, lchnk) 
    call outfld('AWNC' ,       ncout,       pcols, lchnk)
    call outfld('AWNI' ,       niout,       pcols, lchnk)
    call outfld('FICE',        nfice,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
@@ -1616,8 +1560,6 @@ end subroutine micro_p3_readnl
    call outfld('P3_mtend_NUMICE',  tend_out(:,:,47), pcols, lchnk)
    call outfld('P3_mtend_Q',       tend_out(:,:,48), pcols, lchnk)
    call outfld('P3_mtend_TH',      tend_out(:,:,49), pcols, lchnk)
-    
-    !call outfld('P3_QCAUT',   qcaut,  pcols, lchnk)
 
   end subroutine micro_p3_tend
 
