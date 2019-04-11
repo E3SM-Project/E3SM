@@ -123,7 +123,14 @@ contains
        comp(eci)%suffix             =  seq_comm_suffix(comp(eci)%compid)
        comp(eci)%name               =  seq_comm_name  (comp(eci)%compid)
        comp(eci)%ntype              =  ntype(1:3)
-       comp(eci)%oneletterid        =  ntype(1:1)
+       select case(ntype)
+       case ('atm','cpl','ocn','wav','glc','ice','rof','lnd','esp')
+          comp(eci)%oneletterid =  ntype(1:1)
+       case ('iac')
+          comp(eci)%oneletterid = 'z'
+       case default
+          call shr_sys_abort(subname//': component_ntype, "'//component_ntype//'" not recognized"')
+       end select
 
        if (eci == 1) then
           allocate(comp(1)%dom_cx)
