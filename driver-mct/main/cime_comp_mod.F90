@@ -971,11 +971,11 @@ contains
     !----------------------------------------------------------
     !| Timer initialization (has to be after mpi init)
     !----------------------------------------------------------
+
     maxthreads = max(nthreads_GLOID,nthreads_CPLID,nthreads_ATMID, &
          nthreads_LNDID,nthreads_ICEID,nthreads_OCNID,nthreads_GLCID, &
          nthreads_ROFID, nthreads_WAVID, nthreads_ESPID, nthreads_IACID, &
          pethreads_GLOID )
-
     call t_initf(NLFileName, LogPrint=.true., mpicom=mpicom_GLOID, &
          MasterTask=iamroot_GLOID,MaxThreads=maxthreads)
 
@@ -3730,7 +3730,7 @@ contains
     !-------------------------------------------------------
     ! | iac prep-merge
     !-------------------------------------------------------
-    
+
     if (iamin_CPLID .and. iac_prognostic) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:IACPREP_BARRIER')
 
@@ -3740,7 +3740,7 @@ contains
        ! Average our accumulators
        call prep_iac_accum_avg(timer='CPL:iacprep_l2xavg')
 
-       ! Setup lnd inputs on iac grid.  Right now I think they will be the same 
+       ! Setup lnd inputs on iac grid.  Right now I think they will be the same
        ! thing, but I'm trying to code for the general case
        if (lnd_c2_iac) then
           call prep_iac_calc_l2x_zx(timer='CPL:iacprep_lnd2iac')
@@ -3776,7 +3776,7 @@ contains
     !----------------------------------------------------------
     !| iac -> cpl
     !----------------------------------------------------------
-    
+
     if (iamin_CPLALLIACID) then
        call component_exch(rof, flow='c2x', &
             infodata=infodata, infodata_string='iac2cpl_run', &
@@ -3797,7 +3797,7 @@ contains
        call component_diag(infodata, iac, flow='c2x', comment= 'recv iac', &
             info_debug=info_debug, timer_diag='CPL:iacpost_diagav')
 
-       ! TRS I think this is wrong - review these prep functions.  I think it's more likely 
+       ! TRS I think this is wrong - review these prep functions.  I think it's more likely
        if (iac_c2_lnd) then
           call prep_lnd_calc_z2x_lx(timer='CPL:iacpost_iac2lnd')
        endif
