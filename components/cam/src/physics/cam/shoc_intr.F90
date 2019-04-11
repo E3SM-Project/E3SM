@@ -37,8 +37,6 @@ module shoc_intr
              tkh_idx, &
              tk_idx, &
              wthv_idx, &       ! buoyancy flux
-             tauresx_idx, &    ! Residual meridional surface stress
-             tauresy_idx, &    ! Residual zonal surface stress
              cld_idx, &          ! Cloud fraction
              concld_idx, &       ! Convective cloud fraction
              ast_idx, &          ! Stratiform cloud fraction
@@ -138,8 +136,6 @@ module shoc_intr
   
     ! Fields that are not prognostic should be added to PBUF
     call pbuf_add_field('WTHV', 'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wthv_idx)
-    call pbuf_add_field('TAURESX', 'global', dtype_r8, (/pcols,dyn_time_lvls/), tauresx_idx) 
-    call pbuf_add_field('TAURESY', 'global', dtype_r8, (/pcols,dyn_time_lvls/), tauresy_idx) 
     call pbuf_add_field('TKH', 'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), tkh_idx) 
     call pbuf_add_field('TK', 'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), tk_idx) 
 
@@ -288,9 +284,7 @@ end function shoc_implements_cnst
     vmag_gust_idx = pbuf_get_index('vmag_gust')
  
     if (is_first_step()) then
-      call pbuf_set_field(pbuf2d, wthv_idx, 0.0_r8)
-      call pbuf_set_field(pbuf2d, tauresx_idx, 0.0_r8)
-      call pbuf_set_field(pbuf2d, tauresy_idx, 0.0_r8) 
+      call pbuf_set_field(pbuf2d, wthv_idx, 0.0_r8) 
       call pbuf_set_field(pbuf2d, tkh_idx, 0.0_r8) 
       call pbuf_set_field(pbuf2d, tk_idx, 0.0_r8) 
       
@@ -582,8 +576,6 @@ end function shoc_implements_cnst
   
    real(r8), pointer, dimension(:,:) :: tke  ! turbulent kinetic energy 
    real(r8), pointer, dimension(:,:) :: wthv ! buoyancy flux
-   real(r8), pointer, dimension(:)   :: tauresx
-   real(r8), pointer, dimension(:)   :: tauresy
    real(r8), pointer, dimension(:,:) :: tkh 
    real(r8), pointer, dimension(:,:) :: tk
    real(r8), pointer, dimension(:,:) :: cld      ! cloud fraction                               [fraction]
@@ -640,8 +632,6 @@ end function shoc_implements_cnst
    
    !  Establish associations between pointers and physics buffer fields   
    call pbuf_get_field(pbuf, tke_idx,     tke)
-   call pbuf_get_field(pbuf, tauresx_idx,  tauresx,  start=(/1,itim_old/), kount=(/pcols,1/))
-   call pbuf_get_field(pbuf, tauresy_idx,  tauresy,  start=(/1,itim_old/), kount=(/pcols,1/))
    call pbuf_get_field(pbuf, wthv_idx,     wthv,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))  
    call pbuf_get_field(pbuf, tkh_idx,      tkh,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))  
    call pbuf_get_field(pbuf, tk_idx,       tk,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))  
@@ -670,7 +660,7 @@ end function shoc_implements_cnst
    !  instances when a 5 min time step will not be possible (based on 
    !  host model time step or on macro-micro sub-stepping   
    
-   dtime = 300.0_r8  !+DPAB, probably want to make this a namelist variable
+   dtime = 300.0_r8  
    
    !  Now check to see if dtime is greater than the host model 
    !    (or sub stepped) time step.  If it is, then simply 
@@ -735,9 +725,7 @@ end function shoc_implements_cnst
        vm(i,k) = state1%v(i,k)
        
        thlm(i,k) = state1%t(i,k)*exner(i,k)-(latvap/cpair)*state1%q(i,k,ixcldliq)
-       thv2(i,k) = thlm(i,k)*(1.0_r8+zvir*state1%q(i,k,ixq)) 
- 
-       thv(i,k) = thv2(i,k)
+       thv(i,k) = state1%t(i,k)*exner(i,k)*(1.0_r8+zvir*state1%q(i,k,ixq)) 
  
        tke(i,k) = max(tke_tol,state1%q(i,k,ixtke))
      
@@ -875,7 +863,6 @@ end function shoc_implements_cnst
 	  tke_in(:ncol,:), thlm_in(:ncol,:), rtm_in(:ncol,:), & ! Input/Ouput
 	  um_in(:ncol,:), vm_in(:ncol,:), edsclr_in(:ncol,:,:), & ! Input/Output
 	  wthv_in(:ncol,:),tkh_in(:ncol,:),tk_in(:ncol,:), & ! Input/Output
-	  tauresx(:ncol),tauresy(:ncol),&  ! Input/Output
           cloudfrac_shoc(:ncol,:), rcm_shoc(:ncol,:), & ! Output
           shoc_mix_out(:ncol,:), isotropy_out(:ncol,:), & ! Output (diagnostic)
           w_sec_out(:ncol,:), thl_sec_out(:ncol,:), qw_sec_out(:ncol,:), qwthl_sec_out(:ncol,:), & ! Output (diagnostic)          

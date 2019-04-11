@@ -45,9 +45,7 @@ real(r8), parameter :: qwthl2tune=1.0_r8
 ! vertical velocity variance 
 real(r8), parameter :: w2tune=1.0_r8 
 ! third moment of vertical velocity
-real(r8), parameter :: w3tune=1.0_r8 
-! mixing length
-real(r8), parameter :: mixtune=1.0_r8 
+real(r8), parameter :: w3clip=1.2_r8 
 
 ! =========
 ! Below are options to activate certain features in SHOC
@@ -75,7 +73,7 @@ real(r8), parameter :: basepres = 100000._r8
 ! Note that these upper limits are quite high 
 ! and they are rarely reached in a stable simulation
 
-! Return to isotopic timescale [s]
+! Return to isotropic timescale [s]
 real(r8), parameter :: maxiso = 20000.0_r8
 ! Mixing length [m]
 real(r8), parameter :: maxlen = 20000.0_r8
@@ -126,7 +124,6 @@ subroutine shoc_main ( &
      tke, thetal, qw, &                   ! Input/Output
      u_wind, v_wind,qtracers,&            ! Input/Output
      wthv_sec,tkh,tk,&                    ! Input/Output
-     tauresx,tauresy,&                    ! Input/Output
      shoc_cldfrac,shoc_ql,&               ! Output
      shoc_mix, isotropy,&                 ! Output (diagnostic)
      w_sec, thl_sec, qw_sec, qwthl_sec,&  ! Output (diagnostic)
@@ -156,9 +153,9 @@ subroutine shoc_main ( &
   real(r8), intent(in) :: zt_grid(shcol,nlev)	
   ! heights, for interface grid [m]
   real(r8), intent(in) :: zi_grid(shcol,nlevi) 
-  ! pressure levels on thermo grid [hPa]  
+  ! pressure levels on thermo grid [Pa]  
   real(r8), intent(in) :: pres(shcol,nlev)
-  ! Differences in pressure levels [hPa] 
+  ! Differences in pressure levels [Pa] 
   real(r8), intent(in) :: pdel(shcol,nlev)
   ! virtual potential temperature [K] 
   real(r8), intent(in) :: thv(shcol,nlev) 
@@ -196,10 +193,6 @@ subroutine shoc_main ( &
   real(r8), intent(inout) :: tk(shcol,nlev) 
   ! eddy coefficent for heat [m2/s]
   real(r8), intent(inout) :: tkh(shcol,nlev)
-  ! residual surface stress [N/m2] 
-  real(r8), intent(inout) :: tauresx(shcol) 
-  ! residual surface stress [N/m2]
-  real(r8), intent(inout) :: tauresy(shcol) 
 
 ! OUTPUT VARIABLES
   ! Cloud fraction [-]
@@ -276,7 +269,8 @@ subroutine shoc_main ( &
   ! Advance the SGS TKE equation	 
   call shoc_tke(&
          shcol,nlev,nlevi,dtime,&             ! Input
-         wthv_sec,shoc_mix,dz_zi,&            ! Input
+         wthv_sec,shoc_mix,&                  ! Input
+	 dz_zi,dz_zt,pres,&                   ! Input
 	 u_wind,v_wind,brunt,&                ! Input
 	 uw_sfc,vw_sfc,&                      ! Input
 	 zt_grid,zi_grid,&                    ! Input
@@ -292,8 +286,7 @@ subroutine shoc_main ( &
 	   zt_grid,zi_grid,tk,tkh,&           ! Input
            uw_sfc,vw_sfc,wthl_sfc,wqw_sfc,&   ! Input
            thetal,qw,qtracers,tke,&           ! Input/Output
-	   u_wind,v_wind,&                    ! Input/Output
-           tauresx,tauresy)                   ! Input/Output
+	   u_wind,v_wind)                     ! Input/Output
   endif	 
 
   ! Diagnose the second order moments, needed
@@ -542,8 +535,7 @@ subroutine update_prognostics_implicit( &
 	     zt_grid,zi_grid,tk,tkh,&         ! Input
              uw_sfc,vw_sfc,wthl_sfc,wqw_sfc,& ! Input
 	     thetal,qw,tracer,tke,&           ! Input/Output
-	     u_wind,v_wind,&                  ! Input/Output
-             tauresx,tauresy)                 ! Input/Output	
+	     u_wind,v_wind)                   ! Input/Output	
   
   implicit none
 
@@ -595,10 +587,6 @@ subroutine update_prognostics_implicit( &
   real(r8), intent(inout) :: v_wind(shcol,nlev)
   ! turbulent kinetic energy [m2/s2]
   real(r8), intent(inout) :: tke(shcol,nlev)
-  ! zonal residual surface stress [N/m2]	   
-  real(r8), intent(inout) :: tauresx(shcol)
-  ! meridional residual surface stress [N/m2]
-  real(r8), intent(inout) :: tauresy(shcol) 
  
 ! LOCAL VARIABLES         
   integer :: i, k, p
@@ -611,9 +599,6 @@ subroutine update_prognostics_implicit( &
   real(r8) :: flux_dummy(shcol)
   real(r8) :: ws(shcol)
   real(r8) :: tau(shcol), taux(shcol), tauy(shcol)
-  real(r8) :: tauimpx(shcol), tauimpy(shcol)
-  real(r8) :: usum_out(shcol), usum_in(shcol)
-  real(r8) :: vsum_out(shcol), vsum_in(shcol)
   real(r8) :: ksrf(shcol)
   
   real(r8) :: ca(shcol,nlev) ! superdiagonal for solver
@@ -621,7 +606,7 @@ subroutine update_prognostics_implicit( &
   real(r8) :: denom(shcol,nlev) ! denominator in solver
   real(r8) :: ze(shcol,nlev)
 
-  real(r8) :: wsmin, ksrfmin, ramda
+  real(r8) :: wsmin, ksrfmin
   real(r8) :: timeres 
  
   wsmin = 1._r8      ! Minimum wind speed for ksrfturb computation [ m/s ]
@@ -658,22 +643,6 @@ subroutine update_prognostics_implicit( &
     ksrf(i) = max(tau(i) / ws(i), ksrfmin)
   enddo
 
-  do i=1,shcol
-    usum_in(i)=0._r8
-    vsum_in(i)=0._r8
-    do k=1,nlev
-      usum_in(i)=usum_in(i)+(1._r8/ggr)*u_wind(i,k)/rdp_zt(i,k)
-      vsum_in(i)=vsum_in(i)+(1._r8/ggr)*v_wind(i,k)/rdp_zt(i,k)
-    enddo
-  enddo
-
-  ! Add in residual stress of previous time step explicitly into the lowest
-  ! model layer with a relaxation time scale of 'timeres'
-  ramda = dtime/timeres
-  ramda = 0._r8 ! currently turned off
-  u_wind(:,1) = u_wind(:,1) + dtime * ggr * rdp_zt(:,1) * tauresx(:) * ramda
-  v_wind(:,1) = v_wind(:,1) + dtime * ggr * rdp_zt(:,1) * tauresy(:) * ramda 
-
   ! Apply the surface fluxes explicitly for temperature and moisture
   thetal(:,1) = thetal(:,1) + dtime * (ggr * rho_zi(:,1) * rdp_zt(:,1)) * wthl_sfc(:)  
   qw(:,1) = qw(:,1) + dtime * (ggr * rho_zi(:,1) * rdp_zt(:,1)) * wqw_sfc(:)
@@ -706,22 +675,6 @@ subroutine update_prognostics_implicit( &
   ! march tracers one step forward using implicit solver
   do p=1,num_tracer
     call vd_shoc_solve(shcol,nlev,nlevi,ca,cc,denom,ze,tracer(:shcol,:nlev,p))
-  enddo
-
-  do i=1,shcol
-    usum_out(i)=0._r8
-    vsum_out(i)=0._r8
-    do k=1,nlev
-      usum_out(i)=usum_out(i)+(1._r8/ggr)*u_wind(i,k)/rdp_zt(i,k)
-      vsum_out(i)=vsum_out(i)+(1._r8/ggr)*v_wind(i,k)/rdp_zt(i,k)
-    enddo
-
-    tauimpx(i) = (usum_out(i) - usum_in(i))/dtime
-    tauimpy(i) = (vsum_out(i) - vsum_in(i))/dtime
-
-    ! accumuluate residual surface stresses
-    tauresx(i) = taux(i) + tauresx(i) - tauimpx(i)
-    tauresy(i) = tauy(i) + tauresy(i) - tauimpy(i)
   enddo
 
   return	 	 
@@ -1110,14 +1063,12 @@ subroutine diag_third_shoc_moments(&
     
       tsign = 1._r8
       theterm = w_sec_zi(i,k)
-      cond = 1.2_r8 * sqrt(2._r8 * theterm**3)
+      cond = w3clip * sqrt(2._r8 * theterm**3)
       if (w3(i,k) .lt. 0) tsign = -1._r8
       if (tsign * w3(i,k) .gt. cond) w3(i,k) = tsign * cond
     
     enddo ! end i loop (column loop)
   enddo ! end k loop (vertical loop)
- 
-  w3(:,:) = w3tune*w3(:,:)
  
   return
   
@@ -1173,7 +1124,7 @@ subroutine shoc_assumed_pdf(&
   real(r8), intent(in) :: w3(shcol,nlevi) 
   ! large scale vertical velocity [m/s]
   real(r8), intent(in) :: w_field(shcol,nlev)
-  ! pressure [hPa] 
+  ! pressure [Pa] 
   real(r8), intent(in) :: pres(shcol,nlev) 
   ! heights on midpoint grid [m] 
   real(r8), intent(in) :: zt_grid(shcol,nlev) 
@@ -1415,8 +1366,8 @@ subroutine shoc_assumed_pdf(&
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !  BEGIN TO COMPUTE CLOUD PROPERTY STATISTICS
 
-      Tl1_1=thl1_1/((100000._r8/pval)**(rgas/cp))
-      Tl1_2=thl1_2/((100000._r8/pval)**(rgas/cp))
+      Tl1_1=thl1_1/((basepres/pval)**(rgas/cp))
+      Tl1_2=thl1_2/((basepres/pval)**(rgas/cp))
 
       ! Now compute qs
 
@@ -1448,7 +1399,7 @@ subroutine shoc_assumed_pdf(&
       
       s1=qw1_1-qs1*((1._r8+beta1*qw1_1)/(1._r8+beta1*qs1))
       cthl1=((1._r8+beta1*qw1_1)/(1._r8+beta1*qs1)**2)*(cp/lcond) &
-        *beta1*qs1*(pval/100000._r8)**(rgas/cp)
+        *beta1*qs1*(pval/basepres)**(rgas/cp)
 
       cqt1=1._r8/(1._r8+beta1*qs1)
       std_s1=sqrt(max(0._r8,cthl1**2*thl2_1+cqt1**2*qw2_1-2._r8*cthl1 &
@@ -1483,7 +1434,7 @@ subroutine shoc_assumed_pdf(&
         
         s2=qw1_2-qs2*((1._r8+beta2*qw1_2)/(1._r8+beta2*qs2))
         cthl2=((1._r8+beta2*qw1_2)/(1._r8+beta2*qs2)**2)*(cp/lcond) &
-	  *beta2*qs2*(pval/100000._r8)**(rgas/cp)
+	  *beta2*qs2*(pval/basepres)**(rgas/cp)
         cqt2=1._r8/(1._r8+beta2*qs2)
         std_s2=sqrt(max(0._r8,cthl2**2*thl2_2+cqt2**2*qw2_2-2._r8*cthl2* &
 	  sqrtthl2_2*cqt2*sqrtqw2_2*r_qwthl_1))
@@ -1531,7 +1482,8 @@ end subroutine shoc_assumed_pdf
 
 subroutine shoc_tke(&
              shcol,nlev,nlevi,dtime,&    ! Input
-             wthv_sec,shoc_mix,dz_zi,&   ! Input  
+             wthv_sec,shoc_mix,&         ! Input
+	     dz_zi,dz_zt,pres,&          ! Input  
 	     u_wind,v_wind,brunt,&       ! Input
 	     uw_sfc,vw_sfc,&             ! Input
 	     zt_grid,zi_grid,&           ! Input
@@ -1566,6 +1518,10 @@ subroutine shoc_tke(&
   real(r8), intent(in) :: vw_sfc(shcol) 
   ! thickness on interface grid [m]
   real(r8), intent(in) :: dz_zi(shcol,nlev)
+  ! thickness on thermodynamic grid [m]
+  real(r8), intent(in) :: dz_zt(shcol,nlev)
+  ! pressure [Pa]
+  real(r8), intent(in) :: pres(shcol,nlev)
   ! Brunt Vaisalla frequncy [/s] 
   real(r8), intent(in) :: brunt(shcol,nlev)  
   ! heights on midpoint grid [m]
@@ -1588,25 +1544,41 @@ subroutine shoc_tke(&
 ! LOCAL VARIABLES	     
   real(r8) :: shear_prod(shcol,nlevi)
   real(r8) :: shear_prod_zt(shcol,nlev), tk_zi(shcol,nlevi)
-  real(r8) :: grd,betdz,Ck,Ck10,Ce,Ces,Ce1,Ce2,smix,Pr,Cee,Cs
+  real(r8) :: grd,betdz,Ck,Ckh,Ckm,Ce,Ces,Ce1,Ce2,smix,Cee,Cs
   real(r8) :: buoy_sgs,ratio,a_prod_sh,a_prod_bu,a_diss
   real(r8) :: lstarn, lstarp, bbb, omn, omp, ustar
   real(r8) :: qsatt,dqsat,tk_in, uw_sec, vw_sec
   real(r8) :: tscale1,lambda,buoy_sgs_save,grid_dzw,grw1,grid_dz
+  real(r8) :: lambda_low,lambda_high,lambda_slope, brunt_low
+  real(r8) :: brunt_int(shcol)
   integer i,j,k,kc,kb	 
   
+  lambda_low=0.001_r8
+  lambda_high=0.04_r8
+  lambda_slope=0.65_r8
+  brunt_low=0.02
+ 
   ! Turbulent coefficients
-  Cs = 0.15_r8
+  Cs=0.15_r8
   Ck=0.1_r8
-  Ck10=0.5_r8
-  Ce=Ck**3/Cs**4
-  Ces=Ce/0.7_r8*3.0_r8
-  Pr=1.0_r8   
+  Ckh=0.1_r8
+  Ckm=0.1_r8
+  Ce=Ck**3/Cs**4 
   
   Ce1=Ce/0.7_r8*0.19_r8
   Ce2=Ce/0.7_r8*0.51_r8 
 
   Cee=Ce1+Ce2
+  
+  ! Compute integrated column stability in lower troposphere
+  brunt_int(:)=0._r8
+  do k=1,nlev
+    do i=1,shcol
+      if (pres(i,k) .gt. 80000._r8) then
+        brunt_int(i) = brunt_int(i) + dz_zt(i,k)*brunt(i,k)
+      endif
+    enddo
+  enddo
 
   ! Interpolate tk onto interface grid
   call linear_interp(zt_grid,zi_grid,tk,tk_zi,nlev,nlevi,shcol,0._r8)
@@ -1668,17 +1640,19 @@ subroutine shoc_tke(&
       ! define the time scale
       tscale1=(2.0_r8*tke(i,k))/a_diss
       
-      ! define a damping term "lambda" based on local stability
-      lambda=0.04_r8
+      ! define a damping term "lambda" based on column stability
+      lambda=lambda_low+((brunt_int(i)/ggr)-brunt_low)*lambda_slope
+      lambda=max(lambda_low,min(lambda_high,lambda))
+       
       buoy_sgs_save=brunt(i,k)
-      if (buoy_sgs_save .le. 0) lambda=0._r8
+      if (buoy_sgs_save .le. 0._r8) lambda=0._r8
       
       ! Compute the return to isotropic timescale
       isotropy(i,k)=min(maxiso,tscale1/(1._r8+lambda*buoy_sgs_save*tscale1**2))
 
       ! Define the eddy coefficients for heat and momentum
-      tkh(i,k)=Ck10*isotropy(i,k)*tke(i,k)              
-      tk(i,k)=tkh(i,k)  
+      tkh(i,k)=Ckh*isotropy(i,k)*tke(i,k)  
+      tk(i,k)=Ckm*isotropy(i,k)*tke(i,k)            
 
       tke(i,k) = max(mintke,tke(i,k))
  
@@ -1795,6 +1769,8 @@ subroutine shoc_length(&
   vonk=0.35_r8   ! Vonkarman constnt
   tscale=400._r8 ! time scale set based on similarity results
   brunt2(:,:) = 0._r8
+  numer(:) = 0._r8
+  denom(:) = 0._r8
 
   ! Interpolate virtual potential temperature onto interface grid
   call linear_interp(zt_grid,zi_grid,thv,thv_zi,nlev,nlevi,shcol,0._r8)
@@ -1910,9 +1886,6 @@ subroutine shoc_length(&
   enddo ! end i loop
 
   endif 
-	   
-  ! Tune length scale if need be
-  shoc_mix(:,:) = mixtune*shoc_mix(:,:)
   
   ! Do checks on the length scale.  Make sure it is not
   !  larger than the grid mesh of the host model.
