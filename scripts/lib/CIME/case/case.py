@@ -544,32 +544,30 @@ class Case(object):
         ('2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV_SESP', ['2000', 'DATM%NYF', 'SLND', 'DICE%SSMI', 'DOCN%DOM', 'DROF%NYF', 'SGLC', 'SWAV', 'SESP'])
         >>> Case(read_only=False)._valid_compset_impl('2000_DICE%SSMI_DOCN%DOM_DATM%NYF_DROF%NYF', ['CPL', 'ATM', 'LND', 'ICE', 'OCN', 'ROF', 'GLC', 'WAV', 'ESP'], {'datm':1,'satm':1,'dlnd':2,'slnd':2,'dice':3,'sice':3,'docn':4,'socn':4,'drof':5,'srof':5,'sglc':6,'swav':7,'ww3':7,'sesp':8})
         ('2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV_SESP', ['2000', 'DATM%NYF', 'SLND', 'DICE%SSMI', 'DOCN%DOM', 'DROF%NYF', 'SGLC', 'SWAV', 'SESP'])
-        >>> Case(read_only=False)._valid_compset_impl('1850_CAM60_CLM50%BGC-CROP_CICE_POP2%ECO%ABIO-DIC_MOSART_CISM2%NOEVOLVE_WW3', ['CPL', 'ATM', 'LND', 'ICE', 'OCN', 'ROF', 'GLC', 'WAV', 'ESP'], {'datm':1,'satm':1, 'cam':1,'dlnd':2,'clm':2,'slnd':2,'cice':3,'dice':3,'sice':3,'pop':4,'docn':4,'socn':4,'mosart':5,'drof':5,'srof':5,'cism':6,'sglc':6,'ww':7,'swav':7,'ww3':7,'sesp':8})
-        ('1850_CAM60_CLM50%BGC-CROP_CICE_POP2%ECO%ABIO-DIC_MOSART_CISM2%NOEVOLVE_WW3_SESP', ['1850', 'CAM60', 'CLM50%BGC-CROP', 'CICE', 'POP2%ECO%ABIO-DIC', 'MOSART', 'CISM2%NOEVOLVE', 'WW3', 'SESP'])
+        >>> Case(read_only=False)._valid_compset_impl('2000_DICE%SSMI_DOCN%DOM_DATM%NYF_DROF%NYF_TEST', ['CPL', 'ATM', 'LND', 'ICE', 'OCN', 'ROF', 'GLC', 'WAV', 'ESP'], {'datm':1,'satm':1,'dlnd':2,'slnd':2,'dice':3,'sice':3,'docn':4,'socn':4,'drof':5,'srof':5,'sglc':6,'swav':7,'ww3':7,'sesp':8})
+        ('2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV_SESP_TEST', ['2000', 'DATM%NYF', 'SLND', 'DICE%SSMI', 'DOCN%DOM', 'DROF%NYF', 'SGLC', 'SWAV', 'SESP'])
+        >>> Case(read_only=False)._valid_compset_impl('1850_CAM60_CLM50%BGC-CROP_CICE_POP2%ECO%ABIO-DIC_MOSART_CISM2%NOEVOLVE_WW3_BGC%BDRD', ['CPL', 'ATM', 'LND', 'ICE', 'OCN', 'ROF', 'GLC', 'WAV', 'ESP'], {'datm':1,'satm':1, 'cam':1,'dlnd':2,'clm':2,'slnd':2,'cice':3,'dice':3,'sice':3,'pop':4,'docn':4,'socn':4,'mosart':5,'drof':5,'srof':5,'cism':6,'sglc':6,'ww':7,'swav':7,'ww3':7,'sesp':8})
+        ('1850_CAM60_CLM50%BGC-CROP_CICE_POP2%ECO%ABIO-DIC_MOSART_CISM2%NOEVOLVE_WW3_SESP_BGC%BDRD', ['1850', 'CAM60', 'CLM50%BGC-CROP', 'CICE', 'POP2%ECO%ABIO-DIC', 'MOSART', 'CISM2%NOEVOLVE', 'WW3', 'SESP'])
+        >>> Case(read_only=False)._valid_compset_impl('1850_CAM60_CLM50%BGC-CROP_CICE_POP2%ECO%ABIO-DIC_MOSART_CISM2%NOEVOLVE_WW3_BGC%BDRD_TEST', ['CPL', 'ATM', 'LND', 'ICE', 'OCN', 'ROF', 'GLC', 'WAV', 'IAC', 'ESP'], {'datm':1,'satm':1, 'cam':1,'dlnd':2,'clm':2,'slnd':2,'cice':3,'dice':3,'sice':3,'pop':4,'docn':4,'socn':4,'mosart':5,'drof':5,'srof':5,'cism':6,'sglc':6,'ww':7,'swav':7,'ww3':7,'sesp':8})
+        ('1850_CAM60_CLM50%BGC-CROP_CICE_POP2%ECO%ABIO-DIC_MOSART_CISM2%NOEVOLVE_WW3_SIAC_SESP_BGC%BDRD_TEST', ['1850', 'CAM60', 'CLM50%BGC-CROP', 'CICE', 'POP2%ECO%ABIO-DIC', 'MOSART', 'CISM2%NOEVOLVE', 'WW3', 'SIAC', 'SESP'])
         """
         # Find the models declared in the compset
         model_set = [None]*len(comp_classes)
         components = compset_name.split('_')
         model_set[0] = components[0]
-        # Check for noncomponent appends (BGC & TEST)
         noncomps = []
-        for noncomp in ('BGC', 'TEST'):
-            if components[-1][0:len(noncomp)] == noncomp:
-                noncomps.append(components[-1])
-                last_ind = len(components) - 1
-            else:
-                last_ind = len(components)
-
-
-
-        for model in components[1:last_ind]:
+        for model in components[1:]:
             match = Case.__mod_match_re__.match(model.lower())
             expect(match is not None, "No model match for {}".format(model))
             mod_match = match.group(1)
-            expect(mod_match in comp_hash,
-                   "Unknown model type, {}".format(model))
-            comp_ind = comp_hash[mod_match]
-            model_set[comp_ind] = model
+            # Check for noncomponent appends (BGC & TEST)
+            if mod_match in ('bgc', 'test'):
+                noncomps.append(model)
+            else:
+                expect(mod_match in comp_hash,
+                       "Unknown model type, {}".format(model))
+                comp_ind = comp_hash[mod_match]
+                model_set[comp_ind] = model
 
         # Fill in missing components with stubs
         for comp_ind in range(1, len(model_set)):

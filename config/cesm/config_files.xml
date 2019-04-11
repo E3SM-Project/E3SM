@@ -212,6 +212,19 @@
     <schema>$CIMEROOT/config/xml_schemas/config_compsets.xsd</schema>
   </entry>
 
+  <entry id="COMP_ROOT_DIR_IAC">
+    <type>char</type>
+    <default_value>unset</default_value>
+    <values>
+      <value component="siac"      >$CIMEROOT/src/components/stub_comps/siac</value>
+      <value component="xiac"      >$CIMEROOT/src/components/xcpl_comps/xiac</value>
+    </values>
+    <group>case_comps</group>
+    <file>env_case.xml</file>
+    <desc>Root directory of the case integrated assessment component  </desc>
+    <schema>$CIMEROOT/config/xml_schemas/config_compsets.xsd</schema>
+  </entry>
+
   <entry id="COMP_ROOT_DIR_ESP">
     <type>char</type>
     <default_value>unset</default_value>
@@ -506,7 +519,7 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="siac">$CIMEROOT/src/components/stub_comps/siac/cime_config/config_component.xml</value>
+      <value>$COMP_ROOT_DIR_IAC/cime_config/config_component.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
