@@ -614,7 +614,17 @@ if (rarray(i,j,1) == 0) cycle
     end do
 
     do iCell = 1,nCells
-       snoalb(iCell) = snoalb(iCell) / real(nhs(iCell))
+       !
+       ! Mismatches in land mask can lead to MPAS land points with no maximum snow albedo.
+       ! Ideally, we would perform a search for nearby valid albedos, but for now using
+       ! the fill value will at least allow the model to run. In general, the number of cells
+       ! to be treated in this way tends to be a very small fraction of the total number of cells.
+       !
+       if (nhs(iCell) == 0) then
+          snoalb(iCell) = fillval
+       else
+          snoalb(iCell) = snoalb(iCell) / real(nhs(iCell))
+       end if
        snoalb(iCell) = 0.01_RKIND * snoalb(iCell)        ! Convert from percent to fraction
     end do
     deallocate(rarray)
