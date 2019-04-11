@@ -329,7 +329,6 @@ contains
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_clean
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FieldRegrid
-    use shr_nuopc_scalars_mod , only : flds_scalar_name
     use med_internalstate_mod , only : InternalState, mastertask
     use med_map_mod           , only : med_map_FB_Regrid_norm
 
@@ -389,22 +388,26 @@ contains
         .not. ESMF_FieldBundleIsCreated(FBlndIrrig) .and. &
         .not. ESMF_FieldBundleIsCreated(FBrofIrrig)) then
 
-       call shr_nuopc_methods_FB_init(FBout=FBlndVolr, flds_scalar_name=flds_scalar_name, &
+       call shr_nuopc_methods_FB_init(FBout=FBlndVolr, &
+            flds_scalar_name=is_local%wrap%flds_scalar_name, &
             FBgeom=is_local%wrap%FBImp(complnd,complnd), &
             fieldNameList=(/trim(volr_field)/), rc=rc)
        if (chkerr(rc,__line__,u_file_u)) return
 
-       call shr_nuopc_methods_FB_init(FBout=FBrofVolr, flds_scalar_name=flds_scalar_name, &
+       call shr_nuopc_methods_FB_init(FBout=FBrofVolr, &
+            flds_scalar_name=is_local%wrap%flds_scalar_name, &
             FBgeom=is_local%wrap%FBImp(comprof,comprof), &
             fieldNameList=(/trim(volr_field)/), rc=rc)
        if (chkerr(rc,__line__,u_file_u)) return
 
-       call shr_nuopc_methods_FB_init(FBout=FBlndIrrig, flds_scalar_name=flds_scalar_name, &
+       call shr_nuopc_methods_FB_init(FBout=FBlndIrrig, &
+            flds_scalar_name=is_local%wrap%flds_scalar_name, &
             FBgeom=is_local%wrap%FBImp(complnd,complnd), &
             fieldNameList=(/trim(irrig_normalized_field), trim(irrig_volr0_field)/), rc=rc)
        if (chkerr(rc,__line__,u_file_u)) return
 
-       call shr_nuopc_methods_FB_init(FBout=FBrofIrrig, flds_scalar_name=flds_scalar_name, &
+       call shr_nuopc_methods_FB_init(FBout=FBrofIrrig, &
+            flds_scalar_name=is_local%wrap%flds_scalar_name, &
             FBgeom=is_local%wrap%FBImp(comprof,comprof), &
             fieldNameList=(/trim(irrig_normalized_field), trim(irrig_volr0_field)/), rc=rc)
        if (chkerr(rc,__line__,u_file_u)) return

@@ -8,8 +8,8 @@ module glc_elevclass_mod
   !---------------------------------------------------------------------
 
 #include "shr_assert.h"
-  use med_constants_mod     , only : R8
-  use shr_sys_mod           , only : shr_sys_abort
+  use shr_kind_mod , only : r8=>shr_kind_r8
+  use shr_sys_mod  , only : shr_sys_abort
 
   implicit none
   private

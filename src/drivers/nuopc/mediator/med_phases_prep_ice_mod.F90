@@ -35,8 +35,6 @@ contains
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getNumFlds
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_GetScalar
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_SetScalar
-    use shr_nuopc_scalars_mod , only : flds_scalar_name, flds_scalar_num
-    use shr_nuopc_scalars_mod , only : flds_scalar_index_nextsw_cday
     use med_constants_mod     , only : CS, R8, dbug_flag=>med_constants_dbug_flag
     use med_merge_mod         , only : med_merge_auto
     use med_map_mod           , only : med_map_FB_Regrid_Norm
@@ -223,16 +221,19 @@ contains
 
        ! send nextsw_cday to land - first obtain it from atm import 
        call shr_nuopc_methods_State_GetScalar(&
-            scalar_value=nextsw_cday, scalar_id=flds_scalar_index_nextsw_cday, &
-            state=is_local%wrap%NstateImp(compatm), flds_scalar_name=flds_scalar_name, &
-            flds_scalar_num=flds_scalar_num, rc=rc)
+            scalar_value=nextsw_cday, &
+            scalar_id=is_local%wrap%flds_scalar_index_nextsw_cday, &
+            state=is_local%wrap%NstateImp(compatm), &
+            flds_scalar_name=is_local%wrap%flds_scalar_name, &
+            flds_scalar_num=is_local%wrap%flds_scalar_num, rc=rc)
        if (shr_nuopc_methods_chkerr(rc,__LINE__,u_FILE_u)) return
        call shr_nuopc_methods_State_SetScalar(&
-            scalar_value=nextsw_cday, scalar_id=flds_scalar_index_nextsw_cday, &
-            state=is_local%wrap%NstateExp(compice), flds_scalar_name=flds_scalar_name, &
-            flds_scalar_num=flds_scalar_num, rc=rc)
+            scalar_value=nextsw_cday, &
+            scalar_id=is_local%wrap%flds_scalar_index_nextsw_cday, &
+            state=is_local%wrap%NstateExp(compice), &
+            flds_scalar_name=is_local%wrap%flds_scalar_name, &
+            flds_scalar_num=is_local%wrap%flds_scalar_num, rc=rc)
        if (shr_nuopc_methods_chkerr(rc,__LINE__,u_FILE_u)) return
-
 
        !---------------------------------------
        !--- clean up

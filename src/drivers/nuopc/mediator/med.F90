@@ -4,7 +4,7 @@ module MED
   ! Mediator Component.
   !-----------------------------------------------------------------------------
 
-  use med_constants_mod     , only: CX, R8, CL
+  use med_constants_mod     , only: CX, R8, CL, CS
   use med_constants_mod     , only: dbug_flag => med_constants_dbug_flag
   use med_constants_mod     , only: spval_init => med_constants_spval_init
   use med_constants_mod     , only: spval => med_constants_spval
@@ -391,10 +391,8 @@ contains
 
     use ESMF                  , only : ESMF_GridComp, ESMF_State, ESMF_Clock, ESMF_SUCCESS, ESMF_LogFoundAllocError
     use ESMF                  , only : ESMF_LogMsg_Info, ESMF_LogWrite
-    use NUOPC                 , only : NUOPC_AddNamespace, NUOPC_Advertise
-    use med_constants_mod     , only : CS
+    use NUOPC                 , only : NUOPC_AddNamespace, NUOPC_Advertise, NUOPC_CompAttributeGet
     use med_internalstate_mod , only : InternalState
-    use shr_nuopc_scalars_mod , only : flds_scalar_name, flds_scalar_num
     use esmFlds               , only : ncomps, compmed, compatm, compocn
     use esmFlds               , only : compice, complnd, comprof, compwav, compglc, compname
     use esmFlds               , only : fldListFr, fldListTo
@@ -412,6 +410,7 @@ contains
     character(len=CS)   :: stdname, shortname
     integer             :: n, n1, n2, ncomp, nflds
     character(len=CS)   :: transferOffer
+    character(len=CS)   :: cvalue
     type(InternalState) :: is_local
     integer             :: stat
     character(len=*),parameter :: subname='(module_MED:InitializeIPDv03p1)'
@@ -478,6 +477,34 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !------------------
+    ! Determine scalar field indices
+    !------------------
+
+    call NUOPC_CompAttributeGet(gcomp, name="ScalarFieldName", value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    is_local%wrap%flds_scalar_name = trim(cvalue)
+
+    call NUOPC_CompAttributeGet(gcomp, name="ScalarFieldCount", value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue, *) is_local%wrap%flds_scalar_num
+
+    call NUOPC_CompAttributeGet(gcomp, name="ScalarFieldIdxGridNX", value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) is_local%wrap%flds_scalar_index_nx
+
+    call NUOPC_CompAttributeGet(gcomp, name="ScalarFieldIdxGridNY", value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) is_local%wrap%flds_scalar_index_ny
+
+    call NUOPC_CompAttributeGet(gcomp, name="ScalarFieldIdxNextSwCday", value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) is_local%wrap%flds_scalar_index_nextsw_cday
+
+    call NUOPC_CompAttributeGet(gcomp, name="ScalarFieldIdxPrecipFactor", value=cvalue, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) is_local%wrap%flds_scalar_index_precip_factor
+
+    !------------------
     ! Advertise import/export mediator field names
     !------------------
 
@@ -486,7 +513,7 @@ contains
           nflds = shr_nuopc_fldList_GetNumFlds(fldListFr(ncomp))
           do n = 1,nflds
              call shr_nuopc_fldList_GetFldInfo(fldListFr(ncomp), n, stdname, shortname)
-             if (trim(shortname) == flds_scalar_name) then
+             if (trim(shortname) == is_local%wrap%flds_scalar_name) then
                 transferOffer = 'will provide'
              else
                 transferOffer = 'cannot provide'
@@ -501,7 +528,7 @@ contains
           nflds = shr_nuopc_fldList_GetNumFlds(fldListTo(ncomp))
           do n = 1,nflds
              call shr_nuopc_fldList_GetFldInfo(fldListTo(ncomp), n, stdname, shortname)
-             if (trim(shortname) == flds_scalar_name) then
+             if (trim(shortname) == is_local%wrap%flds_scalar_name) then
                 transferOffer = 'will provide'
              else
                 transferOffer = 'cannot provide'
@@ -529,12 +556,10 @@ contains
     use ESMF                  , only : ESMF_GridComp, ESMF_State, ESMF_Clock, ESMF_VM, ESMF_SUCCESS
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_TimeInterval
     use ESMF                  , only : ESMF_VMGet, ESMF_StateIsCreated, ESMF_GridCompGet
-    use med_constants_mod     , only : CL, R8
     use med_internalstate_mod , only : InternalState
     use esmFlds               , only : ncomps, compname
     use esmFlds               , only : fldListFr, fldListTo
     use esmFlds               , only : shr_nuopc_fldList_Realize
-    use shr_nuopc_scalars_mod , only : flds_scalar_name, flds_scalar_num
 
     ! Input/output variables
     type(ESMF_GridComp)  :: gcomp
@@ -565,12 +590,14 @@ contains
     ! Realize States
     do n = 1,ncomps
       if (ESMF_StateIsCreated(is_local%wrap%NStateImp(n), rc=rc)) then
-         call shr_nuopc_fldList_Realize(is_local%wrap%NStateImp(n), fldListFr(n), flds_scalar_name, flds_scalar_num, &
+         call shr_nuopc_fldList_Realize(is_local%wrap%NStateImp(n), fldListFr(n), &
+              is_local%wrap%flds_scalar_name, is_local%wrap%flds_scalar_num, &
               tag=subname//':Fr_'//trim(compname(n)), rc=rc)
          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
       endif
       if (ESMF_StateIsCreated(is_local%wrap%NStateExp(n), rc=rc)) then
-         call shr_nuopc_fldList_Realize(is_local%wrap%NStateExp(n), fldListTo(n), flds_scalar_name, flds_scalar_num, &
+         call shr_nuopc_fldList_Realize(is_local%wrap%NStateExp(n), fldListTo(n), &
+              is_local%wrap%flds_scalar_name, is_local%wrap%flds_scalar_num, &
               tag=subname//':To_'//trim(compname(n)), rc=rc)
          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
       endif
@@ -590,7 +617,6 @@ contains
     use ESMF                  , only : ESMF_GRIDCOMP, ESMF_CLOCK, ESMF_STATE
     use ESMF                  , only : ESMF_StateIsCreated
     use med_internalstate_mod , only : InternalState
-    use med_constants_mod     , only : CL
     use esmFlds               , only : ncomps, compname
 
     ! input/output variables
@@ -602,15 +628,6 @@ contains
     ! local variables
     type(InternalState) :: is_local
     integer :: n1,n2
-    !    type(ESMF_Field)              :: field
-    !    type(ESMF_Grid)               :: grid
-    !    integer                       :: localDeCount
-    !    type(ESMF_DistGrid)           :: distgrid
-    !    integer                       :: dimCount, tileCount, petCount
-    !    integer                       :: deCountPTile, extraDEs
-    !    integer, allocatable          :: minIndexPTile(:,:), maxIndexPTile(:,:)
-    !    integer, allocatable          :: regDecompPTile(:,:)
-    !    integer                       :: i, j, n, n1
     character(len=*),parameter :: subname='(module_MED:realizeConnectedGrid)'
     !-----------------------------------------------------------
 
@@ -1126,7 +1143,6 @@ contains
       use ESMF                  , only : ESMF_MeshLoc_Element, ESMF_TYPEKIND_R8, ESMF_FIELDSTATUS_GRIDSET
       use ESMF                  , only : ESMF_AttributeGet
       use NUOPC                 , only : NUOPC_getStateMemberLists, NUOPC_Realize
-      use shr_nuopc_scalars_mod , only : flds_scalar_name, flds_scalar_num
       use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_getNumFields
       use shr_nuopc_methods_mod , only : shr_nuopc_methods_Field_GeomPrint
 
@@ -1167,7 +1183,7 @@ contains
             geomtype=geomtype, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-          if (geomtype == ESMF_GEOMTYPE_GRID .and. fieldName /= flds_scalar_name) then
+          if (geomtype == ESMF_GEOMTYPE_GRID .and. fieldName /= is_local%wrap%flds_scalar_name) then
             ! Grab grid
             if (dbug_flag > 1) then
                call shr_nuopc_methods_Field_GeomPrint(fieldList(n),trim(fieldName)//'_premesh',rc)
@@ -1282,8 +1298,6 @@ contains
     use esmFlds                 , only : shr_nuopc_fldList_Document_Mapping
     use esmFlds                 , only : shr_nuopc_fldList_Document_Merging
     use esmFldsExchange_mod     , only : esmFldsExchange
-    use shr_nuopc_scalars_mod   , only : flds_scalar_name, flds_scalar_num
-    use shr_nuopc_scalars_mod   , only : flds_scalar_index_nx, flds_scalar_index_ny
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_State_getNumFields
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_Init
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_Init_pointer
@@ -1460,16 +1474,16 @@ contains
 
             ! Create FBImp(:) with pointers directly into NStateImp(:)
             call shr_nuopc_methods_FB_init_pointer(is_local%wrap%NStateImp(n1), is_local%wrap%FBImp(n1,n1), &
-                 flds_scalar_name, name='FBImp'//trim(compname(n1)), rc=rc)
+                 is_local%wrap%flds_scalar_name, name='FBImp'//trim(compname(n1)), rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
             ! Create FBExp(:) with pointers directly into NStateExp(:)
             call shr_nuopc_methods_FB_init_pointer(is_local%wrap%NStateExp(n1), is_local%wrap%FBExp(n1), &
-                 flds_scalar_name, name='FBExp'//trim(compname(n1)), rc=rc)
+                 is_local%wrap%flds_scalar_name, name='FBExp'//trim(compname(n1)), rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
             ! Create import accumulation field bundles
-            call shr_nuopc_methods_FB_init(is_local%wrap%FBImpAccum(n1,n1), flds_scalar_name, &
+            call shr_nuopc_methods_FB_init(is_local%wrap%FBImpAccum(n1,n1), is_local%wrap%flds_scalar_name, &
                  STgeom=is_local%wrap%NStateImp(n1), STflds=is_local%wrap%NStateImp(n1), &
                  name='FBImp'//trim(compname(n1)), rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -1478,7 +1492,7 @@ contains
             is_local%wrap%FBImpAccumCnt(n1) = 0
 
             ! Create export accumulation field bundles
-            call shr_nuopc_methods_FB_init(is_local%wrap%FBExpAccum(n1), flds_scalar_name, &
+            call shr_nuopc_methods_FB_init(is_local%wrap%FBExpAccum(n1), is_local%wrap%flds_scalar_name, &
                  STgeom=is_local%wrap%NStateExp(n1), STflds=is_local%wrap%NStateExp(n1), &
                  name='FBExpAccum'//trim(compname(n1)), rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -1501,13 +1515,13 @@ contains
                if (mastertask) write(logunit,*) subname,' initializing FBs for '//&
                     trim(compname(n1))//'_'//trim(compname(n2))
 
-               call shr_nuopc_methods_FB_init(is_local%wrap%FBImp(n1,n2), flds_scalar_name, &
+               call shr_nuopc_methods_FB_init(is_local%wrap%FBImp(n1,n2), is_local%wrap%flds_scalar_name, &
                     STgeom=is_local%wrap%NStateImp(n2), &
                     STflds=is_local%wrap%NStateImp(n1), &
                     name='FBImp'//trim(compname(n1))//'_'//trim(compname(n2)), rc=rc)
                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-               call shr_nuopc_methods_FB_init(is_local%wrap%FBImpAccum(n1,n2), flds_scalar_name, &
+               call shr_nuopc_methods_FB_init(is_local%wrap%FBImpAccum(n1,n2), is_local%wrap%flds_scalar_name, &
                     STgeom=is_local%wrap%NStateImp(n2), &
                     STflds=is_local%wrap%NStateImp(n1), &
                     name='FBImpAccum'//trim(compname(n1))//'_'//trim(compname(n2)), rc=rc)
@@ -1549,12 +1563,12 @@ contains
             call shr_nuopc_fldList_getfldnames(fldListMed_ocnalb%flds, fldnames, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_ocnalb_a, flds_scalar_name, &
+            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_ocnalb_a, is_local%wrap%flds_scalar_name, &
                  STgeom=is_local%wrap%NStateImp(compatm), fieldnamelist=fldnames, name='FBMed_ocnalb_a', rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
             if (mastertask) write(logunit,*) subname,' initializing FB FBMed_ocnalb_a'
 
-            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_ocnalb_o, flds_scalar_name, &
+            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_ocnalb_o, is_local%wrap%flds_scalar_name, &
                  STgeom=is_local%wrap%NStateImp(compocn), fieldnamelist=fldnames, name='FBMed_ocnalb_o', rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
             if (mastertask) write(logunit,*) subname,' initializing FB FBMed_ocnalb_o'
@@ -1563,7 +1577,7 @@ contains
             ! The following assumes that the mediator atm/ocn flux calculation will be done on the ocean grid
             if (.not. ESMF_FieldBundleIsCreated(is_local%wrap%FBImp(compatm,compocn), rc=rc)) then
                call ESMF_LogWrite(trim(subname)//' creating field bundle FBImp(compatm,compocn)', ESMF_LOGMSG_INFO)
-               call shr_nuopc_methods_FB_init(is_local%wrap%FBImp(compatm,compocn), flds_scalar_name, &
+               call shr_nuopc_methods_FB_init(is_local%wrap%FBImp(compatm,compocn), is_local%wrap%flds_scalar_name, &
                     STgeom=is_local%wrap%NStateImp(compocn), &
                     STflds=is_local%wrap%NStateImp(compatm), &
                     name='FBImp'//trim(compname(compatm))//'_'//trim(compname(compocn)), rc=rc)
@@ -1580,12 +1594,12 @@ contains
             call shr_nuopc_fldList_getfldnames(fldListMed_aoflux%flds, fldnames, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_aoflux_a, flds_scalar_name, &
+            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_aoflux_a, is_local%wrap%flds_scalar_name, &
                  STgeom=is_local%wrap%NStateImp(compatm), fieldnamelist=fldnames, name='FBMed_aoflux_a', rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
             if (mastertask) write(logunit,*) subname,' initializing FB FBMed_aoflux_a'
 
-            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_aoflux_o, flds_scalar_name, &
+            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_aoflux_o, is_local%wrap%flds_scalar_name, &
                  STgeom=is_local%wrap%NStateImp(compocn), fieldnamelist=fldnames, name='FBMed_aoflux_o', rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
             if (mastertask) write(logunit,*) subname,' initializing FB FBMed_aoflux_o'
@@ -1650,7 +1664,7 @@ contains
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
              if (atCorrectTime) then
-                if (fieldNameList(n) == flds_scalar_name) then
+                if (fieldNameList(n) == is_local%wrap%flds_scalar_name) then
                    call ESMF_LogWrite(trim(subname)//" MED - Initialize-Data-Dependency CSTI "//trim(compname(n1)), &
                         ESMF_LOGMSG_INFO, rc=rc)
                    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -1791,12 +1805,16 @@ contains
        write(logunit,*)
        do n1 = 1,ncomps
           if (is_local%wrap%comp_present(n1) .and. ESMF_StateIsCreated(is_local%wrap%NStateImp(n1),rc=rc)) then
-             call shr_nuopc_methods_State_GetScalar(scalar_value=real_nx, scalar_id=flds_scalar_index_nx, &
-                  state=is_local%wrap%NstateImp(n1), flds_scalar_name=flds_scalar_name, &
-                  flds_scalar_num=flds_scalar_num, rc=rc)
-             call shr_nuopc_methods_State_GetScalar(scalar_value=real_ny, scalar_id=flds_scalar_index_ny, &
-                  state=is_local%wrap%NstateImp(n1), flds_scalar_name=flds_scalar_name, &
-                  flds_scalar_num=flds_scalar_num, rc=rc)
+             call shr_nuopc_methods_State_GetScalar(scalar_value=real_nx, &
+                  scalar_id=is_local%wrap%flds_scalar_index_nx, &
+                  state=is_local%wrap%NstateImp(n1), &
+                  flds_scalar_name=is_local%wrap%flds_scalar_name, &
+                  flds_scalar_num=is_local%wrap%flds_scalar_num, rc=rc)
+             call shr_nuopc_methods_State_GetScalar(scalar_value=real_ny, &
+                  scalar_id=is_local%wrap%flds_scalar_index_ny, &
+                  state=is_local%wrap%NstateImp(n1), &
+                  flds_scalar_name=is_local%wrap%flds_scalar_name, &
+                  flds_scalar_num=is_local%wrap%flds_scalar_num, rc=rc)
              is_local%wrap%nx(n1) = nint(real_nx)
              is_local%wrap%ny(n1) = nint(real_ny)
              write(msgString,'(2i8,2l4)') is_local%wrap%nx(n1), is_local%wrap%ny(n1)

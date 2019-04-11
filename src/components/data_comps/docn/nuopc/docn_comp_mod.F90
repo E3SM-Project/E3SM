@@ -1,20 +1,14 @@
-#ifdef AIX
-@PROCESS ALIAS_SIZE(805306368)
-#endif
-
 module docn_comp_mod
 
-  ! !USES:
   use NUOPC                 , only : NUOPC_Advertise
   use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_State
   use ESMF                  , only : ESMF_Mesh, ESMF_DistGrid, ESMF_MeshGet, ESMF_DistGridGet
   use ESMF                  , only : ESMF_State, ESMF_LOGMSG_INFO, ESMF_LogWrite
-  use perf_mod              , only : t_startf, t_stopf
-  use perf_mod              , only : t_adj_detailf, t_barrierf
+  use perf_mod              , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
   use mct_mod               , only : mct_gsmap, mct_gsmap_init, mct_gsmap_lsize
   use mct_mod               , only : mct_avect, mct_avect_indexRA, mct_avect_zero, mct_aVect_nRattr
   use mct_mod               , only : mct_avect_init, mct_avect_lsize, mct_avect_clean
-  use med_constants_mod     , only : R8, CS, CXX, CL
+  use shr_kind_mod          , only : r8=>shr_kind_r8, cxx=>shr_kind_cxx, cl=>shr_kind_cl, cs=>shr_kind_cs
   use shr_const_mod         , only : shr_const_cpsw, shr_const_rhosw, shr_const_TkFrz
   use shr_const_mod         , only : shr_const_TkFrzSw, shr_const_latice, shr_const_ocn_ref_sal
   use shr_const_mod         , only : shr_const_zsrflyr, shr_const_pi
@@ -25,8 +19,6 @@ module docn_comp_mod
   use shr_frz_mod           , only : shr_frz_freezetemp
   use shr_cal_mod           , only : shr_cal_calendarname
   use shr_cal_mod           , only : shr_cal_datetod2string
-  use shr_nuopc_scalars_mod , only : flds_scalar_name
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
   use shr_strdata_mod       , only : shr_strdata_init_model_domain
   use shr_strdata_mod       , only : shr_strdata_init_streams
   use shr_strdata_mod       , only : shr_strdata_init_mapping
@@ -35,6 +27,7 @@ module docn_comp_mod
   use shr_strdata_mod       , only : shr_strdata_advance, shr_strdata_restWrite
   use shr_dmodel_mod        , only : shr_dmodel_translateAV
   use shr_pcdf_mod          , only : shr_pcdf_readwrite
+  use dshr_methods_mod      , only : ChkErr
   use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_import, dshr_export
   use docn_shr_mod          , only : datamode       ! namelist input
   use docn_shr_mod          , only : aquap_option   ! derived from datamode namelist input
@@ -107,12 +100,13 @@ module docn_comp_mod
 contains
 !===============================================================================
 
-  subroutine docn_comp_advertise(importState, exportState, &
+  subroutine docn_comp_advertise(importState, exportState, flds_scalar_name, &
        ocn_prognostic, fldsFrOcn_num, fldsFrOcn, fldsToOcn_num, fldsToOcn, rc)
 
     ! input/output arguments
     type(ESMF_State)     , intent(inout) :: importState
     type(ESMF_State)     , intent(inout) :: exportState
+    character(len=*)     , intent(in)    :: flds_scalar_name 
     logical              , intent(in)    :: ocn_prognostic
     integer              , intent(out)   :: fldsToOcn_num
     integer              , intent(out)   :: fldsFrOcn_num
@@ -193,7 +187,7 @@ contains
 
     do n = 1,fldsFrOcn_num
        call NUOPC_Advertise(exportState, standardName=fldsFrOcn(n)%stdname, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call ESMF_LogWrite('(ocn_comp_nuopc):(InitializeAdvertise):Fr_ocn'//trim(fldsFrOcn(n)%stdname), &
             ESMF_LOGMSG_INFO)
     enddo
@@ -201,7 +195,7 @@ contains
     if (ocn_prognostic) then
        do n = 1,fldsToOcn_num
           call NUOPC_Advertise(importState, standardName=fldsToOcn(n)%stdname, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
           call ESMF_LogWrite('(ocn_comp_nuopc):(InitializeAdvertise):To_ocn'//trim(fldsToOcn(n)%stdname), &
                ESMF_LOGMSG_INFO)
        end do
@@ -304,24 +298,24 @@ contains
 
     ! obtain the distgrid from the mesh that was read in
     call ESMF_MeshGet(Mesh, elementdistGrid=distGrid, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! determin local size on my processor
     call ESMF_distGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! determine global index space for my processor
     allocate(gindex(lsize))
     call ESMF_distGridGet(distGrid, localDe=0, seqIndexList=gindex, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! determine global size of distgrid
     call ESMF_distGridGet(distGrid, dimCount=dimCount, deCount=deCount, tileCount=tileCount, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     allocate(elementCountPTile(tileCount))
     call ESMF_distGridGet(distGrid, elementCountPTile=elementCountPTile, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     gsize = 0
     do n = 1,size(elementCountPTile)
        gsize = gsize + elementCountPTile(n)
@@ -358,11 +352,11 @@ contains
 
     ! obtain mesh lats and lons
     call ESMF_MeshGet(mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     allocate(ownedElemCoords(spatialDim*numOwnedElements))
     allocate(xc(numOwnedElements), yc(numOwnedElements))
     call ESMF_MeshGet(mesh, ownedElemCoords=ownedElemCoords)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     if (numOwnedElements /= lsize) then
        call shr_sys_abort('ERROR: numOwnedElements is not equal to lsize')
     end if
@@ -862,25 +856,25 @@ contains
     rc = ESMF_SUCCESS
 
     call dshr_import(importState, 'Foxx_swnet', x2o%rattr(kswnet,:), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call dshr_import(importState, 'Foxx_lwup', x2o%rattr(klwup,:), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call dshr_import(importState, 'Foxx_sen', x2o%rattr(ksen,:), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call dshr_import(importState, 'Foxx_lat', x2o%rattr(klat,:), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call dshr_import(importState, 'Faxa_lwdn', x2o%rattr(klwdn,:), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call dshr_import(importState, 'Faxa_snow', x2o%rattr(ksnow,:), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call dshr_import(importState, 'Fioi_melth', x2o%rattr(kmelth,:), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine docn_comp_import
 
@@ -896,28 +890,28 @@ contains
     rc = ESMF_SUCCESS
 
     call dshr_export(o2x%rattr(ksomask,:), exportState, 'So_omask', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call dshr_export(o2x%rattr(kt,:), exportState, 'So_t', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call dshr_export(o2x%rattr(ks,:), exportState, 'So_s', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call dshr_export(o2x%rattr(ku,:), exportState, 'So_u', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call dshr_export(o2x%rattr(kv,:), exportState, 'So_v', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call dshr_export(o2x%rattr(kdhdx,:), exportState, 'So_dhdx', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call dshr_export(o2x%rattr(kdhdy,:), exportState, 'So_dhdy', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call dshr_export(o2x%rattr(kq,:), exportState, 'Fioo_q', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine docn_comp_export
 

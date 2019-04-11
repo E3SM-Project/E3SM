@@ -887,6 +887,8 @@ contains
 
   end subroutine shr_nuopc_time_date2ymd
 
+  !===============================================================================
+
   subroutine shr_nuopc_time_read_restart_calendar_settings(restart_file, &
        start_ymd, start_tod, ref_ymd, ref_tod, curr_ymd, curr_tod)
 

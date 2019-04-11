@@ -6,9 +6,12 @@ module Ensemble_driver
   ! length of stop_time - start_time.  It's purpose is to instantiate NINST copies of the
   ! esm driver and its components layed out concurently across mpi tasks.
   !-----------------------------------------------------------------------------
-  use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag, CL
+
+  use shr_kind_mod          , only : cl=>shr_kind_cl
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+  use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag
   use med_internalstate_mod , only : mastertask
+
   implicit none
   private
 
@@ -22,12 +25,14 @@ module Ensemble_driver
 !================================================================================
 
   subroutine SetServices(ensemble_driver, rc)
+
     use NUOPC        , only : NUOPC_CompDerive, NUOPC_CompSpecialize
     use NUOPC_Driver , only : driver_routine_SS             => SetServices
     use NUOPC_Driver , only : ensemble_label_SetModelServices => label_SetModelServices
     use ESMF         , only : ESMF_GridComp, ESMF_Config, ESMF_GridCompSet, ESMF_ConfigLoadFile
     use ESMF         , only : ESMF_ConfigCreate
     use ESMF         , only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO
+
     type(ESMF_GridComp)  :: ensemble_driver
     integer, intent(out) :: rc
 

@@ -24,6 +24,7 @@ module med_map_mod
 
   ! private module variables
 
+  character(len=CS)       :: flds_scalar_name
   integer                 :: srcTermProcessing_Value = 0 ! should this be a module variable?
   logical                 :: mastertask
   character(*), parameter :: u_FILE_u = &
@@ -439,7 +440,6 @@ contains
     use esmFlds               , only: ncomps, compice, compocn, compname
     use esmFlds               , only: mapnames, nmappers
     use med_internalstate_mod , only: InternalState
-    use shr_nuopc_scalars_mod , only: flds_scalar_name, flds_scalar_num
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_Init
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_Reset
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_Clean
@@ -475,6 +475,9 @@ contains
     nullify(is_local%wrap)
     call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! Initialize module variables
+    flds_scalar_name = is_local%wrap%flds_scalar_name
 
     ! Create the normalization field bundles
     normname = 'one'
@@ -551,7 +554,6 @@ contains
     use esmFlds               , only: mapnames, mapfcopy, mapconsd, mapconsf, mapnstod 
     use esmFlds               , only: mapnstod_consd, mapnstod_consf
     use esmFlds               , only: shr_nuopc_fldList_entry_type
-    use shr_nuopc_scalars_mod , only: flds_scalar_name
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_Init
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_Reset
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_Clean
@@ -944,7 +946,6 @@ contains
     use ESMF                  , only: ESMF_LOGMSG_ERROR, ESMF_FAILURE
     use ESMF                  , only: ESMF_FieldBundle, ESMF_FieldBundleIsCreated, ESMF_FieldBundleGet
     use ESMF                  , only: ESMF_RouteHandle, ESMF_RouteHandleIsCreated, ESMF_Field
-    use shr_nuopc_scalars_mod , only: flds_scalar_name
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_Init
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_Reset
     use shr_nuopc_methods_mod , only: shr_nuopc_methods_FB_Clean

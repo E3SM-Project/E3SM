@@ -170,7 +170,6 @@ contains
     use esmFlds               , only : compatm, compocn, compice, complnd
     use esmFlds               , only : comprof, compglc, compwav, compname
     use esmFlds               , only : mapconsf, mapfcopy
-    use shr_nuopc_scalars_mod , only : flds_scalar_name
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset
@@ -243,7 +242,7 @@ contains
        do n1 = 1,ncomps
           if (is_local%wrap%comp_present(n1) .and. ESMF_StateIsCreated(is_local%wrap%NStateImp(n1),rc=rc)) then
 
-             call shr_nuopc_methods_FB_init(is_local%wrap%FBfrac(n1), flds_scalar_name, &
+             call shr_nuopc_methods_FB_init(is_local%wrap%FBfrac(n1), is_local%wrap%flds_scalar_name, &
                   STgeom=is_local%wrap%NStateImp(n1), fieldNameList=fraclist(:,n1), &
                   name='FBfrac'//trim(compname(n1)), rc=rc)
 
@@ -314,7 +313,7 @@ contains
           ! Create a temporary field bundle if one does not exists
           if (.not. ESMF_FieldBundleIsCreated(is_local%wrap%FBImp(complnd,compatm))) then
              call shr_nuopc_methods_FB_init(FBout=FBtemp, &
-                  flds_scalar_name=flds_scalar_name, &
+                  flds_scalar_name=is_local%wrap%flds_scalar_name, &
                   FBgeom=is_local%wrap%FBImp(compatm,compatm), &
                   fieldNameList=(/'Fldtemp'/), name='FBtemp', rc=rc)
              if (shr_nuopc_methods_chkerr(rc,__line__,u_file_u)) return
@@ -637,7 +636,6 @@ contains
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FieldRegrid
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
-    use shr_nuopc_scalars_mod , only : flds_scalar_name
     use perf_mod              , only : t_startf, t_stopf
 
     ! input/output variables
@@ -674,7 +672,7 @@ contains
     if (is_local%wrap%comp_present(compice) .and. is_local%wrap%comp_present(compocn)) then
        if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compice,compocn,mapfcopy), rc=rc)) then
           if (.not. ESMF_FieldBundleIsCreated(is_local%wrap%FBImp(compice,compocn))) then
-             call shr_nuopc_methods_FB_init(is_local%wrap%FBImp(compice,compocn), flds_scalar_name, &
+             call shr_nuopc_methods_FB_init(is_local%wrap%FBImp(compice,compocn), is_local%wrap%flds_scalar_name, &
                   STgeom=is_local%wrap%NStateImp(compocn), &
                   STflds=is_local%wrap%NStateImp(compice), &
                   name='FBImp'//trim(compname(compice))//'_'//trim(compname(compocn)), rc=rc)
@@ -688,7 +686,7 @@ contains
        end if
        if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compocn,compice,mapfcopy), rc=rc)) then
           if (.not. ESMF_FieldBundleIsCreated(is_local%wrap%FBImp(compocn,compice))) then
-             call shr_nuopc_methods_FB_init(is_local%wrap%FBImp(compocn,compice), flds_scalar_name, &
+             call shr_nuopc_methods_FB_init(is_local%wrap%FBImp(compocn,compice), is_local%wrap%flds_scalar_name, &
                   STgeom=is_local%wrap%NStateImp(compice), &
                   STflds=is_local%wrap%NStateImp(compocn), &
                   name='FBImp'//trim(compname(compocn))//'_'//trim(compname(compice)), rc=rc)

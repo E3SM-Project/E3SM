@@ -194,9 +194,6 @@ contains
     use med_constants_mod     , only : CS, CL, R8
     use med_constants_mod     , only : dbug_flag =>med_constants_dbug_flag
     use med_internalstate_mod , only : InternalState, logunit
-    use shr_nuopc_scalars_mod , only : flds_scalar_name
-    use shr_nuopc_scalars_mod , only : flds_scalar_num
-    use shr_nuopc_scalars_mod , only : flds_scalar_index_nextsw_cday
     use esmFlds               , only : compatm, compocn
     use perf_mod              , only : t_startf, t_stopf
 
@@ -301,9 +298,12 @@ contains
           call ESMF_TimeGet( currTime, dayOfYear_r8=nextsw_cday, rc=rc )
           if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
        else
-          call shr_nuopc_methods_State_GetScalar(state=is_local%wrap%NstateImp(compatm), &
-               flds_scalar_name=flds_scalar_name, flds_scalar_num=flds_scalar_num, &
-               scalar_id=flds_scalar_index_nextsw_cday, scalar_value=nextsw_cday, rc=rc)
+          call shr_nuopc_methods_State_GetScalar(&
+               state=is_local%wrap%NstateImp(compatm), &
+               flds_scalar_name=is_local%wrap%flds_scalar_name, &
+               flds_scalar_num=is_local%wrap%flds_scalar_num, &
+               scalar_id=is_local%wrap%flds_scalar_index_nextsw_cday, &
+               scalar_value=nextsw_cday, rc=rc)
           if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
        end if
 
@@ -312,9 +312,12 @@ contains
     else
 
        ! Note that shr_nuopc_methods_State_GetScalar includes a broadcast to all other pets
-       call shr_nuopc_methods_State_GetScalar(state=is_local%wrap%NstateImp(compatm), &
-            flds_scalar_name=flds_scalar_name, flds_scalar_num=flds_scalar_num, &
-            scalar_id=flds_scalar_index_nextsw_cday, scalar_value=nextsw_cday, rc=rc)
+       call shr_nuopc_methods_State_GetScalar(&
+            state=is_local%wrap%NstateImp(compatm), &
+            flds_scalar_name=is_local%wrap%flds_scalar_name, &
+            flds_scalar_num=is_local%wrap%flds_scalar_num, &
+            scalar_id=is_local%wrap%flds_scalar_index_nextsw_cday, &
+            scalar_value=nextsw_cday, rc=rc)
        if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
     end if

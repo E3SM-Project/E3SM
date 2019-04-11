@@ -97,7 +97,6 @@ contains
     use esmFlds               , only : fldListFr, fldListMed_aoflux, compatm, compocn, compname
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
-    use shr_nuopc_scalars_mod , only : flds_scalar_name
     use perf_mod              , only : t_startf, t_stopf
 
     !-----------------------------------------------------------------------

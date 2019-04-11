@@ -23,7 +23,6 @@ contains
     use ESMF
     use NUOPC
     use med_constants_mod     , only : CX, CS, CL
-    use shr_nuopc_scalars_mod , only : flds_scalar_name
     use shr_nuopc_methods_mod , only : chkerr => shr_nuopc_methods_chkerr
     use shr_nuopc_methods_mod , only : fldchk => shr_nuopc_methods_FB_FldChk
     use med_internalstate_mod , only : InternalState
@@ -352,9 +351,11 @@ contains
     !=====================================================================
 
     if (phase == 'advertise') then
+       call NUOPC_CompAttributeGet(gcomp, name="ScalarFieldName", value=cvalue, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        do n = 1,ncomps
-          call addfld(fldListFr(n)%flds, trim(flds_scalar_name))
-          call addfld(fldListTo(n)%flds, trim(flds_scalar_name))
+          call addfld(fldListFr(n)%flds, trim(cvalue))
+          call addfld(fldListTo(n)%flds, trim(cvalue))
        end do
     end if
 
