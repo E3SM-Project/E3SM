@@ -1146,13 +1146,6 @@
     <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>36</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
-    <!--mpirun mpilib="openmpi">
-      <executable>mpiexec</executable>
-      <arguments>
-        <arg name="num_tasks"> -n {{ total_tasks }} </arg>
-        <arg name="tasks_per_node"> - -map-by ppr:{{ tasks_per_numa }}:socket,PE=$ENV{OMP_NUM_THREADS} - -bind-to core -tag-output -report-bindings</arg>
-      </arguments>
-    </mpirun-->
     <mpirun mpilib="default">
       <executable>srun</executable>
       <arguments>
@@ -1163,50 +1156,40 @@
       <executable/>
     </mpirun>
     <module_system type="module">
-      <init_path lang="sh">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/sh</init_path>
-      <init_path lang="csh">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/csh</init_path>
+      <init_path lang="sh">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/sh;export MODULEPATH=/blues/gpfs/software/centos7/spack-0.12.1/share/spack/lmod/linux-centos7-x86_64/Core</init_path>
+      <init_path lang="csh">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/csh;setenv MODULEPATH /blues/gpfs/software/centos7/spack-0.12.1/share/spack/lmod/linux-centos7-x86_64/Core</init_path>
       <init_path lang="python">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/env_modules_python.py</init_path>
-      <cmd_path lang="python">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="python">export MODULEPATH=/blues/gpfs/software/centos7/spack-0.12.1/share/spack/lmod/linux-centos7-x86_64/Core;/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
         <command name="purge"/>
       </modules>
       <modules compiler="intel">
-        <command name="load">intel/18.0.4-443hhug</command>
+        <command name="load">intel/17.0.4-nymb5wx</command>
+        <command name="load">intel-mkl/2017.3.196-v7uuj6z</command>
+        <command name="load">netcdf/4.4.1-magkugi</command>
+        <command name="load">netcdf-fortran/4.4.4-7obsouy</command>
       </modules>
       <modules compiler="intel" mpilib="mvapich">
-	<command name="load">mvapich2/2.3.1-verbs-dtbb6xk</command>
+        <command name="load">mvapich2/2.2-verbs-lxc4y7i</command>
       </modules>
       <modules compiler="intel" mpilib="openmpi">
 	<command name="load">openmpi/3.1.3-verbs-kqojjbw</command>
-	<command name="load">parallel-netcdf/1.8.1-5ldccd7</command>
       </modules>
-      <modules>
-        <command name="load">intel-mkl/2018.4.274-jwaeshj</command>
-	<command name="load">hdf5/1.8.16-n5thgua</command>
-	<command name="load">netcdf/4.4.1-qs32hcj</command>
-	<!--command name="load">netcdf-cxx/4.2-fevpvbh</command-->
-	<command name="load">netcdf-fortran/4.4.4-jy3v3rz</command>
-      </modules>
-      
       <modules compiler="gnu">
         <command name="load">gcc/8.2.0-g7hppkz</command>
-      </modules>
-      <modules compiler="gnu" mpilib="mvapich">
-	<command name="load">mvapich2/2.3.1-verbs-wcfqbl5</command>
-	<!--command name="load">parallel-netcdf/1.8.1-m4l6rud</command-->
-      </modules>
-      <modules compiler="gnu" mpilib="openmpi">
-        <command name="load">openmpi/3.1.3-verbs-q4swt25</command>
-	<command name="load">parallel-netcdf/1.8.1-re3um7k</command>
-      </modules>
-      <modules compiler="gnu">
 	<command name="load">intel-mkl/2018.4.274-2amycpi</command>
 	<command name="load">hdf5/1.8.16-mz7lmxh</command>
 	<command name="load">netcdf/4.4.1-xkjcghm</command>
 	<command name="load">netcdf-cxx/4.2-kyva3os</command>
 	<command name="load">netcdf-fortran/4.4.4-mpstomu</command>
+      </modules>
+      <modules compiler="gnu" mpilib="mvapich">
+	<command name="load">mvapich2/2.3.1-verbs-wcfqbl5</command>
+      </modules>
+      <modules compiler="gnu" mpilib="openmpi">
+        <command name="load">openmpi/3.1.3-verbs-q4swt25</command>
       </modules>
       <modules>
         <command name="load">cmake</command>
@@ -1221,13 +1204,9 @@
       <env name="NETCDF_FORTRAN_PATH">$SHELL{which nf-config | xargs dirname | xargs dirname}</env>
       <env name="PATH">/lcrc/group/acme/soft/perl/5.26.0/bin:$ENV{PATH}</env>
     </environment_variables>
-    <environment_variables mpilib="mvapich" compiler="intel">
-      <env name="PNETCDF_PATH">/blues/gpfs/home/software/climate/pnetcdf/1.8.1/intel-18.0.4/mvapich2-2.3.1-verbs</env>
-    </environment_variables>
-    <environment_variables mpilib="mvapich">
-      <env name="MV2_ENABLE_AFFINITY">1</env>
-      <env name="MV2_USE_THREAD_WARNING">0</env>
-    </environment_variables>
+    <!--environment_variables mpilib="mvapich" compiler="intel">
+      <env name="PNETCDF_PATH">/blues/gpfs/home/software/climate/pnetcdf/1.6.1/intel-17.0.4/mvapich2-2.2-verbs</env>
+    </environment_variables-->
     <environment_variables mpilib="mvapich" DEBUG="TRUE">
       <env name="MV2_DEBUG_SHOW_BACKTRACE">1</env>
       <env name="MV2_SHOW_CPU_BINDING">1</env>
@@ -1235,10 +1214,6 @@
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">64M</env>
-    </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" mpilib="mvapich">
-      <!--e.g. 6 threads: MV2_CPU_MAPPING=0-5:6-11:12-17:18-23:24-29:30-35: -->
-      <env name="MV2_CPU_MAPPING">$SHELL{t=$ENV{OMP_NUM_THREADS};b=0;r=$[36/$t];while [ $r -gt 0 ];do printf "$b-$[$b+$t-1]:";((r--));((b=b+t));done;}</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="intel">
       <env name="KMP_AFFINITY">granularity=thread,scatter</env>
