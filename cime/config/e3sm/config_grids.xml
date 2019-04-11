@@ -974,6 +974,16 @@
       <mask>oEC60to30v3</mask>
     </model_grid>
 
+    <model_grid alias="ne30_hcru_oECv3_ICG" compset="(CAM5.+CLM.+MPASO%SPUNUP)">
+      <grid name="atm">ne30np4</grid>
+      <grid name="lnd">360x720cru</grid>
+      <grid name="ocnice">oEC60to30v3_ICG</grid>
+      <grid name="rof">360x720cru</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
     <model_grid alias="ne30_oECv3wLI_ICG" compset="(CAM5.+CLM.+MPASO%SPUNUP)">
       <grid name="atm">ne30np4</grid>
       <grid name="lnd">ne30np4</grid>
@@ -2539,6 +2549,13 @@
       <map name="ATM2LND_SMAPNAME">cpl/gridmaps/T62/map_T62_to_360x720_aave.190329.nc</map>
       <map name="LND2ATM_FMAPNAME">cpl/gridmaps/T62/map_360x720_to_T62_aave.190329.nc</map>
       <map name="LND2ATM_SMAPNAME">cpl/gridmaps/T62/map_360x720_to_T62_aave.190329.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne30np4" lnd_grid="360x720cru">
+      <map name="ATM2LND_FMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_360x720_aave.190410.nc</map>
+      <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_360x720_aave.190410.nc</map>
+      <map name="LND2ATM_FMAPNAME">cpl/gridmaps/ne30np4/map_360x720_to_ne30np4_aave.190410.nc</map>
+      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/ne30np4/map_360x720_to_ne30np4_aave.190410.nc</map>
     </gridmap>
 
     <gridmap atm_grid="T62" ocn_grid="gx3v7">
