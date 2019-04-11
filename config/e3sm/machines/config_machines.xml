@@ -69,7 +69,7 @@
   <OS>CNL</OS>
   <BATCH_SYSTEM>nersc_slurm</BATCH_SYSTEM>
   <SUPPORTED_BY>e3sm</SUPPORTED_BY>
-  <GMAKE_J>8</GMAKE_J>
+  <GMAKE_J>3</GMAKE_J>
   <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
   <MAX_MPITASKS_PER_NODE>24</MAX_MPITASKS_PER_NODE>
   <PROJECT>acme</PROJECT>
@@ -130,7 +130,7 @@
       <command name="rm">pmi</command>
       <command name="load">pmi/5.0.12</command>
       <command name="rm">cray-mpich</command>
-      <command name="load">pe_archive</command>
+      <command name="load">pe_archive/append-path</command>
       <command name="load">cray-mpich/7.6.0</command>
     </modules>
 
@@ -287,6 +287,7 @@
       <command name="load">pmi/5.0.13</command>
 
       <command name="rm">cray-mpich</command>
+      <command name="load">pe_archive/append-path</command>
       <command name="load">cray-mpich/7.6.2</command>
     </modules>
 
@@ -299,7 +300,7 @@
     <modules compiler="gnu">
       <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.4</command>
       <command name="rm">gcc</command>
-      <command name="load">pe_archive</command>
+      <command name="load">pe_archive/append-path</command>
       <command name="load">gcc/6.3.0</command>
       <command name="rm">cray-libsci</command>
       <command name="load">cray-libsci/17.09.1</command>
@@ -428,6 +429,7 @@
     </modules>
 
     <modules mpilib="mpt">
+      <command name="load">pe_archive/append-path</command>
       <command name="swap">cray-mpich cray-mpich/7.6.2</command>
     </modules>
 
@@ -444,7 +446,7 @@
     <modules compiler="gnu">
       <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.4</command>
       <command name="rm">gcc</command>
-      <command name="load">pe_archive</command>
+      <command name="load">pe_archive/append-path</command>
       <command name="load">gcc/6.3.0</command>
       <command name="rm">cray-libsci</command>
       <command name="load">cray-libsci/17.09.1</command>
