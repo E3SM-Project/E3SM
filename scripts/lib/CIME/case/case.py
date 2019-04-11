@@ -560,6 +560,8 @@ class Case(object):
             last_ind = len(components)
 
         for model in components[1:last_ind]:
+            if model == 'TEST':
+                continue
             match = Case.__mod_match_re__.match(model.lower())
             expect(match is not None, "No model match for {}".format(model))
             mod_match = match.group(1)
@@ -760,7 +762,7 @@ class Case(object):
             for env_file in self._env_entryid_files:
                 env_file.add_elements_by_group(compobj, attributes=attlist)
 
-        self.clean_up_lookups()
+        self.clean_up_lookups(allow_undefined=True)
 
     def _setup_mach_pes(self, pecount, multi_driver, ninst, machine_name, mpilib):
         #--------------------------------------------
