@@ -362,6 +362,7 @@ contains
     call shr_mpi_bcast(wav_nthreads,DRIVER_COMM,'wav_nthreads')
     call shr_mpi_bcast(rof_nthreads,DRIVER_COMM,'rof_nthreads')
     call shr_mpi_bcast(esp_nthreads,DRIVER_COMM,'esp_nthreads')
+    call shr_mpi_bcast(iac_nthreads,DRIVER_COMM,'iac_nthreads')
     call shr_mpi_bcast(cpl_nthreads,DRIVER_COMM,'cpl_nthreads')
 
     call shr_mpi_bcast(atm_layout,DRIVER_COMM,'atm_layout')
@@ -371,6 +372,7 @@ contains
     call shr_mpi_bcast(glc_layout,DRIVER_COMM,'glc_layout')
     call shr_mpi_bcast(wav_layout,DRIVER_COMM,'wav_layout')
     call shr_mpi_bcast(rof_layout,DRIVER_COMM,'rof_layout')
+    call shr_mpi_bcast(iac_layout,DRIVER_COMM,'iac_layout')
     call shr_mpi_bcast(esp_layout,DRIVER_COMM,'esp_layout')
 
     call shr_mpi_bcast(info_taskmap_model,DRIVER_COMM,'info_taskmap_model')
