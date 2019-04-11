@@ -153,6 +153,11 @@
                      description="The maximum snow albedo dataset to use (case 7 only)"
                      possible_values="`MODIS' or `NCEP'"/>
 
+                <nml_option name="config_supersample_factor"    type="integer"       default_value="1"    in_defaults="false"
+                     units="-"
+                     description="The supersampling factor to be used for MODIS maximum snow albedo and monthly albedo datasets (case 7 only)"
+                     possible_values="Positive integer values"/>
+
                 <nml_option name="config_use_spechumd"          type="logical"       default_value="false"
                      units="-"
                      description="Whether to use specific-humidity as the first-guess moisture variable. If this option is False, relative humidity will be used."

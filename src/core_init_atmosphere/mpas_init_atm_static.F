@@ -55,6 +55,7 @@
  integer:: nx,ny,nz
  integer:: endian,isigned,istatus,wordsize
  integer:: i,j,k
+ integer :: ii, jj
  integer:: iCell,iEdge,iVtx,iPoint,iTileStart,iTileEnd,jTileStart,jTileEnd
  integer,dimension(5) :: interp_list
  integer,dimension(:),allocatable  :: nhs
@@ -65,6 +66,8 @@
 
  real(kind=RKIND):: start_lat
  real(kind=RKIND):: start_lon
+
+ integer, pointer :: supersample_fac
 
  real(kind=RKIND):: lat,lon,x,y
  real(kind=RKIND):: lat_pt,lon_pt
@@ -113,6 +116,7 @@
  call mpas_pool_get_config(configs, 'config_vegfrac_data', config_vegfrac_data)
  call mpas_pool_get_config(configs, 'config_albedo_data', config_albedo_data)
  call mpas_pool_get_config(configs, 'config_maxsnowalbedo_data', config_maxsnowalbedo_data)
+ call mpas_pool_get_config(configs, 'config_supersample_factor', supersample_fac)
 
  write(geog_data_path, '(a)') config_geog_data_path
  i = len_trim(geog_data_path)
@@ -555,6 +559,9 @@ if (rarray(i,j,1) == 0) cycle
  if (trim(config_maxsnowalbedo_data) == 'MODIS') then
 
     call mpas_log_write('Using MODIS 0.05-deg data for maximum snow albedo')
+    if (supersample_fac > 1) then
+       call mpas_log_write('   Dataset will be supersampled by a factor of $i', intArgs=(/supersample_fac/))
+    end if
 
     nx = 1206
     ny = 1206
@@ -569,9 +576,9 @@ if (rarray(i,j,1) == 0) cycle
     allocate(nhs(nCells))
     nhs(:) = 0
     snoalb(:) = 0.0
- 
-    start_lat = 89.975
-    start_lon = -179.975
+
+    start_lat = 90.0 - 0.05 * 0.5 / supersample_fac
+    start_lon = -180.0 + 0.05 * 0.5 / supersample_fac
     geog_sub_path = 'maxsnowalb_modis/'
 
     do jTileStart = 1,02401,ny-6
@@ -588,10 +595,13 @@ if (rarray(i,j,1) == 0) cycle
           call init_atm_check_read_error(istatus, fname)
 
           iPoint = 1
-          do j=4,ny-3
-          do i=4,nx-3
-             lat_pt = start_lat - (jTileStart + j - 5) * 0.05
-             lon_pt = start_lon + (iTileStart + i - 5) * 0.05
+          do j=supersample_fac * 3 + 1, supersample_fac * (ny-3)
+          do i=supersample_fac * 3 + 1, supersample_fac * (nx-3)
+             ii = (i - 1) / supersample_fac + 1
+             jj = (j - 1) / supersample_fac + 1
+
+             lat_pt = start_lat - (supersample_fac*(jTileStart-1) + j - (supersample_fac*3+1)) * 0.05 / supersample_fac
+             lon_pt = start_lon + (supersample_fac*(iTileStart-1) + i - (supersample_fac*3+1)) * 0.05 / supersample_fac
              lat_pt = lat_pt * PI / 180.0
              lon_pt = lon_pt * PI / 180.0
 
@@ -599,8 +609,8 @@ if (rarray(i,j,1) == 0) cycle
                                    nEdgesOnCell,cellsOnCell, &
                                    latCell,lonCell)
              if (landmask(iPoint) == 1) then
-                if (rarray(i,j,1) /= msgval) then
-                   snoalb(iPoint) = snoalb(iPoint) + rarray(i,j,1)
+                if (rarray(ii,jj,1) /= msgval) then
+                   snoalb(iPoint) = snoalb(iPoint) + rarray(ii,jj,1)
                    nhs(iPoint) = nhs(iPoint) + 1
                 end if
              else
@@ -881,6 +891,9 @@ if (rarray(i,j,1) == 0) cycle
  if (trim(config_albedo_data) == 'MODIS') then
 
     call mpas_log_write('Using MODIS 0.05-deg data for climatological monthly albedo')
+    if (supersample_fac > 1) then
+       call mpas_log_write('   Dataset will be supersampled by a factor of $i', intArgs=(/supersample_fac/))
+    end if
 
     nx = 1206
     ny = 1206
@@ -896,8 +909,8 @@ if (rarray(i,j,1) == 0) cycle
     nhs(:) = 0
     albedo12m(:,:) = 0.0
 
-    start_lat = 89.975
-    start_lon = -179.975
+    start_lat = 90.0 - 0.05 * 0.5 / supersample_fac
+    start_lon = -180.0 + 0.05 * 0.5 / supersample_fac
     geog_sub_path = 'albedo_modis/'
 
     do jTileStart = 1,02401,ny-6
@@ -914,10 +927,13 @@ if (rarray(i,j,1) == 0) cycle
           call init_atm_check_read_error(istatus, fname)
 
           iPoint = 1
-          do j=4,ny-3
-          do i=4,nx-3
-             lat_pt = start_lat - (jTileStart + j - 5) * 0.05
-             lon_pt = start_lon + (iTileStart + i - 5) * 0.05
+          do j=supersample_fac * 3 + 1, supersample_fac * (ny-3)
+          do i=supersample_fac * 3 + 1, supersample_fac * (nx-3)
+             ii = (i - 1) / supersample_fac + 1
+             jj = (j - 1) / supersample_fac + 1
+
+             lat_pt = start_lat - (supersample_fac*(jTileStart-1) + j - (supersample_fac*3+1)) * 0.05 / supersample_fac
+             lon_pt = start_lon + (supersample_fac*(iTileStart-1) + i - (supersample_fac*3+1)) * 0.05 / supersample_fac
              lat_pt = lat_pt * PI / 180.0
              lon_pt = lon_pt * PI / 180.0
 
@@ -926,10 +942,10 @@ if (rarray(i,j,1) == 0) cycle
                                    latCell,lonCell)
              if (landmask(iPoint) == 1) then
                 do k=1,nz
-                   if (rarray(i,j,k) == msgval) then
-                      rarray(i,j,k) = fillval
+                   if (rarray(ii,jj,k) == msgval) then
+                      rarray(ii,jj,k) = fillval
                    end if
-                   albedo12m(k,iPoint) = albedo12m(k,iPoint) + rarray(i,j,k)
+                   albedo12m(k,iPoint) = albedo12m(k,iPoint) + rarray(ii,jj,k)
                 end do
              else
                 albedo12m(:,iPoint) = albedo12m(:,iPoint) + fillval
