@@ -497,7 +497,6 @@ contains
       call mpas_allocate_scratch_field(ddensityTopOfEdgeField, .true., .false.)
       call mpas_allocate_scratch_field(du2TopOfCellField, .true., .false.)
       call mpas_allocate_scratch_field(du2TopOfEdgeField, .true., .false.)
-      call mpas_threading_barrier()
 
       ddensityTopOfCell => ddensityTopOfCellField % array
       ddensityTopOfEdge => ddensityTopOfEdgeField % array
@@ -600,7 +599,6 @@ contains
       end do
       !$omp end do
 
-      call mpas_threading_barrier()
       call mpas_deallocate_scratch_field(ddensityTopOfCellField, .true.)
       call mpas_deallocate_scratch_field(ddensityTopOfEdgeField, .true.)
       call mpas_deallocate_scratch_field(du2TopOfCellField, .true.)

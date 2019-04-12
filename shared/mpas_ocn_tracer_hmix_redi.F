@@ -190,7 +190,6 @@ contains
       call mpas_allocate_scratch_field(dTracerdZTopOfCellField, .true., .false.)
       call mpas_allocate_scratch_field(dTracerdZTopOfEdgeField, .true., .false.)
       call mpas_allocate_scratch_field(areaCellSumField, .true., .false.)
-      call mpas_threading_barrier()
 
       gradTracerEdge => gradTracerEdgeField % array
       gradTracerTopOfEdge => gradTracerTopOfEdgeField % array
@@ -253,8 +252,6 @@ contains
 
       ! Compute vertical derivative of tracers at cell center and top of layer
       do iTracer = 1, num_tracers
-         ! Sync threads before starting on tracers
-         call mpas_threading_barrier()
 
          nCells = nCellsArray( 2 )
          !$omp do schedule(runtime)
@@ -389,7 +386,6 @@ contains
 
       end do  ! iTracer
 
-      call mpas_threading_barrier()
       call mpas_deallocate_scratch_field(gradTracerEdgeField, .true.)
       call mpas_deallocate_scratch_field(gradTracerTopOfEdgeField, .true.)
       call mpas_deallocate_scratch_field(gradHTracerSlopedTopOfCellField, .true.)
