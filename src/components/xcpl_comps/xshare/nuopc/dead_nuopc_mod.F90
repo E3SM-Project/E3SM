@@ -10,7 +10,7 @@ module dead_nuopc_mod
   use ESMF              , only : operator(/=), operator(==), operator(+)
   use shr_kind_mod      , only : r8=>shr_kind_r8, i8=>shr_kind_i8, cl=>shr_kind_cl, cs=>shr_kind_cs
   use shr_sys_mod       , only : shr_sys_abort
-  use dead_methods_mode , only : chkerr, alarmInit
+  use dead_methods_mod  , only : chkerr, alarmInit
 
   implicit none
   private
@@ -472,7 +472,7 @@ contains
     type(ESMF_Field)  :: field
     character(len=80) :: stdname
     integer           :: gridtoFieldMap=2
-    character(len=*),parameter  :: subname='(dshr_nuopc_mod:fld_list_realize)'
+    character(len=*),parameter  :: subname='(dead_nuopc_mod:fld_list_realize)'
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -534,7 +534,7 @@ contains
       ! local variables
       type(ESMF_Distgrid) :: distgrid
       type(ESMF_Grid)     :: grid
-      character(len=*), parameter :: subname='(dshr_nuopc_mod:SetScalarField)'
+      character(len=*), parameter :: subname='(dead_nuopc_mod:SetScalarField)'
       ! ----------------------------------------------
 
       rc = ESMF_SUCCESS
@@ -598,7 +598,7 @@ contains
     type(ESMF_ALARM)         :: restart_alarm
     character(len=128)       :: name
     integer                  :: alarmcount
-    character(len=*),parameter :: subname='dshr_nuopc_mod:(ModelSetRunClock) '
+    character(len=*),parameter :: subname='dead_nuopc_mod:(ModelSetRunClock) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -646,7 +646,7 @@ contains
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        read(cvalue,*) restart_ymd
 
-       call shr_nuopc_time_alarmInit(mclock, restart_alarm, restart_option, &
+       call alarmInit(mclock, restart_alarm, restart_option, &
             opt_n   = restart_n,           &
             opt_ymd = restart_ymd,         &
             RefTime = mcurrTime,           &
@@ -722,7 +722,7 @@ contains
     integer          :: sendData(1)
     type(ESMF_VM)    :: vm
     integer          :: petCount
-    character(len=*),parameter :: subname='(shr_nuopc_grid_MeshInit)'
+    character(len=*),parameter :: subname='(dead_MeshInit)'
     !--------------------------------------------------------------
 
     rc = ESMF_SUCCESS

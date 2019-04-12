@@ -376,8 +376,8 @@ contains
        call state_diagnose(exportState,subname//':ES',rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        if (my_task == master_task) then
-          call log_clock_advance(clock, 'OCN', logunit)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
+          call log_clock_advance(clock, 'OCN', logunit, rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
        endif
     endif
 

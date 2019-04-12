@@ -45,9 +45,7 @@ def _main_func():
     with open('Filepath', 'w') as out:
         out.write(os.path.join(caseroot, "SourceMods", "src.drv") + "\n")
         out.write(os.path.join(cimeroot, "src", "drivers", "nuopc", "cime_driver") + "\n")
-        out.write(os.path.join(cimeroot, "src", "drivers", "nuopc", "cime_flds") + "\n") # mediator
         out.write(os.path.join(cimeroot, "src", "drivers", "nuopc", "mediator") + "\n")  # mediator
-        out.write(os.path.join(cimeroot, "src", "drivers", "nuopc", "shr") + "\n")       # mediator
 
     # build model executable
 

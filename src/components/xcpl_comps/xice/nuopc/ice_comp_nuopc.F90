@@ -111,9 +111,7 @@ contains
 
   subroutine InitializeAdvertise(gcomp, importState, exportState, clock, rc)
 
-    use shr_nuopc_utils_mod, only : shr_nuopc_set_component_logging
-    use shr_nuopc_utils_mod, only : shr_nuopc_get_component_instance
-
+    ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     type(ESMF_State)     :: importState, exportState
     type(ESMF_Clock)     :: clock
@@ -146,7 +144,7 @@ contains
     ! determine instance information
     !----------------------------------------------------------------------------
 
-    call _get_component_instance(gcomp, inst_suffix, inst_index, rc)
+    call get_component_instance(gcomp, inst_suffix, inst_index, rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     !----------------------------------------------------------------------------
@@ -364,14 +362,14 @@ contains
     ! Pack export state
     !--------------------------------
 
-    call state_setexport(exportState, rc=rc)
+    call State_SetExport(exportState, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_State_SetScalar(dble(nxg),flds_scalar_index_nx, exportState, &
+    call State_SetScalar(dble(nxg),flds_scalar_index_nx, exportState, &
          flds_scalar_name, flds_scalar_num, rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_State_SetScalar(dble(nyg),flds_scalar_index_ny, exportState, &
+    call State_SetScalar(dble(nyg),flds_scalar_index_ny, exportState, &
          flds_scalar_name, flds_scalar_num, rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
@@ -380,7 +378,7 @@ contains
     !--------------------------------
 
     if (dbug > 1) then
-       call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
+       call State_diagnose(exportState,subname//':ES',rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
     endif
 
@@ -407,8 +405,6 @@ contains
 
   subroutine ModelAdvance(gcomp, rc)
 
-    use shr_nuopc_utils_mod, only : shr_nuopc_memcheck, shr_nuopc_log_clock_advance
-
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -422,7 +418,7 @@ contains
 
     rc = ESMF_SUCCESS
     call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=rc)
-    call shr_nuopc_memcheck(subname, 3, mastertask)
+    call memcheck(subname, 3, mastertask)
 
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_setLogUnit (logunit)
@@ -442,10 +438,11 @@ contains
     !--------------------------------
 
     if (dbug > 1) then
-       call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
+       call State_diagnose(exportState,subname//':ES',rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        if (my_task == master_task) then
-          call shr_nuopc_log_clock_advance(clock, 'ICE', logunit)
+          call log_clock_advance(clock, 'XICE', logunit, rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
        endif
     endif
 

@@ -49,6 +49,7 @@ module atm_comp_nuopc
   integer , allocatable  :: gindex(:)
   integer                :: nxg         ! global dim i-direction
   integer                :: nyg         ! global dim j-direction
+  integer                :: my_task     ! my task in mpi communicator mpicom
   integer                :: inst_index  ! number of current instance (ie. 1)
   character(len=5)       :: inst_suffix ! char string associated with instance (ie. "_0001" or "")
   integer                :: logunit     ! logging unit number
@@ -431,7 +432,6 @@ contains
 
     ! local variables
     type(ESMF_Clock)  :: clock
-    type(ESMF_Time)   :: nexttime
     type(ESMF_State)  :: exportState
     real(r8)          :: nextsw_cday
     integer           :: shrlogunit ! original log unit
@@ -458,11 +458,6 @@ contains
     call state_setexport(exportState, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    call ESMF_ClockGetNextTime(clock, nextTime)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_TimeGet(nextTime, dayOfYear_r8=nextsw_cday)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-
     call State_SetScalar(nextsw_cday, flds_scalar_index_nextsw_cday, exportState, &
           flds_scalar_name, flds_scalar_num, rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
@@ -479,6 +474,8 @@ contains
           if (chkerr(rc,__LINE__,u_FILE_u)) return
        endif
     endif
+
+    call shr_file_setLogUnit (shrlogunit)
 
     if (dbug > 5) then
        call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=rc)

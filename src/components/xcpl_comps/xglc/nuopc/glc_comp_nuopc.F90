@@ -380,9 +380,9 @@ contains
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=rc)
-
+    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=rc)
     call memcheck(subname, 3, mastertask)
+
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_setLogUnit (logunit)
 
@@ -404,7 +404,8 @@ contains
        call state_diagnose(exportState,subname//':ES',rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        if (my_task == master_task) then
-          call log_clock_advance(clock, 'GLC', logunit)
+          call log_clock_advance(clock, 'XGLC', logunit, rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
        endif
     endif
 
