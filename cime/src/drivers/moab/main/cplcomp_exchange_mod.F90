@@ -1022,7 +1022,7 @@ contains
 
     partMethod = 0 ! trivial partitioning
 #ifdef MOAB_HAVE_ZOLTAN
-    partMethod = 1
+    partMethod = 2 ! it is better to use RCB for atmosphere and ocean too
 #endif
 
     call seq_comm_getinfo(ID_old ,mpicom=mpicom_old)
