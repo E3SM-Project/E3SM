@@ -131,14 +131,6 @@ contains
 
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_Clock_TimePrint
     use shr_file_mod          , only : shr_file_setLogunit, shr_file_getunit
-    use med                   , only : med_SS         => SetServices
-    use atm_comp_nuopc        , only : ATMSetServices => SetServices
-    use ice_comp_nuopc        , only : ICESetServices => SetServices
-    use lnd_comp_nuopc        , only : LNDSetServices => SetServices
-    use ocn_comp_nuopc        , only : OCNSetServices => SetServices
-    use wav_comp_nuopc        , only : WAVSetServices => SetServices
-    use rof_comp_nuopc        , only : ROFSetServices => SetServices
-    use glc_comp_nuopc        , only : GLCSetServices => SetServices
     use pio                   , only : pio_file_is_open, pio_closefile, file_desc_t
     use perf_mod              , only : t_initf
     use shr_mem_mod           , only : shr_mem_init
@@ -1189,17 +1181,32 @@ contains
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use shr_string_mod        , only : toLower => shr_string_toLower
     use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag, CS, CL
-    use atm_comp_nuopc        , only : ATMSetServices => SetServices
-    use ice_comp_nuopc        , only : ICESetServices => SetServices
-    use lnd_comp_nuopc        , only : LNDSetServices => SetServices
-    use ocn_comp_nuopc        , only : OCNSetServices => SetServices
-    use wav_comp_nuopc        , only : WAVSetServices => SetServices
-    use rof_comp_nuopc        , only : ROFSetServices => SetServices
-    use glc_comp_nuopc        , only : GLCSetServices => SetServices
-    use MED                   , only : MEDSetServices => SetServices
     use mpi                   , only : MPI_COMM_NULL
     use mct_mod               , only : mct_world_init
     use shr_pio_mod           , only : shr_pio_init2
+    use med                   , only : MedSetServices => SetServices
+#ifdef ATM_PRESENT
+    use atm_comp_nuopc        , only : ATMSetServices => SetServices
+#endif
+#ifdef ICE_PRESENT
+    use ice_comp_nuopc        , only : ICESetServices => SetServices
+#endif
+#ifdef LND_PRESENT
+    use lnd_comp_nuopc        , only : LNDSetServices => SetServices
+#endif
+#ifdef OCN_PRESENT
+    use ocn_comp_nuopc        , only : OCNSetServices => SetServices
+#endif
+#ifdef WAV_PRESENT
+    use wav_comp_nuopc        , only : WAVSetServices => SetServices
+#endif
+#ifdef ROF_PRESENT
+    use rof_comp_nuopc        , only : ROFSetServices => SetServices
+#endif
+#ifdef GLC_PRESENT
+    use glc_comp_nuopc        , only : GLCSetServices => SetServices
+#endif
+
 
     ! input/output variables
     type(ESMF_GridComp)            :: driver
@@ -1335,30 +1342,46 @@ contains
           med_id = i + 1
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), MEDSetServices, petList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+#ifdef ATM_PRESENT
        elseif(trim(compLabels(i)) .eq. 'ATM') then
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), ATMSetServices, petList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+#endif
+#ifdef LND_PRESENT
        elseif(trim(compLabels(i)) .eq. 'LND') then
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), LNDSetServices, PetList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+#endif
+#ifdef OCN_PRESENT
        elseif(trim(compLabels(i)) .eq. 'OCN') then
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), OCNSetServices, PetList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+#endif
+#ifdef ICE_PRESENT
        elseif(trim(compLabels(i)) .eq. 'ICE') then
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), ICESetServices, PetList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+#endif
+#ifdef GLC_PRESENT
        elseif(trim(compLabels(i)) .eq. 'GLC') then
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), GLCSetServices, PetList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+#endif
+#ifdef ROF_PRESENT
        elseif(trim(compLabels(i)) .eq. 'ROF') then
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), ROFSetServices, PetList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+#endif
+#ifdef WAV_PRESENT
        elseif(trim(compLabels(i)) .eq. 'WAV') then
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), WAVSetServices, PetList=petlist, comp=child, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+#endif
+#ifdef ESP_PRESENT
        elseif(trim(compLabels(i)) .eq. 'ESP') then
-         !call NUOPC_DriverAddComp(driver, trim(compLabels(i)), ESPSetServices, PetList=petlist, comp=child, rc=rc)
-         !if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          call NUOPC_DriverAddComp(driver, trim(compLabels(i)), ESPSetServices, PetList=petlist, comp=child, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+#endif
        endif
 
        call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, rc=rc)
