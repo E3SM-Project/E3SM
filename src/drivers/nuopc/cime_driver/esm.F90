@@ -117,7 +117,6 @@ contains
     use NUOPC                 , only : NUOPC_CompAttributeAdd, NUOPC_CompAttributeSet
     use NUOPC_Driver          , only : NUOPC_DriverAddComp, NUOPC_DriverGetComp
 
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_Clock_TimePrint
     use med                   , only : med_SS         => SetServices
     use atm_comp_nuopc        , only : ATMSetServices => SetServices
     use ice_comp_nuopc        , only : ICESetServices => SetServices
@@ -131,6 +130,7 @@ contains
     use shr_mem_mod           , only : shr_mem_init
     use shr_file_mod          , only : shr_file_setLogunit, shr_file_getunit
     use shr_log_mod           , only : shrlogunit=> shr_log_unit
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_Clock_TimePrint
 
     ! input/output variables
     type(ESMF_GridComp)    :: driver
@@ -924,10 +924,6 @@ contains
     character(len=CL)              :: cvalue
     character(len=32), allocatable :: compLabels(:)
     character(len=32), allocatable :: attrList(:)
-    character(len=8)               :: atm_present, lnd_present
-    character(len=8)               :: ice_present, rof_present
-    character(len=8)               :: glc_present, med_present
-    character(len=8)               :: ocn_present, wav_present
     integer                        :: componentCount
     character(len=*), parameter    :: subname = "(esm.F90:AddAttributes)"
     !-------------------------------------------
@@ -984,69 +980,6 @@ contains
 
        call ReadAttributes(gcomp, config, "FLDS_attributes::", rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       componentCount = ESMF_ConfigGetLen(config,label="component_list:", rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       allocate(compLabels(componentCount), stat=stat)
-       if (ESMF_LogFoundAllocError(statusToCheck=stat, msg="Allocation of compLabels failed.", &
-            line=__LINE__, file=u_FILE_u, rcToReturn=rc)) return
-
-       call ESMF_ConfigGetAttribute(config, valueList=compLabels, label="component_list:", &
-            count=componentCount, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       call NUOPC_CompAttributeAdd(gcomp, &
-            attrList=(/'atm_present','lnd_present','ocn_present','ice_present',&
-                       'rof_present','wav_present','glc_present','med_present'/), rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       med_present = "false"
-       atm_present = "false"
-       lnd_present = "false"
-       ocn_present = "false"
-       ice_present = "false"
-       rof_present = "false"
-       wav_present = "false"
-       glc_present = "false"
-       do n=1, componentCount
-          if (trim(compLabels(n)) == "MED") med_present = "true"
-          if (trim(compLabels(n)) == "ATM") atm_present = "true"
-          if (trim(compLabels(n)) == "LND") lnd_present = "true"
-          if (trim(compLabels(n)) == "OCN") ocn_present = "true"
-          if (trim(compLabels(n)) == "ICE") ice_present = "true"
-          if (trim(compLabels(n)) == "ROF") rof_present = "true"
-          if (trim(compLabels(n)) == "WAV") wav_present = "true"
-          if (trim(compLabels(n)) == "GLC") glc_present = "true"
-       enddo
-
-       call NUOPC_CompAttributeSet(gcomp, name="atm_present", value=atm_present, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call NUOPC_CompAttributeSet(gcomp, name="lnd_present", value=lnd_present, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call NUOPC_CompAttributeSet(gcomp, name="ocn_present", value=ocn_present, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call NUOPC_CompAttributeSet(gcomp, name="ice_present", value=ice_present, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call NUOPC_CompAttributeSet(gcomp, name="rof_present", value=rof_present, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call NUOPC_CompAttributeSet(gcomp, name="wav_present", value=wav_present, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call NUOPC_CompAttributeSet(gcomp, name="glc_present", value=glc_present, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call NUOPC_CompAttributeSet(gcomp, name="med_present", value=med_present, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       write(logunit,*)
-       write(logunit,*) "atm_present="//trim(atm_present)
-       write(logunit,*) "lnd_present="//trim(lnd_present)
-       write(logunit,*) "ocn_present="//trim(ocn_present)
-       write(logunit,*) "ice_present="//trim(ice_present)
-       write(logunit,*) "rof_present="//trim(rof_present)
-       write(logunit,*) "wav_present="//trim(wav_present)
-       write(logunit,*) "glc_present="//trim(glc_present)
-       write(logunit,*) "med_present="//trim(med_present)
-       write(logunit,*)
     endif
 
     !------

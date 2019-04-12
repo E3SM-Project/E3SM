@@ -1416,11 +1416,24 @@ contains
           call addfld(fldListFr(compice)%flds , 'Fioi_meltw'//iso(n))
           call addfld(fldListTo(compocn)%flds , 'Fioi_meltw'//iso(n))
        else
-          if ( fldchk(is_local%wrap%FBexp(compocn)         , 'Fioi_meltw'//iso(n), rc=rc) .and. &
-               fldchk(is_local%wrap%FBImp(compice, compice), 'Fioi_meltw'//iso(n), rc=rc)) then
-             call addmap(fldListFr(compice)%flds, 'Fioi_meltw'//iso(n),    compocn,  mapfcopy, 'unset', 'unset')
-             call addmrg(fldListTo(compocn)%flds, 'Fioi_meltw'//iso(n), &
-                  mrg_from1=compice, mrg_fld1='Fioi_meltw'//iso(n), mrg_type1='copy_with_weights', mrg_fracname1='ifrac')
+          if (coupling_mode == 'cesm') then
+             if ( fldchk(is_local%wrap%FBexp(compocn)         , 'Fioi_meltw'//iso(n), rc=rc) .and. &
+                  fldchk(is_local%wrap%FBImp(compice, compice), 'Fioi_meltw'//iso(n), rc=rc)) then
+                call addmap(fldListFr(compice)%flds, 'Fioi_meltw'//iso(n),    compocn,  mapfcopy, 'unset', 'unset')
+                call addmrg(fldListTo(compocn)%flds, 'Fioi_meltw'//iso(n), &
+                     mrg_from1=compice, mrg_fld1='Fioi_meltw'//iso(n), mrg_type1='copy_with_weights', mrg_fracname1='ifrac')
+             end if
+          else if (coupling_mode == 'nems_orig') then
+             if (fldchk(is_local%wrap%FBImp(compice, compice), 'Fioi_meltw'//iso(n), rc=rc)) then
+                call addmap(fldListFr(compice)%flds, 'Fioi_meltw'//iso(n),    compocn,  mapfcopy, 'unset', 'unset')
+                ! custom merge in med_phases_prep_ocn
+             end if
+          else if (coupling_mode == 'nems_frac') then
+             if (fldchk(is_local%wrap%FBImp(compice, compice), 'Fioi_meltw'//iso(n), rc=rc)) then
+                call addmap(fldListFr(compice)%flds, 'Fioi_meltw'//iso(n),    compocn,  mapfcopy, 'unset', 'unset')
+                call addmrg(fldListTo(compocn)%flds, 'Fioi_meltw'//iso(n), &
+                     mrg_from1=compice, mrg_fld1='Fioi_meltw'//iso(n), mrg_type1='copy_with_weights', mrg_fracname1='ifrac')
+             end if
           end if
        end if
     end do
