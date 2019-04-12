@@ -145,12 +145,12 @@
                      description="Interval between SST and sea-ice files (case 8 only)"
                      possible_values="[DDD_]hh:mm:ss"/>
 
-                <nml_option name="config_landuse_data"          type="character"     default_value="USGS"
+                <nml_option name="config_landuse_data"          type="character"     default_value="MODIFIED_IGBP_MODIS_NOAH"
                      units="-"
                      description="The land use classification to use (case 7 only)"
-                     possible_values="`USGS' or `MODIFIED\_IGBP\_MODIS\_NOAH'"/>
+                     possible_values="`USGS' or `MODIFIED_IGBP_MODIS_NOAH'"/>
 
-                <nml_option name="config_topo_data"             type="character"     default_value="GTOPO30"
+                <nml_option name="config_topo_data"             type="character"     default_value="GMTED2010"
                      units="-"
                      description="The topography dataset to use for the model terrain and for GWDO static fields (case 7 only)"
                      possible_values="`GTOPO30' or `GMTED2010'"/>
