@@ -218,7 +218,7 @@ contains
 
          allocate(JacobianDxDs(nVertLevels))
 
-         !$omp do schedule(runtime) private(cell1, cell2, invdcEdge, k, pGrad)
+         !$omp do schedule(runtime)
          do iEdge=1,nEdges
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
@@ -256,7 +256,7 @@ contains
          allocate(JacobianDxDs(nVertLevels),JacobianTz(nVertLevels),JacobianSz(nVertLevels), T1(nVertLevels))
          allocate(T2(nVertLevels), S1(nVertLevels), S2(nVertLevels))
 
-         !$omp do schedule(runtime) private(cell1, cell2, invdcEdge, kMax, k, pGrad, alpha, beta)
+         !$omp do schedule(runtime)
          do iEdge=1,nEdges
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)

@@ -307,7 +307,7 @@ contains
 
       if (displacementType == 'surfaceDisplaced') then
 
-         !$omp do schedule(runtime) private(k,tq,sq)
+         !$omp do schedule(runtime)
          do iCell=1,nCells
          do k=1,nVertLevels
             tq = min(tracersSurfaceLayerValue(indexT,iCell), &
@@ -322,7 +322,7 @@ contains
 
       else
 
-         !$omp do schedule(runtime) private(k,tq,sq)
+         !$omp do schedule(runtime)
          do iCell=1,nCells
          do k = 1, nVertLevels
             tq = min(tracers(indexT,k,iCell), ocnEqStateTmax)
@@ -341,8 +341,7 @@ contains
       !$acc parallel loop gang vector collapse(2) &
       !$acc&   present(density, p, p2, tracerTemp, tracerSalt)
 #else
-      !$omp  do schedule(runtime) &
-      !$omp& private(k,tq,sq,t2,sqr,bulkMod,rhosfc,work1,work2,work3,work4)
+      !$omp  do schedule(runtime)
 #endif
       do iCell=1,nCells
       do k=1,nVertLevels
@@ -580,7 +579,7 @@ contains
 
       if (displacementType == 'surfaceDisplaced') then
 
-         !$omp do schedule(runtime) private(k,tq,sq)
+         !$omp do schedule(runtime)
          do iCell=1,nCells
          do k=1,nVertLevels
             tq = min(tracersSurfaceLayerValue(indexT,iCell), &
@@ -595,7 +594,7 @@ contains
 
       else
 
-         !$omp do schedule(runtime) private(k,tq,sq)
+         !$omp do schedule(runtime)
          do iCell=1,nCells
          do k = 1, nVertLevels
             tq = min(tracers(indexT,k,iCell), ocnEqStateTmax)
@@ -618,7 +617,7 @@ contains
       !$acc&           thermalExpansionCoeff,         &
       !$acc&           salineContractionCoeff)
 #else
-      !$omp do schedule(runtime) private(k, tq, sq, t2, sqr, rhosfc, &
+      !$omp do schedule(runtime)
       !$omp&   bulkMod, denomk, work1, work2, work3, work4, &
       !$omp&   drdt0, drds0, dkdt, dkds, drhodt, drhods)
 #endif
