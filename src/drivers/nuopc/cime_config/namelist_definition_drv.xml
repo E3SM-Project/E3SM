@@ -550,7 +550,7 @@
   <entry id="WAV_model" modify_via_xml="COMP_WAV">
     <type>char</type>
     <category>nuopc</category>
-    <group>nuopc_var</group>
+    <group>ALLCOMP_attributes</group>
     <values>
       <value>$COMP_WAV</value>
     </values>
