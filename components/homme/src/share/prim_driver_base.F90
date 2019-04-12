@@ -1344,13 +1344,15 @@ contains
   elseif (ftype==1) then
     !do nothing
   elseif (ftype==2) then
+    ! with CAM physics, tracers were adjusted in dp coupling layer
 #ifndef CAM
     do ie = nets,nete
        call ApplyCAMForcing_tracers (elem(ie),hvcoord,n0,n0qdp,dt_remap,.false.)
     enddo
 #endif
     call ApplyCAMForcing_dynamics(elem,hvcoord,n0,dt_remap,nets,nete)
-  elseif (ftype==4) then
+ elseif (ftype==4) then
+    ! with CAM physics, tracers were adjusted in dp coupling layer
 #ifndef CAM
     do ie = nets,nete
        call ApplyCAMForcing_tracers (elem(ie),hvcoord,n0,n0qdp,dt_remap,.false.)
@@ -1362,7 +1364,7 @@ contains
 
 
 !----------------------------- APPLYCAMFORCING-TRACERS ----------------------------
-
+!
 !new, 1 elem routine
 !if adjustment, then CAM-type update by adjustment
 !otherwise homme-type update, tendencies
@@ -1372,7 +1374,6 @@ contains
   use hybvcoord_mod,      only : hvcoord_t
 #ifdef MODEL_THETA_L
   use control_mod,        only : theta_hydrostatic_mode
-!is it ok to use p0 instead of hyb%ps0?
   use physical_constants, only : cp, g, kappa, Rgas, p0
   use element_ops,        only : get_temperature, get_r_star
   use eos,                only : get_pnh_and_exner
@@ -1400,7 +1401,7 @@ contains
 #endif
 
 #ifdef MODEL_THETA_L
-!below dp is recomputed again
+   !below dp is recomputed again
    do k=1,nlev
       dp(:,:,k)=( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,np1)
@@ -1418,8 +1419,7 @@ contains
 #endif
 
    if (adjustment) then 
-!if adjustment, (almost) blind copy lines in cam/stepon, NO NEGATIVITY CHECK
-
+      ! hard adjust Q from physics.  negativity check done in physics
       do k=1,nlev
          dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,np1)
@@ -1462,9 +1462,7 @@ contains
         end do
 
      else ! end of adjustment
-!if not adjustment
-!blindly copying what homme does
-     ! apply forcing to Qdp
+        ! apply forcing to Qdp
         elem%derived%FQps(:,:)=0
         do q=1,qsize
            do k=1,nlev
@@ -1507,7 +1505,7 @@ contains
      endif ! if adjustment
 
 #ifdef MODEL_THETA_L
-!continue conversion using pprime from above
+     !continue conversion using pprime from above
      call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
      tn1(:,:,:) = tn1(:,:,:) + dt*elem%derived%FT(:,:,:)
 

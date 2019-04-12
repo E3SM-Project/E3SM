@@ -161,7 +161,7 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
                         pbuf2d, dyn_in, dyn_out )
   
   use dp_coupling, only: d_p_coupling
-  use time_mod,    only: tstep, phys_tscale       ! dynamics timestep
+  use time_mod,    only: tstep      ! dynamics timestep
   use time_manager, only: is_last_step
   use control_mod, only: ftype
   use physics_buffer, only : physics_buffer_desc
@@ -186,9 +186,6 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
 
    ! NOTE: dtime_out computed here must match formula below
    dtime_out = get_step_size()
-   if (phys_tscale/=0) then
-      dtime_out=phys_tscale  ! set by user in namelist
-   endif
 
    if(par%dynproc) then
       if(tstep <= 0)  call endrun( 'bad tstep')
@@ -224,7 +221,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    use parallel_mod,   only: par
    use dyn_comp,       only: TimeLevel, hvcoord
    
-   use time_mod,        only: tstep, phys_tscale, TimeLevel_Qdp   !  dynamics typestep
+   use time_mod,        only: tstep, TimeLevel_Qdp   !  dynamics typestep
    use control_mod,     only: ftype, qsplit
    use hycoef,          only: hyai, hybi, ps0
    use cam_history,     only: outfld, hist_fld_active
@@ -272,10 +269,6 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    ! NOTE: rec2dt MUST be 1/dtime_out as computed above
 
    rec2dt = 1._r8/dtime
-   if (phys_tscale/=0) then
-      rec2dt = 1._r8/phys_tscale
-   endif
-
 
    do ie=1,nelemd
      if (.not. single_column) then
@@ -306,7 +299,6 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
          ! apply forcing to states tl_f 
          ! requires forward-in-time timestepping, checked in namelist_mod.F90
 
-!!!! double check dtime but thats what ftype1 uses
          call applyCAMforcing_tracers(dyn_in%elem(ie),hvcoord,tl_f,tl_fQdp,dtime,.true.)
 
       endif ! if ftype == 2 or == 4
@@ -317,10 +309,6 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       if (ftype==1) then
          ! apply forcing to state tl_f
          ! requires forward-in-time timestepping, checked in namelist_mod.F90
-
-!!!!!!!!!!!!!!!!!!!!!!!! same sub as before, this time bfb with ftype1 
-!will be broken due to line Qdp := Qdp+fq , but it is not tested.
-!!!! double check dtime but thats what ftype1 uses
          call applyCAMforcing_tracers(dyn_in%elem(ie),hvcoord,tl_f,tl_fQdp,dtime,.true.)
 
          do k=1,nlev
