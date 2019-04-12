@@ -628,6 +628,9 @@ contains
                                                         tracerGroupSurfaceFluxRemoved, dt, layerThickness, err)
                end if
 
+
+               !$omp master
+
                !
                ! compute ecosystem source-sink tendencies and net surface fluxes
                ! NOTE: must be called before ocn_tracer_surface_flux_tend
@@ -672,6 +675,9 @@ contains
                   call ocn_tracer_MacroMolecules_surface_flux_compute(activeTracers, tracerGroup, forcingPool,  &
                      nTracerGroup, nCellsSolve, zMid, indexTemperature, indexSalinity, tracerGroupSurfaceFlux, err)
                endif
+
+               !$omp end master
+               call mpas_threading_barrier()
 
                !
                ! ocean surface restoring
@@ -974,7 +980,7 @@ contains
 
       allocate(div_hu(nVertLevels))
 
-      !$omp do schedule(runtime) private(div_hu_btr, invAreaCell, i, iEdge, k, totalThickness, flux)
+      !$omp do schedule(runtime)
       do iCell = 1, nCells
         tend_lowFreqDivergence(:, iCell) = 0.0_RKIND
         tend_highFreqThickness(:, iCell) = 0.0_RKIND
