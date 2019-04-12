@@ -618,8 +618,6 @@ contains
       !$acc&           salineContractionCoeff)
 #else
       !$omp do schedule(runtime)
-      !$omp&   bulkMod, denomk, work1, work2, work3, work4, &
-      !$omp&   drdt0, drds0, dkdt, dkds, drhodt, drhods)
 #endif
       do iCell=1,nCells
       do k=1,nVertLevels
