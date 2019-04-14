@@ -27,15 +27,15 @@ contains
     use esmFlds               , only : compatm, compice, comprof, compglc, ncomps, compname
     use esmFlds               , only : fldListFr, fldListTo
     use esmFlds               , only : mapbilnr
-    use shr_nuopc_methods_mod , only : fldchk          => shr_nuopc_methods_FB_FldChk
-    use shr_nuopc_methods_mod , only : chkerr          => shr_nuopc_methods_ChkErr
-    use shr_nuopc_methods_mod , only : FB_GetFldPtr    => shr_nuopc_methods_FB_GetFldPtr
-    use shr_nuopc_methods_mod , only : FB_diagnose     => shr_nuopc_methods_FB_diagnose
-    use shr_nuopc_methods_mod , only : FB_FieldRegrid  => shr_nuopc_methods_FB_FieldRegrid
-    use shr_nuopc_methods_mod , only : FB_getNumFlds   => shr_nuopc_methods_FB_getNumFlds
-    use shr_nuopc_methods_mod , only : State_GetScalar => shr_nuopc_methods_State_GetScalar
-    use shr_nuopc_methods_mod , only : State_SetScalar => shr_nuopc_methods_State_SetScalar
-    use med_constants_mod     , only : CS, R8, dbug_flag=>med_constants_dbug_flag
+    use shr_nuopc_utils_mod   , only : chkerr            => shr_nuopc_utils_ChkErr
+    use shr_nuopc_methods_mod , only : fldchk            => shr_nuopc_methods_FB_FldChk
+    use shr_nuopc_methods_mod , only : FB_GetFldPtr      => shr_nuopc_methods_FB_GetFldPtr
+    use shr_nuopc_methods_mod , only : FB_diagnose       => shr_nuopc_methods_FB_diagnose
+    use shr_nuopc_methods_mod , only : FB_FieldRegrid    => shr_nuopc_methods_FB_FieldRegrid
+    use shr_nuopc_methods_mod , only : FB_getNumFlds     => shr_nuopc_methods_FB_getNumFlds
+    use shr_nuopc_methods_mod , only : State_GetScalar   => shr_nuopc_methods_State_GetScalar
+    use shr_nuopc_methods_mod , only : State_SetScalar   => shr_nuopc_methods_State_SetScalar
+    use med_constants_mod     , only : CS, R8, dbug_flag => med_constants_dbug_flag
     use med_merge_mod         , only : med_merge_auto
     use med_map_mod           , only : med_map_FB_Regrid_Norm
     use med_internalstate_mod , only : InternalState, logunit, mastertask

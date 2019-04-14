@@ -1,9 +1,5 @@
 module med_constants_mod
 
-  !-----------------------------------------------------------------------------
-  ! Used by all components and mediator
-  !-----------------------------------------------------------------------------
-
   use shr_kind_mod   , only : R8=>SHR_KIND_R8
   use shr_kind_mod   , only : R4=>SHR_KIND_R4
   use shr_kind_mod   , only : IN=>SHR_KIND_IN
@@ -15,16 +11,9 @@ module med_constants_mod
 
   use shr_cal_mod    , only : med_constants_noleap => shr_cal_noleap
   use shr_cal_mod    , only : med_constants_gregorian => shr_cal_gregorian
-  use shr_log_mod    , only : shr_log_Unit
   use shr_cal_mod    , only : shr_cal_ymd2date
   use shr_cal_mod    , only : shr_cal_noleap
   use shr_cal_mod    , only : shr_cal_gregorian
-  use shr_file_mod   , only : shr_file_getlogunit
-  use shr_file_mod   , only : shr_file_setlogunit
-  use shr_file_mod   , only : shr_file_getloglevel
-  use shr_file_mod   , only : shr_file_setloglevel
-  use shr_file_mod   , only : shr_file_getUnit
-  use shr_file_mod   , only : shr_file_setIO
 
   implicit none
 
@@ -35,7 +24,6 @@ module med_constants_mod
   integer,  parameter :: med_constants_ispval_mask = -987987     ! spval for RH mask values
   integer,  parameter :: med_constants_SecPerDay = 86400    ! Seconds per day
 
-  !-----------------------------------------------------------------------------
   integer :: med_constants_dbug_flag = 5
 
 end module med_constants_mod

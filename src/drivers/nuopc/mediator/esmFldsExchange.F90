@@ -23,10 +23,9 @@ contains
     use ESMF
     use NUOPC
     use med_constants_mod     , only : CX, CS, CL
-    use shr_nuopc_methods_mod , only : chkerr => shr_nuopc_methods_chkerr
+    use shr_nuopc_utils_mod   , only : chkerr => shr_nuopc_utils_chkerr
     use shr_nuopc_methods_mod , only : fldchk => shr_nuopc_methods_FB_FldChk
     use med_internalstate_mod , only : InternalState
-    use shr_sys_mod           , only : shr_sys_abort
     use esmFlds               , only : shr_nuopc_fldList_type
     use esmFlds               , only : addfld => shr_nuopc_fldList_AddFld
     use esmFlds               , only : addmap => shr_nuopc_fldList_AddMap

@@ -4,9 +4,18 @@ module med_phases_prep_ocn_mod
   ! Mediator phases for preparing ocn export from mediator
   !-----------------------------------------------------------------------------
 
-  use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
-  use shr_nuopc_utils_mod   , only : shr_nuopc_memcheck
   use med_internalstate_mod , only : mastertask
+  use med_constants_mod     , only : dbug_flag     => med_constants_dbug_flag
+  use shr_nuopc_utils_mod   , only : memcheck      => shr_nuopc_memcheck
+  use shr_nuopc_utils_mod   , only : chkerr        => shr_nuopc_utils_ChkErr
+  use shr_nuopc_methods_mod , only : FB_diagnose   => shr_nuopc_methods_FB_diagnose
+  use shr_nuopc_methods_mod , only : FB_getNumFlds => shr_nuopc_methods_FB_getNumFlds
+  use shr_nuopc_methods_mod , only : FB_fldchk     => shr_nuopc_methods_FB_FldChk
+  use shr_nuopc_methods_mod , only : FB_GetFldPtr  => shr_nuopc_methods_FB_GetFldPtr
+  use shr_nuopc_methods_mod , only : FB_accum      => shr_nuopc_methods_FB_accum
+  use shr_nuopc_methods_mod , only : FB_average    => shr_nuopc_methods_FB_average
+  use shr_nuopc_methods_mod , only : FB_copy       => shr_nuopc_methods_FB_copy
+  use shr_nuopc_methods_mod , only : FB_reset      => shr_nuopc_methods_FB_reset
 
   implicit none
   private
@@ -34,8 +43,6 @@ contains
     use ESMF                  , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_ClockPrint
     use ESMF                  , only : ESMF_FieldBundleGet
     use med_internalstate_mod , only : InternalState
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getNumFlds
     use med_map_mod           , only : med_map_FB_Regrid_Norm
     use esmFlds               , only : fldListFr
     use esmFlds               , only : compocn, ncomps, compname
@@ -57,7 +64,7 @@ contains
        call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
     end if
     rc = ESMF_SUCCESS
-    call shr_nuopc_memcheck(subname, 5, mastertask)
+    call memcheck(subname, 5, mastertask)
 
     !---------------------------------------
     ! --- Get the internal state
@@ -65,13 +72,13 @@ contains
 
     nullify(is_local%wrap)
     call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !---------------------------------------
     ! --- Count the number of fields outside of scalar data, if zero, then return
     !---------------------------------------
-    call shr_nuopc_methods_FB_getNumFlds(is_local%wrap%FBExp(compocn), trim(subname)//"FBexp(compocn)", ncnt, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call FB_getNumFlds(is_local%wrap%FBExp(compocn), trim(subname)//"FBexp(compocn)", ncnt, rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (ncnt > 0) then
 
@@ -90,7 +97,7 @@ contains
                   is_local%wrap%FBNormOne(n1,compocn,:), &
                   is_local%wrap%RH(n1,compocn,:), &
                   string=trim(compname(n1))//'2'//trim(compname(compocn)), rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             if (ChkErr(rc,__LINE__,u_FILE_u)) return
           endif
        enddo
     endif
@@ -109,11 +116,6 @@ contains
     use ESMF                  , only : ESMF_GridComp, ESMF_FieldBundleGet
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
     use ESMF                  , only : ESMF_FAILURE,  ESMF_LOGMSG_ERROR
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-    use shr_nuopc_methods_mod , only : fldchk => shr_nuopc_methods_FB_FldChk
-    use shr_nuopc_methods_mod , only : FB_GetFldPtr => shr_nuopc_methods_FB_GetFldPtr
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getNumFlds
     use med_constants_mod     , only : R8, CS
     use med_internalstate_mod , only : InternalState, mastertask, logunit
     use med_merge_mod         , only : med_merge_auto, med_merge_field
@@ -181,7 +183,7 @@ contains
        call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
     end if
     rc = ESMF_SUCCESS
-    call shr_nuopc_memcheck(subname, 5, mastertask)
+    call memcheck(subname, 5, mastertask)
 
     !---------------------------------------
     ! --- Get the internal state
@@ -189,14 +191,14 @@ contains
 
     nullify(is_local%wrap)
     call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !---------------------------------------
     ! --- Count the number of fields outside of scalar data, if zero, then return
     !---------------------------------------
 
-    call shr_nuopc_methods_FB_getNumFlds(is_local%wrap%FBExp(compocn), trim(subname)//"FBexp(compocn)", ncnt, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call FB_getNumFlds(is_local%wrap%FBExp(compocn), trim(subname)//"FBexp(compocn)", ncnt, rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (ncnt > 0) then
 
@@ -209,12 +211,12 @@ contains
                is_local%wrap%FBExp(compocn), is_local%wrap%FBFrac(compocn), &
                is_local%wrap%FBImp(:,compocn), fldListTo(compocn), &
                FBMed1=is_local%wrap%FBMed_aoflux_o, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
        else if (trim(coupling_mode) == 'nems_frac') then
           call med_merge_auto(trim(compname(compocn)), &
                is_local%wrap%FBExp(compocn), is_local%wrap%FBFrac(compocn), &
                is_local%wrap%FBImp(:,compocn), fldListTo(compocn), rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
 
        !---------------------------------------
@@ -229,84 +231,84 @@ contains
 
        ! Input from atm
        call FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swvdr', Faxa_swvdr, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swndr', Faxa_swndr, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swvdf', Faxa_swvdf, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call FB_GetFldPtr(is_local%wrap%FBImp(compatm,compocn), 'Faxa_swndf', Faxa_swndf, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        lsize = size(Faxa_swvdr)
 
        ! Input from mediator, ice-covered ocean and open ocean fractions
        call FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ifrac' , ifrac, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ofrac' , ofrac, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
        ! Input from mediator, ocean albedos
        if (trim(coupling_mode) == 'cesm') then
           call FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, 'So_avsdr' , avsdr, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
           call FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, 'So_anidr' , anidr, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
           call FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, 'So_avsdf' , avsdf, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
           call FB_GetFldPtr(is_local%wrap%FBMed_ocnalb_o, 'So_anidf' , anidf, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
           call FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ifrad' , ifracr, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
           call FB_GetFldPtr(is_local%wrap%FBfrac(compocn), 'ofrad' , ofracr, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
 
        ! Input from ice
        if (is_local%wrap%comp_present(compice)) then
           call FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'Fioi_swpen', Fioi_swpen, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          if (fldchk(is_local%wrap%FBImp(compice,compice), 'Fioi_swpen_vdr', rc=rc)) then
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (FB_fldchk(is_local%wrap%FBImp(compice,compice), 'Fioi_swpen_vdr', rc=rc)) then
              import_swpen_by_bands = .true.
              call FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'Fioi_swpen_vdr', Fioi_swpen_vdr, rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             if (ChkErr(rc,__LINE__,u_FILE_u)) return
              call FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'Fioi_swpen_vdf', Fioi_swpen_vdf, rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             if (ChkErr(rc,__LINE__,u_FILE_u)) return
              call FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'Fioi_swpen_idr', Fioi_swpen_idr, rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             if (ChkErr(rc,__LINE__,u_FILE_u)) return
              call FB_GetFldPtr(is_local%wrap%FBImp(compice,compocn), 'Fioi_swpen_idf', Fioi_swpen_idf, rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             if (ChkErr(rc,__LINE__,u_FILE_u)) return
           else
              import_swpen_by_bands = .false.
          end if
        end if
 
        ! Output to ocean swnet 
-       if (fldchk(is_local%wrap%FBExp(compocn), 'Foxx_swnet', rc=rc)) then
+       if (FB_fldchk(is_local%wrap%FBExp(compocn), 'Foxx_swnet', rc=rc)) then
           call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_swnet',  Foxx_swnet, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
        else
           lsize = size(Faxa_swvdr)
           allocate(Foxx_swnet(lsize))
        end if
 
        ! Output to ocean swnet by radiation bands
-       if (fldchk(is_local%wrap%FBExp(compocn), 'Foxx_swnet_vdr', rc=rc)) then
+       if (FB_fldchk(is_local%wrap%FBExp(compocn), 'Foxx_swnet_vdr', rc=rc)) then
           export_swnet_by_bands = .true.
           call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_swnet_vdr', Foxx_swnet_vdr, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
           call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_swnet_vdf', Foxx_swnet_vdf, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
           call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_swnet_idr', Foxx_swnet_idr, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
           call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_swnet_idf', Foxx_swnet_idf, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
        else
           export_swnet_by_bands = .false.
        end if
 
        ! Swnet without swpen from sea-ice
-       if ( fldchk(is_local%wrap%FBExp(compocn), 'Foxx_swnet_afracr',rc=rc)) then
+       if ( FB_fldchk(is_local%wrap%FBExp(compocn), 'Foxx_swnet_afracr',rc=rc)) then
           call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_swnet_afracr', Foxx_swnet_afracr, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
           export_swnet_afracr = .true.
        else
           export_swnet_afracr = .false.
@@ -382,35 +384,35 @@ contains
        end do
 
        ! Output to ocean per ice thickness fraction and sw penetrating into ocean
-       if ( fldchk(is_local%wrap%FBImp(compice,compice), 'Si_ifrac_n', rc=rc) .and. &
-            fldchk(is_local%wrap%FBExp(compocn)        , 'Si_ifrac_n', rc=rc)) then
+       if ( FB_fldchk(is_local%wrap%FBImp(compice,compice), 'Si_ifrac_n', rc=rc) .and. &
+            FB_fldchk(is_local%wrap%FBExp(compocn)        , 'Si_ifrac_n', rc=rc)) then
 
           call FB_GetFldPtr(is_local%wrap%FBImp(compice,compice), 'Si_ifrac_n', dataptr_i, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
           call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Si_ifrac_n', dataptr_o, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
           dataptr_o(:) = dataptr_i(:)
        end if
 
-       if ( fldchk(is_local%wrap%FBImp(compice,compice), 'Fioi_swpen_ifrac_n', rc=rc) .and. &
-            fldchk(is_local%wrap%FBExp(compocn)        , 'Fioi_swpen_ifrac_n', rc=rc)) then
+       if ( FB_fldchk(is_local%wrap%FBImp(compice,compice), 'Fioi_swpen_ifrac_n', rc=rc) .and. &
+            FB_fldchk(is_local%wrap%FBExp(compocn)        , 'Fioi_swpen_ifrac_n', rc=rc)) then
 
           call FB_GetFldPtr(is_local%wrap%FBImp(compice,compice), 'Fioi_swpen_ifrac_n', dataptr_i, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
           call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Fioi_swpen_ifrac_n', dataptr_o, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
           dataptr_o(:) = dataptr_i(:)
        end if
 
-       if ( fldchk(is_local%wrap%FBExp(compocn), 'Sf_afrac', rc=rc)) then
+       if ( FB_fldchk(is_local%wrap%FBExp(compocn), 'Sf_afrac', rc=rc)) then
           call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Sf_afrac', dataptr_o, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
           dataptr_o(:) = ofrac(:)
        end if
 
-       if ( fldchk(is_local%wrap%FBExp(compocn), 'Sf_afracr', rc=rc)) then
+       if ( FB_fldchk(is_local%wrap%FBExp(compocn), 'Sf_afracr', rc=rc)) then
           call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Sf_afracr', dataptr_o, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
           dataptr_o(:) = ofracr(:)
        end if
 
@@ -429,9 +431,9 @@ contains
           allocate(fldnames(4))
           fldnames = (/'Faxa_rain',' Faxa_snow', 'Foxx_rofl', 'Foxx_rofi'/)
           do n = 1,size(fldnames)
-             if (fldchk(is_local%wrap%FBExp(compocn), trim(fldnames(n)), rc=rc)) then
+             if (FB_fldchk(is_local%wrap%FBExp(compocn), trim(fldnames(n)), rc=rc)) then
                 call FB_GetFldPtr(is_local%wrap%FBExp(compocn), trim(fldnames(n)) , dataptr, rc=rc)
-                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                if (ChkErr(rc,__LINE__,u_FILE_u)) return
                 dataptr(:) = dataptr(:) * precip_fact
              end if
           end do
@@ -452,7 +454,7 @@ contains
           customwgt(:) = - 1._r8 / const_lhvap
           call med_merge_field(is_local%wrap%FBExp(compocn), 'Foxx_evap', &
                FBinA=is_local%wrap%FBImp(compatm,compocn), fnameA='Faxa_lat',  wgtA=customwgt, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
           deallocate(customwgt)
        end if
 
@@ -515,7 +517,7 @@ contains
           call med_merge_field(is_local%wrap%FBExp(compocn),      'Foxx_evap', &
                FBinA=is_local%wrap%FBMed_aoflux_o        , fnameA='Faox_evap', wgtA=ocnwgt1, &
                FBinB=is_local%wrap%FBImp(compatm,compocn), fnameB='Faxa_lat' , wgtB=customwgt, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
           call med_merge_field(is_local%wrap%FBExp(compocn),      'Foxx_sen',    &
                FBinA=is_local%wrap%FBMed_aoflux_o        , fnameA='Faox_sen '  , wgtA=ocnwgt1, &
@@ -552,9 +554,9 @@ contains
        !---------------------------------------
 
        if (dbug_flag > 1) then
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compocn), &
+          call FB_diagnose(is_local%wrap%FBExp(compocn), &
                string=trim(subname)//' FBexp(compocn) ', rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
 
        ! TODO (mvertens, 2018-12-16): document above custom calculation
@@ -582,10 +584,6 @@ contains
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
     use ESMF                  , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_ClockPrint
     use ESMF                  , only : ESMF_FieldBundleGet
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_accum
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getNumFlds
     use med_internalstate_mod , only : InternalState, mastertask
     use esmFlds               , only : compocn
     use perf_mod              , only : t_startf, t_stopf
@@ -616,13 +614,13 @@ contains
 
     nullify(is_local%wrap)
     call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !---------------------------------------
     ! --- Count the number of fields outside of scalar data, if zero, then return
     !---------------------------------------
-    call shr_nuopc_methods_FB_getNumFlds(is_local%wrap%FBExp(compocn), trim(subname)//"FBexp(compocn)", ncnt, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call FB_getNumFlds(is_local%wrap%FBExp(compocn), trim(subname)//"FBexp(compocn)", ncnt, rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (ncnt > 0) then
 
@@ -630,15 +628,15 @@ contains
        !--- ocean accumulator
        !---------------------------------------
 
-       call shr_nuopc_methods_FB_accum(is_local%wrap%FBExpAccum(compocn), is_local%wrap%FBExp(compocn), rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call FB_accum(is_local%wrap%FBExpAccum(compocn), is_local%wrap%FBExp(compocn), rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
        is_local%wrap%FBExpAccumCnt(compocn) = is_local%wrap%FBExpAccumCnt(compocn) + 1
 
        if (dbug_flag > 1) then
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
+          call FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
                string=trim(subname)//' FBExpAccum accumulation ', rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
 
        !---------------------------------------
@@ -664,12 +662,6 @@ contains
     use ESMF                  , only : ESMF_FieldBundleGet
     use med_constants_mod     , only : czero=>med_constants_czero
     use med_internalstate_mod , only : InternalState
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_average
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_copy
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getNumFlds
     use esmFlds               , only : compocn
     use perf_mod              , only : t_startf, t_stopf
 
@@ -699,13 +691,13 @@ contains
 
     nullify(is_local%wrap)
     call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !---------------------------------------
     ! --- Count the number of fields outside of scalar data, if zero, then return
     !---------------------------------------
-    call shr_nuopc_methods_FB_getNumFlds(is_local%wrap%FBExpAccum(compocn), trim(subname)//"FBExpAccum(compocn)", ncnt, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call FB_getNumFlds(is_local%wrap%FBExpAccum(compocn), trim(subname)//"FBExpAccum(compocn)", ncnt, rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (ncnt > 0) then
 
@@ -714,27 +706,27 @@ contains
        !---------------------------------------
 
        if (dbug_flag > 1) then
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
+          call FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
                string=trim(subname)//' FBExpAccum(compocn) before avg ', rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
 
-       call shr_nuopc_methods_FB_average(is_local%wrap%FBExpAccum(compocn), &
+       call FB_average(is_local%wrap%FBExpAccum(compocn), &
             is_local%wrap%FBExpAccumCnt(compocn), rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
        if (dbug_flag > 1) then
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compocn), &
+          call FB_diagnose(is_local%wrap%FBExp(compocn), &
                string=trim(subname)//' FBExpAccum(compocn) after avg ', rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
 
        !---------------------------------------
        !--- copy to FBExp(compocn)
        !---------------------------------------
 
-       call shr_nuopc_methods_FB_copy(is_local%wrap%FBExp(compocn), is_local%wrap%FBExpAccum(compocn), rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call FB_copy(is_local%wrap%FBExp(compocn), is_local%wrap%FBExpAccum(compocn), rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
        !---------------------------------------
        !--- zero accumulator
@@ -742,8 +734,8 @@ contains
 
        is_local%wrap%FBExpAccumFlag(compocn) = .true.
        is_local%wrap%FBExpAccumCnt(compocn) = 0
-       call shr_nuopc_methods_FB_reset(is_local%wrap%FBExpAccum(compocn), value=czero, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call FB_reset(is_local%wrap%FBExpAccum(compocn), value=czero, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     end if
 

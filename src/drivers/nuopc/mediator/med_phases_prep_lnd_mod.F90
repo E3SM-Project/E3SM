@@ -26,7 +26,7 @@ contains
     use ESMF                  , only : ESMF_StateGet, ESMF_StateItem_Flag, ESMF_STATEITEM_NOTFOUND
     use esmFlds               , only : complnd, compatm, ncomps, compname 
     use esmFlds               , only : fldListFr, fldListTo
-    use shr_nuopc_methods_mod , only : chkerr          => shr_nuopc_methods_ChkErr
+    use shr_nuopc_utils_mod   , only : chkerr          => shr_nuopc_utils_ChkErr
     use shr_nuopc_methods_mod , only : FB_init         => shr_nuopc_methods_FB_init
     use shr_nuopc_methods_mod , only : FB_diagnose     => shr_nuopc_methods_FB_diagnose
     use shr_nuopc_methods_mod , only : FB_getNumFlds   => shr_nuopc_methods_FB_getNumFlds

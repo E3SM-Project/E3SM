@@ -129,7 +129,7 @@ contains
     character(len=*), parameter :: subname = 'glc_elevclass_init_override'
     !-----------------------------------------------------------------------
 
-!    SHR_ASSERT_ALL_FL((ubound(my_topomax) == (/my_glc_nec/)), __FILE__, __LINE__)
+    !SHR_ASSERT_ALL_FL((ubound(my_topomax) == (/my_glc_nec/)), __FILE__, __LINE__)
 
     glc_nec = my_glc_nec
     allocate(topomax(0:glc_nec))
@@ -223,7 +223,8 @@ contains
           end if
        end do
 
-!       SHR_ASSERT(elevation_class > 0, subname//' elevation class was not assigned')
+       !SHR_ASSERT(elevation_class > 0, subname//' elevation class was not assigned')
+
     end if
 
   end subroutine glc_get_elevation_class

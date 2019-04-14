@@ -10,7 +10,7 @@ module MED
   use med_constants_mod     , only : spval              => med_constants_spval
   use med_constants_mod     , only : czero              => med_constants_czero
   use med_constants_mod     , only : ispval_mask        => med_constants_ispval_mask
-  use shr_nuopc_methods_mod , only : chkerr             => shr_nuopc_methods_ChkErr
+  use shr_nuopc_utils_mod   , only : chkerr             => shr_nuopc_utils_ChkErr
   use shr_nuopc_methods_mod , only : Field_GeomPrint    => shr_nuopc_methods_Field_GeomPrint
   use shr_nuopc_methods_mod , only : State_GeomPrint    => shr_nuopc_methods_State_GeomPrint
   use shr_nuopc_methods_mod , only : State_GeomWrite    => shr_nuopc_methods_State_GeomWrite
@@ -1369,7 +1369,6 @@ contains
     use med_internalstate_mod   , only : InternalState
     use med_internalstate_mod   , only : med_coupling_allowed, logunit
     use med_internalstate_mod   , only : mastertask
-    use shr_sys_mod             , only : shr_sys_flush
     use esmFlds                 , only : ncomps, compname, ncomps, compmed, compatm, compocn
     use esmFlds                 , only : compice, complnd, comprof, compwav, compglc, compname
     use esmFlds                 , only : fldListMed_ocnalb, fldListMed_aoflux
@@ -1507,7 +1506,6 @@ contains
                write(logunit,'(A)') trim(msgString)
             enddo
             write(logunit,*) ' '
-            call shr_sys_flush(logunit)
          endif
 
          if (dbug_flag >= 0) then
@@ -1523,7 +1521,6 @@ contains
                write(logunit,'(A)') trim(msgString)
             enddo
             write(logunit,*) ' '
-            call shr_sys_flush(logunit)
          endif
       endif
 
@@ -1574,7 +1571,6 @@ contains
             is_local%wrap%FBExpAccumCnt(n1) = 0
 
          endif
-         if (mastertask) call shr_sys_flush(logunit)
 
          ! The following are FBImp and FBImpAccum mapped to different grids.
          ! FBImp(n1,n1) and FBImpAccum(n1,n1) are handled above
@@ -1607,8 +1603,6 @@ contains
          enddo ! loop over n2
 
       enddo ! loop over n1
-
-      if (mastertask) call shr_sys_flush(logunit)
 
       !---------------------------------------
       ! Initialize field bundles needed for ocn albedo and ocn/atm flux calculations
@@ -1749,9 +1743,6 @@ contains
           deallocate(fieldNameList)
 
           if (LocalDone) then
-             ! This copies NStateImp(n1) TO FBImp(n1, n1)
-             call FB_copy(is_local%wrap%FBImp(n1,n1), is_local%wrap%NStateImp(n1), rc=rc)
-             if (ChkErr(rc,__LINE__,u_FILE_u)) return
              call ESMF_LogWrite(trim(subname)//" MED - Initialize-Data-Dependency Copy Import "//&
                   trim(compname(n1)), ESMF_LOGMSG_INFO, rc=rc)
              if (ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -2099,12 +2090,10 @@ contains
     use ESMF                   , only : ESMF_GridComp, ESMF_SUCCESS
     use med_internalstate_mod  , only : logunit, mastertask
     use med_phases_profile_mod , only : med_phases_profile_finalize
-    use shr_file_mod           , only : shr_file_setlogunit
 
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
-    call shr_file_setlogunit(logunit)
     rc = ESMF_SUCCESS
     call memcheck("med_finalize", 0, mastertask)
     if (mastertask) then
