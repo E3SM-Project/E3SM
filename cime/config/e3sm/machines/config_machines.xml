@@ -1204,9 +1204,9 @@
       <env name="NETCDF_FORTRAN_PATH">$SHELL{which nf-config | xargs dirname | xargs dirname}</env>
       <env name="PATH">/lcrc/group/acme/soft/perl/5.26.0/bin:$ENV{PATH}</env>
     </environment_variables>
-    <!--environment_variables mpilib="mvapich" compiler="intel">
+    <environment_variables mpilib="mvapich" compiler="intel">
       <env name="PNETCDF_PATH">/blues/gpfs/home/software/climate/pnetcdf/1.6.1/intel-17.0.4/mvapich2-2.2-verbs</env>
-    </environment_variables-->
+    </environment_variables>
     <environment_variables mpilib="mvapich" DEBUG="TRUE">
       <env name="MV2_DEBUG_SHOW_BACKTRACE">1</env>
       <env name="MV2_SHOW_CPU_BINDING">1</env>
