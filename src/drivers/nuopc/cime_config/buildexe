@@ -31,7 +31,7 @@ def _main_func():
         exeroot   = case.get_value("EXEROOT")
         gmake     = case.get_value("GMAKE")
         gmake_j   = case.get_value("GMAKE_J")
-        model     = case.get_value("MODEL")
+        cime_model     = case.get_value("MODEL")
         num_esp   = case.get_value("NUM_COMP_INST_ESP")
         ocn_model = case.get_value("COMP_OCN")
         atm_model = case.get_value("COMP_ATM")
@@ -47,7 +47,7 @@ def _main_func():
     for comp in comp_classes:
         model = case.get_value("COMP_{}".format(comp))
         stubcomp = "s{}".format(comp.lower())
-        if model and model != stubcomp:
+        if model and model != stubcomp and comp != "CPL":
             cppdefs += "-D{}_PRESENT ".format(comp)
             ulibdep += "{}/lib{}.a ".format(libroot,comp.lower())
     gmake_args += " USER_CPPDEFS=\"{}\" ULIBDEP=\"{}\"".format(cppdefs,ulibdep)
@@ -63,7 +63,7 @@ def _main_func():
     # build model executable
 
     makefile = os.path.join(casetools, "Makefile")
-    exename = os.path.join(exeroot, model + ".exe")
+    exename = os.path.join(exeroot, cime_model + ".exe")
     # always relink
     if os.path.isfile(exename):
         os.remove(exename)
