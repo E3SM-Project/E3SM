@@ -420,7 +420,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
                 ninst = case.get_value("NINST_{}".format(comp_class))
 
         comp = case.get_value("COMP_{}".format(comp_class))
-        if comp_interface == 'nuopc' and comp in ('satm', 'slnd', 'sesp', 'sglc', 'srof', 'sice', 'socn', 'swav'):
+        if comp_interface == 'nuopc' and comp in ('satm', 'slnd', 'sesp', 'sglc', 'srof', 'sice', 'socn', 'swav', 'siac'):
             continue
         thrds =  case.get_value("NTHRDS_{}".format(comp_class))
         expect(ninst is not None,"Failed to get ninst for comp_class {}".format(comp_class))
