@@ -2,6 +2,7 @@
 #define SCREAM_FIELD_IDENTIFIER_HPP
 
 #include "share/field/field_layout.hpp"
+#include "share/grid/abstract_grid.hpp"
 #include "share/scream_assert.hpp"
 
 #include <string>
@@ -21,17 +22,22 @@ namespace scream
 
 class FieldIdentifier {
 public:
-  using layout_type = FieldLayout;
+  using layout_type   = FieldLayout;
+  using grid_type     = AbstractGrid;
+  using grid_ptr_type = std::shared_ptr<grid_type>;
 
   // Constructor(s)
   FieldIdentifier () = delete;
   FieldIdentifier (const FieldIdentifier&) = default;
   FieldIdentifier (const std::string& name,
-                   const layout_type& layout);
+                   const layout_type& layout,
+                   const grid_ptr_type grid = nullptr);
   FieldIdentifier (const std::string& name,
-                   const std::vector<FieldTag>& tags);
+                   const std::vector<FieldTag>& tags,
+                   const grid_ptr_type grid = nullptr);
   FieldIdentifier (const std::string& name,
-                   const std::initializer_list<FieldTag>& tags);
+                   const std::initializer_list<FieldTag>& tags,
+                   const grid_ptr_type grid = nullptr);
 
   // Assignment (defaulted)
   FieldIdentifier& operator= (const FieldIdentifier&) = default;
@@ -39,8 +45,9 @@ public:
   // ----- Getters ----- //
 
   // Name and layout informations
-  const std::string& name   () const { return m_name; }
-  const layout_type& get_layout () const { return m_layout; }
+  const std::string&  name       () const { return m_name;   }
+  const layout_type&  get_layout () const { return m_layout; }
+        grid_ptr_type get_grid   () const { return m_grid;   }
 
   // The identifier string
   const std::string& get_identifier () const { return m_identifier; }
@@ -50,6 +57,7 @@ public:
   // Note: as soon as a dimension is set, it cannot be changed.
   void set_dimension  (const int idim, const int dimension);
   void set_dimensions (const std::vector<int>& dims);
+  void set_grid       (const grid_ptr_type grid);
 
   // We reimplement the equality operator for identifiers comparison (needed for some std container)
   friend bool operator== (const FieldIdentifier&, const FieldIdentifier&);
@@ -62,6 +70,8 @@ protected:
   std::string     m_name;
 
   layout_type     m_layout;
+
+  grid_ptr_type   m_grid;
 
   // The identifier string is a conveniet way to display the information of
   // the identifier, so that it can be easily read.

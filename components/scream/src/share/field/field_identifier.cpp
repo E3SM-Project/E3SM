@@ -1,31 +1,40 @@
-#include "field_identifier.hpp"
+#include "share/field/field_identifier.hpp"
+#include "share/grid/default_grid.hpp"
 
 namespace scream
 {
 
-FieldIdentifier::FieldIdentifier (const std::string& name,
-                                  const layout_type& layout)
+FieldIdentifier::
+FieldIdentifier (const std::string& name,
+                 const layout_type& layout,
+                 const grid_ptr_type grid)
  : m_name   (name)
  , m_layout (layout)
 {
-  update_identifier ();
+  // This also calls 'update_identifier'
+  set_grid(grid);
 }
 
-FieldIdentifier::FieldIdentifier (const std::string& name,
-                                  const std::vector<FieldTag>& tags)
+FieldIdentifier::
+FieldIdentifier (const std::string& name,
+                 const std::vector<FieldTag>& tags,
+                 const grid_ptr_type grid)
  : m_name   (name)
  , m_layout (tags)
 {
-  // Compute identifier string
-  update_identifier ();
+  // This also calls 'update_identifier'
+  set_grid(grid);
 }
 
-FieldIdentifier::FieldIdentifier (const std::string& name,
-                                  const std::initializer_list<FieldTag>& tags)
+FieldIdentifier::
+FieldIdentifier (const std::string& name,
+                 const std::initializer_list<FieldTag>& tags,
+                 const grid_ptr_type grid)
  : m_name   (name)
  , m_layout (tags)
 {
-  update_identifier ();
+  // This also calls 'update_identifier'
+  set_grid(grid);
 }
 
 void FieldIdentifier::set_dimension (const int idim, const int dimension) {
@@ -38,9 +47,23 @@ void FieldIdentifier::set_dimensions (const std::vector<int>& dims) {
   update_identifier ();
 }
 
+void FieldIdentifier::set_grid (const grid_ptr_type grid) {
+  // Only allow overwriting if the stored grid is empty
+  scream_require_msg (!static_cast<bool>(m_grid) || m_grid->type()==GridType::Undefined, "Error! Cannot overwrite a non-empty grid.\n");
+  if (grid==nullptr) {
+    // create empty grid and set that
+    m_grid = std::make_shared<DefaultGrid<GridType::Undefined>>();
+  } else {
+    m_grid = grid;
+  }
+
+  // Update the identifier string
+  update_identifier ();
+}
+
 void FieldIdentifier::update_identifier () {
   // Create a verbose identifier string.
-  m_identifier = m_name + "<" + tag2string(m_layout.tags()[0]);
+  m_identifier = m_name + "[" + e2str(m_grid->type()) + "]<" + tag2string(m_layout.tags()[0]);
   for (int dim=1; dim<m_layout.rank(); ++dim) {
     m_identifier += "," + tag2string(m_layout.tags()[dim]);
   }
