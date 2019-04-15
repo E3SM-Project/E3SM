@@ -518,25 +518,25 @@ contains
 
     call NUOPC_CompAttributeGet(gcomp, name='ATM_model', value=cvalue, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (trim(cvalue) == 'satm') rof_present = "false"
+    if (trim(cvalue) == 'satm') atm_present = "false"
     call NUOPC_CompAttributeGet(gcomp, name='LND_model', value=cvalue, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (trim(cvalue) == 'slnd') rof_present = "false"
+    if (trim(cvalue) == 'slnd') lnd_present = "false"
     call NUOPC_CompAttributeGet(gcomp, name='OCN_model', value=cvalue, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (trim(cvalue) == 'socn') rof_present = "false"
+    if (trim(cvalue) == 'socn') ocn_present = "false"
     call NUOPC_CompAttributeGet(gcomp, name='ICE_model', value=cvalue, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (trim(cvalue) == 'sice') rof_present = "false"
+    if (trim(cvalue) == 'sice') ice_present = "false"
     call NUOPC_CompAttributeGet(gcomp, name='ROF_model', value=cvalue, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     if (trim(cvalue) == 'srof') rof_present = "false"
     call NUOPC_CompAttributeGet(gcomp, name='WAV_model', value=cvalue, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (trim(cvalue) == 'swav') rof_present = "false"
+    if (trim(cvalue) == 'swav') wav_present = "false"
     call NUOPC_CompAttributeGet(gcomp, name='GLC_model', value=cvalue, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (trim(cvalue) == 'sglc') rof_present = "false"
+    if (trim(cvalue) == 'sglc') glc_present = "false"
 
     call NUOPC_CompAttributeSet(gcomp, name="atm_present", value=atm_present, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
