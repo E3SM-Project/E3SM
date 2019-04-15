@@ -26,7 +26,6 @@ struct is_scream_field : public std::false_type {};
 
 template<typename ScalarType, typename Device>
 class Field {
-private:
 public:
 
   using device_type          = Device;
@@ -44,7 +43,6 @@ public:
   // Constructor(s)
   Field () = delete;
   explicit Field (const identifier_type& id);
-  explicit Field (const header_type& header);
 
   // This constructor allows const->const, nonconst->nonconst, and nonconst->const copies
   template<typename SrcDT>
