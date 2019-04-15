@@ -53,9 +53,13 @@ TEST_CASE("remap", "") {
 
   using namespace scream;
 
+  // Some type defs
   using Device = DefaultDevice;
   using PackType = pack::Pack<Real,Homme::VECTOR_SIZE>;
   using Remapper = PhysicsDynamicsRemapper<Real,Device>;
+  using phys_grid_type = Remapper::phys_grid_type;
+  using dyn_grid_type  = Remapper::dyn_grid_type;
+
 
   std::random_device rd;
   std::mt19937_64 engine(rd());
@@ -114,13 +118,11 @@ TEST_CASE("remap", "") {
   };
 
   // Create the columns global id mappings
-  typename Remapper::kt::template view<Int*[NP][NP]> d2p("d2p",num_local_elems);
-  typename Remapper::p2d_map_type p2d("p2d",num_local_columns);
-  typename Remapper::kt::template view<Int*> my_cols("col_gids",num_local_columns);
-  auto h_my_cols = Kokkos::create_mirror_view(my_cols);
+  typename phys_grid_type::dofs_map_type p2d("p2d",num_local_columns);
+  typename dyn_grid_type::dofs_map_type  d2p("d2p",num_local_elems*NP*NP);
 
-  auto h_d2p = Kokkos::create_mirror_view(d2p);
   auto h_p2d = Kokkos::create_mirror_view(p2d);
+  auto h_d2p = Kokkos::create_mirror_view(d2p);
 
   int col_ids[4][16] = { 
                          { 0, 27, 31, 12, 23, 26, 30, 17, 22, 25, 29, 16,  3, 24, 28, 15},
@@ -139,7 +141,11 @@ TEST_CASE("remap", "") {
     for (int i=0; i<NP; ++i) {
       for (int j=0; j<NP; ++j) {
         auto col_gid = col_ids[elem_gid][i*NP+j];
-        h_d2p(ie,i,j) = col_gid;
+        auto elgp = Kokkos::subview(h_d2p,ie*NP*NP+i*NP+j,Kokkos::ALL());
+        elgp(0) = ie;
+        elgp(1) = i;
+        elgp(2) = j;
+        elgp(3) = col_gid;
         // Check if another element already owns the column
         bool found = false;
         for (int prev_elgid=0; prev_elgid<elem_gid; ++prev_elgid) {
@@ -153,17 +159,22 @@ TEST_CASE("remap", "") {
         }
         if (!found) {
           // I own this column
-          h_p2d(col_lid) = {ie,i,j}; 
-          h_my_cols(col_lid) = col_gid;
+          h_p2d(col_lid,0) = ie;
+          h_p2d(col_lid,1) = i;
+          h_p2d(col_lid,2) = j;
+          h_p2d(col_lid,3) = col_gid;
           ++col_lid;
         }
       }
     }
   }
 
-  Kokkos::deep_copy(my_cols,h_my_cols);
   Kokkos::deep_copy(p2d,h_p2d);
   Kokkos::deep_copy(d2p,h_d2p);
+
+  // Create the physics and dynamics grids
+  auto phys_grid = std::make_shared<phys_grid_type>(p2d);
+  auto dyn_grid  = std::make_shared<dyn_grid_type>(d2p);
 
   // Create connectivity, and add the only connection
   // Note: catch2 runs this routine several times, but the connectivity can only be init-ed once, so check first.
@@ -273,14 +284,14 @@ TEST_CASE("remap", "") {
     std::vector<int> vector_3d_phys_dims = {num_local_columns, 2, NUM_PHYSICAL_LEV};
 
     // Create identifiers
-    FieldIdentifier scalar_2d_dyn_fid  ("scalar_2d_dynamics", FieldLayout(scalar_2d_dyn_tags,  scalar_2d_dyn_dims));
-    FieldIdentifier scalar_2d_phys_fid ("scalar_2d_physics",  FieldLayout(scalar_2d_phys_tags, scalar_2d_phys_dims));
-    FieldIdentifier vector_2d_dyn_fid  ("vector_2d_dynamics", FieldLayout(vector_2d_dyn_tags,  vector_2d_dyn_dims));
-    FieldIdentifier vector_2d_phys_fid ("vector_2d_physics",  FieldLayout(vector_2d_phys_tags, vector_2d_phys_dims));
-    FieldIdentifier scalar_3d_dyn_fid  ("scalar_3d_dynamics", FieldLayout(scalar_3d_dyn_tags,  scalar_3d_dyn_dims));
-    FieldIdentifier scalar_3d_phys_fid ("scalar_3d_physics",  FieldLayout(scalar_3d_phys_tags, scalar_3d_phys_dims));
-    FieldIdentifier vector_3d_dyn_fid  ("vector_3d_dynamics", FieldLayout(vector_3d_dyn_tags,  vector_3d_dyn_dims));
-    FieldIdentifier vector_3d_phys_fid ("vector_3d_physics",  FieldLayout(vector_3d_phys_tags, vector_3d_phys_dims));
+    FieldIdentifier scalar_2d_dyn_fid  ("scalar_2d_dynamics", FieldLayout(scalar_2d_dyn_tags,  scalar_2d_dyn_dims), dyn_grid);
+    FieldIdentifier scalar_2d_phys_fid ("scalar_2d_physics",  FieldLayout(scalar_2d_phys_tags, scalar_2d_phys_dims), phys_grid);
+    FieldIdentifier vector_2d_dyn_fid  ("vector_2d_dynamics", FieldLayout(vector_2d_dyn_tags,  vector_2d_dyn_dims), dyn_grid);
+    FieldIdentifier vector_2d_phys_fid ("vector_2d_physics",  FieldLayout(vector_2d_phys_tags, vector_2d_phys_dims), phys_grid);
+    FieldIdentifier scalar_3d_dyn_fid  ("scalar_3d_dynamics", FieldLayout(scalar_3d_dyn_tags,  scalar_3d_dyn_dims), dyn_grid);
+    FieldIdentifier scalar_3d_phys_fid ("scalar_3d_physics",  FieldLayout(scalar_3d_phys_tags, scalar_3d_phys_dims), phys_grid);
+    FieldIdentifier vector_3d_dyn_fid  ("vector_3d_dynamics", FieldLayout(vector_3d_dyn_tags,  vector_3d_dyn_dims), dyn_grid);
+    FieldIdentifier vector_3d_phys_fid ("vector_3d_physics",  FieldLayout(vector_3d_phys_tags, vector_3d_phys_dims), phys_grid);
 
     // Create fields
     Field<Real,Device> scalar_2d_field_in (scalar_2d_phys_fid);
@@ -313,7 +324,7 @@ TEST_CASE("remap", "") {
     vector_3d_field_out.allocate_view();
 
     // Build the remapper, and register the fields
-    std::unique_ptr<Remapper> remapper(new Remapper(p2d));
+    std::unique_ptr<Remapper> remapper(new Remapper(phys_grid,dyn_grid));
     remapper->set_num_fields(4);  // scalar and vector, 2d and 3d.
     remapper->register_field(scalar_2d_field_in, scalar_2d_field_out);
     remapper->register_field(vector_2d_field_in, vector_2d_field_out);
@@ -335,7 +346,7 @@ TEST_CASE("remap", "") {
       auto phys_in = scalar_2d_field_in.template get_reshaped_view<Homme::Real*>();
       auto dyn_out = scalar_2d_field_out.template get_reshaped_view<Homme::Real*[NP][NP]>();
       for (int icol=0; icol<num_local_columns; ++icol) {
-        auto elgp = h_p2d(icol).idx;
+        auto elgp = Kokkos::subview(h_p2d,icol,Kokkos::ALL());
         const int ie = elgp[0];
         const int ip = elgp[1];
         const int jp = elgp[2];
@@ -351,7 +362,7 @@ TEST_CASE("remap", "") {
       auto phys_in = vector_2d_field_in.template get_reshaped_view<Homme::Real**>();
       auto dyn_out = vector_2d_field_out.template get_reshaped_view<Homme::Real**[NP][NP]>();
       for (int icol=0; icol<num_local_columns; ++icol) {
-        auto elgp = h_p2d(icol).idx;
+        auto elgp = Kokkos::subview(h_p2d,icol,Kokkos::ALL());
         const int ie = elgp[0];
         const int ip = elgp[1];
         const int jp = elgp[2];
@@ -369,7 +380,7 @@ TEST_CASE("remap", "") {
       auto phys_in = scalar_3d_field_in.template get_reshaped_view<Homme::Real**>();
       auto dyn_out = scalar_3d_field_out.template get_reshaped_view<Homme::Real*[NP][NP][NUM_PHYSICAL_LEV]>();
       for (int icol=0; icol<num_local_columns; ++icol) {
-        auto elgp = h_p2d(icol).idx;
+        auto elgp = Kokkos::subview(h_p2d,icol,Kokkos::ALL());
         const int ie = elgp[0];
         const int ip = elgp[1];
         const int jp = elgp[2];
@@ -387,7 +398,7 @@ TEST_CASE("remap", "") {
       auto phys_in = vector_3d_field_in.template get_reshaped_view<Homme::Real***>();
       auto dyn_out = vector_3d_field_out.template get_reshaped_view<Homme::Real**[NP][NP][NUM_PHYSICAL_LEV]>();
       for (int icol=0; icol<num_local_columns; ++icol) {
-        auto elgp = h_p2d(icol).idx;
+        auto elgp = Kokkos::subview(h_p2d,icol,Kokkos::ALL());
         const int ie = elgp[0];
         const int ip = elgp[1];
         const int jp = elgp[2];
@@ -427,14 +438,14 @@ TEST_CASE("remap", "") {
     std::vector<int> vector_3d_phys_dims = {num_local_columns, 2, NUM_PHYSICAL_LEV};
 
     // Create identifiers
-    FieldIdentifier scalar_2d_dyn_fid  ("scalar_2d_dynamics", FieldLayout(scalar_2d_dyn_tags,  scalar_2d_dyn_dims));
-    FieldIdentifier scalar_2d_phys_fid ("scalar_2d_physics",  FieldLayout(scalar_2d_phys_tags, scalar_2d_phys_dims));
-    FieldIdentifier vector_2d_dyn_fid  ("vector_2d_dynamics", FieldLayout(vector_2d_dyn_tags,  vector_2d_dyn_dims));
-    FieldIdentifier vector_2d_phys_fid ("vector_2d_physics",  FieldLayout(vector_2d_phys_tags, vector_2d_phys_dims));
-    FieldIdentifier scalar_3d_dyn_fid  ("scalar_3d_dynamics", FieldLayout(scalar_3d_dyn_tags,  scalar_3d_dyn_dims));
-    FieldIdentifier scalar_3d_phys_fid ("scalar_3d_physics",  FieldLayout(scalar_3d_phys_tags, scalar_3d_phys_dims));
-    FieldIdentifier vector_3d_dyn_fid  ("vector_3d_dynamics", FieldLayout(vector_3d_dyn_tags,  vector_3d_dyn_dims));
-    FieldIdentifier vector_3d_phys_fid ("vector_3d_physics",  FieldLayout(vector_3d_phys_tags, vector_3d_phys_dims));
+    FieldIdentifier scalar_2d_dyn_fid  ("scalar_2d_dynamics", FieldLayout(scalar_2d_dyn_tags,  scalar_2d_dyn_dims),  dyn_grid);
+    FieldIdentifier scalar_2d_phys_fid ("scalar_2d_physics",  FieldLayout(scalar_2d_phys_tags, scalar_2d_phys_dims), phys_grid);
+    FieldIdentifier vector_2d_dyn_fid  ("vector_2d_dynamics", FieldLayout(vector_2d_dyn_tags,  vector_2d_dyn_dims),  dyn_grid);
+    FieldIdentifier vector_2d_phys_fid ("vector_2d_physics",  FieldLayout(vector_2d_phys_tags, vector_2d_phys_dims), phys_grid);
+    FieldIdentifier scalar_3d_dyn_fid  ("scalar_3d_dynamics", FieldLayout(scalar_3d_dyn_tags,  scalar_3d_dyn_dims),  dyn_grid);
+    FieldIdentifier scalar_3d_phys_fid ("scalar_3d_physics",  FieldLayout(scalar_3d_phys_tags, scalar_3d_phys_dims), phys_grid);
+    FieldIdentifier vector_3d_dyn_fid  ("vector_3d_dynamics", FieldLayout(vector_3d_dyn_tags,  vector_3d_dyn_dims),  dyn_grid);
+    FieldIdentifier vector_3d_phys_fid ("vector_3d_physics",  FieldLayout(vector_3d_phys_tags, vector_3d_phys_dims), phys_grid);
 
     // Create fields
     Field<Real,Device> scalar_2d_field_in (scalar_2d_dyn_fid);
@@ -467,7 +478,7 @@ TEST_CASE("remap", "") {
     vector_3d_field_out.allocate_view();
 
     // Build the remapper, and register the fields
-    std::unique_ptr<Remapper> remapper(new Remapper(p2d));
+    std::unique_ptr<Remapper> remapper(new Remapper(phys_grid,dyn_grid));
     remapper->set_num_fields(4);  // scalar and vector, 2d and 3d.
     remapper->register_field(scalar_2d_field_out, scalar_2d_field_in);
     remapper->register_field(vector_2d_field_out, vector_2d_field_in);
@@ -508,7 +519,7 @@ TEST_CASE("remap", "") {
       auto dyn_in   = scalar_2d_field_in.template get_reshaped_view<Homme::Real*[NP][NP]>();
       auto phys_out = scalar_2d_field_out.template get_reshaped_view<Homme::Real*>();
       for (int icol=0; icol<num_local_columns; ++icol) {
-        auto elgp = h_p2d(icol).idx;
+        auto elgp = Kokkos::subview(h_p2d,icol,Kokkos::ALL());
         const int ie = elgp[0];
         const int ip = elgp[1];
         const int jp = elgp[2];
@@ -524,7 +535,7 @@ TEST_CASE("remap", "") {
       auto dyn_in   = vector_2d_field_in.template get_reshaped_view<Homme::Real**[NP][NP]>();
       auto phys_out = vector_2d_field_out.template get_reshaped_view<Homme::Real**>();
       for (int icol=0; icol<num_local_columns; ++icol) {
-        auto elgp = h_p2d(icol).idx;
+        auto elgp = Kokkos::subview(h_p2d,icol,Kokkos::ALL());
         const int ie = elgp[0];
         const int ip = elgp[1];
         const int jp = elgp[2];
@@ -542,7 +553,7 @@ TEST_CASE("remap", "") {
       auto dyn_in   = scalar_3d_field_in.template get_reshaped_view<Homme::Real*[NP][NP][NUM_PHYSICAL_LEV]>();
       auto phys_out = scalar_3d_field_out.template get_reshaped_view<Homme::Real**>();
       for (int icol=0; icol<num_local_columns; ++icol) {
-        auto elgp = h_p2d(icol).idx;
+        auto elgp = Kokkos::subview(h_p2d,icol,Kokkos::ALL());
         const int ie = elgp[0];
         const int ip = elgp[1];
         const int jp = elgp[2];
@@ -560,7 +571,7 @@ TEST_CASE("remap", "") {
       auto dyn_in   = vector_3d_field_in.template get_reshaped_view<Homme::Real**[NP][NP]>();
       auto phys_out = vector_3d_field_out.template get_reshaped_view<Homme::Real**>();
       for (int icol=0; icol<num_local_columns; ++icol) {
-        auto elgp = h_p2d(icol).idx;
+        auto elgp = Kokkos::subview(h_p2d,icol,Kokkos::ALL());
         const int ie = elgp[0];
         const int ip = elgp[1];
         const int jp = elgp[2];

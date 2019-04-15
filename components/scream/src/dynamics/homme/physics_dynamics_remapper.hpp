@@ -1,10 +1,13 @@
 #ifndef SCREAM_PHYSICS_DYNAMICS_REMAPPER_HPP
 #define SCREAM_PHYSICS_DYNAMICS_REMAPPER_HPP
 
-#include "share/field/remap/abstract_remapper.hpp"
+#include "share/remap/abstract_remapper.hpp"
+#include "share/remap/remap_utils.hpp"
 #include "share/field/field_tag.hpp"
+#include "share/grid/abstract_grid.hpp"
+#include "share/grid/default_grid.hpp"
 #include "share/scream_pack.hpp"
-#include "share/field/remap/remap_utils.hpp"
+#include "share/scream_assert.hpp"
 
 // Homme includes
 #include "Types.hpp"
@@ -17,28 +20,23 @@ namespace scream
 {
 
 template<>
-struct util::ScalarProperties<Homme::Scalar> {
+struct util::ScalarProperties<::Homme::Scalar> {
   using scalar_type = Homme::Real;
   static constexpr bool is_pack = true;
 };
 
 template<>
-struct util::TypeName<Homme::Scalar> {
+struct util::TypeName<::Homme::Scalar> {
   static std::string name () {
     return "Homme::Scalar";
   }
 };
 
-template<int N>
-struct IntN {
-  Int idx[N];
-};
-
 template<typename DataType,typename ScalarType,typename DeviceType>
-Homme::ExecViewUnmanaged<DataType>
+::Homme::ExecViewUnmanaged<DataType>
 getHommeView(const Field<ScalarType,DeviceType>& f) {
   auto scream_view = f.template get_reshaped_view<DataType>();
-  return Homme::ExecViewUnmanaged<DataType>(scream_view.data(),scream_view.layout());
+  return ::Homme::ExecViewUnmanaged<DataType>(scream_view.data(),scream_view.layout());
 }
 
 // Performs remap from physics to dynamics grids, and viceversa
@@ -54,12 +52,17 @@ public:
   using identifier_type = typename base_type::identifier_type;
   using layout_type     = typename base_type::layout_type;
   using kt              = KokkosTypes<DeviceType>;
-  using p2d_map_type    = typename kt::template view<IntN<3>*>;
+  using phys_grid_type  = DefaultGrid<GridType::Physics>;
+  using dyn_grid_type   = DefaultGrid<GridType::Dynamics>;
 
-  PhysicsDynamicsRemapper (const p2d_map_type& phys_to_dyn_map)
-   : m_phys_to_dyn_map (phys_to_dyn_map)
+  PhysicsDynamicsRemapper (const std::shared_ptr<AbstractGrid> phys_grid,
+                           const std::shared_ptr<AbstractGrid> dyn_grid)
+   : base_type(phys_grid,dyn_grid)
   {
-    // Nothing to do here
+    scream_require_msg(static_cast<bool>(phys_grid), "Error! Invalid input physics grid pointer.\n");
+    scream_require_msg(static_cast<bool>(dyn_grid),  "Error! Invalid input dynamics grid pointer.\n");
+    scream_require_msg(dyn_grid->type()==GridType::Dynamics,  "Error! Input dynamics grid pointer is not a Dynamics grid.\n");
+    scream_require_msg(phys_grid->type()==GridType::Physics,  "Error! Input physics grid pointer is not a Physics grid.\n");
   }
 
   ~PhysicsDynamicsRemapper () = default;
@@ -90,8 +93,6 @@ protected:
 
   void setup_boundary_exchange ();
 
-  p2d_map_type              m_phys_to_dyn_map;
-
   std::vector<field_type>   m_phys;
   std::vector<field_type>   m_dyn;
 
@@ -119,14 +120,13 @@ do_register_field (const field_type& src, const field_type& tgt)
   error::runtime_check(tgt.is_allocated(), "Error! Dynamics field is not yet allocated.\n");
 
 
-  const auto phys = get_layout_specs(src.get_header().get_identifier().get_layout()).first;
-  const auto dyn  = get_layout_specs(tgt.get_header().get_identifier().get_layout()).first;
-  const auto plt = get_layout_specs(src.get_header().get_identifier().get_layout()).second;
-  const auto dlt = get_layout_specs(tgt.get_header().get_identifier().get_layout()).second;
+  const auto phys_grid = src.get_header().get_identifier().get_grid();
+  const auto dyn_grid  = tgt.get_header().get_identifier().get_grid();
+  const auto plt = get_layout_type(src.get_header().get_identifier().get_layout());
+  const auto dlt = get_layout_type(tgt.get_header().get_identifier().get_layout());
 
-  error::runtime_check(phys==PhysDyn::Phys, "Error! Source field does not have a Physics layout.\n");
-  error::runtime_check(dyn==PhysDyn::Dyn, "Error! Target field does not have a Dynamics layout.\n");
-  error::runtime_check(plt!=LayoutType::Tensor2D, "Error! PhysicsDynamicsRemapper does not support 2d tensors yet.\n");
+  error::runtime_check(phys_grid==this->m_src_grid, "Error! Source field does not have a Physics grid.\n");
+  error::runtime_check(dyn_grid==this->m_tgt_grid, "Error! Target field does not have a Dynamics grid.\n");
   error::runtime_check(dlt==plt, "Error! Source and target layouts do not match.\n");
 
   m_phys.push_back(src);
@@ -147,8 +147,8 @@ do_registration_complete ()
   int num_2d = 0;
   int num_3d = 0;
   for (int i=0; i<this->get_num_fields(); ++i) {
-    auto layout = m_dyn[i].get_header().get_identifier().get_layout();
-    auto lt = get_layout_specs(layout).second;
+    const auto& layout = m_dyn[i].get_header().get_identifier().get_layout();
+    const auto lt = get_layout_type(layout);
     switch (lt) {
       case LayoutType::Scalar2D:
         ++num_2d;
@@ -175,8 +175,9 @@ do_registration_complete ()
 
   m_be->set_num_fields(0,num_2d,num_3d);
   for (int i=0; i<this->get_num_fields(); ++i) {
-    auto dims = m_dyn[i].get_header().get_identifier().get_layout().dims();
-    auto lt = get_layout_specs(m_dyn[i].get_header().get_identifier().get_layout()).second;
+    const auto& layout = m_dyn[i].get_header().get_identifier().get_layout();
+    const auto& dims = layout.dims();
+    const auto lt = get_layout_type(layout);
     switch (lt) {
       case LayoutType::Scalar2D:
         m_be->register_field(getHommeView<Real*[NP][NP]>(m_dyn[i]));
@@ -218,7 +219,8 @@ do_remap_fwd() const {
     const auto& phys = m_phys[i];
     const auto& dyn  = m_dyn[i];
 
-    const auto lt = get_layout_specs(phys.get_header().get_identifier().get_layout()).second;
+    const auto& layout = phys.get_header().get_identifier().get_layout();
+    const auto lt = get_layout_type(layout);
     const auto& tgt_alloc_prop = dyn.get_header().get_alloc_properties();
     const auto& src_alloc_prop = phys.get_header().get_alloc_properties();
     using pack_type = pack::Pack<ScalarType,SCREAM_PACK_SIZE>;
@@ -258,7 +260,8 @@ do_remap_bwd() const {
     const auto& phys = m_phys[i];
     const auto& dyn  = m_dyn[i];
 
-    const auto lt = get_layout_specs(phys.get_header().get_identifier().get_layout()).second;
+    const auto& layout = phys.get_header().get_identifier().get_layout();
+    const auto lt = get_layout_type(layout);
     const auto& tgt_alloc_prop = phys.get_header().get_alloc_properties();
     const auto& src_alloc_prop = dyn.get_header().get_alloc_properties();
     using pack_type = pack::Pack<ScalarType,SCREAM_PACK_SIZE>;
@@ -296,7 +299,7 @@ local_remap_fwd_2d(const field_type& src_field, const field_type& tgt_field, con
 {
   using RangePolicy = Kokkos::RangePolicy<typename kt::ExeSpace>;
 
-  auto p2d = m_phys_to_dyn_map;
+  auto p2d = this->m_src_grid->get_dofs_map();
   const int num_cols = p2d.extent_int(0);
 
   switch (lt) {
@@ -306,7 +309,7 @@ local_remap_fwd_2d(const field_type& src_field, const field_type& tgt_field, con
       auto dyn  = tgt_field.template get_reshaped_view<Real*[NP][NP]>();
       Kokkos::parallel_for(RangePolicy(0,num_cols),
                            KOKKOS_LAMBDA(const int icol) {
-        const auto& elgp = p2d(icol).idx;
+        const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
         dyn(elgp[0],elgp[1],elgp[2]) = phys(icol);
       });
       break;
@@ -321,7 +324,7 @@ local_remap_fwd_2d(const field_type& src_field, const field_type& tgt_field, con
         const int icol = idx / dim;
         const int idim = idx % dim;
 
-        const auto& elgp = p2d(icol).idx;
+        const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
         dyn(elgp[0],idim,elgp[1],elgp[2]) = phys(icol,idim);
       });
       break;
@@ -345,7 +348,7 @@ local_remap_fwd_2d(const field_type& src_field, const field_type& tgt_field, con
         const int icol = idx / (dim1*dim2);
         const int dims [2] = { (idx/dim2)%dim1 , idx%dim2 };
 
-        const auto& elgp = p2d(icol).idx;
+        const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
         dyn(elgp[0],dims[ordering[0]],dims[ordering[1]],elgp[1],elgp[2]) = phys(icol,dims[0],dims[1]);
       });
       break;
@@ -361,7 +364,7 @@ void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
 local_remap_fwd_3d_impl(const field_type& src_field, const field_type& tgt_field, const LayoutType lt) const {
   using RangePolicy = Kokkos::RangePolicy<typename kt::ExeSpace>;
 
-  auto p2d = m_phys_to_dyn_map;
+  auto p2d = this->m_src_grid->get_dofs_map();
   const int num_cols = p2d.extent_int(0);
 
   switch (lt) {
@@ -375,7 +378,7 @@ local_remap_fwd_3d_impl(const field_type& src_field, const field_type& tgt_field
         const int icol = idx / NumVerticalLevels;
         const int ilev = idx % NumVerticalLevels;
 
-        const auto& elgp = p2d(icol).idx;
+        const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
         dyn(elgp[0],elgp[1],elgp[2],ilev) = phys(icol,ilev);
       });
       break;
@@ -392,7 +395,7 @@ local_remap_fwd_3d_impl(const field_type& src_field, const field_type& tgt_field
         const int idim = (idx / NumVerticalLevels) % dim;
         const int ilev =  idx % NumVerticalLevels;
 
-        const auto& elgp = p2d(icol).idx;
+        const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
         dyn(elgp[0],idim,elgp[1],elgp[2],ilev) = phys(icol,idim,ilev);
       });
       break;
@@ -418,7 +421,7 @@ local_remap_fwd_3d_impl(const field_type& src_field, const field_type& tgt_field
         const int dims [2] = { (idx/NumVerticalLevels)%dim1 , (idx/NumVerticalLevels)%dim2 };
         const int ilev =  idx % NumVerticalLevels;
 
-        const auto& elgp = p2d(icol).idx;
+        const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
         dyn(elgp[0],dims[ordering[0]],dims[ordering[1]],elgp[1],elgp[1],ilev) = phys(icol,dims[0],dims[1],ilev);
       });
       break;
@@ -433,7 +436,7 @@ void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
 remap_bwd_2d(const field_type& src_field, const field_type& tgt_field, const LayoutType lt) const {
   using RangePolicy = Kokkos::RangePolicy<typename kt::ExeSpace>;
 
-  auto p2d = m_phys_to_dyn_map;
+  auto p2d = this->m_src_grid->get_dofs_map();
   const int num_cols = p2d.extent_int(0);
 
   switch (lt) {
@@ -443,7 +446,7 @@ remap_bwd_2d(const field_type& src_field, const field_type& tgt_field, const Lay
       auto phys = tgt_field.template get_reshaped_view<Real*>();
       Kokkos::parallel_for(RangePolicy(0,num_cols),
                            KOKKOS_LAMBDA(const int icol) {
-        const auto& elgp = p2d(icol).idx;
+        const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
         phys(icol) = dyn(elgp[0],elgp[1],elgp[2]);
       });
       break;
@@ -458,7 +461,7 @@ remap_bwd_2d(const field_type& src_field, const field_type& tgt_field, const Lay
         const int icol = idx / dim;
         const int idim = idx % dim;
 
-        const auto& elgp = p2d(icol).idx;
+        const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
         phys(icol,idim) = dyn(elgp[0],idim,elgp[1],elgp[2]);
       });
       break;
@@ -482,7 +485,7 @@ remap_bwd_2d(const field_type& src_field, const field_type& tgt_field, const Lay
         const int icol = idx / (dim1*dim2);
         const int dims [2] = { (idx/dim2)%dim1 , idx%dim2 };
 
-        const auto& elgp = p2d(icol).idx;
+        const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
         phys(icol,dims[ordering[0]],dims[ordering[1]]) = dyn(elgp[0],dims[0],dims[1],elgp[1],elgp[2]);
       });
       break;
@@ -498,7 +501,7 @@ void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
 remap_bwd_3d_impl(const field_type& src_field, const field_type& tgt_field, const LayoutType lt) const {
   using RangePolicy = Kokkos::RangePolicy<typename kt::ExeSpace>;
 
-  auto p2d = m_phys_to_dyn_map;
+  auto p2d = this->m_src_grid->get_dofs_map();
   const int num_cols = p2d.extent_int(0);
 
   switch (lt) {
@@ -512,7 +515,7 @@ remap_bwd_3d_impl(const field_type& src_field, const field_type& tgt_field, cons
         const int icol = idx / NumVerticalLevels;
         const int ilev = idx % NumVerticalLevels;
 
-        const auto& elgp = p2d(icol).idx;
+        const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
         phys(icol,ilev) = dyn(elgp[0],elgp[1],elgp[2],ilev);
       });
       break;
@@ -529,7 +532,7 @@ remap_bwd_3d_impl(const field_type& src_field, const field_type& tgt_field, cons
         const int idim = (idx / NumVerticalLevels) % dim;
         const int ilev =  idx % NumVerticalLevels;
 
-        const auto& elgp = p2d(icol).idx;
+        const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
         phys(icol,idim,ilev) = dyn(elgp[0],idim,elgp[1],elgp[2],ilev);
       });
       break;
@@ -555,7 +558,7 @@ remap_bwd_3d_impl(const field_type& src_field, const field_type& tgt_field, cons
         const int dims [2] = { (idx / (dim2*NumVerticalLevels)) % dim1 , (idx / NumVerticalLevels) % dim2 };
         const int ilev =  idx % NumVerticalLevels;
 
-        const auto& elgp = p2d(icol).idx;
+        const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
         phys(icol,dims[ordering[0]],dims[ordering[1]],ilev) = dyn(elgp[0],dims[0],dims[1],elgp[1],elgp[2],ilev);
       });
       break;
