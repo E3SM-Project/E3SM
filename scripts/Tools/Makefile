@@ -832,9 +832,7 @@ ifeq ($(ULIBDEP),$(null))
      ULIBDEP += $(LIBROOT)/librof.a
      ULIBDEP += $(LIBROOT)/libglc.a
      ULIBDEP += $(LIBROOT)/libwav.a
-     ifneq ($(COMP_INTERFACE), nuopc)
-       ULIBDEP += $(LIBROOT)/libiac.a
-     endif
+     ULIBDEP += $(LIBROOT)/libiac.a
      ULIBDEP += $(LIBROOT)/libesp.a
      ifeq ($(COMP_GLC), cism)
        ULIBDEP += $(CISM_LIBDIR)/libglimmercismfortran.a
