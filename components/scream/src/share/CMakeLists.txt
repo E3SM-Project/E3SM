@@ -30,6 +30,9 @@ set(SHARE_HEADERS
   field/field_tracking.cpp
   field/remap/abstract_remapper.hpp
   field/remap/remap_utils.hpp
+  grid/abstract_grid.hpp
+  grid/default_grid.hpp
+  grid/grid_utils.hpp
   parameter_list.hpp
   scream_session.hpp
   mpi/scream_comm.hpp
