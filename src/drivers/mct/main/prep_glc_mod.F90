@@ -32,7 +32,8 @@ module prep_glc_mod
   public :: prep_glc_init
   public :: prep_glc_mrg_lnd
 
-  public :: prep_glc_accum
+  public :: prep_glc_accum_lnd
+  public :: prep_glc_accum_ocn
   public :: prep_glc_accum_avg
 
   public :: prep_glc_calc_l2x_gx
@@ -398,61 +399,80 @@ contains
 
   !================================================================================================
 
-  subroutine prep_glc_accum(lnd_c2_glc, ocn_c2_glc, timer)
+  subroutine prep_glc_accum_lnd(timer)
 
     !---------------------------------------------------------------
     ! Description
-    ! Accumulate glc inputs
+    ! Accumulate glc inputs from lnd
     !
     ! Arguments
-    logical         , intent(in) :: lnd_c2_glc ! .true.  => lnd to glc coupling on
-    logical         , intent(in) :: ocn_c2_glc ! .true.  => ocn to glc (iceshelf) coupling on
     character(len=*), intent(in) :: timer
     !
     ! Local Variables
-    integer :: eli, egi
+    integer :: eli
     type(mct_avect), pointer :: l2x_lx
-    type(mct_avect), pointer :: x2g_gx
 
-    character(*), parameter :: subname = '(prep_glc_accum)'
+    character(*), parameter :: subname = '(prep_glc_accum_lnd)'
     !---------------------------------------------------------------
 
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
-    if (lnd_c2_glc) then
-       do eli = 1,num_inst_lnd
-          l2x_lx => component_get_c2x_cx(lnd(eli))
-          if (l2gacc_lx_cnt == 0) then
-             call mct_avect_copy(l2x_lx, l2gacc_lx(eli))
-          else
-             call mct_avect_accum(l2x_lx, l2gacc_lx(eli))
-          endif
-       end do
-       l2gacc_lx_cnt = l2gacc_lx_cnt + 1
-    end if
-
-    if (ocn_c2_glc) then
-       do egi = 1,num_inst_glc
-          x2g_gx => component_get_x2c_cx(glc(egi))
-          if (x2gacc_gx_cnt == 0) then
-             call mct_avect_copy(x2g_gx, x2gacc_gx(egi))
-          else
-             call mct_avect_accum(x2g_gx, x2gacc_gx(egi))
-          endif
-       end do
-       x2gacc_gx_cnt = x2gacc_gx_cnt + 1
-    end if
-
+    do eli = 1,num_inst_lnd
+       l2x_lx => component_get_c2x_cx(lnd(eli))
+       if (l2gacc_lx_cnt == 0) then
+          call mct_avect_copy(l2x_lx, l2gacc_lx(eli))
+       else
+          call mct_avect_accum(l2x_lx, l2gacc_lx(eli))
+       endif
+    end do
+    l2gacc_lx_cnt = l2gacc_lx_cnt + 1
     call t_drvstopf  (trim(timer))
 
-  end subroutine prep_glc_accum
+  end subroutine prep_glc_accum_lnd
 
   !================================================================================================
+
+  subroutine prep_glc_accum_ocn(timer)
+
+    !---------------------------------------------------------------
+    ! Description
+    ! Accumulate glc inputs from ocn
+    !
+    ! Arguments
+    character(len=*), intent(in) :: timer
+    !
+    ! Local Variables
+    integer :: egi
+    type(mct_avect), pointer :: x2g_gx
+
+    character(*), parameter :: subname = '(prep_glc_accum_ocn)'
+    !---------------------------------------------------------------
+
+    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
+    do egi = 1,num_inst_glc
+       x2g_gx => component_get_x2c_cx(glc(egi))
+       if (x2gacc_gx_cnt == 0) then
+          call mct_avect_copy(x2g_gx, x2gacc_gx(egi))
+       else
+          call mct_avect_accum(x2g_gx, x2gacc_gx(egi))
+       endif
+    end do
+    x2gacc_gx_cnt = x2gacc_gx_cnt + 1
+    call t_drvstopf  (trim(timer))
+
+  end subroutine prep_glc_accum_ocn
+
+  !================================================================================================
+
 
   subroutine prep_glc_accum_avg(timer)
 
     !---------------------------------------------------------------
     ! Description
     ! Finalize accumulation of glc inputs
+    ! Note: There could be separate accum_avg routines for forcing coming
+    ! from each component (LND and OCN), but they can be combined here
+    ! by taking advantage of l2gacc_lx_cnt and x2gacc_gx_cnt variables
+    ! that will only be greater than 0 if corresponding coupling is enabled.
     !
     ! Arguments
     character(len=*), intent(in) :: timer
@@ -464,6 +484,7 @@ contains
     character(*), parameter :: subname = '(prep_glc_accum_avg)'
     !---------------------------------------------------------------
 
+    ! Accumulation for LND
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     if (l2gacc_lx_cnt > 1) then
        do eli = 1,num_inst_lnd
@@ -472,19 +493,18 @@ contains
     end if
     l2gacc_lx_cnt = 0
 
-    do egi = 1,num_inst_glc
-       ! temporary formation of average
-       if (x2gacc_gx_cnt > 1) then
-	  call mct_avect_avg(x2gacc_gx(egi), x2gacc_gx_cnt)
-       end if
+    ! Accumulation for OCN
+    if (x2gacc_gx_cnt > 1) then
+       do egi = 1,num_inst_glc
+          ! temporary formation of average
+          call mct_avect_avg(x2gacc_gx(egi), x2gacc_gx_cnt)
 
-       ! ***NOTE***THE FOLLOWING ACTUALLY MODIFIES x2g_gx
-       x2g_gx	=> component_get_x2c_cx(glc(egi))
-       call mct_avect_copy(x2gacc_gx(egi), x2g_gx)
-    enddo
+          ! ***NOTE***THE FOLLOWING ACTUALLY MODIFIES x2g_gx
+          x2g_gx => component_get_x2c_cx(glc(egi))
+          call mct_avect_copy(x2gacc_gx(egi), x2g_gx)
+       enddo
+    end if
     x2gacc_gx_cnt = 0
-
-
 
     call t_drvstopf  (trim(timer))
 
