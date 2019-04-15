@@ -151,7 +151,7 @@
 !/ ------------------------------------------------------------------- /
       use w3gdatmd, only: dtmax, dtcfl, dtcfli, dtmin, nx, ny, nseal, mapsf, mapsta, x0, y0, sx, sy, w3nmod, w3setg
       use w3wdatmd, only: time, w3ndat, w3setw
-      use w3adatmd, only: ussx, ussy, w3naux, w3seta !SB, lamult
+      use w3adatmd, only: ussx, ussy, w3naux, w3seta, sxx, sxy, syy !SB, lamult
       use w3idatmd, only: inflags1, w3seti, w3ninp
       USE W3IDATMD, ONLY: TC0, CX0, CY0, TCN, CXN, CYN
       USE W3IDATMD, ONLY: TW0, WX0, WY0, DT0, TWN, WXN, WYN, DTN
@@ -175,7 +175,7 @@
 
       use ww3_cpl_indices  , only : ww3_cpl_indices_set
       use ww3_cpl_indices  , only : index_x2w_Sa_u, index_x2w_Sa_v, index_x2w_Sa_tbot, index_x2w_Si_ifrac
-      use ww3_cpl_indices  , only : index_x2w_So_t, index_x2w_So_u, index_x2w_So_v, index_x2w_So_bldepth
+      use ww3_cpl_indices  , only : index_x2w_So_t, index_x2w_So_u, index_x2w_So_v, index_x2w_So_bldepth, index_x2w_So_ssh
       use ww3_cpl_indices  , only : index_w2x_Sw_lamult, index_w2x_Sw_ustokes
       use ww3_cpl_indices  , only : index_w2x_Sw_vstokes, index_w2x_Sw_hstokes
       use ww3_cpl_indices  , only : index_w2x_Sw_Sxx, index_w2x_Sw_Sxy, index_w2x_Sw_Syy
