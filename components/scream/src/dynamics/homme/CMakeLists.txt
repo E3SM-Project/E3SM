@@ -73,9 +73,7 @@ MACRO (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE USE_PIO USE_ENERGY)
     SET (HOMME_INCLUDE_DIRS ${EXEC_INCLUDE_DIRS})
 
     SET (SCREAM_DYNAMICS_SOURCES
-         ${SCREAM_DYNAMICS_SRC_DIR}/atmosphere_dynamics.cpp
          ${SCREAM_DYNAMICS_SRC_DIR}/homme_dynamics.cpp
-         # ${SCREAM_DYNAMICS_SRC_DIR}/scream_homme_interface.F90
          ${PREQX_DEPS_CXX}
          ${PREQX_DEPS_F90}
     )
