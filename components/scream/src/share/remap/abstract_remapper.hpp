@@ -5,7 +5,8 @@
 #include "share/util/factory.hpp"
 #include "share/util/string_utils.hpp"
 #include "share/parameter_list.hpp"
-#include "share/field/remap/remap_utils.hpp"
+#include "share/remap/remap_utils.hpp"
+#include "share/grid/abstract_grid.hpp"
 
 namespace scream
 {
@@ -26,7 +27,8 @@ public:
   using identifier_type   = typename field_type::identifier_type;
   using layout_type       = typename identifier_type::layout_type;
 
-  AbstractRemapper ();
+  AbstractRemapper (const std::shared_ptr<AbstractGrid> src_grid,
+                    const std::shared_ptr<AbstractGrid> tgt_grid);
 
   virtual ~AbstractRemapper () = default;
 
@@ -78,13 +80,20 @@ protected:
 
   // The number of fields to remap
   int           m_num_fields;
+
+  // The grids associated with the src and tgt fields
+  std::shared_ptr<AbstractGrid> m_src_grid;
+  std::shared_ptr<AbstractGrid> m_tgt_grid;
 };
 
 template<typename ScalarType, typename DeviceType>
 AbstractRemapper<ScalarType,DeviceType>::
-AbstractRemapper ()
+AbstractRemapper (const std::shared_ptr<AbstractGrid> src_grid,
+                  const std::shared_ptr<AbstractGrid> tgt_grid)
  : m_state      (RepoState::Clean)
  , m_num_fields (0)
+ , m_src_grid   (src_grid)
+ , m_tgt_grid   (tgt_grid)
 {
   // Nothing to do here
 }
@@ -111,6 +120,11 @@ register_field (const field_type& src, const field_type& tgt) {
   error::runtime_check(m_state!=RepoState::Closed,
                        "Error! Cannot register fields in the remapper at this time.\n"
                        "       Did you accidentally call 'registration_complete' already?");
+
+  error::runtime_check(src.get_header().get_identifier().get_grid()==m_src_grid,
+                       "Error! Source field stores the wrong grid.\n");
+  error::runtime_check(src.get_header().get_identifier().get_grid()==m_src_grid,
+                       "Error! Target field stores the wrong grid.\n");
 
   do_register_field(src,tgt);
 }
