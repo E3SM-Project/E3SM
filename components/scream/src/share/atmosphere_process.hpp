@@ -12,6 +12,7 @@
 #include "share/field/field.hpp"
 #include "share/util/factory.hpp"
 #include "share/util/string_utils.hpp"
+#include "share/grid/grids_manager.hpp"
 #include "share/parameter_list.hpp"
 
 namespace scream
@@ -40,6 +41,9 @@ public:
   // The type of the process (e.g., dynamics or physics)
   virtual AtmosphereProcessType type () const = 0;
 
+  // The type of grids needed by the process
+  virtual std::set<GridType> get_required_grids () const = 0;
+
   // The name of the process
   virtual std::string name () const = 0;
 
@@ -59,7 +63,7 @@ public:
   // run method can (and usually will) be called multiple times.
   // We should put asserts to verify that the process has been init-ed, when
   // run/finalize is called.
-  virtual void initialize (const Comm& comm) = 0;
+  virtual void initialize (const Comm& comm, const std::shared_ptr<const GridsManager> grids_manager) = 0;
   virtual void run        (/* what inputs? */) = 0;
   virtual void finalize   (/* what inputs? */) = 0;
 

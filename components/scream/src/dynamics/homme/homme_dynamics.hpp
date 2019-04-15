@@ -29,6 +29,12 @@ public:
   // The type of the subcomponent (dynamics or physics)
   AtmosphereProcessType type () const { return AtmosphereProcessType::Dynamics; }
 
+  std::set<GridType> get_required_grids () const {
+    static std::set<GridType> s;
+    s.insert(GridType::Dynamics);
+    return s;
+  }
+
   // The name of the subcomponent
   std::string name () const { return "dynamics"; }
 
@@ -36,7 +42,7 @@ public:
   const Comm& get_comm () const { return m_dynamics_comm; }
 
   // These are the three main interfaces:
-  void initialize (const Comm& comm);
+  void initialize (const Comm& comm, const std::shared_ptr<const GridsManager> grids_manager);
   void run        (/* what inputs? */);
   void finalize   (/* what inputs? */);
 

@@ -13,6 +13,13 @@ public:
   // The type of the block (dynamics or physics)
   AtmosphereProcessType type () const { return PType; }
 
+  // The type of grids on which the process is defined
+  std::set<GridType> get_required_grids () const {
+    static std::set<GridType> s;
+    s.insert(GridType::Undefined);
+    return s;
+  }
+
   // Return some sort of name, linked to PType
   std::string name () const { return e2str(PType); }
 
@@ -21,7 +28,10 @@ public:
 
   // The initialization method should prepare all stuff needed to import/export from/to
   // f90 structures.
-  void initialize (const Comm& comm) { m_comm = comm; }
+  void initialize (const Comm& comm, const std::shared_ptr<const GridsManager> grids_manager) {
+    m_comm = comm;
+    (void) grids_manager;
+  }
 
   // The run method is responsible for exporting atm states to the e3sm coupler, and
   // import surface states from the e3sm coupler.

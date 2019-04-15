@@ -8,7 +8,7 @@ namespace scream {
 
 namespace control {
 
-void AtmosphereDriver::initialize (const Comm& atm_comm, const ParameterList& params /* inputs? */ ) {
+void AtmosphereDriver::initialize (const Comm& atm_comm, const ParameterList& params) {
   m_atm_comm = atm_comm;
   m_atm_params = params;
 
@@ -17,8 +17,13 @@ void AtmosphereDriver::initialize (const Comm& atm_comm, const ParameterList& pa
   // See AtmosphereProcessGroup class documentation for more details.
   m_atm_process_group = std::make_shared<AtmosphereProcessGroup>(m_atm_params.sublist("Atmosphere Processes"));
 
+  // Create the grids manager
+  auto& gm_params = m_atm_params.sublist("Grids Manager");
+  const std::string& gm_type = gm_params.get<std::string>("Type");
+  m_grids_manager.reset(GridsManagerFactory::instance().create(gm_type,gm_params));
+
   // Initialize the processes
-  m_atm_process_group->initialize(m_atm_comm);
+  m_atm_process_group->initialize(m_atm_comm,m_grids_manager);
 
   // Let the processes register their fields in the repo
   m_device_field_repo.registration_begins();

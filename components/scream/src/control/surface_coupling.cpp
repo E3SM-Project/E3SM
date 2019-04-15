@@ -7,7 +7,7 @@ SurfaceCoupling::SurfaceCoupling (const ParameterList& /*params*/)
   // Grab what you need from the parameter list
 }
 
-void SurfaceCoupling::initialize (const Comm& comm) {
+void SurfaceCoupling::initialize (const Comm& comm, const std::shared_ptr<const GridsManager> /* grids_manager */) {
   m_comm = comm;
   // Initialize the FieldRepository (FR) for host fields
   // (i.e., fields that are I/O w.r.t the coupler)
