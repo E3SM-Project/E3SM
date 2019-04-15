@@ -2546,36 +2546,6 @@ contains
        !----------------------------------------------------------
        !| GLC SETUP-SEND
        !----------------------------------------------------------
-       if (glc_present) then
-
-          if (ocn_c2_glc) then
-             call prep_glc_calc_o2x_gx(timer='CPL:glcprep_ocn2glc') !remap ocean fields to o2x_g at atmospheric timestep
-          end if
-
-          if (glc_c2_ocn) then
-             call prep_glc_calculate_subshelf_boundary_fluxes! this outputs
-                                           !x2g_g/g2x_g, where latter is going
-                                           !to ocean, so should get remapped to
-                                           !ocean grid in prep_ocn_shelf_calc_g2x_ox
-             call prep_ocn_shelf_calc_g2x_ox(timer='CPL:glcpost_glcshelf2ocn')
-                                           !Map g2x_gx shelf fields that were updated above, to g2x_ox.
-                                           !Do this at intrinsic coupling
-                                           !frequency
-             call prep_ice_shelf_calc_g2x_ix(timer='CPL:glcpost_glcshelf2ice')
-                                           !Map g2x_gx shelf fields to g2x_ix.
-                                           !Do this at intrinsic coupling
-                                           !frequency.  This is perhaps an
-                                           !unnecessary place to put this
-                                           !call, since these fields aren't
-                                           !changing on the intrinsic
-                                           !timestep.  But I don't think it's
-                                           !unsafe to do it here.
-          endif
-
-          call prep_glc_accum(lnd_c2_glc, timer='CPL:glcprep_accum') !accum x2g_g fields here into x2g_gacc, along with l2gacc_lx
-
-       endif
-
        if (glc_present .and. glcrun_alarm) then
           call cime_run_glc_setup_send(lnd2glc_averaged_now)
        endif
@@ -3642,6 +3612,8 @@ contains
        call component_diag(infodata, ocn, flow='c2x', comment= 'recv ocn', &
             info_debug=info_debug, timer_diag='CPL:ocnpost_diagav')
 
+       call cime_run_ocnglc_coupling()
+
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
        call t_drvstopf  ('CPL:OCNPOSTT',cplrun=.true.)
     endif
@@ -3703,6 +3675,47 @@ contains
     end if
 
   end subroutine cime_run_atmocn_setup
+
+!----------------------------------------------------------------------------------
+
+  subroutine cime_run_ocnglc_coupling()
+    !---------------------------------------
+    ! Description: Run calculation of coupling fluxes between OCN and GLC
+    !    Note: this happens in the coupler to allow it be calculated on the
+    !    ocean time step but the GLC grid.
+    !---------------------------------------
+
+    if (glc_present) then
+
+          if (ocn_c2_glc) then
+             call prep_glc_calc_o2x_gx(timer='CPL:glcprep_ocn2glc') !remap ocean fields to o2x_g at atmospheric timestep
+          end if
+
+          if (glc_c2_ocn) then
+             call prep_glc_calculate_subshelf_boundary_fluxes! this outputs
+                                           !x2g_g/g2x_g, where latter is going
+                                           !to ocean, so should get remapped to
+                                           !ocean grid in prep_ocn_shelf_calc_g2x_ox
+             call prep_ocn_shelf_calc_g2x_ox(timer='CPL:glcpost_glcshelf2ocn')
+                                           !Map g2x_gx shelf fields that were updated above, to g2x_ox.
+                                           !Do this at intrinsic coupling
+                                           !frequency
+             call prep_ice_shelf_calc_g2x_ix(timer='CPL:glcpost_glcshelf2ice')
+                                           !Map g2x_gx shelf fields to g2x_ix.
+                                           !Do this at intrinsic coupling
+                                           !frequency.  This is perhaps an
+                                           !unnecessary place to put this
+                                           !call, since these fields aren't
+                                           !changing on the intrinsic
+                                           !timestep.  But I don't think it's
+                                           !unsafe to do it here.
+          endif
+
+          call prep_glc_accum_ocn(timer='CPL:glcprep_accum_ocn') !accum x2g_g fields here into x2g_gacc, along with l2gacc_lx
+
+       endif
+
+  end subroutine cime_run_ocnglc_coupling
 
 !----------------------------------------------------------------------------------
 
@@ -3772,7 +3785,7 @@ contains
 
        ! Accumulate rof and glc inputs (module variables in prep_rof_mod and prep_glc_mod)
        if (lnd_c2_rof) call prep_rof_accum(timer='CPL:lndpost_accl2r')
-       if (lnd_c2_glc) call prep_glc_accum(.true., timer='CPL:lndpost_accl2g' )
+       if (lnd_c2_glc) call prep_glc_accum_lnd(timer='CPL:lndpost_accl2g' )
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
        call t_drvstopf  ('CPL:LNDPOST',cplrun=.true.)
@@ -3797,7 +3810,7 @@ contains
        ! NOTE - only create appropriate input to glc if the avg_alarm is on
        if (glcrun_avg_alarm) then
           if (lnd_c2_glc .or. ocn_c2_glc) then
-             call prep_glc_accum_avg(lnd_c2_glc, ocn_c2_glc, timer='CPL:glcprep_avg')
+             call prep_glc_accum_avg(timer='CPL:glcprep_avg')
 
              if (lnd_c2_glc) then
                 lnd2glc_averaged_now = .true.
