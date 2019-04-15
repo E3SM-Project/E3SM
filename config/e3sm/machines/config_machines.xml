@@ -1973,6 +1973,104 @@
     </environment_variables>
   </machine>
 
+  <machine MACH="compy">
+    <DESC>PNL E3SM Intel Xeon Gold 6148(Skylake) nodes, OS is Linux, SLURM</DESC>
+    <NODENAME_REGEX>compy</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>intel,pgi,gnu</COMPILERS>
+    <MPILIBS>mvapich2,openmpi</MPILIBS>
+    <CIME_OUTPUT_ROOT>/compyfs/$USER/e3sm_scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/compyfs/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/compyfs/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/compyfs/$USER/e3sm_scratch/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/compyfs/e3sm_baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/compyfs/e3sm_baselines/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>8</GMAKE_J>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>bibi.mathew -at- pnnl.gov</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>40</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>40</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <mpirun mpilib="mpi-serial">
+      <executable/>
+    </mpirun>
+    <mpirun mpilib="mvapich2">
+      <executable>srun</executable>
+      <arguments>
+        <arg name="mpi">--mpi=none</arg>
+        <arg name="num_tasks">--ntasks={{ total_tasks }}</arg>
+        <arg name="cpu_bind">--cpu_bind=sockets --cpu_bind=verbose</arg>
+        <arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="intelmpi">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="num_tasks">-n {{ total_tasks }}</arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="openmpi">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="num_tasks">-n {{ total_tasks }}</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="perl">/share/apps/modules/init/perl.pm</init_path>
+      <init_path lang="python">/share/apps/modules/init/python.py</init_path>
+      <init_path lang="csh">/etc/profile.d/modules.csh</init_path>
+      <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
+      <cmd_path lang="perl"> /share/apps/modules/bin/modulecmd  perl</cmd_path>
+      <cmd_path lang="python">/share/apps/modules/bin/modulecmd python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+        <command name="purge"/>
+      </modules>
+      <modules compiler="intel">
+        <command name="load">intel/19.0.3</command>
+        <command name="load">mkl/2019u3</command>
+      </modules>
+      <modules compiler="pgi">
+        <command name="load">pgi/19.1</command>
+	<command name="load">mkl/2019u3</command>
+      </modules>
+      <modules compiler="gnu">
+        <command name="load">gcc/4.8.5</command>
+	<command name="load">mkl/2019u3</command>
+      </modules>
+      <modules mpilib="mvapich2" compiler="intel">
+        <command name="load">mvapich2/2.3.1</command>
+      </modules>
+      <modules mpilib="mvapich2" compiler="pgi">
+        <command name="load">mvapich2/2.3.1</command>
+      </modules>
+      <modules mpilib="mvapich2" compiler="gnu">
+        <command name="load">mvapich2/2.3.1</command>
+      </modules>
+      <modules mpilib="openmpi">
+        <command name="load">openmpi/3.1.3</command>
+      </modules>
+      <modules compiler="intel">
+        <command name="load">netcdf/4.6.3</command>
+      </modules>
+      <modules compiler="pgi">
+        <command name="load">netcdf/4.6.3</command>
+      </modules>
+      <modules compiler="gnu">
+        <command name="load">netcdf/4.6.3</command>
+      </modules>
+    </module_system>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <environment_variables>
+      <env name="OMP_STACKSIZE">64M</env>
+      <env name="NETCDF_HOME">$ENV{NETCDF_ROOT}/</env>
+    </environment_variables>
+    <environment_variables compiler="intel">
+      <env name="MKL_PATH">$ENV{MKLROOT}</env>
+    </environment_variables>
+  </machine>
 
   <machine MACH="oic5">
     <DESC>ORNL XK6, os is Linux, 32 pes/node, batch system is PBS</DESC>
