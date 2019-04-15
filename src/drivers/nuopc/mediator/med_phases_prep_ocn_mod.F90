@@ -1,12 +1,12 @@
 module med_phases_prep_ocn_mod
 
+  !-----------------------------------------------------------------------------
+  ! Mediator phases for preparing ocn export from mediator
+  !-----------------------------------------------------------------------------
+
   use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
   use shr_nuopc_utils_mod   , only : shr_nuopc_memcheck
   use med_internalstate_mod , only : mastertask
-
-  !-----------------------------------------------------------------------------
-  ! Carry out fast accumulation for the ocean
-  !-----------------------------------------------------------------------------
 
   implicit none
   private
@@ -86,6 +86,7 @@ contains
                   is_local%wrap%FBImp(n1,n1), &
                   is_local%wrap%FBImp(n1,compocn), &
                   is_local%wrap%FBFrac(n1), &
+                  is_local%wrap%FBFrac(compocn), &
                   is_local%wrap%FBNormOne(n1,compocn,:), &
                   is_local%wrap%RH(n1,compocn,:), &
                   string=trim(compname(n1))//'2'//trim(compname(compocn)), rc=rc)
@@ -113,7 +114,7 @@ contains
     use shr_nuopc_methods_mod , only : FB_GetFldPtr => shr_nuopc_methods_FB_GetFldPtr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getNumFlds
-    use med_constants_mod     , only : R8
+    use med_constants_mod     , only : R8, CS
     use med_internalstate_mod , only : InternalState, mastertask, logunit
     use med_merge_mod         , only : med_merge_auto, med_merge_field
     use esmFlds               , only : fldListTo
@@ -137,6 +138,7 @@ contains
     real(R8), pointer   :: Faxa_swvdf(:), Faxa_swndf(:)
     real(R8), pointer   :: Faxa_swvdr(:), Faxa_swndr(:)
     real(R8), pointer   :: Foxx_swnet(:)
+    real(R8), pointer   :: Foxx_swnet_afracr(:)
     real(R8), pointer   :: Foxx_swnet_vdr(:), Foxx_swnet_vdf(:)
     real(R8), pointer   :: Foxx_swnet_idr(:), Foxx_swnet_idf(:)
     real(R8), pointer   :: Fioi_swpen_vdr(:), Fioi_swpen_vdf(:)
@@ -146,18 +148,21 @@ contains
     real(R8), pointer   :: Foxx_lwnet(:)
     real(R8), pointer   :: Faox_lwup(:)
     real(R8), pointer   :: Faxa_lwdn(:)
+    real(R8), pointer   :: dataptr_i(:), dataptr_o(:)
     real(R8)            :: ifrac_scaled, ofrac_scaled
     real(R8)            :: ifracr_scaled, ofracr_scaled
     real(R8)            :: frac_sum
     real(R8)            :: albvis_dir, albvis_dif
     real(R8)            :: albnir_dir, albnir_dif
     real(R8)            :: fswabsv, fswabsi
-    real(R8)            :: flux_epbalfact
     logical             :: export_swnet_by_bands
     logical             :: import_swpen_by_bands
-    logical             :: first_call = .true.
+    logical             :: export_swnet_afracr
+    logical             :: first_precip_fact_call = .true.
+    real(R8)            :: precip_fact
     integer             :: lsize
     integer             :: dbrc
+    character(CS)       :: cvalue
     ! NEMS-orig
     real(R8), pointer   :: ocnwgt1(:)
     real(R8), pointer   :: icewgt1(:)
@@ -193,7 +198,7 @@ contains
     call shr_nuopc_methods_FB_getNumFlds(is_local%wrap%FBExp(compocn), trim(subname)//"FBexp(compocn)", ncnt, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (ncnt >= 0) then
+    if (ncnt > 0) then
 
        !---------------------------------------
        !--- auto merges to ocn
@@ -203,14 +208,12 @@ contains
           call med_merge_auto(trim(compname(compocn)), &
                is_local%wrap%FBExp(compocn), is_local%wrap%FBFrac(compocn), &
                is_local%wrap%FBImp(:,compocn), fldListTo(compocn), &
-               FBMed1=is_local%wrap%FBMed_aoflux_o, &
-               document=first_call, string='(merge_to_ocn)', mastertask=mastertask, rc=rc)
+               FBMed1=is_local%wrap%FBMed_aoflux_o, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        else if (trim(coupling_mode) == 'nems_frac') then
           call med_merge_auto(trim(compname(compocn)), &
                is_local%wrap%FBExp(compocn), is_local%wrap%FBFrac(compocn), &
-               is_local%wrap%FBImp(:,compocn), fldListTo(compocn), &
-               document=first_call, string='(merge_to_ocn)', mastertask=mastertask, rc=rc)
+               is_local%wrap%FBImp(:,compocn), fldListTo(compocn), rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
 
@@ -276,7 +279,7 @@ contains
          end if
        end if
 
-       ! Output to ocean
+       ! Output to ocean swnet 
        if (fldchk(is_local%wrap%FBExp(compocn), 'Foxx_swnet', rc=rc)) then
           call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_swnet',  Foxx_swnet, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -284,6 +287,8 @@ contains
           lsize = size(Faxa_swvdr)
           allocate(Foxx_swnet(lsize))
        end if
+
+       ! Output to ocean swnet by radiation bands
        if (fldchk(is_local%wrap%FBExp(compocn), 'Foxx_swnet_vdr', rc=rc)) then
           export_swnet_by_bands = .true.
           call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_swnet_vdr', Foxx_swnet_vdr, rc=rc)
@@ -296,6 +301,15 @@ contains
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        else
           export_swnet_by_bands = .false.
+       end if
+
+       ! Swnet without swpen from sea-ice
+       if ( fldchk(is_local%wrap%FBExp(compocn), 'Foxx_swnet_afracr',rc=rc)) then
+          call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Foxx_swnet_afracr', Foxx_swnet_afracr, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          export_swnet_afracr = .true.
+       else
+          export_swnet_afracr = .false.
        end if
 
        do n = 1,lsize
@@ -317,6 +331,10 @@ contains
           fswabsv  = Faxa_swvdr(n) * (1.0_R8 - albvis_dir) + Faxa_swvdf(n) * (1.0_R8 - albvis_dif)
           fswabsi  = Faxa_swndr(n) * (1.0_R8 - albnir_dir) + Faxa_swndf(n) * (1.0_R8 - albnir_dif)
           Foxx_swnet(n) = fswabsv + fswabsi
+
+          if (export_swnet_afracr) then
+             Foxx_swnet_afracr(n) = fswabsv + fswabsi
+          end if
 
           ! Add swpen from sea ice if sea ice is present
           if (is_local%wrap%comp_present(compice)) then
@@ -360,35 +378,61 @@ contains
                    Foxx_swnet_idf(n) = c4 * Foxx_swnet(n)
                 end if
              end if
-             ! TODO (mvertens, 2018-12-16): fill in the following
-             ! if (i2o_per_cat) then
-             !   Sf_ofrac(n)  = ofrac(n)
-             !   Sf_ofracr(n) = ofracr(n)
-             !   Foxx_swnet_ofracr(n) = (fswabsv + fswabsi) * ofracr_scaled
-             ! end if
           end if  ! if sea-ice is present
        end do
 
-       !-------------
-       ! custom calculation for cesm coupling
-       !-------------
-       if (trim(coupling_mode) == 'cesm') then
+       ! Output to ocean per ice thickness fraction and sw penetrating into ocean
+       if ( fldchk(is_local%wrap%FBImp(compice,compice), 'Si_ifrac_n', rc=rc) .and. &
+            fldchk(is_local%wrap%FBExp(compocn)        , 'Si_ifrac_n', rc=rc)) then
 
-          ! scale precipitation and runoff by epbalfact
-          ! TODO (mvertens, 2018-12-16): the calculation needs to be set
-          ! at run time based on receiving it from the ocean
-          flux_epbalfact = 1.0_r8
+          call FB_GetFldPtr(is_local%wrap%FBImp(compice,compice), 'Si_ifrac_n', dataptr_i, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Si_ifrac_n', dataptr_o, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          dataptr_o(:) = dataptr_i(:)
+       end if
 
-          allocate(fldnames(5))
-          fldnames = (/'Foxx_rain',' Foxx_snow', 'Foxx_prec', 'Foxx_rofl', 'Foxx_rofi'/)
+       if ( fldchk(is_local%wrap%FBImp(compice,compice), 'Fioi_swpen_ifrac_n', rc=rc) .and. &
+            fldchk(is_local%wrap%FBExp(compocn)        , 'Fioi_swpen_ifrac_n', rc=rc)) then
+
+          call FB_GetFldPtr(is_local%wrap%FBImp(compice,compice), 'Fioi_swpen_ifrac_n', dataptr_i, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Fioi_swpen_ifrac_n', dataptr_o, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          dataptr_o(:) = dataptr_i(:)
+       end if
+
+       if ( fldchk(is_local%wrap%FBExp(compocn), 'Sf_afrac', rc=rc)) then
+          call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Sf_afrac', dataptr_o, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          dataptr_o(:) = ofrac(:)
+       end if
+
+       if ( fldchk(is_local%wrap%FBExp(compocn), 'Sf_afracr', rc=rc)) then
+          call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Sf_afracr', dataptr_o, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          dataptr_o(:) = ofracr(:)
+       end if
+
+       !-------------
+       ! application of precipitation factor from ocean
+       !-------------
+       precip_fact = 1.0_R8
+       if (precip_fact /= 1.0_R8) then
+          if (first_precip_fact_call .and. mastertask) then
+             write(logunit,'(a)')'(merge_to_ocn): Scaling rain, snow, liquid and ice runoff by precip_fact '
+             first_precip_fact_call = .false.
+          end if
+          write(cvalue,*) precip_fact
+          call ESMF_LogWrite(trim(subname)//" precip_fact is "//trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
+
+          allocate(fldnames(4))
+          fldnames = (/'Faxa_rain',' Faxa_snow', 'Foxx_rofl', 'Foxx_rofi'/)
           do n = 1,size(fldnames)
              if (fldchk(is_local%wrap%FBExp(compocn), trim(fldnames(n)), rc=rc)) then
                 call FB_GetFldPtr(is_local%wrap%FBExp(compocn), trim(fldnames(n)) , dataptr, rc=rc)
                 if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                dataptr(:) = dataptr(:) * flux_epbalfact
-                if (first_call .and. mastertask) then
-                   write(logunit,'(a)')'(merge_to_ocn): Scaling '//trim(fldnames(n))//' by flux_epbalfact '
-                end if
+                dataptr(:) = dataptr(:) * precip_fact
              end if
           end do
           deallocate(fldnames)
@@ -507,8 +551,11 @@ contains
        !--- diagnose output
        !---------------------------------------
 
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compocn), string=trim(subname)//' FBexp(compocn) ', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (dbug_flag > 1) then
+          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compocn), &
+               string=trim(subname)//' FBexp(compocn) ', rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
 
        ! TODO (mvertens, 2018-12-16): document above custom calculation
 
@@ -516,7 +563,6 @@ contains
        !--- clean up
        !---------------------------------------
 
-       first_call = .false.
     endif
 
     if (dbug_flag > 20) then
@@ -589,9 +635,11 @@ contains
 
        is_local%wrap%FBExpAccumCnt(compocn) = is_local%wrap%FBExpAccumCnt(compocn) + 1
 
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
-            string=trim(subname)//' FBExpAccum accumulation ', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (dbug_flag > 1) then
+          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
+               string=trim(subname)//' FBExpAccum accumulation ', rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
 
        !---------------------------------------
        !--- clean up
@@ -665,17 +713,21 @@ contains
        !--- average ocn accumulator
        !---------------------------------------
 
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
-            string=trim(subname)//' FBExpAccum(compocn) before avg ', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (dbug_flag > 1) then
+          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExpAccum(compocn), &
+               string=trim(subname)//' FBExpAccum(compocn) before avg ', rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
 
        call shr_nuopc_methods_FB_average(is_local%wrap%FBExpAccum(compocn), &
             is_local%wrap%FBExpAccumCnt(compocn), rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compocn), &
-            string=trim(subname)//' FBExpAccum(compocn) after avg ', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (dbug_flag > 1) then
+          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compocn), &
+               string=trim(subname)//' FBExpAccum(compocn) after avg ', rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
 
        !---------------------------------------
        !--- copy to FBExp(compocn)

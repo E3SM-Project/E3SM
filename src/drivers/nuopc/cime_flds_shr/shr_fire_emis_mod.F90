@@ -1,11 +1,12 @@
-!================================================================================
-! Coordinates carbon emissions fluxes from CLM fires for use as sources of
-! chemical constituents in CAM
-!
-! This module reads fire_emis_nl namelist which specifies the compound fluxes
-! that are to be passed through the model coupler.
-!================================================================================
 module shr_fire_emis_mod
+
+  !================================================================================
+  ! Coordinates carbon emissions fluxes from CLM fires for use as sources of
+  ! chemical constituents in CAM
+  !
+  ! This module reads fire_emis_nl namelist which specifies the compound fluxes
+  ! that are to be passed through the model coupler.
+  !================================================================================
 
   use shr_kind_mod , only : r8 => shr_kind_r8
   use shr_kind_mod , only : CL => SHR_KIND_CL, CX => SHR_KIND_CX, CS => SHR_KIND_CS
@@ -29,10 +30,9 @@ module shr_fire_emis_mod
 
   logical :: shr_fire_emis_elevated = .true.
 
-  character(len=CS), public :: shr_fire_emis_fields_token = ''       ! emissions fields token
   character(len=CL), public :: shr_fire_emis_factors_file = ''       ! a table of basic fire emissions compounds
   character(len=CS), public :: shr_fire_emis_ztop_token = 'Sl_fztop' ! token for emissions top of vertical distribution
-  integer, parameter :: name_len=16
+  integer, parameter        :: name_len=16
 
   ! fire emissions component data structure (or user defined type)
   type shr_fire_emis_comp_t
@@ -61,56 +61,61 @@ module shr_fire_emis_mod
   integer :: shr_fire_emis_comps_n = 0      ! number of unique fire components
   integer :: shr_fire_emis_mechcomps_n = 0  ! number of unique compounds in the CAM chemical mechanism that have fire emissions
 
+!-------------------------------------------------------------------------
 contains
+!-------------------------------------------------------------------------
 
-  !-------------------------------------------------------------------------
-  !
-  ! This reads the fire_emis_nl namelist group in drv_flds_in and parses the
-  ! namelist information for the driver, CLM, and CAM.
-  !
-  ! Namelist variables:
-  !   fire_emis_specifier, fire_emis_factors_file, fire_emis_elevated
-  !
-  !   fire_emis_specifier (array of strings) -- Each array element specifies
-  !     how CAM-Chem constituents are mapped to basic smoke compounds in
-  !     the fire emissions factors table (fire_emis_factors_file).  Each
-  !     chemistry constituent name (left of '=' sign) is mapped to one or more
-  !     smoke compound (separated by + sign if more than one), which can be
-  !     proceeded by a multiplication factor (separated by '*').
-  !     Example:
-  !       fire_emis_specifier = 'bc_a1 = BC','pom_a1 = 1.4*OC','SO2 = SO2'
-  !
-  !   fire_emis_factors_file (string) -- Input file that contains the table
-  !     of basic compounds that make up the smoke from the CLM fires.  This is
-  !     used in CLM module FireEmisFactorsMod.
-  !
-  !   fire_emis_elevated (locical) -- If true then CAM-Chem treats the fire
-  !     emission sources as 3-D vertically distributed forcings for the
-  !     corresponding chemical tracers.
-  !
-  !-------------------------------------------------------------------------
-  subroutine shr_fire_emis_readnl( NLFileName, emis_fields, emis_nflds )
-    use ESMF, only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VMGet, ESMF_VMBroadcast
-    use shr_nl_mod,     only : shr_nl_find_group_name
-    use shr_file_mod,   only : shr_file_getUnit, shr_file_freeUnit
+  subroutine shr_fire_emis_readnl( NLFileName, emis_nflds )
 
+    !-------------------------------------------------------------------------
+    !
+    ! This reads the fire_emis_nl namelist group in drv_flds_in and parses the
+    ! namelist information for the driver, CLM, and CAM.
+    !
+    ! Namelist variables:
+    !   fire_emis_specifier, fire_emis_factors_file, fire_emis_elevated
+    !
+    !   fire_emis_specifier (array of strings) -- Each array element specifies
+    !     how CAM-Chem constituents are mapped to basic smoke compounds in
+    !     the fire emissions factors table (fire_emis_factors_file).  Each
+    !     chemistry constituent name (left of '=' sign) is mapped to one or more
+    !     smoke compound (separated by + sign if more than one), which can be
+    !     proceeded by a multiplication factor (separated by '*').
+    !     Example:
+    !       fire_emis_specifier = 'bc_a1 = BC','pom_a1 = 1.4*OC','SO2 = SO2'
+    !
+    !   fire_emis_factors_file (string) -- Input file that contains the table
+    !     of basic compounds that make up the smoke from the CLM fires.  This is
+    !     used in CLM module FireEmisFactorsMod.
+    !
+    !   fire_emis_elevated (locical) -- If true then CAM-Chem treats the fire
+    !     emission sources as 3-D vertically distributed forcings for the
+    !     corresponding chemical tracers.
+    !
+    !-------------------------------------------------------------------------
+    
+    use ESMF         , only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VMGet, ESMF_VMBroadcast
+    use shr_nl_mod   , only : shr_nl_find_group_name
+    use shr_file_mod , only : shr_file_getUnit, shr_file_freeUnit
 
+    ! input/output variables
     character(len=*), intent(in)  :: NLFileName  ! name of namelist file
-    character(len=*), intent(out) :: emis_fields ! emis flux fields
     integer, intent(out) :: emis_nflds
 
-    type(ESMF_VM) :: vm
-    integer :: localPet
-    integer :: rc
-    integer :: unitn            ! namelist unit number
-    integer :: ierr             ! error code
-    logical :: exists           ! if file exists or not
-    integer, parameter     :: maxspc = 100
-    character(len=2*CX)    :: fire_emis_specifier(maxspc) = ' '
-    character(len=CL)      :: fire_emis_factors_file = ' '
-    logical                :: fire_emis_elevated = .true.
-    integer :: i, tmp(1)
+    ! local variables
+    type(ESMF_VM)       :: vm
+    integer             :: localPet
+    integer             :: rc
+    integer             :: unitn            ! namelist unit number
+    integer             :: ierr             ! error code
+    logical             :: exists           ! if file exists or not
+    integer, parameter  :: maxspc = 100
+    character(len=2*CX) :: fire_emis_specifier(maxspc) = ' '
+    character(len=CL)   :: fire_emis_factors_file = ' '
+    logical             :: fire_emis_elevated = .true.
+    integer             :: i, tmp(1)
     character(*),parameter :: F00   = "('(shr_fire_emis_readnl) ',2a)"
+    !------------------------------------------------------------------
 
     namelist /fire_emis_nl/ fire_emis_specifier, fire_emis_factors_file, fire_emis_elevated
 
@@ -157,25 +162,30 @@ contains
     shr_fire_emis_elevated = fire_emis_elevated
 
     ! parse the namelist info and initialize the module data
-    call shr_fire_emis_init( fire_emis_specifier, emis_fields )
+    call shr_fire_emis_init( fire_emis_specifier )
 
   end subroutine shr_fire_emis_readnl
 
-  !-----------------------------------------------------------------------
-  ! module data initializer
-  !------------------------------------------------------------------------
-  subroutine shr_fire_emis_init( specifier, emis_fields )
+!-------------------------------------------------------------------------
+! private methods...
+!-------------------------------------------------------------------------
+
+  subroutine shr_fire_emis_init( specifier )
+
+    !--------------------------------------------------
+    ! module data initializer
+    !--------------------------------------------------
 
     use shr_expr_parser_mod, only : shr_exp_parse, shr_exp_item_t, shr_exp_list_destroy
 
+    ! input/output variables
     character(len=*), intent(in) :: specifier(:)
-    character(len=*), intent(out) :: emis_fields
 
+    ! local variables
     integer :: n_entries
     integer :: i, j, k
-
     type(shr_exp_item_t), pointer :: items_list, item
-    character(len=12) :: token   ! fire emis field name to add
+    !------------------------------------------------------
 
     nullify(shr_fire_emis_linkedlist)
 
@@ -183,8 +193,6 @@ contains
 
     allocate(shr_fire_emis_mechcomps(n_entries))
     shr_fire_emis_mechcomps(:)%n_emis_comps = 0
-
-    emis_fields = ''
 
     item => items_list
     i = 1
@@ -208,32 +216,17 @@ contains
        enddo
        shr_fire_emis_mechcomps_n = shr_fire_emis_mechcomps_n+1
 
-       write(token,333) shr_fire_emis_mechcomps_n
-
-       if ( shr_fire_emis_mechcomps_n == 1 ) then
-          ! do not prepend ":" to the string for the first token
-          emis_fields = trim(token)
-          shr_fire_emis_fields_token = token
-       else
-          emis_fields = trim(emis_fields)//':'//trim(token)
-       endif
-
        item => item%next_item
        i = i+1
     enddo
     if (associated(items_list)) call shr_exp_list_destroy(items_list)
 
     ! Need to explicitly add Fl_ based on naming convention
-333 format ('Fall_fire',i3.3)
 
   end subroutine shr_fire_emis_init
 
   !-------------------------------------------------------------------------
-  ! private methods...
 
-
-  !-------------------------------------------------------------------------
-  !-------------------------------------------------------------------------
   function add_emis_comp( name, coeff ) result(emis_comp)
 
     character(len=*), intent(in) :: name
@@ -263,7 +256,7 @@ contains
   end function add_emis_comp
 
   !-------------------------------------------------------------------------
-  !-------------------------------------------------------------------------
+
   recursive function get_emis_comp_by_name(list_comp, name) result(emis_comp)
 
     type(shr_fire_emis_comp_t), pointer  :: list_comp
@@ -283,7 +276,7 @@ contains
   end function get_emis_comp_by_name
 
   !-------------------------------------------------------------------------
-  !-------------------------------------------------------------------------
+
   subroutine add_emis_comp_to_list( new_emis_comp )
 
     type(shr_fire_emis_comp_t), target, intent(in) :: new_emis_comp

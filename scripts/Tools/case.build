@@ -69,7 +69,7 @@ def parse_command_line(args, description):
     # config_file = files.get_value("CONFIG_CPL_FILE")
     # component = Component(config_file, "CPL")
     # comps = [x.lower() for x in component.get_valid_model_components()]
-    comps = ["cpl","atm","lnd","ice","ocn","rof","glc","wav","esp"]
+    comps = ["cpl","atm","lnd","ice","ocn","rof","glc","wav","esp","iac"]
     libs  = ["csmshare", "mct", "pio", "gptl"]
     allobjs = comps + libs
 
