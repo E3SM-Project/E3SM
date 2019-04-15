@@ -33,6 +33,8 @@ set(SHARE_HEADERS
   grid/abstract_grid.hpp
   grid/default_grid.hpp
   grid/grid_utils.hpp
+  grid/grids_manager.hpp
+  grid/user_provided_grids_manager.hpp
   parameter_list.hpp
   scream_session.hpp
   mpi/scream_comm.hpp
