@@ -50,7 +50,8 @@ module micro_p3
        clbfact_dep,iparam, isize, densize, rimsize, rcollsize, tabsize, colltabsize, &
        get_latent_heat, zerodegc, pi=>pi_e3sm, dnu, &
        micro_p3_utils_init, rainfrze, icenuct, homogfrze, iulog=>iulog_e3sm, &
-       masterproc=>masterproc_e3sm, calculate_incloud_mixingratios
+       masterproc=>masterproc_e3sm, calculate_incloud_mixingratios, mu_r_constant, &
+       lookup_table_1a_dum1_c
 
   implicit none
   save
@@ -88,7 +89,6 @@ contains
 
     ! Passed arguments:
     character*(*), intent(in)    :: lookup_file_dir                !directory of the lookup tables
-    !character(len=16), parameter :: version_p3  = '2.8.2'          !version number of P3 package
     character(len=16), intent(in) :: version_p3  !version number of P3 package
 
     if (masterproc) write(iulog,*) ''
@@ -107,10 +107,12 @@ contains
     character*(*), intent(in)     :: lookup_file_dir       !directory of the lookup tables
 
     character(len=16), intent(in) :: version_p3            !version number of P3 package
-    character(len=1024)           :: lookup_file_1         !lookup table, main
+    character(len=1024)           :: lookup_file_1         !lookup table, maini
+    character(len=1024)           :: version_header_table_1             !version number read from header, table 1
     integer                       :: i,j,ii,jj
     real(rtype)                   :: dum
     integer                       :: dumi
+    character(len=1024)           :: dumstr
 
     !------------------------------------------------------------------------------------------!
 
@@ -128,7 +130,19 @@ contains
 
     if (masterproc) write(iulog,*) '   P3_INIT (reading/creating look-up tables) ...'
 
-    open(unit=10,file=lookup_file_1, status='old')
+    open(unit=10,file=lookup_file_1, status='old', action='read')
+
+    read(10,*) dumstr, version_header_table_1
+    if (trim(version_p3) /= trim(version_header_table_1)) then
+       print*
+       print*, '***********   WARNING in P3_INIT   *************'
+       print*, ' Loading lookupTable_1: v',trim(version_header_table_1)
+       print*, ' P3 is intended to use lookupTable_1: v', trim(version_p3)
+       print*, '               -- ABORTING -- '
+       print*, '************************************************'
+       print*
+       stop
+    end if
 
     itab(:,:,:,:) = 0.
     itabcoll(:,:,:,:,:) = 0.
@@ -157,6 +171,7 @@ contains
     close(10)
 
     !PMC: deleted ice-ice collision lookup table here b/c only used for nCat>1.
+    ! So there is no need to fill lookup values for lookup table 2.
 
   END SUBROUTINE p3_init_a
 
@@ -195,38 +210,40 @@ contains
 
     !write(iulog,*) '   Generating rain lookup-table ...'
 
+    ! AaronDonahue: Switching to table ver 4 means switching to a constand mu_r,
+    ! so this section is commented out.
     do i = 1,150              ! loop over lookup table values
-       initlamr = 1./((real(i)*2.)*1.e-6 + 250.e-6)
-
-       ! iterate to get mu_r
-       ! mu_r-lambda relationship is from Cao et al. (2008), eq. (7)
-
-       ! start with first guess, mu_r = 0
-
-       mu_r = 0.
-
-       do ii=1,50
-          lamr = initlamr*((mu_r+3.)*(mu_r+2.)*(mu_r+1.)/6.)**thrd
-
-          ! new estimate for mu_r based on lambda
-          ! set max lambda in formula for mu_r to 20 mm-1, so Cao et al.
-          ! formula is not extrapolated beyond Cao et al. data range
-          dum  = min(20.,lamr*1.e-3)
-          mu_r = max(0.,-0.0201*dum**2+0.902*dum-1.718)
-
-          ! if lambda is converged within 0.1%, then exit loop
-          if (ii.ge.2) then
-             if (abs((lamold-lamr)/lamr).lt.0.001) goto 111
-          end if
-
-          lamold = lamr
-
-       enddo
-
-111    continue
-
-       ! assign lookup table values
-       mu_r_table(i) = mu_r
+!       initlamr = 1./((real(i)*2.)*1.e-6 + 250.e-6)
+!
+!       ! iterate to get mu_r
+!       ! mu_r-lambda relationship is from Cao et al. (2008), eq. (7)
+!
+!       ! start with first guess, mu_r = 0
+!
+!       mu_r = 0.
+!
+!       do ii=1,50
+!          lamr = initlamr*((mu_r+3.)*(mu_r+2.)*(mu_r+1.)/6.)**thrd
+!
+!          ! new estimate for mu_r based on lambda
+!          ! set max lambda in formula for mu_r to 20 mm-1, so Cao et al.
+!          ! formula is not extrapolated beyond Cao et al. data range
+!          dum  = min(20.,lamr*1.e-3)
+!          mu_r = max(0.,-0.0201*dum**2+0.902*dum-1.718)
+!
+!          ! if lambda is converged within 0.1%, then exit loop
+!          if (ii.ge.2) then
+!             if (abs((lamold-lamr)/lamr).lt.0.001) goto 111
+!          end if
+!
+!          lamold = lamr
+!
+!       enddo
+!
+!111    continue
+!
+!       ! assign lookup table values
+       mu_r_table(i) = mu_r_constant
 
     enddo
 
@@ -238,7 +255,8 @@ contains
     mu_r_loop: do ii = 1,10   !** change 10 to 9, since range of mu_r is 0-8  CONFIRM
        !mu_r_loop: do ii = 1,9   !** change 10 to 9, since range of mu_r is 0-8
 
-       mu_r = real(ii-1)  ! values of mu
+!       mu_r = real(ii-1)  ! values of mu
+       mu_r = mu_r_constant
 
        ! loop over number-weighted mean size
        meansize_loop: do jj = 1,300
@@ -2654,7 +2672,8 @@ contains
     !             dum1 = (log10(qitot)+16.)*1.41328
     ! we are inverting this equation from the lookup table to solve for i:
     ! qitot/nitot=261.7**((i+10)*0.1)*1.e-18
-    dum1 = (log10(qitot/nitot)+18.)/(0.1*log10(261.7))-10.
+    !dum1 = (log10(qitot/nitot)+18.)/(0.1*log10(261.7))-10.
+    dum1 = (log10(qitot/nitot)+18.)*lookup_table_1a_dum1_c-10. ! For computational efficiency
     dumi = int(dum1)
     ! set limits (to make sure the calculated index doesn't exceed range of lookup table)
     dum1 = min(dum1,real(isize))
@@ -2870,20 +2889,23 @@ contains
        nr      = max(nr,nsmall)
        inv_dum = (qr/(cons1*nr*6.))**thrd
 
-       if (inv_dum.lt.282.e-6) then
-          mu_r = 8.282
-       elseif (inv_dum.ge.282.e-6 .and. inv_dum.lt.502.e-6) then
-          ! interpolate
-          rdumii = (inv_dum-250.e-6)*1.e+6*0.5
-          rdumii = max(rdumii,1.)
-          rdumii = min(rdumii,150.)
-          dumii  = int(rdumii)
-          dumii  = min(149,dumii)
-          mu_r   = mu_r_table(dumii)+(mu_r_table(dumii+1)-mu_r_table(dumii))*(rdumii-  &
-               real(dumii))
-       elseif (inv_dum.ge.502.e-6) then
-          mu_r = 0.
-       endif
+       ! Apply constant mu_r:  Recall the switch to v4 tables means constant mu_r
+       mu_r = mu_r_constant
+       ! AaronDonahue: Comment out the variable mu_r calculation below.
+!       if (inv_dum.lt.282.e-6) then
+!          mu_r = 8.282
+!       elseif (inv_dum.ge.282.e-6 .and. inv_dum.lt.502.e-6) then
+!          ! interpolate
+!          rdumii = (inv_dum-250.e-6)*1.e+6*0.5
+!          rdumii = max(rdumii,1.)
+!          rdumii = min(rdumii,150.)
+!          dumii  = int(rdumii)
+!          dumii  = min(149,dumii)
+!          mu_r   = mu_r_table(dumii)+(mu_r_table(dumii+1)-mu_r_table(dumii))*(rdumii-  &
+!               real(dumii))
+!       elseif (inv_dum.ge.502.e-6) then
+!          mu_r = 0.
+!       endif
 
        lamr   = (cons1*nr*(mu_r+3.)*(mu_r+2)*(mu_r+1.)/(qr))**thrd  ! recalculate slope based on mu_r
        lammax = (mu_r+1.)*1.e+5   ! check for slope

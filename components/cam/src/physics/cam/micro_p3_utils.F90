@@ -46,6 +46,9 @@ module micro_p3_utils
        clbfact_dep
     real(rtype),dimension(16), public :: dnu
 
+    real(rtype), public, parameter :: mu_r_constant = 1.0_rtype
+    real(rtype), public, parameter :: lookup_table_1a_dum1_c = 1.0_rtype/(0.1_rtype*log10(261.7_rtype))
+
     real(rtype),public :: zerodegc  ! Temperature at zero degree celcius ~K
     real(rtype),public :: rainfrze  ! Contact and immersion freexing temp, -4C  ~K
     real(rtype),public :: homogfrze ! Homogeneous freezing temperature, -40C  ~K
