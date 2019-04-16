@@ -4552,7 +4552,7 @@
   </grid>
   <grid name="a%ne30np4_l%ne30np4_oi%ne30np4">
     <mach name="anvil|bebop">
-      <pes compset="any" pesize="S">
+      <pes compset="any" pesize="any">
         <comment>ne30_ne30 grid on 40 nodes 36 ppn pure-MPI</comment>
         <ntasks>
           <ntasks_atm>1350</ntasks_atm>
@@ -4585,7 +4585,7 @@
           <rootpe_wav>0</rootpe_wav>
         </rootpe>
       </pes>
-      <pes compset="any" pesize="any">
+      <pes compset="any" pesize="L">
         <comment>77x36x1</comment>
         <ntasks>
           <ntasks_atm>2700</ntasks_atm>
@@ -4618,7 +4618,7 @@
           <rootpe_wav>0</rootpe_wav>
         </rootpe>
       </pes>
-      <pes compset="any" pesize="L">
+      <pes compset="any" pesize="XL">
         <comment>152x36x1</comment>
         <ntasks>
           <ntasks_atm>5400</ntasks_atm>
@@ -4656,16 +4656,16 @@
   <grid name="any">
     <mach name="anvil">
       <pes compset="any" pesize="any">
-        <comment>default,20nodes*36tasks*1threads</comment>
+        <comment>default,4nodes*36tasks*1threads</comment>
         <ntasks>
-          <ntasks_atm>720</ntasks_atm>
-          <ntasks_lnd>720</ntasks_lnd>
-          <ntasks_rof>720</ntasks_rof>
-          <ntasks_ice>720</ntasks_ice>
-          <ntasks_ocn>720</ntasks_ocn>
-          <ntasks_glc>720</ntasks_glc>
-          <ntasks_wav>720</ntasks_wav>
-          <ntasks_cpl>720</ntasks_cpl>
+          <ntasks_atm>144</ntasks_atm>
+          <ntasks_lnd>144</ntasks_lnd>
+          <ntasks_rof>144</ntasks_rof>
+          <ntasks_ice>144</ntasks_ice>
+          <ntasks_ocn>144</ntasks_ocn>
+          <ntasks_glc>144</ntasks_glc>
+          <ntasks_wav>144</ntasks_wav>
+          <ntasks_cpl>144</ntasks_cpl>
         </ntasks>
         <nthrds>
           <nthrds_atm>1</nthrds_atm>
