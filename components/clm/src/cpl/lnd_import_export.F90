@@ -972,7 +972,8 @@ contains
        atm2lnd_vars%forc_aer_grc(g,14) =  x2l(index_x2l_Faxa_dstdry4,i)
        
        !set the topounit-level atmospheric state and flux forcings
-       call downscale_atmo_state_to_topounit(g, i, x2l)
+ !      call downscale_atmo_state_to_topounit(g, i, x2l)
+	   call downscale_grd_to_topounit(g, i, x2l)
        do topo = grc_pp%topi(g), grc_pp%topf(g)
          ! first, all the state forcings
 !         top_as%tbot(topo)    = x2l(index_x2l_Sa_tbot,i)      ! forc_txy  Atm state K
