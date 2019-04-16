@@ -30,16 +30,6 @@ St = 5.9e-4
 
 iDepth=-1
 
-# use a list to see how the melt rate changes with different profiles.
-# use a list with one entry to just plot up a single case.
-zUppers =  numpy.linspace(-0.,-600., 13)
-zUppers =  numpy.linspace(-0.,-600., 5)
-#zUppers =  numpy.array([-200., -400.])
-#zUppers =  numpy.array([-500.])
-#zUppers =  numpy.array([-300.]) # "standard" value for Pine Island Bay
-
-zSill = -663. # estimate used for Thwaites
-
 # Set depth of grounding line here
 #    zGL = -1500.
 ##    zGL =-688.
@@ -50,6 +40,18 @@ zCF = -173.  # calving front depth from Thwaites initial condition
 #zGL=-1453.0; zCF=-202.0  # TG sim at yr 325
 #zGL=-1107.0; zCF=-101.0  # TG sim at yr 225
 #zGL=-1235.0; zCF=-125.0  # TG sim approx at both 285 & 430
+
+
+# use a list to see how the melt rate changes with different profiles.
+# use a list with one entry to just plot up a single case.
+zLow = -1001.
+zUppers =  numpy.linspace(-0.,-600., 13); zLow = zGL-400.  # for variability histogram/profile plot (7)
+#zUppers =  numpy.linspace(-0.,-600., 5); zLow = zGL-400.  # For variability range plot in paper (Fig. 3)
+#zUppers =  numpy.array([-200., -400.])
+#zUppers =  numpy.array([-500.])
+#zUppers =  numpy.array([-300.]); zLow = zGL-100.0 # "standard" value for Pine Island Bay
+
+zSill = -663. # estimate used for Thwaites
 
 # idealized Pine Island Bay temperatures
 TUpper = -1.
@@ -69,30 +71,38 @@ axTvar = figVar.add_subplot(nrow, ncol, 1)
 plt.xlabel('ocean temperature ($^{\circ}$C)')
 plt.ylabel('depth (m)')
 plt.grid()
+axTvar.text(-0.15, 0.95, 'a', transform=axTvar.transAxes, fontsize=14, fontweight='bold')
+
 
 # melt plot
 axMeltvar = figVar.add_subplot(nrow, ncol, 2)
 plt.xlabel('melt rate (m yr$^{-1}$)')
 plt.ylabel('depth (m)')
 plt.grid()
+axMeltvar.text(-0.15, 0.95, 'b', transform=axMeltvar.transAxes, fontsize=14, fontweight='bold')
 
 # histogram
 axHist = figVar.add_subplot(nrow, ncol, 3)
 #plt.xlabel('ice shelf area (km$^2$)')
 plt.xlabel('fraction of ice shelf area')
 plt.ylabel('depth (m)')
+axHist.text(-0.15, 0.95, 'c', transform=axHist.transAxes, fontsize=14, fontweight='bold')
 
-
-nOneSide = (len(zUppers)-1)/2
-colorsOneSide = numpy.array( [ cm.cool(x) for x in numpy.linspace(0.0, 1.0, nOneSide) ])
-#print colorsOneSide
+if len(zUppers)>6:
+   nOneSide = (len(zUppers)-1)/2
+   colorsOneSide = numpy.array( [ cm.cool(x) for x in numpy.linspace(0.0, 1.0, nOneSide) ])
+   #print colorsOneSide
+else:
+   nOneSide = 2
+   colorsOneSide = numpy.flip(numpy.array( [ cm.bwr(x) for x in numpy.linspace(0.0, 1.0, nOneSide) ]),0)
+   colors = numpy.vstack( (colorsOneSide, [0,0,0,1], numpy.flip(colorsOneSide,0)))
 colors = numpy.vstack( (colorsOneSide, [0,0,0,1], numpy.flip(colorsOneSide,0)))
 
 for zUpper in zUppers:
     iDepth = iDepth+1
     print "iDepth={}, zUpper={}".format(iDepth, zUpper)
 
-    z = numpy.linspace(0., zGL-400, 1001)
+    z = numpy.linspace(0., zLow, 1001)
 
     zLower = zUpper - 400.
 
@@ -171,6 +181,7 @@ for zUpper in zUppers:
         plt.xlabel('ocean temperature ($^{\circ}$C)')
         plt.ylabel('depth (m)')
         plt.grid()
+        axT.text(-0.15, 0.95, 'a', transform=axT.transAxes, fontsize=14, fontweight='bold')
 
         plt.plot(TRegional, z, label='$T_{regional}$')
         plt.plot(TCavity, z, label='$T_{cavity}$')
@@ -192,6 +203,7 @@ for zUpper in zUppers:
         plt.plot([0.0, ThermalForcing.max()], zGL*numpy.array([1.0, 1.0]), '--k', label='$z_{GL}$')
         plt.plot([0.0, ThermalForcing.max()], zCF*numpy.array([1.0, 1.0]), ':k', label='$z_{CF}$')
         plt.legend()
+        axTF.text(-0.15, 0.95, 'b', transform=axTF.transAxes, fontsize=14, fontweight='bold')
 
 
         # melt plot
@@ -199,6 +211,7 @@ for zUpper in zUppers:
         plt.xlabel('melt rate (m yr$^{-1}$)')
         plt.ylabel('depth (m)')
         plt.grid()
+        axMelt.text(-0.15, 0.95, 'c', transform=axMelt.transAxes, fontsize=14, fontweight='bold')
         # plot Rignot obs if available
         obsFile = '/Users/mhoffman/Documents/PAPERS_PRESENTATIONS/2017_Thwaites_variability/melt_param_testing/iceshelf_melt_param_test/thwaites_1-8km_resolution.cleaned.withRignotMelt.nc'
         if os.path.isfile(obsFile):
@@ -273,7 +286,7 @@ if len(zUppers) > 1:
   plt.plot([0.0, plotMeltMax], [-700, -700],'k-')
   plt.plot([0.0, plotMeltMax], [-400, -400],'k:')
   plt.plot([0.0, plotMeltMax], [-1000, -1000],'k:')
-#  plt.plot([0.0, plotMeltMax], [-800, -800],'k-')
+  #plt.plot([0.0, plotMeltMax], [-800, -800],'k-')
   plt.xlabel('mean melt rate (m/yr)')
   plt.ylabel('depth of thermocline (m)')
   plt.title("kappa={}, D={}, alpha={}, zGL={}, zSill={}".format(Kappa, D, alpha, zGL, zSill))
@@ -288,7 +301,7 @@ if len(zUppers) > 1:
   plt.plot([0.0, plotMeltMax], [-700, -700],'k-')
   plt.plot([0.0, plotMeltMax], [-400, -400],'k:')
   plt.plot([0.0, plotMeltMax], [-1000, -1000],'k:')
-#  plt.plot([0.0, plotMeltMax], [-800, -800],'k-')
+  #plt.plot([0.0, plotMeltMax], [-800, -800],'k-')
   plt.xlabel('GL melt rate (m/yr)')
   plt.ylabel('depth of thermocline (m)')
   plt.title("kappa={}, D={}, alpha={}, zGL={}, zSill={}".format(Kappa, D, alpha, zGL, zSill))
