@@ -2758,6 +2758,12 @@ Switch for CLUBB_SGS
 Default: FALSE
 </entry>
 
+<entry id="do_shoc_sgs" type="logical" category="conv"
+       group="phys_ctl_nl" valid_values="" >
+Switch for SHOC_SGS
+Default: FALSE
+</entry>
+
 <entry id="do_aerocom_ind3" type="logical" category="conv"
        group="phys_ctl_nl" valid_values="" >
 Switch for AeroCom diagnostics

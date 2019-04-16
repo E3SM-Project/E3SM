@@ -41,11 +41,14 @@ Physics package: cam3, cam4, cam5, ideal (Held-Suarez forcings), adiabatic.
 <entry id="microphys" valid_values="rk,mg1,mg1.5,mg2" value="">
 Microphysics package: rk (Rasch and Kristjansson), mg1 (Morrison and Gettelman two moment scheme CAM5.1), mg1.5 (Morrison and Gettelman second version development), mg2 ((Morrison and Gettelman second version).
 </entry>
-<entry id="macrophys" valid_values="rk,park,clubb_sgs,none" value="">
-Macrophysics package: RK, Park, CLUBB_SGS.
+<entry id="macrophys" valid_values="rk,park,clubb_sgs,shoc_sgs,none" value="">
+Macrophysics package: RK, Park, CLUBB_SGS, SHOC_SGS.
 </entry>
 <entry id="clubb_sgs" valid_values="0,1" value="0">
 Switch to turn on/off CLUBB_SGS package: 0 => no, 1 => yes
+</entry>
+<entry id="shoc_sgs" valid_values="0,1" value="0">
+Switch to turn on/off SHOC_SGS package: 0 => no, 1 => yes
 </entry>
 <entry id="unicon" valid_values="0,1" value="0">
 Switch to turn on UNICON package: 0 => off, 1 => on
@@ -56,9 +59,9 @@ Switch to turn on/off CLUBB_SGS using clubb to calculate deep: 0 => no, 1 => yes
 <entry id="clubb_do_adv" valid_values="0,1" value="0">
 Switch to turn on/off advecting CLUBB moments: 0 => no, 1 => yes
 </entry>
-<entry id="pbl" valid_values="uw,hb,hbr,clubb_sgs" value="">
+<entry id="pbl" valid_values="uw,hb,hbr,clubb_sgs,shoc_sgs" value="">
 PBL package: uw (University of Washington), hb (Holtslag and Boville), hbr
- (Holtslag, Boville, and Rasch), clubb_sgs.
+ (Holtslag, Boville, and Rasch), clubb_sgs, shoc_sgs.
 </entry>
 <entry id="rad" valid_values="rrtmg,rrtmgp,camrt" value="">
 Radiative transfer calculation: 
