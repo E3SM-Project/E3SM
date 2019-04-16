@@ -121,9 +121,9 @@ register_field (const field_type& src, const field_type& tgt) {
                        "Error! Cannot register fields in the remapper at this time.\n"
                        "       Did you accidentally call 'registration_complete' already?");
 
-  error::runtime_check(src.get_header().get_identifier().get_grid()==m_src_grid,
+  error::runtime_check(src.get_header().get_identifier().get_grid_name()==m_src_grid->name(),
                        "Error! Source field stores the wrong grid.\n");
-  error::runtime_check(src.get_header().get_identifier().get_grid()==m_src_grid,
+  error::runtime_check(src.get_header().get_identifier().get_grid_name()==m_src_grid->name(),
                        "Error! Target field stores the wrong grid.\n");
 
   do_register_field(src,tgt);

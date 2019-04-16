@@ -9,8 +9,7 @@ namespace scream
 enum class GridType {
   Undefined,
   Physics,
-  Dynamics,
-  Radiation
+  Dynamics
 };
 
 inline std::string e2str (const GridType type) {
@@ -24,9 +23,6 @@ inline std::string e2str (const GridType type) {
       break;
     case GridType::Dynamics:
       str = "Dynamics";
-      break;
-    case GridType::Radiation:
-      str = "Radiation";
       break;
     default:
       str = "INVALID";

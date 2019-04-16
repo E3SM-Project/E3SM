@@ -120,13 +120,13 @@ do_register_field (const field_type& src, const field_type& tgt)
   error::runtime_check(tgt.is_allocated(), "Error! Dynamics field is not yet allocated.\n");
 
 
-  const auto phys_grid = src.get_header().get_identifier().get_grid();
-  const auto dyn_grid  = tgt.get_header().get_identifier().get_grid();
+  const auto phys_grid_name = src.get_header().get_identifier().get_grid_name();
+  const auto dyn_grid_name  = tgt.get_header().get_identifier().get_grid_name();
   const auto plt = get_layout_type(src.get_header().get_identifier().get_layout());
   const auto dlt = get_layout_type(tgt.get_header().get_identifier().get_layout());
 
-  error::runtime_check(phys_grid==this->m_src_grid, "Error! Source field does not have a Physics grid.\n");
-  error::runtime_check(dyn_grid==this->m_tgt_grid, "Error! Target field does not have a Dynamics grid.\n");
+  error::runtime_check(phys_grid_name==this->m_src_grid->name(), "Error! Source field does not have a Physics grid.\n");
+  error::runtime_check(dyn_grid_name==this->m_tgt_grid->name(), "Error! Target field does not have a Dynamics grid.\n");
   error::runtime_check(dlt==plt, "Error! Source and target layouts do not match.\n");
 
   m_phys.push_back(src);

@@ -31,13 +31,13 @@ public:
   FieldIdentifier (const FieldIdentifier&) = default;
   FieldIdentifier (const std::string& name,
                    const layout_type& layout,
-                   const grid_ptr_type grid = nullptr);
+                   const std::string& grid_name = "");
   FieldIdentifier (const std::string& name,
                    const std::vector<FieldTag>& tags,
-                   const grid_ptr_type grid = nullptr);
+                   const std::string& grid_name = "");
   FieldIdentifier (const std::string& name,
                    const std::initializer_list<FieldTag>& tags,
-                   const grid_ptr_type grid = nullptr);
+                   const std::string& grid_name = "");
 
   // Assignment (defaulted)
   FieldIdentifier& operator= (const FieldIdentifier&) = default;
@@ -45,9 +45,9 @@ public:
   // ----- Getters ----- //
 
   // Name and layout informations
-  const std::string&  name       () const { return m_name;   }
-  const layout_type&  get_layout () const { return m_layout; }
-        grid_ptr_type get_grid   () const { return m_grid;   }
+  const std::string&  name          () const { return m_name;      }
+  const layout_type&  get_layout    () const { return m_layout;    }
+  const std::string&  get_grid_name () const { return m_grid_name; }
 
   // The identifier string
   const std::string& get_identifier () const { return m_identifier; }
@@ -57,7 +57,7 @@ public:
   // Note: as soon as a dimension is set, it cannot be changed.
   void set_dimension  (const int idim, const int dimension);
   void set_dimensions (const std::vector<int>& dims);
-  void set_grid       (const grid_ptr_type grid);
+  void set_grid_name  (const std::string& grid_name);
 
   // We reimplement the equality operator for identifiers comparison (needed for some std container)
   friend bool operator== (const FieldIdentifier&, const FieldIdentifier&);
@@ -71,7 +71,7 @@ protected:
 
   layout_type     m_layout;
 
-  grid_ptr_type   m_grid;
+  std::string     m_grid_name;
 
   // The identifier string is a conveniet way to display the information of
   // the identifier, so that it can be easily read.

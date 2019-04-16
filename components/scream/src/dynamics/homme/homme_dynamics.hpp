@@ -29,9 +29,9 @@ public:
   // The type of the subcomponent (dynamics or physics)
   AtmosphereProcessType type () const { return AtmosphereProcessType::Dynamics; }
 
-  std::set<GridType> get_required_grids () const {
-    static std::set<GridType> s;
-    s.insert(GridType::Dynamics);
+  std::set<std::string> get_required_grids () const {
+    static std::set<std::string> s;
+    s.insert(e2str(GridType::Dynamics));
     return s;
   }
 

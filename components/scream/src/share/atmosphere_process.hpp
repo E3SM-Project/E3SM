@@ -42,7 +42,7 @@ public:
   virtual AtmosphereProcessType type () const = 0;
 
   // The type of grids needed by the process
-  virtual std::set<GridType> get_required_grids () const = 0;
+  virtual std::set<std::string> get_required_grids () const = 0;
 
   // The name of the process
   virtual std::string name () const = 0;

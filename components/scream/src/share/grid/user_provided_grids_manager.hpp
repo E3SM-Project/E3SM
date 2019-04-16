@@ -18,16 +18,18 @@ public:
 
   virtual ~UserProvidedGridsManager () = default;
 
-  void build_grids (const std::set<GridType>& grid_types) {
+  void build_grids (const std::set<std::string>& grid_names) {
     // Simply make sure that all types have been set
-    for (auto type : grid_types) {
-      scream_require_msg (m_provided_grids.count(type)==1,
-                          "Error! No grid provided for type '" + e2str(type) + "'.\n");
+    for (auto name : grid_names) {
+      scream_require_msg (m_provided_grids.count(name)==1,
+                          "Error! No grid provided for '" + name + "'.\n");
     }
   }
 
   static void set_grid (const std::shared_ptr<grid_type> grid) {
-    m_provided_grids[grid->type()] = grid;
+    scream_require_msg (m_provided_grids.find(grid->name())==m_provided_grids.end(),
+                        "Error! A grid with name '" + grid->name() + "' was already set.\n");
+    m_provided_grids[grid->name()] = grid;
   }
 protected:
 

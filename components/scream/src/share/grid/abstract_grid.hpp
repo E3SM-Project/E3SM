@@ -22,6 +22,8 @@ public:
 
   virtual GridType type () const = 0;
 
+  virtual std::string name () const = 0;
+
   virtual int num_dofs () const = 0;
 
   virtual dofs_map_type get_dofs_map () const = 0;

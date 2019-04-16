@@ -20,10 +20,10 @@ public:
   AtmosphereProcessType type () const { return AtmosphereProcessType::Coupling; }
 
   // The type of grids required by the process
-  std::set<GridType> get_required_grids () const {
+  std::set<std::string> get_required_grids () const {
     // TODO: define what grid the coupling runs on. Check with MOAB folks.
-    static std::set<GridType> s;
-    s.insert(GridType::Undefined);
+    static std::set<std::string> s;
+    s.insert(e2str(GridType::Undefined));
     return s;
   }
 

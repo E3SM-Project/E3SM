@@ -24,10 +24,10 @@ public:
   // The type of the block (dynamics or physics)
   AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
 
-  std::set<GridType> get_required_grids () const {
+  std::set<std::string> get_required_grids () const {
     // TODO: define what grid the coupling runs on. Check with MOAB folks.
-    static std::set<GridType> s;
-    s.insert(GridType::Undefined);
+    static std::set<std::string> s;
+    s.insert(e2str(GridType::Undefined));
     return s;
   }
 
@@ -42,7 +42,7 @@ public:
     m_id = comm.rank();
     auto size = comm.size();
 
-    m_grid = grids_manager->get_grid(GridType::Physics);
+    m_grid = grids_manager->get_grid("Physics");
     auto num_cols = m_grid->num_dofs();
 
     std::vector<FieldTag> tags = {FieldTag::Column,FieldTag::Component};
@@ -52,8 +52,8 @@ public:
     std::string in_name = "field_" + std::to_string(m_id);
     std::string out_name = "field_" + std::to_string( (m_id + size - 1) % size );
 
-    m_input_fids.emplace(in_name,layout,m_grid);
-    m_output_fids.emplace(out_name,layout,m_grid);
+    m_input_fids.emplace(in_name,layout,m_grid->name());
+    m_output_fids.emplace(out_name,layout,m_grid->name());
   }
 
   void run () {
@@ -120,7 +120,7 @@ class DummyPhysicsGrid : public DefaultGrid<GridType::Physics>
 {
 public:
   DummyPhysicsGrid (const int num_cols)
-   : DefaultGrid<GridType::Physics>()
+   : DefaultGrid<GridType::Physics>("Physics")
   {
     m_num_dofs = num_cols;
   }
@@ -199,7 +199,7 @@ TEST_CASE("ping-pong", "") {
   std::vector<FieldTag> tags = {FieldTag::Column,FieldTag::Component};
   std::vector<int> dims = {num_cols, 2};
   FieldLayout layout (tags,dims);
-  FieldIdentifier final_fid("field_" + std::to_string(atm_comm.size()-1),layout,upgm.get_grid(GridType::Physics));
+  FieldIdentifier final_fid("field_" + std::to_string(atm_comm.size()-1),layout,"Physics");
   const auto& final_field = repo.get_field(final_fid);
 
   auto h_view = Kokkos::create_mirror_view(final_field.get_view());

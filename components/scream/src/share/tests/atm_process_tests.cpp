@@ -14,9 +14,9 @@ public:
   AtmosphereProcessType type () const { return PType; }
 
   // The type of grids on which the process is defined
-  std::set<GridType> get_required_grids () const {
-    static std::set<GridType> s;
-    s.insert(GridType::Undefined);
+  std::set<std::string> get_required_grids () const {
+    static std::set<std::string> s;
+    s.insert(e2str(GridType::Undefined));
     return s;
   }
 
