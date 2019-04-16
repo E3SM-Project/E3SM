@@ -47,8 +47,7 @@
  character(len=StrKIND+1) :: geog_data_path      ! same as config_geog_data_path, but guaranteed to have a trailing slash
  character(len=StrKIND+1) :: geog_sub_path       ! subdirectory names in config_geog_data_path, with trailing slash
 
- integer:: isice_lu,iswater_lu,ismax_lu
-
+ integer:: ismax_lu
  integer:: nx,ny,nz
  integer:: endian,isigned,istatus,wordsize
  integer:: i,j,k
@@ -69,6 +68,7 @@
  real(kind=RKIND),dimension(:,:),allocatable  :: maxsnowalb
  real(kind=RKIND),dimension(:,:,:),allocatable:: vegfra
 
+ integer, pointer :: isice_lu, iswater_lu
  integer, pointer :: nCells, nEdges, nVertices, maxEdges
  logical, pointer :: on_a_sphere
  real (kind=RKIND), pointer :: sphere_radius
@@ -147,6 +147,8 @@
  call mpas_pool_get_array(mesh, 'ter', ter)
  call mpas_pool_get_array(mesh, 'lu_index', lu_index)
  call mpas_pool_get_array(mesh, 'mminlu', mminlu)
+ call mpas_pool_get_array(mesh, 'isice_lu', isice_lu)
+ call mpas_pool_get_array(mesh, 'iswater_lu', iswater_lu)
  call mpas_pool_get_array(mesh, 'soilcat_top', soilcat_top)
  call mpas_pool_get_array(mesh, 'landmask', landmask)
  call mpas_pool_get_array(mesh, 'soiltemp', soiltemp)
