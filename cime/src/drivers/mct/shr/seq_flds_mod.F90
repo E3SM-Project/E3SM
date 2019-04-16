@@ -18,6 +18,7 @@ module seq_flds_mod
   !    g => glc
   !    r => rof
   !    w => wav
+  !    z => iac
   !
   !  state-name
   !    what follows state prefix
@@ -2103,6 +2104,156 @@ contains
     units    = 'm'
     attname  = 'Sw_hstokes'
     call metadata_set(attname, longname, stdname, units)
+
+    !----------------------------
+    ! lnd->iac, iac->lnd, iac->atm
+    !----------------------------
+    
+    ! Only hr and npp matter, for now
+    call seq_flds_add(l2x_states,'Sl_hr')
+    call seq_flds_add(x2z_states,'Sl_hr')
+    longname = 'Total heterotrophic respiration'
+    stdname  = 'lnd_total_heterotrophic_respiration'
+    units    = 'gC/m^2/s'
+    attname  = 'Sl_hr'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(l2x_states,'Sl_npp')
+    call seq_flds_add(x2z_states,'Sl_npp')
+    longname = 'Net primary production'
+    stdname  = 'lnd_net_primary_production'
+    units    = 'gC/m^2/s'
+    attname  = 'Sl_npp'
+    call metadata_set(attname, longname, stdname, units)
+
+    ! Review
+    call seq_flds_add(l2x_states,'Sl_pfts1d_wtgcell')
+    call seq_flds_add(x2z_states,'Sl_pfts1d_wtgcell')
+    longname = 'PFT weight relative to gridcell'
+    stdname  = 'lnd_pft_weight_relative_to_gridcell'
+    units    = ''
+    attname  = 'Sl_pfts1d_wtgcell'
+    call metadata_set(attname, longname, stdname, units)
+
+    ! lnd->iac inputs that are not used, apparently.  I'm keeping
+    ! them here for reference.
+    !call seq_flds_add(l2x_states,'Sl_cwdc')
+    !call seq_flds_add(x2z_states,'Sl_cwdc')
+    !longname = 'Coarse woody debris C'
+    !stdname  = 'lnd_coarse_woody_debris_c'
+    !units    = 'gC/m^2'
+    !attname  = 'Sl_cwdc'
+    !call metadata_set(attname, longname, stdname, units)
+
+    !call seq_flds_add(l2x_states,'Sl_totlitc')
+    !call seq_flds_add(x2z_states,'Sl_totlitc')
+    !longname = 'Total litter carbon'
+    !stdname  = 'lnd_total_litter_carbon'
+    !units    = 'gC/m^2'
+    !attname  = 'Sl_totlitc'
+    !call metadata_set(attname, longname, stdname, units)
+
+    !call seq_flds_add(l2x_states,'Sl_totsomc')
+    !call seq_flds_add(x2z_states,'Sl_totsomc')
+    !longname = 'Total soil organic matter carbon'
+    !stdname  = 'lnd_total_soil_organic_matter_carbon'
+    !units    = 'gC/m^2'
+    !attname  = 'Sl_totsomc'
+    !call metadata_set(attname, longname, stdname, units)
+
+    !call seq_flds_add(l2x_states,'Sl_deadcrootc')
+    !call seq_flds_add(x2z_states,'Sl_deadcrootc')
+    !longname = 'Dead coarse root C'
+    !stdname  = 'lnd_dead_coarse_root_c'
+    !units    = 'gC/m^2'
+    !attname  = 'Sl_deadcrootc'
+    !call metadata_set(attname, longname, stdname, units)
+
+    !call seq_flds_add(l2x_states,'Sl_frootc')
+    !call seq_flds_add(x2z_states,'Sl_frootc')
+    !longname = 'Fine root C'
+    !stdname  = 'lnd_fine_root_c'
+    !units    = 'gC/m^2'
+    !attname  = 'Sl_frootc'
+    !call metadata_set(attname, longname, stdname, units)
+
+    !call seq_flds_add(l2x_states,'Sl_livecrootc')
+    !call seq_flds_add(x2z_states,'Sl_livecrootc')
+    !longname = 'Live coarse root C'
+    !stdname  = 'lnd_live_coarse_root_c'
+    !units    = 'gC/m^2'
+    !attname  = 'Sl_livecrootc'
+    !call metadata_set(attname, longname, stdname, units)
+
+    !call seq_flds_add(l2x_states,'Sl_totvegc')
+    !call seq_flds_add(x2z_states,'Sl_totvegc')
+    !longname = 'Total vegetation carbon, excluding cpool'
+    !stdname  = 'lnd_total_vegetation_carbon'
+    !units    = 'gC/m^2'
+    !attname  = 'Sl_totvegc'
+    !call metadata_set(attname, longname, stdname, units)
+
+    ! iac->lnd 
+
+    call seq_flds_add(z2x_states,'Sz_landfrac')
+    call seq_flds_add(x2l_states,'Sz_landfrac')
+    longname = 'Land fraction from pft dataset'
+    stdname  = 'iac_landfac'
+    units    = 'unitless'
+    attname  = 'Sz_landfrac'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(z2x_states,'Sz_pct_wetland')
+    call seq_flds_add(x2l_states,'Sz_pct_wetland')
+    longname = 'Percent wetland'
+    stdname  = 'iac_pct_wetland'
+    units    = 'percent'
+    attname  = 'Sz_pct_wetland'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(z2x_states,'Sz_pct_lake')
+    call seq_flds_add(x2l_states,'Sz_pct_lake')
+    longname = 'Percent lake'
+    stdname  = 'iac_pct_lake'
+    units    = 'percent'
+    attname  = 'Sz_pct_lake'
+    call metadata_set(attname, longname, stdname, units)
+    
+    call seq_flds_add(z2x_states,'Sz_pct_glacier')
+    call seq_flds_add(x2l_states,'Sz_pct_glacier')
+    longname = 'Percent glacier'
+    stdname  = 'iac_pct_glacier'
+    units    = 'percent'
+    attname  = 'Sz_pct_glacier'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(z2x_states,'Sz_pct_urban')
+    call seq_flds_add(x2l_states,'Sz_pct_urban')
+    longname = 'Percent urban'
+    stdname  = 'iac_pct_urban'
+    units    = 'percent'
+    attname  = 'Sz_pct_urban'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(z2x_states,'Sz_pct_pft')
+    call seq_flds_add(x2l_states,'Sz_pct_pft')
+    longname = 'Percent pft of vegetated land unit'
+    stdname  = 'iac_pct_pft'
+    units    = 'percent'
+    attname  = 'Sz_pct_pft'
+    call metadata_set(attname, longname, stdname, units)
+
+    ! iac->atm flux.  Probably need to switch for correct
+    ! flds_CO2(a,b,c) option
+
+    call seq_flds_add(z2x_fluxes,  "Fazz_fco2_iac")
+    call seq_flds_add(x2a_fluxes,  "Fazz_fco2_iac")
+    longname = 'Surface flux of CO2 from iac'
+    stdname  = 'surface_upward_flux_of_carbon_dioxide_from_iac'
+    units    = 'moles m-2 s-1'
+    attname  = 'Fazz_fco2_iac'
+    call metadata_set(attname, longname, stdname, units)
+
 
     !-----------------------------
     ! New xao_states diagnostic
