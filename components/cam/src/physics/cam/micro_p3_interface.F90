@@ -36,6 +36,7 @@ module micro_p3_interface
   use spmd_utils,     only: masterproc
   use cam_logfile,    only: iulog
   use time_manager,   only: is_first_step
+  use perf_mod,       only: t_startf, t_stopf
        
   implicit none
   save
@@ -756,6 +757,7 @@ end subroutine micro_p3_readnl
        integer  :: i,k
        integer  :: ktop, kbot, kdir
 
+       call t_startf('micro_p3_get_cloud_fraction')
        ktop = kts        !k of top level
        kbot = kte        !k of bottom level
        kdir = -1         !(k: 1=top, nk=bottom)
@@ -798,6 +800,7 @@ end subroutine micro_p3_readnl
        END DO    ! k
 
 
+       call t_stopf('micro_p3_get_cloud_fraction')
        return
     end subroutine get_cloud_fraction
 
@@ -969,6 +972,8 @@ end subroutine micro_p3_readnl
     ! For potential temperature conversion
     real(rtype) :: rd, cp, inv_cp
 
+    call t_startf('micro_p3_tend_init')
+ 
     psetcols = state%psetcols
     lchnk = state%lchnk
     ngrdcol  = state%ngrdcol
@@ -1163,6 +1168,8 @@ end subroutine micro_p3_readnl
         call get_cloud_fraction(its,ite,kts,kte,ast(its:ite,kts:kte),cldliq(its:ite,kts:kte), &
                 rain(its:ite,kts:kte),ice(its:ite,kts:kte),precip_frac_method, &
                 icldm(its:ite,kts:kte),lcldm(its:ite,kts:kte),rcldm(its:ite,kts:kte))
+    call t_stopf('micro_p3_tend_init')
+    call t_startf('micro_p3_tend_loop')
     ! CALL P3
     !==============
     ! TODO: get proper value for 'it' from time module
@@ -1244,6 +1251,8 @@ end subroutine micro_p3_readnl
     ptend%q(:ncol,:pver,ixcldrim)  = ( max(0._rtype,rim(:ncol,:pver)    ) - state%q(:ncol,:pver,ixcldrim)  )/dtime
     ptend%q(:ncol,:pver,ixrimvol)  = ( max(0._rtype,rimvol(:ncol,:pver) ) - state%q(:ncol,:pver,ixrimvol)  )/dtime
 
+    call t_stopf('micro_p3_tend_loop')
+    call t_startf('micro_p3_tend_finish')
    ! Following MG interface as a template:
 
     ! Net micro_p3 condensation rate
@@ -1561,6 +1570,7 @@ end subroutine micro_p3_readnl
    call outfld('P3_mtend_Q',       tend_out(:,:,48), pcols, lchnk)
    call outfld('P3_mtend_TH',      tend_out(:,:,49), pcols, lchnk)
 
+   call t_stopf('micro_p3_tend_finish')
   end subroutine micro_p3_tend
 
   !================================================================================================
