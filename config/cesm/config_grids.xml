@@ -121,6 +121,16 @@
       <grid name="rof">null</grid>
     </model_grid>
 
+    <!-- Regional NLDAS-2 grid over the U.S. (0.125 degree resolution;
+         25-53N, 235-293E), with mask from NLDAS-2 atmospheric drivers -->
+    <model_grid alias="nldas2_rnldas2_mnldas2" compset="DATM.+CLM">
+      <grid name="atm">0.125nldas2</grid>
+      <grid name="lnd">0.125nldas2</grid>
+      <grid name="ocnice">0.125nldas2</grid>
+      <grid name="rof">0.125nldas2</grid>
+      <mask>nldas2</mask>
+    </model_grid>
+
     <model_grid alias="hcru_hcru" compset="DATM.+CLM">
       <grid name="atm">360x720cru</grid>
       <grid name="lnd">360x720cru</grid>
@@ -1098,6 +1108,14 @@
       <nx>1</nx> <ny>1</ny>
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.5x5pt-amazon_navy.090715.nc</file>
       <desc>5x5 Amazon regional case -- only valid for DATM/CLM compset</desc>
+    </domain>
+
+    <!-- This grid is also used by ROF -->
+    <domain name="0.125nldas2">
+      <nx>464</nx> <ny>224</ny>
+      <file grid="atm|lnd" mask="nldas2">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.0.125nldas2_0.125nldas2.190410.nc</file>
+      <file grid="ocnice"  mask="nldas2">$DIN_LOC_ROOT/share/domains/domain.clm/domain.ocn.0.125nldas2.190410.nc</file>
+      <desc>Regional NLDAS-2 grid over the U.S. (0.125 degree resolution; 25-53N, 235-293E)</desc>
     </domain>
 
     <!-- ATM/LND domains global -->
