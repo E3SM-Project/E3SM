@@ -1165,17 +1165,21 @@
       <modules>
         <command name="purge"/>
       </modules>
-      <modules compiler="intel">
-        <command name="load">intel/17.0.4-nymb5wx</command>
+      <modules compiler="intel" mpilib="mvapich">
+        <command name="load">intel/17.0.4-74uvhji</command>
         <command name="load">intel-mkl/2017.3.196-v7uuj6z</command>
         <command name="load">netcdf/4.4.1-magkugi</command>
         <command name="load">netcdf-fortran/4.4.4-7obsouy</command>
-      </modules>
-      <modules compiler="intel" mpilib="mvapich">
         <command name="load">mvapich2/2.2-verbs-lxc4y7i</command>
+        <command name="load">cmake</command>
       </modules>
       <modules compiler="intel" mpilib="openmpi">
-	<command name="load">openmpi/3.1.3-verbs-kqojjbw</command>
+        <command name="load">intel/17.0.0-yil23id</command>
+        <command name="load">intel-mkl/2017.0.098-gqttdpp</command>
+        <command name="load">netcdf/4.4.1-qy35uvc</command>
+        <command name="load">netcdf-fortran/4.4.4-2jrvsdv</command>
+	<command name="load">openmpi/2.0.1-verbs-id2i464</command>
+        <command name="load">cmake/3.14.1-ymmizo4</command>
       </modules>
       <modules compiler="gnu">
         <command name="load">gcc/8.2.0-g7hppkz</command>
@@ -1190,9 +1194,6 @@
       </modules>
       <modules compiler="gnu" mpilib="openmpi">
         <command name="load">openmpi/3.1.3-verbs-q4swt25</command>
-      </modules>
-      <modules>
-        <command name="load">cmake</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -1257,9 +1258,7 @@
     <module_system type="module">
       <init_path lang="sh">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/sh</init_path>
       <init_path lang="csh">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/csh</init_path>
-      <init_path lang="perl">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/perl</init_path>
       <init_path lang="python">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/env_modules_python.py</init_path>
-      <cmd_path lang="perl">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/libexec/lmod perl</cmd_path>
       <cmd_path lang="python">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
@@ -1273,16 +1272,18 @@
       <modules compiler="gnu">
         <command name="load">gcc/7.1.0-4bgguyp</command>
       </modules>
-      <modules mpilib="impi">
+      <modules compiler="intel" mpilib="impi">
         <command name="load">intel-mpi/2017.3-dfphq6k</command>
+        <command name="load">parallel-netcdf/1.6.1</command>
+      </modules>
+      <modules compiler="intel" mpilib="mvapich">
+        <command name="load">mvapich2/2.2-n6lclff</command>
+        <command name="load">parallel-netcdf/1.6.1-mvapich2.2</command>
       </modules>
       <modules>
         <command name="load">cmake</command>
         <command name="load">netcdf/4.4.1.1-prsuusl</command>
         <command name="load">netcdf-fortran/4.4.4-ojwazvy</command>
-      </modules>
-      <modules mpilib="!mpi-serial">
-        <command name="load">parallel-netcdf/1.6.1</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
