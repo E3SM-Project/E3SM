@@ -49,9 +49,9 @@ def _main_func():
         if model and model != stubcomp and comp != "CPL":
             cppdefs += "-D{}_PRESENT ".format(comp)
             if comp == "LND":
-                ulibdep += "\$(LNDLIBDIR)/\$(LNDLIB) "
+                ulibdep += "$(LNDLIBDIR)/$(LNDLIB) "
             else:
-                ulibdep += "\$(LIBROOT)/lib{}.a ".format(comp.lower())
+                ulibdep += "$(LIBROOT)/lib{}.a ".format(comp.lower())
     gmake_args += " USER_CPPDEFS=\"{}\" ULIBDEP=\"{}\"".format(cppdefs,ulibdep)
 
     expect((num_esp is None) or (int(num_esp) == 1), "ESP component restricted to one instance")
