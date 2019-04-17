@@ -10,6 +10,7 @@ UTILS = mpas_ocn_init_spherical_utils.o \
 
 TEST_CASES = mpas_ocn_init_baroclinic_channel.o \
              mpas_ocn_init_lock_exchange.o \
+             mpas_ocn_init_dam_break.o \
              mpas_ocn_init_internal_waves.o \
              mpas_ocn_init_overflow.o \
              mpas_ocn_init_cvmix_WSwSBF.o \
