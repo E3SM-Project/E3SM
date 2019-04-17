@@ -13,6 +13,7 @@ module clubb_intr
   !                                                                                                      !
   !---------------------------Code history-------------------------------------------------------------- !
   ! Authors:  P. Bogenschutz, C. Craig, A. Gettelman                                                     ! 
+  !                                                                                                      ! 
   !----------------------------------------------------------------------------------------------------- !
 
   use shr_kind_mod,  only: r8=>shr_kind_r8
@@ -178,14 +179,21 @@ module clubb_intr
     naai_idx, &         ! ice number concentration
     prer_evap_idx, &    ! rain evaporation rate
     qrl_idx, &          ! longwave cooling rate
-    radf_idx, &
+    radf_idx
+
+#ifdef FIVE
+  integer :: &
     t_five_idx, &
     q_five_idx, &
     u_five_idx, &
     v_five_idx, &
     pmid_five_idx, &
     pint_five_idx, &
-    wp2_five_idx
+    wp2_five_idx, &
+    cld_five_idx, &
+    concld_five_idx, &
+    ast_five_idx
+#endif
  
   integer, public :: & 
     ixthlp2 = 0, &
@@ -318,6 +326,9 @@ module clubb_intr
     ! Define a PBUF field for WP2 to be used on the low resolution E3SM grid, if FIVE is used
     !   this is the only turbulent moment that is passed to another E3SM parameterization, 
     !   thus must be interpolated and saved on the E3SM grid.
+    call pbuf_add_field('CLD_FIVE',      'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/),    cld_five_idx)
+    call pbuf_add_field('CONCLD_FIVE',   'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/),    concld_five_idx)
+    call pbuf_add_field('AST_FIVE',      'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/),    ast_five_idx)
     call pbuf_add_field('WP2_nadv_five', 'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wp2_five_idx)
 #endif 
 
@@ -666,6 +677,9 @@ end subroutine clubb_init_cnst
     v_five_idx = pbuf_get_index('V_FIVE')
     pmid_five_idx = pbuf_get_index('PMID_FIVE')
     pint_five_idx = pbuf_get_index('PINT_FIVE')
+    cld_five_idx = pbuf_get_index('CLD_FIVE')
+    concld_five_idx = pbuf_get_index('CONCLD_FIVE')
+    ast_five_idx = pbuf_get_index('AST_FIVE')
 #endif
 
     iisclr_rt  = -1
@@ -760,6 +774,22 @@ end subroutine clubb_init_cnst
     endif
 
     !  These are default CLUBB output.  Not the higher order history budgets
+#ifdef FIVE
+    call addfld ('RHO_CLUBB',    (/ 'ilev_five' /), 'A',        'kg/m3', 'Air Density')
+    call addfld ('UP2_CLUBB',    (/ 'ilev_five' /), 'A',        'm2/s2', 'Zonal Velocity Variance')
+    call addfld ('VP2_CLUBB',    (/ 'ilev_five' /), 'A',        'm2/s2', 'Meridional Velocity Variance')
+    call addfld ('WP2_CLUBB',    (/ 'ilev_five' /), 'A',        'm2/s2', 'Vertical Velocity Variance')
+    call addfld ('UPWP_CLUBB',    (/ 'ilev_five' /), 'A',       'm2/s2', 'Zonal Momentum Flux')
+    call addfld ('VPWP_CLUBB',    (/ 'ilev_five' /), 'A',       'm2/s2', 'Meridional Momentum Flux')
+    call addfld ('WP3_CLUBB',    (/ 'ilev_five' /), 'A',        'm3/s3', 'Third Moment Vertical Velocity')
+    call addfld ('WPTHLP_CLUBB',     (/ 'ilev_five' /), 'A',     'W/m2', 'Heat Flux')
+    call addfld ('WPRTP_CLUBB',     (/ 'ilev_five' /), 'A',      'W/m2', 'Moisture Flux')
+    call addfld ('RTP2_CLUBB', (/ 'ilev_five' /), 'A',       'g^2/kg^2', 'Moisture Variance')
+    call addfld ('THLP2_CLUBB',      (/ 'ilev_five' /), 'A',      'K^2', 'Temperature Variance')
+    call addfld ('RTPTHLP_CLUBB',   (/ 'ilev_five' /), 'A',    'K g/kg', 'Temp. Moist. Covariance')
+    call addfld ('WPRCP_CLUBB',     (/ 'ilev_five' /), 'A',      'W/m2', 'Liquid Water Flux')
+    call addfld ('WPTHVP_CLUBB',     (/ 'ilev_five' /),  'A',     'W/m2', 'Buoyancy Flux')
+#else
     call addfld ('RHO_CLUBB',    (/ 'ilev' /), 'A',        'kg/m3', 'Air Density')
     call addfld ('UP2_CLUBB',    (/ 'ilev' /), 'A',        'm2/s2', 'Zonal Velocity Variance')
     call addfld ('VP2_CLUBB',    (/ 'ilev' /), 'A',        'm2/s2', 'Meridional Velocity Variance')
@@ -772,12 +802,13 @@ end subroutine clubb_init_cnst
     call addfld ('RTP2_CLUBB', (/ 'ilev' /), 'A',       'g^2/kg^2', 'Moisture Variance')
     call addfld ('THLP2_CLUBB',      (/ 'ilev' /), 'A',      'K^2', 'Temperature Variance')
     call addfld ('RTPTHLP_CLUBB',   (/ 'ilev' /), 'A',    'K g/kg', 'Temp. Moist. Covariance')
-    call addfld ('RCM_CLUBB',     (/ 'ilev' /), 'A',        'g/kg', 'Cloud Water Mixing Ratio')
     call addfld ('WPRCP_CLUBB',     (/ 'ilev' /), 'A',      'W/m2', 'Liquid Water Flux')
+    call addfld ('WPTHVP_CLUBB',     (/ 'ilev' /),  'A',     'W/m2', 'Buoyancy Flux')
+#endif
+    call addfld ('RCM_CLUBB',     (/ 'ilev' /), 'A',        'g/kg', 'Cloud Water Mixing Ratio')
     call addfld ('CLOUDFRAC_CLUBB', (/ 'lev' /),  'A',  'fraction', 'Cloud Fraction')
     call addfld ('RCMINLAYER_CLUBB',     (/ 'ilev' /), 'A', 'g/kg', 'Cloud Water in Layer')
     call addfld ('CLOUDCOVER_CLUBB', (/ 'ilev' /), 'A', 'fraction', 'Cloud Cover') 
-    call addfld ('WPTHVP_CLUBB',     (/ 'lev' /),  'A',     'W/m2', 'Buoyancy Flux')
     call addfld ('RVMTEND_CLUBB',  (/ 'lev' /),  'A',    'g/kg /s', 'Water vapor tendency')
     call addfld ('STEND_CLUBB',      (/ 'lev' /),  'A',      'k/s', 'Temperature tendency')
     call addfld ('RCMTEND_CLUBB',  (/ 'lev' /),  'A',    'g/kg /s', 'Cloud Liquid Water Tendency')
@@ -803,9 +834,15 @@ end subroutine clubb_init_cnst
     call addfld ('DPDLFT', (/ 'lev' /),  'A',        'K/s', 'T-tendency due to deep convective detrainment') 
     call addfld ('RELVAR', (/ 'lev' /),  'A',        '-', 'Relative cloud water variance')
     call addfld ('RELVARC', (/ 'lev' /),  'A',        '-', 'Relative cloud water variance', flag_xyfill=.true.,fill_value=fillvalue)
+    call addfld ('CLD', (/ 'lev' /),  'A',        'fraction', ' cloud cover')
     call addfld ('CONCLD', (/ 'lev' /),  'A',        'fraction', 'Convective cloud cover')
+    call addfld ('AST', (/ 'lev' /),  'A',        'fraction', 'Stratiform cloud cover')
     call addfld ('CMELIQ', (/ 'lev' /),  'A',        'kg/kg/s', 'Rate of cond-evap of liq within the cloud')
-
+#ifdef FIVE
+    call addfld ('CLD_FIVE', (/ 'lev_five' /),  'A',        'fraction', ' cloud cover')
+    call addfld ('CONCLD_FIVE', (/ 'lev_five' /),  'A',        'fraction', 'Convective cloud cover')
+    call addfld ('AST_FIVE', (/ 'lev_five' /),  'A',        'fraction', 'Stratiform cloud cover')
+#endif
     !  Initialize statistics, below are dummy variables
     dum1 = 300._r8
     dum2 = 1200._r8
@@ -868,7 +905,14 @@ end subroutine clubb_init_cnst
        call add_default('VM_CLUBB',         1, ' ')
        call add_default('SL',               1, ' ')
        call add_default('QT',               1, ' ')
+       call add_default('CLD',              1, ' ')
+       call add_default('AST',              1, ' ')
        call add_default('CONCLD',           1, ' ')
+#ifdef FIVE
+       call add_default('CLD_FIVE',         1, ' ')
+       call add_default('AST_FIVE',         1, ' ')
+       call add_default('CONCLD_FIVE',      1, ' ')
+#endif
     else 
        call add_default('CLOUDFRAC_CLUBB',  1, ' ')
        call add_default('CONCLD',           1, ' ')
@@ -1199,10 +1243,10 @@ end subroutine clubb_init_cnst
    real(r8) :: se_dis, se_a(pcols), se_b(pcols), clubb_s(pver)
 
    real(r8) :: exner_clubb(pcols,pverp)         ! Exner function consistent with CLUBB          [-]
-   real(r8) :: wpthlp_output(pcols,pverp)       ! Heat flux output variable                     [W/m2]
-   real(r8) :: wprtp_output(pcols,pverp)        ! Total water flux output variable              [W/m2]
-   real(r8) :: wp3_output(pcols,pverp)          ! wp3 output                                    [m^3/s^3]
-   real(r8) :: rtpthlp_output(pcols,pverp)      ! rtpthlp ouptut                                [K kg/kg]
+   real(r8) :: wpthlp_output(pcols,pverp_clubb)       ! Heat flux output variable                     [W/m2]
+   real(r8) :: wprtp_output(pcols,pverp_clubb)        ! Total water flux output variable              [W/m2]
+   real(r8) :: wp3_output(pcols,pverp_clubb)          ! wp3 output                                    [m^3/s^3]
+   real(r8) :: rtpthlp_output(pcols,pverp_clubb)      ! rtpthlp ouptut                                [K kg/kg]
    real(r8) :: qt_output(pcols,pver)            ! Total water mixing ratio for output           [kg/kg]
    real(r8) :: thetal_output(pcols,pver)        ! Liquid water potential temperature output     [K]
    real(r8) :: sl_output(pcols,pver)            ! Liquid water static energy                    [J/kg]
@@ -1210,12 +1254,12 @@ end subroutine clubb_init_cnst
    real(r8) :: rho(pcols,pverp_clubb)           ! Midpoint density in CAM                       [kg/m^3]
    real(r8) :: thv(pcols,pver)                  ! virtual potential temperature                 [K]
    real(r8) :: edsclr_out(pverp,edsclr_dim)     ! Scalars to be diffused through CLUBB          [units vary]
-   real(r8) :: rcm(pcols,pverp)           ! CLUBB cloud water mixing ratio                [kg/kg]
+   real(r8) :: rcm(pcols,pverp)                 ! CLUBB cloud water mixing ratio                [kg/kg]
    real(r8) :: cloud_frac(pcols,pverp)          ! CLUBB cloud fraction                          [fraction]
    real(r8) :: rcm_in_layer(pcols,pverp)        ! CLUBB in-cloud liquid water mixing ratio      [kg/kg]
    real(r8) :: cloud_cover(pcols,pverp)         ! CLUBB in-cloud cloud fraction                 [fraction]
-   real(r8) :: wprcp(pcols,pverp)               ! CLUBB liquid water flux                       [m/s kg/kg]
-   real(r8) :: wpthvp(pcols,pverp)              ! CLUBB buoyancy flux                           [W/m^2]
+   real(r8) :: wprcp(pcols,pverp_clubb)               ! CLUBB liquid water flux                       [m/s kg/kg]
+   real(r8) :: wpthvp(pcols,pverp_clubb)              ! CLUBB buoyancy flux                           [W/m^2]
    real(r8) :: rvm(pcols,pverp)
    real(r8) :: thlm(pcols,pverp)
    real(r8) :: rtm(pcols,pverp)
@@ -1254,6 +1298,7 @@ end subroutine clubb_init_cnst
    real(r8) :: qs(pcols,pver)
    real(r8) :: gam(pcols,pver)
    real(r8) :: tmp_array(state%ncol,pverp)
+   real(r8) :: tmp_array2(state%ncol,pverp_clubb)
    real(r8) :: bfact, orgparam, delpavg, hkl, hkk
    character(len=6) :: choice_radf
    
@@ -1317,9 +1362,18 @@ end subroutine clubb_init_cnst
    real(r8), pointer, dimension(:,:) :: pmid_five
    real(r8), pointer, dimension(:,:) :: pint_five
    real(r8), pointer, dimension(:,:) :: wp2_five
+   real(r8), pointer, dimension(:,:) :: cld_five
+   real(r8), pointer, dimension(:,:) :: concld_five
+   real(r8), pointer, dimension(:,:) :: ast_five
    
    real(r8) :: t_five_host(pver)
-   
+  
+   real(r8) :: cmfmc_five(pcols,pverp_five) 
+   real(r8) :: cmfmc_sh_five(pcols,pverp_five) 
+   real(r8) :: alst_five(pcols,pverp_five) 
+   real(r8) :: aist_five(pcols,pverp_five) 
+   real(r8) :: deepcu_five(pcols,pverp_five) 
+   real(r8) :: tke_five(pcols,pverp_five) 
    ! Five variables on the E3SM grid
    real(r8) :: t_five_low(pcols,pver)
    real(r8) :: u_five_low(pcols,pver)
@@ -1330,7 +1384,7 @@ end subroutine clubb_init_cnst
    real(r8) :: tv_five(pver_five)
    real(r8) :: thv_five(pver_five)
    real(r8) :: omega_five(pver_five)
-   real(r8) :: exner_five(pver_five)
+   real(r8) :: exner_five(pcols,pver_five)
    
    real(r8) :: dz_five(pver_five)
    real(r8) :: rho_five(pver_five)
@@ -1453,6 +1507,9 @@ end subroutine clubb_init_cnst
    call pbuf_get_field(pbuf, pint_five_idx,    pint_five,      start=(/1,1,1/), kount=(/pcols,pverp_five,1/))  
    
    call pbuf_get_field(pbuf, wp2_five_idx,     wp2_five,     start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))      
+   call pbuf_get_field(pbuf, cld_five_idx,     cld_five,     start=(/1,1,itim_old/), kount=(/pcols,pver_five,1/))      
+   call pbuf_get_field(pbuf, concld_five_idx,  concld_five,  start=(/1,1,itim_old/), kount=(/pcols,pver_five,1/))      
+   call pbuf_get_field(pbuf, ast_five_idx,     ast_five,     start=(/1,1,itim_old/), kount=(/pcols,pver_five,1/))      
 #endif 
 
    ! Intialize the apply_const variable (note special logic is due to eularian backstepping)
@@ -1577,8 +1634,9 @@ end subroutine clubb_init_cnst
 #ifdef FIVE
    ! Syncronize FIVE variables to E3SM state
    !  This is a crucial component to using FIVE within E3SM
-   call five_syncronize_e3sm(state1,dtime,p0_clubb,pint_five,pmid_five,t_five,u_five,v_five,q_five) 
-   write(*,*) 'QFIVE ', q_five(:,:,:)
+   if (macmic_it .eq. 1) then
+      call five_syncronize_e3sm(state1,hdtime,p0_clubb,pint_five,pmid_five,t_five,u_five,v_five,q_five) 
+   endif
 #endif   
 
    !  At each CLUBB call, initialize mean momentum  and thermo CLUBB state 
@@ -1800,13 +1858,13 @@ end subroutine clubb_init_cnst
       
       ! Compute the Exner values to that using FIVE pressure levels
       do k=1,pver_five
-        exner_five(k) = 1._r8/(pmid_five(i,k)/p0_clubb)**(rair/cpair)
+        exner_five(i,k) = 1._r8/(pmid_five(i,k)/p0_clubb)**(rair/cpair)
       enddo
       
       ! Define virtual temperature
       do k=1,pver_five
         tv_five(k) = t_five(i,k)*(1._r8+zvir*q_five(i,k,ixq)-q_five(i,k,ixcldliq))
-	thv_five(k) = exner_five(k)*tv_five(k)
+	thv_five(k) = exner_five(i,k)*tv_five(k)
       enddo
       
       ! Compute heights on the FIVE grid
@@ -1827,7 +1885,7 @@ end subroutine clubb_init_cnst
 	rho(i,k) = rho_ds_zt(k)
 	rho_zt(k) = rho(i,k)
 	thv_ds_zt(k) =thv_five(k)
-	exner(k) = 1._r8/exner_five(k)
+	exner(k) = 1._r8/exner_five(i,k)
       enddo
            
       ! Linearly interpolate other CLUBB input variables to the FIVE grid, which 
@@ -1868,7 +1926,7 @@ end subroutine clubb_init_cnst
       ! Initialize CLUBB's prognostic variables here, based on the 
       !   FIVE state
       do k=1,pver_five
-        thlm_pre(k) = t_five(i,k)*exner_five(k) - (latvap/cpair) * q_five(i,k,ixcldliq) ! cloud water
+        thlm_pre(k) = t_five(i,k)*exner_five(i,k) - (latvap/cpair) * q_five(i,k,ixcldliq) ! cloud water
         um_pre(k) = u_five(i,k)
         vm_pre(k) = v_five(i,k) 
         rtm_pre(k) = q_five(i,k,ixq) + q_five(i,k,ixcldliq)
@@ -2383,7 +2441,7 @@ end subroutine clubb_init_cnst
       ! Linearly interpolate variables that E3SM needs to use for other routines (i.e. cloud fraction)
       !  +QUESTION:  Should things like cloud fraction be saved on the FIVE grid so they can be used
       !    for microphysics and radiation, etc. etc. ?!
-      call linear_interp(pmid_five(i,:),state1%pmid(i,:),wprcp_pre(1:pver_five),wprcp(i,1:pver),pver_five,pver)
+      !call linear_interp(pmid_five(i,:),state1%pmid(i,:),wprcp_pre(1:pver_five),wprcp(i,1:pver),pver_five,pver)
       call linear_interp(pmid_five(i,:),state1%pmid(i,:),cloud_frac_pre(1:pver_five),cloud_frac(i,1:pver),pver_five,pver)
       call linear_interp(pmid_five(i,:),state1%pmid(i,:),rcm_in_layer_pre(1:pver_five),rcm_in_layer(i,1:pver),pver_five,pver)
       call linear_interp(pmid_five(i,:),state1%pmid(i,:),cloud_cover_pre(1:pver_five),cloud_cover(i,1:pver),pver_five,pver)
@@ -2394,7 +2452,8 @@ end subroutine clubb_init_cnst
       
       call linear_interp(pmid_five(i,:),state1%pmid(i,:),wp2(i,1:pver_five),wp2_five(i,1:pver),pver_five,pver)
       wp2_five(i,pverp) = wp2_five(i,pver) ! set lower boundary 
- 
+      cld_five(i,1:pver_five) = cloud_frac_pre(1:pver_five) 
+      wprcp(i,1:pverp_five) = wprcp_pre(1:pverp_five)
 #else 
       ! If FIVE is not used, then simply just copy the arrays over
       thlm(i,:) = thlm_pre(:)
@@ -2694,18 +2753,31 @@ end subroutine clubb_init_cnst
    ! ------------------------------------------------- !
 
    !  density
+#ifndef FIVE 
    rho(:ncol,1:pver) = state1%pmid(:ncol,1:pver)/(rair*state1%t(:ncol,1:pver))
    rho(:ncol,pverp)  = state1%ps(:ncol)/(rair*state1%t(:ncol,pver))
+#endif
 
    eps = rair/rh2o
    wpthvp(:,:) = 0.0_r8
-   do k=1,pver
+
+   do k=1,pver_clubb
       do i=1,ncol
          !  buoyancy flux
+#ifdef FIVE
+         wpthvp(i,k) = (wpthlp(i,k)-(apply_const*wpthlp_const))+((1._r8-eps)/eps)*theta0* &
+                       (wprtp(i,k)-(apply_const*wprtp_const))+((latvap/cpair)* &
+                       exner_five(i,k)-(1._r8/eps)*theta0)*wprcp(i,k)
+#else
          wpthvp(i,k) = (wpthlp(i,k)-(apply_const*wpthlp_const))+((1._r8-eps)/eps)*theta0* &
                        (wprtp(i,k)-(apply_const*wprtp_const))+((latvap/cpair)* &
                        state1%exner(i,k)-(1._r8/eps)*theta0)*wprcp(i,k)
+#endif
+      enddo
+   enddo
 
+   do k=1,pver
+      do i=1,ncol
          !  total water mixing ratio
          qt_output(i,k) = state1%q(i,k,ixq)+state1%q(i,k,ixcldliq)+state1%q(i,k,ixcldice)
          !  liquid water potential temperature
@@ -2715,15 +2787,33 @@ end subroutine clubb_init_cnst
       enddo
    enddo
    
-   do k=1,pverp
+   do k=1,pverp_clubb
       do i=1,ncol
          wpthlp_output(i,k)  = (wpthlp(i,k)-(apply_const*wpthlp_const))*rho(i,k)*cpair !  liquid water potential temperature flux
          wprtp_output(i,k)   = (wprtp(i,k)-(apply_const*wprtp_const))*rho(i,k)*latvap  !  total water mixig ratio flux
          rtpthlp_output(i,k) = rtpthlp(i,k)-(apply_const*rtpthlp_const)                !  rtpthlp output
          wp3_output(i,k)     = wp3(i,k) - (apply_const*wp3_const)                      !  wp3 output
-         tke(i,k)            = 0.5_r8*(up2(i,k)+vp2(i,k)+wp2(i,k))                     !  turbulent kinetic energy
       enddo
    enddo
+
+#ifdef FIVE
+   do i=1,ncol
+      do k=1,pverp_clubb
+         tke_five(i,k)       = 0.5_r8*(up2(i,k)+vp2(i,k)+wp2(i,k))
+      enddo
+
+      call linear_interp(pmid_five(i,:),state1%pmid(i,:),tke_five(i,1:pver_five),tke(i,1:pver),pver_five,pver)
+
+      tke(i,pverp) = tke_five(i,pverp_five)
+   enddo
+
+#else 
+   do k=1,pverp
+      do i=1,ncol
+         tke(i,k)            = 0.5_r8*(up2(i,k)+vp2(i,k)+wp2(i,k))
+      enddo
+   enddo
+#endif
    
    ! --------------------------------------------------------------------------------- ! 
    !  Diagnose some quantities that are computed in macrop_tend here.                  !
@@ -2748,6 +2838,16 @@ end subroutine clubb_init_cnst
       enddo
    enddo
 
+#ifdef FIVE
+   alst_five(:,:) = 0.0_r8
+
+   do k=1,pver_clubb
+      do i=1,ncol
+         alst_five(i,k) = cld_five(i,k)   
+      enddo
+   enddo
+#endif 
+
    ! HW
    if(liqcf_fix) then
       if(is_first_step()) alst_o(:ncol,:pver) = alst(:ncol,:pver)
@@ -2760,7 +2860,10 @@ end subroutine clubb_init_cnst
  
    deepcu(:,pver) = 0.0_r8
    shalcu(:,pver) = 0.0_r8
- 
+#ifdef FIVE
+   deepcu_five(:,pver_clubb) = 0.0_r8
+#endif 
+
    do k=1,pver-1
       do i=1,ncol
          !  diagnose the deep convective cloud fraction, as done in macrophysics based on the 
@@ -2781,6 +2884,31 @@ end subroutine clubb_init_cnst
          concld(i,k) = min(cloud_frac(i,k)-alst(i,k)+deepcu(i,k),0.80_r8)
       enddo
    enddo
+
+# ifdef FIVE
+   do i = 1, ncol
+      call linear_interp(state1%pmid(i,:),pmid_five(i,:), &
+                         cmfmc(i,1:pver),cmfmc_five(i,1:pver_five),pver,pver_five)
+      call linear_interp(state1%pmid(i,:),pmid_five(i,:), &
+                         cmfmc_sh(i,1:pver),cmfmc_sh_five(i,1:pver_five),pver,pver_five)
+      call linear_interp(state1%pmid(i,:),pmid_five(i,:), &
+                         deepcu(i,1:pver),deepcu_five(i,1:pver_five),pver,pver_five)
+   enddo
+
+   do k = 1, pver_clubb-1
+      do i = 1, ncol
+
+!         deepcu_five(i,k) = max(0.0_r8,min(dp1*log(1.0_r8+500.0_r8*(cmfmc_five(i,k+1)-cmfmc_sh_five(i,k+1))),0.6_r8))
+!
+!         if (deepcu_five(i,k) <= frac_limit ) then
+!            deepcu_five(i,k) = 0._r8
+!         endif
+
+         concld_five(i,k) = min(cld_five(i,k)-alst_five(i,k)+deepcu_five(i,k),0.80_r8)
+
+      enddo 
+   enddo 
+# endif
    
    if (single_column) then
       if (trim(scm_clubb_iop_name) .eq. 'ATEX_48hr'       .or. &
@@ -2795,7 +2923,7 @@ end subroutine clubb_init_cnst
        
       endif       
    endif
-   
+
    ! --------------------------------------------------------------------------------- !  
    !  COMPUTE THE ICE CLOUD FRACTION PORTION                                           !
    !  use the aist_vector function to compute the ice cloud fraction                   !
@@ -2842,7 +2970,20 @@ end subroutine clubb_init_cnst
          cloud_frac(i,k) = min(ast(i,k)+deepcu(i,k),1.0_r8)
       enddo
    enddo
-   
+#ifdef FIVE
+   do i = 1, ncol
+      call linear_interp(state1%pmid(i,:),pmid_five(i,:), &
+                         aist(i,1:pver),aist_five(i,1:pver_five),pver,pver_five)
+   enddo
+
+   do k = 1, pver_clubb
+      do i = 1, ncol
+         ast_five(i,k) = max(alst_five(i,k), aist_five(i,k))
+
+         cld_five(i,k) = min(ast_five(i,k)+deepcu_five(i,k), 1.0_r8)
+      enddo
+   enddo
+#endif   
    ! --------------------------------------------------------------------------------- !  
    !  DIAGNOSE THE PBL DEPTH                                                           !
    !  this is needed for aerosol code                                                  !
@@ -2858,7 +2999,8 @@ end subroutine clubb_init_cnst
  
    ! diagnose surface friction and obukhov length (inputs to diagnose PBL depth)
    do i=1,ncol
-      rrho = (1._r8/gravit)*(state1%pdel(i,pver)/dz_g(pver))
+      !rrho = (1._r8/gravit)*(state1%pdel(i,pver)/dz_g(pver))
+      rrho = (1._r8/gravit)*(state1%pdel(i,pver)/(state%zi(i,pver)-state%zi(i,pver+1)))
       call calc_ustar( state1%t(i,pver), state1%pmid(i,pver), cam_in%wsx(i), cam_in%wsy(i), &
                        rrho, ustar2(i) )
       call calc_obklen( th(i,pver), thv(i,pver), cam_in%cflx(i,1), cam_in%shf(i), rrho, ustar2(i), &
@@ -2900,21 +3042,21 @@ end subroutine clubb_init_cnst
    call outfld( 'VPWP_CLUBB',       vpwp,                    pcols, lchnk )
    call outfld( 'WPTHLP_CLUBB',     wpthlp_output,           pcols, lchnk )
    call outfld( 'WPRTP_CLUBB',      wprtp_output,            pcols, lchnk )
-   tmp_array = rtp2(:ncol,:)*1000._r8
-   call outfld( 'RTP2_CLUBB',       tmp_array,               ncol,  lchnk )
+   tmp_array2 = rtp2(:ncol,:)*1000._r8
+   call outfld( 'RTP2_CLUBB',       tmp_array2,               ncol,  lchnk )
    call outfld( 'THLP2_CLUBB',      thlp2,                   pcols, lchnk )
-   tmp_array = rtpthlp_output(:ncol,:)*1000._r8
-   call outfld( 'RTPTHLP_CLUBB',    tmp_array,               ncol,  lchnk )
+   tmp_array2 = rtpthlp_output(:ncol,:)*1000._r8
+   call outfld( 'RTPTHLP_CLUBB',    tmp_array2,               ncol,  lchnk )
    tmp_array = rcm(:ncol,:)*1000._r8
    call outfld( 'RCM_CLUBB',        tmp_array,               ncol,  lchnk )
-   tmp_array = wprcp(:ncol,:)*latvap
-   call outfld( 'WPRCP_CLUBB',      tmp_array,               ncol,  lchnk )
+   tmp_array2 = wprcp(:ncol,:)*latvap
+   call outfld( 'WPRCP_CLUBB',      tmp_array2,               ncol,  lchnk )
    call outfld( 'CLOUDFRAC_CLUBB',  alst,                    pcols, lchnk )
    tmp_array = rcm_in_layer(:ncol,:)*1000._r8
    call outfld( 'RCMINLAYER_CLUBB', tmp_array,               ncol,  lchnk )
    call outfld( 'CLOUDCOVER_CLUBB', cloud_frac,              pcols, lchnk )
-   tmp_array = wpthvp(:ncol,:)*cpair
-   call outfld( 'WPTHVP_CLUBB',     tmp_array,               ncol,  lchnk )
+   tmp_array2 = wpthvp(:ncol,:)*cpair
+   call outfld( 'WPTHVP_CLUBB',     tmp_array2,               ncol,  lchnk )
    tmp_array = 1._r8*zt_out(:ncol,:)
    call outfld( 'ZT_CLUBB',         tmp_array,               ncol,  lchnk )
    tmp_array = 1._r8*zi_out(:ncol,:)
@@ -2924,8 +3066,14 @@ end subroutine clubb_init_cnst
    call outfld( 'THETAL',           thetal_output,           pcols, lchnk )
    call outfld( 'QT',               qt_output,               pcols, lchnk )
    call outfld( 'SL',               sl_output,               pcols, lchnk )
+   call outfld( 'CLD',              cld,                     pcols, lchnk )
    call outfld( 'CONCLD',           concld,                  pcols, lchnk )
-
+   call outfld( 'AST',              ast,                     pcols, lchnk )
+#ifdef FIVE
+   call outfld( 'CLD_FIVE',         cld_five,                pcols, lchnk )
+   call outfld( 'CONCLD_FIVE',      concld_five,             pcols, lchnk )
+   call outfld( 'AST_FIVE',         ast_five,                pcols, lchnk )
+#endif
    !  Output CLUBB history here
    if (l_stats) then 
       
