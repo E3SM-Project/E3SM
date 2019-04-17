@@ -56,6 +56,7 @@ module ocn_init_mode
    use ocn_init_sea_mount
    use ocn_init_isomip
    use ocn_init_isomip_plus
+   use ocn_init_tidal_boundary
 
    implicit none
    private
@@ -282,6 +283,7 @@ module ocn_init_mode
       call ocn_init_setup_sea_mount(domain, ierr)
       call ocn_init_setup_isomip(domain, ierr)
       call ocn_init_setup_isomip_plus(domain, ierr)
+      call ocn_init_setup_tidal_boundary(domain, ierr)
       !call ocn_init_setup_TEMPLATE(domain, ierr)
 
       call mpas_log_write( ' Completed setup of: ' // trim(config_init_configuration))
@@ -386,6 +388,8 @@ module ocn_init_mode
       call ocn_init_validate_isomip(configPool, packagePool, iocontext, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
       call ocn_init_validate_isomip_plus(configPool, packagePool, iocontext, iErr=err_tmp)
+      iErr = ior(iErr, err_tmp)
+      call ocn_init_validate_tidal_boundary(configPool, packagePool, iocontext, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
       ! call ocn_init_validate_TEMPLATE(configPool, packagePool, iocontext, iErr=err_tmp)
       ! iErr = ior(iErr, err_tmp)
