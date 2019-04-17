@@ -155,6 +155,26 @@
                      description="The topography dataset to use for the model terrain and for GWDO static fields (case 7 only)"
                      possible_values="`GTOPO30' or `GMTED2010'"/>
 
+                <nml_option name="config_vegfrac_data"          type="character"     default_value="MODIS"
+                     units="-"
+                     description="The climatological monthly vegetation fraction dataset to use (case 7 only)"
+                     possible_values="`MODIS' or `NCEP'"/>
+
+                <nml_option name="config_albedo_data"           type="character"     default_value="MODIS"
+                     units="-"
+                     description="The climatological monthly albedo dataset to use (case 7 only)"
+                     possible_values="`MODIS' or `NCEP'"/>
+
+                <nml_option name="config_maxsnowalbedo_data"    type="character"     default_value="MODIS"
+                     units="-"
+                     description="The maximum snow albedo dataset to use (case 7 only)"
+                     possible_values="`MODIS' or `NCEP'"/>
+
+                <nml_option name="config_supersample_factor"    type="integer"       default_value="3"
+                     units="-"
+                     description="The supersampling factor to be used for MODIS maximum snow albedo and monthly albedo datasets (case 7 only)"
+                     possible_values="Positive integer values"/>
+
                 <nml_option name="config_use_spechumd"          type="logical"       default_value="false"
                      units="-"
                      description="Whether to use specific-humidity as the first-guess moisture variable. If this option is False, relative humidity will be used."
