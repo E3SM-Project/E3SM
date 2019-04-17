@@ -54,6 +54,8 @@ void AtmosphereDriver::run ( /* inputs ? */ ) {
 
 void AtmosphereDriver::finalize ( /* inputs? */ ) {
   m_atm_process_group->finalize( /* inputs ? */ );
+
+  m_device_field_repo.clean_up();
 }
 
 }  // namespace control

@@ -27,7 +27,7 @@ public:
   std::set<std::string> get_required_grids () const {
     // TODO: define what grid the coupling runs on. Check with MOAB folks.
     static std::set<std::string> s;
-    s.insert(e2str(GridType::Undefined));
+    s.insert("Physics");
     return s;
   }
 
@@ -85,13 +85,9 @@ protected:
 
   // Setting the field in the atmosphere process
   void set_required_field_impl (const Field<const Real, device_type>& f) {
-    error::runtime_check(f.get_header().get_identifier()==*m_input_fids.begin(),
-                         "Error! This is not one of my input fields...\n");
     m_input = f;
   }
   void set_computed_field_impl (const Field<      Real, device_type>& f) {
-    error::runtime_check(f.get_header().get_identifier()==*m_output_fids.begin(),
-                         "Error! This is not one of my input fields...\n");
     m_output = f;
   }
 
@@ -178,12 +174,11 @@ TEST_CASE("ping-pong", "") {
   // Create the driver
   AtmosphereDriver ad;
 
-  // Init, run, and finalize
+  // Init and run (do not finalize, or you'll clear the field repo!)
   ad.initialize(atm_comm,ad_params);
   for (int i=0; i<num_iters; ++i) {
     ad.run();
   }
-  ad.finalize();
 
   // Every atm proc does out(:) = sin(in(:)+rank)
   Real answer = 0;
@@ -206,6 +201,9 @@ TEST_CASE("ping-pong", "") {
   for (int i=0; i<h_view.extent_int(0); ++i) {
     REQUIRE (h_view(i) == answer);
   }
+
+  // Finalize 
+  ad.finalize();
 }
 
 } // empty namespace
