@@ -326,6 +326,11 @@
   <!-- *********************************** -->
   <!-- idealized / adiabatic -->
   <!-- *********************************** -->
+  
+  <compset>
+    <alias>FSCRAV1C-L</alias>
+    <lname>2000_SCREAM%AV1C-L_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>  
 
   <compset>
     <alias>FIDEAL</alias>
