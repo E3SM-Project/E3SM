@@ -386,6 +386,16 @@
     </queues>
    </batch_system>
 
+   <batch_system MACH="compy" type="slurm">
+    <directives>
+      <directive>--output=slurm.out</directive>
+      <directive>--error=slurm.err</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:59:00" default="true">slurm</queue>
+    </queues>
+   </batch_system>
+
    <batch_system MACH="sooty" type="slurm" >
      <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
