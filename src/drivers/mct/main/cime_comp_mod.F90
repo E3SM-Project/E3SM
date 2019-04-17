@@ -3811,8 +3811,8 @@ contains
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
        ! NOTE - only create appropriate input to glc if the avg_alarm is on
-       if (glcrun_avg_alarm) then
-          if (lnd_c2_glc .or. ocn_c2_glc) then
+       if (lnd_c2_glc .or. ocn_c2_glc) then
+          if (glcrun_avg_alarm) then
              call prep_glc_accum_avg(timer='CPL:glcprep_avg')
 
              if (lnd_c2_glc) then
@@ -3826,11 +3826,10 @@ contains
              call component_diag(infodata, glc, flow='x2c', comment='send glc', &
                   info_debug=info_debug, timer_diag='CPL:glcprep_diagav')
 
-          endif ! lnd_c2_glc or ocn_c2_glc
-
-       else
-          call prep_glc_zero_fields()
-       end if  ! glcrun_avg_alarm
+          else
+             call prep_glc_zero_fields()
+          endif ! glcrun_avg_alarm
+       end if ! lnd_c2_glc or ocn_c2_glc
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
        call t_drvstopf  ('CPL:GLCPREP',cplrun=.true.)
