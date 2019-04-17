@@ -35,6 +35,9 @@ public:
     return factory;
   }
 
+  // For debugging, inspect if the size of the register in the factory
+  size_t register_size () const { return m_register.size(); }
+
   // Register a creator and returns true if it was successfully registered
   bool register_product (const key_type& key,
                          const creator_type& creator,
@@ -44,6 +47,8 @@ public:
   obj_ptr_type create (const key_type& label, ConstructorArgs&& ...args);
 
 private:
+  std::string print_registered_products () const;
+
   Factory () = default;
   Factory (const factory_type&) = delete;
   factory_type& operator= (const factory_type&) = delete;
@@ -84,14 +89,40 @@ create (const key_type& key,ConstructorArgs&& ...args)
   // Note: this check is redundant, since, if negative, the next one would fail too.
   //       However, this check is symptomatic of a larger problem (not registering product)
   //       than simply not finding the requested one (perhaps because of spelling).
-  error::runtime_check(m_register.size()>0, "[Factory] Error! There are no products registered in the factory. Did you forget to call 'register_product'?\n");
+  scream_require_msg(m_register.size()>0,
+                     "[Factory] Error! There are no products registered in the factory.\n"
+                     "                 Did you forget to call 'register_product'?\n");
 
   auto it = m_register.find(key);
 
   // Check that the requested product is registered
-  error::runtime_check(it!=m_register.end(), "[Factory] Error! The key '" + key + "' is not associated to any registered product. Did you forget to register it?\n");
+  scream_require_msg(it!=m_register.end(),
+                     "[Factory] Error! The key '" + key + "' is not associated to any registered product.\n"
+                     "                 The list of registered product is: " + print_registered_products() + "\n"
+                     "                 Did you forget to register it?\n");
 
   return (*it->second)(std::forward<ConstructorArgs>(args)...);
+}
+
+template<typename AbstractProduct,
+         typename KeyType,
+         typename... ConstructorArgs>
+std::string
+Factory<AbstractProduct,KeyType,ConstructorArgs...>::
+print_registered_products () const {
+  // This routine simply puts the products name in a string, as "name1, name2, name3,..., name N"
+  std::string str;
+  if (m_register.size()==0) {
+    return str;
+  }
+  auto next = m_register.begin();
+  auto it = m_register.begin();
+  for (++next; next!=m_register.end(); ++it, ++next) {
+    str += it->first + ", ";
+  }
+  str += next->first;
+
+  return str;
 }
 
 } // namespace util
