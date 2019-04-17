@@ -153,7 +153,7 @@
                      description="The maximum snow albedo dataset to use (case 7 only)"
                      possible_values="`MODIS' or `NCEP'"/>
 
-                <nml_option name="config_supersample_factor"    type="integer"       default_value="1"    in_defaults="false"
+                <nml_option name="config_supersample_factor"    type="integer"       default_value="3"
                      units="-"
                      description="The supersampling factor to be used for MODIS maximum snow albedo and monthly albedo datasets (case 7 only)"
                      possible_values="Positive integer values"/>
