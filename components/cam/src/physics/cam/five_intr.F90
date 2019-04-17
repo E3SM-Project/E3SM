@@ -1,4 +1,4 @@
-NUMmodule five_intr
+module five_intr
 
 !-------------------------------------------
 ! Module to interface FIVE with E3SM physics packages
@@ -13,11 +13,14 @@ NUMmodule five_intr
   use cam_logfile, only: iulog
 
   implicit none
-  
+! HHLEE
+  public:: five_readnl ! read namelist from file 
+
   ! This is the number of layers to add between E3SM levels
   !  NOTE: This must be an EVEN number, due to limitations
   !  in the tendency interpolation scheme
-  integer :: five_add_nlevels = 2 
+!  integer :: five_add_nlevels = 2 
+  integer :: five_add_nlevels
     
   ! Determine which layers you want to add levels to.  NOTE:
   !  this refers to the base or reference pressure profiles
@@ -28,10 +31,12 @@ NUMmodule five_intr
   !   to a very large value to add all the way to surface, though
   !   currently setting this value to surface results in model
   !   crashes in SCM, so need to investigate)
-  real, parameter :: five_bot_toadd = 98000._r8
+!  real, parameter :: five_bot_toadd = 98000._r8
+  real(r8) :: five_bot_toadd 
   
   ! The top layer to which we will add layers to
-  real, parameter :: five_top_toadd = 80000._r8
+!  real, parameter :: five_top_toadd = 70000._r8
+  real(r8) :: five_top_toadd 
   ! TASK: the parameters above should probably be moved to the
   !   E3SM atm_in namelist
   
@@ -39,9 +44,9 @@ NUMmodule five_intr
   !   because PBUF needs these to be initialized.
   !   TASK: figure out a better way so these can be computed
   !   on the fly and not user specified!
-  integer, parameter :: pver_five = 100
-  integer, parameter :: pverp_five = 101
-  
+    integer, parameter :: pver_five = 110
+    integer, parameter :: pverp_five = 111
+
   ! Pressure values as initialized in hycoef.F90
   real(r8) :: alev_five(pver_five) ! midpoint FIVE pressures (pascals)
   real(r8) :: ailev_five(pverp_five) ! interface FIVE pressures (pascals)
@@ -59,8 +64,20 @@ NUMmodule five_intr
 	     u_five_idx, &
 	     v_five_idx, &
 	     pmid_five_idx, &
-	     pint_five_idx 
-	     
+	     pint_five_idx, &
+! add sharing FIVE variables
+             cld_five_idx,      &
+             concld_five_idx,   &
+             ast_five_idx,      &
+             dei_five_idx,      &
+             des_five_idx,      &
+             mu_five_idx,       &
+             lambdac_five_idx,  &
+             iciwp_five_idx,    &
+             iclwp_five_idx,    &
+             icswp_five_idx,    &
+             cldfsnow_five_idx 
+     
   integer :: five_bot_k, five_top_k ! indicees where
                                     ! levels are added
   
@@ -86,12 +103,12 @@ NUMmodule five_intr
     
     integer :: iunit, read_status
     
-    namelist /five_nl/ five_add_nlevels
+    namelist /five_nl/ five_add_nlevels, five_bot_toadd, five_top_toadd
     
     !----- Begin Code -----
     
     !  Initialize some FIVE parameters
-    five_add_nlevels = 1 
+    !five_add_nlevels = 1 
     
     !  Read namelist to determine FIVE parameters
     if (masterproc) then
@@ -113,6 +130,8 @@ NUMmodule five_intr
 #ifdef SPMD
 ! Broadcast namelist variables
       call mpibcast(five_add_nlevels,            1,   mpiint,   0, mpicom)
+      call mpibcast(five_bot_toadd,              1,   mpir8,    0, mpicom)
+      call mpibcast(five_top_toadd,              1,   mpir8,    0, mpicom)
 #endif           
   
   end subroutine five_readnl
@@ -127,9 +146,9 @@ NUMmodule five_intr
     use physics_buffer,  only: pbuf_add_field, dtype_r8, dyn_time_lvls
     use ppgrid,          only: pver, pverp, pcols
     
-    ! Define PBUF for prognostics 
+    ! Define PBUF for prognostics
     call pbuf_add_field('T_FIVE',       'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), t_five_idx)
-    call pbuf_add_field('Q_FIVE',       'global', dtype_r8, (/pcols,pver_five,pcnst,dyn_time_lvls/), q_five_idx)
+    call pbuf_add_field('Q_FIVE',       'global', dtype_r8, (/pcols,pver_five,pcnst,dyn_time_lvls/), q_five_idx) 
     call pbuf_add_field('U_FIVE',       'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), u_five_idx)
     call pbuf_add_field('V_FIVE',       'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), v_five_idx)
     
@@ -137,6 +156,18 @@ NUMmodule five_intr
     ! Probably also need to save things like cloud fraction
     call pbuf_add_field('PMID_FIVE', 'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), pmid_five_idx)
     call pbuf_add_field('PINT_FIVE', 'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), pint_five_idx) 
+    ! sharing FIVE variables
+    call pbuf_add_field('CLD_FIVE',     'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), cld_five_idx) 
+    call pbuf_add_field('CONCLD_FIVE',  'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), concld_five_idx) 
+    call pbuf_add_field('AST_FIVE',     'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), ast_five_idx) 
+    call pbuf_add_field('DEI_FIVE',     'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), dei_five_idx) 
+    call pbuf_add_field('DES_FIVE',     'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), des_five_idx) 
+    call pbuf_add_field('MU_FIVE',      'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), mu_five_idx) 
+    call pbuf_add_field('LAMBDAC_FIVE', 'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), lambdac_five_idx) 
+    call pbuf_add_field('ICIWP_FIVE',   'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), iciwp_five_idx) 
+    call pbuf_add_field('ICLWP_FIVE',   'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), iclwp_five_idx) 
+    call pbuf_add_field('ICSWP_FIVE',   'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), icswp_five_idx) 
+    call pbuf_add_field('CLDFSNOW_FIVE','global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), cldfsnow_five_idx) 
   
   end subroutine five_register_e3sm 
   
@@ -236,7 +267,7 @@ NUMmodule five_intr
       alev_five(k) = (ailev_five(k)+ailev_five(k+1))/2.0_r8
     enddo      
 	
-    write(iulog,*) 'NUMBER OF FIVE LEVELS', kh-1, five_bot_k, five_top_k       
+    write(iulog,*) 'NUMBER OF FIVE LEVELS', kh-1, five_bot_k, five_top_k        
     
     ! Now add vertical coordinate to the history output field
     call add_vert_coord('lev_five', pver_five,                               &
@@ -286,6 +317,19 @@ NUMmodule five_intr
     real(r8) :: q_five(pcols,pver_five,pcnst)
     real(r8) :: u_five(pcols,pver_five)
     real(r8) :: v_five(pcols,pver_five)
+    
+    ! Add sharing FIVE variables
+    real(r8) :: cld_five(pcols,pver_five)
+    real(r8) :: concld_five(pcols,pver_five)
+    real(r8) :: ast_five(pcols,pver_five)
+    real(r8) :: dei_five(pcols,pver_five)
+    real(r8) :: des_five(pcols,pver_five)
+    real(r8) :: mu_five(pcols,pver_five)
+    real(r8) :: lambdac_five(pcols,pver_five)
+    real(r8) :: iciwp_five(pcols,pver_five)
+    real(r8) :: iclwp_five(pcols,pver_five)
+    real(r8) :: icswp_five(pcols,pver_five)
+    real(r8) :: cldfsnow_five(pcols,pver_five)
     
     integer :: ncol, i, p, lchnk, k, kh, ki, n
     integer :: low_ind, high_ind
@@ -349,6 +393,19 @@ NUMmodule five_intr
         enddo
     
       enddo
+      
+      ! Initialize sharing FIVE variables
+      cld_five(:,:) = 0._r8
+      concld_five(:,:) = 0._r8
+      ast_five(:,:) = 0._r8
+      dei_five(:,:) = 0._r8
+      des_five(:,:) = 0._r8
+      mu_five(:,:) = 0._r8
+      lambdac_five(:,:) = 0._r8
+      iciwp_five(:,:) = 0._r8
+      iclwp_five(:,:) = 0._r8
+      icswp_five(:,:) = 0._r8
+      cldfsnow_five(:,:) = 0._r8
 
       ! Store all needed variables onto the PBUF, so they can be used by the 
       !  parameterizations.  Loop over all the dynamics time levels, which is needed
@@ -362,6 +419,18 @@ NUMmodule five_intr
         ! Also save pmid values to be used by parameterizations
         call pbuf_set_field(pbuf2d_chunk, pmid_five_idx, pmid_five,(/1,1,n/),(/pcols,pver_five,1/))
         call pbuf_set_field(pbuf2d_chunk, pint_five_idx, pint_five,(/1,1,n/),(/pcols,pverp_five,1/))
+        ! new sharing FIVE avariables
+        call pbuf_set_field(pbuf2d_chunk, cld_five_idx,      cld_five,(/1,1,n/),(/pcols,pver_five,1/))
+        call pbuf_set_field(pbuf2d_chunk, concld_five_idx,   concld_five,(/1,1,n/),(/pcols,pver_five,1/))
+        call pbuf_set_field(pbuf2d_chunk, ast_five_idx,      ast_five,(/1,1,n/),(/pcols,pver_five,1/))
+        call pbuf_set_field(pbuf2d_chunk, dei_five_idx,      dei_five,(/1,1,n/),(/pcols,pver_five,1/))
+        call pbuf_set_field(pbuf2d_chunk, des_five_idx,      des_five,(/1,1,n/),(/pcols,pver_five,1/))
+        call pbuf_set_field(pbuf2d_chunk, mu_five_idx,       mu_five,(/1,1,n/),(/pcols,pver_five,1/))
+        call pbuf_set_field(pbuf2d_chunk, lambdac_five_idx,  lambdac_five,(/1,1,n/),(/pcols,pver_five,1/))
+        call pbuf_set_field(pbuf2d_chunk, iciwp_five_idx,    iciwp_five,(/1,1,n/),(/pcols,pver_five,1/))
+        call pbuf_set_field(pbuf2d_chunk, iclwp_five_idx,    iclwp_five,(/1,1,n/),(/pcols,pver_five,1/))
+        call pbuf_set_field(pbuf2d_chunk, icswp_five_idx,    icswp_five,(/1,1,n/),(/pcols,pver_five,1/))
+        call pbuf_set_field(pbuf2d_chunk, cldfsnow_five_idx, cldfsnow_five,(/1,1,n/),(/pcols,pver_five,1/))
       enddo
     
     enddo
@@ -434,7 +503,7 @@ NUMmodule five_intr
     
     real(r8) :: psr
 ! HHLEE 20190117
-    real(r8) :: five_water, e3sm_water, ratio, diff    
+    real(r8) :: five_water, e3sm_water, ratio, diff
         
     ncol = state%ncol
     
@@ -473,11 +542,6 @@ NUMmodule five_intr
       call compute_five_heights(pmid_five(i,:),pint_five(i,:),t_five(i,:),&
              q_five(i,:,1),q_five(i,:,2),pdel_five(i,:),pver_five,p0,&
 	     zm_five(i,:),zi_five(i,:))
-    enddo
-    
-    do i=1,ncol
-      call linear_interp(state%pmid(i,:),pmid_five(i,:),state%zm(i,:),zm_five(i,:),pver,pver_five)
-      call linear_interp(state%pint(i,:),pint_five(i,:),state%zi(i,:),zi_five(i,:),pverp,pverp_five)
     enddo
   
     ! First compute a mass weighted average of the five variables onto the 
@@ -521,9 +585,6 @@ NUMmodule five_intr
         
       enddo
     enddo
-    
-!    write(*,*) 'ZM_E3SM', state%zm(1,:)
-!    write(*,*) 'ZM_FIVE', zm_five(1,:)
 
     ! Now interpolate this tendency to the higher resolution FIVE grid, 
     !   using the interpolation method of Sheng and Zwiers (1998), 
@@ -541,7 +602,7 @@ NUMmodule five_intr
 	     
       do p=1,pcnst
         call tendency_low_to_high(state%zm(i,:),state%zi(i,:),zm_five(i,:),&
-             rho_e3sm(i,:),rho_five(i,:),q_five_tend_low(i,:,p),q_five_tend(i,:,p))     	     
+             rho_e3sm(i,:),rho_five(i,:),q_five_tend_low(i,:,p),q_five_tend(i,:,p))     
       enddo	     	             	
       
     enddo      	     
@@ -557,7 +618,7 @@ NUMmodule five_intr
         do p=1,pcnst
           q_five(i,k,p) = q_five(i,k,p) + dtime * q_five_tend(i,k,p)
 ! HHLEE 20190117
-          q_five(i,k,p) = max(q_five(i,k,p),0._r8)	  
+          q_five(i,k,p) = max(q_five(i,k,p),0._r8)
         enddo
        
       enddo
@@ -577,7 +638,7 @@ NUMmodule five_intr
             end if
 
             five_water = sum(q_five(i,:,p)*pdel_five(i,:)/gravit)
-            if (five_water .ne. e3sm_water) then
+            if (five_water .ne. e3sm_water .and. five_water .gt. 0._r8) then
                diff = five_water - e3sm_water
                do k = 1, pver_five
                   ratio = (q_five(i,k,p)*pdel_five(i,k)/gravit)/five_water
@@ -586,10 +647,10 @@ NUMmodule five_intr
             end if
 
        end do
-    end do    
-    	
+    end do
+
     return
-		
+
    end subroutine five_syncronize_e3sm
    
   ! ======================================== !
@@ -611,7 +672,6 @@ NUMmodule five_intr
     
     real(r8), intent(out) :: dz(nlev)
     real(r8), intent(out) :: rho(nlev)
-    
     integer :: k
     
     ! Compute density
@@ -744,11 +804,10 @@ NUMmodule five_intr
       ! Compute rho on host grid
       rho_host_avg(k) = rho_host_avg(k)/dz_host(k)
       
-      ! Compute the mass weighted vertical average
-      var_host(k) = var_host(k)/(rho_host(k)*dz_host(k))
-      
+      var_host(k) = var_host(k)/(rho_host_avg(k)*dz_host(k))
+
     enddo
-    
+
     return
   
   end subroutine masswgt_vert_avg     
@@ -881,11 +940,10 @@ NUMmodule five_intr
       rho_zs(k) = rho_five_in(pver_five-k+1)
     enddo  
     
-    !+ PAB look at
     zi1 = pver-five_bot_k+1
     zi2 = pver-five_top_k+1
     
-    dz=0.5_r8*(zm(1)+zm(2))
+    dz=zi(2)
     
     ! define adz and adzw
     do k=2,pver
@@ -895,7 +953,7 @@ NUMmodule five_intr
     
     adz(1) = 1._r8
     do k=2,pver-1
-      adz(k) = 0.5_r8*(zm(k+1)-zm(k-1))/dz
+      adz(k) = 0.5*(zm(k+1)-zm(k-1))/dz
     enddo
     adz(pver) = adzw(pver)
     

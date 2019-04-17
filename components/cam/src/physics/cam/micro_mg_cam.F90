@@ -186,13 +186,28 @@ integer :: &
    ls_flxsnw_idx,      &
    relvar_idx,         &
    cmeliq_idx,         &
-   accre_enhan_idx,    &
+   accre_enhan_idx
+
+#ifdef FIVE
+integer :: &
    t_five_idx, &
    q_five_idx, &
    u_five_idx, &
    v_five_idx, &
    pmid_five_idx, &
-   pint_five_idx  
+   pint_five_idx, &
+   ast_five_idx,  &
+   mu_five_idx,   & 
+   lambdac_five_idx, &
+   dei_five_idx,  &
+   des_five_idx,  &
+   cld_five_idx,  &
+   concld_five_idx,  &
+   iciwp_five_idx,   &
+   iclwp_five_idx,   &
+   icswp_five_idx,   &
+   cldfsnow_five_idx
+#endif     
 
 ! Fields for UNICON
 integer :: &
@@ -1213,6 +1228,18 @@ subroutine micro_mg_cam_init(pbuf2d)
    v_five_idx = pbuf_get_index('V_FIVE')
    pmid_five_idx = pbuf_get_index('PMID_FIVE')
    pint_five_idx = pbuf_get_index('PINT_FIVE')
+
+   cld_five_idx     = pbuf_get_index('CLD_FIVE')
+   concld_five_idx  = pbuf_get_index('CONCLD_FIVE')
+   ast_five_idx     = pbuf_get_index('AST_FIVE')
+   dei_five_idx     = pbuf_get_index('DEI_FIVE')
+   des_five_idx     = pbuf_get_index('DES_FIVE')
+   mu_five_idx      = pbuf_get_index('MU_FIVE')
+   lambdac_five_idx = pbuf_get_index('LAMBDAC_FIVE')
+   iciwp_five_idx   = pbuf_get_index('ICIWP_FIVE')
+   iclwp_five_idx   = pbuf_get_index('ICLWP_FIVE')
+   icswp_five_idx   = pbuf_get_index('ICSWP_FIVE')
+   cldfsnow_five_idx = pbuf_get_index('CLDFSNOW_FIVE')
 #endif   
 
    cmeliq_idx = pbuf_get_index('CMELIQ')
@@ -1341,6 +1368,21 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8), pointer, dimension(:,:) :: pmid_five
    real(r8), pointer, dimension(:,:) :: pint_five
    
+   real(r8), pointer, dimension(:,:) :: cld_five
+   real(r8), pointer, dimension(:,:) :: concld_five
+   real(r8), pointer, dimension(:,:) :: ast_five
+   real(r8), pointer, dimension(:,:) :: dei_five
+   real(r8), pointer, dimension(:,:) :: des_five
+   real(r8), pointer, dimension(:,:) :: mu_five
+   real(r8), pointer, dimension(:,:) :: lambdac_five
+   real(r8), pointer, dimension(:,:) :: iciwp_five
+   real(r8), pointer, dimension(:,:) :: iclwp_five
+   real(r8), pointer, dimension(:,:) :: icswp_five
+   real(r8), pointer, dimension(:,:) :: cldfsnow_five
+   
+   real(r8), pointer, dimension(:,:) :: alst_mic_five
+   real(r8), pointer, dimension(:,:) :: aist_mic_five
+
    real(r8) :: cldmax_five(state%psetcols,pver_five)
    real(r8) :: pdel_five(pcols,pver_five)
    real(r8) :: t_five_tend(pcols,pver_five)
@@ -1376,9 +1418,9 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
 ! other input variables with FIVE resolution 
    real(r8) :: relvar_five(pcols,pver_five)
    real(r8) :: accre_enhan_five(pcols,pver_five)
-   real(r8) :: ast_five(pcols,pver_five)
-   real(r8) :: alst_mic_five(pcols,pver_five)
-   real(r8) :: aist_mic_five(pcols,pver_five)
+!   real(r8) :: ast_five(pcols,pver_five)
+!   real(r8) :: alst_mic_five(pcols,pver_five)
+!   real(r8) :: aist_mic_five(pcols,pver_five)
    real(r8) :: naai_five(pcols,pver_five)      ! ice nucleation number
    real(r8) :: naai_hom_five(pcols,pver_five)      ! ice nucleation number
    real(r8) :: npccn_five(pcols,pver_five)     ! liquid activation number tendency
@@ -1633,7 +1675,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8), allocatable :: packed_prer_evap_low(:,:)
    real(r8), allocatable :: packed_nevapr_low(:,:)
 
-   real(r8), allocatable :: packed_rel_low_all(:,:) ! vertival leves from 1 to pver
+   real(r8), allocatable :: packed_rel_low_all(:,:) ! vertival leveLs from 1 to pver
    real(r8), allocatable :: packed_rei_low_all(:,:)
    real(r8), allocatable :: packed_lambdac_low_all(:,:)
    real(r8), allocatable :: packed_mu_low_all(:,:)
@@ -1777,6 +1819,13 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8), pointer :: des_grid(:,:)
    real(r8), pointer :: iclwpst_grid(:,:)
 
+#ifdef FIVE
+   real(r8), pointer :: lambdac_five_grid(:,:)
+   real(r8), pointer :: mu_five_grid(:,:)
+   real(r8), pointer :: dei_five_grid(:,:)
+   real(r8), pointer :: des_five_grid(:,:)
+#endif
+
    real(r8) :: rho_grid(pcols,pver)
    real(r8) :: liqcldf_grid(pcols,pver)
    real(r8) :: qsout_grid(pcols,pver)
@@ -1868,6 +1917,18 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8) :: frzimm_five(pcols,pver_five)
    real(r8) :: frzcnt_five(pcols,pver_five)
    real(r8) :: frzdep_five(pcols,pver_five)
+! variables for size distribution calculation 
+   real(r8) :: rho2d_five(pcols,pver_five)
+   real(r8) :: rel_five(pcols,pver_five)
+   real(r8) :: rei_five(pcols,pver_five)
+   real(r8) :: ncic_five(pcols,pver_five)
+   real(r8) :: niic_five(pcols,pver_five)
+   real(r8) :: icwmrst_five(pcols,pver_five)
+   real(r8) :: icimrst_five(pcols,pver_five)
+   real(r8) :: drout2_five(pcols,pver_five)
+   real(r8) :: dsout2_five(pcols,pver_five)
+   real(r8) :: reff_rain_five(pcols,pver_five)
+   real(r8) :: reff_snow_five(pcols,pver_five)
 #endif
 
    integer :: nlev   ! number of levels where cloud physics is done
@@ -2067,8 +2128,20 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    call pbuf_get_field(pbuf, q_five_idx,    q_five,     start=(/1,1,1,itim_old/), kount=(/pcols,pver_micro,pcnst,1/))
    call pbuf_get_field(pbuf, u_five_idx,    u_five,      start=(/1,1,itim_old/), kount=(/pcols,pver_micro,1/))
    call pbuf_get_field(pbuf, v_five_idx,    v_five,      start=(/1,1,itim_old/), kount=(/pcols,pver_micro,1/))
-   call pbuf_get_field(pbuf, pmid_five_idx,    pmid_five,      start=(/1,1,1/), kount=(/pcols,pver_micro,1/)) 
-   call pbuf_get_field(pbuf, pint_five_idx,    pint_five,      start=(/1,1,1/), kount=(/pcols,pverp_micro,1/))      
+   call pbuf_get_field(pbuf, pmid_five_idx,   pmid_five,     start=(/1,1,1/), kount=(/pcols,pver_micro,1/)) 
+   call pbuf_get_field(pbuf, pint_five_idx,   pint_five,     start=(/1,1,1/), kount=(/pcols,pverp_micro,1/))      
+
+   call pbuf_get_field(pbuf, cld_five_idx,      cld_five,      start=(/1,1,itim_old/), kount=(/pcols,pver_micro,1/))      
+   call pbuf_get_field(pbuf, concld_five_idx,   concld_five,   start=(/1,1,itim_old/), kount=(/pcols,pver_micro,1/))      
+   call pbuf_get_field(pbuf, ast_five_idx,      ast_five,      start=(/1,1,itim_old/), kount=(/pcols,pver_micro,1/))      
+   call pbuf_get_field(pbuf, dei_five_idx,      dei_five,      start=(/1,1,itim_old/), kount=(/pcols,pver_micro,1/))      
+   call pbuf_get_field(pbuf, des_five_idx,      des_five,      start=(/1,1,itim_old/), kount=(/pcols,pver_micro,1/))      
+   call pbuf_get_field(pbuf, mu_five_idx,       mu_five,       start=(/1,1,itim_old/), kount=(/pcols,pver_micro,1/))      
+   call pbuf_get_field(pbuf, lambdac_five_idx,  lambdac_five,  start=(/1,1,itim_old/), kount=(/pcols,pver_micro,1/))      
+   call pbuf_get_field(pbuf, iciwp_five_idx,    iciwp_five,    start=(/1,1,itim_old/), kount=(/pcols,pver_micro,1/))      
+   call pbuf_get_field(pbuf, iclwp_five_idx,    iclwp_five,    start=(/1,1,itim_old/), kount=(/pcols,pver_micro,1/))      
+   call pbuf_get_field(pbuf, icswp_five_idx,    icswp_five,    start=(/1,1,itim_old/), kount=(/pcols,pver_micro,1/))      
+   call pbuf_get_field(pbuf, cldfsnow_five_idx, cldfsnow_five, start=(/1,1,itim_old/), kount=(/pcols,pver_micro,1/))      
 #endif    
    
    !-------------------------------------------------------------------------------------
@@ -2111,6 +2184,11 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    
    alst_mic => ast
    aist_mic => ast
+
+#ifdef FIVE
+   alst_mic_five => ast_five
+   aist_mic_five => ast_five
+#endif
 
    if(do_aerocom_ind3) then  
      cldliqbf_idx    = pbuf_get_index('cldliqbf')
@@ -2453,8 +2531,8 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
                          relvar(i,1:pver),relvar_five(i,1:pver_five),pver,pver_five)
       call linear_interp(state_loc%pmid(i,:),pmid_five(i,:), &
                          accre_enhan(i,1:pver),accre_enhan_five(i,1:pver_five),pver,pver_five)
-      call linear_interp(state_loc%pmid(i,:),pmid_five(i,:), &
-                         ast(i,1:pver),ast_five(i,1:pver_five),pver,pver_five)
+!      call linear_interp(state_loc%pmid(i,:),pmid_five(i,:), &
+!                         ast(i,1:pver),ast_five(i,1:pver_five),pver,pver_five)
       call linear_interp(state_loc%pmid(i,:),pmid_five(i,:), &
                          alst_mic(i,1:pver),alst_mic_five(i,1:pver_five),pver,pver_five)
       call linear_interp(state_loc%pmid(i,:),pmid_five(i,:), &
@@ -2818,6 +2896,8 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       call compute_five_grids(t_five(i,:),pdel_five(i,:),pmid_five(i,:),pver_five,&
              dz_five(:),rho_five(:))    
 
+      rho2d_five(i,:) = rho_five(:)
+
       ! Compute mass weighted vertical average of variables from FIVE grid to E3SM grid
       ! For temperature 
       call masswgt_vert_avg(rho_e3sm(:),rho_five(:),dz_e3sm(:),dz_five(:),&
@@ -2877,6 +2957,23 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       ptend_loc%q(:,:,ixnumsnow) = ns_five_low(:,:)
       end if
 
+! update q_five for future use
+      do k = 1, pver_five 
+        do i = 1, ncol
+           q_five(i,k,1)         = q_five(i,k,1)        +qv_five_tend(i,k)*(dtime/num_steps)
+           q_five(i,k,ixcldliq)  = q_five(i,k,ixcldliq) +qc_five_tend(i,k)*(dtime/num_steps)
+           q_five(i,k,ixcldice)  = q_five(i,k,ixcldice) +qi_five_tend(i,k)*(dtime/num_steps)
+           q_five(i,k,ixnumliq)  = q_five(i,k,ixnumliq) +nc_five_tend(i,k)*(dtime/num_steps)
+           q_five(i,k,ixnumice)  = q_five(i,k,ixnumice) +ni_five_tend(i,k)*(dtime/num_steps)
+           q_five(i,k,ixrain)    = q_five(i,k,ixrain)   +qr_five_tend(i,k)*(dtime/num_steps)
+           q_five(i,k,ixsnow)    = q_five(i,k,ixsnow)   +qs_five_tend(i,k)*(dtime/num_steps)
+           q_five(i,k,ixnumrain) = q_five(i,k,ixnumrain)+nr_five_tend(i,k)*(dtime/num_steps)
+           q_five(i,k,ixnumsnow) = q_five(i,k,ixnumsnow)+ns_five_tend(i,k)*(dtime/num_steps)
+
+           q_five(i,k,:) = max(q_five(i,k,:),0._r8)
+        enddo
+      enddo
+
 #else
 
       ptend_loc%s               = packer%unpack(packed_tlat, 0._r8)
@@ -2925,6 +3022,11 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       packed_prer_evap_all(i,top_lev_five(i):pver_five) = packed_prer_evap(i,:)
       packed_nevapr_all(i,1:top_lev_five(i)-1)          = 0._r8
       packed_nevapr_all(i,top_lev_five(i):pver_five)    = packed_nevapr(i,:)
+! sharing FIVE variables
+      mu_five(i,:)      = packed_mu_all(i,:)
+      lambdac_five(i,:) = packed_lambdac_all(i,:)
+      des_five(i,:)     = packed_des_all(i,:)
+      dei_five(i,:)     = packed_dei_all(i,:)
 
       call masswgt_vert_avg(rho_e3sm(:),rho_five(:),dz_e3sm(:),dz_five(:),&
                             state%pint(i,:),pmid_five(i,:),state%pmid(i,:),&
@@ -3190,6 +3292,11 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    cldfsnow = 0._r8
 
 #ifdef FIVE
+   iciwp_five = 0._r8
+   iclwp_five = 0._r8
+   icswp_five = 0._r8
+   cldfsnow_five = 0._r8
+
    do i = 1, ncol
       call masswgt_vert_avg(rho_e3sm(:),rho_five(:),dz_e3sm(:),dz_five(:),&
                             state%pint(i,:),pmid_five(i,:),state%pmid(i,:),&
@@ -3273,6 +3380,46 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
          end where
       end do
    end if
+
+! calculate sharing FIVE variables
+#ifdef FIVE
+   do k = top_lev, pver_five
+      do i = 1, ncol
+         ! Limits for in-cloud mixing ratios consistent with MG microphysics
+         ! in-cloud mixing ratio maximum limit of 0.005 kg/kg
+         icimrst_five(i,k) = min(q_five(i,k,ixcldice)/max(mincld,ast_five(i,k)),0.005_r8 )
+         icwmrst_five(i,k) = min(q_five(i,k,ixcldliq)/max(mincld,ast_five(i,k)),0.005_r8 )
+         ! Calculate micro_mg_cam cloud water paths in each layer
+         ! Note: uses stratiform cloud fraction!
+         iciwp_five(i,k)   = min(q_five(i,k,ixcldice)/max(mincld,ast_five(i,k)),0.005_r8) * pdel_five(i,k) / gravit
+         iclwp_five(i,k)   = min(q_five(i,k,ixcldliq)/max(mincld,ast_five(i,k)),0.005_r8) * pdel_five(i,k) / gravit
+
+         ! ------------------------------ !
+         ! Adjust cloud fraction for snow !
+         ! ------------------------------ !
+         cldfsnow_five(i,k) = cld_five(i,k)
+         ! If cloud and only ice ( no convective cloud or ice ), then set to 0.
+         if( ( cldfsnow_five(i,k) .gt. 1.e-4_r8 ) .and. &
+            ( concld_five(i,k)   .lt. 1.e-4_r8 ) .and. &
+            ( q_five(i,k,ixcldliq) .lt. 1.e-10_r8 ) ) then
+            cldfsnow_five(i,k) = 0._r8
+         end if
+         ! If no cloud and snow, then set to 0.25
+         if(rrtmg_temp_fix ) then
+            if( (cldfsnow_five(i,k) .le. 1.e-4_r8) .and. (qsout(i,k) .gt. 1.e-6_r8) ) then
+               cldfsnow_five(i,k) = 0.25_r8
+            endif
+         else
+            if( (cldfsnow_five(i,k) .lt. 1.e-4_r8) .and. (qsout(i,k) .gt. 1.e-6_r8) ) then
+               cldfsnow_five(i,k) = 0.25_r8
+            endif
+         endif
+
+         ! Calculate in-cloud snow water path
+         icswp_five(i,k) = qsout(i,k) / max( mincld, cldfsnow_five(i,k) ) * pdel_five(i,k) / gravit
+      end do
+   end do  
+#endif
 
    ! ------------------------------------------------------ !
    ! ------------------------------------------------------ !
@@ -3371,6 +3518,11 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       end if
 
 #ifdef FIVE
+      lambdac_five_grid    => lambdac_five
+      mu_five_grid         => mu_five
+      dei_five_grid        => dei_five
+      des_five_grid        => des_five
+
       evpsnow_st_grid = evapsnow_five_low
       qrout_grid      = qrout_five_low
       qsout_grid      = qsout_five_low
@@ -3602,6 +3754,99 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
 
    mgreffrain_grid(:ngrdcol,:pver) = reff_rain_grid(:ngrdcol,:pver)
    mgreffsnow_grid(:ngrdcol,:pver) = reff_snow_grid(:ngrdcol,:pver)
+
+#ifdef FIVE 
+   ! -------------------------------------------------------- !
+   ! Size distribution calculation for FIVE variables         !
+   ! -------------------------------------------------------- !
+
+   ! Effective radius for cloud liquid, and size parameters
+   ! mu_grid and lambdac_grid.
+   mu_five = 0._r8
+   lambdac_five = 0._r8
+   rel_five = 10._r8
+
+   ! Calculate ncic on the grid
+   ncic_five(:ngrdcol,:) = q_five(:ngrdcol,:,ixnumliq) / &
+        max(mincld,ast_five(:ngrdcol,:))
+
+   call size_dist_param_liq(mg_liq_props, icwmrst_five(:ngrdcol,:), &
+        ncic_five(:ngrdcol,:), rho2d_five(:ngrdcol,:), &
+        mu_five(:ngrdcol,:), lambdac_five(:ngrdcol,:))
+
+   where (icwmrst_five(:ngrdcol,:) >= qsmall)
+      rel_five(:ngrdcol,:) = &
+           (mu_five(:ngrdcol,:) + 3._r8) / &
+           lambdac_five(:ngrdcol,:)/2._r8 * 1.e6_r8
+   elsewhere
+      mu_five(:ngrdcol,:) = 0._r8
+   end where
+  
+   ! Rain/Snow effective diameter.
+   drout2_five = 0._r8
+   reff_rain_five = 0._r8
+   des_five = 0._r8
+   dsout2_five = 0._r8
+   reff_snow_five = 0._r8
+
+   ! Prognostic precipitation
+
+      where (q_five(:ngrdcol,:,ixrain) >= 1.e-7_r8)
+         drout2_five(:ngrdcol,:) = avg_diameter( &
+              q_five(:ngrdcol,:,ixrain), &
+              q_five(:ngrdcol,:,ixnumrain) * rho2d_five(:ngrdcol,:), &
+              rho2d_five(:ngrdcol,:), rhow)
+
+         reff_rain_five(:ngrdcol,:) = drout2_five(:ngrdcol,:) * &
+              1.5_r8 * 1.e6_r8
+      end where
+
+      where (q_five(:ngrdcol,:,ixsnow) >= 1.e-7_r8)
+         dsout2_five(:ngrdcol,:) = avg_diameter( &
+              q_five(:ngrdcol,:,ixsnow), &
+              q_five(:ngrdcol,:,ixnumsnow) * rho2d_five(:ngrdcol,:), &
+              rho2d_five(:ngrdcol,:), rhosn)
+
+         des_five(:ngrdcol,:) = dsout2_five(:ngrdcol,:) *&
+              3._r8 * rhosn/rhows
+
+         reff_snow_five(:ngrdcol,:) = dsout2_five(:ngrdcol,:) * &
+              1.5_r8 * 1.e6_r8
+      end where
+
+   ! Effective radius and diameter for cloud ice.
+   rei_five = 25._r8
+
+   niic_five(:ngrdcol,:) = q_five(:ngrdcol,:,ixnumice) / &
+        max(mincld,ast_five(:ngrdcol,:))
+
+   call size_dist_param_basic(mg_ice_props, icimrst_five(:ngrdcol,:), &
+        niic_five(:ngrdcol,:), rei_five(:ngrdcol,:))
+
+   where (icimrst_five(:ngrdcol,:) >= qsmall)
+      rei_five(:ngrdcol,:) = 1.5_r8/rei_five(:ngrdcol,:) &
+           * 1.e6_r8
+   elsewhere
+      rei_five(:ngrdcol,:) = 25._r8
+   end where
+
+   dei_five = rei_five * rhoi/rhows * 2._r8
+
+   ! Limiters for low cloud fraction.
+   do k = 1, pver_five
+      do i = 1, ngrdcol
+         ! Convert snow effective diameter to microns
+         des_five(i,k) = des_five(i,k) * 1.e6_r8
+         if ( ast_five(i,k) < 1.e-4_r8 ) then
+            mu_five(i,k) = mucon
+            lambdac_five(i,k) = (mucon + 1._r8)/dcon
+            dei_five(i,k) = deicon
+         end if
+      end do
+   end do
+   
+#endif
+
    ! ------------------------------------- !
    ! Precipitation efficiency Calculation  !
    ! ------------------------------------- !
