@@ -2,7 +2,12 @@
 #define SCREAM_GRIDS_MANAGER_HPP
 
 #include "share/grid/abstract_grid.hpp"
+#include "share/scream_assert.hpp"
+#include "share/util/factory.hpp"
+#include "share/util/string_utils.hpp"
+#include <map>
 #include <set>
+#include <memory>
 
 namespace scream
 {
@@ -17,11 +22,42 @@ public:
   GridsManager () = default;
   virtual ~GridsManager () = default;
 
+  virtual std::string name () const = 0;
+
   std::shared_ptr<grid_type> get_grid (const std::string& name) const;
 
-  virtual void build_grids (const std::set<std::string>& grid_names) = 0;
+  void build_grids (const std::set<std::string>& grid_names) {
+    for (const auto& name : grid_names) {
+      scream_require_msg (supports_grid(name),
+                          "Error! Grids manager '" + this->name() + "' does not provide grid '" + name + "'.\n"
+                          "       Supported grids are: " + print_supported_grids()  + "\n");
+    }
+  }
+
 protected:
 
+  bool supports_grid (const std::string& grid_name) const {
+    const auto& grids = get_repo ();
+    return grids.find(grid_name)!=grids.end();
+  }
+
+  // This mini-function simply prints the supported grids names as "name1, name2, name3"
+  std::string print_supported_grids () const {
+    const auto& grids = get_repo ();
+
+    std::string str;
+    if (grids.size()==0) {
+      return str;
+    }
+    auto next = ++grids.begin();
+    for (auto it=grids.begin(); next!=grids.end(); ++it, ++next) {
+      str += it->first + ", ";
+    }
+    str += next->first;
+    return str;
+  }
+
+  virtual void build_grid (const std::string& grid_name) = 0;
   virtual const repo_type& get_repo () const = 0;
 };
 
@@ -34,8 +70,12 @@ GridsManager::get_grid(const std::string& name) const
   return it->second;
 }
 
+// Forward declarations
+class Comm;
+class ParameterList;
+
 // A short name for the factory for grid managers
-using GridsManagerFactory = util::Factory<GridsManager,util::CaseInsensitiveString,const ParameterList&>;
+using GridsManagerFactory = util::Factory<GridsManager,util::CaseInsensitiveString,const Comm&,const ParameterList&>;
 
 } // namespace scream
 

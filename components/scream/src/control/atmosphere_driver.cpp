@@ -20,7 +20,7 @@ void AtmosphereDriver::initialize (const Comm& atm_comm, const ParameterList& pa
   // Create the grids manager
   auto& gm_params = m_atm_params.sublist("Grids Manager");
   const std::string& gm_type = gm_params.get<std::string>("Type");
-  m_grids_manager.reset(GridsManagerFactory::instance().create(gm_type,gm_params));
+  m_grids_manager.reset(GridsManagerFactory::instance().create(gm_type,m_atm_comm,gm_params));
 
   // Initialize the processes
   m_atm_process_group->initialize(m_atm_comm,m_grids_manager);
@@ -28,15 +28,6 @@ void AtmosphereDriver::initialize (const Comm& atm_comm, const ParameterList& pa
   // Let the processes register their fields in the repo
   m_device_field_repo.registration_begins();
   m_atm_process_group->register_fields(m_device_field_repo);
-
-  // TODO: this is the correct location where you should make sure all the fields
-  //       dimensions have been set. Some may have not been known at construction
-  //       time: e.g., a field may have been created following the request of an
-  //       atmosphere process which did not have access to all the dimensions
-  //       information. Now, before you call registration_complete, you MUST
-  //       make sure all dimensions are set.
-
-  // Prohibit further additions to the repo, and allocate fields.
   m_device_field_repo.registration_ends();
 
   // TODO: this is a good place where we can insert a DAG analysis, to make sure all
