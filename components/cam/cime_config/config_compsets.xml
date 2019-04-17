@@ -281,6 +281,11 @@
     <alias>FC5AV1C-L-AQUAP</alias>
     <lname>2000_CAM5%AV1C-L_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
   </compset>
+  
+  <compset>
+    <alias>FSCRAV1C-L</alias>
+    <lname>2000_SCREAM%AV1C-L_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>  
 
   <compset>
     <alias>FIDEAL</alias>
