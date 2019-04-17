@@ -3687,12 +3687,14 @@ contains
 
     if (glc_present) then
 
-          if (ocn_c2_glc) then
-             call prep_glc_calc_o2x_gx(timer='CPL:glcprep_ocn2glc') !remap ocean fields to o2x_g at atmospheric timestep
-          end if
+          if (ocn_c2_glc .and. glc_c2_ocn) then
+             ! the boundary flux calculations done in the coupler require inputs from both GLC and OCN,
+             ! so they will only be valid if both OCN->GLC and GLC->OCN
 
-          if (glc_c2_ocn) then
-             call prep_glc_calculate_subshelf_boundary_fluxes! this outputs
+             call prep_glc_calc_o2x_gx(timer='CPL:glcprep_ocn2glc') !remap ocean fields to o2x_g at ocean couping interval
+
+             call prep_glc_calculate_subshelf_boundary_fluxes ! this is actual boundary layer flux calculation
+                                           !this outputs
                                            !x2g_g/g2x_g, where latter is going
                                            !to ocean, so should get remapped to
                                            !ocean grid in prep_ocn_shelf_calc_g2x_ox
@@ -3709,9 +3711,10 @@ contains
                                            !changing on the intrinsic
                                            !timestep.  But I don't think it's
                                            !unsafe to do it here.
-          endif
 
-          call prep_glc_accum_ocn(timer='CPL:glcprep_accum_ocn') !accum x2g_g fields here into x2g_gacc, along with l2gacc_lx
+             call prep_glc_accum_ocn(timer='CPL:glcprep_accum_ocn') !accum x2g_g fields here into x2g_gacc
+
+          endif
 
        endif
 
