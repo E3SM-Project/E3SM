@@ -17,7 +17,7 @@ module clm_varctl
   public :: cnallocate_carbonnitrogen_only
   public :: cnallocate_carbonphosphorus_only_set
   public :: cnallocate_carbonphosphorus_only
-  public :: get_carbontag ! get the tag for carbon simulations  
+  public :: get_carbontag ! get the tag for carbon simulations
   !
   private
   save
@@ -32,44 +32,44 @@ module clm_varctl
   ! Run control variables
   !
   ! case id
-  character(len=256), public :: caseid  = ' '                            
+  character(len=256), public :: caseid  = ' '
 
   ! case title
-  character(len=256), public :: ctitle  = ' '                            
+  character(len=256), public :: ctitle  = ' '
 
   ! Type of run
-  integer, public :: nsrest             = iundef                         
+  integer, public :: nsrest             = iundef
 
   ! Startup from initial conditions
-  integer, public, parameter :: nsrStartup  = 0                          
+  integer, public, parameter :: nsrStartup  = 0
 
   ! Continue from restart files
-  integer, public, parameter :: nsrContinue = 1                          
+  integer, public, parameter :: nsrContinue = 1
 
   ! Branch from restart files
-  integer, public, parameter :: nsrBranch   = 2                          
+  integer, public, parameter :: nsrBranch   = 2
 
   ! true => allow case name to remain the same for branch run
   ! by default this is not allowed
-  logical, public :: brnch_retain_casename = .false.                     
+  logical, public :: brnch_retain_casename = .false.
 
   !true => no valid land points -- do NOT run
-  logical, public :: noland = .false.                                    
+  logical, public :: noland = .false.
 
   ! Hostname of machine running on
-  character(len=256), public :: hostname = ' '                           
+  character(len=256), public :: hostname = ' '
 
   ! username of user running program
-  character(len=256), public :: username = ' '                           
+  character(len=256), public :: username = ' '
 
   ! description of this source
-  character(len=256), public :: source   = "Community Land Model CLM4.0" 
+  character(len=256), public :: source   = "Community Land Model CLM4.0"
 
   ! version of program
-  character(len=256), public :: version  = " "                           
+  character(len=256), public :: version  = " "
 
   ! dataset conventions
-  character(len=256), public :: conventions = "CF-1.0"                   
+  character(len=256), public :: conventions = "CF-1.0"
 
   !----------------------------------------------------------
   ! Unit Numbers
@@ -103,75 +103,75 @@ module clm_varctl
   ! Flag to turn on MEGAN VOC's
   !----------------------------------------------------------
 
-  logical, public :: use_voc = .true. 
+  logical, public :: use_voc = .true.
 
   !----------------------------------------------------------
   ! Interpolation of finidat if requested
   !----------------------------------------------------------
 
-  logical, public :: bound_h2osoi = .true. ! for debugging 
+  logical, public :: bound_h2osoi = .true. ! for debugging
 
   ! If finidat_interp_source is non-blank and finidat is blank then interpolation will be done from
   ! finidat_interp_source to finidat_interp_dest
 
   character(len=fname_len), public :: finidat_interp_source = ' '
-  character(len=fname_len), public :: finidat_interp_dest   = 'finidat_interp_dest.nc'     
+  character(len=fname_len), public :: finidat_interp_dest   = 'finidat_interp_dest.nc'
 
   !----------------------------------------------------------
   ! Irrigate logic
   !----------------------------------------------------------
 
   ! do not irrigate by default
-  logical, public :: irrigate = .false.            
+  logical, public :: irrigate = .false.
 
   !----------------------------------------------------------
   ! Landunit logic
   !----------------------------------------------------------
 
   ! true => separate crop landunit is not created by default
-  logical, public :: create_crop_landunit = .false.     
-  
+  logical, public :: create_crop_landunit = .false.
+
   !----------------------------------------------------------
   ! Other subgrid logic
   !----------------------------------------------------------
 
   ! true => make ALL patches, cols & landunits active (even if weight is 0)
-  logical, public :: all_active = .false.          
+  logical, public :: all_active = .false.
 
   !----------------------------------------------------------
   ! BGC logic and datasets
   !----------------------------------------------------------
 
   ! values of 'prognostic','diagnostic','constant'
-  character(len=16), public :: co2_type = 'constant'    
+  character(len=16), public :: co2_type = 'constant'
 
-  ! State of the model for the accelerated decomposition (AD) spinup. 
+  ! State of the model for the accelerated decomposition (AD) spinup.
   ! 0 (default) = normal model; 1 = AD SPINUP
-  integer, public :: spinup_state = 0 
+  integer, public :: spinup_state = 0
   integer, public :: nyears_ad_carbon_only = 0
   real(r8), public :: spinup_mortality_factor = 1._r8
 
   ! true => anoxia is applied to heterotrophic respiration also considered in CH4 model
   ! default value reset in controlMod
-  logical, public :: anoxia  = .true. 
+  logical, public :: anoxia  = .true.
 
   ! used to override an error check on reading in restart files
-  logical, public :: override_bgc_restart_mismatch_dump = .false. 
+  logical, public :: override_bgc_restart_mismatch_dump = .false.
 
   ! Set in AllocationInit (TODO - had to move it here to avoid circular dependency)
-  logical, private:: carbon_only      
-  logical, private:: carbonnitrogen_only      
-  logical, private:: carbonphosphorus_only      
+  logical, private:: carbon_only
+  logical, private:: carbonnitrogen_only
+  logical, private:: carbonphosphorus_only
 
   !----------------------------------------------------------
   ! Physics
   !----------------------------------------------------------
 
   ! use subgrid fluxes
-  integer,  public :: subgridflag = 1                   
+  integer,  public :: subgridflag = 1
 
   ! true => write global average diagnostics to std out
-  logical,  public :: wrtdia       = .false.            
+  logical,  public :: wrtdia       = .false.
 
   ! atmospheric CO2 molar ratio (by volume) (umol/mol)
   real(r8), public :: co2_ppmv     = 355._r8            !
@@ -199,7 +199,6 @@ module clm_varctl
                                                                        ! 2 => C+N+P (not enabled yet)
                                                                        ! no others enabled
 
-
   !----------------------------------------------------------
   !  BeTR switches
   !----------------------------------------------------------
@@ -223,30 +222,30 @@ module clm_varctl
   !----------------------------------------------------------
 
   ! glacier_mec landunit is not created (set in controlMod)
-  logical , public :: create_glacier_mec_landunit = .false. 
+  logical , public :: create_glacier_mec_landunit = .false.
 
   ! if true, pass surface mass balance info to GLC
-  logical , public :: glc_smb = .true.                      
+  logical , public :: glc_smb = .true.
 
   ! if false, pass positive-degree-day info to GLC
 
-  ! true => CLM glacier area & topography changes dynamically 
-  logical , public :: glc_do_dynglacier = .false.           
+  ! true => CLM glacier area & topography changes dynamically
+  logical , public :: glc_do_dynglacier = .false.
 
   ! true => downscale precip division into rain & snow
-  logical , public :: glcmec_downscale_rain_snow_convert = .false.     
+  logical , public :: glcmec_downscale_rain_snow_convert = .false.
 
   ! true => downscale longwave radiation
-  logical , public :: glcmec_downscale_longwave = .true.    
+  logical , public :: glcmec_downscale_longwave = .true.
 
   ! number of days before one considers the perennially snow-covered point 'land ice'
-  integer , public :: glc_snow_persistence_max_days = 7300  
+  integer , public :: glc_snow_persistence_max_days = 7300
 
-  ! glc_grid used to determine fglcmask  
-  character(len=256), public :: glc_grid = ' '              
+  ! glc_grid used to determine fglcmask
+  character(len=256), public :: glc_grid = ' '
 
   ! glacier mask file name (based on glc_grid)
-  character(len=fname_len), public :: fglcmask = ' '        
+  character(len=fname_len), public :: fglcmask = ' '
   !
   !----------------------------------------------------------
   ! single column control variables
@@ -269,22 +268,22 @@ module clm_varctl
   !----------------------------------------------------------
 
   ! number of segments per clump for decomp
-  integer, public :: nsegspc = 20                       
+  integer, public :: nsegspc = 20
 
   !----------------------------------------------------------
   ! Derived variables (run, history and restart file)
   !----------------------------------------------------------
 
   ! directory name for local restart pointer file
-  character(len=256), public :: rpntdir = '.'            
+  character(len=256), public :: rpntdir = '.'
 
   ! file name for local restart pointer file
-  character(len=256), public :: rpntfil = 'rpointer.lnd' 
+  character(len=256), public :: rpntfil = 'rpointer.lnd'
 
   ! moved hist_wrtch4diag from histFileMod.F90 to here - caused compiler error with intel
   ! namelist: write CH4 extra diagnostic output
-  logical, public :: hist_wrtch4diag = .false.         
-  
+  logical, public :: hist_wrtch4diag = .false.
+
   !----------------------------------------------------------
   ! ED/FATES
   !----------------------------------------------------------
@@ -335,17 +334,17 @@ module clm_varctl
   !
   logical, private :: clmvarctl_isset = .false.
   !-----------------------------------------------------------------------
- 
+
   !-----------------------------------------------------------------------
   ! nutrient competition (nu_com), default is relative demand approach (RD)
   character(len=15), public :: nu_com = 'RD'
- 
-  !-----------------------------------------------------------------------
-  ! forest N/P fertilization
-  logical, public :: forest_fert_exp = .false. 
 
   !-----------------------------------------------------------------------
-  ! ECA regular spinup with P on, keep labile, secondary, occluded, parent 
+  ! forest N/P fertilization
+  logical, public :: forest_fert_exp = .false.
+
+  !-----------------------------------------------------------------------
+  ! ECA regular spinup with P on, keep labile, secondary, occluded, parent
   ! material P being constant or not
   logical, public :: ECA_Pconst_RGspin = .false.
 
@@ -358,6 +357,11 @@ module clm_varctl
   !-----------------------------------------------------------------------
   logical, public            :: lateral_connectivity  = .false.
   character(len=256), public :: domain_decomp_type    = 'round_robin'
+
+  !-----------------------------------------------------------------------
+  ! flux limiter for phenology flux calculation
+  public, logical :: use_phenolmter = .false.
+
 
   !-----------------------------------------------------------------------
   ! bgc & pflotran interface
@@ -405,7 +409,7 @@ contains
     ! !ARGUMENTS:
     character(len=256), optional, intent(IN) :: caseid_in                ! case id
     character(len=256), optional, intent(IN) :: ctitle_in                ! case title
-    logical,            optional, intent(IN) :: brnch_retain_casename_in ! true => allow case name to remain the 
+    logical,            optional, intent(IN) :: brnch_retain_casename_in ! true => allow case name to remain the
                                                                          ! same for branch run
     logical,            optional, intent(IN) :: single_column_in         ! true => single column mode
     real(r8),           optional, intent(IN) :: scmlat_in                ! single column lat
@@ -470,9 +474,9 @@ contains
   function get_carbontag(carbon_type)result(ctag)
     implicit none
     character(len=*) :: carbon_type
-     
+
     character(len=3) :: ctag
-  
+
     if(carbon_type=='c12')then
        ctag = 'C'
     elseif(carbon_type=='c13')then
@@ -481,5 +485,5 @@ contains
        ctag = 'C14'
     endif
   end function get_carbontag
-  
+
 end module clm_varctl
