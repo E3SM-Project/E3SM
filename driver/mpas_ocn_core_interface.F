@@ -119,6 +119,7 @@ module ocn_core_interface
       logical, pointer :: landIceCouplingPKGActive
       logical, pointer :: thicknessBulkPKGActive
       logical, pointer :: frazilIceActive
+      logical, pointer :: tidalForcingActive
       logical, pointer :: inSituEOSActive
       logical, pointer :: variableShortwaveActive
       logical, pointer :: gmActive
@@ -145,6 +146,7 @@ module ocn_core_interface
 
       logical, pointer :: config_use_freq_filtered_thickness
       logical, pointer :: config_use_frazil_ice_formation
+      logical, pointer :: config_use_tidal_forcing
       logical, pointer :: config_use_standardGM
       logical, pointer :: config_use_time_varying_atmospheric_forcing
 
@@ -270,6 +272,15 @@ module ocn_core_interface
       call mpas_pool_get_config(configPool, 'config_use_frazil_ice_formation', config_use_frazil_ice_formation)
       if (config_use_frazil_ice_formation) then
          frazilIceActive = .true.
+      end if
+
+      !
+      ! test for use of tidal forcing, tidalForcingActive
+      !
+      call mpas_pool_get_package(packagePool, 'tidalForcingActive', tidalForcingActive)
+      call mpas_pool_get_config(configPool, 'config_use_tidal_forcing', config_use_tidal_forcing)
+      if (config_use_tidal_forcing) then
+         tidalForcingActive = .true.
       end if
 
       !

@@ -31,6 +31,7 @@ module ocn_tendency
    use ocn_surface_bulk_forcing
    use ocn_surface_land_ice_fluxes
    use ocn_frazil_forcing
+   use ocn_tidal_forcing
 
    use ocn_tracer_hmix
    use ocn_high_freq_thickness_hmix_del2
@@ -185,6 +186,11 @@ contains
       ! surface flux tendency
       !
       call ocn_frazil_forcing_layer_thickness(meshPool, forcingPool, tend_layerThickness, err)
+
+      !
+      ! tidal boundary condition flux 
+      !
+      call ocn_tidal_forcing_layer_thickness(meshPool, forcingPool, tend_layerThickness, err)
 
       call mpas_timer_stop("ocn_tend_thick")
 
