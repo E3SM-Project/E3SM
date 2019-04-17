@@ -2044,6 +2044,7 @@
       </modules>
       <modules>
         <command name="load">netcdf/4.6.3</command>
+	<command name="load">pnetcdf/1.9.0</command>
 	<command name="load">mkl/2019u3</command>
       </modules>
     </module_system>
