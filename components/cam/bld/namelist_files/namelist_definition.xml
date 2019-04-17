@@ -2944,6 +2944,26 @@ Temporary variable for a bug fix. Introduced to maintain BFB, must be REMOVED la
 Default: FALSE
 </entry>
 
+<!-- Five parameters -->
+
+<entry id="five_add_nlevels" type="integer" category="pblrad"
+       group="five_nl" valid_values="" >
+This is the number of layers to add between E3SM levels
+Default: 2
+</entry>
+
+<entry id="five_bot_toadd" type="real" category="pblrad"
+       group="five_nl" valid_values="" >
+Determine which layer you want to add levels to
+Default: 98000.0
+</entry>
+
+<entry id="five_top_toadd" type="real" category="pblrad"
+       group="five_nl" valid_values="" >
+The top layer to which we will add levels to
+Default: 70000.0
+</entry>
+
 
 <!-- Clubb tunable parameters -->
 

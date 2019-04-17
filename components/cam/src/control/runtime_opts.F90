@@ -226,6 +226,9 @@ contains
    use spmd_utils,          only: spmd_utils_readnl
    use physconst,           only: physconst_readnl
    use phys_control,        only: phys_ctl_readnl
+#ifdef FIVE
+   use five_intr,           only: five_readnl
+#endif
    use wv_saturation,       only: wv_sat_readnl
    use ref_pres,            only: ref_pres_readnl
    use cam3_aero_data,      only: cam3_aero_data_readnl
@@ -489,6 +492,9 @@ contains
    call physconst_readnl(nlfilename)
    call chem_surfvals_readnl(nlfilename)
    call phys_ctl_readnl(nlfilename)
+#ifdef FIVE
+   call five_readnl(nlfilename)
+#endif
    call wv_sat_readnl(nlfilename)
    call ref_pres_readnl(nlfilename)
    call cam3_aero_data_readnl(nlfilename)
