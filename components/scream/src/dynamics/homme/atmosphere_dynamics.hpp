@@ -22,27 +22,29 @@ namespace scream
 class HommeDynamics : public AtmosphereProcess
 {
 public:
+  using field_type       = Field<      Real,device_type>;
+  using const_field_type = Field<const Real,device_type>;
 
   // Constructor(s)
-  explicit HommeDynamics (const ParameterList& params);
+  HommeDynamics (const Comm& comm, const ParameterList& params);
 
   // The type of the subcomponent (dynamics or physics)
   AtmosphereProcessType type () const { return AtmosphereProcessType::Dynamics; }
 
   std::set<std::string> get_required_grids () const {
     static std::set<std::string> s;
-    s.insert(e2str(GridType::Dynamics));
+    s.insert("Dynamics");
     return s;
   }
 
   // The name of the subcomponent
-  std::string name () const { return "dynamics"; }
+  std::string name () const { return "Dynamics"; }
 
   // The communicator used by the dynamics
   const Comm& get_comm () const { return m_dynamics_comm; }
 
   // These are the three main interfaces:
-  void initialize (const Comm& comm, const std::shared_ptr<const GridsManager> grids_manager);
+  void initialize (const std::shared_ptr<const GridsManager> grids_manager);
   void run        (/* what inputs? */);
   void finalize   (/* what inputs? */);
 
@@ -57,17 +59,20 @@ protected:
 
   // Setting the field in the atmosphere process
   void set_required_field_impl (const Field<const Real, device_type>& /*f*/) { /* impl */ }
-  void set_computed_field_impl (const Field<      Real, device_type>& /*f*/) { /* impl */ }
+  void set_computed_field_impl (const Field<      Real, device_type>& f);
 
   std::set<FieldIdentifier> m_required_fields;
   std::set<FieldIdentifier> m_computed_fields;
 
-  Comm      m_dynamics_comm;
+  std::map<std::string,const_field_type>  m_dyn_fields_in;
+  std::map<std::string,field_type>        m_dyn_fields_out;
 
+  Comm      m_dynamics_comm;
 };
 
-inline AtmosphereProcess* create_homme_dynamics(const ParameterList& p) {
-  return new HommeDynamics(p);
+inline AtmosphereProcess*
+create_atmosphere_dynamics(const Comm& comm, const ParameterList& p) {
+  return new HommeDynamics(comm,p);
 }
 
 } // namespace scream

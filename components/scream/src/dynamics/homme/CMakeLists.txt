@@ -78,7 +78,9 @@ MACRO (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE USE_PIO USE_ENERGY)
     SET (HOMME_INCLUDE_DIRS ${EXEC_INCLUDE_DIRS})
 
     SET (SCREAM_DYNAMICS_SOURCES
-         ${SCREAM_DYNAMICS_SRC_DIR}/homme_dynamics.cpp
+         ${SCREAM_DYNAMICS_SRC_DIR}/atmosphere_dynamics.cpp
+         ${SCREAM_DYNAMICS_SRC_DIR}/dynamics_driven_grids_manager.cpp
+         ${SCREAM_DYNAMICS_SRC_DIR}/scream_homme_interface.F90
          ${PREQX_DEPS_CXX}
          ${PREQX_DEPS_F90}
     )
@@ -115,7 +117,7 @@ MACRO (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE USE_PIO USE_ENERGY)
     STRING(REPLACE " " ";" HOMME_Fortran_FLAGS_LIST ${HOMME_Fortran_FLAGS})
 
     ADD_LIBRARY(${dynLibName} ${SCREAM_DYNAMICS_SOURCES})
-    target_link_libraries(${dynLibName} pio timing)
+    target_link_libraries(${dynLibName} ${SCREAM_DYNAMICS_LINK_LIBRARIES})
     SET_TARGET_PROPERTIES (${dynLibName} PROPERTIES Fortran_MODULE_DIRECTORY ${dynLibDir}/${dynLibName}_modules)
 
     # Add flags, using a generator to achieve language specific behavior
