@@ -1977,8 +1977,8 @@
     <DESC>PNL E3SM Intel Xeon Gold 6148(Skylake) nodes, OS is Linux, SLURM</DESC>
     <NODENAME_REGEX>compy</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>intel,pgi,gnu</COMPILERS>
-    <MPILIBS>mvapich2,openmpi</MPILIBS>
+    <COMPILERS>intel,pgi</COMPILERS>
+    <MPILIBS>mvapich2</MPILIBS>
     <CIME_OUTPUT_ROOT>/compyfs/$USER/e3sm_scratch</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/compyfs/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/compyfs/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
@@ -2003,18 +2003,6 @@
         <arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
       </arguments>
     </mpirun>
-    <mpirun mpilib="intelmpi">
-      <executable>mpirun</executable>
-      <arguments>
-        <arg name="num_tasks">-n {{ total_tasks }}</arg>
-      </arguments>
-    </mpirun>
-    <mpirun mpilib="openmpi">
-      <executable>mpirun</executable>
-      <arguments>
-        <arg name="num_tasks">-n {{ total_tasks }}</arg>
-      </arguments>
-    </mpirun>
     <module_system type="module">
       <init_path lang="perl">/share/apps/modules/init/perl.pm</init_path>
       <init_path lang="python">/share/apps/modules/init/python.py</init_path>
@@ -2033,14 +2021,8 @@
       <modules compiler="pgi">
         <command name="load">pgi/18.10</command>
       </modules>
-      <modules compiler="gnu">
-        <command name="load">gcc/8.1.0</command>
-      </modules>
       <modules mpilib="mvapich2">
         <command name="load">mvapich2/2.3.1</command>
-      </modules>
-      <modules mpilib="openmpi">
-        <command name="load">openmpi/3.1.3</command>
       </modules>
       <modules>
         <command name="load">netcdf/4.6.3</command>
