@@ -1005,19 +1005,6 @@
     </values>
   </entry>
 
-  <entry id="flux_epbal" modify_via_xml="CPL_EPBAL">
-    <type>char</type>
-    <category>control</category>
-    <group>MED_attributes</group>
-    <valid_values>off,ocn</valid_values>
-    <desc>
-      Only used for C,G compsets: if ocn, ocn provides EP balance factor for precip
-    </desc>
-    <values>
-      <value>$CPL_EPBAL</value>
-    </values>
-  </entry>
-
   <entry id="flux_albav" modify_via_xml="CPL_ALBAV">
     <type>logical</type>
     <category>control</category>
@@ -1554,8 +1541,7 @@ n    </desc>
       total number of scalars in the scalar coupling field
     </desc>
     <values>
-      <value>3</value>
-      <value compocn="pop">4</value>
+      <value>5</value>
     </values>
   </entry>
 
@@ -1595,6 +1581,18 @@ n    </desc>
     </values>
   </entry>
 
+  <entry id="ScalarFieldIdxValidGlcInput">
+    <type>integer</type>
+    <category>expdef</category>
+    <group>ALLCOMP_attributes</group>
+    <desc>
+      index of valid glc input from mediator
+    </desc>
+    <values>
+      <value>4</value>
+    </values>
+  </entry>
+
   <entry id="ScalarFieldIdxPrecipFactor">
     <type>integer</type>
     <category>expdef</category>
@@ -1603,12 +1601,12 @@ n    </desc>
       index of scalar containing epbal precipitation factor from ocn (only for POP)
     </desc>
     <values>
-      <value>0</value>
-      <value compocn="pop">4</value>
+      <value flux_epbal='off'>0</value>
+      <value flux_epbal="ocn">5</value>
     </values>
   </entry>
 
-  <entry id="atm2ocn_fmapname"    modify_via_xml="ATM2OCN_FMAPNAME">
+  <entry id="atm2ocn_fmapname" modify_via_xml="ATM2OCN_FMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
@@ -1619,7 +1617,7 @@ n    </desc>
     </values>
   </entry>
 
-  <entry id="atm2ocn_smapname"    modify_via_xml="ATM2OCN_SMAPNAME">
+  <entry id="atm2ocn_smapname" modify_via_xml="ATM2OCN_SMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
