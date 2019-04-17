@@ -31,7 +31,7 @@ public:
   };
 
   // Constructor(s)
-  explicit AtmosphereProcessGroup (const ParameterList& params);
+  explicit AtmosphereProcessGroup (const Comm& comm, const ParameterList& params);
 
   virtual ~AtmosphereProcessGroup () = default;
 
@@ -48,7 +48,7 @@ public:
   const Comm& get_comm () const { return m_comm; }
 
   // The initialization, run, and finalization methods
-  virtual void initialize (const Comm& comm, const std::shared_ptr<const GridsManager> grids_manager);
+  void initialize (const std::shared_ptr<const GridsManager> grids_manager);
   void run        (/* what inputs? */);
   void finalize   (/* what inputs? */);
 
@@ -95,8 +95,9 @@ protected:
   std::set<FieldIdentifier>      m_computed_fields;
 };
 
-inline AtmosphereProcess* create_atmosphere_process_group(const ParameterList& p) {
-  return new AtmosphereProcessGroup(p);
+inline AtmosphereProcess*
+create_atmosphere_process_group(const Comm& comm, const ParameterList& p) {
+  return new AtmosphereProcessGroup(comm,p);
 }
 
 } // namespace scream
