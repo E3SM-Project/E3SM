@@ -81,7 +81,10 @@ integer :: t_five_idx, &
            u_five_idx, &
            v_five_idx, &
            pmid_five_idx, &
-           pint_five_idx
+           pint_five_idx, &
+           cld_five_idx,  &
+           concld_five_idx,  &
+           cldfsnow_five_idx
 #endif
 ! Default values for namelist variables
 
@@ -774,18 +777,15 @@ end function radiation_nextsw_cday
     v_five_idx = pbuf_get_index('V_FIVE')
     pmid_five_idx = pbuf_get_index('PMID_FIVE')
     pint_five_idx = pbuf_get_index('PINT_FIVE')
+    cld_five_idx  = pbuf_get_index('CLD_FIVE')
+    concld_five_idx   = pbuf_get_index('CONCLD_FIVE')
+    cldfsnow_five_idx = pbuf_get_index('CLDFSNOW_FIVE')
 #endif   
 
     if (cldfsnow_idx > 0) then
-#ifdef FIVE
-       call addfld ('CLDFSNOW',(/ 'lev_five' /),'I','1','CLDFSNOW',flag_xyfill=.true.)
-       call addfld('SNOW_ICLD_VISTAU', (/ 'lev_five' /), 'A', '1', 'Snow in-cloud extinction visible sw optical depth', &
-                                                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
-#else
        call addfld ('CLDFSNOW',(/ 'lev' /),'I','1','CLDFSNOW',flag_xyfill=.true.)
        call addfld('SNOW_ICLD_VISTAU', (/ 'lev' /), 'A', '1', 'Snow in-cloud extinction visible sw optical depth', &
-                                                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
-#endif
+                                                       sampling_seq='rad_lwsw',flag_xyfill=.true.)
     endif
 
   end subroutine radiation_init
@@ -967,8 +967,9 @@ end function radiation_nextsw_cday
     real(r8) :: qrsc(pcols,pver)                  ! clearsky shortwave radiative heating rate 
     real(r8) :: qrlc(pcols,pver)                  ! clearsky longwave  radiative heating rate 
 #ifdef FIVE
-    real(r8) :: cld_five(pcols,pver_rad)          ! cloud fraction
-    real(r8) :: cldfsnow_five(pcols,pver_rad)     ! cloud fraction of just "snow clouds- whatever they are"
+    real(r8), pointer, dimension(:,:) :: cld_five      ! cloud fraction
+    real(r8), pointer, dimension(:,:) :: concld_five   ! convective cloud fraction
+    real(r8), pointer, dimension(:,:) :: cldfsnow_five ! cloud fraction of just "snow clouds- whatever they are"
     real(r8) :: qrs_five(pcols,pver_rad)          ! shortwave radiative heating rate 
     real(r8) :: qrl_five(pcols,pver_rad)          !  longwave  radiative heating rate 
     real(r8) :: qrsc_five(pcols,pver_rad)         ! clearsky shortwave radiative heating rate 
@@ -1110,7 +1111,15 @@ end function radiation_nextsw_cday
       call pbuf_get_field(pbuf, lu_idx, lu)
       call pbuf_get_field(pbuf, ld_idx, ld)
     end if
- 
+
+#ifdef FIVE
+    if (cldfsnow_five_idx > 0) then
+       call pbuf_get_field(pbuf, cldfsnow_five_idx, cldfsnow_five, start=(/1,1,itim_old/), kount=(/pcols,pver_rad,1/) )
+    endif
+    call pbuf_get_field(pbuf, cld_five_idx,      cld_five,      start=(/1,1,itim_old/), kount=(/pcols,pver_rad,1/) )
+    call pbuf_get_field(pbuf, concld_five_idx,   concld_five,   start=(/1,1,itim_old/), kount=(/pcols,pver_rad,1/)  )
+#endif 
+
     if (do_aerocom_ind3) then
       cld_tau_idx = pbuf_get_index('cld_tau')
     end if
@@ -1193,15 +1202,6 @@ end function radiation_nextsw_cday
 
        call t_startf('cldoptics')
 
-#ifdef FIVE 
-        do  i = 1, ncol
-            call linear_interp(state%pmid(i,:),pmid_five(i,:), &
-                    cld(i,1:pver), cld_five(i,1:pver_five),pver,pver_five)
-
-            call linear_interp(state%pmid(i,:),pmid_five(i,:), &
-                    cldfsnow(i,1:pver), cldfsnow_five(i,1:pver_five),pver,pver_five)
-        end do
-#endif
 ! HHLEE 20190131
 ! current default options for cloud optical thickness are mitchell (ice) and
 ! gammadist (liquid)

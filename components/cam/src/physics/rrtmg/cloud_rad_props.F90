@@ -67,7 +67,13 @@ real(r8), allocatable :: abs_lw_ice(:,:)
         ixcldliq              ! cloud liquid water index
 
 #ifdef FIVE
-   integer :: pmid_five_idx
+   integer :: mu_five_idx,  &
+              lambdac_five_idx, &
+              dei_five_idx,   &
+              des_five_idx,   &
+              iciwp_five_idx, &
+              iclwp_five_idx, &
+              icswp_five_idx
 
    integer, parameter :: pverp_rad = pverp_five
    integer, parameter :: pver_rad = pver_five
@@ -124,7 +130,13 @@ subroutine cloud_rad_props_init()
    i_des    = pbuf_get_index('DES',errcode=err)
    i_icswp  = pbuf_get_index('ICSWP',errcode=err)
 #ifdef FIVE
-   pmid_five_idx = pbuf_get_index('PMID_FIVE')
+   dei_five_idx     = pbuf_get_index('DEI_FIVE')
+   mu_five_idx      = pbuf_get_index('MU_FIVE')
+   lambdac_five_idx = pbuf_get_index('LAMBDAC_FIVE')
+   iciwp_five_idx   = pbuf_get_index('ICIWP_FIVE')
+   iclwp_five_idx   = pbuf_get_index('ICLWP_FIVE')
+   des_five_idx     = pbuf_get_index('DES_FIVE')
+   icswp_five_idx   = pbuf_get_index('ICSWP_FIVE')
 #endif   
 
    ! old optics
@@ -452,11 +464,8 @@ subroutine get_snow_optics_sw(state, pbuf, tau, tau_w, tau_w_g, tau_w_f)
 
    real(r8), pointer :: icswpth(:,:), des(:,:)
 #ifdef FIVE
-   integer  :: ncol, i
-   real(r8), pointer, dimension(:,:) :: pmid_five 
-   real(r8) :: icswpth_five(pcols,pver_rad), des_five(pcols,pver_five)
-
-   ncol  = state%ncol
+   real(r8), pointer, dimension(:,:) :: icswp_five 
+   real(r8), pointer, dimension(:,:) :: des_five 
 #endif
    ! This does the same thing as get_ice_optics_sw, except with a different
    ! water path and effective diameter.
@@ -464,16 +473,10 @@ subroutine get_snow_optics_sw(state, pbuf, tau, tau_w, tau_w_g, tau_w_f)
    call pbuf_get_field(pbuf, i_des,   des)
 
 #ifdef FIVE
-   call pbuf_get_field(pbuf, pmid_five_idx, pmid_five, start=(/1,1,1/), kount=(/pcols,pver_rad,1/))
+   call pbuf_get_field(pbuf, icswp_five_idx, icswp_five, start=(/1,1,1/), kount=(/pcols,pver_rad,1/))
+   call pbuf_get_field(pbuf, des_five_idx, des_five, start=(/1,1,1/), kount=(/pcols,pver_rad,1/))
 
-   do i = 1, ncol
-      call linear_interp(state%pmid(i,:),pmid_five(i,:), &
-                         icswpth(i,1:pver),icswpth_five(i,1:pver_five),pver,pver_five)   
-      call linear_interp(state%pmid(i,:),pmid_five(i,:), &
-                         des(i,1:pver),des_five(i,1:pver_five),pver,pver_five)   
-   end do
-
-   call interpolate_ice_optics_sw(state%ncol, icswpth_five, des_five, tau, tau_w, &
+   call interpolate_ice_optics_sw(state%ncol, icswp_five, des_five, tau, tau_w, &
         tau_w_g, tau_w_f)
 #else
    call interpolate_ice_optics_sw(state%ncol, icswpth, des, tau, tau_w, &
@@ -498,11 +501,8 @@ subroutine get_ice_optics_sw(state, pbuf, tau, tau_w, tau_w_g, tau_w_f)
    real(r8), pointer :: iciwpth(:,:), dei(:,:)
 
 #ifdef FIVE
-   integer  :: ncol, i
-   real(r8), pointer, dimension(:,:) :: pmid_five 
-   real(r8) :: iciwpth_five(pcols,pver_rad), dei_five(pcols,pver_five)
-
-   ncol  = state%ncol
+   real(r8), pointer, dimension(:,:) :: iciwp_five 
+   real(r8), pointer, dimension(:,:) :: dei_five 
 #endif
    ! Get relevant pbuf fields, and interpolate optical properties from
    ! the lookup tables.
@@ -510,16 +510,10 @@ subroutine get_ice_optics_sw(state, pbuf, tau, tau_w, tau_w_g, tau_w_f)
    call pbuf_get_field(pbuf, i_dei,   dei)
 
 #ifdef FIVE
-   call pbuf_get_field(pbuf, pmid_five_idx, pmid_five, start=(/1,1,1/), kount=(/pcols,pver_rad,1/))
+   call pbuf_get_field(pbuf, iciwp_five_idx, iciwp_five, start=(/1,1,1/), kount=(/pcols,pver_rad,1/))
+   call pbuf_get_field(pbuf, dei_five_idx, dei_five, start=(/1,1,1/), kount=(/pcols,pver_rad,1/))
 
-   do i = 1, ncol
-      call linear_interp(state%pmid(i,:),pmid_five(i,:), &
-                         iciwpth(i,1:pver),iciwpth_five(i,1:pver_five),pver,pver_five)
-      call linear_interp(state%pmid(i,:),pmid_five(i,:), &
-                         dei(i,1:pver),dei_five(i,1:pver_five),pver,pver_five)
-   end do
-
-   call interpolate_ice_optics_sw(state%ncol, iciwpth_five, dei_five, tau, tau_w, &
+   call interpolate_ice_optics_sw(state%ncol, iciwp_five, dei_five, tau, tau_w, &
         tau_w_g, tau_w_f)
 #else
 
@@ -594,10 +588,9 @@ subroutine get_liquid_optics_sw(state, pbuf, tau, tau_w, tau_w_g, tau_w_f)
 
    real(r8), pointer, dimension(:,:) :: lamc, pgam, iclwpth
 #ifdef FIVE
-   real(r8), pointer, dimension(:,:) :: pmid_five
-   real(r8) :: lamc_five(pcols,pver_rad)
-   real(r8) :: pgam_five(pcols,pver_rad)
-   real(r8) :: iclwpth_five(pcols,pver_rad)
+   real(r8), pointer, dimension(:,:) :: lambdac_five
+   real(r8), pointer, dimension(:,:) :: mu_five
+   real(r8), pointer, dimension(:,:) :: iclwp_five
 #endif
    real(r8), dimension(pcols,pver_rad) :: kext
    integer i,k,swband,lchnk,ncol
@@ -611,23 +604,16 @@ subroutine get_liquid_optics_sw(state, pbuf, tau, tau_w, tau_w_g, tau_w_f)
    call pbuf_get_field(pbuf, i_iclwp,   iclwpth)
 
 #ifdef FIVE
-   call pbuf_get_field(pbuf, pmid_five_idx, pmid_five, start=(/1,1,1/), kount=(/pcols,pver_rad,1/))
-
-   do i = 1, ncol
-      call linear_interp(state%pmid(i,:),pmid_five(i,:), &
-                         lamc(i,1:pver),lamc_five(i,1:pver_five),pver,pver_five)
-      call linear_interp(state%pmid(i,:),pmid_five(i,:), &
-                         pgam(i,1:pver),pgam_five(i,1:pver_five),pver,pver_five)
-      call linear_interp(state%pmid(i,:),pmid_five(i,:), &
-                         iclwpth(i,1:pver),iclwpth_five(i,1:pver_five),pver,pver_five)
-   end do
+   call pbuf_get_field(pbuf, lambdac_five_idx, lambdac_five, start=(/1,1,1/), kount=(/pcols,pver_rad,1/))
+   call pbuf_get_field(pbuf, mu_five_idx, mu_five, start=(/1,1,1/), kount=(/pcols,pver_rad,1/))
+   call pbuf_get_field(pbuf, iclwp_five_idx, iclwp_five, start=(/1,1,1/), kount=(/pcols,pver_rad,1/))
 #endif
 
    do k = 1,pver_rad
       do i = 1,ncol
 #ifdef FIVE
-         if(lamc_five(i,k) > 0._r8) then ! This seems to be clue from microphysics of no cloud
-            call gam_liquid_sw(iclwpth_five(i,k), lamc_five(i,k), pgam_five(i,k), &
+         if(lambdac_five(i,k) > 0._r8) then ! This seems to be clue from microphysics of no cloud
+            call gam_liquid_sw(iclwp_five(i,k), lambdac_five(i,k), mu_five(i,k), &
                 tau(1:nswbands,i,k), tau_w(1:nswbands,i,k), tau_w_g(1:nswbands,i,k), tau_w_f(1:nswbands,i,k))
          else
             tau(1:nswbands,i,k) = 0._r8
@@ -662,10 +648,9 @@ subroutine liquid_cloud_get_rad_props_lw(state, pbuf, abs_od)
    integer :: lchnk, ncol
    real(r8), pointer, dimension(:,:) :: lamc, pgam, iclwpth
 #ifdef FIVE
-   real(r8), pointer, dimension(:,:) :: pmid_five
-   real(r8) :: lamc_five(pcols,pver_rad)
-   real(r8) :: pgam_five(pcols,pver_rad)
-   real(r8) :: iclwpth_five(pcols,pver_rad)
+   real(r8), pointer, dimension(:,:) :: lambdac_five
+   real(r8), pointer, dimension(:,:) :: mu_five
+   real(r8), pointer, dimension(:,:) :: iclwp_five
 #endif
 
    integer lwband, i, k
@@ -680,23 +665,16 @@ subroutine liquid_cloud_get_rad_props_lw(state, pbuf, abs_od)
    call pbuf_get_field(pbuf, i_iclwp,   iclwpth)
 
 #ifdef FIVE
-   call pbuf_get_field(pbuf, pmid_five_idx, pmid_five, start=(/1,1,1/), kount=(/pcols,pver_rad,1/))
-
-   do i = 1, ncol
-      call linear_interp(state%pmid(i,:),pmid_five(i,:), &
-                         lamc(i,1:pver),lamc_five(i,1:pver_five),pver,pver_five)
-      call linear_interp(state%pmid(i,:),pmid_five(i,:), &
-                         pgam(i,1:pver),pgam_five(i,1:pver_five),pver,pver_five)
-      call linear_interp(state%pmid(i,:),pmid_five(i,:), &
-                         iclwpth(i,1:pver),iclwpth_five(i,1:pver_five),pver,pver_five)
-   end do
+   call pbuf_get_field(pbuf, lambdac_five_idx, lambdac_five, start=(/1,1,1/), kount=(/pcols,pver_rad,1/))
+   call pbuf_get_field(pbuf, mu_five_idx, mu_five, start=(/1,1,1/), kount=(/pcols,pver_rad,1/))
+   call pbuf_get_field(pbuf, iclwp_five_idx, iclwp_five, start=(/1,1,1/), kount=(/pcols,pver_rad,1/))
 #endif
 
    do k = 1,pver_rad
       do i = 1,ncol
 #ifdef FIVE
-         if(lamc_five(i,k) > 0._r8) then ! This seems to be the clue for no cloud from microphysics formulation
-            call gam_liquid_lw(iclwpth_five(i,k), lamc_five(i,k), pgam_five(i,k), abs_od(1:nlwbands,i,k))
+         if(lambdac_five(i,k) > 0._r8) then ! This seems to be the clue for no cloud from microphysics formulation
+            call gam_liquid_lw(iclwp_five(i,k), lambdac_five(i,k), mu_five(i,k), abs_od(1:nlwbands,i,k))
          else
             abs_od(1:nlwbands,i,k) = 0._r8
          endif
@@ -721,12 +699,8 @@ subroutine snow_cloud_get_rad_props_lw(state, pbuf, abs_od)
 
    real(r8), pointer :: icswpth(:,:), des(:,:)
 #ifdef FIVE
-   real(r8), pointer, dimension(:,:) :: pmid_five
-   real(r8) :: icswpth_five(pcols,pver_rad)
-   real(r8) :: des_five(pcols,pver_rad)
-   integer :: ncol, i
-
-   ncol = state%ncol
+   real(r8), pointer, dimension(:,:) :: icswp_five
+   real(r8), pointer, dimension(:,:) :: des_five
 #endif
 
    ! This does the same thing as ice_cloud_get_rad_props_lw, except with a
@@ -735,16 +709,10 @@ subroutine snow_cloud_get_rad_props_lw(state, pbuf, abs_od)
    call pbuf_get_field(pbuf, i_des,   des)
 
 #ifdef FIVE
-   call pbuf_get_field(pbuf, pmid_five_idx, pmid_five, start=(/1,1,1/), kount=(/pcols,pver_rad,1/))
+   call pbuf_get_field(pbuf, icswp_five_idx, icswp_five, start=(/1,1,1/), kount=(/pcols,pver_rad,1/))
+   call pbuf_get_field(pbuf, des_five_idx, des_five, start=(/1,1,1/), kount=(/pcols,pver_rad,1/))
 
-   do i = 1, ncol
-      call linear_interp(state%pmid(i,:),pmid_five(i,:), &
-                         icswpth(i,1:pver),icswpth_five(i,1:pver_five),pver,pver_five)
-      call linear_interp(state%pmid(i,:),pmid_five(i,:), &
-                         des(i,1:pver),des_five(i,1:pver_five),pver,pver_five)
-   end do
-
-   call interpolate_ice_optics_lw(state%ncol,icswpth_five, des_five, abs_od)
+   call interpolate_ice_optics_lw(state%ncol,icswp_five, des_five, abs_od)
 #else
    call interpolate_ice_optics_lw(state%ncol,icswpth, des, abs_od)
 #endif
@@ -761,30 +729,19 @@ subroutine ice_cloud_get_rad_props_lw(state, pbuf, abs_od)
 
    real(r8), pointer :: iciwpth(:,:), dei(:,:)
 #ifdef FIVE
-   real(r8), pointer, dimension(:,:) :: pmid_five
-   real(r8) :: iciwpth_five(pcols,pver_rad)
-   real(r8) :: dei_five(pcols,pver_rad)
-   integer :: ncol, i
-
-   ncol = state%ncol
+   real(r8), pointer, dimension(:,:) :: iciwp_five
+   real(r8), pointer, dimension(:,:) :: dei_five
 #endif
-
    ! Get relevant pbuf fields, and interpolate optical properties from
    ! the lookup tables.
    call pbuf_get_field(pbuf, i_iciwp, iciwpth)
    call pbuf_get_field(pbuf, i_dei,   dei)
 
 #ifdef FIVE
-   call pbuf_get_field(pbuf, pmid_five_idx, pmid_five, start=(/1,1,1/), kount=(/pcols,pver_rad,1/))
+   call pbuf_get_field(pbuf, iciwp_five_idx, iciwp_five, start=(/1,1,1/), kount=(/pcols,pver_rad,1/))
+   call pbuf_get_field(pbuf, dei_five_idx, dei_five, start=(/1,1,1/), kount=(/pcols,pver_rad,1/))
 
-   do i = 1, ncol
-      call linear_interp(state%pmid(i,:),pmid_five(i,:), &
-                         iciwpth(i,1:pver),iciwpth_five(i,1:pver_five),pver,pver_five)
-      call linear_interp(state%pmid(i,:),pmid_five(i,:), &
-                         dei(i,1:pver),dei_five(i,1:pver_five),pver,pver_five)
-   end do
-
-   call interpolate_ice_optics_lw(state%ncol,iciwpth_five, dei_five, abs_od)
+   call interpolate_ice_optics_lw(state%ncol,iciwp_five, dei_five, abs_od)
 #else
    call interpolate_ice_optics_lw(state%ncol,iciwpth, dei, abs_od)
 #endif
