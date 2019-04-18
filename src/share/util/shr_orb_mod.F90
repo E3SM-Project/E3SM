@@ -37,7 +37,7 @@ MODULE shr_orb_mod
 CONTAINS
   !===============================================================================
 
-  real(SHR_KIND_R8) pure FUNCTION shr_orb_cosz(jday,lat,lon,declin,dt_avg)
+  real(SHR_KIND_R8) pure FUNCTION shr_orb_cosz(jday,lat,lon,declin,dt_avg,uniform_angle)
 
     !----------------------------------------------------------------------------
     !
@@ -52,29 +52,37 @@ CONTAINS
     !
     !----------------------------------------------------------------------------
 
+    !
+    ! +BPM Add another optional argument called uniform_angle. When present, uses the cos(value) for return. 
+    !
+
     real   (SHR_KIND_R8),intent(in) :: jday   ! Julian cal day (1.xx to 365.xx)
     real   (SHR_KIND_R8),intent(in) :: lat    ! Centered latitude (radians)
     real   (SHR_KIND_R8),intent(in) :: lon    ! Centered longitude (radians)
     real   (SHR_KIND_R8),intent(in) :: declin ! Solar declination (radians)
     real   (SHR_KIND_R8),intent(in), optional   :: dt_avg ! if present and set non-zero, then use in the
+    real   (SHR_KIND_R8),intent(in), optional   :: uniform_angle ! if present and true, apply uniform insolation 
     ! average cosz calculation
     logical :: use_dt_avg
 
     !----------------------------------------------------------------------------
-
-    use_dt_avg = .false.
-    if (present(dt_avg)) then
-       if (dt_avg /= 0.0_shr_kind_r8) use_dt_avg = .true.
-    end if
-
-
-    ! If dt for the average cosz is specified, then call the shr_orb_avg_cosz
-    if (use_dt_avg) then
-       shr_orb_cosz =  shr_orb_avg_cosz(jday, lat, lon, declin, dt_avg)
+    
+    if (present(uniform_angle)) then
+       shr_orb_cosz = cos(uniform_angle)
     else
-       shr_orb_cosz = sin(lat)*sin(declin) - &
-            cos(lat)*cos(declin) * &
-            cos((jday-floor(jday))*2.0_SHR_KIND_R8*pi + lon)
+       ! This is the usual calculation (+BPM)
+       use_dt_avg = .false.
+       if (present(dt_avg)) then
+          if (dt_avg /= 0.0_shr_kind_r8) use_dt_avg = .true.
+       end if
+       ! If dt for the average cosz is specified, then call the shr_orb_avg_cosz
+       if (use_dt_avg) then
+          shr_orb_cosz =  shr_orb_avg_cosz(jday, lat, lon, declin, dt_avg)
+       else
+          shr_orb_cosz = sin(lat)*sin(declin) - &
+               cos(lat)*cos(declin) * &
+               cos((jday-floor(jday))*2.0_SHR_KIND_R8*pi + lon)
+       end if
     end if
 
   END FUNCTION shr_orb_cosz

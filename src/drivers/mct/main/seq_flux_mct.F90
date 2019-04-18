@@ -711,7 +711,14 @@ contains
     logical             :: update_alb           ! was albedo updated
     logical,save        :: first_call = .true.
     !
-    real(r8),parameter :: albdif = 0.06_r8 ! 60 deg reference albedo, diffuse
+
+
+    ! +BPM CHANGE albdif to be 0.07_r8 for RCEMIP configuration;
+    !      USE flux_albav = .true. to directly use these values.
+    !      TODO: the "reference values" should be set via namelist to allow ez change.
+    !
+    ! real(r8),parameter :: albdif = 0.06_r8 ! 60 deg reference albedo, diffuse
+    real(r8),parameter :: albdif = 0.07_r8 ! MODIFIED  albedo, diffuse
     real(r8),parameter :: albdir = 0.07_r8 ! 60 deg reference albedo, direct
     character(*),parameter :: subName =   '(seq_flux_ocnalb_mct) '
     !

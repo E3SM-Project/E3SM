@@ -13,7 +13,7 @@
        This file may have ocn desc entries.
   -->
   <description modifier_mode="1">
-    <desc ocn="DOCN[%NULL][%DOM][%SOM][%SOMAQP][%IAF][%SST_AQUAP][%AQP1][%AQP2][%AQP3][%AQP4][%AQP5][%AQP6][%AQP7][%AQP8][%AQP9][%AQP10][%AQPFILE]">DOCN </desc>
+    <desc ocn="DOCN[%NULL][%DOM][%SOM][%SOMAQP][%IAF][%SST_AQUAP][%AQP1][%AQP2][%AQP3][%AQP4][%AQP5][%AQP6][%AQP7][%AQP8][%AQP9][%AQP10][%AQP11][%AQPFILE]">DOCN </desc>
     <desc option="NULL">  null mode</desc>
     <desc option="DOM">  prescribed ocean mode</desc>
     <desc option="SOM">  slab ocean mode</desc>
@@ -30,6 +30,7 @@
     <desc option="AQP8">  analytic aquaplanet sst - option 8</desc>
     <desc option="AQP9">  analytic aquaplanet sst - option 9</desc>
     <desc option="AQP10">  analytic aquaplanet sst - option 10</desc>
+    <desc option="AQP11">  CONSTANT, UNIFORM aquaplanet sst - option 11</desc>
     <desc option="AQPFILE">  file input aquaplanet sst </desc>
   </description>
 
@@ -44,7 +45,7 @@
 
   <entry id="DOCN_MODE">
     <type>char</type>
-    <valid_values>prescribed,sst_aquap1,sst_aquap2,sst_aquap3,sst_aquap4,sst_aquap5,sst_aquap6,sst_aquap7,sst_aquap8,sst_aquap9,sst_aquap10,sst_aquapfile,som,som_aquap,interannual,null</valid_values>
+    <valid_values>prescribed,sst_aquap1,sst_aquap2,sst_aquap3,sst_aquap4,sst_aquap5,sst_aquap6,sst_aquap7,sst_aquap8,sst_aquap9,sst_aquap10,sst_aquap11,sst_aquapfile,som,som_aquap,interannual,null</valid_values>
     <default_value>prescribed</default_value>
     <values match="last">
       <value compset="_DOCN%NULL_">null</value>
@@ -62,6 +63,7 @@
       <value compset="_DOCN%AQP8_">sst_aquap8</value>
       <value compset="_DOCN%AQP9_">sst_aquap9</value>
       <value compset="_DOCN%AQP10_">sst_aquap10</value>
+      <value compset="_DOCN%AQP11_">sst_aquap11</value>
       <value compset="_DOCN%AQPFILE_">sst_aquapfile</value>
     </values>
     <group>run_component_docn</group>
