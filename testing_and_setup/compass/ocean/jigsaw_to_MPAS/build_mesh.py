@@ -15,6 +15,7 @@ import define_base_mesh
 import scipy.io as sio
 import subprocess
 import os
+import argparse
 
 def removeFile(fileName):
     try:
@@ -22,6 +23,12 @@ def removeFile(fileName):
     except OSError:
         pass
 
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--preserve_floodplain', action='store_true')
+parser.add_argument('--floodplain_elevation', action='store', default='20.0')
+parser.add_argument('--inject_bathymetry', action='store_true')
+cl_args = parser.parse_args()
 
 print 'Step 1. Build cellWidth array as function of latitude and longitude'
 cellWidth, lon, lat = define_base_mesh.cellWidthVsLatLon()
@@ -57,15 +64,25 @@ args = ['./inject_meshDensity.py',
 print "running", ' '.join(args)
 subprocess.check_call(args, env=os.environ.copy())
 
-print 'Step 6. Injecting bathymetry'
-args = ['./inject_bathymetry.py',
-        'base_mesh.nc']
-print "running", ' '.join(args)
-subprocess.check_call(args, env=os.environ.copy())
+if cl_args.inject_bathymetry:
+  print 'Step 6. Injecting bathymetry'
+  args = ['./inject_bathymetry.py',
+          'base_mesh.nc']
+  print "running", ' '.join(args)
+  subprocess.check_call(args, env=os.environ.copy())
 
-print 'Step 7. Create vtk file for visualization'
+if cl_args.preserve_floodplain:
+  print 'Step 7. Injecting flag to preserve floodplain'
+  args = ['./inject_preserve_floodplain.py',
+          'base_mesh.nc',
+          cl_args.floodplain_elevation]
+  print "running", ' '.join(args)
+  subprocess.check_call(args, env=os.environ.copy())
+
+print 'Step 8. Create vtk file for visualization'
 args = ['./paraview_vtk_field_extractor.py',
         '--ignore_time',
+        '-l',
         '-d', 'maxEdges=0',
         '-v', 'allOnCells',
         '-f', 'base_mesh.nc',
