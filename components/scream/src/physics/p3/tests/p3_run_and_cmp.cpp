@@ -59,18 +59,12 @@ struct Baseline {
     auto fid = FILEPtr(fopen(filename.c_str(), "w"));
     scream_require_msg( fid, "generate_baseline can't write " << filename);
     Int nerr = 0;
-    bool first = true;
     for (auto ps : params_) {
       // Run reference p3 on this set of parameters.
       const auto d = ic::Factory::create(ps.ic);
       d->dt = ps.dt;
       p3_init();
       p3_main(*d);
-      if (first) {
-        first = false;
-        nerr += check_against_python(*d);
-        if (nerr) std::cout << "Spot-check against Python failed.\n";
-      }
       // Save the fields to the baseline file.
       write(fid, d);
     }
