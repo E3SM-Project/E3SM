@@ -555,16 +555,18 @@ contains
     call NUOPC_CompAttributeSet(gcomp, name="med_present", value=med_present, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    write(logunit,*)
-    write(logunit,*) "atm_present="//trim(atm_present)
-    write(logunit,*) "lnd_present="//trim(lnd_present)
-    write(logunit,*) "ocn_present="//trim(ocn_present)
-    write(logunit,*) "ice_present="//trim(ice_present)
-    write(logunit,*) "rof_present="//trim(rof_present)
-    write(logunit,*) "wav_present="//trim(wav_present)
-    write(logunit,*) "glc_present="//trim(glc_present)
-    write(logunit,*) "med_present="//trim(med_present)
-    write(logunit,*)
+    if (mastertask) then
+       write(logunit,*)
+       write(logunit,*) "atm_present="//trim(atm_present)
+       write(logunit,*) "lnd_present="//trim(lnd_present)
+       write(logunit,*) "ocn_present="//trim(ocn_present)
+       write(logunit,*) "ice_present="//trim(ice_present)
+       write(logunit,*) "rof_present="//trim(rof_present)
+       write(logunit,*) "wav_present="//trim(wav_present)
+       write(logunit,*) "glc_present="//trim(glc_present)
+       write(logunit,*) "med_present="//trim(med_present)
+       write(logunit,*)
+    end if
 
     call NUOPC_CompAttributeGet(gcomp, name="ScalarFieldName", value=cvalue, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
