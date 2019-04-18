@@ -334,6 +334,7 @@ contains
 
   function get_homme_int_param_value_f90 (param_name_c) result(param_value) bind(c)
     use dimensions_mod, only: nelemd
+    use time_mod,       only: nmax
     !
     ! Input(s)
     !
@@ -355,6 +356,8 @@ contains
     select case(param_name(1:len))
       case("nelemd")
         param_value = nelemd
+      case("nmax")
+        param_value = nmax
       case("num momentum forcings")
         dims = SHAPE(elem(1)%derived%FM)
         param_value = dims(3)

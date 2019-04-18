@@ -4,15 +4,16 @@
 #include "control/surface_coupling.hpp"
 #include "dynamics/homme/atmosphere_dynamics.hpp"
 #include "dynamics/homme/dynamics_driven_grids_manager.hpp"
+#include "dynamics/homme/scream_homme_interface.hpp"
+
+// Hommexx includes
+#include "Context.hpp"
+#include "SimulationParams.hpp"
 #include "Types.hpp"
 
 TEST_CASE("scream_homme_stand_alone", "scream_homme_stand_alone") {
   using namespace scream;
   using namespace scream::control;
-
-  // using device_type = AtmosphereDriver::device_type;
-
-  int num_dyn_iters = 96;
 
   // Create a parameter list for inputs
   ParameterList ad_params("Atmosphere Driver");
@@ -45,6 +46,12 @@ TEST_CASE("scream_homme_stand_alone", "scream_homme_stand_alone") {
 
   // Init, run, and finalize
   ad.initialize(atm_comm,ad_params);
+
+  // Have to wait till now to get homme's parameters, cause it only gets init-ed during the driver initialization
+  const auto& sp = Homme::Context::singleton().get_simulation_params();
+  const int nmax = get_homme_param_value<int>("nmax");
+  const int num_dyn_iters = nmax / (sp.qsplit*sp.rsplit);
+
   for (int i=0; i<num_dyn_iters; ++i) {
     ad.run();
   }
