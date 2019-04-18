@@ -135,20 +135,6 @@ void p3_main (const FortranData& d) {
             d.rcldm.data(), d.lcldm.data(), d.icldm.data(),d.p3_tend_out.data());
 }
 
-Int check_against_python (const FortranData& d) {
-  Int nerr = 0;
-  if (util::is_single_precision<Real>::value) {
-    const double tol = 0;
-    if (util::reldif<double>(d.birim(0,d.nlev-1), 7.237245824853744e-08) > tol)
-      ++nerr;
-    if (util::reldif<double>(d.qirim(0,d.nlev-1), 9.047746971191373e-06) > tol)
-      ++nerr;
-    if (util::reldif<double>(d.nr(0,d.nlev-1), 3.177030468750000e+04) > tol)
-      ++nerr;
-  }
-  return nerr;
-}
-
 int test_FortranData () {
   FortranData d(11, 72);
   return 0;
@@ -163,7 +149,7 @@ int test_p3_ic () {
   const auto d = ic::Factory::create(ic::Factory::mixed);
   p3_init();
   p3_main(*d);
-  return check_against_python(*d);
+  return 0;
 }
 
 } // namespace p3
