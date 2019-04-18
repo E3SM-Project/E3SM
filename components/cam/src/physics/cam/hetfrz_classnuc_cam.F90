@@ -932,8 +932,8 @@ subroutine hetfrz_classnuc_cam_calc( &
 !$acc  kernels loop collapse(2)  &
 !$acc& private(fn,i,k) &
 !$acc& copyin(nc,factnum,lcldm, r3lx, qc, deltatin, supersatice) &
-!$acc& copy(pmid, t) &
-!$acc& copy(frzbcdep(:,:),frzduimm(:,:),frzdudep(:,:),errstring,frzbcimm(:,:),frzbccnt(:,:),frzducnt(:,:)) &
+!$acc& copyin(pmid, t) &
+!$acc& copyout(frzbcdep(:,:),frzduimm(:,:),frzdudep(:,:),errstring,frzbcimm(:,:),frzbccnt(:,:),frzducnt(:,:)) &
 !$acc& present(hetraer, rho, coated_aer_num) &
 !$acc& present(dstcoat,awcam,awfacm,uncoated_aer_num,total_interstitial_aer_num,total_cloudborne_aer_num,total_aer_num)
    do i = 1, ncol
@@ -973,14 +973,13 @@ subroutine hetfrz_classnuc_cam_calc( &
    enddo
 !$acc end kernels loop
 
-!$acc  exit data delete(rho,k) &
+!$acc  exit data delete(rho) &
 !$acc& delete(hetraer, awcam, dstcoat, awfacm) &
 !$acc& delete(na500,coated_aer_num,tot_na500)  &
 !$acc& delete(total_cloudborne_aer_num,uncoated_aer_num,total_interstitial_aer_num) &
 !$acc& delete(total_aer_num)
 
   call t_stopf('shan2')
-  call t_startf('shan3')
    do i = 1, ncol
       do k = top_lev, pver
          if (t(i,k) > 235.15_r8 .and. t(i,k) < 269.15_r8) then
@@ -1022,7 +1021,6 @@ subroutine hetfrz_classnuc_cam_calc( &
       end do
    end do
 !!!!$acc end kernels loop
-   call t_stopf('shan3')
 
    call outfld('FREQIMM', freqimm, pcols, lchnk)
    call outfld('FREQCNT', freqcnt, pcols, lchnk)

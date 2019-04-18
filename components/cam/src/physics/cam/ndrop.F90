@@ -24,7 +24,7 @@ use physics_buffer,   only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
 use wv_saturation,    only: qsat
 use phys_control,     only: phys_getopts
 use ref_pres,         only: top_lev => trop_cloud_top_lev
-use shr_spfn_mod,     only: erf => shr_spfn_erf
+!! use shr_spfn_mod,     only: erf => shr_spfn_erf
 use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_mode_num, rad_cnst_get_aer_mmr, &
                             rad_cnst_get_aer_props, rad_cnst_get_mode_props,                &
                             rad_cnst_get_mam_mmr_idx, rad_cnst_get_mode_num_idx
@@ -530,6 +530,7 @@ subroutine dropmixnuc( &
    ! overall_main_i_loop
    call t_stopf('shan11')
    call t_startf('shan12')
+!!!!!$acc kernels loop vector private(zs)
    do i = 1, ncol
 
       do k = top_lev, pver-1
@@ -923,7 +924,6 @@ subroutine dropmixnuc( &
       count_submix(nsubmix_bnd) = count_submix(nsubmix_bnd) + 1
       dtmix = dtmicro/nsubmix
 
-!$acc parallel loop copyin(cldn) present(overlapp, overlapm) async(1)
       do k = top_lev, pver
          kp1 = min(k+1, pver)
          km1 = max(k-1, top_lev)
@@ -939,7 +939,6 @@ subroutine dropmixnuc( &
             overlapm(k) = 1._r8
          end if
       end do
-!$acc end parallel loop
 
       ! rce-comment
       !    the activation source(k) = mact(k,m)*raercol(kp1,lmass)
@@ -947,25 +946,21 @@ subroutine dropmixnuc( &
       !       from kp1 to k which = ekkp(k)*raercol(kp1,lmass)
       !    however it might if things are not "just right" in subr activate
       !    the following is a safety measure to avoid negatives in explmix
-!$acc update device(nact, mact, ekkp) async(1)
-!$acc parallel loop collapse(2) default(present) async(1)
+!!!$acc update device(nact, mact, ekkp) 
       do k = top_lev, pver-1
          do m = 1, ntot_amode
             nact(k,m) = min( nact(k,m), ekkp(k) )
             mact(k,m) = min( mact(k,m), ekkp(k) )
          end do
       end do
-!$acc end parallel loop
 
       ! old_cloud_nsubmix_loop
-!$acc update device(raercol, raercol_cw, ekkm, qcld, nnew, nsav) async(1)
-!$acc kernels async(1)
+!!!$acc update device(raercol(:,:,nnew), raercol_cw(:,:,nnew), ekkm, overlapp, overlapm, nnew, nsav) 
       do n = 1, nsubmix
          qncld(:) = qcld(:)
          nnew = mod(nnew, 2) + 1
          nsav = mod(nsav, 2) + 1
 
-!$acc loop independent
          do k = top_lev, pver
             kp1=min(k+1,pver)
             km1=max(k-1,top_lev) 
@@ -994,9 +989,11 @@ subroutine dropmixnuc( &
          !    source terms involve clear air (from below) moving into cloudy air (above).
          !    in theory, the clear-portion mixratio should be used when calculating 
          !    source terms
-!$acc loop collapse(2) independent 
-         do mm = 1, ncnst_tot
-            do k = top_lev, pver
+!!         call t_startf('shan14')
+!!!$acc update device(nsav, nnew)
+!!!$acc parallel loop vector 
+         do k = top_lev, pver
+            do mm = 1, ncnst_tot
               m   = mam_idx_1d(1, mm)
               l   = mam_idx_1d(2, mm)
               kp1 = min(k+1,pver)
@@ -1030,11 +1027,11 @@ subroutine dropmixnuc( &
 
            end do
          end do
+!!!$acc end parallel loop
+!!!$acc update host(raercol(:,:,nnew), raercol_cw(:,:,nnew))
 
+!!!         call t_stopf('shan14')
       end do ! old_cloud_nsubmix_loop
-!$acc end kernels
-!$acc update host(qcld, raercol, raercol_cw, nsav, nnew) async(1)
-!$acc wait(1)
 
       ! evaporate particles again if no cloud
 
@@ -1096,6 +1093,8 @@ subroutine dropmixnuc( &
 
    end do  ! overall_main_i_loop
    ! end of main loop over i/longitude ....................................
+!!!!$acc end kernels loop
+
    call t_stopf('shan12')
 
    call outfld('NDROPCOL', ndropcol, pcols, lchnk)
@@ -1112,7 +1111,6 @@ subroutine dropmixnuc( &
    enddo
 
    if(do_aerocom_ind3) then 
-      call t_startf('shan14')
       ccn3d(:ncol, :) = ccn(:ncol, :, 4)
       ccn3col = 0.0_r8; ccn4col = 0.0_r8
       do i=1, ncol
@@ -1140,7 +1138,6 @@ subroutine dropmixnuc( &
         ccn4bl(i) = (ccn(i,idx1000,4)*(1000.-zm2(idx1000+1))+ccn(i,idx1000+1,4) * (zm2(idx1000)-1000.)) &                            
                      /(zm2(idx1000)-zm2(idx1000+1)) *1.0e6   ! #/cm3 -->#/m3
       enddo
-      call t_stopf('shan14')
       call outfld('colccn.1', ccn3col, pcols, lchnk)
       call outfld('colccn.3', ccn4col, pcols, lchnk)
       call outfld('ccn.1bl', ccn3bl, pcols, lchnk)
@@ -1741,8 +1738,8 @@ subroutine ccncalc(state, pbuf, cs, ccn)
    integer :: ncol  ! number of columns
    real(r8), pointer :: tair(:,:)     ! air temperature (K)
 
-   real(r8) naerosol(pcols) ! interstit+activated aerosol number conc (/m3)
-   real(r8) vaerosol(pcols) ! interstit+activated aerosol volume conc (m3/m3)
+   real(r8) naerosol(pcols, ntot_amode, pver) ! interstit+activated aerosol number conc (/m3)
+   real(r8) vaerosol(pcols, ntot_amode, pver) ! interstit+activated aerosol volume conc (m3/m3)
 
    real(r8) amcube(pcols)
    real(r8) super(psat) ! supersaturation
@@ -1751,7 +1748,7 @@ subroutine ccncalc(state, pbuf, cs, ccn)
    real(r8) :: surften       ! surface tension of water w/respect to air (N/m)
    real(r8) surften_coef
    real(r8) a(pcols) ! surface tension parameter
-   real(r8) hygro(pcols)  ! aerosol hygroscopicity
+   real(r8) hygro(pcols, ntot_amode, pver)  ! aerosol hygroscopicity
    real(r8) sm(pcols)  ! critical supersaturation at mode radius
    real(r8) arg(pcols)
    !     mathematical constants
@@ -1783,6 +1780,23 @@ subroutine ccncalc(state, pbuf, cs, ccn)
    end do
 
    ccn = 0._r8
+
+   phase = 3
+   call t_startf('shan15')
+   do k=top_lev,pver
+      do m=1,ntot_amode
+         call loadaer( &
+            state, pbuf, 1, ncol, k, &
+            m, cs, phase, naerosol(:,m,k), vaerosol(:,m,k), &
+            hygro(:,m,k))
+      end do
+   end do
+   call t_stopf('shan15')
+
+!$acc  data copy(ccn) &
+!$acc& copyin(super,ncol,amcubecoef,argfactor,tair,smcoefcoef,surften_coef) &
+!$acc& copyin(vaerosol, hygro, naerosol) 
+!$acc  parallel loop vector private(a,smcoef,arg,sm,amcube,m,i,l) default(present)
    do k=top_lev,pver
 
       do i=1,ncol
@@ -1792,28 +1806,27 @@ subroutine ccncalc(state, pbuf, cs, ccn)
 
       do m=1,ntot_amode
 
-         phase=3 ! interstitial+cloudborne
-
-         call loadaer( &
-            state, pbuf, 1, ncol, k, &
-            m, cs, phase, naerosol, vaerosol, &
-            hygro)
-
-         where(naerosol(:ncol)>1.e-3_r8)
-            amcube(:ncol)=amcubecoef(m)*vaerosol(:ncol)/naerosol(:ncol)
-            sm(:ncol)=smcoef(:ncol)/sqrt(hygro(:ncol)*amcube(:ncol)) ! critical supersaturation
+         where(naerosol(:ncol,m,k)>1.e-3_r8)
+            amcube(:ncol)=amcubecoef(m)*vaerosol(:ncol,m,k)/naerosol(:ncol,m,k)
+            sm(:ncol)=smcoef(:ncol)/sqrt(hygro(:ncol,m,k)*amcube(:ncol)) ! critical supersaturation
          elsewhere
             sm(:ncol)=1._r8 ! value shouldn't matter much since naerosol is small
          endwhere
          do l=1,psat
             do i=1,ncol
                arg(i)=argfactor(m)*log(sm(i)/super(l))
-               ccn(i,k,l)=ccn(i,k,l)+naerosol(i)*0.5_r8*(1._r8-erf(arg(i)))
+               ccn(i,k,l)=ccn(i,k,l)+naerosol(i,m,k)*0.5_r8*(1._r8-erf(arg(i)))
             enddo
          enddo
       enddo
    enddo
+!$acc end parallel loop
+
+!$acc kernels default(present)
    ccn(:ncol,:,:)=ccn(:ncol,:,:)*1.e-6_r8 ! convert from #/m3 to #/cm3
+!$acc end kernels
+
+!$acc end data 
 
    deallocate( &
       amcubecoef, &
@@ -1827,7 +1840,7 @@ subroutine loadaer( &
    state, pbuf, istart, istop, k, &
    m, cs, phase, naerosol, &
    vaerosol, hygro)
-
+!!!!$acc routine
    ! return aerosol number, volume concentrations, and bulk hygroscopicity
 
    ! input arguments
@@ -1855,8 +1868,14 @@ subroutine loadaer( &
 
    real(r8) :: vol(pcols) ! aerosol volume mixing ratio
    integer  :: i, l
+   integer, save :: ddd=0
    !-------------------------------------------------------------------------------
 
+   if (ddd == 0) then
+      ddd = 1
+      print *, "AAA size of ", size(naerosol), sizeof(naerosol)
+
+   endif 
    lchnk = state%lchnk
 
    do i = istart, istop

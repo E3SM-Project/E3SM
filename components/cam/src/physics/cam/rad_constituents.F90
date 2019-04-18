@@ -110,6 +110,7 @@ type :: modes_t
 end type modes_t
 
 type(modes_t), target :: modes  ! mode definitions
+!$acc declare create(modes)
 
 ! type to provide access to the data parsed from the rad_climate and rad_diag_* strings
 type :: rad_cnst_namelist_t
@@ -180,6 +181,7 @@ type :: modelist_t
 end type modelist_t
 
 type(modelist_t), target :: ma_list(0:N_DIAG) ! list of aerosol modes used in climate/diagnostic calcs
+!$acc declare create(ma_list)
 
 
 ! values for constituents with requested value of zero
@@ -318,6 +320,7 @@ subroutine rad_cnst_readnl(nlfile)
 
    ! Mode definition stings
    call parse_mode_defs(mode_defs, modes)
+!$acc update device(modes)
    
    ! Lists of externally mixed entities for climate and diagnostic calculations
    do i = 0,N_DIAG
@@ -368,6 +371,7 @@ subroutine rad_cnst_readnl(nlfile)
          ma_list(i)%list_id     = suffix
       end if
    end do
+!$acc update device(ma_list)
 
    ! Create a list of the unique set of filenames containing property data
 
@@ -1841,6 +1845,7 @@ end subroutine rad_cnst_get_aer_mmr_by_idx
 !================================================================================================
 
 subroutine rad_cnst_get_mam_mmr_by_idx(list_idx, mode_idx, spec_idx, phase, state, pbuf, mmr)
+!$acc routine
 
    ! Return pointer to mass mixing ratio for the modal aerosol specie from the specified
    ! climate or diagnostic list.  
