@@ -60,6 +60,7 @@ contains
     use shr_const_mod,       only: SHR_CONST_PI
     use scamMod,             only: setiopupdate, readiopdata
     use se_single_column_mod, only: scm_setinitial
+    use fv_physics_coupling_mod, only: fv_phys_to_dyn_topo
     implicit none
     type(file_desc_t),intent(inout) :: ncid_ini, ncid_topo
     type (dyn_import_t), target, intent(inout) :: dyn_in   ! dynamics import
@@ -69,6 +70,8 @@ contains
     real(r8), allocatable :: tmp(:,:,:)    ! (npsp,nlev,nelemd)
     real(r8), allocatable :: qtmp(:,:)     ! (npsp*nelemd,nlev)
     logical,  allocatable :: tmpmask(:,:)  ! (npsp,nlev,nelemd) unique grid val
+    real(r8), allocatable :: phys_tmp(:,:)    ! (nphys_sq,nelemd)
+    integer :: nphys_sq                   ! # of fv physics columns per element
     integer :: ie, k, t
     integer :: indx_scm, ie_scm, i_scm, j_scm
     character(len=max_fieldname_len) :: fieldname
@@ -111,6 +114,11 @@ contains
     allocate(tmp(npsq,nlev,nelemd))
     tmp = 0.0_r8
     allocate(qtmp(npsq*nelemd,nlev))
+
+    if (fv_nphys>0) then
+      nphys_sq = fv_nphys*fv_nphys
+      allocate(phys_tmp(nphys_sq,nelemd))
+    end if
 
     if (par%dynproc) then
       if(elem(1)%idxP%NumUniquePts <=0 .or. elem(1)%idxP%NumUniquePts > np*np) then
@@ -421,27 +429,35 @@ contains
     if ( (ideal_phys .or. aqua_planet)) then
        tmp(:,1,:) = 0._r8
     else    
-       fieldname = 'PHIS'
-       tmp(:,1,:) = 0.0_r8
-       ! Probably need to change ncol and grid names here so it matches physics grid - Walter Hannah
-       call infld(fieldname, ncid_topo, ncol_name,      &
+      fieldname = 'PHIS'
+      tmp(:,1,:) = 0.0_r8
+      if (fv_nphys > 0) then
+         call infld(fieldname, ncid_topo, 'ncol', 1, nphys_sq, &
+                    1, nelemd, phys_tmp, found, gridname='physgrid_d')
+         ! Copy phis field to GLL grid
+         call fv_phys_to_dyn_topo(elem,phys_tmp)
+      else
+         call infld(fieldname, ncid_topo, ncol_name,      &
             1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
-       if(.not. found) then
-          call endrun('Could not find PHIS field on input datafile')
-       end if
+      endif
+      if(.not. found) then
+         call endrun('Could not find PHIS field on input datafile')
+      end if
     end if
 
-    do ie=1,nelemd
-       elem(ie)%state%phis=0.0_r8
-       indx = 1
-       do j = 1, np
-          do i = 1, np
-             elem(ie)%state%phis(i,j) = tmp(indx,1,ie)
-             if (single_column) elem(ie)%state%phis(i,j) = tmp(indx_scm,1,ie_scm)
-             indx = indx + 1
-          end do
-       end do
-    end do
+    if (fv_nphys == 0) then
+      do ie=1,nelemd
+         elem(ie)%state%phis=0.0_r8
+         indx = 1
+         do j = 1, np
+            do i = 1, np
+               elem(ie)%state%phis(i,j) = tmp(indx,1,ie)
+               if (single_column) elem(ie)%state%phis(i,j) = tmp(indx_scm,1,ie_scm)
+               indx = indx + 1
+            end do
+         end do
+      end do
+   end if ! fv_nphys == 0
     
     if (single_column) then
       iop_update_surface = .false.

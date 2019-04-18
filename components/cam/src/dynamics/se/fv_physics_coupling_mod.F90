@@ -26,6 +26,7 @@ module fv_physics_coupling_mod
   ! These method encapsulate the coupling method for the fv phys grid,
   ! they are used by d_p_coupling() and p_d_coupling() in dp_coupling.F90 
   public :: fv_phys_to_dyn
+  public :: fv_phys_to_dyn_topo
   public :: dyn_to_fv_phys
 
 contains
@@ -87,10 +88,78 @@ contains
         end do ! i
       end do ! j
     end do ! ie
-
+    !---------------------------------------------------------------------------
+    !---------------------------------------------------------------------------
   end subroutine fv_phys_to_dyn
-  !================================================================================================
-  !================================================================================================
+  !=================================================================================================
+  !=================================================================================================
+  subroutine fv_phys_to_dyn_topo(elem,phys_tmp)
+    use parallel_mod,   only: par
+    use edgetype_mod,   only: EdgeBuffer_t
+    use edge_mod,       only: initEdgeBuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
+    use bndry_mod,      only: bndry_exchangeV
+    implicit none
+    !---------------------------------------------------------------------------
+    ! interface arguments
+    type(element_t),      intent(inout) :: elem(:)        ! dynamics element structure
+    real(kind=real_kind), intent(inout) :: phys_tmp (:,:) ! temp array to hold PHIS field from file
+    ! local variables
+    integer(kind=int_kind)   :: ie, i, j, icol            ! loop iterators
+    integer(kind=int_kind)   :: gi(2), gj(2)              ! index list used to simplify pg2 case
+    integer(kind=int_kind)   :: di, dj
+    type(EdgeBuffer_t)       :: edgebuf
+    !---------------------------------------------------------------------------
+    ! Copy tendencies on the physics grid over to the dynamics grid (GLL)
+    !---------------------------------------------------------------------------
+    do ie = 1,nelemd
+      icol = 0
+      do j = 1,fv_nphys
+        do i = 1,fv_nphys 
+          icol = icol + 1
+          !-------------------------------------------------------------------
+          !-------------------------------------------------------------------
+          ! pg1 case 
+          if (fv_nphys == 1) then
+            elem(ie)%state%phis(:,:) = phys_tmp(icol,ie)
+          end if ! fv_nphys == 1
+          !-------------------------------------------------------------------
+          !-------------------------------------------------------------------
+          ! for pg2 we need to copy the FV state to quadrants of GLL grid
+          if (fv_nphys == 2) then
+            ! define indices of GLL points in quadrant
+            di = (i-1)+(i-2)  ! either i=1 & di=-1 or i=2 & di=+1
+            dj = (j-1)+(j-2)  ! either j=1 & dj=-1 or j=2 & dj=+1
+            ! gi & gj are indices of the 4 GLL nodes in each element quadrant
+            gi(1:2) = (/i+1,i+1+di/)
+            gj(1:2) = (/j+1,j+1+dj/)
+            ! copy physics column values to GLL nodes
+            elem(ie)%state%phis(gi,gj) = phys_tmp(icol,ie)
+          end if ! fv_nphys == 2
+          !-------------------------------------------------------------------
+          !-------------------------------------------------------------------
+        end do ! i
+      end do ! j
+    end do ! ie
+    !---------------------------------------------------------------------------
+    ! Boundary exchange to make field continuous
+    !---------------------------------------------------------------------------
+    if(par%dynproc) then
+      call initEdgeBuffer(par, edgebuf, elem, (3+pcnst)*nlev)
+    end if
+    do ie = 1,nelemd
+      elem(ie)%state%phis(:,:) = elem(ie)%state%phis(:,:) * elem(ie)%spheremp(:,:)
+      call edgeVpack(edgebuf,elem(ie)%state%phis(:,:),0,0,ie)
+    end do ! ie
+    call bndry_exchangeV(par, edgebuf)
+    do ie = 1,nelemd
+      call edgeVunpack(edgebuf,elem(ie)%state%phis(:,:),0,0,ie)
+      elem(ie)%state%phis(:,:) = elem(ie)%state%phis(:,:) * elem(ie)%rspheremp(:,:)
+    end do ! ie
+    !---------------------------------------------------------------------------
+    !---------------------------------------------------------------------------
+  end subroutine fv_phys_to_dyn_topo
+  !=================================================================================================
+  !=================================================================================================
   subroutine dyn_to_fv_phys(elem,ps_tmp,zs_tmp,T_tmp,uv_tmp,w_tmp,Q_tmp)
     use derivative_mod,     only: subcell_integration
     use dyn_comp,           only: TimeLevel
