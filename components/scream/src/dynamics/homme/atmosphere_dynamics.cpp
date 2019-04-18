@@ -1,4 +1,5 @@
 #include "atmosphere_dynamics.hpp"
+#include "share/scream_assert.hpp"
 #include "scream_homme_interface.hpp"
 #include "Context.hpp"
 #include "mpi/MpiContext.hpp"
@@ -7,44 +8,73 @@
 #include "Tracers.hpp"
 #include "Dimensions.hpp"
 #include "CaarFunctor.hpp"
+#include "Hommexx_Session.hpp"
 #include "EulerStepFunctor.hpp"
 #include "HyperviscosityFunctor.hpp"
 
 namespace scream
 {
 
+namespace util
+{
+
+template<>
+struct ScalarProperties<Homme::Scalar> {
+  using scalar_type = Homme::Real;
+  static constexpr bool is_pack = true;
+};
+
+}
+
 HommeDynamics::HommeDynamics (const Comm& comm,const ParameterList& /* params */)
  : m_dynamics_comm (comm)
 {
   init_homme1(comm);
 
-  constexpr int NUM_PHYSICAL_LEV = Homme::NUM_PHYSICAL_LEV;
-  constexpr int NUM_TIME_LEVELS  = Homme::NUM_TIME_LEVELS;
-  const int num_elems = get_homme_param_value<int>("nelemd");
+  // Make Homme throw rather than abort. In Homme, abort causes finalization of Kokkos,
+  // which is bad, since scream still has outstanding views.
+  Homme::Session::m_throw_instead_of_abort = true;
+
+  constexpr int NGP  = NP;
+  constexpr int QSZ  = QSIZE_D;
+  constexpr int NVL  = Homme::NUM_PHYSICAL_LEV;
+  constexpr int NTL  = Homme::NUM_TIME_LEVELS;
+  constexpr int QNTL = Homme::Q_NUM_TIME_LEVELS;
+
+  const int ne  = get_homme_param_value<int>("nelemd");
+  const int nmf = get_homme_param_value<int>("num momentum forcings");
 
   // Create the identifiers of input and output fields
+  auto EL = FieldTag::Element;
+  auto GP = FieldTag::GaussPoint;
+  auto TL = FieldTag::TimeLevel;
+  auto CM = FieldTag::Component;
+  auto VL = FieldTag::VerticalLevel;
+  auto VR = FieldTag::Variable;
 
   // Create layout of scalar/vector/tensor 2d/3d fields
-  std::vector<FieldTag> tags_scalar_2d = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::GaussPoint};
-  std::vector<FieldTag> tags_vector_2d = {FieldTag::Element, FieldTag::Component, FieldTag::GaussPoint, FieldTag::GaussPoint};
+  FieldLayout scalar2d_layout  { {EL,GP,GP}, {ne,NGP,NGP} };
 
-  std::vector<FieldTag> tags_scalar_3d = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::GaussPoint, FieldTag::VerticalLevel};
-  std::vector<FieldTag> tags_vector_3d = {FieldTag::Element, FieldTag::Component, FieldTag::GaussPoint, FieldTag::GaussPoint, FieldTag::VerticalLevel};
-  std::vector<FieldTag> tags_scalar_state_3d = {FieldTag::Element, FieldTag::TimeLevel, FieldTag::GaussPoint, FieldTag::GaussPoint, FieldTag::VerticalLevel};
-  std::vector<FieldTag> tags_vector_state_3d = {FieldTag::Element, FieldTag::TimeLevel, FieldTag::Component, FieldTag::GaussPoint, FieldTag::GaussPoint, FieldTag::VerticalLevel};
+  FieldLayout scalar_state_3d_mid_layout { {EL,TL,   GP,GP,VL} , {ne,NTL,  NGP,NGP,NVL}};
+  FieldLayout vector_state_3d_mid_layout { {EL,TL,CM,GP,GP,VL} , {ne,NTL,2,NGP,NGP,NVL}};
 
-  std::vector<int> dims_scalar_2d = {num_elems, NP, NP};
-  std::vector<int> dims_scalar_3d_mid = {num_elems, NP, NP, NUM_PHYSICAL_LEV};
-  std::vector<int> dims_scalar_3d_int = {num_elems, NP, NP, NUM_PHYSICAL_LEV+1};
-  std::vector<int> dims_scalar_state_3d = {num_elems, NUM_TIME_LEVELS, NP, NP, NUM_PHYSICAL_LEV};
-  std::vector<int> dims_vector_state_3d = {num_elems, NUM_TIME_LEVELS, 2, NP, NP, NUM_PHYSICAL_LEV};
+  FieldLayout tracers_state_layout { {EL,TL,VR,GP,GP,VL}, {ne,QNTL,QSZ,NGP,NGP,NVL} };
 
-  FieldLayout v_layout {tags_vector_state_3d,dims_vector_state_3d};
-  FieldLayout t_dp_layout {tags_scalar_state_3d,dims_scalar_state_3d};
+  FieldLayout q_forcing_layout  { {EL,VR,GP,GP,VL}, {ne,QSZ,NGP,NGP,NVL} };
+  FieldLayout m_forcing_layout  { {EL,VR,GP,GP,VL}, {ne,nmf,NGP,NGP,NVL} };
+  FieldLayout t_forcing_layout  { {EL,   GP,GP,VL}, {ne,    NGP,NGP,NVL} };
 
-  m_computed_fields.emplace("horizontal velocity",v_layout,"Dynamics");
-  m_computed_fields.emplace("temperature",t_dp_layout,"Dynamics");
-  m_computed_fields.emplace("dp",t_dp_layout,"Dynamics");
+  // Set requirements
+  m_required_fields.emplace("phis", scalar2d_layout,   "Dynamics");
+  m_required_fields.emplace("FQ",   q_forcing_layout,  "Dynamics");
+  m_required_fields.emplace("FM",   m_forcing_layout,  "Dynamics");
+  m_required_fields.emplace("FT",   t_forcing_layout,  "Dynamics");
+
+  // Set computed fields
+  m_computed_fields.emplace("v",  vector_state_3d_mid_layout,"Dynamics");
+  m_computed_fields.emplace("t",  scalar_state_3d_mid_layout,"Dynamics");
+  m_computed_fields.emplace("dp", scalar_state_3d_mid_layout,"Dynamics");
+  m_computed_fields.emplace("qdp",tracers_state_layout,"Dynamics");
 }
 
 void HommeDynamics::initialize (const std::shared_ptr<const GridsManager> /* grids_manager */)
@@ -60,22 +90,23 @@ void HommeDynamics::initialize (const std::shared_ptr<const GridsManager> /* gri
 
   const int num_elems = elements.num_elems();
   constexpr int NUM_PHYSICAL_LEV  = Homme::NUM_PHYSICAL_LEV;
+  constexpr int NUM_LEV           = Homme::NUM_LEV;
   constexpr int NUM_TIME_LEVELS   = Homme::NUM_TIME_LEVELS;
   constexpr int Q_NUM_TIME_LEVELS = Homme::Q_NUM_TIME_LEVELS;
-  // constexpr int QSIZE_D           = Homme::QSIZE_D;
   using Scalar = Homme::Scalar;
 
+  // Computed fields
   for (auto& it : m_dyn_fields_out) {
     const auto& name = it.first;
     const auto& f    = it.second;
 
-    if (name=="horizontal velocity") {
+    if (name=="v") {
       // Velocity
       auto& v = elements.m_v;
-      auto v_in = f.get_reshaped_view<Real*[NUM_TIME_LEVELS][2][NP][NP][NUM_PHYSICAL_LEV]>();
+      auto v_in = f.get_reshaped_view<Scalar*[NUM_TIME_LEVELS][2][NP][NP][NUM_LEV]>();
       using v_type = std::remove_reference<decltype(v)>::type;
-      v = v_type (reinterpret_cast<Scalar*>(v_in.data()),num_elems);
-    } else if (name=="temperature") {
+      v = v_type (v_in.data(),num_elems);
+    } else if (name=="t") {
       // Temperature
       auto& t = elements.m_t;
       auto t_in = f.get_reshaped_view<Real*[NUM_TIME_LEVELS][NP][NP][NUM_PHYSICAL_LEV]>();
@@ -98,6 +129,48 @@ void HommeDynamics::initialize (const std::shared_ptr<const GridsManager> /* gri
     }
   }
 
+  // Required fields.
+  // NOTE: Homme's Elements store all field as views to non-const data (due to initialization),
+  //       so we need to cast away the const from the scream input fields.
+  // TODO: make Hommexx Elements structure store const views for stuff that is indeed const.
+  for (auto& it : m_dyn_fields_in) {
+    const auto& name = it.first;
+    const auto& f    = it.second;
+
+    if (name=="phis") {
+      // Surface geo-potential
+      auto& phis = elements.m_phis;
+      auto phis_in = f.template get_reshaped_view<const Real*[NP][NP]>();
+      using phis_type = std::remove_reference<decltype(phis)>::type;
+      auto non_const_ptr = const_cast<Real*>(phis_in.data());
+      phis = phis_type(non_const_ptr,num_elems);
+    } else if (name=="FQ") {
+      // Tracers forcing
+      auto& fq = tracers.fq;
+      auto fq_in = f.template get_reshaped_view<const Real*[QSIZE_D][NP][NP][NUM_PHYSICAL_LEV]>();
+      using fq_type = std::remove_reference<decltype(fq)>::type;
+      auto non_const_ptr = reinterpret_cast<Scalar*>(const_cast<Real*>(fq_in.data()));
+      fq = fq_type(non_const_ptr,num_elems);
+    } else if (name=="FM") {
+      // Momemntum forcing
+      auto& fm = elements.m_fm;
+      // Use dynamic extent for second dimension, since preqx and theta have different extents
+      auto fm_in = f.template get_reshaped_view<const Real**[NP][NP][NUM_PHYSICAL_LEV]>();
+      using fm_type = std::remove_reference<decltype(fm)>::type;
+      auto non_const_ptr = reinterpret_cast<Scalar*>(const_cast<Real*>(fm_in.data()));
+      fm = fm_type(non_const_ptr,num_elems);
+    } else if (name=="FT") {
+      // Temperature forcing
+      auto& ft = elements.m_ft;
+      auto ft_in = f.template get_reshaped_view<const Real*[NP][NP][NUM_PHYSICAL_LEV]>();
+      using ft_type = std::remove_reference<decltype(ft)>::type;
+      auto non_const_ptr = reinterpret_cast<Scalar*>(const_cast<Real*>(ft_in.data()));
+      ft = ft_type(non_const_ptr,num_elems);
+    } else {
+      error::runtime_abort("Error! Unexpected field name. This is an internal error. Please, contact developers.\n");
+    }
+  }
+
   // Now that we set the correct pointers inside the Kokkos views, we can finish homme's initialization
   init_homme2_f90 ();
 }
@@ -107,16 +180,20 @@ void HommeDynamics::register_fields (FieldRepository<Real, device_type>& field_r
   for (const auto& fid : m_computed_fields) {
     field_repo.register_field(fid);
   }
-}
-
-void HommeDynamics::set_computed_field_impl (const Field<Real, device_type>& f)
-{
-  m_dyn_fields_out.emplace(f.get_header().get_identifier().name(),f);
+  for (const auto& fid : m_required_fields) {
+    field_repo.register_field(fid);
+  }
 }
 
 void HommeDynamics::run (/* what inputs? */)
 {
-  run_homme_f90 ();
+  try {
+    run_homme_f90 ();
+  } catch (std::exception& e) {
+    error::runtime_abort(e.what());
+  } catch (...) {
+    error::runtime_abort("Something went wrong, but we don't know what.\n");
+  }
 }
 
 void HommeDynamics::finalize (/* what inputs? */)

@@ -58,8 +58,13 @@ public:
 protected:
 
   // Setting the field in the atmosphere process
-  void set_required_field_impl (const Field<const Real, device_type>& /*f*/) { /* impl */ }
-  void set_computed_field_impl (const Field<      Real, device_type>& f);
+  void set_required_field_impl (const Field<const Real, device_type>& f) {
+    m_dyn_fields_in.emplace(f.get_header().get_identifier().name(),f);
+  }
+
+  void set_computed_field_impl (const Field<Real, device_type>& f) {
+    m_dyn_fields_out.emplace(f.get_header().get_identifier().name(),f);
+  }
 
   std::set<FieldIdentifier> m_required_fields;
   std::set<FieldIdentifier> m_computed_fields;

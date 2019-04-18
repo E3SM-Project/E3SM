@@ -344,6 +344,7 @@ contains
     !
     character(len=256), pointer :: param_name
     integer :: len
+    integer :: dims(4)
 
     if (.not. is_half_inited) then
       call abortmp ("Error! init_homme1_f90 was not called yet.\n")
@@ -354,6 +355,9 @@ contains
     select case(param_name(1:len))
       case("nelemd")
         param_value = nelemd
+      case("num momentum forcings")
+        dims = SHAPE(elem(1)%derived%FM)
+        param_value = dims(3)
       case default
         call abortmp ("[get_homme_int_param_value_f90] Error! Unrecognized parameter name.")
     end select 
