@@ -1110,8 +1110,6 @@ contains
                x2o_o%rAttr(index_x2o_Faxa_snow_HDO ,n)
        end if
     end do
-    !Experimental: call subshelf boundary flux code here.  Note this is called on atmospheric timestep.
-    call prep_glc_calculate_subshelf_boundary_fluxes
 
     do ko = 1,noflds
        !--- document merge ---
