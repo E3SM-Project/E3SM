@@ -974,6 +974,16 @@
       <mask>oEC60to30v3</mask>
     </model_grid>
 
+    <model_grid alias="ne30_hcru_oECv3" compset="(CAM5.+CLM.+MPASO)">
+      <grid name="atm">ne30np4</grid>
+      <grid name="lnd">360x720cru</grid>
+      <grid name="ocnice">oEC60to30v3</grid>
+      <grid name="rof">360x720cru</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
     <model_grid alias="ne30_hcru_oECv3_ICG" compset="(CAM5.+CLM.+MPASO%SPUNUP)">
       <grid name="atm">ne30np4</grid>
       <grid name="lnd">360x720cru</grid>
