@@ -51,6 +51,7 @@ module cam_history
                                   lookup_hist_coord_indices, get_hist_coord_index
    use sat_hist,            only: is_satfile
    use mo_solar_parms,      only: solar_parms_get, solar_parms_on
+   use scamMod,             only: single_column
 
   implicit none
   private
@@ -4113,6 +4114,7 @@ end subroutine print_active_fldlst
     ! Write time-invariant portion of history header
     !
     if(.not. is_satfile(t)) then
+      if(.not. single_column) then
       if(interpolate) then
         call cam_grid_write_var(tape(t)%File, interpolate_info(t)%grid_id)
       else if((.not. patch_output) .or. restart) then
@@ -4124,6 +4126,7 @@ end subroutine print_active_fldlst
         do i = 1, size(tape(t)%patches)
           call tape(t)%patches(i)%write_vals(tape(t)%File)
         end do
+      end if
       end if ! interpolate
       if (allocated(lonvar)) then
         deallocate(lonvar)
