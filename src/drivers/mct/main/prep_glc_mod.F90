@@ -834,113 +834,94 @@ contains
     !---------------------------------------------------------------
 
     if (.not.(glc_present)) return
-    !write(logunit,*) 'Starting prep_glc_calculate_subshelf_boundary_fluxes'
 
     do egi = 1,num_inst_glc
 
-    o2x_ox => component_get_c2x_cx(ocn(egi))
-    g2x_gx => component_get_c2x_cx(glc(egi))
-    x2g_gx => component_get_x2c_cx(glc(egi))
+       o2x_ox => component_get_c2x_cx(ocn(egi))
+       g2x_gx => component_get_c2x_cx(glc(egi))
+       x2g_gx => component_get_x2c_cx(glc(egi))
 
-    !Remap relevant ocean variables to ice sheet grid.
-    !Done here instead of in glc-frequency mapping so it happens within ocean coupling interval.
-    ! Also could map o2x_ox->o2x_gx(1) but using x2g_gx as destination allows us to see
-    ! these fields on the GLC grid of the coupler history file, which helps with debugging.
-    call seq_map_map(mapper_So2g, o2x_ox, x2g_gx, &
-    fldlist='So_blt:So_bls:So_htv:So_stv:So_rhoeff',norm=.true.)
+       !Remap relevant ocean variables to ice sheet grid.
+       !Done here instead of in glc-frequency mapping so it happens within ocean coupling interval.
+       ! Also could map o2x_ox->o2x_gx(1) but using x2g_gx as destination allows us to see
+       ! these fields on the GLC grid of the coupler history file, which helps with debugging.
+       call seq_map_map(mapper_So2g, o2x_ox, x2g_gx, &
+       fldlist='So_blt:So_bls:So_htv:So_stv:So_rhoeff',norm=.true.)
 
-    ! inputs to melt flux calculation
-    index_x2g_So_blt =    mct_avect_indexra(x2g_gx,'So_blt',perrwith='quiet')
-    index_x2g_So_bls =    mct_avect_indexra(x2g_gx,'So_bls',perrwith='quiet')
-    index_x2g_So_htv =    mct_avect_indexra(x2g_gx,'So_htv',perrwith='quiet')
-    index_x2g_So_stv =    mct_avect_indexra(x2g_gx,'So_stv',perrwith='quiet')
-    !index_x2g_So_rhoeff = mct_avect_indexra(x2g_gx,'So_rhoeff',perrwith='quiet')
+       ! inputs to melt flux calculation
+       index_x2g_So_blt =    mct_avect_indexra(x2g_gx,'So_blt',perrwith='quiet')
+       index_x2g_So_bls =    mct_avect_indexra(x2g_gx,'So_bls',perrwith='quiet')
+       index_x2g_So_htv =    mct_avect_indexra(x2g_gx,'So_htv',perrwith='quiet')
+       index_x2g_So_stv =    mct_avect_indexra(x2g_gx,'So_stv',perrwith='quiet')
+       index_x2g_So_rhoeff = mct_avect_indexra(x2g_gx,'So_rhoeff',perrwith='quiet')
 
-    index_g2x_Sg_tbot =   mct_avect_indexra(g2x_gx,'Sg_tbot',perrwith='quiet')
-    index_g2x_Sg_dztbot = mct_avect_indexra(g2x_gx,'Sg_dztbot',perrwith='quiet')
-    index_g2x_Sg_lithop = mct_avect_indexra(g2x_gx,'Sg_lithop',perrwith='quiet')
-    index_g2x_Sg_icemask_floating = mct_avect_indexra(g2x_gx,'Sg_icemask_floating',perrwith='quiet')
+       index_g2x_Sg_tbot =   mct_avect_indexra(g2x_gx,'Sg_tbot',perrwith='quiet')
+       index_g2x_Sg_dztbot = mct_avect_indexra(g2x_gx,'Sg_dztbot',perrwith='quiet')
+       index_g2x_Sg_lithop = mct_avect_indexra(g2x_gx,'Sg_lithop',perrwith='quiet')
+       index_g2x_Sg_icemask_floating = mct_avect_indexra(g2x_gx,'Sg_icemask_floating',perrwith='quiet')
 
-    ! outputs to melt flux calculation
-    index_g2x_Sg_blis = mct_avect_indexra(g2x_gx,'Sg_blis',perrwith='quiet')
-    index_g2x_Sg_blit = mct_avect_indexra(g2x_gx,'Sg_blit',perrwith='quiet')
-    index_g2x_Fogx_qiceho = mct_avect_indexra(g2x_gx,'Fogx_qiceho',perrwith='quiet')
-    index_g2x_Fogx_qicelo = mct_avect_indexra(g2x_gx,'Fogx_qicelo',perrwith='quiet')
-    index_x2g_Fogx_qiceli = mct_avect_indexra(x2g_gx,'Fogx_qiceli',perrwith='quiet')
-    index_x2g_Fogx_qicehi = mct_avect_indexra(x2g_gx,'Fogx_qicehi',perrwith='quiet')
+       ! outputs to melt flux calculation
+       index_g2x_Sg_blis = mct_avect_indexra(g2x_gx,'Sg_blis',perrwith='quiet')
+       index_g2x_Sg_blit = mct_avect_indexra(g2x_gx,'Sg_blit',perrwith='quiet')
+       index_g2x_Fogx_qiceho = mct_avect_indexra(g2x_gx,'Fogx_qiceho',perrwith='quiet')
+       index_g2x_Fogx_qicelo = mct_avect_indexra(g2x_gx,'Fogx_qicelo',perrwith='quiet')
+       index_x2g_Fogx_qiceli = mct_avect_indexra(x2g_gx,'Fogx_qiceli',perrwith='quiet')
+       index_x2g_Fogx_qicehi = mct_avect_indexra(x2g_gx,'Fogx_qicehi',perrwith='quiet')
 
-    gsize = mct_aVect_lsize(g2x_gx)
-    write(logunit,*) 'gsize=',gsize
+       gsize = mct_aVect_lsize(g2x_gx)
+       write(logunit,*) 'gsize=',gsize
 
-    do n=1,gsize
-      !Extract glc and ocn-sourced coupler fields used as input to compute_melt_fluxes to local arrays...
+       do n=1,gsize
+          !Extract glc and ocn-sourced coupler fields used as input to compute_melt_fluxes to local arrays...
 
-      ! Fields from the ocean, now on the GLC grid
-      oceanTemperature(n) =               x2g_gx%rAttr(index_x2g_So_blt,n)
-      oceanSalinity(n) =                  x2g_gx%rAttr(index_x2g_So_bls,n)
-      oceanHeatTransferVelocity(n) =      x2g_gx%rAttr(index_x2g_So_htv,n)
-      oceanSaltTransferVelocity(n) =      x2g_gx%rAttr(index_x2g_So_stv,n)
+          ! Fields from the ocean, now on the GLC grid
+          oceanTemperature(n) =               x2g_gx%rAttr(index_x2g_So_blt,n)
+          oceanSalinity(n) =                  x2g_gx%rAttr(index_x2g_So_bls,n)
+          oceanHeatTransferVelocity(n) =      x2g_gx%rAttr(index_x2g_So_htv,n)
+          oceanSaltTransferVelocity(n) =      x2g_gx%rAttr(index_x2g_So_stv,n)
 
-      ! Fields from the ice sheet model (still on the GLC grid)
-      iceTemperature(n) =                 g2x_gx%rAttr(index_g2x_Sg_tbot,n)
-      iceTemperatureDistance(n) =         g2x_gx%rAttr(index_g2x_Sg_dztbot,n)
-      interfacePressure(n) =              g2x_gx%rAttr(index_g2x_Sg_lithop,n)
-      iceFloatingMask(n) =                g2x_gx%rAttr(index_g2x_Sg_icemask_floating,n)
+          ! Fields from the ice sheet model (still on the GLC grid)
+          iceTemperature(n) =                 g2x_gx%rAttr(index_g2x_Sg_tbot,n)
+          iceTemperatureDistance(n) =         g2x_gx%rAttr(index_g2x_Sg_dztbot,n)
+          interfacePressure(n) =              g2x_gx%rAttr(index_g2x_Sg_lithop,n)
+          iceFloatingMask(n) =                g2x_gx%rAttr(index_g2x_Sg_icemask_floating,n)
 
-      !... initialize local compute_melt_fluxes output arrays...
-      outInterfaceSalinity(n)     =       0.0_r8
-      outInterfaceTemperature(n)  =       0.0_r8
-      outFreshwaterFlux(n)  =             0.0_r8
-      outOceanHeatFlux(n) =               0.0_r8
-      outIceHeatFlux(n) =                 0.0_r8
-    end do
+          !... initialize local compute_melt_fluxes output arrays...
+          outInterfaceSalinity(n)     =       0.0_r8
+          outInterfaceTemperature(n)  =       0.0_r8
+          outFreshwaterFlux(n)  =             0.0_r8
+          outOceanHeatFlux(n) =               0.0_r8
+          outIceHeatFlux(n) =                 0.0_r8
+       end do
 
-    !Fyke: hardwire in some *reasonable* values here to test things out.
-      !     do n=1,gsize
-      !       oceanTemperature(n)=0._r8
-      !       oceanSalinity(n)=34.5_r8
-      !       oceanHeatTransferVelocity(n)=1.e-4_r8
-      !       oceanSaltTransferVelocity(n)=3.e-6_r8
-      !       interfacePressure(n)=1000._r8*9.81_r8*918._r8 !lithostatic pressure of 1km of ice
-      !     end do
+       !...calculate fluxes...
+       call compute_melt_fluxes(oceanTemperature=oceanTemperature,&
+                                oceanSalinity=oceanSalinity,&
+                                oceanHeatTransferVelocity=oceanHeatTransferVelocity,&
+                                oceanSaltTransferVelocity=oceanSaltTransferVelocity,&
+                                interfacePressure=interfacePressure,&
+                                iceTemperature=iceTemperature,&
+                                iceTemperatureDistance=iceTemperatureDistance, &
+                                iceFloatingMask=iceFloatingMask, &
+                                outInterfaceSalinity=outInterfaceSalinity,&
+                                outInterfaceTemperature=outInterfaceTemperature,&
+                                outFreshwaterFlux=outFreshwaterFlux,&
+                                outOceanHeatFlux=outOceanHeatFlux,&
+                                outIceHeatFlux=outIceHeatFlux,&
+                                nCells=gsize)
 
-    !...calculate fluxes...
-    call compute_melt_fluxes(oceanTemperature,&
-                             oceanSalinity,&
-                             oceanHeatTransferVelocity,&
-                             oceanSaltTransferVelocity,&
-                             interfacePressure,&
-                             iceTemperature,&
-                             iceTemperatureDistance, &
-                             iceFloatingMask, &
-                             outInterfaceSalinity,&
-                             outInterfaceTemperature,&
-                             outFreshwaterFlux,&
-                             outOceanHeatFlux,&
-                             outIceHeatFlux,&
-                             gsize)
+       !...and assign fluxes to glc and ocn-directed coupler fields
+       do n=1,gsize
+          !Assign outputs from compute_melt_fluxes back into coupler attributes
+          g2x_gx%rAttr(index_g2x_Sg_blis,n) =     outInterfaceSalinity(n)    !to ocean
+          g2x_gx%rAttr(index_g2x_Sg_blit,n) =     outInterfaceTemperature(n) !to ocean
+          g2x_gx%rAttr(index_g2x_Fogx_qiceho,n) = outOceanHeatFlux(n)        !to ocean
+          g2x_gx%rAttr(index_g2x_Fogx_qicelo,n)=  outFreshwaterFlux(n)       !to ocean
+          x2g_gx%rAttr(index_x2g_Fogx_qicehi,n) = outIceHeatFlux(n)          !to ice sheet
+          x2g_gx%rAttr(index_x2g_Fogx_qiceli,n) = -1.0_r8 * outFreshwaterFlux(n)       !to ice sheet
+       end do
 
-    !do n=1,gsize
-    !  write(logunit,*) 'outInterfaceSalinity(n)=',n,outInterfaceSalinity(n)
-    !  write(logunit,*) 'outInterfaceTemperature(n)=',n,outInterfaceTemperature(n)
-    !  write(logunit,*) 'outOceanHeatFlux(n)=',n,outOceanHeatFlux(n)
-    !  write(logunit,*) 'outFreshwaterFlux(n)=',n,outFreshwaterFlux(n)
-    !  write(logunit,*) 'outIceHeatFlux(n)=',n,outIceHeatFlux(n)
-    !  write(logunit,*) 'outFreshwaterFlux(n)=',n,outFreshwaterFlux(n)
-    !end do
-
-    !...and assign fluxes to glc and ocn-directed coupler fields
-    do n=1,gsize
-      !Assign outputs from compute_melt_fluxes back into coupler attributes
-      g2x_gx%rAttr(index_g2x_Sg_blis,n) =     outInterfaceSalinity(n)    !to ocean
-      g2x_gx%rAttr(index_g2x_Sg_blit,n) =     outInterfaceTemperature(n) !to ocean
-      g2x_gx%rAttr(index_g2x_Fogx_qiceho,n) = outOceanHeatFlux(n)        !to ocean
-      g2x_gx%rAttr(index_g2x_Fogx_qicelo,n)=  outFreshwaterFlux(n)       !to ocean
-      x2g_gx%rAttr(index_x2g_Fogx_qicehi,n) = outIceHeatFlux(n)          !to ice sheet
-      x2g_gx%rAttr(index_x2g_Fogx_qiceli,n) = -1.0_r8 * outFreshwaterFlux(n)       !to ice sheet
-    end do
-
-    !Note: remap ocean-side outputs back onto ocean grid done in call to prep_ocn_shelf_calc_g2x_ox
+       !Note: remap ocean-side outputs back onto ocean grid done in call to prep_ocn_shelf_calc_g2x_ox
 
     end do ! loop over GLC instances
 
@@ -1625,15 +1606,9 @@ contains
       outIceHeatFlux(iCell) = outIceHeatFlux(iCell) &
         - iceHeatFluxCoeff*(iceTemperature(iCell) - outInterfaceTemperature(iCell))
 
-      if (iCell==72) then
-      write(logunit,*) 'i,oT,oS,oHTV,oSTV', icell, oceanTemperature(iCell),oceanSalinity(iCell),oceanHeatTransferVelocity(iCell), oceanSaltTransferVelocity(iCell)
-      write(logunit,*) 'i,Pr,iT,iTD,msk', iCell,interfacePressure(iCell),iceTemperature(iCell),iceTemperatureDistance(iCell),iceFloatingMask(iCell)
-      write(logunit,*) 'i,intS,intT,melt,ohtflx,ihtflx',iCell, outInterfaceSalinity(iCell),outInterfaceTemperature(iCell),outFreshwaterFlux(iCell), outOceanHeatFlux(iCell), outIceHeatFlux(iCell)
-      endif
- 
     end do
 
   !--------------------------------------------------------------------
+  end subroutine compute_melt_fluxes
 
-  end subroutine compute_melt_fluxes !}}}
 end module prep_glc_mod
