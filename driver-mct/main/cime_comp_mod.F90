@@ -366,6 +366,8 @@ module cime_comp_mod
   ! control flags
   !----------------------------------------------------------------------------
 
+  character(len=cs) :: cime_model    ! model invoking CIME (cesm or e3sm)
+
   logical  :: atm_present            ! .true.  => atm is present
   logical  :: lnd_present            ! .true.  => land is present
   logical  :: ice_present            ! .true.  => ice is present
@@ -1448,7 +1450,8 @@ contains
          glc_nx=glc_nx, glc_ny=glc_ny,          &
          ocn_nx=ocn_nx, ocn_ny=ocn_ny,          &
          wav_nx=wav_nx, wav_ny=wav_ny,          &
-         atm_aero=atm_aero )
+         atm_aero=atm_aero,                     &
+         cime_model=cime_model)
 
     ! derive samegrid flags
 
@@ -1522,7 +1525,10 @@ contains
        if (atm_present   ) ocn_c2_atm = .true. ! needed for aoflux calc if aoflux=atm
        if (ice_prognostic) ocn_c2_ice = .true.
        if (wav_prognostic) ocn_c2_wav = .true.
-       if (glc_prognostic) ocn_c2_glc = .true.
+       if (trim(cime_model) == 'e3sm') then
+          ! Only E3SM is utilizing the iceshelf/ocean coupling
+          if (glc_prognostic) ocn_c2_glc = .true.
+       endif
 
     endif
     if (ice_present) then
@@ -1538,7 +1544,10 @@ contains
     if (glc_present) then
        if (glclnd_present .and. lnd_prognostic) glc_c2_lnd = .true.
        if (glcocn_present .and. ocn_prognostic) glc_c2_ocn = .true.
-       if (glcocn_present .and. ocn_prognostic) glcshelf_c2_ocn = .true.
+       if (trim(cime_model) == 'e3sm') then
+          ! Only E3SM is utilizing the iceshelf/ocean coupling
+          if (glcocn_present .and. ocn_prognostic) glcshelf_c2_ocn = .true.
+       endif
        if (glcice_present .and. iceberg_prognostic) glc_c2_ice = .true.
        if (glcocn_present .and. ice_prognostic) glcshelf_c2_ice = .true.
     endif
@@ -1687,6 +1696,10 @@ contains
 #endif
     if ((glclnd_present .or. glcocn_present .or. glcice_present) .and. .not.glc_present) then
        call shr_sys_abort(subname//' ERROR: if glcxxx present must also have glc present')
+    endif
+    if ((ocn_c2_glc .and. .not. glcshelf_c2_ocn) .or. (glcshelf_c2_ocn .and. .not. ocn_c2_glc)) then
+       call shr_sys_abort(subname//' ERROR: if glc_c2_ocn must also have ocn_c2_glc and vice versa. '//&
+            'Boundary layer fluxes calculated in coupler require input from both components.')
     endif
     if (rofice_present .and. .not.rof_present) then
        call shr_sys_abort(subname//' ERROR: if rofice present must also have rof present')
@@ -3687,7 +3700,7 @@ contains
 
     if (glc_present) then
 
-          if (ocn_c2_glc .and. glc_c2_ocn) then
+          if (ocn_c2_glc .and. glcshelf_c2_ocn) then
              ! the boundary flux calculations done in the coupler require inputs from both GLC and OCN,
              ! so they will only be valid if both OCN->GLC and GLC->OCN
 
