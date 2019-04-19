@@ -1278,7 +1278,7 @@ contains
                mrg_from1=compmed, mrg_fld1='Faox_evap', mrg_type1='merge', mrg_fracname1='ofrac')
        end if
        ! NEMS orig
-       if ( fldchk(is_local%wrap%FBexp(compocn)         , 'Foxx_lat'  , rc=rc) .and. &
+       if ( fldchk(is_local%wrap%FBexp(compocn)         , 'Foxx_evap' , rc=rc) .and. &
             fldchk(is_local%wrap%FBMed_aoflux_o         , 'Foax_evap' , rc=rc) .and. &
             fldchk(is_local%wrap%FBImp(compatm, compatm), 'Faxa_lat'  , rc=rc)) then
           call addmap(fldListFr(compatm)%flds, 'Faxa_lat', compocn, mapconsf, 'one', atm2ocn_fmap)
