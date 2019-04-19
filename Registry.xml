@@ -92,17 +92,17 @@
 			definition="3"
 			description="Number of spectral intervals in the radiation calculation"
 		/>
-		<dim name="T"
+		<dim name="nGrainAgingT"
 			definition="11"
-			name_in_code="nSnowTemperatureIndex"
+			description="Number of temperature dependent factors in snow grain aging"
 		/>
-		<dim name="dTdz"
+		<dim name="nGrainAgingdTdz"
 			definition="31"
-			name_in_code="nSnowTemperatureGradIndex"
+			description="Number of temperature gradient dependent factors in snow grain aging"
 		/>
-		<dim name="sno_dns"
+		<dim name="nGrainAgingSnowDensity"
 			definition="8"
-			name_in_code="nSnowDensityIndex"
+			description="Number of snow density dependent factors in snow grain aging"
 		/>
 		<dim name="nBioLayers"
 			definition="7"
@@ -659,7 +659,7 @@
 			description="Run the ridging column physics calculation."
 			possible_values="true or false"
 		/>
-		<nml_option name="config_use_column_snow" type="logical" default_value="false" units="unitless"
+		<nml_option name="config_use_column_snow_tracers" type="logical" default_value="false" units="unitless"
 			description="Allow snow modifications plus additional snow tracers"
 			possible_values="true or false"
 		/>
@@ -701,7 +701,7 @@
 			possible_values="true or false"
 			icepack_name="tr_aero"
 		/>
-		<nml_option name="config_use_snow_density" type="logical" default_value="false" units="unitless"
+		<nml_option name="config_use_effective_snow_density" type="logical" default_value="false" units="unitless"
 			description="Use effective snow density"
 			possible_values="true or false"
 			icepack_name="tr_snow"
@@ -2029,13 +2029,13 @@
 
 		<stream name="SnowAgingPropertiesInput"
 				type="input"
-				filename_template="snicar_drdt_bst_fit_60_c070416.nc"
+				filename_template="snicar_drdt_bst_fit_60_c04182019.nc"
 				filename_interval="none"
 				input_interval="initial_only"
 				immutable="true">
-			<var name="tau"/>
-			<var name="kappa"/>
-			<var name="drdsdt0"/>
+			<var name="snowPropertyTau"/>
+			<var name="snowPropertyKappa"/>
+			<var name="snowPropertyRate"/>
 		</stream>
 
 		<stream name="pointLocationsInput"
@@ -2273,8 +2273,8 @@
 		<package name="pkgColumnTracerPonds" description=""/>
 		<package name="pkgColumnTracerLidThickness" description=""/>
 		<package name="pkgColumnTracerAerosols" description=""/>
-		<package name="pkgColumnTracerSnowDensity" description=""/>
-		<package name="pkgColumnTracerSnowGrainRadius" description=""/>
+		<package name="pkgColumnTracerSnowDensity" description="Computes effective snow density based on liquid and ice snow content and snow compaction"/>
+		<package name="pkgColumnTracerSnowGrainRadius" description="Evolves snow grain radius for radiative transfer based on dry and wet metamorphism"/>
 		<package name="pkgTracerBrine" description=""/>
 		<package name="pkgTracerMobileFraction" description=""/>
 		<package name="pkgTracerSkeletalAlgae" description=""/>
@@ -2326,30 +2326,10 @@
 		<var name="iceEnthalpy"			type="real"	dimensions="nIceLayers nCategories nCells Time"		name_in_code="iceEnthalpy"/>
 		<var name="iceSalinity"			type="real"	dimensions="nIceLayers nCategories nCells Time"		name_in_code="iceSalinity"/>
 		<var name="snowEnthalpy"			type="real"	dimensions="nSnowLayers nCategories nCells Time"		name_in_code="snowEnthalpy"/>
-		<var name="snowIceMass"			type="real"	dimensions="nSnowLayers nCategories nCells Time"
-			units="kg/m^3"
-			description="Mass of ice in snow layer"
-			name_in_code="snowIceMass"
-			packages="pkgColumnTracerSnowDensity"
-		/>
-		<var name="snowLiquidMass"			type="real"	dimensions="nSnowLayers nCategories nCells Time"
-			units="kg/m^3"
-			description="Mass of liquid in snow layer"
-			name_in_code="snowLiquidMass"
-			packages="pkgColumnTracerSnowDensity"
-		/>
-		<var name="snowGrainRadius"			type="real"	dimensions="nSnowLayers nCategories nCells Time"
-			units="um"
-			description="Effective snow grain radius"
-			name_in_code="snowGrainRadius"
-			packages="pkgColumnTracerSnowGrainRadius"
-		/>
-		<var name="snowDensity"			type="real"	dimensions="nSnowLayers nCategories nCells Time"
-			units="kg/m^3"
-			description="prognostic snow density"
-			name_in_code="snowDensity"
-			packages="pkgColumnTracerSnowDensity"
-		/>
+		<var name="snowIceMass"			type="real"	dimensions="nSnowLayers nCategories nCells Time"	units="kg/m^3"	description="Mass of ice in snow layer"	name_in_code="snowIceMass"	packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowLiquidMass"			type="real"	dimensions="nSnowLayers nCategories nCells Time"	units="kg/m^3"	description="Mass of liquid in snow layer"	name_in_code="snowLiquidMass"	packages="pkgColumnTracerSnowDensity"/>
+		<var name="snowGrainRadius"			type="real"	dimensions="nSnowLayers nCategories nCells Time"	units="um"	description="Effective snow grain radius"	name_in_code="snowGrainRadius"	packages="pkgColumnTracerSnowGrainRadius"/>
+		<var name="snowDensity"			type="real"	dimensions="nSnowLayers nCategories nCells Time"	units="kg/m^3"	description="prognostic snow density"	name_in_code="snowDensity"	packages="pkgColumnTracerSnowDensity"/>
 		<var name="iceAge"				type="real"	dimensions="ONE nCategories nCells Time"			name_in_code="iceAge"				packages="pkgColumnTracerIceAge"/>
 		<var name="firstYearIceArea"			type="real"	dimensions="ONE nCategories nCells Time"			name_in_code="firstYearIceArea"		packages="pkgColumnTracerFirstYearIce"/>
 		<var name="levelIceArea"			type="real"	dimensions="ONE nCategories nCells Time"			name_in_code="levelIceArea"			packages="pkgColumnTracerLevelIce"/>
@@ -3830,9 +3810,9 @@
 		<var name="snowMeltMassCategory"		type="real"	dimensions="nCategories nCells Time"		name_in_code="snowMeltMassCategory"		units="kg/m^2"/>
 		<var name="snowRadiusRadiationCategory"	type="real"	dimensions="nCategories nCells Time"		name_in_code="snowRadiusRadiationCategory"	units="um"/>
 		<var name="snowRadiusRadiation"		type="real"	dimensions="nCells Time"			name_in_code="snowRadiusRadiation"		units="um"/>
-		<var name="tau"				type="real"	dimensions="sno_dns dTdz T"			name_in_code="snowPropertyTau"		units="um"/>
-		<var name="kappa"				type="real"	dimensions="sno_dns dTdz T"			name_in_code="snowPropertyKappa"	units="none"/>
-		<var name="drdsdt0"				type="real"	dimensions="sno_dns dTdz T"			name_in_code="snowPropertyRate"	units="um/hr"/>
+		<var name="snowPropertyTau"				type="real"	dimensions="nGrainAgingSnowDensity nGrainAgingdTdz nGrainAgingT"			name_in_code="snowPropertyTau"		units="um"/>
+		<var name="snowPropertyKappa"				type="real"	dimensions="nGrainAgingSnowDensity nGrainAgingdTdz nGrainAgingT"			name_in_code="snowPropertyKappa"	units="none"/>
+		<var name="snowPropertyRate"				type="real"	dimensions="nGrainAgingSnowDensity nGrainAgingdTdz nGrainAgingT"			name_in_code="snowPropertyRate"	units="um/hr"/>
 	</var_struct>
 
 	<!-- aerosols -->
