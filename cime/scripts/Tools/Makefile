@@ -272,7 +272,7 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
 endif
 
 # Set MOAB info if it is being used
-ifeq ($(strip $(USE_MOAB)), TRUE)
+ifeq ($(COMP_INTERFACE),moab)
   ifdef MOAB_PATH
     CPPDEFS += -DHAVE_MOAB
     ifndef INC_MOAB
@@ -282,7 +282,7 @@ ifeq ($(strip $(USE_MOAB)), TRUE)
       LIB_MOAB:=$(MOAB_PATH)/lib
     endif
   else
-    $(error MOAB_PATH must be defined when USE_MOAB is TRUE)
+    $(error MOAB_PATH must be defined when using moab driver)
   endif
 
   # get the "IMESH_LIBS" list as an env var
@@ -567,7 +567,7 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
 endif
 
 # Add MOAB libraries.  These are defined in the MOAB_LINK_LIBS env var that was included above
-ifeq ($(strip $(USE_MOAB)), TRUE)
+ifeq ($(COMP_INTERFACE),moab)
   SLIBS += $(IMESH_LIBS)
 endif
 
