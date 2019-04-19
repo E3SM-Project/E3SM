@@ -90,7 +90,6 @@ include(SetCompilerFlags)
 
 set (SCREAM_LINK_FLAGS ${KOKKOS_LDFLAGS_STR})
 set (SCREAM_INCLUDE_DIRS ${SCREAM_SRC_DIR} ${CMAKE_BINARY_DIR}/src)
-set (SCREAM_LIBRARY_DIRS ${CMAKE_CURRENT_BINARY_DIR}/src)
 
 set (SCREAM_TPL_INCLUDE_DIRS ${Kokkos_INCLUDE_DIR})
 set (SCREAM_TPL_LIBRARY_DIRS ${Kokkos_LIBRARY_DIR})
@@ -113,8 +112,6 @@ print_var(SCREAM_PACK_SIZE)
 print_var(SCREAM_SMALL_PACK_SIZE)
 print_var(SCREAM_INCLUDE_DIRS)
 print_var(SCREAM_LINK_FLAGS)
-print_var(SCREAM_LIBRARY_DIRS)
-print_var(SCREAM_LIBRARIES)
 
 # This must be done using add_definitions because it is used to determine
 # whether to include scream_config.h.

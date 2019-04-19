@@ -46,6 +46,11 @@ struct KokkosTypes
   using ExeSpace = typename Device::execution_space;
   using TeamPolicy = Kokkos::TeamPolicy<ExeSpace>;
   using MemberType = typename TeamPolicy::member_type;
+  using RangePolicy = Kokkos::RangePolicy<ExeSpace>;
+  template<typename TagType>
+  using RangeTagPolicy = Kokkos::RangePolicy<ExeSpace,TagType>;
+  template<typename TagType>
+  using TeamTagPolicy = Kokkos::TeamPolicy<ExeSpace,TagType>;
 
   template <typename DataType>
   using view = Kokkos::View<DataType, Layout, Device>;
@@ -90,6 +95,13 @@ struct ScalarProperties {
 };
 
 } // namespace util
+
+// An enum to be used with object that have 'repository'-like behavior
+enum class RepoState {
+  Clean,
+  Open,
+  Closed
+};
 
 } // namespace scream
 

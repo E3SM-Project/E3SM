@@ -38,6 +38,9 @@ public:
   // The type of the block (e.g., dynamics or physics)
   AtmosphereProcessType type () const { return AtmosphereProcessType::Group; }
 
+  // The type of grids on which the process is defined
+  std::set<std::string> get_required_grids () const { return m_required_grids; }
+
   // The name of the block
   std::string name () const { return m_group_name; }
 
@@ -45,7 +48,7 @@ public:
   const Comm& get_comm () const { return m_comm; }
 
   // The initialization, run, and finalization methods
-  void initialize (const Comm& comm);
+  virtual void initialize (const Comm& comm, const std::shared_ptr<const GridsManager> grids_manager);
   void run        (/* what inputs? */);
   void finalize   (/* what inputs? */);
 
@@ -55,6 +58,14 @@ public:
   // The methods used to query the process for its inputs/outputs
   const std::set<FieldIdentifier>&  get_required_fields () const { return m_required_fields; }
   const std::set<FieldIdentifier>&  get_computed_fields () const { return m_computed_fields; }
+
+  // --- Methods specific to AtmosphereProcessGroup --- //
+
+  int get_num_processes () const { return m_atm_processes.size(); }
+
+  atm_proc_ptr_type get_process (const int i) const {
+    return m_atm_processes.at(i);
+  }
 
 protected:
 
@@ -72,6 +83,9 @@ protected:
 
   // The list of atm processes in this group
   std::vector<atm_proc_ptr_type>  m_atm_processes;
+
+  // The grids required by this process
+  std::set<std::string>  m_required_grids;
 
   // The schedule type: Parallel vs Sequential
   GroupScheduleType   m_group_schedule_type;

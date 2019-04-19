@@ -38,7 +38,7 @@ namespace scream
 class FieldAllocProp {
 public:
 
-  explicit FieldAllocProp (const FieldIdentifier& id);
+  explicit FieldAllocProp (const FieldLayout& layout);
   
   // Request allocation able to accommodate the given ValueType
   template<typename ValueType>
@@ -59,14 +59,15 @@ public:
 
 protected:
 
-  const FieldIdentifier& m_fid;
+  const FieldLayout&  m_layout;
 
-  std::vector<int> m_value_type_sizes;
+  std::vector<int>    m_value_type_sizes;
 
   int         m_scalar_type_size;
   std::string m_scalar_type_name;
 
   int   m_alloc_size;
+  int   m_last_dim_alloc_size;
 
   bool  m_committed;
 };
@@ -119,7 +120,7 @@ bool FieldAllocProp::is_allocation_compatible_with_value_type () const {
   constexpr int vts = sizeof(ValueType);
 
   return util::TypeName<typename util::ScalarProperties<ValueType>::scalar_type>::name()==m_scalar_type_name
-      && sts==m_scalar_type_size && (m_alloc_size%vts==0);
+      && sts==m_scalar_type_size && (m_last_dim_alloc_size%vts==0);
 }
 
 } // namespace scream

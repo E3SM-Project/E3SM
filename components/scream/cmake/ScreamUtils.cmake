@@ -11,21 +11,30 @@ include(CMakeParseArguments) # Needed for backwards compatibility
 #      Note: One test will be created per combination of valid mpi-rank and thread value
 
 FUNCTION(CreateUnitTest target_name target_srcs scream_libs)
-  set(oneValueArgs CONFIG_DEFS)
-  set(multiValueArgs MPI_RANKS THREADS)
+  set(oneValueArgs)
+  set(multiValueArgs MPI_RANKS THREADS CONFIG_DEFS INCLUDE_DIRS)
   cmake_parse_arguments(CreateUnitTest "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
   # Set link directories (must be done BEFORE add_executable is called)
-  link_directories(${SCREAM_TPL_LIBRARY_DIRS} ${SCREAM_LIBRARY_DIRS})
+  link_directories(${SCREAM_TPL_LIBRARY_DIRS})
 
   # Create the executable
   add_executable (${target_name} ${target_srcs} ${SCREAM_SRC_DIR}/share/util/scream_catch_main.cpp)
 
+  SET (TEST_INCLUDE_DIRS
+       ${SCREAM_INCLUDE_DIRS}
+       ${CATCH_INCLUDE_DIR}
+       ${CMAKE_CURRENT_SOURCE_DIR}
+       ${CMAKE_CURRENT_BINARY_DIR}
+       ${SCREAM_F90_MODULES}
+       ${CreateUnitTest_INCLUDE_DIRS}
+  )
+
   # Set all target properties
   target_link_libraries(${target_name} ${scream_libs} ${SCREAM_TPL_LIBRARIES})
-  target_include_directories(${target_name} PUBLIC ${SCREAM_INCLUDE_DIRS} ${CATCH_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+  target_include_directories(${target_name} PUBLIC ${TEST_INCLUDE_DIRS})
   set_target_properties(${target_name} PROPERTIES LINK_FLAGS "${SCREAM_LINK_FLAGS}")
-  set_target_properties(${target_name} PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
+  set_target_properties(${target_name} PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${target_name}_modules)
   if (CreateUnitTest_CONFIG_DEFS)
     set_target_properties(${target_name} PROPERTIES COMPILE_DEFINITIONS "${CreateUnitTest_CONFIG_DEFS}")
   endif()

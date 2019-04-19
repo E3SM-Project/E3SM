@@ -59,14 +59,14 @@ TEST_CASE("team_policy", "[kokkos_utils]") {
 }
 
 TEST_CASE("team_utils", "[kokkos_utils]") {
+
+#ifdef KOKKOS_ENABLE_OPENMP
   using namespace scream::util;
   using namespace scream;
 
   using Device = DefaultDevice;
   using ExeSpace = typename KokkosTypes<Device>::ExeSpace;
   using MemberType = typename KokkosTypes<Device>::MemberType;
-
-#ifdef KOKKOS_ENABLE_OPENMP
   const int n = omp_get_max_threads();
   // test will not work with more than 16 threads
   if (n > 16) {

@@ -4,6 +4,7 @@
 #include <string>
 #include <set>
 
+#include "share/atmosphere_process_utils.hpp"
 #include "share/scream_assert.hpp"
 #include "share/mpi/scream_comm.hpp"
 #include "share/field/field_identifier.hpp"
@@ -11,29 +12,11 @@
 #include "share/field/field.hpp"
 #include "share/util/factory.hpp"
 #include "share/util/string_utils.hpp"
+#include "share/grid/grids_manager.hpp"
 #include "share/parameter_list.hpp"
 
 namespace scream
 {
-
-enum class AtmosphereProcessType {
-  Coupling,   // Process responsible of interfacing with the component coupler
-  Dynamics,   // Process responsible of handling the dynamics
-  Physics,    // Process handling a physics parametrization
-  Group       // Process that groups a bunch of processes (so they look as a single process)
-};
-
-inline std::string e2str (const AtmosphereProcessType ap_type) {
-  switch (ap_type) {
-    case AtmosphereProcessType::Coupling:  return "Surface Coupling";
-    case AtmosphereProcessType::Dynamics:  return "Atmosphere Dynamics";
-    case AtmosphereProcessType::Physics:   return "Atmosphere Physics Parametrization";
-    case AtmosphereProcessType::Group:     return "Atmosphere Process Group";
-    default:
-      error::runtime_abort("Error! Unrecognized atmosphere process type.\n");
-  }
-  return "INVALID";
-}
 
 /*
  *  The abstract interface of a process of the atmosphere 
@@ -55,10 +38,13 @@ public:
 
   virtual ~AtmosphereProcess () = default;
 
-  // The type of the block (e.g., dynamics or physics)
+  // The type of the process (e.g., dynamics or physics)
   virtual AtmosphereProcessType type () const = 0;
 
-  // The name of the block 
+  // The type of grids needed by the process
+  virtual std::set<std::string> get_required_grids () const = 0;
+
+  // The name of the process
   virtual std::string name () const = 0;
 
   // The communicator associated with this atm process
@@ -77,13 +63,13 @@ public:
   // run method can (and usually will) be called multiple times.
   // We should put asserts to verify that the process has been init-ed, when
   // run/finalize is called.
-  virtual void initialize (const Comm& comm) = 0;
+  virtual void initialize (const Comm& comm, const std::shared_ptr<const GridsManager> grids_manager) = 0;
   virtual void run        (/* what inputs? */) = 0;
   virtual void finalize   (/* what inputs? */) = 0;
 
   // These methods set fields in the atm process. Fields live on device and they are all 1d.
   // If the process *needs* to store the field as n-dimensional field, use the
-  // template functio 'reinterpret_field' (see field.hpp for details).
+  // template function 'get_reshaped_view' (see field.hpp for details).
   void set_required_field (const Field<const Real, device_type>& f) {
     error::runtime_check(requires(f.get_header().get_identifier()),
                          "Error! This atmosphere process does not require this field. "
@@ -114,6 +100,7 @@ protected:
   virtual void set_computed_field_impl (const Field<      Real, device_type>& f) = 0;
 };
 
+// A short name for the factory for atmosphere processes
 using AtmosphereProcessFactory = util::Factory<AtmosphereProcess,util::CaseInsensitiveString,const ParameterList&>;
 
 } // namespace scream

@@ -14,6 +14,11 @@ AtmosphereProcessGroup::AtmosphereProcessGroup (const ParameterList& params) {
     const auto& params_i = params.sublist(util::strint("Process",i));
     const std::string& process_name = params_i.get<std::string>("Process Name");
     m_atm_processes.emplace_back(Factory::instance().create(process_name,params_i));
+
+    // Update the grid types of the group, given the needs of the newly created process
+    for (auto type : m_atm_processes.back()->get_required_grids()) {
+      m_required_grids.insert(type);
+    }
   }
 
   if (params.get<std::string>("Schedule Type") == "Sequential") {
@@ -27,7 +32,7 @@ AtmosphereProcessGroup::AtmosphereProcessGroup (const ParameterList& params) {
   error::runtime_check(m_group_schedule_type==GroupScheduleType::Sequential, "Error! Parallel schedule not yet implemented.\n");
 }
 
-void AtmosphereProcessGroup::initialize (const Comm& comm) {
+void AtmosphereProcessGroup::initialize (const Comm& comm, const std::shared_ptr<const GridsManager> grids_manager) {
   m_comm = comm;
 
   // Now that we have the comm for the processes in the group, we can initialize them
@@ -53,7 +58,7 @@ void AtmosphereProcessGroup::initialize (const Comm& comm) {
       // we need to know how many ranks are assigned to each atm process
     }
 
-    m_atm_processes[i]->initialize(proc_comm);
+    m_atm_processes[i]->initialize(proc_comm,grids_manager);
 
     // Add inputs/outputs to the list of inputs/outputs of this group
     for (const auto& id : m_atm_processes[i]->get_required_fields()) {
@@ -82,7 +87,7 @@ void AtmosphereProcessGroup::register_fields (FieldRepository<Real, device_type>
     atm_proc->register_fields(field_repo);
 
     // Make sure processes are not calling methods they shouldn't on the repo
-    error::runtime_check(field_repo.repository_state()==RepoState::OPEN,
+    error::runtime_check(field_repo.repository_state()==RepoState::Open,
                          "Error! Atmosphere processes are *not* allowed to modify the state of the repository.\n");
 
     // Check that the required fields are indeed in the repo now

@@ -12,7 +12,7 @@ TEST_CASE("field_identifier", "") {
   using namespace scream;
 
   std::vector<FieldTag> tags1 = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::GaussPoint};
-  std::vector<FieldTag> tags2 = {FieldTag::Element, FieldTag::Component, FieldTag::Level};
+  std::vector<FieldTag> tags2 = {FieldTag::Element, FieldTag::Component, FieldTag::VerticalLevel};
 
   FieldIdentifier fid1 ("field_1", tags1);
   FieldIdentifier fid2 ("field_1", tags1);
@@ -38,7 +38,7 @@ TEST_CASE("field", "") {
 
   using Device = DefaultDevice;
 
-  std::vector<FieldTag> tags = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::Level};
+  std::vector<FieldTag> tags = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::VerticalLevel};
   std::vector<int> dims = {2, 3, 12};
 
   FieldIdentifier fid ("field_1", tags);
@@ -96,7 +96,7 @@ TEST_CASE("field_repo", "") {
   using Device = DefaultDevice;
 
   std::vector<FieldTag> tags1 = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::GaussPoint};
-  std::vector<FieldTag> tags2 = {FieldTag::Element, FieldTag::Component, FieldTag::Level};
+  std::vector<FieldTag> tags2 = {FieldTag::Element, FieldTag::Component, FieldTag::VerticalLevel};
 
   FieldIdentifier fid1("field_1", tags1);
   FieldIdentifier fid2("field_2", tags1);
@@ -115,7 +115,7 @@ TEST_CASE("field_repo", "") {
   repo_dev.registration_ends();
 
   // Check registration is indeed closed
-  REQUIRE (repo_dev.repository_state()==RepoState::CLOSED);
+  REQUIRE (repo_dev.repository_state()==RepoState::Closed);
   REQUIRE (repo_dev.size()==2);
 
   auto f1 = repo_dev.get_field(fid1);

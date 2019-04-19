@@ -6,7 +6,7 @@ namespace scream
 HommeDynamics::HommeDynamics (const ParameterList& /* params */) {
 }
 
-void HommeDynamics::initialize (const Comm& comm)
+void HommeDynamics::initialize (const Comm& comm, const std::shared_ptr<const GridsManager> /* grids_manager */)
 {
   m_dynamics_comm = comm;
 }

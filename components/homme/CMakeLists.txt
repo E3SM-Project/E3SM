@@ -164,7 +164,7 @@ ENDIF()
 ##############################################################################
 # Compiler options set in cmake/SetCompiler.cmake
 ##############################################################################
-INCLUDE(SetCompilerFlags)
+INCLUDE(${HOMME_SOURCE_DIR}/cmake/SetCompilerFlags.cmake)
 
 
 OPTION(HOMME_USE_MKL "Whether to use Intel's MKL instead of blas/lapack" FALSE)
@@ -369,3 +369,10 @@ ADD_CUSTOM_TARGET(clean-all
    COMMAND ${CMAKE_BUILD_TOOL} clean
    COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/clean-cmake-files.cmake"
 )
+
+IF (NOT "${PROJECT_NAME}" STREQUAL "HOMME")
+  # Homme is used as a subproject. We need to make the compiler options available to the outside
+  SET (HOMME_C_FLAGS ${CMAKE_C_FLAGS} PARENT_SCOPE)
+  SET (HOMME_CXX_FLAGS "${HOMME_CXX_FLAGS} ${CMAKE_CXX_FLAGS}" PARENT_SCOPE)
+  SET (HOMME_Fortran_FLAGS ${CMAKE_Fortran_FLAGS} PARENT_SCOPE)
+ENDIF ()

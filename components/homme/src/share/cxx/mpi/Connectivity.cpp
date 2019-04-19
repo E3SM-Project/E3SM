@@ -5,6 +5,7 @@
  *******************************************************************************/
 
 #include "Connectivity.hpp"
+#include "ErrorDefs.hpp"
 
 #include <array>
 #include <algorithm>
@@ -128,29 +129,28 @@ void Connectivity::add_connection (const int first_elem_lid,  const int first_el
   }
 }
 
-void Connectivity::finalize()
+void Connectivity::finalize(const bool sanity_check)
 {
   // Sanity check: Homme does not allow less than 2*2 elements on each of the cube's faces, so each element
   // should have at most ONE missing connection
   constexpr int corners[NUM_CORNERS] = { etoi(ConnectionName::SWEST), etoi(ConnectionName::SEAST), etoi(ConnectionName::NWEST), etoi(ConnectionName::NEAST)};
 
   for (int ie=0; ie<m_num_local_elements; ++ie) {
-#ifndef NDEBUG
     std::array<bool,NUM_CORNERS> missing = {{false, false, false, false}};
-#endif
 
     for (int ic : corners) {
       if (h_connections(ie,ic).kind == etoi(ConnectionKind::MISSING)) {
-#ifndef NDEBUG
         missing[ic % NUM_CORNERS] = true;
-#endif
 
         // Just for tracking purposes
         //++h_num_connections(etoi(ConnectionSharing::MISSING),etoi(ConnectionKind::MISSING));
         h_num_connections(2,2) += 1;//etoi(ConnectionSharing::MISSING),etoi(ConnectionKind::MISSING)) += 1;
       }
     }
-    assert (std::count(missing.cbegin(),missing.cend(),true)<=1);
+
+    Errors::runtime_check(!sanity_check || std::count(missing.cbegin(),missing.cend(),true)<=1,
+                          "Error! On real geometries, each element should have at most ONE missing connection.\n"
+                          "       If this is a unit test, you may want to call finalize(false) to disable this check.\n",-1);
   }
 
   // Updating counters for groups with same sharing/kind

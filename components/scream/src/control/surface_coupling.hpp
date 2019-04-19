@@ -19,6 +19,14 @@ public:
   // The type of the block (dynamics or physics)
   AtmosphereProcessType type () const { return AtmosphereProcessType::Coupling; }
 
+  // The type of grids required by the process
+  std::set<std::string> get_required_grids () const {
+    // TODO: define what grid the coupling runs on. Check with MOAB folks.
+    static std::set<std::string> s;
+    s.insert(e2str(GridType::Undefined));
+    return s;
+  }
+
   std::string name () const { return "surface_coupling"; }
 
   // The communicator associated with this atm process
@@ -26,7 +34,7 @@ public:
 
   // The initialization method should prepare all stuff needed to import/export from/to
   // f90 structures.
-  void initialize (const Comm& comm);
+  void initialize (const Comm& comm, const std::shared_ptr<const GridsManager> grids_manager);
 
   // The run method is responsible for exporting atm states to the e3sm coupler, and
   // import surface states from the e3sm coupler.
