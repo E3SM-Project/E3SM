@@ -541,6 +541,14 @@ contains
                FBinB=is_local%wrap%FBImp(compatm,compocn), fnameB='Faxa_lwdn' , wgtB=ocnwgt1, &
                FBinC=is_local%wrap%FBImp(compatm,compocn), fnameC='Faxa_lwup' , wgtc=wgtp01, rc=rc)
 
+          ! Merge rain with melted ice before sending liquid precipitation to ocean
+          call med_merge_field(is_local%wrap%FBExp(compocn),      'Faxa_rain' , &
+               FBInA=is_local%wrap%FBImp(compatm,compocn), fnameA='Faxa_rain' , wgtA=ofrac, &
+               FBInB=is_local%wrap%FBImp(compice,compocn), fnameB='Fioi_meltw', wgtB=ifrac, rc=rc)
+
+          call med_merge_field(is_local%wrap%FBExp(compocn),      'Faxa_snow' , &
+               FBInA=is_local%wrap%FBImp(compatm,compocn), fnameA='Faxa_snow' , wgtA=ofrac, rc=rc)
+
           deallocate(ocnwgt1)
           deallocate(icewgt1)
           deallocate(wgtp01)
