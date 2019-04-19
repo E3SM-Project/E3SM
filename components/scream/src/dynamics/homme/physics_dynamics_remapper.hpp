@@ -1,6 +1,8 @@
 #ifndef SCREAM_PHYSICS_DYNAMICS_REMAPPER_HPP
 #define SCREAM_PHYSICS_DYNAMICS_REMAPPER_HPP
 
+#include "dynamics/homme/hommexx_dimensions.hpp"
+
 #include "share/remap/abstract_remapper.hpp"
 #include "share/remap/remap_utils.hpp"
 #include "share/field/field_tag.hpp"
@@ -141,10 +143,6 @@ void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
 do_registration_complete ()
 {
   using Scalar = Homme::Scalar;
-#ifndef CUDA_BUILD
-  // Homme defines NUM_LEV as macro in cuda build, and constexpr otherwise
-  constexpr int NUM_LEV = Homme::NUM_LEV;
-#endif
 
   auto bm   = Homme::MpiContext::singleton().get_buffers_manager(Homme::MPI_EXCHANGE);
   auto conn = Homme::MpiContext::singleton().get_connectivity();
@@ -199,16 +197,16 @@ do_registration_complete ()
         }
         break;
       case LayoutType::Scalar3D:
-        m_be->register_field(getHommeView<Scalar*[NP][NP][NUM_LEV]>(m_dyn[i]));
+        m_be->register_field(getHommeView<Scalar*[NP][NP][HOMMEXX_NUM_LEV]>(m_dyn[i]));
         break;
       case LayoutType::Vector3D:
-        m_be->register_field(getHommeView<Scalar**[NP][NP][NUM_LEV]>(m_dyn[i]),dims[1],0);
+        m_be->register_field(getHommeView<Scalar**[NP][NP][HOMMEXX_NUM_LEV]>(m_dyn[i]),dims[1],0);
         break;
       case LayoutType::Tensor3D:
         for (int idim=0; idim<dims[1]; ++idim) {
           // Homme::BoundaryExchange only exchange one slice of the outer dim at a time,
           // so loop on the outer dim and register each slice individually.
-          m_be->register_field(getHommeView<Scalar***[NP][NP][NUM_LEV]>(m_dyn[i]),idim,dims[2],0);
+          m_be->register_field(getHommeView<Scalar***[NP][NP][HOMMEXX_NUM_LEV]>(m_dyn[i]),idim,dims[2],0);
         }
         break;
     default:
