@@ -1440,6 +1440,7 @@
     <EXEROOT>/p/lscratchh/$CCSMUSER/$CASE/bld</EXEROOT>
     <environment_variables compiler="intel">
       <env name="NETCDFROOT">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</env>
+      <env name="NETCDF_PATH">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</env>
     </environment_variables>
     <environment_variables compiler="intel" mpilib="!mpi-serial">
       <env name="PNETCDFROOT">/usr/tce/packages/pnetcdf/pnetcdf-1.9.0-intel-18.0.1-mvapich2-2.2/</env>
@@ -1492,6 +1493,7 @@
     <EXEROOT>/p/lscratchh/$CCSMUSER/$CASE/bld</EXEROOT>
     <environment_variables compiler="intel">
       <env name="NETCDFROOT">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</env>
+      <env name="NETCDF_PATH">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</env>
     </environment_variables>
     <environment_variables compiler="intel" mpilib="!mpi-serial">
       <env name="PNETCDFROOT">/usr/tce/packages/pnetcdf/pnetcdf-1.9.0-intel-18.0.1-mvapich2-2.2/</env>
