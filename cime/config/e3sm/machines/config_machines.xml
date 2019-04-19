@@ -1321,7 +1321,14 @@
       </modules>
       <modules compiler="intel">
         <command name="load">intel/17.0.4-74uvhji</command>
-        <command name="load">intel-mkl/2017.3.196-jyjmyut</command>
+	<command name="load">intel-mpi/2017.3-dfphq6k</command>
+	<command name="load">netlib-lapack/3.8.0-tb3ivhl</command>
+	<command name="load">hdf5/1.10.1-3zhckvj</command>
+	<command name="load">netcdf/4.6.1-c2mecde</command>
+	<command name="load">parallel-netcdf/1.8.0-2vcchdi</command>
+	<command name="load">cmake</command>
+	<command name="load">eigen/3.3.3</command>
+	<command name="load">metis/5.1.0-2heh4ro</command>
       </modules>
       <modules compiler="gnu">
         <command name="load">gcc/7.1.0-4bgguyp</command>
@@ -1331,17 +1338,13 @@
       </modules>
       <modules>
         <command name="load">cmake</command>
-	<command name="load">netcdf/4.4.1.1-prsuusl</command>
-        <command name="load">netcdf-fortran/4.4.4-ojwazvy</command>
-      </modules>
-      <modules mpilib="!mpi-serial">
-        <command name="load">parallel-netcdf/1.6.1</command>
       </modules>
     </module_system>
     <environment_variables>
       <env name="NETCDF_C_PATH">$SHELL{which nc-config | xargs dirname | xargs dirname}</env>
-      <env name="NETCDF_FORTRAN_PATH">$SHELL{which nf-config | xargs dirname | xargs dirname}</env>
-      <env name="PATH">/lcrc/group/acme/soft/perl/5.26.0/bin:$ENV{PATH}</env>
+      <env name="NETCDF_FORTRAN_PATH">/home/sarich/software/bebop/netcdf-fortran-4.4.4-intel-17.0.4</env>
+      <env name="PATH">/lcrc/group/acme/soft/perl/5.26.0/bin:/home/sarich/software/bebop/netcdf-fortran-4.4.4-intel-17.0.4/bin:$ENV{PATH}</env>
+      <env name="LD_LIBRARY_PATH">$ENV{LD_LIBRARY_PATH}:/home/sarich/software/bebop/netcdf-fortran-4.4.4-intel-17.0.4/lib</env>
     </environment_variables>
     <environment_variables  mpilib="!mpi-serial">
       <env name="PNETCDF_PATH">$SHELL{which pnetcdf_version | xargs dirname | xargs dirname}</env>

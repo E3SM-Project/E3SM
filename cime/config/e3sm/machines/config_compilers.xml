@@ -760,20 +760,23 @@ for mct, etc.
 
 <compiler MACH="bebop" COMPILER="intel">
   <ALBANY_PATH>/soft/climate/AlbanyTrilinos_06262017/Albany/buildintel/install</ALBANY_PATH>
+  <MOAB_PATH>/home/iulian/moab-blds/bebop/moab-intel-17</MOAB_PATH>
   <CPPDEFS>
     <append MODEL="gptl"> -DHAVE_SLASHPROC </append>
+    <append> -DMOABDEBUG -DNO_SHR_VMATH </append>
   </CPPDEFS>
   <CXX_LIBS>
     <base>-lstdc++</base>
   </CXX_LIBS>
   <FFLAGS>
-    <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align</append>
+    <append> $SHELL{nf-config --fflags} -DNO_SHR_VMATH </append>
+    <append DEBUG="FALSE"> $SHELL{nf-config --fflags} -O2 -debug minimal -qno-opt-dynamic-align</append>
   </FFLAGS>
   <MPICC> mpiicc  </MPICC>
   <MPICXX> mpiicpc </MPICXX>
   <MPIFC> mpiifort </MPIFC>
   <SLIBS>
-    <append>$SHELL{nf-config --flibs} -mkl</append>
+    <append>$SHELL{nf-config --flibs} -llapack -lblas</append>
   </SLIBS>
 </compiler>
 
