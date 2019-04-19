@@ -10,4 +10,4 @@
 	url = git@github.com:BeTR-biogeochemistry-modeling/sbetr.git
 [submodule "components/mpas-source"]
 	path = components/mpas-source
-	url = git@github.com:MPAS-Dev/MPAS-Model.git
+	url = git@github.com:sarich/MPAS-Model.git
