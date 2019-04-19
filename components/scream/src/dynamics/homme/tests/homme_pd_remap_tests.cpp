@@ -55,11 +55,15 @@ TEST_CASE("remap", "") {
 
   // Some type defs
   using Device = DefaultDevice;
-  using PackType = pack::Pack<Real,Homme::VECTOR_SIZE>;
-  using Remapper = PhysicsDynamicsRemapper<Real,Device>;
+#ifdef CUDA_BUILD
+  // Homme defines VECTOR_SIZE as macro in cuda build, and constexpr otherwise
+  using PackType = pack::Pack<Homme::Real,VECTOR_SIZE>;
+#else
+  using PackType = pack::Pack<Homme::Real,Homme::VECTOR_SIZE>;
+#endif
+  using Remapper = PhysicsDynamicsRemapper<Homme::Real,Device>;
   using phys_grid_type = Remapper::phys_grid_type;
   using dyn_grid_type  = Remapper::dyn_grid_type;
-
 
   std::random_device rd;
   std::mt19937_64 engine(rd());
@@ -81,7 +85,7 @@ TEST_CASE("remap", "") {
 
   // Local counters
   const int num_local_elems = num_elems / world_size;
-  int num_local_columns;
+  int num_local_columns = -1;
   switch(world_size) {
     case 1:
       num_local_columns = 36;
@@ -104,6 +108,7 @@ TEST_CASE("remap", "") {
       }
       break;
   }
+  scream_require_msg(num_local_columns>0, "Internal test error! Fix homme_pd_remap_tests, please.\n");
 
   auto get_elem_pid = [&](const int elem_gid)->int {
     switch (world_size) {
@@ -262,7 +267,10 @@ TEST_CASE("remap", "") {
   }
 
   SECTION ("remap fwd") {
+#ifndef CUDA_BUILD
+    // Homme defines NUM_PHYSICAL_LEV as macro in cuda build, and constexpr otherwise
     constexpr int NUM_PHYSICAL_LEV = Homme::NUM_PHYSICAL_LEV;
+#endif
 
     // Create tags and dimensions
     std::vector<FieldTag> scalar_2d_dyn_tags  = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::GaussPoint};
@@ -343,8 +351,8 @@ TEST_CASE("remap", "") {
 
     // Check
     {
-      auto phys_in = scalar_2d_field_in.template get_reshaped_view<Homme::Real*>();
-      auto dyn_out = scalar_2d_field_out.template get_reshaped_view<Homme::Real*[NP][NP]>();
+      auto phys_in = Kokkos::create_mirror_view(scalar_2d_field_in.template get_reshaped_view<Homme::Real*>());
+      auto dyn_out = Kokkos::create_mirror_view(scalar_2d_field_out.template get_reshaped_view<Homme::Real*[NP][NP]>());
       for (int icol=0; icol<num_local_columns; ++icol) {
         auto elgp = Kokkos::subview(h_p2d,icol,Kokkos::ALL());
         const int ie = elgp[0];
@@ -359,8 +367,8 @@ TEST_CASE("remap", "") {
     }
 
     {
-      auto phys_in = vector_2d_field_in.template get_reshaped_view<Homme::Real**>();
-      auto dyn_out = vector_2d_field_out.template get_reshaped_view<Homme::Real**[NP][NP]>();
+      auto phys_in = Kokkos::create_mirror_view(vector_2d_field_in.template get_reshaped_view<Homme::Real**>());
+      auto dyn_out = Kokkos::create_mirror_view(vector_2d_field_out.template get_reshaped_view<Homme::Real**[NP][NP]>());
       for (int icol=0; icol<num_local_columns; ++icol) {
         auto elgp = Kokkos::subview(h_p2d,icol,Kokkos::ALL());
         const int ie = elgp[0];
@@ -377,8 +385,8 @@ TEST_CASE("remap", "") {
     }
 
     {
-      auto phys_in = scalar_3d_field_in.template get_reshaped_view<Homme::Real**>();
-      auto dyn_out = scalar_3d_field_out.template get_reshaped_view<Homme::Real*[NP][NP][NUM_PHYSICAL_LEV]>();
+      auto phys_in = Kokkos::create_mirror_view(scalar_3d_field_in.template get_reshaped_view<Homme::Real**>());
+      auto dyn_out = Kokkos::create_mirror_view(scalar_3d_field_out.template get_reshaped_view<Homme::Real*[NP][NP][NUM_PHYSICAL_LEV]>());
       for (int icol=0; icol<num_local_columns; ++icol) {
         auto elgp = Kokkos::subview(h_p2d,icol,Kokkos::ALL());
         const int ie = elgp[0];
@@ -395,8 +403,8 @@ TEST_CASE("remap", "") {
     }
 
     {
-      auto phys_in = vector_3d_field_in.template get_reshaped_view<Homme::Real***>();
-      auto dyn_out = vector_3d_field_out.template get_reshaped_view<Homme::Real**[NP][NP][NUM_PHYSICAL_LEV]>();
+      auto phys_in = Kokkos::create_mirror_view(vector_3d_field_in.template get_reshaped_view<Homme::Real***>());
+      auto dyn_out = Kokkos::create_mirror_view(vector_3d_field_out.template get_reshaped_view<Homme::Real**[NP][NP][NUM_PHYSICAL_LEV]>());
       for (int icol=0; icol<num_local_columns; ++icol) {
         auto elgp = Kokkos::subview(h_p2d,icol,Kokkos::ALL());
         const int ie = elgp[0];
@@ -416,7 +424,10 @@ TEST_CASE("remap", "") {
   }
 
   SECTION ("remap bwd") {
+#ifndef CUDA_BUILD
+    // Homme defines NUM_PHYSICAL_LEV as macro in cuda build, and constexpr otherwise
     constexpr int NUM_PHYSICAL_LEV = Homme::NUM_PHYSICAL_LEV;
+#endif
 
     // Create tags and dimensions
     std::vector<FieldTag> scalar_2d_dyn_tags  = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::GaussPoint};
@@ -502,7 +513,7 @@ TEST_CASE("remap", "") {
     for (int ie=0; ie<num_local_elems; ++ie) {
       for (int ip=0; ip<NP; ++ip) {
         for (int jp=0; jp<NP; ++jp) {
-          h_scalar_2d_view(ie,ip,jp) = h_d2p(ie,ip,jp);
+          h_scalar_2d_view(ie,ip,jp) = h_d2p(ie*NP*NP + ip*NP + jp,3);
         }
       }
     }
@@ -516,8 +527,8 @@ TEST_CASE("remap", "") {
 
     // Check
     {
-      auto dyn_in   = scalar_2d_field_in.template get_reshaped_view<Homme::Real*[NP][NP]>();
-      auto phys_out = scalar_2d_field_out.template get_reshaped_view<Homme::Real*>();
+      auto dyn_in   = Kokkos::create_mirror_view(scalar_2d_field_in.template get_reshaped_view<Homme::Real*[NP][NP]>());
+      auto phys_out = Kokkos::create_mirror_view(scalar_2d_field_out.template get_reshaped_view<Homme::Real*>());
       for (int icol=0; icol<num_local_columns; ++icol) {
         auto elgp = Kokkos::subview(h_p2d,icol,Kokkos::ALL());
         const int ie = elgp[0];
@@ -532,8 +543,8 @@ TEST_CASE("remap", "") {
     }
 
     {
-      auto dyn_in   = vector_2d_field_in.template get_reshaped_view<Homme::Real**[NP][NP]>();
-      auto phys_out = vector_2d_field_out.template get_reshaped_view<Homme::Real**>();
+      auto dyn_in   = Kokkos::create_mirror_view(vector_2d_field_in.template get_reshaped_view<Homme::Real**[NP][NP]>());
+      auto phys_out = Kokkos::create_mirror_view(vector_2d_field_out.template get_reshaped_view<Homme::Real**>());
       for (int icol=0; icol<num_local_columns; ++icol) {
         auto elgp = Kokkos::subview(h_p2d,icol,Kokkos::ALL());
         const int ie = elgp[0];
@@ -550,8 +561,8 @@ TEST_CASE("remap", "") {
     }
 
     {
-      auto dyn_in   = scalar_3d_field_in.template get_reshaped_view<Homme::Real*[NP][NP][NUM_PHYSICAL_LEV]>();
-      auto phys_out = scalar_3d_field_out.template get_reshaped_view<Homme::Real**>();
+      auto dyn_in   = Kokkos::create_mirror_view(scalar_3d_field_in.template get_reshaped_view<Homme::Real*[NP][NP][NUM_PHYSICAL_LEV]>());
+      auto phys_out = Kokkos::create_mirror_view(scalar_3d_field_out.template get_reshaped_view<Homme::Real**>());
       for (int icol=0; icol<num_local_columns; ++icol) {
         auto elgp = Kokkos::subview(h_p2d,icol,Kokkos::ALL());
         const int ie = elgp[0];
@@ -568,8 +579,8 @@ TEST_CASE("remap", "") {
     }
 
     {
-      auto dyn_in   = vector_3d_field_in.template get_reshaped_view<Homme::Real**[NP][NP]>();
-      auto phys_out = vector_3d_field_out.template get_reshaped_view<Homme::Real**>();
+      auto dyn_in   = Kokkos::create_mirror_view(vector_3d_field_in.template get_reshaped_view<Homme::Real**[NP][NP][NUM_PHYSICAL_LEV]>());
+      auto phys_out = Kokkos::create_mirror_view(vector_3d_field_out.template get_reshaped_view<Homme::Real***>());
       for (int icol=0; icol<num_local_columns; ++icol) {
         auto elgp = Kokkos::subview(h_p2d,icol,Kokkos::ALL());
         const int ie = elgp[0];

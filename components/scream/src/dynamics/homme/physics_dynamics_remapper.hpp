@@ -83,6 +83,16 @@ protected:
   void do_remap_fwd () const override;
   void do_remap_bwd () const override;
 
+  void setup_boundary_exchange ();
+
+  std::vector<field_type>   m_phys;
+  std::vector<field_type>   m_dyn;
+
+  std::shared_ptr<Homme::BoundaryExchange>  m_be;
+
+public:
+  // These functions should be morally privade, but CUDA does not allow extended host-device lambda
+  // to have private/protected access within the class
   void local_remap_fwd_2d (const field_type& src, const field_type& tgt, const LayoutType lt) const;
   template<typename ScalarT>
   void local_remap_fwd_3d_impl (const field_type& src, const field_type& tgt, const LayoutType lt) const;
@@ -90,13 +100,6 @@ protected:
   void remap_bwd_2d (const field_type& src, const field_type& tgt, const LayoutType lt) const;
   template<typename ScalarT>
   void remap_bwd_3d_impl (const field_type& src, const field_type& tgt, const LayoutType lt) const;
-
-  void setup_boundary_exchange ();
-
-  std::vector<field_type>   m_phys;
-  std::vector<field_type>   m_dyn;
-
-  std::shared_ptr<Homme::BoundaryExchange>  m_be;
 };
 
 // ================= IMPLEMENTATION ================= //
@@ -138,7 +141,10 @@ void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
 do_registration_complete ()
 {
   using Scalar = Homme::Scalar;
+#ifndef CUDA_BUILD
+  // Homme defines NUM_LEV as macro in cuda build, and constexpr otherwise
   constexpr int NUM_LEV = Homme::NUM_LEV;
+#endif
 
   auto bm   = Homme::MpiContext::singleton().get_buffers_manager(Homme::MPI_EXCHANGE);
   auto conn = Homme::MpiContext::singleton().get_connectivity();
@@ -335,13 +341,13 @@ local_remap_fwd_2d(const field_type& src_field, const field_type& tgt_field, con
       auto dyn  = tgt_field.template get_reshaped_view<Real***[NP][NP]>();
       const int dim1 = phys.extent_int(1);
       const int dim2 = phys.extent_int(2);
-      int ordering[2];
+      Kokkos::pair<int,int> ordering;
       if (src_field.get_header().get_identifier().get_layout().tag(1)==tgt_field.get_header().get_identifier().get_layout().tag(1)) {
-        ordering[0]=0;
-        ordering[0]=1;
+        ordering.first=0;
+        ordering.second=1;
       } else {
-        ordering[0]=1;
-        ordering[0]=0;
+        ordering.first=1;
+        ordering.second=0;
       }
       Kokkos::parallel_for(RangePolicy(0,num_cols*dim1*dim2),
                            KOKKOS_LAMBDA(const int idx) {
@@ -349,13 +355,14 @@ local_remap_fwd_2d(const field_type& src_field, const field_type& tgt_field, con
         const int dims [2] = { (idx/dim2)%dim1 , idx%dim2 };
 
         const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
-        dyn(elgp[0],dims[ordering[0]],dims[ordering[1]],elgp[1],elgp[2]) = phys(icol,dims[0],dims[1]);
+        dyn(elgp[0],dims[ordering.first],dims[ordering.second],elgp[1],elgp[2]) = phys(icol,dims[0],dims[1]);
       });
       break;
     }
     default:
       error::runtime_abort("Error! Invalid layout. This is an internal error. Please, contact developers\n");
   }
+  Kokkos::fence();
 }
 
 template<typename ScalarType, typename DeviceType>
@@ -407,13 +414,13 @@ local_remap_fwd_3d_impl(const field_type& src_field, const field_type& tgt_field
       const int dim1 = phys.extent_int(1);
       const int dim2 = phys.extent_int(2);
       const int NumVerticalLevels = dyn.extent_int(5);
-      int ordering[2];
+      Kokkos::pair<int,int> ordering;
       if (src_field.get_header().get_identifier().get_layout().tag(1)==tgt_field.get_header().get_identifier().get_layout().tag(1)) {
-        ordering[0]=0;
-        ordering[0]=1;
+        ordering.first=0;
+        ordering.second=1;
       } else {
-        ordering[0]=1;
-        ordering[0]=0;
+        ordering.first=1;
+        ordering.second=0;
       }
       Kokkos::parallel_for(RangePolicy(0,num_cols*dim1*dim2*NumVerticalLevels),
                            KOKKOS_LAMBDA(const int idx) {
@@ -422,13 +429,14 @@ local_remap_fwd_3d_impl(const field_type& src_field, const field_type& tgt_field
         const int ilev =  idx % NumVerticalLevels;
 
         const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
-        dyn(elgp[0],dims[ordering[0]],dims[ordering[1]],elgp[1],elgp[1],ilev) = phys(icol,dims[0],dims[1],ilev);
+        dyn(elgp[0],dims[ordering.first],dims[ordering.second],elgp[1],elgp[1],ilev) = phys(icol,dims[0],dims[1],ilev);
       });
       break;
     }
     default:
       error::runtime_abort("Error! Invalid layout. This is an internal error. Please, contact developers\n");
   }
+  Kokkos::fence();
 }
 
 template<typename ScalarType, typename DeviceType>
@@ -472,13 +480,13 @@ remap_bwd_2d(const field_type& src_field, const field_type& tgt_field, const Lay
       auto phys = tgt_field.template get_reshaped_view<Real***>();
       const int dim1 = dyn.extent_int(1);
       const int dim2 = dyn.extent_int(2);
-      int ordering[2];
+      Kokkos::pair<int,int> ordering;
       if (src_field.get_header().get_identifier().get_layout().tag(1)==tgt_field.get_header().get_identifier().get_layout().tag(1)) {
-        ordering[0]=0;
-        ordering[0]=1;
+        ordering.first=0;
+        ordering.second=1;
       } else {
-        ordering[0]=1;
-        ordering[0]=0;
+        ordering.first=1;
+        ordering.second=0;
       }
       Kokkos::parallel_for(RangePolicy(0,num_cols*dim1*dim2),
                            KOKKOS_LAMBDA(const int idx) {
@@ -486,13 +494,14 @@ remap_bwd_2d(const field_type& src_field, const field_type& tgt_field, const Lay
         const int dims [2] = { (idx/dim2)%dim1 , idx%dim2 };
 
         const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
-        phys(icol,dims[ordering[0]],dims[ordering[1]]) = dyn(elgp[0],dims[0],dims[1],elgp[1],elgp[2]);
+        phys(icol,dims[ordering.first],dims[ordering.second]) = dyn(elgp[0],dims[0],dims[1],elgp[1],elgp[2]);
       });
       break;
     }
     default:
       error::runtime_abort("Error! Invalid layout. This is an internal error. Please, contact developers\n");
   }
+  Kokkos::fence();
 }
 
 template<typename ScalarType, typename DeviceType>
@@ -544,13 +553,13 @@ remap_bwd_3d_impl(const field_type& src_field, const field_type& tgt_field, cons
       const int dim1 = dyn.extent_int(1);
       const int dim2 = dyn.extent_int(2);
       const int NumVerticalLevels = dyn.extent_int(5);
-      int ordering [2];
+      Kokkos::pair<int,int> ordering;
       if (src_field.get_header().get_identifier().get_layout().tag(1)==tgt_field.get_header().get_identifier().get_layout().tag(1)) {
-        ordering[0]=0;
-        ordering[0]=1;
+        ordering.first=0;
+        ordering.second=1;
       } else {
-        ordering[0]=1;
-        ordering[0]=0;
+        ordering.first=1;
+        ordering.second=0;
       }
       Kokkos::parallel_for(RangePolicy(0,num_cols*dim1*dim2*NumVerticalLevels),
                            KOKKOS_LAMBDA(const int idx) {
@@ -559,13 +568,14 @@ remap_bwd_3d_impl(const field_type& src_field, const field_type& tgt_field, cons
         const int ilev =  idx % NumVerticalLevels;
 
         const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
-        phys(icol,dims[ordering[0]],dims[ordering[1]],ilev) = dyn(elgp[0],dims[0],dims[1],elgp[1],elgp[2],ilev);
+        phys(icol,dims[ordering.first],dims[ordering.second],ilev) = dyn(elgp[0],dims[0],dims[1],elgp[1],elgp[2],ilev);
       });
       break;
     }
     default:
       error::runtime_abort("Error! Invalid layout. This is an internal error. Please, contact developers\n");
   }
+  Kokkos::fence();
 }
 
 } // namespace scream
