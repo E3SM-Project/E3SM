@@ -708,17 +708,14 @@ flags should be captured within MPAS CMake files.
     <append>$SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --flibs}  -L$ENV{MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm -ldl </append>
     <append> $SHELL{$ENV{NETCDF_C_PATH}/bin/nc-config --libs} </append>
   </SLIBS>
-<<<<<<< HEAD
   <CXX_LIBS>
     <base>-lstdc++</base>
   </CXX_LIBS>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
   <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
-=======
   <MOAB_PATH MPILIB="mvapich">/lcrc/project/ACME/MOAB/gcc-73-mvapich</MOAB_PATH>
   <MOAB_PATH MPILIB="openmpi">/lcrc/project/ACME/MOAB/gcc-73-openmpi</MOAB_PATH>
->>>>>>> update for anvil keys
 </compiler>
 
 <compiler MACH="anvil" COMPILER="intel">
@@ -747,14 +744,11 @@ flags should be captured within MPAS CMake files.
     <append> $SHELL{$ENV{NETCDF_C_PATH}/bin/nc-config --libs} </append>
     <append>-Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_sequential.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl</append>
   </SLIBS>
-<<<<<<< HEAD
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
   <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
-=======
   <MOAB_PATH MPILIB="mvapich">/lcrc/project/ACME/MOAB/intel-18-mvapich</MOAB_PATH>
   <MOAB_PATH MPILIB="openmpi">/lcrc/project/ACME/MOAB/intel-18-openmpi</MOAB_PATH> 
->>>>>>> update for anvil keys
 </compiler>
 
 <compiler MACH="anvil" COMPILER="intel18">
@@ -828,20 +822,24 @@ flags should be captured within MPAS CMake files.
 
 <compiler MACH="bebop" COMPILER="intel">
   <ALBANY_PATH>/soft/climate/AlbanyTrilinos_06262017/Albany/buildintel/install</ALBANY_PATH>
+  <MOAB_PATH>/home/iulian/moab-blds/bebop/moab-intel-17</MOAB_PATH>
   <CPPDEFS>
     <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
+    <append MODEL="gptl"> -DHAVE_SLASHPROC </append>
+    <append> -DMOABDEBUG -DNO_SHR_VMATH </append>
   </CPPDEFS>
   <CXX_LIBS>
     <base>-lstdc++</base>
   </CXX_LIBS>
   <FFLAGS>
-    <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align</append>
+    <append> $SHELL{nf-config --fflags} -DNO_SHR_VMATH </append>
+    <append DEBUG="FALSE"> $SHELL{nf-config --fflags} -O2 -debug minimal -qno-opt-dynamic-align</append>
   </FFLAGS>
   <MPICC  MPILIB="impi"> mpiicc  </MPICC>
   <MPICXX MPILIB="impi"> mpiicpc </MPICXX>
   <MPIFC  MPILIB="impi"> mpiifort </MPIFC>
   <SLIBS>
-    <append>$SHELL{nf-config --flibs} -mkl</append>
+    <append>$SHELL{nf-config --flibs} -llapack -lblas</append>
   </SLIBS>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
