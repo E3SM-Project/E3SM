@@ -101,7 +101,7 @@
     config_use_column_biogeochemistry = false
     config_use_column_itd_thermodynamics = true
     config_use_column_ridging = true
-    config_use_column_snow = false
+    config_use_column_snow_tracers = false
 /
 &column_tracers
     config_use_ice_age = true
@@ -111,7 +111,7 @@
     config_use_level_meltponds = true
     config_use_topo_meltponds = false
     config_use_aerosols = false
-    config_use_snow_density = false
+    config_use_effective_snow_density = false
     config_use_snow_grain_radius = false
 /
 &biogeochemistry

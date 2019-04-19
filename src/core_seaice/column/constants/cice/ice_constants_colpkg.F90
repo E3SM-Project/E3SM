@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_constants_colpkg.F90 1030 2015-07-27 15:05:32Z eclare $
+!  SVN:$Id: ice_constants_colpkg.F90 1012 2015-06-26 12:34:09Z eclare $
 !=======================================================================
 !
 ! This module defines a variety of physical and numerical constants

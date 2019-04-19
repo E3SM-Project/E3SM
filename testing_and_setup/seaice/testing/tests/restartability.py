@@ -64,7 +64,7 @@ def restartability(mpasDevelopmentDir, domainsDir, domain, configuration, option
         bgcRestart = True
 
     snowModsRestart = False
-    if ("snowMods" in options.keys() and options["snowMods"] == "True"):
+    if ("snow_tracer_physics" in options.keys() and options["snow_tracer_physics"] == "True"):
         snowModsRestart = True
  
     if (not bgcRestart):

@@ -3884,7 +3884,8 @@
                           fresh,    fhocn,     &
                           fsloss,   rhos_cmpn, &
                           fsnow,    rhosmax,   &
-                          windmin,  drhosdwind)
+                          windmin,  drhosdwind, &
+                          l_stop,   stop_label)
       endif
 
       vsno = c0

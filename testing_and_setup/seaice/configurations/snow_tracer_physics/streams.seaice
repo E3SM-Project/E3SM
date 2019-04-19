@@ -88,7 +88,7 @@
 
 <immutable_stream name="SnowAgingPropertiesInput"
                   type="input"
-                  filename_template="forcing/snicar_drdt_bst_fit_60_c070416.nc"
+                  filename_template="forcing/snicar_drdt_bst_fit_60_c04182019.nc"
                   filename_interval="none"
                   input_interval="initial_only" />
 

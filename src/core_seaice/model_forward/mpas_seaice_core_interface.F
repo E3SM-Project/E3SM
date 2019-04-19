@@ -255,7 +255,7 @@ module seaice_core_interface
           config_use_iron, &
           config_use_zaerosols, &
           config_use_snow_grain_radius, &
-          config_use_snow_density
+          config_use_effective_snow_density
 
      logical, pointer :: &
           pkgColumnTracerIceAgeActive, &
@@ -382,7 +382,7 @@ module seaice_core_interface
      call MPAS_pool_get_config(configPool, "config_use_DON", config_use_DON)
      call MPAS_pool_get_config(configPool, "config_use_iron", config_use_iron)
      call MPAS_pool_get_config(configPool, "config_use_zaerosols", config_use_zaerosols)
-     call MPAS_pool_get_config(configPool, "config_use_snow_density", config_use_snow_density)
+     call MPAS_pool_get_config(configPool, "config_use_effective_snow_density", config_use_effective_snow_density)
      call MPAS_pool_get_config(configPool, "config_use_snow_grain_radius", config_use_snow_grain_radius)
 
      call MPAS_pool_get_package(packagePool, "pkgColumnTracerIceAgeActive", pkgColumnTracerIceAgeActive)
@@ -452,8 +452,8 @@ module seaice_core_interface
      pkgTracerZAerosolsActive            = config_use_zaerosols
      pkgTracerZSalinityActive            = config_use_vertical_zsalinity
 
-     pkgColumnTracerSnowDensityActive    = config_use_snow_density
-     pkgColumnTracerSnowGrainRadiusActive= config_use_snow_grain_radius
+     pkgColumnTracerSnowDensityActive     = config_use_effective_snow_density
+     pkgColumnTracerSnowGrainRadiusActive = config_use_snow_grain_radius
 
      if (.not. config_use_column_package) then
         pkgColumnTracerIceAgeActive       = .false.
@@ -486,8 +486,8 @@ module seaice_core_interface
         pkgTracerVerticalIronActive         = .false.
         pkgTracerZAerosolsActive            = .false.
         pkgTracerZSalinityActive            = .false.
-        pkgColumnTracerSnowDensityActive    = .false.
-        pkgColumnTracerSnowGrainRadiusActive= .false.
+        pkgColumnTracerSnowDensityActive     = .false.
+        pkgColumnTracerSnowGrainRadiusActive = .false.
      endif
 
      if (.not. config_use_column_biogeochemistry .and. config_use_column_package) then

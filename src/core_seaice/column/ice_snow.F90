@@ -118,7 +118,7 @@
 
       subroutine snow_redist(dt, nslyr, ncat, wind, ain, vin, vsn, zqsn, &
          snwredist, alvl, vlvl, fresh, fhocn, fsloss, rhos_cmpn, &
-         fsnow, rhosmax, windmin, drhosdwind)
+         fsnow, rhosmax, windmin, drhosdwind, l_stop, stop_label)
 
       use ice_therm_vertical, only: adjust_enthalpy
 
@@ -154,6 +154,11 @@
 
       character(len=char_len), intent(in) :: &
          snwredist                ! type of snow redistribution
+
+      logical (kind=log_kind), intent(out) :: &
+         l_stop          ! if true, print diagnostics and abort on return
+
+      character (len=*), intent(out) :: stop_label
 
       ! local variables
 
@@ -223,6 +228,8 @@
       ! Conservation checks
       !-----------------------------------------------------------------
 
+      l_stop = .false.
+      stop_label = ''
       tmp1 = c0
       tmp3 = c0
       do n = 1, ncat
@@ -450,23 +457,40 @@
       tmp2 = tmp2 + (mlost/rhos)
 
       if (abs(tmp1-tmp2) > puny) then
-         print*,'mass conservation error in snow_redist', tmp1, tmp2
-         print*,'klyr',klyr
-         print*,'ain',atmp(:)
-         print*,'vsn final',vsn(:)
-         print*,'vsn init',vsn_init(:)
-         print*,'rhos*vsn init',rhos*vsn_init(:)
-         print*,'m_erosion',m_erosion(:)
-         print*,'m_redep',m_redep(:)
-         print*,'mlost',mlost
-         print*,'v_erosion',m_erosion(:)/rhos
-         print*,'v_redep',m_redep(:)/rhos
-         print*,'v lost',mlost/rhos
-         print*,'hsn',hsn(:)
-         print*,'hsn_new',hsn_new(:)
-         print*,'vsn_new',hsn_new(:)*atmp(:)
-         print*,'lost',suma,flost,alost,msnw_susp
-         stop
+         write(warning,*)'mass conservation error in snow_redist', tmp1, tmp2
+         call add_warning(warning)
+         write(warning,*)'klyr',klyr
+         call add_warning(warning)
+         write(warning,*)'ain',atmp(:)
+         call add_warning(warning)
+         write(warning,*)'vsn final',vsn(:)
+         call add_warning(warning)
+         write(warning,*)'vsn init',vsn_init(:)
+         call add_warning(warning)
+         write(warning,*)'rhos*vsn init',rhos*vsn_init(:)
+         call add_warning(warning)
+         write(warning,*)'m_erosion',m_erosion(:)
+         call add_warning(warning)
+         write(warning,*)'m_redep',m_redep(:)
+         call add_warning(warning)
+         write(warning,*)'mlost',mlost
+         call add_warning(warning)
+         write(warning,*)'v_erosion',m_erosion(:)/rhos
+         call add_warning(warning)
+         write(warning,*)'v_redep',m_redep(:)/rhos
+         call add_warning(warning)
+         write(warning,*)'v lost',mlost/rhos
+         call add_warning(warning)
+         write(warning,*)'hsn',hsn(:)
+         call add_warning(warning)
+         write(warning,*)'hsn_new',hsn_new(:)
+         call add_warning(warning)
+         write(warning,*)'vsn_new',hsn_new(:)*atmp(:)
+         call add_warning(warning)
+         write(warning,*)'lost',suma,flost,alost,msnw_susp
+         call add_warning(warning)
+         stop_label = 'snow redistribution mass conservation error'
+         l_stop = .true.
       endif
 
       !-----------------------------------------------------------------
@@ -492,31 +516,54 @@
       fhocn = fhocn + elost / dt
 
       if (abs(tmp5) > nslyr*Lfresh*puny) then
-         print*,'energy conservation error in snow_redist', tmp3, tmp4, tmp5
-         print*,'klyr',klyr
-         print*,'ain',atmp(:)
-         print*,'vsn final',vsn(:)
-         print*,'vsn init',vsn_init(:)
-         print*,'rhos*vsn init',rhos*vsn_init(:)
-         print*,'m_erosion',m_erosion(:)
-         print*,'m_redep',m_redep(:)
-         print*,'mlost',mlost
-         print*,'v_erosion',m_erosion(:)/rhos
-         print*,'v_redep',m_redep(:)/rhos
-         print*,'v lost',mlost/rhos
-         print*,'hsn',hsn(:)
-         print*,'hsn_new',hsn_new(:)
-         print*,'vsn_new',hsn_new(:)*atmp(:)
-         print*,'lost',suma,flost,alost,msnw_susp
-
-         print*,'tmp3(1)', (vsn(1)*zqsn(k,1)/nslyr,k=1,nslyr)
-         print*,'esn init',esn_init(:)
-         print*,'esn final',esn_final(:)
-         print*,'e_erosion',e_erosion(:)
-         print*,'e_redep',e_redep(:)
-         print*,'elost',elost,esnw_susp*alost,Lfresh*mlost
-         print*,'esnw_susp',esnw_susp
-         stop
+         write(warning,*)'energy conservation error in snow_redist', tmp3, tmp4, tmp5
+         call add_warning(warning)
+         write(warning,*)'klyr',klyr
+         call add_warning(warning)
+         write(warning,*)'ain',atmp(:)
+         call add_warning(warning)
+         write(warning,*)'vsn final',vsn(:)
+         call add_warning(warning)
+         write(warning,*)'vsn init',vsn_init(:)
+         call add_warning(warning)
+         write(warning,*)'rhos*vsn init',rhos*vsn_init(:)
+         call add_warning(warning)
+         write(warning,*)'m_erosion',m_erosion(:)
+         call add_warning(warning)
+         write(warning,*)'m_redep',m_redep(:)
+         call add_warning(warning)
+         write(warning,*)'mlost',mlost
+         call add_warning(warning)
+         write(warning,*)'v_erosion',m_erosion(:)/rhos
+         call add_warning(warning)
+         write(warning,*)'v_redep',m_redep(:)/rhos
+         call add_warning(warning)
+         write(warning,*)'v lost',mlost/rhos
+         call add_warning(warning)
+         write(warning,*)'hsn',hsn(:)
+         call add_warning(warning)
+         write(warning,*)'hsn_new',hsn_new(:)
+         call add_warning(warning)
+         write(warning,*)'vsn_new',hsn_new(:)*atmp(:)
+         call add_warning(warning)
+         write(warning,*)'lost',suma,flost,alost,msnw_susp
+         call add_warning(warning)
+         write(warning,*)'tmp3(1)', (vsn(1)*zqsn(k,1)/nslyr,k=1,nslyr)
+         call add_warning(warning)
+         write(warning,*)'esn init',esn_init(:)
+         call add_warning(warning)
+         write(warning,*)'esn final',esn_final(:)
+         call add_warning(warning)
+         write(warning,*)'e_erosion',e_erosion(:)
+         call add_warning(warning)
+         write(warning,*)'e_redep',e_redep(:)
+         call add_warning(warning)
+         write(warning,*)'elost',elost,esnw_susp*alost,Lfresh*mlost
+         call add_warning(warning)
+         write(warning,*)'esnw_susp',esnw_susp
+         call add_warning(warning)
+         stop_label = 'snow redistribution energy conservation error'
+         l_stop = .true.
       endif
 
       !-----------------------------------------------------------------

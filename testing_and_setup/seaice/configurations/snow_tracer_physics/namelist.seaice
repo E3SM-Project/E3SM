@@ -36,7 +36,7 @@
 &dimensions
     config_nCategories = 5
     config_nIceLayers = 7
-    config_nSnowLayers = 1
+    config_nSnowLayers = 3
 /
 &initialize
     config_initial_condition_type = 'cice_default'
@@ -101,7 +101,7 @@
     config_use_column_biogeochemistry = false
     config_use_column_itd_thermodynamics = true
     config_use_column_ridging = true
-    config_use_column_snow = true
+    config_use_column_snow_tracers = true
 /
 &column_tracers
     config_use_ice_age = true
@@ -111,7 +111,7 @@
     config_use_level_meltponds = true
     config_use_topo_meltponds = false
     config_use_aerosols = false
-    config_use_snow_density = true
+    config_use_effective_snow_density = true
     config_use_snow_grain_radius = true
 /
 &biogeochemistry
