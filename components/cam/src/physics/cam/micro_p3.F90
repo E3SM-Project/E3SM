@@ -678,7 +678,9 @@ contains
 
 
          !Activaiton of cloud droplets 
-          nc(i,k) = nc(i,k) + npccn(i,k) * dt
+          if (log_predictNc) then 
+             nc(i,k) = nc(i,k) + npccn(i,k) * dt
+          endif 
 
           call calculate_incloud_mixingratios(qc(i,k),qr(i,k),qitot(i,k),qirim(i,k),nc(i,k),nr(i,k),nitot(i,k),birim(i,k), &
                   inv_lcldm(i,k),inv_icldm(i,k),inv_rcldm(i,k), &
