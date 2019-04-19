@@ -306,6 +306,7 @@ local_remap_fwd_2d(const field_type& src_field, const field_type& tgt_field, con
   auto p2d = this->m_src_grid->get_dofs_map();
   const int num_cols = p2d.extent_int(0);
 
+  const auto& phys_dims = src_field.get_header().get_identifier().get_layout().dims();
   switch (lt) {
     case LayoutType::Scalar2D:
     {
@@ -322,7 +323,7 @@ local_remap_fwd_2d(const field_type& src_field, const field_type& tgt_field, con
     {
       auto phys = src_field.template get_reshaped_view<Real**>();
       auto dyn  = tgt_field.template get_reshaped_view<Real**[NP][NP]>();
-      const int dim = phys.extent_int(1);
+      const int dim = phys_dims[1];
       Kokkos::parallel_for(RangePolicy(0,num_cols*dim),
                            KOKKOS_LAMBDA(const int idx) {
         const int icol = idx / dim;
@@ -337,8 +338,8 @@ local_remap_fwd_2d(const field_type& src_field, const field_type& tgt_field, con
     {
       auto phys = src_field.template get_reshaped_view<Real***>();
       auto dyn  = tgt_field.template get_reshaped_view<Real***[NP][NP]>();
-      const int dim1 = phys.extent_int(1);
-      const int dim2 = phys.extent_int(2);
+      const int dim1 = phys_dims[1];
+      const int dim2 = phys_dims[2];
       Kokkos::pair<int,int> ordering;
       if (src_field.get_header().get_identifier().get_layout().tag(1)==tgt_field.get_header().get_identifier().get_layout().tag(1)) {
         ordering.first=0;
@@ -372,6 +373,7 @@ local_remap_fwd_3d_impl(const field_type& src_field, const field_type& tgt_field
   auto p2d = this->m_src_grid->get_dofs_map();
   const int num_cols = p2d.extent_int(0);
 
+  const auto& phys_dims = src_field.get_header().get_identifier().get_layout().dims();
   switch (lt) {
     case LayoutType::Scalar3D:
     {
@@ -392,7 +394,7 @@ local_remap_fwd_3d_impl(const field_type& src_field, const field_type& tgt_field
     {
       auto phys = src_field.template get_reshaped_view<ScalarT***>();
       auto dyn  = tgt_field.template get_reshaped_view<ScalarT*****>();
-      const int dim = phys.extent_int(1);
+      const int dim = phys_dims[1];
       const int NumVerticalLevels = dyn.extent_int(4);
       Kokkos::parallel_for(RangePolicy(0,num_cols*dim*NumVerticalLevels),
                            KOKKOS_LAMBDA(const int idx) {
@@ -409,8 +411,8 @@ local_remap_fwd_3d_impl(const field_type& src_field, const field_type& tgt_field
     {
       auto phys = src_field.template get_reshaped_view<ScalarT****>();
       auto dyn  = tgt_field.template get_reshaped_view<ScalarT******>();
-      const int dim1 = phys.extent_int(1);
-      const int dim2 = phys.extent_int(2);
+      const int dim1 = phys_dims[1];
+      const int dim2 = phys_dims[2];
       const int NumVerticalLevels = dyn.extent_int(5);
       Kokkos::pair<int,int> ordering;
       if (src_field.get_header().get_identifier().get_layout().tag(1)==tgt_field.get_header().get_identifier().get_layout().tag(1)) {
@@ -445,6 +447,7 @@ remap_bwd_2d(const field_type& src_field, const field_type& tgt_field, const Lay
   auto p2d = this->m_src_grid->get_dofs_map();
   const int num_cols = p2d.extent_int(0);
 
+  const auto& dyn_dims = src_field.get_header().get_identifier().get_layout().dims();
   switch (lt) {
     case LayoutType::Scalar2D:
     {
@@ -461,7 +464,7 @@ remap_bwd_2d(const field_type& src_field, const field_type& tgt_field, const Lay
     {
       auto dyn  = src_field.template get_reshaped_view<Real**[NP][NP]>();
       auto phys = tgt_field.template get_reshaped_view<Real**>();
-      const int dim = dyn.extent_int(1);
+      const int dim = dyn_dims[1];
       Kokkos::parallel_for(RangePolicy(0,num_cols*dim),
                            KOKKOS_LAMBDA(const int idx) {
         const int icol = idx / dim;
@@ -476,8 +479,8 @@ remap_bwd_2d(const field_type& src_field, const field_type& tgt_field, const Lay
     {
       auto dyn  = src_field.template get_reshaped_view<Real***[NP][NP]>();
       auto phys = tgt_field.template get_reshaped_view<Real***>();
-      const int dim1 = dyn.extent_int(1);
-      const int dim2 = dyn.extent_int(2);
+      const int dim1 = dyn_dims[1];
+      const int dim2 = dyn_dims[2];
       Kokkos::pair<int,int> ordering;
       if (src_field.get_header().get_identifier().get_layout().tag(1)==tgt_field.get_header().get_identifier().get_layout().tag(1)) {
         ordering.first=0;
@@ -511,6 +514,7 @@ remap_bwd_3d_impl(const field_type& src_field, const field_type& tgt_field, cons
   auto p2d = this->m_src_grid->get_dofs_map();
   const int num_cols = p2d.extent_int(0);
 
+  const auto& dyn_dims = src_field.get_header().get_identifier().get_layout().dims();
   switch (lt) {
     case LayoutType::Scalar3D:
     {
@@ -531,7 +535,7 @@ remap_bwd_3d_impl(const field_type& src_field, const field_type& tgt_field, cons
     {
       auto dyn  = src_field.template get_reshaped_view<ScalarT*****>();
       auto phys = tgt_field.template get_reshaped_view<ScalarT***>();
-      const int dim = dyn.extent_int(1);
+      const int dim = dyn_dims[1];
       const int NumVerticalLevels = dyn.extent_int(4);
       Kokkos::parallel_for(RangePolicy(0,num_cols*dim*NumVerticalLevels),
                            KOKKOS_LAMBDA(const int idx) {
@@ -548,8 +552,8 @@ remap_bwd_3d_impl(const field_type& src_field, const field_type& tgt_field, cons
     {
       auto dyn  = src_field.template get_reshaped_view<ScalarT******>();
       auto phys = tgt_field.template get_reshaped_view<ScalarT****>();
-      const int dim1 = dyn.extent_int(1);
-      const int dim2 = dyn.extent_int(2);
+      const int dim1 = dyn_dims[1];
+      const int dim2 = dyn_dims[2];
       const int NumVerticalLevels = dyn.extent_int(5);
       Kokkos::pair<int,int> ordering;
       if (src_field.get_header().get_identifier().get_layout().tag(1)==tgt_field.get_header().get_identifier().get_layout().tag(1)) {
