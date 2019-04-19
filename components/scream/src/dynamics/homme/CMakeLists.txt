@@ -29,6 +29,11 @@ FOREACH (target IN ITEMS ${HOMME_TARGETS})
   ENDIF()
 ENDFOREACH()
 
+# Homme will fill these variables with its flags
+SET (HOMME_C_FLAGS       "" CACHE INTERNAL "List of C compiler flags for Homme")
+SET (HOMME_CXX_FLAGS     "" CACHE INTERNAL "List of CXX compiler flags for Homme")
+SET (HOMME_Fortran_FLAGS "" CACHE INTERNAL "List of Fortran compiler flags for Homme")
+
 ADD_SUBDIRECTORY(homme)
 
 SET (DynamicsLibsCreated   "" CACHE INTERNAL "List of created dynamics libraries names")
@@ -104,9 +109,20 @@ MACRO (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE USE_PIO USE_ENERGY)
 
     ADD_DEFINITIONS(-DHAVE_CONFIG_H)
 
+    # Convert strings to lists
+    STRING(REPLACE " " ";" HOMME_C_FLAGS_LIST       ${HOMME_C_FLAGS})
+    STRING(REPLACE " " ";" HOMME_CXX_FLAGS_LIST     ${HOMME_CXX_FLAGS})
+    STRING(REPLACE " " ";" HOMME_Fortran_FLAGS_LIST ${HOMME_Fortran_FLAGS})
+
     ADD_LIBRARY(${dynLibName} ${SCREAM_DYNAMICS_SOURCES})
     target_link_libraries(${dynLibName} pio timing)
     SET_TARGET_PROPERTIES (${dynLibName} PROPERTIES Fortran_MODULE_DIRECTORY ${dynLibDir}/${dynLibName}_modules)
+
+    # Add flags, using a generator to achieve language specific behavior
+    TARGET_COMPILE_OPTIONS(${dynLibName} BEFORE PUBLIC $<$<COMPILE_LANGUAGE:C>:${HOMME_C_FLAGS_LIST}>)
+    TARGET_COMPILE_OPTIONS(${dynLibName} BEFORE PUBLIC $<$<COMPILE_LANGUAGE:CXX>:${HOMME_CXX_FLAGS_LIST}>)
+    TARGET_COMPILE_OPTIONS(${dynLibName} BEFORE PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${HOMME_Fortran_FLAGS_LIST}>)
+
     TARGET_INCLUDE_DIRECTORIES(
         ${dynLibName} PUBLIC
         ${SCREAM_INCLUDE_DIRS}
@@ -120,6 +136,9 @@ MACRO (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE USE_PIO USE_ENERGY)
       LIBRARY_OUTPUT_DIRECTORY "${dynLibDir}"
       RUNTIME_OUTPUT_DIRECTORY "${dynLibDir}"
     )
+    GET_TARGET_PROPERTY(dynOpts ${dynLibName} COMPILE_OPTIONS)
+    GET_TARGET_PROPERTY(dynFlags ${dynLibName} COMPILE_FLAGS)
+    GET_TARGET_PROPERTY(dynDefs ${dynLibName} COMPILE_DEFINITIONS)
   ENDIF()
 ENDMACRO(CreateDynamicsLib)
 
