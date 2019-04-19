@@ -750,6 +750,9 @@ for mct, etc.
     <append> $SHELL{$ENV{NETCDF_C_PATH}/bin/nc-config --libs} </append>
     <append>-mkl</append>
   </SLIBS>
+  <MPICC MPILIB="impi"> mpiicc </MPICC>
+  <MPICXX MPILIB="impi"> mpiicpc </MPICXX>
+  <MPIFC MPILIB="impi"> mpiifort </MPIFC>
 </compiler>
 
 <compiler MACH="anvil" COMPILER="pgi">
