@@ -4709,6 +4709,8 @@ sub add_default {
 	$val = get_default_value($var, \%opts);
     }
 
+    print "$ProgName - kaizhang $var\n";
+
     # if no value is found then exit w/ error (unless 'nofail' option set)
     unless (defined $val) {
         unless ($opts{'nofail'}) {

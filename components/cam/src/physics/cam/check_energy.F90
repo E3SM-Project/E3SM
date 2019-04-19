@@ -320,15 +320,21 @@ end subroutine check_energy_get_integrals
        end do
     end if
 
-    if (ixrain   > 1  .and.  ixsnow   > 1 ) then
+    if (ixrain   > 1) then
        do k = 1, pver
           do i = 1, ncol
              wr(i) = wr(i) + state%q(i,k,ixrain)*state%pdel(i,k)/gravit
-             ws(i) = ws(i) + state%q(i,k,ixsnow)*state%pdel(i,k)/gravit
           end do
        end do
     end if
 
+    if (ixsnow   > 1 ) then
+       do k = 1, pver
+          do i = 1, ncol
+             ws(i) = ws(i) + state%q(i,k,ixsnow)*state%pdel(i,k)/gravit
+          end do
+       end do
+    end if
 
 ! Compute vertical integrals of frozen static energy and total water.
     do i = 1, ncol
@@ -470,10 +476,17 @@ end subroutine check_energy_get_integrals
        end do
     end if
 
-    if (ixrain   > 1  .and.  ixsnow   > 1 ) then
+    if (ixrain   > 1) then
        do k = 1, pver
           do i = 1, ncol
              wr(i) = wr(i) + state%q(i,k,ixrain)*state%pdel(i,k)/gravit
+          end do
+       end do
+    end if
+
+    if (ixsnow   > 1 ) then
+       do k = 1, pver
+          do i = 1, ncol
              ws(i) = ws(i) + state%q(i,k,ixsnow)*state%pdel(i,k)/gravit
           end do
        end do

@@ -127,6 +127,21 @@
   </compset>
 
   <compset>
+    <alias>FC5AV1C-04Z1</alias>
+    <lname>2000_CAM5%AV1C-04Z1_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>PORT2000</alias>
+    <lname>2000_CAM5%AV1C-04P2_SLND_SICE_SOCN_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>PORT2000Z1</alias>
+    <lname>2000_CAM5%AV1C-04Z1_SLND_SICE_SOCN_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>FC5AV1C-L</alias>
     <lname>2000_CAM5%AV1C-L_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
@@ -348,6 +363,16 @@
     <alias>F_SCAM5</alias>
     <lname>SCAM_CAM5%SCAM_CLM45%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>   
+
+  <compset>
+    <alias>FSCM5P2-Z1A97</alias>
+    <lname>AR97_CAM5Z1%SCAM_CLM45%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>F_SCAM5MG2</alias>
+    <lname>SCAM_CAM5MG2%SCAM_CLM45%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
 
   <entries>
 

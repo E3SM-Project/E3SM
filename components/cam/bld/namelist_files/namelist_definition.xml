@@ -478,6 +478,14 @@
        Default: none
        </entry>
 
+<!-- JS ADD -->
+<entry id="Nudge_Method" type="char*80" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Method to perform Nudging analyses.
+       Default: none
+       </entry>
+<!-- JS END -->
+
 <!-- Aerosols: Data (CAM version) -->
 
 <entry id="bndtvaer" type="char*256" input_pathname="abs" category="aero_data_cam"
@@ -2257,6 +2265,114 @@ Accretion enhancement factor from namelist
 Default: 1.0_r8
 </entry>
 
+<entry id="micro_p3_num_steps" type="integer" category="microphys"
+       group="micro_p3_nl" valid_values="" >
+micro_p3_num_steps
+Default: 1
+</entry>
+
+<entry id="micro_p3_l_mg2_qidep" type="logical" category="microphys"
+       group="micro_p3_nl" valid_values="" >
+micro_p3_l_mg2_qidep
+Default: .false.
+</entry>
+
+<entry id="micro_p3_l_massclip" type="logical" category="microphys"
+       group="micro_p3_nl" valid_values="" >
+micro_p3_l_massclip
+Default: .false.
+</entry>
+
+<entry id="micro_p3_l_limit_qidep_qinuc" type="logical" category="microphys"
+       group="micro_p3_nl" valid_values="" >
+micro_p3_l_limit_qidep_qinuc
+Default: .false.
+</entry>
+
+<entry id="micro_p3_l_limit_qisub_qrevp" type="logical" category="microphys"
+       group="micro_p3_nl" valid_values="" >
+micro_p3_l_limit_qisub_qrevp
+Default: .false.
+</entry>
+
+<entry id="micro_p3_scale_berg" type="real" category="microphys"
+       group="micro_p3_nl" valid_values="" >
+micro_p3_scale_berg
+Default: 1.0
+</entry>
+
+<entry id="micro_p3_scale_qidep" type="real" category="microphys"
+       group="micro_p3_nl" valid_values="" >
+micro_p3_scale_qidep
+Default: 1.0
+</entry>
+
+<entry id="micro_p3_test_pm1" type="real" category="microphys"
+       group="micro_p3_nl" valid_values="" >
+micro_p3_test_pm1
+Default: 1.0
+</entry>
+
+<entry id="micro_p3_test_pm2" type="real" category="microphys"
+       group="micro_p3_nl" valid_values="" >
+micro_p3_test_pm2
+Default: 1.0
+</entry>
+
+<entry id="micro_p3_test_pm3" type="real" category="microphys"
+       group="micro_p3_nl" valid_values="" >
+micro_p3_test_pm3
+Default: 1.0
+</entry>
+
+<entry id="micro_p3_l_cshd" type="logical" category="microphys"
+       group="micro_p3_nl" valid_values="" >
+micro_p3_l_cshd
+Default: .false.
+</entry>
+
+<entry id="micro_p3_l_imlt" type="logical" category="microphys"
+       group="micro_p3_nl" valid_values="" >
+micro_p3_l_imlt
+Default: .false.
+</entry>
+
+<entry id="micro_p3_l_ccol" type="logical" category="microphys"
+       group="micro_p3_nl" valid_values="" >
+micro_p3_l_ccol
+Default: .false.
+</entry>
+
+<entry id="micro_p3_l_cheti" type="logical" category="microphys"
+       group="micro_p3_nl" valid_values="" >
+micro_p3_l_cheti
+Default: .false.
+</entry>
+
+<entry id="micro_p3_l_inuc" type="logical" category="microphys"
+       group="micro_p3_nl" valid_values="" >
+micro_p3_l_inuc
+Default: .false.
+</entry>
+
+<entry id="micro_p3_l_crconevp" type="logical" category="microphys"
+       group="micro_p3_nl" valid_values="" >
+micro_p3_l_crconevp
+Default: .false.
+</entry>
+
+<entry id="micro_p3_opt_cheti" type="integer" category="microphys"
+       group="micro_p3_nl" valid_values="" >
+micro_p3_opt_cheti
+Default: .false.
+</entry>
+
+<entry id="micro_p3_opt_inuc" type="integer" category="microphys"
+       group="micro_p3_nl" valid_values="" >
+micro_p3_opt_inuc
+Default: .false.
+</entry>
+
 <entry id="prc_coef1" type="real" category="microphysics"
 group="phys_ctl_nl" valid_values="" >
 Tunable coefficient for autoconversion
@@ -2738,7 +2854,7 @@ Default: 'ZM' unless using 'UNICON'
 </entry>
 
 <entry id="microp_scheme" type="char*16" category="conv"
-       group="phys_ctl_nl" valid_values="RK,MG" >
+       group="phys_ctl_nl" valid_values="RK,MG,P3" >
 Type of microphysics scheme employed.  'RK' for Rasch and Kristjansson
 (1998); 'MG' for Morrison and Gettelman (2008), Gettelman et al (2010)
 two moment scheme for CAM5.1
@@ -4164,6 +4280,7 @@ Analogous to rad_diag_1, but for the 10th diagnostic calculation.
 Default: none
 </entry>
 
+<!-- Radiation driver outputs and inputs -->
 
 <entry id="rad_data_output" type="logical"   category="radiation"
        group="rad_data_nl" valid_values="" >
@@ -4183,6 +4300,67 @@ Averaging flag for adiation driver output data.
 Default: 'A'
 </entry>
 
+<entry id="rad_data_fdh" type="logical"  category="offline_unit_driver"
+       group="rad_data_nl" valid_values="" >
+Switch to turn on Fixed Dynamical Heating in the offline radiation tool (PORT).
+Default: false
+</entry>
+
+<entry id="offline_driver_infile" type="char*256" input_pathname="abs" category="offline_unit_driver"
+       group="offline_driver_nl" valid_values="" >
+Filepath for dataset for offline unit driver.
+Default: none
+</entry>
+
+<entry id="offline_driver_fileslist" type="char*256" input_pathname="abs" category="offline_unit_driver"
+       group="offline_driver_nl" valid_values="" >
+List of filepaths for dataset for offline unit driver.
+Default: none
+</entry>
+
+<!-- Aerosol and cloud optics -->
+
+<entry id="water_refindex_file" type="char*256" input_pathname="abs" category="radiation"
+       group="modal_aer_opt_nl" valid_values="" >
+Full pathname of dataset for water refractive indices used in modal aerosol optics
+Default: none
+</entry>
+
+
+<entry id="drydep_srf_file" type="char*256" input_pathname="abs" category="cam_chem"
+       group="chem_inparm" valid_values="">
+Dry deposition surface values interpolated to model grid, required for unstructured atmospheric grids
+with modal chemistry.
+Default: none
+</entry>
+
+<entry id="oldcldoptics" type="logical"  category="radiation"
+       group="rad_cnst_nl" valid_values="" >
+filepath and name for ice optics data for rrtmg
+Default: none
+</entry>
+
+<entry id="liqcldoptics" type="char*32"  category="radiation"
+       group="rad_cnst_nl" valid_values="slingo,gammadist" >
+filepath and name for ice optics data for rrtmg
+Default: none
+</entry>
+
+<entry id="icecldoptics" type="char*32"  category="radiation"
+       group="rad_cnst_nl" valid_values="ebertcurry,mitchell" >
+filepath and name for ice optics data for rrtmg
+Default: none
+</entry>
+
+<entry id="iceopticsfile" type="char*256" input_pathname="abs"  category="radiation"
+       group="rad_cnst_nl" valid_values="" >
+filepath and name for ice optics data for rrtmg
+Default: none
+</entry>
+
+<entry id="liqopticsfile" type="char*256" input_pathname="abs"  category="radiation"
+       group="rad_cnst_nl" valid_values="" >
+filepath and name for liquid cloud (gamma distributed) optics data for rrtmg
 <!-- Aerosol and cloud optics -->
 
 <entry id="water_refindex_file" type="char*256" input_pathname="abs" category="radiation"

@@ -143,7 +143,7 @@ OPTIONS
                         se grids.
      -max_n_rad_cnst <n> Maximum number of constituents that are either radiatively
                         active, or in any single diagnostic list for the radiation.    
-     -microphys <name>  Specify the microphysics option [mg1 | mg1.5 | mg2 | rk].
+     -microphys <name>  Specify the microphysics option [mg1 | mg1.5 | mg2 | p3 | rk].
      -nadv <n>          Set total number of advected species to <n>.
      -nadv_tt <n>       Set number of advected test tracers <n>.
      -nlev <n>          Set number of levels to <n>.
@@ -265,6 +265,7 @@ OPTIONS
                         perl \$OSNAME variable.
      -usr_src <dir1>[,<dir2>[,<dir3>[...]]]
                         Directories containing user source code.
+     -offline_drv <name> Specify offline unit driver [ rad | stub ]
 EOF
 }
 
@@ -371,6 +372,7 @@ GetOptions(
     "prog_species=s"            => \$opts{'prog_species'},
     "psubcols=s"                => \$opts{'psubcols'},
     "rad=s"                     => \$opts{'rad'},
+    "offline_drv=s"             => \$opts{'offline_drv'},
     "res=s"                     => \$opts{'res'},
     "rof=s"                     => \$opts{'rof'},
     "scam"                      => \$opts{'scam'},
@@ -403,8 +405,9 @@ if (@ARGV) {
 # 1 - only informs what files are created (default)
 # 2 - verbose
 my $print = 1;
-if ($opts{'silent'})  { $print = 0; }
-if ($opts{'verbose'}) { $print = 2; }
+###if ($opts{'silent'})  { $print = 0; }
+###if ($opts{'verbose'}) { $print = 2; }
+my $print = 2;
 my $eol = "\n";
 
 my %cfg = ();           # build configuration
@@ -807,6 +810,10 @@ if (defined $opts{'waccm_phys'}) {
 }
 my $waccm_phys = $cfg_ref->get('waccm_phys');
 
+# offline unit driver
+if (defined $opts{'offline_drv'}) {
+    $cfg_ref->set('offline_drv', $opts{'offline_drv'});
+}
 
 # WACCM only runs with FV dycore
 if ( ($waccm_phys) and ($dyn_pkg ne 'fv') and ($dyn_pkg ne 'se') ) {
@@ -889,20 +896,20 @@ if ($co2_cycle and $print>=2) { print "co2_cycle option: ON$eol"; }
 # Micro-physics package
 
 # The default for the current physics package is:
-my $microphys_pkg = 'mg1';
+my $microphys_pkg = 'mg2';
 
-#Set the default microphysics package for CLUBB to mg2
-if (defined $opts{'clubb_sgs'}) {
-    $microphys_pkg = 'mg2';
-}
-
-# But if the physics package is adiabatic, ideal, cam3, cam4, change the default
-if ($phys_pkg =~ m/^ideal$|^adiabatic$|^cam[34]$/) {
-    $microphys_pkg = 'rk';
-}
-elsif ($phys_pkg eq 'cam5' and !defined $opts{'clubb_sgs'}) {
-    $microphys_pkg = 'mg1';
-}
+###Set the default microphysics package for CLUBB to mg2
+##if (defined $opts{'clubb_sgs'}) {
+##    $microphys_pkg = 'mg2';
+##}
+##
+### But if the physics package is adiabatic, ideal, cam3, cam4, change the default
+##if ($phys_pkg =~ m/^ideal$|^adiabatic$|^cam[34]$/) {
+##    $microphys_pkg = 'rk';
+##}
+##elsif ($phys_pkg eq 'cam5' and !defined $opts{'clubb_sgs'}) {
+##    $microphys_pkg = 'mg1';
+##}
 
 # Allow the user to override the default via the commandline.
 if (defined $opts{'microphys'}) {
@@ -952,12 +959,12 @@ my $clubb_sgs = $cfg_ref->get('clubb_sgs');
 # consistency checks...
 
 # CLUBB_SGS only works with mg microphysics
-if ($clubb_sgs and $microphys_pkg !~ m/^mg/) {
-    die <<"EOF";
-**    ERROR: microphysics package set to: $microphys_pkg
-**    CLUBB_SGS only works with MG microphysics.
-EOF
-}
+###if ($clubb_sgs and $microphys_pkg !~ m/^mg/) {
+###    die <<"EOF";
+###**    ERROR: microphysics package set to: $microphys_pkg
+###**    CLUBB_SGS only works with MG microphysics.
+###EOF
+###}
 
 #-----------------------------------------------------------------------------------------------
 # Break apart CLUBB options into separate fields
@@ -1109,6 +1116,9 @@ my $ocn_pkg = 'docn';
 if ($phys_pkg =~ m/ideal|adiabatic/) {
     $ocn_pkg = 'socn';
 } 
+elsif (defined $opts{'offline_drv'}) {
+    $ocn_pkg = 'socn';
+}
 
 # Allow the user to override the default via the commandline.
 if (defined $opts{'ocn'}) {
@@ -1128,17 +1138,20 @@ if ($phys_pkg =~ m/ideal|adiabatic/) {
 }
 elsif ($ocn_pkg eq 'aquaplanet') {
     $lnd_pkg = 'slnd';
-} 
-
-# If building for CESM then do nothing for land component
-if ($ccsm_seq) {
-    $lnd_pkg = 'none';
+}
+elsif (defined $opts{'offline_drv'}) {
+    $lnd_pkg = 'slnd';
 }
 
-# Allow the user to override the default via the commandline.
-if (defined $opts{'lnd'}) {
-    $lnd_pkg = lc($opts{'lnd'});
-}
+#### If building for CESM then do nothing for land component
+###if ($ccsm_seq) {
+###    $lnd_pkg = 'none';
+###}
+###
+#### Allow the user to override the default via the commandline.
+###if (defined $opts{'lnd'}) {
+###    $lnd_pkg = lc($opts{'lnd'});
+###}
 
 
 $cfg_ref->set('lnd', $lnd_pkg);
@@ -1153,6 +1166,9 @@ if ($phys_pkg =~ m/ideal|adiabatic/) {
     $ice_pkg = 'sice';
 }
 elsif ($ocn_pkg eq 'aquaplanet') {
+    $ice_pkg = 'sice';
+}
+elsif (defined $opts{'offline_drv'}) {
     $ice_pkg = 'sice';
 }
 
@@ -1180,6 +1196,10 @@ if ($phys_pkg =~ m/ideal|adiabatic/) {
 elsif ($ocn_pkg eq 'aquaplanet') {
     $rof_pkg = 'srof';
 }
+elsif (defined $opts{'offline_drv'}) {
+    $rof_pkg = 'srof';
+}
+
 # If building for CESM then do nothing for runoff component
 if ($ccsm_seq) {
     $rof_pkg = 'none';
@@ -1493,6 +1513,10 @@ else {
             if ($print>=2) { print "Advected constituents added by $microphys_pkg microphysics: 4$eol"; }
         }
         elsif ($microphys_pkg =~/^mg2/) {
+            $nadv += 8;
+            if ($print>=2) { print "Advected constituents added by $microphys_pkg microphysics: 8$eol"; }
+        }
+        elsif ($microphys_pkg =~/^p3/) {
             $nadv += 8;
             if ($print>=2) { print "Advected constituents added by $microphys_pkg microphysics: 8$eol"; }
         }
@@ -2706,6 +2730,7 @@ sub write_filepath
     my $lnd           = $cfg_ref->get('lnd');
     my $ice           = $cfg_ref->get('ice');
     my $rof           = $cfg_ref->get('rof');
+    my $offline_drv   = $cfg_ref->get('offline_drv');
 
     # Root directory
     my $camsrcdir = "$cam_root/components";
@@ -2733,6 +2758,7 @@ sub write_filepath
 
     # offline unit driver (defaults to stub)
     print $fh "$camsrcdir/cam/src/unit_drivers\n";
+    print $fh "$camsrcdir/cam/src/unit_drivers/${offline_drv}\n";
 
     if ($carma ne 'none') {
 	# This directory needs to precede physics/cam/ to replace
