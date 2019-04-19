@@ -1,6 +1,7 @@
 #include "atmosphere_dynamics.hpp"
 #include "share/scream_assert.hpp"
-#include "scream_homme_interface.hpp"
+#include "dynamics/homme/scream_homme_interface.hpp"
+#include "dynamics/homme/hommexx_dimensions.hpp"
 #include "Context.hpp"
 #include "mpi/MpiContext.hpp"
 #include "Types.hpp"
@@ -24,7 +25,7 @@ struct ScalarProperties<Homme::Scalar> {
   static constexpr bool is_pack = true;
 };
 
-}
+} // namespace util
 
 HommeDynamics::HommeDynamics (const Comm& comm,const ParameterList& /* params */)
  : m_dynamics_comm (comm)
@@ -35,11 +36,11 @@ HommeDynamics::HommeDynamics (const Comm& comm,const ParameterList& /* params */
   // which is bad, since scream still has outstanding views.
   Homme::Session::m_throw_instead_of_abort = true;
 
-  constexpr int NGP  = NP;
-  constexpr int QSZ  = QSIZE_D;
-  constexpr int NVL  = Homme::NUM_PHYSICAL_LEV;
-  constexpr int NTL  = Homme::NUM_TIME_LEVELS;
-  constexpr int QNTL = Homme::Q_NUM_TIME_LEVELS;
+  constexpr int NGP  = HOMMEXX_NP;
+  constexpr int QSZ  = HOMMEXX_QSIZE_D;
+  constexpr int NVL  = HOMMEXX_NUM_PHYSICAL_LEV;
+  constexpr int NTL  = HOMMEXX_NUM_TIME_LEVELS;
+  constexpr int QNTL = HOMMEXX_Q_NUM_TIME_LEVELS;
 
   const int ne  = get_homme_param_value<int>("nelemd");
   const int nmf = get_homme_param_value<int>("num momentum forcings");
@@ -89,10 +90,6 @@ void HommeDynamics::initialize (const std::shared_ptr<const GridsManager> /* gri
   auto& tracers  = Homme::Context::singleton().get_tracers();
 
   const int num_elems = elements.num_elems();
-  constexpr int NUM_PHYSICAL_LEV  = Homme::NUM_PHYSICAL_LEV;
-  constexpr int NUM_LEV           = Homme::NUM_LEV;
-  constexpr int NUM_TIME_LEVELS   = Homme::NUM_TIME_LEVELS;
-  constexpr int Q_NUM_TIME_LEVELS = Homme::Q_NUM_TIME_LEVELS;
   using Scalar = Homme::Scalar;
 
   // Computed fields
@@ -103,25 +100,25 @@ void HommeDynamics::initialize (const std::shared_ptr<const GridsManager> /* gri
     if (name=="v") {
       // Velocity
       auto& v = elements.m_v;
-      auto v_in = f.get_reshaped_view<Scalar*[NUM_TIME_LEVELS][2][NP][NP][NUM_LEV]>();
+      auto v_in = f.get_reshaped_view<Scalar*[HOMMEXX_NUM_TIME_LEVELS][2][HOMMEXX_NP][HOMMEXX_NP][HOMMEXX_NUM_LEV]>();
       using v_type = std::remove_reference<decltype(v)>::type;
       v = v_type (v_in.data(),num_elems);
     } else if (name=="t") {
       // Temperature
       auto& t = elements.m_t;
-      auto t_in = f.get_reshaped_view<Real*[NUM_TIME_LEVELS][NP][NP][NUM_PHYSICAL_LEV]>();
+      auto t_in = f.get_reshaped_view<Real*[HOMMEXX_NUM_TIME_LEVELS][HOMMEXX_NP][HOMMEXX_NP][HOMMEXX_NUM_PHYSICAL_LEV]>();
       using t_type = std::remove_reference<decltype(t)>::type;
       t = t_type(reinterpret_cast<Scalar*>(t_in.data()),num_elems);
     } else if (name=="dp") {
       // Levels thickness
       auto& dp = elements.m_dp3d;
-      auto dp_in = f.template get_reshaped_view<Real*[NUM_TIME_LEVELS][NP][NP][NUM_PHYSICAL_LEV]>();
+      auto dp_in = f.template get_reshaped_view<Real*[HOMMEXX_NUM_TIME_LEVELS][HOMMEXX_NP][HOMMEXX_NP][HOMMEXX_NUM_PHYSICAL_LEV]>();
       using dp_type = std::remove_reference<decltype(dp)>::type;
       dp = dp_type(reinterpret_cast<Scalar*>(dp_in.data()),num_elems);
     } else if (name=="qdp") {
       // Tracers mass
       auto& qdp = tracers.qdp;
-      auto qdp_in = f.template get_reshaped_view<Real*[Q_NUM_TIME_LEVELS][QSIZE_D][NP][NP][NUM_PHYSICAL_LEV]>();
+      auto qdp_in = f.template get_reshaped_view<Real*[HOMMEXX_NUM_TIME_LEVELS][QSIZE_D][HOMMEXX_NP][HOMMEXX_NP][HOMMEXX_NUM_PHYSICAL_LEV]>();
       using qdp_type = std::remove_reference<decltype(qdp)>::type;
       qdp = qdp_type(reinterpret_cast<Scalar*>(qdp_in.data()),num_elems);
     } else {
@@ -140,14 +137,14 @@ void HommeDynamics::initialize (const std::shared_ptr<const GridsManager> /* gri
     if (name=="phis") {
       // Surface geo-potential
       auto& phis = elements.m_phis;
-      auto phis_in = f.template get_reshaped_view<const Real*[NP][NP]>();
+      auto phis_in = f.template get_reshaped_view<const Real*[HOMMEXX_NP][HOMMEXX_NP]>();
       using phis_type = std::remove_reference<decltype(phis)>::type;
       auto non_const_ptr = const_cast<Real*>(phis_in.data());
       phis = phis_type(non_const_ptr,num_elems);
     } else if (name=="FQ") {
       // Tracers forcing
       auto& fq = tracers.fq;
-      auto fq_in = f.template get_reshaped_view<const Real*[QSIZE_D][NP][NP][NUM_PHYSICAL_LEV]>();
+      auto fq_in = f.template get_reshaped_view<const Real*[QSIZE_D][HOMMEXX_NP][HOMMEXX_NP][HOMMEXX_NUM_PHYSICAL_LEV]>();
       using fq_type = std::remove_reference<decltype(fq)>::type;
       auto non_const_ptr = reinterpret_cast<Scalar*>(const_cast<Real*>(fq_in.data()));
       fq = fq_type(non_const_ptr,num_elems);
@@ -155,14 +152,14 @@ void HommeDynamics::initialize (const std::shared_ptr<const GridsManager> /* gri
       // Momemntum forcing
       auto& fm = elements.m_fm;
       // Use dynamic extent for second dimension, since preqx and theta have different extents
-      auto fm_in = f.template get_reshaped_view<const Real**[NP][NP][NUM_PHYSICAL_LEV]>();
+      auto fm_in = f.template get_reshaped_view<const Real**[HOMMEXX_NP][HOMMEXX_NP][HOMMEXX_NUM_PHYSICAL_LEV]>();
       using fm_type = std::remove_reference<decltype(fm)>::type;
       auto non_const_ptr = reinterpret_cast<Scalar*>(const_cast<Real*>(fm_in.data()));
       fm = fm_type(non_const_ptr,num_elems);
     } else if (name=="FT") {
       // Temperature forcing
       auto& ft = elements.m_ft;
-      auto ft_in = f.template get_reshaped_view<const Real*[NP][NP][NUM_PHYSICAL_LEV]>();
+      auto ft_in = f.template get_reshaped_view<const Real*[HOMMEXX_NP][HOMMEXX_NP][HOMMEXX_NUM_PHYSICAL_LEV]>();
       using ft_type = std::remove_reference<decltype(ft)>::type;
       auto non_const_ptr = reinterpret_cast<Scalar*>(const_cast<Real*>(ft_in.data()));
       ft = ft_type(non_const_ptr,num_elems);
