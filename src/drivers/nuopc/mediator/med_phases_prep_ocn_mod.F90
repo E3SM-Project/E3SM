@@ -539,7 +539,7 @@ contains
           call med_merge_field(is_local%wrap%FBExp(compocn),      'Foxx_lwnet', &
                FBinA=is_local%wrap%FBMed_aoflux_o        , fnameA='Faox_lwup ', wgtA=ocnwgt1, &
                FBinB=is_local%wrap%FBImp(compatm,compocn), fnameB='Faxa_lwdn' , wgtB=ocnwgt1, &
-               FBinC=is_local%wrap%FBImp(compatm,compocn), fnameC='Faxa_lwup' , wgtc=wgtp01, rc=rc)
+               FBinC=is_local%wrap%FBImp(compatm,compocn), fnameC='Faxa_lwnet' , wgtc=wgtp01, rc=rc)
 
           ! Merge rain with melted ice before sending liquid precipitation to ocean
           call med_merge_field(is_local%wrap%FBExp(compocn),      'Faxa_rain' , &
