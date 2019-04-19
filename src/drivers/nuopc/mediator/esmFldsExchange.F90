@@ -1279,7 +1279,7 @@ contains
        end if
        ! NEMS orig
        if ( fldchk(is_local%wrap%FBexp(compocn)         , 'Foxx_evap' , rc=rc) .and. &
-            fldchk(is_local%wrap%FBMed_aoflux_o         , 'Foax_evap' , rc=rc) .and. &
+            fldchk(is_local%wrap%FBMed_aoflux_o         , 'Faox_evap' , rc=rc) .and. &
             fldchk(is_local%wrap%FBImp(compatm, compatm), 'Faxa_lat'  , rc=rc)) then
           call addmap(fldListFr(compatm)%flds, 'Faxa_lat', compocn, mapconsf, 'one', atm2ocn_fmap)
        end if
