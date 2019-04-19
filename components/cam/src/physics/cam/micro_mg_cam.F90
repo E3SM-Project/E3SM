@@ -1176,6 +1176,9 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8), target :: qisevap(state%psetcols,pver)    ! Sublimation of falling cloud ice
    real(r8), target :: qvres(state%psetcols,pver)      ! Residual condensation term to remove excess saturation
    real(r8), target :: cmeiout(state%psetcols,pver)    ! Deposition/sublimation rate of cloud ice
+   real(r8), target :: qidep(state%psetcols,pver)    ! Deposition/sublimation rate of cloud ice
+   real(r8), target :: qisub(state%psetcols,pver)    ! Deposition/sublimation rate of cloud ice
+   real(r8), target :: qinuc(state%psetcols,pver)    ! Deposition/sublimation rate of cloud ice
    real(r8), target :: vtrmc(state%psetcols,pver)      ! Mass-weighted cloud water fallspeed
    real(r8), target :: vtrmi(state%psetcols,pver)      ! Mass-weighted cloud ice fallspeed
    real(r8), target :: umr(state%psetcols,pver)        ! Mass-weighted rain fallspeed
@@ -1304,6 +1307,9 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8), allocatable, target :: packed_qisevap(:,:)
    real(r8), allocatable, target :: packed_qvres(:,:)
    real(r8), allocatable, target :: packed_cmei(:,:)
+   real(r8), allocatable, target :: packed_qidep(:,:)
+   real(r8), allocatable, target :: packed_qisub(:,:)
+   real(r8), allocatable, target :: packed_qinuc(:,:)
    real(r8), allocatable, target :: packed_vtrmc(:,:)
    real(r8), allocatable, target :: packed_vtrmi(:,:)
    real(r8), allocatable, target :: packed_qcsedten(:,:)
@@ -1523,6 +1529,9 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8) :: psacwso_grid(pcols,pver)
    real(r8) :: bergso_grid(pcols,pver)
    real(r8) :: cmeiout_grid(pcols,pver)
+   real(r8) :: qidep_grid(pcols,pver)
+   real(r8) :: qisub_grid(pcols,pver)
+   real(r8) :: qinuc_grid(pcols,pver)
    real(r8) :: qireso_grid(pcols,pver)
    real(r8) :: prcio_grid(pcols,pver)
    real(r8) :: praio_grid(pcols,pver)
@@ -1902,6 +1911,12 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    call post_proc%add_field(p(qvres), p(packed_qvres))
    allocate(packed_cmei(mgncol,nlev))
    call post_proc%add_field(p(cmeiout), p(packed_cmei))
+   allocate(packed_qidep(mgncol,nlev))
+   call post_proc%add_field(p(qidep), p(packed_qidep))
+   allocate(packed_qisub(mgncol,nlev))
+   call post_proc%add_field(p(qisub), p(packed_qisub))
+   allocate(packed_qinuc(mgncol,nlev))
+   call post_proc%add_field(p(qinuc), p(packed_qinuc))
    allocate(packed_vtrmc(mgncol,nlev))
    call post_proc%add_field(p(vtrmc), p(packed_vtrmc))
    allocate(packed_vtrmi(mgncol,nlev))
@@ -2220,7 +2235,11 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
                  packed_rflx,    packed_sflx,    packed_qrout,   &
                  reff_rain_dum,          reff_snow_dum,          &
                  packed_qcsevap, packed_qisevap, packed_qvres,   &
-                 packed_cmei,    packed_vtrmc,   packed_vtrmi,   &
+                 packed_cmei,     &
+                 packed_qidep,    &
+                 packed_qisub,    &
+                 packed_qinuc,    &
+                 packed_vtrmc,   packed_vtrmi,   &
                  packed_umr,             packed_ums,             &
                  packed_qcsedten,        packed_qisedten,        &
                  packed_qrsedten,        packed_qssedten,        &
@@ -2517,6 +2536,9 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       call subcol_field_avg(psacwso,   ngrdcol, lchnk, psacwso_grid)
       call subcol_field_avg(bergso,    ngrdcol, lchnk, bergso_grid)
       call subcol_field_avg(cmeiout,   ngrdcol, lchnk, cmeiout_grid)
+      call subcol_field_avg(qidep,   ngrdcol, lchnk, qidep_grid)
+      call subcol_field_avg(qisub,   ngrdcol, lchnk, qisub_grid)
+      call subcol_field_avg(qinuc,   ngrdcol, lchnk, qinuc_grid)
       call subcol_field_avg(qireso,    ngrdcol, lchnk, qireso_grid)
       call subcol_field_avg(prcio,     ngrdcol, lchnk, prcio_grid)
       call subcol_field_avg(praio,     ngrdcol, lchnk, praio_grid)
@@ -2583,6 +2605,9 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       psacwso_grid    = psacwso
       bergso_grid     = bergso
       cmeiout_grid    = cmeiout
+      qidep_grid      = qidep
+      qisub_grid      = qisub
+      qinuc_grid      = qinuc
       qireso_grid     = qireso
       prcio_grid      = prcio
       praio_grid      = praio
@@ -3112,6 +3137,9 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    call outfld('ICIMRST',     icimrst_grid_out, pcols, lchnk)
    call outfld('ICWMRST',     icwmrst_grid_out, pcols, lchnk)
    call outfld('CMEIOUT',     cmeiout_grid,     pcols, lchnk)
+   call outfld('QIDEP',   qidep_grid,     pcols, lchnk)
+   call outfld('QISUB',   qisub_grid,     pcols, lchnk)
+   call outfld('QINUC',   qinuc_grid,     pcols, lchnk)
    call outfld('PRAO',        prao_grid,        pcols, lchnk)
    call outfld('PRCO',        prco_grid,        pcols, lchnk)
    call outfld('MNUCCCO',     mnuccco_grid,     pcols, lchnk)

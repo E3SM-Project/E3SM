@@ -391,7 +391,11 @@ subroutine micro_mg_tend ( &
      rflx,               sflx,               qrout,              &
      reff_rain,                    reff_snow,                    &
      qcsevap,            qisevap,            qvres,              &
-     cmeitot,            vtrmc,              vtrmi,              &
+     cmeitot,            &
+     qidep,            &
+     qisub,            &
+     qinuc,            &
+     vtrmc,              vtrmi,              &
      umr,                          ums,                          &
      qcsedten,                     qisedten,                     &
      qrsedten,                     qssedten,                     &
@@ -536,6 +540,9 @@ subroutine micro_mg_tend ( &
   real(r8), intent(out) :: qisevap(:,:)      ! cloud ice sublimation due to sublimation (1/s)
   real(r8), intent(out) :: qvres(:,:)        ! residual condensation term to ensure RH < 100% (1/s)
   real(r8), intent(out) :: cmeitot(:,:)       ! grid-mean cloud ice sub/dep (1/s)
+  real(r8), intent(out) :: qidep(:,:)       ! grid-mean cloud ice sub/dep (1/s)
+  real(r8), intent(out) :: qisub(:,:)       ! grid-mean cloud ice sub/dep (1/s)
+  real(r8), intent(out) :: qinuc(:,:)       ! grid-mean cloud ice sub/dep (1/s)
   real(r8), intent(out) :: vtrmc(:,:)        ! mass-weighted cloud water fallspeed (m/s)
   real(r8), intent(out) :: vtrmi(:,:)        ! mass-weighted cloud ice fallspeed (m/s)
   real(r8), intent(out) :: umr(:,:)          ! mass weighted rain fallspeed (m/s)
@@ -952,6 +959,9 @@ subroutine micro_mg_tend ( &
   qisevap=0._r8
   qvres  =0._r8
   cmeitot =0._r8
+  qidep =0._r8
+  qisub =0._r8
+  qinuc =0._r8
   vtrmc =0._r8
   vtrmi =0._r8
   qcsedten =0._r8
@@ -1924,6 +1934,9 @@ subroutine micro_mg_tend ( &
 
         ! add output for cmei (accumulate)
         cmeitot(i,k) = vap_dep(i,k) + ice_sublim(i,k) + mnuccd(i,k)
+        qidep(i,k) = vap_dep(i,k) 
+        qisub(i,k) = ice_sublim(i,k) 
+        qinuc(i,k) = mnuccd(i,k)
 
         ! assign variables for trop_mozart, these are grid-average
         !-------------------------------------------------------------------
