@@ -1,3 +1,3 @@
 IF ("${SCREAM_DYNAMICS_DYCORE}" STREQUAL "HOMME")
-  # add_subdirectory(scream_homme_dyn_ut_nlev72_qsize4)
+  # Add all subdirectory that contain tests to be built only if Homme is the dynamics dycore
 ENDIF()
