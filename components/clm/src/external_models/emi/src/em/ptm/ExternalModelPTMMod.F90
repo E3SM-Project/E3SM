@@ -1481,11 +1481,11 @@ contains
 
              ! Save data for internal SoE auxvars
              temperature_1d(idx) = l2e_th2osfc(c)
-             dz_1d(idx)          = 1.0e-3*l2e_h2osfc(c)
+             dz_1d(idx)          = 1.0e-3*l2e_h2osfc(c)/l2e_frac_h2osfc(c)
              is_active_1d(idx)   = .true.
              frac_1d(idx)        = l2e_frac_h2osfc(c)
-             dist_up_1d(idx)     = dz_1d(idx)/2.d0
-             dist_dn_1d(idx)     = dz_1d(idx)/2.d0
+             dist_up_1d(idx)     = dz_1d(idx)/2.d0/l2e_frac_h2osfc(c)
+             dist_dn_1d(idx)     = dz_1d(idx)/2.d0/l2e_frac_h2osfc(c)
 
              ! Index for boundary SoE auxvars
              idx                 = (c-begc) + 1
