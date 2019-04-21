@@ -13,7 +13,7 @@ module ndrop
 !---------------------------------------------------------------------------------
 
 use shr_kind_mod,     only: r8 => shr_kind_r8
-use spmd_utils,       only: masterproc
+use spmd_utils,       only: masterproc, iam
 use ppgrid,           only: pcols, pver, pverp
 use physconst,        only: pi, rhoh2o, mwh2o, r_universal, rh2o, &
                             gravit, latvap, cpair, rair
@@ -417,9 +417,9 @@ subroutine dropmixnuc( &
 !$acc declare create(nact, mact, raercol, raercol_cw)
 
    real(r8) :: na(pcols), va(pcols), hy(pcols)
-   real(r8), allocatable :: naermod(:)  ! (1/m3)
-   real(r8), allocatable :: hygro(:)    ! hygroscopicity of aerosol mode
-   real(r8), allocatable :: vaerosol(:) ! interstit+activated aerosol volume conc (cm3/cm3)
+   real(r8), allocatable :: naermod(:,:,:)  ! (1/m3)
+   real(r8), allocatable :: hygro(:,:,:)    ! hygroscopicity of aerosol mode
+   real(r8), allocatable :: vaerosol(:,:,:) ! interstit+activated aerosol volume conc (cm3/cm3)
 
    real(r8) :: source(pver)
 
@@ -446,6 +446,8 @@ subroutine dropmixnuc( &
    real(r8) :: zi2(pver+1), zm2(pver)
    integer  :: idx1000
    logical  :: zmflag
+   logical, save :: printinfo = .true.
+   logical :: flag1, flag2, flag3(pcols, pver)
 
    call t_startf('shan11')
    !-------------------------------------------------------------------------------
@@ -495,9 +497,9 @@ subroutine dropmixnuc( &
       raercol_cw(pver,ncnst_tot,2),   &
       coltend(pcols,ncnst_tot),       &
       coltend_cw(pcols,ncnst_tot),    &
-      naermod(ntot_amode),            &
-      hygro(ntot_amode),              &
-      vaerosol(ntot_amode),           &
+      naermod(ntot_amode,top_lev:pver,ncol),            &
+      hygro(ntot_amode,top_lev:pver,ncol),              &
+      vaerosol(ntot_amode,top_lev:pver,ncol),           &
       fn(ntot_amode),                 &
       fm(ntot_amode),                 &
       fluxn(ntot_amode),              &
@@ -530,7 +532,60 @@ subroutine dropmixnuc( &
    ! overall_main_i_loop
    call t_stopf('shan11')
    call t_startf('shan12')
+
+   call t_startf('shan16')
 !!!!!$acc kernels loop vector private(zs)
+!! shan: get loadaer first
+   phase = 1
+   tau_cld_regenerate = 3600.0_r8 * 3.0_r8
+
+   flag3(1:ncol, top_lev:pver) = .false.
+
+   do i = 1, ncol
+   do k = top_lev, pver
+       cs(i,k)  = pmid(i,k)/(rair*temp(i,k))  
+
+       if (regen_fix) then
+          cldn_tmp = cldn(i,k) !* exp( -dtmicro/tau_cld_regenerate )!HW: there is a bug here; turn off regeneration,01/10/2012
+       else
+          cldn_tmp = cldn(i,k) * exp( -dtmicro/tau_cld_regenerate )
+       end if
+
+       if(regen_fix) then
+          cldo_tmp = cldo(i,k)! HW turned off the regeneration growing 
+       else
+          cldo_tmp = cldn_tmp
+       endif
+
+      cldn_tmp = cldn(i,k)
+      kp1 = min0(k+1, pver)
+ 
+      flag1 = cldn_tmp-cldo_tmp > 0.01_r8
+      flag2 = (cldn(i,k) > 0.01_r8) 
+      flag2 = flag2 .and. (cldn(i,k) - cldn(i,kp1) > 0.01_r8 .or. ((k == pver)  .and. (.not. regen_fix)))
+      if (flag1) flag3(i,k) = .true.
+      if (flag2) flag3(i, kp1) = .true.
+   end do
+   end do
+   
+   do i = 1, ncol
+   do k = top_lev, pver
+      if (flag3(i,k)) then
+         do m = 1, ntot_amode
+            call loadaer( &
+               state, pbuf, i, i, k, &
+               m, cs, phase, na, va, &
+               hy)
+            naermod(m,k,i)  = na(i)
+            vaerosol(m,k,i) = va(i)
+            hygro(m,k,i)    = hy(i)
+         end do
+      end if
+   end do
+   end do
+
+   call t_stopf('shan16')
+
    do i = 1, ncol
 
       do k = top_lev, pver-1
@@ -662,22 +717,21 @@ subroutine dropmixnuc( &
             wdiab = 0
 
             ! load aerosol properties, assuming external mixtures
-
-            phase = 1 ! interstitial
-            do m = 1, ntot_amode
-               call loadaer( &
-                  state, pbuf, i, i, k, &
-                  m, cs, phase, na, va, &
-                  hy)
-               naermod(m)  = na(i)
-               vaerosol(m) = va(i)
-               hygro(m)    = hy(i)
-            end do
+!            phase = 1 ! interstitial
+!            do m = 1, ntot_amode
+!               call loadaer( &
+!                  state, pbuf, i, i, k, &
+!                  m, cs, phase, na, va, &
+!                  hy)
+!               naermod(m,k,i)  = na(i)
+!               vaerosol(m,k,i) = va(i)
+!               hygro(m,k,i)    = hy(i)
+!            end do
 
             call activate_modal( &
                wbar, wmix, wdiab, wmin, wmax,                       &
-               temp(i,k), cs(i,k), naermod, ntot_amode, &
-               vaerosol, hygro, fn, fm, fluxn,                      &
+               temp(i,k), cs(i,k), naermod(:,k,i), ntot_amode, &
+               vaerosol(:,k,i), hygro(:,k,i), fn, fm, fluxn,                      &
                fluxm,flux_fullact(k))
 
             factnum(i,k,:) = fn
@@ -753,22 +807,28 @@ subroutine dropmixnuc( &
                wmin    = wbar + wmix*0.25_r8*sq2pi*log(alogarg)
                phase   = 1   ! interstitial
 
-               do m = 1, ntot_amode
+!               do m = 1, ntot_amode
                   ! rce-comment - use kp1 here as old-cloud activation involves 
                   !   aerosol from layer below
-                  call loadaer( &
-                     state, pbuf, i, i, kp1,  &
-                     m, cs, phase, na, va,   &
-                     hy)
-                  naermod(m)  = na(i)
-                  vaerosol(m) = va(i)
-                  hygro(m)    = hy(i)
-               end do
+!                  call loadaer( &
+!                     state, pbuf, i, i, kp1,  &
+!                     m, cs, phase, na, va,   &
+!                     hy)
+!                  if (iam == 0 .and. printinfo .and. naermod(m,kp1,i)  /= na(i)) then
+!                        print *, "EEE ", i, kp1, m, cs(i, kp1), naermod(m,kp1,i), na(i)
+!                  endif
+!                  if (iam == 0 .and. printinfo .and. vaerosol(m,kp1,i) /= va(i)) then
+!                        print *, "EE1 ", i, kp1, m, cs(i, kp1), vaerosol(m,kp1,i), va(i)
+!                  end if
+!                  if (iam == 0 .and. printinfo .and. hygro(m,kp1,i)    /= hy(i)) then
+!                        print *, "EE2 ", i, kp1, m, cs(i, kp1), hygro(m,kp1,i), hy(i)
+!                  end if
+!               end do
 
                call activate_modal( &
                   wbar, wmix, wdiab, wmin, wmax,                       &
-                  temp(i,k), cs(i,k), naermod, ntot_amode, &
-                  vaerosol, hygro, fn, fm, fluxn,                      &
+                  temp(i,k), cs(i,k), naermod(:,kp1,i), ntot_amode, &
+                  vaerosol(:,kp1,i), hygro(:,kp1,i), fn, fm, fluxn,                      &
                   fluxm, flux_fullact(k))
 
                factnum(i,k,:) = fn
@@ -1094,6 +1154,8 @@ subroutine dropmixnuc( &
    end do  ! overall_main_i_loop
    ! end of main loop over i/longitude ....................................
 !!!!$acc end kernels loop
+
+   printinfo = .false.
 
    call t_stopf('shan12')
 
@@ -1783,6 +1845,8 @@ subroutine ccncalc(state, pbuf, cs, ccn)
 
    phase = 3
    call t_startf('shan15')
+!!!!$acc  parallel loop collapse(2) copyin(cs,pbuf,ncol,state) &
+!!!!$acc& copyout(naerosol,vaerosol,hygro)
    do k=top_lev,pver
       do m=1,ntot_amode
          call loadaer( &
@@ -1791,6 +1855,7 @@ subroutine ccncalc(state, pbuf, cs, ccn)
             hygro(:,m,k))
       end do
    end do
+!!!!$acc end parallel loop
    call t_stopf('shan15')
 
 !$acc  data copy(ccn) &
@@ -1840,7 +1905,6 @@ subroutine loadaer( &
    state, pbuf, istart, istop, k, &
    m, cs, phase, naerosol, &
    vaerosol, hygro)
-!!!!$acc routine
    ! return aerosol number, volume concentrations, and bulk hygroscopicity
 
    ! input arguments
