@@ -262,12 +262,20 @@ SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/pio
 # PIO
 #
 #set search paths for PIO's findNetCDF
+# HOMME machine files set NETCDF_DIR, PNETCDF_DIR which we copy
+# to variables used by PIO.  Newer machine files sould direclty set
+# necessyar PIO variables:
+#
 ADD_DEFINITIONS(-D_NO_MPI_RSEND)
 SET(NetCDF_PATH ${NETCDF_DIR})
 SET(PnetCDF_PATH ${PNETCDF_DIR})
 message("** Configuring PIO with:")
 message("-- NetCDF_PATH = ${NetCDF_PATH}")
 message("-- PnetCDF_PATH = ${PnetCDF_PATH}")
+message("-- NetCDF_Fortran_PATH = ${NetCDF_Fortran_PATH}")
+message("-- NetCDF_C_PATH = ${NetCDF_C_PATH}")
+message("-- PnetCDF_Fortran_PATH = ${PnetCDF_Fortran_PATH}")
+message("-- PnetCDF_C_PATH = ${PnetCDF_C_PATH}")
 # pio needs cime/externals/genf90/genf90.pl
 SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/genf90)
 ADD_SUBDIRECTORY(utils/cime/src/externals/pio1)
