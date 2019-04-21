@@ -7,14 +7,12 @@ u_perturb = 1
 rotate_grid = 0
 ne=256
 qsize = 10
-! tstep=36  360 steps = 2h  (Bechmark reports 2h time)
+! run 4h.   (Bechmark reports 2h time)
 nmax = 360
 !ndays=2
 statefreq=200
 disable_diagnostics = .true.
 !disable_diagnostics = .false.
-restartfreq   = 1
-restartfile   = "./R0001"
 runtype       = 0
 theta_hydrostatic_mode=.false.
 theta_advect_form = 1
