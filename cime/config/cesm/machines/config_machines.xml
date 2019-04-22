@@ -2309,7 +2309,7 @@ This allows using a different mpirun command to launch unit tests
      </environment_variables>
     <environment_variables comp_interface="nuopc" mpilib="impi">
       <!-- <env name="ESMFMKFILE">/work/02503/edwardsj/stampede2/esmf_8.0.0bs27/lib/libg/Linux.intel.64.intelmpi.default/esmf.mk</env> -->
-      <env name="ESMFMKFILE">/home1/06242/tg855414/ESMF-INSTALL/master/lib/libg/Linux.intel.64.intelmpi.default/esmf.mk</env>
+      <env name="ESMFMKFILE">/work/06242/tg855414/stampede2/ESMF-INSTALL/8.0.0bs28/lib/libO/Linux.intel.64.intelmpi.default/esmf.mk</env>
      </environment_variables>
     <environment_variables comp_interface="nuopc">
       <env name="ESMF_RUNTIME_PROFILE">ON</env>
@@ -2421,7 +2421,7 @@ This allows using a different mpirun command to launch unit tests
         <command name="load">netcdf/4.3.0</command>
         <command name="load">pnetcdf</command>
         <command name="use">/scratch4/NCEPDEV/nems/noscrub/emc.nemspara/soft/modulefiles</command>
-        <command name="load">esmf/8.0.0bs27g</command>
+        <command name="load">esmf/8.0.0bs28g</command>
       </modules>
     </module_system>
     <environment_variables comp_interface="nuopc">

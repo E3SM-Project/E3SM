@@ -304,6 +304,7 @@ def _create_runseq(case, coupling_times):
         # Determine if there is a user run sequence file in CASEROOT, use it
         shutil.copy(user_file, rundir)
         shutil.copy(user_file, os.path.join(caseroot,"CaseDocs"))
+        logger.info("NUOPC run sequence: copying custom run sequence from case root")
 
     else:
 
@@ -337,11 +338,14 @@ def _create_runseq(case, coupling_times):
             # for Q (aquaplanet) compsets
             runseq_input = os.path.join(input_dir, 'nuopc_runseq_Q')
 
-        elif ( (comp_atm == 'datm' and comp_ocn == "mom"  and comp_ice == "dice") or 
-               (comp_atm == 'datm' and comp_ocn == "mom"  and comp_ice == "cice") or
+        elif ( (comp_atm == 'datm' and (comp_ocn == "mom" or comp_ocn == 'pop')  and comp_ice == "dice") or 
+               (comp_atm == 'datm' and (comp_ocn == "mom" or comp_ocn == 'pop')  and comp_ice == "cice") or
                (comp_atm == 'datm' and comp_ocn == "docn" and comp_ice == "cice")):
             # for C, G and D compsets
-            runseq_input = os.path.join(input_dir, 'nuopc_runseq_C_G_D')
+            if comp_wav == 'ww':
+                runseq_input = os.path.join(input_dir, 'nuopc_runseq_C_G_D_ww3')
+            else:
+                runseq_input = os.path.join(input_dir, 'nuopc_runseq_C_G_D_swav')
 
         elif (comp_atm == 'datm' and comp_lnd == "clm"):
             # for I compsets
@@ -358,8 +362,13 @@ def _create_runseq(case, coupling_times):
                 runseq_input = os.path.join(input_dir, 'nuopc_runseq_B')
 
         elif (comp_atm == 'fv3gfs' and comp_ocn == "mom" and comp_ice == 'cice'):
-            # for NEMS fully coupled 
-            runseq_input = os.path.join(input_dir, 'nuopc_runseq_NEMS')
+            # for NEMS fully coupled
+            if case.get_value("CONTINUE_RUN"):
+                logger.info("NUOPC run sequence: warm start (concurrent)")
+                runseq_input = os.path.join(input_dir, 'nuopc_runseq_NEMS.warm')
+            else:
+                logger.info("NUOPC run sequence: cold start (sequential)")
+                runseq_input = os.path.join(input_dir, 'nuopc_runseq_NEMS.cold')
 
         else:
             # default

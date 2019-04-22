@@ -10,10 +10,9 @@ module med_phases_prep_rof_mod
   !   this will be done in med_phases_prep_rof_avg
   !-----------------------------------------------------------------------------
 
-  use ESMF                  , only : ESMF_FieldBundle, ESMF_MAXSTR
+  use ESMF                  , only : ESMF_FieldBundle
   use esmFlds               , only : ncomps, complnd, comprof, compname, mapconsf
   use med_constants_mod     , only : R8, CS
-  use med_constants_mod     , only : czero => med_constants_czero
   use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
   use shr_nuopc_methods_mod , only : chkerr => shr_nuopc_methods_chkerr
   use perf_mod              , only : t_startf, t_stopf
@@ -45,9 +44,12 @@ contains
 
   subroutine med_phases_prep_rof_accum_fast(gcomp, rc)
 
+    !------------------------------------
     ! Carry out fast accumulation for the river (rof) component
-    ! Accumulation and averaging is done on the land input to the river component on the land grid
+    ! Accumulation and averaging is done on the land input on the land grid for the fields that will 
+    ! will be sent to the river component
     ! Mapping from the land to the rof grid is then done with the time averaged fields
+    !------------------------------------
 
     use ESMF                  , only : ESMF_GridComp, ESMF_GridCompGet
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
@@ -59,6 +61,7 @@ contains
 
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
+
     integer, intent(out) :: rc
 
     ! local variables
@@ -89,31 +92,34 @@ contains
 
     if (.not. ESMF_FieldBundleIsCreated(is_local%wrap%FBImp(complnd,complnd))) then
        ncnt = 0
+       call ESMF_LogWrite(trim(subname)//": FBImp(complnd,complnd) is not created", &
+            ESMF_LOGMSG_INFO, rc=dbrc)
     else 
        ! The scalar field has been removed from all mediator field bundles - so check if the fieldCount is
        ! 0 and not 1 here
        call ESMF_FieldBundleGet(is_local%wrap%FBImp(complnd,complnd), fieldCount=ncnt, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBimp(complnd), returning", &
+            ESMF_LOGMSG_INFO)
     end if
 
-    if (ncnt == 0) then
-       call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBimp(complnd), returning", &
-            ESMF_LOGMSG_INFO, rc=dbrc)
-    else
+    !---------------------------------------
+    !-- Accumulate lnd input on lnd grid to send to rof
+    !---------------------------------------
 
-       !---------------------------------------
-       ! Accumulate lnd input on lnd grid to send to rof
-       !---------------------------------------
-       call shr_nuopc_methods_FB_accum(is_local%wrap%FBImpAccum(complnd,complnd), &
+    if (ncnt > 0) then
+       call shr_nuopc_methods_FB_accum(&
+            is_local%wrap%FBImpAccum(complnd,complnd), &
             is_local%wrap%FBImp(complnd,complnd), rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        is_local%wrap%FBImpAccumCnt(complnd) = is_local%wrap%FBImpAccumCnt(complnd) + 1
 
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBImpAccum(complnd,complnd), &
-            string=trim(subname)//' FBImpAccum(complnd,complnd) ', rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-
+       if (dbug_flag > 1) then
+          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBImpAccum(complnd,complnd), &
+               string=trim(subname)//' FBImpAccum(complnd,complnd) ', rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+       end if
     end if
 
     if (dbug_flag > 20) then
@@ -127,7 +133,9 @@ contains
 
   subroutine med_phases_prep_rof_avg(gcomp, rc)
 
+    !------------------------------------
     ! Prepare the ROF export Fields from the mediator
+    !------------------------------------
 
     use NUOPC                 , only : NUOPC_IsConnected
     use ESMF                  , only : ESMF_GridComp, ESMF_GridCompGet 
@@ -141,6 +149,7 @@ contains
     use med_merge_mod         , only : med_merge_auto
     use med_map_mod           , only : med_map_FB_Regrid_Norm
     use med_internalstate_mod , only : InternalState, mastertask
+    use med_constants_mod     , only : czero => med_constants_czero
 
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
@@ -152,7 +161,6 @@ contains
     integer                     :: dbrc
     logical                     :: connected
     real(r8), pointer           :: dataptr(:)
-    logical , save              :: first_call = .true.
     character(len=*),parameter  :: subname='(med_phases_prep_rof_mod: med_phases_prep_rof_avg)'
     !---------------------------------------
 
@@ -194,9 +202,11 @@ contains
                                          is_local%wrap%FBImpAccumCnt(complnd), rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBImpAccum(complnd,complnd), &
-            string=trim(subname)//' FBImpAccum(complnd,complnd) after avg ', rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       if (dbug_flag > 1) then
+          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBImpAccum(complnd,complnd), &
+               string=trim(subname)//' FBImpAccum(complnd,complnd) after avg ', rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+       end if
 
        !---------------------------------------
        !--- map to create FBImpAccum(complnd,comprof)
@@ -212,14 +222,17 @@ contains
                is_local%wrap%FBImpAccum(complnd,complnd), &
                is_local%wrap%FBImpAccum(complnd,comprof), &
                is_local%wrap%FBFrac(complnd), &
+               is_local%wrap%FBFrac(comprof), &
                is_local%wrap%FBNormOne(complnd,comprof,:), &
                is_local%wrap%RH(complnd,comprof,:), &
                string=trim(compname(complnd))//'2'//trim(compname(comprof)), rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBImpAccum(complnd,comprof), &
-               string=trim(subname)//' FBImpAccum(complnd,comprof) after avg ', rc=rc)
-          if (chkerr(rc,__LINE__,u_FILE_u)) return
+          if (dbug_flag > 1) then
+             call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBImpAccum(complnd,comprof), &
+                  string=trim(subname)//' FBImpAccum(complnd,comprof) after avg ', rc=rc)
+             if (chkerr(rc,__LINE__,u_FILE_u)) return
+          end if
 
           ! Reset the irrig_flux_field with the map_lnd2rof_irrig calculation below if appropriate
           if ( NUOPC_IsConnected(is_local%wrap%NStateImp(complnd), fieldname=trim(irrig_flux_field))) then
@@ -238,21 +251,24 @@ contains
        !--- auto merges to create FBExp(comprof)
        !---------------------------------------
 
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBFrac(comprof), &
-            string=trim(subname)//' FBFrac(comprof) before merge ', rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       if (dbug_flag > 1) then
+          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBFrac(comprof), &
+               string=trim(subname)//' FBFrac(comprof) before merge ', rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+       end if
 
        call med_merge_auto(trim(compname(comprof)), &
             is_local%wrap%FBExp(comprof), &
             is_local%wrap%FBFrac(comprof), &
             is_local%wrap%FBImpAccum(:,comprof), &
-            fldListTo(comprof), &
-            document=first_call, string='(merge_to_rof)', mastertask=mastertask, rc=rc)
+            fldListTo(comprof), rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(comprof), &
-            string=trim(subname)//' FBexp(comprof) ', rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       if (dbug_flag > 1) then
+          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(comprof), &
+               string=trim(subname)//' FBexp(comprof) ', rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+       end if
 
        !---------------------------------------
        !--- zero accumulator
@@ -271,7 +287,6 @@ contains
        !--- clean up
        !---------------------------------------
 
-       first_call = .false.
     endif
 
     if (dbug_flag > 20) then
@@ -315,7 +330,6 @@ contains
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_clean
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FieldRegrid
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
     use shr_nuopc_scalars_mod , only : flds_scalar_name
     use med_internalstate_mod , only : InternalState, mastertask
     use med_map_mod           , only : med_map_FB_Regrid_norm
@@ -472,9 +486,10 @@ contains
     !     convert to a total irrigation flux on the ROF grid
     ! ------------------------------------------------------------------------
 
-    call med_map_FB_Regrid_Norm((/trim(irrig_normalized_field), trim(irrig_volr0_field)/), &
+    call med_map_FB_Regrid_Norm(&
+         (/trim(irrig_normalized_field), trim(irrig_volr0_field)/), &
          FBlndIrrig, FBrofIrrig, &
-         is_local%wrap%FBFrac(complnd), 'lfrin', &
+         is_local%wrap%FBFrac(complnd), 'lfrac', &
          is_local%wrap%RH(complnd, comprof, mapconsf), &
          string='mapping normalized irrig from lnd to to rof', rc=rc)
 

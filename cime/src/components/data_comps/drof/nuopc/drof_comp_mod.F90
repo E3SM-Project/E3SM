@@ -29,8 +29,7 @@ module drof_comp_mod
   use shr_cal_mod           , only : shr_cal_datetod2string
   use shr_nuopc_scalars_mod , only : flds_scalar_name
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-  use dshr_nuopc_mod        , only : fld_list_type
-  use dshr_nuopc_mod        , only : dshr_fld_add
+  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_export
   use drof_shr_mod          , only : datamode       ! namelist input
   use drof_shr_mod          , only : rest_file      ! namelist input
   use drof_shr_mod          , only : rest_file_strm ! namelist input
@@ -47,6 +46,7 @@ module drof_comp_mod
   public :: drof_comp_advertise
   public :: drof_comp_init
   public :: drof_comp_run
+  public :: drof_comp_export
 
   !--------------------------------------------------------------------------
   ! Private data
@@ -494,5 +494,30 @@ contains
     call t_stopf('DROF_RUN')
 
   end subroutine drof_comp_run
+
+  !===============================================================================
+
+  subroutine drof_comp_export(r2x, exportState, rc)
+
+    ! input/output variables
+    type(mct_aVect)      :: r2x
+    type(ESMF_State)     :: exportState
+    integer, intent(out) :: rc
+
+    ! local variables
+    integer :: k
+    !----------------------------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    k = mct_aVect_indexRA(r2x, 'Forr_rofl')
+    call dshr_export(r2x%rattr(k,:), exportState, 'Forr_rofl', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    k = mct_aVect_indexRA(r2x, 'Forr_rofi')
+    call dshr_export(r2x%rattr(k,:), exportState, 'Forr_rofi', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+  end subroutine drof_comp_export
 
 end module drof_comp_mod

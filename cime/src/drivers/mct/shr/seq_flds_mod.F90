@@ -212,6 +212,11 @@ module seq_flds_mod
   character(CXX) :: seq_flds_r2o_liq_fluxes
   character(CXX) :: seq_flds_r2o_ice_fluxes
 
+  !character(CXX) :: seq_flds_x2z_states
+  !character(CXX) :: seq_flds_z2x_states
+  character(CXX) :: seq_flds_z2x_fluxes
+  character(CXX) :: seq_flds_x2z_fluxes
+
   !----------------------------------------------------------------------------
   ! combined state/flux fields
   !----------------------------------------------------------------------------

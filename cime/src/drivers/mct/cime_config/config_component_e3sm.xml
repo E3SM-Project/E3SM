@@ -496,6 +496,15 @@
     where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
   </entry>
 
+  <entry id="IAC_NCPL">
+    <type>integer</type>
+    <default_value>$ATM_NCPL</default_value>
+    <group>run_coupling</group>
+    <file>env_run.xml</file>
+    <desc>Number of iac coupling intervals per NCPL_BASE_PERIOD.
+      This is used to set the driver namelist iac_cpl_dt, equal to basedt/IAC_NCPL
+      where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
+  </entry>
 
   <!-- Logic for CPL_ALBAV should be reworked to depend on datm forcing rather
        than compset: see https://github.com/ESMCI/cime/issues/120 -->

@@ -38,7 +38,6 @@ contains
     use esmFlds               , only : ncomps, compname, compocn
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
     use med_internalstate_mod , only : InternalState
-    use med_infodata_mod      , only : med_infodata, med_infodata_GetData
     use shr_file_mod          , only : shr_file_getUnit, shr_file_freeUnit
     use med_io_mod            , only : med_io_write, med_io_wopen, med_io_enddef
     use med_io_mod            , only : med_io_close, med_io_date2yyyymmdd
@@ -268,9 +267,11 @@ contains
 
           do n = 1,ncomps
              if (is_local%wrap%comp_present(n)) then
+                nx = is_local%wrap%nx(n)
+                ny = is_local%wrap%ny(n)
+
                 ! Write import field bundles
                 if (ESMF_FieldBundleIsCreated(is_local%wrap%FBimp(n,n),rc=rc)) then
-                   call med_infodata_GetData(med_infodata, ncomp=n, nx=nx, ny=ny)
                    !write(tmpstr,*) subname,' nx,ny = ',trim(compname(n)),nx,ny
                    !call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
                    call med_io_write(restart_file, iam, is_local%wrap%FBimp(n,n), &
@@ -280,7 +281,6 @@ contains
 
                 ! Write fraction field bundles
                 if (ESMF_FieldBundleIsCreated(is_local%wrap%FBfrac(n),rc=rc)) then
-                   call med_infodata_GetData(med_infodata, ncomp=n, nx=nx, ny=ny)
                    !write(tmpstr,*) subname,' nx,ny = ',trim(compname(n)),nx,ny
                    !call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
                    call med_io_write(restart_file, iam, is_local%wrap%FBfrac(n), &
@@ -291,7 +291,6 @@ contains
                 ! Write export accumulators
                 if (ESMF_FieldBundleIsCreated(is_local%wrap%FBExpAccum(n),rc=rc)) then
                    ! TODO: only write this out if actually have done accumulation
-                   call med_infodata_GetData(med_infodata, ncomp=n, nx=nx, ny=ny)
                    !write(tmpstr,*) subname,' nx,ny = ',trim(compname(n)),nx,ny
                    !call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO, rc=dbrc)
                    call med_io_write(restart_file, iam,  is_local%wrap%FBExpAccum(n), &
@@ -303,7 +302,8 @@ contains
 
           !Write ocn albedo field bundle (CESM only)
           if (ESMF_FieldBundleIsCreated(is_local%wrap%FBMed_ocnalb_o,rc=rc)) then
-             call med_infodata_GetData(med_infodata, ncomp=compocn, nx=nx, ny=ny)
+             nx = is_local%wrap%nx(compocn)
+             ny = is_local%wrap%ny(compocn)
              call med_io_write(restart_file, iam, is_local%wrap%FBMed_ocnalb_o, &
                   nx=nx, ny=ny, nt=1, whead=whead, wdata=wdata, pre='MedOcnAlb_o', rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return

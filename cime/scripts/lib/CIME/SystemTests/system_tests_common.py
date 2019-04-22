@@ -263,13 +263,20 @@ class SystemTestsCommon(object):
         comments = copy(self._case, suffix)
         append_testlog(comments)
 
-    def _component_compare_test(self, suffix1, suffix2, success_change=False):
+    def _component_compare_test(self, suffix1, suffix2,
+                                success_change=False,
+                                ignore_fieldlist_diffs=False):
         """
         Return value is not generally checked, but is provided in case a custom
         run case needs indirection based on success.
-        If success_change is True, success requires some files to be different
+        If success_change is True, success requires some files to be different.
+        If ignore_fieldlist_diffs is True, then: If the two cases differ only in their
+            field lists (i.e., all shared fields are bit-for-bit, but one case has some
+            diagnostic fields that are missing from the other case), treat the two cases
+            as identical.
         """
-        success, comments = self._do_compare_test(suffix1, suffix2)
+        success, comments = self._do_compare_test(suffix1, suffix2,
+                                                  ignore_fieldlist_diffs=ignore_fieldlist_diffs)
         if success_change:
             success = not success
 
@@ -279,12 +286,21 @@ class SystemTestsCommon(object):
             self._test_status.set_status("{}_{}_{}".format(COMPARE_PHASE, suffix1, suffix2), status)
         return success
 
-    def _do_compare_test(self, suffix1, suffix2):
+    def _do_compare_test(self, suffix1, suffix2, ignore_fieldlist_diffs=False):
         """
         Wraps the call to compare_test to facilitate replacement in unit
         tests
         """
-        return compare_test(self._case, suffix1, suffix2)
+        return compare_test(self._case, suffix1, suffix2,
+                            ignore_fieldlist_diffs=ignore_fieldlist_diffs)
+
+    def _st_archive_case_test(self):
+        result = self._case.test_env_archive()
+        with self._test_status:
+            if result:
+                self._test_status.set_status(STARCHIVE_PHASE, TEST_PASS_STATUS)
+            else:
+                self._test_status.set_status(STARCHIVE_PHASE, TEST_FAIL_STATUS)
 
     def _st_archive_case_test(self):
         result = self._case.test_env_archive()
