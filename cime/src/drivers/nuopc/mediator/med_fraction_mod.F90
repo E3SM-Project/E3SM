@@ -599,12 +599,15 @@ contains
     ! Diagnostic output
     !---------------------------------------
 
-    do n = 1,ncomps
-       if (ESMF_FieldBundleIsCreated(is_local%wrap%FBfrac(n),rc=rc)) then
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBfrac(n), trim(subname) // trim(compname(n)), rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       endif
-    enddo
+    if (dbug_flag > 1) then
+       do n = 1,ncomps
+          if (ESMF_FieldBundleIsCreated(is_local%wrap%FBfrac(n),rc=rc)) then
+             call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBfrac(n), &
+                  trim(subname) // trim(compname(n)), rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          end if
+       end do
+    end if
 
     if (dbug_flag > 20) then
        call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -633,6 +636,8 @@ contains
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFldPtr
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FieldRegrid
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
+    use shr_nuopc_scalars_mod , only : flds_scalar_name
     use perf_mod              , only : t_startf, t_stopf
 
     ! input/output variables
@@ -666,8 +671,15 @@ contains
     ! Update FBFrac(compice), FBFrac(compocn) and FBFrac(compatm) field bundles
     !---------------------------------------
 
-    if (is_local%wrap%med_coupling_active(compice,compocn)) then
+    if (is_local%wrap%comp_present(compice) .and. is_local%wrap%comp_present(compocn)) then
        if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compice,compocn,mapfcopy), rc=rc)) then
+          if (.not. ESMF_FieldBundleIsCreated(is_local%wrap%FBImp(compice,compocn))) then
+             call shr_nuopc_methods_FB_init(is_local%wrap%FBImp(compice,compocn), flds_scalar_name, &
+                  STgeom=is_local%wrap%NStateImp(compocn), &
+                  STflds=is_local%wrap%NStateImp(compice), &
+                  name='FBImp'//trim(compname(compice))//'_'//trim(compname(compocn)), rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          end if
           call med_map_Fractions_init( gcomp, compice, compocn, &
                FBSrc=is_local%wrap%FBImp(compice,compice), &
                FBDst=is_local%wrap%FBImp(compice,compocn), &
@@ -675,6 +687,13 @@ contains
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
        if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compocn,compice,mapfcopy), rc=rc)) then
+          if (.not. ESMF_FieldBundleIsCreated(is_local%wrap%FBImp(compocn,compice))) then
+             call shr_nuopc_methods_FB_init(is_local%wrap%FBImp(compocn,compice), flds_scalar_name, &
+                  STgeom=is_local%wrap%NStateImp(compice), &
+                  STflds=is_local%wrap%NStateImp(compocn), &
+                  name='FBImp'//trim(compname(compocn))//'_'//trim(compname(compice)), rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          end if
           call med_map_Fractions_init( gcomp, compocn, compice, &
                FBSrc=is_local%wrap%FBImp(compocn,compocn), &
                FBDst=is_local%wrap%FBImp(compocn,compice), &
@@ -718,19 +737,15 @@ contains
 
        ! The following is just a redistribution from FBFrac(compice)
 
-       ! Map 'ifrac' from FBfrac(compice) to FBfrac(compocn)
        if (is_local%wrap%comp_present(compocn)) then
-          if (is_local%wrap%med_coupling_active(compice,compocn)) then
-             call shr_nuopc_methods_FB_FieldRegrid(&
-                  is_local%wrap%FBfrac(compice), 'ifrac', &
-                  is_local%wrap%FBfrac(compocn), 'ifrac', &
-                  is_local%wrap%RH(compice,compocn,mapfcopy), rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          end if
-       end if
+          ! Map 'ifrac' from FBfrac(compice) to FBfrac(compocn)
+          call shr_nuopc_methods_FB_FieldRegrid(&
+               is_local%wrap%FBfrac(compice), 'ifrac', &
+               is_local%wrap%FBfrac(compocn), 'ifrac', &
+               is_local%wrap%RH(compice,compocn,mapfcopy), rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-       ! Map 'ofrac' from FBfrac(compice) to FBfrac(comp)
-       if (is_local%wrap%med_coupling_active(compice,compocn)) then
+          ! Map 'ofrac' from FBfrac(compice) to FBfrac(compocn)
           call shr_nuopc_methods_FB_FieldRegrid(&
                is_local%wrap%FBfrac(compice), 'ofrac', &
                is_local%wrap%FBfrac(compocn), 'ofrac', &
@@ -822,12 +837,15 @@ contains
     ! Diagnostic output
     !---------------------------------------
 
-    do n = 1,ncomps
-       if (ESMF_FieldBundleIsCreated(is_local%wrap%FBfrac(n),rc=rc)) then
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBfrac(n), trim(subname) // trim(compname(n))//' frac', rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       endif
-    enddo
+    if (dbug_flag > 1) then
+       do n = 1,ncomps
+          if (ESMF_FieldBundleIsCreated(is_local%wrap%FBfrac(n),rc=rc)) then
+             call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBfrac(n), &
+                  trim(subname) // trim(compname(n))//' frac', rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          end if
+       enddo
+    end if
 
     if (dbug_flag > 20) then
        call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
