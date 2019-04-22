@@ -700,6 +700,7 @@ flags should be captured within MPAS CMake files.
 </compiler>
 
 <compiler MACH="anvil" COMPILER="gnu">
+  <MOAB_PATH>/home/sarich/software/moab-gnu-mvapich</MOAB_PATH>
   <CPPDEFS>
     <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY  </append>
   </CPPDEFS>
@@ -719,6 +720,7 @@ flags should be captured within MPAS CMake files.
 </compiler>
 
 <compiler MACH="anvil" COMPILER="intel">
+  <MOAB_PATH>/home/sarich/software/anvil/moab-intel-18-mvapich</MOAB_PATH>
   <CFLAGS>
     <append compile_threaded="TRUE"> -static-intel</append>
     <append compile_threaded="TRUE" DEBUG="TRUE">-heap-arrays</append>
@@ -819,6 +821,7 @@ flags should be captured within MPAS CMake files.
   <SFC> ifort </SFC>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
+
 
 <compiler MACH="bebop" COMPILER="intel">
   <ALBANY_PATH>/soft/climate/AlbanyTrilinos_06262017/Albany/buildintel/install</ALBANY_PATH>

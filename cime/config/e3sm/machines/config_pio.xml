@@ -60,6 +60,7 @@
       <value mach="badger">netcdf</value>
       <value mpilib="mpi-serial">netcdf</value>
       <value mach="bebop" mpilib="impi" compset=".*CAM5.+MPAS.*">netcdf</value>
+      <value mach="anvil">netcdf</value>
     </values>
   </entry>
 
