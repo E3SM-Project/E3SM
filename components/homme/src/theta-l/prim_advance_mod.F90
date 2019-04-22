@@ -266,9 +266,9 @@ contains
       ahat5 = 1d0
 
       ! IMEX-KGO254 most stable coefficients
-      dhat2 = .1d0
-      dhat3 = .1d0
-      dhat4 = .4175d0
+      dhat2 = 1d0
+      dhat3 = 1d0
+      dhat4 = 2d0
       ahat4 = 1d0/2d0-dhat4
       dhat1= (ahat4*ahat5 - ahat5*dhat3 - ahat5*dhat2 + dhat3*dhat2+ dhat3*dhat4 + dhat2*dhat4)/&
         (ahat5-dhat3-dhat2-dhat4)
