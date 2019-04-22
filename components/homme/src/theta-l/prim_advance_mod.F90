@@ -198,14 +198,14 @@ contains
        ! u5 = u0 +  dt/4 RHS(u0)) + 3dt/4 RHS(u4)
 !=========================================================================================
     elseif (tstep_type == 6) then  ! IMEX-KG243
+ 
+      a1 = 1d0/4d0
+      a2 = 1d0/3d0
+      a3 = 1d0/2d0
+      a4 = 1d0
 
-      a1 = 1./4.
-      a2 = 1./3.
-      a3 = 1./2.
-      a4 = 1.0
-
-      ahat4 = 1.
-      ahat1 = 0.
+      ahat4 = 1d0
+      ahat1 = 0d0
       max_itercnt_perstep = 0
       max_itererr_perstep = 0.0  
       ! IMEX-KGNO243
@@ -266,9 +266,9 @@ contains
       ahat5 = 1d0
 
       ! IMEX-KGO254 most stable coefficients
-      dhat2 = 1d0
-      dhat3 = 1d0
-      dhat4 = 2d0
+      dhat2 = .1d0
+      dhat3 = .1d0
+      dhat4 = .4175d0
       ahat4 = 1d0/2d0-dhat4
       dhat1= (ahat4*ahat5 - ahat5*dhat3 - ahat5*dhat2 + dhat3*dhat2+ dhat3*dhat4 + dhat2*dhat4)/&
         (ahat5-dhat3-dhat2-dhat4)
@@ -417,6 +417,42 @@ contains
         deriv,nets,nete,compute_diagnostics,eta_ave_w,1d0,ahat5/a5,1d0)
 
       avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
+!================================================================================                                      
+    elseif (tstep_type == 10) then ! IMKG232b
+      a1 = 1d0/2d0
+      a2 = 1d0/2d0
+      a3 = 1d0
+      ahat3 = 1d0
+      dhat2 = .5d0*(2d0+sqrt(2d0))
+      dhat1 = dhat2
+      ahat2 = -(1d0+sqrt(2d0))/2d0
+
+      call compute_andor_apply_rhs(np1,n0,n0,qn0,dt*a1,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)  
+
+      maxiter=10
+      itertol=1e-12
+      call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
+      max_itererr_perstep = max(itertol,max_itererr_perstep)
+
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a2,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat2/a2,1d0)
+
+      maxiter=10
+      itertol=1e-12
+      call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol) 
+      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
+      max_itererr_perstep = max(itertol,max_itererr_perstep)
+
+
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a3,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat3/a3,1d0)
+
+      avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
+
 !===================================================================================
     else
        call abortmp('ERROR: bad choice of tstep_type')
@@ -803,6 +839,42 @@ contains
         deriv,nets,nete,compute_diagnostics,eta_ave_w,1d0,ahat5/a5,1d0)
 
       avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
+! ==================================================================================
+    elseif (tstep_type == 10) then ! IMKG232b
+      a1 = 1d0/2d0
+      a2 = 1d0/2d0
+      a3 = 1d0
+      ahat3 = 1d0
+      dhat2 = .5d0*(2d0+sqrt(2d0))
+      dhat1 = dhat2
+      ahat2 = -(1d0+sqrt(2d0))/2d0
+
+      call compute_andor_apply_rhs(np1,n0,n0,qn0,dt*a1,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)  
+
+      maxiter=10
+      itertol=1e-12
+      call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
+      max_itererr_perstep = max(itertol,max_itererr_perstep)
+
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a2,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat2/a2,1d0)
+
+      maxiter=10
+      itertol=1e-12
+      call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol) 
+      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
+      max_itererr_perstep = max(itertol,max_itererr_perstep)
+
+
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a3,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat3/a3,1d0)
+
+      avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
+
 !=========================================================================================
     else if (tstep_type==20) then ! ARKode RK2
       call set_Butcher_tables(arkode_parameters, arkode_tables%RK2)
