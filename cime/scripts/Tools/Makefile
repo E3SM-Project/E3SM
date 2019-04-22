@@ -91,7 +91,9 @@ include $(CASEROOT)/Macros.make
 
 # Unless DEBUG mode is enabled, use NDEBUG to turn off assert statements.
 ifeq ($(strip $(DEBUG)),TRUE)
-   CPPDEFS += -DDEBUG
+  ifeq ($(CIME_MODEL),cesm)
+    CPPDEFS += -DDEBUG
+  endif
 else
    CPPDEFS += -DNDEBUG
 endif
