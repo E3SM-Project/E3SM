@@ -184,6 +184,16 @@ ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map
 ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.ICRUCLM45SP.2000-01-01.ne240np4_tx0.1v2.162cd32_simyr2000_c170910.nc
 </finidat>
 
+<!-- MOSART grid r05 resolution -->
+
+<finidat hgrid="r05"   maxpft="17"  mask="oEC60to30v3" use_cn=".false." ic_ymd="18500101" more_vertlayers=".false."
+ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." >
+</finidat>
+
+<finidat hgrid="r05"   maxpft="17"  mask="oEC60to30v3" use_cn=".false." ic_ymd="20000101" more_vertlayers=".false."
+ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >
+</finidat>
+
 <!-- f10 resolution -->
 
 <finidat hgrid="10x15"    maxpft="25"  mask="USGS" use_cn=".true." use_cndv=".false." ic_ymd="00010101" more_vertlayers=".false." use_nitrif_denitrif=".true." use_vertsoilc=".true."
@@ -236,6 +246,8 @@ lnd/clm2/surfdata_map/surfdata_ne4np4_simyr2000_c160614.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_ne4pg2_simyr2000_c190620.nc</fsurdat>
 <fsurdat hgrid="ne240np4"      sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne240np4_simyr2000_c170821.nc</fsurdat>
+<fsurdat hgrid="r05"         sim_year="2000" >
+lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr2000_c190418.nc</fsurdat>
 
 <!-- Crop surface datasets -->
 <fsurdat hgrid="1.9x2.5"   sim_year="2000" use_crop=".true." >
@@ -295,6 +307,8 @@ lnd/clm2/surfdata_map/surfdata_ne11np4_simyr1850_c160614.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_ne4np4_simyr1850_c160614.nc</fsurdat>
 <fsurdat hgrid="ne240np4"      sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne240np4_simyr1850_c170821.nc</fsurdat>
+<fsurdat hgrid="r05"          sim_year="1850" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c190418.nc</fsurdat>
 
 <fsurdat hgrid="ne0np4_conus_x4v1_lowcon" sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr1850_c160503.nc</fsurdat>
