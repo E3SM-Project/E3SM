@@ -915,6 +915,15 @@ using a fortran linker.
   </SLIBS>
 </compiler>
 
+<compiler MACH="izumi" COMPILER="nag">
+  <LDFLAGS>
+    <append> -lpthread</append>
+  </LDFLAGS>
+  <SLIBS>
+    <append> -L$(COMPILER_PATH)/lib/NAG_Fortran -lf62rts </append>
+  </SLIBS>
+</compiler>
+
 <compiler MACH="hobart" COMPILER="pgi">
   <CFLAGS>
     <append DEBUG="FALSE"> -O0 </append>
