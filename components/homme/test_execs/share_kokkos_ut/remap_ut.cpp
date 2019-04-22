@@ -446,3 +446,51 @@ TEST_CASE("remap_interface", "vertical remap") {
     remap.run_remap(np1, n0_qdp, dt);
   }
 }
+
+TEST_CASE("binary_search","binary_search")
+{
+  constexpr int length = 100;
+  constexpr int num_tests = 5;
+
+  std::random_device rd;
+  std::mt19937_64 engine(rd());
+  std::uniform_real_distribution<Real> pdf(0.01, 10);
+
+  // Testing the binary search utility
+  HostViewManaged<Real[length+1]> pin("");
+  HostViewManaged<Real[length+2]> pio("");
+
+  for (int itest=0; itest<num_tests; ++itest) {
+    // Generate random pin, but sorted
+    genRandArray(pin,engine,pdf);
+    std::sort(pin.data(),pin.data()+pin.size());
+    pin(0) = 0;
+
+    // Generate random pio, but sorted
+    genRandArray(pio,engine,pdf);
+    std::sort(pio.data(),pio.data()+pio.size());
+    pio(0) = 0;
+
+    // Make pio(length+1)>pio(length), and
+    // make pio(length)=pin(length)
+    if (pio(length)>=pin(length)) {
+      pin(length) = pio(length);
+    } else {
+      pio(length) = pin(length);
+    }
+    pio(length+1) = pio(length)+1.0;
+
+    // For each k, run binary search and check that the result maches the
+    // post-condition.
+    for (int k=0; k<length; ++k) {
+      int kk = k;
+      binary_search(pio,pin(k+1),kk);
+      if (kk==(length+1)) {
+        kk = length;
+      }
+      REQUIRE ( (pio(kk) <= pin(k+1) &&
+                pio(kk+1) >= pin(k+1) &&
+                !(pio(kk+1) == pin(k+1) && k!=length)) );
+    }
+  }
+}

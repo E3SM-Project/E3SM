@@ -677,32 +677,6 @@ template <typename boundaries> struct PpmVertRemap : public VertRemapAlg {
            sq_coeff * (x2 * x2 * x2 - x1 * x1 * x1) / 3.0;
   }
 
-  KOKKOS_INLINE_FUNCTION
-  void binary_search (ExecViewUnmanaged<const Real[_ppm_consts::PIO_PHYSICAL_LEV]> pt_pio,
-                      const Real pivot, int& k) const {
-    int lo,hi;
-
-    // Initialize lower and upper bounds
-    if (pt_pio(k)>pivot) {
-      lo = 0;
-      hi = k;
-    } else {
-      lo = k;
-      hi = _ppm_consts::PIO_PHYSICAL_LEV-1;
-    }
-
-    // Binary search until hi=lo
-    while (hi>lo+1) {
-      k = (lo+hi)/2;
-      if (pt_pio(k)>pivot) {
-        hi = k;
-      } else {
-        lo = k;
-      }
-    }
-    k = lo;
-  }
-
   ExecViewManaged<Real * [NP][NP][_ppm_consts::DPO_PHYSICAL_LEV]> m_dpo;
   // pio corresponds to the points in each layer of the source layer thickness
   ExecViewManaged<Real * [NP][NP][_ppm_consts::PIO_PHYSICAL_LEV]> m_pio;
