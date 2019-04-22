@@ -333,7 +333,7 @@ template <typename boundaries> struct PpmVertRemap : public VertRemapAlg {
   template <typename ExecSpaceType = ExecSpace>
   KOKKOS_INLINE_FUNCTION
   typename std::enable_if<Homme::OnGpu<ExecSpaceType>::value, void>::type
-  compute_remapa(KernelVariables &kv,
+  compute_remap(KernelVariables &kv,
       ExecViewUnmanaged<const int[NUM_PHYSICAL_LEV]> k_id,
       ExecViewUnmanaged<const Real[NUM_PHYSICAL_LEV]> integral_bounds,
       ExecViewUnmanaged<const Real[3][NUM_PHYSICAL_LEV]> parabola_coeffs,
