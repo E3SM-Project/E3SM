@@ -272,6 +272,8 @@ contains
     namelist /clm_inparm/ &
          do_budgets, budget_inst, budget_daily, budget_month, &
          budget_ann, budget_ltann, budget_ltend
+	
+	namelist /clm_inparm/use_downscaling_to_topounit
 
     ! ----------------------------------------------------------------------
     ! Default values
@@ -833,6 +835,7 @@ contains
     write(iulog,*) 'input data files:'
     write(iulog,*) '   PFT physiology and parameters file = ',trim(paramfile)
     write(iulog,*) '   Soil order dependent parameters file = ',trim(fsoilordercon)
+	write(iulog,*) '    use_downscaling_to_topounit = ', use_downscaling_to_topounit
     if (fsurdat == ' ') then
        write(iulog,*) '   fsurdat, surface dataset not set'
     else

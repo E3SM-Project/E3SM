@@ -51,6 +51,7 @@ module GridcellType
      real(r8) , pointer :: prev_dayl   (:) => null() ! daylength from previous timestep (seconds)
      real(r8) , pointer :: elevation   (:) => null() ! mean soil surface elevation, above mean sea level (m)
      real(r8) , pointer :: froudenum   (:) => null() ! Froude number (dimensionless)
+	 real(r8) , pointer :: MaxElevation   (:) => null() ! Maximum soil surface elevation, above mean sea level (meter) needed for precipitation downscaling
 
      ! indices into landunit-level arrays for landunits in this grid cell (ispval implies
      ! this landunit doesn't exist on this grid cell) [1:max_lunit, begg:endg]
@@ -106,6 +107,7 @@ contains
     
     allocate(this%elevation (begg:endg)) ; this%elevation (:) = nan
     allocate(this%froudenum (begg:endg)) ; this%froudenum (:) = nan 
+	allocate(this%MaxElevation (begg:endg)) ; this%MaxElevation (:) = nan
 
     allocate(this%landunit_indices(1:max_lunit, begg:endg)); this%landunit_indices(:,:) = ispval
 
@@ -141,6 +143,7 @@ contains
     deallocate(this%prev_dayl        )
     deallocate(this%elevation        )
     deallocate(this%froudenum        )
+	deallocate(this%MaxElevation     )
     deallocate(this%landunit_indices )
     
   end subroutine grc_pp_clean

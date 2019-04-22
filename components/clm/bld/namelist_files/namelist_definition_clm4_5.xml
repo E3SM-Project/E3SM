@@ -1734,6 +1734,15 @@ Runtime flag to turn on/off variable soil thickness.
 </entry>
 
 <!-- ========================================================================================  -->
+<!-- Namelist options for downscaling from grid to topounit                                              -->
+<!-- ========================================================================================  -->
+
+<entry id="use_downscaling_to_topounit" type="logical" category="default_settings"
+        group="clm_inparm" valid_values="">
+Runtime flag to turn on/off downscaling from grid to topounit.
+</entry
+
+<!-- ========================================================================================  -->
 <!-- Namelist options for performing water and energy budgets                                  -->
 <!-- ========================================================================================  -->
 <entry id="do_budgets"
