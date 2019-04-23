@@ -19,7 +19,7 @@
     ICE  = [MPASCICE, CICE, DICE, SICE]
     OCN  = [MPASO, DOCN, SOCN]
     ROF  = [MOSART, SROF]
-    GLC  = [MALI, SGLC]
+    GLC  = [MALI, BISICLES, SGLC]
     WAV  = [DWAV, XWAV, SWAV]
     ESP  = [SESP]
     BGC  = optional BGC scenario
