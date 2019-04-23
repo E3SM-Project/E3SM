@@ -213,10 +213,10 @@ module seq_flds_mod
   character(CXX) :: seq_flds_r2o_liq_fluxes
   character(CXX) :: seq_flds_r2o_ice_fluxes
 
-  !character(CXX) :: seq_flds_x2z_states
-  !character(CXX) :: seq_flds_z2x_states
-  character(CXX) :: seq_flds_z2x_fluxes
-  character(CXX) :: seq_flds_x2z_fluxes
+  character(CXX) :: seq_flds_x2z_states
+  character(CXX) :: seq_flds_z2x_states
+  !character(CXX) :: seq_flds_z2x_fluxes
+  !character(CXX) :: seq_flds_x2z_fluxes
 
   !----------------------------------------------------------------------------
   ! combined state/flux fields
@@ -241,6 +241,9 @@ module seq_flds_mod
   character(CXX) :: seq_flds_x2g_fields
   character(CXX) :: seq_flds_w2x_fields
   character(CXX) :: seq_flds_x2w_fields
+  character(CXX) :: seq_flds_z2x_fields
+  character(CXX) :: seq_flds_x2z_fields
+
 
   !----------------------------------------------------------------------------
   ! component names
@@ -253,6 +256,7 @@ module seq_flds_mod
   character(32) :: glcname='glc'
   character(32) :: wavname='wav'
   character(32) :: rofname='rof'
+  character(32) :: iacname='iac'
 
   ! namelist variables
   logical :: nan_check_component_fields
@@ -334,6 +338,11 @@ contains
     character(CXX) :: x2w_fluxes = ''
     character(CXX) :: r2o_liq_fluxes = ''
     character(CXX) :: r2o_ice_fluxes = ''
+
+    character(CXX) :: z2x_states = ''
+    character(CXX) :: z2x_fluxes = ''
+    character(CXX) :: x2z_states = ''
+    character(CXX) :: x2z_fluxes = ''
 
     character(CXX) :: stringtmp  = ''
 
@@ -505,6 +514,12 @@ contains
           case('x2g')
              if (is_state) call seq_flds_add(x2g_states,trim(fldname))
              if (is_flux ) call seq_flds_add(x2g_fluxes,trim(fldname))
+          case('z2x')
+             if (is_state) call seq_flds_add(z2x_states,trim(fldname))
+             if (is_flux ) call seq_flds_add(z2x_fluxes,trim(fldname))
+          case('x2z')
+             if (is_state) call seq_flds_add(x2z_states,trim(fldname))
+             if (is_flux ) call seq_flds_add(x2z_fluxes,trim(fldname))
           case default
              write(logunit,*) subname//'ERROR: ',trim(cplflds_custom(n)),&
                   ' not a recognized value'
@@ -2135,106 +2150,11 @@ contains
     attname  = 'Sl_pfts1d_wtgcell'
     call metadata_set(attname, longname, stdname, units)
 
-    ! lnd->iac inputs that are not used, apparently.  I'm keeping
-    ! them here for reference.
-    !call seq_flds_add(l2x_states,'Sl_cwdc')
-    !call seq_flds_add(x2z_states,'Sl_cwdc')
-    !longname = 'Coarse woody debris C'
-    !stdname  = 'lnd_coarse_woody_debris_c'
-    !units    = 'gC/m^2'
-    !attname  = 'Sl_cwdc'
-    !call metadata_set(attname, longname, stdname, units)
-
-    !call seq_flds_add(l2x_states,'Sl_totlitc')
-    !call seq_flds_add(x2z_states,'Sl_totlitc')
-    !longname = 'Total litter carbon'
-    !stdname  = 'lnd_total_litter_carbon'
-    !units    = 'gC/m^2'
-    !attname  = 'Sl_totlitc'
-    !call metadata_set(attname, longname, stdname, units)
-
-    !call seq_flds_add(l2x_states,'Sl_totsomc')
-    !call seq_flds_add(x2z_states,'Sl_totsomc')
-    !longname = 'Total soil organic matter carbon'
-    !stdname  = 'lnd_total_soil_organic_matter_carbon'
-    !units    = 'gC/m^2'
-    !attname  = 'Sl_totsomc'
-    !call metadata_set(attname, longname, stdname, units)
-
-    !call seq_flds_add(l2x_states,'Sl_deadcrootc')
-    !call seq_flds_add(x2z_states,'Sl_deadcrootc')
-    !longname = 'Dead coarse root C'
-    !stdname  = 'lnd_dead_coarse_root_c'
-    !units    = 'gC/m^2'
-    !attname  = 'Sl_deadcrootc'
-    !call metadata_set(attname, longname, stdname, units)
-
-    !call seq_flds_add(l2x_states,'Sl_frootc')
-    !call seq_flds_add(x2z_states,'Sl_frootc')
-    !longname = 'Fine root C'
-    !stdname  = 'lnd_fine_root_c'
-    !units    = 'gC/m^2'
-    !attname  = 'Sl_frootc'
-    !call metadata_set(attname, longname, stdname, units)
-
-    !call seq_flds_add(l2x_states,'Sl_livecrootc')
-    !call seq_flds_add(x2z_states,'Sl_livecrootc')
-    !longname = 'Live coarse root C'
-    !stdname  = 'lnd_live_coarse_root_c'
-    !units    = 'gC/m^2'
-    !attname  = 'Sl_livecrootc'
-    !call metadata_set(attname, longname, stdname, units)
-
-    !call seq_flds_add(l2x_states,'Sl_totvegc')
-    !call seq_flds_add(x2z_states,'Sl_totvegc')
-    !longname = 'Total vegetation carbon, excluding cpool'
-    !stdname  = 'lnd_total_vegetation_carbon'
-    !units    = 'gC/m^2'
-    !attname  = 'Sl_totvegc'
-    !call metadata_set(attname, longname, stdname, units)
-
     ! iac->lnd 
 
-    call seq_flds_add(z2x_states,'Sz_landfrac')
-    call seq_flds_add(x2l_states,'Sz_landfrac')
-    longname = 'Land fraction from pft dataset'
-    stdname  = 'iac_landfac'
-    units    = 'unitless'
-    attname  = 'Sz_landfrac'
-    call metadata_set(attname, longname, stdname, units)
-
-    call seq_flds_add(z2x_states,'Sz_pct_wetland')
-    call seq_flds_add(x2l_states,'Sz_pct_wetland')
-    longname = 'Percent wetland'
-    stdname  = 'iac_pct_wetland'
-    units    = 'percent'
-    attname  = 'Sz_pct_wetland'
-    call metadata_set(attname, longname, stdname, units)
-
-    call seq_flds_add(z2x_states,'Sz_pct_lake')
-    call seq_flds_add(x2l_states,'Sz_pct_lake')
-    longname = 'Percent lake'
-    stdname  = 'iac_pct_lake'
-    units    = 'percent'
-    attname  = 'Sz_pct_lake'
-    call metadata_set(attname, longname, stdname, units)
-    
-    call seq_flds_add(z2x_states,'Sz_pct_glacier')
-    call seq_flds_add(x2l_states,'Sz_pct_glacier')
-    longname = 'Percent glacier'
-    stdname  = 'iac_pct_glacier'
-    units    = 'percent'
-    attname  = 'Sz_pct_glacier'
-    call metadata_set(attname, longname, stdname, units)
-
-    call seq_flds_add(z2x_states,'Sz_pct_urban')
-    call seq_flds_add(x2l_states,'Sz_pct_urban')
-    longname = 'Percent urban'
-    stdname  = 'iac_pct_urban'
-    units    = 'percent'
-    attname  = 'Sz_pct_urban'
-    call metadata_set(attname, longname, stdname, units)
-
+    ! This is currently the only thing we send back from gcam, but I
+    ! wonder if landuse and landfrac should go as well - just to
+    ! verify that we are all using the same values.
     call seq_flds_add(z2x_states,'Sz_pct_pft')
     call seq_flds_add(x2l_states,'Sz_pct_pft')
     longname = 'Percent pft of vegetated land unit'
