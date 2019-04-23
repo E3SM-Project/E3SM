@@ -37,7 +37,7 @@
 		<option name="config_cvmix_WSwSBF_interior_salinity_restoring_rate">1.0e-6</option>
 		<option name="config_cvmix_WSwSBF_temperature_gradient">0.01</option>
 		<option name="config_cvmix_WSwSBF_salinity_gradient">0.0</option>
-		<option name="config_cvmix_WSwSBF_vertical_grid">'100layerACMEv1'</option>
+		<option name="config_cvmix_WSwSBF_vertical_grid">'100layerE3SMv1'</option>
 		<option name="config_cvmix_WSwSBF_bottom_depth">400.0</option>
 		<option name="config_cvmix_WSwSBF_max_windstress">0.1</option>
 		<option name="config_cvmix_WSwSBF_coriolis_parameter">1E-4</option>
