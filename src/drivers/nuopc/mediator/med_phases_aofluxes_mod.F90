@@ -221,6 +221,8 @@ contains
     character(*),parameter   :: subName =   '(med_aofluxes_init) '
     !-----------------------------------------------------------------------
 
+    call t_startf('MED:'//subname)
+
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
@@ -410,12 +412,12 @@ contains
 
   subroutine med_aofluxes_run(gcomp, aoflux, rc)
 
-    use ESMF          , only : ESMF_GridComp, ESMF_Clock, ESMF_Time, ESMF_TimeInterval
-    use ESMF          , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_TimeIntervalGet
-    use ESMF          , only : ESMF_LogWrite, ESMF_LogMsg_Info
-    use NUOPC         , only : NUOPC_CompAttributeGet
-    use shr_flux_mod  , only : shr_flux_atmocn, shr_flux_adjust_constants
-    use perf_mod      , only : t_startf, t_stopf
+    use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time, ESMF_TimeInterval
+    use ESMF                  , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_TimeIntervalGet
+    use ESMF                  , only : ESMF_LogWrite, ESMF_LogMsg_Info
+    use NUOPC                 , only : NUOPC_CompAttributeGet
+    use med_calc_aofluxes_mod , only : flux_atmocn, flux_adjust_constants
+    use perf_mod              , only : t_startf, t_stopf
 
     !-----------------------------------------------------------------------
     ! Determine atm/ocn fluxes eother on atm or on ocean grid
@@ -464,7 +466,7 @@ contains
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        read(cvalue,*) flux_convergence
 
-       call shr_flux_adjust_constants(&
+       call flux_adjust_constants(&
             flux_convergence_tolerance=flux_convergence, &
             flux_convergence_max_iteration=flux_max_iteration, &
             coldair_outbreak_mod=coldair_outbreak_mod)
@@ -535,7 +537,8 @@ contains
          aoflux%evap, aoflux%evap_16O, aoflux%evap_HDO, aoflux%evap_18O, &
          aoflux%taux, aoflux%tauy, aoflux%tref, aoflux%qref, &
          aoflux%duu10n, ustar_sv=aoflux%ustar, re_sv=aoflux%re, ssq_sv=aoflux%ssq, &
-         missval = 0.0_r8)
+         missval = 0.0_r8, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     do n = 1,lsize
        if (aoflux%mask(n) /= 0) then

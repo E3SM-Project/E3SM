@@ -221,7 +221,7 @@
       <value compset="_CAM\d+%WCXI">288</value>
       <value compset="_DATM%COPYALL_NPS">72</value>
       <value compset="_DATM.*_CLM">48</value>
-      <value compset="_DATM.*_DICE.*_POP2">4</value>
+      <value compset="_DATM.*_DICE.*_POP2">24</value>
       <value compset="_DATM.*_SLND.*_CICE.*_POP2">24</value>
       <value compset="_DATM.*_CICE.*_DOCN">24</value>
       <value compset="_DATM.*_DOCN%US20">24</value>

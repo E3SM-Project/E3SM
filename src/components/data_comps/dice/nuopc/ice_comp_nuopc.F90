@@ -347,6 +347,10 @@ contains
     Emesh = ESMF_MeshCreate(filename=trim(cvalue), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
+    if (my_task == master_task) then
+       write(logunit,*) " obtaining dice mesh from " // trim(cvalue)
+    end if
+
     !--------------------------------
     ! Initialize model
     !--------------------------------

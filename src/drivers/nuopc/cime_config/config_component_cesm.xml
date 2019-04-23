@@ -203,34 +203,34 @@
       <value compset="_DATM.*_CLM">48</value>
       <!-- NOTE: if the following is changed from 24 -> 4 - then a new run sequence is needed since the -->
       <!-- ocn coupling interval for this case is 24 - but the atm is longer -->
-      <value compset="_DATM.*_DICE.*_POP2">24</value>
-      <value compset="_DATM.*_SLND.*_CICE.*_POP2">24</value>
-      <value compset="_DATM.*_CICE.*_DOCN">24</value>
-      <value compset="_DATM.*_DOCN%US20">24</value>
-      <value compset="_DATM%CPLHIST.+POP\d">48</value>
-      <value compset="_MPAS">1</value>
-      <value compset=".+" grid="a%0.23x0.31">96</value>
-      <value compset=".+" grid="a%ne60np4">96</value>
-      <value compset=".+" grid="a%ne60np4.pg3">96</value>
-      <value compset=".+" grid="a%ne60np4.pg4">96</value>
-      <value compset=".+" grid="a%ne120np4">192</value>
-      <value compset=".+" grid="a%ne120np4.pg2">192</value>
-      <value compset=".+" grid="a%ne120np4.pg3">192</value>
-      <value compset=".+" grid="a%ne120np4.pg4">192</value>
-      <value compset=".+" grid="a%ne240np4">384</value>
-      <value compset=".+" grid="a%ne240np4.pg2">384</value>
-      <value compset=".+" grid="a%ne240np4.pg3">384</value>
-      <value compset=".+" grid="a%ne0np4CONUS.ne30x8">144</value>
-      <value compset=".+" grid="a%T42">72</value>
-      <value compset=".+" grid="a%T85">144</value>
-      <value compset=".+" grid="a%T341">288</value>
-      <value compset=".+" grid="1x1">48</value>
-      <value compset=".+" grid="1x1_urbanc">48</value>
-      <value compset=".+" grid="1x1_mexico">24</value>
-      <value compset=".+" grid="1x1_vancou">24</value>
-      <value compset="_DLND.*_CISM\d">1</value>
-      <value compset="_DATM.*_DICE.*_POP2.*_WW3">4</value>
-      <value compset="_DATM.*_DICE.*_POP2.*_DWAV">4</value>
+      <value compset="_DATM.*_SLND.*_DICE.*_POP2"	>24</value>
+      <value compset="_DATM.*_SLND.*_CICE.*_POP2"	>24</value>
+      <value compset="_DATM.*_CICE.*_DOCN"		>24</value>
+      <value compset="_DATM.*_DOCN%US20"		>24</value>
+      <value compset="_DATM%CPLHIST.+POP\d"		>48</value>
+      <value compset="_MPAS"				>1</value>
+      <value compset=".+" grid="a%0.23x0.31"		>96</value>
+      <value compset=".+" grid="a%ne60np4"		>96</value>
+      <value compset=".+" grid="a%ne60np4.pg3"		>96</value>
+      <value compset=".+" grid="a%ne60np4.pg4"		>96</value>
+      <value compset=".+" grid="a%ne120np4"		>192</value>
+      <value compset=".+" grid="a%ne120np4.pg2"		>192</value>
+      <value compset=".+" grid="a%ne120np4.pg3"		>192</value>
+      <value compset=".+" grid="a%ne120np4.pg4"		>192</value>
+      <value compset=".+" grid="a%ne240np4"		>384</value>
+      <value compset=".+" grid="a%ne240np4.pg2"		>384</value>
+      <value compset=".+" grid="a%ne240np4.pg3"		>384</value>
+      <value compset=".+" grid="a%ne0np4CONUS.ne30x8"	>144</value>
+      <value compset=".+" grid="a%T42"			>72</value>
+      <value compset=".+" grid="a%T85"			>144</value>
+      <value compset=".+" grid="a%T341"			>288</value>
+      <value compset=".+" grid="1x1"			>48</value>
+      <value compset=".+" grid="1x1_urbanc"		>48</value>
+      <value compset=".+" grid="1x1_mexico"		>24</value>
+      <value compset=".+" grid="1x1_vancou"		>24</value>
+      <value compset="_DLND.*_CISM\d"			>1</value>
+      <!-- <value compset="_DATM.*_DICE.*_POP2.*_WW3">4</value> -->
+      <!-- <value compset="_DATM.*_DICE.*_POP2.*_DWAV">4</value> -->
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>

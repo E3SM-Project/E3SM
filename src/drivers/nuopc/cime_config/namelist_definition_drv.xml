@@ -108,11 +108,10 @@
     <type>char</type>
     <category>expdef</category>
     <group>DRIVER_attributes</group>
-    <valid_values>e3sm,cesm</valid_values>
+    <valid_values>cesm</valid_values>
     <desc>cime model</desc>
     <values>
       <value cime_model='cesm'>cesm</value>
-      <value cime_model='e3sm'>e3sm</value>
     </values>
   </entry>
 
@@ -784,7 +783,6 @@
     <values>
       <value cime_model='cesm'>0.01</value>
       <value cime_model='cesm' atm_grid="0.9x1.25">0.0</value>
-      <value cime_model='e3sm'>0.0</value>
     </values>
   </entry>
 
@@ -797,7 +795,6 @@
     </desc>
     <values>
       <value cime_model='cesm'>5</value>
-      <value cime_model='e3sm'>2</value>
     </values>
   </entry>
 
@@ -809,8 +806,9 @@
       if true use  Mahrt and Sun 1995,MWR modification to surface flux calculation
     </desc>
     <values>
+      <value cime_model='cesm' atm_grid="T62">.false.</value>
+      <value cime_model='cesm' atm_grid="TL319">.false.</value>
       <value cime_model='cesm'>.true.</value>
-      <value cime_model='e3sm'>.false.</value>
     </values>
   </entry>
 
