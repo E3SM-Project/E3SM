@@ -528,8 +528,8 @@ contains
        end do
     end if
 
-    call shr_flux_atmocn (&
-         lsize, aoflux%zbot, aoflux%ubot, aoflux%vbot, aoflux%thbot, &
+    call flux_atmocn (&
+         lsize, aoflux%zbot, aoflux%ubot, aoflux%vbot, aoflux%thbot, aoflux%prec_gust, gust_fac, &
          aoflux%shum, aoflux%shum_16O, aoflux%shum_HDO, aoflux%shum_18O, aoflux%dens , &
          aoflux%tbot, aoflux%uocn, aoflux%vocn, &
          aoflux%tocn, aoflux%mask, aoflux%sen, aoflux%lat, aoflux%lwup, &
