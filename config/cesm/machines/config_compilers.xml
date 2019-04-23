@@ -324,14 +324,11 @@ using a fortran linker.
   <LDFLAGS>
     <append> -lpthread </append>
   </LDFLAGS>
-  <SLIBS>
-    <append> -L$(COMPILER_PATH)/lib/NAG_Fortran -lf62rts </append>
-  </SLIBS>
   <CONFIG_ARGS>
-    <append> LIBS="-L$(COMPILER_PATH)/lib/NAG_Fortran -lf62rts" </append>
+    <append> FCLIBS="-Wl,--as-needed,--allow-shlib-undefined  -L$(COMPILER_PATH)/lib/NAG_Fortran -lf62rts" </append>
   </CONFIG_ARGS>
-
 </compiler>
+
 
 <compiler COMPILER="pgi">
   <CFLAGS>
