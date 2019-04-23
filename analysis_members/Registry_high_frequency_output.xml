@@ -295,13 +295,16 @@
 				mode="forward;analysis"
 				filename_template="analysis_members/highFrequencyOutput.$Y-$M-$D.nc"
 				filename_interval="01-00-00_00:00:00"
-				output_interval="00-00-01_00:00:00"
+				output_interval="00-00-05_00:00:00"
 				reference_time="0001-01-01_00:00:00"
 				packages="highFrequencyOutputAMPKG"
 				clobber_mode="truncate"
 				runtime_format="single_file">
 			<stream name="mesh"/>
 			<var name="xtime"/>
+			<var name="kineticEnergyAtSurface"/>
+			<var_array name="activeTracersAtSurface"/>
+			<var name="ssh"/>
 			<var name="kineticEnergyAt250m"/>
 			<var name="relativeVorticityAt250m"/>
 			<var name="divergenceAt250m"/>
@@ -310,7 +313,6 @@
 			<var name="columnIntegratedSpeed"/>
 			<var name="relativeVorticityVertexAt250m"/>
 			<var name="boundaryLayerDepth"/>
-			<var name="ssh"/>
 			<var name="vertGMvelocitySFC"/>
 			<var name="vertTransportVelocitySFC"/>
 			<var name="vertVelSFC"/>
