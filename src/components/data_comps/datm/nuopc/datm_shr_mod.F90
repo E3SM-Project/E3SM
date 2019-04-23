@@ -6,11 +6,10 @@ module datm_shr_mod
   use shr_const_mod  , only : SHR_CONST_CDAY,SHR_CONST_TKFRZ,SHR_CONST_SPVAL
   use shr_file_mod   , only : shr_file_getlogunit, shr_file_getunit, shr_file_freeunit
   use shr_sys_mod    , only : shr_sys_flush, shr_sys_abort
-  use shr_strdata_mod, only : shr_strdata_readnml
-  use shr_dmodel_mod , only : shr_dmodel_mapset
   use shr_cal_mod    , only : shr_cal_date2julian
+  use shr_dmodel_mod , only : shr_dmodel_mapset
   use shr_ncread_mod , only : shr_ncread_varExists, shr_ncread_varDimSizes, shr_ncread_field4dG
-  use shr_strdata_mod, only : shr_strdata_type
+  use shr_strdata_mod, only : shr_strdata_readnml, shr_strdata_type
   use mct_mod
 
   ! !PUBLIC TYPES:

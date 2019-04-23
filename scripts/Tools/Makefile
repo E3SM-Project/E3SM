@@ -1024,3 +1024,6 @@ ifeq (,$(findstring clean,$(MAKECMDGOALS)))
 endif
 endif
 endif
+ifeq ($(MODEL),csm_share)
+  shr_assert_mod.mod: shr_assert_mod.o
+endif

@@ -1,7 +1,6 @@
 module esmflds
 
-  use shr_kind_mod , only : CX => shr_kind_CX, CS=>shr_kind_CS, CL=>shr_kind_cl
-  use shr_sys_mod  , only : shr_sys_abort
+  use med_constants_mod, only : CX, CS, CL
 
   implicit none
   private
@@ -185,8 +184,6 @@ contains
 
   subroutine shr_nuopc_fldList_GetMetadata(shortname, longname, stdname, units)
 
-    use shr_string_mod , only : shr_string_lastindex
-
     ! input/output variables
     character(len=*),           intent(in)  :: shortname
     character(len=*), optional, intent(out) :: longname
@@ -226,7 +223,7 @@ contains
     if (.not.found) then
        i = 1
        do while (i <= n_entries .and. .not.found)
-          n = shr_string_lastIndex(shortname,"_")
+          n = index(shortname, '_',.true.)
           lshortname = ""
           if (n < len_trim(shortname)) lshortname = shortname(n+1:len_trim(shortname))
           if (trim(lshortname) == trim(shr_nuopc_fldList_Metadata(i,1))) then
@@ -344,6 +341,10 @@ contains
     ! Determine mrg entry or entries in flds aray
     ! ----------------------------------------------
 
+    use ESMF, only : ESMF_FAILURE, ESMF_LogWrite
+    use ESMF, only : ESMF_LOGMSG_INFO, ESMF_LOGMSG_ERROR 
+
+    ! input/output variables
     type(shr_nuopc_fldList_entry_type) , pointer                :: flds(:)
     character(len=*)                   , intent(in)             :: fldname
     integer                            , intent(in)  , optional :: mrg_from1
@@ -365,6 +366,7 @@ contains
 
     ! local variables
     integer :: n, id
+    integer :: rc
     character(len=*), parameter :: subname='(shr_nuopc_fldList_MrgFld)'
     ! ----------------------------------------------
 
@@ -379,7 +381,9 @@ contains
        do n = 1,size(flds)
           write(6,*) trim(subname)//' input flds entry is ',trim(flds(n)%stdname)
        end do
-       call shr_sys_abort(subname // 'ERROR: fldname '// trim(fldname) // ' not found in input flds')
+       call ESMF_LogWrite(subname // 'ERROR: fldname '// trim(fldname) // ' not found in input flds', ESMF_LOGMSG_INFO)
+       rc = ESMF_FAILURE
+       return
     end if
 
     if (present(mrg_from1) .and. present(mrg_fld1) .and. present(mrg_type1)) then
@@ -421,6 +425,8 @@ contains
 
   subroutine shr_nuopc_fldList_AddMap(flds, fldname, destcomp, maptype, mapnorm, mapfile)
 
+    use ESMF, only : ESMF_LOGMSG_ERROR, ESMF_FAILURE, ESMF_LogWrite, ESMF_LOGMSG_INFO
+
     ! intput/output variables
     type(shr_nuopc_fldList_entry_type) , intent(inout) :: flds(:)
     character(len=*)                   , intent(in)    :: fldname
@@ -431,6 +437,7 @@ contains
 
     ! local variables
     integer :: id, n
+    integer :: rc
     character(len=*),parameter  :: subname='(shr_nuopc_fldList_AddMap)'
     ! ----------------------------------------------
 
@@ -445,7 +452,9 @@ contains
        do n = 1,size(flds)
           write(6,*) trim(subname)//' input flds entry is ',trim(flds(n)%stdname)
        end do
-       call shr_sys_abort(subname // 'ERROR: fldname '// trim(fldname) // ' not found in input flds')
+       call ESMF_LogWrite(subname // 'ERROR: fldname '// trim(fldname) // ' not found in input flds', ESMF_LOGMSG_INFO)
+       rc = ESMF_FAILURE
+       return
     end if
 
     ! Note - default values are already set for the fld entries - so only non-default
@@ -769,7 +778,7 @@ contains
     else
        call ESMF_LogWrite("shr_nuopc_fldList_GetFldNames: ERROR either flds or fldnames have not been allocate ", &
             ESMF_LOGMSG_INFO, rc=rc)
-       rc=ESMF_FAILURE
+       rc = ESMF_FAILURE
        return
     end if
 
