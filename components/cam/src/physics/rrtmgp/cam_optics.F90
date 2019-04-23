@@ -438,9 +438,13 @@ contains
 
       ! Get cloud and snow fractions, and combine
       call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cloud_fraction)
-      call pbuf_get_field(pbuf, pbuf_get_index('CLDFSNOW'), snow_fraction)
-      combined_cloud_fraction(1:ncol,1:pver) = max(cloud_fraction(1:ncol,1:pver), &
-                                                   snow_fraction(1:ncol,1:pver))
+      if (snow_exists()) then
+         call pbuf_get_field(pbuf, pbuf_get_index('CLDFSNOW'), snow_fraction)
+         combined_cloud_fraction(1:ncol,1:pver) = max(cloud_fraction(1:ncol,1:pver), &
+                                                      snow_fraction(1:ncol,1:pver))
+      else
+         combined_cloud_fraction(1:ncol,1:pver) = cloud_fraction(1:ncol,1:pver)
+      end if
 
       ! Do MCICA sampling of optics here. This will map bands to gpoints,
       ! while doing stochastic sampling of cloud state
@@ -569,11 +573,13 @@ contains
 
       ! Get cloud and snow fractions, and combine
       call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cloud_fraction)
-      call pbuf_get_field(pbuf, pbuf_get_index('CLDFSNOW'), snow_fraction)
-
-      ! Combine cloud and snow fractions for MCICA sampling
-      combined_cloud_fraction(1:ncol,1:pver) = max(cloud_fraction(1:ncol,1:pver), &
-                                                   snow_fraction(1:ncol,1:pver))
+      if (snow_exists()) then
+         call pbuf_get_field(pbuf, pbuf_get_index('CLDFSNOW'), snow_fraction)
+         combined_cloud_fraction(1:ncol,1:pver) = max(cloud_fraction(1:ncol,1:pver), &
+                                                      snow_fraction(1:ncol,1:pver))
+      else
+         combined_cloud_fraction(1:ncol,1:pver) = cloud_fraction(1:ncol,1:pver)
+      end if
 
       ! Do MCICA sampling of optics here. This will map bands to gpoints,
       ! while doing stochastic sampling of cloud state
