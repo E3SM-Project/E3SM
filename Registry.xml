@@ -198,7 +198,7 @@
 		/>
 		<nml_option name="config_vertical_grid" type="character" default_value="uniform" units="unitless"
 					description="Name of vertical grid to use in configuration generation"
-					possible_values="'uniform', '60layerPHC', '42layerWOCE', '100layerACMEv1', '1dCVTgenerator', ..."
+					possible_values="'uniform', '60layerPHC', '42layerWOCE', '100layerE3SMv1', '1dCVTgenerator', ..."
 		/>
 	</nml_record>
 	<nml_record name="CVTgenerator" mode="init">
@@ -785,11 +785,11 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_frazil_heat_of_fusion" type="real" default_value="3.34e5" units="J kg^{-1}"
-					description="Energy per kilogram released when sea water freezes. NOTE: test and make consistent with ACME."
+					description="Energy per kilogram released when sea water freezes. NOTE: test and make consistent with E3SM."
 					possible_values="Any positive real number."
 		/>
 		<nml_option name="config_frazil_ice_density" type="real" default_value="1000.0" units="kg m^{-3}"
-					description="Assumed density of frazil. NOTE: test and make consistent with ACME."
+					description="Assumed density of frazil. NOTE: test and make consistent with E3SM."
 					possible_values="Any positive real number."
 		/>
 		<nml_option name="config_frazil_fractional_thickness_limit" type="real" default_value="0.1" units="non-dimensional"
@@ -797,7 +797,7 @@
 					possible_values="Any positive real number between 0 and 1."
 		/>
 		<nml_option name="config_specific_heat_sea_water" type="real" default_value="3985.0" units="J kg^{-1} C^{-1}"
-					description="Energy per kilogram per C needed to raise ocean temperature 1 C. NOTE: test and make consistent with ACME."
+					description="Energy per kilogram per C needed to raise ocean temperature 1 C. NOTE: test and make consistent with E3SM."
 					possible_values="Any positive real number."
 		/>
 		<nml_option name="config_frazil_maximum_depth" type="real" default_value="100.0" units="m"
