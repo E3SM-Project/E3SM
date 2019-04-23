@@ -2884,6 +2884,14 @@ module init_atm_cases
             hs(iCell) = 0.
             if(ter(iCell) .ne. 0.) then
                do j = 1,nEdgesOnCell(iCell)
+
+                  ! For smoothing at cells along the boundary of the mesh, set the terrain value
+                  ! for non-existent neighbors, which map to the "garbage cell", to the same as
+                  ! the terrain in the cell being smoothed
+                  if (cellsOnCell(j,iCell) == nCells+1) then
+                     ter(nCells+1) = ter(iCell)
+                  end if
+
                   hs(iCell) = hs(iCell) + dvEdge(edgesOnCell(j,iCell))    &
                                         / dcEdge(edgesOnCell(j,iCell))    &
                                         * (ter(cellsOnCell(j,iCell))-ter(iCell))
@@ -2896,6 +2904,14 @@ module init_atm_cases
             ter(iCell) = 0.
             if(hs(iCell) .ne. 0.) then
                do j = 1,nEdgesOnCell(iCell)
+
+                  ! For smoothing at cells along the boundary of the mesh, set the terrain value
+                  ! for non-existent neighbors, which map to the "garbage cell", to the same as
+                  ! the terrain in the cell being smoothed
+                  if (cellsOnCell(j,iCell) == nCells+1) then
+                     hs(nCells+1) = hs(iCell)
+                  end if
+
                   ter(iCell) = ter(iCell) + dvEdge(edgesOnCell(j,iCell))    &
                                           / dcEdge(edgesOnCell(j,iCell))    &
                                           * (hs(cellsOnCell(j,iCell))-hs(iCell))
@@ -3082,19 +3098,18 @@ module init_atm_cases
                   hs1(iCell) = 0.
                   do j = 1,nEdgesOnCell(iCell)
 
+                     ! For smoothing at cells along the boundary of the mesh, set the hx value
+                     ! for non-existent neighbors, which map to the "garbage cell", to the same as
+                     ! the hx in the cell being smoothed
+                     if (cellsOnCell(j,iCell) == nCells+1) then
+                        hx(k,nCells+1) = hx(k,iCell)
+                     end if
+
                      hs1(iCell) = hs1(iCell) + dvEdge(edgesOnCell(j,iCell))    &
                                            / dcEdge(edgesOnCell(j,iCell))    &
                                            *  (hx(k,cellsOnCell(j,iCell))-hx(k,iCell))
                   end do
-                  hs1(iCell) = hx(k,iCell) + sm*hs1(iCell)
-
-                  hs(iCell) = 0.
-              !    do j = 1,nEdgesOnCell(iCell)
-              !       hs(iCell) = hs(iCell) + dvEdge(edgesOnCell(j,iCell))    &
-              !                             / dcEdge(edgesOnCell(j,iCell))    &
-              !                             *  (hs1(cellsOnCell(j,iCell))-hs1(iCell))
-              !    end do
-                  hs(iCell) = hs1(iCell) - 0.*hs(iCell)
+                  hs(iCell) = hx(k,iCell) + sm*hs1(iCell)
 
                end do
 
@@ -3176,6 +3191,15 @@ module init_atm_cases
       do iEdge = 1,nEdges
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
+
+         ! Avoid referencing the garbage cell for exterior edges
+         if (cell1 == nCells+1) then
+            cell1 = cell2
+         end if
+         if (cell2 == nCells+1) then
+            cell2 = cell1
+         end if
+
          if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve ) then
 
             do k = 1, nVertLevels

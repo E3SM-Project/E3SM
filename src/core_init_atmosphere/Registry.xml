@@ -365,6 +365,9 @@
                         <var name="cellsOnVertex"/>
                         <var name="kiteAreasOnVertex"/>
                         <var name="meshDensity"/>
+                        <var name="bdyMaskCell"/>
+                        <var name="bdyMaskEdge"/>
+                        <var name="bdyMaskVertex"/>
                         <var name="edgeNormalVectors" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
                         <var name="localVerticalUnitVectors" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
                         <var name="cellTangentPlane" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
@@ -458,6 +461,9 @@
                         <var name="cellsOnVertex"/>
                         <var name="kiteAreasOnVertex"/>
                         <var name="meshDensity"/>
+                        <var name="bdyMaskCell"/>
+                        <var name="bdyMaskEdge"/>
+                        <var name="bdyMaskVertex"/>
                         <var name="edgeNormalVectors"/>
                         <var name="localVerticalUnitVectors"/>
                         <var name="cellTangentPlane"/>
@@ -830,6 +836,15 @@
                 <!-- arrays required for reconstruction of velocity field -->
                 <var name="coeffs_reconstruct" type="real" dimensions="R3 maxEdges nCells" units="unitless"
                      description="Coefficients to reconstruct velocity vectors at cell centers"/>
+
+                <var name="bdyMaskCell" type="integer" dimensions="nCells" default_value="0" units="-"
+                     description="Indicator of whether a cell is an interior cell, a relaxation-zone cell, or a specified-zone cell"/>
+
+                <var name="bdyMaskEdge" type="integer" dimensions="nEdges" default_value="0" units="-"
+                     description="Indicator of whether an edge is an interior edge, a relaxation-zone edge, or a specified-zone edge"/>
+
+                <var name="bdyMaskVertex" type="integer" dimensions="nVertices" default_value="0" units="-"
+                     description="Indicator of whether an vertex is an interior vertex, a relaxation-zone vertex, or a specified-zone vertex"/>
         </var_struct>
 
         <var_struct name="state" time_levs="1">

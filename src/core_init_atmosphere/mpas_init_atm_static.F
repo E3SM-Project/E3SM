@@ -36,6 +36,11 @@
  type (mpas_pool_type), intent(in) :: dims
  type (mpas_pool_type), intent(in) :: configs
 
+!constants
+ integer, parameter :: nBdyLayers = 7   ! The number of relaxation layers plus the number of specified layers
+                                        ! This value is used in determining whether extra checks are needed
+                                        ! in the remapping of terrain, land use, and soil category pixels
+
 !local variables:
  type(proj_info):: proj
 
@@ -68,7 +73,7 @@
 
  integer, pointer :: supersample_fac
 
- real(kind=RKIND):: lat,lon,x,y
+ real(kind=RKIND):: lat,lon,x,y,z
  real(kind=RKIND):: lat_pt,lon_pt
  real(kind=RKIND),dimension(:,:),allocatable  :: soiltemp_1deg
  real(kind=RKIND),dimension(:,:),allocatable  :: maxsnowalb
@@ -80,6 +85,7 @@
  
  integer, dimension(:), pointer :: nEdgesOnCell
  integer, dimension(:,:), pointer :: cellsOnCell
+ integer, dimension(:,:), pointer :: verticesOnCell
  real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell
  real (kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
  real (kind=RKIND), dimension(:), pointer :: xEdge, yEdge, zEdge
@@ -101,7 +107,10 @@
  integer, dimension(:), pointer :: lu_index
  integer, dimension(:), pointer :: soilcat_top
  integer, dimension(:), pointer :: landmask
+ integer, dimension(:), pointer :: bdyMaskCell
  character(len=StrKIND), pointer :: mminlu
+
+ real (kind=RKIND) :: xPixel, yPixel, zPixel
 
 !--------------------------------------------------------------------------------------------------
 
@@ -150,9 +159,11 @@
  call mpas_pool_get_array(mesh, 'lonVertex', lonVertex)
  call mpas_pool_get_array(mesh, 'fEdge', fEdge)
  call mpas_pool_get_array(mesh, 'fVertex', fVertex)
+ call mpas_pool_get_array(mesh, 'bdyMaskCell', bdyMaskCell)
  
  call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
  call mpas_pool_get_array(mesh, 'cellsOnCell', cellsOnCell)
+ call mpas_pool_get_array(mesh, 'verticesOnCell', verticesOnCell)
 
  call mpas_pool_get_array(mesh, 'ter', ter)
  call mpas_pool_get_array(mesh, 'lu_index', lu_index)
@@ -292,8 +303,30 @@
           iPoint = nearest_cell(lat_pt,lon_pt,iPoint,nCells,maxEdges, &
                                 nEdgesOnCell,cellsOnCell, &
                                 latCell,lonCell)
-          ter(iPoint) = ter(iPoint) + rarray(i,j,1)
-          nhs(iPoint) = nhs(iPoint) + 1
+
+          !
+          ! For all but the outermost boundary cells, we can safely assume that the nearest
+          ! model grid cell contains the pixel (else, a different cell would be nearest)
+          !
+          if (bdyMaskCell(iPoint) < nBdyLayers) then
+             ter(iPoint) = ter(iPoint) + rarray(i,j,1)
+             nhs(iPoint) = nhs(iPoint) + 1
+
+          ! For outermost boundary cells, additional work is needed to verify that the pixel
+          ! actually lies within the nearest cell
+          else
+             zPixel = sphere_radius * sin(lat_pt)                  ! Model cell coordinates assume a "full" sphere radius
+             xPixel = sphere_radius * cos(lon_pt) * cos(lat_pt)    ! at this point, so we need to ues the same radius
+             yPixel = sphere_radius * sin(lon_pt) * cos(lat_pt)    ! for source pixel coordinates
+
+             if (in_cell(xPixel, yPixel, zPixel, xCell(iPoint), yCell(iPoint), zCell(iPoint), &
+                         nEdgesOnCell(iPoint), verticesOnCell(:,iPoint), xVertex, yVertex, zVertex)) then
+
+                ter(iPoint) = ter(iPoint) + rarray(i,j,1)
+                nhs(iPoint) = nhs(iPoint) + 1
+
+             end if
+          end if
        end do
        end do
 
@@ -367,7 +400,28 @@ if (rarray(i,j,1) == 0) cycle
           iPoint = nearest_cell(lat_pt,lon_pt,iPoint,nCells,maxEdges, &
                                 nEdgesOnCell,cellsOnCell, &
                                 latCell,lonCell)
-          ncat(int(rarray(i,j,1)),iPoint) = ncat(int(rarray(i,j,1)),iPoint) + 1
+
+          !
+          ! For all but the outermost boundary cells, we can safely assume that the nearest
+          ! model grid cell contains the pixel (else, a different cell would be nearest)
+          !
+          if (bdyMaskCell(iPoint) < nBdyLayers) then
+             ncat(int(rarray(i,j,1)),iPoint) = ncat(int(rarray(i,j,1)),iPoint) + 1
+
+          ! For outermost boundary cells, additional work is needed to verify that the pixel
+          ! actually lies within the nearest cell
+          else
+             zPixel = sphere_radius * sin(lat_pt)                  ! Model cell coordinates assume a "full" sphere radius
+             xPixel = sphere_radius * cos(lon_pt) * cos(lat_pt)    ! at this point, so we need to ues the same radius
+             yPixel = sphere_radius * sin(lon_pt) * cos(lat_pt)    ! for source pixel coordinates
+
+             if (in_cell(xPixel, yPixel, zPixel, xCell(iPoint), yCell(iPoint), zCell(iPoint), &
+                         nEdgesOnCell(iPoint), verticesOnCell(:,iPoint), xVertex, yVertex, zVertex)) then
+
+                ncat(int(rarray(i,j,1)),iPoint) = ncat(int(rarray(i,j,1)),iPoint) + 1
+
+             end if
+          end if
        end do
        end do
 
@@ -426,7 +480,28 @@ if (rarray(i,j,1) == 0) cycle
           iPoint = nearest_cell(lat_pt,lon_pt,iPoint,nCells,maxEdges, &
                                 nEdgesOnCell,cellsOnCell, &
                                 latCell,lonCell)
-          ncat(int(rarray(i,j,1)),iPoint) = ncat(int(rarray(i,j,1)),iPoint) + 1
+
+          !
+          ! For all but the outermost boundary cells, we can safely assume that the nearest
+          ! model grid cell contains the pixel (else, a different cell would be nearest)
+          !
+          if (bdyMaskCell(iPoint) < nBdyLayers) then
+             ncat(int(rarray(i,j,1)),iPoint) = ncat(int(rarray(i,j,1)),iPoint) + 1
+
+          ! For outermost boundary cells, additional work is needed to verify that the pixel
+          ! actually lies within the nearest cell
+          else
+             zPixel = sphere_radius * sin(lat_pt)                  ! Model cell coordinates assume a "full" sphere radius
+             xPixel = sphere_radius * cos(lon_pt) * cos(lat_pt)    ! at this point, so we need to ues the same radius
+             yPixel = sphere_radius * sin(lon_pt) * cos(lat_pt)    ! for source pixel coordinates
+
+             if (in_cell(xPixel, yPixel, zPixel, xCell(iPoint), yCell(iPoint), zCell(iPoint), &
+                         nEdgesOnCell(iPoint), verticesOnCell(:,iPoint), xVertex, yVertex, zVertex)) then
+
+                ncat(int(rarray(i,j,1)),iPoint) = ncat(int(rarray(i,j,1)),iPoint) + 1
+
+             end if
+          end if
        end do
        end do
 
@@ -607,14 +682,30 @@ if (rarray(i,j,1) == 0) cycle
              iPoint = nearest_cell(lat_pt,lon_pt,iPoint,nCells,maxEdges, &
                                    nEdgesOnCell,cellsOnCell, &
                                    latCell,lonCell)
-             if (landmask(iPoint) == 1) then
-                if (rarray(ii,jj,1) /= msgval) then
+             if (rarray(ii,jj,1) /= msgval) then
+
+                !
+                ! This field only matters for land cells, and for all but the outermost boundary cells,
+                ! we can safely assume that the nearest model grid cell contains the pixel (else, a different
+                ! cell would be nearest)
+                !
+                if (landmask(iPoint) == 1 .and. bdyMaskCell(iPoint) < nBdyLayers) then
                    snoalb(iPoint) = snoalb(iPoint) + rarray(ii,jj,1)
                    nhs(iPoint) = nhs(iPoint) + 1
+
+                ! For outermost land cells, additional work is needed to verify that the pixel
+                ! actually lies within the nearest cell
+                else if (landmask(iPoint) == 1) then
+                   zPixel = sphere_radius * sin(lat_pt)                  ! Model cell coordinates assume a "full" sphere radius
+                   xPixel = sphere_radius * cos(lon_pt) * cos(lat_pt)    ! at this point, so we need to ues the same radius
+                   yPixel = sphere_radius * sin(lon_pt) * cos(lat_pt)    ! for source pixel coordinates
+
+                   if (in_cell(xPixel, yPixel, zPixel, xCell(iPoint), yCell(iPoint), zCell(iPoint), &
+                               nEdgesOnCell(iPoint), verticesOnCell(:,iPoint), xVertex, yVertex, zVertex)) then
+                      snoalb(iPoint) = snoalb(iPoint) + rarray(ii,jj,1)
+                      nhs(iPoint) = nhs(iPoint) + 1
+                   end if
                 end if
-             else
-                snoalb(iPoint) = snoalb(iPoint) + fillval
-                nhs(iPoint) = nhs(iPoint) + 1
              end if
           end do
           end do
@@ -775,17 +866,39 @@ if (rarray(i,j,1) == 0) cycle
              iPoint = nearest_cell(lat_pt,lon_pt,iPoint,nCells,maxEdges, &
                                    nEdgesOnCell,cellsOnCell, &
                                    latCell,lonCell)
-             if (landmask(iPoint) == 1) then
+
+             !
+             ! This field only matters for land cells, and for all but the outermost boundary cells,
+             ! we can safely assume that the nearest model grid cell contains the pixel (else, a different
+             ! cell would be nearest)
+             !
+             if (landmask(iPoint) == 1 .and. bdyMaskCell(iPoint) < nBdyLayers) then
                 do k=1,nz
                    if (vegfra(i,j,k) == msgval) then
                       vegfra(i,j,k) = fillval
                    end if
                    greenfrac(k,iPoint) = greenfrac(k,iPoint) + vegfra(i,j,k)
                 end do
-             else
-                greenfrac(:,iPoint) = greenfrac(:,iPoint) + fillval
+                nhs(iPoint) = nhs(iPoint) + 1
+
+             ! For outermost land cells, additional work is needed to verify that the pixel
+             ! actually lies within the nearest cell
+             else if (landmask(iPoint) == 1) then
+                zPixel = sphere_radius * sin(lat_pt)                  ! Model cell coordinates assume a "full" sphere radius
+                xPixel = sphere_radius * cos(lon_pt) * cos(lat_pt)    ! at this point, so we need to ues the same radius
+                yPixel = sphere_radius * sin(lon_pt) * cos(lat_pt)    ! for source pixel coordinates
+
+                if (in_cell(xPixel, yPixel, zPixel, xCell(iPoint), yCell(iPoint), zCell(iPoint), &
+                            nEdgesOnCell(iPoint), verticesOnCell(:,iPoint), xVertex, yVertex, zVertex)) then
+                   do k=1,nz
+                      if (vegfra(i,j,k) == msgval) then
+                         vegfra(i,j,k) = fillval
+                      end if
+                      greenfrac(k,iPoint) = greenfrac(k,iPoint) + vegfra(i,j,k)
+                   end do
+                   nhs(iPoint) = nhs(iPoint) + 1
+                end if
              end if
-             nhs(iPoint) = nhs(iPoint) + 1
           end do
           end do
 
@@ -793,7 +906,13 @@ if (rarray(i,j,1) == 0) cycle
     end do
 
     do iCell = 1,nCells
-       greenfrac(:,iCell) = greenfrac(:,iCell) / real(nhs(iCell))
+       ! For land points that have no overlap with valid data, and for water points,
+       ! just use the fill value...
+       if (nhs(iCell) == 0) then
+          greenfrac(:,iCell) = fillval
+       else
+          greenfrac(:,iCell) = greenfrac(:,iCell) / real(nhs(iCell))
+       end if
        shdmin(iCell) = minval(greenfrac(:,iCell))
        shdmax(iCell) = maxval(greenfrac(:,iCell))
     end do
@@ -939,17 +1058,39 @@ if (rarray(i,j,1) == 0) cycle
              iPoint = nearest_cell(lat_pt,lon_pt,iPoint,nCells,maxEdges, &
                                    nEdgesOnCell,cellsOnCell, &
                                    latCell,lonCell)
-             if (landmask(iPoint) == 1) then
+
+             !
+             ! This field only matters for land cells, and for all but the outermost boundary cells,
+             ! we can safely assume that the nearest model grid cell contains the pixel (else, a different
+             ! cell would be nearest)
+             !
+             if (landmask(iPoint) == 1 .and. bdyMaskCell(iPoint) < nBdyLayers) then
                 do k=1,nz
                    if (rarray(ii,jj,k) == msgval) then
                       rarray(ii,jj,k) = fillval
                    end if
                    albedo12m(k,iPoint) = albedo12m(k,iPoint) + rarray(ii,jj,k)
                 end do
-             else
-                albedo12m(:,iPoint) = albedo12m(:,iPoint) + fillval
+                nhs(iPoint) = nhs(iPoint) + 1
+
+             ! For outermost land cells, additional work is needed to verify that the pixel
+             ! actually lies within the nearest cell
+             else if (landmask(iPoint) == 1) then
+                zPixel = sphere_radius * sin(lat_pt)                  ! Model cell coordinates assume a "full" sphere radius
+                xPixel = sphere_radius * cos(lon_pt) * cos(lat_pt)    ! at this point, so we need to ues the same radius
+                yPixel = sphere_radius * sin(lon_pt) * cos(lat_pt)    ! for source pixel coordinates
+
+                if (in_cell(xPixel, yPixel, zPixel, xCell(iPoint), yCell(iPoint), zCell(iPoint), &
+                            nEdgesOnCell(iPoint), verticesOnCell(:,iPoint), xVertex, yVertex, zVertex)) then
+                   do k=1,nz
+                      if (rarray(ii,jj,k) == msgval) then
+                         rarray(ii,jj,k) = fillval
+                      end if
+                      albedo12m(k,iPoint) = albedo12m(k,iPoint) + rarray(ii,jj,k)
+                   end do
+                   nhs(iPoint) = nhs(iPoint) + 1
+                end if
              end if
-             nhs(iPoint) = nhs(iPoint) + 1
           end do
           end do
 
@@ -957,7 +1098,13 @@ if (rarray(i,j,1) == 0) cycle
     end do
 
     do iCell = 1,nCells
-       albedo12m(:,iCell) = albedo12m(:,iCell) / real(nhs(iCell))
+       ! For land points that have no overlap with valid data, and for water points,
+       ! just use the fill value...
+       if (nhs(iCell) == 0) then
+          albedo12m(:,iCell) = fillval
+       else
+          albedo12m(:,iCell) = albedo12m(:,iCell) / real(nhs(iCell))
+       end if
        if (lu_index(iCell) == isice_lu) then
           albedo12m(:,iCell) = 70.0
        end if
@@ -1120,6 +1267,147 @@ if (rarray(i,j,1) == 0) cycle
  sphere_distance = 2.*radius*asin(arg1)
 
  end function sphere_distance
+
+
+!-----------------------------------------------------------------------
+!  routine mirror_point
+!
+!> \brief Finds the "mirror" of a point about a great-circle arc
+!> \author Michael Duda
+!> \date   7 March 2019
+!> \details
+!>  Given the endpoints of a great-circle arc (A,B) and a point, computes
+!>  the location of the point on the opposite side of the arc along a great-
+!>  circle arc that intersects (A,B) at a right angle, and such that the arc
+!>  between the point and its mirror is bisected by (A,B).
+!>
+!>  Assumptions: A, B, and the point to be reflected all lie on the surface
+!>  of the unit sphere.
+!
+!-----------------------------------------------------------------------
+subroutine mirror_point(xPoint, yPoint, zPoint, xA, yA, zA, xB, yB, zB, xMirror, yMirror, zMirror)
+
+   implicit none
+
+   real(kind=RKIND), intent(in) :: xPoint, yPoint, zPoint
+   real(kind=RKIND), intent(in) :: xA, yA, zA
+   real(kind=RKIND), intent(in) :: xB, yB, zB
+   real(kind=RKIND), intent(out) :: xMirror, yMirror, zMirror
+
+   real(kind=RKIND) :: alpha
+
+   !
+   ! Find the spherical angle between arcs AP and AB (where P is the point to be reflected)
+   !
+   alpha = sphere_angle(xA, yA, zA, xPoint, yPoint, zPoint, xB, yB, zB)
+
+   !
+   ! Rotate the point to be reflected by twice alpha about the vector from the origin to A
+   !
+   call rotate_about_vector(xPoint, yPoint, zPoint, 2.0_RKIND * alpha, 0.0_RKIND, 0.0_RKIND, 0.0_RKIND, &
+                            xA, yA, zA, xMirror, yMirror, zMirror)
+
+end subroutine mirror_point
+
+
+!-----------------------------------------------------------------------
+!  routine rotate_about_vector
+!
+!> \brief Rotates a point about a vector in R3
+!> \author Michael Duda
+!> \date   7 March 2019
+!> \details
+!>  Rotates the point (x,y,z) through an angle theta about the vector
+!>  originating at (a, b, c) and having direction (u, v, w).
+!
+!>  Reference: https://sites.google.com/site/glennmurray/Home/rotation-matrices-and-formulas/rotation-about-an-arbitrary-axis-in-3-dimensions
+!
+!-----------------------------------------------------------------------
+subroutine rotate_about_vector(x, y, z, theta, a, b, c, u, v, w, xp, yp, zp)
+
+   implicit none
+
+   real (kind=RKIND), intent(in) :: x, y, z, theta, a, b, c, u, v, w
+   real (kind=RKIND), intent(out) :: xp, yp, zp
+
+   real (kind=RKIND) :: vw2, uw2, uv2
+   real (kind=RKIND) :: m
+
+   vw2 = v**2.0 + w**2.0
+   uw2 = u**2.0 + w**2.0
+   uv2 = u**2.0 + v**2.0
+   m = sqrt(u**2.0 + v**2.0 + w**2.0)
+
+   xp = (a*vw2 + u*(-b*v-c*w+u*x+v*y+w*z) + ((x-a)*vw2+u*(b*v+c*w-v*y-w*z))*cos(theta) + m*(-c*v+b*w-w*y+v*z)*sin(theta))/m**2.0
+   yp = (b*uw2 + v*(-a*u-c*w+u*x+v*y+w*z) + ((y-b)*uw2+v*(a*u+c*w-u*x-w*z))*cos(theta) + m*( c*u-a*w+w*x-u*z)*sin(theta))/m**2.0
+   zp = (c*uv2 + w*(-a*u-b*v+u*x+v*y+w*z) + ((z-c)*uv2+w*(a*u+b*v-u*x-v*y))*cos(theta) + m*(-b*u+a*v-v*x+u*y)*sin(theta))/m**2.0
+
+end subroutine rotate_about_vector
+
+
+!-----------------------------------------------------------------------
+!  routine in_cell
+!
+!> \brief Determines whether a point is within a Voronoi cell
+!> \author Michael Duda
+!> \date   7 March 2019
+!> \details
+!>  Given a point on the surface of the sphere, the corner points of a Voronoi
+!>  cell, and the generating point for that Voronoi cell, determines whether
+!>  the given point is within the Voronoi cell.
+!
+!-----------------------------------------------------------------------
+logical function in_cell(xPoint, yPoint, zPoint, xCell, yCell, zCell, &
+                         nEdgesOnCell, verticesOnCell, xVertex, yVertex, zVertex)
+
+   use mpas_geometry_utils, only : mpas_arc_length
+
+   implicit none
+
+   real(kind=RKIND), intent(in) :: xPoint, yPoint, zPoint
+   real(kind=RKIND), intent(in) :: xCell, yCell, zCell
+   integer, intent(in) :: nEdgesOnCell
+   integer, dimension(:), intent(in) :: verticesOnCell
+   real(kind=RKIND), dimension(:), intent(in) :: xVertex, yVertex, zVertex
+
+   integer :: i
+   integer :: vtx1, vtx2
+   real(kind=RKIND) :: xNeighbor, yNeighbor, zNeighbor
+   real(kind=RKIND) :: inDist, outDist
+   real(kind=RKIND) :: radius
+   real(kind=RKIND) :: radius_inv
+
+   radius = sqrt(xCell * xCell + yCell * yCell + zCell * zCell)
+   radius_inv = 1.0_RKIND / radius
+
+   inDist = mpas_arc_length(xPoint, yPoint, zPoint, xCell, yCell, zCell)
+
+   in_cell = .true.
+
+   do i=1,nEdgesOnCell
+      vtx1 = verticesOnCell(i)
+      vtx2 = verticesOnCell(mod(i,nEdgesOnCell)+1)
+
+      call mirror_point(xCell*radius_inv, yCell*radius_inv, zCell*radius_inv, &
+                        xVertex(vtx1)*radius_inv, yVertex(vtx1)*radius_inv, zVertex(vtx1)*radius_inv, &
+                        xVertex(vtx2)*radius_inv, yVertex(vtx2)*radius_inv, zVertex(vtx2)*radius_inv, &
+                        xNeighbor, yNeighbor, zNeighbor)
+
+      xNeighbor = xNeighbor * radius
+      yNeighbor = yNeighbor * radius
+      zNeighbor = zNeighbor * radius
+
+      outDist = mpas_arc_length(xPoint, yPoint, zPoint, xNeighbor, yNeighbor, zNeighbor)
+
+      if (outDist < inDist) then
+         in_cell = .false.
+         return
+      end if
+
+   end do
+
+end function in_cell
+
 
 !==================================================================================================
  end module mpas_init_atm_static
