@@ -319,8 +319,7 @@ public:
     HostViewManaged<Real[NUM_PHYSICAL_LEV][NP][NP]>
     f90_tgt_layer_thickness_input("fortran target layer thickness");
 
-    HostViewManaged<Scalar * * [NP][NP][NUM_LEV]> kokkos_remapped(
-        "kokkos_remapped", ne, num_remap);
+    auto kokkos_remapped = Kokkos::create_mirror_view(remap_vals);
     Kokkos::deep_copy(kokkos_remapped, remap_vals);
 
     for (int ie = 0; ie < ne; ++ie) {
