@@ -94,7 +94,6 @@
 <rrtmg_temp_fix>.true.</rrtmg_temp_fix>
 
 <!-- Energy fixer options -->
-<l_ieflx_fix> .true.</l_ieflx_fix>
 <ieflx_opt  > 2     </ieflx_opt>
 
 <!-- External forcing for BAM or MAM.  CMIP6 input4mips data -->

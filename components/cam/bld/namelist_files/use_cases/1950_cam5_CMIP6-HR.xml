@@ -106,7 +106,6 @@
 <cld_macmic_num_steps>3</cld_macmic_num_steps>
 
 <!-- Energy fixer options -->
-<l_ieflx_fix> .true.</l_ieflx_fix>
 <ieflx_opt  > 2     </ieflx_opt>
 
 <!-- External forcing for BAM or MAM.  CMIP6 input4mips data -->
