@@ -700,7 +700,7 @@ flags should be captured within MPAS CMake files.
 </compiler>
 
 <compiler MACH="anvil" COMPILER="gnu">
-  <MOAB_PATH>/home/sarich/software/moab-gnu-mvapich</MOAB_PATH>
+  <MOAB_PATH>/home/sarich/software/anvil/moab-gcc-8-mvapich</MOAB_PATH>
   <CPPDEFS>
     <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY  </append>
   </CPPDEFS>
