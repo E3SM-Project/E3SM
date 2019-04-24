@@ -1532,6 +1532,8 @@
 <se_limiter_option> 8 </se_limiter_option>
 <vert_remap_q_alg> 1 </vert_remap_q_alg>
 
+<theta_hydrostatic_mode>.true.</theta_hydrostatic_mode>
+
 <interpolate_analysis> .false. </interpolate_analysis>
 <interp_nlon> 0 </interp_nlon>
 <interp_nlat> 0 </interp_nlat>

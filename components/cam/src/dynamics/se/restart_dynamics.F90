@@ -89,7 +89,7 @@ CONTAINS
     use time_manager, only: get_curr_time
     use parallel_mod, only: par
     use hycoef, only: write_restart_hycoef
-
+    use cam_abortutils,   only: endrun
 
     implicit none
     type(file_desc_t) :: File
@@ -106,6 +106,10 @@ CONTAINS
     real(kind=r8) :: time
     integer :: ndcur, nscur
     integer, pointer :: ldof(:)
+
+#ifdef MODEL_THETA_L
+    call endrun("read_inidat: restart does not work with cam target theta-l.")
+#endif
 
     call write_restart_hycoef(File)
 
@@ -217,7 +221,9 @@ CONTAINS
        do k=1,nlev
           do j=1,np
              do i=1,np
+#ifndef MODEL_THETA_L
                 var3d(i,j,ie,k) = elem(ie)%state%T(i,j,k,tl)
+#endif
              end do
           end do
        end do
@@ -493,6 +499,7 @@ CONTAINS
        end do
     end do
 
+!with theta, assigning T should be moved after assigning Q
     call pio_setframe(File,tdesc, t)
     call pio_read_darray(File, tdesc, iodesc3d, var3d, ierr)
     cnt=0
@@ -501,7 +508,9 @@ CONTAINS
           do j=1,np
              do i=1,np
                 cnt=cnt+1
+#ifndef MODEL_THETA_L
                 elem(ie)%state%T(i,j,k,tl) = var3d(cnt)
+#endif
              end do
           end do
        end do
