@@ -1453,7 +1453,7 @@
     <domain name="tx0.66v1">
       <nx>540</nx> <ny>458</ny>
       <file grid="ocnice">$DIN_LOC_ROOT/share/domains/domain.ocn.tx0.66v1.190314.nc</file>
-      <mesh driver="nuopc">$DIN_LOC_ROOT/share/meshes/tx0.66v1_180604_ESMFmesh.nc</mesh>
+      <mesh driver="nuopc">$DIN_LOC_ROOT/share/meshes/tx0.66v1_190314_ESMFmesh.nc</mesh>
       <desc>tx0.66v1 is tripole v1 0.66-deg MOM6 grid:</desc>
       <support>Experimental for MOM6 experiments</support>
     </domain>
