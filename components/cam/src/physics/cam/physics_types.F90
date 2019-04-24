@@ -504,7 +504,7 @@ contains
                               shr_infnan_posinf, shr_infnan_neginf
     use shr_assert_mod, only: shr_assert, shr_assert_in_domain
     use physconst,      only: pi
-    use constituents,   only: pcnst, qmin
+    use constituents,   only: pcnst
 
 !------------------------------Arguments--------------------------------
     ! State to check.
@@ -677,7 +677,7 @@ contains
 
     ! 3-D variables
     do m = 1,pcnst
-       call shr_assert_in_domain(state%q(:ncol,:,m),    lt=posinf_r8, ge=qmin(m), &
+       call shr_assert_in_domain(state%q(:ncol,:,m),    lt=posinf_r8, gt=neginf_r8, &
             varname="state%q ("//trim(cnst_name(m))//")", msg=msg)
     end do
 

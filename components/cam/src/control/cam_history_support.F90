@@ -121,6 +121,7 @@ module cam_history_support
     character(len=max_fieldname_len) :: name ! field name
     character(len=max_chars) :: long_name    ! long name
     character(len=max_chars) :: units        ! units
+    character(len=3)         :: mixing_ratio ! 'dry' or 'wet'
     character(len=max_chars) :: sampling_seq ! sampling sequence - if not every timestep, how often field is sampled
     ! (i.e., how often "outfld" is called):  every other; only during LW/SW
     ! radiation calcs; etc.

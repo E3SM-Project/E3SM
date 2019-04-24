@@ -443,11 +443,8 @@ contains
        enddo
        end if
 
-       if( cnst_get_type_byind(k) .eq. 'wet' ) then
-          if( vdiff_select( fieldlist_wet, 'q', k ) .ne. '' ) call endrun( vdiff_select( fieldlist_wet, 'q', k ) )
-       else
-          if( vdiff_select( fieldlist_dry, 'q', k ) .ne. '' ) call endrun( vdiff_select( fieldlist_dry, 'q', k ) )
-       endif
+     ! Convert all constituents to wet before doing diffusion.
+     if( vdiff_select( fieldlist_wet, 'q', k ) .ne. '' ) call endrun( vdiff_select( fieldlist_wet, 'q', k ) )
     
        ! ----------------------------------------------- !
        ! Select constituents for molecular diffusion     !
@@ -650,6 +647,7 @@ contains
     !---------------------------------------------------- !
     use physics_buffer,     only : physics_buffer_desc, pbuf_get_field, pbuf_set_field
     use physics_types,      only : physics_state, physics_ptend, physics_ptend_init
+    use physics_types,      only : set_dry_to_wet, set_wet_to_dry
     use cam_history,        only : outfld
     
     use trb_mtn_stress,     only : compute_tms
@@ -657,7 +655,7 @@ contains
     use hb_diff,            only : compute_hb_diff
     use wv_saturation,      only : qsat
     use molec_diff,         only : compute_molec_diff, vd_lu_qdecomp
-    use constituents,       only : qmincg, qmin
+    use constituents,       only : qmincg, qmin, cnst_type
     use diffusion_solver,   only : compute_vdiff, any, operator(.not.)
     use physconst,          only : cpairv, rairv !Needed for calculation of upward H flux
     use time_manager,       only : get_nstep
@@ -669,7 +667,7 @@ contains
     ! Input Arguments !
     ! --------------- !
 
-    type(physics_state), intent(in)    :: state                     ! Physics state variables
+    type(physics_state), intent(inout) :: state                     ! Physics state variables
 
     real(r8),            intent(in)    :: taux(pcols)               ! x surface stress  [ N/m2 ]
     real(r8),            intent(in)    :: tauy(pcols)               ! y surface stress  [ N/m2 ]
@@ -820,6 +818,9 @@ contains
     ! ----------------------- !
     ! Main Computation Begins !
     ! ----------------------- !
+
+    ! Assume 'wet' mixing ratios in diffusion code.
+    call set_dry_to_wet(state)
 
     rztodt = 1._r8 / ztodt
     lchnk  = state%lchnk
@@ -1117,7 +1118,7 @@ contains
     if (prog_modal_aero) then
 
        ! Modal aerosol species not diffused, so just add the explicit surface fluxes to the
-       ! lowest layer
+       ! lowest layer.  **NOTE** This code assumes wet mmr.
 
     tmp1(:ncol) = ztodt * gravit * state%rpdel(:ncol,pver)
        do m = 1, pmam_ncnst
@@ -1217,6 +1218,16 @@ contains
     ptend%u(:ncol,:)       = ( u_tmp(:ncol,:) - state%u(:ncol,:) ) * rztodt
     ptend%v(:ncol,:)       = ( v_tmp(:ncol,:) - state%v(:ncol,:) ) * rztodt
     ptend%q(:ncol,:pver,:) = ( q_tmp(:ncol,:pver,:) - state%q(:ncol,:pver,:) ) * rztodt
+
+    ! Convert tendencies of dry constituents to dry basis.
+    do m = 1,pcnst
+       if (cnst_type(m).eq.'dry') then
+          ptend%q(:ncol,:pver,m) = ptend%q(:ncol,:pver,m)*state%pdel(:ncol,:pver)/state%pdeldry(:ncol,:pver)
+       endif
+    end do
+    ! convert wet mmr back to dry before conservation check
+    call set_wet_to_dry(state)
+
     slten(:ncol,:)         = ( sl(:ncol,:) - sl_prePBL(:ncol,:) ) * rztodt
     qtten(:ncol,:)         = ( qt(:ncol,:) - qt_prePBL(:ncol,:) ) * rztodt
 
@@ -1311,7 +1322,7 @@ contains
                            'MASSCHECK vert diff : nstep,lon,lat,mass1,mass2,sum3,sflx,rel-diff : ', &
                            trim(cnst_name(m)), ' : ', nstep, state%lon(i)*180._r8/pi, state%lat(i)*180._r8/pi, &
                            sum1, sum2, sum3, sflx, abs(sum2-sum1)/sum1
-                      call endrun('vertical_diffusion_tend : mass not conserved' )
+!xxx                      call endrun('vertical_diffusion_tend : mass not conserved' )
                    endif
                 endif
              enddo col_loop
