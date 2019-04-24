@@ -863,7 +863,6 @@ contains
       integer :: idx, err
 
       ! Should we do snow optics? Check for existence of "cldfsnow" variable
-      ! The thing to do then is probably to set this at the module level.
       idx = pbuf_get_index('CLDFSNOW', errcode=err)
       if (err > 0) then
          snow_exists = .true.
