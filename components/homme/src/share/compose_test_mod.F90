@@ -7,6 +7,8 @@ module compose_test_mod
   implicit none
 
 interface
+
+#ifdef HOMME_ENABLE_COMPOSE
    subroutine compose_unittest() bind(c)
    end subroutine compose_unittest
 
@@ -61,6 +63,8 @@ interface
      use iso_c_binding, only: c_int
      integer (kind=c_int), value, intent(in) :: comm, root, rank
    end subroutine compose_stt_finish
+#endif
+
 end interface
 
 contains
@@ -84,6 +88,7 @@ contains
     type (derivative_t) :: deriv
     integer :: ithr, nets, nete
 
+#ifdef HOMME_ENABLE_COMPOSE
     call derivinit(deriv)
 
     if (par%masterproc) print *, '~*~ Comprehensively test COMPOSE ~*~'
@@ -105,6 +110,7 @@ contains
     call compose_stt(hybrid, nets, nete, hvcoord, deriv, elem)
 #if (defined HORIZ_OPENMP)
     !$omp end parallel
+#endif
 #endif
   end subroutine compose_test
 
@@ -167,7 +173,8 @@ contains
     type (timelevel_t) :: tl
     integer :: nsteps, n0_qdp, np1_qdp, ie, i, j
     real (kind=real_kind) :: dt, tprev, t
-  
+
+#ifdef HOMME_ENABLE_COMPOSE  
     call t_startf('compose_stt')
     ! Set up time stepping and initialize q and density.
     call timelevel_init_default(tl)
@@ -217,6 +224,7 @@ contains
     ! Do the global reductions, print diagnostic information, and clean up.
     call compose_stt_finish(hybrid%par%comm, hybrid%par%root, hybrid%par%rank)
     call t_stopf('compose_stt')
+#endif
   end subroutine compose_stt
 
 end module compose_test_mod

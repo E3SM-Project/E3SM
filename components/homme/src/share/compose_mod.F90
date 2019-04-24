@@ -3,6 +3,8 @@ module compose_mod
   implicit none
 
   interface
+
+#ifdef HOMME_ENABLE_COMPOSE
      subroutine kokkos_init() bind(c)
      end subroutine kokkos_init
 
@@ -122,20 +124,6 @@ module compose_mod
        type(cartesian3D_t), intent(in) :: sphere_cart_coord
      end subroutine slmm_check_ref2sphere
 
-     subroutine slmm_advect(lev, ie, nnc, np, nlev, qsize, nets, nete, &
-          dep_points, Qj_src, metdet, dp3d, tl_np1, q, minq, maxq) bind(c)
-       use iso_c_binding, only: c_int, c_double
-       use coordinate_systems_mod, only : cartesian3D_t
-       use dimensions_mod, only : qsize_d, max_neigh_edges
-       use element_state, only : timelevels
-       integer(kind=c_int), value, intent(in) :: lev, ie, nnc, np, nlev, qsize, nets, nete, tl_np1
-       type(cartesian3D_t), intent(in) :: dep_points(np,np)
-       real(kind=c_double), intent(in) :: Qj_src(np,np,qsize+1,max_neigh_edges+1), &
-            metdet(np,np), dp3d(np,np,nlev,timelevels)
-       real(kind=c_double), intent(out) :: q(np,np,nlev,qsize_d), &
-            minq(np,np,nlev,qsize,nets:nete), maxq(np,np,nlev,qsize,nets:nete)
-     end subroutine slmm_advect
-
      subroutine slmm_csl_set_elem_data(ie, metdet, qdp, dp, q, nelem_in_patch) bind(c)
        use iso_c_binding, only: c_int, c_double
        use dimensions_mod, only : nlev, np, qsize
@@ -163,6 +151,8 @@ module compose_mod
        use iso_c_binding, only: c_int
        integer(kind=c_int), intent(out) :: sl_mpi
      end subroutine slmm_get_mpi_pattern
+#endif
+
   end interface
 
 contains
@@ -193,6 +183,7 @@ contains
     integer, allocatable :: owned_ids(:)
     integer, pointer :: rank2sfc(:) => null()
 
+#ifdef HOMME_ENABLE_COMPOSE
     call t_startf('compose_init')
     use_sgi = sgi_is_initialized()
 
@@ -266,11 +257,16 @@ contains
        deallocate(nbr_id_rank, nirptr)
     end if
     call t_stopf('compose_init')
+#endif
   end subroutine compose_init
 
   subroutine compose_repro_sum(send, recv, nlocal, nfld, comm) bind(c)
     use iso_c_binding, only: c_int, c_double
+#ifdef CAM
+    use shr_reprosum_mod, only: repro_sum => shr_reprosum_calc
+#else
     use repro_sum_mod, only: repro_sum
+#endif
 
     real(kind=c_double), intent(in) :: send(nlocal,nfld)
     real(kind=c_double), intent(out) :: recv(nfld)

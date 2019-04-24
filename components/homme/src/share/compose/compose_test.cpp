@@ -3,8 +3,6 @@
 #include <memory>
 #include <vector>
 
-#include "config.h.c"
-
 #include <Kokkos_Core.hpp>
 
 #include "compose_test.hpp"
@@ -65,12 +63,12 @@ inline Real great_circle_dist (
   const Real lat1, const Real lon1, const Real lat2, const Real lon2,
   const Real R = 1)
 {
-    Real xA, yA, zA;
-    Real xB, yB, zB;
-    ll2xyz(lat1, lon1, xA, yA, zA);
-    ll2xyz(lat2, lon2, xB, yB, zB);
-    Real cp1, cp2, cp3, cpnorm, dotprod;
-    cp1 = yA*zB - yB*zA;
+  Real xA, yA, zA;
+  Real xB, yB, zB;
+  ll2xyz(lat1, lon1, xA, yA, zA);
+  ll2xyz(lat2, lon2, xB, yB, zB);
+  Real cp1, cp2, cp3, cpnorm, dotprod;
+  cp1 = yA*zB - yB*zA;
 	cp2 = xB*zA - xA*zB;
 	cp3 = xA*yB - xB*yA;
 	cpnorm = std::sqrt(cp1*cp1 + cp2*cp2 + cp3*cp3);

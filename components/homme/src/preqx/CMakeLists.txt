@@ -52,12 +52,6 @@ SET(PREQX_SRCS_C
   ${HOMME_SOURCE_DIR}/utils/cime/src/share/timing/GPTLget_memusage.c
 )
 
-SET(PREQX_SRCS_CXX
-  ${SRC_SHARE_DIR}/cedr.cpp
-  ${SRC_SHARE_DIR}/slmm.cpp
-  ${SRC_SHARE_DIR}/compose_test.cpp
-)
-
 IF (${HOMME_USE_TRILINOS})
 SET (PREQX_SRCS_ZOLTAN   ${TRILINOS_ZOLTAN_DIR}/zoltan_interface.c  ${TRILINOS_ZOLTAN_DIR}/zoltan_cppinterface.cpp)
 SET_SOURCE_FILES_PROPERTIES( ${TRILINOS_ZOLTAN_DIR}/zoltan_cppinterface.cpp PROPERTIES LANGUAGE CXX )
@@ -70,7 +64,7 @@ IF (DEFINED PREQX_CUSTOM_FLAGS_FILE)
 ENDIF ()
 
 # Make SRCS global so the tests can access it
-SET(EXEC_SOURCES ${PREQX_SRCS} ${PREQX_SRCS_F90} ${PREQX_SRCS_ZOLTAN} ${PREQX_SRCS_C} ${PREQX_SRCS_CXX})
+SET(EXEC_SOURCES ${PREQX_SRCS} ${PREQX_SRCS_F90} ${PREQX_SRCS_ZOLTAN} ${PREQX_SRCS_C})
 
 # Set up defaults
 IF (NOT PREQX_NP)

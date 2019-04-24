@@ -582,16 +582,19 @@ contains
   end subroutine prim_init1_elem_arrays
 
   subroutine prim_init1_compose(par, elem)
-    use parallel_mod, only : parallel_t
-    use control_mod, only : transport_alg, semi_lagrange_cdr_alg
-    use compose_mod, only : kokkos_init, compose_init, cedr_set_ie2gci, cedr_unittest
+    use parallel_mod, only : parallel_t, abortmp
+    use control_mod,  only : transport_alg, semi_lagrange_cdr_alg
+#ifdef HOMME_ENABLE_COMPOSE
+    use compose_mod,  only : kokkos_init, compose_init, cedr_set_ie2gci, cedr_unittest
+#endif
 
     type (parallel_t), intent(in) :: par
     type (element_t), pointer, intent(in) :: elem(:)
     integer :: ie, ierr
 
-    call kokkos_init()
-    if (transport_alg > 0 .and. semi_lagrange_cdr_alg > 1) then
+    if (transport_alg > 0) then
+#ifdef HOMME_ENABLE_COMPOSE
+       call kokkos_init()
        call compose_init(par, elem, GridVertex)
        !call cedr_unittest(par%comm, ierr)
        if (par%masterproc) then
@@ -600,6 +603,9 @@ contains
        do ie = 1, nelemd
           call cedr_set_ie2gci(ie, elem(ie)%vertex%number)
        end do
+#else
+       call abortmp('COMPOSE SL transport was requested, but HOMME was built without COMPOSE.')
+#endif
     end if
   end subroutine prim_init1_compose
 

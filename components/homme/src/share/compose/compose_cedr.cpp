@@ -1,10 +1,3 @@
-// Homme doesn't define this, probably b/c Fortran code doesn't use it that
-// much, so define it here.
-#ifndef NDEBUG
-# define NDEBUG
-#endif
-//#pragma message "We want assertions"
-//#undef NDEBUG
 // Uncomment this to look for MPI-related memory leaks.
 //#define COMPOSE_DEBUG_MPI
 
