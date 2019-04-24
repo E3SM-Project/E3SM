@@ -260,7 +260,8 @@ for mct, etc.
     <append DEBUG="TRUE"> -O0 -g </append>
   </CFLAGS>
   <CXXFLAGS>
-    <base> -std=c++11 -fp-model source -qopenmp </base>
+    <base> -std=c++11 -fp-model source </base>
+    <append compile_threaded="TRUE"> -qopenmp </append>
     <append DEBUG="TRUE"> -O0 -g </append>
     <append DEBUG="FALSE"> -O2 </append>
   </CXXFLAGS>
