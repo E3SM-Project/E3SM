@@ -11,7 +11,7 @@
 		<option name="config_vert_levels">100</option>
 		<option name="config_ocean_run_mode">'init'</option>
 		<option name="config_write_cull_cell_mask">.false.</option>
-		<option name="config_vertical_grid">'100layerACMEv1'</option>
+		<option name="config_vertical_grid">'100layerE3SMv1'</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="init">
