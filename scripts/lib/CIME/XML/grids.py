@@ -157,7 +157,7 @@ class Grids(GenericXML):
 
         # determine component grids and associated required domains and gridmaps
         # TODO: this should be in XML, not here
-        prefix = {"atm":"a%", "lnd":"l%", "ocnice":"oi%", "rof":"r%", "wav":"w%", "glc":"g%", "mask":"m%"}
+        prefix = {"atm":"a%", "lnd":"l%", "ocnice":"oi%", "rof":"r%", "wav":"w%", "glc":"g%", "mask":"m%", "iac":"z%"}
         lname = ""
         for component_gridname in self._comp_gridnames:
             if lname:
@@ -204,7 +204,7 @@ class Grids(GenericXML):
         # use component_grids to create grids dictionary
         # TODO: this should be in XML, not here
         grids = [("atm", "a%"), ("lnd", "l%"), ("ocn", "o%"), ("mask", "m%"),\
-                 ("ice", "i%"), ("rof", "r%"), ("glc", "g%"), ("wav", "w%")]
+                 ("ice", "i%"), ("rof", "r%"), ("glc", "g%"), ("wav", "w%"), ("iac", "z%")]
         domains = {}
         mask_name = None
         if 'm%' in component_grids:
@@ -281,7 +281,7 @@ class Grids(GenericXML):
         set all mapping files for config_grids.xml v2 schema
         """
         grids = [("atm_grid","a%"), ("lnd_grid","l%"), ("ocn_grid","o%"), \
-                 ("rof_grid","r%"), ("glc_grid","g%"), ("wav_grid","w%")]
+                 ("rof_grid","r%"), ("glc_grid","g%"), ("wav_grid","w%"), ("iac_grid","z%")]
         gridmaps = {}
 
         # (1) set all possibly required gridmaps to idmap

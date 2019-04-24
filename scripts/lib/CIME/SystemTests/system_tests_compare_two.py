@@ -52,7 +52,8 @@ class SystemTestsCompareTwo(SystemTestsCommon):
                  run_two_suffix = 'test',
                  run_one_description = '',
                  run_two_description = '',
-                 multisubmit = False):
+                 multisubmit = False,
+                 ignore_fieldlist_diffs = False):
         """
         Initialize a SystemTestsCompareTwo object. Individual test cases that
         inherit from SystemTestsCompareTwo MUST call this __init__ method.
@@ -71,10 +72,16 @@ class SystemTestsCompareTwo(SystemTestsCommon):
                 when starting the second run. Defaults to ''.
             multisubmit (bool): Do first and second runs as different submissions.
                 Designed for tests with RESUBMIT=1
+            ignore_fieldlist_diffs (bool): If True, then: If the two cases differ only in
+                their field lists (i.e., all shared fields are bit-for-bit, but one case
+                has some diagnostic fields that are missing from the other case), treat
+                the two cases as identical. (This is needed for tests where one case
+                exercises an option that produces extra diagnostic fields.)
         """
         SystemTestsCommon.__init__(self, case)
 
         self._separate_builds = separate_builds
+        self._ignore_fieldlist_diffs = ignore_fieldlist_diffs
 
         # run_one_suffix is just used as the suffix for the netcdf files
         # produced by the first case; we may eventually remove this, but for now
@@ -250,7 +257,9 @@ class SystemTestsCompareTwo(SystemTestsCommon):
             # Case1 is the "main" case, and we need to do the comparisons from there
             self._activate_case1()
             self._link_to_case2_output()
-            self._component_compare_test(self._run_one_suffix, self._run_two_suffix, success_change=success_change)
+            self._component_compare_test(self._run_one_suffix, self._run_two_suffix,
+                                         success_change=success_change,
+                                         ignore_fieldlist_diffs=self._ignore_fieldlist_diffs)
 
     def copy_case1_restarts_to_case2(self):
         """
