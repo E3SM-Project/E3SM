@@ -760,50 +760,35 @@ contains
     else if (tstep_type==31) then ! ARKode Conde et al ssp3(3,3,3)b (renamed here)
       call set_Butcher_tables(arkode_parameters, arkode_tables%SSP3333C)
 
-    else if (tstep_type==32) then ! ARKode IMKG 2nd-order, 4 stage, variant a
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG232a)
+    else if (tstep_type==32) then ! ARKode IMKG 2nd-order, 4 stage (2 implicit)
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG232)
 
-    else if (tstep_type==33) then ! ARKode IMKG 2nd-order, 4 stage, variant b
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG232b)
+    else if (tstep_type==33) then ! ARKode IMKG 2nd-order, 5 stage (2 implicit)
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG242)
 
-    else if (tstep_type==34) then ! ARKode IMKG 2nd-order, 5 stage, variant a
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG242a)
+    else if (tstep_type==34) then ! ARKode IMKG 2nd-order, 5 stage (3 implicit)
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG243)
 
-    else if (tstep_type==35) then ! ARKode IMKG 2nd-order, 5 stage, variant b
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG242b)
+    else if (tstep_type==35) then ! ARKode IMKG 2nd-order, 6 stage (2 implicit)
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG252)
 
-    else if (tstep_type==36) then ! ARKode IMKG 2nd-order, 5 stage, variant a
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG243a)
+    else if (tstep_type==36) then ! ARKode IMKG 2nd-order, 6 stage (3 implicit)
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG253)
 
-    else if (tstep_type==37) then ! ARKode IMKG 2nd-order, 5 stage, variant b
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG243b)
+    else if (tstep_type==37) then ! ARKode IMKG 2nd-order, 6 stage (4 implicit)
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG254)
 
-    else if (tstep_type==38) then ! ARKode IMKG 2nd-order, 6 stage, variant a
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG252a)
+    else if (tstep_type==38) then ! ARKode IMKG 3rd-order, 5 stage (2 implicit)
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG342)
 
-    else if (tstep_type==39) then ! ARKode IMKG 2nd-order, 6 stage, variant b
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG252b)
+    else if (tstep_type==39) then ! ARKode IMKG 3rd-order, 5 stage (3 implicit)
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG343)
 
-    else if (tstep_type==40) then ! ARKode IMKG 2nd-order, 6 stage, variant a
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG253a)
+    else if (tstep_type==40) then ! ARKode IMKG 3rd-order, 6 stage (3 implicit)
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG353)
 
-    else if (tstep_type==41) then ! ARKode IMKG 2nd-order, 6 stage, variant b
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG253b)
-
-    else if (tstep_type==42) then ! ARKode IMKG 2nd-order, 6 stage, variant a
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG254a)
-
-    else if (tstep_type==43) then ! ARKode IMKG 2nd-order, 6 stage, variant b
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG254b)
-
-    else if (tstep_type==44) then ! ARKode IMKG 2nd-order, 6 stage, variant c
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG254c)
-
-    else if (tstep_type==45) then ! ARKode IMKG 3rd-order, 5 stage, variant a
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG343a)
-
-    else if (tstep_type==46) then ! ARKode IMKG 3rd-order, 5 stage, variant b
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG343b)
+    else if (tstep_type==41) then ! ARKode IMKG 3rd-order, 6 stage (4 implicit)
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG354)
 
     else 
        call abortmp('ERROR: bad choice of tstep_type')
