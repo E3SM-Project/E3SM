@@ -836,16 +836,16 @@ ifeq ($(ULIBDEP),$(null))
        ULIBDEP += $(LIBROOT)/libiac.a
      endif
      ULIBDEP += $(LIBROOT)/libesp.a
-     ifeq ($(COMP_GLC), cism)
-       ULIBDEP += $(CISM_LIBDIR)/libglimmercismfortran.a
-       ifeq ($(CISM_USE_TRILINOS), TRUE)
-         ULIBDEP += $(CISM_LIBDIR)/libglimmercismcpp.a
-       endif
-     endif
-     ifeq ($(OCN_SUBMODEL),moby)
-       ULIBDEP += $(LIBROOT)/libmoby.a
-     endif
    endif
+endif
+ifeq ($(COMP_GLC), cism)
+  ULIBDEP += $(CISM_LIBDIR)/libglimmercismfortran.a
+  ifeq ($(CISM_USE_TRILINOS), TRUE)
+    ULIBDEP += $(CISM_LIBDIR)/libglimmercismcpp.a
+  endif
+endif
+ifeq ($(OCN_SUBMODEL),moby)
+  ULIBDEP += $(LIBROOT)/libmoby.a
 endif
 
 ifdef COSP_LIBDIR
