@@ -612,7 +612,7 @@ contains
                end if
             end if
 
-            ! Reset configs to false, so we don't write or compute the state every coupling interval for use within ACME.
+            ! Reset configs to false, so we don't write or compute the state every coupling interval for use within E3SM.
             ! This ensures that these startup options are only done once.
             if ( config_AM_compute_on_startup) then
               config_AM_compute_on_startup = .false.
