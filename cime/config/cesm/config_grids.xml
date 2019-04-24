@@ -44,6 +44,7 @@
       <grid name="wav"	  compset="DWAV"  >ww3a</grid>
       <grid name="wav"	  compset="WW3"	  >ww3a</grid>
       <grid name="wav"    compset="XWAV"  >ww3a</grid>
+      <grid name="iac"    compset="SIAC"  >null</grid>
     </model_grid_defaults>
 
     <model_grid alias="g16_g16" compset="DATM.+DROF">
@@ -118,6 +119,16 @@
       <grid name="atm">5x5_amazon</grid>
       <grid name="lnd">5x5_amazon</grid>
       <grid name="rof">null</grid>
+    </model_grid>
+
+    <!-- Regional NLDAS-2 grid over the U.S. (0.125 degree resolution;
+         25-53N, 235-293E), with mask from NLDAS-2 atmospheric drivers -->
+    <model_grid alias="nldas2_rnldas2_mnldas2" compset="DATM.+CLM">
+      <grid name="atm">0.125nldas2</grid>
+      <grid name="lnd">0.125nldas2</grid>
+      <grid name="ocnice">0.125nldas2</grid>
+      <grid name="rof">0.125nldas2</grid>
+      <mask>nldas2</mask>
     </model_grid>
 
     <model_grid alias="hcru_hcru" compset="DATM.+CLM">
@@ -275,6 +286,12 @@
       <grid name="atm">T62</grid>
       <grid name="lnd">T62</grid>
       <grid name="ocnice">tx0.66v1</grid>
+    </model_grid>
+
+    <model_grid alias="T62_t025" not_compset="_CAM">
+      <grid name="atm">T62</grid>
+      <grid name="lnd">T62</grid>
+      <grid name="ocnice">tx0.25v1</grid>
     </model_grid>
 
     <model_grid alias="T62_g16" not_compset="_CAM">
@@ -1002,11 +1019,11 @@
       <mask>tx0.66v1</mask>
     </model_grid>
 
-    <model_grid alias="C96_t061" not_compset="_POP" >
+    <model_grid alias="C96_t025" not_compset="_POP" >
       <grid name="atm">C96</grid>
       <grid name="lnd">C96</grid>
-      <grid name="ocnice">tx0.66v1</grid>
-      <mask>tx0.66v1</mask>
+      <grid name="ocnice">tx0.25v1</grid>
+      <mask>tx0.25v1</mask>
     </model_grid>
 
     <!-- The following grid is only used for ADWAV testing -->
@@ -1091,6 +1108,14 @@
       <nx>1</nx> <ny>1</ny>
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.5x5pt-amazon_navy.090715.nc</file>
       <desc>5x5 Amazon regional case -- only valid for DATM/CLM compset</desc>
+    </domain>
+
+    <!-- This grid is also used by ROF -->
+    <domain name="0.125nldas2">
+      <nx>464</nx> <ny>224</ny>
+      <file grid="atm|lnd" mask="nldas2">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.0.125nldas2_0.125nldas2.190410.nc</file>
+      <file grid="ocnice"  mask="nldas2">$DIN_LOC_ROOT/share/domains/domain.clm/domain.ocn.0.125nldas2.190410.nc</file>
+      <desc>Regional NLDAS-2 grid over the U.S. (0.125 degree resolution; 25-53N, 235-293E)</desc>
     </domain>
 
     <!-- ATM/LND domains global -->
@@ -1367,8 +1392,8 @@
 
     <domain name="ne0np4CONUS.ne30x8">
       <nx>174098</nx> <ny>1</ny>
-      <file grid="atm|lnd" mask="gx1v7">$DIN_LOC_ROOT/share/domains/domain.lnd.ne0CONUSne30x8_gx1v7.190304.nc</file>
-      <file grid="ocnice"  mask="gx1v7">$DIN_LOC_ROOT/share/domains/domain.ocn.ne0CONUSne30x8_gx1v7.190304.nc</file>
+      <file grid="atm|lnd" mask="gx1v7">$DIN_LOC_ROOT/share/domains/domain.lnd.ne0CONUSne30x8_gx1v7.190322.nc</file>
+      <file grid="ocnice"  mask="gx1v7">$DIN_LOC_ROOT/share/domains/domain.ocn.ne0CONUSne30x8_gx1v7.190322.nc</file>
       <desc>ne0np4CONUS.ne30x8 is a Spectral Elem 1-deg grid with a 1/8 deg refined region over the continental United States:</desc>
       <support>Test support only</support>
     </domain>
@@ -1400,7 +1425,9 @@
       <support>EXPERIMENTAL FVM physics grid</support>
     </domain>
 
+    <!-- ======================================================== -->
     <!-- OCN/ICE domains -->
+    <!-- ======================================================== -->
 
     <domain name="gx1v6">
       <nx>320</nx>  <ny>384</ny>
@@ -1433,6 +1460,14 @@
       <support>Experimental for MOM6 experiments</support>
     </domain>
 
+    <domain name="tx0.25v1">
+      <nx>1440</nx> <ny>1080</ny>
+      <file grid="ocnice">$DIN_LOC_ROOT/share/domains/domain.ocn.tx0.25v1.190207.nc</file>
+      <mesh driver="nuopc">$DIN_LOC_ROOT/share/meshes/tx0.25v1_190204_ESMFmesh.nc</mesh>
+      <desc>tx0.25v1 is tripole v1 0.25-deg MOM6 grid:</desc>
+      <support>Experimental for MOM6 experiments</support>
+    </domain>
+
     <domain name="tx0.1v2">
       <nx>3600</nx> <ny>2400</ny>
       <file grid="ocnice">$DIN_LOC_ROOT/share/domains/domain.ocn.tx0.1v2.161014.nc</file>
@@ -1461,7 +1496,9 @@
       <support>Experimental, under development</support>
     </domain>
 
+    <!-- ======================================================== -->
     <!-- ROF domains -->
+    <!-- ======================================================== -->
 
     <domain name="rx1">
       <nx>360</nx> <ny>180</ny>
@@ -1554,8 +1591,8 @@
     <required_gridmap grid1="ocn_grid" grid2="wav_grid">OCN2WAV_SMAPNAME</required_gridmap>
     <required_gridmap grid1="ocn_grid" grid2="wav_grid">ICE2WAV_SMAPNAME</required_gridmap> <!-- ??? -->
     <!-- <required_gridmap grid1="ocn_grid" grid2="rof_grid" not_compset="_POP">ROF2OCN_FMAPNAME</required_gridmap> ?? -->
-    <required_gridmap grid1="ocn_grid" grid2="rof_grid" >ROF2OCN_LIQ_RMAPNAME</required_gridmap>
-    <required_gridmap grid1="ocn_grid" grid2="rof_grid" >ROF2OCN_ICE_RMAPNAME</required_gridmap>
+    <required_gridmap grid1="ocn_grid" grid2="rof_grid">ROF2OCN_LIQ_RMAPNAME</required_gridmap>
+    <required_gridmap grid1="ocn_grid" grid2="rof_grid">ROF2OCN_ICE_RMAPNAME</required_gridmap>
     <required_gridmap grid1="lnd_grid" grid2="rof_grid">LND2ROF_FMAPNAME</required_gridmap>
     <required_gridmap grid1="lnd_grid" grid2="rof_grid">ROF2LND_FMAPNAME</required_gridmap>
   </required_gridmaps>

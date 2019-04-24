@@ -45,6 +45,7 @@
       <grid name="wav"    compset="DWAV">ww3a</grid>
       <grid name="wav"    compset="WW3">ww3a</grid>
       <grid name="wav"    compset="XWAV">ww3a</grid>
+      <grid name="iac"    compset="SIAC">null</grid>
     </model_grid_defaults>
 
     <model_grid alias="g16_g16" compset="DATM.+DROF">
