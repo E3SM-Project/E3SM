@@ -647,7 +647,7 @@ if ( `lowercase $walltime` == default ) then
   if ( `lowercase $debug_queue` == true ) then
     set walltime = '0:30:00'
   else
-    if ( $machine == 'cab' || $machine == 'syrah' ) then
+    if ( $machine == 'quartz' || $machine == 'syrah' ) then
       set walltime = '1:29:00'
     else
       set walltime = '2:00:00'
@@ -835,7 +835,7 @@ endif
 #===========================
 
 if ( `lowercase $debug_queue` == true ) then
-  if ( $machine == cab || $machine == sierra ) then
+  if ( $machine == quartz || $machine == syrah ) then
     $xmlchange_exe --id JOB_QUEUE --val 'pdebug'
   else if ($machine != sandiatoss3 && $machine != bebop && $machine != blues) then
     $xmlchange_exe --id JOB_QUEUE --val 'debug'
@@ -957,6 +957,7 @@ if ( `lowercase $old_executable` == false ) then
   e3sm_print '-------- Starting Build --------'
   e3sm_newline
 
+  e3sm_print 'WARNING: Make sure there are no double-slashes (//) in the build command below: => Will cause a build error'
   e3sm_print ${case_build_exe}
   ${case_build_exe}
 
