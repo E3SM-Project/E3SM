@@ -1178,7 +1178,6 @@ contains
     use ESMF                  , only : ESMF_GridCompIsPetLocal, ESMF_MethodAdd
     use NUOPC                 , only : NUOPC_CompAttributeGet
     use NUOPC_Driver          , only : NUOPC_DriverAddComp
-    use shr_nuopc_methods_mod , only : chkerr
     use shr_string_mod        , only : toLower => shr_string_toLower
     use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag, CS, CL
     use mpi                   , only : MPI_COMM_NULL
@@ -1434,7 +1433,6 @@ contains
     use ESMF                  , only : ESMF_GridComp, ESMF_GridCompGet, ESMF_VM, ESMF_VMGet
     use ESMF                  , only : ESMF_SUCCESS
     use NUOPC                 , only : NUOPC_CompAttributeGet
-    use shr_nuopc_methods_mod , only : chkerr
     use perf_mod              , only : t_prf, t_finalizef
     use med_constants_mod     , only : CL
 
