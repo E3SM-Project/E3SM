@@ -135,7 +135,7 @@ module seq_rest_mod
 contains
   !===============================================================================
 
-  subroutine seq_rest_read(rest_file, infodata, &
+  subroutine seq_rest_read(rest_file, infodata, ocn_c2_glc, &
        atm, lnd, ice, ocn, rof, glc, wav, esp,  &
        fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
        fractions_rx, fractions_gx, fractions_wx)
@@ -144,6 +144,7 @@ contains
 
     character(*)           , intent(in) :: rest_file  ! restart file path/name
     type(seq_infodata_type), intent(in) :: infodata
+    logical, intent(in)                 :: ocn_c2_glc ! .true.  => ocn to glc coupling on
     type (component_type) , intent(inout) :: atm(:)
     type (component_type) , intent(inout) :: lnd(:)
     type (component_type) , intent(inout) :: ice(:)
@@ -227,7 +228,7 @@ contains
           call seq_io_read(rest_file, l2gacc_lx_cnt ,'l2gacc_lx_cnt')
        end if
 
-       if (glc_present) then
+       if (ocn_c2_glc) then
           gsmap         => component_get_gsmap_cx(glc(1))
           x2gacc_gx     => prep_glc_get_x2gacc_gx()
           x2gacc_gx_cnt => prep_glc_get_x2gacc_gx_cnt()
@@ -298,7 +299,7 @@ contains
 
   !===============================================================================
 
-  subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
+  subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, ocn_c2_glc, &
        atm, lnd, ice, ocn, rof, glc, wav, esp,                 &
        fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
        fractions_rx, fractions_gx, fractions_wx, tag, rest_file)
@@ -308,6 +309,7 @@ contains
     type(ESMF_Clock)       , intent(in)    :: EClock_d      ! driver clock
     type(seq_timemgr_type) , intent(inout) :: seq_SyncClock ! contains ptr to driver clock
     type(seq_infodata_type), intent(in)    :: infodata
+    logical, intent(in)                    :: ocn_c2_glc ! .true.  => ocn to glc coupling on
     type (component_type)       , intent(inout) :: atm(:)
     type (component_type)  , intent(inout) :: lnd(:)
     type (component_type)  , intent(inout) :: ice(:)
@@ -494,7 +496,7 @@ contains
              call seq_io_write(rest_file, l2gacc_lx_cnt, 'l2gacc_lx_cnt', &
                   whead=whead, wdata=wdata)
           end if
-          if (glc_present) then
+          if (ocn_c2_glc) then
              gsmap         => component_get_gsmap_cx(glc(1))
              x2gacc_gx => prep_glc_get_x2gacc_gx()
              x2gacc_gx_cnt => prep_glc_get_x2gacc_gx_cnt()

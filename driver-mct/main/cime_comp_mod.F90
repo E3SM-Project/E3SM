@@ -2128,7 +2128,7 @@ contains
 
     call seq_diag_zero_mct(mode='all')
     if (read_restart .and. iamin_CPLID) then
-       call seq_rest_read(rest_file, infodata, &
+       call seq_rest_read(rest_file, infodata, ocn_c2_glc, &
             atm, lnd, ice, ocn, rof, glc, wav, esp, &
             fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
             fractions_rx, fractions_gx, fractions_wx)
@@ -3021,7 +3021,7 @@ contains
              call shr_sys_flush(logunit)
           end if
           if (iamin_CPLID) then
-             call seq_rest_read(drv_resume, infodata,                          &
+             call seq_rest_read(drv_resume, infodata, ocn_c2_glc,              &
                   atm, lnd, ice, ocn, rof, glc, wav, esp,                      &
                   fractions_ax, fractions_lx, fractions_ix, fractions_ox,      &
                   fractions_rx, fractions_gx, fractions_wx)
@@ -4309,7 +4309,7 @@ contains
              call shr_sys_flush(logunit)
           endif
 
-          call seq_rest_write(EClock_d, seq_SyncClock, infodata,       &
+          call seq_rest_write(EClock_d, seq_SyncClock, infodata, ocn_c2_glc, &
                atm, lnd, ice, ocn, rof, glc, wav, esp,                 &
                fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
                fractions_rx, fractions_gx, fractions_wx,               &
