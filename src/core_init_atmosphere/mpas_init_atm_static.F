@@ -15,8 +15,11 @@
  use mpas_log, only : mpas_log_write
  use init_atm_hinterp
  use init_atm_llxy
+ use mpas_c_interfacing, only : mpas_f_to_c_string
 
  use mpas_atmphys_utilities
+
+ use iso_c_binding, only : c_char, c_int, c_float, c_loc, c_ptr
 
  implicit none
  private
@@ -24,6 +27,23 @@
           init_atm_check_read_error, &
           nearest_cell,              &
           sphere_distance
+
+ interface
+    subroutine read_geogrid(fname, rarray, nx, ny, nz, isigned, endian, &
+                            scalefactor, wordsize, status) bind(C)
+       use iso_c_binding, only : c_char, c_int, c_float, c_ptr
+       character (c_char), dimension(*), intent(in) :: fname
+       type (c_ptr), value :: rarray
+       integer (c_int), intent(in), value :: nx
+       integer (c_int), intent(in), value :: ny
+       integer (c_int), intent(in), value :: nz
+       integer (c_int), intent(in), value :: isigned
+       integer (c_int), intent(in), value :: endian
+       real (c_float), intent(in), value :: scalefactor
+       integer (c_int), intent(in), value :: wordsize
+       integer (c_int), intent(inout) :: status
+    end subroutine read_geogrid
+ end interface
 
  contains
 
@@ -45,6 +65,7 @@
  type(proj_info):: proj
 
  character(len=StrKIND) :: fname
+ character(kind=c_char), dimension(StrKIND+1) :: c_fname
  character(len=StrKIND), pointer :: config_geog_data_path
  character(len=StrKIND), pointer :: config_landuse_data
  character(len=StrKIND), pointer :: config_topo_data
@@ -56,8 +77,8 @@
 
  integer:: isice_lu,iswater_lu,ismax_lu
 
- integer:: nx,ny,nz
- integer:: endian,isigned,istatus,wordsize
+ integer(c_int):: nx,ny,nz
+ integer(c_int):: endian,isigned,istatus,wordsize
  integer:: i,j,k
  integer :: ii, jj
  integer:: iCell,iEdge,iVtx,iPoint,iTileStart,iTileEnd,jTileStart,jTileEnd
@@ -65,8 +86,9 @@
  integer,dimension(:),allocatable  :: nhs
  integer,dimension(:,:),allocatable:: ncat
       
- real(kind=4):: scalefactor
- real(kind=4),dimension(:,:,:),allocatable:: rarray
+ real(kind=c_float):: scalefactor
+ real(kind=c_float),dimension(:,:,:),pointer,contiguous :: rarray
+ type(c_ptr) :: rarray_ptr
 
  real(kind=RKIND):: start_lat
  real(kind=RKIND):: start_lon
@@ -260,6 +282,8 @@
  nhs(:) = 0
  ter(:) = 0.0
 
+ rarray_ptr = c_loc(rarray)
+
  start_lat = -89.99583
  select case(trim(config_topo_data))
     case('GTOPO30')
@@ -287,8 +311,9 @@
        write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)//trim(geog_sub_path), &
                     iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
        call mpas_log_write(trim(fname))
+       call mpas_f_to_c_string(fname, c_fname)
 
-       call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
+       call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned,endian, &
                          scalefactor,wordsize,istatus)
        call init_atm_check_read_error(istatus, fname)
 
@@ -371,6 +396,8 @@
  ncat(:,:) = 0
  lu_index(:) = 0.0
 
+ rarray_ptr = c_loc(rarray)
+
  do jTileStart = 1,20401,ny
     jTileEnd = jTileStart + ny - 1
 
@@ -379,8 +406,9 @@
        write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
              trim(geog_sub_path),iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
        call mpas_log_write(trim(fname))
+       call mpas_f_to_c_string(fname, c_fname)
 
-       call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
+       call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned,endian, &
                          scalefactor,wordsize,istatus)
        call init_atm_check_read_error(istatus, fname)
 
@@ -456,6 +484,8 @@ if (rarray(i,j,1) == 0) cycle
  ncat(:,:) = 0
  soilcat_top(:) = 0.0
 
+ rarray_ptr = c_loc(rarray)
+
  do jTileStart = 1,20401,ny
     jTileEnd = jTileStart + ny - 1
 
@@ -464,8 +494,9 @@ if (rarray(i,j,1) == 0) cycle
        write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
              'soiltype_top_30s/',iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
        call mpas_log_write(trim(fname))
+       call mpas_f_to_c_string(fname, c_fname)
 
-       call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
+       call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned,endian, &
                          scalefactor,wordsize,istatus)
        call init_atm_check_read_error(istatus, fname)
 
@@ -568,6 +599,8 @@ if (rarray(i,j,1) == 0) cycle
  allocate(soiltemp_1deg(-2:363,-2:183))
  soiltemp(:) = 0.0
 
+ rarray_ptr = c_loc(rarray)
+
  call map_set(PROJ_LATLON, proj,  &
               latinc = 1.0_RKIND, &
               loninc = 1.0_RKIND, &
@@ -579,8 +612,9 @@ if (rarray(i,j,1) == 0) cycle
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
        'soiltemp_1deg/',1,'-',180,'.',1,'-',180
  call mpas_log_write(trim(fname))
+ call mpas_f_to_c_string(fname, c_fname)
 
- call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned, endian, &
+ call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned, endian, &
                    scalefactor,wordsize,istatus)
  call init_atm_check_read_error(istatus, fname)
  soiltemp_1deg(-2:180,-2:183) = rarray(1:183,1:186,1)
@@ -588,8 +622,9 @@ if (rarray(i,j,1) == 0) cycle
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
             'soiltemp_1deg/',181,'-',360,'.',1,'-',180
  call mpas_log_write(trim(fname))
+ call mpas_f_to_c_string(fname, c_fname)
 
- call read_geogrid(fname, len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
+ call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned,endian, &
                         scalefactor,wordsize,istatus)
  call init_atm_check_read_error(istatus,fname)
  soiltemp_1deg(181:363,-2:183) = rarray(4:186,1:186,1)
@@ -651,6 +686,8 @@ if (rarray(i,j,1) == 0) cycle
     nhs(:) = 0
     snoalb(:) = 0.0
 
+    rarray_ptr = c_loc(rarray)
+
     start_lat = 90.0 - 0.05 * 0.5 / supersample_fac
     start_lon = -180.0 + 0.05 * 0.5 / supersample_fac
     geog_sub_path = 'maxsnowalb_modis/'
@@ -663,8 +700,9 @@ if (rarray(i,j,1) == 0) cycle
           write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)//trim(geog_sub_path), &
                        iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
           call mpas_log_write(trim(fname))
+          call mpas_f_to_c_string(fname, c_fname)
 
-          call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
+          call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned,endian, &
                             scalefactor,wordsize,istatus)
           call init_atm_check_read_error(istatus, fname)
 
@@ -745,6 +783,8 @@ if (rarray(i,j,1) == 0) cycle
     allocate(maxsnowalb(-2:363,-2:183))
     snoalb(:) = 0.0
 
+    rarray_ptr = c_loc(rarray)
+
     call map_set(PROJ_LATLON, proj,  &
                  latinc = 1.0_RKIND, &
                  loninc = 1.0_RKIND, &
@@ -756,8 +796,9 @@ if (rarray(i,j,1) == 0) cycle
     write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
           'maxsnowalb/',1,'-',180,'.',1,'-',180
     call mpas_log_write(trim(fname))
+    call mpas_f_to_c_string(fname, c_fname)
 
-    call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
+    call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned,endian, &
                       scalefactor,wordsize,istatus)
     call init_atm_check_read_error(istatus,fname)
     maxsnowalb(-2:180,-2:183) = rarray(1:183,1:186,1)
@@ -765,8 +806,9 @@ if (rarray(i,j,1) == 0) cycle
     write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
           'maxsnowalb/',181,'-',360,'.',1,'-',180
     call mpas_log_write(trim(fname))
+    call mpas_f_to_c_string(fname, c_fname)
 
-    call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
+    call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned,endian, &
                       scalefactor,wordsize,istatus)
     call init_atm_check_read_error(istatus, fname)
     maxsnowalb(181:363,-2:183) = rarray(4:186,1:186,1)
@@ -833,10 +875,12 @@ if (rarray(i,j,1) == 0) cycle
     scalefactor = 1.0
     msgval = 200.0
     fillval = 0.0
-    allocate(vegfra(nx,ny,nz))
+    allocate(rarray(nx,ny,nz))
     allocate(nhs(nCells))
     nhs(:) = 0
     greenfrac(:,:) = 0.0
+
+    rarray_ptr = c_loc(rarray)
 
     start_lat = -89.99583
     start_lon = -179.99583
@@ -850,8 +894,9 @@ if (rarray(i,j,1) == 0) cycle
           write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)//trim(geog_sub_path), &
                        iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
           call mpas_log_write(trim(fname))
+          call mpas_f_to_c_string(fname, c_fname)
 
-          call read_geogrid(fname,len_trim(fname),vegfra,nx,ny,nz,isigned,endian, &
+          call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned,endian, &
                             scalefactor,wordsize,istatus)
           call init_atm_check_read_error(istatus, fname)
 
@@ -874,10 +919,10 @@ if (rarray(i,j,1) == 0) cycle
              !
              if (landmask(iPoint) == 1 .and. bdyMaskCell(iPoint) < nBdyLayers) then
                 do k=1,nz
-                   if (vegfra(i,j,k) == msgval) then
-                      vegfra(i,j,k) = fillval
+                   if (rarray(i,j,k) == msgval) then
+                      rarray(i,j,k) = fillval
                    end if
-                   greenfrac(k,iPoint) = greenfrac(k,iPoint) + vegfra(i,j,k)
+                   greenfrac(k,iPoint) = greenfrac(k,iPoint) + rarray(i,j,k)
                 end do
                 nhs(iPoint) = nhs(iPoint) + 1
 
@@ -891,10 +936,10 @@ if (rarray(i,j,1) == 0) cycle
                 if (in_cell(xPixel, yPixel, zPixel, xCell(iPoint), yCell(iPoint), zCell(iPoint), &
                             nEdgesOnCell(iPoint), verticesOnCell(:,iPoint), xVertex, yVertex, zVertex)) then
                    do k=1,nz
-                      if (vegfra(i,j,k) == msgval) then
-                         vegfra(i,j,k) = fillval
+                      if (rarray(i,j,k) == msgval) then
+                         rarray(i,j,k) = fillval
                       end if
-                      greenfrac(k,iPoint) = greenfrac(k,iPoint) + vegfra(i,j,k)
+                      greenfrac(k,iPoint) = greenfrac(k,iPoint) + rarray(i,j,k)
                    end do
                    nhs(iPoint) = nhs(iPoint) + 1
                 end if
@@ -916,7 +961,7 @@ if (rarray(i,j,1) == 0) cycle
        shdmin(iCell) = minval(greenfrac(:,iCell))
        shdmax(iCell) = maxval(greenfrac(:,iCell))
     end do
-    deallocate(vegfra)
+    deallocate(rarray)
     deallocate(nhs)
 
  else if (trim(config_vegfrac_data) == 'NCEP') then
@@ -934,6 +979,8 @@ if (rarray(i,j,1) == 0) cycle
     allocate(vegfra(-2:2503,-2:1253,12))
     greenfrac(:,:) = 0.0
 
+    rarray_ptr = c_loc(rarray)
+
     call map_set(PROJ_LATLON, proj,    &
                  latinc = 0.144_RKIND, &
                  loninc = 0.144_RKIND, &
@@ -945,8 +992,9 @@ if (rarray(i,j,1) == 0) cycle
     write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
           'greenfrac/',1,'-',1250,'.',1,'-',1250
     call mpas_log_write(trim(fname))
+    call mpas_f_to_c_string(fname, c_fname)
 
-    call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
+    call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned,endian, &
                       scalefactor,wordsize,istatus)
     call init_atm_check_read_error(istatus,fname)
     vegfra(-2:1250,-2:1253,1:12) = rarray(1:1253,1:1256,1:12)
@@ -954,8 +1002,9 @@ if (rarray(i,j,1) == 0) cycle
     write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
           'greenfrac/',1251,'-',2500,'.',1,'-',1250
     call mpas_log_write(trim(fname))
+    call mpas_f_to_c_string(fname, c_fname)
 
-    call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
+    call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned,endian, &
                       scalefactor,wordsize,istatus)
     call init_atm_check_read_error(istatus,fname)
     vegfra(1251:2503,-2:1253,1:12) = rarray(4:1256,1:1256,1:12)
@@ -1027,6 +1076,8 @@ if (rarray(i,j,1) == 0) cycle
     nhs(:) = 0
     albedo12m(:,:) = 0.0
 
+    rarray_ptr = c_loc(rarray)
+
     start_lat = 90.0 - 0.05 * 0.5 / supersample_fac
     start_lon = -180.0 + 0.05 * 0.5 / supersample_fac
     geog_sub_path = 'albedo_modis/'
@@ -1039,8 +1090,9 @@ if (rarray(i,j,1) == 0) cycle
           write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)//trim(geog_sub_path), &
                        iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
           call mpas_log_write(trim(fname))
+          call mpas_f_to_c_string(fname, c_fname)
 
-          call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
+          call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned,endian, &
                             scalefactor,wordsize,istatus)
           call init_atm_check_read_error(istatus, fname)
 
@@ -1127,6 +1179,8 @@ if (rarray(i,j,1) == 0) cycle
     allocate(vegfra(-2:2503,-2:1253,12))
     albedo12m(:,:) = 0.0
 
+    rarray_ptr = c_loc(rarray)
+
     call map_set(PROJ_LATLON, proj,    &
                  latinc = 0.144_RKIND, &
                  loninc = 0.144_RKIND, &
@@ -1138,8 +1192,9 @@ if (rarray(i,j,1) == 0) cycle
     write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
           'albedo_ncep/',1,'-',1250,'.',1,'-',1250
     call mpas_log_write(trim(fname))
+    call mpas_f_to_c_string(fname, c_fname)
 
-    call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
+    call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned,endian, &
                       scalefactor, wordsize, istatus)
     call init_atm_check_read_error(istatus,fname)
     vegfra(-2:1250,-2:1253,1:12) = rarray(1:1253,1:1256,1:12)
@@ -1147,8 +1202,9 @@ if (rarray(i,j,1) == 0) cycle
     write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
           'albedo_ncep/',1251,'-',2500,'.',1,'-',1250
     call mpas_log_write(trim(fname))
+    call mpas_f_to_c_string(fname, c_fname)
 
-    call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
+    call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned,endian, &
                       scalefactor,wordsize,istatus)
     call init_atm_check_read_error(istatus,fname)
     vegfra(1251:2503,-2:1253,1:12) = rarray(4:1256,1:1256,1:12)
