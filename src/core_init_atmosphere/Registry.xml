@@ -310,6 +310,7 @@
         <packages>
                 <package name="initial_conds" description="Used by test cases that produce initial conditions."/>
                 <package name="sfc_update" description="Used by test cases that produce surface updates."/>
+                <package name="lbcs" description="Active when lateral boundary conditions are interpolated and written."/>
                 <package name="gwd_stage_in" description="Active only if GWD static fields are be generated and other static fields are not being generated"/>
                 <package name="gwd_stage_out" description="Active only if GWD static fields are be generated and other static fields are not being generated"/>
                 <package name="vertical_stage_in" description="Active only if a vertical grid is being generated"/>
@@ -561,6 +562,18 @@
 			<var name="xtime"/>
 			<var name="sst"/>
 			<var name="xice"/>
+		</stream>
+
+		<stream name="lbc"
+                        type="output"
+                        filename_template="lbc.$Y-$M-$D_$h.nc"
+                        output_interval="3:00:00"
+                        filename_interval="output_interval"
+                        packages="lbcs"
+                        immutable="true">
+
+			<var name="xtime"/>
+			<var_struct name="lbc_state"/>
 		</stream>
 
 	</streams>
@@ -881,6 +894,36 @@
                 <!-- Climatology for ocean mixed-layer depth -->
                 <var name="h_oml_initial" type="real" dimensions="nCells Time" units="m"
                      description="Initial depth of ocean mix layer"/>
+        </var_struct>
+
+        <var_struct name="lbc_state" time_levs="1">
+                <var name="lbc_u" type="real" dimensions="nVertLevels nEdges Time" packages="lbcs"
+                     units="m s^{-1}"
+                     description="Horizontal normal velocity on domain lateral boundary edges"/>
+
+                <var name="lbc_w" type="real" dimensions="nVertLevelsP1 nCells Time" packages="lbcs"
+                     units="m s^{-1}"
+                     description="Vertical velocity on domain lateral boundary vertical cell faces"/>
+
+                <var name="lbc_rho" type="real" dimensions="nVertLevels nCells Time" packages="lbcs"
+                     units="kg m^{-3}"
+                     description="Dry air density on lateral boundary cells"/>
+
+                <var name="lbc_theta" type="real" dimensions="nVertLevels nCells Time" packages="lbcs"
+                     units="K"
+                     description="Potential temperature on lateral boundary cells"/>
+
+                <var_array name="lbc_scalars" type="real" dimensions="nVertLevels nCells Time" packages="lbcs">
+                        <var name="lbc_qv" array_group="moist" units="kg kg^{-1}"
+                             description="Water vapor mixing ratio on lateral boundary cells"/>
+
+                        <var name="lbc_qc" array_group="moist" units="kg kg^{-1}"
+                             description="Cloud water mixing ratio on lateral boundary cells"/>
+
+                        <var name="lbc_qr" array_group="moist" units="kg kg^{-1}"
+                             description="Rain water mixing ratio on lateral boundary cells"/>
+                </var_array>
+
         </var_struct>
 
         <var_struct name="fg" time_levs="1">

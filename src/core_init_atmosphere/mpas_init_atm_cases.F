@@ -60,6 +60,7 @@ module init_atm_cases
       type (mpas_pool_type), pointer :: state
       type (mpas_pool_type), pointer :: diag
       type (mpas_pool_type), pointer :: diag_physics
+      type (mpas_pool_type), pointer :: lbc_state
 
       integer, pointer :: config_init_case
       logical, pointer :: config_static_interp
@@ -253,6 +254,7 @@ module init_atm_cases
                call mpas_pool_get_subpool(block_ptr % structs, 'fg', fg)
                call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
                call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
+               call mpas_pool_get_subpool(block_ptr % structs, 'lbc_state', lbc_state)
 
                call mpas_pool_get_array(state, 'xtime', xtime)
 
@@ -264,16 +266,25 @@ module init_atm_cases
                xtime = timeString   ! Set field valid time, xtime, to the current time in the time loop
 
                call init_atm_case_lbc(timeString, block_ptr, mesh, nCells, nEdges, nVertLevels, fg, state, &
-                                      diag, block_ptr % dimensions, block_ptr % configs)
+                                      diag, lbc_state, block_ptr % dimensions, block_ptr % configs)
 
                block_ptr => block_ptr % next
             end do
+
+            call mpas_stream_mgr_write(stream_manager, streamID='lbc', ierr=ierr)
+            call mpas_stream_mgr_reset_alarms(stream_manager, streamID='lbc', direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
             call mpas_advance_clock(domain % clock)
             curr_time = mpas_get_clock_time(domain % clock, MPAS_NOW)
 
          end do
 
+         !
+         ! Ensure that no output alarms are still ringing for the 'lbc' stream after
+         ! we exit the time loop above; the main run routine may write out all other
+         ! output streams with ringing alarms.
+         !
+         call mpas_stream_mgr_reset_alarms(stream_manager, streamID='lbc', direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
       else
 
@@ -4907,7 +4918,7 @@ call mpas_log_write('Done with soil consistency check')
    !>  fields that are needed as model lateral boundary conditions.
    !
    !-----------------------------------------------------------------------
-   subroutine init_atm_case_lbc(timestamp, block, mesh, nCells, nEdges, nVertLevels, fg, state, diag, dims, configs)
+   subroutine init_atm_case_lbc(timestamp, block, mesh, nCells, nEdges, nVertLevels, fg, state, diag, lbc_state, dims, configs)
 
       implicit none
 
@@ -4920,6 +4931,7 @@ call mpas_log_write('Done with soil consistency check')
       type (mpas_pool_type), intent(inout) :: fg
       type (mpas_pool_type), intent(inout) :: state
       type (mpas_pool_type), intent(inout) :: diag
+      type (mpas_pool_type), intent(inout) :: lbc_state
       type (mpas_pool_type), intent(inout):: dims
       type (mpas_pool_type), intent(inout):: configs
 
