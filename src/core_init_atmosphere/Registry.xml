@@ -60,7 +60,8 @@
                                         6 = mountain wave, \newline
                                         7 = real-data initial conditions from, e.g., GFS, \newline
                                         8 = surface field (SST, sea-ice) update file for use with real-data simulations"
-                     possible_values="1 -- 8"/>
+                                        9 = lateral boundary conditions update file for use with real-data simulations"
+                     possible_values="1 -- 9"/>
 
                 <nml_option name="config_calendar_type" type="character" default_value="gregorian" in_defaults="false"
                      units="-"

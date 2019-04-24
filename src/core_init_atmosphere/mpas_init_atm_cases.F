@@ -67,6 +67,10 @@ module init_atm_cases
       logical, pointer :: config_met_interp
 
       character(len=StrKIND), pointer :: mminlu
+      character(len=StrKIND), pointer :: xtime
+
+      type (MPAS_Time_type)  :: curr_time, stop_time
+      character(len=StrKIND) :: timeString
 
       integer, pointer :: nCells
       integer, pointer :: nEdges
@@ -234,10 +238,47 @@ module init_atm_cases
             block_ptr => block_ptr % next
          end do
 
+      else if (config_init_case == 9 ) then
+
+         call mpas_log_write('Lateral boundary conditions case')
+
+         curr_time = mpas_get_clock_time(domain % clock, MPAS_NOW)
+         stop_time = mpas_get_clock_time(domain % clock, MPAS_STOP_TIME)
+
+         do while (curr_time <= stop_time)
+
+            block_ptr => domain % blocklist
+            do while (associated(block_ptr))
+               call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
+               call mpas_pool_get_subpool(block_ptr % structs, 'fg', fg)
+               call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
+               call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
+
+               call mpas_pool_get_array(state, 'xtime', xtime)
+
+               call mpas_pool_get_dimension(block_ptr % dimensions, 'nCells', nCells)
+               call mpas_pool_get_dimension(block_ptr % dimensions, 'nEdges', nEdges)
+               call mpas_pool_get_dimension(block_ptr % dimensions, 'nVertLevels', nVertLevels)
+
+               call mpas_get_time(curr_time, dateTimeString=timeString)
+               xtime = timeString   ! Set field valid time, xtime, to the current time in the time loop
+
+               call init_atm_case_lbc(timeString, block_ptr, mesh, nCells, nEdges, nVertLevels, fg, state, &
+                                      diag, block_ptr % dimensions, block_ptr % configs)
+
+               block_ptr => block_ptr % next
+            end do
+
+            call mpas_advance_clock(domain % clock)
+            curr_time = mpas_get_clock_time(domain % clock, MPAS_NOW)
+
+         end do
+
+
       else
 
          call mpas_log_write(' ****************************************************', messageType=MPAS_LOG_ERR)
-         call mpas_log_write(' Only test cases 1 through 8 are currently supported.', messageType=MPAS_LOG_ERR)
+         call mpas_log_write(' Only test cases 1 through 9 are currently supported.', messageType=MPAS_LOG_ERR)
          call mpas_log_write(' ****************************************************', messageType=MPAS_LOG_CRIT)
 
       end if
@@ -4850,6 +4891,41 @@ call mpas_log_write('Done with soil consistency check')
       end if    ! config_met_interp
 
    end subroutine init_atm_case_gfs
+
+
+   !-----------------------------------------------------------------------
+   !  routine init_atm_case_lbc
+   !
+   !> \brief Computes lbc_{rho,theta,u,w,qx} fields for lateral boundary conditions
+   !> \author Michael Duda
+   !> \date   22 April 2019
+   !> \details
+   !>  This routine is similar to the init_atm_case_gfs routine in that it reads
+   !>  atmospheric fields from "intermediate" files and horizontally and vertically
+   !>  interpolates them to an MPAS mesh. However, rather than producing model
+   !>  initial conditions, this routine is responsible for producing only those
+   !>  fields that are needed as model lateral boundary conditions.
+   !
+   !-----------------------------------------------------------------------
+   subroutine init_atm_case_lbc(timestamp, block, mesh, nCells, nEdges, nVertLevels, fg, state, diag, dims, configs)
+
+      implicit none
+
+      character(len=*), intent(in) :: timestamp
+      type (block_type), intent(inout), target :: block
+      type (mpas_pool_type), intent(inout) :: mesh
+      integer, intent(in) :: nCells
+      integer, intent(in) :: nEdges
+      integer, intent(in) :: nVertLevels
+      type (mpas_pool_type), intent(inout) :: fg
+      type (mpas_pool_type), intent(inout) :: state
+      type (mpas_pool_type), intent(inout) :: diag
+      type (mpas_pool_type), intent(inout):: dims
+      type (mpas_pool_type), intent(inout):: configs
+
+      call mpas_log_write('Interpolating LBCs at time '//trim(timestamp))
+
+   end subroutine init_atm_case_lbc
 
 
    integer function nearest_edge(target_lat, target_lon, &
