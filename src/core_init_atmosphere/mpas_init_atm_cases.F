@@ -71,6 +71,7 @@ module init_atm_cases
       character(len=StrKIND), pointer :: xtime
 
       type (MPAS_Time_type)  :: curr_time, stop_time
+      type (MPAS_TimeInterval_type)  :: clock_interval, lbc_stream_interval
       character(len=StrKIND) :: timeString
 
       integer, pointer :: nCells
@@ -242,6 +243,21 @@ module init_atm_cases
       else if (config_init_case == 9 ) then
 
          call mpas_log_write('Lateral boundary conditions case')
+
+         !
+         ! Check that the first-guess interval (which is the same as the clock timestep)
+         ! matches the output interval of the 'lbc' stream
+         !
+         clock_interval = mpas_get_clock_timestep(domain % clock, ierr=ierr)
+         lbc_stream_interval = MPAS_stream_mgr_get_stream_interval(stream_manager, 'lbc', MPAS_STREAM_OUTPUT, ierr)
+         if (clock_interval /= lbc_stream_interval) then
+            call mpas_log_write('****************************************************************',   messageType=MPAS_LOG_ERR)
+            call mpas_log_write('The intermediate file interval specified by ''config_fg_interval''', messageType=MPAS_LOG_ERR)
+            call mpas_log_write('does not match the output_interval for the ''lbc'' stream.',         messageType=MPAS_LOG_ERR)
+            call mpas_log_write('Please correct the namelist.init_atmosphere and/or',                 messageType=MPAS_LOG_ERR)
+            call mpas_log_write('streams.init_atmosphere files.',                                     messageType=MPAS_LOG_ERR)
+            call mpas_log_write('****************************************************************',   messageType=MPAS_LOG_CRIT)
+         end if
 
          curr_time = mpas_get_clock_time(domain % clock, MPAS_NOW)
          stop_time = mpas_get_clock_time(domain % clock, MPAS_STOP_TIME)
@@ -5031,6 +5047,7 @@ call mpas_log_write('Done with soil consistency check')
       integer :: level_value
 
       character (len=StrKIND) :: errstring
+
 
       call mpas_log_write('Interpolating LBCs at time '//trim(timestamp))
 
