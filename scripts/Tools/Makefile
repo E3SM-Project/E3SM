@@ -77,6 +77,10 @@ ifeq ($(strip $(USE_FMS)), TRUE)
   SLIBS += -lfms
 endif
 
+ifeq ($(strip $(USE_FMS)), TRUE)
+  SLIBS += -lfms
+endif
+
 ifndef MOD_SUFFIX
    MOD_SUFFIX := mod
 endif
