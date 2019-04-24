@@ -58,7 +58,7 @@
     </options>
   </test>
 
-  <test compset="CMOM" grid="T62_g16" name="SMS_Vnuopc_Ld5" testmods="mom/nuopc_cap">
+  <test compset="CMOM" grid="T62_g16" name="SMS_Vnuopc_Ld5">
     <machines>
       <machine name="cheyenne" compiler="intel" category="nuopc"/>
       <machine name="theia" compiler="intel" category="nuopc"/>
@@ -68,7 +68,7 @@
     </options>
   </test>
 
-  <test compset="CMOM" grid="T62_g16" name="SMS_Vmct_Ld5" testmods="mom/nuopc_cap">
+  <test compset="CMOM" grid="T62_g16" name="SMS_Vmct_Ld5">
     <machines>
       <machine name="cheyenne" compiler="intel" category="mctcheck"/>
       <machine name="theia" compiler="intel" category="mctcheck"/>
@@ -78,7 +78,7 @@
     </options>
   </test>
 
-  <test compset="GMOM" grid="T62_g16" name="SMS_Vnuopc_Ld5" testmods="mom/nuopc_cap">
+  <test compset="GMOM" grid="T62_g16" name="SMS_Vnuopc_Ld5">
     <machines>
       <machine name="cheyenne" compiler="intel" category="nuopc"/>
       <machine name="theia" compiler="intel" category="nuopc"/>
@@ -88,7 +88,7 @@
     </options>
   </test>
 
-  <test compset="GMOM" grid="T62_g16" name="SMS_Vmct_Ld5" testmods="mom/nuopc_cap">
+  <test compset="GMOM" grid="T62_g16" name="SMS_Vmct_Ld5">
     <machines>
       <machine name="cheyenne" compiler="intel" category="mctcheck"/>
       <machine name="theia" compiler="intel" category="mctcheck"/>
@@ -144,7 +144,7 @@
       <machine name="theia" compiler="intel" category="nuopc"/>
     </machines>
     <options>
-      <option name="wallclock"> 00:10:00 </option>
+      <option name="wallclock"> 00:20:00 </option>
     </options>
   </test>
 
@@ -154,7 +154,7 @@
       <machine name="theia" compiler="intel" category="nuopc"/>
     </machines>
     <options>
-      <option name="wallclock"> 00:10:00 </option>
+      <option name="wallclock"> 00:20:00 </option>
     </options>
   </test>
 
@@ -266,7 +266,7 @@
     </options>
   </test>
 
-  <test compset="CMOM" grid="T62_g16" name="ERS_Vnuopc_Ld5" testmods="mom/nuopc_cap">
+  <test compset="CMOM" grid="T62_g16" name="ERS_Vnuopc_Ld5">
     <machines>
       <machine name="cheyenne" compiler="intel" category="nuopc"/>
       <machine name="theia" compiler="intel" category="nuopc"/>
@@ -276,7 +276,7 @@
     </options>
   </test>
 
-  <test compset="CMOM" grid="T62_g16" name="ERS_Vmct_Ld5" testmods="mom/nuopc_cap">
+  <test compset="CMOM" grid="T62_g16" name="ERS_Vmct_Ld5">
     <machines>
       <machine name="cheyenne" compiler="intel" category="mctcheck"/>
       <machine name="theia" compiler="intel" category="mctcheck"/>
@@ -286,7 +286,7 @@
     </options>
   </test>
 
-  <test compset="GMOM" grid="T62_g16" name="ERS_Vnuopc_Ld5" testmods="mom/nuopc_cap">
+  <test compset="GMOM" grid="T62_g16" name="ERS_Vnuopc_Ld5">
     <machines>
       <machine name="cheyenne" compiler="intel" category="nuopc"/>
       <machine name="theia" compiler="intel" category="nuopc"/>
@@ -296,7 +296,7 @@
     </options>
   </test>
 
-  <test compset="GMOM" grid="T62_g16" name="ERS_Vmct_Ld5" testmods="mom/nuopc_cap">
+  <test compset="GMOM" grid="T62_g16" name="ERS_Vmct_Ld5">
     <machines>
       <machine name="cheyenne" compiler="intel" category="mctcheck"/>
       <machine name="theia" compiler="intel" category="mctcheck"/>
@@ -352,7 +352,7 @@
       <machine name="theia" compiler="intel" category="nuopc"/>
     </machines>
     <options>
-      <option name="wallclock"> 00:10:00 </option>
+      <option name="wallclock"> 00:20:00 </option>
     </options>
   </test>
 
@@ -362,7 +362,7 @@
       <machine name="theia" compiler="intel" category="mctcheck"/>
     </machines>
     <options>
-      <option name="wallclock"> 00:10:00 </option>
+      <option name="wallclock"> 00:20:00 </option>
     </options>
   </test>
 

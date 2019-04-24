@@ -5,24 +5,13 @@ module ESM
   !-----------------------------------------------------------------------------
 
   use ESMF                  , only : ESMF_Clock
-  use shr_nuopc_methods_mod , only : chkerr=>shr_nuopc_methods_ChkErr
+  use shr_kind_mod          , only : r8=>shr_kind_r8, cl=>shr_kind_cl, cs=>shr_kind_cs
+  use shr_nuopc_utils_mod   , only : chkerr => shr_nuopc_utils_ChkErr
   use shr_nuopc_utils_mod   , only : shr_nuopc_memcheck
-  use shr_kind_mod          , only : SHR_KIND_R8, SHR_KIND_CS, SHR_KIND_CL
-  use shr_log_mod           , only : shr_log_Unit, shr_log_Level
-  use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag
   use med_internalstate_mod , only : logunit, loglevel, mastertask, med_id
 
   implicit none
   private
-
-  character(len=512)             :: msgstr
-  integer                        :: componentCount
-  character(len=8)               :: atm_present, lnd_present, ocn_present
-  character(len=8)               :: ice_present, rof_present, wav_present
-  character(len=8)               :: glc_present, med_present
-  character(*), parameter        :: nlfilename = "drv_in" ! input namelist filename
-  character(*), parameter        :: u_FILE_u = &
-       __FILE__
 
   public  :: SetServices
   public  :: ReadAttributes ! used in ensemble_driver
@@ -39,6 +28,9 @@ module ESM
   private :: esm_init_pelayout
   private :: esm_finalize
   private :: pretty_print_nuopc_freeformat
+
+  character(*), parameter :: u_FILE_u = &
+       __FILE__
 
 !================================================================================
 contains
@@ -60,15 +52,12 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    integer           :: dbrc
     type(ESMF_Config) :: runSeq
     character(len=*), parameter :: subname = "(esm.F90:SetServices)"
     !---------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
 
     ! NUOPC_Driver registers the generic methods
     call NUOPC_CompDerive(driver, driver_routine_SS, rc=rc)
@@ -106,9 +95,7 @@ contains
     call ESMF_GridCompSet(driver, configFile="nuopc.runconfig", rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
 
   end subroutine SetServices
 
@@ -134,29 +121,31 @@ contains
     use pio                   , only : pio_file_is_open, pio_closefile, file_desc_t
     use perf_mod              , only : t_initf
     use shr_mem_mod           , only : shr_mem_init
+    use shr_file_mod          , only : shr_file_setLogunit, shr_file_getunit
     use shr_log_mod           , only : shrlogunit=> shr_log_unit
+    use shr_nuopc_methods_mod , only : shr_nuopc_methods_Clock_TimePrint
 
     ! input/output variables
     type(ESMF_GridComp)    :: driver
     integer, intent(out)   :: rc
 
     ! local variables
-    type(ESMF_VM)          :: vm
-    type(ESMF_Config)      :: config
-    integer                :: n, i, stat
-    character(len=20)      :: model, prefix
-    integer                :: localPet, medpet
-    character(SHR_KIND_CL) :: meminitStr
-    integer                :: global_comm
-    integer                :: maxthreads
-    integer                :: dbrc
+    type(ESMF_VM)     :: vm
+    type(ESMF_Config) :: config
+    integer           :: n, i, stat
+    character(len=20) :: model, prefix
+    integer           :: localPet, medpet
+    character(len=CL) :: meminitStr
+    integer           :: global_comm
+    integer           :: maxthreads
+    character(len=CL) :: msgstr
+    integer           :: componentcount
     character(len=*), parameter :: subname = "(esm.F90:SetModelServices)"
     !-------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
+
     !-------------------------------------------
     ! Set the io logunit to the value defined in ensemble_driver
     ! it may be corrected below if the med mastertask is not the driver mastertask
@@ -177,11 +166,11 @@ contains
     ! determine the generic component labels
     !-------------------------------------------
 
-    componentCount = ESMF_ConfigGetLen(config,label="CESM_component_list:", rc=rc)
+    componentCount = ESMF_ConfigGetLen(config,label="component_list:", rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     if (componentCount == 0) then
-      write (msgstr, *) "No models were specified in CESM_component_list "
+      write (msgstr, *) "No models were specified in component_list "
       call ESMF_LogSetError(ESMF_RC_NOT_VALID, msg=msgstr, line=__LINE__, file=__FILE__, rcToReturn=rc)
       return  ! bail out
     endif
@@ -228,21 +217,13 @@ contains
        call shr_mem_init(strbuf=meminitstr)
 
        write(logunit,*) trim(meminitstr)
-       write(logunit,*) trim(subname)//":atm_present="//trim(atm_present)
-       write(logunit,*) trim(subname)//":lnd_present="//trim(lnd_present)
-       write(logunit,*) trim(subname)//":ocn_present="//trim(ocn_present)
-       write(logunit,*) trim(subname)//":ice_present="//trim(ice_present)
-       write(logunit,*) trim(subname)//":rof_present="//trim(rof_present)
-       write(logunit,*) trim(subname)//":wav_present="//trim(wav_present)
-       write(logunit,*) trim(subname)//":glc_present="//trim(glc_present)
-       write(logunit,*) trim(subname)//":med_present="//trim(med_present)
     end if
 
     !-------------------------------------------
     ! Timer initialization (has to be after pelayouts are determined)
     !-------------------------------------------
 
-    call t_initf(nlfilename, LogPrint=.true., mpicom=global_comm, &
+    call t_initf('drv_in', LogPrint=.true., mpicom=global_comm, &
          mastertask=mastertask, MaxThreads=maxthreads)
 
     !-------------------------------------------
@@ -252,9 +233,7 @@ contains
     call InitRestart(driver, rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
 
   end subroutine SetModelServices
 
@@ -279,14 +258,11 @@ contains
     integer                 :: localrc
     type(ESMF_Config)       :: runSeq
     type(NUOPC_FreeFormat)  :: runSeqFF
-    integer                 :: dbrc
     character(len=*), parameter :: subname = "(esm.F90:SetRunSequence)"
     !---------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
 
     !--------
     ! Run Sequence and Connectors
@@ -319,9 +295,7 @@ contains
     call NUOPC_FreeFormatDestroy(runSeqFF, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
 
   end subroutine SetRunSequence
 
@@ -334,12 +308,13 @@ contains
 
     ! input/output variables
     type(NUOPC_FreeFormat) , intent(in)  :: ffstuff
-    character(len=*)                     :: label
+    character(len=*)       , intent(in)  :: label
     integer                , intent(out) :: rc
 
     ! local variables
     integer :: i
     integer :: linecnt
+    integer :: dbug_flag = 5
     character(len=NUOPC_FreeFormatLen), pointer :: outstr(:)
     !---------------------------------------
 
@@ -377,18 +352,16 @@ contains
     type(ESMF_Clock)     :: clock
     integer, intent(out) :: rc
 
-    type(ESMF_CplComp), pointer     :: connectorList(:)
-    integer                         :: i, j, cplListSize
-    character(len=160), allocatable :: cplList(:)
-    character(len=160)              :: tempString
-    integer                         :: dbrc
-    character(len=*), parameter     :: subname = "(esm.F90:ModifyCplLists)"
+    type(ESMF_CplComp), pointer    :: connectorList(:)
+    integer                        :: i, j, cplListSize
+    character(len=CL), allocatable :: cplList(:)
+    character(len=CL)              :: tempString
+    character(len=CL)              :: msgstr
+    character(len=*), parameter    :: subname = "(esm.F90:ModifyCplLists)"
     !---------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
 
     call ESMF_LogWrite("Driver is in ModifyCplLists()", ESMF_LOGMSG_INFO, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
@@ -431,9 +404,7 @@ contains
 
     deallocate(connectorList)
 
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
 
   end subroutine ModifyCplLists
 
@@ -451,11 +422,12 @@ contains
     integer                , intent(out)   :: rc
 
     ! locals
+    character(len=CL)            :: start_type     ! Type of startup
+    character(len=CL)            :: msgstr
     character(len=*) , parameter :: start_type_start = "startup"
     character(len=*) , parameter :: start_type_cont  = "continue"
     character(len=*) , parameter :: start_type_brnch = "branch"
-    character(SHR_KIND_CL)       :: start_type     ! Type of startup
-    character(len=*), parameter  :: subname = "(esm.F90:IsRestart)"
+    character(len=*) , parameter  :: subname = "(esm.F90:IsRestart)"
     !---------------------------------------
 
     rc = ESMF_SUCCESS
@@ -500,16 +472,14 @@ contains
     integer                , intent(out)   :: rc
 
     ! local variables
-    character(SHR_KIND_CL)       :: cvalue         ! temporary
-    logical                      :: read_restart   ! read the restart file, based on start_type
-    character(SHR_KIND_CL)       :: rest_case_name ! Short case identification
+    logical           :: read_restart   ! read the restart file, based on start_type
+    character(len=CL) :: cvalue         ! temporary
+    character(len=CL) :: rest_case_name ! Short case identification
     character(len=*) , parameter :: subname = "(esm.F90:InitRestart)"
     !-------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=rc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=rc)
 
     !-----------------------------------------------------
     ! Carry out restart if appropriate
@@ -561,58 +531,55 @@ contains
     integer             , intent(out)   :: rc                 ! return code
 
     ! local variables
-    type(ESMF_Clock)                :: clock
-    type(ESMF_Time)                 :: currTime
-    character(SHR_KIND_CL)          :: errstring
-    character(SHR_KIND_CL)          :: cvalue
-    logical                         :: reprosum_use_ddpdd    ! setup reprosum, use ddpdd
-    real(SHR_KIND_R8)               :: reprosum_diffmax      ! setup reprosum, set rel_diff_max
-    logical                         :: reprosum_recompute    ! setup reprosum, recompute if tolerance exceeded
-    integer                         :: year                  ! Current date (YYYY)
-    character(SHR_KIND_CS)          :: tfreeze_option        ! Freezing point calculation
-    character(SHR_KIND_CL)          :: orb_mode              ! orbital mode
-    integer                         :: orb_iyear             ! orbital year
-    integer                         :: orb_iyear_align       ! associated with model year
-    integer                         :: orb_cyear             ! orbital year for current orbital computation
-    integer                         :: orb_nyear             ! orbital year associated with currrent model year
-    integer                         :: orbitmp(4)            ! array for integer parameter broadcast
-    real(SHR_KIND_R8)               :: orbrtmp(6)            ! array for real parameter broadcast
-    real(SHR_KIND_R8)               :: orb_eccen             ! orbital eccentricity
-    real(SHR_KIND_R8)               :: orb_obliq             ! obliquity in degrees
-    real(SHR_KIND_R8)               :: orb_mvelp             ! moving vernal equinox long
-    real(SHR_KIND_R8)               :: orb_obliqr            ! Earths obliquity in rad
-    real(SHR_KIND_R8)               :: orb_lambm0            ! Mean long of perihelion at vernal equinox (radians)
-    real(SHR_KIND_R8)               :: orb_mvelpp            ! moving vernal equinox long
-    real(SHR_KIND_R8)               :: wall_time_limit       ! wall time limit in hours
-    logical                         :: single_column         ! scm mode logical
-    real(SHR_KIND_R8)               :: scmlon                ! single column lon
-    real(SHR_KIND_R8)               :: scmlat                ! single column lat
-    character(SHR_KIND_CS)          :: wv_sat_scheme
-    real(SHR_KIND_R8)               :: wv_sat_transition_start
-    logical                         :: wv_sat_use_tables
-    real(SHR_KIND_R8)               :: wv_sat_table_spacing
-    type(ShrWVSatTableSpec)         :: liquid_spec
-    type(ShrWVSatTableSpec)         :: ice_spec
-    type(ShrWVSatTableSpec)         :: mixed_spec
-    logical                         :: flag
-    integer                         :: i, it, n
-    integer                         :: unitn                 ! Namelist unit number to read
-    integer                         :: dbrc
-    integer                         :: localPet, rootpe_med
-    integer          , parameter    :: ens1=1                ! use first instance of ensemble only
-    integer          , parameter    :: fix1=1                ! temporary hard-coding to first ensemble, needs to be fixed
-    real(SHR_KIND_R8), parameter    :: epsilo = shr_const_mwwv/shr_const_mwdair
-    character(len=*) , parameter    :: orb_fixed_year       = 'fixed_year'
-    character(len=*) , parameter    :: orb_variable_year    = 'variable_year'
-    character(len=*) , parameter    :: orb_fixed_parameters = 'fixed_parameters'
-    character(len=*) , parameter    :: subname = '(InitAttributes)'
-
+    type(ESMF_Clock)             :: clock
+    type(ESMF_Time)              :: currTime
+    character(len=CL)            :: errstring
+    character(len=CL)            :: cvalue
+    logical                      :: reprosum_use_ddpdd    ! setup reprosum, use ddpdd
+    real(R8)                     :: reprosum_diffmax      ! setup reprosum, set rel_diff_max
+    logical                      :: reprosum_recompute    ! setup reprosum, recompute if tolerance exceeded
+    integer                      :: year                  ! Current date (YYYY)
+    character(LEN=CS)            :: tfreeze_option        ! Freezing point calculation
+    character(len=CL)            :: orb_mode              ! orbital mode
+    integer                      :: orb_iyear             ! orbital year
+    integer                      :: orb_iyear_align       ! associated with model year
+    integer                      :: orb_cyear             ! orbital year for current orbital computation
+    integer                      :: orb_nyear             ! orbital year associated with currrent model year
+    integer                      :: orbitmp(4)            ! array for integer parameter broadcast
+    real(R8)                     :: orbrtmp(6)            ! array for real parameter broadcast
+    real(R8)                     :: orb_eccen             ! orbital eccentricity
+    real(R8)                     :: orb_obliq             ! obliquity in degrees
+    real(R8)                     :: orb_mvelp             ! moving vernal equinox long
+    real(R8)                     :: orb_obliqr            ! Earths obliquity in rad
+    real(R8)                     :: orb_lambm0            ! Mean long of perihelion at vernal equinox (radians)
+    real(R8)                     :: orb_mvelpp            ! moving vernal equinox long
+    real(R8)                     :: wall_time_limit       ! wall time limit in hours
+    logical                      :: single_column         ! scm mode logical
+    real(R8)                     :: scmlon                ! single column lon
+    real(R8)                     :: scmlat                ! single column lat
+    character(LEN=CS)            :: wv_sat_scheme
+    real(R8)                     :: wv_sat_transition_start
+    logical                      :: wv_sat_use_tables
+    real(R8)                     :: wv_sat_table_spacing
+    type(ShrWVSatTableSpec)      :: liquid_spec
+    type(ShrWVSatTableSpec)      :: ice_spec
+    type(ShrWVSatTableSpec)      :: mixed_spec
+    logical                      :: flag
+    integer                      :: i, it, n
+    integer                      :: unitn                 ! Namelist unit number to read
+    integer                      :: localPet, rootpe_med
+    character(len=CL)            :: msgstr
+    integer          , parameter :: ens1=1                ! use first instance of ensemble only
+    integer          , parameter :: fix1=1                ! temporary hard-coding to first ensemble, needs to be fixed
+    real(R8)         , parameter :: epsilo = shr_const_mwwv/shr_const_mwdair
+    character(len=*) , parameter :: orb_fixed_year       = 'fixed_year'
+    character(len=*) , parameter :: orb_variable_year    = 'variable_year'
+    character(len=*) , parameter :: orb_fixed_parameters = 'fixed_parameters'
+    character(len=*) , parameter :: subname = '(InitAttributes)'
     !----------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     call shr_nuopc_memcheck(subname, 0, mastertask)
 
     !----------------------------------------------------------
@@ -793,7 +760,7 @@ contains
     read(cvalue,*) wv_sat_transition_start
 
     call shr_assert_in_domain(wv_sat_transition_start, &
-         ge=0._SHR_KIND_R8, le=40._SHR_KIND_R8, &
+         ge=0._R8, le=40._R8, &
          varname="wv_sat_transition_start", msg="Invalid transition temperature range.")
 
     call NUOPC_CompAttributeGet(driver, name="wv_sat_use_tables", value=cvalue, rc=rc)
@@ -825,9 +792,9 @@ contains
     ! is why only the spacing is in the namelist.
 
     if (wv_sat_use_tables) then
-       liquid_spec = ShrWVSatTableSpec(ceiling(200._SHR_KIND_R8/wv_sat_table_spacing), 175._SHR_KIND_R8, wv_sat_table_spacing)
-       ice_spec    = ShrWVSatTableSpec(ceiling(150._SHR_KIND_R8/wv_sat_table_spacing), 125._SHR_KIND_R8, wv_sat_table_spacing)
-       mixed_spec  = ShrWVSatTableSpec(ceiling(250._SHR_KIND_R8/wv_sat_table_spacing), 125._SHR_KIND_R8, wv_sat_table_spacing)
+       liquid_spec = ShrWVSatTableSpec(ceiling(200._R8/wv_sat_table_spacing), 175._R8, wv_sat_table_spacing)
+       ice_spec    = ShrWVSatTableSpec(ceiling(150._R8/wv_sat_table_spacing), 125._R8, wv_sat_table_spacing)
+       mixed_spec  = ShrWVSatTableSpec(ceiling(250._R8/wv_sat_table_spacing), 125._R8, wv_sat_table_spacing)
        call shr_wv_sat_make_tables(liquid_spec, ice_spec, mixed_spec)
     end if
 
@@ -875,20 +842,17 @@ contains
     integer             , intent(out)   :: rc
 
     !----- local -----
-    character(SHR_KIND_CL) :: cvalue         ! temporary
-    character(SHR_KIND_CL) :: start_type     ! Type of startup
-    character(SHR_KIND_CL) :: rest_case_name ! Short case identification
-    character(SHR_KIND_CS) :: logFilePostFix ! postfix for output log files
-    character(SHR_KIND_CL) :: outPathRoot    ! root for output log files
-    character(SHR_KIND_CS) :: cime_model
-    integer                :: dbrc
+    character(len=CL) :: cvalue         ! temporary
+    character(len=CL) :: start_type     ! Type of startup
+    character(len=CL) :: rest_case_name ! Short case identification
+    character(len=CS) :: logFilePostFix ! postfix for output log files
+    character(len=CL) :: outPathRoot    ! root for output log files
+    character(len=CS) :: cime_model
     character(len=*), parameter :: subname = '(driver_attributes_check) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
 
     call NUOPC_CompAttributeGet(driver, name="cime_model", value=cime_model, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
@@ -949,17 +913,16 @@ contains
     integer                        :: n
     integer                        :: stat
     integer                        :: inst_index
-    character(len=SHR_KIND_CL)     :: cvalue
+    logical                        :: is_present
+    character(len=CL)              :: cvalue
     character(len=32), allocatable :: compLabels(:)
     character(len=32), allocatable :: attrList(:)
-    integer                        :: dbrc
+    integer                        :: componentCount
     character(len=*), parameter    :: subname = "(esm.F90:AddAttributes)"
     !-------------------------------------------
 
     rc = ESMF_Success
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
 
     !------
     ! Add compid to gcomp attributes
@@ -1010,59 +973,6 @@ contains
 
        call ReadAttributes(gcomp, config, "FLDS_attributes::", rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-       componentCount = ESMF_ConfigGetLen(config,label="CESM_component_list:", rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-       allocate(compLabels(componentCount), stat=stat)
-       if (ESMF_LogFoundAllocError(statusToCheck=stat, msg="Allocation of compLabels failed.", &
-            line=__LINE__, file=u_FILE_u, rcToReturn=rc)) return
-
-       call ESMF_ConfigGetAttribute(config, valueList=compLabels, label="CESM_component_list:", &
-            count=componentCount, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-       call NUOPC_CompAttributeAdd(gcomp, &
-            attrList=(/'atm_present','lnd_present','ocn_present','ice_present',&
-                       'rof_present','wav_present','glc_present','med_present'/), rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-       med_present = "false"
-       atm_present = "false"
-       lnd_present = "false"
-       ocn_present = "false"
-       ice_present = "false"
-       rof_present = "false"
-       wav_present = "false"
-       glc_present = "false"
-       do n=1, componentCount
-          if (trim(compLabels(n)) == "MED") med_present = "true"
-          if (trim(compLabels(n)) == "ATM") atm_present = "true"
-          if (trim(compLabels(n)) == "LND") lnd_present = "true"
-          if (trim(compLabels(n)) == "OCN") ocn_present = "true"
-          if (trim(compLabels(n)) == "ICE") ice_present = "true"
-          if (trim(compLabels(n)) == "ROF") rof_present = "true"
-          if (trim(compLabels(n)) == "WAV") wav_present = "true"
-          if (trim(compLabels(n)) == "GLC") glc_present = "true"
-       enddo
-
-       call NUOPC_CompAttributeSet(gcomp, name="atm_present", value=atm_present, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call NUOPC_CompAttributeSet(gcomp, name="lnd_present", value=lnd_present, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call NUOPC_CompAttributeSet(gcomp, name="ocn_present", value=ocn_present, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call NUOPC_CompAttributeSet(gcomp, name="ice_present", value=ice_present, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call NUOPC_CompAttributeSet(gcomp, name="rof_present", value=rof_present, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call NUOPC_CompAttributeSet(gcomp, name="wav_present", value=wav_present, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call NUOPC_CompAttributeSet(gcomp, name="glc_present", value=glc_present, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call NUOPC_CompAttributeSet(gcomp, name="med_present", value=med_present, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-
     endif
 
     !------
@@ -1106,14 +1016,11 @@ contains
 
     ! local variables
     type(NUOPC_FreeFormat)  :: attrFF
-    integer :: dbrc
     character(len=*), parameter :: subname = "(esm.F90:ReadAttributes)"
     !-------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+
     if (present(relaxedflag)) then
        attrFF = NUOPC_FreeFormatCreate(config, label=trim(label), relaxedflag=.true., rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
@@ -1156,14 +1063,11 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    integer :: dbrc
     character(len=*), parameter :: subname = "(esm.F90:InitAdvertize)"
     !---------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
 
   end subroutine InitAdvertize
 
@@ -1238,9 +1142,8 @@ contains
     !---------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
+
     maxthreads = 1
     call ESMF_GridCompGet(driver, vm=vm, config=config, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
@@ -1251,7 +1154,7 @@ contains
     call ESMF_VMGet(vm, petCount=petCount, mpiCommunicator=Global_Comm, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    componentCount = ESMF_ConfigGetLen(config,label="CESM_component_list:", rc=rc)
+    componentCount = ESMF_ConfigGetLen(config,label="component_list:", rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     allocate(compLabels(componentCount), stat=stat)
@@ -1264,7 +1167,7 @@ contains
     if (ESMF_LogFoundAllocError(statusToCheck=stat, msg="Allocation of compLabels failed.", &
          line=__LINE__, file=u_FILE_u, rcToReturn=rc)) return
 
-    call ESMF_ConfigGetAttribute(config, valueList=compLabels, label="CESM_component_list:", count=componentCount, rc=rc)
+    call ESMF_ConfigGetAttribute(config, valueList=compLabels, label="component_list:", count=componentCount, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call NUOPC_CompAttributeGet(driver, name="inst_suffix", isPresent=isPresent, rc=rc)
@@ -1337,7 +1240,7 @@ contains
 
        comps(i+1) = i+1
 
-       if (trim(compLabels(i)) .eq. 'MED') then
+       if (trim(compLabels(i)) == 'MED') then
           med_id = i + 1
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), MEDSetServices, petList=petlist, comp=child, rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
@@ -1434,14 +1337,13 @@ contains
     use ESMF                  , only : ESMF_SUCCESS
     use NUOPC                 , only : NUOPC_CompAttributeGet
     use perf_mod              , only : t_prf, t_finalizef
-    use med_constants_mod     , only : CL
 
     ! input/output variables
     type(ESMF_GridComp)  :: driver
     integer, intent(out) :: rc
 
     ! local variables
-    character(CL)        :: timing_dir        ! timing directory
+    character(len=CL)    :: timing_dir        ! timing directory
     character(len=5)     :: inst_suffix
     logical              :: isPresent
     type(ESMF_VM)        :: vm
@@ -1466,8 +1368,7 @@ contains
     else
        inst_suffix = ""
     endif
-    call t_prf(trim(timing_dir)//'/model_timing'//trim(inst_suffix), &
-         mpicom=mpicomm)
+    call t_prf(trim(timing_dir)//'/model_timing'//trim(inst_suffix), mpicom=mpicomm)
 
     call t_finalizef()
 
@@ -1588,9 +1489,7 @@ contains
     !---------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=rc)
-    endif
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=rc)
 
     is_restart = IsRestart(gcomp, rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return

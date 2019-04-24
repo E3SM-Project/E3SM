@@ -8,8 +8,8 @@ module glc_elevclass_mod
   !---------------------------------------------------------------------
 
 #include "shr_assert.h"
-  use med_constants_mod     , only : R8
-  use shr_sys_mod           , only : shr_sys_abort
+  use shr_kind_mod , only : r8=>shr_kind_r8
+  use shr_sys_mod  , only : shr_sys_abort
 
   implicit none
   private
@@ -224,6 +224,7 @@ contains
        end do
 
        SHR_ASSERT(elevation_class > 0, subname//' elevation class was not assigned')
+
     end if
 
   end subroutine glc_get_elevation_class
@@ -428,4 +429,3 @@ contains
   end function glc_errcode_to_string
 
 end module glc_elevclass_mod
-

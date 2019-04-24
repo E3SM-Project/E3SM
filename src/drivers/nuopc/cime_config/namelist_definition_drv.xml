@@ -8,15 +8,6 @@
   <!--  DRIVER attributes                       -->
   <!-- ======================================== -->
 
-  <entry id="CESM_component_list">
-    <type>char</type>
-    <category>nuopc</category>
-    <group>nuopc_var</group>
-    <values>
-      <value>ATM OCN ICE LND ROF GLC WAV MED</value>
-    </values>
-  </entry>
-
   <entry id="Verbosity@DRIVER_attributes">
     <type>char</type>
     <category>nuopc</category>
@@ -37,31 +28,12 @@
     </values>
   </entry>
 
-  <entry id="MED_model">
-    <type>char</type>
-    <category>nuopc</category>
-    <group>nuopc_var</group>
-    <values>
-      <value cime_model="cesm">cesm</value>
-      <value cime_model="e3sm">e3sm</value>
-    </values>
-  </entry>
-
   <entry id="Verbosity@MED_attributes">
     <type>char</type>
     <category>nuopc</category>
     <group>MED_attributes</group>
     <values>
       <value>$INFO_DBUG</value>
-    </values>
-  </entry>
-
-  <entry id="ATM_model" modify_via_xml="COMP_ATM">
-    <type>char</type>
-    <category>nuopc</category>
-    <group>nuopc_var</group>
-    <values>
-      <value>$COMP_ATM</value>
     </values>
   </entry>
 
@@ -74,30 +46,12 @@
     </values>
   </entry>
 
-  <entry id="OCN_model" modify_via_xml="COMP_OCN">
-    <type>char</type>
-    <category>nuopc</category>
-    <group>nuopc_var</group>
-    <values>
-      <value>$COMP_OCN</value>
-    </values>
-  </entry>
-
   <entry id="Verbosity@OCN_attributes">
     <type>char</type>
     <category>nuopc</category>
     <group>OCN_attributes</group>
     <values>
       <value>$INFO_DBUG</value>
-    </values>
-  </entry>
-
-  <entry id="ICE_model" modify_via_xml="COMP_ICE">
-    <type>char</type>
-    <category>nuopc</category>
-    <group>nuopc_var</group>
-    <values>
-      <value>$COMP_ICE</value>
     </values>
   </entry>
 
@@ -110,30 +64,12 @@
     </values>
   </entry>
 
-  <entry id="ROF_model" modify_via_xml="COMP_ROF">
-    <type>char</type>
-    <category>nuopc</category>
-    <group>nuopc_var</group>
-    <values>
-      <value>$COMP_ROF</value>
-    </values>
-  </entry>
-
   <entry id="Verbosity@ROF_attributes">
     <type>char</type>
     <category>nuopc</category>
     <group>ROF_attributes</group>
     <values>
       <value>$INFO_DBUG</value>
-    </values>
-  </entry>
-
-  <entry id="LND_model" modify_via_xml="COMP_LND">
-    <type>char</type>
-    <category>nuopc</category>
-    <group>nuopc_var</group>
-    <values>
-      <value>$COMP_LND</value>
     </values>
   </entry>
 
@@ -146,30 +82,12 @@
     </values>
   </entry>
 
-  <entry id="GLC_model" modify_via_xml="COMP_GLC">
-    <type>char</type>
-    <category>nuopc</category>
-    <group>nuopc_var</group>
-    <values>
-      <value>$COMP_GLC</value>
-    </values>
-  </entry>
-
   <entry id="Verbosity@GLC_attributes">
     <type>char</type>
     <category>nuopc</category>
     <group>GLC_attributes</group>
     <values>
       <value>$INFO_DBUG</value>
-    </values>
-  </entry>
-
-  <entry id="WAV_model" modify_via_xml="COMP_WAV">
-    <type>char</type>
-    <category>nuopc</category>
-    <group>nuopc_var</group>
-    <values>
-      <value>$COMP_WAV</value>
     </values>
   </entry>
 
@@ -558,6 +476,83 @@
     </desc>
     <values>
       <value>0.</value>
+    </values>
+  </entry>
+
+  <entry id="component_list">
+    <type>char</type>
+    <category>nuopc</category>
+    <group>nuopc_var</group>
+    <desc>
+      Model components that are active
+    </desc>
+    <values>
+      <value>ATM OCN ICE LND ROF GLC WAV MED</value>
+    </values>
+  </entry>
+
+  <entry id="MED_model">
+    <type>char</type>
+    <category>nuopc</category>
+    <group>ALLCOMP_attributes</group>
+    <values>
+      <value cime_model="cesm">cesm</value>
+    </values>
+  </entry>
+  <entry id="ATM_model" modify_via_xml="COMP_ATM">
+    <type>char</type>
+    <category>nuopc</category>
+    <group>ALLCOMP_attributes</group>
+    <values>
+      <value>$COMP_ATM</value>
+    </values>
+  </entry>
+  <entry id="OCN_model" modify_via_xml="COMP_OCN">
+    <type>char</type>
+    <category>nuopc</category>
+    <group>ALLCOMP_attributes</group>
+    <values>
+      <value>$COMP_OCN</value>
+    </values>
+  </entry>
+  <entry id="ICE_model" modify_via_xml="COMP_ICE">
+    <type>char</type>
+    <category>nuopc</category>
+    <group>ALLCOMP_attributes</group>
+    <values>
+      <value>$COMP_ICE</value>
+    </values>
+  </entry>
+  <entry id="ROF_model" modify_via_xml="COMP_ROF">
+    <type>char</type>
+    <category>nuopc</category>
+    <group>ALLCOMP_attributes</group>
+    <values>
+      <value>$COMP_ROF</value>
+    </values>
+  </entry>
+  <entry id="LND_model" modify_via_xml="COMP_LND">
+    <type>char</type>
+    <category>nuopc</category>
+    <group>ALLCOMP_attributes</group>
+    <values>
+      <value>$COMP_LND</value>
+    </values>
+  </entry>
+  <entry id="GLC_model" modify_via_xml="COMP_GLC">
+    <type>char</type>
+    <category>nuopc</category>
+    <group>ALLCOMP_attributes</group>
+    <values>
+      <value>$COMP_GLC</value>
+    </values>
+  </entry>
+  <entry id="WAV_model" modify_via_xml="COMP_WAV">
+    <type>char</type>
+    <category>nuopc</category>
+    <group>ALLCOMP_attributes</group>
+    <values>
+      <value>$COMP_WAV</value>
     </values>
   </entry>
 
@@ -1542,13 +1537,6 @@ n    </desc>
     </values>
   </entry>
 
-  <!--
-       TODO:
-       need a way to ensure the three values below stay consistent with
-       cime/src/drivers/nuopc/shr/shr_nuopc_scalars_mod.F90
-       This includes: ScalarFieldCount, ScalarFieldIdxGridNX, ScalarFieldIdxNY
-  -->
-
   <entry id="ScalarFieldCount">
     <type>integer</type>
     <category>expdef</category>
@@ -1557,7 +1545,8 @@ n    </desc>
       total number of scalars in the scalar coupling field
     </desc>
     <values>
-      <value>15</value>
+      <value>3</value>
+      <value compocn="pop">4</value>
     </values>
   </entry>
 
@@ -1582,6 +1571,31 @@ n    </desc>
     </desc>
     <values>
       <value>2</value>
+    </values>
+  </entry>
+
+  <entry id="ScalarFieldIdxNextSwCday">
+    <type>integer</type>
+    <category>expdef</category>
+    <group>ALLCOMP_attributes</group>
+    <desc>
+      index of scalar containing calendar day of nextsw computation from atm
+    </desc>
+    <values>
+      <value>3</value>
+    </values>
+  </entry>
+
+  <entry id="ScalarFieldIdxPrecipFactor">
+    <type>integer</type>
+    <category>expdef</category>
+    <group>ALLCOMP_attributes</group>
+    <desc>
+      index of scalar containing epbal precipitation factor from ocn (only for POP)
+    </desc>
+    <values>
+      <value>0</value>
+      <value compocn="pop">4</value>
     </values>
   </entry>
 
