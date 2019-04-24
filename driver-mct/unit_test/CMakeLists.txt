@@ -9,6 +9,7 @@ add_definitions(
   -DNUM_COMP_INST_WAV=1
   -DNUM_COMP_INST_ROF=1
   -DNUM_COMP_INST_ESP=1
+  -DNUM_COMP_INST_IAC=1
   )
 
 # The following definitions are needed when building with the mpi-serial library
