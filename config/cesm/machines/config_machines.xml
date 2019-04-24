@@ -353,7 +353,7 @@ This allows using a different mpirun command to launch unit tests
 	<command name="load">ncarenv/1.2</command>
       </modules>
       <modules compiler="intel">
-	<command name="load">intel/17.0.1</command>
+	<command name="load">intel/19.0.2</command>
 	<command name="load">esmf_libs</command>
 	<command name="load">mkl</command>
       </modules>
