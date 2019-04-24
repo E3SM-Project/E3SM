@@ -5,7 +5,7 @@ module ESM
   !-----------------------------------------------------------------------------
 
   use ESMF                  , only : ESMF_Clock
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+  use shr_nuopc_methods_mod , only : chkerr=>shr_nuopc_methods_ChkErr
   use shr_nuopc_utils_mod   , only : shr_nuopc_memcheck
   use shr_kind_mod          , only : SHR_KIND_R8, SHR_KIND_CS, SHR_KIND_CL
   use shr_log_mod           , only : shr_log_Unit, shr_log_Level
@@ -72,21 +72,21 @@ contains
 
     ! NUOPC_Driver registers the generic methods
     call NUOPC_CompDerive(driver, driver_routine_SS, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! attach specializing method(s)
     call NUOPC_CompSpecialize(driver, specLabel=driver_label_SetModelServices, &
          specRoutine=SetModelServices, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call NUOPC_CompSpecialize(driver, specLabel=driver_label_SetRunSequence, &
          specRoutine=SetRunSequence, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! register an internal initialization method
     call NUOPC_CompSetInternalEntryPoint(driver, ESMF_METHOD_INITIALIZE, &
          phaseLabelList=(/"IPDv03p2"/), userRoutine=ModifyCplLists, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     !
     ! This prevents the driver trying to "auto" connect to the ensemble_driver
@@ -94,17 +94,17 @@ contains
     !
     call NUOPC_CompSetInternalEntryPoint(driver, ESMF_METHOD_INITIALIZE, &
       phaseLabelList=(/"IPDv05p1"/), userRoutine=InitAdvertize, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Set a finalize method
     call NUOPC_CompSpecialize(driver, specLabel=driver_label_Finalize, &
          specRoutine=esm_finalize, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Create, open and set the config
 
     call ESMF_GridCompSet(driver, configFile="nuopc.runconfig", rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -168,17 +168,17 @@ contains
     !-------------------------------------------
 
     call ESMF_GridCompGet(driver, vm=vm, config=config, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_VMGet(vm, localPet=localPet, mpiCommunicator=global_comm, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     !-------------------------------------------
     ! determine the generic component labels
     !-------------------------------------------
 
     componentCount = ESMF_ConfigGetLen(config,label="CESM_component_list:", rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     if (componentCount == 0) then
       write (msgstr, *) "No models were specified in CESM_component_list "
@@ -191,36 +191,36 @@ contains
     !-------------------------------------------
 
     call ReadAttributes(driver, config, "DRIVER_attributes::", formatprint=.true., rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call ReadAttributes(driver, config, "FLDS_attributes::", formatprint=.true., rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call ReadAttributes(driver, config, "CLOCK_attributes::", formatprint=.true., rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call ReadAttributes(driver, config, "ALLCOMP_attributes::", formatprint=.true., rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call ReadAttributes(driver, config, "PELAYOUT_attributes::", formatprint=.true., rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call CheckAttributes(driver, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     !-------------------------------------------
     ! Initialize other attributes (after initializing driver clock)
     !-------------------------------------------
 
     call InitAttributes(driver, mastertask, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     !-------------------------------------------
     ! Initialize component pe layouts
     !-------------------------------------------
 
     call esm_init_pelayout(driver, maxthreads, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Print out present flags to mediator log file
     if (mastertask) then
@@ -250,7 +250,7 @@ contains
     !-------------------------------------------
 
     call InitRestart(driver, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -295,16 +295,16 @@ contains
     ! read free format run sequence
 
     runSeq = ESMF_ConfigCreate(rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_ConfigLoadFile(runSeq, "nuopc.runseq", rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     runSeqFF = NUOPC_FreeFormatCreate(runSeq, label="runSeq::", rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call NUOPC_DriverIngestRunSequence(driver, runSeqFF, autoAddConnectors=.true., rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Uncomment these to add debugging information for driver
     ! call NUOPC_DriverPrint(driver, orderflag=.true.)
@@ -314,10 +314,10 @@ contains
     !   return  ! bail out
 
     ! call pretty_print_nuopc_freeformat(runSeqFF, 'run sequence', rc=rc)
-    ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    ! if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call NUOPC_FreeFormatDestroy(runSeqFF, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -348,10 +348,10 @@ contains
     if (mastertask .or. dbug_flag > 3) then
        write(logunit, *) 'BEGIN: ', trim(label)
        call NUOPC_FreeFormatGet(ffstuff, linecount=linecnt, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
        allocate(outstr(linecnt))
        call NUOPC_FreeFormatGet(ffstuff, stringList=outstr, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
        do i=1,linecnt
           if(len_trim(outstr(i)) > 0) then
              write(logunit, *) trim(outstr(i))
@@ -391,26 +391,26 @@ contains
     endif
 
     call ESMF_LogWrite("Driver is in ModifyCplLists()", ESMF_LOGMSG_INFO, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     nullify(connectorList)
     call NUOPC_DriverGetComp(driver, compList=connectorList, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     write (msgstr,*) "Found ", size(connectorList), " Connectors."// " Modifying CplList Attribute...."
     call ESMF_LogWrite(trim(msgstr), ESMF_LOGMSG_INFO, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     do i=1, size(connectorList)
 
       ! query the cplList for connector i
       call NUOPC_CompAttributeGet(connectorList(i), name="CplList", itemCount=cplListSize, rc=rc)
-      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+      if (chkerr(rc,__LINE__,u_FILE_u)) return
 
       if (cplListSize>0) then
         allocate(cplList(cplListSize))
 
         call NUOPC_CompAttributeGet(connectorList(i), name="CplList", valueList=cplList, rc=rc)
-        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
         ! go through all of the entries in the cplList and set the mapping method to "redist"
         do j=1, cplListSize
@@ -423,7 +423,7 @@ contains
 
         ! store the modified cplList in CplList attribute of connector i
         call NUOPC_CompAttributeSet(connectorList(i), name="CplList", valueList=cplList, rc=rc)
-        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
         deallocate(cplList)
       endif
@@ -462,7 +462,7 @@ contains
 
     ! First Determine if restart is read
     call NUOPC_CompAttributeGet(gcomp, name='start_type', value=start_type, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     if ((trim(start_type) /= start_type_start) .and.  &
         (trim(start_type) /= start_type_cont ) .and.  &
@@ -516,19 +516,19 @@ contains
     !-----------------------------------------------------
 
     read_restart = IsRestart(driver, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Add rest_case_name and read_restart to driver attributes
     call NUOPC_CompAttributeAdd(driver, attrList=(/'rest_case_name','read_restart'/), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     rest_case_name = ' '
     call NUOPC_CompAttributeSet(driver, name='rest_case_name', value=rest_case_name, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     write(cvalue,*) read_restart
     call NUOPC_CompAttributeSet(driver, name='read_restart', value=trim(cvalue), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine InitRestart
 
@@ -620,15 +620,15 @@ contains
     !----------------------------------------------------------
 
     call NUOPC_CompAttributeGet(driver, name="reprosum_use_ddpdd", value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) reprosum_use_ddpdd
 
     call NUOPC_CompAttributeGet(driver, name="reprosum_diffmax", value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) reprosum_diffmax
 
     call NUOPC_CompAttributeGet(driver, name="reprosum_recompute", value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) reprosum_recompute
 
     call shr_reprosum_setopts(repro_sum_use_ddpdd_in=reprosum_use_ddpdd, &
@@ -639,7 +639,7 @@ contains
     !----------------------------------------------------------
 
     call NUOPC_CompAttributeGet(driver, name="tfreeze_option", value=tfreeze_option, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call shr_frz_freezetemp_init(tfreeze_option, mastertask)
 
@@ -648,27 +648,27 @@ contains
     !----------------------------------------------------------
 
     call NUOPC_CompAttributeGet(driver, name="orb_mode", value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) orb_mode
 
     call NUOPC_CompAttributeGet(driver, name="orb_iyear", value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) orb_iyear
 
     call NUOPC_CompAttributeGet(driver, name="orb_iyear_align", value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) orb_iyear_align
 
     call NUOPC_CompAttributeGet(driver, name="orb_obliq", value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) orb_obliq
 
     call NUOPC_CompAttributeGet(driver, name="orb_eccen", value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) orb_eccen
 
     call NUOPC_CompAttributeGet(driver, name="orb_mvelp", value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) orb_mvelp
 
     if (trim(orb_mode) == trim(orb_fixed_year)) then
@@ -716,20 +716,20 @@ contains
 
     call NUOPC_CompAttributeGet(driver, name='cpl_rootpe', value=cvalue, rc=rc)
     read(cvalue, *) rootpe_med
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     call ESMF_GridCompGet(driver, localPet=localPet, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Determine orbital params
     if (trim(orb_mode) == trim(orb_variable_year)) then
        call ESMF_GridCompGet(driver, clock=clock, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        call ESMF_ClockGet(clock, CurrTime=CurrTime, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        call ESMF_TimeGet(CurrTime, yy=year, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        orb_cyear = orb_iyear + (year - orb_iyear_align)
        call shr_orb_params(orb_cyear, orb_eccen, orb_obliq, orb_mvelp, &
@@ -751,23 +751,23 @@ contains
     ! Add updated orbital params to driver attributes
 
     call NUOPC_CompAttributeAdd(driver, attrList=(/'orb_obliqr', 'orb_lambm0', 'orb_mvelpp'/), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     write(cvalue,*) orb_eccen
     call NUOPC_CompAttributeSet(driver, name="orb_eccen", value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     write(cvalue,*) orb_obliqr
     call NUOPC_CompAttributeSet(driver, name="orb_obliqr", value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     write(cvalue,*) orb_lambm0
     call NUOPC_CompAttributeSet(driver, name="orb_lambm0", value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     write(cvalue,*) orb_mvelpp
     call NUOPC_CompAttributeSet(driver, name="orb_mvelpp", value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! TODO: need to update orbital parameters during run time - actually - each component needs to update its orbital
     ! parameters to be consistent
@@ -779,7 +779,7 @@ contains
     ! TODO: this does not seem to belong here - where should it go?
 
     call NUOPC_CompAttributeGet(driver, name="wv_sat_scheme", value=wv_sat_scheme, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     if (.not. shr_wv_sat_valid_idx(shr_wv_sat_get_scheme_idx(trim(wv_sat_scheme)))) then
        call shr_sys_abort(subname//': "'//trim(wv_sat_scheme)//'" is not a recognized saturation vapor pressure scheme name')
@@ -789,7 +789,7 @@ contains
     end if
 
     call NUOPC_CompAttributeGet(driver, name="wv_sat_transition_start", value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) wv_sat_transition_start
 
     call shr_assert_in_domain(wv_sat_transition_start, &
@@ -797,11 +797,11 @@ contains
          varname="wv_sat_transition_start", msg="Invalid transition temperature range.")
 
     call NUOPC_CompAttributeGet(driver, name="wv_sat_use_tables", value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) wv_sat_use_tables
 
     call NUOPC_CompAttributeGet(driver, name="wv_sat_table_spacing", value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) wv_sat_table_spacing
 
     ! A transition range averaging method in CAM is only valid for:
@@ -839,7 +839,7 @@ contains
     !----------------------------------------------------------
 
     call NUOPC_CompAttributeGet(driver, name="single_column", value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) single_column
 
     ! NOTE: cam stand-alone aqua-planet model will no longer be supported here - only the data model aqua-planet
@@ -847,11 +847,11 @@ contains
     if (single_column) then
 
        call NUOPC_CompAttributeGet(driver, name="scmlon", value=cvalue, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
        read(cvalue,*) scmlon
 
        call NUOPC_CompAttributeGet(driver, name="scmlat", value=cvalue, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
        read(cvalue,*) scmlat
 
        ! TODO(mvertens, 2019-01-30): need to add single column functionality
@@ -891,14 +891,14 @@ contains
     endif
 
     call NUOPC_CompAttributeGet(driver, name="cime_model", value=cime_model, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     if ( trim(cime_model) /= 'cesm') then
        call shr_sys_abort( subname//': cime_model must be set to cesm, aborting')
     end if
 
     ! --- LogFile ending name -----
     call NUOPC_CompAttributeGet(driver, name="logFilePostFix", value=logFilePostFix, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     if ( len_trim(logFilePostFix) == 0 ) then
        call shr_sys_abort( subname//': logFilePostFix  must be set to something not blank' )
@@ -906,7 +906,7 @@ contains
 
     ! --- Output path root directory -----
     call NUOPC_CompAttributeGet(driver, name="outPathRoot", value=outPathRoot, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     if ( len_trim(outPathRoot) == 0 ) then
        call shr_sys_abort( subname//': outPathRoot  must be set' )
@@ -917,7 +917,7 @@ contains
 
     ! --- Case name and restart case name ------
     ! call NUOPC_CompAttributeGet(driver, name="rest_case_name", value=rest_case_name, rc=rc)
-    ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    ! if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! if ((trim(start_type) == start_type_cont ) .and. (trim(case_name)  /= trim(rest_case_name))) then
     !    write(logunit,'(10a)') subname,' case_name =',trim(case_name),':',' rest_case_name =',trim(rest_case_name),':'
@@ -966,9 +966,9 @@ contains
     !------
     write(cvalue,*) compid
     call NUOPC_CompAttributeAdd(gcomp, attrList=(/'MCTID'/), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     call NUOPC_CompAttributeSet(gcomp, name='MCTID', value=trim(cvalue), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     !------
     ! Add all the other attributes in AttrList (which have already been added to driver attributes)
@@ -977,12 +977,12 @@ contains
     attrList =  (/"read_restart", "orb_eccen", "orb_obliqr", "orb_lambm0", "orb_mvelpp"/)
 
     call NUOPC_CompAttributeAdd(gcomp, attrList=attrList, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     do n = 1,size(attrList)
        call NUOPC_CompAttributeGet(driver, name=trim(attrList(n)), value=cvalue, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
        call NUOPC_CompAttributeSet(gcomp, name=trim(attrList(n)), value=trim(cvalue), rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
     enddo
     deallocate(attrList)
 
@@ -990,29 +990,29 @@ contains
     ! Add component specific attributes
     !------
     call ReadAttributes(gcomp, config, trim(compname)//"_attributes::", rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call ReadAttributes(gcomp, config, "ALLCOMP_attributes::", rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call ReadAttributes(gcomp, config, trim(compname)//"_modelio"//trim(inst_suffix)//"::", rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call ReadAttributes(gcomp, config, "CLOCK_attributes::", rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     !------
     ! Add mediator specific attributes
     !------
     if (compname == 'MED') then
        call ReadAttributes(gcomp, config, "MED_history_attributes::", rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        call ReadAttributes(gcomp, config, "FLDS_attributes::", rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        componentCount = ESMF_ConfigGetLen(config,label="CESM_component_list:", rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        allocate(compLabels(componentCount), stat=stat)
        if (ESMF_LogFoundAllocError(statusToCheck=stat, msg="Allocation of compLabels failed.", &
@@ -1020,12 +1020,12 @@ contains
 
        call ESMF_ConfigGetAttribute(config, valueList=compLabels, label="CESM_component_list:", &
             count=componentCount, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        call NUOPC_CompAttributeAdd(gcomp, &
             attrList=(/'atm_present','lnd_present','ocn_present','ice_present',&
                        'rof_present','wav_present','glc_present','med_present'/), rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        med_present = "false"
        atm_present = "false"
@@ -1047,21 +1047,21 @@ contains
        enddo
 
        call NUOPC_CompAttributeSet(gcomp, name="atm_present", value=atm_present, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
        call NUOPC_CompAttributeSet(gcomp, name="lnd_present", value=lnd_present, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
        call NUOPC_CompAttributeSet(gcomp, name="ocn_present", value=ocn_present, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
        call NUOPC_CompAttributeSet(gcomp, name="ice_present", value=ice_present, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
        call NUOPC_CompAttributeSet(gcomp, name="rof_present", value=rof_present, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
        call NUOPC_CompAttributeSet(gcomp, name="wav_present", value=wav_present, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
        call NUOPC_CompAttributeSet(gcomp, name="glc_present", value=glc_present, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
        call NUOPC_CompAttributeSet(gcomp, name="med_present", value=med_present, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     endif
 
@@ -1069,21 +1069,21 @@ contains
     ! Add multi-instance specific attributes
     !------
     call NUOPC_CompAttributeAdd(gcomp, attrList=(/'inst_index'/), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! add inst_index attribute (inst_index is not required for cime internal components)
     ! for now hard-wire inst_index to 1
     inst_index = 1
     write(cvalue,*) inst_index
     call NUOPC_CompAttributeSet(gcomp, name='inst_index', value=trim(cvalue), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! add inst_suffix attribute
     if (len_trim(inst_suffix) > 0) then
        call NUOPC_CompAttributeAdd(gcomp, attrList=(/'inst_suffix'/), rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
        call NUOPC_CompAttributeSet(gcomp, name='inst_suffix', value=inst_suffix, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
     end if
 
   end subroutine AddAttributes
@@ -1116,22 +1116,22 @@ contains
     endif
     if (present(relaxedflag)) then
        attrFF = NUOPC_FreeFormatCreate(config, label=trim(label), relaxedflag=.true., rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
     else
        attrFF = NUOPC_FreeFormatCreate(config, label=trim(label), rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
     end if
 
     call NUOPC_CompAttributeIngest(gcomp, attrFF, addFlag=.true., rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     !    if (present (formatprint)) then
     !       call pretty_print_nuopc_freeformat(attrFF, trim(label)//' attributes', rc=rc)
-    !       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    !       if (chkerr(rc,__LINE__,u_FILE_u)) return
     !    end if
 
     call NUOPC_FreeFormatDestroy(attrFF, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine ReadAttributes
 
@@ -1178,7 +1178,7 @@ contains
     use ESMF                  , only : ESMF_GridCompIsPetLocal, ESMF_MethodAdd
     use NUOPC                 , only : NUOPC_CompAttributeGet
     use NUOPC_Driver          , only : NUOPC_DriverAddComp
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+    use shr_nuopc_methods_mod , only : chkerr
     use shr_string_mod        , only : toLower => shr_string_toLower
     use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag, CS, CL
     use mpi                   , only : MPI_COMM_NULL
@@ -1244,16 +1244,16 @@ contains
     endif
     maxthreads = 1
     call ESMF_GridCompGet(driver, vm=vm, config=config, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call ReadAttributes(driver, config, "PELAYOUT_attributes::", rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_VMGet(vm, petCount=petCount, mpiCommunicator=Global_Comm, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     componentCount = ESMF_ConfigGetLen(config,label="CESM_component_list:", rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     allocate(compLabels(componentCount), stat=stat)
     if (ESMF_LogFoundAllocError(statusToCheck=stat, msg="Allocation of compLabels failed.", &
@@ -1266,13 +1266,13 @@ contains
          line=__LINE__, file=u_FILE_u, rcToReturn=rc)) return
 
     call ESMF_ConfigGetAttribute(config, valueList=compLabels, label="CESM_component_list:", count=componentCount, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call NUOPC_CompAttributeGet(driver, name="inst_suffix", isPresent=isPresent, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     if (isPresent) then
        call NUOPC_CompAttributeGet(driver, name="inst_suffix", value=inst_suffix, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
     else
        inst_suffix = ""
     endif
@@ -1285,7 +1285,7 @@ contains
        namestr = toLower(compLabels(i))
        if (namestr == 'med') namestr = 'cpl'
        call NUOPC_CompAttributeGet(driver, name=trim(namestr)//'_ntasks', value=cvalue, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
        read(cvalue,*) ntasks
 
        if (ntasks < 0 .or. ntasks > PetCount) then
@@ -1295,13 +1295,13 @@ contains
        endif
 
        call NUOPC_CompAttributeGet(driver, name=trim(namestr)//'_nthreads', value=cvalue, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
        read(cvalue,*) nthrds
 
        if(nthrds > maxthreads) maxthreads = nthrds
 
        call NUOPC_CompAttributeGet(driver, name=trim(namestr)//'_rootpe', value=cvalue, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
        read(cvalue,*) rootpe
        if (rootpe < 0 .or. rootpe > PetCount) then
           write (msgstr, *) "Invalid Rootpe value specified for component: ",namestr, ' rootpe: ',rootpe
@@ -1315,7 +1315,7 @@ contains
        endif
 
        call NUOPC_CompAttributeGet(driver, name=trim(namestr)//'_pestride', value=cvalue, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
        read(cvalue,*) stride
        if (stride < 1 .or. rootpe+ntasks*stride > PetCount) then
           write (msgstr, *) "Invalid pestride value specified for component: ",namestr, ' rootpe: ',rootpe, ' pestride: ', stride
@@ -1341,75 +1341,75 @@ contains
        if (trim(compLabels(i)) .eq. 'MED') then
           med_id = i + 1
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), MEDSetServices, petList=petlist, comp=child, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
 #ifdef ATM_PRESENT
        elseif(trim(compLabels(i)) .eq. 'ATM') then
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), ATMSetServices, petList=petlist, comp=child, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
 #endif
 #ifdef LND_PRESENT
        elseif(trim(compLabels(i)) .eq. 'LND') then
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), LNDSetServices, PetList=petlist, comp=child, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
 #endif
 #ifdef OCN_PRESENT
        elseif(trim(compLabels(i)) .eq. 'OCN') then
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), OCNSetServices, PetList=petlist, comp=child, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
 #endif
 #ifdef ICE_PRESENT
        elseif(trim(compLabels(i)) .eq. 'ICE') then
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), ICESetServices, PetList=petlist, comp=child, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
 #endif
 #ifdef GLC_PRESENT
        elseif(trim(compLabels(i)) .eq. 'GLC') then
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), GLCSetServices, PetList=petlist, comp=child, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
 #endif
 #ifdef ROF_PRESENT
        elseif(trim(compLabels(i)) .eq. 'ROF') then
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), ROFSetServices, PetList=petlist, comp=child, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
 #endif
 #ifdef WAV_PRESENT
        elseif(trim(compLabels(i)) .eq. 'WAV') then
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), WAVSetServices, PetList=petlist, comp=child, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
 #endif
 #ifdef ESP_PRESENT
        elseif(trim(compLabels(i)) .eq. 'ESP') then
           call NUOPC_DriverAddComp(driver, trim(compLabels(i)), ESPSetServices, PetList=petlist, comp=child, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
 #endif
        endif
 
        call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        if (ESMF_GridCompIsPetLocal(child, rc=rc)) then
           call ESMF_GridCompGet(child, vm=vm, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
 
           call ESMF_VMGet(vm, mpiCommunicator=comms(i+1), localPet=comp_comm_iam(i), rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
 
           call AddAttributes(child, driver, config, i+1, trim(compLabels(i)), inst_suffix, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
 
           ! This code is not supported, we need an optional arg to NUOPC_DriverAddComp to include the
           ! per component thread count.  #3614572 in esmf_support
           !          call ESMF_GridCompSetVMMaxPEs(child, maxPeCountPerPet=nthrds, rc=rc)
-          !          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          !          if (chkerr(rc,__LINE__,u_FILE_u)) return
 
           ! Attach methods for handling reading/writing of restart pointer file
           call ESMF_MethodAdd(child, label="GetRestartFileToWrite", &
                userRoutine=GetRestartFileToWrite, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
 
           call ESMF_MethodAdd(child, label="GetRestartFileToRead", &
                userRoutine=GetRestartFileToRead, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
           comp_iamin(i) = .true.
        else
           comms(i+1) = MPI_COMM_NULL
@@ -1434,7 +1434,7 @@ contains
     use ESMF                  , only : ESMF_GridComp, ESMF_GridCompGet, ESMF_VM, ESMF_VMGet
     use ESMF                  , only : ESMF_SUCCESS
     use NUOPC                 , only : NUOPC_CompAttributeGet
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+    use shr_nuopc_methods_mod , only : chkerr
     use perf_mod              , only : t_prf, t_finalizef
     use med_constants_mod     , only : CL
 
@@ -1453,18 +1453,18 @@ contains
     rc = ESMF_SUCCESS
 
     call ESMF_GridCompGet(driver, vm=vm, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     call ESMF_VMGet(vm, mpiCommunicator=mpicomm, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call NUOPC_CompAttributeGet(driver, name="timing_dir",value=timing_dir, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call NUOPC_CompAttributeGet(driver, name="inst_suffix", isPresent=isPresent, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     if (isPresent) then
        call NUOPC_CompAttributeGet(driver, name="inst_suffix", value=inst_suffix, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
     else
        inst_suffix = ""
     endif
@@ -1514,7 +1514,7 @@ contains
 
     call NUOPC_CompAttributeGet(gcomp, name='case_name', value=casename, &
          isPresent=isPresent, isSet=isSet, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     if (.not. isPresent .or. .not. isSet) then
        call ESMF_LogSetError(ESMF_RC_ATTR_NOTSET, &
             msg=subname//": case_name attribute must be set to generate restart filename",  &
@@ -1523,27 +1523,27 @@ contains
     endif
 
     call ESMF_GridCompGet(gcomp, clock=clock, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Need to use next time step since clock is
     ! not advanced until the end of the time interval
     call ESMF_ClockGetNextTime(clock, nextTime, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_TimeGet(nextTime, yy=year, mm=month, dd=day, s=seconds, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     write(restartname,'(A,".mom6.r.",I4.4,"-",I2.2,"-",I2.2,"-",I5.5)') &
          trim(casename), year, month, day, seconds
 
     call NUOPC_CompAttributeSet(gcomp, name="RestartFileToWrite", &
          value=trim(restartname), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_VMGet(vm, localPet=localPet, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     if (localPet == 0) then
        ! Write name of restart file in the rpointer file
@@ -1595,15 +1595,15 @@ contains
     endif
 
     is_restart = IsRestart(gcomp, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     if (is_restart) then
        restartname = ""
 
        call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        call ESMF_VMGet(vm, localPet=localPet, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        if (localPet == 0) then
           readunit = shr_file_getUnit()
@@ -1625,12 +1625,12 @@ contains
 
        ! broadcast attribute set on master task to all tasks
        call ESMF_VMBroadcast(vm, restartname, count=ESMF_MAXSTR-1, rootPet=0, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
        !write(logunit,*) trim(subname)//":restartfile after broadcast = "//trim(restartfile)
 
        call NUOPC_CompAttributeSet(gcomp, name='RestartFileToRead', &
             value=trim(restartname), rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
     endif
     call ESMF_LogWrite(trim(subname)//": returning", ESMF_LOGMSG_INFO, rc=rc)
 
