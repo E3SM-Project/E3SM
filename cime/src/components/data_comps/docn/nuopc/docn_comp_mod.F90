@@ -1,10 +1,10 @@
 #ifdef AIX
 @PROCESS ALIAS_SIZE(805306368)
 #endif
+
 module docn_comp_mod
 
   ! !USES:
-  use shr_pcdf_mod          , only : shr_pcdf_readwrite
   use NUOPC                 , only : NUOPC_Advertise
   use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_State
   use ESMF                  , only : ESMF_Mesh, ESMF_DistGrid, ESMF_MeshGet, ESMF_DistGridGet
@@ -34,12 +34,14 @@ module docn_comp_mod
   use shr_strdata_mod       , only : shr_strdata_print, shr_strdata_restRead
   use shr_strdata_mod       , only : shr_strdata_advance, shr_strdata_restWrite
   use shr_dmodel_mod        , only : shr_dmodel_translateAV
-  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add
+  use shr_pcdf_mod          , only : shr_pcdf_readwrite
+  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_import, dshr_export
   use docn_shr_mod          , only : datamode       ! namelist input
   use docn_shr_mod          , only : aquap_option   ! derived from datamode namelist input
   use docn_shr_mod          , only : rest_file      ! namelist input
   use docn_shr_mod          , only : rest_file_strm ! namelist input
   use docn_shr_mod          , only : nullstr
+  use docn_shr_mod          , only : SDOCN
 
   ! !PUBLIC TYPES:
   implicit none
@@ -52,12 +54,19 @@ module docn_comp_mod
   public :: docn_comp_advertise
   public :: docn_comp_init
   public :: docn_comp_run
+  public :: docn_comp_import
+  public :: docn_comp_export
 
   private :: prescribed_sst
 
   !--------------------------------------------------------------------------
   ! Private data
   !--------------------------------------------------------------------------
+
+  type(mct_aVect)            :: x2o
+  type(mct_aVect)            :: o2x
+  character(CXX)             :: flds_o2x = ''
+  character(CXX)             :: flds_x2o = ''
 
   integer                    :: debug_import = 0      ! debug level (if > 0 will print all import fields)
   integer                    :: debug_export = 0      ! debug level (if > 0 will print all export fields)
@@ -82,8 +91,6 @@ module docn_comp_mod
   character(len=CS), pointer :: stifld(:)                       ! names of fields in input streams
   character(len=CS), pointer :: stofld(:)                       ! local names of fields in input streams for calculations
   character(CXX)             :: flds_strm = ''                  ! set in docn_comp_init
-  character(len=CXX)         :: flds_o2x_mod                    ! set in docn_comp_advertise
-  character(len=CXX)         :: flds_x2o_mod                    ! set in docn_comp_advertise
   logical                    :: ocn_prognostic_mod              ! set in docn_comp_advertise
 
   integer , pointer          :: imask(:)                        ! integer ocean mask
@@ -101,29 +108,21 @@ contains
 !===============================================================================
 
   subroutine docn_comp_advertise(importState, exportState, &
-       ocn_present, ocn_prognostic, ocnrof_prognostic, &
-       fldsFrOcn_num, fldsFrOcn, fldsToOcn_num, fldsToOcn, &
-       flds_o2x, flds_x2o, rc)
+       ocn_prognostic, fldsFrOcn_num, fldsFrOcn, fldsToOcn_num, fldsToOcn, rc)
 
     ! input/output arguments
     type(ESMF_State)     , intent(inout) :: importState
     type(ESMF_State)     , intent(inout) :: exportState
-    logical              , intent(in)    :: ocn_present
     logical              , intent(in)    :: ocn_prognostic
-    logical              , intent(in)    :: ocnrof_prognostic
     integer              , intent(out)   :: fldsToOcn_num
     integer              , intent(out)   :: fldsFrOcn_num
     type (fld_list_type) , intent(out)   :: fldsToOcn(:)
     type (fld_list_type) , intent(out)   :: fldsFrOcn(:)
-    character(len=*)     , intent(out)   :: flds_o2x
-    character(len=*)     , intent(out)   :: flds_x2o
     integer              , intent(out)   :: rc
 
     ! local variables
     integer         :: n
     !-------------------------------------------------------------------------------
-
-    if (.not. ocn_present) return
 
     !--------------------------------
     ! export fields
@@ -136,29 +135,29 @@ contains
 
     call dshr_fld_add(model_fld='So_omask', model_fld_concat=flds_o2x, model_fld_index=ksomask, &
          fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
-
     call dshr_fld_add(model_fld='Fioo_q', model_fld_concat=flds_o2x, model_fld_index=kq, &
          fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
 
     ! export fields that have a corresponding stream field
 
-    call dshr_fld_add(data_fld='t', data_fld_array=avifld, model_fld='So_t', model_fld_array=avofld, &
-         model_fld_concat=flds_o2x, model_fld_index=kt, fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
-
-    call dshr_fld_add(data_fld='s', data_fld_array=avifld, model_fld='So_s', model_fld_array=avofld, &
-         model_fld_concat=flds_o2x, model_fld_index=ks, fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
-
-    call dshr_fld_add(data_fld='u', data_fld_array=avifld, model_fld='So_u', model_fld_array=avofld, &
-         model_fld_concat=flds_o2x, model_fld_index=ku, fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
-
-    call dshr_fld_add(data_fld='v', data_fld_array=avifld, model_fld='So_v', model_fld_array=avofld, &
-         model_fld_concat=flds_o2x, model_fld_index=kv, fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
-
-    call dshr_fld_add(data_fld='dhdx', data_fld_array=avifld, model_fld='So_dhdx', model_fld_array=avofld, &
-         model_fld_concat=flds_o2x, model_fld_index=kdhdx, fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
-
-    call dshr_fld_add(data_fld='dhdy', data_fld_array=avifld, model_fld='So_dhdy', model_fld_array=avofld, &
-         model_fld_concat=flds_o2x, model_fld_index=kdhdy, fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
+    call dshr_fld_add(data_fld='t', data_fld_array=avifld, &
+         model_fld='So_t', model_fld_array=avofld, model_fld_concat=flds_o2x, model_fld_index=kt, &
+         fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
+    call dshr_fld_add(data_fld='s', data_fld_array=avifld, &
+         model_fld='So_s', model_fld_array=avofld, model_fld_concat=flds_o2x, model_fld_index=ks, &
+         fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
+    call dshr_fld_add(data_fld='u', data_fld_array=avifld, &
+         model_fld='So_u', model_fld_array=avofld, model_fld_concat=flds_o2x, model_fld_index=ku, &
+         fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
+    call dshr_fld_add(data_fld='v', data_fld_array=avifld, &
+         model_fld='So_v', model_fld_array=avofld, model_fld_concat=flds_o2x, model_fld_index=kv, &
+         fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
+    call dshr_fld_add(data_fld='dhdx', data_fld_array=avifld, &
+         model_fld='So_dhdx', model_fld_array=avofld, model_fld_concat=flds_o2x, model_fld_index=kdhdx, &
+         fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
+    call dshr_fld_add(data_fld='dhdy', data_fld_array=avifld, &
+         model_fld='So_dhdy', model_fld_array=avofld, model_fld_concat=flds_o2x, model_fld_index=kdhdy, &
+         fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
 
     !-------------------
     ! import fields (have no corresponding stream fields)
@@ -185,6 +184,7 @@ contains
             fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
        call dshr_fld_add(model_fld='Foxx_rofi', model_fld_concat=flds_x2o, model_fld_index=krofi, &
             fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
+
     end if
 
     !-------------------
@@ -208,11 +208,9 @@ contains
     end if
 
     !-------------------
-    ! Save flds_x2o and flds_o2x as module variables for use in debugging
+    ! Save as module variables for use in debugging
     !-------------------
 
-    flds_x2o_mod = trim(flds_x2o)
-    flds_o2x_mod = trim(flds_o2x)
     ocn_prognostic_mod = ocn_prognostic
 
     !-------------------
@@ -234,19 +232,15 @@ contains
 
   !===============================================================================
 
-  subroutine docn_comp_init(x2o, o2x, &
-       SDOCN, mpicom, compid, my_task, master_task, &
+  subroutine docn_comp_init(mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, read_restart, &
-       scmMode, scmlat, scmlon, calendar, current_ymd, current_tod, modeldt, mesh)
-
+       scmMode, scmlat, scmlon, calendar, current_ymd, current_tod, modeldt, mesh, nxg, nyg)
 
     ! !DESCRIPTION: initialize docn model
     use pio        , only : iosystem_desc_t
     use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
 
     ! --- input/output arguments ---
-    type(mct_aVect)        , intent(inout) :: x2o, o2x       ! input/output attribute vectors
-    type(shr_strdata_type) , intent(inout) :: SDOCN          ! model shr_strdata instance (output)
     integer                , intent(in)    :: mpicom         ! mpi communicator
     integer                , intent(in)    :: compid         ! mct comp id
     integer                , intent(in)    :: my_task        ! my task in mpi communicator mpicom
@@ -262,6 +256,7 @@ contains
     integer                , intent(in)    :: current_tod    ! model sec into model date
     integer                , intent(in)    :: modeldt        ! model time step
     type(ESMF_Mesh)        , intent(in)    :: mesh           ! ESMF docn mesh
+    integer                , intent(out)   :: nxg, nyg
 
     !--- local variables ---
     integer                        :: n,k      ! generic counters
@@ -424,14 +419,14 @@ contains
     call t_startf('docn_initavs')
     if (my_task == master_task) write(logunit,F00) 'allocate AVs'
 
-    call mct_aVect_init(o2x, rList=flds_o2x_mod, lsize=lsize)
+    call mct_aVect_init(o2x, rList=flds_o2x, lsize=lsize)
     call mct_aVect_zero(o2x)
 
     kfrac = mct_aVect_indexRA(SDOCN%grid%data,'frac')
     o2x%rAttr(ksomask,:) = SDOCN%grid%data%rAttr(kfrac,:)
 
     if (ocn_prognostic_mod) then
-       call mct_aVect_init(x2o, rList=flds_x2o_mod, lsize=lsize)
+       call mct_aVect_init(x2o, rList=flds_x2o, lsize=lsize)
        call mct_aVect_zero(x2o)
 
        ! Initialize internal attribute vectors for optional streams
@@ -471,6 +466,9 @@ contains
     end if
 
     call t_stopf('docn_initavs')
+
+    nxg = SDOCN%nxg
+    nyg = SDOCN%nyg
 
     !----------------------------------------------------------------------------
     ! Read restart
@@ -535,21 +533,10 @@ contains
 
     call t_adj_detailf(+2)
 
-    call docn_comp_run(&
-         x2o=x2o, &
-         o2x=o2x, &
-         SDOCN=SDOCN, &
-         mpicom=mpicom, &
-         compid=compid, &
-         my_task=my_task, &
-         master_task=master_task, &
-         inst_suffix=inst_suffix, &
-         logunit=logunit, &
-         read_restart=read_restart, &
-         write_restart=.false., &
-         target_ymd=current_ymd, &
-         target_tod=current_tod, &
-         modeldt=modeldt)
+    call docn_comp_run(mpicom=mpicom, compid=compid,  my_task=my_task, &
+         master_task=master_task, inst_suffix=inst_suffix, logunit=logunit, &
+         read_restart=read_restart, write_restart=.false., &
+         target_ymd=current_ymd, target_tod=current_tod, modeldt=modeldt)
 
     if (my_task == master_task) then
        write(logunit,F00) 'docn_comp_init done'
@@ -563,18 +550,13 @@ contains
 
   !===============================================================================
 
-  subroutine docn_comp_run(x2o, o2x, &
-       SDOCN, mpicom, compid, my_task, master_task, &
+  subroutine docn_comp_run(mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, read_restart, write_restart, &
        target_ymd, target_tod, modeldt, case_name)
 
     ! !DESCRIPTION:  run method for docn model
-    implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(mct_aVect)        , intent(inout) :: x2o
-    type(mct_aVect)        , intent(inout) :: o2x
-    type(shr_strdata_type) , intent(inout) :: SDOCN
     integer                , intent(in)    :: mpicom        ! mpi communicator
     integer                , intent(in)    :: compid        ! mct comp id
     integer                , intent(in)    :: my_task       ! my task in mpi communicator mpicom
@@ -589,21 +571,20 @@ contains
     character(len=*)       , intent(in), optional :: case_name ! case name
 
     !--- local ---
-    integer           :: n,nfld ! indices
-    integer           :: lsize  ! size of attr vect
-    real(R8)          :: dt     ! timestep
-    integer           :: nu     ! unit number
-    character(len=18) :: date_str
-    character(len=CS) :: fldname
-    character(len=CL) :: local_case_name
-    real(R8), parameter :: &
-         swp = 0.67_R8*(exp((-1._R8*shr_const_zsrflyr) /1.0_R8)) + 0.33_R8*exp((-1._R8*shr_const_zsrflyr)/17.0_R8)
-
+    integer                 :: n,nfld ! indices
+    integer                 :: lsize  ! size of attr vect
+    real(R8)                :: dt     ! timestep
+    integer                 :: nu     ! unit number
+    character(len=18)       :: date_str
+    character(len=CS)       :: fldname
+    character(len=CL)       :: local_case_name
     character(*), parameter :: F00   = "('(docn_comp_run) ',8a)"
     character(*), parameter :: F01   = "('(docn_comp_run) ',a, i7,2x,i5,2x,i5,2x,d21.14)"
     character(*), parameter :: F04   = "('(docn_comp_run) ',2a,2i8,'s')"
     character(*), parameter :: F0D   = "('(docn_comp_run) ',a, i7,2x,i5,2x,i5,2x,d21.14)"
     character(*), parameter :: subName = "(docn_comp_run) "
+    real(R8), parameter :: &
+         swp = 0.67_R8*(exp((-1._R8*shr_const_zsrflyr) /1.0_R8)) + 0.33_R8*exp((-1._R8*shr_const_zsrflyr)/17.0_R8)
     !-------------------------------------------------------------------------------
 
     !--------------------
@@ -612,7 +593,7 @@ contains
 
     if (debug_import > 0 .and. my_task == master_task .and. ocn_prognostic_mod) then
        do nfld = 1, mct_aVect_nRAttr(x2o)
-          call shr_string_listGetName(trim(flds_x2o_mod), nfld, fldname)
+          call shr_string_listGetName(trim(flds_x2o), nfld, fldname)
           do n = 1, mct_aVect_lsize(x2o)
              write(logunit,F0D)'import: ymd,tod,n  = '// trim(fldname),target_ymd, target_tod, &
                   n, x2o%rattr(nfld,n)
@@ -627,6 +608,7 @@ contains
     else
        local_case_name = " "
     endif
+
     !--------------------
     ! ADVANCE OCN
     !--------------------
@@ -818,7 +800,7 @@ contains
 
     if (debug_export > 1 .and. my_task == master_task) then
        do nfld = 1, mct_aVect_nRAttr(o2x)
-          call shr_string_listGetName(trim(flds_o2x_mod), nfld, fldname)
+          call shr_string_listGetName(trim(flds_o2x), nfld, fldname)
           do n = 1, mct_aVect_lsize(o2x)
              write(logunit,F0D)'export: ymd,tod,n  = '// trim(fldname),target_ymd, target_tod, &
                   n, o2x%rattr(nfld,n)
@@ -867,6 +849,77 @@ contains
     call t_stopf('DOCN_RUN')
 
   end subroutine docn_comp_run
+
+  !===============================================================================
+
+  subroutine docn_comp_import(importState, rc)
+
+    ! input/output variables
+    type(ESMF_State)     :: importState
+    integer, intent(out) :: rc
+    !----------------------------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    call dshr_import(importState, 'Foxx_swnet', x2o%rattr(kswnet,:), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_import(importState, 'Foxx_lwup', x2o%rattr(klwup,:), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_import(importState, 'Foxx_sen', x2o%rattr(ksen,:), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_import(importState, 'Foxx_lat', x2o%rattr(klat,:), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_import(importState, 'Faxa_lwdn', x2o%rattr(klwdn,:), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_import(importState, 'Faxa_snow', x2o%rattr(ksnow,:), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_import(importState, 'Fioi_melth', x2o%rattr(kmelth,:), rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+  end subroutine docn_comp_import
+
+  !===============================================================================
+
+  subroutine docn_comp_export(exportState, rc)
+
+    ! input/output variables
+    type(ESMF_State)     :: exportState
+    integer, intent(out) :: rc
+    !----------------------------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    call dshr_export(o2x%rattr(ksomask,:), exportState, 'So_omask', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(o2x%rattr(kt,:), exportState, 'So_t', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(o2x%rattr(ks,:), exportState, 'So_s', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(o2x%rattr(ku,:), exportState, 'So_u', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(o2x%rattr(kv,:), exportState, 'So_v', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(o2x%rattr(kdhdx,:), exportState, 'So_dhdx', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(o2x%rattr(kdhdy,:), exportState, 'So_dhdy', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_export(o2x%rattr(kq,:), exportState, 'Fioo_q', rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+  end subroutine docn_comp_export
 
   !===============================================================================
 

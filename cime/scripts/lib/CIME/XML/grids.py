@@ -70,7 +70,7 @@ class Grids(GenericXML):
         gridinfo.update(domains)
 
         # determine gridmaps given component_grids
-        gridmaps = self._get_gridmaps(component_grids)
+        gridmaps = self._get_gridmaps(component_grids, driver)
         gridinfo.update(gridmaps)
 
         return gridinfo
@@ -157,7 +157,7 @@ class Grids(GenericXML):
 
         # determine component grids and associated required domains and gridmaps
         # TODO: this should be in XML, not here
-        prefix = {"atm":"a%", "lnd":"l%", "ocnice":"oi%", "rof":"r%", "wav":"w%", "glc":"g%", "mask":"m%"}
+        prefix = {"atm":"a%", "lnd":"l%", "ocnice":"oi%", "rof":"r%", "wav":"w%", "glc":"g%", "mask":"m%", "iac":"z%"}
         lname = ""
         for component_gridname in self._comp_gridnames:
             if lname:
@@ -204,7 +204,7 @@ class Grids(GenericXML):
         # use component_grids to create grids dictionary
         # TODO: this should be in XML, not here
         grids = [("atm", "a%"), ("lnd", "l%"), ("ocn", "o%"), ("mask", "m%"),\
-                 ("ice", "i%"), ("rof", "r%"), ("glc", "g%"), ("wav", "w%")]
+                 ("ice", "i%"), ("rof", "r%"), ("glc", "g%"), ("wav", "w%"), ("iac", "z%")]
         domains = {}
         mask_name = None
         if 'm%' in component_grids:
@@ -276,12 +276,12 @@ class Grids(GenericXML):
 
         return domains
 
-    def _get_gridmaps(self, component_grids):
+    def _get_gridmaps(self, component_grids, driver):
         """
         set all mapping files for config_grids.xml v2 schema
         """
         grids = [("atm_grid","a%"), ("lnd_grid","l%"), ("ocn_grid","o%"), \
-                 ("rof_grid","r%"), ("glc_grid","g%"), ("wav_grid","w%")]
+                 ("rof_grid","r%"), ("glc_grid","g%"), ("wav_grid","w%"), ("iac_grid","z%")]
         gridmaps = {}
 
         # (1) set all possibly required gridmaps to idmap
@@ -299,8 +299,13 @@ class Grids(GenericXML):
                 if gridname == "atm_grid":
                     atm_gridvalue = gridvalue
                 other_gridvalue = component_grids[other_grid[1]]
-                gridmap_nodes = self.get_children("gridmap", root=self.get_child("gridmaps"),
-                                               attributes={gridname:gridvalue, other_gridname:other_gridvalue})
+                gridmaps_roots = self.get_children("gridmaps")
+                gridmap_nodes = []
+                for root in gridmaps_roots:
+                    gmdriver = self.get(root, "driver")
+                    if gmdriver is None or gmdriver == driver:
+                        gridmap_nodes.extend(self.get_children("gridmap", root=root,
+                                                               attributes={gridname:gridvalue, other_gridname:other_gridvalue}))
                 for gridmap_node in gridmap_nodes:
                     expect(len(self.attrib(gridmap_node)) == 2,
                            " Bad attribute count in gridmap node %s"%self.attrib(gridmap_node))
@@ -329,7 +334,10 @@ class Grids(GenericXML):
                         if grid1_name == "ocn_grid" and grid1_value == atm_gridvalue:
                             logger.debug('ocn_grid == atm_grid so this is not an idmap error')
                         else:
-                            logger.warning("Warning: missing non-idmap {} for {}, {} and {} {} ".format(self.text(node), grid1_name, grid1_value, grid2_name, grid2_value))
+                            if driver == "nuopc":
+                                gridmaps[self.text(node)] = 'unset'
+                            else:
+                                logger.warning("Warning: missing non-idmap {} for {}, {} and {} {} ".format(self.text(node), grid1_name, grid1_value, grid2_name, grid2_value))
 
         return gridmaps
 

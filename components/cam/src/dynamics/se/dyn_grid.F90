@@ -19,7 +19,8 @@ module dyn_grid
   !      get_gcol_block_cnt_d     get number of blocks containing data
   !                               from a given global column index
   !      get_block_owner_d        get process "owning" given block
-  !      get_horiz_grid_d         get horizontal grid coordinates
+  !      get_horiz_grid_d         get horizontal grid coordinates and associated
+  !                               information
   !      get_horiz_grid_dim_d     get horizontal dimensions of dynamics grid
   !      dyn_grid_get_pref        get reference pressures for the dynamics grid
   !      dyn_grid_get_elem_coords get coordinates of a specified block element 
@@ -37,6 +38,7 @@ module dyn_grid
   use shr_kind_mod,           only: r8 => shr_kind_r8
   use shr_const_mod,          only: SHR_CONST_PI
   use cam_grid_support,       only: iMap
+  use scamMod,                only: single_column
 
   implicit none
   private
@@ -528,14 +530,17 @@ end function get_block_owner_d
   !========================================================================
   !
   subroutine get_horiz_grid_d(nxy,clat_d_out,clon_d_out,area_d_out, &
-       wght_d_out,lat_d_out,lon_d_out)
+       wght_d_out,lat_d_out,lon_d_out,cost_d_out)
 
     !----------------------------------------------------------------------- 
     ! 
     !                          
     ! Purpose: Return latitude and longitude (in radians), column surface
     !          area (in radians squared) and surface integration weights
-    !          for global column indices that will be passed to/from physics
+    !          for global column indices that will be passed to/from
+    !          physics. Optionally also return estimated physics 
+    !          computational cost per global column for use in load 
+    !          balancing.
     ! 
     ! Method: 
     ! 
@@ -552,7 +557,7 @@ end function get_block_owner_d
     !  weight
     real(r8), intent(out), optional :: lat_d_out(:)  ! column degree latitudes
     real(r8), intent(out), optional :: lon_d_out(:)  ! column degree longitudes
-
+    real(r8), intent(out), optional :: cost_d_out(:) ! column cost
 
     real(r8), pointer :: area_d(:)
     real(r8), pointer :: temp(:)
@@ -607,6 +612,16 @@ end function get_block_owner_d
       deallocate(temp)
     end if
 
+    ! just a placeholder for now, until a mechanism for setting cost_d_out
+    ! is designed and implemented
+    if (present(cost_d_out)) then
+      if (size(cost_d_out) .ne. nxy) then
+        call endrun('bad cost_d_out array size in dyn_grid')
+      else
+        cost_d_out(:) = 1.0_r8
+      end if
+    end if
+
     return
   end subroutine get_horiz_grid_d
 
@@ -619,6 +634,7 @@ end function get_block_owner_d
     type(horiz_coord_t), pointer :: lon_coord
     integer(iMap),       pointer :: grid_map(:,:)
     integer                :: i, j, mapind  ! Loop variables
+    real(r8) :: area_scm(1)
 
     !NB: These will change once a separate column-parameterization grid is supported.
     ! Note: not using get_horiz_grid_dim_d or get_horiz_grid_d since those
@@ -644,9 +660,20 @@ end function get_block_owner_d
 
     ! The native HOMME GLL grid
     call cam_grid_register('GLL', dyn_decomp, lat_coord, lon_coord,           &
-         grid_map, block_indexed=.false., unstruct=.true.)
-    call cam_grid_attribute_register('GLL', 'area', 'gll grid areas',         &
+         grid_map, block_indexed=.false., unstruct=.true.) 
+	 
+    if (.not. single_column) then 
+      call cam_grid_attribute_register('GLL', 'area', 'gll grid areas',         &
          'ncol', pearea, pemap)
+    else
+      ! if single column model, then this attribute has to be handled 
+      !  by assigning just the SCM point. Else, the model will bomb out
+      !  when writing the header information to history output
+      area_scm(1) = 1.0_r8 / elem(1)%rspheremp(1,1)
+      call cam_grid_attribute_register('GLL', 'area', 'gll grid areas',         &
+          'ncol', area_scm)
+    endif
+      
     call cam_grid_attribute_register('GLL', 'np', '', np)
     call cam_grid_attribute_register('GLL', 'ne', '', ne)
     nullify(grid_map) ! Map belongs to grid now

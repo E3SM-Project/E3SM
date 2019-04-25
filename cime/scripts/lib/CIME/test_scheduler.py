@@ -611,15 +611,20 @@ class TestScheduler(object):
                     #  (SCM) mode
                     envtest.set_test_parameter("PTS_MODE", "TRUE")
 
-                    # For PTS_MODE, compile with mpi-serial
-                    envtest.set_test_parameter("MPILIB", "mpi-serial")
+                    # For PTS_MODE, set all tasks and threads to 1
+                    comps=["ATM","LND","ICE","OCN","CPL","GLC","ROF","WAV"]
+
+                    for comp in comps:
+                        envtest.set_test_parameter("NTASKS_"+comp, "1")
+                        envtest.set_test_parameter("NTHRDS_"+comp, "1")
 
                 elif (opt.startswith('I') or # Marker to distinguish tests with same name - ignored
                       opt.startswith('M') or # handled in create_newcase
                       opt.startswith('P') or # handled in create_newcase
                       opt.startswith('N') or # handled in create_newcase
                       opt.startswith('C') or # handled in create_newcase
-                      opt.startswith('V')):  # handled in create_newcase
+                      opt.startswith('V') or # handled in create_newcase
+                      opt == 'B'):           # handled in run_phase
                     pass
 
                 elif opt.startswith('IOP'):
@@ -644,7 +649,7 @@ class TestScheduler(object):
 
             # handle single-exe here, all cases will use the EXEROOT from
             # the first case.
-            first_test = self._tests.keys()[0]
+            first_test = self._first_test()
             if self._single_exe:
                 if test == first_test:
                     self._single_exe_root = case.get_value("EXEROOT")
@@ -675,7 +680,7 @@ class TestScheduler(object):
     ###########################################################################
     def _sharedlib_build_phase(self, test):
     ###########################################################################
-        first_test = self._tests.keys()[0]
+        first_test = self._first_test()
         if self._single_exe and test != first_test:
             if self._get_test_status(first_test, phase=SHAREDLIB_BUILD_PHASE) == TEST_PASS_STATUS:
                 return True, ""
@@ -686,11 +691,16 @@ class TestScheduler(object):
         return self._shell_cmd_for_phase(test, "./case.build --sharedlib-only", SHAREDLIB_BUILD_PHASE, from_dir=test_dir)
 
     ###########################################################################
+    def _first_test(self):
+    ###########################################################################
+        return list(self._tests.keys())[0]
+
+    ###########################################################################
     def _model_build_phase(self, test):
     ###########################################################################
         test_dir = self._get_test_dir(test)
 
-        first_test = self._tests.keys()[0]
+        first_test = self._first_test()
         if self._single_exe and test != first_test:
             if self._get_test_status(first_test, phase=MODEL_BUILD_PHASE) == TEST_PASS_STATUS:
                 with Case(test_dir, read_only=False) as case:
@@ -707,17 +717,25 @@ class TestScheduler(object):
     ###########################################################################
         test_dir = self._get_test_dir(test)
 
-        cmd = "./case.submit"
-        if not self._allow_pnl:
-            cmd += " --skip-preview-namelist"
-        if self._no_batch:
-            cmd += " --no-batch"
-        if self._mail_user:
-            cmd += " --mail-user={}".format(self._mail_user)
-        if self._mail_type:
-            cmd += " -M={}".format(",".join(self._mail_type))
+        case_opts = parse_test_name(test)[1]
+        if case_opts is not None and "B" in case_opts: # pylint: disable=unsupported-membership-test
+            self._log_output(test, "{} SKIPPED for test '{}'".format(RUN_PHASE, test))
+            self._update_test_status_file(test, SUBMIT_PHASE, TEST_PASS_STATUS)
+            self._update_test_status_file(test, RUN_PHASE,    TEST_PASS_STATUS)
 
-        return self._shell_cmd_for_phase(test, cmd, RUN_PHASE, from_dir=test_dir)
+            return True, "SKIPPED"
+        else:
+            cmd = "./case.submit"
+            if not self._allow_pnl:
+                cmd += " --skip-preview-namelist"
+            if self._no_batch:
+                cmd += " --no-batch"
+            if self._mail_user:
+                cmd += " --mail-user={}".format(self._mail_user)
+            if self._mail_type:
+                cmd += " -M={}".format(",".join(self._mail_type))
+
+            return self._shell_cmd_for_phase(test, cmd, RUN_PHASE, from_dir=test_dir)
 
     ###########################################################################
     def _run_catch_exceptions(self, test, phase, run):
@@ -736,7 +754,7 @@ class TestScheduler(object):
     ###########################################################################
         # If in single_exe mode, we must wait for the first case to complete building
         # before starting other cases.
-        first_test = self._tests.keys()[0]
+        first_test = self._first_test()
         if self._single_exe and test != first_test and \
            self._get_test_status(first_test, phase=MODEL_BUILD_PHASE) == TEST_PEND_STATUS:
             return self._proc_pool + 1
@@ -816,7 +834,7 @@ class TestScheduler(object):
         logger.info(status_str)
 
         if test_phase in [CREATE_NEWCASE_PHASE, XML_PHASE] or \
-           (self._single_exe and test != self._tests.keys()[0] and test_phase in [SHAREDLIB_BUILD_PHASE, MODEL_BUILD_PHASE]):
+           (self._single_exe and test != self._first_test() and test_phase in [SHAREDLIB_BUILD_PHASE, MODEL_BUILD_PHASE]):
             # These are the phases for which TestScheduler is reponsible for
             # updating the TestStatus file
             self._update_test_status_file(test, test_phase, status)
