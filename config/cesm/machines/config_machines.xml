@@ -949,7 +949,7 @@ This allows using a different mpirun command to launch unit tests
 	<command name="use">/global/project/projectdirs/ccsm1/modulefiles/edison</command>
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial" >
-	<command name="load">esmf/6.3.0rp1-defio-intel17.0-mpi-O</command>
+	<command name="load">esmf/7.1.0r-defio-intel18.0.1.163-mpi-O</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial" >
 	<command name="load">esmf/6.3.0rp1-defio-intel17.0-mpiuni-O</command>
