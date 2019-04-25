@@ -11,7 +11,8 @@ module ActiveLayerMod
   use TemperatureType , only : temperature_type
   use CanopyStateType , only : canopystate_type
   use GridcellType    , only : grc_pp       
-  use ColumnType      , only : col_pp       
+  use ColumnType      , only : col_pp
+  use ColumnDataType  , only : col_es  
   !
   implicit none
   save
@@ -68,7 +69,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                & 
-         t_soisno             =>    temperature_vars%t_soisno_col        ,    & ! Input:   [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)                    
+         t_soisno             =>    col_es%t_soisno        ,    & ! Input:   [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)                    
          
          alt                  =>    canopystate_vars%alt_col             ,    & ! Output:  [real(r8) (:)   ]  current depth of thaw                                                 
          altmax               =>    canopystate_vars%altmax_col          ,    & ! Output:  [real(r8) (:)   ]  maximum annual depth of thaw                                          

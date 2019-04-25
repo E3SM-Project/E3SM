@@ -3,7 +3,7 @@
 #
 # build-namelist
 #
-# This script builds the namelists for the MPASSI configuration of ACME.
+# This script builds the namelists for the MPASSI configuration of E3SM.
 #
 # build-namelist uses a config_cache.xml file that current contains the seaice grid information.
 # build-namelist reads this file to obtain information it needs to provide

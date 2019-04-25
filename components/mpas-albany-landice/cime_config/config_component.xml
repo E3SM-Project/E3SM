@@ -35,7 +35,7 @@
       library The first-order velocity solver in MALI uses the
       Albany library.  In order to use that velocity solver, MALI
       must be built with Albany support and linking to Albany must
-      occur when building the ACME executable.  This occurs if this
+      occur when building the E3SM executable.  This occurs if this
       variable is set to TRUE.  Note that is only available on a
       limited set of machines/compilers.  This must remain FALSE to
       run MALI on a machine that does not have Albany, or for which

@@ -2,6 +2,7 @@
 from standard_script_setup import *
 from CIME.utils import copyifnewer, run_bld_cmd_ensure_logging
 from CIME.case import Case
+from CIME.build import get_standard_makefile_args
 import glob
 
 logger = logging.getLogger(__name__)
@@ -50,7 +51,7 @@ def buildlib(bldroot, installpath, case):
 
     gmake_opts = "-f {} ".format(os.path.join(caseroot,"Tools","Makefile"))
     gmake_opts += " -C {} ".format(bldroot)
-    gmake_opts += " CASEROOT={} ".format(caseroot)
+    gmake_opts += " {} ".format(get_standard_makefile_args(case))
     gmake_opts += "MODEL=mpi-serial {}".format(os.path.join(bldroot,"Makefile.conf"))
 
     gmake_cmd = case.get_value("GMAKE")

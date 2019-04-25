@@ -396,6 +396,7 @@ void pio_map_sort(const PIO_Offset *map, int *remap, int maplen)
 */
 }
 
+
 /**
  * Initialize the decomposition used with distributed arrays. The
  * decomposition describes how the data will be distributed between
@@ -1051,6 +1052,7 @@ int PIOc_set_hint(int iosysid, const char *hint, const char *hintval)
     if (ios->ioproc)
         if ((mpierr = MPI_Info_set(ios->info, hint, hintval)))
             return check_mpi2(ios, NULL, mpierr, __FILE__, __LINE__);
+
     return PIO_NOERR;
 }
 

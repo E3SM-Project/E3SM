@@ -8,6 +8,7 @@
   <xs:attribute name="comp_interface" type="xs:string"/>
   <xs:attribute name="queue" type="xs:string"/>
   <xs:attribute name="DEBUG" type="upperBoolean"/>
+  <xs:attribute name="PIO_VERSION" type="xs:integer"/>
   <xs:attribute name="threaded" type="xs:boolean"/>
   <xs:attribute name="allow_error" type="xs:boolean"/>
   <xs:attribute name="unit_testing" type="xs:boolean"/>
@@ -222,6 +223,7 @@
       </xs:sequence>
       <xs:attribute ref="compiler"/>
       <xs:attribute ref="DEBUG"/>
+      <xs:attribute ref="PIO_VERSION"/>
       <xs:attribute ref="mpilib"/>
       <xs:attribute ref="comp_interface"/>
     </xs:complexType>

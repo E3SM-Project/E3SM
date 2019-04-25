@@ -13,6 +13,8 @@ module C14DecayMod
   use CNCarbonStateType      , only : carbonstate_type
   use CNStateType            , only : cnstate_type
   use clm_varctl             , only : nu_com
+  use ColumnDataType         , only : c14_col_cs
+  use VegetationDataType     , only : c14_veg_cs  
   !
   implicit none
   save
@@ -63,31 +65,31 @@ contains
     associate(                                                                    & 
          spinup_factor      =>    decomp_cascade_con%spinup_factor              , & ! Input:   [real(r8) (:)     ]  factor for AD spinup associated with each pool
 
-         decomp_cpools_vr   =>    c14_carbonstate_vars%decomp_cpools_vr_col     , & ! Output:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
-         seedc              =>    c14_carbonstate_vars%seedc_col                , & ! Output:  [real(r8) (:)     ]                                          
-         cpool              =>    c14_carbonstate_vars%cpool_patch              , & ! Output:  [real(r8) (:)     ]  (gC/m2) temporary photosynthate C pool  
-         xsmrpool           =>    c14_carbonstate_vars%xsmrpool_patch           , & ! Output:  [real(r8) (:)     ]  (gC/m2) execss maint resp C pool        
-         deadcrootc         =>    c14_carbonstate_vars%deadcrootc_patch         , & ! Output:  [real(r8) (:)     ]  (gC/m2) dead coarse root C              
-         deadcrootc_storage =>    c14_carbonstate_vars%deadcrootc_storage_patch , & ! Output:  [real(r8) (:)     ]  (gC/m2) dead coarse root C storage      
-         deadcrootc_xfer    =>    c14_carbonstate_vars%deadcrootc_xfer_patch    , & ! Output:  [real(r8) (:)     ]  (gC/m2) dead coarse root C transfer     
-         deadstemc          =>    c14_carbonstate_vars%deadstemc_patch          , & ! Output:  [real(r8) (:)     ]  (gC/m2) dead stem C                     
-         deadstemc_storage  =>    c14_carbonstate_vars%deadstemc_storage_patch  , & ! Output:  [real(r8) (:)     ]  (gC/m2) dead stem C storage             
-         deadstemc_xfer     =>    c14_carbonstate_vars%deadstemc_xfer_patch     , & ! Output:  [real(r8) (:)     ]  (gC/m2) dead stem C transfer            
-         frootc             =>    c14_carbonstate_vars%frootc_patch             , & ! Output:  [real(r8) (:)     ]  (gC/m2) fine root C                     
-         frootc_storage     =>    c14_carbonstate_vars%frootc_storage_patch     , & ! Output:  [real(r8) (:)     ]  (gC/m2) fine root C storage             
-         frootc_xfer        =>    c14_carbonstate_vars%frootc_xfer_patch        , & ! Output:  [real(r8) (:)     ]  (gC/m2) fine root C transfer            
-         gresp_storage      =>    c14_carbonstate_vars%gresp_storage_patch      , & ! Output:  [real(r8) (:)     ]  (gC/m2) growth respiration storage      
-         gresp_xfer         =>    c14_carbonstate_vars%gresp_xfer_patch         , & ! Output:  [real(r8) (:)     ]  (gC/m2) growth respiration transfer     
-         leafc              =>    c14_carbonstate_vars%leafc_patch              , & ! Output:  [real(r8) (:)     ]  (gC/m2) leaf C                          
-         leafc_storage      =>    c14_carbonstate_vars%leafc_storage_patch      , & ! Output:  [real(r8) (:)     ]  (gC/m2) leaf C storage                  
-         leafc_xfer         =>    c14_carbonstate_vars%leafc_xfer_patch         , & ! Output:  [real(r8) (:)     ]  (gC/m2) leaf C transfer                 
-         livecrootc         =>    c14_carbonstate_vars%livecrootc_patch         , & ! Output:  [real(r8) (:)     ]  (gC/m2) live coarse root C              
-         livecrootc_storage =>    c14_carbonstate_vars%livecrootc_storage_patch , & ! Output:  [real(r8) (:)     ]  (gC/m2) live coarse root C storage      
-         livecrootc_xfer    =>    c14_carbonstate_vars%livecrootc_xfer_patch    , & ! Output:  [real(r8) (:)     ]  (gC/m2) live coarse root C transfer     
-         livestemc          =>    c14_carbonstate_vars%livestemc_patch          , & ! Output:  [real(r8) (:)     ]  (gC/m2) live stem C                     
-         livestemc_storage  =>    c14_carbonstate_vars%livestemc_storage_patch  , & ! Output:  [real(r8) (:)     ]  (gC/m2) live stem C storage             
-         livestemc_xfer     =>    c14_carbonstate_vars%livestemc_xfer_patch     , & ! Output:  [real(r8) (:)     ]  (gC/m2) live stem C transfer            
-         pft_ctrunc         =>    c14_carbonstate_vars%ctrunc_patch               & ! Output:  [real(r8) (:)     ]  (gC/m2) pft-level sink for C truncation 
+         decomp_cpools_vr   =>    c14_col_cs%decomp_cpools_vr     , & ! Output:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
+         seedc              =>    c14_col_cs%seedc                , & ! Output:  [real(r8) (:)     ]                                          
+         cpool              =>    c14_veg_cs%cpool              , & ! Output:  [real(r8) (:)     ]  (gC/m2) temporary photosynthate C pool  
+         xsmrpool           =>    c14_veg_cs%xsmrpool           , & ! Output:  [real(r8) (:)     ]  (gC/m2) execss maint resp C pool        
+         deadcrootc         =>    c14_veg_cs%deadcrootc         , & ! Output:  [real(r8) (:)     ]  (gC/m2) dead coarse root C              
+         deadcrootc_storage =>    c14_veg_cs%deadcrootc_storage , & ! Output:  [real(r8) (:)     ]  (gC/m2) dead coarse root C storage      
+         deadcrootc_xfer    =>    c14_veg_cs%deadcrootc_xfer    , & ! Output:  [real(r8) (:)     ]  (gC/m2) dead coarse root C transfer     
+         deadstemc          =>    c14_veg_cs%deadstemc          , & ! Output:  [real(r8) (:)     ]  (gC/m2) dead stem C                     
+         deadstemc_storage  =>    c14_veg_cs%deadstemc_storage  , & ! Output:  [real(r8) (:)     ]  (gC/m2) dead stem C storage             
+         deadstemc_xfer     =>    c14_veg_cs%deadstemc_xfer     , & ! Output:  [real(r8) (:)     ]  (gC/m2) dead stem C transfer            
+         frootc             =>    c14_veg_cs%frootc             , & ! Output:  [real(r8) (:)     ]  (gC/m2) fine root C                     
+         frootc_storage     =>    c14_veg_cs%frootc_storage     , & ! Output:  [real(r8) (:)     ]  (gC/m2) fine root C storage             
+         frootc_xfer        =>    c14_veg_cs%frootc_xfer        , & ! Output:  [real(r8) (:)     ]  (gC/m2) fine root C transfer            
+         gresp_storage      =>    c14_veg_cs%gresp_storage      , & ! Output:  [real(r8) (:)     ]  (gC/m2) growth respiration storage      
+         gresp_xfer         =>    c14_veg_cs%gresp_xfer         , & ! Output:  [real(r8) (:)     ]  (gC/m2) growth respiration transfer     
+         leafc              =>    c14_veg_cs%leafc              , & ! Output:  [real(r8) (:)     ]  (gC/m2) leaf C                          
+         leafc_storage      =>    c14_veg_cs%leafc_storage      , & ! Output:  [real(r8) (:)     ]  (gC/m2) leaf C storage                  
+         leafc_xfer         =>    c14_veg_cs%leafc_xfer         , & ! Output:  [real(r8) (:)     ]  (gC/m2) leaf C transfer                 
+         livecrootc         =>    c14_veg_cs%livecrootc         , & ! Output:  [real(r8) (:)     ]  (gC/m2) live coarse root C              
+         livecrootc_storage =>    c14_veg_cs%livecrootc_storage , & ! Output:  [real(r8) (:)     ]  (gC/m2) live coarse root C storage      
+         livecrootc_xfer    =>    c14_veg_cs%livecrootc_xfer    , & ! Output:  [real(r8) (:)     ]  (gC/m2) live coarse root C transfer     
+         livestemc          =>    c14_veg_cs%livestemc          , & ! Output:  [real(r8) (:)     ]  (gC/m2) live stem C                     
+         livestemc_storage  =>    c14_veg_cs%livestemc_storage  , & ! Output:  [real(r8) (:)     ]  (gC/m2) live stem C storage             
+         livestemc_xfer     =>    c14_veg_cs%livestemc_xfer     , & ! Output:  [real(r8) (:)     ]  (gC/m2) live stem C transfer            
+         pft_ctrunc         =>    c14_veg_cs%ctrunc               & ! Output:  [real(r8) (:)     ]  (gC/m2) pft-level sink for C truncation 
          )
 
       ! set time steps

@@ -26,18 +26,14 @@ module ice_comp_nuopc
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_SetScalar
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_Diagnose
-  use shr_nuopc_grid_mod    , only : shr_nuopc_grid_ArrayToState
-  use shr_nuopc_grid_mod    , only : shr_nuopc_grid_StateToArray
-  use shr_const_mod         , only : SHR_CONST_SPVAL
+  use shr_const_mod         , only : shr_const_spval, shr_const_pi
   use shr_strdata_mod       , only : shr_strdata_type
   use shr_cal_mod           , only : shr_cal_ymd2julian
-  use shr_const_mod         , only : shr_const_pi
-  use dshr_nuopc_mod        , only : fld_list_type, fldsMax, fld_list_realize
+  use dshr_nuopc_mod        , only : fld_list_type, fldsMax, dshr_realize
   use dshr_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, ModelSetMetaData
   use dice_shr_mod          , only : dice_shr_read_namelists
   use dice_comp_mod         , only : dice_comp_init, dice_comp_run, dice_comp_advertise
-  use mct_mod               , only : mct_Avect, mct_Avect_info
-
+  use dice_comp_mod         , only : dice_comp_import, dice_comp_export
 
   implicit none
   private ! except
@@ -57,9 +53,7 @@ module ice_comp_nuopc
   integer                    :: fldsFrIce_num = 0
   type (fld_list_type)       :: fldsToIce(fldsMax)
   type (fld_list_type)       :: fldsFrIce(fldsMax)
-  type(shr_strdata_type)     :: SDICE
-  type(mct_aVect)            :: x2i
-  type(mct_aVect)            :: i2x
+
   integer                    :: compid                    ! mct comp id
   integer                    :: mpicom                    ! mpi communicator
   integer                    :: my_task                   ! my task in mpi communicator mpicom
@@ -70,13 +64,10 @@ module ice_comp_nuopc
   integer, parameter         :: master_task=0             ! task number of master task
   logical                    :: read_restart              ! start from restart
   character(len=256)         :: case_name                 ! case name
-  integer                    :: dbrc
   logical                    :: flds_i2o_per_cat          ! .true. if select per ice thickness
                                                           ! category fields are passed from ice to ocean
   character(len=80)          :: calendar                  ! calendar name
   integer                    :: modeldt                   ! integer timestep
-  character(len=CXX)         :: flds_i2x = ''
-  character(len=CXX)         :: flds_x2i = ''
   logical                    :: use_esmf_metadata = .false.
   real(R8)    ,parameter     :: pi  = shr_const_pi      ! pi
   character(*),parameter     :: modName =  "(ice_comp_nuopc)"
@@ -95,7 +86,7 @@ contains
     character(len=*),parameter  :: subname=trim(modName)//':(SetServices) '
 
     rc = ESMF_SUCCESS
-    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO)
 
     ! the NUOPC gcomp component will register the generic methods
     call NUOPC_CompDerive(gcomp, model_routine_SS, rc=rc)
@@ -131,7 +122,7 @@ contains
          specRoutine=ModelFinalize, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO)
 
   end subroutine SetServices
 
@@ -165,7 +156,7 @@ contains
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO)
 
     !----------------------------------------------------------------------------
     ! generate local mpi comm
@@ -199,7 +190,7 @@ contains
 
     filename = "dice_in"//trim(inst_suffix)
     call dice_shr_read_namelists(filename, mpicom, my_task, master_task, &
-         logunit, SDICE, ice_present, ice_prognostic)
+         logunit, ice_present, ice_prognostic)
 
     !--------------------------------
     ! Advertise import and export fields
@@ -207,8 +198,7 @@ contains
 
     call dice_comp_advertise(importstate, exportState, &
        ice_present, ice_prognostic, &
-       fldsFrIce_num, fldsFrIce, fldsToIce_num, fldsToIce, &
-       flds_i2x, flds_x2i, rc)
+       fldsFrIce_num, fldsFrIce, fldsToIce_num, fldsToIce, rc)
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to original values
@@ -217,7 +207,7 @@ contains
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
 
-    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO)
 
   end subroutine InitializeAdvertise
 
@@ -251,11 +241,12 @@ contains
     real(R8)                :: cosarg                    ! for setting ice temp pattern
     real(R8)                :: jday, jday0               ! elapsed day counters
     logical                 :: write_restart
+    integer                 :: nxg, nyg
     character(len=*),parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO)
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to my log file
@@ -310,7 +301,7 @@ contains
        calendar = shr_cal_gregorian
     else
        call ESMF_LogWrite(subname//" ERROR bad ESMF calendar name "//trim(calendar), &
-            ESMF_LOGMSG_ERROR, rc=dbrc)
+            ESMF_LOGMSG_ERROR)
        rc = ESMF_Failure
        return
     end if
@@ -329,11 +320,9 @@ contains
     ! Initialize model
     !--------------------------------
 
-    call dice_comp_init(x2i, i2x, &
-         flds_x2i, flds_i2x, flds_i2o_per_cat, &
-         SDICE, mpicom, compid, my_task, master_task, &
+    call dice_comp_init(flds_i2o_per_cat, mpicom, compid, my_task, master_task, &
          inst_suffix, inst_name, logunit, read_restart, &
-         scmMode, scmlat, scmlon, calendar, Emesh)
+         scmMode, scmlat, scmlon, calendar, Emesh, nxg, nyg)
 
     !--------------------------------
     ! realize the actively coupled fields, now that a mesh is established
@@ -341,7 +330,7 @@ contains
     ! by replacing the advertised fields with the newly created fields of the same name.
     !--------------------------------
 
-    call fld_list_realize( &
+    call dshr_realize( &
          state=ExportState, &
          fldList=fldsFrIce, &
          numflds=fldsFrIce_num, &
@@ -351,7 +340,7 @@ contains
          mesh=Emesh, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call fld_list_realize( &
+    call dshr_realize( &
          state=importState, &
          fldList=fldsToIce, &
          numflds=fldsToIce_num, &
@@ -381,22 +370,19 @@ contains
     cosArg = 2.0_R8*pi*(jday - jday0)/365.0_R8
 
     write_restart = .false.
-    call dice_comp_run(x2i, i2x, &
-         flds_i2o_per_cat, SDICE, mpicom, my_task, master_task, &
+    call dice_comp_run(flds_i2o_per_cat, mpicom, my_task, master_task, &
          inst_suffix, logunit, read_restart, write_restart, &
          calendar, modeldt, current_ymd, current_tod, cosArg)
 
     ! Pack export state
-    call shr_nuopc_grid_ArrayToState(i2x%rattr, flds_i2x, exportState, grid_option='mesh', rc=rc)
+    call dice_comp_export(exportState, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    nx_global = SDICE%nxg
-    ny_global = SDICE%nyg
-    call shr_nuopc_methods_State_SetScalar(dble(nx_global),flds_scalar_index_nx, exportState, &
+    call shr_nuopc_methods_State_SetScalar(dble(nxg),flds_scalar_index_nx, exportState, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_State_SetScalar(dble(ny_global),flds_scalar_index_ny, exportState, &
+    call shr_nuopc_methods_State_SetScalar(dble(nyg),flds_scalar_index_ny, exportState, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -421,7 +407,7 @@ contains
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
-    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO)
 
   end subroutine InitializeRealize
 
@@ -454,7 +440,7 @@ contains
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO)
     call shr_nuopc_memcheck(subname, 5, my_task==master_task)
     !--------------------------------
     ! Reset shr logging to my log file
@@ -480,7 +466,7 @@ contains
     ! Unpack import state
     !--------------------------------
 
-    call shr_nuopc_grid_StateToArray(importState, x2i%rattr, flds_x2i, grid_option='mesh', rc=rc)
+    call dice_comp_import(importState, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
@@ -520,8 +506,7 @@ contains
     ! Run dice
 
     read_restart = .false.
-    call dice_comp_run(x2i, i2x, &
-         flds_i2o_per_cat, SDICE, mpicom, my_task, master_task, &
+    call dice_comp_run(flds_i2o_per_cat, mpicom, my_task, master_task, &
          inst_suffix, logunit, read_restart, write_restart, &
          calendar, modeldt, next_ymd, next_tod, cosArg, case_name)
 
@@ -529,7 +514,7 @@ contains
     ! Pack export state
     !--------------------------------
 
-    call shr_nuopc_grid_ArrayToState(i2x%rattr, flds_i2x, exportState, grid_option='mesh', rc=rc)
+    call dice_comp_export(exportState, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
@@ -545,7 +530,7 @@ contains
        call shr_nuopc_log_clock_advance(clock, 'ICE', logunit)
     end if
 
-    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO)
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to original values
@@ -574,7 +559,7 @@ contains
        write(logunit,F00) ' dice: end of main integration loop'
        write(logunit,F91)
     end if
-    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO)
 
   end subroutine ModelFinalize
 

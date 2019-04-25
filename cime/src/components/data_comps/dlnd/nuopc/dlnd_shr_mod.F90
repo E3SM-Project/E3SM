@@ -23,6 +23,9 @@ module dlnd_shr_mod
   ! Public data
   !--------------------------------------------------------------------------
 
+  ! stream data type
+  type(shr_strdata_type), public :: SDLND
+
   ! input namelist variables
   character(CL) , public :: restfilm              ! model restart file namelist
   character(CL) , public :: restfils              ! stream restart file namelist
@@ -40,7 +43,7 @@ CONTAINS
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   subroutine dlnd_shr_read_namelists(filename, mpicom, my_task, master_task, &
-       logunit, SDLND, lnd_present, lnd_prognostic)
+       logunit, lnd_present, lnd_prognostic)
 
     ! !DESCRIPTION: Read in dlnd namelists
     implicit none
@@ -51,7 +54,6 @@ CONTAINS
     integer(IN)            , intent(in)    :: my_task           ! my task in mpi communicator mpicom
     integer(IN)            , intent(in)    :: master_task       ! task number of master task
     integer(IN)            , intent(in)    :: logunit           ! logging unit number
-    type(shr_strdata_type) , intent(inout) :: SDLND
     logical                , intent(out)   :: lnd_present       ! flag
     logical                , intent(out)   :: lnd_prognostic    ! flag
 

@@ -7,17 +7,17 @@ module VegStructUpdateMod
   use shr_kind_mod         , only: r8 => shr_kind_r8
   use shr_sys_mod          , only : shr_sys_flush
   use shr_const_mod        , only : SHR_CONST_PI
-  use clm_varctl           , only : iulog, use_cndv
+  use clm_varctl           , only : iulog
   use VegetationPropertiesType     , only : veg_vp
-  use CNDVType             , only : dgv_ecophyscon    
   use WaterStateType       , only : waterstate_type
   use FrictionVelocityType , only : frictionvel_type
-  use CNDVType             , only : dgvs_type
   use CNStateType          , only : cnstate_type
   use CNCarbonStateType    , only : carbonstate_type
   use CanopyStateType      , only : canopystate_type
-  use VegetationType            , only : veg_pp
   use CropType             , only : crop_type
+  use ColumnDataType       , only : col_ws
+  use VegetationType       , only : veg_pp
+  use VegetationDataType   , only : veg_cs  
   !
   implicit none
   save
@@ -31,7 +31,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine VegStructUpdate(num_soilp, filter_soilp, &
-       waterstate_vars, frictionvel_vars, dgvs_vars, cnstate_vars, &
+       waterstate_vars, frictionvel_vars, cnstate_vars, &
        carbonstate_vars, canopystate_vars, crop_vars)
     !
     ! !DESCRIPTION:
@@ -49,7 +49,6 @@ contains
     integer                , intent(in)    :: filter_soilp(:) ! patch filter for soil points
     type(waterstate_type)  , intent(in)    :: waterstate_vars
     type(frictionvel_type) , intent(in)    :: frictionvel_vars
-    type(dgvs_type)        , intent(in)    :: dgvs_vars
     type(cnstate_type)     , intent(inout) :: cnstate_vars
     type(carbonstate_type) , intent(in)    :: carbonstate_vars
     type(canopystate_type) , intent(inout) :: canopystate_vars
@@ -93,18 +92,13 @@ contains
          z0mr               =>  veg_vp%z0mr                   ,       & ! Input:  [real(r8) (:) ] ratio of momentum roughness length to canopy top height (-)
          displar            =>  veg_vp%displar                ,       & ! Input:  [real(r8) (:) ] ratio of displacement height to canopy top height (-)
          dwood              =>  veg_vp%dwood                  ,       & ! Input:  [real(r8) (:) ] density of wood (gC/m^3)                          
-         allom2             =>  dgv_ecophyscon%allom2             ,       & ! Input:  [real(r8) (:) ] ecophys const                                     
-         allom3             =>  dgv_ecophyscon%allom3             ,       & ! Input:  [real(r8) (:) ] ecophys const                                     
 
-         nind               =>  dgvs_vars%nind_patch              ,       & ! Input:  [real(r8) (:) ] number of individuals (#/m**2)                    
-         fpcgrid            =>  dgvs_vars%fpcgrid_patch           ,       & ! Input:  [real(r8) (:) ] fractional area of pft (pft area/nat veg area)    
-
-         snow_depth         =>  waterstate_vars%snow_depth_col    ,       & ! Input:  [real(r8) (:) ] snow height (m)                                   
+         snow_depth         =>  col_ws%snow_depth    ,       & ! Input:  [real(r8) (:) ] snow height (m)                                   
 
          forc_hgt_u_patch   =>  frictionvel_vars%forc_hgt_u_patch ,       & ! Input:  [real(r8) (:) ] observational height of wind at pft-level [m]     
 
-         leafc              =>  carbonstate_vars%leafc_patch      ,       & ! Input:  [real(r8) (:) ] (gC/m2) leaf C                                    
-         deadstemc          =>  carbonstate_vars%deadstemc_patch  ,       & ! Input:  [real(r8) (:) ] (gC/m2) dead stem C                               
+         leafc              =>  veg_cs%leafc      ,       & ! Input:  [real(r8) (:) ] (gC/m2) leaf C                                    
+         deadstemc          =>  veg_cs%deadstemc  ,       & ! Input:  [real(r8) (:) ] (gC/m2) dead stem C                               
 
          farea_burned       =>  cnstate_vars%farea_burned_col     ,       & ! Input:  [real(r8) (:) ] F. Li and S. Levis                                 
          harvdate           =>  crop_vars%harvdate_patch          ,       & ! Input:  [integer  (:) ] harvest date                                       
@@ -151,7 +145,6 @@ contains
             tlai(p) = max(0._r8, tlai(p))
 
             ! update the stem area index and height based on LAI, stem mass, and veg type.
-            ! With the exception of htop for woody vegetation, this follows the DGVM logic.
 
             ! tsai formula from Zeng et. al. 2002, Journal of Climate, p1835 (see notes)
             ! Assumes doalb time step .eq. CLM time step, SAI min and monthly decay factor
@@ -183,28 +176,13 @@ contains
 
                ! trees and shrubs for now have a very simple allometry, with hard-wired
                ! stem taper (height:radius) and hard-wired stocking density (#individuals/area)
-               if (use_cndv) then
-                  if (fpcgrid(p) > 0._r8 .and. nind(p) > 0._r8) then
-                     stocking = nind(p)/fpcgrid(p) !#ind/m2 nat veg area -> #ind/m2 pft area
-                     if (spinup_state >= 1) then 
-                       htop(p) = allom2(ivt(p)) * ( (24._r8 * deadstemc(p) * spinup_mortality_factor / &
-                            (SHR_CONST_PI * stocking * dwood(ivt(p)) * taper))**(1._r8/3._r8) )**allom3(ivt(p)) ! lpj's htop w/ cn's stemdiam
-                     else 
-                       htop(p) = allom2(ivt(p)) * ( (24._r8 * deadstemc(p) / &
-                            (SHR_CONST_PI * stocking * dwood(ivt(p)) * taper))**(1._r8/3._r8) )**allom3(ivt(p)) ! lpj's htop w/ cn's stemdiam
-                     end if
-                  else
-                     htop(p) = 0._r8
-                  end if
+               if (spinup_state >= 1) then 
+                 htop(p) = ((3._r8 * deadstemc(p) * spinup_mortality_factor * taper * taper)/ &
+                      (SHR_CONST_PI * stocking * dwood(ivt(p))))**(1._r8/3._r8)
                else
-                  if (spinup_state >= 1) then 
-                    htop(p) = ((3._r8 * deadstemc(p) * spinup_mortality_factor * taper * taper)/ &
-                         (SHR_CONST_PI * stocking * dwood(ivt(p))))**(1._r8/3._r8)
-                  else
-                    htop(p) = ((3._r8 * deadstemc(p) * taper * taper)/ &
-                         (SHR_CONST_PI * stocking * dwood(ivt(p))))**(1._r8/3._r8)
-                  end if
-               endif
+                 htop(p) = ((3._r8 * deadstemc(p) * taper * taper)/ &
+                      (SHR_CONST_PI * stocking * dwood(ivt(p))))**(1._r8/3._r8)
+               end if
 
                ! Peter Thornton, 5/3/2004
                ! Adding test to keep htop from getting too close to forcing height for windspeed

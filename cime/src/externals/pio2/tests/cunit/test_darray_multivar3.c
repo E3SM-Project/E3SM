@@ -106,7 +106,7 @@ int test_multivar_darray(int iosysid, int ioid, int num_flavors, int *flavor,
                 if ((ret = PIOc_def_dim(ncid, dim_name[d], (PIO_Offset)dim_len[d], &dimids[d])))
                     ERR(ret);
 
-            /* Var 0 does not have a record dim, varid 1 is a record var. */
+            /* Var 0 does not have a record dim, varid 1 and 2 are record vars. */
             if ((ret = PIOc_def_var(ncid, var_name[0], PIO_INT, NDIM - 1, &dimids[1], &varid[0])))
                 ERR(ret);
             if ((ret = PIOc_def_var(ncid, var_name[1], PIO_INT, NDIM, dimids, &varid[1])))
@@ -115,11 +115,11 @@ int test_multivar_darray(int iosysid, int ioid, int num_flavors, int *flavor,
                 ERR(ret);
 
             /* Set the custom fill values. */
-            if ((ret = PIOc_def_var_fill(ncid, varid[0], 0, &custom_fillvalue_int))) 
+            if ((ret = PIOc_def_var_fill(ncid, varid[0], 0, &custom_fillvalue_int)))
                 ERR(ret);
-            if ((ret = PIOc_def_var_fill(ncid, varid[1], 0, &custom_fillvalue_int))) 
+            if ((ret = PIOc_def_var_fill(ncid, varid[1], 0, &custom_fillvalue_int)))
                 ERR(ret);
-            if ((ret = PIOc_def_var_fill(ncid, varid[2], 0, &custom_fillvalue_float))) 
+            if ((ret = PIOc_def_var_fill(ncid, varid[2], 0, &custom_fillvalue_float)))
                 ERR(ret);
 
             /* End define mode. */
@@ -148,20 +148,16 @@ int test_multivar_darray(int iosysid, int ioid, int num_flavors, int *flavor,
                                          fvp_int)))
                 ERR(ret);
 
-            /* This should not work, since the type of the var is
-             * PIO_FLOAT, and the type if the decomposition is
-             * PIO_INT. */
-            if (PIOc_write_darray(ncid, varid[2], ioid, arraylen, test_data_float,
-                                  fvp_float) != PIO_EINVAL)
-                ERR(ERR_WRONG);
+            /* This should not work since we cannot mix record and not record vars */
+	    int frame[NUM_VAR] = {0, 0, 0};
 
-            /* This should also fail, because it mixes an int and a
-             * float. */
-            int frame[NUM_VAR] = {0, 0, 0};
             if (PIOc_write_darray_multi(ncid, varid, ioid, NUM_VAR, arraylen * NUM_VAR, test_data_float,
-                                        frame, NULL, 0) != PIO_EINVAL)
+                                        frame, NULL, 0) != PIO_EVARDIMMISMATCH)
                 ERR(ERR_WRONG);
-
+	    /* This should work since int and float are the same size and both are record vars */
+            if ((ret = PIOc_write_darray_multi(ncid, varid+1, ioid, NUM_VAR-1, arraylen * (NUM_VAR-1), test_data_float,
+					       frame, NULL, 0)))
+                ERR(ret);
 
             /* Close the netCDF file. */
             if ((ret = PIOc_closefile(ncid)))

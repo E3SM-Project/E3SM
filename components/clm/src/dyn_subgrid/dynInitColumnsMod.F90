@@ -19,6 +19,7 @@ module dynInitColumnsMod
   use TopounitType      , only : top_pp
   use LandunitType      , only : lun_pp
   use ColumnType        , only : col_pp
+  use ColumnDataType    , only : col_es, col_ws
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -300,7 +301,7 @@ contains
 
     ! For now, just copy t_soisno
     ! TODO: Figure out what else should be copied
-    temperature_vars%t_soisno_col(c_new,:) = temperature_vars%t_soisno_col(c_template,:)
+    col_es%t_soisno(c_new,:) = col_es%t_soisno(c_template,:)
     
     ! TODO(wjs, 2016-08-31) If we had more general uses of this initial template col
     ! infrastructure (copying state between very different landunits), then we might need
@@ -308,9 +309,9 @@ contains
     ! bedrock layer(?). But for now we just use this initial template col infrastructure
     ! for nat veg -> crop, for which the bedrock will be the same, so we're not dealing
     ! with that complexity for now.
-    waterstate_vars%h2osoi_liq_col(c_new,1:) = waterstate_vars%h2osoi_liq_col(c_template,1:)
-    waterstate_vars%h2osoi_ice_col(c_new,1:) = waterstate_vars%h2osoi_ice_col(c_template,1:)
-    waterstate_vars%h2osoi_vol_col(c_new,1:) = waterstate_vars%h2osoi_vol_col(c_template,1:)
+    col_ws%h2osoi_liq(c_new,1:) = col_ws%h2osoi_liq(c_template,1:)
+    col_ws%h2osoi_ice(c_new,1:) = col_ws%h2osoi_ice(c_template,1:)
+    col_ws%h2osoi_vol(c_new,1:) = col_ws%h2osoi_vol(c_template,1:)
 
     soilhydrology_vars%wa_col(c_new) = soilhydrology_vars%wa_col(c_template)
 
