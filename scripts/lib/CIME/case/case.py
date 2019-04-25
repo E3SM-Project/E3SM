@@ -179,6 +179,8 @@ class Case(object):
 
         if self.get_build_threaded():
             os.environ["OMP_NUM_THREADS"] = str(self.thread_count)
+        elif "OMP_NUM_THREADS" in os.environ:
+            del os.environ["OMP_NUM_THREADS"]
 
         self.srun_binding = smt_factor*max_mpitasks_per_node / self.tasks_per_node
 
@@ -1414,6 +1416,8 @@ directory, NOT in this subdirectory."""
                 job = self.get_primary_job()
             if self.get_build_threaded():
                 os.environ["OMP_NUM_THREADS"] = str(self.thread_count)
+            elif "OMP_NUM_THREADS" in os.environ:
+                del os.environ["OMP_NUM_THREADS"]
             env_module = self.get_env("mach_specific")
             env_module.load_env(self, job=job, verbose=verbose)
             self._is_env_loaded = True

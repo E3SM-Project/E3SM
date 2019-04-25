@@ -78,6 +78,8 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
     # Set OMP_NUM_THREADS
     if case.get_build_threaded():
         os.environ["OMP_NUM_THREADS"] = str(case.thread_count)
+    elif "OMP_NUM_THREADS" in os.environ:
+        del os.environ["OMP_NUM_THREADS"]
 
     # Run the model
     cmd = case.get_mpirun_cmd(allow_unresolved_envvars=False)
