@@ -97,7 +97,6 @@ module micro_p3_interface
 
    integer :: &
       naai_idx = -1,           &
-      naai_hom_idx = -1,       &
       npccn_idx = -1,          &
       rndst_idx = -1,          &
       nacon_idx = -1,          &
@@ -391,7 +390,6 @@ end subroutine micro_p3_readnl
     !!
 
     naai_idx     = pbuf_get_index('NAAI') !! from microp 
-    naai_hom_idx = pbuf_get_index('NAAI_HOM')!! from microp 
     npccn_idx    = pbuf_get_index('NPCCN')!! from microp 
     rndst_idx    = pbuf_get_index('RNDST')!! from microp 
     nacon_idx    = pbuf_get_index('NACON')!! from microp 
@@ -868,7 +866,6 @@ end subroutine micro_p3_readnl
     real(rtype), pointer :: cld(:,:)          ! Total cloud fraction
     real(rtype), pointer :: concld(:,:)       ! Convective cloud fraction
     real(rtype), pointer :: naai(:,:)      ! ice nucleation number
-    real(rtype), pointer :: naai_hom(:,:)  ! ice nucleation number (homogeneous)
     real(rtype), pointer :: npccn(:,:)     ! liquid activation number tendency
     real(rtype), pointer :: rndst(:,:,:)
     real(rtype), pointer :: nacon(:,:,:)
@@ -991,9 +988,8 @@ end subroutine micro_p3_readnl
          col_type=col_type, copy_if_needed=use_subcol_microp)
     call pbuf_get_field(pbuf, concld_idx,      concld,  start=(/1,1,itim_old/), kount=(/psetcols,pver,1/), &
          col_type=col_type, copy_if_needed=use_subcol_microp)  ! Not used
-    call pbuf_get_field(pbuf, naai_idx,        naai,        col_type=col_type, copy_if_needed=use_subcol_microp) ! Not used in this ver of P3
-    call pbuf_get_field(pbuf, naai_hom_idx,    naai_hom,    col_type=col_type, copy_if_needed=use_subcol_microp) ! Not used
-    call pbuf_get_field(pbuf, npccn_idx,       npccn,       col_type=col_type, copy_if_needed=use_subcol_microp) ! Not used in this ver of P3
+    call pbuf_get_field(pbuf, naai_idx,        naai,        col_type=col_type, copy_if_needed=use_subcol_microp) 
+    call pbuf_get_field(pbuf, npccn_idx,       npccn,       col_type=col_type, copy_if_needed=use_subcol_microp)
     call pbuf_get_field(pbuf, rndst_idx,       rndst,       col_type=col_type, copy_if_needed=use_subcol_microp) ! Not used in this ver of P3
     call pbuf_get_field(pbuf, nacon_idx,       nacon,       col_type=col_type, copy_if_needed=use_subcol_microp) ! Not used in this ver of P3
     call pbuf_get_field(pbuf, cmeliq_idx,      cmeliq,      col_type=col_type, copy_if_needed=use_subcol_microp)
