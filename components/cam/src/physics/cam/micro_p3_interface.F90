@@ -954,7 +954,7 @@ end subroutine micro_p3_readnl
     real(rtype) :: prctot(pcols,pver) ! autoconversion of cloud by rain      
 
     ! For potential temperature conversion
-    real(rtype) :: rd, cp, inv_cp
+    real(rtype) :: inv_cp
 
     call t_startf('micro_p3_tend_init')
  
