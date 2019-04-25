@@ -187,30 +187,31 @@
     <valid_values></valid_values>
     <default_value>1</default_value>
     <values match="last">
-      <value compset="2000.*_DATM%1PT">1</value>
+      <value compset="2000.*_DATM%1PT">1972</value>
       <value compset="1850.*_DATM%QIA">1</value>
       <value compset="1850.*_DATM%CRU">1</value>
       <value compset="1850.*_DATM%GSW">1</value>
-      <value compset="2000.*_DATM%QIA">1</value>
+      <value compset="2000.*_DATM%WISOQIA">2000</value>
+      <value compset="2000.*_DATM%QIA">1972</value>
       <value compset="HIST.*_DATM%QIA">1895</value>
       <value compset="HIST.*_DATM%CRU">1901</value>
       <value compset="HIST.*_DATM%GSW">1901</value>
       <value compset="20TR.*_DATM%QIA">1895</value>
       <value compset="20TR.*_DATM%CRU">1901</value>
       <value compset="20TR.*_DATM%GSW">1901</value>
-      <value compset="4804.*_DATM%QIA">1</value>
+      <value compset="4804.*_DATM%QIA">1948</value>
       <value compset="RCP.*_DATM%QIA">2004</value>
       <value compset="RCP.*_DATM%CRU">2005</value>
       <value compset="RCP.*_DATM%GSW">2005</value>
-      <value compset="2003.*_DATM%QIA.*_TEST">1</value>
+      <value compset="2003.*_DATM%QIA.*_TEST">2002</value>
       <value compset="1850.*_DATM%CRU">1</value>
-      <value compset="2000.*_DATM%CRU">1</value>
-      <value compset="2003.*_DATM%CRU">1</value>
-      <value compset="2010.*_DATM%CRU">1</value>
+      <value compset="2000.*_DATM%CRU">1991</value>
+      <value compset="2003.*_DATM%CRU">2002</value>
+      <value compset="2010.*_DATM%CRU">2005</value>
       <value compset="1850.*_DATM%GSW">1</value>
-      <value compset="2000.*_DATM%GSW">1</value>
-      <value compset="2010.*_DATM%GSW">1</value>
-      <value compset="2003.*_DATM%GSW">1</value>
+      <value compset="2000.*_DATM%GSW">1991</value>
+      <value compset="2010.*_DATM%GSW">2005</value>
+      <value compset="2003.*_DATM%GSW">2002</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
