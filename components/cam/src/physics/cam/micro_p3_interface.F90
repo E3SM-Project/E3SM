@@ -53,7 +53,6 @@ module micro_p3_interface
   !defining them in micro_p3_register makes them permanently 
   !available.
   logical :: use_subcol_microp  ! If true, then are using subcolumns in microphysics
-  integer :: num_steps
   CHARACTER(len=16) :: precip_frac_method = 'max_overlap'  ! AaronDonahue, Hard-coded for now, should be fixed in the future
 
   integer, public ::    &
