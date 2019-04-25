@@ -1139,7 +1139,17 @@
 
     <!--- mali grids -->
 
-    <model_grid alias="ne30_oECv3_g" compset="_MALI">
+    <model_grid alias="ne30_oECv3_aisgis" compset="_MALI">
+      <grid name="atm">ne30np4</grid>
+      <grid name="lnd">ne30np4</grid>
+      <grid name="ocnice">oEC60to30v3</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">mpas.aisgis20km</grid>
+      <grid name="wav">null</grid>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
+    <model_grid alias="ne30_oECv3_gis" compset="_MALI">
       <grid name="atm">ne30np4</grid>
       <grid name="lnd">ne30np4</grid>
       <grid name="ocnice">oEC60to30v3</grid>
@@ -2090,6 +2100,12 @@
     </domain>
 
     <!-- GLC:MALI domains -->
+
+    <domain name="mpas.aisgis20km">
+      <nx>53100</nx>
+      <ny>1</ny>
+      <desc>mpas.aisgis20km is a uniform-resolution 20km MALI grid of the Antarctic and Greenland Ice Sheets.  It is primarily intended for testing.</desc>
+    </domain>
 
     <domain name="mpas.gis20km">
       <nx>7425</nx>
@@ -3130,12 +3146,9 @@
     <XROF_FLOOD_MODE lnd_grid="1.9x2.5" rof_grid="r05" ocn_grid="gx1v6" >ACTIVE</XROF_FLOOD_MODE>
 
     <!-- ====================  -->
-    <!-- GLC: MALI grids     -->
+    <!-- GLC: MALI grids       -->
     <!-- ====================  -->
 
-    <!-- ====================  -->
-    <!-- GLC: mpas.gis20km     -->
-    <!-- ====================  -->
 
     <gridmap glc_grid="mpas.gis20km" lnd_grid="0.9x1.25">
       <map name="LND2GLC_FMAPNAME">cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_mpas.gis20km_aave.150922.nc</map>
@@ -3143,6 +3156,28 @@
       <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.gis20km/map_mpas.gis20km_TO_fv0.9x1.25_aave.150922.nc</map>
       <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.gis20km/map_mpas.gis20km_TO_fv0.9x1.25_aave.150922.nc</map>
     </gridmap>
+
+    <!-- ====================  -->
+    <!-- GLC: mpas.aisgis20km  -->
+    <!-- ====================  -->
+
+    <gridmap glc_grid="mpas.aisgis20km" lnd_grid="ne30np4">
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_mpas.aisgis20km_aave.190403.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_mpas.aisgis20km_aave.190403.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.aisgis20km/map_mpas.aisgis20km_to_ne30np4_aave.190403.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.aisgis20km/map_mpas.aisgis20km_to_ne30np4_aave.190403.nc</map>
+    </gridmap>
+
+    <gridmap glc_grid="mpas.aisgis20km" ocn_grid="oEC60to30v3">
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_mpas.aisgis20km_aave.190403.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_mpas.aisgis20km_bilin.190403.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.aisgis20km/map_mpas.aisgis20km_to_oEC60to30v3_aave.190403.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.aisgis20km/map_mpas.aisgis20km_to_oEC60to30v3_bilin.190403.nc</map>
+    </gridmap>
+
+    <!-- ====================  -->
+    <!-- GLC: mpas.gis20km     -->
+    <!-- ====================  -->
 
     <gridmap glc_grid="mpas.gis20km" lnd_grid="ne30np4">
       <map name="LND2GLC_FMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_mpas.gis20km_mono.171002.nc</map>
