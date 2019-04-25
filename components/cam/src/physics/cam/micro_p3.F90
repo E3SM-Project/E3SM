@@ -252,7 +252,6 @@ contains
     ! the lookup table is two dimensional as a function of number-weighted mean size
     ! proportional to qr/Nr and shape parameter mu_r
 
-!ASD rtype problem for mu_r loop
     mu_r_loop: do ii = 1,10   !** change 10 to 9, since range of mu_r is 0-8  CONFIRM
        !mu_r_loop: do ii = 1,9   !** change 10 to 9, since range of mu_r is 0-8
 
@@ -263,57 +262,57 @@ contains
        meansize_loop: do jj = 1,300
 
           if (jj.le.20) then
-             dm = (real(jj)*10.-5.)*1.e-6      ! mean size [m]
+             dm = (real(jj)*10._rtype-5._rtype)*1.e-6_rtype      ! mean size [m]
           elseif (jj.gt.20) then
-             dm = (real(jj-20)*30.+195.)*1.e-6 ! mean size [m]
+             dm = (real(jj-20)*30._rtype+195._rtype)*1.e-6_rtype ! mean size [m]
           endif
 
-          lamr = (mu_r+1)/dm
+          lamr = (mu_r+1._rtype)/dm
 
           ! do numerical integration over PSD
 
-          dum1 = 0. ! numerator,   number-weighted fallspeed
-          dum2 = 0. ! denominator, number-weighted fallspeed
-          dum3 = 0. ! numerator,   mass-weighted fallspeed
-          dum4 = 0. ! denominator, mass-weighted fallspeed
-          dum5 = 0. ! term for ventilation factor in evap
-          dd   = 2.
+          dum1 = 0._rtype ! numerator,   number-weighted fallspeed
+          dum2 = 0._rtype ! denominator, number-weighted fallspeed
+          dum3 = 0._rtype ! numerator,   mass-weighted fallspeed
+          dum4 = 0._rtype ! denominator, mass-weighted fallspeed
+          dum5 = 0._rtype ! term for ventilation factor in evap
+          dd   = 2._rtype
 
           ! loop over PSD to numerically integrate number and mass-weighted mean fallspeeds
           do kk = 1,10000
 
-             dia = (real(kk)*dd-dd*0.5)*1.e-6  ! size bin [m]
-             amg = piov6*997.*dia**3           ! mass [kg]
-             amg = amg*1000.                   ! convert [kg] to [g]
+             dia = (real(kk)*dd-dd*0.5_rtype)*1.e-6_rtype  ! size bin [m]
+             amg = piov6*997._rtype*dia**3           ! mass [kg]
+             amg = amg*1000._rtype                   ! convert [kg] to [g]
 
              !get fallspeed as a function of size [m s-1]
-             if (dia*1.e+6.le.134.43)      then
-                vt = 4.5795e+3*amg**(2.*thrd)
-             elseif (dia*1.e+6.lt.1511.64) then
-                vt = 4.962e+1*amg**thrd
-             elseif (dia*1.e+6.lt.3477.84) then
-                vt = 1.732e+1*amg**sxth
+             if (dia*1.e+6_rtype.le.134.43_rtype)      then
+                vt = 4.5795e+3_rtype*amg**(2._rtype*thrd)
+             elseif (dia*1.e+6_rtype.lt.1511.64_rtype) then
+                vt = 4.962e+1_rtype*amg**thrd
+             elseif (dia*1.e+6_rtype.lt.3477.84_rtype) then
+                vt = 1.732e+1_rtype*amg**sxth
              else
-                vt = 9.17
+                vt = 9.17_rtype
              endif
 
              !note: factor of 4.*mu_r is non-answer changing and only needed to
              !      prevent underflow/overflow errors, same with 3.*mu_r for dum5
-             dum1 = dum1 + vt*10.**(mu_r*log10(dia)+4.*mu_r)*exp(-lamr*dia)*dd*1.e-6
-             dum2 = dum2 + 10.**(mu_r*log10(dia)+4.*mu_r)*exp(-lamr*dia)*dd*1.e-6
-             dum3 = dum3 + vt*10.**((mu_r+3.)*log10(dia)+4.*mu_r)*exp(-lamr*dia)*dd*1.e-6
-             dum4 = dum4 + 10.**((mu_r+3.)*log10(dia)+4.*mu_r)*exp(-lamr*dia)*dd*1.e-6
+             dum1 = dum1 + vt*10._rtype**(mu_r*log10(dia)+4._rtype*mu_r)*exp(-lamr*dia)*dd*1.e-6_rtype
+             dum2 = dum2 + 10._rtype**(mu_r*log10(dia)+4._rtype*mu_r)*exp(-lamr*dia)*dd*1.e-6_rtype
+             dum3 = dum3 + vt*10._rtype**((mu_r+3._rtype)*log10(dia)+4._rtype*mu_r)*exp(-lamr*dia)*dd*1.e-6_rtype
+             dum4 = dum4 + 10._rtype**((mu_r+3._rtype)*log10(dia)+4._rtype*mu_r)*exp(-lamr*dia)*dd*1.e-6_rtype
              dum5 = dum5 + (vt*dia)**0.5*10.**((mu_r+1.)*log10(dia)+3.*mu_r)*exp(-lamr*dia)*dd*1.e-6
 
           enddo ! kk-loop (over PSD)
 
-          dum2 = max(dum2, 1.e-30)  !to prevent divide-by-zero below
-          dum4 = max(dum4, 1.e-30)  !to prevent divide-by-zero below
-          dum5 = max(dum5, 1.e-30)  !to prevent log10-of-zero below
+          dum2 = max(dum2, 1.e-30_rtype)  !to prevent divide-by-zero below
+          dum4 = max(dum4, 1.e-30_rtype)  !to prevent divide-by-zero below
+          dum5 = max(dum5, 1.e-30_rtype)  !to prevent log10-of-zero below
 
           vn_table(jj,ii)    = dum1/dum2
           vm_table(jj,ii)    = dum3/dum4
-          revap_table(jj,ii) = 10.**(log10(dum5)+(mu_r+1.)*log10(lamr)-(3.*mu_r))
+          revap_table(jj,ii) = 10._rtype**(log10(dum5)+(mu_r+1._rtype)*log10(lamr)-(3._rtype*mu_r))
 
        enddo meansize_loop
 
@@ -1373,45 +1372,44 @@ contains
           endif
 
           !................
-          ! autoconversion  ! ASD rtype problem
 
           qc_not_small: if (qc_incld(i,k).ge.1.e-8_rtype) then
 
              if (iparam.eq.1) then
 
                 !Seifert and Beheng (2001)
-                dum   = 1.-qc_incld(i,k)/(qc_incld(i,k)+qr_incld(i,k))
-                dum1  = 600.*dum**0.68*(1.-dum**0.68)**3
+                dum   = 1._rtype-qc_incld(i,k)/(qc_incld(i,k)+qr_incld(i,k))
+                dum1  = 600._rtype*dum**0.68_rtype*(1.-dum**0.68_rtype)**3
                 ! qcaut = kc/(20.*2.6e-7)*(nu(i,k)+2.)*(nu(i,k)+4.)/(nu(i,k)+1.)**2*         &
                 !         (rho(i,k)*qc_incld(i,k)/1000.)**4/(rho(i,k)*nc_incld(i,k)/1.e+6)**2*(1.+       &
                 !         dum1/(1.-dum)**2)*1000.*inv_rho(i,k)
                 ! ncautc = qcaut*2./2.6e-7*1000.
-                qcaut =  kc*1.9230769e-5*(nu(i,k)+2.)*(nu(i,k)+4.)/(nu(i,k)+1.)**2*        &
-                     (rho(i,k)*qc_incld(i,k)*1.e-3)**4/(rho(i,k)*nc_incld(i,k)*1.e-6)**2*(1.+      &
-                     dum1/(1.-dum)**2)*1000.*inv_rho(i,k)
-                ncautc = qcaut*7.6923076e+9
+                qcaut =  kc*1.9230769e-5_rtype*(nu(i,k)+2._rtype)*(nu(i,k)+4._rtype)/(nu(i,k)+1.)**2*        &
+                     (rho(i,k)*qc_incld(i,k)*1.e-3_rtype)**4/(rho(i,k)*nc_incld(i,k)*1.e-6_rtype)**2*(1._rtype+      &
+                     dum1/(1._rtype-dum)**2)*1000._rtype*inv_rho(i,k)
+                ncautc = qcaut*7.6923076e+9_rtype
 
              elseif (iparam.eq.2) then
 
                 !Beheng (1994)
-                if (nc_incld(i,k)*rho(i,k)*1.e-6 .lt. 100.) then
-                   qcaut = 6.e+28*inv_rho(i,k)*mu_c(i,k)**(-1.7)*(1.e-6*rho(i,k)*          &
-                        nc_incld(i,k))**(-3.3)*(1.e-3*rho(i,k)*qc_incld(i,k))**4.7
+                if (nc_incld(i,k)*rho(i,k)*1.e-6_rtype .lt. 100._rtype) then
+                   qcaut = 6.e+28_rtype*inv_rho(i,k)*mu_c(i,k)**(-1.7_rtype)*(1.e-6_rtype*rho(i,k)*          &
+                        nc_incld(i,k))**(-3.3_rtype)*(1.e-3_rtype*rho(i,k)*qc_incld(i,k))**4.7_rtype
                 else
                    !2D interpolation of tabled logarithmic values
-                   dum   = 41.46 + (nc_incld(i,k)*1.e-6*rho(i,k)-100.)*(37.53-41.46)*5.e-3
-                   dum1  = 39.36 + (nc_incld(i,k)*1.e-6*rho(i,k)-100.)*(30.72-39.36)*5.e-3
-                   qcaut = dum+(mu_c(i,k)-5.)*(dum1-dum)*0.1
+                   dum   = 41.46_rtype + (nc_incld(i,k)*1.e-6_rtype*rho(i,k)-100._rtype)*(37.53_rtype-41.46_rtype)*5.e-3_rtype
+                   dum1  = 39.36_rtype + (nc_incld(i,k)*1.e-6_rtype*rho(i,k)-100._rtype)*(30.72_rtype-39.36_rtype)*5.e-3_rtype
+                   qcaut = dum+(mu_c(i,k)-5._rtype)*(dum1-dum)*0.1_rtype
                    ! 1000/rho is for conversion from g cm-3/s to kg/kg
-                   qcaut = exp(qcaut)*(1.e-3*rho(i,k)*qc_incld(i,k))**4.7*1000.*inv_rho(i,k)
+                   qcaut = exp(qcaut)*(1.e-3_rtype*rho(i,k)*qc_incld(i,k))**4.7_rtype*1000._rtype*inv_rho(i,k)
                 endif
-                ncautc = 7.7e+9*qcaut
+                ncautc = 7.7e+9_rtype*qcaut
 
              elseif (iparam.eq.3) then
 
                 !Khroutdinov and Kogan (2000)
                 dum   = qc_incld(i,k)
-                qcaut = 1350._rtype*dum**2.47_rtype*(nc_incld(i,k)*1.e-6_rtype*rho(i,k))**(-1.79) ! ASD rtype problem for 1.79 constant
+                qcaut = 1350._rtype*dum**2.47_rtype*(nc_incld(i,k)*1.e-6_rtype*rho(i,k))**(-1.79_rtype)
                 ! note: ncautr is change in Nr; ncautc is change in Nc
                 ncautr = qcaut*cons3
                 ncautc = qcaut*nc_incld(i,k)/qc_incld(i,k)

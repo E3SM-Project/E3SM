@@ -162,8 +162,8 @@ end interface var_coef
     masterproc_e3sm = masterproc
 
     ! mathematical/optimization constants
-    thrd  = 1./3.  ! ASD rtype problem
-    sxth  = 1./6.  ! ASD rtype problem
+    thrd  = 1._rtype/3._rtype
+    sxth  = 1._rtype/6._rtype 
     pi_e3sm = pi
     piov3 = pi*thrd
     piov6 = pi*sxth
@@ -232,15 +232,13 @@ end interface var_coef
     ! ratio of rain number produced to ice number loss from melting
     nmltratio = 0.2_rtype
 
-! ASD rtype problem for section of consX variables, probably because of the
-! reliance on piov3 and piov6 which is dependent on thrd and sxth (see above).
     cons1 = piov6*rhow
-    cons2 = 4.*piov3*rhow
-    cons3 = 1./(cons2*(25.e-6)**3)
-    cons4 = 1./(dbrk**3*pi*rhow)
+    cons2 = 4._rtype*piov3*rhow
+    cons3 = 1._rtype/(cons2*(25.e-6_rtype)**3)
+    cons4 = 1._rtype/(dbrk**3*pi*rhow)
     cons5 = piov6*bimm
     cons6 = piov6**2*rhow*bimm
-    cons7 = 4.*piov3*rhow*(1.e-6)**3
+    cons7 = 4._rtype*piov3*rhow*(1.e-6_rtype)**3
 
     ! aerosol/droplet activation parameters
     mw     = 0.018_rtype
