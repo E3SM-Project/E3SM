@@ -805,7 +805,7 @@ end subroutine micro_p3_readnl
                               rhow, &
                               rhows, &
                               qsmall, &
-                              mincld
+                              mincld, & 
     use output_aerocom_aie, only: do_aerocom_ind3
 
     !INPUT/OUTPUT VARIABLES
@@ -953,9 +953,6 @@ end subroutine micro_p3_readnl
     real(rtype) :: pratot(pcols,pver) ! accretion of cloud by rain      
     real(rtype) :: prctot(pcols,pver) ! autoconversion of cloud by rain      
 
-    ! For potential temperature conversion
-    real(rtype) :: inv_cp
-
     call t_startf('micro_p3_tend_init')
  
     psetcols = state%psetcols
@@ -1067,7 +1064,6 @@ end subroutine micro_p3_readnl
     !==============
     ! Note: state%exner is currently defined in a way different than the
     ! traditional definition of exner, so we calculate here.
-    inv_cp = 1._rtype/cpair
     exner(:ncol,:pver) = 1._rtype/((state%pmid(:ncol,:pver)*1.e-5_rtype)**(rair*inv_cp))
     if ( is_first_step() ) then
        th_old(:ncol,:pver)=state%t(:ncol,:pver)*exner(:ncol,:pver)
