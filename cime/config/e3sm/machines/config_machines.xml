@@ -855,9 +855,9 @@
       <cmd_path lang="csh">source /software/common/adm/packages/softenv-1.6.2/etc/softenv-aliases.csh ; soft</cmd_path>
       <cmd_path lang="sh">source /software/common/adm/packages/softenv-1.6.2/etc/softenv-aliases.sh ; soft</cmd_path>
       <modules compiler="gnu">
-	<command name="add">+gcc-6.2.0</command>
-	<command name="add">+szip-2.1-gcc-6.2.0</command>
-	<command name="add">+cmake-2.8.12</command>
+        <command name="add">+gcc-6.2.0</command>
+        <command name="add">+szip-2.1-gcc-6.2.0</command>
+        <command name="add">+cmake-2.8.12</command>
       </modules>
       <modules compiler="gnu" mpilib="mpi-serial">
         <command name="add">+netcdf-4.4.1c-4.2cxx-4.4.4f-serial-gcc6.2.0</command>
@@ -865,8 +865,8 @@
       <modules compiler="gnu" mpilib="!mpi-serial">
         <command name="add">+mpich-3.2-gcc-6.2.0</command>
         <command name="add">+hdf5-1.8.16-gcc-6.2.0-mpich-3.2-parallel</command>
-        <command name="add">+netcdf-4.3.3.1c-4.2cxx-4.4.2f-parallel-gcc6.2.0-mpich3.2</command>
-        <command name="add">+pnetcdf-1.6.1-gcc-6.2.0-mpich-3.2</command>
+        <command name="add">+netcdf-4.4.1c-4.2cxx-4.4.4f-parallel-gcc6.2.0-mpich-3.2</command>
+	<command name="add">+pnetcdf-1.6.1-gcc-6.2.0-mpich-3.2</command>
       </modules>
     </module_system>
     <environment_variables>
