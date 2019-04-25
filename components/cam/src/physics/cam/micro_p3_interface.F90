@@ -225,7 +225,6 @@ end subroutine micro_p3_readnl
   subroutine micro_p3_register()
 
   logical :: prog_modal_aero
-  logical :: save_subcol_microp ! If true, then need to store sub-columnized fields in pbuf
 
   if (masterproc) write(iulog,'(A20)') ' P3 register start ...'
 
