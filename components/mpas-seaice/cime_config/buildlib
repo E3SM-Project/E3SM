@@ -6,7 +6,7 @@ my $component = "mpas-seaice";
 my $component_dir = "ice";
 my $component_driver = "seaice_acme_driver";
 my $core = "seaice";
-my $esm = "ACME";
+my $esm = "E3SM";
 
 if ($#ARGV == -1) {
     die " ERROR $component buildlib: must specify a caseroot input argument";
