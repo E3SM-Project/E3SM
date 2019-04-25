@@ -43,9 +43,8 @@ module micro_p3
    ! physical and mathematical constants
    use micro_p3_utils, only: rhosur,rhosui,ar,br,f1r,f2r,ecr,rhow,kr,kc,aimm,rin,mi0,nccnst,  &
        eci,eri,bcn,cpw,cons1,cons2,cons3,cons4,cons5,cons6,cons7,         &
-       inv_rhow,qsmall,nsmall,cp,g,rd,rv,ep_2,inv_cp,mw,osm,   &
-       vi,epsm,rhoa,map,ma,rr,bact,inv_rm1,inv_rm2,sig1,nanew1,f11,f21,sig2, &
-       nanew2,f12,f22,thrd,sxth,piov3,piov6,rho_rimeMin,     &
+       inv_rhow,qsmall,nsmall,cp,g,rd,rv,ep_2,inv_cp,   &
+       thrd,sxth,piov3,piov6,rho_rimeMin,     &
        rho_rimeMax,inv_rho_rimeMax,max_total_Ni,dbrk,nmltratio,clbfact_sub,  &
        clbfact_dep,iparam, isize, densize, rimsize, rcollsize, tabsize, colltabsize, &
        get_latent_heat, zerodegc, pi=>pi_e3sm, dnu, &
@@ -1317,24 +1316,6 @@ contains
             ! for predicted Nc, use activation predicted by aerosol scheme
             ! note that this is also applied at the first time step
             if (sup(i,k).gt.1.e-6) then
-               ! code removed below by K. Pressel 2/19 to allow for activation of droplets 
-               ! by the aerosol scheme 
-               !dum1  = 1./bact**0.5
-               !sigvl = 0.0761 - 1.55e-4*(t(i,k)-zerodegc)
-               !aact  = 2.*mw/(rhow*rr*t(i,k))*sigvl
-               !sm1   = 2.*dum1*(aact*thrd*inv_rm1)**1.5
-               !sm2   = 2.*dum1*(aact*thrd*inv_rm2)**1.5
-               !uu1   = 2.*log(sm1/sup(i,k))/(4.242*log(sig1))
-               !uu2   = 2.*log(sm2/sup(i,k))/(4.242*log(sig2))
-               !dum1  = nanew1*0.5*(1.-erf(uu1)) ! activated number in kg-1 mode 1
-               !dum2  = nanew2*0.5*(1.-erf(uu2)) ! activated number in kg-1 mode 2
-               !! make sure this value is not greater than total number of aerosol
-               !dum2  = min((nanew1+nanew2),dum1+dum2)
-               !dum2  = (dum2-nc(i,k))*odt
-               !dum2  = max(0.,dum2)
-               !ncnuc = dum2
-               ! don't include mass increase from droplet activation during first time step
-               ! since this is already accounted for by saturation adjustment below
                ncnuc = npccn(i,k)
                if (it.eq.1) then
                   qcnuc = 0._rtype
