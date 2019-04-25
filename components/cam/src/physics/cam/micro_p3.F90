@@ -43,7 +43,7 @@ module micro_p3
    ! physical and mathematical constants
    use micro_p3_utils, only: rhosur,rhosui,ar,br,f1r,f2r,ecr,rhow,kr,kc,bimm,aimm,rin,mi0,nccnst,  &
        eci,eri,bcn,cpw,cons1,cons2,cons3,cons4,cons5,cons6,cons7,         &
-       inv_rhow,qsmall,nsmall,bsmall,cp,g,rd,rv,ep_2,inv_cp,mw,osm,   &
+       inv_rhow,qsmall,nsmall,cp,g,rd,rv,ep_2,inv_cp,mw,osm,   &
        vi,epsm,rhoa,map,ma,rr,bact,inv_rm1,inv_rm2,sig1,nanew1,f11,f21,sig2, &
        nanew2,f12,f22,thrd,sxth,piov3,piov6,rho_rimeMin,     &
        rho_rimeMax,inv_rho_rimeMax,max_total_Ni,dbrk,nmltratio,clbfact_sub,  &
@@ -2952,7 +2952,6 @@ contains
     !--------------------------------------------------------------------------
 
     if (bi_rim.ge.1.e-15_rtype) then
-       !if (bi_rim.ge.bsmall) then
        rho_rime = qi_rim/bi_rim
        !impose limits on rho_rime;  adjust bi_rim if needed
        if (rho_rime.lt.rho_rimeMin) then

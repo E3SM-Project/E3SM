@@ -39,7 +39,7 @@ module micro_p3_utils
 
     real(rtype),public :: rhosur,rhosui,ar,br,f1r,f2r,ecr,rhow,kr,kc,bimm,aimm,rin,mi0,nccnst,  &
        eci,eri,bcn,cpw,cons1,cons2,cons3,cons4,cons5,cons6,cons7,         &
-       inv_rhow,bsmall,cp,g,rd,rv,ep_2,inv_cp,mw,osm,   &
+       inv_rhow,cp,g,rd,rv,ep_2,inv_cp,mw,osm,   &
        vi,epsm,rhoa,map,ma,rr,bact,inv_rm1,inv_rm2,sig1,nanew1,f11,f21,sig2, &
        nanew2,f12,f22,thrd,sxth,piov3,piov6,rho_rimeMin,     &
        rho_rimeMax,inv_rho_rimeMax,max_total_Ni,dbrk,nmltratio,clbfact_sub,  &
@@ -210,9 +210,6 @@ end interface var_coef
     rho_rimeMin     =  50._rtype
     rho_rimeMax     = 900._rtype
     inv_rho_rimeMax =   1._rtype/rho_rimeMax
-
-    ! minium allowable prognostic variables
-    bsmall = qsmall*inv_rho_rimeMax
 
     ! Bigg (1953)
     !bimm   = 100.
