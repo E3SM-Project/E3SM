@@ -2498,6 +2498,7 @@ module init_atm_cases
       real (kind=RKIND), dimension(:), pointer :: dvEdge, dcEdge, areaCell 
       real (kind=RKIND), dimension(:,:), pointer :: v
       real (kind=RKIND), dimension(:,:), pointer :: sorted_arr
+      integer, dimension(:), pointer :: bdyMaskCell
 
       type (field1DReal), pointer :: tempField
       type (field1DReal), pointer :: ter_field
@@ -2573,6 +2574,7 @@ module init_atm_cases
       logical, pointer :: config_smooth_surfaces
       integer, pointer :: config_theta_adv_order
       real (kind=RKIND), pointer :: config_coef_3rd_order
+      logical, pointer :: config_blend_bdy_terrain
 
       character (len=StrKIND), pointer :: config_extrap_airtemp
       integer :: extrap_airtemp
@@ -2648,6 +2650,7 @@ module init_atm_cases
       call mpas_pool_get_config(configs, 'config_smooth_surfaces', config_smooth_surfaces)
       call mpas_pool_get_config(configs, 'config_theta_adv_order', config_theta_adv_order)
       call mpas_pool_get_config(configs, 'config_coef_3rd_order', config_coef_3rd_order)
+      call mpas_pool_get_config(configs, 'config_blend_bdy_terrain', config_blend_bdy_terrain)
       
       call mpas_pool_get_config(configs, 'config_extrap_airtemp', config_extrap_airtemp)
       if (trim(config_extrap_airtemp) == 'constant') then
@@ -2770,100 +2773,23 @@ module init_atm_cases
 
       scalars(:,:,:) = 0.
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! BEGIN ADOPT GFS TERRAIN HEIGHT
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-#if 0
-      call read_met_init(trim(config_met_prefix), .false., config_start_time(1:13), istatus)
+      !
+      ! If requested, blend the terrain along the domain boundaries with terrain from
+      ! an intermediate file. For global domains, this routine will have no effect even
+      ! if called, since terrain is only blended for cells with bdyMaskCell > 0.
+      !
+      if (config_blend_bdy_terrain) then
+         call mpas_pool_get_array(mesh, 'bdyMaskCell', bdyMaskCell)
+         call mpas_pool_get_array(mesh, 'ter', ter)
 
-      if (istatus /= 0) then
-         call mpas_log_write('********************************************************************************', messageType=MPAS_LOG_ERR)
-         call mpas_log_write('Error opening initial meteorological data file ' &
-                                      //trim(config_met_prefix)//':'//config_start_time(1:13),                   messageType=MPAS_LOG_ERR)
-         call mpas_log_write('********************************************************************************', messageType=MPAS_LOG_CRIT)
-      end if
-
-      call read_next_met_field(field, istatus)
-      do while (istatus == 0)
-         if (trim(field % field) == 'SOILHGT') then
-
-
-            call mpas_log_write('USING ECMWF TERRAIN...')
-
-            interp_list(1) = FOUR_POINT
-            interp_list(2) = SEARCH
-            interp_list(3) = 0
-
-            !
-            ! Set up projection
-            !
-            call map_init(proj)
-          
-            if (field % iproj == PROJ_LATLON) then
-               call map_set(PROJ_LATLON, proj, &
-                            latinc = real(field % deltalat,RKIND), &
-                            loninc = real(field % deltalon,RKIND), &
-                            knowni = 1.0_RKIND, &
-                            knownj = 1.0_RKIND, &
-                            lat1 = real(field % startlat,RKIND), &
-                            lon1 = real(field % startlon,RKIND))
-            end if
-
-
-            if (trim(field % field) == 'SOILHGT') then
-               nInterpPoints = nCells
-               latPoints => latCell
-               lonPoints => lonCell
-               destField1d => ter
-               ndims = 1
-            end if
-
-            allocate(rslab(-2:field % nx+3, field % ny))
-            rslab(1:field % nx, 1:field % ny) = field % slab(1:field % nx, 1:field % ny)
-            rslab(0, 1:field % ny)  = field % slab(field % nx, 1:field % ny)
-            rslab(-1, 1:field % ny) = field % slab(field % nx-1, 1:field % ny)
-            rslab(-2, 1:field % ny) = field % slab(field % nx-2, 1:field % ny)
-            rslab(field % nx+1, 1:field % ny) = field % slab(1, 1:field % ny)
-            rslab(field % nx+2, 1:field % ny) = field % slab(2, 1:field % ny)
-            rslab(field % nx+3, 1:field % ny) = field % slab(3, 1:field % ny)
-
-            do i=1,nInterpPoints
-               lat = latPoints(i)*DEG_PER_RAD
-               lon = lonPoints(i)*DEG_PER_RAD
-               call latlon_to_ij(proj, lat, lon, x, y)
-               if (x < 0.5) then
-                  lon = lon + 360.0
-                  call latlon_to_ij(proj, lat, lon, x, y)
-               else if (x >= real(field%nx)+0.5) then
-                  lon = lon - 360.0
-                  call latlon_to_ij(proj, lat, lon, x, y)
-               end if
-               if (y < 0.5) then
-                  y = 1.0
-               else if (y >= real(field%ny)+0.5) then
-                  y = real(field%ny)
-               end if
-               if (ndims == 1) then
-                  destField1d(i) = interp_sequence(x, y, 1, rslab, -2, field % nx + 3, 1, field % ny, 1, 1, -1.e30_RKIND, interp_list, 1)
-               else if (ndims == 2) then
-                  destField2d(k,i) = interp_sequence(x, y, 1, rslab, -2, field % nx + 3, 1, field % ny, 1, 1, -1.e30_RKIND, interp_list, 1)
-               end if
-            end do
-
-            deallocate(rslab)
+         call blend_bdy_terrain(config_met_prefix, config_start_time, nCells, latCell, lonCell, bdyMaskCell, ter, istatus)
+         if (istatus /= 0) then
+             call mpas_log_write('*************************************************************', messageType=MPAS_LOG_ERR)
+             call mpas_log_write('* Blending of terrain along domain boundaries failed!       *', messageType=MPAS_LOG_ERR)
+             call mpas_log_write('*************************************************************', messageType=MPAS_LOG_CRIT)
          end if
-   
-         deallocate(field % slab)
-         call read_next_met_field(field, istatus)
-      end do
-
-      call read_met_close()
-#endif
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! END ADOPT GFS TERRAIN HEIGHT
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      end if
 
 
       if (config_vertical_grid) then
@@ -5195,5 +5121,188 @@ call mpas_log_write('Done with soil consistency check')
       end do
 
    end subroutine decouple_variables
+
+
+   !-----------------------------------------------------------------------
+   !  routine blend_bdy_terrain
+   !
+   !> \brief Combines first-guess terrain with static terrain along regional domain boundaries
+   !> \author Michael Duda
+   !> \date   25 April 2019
+   !> \details
+   !>  This routine combines terrain from the first-guess dataset provided in an intermediate
+   !>  file with the terrain field produced by the init_atmosphere core's "static interpolation"
+   !>  stage in the boundary cells of a regional mesh. Specifically, where the value of
+   !>  the bdyMaskCell field is nBdyLayers or nBdyLayers-1, the terrain field, ter, is interpolated
+   !>  directly from the first-guess terrain; where the value of bdy MaskCell is between nBdyLayers-2
+   !>  and 1, the terrain field is a combination of the first-guess terrain and the high-resolution
+   !>  "static" terrain field.
+   !>
+   !>  For global meshes, where bdyMaskCell == 0 everywhere, this routine will have no impact
+   !>  on the model terrain field.
+   !
+   !-----------------------------------------------------------------------
+   subroutine blend_bdy_terrain(config_met_prefix, config_start_time, nCells, latCell, lonCell, bdyMaskCell, ter, ierr)
+
+      use init_atm_read_met, only : read_met_init, read_met_close, read_next_met_field, met_data
+      use init_atm_llxy, only : map_init, map_set, proj_info, latlon_to_ij, PROJ_LATLON, PROJ_GAUSS, DEG_PER_RAD
+      use init_atm_hinterp, only : interp_sequence, FOUR_POINT
+
+      implicit none
+
+      character(len=*), intent(in) :: config_met_prefix
+      character(len=*), intent(in) :: config_start_time
+      integer, intent(in) :: nCells
+      real (kind=RKIND), dimension(:), intent(in) :: latCell  ! These four variables (latCell, lonCell, bdyMaskCell, and ter)
+      real (kind=RKIND), dimension(:), intent(in) :: lonCell  ! may actually have more than nCells elements, for example,
+      integer, dimension(:), intent(in) :: bdyMaskCell        ! if the arrays include a "garbage cell".
+      real (kind=RKIND), dimension(:), intent(inout) :: ter   ! 
+      integer, intent(out) :: ierr
+
+      integer, parameter :: nBdyLayers = 7   ! The number of relaxation layers plus the number of specified layers
+      integer, parameter :: nSpecLayers = 2  ! The number of specified layers
+
+      integer :: i
+      integer :: istatus
+      integer, dimension(2) :: interp_list
+      real (kind=RKIND) :: weight
+      real (kind=RKIND) :: lat, lon
+      real (kind=RKIND) :: x, y
+      real (kind=RKIND), allocatable, dimension(:,:) :: rslab
+      type (met_data) :: field
+      type (proj_info) :: proj
+
+
+      ierr = 0
+
+      call mpas_log_write('Blending first-guess terrain field along domain boundary')
+
+      call read_met_init(trim(config_met_prefix), .false., config_start_time(1:13), istatus)
+
+      if (istatus /= 0) then
+         call mpas_log_write('********************************************************************************', &
+                             messageType=MPAS_LOG_ERR)
+         call mpas_log_write('Error opening file with terrain field, '//trim(config_met_prefix)//':'//config_start_time(1:13), &
+                             messageType=MPAS_LOG_ERR)
+         call mpas_log_write('********************************************************************************', &
+                             messageType=MPAS_LOG_ERR)
+         ierr = 1
+         return
+      end if
+
+      !
+      ! Loop over fields in the intermediate file looking for the SOILHGT field
+      !
+      call read_next_met_field(field, istatus)
+      do while (istatus == 0)
+         if (trim(field % field) == 'SOILHGT') then
+
+            interp_list(1) = FOUR_POINT
+            interp_list(2) = 0
+
+            !
+            ! Set up map projection - currently, only the regular lat-lon projection is handled
+            !
+            call map_init(proj)
+          
+            if (field % iproj == PROJ_LATLON) then
+               call map_set(PROJ_LATLON, proj, &
+                            latinc = real(field % deltalat,RKIND), &
+                            loninc = real(field % deltalon,RKIND), &
+                            knowni = 1.0_RKIND, &
+                            knownj = 1.0_RKIND, &
+                            lat1 = real(field % startlat,RKIND), &
+                            lon1 = real(field % startlon,RKIND))
+            else if (field % iproj == PROJ_GAUSS) then
+               call map_set(PROJ_GAUSS, proj, &
+                            nlat = nint(field % deltalat), &
+                            loninc = 360.0_RKIND / real(field % nx,RKIND), &
+                            lat1 = real(field % startlat,RKIND), &
+                            lon1 = real(field % startlon,RKIND))
+            end if
+
+            !
+            ! Copy the first-guess terrain field into an array that includes some periodic points
+            !
+            allocate(rslab(-2:field % nx+3, field % ny))
+            rslab(1:field % nx, 1:field % ny) = field % slab(1:field % nx, 1:field % ny)
+            rslab(0, 1:field % ny)  = field % slab(field % nx, 1:field % ny)
+            rslab(-1, 1:field % ny) = field % slab(field % nx-1, 1:field % ny)
+            rslab(-2, 1:field % ny) = field % slab(field % nx-2, 1:field % ny)
+            rslab(field % nx+1, 1:field % ny) = field % slab(1, 1:field % ny)
+            rslab(field % nx+2, 1:field % ny) = field % slab(2, 1:field % ny)
+            rslab(field % nx+3, 1:field % ny) = field % slab(3, 1:field % ny)
+
+            !
+            ! For each cell in the MPAS mesh, perform terrain blending if the cell is a boundary cell
+            !
+            do i=1,nCells
+               if (bdyMaskCell(i) > 0) then
+                  lat = latCell(i)*DEG_PER_RAD
+                  lon = lonCell(i)*DEG_PER_RAD
+                  call latlon_to_ij(proj, lat, lon, x, y)
+                  if (x < 0.5) then
+                     lon = lon + 360.0
+                     call latlon_to_ij(proj, lat, lon, x, y)
+                  else if (x >= real(field%nx)+0.5) then
+                     lon = lon - 360.0
+                     call latlon_to_ij(proj, lat, lon, x, y)
+                  end if
+                  if (y < 0.5) then
+                     y = 1.0
+                  else if (y >= real(field%ny)+0.5) then
+                     y = real(field%ny)
+                  end if
+
+                  !
+                  ! Is this a specified cell?
+                  !
+                  if (bdyMaskCell(i) > (nBdyLayers - nSpecLayers)) then
+                     ter(i) = interp_sequence(x, y, 1, rslab, -2, field%nx + 3, 1, field%ny, &
+                                              1, 1, -1.0E30_RKIND, interp_list, 1)
+
+                  !
+                  ! Or a relaxation cell?
+                  !
+                  else
+                     weight = real(bdyMaskCell(i),kind=RKIND) / real(nBdyLayers - nSpecLayers,kind=RKIND)
+                     ter(i) = weight * interp_sequence(x, y, 1, rslab, -2, field%nx + 3, 1, field%ny, &
+                                                       1, 1, -1.0E30_RKIND, interp_list, 1) &
+                            + (1.0_RKIND - weight) * ter(i)
+
+                  end if
+               end if
+            end do
+
+            deallocate(rslab)
+
+            !
+            ! At this point, we have found and processed the first-guess terrain field, so we can return
+            !
+            deallocate(field % slab)
+            call read_met_close()
+            return
+
+         end if
+   
+         deallocate(field % slab)
+         call read_next_met_field(field, istatus)
+      end do
+
+      call read_met_close()
+
+      !
+      ! If we have reached this point, no first-guess terrain field was found...
+      !
+      ierr = 1
+      call mpas_log_write('********************************************************************************', &
+                          messageType=MPAS_LOG_ERR)
+      call mpas_log_write('SOILHGT field not found in intermediate file ' &
+                                     //trim(config_met_prefix)//':'//config_start_time(1:13)                , &
+                          messageType=MPAS_LOG_ERR)
+      call mpas_log_write('********************************************************************************', &
+                          messageType=MPAS_LOG_ERR)
+
+   end subroutine blend_bdy_terrain
 
 end module init_atm_cases
