@@ -2277,6 +2277,12 @@ micro_p3_l_mg2_qidep
 Default: .false.
 </entry>
 
+<entry id="micro_p3_l_satadj" type="logical" category="microphys"
+       group="micro_p3_nl" valid_values="" >
+micro_p3_l_satadj
+Default: .false.
+</entry>
+
 <entry id="micro_p3_l_massclip" type="logical" category="microphys"
        group="micro_p3_nl" valid_values="" >
 micro_p3_l_massclip
