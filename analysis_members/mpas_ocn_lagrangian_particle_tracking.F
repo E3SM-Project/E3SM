@@ -19,8 +19,8 @@
 !-----------------------------------------------------------------------
 #define COMMA ,
 #ifdef MPAS_DEBUG
-#define LIGHT_DEBUG_WRITE(Z)   print *, Z
-#define LIGHT_DEBUG_ALL_WRITE(Z)  print *, Z
+#define LIGHT_DEBUG_WRITE(Z) !  print *, Z
+#define LIGHT_DEBUG_ALL_WRITE(Z) ! print *, Z
 #else
 #define LIGHT_DEBUG_WRITE(Z)  ! print *, Z
 #define LIGHT_DEBUG_ALL_WRITE(Z) ! print *, Z
@@ -3048,17 +3048,20 @@ contains
        call mpas_timer_start("verifyParticleDepthInDomainLPT")
 #endif
 
-#ifdef MPAS_DEBUG
-       ! check and verify that free floating particle hasn't gone out of boundary
-       if (iLevel == -1) then
-         call mpas_log_write(' Warning: Particle $i location of $r is higher than zMid of $r', &
-           realArgs=(/ zLevelParticle, zMid(1, iCell) /), intArgs=(/iCell/))
-       end if
-       if (iLevel == 0) then
-         call mpas_log_write(' Warning: Particle $i location of $r is deeper than zMid at bottom $r', &
-           realArgs=(/ zLevelParticle, zMid(maxLevelCell(iCell),iCell) /), intArgs=(/iCell/))
-       end if
-#endif
+      ! debug !{{{
+!#ifdef MPAS_DEBUG
+!       ! check and verify that free floating particle hasn't gone out of boundary
+!       if (iLevel == -1) then
+!         call mpas_log_write(' Warning: Particle $i location of $r is higher than zMid of $r', &
+!           realArgs=(/ zLevelParticle, zMid(1, iCell) /), intArgs=(/iCell/))
+!       end if
+!       if (iLevel == 0) then
+!         call mpas_log_write(' Warning: Particle $i location of $r is deeper than zMid at bottom $r', &
+!           realArgs=(/ zLevelParticle, zMid(maxLevelCell(iCell),iCell) /), intArgs=(/iCell/))
+!       end if
+!#endif
+      !}}}
+
        ! verify that it is less than SSH and greater than bottomDepth
        if (zLevelParticle + bottomDepth(iCell) < eps) then
          call mpas_log_write(' Error: $i ($i) Particle of type $i height $r is lower than bottom depth $r', &
@@ -3153,6 +3156,7 @@ contains
      integer, pointer :: nCells
      real(kind=RKIND), parameter :: eps = 1.0e-12_RKIND
      integer :: ierr = 0
+     logical :: boundaryInterp
 
      ! assume that we cannot do spatial interpolation
      vertexID = -1
@@ -3223,20 +3227,21 @@ contains
      !end if
      !}}}
 
-
-#ifdef MPAS_DEBUG
-     ! check to make sure nearest vertex found makes sense
-     call mpas_log_write('vertexID = $i, xPoint = $r $r $r', intArgs = (/ vertexID /), &
-       realArgs = (/ xPoint(1), xPoint(2), xPoint(3) /))
-     do aVertex = 1, nVertices
-       call mpas_log_write('$i xVertex = $r $r $r$', intArgs = (/ aVertex /), &
-         realArgs = (/ &
-         xVertex(1, aVertex), &
-         xVertex(2, aVertex), &
-         xVertex(3, aVertex)  &
-         /))
-     end do
-#endif
+     ! debugging output !{{{
+!#ifdef MPAS_DEBUG
+!     ! check to make sure nearest vertex found makes sense
+!     call mpas_log_write('vertexID = $i, xPoint = $r $r $r', intArgs = (/ vertexID /), &
+!       realArgs = (/ xPoint(1), xPoint(2), xPoint(3) /))
+!     do aVertex = 1, nVertices
+!       call mpas_log_write('$i xVertex = $r $r $r$', intArgs = (/ aVertex /), &
+!         realArgs = (/ &
+!         xVertex(1, aVertex), &
+!         xVertex(2, aVertex), &
+!         xVertex(3, aVertex)  &
+!         /))
+!     end do
+!#endif
+     !}}}
      !}}}
      ! }}}
 
@@ -3249,14 +3254,22 @@ contains
      ! {{{
      ! cellsOnVertex assumes an "empty" neighbor (edge case) is 0
      do aCell = 1, vertexDegree
+
+       boundaryInterp = .false.
+
        ! only handles the case where the vertex is an exterior vertex, otherwise treat as cell-based value
        ! (no horizontal interpolation)
-       if (vertexID .eq. -1 .or. &
-         cellsOnVertex(aCell, verticesOnTheCell(vertexID)) == 0 .or. &
-         cellsOnVertex(aCell, verticesOnTheCell(vertexID)) == nCells+1 .or. &
-         (cellsOnVertex(1, verticesOnTheCell(vertexID)) == cellsOnVertex(2, verticesOnTheCell(vertexID))) .or. &
-         (cellsOnVertex(2, verticesOnTheCell(vertexID)) == cellsOnVertex(3, verticesOnTheCell(vertexID))) .or. &
-         (cellsOnVertex(3, verticesOnTheCell(vertexID)) == cellsOnVertex(1, verticesOnTheCell(vertexID)))) then
+       if (vertexID .eq. -1) then
+         boundaryInterp = .true.
+       else if (cellsOnVertex(aCell, verticesOnTheCell(vertexID)) == 0 .or. &
+                cellsOnVertex(aCell, verticesOnTheCell(vertexID)) == nCells+1 .or. &
+                (cellsOnVertex(1, verticesOnTheCell(vertexID)) == cellsOnVertex(2, verticesOnTheCell(vertexID))) .or. &
+                (cellsOnVertex(2, verticesOnTheCell(vertexID)) == cellsOnVertex(3, verticesOnTheCell(vertexID))) .or. &
+                (cellsOnVertex(3, verticesOnTheCell(vertexID)) == cellsOnVertex(1, verticesOnTheCell(vertexID)))) then
+         boundaryInterp = .true.
+       end if
+
+       if (boundaryInterp) then
 
          !call mpas_log_write('Using column interpolation for $i because it is on an edge', intArgs = (/iCell/))
 
@@ -3368,35 +3381,35 @@ contains
      !}}}
 
      ! debugging output !{{{
-#ifdef MPAS_DEBUG
-     ! check to make sure nearest vertex found makes sense
-     call mpas_log_write('vertexID = $i, xPoint = $r $r $r', intArgs = (/ vertexID /), &
-       realArgs = (/ xPoint(1), xPoint(2), xPoint(3) /))
-     do aVertex = 1, nVertices
-       call mpas_log_write('$i xVertex = $r $r $r$', intArgs = (/ aVertex /), &
-         realArgs = (/ &
-         xVertex(1, aVertex), &
-         xVertex(2, aVertex), &
-         xVertex(3, aVertex) /))
-     end do
-     do aCell = 1, vertexDegree
-       localCell = cellsOnVertex(aCell, verticesOnTheCell(vertexID))
-       call mpas_log_write(' cell id $i $r $r $r', intArgs=(/ localCell/), &
-         realArgs = (/&
-         vertexTriangle(1, aCell), &
-         vertexTriangle(2, aCell), &
-         vertexTriangle(3, aCell)/))
-     end do
-     call mpas_log_write('scalar Triangle = $r $r $r', realArgs = &
-       (/scalarTriangle(1), &
-         scalarTriangle(2), &
-         scalarTriangle(3)/))
-     call mpas_log_write('lambda = $r $r $r', realArgs = &
-       (/lambda(1), &
-         lambda(2), &
-         lambda(3)/))
-     call mpas_log_write('ierr = $i', intArgs=(/ierr/))
-#endif
+!#ifdef MPAS_DEBUG
+!     ! check to make sure nearest vertex found makes sense
+!     call mpas_log_write('vertexID = $i, xPoint = $r $r $r', intArgs = (/ vertexID /), &
+!       realArgs = (/ xPoint(1), xPoint(2), xPoint(3) /))
+!     do aVertex = 1, nVertices
+!       call mpas_log_write('$i xVertex = $r $r $r$', intArgs = (/ aVertex /), &
+!         realArgs = (/ &
+!         xVertex(1, aVertex), &
+!         xVertex(2, aVertex), &
+!         xVertex(3, aVertex) /))
+!     end do
+!     do aCell = 1, vertexDegree
+!       localCell = cellsOnVertex(aCell, verticesOnTheCell(vertexID))
+!       call mpas_log_write(' cell id $i $r $r $r', intArgs=(/ localCell/), &
+!         realArgs = (/&
+!         vertexTriangle(1, aCell), &
+!         vertexTriangle(2, aCell), &
+!         vertexTriangle(3, aCell)/))
+!     end do
+!     call mpas_log_write('scalar Triangle = $r $r $r', realArgs = &
+!       (/scalarTriangle(1), &
+!         scalarTriangle(2), &
+!         scalarTriangle(3)/))
+!     call mpas_log_write('lambda = $r $r $r', realArgs = &
+!       (/lambda(1), &
+!         lambda(2), &
+!         lambda(3)/))
+!     call mpas_log_write('ierr = $i', intArgs=(/ierr/))
+!#endif
      !}}}
 
    end subroutine interp_scalars !}}}
@@ -3764,15 +3777,14 @@ contains
        ! we are ok
        LIGHT_DEBUG_ALL_WRITE('brute force interpolation successful')
        LIGHT_DEBUG_ALL_WRITE('iLow = ' COMMA iLow COMMA ' iHigh = ' COMMA iHigh)
-       write(message, *) 'phiInterp = ', phiInterp, ' phiLow =', phiVals(iLow), ' phiHigh = ', phiVals(iHigh)
+       LIGHT_DEBUG_ALL_WRITE('phiInterp = ' COMMA phiInterp COMMA ' phiLow =' COMMA phiVals(iLow) COMMA ' phiHigh = ' COMMA phiVals(iHigh))
        LIGHT_DEBUG_ALL_WRITE(message)
      else
-       print *,  'brute force interpolation failed with phiInterp = ', phiInterp, ' phiLow = ', phiVals(iLow), &
-                        ' phiHigh = ', phiVals(iHigh)
+       LIGHT_DEBUG_ALL_WRITE('brute force interpolation failed with phiInterp = ' COMMA phiInterp COMMA ' phiLow = ' COMMA phiVals(iLow) COMMA ' phiHigh = ' COMMA phiVals(iHigh))
        LIGHT_DEBUG_ALL_WRITE(' phiVals = ' COMMA phiVals(1:nVertLevels))
      end if
 
-     call mpas_log_write( 'Warning!: brute force interpolation used, boundary condition may be wrong!')
+     LIGHT_DEBUG_WRITE('Warning!: brute force interpolation used, boundary condition may be wrong!')
 #endif
 
    end subroutine get_bounding_indices_brute_force!}}}
