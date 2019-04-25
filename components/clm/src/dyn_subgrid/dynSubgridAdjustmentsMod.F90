@@ -26,7 +26,8 @@ module dynSubgridAdjustmentsMod
   use ColumnDataType         , only : column_phosphorus_state
   use VegetationDataType     , only : vegetation_carbon_state, vegetation_nitrogen_state
   use VegetationDataType     , only : vegetation_phosphorus_state
-  use SpeciesMod           , only : CN_SPECIES_N, CN_SPECIES_P
+  use SpeciesMod             , only : CN_SPECIES_N, CN_SPECIES_P
+  use clm_varctl             , only : iulog
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -850,16 +851,17 @@ contains
     type(column_nitrogen_state)     , intent(inout) :: col_ns
     !
     ! !LOCAL VARIABLES:
-    integer                     :: l, j
+    integer                     :: l, j, c
     integer                     :: begc, endc
     real(r8)                    :: adjustment_one_level(bounds%begc:bounds%endc)
-
+    
     character(len=*), parameter :: subname = 'NStateDynamicColumnAdjustments'
     !-----------------------------------------------------------------------
 
     begc = bounds%begc
     endc = bounds%endc
 
+    col_ns%dyn_nbal_adjustments(begc:endc) = 0._r8
     do l = 1, ndecomp_pools
        do j = 1, nlevdecomp
           call column_state_updater%update_column_state_no_special_handling( &
@@ -1285,7 +1287,7 @@ contains
 
     begc = bounds%begc
     endc = bounds%endc
-
+    col_ps%dyn_pbal_adjustments(begc:endc) = 0._r8
     do l = 1, ndecomp_pools
        do j = 1, nlevdecomp
           call column_state_updater%update_column_state_no_special_handling( &

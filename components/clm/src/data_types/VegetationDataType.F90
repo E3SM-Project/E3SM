@@ -2486,9 +2486,8 @@ module VegetationDataType
                 this%grainc(p)            = 0._r8 
                 this%grainc_storage(p)    = 0._r8 
                 this%grainc_xfer(p)       = 0._r8 
-                this%cropseedc_deficit(p) = 0._r8
              end if
-
+             this%cropseedc_deficit(p) = 0._r8
              ! calculate totvegc explicitly so that it is available for the isotope 
              ! code on the first time step.
 
@@ -3887,8 +3886,8 @@ module VegetationDataType
              this%grainn(p)            = 0._r8
              this%grainn_storage(p)    = 0._r8
              this%grainn_xfer(p)       = 0._r8
-             this%cropseedn_deficit(p) = 0._r8
           end if
+          this%cropseedn_deficit(p) = 0._r8
           this%frootn(p)            = 0._r8
           this%frootn_storage(p)    = 0._r8
           this%frootn_xfer(p)       = 0._r8
@@ -4552,8 +4551,8 @@ module VegetationDataType
              this%grainp(p)            = 0._r8
              this%grainp_storage(p)    = 0._r8
              this%grainp_xfer(p)       = 0._r8
-             this%cropseedp_deficit(p) = 0._r8
           end if
+          this%cropseedp_deficit(p) = 0._r8
           this%frootp(p)            = 0._r8
           this%frootp_storage(p)    = 0._r8
           this%frootp_xfer(p)       = 0._r8
@@ -9630,12 +9629,12 @@ module VegetationDataType
        this%hrv_nloss_litter(i)                    = value_patch
        this%sen_nloss_litter(i)                    = value_patch
        this%crop_seedn_to_leaf(i)                  = value_patch
+       this%livestemn_to_litter(i)                 = value_patch
     end do
 
     if ( crop_prog )then
        do fi = 1,num_patch
           i = filter_patch(fi)
-          this%livestemn_to_litter(i)              = value_patch
           this%grainn_to_food(i)                   = value_patch
           this%grainn_xfer_to_grainn(i)            = value_patch
           this%npool_to_grainn(i)                  = value_patch
@@ -10734,12 +10733,12 @@ module VegetationDataType
        this%fire_ploss_litter(i)                   = value_patch
        this%hrv_ploss_litter(i)                    = value_patch
        this%sen_ploss_litter(i)                    = value_patch
+       this%livestemp_to_litter(i)                 = value_patch
     end do
 
     if ( crop_prog )then
        do fi = 1,num_patch
           i = filter_patch(fi)
-          this%livestemp_to_litter(i)              = value_patch
           this%grainp_to_food(i)                   = value_patch
           this%grainp_xfer_to_grainp(i)            = value_patch
           this%ppool_to_grainp(i)                  = value_patch
