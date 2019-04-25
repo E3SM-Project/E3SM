@@ -354,8 +354,6 @@ end subroutine micro_p3_readnl
     use micro_p3_utils, only: micro_p3_utils_init
 
     type(physics_buffer_desc),  pointer :: pbuf2d(:,:)
-!    character(128) :: p3_lookup_dir  !ASD-DELETE
-    character(128) ::  errstring
     integer        :: m, mm
     integer        :: ierr
     logical :: history_amwg         ! output the variables used by the AMWG diag package
@@ -1020,10 +1018,13 @@ end subroutine micro_p3_readnl
     call pbuf_get_field(pbuf,  cv_reffliq_idx, cvreffliq,    col_type=col_type)
     call pbuf_get_field(pbuf,  cv_reffice_idx, cvreffice,    col_type=col_type)
 
+<<<<<<< 7c98dd1439efc93336da13b42e89f287323c6dfa
     rd = rair 
     cp = cpair
     inv_cp = 1._rtype/cp 
     
+=======
+>>>>>>> Simplified use of thermodynamic constants.
     ncol = state%ncol
     !==============
     ! Some pre-microphysics INITIALIZATION
@@ -1066,7 +1067,8 @@ end subroutine micro_p3_readnl
     !==============
     ! Note: state%exner is currently defined in a way different than the
     ! traditional definition of exner, so we calculate here.
-    exner(:ncol,:pver) = 1._rtype/((state%pmid(:ncol,:pver)*1.e-5_rtype)**(rd*inv_cp))
+    inv_cp = 1._rtype/cpair
+    exner(:ncol,:pver) = 1._rtype/((state%pmid(:ncol,:pver)*1.e-5_rtype)**(rair*inv_cp))
     if ( is_first_step() ) then
        th_old(:ncol,:pver)=state%t(:ncol,:pver)*exner(:ncol,:pver)
        qv_old(:ncol,:pver)=state%q(:ncol,:pver,1)
