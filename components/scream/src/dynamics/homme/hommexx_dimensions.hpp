@@ -10,6 +10,8 @@ namespace scream {
 #ifdef CUDA_BUILD
 
 #define HOMMEXX_QSIZE_D             QSIZE_D
+#define HOMMEXX_NP                  NP
+
 #define HOMMEXX_NUM_TIME_LEVELS     NUM_TIME_LEVELS
 #define HOMMEXX_Q_NUM_TIME_LEVELS   Q_NUM_TIME_LEVELS
 
@@ -20,8 +22,10 @@ namespace scream {
 
 #else
 
-constexpr int HOMMEXX_NUM_PHYSICAL_LEV   = Homme::NUM_PHYSICAL_LEV;
 constexpr int HOMMEXX_QSIZE_D            = QSIZE_D;
+constexpr int HOMMEXX_NP                 = NP;
+
+constexpr int HOMMEXX_NUM_PHYSICAL_LEV   = Homme::NUM_PHYSICAL_LEV;
 constexpr int HOMMEXX_NUM_TIME_LEVELS    = Homme::NUM_TIME_LEVELS;
 constexpr int HOMMEXX_Q_NUM_TIME_LEVELS  = Homme::Q_NUM_TIME_LEVELS;
 

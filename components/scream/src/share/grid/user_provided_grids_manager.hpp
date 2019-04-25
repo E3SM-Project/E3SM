@@ -18,13 +18,7 @@ public:
 
   virtual ~UserProvidedGridsManager () = default;
 
-  void build_grids (const std::set<std::string>& grid_names) {
-    // Simply make sure that all types have been set
-    for (auto name : grid_names) {
-      scream_require_msg (m_provided_grids.count(name)==1,
-                          "Error! No grid provided for '" + name + "'.\n");
-    }
-  }
+  std::string name () const { return "User Provided Grids Manager"; }
 
   static void set_grid (const std::shared_ptr<grid_type> grid) {
     scream_require_msg (m_provided_grids.find(grid->name())==m_provided_grids.end(),
@@ -32,6 +26,12 @@ public:
     m_provided_grids[grid->name()] = grid;
   }
 protected:
+
+  void build_grid (const std::string& grid_name) {
+    // Simply make sure that the grid has been set
+    scream_require_msg (supports_grid(grid_name),
+                        "Error! No grid provided for '" + grid_name + "'.\n");
+  }
 
   const repo_type& get_repo () const { return m_provided_grids; }
 
@@ -41,7 +41,7 @@ protected:
 };
 
 inline GridsManager*
-create_user_provided_grids_manager (const ParameterList& /* p */) {
+create_user_provided_grids_manager (const Comm& /* comm */, const ParameterList& /* p */) {
   return new UserProvidedGridsManager();
 }
 

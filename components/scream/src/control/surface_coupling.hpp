@@ -14,7 +14,7 @@ public:
   template<typename MS>
   using field_repo_type = FieldRepository<Real,MS>;
 
-  explicit SurfaceCoupling (const ParameterList& params);
+  explicit SurfaceCoupling (const Comm& comm, const ParameterList& params);
 
   // The type of the block (dynamics or physics)
   AtmosphereProcessType type () const { return AtmosphereProcessType::Coupling; }
@@ -34,7 +34,7 @@ public:
 
   // The initialization method should prepare all stuff needed to import/export from/to
   // f90 structures.
-  void initialize (const Comm& comm, const std::shared_ptr<const GridsManager> grids_manager);
+  void initialize (const std::shared_ptr<const GridsManager> grids_manager);
 
   // The run method is responsible for exporting atm states to the e3sm coupler, and
   // import surface states from the e3sm coupler.
@@ -65,10 +65,10 @@ protected:
   Comm    m_comm;
 };
 
-inline AtmosphereProcess* create_surface_coupling(const ParameterList& p) {
-  return new SurfaceCoupling(p);
+inline AtmosphereProcess*
+create_surface_coupling(const Comm& comm, const ParameterList& p) {
+  return new SurfaceCoupling(comm,p);
 }
-
 
 } // namespace scream
 

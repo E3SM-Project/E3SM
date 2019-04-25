@@ -2,13 +2,14 @@
 
 namespace scream {
 
-SurfaceCoupling::SurfaceCoupling (const ParameterList& /*params*/)
+SurfaceCoupling::
+SurfaceCoupling (const Comm& comm, const ParameterList& /*params*/)
+ : m_comm(comm)
 {
   // Grab what you need from the parameter list
 }
 
-void SurfaceCoupling::initialize (const Comm& comm, const std::shared_ptr<const GridsManager> /* grids_manager */) {
-  m_comm = comm;
+void SurfaceCoupling::initialize (const std::shared_ptr<const GridsManager> /* grids_manager */) {
   // Initialize the FieldRepository (FR) for host fields
   // (i.e., fields that are I/O w.r.t the coupler)
 }

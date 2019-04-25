@@ -8,7 +8,11 @@ template<AtmosphereProcessType PType>
 class DummyProcess : public scream::AtmosphereProcess {
 public:
 
-  explicit DummyProcess (const ParameterList& /* params */) {}
+  DummyProcess (const Comm& comm,const ParameterList& /* params */)
+   : m_comm(comm)
+  {
+    // Nothing to do
+  }
 
   // The type of the block (dynamics or physics)
   AtmosphereProcessType type () const { return PType; }
@@ -28,8 +32,7 @@ public:
 
   // The initialization method should prepare all stuff needed to import/export from/to
   // f90 structures.
-  void initialize (const Comm& comm, const std::shared_ptr<const GridsManager> grids_manager) {
-    m_comm = comm;
+  void initialize (const std::shared_ptr<const GridsManager> grids_manager) {
     (void) grids_manager;
   }
 
@@ -59,12 +62,15 @@ protected:
 };
 
 template<AtmosphereProcessType PType>
-AtmosphereProcess* create_dummy_process (const ParameterList& p) {
-  return new DummyProcess<PType>(p);
+AtmosphereProcess* create_dummy_process (const Comm& comm, const ParameterList& p) {
+  return new DummyProcess<PType>(comm,p);
 }
 
 TEST_CASE("process_factory", "") {
   using namespace scream;
+
+  // A world comm
+  Comm comm(MPI_COMM_WORLD);
 
   // Create a parameter list for inputs
   ParameterList params ("Atmosphere Processes");
@@ -93,7 +99,7 @@ TEST_CASE("process_factory", "") {
   factory.register_product("grouP",&create_atmosphere_process_group);
 
   // Create the processes
-  std::shared_ptr<AtmosphereProcess> atm_process (factory.create("group",params));
+  std::shared_ptr<AtmosphereProcess> atm_process (factory.create("group",comm,params));
 
   // CHECKS
   auto group = std::dynamic_pointer_cast<AtmosphereProcessGroup>(atm_process);
@@ -115,4 +121,3 @@ TEST_CASE("process_factory", "") {
 }
 
 } // empty namespace
-

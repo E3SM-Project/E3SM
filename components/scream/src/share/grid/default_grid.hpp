@@ -25,7 +25,7 @@ public:
   DefaultGrid (dofs_map_type col_to_elgp, const std::string& name)
    : m_col_to_elgp (col_to_elgp)
    , m_num_dofs    (m_col_to_elgp.extent_int(0))
-   , m_name     (name)
+   , m_name        (name)
   {
     // Nothing to do here
   }
