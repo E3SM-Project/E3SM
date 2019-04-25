@@ -334,14 +334,13 @@ end subroutine micro_p3_readnl
 
   !================================================================================================
 
-  subroutine micro_p3_init_cnst(name, q, gcid)
+  subroutine micro_p3_init_cnst(name, q)
 
     ! Initialize the microphysics constituents, if they are
     ! not read from the initial file.
 
     character(len=*), intent(in) :: name     ! constituent name
     real(rtype), intent(out) :: q(:,:)   ! mass mixing ratio (gcol, plev)
-    integer,  intent(in)  :: gcid(:)  ! global column id
 
     if (micro_p3_implements_cnst(name)) q = 0.0_rtype
 

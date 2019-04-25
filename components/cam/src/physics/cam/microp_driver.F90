@@ -129,7 +129,7 @@ subroutine microp_driver_init_cnst(name, q, gcid)
    case ('MG')
       call micro_mg_cam_init_cnst(name, q, gcid)
    case ('P3')
-      call micro_p3_init_cnst(name, q, gcid)
+      call micro_p3_init_cnst(name, q)
    case ('RK')
       ! microp_driver doesn't handle this one
       continue
