@@ -37,7 +37,7 @@ module micro_p3_utils
 
     real(rtype) :: xxlv, xxls, xlf
 
-    real(rtype),public :: rhosur,rhosui,ar,br,f1r,f2r,ecr,rhow,kr,kc,bimm,aimm,rin,mi0,nccnst,  &
+    real(rtype),public :: rhosur,rhosui,ar,br,f1r,f2r,ecr,rhow,kr,kc,aimm,rin,mi0,nccnst,  &
        eci,eri,bcn,cpw,cons1,cons2,cons3,cons4,cons5,cons6,cons7,         &
        inv_rhow,cp,g,rd,rv,ep_2,inv_cp,mw,osm,   &
        vi,epsm,rhoa,map,ma,rr,bact,inv_rm1,inv_rm2,sig1,nanew1,f11,f21,sig2, &
