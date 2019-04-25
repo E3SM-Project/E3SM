@@ -1037,7 +1037,7 @@ end subroutine micro_p3_readnl
 
     rd = rair 
     cp = cpair
-    inv_cp = 1./cp 
+    inv_cp = 1._rtype/cp 
     
     ncol = state%ncol
     !==============
@@ -1081,7 +1081,7 @@ end subroutine micro_p3_readnl
     !==============
     ! Note: state%exner is currently defined in a way different than the
     ! traditional definition of exner, so we calculate here.
-    exner(:ncol,:pver) = 1._rtype/((state%pmid(:ncol,:pver)*1.e-5)**(rd*inv_cp))
+    exner(:ncol,:pver) = 1._rtype/((state%pmid(:ncol,:pver)*1.e-5_rtype)**(rd*inv_cp))
     if ( is_first_step() ) then
        th_old(:ncol,:pver)=state%t(:ncol,:pver)*exner(:ncol,:pver)
        qv_old(:ncol,:pver)=state%q(:ncol,:pver,1)
@@ -1478,8 +1478,8 @@ end subroutine micro_p3_readnl
     cvreffliq(:ncol,top_lev:pver) = 9.0_rtype
     cvreffice(:ncol,top_lev:pver) = 37.0_rtype
 
-    reffrain(:,:) = 0.d0
-    reffsnow(:,:) = 0.d0
+    reffrain(:,:) = 0._rtype
+    reffsnow(:,:) = 0._rtype
     reffrain(:ngrdcol,top_lev:pver) = reff_rain(:ngrdcol,top_lev:pver)
     reffsnow(:ngrdcol,top_lev:pver) = 1000._rtype !! dummy value, the choice here impacts the COSP output variable: CFAD_DBZE94_CS.  TODO: Figure out if this is ok, change if needed.
 
