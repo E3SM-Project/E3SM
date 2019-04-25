@@ -118,11 +118,6 @@ module micro_p3_interface
       p3_qv_idx, &
       p3_th_idx
 
-   logical :: &
-      allow_sed_supersat  ! allow supersaturated conditions after sedimentation loop
-
-
-
    real(rtype) :: &
       micro_mg_accre_enhan_fac = huge(1.0_rtype), & !Accretion enhancement factor from namelist
       prc_coef1_in             = huge(1.0_rtype), &
