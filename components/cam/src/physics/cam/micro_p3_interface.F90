@@ -805,7 +805,8 @@ end subroutine micro_p3_readnl
                               rhow, &
                               rhows, &
                               qsmall, &
-                              mincld 
+                              mincld, & 
+                              inv_cp 
     use output_aerocom_aie, only: do_aerocom_ind3
 
     !INPUT/OUTPUT VARIABLES
