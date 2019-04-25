@@ -2533,10 +2533,10 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
                          accre_enhan(i,1:pver),accre_enhan_five(i,1:pver_five),pver,pver_five)
 !      call linear_interp(state_loc%pmid(i,:),pmid_five(i,:), &
 !                         ast(i,1:pver),ast_five(i,1:pver_five),pver,pver_five)
-      call linear_interp(state_loc%pmid(i,:),pmid_five(i,:), &
-                         alst_mic(i,1:pver),alst_mic_five(i,1:pver_five),pver,pver_five)
-      call linear_interp(state_loc%pmid(i,:),pmid_five(i,:), &
-                         aist_mic(i,1:pver),aist_mic_five(i,1:pver_five),pver,pver_five)
+!      call linear_interp(state_loc%pmid(i,:),pmid_five(i,:), &
+!                         alst_mic(i,1:pver),alst_mic_five(i,1:pver_five),pver,pver_five)
+!      call linear_interp(state_loc%pmid(i,:),pmid_five(i,:), &
+!                         aist_mic(i,1:pver),aist_mic_five(i,1:pver_five),pver,pver_five)
       call linear_interp(state_loc%pmid(i,:),pmid_five(i,:), &
                          naai(i,1:pver),naai_five(i,1:pver_five),pver,pver_five)
       call linear_interp(state_loc%pmid(i,:),pmid_five(i,:), &

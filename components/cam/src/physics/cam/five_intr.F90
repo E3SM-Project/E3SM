@@ -44,6 +44,9 @@ module five_intr
   !   because PBUF needs these to be initialized.
   !   TASK: figure out a better way so these can be computed
   !   on the fly and not user specified!
+  ! 2LEV: 110/111
+  ! 4LEV: 148/149
+  ! 6LEV: 186/187
     integer, parameter :: pver_five = 110
     integer, parameter :: pverp_five = 111
 

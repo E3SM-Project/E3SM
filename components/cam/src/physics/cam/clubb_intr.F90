@@ -326,9 +326,9 @@ module clubb_intr
     ! Define a PBUF field for WP2 to be used on the low resolution E3SM grid, if FIVE is used
     !   this is the only turbulent moment that is passed to another E3SM parameterization, 
     !   thus must be interpolated and saved on the E3SM grid.
-    call pbuf_add_field('CLD_FIVE',      'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/),    cld_five_idx)
-    call pbuf_add_field('CONCLD_FIVE',   'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/),    concld_five_idx)
-    call pbuf_add_field('AST_FIVE',      'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/),    ast_five_idx)
+!    call pbuf_add_field('CLD_FIVE',      'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/),    cld_five_idx)
+!    call pbuf_add_field('CONCLD_FIVE',   'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/),    concld_five_idx)
+!    call pbuf_add_field('AST_FIVE',      'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/),    ast_five_idx)
     call pbuf_add_field('WP2_nadv_five', 'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wp2_five_idx)
 #endif 
 
@@ -1634,9 +1634,9 @@ end subroutine clubb_init_cnst
 #ifdef FIVE
    ! Syncronize FIVE variables to E3SM state
    !  This is a crucial component to using FIVE within E3SM
-   if (macmic_it .eq. 1) then
+!   if (macmic_it .eq. 1) then
       call five_syncronize_e3sm(state1,hdtime,p0_clubb,pint_five,pmid_five,t_five,u_five,v_five,q_five) 
-   endif
+!   endif
 #endif   
 
    !  At each CLUBB call, initialize mean momentum  and thermo CLUBB state 
@@ -2905,9 +2905,8 @@ end subroutine clubb_init_cnst
 !         endif
 
          concld_five(i,k) = min(cld_five(i,k)-alst_five(i,k)+deepcu_five(i,k),0.80_r8)
-
       enddo 
-   enddo 
+   enddo
 # endif
    
    if (single_column) then
