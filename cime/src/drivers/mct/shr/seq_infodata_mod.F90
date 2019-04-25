@@ -167,6 +167,8 @@ MODULE seq_infodata_mod
      logical                 :: reprosum_recompute  ! recompute reprosum with nonscalable algorithm
      ! if reprosum_diffmax is exceeded
 
+     logical                 :: tprof_in_init   ! performance data checkpoints written during initialization
+
      !--- set via namelist and may be time varying ---
      integer(SHR_KIND_IN)    :: info_debug      ! debug level
      logical                 :: bfbflag         ! turn on bfb option
@@ -401,6 +403,7 @@ CONTAINS
     real(SHR_KIND_R8)      :: reprosum_diffmax   ! maximum difference tolerance
     logical                :: reprosum_recompute ! recompute reprosum with nonscalable algorithm
     ! if reprosum_diffmax is exceeded
+    logical                :: tprof_in_init      ! performance data checkpoints written during initialization
     logical                :: mct_usealltoall    ! flag for mct alltoall
     logical                :: mct_usevector      ! flag for mct vector
     real(shr_kind_r8)      :: max_cplstep_time   ! abort if cplstep time exceeds this value
@@ -440,6 +443,7 @@ CONTAINS
          eps_oarea, esmf_map_flag,                         &
          reprosum_use_ddpdd, reprosum_allow_infnan,        &
          reprosum_diffmax, reprosum_recompute,             &
+         tprof_in_init,                                    &
          mct_usealltoall, mct_usevector, max_cplstep_time, model_doi_url
 
     !-------------------------------------------------------------------------------
@@ -549,6 +553,7 @@ CONTAINS
        reprosum_allow_infnan = .false.
        reprosum_diffmax      = -1.0e-8
        reprosum_recompute    = .false.
+       tprof_in_init         = .false.
        mct_usealltoall       = .false.
        mct_usevector         = .false.
        max_cplstep_time      = 0.0
@@ -678,6 +683,7 @@ CONTAINS
        infodata%reprosum_allow_infnan = reprosum_allow_infnan
        infodata%reprosum_diffmax      = reprosum_diffmax
        infodata%reprosum_recompute    = reprosum_recompute
+       infodata%tprof_in_init         = tprof_in_init
        infodata%mct_usealltoall       = mct_usealltoall
        infodata%mct_usevector         = mct_usevector
 
@@ -960,6 +966,7 @@ CONTAINS
        eps_agrid, eps_aarea, eps_omask, eps_ogrid, eps_oarea,             &
        reprosum_use_ddpdd, reprosum_allow_infnan,                         &
        reprosum_diffmax, reprosum_recompute,                              &
+       tprof_in_init,                                                     &
        mct_usealltoall, mct_usevector, max_cplstep_time, model_doi_url,   &
        glc_valid_input)
 
@@ -1067,6 +1074,7 @@ CONTAINS
     logical,                optional, intent(OUT) :: reprosum_allow_infnan   ! allow INF and NaN summands
     real(SHR_KIND_R8),      optional, intent(OUT) :: reprosum_diffmax        ! maximum difference tolerance
     logical,                optional, intent(OUT) :: reprosum_recompute      ! recompute if tolerance exceeded
+    logical,                optional, intent(OUT) :: tprof_in_init           ! performance checkpoints in init
     logical,                optional, intent(OUT) :: mct_usealltoall         ! flag for mct alltoall
     logical,                optional, intent(OUT) :: mct_usevector           ! flag for mct vector
 
@@ -1235,6 +1243,7 @@ CONTAINS
     if ( present(reprosum_allow_infnan)) reprosum_allow_infnan = infodata%reprosum_allow_infnan
     if ( present(reprosum_diffmax)  ) reprosum_diffmax   = infodata%reprosum_diffmax
     if ( present(reprosum_recompute)) reprosum_recompute = infodata%reprosum_recompute
+    if ( present(tprof_in_init)  ) tprof_in_init  = infodata%tprof_in_init
     if ( present(mct_usealltoall)) mct_usealltoall = infodata%mct_usealltoall
     if ( present(mct_usevector)  ) mct_usevector  = infodata%mct_usevector
 
@@ -1466,6 +1475,7 @@ CONTAINS
        eps_agrid, eps_aarea, eps_omask, eps_ogrid, eps_oarea,             &
        reprosum_use_ddpdd, reprosum_allow_infnan,                         &
        reprosum_diffmax, reprosum_recompute,                              &
+       tprof_in_init,                                                     &
        mct_usealltoall, mct_usevector, glc_valid_input)
 
 
@@ -1571,6 +1581,7 @@ CONTAINS
     logical,                optional, intent(IN)    :: reprosum_allow_infnan ! allow INF and NaN summands
     real(SHR_KIND_R8),      optional, intent(IN)    :: reprosum_diffmax   ! maximum difference tolerance
     logical,                optional, intent(IN)    :: reprosum_recompute ! recompute if tolerance exceeded
+    logical,                optional, intent(IN)    :: tprof_in_init      ! performance checkpoints in init
     logical,                optional, intent(IN)    :: mct_usealltoall    ! flag for mct alltoall
     logical,                optional, intent(IN)    :: mct_usevector      ! flag for mct vector
 
@@ -1737,6 +1748,7 @@ CONTAINS
     if ( present(reprosum_allow_infnan)) infodata%reprosum_allow_infnan = reprosum_allow_infnan
     if ( present(reprosum_diffmax)  ) infodata%reprosum_diffmax   = reprosum_diffmax
     if ( present(reprosum_recompute)) infodata%reprosum_recompute = reprosum_recompute
+    if ( present(tprof_in_init)  ) infodata%tprof_in_init  = tprof_in_init
     if ( present(mct_usealltoall)) infodata%mct_usealltoall = mct_usealltoall
     if ( present(mct_usevector)  ) infodata%mct_usevector  = mct_usevector
 
@@ -2023,6 +2035,7 @@ CONTAINS
     call shr_mpi_bcast(infodata%reprosum_allow_infnan,   mpicom)
     call shr_mpi_bcast(infodata%reprosum_diffmax,        mpicom)
     call shr_mpi_bcast(infodata%reprosum_recompute,      mpicom)
+    call shr_mpi_bcast(infodata%tprof_in_init,           mpicom)
     call shr_mpi_bcast(infodata%mct_usealltoall,         mpicom)
     call shr_mpi_bcast(infodata%mct_usevector,           mpicom)
 
@@ -2683,6 +2696,8 @@ CONTAINS
     write(logunit,F0L) subname,'reprosum_allow_infnan    = ', infodata%reprosum_allow_infnan
     write(logunit,F0R) subname,'reprosum_diffmax         = ', infodata%reprosum_diffmax
     write(logunit,F0L) subname,'reprosum_recompute       = ', infodata%reprosum_recompute
+
+    write(logunit,F0L) subname,'tprof_in_init            = ', infodata%tprof_in_init
 
     write(logunit,F0L) subname,'mct_usealltoall          = ', infodata%mct_usealltoall
     write(logunit,F0L) subname,'mct_usevector            = ', infodata%mct_usevector

@@ -88,7 +88,18 @@
     <default_value>12</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>
-    <desc>timer detail FIXME - add documentation</desc>
+    <desc>Sets maximum number of run loop timing data checkpoints.
+    This sets values for tprof_option and tprof_n that determine the timing output file frequency.
+    </desc>
+  </entry>
+
+  <entry id="TPROF_IN_INIT">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>Turns on checkpointing of timing data during initialization</desc>
   </entry>
 
   <entry id="DOUT_S_SAVE_INTERIM_RESTART_FILES">

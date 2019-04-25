@@ -220,6 +220,7 @@ module cime_comp_mod
   private :: cime_run_calc_budgets3
   private :: cime_run_write_history
   private :: cime_run_write_restart
+  private :: cime_write_performance_checkpoint
 
 #include <mpif.h>
 
@@ -460,6 +461,8 @@ module cime_comp_mod
   logical  :: reprosum_allow_infnan  ! setup reprosum, allow INF and NaN in summands
   real(r8) :: reprosum_diffmax       ! setup reprosum, set rel_diff_max
   logical  :: reprosum_recompute     ! setup reprosum, recompute if tolerance exceeded
+
+  logical  :: tprof_in_init=.false.  ! write performance data checkpoints during initialization
 
   logical  :: output_perf = .false.  ! require timing data output for this pe
   logical  :: in_first_day = .true.  ! currently simulating first day
@@ -1042,6 +1045,7 @@ contains
          reprosum_allow_infnan=reprosum_allow_infnan, &
          reprosum_diffmax=reprosum_diffmax         , &
          reprosum_recompute=reprosum_recompute, &
+         tprof_in_init=tprof_in_init               , &
          max_cplstep_time=max_cplstep_time)
 
     ! above - cpl_decomp is set to pass the cpl_decomp value to seq_mctext_decomp
@@ -1395,6 +1399,16 @@ contains
     call t_stopf('CPL:comp_list_all')
 
     call t_stopf('CPL:init_comps')
+
+    if (tprof_in_init) then
+       ! --- Write out performance data
+       call t_set_prefixf("CPL:init_comps_")
+       call cime_write_performance_checkpoint(output_perf,&
+            trim(tchkpt_dir)//'/model_timing'//trim(cpl_inst_tag)//'_init_comps',&
+            mpicom_GLOID)
+       call t_unset_prefixf()
+    endif
+
     !----------------------------------------------------------
     !| Determine coupling interactions based on present and prognostic flags
     !----------------------------------------------------------
@@ -2171,6 +2185,15 @@ contains
 
     call t_adj_detailf(-1)
     call t_stopf('CPL:cime_init')
+
+    if (tprof_in_init) then
+       ! --- Write out performance data
+       call t_set_prefixf("CPL:cime_init_")
+       call cime_write_performance_checkpoint(output_perf,&
+            trim(tchkpt_dir)//'/model_timing'//trim(cpl_inst_tag)//'_cime_init', &
+            mpicom_GLOID)
+       call t_unset_prefixf()
+    endif
 
   end subroutine cime_init
 
@@ -3090,30 +3113,14 @@ contains
           if ((tod == 0) .and. in_first_day) then
              in_first_day = .false.
           endif
-          call t_adj_detailf(+1)
-
-          call t_startf("CPL:sync1_tprof")
-          call mpi_barrier(mpicom_GLOID,ierr)
-          call t_stopf("CPL:sync1_tprof")
 
           write(timing_file,'(a,i8.8,a1,i5.5)') &
-               trim(tchkpt_dir)//"/model_timing"//trim(cpl_inst_tag)//"_",ymd,"_",tod
+                trim(tchkpt_dir)//"/model_timing"//trim(cpl_inst_tag)//"_",ymd,"_",tod
 
-          call t_set_prefixf("CPL:")
-          if (output_perf) then
-             call t_prf(filename=trim(timing_file), mpicom=mpicom_GLOID, &
-                  num_outpe=0, output_thispe=output_perf)
-          else
-             call t_prf(filename=trim(timing_file), mpicom=mpicom_GLOID, &
-                  num_outpe=0)
-          endif
+          call t_set_prefixf("CPL:RUN_LOOP_")
+          call cime_write_performance_checkpoint(output_perf,timing_file,mpicom_GLOID)
           call t_unset_prefixf()
 
-          call t_startf("CPL:sync2_tprof")
-          call mpi_barrier(mpicom_GLOID,ierr)
-          call t_stopf("CPL:sync2_tprof")
-
-          call t_adj_detailf(-1)
        endif
        call t_stopf  ('CPL:TPROF_WRITE')
 
@@ -3209,9 +3216,11 @@ contains
     call t_adj_detailf(-1)
     call t_stopf  ('CPL:FINAL')
 
-    call t_startf("sync3_tprof")
+    call t_set_prefixf("CPL:FINAL_")
+
+    call t_startf("sync1_tprf")
     call mpi_barrier(mpicom_GLOID,ierr)
-    call t_stopf("sync3_tprof")
+    call t_stopf("sync1_tprf")
 
     if (output_perf) then
        call t_prf(trim(timing_dir)//'/model_timing'//trim(cpl_inst_tag), &
@@ -3220,6 +3229,8 @@ contains
        call t_prf(trim(timing_dir)//'/model_timing'//trim(cpl_inst_tag), &
             mpicom=mpicom_GLOID)
     endif
+
+    call t_unset_prefixf()
 
     call t_finalizef()
 
@@ -4244,5 +4255,43 @@ contains
     end if
 
   end subroutine cime_run_write_restart
+
+!----------------------------------------------------------------------------------
+
+  subroutine cime_write_performance_checkpoint(output_ckpt, ckpt_filename, &
+                                               ckpt_mpicom)
+
+    !----------------------------------------------------------
+    ! Checkpoint performance data
+    !----------------------------------------------------------
+
+    logical, intent(in)             :: output_ckpt
+    character(len=*), intent(in)    :: ckpt_filename
+    integer, intent(in)             :: ckpt_mpicom
+
+103 format( 5A )
+104 format( A, i10.8, i8)
+
+    call t_adj_detailf(+1)
+
+    call t_startf("sync1_tprf")
+    call mpi_barrier(ckpt_mpicom,ierr)
+    call t_stopf("sync1_tprf")
+
+    if (output_ckpt) then
+       call t_prf(filename=trim(ckpt_filename), mpicom=ckpt_mpicom, &
+            num_outpe=0, output_thispe=output_ckpt)
+    else
+       call t_prf(filename=trim(ckpt_filename), mpicom=ckpt_mpicom, &
+            num_outpe=0)
+    endif
+
+    call t_startf("sync2_tprf")
+    call mpi_barrier(ckpt_mpicom,ierr)
+    call t_stopf("sync2_tprf")
+
+    call t_adj_detailf(-1)
+
+  end subroutine cime_write_performance_checkpoint
 
 end module cime_comp_mod
