@@ -41,14 +41,14 @@ module micro_p3
    use micro_p3_utils, only: rtype
 
    ! physical and mathematical constants
-   use micro_p3_utils, only: rhosur,rhosui,ar,br,f1r,f2r,ecr,rhow,kr,kc,aimm,rin,mi0,nccnst,  &
-       eci,eri,bcn,cpw,cons1,cons2,cons3,cons4,cons5,cons6,cons7,         &
+   use micro_p3_utils, only: rhosur,rhosui,ar,br,f1r,f2r,rhow,kr,kc,aimm,mi0,nccnst,  &
+       eci,eri,bcn,cpw,cons1,cons3,cons4,cons5,cons6,cons7,         &
        inv_rhow,qsmall,nsmall,cp,g,rd,rv,ep_2,inv_cp,   &
-       thrd,sxth,piov3,piov6,rho_rimeMin,     &
+       thrd,sxth,piov6,rho_rimeMin,     &
        rho_rimeMax,inv_rho_rimeMax,max_total_Ni,dbrk,nmltratio,clbfact_sub,  &
        clbfact_dep,iparam, isize, densize, rimsize, rcollsize, tabsize, colltabsize, &
        get_latent_heat, zerodegc, pi=>pi_e3sm, dnu, &
-       micro_p3_utils_init, rainfrze, icenuct, homogfrze, iulog=>iulog_e3sm, &
+       rainfrze, icenuct, homogfrze, iulog=>iulog_e3sm, &
        masterproc=>masterproc_e3sm, calculate_incloud_mixingratios, mu_r_constant, &
        lookup_table_1a_dum1_c
 
