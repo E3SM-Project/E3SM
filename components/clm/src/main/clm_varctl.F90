@@ -360,7 +360,7 @@ module clm_varctl
 
   !-----------------------------------------------------------------------
   ! flux limiter for phenology flux calculation
-  public, logical :: use_phenolmter = .false.
+  logical, public :: use_phenolmter = .false.
 
 
   !-----------------------------------------------------------------------
