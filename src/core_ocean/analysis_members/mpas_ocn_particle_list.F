@@ -18,8 +18,8 @@
 !-----------------------------------------------------------------------
 #define COMMA ,
 #ifdef MPAS_DEBUG
-#define LIGHT_DEBUG_WRITE(Z)   print *, Z
-#define LIGHT_DEBUG_ALL_WRITE(Z)  print *, Z
+#define LIGHT_DEBUG_WRITE(Z) ! print *, Z
+#define LIGHT_DEBUG_ALL_WRITE(Z) ! print *, Z
 #else
 #define LIGHT_DEBUG_WRITE(Z)  ! print *, Z
 #define LIGHT_DEBUG_ALL_WRITE(Z) ! print *, Z
