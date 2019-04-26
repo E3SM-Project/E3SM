@@ -1435,14 +1435,30 @@ module atm_time_integration
                   call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadStart', cellSolveThreadStart)
                   call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadEnd', cellSolveThreadEnd)
 
-                  scalars_driving(index_qv,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qv', rk_timestep(rk_step) )
-                  scalars_driving(index_qc,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qc', rk_timestep(rk_step) )
-                  scalars_driving(index_qr,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qr', rk_timestep(rk_step) )
-                  scalars_driving(index_qi,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qi', rk_timestep(rk_step) )
-                  scalars_driving(index_qs,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qs', rk_timestep(rk_step) )
-                  scalars_driving(index_qg,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qg', rk_timestep(rk_step) )
-                  !! scalars_driving(index_nr,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'nr', rk_timestep(rk_step) )
-                  !! scalars_driving(index_ni,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'ni', rk_timestep(rk_step) )
+                  if (index_qv > 0) then
+                     scalars_driving(index_qv,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qv', rk_timestep(rk_step) )
+                  end if
+                  if (index_qc > 0) then
+                     scalars_driving(index_qc,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qc', rk_timestep(rk_step) )
+                  end if
+                  if (index_qr > 0) then
+                     scalars_driving(index_qr,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qr', rk_timestep(rk_step) )
+                  end if
+                  if (index_qi > 0) then
+                     scalars_driving(index_qi,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qi', rk_timestep(rk_step) )
+                  end if
+                  if (index_qs > 0) then
+                     scalars_driving(index_qs,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qs', rk_timestep(rk_step) )
+                  end if
+                  if (index_qg > 0) then
+                     scalars_driving(index_qg,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qg', rk_timestep(rk_step) )
+                  end if
+                  if (index_nr > 0) then
+                     scalars_driving(index_nr,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'nr', rk_timestep(rk_step) )
+                  end if
+                  if (index_ni > 0) then
+                     scalars_driving(index_ni,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'ni', rk_timestep(rk_step) )
+                  end if
                   
 !$OMP PARALLEL DO
                   do thread=1,nThreads
@@ -1646,14 +1662,30 @@ module atm_time_integration
             call mpas_pool_get_dimension(block % dimensions, 'vertexSolveThreadStart', vertexSolveThreadStart)
             call mpas_pool_get_dimension(block % dimensions, 'vertexSolveThreadEnd', vertexSolveThreadEnd)
 
-            scalars_driving(index_qv,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qv', dt )
-            scalars_driving(index_qc,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qc', dt )
-            scalars_driving(index_qr,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qr', dt )
-            scalars_driving(index_qi,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qi', dt )
-            scalars_driving(index_qs,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qs', dt )
-            scalars_driving(index_qg,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qg', dt )
-            !! scalars_driving(index_nr,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'nr', rk_timestep(rk_step) )
-            !! scalars_driving(index_ni,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'ni', rk_timestep(rk_step) )
+            if (index_qv > 0) then
+               scalars_driving(index_qv,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qv', dt )
+            end if
+            if (index_qc > 0) then
+               scalars_driving(index_qc,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qc', dt )
+            end if
+            if (index_qr > 0) then
+               scalars_driving(index_qr,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qr', dt )
+            end if
+            if (index_qi > 0) then
+               scalars_driving(index_qi,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qi', dt )
+            end if
+            if (index_qs > 0) then
+               scalars_driving(index_qs,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qs', dt )
+            end if
+            if (index_qg > 0) then
+               scalars_driving(index_qg,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'qg', dt )
+            end if
+            if (index_nr > 0) then
+               scalars_driving(index_nr,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'nr', dt )
+            end if
+            if (index_ni > 0) then
+               scalars_driving(index_ni,1:nVertLevels,1:nCells+1) = mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nCells, 'ni', dt )
+            end if
       
 !$OMP PARALLEL DO
             do thread=1,nThreads
