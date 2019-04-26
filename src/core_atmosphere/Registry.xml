@@ -359,6 +359,7 @@
                 <package name="bl_mynn_in" description="parameterization of MYNN Planetary Boundary Layer."/>
 
                 <package name="iau" description="Incremental Analysis Update"/>
+                <package name="limited_area" description="Limited-area simulations, which have lateral boundaries"/>
         </packages>
 
 
@@ -1070,7 +1071,8 @@
                         filename_interval="input_interval"
                         input_interval="3:00:00" 
                         runtime_format="single_file"
-                        immutable="true">
+                        immutable="true"
+                        packages="limited_area">
 
                         <var name="xtime" />
                         <var name="lbc_u" />
@@ -1729,7 +1731,7 @@
         <!-- Time-level 1 contains tendencies for variables                                        -->
         <!-- Time-level 2 contains values for variables valid at the end of the boundary interval  -->
         <!-- ===================================================================================== -->
-        <var_struct name="lbc" time_levs="2">
+        <var_struct name="lbc" time_levs="2" packages="limited_area">
                 <var name="lbc_u" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-2}"
                      description="Lateral boundary tendency of u"/>
 

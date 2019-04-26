@@ -119,9 +119,14 @@ module atm_core_interface
 
       logical, pointer :: iauActive
       character(len=StrKIND), pointer :: config_iau_option
+      logical, pointer :: limited_areaActive
+      logical, pointer :: config_apply_lbcs
 
       ierr = 0
 
+      !
+      ! Incremental analysis update
+      !
       nullify(config_iau_option)
       call mpas_pool_get_config(configs, 'config_IAU_option', config_iau_option)
 
@@ -132,6 +137,21 @@ module atm_core_interface
          iauActive = .true.
       else
          iauActive = .false.
+      end if
+
+      !
+      ! Limited-area
+      !
+      nullify(config_apply_lbcs)
+      call mpas_pool_get_config(configs, 'config_apply_lbcs', config_apply_lbcs)
+
+      nullify(limited_areaActive)
+      call mpas_pool_get_package(packages, 'limited_areaActive', limited_areaActive)
+
+      if (config_apply_lbcs) then
+         limited_areaActive = .true.
+      else
+         limited_areaActive = .false.
       end if
 
 #ifdef DO_PHYSICS
