@@ -8,19 +8,20 @@
 #XXSBATCH --account=FY150001
 #SBATCH -p acme
 #SBATCH --account=condo
-#SBATCH -N 25
-#SBATCH --time=3:00:00
+#SBATCH -N 4
+#SBATCH --time=0:10:00
 
 
 set OMP_NUM_THREADS = 1
 set NCPU = 40 
-if ( ${?PBS_ENVIRONMENT} ) then   # anvil
-  set NCPU = $PBS_NNODES
-  if ( $PBS_ENVIRONMENT == PBS_BATCH ) cd $PBS_O_WORKDIR     
-endif
 if ( ${?SLURM_NNODES} ) then   
     set NCPU = $SLURM_NNODES
-    @ NCPU *= 16
+    if ( ${?SLURM_CPUS_ON_NODE} ) then   
+       @ NCPU *= $SLURM_CPUS_ON_NODE 
+    endif
+    if ( ${?SLURM_TASKS_PER_NODE} ) then   
+       @ NCPU *= $SLURM_TASKS_PER_NODE
+    endif
     @ NCPU /= $OMP_NUM_THREADS
 endif
 
