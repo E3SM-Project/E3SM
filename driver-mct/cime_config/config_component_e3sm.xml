@@ -89,17 +89,10 @@
     <group>run_flags</group>
     <file>env_run.xml</file>
     <desc>Sets maximum number of run loop timing data checkpoints.
-    This sets values for tprof_option and tprof_n that determine the timing output file frequency.
-    </desc>
-  </entry>
-
-  <entry id="TPROF_IN_INIT">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
-    <group>run_flags</group>
-    <file>env_run.xml</file>
-    <desc>Turns on checkpointing of timing data during initialization</desc>
+    This sets values for tprof_option and tprof_n that determine
+    the timing output file frequency. If less than one, uses
+    defaults for tprof_option and tprof_n and also allows them
+    to be set in user_nl_cpl.</desc>
   </entry>
 
   <entry id="DOUT_S_SAVE_INTERIM_RESTART_FILES">
