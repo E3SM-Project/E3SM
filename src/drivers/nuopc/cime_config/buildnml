@@ -73,9 +73,9 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     nmlgen.init_defaults(infile, config)
 
     if case.get_value('MEDIATOR_READ_RESTART'):
-	nmlgen.set_value('mediator_read_restart', value='.true.')
+        nmlgen.set_value('mediator_read_restart', value='.true.')
     else:
-	nmlgen.set_value('mediator_read_restart', value='.false.')
+        nmlgen.set_value('mediator_read_restart', value='.false.')
 
     #--------------------------------
     # Overwrite: set brnch_retain_casename
