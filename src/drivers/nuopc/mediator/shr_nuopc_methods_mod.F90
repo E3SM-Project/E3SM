@@ -3185,7 +3185,7 @@ contains
     integer,          intent(inout)  :: rc
 
     ! local variables
-    integer           :: mytask, ierr, len
+    integer           :: mytask, ierr, len, icount
     type(ESMF_VM)     :: vm
     type(ESMF_Field)  :: field
     real(R8), pointer :: farrayptr(:,:)
@@ -3201,22 +3201,30 @@ contains
     call ESMF_VMGet(vm, localPet=mytask, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    call ESMF_StateGet(State, itemName=trim(flds_scalar_name), field=field, rc=rc)
+    ! check item exist or not?
+    call ESMF_StateGet(State, itemSearch=trim(flds_scalar_name), itemCount=icount, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    if (mytask == 0) then
-      call ESMF_FieldGet(field, farrayPtr = farrayptr, rc=rc)
+    if (icount > 0) then
+      call ESMF_StateGet(State, itemName=trim(flds_scalar_name), field=field, rc=rc)
       if (chkerr(rc,__LINE__,u_FILE_u)) return
-      if (scalar_id < 0 .or. scalar_id > flds_scalar_num) then
-        call ESMF_LogWrite(trim(subname)//": ERROR in scalar_id", ESMF_LOGMSG_INFO, line=__LINE__, file=u_FILE_u)
-        rc = ESMF_FAILURE
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+
+      if (mytask == 0) then
+        call ESMF_FieldGet(field, farrayPtr = farrayptr, rc=rc)
+        if (chkerr(rc,__LINE__,u_FILE_u)) return
+        if (scalar_id < 0 .or. scalar_id > flds_scalar_num) then
+          call ESMF_LogWrite(trim(subname)//": ERROR in scalar_id", ESMF_LOGMSG_INFO, line=__LINE__, file=u_FILE_u)
+          rc = ESMF_FAILURE
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+        endif
+        tmp(:) = farrayptr(scalar_id,:)
       endif
-      tmp(:) = farrayptr(scalar_id,:)
-    endif
-    call ESMF_VMBroadCast(vm, tmp, 1, 0, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-    scalar_value = tmp(1)
+      call ESMF_VMBroadCast(vm, tmp, 1, 0, rc=rc)
+      if (chkerr(rc,__LINE__,u_FILE_u)) return
+      scalar_value = tmp(1)
+    else
+      call ESMF_LogWrite(trim(subname)//": no ESMF_Field found named: "//trim(flds_scalar_name), ESMF_LOGMSG_INFO)
+    end if 
 
   end subroutine shr_nuopc_methods_State_GetScalar
 
