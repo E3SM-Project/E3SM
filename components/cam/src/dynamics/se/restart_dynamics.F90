@@ -56,7 +56,11 @@ CONTAINS
 
     ierr = PIO_Def_Var(File, 'U', pio_double, (/ncol_dimid, nlev_dimid, timelevels_dimid/), Udesc)
     ierr = PIO_Def_Var(File, 'V', pio_double, (/ncol_dimid, nlev_dimid, timelevels_dimid/), Vdesc)
+#ifdef MODEL_THETA_L
+    ierr = PIO_Def_Var(File, 'VTheta_dp', pio_double, (/ncol_dimid, nlev_dimid, timelevels_dimid/), Tdesc)
+#else
     ierr = PIO_Def_Var(File, 'T', pio_double, (/ncol_dimid, nlev_dimid, timelevels_dimid/), Tdesc)
+#endif
     !
     ! Omega is not strictly needed, it could be rederived - but this is easier
     !
@@ -106,10 +110,6 @@ CONTAINS
     real(kind=r8) :: time
     integer :: ndcur, nscur
     integer, pointer :: ldof(:)
-
-#ifdef MODEL_THETA_L
-    call endrun("read_inidat: restart does not work with cam target theta-l.")
-#endif
 
     call write_restart_hycoef(File)
 
@@ -221,7 +221,9 @@ CONTAINS
        do k=1,nlev
           do j=1,np
              do i=1,np
-#ifndef MODEL_THETA_L
+#ifdef MODEL_THETA_L
+                var3d(i,j,ie,k) = elem(ie)%state%VTheta_dp(i,j,k,tl)
+#else
                 var3d(i,j,ie,k) = elem(ie)%state%T(i,j,k,tl)
 #endif
              end do
@@ -401,7 +403,11 @@ CONTAINS
 
     ierr = PIO_Inq_varid(File, 'V', Vdesc)
 
+#ifdef MODEL_THETA_L
+    ierr = PIO_Inq_varid(File, 'VTheta_dp', tdesc)
+#else
     ierr = PIO_Inq_varid(File, 'T', tdesc)
+#endif
 
     ierr = PIO_Inq_varid(File, 'OMEGA', OMEGAdesc)
 
@@ -508,7 +514,9 @@ CONTAINS
           do j=1,np
              do i=1,np
                 cnt=cnt+1
-#ifndef MODEL_THETA_L
+#ifdef MODEL_THETA_L
+                elem(ie)%state%VTheta_dp(i,j,k,tl) = var3d(cnt)
+#else
                 elem(ie)%state%T(i,j,k,tl) = var3d(cnt)
 #endif
              end do
