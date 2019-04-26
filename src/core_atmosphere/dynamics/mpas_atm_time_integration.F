@@ -505,8 +505,6 @@ module atm_time_integration
 
          RK3_DYNAMICS : do rk_step = 1, 3  ! Runge-Kutta loop
 
-            write(0,*) ' dynamics rk step ',rk_step
-
             ! recompute vertically implicit coefficients if necessary
             if( (config_time_integration_order == 3) .and. (rk_step == 2)) then
 
@@ -811,8 +809,6 @@ module atm_time_integration
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
             do small_step = 1, number_sub_steps(rk_step)
-
-               write(0,*) ' acoustic step ',small_step
 
                call mpas_pool_get_subpool(domain % blocklist % structs, 'diag', diag)
                call mpas_pool_get_field(diag, 'rho_pp', rho_pp_field)
@@ -1391,7 +1387,6 @@ module atm_time_integration
 !$OMP PARALLEL DO
                do thread=1,nThreads
                   if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
-                     write(0,*) ' calling advance_scalars '
                      call atm_advance_scalars( tend, state, diag, mesh, block % configs, num_scalars, nCells, nVertLevels, rk_timestep(rk_step), &
                                              cellThreadStart(thread), cellThreadEnd(thread), &
                                              vertexThreadStart(thread), vertexThreadEnd(thread), &
@@ -1401,10 +1396,8 @@ module atm_time_integration
                                              edgeSolveThreadStart(thread), edgeSolveThreadEnd(thread), &
                                              horiz_flux_array, rk_step, config_time_integration_order, &
                                              advance_density=.true., scalar_tend=scalar_tend_array, rho_zz_int=rho_zz_int )
-                     write(0,*) ' returned from advance_scalars '
                   else
       
-                     write(0,*) ' calling advance_scalars_mono '
                      block % domain = domain 
                      call atm_advance_scalars_mono( block, tend, state, diag, mesh, block % configs, nCells, nEdges, nVertLevels, rk_timestep(rk_step), &
                                              cellThreadStart(thread), cellThreadEnd(thread), &
@@ -1416,7 +1409,6 @@ module atm_time_integration
                                              scalar_old_arr, scalar_new_arr, s_max_arr, s_min_arr, wdtn_arr, &
                                              scale_array, flux_array, flux_upwind_tmp_arr, flux_tmp_arr, &
                                              advance_density=.true., rho_zz_int=rho_zz_int)
-                     write(0,*) ' returned from advance_scalars_mono '
                   end if
                end do
 !$OMP END PARALLEL DO
@@ -1507,8 +1499,6 @@ module atm_time_integration
 
                   deallocate(scalars_driving)
 
-                  write(0,*) ' finished resetting scalar values '
-                  
                   block => block % next
                end do
 
@@ -1730,8 +1720,6 @@ module atm_time_integration
 
             deallocate(scalars_driving)
 
-            write(0,*) ' finished resetting scalar values '
-            
             block => block % next
          end do
 
@@ -3950,8 +3938,6 @@ module atm_time_integration
       !  Note, however, that we enforce positive-definiteness in this update.
       !  The transport will maintain this positive definite solution and optionally, shape preservation (monotonicity).
 
-      write(0,*) ' in mono, point 1 '
-
       do iCell=cellSolveStart,cellSolveEnd
 !DIR$ IVDEP
       do k = 1,nVertLevels
@@ -3969,7 +3955,6 @@ module atm_time_integration
       end do
       end do
 
-      write(0,*) ' in mono, point 2 '
 
 !$OMP BARRIER
 !$OMP MASTER
@@ -3977,8 +3962,6 @@ module atm_time_integration
 !$OMP END MASTER
 !$OMP BARRIER
 
-
-      write(0,*) ' in mono, point 3 '
 
       !
       ! Runge Kutta integration, so we compute fluxes from scalar_new values, update starts from scalar_old
@@ -4014,14 +3997,9 @@ module atm_time_integration
 !$OMP BARRIER
       end if
 
-      write(0,*) ' in mono, point 4 '
-
       ! next, do one scalar at a time
 
       do iScalar = 1, num_scalars
-
-         write(0,*) ' scalar mono ',iScalar
-
 
          do iCell=cellStart,cellEnd
 !DIR$ IVDEP
