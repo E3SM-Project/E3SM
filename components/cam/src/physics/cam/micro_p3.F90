@@ -412,7 +412,7 @@ contains
     real(rtype), dimension(its:ite,kts:kte) :: lamr
     real(rtype), dimension(its:ite,kts:kte) :: logn0r
     real(rtype), dimension(its:ite,kts:kte) :: mu_c
-    !real(rtype), dimension(its:ite,kts:kte) :: diag_effr   (currently not used)
+
     real(rtype), dimension(its:ite,kts:kte) :: nu
     real(rtype), dimension(its:ite,kts:kte) :: cdist
     real(rtype), dimension(its:ite,kts:kte) :: cdist1
@@ -551,6 +551,7 @@ contains
 
     ! Compute time scale factor over which to apply soft rain lambda limiter
     ! note: '1./max(30.,dt)' = '1.*min(1./30., 1./dt)'
+<<<<<<< 762c647149c32571b31d5b39371cf5dfc9efd1be
     timeScaleFactor = min(1._rtype/120._rtype, odt)
 
     prt_liq   = 0._rtype
@@ -564,7 +565,6 @@ contains
     ze_ice    = 1.e-22_rtype
     ze_rain   = 1.e-22_rtype
     diag_effc = 10.e-6_rtype ! default value
-    !diag_effr = 25.e-6 ! default value
     diag_effi = 25.e-6_rtype ! default value
     diag_vmi  = 0._rtype
     diag_di   = 0._rtype
@@ -2280,20 +2280,6 @@ contains
                   !                        cdistr(i,k),logn0r(i,k))
                   tmp1,tmp2,rcldm(i,k))
 
-             ! hm, turn off soft lambda limiter
-             ! impose size limits for rain with 'soft' lambda limiter
-             ! (adjusts over a set timescale rather than within one timestep)
-             ! dum2 = (qr(i,k)/(pi*rhow*nr(i,k)))**thrd
-             ! if (dum2.gt.dbrk) then
-             !    dum   = qr(i,k)*cons4
-             !   !dum1  = (dum-nr(i,k))/max(60.,dt)  !time scale for adjustment is 60 s
-             !    dum1  = (dum-nr(i,k))*timeScaleFactor
-             !     nr(i,k) = nr(i,k)+dum1*dt
-             ! endif
-
-             !diag_effr(i,k) = 0.5*(mu_r(i,k)+3.)/lamr(i,k)    (currently not used)
-             ! ze_rain(i,k) = n0r(i,k)*720./lamr(i,k)**3/lamr(i,k)**3/lamr(i,k)
-             ! non-exponential rain:
              ze_rain(i,k) = nr(i,k)*(mu_r(i,k)+6._rtype)*(mu_r(i,k)+5._rtype)*(mu_r(i,k)+4._rtype)*           &
                   (mu_r(i,k)+3._rtype)*(mu_r(i,k)+2._rtype)*(mu_r(i,k)+1._rtype)/lamr(i,k)**6
              ze_rain(i,k) = max(ze_rain(i,k),1.e-22_rtype)
