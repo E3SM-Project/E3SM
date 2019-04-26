@@ -462,8 +462,6 @@ module cime_comp_mod
   real(r8) :: reprosum_diffmax       ! setup reprosum, set rel_diff_max
   logical  :: reprosum_recompute     ! setup reprosum, recompute if tolerance exceeded
 
-  logical  :: tprof_in_init=.false.  ! write performance data checkpoints during initialization
-
   logical  :: output_perf = .false.  ! require timing data output for this pe
   logical  :: in_first_day = .true.  ! currently simulating first day
 
@@ -1044,8 +1042,7 @@ contains
          reprosum_use_ddpdd=reprosum_use_ddpdd     , &
          reprosum_allow_infnan=reprosum_allow_infnan, &
          reprosum_diffmax=reprosum_diffmax         , &
-         reprosum_recompute=reprosum_recompute, &
-         tprof_in_init=tprof_in_init               , &
+         reprosum_recompute=reprosum_recompute     , &
          max_cplstep_time=max_cplstep_time)
 
     ! above - cpl_decomp is set to pass the cpl_decomp value to seq_mctext_decomp
@@ -1399,15 +1396,6 @@ contains
     call t_stopf('CPL:comp_list_all')
 
     call t_stopf('CPL:init_comps')
-
-    if (tprof_in_init) then
-       ! --- Write out performance data
-       call t_set_prefixf("CPL:init_comps_")
-       call cime_write_performance_checkpoint(output_perf,&
-            trim(tchkpt_dir)//'/model_timing'//trim(cpl_inst_tag)//'_init_comps',&
-            mpicom_GLOID)
-       call t_unset_prefixf()
-    endif
 
     !----------------------------------------------------------
     !| Determine coupling interactions based on present and prognostic flags
@@ -2186,15 +2174,6 @@ contains
     call t_adj_detailf(-1)
     call t_stopf('CPL:cime_init')
 
-    if (tprof_in_init) then
-       ! --- Write out performance data
-       call t_set_prefixf("CPL:cime_init_")
-       call cime_write_performance_checkpoint(output_perf,&
-            trim(tchkpt_dir)//'/model_timing'//trim(cpl_inst_tag)//'_cime_init', &
-            mpicom_GLOID)
-       call t_unset_prefixf()
-    endif
-
   end subroutine cime_init
 
   !===============================================================================
@@ -2251,6 +2230,15 @@ contains
     force_stop = .false.
     force_stop_ymd = -1
     force_stop_tod = -1
+
+    ! --- Write out performance data for initialization
+    call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd, curr_tod=tod)
+    write(timing_file,'(a,i8.8,a1,i5.5)') &
+          trim(tchkpt_dir)//"/model_timing"//trim(cpl_inst_tag)//"_",ymd,"_",tod
+
+    call t_set_prefixf("CPL:INIT_")
+    call cime_write_performance_checkpoint(output_perf,timing_file,mpicom_GLOID)
+    call t_unset_prefixf()
 
     !|----------------------------------------------------------
     !| Beginning of driver time step loop
