@@ -4,7 +4,7 @@
 # NH:  10 nodes ?  
 #
 #SBATCH --job-name d20-theta
-#XXSBATCH -p ec
+#XXSBATCH -p short,batch
 #XXSBATCH --account=FY150001
 #SBATCH -p acme
 #SBATCH --account=condo
@@ -18,9 +18,6 @@ if ( ${?SLURM_NNODES} ) then
     set NCPU = $SLURM_NNODES
     if ( ${?SLURM_CPUS_ON_NODE} ) then   
        @ NCPU *= $SLURM_CPUS_ON_NODE 
-    endif
-    if ( ${?SLURM_TASKS_PER_NODE} ) then   
-       @ NCPU *= $SLURM_TASKS_PER_NODE
     endif
     @ NCPU /= $OMP_NUM_THREADS
 endif
