@@ -48,7 +48,7 @@ module micro_p3
        rho_rimeMax,inv_rho_rimeMax,max_total_Ni,dbrk,nmltratio,clbfact_sub,  &
        clbfact_dep,iparam, isize, densize, rimsize, rcollsize, tabsize, colltabsize, &
        get_latent_heat, zerodegc, pi=>pi_e3sm, dnu, &
-       rainfrze, icenuct, homogfrze, iulog=>iulog_e3sm, &
+      rainfrze, icenuct, homogfrze, iulog=>iulog_e3sm, &
        masterproc=>masterproc_e3sm, calculate_incloud_mixingratios, mu_r_constant, &
        lookup_table_1a_dum1_c
 
@@ -463,17 +463,7 @@ contains
     real(rtype) :: qcshd     ! source for rain mass due to cloud water/ice collision above freezing and shedding or wet growth and shedding
     real(rtype) :: rhorime_c ! density of rime (from cloud)
     real(rtype) :: ncshdc    ! source for rain number due to cloud water/ice collision above freezing  and shedding (combined with NRSHD in the paper)
-
-    ! AaronDonahue, The following microphysical processes are not currently used
-    ! in the code so they have been deleted pending future improvements.
-!    real(rtype) :: nchetc    ! contact freezing droplets
-!    real(rtype) :: nimul     ! change in Ni, ice multiplication from rime-splintering (not included in the paper)
-!    real(rtype) :: nrhetc    ! contact freezing rain
-!    real(rtype) :: qchetc    ! contact freezing droplets
-!    real(rtype) :: qrhetc    ! contact freezing rain
-!    real(rtype) :: qrmul     ! change in q, ice multiplication from rime-splitnering of rain (not included in the paper)
-!    real(rtype) :: qcmul     ! change in q, ice multiplication from rime-splitnering of cloud water (not included in the paper)
-
+   
     logical   :: log_wetgrowth
 
     real(rtype) :: Eii_fact,epsi
@@ -495,10 +485,10 @@ contains
          flux_qx,flux_nx,                     &
          flux_nit,flux_qir,flux_bir
 
-    real(rtype)    :: lammax,lammin,mu,dv,sc,dqsdt,ab,kap,epsr,epsc,xx,aaa,epsilon,sigvl,epsi_tot, &
-         aact,sm1,sm2,uu1,uu2,dum,dum1,dum2,    &
+    real(rtype)    :: lammax,lammin,mu,dv,sc,dqsdt,ab,kap,epsr,epsc,xx,aaa,epsilon,epsi_tot, &
+         dum,dum1,dum2,    &
          dumqv,dumqvs,dums,ratio,qsat0,dum3,dum4,dum5,dum6,rdumii, &
-         rdumjj,dqsidt,abi,dumqvi,rhop,v_impact,ri,iTc,D_c,tmp1,  &
+         rdumjj,dqsidt,abi,dumqvi,rhop,V_impact,ri,iTc,D_c,tmp1,  &
          tmp2,inv_dum3,odt,oxx,oabi,     &
          fluxdiv_qit,fluxdiv_nit,fluxdiv_qir,fluxdiv_bir,prt_accum, &
          fluxdiv_qx,fluxdiv_nx,Co_max,dt_sub,      &
@@ -528,14 +518,11 @@ contains
     real(rtype)    :: f1pr08   ! collection of rain mass by ice
     real(rtype)    :: f1pr09   ! minimum ice number (lambda limiter)
     real(rtype)    :: f1pr10   ! maximum ice number (lambda limiter)
-!    real(rtype)    :: f1pr11   ! not used
-!    real(rtype)    :: f1pr12   ! not used
     real(rtype)    :: f1pr13   ! reflectivity
     real(rtype)    :: f1pr14   ! melting (ventilation term)
     real(rtype)    :: f1pr15   ! mass-weighted mean diameter
     real(rtype)    :: f1pr16   ! mass-weighted mean particle density
-!    real(rtype)    :: f1pr17   ! ice-ice category collection change in number (not used)
-!    real(rtype)    :: f1pr18   ! ice-ice category collection change in mass (not used)
+
 
     !--These will be added as namelist parameters in the future
     logical, parameter :: debug_ON     = .false.  !.true. to switch on debugging checks/traps throughout code
