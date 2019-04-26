@@ -166,7 +166,7 @@ contains
          pkgColumnTracerLevelIceActive, &
          pkgColumnTracerPondsActive, &
          pkgColumnTracerLidThicknessActive, &
-         pkgColumnTracerSnowDensityActive, &
+         pkgColumnTracerEffectiveSnowDensityActive, &
          pkgColumnTracerSnowGrainRadiusActive, &
          pkgColumnTracerAerosolsActive, &
          pkgColumnBiogeochemistryActive, &
@@ -235,8 +235,8 @@ contains
                                                                pkgColumnTracerPondsActive)
     call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerLidThicknessActive', &
                                                                pkgColumnTracerLidThicknessActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerSnowDensityActive', &
-                                                               pkgColumnTracerSnowDensityActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerEffectiveSnowDensityActive', &
+                                                               pkgColumnTracerEffectiveSnowDensityActive)
     call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerSnowGrainRadiusActive', &
                                                                pkgColumnTracerSnowGrainRadiusActive)
     call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerAerosolsActive', &
@@ -322,7 +322,7 @@ contains
     endif
 
     ! snow density
-    if (pkgColumnTracerSnowDensityActive) then
+    if (pkgColumnTracerEffectiveSnowDensityActive) then
        call add_tracer_to_tracer_linked_list(tracersHead, 'snowIceMass',    'snowVolumeCategory')
        call add_tracer_to_tracer_linked_list(tracersHead, 'snowLiquidMass', 'snowVolumeCategory')
        call add_tracer_to_tracer_linked_list(tracersHead, 'snowDensity',    'snowVolumeCategory')
