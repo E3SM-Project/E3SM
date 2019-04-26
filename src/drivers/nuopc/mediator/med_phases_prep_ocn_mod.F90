@@ -151,6 +151,7 @@ contains
     real(R8), pointer   :: Faox_lwup(:)
     real(R8), pointer   :: Faxa_lwdn(:)
     real(R8), pointer   :: dataptr_i(:), dataptr_o(:)
+    real(R8), pointer   :: dataptr2d_i(:,:), dataptr2d_o(:,:)
     real(R8)            :: ifrac_scaled, ofrac_scaled
     real(R8)            :: ifracr_scaled, ofracr_scaled
     real(R8)            :: frac_sum
@@ -334,12 +335,9 @@ contains
           fswabsi  = Faxa_swndr(n) * (1.0_R8 - albnir_dir) + Faxa_swndf(n) * (1.0_R8 - albnir_dif)
           Foxx_swnet(n) = fswabsv + fswabsi
 
-          if (export_swnet_afracr) then
-             Foxx_swnet_afracr(n) = fswabsv + fswabsi
-          end if
-
           ! Add swpen from sea ice if sea ice is present
           if (is_local%wrap%comp_present(compice)) then
+
              if (trim(coupling_mode) == 'cesm') then
                 ifrac_scaled = ifrac(n)
                 ofrac_scaled = ofrac(n)
@@ -359,7 +357,12 @@ contains
                 ofracr_scaled = ofrac(n)
                 ifrac_scaled  = ifrac(n)
              end if
-             Foxx_swnet(n) = ofracr_scaled*Foxx_swnet(n) + ifrac_scaled*Fioi_swpen(n)
+
+             Foxx_swnet(n) = ofracr_scaled*(fswabsv + fswabsi) + ifrac_scaled*Fioi_swpen(n)
+
+             if (export_swnet_afracr) then
+                Foxx_swnet_afracr(n) = ofracr_scaled*(fswabsv + fswabsi) 
+             end if
 
              if (export_swnet_by_bands) then
                 if (import_swpen_by_bands) then
@@ -384,34 +387,13 @@ contains
        end do
 
        ! Output to ocean per ice thickness fraction and sw penetrating into ocean
-       if ( FB_fldchk(is_local%wrap%FBImp(compice,compice), 'Si_ifrac_n', rc=rc) .and. &
-            FB_fldchk(is_local%wrap%FBExp(compocn)        , 'Si_ifrac_n', rc=rc)) then
-
-          call FB_GetFldPtr(is_local%wrap%FBImp(compice,compice), 'Si_ifrac_n', dataptr_i, rc=rc)
-          if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Si_ifrac_n', dataptr_o, rc=rc)
-          if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          dataptr_o(:) = dataptr_i(:)
-       end if
-
-       if ( FB_fldchk(is_local%wrap%FBImp(compice,compice), 'Fioi_swpen_ifrac_n', rc=rc) .and. &
-            FB_fldchk(is_local%wrap%FBExp(compocn)        , 'Fioi_swpen_ifrac_n', rc=rc)) then
-
-          call FB_GetFldPtr(is_local%wrap%FBImp(compice,compice), 'Fioi_swpen_ifrac_n', dataptr_i, rc=rc)
-          if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Fioi_swpen_ifrac_n', dataptr_o, rc=rc)
-          if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          dataptr_o(:) = dataptr_i(:)
-       end if
-
        if ( FB_fldchk(is_local%wrap%FBExp(compocn), 'Sf_afrac', rc=rc)) then
-          call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Sf_afrac', dataptr_o, rc=rc)
+          call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Sf_afrac', fldptr1=dataptr_o, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
           dataptr_o(:) = ofrac(:)
        end if
-
        if ( FB_fldchk(is_local%wrap%FBExp(compocn), 'Sf_afracr', rc=rc)) then
-          call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Sf_afracr', dataptr_o, rc=rc)
+          call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Sf_afracr', fldptr1=dataptr_o, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
           dataptr_o(:) = ofracr(:)
        end if

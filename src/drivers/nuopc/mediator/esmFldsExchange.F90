@@ -1145,7 +1145,11 @@ contains
           call addfld(fldListTo(compocn)%flds, 'Foxx_swnet_afracr')
        else
           call addmap(fldListFr(compice)%flds, 'Si_ifrac_n'        , compocn, mapfcopy, 'unset', 'unset')
+          call addmrg(fldListTo(compocn)%flds, 'Si_ifrac_n', mrg_from1=compice, mrg_fld1='Si_ifrac_n', &
+               mrg_type1='copy')
           call addmap(fldListFr(compice)%flds, 'Fioi_swpen_ifrac_n', compocn, mapfcopy, 'unset', 'unset')
+          call addmrg(fldListTo(compocn)%flds, 'Fioi_swpen_ifrac_n', mrg_from1=compice, mrg_fld1='Fioi_swpen_ifrac_n', &
+               mrg_type1='copy')
           ! Note that 'Sf_afrac, 'Sf_afracr' and 'Foxx_swnet_afracr' will have explicit merging in med_phases_prep_ocn
        end if
     end if
