@@ -1,6 +1,41 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 4-26-2019
+Tag: cime5.6.15
+Answer Changes: None
+Tests: scripts_regression_tests.py, by hand, SMS_P45.f19_g16.X 
+       manually test archive_metadata
+Dependencies:
+
+Brief Summary:
+    - Improve reporting of invalid settings in REFCASE when GET_REFCASE=TRUE.
+    - Remove ESMF modules on edison.
+    - Fix issue with setting 2 io tasks.
+    - maint-5.6 archive_metadata update.
+
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+a1c0e9d Merge pull request #3095 from jedwards4b/get_refcase_errors
+4abc89e Merge pull request #3080 from ESMCI/fischer/edison
+bfd3e22 Merge pull request #3078 from jedwards4b/shr_pio_bug_fix
+93bd063 Merge pull request #3076 from bertinia/maint-5.6_archive_metadata
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/config_machines.xml
+M       scripts/Tools/archive_metadata
+M       scripts/lib/CIME/case/check_input_data.py
+M       src/share/util/shr_pio_mod.F90
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 4-08-2019
 Tag: cime5.6.14
 Answer Changes: None
