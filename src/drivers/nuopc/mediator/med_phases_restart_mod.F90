@@ -38,7 +38,7 @@ contains
     use med_constants_mod     , only : med_constants_noleap
     use med_constants_mod     , only : med_constants_gregorian
     use med_constants_mod     , only : SecPerDay => med_constants_SecPerDay
-    use med_internalstate_mod , only : InternalState
+    use med_internalstate_mod, only : mastertask, logunit, InternalState
     use med_io_mod            , only : med_io_write, med_io_wopen, med_io_enddef
     use med_io_mod            , only : med_io_close, med_io_date2yyyymmdd
     use med_io_mod            , only : med_io_sec2hms
@@ -177,10 +177,11 @@ contains
        if (dbug_flag > 1) then
           call ESMF_LogWrite(trim(subname)//": nexttime = "//trim(nexttimestr), ESMF_LOGMSG_INFO, rc=dbrc)
        endif
-
-       call ESMF_ClockPrint(clock, options="currTime", preString="-------->"//trim(subname)//" mediating for: ", rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
+       if(mastertask) then
+          call ESMF_ClockPrint(clock, options="currTime", preString="-------->"//trim(subname)//" mediating for: ", unit=cvalue, rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          write(logunit, *) trim(cvalue)
+       endif
        timediff = nexttime - reftime
        call ESMF_TimeIntervalGet(timediff, d=day, s=sec, rc=rc)
        dayssince = day + sec/real(SecPerDay,R8)
