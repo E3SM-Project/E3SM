@@ -288,7 +288,7 @@ module seaice_core_interface
           pkgTracerVerticalIronActive, &
           pkgTracerZAerosolsActive, &
           pkgTracerZSalinityActive, &
-          pkgColumnTracerSnowDensityActive, &
+          pkgColumnTracerEffectiveSnowDensityActive, &
           pkgColumnTracerSnowGrainRadiusActive
 
      ! other packages
@@ -356,7 +356,7 @@ module seaice_core_interface
      !pkgTracerVerticalIron
      !pkgTracerZAerosols
      !pkgTracerZSalinity
-     !pkgColumnTracerSnowDensity
+     !pkgColumnTracerEffectiveSnowDensity
      !pkgColumnTracerSnowGrainRadius
 
      call MPAS_pool_get_config(configPool, "config_use_ice_age", config_use_ice_age)
@@ -415,7 +415,7 @@ module seaice_core_interface
      call MPAS_pool_get_package(packagePool, "pkgTracerVerticalIronActive", pkgTracerVerticalIronActive)
      call MPAS_pool_get_package(packagePool, "pkgTracerZAerosolsActive", pkgTracerZAerosolsActive)
      call MPAS_pool_get_package(packagePool, "pkgTracerZSalinityActive", pkgTracerZSalinityActive)
-     call MPAS_pool_get_package(packagePool, "pkgColumnTracerSnowDensityActive", pkgColumnTracerSnowDensityActive)
+     call MPAS_pool_get_package(packagePool, "pkgColumnTracerEffectiveSnowDensityActive", pkgColumnTracerEffectiveSnowDensityActive)
      call MPAS_pool_get_package(packagePool, "pkgColumnTracerSnowGrainRadiusActive", pkgColumnTracerSnowGrainRadiusActive)
 
      use_meltponds = (config_use_cesm_meltponds .or. config_use_level_meltponds .or. config_use_topo_meltponds)
@@ -452,7 +452,7 @@ module seaice_core_interface
      pkgTracerZAerosolsActive            = config_use_zaerosols
      pkgTracerZSalinityActive            = config_use_vertical_zsalinity
 
-     pkgColumnTracerSnowDensityActive     = config_use_effective_snow_density
+     pkgColumnTracerEffectiveSnowDensityActive = config_use_effective_snow_density
      pkgColumnTracerSnowGrainRadiusActive = config_use_snow_grain_radius
 
      if (.not. config_use_column_package) then
@@ -486,8 +486,8 @@ module seaice_core_interface
         pkgTracerVerticalIronActive         = .false.
         pkgTracerZAerosolsActive            = .false.
         pkgTracerZSalinityActive            = .false.
-        pkgColumnTracerSnowDensityActive     = .false.
-        pkgColumnTracerSnowGrainRadiusActive = .false.
+        pkgColumnTracerEffectiveSnowDensityActive = .false.
+        pkgColumnTracerSnowGrainRadiusActive      = .false.
      endif
 
      if (.not. config_use_column_biogeochemistry .and. config_use_column_package) then

@@ -224,6 +224,9 @@
          zs1         , & ! depth of snow layer boundaries (m)
          zs2             ! adjusted depths, with equal hslyr (m)
 
+      character(len=char_len_long) :: &
+         warning  
+
       !-----------------------------------------------------------------
       ! Conservation checks
       !-----------------------------------------------------------------

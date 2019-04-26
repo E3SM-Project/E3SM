@@ -275,14 +275,14 @@
     config_algae_absorption_coefficient = 0.6
 /
 &snow
-    config_snow_redistribution = 'none'
-    config_fallen_snow_radius = 54.4
+    config_snow_redistribution_scheme = 'none'
+    config_fallen_snow_radius = 54.526
     config_use_snow_liquid_ponds = false
     config_new_snow_density = 100.0
     config_max_snow_density = 450.0
     config_minimum_wind_compaction = 10.0
     config_wind_compaction_factor = 27.3
-    config_max_dry_snow_radius = 2800.0
+    config_max_dry_snow_radius = 1500.0
 /
 &meltponds
     config_snow_to_ice_transition_depth = 0.0
