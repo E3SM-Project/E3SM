@@ -257,6 +257,13 @@
                      possible_values="0 $\leq$ config_xnutr $\leq$ 1"/>
         </nml_record>
 
+        <nml_record name="limited_area" in_defaults="true">
+                <nml_option name="config_apply_lbcs" type="logical" default_value="false"
+                     units="-"
+                     description="Whether to apply lateral boundary conditions"
+                     possible_values="true or false; this option must be set to true for limited-area simulations and false for global simulations"/>
+	</nml_record>
+
         <nml_record name="io" in_defaults="true">
                 <nml_option name="config_restart_timestamp_name" type="character" default_value="restart_timestamp" in_defaults="false"
                      units="-"

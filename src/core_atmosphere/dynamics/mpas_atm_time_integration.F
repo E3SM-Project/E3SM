@@ -64,7 +64,7 @@ module atm_time_integration
    real (kind=RKIND), dimension(:,:), allocatable :: rt_driving_values ! regional_MPAS addition 
    real (kind=RKIND), dimension(:,:), allocatable :: rho_driving_values ! regional_MPAS addition 
    integer, dimension(:), pointer :: bdyMaskEdge ! regional_MPAS addition
-   logical, parameter :: regional_mpas = .true.
+   logical, pointer :: config_apply_lbcs
    
    ! Used in compute_solve_diagnostics
    real (kind=RKIND), allocatable, dimension(:,:) :: ke_vertex
@@ -108,6 +108,7 @@ module atm_time_integration
       blocklist => domain % blocklist
 
       call mpas_pool_get_config(domain % blocklist % configs, 'config_time_integration', config_time_integration)
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_apply_lbcs', config_apply_lbcs)
 
       if (trim(config_time_integration) == 'SRK3') then
          call atm_srk3(domain, dt, itimestep)
@@ -666,7 +667,7 @@ module atm_time_integration
           
 !------------------------------------------------------------------------------------------------------------------------
 
-            if (regional_mpas) then  ! adjust boundary tendencies for regional_MPAS dry dynamics in the specified zone
+            if (config_apply_lbcs) then  ! adjust boundary tendencies for regional_MPAS dry dynamics in the specified zone
 
                block => domain % blocklist
                do while (associated(block))
@@ -917,7 +918,7 @@ module atm_time_integration
 
 !-------------------------------------------------------------------
 
-            if (regional_mpas) then
+            if (config_apply_lbcs) then
 
                ! First, (re)set the value of u and ru in the specified zone at the outermost edge (we will reset all for now).
                ! atm_recover_large_step_variables will not have set outermost edge velocities correctly.
@@ -1160,7 +1161,7 @@ module atm_time_integration
 
             ! set the zero-gradient condition on w for regional_MPAS
             
-            if ( regional_mpas ) then  ! regional_MPAS addition
+            if ( config_apply_lbcs ) then  ! regional_MPAS addition
               block => domain % blocklist
               do while (associated(block))
 
@@ -1398,7 +1399,7 @@ module atm_time_integration
 
 !------------------------------------------------------------------------------------------------------------------------
 
-            if (regional_mpas) then  ! adjust boundary tendencies for regional_MPAS scalar transport
+            if (config_apply_lbcs) then  ! adjust boundary tendencies for regional_MPAS scalar transport
 
                call mpas_pool_get_field(state, 'scalars', scalars_field, 2)  ! need to fill halo for horizontal filter
                call mpas_dmpar_exch_halo_field(scalars_field)
@@ -1563,7 +1564,7 @@ module atm_time_integration
       !
 #endif
 
-      if (regional_mpas) then  ! reset boundary values of rtheta in the specified zone - microphysics has messed with them
+      if (config_apply_lbcs) then  ! reset boundary values of rtheta in the specified zone - microphysics has messed with them
 
          block => domain % blocklist
          do while (associated(block))
@@ -1605,7 +1606,7 @@ module atm_time_integration
       end if  ! regional_MPAS addition
 
 
-      if (regional_mpas) then  ! adjust boundary values for regional_MPAS scalar transport
+      if (config_apply_lbcs) then  ! adjust boundary values for regional_MPAS scalar transport
 
          call mpas_pool_get_field(state, 'scalars', scalars_field, 2)  ! need to fill halo for horizontal filter
          call mpas_dmpar_exch_halo_field(scalars_field)
@@ -3504,7 +3505,7 @@ module atm_time_integration
 
       do iEdge=edgeStart,edgeEnd
 
-         if( (.not.regional_mpas) .or. (bdyMaskEdge(iEdge) .lt. nRelaxZone-1) )  then  ! full flux calculation
+         if( (.not.config_apply_lbcs) .or. (bdyMaskEdge(iEdge) .lt. nRelaxZone-1) )  then  ! full flux calculation
 
          select case(nAdvCellsForEdge(iEdge))
 
@@ -3554,7 +3555,7 @@ module atm_time_integration
 
          end select
 
-         else if(regional_mpas .and. (bdyMaskEdge(iEdge) .ge. nRelaxZone-1) .and. (bdyMaskEdge(iEdge) .le. nRelaxZone) ) then
+         else if(config_apply_lbcs .and. (bdyMaskEdge(iEdge) .ge. nRelaxZone-1) .and. (bdyMaskEdge(iEdge) .le. nRelaxZone) ) then
           !  upwind flux evaluation for outermost 2 edges in specified zone
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
@@ -4162,7 +4163,7 @@ module atm_time_integration
                flux_tmp(k,iEdge) = dt * flux_arr(k,iEdge) - flux_upwind_tmp(k,iEdge)
             end do
 
-            if( regional_mpas .and. (bdyMaskEdge(iEdge) == nRelaxZone) .or. (bdyMaskEdge(iEdge) == nRelaxZone-1) ) then
+            if( config_apply_lbcs .and. (bdyMaskEdge(iEdge) == nRelaxZone) .or. (bdyMaskEdge(iEdge) == nRelaxZone-1) ) then
                flux_tmp(:,iEdge) = 0.
                flux_arr(:,iEdge) = flux_upwind_tmp(:,iEdge)
             end if
@@ -4258,7 +4259,7 @@ module atm_time_integration
                   flux_arr(k,iEdge) = dt*flux_arr(k,iEdge) - flux_upwind
                end do
 
-               if( regional_mpas .and. (bdyMaskEdge(iEdge) == nRelaxZone) .or. (bdyMaskEdge(iEdge) == nRelaxZone-1) ) then
+               if( config_apply_lbcs .and. (bdyMaskEdge(iEdge) == nRelaxZone) .or. (bdyMaskEdge(iEdge) == nRelaxZone-1) ) then
                   flux_arr(:,iEdge) = 0.
                end if
 
