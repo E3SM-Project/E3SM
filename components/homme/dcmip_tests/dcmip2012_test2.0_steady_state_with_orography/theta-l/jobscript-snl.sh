@@ -3,16 +3,13 @@
 # hydrostatic: 4 nodes: 3min
 # NH:  10 nodes ?  
 #
-#SBATCH -p ec
 #SBATCH --job-name d20-theta
-#SBATCH --account=FY150001
+#XXSBATCH -p ec
+#XXSBATCH --account=FY150001
+#SBATCH -p acme
+#SBATCH --account=condo
 #SBATCH -N 25
 #SBATCH --time=3:00:00
-#XXSBATCH -N 4
-#XXSBATCH --time=0:10:00
-#PBS -q acme
-#PBS -l walltime=0:30:00
-#PBS -l nodes=20    
 
 
 set OMP_NUM_THREADS = 1
