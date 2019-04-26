@@ -84,15 +84,6 @@
     </desc>
   </entry>
 
-  <entry id="TPROF_IN_INIT">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
-    <group>run_flags</group>
-    <file>env_run.xml</file>
-    <desc>Turns on checkpointing of timing data during initialization</desc>
-  </entry>
-
   <entry id="TIMER_DETAIL">
     <type>integer</type>
     <default_value>2</default_value>

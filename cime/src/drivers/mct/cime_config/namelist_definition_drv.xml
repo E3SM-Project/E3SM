@@ -2109,18 +2109,6 @@
     </values>
   </entry>
 
-  <entry id="tprof_in_init" modify_via_xml="TPROF_IN_INIT">
-    <type>logical</type>
-    <category>performance</category>
-    <group>seq_infodata_inparm</group>
-    <desc>
-      Turns on checkpointing of timing data during initialization
-    </desc>
-    <values>
-      <value>$TPROF_IN_INIT</value>
-    </values>
-  </entry>
-
   <entry id="pause_option" modify_via_xml="PAUSE_OPTION">
     <type>char</type>
     <category>time</category>
