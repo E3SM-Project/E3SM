@@ -80,7 +80,7 @@ if cl_args.preserve_floodplain:
   subprocess.check_call(args, env=os.environ.copy())
 
 print 'Step 8. Create vtk file for visualization'
-args = ['./paraview_vtk_field_extractor.py',
+args = ['paraview_vtk_field_extractor.py',
         '--ignore_time',
         '-l',
         '-d', 'maxEdges=0',
