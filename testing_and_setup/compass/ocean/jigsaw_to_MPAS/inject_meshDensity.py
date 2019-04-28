@@ -7,7 +7,9 @@
 #   base_mesh.nc is the mpas netcdf file where meshDensity is added
 # Mark Petersen, 7/24/2018
 
-import matplotlib.pyplot as plt
+from __future__ import absolute_import, division, print_function, \
+    unicode_literals
+
 import numpy as np
 from scipy import interpolate
 import netCDF4 as nc4
@@ -18,7 +20,7 @@ rtod = 180.0 / np.pi
 if __name__ == "__main__":
     import sys
 
-    print 'Read cell width field from Matlab regular grid...'
+    print('Read cell width field from Matlab regular grid...')
     matData = sio.loadmat(sys.argv[1])
     # Add extra column in longitude to interpolate over the Date Line
     cellWidth = np.concatenate(
@@ -31,20 +33,20 @@ if __name__ == "__main__":
     LatPos[np.argmax(LatPos)] = np.pi / 2.0
     minCellWidth = cellWidth.min()
     meshDensityVsLatLon = (minCellWidth / cellWidth)**4
-    print '  minimum cell width in grid definition:', minCellWidth
-    print '  maximum cell width in grid definition:', cellWidth.max()
+    print('  minimum cell width in grid definition:', minCellWidth)
+    print('  maximum cell width in grid definition:', cellWidth.max())
 
     LON, LAT = np.meshgrid(LonPos, LatPos)
 
-    print 'Open unstructured MPAS mesh file...'
+    print('Open unstructured MPAS mesh file...')
     ds = nc4.Dataset(sys.argv[2], 'r+')
     meshDensity = ds.variables['meshDensity'][:]
 
-    print 'Preparing interpolation of meshDensity from lat/lon to mesh...'
+    print('Preparing interpolation of meshDensity from lat/lon to mesh...')
     meshDensityInterp = interpolate.LinearNDInterpolator(
         np.vstack((LAT.ravel(), LON.ravel())).T, meshDensityVsLatLon.ravel())
 
-    print 'Interpolating and writing meshDensity...'
+    print('Interpolating and writing meshDensity...')
     ds.variables['meshDensity'][:] = meshDensityInterp(
         np.vstack(
             (ds.variables['latCell'][:],

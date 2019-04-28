@@ -9,16 +9,11 @@ These groups of functions are used to define the cellWidth variable on
 regular lat/lon grids.  The cellWidth variable is a jigsaw input that
 defines the mesh.
 '''
+from __future__ import absolute_import, division, print_function, \
+    unicode_literals
+
 import numpy as np
-import argparse
-from netCDF4 import Dataset
 import matplotlib.pyplot as plt
-import numpy as np
-from scipy import spatial, io
-import timeit
-from mpl_toolkits.basemap import Basemap
-import inject_bathymetry
-import pprint
 plt.switch_backend('agg')
 
 # Constants

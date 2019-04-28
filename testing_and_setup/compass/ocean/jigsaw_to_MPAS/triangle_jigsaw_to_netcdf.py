@@ -24,13 +24,11 @@ the MPASMeshConverter.x to produce a valid MPAS mesh.
 5. Final mesh mesh.nc can then be used to create our initial condition files.
 
 """
-import sys
-import os
-import glob
-import shutil
+from __future__ import absolute_import, division, print_function, \
+    unicode_literals
+
 import numpy as np
 
-from netCDF4 import *
 from netCDF4 import Dataset as NetCDFFile
 from open_msh import readmsh
 

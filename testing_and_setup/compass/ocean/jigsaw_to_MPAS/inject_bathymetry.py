@@ -2,13 +2,14 @@
 # Simple script to inject bathymetry onto a mesh
 # Phillip Wolfram, 01/19/2018
 
-import matplotlib.pyplot as plt
+from __future__ import absolute_import, division, print_function, \
+    unicode_literals
+
 from open_msh import readmsh
 import numpy as np
 from scipy import interpolate
 import netCDF4 as nc4
 import timeit
-import pprint
 import os
 
 dtor = np.pi / 180.0
@@ -41,7 +42,7 @@ def interpolate_SRTM(lon_pts, lat_pts):
     # Interpolate inside each box
     start = timeit.default_timer()
     for i, box in enumerate(boxes):
-        print i + 1, "/", len(boxes)
+        print(i + 1, "/", len(boxes))
 
         # Get data inside box (plus a small overlap region)
         overlap = 0.1
@@ -68,7 +69,7 @@ def interpolate_SRTM(lon_pts, lat_pts):
         bathymetry[idx] = bathy_int
 
     end = timeit.default_timer()
-    print end - start, " seconds"
+    print(end - start, " seconds")
 
     return bathymetry
 
@@ -106,7 +107,7 @@ if __name__ == "__main__":
     elif os.path.isfile("topo.msh"):
         bathymetry = interpolate_topomsh(lon_mesh, lat_mesh)
     else:
-        print "Bathymetry data file not found"
+        print("Bathymetry data file not found")
         raise SystemExit(0)
 
     # Create new NetCDF variables in mesh file, if necessary

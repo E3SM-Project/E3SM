@@ -6,11 +6,10 @@ https://www.cs.cmu.edu/~quake/triangle.ele.html
 
 Only works for planar meshes.
 '''
+from __future__ import absolute_import, division, print_function, \
+    unicode_literals
+
 import sys
-import os
-import glob
-import shutil
-import numpy
 from netCDF4 import Dataset as NetCDFFile
 from optparse import OptionParser
 import collections
@@ -100,4 +99,4 @@ fele.write("# Generated from MPAS file: {}\n".format(options.mpasfile))
 fele.close()
 
 fin.close()
-print "Conversion complete."
+print("Conversion complete.")

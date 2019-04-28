@@ -6,7 +6,8 @@ Utility functions to read and manipulate JIGSAW meshes.
 Phillip J. Wolfram
 04/06/2017
 """
-
+from __future__ import absolute_import, division, print_function, \
+    unicode_literals
 
 import numpy as np
 

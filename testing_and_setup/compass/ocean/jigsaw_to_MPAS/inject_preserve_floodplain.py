@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import, division, print_function, \
+    unicode_literals
+
 import netCDF4 as nc4
-import argparse 
+import argparse
 
 if __name__ == "__main__":
 
@@ -15,6 +18,7 @@ if __name__ == "__main__":
 
     if 'cellSeedMask' not in nc_vars:
         nc_mesh.createVariable('cellSeedMask','i',('nCells'))
-    nc_mesh.variables['cellSeedMask'][:] = nc_mesh.variables['bathymetry'][:] < cl_args.floodplain_elevation
+    nc_mesh.variables['cellSeedMask'][:] = \
+        nc_mesh.variables['bathymetry'][:] < cl_args.floodplain_elevation
 
     nc_mesh.close()
