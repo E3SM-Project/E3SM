@@ -34,14 +34,10 @@ from optparse import OptionParser
 import xarray
 
 from geometric_features import GeometricFeatures
-from mpas_mesh_tool import conversion
-
-
-def removeFile(fileName):
-    try:
-        os.remove(fileName)
-    except OSError:
-        pass
+from mpas_tools import conversion
+from mpas_tools.io import write_netcdf
+from mpas_tools.ocean.coastline_alteration import widen_transect_edge_masks, \
+    add_critical_land_blockages, add_land_locked_cells_to_mask
 
 
 parser = OptionParser()
@@ -56,8 +52,11 @@ parser.add_option("--preserve_floodplain", action="store_true",
                   dest="preserve_floodplain", default=False)
 options, args = parser.parse_args()
 
+# required for compatibility with MPAS
+netcdfFormat = 'NETCDF3_64BIT'
+
 gf = GeometricFeatures(cacheLocation='{}'.format(options.path),
-                       remoteBranchOrTag='0.1')
+                       remoteBranchOrTag='convert_to_package')
 
 # start with the land coverage from Natural Earth
 fcLandCoverage = gf.read(componentName='natural_earth', objectType='region',
@@ -87,22 +86,10 @@ fcLandCoverage.to_geojson('land_coverage.geojson')
 # Create the land mask based on the land coverage, i.e. coastline data.
 dsBaseMesh = xarray.open_dataset('base_mesh.nc')
 dsLandMask = conversion.mask(dsBaseMesh, fcMask=fcLandCoverage)
-dsLandMask.to_netcdf('land_mask_1_from_land_coverage.nc')
 
-if options.with_critical_passages:
-    outMaskFile = 'land_mask_2_from_land_locked_cells.nc'
-else:
-    outMaskFile = 'land_mask_final.nc'
-
-# Add land-locked cells to land coverage mask.
-args = ['add_land_locked_cells_to_mask.py',
-        '-f', 'land_mask_1_from_land_coverage.nc',
-        '-o', outMaskFile,
-        '-m', 'base_mesh.nc',
-        '-l', '43.0',
-        '-n', '20']
-print("running {}".format(' '.join(args)))
-subprocess.check_call(args, env=os.environ.copy())
+dsLandMask = add_land_locked_cells_to_mask(dsLandMask, dsBaseMesh,
+                                           latitude_threshold=43.0,
+                                           nSweeps=20)
 
 # create seed points for a flood fill of the ocean
 # use all points in the ocean directory, on the assumption that they are, in
@@ -117,17 +104,11 @@ if options.with_critical_passages:
 
     # create masks from the transects
     dsCritPassMask = conversion.mask(dsBaseMesh, fcMask=fcCritPassages)
-    dsCritPassMask.to_netcdf('critical_passages_mask.nc')
 
     # Alter critical passages to be at least two cells wide, to avoid sea ice
     # blockage.
-    args = ['widen_transect_edge_masks.py',
-            '-f', 'critical_passages_mask.nc',
-            '-m', 'base_mesh.nc',
-            '-l', '43.0']
-    print("running {}".format(' '.join(args)))
-
-    subprocess.check_call(args, env=os.environ.copy())
+    dsCritPassMask = widen_transect_edge_masks(dsCritPassMask, dsBaseMesh,
+                                               latitude_threshold=43.0)
 
     # merge transects for critical land blockages into
     # critical_land_blockages.geojson
@@ -136,18 +117,8 @@ if options.with_critical_passages:
 
     # create masks from the transects for critical land blockages
     dsCritBlockMask = conversion.mask(dsBaseMesh, fcMask=fcCritBlockages)
-    dsCritPassMask.to_netcdf('critical_land_blockages_mask.nc')
 
-    # add critical land blockages to land_mask_final.nc
-    args = ['add_critical_land_blockages_to_mask.py',
-            '-f', 'land_mask_2_from_land_locked_cells.nc',
-            '-o', 'land_mask_final.nc',
-            '-b', 'critical_land_blockages_mask.nc']
-    print("running {}".format(' '.join(args)))
-
-    subprocess.check_call(args, env=os.environ.copy())
-
-    dsLandMask = xarray.open_dataset('land_mask_final.nc')
+    dsLandMask = add_critical_land_blockages(dsLandMask, dsCritBlockMask)
 
     # Cull the mesh based on the land mask while keeping critical passages open
     if options.preserve_floodplain:
@@ -159,25 +130,23 @@ if options.with_critical_passages:
 
 else:
 
-    dsLandMask = xarray.open_dataset('land_mask_final.nc')
-
+    # cull the mesh based on the land mask
     if options.preserve_floodplain:
         dsCulledMesh = conversion.cull(dsBaseMesh, dsMask=dsLandMask,
                                        dsPreserve=dsBaseMesh)
     else:
         dsCulledMesh = conversion.cull(dsBaseMesh, dsMask=dsLandMask)
 
-    # cull the mesh based on the land mask
-    dsCulledMesh = conversion.cull(dsBaseMesh, dsMask=dsLandMask)
-
 # create a mask for the flood fill seed points
 dsSeedMask = conversion.mask(dsCulledMesh, fcSeed=fcSeed)
 
 # cull the mesh a second time using a flood fill from the seed points
-dsCulledMesh = conversion.cull(dsCulledMesh, dsInverse=dsSeedMask)
-dsCulledMesh.to_netcdf('culled_mesh.nc')
+dsCulledMesh = conversion.cull(dsCulledMesh, dsInverse=dsSeedMask,
+                               graphInfoFileName='culled_graph.info')
+write_netcdf(dsCulledMesh, 'culled_mesh.nc', format=netcdfFormat)
 
 if options.with_critical_passages:
     # make a new version of the critical passages mask on the culled mesh
     dsCritPassMask = conversion.mask(dsCulledMesh, fcMask=fcCritPassages)
-    dsCritPassMask.to_netcdf('critical_passages_mask_final.nc')
+    write_netcdf(dsCritPassMask, 'critical_passages_mask_final.nc',
+                 format=netcdfFormat)
