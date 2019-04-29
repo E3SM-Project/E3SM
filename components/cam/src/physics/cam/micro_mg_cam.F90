@@ -207,6 +207,8 @@ integer :: &
    iclwp_five_idx,   &
    icswp_five_idx,   &
    cldfsnow_five_idx
+
+integer :: icwmrdp_idx
 #endif     
 
 ! Fields for UNICON
@@ -1240,6 +1242,8 @@ subroutine micro_mg_cam_init(pbuf2d)
    iclwp_five_idx   = pbuf_get_index('ICLWP_FIVE')
    icswp_five_idx   = pbuf_get_index('ICSWP_FIVE')
    cldfsnow_five_idx = pbuf_get_index('CLDFSNOW_FIVE')
+   
+   icwmrdp_idx  = pbuf_get_index('ICWMRDP')
 #endif   
 
    cmeliq_idx = pbuf_get_index('CMELIQ')
@@ -1383,6 +1387,8 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8), pointer, dimension(:,:) :: alst_mic_five
    real(r8), pointer, dimension(:,:) :: aist_mic_five
 
+   real(r8), pointer, dimension(:,:) ::  dp_icwmr ! Deep conv. cloud water
+
    real(r8) :: cldmax_five(state%psetcols,pver_five)
    real(r8) :: pdel_five(pcols,pver_five)
    real(r8) :: t_five_tend(pcols,pver_five)
@@ -1421,6 +1427,10 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
 !   real(r8) :: ast_five(pcols,pver_five)
 !   real(r8) :: alst_mic_five(pcols,pver_five)
 !   real(r8) :: aist_mic_five(pcols,pver_five)
+   real(r8) :: dpicwmr_five(pcols,pver_five)      ! dep. convection cloud water
+   real(r8) :: totg_ice(pcols,pver_five)      ! ice cloud water
+   real(r8) :: totg_liq(pcols,pver_five)      ! liq. cloud water
+
    real(r8) :: naai_five(pcols,pver_five)      ! ice nucleation number
    real(r8) :: naai_hom_five(pcols,pver_five)      ! ice nucleation number
    real(r8) :: npccn_five(pcols,pver_five)     ! liquid activation number tendency
@@ -1929,6 +1939,9 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8) :: dsout2_five(pcols,pver_five)
    real(r8) :: reff_rain_five(pcols,pver_five)
    real(r8) :: reff_snow_five(pcols,pver_five)
+! variable for convection cloud fraction and cloud water
+   real(r8) :: wrk1, cu0_frac, cu_icwmr, ls_frac, ls_icwmr, &
+               tot0_frac, tot_icwmr, kabsi, kabs, alpha
 #endif
 
    integer :: nlev   ! number of levels where cloud physics is done
@@ -3419,7 +3432,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
          icswp_five(i,k) = qsout(i,k) / max( mincld, cldfsnow_five(i,k) ) * pdel_five(i,k) / gravit
       end do
    end do  
-#endif
+# endif
 
    ! ------------------------------------------------------ !
    ! ------------------------------------------------------ !
@@ -3845,6 +3858,87 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       end do
    end do
    
+#endif
+
+#ifdef FIVE
+! 20190425
+! Add convective cloud/ice water in iclwp_five and iciwp_five
+   call pbuf_get_field(pbuf, icwmrdp_idx, dp_icwmr )
+
+   do i = 1, ncol
+      call linear_interp(state_loc%pmid(i,:),pmid_five(i,:), &
+                         dp_icwmr(i,1:pver),dpicwmr_five(i,1:pver_five),pver,pver_five)
+   end do
+ 
+   do k = 1, pver_five
+   do i = 1, ncol
+
+    ! For the moment calculate the emissivity based upon the ls clouds ice
+    ! fraction
+
+      wrk1 = min(1._r8,max(0._r8, q_five(i,k,ixcldice)/(q_five(i,k,ixcldice)+q_five(i,k,ixcldliq)+1.e-36_r8)))
+
+      if( (concld_five(i,k) < 0.01_r8) .or. (dpicwmr_five(i,k) < 1.e-12_r8) ) then
+      
+            cu_icwmr = 0._r8
+
+            ls_frac = ast_five(i,k)
+
+            if( ls_frac < 0.01_r8 ) then
+                ls_frac  = 0._r8
+                ls_icwmr = 0._r8
+            else
+                ls_icwmr = ( q_five(i,k,ixcldliq) + q_five(i,k,ixcldice) )/max(0.01_r8,ls_frac) ! Convert to IC value.
+            end if
+
+            tot0_frac = ls_frac
+            tot_icwmr = ls_icwmr
+      else
+
+          ! Select radiation constants (effective radii) for emissivity
+          ! averaging.
+
+            kabsi = 0.005_r8 + 1._r8/min(max(13._r8,rei_five(i,k)),130._r8)
+            kabs  = 0.090361_r8 * ( 1._r8 - wrk1 ) + kabsi * wrk1
+            alpha = -1.66_r8*kabs*pdel_five(i,k)/gravit*1000.0_r8
+
+          ! Selecting cumulus in-cloud water.   
+                     
+            cu_icwmr = (concld_five(i,k)*dpicwmr_five(i,k))/max(0.01_r8,concld_five(i,k))
+
+          ! Selecting total in-cloud water. 
+          ! Attribute large-scale/convective area fraction differently from
+          ! default.
+            ls_frac   = ast_five(i,k)
+            ls_icwmr  = (q_five(i,k,ixcldliq) + q_five(i,k,ixcldice))/max(0.01_r8,ls_frac) ! Convert to IC value.
+            tot0_frac = (ls_frac + concld_five(i,k))
+
+            tot_icwmr = (ls_frac*ls_icwmr + concld_five(i,k)*cu_icwmr)/max(0.01_r8,tot0_frac)
+
+      end if
+
+    ! Repartition convective cloud water into liquid and ice phase.
+    ! Currently, this partition is made using the ice fraction of stratus
+    ! condensate.
+    ! In future, we should use ice fraction explicitly computed from the
+    ! convection scheme.
+
+      totg_ice(i,k) = tot0_frac * tot_icwmr * wrk1
+      totg_liq(i,k) = tot0_frac * tot_icwmr * (1._r8-wrk1)
+
+   end do
+   end do
+
+       do k = top_lev, pver_five
+          do i = 1, ncol
+             ! Limits for in-cloud mixing ratios consistent with MG microphysics
+             ! in-cloud mixing ratio maximum limit of 0.005 kg/kg
+             iciwp_five(i,k) = min( totg_ice(i,k) / max(0.0001_r8,cld_five(i,k)),0.005_r8 ) * pdel_five(i,k) / gravit
+             iclwp_five(i,k) = min( totg_liq(i,k) / max(0.0001_r8,cld_five(i,k)),0.005_r8 ) * pdel_five(i,k) / gravit
+          end do
+       end do
+
+
 #endif
 
    ! ------------------------------------- !
