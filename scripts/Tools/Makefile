@@ -91,7 +91,10 @@ include $(CASEROOT)/Macros.make
 
 # Unless DEBUG mode is enabled, use NDEBUG to turn off assert statements.
 ifeq ($(strip $(DEBUG)),TRUE)
-   CPPDEFS += -DDEBUG
+  # e3sm still has components that cannot build with -DDEBUG
+  ifeq ($(CIME_MODEL),cesm)
+    CPPDEFS += -DDEBUG
+  endif
 else
    CPPDEFS += -DNDEBUG
 endif
@@ -120,7 +123,7 @@ endif
 ifeq ($(strip $(PIO_VERSION)),1)
   CPPDEFS += -DPIO1
 else
-  USE_CXX = true
+  USE_CXX = TRUE
 endif
 
 ifeq (,$(SHAREDPATH))
@@ -283,7 +286,6 @@ endif
 ifeq ($(strip $(USE_FMS)), TRUE)
   SLIBS += -lfms
 endif
-
 
 # Set MOAB info if it is being used
 ifeq ($(strip $(USE_MOAB)), TRUE)
