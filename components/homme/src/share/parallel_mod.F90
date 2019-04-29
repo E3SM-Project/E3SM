@@ -108,13 +108,13 @@ contains
 !  environment, returns a parallel_t structure..
 ! ================================================
 
-  function init_par(npes_in,npes_stride) result(par)
+  subroutine init_par(par,npes_in,npes_stride)
 #ifdef CAM
     use spmd_utils, only : mpicom
 #endif      
     integer, intent(in), optional ::  npes_in
     integer, intent(in), optional ::  npes_stride
-    type (parallel_t) par
+    type(parallel_t), intent(out) ::  par
 
 #ifdef _MPI
 #include <mpif.h>
@@ -173,7 +173,7 @@ contains
     par%comm          = -1
     par%masterproc    = .TRUE.
 #endif
-  end function init_par
+  end subroutine init_par
 
   subroutine initmp_from_par(par)
     type (parallel_t),intent(in):: par
@@ -271,7 +271,7 @@ contains
     integer, intent(in), optional ::  npes_stride
     type (parallel_t) par
 
-    par = init_par(npes_in,npes_stride)
+    call init_par(par,npes_in,npes_stride)
 
     call initmp_from_par(par)
 
