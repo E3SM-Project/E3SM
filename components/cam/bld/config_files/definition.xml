@@ -38,8 +38,8 @@ Option to turn on waccmx thermosphere/ionosphere extension: 0 => no, 1 => yes
 <entry id="phys" valid_values="cam3,cam3_5_1,cam4,cam5,ideal,adiabatic" value="">
 Physics package: cam3, cam4, cam5, ideal (Held-Suarez forcings), adiabatic.
 </entry>
-<entry id="microphys" valid_values="rk,mg1,mg1.5,mg2" value="">
-Microphysics package: rk (Rasch and Kristjansson), mg1 (Morrison and Gettelman two moment scheme CAM5.1), mg1.5 (Morrison and Gettelman second version development), mg2 ((Morrison and Gettelman second version).
+<entry id="microphys" valid_values="rk,mg1,mg1.5,mg2,p3" value="">
+Microphysics package: rk (Rasch and Kristjansson), mg1 (Morrison and Gettelman two moment scheme CAM5.1), mg1.5 (Morrison and Gettelman second version development), mg2 ((Morrison and Gettelman second version), p3 for the P3 microphysics scheme,Morrison et al (2015).
 </entry>
 <entry id="macrophys" valid_values="rk,park,clubb_sgs,shoc_sgs,none" value="">
 Macrophysics package: RK, Park, CLUBB_SGS, SHOC_SGS.
