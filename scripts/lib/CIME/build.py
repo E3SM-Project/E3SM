@@ -233,7 +233,7 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
     if mpilib == "mpi-serial":
         libs.insert(0, mpilib)
 
-    if cam_target == "preqx_kokkos":
+    if cam_target in ("preqx_kokkos", "theta-l"):
         libs.append("kokkos")
 
     logs = []
@@ -494,7 +494,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
     if not sharedlib_only:
         os.environ["INSTALL_SHAREDPATH"] = os.path.join(exeroot, sharedpath) # for MPAS makefile generators
         # Set USE_KOKKOS to true if cam is preqx_kokkos
-        if cam_target == "preqx_kokkos":
+        if cam_target in ("preqx_kokkos", "theta-l"):
             os.environ["USE_KOKKOS"] = "TRUE"
 
         logs.extend(_build_model(build_threaded, exeroot, incroot, complist,
