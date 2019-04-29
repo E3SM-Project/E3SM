@@ -91,6 +91,7 @@ include $(CASEROOT)/Macros.make
 
 # Unless DEBUG mode is enabled, use NDEBUG to turn off assert statements.
 ifeq ($(strip $(DEBUG)),TRUE)
+  # e3sm still has components that cannot build with -DDEBUG
   ifeq ($(CIME_MODEL),cesm)
     CPPDEFS += -DDEBUG
   endif
@@ -282,13 +283,6 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
   include $(ALBANY_PATH)/export_albany.in
 endif
 
-ifeq ($(strip $(USE_KOKKOS)), TRUE)
-  include $(INSTALL_SHAREDPATH)/Makefile.kokkos
-  SLIBS += $(KOKKOS_LIBS)
-  CFLAGS += $(KOKKOS_CXXFLAGS)
-  CXX_LDFLAGS += $(KOKKOS_LDFLAGS)
-endif
-
 ifeq ($(strip $(USE_FMS)), TRUE)
   SLIBS += -lfms
 endif
@@ -447,31 +441,7 @@ endif
 
 ifeq ($(MODEL),driver)
   INCLDIR += -I$(EXEROOT)/atm/obj -I$(EXEROOT)/ice/obj -I$(EXEROOT)/ocn/obj -I$(EXEROOT)/glc/obj -I$(EXEROOT)/rof/obj -I$(EXEROOT)/wav/obj -I$(EXEROOT)/esp/obj -I$(EXEROOT)/iac/obj
-# nagfor and gcc have incompatible LDFLAGS.
-# nagfor requires the weird "-Wl,-Wl,," syntax.
-# If done in config_compilers.xml, we break MCT.
-  ifeq ($(strip $(COMPILER)),nag)
-     ifeq ($(NETCDF_SEPARATE), FALSE)
-       SLIBS += -Wl,-Wl,,-rpath=$(LIB_NETCDF)
-     else ifeq ($(NETCDF_SEPARATE), TRUE)
-       SLIBS += -Wl,-Wl,,-rpath=$(LIB_NETCDF_C)
-       SLIBS += -Wl,-Wl,,-rpath=$(LIB_NETCDF_FORTRAN)
-     endif
-  endif
-else
-  ifeq ($(strip $(COMPILER)),nag)
-    ifeq ($(DEBUG), TRUE)
-      ifeq ($(strip $(MACH)),hobart)
-       # GCC needs to be able to link to
-       # nagfor runtime to get autoconf
-       # tests to work.
-         CFLAGS += -Wl,--as-needed,--allow-shlib-undefined
-         SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf62rts
-       endif
-    endif
-  endif
 endif
-
 
 ifndef MCT_LIBDIR
   MCT_LIBDIR=$(INSTALL_SHAREDPATH)/lib
@@ -522,14 +492,8 @@ else ifeq ($(NETCDF_SEPARATE), TRUE)
   CONFIG_ARGS += NETCDF_PATH=$(NETCDF_C_PATH)
 endif
 
-ifeq ($(COMPILER),nag)
-  CONFIG_ARGS += LIBS="$(SLIBS)"
-endif
-
 FFLAGS += $(FPPDEFS)
 FFLAGS_NOOPT += $(FPPDEFS)
-
-
 
 ifeq ($(findstring -cosp,$(CAM_CONFIG_OPTS)),-cosp)
   # The following is for the COSP simulator code:
