@@ -300,6 +300,9 @@ module mpas_atm_boundaries
     !-----------------------------------------------------------------------
     function mpas_atm_get_bdy_state(clock, block, vertDim, horizDim, field, delta_t) result(return_state)
 
+        use mpas_pool_routines, only : mpas_pool_get_error_level, mpas_pool_set_error_level
+        use mpas_derived_types, only : MPAS_POOL_SILENT
+
         implicit none
 
         type (mpas_clock_type), intent(in) :: clock
@@ -320,6 +323,7 @@ module mpas_atm_boundaries
         type (MPAS_TimeInterval_Type) :: lbc_interval
         integer :: dd_intv, s_intv, sn_intv, sd_intv
         real (kind=RKIND) :: dt
+        integer :: err_level
         integer :: ierr
 
 
@@ -335,11 +339,27 @@ module mpas_atm_boundaries
 
         call mpas_pool_get_subpool(block % structs, 'lbc', lbc)
 
+        !
+        ! The first two calls to mpas_pool_get_array, below, may cause harmless warning
+        ! messages, which we can silence by setting the pool error level
+        !
+        err_level = mpas_pool_get_error_level()
+        call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+
         nullify(tend)
         nullify(state)
+
         call mpas_pool_get_array(lbc, 'lbc_'//trim(field), tend, 1)
         call mpas_pool_get_array(lbc, 'lbc_'//trim(field), state, 2)
 
+        ! Reset the pool error level to its previous value
+        call mpas_pool_set_error_level(err_level)
+
+        !
+        ! If we have both a tendency and state for this boundary field from the tend and state
+        ! pools, then the requested field was not a scalar constituent; otherwise, we need to
+        ! query the field as a scalar constituent
+        !
         if (associated(tend) .and. associated(state)) then
             return_state(:,:) = state(:,:) - dt * tend(:,:)
         else
