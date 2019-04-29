@@ -69,6 +69,7 @@ module mpas_atm_boundaries
         type (mpas_pool_type), pointer :: lbc
         real (kind=RKIND) :: dt
 
+        integer, pointer :: nCells
         integer, pointer :: nEdges
         integer, pointer :: index_qv
 
@@ -130,11 +131,13 @@ module mpas_atm_boundaries
         call mpas_pool_get_array(lbc, 'lbc_scalars', scalars, 2)
 
         call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+        call mpas_pool_get_dimension(mesh, 'nCells', nCells)
         call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
         call mpas_pool_get_dimension(lbc, 'index_qv', index_qv)
         call mpas_pool_get_array(mesh, 'zz', zz)
 
         ! Compute lbc_rho_zz
+        zz(:,nCells+1) = 1.0_RKIND          ! Avoid potential division by zero in the following line
         rho_zz(:,:) = rho(:,:) / zz(:,:)
 
         ! Average lbc_rho_zz to edges
