@@ -1209,7 +1209,8 @@
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
-      <env name="NETCDF_PATH">$SHELL{which nf-config | xargs dirname | xargs dirname}</env>
+      <env name="NETCDF_C_PATH">$SHELL{which nc-config | xargs dirname | xargs dirname}</env>
+      <env name="NETCDF_FORTRAN_PATH">$SHELL{which nf-config | xargs dirname | xargs dirname}</env>
     </environment_variables>
     <environment_variables mpilib="!mpi-serial">
       <env name="PNETCDF_PATH">$SHELL{which pnetcdf_version | xargs dirname | xargs dirname}</env>
