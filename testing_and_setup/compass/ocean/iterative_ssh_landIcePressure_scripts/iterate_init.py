@@ -1,6 +1,10 @@
 #!/usr/bin/env python
-import sys, os, subprocess
-import xml.etree.ElementTree as ET
+from __future__ import absolute_import, division, print_function, \
+    unicode_literals
+
+import sys
+import os
+import subprocess
 import argparse
 import numpy
 from netCDF4 import Dataset
@@ -18,7 +22,7 @@ dev_null = open('/dev/null', 'w')
 error = False
 
 if args.variable_to_modify not in ['ssh', 'landIcePressure']:
-  print "Error: unknown variable to modify", args.variable_to_modify
+  print("Error: unknown variable to modify", args.variable_to_modify)
 
 subprocess.check_call(['ln', '-sfn', '../init_step2/ocean.nc', 'init0.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
 
@@ -26,23 +30,23 @@ if args.plot_globalStats:
   subprocess.check_call(['mkdir', '-p', 'statsPlots'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
 
 for iterIndex in range(args.first_iteration,args.iteration_count):
-    print " * Iteration %i/%i"%(iterIndex+1,args.iteration_count)
+    print(" * Iteration %i/%i"%(iterIndex+1,args.iteration_count))
 
     subprocess.check_call(['ln', '-sfn', 'init%i.nc'%iterIndex, 'init.nc'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
 
-    print "   * Running forward model"
+    print("   * Running forward model")
     # ./run_model.py
     subprocess.check_call(['./run_model.py'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
-    print "   - Complete"
+    print("   - Complete")
 
     if args.plot_globalStats:
-        print "   * Plotting stats"
+        print("   * Plotting stats")
         subprocess.check_call(['./plot_globalStats.py', '--out_dir=statsPlots','--iteration=%i'%iterIndex, 'kineticEnergyCellMax',
                                'kineticEnergyCellAvg', 'layerThicknessMin'], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
-        print "   - Complete"
+        print("   - Complete")
 
 
-    print "   * Updating SSH or land-ice pressure"
+    print("   * Updating SSH or land-ice pressure")
 
     # copy the init file first
 
@@ -108,7 +112,7 @@ for iterIndex in range(args.first_iteration,args.iteration_count):
                                                                          finalSSH[iCell], landIcePressure[iCell]))
     logFile.close()
 
-    print "   - Complete"
+    print("   - Complete")
 
 if error:
     sys.exit(1)
