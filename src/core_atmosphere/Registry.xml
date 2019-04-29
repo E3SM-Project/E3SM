@@ -1074,7 +1074,6 @@
                         immutable="true"
                         packages="limited_area">
 
-                        <var name="xtime" />
                         <var name="lbc_u" />
                         <var name="lbc_w" />
                         <var name="lbc_rho" />
