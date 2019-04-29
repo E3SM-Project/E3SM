@@ -75,6 +75,28 @@ int strcmp(const char* first, const char* second)
   }
   return *(const unsigned char*)first - *(const unsigned char*)second;
 }
+template<class T>
+KOKKOS_INLINE_FUNCTION
+const T* upper_bound(const T* first, const T* last, const T& value)
+{
+  const T* it;
+  int count, step;
+  count = last - first;
+
+  while (count > 0) {
+    it = first;
+    step = count / 2;
+    it += step;
+    if (value >= *it) {
+      first = ++it;
+      count -= step + 1;
+    }
+    else {
+      count = step;
+    }
+  }
+  return first;
+}
 #else
 using std::min;
 using std::max;
@@ -83,6 +105,7 @@ using std::max_element;
 using std::strlen;
 using std::strcpy;
 using std::strcmp;
+using std::upper_bound;
 #endif
 
 template <typename Integer> KOKKOS_INLINE_FUNCTION
@@ -103,6 +126,22 @@ template <typename Real> KOKKOS_INLINE_FUNCTION
 Real reldif (const Real& a, const Real& b) {
   return std::abs(b - a)/std::abs(a);
 }
+
+struct TransposeDirection {
+  enum Enum { c2f, f2c };
+};
+
+// Switch whether i (column index) or k (level index) is the fast
+// index. TransposeDirection::c2f makes i faster; f2c makes k faster.
+template <TransposeDirection::Enum direction, typename Scalar>
+void transpose(const Scalar* sv, Scalar* dv, Int ni, Int nk) {
+  for (Int k = 0; k < nk; ++k)
+    for (Int i = 0; i < ni; ++i)
+      if (direction == TransposeDirection::c2f)
+        dv[ni*k + i] = sv[nk*i + k];
+      else
+        dv[nk*i + k] = sv[ni*k + i];
+};
 
 } // namespace util
 } // namespace scream
