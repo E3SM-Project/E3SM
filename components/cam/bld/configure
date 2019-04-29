@@ -1545,7 +1545,6 @@ if ($print>=2) { print "Total advected constituents: $nadv$eol"; }
 # Setup the CICE build
 # cice setup is controlled by cime. The block in cam's configure is remove
 
-
 #-----------------------------------------------------------------------------------------------
 # Makefile configuration #######################################################################
 #-----------------------------------------------------------------------------------------------
@@ -1842,9 +1841,6 @@ if($dyn_pkg eq 'se'){
     if ($spmd eq 'ON'){	$cfg_cppdefs .=" -D_MPI"; }
     $cfg_cppdefs .= " -DCAM  -D_WK_GRAD -D_PRIM ";
 }
-
-# CICE ice model
-$cfg_cppdefs .= $cice_cppdefs;
 
 # -DSPMD only added for CESM build.  The CAM Makefile has a separate SPMD macro.
 if ( ($ccsm_seq) and ($spmd eq 'ON') ) { $cfg_cppdefs .= " -DSPMD"; }
