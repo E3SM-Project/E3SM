@@ -990,7 +990,7 @@ my $shoc_sgs = $cfg_ref->get('shoc_sgs');
 
 # consistency checks...
 
-# CLUBB_SGS only works with mg or p3 microphysics
+# SHOC_SGS only works with mg or p3 microphysics
 if ($shoc_sgs and $microphys_pkg !~ m/^mg/ and $microphys_pkg !~ m/^p3/) {
     die <<"EOF";
 **    ERROR: microphysics package set to: $microphys_pkg
