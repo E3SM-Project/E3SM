@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<config_machines version="2.1">
+<config_machines version="2.0">
 
   <!--
 
@@ -1147,11 +1147,10 @@
     <MAX_MPITASKS_PER_NODE>36</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
-      <executable>sbcast ${EXEROOT}/e3sm.exe /tmp/e3sm.exe; srun </executable>
+      <executable>srun</executable>
       <arguments>
         <arg name="num_tasks"> -l -n {{ total_tasks }} </arg>
       </arguments>
-      <run_exe> /tmp/e3sm.exe </run_exe>
     </mpirun>
     <mpirun mpilib="mpi-serial">
       <executable/>
