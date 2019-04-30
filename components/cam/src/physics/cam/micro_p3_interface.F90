@@ -1016,13 +1016,6 @@ end subroutine micro_p3_readnl
     call pbuf_get_field(pbuf,  cv_reffliq_idx, cvreffliq,    col_type=col_type)
     call pbuf_get_field(pbuf,  cv_reffice_idx, cvreffice,    col_type=col_type)
 
-<<<<<<< 7c98dd1439efc93336da13b42e89f287323c6dfa
-    rd = rair 
-    cp = cpair
-    inv_cp = 1._rtype/cp 
-    
-=======
->>>>>>> Simplified use of thermodynamic constants.
     ncol = state%ncol
     !==============
     ! Some pre-microphysics INITIALIZATION

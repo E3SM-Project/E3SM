@@ -551,7 +551,6 @@ contains
 
     ! Compute time scale factor over which to apply soft rain lambda limiter
     ! note: '1./max(30.,dt)' = '1.*min(1./30., 1./dt)'
-<<<<<<< 762c647149c32571b31d5b39371cf5dfc9efd1be
     timeScaleFactor = min(1._rtype/120._rtype, odt)
 
     prt_liq   = 0._rtype
