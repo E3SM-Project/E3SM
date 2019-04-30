@@ -11,6 +11,30 @@
 namespace scream {
 namespace util {
 
+/*
+ * LinInterp is a class for doing fast linear interpolations within Kokkos
+ * kernels. The user is expected to call setup for every thread team that
+ * intends to do a linear interpolation. Setup is O(n log n) but it allows
+ * for any number of O(n) linear interpolations using the same coordinates.
+ *
+ * Example: Linearly interpolate y1a, y1b, and y1c from x1 to x2
+ *   Kokkos::parallel_for("setup",
+                           li.m_policy,
+                           KOKKOS_LAMBDA(typename LI::MemberType const& team_member) {
+      const int i = team_member.league_rank();
+
+      auto x1col = subview(x1, i);
+      auto x2col = subview(x2, i);
+
+      li.setup(team_member, x1col, x2col);
+
+      li.lin_interp(team_member, x1col, x2col, subview(y1a, i), subview(y2a, i));
+      li.lin_interp(team_member, x1col, x2col, subview(y1b, i), subview(y2b, i));
+      li.lin_interp(team_member, x1col, x2col, subview(y1c, i), subview(y2c, i));
+    });
+
+ */
+
 template <typename ScalarT, typename DeviceT=DefaultDevice>
 struct LinInterp
 {
