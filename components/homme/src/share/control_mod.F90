@@ -38,8 +38,6 @@ module control_mod
   ! halo available to it if the actual point is outside the halo. This is done
   ! in levels <= this parameter.
   integer, public :: semi_lagrange_nearest_point_lev = 0
-  ! Leftover for transport_alg = 1
-  logical, public  :: use_semi_lagrange_transport_local_conservation  = .false.
 
 ! flag used by preqx, theta-l and theta-c models
 ! should be renamed to "hydrostatic_mode"
