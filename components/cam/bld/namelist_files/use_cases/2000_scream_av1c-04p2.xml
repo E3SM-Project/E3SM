@@ -17,7 +17,6 @@
 <use_hetfrz_classnuc>.true.</use_hetfrz_classnuc>
 <use_preexisting_ice>.false.</use_preexisting_ice>
 <hist_hetfrz_classnuc>.false.</hist_hetfrz_classnuc>
-<micro_mg_dcs_tdep>.true.</micro_mg_dcs_tdep>
 <microp_aero_wsub_scheme>1</microp_aero_wsub_scheme>
 
 <!-- For Polar mods-->
@@ -61,7 +60,6 @@
 <do_tms>             .false.</do_tms>
 <so4_sz_thresh_icenuc>0.075e-6</so4_sz_thresh_icenuc>
 <n_so4_monolayers_pcage>8.0D0 </n_so4_monolayers_pcage>
-<micro_mg_accre_enhan_fac>1.5D0</micro_mg_accre_enhan_fac>
 <zmconv_tiedke_add       >0.8D0</zmconv_tiedke_add>
 <zmconv_cape_cin         >1</zmconv_cape_cin>
 <zmconv_mx_bot_lyr_adj   >2</zmconv_mx_bot_lyr_adj>
@@ -71,11 +69,13 @@
 <prc_exp                 >3.19D0</prc_exp>
 <prc_exp1                >-1.2D0</prc_exp1>
 <se_ftype                >2</se_ftype>
-<relvar_fix              >.true.</relvar_fix>
-<mg_prc_coeff_fix        >.true.</mg_prc_coeff_fix>
 <rrtmg_temp_fix          >.true.</rrtmg_temp_fix>
+<nucleate_ice_subgrid    >1.2D0</nucleate_ice_subgrid>
+<cld_sed                 >1.0D0</cld_sed>
 <microp_scheme           >P3</microp_scheme>
 
+<!-- Macrophysics/microphysics coupling -->
+<cld_macmic_num_steps    > 6</cld_macmic_num_steps>
 
 <!-- External forcing for BAM or MAM -->
 <soag_ext_file	 ver="mam" >atm/cam/chem/trop_mozart_aero/emis/aces4bgc_nvsoa_soag_elev_2000_c160427.nc</soag_ext_file>

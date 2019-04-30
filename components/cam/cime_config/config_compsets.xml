@@ -322,6 +322,15 @@
     <alias>F-EAMv1-AQPFILE</alias>
     <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQPFILE_SROF_SGLC_SWAV</lname>
   </compset>
+  
+  <!-- *********************************** -->
+  <!-- SCREAM compsets -->
+  <!-- *********************************** -->  
+  
+  <compset>
+    <alias>FSCREAM-L</alias>
+    <lname>2000_CAM5%SCREAM-L_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset> 
 
   <!-- *********************************** -->
   <!-- idealized / adiabatic -->

@@ -112,6 +112,9 @@
       <value compset="_CAM%IDEAL"     >-phys ideal</value>              
       <value compset="_CAM%ADIAB"     >-phys adiabatic</value>              
 
+      <!-- SCREAM configurations -->
+      <value compset="_CAM5%SCREAM-L">-phys cam5 -shoc_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72 -rad rrtmgp</value>
+
       <!-- Aquaplanet -->
       <value compset="_CAM5%AQUA"   >-phys cam5 -nlev 72 -clubb_sgs -microphys mg2 -aquaplanet -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates </value>
 
@@ -241,6 +244,7 @@
       <value compset="AR97_CAM[45]"     >scam_arm97</value>
       <value compset="SCAM_CAM5"        >scam_generic</value>
       <value compset="PIPD_CAM5"        >1850-PD_cam5</value>
+      <value compset="2000_CAM5.*SCREAM-L" >2000_scream_av1c-04p2</value>
       <!-- Aqua planet -->
       <value compset="_CAM5%AQUA"     >aquaplanet_EAMv1</value>
       <value compset="2000_SCREAM.*AV1C-L" >2000_scream_av1c-04p2</value>
@@ -347,7 +351,7 @@
     <desc compset="_CAM5%MG1M"   >MG1.0 w/ modified activation:</desc>
     <desc compset="_CAM5%UNI"    >UNICON (modified mg1.0):</desc>
     <desc compset="CAM[45].*_BGC%B">CAM prognostic CO2 cycle turned on.</desc>
-    <desc compset="_SCREAM.*AV1C-L"   >Fortran version of SCREAM with E3SM atmospheric mods for V1 (72 layers model) and ACES4BGC SOAG emissions- v04p2:</desc>
+    <desc compset="_CAM5.*SCREAM-L"   >Low Resolution Fortran version of SCREAM with E3SM atmospheric mods for V1 (72 layers model) and ACES4BGC SOAG emissions- v04p2:</desc>
   </description>
 
   <!-- Aqua planet uses this for setting orbital parameters -->
