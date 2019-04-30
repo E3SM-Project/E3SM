@@ -285,7 +285,7 @@ endif
 ifeq ($(strip $(USE_KOKKOS)), TRUE)
   include $(INSTALL_SHAREDPATH)/Makefile.kokkos
   SLIBS += $(KOKKOS_LIBS)
-  CFLAGS += $(KOKKOS_CXXFLAGS)
+  CXXFLAGS += $(KOKKOS_CXXFLAGS)
   CXX_LDFLAGS += $(KOKKOS_LDFLAGS)
 endif
 
@@ -509,7 +509,7 @@ INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include
 # Use the MCT dir for the cache for all configure calls because it is the first one
 #
 CFLAGS+=$(CPPDEFS)
-CXXFLAGS+=$(CFLAGS)
+CXXFLAGS+=$(CPPDEFS)
 CONFIG_ARGS +=  CC="$(CC)" FC="$(FC)" MPICC="$(MPICC)" \
                 MPIFC="$(MPIFC)" FCFLAGS="$(FFLAGS) $(FREEFLAGS) $(INCLDIR)" \
                 CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)" \
