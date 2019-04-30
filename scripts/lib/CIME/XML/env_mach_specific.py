@@ -39,7 +39,7 @@ class EnvMachSpecific(EnvBase):
                 if len(nodes) == 0:
                     value = self.text(default_run_exe_node) if item == "run_exe" else self.text(default_run_misc_suffix_node)
                 else:
-                    value = nodes[0].text
+                    value = self.text(nodes[0])
 
                 entity_node = self.make_child("entry", {"id":item, "value":value}, root=group_node)
 
