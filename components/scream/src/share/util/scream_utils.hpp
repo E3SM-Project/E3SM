@@ -75,28 +75,6 @@ int strcmp(const char* first, const char* second)
   }
   return *(const unsigned char*)first - *(const unsigned char*)second;
 }
-template<class T>
-KOKKOS_INLINE_FUNCTION
-const T* upper_bound(const T* first, const T* last, const T& value)
-{
-  const T* it;
-  int count, step;
-  count = last - first;
-
-  while (count > 0) {
-    it = first;
-    step = count / 2;
-    it += step;
-    if (value >= *it) {
-      first = ++it;
-      count -= step + 1;
-    }
-    else {
-      count = step;
-    }
-  }
-  return first;
-}
 #else
 using std::min;
 using std::max;
@@ -105,7 +83,6 @@ using std::max_element;
 using std::strlen;
 using std::strcpy;
 using std::strcmp;
-using std::upper_bound;
 #endif
 
 template <typename Integer> KOKKOS_INLINE_FUNCTION

@@ -23,3 +23,6 @@ CreateUnitTest(atm_proc "atm_process_tests.cpp" scream_share)
 
 # Test lin interp processes
 CreateUnitTest(lin_interp "lin_interp_test.cpp;lin_interp_ref.f90" scream_share THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC})
+
+# Test upper_bound
+CreateUnitTest(upper_bound "upper_bound_test.cpp" scream_share)
