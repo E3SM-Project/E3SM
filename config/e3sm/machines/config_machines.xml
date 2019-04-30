@@ -1126,7 +1126,7 @@
 
   <machine MACH="anvil">
     <DESC>ANL/LCRC Linux Cluster</DESC>
-    <NODENAME_REGEX>blueslogin.*.lcrc.anl.gov</NODENAME_REGEX>
+    <NODENAME_REGEX>b51.*.lcrc.anl.gov</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel,gnu,pgi</COMPILERS>
     <MPILIBS>mvapich,openmpi</MPILIBS>
