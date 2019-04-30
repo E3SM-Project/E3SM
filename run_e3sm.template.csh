@@ -647,7 +647,7 @@ if ( `lowercase $walltime` == default ) then
   if ( `lowercase $debug_queue` == true ) then
     set walltime = '0:30:00'
   else
-    if ( $machine == 'cab' || $machine == 'syrah' ) then
+    if ( $machine == 'quartz' || $machine == 'syrah' ) then
       set walltime = '1:29:00'
     else
       set walltime = '2:00:00'
@@ -835,7 +835,7 @@ endif
 #===========================
 
 if ( `lowercase $debug_queue` == true ) then
-  if ( $machine == cab || $machine == sierra ) then
+  if ( $machine == quartz || $machine == syrah ) then
     $xmlchange_exe --id JOB_QUEUE --val 'pdebug'
   else if ($machine != sandiatoss3 && $machine != bebop && $machine != blues) then
     $xmlchange_exe --id JOB_QUEUE --val 'debug'
@@ -957,6 +957,7 @@ if ( `lowercase $old_executable` == false ) then
   e3sm_print '-------- Starting Build --------'
   e3sm_newline
 
+  e3sm_print 'WARNING: Make sure there are no double-slashes (//) in the build command below: => Will cause a build error'
   e3sm_print ${case_build_exe}
   ${case_build_exe}
 
@@ -1214,7 +1215,7 @@ else if ( $model_start_type == 'branch' ) then
   cp -s ${restart_files_dir}/${restart_case_name}.cpl.r.${restart_filedate}-00000.nc $case_run_dir
   cp -s ${restart_files_dir}/${restart_case_name}.mosart.r.${restart_filedate}-00000.nc $case_run_dir
   cp -s ${restart_files_dir}/${restart_case_name}.mosart.rh0.${restart_filedate}-00000.nc $case_run_dir
-  cp -s ${restart_files_dir}/mpascice.rst.${restart_filedate}_00000.nc $case_run_dir
+  cp -s ${restart_files_dir}/mpassi.rst.${restart_filedate}_00000.nc $case_run_dir
   cp -s ${restart_files_dir}/mpaso.rst.${restart_filedate}_00000.nc $case_run_dir
   cp -s ${restart_files_dir}/../../atm/hist/${restart_case_name}.cam.h0.${restart_prevdate}.nc $case_run_dir
   cp -s ${restart_files_dir}/../../rof/hist/${restart_case_name}.mosart.h0.${restart_prevdate}.nc $case_run_dir

@@ -111,6 +111,7 @@ OPTIONS
   effect whether running CAM as part of CCSM or running in a CAM standalone mode:
 
      -[no]age_of_air_trcs Switch on [off] age of air tracers. Default: on for waccm_phys, otherwise off
+     -aquaplanet        Switch on aqua-planet mode w/ SST controlled by data ocean component in CIME
      -carma <name>      Build CAM with specified CARMA microphysics model
                         [ none | bc_strat | cirrus | cirrus_dust | dust | meteor_impact | 
                           meteor_smoke | mixed_sulfate | pmc | pmc_sulfate | sea_salt | sulfate | tholin |
@@ -301,6 +302,7 @@ my %opts = (
 	    );
 GetOptions(
     "age_of_air_trcs!"          => \$opts{'age_of_air_trcs'},
+    "aquaplanet"                => \$opts{'aquaplanet'},
     "cache=s"                   => \$opts{'cache'},
     "cachedir=s"                => \$opts{'cachedir'},
     "carma=s"                   => \$opts{'carma'},
@@ -1087,6 +1089,20 @@ my $cosp = $cfg_ref->get('cosp');
 if ($cosp and $print>=2) { print "COSP simulator enabled$eol"; }
 
 #-----------------------------------------------------------------------------------------------
+# Aquaplanet mode
+# This provides a flag to the atmosphere to let it know that it's running in aquaplanet mode.
+# This flag is mainly used by the dycore to set the fixed dry mass of the atmosphere.
+# It is independent of which model is used to specify the aquaplanet surface properties.
+my $aquaplanet = 0;
+# user override
+if (defined $opts{'aquaplanet'}) {
+    $aquaplanet = 1;
+}
+$cfg_ref->set('aquaplanet', $aquaplanet);
+my $aqua_mode = $aquaplanet ? "ON" : "OFF";
+if ($print>=2) { print "Aqua-planet mode: $aqua_mode$eol"; }
+
+#-----------------------------------------------------------------------------------------------
 # Ocean model
 my $ocn_pkg = 'docn';
 # If the physics package is adiabatic, or ideal, change the default
@@ -1200,16 +1216,6 @@ if ($scam eq 'ON' and $dyn_pkg ne 'eul' and $dyn_pkg ne 'se') {
     die <<"EOF";
 **  ERROR: SCAM mode only works with Eulerian dycore or Spectral Element dycore.
 **         Requested dycore is: $dyn_pkg
-EOF
-}
-
-# Check that model is configured for serial execution.  Note that configuring with spmd
-# and running with 1 task doesn't work because the EUL dycore expects at least 2 tasks.
-# The model should run if built for threading.
-if ($scam eq 'ON' and $dyn_pkg eq 'eul' and $spmd ne 'OFF') {
-    die <<"EOF";
-**  ERROR: SCAM mode assumes a serial build.
-**         Requested parallel modes are: spmd=$spmd  smp=$smp
 EOF
 }
 
@@ -2797,6 +2803,9 @@ sub write_filepath
         print $fh "$camsrcdir/homme/src/preqx_acc\n";
         print $fh "$camsrcdir/homme/src/preqx/share\n";
       }
+      elsif($opts{'dyn_target'} eq 'theta-l') {
+        print $fh "$camsrcdir/homme/src/theta-l\n";
+      }
       elsif ($opts{'dyn_target'} eq 'preqx_kokkos') {
         print $fh "$camsrcdir/homme/src/share/cxx\n";
         print $fh "$camsrcdir/homme/src/share/cxx/mpi\n";
@@ -2910,6 +2919,10 @@ sub write_cppdefs
     $fh->open(">$file") or die "** can't open cpp defs file: $file\n";
 
     print $fh "$make_cppdefs";
+
+    if ($dyn eq "se" and $opts{"dyn_target"} eq "theta-l") {
+        print $fh " -DMODEL_THETA_L " 
+    }
 
     if ($dyn eq "se" and $opts{"dyn_target"} eq "preqx_kokkos") {
 	print $fh " -DUSE_KOKKOS_KERNELS "

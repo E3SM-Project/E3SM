@@ -254,7 +254,7 @@ contains
     ! Interpolate pctpft to current time step - output in pctpft_intp
     ! Map interpolated pctpft to subgrid weights
     ! assumes that maxpatch_pft = numpft + 1, that each landunit has only 1 column, 
-    ! SCAM and CNDV have not been defined, and create_croplandunit = .false.
+    ! SCAM has not been defined, and create_croplandunit = .false.
 
     SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
 

@@ -844,10 +844,6 @@ module namelist_mod
 
 #ifdef _PRIM
     rk_stage_user=3  ! 3d PRIM code only supports 3 stage RK tracer advection
-    ! CHECK phys timescale, requires se_ftype=0 (pure tendencies for forcing)
-    if (phys_tscale/=0) then
-       if (ftype>0) call abortmp('user specified se_phys_tscale requires se_ftype<=0')
-    endif
     if (limiter_option==8 .or. limiter_option==84 .or. limiter_option == 9) then
        if (hypervis_subcycle_q/=1 .and. transport_alg == 0) then
           call abortmp('limiter 8,84,9 require hypervis_subcycle_q=1')

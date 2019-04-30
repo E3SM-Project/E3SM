@@ -237,7 +237,7 @@ def find_pfunit(compilerobj, mpilib, use_openmp):
     - use_openmp: Boolean
     """
     attrs = {"MPILIB": mpilib,
-             "compile_threaded": "true" if use_openmp else "false"
+             "compile_threaded": "TRUE" if use_openmp else "FALSE"
              }
 
     pfunit_path = compilerobj.get_optional_compiler_node("PFUNIT_PATH", attributes=attrs)
@@ -337,9 +337,9 @@ def _main():
     os.environ["DEBUG"] = stringify_bool(debug)
     os.environ["MPILIB"] = mpilib
     if use_openmp:
-        os.environ["compile_threaded"] = "true"
+        os.environ["compile_threaded"] = "TRUE"
     else:
-        os.environ["compile_threaded"] = "false"
+        os.environ["compile_threaded"] = "FALSE"
 
     os.environ["UNIT_TEST_HOST"] = socket.gethostname()
     if "NETCDF_PATH" in os.environ and not "NETCDF" in os.environ:

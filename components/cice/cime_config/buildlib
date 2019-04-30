@@ -18,6 +18,8 @@ my $MACH         = `./xmlquery MACH         -value`;
 my $CICE_BLCKX   = `./xmlquery CICE_BLCKX   -value`;
 my $CICE_BLCKY   = `./xmlquery CICE_BLCKY   -value`;
 my $CICE_MXBLCKS = `./xmlquery CICE_MXBLCKS -value`;
+my $MAKE_ARGS    = `./Tools/get_standard_makefile_args`;
+chomp($MAKE_ARGS);
 
 chdir "${OBJROOT}/ice/obj";
 
@@ -65,7 +67,7 @@ $cppdefs = "$cppdefs -DBLCKX=$CICE_BLCKX -DBLCKY=$CICE_BLCKY -DMXBLCKS=$CICE_MXB
 #-------------------------------------------------------
 
 chdir "${OBJROOT}/ice/obj";
-my $sysmod = "$GMAKE complib -j ${GMAKE_J} MODEL=cice COMPLIB=${LIBROOT}/libice.a MACFILE=${CASEROOT}/Macros.${MACH} USER_CPPDEFS=\"$cppdefs\" -f ${CASETOOLS}/Makefile";
+my $sysmod = "$GMAKE complib -j ${GMAKE_J} MODEL=cice COMPLIB=${LIBROOT}/libice.a MACFILE=${CASEROOT}/Macros.${MACH} USER_CPPDEFS=\"$cppdefs\" -f ${CASETOOLS}/Makefile ${MAKE_ARGS}";
 system($sysmod) == 0 or die "ERROR cice buildlib: $sysmod failed: $?\n";
 
 exit(0);

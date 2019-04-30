@@ -22,7 +22,7 @@ module SoilStateType
   use CH4varcon       , only : allowlakeprod
   use LandunitType    , only : lun_pp                
   use ColumnType      , only : col_pp                
-  use VegetationType       , only : veg_pp                
+  use VegetationType  , only : veg_pp                
   !
   implicit none
   save

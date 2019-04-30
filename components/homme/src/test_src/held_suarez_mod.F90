@@ -296,9 +296,7 @@ contains
        enddo
        endif
 
-       do tl=1,timelevels
-          call set_thermostate(elem(ie),temperature,hvcoord,tl,1)
-       enddo
+       call set_thermostate(elem(ie),temperature,hvcoord)
     end do
 
   end subroutine hs0_init_state
