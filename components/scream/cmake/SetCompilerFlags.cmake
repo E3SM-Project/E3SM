@@ -35,7 +35,8 @@ ELSEIF (CMAKE_Fortran_COMPILER_ID STREQUAL Intel)
   SET(${UT_FP_MODEL} "-fp-model precise")
 ENDIF ()
 
-# enable all warning but disable vectorization warnings
+# enable all warning but disable vectorization remarks like "remark: simd loop has only one iteration"
+# since we would get hit with 1000's of those anytime we set packsize to 1.
 SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 IF (CMAKE_Fortran_COMPILER_ID STREQUAL Intel)
