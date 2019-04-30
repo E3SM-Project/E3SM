@@ -53,7 +53,6 @@ module micro_p3_interface
   !defining them in micro_p3_register makes them permanently 
   !available.
   logical :: use_subcol_microp  ! If true, then are using subcolumns in microphysics
-  integer :: num_steps
   CHARACTER(len=16) :: precip_frac_method = 'max_overlap'  ! AaronDonahue, Hard-coded for now, should be fixed in the future
 
   integer, public ::    &
@@ -98,7 +97,6 @@ module micro_p3_interface
 
    integer :: &
       naai_idx = -1,           &
-      naai_hom_idx = -1,       &
       npccn_idx = -1,          &
       rndst_idx = -1,          &
       nacon_idx = -1,          &
@@ -119,11 +117,6 @@ module micro_p3_interface
    integer :: &
       p3_qv_idx, &
       p3_th_idx
-
-   logical :: &
-      allow_sed_supersat  ! allow supersaturated conditions after sedimentation loop
-
-
 
    real(rtype) :: &
       micro_mg_accre_enhan_fac = huge(1.0_rtype), & !Accretion enhancement factor from namelist
@@ -147,9 +140,6 @@ module micro_p3_interface
   character(len=8), parameter :: &      ! Constituent names
      cnst_names(8) = (/'CLDLIQ', 'CLDICE','NUMLIQ','NUMICE', &
                      'RAINQM', 'CLDRIM','NUMRAI','BVRIM'/)
-
-  real(rtype) :: &             
-     ice_sed_ai = 700.0_rtype      ! Fall speed parameter for cloud ice
 
   character(len=128) :: micro_p3_lookup_dir     = unset_str ! location of p3 input files
   character(len=16)  :: micro_p3_tableversion   = unset_str ! P3 table version
@@ -235,7 +225,6 @@ end subroutine micro_p3_readnl
   subroutine micro_p3_register()
 
   logical :: prog_modal_aero
-  logical :: save_subcol_microp ! If true, then need to store sub-columnized fields in pbuf
 
   if (masterproc) write(iulog,'(A20)') ' P3 register start ...'
 
@@ -345,14 +334,13 @@ end subroutine micro_p3_readnl
 
   !================================================================================================
 
-  subroutine micro_p3_init_cnst(name, q, gcid)
+  subroutine micro_p3_init_cnst(name, q)
 
     ! Initialize the microphysics constituents, if they are
     ! not read from the initial file.
 
     character(len=*), intent(in) :: name     ! constituent name
     real(rtype), intent(out) :: q(:,:)   ! mass mixing ratio (gcol, plev)
-    integer,  intent(in)  :: gcid(:)  ! global column id
 
     if (micro_p3_implements_cnst(name)) q = 0.0_rtype
 
@@ -366,8 +354,6 @@ end subroutine micro_p3_readnl
     use micro_p3_utils, only: micro_p3_utils_init
 
     type(physics_buffer_desc),  pointer :: pbuf2d(:,:)
-!    character(128) :: p3_lookup_dir  !ASD-DELETE
-    character(128) ::  errstring
     integer        :: m, mm
     integer        :: ierr
     logical :: history_amwg         ! output the variables used by the AMWG diag package
@@ -392,7 +378,6 @@ end subroutine micro_p3_readnl
     !!
 
     naai_idx     = pbuf_get_index('NAAI') !! from microp 
-    naai_hom_idx = pbuf_get_index('NAAI_HOM')!! from microp 
     npccn_idx    = pbuf_get_index('NPCCN')!! from microp 
     rndst_idx    = pbuf_get_index('RNDST')!! from microp 
     nacon_idx    = pbuf_get_index('NACON')!! from microp 
@@ -820,7 +805,8 @@ end subroutine micro_p3_readnl
                               rhow, &
                               rhows, &
                               qsmall, &
-                              mincld
+                              mincld, & 
+                              inv_cp 
     use output_aerocom_aie, only: do_aerocom_ind3
 
     !INPUT/OUTPUT VARIABLES
@@ -869,7 +855,6 @@ end subroutine micro_p3_readnl
     real(rtype), pointer :: cld(:,:)          ! Total cloud fraction
     real(rtype), pointer :: concld(:,:)       ! Convective cloud fraction
     real(rtype), pointer :: naai(:,:)      ! ice nucleation number
-    real(rtype), pointer :: naai_hom(:,:)  ! ice nucleation number (homogeneous)
     real(rtype), pointer :: npccn(:,:)     ! liquid activation number tendency
     real(rtype), pointer :: rndst(:,:,:)
     real(rtype), pointer :: nacon(:,:,:)
@@ -969,9 +954,6 @@ end subroutine micro_p3_readnl
     real(rtype) :: pratot(pcols,pver) ! accretion of cloud by rain      
     real(rtype) :: prctot(pcols,pver) ! autoconversion of cloud by rain      
 
-    ! For potential temperature conversion
-    real(rtype) :: rd, cp, inv_cp
-
     call t_startf('micro_p3_tend_init')
  
     psetcols = state%psetcols
@@ -992,9 +974,8 @@ end subroutine micro_p3_readnl
          col_type=col_type, copy_if_needed=use_subcol_microp)
     call pbuf_get_field(pbuf, concld_idx,      concld,  start=(/1,1,itim_old/), kount=(/psetcols,pver,1/), &
          col_type=col_type, copy_if_needed=use_subcol_microp)  ! Not used
-    call pbuf_get_field(pbuf, naai_idx,        naai,        col_type=col_type, copy_if_needed=use_subcol_microp) ! Not used in this ver of P3
-    call pbuf_get_field(pbuf, naai_hom_idx,    naai_hom,    col_type=col_type, copy_if_needed=use_subcol_microp) ! Not used
-    call pbuf_get_field(pbuf, npccn_idx,       npccn,       col_type=col_type, copy_if_needed=use_subcol_microp) ! Not used in this ver of P3
+    call pbuf_get_field(pbuf, naai_idx,        naai,        col_type=col_type, copy_if_needed=use_subcol_microp) 
+    call pbuf_get_field(pbuf, npccn_idx,       npccn,       col_type=col_type, copy_if_needed=use_subcol_microp)
     call pbuf_get_field(pbuf, rndst_idx,       rndst,       col_type=col_type, copy_if_needed=use_subcol_microp) ! Not used in this ver of P3
     call pbuf_get_field(pbuf, nacon_idx,       nacon,       col_type=col_type, copy_if_needed=use_subcol_microp) ! Not used in this ver of P3
     call pbuf_get_field(pbuf, cmeliq_idx,      cmeliq,      col_type=col_type, copy_if_needed=use_subcol_microp)
@@ -1035,10 +1016,6 @@ end subroutine micro_p3_readnl
     call pbuf_get_field(pbuf,  cv_reffliq_idx, cvreffliq,    col_type=col_type)
     call pbuf_get_field(pbuf,  cv_reffice_idx, cvreffice,    col_type=col_type)
 
-    rd = rair 
-    cp = cpair
-    inv_cp = 1._rtype/cp 
-    
     ncol = state%ncol
     !==============
     ! Some pre-microphysics INITIALIZATION
@@ -1081,7 +1058,7 @@ end subroutine micro_p3_readnl
     !==============
     ! Note: state%exner is currently defined in a way different than the
     ! traditional definition of exner, so we calculate here.
-    exner(:ncol,:pver) = 1._rtype/((state%pmid(:ncol,:pver)*1.e-5_rtype)**(rd*inv_cp))
+    exner(:ncol,:pver) = 1._rtype/((state%pmid(:ncol,:pver)*1.e-5_rtype)**(rair*inv_cp))
     if ( is_first_step() ) then
        th_old(:ncol,:pver)=state%t(:ncol,:pver)*exner(:ncol,:pver)
        qv_old(:ncol,:pver)=state%q(:ncol,:pver,1)

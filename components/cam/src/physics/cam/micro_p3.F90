@@ -41,15 +41,14 @@ module micro_p3
    use micro_p3_utils, only: rtype
 
    ! physical and mathematical constants
-   use micro_p3_utils, only: rhosur,rhosui,ar,br,f1r,f2r,ecr,rhow,kr,kc,bimm,aimm,rin,mi0,nccnst,  &
-       eci,eri,bcn,cpw,cons1,cons2,cons3,cons4,cons5,cons6,cons7,         &
-       inv_rhow,qsmall,nsmall,bsmall,cp,g,rd,rv,ep_2,inv_cp,mw,osm,   &
-       vi,epsm,rhoa,map,ma,rr,bact,inv_rm1,inv_rm2,sig1,nanew1,f11,f21,sig2, &
-       nanew2,f12,f22,thrd,sxth,piov3,piov6,rho_rimeMin,     &
+   use micro_p3_utils, only: rhosur,rhosui,ar,br,f1r,f2r,rhow,kr,kc,aimm,mi0,nccnst,  &
+       eci,eri,bcn,cpw,cons1,cons3,cons4,cons5,cons6,cons7,         &
+       inv_rhow,qsmall,nsmall,cp,g,rd,rv,ep_2,inv_cp,   &
+       thrd,sxth,piov6,rho_rimeMin,     &
        rho_rimeMax,inv_rho_rimeMax,max_total_Ni,dbrk,nmltratio,clbfact_sub,  &
        clbfact_dep,iparam, isize, densize, rimsize, rcollsize, tabsize, colltabsize, &
        get_latent_heat, zerodegc, pi=>pi_e3sm, dnu, &
-       micro_p3_utils_init, rainfrze, icenuct, homogfrze, iulog=>iulog_e3sm, &
+      rainfrze, icenuct, homogfrze, iulog=>iulog_e3sm, &
        masterproc=>masterproc_e3sm, calculate_incloud_mixingratios, mu_r_constant, &
        lookup_table_1a_dum1_c
 
@@ -413,7 +412,7 @@ contains
     real(rtype), dimension(its:ite,kts:kte) :: lamr
     real(rtype), dimension(its:ite,kts:kte) :: logn0r
     real(rtype), dimension(its:ite,kts:kte) :: mu_c
-    !real(rtype), dimension(its:ite,kts:kte) :: diag_effr   (currently not used)
+
     real(rtype), dimension(its:ite,kts:kte) :: nu
     real(rtype), dimension(its:ite,kts:kte) :: cdist
     real(rtype), dimension(its:ite,kts:kte) :: cdist1
@@ -464,17 +463,7 @@ contains
     real(rtype) :: qcshd     ! source for rain mass due to cloud water/ice collision above freezing and shedding or wet growth and shedding
     real(rtype) :: rhorime_c ! density of rime (from cloud)
     real(rtype) :: ncshdc    ! source for rain number due to cloud water/ice collision above freezing  and shedding (combined with NRSHD in the paper)
-
-    ! AaronDonahue, The following microphysical processes are not currently used
-    ! in the code so they have been deleted pending future improvements.
-!    real(rtype) :: nchetc    ! contact freezing droplets
-!    real(rtype) :: nimul     ! change in Ni, ice multiplication from rime-splintering (not included in the paper)
-!    real(rtype) :: nrhetc    ! contact freezing rain
-!    real(rtype) :: qchetc    ! contact freezing droplets
-!    real(rtype) :: qrhetc    ! contact freezing rain
-!    real(rtype) :: qrmul     ! change in q, ice multiplication from rime-splitnering of rain (not included in the paper)
-!    real(rtype) :: qcmul     ! change in q, ice multiplication from rime-splitnering of cloud water (not included in the paper)
-
+   
     logical   :: log_wetgrowth
 
     real(rtype) :: Eii_fact,epsi
@@ -496,10 +485,10 @@ contains
          flux_qx,flux_nx,                     &
          flux_nit,flux_qir,flux_bir
 
-    real(rtype)    :: lammax,lammin,mu,dv,sc,dqsdt,ab,kap,epsr,epsc,xx,aaa,epsilon,sigvl,epsi_tot, &
-         aact,sm1,sm2,uu1,uu2,dum,dum1,dum2,    &
+    real(rtype)    :: lammax,lammin,mu,dv,sc,dqsdt,ab,kap,epsr,epsc,xx,aaa,epsilon,epsi_tot, &
+         dum,dum1,dum2,    &
          dumqv,dumqvs,dums,ratio,qsat0,dum3,dum4,dum5,dum6,rdumii, &
-         rdumjj,dqsidt,abi,dumqvi,rhop,v_impact,ri,iTc,D_c,tmp1,  &
+         rdumjj,dqsidt,abi,dumqvi,rhop,V_impact,ri,iTc,D_c,tmp1,  &
          tmp2,inv_dum3,odt,oxx,oabi,     &
          fluxdiv_qit,fluxdiv_nit,fluxdiv_qir,fluxdiv_bir,prt_accum, &
          fluxdiv_qx,fluxdiv_nx,Co_max,dt_sub,      &
@@ -529,14 +518,11 @@ contains
     real(rtype)    :: f1pr08   ! collection of rain mass by ice
     real(rtype)    :: f1pr09   ! minimum ice number (lambda limiter)
     real(rtype)    :: f1pr10   ! maximum ice number (lambda limiter)
-!    real(rtype)    :: f1pr11   ! not used
-!    real(rtype)    :: f1pr12   ! not used
     real(rtype)    :: f1pr13   ! reflectivity
     real(rtype)    :: f1pr14   ! melting (ventilation term)
     real(rtype)    :: f1pr15   ! mass-weighted mean diameter
     real(rtype)    :: f1pr16   ! mass-weighted mean particle density
-!    real(rtype)    :: f1pr17   ! ice-ice category collection change in number (not used)
-!    real(rtype)    :: f1pr18   ! ice-ice category collection change in mass (not used)
+
 
     !--These will be added as namelist parameters in the future
     logical, parameter :: debug_ON     = .false.  !.true. to switch on debugging checks/traps throughout code
@@ -578,7 +564,6 @@ contains
     ze_ice    = 1.e-22_rtype
     ze_rain   = 1.e-22_rtype
     diag_effc = 10.e-6_rtype ! default value
-    !diag_effr = 25.e-6 ! default value
     diag_effi = 25.e-6_rtype ! default value
     diag_vmi  = 0._rtype
     diag_di   = 0._rtype
@@ -1317,24 +1302,6 @@ contains
             ! for predicted Nc, use activation predicted by aerosol scheme
             ! note that this is also applied at the first time step
             if (sup(i,k).gt.1.e-6) then
-               ! code removed below by K. Pressel 2/19 to allow for activation of droplets 
-               ! by the aerosol scheme 
-               !dum1  = 1./bact**0.5
-               !sigvl = 0.0761 - 1.55e-4*(t(i,k)-zerodegc)
-               !aact  = 2.*mw/(rhow*rr*t(i,k))*sigvl
-               !sm1   = 2.*dum1*(aact*thrd*inv_rm1)**1.5
-               !sm2   = 2.*dum1*(aact*thrd*inv_rm2)**1.5
-               !uu1   = 2.*log(sm1/sup(i,k))/(4.242*log(sig1))
-               !uu2   = 2.*log(sm2/sup(i,k))/(4.242*log(sig2))
-               !dum1  = nanew1*0.5*(1.-erf(uu1)) ! activated number in kg-1 mode 1
-               !dum2  = nanew2*0.5*(1.-erf(uu2)) ! activated number in kg-1 mode 2
-               !! make sure this value is not greater than total number of aerosol
-               !dum2  = min((nanew1+nanew2),dum1+dum2)
-               !dum2  = (dum2-nc(i,k))*odt
-               !dum2  = max(0.,dum2)
-               !ncnuc = dum2
-               ! don't include mass increase from droplet activation during first time step
-               ! since this is already accounted for by saturation adjustment below
                ncnuc = npccn(i,k)
                if (it.eq.1) then
                   qcnuc = 0._rtype
@@ -2312,20 +2279,6 @@ contains
                   !                        cdistr(i,k),logn0r(i,k))
                   tmp1,tmp2,rcldm(i,k))
 
-             ! hm, turn off soft lambda limiter
-             ! impose size limits for rain with 'soft' lambda limiter
-             ! (adjusts over a set timescale rather than within one timestep)
-             ! dum2 = (qr(i,k)/(pi*rhow*nr(i,k)))**thrd
-             ! if (dum2.gt.dbrk) then
-             !    dum   = qr(i,k)*cons4
-             !   !dum1  = (dum-nr(i,k))/max(60.,dt)  !time scale for adjustment is 60 s
-             !    dum1  = (dum-nr(i,k))*timeScaleFactor
-             !     nr(i,k) = nr(i,k)+dum1*dt
-             ! endif
-
-             !diag_effr(i,k) = 0.5*(mu_r(i,k)+3.)/lamr(i,k)    (currently not used)
-             ! ze_rain(i,k) = n0r(i,k)*720./lamr(i,k)**3/lamr(i,k)**3/lamr(i,k)
-             ! non-exponential rain:
              ze_rain(i,k) = nr(i,k)*(mu_r(i,k)+6._rtype)*(mu_r(i,k)+5._rtype)*(mu_r(i,k)+4._rtype)*           &
                   (mu_r(i,k)+3._rtype)*(mu_r(i,k)+2._rtype)*(mu_r(i,k)+1._rtype)/lamr(i,k)**6
              ze_rain(i,k) = max(ze_rain(i,k),1.e-22_rtype)
@@ -2952,7 +2905,6 @@ contains
     !--------------------------------------------------------------------------
 
     if (bi_rim.ge.1.e-15_rtype) then
-       !if (bi_rim.ge.bsmall) then
        rho_rime = qi_rim/bi_rim
        !impose limits on rho_rime;  adjust bi_rim if needed
        if (rho_rime.lt.rho_rimeMin) then

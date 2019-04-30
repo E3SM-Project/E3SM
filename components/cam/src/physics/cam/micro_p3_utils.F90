@@ -37,11 +37,10 @@ module micro_p3_utils
 
     real(rtype) :: xxlv, xxls, xlf
 
-    real(rtype),public :: rhosur,rhosui,ar,br,f1r,f2r,ecr,rhow,kr,kc,bimm,aimm,rin,mi0,nccnst,  &
+    real(rtype),public :: rhosur,rhosui,ar,br,f1r,f2r,ecr,rhow,kr,kc,aimm,bimm,rin,mi0,nccnst,  &
        eci,eri,bcn,cpw,cons1,cons2,cons3,cons4,cons5,cons6,cons7,         &
-       inv_rhow,bsmall,cp,g,rd,rv,ep_2,inv_cp,mw,osm,   &
-       vi,epsm,rhoa,map,ma,rr,bact,inv_rm1,inv_rm2,sig1,nanew1,f11,f21,sig2, &
-       nanew2,f12,f22,thrd,sxth,piov3,piov6,rho_rimeMin,     &
+       inv_rhow,cp,g,rd,rv,ep_2,inv_cp,   &
+       thrd,sxth,piov3,piov6,rho_rimeMin,     &
        rho_rimeMax,inv_rho_rimeMax,max_total_Ni,dbrk,nmltratio,clbfact_sub,  &
        clbfact_dep
     real(rtype),dimension(16), public :: dnu
@@ -211,9 +210,6 @@ end interface var_coef
     rho_rimeMax     = 900._rtype
     inv_rho_rimeMax =   1._rtype/rho_rimeMax
 
-    ! minium allowable prognostic variables
-    bsmall = qsmall*inv_rho_rimeMax
-
     ! Bigg (1953)
     !bimm   = 100.
     !aimm   = 0.66
@@ -239,34 +235,6 @@ end interface var_coef
     cons5 = piov6*bimm
     cons6 = piov6**2*rhow*bimm
     cons7 = 4._rtype*piov3*rhow*(1.e-6_rtype)**3
-
-    ! aerosol/droplet activation parameters
-    mw     = 0.018_rtype
-    osm    = 1._rtype
-    vi     = 3._rtype
-    epsm   = 0.9_rtype
-    rhoa   = 1777._rtype
-    map    = 0.132_rtype
-    ma     = 0.0284_rtype
-    rr     = 8.3187_rtype
-    bact   = vi*osm*epsm*mw*rhoa/(map*rhow)
-    ! inv_bact = (map*rhow)/(vi*osm*epsm*mw*rhoa)    *** to replace /bact **
-
-    ! mode 1
-    inv_rm1 = 2.e+7_rtype           ! inverse aerosol mean size (m-1)
-    sig1    = 2.0_rtype             ! aerosol standard deviation
-    nanew1  = 300.e6_rtype          ! aerosol number mixing ratio (kg-1)
-    f11     = 0.5_rtype*exp(2.5_rtype*(log(sig1))**2)
-    f21     = 1._rtype + 0.25_rtype*log(sig1)
-
-    ! note: currently only set for a single mode, droplet activation code needs to
-    !       be modified to include the second mode
-    ! mode 2
-    inv_rm2 = 7.6923076e+5_rtype    ! inverse aerosol mean size (m-1)
-    sig2    = 2.5_rtype             ! aerosol standard deviation
-    nanew2  = 0._rtype              ! aerosol number mixing ratio (kg-1)
-    f12     = 0.5_rtype*exp(2.5_rtype*(log(sig2))**2)
-    f22     = 1._rtype + 0.25_rtype*log(sig2)
 
     ! droplet spectral shape parameter for mass spectra, used for Seifert and Beheng (2001)
     ! warm rain autoconversion/accretion option only (iparam = 1)
