@@ -159,8 +159,6 @@
         <!-- mpirun: The mpi exec to start a job on this machine
              see detail below-->
         <xs:element ref="mpirun" minOccurs="1" maxOccurs="unbounded"/>
-        <!-- run_exe: The run executable to use on this machine; overrides default_run_exe -->
-        <xs:element ref="run_exe" minOccurs="0"/>
         <!-- module_system: how and what modules to load on this system ,
              see detail below -->
         <xs:element ref="module_system" minOccurs="1" maxOccurs="1"/>
@@ -182,6 +180,8 @@
       <xs:sequence>
         <xs:element ref="executable"/>
         <xs:element ref="arguments" minOccurs="0"/>
+        <!-- run_exe: The run executable to use on this machine; overrides default_run_exe -->
+        <xs:element ref="run_exe" minOccurs="0"/>
       </xs:sequence>
       <xs:attribute ref="compiler"/>
       <xs:attribute ref="queue"/>

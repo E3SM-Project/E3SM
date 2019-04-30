@@ -1147,15 +1147,15 @@
     <MAX_MPITASKS_PER_NODE>36</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
-      <executable>sbcast ${EXEROOT}/e3sm.exe /tmp/e3sm.exe; srun</executable>
+      <executable>sbcast ${EXEROOT}/e3sm.exe /tmp/e3sm.exe; srun </executable>
       <arguments>
         <arg name="num_tasks"> -l -n {{ total_tasks }} </arg>
       </arguments>
+      <run_exe> /tmp/e3sm.exe </run_exe>
     </mpirun>
     <mpirun mpilib="mpi-serial">
       <executable/>
     </mpirun>
-    <run_exe> /tmp/e3sm.exe </run_exe>
     <module_system type="module">
       <init_path lang="sh">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/sh;export MODULEPATH=/blues/gpfs/software/centos7/spack-0.12.1/share/spack/lmod/linux-centos7-x86_64/Core</init_path>
       <init_path lang="csh">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/csh;setenv MODULEPATH /blues/gpfs/software/centos7/spack-0.12.1/share/spack/lmod/linux-centos7-x86_64/Core</init_path>

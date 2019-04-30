@@ -475,7 +475,10 @@ class EnvMachSpecific(EnvBase):
         expect(exec_node is not None,"No executable found")
         executable = self.text(exec_node)
 
-        return executable, args
+        run_exe_node = self.get_optional_child('run_exe', root=the_match)
+        run_exe = self.text(run_exe_node)
+
+        return executable, args, run_exe
 
     def get_type_info(self, vid):
         return "char"
