@@ -56,8 +56,13 @@ def buildlib(bldroot, installpath, case):
     if stat == 0:
         kokkos_options = output.split(":=")[-1].strip()
     else:
-        kokkos_options = "--with-openmp --with-serial" # This is the default
-        logger.warning("Failed to find custom kokkos options, using default.")
+        # This is the default setup.
+        kokkos_options = "--with-serial"
+        build_threaded = case.get_build_threaded()
+        if build_threaded:
+            kokkos_options += " --with-openmp"
+        logger.warning("Failed to find custom kokkos options, using default: {:s}.".
+                       format(kokkos_options))
 
     cxx = run_cmd_no_fail("make -f Macros.make {} -p | grep SCXX".format(make_args)).split(":=")[-1].strip()
 
