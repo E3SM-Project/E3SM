@@ -1529,6 +1529,7 @@
 
     <domain name="JRA025">
       <nx>1440</nx> <ny>720</ny>
+      <mesh driver="nuopc">$DIN_LOC_ROOT/share/meshes/JRA025m.170209_ESMFmesh.nc</mesh>
       <!-- TODO (mvertens, 2018-12-02): create a domain file for this  -->
       <desc>JRA is 0.25 degree runoff grid for use with JRA-55 runoff data</desc>
     </domain>
