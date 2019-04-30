@@ -479,7 +479,7 @@ class EnvMachSpecific(EnvBase):
         run_exe = self.text(run_exe_node)
 
         run_misc_suffix_node = self.get_optional_child('run_misc_suffix', root=the_match)
-        run_misc_suffix = self.text(run_exe_node)
+        run_misc_suffix = self.text(run_misc_suffix_node)
 
         return executable, args, run_exe, run_misc_suffix
 
