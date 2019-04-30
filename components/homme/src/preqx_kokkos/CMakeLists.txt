@@ -228,4 +228,3 @@ PREQX_KOKKOS_SETUP()
 # Need to set this, so createTestExec will call link_to_kokkos
 SET (USE_KOKKOS_KERNELS ON)
 createTestExec(preqx_kokkos preqx_kokkos ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY} ${QSIZE_D})
-UNSET (USE_KOKKOS_KERNELS)

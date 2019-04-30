@@ -78,9 +78,11 @@ OPTION(BUILD_HOMME_PREQX_KOKKOS "Primitive equations FEM with Kokkos" OFF)
 OPTION(BUILD_HOMME_PESE  "Primitive equations with vertical spectral elements" OFF)
 OPTION(BUILD_HOMME_SWIM  "Shallow water equations implicit" OFF)
 OPTION(BUILD_HOMME_PRIM  "Primitive equations implicit" OFF)
+OPTION(HOMME_ENABLE_COMPOSE "Build COMPOSE semi-Lagrangian tracer transport code" ON)
 
 #by default we don't need cxx
 SET(HOMME_USE_CXX FALSE)
+SET(HOMME_USE_KOKKOS FALSE)
 
 # swim and prim executables require C++ compiler
 IF(${BUILD_HOMME_SWIM} OR ${BUILD_HOMME_PRIM})
@@ -92,7 +94,6 @@ IF (${HOMME_USE_TRILINOS})
   SET (HOMME_USE_CXX TRUE)
 ENDIF()
 #if kokkos is needed, then so is cxx
-SET (HOMME_USE_KOKKOS FALSE)
 IF (${BUILD_HOMME_PREQX_KOKKOS})
   SET (HOMME_USE_KOKKOS TRUE)
   SET (HOMME_USE_CXX TRUE)
@@ -104,10 +105,10 @@ IF (${BUILD_HOMME_PREQX_KOKKOS})
   # We need to compare against F90 implementation, so turn this on
   SET (BUILD_HOMME_PREQX TRUE)
 ENDIF ()
-
-if (NOT HOMME_NO_COMPOSE)
-  set (HOMME_USE_CXX TRUE)
-endif ()
+IF (${HOMME_ENABLE_COMPOSE})
+  SET (HOMME_USE_CXX TRUE)
+  SET (HOMME_USE_KOKKOS TRUE)
+ENDIF ()
 
 IF (${HOMME_USE_CXX})
   MESSAGE(STATUS "This configuration of HOMME requires a C++ compiler")
@@ -317,7 +318,6 @@ ENDIF ()
 
 # Add libcompose, consisting of just C++ files, so we can build it just once for
 # all exes. It does not depend on compile-time sizes.
-set (HOMME_ENABLE_COMPOSE TRUE CACHE LOGICAL "Build COMPOSE semi-Lagrangian tracer transport code")
 if (HOMME_ENABLE_COMPOSE)
   add_definitions(-DHOMME_ENABLE_COMPOSE)
   set (COMPOSE_LIBRARY "compose")
