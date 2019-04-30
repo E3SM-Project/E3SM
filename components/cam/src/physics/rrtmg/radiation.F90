@@ -850,6 +850,7 @@ end function radiation_nextsw_cday
     use rrtmg_state, only: rrtmg_state_create, rrtmg_state_update, rrtmg_state_destroy, rrtmg_state_t, num_rrtmg_levs
     use orbit,            only: zenith
     use output_aerocom_aie , only: do_aerocom_ind3
+    use time_manager,     only: get_step_size
 
     ! Arguments
     logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
@@ -883,6 +884,7 @@ end function radiation_nextsw_cday
     ! Local variables
 
     logical :: dosw, dolw
+    real(r8) :: dtime
     integer nstep                       ! current timestep number
     real(r8) britemp(pcols,pnf_msu)     ! Microwave brightness temperature
     real(r8) tb_ir(pcols,pnb_hirs)      ! Infrared brightness temperature
@@ -1081,6 +1083,7 @@ end function radiation_nextsw_cday
 
     call t_startf ('radiation_tend_init')
 
+    dtime  = get_step_size()
     lchnk = state%lchnk
     ncol = state%ncol
     
@@ -1158,8 +1161,8 @@ end function radiation_nextsw_cday
    ! Syncronize FIVE variables to E3SM state
    !  This is a crucial component to using FIVE within E3SM
 ! HHLEE 
-!   call five_syncronize_e3sm(state,dtime,p0_five_ref,pint_five,pmid_five,&
-!                             t_five,u_five,v_five,q_five)
+   call five_syncronize_e3sm(state,dtime,p0_five_ref,pint_five,pmid_five,&
+                             t_five,u_five,v_five,q_five)
 
    ! Define pressue differences
    do k=1,pver_five
@@ -1424,7 +1427,9 @@ end function radiation_nextsw_cday
 #ifdef FIVE
                   call rad_rrtmg_sw( &
                        lchnk,        ncol,         pverp_five,     r_state,                    &
-                       pmid_five,    pint_five,    state%pint,    cldfprime,                   &
+                       pmid_five,    pint_five,    t_five,       state%pmid,                   &
+                       state%pint,                                                             &
+                       cldfprime,                                                              &
                        aer_tau_five, aer_tau_w_five, aer_tau_w_g_five,  aer_tau_w_f_five,      &
                        eccf,         coszrs,       solin,        sfac,                         &
                        cam_in%asdir, cam_in%asdif, cam_in%aldir, cam_in%aldif,                 &
@@ -1618,7 +1623,8 @@ end function radiation_nextsw_cday
 #ifdef FIVE
                   call rad_rrtmg_lw( &
                        lchnk,        ncol,         pverp_five,      r_state,      pmid_five,     &
-                       pint_five,    state%pint,                                                 &
+                       pint_five,    t_five,       state%pmid,                                   &
+                       state%pint,                                                               &
                        aer_lw_abs_five,   cldfprime,       c_cld_lw_abs,                         &
                        qrl_five,     qrlc_five,                                                  &
                        flns,         flnt,         flnsc,           flntc,        cam_out%flwds, &
