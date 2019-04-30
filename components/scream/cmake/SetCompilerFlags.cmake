@@ -84,13 +84,18 @@ ENDIF ()
 # Handle Cuda.
 find_package(CUDA QUIET)
 if (${CUDA_FOUND})
+  # We found cuda, but we may be only interested in running on host.
+  # Check if the compiler is not nvcc; if not, do not add cuda support
   execute_process(COMMAND ${CMAKE_CXX_COMPILER} "--nvcc-wrapper-show"
-    RESULT_VARIABLE WRAPS_NVCC OUTPUT_VARIABLE WRAPS_NVCC_OUT)
-  string (FIND ${WRAPS_NVCC_OUT} "nvcc" pos)
+                  RESULT_VARIABLE WRAPS_NVCC
+                  OUTPUT_VARIABLE WRAPS_NVCC_OUT
+                  OUTPUT_QUIET
+                  ERROR_QUIET)
+  string (FIND "${WRAPS_NVCC_OUT}" "nvcc" pos)
   if (${pos} GREATER -1)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-extended-lambda")
   else ()
-    message ("Cuda was found, but the C++ compiler is not nvcc_wrapper, so building without Cuda support.")
+    message (STATUS "Cuda was found, but the C++ compiler is not nvcc_wrapper, so building without Cuda support.")
   endif ()
 endif ()
 

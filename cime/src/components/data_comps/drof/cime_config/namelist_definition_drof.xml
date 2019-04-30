@@ -89,10 +89,10 @@
     <group>streams_file</group>
     <desc>Stream domain file path(s).</desc>
     <values>
-      <value stream="rof.diatren_ann_rx1"      >runoff.daitren.annual.090225.nc</value>
-      <value stream="rof.diatren_ann_ais00_rx1">runoff.daitren.annual.090225.nc</value>
-      <value stream="rof.diatren_ann_ais45_rx1">runoff.daitren.annual.090225.nc</value>
-      <value stream="rof.diatren_ann_ais55_rx1">runoff.daitren.annual.090225.nc</value>
+      <value stream="rof.diatren_ann_rx1"      >runoff.daitren.annual.20190226.nc</value>
+      <value stream="rof.diatren_ann_ais00_rx1">runoff.daitren.annual.20190226.nc</value>
+      <value stream="rof.diatren_ann_ais45_rx1">runoff.daitren.annual.20190226.nc</value>
+      <value stream="rof.diatren_ann_ais55_rx1">runoff.daitren.annual.20190226.nc</value>
       <value stream="rof.diatren_iaf_rx1"      >runoff.daitren.iaf.20120419.nc</value>
       <value stream="rof.diatren_iaf_ais00_rx1">runoff.daitren.iaf-AISx00.20120419.nc</value>
       <value stream="rof.diatren_iaf_ais45_rx1">runoff.daitren.iaf-AISx45.20120419.nc</value>
@@ -179,10 +179,10 @@
     <group>streams_file</group>
     <desc>Stream data file path(s).</desc>
     <values>
-      <value stream="rof.diatren_ann_rx1"      >runoff.daitren.annual.090225.nc</value>
-      <value stream="rof.diatren_ann_ais00_rx1">runoff.daitren.annual.090225.nc</value>
-      <value stream="rof.diatren_ann_ais45_rx1">runoff.daitren.annual.090225.nc</value>
-      <value stream="rof.diatren_ann_ais55_rx1">runoff.daitren.annual.090225.nc</value>
+      <value stream="rof.diatren_ann_rx1"      >runoff.daitren.annual.20190226.nc</value>
+      <value stream="rof.diatren_ann_ais00_rx1">runoff.daitren.annual.20190226.nc</value>
+      <value stream="rof.diatren_ann_ais45_rx1">runoff.daitren.annual.20190226.nc</value>
+      <value stream="rof.diatren_ann_ais55_rx1">runoff.daitren.annual.20190226.nc</value>
       <value stream="rof.diatren_iaf_rx1"      >runoff.daitren.iaf.20120419.nc</value>
       <value stream="rof.diatren_iaf_ais00_rx1">runoff.daitren.iaf-AISx00.20120419.nc</value>
       <value stream="rof.diatren_iaf_ais45_rx1">runoff.daitren.iaf-AISx45.20120419.nc</value>

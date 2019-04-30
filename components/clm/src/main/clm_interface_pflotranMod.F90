@@ -13,7 +13,7 @@ module clm_interface_pflotranMod
 
 !----------------------------------------------------------------------------------------------
 ! NGEE-Arctic CLM-PFLOTRAN soil Thermal-Hydrology & bgC coupling interface
-! authors: Fengming YUAN1, Gautam Bishit1,2, and Guoping Tang1
+! authors: Fengming YUAN1, Gautam Bisht1,2, and Guoping Tang1
 !
 !          1.Climate Change Science Institute & Environmental Science Division
 !          Oak Ridge National Laboratory

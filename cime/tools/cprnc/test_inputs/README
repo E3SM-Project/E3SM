@@ -3,7 +3,7 @@ This directory contains simple test inputs to test cprnc.
 All comparisons can be run by running the run_tests script in the
 parent directory. Suggestion: run this once from the baseline
 directory, then once from the new directory; compare against baselines
-with, e.g.:
+by doing a directory diff of the two directories, or with, e.g.:
 
     baseline_out=/PATH/TO/BASELINE/OUTPUT
     new_out=/PATH/TO/NEW/OUTPUT
@@ -17,6 +17,11 @@ The files here are:
 
 - diffs_in_vals.nc: one variable has differences in values
 
+- diffs_in_vals_and_extra_and_missing.nc: one variable has differences in
+  values; also, one variable is missing and there is an extra variable. Purpose
+  of this test is to make sure that this case is reported as a DIFFERENCE rather
+  than just a warning due to the missing fields.
+
 - diffs_in_fill.nc: one variable has differences in fill pattern
 
 - diffs_in_vals_and_diffs_in_fill.nc: one variable has differences in
@@ -25,7 +30,11 @@ The files here are:
 - diffs_in_vals_and_fill.nc: a single variable has differences in both
   values and fill pattern
 
+- extra_variables.nc: has two extra variables beyond those in control.nc
+
 - lon_differs.nc: number of longitude points differs
+
+- missing_variables.nc: missing two variables that are present in control.nc
 
 - vals_differ_by_1.1.nc: testvar has values equal to 1.1 times those
   in the control file. This is useful for testing the relative
@@ -94,12 +103,24 @@ with time first.
   same for both variables (e.g., RMS errors should be the same for
   both).
 
+- multipleTimes_someTimeless_extra_and_missing.nc: two timeless
+  variables are missing and there is one extra timeless
+  variable. Purpose of this test is to make sure that the results are
+  reported as IDENTICAL when the only diffs in field lists are variables
+  without an unlimited dimension (in a file that has an unlimited
+  dimension).
+
 --- FILES COMPARED AGAINST control_noTime.nc ---
 
 Note: This file has no time (unlimited) dimension.
 
 - noTime_diffs_in_vals_and_fill.nc: a single variable has differences
   in both values and fill pattern
+
+- noTime_extra_and_missing.nc: two variables are missing and there is
+  one extra variable. Purpose of this test is to make sure that even
+  missing fields without an unlimited dimension trigger a DIFFER result
+  if the file doesn't have an unlimited dimension to begin with.
 
 --- FILES COMPARED AGAINST control_0d.nc ---
 
@@ -133,3 +154,18 @@ times.
   variables, identical & different real-valued variables, and
   variables with different spatial dimensions (e.g., landunit, pft,
   and lat x lon).
+
+--- FILES COMPARED AGAINST control_attributes.nc ---
+
+Note: This file is like control.nc, but contains some global attributes
+
+- diffs_in_attribute.nc: one global attribute is the same, one differs; in
+  addition, one global attribute is missing, and there is a new one on this file
+  that is not present on the control.nc file
+
+--- FILES COMPARED AGAINST control_char.nc ---
+
+Note: This file just has a character variable, in order to test what is output
+for character variables (which cannot be analyzed).
+
+- copy_char.nc: identical to control_char.nc

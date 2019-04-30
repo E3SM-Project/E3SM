@@ -8,30 +8,23 @@ namespace scream {
 
 namespace control {
 
-void AtmosphereDriver::initialize (const Comm& atm_comm, const ParameterList& params /* inputs? */ ) {
+void AtmosphereDriver::initialize (const Comm& atm_comm, const ParameterList& params) {
   m_atm_comm = atm_comm;
   m_atm_params = params;
 
   // Create the group of processes. This will recursively create the processes
   // tree, storing also the information regarding parallel execution (if needed).
   // See AtmosphereProcessGroup class documentation for more details.
-  m_atm_process_group = std::make_shared<AtmosphereProcessGroup>(m_atm_params.sublist("Atmosphere Processes"));
+  m_atm_process_group = std::make_shared<AtmosphereProcessGroup>(m_atm_comm,m_atm_params.sublist("Atmosphere Processes"));
 
-  // Initialize the processes
-  m_atm_process_group->initialize(m_atm_comm);
+  // Create the grids manager
+  auto& gm_params = m_atm_params.sublist("Grids Manager");
+  const std::string& gm_type = gm_params.get<std::string>("Type");
+  m_grids_manager.reset(GridsManagerFactory::instance().create(gm_type,m_atm_comm,gm_params));
 
   // Let the processes register their fields in the repo
   m_device_field_repo.registration_begins();
   m_atm_process_group->register_fields(m_device_field_repo);
-
-  // TODO: this is the correct location where you should make sure all the fields
-  //       dimensions have been set. Some may have not been known at construction
-  //       time: e.g., a field may have been created following the request of an
-  //       atmosphere process which did not have access to all the dimensions
-  //       information. Now, before you call registration_complete, you MUST
-  //       make sure all dimensions are set.
-
-  // Prohibit further additions to the repo, and allocate fields.
   m_device_field_repo.registration_ends();
 
   // TODO: this is a good place where we can insert a DAG analysis, to make sure all
@@ -48,6 +41,9 @@ void AtmosphereDriver::initialize (const Comm& atm_comm, const ParameterList& pa
   for (const auto& id : outputs) {
     m_atm_process_group->set_computed_field(m_device_field_repo.get_field(id));
   }
+
+  // Initialize the processes
+  m_atm_process_group->initialize(m_grids_manager);
 }
 
 void AtmosphereDriver::run ( /* inputs ? */ ) {
@@ -58,17 +54,8 @@ void AtmosphereDriver::run ( /* inputs ? */ ) {
 
 void AtmosphereDriver::finalize ( /* inputs? */ ) {
   m_atm_process_group->finalize( /* inputs ? */ );
-}
 
-// ==================== STUB for testing ================= //
-
-int driver_stub() {
-  // Test that we can at least create an AD...
-  AtmosphereDriver ad;
-  (void) ad;
-
-  // Return the answer to life, universe, everything...
-  return 42;
+  m_device_field_repo.clean_up();
 }
 
 }  // namespace control

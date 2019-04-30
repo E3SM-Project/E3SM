@@ -5,6 +5,7 @@ common utilities for buildlib
 from CIME.XML.standard_module_setup import *
 from CIME.case import Case
 from CIME.utils import parse_args_and_handle_standard_logging_options, setup_standard_logging_options
+from CIME.build import get_standard_makefile_args
 import sys, os, argparse
 logger = logging.getLogger(__name__)
 
@@ -66,12 +67,10 @@ def build_cime_component_lib(case, compname, libroot, bldroot):
 ###############################################################################
 def run_gmake(case, compclass, libroot, bldroot, libname="", user_cppdefs=""):
 ###############################################################################
+    gmake_args = get_standard_makefile_args(case)
 
-    caseroot  = case.get_value("CASEROOT")
-    casetools = case.get_value("CASETOOLS")
     gmake_j   = case.get_value("GMAKE_J")
     gmake     = case.get_value("GMAKE")
-    mach      = case.get_value("MACH")
 
     complib = ""
     if libname:
@@ -79,11 +78,10 @@ def run_gmake(case, compclass, libroot, bldroot, libname="", user_cppdefs=""):
     else:
         complib  = os.path.join(libroot, "lib{}.a".format(compclass))
 
-    makefile = os.path.join(casetools, "Makefile")
-    macfile  = os.path.join(caseroot, "Macros.{}".format(mach))
+    makefile = os.path.join(case.get_value("CASETOOLS"), "Makefile")
 
-    cmd = "{} complib -j {:d} MODEL={} COMPLIB={} -f {} -C {} MACFILE={} " \
-        .format(gmake, gmake_j, compclass, complib, makefile, bldroot, macfile )
+    cmd = "{} complib -j {:d} MODEL={} COMPLIB={} {} -f {} -C {} " \
+        .format(gmake, gmake_j, compclass, complib, gmake_args, makefile, bldroot)
     if user_cppdefs:
         cmd = cmd + "USER_CPPDEFS='{}'".format(user_cppdefs )
 

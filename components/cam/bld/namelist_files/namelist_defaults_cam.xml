@@ -160,6 +160,11 @@
 <ncdata dyn="se" hgrid="ne240np4" nlev="26"             ic_ymd="101" >atm/cam/inic/homme/cami_1850-01-01_ne240np4_L26_c110314.nc</ncdata>
 <ncdata dyn="se" hgrid="ne240np4" nlev="26"             ic_ymd="901" >atm/cam/inic/homme/cami_0000-09-01_ne240np4_L26_c061106.nc</ncdata>
 
+<!-- E3SM Aquaplanet -->
+<ncdata dyn="se" hgrid="ne4np4"   nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne4np4_L72_c190218.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne30np4_L72_c190215.nc</ncdata>
+
+
 <ncdata dyn="se" hgrid="ne240np4" nlev="30"              >atm/cam/inic/homme/cami-mam3_0000-01-ne240np4_L30_c111004.nc</ncdata>
 <ncdata dyn="se" hgrid="ne240np4" nlev="72"              >atm/cam/inic/homme/cami_mam4_Linoz_0001-01-ne240np4_L72_c170910.nc</ncdata>
 
@@ -189,15 +194,6 @@
 <!-- Initial condition file for ENA RRM grid from 1 year spin-up -->
 <!-- (starting from initial file interpolated using interpic) -->
 <ncdata dyn="se" hgrid="ne0np4_enax4v1" nlev="72">atm/cam/inic/homme/cami_0002-01-01_enax4v1_L72_c170706.nc</ncdata>
-
-<ncdata dyn="se" hgrid="ne5np8"   nlev="26"  ocn="aquaplanet" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne5np8_L26_ape_c061102.nc</ncdata>
-<ncdata dyn="se" hgrid="ne16np4"  nlev="26"  ocn="aquaplanet" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne16np4_L26_ape_c071213.nc</ncdata>
-<ncdata dyn="se" hgrid="ne16np8"  nlev="26"  ocn="aquaplanet" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne16np8_L26_ape_c110222.nc</ncdata>
-<ncdata dyn="se" hgrid="ne21np4"  nlev="26"  ocn="aquaplanet" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne21np4_L26_ape_c071210.nc</ncdata>
-<ncdata dyn="se" hgrid="ne30np4"  nlev="26"  ocn="aquaplanet" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne30np4_L26_ape_c071210.nc</ncdata>
-
-<ncdata dyn="se" hgrid="ne16np4"  nlev="30"  ocn="aquaplanet" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne16np4_L30_ape_c101201.nc</ncdata>
-<ncdata dyn="se" hgrid="ne30np4"  nlev="30"  ocn="aquaplanet" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne30np4_L30_ape_c111020.nc</ncdata>
 
 
 <!-- Topography -->
@@ -906,6 +902,7 @@
 <!-- CLUBB options -->
 <clubb_rainevap_turb                              > .false. </clubb_rainevap_turb>
 <clubb_rainevap_turb microphys="mg2" clubb_sgs="1"> .false.  </clubb_rainevap_turb>
+<clubb_rainevap_turb microphys="p3"  clubb_sgs="1"> .false.  </clubb_rainevap_turb>
 <clubb_cloudtop_cooling                           > .false. </clubb_cloudtop_cooling>
 <clubb_expldiff                                   > .false. </clubb_expldiff>
 <clubb_expldiff     clubb_sgs="1"                 > .true.  </clubb_expldiff>
@@ -936,6 +933,7 @@
 <microp_scheme microphys="mg1">  MG</microp_scheme>
 <microp_scheme microphys="mg1.5">MG</microp_scheme>
 <microp_scheme microphys="mg2">  MG</microp_scheme>
+<microp_scheme microphys="p3">   P3</microp_scheme>
 
 <micro_mg_version     microphys="mg1">    1          </micro_mg_version>
 <micro_mg_sub_version microphys="mg1">    0          </micro_mg_sub_version>
@@ -986,6 +984,8 @@
 <cld_macmic_num_steps>                               1 </cld_macmic_num_steps>
 <cld_macmic_num_steps microphys="mg2" clubb_sgs="1"> 6 </cld_macmic_num_steps>
 <cld_macmic_num_steps microphys="mg2" shoc_sgs="1"> 6 </cld_macmic_num_steps>
+<cld_macmic_num_steps microphys="p3"  clubb_sgs="1"> 6 </cld_macmic_num_steps>
+<cld_macmic_num_steps microphys="p3"  shoc_sgs="1"> 6 </cld_macmic_num_steps>
 
 <microp_uniform>.false.</microp_uniform>
 <!-- Added flags for regenration and liq cld frac bug fixes    -->
@@ -1000,6 +1000,9 @@
 <nucleate_ice_subgrid clubb_sgs="1"     microphys="mg2" >1.2D0</nucleate_ice_subgrid>
 <nucleate_ice_subgrid shoc_sgs="1"     microphys="mg2" >1.2D0</nucleate_ice_subgrid>
 <nucleate_ice_subgrid clubb_do_deep="1" microphys="mg2" >1.0D0</nucleate_ice_subgrid>
+<nucleate_ice_subgrid clubb_sgs="1"     microphys="p3" >1.2D0</nucleate_ice_subgrid>
+<nucleate_ice_subgrid shoc_sgs="1"      microphys="p3" >1.2D0</nucleate_ice_subgrid>
+<nucleate_ice_subgrid clubb_do_deep="1" microphys="p3" >1.0D0</nucleate_ice_subgrid>
 
 <!-- Macrophysics scheme -->
 <macrop_scheme                       >none</macrop_scheme>
@@ -1089,6 +1092,9 @@
 
 <sol_facti_cloud_borne clubb_sgs="1" microphys="mg2"                  >1.0D0</sol_facti_cloud_borne>
 <sol_facti_cloud_borne clubb_sgs="1" clubb_do_deep="1" microphys="mg2">3.0D0</sol_facti_cloud_borne>
+<!-- AaronDonahue, Do we need this for p3 too? -->
+<sol_facti_cloud_borne clubb_sgs="1" microphys="p3"                  >1.0D0</sol_facti_cloud_borne>
+<sol_facti_cloud_borne clubb_sgs="1" clubb_do_deep="1" microphys="p3">3.0D0</sol_facti_cloud_borne>
 
 <sol_factb_interstitial                >0.1D0</sol_factb_interstitial>
 <sol_factb_interstitial unicon="1"     >1.0D0</sol_factb_interstitial>
@@ -1155,6 +1161,7 @@
 <cldfrc_rhminl dyn="fv"          phys="cam5" unicon="1"               > 0.850D0 </cldfrc_rhminl>
 <cldfrc_rhminl dyn="se"          phys="cam5" unicon="1"               > 0.920D0 </cldfrc_rhminl>
 <cldfrc_rhminl                   phys="cam5" microphys="mg2"          > 0.950D0 </cldfrc_rhminl>
+<cldfrc_rhminl                   phys="cam5" microphys="p3"          > 0.950D0 </cldfrc_rhminl>
 <cldfrc_rhminl                   phys="cam5"                          > 0.8975D0 </cldfrc_rhminl>
 <cldfrc_rhminl hgrid="1.9x2.5"   phys="cam5" microphys="mg1.5"        > 0.9125D0 </cldfrc_rhminl>
 <cldfrc_rhminl hgrid="1.9x2.5"   phys="cam5"                          > 0.8875D0 </cldfrc_rhminl>
@@ -1299,6 +1306,7 @@
 <zmconv_c0_lnd                                    phys="cam5"         > 0.0059D0 </zmconv_c0_lnd>
 <zmconv_c0_lnd                   hgrid="ne120np4" phys="cam5"         > 0.0035D0 </zmconv_c0_lnd>
 <zmconv_c0_lnd  microphys="mg2"  clubb_sgs="1"    phys="cam5"         > 0.0075D0 </zmconv_c0_lnd>
+<zmconv_c0_lnd  microphys="p3"  clubb_sgs="1"    phys="cam5"         > 0.0075D0 </zmconv_c0_lnd>
 <zmconv_c0_lnd  dyn="fv"                          phys="cam4"         > 0.0035D0 </zmconv_c0_lnd>
 <zmconv_c0_lnd  dyn="se"                       phys="cam4"         > 0.0035D0 </zmconv_c0_lnd>
 <zmconv_c0_lnd                   hgrid="48x96"    phys="cam4"         > 0.0020D0 </zmconv_c0_lnd>

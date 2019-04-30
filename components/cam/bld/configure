@@ -111,6 +111,7 @@ OPTIONS
   effect whether running CAM as part of CCSM or running in a CAM standalone mode:
 
      -[no]age_of_air_trcs Switch on [off] age of air tracers. Default: on for waccm_phys, otherwise off
+     -aquaplanet        Switch on aqua-planet mode w/ SST controlled by data ocean component in CIME
      -carma <name>      Build CAM with specified CARMA microphysics model
                         [ none | bc_strat | cirrus | cirrus_dust | dust | meteor_impact | 
                           meteor_smoke | mixed_sulfate | pmc | pmc_sulfate | sea_salt | sulfate | tholin |
@@ -143,7 +144,7 @@ OPTIONS
                         se grids.
      -max_n_rad_cnst <n> Maximum number of constituents that are either radiatively
                         active, or in any single diagnostic list for the radiation.    
-     -microphys <name>  Specify the microphysics option [mg1 | mg1.5 | mg2 | rk].
+     -microphys <name>  Specify the microphysics option [mg1 | mg1.5 | mg2 | rk | p3].
      -nadv <n>          Set total number of advected species to <n>.
      -nadv_tt <n>       Set number of advected test tracers <n>.
      -nlev <n>          Set number of levels to <n>.
@@ -302,6 +303,7 @@ my %opts = (
 	    );
 GetOptions(
     "age_of_air_trcs!"          => \$opts{'age_of_air_trcs'},
+    "aquaplanet"                => \$opts{'aquaplanet'},
     "cache=s"                   => \$opts{'cache'},
     "cachedir=s"                => \$opts{'cachedir'},
     "carma=s"                   => \$opts{'carma'},
@@ -956,11 +958,11 @@ my $clubb_sgs = $cfg_ref->get('clubb_sgs');
 
 # consistency checks...
 
-# CLUBB_SGS only works with mg microphysics
-if ($clubb_sgs and $microphys_pkg !~ m/^mg/) {
+# CLUBB_SGS only works with mg or p3 microphysics
+if ($clubb_sgs and $microphys_pkg !~ m/^mg/ and $microphys_pkg !~ m/^p3/) {
     die <<"EOF";
 **    ERROR: microphysics package set to: $microphys_pkg
-**    CLUBB_SGS only works with MG microphysics.
+**    CLUBB_SGS only works with MG or P3 microphysics.
 EOF
 }
 
@@ -985,6 +987,16 @@ if (defined $opts{'shoc_sgs'}) {
     $cfg_ref->set('shoc_sgs', $opts{'shoc_sgs'});
 }
 my $shoc_sgs = $cfg_ref->get('shoc_sgs');
+
+# consistency checks...
+
+# SHOC_SGS only works with mg or p3 microphysics
+if ($shoc_sgs and $microphys_pkg !~ m/^mg/ and $microphys_pkg !~ m/^p3/) {
+    die <<"EOF";
+**    ERROR: microphysics package set to: $microphys_pkg
+**    SHOC_SGS only works with MG or P3 microphysics.
+EOF
+}
 
 #-----------------------------------------------------------------------------------------------
 # Macro-physics package
@@ -1108,6 +1120,20 @@ my $cosp = $cfg_ref->get('cosp');
 if ($cosp and $print>=2) { print "COSP simulator enabled$eol"; }
 
 #-----------------------------------------------------------------------------------------------
+# Aquaplanet mode
+# This provides a flag to the atmosphere to let it know that it's running in aquaplanet mode.
+# This flag is mainly used by the dycore to set the fixed dry mass of the atmosphere.
+# It is independent of which model is used to specify the aquaplanet surface properties.
+my $aquaplanet = 0;
+# user override
+if (defined $opts{'aquaplanet'}) {
+    $aquaplanet = 1;
+}
+$cfg_ref->set('aquaplanet', $aquaplanet);
+my $aqua_mode = $aquaplanet ? "ON" : "OFF";
+if ($print>=2) { print "Aqua-planet mode: $aqua_mode$eol"; }
+
+#-----------------------------------------------------------------------------------------------
 # Ocean model
 my $ocn_pkg = 'docn';
 # If the physics package is adiabatic, or ideal, change the default
@@ -1221,16 +1247,6 @@ if ($scam eq 'ON' and $dyn_pkg ne 'eul' and $dyn_pkg ne 'se') {
     die <<"EOF";
 **  ERROR: SCAM mode only works with Eulerian dycore or Spectral Element dycore.
 **         Requested dycore is: $dyn_pkg
-EOF
-}
-
-# Check that model is configured for serial execution.  Note that configuring with spmd
-# and running with 1 task doesn't work because the EUL dycore expects at least 2 tasks.
-# The model should run if built for threading.
-if ($scam eq 'ON' and $dyn_pkg eq 'eul' and $spmd ne 'OFF') {
-    die <<"EOF";
-**  ERROR: SCAM mode assumes a serial build.
-**         Requested parallel modes are: spmd=$spmd  smp=$smp
 EOF
 }
 
@@ -1508,6 +1524,10 @@ else {
             if ($print>=2) { print "Advected constituents added by $microphys_pkg microphysics: 4$eol"; }
         }
         elsif ($microphys_pkg =~/^mg2/) {
+            $nadv += 8;
+            if ($print>=2) { print "Advected constituents added by $microphys_pkg microphysics: 8$eol"; }
+        }
+        elsif ($microphys_pkg =~/^p3/) {
             $nadv += 8;
             if ($print>=2) { print "Advected constituents added by $microphys_pkg microphysics: 8$eol"; }
         }

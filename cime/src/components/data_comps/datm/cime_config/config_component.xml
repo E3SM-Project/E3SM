@@ -70,6 +70,7 @@
       <value compset="^HIST_">trans_1850-2000</value>
       <value compset="^20TR_">trans_1850-2000</value>
       <value compset="_DATM%CPLHIST">cplhist</value>
+      <value compset="_DATM.*_DICE.*_DOCN.*_DROF">none</value> 
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>

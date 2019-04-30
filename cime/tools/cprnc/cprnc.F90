@@ -17,7 +17,19 @@ program piocprnc
   type(file_t) :: file(2)
   type(dim_t) :: dimoptions(12)
   integer :: dimoptioncnt
-  integer :: nvars, ndiffs, nfilldiffs, numnotfound
+  integer :: nvars, ndiffs, nfilldiffs
+
+  ! The following variables count the number of fields found on one file but not the
+  ! other, only considering (a) fields with an unlimited (time) dimension, and (b) fields
+  ! without an unlimited (time) dimension on a file that doesn't have an unlimited
+  ! dimension.
+  integer :: num_not_found_on_file1, num_not_found_on_file2
+
+  ! The following variables count the number of fields found on one file but not the
+  ! other, only considering fields without an unlimited (time) dimension on a file that
+  ! has an unlimited dimension.
+  integer :: num_not_found_on_file1_timeconst, num_not_found_on_file2_timeconst
+
   integer :: num_sizes_differ
   integer :: num_not_analyzed
 
@@ -87,10 +99,18 @@ program piocprnc
 
       call compare_dimensions( file(1)%dim, file(2)%dim)
 
-      call match_vars( file(1), file(2) )
+      num_not_found_on_file1 = 0
+      num_not_found_on_file2 = 0
+      num_not_found_on_file1_timeconst = 0
+      num_not_found_on_file2_timeconst = 0
+      call match_vars( file(1), file(2), &
+           num_not_found_on_file1 = num_not_found_on_file1, &
+           num_not_found_on_file2 = num_not_found_on_file2, &
+           num_not_found_on_file1_timeconst = num_not_found_on_file1_timeconst, &
+           num_not_found_on_file2_timeconst = num_not_found_on_file2_timeconst)
    end if
    call compare_vars(numcases, file, nvars, ndiffs, nfilldiffs, &
-        num_sizes_differ, num_not_analyzed, numnotfound)
+        num_sizes_differ, num_not_analyzed)
 
 
 !
@@ -110,12 +130,44 @@ program piocprnc
          write(6,700) '               and ',num_sizes_differ,' had different dimension sizes'
          write(6,700) ' A total number of ',num_sizes_differ + num_not_analyzed, &
               ' fields could not be analyzed'
-         write(6,700) ' A total number of ',numnotfound,' fields on file 1 were not found on file2.'
-         if (nvars > 0 .and. ndiffs == 0 .and. nfilldiffs == 0 .and. &
-              num_sizes_differ == 0 .and. num_not_analyzed<nvars) then
-            write(6,700) '  diff_test: the two files seem to be IDENTICAL '
-         else
+
+         call print_fields_not_found( &
+              filenum = 1, &
+              file_has_unlimited_dim = file(1)%has_unlimited_dim(), &
+              num_not_found = num_not_found_on_file2, &
+              num_not_found_timeconst = num_not_found_on_file2_timeconst)
+
+         call print_fields_not_found( &
+              filenum = 2, &
+              file_has_unlimited_dim = file(2)%has_unlimited_dim(), &
+              num_not_found = num_not_found_on_file1, &
+              num_not_found_timeconst = num_not_found_on_file1_timeconst)
+
+         if (nvars == 0 .or. ndiffs > 0 .or. nfilldiffs > 0 .or. &
+              num_sizes_differ > 0 .or. num_not_analyzed >= nvars) then
             write(6,700) '  diff_test: the two files seem to be DIFFERENT '
+         else if (num_not_found_on_file1 > 0 .or. num_not_found_on_file2 > 0) then
+            ! Note that we deliberately allow num_not_found_on_file1_timeconst or
+            ! num_not_found_on_file2_timeconst to be > 0: those do NOT result in a
+            ! "DIFFER" result.
+            !
+            ! Ideally, we'd count those fields here, too. Doing so would catch more
+            ! differences and would simplify the cprnc code. But this sometimes leads to
+            ! problems when comparing restart vs. baseline files
+            ! (https://github.com/ESMCI/cime/issues/3007). We could add a flag that you
+            ! specify to not count these fields, but there are backwards compatibility
+            ! issues with doing so. Eventually it could be good to count these absent
+            ! fields as a DIFFER result by default, adding a flag that you can specify to
+            ! not count them, then have cime specify this flag when doing the in-test
+            ! comparison (so absent time-constant fields would result in a DIFFER result
+            ! for cime's baseline comparisons and for interactive use of cprnc).
+            write(6,'(a)') '  diff_test: the two files DIFFER only in their field lists'
+         else
+            write(6,700) '  diff_test: the two files seem to be IDENTICAL '
+            if (num_not_found_on_file1_timeconst > 0 .or. &
+                 num_not_found_on_file2_timeconst > 0) then
+               write(6,'(a)') '      (But note that there were differences in field lists just for time-constant fields.)'
+            end if
          end if
       end if
       write(6,*) ' '
@@ -205,5 +257,52 @@ program piocprnc
      if(verbose) print *,__FILE__,__LINE__,trim(dimname),v1,v2
      return
    end subroutine parsearg
+
+   subroutine print_fields_not_found(filenum, file_has_unlimited_dim, &
+        num_not_found, num_not_found_timeconst)
+     ! Prints information about the number of fields in filenum not found on the other file
+
+     integer, intent(in) :: filenum                 ! file number for which we're printing this information
+     logical, intent(in) :: file_has_unlimited_dim  ! whether this file has an unlimited dimension
+
+     ! Number of fields in filenum but not on the other file, only considering (a) fields
+     ! with an unlimited (time) dimension, and (b) fields without an unlimited (time)
+     ! dimension on a file that doesn't have an unlimited dimension
+     integer, intent(in) :: num_not_found
+
+     ! Number of fields in filenum but not on the other file, only considering fields
+     ! without an unlimited (time) dimension on a file that has an unlimited dimension
+     integer, intent(in) :: num_not_found_timeconst
+
+     integer :: other_filenum
+
+     if (filenum == 1) then
+        other_filenum = 2
+     else if (filenum == 2) then
+        other_filenum = 1
+     else
+        stop 'Unexpected value for filenum'
+     end if
+
+     if (file_has_unlimited_dim) then
+        write(6,'(a,i6,a,i1,a,i1,a)') &
+             ' A total number of ', num_not_found, &
+             ' time-varying fields on file ', filenum, &
+             ' were not found on file ', other_filenum, '.'
+        write(6,'(a,i6,a,i1,a,i1,a)') &
+             ' A total number of ', num_not_found_timeconst, &
+             ' time-constant fields on file ', filenum, &
+             ' were not found on file ', other_filenum, '.'
+     else
+        write(6,'(a,i6,a,i1,a,i1,a)') &
+             ' A total number of ', num_not_found, &
+             ' fields on file ', filenum, &
+             ' were not found on file ', other_filenum, '.'
+        if (num_not_found_timeconst > 0) then
+           stop 'Programming error: file has no unlimited dimension, but num_not_found_timeconst > 0'
+        end if
+     end if
+
+   end subroutine print_fields_not_found
 
  end program piocprnc

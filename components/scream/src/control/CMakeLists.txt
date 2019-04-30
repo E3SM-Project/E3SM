@@ -8,7 +8,7 @@ set(SCREAM_CONTROL_HEADERS
   surface_coupling.hpp
 )
 
-link_directories(${SCREAM_LIBRARY_DIRS} ${SCREAM_TPL_LIBRARY_DIRS})
+link_directories(${SCREAM_TPL_LIBRARY_DIRS})
 
 add_library(scream_control ${SCREAM_CONTROL_SOURCES})
 target_include_directories(scream_control PUBLIC ${SCREAM_SRC_DIR})

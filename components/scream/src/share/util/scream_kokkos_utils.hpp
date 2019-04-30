@@ -79,7 +79,7 @@ template <typename ExeSpace = Kokkos::DefaultExecutionSpace>
 struct ExeSpaceUtils {
   using TeamPolicy = Kokkos::TeamPolicy<ExeSpace>;
 
-  static TeamPolicy get_default_team_policy (Int ni, Int nk) {
+  static TeamPolicy get_default_team_policy (Int ni, Int /* nk */) {
 #ifdef SCREAM_MIMIC_GPU
     const int max_threads = ExeSpace::concurrency();
     const int team_size = max_threads < 7 ? max_threads : 7;
@@ -143,7 +143,7 @@ public:
    */
   template <typename MemberType>
   KOKKOS_INLINE_FUNCTION
-  int get_workspace_idx(const MemberType& team_member) const
+  int get_workspace_idx(const MemberType& /* team_member */) const
   {
 #ifdef KOKKOS_ENABLE_OPENMP
     return omp_get_thread_num() / _team_size;

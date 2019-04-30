@@ -509,6 +509,12 @@ processes, otherwise use option 0 (approx.).
 Default: -1
 </entry>
 
+<entry id="phys_chnk_cost_write" type="logical"  category="perf_dp_coup"
+       group="cam_inparm" valid_values="">
+Enable/disable output of measured physics cost per chunk.
+Default: .false.
+</entry>
+
 <entry id="phys_chnk_per_thd" type="integer"  category="perf_dp_coup"
        group="cam_inparm" valid_values="">
 Select target number of chunks per thread.  Must be positive.
@@ -1121,13 +1127,6 @@ Default: set by build-namelist.
 IEFLX fixer options
 Default: 0
 </entry>
-
-<entry id="l_ieflx_fix" type="logical"  category="fixers"
-       group="phys_ctl_nl" valid_values="">
-Whether or not to turn on IEFLX fixer
-Default: false
-</entry>
-
 
 <!-- Gravity Wave Drag -->
 
@@ -3067,6 +3066,18 @@ Constant associated with the dissipation of the variance of vertical velocity
 Default: 1.0. See clubb/parameters_tunable.F90
 </entry>
 
+<entry id="clubb_C1b" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Constant associated with the dissipation of the variance of vertical velocity
+Default: 1.0. See clubb/parameters_tunable.F90
+</entry>
+
+<entry id="clubb_C1c" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Constant associated with the dissipation of the variance of vertical velocity
+Default: 1.0. See clubb/parameters_tunable.F90
+</entry>
+
 <entry id="clubb_C2rt" type="real" category="pblrad"
        group="clubb_param_nl" valid_values="" >
 Constant associated with the dissipation of the variance of total water
@@ -3096,6 +3107,25 @@ Default: 4.0
 High skewness of Newtonian damping of water flux
 Default: 6.0
 </entry>
+
+<entry id="clubb_C6rtc" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+High skewness of Newtonian damping of water flux
+Default: 1.0
+</entry>
+
+<entry id="clubb_C6thlb" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Low skewness of Newtonian damping of water flux
+Default: 1.0
+</entry>
+
+<entry id="clubb_C6thlc" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Low skewness of Newtonian damping of water flux
+Default: 6.0
+</entry>
+
 
 <entry id="clubb_C7" type="real" category="pblrad"
        group="clubb_param_nl" valid_values="" >
@@ -3127,6 +3157,12 @@ High skewnes of buoyancy damping of the third moment of vertical velocity
 Default: 0.35
 </entry>
 
+<entry id="clubb_C11c" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+High skewnes of buoyancy damping of the third moment of vertical velocity
+Default: 0.5
+</entry>
+
 <entry id="clubb_C14" type="real" category="pblrad"
        group="clubb_param_nl" valid_values="" >
 Constant of Newtonian damping of the variances of u-wind and v-wind
@@ -3149,6 +3185,12 @@ Default: 0.32
        group="clubb_param_nl" valid_values="" >
 High Skw. gamma coef. Skw. Fnct.
 Default: 0.32 or clubb_gamma_coef if it is specified
+</entry>
+
+<entry id="clubb_gamma_coefc" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+High Skw. gamma coef. Skw. Fnct.
+Default: 5.0or clubb_gamma_coef if it is specified
 </entry>
 
 <entry id="clubb_mu" type="real" category="pblrad"

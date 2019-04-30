@@ -5,6 +5,7 @@
 #include "share/field/field_repository.hpp"
 #include "share/mpi/scream_comm.hpp"
 #include "share/parameter_list.hpp"
+#include "share/grid/grids_manager.hpp"
 
 #include <memory>
 
@@ -53,19 +54,20 @@ public:
   // Clean up the driver (includes cleaning up the parametrizations and the fm's);
   void finalize ( /* inputs */ );
 
+  const FieldRepository<Real,device_type>& get_field_repo () const { return m_device_field_repo; }
 protected:
 
   FieldRepository<Real,device_type>           m_device_field_repo;
 
   std::shared_ptr<AtmosphereProcessGroup>     m_atm_process_group;
 
+  std::shared_ptr<GridsManager>               m_grids_manager;
+
   ParameterList                               m_atm_params;
 
   // This is the comm containing all (and only) the processes assigned to the atmosphere
   Comm   m_atm_comm;
 };
-
-int driver_stub();
 
 }  // namespace control
 }  // namespace scream

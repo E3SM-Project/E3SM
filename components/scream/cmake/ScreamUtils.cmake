@@ -11,21 +11,30 @@ include(CMakeParseArguments) # Needed for backwards compatibility
 #      Note: One test will be created per combination of valid mpi-rank and thread value
 
 FUNCTION(CreateUnitTest target_name target_srcs scream_libs)
-  set(oneValueArgs CONFIG_DEFS)
-  set(multiValueArgs MPI_RANKS THREADS)
+  set(oneValueArgs NAMELIST_FILE)
+  set(multiValueArgs MPI_RANKS THREADS CONFIG_DEFS INCLUDE_DIRS)
   cmake_parse_arguments(CreateUnitTest "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
   # Set link directories (must be done BEFORE add_executable is called)
-  link_directories(${SCREAM_TPL_LIBRARY_DIRS} ${SCREAM_LIBRARY_DIRS})
+  link_directories(${SCREAM_TPL_LIBRARY_DIRS})
 
   # Create the executable
   add_executable (${target_name} ${target_srcs} ${SCREAM_SRC_DIR}/share/util/scream_catch_main.cpp)
 
+  SET (TEST_INCLUDE_DIRS
+       ${SCREAM_INCLUDE_DIRS}
+       ${CATCH_INCLUDE_DIR}
+       ${CMAKE_CURRENT_SOURCE_DIR}
+       ${CMAKE_CURRENT_BINARY_DIR}
+       ${SCREAM_F90_MODULES}
+       ${CreateUnitTest_INCLUDE_DIRS}
+  )
+
   # Set all target properties
   target_link_libraries(${target_name} ${scream_libs} ${SCREAM_TPL_LIBRARIES})
-  target_include_directories(${target_name} PUBLIC ${SCREAM_INCLUDE_DIRS} ${CATCH_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+  target_include_directories(${target_name} PUBLIC ${TEST_INCLUDE_DIRS})
   set_target_properties(${target_name} PROPERTIES LINK_FLAGS "${SCREAM_LINK_FLAGS}")
-  set_target_properties(${target_name} PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
+  set_target_properties(${target_name} PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${target_name}_modules)
   if (CreateUnitTest_CONFIG_DEFS)
     set_target_properties(${target_name} PROPERTIES COMPILE_DEFINITIONS "${CreateUnitTest_CONFIG_DEFS}")
   endif()
@@ -89,13 +98,21 @@ FUNCTION(CreateUnitTest target_name target_srcs scream_libs)
   set(CURR_RANKS ${MPI_START_RANK})
   set(CURR_THREADS ${THREAD_START})
 
+  IF (CreateUnitTest_NAMELIST_FILE)
+    SET  (invokeExec "./${target_name} < ${CreateUnitTest_NAMELIST_FILE}")
+  ELSE()
+    SET  (invokeExec "./${target_name}")
+  ENDIF()
+
   while (NOT CURR_RANKS GREATER ${MPI_END_RANK})
     while (NOT CURR_THREADS GREATER ${THREAD_END})
       # Create the test
       IF (${CURR_RANKS} GREATER 1)
-        ADD_TEST(${target_name}_ut_np${CURR_RANKS}_omp${CURR_THREADS} mpiexec -np ${CURR_RANKS} ${SCREAM_MPI_EXTRA_ARGS} ${target_name})
+        ADD_TEST(NAME ${target_name}_ut_np${CURR_RANKS}_omp${CURR_THREADS}
+                 COMMAND sh -c "mpiexec -np ${CURR_RANKS} ${SCREAM_MPI_EXTRA_ARGS} ${invokeExec}")
       ELSE()
-        ADD_TEST(${target_name}_ut_np1_omp${CURR_THREADS} ${target_name})
+        ADD_TEST(NAME ${target_name}_ut_np1_omp${CURR_THREADS}
+                 COMMAND sh -c "${invokeExec}")
       ENDIF()
       set_tests_properties(${target_name}_ut_np${CURR_RANKS}_omp${CURR_THREADS} PROPERTIES ENVIRONMENT OMP_NUM_THREADS=${CURR_THREADS})
       MATH(EXPR CURR_THREADS "${CURR_THREADS}+${THREAD_INCREMENT}")
