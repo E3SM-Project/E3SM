@@ -478,7 +478,10 @@ class EnvMachSpecific(EnvBase):
         run_exe_node = self.get_optional_child('run_exe', root=the_match)
         run_exe = self.text(run_exe_node)
 
-        return executable, args, run_exe
+        run_misc_suffix_node = self.get_optional_child('run_misc_suffix', root=the_match)
+        run_misc_suffix = self.text(run_exe_node)
+
+        return executable, args, run_exe, run_misc_suffix
 
     def get_type_info(self, vid):
         return "char"

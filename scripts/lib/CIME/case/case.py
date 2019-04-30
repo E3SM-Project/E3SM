@@ -1378,10 +1378,13 @@ directory, NOT in this subdirectory."""
             "unit_testing" : False
             }
 
-        executable, mpi_arg_list, custom_run_exe = env_mach_specific.get_mpirun(self, mpi_attribs, job)
+        executable, mpi_arg_list, custom_run_exe, custom_run_misc_suffix = env_mach_specific.get_mpirun(self, mpi_attribs, job)
         if custom_run_exe:
             logger.info('Using a custom run_exe {}'.format(custom_run_exe))
             run_exe = custom_run_exe
+        if custom_run_misc_suffix:
+            logger.info('Using a custom run_misc_suffix {}'.format(custom_run_misc_suffix))
+            run_misc_suffix = custom_run_misc_suffix
 
 
         # special case for aprun
