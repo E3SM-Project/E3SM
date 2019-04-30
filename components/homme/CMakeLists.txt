@@ -312,6 +312,7 @@ IF (NOT (CPRNC_DIR))
 ENDIF ()
 
 IF (${HOMME_USE_KOKKOS})
+  INCLUDE(Kokkos)
   # Add unit tests for C++ code
   ADD_SUBDIRECTORY(test/unit_tests)
 ENDIF ()
@@ -370,3 +371,9 @@ ADD_CUSTOM_TARGET(clean-all
 )
 
 ADD_SUBDIRECTORY(dcmip_tests)
+
+IF (${HOMME_USE_KOKKOS})
+  # Put this last so that tribits.cmake's 'check' target doesn't conflict with
+  # Homme's.
+  install_kokkos_if_needed()
+ENDIF ()
