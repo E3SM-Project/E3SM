@@ -35,11 +35,12 @@ ELSEIF (CMAKE_Fortran_COMPILER_ID STREQUAL Intel)
   SET(${UT_FP_MODEL} "-fp-model precise")
 ENDIF ()
 
-# enable all warning
+# enable all warning but disable vectorization warnings
 SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 IF (CMAKE_Fortran_COMPILER_ID STREQUAL Intel)
-  SET (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -warn all")
+  SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -diag-disable=vec,par,remark")
+  SET (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -warn all -diag-disable=vec,par,remark")
 ELSE()
   SET (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wall")
 ENDIF()
