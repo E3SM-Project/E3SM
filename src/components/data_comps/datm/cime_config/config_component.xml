@@ -205,7 +205,6 @@
       <value compset="RCP.*_DATM%QIA">2004</value>
       <value compset="RCP.*_DATM%CRU">2005</value>
       <value compset="RCP.*_DATM%GSW">2005</value>
-      <value compset="RCP.*_DATM%NLDAS2">2005</value>
       <value compset="1850.*_DATM%CRU">1</value>
       <value compset="1850.*_DATM%GSW">1</value>
       <value compset="2000.*_DATM">$DATM_CLMNCEP_YR_START</value>
@@ -242,7 +241,6 @@
       <value compset="RCP.*_DATM%QIA" >1972</value>
       <value compset="RCP.*_DATM%CRU" >1991</value>
       <value compset="RCP.*_DATM%GSW" >1991</value>
-      <value compset="RCP.*_DATM%NLDAS2" >0</value>  <!-- Unsupported -->
       <value compset="2003.*_DATM%QIA.*_TEST">2002</value>
       <value compset="1850.*_DATM%CRU">1901</value>
       <value compset="2000.*_DATM%CRU">1991</value>
@@ -285,7 +283,6 @@
       <value   compset="RCP.*_DATM%QIA">2004</value>
       <value   compset="RCP.*_DATM%CRU">2010</value>
       <value   compset="RCP.*_DATM%GSW">2010</value>
-      <value   compset="RCP.*_DATM%NLDAS2">-1</value>  <!-- Unsupported -->
       <value   compset="2003.*_DATM%QIA.*_TEST">2003</value>
       <value   compset="1850.*_DATM%CRU">1920</value>
       <value   compset="2000.*_DATM%CRU">2010</value>
