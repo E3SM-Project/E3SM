@@ -364,13 +364,13 @@ contains
                                 pbuf_get_field, &
                                 pbuf_get_index
       use mo_optical_props, only: ty_optical_props_2str
-      use mo_gas_optics, only: ty_gas_optics
+      use mo_gas_optics_rrtmgp, only: ty_gas_optics_rrtmgp
       use mcica_subcol_gen, only: mcica_subcol_mask
 
       type(physics_state), intent(in) :: state
       type(physics_buffer_desc), pointer :: pbuf(:)
       integer, intent(in) :: day_indices(:)
-      type(ty_gas_optics), intent(in) :: kdist
+      type(ty_gas_optics_rrtmgp), intent(in) :: kdist
       type(ty_optical_props_2str), intent(inout) :: optics_out
 
       ! Type to hold optics on CAM grid
@@ -524,12 +524,12 @@ contains
       use physics_buffer, only: physics_buffer_desc, &
                                 pbuf_get_field, pbuf_get_index
       use mo_optical_props, only: ty_optical_props_1scl
-      use mo_gas_optics, only: ty_gas_optics
+      use mo_gas_optics_rrtmgp, only: ty_gas_optics_rrtmgp
       use mcica_subcol_gen, only: mcica_subcol_mask
 
       type(physics_state), intent(in) :: state
       type(physics_buffer_desc), pointer :: pbuf(:)
-      type(ty_gas_optics), intent(in) :: kdist
+      type(ty_gas_optics_rrtmgp), intent(in) :: kdist
       type(ty_optical_props_1scl), intent(inout) :: optics_out
 
       type(cam_optics_type) :: optics_cam
