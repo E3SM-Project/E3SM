@@ -78,6 +78,8 @@ contains
     use hybrid_mod, only: hybrid_t, hybrid_create
     use derivative_mod, only: derivative_t, derivinit
     use hybvcoord_mod, only: hvcoord_t
+    use time_mod, only: nEndStep
+    use control_mod, only: transport_alg
 
     type (parallel_t), intent(in) :: par
     type (domain1d_t), pointer, intent(in) :: dom_mt(:)
@@ -89,6 +91,12 @@ contains
     integer :: ithr, nets, nete
 
 #ifdef HOMME_ENABLE_COMPOSE
+    if (transport_alg == 19) then
+       nEndStep = -1
+    else
+       return
+    end if
+
     call derivinit(deriv)
 
     if (par%masterproc) print *, '~*~ Comprehensively test COMPOSE ~*~'
