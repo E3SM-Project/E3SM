@@ -7,8 +7,8 @@
 
 	<run_script name="run.py">
 		<step executable="MpasMeshConverter.x">
-                     <argument flag="mesh.nc"></argument>
-                     <argument flag="mesh_with_metrics.nc"></argument>
+			<argument flag="mesh.nc"></argument>
+			<argument flag="mesh_with_metrics.nc"></argument>
 		</step>
 
 		<step executable="./inject_bathymetry.py">

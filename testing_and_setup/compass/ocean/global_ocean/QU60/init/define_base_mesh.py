@@ -6,6 +6,9 @@
 %    lon - longitude, vector of length m, with entries between -180 and 180, degrees
 %    lat - latitude, vector of length n, with entries between -90 and 90, degrees
 """
+from __future__ import absolute_import, division, print_function, \
+    unicode_literals
+
 import numpy as np
 
 
@@ -18,5 +21,4 @@ def cellWidthVsLatLon():
     lon = np.arange(-180, 180.01, ddeg)
 
     cellWidth = constantCellWidth * np.ones((lat.size, lon.size))
-    print 'cellWidth', cellWidth
     return cellWidth, lon, lat

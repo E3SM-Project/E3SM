@@ -7,7 +7,7 @@
 %    lat - latitude, vector of length n, with entries between -90 and 90, degrees
 """
 import numpy as np
-import mesh_definition_tools as mdt
+import jigsaw_to_MPAS.mesh_definition_tools as mdt
 
 
 def cellWidthVsLatLon():
