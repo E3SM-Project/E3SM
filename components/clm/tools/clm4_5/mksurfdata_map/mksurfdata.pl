@@ -556,6 +556,7 @@ EOF
  mksrf_fphosphorus = '$datfil{'pho'}'
 EOF
             my $urbdesc = "urb3den";
+            my $rcp_option= "";
 
             my $resol = "-res $hgrd{'veg'}";
             my $sim_yr0 = $sim_year;
@@ -564,7 +565,12 @@ EOF
                $sim_yr0 = $1;
                $sim_yrn = $2;
             }
-            my $cmd    = "$scrdir/../../../bld/queryDefaultNamelist.pl $queryfilopts $resol -options sim_year=${sim_yr0}$mkcrop -var mksrf_fvegtyp -namelist clmexp";
+            if ( $rcp == -999.9 ) {
+               $rcp_option="";
+            } else {
+               $rcp_option = ",rcp=$rcp";
+            }
+            my $cmd    = "$scrdir/../../../bld/queryDefaultNamelist.pl $queryfilopts $resol -options sim_year=${sim_yr0}$mkcrop$rcp_option -var mksrf_fvegtyp -namelist clmexp";
             my $vegtyp = `$cmd`;
             chomp( $vegtyp );
             if ( $vegtyp eq "" ) {
