@@ -14,20 +14,18 @@ import numpy as np
 from scipy import interpolate
 import netCDF4 as nc4
 import scipy.io as sio
-dtor = np.pi / 180.0
-rtod = 180.0 / np.pi
+import sys
 
-if __name__ == "__main__":
-    import sys
 
+def inject_meshDensity(mat_filename, mesh_filename):
     print('Read cell width field from Matlab regular grid...')
-    matData = sio.loadmat(sys.argv[1])
+    matData = sio.loadmat(mat_filename)
     # Add extra column in longitude to interpolate over the Date Line
     cellWidth = np.concatenate(
         (matData['cellWidth'], matData['cellWidth'][:, 0:1]), axis=1)
-    LonPos = np.concatenate(
-        (matData['lon'].T, matData['lon'].T[0:1] + 360)) * dtor
-    LatPos = matData['lat'].T * dtor
+    LonPos = np.deg2rad(np.concatenate(
+        (matData['lon'].T, matData['lon'].T[0:1] + 360)))
+    LatPos = np.deg2rad(matData['lat'].T)
     # set max lat position to be exactly at North Pole to avoid interpolation
     # errors
     LatPos[np.argmax(LatPos)] = np.pi / 2.0
@@ -39,15 +37,15 @@ if __name__ == "__main__":
     LON, LAT = np.meshgrid(LonPos, LatPos)
 
     print('Open unstructured MPAS mesh file...')
-    ds = nc4.Dataset(sys.argv[2], 'r+')
-    meshDensity = ds.variables['meshDensity'][:]
+    ds = nc4.Dataset(mesh_filename, 'r+')
+    meshDensity = ds.variables['meshDensity']
 
     print('Preparing interpolation of meshDensity from lat/lon to mesh...')
     meshDensityInterp = interpolate.LinearNDInterpolator(
         np.vstack((LAT.ravel(), LON.ravel())).T, meshDensityVsLatLon.ravel())
 
     print('Interpolating and writing meshDensity...')
-    ds.variables['meshDensity'][:] = meshDensityInterp(
+    meshDensity[:] = meshDensityInterp(
         np.vstack(
             (ds.variables['latCell'][:],
              np.mod(
@@ -58,3 +56,8 @@ if __name__ == "__main__":
                 np.pi)).T)
 
     ds.close()
+
+
+if __name__ == "__main__":
+
+    inject_meshDensity(mat_filename=sys.argv[1], mesh_filename=sys.argv[2])

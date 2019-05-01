@@ -6,6 +6,20 @@ from __future__ import absolute_import, division, print_function, \
 import netCDF4 as nc4
 import argparse
 
+
+def inject_preserve_floodplain(mesh_file, floodplain_elevation):
+
+    nc_mesh = nc4.Dataset(mesh_file, 'r+')
+    nc_vars = nc_mesh.variables.keys()
+
+    if 'cellSeedMask' not in nc_vars:
+        nc_mesh.createVariable('cellSeedMask', 'i', ('nCells'))
+    nc_mesh.variables['cellSeedMask'][:] = \
+        nc_mesh.variables['bathymetry'][:] < floodplain_elevation
+
+    nc_mesh.close()
+
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
@@ -13,12 +27,4 @@ if __name__ == "__main__":
     parser.add_argument('floodplain_elevation', action='store', type=float)
     cl_args = parser.parse_args()
 
-    nc_mesh = nc4.Dataset(cl_args.mesh_file, 'r+')
-    nc_vars = nc_mesh.variables.keys()
-
-    if 'cellSeedMask' not in nc_vars:
-        nc_mesh.createVariable('cellSeedMask','i',('nCells'))
-    nc_mesh.variables['cellSeedMask'][:] = \
-        nc_mesh.variables['bathymetry'][:] < cl_args.floodplain_elevation
-
-    nc_mesh.close()
+    inject_preserve_floodplain(cl_args.mesh_file, cl_args.floodplain_elevation)

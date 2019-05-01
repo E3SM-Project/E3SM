@@ -20,36 +20,6 @@ def readmsh(fname):
     09/22/2017
     """
 
-    def store_datavals(datavals, dataset):  # {{{
-
-        if datavals['ARRAY'] is not None:
-            # remove empty data
-            if np.all(datavals['ARRAY'] == np.array(None, dtype='object')):
-                datavals.pop('ARRAY')
-            for key in [aval for aval in datavals.keys()
-                        if aval in ['HEADER', 'MSHID', 'NDIMS']]:
-                if key in dataset:
-                    dataset[key] += datavals[key]
-                else:
-                    dataset[key] = datavals[key]
-                datavals.pop(key)
-            entryname = [aval for aval in datavals.keys() if aval not in [
-                'ARRAY']]
-
-            if 'TRI' in entryname[0]:
-                dtype = 'i'
-            else:
-                dtype = 'f8'
-            datavals['ARRAY'] = np.asarray(datavals['ARRAY'], dtype=dtype)
-
-            # decided to throw away "index" from msh because it isn't truly a
-            # real number
-            dataset[entryname[0]] = datavals['ARRAY']
-            datavals = {}
-            datavals['ARRAY'] = None
-
-        return datavals, dataset  # }}}
-
     dataset = {}
     datavals = {}
     datavals['HEADER'] = ';'
@@ -62,7 +32,7 @@ def readmsh(fname):
                 line = f.readline()
                 continue
             if '=' in line:
-                datavals, dataset = store_datavals(datavals, dataset)
+                datavals, dataset = _store_datavals(datavals, dataset)
                 if 'COORD' in line:
                     name = 'COORD' + line.split('=')[1][0]
                     datavals[name] = line.split(';')[-1]
@@ -81,13 +51,37 @@ def readmsh(fname):
                 datavals['ARRAY'].append(arrayvals)
             line = f.readline()
             continue
-        datavals, dataset = store_datavals(datavals, dataset)
+        datavals, dataset = _store_datavals(datavals, dataset)
 
     return dataset
 
 
-if __name__ == "__main__":
-    import sys
-    msh = readmsh(sys.argv[1])
-    import pdb
-    pdb.set_trace()
+def _store_datavals(datavals, dataset):  # {{{
+
+    if datavals['ARRAY'] is not None:
+        # remove empty data
+        if np.all(datavals['ARRAY'] == np.array(None, dtype='object')):
+            datavals.pop('ARRAY')
+        for key in [aval for aval in datavals.keys()
+                    if aval in ['HEADER', 'MSHID', 'NDIMS']]:
+            if key in dataset:
+                dataset[key] += datavals[key]
+            else:
+                dataset[key] = datavals[key]
+            datavals.pop(key)
+        entryname = [aval for aval in datavals.keys() if aval not in [
+            'ARRAY']]
+
+        if 'TRI' in entryname[0]:
+            dtype = 'i'
+        else:
+            dtype = 'f8'
+        datavals['ARRAY'] = np.asarray(datavals['ARRAY'], dtype=dtype)
+
+        # decided to throw away "index" from msh because it isn't truly a
+        # real number
+        dataset[entryname[0]] = datavals['ARRAY']
+        datavals = {}
+        datavals['ARRAY'] = None
+
+    return datavals, dataset  # }}}

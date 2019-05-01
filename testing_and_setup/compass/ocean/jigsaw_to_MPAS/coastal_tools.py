@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 from scipy import spatial, io
 import timeit
 from mpl_toolkits.basemap import Basemap
-import mesh_definition_tools as mdt
+import jigsaw_to_MPAS.mesh_definition_tools as mdt
 plt.switch_backend('agg')
 
 # Constants
