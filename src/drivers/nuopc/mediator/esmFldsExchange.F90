@@ -448,8 +448,8 @@ contains
     ! ---------------------------------------------------------------------
 
     allocate(flds(9))
-    flds = (/'Sa_z', 'Sa_topo', 'Sa_u', 'Sa_v', 'Sa_tbot', &
-             'Sa_ptem', 'Sa_pbot', 'Sa_shum', 'Sa_shum_wiso'/)
+    flds = (/'Sa_z        ', 'Sa_topo     ', 'Sa_u        ', 'Sa_v        ', 'Sa_tbot     ', &
+             'Sa_ptem     ', 'Sa_pbot     ', 'Sa_shum     ', 'Sa_shum_wiso'/)
 
     do n = 1,size(flds)
        fldname = trim(flds(n))
@@ -493,9 +493,9 @@ contains
     ! TODO (mvertens, 2019-03-10): add water isotopes from atm
 
     allocate(flds(14))
-    flds = (/'Faxa_rainc'    , 'Faxa_rainl'   , 'Faxa_snowc'   , 'Faxa_snowl' ,               &
-             'Faxa_lwdn'     , 'Faxa_swndr'   , 'Faxa_swvdr'   , 'Faxa_swndf' , 'Faxa_swvdf', &
-             'Faxa_bcph'     , 'Faxa_ocph'    , 'Faxa_dstwet'  , 'Faxa_dstdry', 'Faxa_ndep' /)
+    flds = (/'Faxa_rainc ', 'Faxa_rainl ', 'Faxa_snowc ', 'Faxa_snowl ',                &
+             'Faxa_lwdn  ', 'Faxa_swndr ', 'Faxa_swvdr ', 'Faxa_swndf ', 'Faxa_swvdf ', &
+             'Faxa_bcph  ', 'Faxa_ocph  ', 'Faxa_dstwet', 'Faxa_dstdry', 'Faxa_ndep  ' /)
 
     do n = 1,size(flds)
        fldname = trim(flds(n))
@@ -519,7 +519,8 @@ contains
     ! to lnd: river water flux back to land due to flooding
     ! ---------------------------------------------------------------------
     allocate(flds(6))
-    flds = (/'Flrr_volr', 'Flrr_volr_wiso', 'Flrr_volrmch', 'Flrr_volrmch_wiso', 'Flrr_flood', 'Flrr_flood_wiso'/)
+    flds = (/'Flrr_volr        ', 'Flrr_volr_wiso   ', 'Flrr_volrmch     ', &
+             'Flrr_volrmch_wiso', 'Flrr_flood       ', 'Flrr_flood_wiso  '/)
 
     do n = 1,size(flds)
        fldname = trim(flds(n))
@@ -543,7 +544,7 @@ contains
     ! to lnd: fields with multiple elevation classes from glc
     ! ---------------------------------------------------------------------
     allocate(flds(2))
-    flds = (/'Sg_icemask', 'Sg_icemask_coupled_fluxes'/)
+    flds = (/'Sg_icemask               ', 'Sg_icemask_coupled_fluxes'/)
 
     do n = 1,size(flds)
        fldname = trim(flds(n))
@@ -652,7 +653,7 @@ contains
     ! to atm: merged reference specific water isoptope humidity at 2 meters
     ! ---------------------------------------------------------------------
     allocate(suffix(4))
-    suffix = (/'tref', 'u10', 'qref', 'qref_wiso'/)
+    suffix = (/'tref     ', 'u10      ', 'qref     ', 'qref_wiso'/)
 
     do n = 1,size(suffix)
        if (phase == 'advertise') then
@@ -705,7 +706,7 @@ contains
     ! to atm: evaporation water flux from water isotopes
     ! ---------------------------------------------------------------------
     allocate(suffix(7))
-    suffix = (/'taux', 'tauy', 'lat', 'sen', 'lwup', 'evap', 'evap_wiso'/)
+    suffix = (/'taux     ', 'tauy     ', 'lat      ', 'sen      ', 'lwup     ', 'evap     ', 'evap_wiso'/)
 
     do n = 1,size(suffix)
        if (phase == 'advertise') then
@@ -820,7 +821,7 @@ contains
     ! to atm: mean snow volume per unit area from ice
     ! ---------------------------------------------------------------------
     allocate(flds(3))
-    flds = (/'Si_snowh', 'Si_vice', 'Si_vsno'/)
+    flds = (/'Si_snowh', 'Si_vice ', 'Si_vsno '/)
 
     do n = 1,size(flds)
        fldname = trim(flds(n))
@@ -848,7 +849,7 @@ contains
     ! to atm: surface fraction velocity                     from med aoflux
     ! ---------------------------------------------------------------------
     allocate(flds(3))
-    flds = (/'So_ssq', 'So_re', 'So_ustar'/)
+    flds = (/'So_ssq  ', 'So_re   ', 'So_ustar'/)
 
     do n = 1,size(flds)
        fldname = trim(flds(n))
@@ -872,7 +873,7 @@ contains
     ! to atm: surface snow water equivalent from land
     ! ---------------------------------------------------------------------
     allocate(flds(3))
-    flds = (/'Sl_fv', 'Sl_ram1', 'Sl_snowh'/)
+    flds = (/'Sl_fv   ', 'Sl_ram1 ', 'Sl_snowh'/)
 
     do n = 1,size(flds)
        fldname = trim(flds(n))
@@ -991,7 +992,7 @@ contains
     ! to ocn: downward diffuse visible incident solar radiation from atm
     ! ---------------------------------------------------------------------
     allocate(flds(5))
-    flds = (/'Faxa_lwdn', 'Faxa_swndr', 'Faxa_swndf', 'Faxa_swvdr', 'Faxa_swndf'/)
+    flds = (/'Faxa_lwdn ', 'Faxa_swndr', 'Faxa_swndf', 'Faxa_swvdr', 'Faxa_swndf'/)
 
     do n = 1,size(flds)
        fldname = trim(flds(n))
@@ -1354,7 +1355,7 @@ contains
     ! to ocn: nitrogen deposition fields (2) from atm
     ! ---------------------------------------------------------------------
     allocate(flds(5))
-    flds = (/'Faxa_bcph', 'Faxa_ocph', 'Faxa_dstwet' , 'Faxa_dstdry', 'Faxa_ndep' /)
+    flds = (/'Faxa_bcph  ', 'Faxa_ocph  ', 'Faxa_dstwet' , 'Faxa_dstdry', 'Faxa_ndep  ' /)
 
     do n = 1,size(flds)
        fldname = trim(flds(n))
@@ -1452,7 +1453,7 @@ contains
     ! Is fd.yaml correctly aliasing Fioi_melth?
 
     allocate(flds(5))
-    flds = (/'Fioi_melth', 'Fioi_salt', 'Fioi_bcphi', 'Fioi_bcpho', 'Fioi_flxdst'/)
+    flds = (/'Fioi_melth ', 'Fioi_salt  ', 'Fioi_bcphi ', 'Fioi_bcpho ', 'Fioi_flxdst'/)
 
     do n = 1,size(flds)
        fldname = trim(flds(n))
@@ -1555,7 +1556,7 @@ contains
     ! to ocn: Stokes drift depth from wave
     !-----------------------------
     allocate(flds(4))
-    flds = (/'Sw_lamult', 'Sw_ustokes', 'Sw_vstokes', 'Sw_hstokes'/)
+    flds = (/'Sw_lamult ', 'Sw_ustokes', 'Sw_vstokes', 'Sw_hstokes'/)
 
     do n = 1,size(flds)
        fldname = trim(flds(n))
@@ -1599,8 +1600,8 @@ contains
     ! to ice: dust dry deposition flux (size 4) from atm
     ! ---------------------------------------------------------------------
     allocate(flds(9))
-    flds = (/'Faxa_lwdn'    , 'Faxa_swndr'   , 'Faxa_swvdr'   , 'Faxa_swndf' , 'Faxa_swvdf', &
-             'Faxa_bcph'    , 'Faxa_ocph'    , 'Faxa_dstwet'  , 'Faxa_dstdry' /)
+    flds = (/'Faxa_lwdn  '    , 'Faxa_swndr '   , 'Faxa_swvdr '   , 'Faxa_swndf ' , 'Faxa_swvdf ', &
+             'Faxa_bcph  '    , 'Faxa_ocph  '    , 'Faxa_dstwet'  , 'Faxa_dstdry' /)
 
     do n = 1,size(flds)
        fldname = trim(flds(n))
@@ -1712,7 +1713,8 @@ contains
     ! to ice: specific humidity for water isotopes at the lowest model level from atm
     ! ---------------------------------------------------------------------
     allocate(flds(9))
-    flds = (/'Sa_z', 'Sa_pbot', 'Sa_tbot', 'Sa_ptem', 'Sa_dens', 'Sa_u', 'Sa_v', 'Sa_shum', 'Sa_shum_wiso'/)
+    flds = (/'Sa_z        ', 'Sa_pbot     ', 'Sa_tbot     ', 'Sa_ptem     ', &
+             'Sa_dens     ', 'Sa_u        ', 'Sa_v        ', 'Sa_shum     ', 'Sa_shum_wiso'/)
 
     do n = 1,size(flds)
        fldname = trim(flds(n))
@@ -1743,7 +1745,7 @@ contains
     ! to ice: meridional sea surface slope from ocn
     ! ---------------------------------------------------------------------
     allocate(flds(6))
-    flds = (/'So_t', 'So_s', 'So_u', 'So_v', 'So_dhdx', 'So_dhdy'/)
+    flds = (/'So_t   ', 'So_s   ', 'So_u   ', 'So_v   ', 'So_dhdx', 'So_dhdy'/)
 
     do n = 1,size(flds)
        fldname = trim(flds(n))
@@ -1844,7 +1846,7 @@ contains
     ! to wav: ocean surface temperature from ocn
     ! ---------------------------------------------------------------------
     allocate(flds(4))
-    flds = (/'So_t', 'So_u', 'So_v', 'So_bldepth'/)
+    flds = (/'So_t      ', 'So_u      ', 'So_v      ', 'So_bldepth'/)
 
     do n = 1,size(flds)
        fldname = trim(flds(n))
@@ -1867,7 +1869,7 @@ contains
     ! to wav: meridional wind at the lowest model level from atm
     ! ---------------------------------------------------------------------
     allocate(flds(3))
-    flds = (/'Sa_u', 'Sa_v', 'Sa_tbot'/)
+    flds = (/'Sa_u   ', 'Sa_v   ', 'Sa_tbot'/)
 
     do n = 1,size(flds)
        fldname = trim(flds(n))
@@ -1903,7 +1905,7 @@ contains
     !          'Flrl_rofi'  , 'Flrl_rofi_wiso'  , 'Flrl_irrig' , 'Flrl_irrig_wiso'   /)
 
     allocate(flds(6))
-    flds = (/'Flrl_rofsur', 'Flrl_rofgwl', 'Flrl_rofsub', 'Flrl_rofdto', 'Flrl_rofi', 'Flrl_irrig'/)
+    flds = (/'Flrl_rofsur', 'Flrl_rofgwl', 'Flrl_rofsub', 'Flrl_rofdto', 'Flrl_rofi  ', 'Flrl_irrig '/)
 
     do n = 1,size(flds)
        fldname = trim(flds(n))

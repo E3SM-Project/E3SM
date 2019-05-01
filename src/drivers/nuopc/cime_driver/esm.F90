@@ -489,7 +489,7 @@ contains
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Add rest_case_name and read_restart to driver attributes
-    call NUOPC_CompAttributeAdd(driver, attrList=(/'rest_case_name','read_restart'/), rc=rc)
+    call NUOPC_CompAttributeAdd(driver, attrList=(/'rest_case_name','read_restart  '/), rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     rest_case_name = ' '
@@ -938,7 +938,7 @@ contains
     ! Add all the other attributes in AttrList (which have already been added to driver attributes)
     !------
     allocate(attrList(5))
-    attrList =  (/"read_restart", "orb_eccen", "orb_obliqr", "orb_lambm0", "orb_mvelpp"/)
+    attrList =  (/"read_restart", "orb_eccen   ", "orb_obliqr  ", "orb_lambm0  ", "orb_mvelpp  "/)
 
     call NUOPC_CompAttributeAdd(gcomp, attrList=attrList, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return

@@ -411,7 +411,7 @@ contains
           call ESMF_LogWrite(trim(subname)//" precip_fact is "//trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
 
           allocate(fldnames(4))
-          fldnames = (/'Faxa_rain',' Faxa_snow', 'Foxx_rofl', 'Foxx_rofi'/)
+          fldnames = (/'Faxa_rain','Faxa_snow', 'Foxx_rofl', 'Foxx_rofi'/)
           do n = 1,size(fldnames)
              if (FB_fldchk(is_local%wrap%FBExp(compocn), trim(fldnames(n)), rc=rc)) then
                 call FB_GetFldPtr(is_local%wrap%FBExp(compocn), trim(fldnames(n)) , dataptr, rc=rc)

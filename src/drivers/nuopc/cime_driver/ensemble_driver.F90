@@ -307,7 +307,7 @@ module Ensemble_driver
     endif
 
     ! Add rest_case_name and read_restart to ensemble_driver attributes
-    call NUOPC_CompAttributeAdd(ensemble_driver, attrList=(/'rest_case_name','read_restart'/), rc=rc)
+    call NUOPC_CompAttributeAdd(ensemble_driver, attrList=(/'rest_case_name','read_restart  '/), rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     rest_case_name = ' '
