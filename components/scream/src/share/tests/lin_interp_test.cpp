@@ -178,7 +178,8 @@ TEST_CASE("lin_interp", "soak") {
       Kokkos::deep_copy(y2kvm, y2kv);
       for (int i = 0; i < ncol; ++i) {
         for (int j = 0; j < km2; ++j) {
-          REQUIRE(y2_f90[i][j] == y2kvm(i, j / Pack::n)[j % Pack::n]);
+          // without fp-model strict, we can't do bfb
+          REQUIRE(y2_f90[i][j] == Approx(y2kvm(i, j / Pack::n)[j % Pack::n]));
         }
       }
     }
