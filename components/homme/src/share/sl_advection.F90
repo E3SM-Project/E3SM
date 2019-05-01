@@ -51,7 +51,7 @@ contains
   subroutine sl_init1(par, elem)
     use interpolate_mod,        only : interpolate_tracers_init
     use control_mod,            only : transport_alg, semi_lagrange_cdr_alg, cubed_sphere_map, &
-         nu_q, semi_lagrange_hv_q_all
+         nu_q, semi_lagrange_hv_q
     use element_state,          only : timelevels
     use coordinate_systems_mod, only : cartesian3D_t, change_coordinates
     use perf_mod, only : t_startf, t_stopf
@@ -66,8 +66,8 @@ contains
     call t_startf('sl_init1')
     if (transport_alg > 0) then
        call sl_parse_transport_alg(transport_alg, slmm, cisl, qos, sl_test)
-       if (par%masterproc .and. nu_q > 0) &
-            print *, 'COMPOSE> use HV; nu_q, all:', nu_q, semi_lagrange_hv_q_all
+       if (par%masterproc .and. nu_q > 0 .and. semi_lagrange_hv_q > 0) &
+            print *, 'COMPOSE> use HV; nu_q, all:', nu_q, semi_lagrange_hv_q
        nslots = nlev*qsize
        sl_mpi = 0
        call slmm_get_mpi_pattern(sl_mpi)
@@ -108,7 +108,7 @@ contains
     use dimensions_mod,         only : max_neigh_edges
     use bndry_mod,              only : ghost_exchangevfull
     use interpolate_mod,        only : interpolate_tracers, minmax_tracers
-    use control_mod,            only : qsplit, nu_q, semi_lagrange_hv_q_all, &
+    use control_mod,            only : qsplit, nu_q, semi_lagrange_hv_q, &
          transport_alg, semi_lagrange_cdr_alg, semi_lagrange_cdr_check
     ! For DCMIP16 supercell test case.
     use control_mod,            only : dcmip16_mu_q
@@ -173,12 +173,8 @@ contains
     if (barrier) call perf_barrier(hybrid)
     call t_stopf('SLMM_csl')
 
-    if (nu_q > 0) then
-       if (semi_lagrange_hv_q_all) then
-          n = qsize
-       else
-          n = 1
-       end if
+    if (semi_lagrange_hv_q > 0 .and. nu_q > 0) then
+       n = semi_lagrange_hv_q
        do ie = nets, nete
           do q = 1, n
              do k = 1, nlev

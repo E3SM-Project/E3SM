@@ -16,24 +16,24 @@ module control_mod
 ! experimental option for preqx model:
   ! Tracer transport algorithm type:
   !     0  spectral-element Eulerian
-  !     1  classical semi-Lagrangian (SL)
-  !     2  cell-integrated remap SL
+  !    12 interpolation semi-Lagrangian
   integer, public  :: transport_alg = 0
   ! Constrained density reconstructor for SL property preservation; not used if
   ! transport_alg = 0:
   !     0  none
-  !     1  Cobra
   !     2  QLT
   !     3  CAAS
-  integer, public  :: semi_lagrange_cdr_alg = 2
+  !    20  QLT  with superlevels
+  !    30  CAAS with superlevels
+  integer, public  :: semi_lagrange_cdr_alg = 20
   ! If true, check mass conservation and shape preservation. The second
   ! implicitly checks tracer consistency.
   logical, public  :: semi_lagrange_cdr_check = .false.
-  ! If true and nu_q > 0, apply hyperviscosity to all the tracers, rather than
-  ! just those that couple to the dynamics at the dynamical time step. These
-  ! latter are 'active' tracers, in contrast to 'passive' tracers that directly
-  ! couple only to the physics.
-  logical, public  :: semi_lagrange_hv_q_all = .false.
+  ! If > 0 and nu_q > 0, apply hyperviscosity to tracers 1 through this value,
+  ! rather than just those that couple to the dynamics at the dynamical time
+  ! step. These latter are 'active' tracers, in contrast to 'passive' tracers
+  ! that directly couple only to the physics.
+  integer, public  :: semi_lagrange_hv_q = 0
   ! If >= 1, then the SL algorithm may choose a nearby point inside the element
   ! halo available to it if the actual point is outside the halo. This is done
   ! in levels <= this parameter.

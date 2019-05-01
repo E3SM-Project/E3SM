@@ -34,7 +34,7 @@ module namelist_mod
     transport_alg , &      ! SE Eulerian, classical SL, cell-integrated SL
     semi_lagrange_cdr_alg, &     ! see control_mod for semi_lagrange_* descriptions
     semi_lagrange_cdr_check, &
-    semi_lagrange_hv_q_all, &
+    semi_lagrange_hv_q, &
     semi_lagrange_nearest_point_lev, &
     tstep_type,    &
     cubed_sphere_map, &
@@ -215,7 +215,7 @@ module namelist_mod
       transport_alg , &      ! SE Eulerian, classical SL, cell-integrated SL
       semi_lagrange_cdr_alg, &
       semi_lagrange_cdr_check, &
-      semi_lagrange_hv_q_all, &
+      semi_lagrange_hv_q, &
       semi_lagrange_nearest_point_lev, &
       tstep_type,    &
       cubed_sphere_map, &
@@ -378,7 +378,7 @@ module namelist_mod
     transport_alg = 0
     semi_lagrange_cdr_alg = 2
     semi_lagrange_cdr_check = .false.
-    semi_lagrange_hv_q_all = .false.
+    semi_lagrange_hv_q = 0
     semi_lagrange_nearest_point_lev = 0
     disable_diagnostics = .false.
 
@@ -703,7 +703,7 @@ module namelist_mod
     call MPI_bcast(transport_alg ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(semi_lagrange_cdr_alg ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(semi_lagrange_cdr_check ,1,MPIlogical_t,par%root,par%comm,ierr)
-    call MPI_bcast(semi_lagrange_hv_q_all ,1,MPIlogical_t,par%root,par%comm,ierr)
+    call MPI_bcast(semi_lagrange_hv_q ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(semi_lagrange_nearest_point_lev ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(tstep_type,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(cubed_sphere_map,1,MPIinteger_t ,par%root,par%comm,ierr)
@@ -957,7 +957,7 @@ module namelist_mod
        write(iulog,*)"readnl: transport_alg   = ",transport_alg
        write(iulog,*)"readnl: semi_lagrange_cdr_alg   = ",semi_lagrange_cdr_alg
        write(iulog,*)"readnl: semi_lagrange_cdr_check   = ",semi_lagrange_cdr_check
-       write(iulog,*)"readnl: semi_lagrange_hv_q_all   = ",semi_lagrange_hv_q_all
+       write(iulog,*)"readnl: semi_lagrange_hv_q   = ",semi_lagrange_hv_q
        write(iulog,*)"readnl: semi_lagrange_nearest_point_lev   = ",semi_lagrange_nearest_point_lev
        write(iulog,*)"readnl: tstep_type    = ",tstep_type
        write(iulog,*)"readnl: theta_advect_form = ",theta_advect_form

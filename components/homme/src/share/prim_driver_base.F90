@@ -598,10 +598,6 @@ contains
 #ifdef HOMME_ENABLE_COMPOSE
        call kokkos_init()
        call compose_init(par, elem, GridVertex)
-       !call cedr_unittest(par%comm, ierr)
-       if (par%masterproc) then
-          write(iulog,*) "CEDR unittest returned", ierr
-       end if
        do ie = 1, nelemd
           call cedr_set_ie2gci(ie, elem(ie)%vertex%number)
        end do
