@@ -29,11 +29,10 @@ namespace Kokkos {
 struct Real2 {
   Homme::Real v[2];
   KOKKOS_FORCEINLINE_FUNCTION Real2 () { v[0] = v[1] = 0; }
-  KOKKOS_FORCEINLINE_FUNCTION Real2 operator+= (const Real2& o) const {
-    Real2 r;
-    r.v[0] = v[0] + o.v[0];
-    r.v[1] = v[1] + o.v[1];
-    return r;
+  KOKKOS_FORCEINLINE_FUNCTION Real2 operator+= (const Real2& o) {
+    v[0] += o.v[0];
+    v[1] += o.v[1];
+    return *this;
   }
 };
 

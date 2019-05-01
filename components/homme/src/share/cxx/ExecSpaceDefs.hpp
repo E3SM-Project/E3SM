@@ -318,7 +318,7 @@ struct Dispatch<Kokkos::Cuda> {
     const LoopBdyType& loop_boundaries,
     const Lambda& lambda, ValueType& result)
   {
-#if defined HOMMEXX_GPU_BFB_WITH_CPU
+#if HOMMEXX_GPU_BFB_WITH_CPU
     // We want to get C++ on GPU to match F90 on CPU. Thus, need to
     // serialize parallel reductions.
 
@@ -365,7 +365,7 @@ struct Dispatch<Kokkos::Cuda> {
     const int num_iters,
     const Lambda& lambda)
   {
-#if defined HOMMEXX_GPU_BFB_WITH_CPU
+#if HOMMEXX_GPU_BFB_WITH_CPU
     // We want to get C++ on GPU to match F90 on CPU. Thus, need to
     // serialize parallel scans.
 
