@@ -150,3 +150,12 @@ if options.with_critical_passages:
     dsCritPassMask = conversion.mask(dsCulledMesh, fcMask=fcCritPassages)
     write_netcdf(dsCritPassMask, 'critical_passages_mask_final.nc',
                  format=netcdfFormat)
+
+args = ['paraview_vtk_field_extractor.py',
+        '--ignore_time',
+        '-d', 'maxEdges=',
+        '-v', 'allOnCells',
+        '-f', 'culled_mesh.nc',
+        '-o', 'culled_mesh_vtk']
+print("running", ' '.join(args))
+subprocess.check_call(args, env=os.environ.copy())
