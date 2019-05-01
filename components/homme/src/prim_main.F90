@@ -15,7 +15,7 @@ program prim_main
                               omp_get_num_threads, omp_get_max_threads
   use time_mod,         only: tstep, nendstep, timelevel_t, TimeLevel_init, nstep=>nextOutputStep
   use dimensions_mod,   only: nelemd, qsize
-  use control_mod,      only: restartfreq, vfile_mid, vfile_int, runtype, integration, statefreq, tstep_type, transport_alg
+  use control_mod,      only: restartfreq, vfile_mid, vfile_int, runtype, integration, statefreq, tstep_type
   use domain_mod,       only: domain1d_t, decompose
   use element_mod,      only: element_t
   use common_io_mod,    only: output_dir, infilenames
@@ -212,11 +212,7 @@ program prim_main
 #endif
   endif
 
-  if ((transport_alg >= 17 .and. transport_alg <= 19) .or. &
-       transport_alg == 29 .or. transport_alg == 39) then
-     nEndStep = -1
-     call compose_test(par, hvcoord, dom_mt, elem)
-  end if
+  call compose_test(par, hvcoord, dom_mt, elem)
 
   if(par%masterproc) print *,"Entering main timestepping loop"
   call t_startf('prim_main_loop')

@@ -100,8 +100,9 @@ module edge_mod_base
   public :: ghostVunpackfull     
   ! same as above, except orientation of element data is preserved
   ! (so boundary data for two adjacent element may not match up)
-  public :: ghostVpack_unoriented
+  public :: ghostVpack_unoriented   
   public :: ghostVunpack_unoriented     
+
 
 !
 ! James Overfelt
@@ -2065,6 +2066,7 @@ endif
 
   end subroutine GhostVpack_unoriented
 
+
   ! ========================================
   ! edgeVunpack:
   !
@@ -2091,13 +2093,13 @@ endif
     m=0
     gid = GlobalID
     do n=1,desc%actual_neigh_edges+1
-       l = desc%loc2buf(m+1)
-       pid = desc%globalID(l)
+       pid = desc%globalID(desc%loc2buf((m+1)))
        if (m==desc%actual_neigh_edges .OR. pid < gid) then
           gid = -1
           v(:,:,:,n) = u(:,:,:)
        else
           m = m+1
+          l = desc%loc2buf(m)
           is = desc%getmapP_ghost(l)
           do k=1,vlyr
              v(:,:,k,n) = edge%buf(:,:,kptr+k,is) 
@@ -2107,6 +2109,14 @@ endif
 
 
   end subroutine GhostVunpack_unoriented
+
+
+
+
+
+
+
+
 
 
 

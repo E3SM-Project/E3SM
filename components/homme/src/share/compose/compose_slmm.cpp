@@ -3247,7 +3247,6 @@ void setup_comm_pattern (CslMpi& cm, const Int* nbr_id_rank, const Int* nirptr) 
     set_idx2_maps(cm, rank2rmtgids, gid2rmt_owning_lid);
   }
   alloc_mpi_buffers(cm, rank2rmtgids, rank2owngids);
-  if (cm.ed(0).me->rank == 0) std::cout << "COMPOSE> use SL MPI pattern\n";
 }
 
 // mylid_with_comm(rankidx) is a list of element LIDs that have relations with

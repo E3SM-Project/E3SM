@@ -238,8 +238,7 @@ if (qsize>=3) then
 endif
 
 
-! if we run a test case with 10 tracers, assume we want to reproduce the AVEC
-! benchmarks
+! if we run a test case with 10 tracers, assume we want to reproduce the AVEC benchmarks
 ! using SJ's test tracers:
 ! tracers can be discontinous at element edges due to roundoff
 ! need to DSS the initial condition
