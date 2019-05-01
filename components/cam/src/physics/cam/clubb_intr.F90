@@ -444,6 +444,7 @@ end subroutine clubb_init_cnst
       call mpibcast(clubb_tk1,                1,   mpir8,   0, mpicom)
       call mpibcast(clubb_tk2,                1,   mpir8,   0, mpicom)
       call mpibcast(relvar_fix,               1,   mpilog,  0, mpicom)
+      call mpibcast(clubb_use_sgv,            1,   mpilog,   0, mpicom)
 #endif
 
     !  Overwrite defaults if they are true
@@ -1278,6 +1279,7 @@ end subroutine clubb_init_cnst
    real(r8)  qitend(pcols,pver)
    real(r8)  initend(pcols,pver)
    logical            :: lqice(pcnst)
+   integer :: ktopi(pcols)
    
    integer :: ixorg
 

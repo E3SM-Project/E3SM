@@ -51,20 +51,27 @@ module parameters_tunable
 
   real( kind = core_rknd ) ::      &
     clubb_C1,                      &
+    clubb_C1b,                     &
+    clubb_C1c,                     &
     clubb_C2rt,                    &
     clubb_C2thl,                   &
     clubb_C2rtthl,                 &
     clubb_C6rt,                    &
     clubb_C6rtb,                   &
+    clubb_C6rtc,                   &
+    clubb_C6thlb,                  &
+    clubb_C6thlc,                  &
     clubb_C7,                      &
     clubb_C7b,                     &
     clubb_C8,                      &
     clubb_C11,                     &
     clubb_C11b,                    &
+    clubb_C11c,                    &
     clubb_C14,                     &
     clubb_beta,                    &
     clubb_gamma_coef,              &
     clubb_gamma_coefb,             &
+    clubb_gamma_coefc,             &
     clubb_mu,                      &
     clubb_nu1,                     &
     clubb_c_K10,                   &
@@ -73,41 +80,41 @@ module parameters_tunable
 
   ! Model constant parameters
   real( kind = core_rknd ), public :: & 
-    C1          = 1.000000_core_rknd,    & ! Low Skewness in C1 Skw. Function    [-]
-    C1b         = 1.000000_core_rknd,    & ! High Skewness in C1 Skw. Function   [-]
-    C1c         = 1.000000_core_rknd,    & ! Degree of Slope of C1 Skw. Function [-]
-    C2          = 1.300000_core_rknd,    & ! Low Skewness in C2 Skw. Function    [-]
-    C2rt        = 1.000000_core_rknd,    & ! C2 coef. for the rtp2_dp1 term      [-]
-    C2thl       = 1.000000_core_rknd,    & ! C2 coef. for the thlp2_dp1 term     [-]
-    C2rtthl     = 1.300000_core_rknd,    & ! C2 coef. for the rtpthlp_dp1 term   [-]
-    C2b         = 1.300000_core_rknd,    & ! High Skewness in C2 Skw. Function   [-]
-    C2c         = 5.000000_core_rknd,    & ! Degree of Slope of C2 Skw. Function [-]
-    C4          = 5.200000_core_rknd,    & ! Used only when l_tke_aniso is true  [-]
-    C5          = 0.300000_core_rknd,    & ! Coef. in pressure terms: w'^2 eqn   [-]
-    C6rt        = 4.000000_core_rknd,    & ! Low Skewness in C6rt Skw. Function  [-]
-    C6rtb       = 6.000000_core_rknd,    & ! High Skewness in C6rt Skw. Function [-]
-    C6rtc       = 1.000000_core_rknd,    & ! Degree of Slope of C6rt Skw. Fnct.  [-]
-    C6thl       = 4.000000_core_rknd,    & ! Low Skewness in C6thl Skw. Function [-]
-    C6thlb      = 6.000000_core_rknd,    & ! High Skewness in C6thl Skw. Fnct.   [-]
-    C6thlc      = 1.000000_core_rknd,    & ! Degree of Slope of C6thl Skw. Fnct. [-]
-    C7          = 0.500000_core_rknd,    & ! Low Skewness in C7 Skw. Function    [-]
-    C7b         = 0.500000_core_rknd,    & ! High Skewness in C7 Skw. Function   [-]
-    C7c         = 0.500000_core_rknd,    & ! Degree of Slope of C7 Skw. Function [-]
-    C8          = 4.20000_core_rknd,    & ! Coef. #1 in C8 Skewness Equation    [-]
-    C8b         = 0.000000_core_rknd,    & ! Coef. #2 in C8 Skewness Equation    [-]
-    C10         = 3.300000_core_rknd,    & ! Currently Not Used in the Model     [-]
+    C1      = 1.000000_core_rknd,    & ! Low Skewness in C1 Skw. Function    [-]
+    C1b     = 1.000000_core_rknd,    & ! High Skewness in C1 Skw. Function   [-]
+    C1c     = 1.000000_core_rknd,    & ! Degree of Slope of C1 Skw. Function [-]
+    C2      = 1.300000_core_rknd,    & ! Low Skewness in C2 Skw. Function    [-]
+    C2rt    = 1.000000_core_rknd,    & ! C2 coef. for the rtp2_dp1 term      [-]
+    C2thl   = 1.000000_core_rknd,    & ! C2 coef. for the thlp2_dp1 term     [-]
+    C2rtthl = 1.300000_core_rknd,    & ! C2 coef. for the rtpthlp_dp1 term   [-]
+    C2b     = 1.300000_core_rknd,    & ! High Skewness in C2 Skw. Function   [-]
+    C2c     = 5.000000_core_rknd,    & ! Degree of Slope of C2 Skw. Function [-]
+    C4      = 5.200000_core_rknd,    & ! Used only when l_tke_aniso is true  [-]
+    C5      = 0.300000_core_rknd,    & ! Coef. in pressure terms: w'^2 eqn   [-]
+    C6rt    = 4.000000_core_rknd,    & ! Low Skewness in C6rt Skw. Function  [-]
+    C6rtb   = 6.000000_core_rknd,    & ! High Skewness in C6rt Skw. Function [-]
+    C6rtc   = 1.000000_core_rknd,    & ! Degree of Slope of C6rt Skw. Fnct.  [-]
+    C6thl   = 4.000000_core_rknd,    & ! Low Skewness in C6thl Skw. Function [-]
+    C6thlb  = 6.000000_core_rknd,    & ! High Skewness in C6thl Skw. Fnct.   [-]
+    C6thlc  = 1.000000_core_rknd,    & ! Degree of Slope of C6thl Skw. Fnct. [-]
+    C7      = 0.500000_core_rknd,    & ! Low Skewness in C7 Skw. Function    [-]
+    C7b     = 0.500000_core_rknd,    & ! High Skewness in C7 Skw. Function   [-]
+    C7c     = 0.500000_core_rknd,    & ! Degree of Slope of C7 Skw. Function [-]
+    C8      = 4.200000_core_rknd,    & ! Coef. #1 in C8 Skewness Equation    [-]
+    C8b     = 0.000000_core_rknd,    & ! Coef. #2 in C8 Skewness Equation    [-]
+    C10     = 3.300000_core_rknd,    & ! Currently Not Used in the Model     [-]
 #if defined(CLUBB_CAM) && !defined(CLUBBND_CAM)
-    C11         = 0.70000_core_rknd,     & ! Low Skewness in C11 Skw. Function   [-]
-    C11b        = 0.350000_core_rknd,    & ! High Skewness in C11 Skw. Function  [-]
+    C11     = 0.70000_core_rknd,     & ! Low Skewness in C11 Skw. Function   [-]
+    C11b    = 0.350000_core_rknd,    & ! High Skewness in C11 Skw. Function  [-]
 #else
-    C11         = 0.80000_core_rknd,    & ! Low Skewness in C11 Skw. Function   [-]
-    C11b        = 0.350000_core_rknd,    & ! High Skewness in C11 Skw. Function  [-]
+    C11     = 0.80000_core_rknd,     & ! Low Skewness in C11 Skw. Function   [-]
+    C11b    = 0.350000_core_rknd,    & ! High Skewness in C11 Skw. Function  [-]
 #endif
-    C11c        = 0.500000_core_rknd,    & ! Degree of Slope of C11 Skw. Fnct.   [-]
-    C12         = 1.000000_core_rknd,    & ! Constant in w'^3 Crank-Nich. diff.  [-]
-    C13         = 0.100000_core_rknd,    & ! Not currently used in model         [-]
-    C14         = 1.000000_core_rknd,    & ! Constant for u'^2 and v'^2 terms    [-]
-    C15         = 0.4_core_rknd,         & ! Coefficient for the wp3_bp2 term    [-]
+    C11c    = 0.500000_core_rknd,    & ! Degree of Slope of C11 Skw. Fnct.   [-]
+    C12     = 1.000000_core_rknd,    & ! Constant in w'^3 Crank-Nich. diff.  [-]
+    C13     = 0.100000_core_rknd,    & ! Not currently used in model         [-]
+    C14     = 1.000000_core_rknd,    & ! Constant for u'^2 and v'^2 terms    [-]
+    C15     = 0.4_core_rknd,         & ! Coefficient for the wp3_bp2 term    [-]
     C_wp2_splat = 0.0_core_rknd            ! Coefficient for gustiness near ground [-]
 !$omp threadprivate(C1, C1b, C1c, C2, C2b, C2c, &
 !$omp   C2rt, C2thl, C2rtthl, C4, C5, C6rt, C6rtb, C6rtc, &
@@ -138,14 +145,14 @@ module parameters_tunable
     gamma_coefc = 5.000000_core_rknd, & ! Deg. Slope: gamma coef. Skw. Fnct. [-]
 #ifdef CLUBBND_CAM
     mu          = 1.000E-3_core_rknd, & ! Fract entrain rate per unit alt  [1/m]
-#else
+#else 
     mu          = 1.000E-3_core_rknd, & ! Fract entrain rate per unit alt  [1/m]
 #endif
 #ifdef CLUBBND_CAM
     mult_coef   = 1.500000_core_rknd, &
 #else
     mult_coef   = 1.000000_core_rknd, & ! Coef. applied to log(avg dz/thresh)[-]
-#endif
+#endif    
     taumin      = 90.00000_core_rknd, & ! Min. allow. value: time-scale tau  [s]
     taumax      = 3600.000_core_rknd, & ! Max. allow. value: time-scale tau  [s]
     lmin        = 20.00000_core_rknd    ! Min. value for the length scale    [m]
@@ -195,7 +202,7 @@ module parameters_tunable
 !$omp threadprivate(beta)
 
   real( kind = core_rknd ), private :: &
-    lmin_coef = 0.100000_core_rknd   ! Coefficient of lmin    [-]
+    lmin_coef = 0.100000_core_rknd    ! Coefficient of lmin    [-]
 
 !$omp threadprivate(lmin_coef)
 
@@ -426,20 +433,27 @@ module parameters_tunable
 
     namelist /clubb_param_nl/      &
     clubb_C1,                      &
+    clubb_C1b,                     &
+    clubb_C1c,                     &
     clubb_C2rt,                    &
     clubb_C2thl,                   &
     clubb_C2rtthl,                 &
     clubb_C6rt,                    &
     clubb_C6rtb,                   &
+    clubb_C6rtc,                   &
+    clubb_C6thlb,                   &
+    clubb_C6thlc,                   &
     clubb_C7,                      &
     clubb_C7b,                     &
     clubb_C8,                      &
     clubb_C11,                     &
     clubb_C11b,                    &
+    clubb_C11c,                    &
     clubb_C14,                     &
     clubb_beta,                    &
     clubb_gamma_coef,              &
     clubb_gamma_coefb,             &
+    clubb_gamma_coefc,             &
     clubb_mu,                      &
     clubb_nu1,                     &
     clubb_c_K10,                   &
@@ -454,20 +468,27 @@ module parameters_tunable
     ! This is made available for tuning 
      
     clubb_C1 = init_value
+    clubb_C1b = init_value
+    clubb_C1c = init_value
     clubb_C2rt = init_value
     clubb_C2thl = init_value
     clubb_C2rtthl = init_value
     clubb_C6rt = init_value
     clubb_C6rtb = init_value
+    clubb_C6rtc = init_value
+    clubb_C6thlb = init_value
+    clubb_C6thlc = init_value
     clubb_C7 = init_value
     clubb_C7b = init_value
     clubb_C8 = init_value
     clubb_C11 = init_value
     clubb_C11b = init_value
+    clubb_C11c = init_value
     clubb_C14 = init_value
     clubb_beta = init_value
     clubb_gamma_coef = init_value
     clubb_gamma_coefb = init_value
+    clubb_gamma_coefc = init_value
     clubb_mu = init_value
     clubb_nu1 = init_value
     clubb_c_K10 = init_value
@@ -489,20 +510,27 @@ module parameters_tunable
 #ifdef SPMD
    ! Broadcast namelist variables
    call mpibcast(clubb_C1,         1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C1b,        1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C1c,        1, mpir8,  0, mpicom)
    call mpibcast(clubb_C2rt,       1, mpir8,  0, mpicom)
    call mpibcast(clubb_C2thl,      1, mpir8,  0, mpicom)
    call mpibcast(clubb_C2rtthl,    1, mpir8,  0, mpicom)
    call mpibcast(clubb_C6rt,       1, mpir8,  0, mpicom)
    call mpibcast(clubb_C6rtb,      1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C6rtc,      1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C6thlb,     1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C6thlc,     1, mpir8,  0, mpicom)
    call mpibcast(clubb_C7,         1, mpir8,  0, mpicom)
    call mpibcast(clubb_C7b,        1, mpir8,  0, mpicom)
    call mpibcast(clubb_C8,         1, mpir8,  0, mpicom)
    call mpibcast(clubb_C11,        1, mpir8,  0, mpicom)
    call mpibcast(clubb_C11b,       1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C11c,       1, mpir8,  0, mpicom)
    call mpibcast(clubb_C14,        1, mpir8,  0, mpicom)
    call mpibcast(clubb_beta,       1, mpir8,  0, mpicom)
    call mpibcast(clubb_gamma_coef, 1, mpir8,  0, mpicom)
    call mpibcast(clubb_gamma_coefb,1, mpir8,  0, mpicom)
+   call mpibcast(clubb_gamma_coefc,1, mpir8,  0, mpicom)
    call mpibcast(clubb_mu,         1, mpir8,  0, mpicom)
    call mpibcast(clubb_nu1,        1, mpir8,  0, mpicom)
    call mpibcast(clubb_c_K10,      1, mpir8,  0, mpicom)
@@ -1078,7 +1106,12 @@ module parameters_tunable
 
     if (clubb_C1 /= init_value) then
        C1 = clubb_C1
-       C1b = C1
+    endif
+    if (clubb_C1b /= init_value) then
+       C1b = clubb_C1b
+    end if
+    if (clubb_C1c /= init_value) then
+       C1c = clubb_C1c
     end if
     ! if clubb_C2thl and clubb_C2rtthl not specified, continue to use C2thl=C2rt, C2rtthl = 1.3*C2rt
     ! to preserve existing compsets that have assumed so and only vary C2rt
@@ -1095,21 +1128,23 @@ module parameters_tunable
        C6thl = C6rt
     end if
     if (clubb_C6rtb /= init_value) C6rtb = clubb_C6rtb
+    if (clubb_C6rtc /= init_value) C6rtc = clubb_C6rtc
+    if (clubb_C6thlb /= init_value) C6thlb = clubb_C6thlb
+    if (clubb_C6thlc /= init_value) C6thlc = clubb_C6thlc
     if (clubb_C7 /= init_value) C7 = clubb_C7
     if (clubb_C7b /= init_value) C7b = clubb_C7b
     if (clubb_C8 /= init_value) C8 = clubb_C8
     if (clubb_C11 /= init_value) C11 = clubb_C11
     if (clubb_C11b /= init_value) C11b = clubb_C11b
+    if (clubb_C11c /= init_value) C11c = clubb_C11c
     if (clubb_C14 /= init_value) C14 = clubb_C14
     if (clubb_beta /= init_value) beta = clubb_beta
-    ! if clubb_gamma_coefb not specified, continue to use gamma_coefb=gamma_coef
-    ! to preserve existing compsets that have assumed so  and only vary gamma_coef
-    if (clubb_gamma_coef /= init_value) then
-       gamma_coef = clubb_gamma_coef
-       if (clubb_gamma_coefb == init_value) gamma_coefb = gamma_coef
-    end if
-    ! Allows gamma_coefb to vary separately
+    if (clubb_gamma_coef /= init_value) gamma_coef = clubb_gamma_coef
     if (clubb_gamma_coefb /= init_value) gamma_coefb = clubb_gamma_coefb
+    if (clubb_gamma_coefc /= init_value) gamma_coefc = clubb_gamma_coefc
+
+    ! Allows gamma_coefb to vary separately
+    if (clubb_gamma_coefb /= init_value) gamma_coefb = clubb_gamma_coefb !why is this repeated?
     if (clubb_mu /= init_value) mu = clubb_mu
     if (clubb_nu1 /= init_value) nu1 = clubb_nu1
     if (clubb_c_K10 /= init_value) c_K10 = clubb_c_K10
@@ -1775,82 +1810,82 @@ module parameters_tunable
 
     ! --- Begin Code ---
 
-    C1                           = init_value
-    C1b                          = init_value
-    C1c                          = init_value
-    C2rt                         = init_value
-    C2thl                        = init_value
-    C2rtthl                      = init_value
-    C2                           = init_value
-    C2b                          = init_value
-    C2c                          = init_value
-    C4                           = init_value
-    C5                           = init_value
-    C6rt                         = init_value
-    C6rtb                        = init_value
-    C6rtc                        = init_value
-    C6thl                        = init_value
-    C6thlb                       = init_value
-    C6thlc                       = init_value
-    C7                           = init_value
-    C7b                          = init_value
-    C7c                          = init_value
-    C8                           = init_value
-    C8b                          = init_value
-    C10                          = init_value
-    C11                          = init_value
-    C11b                         = init_value
-    C11c                         = init_value
-    C12                          = init_value
-    C13                          = init_value
-    C14                          = init_value
-    C15                          = init_value
-    C_wp2_splat                  = init_value 
-    C6rt_Lscale0                 = init_value
-    C6thl_Lscale0                = init_value
-    C7_Lscale0                   = init_value
-    wpxp_L_thresh                = init_value
-    c_K                          = init_value
-    c_K1                         = init_value
-    nu1                          = init_value
-    c_K2                         = init_value
-    nu2                          = init_value
-    c_K6                         = init_value
-    nu6                          = init_value
-    c_K8                         = init_value
-    nu8                          = init_value
-    c_K9                         = init_value
-    nu9                          = init_value
-    nu10                         = init_value
-    c_K_hm                       = init_value
-    c_K_hmb                      = init_value
-    K_hm_min_coef                = init_value
-    nu_hm                        = init_value
+    C1                          = init_value
+    C1b                         = init_value
+    C1c                         = init_value
+    C2rt                        = init_value
+    C2thl                       = init_value
+    C2rtthl                     = init_value
+    C2                          = init_value
+    C2b                         = init_value
+    C2c                         = init_value
+    C4                          = init_value
+    C5                          = init_value
+    C6rt                        = init_value
+    C6rtb                       = init_value
+    C6rtc                       = init_value
+    C6thl                       = init_value
+    C6thlb                      = init_value
+    C6thlc                      = init_value
+    C7                          = init_value
+    C7b                         = init_value
+    C7c                         = init_value
+    C8                          = init_value
+    C8b                         = init_value
+    C10                         = init_value
+    C11                         = init_value
+    C11b                        = init_value
+    C11c                        = init_value
+    C12                         = init_value
+    C13                         = init_value
+    C14                         = init_value
+    C15                         = init_value
+    C_wp2_splat                 = init_value 
+    C6rt_Lscale0                = init_value
+    C6thl_Lscale0               = init_value
+    C7_Lscale0                  = init_value
+    wpxp_L_thresh               = init_value
+    c_K                         = init_value
+    c_K1                        = init_value
+    nu1                         = init_value
+    c_K2                        = init_value
+    nu2                         = init_value
+    c_K6                        = init_value
+    nu6                         = init_value
+    c_K8                        = init_value
+    nu8                         = init_value
+    c_K9                        = init_value
+    nu9                         = init_value
+    nu10                        = init_value
+    c_K_hm                      = init_value
+    c_K_hmb                     = init_value
+    K_hm_min_coef               = init_value
+    nu_hm                       = init_value
     slope_coef_spread_DG_means_w = init_value
     pdf_component_stdev_factor_w = init_value
-    coef_spread_DG_means_rt      = init_value
-    coef_spread_DG_means_thl     = init_value
-    beta                         = init_value
-    gamma_coef                   = init_value
-    gamma_coefb                  = init_value
-    gamma_coefc                  = init_value
-    mult_coef                    = init_value
-    taumin                       = init_value
-    taumax                       = init_value
-    lmin_coef                    = init_value
-    omicron                      = init_value
-    zeta_vrnce_rat               = init_value
-    upsilon_precip_frac_rat      = init_value
-    lambda0_stability_coef       = init_value
-    mu                           = init_value
-    Lscale_mu_coef               = init_value
-    Lscale_pert_coef             = init_value
-    alpha_corr                   = init_value
-    Skw_denom_coef               = init_value
-    c_K10                        = init_value
-    c_K10h                       = init_value
-    thlp2_rad_coef               = init_value
-    thlp2_rad_cloud_frac_thresh  = init_value
+    coef_spread_DG_means_rt     = init_value
+    coef_spread_DG_means_thl    = init_value
+    beta                        = init_value
+    gamma_coef                  = init_value
+    gamma_coefb                 = init_value
+    gamma_coefc                 = init_value
+    mult_coef                   = init_value
+    taumin                      = init_value
+    taumax                      = init_value
+    lmin_coef                   = init_value
+    omicron                     = init_value
+    zeta_vrnce_rat              = init_value
+    upsilon_precip_frac_rat     = init_value
+    lambda0_stability_coef      = init_value
+    mu                          = init_value
+    Lscale_mu_coef              = init_value
+    Lscale_pert_coef            = init_value
+    alpha_corr                  = init_value
+    Skw_denom_coef              = init_value
+    c_K10                       = init_value
+    c_K10h                      = init_value
+    thlp2_rad_coef              = init_value
+    thlp2_rad_cloud_frac_thresh = init_value
     up2_vp2_factor               = init_value
     Skw_max_mag                  = init_value
 
