@@ -48,12 +48,12 @@ genRandArray(FieldType& field, rngAlg &engine, PDF &&pdf) {
   genRandArray(field.get_view(), engine, pdf);
 }
 
-// Do an == check between a fortran result and a packed-C++ result.
-// Expect BFB except when C++ pksize > 1 and fortran fp model is not strict
+// Do an == check between a scalar result and a packed-C++ result.
+// Expect BFB except when C++ pksize > 1 and fp model is not strict
 template <int Packsize, typename Scalar>
 void catch2_req_pk_sensitive(const Scalar lhs, const Scalar rhs)
 {
-#ifdef SCREAM_FORTRAN_STRICT_FP
+#ifdef SCREAM_STRICT_FP
   REQUIRE(lhs == rhs);
 #else
   if (Packsize > 1) {

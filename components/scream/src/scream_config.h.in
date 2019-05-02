@@ -29,6 +29,6 @@
 #cmakedefine CUDA_BUILD
 
 // Whether fp model is strict
-#cmakedefine SCREAM_FORTRAN_STRICT_FP
+#cmakedefine SCREAM_STRICT_FP
 
 #endif // SCREAM_CONFIG_H
