@@ -5990,6 +5990,24 @@ Number of vertical threads.
 Default: 1.
 </entry>
 
+<entry id="theta_hydrostatic_mode" type="logical" category="se"
+       group="ctl_nl" valid_values="" >
+Indicates hydrostatic regime for atm. theta-l model.
+Default: true. 
+</entry>
+
+<entry id="theta_advect_form" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Indicates form of eqn. for vtheta in theta-l model.
+0 is conservation form, 1 is expanded div form.
+Default: 0.
+</entry>
+	
+<entry id="cubed_sphere_map" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Defines which map is used for ref. element in homme.
+Default for preqx target: 0.
+</entry>
 
 
 <!-- CAM I/O  -->

@@ -41,6 +41,8 @@ module prim_driver_base
 
   public :: smooth_topo_datasets, deriv1
 
+  public :: applyCAMforcing_tracers
+
   ! Service variables used to partition the mesh.
   ! Note: GridEdge and MeshVertex are public, cause kokkos targets need to access them
   type (GridVertex_t), pointer :: GridVertex(:)
@@ -976,7 +978,6 @@ contains
 #if USE_OPENACC
     use openacc_utils_mod,  only: copy_qdp_h2d, copy_qdp_d2h
 #endif
-    use prim_advance_mod,   only: convert_thermo_forcing
 
     implicit none
 
@@ -1031,7 +1032,6 @@ contains
     ! by calling it here, it mimics eam forcings computations in standalone
     ! homme.
     call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
-    call convert_thermo_forcing(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
 #endif
 
     call applyCAMforcing_ps(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
@@ -1137,6 +1137,7 @@ contains
           enddo
        enddo
     enddo
+
     call t_stopf("prim_run_subcyle_diags")
 
     ! now we have:
@@ -1295,7 +1296,7 @@ contains
   subroutine applyCAMforcing_dp3d(elem,hvcoord,n0,dt_dyn,nets,nete)
   use control_mod,        only : ftype
   use hybvcoord_mod,      only : hvcoord_t
-  use prim_advance_mod,   only : applycamforcing_dynamics,applycamforcing_dynamics_dp
+  use prim_advance_mod,   only : applycamforcing_dynamics
   implicit none
   type (element_t),       intent(inout) :: elem(:)
   real (kind=real_kind),  intent(in)    :: dt_dyn
@@ -1303,9 +1304,7 @@ contains
   integer,                intent(in)    :: n0,nets,nete
 
   call t_startf("ApplyCAMForcing")
-  if (ftype == 3) then
-    call ApplyCAMForcing_dynamics_dp(elem,hvcoord,n0,dt_dyn,nets,nete)
-  elseif (ftype == 4) then
+  if (ftype == 4) then
     call ApplyCAMForcing_dynamics   (elem,hvcoord,n0,dt_dyn,nets,nete)
   endif
   call t_stopf("ApplyCAMForcing")
@@ -1331,24 +1330,33 @@ contains
   real (kind=real_kind),  intent(in)    :: dt_remap
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: n0,n0qdp,nets,nete
+  integer                               :: ie
 
 !in the next pr we will reorder calling _dyn and _tr versions
   call t_startf("ApplyCAMForcing")
   if (ftype==-1) then
     !do nothing
   elseif (ftype==0) then
-    call applyCAMforcing_dynamics(elem,hvcoord,n0,      dt_remap,nets,nete)
-    call applyCAMforcing_tracers (elem,hvcoord,n0,n0qdp,dt_remap,nets,nete)
+    do ie = nets,nete
+       call applyCAMforcing_tracers (elem(ie),hvcoord,n0,n0qdp,dt_remap,.false.)
+    enddo
+    call applyCAMforcing_dynamics(elem,hvcoord,n0,dt_remap,nets,nete)
   elseif (ftype==1) then
     !do nothing
   elseif (ftype==2) then
-    call ApplyCAMForcing_dynamics(elem,hvcoord,n0,      dt_remap,nets,nete)
+    ! with CAM physics, tracers were adjusted in dp coupling layer
 #ifndef CAM
-    call ApplyCAMForcing_tracers (elem,hvcoord,n0,n0qdp,dt_remap,nets,nete)
+    do ie = nets,nete
+       call ApplyCAMForcing_tracers (elem(ie),hvcoord,n0,n0qdp,dt_remap,.false.)
+    enddo
 #endif
-  elseif (ftype==4) then
+    call ApplyCAMForcing_dynamics(elem,hvcoord,n0,dt_remap,nets,nete)
+ elseif (ftype==4) then
+    ! with CAM physics, tracers were adjusted in dp coupling layer
 #ifndef CAM
-    call ApplyCAMForcing_tracers (elem,hvcoord,n0,n0qdp,dt_remap,nets,nete)
+    do ie = nets,nete
+       call ApplyCAMForcing_tracers (elem(ie),hvcoord,n0,n0qdp,dt_remap,.false.)
+    enddo
 #endif
   endif
   call t_stopf("ApplyCAMForcing")
@@ -1356,80 +1364,181 @@ contains
 
 
 !----------------------------- APPLYCAMFORCING-TRACERS ----------------------------
-
-  subroutine applyCAMforcing_tracers(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
+!
+!new, 1 elem routine
+!if adjustment, then CAM-type update by adjustment
+!otherwise homme-type update, tendencies
+  subroutine applyCAMforcing_tracers(elem,hvcoord,np1,np1_qdp,dt,adjustment)
 
   use control_mod,        only : use_moisture
   use hybvcoord_mod,      only : hvcoord_t
+#ifdef MODEL_THETA_L
+  use control_mod,        only : theta_hydrostatic_mode
+  use physical_constants, only : cp, g, kappa, Rgas, p0
+  use element_ops,        only : get_temperature, get_r_star
+  use eos,                only : get_pnh_and_exner
+#endif
   implicit none
-  type (element_t),       intent(inout) :: elem(:)
+  type (element_t),       intent(inout) :: elem
   real (kind=real_kind),  intent(in)    :: dt
   type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: np1,nets,nete,np1_qdp
+  integer,                intent(in)    :: np1,np1_qdp
+  logical,                intent(in)    :: adjustment
 
   ! local
-  integer :: i,j,k,ie,q
-  real (kind=real_kind) :: v1
-  real (kind=real_kind) :: temperature(np,np,nlev)
-  real (kind=real_kind) :: Rstar(np,np,nlev)
-  real (kind=real_kind) :: exner(np,np,nlev)
-  real (kind=real_kind) :: dp(np,np,nlev)
-  real (kind=real_kind) :: pnh(np,np,nlev)
-  real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
+  integer :: i,j,k,ie,q,ic
+  real (kind=real_kind)  :: v1
+  real (kind=real_kind)  :: dp(np,np,nlev), fq
+#ifdef MODEL_THETA_L
+  real (kind=real_kind)  :: pprime(np,np,nlev)
+  real (kind=real_kind)  :: vthn1(np,np,nlev)
+  real (kind=real_kind)  :: tn1(np,np,nlev)
+  real (kind=real_kind)  :: pnh(np,np,nlev)
+  real (kind=real_kind)  :: phi_n1(np,np,nlevp)
+  real (kind=real_kind)  :: rstarn1(np,np,nlev)
+  real (kind=real_kind)  :: exner(np,np,nlev)
+  real (kind=real_kind)  :: dpnh_dp_i(np,np,nlevp)
+#endif
 
-  do ie=nets,nete
-     ! apply forcing to Qdp
-     elem(ie)%derived%FQps(:,:)=0
+#ifdef MODEL_THETA_L
+   !below dp is recomputed again
+   do k=1,nlev
+      dp(:,:,k)=( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+          ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,np1)
+   enddo
+   !one can set pprime=0 to hydro regime but it is not done in master
+   !compute pnh, here only pnh is needed
+   call get_pnh_and_exner(hvcoord,elem%state%vtheta_dp(:,:,:,np1),dp,&
+        elem%state%phinh_i(:,:,:,np1),pnh,exner,dpnh_dp_i)
+   do k=1,nlev
+      pprime(:,:,k) = pnh(:,:,k) - &
+       ( hvcoord%ps0*hvcoord%hyam(k) + elem%state%ps_v(:,:,np1)*hvcoord%hybm(k))
+   enddo
+   call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
+   tn1=exner* elem%state%vtheta_dp(:,:,:,np1)*(Rgas/rstarn1) / dp
+#endif
 
-     do q=1,qsize
-        do k=1,nlev
-           do j=1,np
-              do i=1,np
-                 v1 = dt*elem(ie)%derived%FQ(i,j,k,q)
-                 !if (elem(ie)%state%Qdp(i,j,k,q,np1) + v1 < 0 .and. v1<0) then
-                 if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
-                    !if (elem(ie)%state%Qdp(i,j,k,q,np1) < 0 ) then
-                    if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
-                       v1=0  ! Q already negative, dont make it more so
-                    else
-                       !v1 = -elem(ie)%state%Qdp(i,j,k,q,np1)
-                       v1 = -elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
+   if (adjustment) then 
+      ! hard adjust Q from physics.  negativity check done in physics
+      do k=1,nlev
+         dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+         ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,np1)
+      enddo
+      do k=1,nlev
+         do j=1,np
+            do i=1,np
+               do ic=1,qsize
+                  ! apply forcing to Qdp
+                  ! dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) = &
+                  !        dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) + fq 
+                  elem%state%Qdp(i,j,k,ic,np1_qdp) = &
+                  dp(i,j,k)*elem%derived%FQ(i,j,k,ic)
+
+                  if (ic==1) then
+                     fq = dp(i,j,k)*( elem%derived%FQ(i,j,k,ic) -&
+                          elem%state%Q(i,j,k,ic))
+                        ! force ps_v to conserve mass:  
+                     elem%state%ps_v(i,j,np1)= &
+                          elem%state%ps_v(i,j,np1) + fq
+                  endif
+               enddo
+            end do
+         end do
+      end do
+
+      do k=1,nlev
+         do ic=1,qsize
+            do j=1,np
+               do i=1,np
+                  ! make Q consistent now that we have updated ps_v above
+                  ! recompute dp, since ps_v was changed above
+                  dp(i,j,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                       ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(i,j,np1)
+                  elem%state%Q(i,j,k,ic)= &
+                       elem%state%Qdp(i,j,k,ic,np1_qdp)/dp(i,j,k)
+               end do
+            end do
+          end do
+        end do
+
+     else ! end of adjustment
+        ! apply forcing to Qdp
+        elem%derived%FQps(:,:)=0
+        do q=1,qsize
+           do k=1,nlev
+              do j=1,np
+                 do i=1,np
+                    v1 = dt*elem%derived%FQ(i,j,k,q)
+                    if (elem%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
+                       if (elem%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
+                          v1=0  ! Q already negative, dont make it more so
+                       else
+                          v1 = -elem%state%Qdp(i,j,k,q,np1_qdp)
+                       endif
                     endif
-                 endif
-                 !elem(ie)%state%Qdp(i,j,k,q,np1) =
-                 !elem(ie)%state%Qdp(i,j,k,q,np1)+v1
-                 elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)+v1
-                 if (q==1) then
-                    elem(ie)%derived%FQps(i,j)=elem(ie)%derived%FQps(i,j)+v1/dt
-                 endif
+                    elem%state%Qdp(i,j,k,q,np1_qdp) = elem%state%Qdp(i,j,k,q,np1_qdp)+v1
+                    if (q==1) then
+                       elem%derived%FQps(i,j)=elem%derived%FQps(i,j)+v1/dt
+                    endif
+                 enddo
               enddo
            enddo
         enddo
-     enddo
 
-     if (use_moisture) then
-        ! to conserve dry mass in the precese of Q1 forcing:
-        elem(ie)%state%ps_v(:,:,np1) = elem(ie)%state%ps_v(:,:,np1) + &
-             dt*elem(ie)%derived%FQps(:,:)
-     endif
+        if (use_moisture) then
+           ! to conserve dry mass in the precese of Q1 forcing:
+           elem%state%ps_v(:,:,np1) = elem%state%ps_v(:,:,np1) + &
+             dt*elem%derived%FQps(:,:)
+        endif
 
-
-     ! Qdp(np1) and ps_v(np1) were updated by forcing - update Q(np1)
-     do k=1,nlev
-        dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-             ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
-     enddo
-     do q=1,qsize
+        ! Qdp(np1) and ps_v(np1) were updated by forcing - update Q(np1)
         do k=1,nlev
-           elem(ie)%state%Q(:,:,k,q) = elem(ie)%state%Qdp(:,:,k,q,np1_qdp)/dp(:,:,k)
+           dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,np1)
         enddo
+        do q=1,qsize
+           do k=1,nlev
+              elem%state%Q(:,:,k,q) = elem%state%Qdp(:,:,k,q,np1_qdp)/dp(:,:,k)
+           enddo
+        enddo
+
+     endif ! if adjustment
+
+#ifdef MODEL_THETA_L
+     !continue conversion using pprime from above
+     call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
+     tn1(:,:,:) = tn1(:,:,:) + dt*elem%derived%FT(:,:,:)
+
+     ! update pressure based on Qdp forcing
+     do k=1,nlev
+        ! constant PHI.  FPHI will be zero. cant be used Hydrostatic
+        !pnh(:,:,k) = rstarn1(:,:,k)*tn1(:,:,k)*dp(:,:,k) / &
+        !     (
+        !     elem(ie)%state%phinh_i(:,:,k,n0)-elem(ie)%state%phinh_i(:,:,k+1,n0))
+        ! constant NH perturbation pressure
+        pnh(:,:,k)=hvcoord%ps0*hvcoord%hyam(k) + elem%state%ps_v(:,:,np1)*hvcoord%hybm(k) + pprime(:,:,k)
+        exner(:,:,k)=(pnh(:,:,k)/p0)**(Rgas/Cp)
      enddo
-  enddo
 
-  end subroutine applyCAMforcing_tracers
+     ! now we have tn1,dp,pnh - compute corresponding theta and phi:
+     vthn1 =  (rstarn1(:,:,:)/Rgas)*tn1(:,:,:)*dp(:,:,:)/exner(:,:,:)
 
+     phi_n1(:,:,nlevp)=elem%state%phinh_i(:,:,nlevp,np1)
+     do k=nlev,1,-1
+        phi_n1(:,:,k)=phi_n1(:,:,k+1) + Rgas*vthn1(:,:,k)*exner(:,:,k)/pnh(:,:,k)
+     enddo
 
+     !finally, compute difference for FVTheta
+     ! this method is using new dp, new exner, new-new r*, new t
+     elem%derived%FVTheta(:,:,:) = &
+         (vthn1 - elem%state%vtheta_dp(:,:,:,np1))/dt
 
+     elem%derived%FPHI(:,:,:) = &
+         (phi_n1 - elem%state%phinh_i(:,:,:,np1))/dt
+
+#endif
+
+end subroutine applyCAMforcing_tracers
   
   
   subroutine prim_step_scm(elem, nets,nete, dt, tl, hvcoord)

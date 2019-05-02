@@ -736,6 +736,7 @@ for mct, etc.
   </CPPDEFS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align</append>
+    <append> $SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --fflags} </append>
     <append compile_threaded="TRUE"> -static-intel</append>
     <append compile_threaded="TRUE" DEBUG="TRUE">-heap-arrays</append>
   </FFLAGS>
