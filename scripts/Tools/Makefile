@@ -641,7 +641,7 @@ CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(EXTRA_PIO_FPPDEFS) $(IN
               -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
               -D GPTL_PATH:STRING=$(INSTALL_SHAREDPATH) \
               -D PIO_ENABLE_TESTS:BOOL=OFF \
-              -D PIO_USE_MALLOC:BOOL=ON \
+              -D PIO_USE_MALLOC:BOOL=OFF \
 	      -D USER_CMAKE_MODULE_PATH:LIST="$(CIMEROOT)/src/CMake;$(CIMEROOT)/src/externals/pio2/cmake" \
 
 # Allow for separate installations of the NetCDF C and Fortran libraries
@@ -804,18 +804,20 @@ ifeq ($(ULIBDEP),$(null))
      ULIBDEP += $(LIBROOT)/librof.a
      ULIBDEP += $(LIBROOT)/libglc.a
      ULIBDEP += $(LIBROOT)/libwav.a
-     ULIBDEP += $(LIBROOT)/libiac.a
+     ifneq ($(COMP_INTERFACE), nuopc)
+       ULIBDEP += $(LIBROOT)/libiac.a
+     endif
      ULIBDEP += $(LIBROOT)/libesp.a
-     ifeq ($(COMP_GLC), cism)
-       ULIBDEP += $(CISM_LIBDIR)/libglimmercismfortran.a
-       ifeq ($(CISM_USE_TRILINOS), TRUE)
-         ULIBDEP += $(CISM_LIBDIR)/libglimmercismcpp.a
-       endif
-     endif
-     ifeq ($(OCN_SUBMODEL),moby)
-       ULIBDEP += $(LIBROOT)/libmoby.a
-     endif
    endif
+endif
+ifeq ($(COMP_GLC), cism)
+  ULIBDEP += $(CISM_LIBDIR)/libglimmercismfortran.a
+  ifeq ($(CISM_USE_TRILINOS), TRUE)
+    ULIBDEP += $(CISM_LIBDIR)/libglimmercismcpp.a
+  endif
+endif
+ifeq ($(OCN_SUBMODEL),moby)
+  ULIBDEP += $(LIBROOT)/libmoby.a
 endif
 
 ifdef COSP_LIBDIR
@@ -993,4 +995,7 @@ ifeq (,$(findstring clean,$(MAKECMDGOALS)))
     -include Depends $(CASEROOT)/Depends.$(COMPILER) $(CASEROOT)/Depends.$(MACH) $(CASEROOT)/Depends.$(MACH).$(COMPILER)
 endif
 endif
+endif
+ifeq ($(MODEL),csm_share)
+  shr_assert_mod.mod: shr_assert_mod.o
 endif

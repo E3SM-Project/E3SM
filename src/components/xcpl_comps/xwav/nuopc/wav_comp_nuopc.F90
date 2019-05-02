@@ -5,28 +5,22 @@ module wav_comp_nuopc
   !----------------------------------------------------------------------------
 
   use ESMF
-  use NUOPC                 , only : NUOPC_CompDerive, NUOPC_CompSetEntryPoint, NUOPC_CompSpecialize
-  use NUOPC                 , only : NUOPC_CompAttributeGet, NUOPC_Advertise
-  use NUOPC_Model           , only : model_routine_SS        => SetServices
-  use NUOPC_Model           , only : model_label_Advance     => label_Advance
-  use NUOPC_Model           , only : model_label_SetRunClock => label_SetRunClock
-  use NUOPC_Model           , only : model_label_Finalize    => label_Finalize
-  use NUOPC_Model           , only : NUOPC_ModelGet
-  use med_constants_mod     , only : R8, CL, CS
-  use med_constants_mod     , only : shr_file_getlogunit, shr_file_setlogunit
-  use shr_nuopc_scalars_mod , only : flds_scalar_name
-  use shr_nuopc_scalars_mod , only : flds_scalar_num
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_nx
-  use shr_nuopc_scalars_mod , only : flds_scalar_index_ny
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_Clock_TimePrint
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_SetScalar
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_Diagnose
-  use shr_nuopc_methods_mod , only : chkerr => shr_nuopc_methods_ChkErr 
-  use dead_nuopc_mod        , only : dead_grid_lat, dead_grid_lon, dead_grid_index
-  use dead_nuopc_mod        , only : dead_init_nuopc, dead_final_nuopc, dead_meshinit
-  use dead_nuopc_mod        , only : fld_list_add, fld_list_realize, fldsMax, fld_list_type
-  use dead_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock
-  use med_constants_mod     , only : dbug => med_constants_dbug_flag
+  use NUOPC             , only : NUOPC_CompDerive, NUOPC_CompSetEntryPoint, NUOPC_CompSpecialize
+  use NUOPC             , only : NUOPC_CompAttributeGet, NUOPC_Advertise
+  use NUOPC_Model       , only : model_routine_SS        => SetServices
+  use NUOPC_Model       , only : model_label_Advance     => label_Advance
+  use NUOPC_Model       , only : model_label_SetRunClock => label_SetRunClock
+  use NUOPC_Model       , only : model_label_Finalize    => label_Finalize
+  use NUOPC_Model       , only : NUOPC_ModelGet
+  use shr_sys_mod       , only : shr_sys_abort
+  use shr_kind_mod      , only : r8=>shr_kind_r8, i8=>shr_kind_i8, cl=>shr_kind_cl, cs=>shr_kind_cs
+  use shr_file_mod      , only : shr_file_getlogunit, shr_file_setlogunit
+  use dead_methods_mod  , only : chkerr, state_setscalar,  state_diagnose, alarmInit, memcheck
+  use dead_methods_mod  , only : set_component_logging, get_component_instance, log_clock_advance
+  use dead_nuopc_mod    , only : dead_grid_lat, dead_grid_lon, dead_grid_index
+  use dead_nuopc_mod    , only : dead_init_nuopc, dead_final_nuopc, dead_meshinit
+  use dead_nuopc_mod    , only : fld_list_add, fld_list_realize, fldsMax, fld_list_type
+  use dead_nuopc_mod    , only : ModelInitPhase, ModelSetRunClock
 
   implicit none
   private ! except
@@ -37,24 +31,32 @@ module wav_comp_nuopc
   ! Private module data
   !--------------------------------------------------------------------------
 
-  integer                    :: fldsToWav_num = 0
-  integer                    :: fldsFrWav_num = 0
-  type (fld_list_type)       :: fldsToWav(fldsMax)
-  type (fld_list_type)       :: fldsFrWav(fldsMax)
-  integer, parameter         :: gridTofieldMap = 2 ! ungridded dimension is innermost
+  character(len=CL)      :: flds_scalar_name = ''
+  integer                :: flds_scalar_num = 0
+  integer                :: flds_scalar_index_nx = 0
+  integer                :: flds_scalar_index_ny = 0
+  integer                :: flds_scalar_index_nextsw_cday = 0
 
-  real(r8), pointer          :: lat(:)
-  real(r8), pointer          :: lon(:)
-  integer , allocatable      :: gindex(:)
-  integer                    :: nxg                  ! global dim i-direction
-  integer                    :: nyg                  ! global dim j-direction
-  integer                    :: inst_index           ! number of current instance (ie. 1)
-  character(len=16)          :: inst_name            ! fullname of current instance (ie. "wav_0001")
-  character(len=16)          :: inst_suffix = ""     ! char string associated with instance (ie. "_0001" or "")
-  integer                    :: logunit              ! logging unit number
-  logical                    :: mastertask
-  character(*),parameter     :: modName =  "(xwav_comp_nuopc)"
-  character(*),parameter     :: u_FILE_u = &
+  integer                :: fldsToWav_num = 0
+  integer                :: fldsFrWav_num = 0
+  type (fld_list_type)   :: fldsToWav(fldsMax)
+  type (fld_list_type)   :: fldsFrWav(fldsMax)
+  integer, parameter     :: gridTofieldMap = 2 ! ungridded dimension is innermost
+
+  real(r8), pointer      :: gbuf(:,:)            ! model info
+  real(r8), pointer      :: lat(:)
+  real(r8), pointer      :: lon(:)
+  integer , allocatable  :: gindex(:)
+  integer                :: nxg                  ! global dim i-direction
+  integer                :: nyg                  ! global dim j-direction
+  integer                :: my_task              ! my task in mpi communicator mpicom
+  integer                :: inst_index           ! number of current instance (ie. 1)
+  character(len=16)      :: inst_suffix = ""     ! char string associated with instance (ie. "_0001" or "")
+  integer                :: logunit              ! logging unit number
+  logical                :: mastertask
+  integer                :: dbug = 1
+  character(*),parameter :: modName =  "(xwav_comp_nuopc)"
+  character(*),parameter :: u_FILE_u = &
        __FILE__
 
 !===============================================================================
@@ -111,9 +113,6 @@ contains
 
   subroutine InitializeAdvertise(gcomp, importState, exportState, clock, rc)
 
-    use shr_nuopc_utils_mod, only : shr_nuopc_set_component_logging
-    use shr_nuopc_utils_mod, only : shr_nuopc_get_component_instance
-
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     type(ESMF_State)     :: importState, exportState
@@ -121,13 +120,14 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    integer            :: n
-    type(ESMF_VM)      :: vm
-    character(CS)      :: stdname
-    real(r8), pointer  :: gbuf(:,:)  ! model info
-    integer            :: my_task    ! my task in mpi communicator mpicom
-    integer            :: lsize      ! local array size
-    integer            :: shrlogunit ! original log unit
+    type(ESMF_VM)     :: vm
+    character(CS)     :: stdname
+    integer           :: n
+    integer           :: lsize       ! local array size
+    integer           :: shrlogunit  ! original log unit
+    character(CL)     :: cvalue
+    character(len=CL) :: logmsg
+    logical           :: isPresent, isSet
     character(len=*),parameter :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
 
@@ -147,14 +147,15 @@ contains
     ! determine instance information
     !---------------------------------------------------------------------------
 
-    call shr_nuopc_get_component_instance(gcomp, inst_suffix, inst_index)
-    inst_name = "WAV"//trim(inst_suffix)
+    call get_component_instance(gcomp, inst_suffix, inst_index, rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     !----------------------------------------------------------------------------
     ! set logunit and set shr logging to my log file
     !----------------------------------------------------------------------------
 
-    call shr_nuopc_set_component_logging(gcomp, mastertask, logunit, shrlogunit)
+    call set_component_logging(gcomp, mastertask, logunit, shrlogunit, rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     !----------------------------------------------------------------------------
     ! Initialize xwav
@@ -173,6 +174,49 @@ contains
     !--------------------------------
     ! advertise import and export fields
     !--------------------------------
+
+    call NUOPC_CompAttributeGet(gcomp, name="ScalarFieldName", value=cvalue, isPresent=isPresent, isSet=isSet, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (isPresent .and. isSet) then
+       flds_scalar_name = trim(cvalue)
+       call ESMF_LogWrite(trim(subname)//' flds_scalar_name = '//trim(flds_scalar_name), ESMF_LOGMSG_INFO)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    else
+       call shr_sys_abort(subname//'Need to set attribute ScalarFieldName')
+    endif
+
+    call NUOPC_CompAttributeGet(gcomp, name="ScalarFieldCount", value=cvalue, isPresent=isPresent, isSet=isSet, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (isPresent .and. isSet) then
+       read(cvalue, *) flds_scalar_num
+       write(logmsg,*) flds_scalar_num
+       call ESMF_LogWrite(trim(subname)//' flds_scalar_num = '//trim(logmsg), ESMF_LOGMSG_INFO)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    else
+       call shr_sys_abort(subname//'Need to set attribute ScalarFieldCount')
+    endif
+
+    call NUOPC_CompAttributeGet(gcomp, name="ScalarFieldIdxGridNX", value=cvalue, isPresent=isPresent, isSet=isSet, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (isPresent .and. isSet) then
+       read(cvalue,*) flds_scalar_index_nx
+       write(logmsg,*) flds_scalar_index_nx
+       call ESMF_LogWrite(trim(subname)//' : flds_scalar_index_nx = '//trim(logmsg), ESMF_LOGMSG_INFO)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    else
+       call shr_sys_abort(subname//'Need to set attribute ScalarFieldIdxGridNX')
+    endif
+
+    call NUOPC_CompAttributeGet(gcomp, name="ScalarFieldIdxGridNY", value=cvalue, isPresent=isPresent, isSet=isSet, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (isPresent .and. isSet) then
+       read(cvalue,*) flds_scalar_index_ny
+       write(logmsg,*) flds_scalar_index_ny
+       call ESMF_LogWrite(trim(subname)//' : flds_scalar_index_ny = '//trim(logmsg), ESMF_LOGMSG_INFO)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    else
+       call shr_sys_abort(subname//'Need to set attribute ScalarFieldIdxGridNY')
+    endif
 
     if (nxg /= 0 .and. nyg /= 0) then
 
@@ -282,14 +326,14 @@ contains
     ! Pack export state
     !--------------------------------
 
-    call state_setexport(exportState, rc=rc)
+    call State_SetExport(exportState, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_State_SetScalar(dble(nxg),flds_scalar_index_nx, exportState, &
+    call State_SetScalar(dble(nxg),flds_scalar_index_nx, exportState, &
          flds_scalar_name, flds_scalar_num, rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_State_SetScalar(dble(nyg),flds_scalar_index_ny, exportState, &
+    call State_SetScalar(dble(nyg),flds_scalar_index_ny, exportState, &
          flds_scalar_name, flds_scalar_num, rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
@@ -298,7 +342,7 @@ contains
     !--------------------------------
 
     if (dbug > 1) then
-       call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
+       call State_diagnose(exportState,subname//':ES',rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
     endif
 
@@ -325,8 +369,7 @@ contains
 
   subroutine ModelAdvance(gcomp, rc)
 
-    use shr_nuopc_utils_mod, only : shr_nuopc_memcheck, shr_nuopc_log_clock_advance
-
+    ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -339,8 +382,10 @@ contains
 
     rc = ESMF_SUCCESS
 
-    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=rc)
-    call shr_nuopc_memcheck(subname, 3, mastertask)
+    if (dbug > 5) then
+       call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=rc)
+    end if
+    call memcheck(subname, 3, mastertask)
 
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_setLogUnit (logunit)
@@ -360,16 +405,19 @@ contains
     !--------------------------------
 
     if (dbug > 1) then
-       call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
+       call State_diagnose(exportState,subname//':ES',rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        if ( mastertask) then
-          call shr_nuopc_log_clock_advance(clock, 'WAV', logunit)
+          call log_clock_advance(clock, 'XWAV', logunit, rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
        endif
     endif
 
     call shr_file_setLogUnit (shrlogunit)
 
-    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=rc)
+    if (dbug > 5) then
+       call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=rc)
+    end if
 
   end subroutine ModelAdvance
 

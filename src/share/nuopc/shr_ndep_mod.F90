@@ -6,18 +6,23 @@ module shr_ndep_mod
   ! dry deposition of tracers
   !========================================================================
 
-  !USES:
+  use ESMF         , only : ESMF_VMGetCurrent, ESMF_VM, ESMF_VMBroadcast, ESMF_VMGet
+  use ESMF         , only : ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU
   use shr_sys_mod,   only : shr_sys_abort
-  use shr_log_mod,   only : s_loglev  => shr_log_Level
   use shr_log_mod  , only : s_logunit => shr_log_Unit
-  use shr_kind_mod,  only : r8 => shr_kind_r8, CS => SHR_KIND_CS, CX => SHR_KIND_CX
+  use shr_kind_mod,  only : r8 => shr_kind_r8
+  use shr_file_mod , only : shr_file_getUnit, shr_file_freeUnit
+  use shr_nl_mod   , only : shr_nl_find_group_name
 
   implicit none
   private
 
   ! !PUBLIC MEMBER FUNCTIONS
   public :: shr_ndep_readnl       ! Read namelist
-  character(len=*), parameter :: u_FILE_u=__FILE__
+
+  character(len=*), parameter :: &
+       u_FILE_u=__FILE__
+
 !====================================================================================
 CONTAINS
 !====================================================================================
@@ -28,11 +33,6 @@ CONTAINS
     ! reads ndep_inparm namelist and sets up driver list of fields for
     ! atmosphere -> land and atmosphere -> ocn communications.
     !========================================================================
-
-    use shr_file_mod        , only : shr_file_getUnit, shr_file_freeUnit
-    use shr_nl_mod          , only : shr_nl_find_group_name
-    use ESMF                , only : ESMF_VMGetCurrent, ESMF_VM, ESMF_VMBroadcast, ESMF_VMGet
-    use shr_nuopc_utils_mod , only : shr_nuopc_utils_chkerr
 
     ! input/output variables
     character(len=*), intent(in)  :: NLFilename ! Namelist filename
@@ -65,19 +65,20 @@ CONTAINS
     if ( len_trim(NLFilename) == 0 ) then
        call shr_sys_abort( subName//'ERROR: nlfilename not set' )
     end if
+
     call ESMF_VMGetCurrent(vm, rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return 
+
     call ESMF_VMGet(vm, localpet=localpet, rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return 
+
     ndep_nflds=0
     if (localpet==0) then
        inquire( file=trim(NLFileName), exist=exists)
        if ( exists ) then
           unitn = shr_file_getUnit()
           open( unitn, file=trim(NLFilename), status='old' )
-          if ( s_loglev > 0 ) then
-             write(s_logunit,F00) 'Read in ndep_inparm namelist from: ', trim(NLFilename)
-          end if
+          write(s_logunit,F00) 'Read in ndep_inparm namelist from: ', trim(NLFilename)
           call shr_nl_find_group_name(unitn, 'ndep_inparm', ierr)
           if (ierr == 0) then
              ierr = 1
@@ -101,8 +102,8 @@ CONTAINS
     end if
     tmp = ndep_nflds
     call ESMF_VMBroadcast(vm, tmp, 1, 0, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return 
     ndep_nflds=tmp(1)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine shr_ndep_readnl
 

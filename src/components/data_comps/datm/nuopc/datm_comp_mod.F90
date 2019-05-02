@@ -1,10 +1,5 @@
-#ifdef AIX
-  @PROCESS ALIAS_SIZE(805306368)
-#endif
-
 module datm_comp_mod
 
-  ! !USES:
   use NUOPC                 , only : NUOPC_Advertise
   use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_State
   use ESMF                  , only : ESMF_Mesh, ESMF_DistGrid, ESMF_MeshGet, ESMF_DistGridGet
@@ -12,13 +7,13 @@ module datm_comp_mod
   use mct_mod               , only : mct_gsmap_init
   use mct_mod               , only : mct_avect, mct_avect_indexRA, mct_avect_zero, mct_aVect_nRattr
   use mct_mod               , only : mct_avect_init, mct_avect_lsize
+  use shr_kind_mod          , only : r8=>shr_kind_r8, cxx=>shr_kind_cxx, cl=>shr_kind_cl, cs=>shr_kind_cs
   use shr_const_mod         , only : SHR_CONST_SPVAL
   use shr_const_mod         , only : SHR_CONST_TKFRZ
   use shr_const_mod         , only : SHR_CONST_PI
   use shr_const_mod         , only : SHR_CONST_PSTD
   use shr_const_mod         , only : SHR_CONST_STEBOL
   use shr_const_mod         , only : SHR_CONST_RDAIR
-  use med_constants_mod     , only : R8, CS, CL, CXX
   use shr_string_mod        , only : shr_string_listGetName
   use shr_sys_mod           , only : shr_sys_abort
   use shr_file_mod          , only : shr_file_getunit, shr_file_freeunit
@@ -34,8 +29,7 @@ module datm_comp_mod
   use shr_strdata_mod       , only : shr_strdata_advance, shr_strdata_restWrite
   use shr_strdata_mod       , only : shr_strdata_setorbs
   use shr_dmodel_mod        , only : shr_dmodel_translate_list, shr_dmodel_translateAV_list
-  use shr_nuopc_scalars_mod , only : flds_scalar_name
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+  use dshr_methods_mod      , only : ChkErr
   use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_export, dshr_import
   use datm_shr_mod          , only : datm_shr_esat, datm_shr_CORE2getFactors
   use datm_shr_mod          , only : datamode       ! namelist input
@@ -142,7 +136,7 @@ module datm_comp_mod
 contains
 !===============================================================================
 
-  subroutine datm_comp_advertise(importState, exportState, &
+  subroutine datm_comp_advertise(importState, exportState, flds_scalar_name, &
        atm_prognostic, flds_wiso_in, flds_co2a_in, flds_co2b_in, flds_co2c_in, &
        fldsFrAtm_num, fldsFrAtm, fldsToAtm_num, fldsToAtm, rc)
 
@@ -151,18 +145,19 @@ contains
     ! 3. determine module indices for attribute vectors
 
     ! input/output arguments
-    type(ESMF_State)                   :: importState
-    type(ESMF_State)                   :: exportState
-    logical              , intent(in)  :: atm_prognostic
-    logical              , intent(in)  :: flds_wiso_in   ! use case
-    logical              , intent(in)  :: flds_co2a_in   ! use case
-    logical              , intent(in)  :: flds_co2b_in   ! use case
-    logical              , intent(in)  :: flds_co2c_in   ! use case
-    integer              , intent(out) :: fldsFrAtm_num
-    type (fld_list_type) , intent(out) :: fldsFrAtm(:)
-    integer              , intent(out) :: fldsToAtm_num
-    type (fld_list_type) , intent(out) :: fldsToAtm(:)
-    integer              , intent(out) :: rc
+    type(ESMF_State)     , intent(inout) :: importState
+    type(ESMF_State)     , intent(inout) :: exportState
+    character(len=*)     , intent(in)    :: flds_scalar_name 
+    logical              , intent(in)    :: atm_prognostic
+    logical              , intent(in)    :: flds_wiso_in   ! use case
+    logical              , intent(in)    :: flds_co2a_in   ! use case
+    logical              , intent(in)    :: flds_co2b_in   ! use case
+    logical              , intent(in)    :: flds_co2c_in   ! use case
+    integer              , intent(out)   :: fldsFrAtm_num
+    type (fld_list_type) , intent(out)   :: fldsFrAtm(:)
+    integer              , intent(out)   :: fldsToAtm_num
+    type (fld_list_type) , intent(out)   :: fldsToAtm(:)
+    integer              , intent(out)   :: rc
 
     ! local variables
     integer :: n
@@ -393,13 +388,13 @@ contains
 
     do n = 1,fldsFrAtm_num
        call NUOPC_Advertise(exportState, standardName=fldsFrAtm(n)%stdname, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
     enddo
 
     if (atm_prognostic) then
        do n = 1,fldsToAtm_num
           call NUOPC_Advertise(importState, standardName=fldsToAtm(n)%stdname, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
        end do
     end if
 
@@ -540,24 +535,24 @@ contains
 
     ! obtain the distgrid from the mesh that was read in
     call ESMF_MeshGet(Mesh, elementdistGrid=distGrid, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! determin local size on my processor
     call ESMF_distGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! determine global index space for my processor
     allocate(gindex(lsize))
     call ESMF_distGridGet(distGrid, localDe=0, seqIndexList=gindex, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! determine global size of distgrid
     call ESMF_distGridGet(distGrid, dimCount=dimCount, deCount=deCount, tileCount=tileCount, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     allocate(elementCountPTile(tileCount))
     call ESMF_distGridGet(distGrid, elementCountPTile=elementCountPTile, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     gsize = 0
     do n = 1,size(elementCountPTile)
        gsize = gsize + elementCountPTile(n)
@@ -591,11 +586,11 @@ contains
 
     ! obtain mesh lats and lons
     call ESMF_MeshGet(mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     allocate(ownedElemCoords(spatialDim*numOwnedElements))
     allocate(xc(numOwnedElements), yc(numOwnedElements))
     call ESMF_MeshGet(mesh, ownedElemCoords=ownedElemCoords)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     if (numOwnedElements /= lsize) then
        call shr_sys_abort('ERROR: numOwnedElements is not equal to lsize')
     end if
@@ -1436,75 +1431,75 @@ contains
 
     k = mct_aVect_indexRA(x2a, 'Sx_avsdr')
     call dshr_import(importState, 'Sx_avsdr', x2a%rattr(:,k), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     k = mct_aVect_indexRA(x2a, 'Sx_avsdf')
     call dshr_import(importState, 'Sx_avsdf', x2a%rattr(:,k), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     k = mct_aVect_indexRA(x2a, 'Sx_ansdr')
     call dshr_import(importState, 'Sx_anidr', x2a%rattr(:,k), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     k = mct_aVect_indexRA(x2a, 'Sx_anidf')
     call dshr_import(importState, 'Sx_anidf', x2a%rattr(:,k), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     k = mct_aVect_indexRA(x2a, 'Sx_tref')
     call dshr_import(importState, 'Sx_tref', x2a%rattr(:,k), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     k = mct_aVect_indexRA(x2a, 'Sx_qref')
     call dshr_import(importState, 'Sx_qref', x2a%rattr(:,k), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     k = mct_aVect_indexRA(x2a, 'Sx_t')
     call dshr_import(importState, 'Sx_t', x2a%rattr(:,k), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     k = mct_aVect_indexRA(x2a, 'So_t')
     call dshr_import(importState, 'So_t', x2a%rattr(:,k), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     k = mct_aVect_indexRA(x2a, 'Sl_snowh')
     call dshr_import(importState, 'Sl_snowh', x2a%rattr(:,k), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     k = mct_aVect_indexRA(x2a, 'Sl_lfrac')
     call dshr_import(importState, 'Sl_lfrac', x2a%rattr(:,k), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     k = mct_aVect_indexRA(x2a, 'Si_lfrac')
     call dshr_import(importState, 'Si_lfrac', x2a%rattr(:,k), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     k = mct_aVect_indexRA(x2a, 'So_ofrac')
     call dshr_import(importState, 'So_ofrac', x2a%rattr(:,k), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     k = mct_aVect_indexRA(x2a, 'Faxx_taux')
     call dshr_import(importState, 'Faxx_taux', x2a%rattr(:,k), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     k = mct_aVect_indexRA(x2a, 'Faxx_tauy')
     call dshr_import(importState, 'Faxx_tauy', x2a%rattr(:,k), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     k = mct_aVect_indexRA(x2a, 'Faxx_lat')
     call dshr_import(importState, 'Faxx_lat', x2a%rattr(:,k), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     k = mct_aVect_indexRA(x2a, 'Faxx_sen')
     call dshr_import(importState, 'Faxx_sen', x2a%rattr(:,k), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     k = mct_aVect_indexRA(x2a, 'Faxx_lwup')
     call dshr_import(importState, 'Faxx_lwup', x2a%rattr(:,k), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     k = mct_aVect_indexRA(x2a, 'Faxx_evap')
     call dshr_import(importState, 'Faxx_evap', x2a%rattr(:,k), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine datm_comp_import
 
@@ -1523,124 +1518,124 @@ contains
     rc = ESMF_SUCCESS
 
     call dshr_export(a2x%rattr(ktopo,:) , exportState, 'Sa_topo', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_export(a2x%rattr(kz,:)    , exportState, 'Sa_z', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_export(a2x%rattr(ku,:)    , exportState, 'Sa_u', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_export(a2x%rattr(kv,:)    , exportState, 'Sa_v', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_export(a2x%rattr(kptem,:) , exportState, 'Sa_ptem', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_export(a2x%rattr(kdens,:) , exportState, 'Sa_dens', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_export(a2x%rattr(kpslv,:) , exportState, 'Sa_pslv', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_export(a2x%rattr(ktbot,:) , exportState, 'Sa_tbot', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_export(a2x%rattr(kpbot,:) , exportState, 'Sa_pbot', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_export(a2x%rattr(kshum,:) , exportState, 'Sa_shum', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call dshr_export(a2x%rattr(krc,:)   , exportState, 'Faxa_rainc', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_export(a2x%rattr(krl,:)   , exportState, 'Faxa_rainl', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_export(a2x%rattr(ksc,:)   , exportState, 'Faxa_snowc', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_export(a2x%rattr(ksl,:)   , exportState, 'Faxa_snowl', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call dshr_export(a2x%rattr(kswndr,:), exportState, 'Faxa_swndr', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_export(a2x%rattr(kswndf,:), exportState, 'Faxa_swndf', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_export(a2x%rattr(kswvdr,:), exportState, 'Faxa_swvdr', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_export(a2x%rattr(kswvdf,:), exportState, 'Faxa_swvdf', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_export(a2x%rattr(kswnet,:), exportState, 'Faxa_swnet', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_export(a2x%rattr(klwdn,:) , exportState, 'Faxa_lwdn', rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (flds_co2a .or. flds_co2b .or. flds_co2c) then
        call dshr_export(avstrm%rattr(sco2p,:), exportState, 'Sa_co2prog' , rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call dshr_export(avstrm%rattr(sco2d,:), exportState, 'Sa_co2diag' , rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
     if (presaero) then
        call dshr_export(a2x%rattr(kbcphidry,:), exportState, 'Faxa_bcph', ungridded_index=1, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call dshr_export(a2x%rattr(kbcphodry,:), exportState, 'Faxa_bcph', ungridded_index=2, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call dshr_export(a2x%rattr(kbcphiwet,:), exportState, 'Faxa_bcph', ungridded_index=3, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call dshr_export(a2x%rattr(kocphidry,:), exportState, 'Faxa_ocph', ungridded_index=1, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call dshr_export(a2x%rattr(kocphodry,:), exportState, 'Faxa_ocph', ungridded_index=2, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call dshr_export(a2x%rattr(kocphiwet,:), exportState, 'Faxa_ocph', ungridded_index=3, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call dshr_export(a2x%rattr(kdstwet1,:), exportState, 'Faxa_dstwet', ungridded_index=1, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call dshr_export(a2x%rattr(kdstwet2,:), exportState, 'Faxa_dstwet', ungridded_index=2, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call dshr_export(a2x%rattr(kdstwet3,:), exportState, 'Faxa_dstwet', ungridded_index=3, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call dshr_export(a2x%rattr(kdstwet4,:), exportState, 'Faxa_dstwet', ungridded_index=4, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call dshr_export(a2x%rattr(kdstdry1,:), exportState, 'Faxa_dstdry', ungridded_index=1, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call dshr_export(a2x%rattr(kdstdry2,:), exportState, 'Faxa_dstdry', ungridded_index=2, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call dshr_export(a2x%rattr(kdstdry3,:), exportState, 'Faxa_dstdry', ungridded_index=3, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call dshr_export(a2x%rattr(kdstdry4,:), exportState, 'Faxa_dstdry', ungridded_index=4, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
     if (flds_wiso) then
        call dshr_export(a2x%rattr(krc_16O,:), exportState, 'Faxa_rainc_wiso', ungridded_index=1, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call dshr_export(a2x%rattr(krc_18O,:), exportState, 'Faxa_rainc_wiso', ungridded_index=2, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call dshr_export(a2x%rattr(krc_HDO,:), exportState, 'Faxa_rainc_wiso', ungridded_index=3, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call dshr_export(a2x%rattr(krl_16O,:), exportState, 'Faxa_rainl_wiso', ungridded_index=1, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call dshr_export(a2x%rattr(krl_18O,:), exportState, 'Faxa_rainl_wiso', ungridded_index=2, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call dshr_export(a2x%rattr(krl_HDO,:), exportState, 'Faxa_rainl_wiso', ungridded_index=3, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call dshr_export(a2x%rattr(ksc_16O,:), exportState, 'Faxa_snowc_wiso', ungridded_index=1, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call dshr_export(a2x%rattr(ksc_18O,:), exportState, 'Faxa_snowc_wiso', ungridded_index=2, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call dshr_export(a2x%rattr(ksc_HDO,:), exportState, 'Faxa_snowc_wiso', ungridded_index=3, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call dshr_export(a2x%rattr(ksl_16O,:), exportState, 'Faxa_snowl_wiso', ungridded_index=1, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call dshr_export(a2x%rattr(ksl_18O,:), exportState, 'Faxa_snowl_wiso', ungridded_index=2, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call dshr_export(a2x%rattr(ksl_HDO,:), exportState, 'Faxa_snowl_wiso', ungridded_index=3, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call dshr_export(a2x%rattr(kshum_16O,:), exportState, 'Faxa_shum_wiso', ungridded_index=1, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call dshr_export(a2x%rattr(kshum_18O,:), exportState, 'Faxa_shum_wiso', ungridded_index=2, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call dshr_export(a2x%rattr(kshum_HDO,:), exportState, 'Faxa_shum_wiso', ungridded_index=3, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
   end subroutine datm_comp_export
