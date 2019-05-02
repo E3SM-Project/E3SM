@@ -101,7 +101,12 @@ subroutine stepon_init(dyn_in, dyn_out )
 
   ! This is not done in dyn_init due to a circular dependency issue.
   if(par%dynproc) then
+#ifdef MODEL_THETA_L
+     !buffer to comm forcings, theta-l needs 1 more
+     call initEdgeBuffer(par, edgebuf, dyn_in%elem, (4+pcnst)*nlev)
+#else
      call initEdgeBuffer(par, edgebuf, dyn_in%elem, (3+pcnst)*nlev)
+#endif
      if (use_gw_front)  call gws_init(dyn_in%elem)
   end if
 
@@ -156,7 +161,7 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
                         pbuf2d, dyn_in, dyn_out )
   
   use dp_coupling, only: d_p_coupling
-  use time_mod,    only: tstep, phys_tscale       ! dynamics timestep
+  use time_mod,    only: tstep      ! dynamics timestep
   use time_manager, only: is_last_step
   use control_mod, only: ftype
   use physics_buffer, only : physics_buffer_desc
@@ -181,9 +186,6 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
 
    ! NOTE: dtime_out computed here must match formula below
    dtime_out = get_step_size()
-   if (phys_tscale/=0) then
-      dtime_out=phys_tscale  ! set by user in namelist
-   endif
 
    if(par%dynproc) then
       if(tstep <= 0)  call endrun( 'bad tstep')
@@ -217,19 +219,19 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    use dimensions_mod, only: nlev, nelemd, np, npsq
    use dp_coupling,    only: p_d_coupling
    use parallel_mod,   only: par
-   use dyn_comp,       only: TimeLevel
+   use dyn_comp,       only: TimeLevel, hvcoord
    
-   use time_mod,        only: tstep, phys_tscale, TimeLevel_Qdp   !  dynamics typestep
+   use time_mod,        only: tstep, TimeLevel_Qdp   !  dynamics typestep
    use control_mod,     only: ftype, qsplit
    use hycoef,          only: hyai, hybi, ps0
    use cam_history,     only: outfld, hist_fld_active
-
+   use prim_driver_base,only: applyCAMforcing_tracers
 
    type(physics_state), intent(inout) :: phys_state(begchunk:endchunk)
    type(physics_tend), intent(inout) :: phys_tend(begchunk:endchunk)
    type (dyn_import_t), intent(inout) :: dyn_in  ! Dynamics import container
    type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
-   integer :: kptr, ie, ic, i, j, k, tl_f, tl_fQdp
+   integer :: kptr, ie, ic, i, j, k, tl_f, tl_fQdp, velcomp
    real(r8) :: rec2dt, dyn_ps0
    real(r8) :: dp(np,np,nlev),dp_tmp,fq,fq0,qn0, ftmp(npsq,nlev,2)
    real(r8) :: dtime
@@ -249,9 +251,13 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    if (.not. single_column) then 
      do ie=1,nelemd
        kptr=0
+#ifdef MODEL_THETA_L
+       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),3*nlev,kptr,ie)
+       kptr=kptr+3*nlev
+#else
        call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),2*nlev,kptr,ie)
        kptr=kptr+2*nlev
-
+#endif
        call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
        kptr=kptr+nlev
        call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
@@ -263,18 +269,17 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    ! NOTE: rec2dt MUST be 1/dtime_out as computed above
 
    rec2dt = 1._r8/dtime
-   if (phys_tscale/=0) then
-      rec2dt = 1._r8/phys_tscale
-   endif
-
 
    do ie=1,nelemd
      if (.not. single_column) then
        kptr=0
-
+#ifdef MODEL_THETA_L
+       call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),3*nlev,kptr,ie)
+       kptr=kptr+3*nlev
+#else
        call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),2*nlev,kptr,ie)
        kptr=kptr+2*nlev
-
+#endif
        call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
        kptr=kptr+nlev
 
@@ -288,68 +293,15 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       dyn_ps0=ps0
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      ! ftype=2,3,4:  apply forcing to Q,ps.  Return dynamics tendencies
+      ! ftype=2,4:  apply forcing to Q,ps.  Return dynamics tendencies
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      if ( (ftype==2) .or. (ftype==3) .or. (ftype==4) ) then
+      if ( (ftype==2) .or. (ftype==4) ) then
          ! apply forcing to states tl_f 
          ! requires forward-in-time timestepping, checked in namelist_mod.F90
-!$omp parallel do private(k)
-         do k=1,nlev
-            dp(:,:,k) = ( hyai(k+1) - hyai(k) )*dyn_ps0 + &
-                 ( hybi(k+1) - hybi(k) )*dyn_in%elem(ie)%state%ps_v(:,:,tl_f)
-         enddo
 
-         if (ftype == 3) then ! ftype == 3, scale tendencies with current dp
-           do k=1,nlev
-             do j=1,np
-               do i=1,np
-                  dyn_in%elem(ie)%derived%FT(i,j,k) = dyn_in%elem(ie)%derived%FT(i,j,k)*dp(i,j,k)
-                  dyn_in%elem(ie)%derived%FM(i,j,1:2,k) = dyn_in%elem(ie)%derived%FM(i,j,1:2,k)*dp(i,j,k)
-               end do
-             end do
-           end do
-         endif !ftype 3
+         call applyCAMforcing_tracers(dyn_in%elem(ie),hvcoord,tl_f,tl_fQdp,dtime,.true.)
 
-         do k=1,nlev
-            do j=1,np
-               do i=1,np
-                  do ic=1,pcnst
-                     ! apply forcing to Qdp
-                     ! dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) = &
-                     !        dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) + fq 
-                     dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) = &
-                          dp(i,j,k)*dyn_in%elem(ie)%derived%FQ(i,j,k,ic)
-
-! BEWARE critical region if using OpenMP over k (AAM)
-                     if (ic==1) then
-                        fq = dp(i,j,k)*(  dyn_in%elem(ie)%derived%FQ(i,j,k,ic) - &
-                             dyn_in%elem(ie)%state%Q(i,j,k,ic))
-                        ! force ps_v to conserve mass:  
-                        dyn_in%elem(ie)%state%ps_v(i,j,tl_f)= &
-                             dyn_in%elem(ie)%state%ps_v(i,j,tl_f) + fq
-                     endif
-                  enddo
-               end do
-            end do
-         end do
-
-!$omp parallel do private(k, j, i, ic, dp_tmp)
-         do k=1,nlev
-          do ic=1,pcnst
-            do j=1,np
-               do i=1,np
-                  ! make Q consistent now that we have updated ps_v above
-                  ! recompute dp, since ps_v was changed above
-                  dp_tmp = ( hyai(k+1) - hyai(k) )*dyn_ps0 + &
-                       ( hybi(k+1) - hybi(k) )*dyn_in%elem(ie)%state%ps_v(i,j,tl_f)
-                  dyn_in%elem(ie)%state%Q(i,j,k,ic)= &
-                       dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp)/dp_tmp
-               end do
-            end do
-          end do
-         end do
-
-      endif ! if ftype == 2 or == 3 or == 4
+      endif ! if ftype == 2 or == 4
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! ftype=1:  apply all forcings as an adjustment
@@ -357,60 +309,33 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       if (ftype==1) then
          ! apply forcing to state tl_f
          ! requires forward-in-time timestepping, checked in namelist_mod.F90
-!$omp parallel do private(k)
-         do k=1,nlev
-            dp(:,:,k) = ( hyai(k+1) - hyai(k) )*dyn_ps0 + &
-                 ( hybi(k+1) - hybi(k) )*dyn_in%elem(ie)%state%ps_v(:,:,tl_f)
-         enddo
+         call applyCAMforcing_tracers(dyn_in%elem(ie),hvcoord,tl_f,tl_fQdp,dtime,.true.)
+
          do k=1,nlev
             do j=1,np
-               do i=1,np
-
-                  do ic=1,pcnst
-                     ! back out tendency: Qdp*dtime 
-                     fq = dp(i,j,k)*(  dyn_in%elem(ie)%derived%FQ(i,j,k,ic) - &
-                          dyn_in%elem(ie)%state%Q(i,j,k,ic))
-                     
-                     ! apply forcing to Qdp
-                     dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) = &
-                          dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) + fq 
-
-                     ! BEWARE critical region if using OpenMP over k (AAM)
-                     if (ic==1) then
-                        ! force ps_v to conserve mass:  
-                        dyn_in%elem(ie)%state%ps_v(i,j,tl_f)= &
-                             dyn_in%elem(ie)%state%ps_v(i,j,tl_f) + fq
-                     endif
-                  enddo
-
+               do i=1,np       
                   ! force V, T, both timelevels
-                  dyn_in%elem(ie)%state%v(i,j,:,k,tl_f)= &
-                       dyn_in%elem(ie)%state%v(i,j,:,k,tl_f) +  &
-                       dtime*dyn_in%elem(ie)%derived%FM(i,j,:,k)
-                  
+                  do velcomp=1,2
+                     dyn_in%elem(ie)%state%v(i,j,velcomp,k,tl_f)= &
+                     dyn_in%elem(ie)%state%v(i,j,velcomp,k,tl_f) +  &
+                     dtime*dyn_in%elem(ie)%derived%FM(i,j,velcomp,k)
+                  enddo
+        
+#ifdef MODEL_THETA_L
+                  dyn_in%elem(ie)%state%vtheta_dp(i,j,k,tl_f)= &
+                  dyn_in%elem(ie)%state%vtheta_dp(i,j,k,tl_f) + &
+                  dtime*dyn_in%elem(ie)%derived%FVTheta(i,j,k)
+#else                  
                   dyn_in%elem(ie)%state%T(i,j,k,tl_f)= &
-                       dyn_in%elem(ie)%state%T(i,j,k,tl_f) + &
-                       dtime*dyn_in%elem(ie)%derived%FT(i,j,k)
-                  
+                  dyn_in%elem(ie)%state%T(i,j,k,tl_f) + &
+                  dtime*dyn_in%elem(ie)%derived%FT(i,j,k)    
+#endif
+        
                end do
             end do
-         end do
+        end do
 
-!$omp parallel do private(k, j, i, ic, dp_tmp)
-         do k=1,nlev
-            do ic=1,pcnst
-               do j=1,np
-                  do i=1,np
-                     ! make Q consistent now that we have updated ps_v above
-                     dp_tmp = ( hyai(k+1) - hyai(k) )*dyn_ps0 + &
-                          ( hybi(k+1) - hybi(k) )*dyn_in%elem(ie)%state%ps_v(i,j,tl_f)
-                     dyn_in%elem(ie)%state%Q(i,j,k,ic)= &
-                          dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp)/dp_tmp
-                  end do
-               end do
-            end do
-         end do
-      endif
+      endif !ftype=1 
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! ftype=0 and ftype<0 (debugging options):  just return tendencies to dynamics
@@ -439,8 +364,8 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
                end do
             end do
          end do
-      endif
-   end do
+      endif ! ftype<0
+   end do   ! ie loop
    call t_stopf('stepon_bndry_exch')
 
 
