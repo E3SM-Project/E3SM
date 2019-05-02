@@ -1627,9 +1627,15 @@ end function radiation_nextsw_cday
 #ifdef FIVE
                ! compute aer_lw_abs_five in FIVE vertical resolution
                 do i = 1, ncol
+                  do k = 1, pver
+                      aer_lw_abs(i,k,:)= aer_lw_abs(i,k,:)/state%pdeldry(i,k)
+                  end do
                   do nb = 1, nbndsw
                     call linear_interp(state%pmid(i,:),pmid_five(i,:), &
                          aer_lw_abs(i,1:pver,nb),aer_lw_abs_five(i,1:pver_five,nb),pver,pver_five)
+                  end do
+                  do k = 1, pver_five
+                      aer_lw_abs_five(i,k,:)= aer_lw_abs_five(i,k,:) * pdel_five(i,k)
                   end do
                 end do
 #endif
