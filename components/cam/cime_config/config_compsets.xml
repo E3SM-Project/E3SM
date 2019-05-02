@@ -331,6 +331,11 @@
     <alias>FSCREAM-L</alias>
     <lname>2000_CAM5%SCREAM-L_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset> 
+  
+  <compset>
+    <alias>FSCREAM-F</alias>
+    <lname>2000_CAM5%SCREAM-F_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset> 
 
   <!-- *********************************** -->
   <!-- idealized / adiabatic -->
