@@ -952,7 +952,7 @@ module atm_time_integration
                   ru_driving_values(1:nVertLevels,1:nEdges+1) =  mpas_atm_get_bdy_state( clock, domain % blocklist, nVertLevels, nEdges, 'ru', time_dyn_step )
                   call mpas_pool_get_array(diag, 'ru', u)
                   ! do this inline at present - it is simple enough
-                  do iEdge = 1, nEdgesSolve
+                  do iEdge = 1, nEdges
                      if(bdyMaskEdge(iEdge) > nRelaxZone) then
                         do k = 1, nVertLevels
                            u(k,iEdge) = ru_driving_values(k,iEdge)
@@ -6416,7 +6416,7 @@ module atm_time_integration
          end if
       end do
 
-      do iEdge = edgeSolveStart, edgeSolveEnd
+      do iEdge = edgeStart, edgeEnd
          if( (bdyMaskEdge(iEdge) > 1) .and. (bdyMaskEdge(iEdge) <= nRelaxZone) ) then
             rayleigh_damping_coef = (real(bdyMaskEdge(iEdge)) - 1.)/real(nRelaxZone)/(50.*dt*meshScalingRegionalEdge(iEdge))
             do k=1, nVertLevels
@@ -6455,7 +6455,7 @@ module atm_time_integration
 
       !  Third (and last), the horizontal filter for ru
 
-      do iEdge = edgeSolveStart, edgeSolveEnd
+      do iEdge = edgeStart, edgeEnd
 
          if ( (bdyMaskEdge(iEdge) > 1) .and. (bdyMaskEdge(iEdge) <= nRelaxZone) ) then ! relaxation zone
 
@@ -6704,7 +6704,7 @@ module atm_time_integration
 
       end do  ! updates now in temp storage
             
-!OMP BARRIER
+!$OMP BARRIER
 
       do iCell = cellSolveStart, cellSolveEnd ! threaded over cells
          if (bdyMaskCell(iCell) > 1) then ! update values
