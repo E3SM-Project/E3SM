@@ -10,12 +10,13 @@
        This file may have atm desc entries.
   -->
   <description modifier_mode="1">
-    <desc atm="DATM[%QIA][%WISOQIA][%CRU][%CRUv7][%GSWP3v1][%CPLHIST][%1PT][%NYF][%IAF][%JRA]"> Data driven ATM </desc>
+    <desc atm="DATM[%QIA][%WISOQIA][%CRU][%CRUv7][%GSWP3v1][%NLDAS2][%CPLHIST][%1PT][%NYF][%IAF][%JRA]"> Data driven ATM </desc>
     <desc option="QIA"> QIAN data set </desc>
     <desc option="WISOQIA">QIAN with water isotopes</desc>
     <desc option="CRU"> CRUNCEP data set </desc>
     <desc option="CRUv7"> CLM CRU NCEP v7 data set </desc>
     <desc option="GSWP3v1"> GSWP3v1 data set </desc>
+    <desc option="NLDAS2"> NLDAS2 regional 0.125 degree data set over the U.S. (25-53N, 235-293E). WARNING: Garbage data will be produced for runs extending beyond this regional domain. </desc>
     <desc option="CPLHIST"> Coupler hist data set (in this mode, it is strongly recommended that the model domain and the coupler history forcing are on the same domain)</desc>
     <desc option="1PT">single point tower site data set </desc>
     <desc option="NYF">COREv2 normal year forcing</desc>
@@ -34,13 +35,14 @@
 
   <entry id="DATM_MODE">
     <type>char</type>
-    <valid_values>CORE2_NYF,CORE2_IAF,CLM_QIAN,CLM_QIAN_WISO,CLM1PT,CLMCRUNCEP,CLMCRUNCEPv7,CLMGSWP3v1,CPLHIST,CORE_IAF_JRA</valid_values>
+    <valid_values>CORE2_NYF,CORE2_IAF,CLM_QIAN,CLM_QIAN_WISO,CLM1PT,CLMCRUNCEP,CLMCRUNCEPv7,CLMGSWP3v1,CLMNLDAS2,CPLHIST,CORE_IAF_JRA</valid_values>
     <default_value>CORE2_NYF</default_value>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
     <desc>Mode for data atmosphere component.
       CORE2_NYF (CORE2 normal year forcing) are modes used in forcing prognostic ocean/sea-ice components.
-      CLM_QIAN, CLMCRUNCEP, CLMCRUNCEPv7, CLMGSWP3v1 and CLM1PT are modes using observational data for forcing prognostic land components.</desc>
+      CLM_QIAN, CLMCRUNCEP, CLMCRUNCEPv7, CLMGSWP3v1, CLMNLDAS2 and CLM1PT are modes using observational data for forcing prognostic land components.
+      WARNING for CLMNLDAS2: This is a regional forcing dataset over the U.S. (25-53N, 235-293E). Garbage data will be produced for runs extending beyond this regional domain. </desc>
     <values match="last">
       <value compset="%NYF">CORE2_NYF</value>
       <value compset="%IAF">CORE2_IAF</value>
@@ -50,6 +52,7 @@
       <value compset="%CRU">CLMCRUNCEP</value>
       <value compset="%CRUv7">CLMCRUNCEPv7</value>
       <value compset="%GSWP3v1">CLMGSWP3v1</value>
+      <value compset="%NLDAS2">CLMNLDAS2</value>
       <value compset="%1PT">CLM1PT</value>
       <value compset="%CPLHIST">CPLHIST</value>
     </values>
@@ -187,30 +190,27 @@
     <valid_values></valid_values>
     <default_value>1</default_value>
     <values match="last">
-      <value compset="2000.*_DATM%1PT">1</value>
       <value compset="1850.*_DATM%QIA">1</value>
       <value compset="1850.*_DATM%CRU">1</value>
       <value compset="1850.*_DATM%GSW">1</value>
-      <value compset="2000.*_DATM%QIA">1</value>
+      <value compset="1850.*_DATM%NLDAS2">1</value>
       <value compset="HIST.*_DATM%QIA">1895</value>
       <value compset="HIST.*_DATM%CRU">1901</value>
       <value compset="HIST.*_DATM%GSW">1901</value>
+      <value compset="HIST.*_DATM%NLDAS2">$DATM_CLMNCEP_YR_START</value>
       <value compset="20TR.*_DATM%QIA">1895</value>
       <value compset="20TR.*_DATM%CRU">1901</value>
       <value compset="20TR.*_DATM%GSW">1901</value>
-      <value compset="4804.*_DATM%QIA">1</value>
+      <value compset="20TR.*_DATM%NLDAS2">$DATM_CLMNCEP_YR_START</value>
       <value compset="RCP.*_DATM%QIA">2004</value>
       <value compset="RCP.*_DATM%CRU">2005</value>
       <value compset="RCP.*_DATM%GSW">2005</value>
-      <value compset="2003.*_DATM%QIA.*_TEST">1</value>
       <value compset="1850.*_DATM%CRU">1</value>
-      <value compset="2000.*_DATM%CRU">1</value>
-      <value compset="2003.*_DATM%CRU">1</value>
-      <value compset="2010.*_DATM%CRU">1</value>
       <value compset="1850.*_DATM%GSW">1</value>
-      <value compset="2000.*_DATM%GSW">1</value>
-      <value compset="2010.*_DATM%GSW">1</value>
-      <value compset="2003.*_DATM%GSW">1</value>
+      <value compset="2000.*_DATM">$DATM_CLMNCEP_YR_START</value>
+      <value compset="2003.*_DATM">$DATM_CLMNCEP_YR_START</value>
+      <value compset="2010.*_DATM">$DATM_CLMNCEP_YR_START</value>
+      <value compset="4804.*_DATM">$DATM_CLMNCEP_YR_START</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
@@ -226,14 +226,17 @@
       <value compset="1850.*_DATM%QIA">1948</value>
       <value compset="1850.*_DATM%CRU">1901</value>
       <value compset="1850.*_DATM%GSW">1901</value>
+      <value compset="1850.*_DATM%NLDAS2">0</value>  <!-- Unsupported -->
       <value compset="2000.*_DATM%WISOQIA">2000</value>
       <value compset="2000.*_DATM%QIA">1972</value>
       <value compset="HIST.*_DATM%QIA">1948</value>
       <value compset="HIST.*_DATM%CRU">1901</value>
       <value compset="HIST.*_DATM%GSW">1901</value>
+      <value compset="HIST.*_DATM%NLDAS2">0</value>  <!-- Unsupported -->
       <value compset="20TR.*_DATM%QIA">1948</value>
       <value compset="20TR.*_DATM%CRU">1901</value>
       <value compset="20TR.*_DATM%GSW">1901</value>
+      <value compset="20TR.*_DATM%NLDAS2">0</value>  <!-- Unsupported -->
       <value compset="4804.*_DATM%QIA">1948</value>
       <value compset="RCP.*_DATM%QIA" >1972</value>
       <value compset="RCP.*_DATM%CRU" >1991</value>
@@ -247,6 +250,9 @@
       <value compset="2000.*_DATM%GSW">1991</value>
       <value compset="2010.*_DATM%GSW">2005</value>
       <value compset="2003.*_DATM%GSW">2002</value>
+      <value compset="2000.*_DATM%NLDAS2">1980</value>
+      <value compset="2010.*_DATM%NLDAS2">2005</value>
+      <value compset="2003.*_DATM%NLDAS2">2002</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
@@ -262,14 +268,17 @@
       <value   compset="1850.*_DATM%QIA">1972</value>
       <value   compset="1850.*_DATM%CRU">1920</value>
       <value   compset="1850.*_DATM%GSW">1920</value>
+      <value   compset="1850.*_DATM%NLDAS2">-1</value>  <!-- Unsupported -->
       <value   compset="2000.*_DATM%WISOQIA">2004</value>
       <value   compset="2000.*_DATM%QIA">2004</value>
       <value   compset="HIST.*_DATM%QIA">1972</value>
       <value   compset="HIST.*_DATM%CRU">1920</value>
       <value   compset="HIST.*_DATM%GSW">1920</value>
+      <value   compset="HIST.*_DATM%NLDAS2">-1</value>  <!-- Unsupported -->
       <value   compset="20TR.*_DATM%QIA">1972</value>
       <value   compset="20TR.*_DATM%CRU">1920</value>
       <value   compset="20TR.*_DATM%GSW">1920</value>
+      <value   compset="20TR.*_DATM%NLDAS2">-1</value>  <!-- Unsupported -->
       <value   compset="4804.*_DATM%QIA">2004</value>
       <value   compset="RCP.*_DATM%QIA">2004</value>
       <value   compset="RCP.*_DATM%CRU">2010</value>
@@ -283,6 +292,9 @@
       <value   compset="2000.*_DATM%GSW">2010</value>
       <value   compset="2010.*_DATM%GSW">2014</value>
       <value   compset="2003.*_DATM%GSW">2003</value>
+      <value   compset="2000.*_DATM%NLDAS2">2018</value>
+      <value   compset="2010.*_DATM%NLDAS2">2014</value>
+      <value   compset="2003.*_DATM%NLDAS2">2003</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>

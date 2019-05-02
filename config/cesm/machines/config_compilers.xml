@@ -320,7 +320,15 @@ using a fortran linker.
   <MPIFC> mpif90 </MPIFC>
   <SCC> gcc </SCC>
   <SFC> nagfor </SFC>
+
+  <LDFLAGS>
+    <append> -lpthread </append>
+  </LDFLAGS>
+  <CONFIG_ARGS>
+    <append> FCLIBS="-Wl,--as-needed,--allow-shlib-undefined  -L$(COMPILER_PATH)/lib/NAG_Fortran -lf62rts" </append>
+  </CONFIG_ARGS>
 </compiler>
+
 
 <compiler COMPILER="pgi">
   <CFLAGS>
@@ -900,19 +908,6 @@ using a fortran linker.
     <append MPILIB="mvapich2"> -mkl=cluster </append>
   </SLIBS>
   <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="FALSE">/fs/cgd/csm/tools/pFUnit/pFUnit3.2.8_hobart_Intel15.0.2_noMPI_noOpenMP</PFUNIT_PATH>
-</compiler>
-
-<compiler MACH="hobart" COMPILER="nag">
-  <CPPDEFS>
-    <!-- needed for nag pio build.. -->
-    <append> -DNO_C_SIZEOF </append>
-  </CPPDEFS>
-  <LDFLAGS>
-    <append> -lpthread</append>
-  </LDFLAGS>
-  <SLIBS>
-    <append> -L/usr/local/nag/lib/NAG_Fortran </append>
-  </SLIBS>
 </compiler>
 
 <compiler MACH="hobart" COMPILER="pgi">
