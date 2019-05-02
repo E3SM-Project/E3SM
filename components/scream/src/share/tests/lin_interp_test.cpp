@@ -1,6 +1,7 @@
 #include <catch2/catch.hpp>
 
 #include "share/util/scream_lin_interp.hpp"
+#include "share/util/scream_test_utils.hpp"
 
 #include <random>
 #include <vector>
@@ -178,8 +179,7 @@ TEST_CASE("lin_interp", "soak") {
       Kokkos::deep_copy(y2kvm, y2kv);
       for (int i = 0; i < ncol; ++i) {
         for (int j = 0; j < km2; ++j) {
-          // without fp-model strict, we can't do bfb
-          REQUIRE(y2_f90[i][j] == Approx(y2kvm(i, j / Pack::n)[j % Pack::n]));
+          scream::util::catch2_req_pk_sensitive<Pack::n>(y2_f90[i][j], y2kvm(i, j / Pack::n)[j % Pack::n]);
         }
       }
     }
