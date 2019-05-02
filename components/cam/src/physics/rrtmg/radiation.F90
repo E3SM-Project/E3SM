@@ -1404,6 +1404,13 @@ end function radiation_nextsw_cday
 #ifdef FIVE
                 ! compute aer_tau_five in FIVE vertical resolution
                 do i = 1, ncol
+                  do k = 1, pver
+                     aer_tau(i,k,:)= aer_tau(i,k,:)/state%pdeldry(i,k)
+                     aer_tau_w(i,k,:)= aer_tau_w(i,k,:)/state%pdeldry(i,k)
+                     aer_tau_w_g(i,k,:)= aer_tau_w_g(i,k,:)/state%pdeldry(i,k)
+                     aer_tau_w_f(i,k,:)= aer_tau_w_f(i,k,:)/state%pdeldry(i,k)
+                  end do
+ 
                   do nb = 1, nbndsw 
                     call linear_interp(state%pmid(i,:),pmid_five(i,:), &
                          aer_tau(i,1:pver,nb),aer_tau_five(i,1:pver_five,nb),pver,pver_five)
@@ -1420,6 +1427,13 @@ end function radiation_nextsw_cday
                     call linear_interp(state%pmid(i,:),pmid_five(i,:), &
                          aer_tau(i,1:pver,nb),aer_tau_five(i,1:pver_five,nb),pver,pver_five)
                     aer_tau_w_f_five(i,0,nb) = aer_tau_w_f(i,0,nb)
+                  end do 
+
+                  do k = 1, pver_five
+                     aer_tau_five(i,k,:)= aer_tau_five(i,k,:) * pdel_five(1,k)
+                     aer_tau_w_five(i,k,:)= aer_tau_w_five(i,k,:) * pdel_five(1,k)
+                     aer_tau_w_g_five(i,k,:)= aer_tau_w_g_five(i,k,:) * pdel_five(1,k)
+                     aer_tau_w_f_five(i,k,:)= aer_tau_w_f_five(i,k,:) * pdel_five(1,k)
                   end do 
                 end do
 #endif 
