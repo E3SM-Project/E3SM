@@ -324,6 +324,7 @@
     <default_value>$ATM_NCPL</default_value>
     <values match="last">
       <value compset="_DATM.*_POP2.*_DROF">$ATM_NCPL</value>
+      <value compset="_DATM.*_MOM6.*_DROF">8</value>
       <value compset="_DATM.*_DOCN%SOM">$ATM_NCPL</value>
       <value compset="_DATM.*_SLND.*_DICE.*_DOCN">$ATM_NCPL</value>
       <value compset="_DATM%CPLHIST.+POP\d">8</value>
@@ -356,8 +357,10 @@
     <default_value>FALSE</default_value>
     <values match="last">
       <value compset="DATM.+POP\d">TRUE</value>
+      <value compset="DATM.+MOM\d">TRUE</value>
       <value compset="DATM.+DOCN%IAF">TRUE</value>
       <value compset="DATM%CPLHIST.+POP\d">FALSE</value>
+      <value compset="DATM%CPLHIST.+MOM\d">FALSE</value>
     </values>
     <group>run_component_cpl</group>
     <file>env_run.xml</file>
