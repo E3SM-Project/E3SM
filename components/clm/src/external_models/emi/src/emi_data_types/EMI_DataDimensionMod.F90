@@ -46,8 +46,8 @@ implicit none
 
   type emi_data_dimension_list_type
      integer                                :: num_dims
-     type(emi_data_dimension_type), pointer :: first
-     type(emi_data_dimension_type), pointer :: last
+     class(emi_data_dimension_type), pointer :: first
+     class(emi_data_dimension_type), pointer :: last
   contains
      procedure, public :: Init             => EMID_Dim_List_Init
      procedure, public :: AddDim           => EMID_Dim_List_AddDim
