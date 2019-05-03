@@ -5,6 +5,8 @@
 # This is a port of cime/scripts/Tools/Makefile. As more components are ported to
 # CMake, the directory level of this file will rise to the top-level directory.
 #
+# We will prefer space-separated strings over lists
+#
 #===============================================================================
 
 cmake_minimum_required(VERSION 3.3)
@@ -13,15 +15,15 @@ cmake_policy(SET CMP0057 NEW)
 project(E3SM CXX Fortran)
 
 # Load dependency search path.
-set(DIRS ".")
 file(STRINGS Filepath FILEPATH_DIRS)
-list(APPEND DIRS ${FILEPATH_DIRS})
+string(REPLACE ";" " " DIRS "${FILEPATH_DIRS}")
+set(DIRS ". ${DIRS}")
 
 set(CPP_DIRS ${DIRS})
 # Add INCROOT to path for Depends and Include
 set(MINCROOT "")
 if (INCROOT)
-  list(APPEND CPP_DIRS ${INCROOT})
+  set(CPP_DIRS "${CPP_DIRS} ${INCROOT}")
   set(MINCROOT ${INCROOT})
 endif ()
 
@@ -81,39 +83,39 @@ include(${CASEROOT}/Macros)
 
 # SLIBS comes from Macros, so this append must come after Macros are included
 if (USE_FMS)
-  list(APPEND SLIBS "-lfms")
+  set(SLIBS "${SLIBS} -lfms")
 endif()
 
 if (DEBUG)
   if (CIME_MODEL STREQUAL "cesm")
-    list(APPEND CPPDEFS "-DDEBUG")
+    set(CPPDEFS "${CPPDEFS} -DDEBUG")
   endif()
 else()
-  list(APPEND CPPDEFS "-DNDEBUG")
+  set(CPPDEFS "${CPPDEFS} -DNDEBUG")
 endif()
 
 if (USE_ESMF_LIB)
-  list(APPEND CPPDEFS "-DUSE_ESMF_LIB")
+  set(CPPDEFS "${CPPDEFS} -DUSE_ESMF_LIB")
 endif()
 
 if (COMP_INTERFACE STREQUAL "nuopc")
-  list(APPEND CPPDEFS "-DNUOPC_INTERFACE")
+  set(CPPDEFS "${CPPDEFS} -DNUOPC_INTERFACE")
 else()
-  list(APPEND CPPDEFS "-DMCT_INTERFACE")
+  set(CPPDEFS "${CPPDEFS} -DMCT_INTERFACE")
 endif()
 
 if (COMPARE_TO_NUOPC)
-  list(APPEND CPPDEFS "-DCOMPARE_TO_NUOPC")
+  set(CPPDEFS "${CPPDEFS} -DCOMPARE_TO_NUOPC")
 endif()
 
 if (MPILIB STREQUAL mpi-serial)
-  list(APPEND CPPDEFS "-DNO_MPI2")
+  set(CPPDEFS "${CPPDEFS} -DNO_MPI2")
 else()
-  list(APPEND CPPDEFS "-DHAVE_MPI")
+  set(CPPDEFS "${CPPDEFS} -DHAVE_MPI")
 endif()
 
 if (PIO_VERSION STREQUAL "1")
-  list(APPEND CPPDEFS "-DPIO1")
+  set(CPPDEFS "${CPPDEFS} -DPIO1")
 else()
   set(USE_CXX TRUE)
 endif()
@@ -153,7 +155,7 @@ else()
 endif()
 
 if (CPRE)
-  set(CONTIGUOUS_FLAG ${CPRE})
+  set(CONTIGUOUS_FLAG ${CPRE}) # JGF
 endif()
 
 if (NOT AR)
@@ -261,14 +263,15 @@ endif()
 
 if (USE_KOKKOS)
   include(${INSTALL_SHAREDPATH}/Kokkos)
-  list(APPEND SLIBS ${KOKKOS_LIBS})
-  list(APPEND CXXFLAGS ${KOKKOS_CXXFLAGS})
-  list(APPEND CXX_LDFLAGS ${KOKKOS_LDFLAGS})
+  # JGF - convert kokkos lists to strings
+  set(SLIBS "${SLIBS} ${KOKKOS_LIBS}")
+  set(CXXFLAGS "${CXXFLAGS} ${KOKKOS_CXXFLAGS}")
+  set(CXX_LDFLAGS "${CXX_LDFLAGS} ${KOKKOS_LDFLAGS}")
 endif()
 
 if (USE_MOAB)
   if (MOAB_PATH)
-    list(APPEND CPPDEFS "-DHAVE_MOAB")
+    set(CPPDEFS "${CPPDEFS} -DHAVE_MOAB")
     if (NOT INC_MOAB)
       set(INC_MOAB ${MOAB_PATH}/include)
     endif()
@@ -288,7 +291,7 @@ string(FIND CPPDEFS "-DLINUX" HAS_DLINUX)
 string(FIND CPPDEFS "DBG" HAS_DBG)
 string(FIND CPPDEFS "Darwin" HAS_DARWIN)
 if (NOT HAS_DLINUX EQUAL -1 AND HAS_DBG EQUAL -1 AND HASDARWIN EQUAL -1)
-  list(APPEND CPPDEFS "-DHAVE_SLASHPROC")
+  set(CPPDEFS "${CPPDEFS} -DHAVE_SLASHPROC")
 endif()
 
 # Atleast on Titan+cray mpi, MPI_Irsends() are buggy, causing hangs during I/O
@@ -300,8 +303,8 @@ else()
 endif
 
 if (LIB_PNETCDF)
-  list(APPEND CPPDEFS "-D_PNETCDF")
-  list(APPEND SLIBS "-L${LIB_PNETCDF}" "-lpnetcdf")
+  set(CPPDEFS "${CPPDEFS} -D_PNETCDF")
+  set(SLIBS "${SLIBS} -L${LIB_PNETCDF} -lpnetcdf")
 endif()
 
 # Set esmf.mk location with ESMF_LIBDIR having precedent over ESMFMKFILE
@@ -320,10 +323,10 @@ endif()
 # ESMF_F90LINKRPATHS
 # ESMF_F90ESMFLINKLIBS
 if (USE_ESMF_LIB)
-  # include(${CIME_ESMFMKFILE} # JGF
-  list(APPEND CPPDEFS "-DESMF_VERSION_MAJOR=${ESMF_VERSION_MAJOR}" "-DESMF_VERSION_MINOR=${ESMF_VERSION_MINOR}")
-  list(APPEND FFLAGS ${ESMF_F90COMPILEPATHS})
-  list(APPEND SLIBS ${ESMF_F90LINKPATHS} ${ESMF_F90LINKRPATHS} ${ESMF_F90ESMFLINKLIBS})
+  # include(${CIME_ESMFMKFILE}) # JGF
+  set(CPPDEFS "${CPPDEFS} -DESMF_VERSION_MAJOR=${ESMF_VERSION_MAJOR} -DESMF_VERSION_MINOR=${ESMF_VERSION_MINOR}")
+  set(FFLAGS "${FFLAGS} ${ESMF_F90COMPILEPATHS}")
+  set(SLIBS "${SLIBS} ${ESMF_F90LINKPATHS} ${ESMF_F90LINKRPATHS} ${ESMF_F90ESMFLINKLIBS}")
 endif()
 
 # JGF
@@ -345,9 +348,9 @@ if (NOT CONFIG_ARGS)
 endif()
 string(FIND MODEL "pio" HAS_PIO)
 if (NOT HAS_PIO EQUAL -1)
-  list(APPEND CONFIG_ARGS "--enable-timing")
+  set(CONFIG_ARGS "${CONFIG_ARGS} --enable-timing")
   if (DEBUG)
-    list(APPEND CONFIG_ARGS "--enable-debug")
+    set(CONFIG_ARGS "${CONFIG_ARGS} --enable-debug")
   endif()
 endif()
 
@@ -357,21 +360,21 @@ endif()
 
 set(INCLDIR "-I.")
 if (USER_INCLDIR)
-  list(APPEND INCLDIR ${USER_INCLDIR})
+  set(INCLDIR "${INCLDIR} ${USER_INCLDIR}")
 endif()
 
 #===============================================================================
 # MPI-serial library (part of MCT)
 #===============================================================================
 
-if (MPILIB STREQUAL mpi-serial)
+if (MPILIB STREQUAL "mpi-serial")
   set(CC ${SCC})
   set(FC ${SFC})
   set(CXX ${SCXX})
   set(MPIFC ${SFC})
   set(MPICC ${SCC})
   set(MPICXX ${SCXX})
-  list(APPEND CONFIG_ARGS "MCT_PATH=${SHAREDLIBROOT}/${SHAREDPATH}/mct/mpi-serial")
+  set(CONFIG_ARGS "${CONFIG_ARGS} MCT_PATH=${SHAREDLIBROOT}/${SHAREDPATH}/mct/mpi-serial")
 else()
   set(CC ${MPICC})
   set(FC ${MPIFC})
@@ -387,4 +390,252 @@ set(CSM_SHR_INCLUDE ${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_V
 #===============================================================================
 # Set include paths (needed after override for any model specific builds below)
 #===============================================================================
+set(INCLDIR "${INCLDIR} -I${INSTALL_SHAREDPATH}/include -I${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/include")
+
+if (NOT NETCDF_SEPARATE)
+  set(INCLDIR "${INCLDIR} -I${INC_NETCDF}")
+else()
+  set(INCLDIR "${INCLDIR} -I${INC_NETCDF_C} -I${INC_NETCDF_FORTRAN}")
+endif()
+
+foreach(ITEM MOD_NETCDF INC_MPI INC_PNETCDF INC_PETSC INC_TRILINOS INC_ALBANY INC_MOAB)
+  if (${ITEM})
+    set(INCLDIR "${INCLDIR} ${${ITEM}}")
+  endif()
+endforeach()
+
+if (MODEL STREQUAL "driver")
+  set(INCLDIR "${INCLDIR} -I${EXEROOT}/atm/obj -I${EXEROOT}/ice/obj -I${EXEROOT}/ocn/obj -I${EXEROOT}/glc/obj -I${EXEROOT}/rof/obj -I${EXEROOT}/wav/obj -I${EXEROOT}/esp/obj -I${EXEROOT}/iac/obj")
+  # nagfor and gcc have incompatible LDFLAGS.
+  # nagfor requires the weird "-Wl,-Wl,," syntax.
+  # If done in config_compilers.xml, we break MCT.
+  if (COMPILER STREQUAL "nag")
+    if (NOT NETCDF_SEPARATE)
+      set(SLIBS "${SLIBS} -Wl,-Wl,,-rpath=${LIB_NETCDF}")
+    else()
+      set(SLIBS "${SLIBS} -Wl,-Wl,,-rpath=${LIB_NETCDF_C}")
+      set(SLIBS "${SLIBS} -Wl,-Wl,,-rpath=${LIB_NETCDF_FORTRAN}")
+    endif()
+  endif()
+else()
+  if (COMPILER STREQUAL "nag")
+    if (DEBUG)
+      if (MACH STREQUAL "hobart")
+       # GCC needs to be able to link to
+       # nagfor runtime to get autoconf
+       # tests to work.
+       set(CFLAGS "${CFLAGS} -Wl,--as-needed,--allow-shlib-undefined")
+       set(SLIBS "${SLIBS} -L${COMPILER_PATH}/lib/NAG_Fortran -lf62rts")
+     endif()
+   endif()
+ endif()
+endif()
+
+if (NOT MCT_LIBDIR)
+  set(MCT_LIBDIR "${INSTALL_SHAREDPATH}/lib")
+endif()
+
+if (PIO_LIBDIR)
+  if (PIO_VERSION STREQUAL ${PIO_VERSION_MAJOR})
+    set(INCLDIR "${INCLDIR} ${PIO_INCDIR}")
+    set(SLIBS "${SLIBS} -L${PIO_LIBDIR}")
+  else()
+    # If PIO_VERSION_MAJOR doesnt match, build from source
+    unset(PIO_LIBDIR)
+  endif()
+endif()
+if (NOT PIO_LIBDIR)
+  set(PIO_LIBDIR "${INSTALL_SHAREDPATH}/lib")
+endif()
+
+if (NOT GPTL_LIBDIR)
+  set(GPTL_LIBDIR "${INSTALL_SHAREDPATH}/lib")
+endif()
+
+if (NOT GLC_DIR)
+  set(GLC_DIR "${EXEROOT}/glc")
+endif()
+
+if (NOT CISM_LIBDIR)
+  set(CISM_LIBDIR "${GLC_DIR}/lib")
+endif()
+
+if (NOT GLCROOT)
+  # Backwards compatibility
+  set(GLCROOT "${CIMEROOT}/../components/cism")
+endif()
+
+set(INCLDIR "-I${INSTALL_SHAREDPATH}/include")
+
+#
+# Use the MCT dir for the cache for all configure calls because it is the first one
+#
+set(CFLAGS "${CPPDEFS}")
+set(CXXFLAGS "${CPPDEFS}")
+set(CONFIG_ARGS "CC=\"${CC}\" FC=\"${FC}\" MPICC=\"${MPICC}\" MPIFC=\"${MPIFC}\" FCFLAGS=\"${FFLAGS} ${FREEFLAGS} ${INCLDIR}\" CPPDEFS=\"${CPPDEFS}\" CFLAGS=\"${CFLAGS} -I.. ${INCLDIR}\" LDFLAGS=\"${LDFLAGS}\"")
+
+if (NOT NETCDF_SEPARATE)
+  set(CONFIG_ARGS "${CONFIG_ARGS} NETCDF_PATH=${NETCDF_PATH}")
+else()
+  set(CONFIG_ARGS "${CONFIG_ARGS} NETCDF_PATH=${NETCDF_C_PATH}")
+endif()
+
+if (COMPILER STREQUAL "nag")
+  set(CONFIG_ARGS "LIBS=${SLIBS}")
+endif()
+
+set(FFLAGS "${FPPDEFS}")
+set(FFLAGS_NOOPT "${FPPDEFS}")
+
+string(FIND CAM_CONFIG_OPTS "-cosp" HAS_COSP)
+if (NOT HAS_COSP EQUAL -1)
+  # The following is for the COSP simulator code:
+  get_filename_component(COSP_LIBDIR ${EXEROOT}/atm/obj/cosp ABSOLUTE)
+  if (MODEL STREQUAL "driver")
+    set(INCLDIR "${INCLDIR} -I${COSP_LIBDIR}")
+  endif()
+endif()
+
+
+if (MODEL STREQUAL "cam")
+  # These RRTMG files take an extraordinarily long time to compile with optimization.
+  # Until mods are made to read the data from files, just remove optimization from
+  # their compilation.
+
+  # JGF
+# rrtmg_lw_k_g.o: rrtmg_lw_k_g.f90
+# 	$(FC) -c $(FPPFLAGS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS_NOOPT) $<
+
+# rrtmg_sw_k_g.o: rrtmg_sw_k_g.f90
+# 	$(FC) -c $(FPPFLAGS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS_NOOPT) $<
+
+  if (COSP_LIBDIR)
+    set(INCLDIR "-I${COSP_LIBDIR} -I${COSP_LIBDIR}/../ -I../${INSTALL_SHAREDPATH}/include -I../${CSM_SHR_INCLUDE}")
+    # JGF
+    add_library(libcosp cam_abortutils.f90)
+  endif()
+
+endif()
+
+# System libraries (netcdf, mpi, pnetcdf, esmf, trilinos, etc.)
+if (NOT SLIBS)
+  if (NOT NETCDF_SEPARATE)
+    set(SLIBS "${SLIBS} -L${LIB_NETCDF} -lnetcdff -lnetcdf")
+  else()
+    set(SLIBS "${SLIBS} -L${LIB_NETCDF_FORTRAN} -L${LIB_NETCDF_C} -lnetcdff -lnetcdf")
+  endif()
+endif()
+
+if (LAPACK_LIBDIR)
+  set(SLIBS "${SLIBS} -L${LAPACK_LIBDIR} -llapack -lblas")
+endif()
+
+if (LIB_MPI)
+  if (NOT MPI_LIB_NAME)
+    set(SLIBS "${SLIBS} -L${LIB_MPI} -lmpi")
+  else()
+    set(SLIBS "${SLIBS} -L${LIB_MPI} -l${MPI_LIB_NAME}")
+  endif()
+endif()
+
+# Add PETSc libraries
+if (USE_PETSC)
+  set(SLIBS "${SLIBS} ${PETSC_LIB}")
+endif()
+
+# Add trilinos libraries; too be safe, we include all libraries included in the trilinos build,
+# as well as all necessary third-party libraries
+if (USE_TRILINOS)
+  set(SLIBS "${SLIBS} -L${LIB_TRILINOS} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARIES}")
+endif()
+
+# Add Albany libraries.  These are defined in the ALBANY_LINK_LIBS env var that was included above
+if (USE_ALBANY)
+  set(SLIBS "${SLIBS} ${ALBANY_LINK_LIBS}")
+endif()
+
+# Add MOAB libraries.  These are defined in the MOAB_LINK_LIBS env var that was included above
+if (USE_MOAB)
+  set(SLIBS "${SLIBS} ${IMESH_LIBS}")
+endif()
+
+# Add libraries and flags that we need on the link line when C++ code is included
+# We need to do these additions after CONFIG_ARGS is set, because they can sometimes break configure for mct, etc.,
+# if they are added to LDFLAGS in CONFIG_ARGS.
+if (USE_CXX)
+  if (CXX_LIBS)
+    set(SLIBS "${SLIBS} ${CXX_LIBS}")
+  endif()
+
+  if (CXX_LDFLAGS)
+    set(LDFLAGS "${SLIBS} ${CXX_LDFLAGS}")
+  endif
+endif
+
+# Remove arch flag if it exists
+string(REGEX REPLACE "-arch[^ ]+" "" F90_LDFLAGS "${LDFLAGS}")
+
+#------------------------------------------------------------------------------
+# Drive configure scripts for support libraries (mct)
+#------------------------------------------------------------------------------
+
+if (NOT EXISTS ${SHAREDLIBROOT}/${SHAREDPATH}/mct/Makefile.conf)
+  execute_process(COMMAND ${CIMEROOT}/src/externals/mct/configure ${CONFIG_ARGS} --srcdir ${CIMEROOT}/src/externals/mct)
+endif()
+
+if (NOT EXISTS ${SHAREDLIBROOT}/${SHAREDPATH}/mct/mpi-serial/Makefile.conf)
+  execute_process(COMMAND ${CIMEROOT}/src/externals/mct/mpi-serial/configure ${CONFIG_ARGS} --srcdir ${CIMEROOT}/src/externals/mct/mpi-serial)
+endif()
+
+if (PIO_VERSION STREQUAL 2)
+  # This is a pio2 library
+  set(PIOLIB "${PIO_LIBDIR}/libpiof.a ${PIO_LIBDIR}/libpioc.a")
+  set(PIOLIBNAME "-lpiof -lpioc")
+  set(PIO_SRC_DIR "${CIMEROOT}/src/externals/pio2")
+else()
+  # This is a pio1 library
+  set(PIOLIB "${PIO_LIBDIR}/libpio.a")
+  set(PIOLIBNAME "-lpio")
+  if (NOT EXISTS "${CIMEROOT}/src/externals/pio1/pio")
+    set(PIO_SRC_DIR "${CIMEROOT}/src/externals/pio1")
+  else()
+    set(PIO_SRC_DIR "${CIMEROOT}/src/externals/pio1/pio")
+  endif()
+endif()
+
+set(MCTLIBS "${MCT_LIBDIR}/libmct.a ${MCT_LIBDIR}/libmpeu.a")
+
+set(GPTLLIB "${GPTL_LIBDIR}/libgptl.a")
+
+set(ULIBS "-L${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/lib -lcsm_share -L${INSTALL_SHAREDPATH}/lib ${PIOLIBNAME} -lgptl -lmct -lmpeu")
+
+#------------------------------------------------------------------------------
+# Drive cmake script for cism and pio
+#------------------------------------------------------------------------------
+
+set(CMAKE_Fortran_FLAGS "${FFLAGS} ${EXTRA_PIO_FPPDEFS} ${INCLDIR}")
+set(CMAKE_C_FLAGS "${CFLAGS} ${EXTRA_PIO_CPPDEFS} ${INCLDIR}")
+set(CMAKE_CXX_FLAGS "${CXXFLAGS} ${EXTRA_PIO_CPPDEFS} ${INCLDIR}")
+set(CMAKE_VERBOSE_MAKEFILE TRUE)
+set(GPTL_PATH "${INSTALL_SHAREDPATH}")
+set(PIO_ENABLE_TESTS FALSE)
+set(PIO_USE_MALLOC TRUE)
+set(USER_CMAKE_MODULE_PATH "${CIMEROOT}/src/CMake;${CIMEROOT}/src/externals/pio2/cmake")
+
+if (NOT PNETCDF_PATH)
+  set(WITH_PNETCDF FALSE)
+endif()
+
+if (MPILIB STREQUAL "mpi-serial")
+  set(PIO_USE_MPISERIAL TRUE)
+  set(MPISERIAL_PATH ${INSTALL_SHAREDPATH})
+endif()
+
+set(CMAKE_C_COMPILER ${CC})
+set(CMAKE_CXX_COMPILER ${CXX})
+set(CMAKE_FC_COMPILER ${FC})
+set(CMAKE_EXE_LINKER_FLAGS ${LDFLAGS})
+
+add_directory(${GLCROOT}/source_cism)
+add_directory(${PIO_SRC_DIR})
 
