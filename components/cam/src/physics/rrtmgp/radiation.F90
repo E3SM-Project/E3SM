@@ -1398,6 +1398,8 @@ contains
       ! simulations...or alternatively add logic within the set_cloud_optics
       ! routines to handle this.
       call t_startf('shortwave cloud optics')
+      call handle_error(cloud_optics_sw%alloc_2str(nday, nlev_rad, k_dist_sw, name='shortwave cloud optics'))
+      !call optics_out%set_name('shortwave cloud optics')
       call set_cloud_optics_sw(state, pbuf, &
                                day_indices(1:nday), &
                                k_dist_sw, cloud_optics_sw)
@@ -1564,6 +1566,7 @@ contains
 
       ! Do longwave cloud optics calculations
       call t_startf('longwave cloud optics')
+      call handle_error(cloud_optics_lw%alloc_1scl(ncol, nlev_rad, k_dist_lw, name='longwave cloud optics'))
       call set_cloud_optics_lw(state, pbuf, k_dist_lw, cloud_optics_lw)
       call t_stopf('longwave cloud optics')
 
