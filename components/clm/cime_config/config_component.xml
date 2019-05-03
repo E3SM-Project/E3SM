@@ -78,6 +78,8 @@
       <value compset="20TR.*_CLM45%[^_]*BGC">20thC_bgc_transient</value>
       <value compset="1950_CAM5%CMIP6-LR.*_CLM">1950_CMIP6LR_control</value>
       <value compset="1950_CAM5%CMIP6-HR_CLM">1950_CMIP6HR_control</value>
+      <value compset="2010_CAM5%CMIP6-LR_CLM">2010_CMIP6LR_control</value>
+      <value compset="SSP585_CAM5%CMIP6_CLM">2015-2100_SSP585_transient</value>
     </values>
     <group>run_component_clm</group>
     <file>env_run.xml</file>
