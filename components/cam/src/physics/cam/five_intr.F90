@@ -178,9 +178,6 @@ module five_intr
     call pbuf_add_field('ICSWP_FIVE',   'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), icswp_five_idx) 
     call pbuf_add_field('CLDFSNOW_FIVE','global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), cldfsnow_five_idx) 
     
-    ! CLUBB variables that need to be declared here
-    call pbuf_add_field('WP2_nadv_five', 'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), wp2_five_idx)
-    
     call pbuf_add_field('RAD_CLUBB',  'global', dtype_r8, (/pcols,pver_five/),               radf_idx)    
     call pbuf_add_field('WP2_nadv',        'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), wp2_idx)
     call pbuf_add_field('WP3_nadv',        'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), wp3_idx)

@@ -48,7 +48,8 @@ CONTAINS
 
 subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state, pmid,  &
 #ifdef FIVE
-                        pint    ,pint_host ,                           &
+                        pint    ,t_five     ,pmid_host ,               &
+                        pint_host,                                     &
 #endif
                         aer_lw_abs,cld       ,tauc_lw,                 &
                         qrl     ,qrlc      ,                           &
@@ -78,7 +79,9 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state, pmid,  &
    real(r8), intent(in) :: pmid(pcols,pver_rad)     ! Level pressure (Pascals)
 #ifdef FIVE
    real(r8), intent(in) :: pint(pcols,pverp_rad)     ! Level pressure (Pascals)
-   real(r8), intent(in) :: pint_host(pcols,pverp)     ! Level pressure (Pascals)
+   real(r8), intent(in) :: t_five(pcols,pver_rad)     
+   real(r8), intent(in) :: pmid_host(pcols,pver)     
+   real(r8), intent(in) :: pint_host(pcols,pverp)     
 #endif
    real(r8), intent(in) :: aer_lw_abs (pcols,pver_rad,nbndlw) ! aerosol absorption optics depth (LW)
 
@@ -169,6 +172,9 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state, pmid,  &
    real(r8) :: cfc12vmr_five(pcols,rrtmg_levs) ! cfc12 volume mixing ratio 
    real(r8) :: cfc22vmr_five(pcols,rrtmg_levs) ! cfc22 volume mixing ratio 
    real(r8) :: ccl4vmr_five(pcols,rrtmg_levs)  ! ccl4 volume mixing ratio 
+
+   real(r8) :: tint_five(pcols,rrtmg_levs-1)   ! interface temperature
+   real(r8) :: dy
 #endif
 
    !-----------------------------------------------------------------------
@@ -259,6 +265,8 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state, pmid,  &
    if (associated(ld)) ld(1:ncol,:,:) = 0.0_r8
 
 #ifdef FIVE
+   tint_five = 0._r8
+   
    do i = 1, ncol
       pintmb_five(i,1) = r_state%pintmb(i,1)
       pintmb_five(i,2:rrtmg_levs+1) = pint(i,1:pverp_five) * 1.e-2_r8 ! mbar
@@ -266,42 +274,68 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state, pmid,  &
       pmidmb_five(i,1) = r_state%pmidmb(i,1)
       pmidmb_five(i,2:rrtmg_levs) = pmid(i,1:pver_five) * 1.e-2_r8 ! mbar
 
-      call linear_interp(pint_host(i,:),pint(i,:), &
-                    r_state%h2ovmr(i,1:pverp),h2ovmr_five(i,1:rrtmg_levs),pverp,pverp_five)
+      call linear_interp(pmid_host(i,:),pmid(i,:), &
+                    r_state%h2ovmr(i,2:pverp),h2ovmr_five(i,2:rrtmg_levs),pver,pver_five)
+      h2ovmr_five(i,1) = r_state%h2ovmr(i,1)
 
-      call linear_interp(pint_host(i,:),pint(i,:), &
-                    r_state%o3vmr(i,1:pverp),o3vmr_five(i,1:rrtmg_levs),pverp,pverp_five)
+      call linear_interp(pmid_host(i,:),pmid(i,:), &
+                    r_state%o3vmr(i,2:pverp),o3vmr_five(i,2:rrtmg_levs),pver,pver_five)
+      o3vmr_five(i,1) = r_state%o3vmr(i,1)
 
-      call linear_interp(pint_host(i,:),pint(i,:), &
-                    r_state%co2vmr(i,1:pverp),co2vmr_five(i,1:rrtmg_levs),pverp,pverp_five)
+      call linear_interp(pmid_host(i,:),pmid(i,:), &
+                    r_state%co2vmr(i,2:pverp),co2vmr_five(i,2:rrtmg_levs),pver,pver_five)
+      co2vmr_five(i,1) = r_state%co2vmr(i,1)
 
-      call linear_interp(pint_host(i,:),pint(i,:), &
-                    r_state%tlev(i,1:pverp),tlev_five(i,1:rrtmg_levs),pverp,pverp_five)
+!      call linear_interp(pint_host(i,1:pver),pint(i,1:rrtmg_levs-1), &
+!                    r_state%tlev(i,2:pverp),tlev_five(i,2:rrtmg_levs),pver,pver_five)
+!      tlev_five(i,1) = r_state%tlev(i,1)
+!      tlev_five(i,rrtmg_levs+1) = r_state%tlev(i,pverp+1)
+
+ !     call linear_interp(pmid_host(i,:),pmid(i,:), &
+ !                   r_state%tlay(i,2:pverp),tlay_five(i,2:rrtmg_levs),pver,pver_five)
+ !     tlay_five(i,1) = r_state%tlay(i,1)
+
+      call linear_interp(pmid_host(i,:),pmid(i,:), &
+                    r_state%ch4vmr(i,2:pverp),ch4vmr_five(i,2:rrtmg_levs),pver,pver_five)
+      ch4vmr_five(i,1) = r_state%ch4vmr(i,1)
+
+      call linear_interp(pmid_host(i,:),pmid(i,:), &
+                    r_state%o2vmr(i,2:pverp),o2vmr_five(i,2:rrtmg_levs),pver,pver_five)
+      o2vmr_five(i,1) = r_state%o2vmr(i,1)
+
+      call linear_interp(pmid_host(i,:),pmid(i,:), &
+                    r_state%n2ovmr(i,2:pverp),n2ovmr_five(i,2:rrtmg_levs),pver,pver_five)
+      n2ovmr_five(i,1) = r_state%n2ovmr(i,1)
+
+      call linear_interp(pmid_host(i,:),pmid(i,:), &
+                    r_state%cfc11vmr(i,2:pverp),cfc11vmr_five(i,2:rrtmg_levs),pver,pver_five)
+      cfc11vmr_five(i,1) = r_state%cfc11vmr(i,1)
+
+      call linear_interp(pmid_host(i,:),pmid(i,:), &
+                    r_state%cfc12vmr(i,2:pverp),cfc12vmr_five(i,2:rrtmg_levs),pver,pver_five)
+      cfc12vmr_five(i,1) = r_state%cfc12vmr(i,1)
+
+      call linear_interp(pmid_host(i,:),pmid(i,:), &
+                    r_state%cfc22vmr(i,2:pverp),cfc22vmr_five(i,2:rrtmg_levs),pver,pver_five)
+      cfc22vmr_five(i,1) = r_state%cfc22vmr(i,1)
+
+      call linear_interp(pmid_host(i,:),pmid(i,:), &
+                    r_state%ccl4vmr(i,2:pverp),ccl4vmr_five(i,2:rrtmg_levs),pver,pver_five)
+      ccl4vmr_five(i,1) = r_state%ccl4vmr(i,1)
+      
+      tlay_five(i,1) = r_state%tlay(i,1)
+      tlay_five(i,2:rrtmg_levs) = t_five(i,1:pver_five)
+
+      tlev_five(i,1) = r_state%tlev(i,1)
+      tlev_five(i,2) = r_state%tlev(i,2)
       tlev_five(i,rrtmg_levs+1) = r_state%tlev(i,pverp+1)
 
-      call linear_interp(pint_host(i,:),pint(i,:), &
-                    r_state%tlay(i,1:pverp),tlay_five(i,1:rrtmg_levs),pverp,pverp_five)
+       do k = 2,pver_five
+          dy = (log(pint(i,k)) - log(pmid(i,k))) / (log(pmid(i,k-1)) - log(pmid(i,k)))
+          tint_five(i,k) = t_five(i,k) - dy * (t_five(i,k) - t_five(i,k-1))
+       end do
 
-      call linear_interp(pint_host(i,:),pint(i,:), &
-                    r_state%ch4vmr(i,1:pverp),ch4vmr_five(i,1:rrtmg_levs),pverp,pverp_five)
-
-      call linear_interp(pint_host(i,:),pint(i,:), &
-                    r_state%o2vmr(i,1:pverp),o2vmr_five(i,1:rrtmg_levs),pverp,pverp_five)
-
-      call linear_interp(pint_host(i,:),pint(i,:), &
-                    r_state%n2ovmr(i,1:pverp),n2ovmr_five(i,1:rrtmg_levs),pverp,pverp_five)
-
-      call linear_interp(pint_host(i,:),pint(i,:), &
-                    r_state%cfc11vmr(i,1:pverp),cfc11vmr_five(i,1:rrtmg_levs),pverp,pverp_five)
-
-      call linear_interp(pint_host(i,:),pint(i,:), &
-                    r_state%cfc12vmr(i,1:pverp),cfc12vmr_five(i,1:rrtmg_levs),pverp,pverp_five)
-
-      call linear_interp(pint_host(i,:),pint(i,:), &
-                    r_state%cfc22vmr(i,1:pverp),cfc22vmr_five(i,1:rrtmg_levs),pverp,pverp_five)
-
-      call linear_interp(pint_host(i,:),pint(i,:), &
-                    r_state%ccl4vmr(i,1:pverp),ccl4vmr_five(i,1:rrtmg_levs),pverp,pverp_five)
+       tlev_five(i,3:rrtmg_levs) = tint_five(i,2:pver_five)
    end do
 
    call rrtmg_lw(lchnk  ,ncol ,rrtmg_levs    ,icld    ,                 &

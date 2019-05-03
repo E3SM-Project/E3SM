@@ -299,25 +299,31 @@ module clubb_intr
     call pbuf_add_field('FICE',       'physpkg',dtype_r8, (/pcols,pver/),               fice_idx)
     call pbuf_add_field('CMELIQ',     'physpkg',dtype_r8, (/pcols,pver/),                  cmeliq_idx)
 
-    ! The following variables are defined on the "pverp_clubb" FIVE grid
-    !  The reason is that these variables are saved timestep to timestep and only
-    !  used in CLUBB.  Thus, interpolation to/from the E3SM grid is not required.  
-    !  NOTE: an exception to this is the WP2_nadv variable, because this variable 
-    !  is used for aerosol activation.   
+    ! If FIVE is called the following pbuf variables are added in five_register_e3sm 
+    !   routine in five_intr.F90.  The reason is that the number of high resolution
+    !   levels has not yet been determined yet at this time.  If FIVE is not called, then
+    !   add these pbuf fields here, as per normal, on the E3SM grid.    
 #ifndef FIVE
-    call pbuf_add_field('RAD_CLUBB',  'global', dtype_r8, (/pcols,pver_clubb/),               radf_idx)    
-    call pbuf_add_field('WP2_nadv',        'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), wp2_idx)
-    call pbuf_add_field('WP3_nadv',        'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), wp3_idx)
-    call pbuf_add_field('WPTHLP_nadv',     'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), wpthlp_idx)
-    call pbuf_add_field('WPRTP_nadv',      'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), wprtp_idx)
-    call pbuf_add_field('RTPTHLP_nadv',    'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), rtpthlp_idx)
-    call pbuf_add_field('RTP2_nadv',       'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), rtp2_idx)
-    call pbuf_add_field('THLP2_nadv',      'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), thlp2_idx)
-    call pbuf_add_field('UP2_nadv',        'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), up2_idx)
-    call pbuf_add_field('VP2_nadv',        'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), vp2_idx)    
-    call pbuf_add_field('UPWP',       'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), upwp_idx)
-    call pbuf_add_field('VPWP',       'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), vpwp_idx) 
-#endif     
+    call pbuf_add_field('RAD_CLUBB',  'global', dtype_r8, (/pcols,pver/),               radf_idx)    
+    call pbuf_add_field('WP2_nadv',        'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wp2_idx)
+    call pbuf_add_field('WP3_nadv',        'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wp3_idx)
+    call pbuf_add_field('WPTHLP_nadv',     'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wpthlp_idx)
+    call pbuf_add_field('WPRTP_nadv',      'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wprtp_idx)
+    call pbuf_add_field('RTPTHLP_nadv',    'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), rtpthlp_idx)
+    call pbuf_add_field('RTP2_nadv',       'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), rtp2_idx)
+    call pbuf_add_field('THLP2_nadv',      'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), thlp2_idx)
+    call pbuf_add_field('UP2_nadv',        'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), up2_idx)
+    call pbuf_add_field('VP2_nadv',        'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), vp2_idx)    
+    call pbuf_add_field('UPWP',       'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), upwp_idx)
+    call pbuf_add_field('VPWP',       'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), vpwp_idx) 
+#endif         
+     
+#ifdef FIVE
+    ! Define a PBUF field for WP2 to be used on the low resolution E3SM grid, if FIVE is used
+    !   this is the only turbulent moment that is passed to another E3SM parameterization, 
+    !   thus must be interpolated and saved on the E3SM grid.
+    call pbuf_add_field('WP2_nadv_five', 'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wp2_five_idx)
+#endif 
 
 #endif 
 
@@ -2921,9 +2927,8 @@ end subroutine clubb_init_cnst
 !         endif
 
          concld_five(i,k) = min(cld_five(i,k)-alst_five(i,k)+deepcu_five(i,k),0.80_r8)
-
       enddo 
-   enddo 
+   enddo
 # endif
    
    if (single_column) then

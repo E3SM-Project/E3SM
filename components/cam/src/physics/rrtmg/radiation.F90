@@ -852,6 +852,7 @@ end function radiation_nextsw_cday
     use rrtmg_state, only: rrtmg_state_create, rrtmg_state_update, rrtmg_state_destroy, rrtmg_state_t, num_rrtmg_levs
     use orbit,            only: zenith
     use output_aerocom_aie , only: do_aerocom_ind3
+    use time_manager,     only: get_step_size
 
     ! Arguments
     logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
@@ -885,6 +886,7 @@ end function radiation_nextsw_cday
     ! Local variables
 
     logical :: dosw, dolw
+    real(r8) :: dtime
     integer nstep                       ! current timestep number
     real(r8) britemp(pcols,pnf_msu)     ! Microwave brightness temperature
     real(r8) tb_ir(pcols,pnb_hirs)      ! Infrared brightness temperature
@@ -1083,6 +1085,7 @@ end function radiation_nextsw_cday
 
     call t_startf ('radiation_tend_init')
 
+    dtime  = get_step_size()
     lchnk = state%lchnk
     ncol = state%ncol
     
@@ -1160,8 +1163,8 @@ end function radiation_nextsw_cday
    ! Syncronize FIVE variables to E3SM state
    !  This is a crucial component to using FIVE within E3SM
 ! HHLEE 
-!   call five_syncronize_e3sm(state,dtime,p0_five_ref,pint_five,pmid_five,&
-!                             t_five,u_five,v_five,q_five)
+   call five_syncronize_e3sm(state,dtime,p0_five_ref,pint_five,pmid_five,&
+                             t_five,u_five,v_five,q_five)
 
    ! Define pressue differences
    do k=1,pver_five
@@ -1403,6 +1406,13 @@ end function radiation_nextsw_cday
 #ifdef FIVE
                 ! compute aer_tau_five in FIVE vertical resolution
                 do i = 1, ncol
+                  do k = 1, pver
+                     aer_tau(i,k,:)= aer_tau(i,k,:)/state%pdeldry(i,k)
+                     aer_tau_w(i,k,:)= aer_tau_w(i,k,:)/state%pdeldry(i,k)
+                     aer_tau_w_g(i,k,:)= aer_tau_w_g(i,k,:)/state%pdeldry(i,k)
+                     aer_tau_w_f(i,k,:)= aer_tau_w_f(i,k,:)/state%pdeldry(i,k)
+                  end do
+ 
                   do nb = 1, nbndsw 
                     call linear_interp(state%pmid(i,:),pmid_five(i,:), &
                          aer_tau(i,1:pver,nb),aer_tau_five(i,1:pver_five,nb),pver,pver_five)
@@ -1420,13 +1430,22 @@ end function radiation_nextsw_cday
                          aer_tau(i,1:pver,nb),aer_tau_five(i,1:pver_five,nb),pver,pver_five)
                     aer_tau_w_f_five(i,0,nb) = aer_tau_w_f(i,0,nb)
                   end do 
+
+                  do k = 1, pver_five
+                     aer_tau_five(i,k,:)= aer_tau_five(i,k,:) * pdel_five(1,k)
+                     aer_tau_w_five(i,k,:)= aer_tau_w_five(i,k,:) * pdel_five(1,k)
+                     aer_tau_w_g_five(i,k,:)= aer_tau_w_g_five(i,k,:) * pdel_five(1,k)
+                     aer_tau_w_f_five(i,k,:)= aer_tau_w_f_five(i,k,:) * pdel_five(1,k)
+                  end do 
                 end do
 #endif 
                   call t_startf ('rad_rrtmg_sw')
 #ifdef FIVE
                   call rad_rrtmg_sw( &
                        lchnk,        ncol,         pverp_five,     r_state,                    &
-                       pmid_five,    pint_five,    state%pint,    cldfprime,                   &
+                       pmid_five,    pint_five,    t_five,       state%pmid,                   &
+                       state%pint,                                                             &
+                       cldfprime,                                                              &
                        aer_tau_five, aer_tau_w_five, aer_tau_w_g_five,  aer_tau_w_f_five,      &
                        eccf,         coszrs,       solin,        sfac,                         &
                        cam_in%asdir, cam_in%asdif, cam_in%aldir, cam_in%aldif,                 &
@@ -1610,9 +1629,15 @@ end function radiation_nextsw_cday
 #ifdef FIVE
                ! compute aer_lw_abs_five in FIVE vertical resolution
                 do i = 1, ncol
+                  do k = 1, pver
+                      aer_lw_abs(i,k,:)= aer_lw_abs(i,k,:)/state%pdeldry(i,k)
+                  end do
                   do nb = 1, nbndsw
                     call linear_interp(state%pmid(i,:),pmid_five(i,:), &
                          aer_lw_abs(i,1:pver,nb),aer_lw_abs_five(i,1:pver_five,nb),pver,pver_five)
+                  end do
+                  do k = 1, pver_five
+                      aer_lw_abs_five(i,k,:)= aer_lw_abs_five(i,k,:) * pdel_five(i,k)
                   end do
                 end do
 #endif
@@ -1620,7 +1645,8 @@ end function radiation_nextsw_cday
 #ifdef FIVE
                   call rad_rrtmg_lw( &
                        lchnk,        ncol,         pverp_five,      r_state,      pmid_five,     &
-                       pint_five,    state%pint,                                                 &
+                       pint_five,    t_five,       state%pmid,                                   &
+                       state%pint,                                                               &
                        aer_lw_abs_five,   cldfprime,       c_cld_lw_abs,                         &
                        qrl_five,     qrlc_five,                                                  &
                        flns,         flnt,         flnsc,           flntc,        cam_out%flwds, &
