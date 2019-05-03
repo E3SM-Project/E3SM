@@ -74,13 +74,9 @@ real(r8), allocatable :: abs_lw_ice(:,:)
               iciwp_five_idx, &
               iclwp_five_idx, &
               icswp_five_idx
+#endif
 
-   integer, parameter :: pverp_rad = pverp_five
-   integer, parameter :: pver_rad = pver_five
-#else
-   integer, parameter :: pverp_rad = pverp
-   integer, parameter :: pver_rad = pver
-#endif   
+integer :: pverp_rad, pver_rad  
 
 !==============================================================================
 contains
@@ -137,7 +133,15 @@ subroutine cloud_rad_props_init()
    iclwp_five_idx   = pbuf_get_index('ICLWP_FIVE')
    des_five_idx     = pbuf_get_index('DES_FIVE')
    icswp_five_idx   = pbuf_get_index('ICSWP_FIVE')
-#endif   
+#endif  
+
+#ifdef FIVE
+   pverp_rad = pverp_five
+   pver_rad = pver_five
+#else
+   pverp_rad = pverp
+   pver_rad = pver
+#endif  
 
    ! old optics
    call cnst_get_ind('CLDICE', ixcldice)

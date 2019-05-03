@@ -43,13 +43,7 @@ public ::&
    radsw_init,      &! initialize constants
    rad_rrtmg_sw      ! driver for solar radiation code
 
-#ifdef FIVE
-   integer, parameter :: pverp_rad = pverp_five
-   integer, parameter :: pver_rad = pver_five
-#else
-   integer, parameter :: pverp_rad = pverp
-   integer, parameter :: pver_rad = pver
-#endif   
+integer :: pverp_rad, pver_rad  
 
 !===============================================================================
 CONTAINS
@@ -764,6 +758,13 @@ subroutine radsw_init()
     call get_solar_band_fraction_irrad(fractional_solar_irradiance)
     call get_ref_solar_band_irrad( solar_band_irrad )
 
+#ifdef FIVE
+   pverp_rad = pverp_five
+   pver_rad = pver_five
+#else
+   pverp_rad = pverp
+   pver_rad = pver
+#endif
 
    ! Initialize rrtmg_sw
    call rrtmg_sw_ini

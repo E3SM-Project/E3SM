@@ -116,13 +116,7 @@ real(r8) :: dt_avg=0.0_r8  ! time step to use for the shr_orb_cosz calculation, 
 logical :: pergro_mods = .false. ! for activating pergro mods
 integer :: firstblock, lastblock      ! global block indices
 
-#ifdef FIVE
-   integer, parameter :: pverp_rad = pverp_five
-   integer, parameter :: pver_rad = pver_five
-#else
-   integer, parameter :: pverp_rad = pverp
-   integer, parameter :: pver_rad = pver
-#endif   
+integer :: pverp_rad, pver_rad   
 
 !===============================================================================
 contains
@@ -392,6 +386,14 @@ end function radiation_nextsw_cday
     integer :: id, lchnk, ncol, ilchnk, astat, iseed, ipes, ipes_tmp
     integer :: igcol, imap, chunkid, icol, iown, tot_cols, ierr, max_chnks_in_blk 
     !-----------------------------------------------------------------------
+
+#ifdef FIVE
+   pverp_rad = pverp_five
+   pver_rad = pver_five
+#else
+   pverp_rad = pverp
+   pver_rad = pver
+#endif 
     
     call rrtmg_state_init()
 

@@ -103,7 +103,7 @@ CONTAINS
     use ppgrid,           only: pcols, pver
     use cam_abortutils,   only : endrun
 #ifdef FIVE
-    use five_intr,        only: init_five_heights
+    use five_intr,        only: init_five_heights, five_register_e3sm
 #endif
 
     ! PARAMETERS:
@@ -145,6 +145,9 @@ CONTAINS
 #ifdef FIVE
    call init_five_heights(100._r8*ailev,100._r8*alev,&
           hyai,hyam,hybi,hybm)
+   ! Register FIVE pbuf variables.  Technically, this should not be done here,
+   !  but has to be because we need to know how many FIVE levels there are
+   call five_register_e3sm()
 #endif    
 
     ! Initialize physics grid reference pressures (needed by initialize_radbuffer)

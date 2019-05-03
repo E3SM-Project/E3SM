@@ -19,7 +19,6 @@ module five_intr
   ! This is the number of layers to add between E3SM levels
   !  NOTE: This must be an EVEN number, due to limitations
   !  in the tendency interpolation scheme
-!  integer :: five_add_nlevels = 2 
   integer :: five_add_nlevels
     
   ! Determine which layers you want to add levels to.  NOTE:
@@ -31,29 +30,22 @@ module five_intr
   !   to a very large value to add all the way to surface, though
   !   currently setting this value to surface results in model
   !   crashes in SCM, so need to investigate)
-!  real, parameter :: five_bot_toadd = 98000._r8
   real(r8) :: five_bot_toadd 
   
   ! The top layer to which we will add layers to
-!  real, parameter :: five_top_toadd = 70000._r8
   real(r8) :: five_top_toadd 
-  ! TASK: the parameters above should probably be moved to the
-  !   E3SM atm_in namelist
-  
-  ! These shouldn't be hardcoded, but currently they are
-  !   because PBUF needs these to be initialized.
-  !   TASK: figure out a better way so these can be computed
-  !   on the fly and not user specified!
-    integer, parameter :: pver_five = 110
-    integer, parameter :: pverp_five = 111
+
+  ! Number of five levels.  These are computed on the fly
+  !  using five_bot_toadd, five_top_toadd, and five_add_nlevels
+  integer :: pver_five, pverp_five
 
   ! Pressure values as initialized in hycoef.F90
-  real(r8) :: alev_five(pver_five) ! midpoint FIVE pressures (pascals)
-  real(r8) :: ailev_five(pverp_five) ! interface FIVE pressures (pascals)
-  real(r8) :: hyai_five(pverp_five)
-  real(r8) :: hyam_five(pver_five)
-  real(r8) :: hybi_five(pverp_five)
-  real(r8) :: hybm_five(pver_five)
+  real(r8), allocatable :: alev_five(:) ! midpoint FIVE pressures (pascals)
+  real(r8), allocatable :: ailev_five(:) ! interface FIVE pressures (pascals)
+  real(r8), allocatable :: hyai_five(:)
+  real(r8), allocatable :: hyam_five(:)
+  real(r8), allocatable :: hybi_five(:)
+  real(r8), allocatable :: hybm_five(:)  
   
   real(r8), parameter :: ps0 = 1.0e5_r8
   
@@ -76,7 +68,20 @@ module five_intr
              iciwp_five_idx,    &
              iclwp_five_idx,    &
              icswp_five_idx,    &
-             cldfsnow_five_idx 
+             cldfsnow_five_idx, &
+	     wp2_five_idx, &
+	     radf_idx, &
+	     wp2_idx, &
+	     wp3_idx, &
+	     wpthlp_idx, &
+	     wprtp_idx, &
+	     rtpthlp_idx, &
+	     rtp2_idx, &
+	     thlp2_idx, &
+	     up2_idx, &
+	     vp2_idx, &
+	     upwp_idx, &
+	     vpwp_idx 
      
   integer :: five_bot_k, five_top_k ! indicees where
                                     ! levels are added
@@ -132,7 +137,11 @@ module five_intr
       call mpibcast(five_add_nlevels,            1,   mpiint,   0, mpicom)
       call mpibcast(five_bot_toadd,              1,   mpir8,    0, mpicom)
       call mpibcast(five_top_toadd,              1,   mpir8,    0, mpicom)
-#endif           
+#endif 
+
+    ! Now, based on five_add_nlevels, five_bot_toadd, and five_top_toadd
+    !   we will determine the number of FIVE levels we will need
+    !   for our simulation.            
   
   end subroutine five_readnl
   
@@ -168,6 +177,22 @@ module five_intr
     call pbuf_add_field('ICLWP_FIVE',   'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), iclwp_five_idx) 
     call pbuf_add_field('ICSWP_FIVE',   'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), icswp_five_idx) 
     call pbuf_add_field('CLDFSNOW_FIVE','global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), cldfsnow_five_idx) 
+    
+    ! CLUBB variables that need to be declared here
+    call pbuf_add_field('WP2_nadv_five', 'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), wp2_five_idx)
+    
+    call pbuf_add_field('RAD_CLUBB',  'global', dtype_r8, (/pcols,pver_five/),               radf_idx)    
+    call pbuf_add_field('WP2_nadv',        'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), wp2_idx)
+    call pbuf_add_field('WP3_nadv',        'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), wp3_idx)
+    call pbuf_add_field('WPTHLP_nadv',     'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), wpthlp_idx)
+    call pbuf_add_field('WPRTP_nadv',      'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), wprtp_idx)
+    call pbuf_add_field('RTPTHLP_nadv',    'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), rtpthlp_idx)
+    call pbuf_add_field('RTP2_nadv',       'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), rtp2_idx)
+    call pbuf_add_field('THLP2_nadv',      'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), thlp2_idx)
+    call pbuf_add_field('UP2_nadv',        'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), up2_idx)
+    call pbuf_add_field('VP2_nadv',        'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), vp2_idx)    
+    call pbuf_add_field('UPWP',       'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), upwp_idx)
+    call pbuf_add_field('VPWP',       'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), vpwp_idx)    
   
   end subroutine five_register_e3sm 
   
@@ -209,6 +234,41 @@ module five_intr
     
     low_ind = pver
     high_ind = 1   
+    
+    ! First we need to determine how many pver_five and
+    !   and pverp_five levels there are.  This may seem repetitive 
+    !   with the code below it but is needed to appease E3SM 
+    !   order of operations and to allow us to add levels
+    !   on the fly
+    kh=0
+    do k=1,pverp
+    
+      kh=kh+1
+      if (k .eq. pverp) goto 50
+      ! Test to see if this is within the bounds of the grid
+      ! we want to add layers to
+      if (ailev(k) .le. five_bot_toadd .and. &
+        ailev(k) .ge. five_top_toadd) then
+	
+	do ki=1,five_add_nlevels
+	  kh=kh+1
+	enddo
+	
+      endif
+    enddo
+	
+50  continue
+
+    ! Set pver_five and pverp_five
+    pverp_five=kh
+    pver_five=pverp_five-1
+
+    allocate(alev_five(pver_five)) ! midpoint FIVE pressures (pascals)
+    allocate(ailev_five(pverp_five)) ! interface FIVE pressures (pascals)
+    allocate(hyai_five(pverp_five))
+    allocate(hyam_five(pver_five))
+    allocate(hybi_five(pverp_five))
+    allocate(hybm_five(pver_five))               
     
     ! Note that here we are actually adding "layers" to the
     !   hybrid coordinates.  The reason is that the 
@@ -267,8 +327,11 @@ module five_intr
       alev_five(k) = (ailev_five(k)+ailev_five(k+1))/2.0_r8
     enddo      
 	
-    write(iulog,*) 'NUMBER OF FIVE LEVELS', kh-1, five_bot_k, five_top_k        
-    
+    ! write out some useful stuff
+    write(iulog,*) 'Number of FIVE levels: ', kh-1    
+    write(iulog,*) 'Index of bottom layer to add FIVE levels to: ', five_bot_k
+    write(iulog,*) 'Index of top layer to add FIVE levels to: ', five_top_k
+      
     ! Now add vertical coordinate to the history output field
     call add_vert_coord('lev_five', pver_five,                               &
          'FIVE hybrid level at midpoints (1000*(A+B))', 'hPa', alev_five, &

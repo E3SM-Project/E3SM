@@ -221,11 +221,7 @@ subroutine phys_register
        end if
        
        ! Register CLUBB_SGS here
-       if (do_clubb_sgs) call clubb_register_cam()
-       
-#ifdef FIVE
-       call five_register_e3sm()
-#endif     
+       if (do_clubb_sgs) call clubb_register_cam()     
 
        call pbuf_add_field('PREC_STR',  'physpkg',dtype_r8,(/pcols/),prec_str_idx)
        call pbuf_add_field('SNOW_STR',  'physpkg',dtype_r8,(/pcols/),snow_str_idx)

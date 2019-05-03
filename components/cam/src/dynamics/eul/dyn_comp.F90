@@ -55,7 +55,7 @@ subroutine dyn_init(file, nlfilename)
    use physics_buffer,  only : pbuf_add_field, dtype_r8
    use ppgrid,          only : pcols, pver
 #ifdef FIVE
-   use five_intr, only: init_five_heights
+   use five_intr, only: init_five_heights, five_register_e3sm
 #endif
 
    ! ARGUMENTS:
@@ -97,6 +97,10 @@ subroutine dyn_init(file, nlfilename)
 #ifdef FIVE
    call init_five_heights(100._r8*ailev,100._r8*alev,&
           hyai,hyam,hybi,hybm)
+   ! Register FIVE pbuf variables.  This technically is not the right place
+   !  to call this, but has to be done here because we need to know how many
+   !  FIVE levels there are
+   call five_register_e3sm()
 #endif
 
    ! Run initgrid (the old initcom) which sets up coordinates and weights

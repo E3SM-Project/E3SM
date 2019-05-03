@@ -232,13 +232,8 @@ module clubb_intr
   ! The addition of these variables is a crucial component for allowing
   !  CLUBB to be run on a different vertical grid than E3SM.  Any variable
   !  that will be fed into CLUBB should use these dimensions
-#ifdef FIVE
-   integer, parameter :: pverp_clubb = pverp_five
-   integer, parameter :: pver_clubb = pver_five
-#else
-   integer, parameter :: pverp_clubb = pverp
-   integer, parameter :: pver_clubb = pver
-#endif
+  
+  integer :: pverp_clubb, pver_clubb
 
   contains
   
@@ -309,6 +304,7 @@ module clubb_intr
     !  used in CLUBB.  Thus, interpolation to/from the E3SM grid is not required.  
     !  NOTE: an exception to this is the WP2_nadv variable, because this variable 
     !  is used for aerosol activation.   
+#ifndef FIVE
     call pbuf_add_field('RAD_CLUBB',  'global', dtype_r8, (/pcols,pver_clubb/),               radf_idx)    
     call pbuf_add_field('WP2_nadv',        'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), wp2_idx)
     call pbuf_add_field('WP3_nadv',        'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), wp3_idx)
@@ -320,17 +316,8 @@ module clubb_intr
     call pbuf_add_field('UP2_nadv',        'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), up2_idx)
     call pbuf_add_field('VP2_nadv',        'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), vp2_idx)    
     call pbuf_add_field('UPWP',       'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), upwp_idx)
-    call pbuf_add_field('VPWP',       'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), vpwp_idx)      
-     
-#ifdef FIVE
-    ! Define a PBUF field for WP2 to be used on the low resolution E3SM grid, if FIVE is used
-    !   this is the only turbulent moment that is passed to another E3SM parameterization, 
-    !   thus must be interpolated and saved on the E3SM grid.
-    call pbuf_add_field('CLD_FIVE',      'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/),    cld_five_idx)
-    call pbuf_add_field('CONCLD_FIVE',   'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/),    concld_five_idx)
-    call pbuf_add_field('AST_FIVE',      'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/),    ast_five_idx)
-    call pbuf_add_field('WP2_nadv_five', 'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wp2_five_idx)
-#endif 
+    call pbuf_add_field('VPWP',       'global', dtype_r8, (/pcols,pverp_clubb,dyn_time_lvls/), vpwp_idx) 
+#endif     
 
 #endif 
 
@@ -586,10 +573,21 @@ end subroutine clubb_init_cnst
     integer :: lptr
 
     ! Define the height arrays to initialize CLUBB
-    real(r8)  :: zt_g(pverp_clubb)                        ! Height dummy array
-    real(r8)  :: zi_g(pverp_clubb)                        ! Height dummy array
+    real(r8), allocatable  :: zt_g(:)              ! Height dummy array
+    real(r8), allocatable  :: zi_g(:)              ! Height dummy array
 
     !----- Begin Code -----
+
+#ifdef FIVE
+   pverp_clubb = pverp_five
+   pver_clubb = pver_five
+#else
+   pverp_clubb = pverp
+   pver_clubb = pver
+#endif 
+
+    allocate(zt_g(pverp_five))
+    allocate(zi_g(pverp_five))
 
     ! ----------------------------------------------------------------- !
     ! Determine how many constituents CLUBB will transport.  Note that  
@@ -680,6 +678,20 @@ end subroutine clubb_init_cnst
     cld_five_idx = pbuf_get_index('CLD_FIVE')
     concld_five_idx = pbuf_get_index('CONCLD_FIVE')
     ast_five_idx = pbuf_get_index('AST_FIVE')
+    
+    wp2_five_idx=pbuf_get_index('WP2_nadv_five')
+    radf_idx=pbuf_get_index('RAD_CLUBB')
+    wp2_idx=pbuf_get_index('WP2_nadv')
+    wp3_idx=pbuf_get_index('WP3_nadv')
+    wpthlp_idx=pbuf_get_index('WPTHLP_nadv')
+    wprtp_idx=pbuf_get_index('WPRTP_nadv')
+    rtpthlp_idx=pbuf_get_index('RTPTHLP_nadv')
+    rtp2_idx=pbuf_get_index('RTP2_nadv')
+    thlp2_idx=pbuf_get_index('THLP2_nadv')
+    up2_idx=pbuf_get_index('UP2_nadv')
+    vp2_idx=pbuf_get_index('VP2_nadv')
+    upwp_idx=pbuf_get_index('UPWP')
+    vpwp_idx=pbuf_get_index('VPWP')
 #endif
 
     iisclr_rt  = -1
@@ -973,6 +985,10 @@ end subroutine clubb_init_cnst
 
 #endif
     dp1 = dp1_in !set via namelist, assigned in cloud_fraction.F90
+    
+    deallocate(zt_g)
+    deallocate(zi_g)
+    
     end subroutine clubb_ini_cam
     
     
@@ -1634,9 +1650,9 @@ end subroutine clubb_init_cnst
 #ifdef FIVE
    ! Syncronize FIVE variables to E3SM state
    !  This is a crucial component to using FIVE within E3SM
-   if (macmic_it .eq. 1) then
+!   if (macmic_it .eq. 1) then
       call five_syncronize_e3sm(state1,hdtime,p0_clubb,pint_five,pmid_five,t_five,u_five,v_five,q_five) 
-   endif
+!   endif
 #endif   
 
    !  At each CLUBB call, initialize mean momentum  and thermo CLUBB state 

@@ -39,13 +39,9 @@ public ::&
 ! Private data
 integer :: ntoplw    ! top level to solve for longwave cooling
 logical :: pergro_mods = .false.
-#ifdef FIVE
-   integer, parameter :: pverp_rad = pverp_five
-   integer, parameter :: pver_rad = pver_five
-#else
-   integer, parameter :: pverp_rad = pverp
-   integer, parameter :: pver_rad = pver
-#endif 
+
+integer :: pverp_rad, pver_rad
+
 !===============================================================================
 CONTAINS
 !===============================================================================
@@ -410,6 +406,14 @@ subroutine radlw_init()
    integer :: k
    
    call phys_getopts(pergro_mods_out=pergro_mods)
+   
+#ifdef FIVE
+   pverp_rad = pverp_five
+   pver_rad = pver_five
+#else
+   pverp_rad = pverp
+   pver_rad = pver
+#endif 
 
    ! If the top model level is above ~90 km (0.1 Pa), set the top level to compute
    ! longwave cooling to about 80 km (1 Pa)

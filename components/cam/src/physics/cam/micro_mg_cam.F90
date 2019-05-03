@@ -281,14 +281,8 @@ integer :: &
    real(r8) :: nicons                   = huge(1.0_r8)
    logical  :: mg_prc_coeff_fix_in      = .false. !temporary variable to maintain BFB, MUST be removed
    logical  :: rrtmg_temp_fix           = .false. !temporary variable to maintain BFB, MUST be removed
-   
-#ifdef FIVE
-   integer, parameter :: pverp_micro = pverp_five 
-   integer, parameter :: pver_micro = pver_five  
-#else
-   integer, parameter :: pverp_micro = pverp
-   integer, parameter :: pver_micro = pver
-#endif   
+ 
+integer :: pverp_micro, pver_micro 
 
 interface p
    module procedure p1
@@ -707,6 +701,14 @@ subroutine micro_mg_cam_init(pbuf2d)
    else
      allow_sed_supersat = .true.
    endif
+   
+#ifdef FIVE
+   pverp_micro = pverp_five 
+   pver_micro = pver_five  
+#else
+   pverp_micro = pverp
+   pver_micro = pver
+#endif    
 
    if (masterproc) then
       write(iulog,"(A,I2,A,I2)") "Initializing MG version ",micro_mg_version,".",micro_mg_sub_version
