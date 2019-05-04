@@ -54,7 +54,7 @@
 #XXSBATCH -p acme
 #XXSBATCH --account=condo
 #SBATCH -N 12
-#SBATCH --time=5:00:00
+#SBATCH --time=3:00:00
 
 
 
@@ -101,8 +101,6 @@ if ( $ne == 30 ) then
    set topo = '/home/ccsm-data/inputdata/atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc'
    set topo = '/projects/ccsm/inputdata/atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc'
    set toponame = 16xdel2-H
-
-   set toponame = 16xdel2-H-tadv0
 
    #set toponame = 16xdel2-NH
    #set toponame = NH

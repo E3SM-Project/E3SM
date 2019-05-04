@@ -25,7 +25,7 @@ module prim_advance_mod
   use element_mod,        only: element_t
   use element_state,      only: max_itercnt_perstep,avg_itercnt,max_itererr_perstep, nu_scale_top
   use element_ops,        only: get_temperature, set_theta_ref, state0, get_R_star
-  use eos,                only: get_pnh_and_exner,get_phinh,get_dirk_jacobian
+  use eos,                only: pnh_and_exner_from_eos,phi_from_eos,get_dirk_jacobian
   use hybrid_mod,         only: hybrid_t
   use hybvcoord_mod,      only: hvcoord_t
   use kinds,              only: iulog, real_kind
@@ -921,7 +921,7 @@ contains
         dp(:,:,k)=( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
             ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(:,:,n0)
      enddo
-     call get_pnh_and_exner(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,n0),dp,&
+     call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,n0),dp,&
           elem(ie)%state%phinh_i(:,:,:,n0),pnh,exner,dpnh_dp_i,caller='convert_thermo_forcing')
      do k=1,nlev
         ! compute NH pressure perturbation (forcing applied w.r.t. constant pprime)
@@ -1127,8 +1127,9 @@ contains
 ! compute reference states
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   do ie=nets,nete
-     !ps_ref(:,:) = hvcoord%hyai(1)*hvcoord%ps0 + sum(elem(ie)%state%dp3d(:,:,:,nt),3)
-     ps_ref(:,:) = hvcoord%ps0 - 11.3*elem(ie)%state%phis(:,:)/g
+     ps_ref(:,:) = hvcoord%hyai(1)*hvcoord%ps0 + sum(elem(ie)%state%dp3d(:,:,:,nt),3)
+     !ps_ref(:,:) = hvcoord%ps0 * exp ( -elem(ie)%state%phis(:,:)/(Rgas*300))  ! 300K ref temperature
+     !ps_ref(:,:) = hvcoord%ps0 - 11.3*elem(ie)%state%phis(:,:)/g
      do k=1,nlev
         dp_ref(:,:,k,ie) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
              (hvcoord%hybi(k+1)-hvcoord%hybi(k))*ps_ref(:,:)
@@ -1138,7 +1139,7 @@ contains
      ! phi_ref,theta_ref depend only on ps:
      call set_theta_ref(hvcoord,dp_ref(:,:,:,ie),theta_ref(:,:,:,ie))
      temp(:,:,:)=theta_ref(:,:,:,ie)*dp_ref(:,:,:,ie) 
-     call get_phinh(hvcoord,elem(ie)%state%phis,&
+     call phi_from_eos(hvcoord,elem(ie)%state%phis,&
           temp(:,:,:),dp_ref(:,:,:,ie),phi_ref(:,:,:,ie))
 #if 0
      ! no reference state, for testing
@@ -1275,7 +1276,7 @@ contains
         ! compute exner needed for heating term and IE scaling
         ! this is using a mixture of data before viscosity and after viscosity 
         temp(:,:,:)=elem(ie)%state%vtheta_dp(:,:,:,nt)*elem(ie)%state%dp3d(:,:,:,nt)
-        call get_pnh_and_exner(hvcoord,temp,&
+        call pnh_and_exner_from_eos(hvcoord,temp,&
              elem(ie)%state%dp3d(:,:,:,nt),elem(ie)%state%phinh_i(:,:,:,nt),&
              pnh,exner,temp_i,caller='advance_hypervis')
         
@@ -1603,7 +1604,7 @@ contains
      endif
 #endif
 
-     call get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_i,pnh,exner,dpnh_dp_i,caller='CAAR')
+     call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_i,pnh,exner,dpnh_dp_i,caller='CAAR')
 
      dp3d_i(:,:,1) = dp3d(:,:,1)
      dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
@@ -1646,7 +1647,6 @@ contains
      enddo
 
      ! Compute omega =  Dpi/Dt   Used only as a DIAGNOSTIC
-     ! for historical reasons, we actually compute w/pi
      pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
      omega_i(:,:,1)=0
      do k=1,nlev
@@ -2238,7 +2238,7 @@ contains
     phi_np1 => elem(ie)%state%phinh_i(:,:,:,np1)
     phis => elem(ie)%state%phis(:,:)
 
-    call get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk1')
+    call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk1')
 
     dp3d_i(:,:,1) = dp3d(:,:,1)
     dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
@@ -2309,10 +2309,10 @@ contains
         enddo
         if (nsafe>1) print *,'WARNING: reducing newton increment, nsafe=',nsafe
         ! if nsafe>1, code will probably crash soon
-        ! if nsafe>8, code will crash in next call to get_pnh_and_exner
+        ! if nsafe>8, code will crash in next call to pnh_and_exner_from_eos
       end do
       end do
-      call get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk2')
+      call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk2')
 
       ! update approximate solution of w
       elem(ie)%state%w_i(:,:,1:nlev,np1) = w_n0(:,:,1:nlev) - g*dt2 * &

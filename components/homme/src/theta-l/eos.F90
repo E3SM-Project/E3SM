@@ -5,16 +5,14 @@
 !  NonHydrostatic Equation of State and inverse EOS routines
 !  Note: these routines should all be discrete inverses of each other
 !
-!  get_pnh_and_exner()       Compute nonhydrostatic pressure as a function of 
+!  pnh_and_exner_from_eos()  Compute nonhydrostatic pressure as a function of 
 !                            potential temperature and geopotential
 !
-!  get_dry_phinh()           Compute geopotential as a function of potential temperature
-!                            and pressure (neglicting water vapor)
+!  phi_from_eos()            Compute geopotential as a function of potential temperature
+!                            and pressure. use virtual potential temperature for wet phi
 !
-!  get_wet_phinh()           Compute geopotential as a function of potential temperature
-!                            and pressure, including water vapor
-!  
 !  Original version: Mark Taylor 2017/1
+!  
 !
 module eos
 
@@ -31,7 +29,7 @@ module eos
 
 contains
 
-subroutine get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_i,pnh,exner,&
+subroutine pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_i,pnh,exner,&
      dpnh_dp_i,pnh_i_out,caller)
 implicit none
 !
@@ -162,12 +160,12 @@ implicit none
    endif
    
   endif ! hydrostatic/nonhydrostatic version
-  end subroutine get_pnh_and_exner
+  end subroutine 
 
 
 
   !_____________________________________________________________________
-  subroutine get_phinh(hvcoord,phis,vtheta_dp,dp,phi_i)
+  subroutine phi_from_eos(hvcoord,phis,vtheta_dp,dp,phi_i)
 !
 ! Use Equation of State to compute geopotential
 !
@@ -178,7 +176,7 @@ implicit none
 ! used to compute background phi for reference state
 !
 ! NOTE1: dp is pressure layer thickness.  If pnh is used to compute thickness, this
-! routine should be the discrete inverse of get_pnh_and_exner().
+! routine should be the discrete inverse of pnh_and_exner_from_eos().
 ! This routine is usually called with hydrostatic layer thickness (dp3d), 
 ! in which case it returns a hydrostatic PHI
 !
@@ -310,7 +308,7 @@ implicit none
         if (theta_hydrostatic_mode) then
           dpnh_dp_i_epsie(:,:,:)=1.d0
         else
-         call get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_i_temp,pnh,exner,dpnh_dp_i_epsie)
+         call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_i_temp,pnh,exner,dpnh_dp_i_epsie)
         end if
         if (k.eq.1) then
           JacL(k,:,:) = (g*dt2)**2 * (dpnh_dp_i(:,:,k+1)-dpnh_dp_i_epsie(:,:,k+1))/epsie

@@ -19,7 +19,7 @@ module prim_state_mod
   use element_mod,      only: element_t
   use element_ops,      only: get_field, get_phi
   use element_state,    only: max_itercnt_perstep,max_itererr_perstep,avg_itercnt
-  use eos,              only: get_pnh_and_exner
+  use eos,              only: pnh_and_exner_from_eos
   use viscosity_mod,    only: compute_zeta_C0
   use reduction_mod,    only: parallelmax,parallelmin
   use perf_mod,         only: t_startf, t_stopf
@@ -861,7 +861,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
           dpt1(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,t1)
        enddo
-       call get_pnh_and_exner(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,t1),dpt1,&
+       call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,t1),dpt1,&
             elem(ie)%state%phinh_i(:,:,:,t1),pnh,exner,dpnh_dp_i,pnh_i,'prim_state_mod')
        call get_phi(elem(ie),phi,phi_i,hvcoord,t1,t1_qdp)
 
