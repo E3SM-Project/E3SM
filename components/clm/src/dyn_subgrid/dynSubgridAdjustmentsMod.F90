@@ -27,7 +27,6 @@ module dynSubgridAdjustmentsMod
   use VegetationDataType     , only : vegetation_carbon_state, vegetation_nitrogen_state
   use VegetationDataType     , only : vegetation_phosphorus_state
   use SpeciesMod             , only : CN_SPECIES_N, CN_SPECIES_P
-  use clm_varctl             , only : iulog
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -851,7 +850,7 @@ contains
     type(column_nitrogen_state)     , intent(inout) :: col_ns
     !
     ! !LOCAL VARIABLES:
-    integer                     :: l, j, c
+    integer                     :: l, j
     integer                     :: begc, endc
     real(r8)                    :: adjustment_one_level(bounds%begc:bounds%endc)
     
