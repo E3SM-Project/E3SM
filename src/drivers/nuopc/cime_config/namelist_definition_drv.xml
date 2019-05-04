@@ -781,7 +781,7 @@
       Setting this to zero will always do flux_max_iteration
     </desc>
     <values>
-      <value cime_model='cesm'>0.01</value>
+      <value cime_model='cesm'>0.0</value>
       <value cime_model='cesm' atm_grid="0.9x1.25">0.0</value>
     </values>
   </entry>
