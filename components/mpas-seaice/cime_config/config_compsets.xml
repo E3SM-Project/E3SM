@@ -7,7 +7,7 @@
    or in the CIME documenation
    </help>
 
-  <!-- ACME D compsets -->
+  <!-- E3SM D compsets -->
 
   <compset>
     <alias>DTESTM</alias>

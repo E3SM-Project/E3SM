@@ -2803,6 +2803,9 @@ sub write_filepath
         print $fh "$camsrcdir/homme/src/preqx_acc\n";
         print $fh "$camsrcdir/homme/src/preqx/share\n";
       }
+      elsif($opts{'dyn_target'} eq 'theta-l') {
+        print $fh "$camsrcdir/homme/src/theta-l\n";
+      }
       elsif ($opts{'dyn_target'} eq 'preqx_kokkos') {
         print $fh "$camsrcdir/homme/src/share/cxx\n";
         print $fh "$camsrcdir/homme/src/share/cxx/mpi\n";
@@ -2916,6 +2919,10 @@ sub write_cppdefs
     $fh->open(">$file") or die "** can't open cpp defs file: $file\n";
 
     print $fh "$make_cppdefs";
+
+    if ($dyn eq "se" and $opts{"dyn_target"} eq "theta-l") {
+        print $fh " -DMODEL_THETA_L " 
+    }
 
     if ($dyn eq "se" and $opts{"dyn_target"} eq "preqx_kokkos") {
 	print $fh " -DUSE_KOKKOS_KERNELS "

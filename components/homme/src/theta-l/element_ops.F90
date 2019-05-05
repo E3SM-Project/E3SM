@@ -256,7 +256,7 @@ contains
   end subroutine
 
 
-
+!why is it called get, not set?
   subroutine get_phi(elem,phi,phi_i,hvcoord,nt,ntQ)
     implicit none
     
@@ -322,7 +322,7 @@ contains
 
 
   !_____________________________________________________________________
-  subroutine set_thermostate(elem,temperature,hvcoord,nt,ntQ)
+  subroutine set_thermostate(elem,temperature,hvcoord)
   !
   ! Assuming a hydrostatic intital state and given surface pressure,
   ! and no moisture, compute theta and phi 
@@ -339,20 +339,23 @@ contains
   !   local
   real (kind=real_kind) :: p(np,np,nlev)
   real (kind=real_kind) :: dp(np,np,nlev)
-  integer :: k,nt,ntQ
+  integer :: k, nt
 
+  nt = 1
   do k=1,nlev
      p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
      dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
   enddo
 
+!set vtheta
   do k=1,nlev
      elem%state%vtheta_dp(:,:,k,nt)=dp(:,:,k)*temperature(:,:,k)* &
           (p(:,:,k)/p0)**(-kappa)
   enddo
 
-  call tests_finalize(elem,hvcoord,nt,ntQ)
+!set phi, copy from 1st timelevel to all
+  call tests_finalize(elem,hvcoord)
 
   end subroutine set_thermostate
 
@@ -545,7 +548,7 @@ contains
   end subroutine 
 
   !_____________________________________________________________________
-  subroutine tests_finalize(elem, hvcoord,ns,ne,ie)
+  subroutine tests_finalize(elem,hvcoord,ie)
 
   ! Now that all variables have been initialized, set phi to be in hydrostatic balance
 
@@ -553,7 +556,6 @@ contains
 
   type(hvcoord_t),     intent(in)   :: hvcoord
   type(element_t),     intent(inout):: elem
-  integer,             intent(in)   :: ns,ne
   integer, optional,   intent(in)   :: ie ! optional element index, to save initial state
 
   integer :: k,tl
@@ -584,7 +586,6 @@ contains
      endif
   enddo
   
-
   do tl = 2,timelevels
     call copy_state(elem,1,tl)
   enddo

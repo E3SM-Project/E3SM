@@ -36,7 +36,9 @@ module prim_advance_mod
   use prim_si_mod,        only: preq_vertadv_v1
   use reduction_mod,      only: parallelmax, reductionbuffer_ordered_1d_t
   use time_mod,           only: timelevel_qdp, timelevel_t
+#ifndef CAM
   use test_mod,           only: set_prescribed_wind
+#endif
   use viscosity_theta,    only: biharmonic_wk_theta
 
 #ifdef TRILINOS
@@ -48,8 +50,7 @@ module prim_advance_mod
   private
   save
   public :: prim_advance_exp, prim_advance_init1, &
-       applycamforcing_dynamics, applyCAMforcing_dynamics_dp, convert_thermo_forcing,&
-       compute_andor_apply_rhs
+       applycamforcing_dynamics, compute_andor_apply_rhs
 
 contains
 
@@ -761,50 +762,35 @@ contains
     else if (tstep_type==31) then ! ARKode Conde et al ssp3(3,3,3)b (renamed here)
       call set_Butcher_tables(arkode_parameters, arkode_tables%SSP3333C)
 
-    else if (tstep_type==32) then ! ARKode IMKG 2nd-order, 4 stage, variant a
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG232a)
+    else if (tstep_type==32) then ! ARKode IMKG 2nd-order, 4 stage (2 implicit)
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG232)
 
-    else if (tstep_type==33) then ! ARKode IMKG 2nd-order, 4 stage, variant b
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG232b)
+    else if (tstep_type==33) then ! ARKode IMKG 2nd-order, 5 stage (2 implicit)
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG242)
 
-    else if (tstep_type==34) then ! ARKode IMKG 2nd-order, 5 stage, variant a
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG242a)
+    else if (tstep_type==34) then ! ARKode IMKG 2nd-order, 5 stage (3 implicit)
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG243)
 
-    else if (tstep_type==35) then ! ARKode IMKG 2nd-order, 5 stage, variant b
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG242b)
+    else if (tstep_type==35) then ! ARKode IMKG 2nd-order, 6 stage (2 implicit)
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG252)
 
-    else if (tstep_type==36) then ! ARKode IMKG 2nd-order, 5 stage, variant a
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG243a)
+    else if (tstep_type==36) then ! ARKode IMKG 2nd-order, 6 stage (3 implicit)
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG253)
 
-    else if (tstep_type==37) then ! ARKode IMKG 2nd-order, 5 stage, variant b
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG243b)
+    else if (tstep_type==37) then ! ARKode IMKG 2nd-order, 6 stage (4 implicit)
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG254)
 
-    else if (tstep_type==38) then ! ARKode IMKG 2nd-order, 6 stage, variant a
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG252a)
+    else if (tstep_type==38) then ! ARKode IMKG 3rd-order, 5 stage (2 implicit)
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG342)
 
-    else if (tstep_type==39) then ! ARKode IMKG 2nd-order, 6 stage, variant b
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG252b)
+    else if (tstep_type==39) then ! ARKode IMKG 3rd-order, 5 stage (3 implicit)
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG343)
 
-    else if (tstep_type==40) then ! ARKode IMKG 2nd-order, 6 stage, variant a
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG253a)
+    else if (tstep_type==40) then ! ARKode IMKG 3rd-order, 6 stage (3 implicit)
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG353)
 
-    else if (tstep_type==41) then ! ARKode IMKG 2nd-order, 6 stage, variant b
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG253b)
-
-    else if (tstep_type==42) then ! ARKode IMKG 2nd-order, 6 stage, variant a
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG254a)
-
-    else if (tstep_type==43) then ! ARKode IMKG 2nd-order, 6 stage, variant b
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG254b)
-
-    else if (tstep_type==44) then ! ARKode IMKG 2nd-order, 6 stage, variant c
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG254c)
-
-    else if (tstep_type==45) then ! ARKode IMKG 3rd-order, 5 stage, variant a
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG343a)
-
-    else if (tstep_type==46) then ! ARKode IMKG 3rd-order, 5 stage, variant b
-      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG343b)
+    else if (tstep_type==41) then ! ARKode IMKG 3rd-order, 6 stage (4 implicit)
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG354)
 
     else 
        call abortmp('ERROR: bad choice of tstep_type')
@@ -872,134 +858,6 @@ contains
   end subroutine prim_advance_exp
 #endif
 
-
-!Converting T tendencies to theta, can be called from homme and EAM.
-!Tests and EAM return thermo tendencies in terms of T, this routine 
-!converts them to weighted potential temp. variable asi theta-l model.
-!This routine should be called BEFORE applyCAMforcing_tracers and
-!before ps_v is updated.
-!That is, theta tendencies are computed wrt the same pressure levels 
-!that were used to compute temperature tendencies
-!
-! For the hydrostatic model, the pressure is determined from FQ 
-! and conversion from T to Theta is done w.r.t. to this pressure.
-!
-! for NH, we have serveral options to determine the new pressure. For
-! consistency with hydrostatic model, we assume NH perturbation pressure
-! remains constant. this requires addign forcing to the PHI equation
-!
-  subroutine convert_thermo_forcing(elem,hvcoord,n0,n0q,dt,nets,nete)
-  use control_mod,        only : use_moisture
-
-  implicit none
-
-  real(kind=real_kind)   :: x,y,noreast, nw, se, sw 
-
-  type (element_t),       intent(inout) :: elem(:)
-  real (kind=real_kind),  intent(in)    :: dt ! should be dt_physics, so, dt_remap*se_nsplit
-  type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: nets,nete
-  integer,                intent(in)    :: n0,n0q
-  integer                               :: ie,i,j,k,q
-  real(kind=real_kind)                  :: vthn1(np,np,nlev), dp(np,np,nlev)
-  real(kind=real_kind)                  :: pnh(np,np,nlev)
-  real(kind=real_kind)                  :: dpnh_dp_i(np,np,nlevp)
-  real(kind=real_kind)                  :: exner(np,np,nlev)
-  real(kind=real_kind)                  :: phi_n1(np,np,nlevp)
-  real(kind=real_kind)                  :: rstarn1(np,np,nlev)
-  real(kind=real_kind)                  :: pprime(np,np,nlev)
-  real(kind=real_kind)                  :: qn1(np,np,nlev), tn1(np,np,nlev), v1
-  real(kind=real_kind)                  :: psn1(np,np)
-
-  if (ftype==-1) return
-
-  q = 1
-  do ie=nets,nete
-
-     ! get current state before forcing
-     do k=1,nlev
-        dp(:,:,k)=( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-            ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(:,:,n0)
-     enddo
-     call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,n0),dp,&
-          elem(ie)%state%phinh_i(:,:,:,n0),pnh,exner,dpnh_dp_i,caller='convert_thermo_forcing')
-     do k=1,nlev
-        ! compute NH pressure perturbation (forcing applied w.r.t. constant pprime)
-        pprime(:,:,k)=pnh(:,:,k) - &
-             ( hvcoord%ps0*hvcoord%hyam(k) + elem(ie)%state%ps_v(:,:,n0)*hvcoord%hybm(k))
-     enddo
-     call get_R_star(rstarn1,elem(ie)%state%Q(:,:,:,1))
-     tn1=exner* elem(ie)%state%vtheta_dp(:,:,:,n0)*(Rgas/rstarn1) / dp
-
-
-     ! now compute new state implied by FQ (Rstar, hydrostatic pressure)
-     ! and FT (temperature)
-     ! semi-repeated code from applycamforcing_tracers
-     psn1(:,:) = 0.0
-     do k=1,nlev
-        do j=1,np
-           do i=1,np
-              v1 = dt*elem(ie)%derived%FQ(i,j,k,q)
-              if (elem(ie)%state%Qdp(i,j,k,q,n0q) + v1 < 0 .and. v1<0)then
-                 if (elem(ie)%state%Qdp(i,j,k,q,n0q) < 0 ) then
-                    v1=0  ! Q already negative, dont make it more so
-                 else
-                    v1 = -elem(ie)%state%Qdp(i,j,k,q,n0q)
-                 endif
-              endif
-              !new qdp
-              qn1(i,j,k) = elem(ie)%state%Qdp(i,j,k,q,n0q)+v1
-              psn1(i,j) = psn1(i,j) + v1/dt 
-           enddo
-        enddo
-     enddo
-
-     if (use_moisture) then
-        psn1(:,:) = elem(ie)%state%ps_v(:,:,n0) + dt*psn1(:,:)
-     else
-        psn1(:,:) = elem(ie)%state%ps_v(:,:,n0) 
-     endif
-
-     do k=1,nlev
-        dp(:,:,k)=&
-            ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-            ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*psn1(:,:)
-        !new q
-        qn1(:,:,k) = qn1(:,:,k)/dp(:,:,k)
-     enddo
-     call get_R_star(rstarn1,qn1)
-     tn1(:,:,:) = tn1(:,:,:) + dt*elem(ie)%derived%FT(:,:,:)
-
-
-     ! update pressure based on Qdp forcing
-     do k=1,nlev
-        ! constant PHI.  FPHI will be zero. cant be used Hydrostatic
-        !pnh(:,:,k) = rstarn1(:,:,k)*tn1(:,:,k)*dp(:,:,k) / &
-        !     ( elem(ie)%state%phinh_i(:,:,k,n0)-elem(ie)%state%phinh_i(:,:,k+1,n0))
-        ! constant NH perturbation pressure
-        pnh(:,:,k)=hvcoord%ps0*hvcoord%hyam(k) + psn1(:,:)*hvcoord%hybm(k) + pprime(:,:,k)
-        exner(:,:,k)=(pnh(:,:,k)/p0)**(Rgas/Cp)
-     enddo
-        
-     ! now we have tn1,dp,pnh - compute corresponding theta and phi:
-     vthn1 =  (rstarn1(:,:,:)/Rgas)*tn1(:,:,:)*dp(:,:,:)/exner(:,:,:)
-
-     phi_n1(:,:,nlevp)=elem(ie)%state%phinh_i(:,:,nlevp,n0)
-     do k=nlev,1,-1
-        phi_n1(:,:,k)=phi_n1(:,:,k+1) + Rgas*vthn1(:,:,k)*exner(:,:,k)/pnh(:,:,k)
-     enddo
-
-     !finally, compute difference for FT
-     ! this method is using new dp, new exner, new-new r*, new t
-     elem(ie)%derived%FT(:,:,:) = &
-         (vthn1 - elem(ie)%state%vtheta_dp(:,:,:,n0))/dt
-
-     elem(ie)%derived%FPHI(:,:,:) = &
-         (phi_n1 - elem(ie)%state%phinh_i(:,:,:,n0))/dt
-  enddo
-  end subroutine convert_thermo_forcing
-
-
 !----------------------------- APPLYCAMFORCING-DYNAMICS ----------------------------
 
   subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,dt,nets,nete)
@@ -1012,7 +870,7 @@ contains
   integer :: k,ie
   do ie=nets,nete
 
-     elem(ie)%state%vtheta_dp(:,:,:,np1) = elem(ie)%state%vtheta_dp(:,:,:,np1) + dt*elem(ie)%derived%FT(:,:,:)
+     elem(ie)%state%vtheta_dp(:,:,:,np1) = elem(ie)%state%vtheta_dp(:,:,:,np1) + dt*elem(ie)%derived%FVTheta(:,:,:)
      elem(ie)%state%phinh_i(:,:,1:nlev,np1) = elem(ie)%state%phinh_i(:,:,1:nlev,np1) + dt*elem(ie)%derived%FPHI(:,:,1:nlev)
 
      elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,1:2,:)
@@ -1024,21 +882,6 @@ contains
   enddo
   
   end subroutine applyCAMforcing_dynamics
-
-
-!----------------------------- APPLYCAMFORCING-DYNAMICS-DP ----------------------------
-
-!a dummy with error message
-  subroutine applyCAMforcing_dynamics_dp(elem,hvcoord,np1,dt,nets,nete)
-  use hybvcoord_mod,  only: hvcoord_t
-  implicit none
-  type (element_t)     ,  intent(inout) :: elem(:)
-  real (kind=real_kind),  intent(in)    :: dt
-  type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: np1,nets,nete
-  
-  call abortmp('Error: In applyCAMforcing_dyn theta-l model doesnt have ftype=3 option.')
-  end subroutine applyCAMforcing_dynamics_dp
 
 
 !----------------------------- ADVANCE-HYPERVIS ----------------------------

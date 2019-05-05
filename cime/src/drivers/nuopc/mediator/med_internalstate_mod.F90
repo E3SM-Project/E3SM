@@ -50,6 +50,12 @@ module med_internalstate_mod
     ! FBImp(n,k) is the FBImp(n,n) interpolated to grid k
     ! RH(n,k,m) is a RH from grid n to grid k, map type m
 
+     ! Mediator vm
+    type(ESMF_VM) :: vm
+
+    ! Global nx,ny dimensions of input arrays (needed for mediator history output)
+    integer :: nx(ncomps), ny(ncomps)
+
     ! Present/Active logical flags
     logical                :: comp_present(ncomps)               ! comp present flag
     logical                :: med_coupling_active(ncomps,ncomps) ! computes the active coupling
@@ -81,11 +87,6 @@ module med_internalstate_mod
     ! Accumulators for import field bundles
     type(ESMF_FieldBundle) :: FBImpAccum(ncomps,ncomps)          ! Accumulator for various components import
     integer                :: FBImpAccumCnt(ncomps)              ! Accumulator counter for each FBImpAccum
-
-    ! Connectors
-    integer                :: conn_prep_cnt(ncomps)              ! Connector prep count
-    integer                :: conn_post_cnt(ncomps)              ! Connector post count
-    type(ESMF_VM)          :: vm
 
  end type InternalStateStruct
 

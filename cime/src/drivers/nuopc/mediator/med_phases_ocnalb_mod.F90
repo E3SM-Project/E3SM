@@ -30,6 +30,7 @@ module med_phases_ocnalb_mod
      real(r8) , pointer :: avsdr (:) ! albedo: visible      , direct
      real(r8) , pointer :: anidf (:) ! albedo: near infrared, diffuse
      real(r8) , pointer :: avsdf (:) ! albedo: visible      , diffuse
+     logical            :: created   ! has memory been allocated here
   end type ocnalb_type
 
   ! Conversion from degrees to radians
@@ -178,7 +179,7 @@ contains
     use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time, ESMF_TimeInterval
     use ESMF                  , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_LogFoundError
-    use ESMF                  , only : ESMF_RouteHandleIsCreated
+    use ESMF                  , only : ESMF_RouteHandleIsCreated, ESMF_FieldBundleIsCreated
     use ESMF                  , only : operator(+)
     use NUOPC                 , only : NUOPC_CompAttributeGet
     use shr_const_mod         , only : shr_const_pi
@@ -198,6 +199,7 @@ contains
     use shr_nuopc_scalars_mod , only : flds_scalar_index_nextsw_cday
     use esmFlds               , only : compatm, compocn
     use perf_mod              , only : t_startf, t_stopf
+
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -238,10 +240,7 @@ contains
     logical                 :: first_call = .true.
     character(len=*)  , parameter :: subname='(med_phases_ocnalb_run)'
     !---------------------------------------
-    call t_startf('MED:'//subname)
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+
     rc = ESMF_SUCCESS
 
     ! Get the internal state from Component.
@@ -249,14 +248,32 @@ contains
     call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
     if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
+    ! Determine if ocnalb data type will be initialized - and if not return
+    if (first_call) then
+       if ( ESMF_FieldBundleIsCreated(is_local%wrap%FBMed_aoflux_a, rc=rc) .and. &
+            ESMF_FieldBundleIsCreated(is_local%wrap%FBMed_aoflux_o, rc=rc)) then
+          ocnalb%created = .true.
+       else
+          ocnalb%created = .false.
+       end if
+    end if
+    if (.not. ocnalb%created) then
+       return
+    end if
+
     ! Note that in the mct version the atm was initialized first so
     ! that nextsw_cday could be passed to the other components - this
     ! assumed that atmosphere component was ALWAYS initialized first.
     ! In the nuopc version it will be easier to assume that on startup
     ! - nextsw_cday is just what cam was setting it as the current calendar day
 
-    if (first_call) then
+    if (dbug_flag > 5) then
+       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+    endif
 
+    call t_startf('MED:'//subname)
+
+    if (first_call) then
        ! Initialize ocean albedo calculation
        call med_phases_ocnalb_init(gcomp, ocnalb, rc)
        if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
@@ -284,9 +301,9 @@ contains
           call ESMF_TimeGet( currTime, dayOfYear_r8=nextsw_cday, rc=rc )
           if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
        else
-          call shr_nuopc_methods_State_GetScalar(is_local%wrap%NstateImp(compatm), &
+          call shr_nuopc_methods_State_GetScalar(state=is_local%wrap%NstateImp(compatm), &
                flds_scalar_name=flds_scalar_name, flds_scalar_num=flds_scalar_num, &
-               scalar_id=flds_scalar_index_nextsw_cday, value=nextsw_cday, rc=rc)
+               scalar_id=flds_scalar_index_nextsw_cday, scalar_value=nextsw_cday, rc=rc)
           if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
        end if
 
@@ -295,9 +312,9 @@ contains
     else
 
        ! Note that shr_nuopc_methods_State_GetScalar includes a broadcast to all other pets
-       call shr_nuopc_methods_State_GetScalar(is_local%wrap%NstateImp(compatm), &
+       call shr_nuopc_methods_State_GetScalar(state=is_local%wrap%NstateImp(compatm), &
             flds_scalar_name=flds_scalar_name, flds_scalar_num=flds_scalar_num, &
-            scalar_id=flds_scalar_index_nextsw_cday, value=nextsw_cday, rc=rc)
+            scalar_id=flds_scalar_index_nextsw_cday, scalar_value=nextsw_cday, rc=rc)
        if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
 
     end if
@@ -378,7 +395,8 @@ contains
     endif
 
     if (dbug_flag > 1) then
-       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBMed_ocnalb_o, string=trim(subname)//' FBMed_ocnalb_o', rc=rc)
+       call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBMed_ocnalb_o, &
+            string=trim(subname)//' FBMed_ocnalb_o', rc=rc)
        if (shr_nuopc_utils_chkerr(rc,__LINE__,u_FILE_u)) return
     end if
     call t_stopf('MED:'//subname)
@@ -430,6 +448,7 @@ contains
          is_local%wrap%FBMed_ocnalb_o, &
          is_local%wrap%FBMed_ocnalb_a, &
          is_local%wrap%FBFrac(compocn), &
+         is_local%wrap%FBFrac(compatm), &
          is_local%wrap%FBNormOne(compocn,compatm,:), &
          is_local%wrap%RH(compocn,compatm,:), &
          string='FBMed_ocnalb_o_To_FBMed_ocnalb_a', rc=rc)

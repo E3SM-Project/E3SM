@@ -25,15 +25,13 @@ module lnd_comp_nuopc
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_SetScalar
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_Diagnose
-  use shr_nuopc_grid_mod    , only : shr_nuopc_grid_ArrayToState
-  use shr_nuopc_grid_mod    , only : shr_nuopc_grid_StateToArray
   use shr_const_mod         , only : SHR_CONST_SPVAL
   use shr_strdata_mod       , only : shr_strdata_type
-  use dshr_nuopc_mod        , only : fld_list_type, fldsMax, fld_list_realize
+  use dshr_nuopc_mod        , only : fld_list_type, fldsMax, dshr_realize
   use dshr_nuopc_mod        , only : ModelInitPhase, ModelSetRunClock, ModelSetMetaData
   use dlnd_shr_mod          , only : dlnd_shr_read_namelists
   use dlnd_comp_mod         , only : dlnd_comp_init, dlnd_comp_run, dlnd_comp_advertise
-  use mct_mod               , only : mct_Avect, mct_Avect_info
+  use dlnd_comp_mod         , only : dlnd_comp_export
 
   implicit none
   private ! except
@@ -54,9 +52,6 @@ module lnd_comp_nuopc
   type (fld_list_type)       :: fldsToLnd(fldsMax)
   type (fld_list_type)       :: fldsFrLnd(fldsMax)
 
-  type(shr_strdata_type)     :: SDLND
-  type(mct_aVect)            :: x2d
-  type(mct_aVect)            :: d2x
   integer                    :: compid                    ! mct comp id
   integer                    :: mpicom                    ! mpi communicator
   integer                    :: my_task                   ! my task in mpi communicator mpicom
@@ -67,13 +62,9 @@ module lnd_comp_nuopc
   integer    ,parameter      :: master_task=0             ! task number of master task
   character(CL)              :: case_name                 ! case name
   logical                    :: lnd_prognostic            ! data is sent back to dlnd
-  character(CXX)             :: flds_l2x = ''
-  character(CXX)             :: flds_x2l = ''
   character(len=80)          :: calendar                  ! calendar name
   logical                    :: use_esmf_metadata = .false.
   character(*),parameter     :: modName =  "(lnd_comp_nuopc)"
-  integer, parameter         :: debug_import = 0          ! if > 0 will diagnose import fields
-  integer, parameter         :: debug_export = 0          ! if > 0 will diagnose export fields
   character(*),parameter     :: u_FILE_u = &
        __FILE__
 
@@ -85,12 +76,11 @@ contains
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
-    integer :: dbrc
     character(len=*),parameter  :: subname=trim(modName)//':(SetServices) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO)
 
     ! the NUOPC gcomp component will register the generic methods
     call NUOPC_CompDerive(gcomp, model_routine_SS, rc=rc)
@@ -122,7 +112,7 @@ contains
     call NUOPC_CompSpecialize(gcomp, specLabel=model_label_Finalize, specRoutine=ModelFinalize, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO)
 
   end subroutine SetServices
 
@@ -153,13 +143,12 @@ contains
     character(len=CL)  :: logfile
     integer            :: glc_nec        ! number of elevation classes
     integer            :: localPet
-    integer            :: dbrc
     character(len=CL)  :: fileName    ! generic file name
     character(len=*),parameter  :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO)
 
     !----------------------------------------------------------------------------
     ! generate local mpi comm
@@ -193,7 +182,7 @@ contains
 
     filename = "dlnd_in"//trim(inst_suffix)
     call dlnd_shr_read_namelists(filename, mpicom, my_task, master_task, &
-         logunit, SDLND, lnd_present, lnd_prognostic)
+         logunit, lnd_present, lnd_prognostic)
 
     !--------------------------------
     ! advertise import and export fields
@@ -202,14 +191,13 @@ contains
     call NUOPC_CompAttributeGet(gcomp, name='glc_nec', value=cvalue, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) glc_nec
-    call ESMF_LogWrite('glc_nec = '// trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite('glc_nec = '// trim(cvalue), ESMF_LOGMSG_INFO)
 
     call dlnd_comp_advertise(importState, exportState, &
        lnd_present, lnd_prognostic, glc_nec, &
-       fldsFrLnd_num, fldsFrLnd, fldsToLnd_num, fldsToLnd, &
-       flds_l2x, flds_x2l, rc)
+       fldsFrLnd_num, fldsFrLnd, fldsToLnd_num, fldsToLnd, rc)
 
-    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO)
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to original values
@@ -246,12 +234,12 @@ contains
     real(R8)                :: scmLat  = shr_const_SPVAL ! single column lat
     real(R8)                :: scmLon  = shr_const_SPVAL ! single column lon
     logical                 :: read_restart              ! start from restart
-    integer                 :: dbrc
+    integer                 :: nxg, nyg
     character(len=*),parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO)
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to my log file
@@ -294,7 +282,7 @@ contains
     else if (esmf_caltype == ESMF_CALKIND_GREGORIAN) then
        calendar = shr_cal_gregorian
     else
-       call ESMF_LogWrite(subname//" ERROR bad ESMF calendar name "//trim(calendar), ESMF_LOGMSG_ERROR, rc=dbrc)
+       call ESMF_LogWrite(subname//" ERROR bad ESMF calendar name "//trim(calendar), ESMF_LOGMSG_ERROR)
        rc = ESMF_Failure
        return
     end if
@@ -317,10 +305,9 @@ contains
     ! Initialize model
     !----------------------------------------------------------------------------
 
-    call dlnd_comp_init(x2d, d2x, &
-         SDLND, mpicom, compid, my_task, master_task, &
+    call dlnd_comp_init(mpicom, compid, my_task, master_task, &
          inst_suffix, logunit, read_restart, &
-         scmMode, scmlat, scmlon, calendar, current_ymd, current_tod, Emesh)
+         scmMode, scmlat, scmlon, calendar, current_ymd, current_tod, Emesh, nxg, nyg)
 
     !--------------------------------
     ! realize the actively coupled fields, now that a mesh is established
@@ -328,7 +315,7 @@ contains
     ! by replacing the advertised fields with the newly created fields of the same name.
     !--------------------------------
 
-    call fld_list_realize( &
+    call dshr_realize( &
          state=ExportState, &
          fldList=fldsFrLnd, &
          numflds=fldsFrLnd_num, &
@@ -338,30 +325,22 @@ contains
          mesh=Emesh, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call fld_list_realize( &
-         state=importState, &
-         fldList=fldsToLnd, &
-         numflds=fldsToLnd_num, &
-         flds_scalar_name=flds_scalar_name, &
-         flds_scalar_num=flds_scalar_num, &
-         tag=subname//':dlndImport',&
-         mesh=Emesh, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    ! No import send for now - only export snow fields
 
     !--------------------------------
     ! Pack export state
-    ! Copy from d2x to exportState
+    ! Copy from l2x to exportState
     ! Set the coupling scalars
     !--------------------------------
 
-    call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_l2x, exportState, grid_option='mesh', rc=rc)
+    call dlnd_comp_export(exportState, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_State_SetScalar(dble(SDLND%nxg),flds_scalar_index_nx, exportState, &
+    call shr_nuopc_methods_State_SetScalar(dble(nxg),flds_scalar_index_nx, exportState, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_State_SetScalar(dble(SDLND%nyg),flds_scalar_index_ny, exportState, &
+    call shr_nuopc_methods_State_SetScalar(dble(nyg),flds_scalar_index_ny, exportState, &
          flds_scalar_name, flds_scalar_num, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -369,10 +348,8 @@ contains
     ! diagnostics
     !--------------------------------
 
-    if (debug_export > 0) then
-       call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
+    call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call shr_file_setLogLevel(shrloglev)
     call shr_file_setLogUnit (shrlogunit)
@@ -382,14 +359,17 @@ contains
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
-    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO)
 
   end subroutine InitializeRealize
 
   !===============================================================================
 
   subroutine ModelAdvance(gcomp, rc)
+
     use shr_nuopc_utils_mod, only : shr_nuopc_memcheck, shr_nuopc_log_clock_advance
+
+    ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -407,12 +387,11 @@ contains
     integer                 :: yr            ! year
     integer                 :: mon           ! month
     integer                 :: day           ! day in month
-    integer                 :: dbrc
     character(len=*),parameter :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO)
 
     call shr_nuopc_memcheck(subname, 5, my_task==master_task)
 
@@ -428,7 +407,7 @@ contains
     call NUOPC_ModelGet(gcomp, modelClock=clock, importState=importState, exportState=exportState, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (debug_export > 0 .and. my_task == master_task) then
+    if (my_task == master_task) then
        call shr_nuopc_methods_Clock_TimePrint(clock,subname//'clock',rc=rc)
     endif
 
@@ -437,8 +416,9 @@ contains
     !--------------------------------
 
     if (lnd_prognostic) then
-       call shr_nuopc_grid_StateToArray(importState, x2d%rattr, flds_x2l, grid_option='mesh', rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       ! No import state for now - only snow fields
+       !call dlnd_comp_import(importState, rc=rc)
+       !if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
     !--------------------------------
@@ -469,8 +449,7 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     call shr_cal_ymd2date(yr, mon, day, nextymd)
 
-    call dlnd_comp_run(x2d, d2x, &
-       SDLND, mpicom, my_task, master_task, &
+    call dlnd_comp_run(mpicom, my_task, master_task, &
        inst_suffix, logunit, read_restart=.false., write_restart=write_restart, &
        target_ymd=nextYMD, target_tod=nextTOD, case_name=case_name)
 
@@ -478,21 +457,19 @@ contains
     ! Pack export state
     !--------------------------------
 
-    call shr_nuopc_grid_ArrayToState(d2x%rattr, flds_l2x, exportState, grid_option='mesh', rc=rc)
+    call dlnd_comp_export(exportState, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
     ! diagnostics
     !--------------------------------
 
-    if (debug_export > 0) then
-       call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif
+    call shr_nuopc_methods_State_diagnose(exportState,subname//':ES',rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     if (my_task == master_task) then
        call shr_nuopc_log_clock_advance(clock, 'LND', logunit)
     endif
-    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO)
 
     call shr_file_setLogLevel(shrloglev)
     call shr_file_setLogUnit (shrlogunit)
@@ -506,20 +483,19 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    integer                 :: dbrc
     character(*), parameter :: F00   = "('(dlnd_comp_final) ',8a)"
     character(*), parameter :: F91   = "('(dlnd_comp_final) ',73('-'))"
     character(len=*),parameter  :: subname=trim(modName)//':(ModelFinalize) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO)
     if (my_task == master_task) then
        write(logunit,F91)
        write(logunit,F00) ' dlnd : end of main integration loop'
        write(logunit,F91)
     end if
-    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO)
 
   end subroutine ModelFinalize
 
