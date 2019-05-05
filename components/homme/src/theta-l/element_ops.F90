@@ -564,20 +564,20 @@ contains
   real(real_kind), dimension(np,np,nlev) :: pnh,exner
   real(real_kind), dimension(np,np,nlevp) :: dpnh_dp_i,phi_i
 
-  tl = 1
-
+  tl=1
   do k=1,nlev
     pi(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,tl)
     dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,tl)
   enddo
 
-  call phi_from_eos(hvcoord,elem%state%phis,elem%state%vtheta_dp(:,:,:,ns),dp,&
-       elem%state%phinh_i(:,:,:,ns))
+
+  call phi_from_eos(hvcoord,elem%state%phis,elem%state%vtheta_dp(:,:,:,tl),dp,&
+       elem%state%phinh_i(:,:,:,tl))
 
   ! verify discrete hydrostatic balance
-  call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,ns),dp,&
-       elem%state%phinh_i(:,:,:,ns),pnh,exner,dpnh_dp_i)
+  call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,tl),dp,&
+       elem%state%phinh_i(:,:,:,tl),pnh,exner,dpnh_dp_i)
   do k=1,nlev
      if (maxval(abs(1-dpnh_dp_i(:,:,k))) > 1e-10) then
         write(iulog,*)'WARNING: hydrostatic inverse FAILED!'
