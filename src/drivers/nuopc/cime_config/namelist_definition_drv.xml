@@ -806,9 +806,7 @@
       if true use  Mahrt and Sun 1995,MWR modification to surface flux calculation
     </desc>
     <values>
-      <value>.true.</value>
-      <value atm_grid="T62">.false.</value>
-      <value atm_grid="TL319">.false.</value>
+      <value cime_model='cesm'>.true.</value>
     </values>
   </entry>
 
