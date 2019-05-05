@@ -49,7 +49,7 @@ module element_ops
 
   use dimensions_mod, only: np, nlev, nlevp, nelemd
   use element_mod,    only: element_t
-  use element_state,  only: elem_state_t
+  use element_state,  only: elem_state_t, timelevels
   use hybvcoord_mod,  only: hvcoord_t
   use kinds,          only: real_kind, iulog
   use perf_mod,       only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
@@ -556,25 +556,26 @@ contains
   integer,             intent(in)   :: ns,ne
   integer, optional,   intent(in)   :: ie ! optional element index, to save initial state
 
-  integer :: k,tl, ntQ
+  integer :: k,tl
   real(real_kind), dimension(np,np,nlev) :: dp, pi
 
   real(real_kind), dimension(np,np,nlev) :: pnh,exner
   real(real_kind), dimension(np,np,nlevp) :: dpnh_dp_i,phi_i
 
+  tl=1
   do k=1,nlev
-    pi(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,ns)
+    pi(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,tl)
     dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,ns)
+                ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,tl)
   enddo
 
-  ntQ=1
-  call phi_from_eos(hvcoord,elem%state%phis,elem%state%vtheta_dp(:,:,:,ns),dp,&
-       elem%state%phinh_i(:,:,:,ns))
+
+  call phi_from_eos(hvcoord,elem%state%phis,elem%state%vtheta_dp(:,:,:,tl),dp,&
+       elem%state%phinh_i(:,:,:,tl))
 
   ! verify discrete hydrostatic balance
-  call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,ns),dp,&
-       elem%state%phinh_i(:,:,:,ns),pnh,exner,dpnh_dp_i)
+  call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,tl),dp,&
+       elem%state%phinh_i(:,:,:,tl),pnh,exner,dpnh_dp_i)
   do k=1,nlev
      if (maxval(abs(1-dpnh_dp_i(:,:,k))) > 1e-10) then
         write(iulog,*)'WARNING: hydrostatic inverse FAILED!'
@@ -584,8 +585,8 @@ contains
   enddo
   
 
-  do tl = ns+1,ne
-    call copy_state(elem,ns,tl)
+  do tl = 2,timelevels
+    call copy_state(elem,1,tl)
   enddo
 
   if(present(ie)) call save_initial_state(elem%state,ie)
