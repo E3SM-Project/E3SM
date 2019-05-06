@@ -90,10 +90,11 @@ subroutine scm_setinitial(elem)
 
 end subroutine scm_setinitial
 
-subroutine scm_setfield(elem)
+subroutine scm_setfield(elem,iop_update_surface)
 
   implicit none
 
+  logical, intent(in) :: iop_update_surface
   type(element_t), intent(inout) :: elem(:)
 
 #ifndef MODEL_THETA_L
@@ -101,9 +102,9 @@ subroutine scm_setfield(elem)
   integer i, j, k, ie
 
   do ie=1,nelemd
-    if (have_ps) elem(ie)%state%ps_v(:,:,:) = psobs 
+    if (have_ps .and. .not. iop_update_surface) elem(ie)%state%ps_v(:,:,:) = psobs 
     do i=1, PLEV
-      if (have_omega) elem(ie)%derived%omega_p(:,:,i)=wfld(i)  !     set t to tobs at first
+      if (have_omega .and. iop_update_surface) elem(ie)%derived%omega_p(:,:,i)=wfld(i)  !     set t to tobs at first
     end do
   end do
 
