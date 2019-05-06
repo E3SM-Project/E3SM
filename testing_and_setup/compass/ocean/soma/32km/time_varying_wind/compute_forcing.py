@@ -1,6 +1,8 @@
 #!/usr/bin/env python
+from __future__ import absolute_import, division, print_function, \
+    unicode_literals
+
 import numpy as np
-import scipy as sp
 import xarray as xr
 import netCDF4
 import datetime
@@ -36,7 +38,7 @@ ncds.createDimension('StrLen', 64)
 ncds.createDimension('Time', None)
 
 time = ncds.createVariable('xtime','S1', ('Time', 'StrLen'))
-time[:] = netCDF4.stringtochar(np.asarray(xtime))
+time[:] = netCDF4.stringtochar(np.asarray(xtime, dtype='S64'))
 
 time = ncds.dimensions['Time'].name
 ncells = ncds.dimensions['nCells'].name
