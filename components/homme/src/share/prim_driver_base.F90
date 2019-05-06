@@ -1388,20 +1388,30 @@ contains
   end subroutine applyCAMforcing_ps
 
 
-!----------------------------- APPLYCAMFORCING-TRACERS ----------------------------
-!
-!new, 1 elem routine
-!if adjustment, then CAM-type update by adjustment
-!otherwise homme-type update, tendencies
-  subroutine applyCAMforcing_tracers(elem,hvcoord,np1,np1_qdp,dt,adjustment)
 
+  subroutine applyCAMforcing_tracers(elem,hvcoord,np1,np1_qdp,dt,adjustment)
+  !
+  ! Apply forcing to tracers
+  !    adjustment=1:  apply forcing as hard adjustment, assume qneg check already done
+  !    adjustment=0:  apply tracer tendency
+  ! in both cases, update PS to conserve mass
+  !
+  ! For theta model, convert temperature tendency to theta/phi tendency
+  ! this conversion is done assuming constant pressure except for changes to hydrostatic
+  ! pressure from the water vapor tendencies. It is thus recomputed whenever
+  ! water vapor tendency is applied
+  ! 
+  ! theta model hydrostatic requires this constant pressure assumption due to 
+  ! phi/density being diagnostic.  theta model NH could do the conversion constant 
+  ! density which would simplify this routine
+  !
   use control_mod,        only : use_moisture
   use hybvcoord_mod,      only : hvcoord_t
 #ifdef MODEL_THETA_L
   use control_mod,        only : theta_hydrostatic_mode
   use physical_constants, only : cp, g, kappa, Rgas, p0
   use element_ops,        only : get_temperature, get_r_star
-  use eos,                only : get_pnh_and_exner
+  use eos,                only : pnh_and_exner_from_eos
 #endif
   implicit none
   type (element_t),       intent(inout) :: elem
@@ -1426,14 +1436,14 @@ contains
 #endif
 
 #ifdef MODEL_THETA_L
-   !below dp is recomputed again
+   !compute temperatue and NH perturbation pressure before Q tendency
    do k=1,nlev
       dp(:,:,k)=( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,np1)
    enddo
    !one can set pprime=0 to hydro regime but it is not done in master
    !compute pnh, here only pnh is needed
-   call get_pnh_and_exner(hvcoord,elem%state%vtheta_dp(:,:,:,np1),dp,&
+   call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,np1),dp,&
         elem%state%phinh_i(:,:,:,np1),pnh,exner,dpnh_dp_i)
    do k=1,nlev
       pprime(:,:,k) = pnh(:,:,k) - &
@@ -1530,11 +1540,13 @@ contains
      endif ! if adjustment
 
 #ifdef MODEL_THETA_L
+     !update temperature
      !continue conversion using pprime from above
      call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
      tn1(:,:,:) = tn1(:,:,:) + dt*elem%derived%FT(:,:,:)
 
-     ! update pressure based on Qdp forcing
+     ! update H pressure based on Qdp forcing
+     ! add in NH pressure pertubration 
      do k=1,nlev
         ! constant PHI.  FPHI will be zero. cant be used Hydrostatic
         !pnh(:,:,k) = rstarn1(:,:,k)*tn1(:,:,k)*dp(:,:,k) / &
@@ -1563,7 +1575,7 @@ contains
 
 #endif
 
-end subroutine applyCAMforcing_tracers
+  end subroutine applyCAMforcing_tracers
   
   
   subroutine prim_step_scm(elem, nets,nete, dt, tl, hvcoord)

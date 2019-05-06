@@ -229,7 +229,7 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
   integer,  parameter :: zcoords  = 0                                   ! 0 -> use p coords
   integer,  parameter :: pert     = 1                                   ! 1 -> add thermal perturbation
 
-  integer :: i,j,k,ie                                                   ! loop indices
+  integer :: i,j,k,ie,imod                                              ! loop indices
   real(rl):: lon,lat                                                    ! pointwise coordiantes
 
   real(rl), parameter :: ztop3  = 20000_rl                              ! top of model at 20km
@@ -261,7 +261,10 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 
   ! set initial conditions
   do ie = nets,nete
-  if (hybrid%masterthread) write(*,"(A,I5,A)",advance="NO") " ie=",ie,achar(13)
+     imod=max(1,(nete-nets)/50) ! limit output to 50 lines. 
+     !if (hybrid%masterthread) write(*,"(A,I5,A)",advance="NO") " ie=",ie,achar(13)
+     if (hybrid%masterthread .and. mod(ie,imod)==0) &
+          write(*,"(A,2I5)") " ie=",ie,nete
 
     do k=1,nlevp
 

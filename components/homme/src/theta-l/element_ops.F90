@@ -56,7 +56,7 @@ module element_ops
   use parallel_mod,   only: abortmp
   use physical_constants, only : p0, Cp, Rgas, Rwater_vapor, Cpwater_vapor, kappa, g, dd_pi
   use control_mod,    only: use_moisture, theta_hydrostatic_mode
-  use eos,            only: get_pnh_and_exner, get_phinh
+  use eos,            only: pnh_and_exner_from_eos, phi_from_eos
   implicit none
   private
 
@@ -188,7 +188,7 @@ contains
   enddo
   call get_R_star(Rstar,elem%state%Q(:,:,:,1))
 
-  call get_pnh_and_exner(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
+  call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
           dp,elem%state%phinh_i(:,:,:,nt),pnh,exner,dpnh_dp_i)
 
   do k=1,nlev
@@ -222,7 +222,7 @@ contains
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
   enddo
 
-  call get_pnh_and_exner(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
+  call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
        dp,elem%state%phinh_i(:,:,:,nt),pnh,exner,dpnh_dp_i)
 
   do k=1,nlev
@@ -250,7 +250,7 @@ contains
       (hvcoord%hybi(k+1)-hvcoord%hybi(k))*elem%state%ps_v(:,:,nt)
     enddo
 
-    call get_pnh_and_exner(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
+    call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
          dp,elem%state%phinh_i(:,:,:,nt),pnh,exner,dpnh_dp_i)
 
   end subroutine
@@ -274,15 +274,14 @@ contains
     real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
     integer :: k
 
-    phi_i = elem%state%phinh_i(:,:,:,nt)
 
     if(theta_hydrostatic_mode) then
        do k=1,nlev
           dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                (hvcoord%hybi(k+1)-hvcoord%hybi(k))*elem%state%ps_v(:,:,nt)
        enddo
-       
-       call get_pnh_and_exner(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
+#if 0       
+       call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
             dp,elem%state%phinh_i(:,:,:,nt),pnh,exner,dpnh_dp_i)
 
        ! traditional Hydrostatic integral
@@ -290,6 +289,10 @@ contains
           temp(:,:,k) = Rgas*elem%state%vtheta_dp(:,:,k,nt)*exner(:,:,k)/pnh(:,:,k)
           phi_i(:,:,k)=phi_i(:,:,k+1)+temp(:,:,k)
        enddo
+#endif
+       call phi_from_eos(hvcoord,elem%state%phis,elem%state%vtheta_dp,dp,phi_i)
+    else
+       phi_i = elem%state%phinh_i(:,:,:,nt)
     endif
 
     do k=1,nlev
@@ -463,7 +466,7 @@ contains
     end do
 
     call get_R_star(Rstar,elem%state%Q(:,:,:,1))
-    call get_pnh_and_exner(hvcoord,elem%state%vtheta_dp(:,:,:,nt),dp,phi_i,&
+    call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),dp,phi_i,&
          pnh,exner,dpnh_dp_i)
 
     ! first compute virtual temperature Tv needed for rho
@@ -561,19 +564,19 @@ contains
   real(real_kind), dimension(np,np,nlev) :: pnh,exner
   real(real_kind), dimension(np,np,nlevp) :: dpnh_dp_i,phi_i
 
-  tl = 1
-
+  tl=1
   do k=1,nlev
     pi(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,tl)
     dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,tl)
   enddo
 
-  call get_phinh(hvcoord,elem%state%phis,elem%state%vtheta_dp(:,:,:,tl),dp,&
+
+  call phi_from_eos(hvcoord,elem%state%phis,elem%state%vtheta_dp(:,:,:,tl),dp,&
        elem%state%phinh_i(:,:,:,tl))
 
   ! verify discrete hydrostatic balance
-  call get_pnh_and_exner(hvcoord,elem%state%vtheta_dp(:,:,:,tl),dp,&
+  call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,tl),dp,&
        elem%state%phinh_i(:,:,:,tl),pnh,exner,dpnh_dp_i)
   do k=1,nlev
      if (maxval(abs(1-dpnh_dp_i(:,:,k))) > 1e-10) then
@@ -604,9 +607,6 @@ contains
 
   integer :: k
   if (use_moisture) then
-#if (defined COLUMN_OPENMP)
-  !$omp parallel do default(shared), private(k)
-#endif
      do k=1,nlev
         cp_star(:,:,k) = (Cp + (Cpwater_vapor-Cp)*Q(:,:,k) )
      enddo
@@ -667,9 +667,6 @@ contains
   do k=1,nlev
      p_i(:,:,k+1) = p_i(:,:,k) + dp(:,:,k)
   enddo
-#if (defined COLUMN_OPENMP)
-  !$omp parallel do default(shared), private(k)
-#endif
   do k=1,nlev
      exner(:,:,k) = ( (p_i(:,:,k) + p_i(:,:,k+1))/(2*p0)) **kappa
      !theta_ref(:,:,k,ie) = (T0/exner(:,:,k) + T1)*Cp*dp_ref(:,:,k,ie)
