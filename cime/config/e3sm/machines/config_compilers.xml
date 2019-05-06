@@ -702,7 +702,7 @@ flags should be captured within MPAS CMake files.
 </compiler>
 
 <compiler MACH="anvil" COMPILER="gnu">
-  <MOAB_PATH>/home/sarich/software/anvil/moab-gcc-8-mvapich</MOAB_PATH>
+  <MOAB_PATH>/home/sarich/software/anvil/gnu-8-mvapich-2.3/moab</MOAB_PATH>
   <CPPDEFS>
     <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY  </append>
   </CPPDEFS>
@@ -722,7 +722,7 @@ flags should be captured within MPAS CMake files.
 </compiler>
 
 <compiler MACH="anvil" COMPILER="intel">
-  <MOAB_PATH>/home/sarich/software/anvil/moab-intel-18-mvapich</MOAB_PATH>
+  <MOAB_PATH>/home/sarich/software/anvil/intel-18-mvapich-2.3/moab</MOAB_PATH>
   <CFLAGS>
     <append compile_threaded="TRUE"> -static-intel</append>
     <append compile_threaded="TRUE" DEBUG="TRUE">-heap-arrays</append>
