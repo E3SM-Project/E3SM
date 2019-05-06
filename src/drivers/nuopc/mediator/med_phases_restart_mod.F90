@@ -27,18 +27,16 @@ contains
 
     use ESMF                  , only : ESMF_GridComp, ESMF_VM, ESMF_Clock, ESMF_Time, ESMF_Alarm
     use ESMF                  , only : ESMF_TimeInterval, ESMF_CalKind_Flag, ESMF_MAXSTR
-    use ESMF                  , only : ESMF_CALKIND_NOLEAP, ESMF_CALKIND_GREGORIAN
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_FAILURE
     use ESMF                  , only : ESMF_LOGMSG_ERROR, operator(==), operator(-)
     use ESMF                  , only : ESMF_GridCompGet, ESMF_VMGet, ESMF_ClockGet, ESMF_ClockGetNextTime
     use ESMF                  , only : ESMF_TimeGet, ESMF_ClockGetAlarm, ESMF_ClockPrint, ESMF_TimeIntervalGet
     use ESMF                  , only : ESMF_AlarmIsRinging, ESMF_AlarmRingerOff, ESMF_FieldBundleIsCreated
+    use ESMF                  , only : ESMF_Calendar
     use NUOPC                 , only : NUOPC_CompAttributeGet
     use esmFlds               , only : ncomps, compname, compocn
-    use med_constants_mod     , only : med_constants_noleap
-    use med_constants_mod     , only : med_constants_gregorian
     use med_constants_mod     , only : SecPerDay => med_constants_SecPerDay
-    use med_internalstate_mod, only : mastertask, logunit, InternalState
+    use med_internalstate_mod , only : mastertask, logunit, InternalState
     use med_io_mod            , only : med_io_write, med_io_wopen, med_io_enddef
     use med_io_mod            , only : med_io_close, med_io_date2yyyymmdd
     use med_io_mod            , only : med_io_sec2hms
@@ -54,7 +52,7 @@ contains
     type(ESMF_Time)            :: currtime, reftime, starttime, nexttime
     type(ESMF_TimeInterval)    :: timediff       ! Used to calculate curr_time
     type(ESMF_Alarm)           :: alarm
-    type(ESMF_CalKind_Flag)    :: calkindflag
+    type(ESMF_Calendar)        :: calendar
     character(len=64)          :: currtimestr, nexttimestr
     type(InternalState)        :: is_local
     integer                    :: i,j,m,n,n1,ncnt
@@ -71,7 +69,6 @@ contains
     real(R8)                   :: dayssince      ! Time interval since reference time
     integer                    :: unitn          ! unit number
     character(ESMF_MAXSTR)     :: time_units     ! units of time variable
-    character(ESMF_MAXSTR)     :: calendar       ! calendar type
     character(ESMF_MAXSTR)     :: case_name      ! case name
     character(ESMF_MAXSTR)     :: restart_file   ! Local path to restart filename
     character(ESMF_MAXSTR)     :: restart_pfile  ! Local path to restart pointer filename
@@ -84,8 +81,8 @@ contains
     logical                    :: whead,wdata    ! for writing restart/restart cdf files
     integer                    :: iam            ! vm stuff
     character(len=ESMF_MAXSTR) :: tmpstr
-    integer                        :: dbrc
-    logical             :: isPresent
+    integer                    :: dbrc
+    logical                    :: isPresent
     character(len=*), parameter :: subname='(med_phases_restart_write)'
     !---------------------------------------
 
@@ -151,18 +148,8 @@ contains
        call ESMF_ClockGetNextTime(clock, nextTime=nexttime, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-       call ESMF_ClockGet(clock, calkindflag=calkindflag, rc=rc)
+       call ESMF_ClockGet(clock, calendar=calendar, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       if (calkindflag == ESMF_CALKIND_GREGORIAN) then
-         calendar = med_constants_gregorian
-       elseif (calkindflag == ESMF_CALKIND_NOLEAP) then
-         calendar = med_constants_noleap
-       else
-         call ESMF_LogWrite(trim(subname)//' ERROR: calendar not supported', ESMF_LOGMSG_ERROR, rc=dbrc)
-         rc=ESMF_Failure
-         return
-       endif
 
        call ESMF_TimeGet(currtime,yy=yr, mm=mon, dd=day, s=sec, rc=dbrc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -241,12 +228,12 @@ contains
           call ESMF_LogWrite(trim(subname)//": time "//trim(time_units), ESMF_LOGMSG_INFO, rc=dbrc)
           if (tbnds(1) >= tbnds(2)) then
              call med_io_write(restart_file, iam=iam, &
-                  time_units=time_units, time_cal=calendar, time_val=dayssince, &
+                  time_units=time_units, calendar=calendar, time_val=dayssince, &
                   whead=whead, wdata=wdata, rc=rc)
              if (ChkErr(rc,__LINE__,u_FILE_u)) return
           else
              call med_io_write(restart_file, iam=iam, &
-                  time_units=time_units, time_cal=calendar, time_val=dayssince, &
+                  time_units=time_units, calendar=calendar, time_val=dayssince, &
                   whead=whead, wdata=wdata, tbnds=tbnds, rc=rc)
              if (ChkErr(rc,__LINE__,u_FILE_u)) return
           endif
@@ -496,7 +483,6 @@ contains
     call t_stopf('MED:'//subname)
 
   end subroutine med_phases_restart_read
-
 
   !===============================================================================
   subroutine ymd2date(year,month,day,date)

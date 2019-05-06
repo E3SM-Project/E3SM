@@ -1,6 +1,16 @@
 module med_phases_aofluxes_mod
 
   use med_constants_mod     , only : R8, CL, CX
+  use med_constants_mod     , only : shr_const_zvir
+  use med_constants_mod     , only : shr_const_zvir
+  use med_constants_mod     , only : shr_const_cpdair
+  use med_constants_mod     , only : shr_const_cpvir
+  use med_constants_mod     , only : shr_const_karman
+  use med_constants_mod     , only : shr_const_g
+  use med_constants_mod     , only : shr_const_latvap
+  use med_constants_mod     , only : shr_const_latice
+  use med_constants_mod     , only : shr_const_stebol
+  use med_constants_mod     , only : shr_const_spval
   use med_internalstate_mod , only : mastertask, logunit
   use med_constants_mod     , only : dbug_flag    => med_constants_dbug_flag
   use shr_nuopc_utils_mod   , only : memcheck     => shr_nuopc_memcheck
@@ -9,16 +19,6 @@ module med_phases_aofluxes_mod
   use shr_nuopc_methods_mod , only : FB_GetFldPtr => shr_nuopc_methods_FB_GetFldPtr
   use shr_nuopc_methods_mod , only : FB_diagnose  => shr_nuopc_methods_FB_diagnose
   use shr_nuopc_methods_mod , only : FB_init      => shr_nuopc_methods_FB_init
-  use shr_const_mod         , only : shr_const_zvir
-  use shr_const_mod         , only : shr_const_zvir
-  use shr_const_mod         , only : shr_const_cpdair
-  use shr_const_mod         , only : shr_const_cpvir
-  use shr_const_mod         , only : shr_const_karman
-  use shr_const_mod         , only : shr_const_g
-  use shr_const_mod         , only : shr_const_latvap
-  use shr_const_mod         , only : shr_const_latice
-  use shr_const_mod         , only : shr_const_stebol
-  use shr_const_mod         , only : shr_const_spval
   use water_isotopes        , only : wiso_flxoce ! calculate water isotope fluxes.
 
   implicit none

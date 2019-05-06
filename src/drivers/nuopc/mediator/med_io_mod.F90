@@ -137,7 +137,6 @@ contains
 
     ! local variables
     logical       :: lclobber
-    integer       :: tmp(1)
     integer       :: rcode
     integer       :: nmode
     integer       :: lfile_ind
@@ -305,6 +304,7 @@ contains
     integer, intent(in) :: date  ! date expressed as an integer: yyyymmdd
 
     call shr_cal_datetod2string(date_str = med_io_date2yyyymmdd, ymd = date)
+
   end function med_io_date2yyyymmdd
 
   !===============================================================================
@@ -366,7 +366,7 @@ contains
     use ESMF                  , only : ESMF_FieldBundleIsCreated, ESMF_FieldBundle, ESMF_Mesh, ESMF_DistGrid
     use ESMF                  , only : ESMF_FieldBundleGet, ESMF_FieldGet, ESMF_MeshGet, ESMF_DistGridGet
     use ESMF                  , only : ESMF_Field, ESMF_FieldGet, ESMF_AttributeGet 
-    use shr_const_mod         , only : fillvalue=>SHR_CONST_SPVAL
+    use med_constants_mod     , only : fillvalue=>SHR_CONST_SPVAL
     use esmFlds               , only : shr_nuopc_fldList_GetMetadata
     use pio                   , only : var_desc_t, io_desc_t, pio_offset_kind
     use pio                   , only : pio_def_dim, pio_inq_dimid, pio_real, pio_def_var, pio_put_att, pio_double
@@ -1021,44 +1021,45 @@ contains
   end subroutine med_io_write_char
 
   !===============================================================================
-  subroutine med_io_write_time(filename, iam, time_units, time_cal, time_val, nt,&
+  subroutine med_io_write_time(filename, iam, time_units, calendar, time_val, nt,&
        whead, wdata, tbnds, file_ind, rc)
 
     !---------------
     ! Write time variable to netcdf file
     !---------------
 
-    use shr_cal_mod       , only : shr_cal_calMaxLen
-    use shr_cal_mod       , only : shr_cal_noleap
-    use shr_cal_mod       , only : shr_cal_gregorian
-    use shr_cal_mod       , only : shr_cal_calendarName
-    use pio               , only : var_desc_t, PIO_UNLIMITED
-    use pio               , only : pio_double, pio_def_dim, pio_def_var, pio_put_att
-    use pio               , only : pio_inq_varid, pio_put_var
+    use ESMF, only : operator(==)
+    use ESMF, only : ESMF_Calendar
+    use ESMF, only : ESMF_CALKIND_360DAY, ESMF_CALKIND_GREGORIAN
+    use ESMF, only : ESMF_CALKIND_JULIAN, ESMF_CALKIND_JULIANDAY, ESMF_CALKIND_MODJULIANDAY  
+    use ESMF, only : ESMF_CALKIND_NOCALENDAR, ESMF_CALKIND_NOLEAP
+    use pio , only : var_desc_t, PIO_UNLIMITED
+    use pio , only : pio_double, pio_def_dim, pio_def_var, pio_put_att
+    use pio , only : pio_inq_varid, pio_put_var
 
     ! input/output variables
-    character(len=*),      intent(in) :: filename   ! file
-    integer,               intent(in) :: iam        ! local pet
-    character(len=*),      intent(in) :: time_units ! units of time
-    character(len=*),      intent(in) :: time_cal   ! calendar type
-    real(r8)        ,      intent(in) :: time_val   ! data to be written
-    integer    , optional, intent(in) :: nt
-    logical,     optional, intent(in) :: whead      ! write header
-    logical,     optional, intent(in) :: wdata      ! write data
-    real(r8),    optional, intent(in) :: tbnds(2)   ! time bounds
-    integer,     optional, intent(in) :: file_ind
-    integer              , intent(out):: rc 
+    character(len=*)    ,           intent(in) :: filename   ! file
+    integer             ,           intent(in) :: iam        ! local pet
+    character(len=*)    ,           intent(in) :: time_units ! units of time
+    type(ESMF_Calendar) ,           intent(in) :: calendar   ! calendar 
+    real(r8)            ,           intent(in) :: time_val   ! data to be written
+    integer             , optional, intent(in) :: nt
+    logical             , optional, intent(in) :: whead      ! write header
+    logical             , optional, intent(in) :: wdata      ! write data
+    real(r8)            , optional, intent(in) :: tbnds(2)   ! time bounds
+    integer             , optional, intent(in) :: file_ind
+    integer             ,           intent(out):: rc 
 
     ! local variables
-    integer                          :: rcode
-    integer                          :: dimid(1)
-    integer                          :: dimid2(2)
-    type(var_desc_t)                 :: varid
-    logical                          :: lwhead, lwdata
-    integer                          :: start(4),count(4)
-    character(len=shr_cal_calMaxLen) :: lcalendar
-    real(r8)                         :: time_val_1d(1)
-    integer                          :: lfile_ind
+    integer          :: rcode
+    integer          :: dimid(1)
+    integer          :: dimid2(2)
+    type(var_desc_t) :: varid
+    logical          :: lwhead, lwdata
+    integer          :: start(4),count(4)
+    real(r8)         :: time_val_1d(1)
+    integer          :: lfile_ind
+    character(CL)    :: calname        ! calendar name
     character(*),parameter :: subName = '(med_io_write_time) '
     !-------------------------------------------------------------------------------
 
@@ -1081,13 +1082,22 @@ contains
        rcode = pio_def_var(io_file(lfile_ind),'time',PIO_DOUBLE,dimid,varid)
        rcode = pio_put_att(io_file(lfile_ind),varid,'units',trim(time_units))
 
-       lcalendar = shr_cal_calendarName(time_cal,trap=.false.)
-       if (trim(lcalendar) == trim(shr_cal_noleap)) then
-          lcalendar = 'noleap'
-       elseif (trim(lcalendar) == trim(shr_cal_gregorian)) then
-          lcalendar = 'gregorian'
-       endif
-       rcode = pio_put_att(io_file(lfile_ind),varid,'calendar',trim(lcalendar))
+       if (calendar == ESMF_CALKIND_360DAY) then
+          calname = 'ESMF_CALKIND_360DAY'
+       else if (calendar == ESMF_CALKIND_GREGORIAN) then
+          calname = 'ESMF_CALKIND_GREGORIAN'
+       else if (calendar == ESMF_CALKIND_JULIAN) then
+          calname = 'ESMF_CALKIND_JULIAN'
+       else if (calendar == ESMF_CALKIND_JULIANDAY) then
+          calname = 'ESMF_CALKIND_JULIANDAY'
+       else if (calendar == ESMF_CALKIND_MODJULIANDAY) then
+          calname = 'ESMF_CALKIND_MODJULIANDAY'
+       else if (calendar == ESMF_CALKIND_NOCALENDAR) then
+          calname = 'ESMF_CALKIND_NOCALENDAR'
+       else if (calendar == ESMF_CALKIND_NOLEAP) then
+          calname = 'ESMF_CALKIND_NOLEAP'
+       end if
+       rcode = pio_put_att(io_file(lfile_ind),varid,'calendar',trim(calname))
 
        if (present(tbnds)) then
           dimid2(2) = dimid(1)
@@ -1129,7 +1139,6 @@ contains
     ! Read FB from netcdf file
     !---------------
 
-    use shr_const_mod         , only : fillvalue=>SHR_CONST_SPVAL
     use ESMF                  , only : ESMF_FieldBundle, ESMF_Field, ESMF_Mesh, ESMF_DistGrid
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
     use ESMF                  , only : ESMF_LOGMSG_ERROR, ESMF_FAILURE
@@ -1141,6 +1150,7 @@ contains
     use pio                   , only : pio_double, pio_get_att, pio_seterrorhandling, pio_freedecomp, pio_closefile
     use pio                   , only : pio_read_darray, pio_offset_kind, pio_setframe
     use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
+    use med_constants_mod     , only : fillvalue=>SHR_CONST_SPVAL
 
     ! input/output arguments
     character(len=*)                        ,intent(in)  :: filename ! file

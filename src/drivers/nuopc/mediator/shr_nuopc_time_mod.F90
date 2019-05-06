@@ -21,8 +21,8 @@ module shr_nuopc_time_mod
   implicit none
   private    ! default private
 
+  public  :: shr_nuopc_time_clockInit  ! initialize driver clock (assumes default calendar)
   public  :: shr_nuopc_time_alarmInit  ! initialize an alarm
-  public  :: shr_nuopc_time_clockInit  ! initialize driver clock
   public  :: shr_nuopc_time_set_component_stop_alarm
 
   private :: shr_nuopc_time_timeInit
@@ -82,8 +82,6 @@ contains
     type(ESMF_Time)         :: StopTime2           ! Stop time
     type(ESMF_Time)         :: Clocktime           ! Loop time
     type(ESMF_TimeInterval) :: TimeStep            ! Clock time-step
-    type(ESMF_Calendar)     :: calendar            ! esmf calendar
-    type(ESMF_CalKind_Flag) :: caltype             ! esmf calendar type
     type(ESMF_Alarm)        :: alarm_stop          ! alarm
     type(ESMF_Alarm)        :: alarm_datestop      ! alarm
     integer                 :: ref_ymd             ! Reference date (YYYYMMDD)
@@ -116,7 +114,6 @@ contains
     integer                 :: unitn               ! unit number
     integer                 :: ierr                ! Return code
     character(CL)           :: tmpstr              ! temporary
-    character(CS)           :: calendar_name       ! Calendar name
     character(CS)           :: inst_suffix
     integer                 :: tmp(6)              ! Array for Broadcast
     logical                 :: isPresent
@@ -137,31 +134,6 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     mastertask = localPet == 0
-    !---------------------------------------------------------------------------
-    ! Create the driver calendar
-    !---------------------------------------------------------------------------
-
-    call NUOPC_CompAttributeGet(esmdriver, name="calendar", value=cvalue, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    calendar_name = shr_cal_calendarName(cvalue)
-
-    if ( trim(calendar_name) == trim(shr_cal_noleap)) then
-       caltype = ESMF_CALKIND_NOLEAP
-    else if ( trim(calendar_name) == trim(shr_cal_gregorian)) then
-       caltype = ESMF_CALKIND_GREGORIAN
-    else
-       call ESMF_LogWrite(trim(subname)//': unrecognized ESMF calendar specified: '//&
-            trim(calendar_name), ESMF_LOGMSG_INFO, rc=rc)
-       rc = ESMF_FAILURE
-       return
-    end if
-
-    call ESMF_LogWrite(trim(subname)//': driver calendar is : '// trim(calendar_name), &
-         ESMF_LOGMSG_INFO, rc=rc)
-
-    calendar = ESMF_CalendarCreate( name='CMEPS_'//trim(calendar_name), &
-         calkindflag=caltype, rc=rc )
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !---------------------------------------------------------------------------
     ! Determine clock start time, reference time and current time
@@ -238,7 +210,7 @@ contains
           endif
        endif
        if (mastertask) then
-          call shr_nuopc_time_read_restart_calendar_settings(restart_file, &
+          call shr_nuopc_time_read_restart(restart_file, &
                start_ymd, start_tod, ref_ymd, ref_tod, curr_ymd, curr_tod, rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
        endif
@@ -267,9 +239,10 @@ contains
        curr_tod = start_tod
     endif
 
-    ! Determine start time
+    ! Determine start time (THE FOLLOWING ASSUMES THAT THE DEFAULT CALENDAR IS SET in the driver)
+
     call shr_nuopc_time_date2ymd(start_ymd, yr, mon, day)
-    call ESMF_TimeSet( StartTime, yy=yr, mm=mon, dd=day, s=start_tod, calendar=calendar, rc=rc)
+    call ESMF_TimeSet( StartTime, yy=yr, mm=mon, dd=day, s=start_tod, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     if(mastertask .or. dbug_flag > 2) then
        write(tmpstr,'(i10)') start_ymd
@@ -282,7 +255,7 @@ contains
 
     ! Determine reference time
     call shr_nuopc_time_date2ymd(ref_ymd, yr, mon, day)
-    call ESMF_TimeSet( RefTime, yy=yr, mm=mon, dd=day, s=ref_tod, calendar=calendar, rc=rc)
+    call ESMF_TimeSet( RefTime, yy=yr, mm=mon, dd=day, s=ref_tod, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if(mastertask .or. dbug_flag > 2) then
@@ -295,7 +268,7 @@ contains
     endif
     ! Determine current time
     call shr_nuopc_time_date2ymd(curr_ymd, yr, mon, day)
-    call ESMF_TimeSet( CurrTime, yy=yr, mm=mon, dd=day, s=curr_tod, calendar=calendar, rc=rc)
+    call ESMF_TimeSet( CurrTime, yy=yr, mm=mon, dd=day, s=curr_tod, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     if(mastertask .or. dbug_flag > 2) then
        write(tmpstr,'(i10)') curr_ymd
@@ -531,7 +504,7 @@ contains
     integer                     , intent(inout) :: rc        ! Return code
 
     ! local variables
-    type(ESMF_Calendar)     :: cal                ! calendar
+    type(ESMF_Calendar)     :: cal              ! calendar
     integer                 :: lymd             ! local ymd
     integer                 :: ltod             ! local tod
     integer                 :: cyy,cmm,cdd,csec ! time info
@@ -566,7 +539,7 @@ contains
        NextAlarm = CurrTime
     endif
 
-    ! Determine calendar
+    ! Get calendar from clock
     call ESMF_ClockGet(clock, calendar=cal)
 
     ! Determine inputs for call to create alarm
@@ -960,7 +933,7 @@ contains
 
   !===============================================================================
 
-  subroutine shr_nuopc_time_read_restart_calendar_settings(restart_file, &
+  subroutine shr_nuopc_time_read_restart(restart_file, &
        start_ymd, start_tod, ref_ymd, ref_tod, curr_ymd, curr_tod, rc)
 
     use netcdf                , only : nf90_open, nf90_nowrite, nf90_noerr
@@ -981,7 +954,7 @@ contains
     ! local variables
     integer                 :: status, ncid, varid ! netcdf stuff
     character(CL)           :: tmpstr              ! temporary
-    character(len=*), parameter :: subname = "(shr_nuopc_time_read_restart_calendar_settings)"
+    character(len=*), parameter :: subname = "(shr_nuopc_time_read_restart)"
     !----------------------------------------------------------------
 
     ! use netcdf here since it's serial
@@ -1084,6 +1057,6 @@ contains
     write(tmpstr,*) trim(subname)//" read curr_tod  = ",curr_tod
     call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO)
 
-  end subroutine shr_nuopc_time_read_restart_calendar_settings
+  end subroutine shr_nuopc_time_read_restart
 
 end module shr_nuopc_time_mod

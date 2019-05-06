@@ -75,21 +75,25 @@ module Ensemble_driver
   !================================================================================
 
   subroutine SetModelServices(ensemble_driver, rc)
+
     use ESMF                  , only : ESMF_GridComp, ESMF_VM, ESMF_Config, ESMF_Clock, ESMF_VMGet
     use ESMF                  , only : ESMF_GridCompGet, ESMF_VMGet, ESMF_ConfigGetAttribute
     use ESMF                  , only : ESMF_ConfigGetLen, ESMF_RC_NOT_VALID, ESMF_LogFoundAllocError
     use ESMF                  , only : ESMF_LogSetError, ESMF_LogWrite, ESMF_LOGMSG_INFO
     use ESMF                  , only : ESMF_GridCompSet, ESMF_SUCCESS, ESMF_METHOD_INITIALIZE, ESMF_RC_ARG_BAD
+    use ESMF                  , only : ESMF_CalendarSetDefault
+    use ESMF                  , only : ESMF_CALKIND_NOLEAP, ESMF_CALKIND_GREGORIAN
     use NUOPC                 , only : NUOPC_CompAttributeGet, NUOPC_CompAttributeSet, NUOPC_CompAttributeAdd
     use NUOPC_Driver          , only : NUOPC_DriverAddComp
-    use esm, only : ESMSetServices => SetServices, ReadAttributes
-!    use pio_interface, only : PIOSetServices => SetServices
+    use esm                   , only : ESMSetServices => SetServices, ReadAttributes
+   !use pio_interface         , only : PIOSetServices => SetServices
     use shr_nuopc_time_mod    , only : shr_nuopc_time_clockInit
     use med_internalstate_mod , only : logunit  ! initialized here
     use shr_log_mod           , only : shrloglev=>shr_log_level, shrlogunit=> shr_log_unit
     use shr_file_mod          , only : shr_file_getUnit, shr_file_getLoglevel
     use shr_file_mod          , only : shr_file_setloglevel, shr_file_setlogunit
 
+    ! input/output variables
     type(ESMF_GridComp)    :: ensemble_driver
     integer, intent(out)   :: rc
 
@@ -119,11 +123,11 @@ module Ensemble_driver
     character(len=5)       :: inst_suffix
     character(len=CL)      :: msgstr
     character(len=CL)      :: cvalue
+    character(len=CL)      :: calendar
     character(len=*) , parameter :: start_type_start = "startup"
     character(len=*) , parameter :: start_type_cont  = "continue"
     character(len=*) , parameter :: start_type_brnch = "branch"
     character(len=*) , parameter :: subname = "(ensemble_driver.F90:SetModelServices)"
-
     !-------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -145,6 +149,20 @@ module Ensemble_driver
 
     call ReadAttributes(ensemble_driver, config, "CLOCK_attributes::", rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+    call NUOPC_CompAttributeGet(ensemble_driver, 'calendar', calendar, rc=rc) 
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    if (calendar == 'NO_LEAP') then
+       call ESMF_CalendarSetDefault(ESMF_CALKIND_NOLEAP, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+    else if (calendar == 'GREGORIAN') then
+       call ESMF_CalendarSetDefault(ESMF_CALKIND_GREGORIAN, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+    else
+       write (msgstr, *) "Only NO_LEAP and GREGORIAN calendars currently supported"
+       call ESMF_LogSetError(ESMF_RC_NOT_VALID, msg=msgstr, line=__LINE__, file=__FILE__, rcToReturn=rc)
+       return  ! bail out
+    end if
 
     call ReadAttributes(ensemble_driver, config, "PELAYOUT_attributes::", rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
@@ -170,6 +188,7 @@ module Ensemble_driver
     call NUOPC_CompAttributeGet(ensemble_driver, name="ninst", value=cvalue, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
     read(cvalue, *) number_of_members
+
     !-------------------------------------------
     ! Extract the config object from the ensemble_driver
     !-------------------------------------------
@@ -221,6 +240,7 @@ module Ensemble_driver
 
           call ReadAttributes(driver, config, "MED_modelio"//trim(inst_suffix)//"::", rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
+
           ! Set the mediator log to the MED task 0
           if (mod(localPet,ntasks_per_member)==cpl_rootpe) then
              call NUOPC_CompAttributeGet(driver, name="diro", value=diro, rc=rc)
@@ -246,15 +266,19 @@ module Ensemble_driver
 
   end subroutine SetModelServices
 
+  !================================================================================
+
   subroutine InitRestart(ensemble_driver, read_restart, rc)
 
     !-----------------------------------------------------
     ! Determine if will restart and read pointer file
     ! if appropriate
     !-----------------------------------------------------
+
     use ESMF         , only : ESMF_GridComp, ESMF_GridCompGet, ESMF_SUCCESS
     use ESMF         , only : ESMF_LogSetError, ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_RC_NOT_VALID
     use NUOPC        , only : NUOPC_CompAttributeGet, NUOPC_CompAttributeSet, NUOPC_CompAttributeAdd
+
     ! input/output variables
     type(ESMF_GridComp)    , intent(inout) :: ensemble_driver
     logical                , intent(out)   :: read_restart   ! read the restart file, based on start_type
@@ -263,7 +287,6 @@ module Ensemble_driver
     ! local variables
     character(len=CL)       :: cvalue         ! temporary
     integer                 :: ierr           ! error return
-
     character(len=CL)       :: restart_file   ! Full archive path to restart file
     character(len=CL)       :: restart_pfile  ! Restart pointer file
     character(len=CL)       :: rest_case_name ! Short case identification

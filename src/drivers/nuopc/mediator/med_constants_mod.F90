@@ -9,11 +9,7 @@ module med_constants_mod
   use shr_kind_mod   , only : CX=>SHR_KIND_CX
   use shr_kind_mod   , only : CXX=>SHR_KIND_CXX
 
-  use shr_cal_mod    , only : med_constants_noleap => shr_cal_noleap
-  use shr_cal_mod    , only : med_constants_gregorian => shr_cal_gregorian
-  use shr_cal_mod    , only : shr_cal_ymd2date
-  use shr_cal_mod    , only : shr_cal_noleap
-  use shr_cal_mod    , only : shr_cal_gregorian
+  use shr_const_mod
 
   implicit none
 

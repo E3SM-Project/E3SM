@@ -31,6 +31,7 @@ contains
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_LOGMSG_ERROR, ESMF_SUCCESS, ESMF_FAILURE
     use ESMF                  , only : operator(==), operator(-)
     use ESMF                  , only : ESMF_FieldBundleIsCreated, ESMF_MAXSTR, ESMF_ClockPrint, ESMF_AlarmIsCreated
+    use ESMF                  , only : ESMF_Calendar
     use NUOPC                 , only : NUOPC_CompAttributeGet
     use esmFlds               , only : compatm, complnd, compocn, compice, comprof, compglc, ncomps, compname
     use esmFlds               , only : fldListFr, fldListTo
@@ -45,7 +46,6 @@ contains
     use med_constants_mod     , only : dbug_flag       => med_constants_dbug_flag
     use med_constants_mod     , only : SecPerDay       => med_constants_SecPerDay
     use med_constants_mod     , only : R8, CL, CS
-    use med_constants_mod     , only : med_constants_noleap, med_constants_gregorian
     use med_map_mod           , only : med_map_FB_Regrid_Norm
     use med_internalstate_mod , only : InternalState, mastertask
     use med_io_mod            , only : med_io_write, med_io_wopen, med_io_enddef
@@ -65,6 +65,7 @@ contains
     type(ESMF_Time)         :: nexttime
     type(ESMF_TimeInterval) :: timediff       ! Used to calculate curr_time
     type(ESMF_CalKind_Flag) :: calkindflag
+    type(ESMF_Calendar)     :: calendar       ! calendar type
     character(len=64)       :: currtimestr
     character(len=64)       :: nexttimestr
     type(InternalState)     :: is_local
@@ -78,7 +79,6 @@ contains
     real(r8)                :: dayssince      ! Time interval since reference time
     integer                 :: fk             ! index
     character(CL)           :: time_units     ! units of time variable
-    character(CL)           :: calendar       ! calendar type
     character(CL)           :: case_name      ! case name
     character(CL)           :: hist_file      ! Local path to history filename
     character(CS)           :: cpl_inst_tag   ! instance tag
@@ -130,6 +130,7 @@ contains
     else
        cpl_inst_tag = ""
     endif
+
     !---------------------------------------
     ! --- Get the clock info
     !---------------------------------------
@@ -137,24 +138,11 @@ contains
     call ESMF_GridCompGet(gcomp, clock=clock, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call ESMF_ClockGet(clock, currtime=currtime, reftime=reftime, starttime=starttime, rc=rc)
+    call ESMF_ClockGet(clock, currtime=currtime, reftime=reftime, starttime=starttime, calendar=calendar, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_ClockGetNextTime(clock, nextTime=nexttime, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_ClockGet(clock, calkindflag=calkindflag, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (calkindflag == ESMF_CALKIND_GREGORIAN) then
-      calendar = med_constants_gregorian
-    elseif (calkindflag == ESMF_CALKIND_NOLEAP) then
-      calendar = med_constants_noleap
-    else
-      call ESMF_LogWrite(trim(subname)//' ERROR: calendar not supported', ESMF_LOGMSG_ERROR, rc=dbrc)
-      rc=ESMF_Failure
-      return
-    endif
 
     call ESMF_TimeGet(currtime,yy=yr, mm=mon, dd=day, s=sec, rc=dbrc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -263,12 +251,12 @@ contains
           call ESMF_LogWrite(trim(subname)//": time "//trim(time_units), ESMF_LOGMSG_INFO, rc=dbrc)
           if (tbnds(1) >= tbnds(2)) then
              call med_io_write(hist_file, iam, &
-                  time_units=time_units, time_cal=calendar, time_val=dayssince, &
+                  time_units=time_units, calendar=calendar, time_val=dayssince, &
                   whead=whead, wdata=wdata, rc=rc)
              if (ChkErr(rc,__LINE__,u_FILE_u)) return
           else
              call med_io_write(hist_file, iam, &
-                  time_units=time_units, time_cal=calendar, time_val=dayssince, &
+                  time_units=time_units, calendar=calendar, time_val=dayssince, &
                   whead=whead, wdata=wdata, tbnds=tbnds, rc=rc)
              if (ChkErr(rc,__LINE__,u_FILE_u)) return
           endif
