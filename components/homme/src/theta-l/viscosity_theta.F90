@@ -96,9 +96,6 @@ endif
 
    do ie=nets,nete
 
-#if (defined COLUMN_OPENMP)
-!$omp parallel do default(shared), private(k,tmp)
-#endif
       do k=1,nlev
          stens(:,:,k,1,ie)=laplace_sphere_wk(elem(ie)%state%dp3d(:,:,k,nt),&
               deriv,elem(ie),var_coef=var_coef1)
@@ -132,9 +129,6 @@ endif
 
       
       ! apply inverse mass matrix, then apply laplace again
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,v,tmp)
-#endif
       do k=1,nlev
          tmp(:,:)=rspheremv(:,:)*stens(:,:,k,1,ie)
          stens(:,:,k,1,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.true.)
@@ -156,9 +150,7 @@ endif
       enddo
    enddo
 #ifdef DEBUGOMP
-#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
-#endif
 #endif
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 end subroutine

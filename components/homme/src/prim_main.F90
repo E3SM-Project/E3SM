@@ -15,8 +15,8 @@ program prim_main
                               omp_get_num_threads, omp_get_max_threads
   use time_mod,         only: tstep, nendstep, timelevel_t, TimeLevel_init, nstep=>nextOutputStep
   use dimensions_mod,   only: nelemd, qsize
-  use control_mod,      only: restartfreq, vfile_mid, vfile_int, runtype, integration, statefreq, tstep_type
-  use domain_mod,       only: domain1d_t, decompose
+  use control_mod,      only: restartfreq, vfile_mid, vfile_int, runtype
+  use domain_mod,       only: domain1d_t
   use element_mod,      only: element_t
   use common_io_mod,    only: output_dir, infilenames
   use common_movie_mod, only: nextoutputstep
@@ -191,6 +191,7 @@ program prim_main
   if(par%masterproc) print *,"I/O init..."
 ! initialize history files.  filename constructed with restart time
 ! so we have to do this after ReadRestart in prim_init2 above
+  call t_startf('prim_io_init')
 #ifdef VERTICAL_INTERPOLATION
   call netcdf_interp_init(elem, hybrid, hvcoord)
 #elif defined PIO_INTERP
@@ -198,6 +199,7 @@ program prim_main
 #else
   call prim_movie_init( elem, par, hvcoord, tl )
 #endif
+  call t_stopf('prim_io_init')
 
   ! output initial state for NEW runs (not restarts or branch runs)
   if (runtype == 0 ) then

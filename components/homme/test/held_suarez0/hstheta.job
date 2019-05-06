@@ -49,19 +49,16 @@
 #
 #
 #SBATCH --job-name HS
-#SBATCH -N 17
+#SBATCH -p batch,short
 #SBATCH --account=FY150001
-#SBATCH --time=2:00:00
-#PBS -l walltime=4:00:00
-#XXPBS -l nodes=22, 19
-#PBS -l nodes=22
-#PBS -q acme
+#XXSBATCH -p acme
+#XXSBATCH --account=condo
+#SBATCH -N 12
+#SBATCH --time=3:00:00
+
 
 
 set NCPU = 0
-if ( ${?PBS_NNODES} ) then
-  set NCPU = $PBS_NNODES
-endif
 echo using NCPU = $NCPU
 set nlev=26
 set ndays = 1600
@@ -102,13 +99,15 @@ if ( $ne == 30 ) then
    #set tstep = 72  # NH model. edit namelist to turn on NH
    set nu = 1e15       # 1.5e15 crashed, 1.6e15 ran
    set topo = '/home/ccsm-data/inputdata/atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc'
+   set topo = '/projects/ccsm/inputdata/atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc'
    set toponame = 16xdel2-H
+
    #set toponame = 16xdel2-NH
    #set toponame = NH
    #set toponame = H
 
-   set topo = '/lcrc/group/acme/taylorm/topodata/USGS-gtopo30_ne30np4_8xdel2.nc'
-   set toponame = 8xdel2-H
+   #set topo = '/lcrc/group/acme/taylorm/topodata/USGS-gtopo30_ne30np4_8xdel2.nc'
+   #set toponame = 8xdel2-H
 
 endif
 if ( $ne == 60 ) then
@@ -173,7 +172,6 @@ endif
    make -j4 $exe
    if ($status) exit
 #endif
-
 
 # setup the work directory
 mkdir $wdir/vcoord
