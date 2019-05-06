@@ -64,6 +64,7 @@ else()
     set(DEFAULT_MIMIC_GPU TRUE)
   endif()
 endif ()
+set(DEFAULT_FPMODEL "precise")
 
 set(SCREAM_DOUBLE_PRECISION TRUE CACHE BOOL "Set to double precision (default True)")
 set(SCREAM_MIMIC_GPU ${DEFAULT_MIMIC_GPU} CACHE BOOL "Mimic GPU to correctness-test inter-column parallelism on non-GPU platform")
@@ -97,9 +98,14 @@ check_pack_size(${SCREAM_PACK_SIZE}, ${SCREAM_POSSIBLY_NO_PACK_SIZE}, "possibly 
 
 ## Now we have pack sizes. Proceed with other config options that depend on
 ## these.
-if (CMAKE_BUILD_TYPE_ci STREQUAL "debug" AND ${SCREAM_PACK_SIZE} EQUAL 1 AND NOT ${CUDA_BUILD})
-  set(DEFAULT_FPE TRUE)
+
+if (CMAKE_BUILD_TYPE_ci STREQUAL "debug")
+  set(DEFAULT_FPMODEL "strict")
+  if (${SCREAM_PACK_SIZE} EQUAL 1 AND NOT ${CUDA_BUILD})
+    set(DEFAULT_FPE TRUE)
+  endif ()
 endif()
+set(SCREAM_FPMODEL ${DEFAULT_FPMODEL} CACHE STRING "Compiler floating point model")
 set(SCREAM_FPE ${DEFAULT_FPE} CACHE BOOL "Enable floating point error exception")
 ### <Scream configuration options
 
@@ -137,6 +143,7 @@ print_var(SCREAM_SMALL_PACK_SIZE)
 print_var(SCREAM_POSSIBLY_NO_PACK_SIZE)
 print_var(SCREAM_INCLUDE_DIRS)
 print_var(SCREAM_LINK_FLAGS)
+print_var(SCREAM_FPMODEL)
 
 # This must be done using add_definitions because it is used to determine
 # whether to include scream_config.h.
