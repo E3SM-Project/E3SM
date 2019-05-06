@@ -199,6 +199,7 @@ contains
     logical, pointer :: config_use_ecosysTracers
     logical, pointer :: config_use_activeTracers_surface_restoring
     logical, pointer :: config_use_surface_salinity_monthly_restoring
+    character (len=StrKIND), pointer :: config_land_ice_flux_mode
 
     real (kind=RKIND) :: dt
     type (MPAS_timeInterval_type) :: timeStep
@@ -785,7 +786,14 @@ contains
 
     call t_stopf ('mpaso_mct_init')
 
-    call seq_infodata_PutData( infodata, ocn_prognostic=.true., ocnrof_prognostic=.true.)
+    call mpas_pool_get_config(domain % configs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
+    if ( trim(config_land_ice_flux_mode) .eq. 'pressure_only' ) then
+       call seq_infodata_PutData( infodata, ocn_prognostic=.true., ocnrof_prognostic=.true., &
+                                            ocn_c2_glcshelf=.false.)
+    else
+       call seq_infodata_PutData( infodata, ocn_prognostic=.true., ocnrof_prognostic=.true., &
+                                            ocn_c2_glcshelf=.true.)
+    end if
 
 !-----------------------------------------------------------------------
 !
