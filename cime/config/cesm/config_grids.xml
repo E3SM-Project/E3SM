@@ -1026,6 +1026,13 @@
       <mask>tx0.25v1</mask>
     </model_grid>
 
+    <model_grid alias="C384_t025" not_compset="_POP" >
+      <grid name="atm">C384</grid>
+      <grid name="lnd">C384</grid>
+      <grid name="ocnice">tx0.25v1</grid>
+      <mask>tx0.25v1</mask>
+    </model_grid>
+
     <!-- The following grid is only used for ADWAV testing -->
     <model_grid alias="ww3a" compset="_WW3|DWAV">
       <grid name="wav">ww3a</grid>
@@ -1047,7 +1054,6 @@
     </domain>
 
     <!-- LND domains for single column or regional -->
-
 
     <domain name="01col">
       <nx>1</nx> <ny>1</ny>
@@ -1565,6 +1571,13 @@
       <file grid="ocnice"  mask="tx0.66v1">$DIN_LOC_ROOT/share/domains/domain.ocn.C96_tx0.66v1.181210.nc</file>
       <mesh driver="nuopc">$DIN_LOC_ROOT/share/meshes/C96_181018_ESMFmesh.nc</mesh>
       <desc>C96 is a fvcubed xx-deg grid:</desc>
+      <support>Experimental for fv3 dycore</support>
+    </domain>
+
+    <domain name="C384">
+      <!-- The following nx is incorrect -->
+      <nx>100000</nx> <ny>1</ny>
+      <desc>C384 is a fvcubed xx-deg grid:</desc>
       <support>Experimental for fv3 dycore</support>
     </domain>
 

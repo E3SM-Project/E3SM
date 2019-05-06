@@ -5,11 +5,16 @@ module med_merge_mod
   !-----------------------------------------------------------------------------
 
   use med_constants_mod     , only : R8
-  use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag
-  use med_constants_mod     , only : spval_init => med_constants_spval_init
-  use med_constants_mod     , only : spval => med_constants_spval
-  use med_constants_mod     , only : czero => med_constants_czero
-  use shr_nuopc_methods_mod , only : ChkErr => shr_nuopc_methods_ChkErr
+  use med_constants_mod     , only : dbug_flag         => med_constants_dbug_flag
+  use med_constants_mod     , only : spval_init        => med_constants_spval_init
+  use med_constants_mod     , only : spval             => med_constants_spval
+  use med_constants_mod     , only : czero             => med_constants_czero
+  use shr_nuopc_utils_mod   , only : ChkErr            => shr_nuopc_utils_ChkErr
+  use shr_nuopc_methods_mod , only : FB_FldChk         => shr_nuopc_methods_FB_FldChk
+  use shr_nuopc_methods_mod , only : FB_GetNameN       => shr_nuopc_methods_FB_GetNameN
+  use shr_nuopc_methods_mod , only : FB_Reset          => shr_nuopc_methods_FB_reset
+  use shr_nuopc_methods_mod , only : FB_GetFldPtr      => shr_nuopc_methods_FB_GetFldPtr
+  use shr_nuopc_methods_mod , only : FieldPtr_Compare  => shr_nuopc_methods_FieldPtr_Compare
 
   implicit none
   private
@@ -44,9 +49,6 @@ contains
     use esmFlds               , only : shr_nuopc_fldList_type
     use esmFlds               , only : shr_nuopc_fldList_GetNumFlds
     use esmFlds               , only : shr_nuopc_fldList_GetFldInfo
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FldChk
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetNameN
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset
     use med_internalstate_mod , only : logunit
     use perf_mod              , only : t_startf, t_stopf
 
@@ -80,7 +82,7 @@ contains
     call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
     rc = ESMF_SUCCESS
 
-    call shr_nuopc_methods_FB_reset(FBOut, value=czero, rc=rc)
+    call FB_reset(FBOut, value=czero, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Want to loop over all of the fields in FBout here - and find the corresponding index in fldListTo(compxxx)
@@ -93,7 +95,7 @@ contains
     do n = 1,cnt
 
        ! Get the nth field name in FBexp
-       call shr_nuopc_methods_FB_getNameN(FBOut, n, fldname, rc)
+       call FB_getNameN(FBOut, n, fldname, rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
        ! Loop over the field in fldListTo
@@ -135,12 +137,12 @@ contains
                                     line=__LINE__, file=u_FILE_u, rcToReturn=rc)
                                return
                             endif
-                            if (shr_nuopc_methods_FB_FldChk(FBMed1, trim(merge_field), rc=rc)) then
+                            if (FB_FldChk(FBMed1, trim(merge_field), rc=rc)) then
                                call med_merge_auto_field(trim(merge_type), &
                                     FBOut, fldname, FB=FBMed1, FBFld=merge_field, FBw=FBfrac, fldw=trim(merge_fracname), rc=rc)
                                if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-                            else if (shr_nuopc_methods_FB_FldChk(FBMed2, trim(merge_field), rc=rc)) then
+                            else if (FB_FldChk(FBMed2, trim(merge_field), rc=rc)) then
                                call med_merge_auto_field(trim(merge_type), &
                                     FBOut, fldname, FB=FBMed2, FBFld=merge_field, FBw=FBfrac, fldw=trim(merge_fracname), rc=rc)
                                if (ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -159,7 +161,7 @@ contains
                                     line=__LINE__, file=u_FILE_u, rcToReturn=rc)
                                return
                             endif
-                            if (shr_nuopc_methods_FB_FldChk(FBMed1, trim(merge_field), rc=rc)) then
+                            if (FB_FldChk(FBMed1, trim(merge_field), rc=rc)) then
                                call med_merge_auto_field(trim(merge_type), &
                                     FBOut, fldname, FB=FBMed1, FBFld=merge_field, FBw=FBfrac, fldw=trim(merge_fracname), rc=rc)
                                if (ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -174,7 +176,7 @@ contains
 
                       else if (ESMF_FieldBundleIsCreated(FBImp(compsrc), rc=rc)) then
 
-                         if (shr_nuopc_methods_FB_FldChk(FBImp(compsrc), trim(merge_field), rc=rc)) then
+                         if (FB_FldChk(FBImp(compsrc), trim(merge_field), rc=rc)) then
                             call med_merge_auto_field(trim(merge_type), &
                                  FBOut, fldname, FB=FBImp(compsrc), FBFld=merge_field, FBw=FBfrac, fldw=trim(merge_fracname), rc=rc)
                             if (ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -206,8 +208,6 @@ contains
     use ESMF                  , only : ESMF_LogWrite, ESMF_LogMsg_Info
     use ESMF                  , only : ESMF_FieldBundle, ESMF_FieldBundleGet
     use ESMF                  , only : ESMF_FieldGet, ESMF_Field
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FldChk
-    use shr_sys_mod           , only : shr_sys_abort 
 
     ! input/output variables
     character(len=*)      ,intent(in)    :: merge_type
@@ -246,7 +246,7 @@ contains
           rc = ESMF_FAILURE
           return
        end if
-       if (.not. shr_nuopc_methods_FB_FldChk(FBw, trim(fldw), rc=rc)) then
+       if (.not. FB_FldChk(FBw, trim(fldw), rc=rc)) then
           call ESMF_LogWrite(trim(subname)//": error "//trim(fldw)//"is not in FBw", &
                ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u)
           rc = ESMF_FAILURE
@@ -292,9 +292,13 @@ contains
 
     ! error checks
     if (ungriddedUBound_output(1) /= ungriddedUBound_input(1)) then
-       call shr_sys_abort("ungriddedUBound_input not equal to ungriddedUBound_output")
+       call ESMF_LogWrite(trim(subname)//"ungriddedUBound_input not equal to ungriddedUBound_output", ESMF_LOGMSG_INFO)
+       rc = ESMF_FAILURE
+       return
     else if (gridToFieldMap_input(1) /= gridToFieldMap_output(1)) then
-       call shr_sys_abort("gridToFieldMap_input not equal to gridToFieldMap_output")
+       call ESMF_LOGWrite(trim(subname)//"gridToFieldMap_input not equal to gridToFieldMap_output", ESMF_LOGMSG_INFO)
+       rc = ESMF_FAILURE
+       return
     end if
 
     ! Get pointer to weights that weights are only rank 1
@@ -360,12 +364,9 @@ contains
                                 FBinD, fnameD, wgtD, &
                                 FBinE, fnameE, wgtE, rc)
 
-    use ESMF                  , only : ESMF_FieldBundle, ESMF_LogWrite
-    use ESMF                  , only : ESMF_SUCCESS, ESMF_FAILURE, ESMF_LOGMSG_ERROR
-    use ESMF                  , only : ESMF_LOGMSG_WARNING, ESMF_LOGMSG_INFO
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FieldPtr_Compare
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FldChk
+    use ESMF , only : ESMF_FieldBundle, ESMF_LogWrite
+    use ESMF , only : ESMF_SUCCESS, ESMF_FAILURE, ESMF_LOGMSG_ERROR
+    use ESMF , only : ESMF_LOGMSG_WARNING, ESMF_LOGMSG_INFO
 
     ! ----------------------------------------------
     ! Supports up to a five way merge
@@ -418,13 +419,13 @@ contains
        return
     endif
 
-    if (.not. shr_nuopc_methods_FB_FldChk(FBout, trim(fnameout), rc=rc)) then
+    if (.not. FB_FldChk(FBout, trim(fnameout), rc=rc)) then
        call ESMF_LogWrite(trim(subname)//": WARNING field not in FBout, skipping merge "//trim(fnameout), &
             ESMF_LOGMSG_WARNING, line=__LINE__, file=u_FILE_u, rc=dbrc)
        return
     endif
 
-    call shr_nuopc_methods_FB_GetFldPtr(FBout, trim(fnameout), fldptr1=dataOut, rc=rc)
+    call FB_GetFldPtr(FBout, trim(fnameout), fldptr1=dataOut, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     lb1 = lbound(dataOut,1)
     ub1 = ubound(dataOut,1)
@@ -435,16 +436,16 @@ contains
     ! check that each field passed in actually exists, if not DO NOT do any merge
     FBinfound = .true.
     if (present(FBinB)) then
-       if (.not. shr_nuopc_methods_FB_FldChk(FBinB, trim(fnameB), rc=rc)) FBinfound = .false.
+       if (.not. FB_FldChk(FBinB, trim(fnameB), rc=rc)) FBinfound = .false.
     endif
     if (present(FBinC)) then
-       if (.not. shr_nuopc_methods_FB_FldChk(FBinC, trim(fnameC), rc=rc)) FBinfound = .false.
+       if (.not. FB_FldChk(FBinC, trim(fnameC), rc=rc)) FBinfound = .false.
     endif
     if (present(FBinD)) then
-       if (.not. shr_nuopc_methods_FB_FldChk(FBinD, trim(fnameD), rc=rc)) FBinfound = .false.
+       if (.not. FB_FldChk(FBinD, trim(fnameD), rc=rc)) FBinfound = .false.
     endif
     if (present(FBinE)) then
-       if (.not. shr_nuopc_methods_FB_FldChk(FBinE, trim(fnameE), rc=rc)) FBinfound = .false.
+       if (.not. FB_FldChk(FBinE, trim(fnameE), rc=rc)) FBinfound = .false.
     endif
     if (.not. FBinfound) then
        call ESMF_LogWrite(trim(subname)//": WARNING field not found in FBin, skipping merge "//trim(fnameout), &
@@ -459,14 +460,14 @@ contains
 
        if (n == 1) then
           FBinfound = .true.
-          call shr_nuopc_methods_FB_GetFldPtr(FBinA, trim(fnameA), fldptr1=dataPtr, rc=rc)
+          call FB_GetFldPtr(FBinA, trim(fnameA), fldptr1=dataPtr, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
           wgtfound = .true.
           wgt => wgtA
 
        elseif (n == 2 .and. present(FBinB)) then
           FBinfound = .true.
-          call shr_nuopc_methods_FB_GetFldPtr(FBinB, trim(fnameB), fldptr1=dataPtr, rc=rc)
+          call FB_GetFldPtr(FBinB, trim(fnameB), fldptr1=dataPtr, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
           if (present(wgtB)) then
              wgtfound = .true.
@@ -475,7 +476,7 @@ contains
 
        elseif (n == 3 .and. present(FBinC)) then
           FBinfound = .true.
-          call shr_nuopc_methods_FB_GetFldPtr(FBinC, trim(fnameC), fldptr1=dataPtr, rc=rc)
+          call FB_GetFldPtr(FBinC, trim(fnameC), fldptr1=dataPtr, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
           if (present(wgtC)) then
              wgtfound = .true.
@@ -484,7 +485,7 @@ contains
 
        elseif (n == 4 .and. present(FBinD)) then
           FBinfound = .true.
-          call shr_nuopc_methods_FB_GetFldPtr(FBinD, trim(fnameD), fldptr1=dataPtr, rc=rc)
+          call FB_GetFldPtr(FBinD, trim(fnameD), fldptr1=dataPtr, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
           if (present(wgtD)) then
              wgtfound = .true.
@@ -493,7 +494,7 @@ contains
 
        elseif (n == 5 .and. present(FBinE)) then
           FBinfound = .true.
-          call shr_nuopc_methods_FB_GetFldPtr(FBinE, trim(fnameE), fldptr1=dataPtr, rc=rc)
+          call FB_GetFldPtr(FBinE, trim(fnameE), fldptr1=dataPtr, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
           if (present(wgtE)) then
              wgtfound = .true.
@@ -503,7 +504,7 @@ contains
        endif
 
        if (FBinfound) then
-          if (.not.shr_nuopc_methods_FieldPtr_Compare(dataPtr, dataOut, subname, rc)) then
+          if (.not.FieldPtr_Compare(dataPtr, dataOut, subname, rc)) then
              call ESMF_LogWrite(trim(subname)//": ERROR FBin wrong size", &
                   ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
              rc = ESMF_FAILURE
@@ -511,7 +512,7 @@ contains
           endif
 
           if (wgtfound) then
-             if (.not.shr_nuopc_methods_FieldPtr_Compare(dataPtr, wgt, subname, rc)) then
+             if (.not.FieldPtr_Compare(dataPtr, wgt, subname, rc)) then
                 call ESMF_LogWrite(trim(subname)//": ERROR wgt wrong size", &
                      ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
                 rc = ESMF_FAILURE
@@ -544,12 +545,9 @@ contains
                                 FBinD, fnameD, wgtD, &
                                 FBinE, fnameE, wgtE, rc)
 
-    use ESMF                  , only : ESMF_FieldBundle, ESMF_LogWrite
-    use ESMF                  , only : ESMF_SUCCESS, ESMF_FAILURE, ESMF_LOGMSG_ERROR
-    use ESMF                  , only : ESMF_LOGMSG_WARNING, ESMF_LOGMSG_INFO
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FieldPtr_Compare
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FldChk
+    use ESMF , only : ESMF_FieldBundle, ESMF_LogWrite
+    use ESMF , only : ESMF_SUCCESS, ESMF_FAILURE, ESMF_LOGMSG_ERROR
+    use ESMF , only : ESMF_LOGMSG_WARNING, ESMF_LOGMSG_INFO
 
     ! ----------------------------------------------
     ! Supports up to a five way merge
@@ -590,13 +588,13 @@ contains
     endif
     rc=ESMF_SUCCESS
 
-    if (.not. shr_nuopc_methods_FB_FldChk(FBout, trim(fnameout), rc=rc)) then
+    if (.not. FB_FldChk(FBout, trim(fnameout), rc=rc)) then
        call ESMF_LogWrite(trim(subname)//": WARNING field not in FBout, skipping merge "//&
             trim(fnameout), ESMF_LOGMSG_WARNING, line=__LINE__, file=u_FILE_u, rc=dbrc)
        return
     endif
 
-    call shr_nuopc_methods_FB_GetFldPtr(FBout, trim(fnameout), fldptr2=dataOut, rc=rc)
+    call FB_GetFldPtr(FBout, trim(fnameout), fldptr2=dataOut, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     lb1 = lbound(dataOut,1)
     ub1 = ubound(dataOut,1)
@@ -620,16 +618,16 @@ contains
     ! check that each field passed in actually exists, if not DO NOT do any merge
     FBinfound = .true.
     if (present(FBinB)) then
-       if (.not. shr_nuopc_methods_FB_FldChk(FBinB, trim(fnameB), rc=rc)) FBinfound = .false.
+       if (.not. FB_FldChk(FBinB, trim(fnameB), rc=rc)) FBinfound = .false.
     endif
     if (present(FBinC)) then
-       if (.not. shr_nuopc_methods_FB_FldChk(FBinC, trim(fnameC), rc=rc)) FBinfound = .false.
+       if (.not. FB_FldChk(FBinC, trim(fnameC), rc=rc)) FBinfound = .false.
     endif
     if (present(FBinD)) then
-       if (.not. shr_nuopc_methods_FB_FldChk(FBinD, trim(fnameD), rc=rc)) FBinfound = .false.
+       if (.not. FB_FldChk(FBinD, trim(fnameD), rc=rc)) FBinfound = .false.
     endif
     if (present(FBinE)) then
-       if (.not. shr_nuopc_methods_FB_FldChk(FBinE, trim(fnameE), rc=rc)) FBinfound = .false.
+       if (.not. FB_FldChk(FBinE, trim(fnameE), rc=rc)) FBinfound = .false.
     endif
     if (.not. FBinfound) then
        call ESMF_LogWrite(trim(subname)//": WARNING field not found in FBin, skipping merge "//trim(fnameout), &
@@ -644,14 +642,14 @@ contains
 
        if (n == 1) then
           FBinfound = .true.
-          call shr_nuopc_methods_FB_GetFldPtr(FBinA, trim(fnameA), fldptr2=dataPtr, rc=rc)
+          call FB_GetFldPtr(FBinA, trim(fnameA), fldptr2=dataPtr, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
           wgtfound = .true.
           wgt => wgtA
 
        elseif (n == 2 .and. present(FBinB)) then
           FBinfound = .true.
-          call shr_nuopc_methods_FB_GetFldPtr(FBinB, trim(fnameB), fldptr2=dataPtr, rc=rc)
+          call FB_GetFldPtr(FBinB, trim(fnameB), fldptr2=dataPtr, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
           if (present(wgtB)) then
              wgtfound = .true.
@@ -660,7 +658,7 @@ contains
 
        elseif (n == 3 .and. present(FBinC)) then
           FBinfound = .true.
-          call shr_nuopc_methods_FB_GetFldPtr(FBinC, trim(fnameC), fldptr2=dataPtr, rc=rc)
+          call FB_GetFldPtr(FBinC, trim(fnameC), fldptr2=dataPtr, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
           if (present(wgtC)) then
              wgtfound = .true.
@@ -669,7 +667,7 @@ contains
 
        elseif (n == 4 .and. present(FBinD)) then
           FBinfound = .true.
-          call shr_nuopc_methods_FB_GetFldPtr(FBinD, trim(fnameD), fldptr2=dataPtr, rc=rc)
+          call FB_GetFldPtr(FBinD, trim(fnameD), fldptr2=dataPtr, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
           if (present(wgtD)) then
              wgtfound = .true.
@@ -678,7 +676,7 @@ contains
 
        elseif (n == 5 .and. present(FBinE)) then
           FBinfound = .true.
-          call shr_nuopc_methods_FB_GetFldPtr(FBinE, trim(fnameE), fldptr2=dataPtr, rc=rc)
+          call FB_GetFldPtr(FBinE, trim(fnameE), fldptr2=dataPtr, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
           if (present(wgtE)) then
              wgtfound = .true.
@@ -688,7 +686,7 @@ contains
        endif
 
        if (FBinfound) then
-          if (.not.shr_nuopc_methods_FieldPtr_Compare(dataPtr, dataOut, subname, rc)) then
+          if (.not.FieldPtr_Compare(dataPtr, dataOut, subname, rc)) then
              call ESMF_LogWrite(trim(subname)//": ERROR FBin wrong size", &
                   ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
              rc = ESMF_FAILURE
@@ -696,7 +694,7 @@ contains
           endif
 
           if (wgtfound) then
-             if (.not.shr_nuopc_methods_FieldPtr_Compare(dataPtr, wgt, subname, rc)) then
+             if (.not. FieldPtr_Compare(dataPtr, wgt, subname, rc)) then
                 call ESMF_LogWrite(trim(subname)//": ERROR wgt wrong size", &
                      ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
                 rc = ESMF_FAILURE

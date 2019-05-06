@@ -9,11 +9,12 @@ module med_phases_history_mod
   implicit none
   private
 
-  character(*)      , parameter :: u_FILE_u  = __FILE__
-  type(ESMF_Alarm)              :: AlarmHist
-  type(ESMF_Alarm)              :: AlarmHistAvg
-
   public  :: med_phases_history_write
+
+  type(ESMF_Alarm)        :: AlarmHist
+  type(ESMF_Alarm)        :: AlarmHistAvg
+  character(*), parameter :: u_FILE_u  = &
+       __FILE__
 
 !===============================================================================
 contains
@@ -31,20 +32,18 @@ contains
     use ESMF                  , only : operator(==), operator(-)
     use ESMF                  , only : ESMF_FieldBundleIsCreated, ESMF_MAXSTR, ESMF_ClockPrint, ESMF_AlarmIsCreated
     use NUOPC                 , only : NUOPC_CompAttributeGet
-    use shr_cal_mod           , only : shr_cal_ymd2date
     use esmFlds               , only : compatm, complnd, compocn, compice, comprof, compglc, ncomps, compname
     use esmFlds               , only : fldListFr, fldListTo
-    use shr_nuopc_scalars_mod , only : flds_scalar_index_nx, flds_scalar_index_ny
-    use shr_nuopc_scalars_mod , only : flds_scalar_name, flds_scalar_num
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_accum
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_GetScalar
-    use shr_nuopc_time_mod    , only : shr_nuopc_time_alarmInit
-    use med_constants_mod     , only : dbug_flag =>med_constants_dbug_flag
-    use med_constants_mod     , only : SecPerDay =>med_constants_SecPerDay
+    use shr_cal_mod           , only : shr_cal_ymd2date
+    use shr_nuopc_utils_mod   , only : chkerr          => shr_nuopc_utils_ChkErr
+    use shr_nuopc_methods_mod , only : FB_reset        => shr_nuopc_methods_FB_reset
+    use shr_nuopc_methods_mod , only : FB_diagnose     => shr_nuopc_methods_FB_diagnose
+    use shr_nuopc_methods_mod , only : FB_GetFldPtr    => shr_nuopc_methods_FB_GetFldPtr
+    use shr_nuopc_methods_mod , only : FB_accum        => shr_nuopc_methods_FB_accum
+    use shr_nuopc_methods_mod , only : State_GetScalar => shr_nuopc_methods_State_GetScalar
+    use shr_nuopc_time_mod    , only : alarmInit       => shr_nuopc_time_alarmInit
+    use med_constants_mod     , only : dbug_flag       => med_constants_dbug_flag
+    use med_constants_mod     , only : SecPerDay       => med_constants_SecPerDay
     use med_constants_mod     , only : R8, CL, CS
     use med_constants_mod     , only : med_constants_noleap, med_constants_gregorian
     use med_map_mod           , only : med_map_FB_Regrid_Norm
@@ -107,10 +106,10 @@ contains
     !---------------------------------------
 
     call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_VMGet(vm, localPet=iam, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !---------------------------------------
     ! --- Get the internal state
@@ -118,16 +117,16 @@ contains
 
     nullify(is_local%wrap)
     call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call NUOPC_CompAttributeGet(gcomp, name='case_name', value=case_name, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call NUOPC_CompAttributeGet(gcomp, name='inst_suffix', isPresent=isPresent, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     if(isPresent) then
        call NUOPC_CompAttributeGet(gcomp, name='inst_suffix', value=cpl_inst_tag, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
     else
        cpl_inst_tag = ""
     endif
@@ -136,16 +135,16 @@ contains
     !---------------------------------------
 
     call ESMF_GridCompGet(gcomp, clock=clock, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_ClockGet(clock, currtime=currtime, reftime=reftime, starttime=starttime, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_ClockGetNextTime(clock, nextTime=nexttime, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_ClockGet(clock, calkindflag=calkindflag, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (calkindflag == ESMF_CALKIND_GREGORIAN) then
       calendar = med_constants_gregorian
@@ -158,14 +157,14 @@ contains
     endif
 
     call ESMF_TimeGet(currtime,yy=yr, mm=mon, dd=day, s=sec, rc=dbrc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     write(currtimestr,'(i4.4,a,i2.2,a,i2.2,a,i5.5)') yr,'-',mon,'-',day,'-',sec
     if (dbug_flag > 1) then
        call ESMF_LogWrite(trim(subname)//": currtime = "//trim(currtimestr), ESMF_LOGMSG_INFO, rc=dbrc)
     endif
 
     call ESMF_TimeGet(nexttime,yy=yr, mm=mon, dd=day, s=sec, rc=dbrc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     write(nexttimestr,'(i4.4,a,i2.2,a,i2.2,a,i5.5)') yr,'-',mon,'-',day,'-',sec
     if (dbug_flag > 1) then
        call ESMF_LogWrite(trim(subname)//": nexttime = "//trim(nexttimestr), ESMF_LOGMSG_INFO, rc=dbrc)
@@ -177,8 +176,8 @@ contains
     call ESMF_TimeGet(reftime, yy=yr, mm=mon, dd=day, s=sec, rc=dbrc)
     call shr_cal_ymd2date(yr,mon,day,start_ymd)
     start_tod = sec
-    time_units = 'days since ' &
-         // trim(med_io_date2yyyymmdd(start_ymd)) // ' ' // med_io_sec2hms(start_tod)
+    time_units = 'days since ' // trim(med_io_date2yyyymmdd(start_ymd)) // ' ' // med_io_sec2hms(start_tod, rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !---------------------------------------
     ! --- History Alarms
@@ -187,30 +186,30 @@ contains
     if (.not. ESMF_AlarmIsCreated(AlarmHist, rc=rc)) then
        ! Set instantaneous history output alarm
        call NUOPC_CompAttributeGet(gcomp, name='history_option', value=cvalue, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        freq_option = cvalue
 
        call NUOPC_CompAttributeGet(gcomp, name='history_n', value=cvalue, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        read(cvalue,*) freq_n
 
        call ESMF_LogWrite(trim(subname)//" init history alarm with option, n = "//&
             trim(freq_option)//","//trim(cvalue), ESMF_LOGMSG_INFO, rc=dbrc)
 
-       call shr_nuopc_time_alarmInit(clock, AlarmHist, option=freq_option, opt_n=freq_n, &
+       call alarmInit(clock, AlarmHist, option=freq_option, opt_n=freq_n, &
             RefTime=RefTime, alarmname='history', rc=rc)
     endif
 
     if (ESMF_AlarmIsRinging(AlarmHist, rc=rc)) then
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        alarmIsOn = .true.
        call ESMF_AlarmRingerOff( AlarmHist, rc=rc )
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
 #if DEBUG
        if (mastertask) then
           call ESMF_ClockPrint(clock, options="currTime", preString="-------->"//trim(subname)//&
                " history alarm for: ", rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 #endif
     else
@@ -220,19 +219,19 @@ contains
     ! Set average history output alarm TODO: fix the following
     ! if (.not. ESMF_AlarmIsCreated(AlarmHistAvg, rc=rc)) then
     !    call NUOPC_CompAttributeGet(gcomp, name="histavg_option", value=histavg_option, rc=rc)
-    !    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    !    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     !    freq_option = cvalue
     !    call NUOPC_CompAttributeGet(gcomp, name="histavg_n", value=cvalue, rc=rc)
-    !    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    !    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     !    read(cvalue,*) freq_n
-    !    call shr_nuopc_time_alarmInit(clock, AlarmHistAvg, option=freq_option, opt_n=freq_n, &
+    !    call alarmInit(clock, AlarmHistAvg, option=freq_option, opt_n=freq_n, &
     !         RefTime=RefTime, alarmname='history_avg', rc=rc)
     ! end if
     ! if (ESMF_AlarmIsRinging(AlarmHistAvg, rc=rc)) then
-    !    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    !    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     !    alarmIsOn = .true.
     !    call ESMF_AlarmRingerOff( AlarmHist, rc=rc )
-    !    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    !    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     ! else
     !    alarmisOn = .false.
     ! endif
@@ -265,11 +264,13 @@ contains
           if (tbnds(1) >= tbnds(2)) then
              call med_io_write(hist_file, iam, &
                   time_units=time_units, time_cal=calendar, time_val=dayssince, &
-                  whead=whead, wdata=wdata)
+                  whead=whead, wdata=wdata, rc=rc)
+             if (ChkErr(rc,__LINE__,u_FILE_u)) return
           else
              call med_io_write(hist_file, iam, &
                   time_units=time_units, time_cal=calendar, time_val=dayssince, &
-                  whead=whead, wdata=wdata, tbnds=tbnds)
+                  whead=whead, wdata=wdata, tbnds=tbnds, rc=rc)
+             if (ChkErr(rc,__LINE__,u_FILE_u)) return
           endif
 
           do n = 1,ncomps
@@ -279,21 +280,22 @@ contains
                    ny = is_local%wrap%ny(n)
                    call med_io_write(hist_file, iam, is_local%wrap%FBimp(n,n), &
                        nx=nx, ny=ny, nt=1, whead=whead, wdata=wdata, pre=trim(compname(n))//'Imp', rc=rc)
-                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                   if (ChkErr(rc,__LINE__,u_FILE_u)) return
                 endif
                 if (ESMF_FieldBundleIsCreated(is_local%wrap%FBexp(n),rc=rc)) then
                    nx = is_local%wrap%nx(n)
                    ny = is_local%wrap%ny(n)
                    call med_io_write(hist_file, iam, is_local%wrap%FBexp(n), &
                        nx=nx, ny=ny, nt=1, whead=whead, wdata=wdata, pre=trim(compname(n))//'Exp', rc=rc)
-                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                   if (ChkErr(rc,__LINE__,u_FILE_u)) return
                 endif
              endif
           enddo
 
        enddo
 
-       call med_io_close(hist_file, iam)
+       call med_io_close(hist_file, iam, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     endif
 
