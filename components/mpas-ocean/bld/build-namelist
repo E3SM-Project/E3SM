@@ -1194,6 +1194,7 @@ add_default($nl, 'config_AM_lagrPartTrack_restart_stream');
 add_default($nl, 'config_AM_lagrPartTrack_input_stream');
 add_default($nl, 'config_AM_lagrPartTrack_write_on_startup');
 add_default($nl, 'config_AM_lagrPartTrack_filter_number');
+add_default($nl, 'config_AM_lagrPartTrack_timeIntegration');
 add_default($nl, 'config_AM_lagrPartTrack_reset_criteria');
 add_default($nl, 'config_AM_lagrPartTrack_reset_global_timestamp');
 add_default($nl, 'config_AM_lagrPartTrack_region_stream');
@@ -1370,6 +1371,40 @@ add_default($nl, 'config_AM_timeSeriesStatsClimatology_repeat_intervals');
 add_default($nl, 'config_AM_timeSeriesStatsClimatology_reset_intervals');
 add_default($nl, 'config_AM_timeSeriesStatsClimatology_backward_output_offset');
 
+################################################
+# Namelist group: AM_timeSeriesStatsMonthlyMax #
+################################################
+
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_enable');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_compute_on_startup');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_write_on_startup');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_compute_interval');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_output_stream');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_restart_stream');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_operation');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_reference_times');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_duration_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_repeat_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_reset_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_backward_output_offset');
+
+################################################
+# Namelist group: AM_timeSeriesStatsMonthlyMin #
+################################################
+
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_enable');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_compute_on_startup');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_write_on_startup');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_compute_interval');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_output_stream');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_restart_stream');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_operation');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_reference_times');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_duration_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_repeat_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_reset_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_backward_output_offset');
+
 ############################################
 # Namelist group: AM_timeSeriesStatsCustom #
 ############################################
@@ -1542,6 +1577,8 @@ my @groups = qw(run_modes
                 am_timeseriesstatsdaily
                 am_timeseriesstatsmonthly
                 am_timeseriesstatsclimatology
+                am_timeseriesstatsmonthlymax
+                am_timeseriesstatsmonthlymin
                 am_timeseriesstatscustom
                 am_pointwisestats
                 am_debugdiagnostics
