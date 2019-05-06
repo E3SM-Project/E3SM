@@ -47,4 +47,6 @@
 <horiz_grid dyn="se"    hgrid="ne0np4_enax4v1"          ncol="78788"    csne="0"    csnp="4"  />
 <horiz_grid dyn="se"    hgrid="ne0np4_twpx4v1" ncol="81434" csne="0" csnp="4"  />
 
+<horiz_grid dyn="se-cslam"    hgrid="ne5np4.pg3"         ncol="1350"     csne="5"    csnp="4"  npg="3" />
+
 </config_horiz_grid>

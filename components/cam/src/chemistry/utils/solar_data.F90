@@ -9,6 +9,7 @@ module solar_data
   use cam_pio_utils, only : cam_pio_openfile
   use cam_logfile,  only: iulog
   use infnan,       only: nan, assignment(=)
+  use phys_control, only: q3d_is_on
 
   implicit none
 
@@ -89,6 +90,8 @@ contains
     namelist /solar_inparm/ &
          solar_data_file, solar_data_type, solar_data_ymd, solar_data_tod, solar_const, &
          solar_htng_spctrl_scl
+
+    if (q3d_is_on) return
 
     unitn = getunit()
     open( unitn, file=trim(nlfile), status='old' )

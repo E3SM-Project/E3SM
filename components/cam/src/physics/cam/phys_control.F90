@@ -109,6 +109,8 @@ logical, public, protected :: use_mass_borrower    = .false.     ! switch on tra
 logical, public, protected :: use_qqflx_fixer      = .false.     ! switch on water vapor fixer to compensate changes in qflx
 logical, public, protected :: print_fixer_message  = .false.     ! switch on error message printout in log file
 
+logical, public, protected :: q3d_is_on  = .false.     ! true => q3d physics configuration
+
 integer, public, protected :: ieflx_opt = 0
 logical, public, protected :: l_ieflx_fix = .false.
 
@@ -127,6 +129,7 @@ logical, public, protected :: use_hetfrz_classnuc = .false.
 logical, public, protected :: use_gw_oro = .true.
 ! Frontogenesis
 logical, public, protected :: use_gw_front = .false.
+logical, public, protected :: use_gw_front_igw = .false.
 ! Convective
 logical, public, protected :: use_gw_convect = .false.
 
@@ -172,7 +175,8 @@ subroutine phys_ctl_readnl(nlfile)
    integer :: unitn, ierr
    character(len=*), parameter :: subname = 'phys_ctl_readnl'
 
-   namelist /phys_ctl_nl/ cam_physpkg, cam_chempkg, waccmx_opt, deep_scheme, shallow_scheme, &
+   namelist /phys_ctl_nl/ cam_physpkg, q3d_is_on, cam_chempkg, waccmx_opt, &
+      deep_scheme, shallow_scheme, &
       eddy_scheme, microp_scheme,  macrop_scheme, radiation_scheme, srf_flux_avg, &
       use_subcol_microp, atm_dep_flux, history_amwg, history_verbose, history_vdiag, &
       history_aerosol, history_aero_optics, &
@@ -183,7 +187,7 @@ subroutine phys_ctl_readnl(nlfile)
       ieflx_opt, &
       use_qqflx_fixer, & 
       print_fixer_message, & 
-      use_hetfrz_classnuc, use_gw_oro, use_gw_front, use_gw_convect, &
+      use_hetfrz_classnuc, use_gw_oro, use_gw_front, use_gw_front_igw, use_gw_convect, &
       cld_macmic_num_steps, micro_do_icesupersat, &
       fix_g1_err_ndrop, ssalt_tuning, resus_fix, convproc_do_aer, &
       convproc_do_gas, convproc_method_activate, liqcf_fix, regen_fix, demott_ice_nuc, pergro_mods, pergro_test_active, &
@@ -236,6 +240,7 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(conv_water_in_rad,               1 , mpiint,  0, mpicom)
    call mpibcast(do_tms,                          1 , mpilog,  0, mpicom)
    call mpibcast(use_mass_borrower,               1 , mpilog,  0, mpicom)
+   call mpibcast(q3d_is_on,               1 , mpilog,  0, mpicom)
    call mpibcast(l_ieflx_fix,             1 , mpilog,  0, mpicom)
    call mpibcast(ieflx_opt,               1 , mpiint,  0, mpicom)
    call mpibcast(use_qqflx_fixer,                 1 , mpilog,  0, mpicom)
@@ -245,6 +250,7 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(use_hetfrz_classnuc,             1 , mpilog,  0, mpicom)
    call mpibcast(use_gw_oro,                      1 , mpilog,  0, mpicom)
    call mpibcast(use_gw_front,                    1 , mpilog,  0, mpicom)
+   call mpibcast(use_gw_front_igw,                1 , mpilog,  0, mpicom)
    call mpibcast(use_gw_convect,                  1 , mpilog,  0, mpicom)
    call mpibcast(fix_g1_err_ndrop,                1 , mpilog,  0, mpicom)
    call mpibcast(ssalt_tuning,                    1 , mpilog,  0, mpicom)
@@ -298,14 +304,14 @@ subroutine phys_ctl_readnl(nlfile)
       call endrun('phys_setopts: illegal value of shallow_scheme')
    endif
    if (.not. (eddy_scheme .eq. 'HB' .or. eddy_scheme .eq. 'HBR' .or. eddy_scheme .eq. 'diag_TKE' .or. &
-              eddy_scheme .eq. 'CLUBB_SGS') ) then
+              eddy_scheme .eq. 'CLUBB_SGS' .or. eddy_scheme .eq. 'off') ) then
       write(iulog,*)'phys_setopts: illegal value of eddy_scheme:', eddy_scheme
       call endrun('phys_setopts: illegal value of eddy_scheme')
    endif
-   if ((microp_scheme /= 'MG' .and. microp_scheme /= 'RK')) then
-      write(iulog,*)'phys_setopts: illegal value of microp_scheme:', microp_scheme
-      call endrun('phys_setopts: illegal value of microp_scheme')
-   endif
+   !if ((microp_scheme /= 'MG' .and. microp_scheme /= 'RK')) then
+   !   write(iulog,*)'phys_setopts: illegal value of microp_scheme:', microp_scheme
+   !   call endrun('phys_setopts: illegal value of microp_scheme')
+   !endif
 
    ! Check compatibility of eddy & shallow schemes
    if (( shallow_scheme .eq. 'UW' ) .and. ( eddy_scheme .ne. 'diag_TKE' )) then

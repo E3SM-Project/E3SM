@@ -16,6 +16,7 @@ use spmd_utils,     only: masterproc
 use ppgrid,         only: pcols, pver
 use physconst,      only: rga
 use physics_types,  only: physics_state
+use phys_control,   only: q3d_is_on
 use constituents,   only: cnst_name, cnst_get_ind
 use radconstants,   only: gasnamelength, nradgas, rad_gas_index, ot_length
 use phys_prop,      only: physprop_accum_unique_files, physprop_init, &
@@ -278,6 +279,8 @@ subroutine rad_cnst_readnl(nlfile)
                           oldcldoptics
 
    !-----------------------------------------------------------------------------
+
+   if (q3d_is_on) return
 
    if (masterproc) then
       unitn = getunit()

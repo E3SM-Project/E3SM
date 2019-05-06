@@ -169,6 +169,17 @@
 <ncdata dyn="se" hgrid="ne0np4_arm_x8v3_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_arm_x8v3_lowcon_np4_L30_c000000.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_arm_x8v3_lowcon"  nlev="26" ocn="aquaplanet"    >atm/cam/inic/homme/cami_0003-01-01_arm_x8v3_lowcon_np4_L26_ape_c000000.nc</ncdata>
 
+<!-- Q3D defaults -->
+<ncdata dyn="se" hgrid="ne5np4"  nlev="26" phys="q3d" ic_ymd="101" >atm/cam/inic/se/ape_cam4_ne5np4_L26_c170517.nc</ncdata>
+<ncdata dyn="se" hgrid="ne16np4"  nlev="26"  phys="q3d" ic_ymd="101" >atm/cam/inic/se/ape_cam4_ne16np4_L26_c170417.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4"  nlev="26"  phys="q3d" ic_ymd="101" >atm/cam/inic/se/ape_cam4_ne30np4_L26_c170417.nc</ncdata>
+<ncdata dyn="se" hgrid="ne5np4"   nlev="30"  phys="q3d" ic_ymd="101" >atm/cam/inic/se/ape_cam5_ne5np4_L30_c170517.nc</ncdata>
+<ncdata dyn="se" hgrid="ne16np4"  nlev="30"  phys="q3d" ic_ymd="101" >atm/cam/inic/se/ape_cam5_ne16np4_L30_c170417.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4"  nlev="30"  phys="q3d" ic_ymd="101" >atm/cam/inic/se/ape_cam5_ne30np4_L30_c170417.nc</ncdata>
+<ncdata dyn="se" hgrid="ne5np4"   nlev="32"  phys="q3d" ic_ymd="101" >atm/cam/inic/se/ape_cam6_ne5np4_L32_c170517.nc</ncdata>
+<ncdata dyn="se" hgrid="ne16np4"  nlev="32"  phys="q3d" ic_ymd="101" >atm/cam/inic/se/ape_cam6_ne16np4_L32_c170509.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4"  nlev="32"  phys="q3d" ic_ymd="101" >atm/cam/inic/se/ape_cam6_ne30np4_L32_c170509.nc</ncdata>
+
 <!--Initial file from interpic utility:  ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_conusx4v1np4_L30_c100618.nc</ncdata-->
 <!-- New file from 1 month spin-up, the renamed $CASE.cam.i* file. -->
 <ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="72"                     >atm/cam/inic/homme/cami_0002-01-01-00000_conusx4v1np4_L72_c160719.nc</ncdata>
@@ -231,6 +242,11 @@
 <bnd_topo hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  >atm/cam/topo/USGS_sooberingoax4x8v1-tensor12x_c150612.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_enax4v1">atm/cam/topo/USGS_enax4v1_tensorx12_consistentSGH_170522.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_twpx4v1" >atm/cam/topo/USGS_twpx4v1_tensor12x_consistentSGH_170629.nc</bnd_topo>
+
+<!-- Q3D -->
+<q3d_ncrm>                25 </q3d_ncrm>
+<q3d_crm_channel_width>    5 </q3d_crm_channel_width>
+<q3d_check_energy_change> .false. </q3d_check_energy_change>
 
 <!-- Bulk aerosol physical properties (includes optics) -->
 
@@ -477,6 +493,9 @@
 <radiation_scheme rad="camrt">camrt</radiation_scheme>
 <radiation_scheme rad="rrtmg">rrtmg</radiation_scheme>
 <radiation_scheme rad="rrtmgp">rrtmgp</radiation_scheme>
+
+<!-- added by mdb -->
+<radiation_scheme rad="none">none</radiation_scheme>
 
 <!-- CARMA file paths -->
 <carma_emis_file        carma="meteor_smoke">atm/waccm/emis/meteor_smoke_kalashnikova.nc</carma_emis_file> 
@@ -932,6 +951,7 @@
 <microp_scheme microphys="mg1">  MG</microp_scheme>
 <microp_scheme microphys="mg1.5">MG</microp_scheme>
 <microp_scheme microphys="mg2">  MG</microp_scheme>
+<microp_scheme                >NONE</microp_scheme>
 
 <micro_mg_version     microphys="mg1">    1          </micro_mg_version>
 <micro_mg_sub_version microphys="mg1">    0          </micro_mg_sub_version>
@@ -1108,8 +1128,10 @@
 <deep_scheme>ZM</deep_scheme>
 <deep_scheme clubb_do_deep="1" >CLUBB_SGS</deep_scheme>
 <deep_scheme unicon="1"        >UNICON   </deep_scheme>
+<deep_scheme pbl="none"        >off      </deep_scheme>
 
 <!-- PBL scheme -->
+<eddy_scheme pbl="none"           >off      </eddy_scheme>
 <eddy_scheme pbl="uw"             >diag_TKE </eddy_scheme>
 <eddy_scheme pbl="hb"             >HB       </eddy_scheme>
 <eddy_scheme pbl="hbr"            >HBR      </eddy_scheme>
@@ -1120,12 +1142,14 @@
 <shallow_scheme pbl="hb"          >Hack     </shallow_scheme>
 <shallow_scheme pbl="hbr"         >Hack     </shallow_scheme>
 <shallow_scheme pbl="clubb_sgs"   >CLUBB_SGS</shallow_scheme>
+<shallow_scheme pbl="none"        >off      </shallow_scheme>
 
 <!-- Surface flux averaging -->
 <srf_flux_avg eddy_scheme="HB"       >0</srf_flux_avg>
 <srf_flux_avg eddy_scheme="HBR"      >0</srf_flux_avg>
 <srf_flux_avg eddy_scheme="diag_TKE" >0</srf_flux_avg>
 <srf_flux_avg eddy_scheme="CLUBB_SGS">0</srf_flux_avg>
+<srf_flux_avg eddy_scheme="off"     >0</srf_flux_avg>
 
 <!-- Cloud fraction -->
 <cldfrc_freeze_dry             >.true.</cldfrc_freeze_dry>
@@ -1360,6 +1384,7 @@
 
 <!-- physics loadbalance -->
 <phys_loadbalance dyn="se"> 2 </phys_loadbalance>
+<phys_loadbalance dyn="se-cslam"> 0 </phys_loadbalance>
 <phys_loadbalance dyn="eul"> 3 </phys_loadbalance>
 
 <!-- Control output to history file(s) -->
@@ -1542,6 +1567,102 @@
 <interp_type> 1 </interp_type>
 <interp_gridtype> 1 </interp_gridtype>
 <vthreads> 1 </vthreads>
+
+<!-- ================================================================== -->
+<!-- Defaults for SE-CSLAM                                                   -->
+<!-- ================================================================== -->
+
+<se_fine_ne                            >   0 </se_fine_ne>
+<se_fine_ne hgrid="ne0np4CONUS.ne30x8" > 120 </se_fine_ne>
+
+<se_ftype> 2 </se_ftype>
+
+<se_hypervis_on_plevs> .true.  </se_hypervis_on_plevs>
+
+<se_hypervis_power> 3.322 </se_hypervis_power>
+
+<se_hypervis_scaling se_refined_mesh="1" hypervis_type="tensor" > 3.2 </se_hypervis_scaling>
+
+<se_hypervis_subcycle>                   3 </se_hypervis_subcycle>
+<se_hypervis_subcycle hgrid="ne5np4" >   1 </se_hypervis_subcycle>
+<se_hypervis_subcycle dyn="se" waccm_phys="1">  1 </se_hypervis_subcycle>
+
+<se_hypervis_subcycle  hgrid="ne0np4CONUS.ne30x8"> 4 </se_hypervis_subcycle>
+
+<se_hypervis_subcycle_q> 1 </se_hypervis_subcycle_q>
+
+<se_limiter_option> 8 </se_limiter_option>
+
+<se_max_hypervis_courant > 1.0e99 </se_max_hypervis_courant>
+<se_max_hypervis_courant se_refined_mesh="1" hypervis_type="scalar" > 1.9 </se_max_hypervis_courant>
+
+<se_mesh_file > none </se_mesh_file>
+
+<se_nsplit>                   2 </se_nsplit>
+<se_nsplit hgrid="ne16np4" >  1 </se_nsplit>
+
+<se_nsplit hgrid="ne5np4"   waccm_phys="1">  5  </se_nsplit>
+<se_nsplit hgrid="ne16np4"  waccm_phys="1">  5  </se_nsplit>
+<se_nsplit hgrid="ne30np4"  waccm_phys="1">  10 </se_nsplit>
+<se_nsplit hgrid="ne60np4"  waccm_phys="1">  20 </se_nsplit>
+<se_nsplit hgrid="ne120np4" waccm_phys="1">  20 </se_nsplit>
+<se_nsplit hgrid="ne240np4" waccm_phys="1">  25 </se_nsplit>
+
+<se_nsplit hgrid="ne0np4CONUS.ne30x8"> 5 </se_nsplit>
+
+<se_nu>-1</se_nu>
+<se_nu se_refined_mesh="1" hypervis_type="tensor" > 8.0e-8 </se_nu>
+<se_nu se_refined_mesh="1" hypervis_type="scalar" > 1.0e13 </se_nu>
+
+<se_nu_div> -1 </se_nu_div>
+<se_nu_div se_refined_mesh="1" hypervis_type="tensor" > 15.8e-8 </se_nu_div>
+<se_nu_div se_refined_mesh="1" hypervis_type="scalar" > 1.5625e13 </se_nu_div>
+
+<se_nu_p>-1 </se_nu_p>
+<se_nu_p se_refined_mesh="1" hypervis_type="tensor" > 8.0e-8 </se_nu_p>
+<se_nu_p se_refined_mesh="1" hypervis_type="scalar" > 1.5625e13 </se_nu_p>
+
+<se_nu_top> 2.5e5 </se_nu_top>
+<se_nu_top hgrid="ne240np4"> 1.0e5 </se_nu_top>
+<se_nu_top se_refined_mesh="1"> 2.0e5 </se_nu_top>
+
+<se_qsize_condensate_loading                    > 3 </se_qsize_condensate_loading>
+<se_qsize_condensate_loading phys="cam4"        > 3 </se_qsize_condensate_loading>
+<se_qsize_condensate_loading phys="cam5"        > 3 </se_qsize_condensate_loading>
+<se_qsize_condensate_loading phys="cam6"        > 5 </se_qsize_condensate_loading>
+<se_qsize_condensate_loading phys="held_suarez" > 1 </se_qsize_condensate_loading>
+<se_qsize_condensate_loading phys="adiabatic"   > 1 </se_qsize_condensate_loading>
+<se_qsize_condensate_loading phys="kessler"     > 1 </se_qsize_condensate_loading>
+
+<se_qsplit > 1 </se_qsplit>
+
+<se_refined_mesh > .false. </se_refined_mesh>
+<se_refined_mesh hgrid="ne0np4CONUS.ne30x8" > .true. </se_refined_mesh>
+<se_refined_mesh hgrid="ne0np4TESTONLY.ne5x4" > .true. </se_refined_mesh>
+
+<se_rsplit >                  3 </se_rsplit>
+
+<se_statediag_numtrac>3</se_statediag_numtrac>
+
+<se_statefreq> 0 </se_statefreq>
+
+<se_tstep_type > 4 </se_tstep_type>
+
+<se_vert_remap_q_alg> 1 </se_vert_remap_q_alg>
+
+<!-- Nudging -->
+<se_met_nudge_u> 2.0e-5 </se_met_nudge_u>
+<se_met_nudge_t> 2.0e-5 </se_met_nudge_t>
+<se_met_nudge_p> 0.0 </se_met_nudge_p>
+<se_met_tevolve> 0 </se_met_tevolve>
+
+<!-- Option to write SCRIP grid file -->
+<se_write_grid_file> no </se_write_grid_file>
+
+<!-- SE performance (threading) entries -->
+<se_horz_num_threads> 0 </se_horz_num_threads>
+<se_tracer_num_threads> 0 </se_tracer_num_threads>
+<se_vert_num_threads> 0 </se_vert_num_threads>
 
 <!-- ================================================================== -->
 <!-- Defaults for driver namelist seq_infodata_inparm                   -->

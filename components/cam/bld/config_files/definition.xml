@@ -23,7 +23,7 @@ Switch specifies whether CAM is being built by the CCSM sequential scripts.  0 =
 <entry id="comp_intf" valid_values="mct,esmf" value="mct">
 Component interfaces: mct or esmf.  Default: mct.
 </entry>
-<entry id="dyn" valid_values="eul,sld,fv,homme,se" value="">
+<entry id="dyn" valid_values="eul,sld,fv,homme,se,se-cslam" value="">
 Dynamics package: eul, sld, fv, or se.
 </entry>
 <entry id="waccm_phys" valid_values="0,1" value="0">
@@ -35,10 +35,10 @@ Switch to turn on FV offline driver: 0 => no, 1 => yes.
 <entry id="waccmx" valid_values="0,1" value="0">
 Option to turn on waccmx thermosphere/ionosphere extension: 0 => no, 1 => yes
 </entry>
-<entry id="phys" valid_values="cam3,cam3_5_1,cam4,cam5,ideal,adiabatic" value="">
-Physics package: cam3, cam4, cam5, ideal (Held-Suarez forcings), adiabatic.
+<entry id="phys" valid_values="cam3,cam3_5_1,cam4,cam5,ideal,adiabatic,q3d" value="">
+Physics package: cam3, cam4, cam5, ideal (Held-Suarez forcings), adiabatic, q3d.
 </entry>
-<entry id="microphys" valid_values="rk,mg1,mg1.5,mg2" value="">
+<entry id="microphys" valid_values="rk,mg1,mg1.5,mg2,none" value="">
 Microphysics package: rk (Rasch and Kristjansson), mg1 (Morrison and Gettelman two moment scheme CAM5.1), mg1.5 (Morrison and Gettelman second version development), mg2 ((Morrison and Gettelman second version).
 </entry>
 <entry id="macrophys" valid_values="rk,park,clubb_sgs,none" value="">
@@ -56,11 +56,11 @@ Switch to turn on/off CLUBB_SGS using clubb to calculate deep: 0 => no, 1 => yes
 <entry id="clubb_do_adv" valid_values="0,1" value="0">
 Switch to turn on/off advecting CLUBB moments: 0 => no, 1 => yes
 </entry>
-<entry id="pbl" valid_values="uw,hb,hbr,clubb_sgs" value="">
+<entry id="pbl" valid_values="uw,hb,hbr,clubb_sgs,none" value="">
 PBL package: uw (University of Washington), hb (Holtslag and Boville), hbr
  (Holtslag, Boville, and Rasch), clubb_sgs.
 </entry>
-<entry id="rad" valid_values="rrtmg,rrtmgp,camrt" value="">
+<entry id="rad" valid_values="rrtmg,rrtmgp,camrt,none" value="">
 Radiative transfer calculation: 
 camrt (CAM3 and CAM4 RT package), rrtmg (RRTMG package from AER), rrtmgp (RRTMGP package from AER).
 </entry>
@@ -155,6 +155,9 @@ Number of elements along one edge of a cubed sphere grid.
 </entry>
 <entry id="csnp" value="1">
 Number of points on each edge of the elements in a cubed sphere grid.
+</entry>
+<entry id="npg" value="0">
+Number of physics grid cells on each edge of the elements in a cubed sphere grid.
 </entry>
 <entry id="nlev" value="30">
 Number of vertical levels.

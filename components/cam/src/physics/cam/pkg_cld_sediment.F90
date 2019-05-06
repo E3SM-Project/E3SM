@@ -17,6 +17,7 @@ module pkg_cld_sediment
   use physconst,     only: gravit, latvap, latice, rair, rhoh2o
   use cldwat,        only: icritc
   use pkg_cldoptics, only: reitab, reltab
+  use phys_control,  only: q3d_is_on
   use cam_abortutils,    only: endrun
   use cam_logfile,   only: iulog
 
@@ -89,6 +90,10 @@ subroutine cld_sediment_readnl(nlfile)
    ! Broadcast namelist variables
    call mpibcast(cldsed_ice_stokes_fac, 1, mpir8, 0, mpicom)
 #endif
+
+   if (masterproc .and. .not. q3d_is_on) then
+      write(iulog,*) subname//': cldsed_ice_stokes_fac = ', cldsed_ice_stokes_fac
+   end if
 
 end subroutine cld_sediment_readnl
 

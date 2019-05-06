@@ -146,7 +146,7 @@ contains
 
 !===============================================================================
 
-  subroutine aoa_tracers_init_cnst(name, q, gcid)
+  subroutine aoa_tracers_init_cnst(name, latvals, lonvals, mask, q)
 
     !----------------------------------------------------------------------- 
     !
@@ -156,8 +156,10 @@ contains
     !-----------------------------------------------------------------------
 
     character(len=*), intent(in)  :: name
+    real(r8),         intent(in)  :: latvals(:) ! lat in degrees (ncol)
+    real(r8),         intent(in)  :: lonvals(:) ! lon in degrees (ncol)
+    logical,          intent(in)  :: mask(:)    ! Only initialize where .true.
     real(r8),         intent(out) :: q(:,:)   ! kg tracer/kg dry air (gcol, plev)
-    integer,          intent(in)  :: gcid(:)  ! global column id
 
     integer :: m
     !-----------------------------------------------------------------------
@@ -167,7 +169,7 @@ contains
     do m = 1, ncnst
        if (name ==  c_names(m))  then
           ! pass global constituent index
-          call init_cnst_3d(ifirst+m-1, q, gcid)
+          call init_cnst_3d(ifirst+m-1, latvals, lonvals, mask, q)
        endif
     end do
 
@@ -346,17 +348,17 @@ contains
 
 !===========================================================================
 
-  subroutine init_cnst_3d(m, q, gcid)
+  subroutine init_cnst_3d(m, latvals, lonvals, mask, q)
 
     use dyn_grid, only : get_horiz_grid_d, get_horiz_grid_dim_d
     use dycore,   only : dycore_is
 
     integer,  intent(in)  :: m       ! global constituent index
+    real(r8), intent(in)  :: latvals(:) ! lat in degrees (ncol)
+    real(r8), intent(in)  :: lonvals(:) ! lon in degrees (ncol)
+    logical,  intent(in)  :: mask(:)    ! Only initialize where .true.
     real(r8), intent(out) :: q(:,:)  ! kg tracer/kg dry air (gcol,plev)
-    integer,  intent(in)  :: gcid(:) ! global column id
 
-    real(r8), allocatable :: lat(:)
-    integer :: plon, plat, ngcols
     integer :: j, k, gsize
     !-----------------------------------------------------------------------
 
@@ -372,15 +374,10 @@ contains
 
     else if (m == ixht) then
 
-       call get_horiz_grid_dim_d( plon, plat )
-       ngcols = plon*plat
-       gsize = size(gcid)
-       allocate(lat(ngcols))
-       call get_horiz_grid_d(ngcols,clat_d_out=lat)
+       gsize = size(q, 1)
        do j = 1, gsize
-          q(j,:) = 2._r8 + sin(lat(gcid(j)))
+          q(j,:) = 2._r8 + sin(latvals(j))
        end do
-       deallocate(lat)
 
     else if (m == ixvt) then
 

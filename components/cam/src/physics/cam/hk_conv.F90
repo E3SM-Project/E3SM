@@ -116,7 +116,8 @@ subroutine mfinti (rair    ,cpair   ,gravit  ,latvap  ,rhowtr,limcnv_in )
 ! Author: J. Hack
 ! 
 !-----------------------------------------------------------------------
-   use dycore, only: dycore_is, get_resolution
+!### M. Branson commenting this out as these are no longer used
+   !use dycore, only: dycore_is, get_resolution
    use spmd_utils, only: masterproc
 !------------------------------Arguments--------------------------------
 !

@@ -98,6 +98,13 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    use cam_pio_utils,    only: init_pio_subsystem
    use cam_instance,     only: inst_suffix
 
+!### added for q3d
+   use dyn_grid,         only: dyn_grid_init
+   use phys_grid,        only: phys_grid_init
+   
+   use phys_control, only: q3d_is_on
+   use dyn_comp,     only: dyn_init
+
 #if ( defined SPMD )   
    real(r8) :: mpi_wtime  ! External
 #endif
@@ -138,7 +145,10 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    !
    ! Set up spectral arrays
    !
-   call trunc()
+   !### mdb: this is an empty subroutine so commenting this out
+   !call trunc()
+
+
    !
    ! Initialize index values for advected and non-advected tracers
    !
@@ -153,11 +163,27 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    !
    call init_pio_subsystem(filein)
 
+   !### mdb: added from the way the CESM2 Q3D code works
+   if (q3d_is_on) then
+     call cam_initfiles_open()
+     call dyn_grid_init()
+     call phys_grid_init()
+   endif
+
+   !write(*,*) '### cam_init: nsrest = ',nsrest,' q3d_is_on = ',q3d_is_on
    if ( nsrest == 0 )then
 
-      call cam_initfiles_open()
-      call cam_initial(dyn_in, dyn_out, NLFileName=filein)
+      if (q3d_is_on) then
+      
+        call dyn_init(dyn_in, dyn_out)
 
+      else
+      
+        call cam_initfiles_open()
+        call cam_initial(dyn_in, dyn_out, NLFileName=filein)
+
+      endif
+      
       ! Allocate and setup surface exchange data
       call atm2hub_alloc(cam_out)
       call hub2atm_alloc(cam_in)

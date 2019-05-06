@@ -1,4 +1,4 @@
-!#define DEBUG 1
+#define DEBUG 1
 module physics_buffer
 
   !----------------------------------------------------------------------- 
@@ -118,6 +118,9 @@ module physics_buffer
   end interface
 
   public :: pbuf_initialize,      &
+!### added for q3d
+            pbuf_readnl,          &! read namelist options
+!### added for q3d
             pbuf_defaultopts,     &! set namelist defaults
             pbuf_setopts,         &! set user specified namelist values
             pbuf_init_time,       &! Initialize dyn_time_lvls
@@ -167,6 +170,54 @@ CONTAINS
   !
   ! Purpose: Return default runtime options
   !
+
+subroutine pbuf_readnl(nlfile)
+
+   use namelist_utils,  only: find_group_name
+   use units,           only: getunit, freeunit
+   use spmd_utils,      only: masterproc, mpicom, mstrid=>masterprocid, mpi_logical
+
+   character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
+
+   ! Local variables
+   integer :: unitn, ierr
+   character(len=*), parameter :: sub = 'pbuf_readnl'
+
+   logical :: pbuf_global_allocate
+
+   namelist /pbuf_nl/ pbuf_global_allocate
+   !-----------------------------------------------------------------------------
+
+   pbuf_global_allocate = global_allocate_all
+
+   ! Read namelist
+   if (masterproc) then
+      unitn = getunit()
+      open( unitn, file=trim(nlfile), status='old' )
+      call find_group_name(unitn, 'pbuf_nl', status=ierr)
+      if (ierr == 0) then
+         read(unitn, pbuf_nl, iostat=ierr)
+         if (ierr /= 0) then
+            call endrun(sub//': FATAL: reading namelist')
+         end if
+      end if
+      close(unitn)
+      call freeunit(unitn)
+   end if
+
+   call mpi_bcast(pbuf_global_allocate, 1, mpi_logical, mstrid, mpicom, ierr)
+   if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: pbuf_global_allocate")
+
+   global_allocate_all = pbuf_global_allocate
+
+   if (masterproc) then
+      write(iulog,*) 'physics buffer options:'
+      write(iulog,*) '  pbuf_global_allocate =', global_allocate_all
+   end if
+
+end subroutine pbuf_readnl
+
+!===============================================================================
 
   subroutine pbuf_defaultopts(pbuf_global_allocate_out)
      logical, intent(out), optional :: pbuf_global_allocate_out

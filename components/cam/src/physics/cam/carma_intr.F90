@@ -132,12 +132,14 @@ contains
   end subroutine carma_timestep_tend
 
 
-  subroutine carma_init_cnst(name, q, gcid)
+  subroutine carma_init_cnst(name, latvals, lonvals, mask, q)
     implicit none
 
     character(len=*), intent(in) :: name               !! constituent name
+    real(r8),         intent(in) :: latvals(:) ! lat in degrees (ncol)
+    real(r8),         intent(in) :: lonvals(:) ! lon in degrees (ncol)
+    logical,          intent(in) :: mask(:)    ! Only initialize where .true.
     real(r8), intent(out)        :: q(plon,plev,plat)  !! mass mixing ratio
-    integer, intent(in)          :: gcid(:)            !! global column id
     
     if (name == "carma") then
       q = 0._r8

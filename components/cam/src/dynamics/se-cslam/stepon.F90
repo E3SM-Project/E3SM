@@ -95,6 +95,7 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
 
    dtime_out = get_step_size()
 
+   !!!if(par%dynproc) then
    if (iam < par%nprocs) then
       if (tstep <= 0)      call endrun('stepon_run1: bad tstep')
       if (dtime_out <= 0)  call endrun('stepon_run1: bad dtime')

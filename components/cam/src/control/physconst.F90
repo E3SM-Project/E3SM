@@ -12,7 +12,7 @@ module physconst
                             shr_const_rwv,    shr_const_zvir,   shr_const_pi,     &
                             shr_const_rearth, shr_const_sday,   shr_const_cday,   &
                             shr_const_spval,  shr_const_omega,  shr_const_cpvir,  &
-                            shr_const_tktrip
+                            shr_const_tktrip, shr_const_cpice
    use ppgrid,        only: pcols, pver, pverp, begchunk, endchunk   ! Dimensions and chunk bounds
 
    implicit none
@@ -37,6 +37,7 @@ module physconst
    real(r8), public, parameter :: cday        = shr_const_cday       ! sec in calendar day ~ sec
    real(r8), public, parameter :: cpair       = shr_const_cpdair     ! specific heat of dry air (J/K/kg)
    real(r8), public, parameter :: cpliq       = shr_const_cpfw       ! specific heat of fresh h2o (J/K/kg)
+   real(r8), public, parameter :: cpice       = shr_const_cpice      ! specific heat of ice (J/K/kg)
    real(r8), public, parameter :: karman      = shr_const_karman     ! Von Karman constant
    real(r8), public, parameter :: latice      = shr_const_latice     ! Latent heat of fusion (J/kg)
    real(r8), public, parameter :: latvap      = shr_const_latvap     ! Latent heat of vaporization (J/kg)

@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+
+<config_definition>
+
+<entry id="dyn"   value="se-cslam"  />
+<entry id="hgrid" value="ne5np4" />
+<entry id="pcols" value="5" />
+
+</config_definition>

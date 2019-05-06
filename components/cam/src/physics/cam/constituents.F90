@@ -36,6 +36,10 @@ module constituents
   public cnst_chk_dim         ! check that number of constituents added equals dimensions (pcnst)
   public cnst_cam_outfld      ! Returns true if default CAM output was specified in the cnst_add calls.
 
+!### added by mdb
+  public cnst_readnl
+  
+  
 ! Public data
 
   integer, parameter, public :: pcnst  = PCNST      ! number of advected constituents (including water vapor)
@@ -85,6 +89,48 @@ module constituents
 !==============================================================================================
 CONTAINS
 !==============================================================================================
+
+subroutine cnst_readnl(nlfile)
+
+   use namelist_utils,  only: find_group_name
+   use units,           only: getunit, freeunit
+   use spmd_utils,      only: mpicom, mstrid=>masterprocid, mpi_logical
+
+
+   character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
+
+   ! Local variables
+   integer :: unitn, ierr
+   character(len=*), parameter :: sub = 'cnst_readnl'
+
+   namelist /constituents_nl/ readtrace
+   !-----------------------------------------------------------------------------
+
+   if (masterproc) then
+      unitn = getunit()
+      open( unitn, file=trim(nlfile), status='old' )
+      call find_group_name(unitn, 'constituents_nl', status=ierr)
+      if (ierr == 0) then
+         read(unitn, constituents_nl, iostat=ierr)
+         if (ierr /= 0) then
+            call endrun(sub//': FATAL: reading namelist')
+         end if
+      end if
+      close(unitn)
+      call freeunit(unitn)
+   end if
+
+   call mpi_bcast(readtrace, 1, mpi_logical, mstrid, mpicom, ierr)
+   if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: readtrace")
+
+   if (masterproc) then
+      write(iulog,*)'Summary of constituent module options:'
+      write(iulog,*)'  Read constituent initial values from initial file by default: ', readtrace
+   end if
+
+end subroutine cnst_readnl
+
+!=========================================================================================
 
   subroutine cnst_add (name, mwc, cpc, qminc, &
                        ind, longname, readiv, mixtype, molectype, cam_outfld, &

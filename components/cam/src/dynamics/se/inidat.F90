@@ -55,7 +55,9 @@ contains
     use co2_cycle   , only: co2_implements_cnst, co2_init_cnst
     use unicon_cam,          only: unicon_implements_cnst, unicon_init_cnst
     use cam_history_support, only: max_fieldname_len
-    use cam_grid_support,    only: cam_grid_get_local_size, cam_grid_get_gcid
+    use cam_grid_support,    only: cam_grid_get_local_size, cam_grid_get_gcid, &
+!### mdb: additional routines needed
+                                   cam_grid_id, cam_grid_get_latvals, cam_grid_get_lonvals
     use cam_map_utils,       only: iMap
     use shr_const_mod,       only: SHR_CONST_PI
     use scamMod,             only: setiopupdate, readiopdata
@@ -69,6 +71,13 @@ contains
     real(r8), allocatable :: tmp(:,:,:)    ! (npsp,nlev,nelemd)
     real(r8), allocatable :: qtmp(:,:)     ! (npsp*nelemd,nlev)
     logical,  allocatable :: tmpmask(:,:)  ! (npsp,nlev,nelemd) unique grid val
+
+!### mdb: new lat/lon variables
+    real(r8), allocatable            :: latvals(:),latvals_phys(:)
+    real(r8), allocatable            :: lonvals(:),lonvals_phys(:)
+    real(r8), parameter              :: deg2rad = SHR_CONST_PI / 180.0_r8
+    logical,  allocatable            :: pmask(:)           ! (npsq*nelemd) unique grid vals
+
     integer :: ie, k, t
     integer :: indx_scm, ie_scm, i_scm, j_scm
     character(len=max_fieldname_len) :: fieldname
@@ -273,6 +282,17 @@ contains
        gcid = ldof
     end where
 
+    allocate(pmask(npsq*nelemd))
+    pmask(:) = (ldof /= 0)
+
+    ! lat/lon needed in radians
+    latvals_deg => cam_grid_get_latvals(cam_grid_id('GLL'))
+    lonvals_deg => cam_grid_get_lonvals(cam_grid_id('GLL'))
+    allocate(latvals(np*np*nelemd))
+    allocate(lonvals(np*np*nelemd))
+    latvals(:) = latvals_deg(:)*deg2rad
+    lonvals(:) = lonvals_deg(:)*deg2rad
+
     ! qmin = 1e-12,0,0
 
     do m_cnst=1,pcnst
@@ -297,38 +317,38 @@ contains
           if(par%masterproc  ) write(iulog,*) 'Field ',cnst_name(m_cnst),' not found on initial dataset'
 
           if (microp_driver_implements_cnst(cnst_name(m_cnst))) then
-             call microp_driver_init_cnst(cnst_name(m_cnst),qtmp , gcid)
+             call microp_driver_init_cnst(cnst_name(m_cnst), latvals, lonvals, mask, qtmp)
               if(par%masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' initialized by "microp_driver_init_cnst"'
           else if (clubb_implements_cnst(cnst_name(m_cnst))) then
-             call clubb_init_cnst(cnst_name(m_cnst), qtmp, gcid)
+             call clubb_init_cnst(cnst_name(m_cnst), latvals, lonvals, mask, qtmp)
               if(par%masterproc) write(iulog,*) '          ', cnst_name(m_cnst), &
                    ' initialized by "clubb_init_cnst"'
           else if (stratiform_implements_cnst(cnst_name(m_cnst))) then
-             call stratiform_init_cnst(cnst_name(m_cnst), qtmp, gcid)
+             call stratiform_init_cnst(cnst_name(m_cnst), latvals, lonvals, mask, qtmp)
               if(par%masterproc) write(iulog,*) '          ', cnst_name(m_cnst), &
                    ' initialized by "stratiform_init_cnst"'
           else if (chem_implements_cnst(cnst_name(m_cnst))) then
-             call chem_init_cnst(cnst_name(m_cnst), qtmp, gcid)
+             call chem_init_cnst(cnst_name(m_cnst), latvals, lonvals, mask, qtmp)
               if(par%masterproc) write(iulog,*) '          ', cnst_name(m_cnst), &
                    ' initialized by "chem_init_cnst"'
           else if (tracers_implements_cnst(cnst_name(m_cnst))) then
-             call tracers_init_cnst(cnst_name(m_cnst), qtmp, gcid)
+             call tracers_init_cnst(cnst_name(m_cnst), latvals, lonvals, mask, qtmp)
               if(par%masterproc) write(iulog,*) '          ', cnst_name(m_cnst), &
                    ' initialized by "tracers_init_cnst"'
           else if (aoa_tracers_implements_cnst(cnst_name(m_cnst))) then
-             call aoa_tracers_init_cnst(cnst_name(m_cnst), qtmp, gcid)
+             call aoa_tracers_init_cnst(cnst_name(m_cnst), latvals, lonvals, mask, qtmp)
               if(par%masterproc) write(iulog,*) '          ', cnst_name(m_cnst), &
                    ' initialized by "aoa_tracers_init_cnst"'
           else if (carma_implements_cnst(cnst_name(m_cnst))) then
-             call carma_init_cnst(cnst_name(m_cnst), qtmp, gcid)
+             call carma_init_cnst(cnst_name(m_cnst), latvals, lonvals, mask, qtmp)
               if(par%masterproc) write(iulog,*) '          ', cnst_name(m_cnst), &
                    ' initialized by "carma_init_cnst"'
           else if (co2_implements_cnst(cnst_name(m_cnst))) then
-             call co2_init_cnst(cnst_name(m_cnst), qtmp, gcid)
+             call co2_init_cnst(cnst_name(m_cnst), latvals, lonvals, mask, qtmp)
               if(par%masterproc) write(iulog,*) '          ', cnst_name(m_cnst), &
                    ' initialized by "co2_init_cnst"'
           else if (unicon_implements_cnst(cnst_name(m_cnst))) then
-             call unicon_init_cnst(cnst_name(m_cnst), qtmp, gcid)
+             call unicon_init_cnst(cnst_name(m_cnst), latvals, lonvals, mask, qtmp)
               if(par%masterproc) write(iulog,*) '          ', cnst_name(m_cnst), &
                    ' initialized by "unicon_init_cnst"'
           else

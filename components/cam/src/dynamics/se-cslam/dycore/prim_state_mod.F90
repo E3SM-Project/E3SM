@@ -24,7 +24,8 @@ CONTAINS
     use constituents,           only: cnst_name
     use dimensions_mod,         only: qsize_condensate_loading,qsize_condensate_loading_idx_gll
     use dimensions_mod,         only: qsize_condensate_loading_idx
-    use cam_control_mod,        only: initial_run
+    !use cam_control_mod,        only: initial_run
+    use cam_control_mod,        only: nsrest
 
     type (element_t),             intent(inout) :: elem(:)
     type(fvm_struct),             intent(inout) :: fvm(:)
@@ -232,7 +233,8 @@ CONTAINS
     !
     ! compute relative mass change
     !
-    if (tl%nstep==0.or..not. initial_run) then
+    !!!if (tl%nstep==0.or..not. initial_run) then
+    if (tl%nstep==0 .or. nsrest>0) then
       mass_chg(:) = 0.0_R8
       elem(nets)%derived%mass(nm+1:nm+statediag_numtrac)   = mass(nm+1:nm+statediag_numtrac)
       if (ntrac>0) then

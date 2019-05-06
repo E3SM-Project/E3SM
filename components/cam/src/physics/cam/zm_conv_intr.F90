@@ -19,6 +19,7 @@ module zm_conv_intr
    use cam_history,  only: outfld, addfld, horiz_only, add_default
    use perf_mod
    use cam_logfile,  only: iulog
+   use cam_abortutils,   only: endrun
    
    implicit none
    private
@@ -28,6 +29,7 @@ module zm_conv_intr
 
    public ::&
       zm_conv_register,           &! register fields in physics buffer
+      zm_conv_readnl,             &! read namelist
       zm_conv_init,               &! initialize donner_deep module
       zm_conv_tend,               &! return tendencies
       zm_conv_tend_2               ! return tendencies
@@ -57,6 +59,21 @@ module zm_conv_intr
    logical  ::    convproc_do_aer 
    logical  ::    convproc_do_gas 
    logical  ::    clim_modal_aero
+
+!### added for q3d
+   real(r8), parameter :: unset_r8 = huge(1.0_r8)
+   real(r8) :: zmconv_c0_lnd = unset_r8
+   real(r8) :: zmconv_c0_ocn = unset_r8
+   real(r8) :: zmconv_ke     = unset_r8
+   real(r8) :: zmconv_ke_lnd = unset_r8
+   real(r8) :: zmconv_momcu  = unset_r8
+   real(r8) :: zmconv_momcd  = unset_r8
+   integer  :: zmconv_num_cin            ! Number of negative buoyancy regions that are allowed 
+                                         ! before the convection top and CAPE calculations are completed.
+   logical  :: zmconv_org                ! Parameterization for sub-grid scale convective organization for the ZM deep 
+                                         ! convective scheme based on Mapes and Neale (2011)
+   logical  :: zmconv_microp = .false.             ! switch for microphysics
+!### added for q3d
 
 !=========================================================================================
 contains
@@ -103,6 +120,61 @@ end subroutine zm_conv_register
 
 !=========================================================================================
 
+subroutine zm_conv_readnl(nlfile)
+
+   use spmd_utils,      only: mpicom, masterproc, masterprocid, mpi_real8, mpi_integer, mpi_logical
+   use namelist_utils,  only: find_group_name
+   use units,           only: getunit, freeunit
+
+   character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
+
+   ! Local variables
+   integer :: unitn, ierr
+   character(len=*), parameter :: subname = 'zm_conv_readnl'
+
+   namelist /zmconv_nl/ zmconv_c0_lnd, zmconv_c0_ocn, zmconv_num_cin, &
+                        zmconv_ke, zmconv_ke_lnd, zmconv_org, &
+                        zmconv_momcu, zmconv_momcd, zmconv_microp
+   !-----------------------------------------------------------------------------
+
+   if (masterproc) then
+      unitn = getunit()
+      open( unitn, file=trim(nlfile), status='old' )
+      call find_group_name(unitn, 'zmconv_nl', status=ierr)
+      if (ierr == 0) then
+         read(unitn, zmconv_nl, iostat=ierr)
+         if (ierr /= 0) then
+            call endrun(subname // ':: ERROR reading namelist')
+         end if
+      end if
+      close(unitn)
+      call freeunit(unitn)
+
+   end if
+
+   ! Broadcast namelist variables
+   call mpi_bcast(zmconv_num_cin,           1, mpi_integer, masterprocid, mpicom, ierr)
+   if (ierr /= 0) call endrun("zm_conv_readnl: FATAL: mpi_bcast: zmconv_num_cin")
+   call mpi_bcast(zmconv_c0_lnd,            1, mpi_real8,   masterprocid, mpicom, ierr)
+   if (ierr /= 0) call endrun("zm_conv_readnl: FATAL: mpi_bcast: zmconv_c0_lnd")
+   call mpi_bcast(zmconv_c0_ocn,            1, mpi_real8,   masterprocid, mpicom, ierr)
+   if (ierr /= 0) call endrun("zm_conv_readnl: FATAL: mpi_bcast: zmconv_c0_ocn")
+   call mpi_bcast(zmconv_ke,                1, mpi_real8,   masterprocid, mpicom, ierr)
+   if (ierr /= 0) call endrun("zm_conv_readnl: FATAL: mpi_bcast: zmconv_ke")
+   call mpi_bcast(zmconv_ke_lnd,            1, mpi_real8,   masterprocid, mpicom, ierr)
+   if (ierr /= 0) call endrun("zm_conv_readnl: FATAL: mpi_bcast: zmconv_ke_lnd")
+   call mpi_bcast(zmconv_momcu,             1, mpi_real8,   masterprocid, mpicom, ierr)
+   if (ierr /= 0) call endrun("zm_conv_readnl: FATAL: mpi_bcast: zmconv_momcu")
+   call mpi_bcast(zmconv_momcd,             1, mpi_real8,   masterprocid, mpicom, ierr)
+   if (ierr /= 0) call endrun("zm_conv_readnl: FATAL: mpi_bcast: zmconv_momcd")
+   call mpi_bcast(zmconv_org,               1, mpi_logical, masterprocid, mpicom, ierr)
+   if (ierr /= 0) call endrun("zm_conv_readnl: FATAL: mpi_bcast: zmconv_org")
+   call mpi_bcast(zmconv_microp,            1, mpi_logical, masterprocid, mpicom, ierr)
+   if (ierr /= 0) call endrun("zm_conv_readnl: FATAL: mpi_bcast: zmconv_microp")
+
+end subroutine zm_conv_readnl
+
+!=========================================================================================
 subroutine zm_conv_init(pref_edge)
 
 !----------------------------------------

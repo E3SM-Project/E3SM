@@ -505,12 +505,14 @@ end subroutine write_restart_dynamics
 
 !=========================================================================================
 
-subroutine read_restart_dynamics(File, dyn_in, dyn_out)
+subroutine read_restart_dynamics(File, dyn_in, dyn_out, NLFileName)
 
    ! arguments
    type(File_desc_t), intent(inout) :: File
    type(dyn_import_t), intent(out)  :: dyn_in
    type(dyn_export_t), intent(out)  :: dyn_out
+
+   character(len=*),   intent(in)  :: NLFileName
 
    ! local variables
    integer(pio_offset_kind), parameter :: t_idx = 1

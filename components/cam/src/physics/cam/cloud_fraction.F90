@@ -191,7 +191,8 @@ subroutine cldfrc_init(dp1_out)
    ! Initialize cloud fraction run-time parameters
 
    use cam_history,   only:   addfld
-   use dycore,        only:  dycore_is, get_resolution
+!### M. Branson commenting this out as these are no longer used
+   !use dycore,        only:  dycore_is, get_resolution
    !BSINGH - "use chemistry" is commented out to get rid of a circular dependency in unified convective trasport scheme
    ! The dependency was: chemistry->aerosol_intr->zm_conv_intr->zm_conv->cloud_fraction->chemistry 
    !use chemistry,     only:  chem_is
@@ -201,7 +202,7 @@ subroutine cldfrc_init(dp1_out)
    real(r8), intent(out) :: dp1_out
    
    ! horizontal grid specifier
-   character(len=32) :: hgrid
+   !character(len=32) :: hgrid
 
    ! query interfaces for scheme settings
    character(len=16) :: shallow_scheme, eddy_scheme, macrop_scheme
@@ -219,7 +220,7 @@ subroutine cldfrc_init(dp1_out)
    ! Limit CAM5 cloud physics to below top cloud level.
    if (macrop_scheme /= "rk") top_lev = trop_cloud_top_lev
 
-   hgrid = get_resolution()
+   !hgrid = get_resolution()
 
    ! Turn off inversion_cld if any UW PBL scheme is being used
    if ( (eddy_scheme .eq. 'diag_TKE' ) .or. (shallow_scheme .eq.  'UW' )) then
@@ -281,7 +282,8 @@ subroutine cldfrc(lchnk   ,ncol    , pbuf,  &
     use physconst,     only: cappa, gravit, rair, tmelt
     use wv_saturation, only: qsat, qsat_water, svp_ice
     use phys_grid,     only: get_rlat_all_p, get_rlon_all_p
-    use dycore,        only: dycore_is, get_resolution
+!### M. Branson commenting this out as these are no longer used
+    !use dycore,        only: dycore_is, get_resolution
 
    
 !RBN - Need this to write shallow,deep fraction to phys buffer.

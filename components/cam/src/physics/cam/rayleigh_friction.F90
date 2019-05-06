@@ -23,7 +23,9 @@ module rayleigh_friction
   use ppgrid,           only: pver
   use spmd_utils,       only: masterproc
   use cam_logfile,      only: iulog
-
+  use phys_control,     only: q3d_is_on
+  use cam_abortutils,   only: endrun
+ 
   implicit none
   private          ! Make default type private to the module
   save
@@ -31,6 +33,7 @@ module rayleigh_friction
   !
   ! Public interfaces
   !
+  public rayleigh_friction_readnl        ! read namelist
   public rayleigh_friction_init          ! Initialization
   public rayleigh_friction_tend          ! Computation of tendencies
 
@@ -57,6 +60,60 @@ module rayleigh_friction
   ! If otau0 = 0, no term is applied.
 
 contains
+
+subroutine rayleigh_friction_readnl(nlfile)
+
+   use namelist_utils,  only: find_group_name
+   use units,           only: getunit, freeunit
+   use spmd_utils,      only: mpicom, mstrid=>masterprocid, mpi_integer, mpi_real8
+
+   character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
+
+   ! Local variables
+   integer :: unitn, ierr
+   character(len=*), parameter :: sub = 'rayleigh_friction_readnl'
+
+   namelist /rayleigh_friction_nl/ rayk0, raykrange, raytau0
+   !-----------------------------------------------------------------------------
+
+   !if (use_simple_phys) return
+   if (q3d_is_on) return
+
+   if (masterproc) then
+      unitn = getunit()
+      open( unitn, file=trim(nlfile), status='old' )
+      call find_group_name(unitn, 'rayleigh_friction_nl', status=ierr)
+      if (ierr == 0) then
+         read(unitn, rayleigh_friction_nl, iostat=ierr)
+         if (ierr /= 0) then
+            call endrun(sub//': FATAL: reading namelist')
+         end if
+      end if
+      close(unitn)
+      call freeunit(unitn)
+   end if
+
+   call mpi_bcast(rayk0, 1, mpi_integer, mstrid, mpicom, ierr)
+   if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: rayk0")
+   call mpi_bcast(raykrange, 1, mpi_real8, mstrid, mpicom, ierr)
+   if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: raykrange")
+   call mpi_bcast(raytau0, 1, mpi_real8, mstrid, mpicom, ierr)
+   if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: raytau0")
+
+   if (masterproc) then
+      if (raytau0 > 0._r8) then
+         write (iulog,*) 'Rayleigh friction options: '
+         write (iulog,*) '  rayk0     = ', rayk0
+         write (iulog,*) '  raykrange = ', raykrange
+         write (iulog,*) '  raytau0   = ', raytau0
+      else
+         write (iulog,*) 'Rayleigh friction not enabled.'
+      end if
+   end if
+
+end subroutine rayleigh_friction_readnl
+
+!===============================================================================
 
   !===============================================================================
   subroutine rayleigh_friction_init()

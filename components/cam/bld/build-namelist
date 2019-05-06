@@ -742,6 +742,9 @@ if ($cfg->get('pergro') or ($chem ne 'none')) {
     add_default($nl, 'print_energy_errors', 'val'=>'.false.');
 }
 
+# Set default for QNEG warnings
+add_default($nl, 'print_qneg_warn', 'val'=>'summary');
+
 # Turn on debugging checks
 if ($cfg->get('debug')) {
     add_default($nl, 'state_debug_checks', 'val'=> '.true.')
@@ -3345,6 +3348,16 @@ if (defined $cam_physpkg) {
 $cam_physpkg = "'" . "$phys" . "'";  # add quotes to this string value
 $nl->set_variable_value('phys_ctl_nl', 'cam_physpkg', $cam_physpkg);
 
+my $q3d_is_on = $nl->get_value('q3d_is_on');
+if (defined $q3d_is_on) {
+    die "CAM Namelist ERROR: User may not specify the value of q3d_is_on.\n".
+        "This variable is set by build-namelist based on information\n".
+        "from the configure cache file.\n";
+}
+$q3d_is_on = '.false.';
+if ($phys eq 'q3d') {$q3d_is_on = '.true.';}
+$nl->set_variable_value('phys_ctl_nl', 'q3d_is_on', $q3d_is_on);
+
 # WACCM-X runtime options
 add_default($nl, 'waccmx_opt');
 
@@ -3953,6 +3966,12 @@ if ((not $waccm_phys) and
 
 add_default($nl, 'fcrit2');
 
+if ($phys eq 'q3d') {
+  add_default($nl, 'q3d_ncrm');
+  add_default($nl, 'q3d_crm_channel_width');
+  add_default($nl, 'q3d_check_energy_change');
+}
+
 # FV dycore
 if ($cfg->get('dyn') eq 'fv') {
     add_default($nl, 'fft_flt');
@@ -3994,7 +4013,8 @@ if ($cfg->get('camiop')) {
 # Spectral Element dycore
 # ============
 
-if ($cfg->get('dyn') =~ /se/) {
+#if ($cfg->get('dyn') =~ /se/) {
+if ($cfg->get('dyn') eq 'se') {
 
     ####################################################
     # namelist group: ctl_nl (for CAM_SE) #
@@ -4025,6 +4045,90 @@ if ($cfg->get('dyn') =~ /se/) {
 
     foreach my $var (@vars) {
 	add_default($nl, $var);
+    }
+}
+
+# Spectral Element w/CSLAM dycore
+# ===============================
+
+if ($cfg->get('dyn') eq 'se-cslam') {
+
+    ####################################################
+    # namelist group: dyn_se_inparm (for CAM_SE) #
+    ####################################################
+
+    my $csne = $cfg->get('csne');
+    my $se_ne = $nl->get_value('se_ne');
+    if (defined($se_ne) and $se_ne != $csne) {
+        die "$ProgName - ERROR: se_ne should not be set by the user\n";
+    }
+    add_default($nl, 'se_ne', 'val'=>$csne);
+
+    my $npg = $cfg->get('npg');
+    my $se_fv_nphys = $nl->get_value('se_fv_nphys');
+    if (defined($se_fv_nphys) and $se_fv_nphys != $npg) {
+        die "$ProgName - ERROR: se_fv_nphys should not be set by the user\n";
+    }
+    add_default($nl, 'se_fv_nphys', 'val'=>$npg);
+
+    my @vars = qw(
+                  se_ftype
+                  se_horz_num_threads
+                  se_hypervis_on_plevs
+                  se_hypervis_subcycle
+                  se_hypervis_subcycle_q
+                  se_limiter_option
+                  se_nsplit
+                  se_nu
+                  se_nu_div
+                  se_nu_p
+                  se_nu_top
+                  se_qsize_condensate_loading
+                  se_qsplit
+                  se_rsplit
+                  se_statediag_numtrac
+                  se_statefreq
+                  se_tracer_num_threads
+                  se_tstep_type
+                  se_vert_num_threads
+                  se_vert_remap_q_alg
+        );
+
+    my %opts;
+
+    # Do we need special refined mesh processing?
+    add_default($nl, 'se_refined_mesh');
+    my $refined_mesh = $nl->get_value('se_refined_mesh');
+    if ($refined_mesh =~ m/$TRUE/i) {
+        $opts{'refined_mesh'} = "1";
+        add_default($nl, 'se_mesh_file');
+        my $se_mesh_file = $nl->get_value('se_mesh_file');
+        if (!defined $se_mesh_file or ($refined_mesh =~ m/none/i) or ((length $refined_mesh) == 0)) {
+            die "$ProgName - ERROR: se_mesh_file is required for a refined mesh run\n";
+        }
+        # We are in a refined mesh situation, set appropriate defaults
+        $nl->set_variable_value('dyn_se_inparm', 'se_ne', 0);
+        add_default($nl, 'se_hypervis_power');
+        my $hypervis_power = $nl->get_value('se_hypervis_power');
+        if ($hypervis_power == 0) {
+            # Configure default tensor hyperviscosity
+            $opts{'hypervis_type'} = 'tensor';
+            push @vars, 'se_hypervis_scaling';
+        }
+        else {
+            # Configure scalar hyperviscosity
+            $opts{'hypervis_type'} = 'scalar';
+            if ($hypervis_power != 3.322) {
+                # This is unsupported territory, allow chaos to reign
+                print "$ProgName - WARNING: Unsupported value for hypervis_power, assuming scalar hyperviscosity\n";
+            }
+            push @vars, 'se_fine_ne';
+            push @vars, 'se_max_hypervis_courant';
+        }
+    }
+    # Add the collected vars
+    foreach my $var (@vars) {
+        add_default($nl, $var, %opts);
     }
 }
 

@@ -298,6 +298,7 @@ use cam_map_utils, only: goldy_debug
   public     :: cam_grid_dimensions, cam_grid_num_grids
   public     :: cam_grid_check ! T/F if grid ID exists
   public     :: cam_grid_id    ! Grid ID (decomp) or -1 if error
+  public     :: new_cam_grid_id ! Return an available grid id
   public     :: cam_grid_get_local_size
   public     :: cam_grid_get_file_dimids
   public     :: cam_grid_get_decomp
@@ -879,6 +880,18 @@ contains
     end if
 
   end function cam_grid_id
+
+  integer function new_cam_grid_id()
+     integer            :: index
+     integer, parameter :: min_grid_id = 200 ! Separate user space
+
+     new_cam_grid_id = min_grid_id
+     do index = 1, registeredhgrids
+        if (cam_grids(index)%id >= new_cam_grid_id) then
+           new_cam_grid_id = cam_grids(index)%id + 1
+        end if
+     end do
+  end function new_cam_grid_id
 
   ! Return the size of a local array for grid, ID.
   ! With no optional argument, return the basic 2D array size

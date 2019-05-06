@@ -141,7 +141,7 @@ end function get_tracer_name
 
 !======================================================================
 !======================================================================
-subroutine init_cnst_tr(m,q, gcid)
+subroutine init_cnst_tr(m, latvals, lonvals, mask, q)
 
 !----------------------------------------------------------------------- 
 !
@@ -155,8 +155,10 @@ subroutine init_cnst_tr(m,q, gcid)
    implicit none
 
    real(r8), intent(out) :: q(:,:)    ! kg tracer/kg dry air (gcol, plev)
-   integer ,intent(in) :: m           ! index of tracer
-   integer, intent(in) :: gcid(:)     ! global column id   
+   integer, intent(in) :: m           ! index of tracer
+   real(r8), intent(in) :: latvals(:) ! lat in degrees (ncol)
+   real(r8), intent(in) :: lonvals(:) ! lon in degrees (ncol)
+   logical, intent(in) :: mask(:)    ! Only initialize where .true.
 
    integer nbase ! Corresponding base tracer index
 
@@ -170,15 +172,15 @@ subroutine init_cnst_tr(m,q, gcid)
    nbase = mod(m-1,trac_names)+1
 
    if ( nbase == 1 ) then
-      call init_cnst_lw(q, gcid)
+      call init_cnst_lw(q, latvals, lonvals, mask)
    else if ( nbase == 2 ) then
-      call init_cnst_md(q, gcid)
+      call init_cnst_md(q, latvals, lonvals, mask)
    else if ( nbase == 3 ) then
-      call init_cnst_hi(q, gcid)
+      call init_cnst_hi(q, latvals, lonvals, mask)
    else if ( nbase == 4 ) then
-      call init_cnst_md(q, gcid, rev_in=1)
+      call init_cnst_md(q, latvals, lonvals, mask, rev_in=1)
    else if ( nbase == 5 ) then
-      call init_cnst_un(q, gcid)
+      call init_cnst_un(q, latvals, lonvals, mask)
    else
       write(iulog,*) 'tracers_suite:init_cnst_tr()'
       write(iulog,*) 'no initialization routine specified for tracer',nbase
@@ -190,7 +192,7 @@ end subroutine init_cnst_tr
 
 
 !======================================================================
-subroutine init_cnst_lw(q, gcid)
+subroutine init_cnst_lw(q, latvals, lonvals, mask)
 
 !----------------------------------------------------------------------- 
 !
@@ -202,7 +204,9 @@ subroutine init_cnst_lw(q, gcid)
 
 !Arguments
    real(r8), intent(out) :: q(:,:)    ! kg tracer/kg dry air (gcol,plev)
-   integer,  intent(in)  :: gcid(:)   ! global column id
+   real(r8), intent(in) :: latvals(:) ! lat in degrees (ncol)
+   real(r8), intent(in) :: lonvals(:) ! lon in degrees (ncol)
+   logical, intent(in) :: mask(:)    ! Only initialize where .true.
 ! Local
   integer indx
 
@@ -225,7 +229,7 @@ subroutine init_cnst_lw(q, gcid)
 end subroutine init_cnst_lw
 
 !======================================================================
-subroutine init_cnst_md(q,gcid,rev_in)
+subroutine init_cnst_md(q,latvals,lonvals,mask,rev_in)
 
 !----------------------------------------------------------------------- 
 !
@@ -237,7 +241,9 @@ subroutine init_cnst_md(q,gcid,rev_in)
 
 !Arguments
    real(r8), intent(out) :: q(:,:)    ! kg tracer/kg dry air
-   integer, intent(in) :: gcid(:)     ! global column id
+   real(r8), intent(in) :: latvals(:) ! lat in degrees (ncol)
+   real(r8), intent(in) :: lonvals(:) ! lon in degrees (ncol)
+   logical, intent(in) :: mask(:)    ! Only initialize where .true.
    integer,  intent(in), optional :: rev_in         ! reverse the mixing ratio
 
 ! Local
@@ -275,7 +281,7 @@ subroutine init_cnst_md(q,gcid,rev_in)
 end subroutine init_cnst_md
 
 !======================================================================
-subroutine init_cnst_hi(q, gcid)
+subroutine init_cnst_hi(q, latvals, lonvals, mask)
 
 !----------------------------------------------------------------------- 
 !
@@ -288,7 +294,9 @@ subroutine init_cnst_hi(q, gcid)
 
 !Arguments
    real(r8), intent(out) :: q(:,:)    ! kg tracer/kg dry air
-   integer, intent(in) :: gcid(:)     ! global column id
+   real(r8), intent(in) :: latvals(:) ! lat in degrees (ncol)
+   real(r8), intent(in) :: lonvals(:) ! lon in degrees (ncol)
+   logical, intent(in) :: mask(:)    ! Only initialize where .true.
 ! Local
   integer indx
 
@@ -311,7 +319,7 @@ subroutine init_cnst_hi(q, gcid)
 end subroutine init_cnst_hi
 
 !======================================================================
-subroutine init_cnst_un(q, gcid)
+subroutine init_cnst_un(q, latvals, lonvals, mask)
 
 !----------------------------------------------------------------------- 
 !
@@ -326,7 +334,9 @@ subroutine init_cnst_un(q, gcid)
    implicit none
 
    real(r8), intent(out) :: q(:,:)    ! kg tracer/kg dry air
-   integer, intent(in)   :: gcid(:)   ! global column id
+   real(r8), intent(in) :: latvals(:) ! lat in degrees (ncol)
+   real(r8), intent(in) :: lonvals(:) ! lon in degrees (ncol)
+   logical, intent(in) :: mask(:)    ! Only initialize where .true.
 !-----------------------------------------------------------------------
 ! Initialize conserved unit tracer.
 

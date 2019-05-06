@@ -163,13 +163,15 @@ end subroutine zmconv_readnl
 
 subroutine zm_convi(limcnv_in, no_deep_pbl_in)
 
-   use dycore,       only: dycore_is, get_resolution
+!### MBRANSON: commenting this out because these are no longer used
+   !use dycore,       only: dycore_is, get_resolution
 
    integer, intent(in)           :: limcnv_in       ! top interface level limit for convection
    logical, intent(in), optional :: no_deep_pbl_in  ! no_deep_pbl = .true. eliminates ZM convection entirely within PBL 
 
+!### MBRANSON: commenting this out because is is no longer used
    ! local variables
-   character(len=32)   :: hgrid           ! horizontal grid specifier
+   !character(len=32)   :: hgrid           ! horizontal grid specifier
 
    ! Initialization of ZM constants
    limcnv = limcnv_in
@@ -191,7 +193,8 @@ subroutine zm_convi(limcnv_in, no_deep_pbl_in)
    ! tau=4800. were used in canadian climate center. however, in echam3 t42, 
    ! convection is too weak, thus adjusted to 2400.
 
-   hgrid = get_resolution()
+!### MBRANSON: commenting this out because is is no longer used
+   !hgrid = get_resolution()
    if(trigmem)tau = 3600._r8
 
    if ( masterproc ) then
@@ -2866,7 +2869,8 @@ subroutine closure(lchnk   , &
 ! the documentation has been enhanced to the degree that we are able
 ! 
 !-----------------------------------------------------------------------
-   use dycore,    only: dycore_is, get_resolution
+!### MBRANSON: commenting this out because these are no longer used
+   !use dycore,    only: dycore_is, get_resolution
 
    implicit none
 

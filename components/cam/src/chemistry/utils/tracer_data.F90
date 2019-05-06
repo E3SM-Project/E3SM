@@ -118,6 +118,9 @@ module tracer_data
      logical :: has_ps = .false.
      logical :: zonal_ave = .false.
      logical :: alt_data = .false.     
+!### added for q3d
+     logical :: geop_alt = .false.
+!### added for q3d
      logical :: cyclical = .false.
      logical :: cyclical_list = .false.
      logical :: weight_by_lat = .false.

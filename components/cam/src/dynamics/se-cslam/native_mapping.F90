@@ -105,7 +105,7 @@ subroutine create_native_mapping_files(par, elem, maptype, ncol, clat, clon, are
     use infnan, only : isnan
     use dof_mod, only : CreateMetaData
     use thread_mod,     only: omp_get_thread_num
-    use datetime_mod, only: datetime
+    !use datetime_mod, only: datetime
 
 
     use cam_history_support, only : fillvalue

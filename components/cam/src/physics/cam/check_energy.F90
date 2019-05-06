@@ -63,6 +63,10 @@ module check_energy
   public :: ieflx_gmean             ! calculate global mean of ieflx 
   public :: check_ieflx_fix         ! add ieflx to sensible heat flux 
 
+  public :: calc_te_and_aam_budgets ! calculate and output total energy and axial angular momentum diagnostics
+
+!### added for q3d
+  public :: check_energy_readnl    ! read namelist values
 
 ! Private module data
 
@@ -91,6 +95,49 @@ module check_energy
 !===============================================================================
 contains
 !===============================================================================
+
+subroutine check_energy_readnl(nlfile)
+
+   use namelist_utils,  only: find_group_name
+   use units,           only: getunit, freeunit
+   use spmd_utils,      only: mpicom, mstrid=>masterprocid, mpi_logical
+   use cam_abortutils,  only: endrun
+
+   character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
+
+   ! Local variables
+   integer :: unitn, ierr
+   character(len=*), parameter :: sub = 'check_energy_readnl'
+
+   namelist /check_energy_nl/ print_energy_errors
+   !-----------------------------------------------------------------------------
+
+   ! Read namelist
+   if (masterproc) then
+      unitn = getunit()
+      open( unitn, file=trim(nlfile), status='old' )
+      call find_group_name(unitn, 'check_energy_nl', status=ierr)
+      if (ierr == 0) then
+         read(unitn, check_energy_nl, iostat=ierr)
+         if (ierr /= 0) then
+            call endrun(sub//': FATAL: reading namelist')
+         end if
+      end if
+      close(unitn)
+      call freeunit(unitn)
+   end if
+
+   call mpi_bcast(print_energy_errors, 1, mpi_logical, mstrid, mpicom, ierr)
+   if (ierr /= 0) call endrun(sub//": FATAL: mpi_bcast: print_energy_errors")
+
+   if (masterproc) then
+      write(iulog,*) 'check_energy options:'
+      write(iulog,*) '  print_energy_errors =', print_energy_errors
+   end if
+
+end subroutine check_energy_readnl
+
+!================================================================================================
 
 subroutine check_energy_defaultopts( &
    print_energy_errors_out)
@@ -1244,6 +1291,165 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
 
   end subroutine check_prect
 
+!#######################################################################
+
+  subroutine calc_te_and_aam_budgets(state, outfld_name_suffix)
+    use physconst,   only: gravit,cpair,pi,rearth,omega
+    use cam_history, only: hist_fld_active, outfld
+
+!------------------------------Arguments--------------------------------
+
+    type(physics_state), intent(inout) :: state
+    character*(*),intent(in) :: outfld_name_suffix ! suffix for "outfld" names
+
+!---------------------------Local storage-------------------------------
+
+    real(r8) :: se(pcols)                          ! Dry Static energy (J/m2)
+    real(r8) :: ke(pcols)                          ! kinetic energy    (J/m2)
+    real(r8) :: wv(pcols)                          ! column integrated vapor       (kg/m2)
+    real(r8) :: wl(pcols)                          ! column integrated liquid      (kg/m2)
+    real(r8) :: wi(pcols)                          ! column integrated ice         (kg/m2)
+    real(r8) :: tt(pcols)                          ! column integrated test tracer (kg/m2)
+    real(r8) :: mr(pcols)                          ! column integrated wind axial angular momentum (kg*m2/s)
+    real(r8) :: mo(pcols)                          ! column integrated mass axial angular momentum (kg*m2/s)
+    real(r8) :: se_tmp,ke_tmp,wv_tmp,wl_tmp,wi_tmp,tt_tmp,mr_tmp,mo_tmp,cos_lat
+    real(r8) :: mr_cnst, mo_cnst
+
+    integer lchnk                                  ! chunk identifier
+    integer ncol                                   ! number of atmospheric columns
+    integer  i,k                                   ! column, level indices
+    integer :: ixcldice, ixcldliq,ixtt             ! CLDICE and CLDLIQ indices
+    character(len=16) :: name_out1,name_out2,name_out3,name_out4,name_out5,name_out6
+!-----------------------------------------------------------------------
+
+    name_out1 = 'SE_'   //trim(outfld_name_suffix)
+    name_out2 = 'KE_'   //trim(outfld_name_suffix)
+    name_out3 = 'WV_'   //trim(outfld_name_suffix)
+    name_out4 = 'WL_'   //trim(outfld_name_suffix)
+    name_out5 = 'WI_'   //trim(outfld_name_suffix)
+    name_out6 = 'TT_'   //trim(outfld_name_suffix)
+
+    if ( hist_fld_active(name_out1).or.hist_fld_active(name_out2).or.hist_fld_active(name_out3).or.&
+         hist_fld_active(name_out4).or.hist_fld_active(name_out5).or.hist_fld_active(name_out6)) then
+
+      lchnk = state%lchnk
+      ncol  = state%ncol
+      call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
+      call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
+      call cnst_get_ind('TT_LW' , ixtt    , abort=.false.)
+
+      ! Compute frozen static energy in 3 parts:  KE, SE, and energy associated with vapor and liquid
+
+      se    = 0._r8
+      ke    = 0._r8
+      wv    = 0._r8
+      wl    = 0._r8
+      wi    = 0._r8
+      tt    = 0._r8
+
+      do k = 1, pver
+        do i = 1, ncol
+          ke_tmp   = 0.5_r8*(state%u(i,k)**2 + state%v(i,k)**2)*state%pdel(i,k)/gravit
+          se_tmp   =   cpair*state%t(i,k)                      *state%pdel(i,k)/gravit
+          wv_tmp   = state%q(i,k,1       )                     *state%pdel(i,k)/gravit
+
+          se   (i) = se   (i) + se_tmp
+          ke   (i) = ke   (i) + ke_tmp
+          wv   (i) = wv   (i) + wv_tmp
+        end do
+      end do
+      do i = 1, ncol
+        se(i) = se(i) + state%phis(i)*state%ps(i)/gravit
+      end do
+
+      ! Don't require cloud liq/ice to be present.  Allows for adiabatic/ideal phys.
+
+      if (ixcldliq > 1) then
+        do k = 1, pver
+          do i = 1, ncol
+            wl_tmp   = state%q(i,k,ixcldliq)*state%pdel(i,k)/gravit
+            wl   (i) = wl(i)    + wl_tmp
+          end do
+        end do
+      end if
+
+      if (ixcldice > 1) then
+        do k = 1, pver
+          do i = 1, ncol
+            wi_tmp   = state%q(i,k,ixcldice)*state%pdel(i,k)/gravit
+            wi(i)    = wi(i)    + wi_tmp
+          end do
+        end do
+      end if
+
+      if (ixtt > 1) then
+        if (name_out6 == 'TT_pAM') then
+          !
+          ! after dme_adjust mixing ratios are all wet
+          !
+          do k = 1, pver
+            do i = 1, ncol
+              tt_tmp   = state%q(i,k,ixtt)*state%pdel(i,k)/gravit
+              tt   (i) = tt(i)    + tt_tmp
+            end do
+          end do
+        else
+          do k = 1, pver
+            do i = 1, ncol
+              tt_tmp   = state%q(i,k,ixtt)*state%pdeldry(i,k)/gravit
+              tt   (i) = tt(i)    + tt_tmp
+            end do
+          end do
+        end if
+      end if
+
+      ! Output energy diagnostics
+
+      call outfld(name_out1  ,se      , pcols   ,lchnk   )
+      call outfld(name_out2  ,ke      , pcols   ,lchnk   )
+      call outfld(name_out3  ,wv      , pcols   ,lchnk   )
+      call outfld(name_out4  ,wl      , pcols   ,lchnk   )
+      call outfld(name_out5  ,wi      , pcols   ,lchnk   )
+      call outfld(name_out6  ,tt      , pcols   ,lchnk   )
+    end if
+
+
+    !
+    ! Axial angular momentum diagnostics
+    !
+    ! Code follows
+    !
+    ! Lauritzen et al., (2014): Held-Suarez simulations with the Community Atmosphere Model
+    ! Spectral Element (CAM-SE) dynamical core: A global axial angularmomentum analysis using Eulerian
+    ! and floating Lagrangian vertical coordinates. J. Adv. Model. Earth Syst. 6,129-140,
+    ! doi:10.1002/2013MS000268
+    !
+    ! MR is equation (6) without \Delta A and sum over areas (areas are in units of radians**2)
+    ! MO is equation (7) without \Delta A and sum over areas (areas are in units of radians**2)
+    !
+    name_out1 = 'MR_'   //trim(outfld_name_suffix)
+    name_out2 = 'MO_'   //trim(outfld_name_suffix)
+
+    if ( hist_fld_active(name_out1).or.hist_fld_active(name_out2)) then
+      lchnk = state%lchnk
+      ncol  = state%ncol
+
+      mr_cnst = rearth**3/gravit
+      mo_cnst = omega*rearth**4/gravit
+      do k = 1, pver
+        do i = 1, ncol
+          cos_lat = cos(state%lat(i))
+          mr_tmp = mr_cnst*state%u(i,k)*state%pdel(i,k)*cos_lat
+          mo_tmp = mo_cnst*state%pdel(i,k)*cos_lat**2
+
+          mr(i) = mr(i) + mr_tmp
+          mo(i) = mo(i) + mo_tmp
+        end do
+      end do
+      call outfld(name_out1  ,mr, pcols,lchnk   )
+      call outfld(name_out1  ,mo, pcols,lchnk   )
+    end if
+  end subroutine calc_te_and_aam_budgets
 
 end module check_energy
 

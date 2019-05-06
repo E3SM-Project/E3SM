@@ -21,6 +21,7 @@ module tropopause
   !---------------------------------------------------------------
 
   use shr_kind_mod,  only : r8 => shr_kind_r8
+  use shr_const_mod, only : pi => shr_const_pi
   use ppgrid,        only : pcols, pver, begchunk, endchunk
   use cam_abortutils,    only : endrun
   use cam_logfile,   only : iulog
@@ -34,6 +35,7 @@ module tropopause
   private
   
   public  :: tropopause_readnl, tropopause_init, tropopause_find, tropopause_output
+  public  :: tropopause_findChemTrop
   public  :: TROP_ALG_NONE, TROP_ALG_ANALYTIC, TROP_ALG_CLIMATE
   public  :: TROP_ALG_STOBIE, TROP_ALG_HYBSTOB, TROP_ALG_TWMO, TROP_ALG_WMO
 
@@ -1020,6 +1022,54 @@ contains
     
     return
   end subroutine tropopause_find
+  
+  subroutine tropopause_findChemTrop(pstate, tropLev, primary, backup)
+
+    implicit none
+
+    type(physics_state), intent(in)     :: pstate 
+    integer, optional, intent(in)       :: primary                   ! primary detection algorithm
+    integer, optional, intent(in)       :: backup                    ! backup detection algorithm
+    integer,            intent(out)     :: tropLev(pcols)            ! tropopause level index   
+
+    ! Local Variable
+    real(r8), parameter :: rad2deg = 180._r8/pi                      ! radians to degrees conversion factor
+    real(r8)            :: dlats(pcols)
+    integer             :: i
+    integer             :: ncol
+    integer             :: backAlg
+
+    ! First use the lapse rate tropopause.
+    ncol = pstate%ncol
+    call tropopause_find(pstate, tropLev, primary=primary, backup=TROP_ALG_NONE)
+   
+    ! Now check high latitudes (poleward of 50) and set the level to the
+    ! climatology if the level was not found or is at P <= 125 hPa.
+    dlats(:ncol) = pstate%lat(:ncol) * rad2deg ! convert to degrees
+
+    if (present(backup)) then
+      backAlg = backup
+    else
+      backAlg = default_backup
+    end if
+    
+    do i = 1, ncol
+      if (abs(dlats(i)) > 50._r8) then
+        if (tropLev(i) .ne. NOTFOUND) then
+          if (pstate%pmid(i, tropLev(i)) <= 12500._r8) then
+            tropLev(i) = NOTFOUND
+          end if
+        end if
+      end if
+    end do
+        
+    ! Now use the backup algorithm
+    if ((backAlg /= TROP_ALG_NONE) .and. any(tropLev(:) == NOTFOUND)) then
+      call tropopause_findUsing(pstate, backAlg, tropLev)
+    end if
+    
+    return
+  end subroutine tropopause_findChemTrop
   
   
   ! Call the appropriate tropopause detection routine based upon the algorithm

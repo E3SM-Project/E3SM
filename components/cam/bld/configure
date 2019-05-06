@@ -491,6 +491,7 @@ elsif ($chem_pkg =~ /waccm_/) {
 elsif ($opts{'dyn'}  eq 'eul')               {$config_defaults_file = 'config_files/defaults_eul.xml'}
 elsif ($opts{'dyn'}  eq 'sld')               {$config_defaults_file = 'config_files/defaults_sld.xml'}
 elsif ($opts{'dyn'}  eq 'se')                {$config_defaults_file = 'config_files/defaults_se.xml'}
+elsif ($opts{'dyn'}  eq 'se-cslam')          {$config_defaults_file = 'config_files/defaults_se-cslam.xml'}
 else                                         {$config_defaults_file = 'config_files/defaults_fv.xml'}
 (-f "$cfgdir/$config_defaults_file")  or  die <<"EOF";
 ** Cannot find configuration defaults file \"$config_defaults_file\" in directory \"$cfgdir\" **
@@ -908,6 +909,9 @@ if ($phys_pkg =~ m/^ideal$|^adiabatic$|^cam[34]$/) {
 elsif ($phys_pkg eq 'cam5' and !defined $opts{'clubb_sgs'}) {
     $microphys_pkg = 'mg1';
 }
+elsif ($phys_pkg eq 'q3d') {
+    $microphys_pkg = 'none';
+}
 
 # Allow the user to override the default via the commandline.
 if (defined $opts{'microphys'}) {
@@ -1002,6 +1006,9 @@ my $pbl_pkg = 'uw';
 if ($phys_pkg =~ m/ideal|adiabatic|cam3|cam4/) {
     $pbl_pkg = 'hb';
 }
+if ($phys_pkg = 'q3d') {
+    $pbl_pkg = 'none';
+}
 if ($clubb_sgs == 1) {
   $pbl_pkg = 'clubb_sgs';
 }
@@ -1055,6 +1062,9 @@ if ($unicon and $print>=2) { print "Using UNICON scheme.$eol"; }
 my $rad_pkg = 'rrtmg';
 if ($phys_pkg =~ m/^ideal$|^adiabatic$|^cam[34]$/) {
     $rad_pkg = 'camrt';
+}
+elsif ($phys_pkg =~ m/^q3d$/) {
+    $rad_pkg = 'none';
 }
 
 # Allow the user to override the default via the commandline.
@@ -2793,12 +2803,6 @@ sub write_filepath
         print $fh "$camsrcdir/cam/src/physics/camrt\n";
     }
 
-    print $fh "$camsrcdir/cam/src/physics/cam\n";
-    if ($clubb_sgs eq '1') {
-       print $fh "$camsrcdir/cam/src/physics/clubb\n";
-       print $fh "$camsrcdir/cam/src/physics/silhs\n";
-    }
-
     # Q3D
     if ($phys_pkg eq 'q3d') {
       print $fh "$camsrcdir/cam/src/physics/q3d\n";
@@ -2806,6 +2810,8 @@ sub write_filepath
       print $fh "$camsrcdir/cam/src/physics/simple\n";
       # Add special SE q3d coupling code
       print $fh "$camsrcdir/cam/src/dynamics/se-cslam/q3d\n";
+      # Add special dycore testing code
+      print $fh "$camsrcdir/cam/src/dynamics/tests\n";
       # Add GQ3D directories
       print $fh "$camsrcdir/cam/src/physics/q3d/GQ3D_CODE\n";
       print $fh "$camsrcdir/cam/src/physics/q3d/GQ3D_CODE/CDECKS\n";
@@ -2814,7 +2820,16 @@ sub write_filepath
       print $fh "$camsrcdir/cam/src/physics/q3d/GQ3D_CODE/VVM\n";
     }
 
+    print $fh "$camsrcdir/cam/src/physics/cam\n";
+    if ($clubb_sgs eq '1') {
+       print $fh "$camsrcdir/cam/src/physics/clubb\n";
+       print $fh "$camsrcdir/cam/src/physics/silhs\n";
+    }
+
     print $fh "$camsrcdir/cam/src/dynamics/$dyn\n";
+    if($dyn eq 'se-cslam') {
+      print $fh "$camsrcdir/cam/src/dynamics/se-cslam/dycore\n";
+    }
     if($dyn eq 'se') {
       print $fh "$camsrcdir/homme/src/share\n";
       if ($opts{'dyn_target'} eq 'preqx') {

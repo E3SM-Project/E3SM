@@ -36,6 +36,9 @@ module scamMod
   public setiopupdate
   public readiopdata         
 
+!### added for q3d
+  public scam_readnl   ! read SCAM namelist options 
+
 !
 ! !PUBLIC MODULE DATA:
 !
@@ -137,7 +140,11 @@ module scamMod
 					       
   real(r8), public ::  scm_relaxation_low      ! lowest level to apply relaxation
   real(r8), public ::  scm_relaxation_high     ! highest level to apply relaxation					       
-					       
+!### added for q3d
+  real(r8), public ::  scm_relax_top_p       = 1.e36_r8 ! upper bound for scm relaxation
+  real(r8), public ::  scm_relax_bot_p       = -1.e36_r8 !  lower bound for scm relaxation
+  real(r8), public ::  scm_relax_tau_sec       = 10800._r8  ! relaxation time constant (sec)
+			       
   real(r8), public, pointer :: loniop(:)
   real(r8), public, pointer :: latiop(:)
 !
@@ -190,6 +197,23 @@ module scamMod
   logical*4, public ::  use_3dfrc     ! use 3d forcing
   logical*4, public ::  have_heat_glob ! dataset contains global energy fixer
 
+!### added for q3d
+  logical, public ::  scm_iop_lhflxshflxTg   = .false. !turn off LW rad
+  logical, public ::  scm_iop_Tg             = .false. !turn off LW rad
+  logical, public ::  scm_cambfb_mode        = .false. ! Use extra CAM IOP fields to assure bit for bit match with CAM run
+  logical, public ::  scm_use_obs_T          = .false. ! Use the SCAM-IOP specified observed T   at each time step instead of forecasting.
+  logical, public ::  scm_force_latlon       = .false. ! force scam to use the lat lon fields specified in the scam namelist not what is closest to iop avail lat lon
+  logical, public ::  scm_use_obs_uv         = .true. ! Use the SCAM-IOP specified observed u,v at each time step instead of forecasting.
+  logical, public ::  scm_use_obs_qv         = .false. ! Use the SCAM-IOP specified observed qv  at each time step instead of forecasting.
+  logical, public ::  scm_relax_linear = .false.
+  real(r8), public:: scm_relax_tau_bot_sec = 10800._r8
+  real(r8), public:: scm_relax_tau_top_sec = 10800._r8
+  character(len=26), public  :: scm_relax_fincl(pcnst)
+
+  character(len=16), public    :: scm_zadv_T  = 'eulc            '
+  character(len=16), public    :: scm_zadv_q  = 'slt             '
+  character(len=16), public    :: scm_zadv_uv = 'eulc            '
+
   character(len=200), public ::  scm_clubb_iop_name   ! IOP name for CLUBB
 
 !=======================================================================
@@ -200,6 +224,113 @@ module scamMod
 !-----------------------------------------------------------------------
 !
 
+subroutine scam_readnl(nlfile,single_column_in,scmlat_in,scmlon_in)
+
+  use namelist_utils,  only: find_group_name
+  use units,           only: getunit, freeunit
+  use dycore,          only: dycore_is
+  use wrap_nf,         only: wrap_open
+  use spmd_utils,      only : masterproc,npes
+  use netcdf,          only : nf90_inquire_attribute,NF90_NOERR,NF90_GLOBAL,NF90_NOWRITE
+
+
+!---------------------------Arguments-----------------------------------
+
+  character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input  (nlfile=atm_in)
+  logical,          intent(in) :: single_column_in
+  real(r8),         intent(in) :: scmlat_in
+  real(r8),         intent(in) :: scmlon_in
+
+  ! Local variables
+  character(len=*), parameter :: sub = 'scam_readnl'
+  integer :: unitn, ierr
+  integer  :: ncid
+  integer  :: latdimid, londimid
+  integer  :: latsiz, lonsiz
+  integer  :: latid, lonid
+  integer  :: iatt
+  integer  :: ret
+  integer  :: latidx, lonidx
+  real(r8) :: ioplat,ioplon
+
+! this list should include any variable that you might want to include in the namelist
+  namelist /scam_nl/ iopfile, scm_iop_lhflxshflxTg, scm_iop_Tg, scm_relaxation, &
+       scm_relax_top_p,scm_relax_bot_p,scm_relax_tau_sec, &
+       scm_cambfb_mode,scm_crm_mode,scm_zadv_uv,scm_zadv_T,scm_zadv_q,&
+       scm_use_obs_T, scm_use_obs_uv, scm_use_obs_qv, &
+       scm_relax_linear, scm_relax_tau_top_sec, &
+       scm_relax_tau_bot_sec, scm_force_latlon, scm_relax_fincl
+
+  single_column=single_column_in
+
+  iopfile            = ' '
+  scm_clubb_iop_name = ' '
+  scm_relax_fincl(:) = ' '
+  
+  if( single_column ) then
+     if( npes.gt.1) call endrun('SCAM_READNL: SCAM doesnt support using more than 1 pe.')
+
+     if (.not. dycore_is('EUL') .or. plon /= 1 .or. plat /=1 ) then 
+        call endrun('SCAM_SETOPTS: must compile model for SCAM mode when namelist parameter single_column is .true.')
+     endif
+
+     scmlat=scmlat_in
+     scmlon=scmlon_in
+     
+     if( scmlat .lt. -90._r8 .or. scmlat .gt. 90._r8 ) then
+        call endrun('SCAM_READNL: SCMLAT must be between -90. and 90. degrees.')
+     elseif( scmlon .lt. 0._r8 .or. scmlon .gt. 360._r8 ) then
+        call endrun('SCAM_READNL: SCMLON must be between 0. and 360. degrees.')
+     end if
+     
+     ! Read namelist
+     if (masterproc) then
+        unitn = getunit()
+        open( unitn, file=trim(nlfile), status='old' )
+        call find_group_name(unitn, 'scam_nl', status=ierr)
+        if (ierr == 0) then
+           read(unitn, scam_nl, iostat=ierr)
+           if (ierr /= 0) then
+              call endrun(sub // ':: ERROR reading namelist')
+           end if
+        end if
+        close(unitn)
+        call freeunit(unitn)
+     end if
+     
+     ! Error checking:
+     
+     iopfile = trim(iopfile)
+     if( iopfile .ne. "" ) then 
+        use_iop = .true.
+     else
+        call endrun('SCAM_READNL: must specify IOP file for single column mode')
+     endif
+
+     call wrap_open( iopfile, NF90_NOWRITE, ncid )
+
+     if( nf90_inquire_attribute( ncid, NF90_GLOBAL, 'CAM_GENERATED_FORCING', iatt ) .EQ. NF90_NOERR ) then
+        use_camiop = .true.
+     else
+        use_camiop = .false.
+     endif
+     
+     ! If we are not forcing the lat and lon from the namelist use the closest lat and lon that is found in the IOP file.
+     if (.not.scm_force_latlon) then
+        call shr_scam_GetCloseLatLon( ncid, scmlat, scmlon, ioplat, ioplon, latidx, lonidx )
+        write(iulog,*) 'SCAM_READNL: using closest IOP column to lat/lon specified in drv_in'
+        write(iulog,*) '   requested lat,lon    =',scmlat,', ',scmlon
+        write(iulog,*) '   closest IOP lat,lon  =',ioplat,', ',ioplon
+     
+        scmlat = ioplat
+        scmlon = ioplon
+     end if
+     
+  end if
+     
+end subroutine scam_readnl
+
+!===============================================================================
 
 subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
 	single_column_out,scm_iop_srf_prop_out, scm_relaxation_out, &

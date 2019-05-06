@@ -9,9 +9,11 @@ module physpkg
   use shr_kind_mod,    only: r8 => shr_kind_r8
   use spmd_utils,      only: masterproc, mpicom
   use physics_types,   only: physics_state, physics_tend, physics_ptend,      &
-       physics_state_set_grid, physics_update,                                &
+       !physics_state_set_grid, physics_update,                                &
+       physics_state_set_grid, physics_update_main,                           &
        physics_type_alloc,    physics_state_alloc,   physics_tend_alloc,      &
        physics_ptend_dealloc, physics_state_dealloc, physics_tend_dealloc
+  use physics_update_mod,  only: physics_update_init
   use phys_grid,       only: get_ncols_p
   use phys_gmean,      only: gmean_mass
   use ppgrid,          only: begchunk, endchunk, pcols, pver, pverp
@@ -161,15 +163,16 @@ contains
     use physics_buffer,     only: physics_buffer_desc, pbuf_initialize, pbuf_get_index
     use physconst,          only: physconst_init
 
-    use cam_control_mod,    only: initial_run, ideal_phys
+    use cam_control_mod,    only: nsrest, ideal_phys
     use check_energy,       only: check_energy_init
     use chemistry,          only: chem_init, chem_is_active
     use cam_diagnostics,    only: diag_init
-    use held_suarez_cam,    only: held_suarez_init
+    !use held_suarez_cam,    only: held_suarez_init
     use tracers,            only: tracers_init
     use phys_debug_util,    only: phys_debug_init
     use wv_saturation,      only: wv_sat_init
     use qneg_module,        only: qneg_init
+    use subcol,             only: subcol_init
 
     ! Input/output arguments
     type(physics_state), pointer       :: phys_state(:)
@@ -203,9 +206,16 @@ contains
 
     call pbuf_initialize(pbuf2d)
 
+!### mdb insert from non-q3d version
+    !initialize physics update interface routine
+    call physics_update_init()
+    ! Initialize subcol scheme
+    call subcol_init(pbuf2d)
+!### mdb insert from non-q3d version
+
     ! diag_init makes addfld calls for dynamics fields that are output from
     ! the physics decomposition
-    call diag_init(pbuf2d)
+    call diag_init()
 
     call check_energy_init()
     teout_idx  = pbuf_get_index('TEOUT')
@@ -217,7 +227,7 @@ contains
 
     call tracers_init()
 
-    if (initial_run) then
+    if (nsrest .eq. 0) then
       call phys_inidat(cam_out, pbuf2d)
     end if
 
@@ -497,6 +507,7 @@ contains
     type(physics_buffer_desc), pointer       :: pbuf(:)
 
     !---------------------------Local workspace-----------------------------
+    real(r8)                                 :: tmp_t(pcols, pver)
     real(r8)                                 :: tmp_q(pcols, pver)
     real(r8)                                 :: tmp_cldliq(pcols, pver)
     real(r8)                                 :: tmp_cldice(pcols, pver)
@@ -534,6 +545,7 @@ contains
     ! Scale dry mass and energy (does nothing if dycore is EUL or SLD)
     call cnst_get_ind('CLDLIQ', ixcldliq)
     call cnst_get_ind('CLDICE', ixcldice)
+    tmp_t     (:ncol,:pver) = state%t(:ncol,:pver)  ! added by mdb 
     tmp_q     (:ncol,:pver) = state%q(:ncol,:pver,1)
     tmp_cldliq(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)
     tmp_cldice(:ncol,:pver) = state%q(:ncol,:pver,ixcldice)
@@ -564,7 +576,7 @@ contains
     end do
 
     call diag_phys_tend_writeout (state, pbuf,  tend, ztodt,                  &
-         tmp_q, tmp_cldliq, tmp_cldice, qini, cldliqini, cldiceini)
+         tmp_q, tmp_cldliq, tmp_cldice, tmp_t, qini, cldliqini, cldiceini)
 
    end subroutine tphysac
 
@@ -678,7 +690,8 @@ contains
 
     if (dycore_is('LR') .or. dycore_is('SE')) then
       call check_energy_fix(state, ptend, nstep, flx_heat)
-      call physics_update(state, ptend, ztodt, tend)
+      !call physics_update(state, ptend, ztodt, tend)
+      call physics_update_main(state, ptend, ztodt, tend)
       call check_energy_chng(state, tend, "chkengyfix", nstep, ztodt, zero, zero, zero, flx_heat)
       call outfld( 'EFIX', flx_heat    , pcols, lchnk   )
       call physics_ptend_dealloc(ptend)

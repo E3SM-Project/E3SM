@@ -134,6 +134,11 @@ subroutine ref_pres_init
 end subroutine ref_pres_init
 
 !====================================================================================
+!subroutine ref_pres_init_q3d(pref_edge_in, pref_mid_in, num_pr_lev_in)
+
+!end subroutine ref_pres_init_q3d
+
+!====================================================================================
 
 ! Convert pressure limiters to the appropriate level.
 pure function press_lim_idx(p, top) result(k_lim)

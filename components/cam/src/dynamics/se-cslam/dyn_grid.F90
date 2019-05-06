@@ -55,9 +55,45 @@ use edgetype_mod,           only: EdgeBuffer_t
 use time_mod,               only: TimeLevel_t
 use dof_mod,                only: UniqueCoords, UniquePoints
 
+use ppgrid,                 only: pver, pverp
+
 implicit none
 private
 save
+
+!-- copied from ref_pres module
+! Reference pressures (Pa)
+real(r8), protected :: pref_edge(pverp)     ! Layer edges
+real(r8), protected :: pref_mid(pver)       ! Layer midpoints
+real(r8), protected :: pref_mid_norm(pver)  ! Layer midpoints normalized by
+                                            ! surface pressure ('eta' coordinate)
+
+real(r8), protected :: ptop_ref             ! Top of model
+real(r8), protected :: psurf_ref            ! Surface pressure
+! Number of top levels using pure pressure representation
+integer, protected :: num_pr_lev
+
+! Pressure used to set troposphere cloud physics top (Pa)
+real(r8), protected :: trop_cloud_top_press = 0._r8
+! Top level for troposphere cloud physics
+integer, protected :: trop_cloud_top_lev
+
+! Pressure used to set MAM process top (Pa)
+real(r8), protected :: clim_modal_aero_top_press = 0._r8
+! Top level for MAM processes that impact climate
+integer, protected :: clim_modal_aero_top_lev
+
+! Molecular diffusion is calculated only if the model top is below this
+! pressure (Pa).
+real(r8), protected :: do_molec_press = 0.1_r8
+! Pressure used to set bottom of molecular diffusion region (Pa).
+real(r8), protected :: molec_diff_bot_press = 50._r8
+! Flag for molecular diffusion, and molecular diffusion level indices.
+logical, protected :: do_molec_diff = .false.
+integer, protected :: ntop_molec = 1
+integer, protected :: nbot_molec = 0
+!-- copied from ref_pres module
+
 
 integer, parameter :: dyn_decomp = 101 ! The SE dynamics grid
 integer, parameter :: fvm_decomp = 102 ! The FVM (CSLAM) grid
@@ -97,7 +133,9 @@ public :: &
    dyn_grid_get_elem_coords, & ! get coordinates of a specified block element
    dyn_grid_get_colndx,      & ! get element block/column and MPI process indices
                                ! corresponding to a specified global column index
-   physgrid_copy_attributes_d
+   physgrid_copy_attributes_d, &
+   ref_pres_init_q3d,        &
+   dyn_grid_get_pref
 
 ! Namelist variables controlling grid writing.
 ! Read in dyn_readnl from dyn_se_inparm group.
@@ -134,9 +172,9 @@ subroutine dyn_grid_init()
 
    use hycoef,              only: hycoef_init, hypi, hypm, nprlev, &
                                   hyam, hybm, hyai, hybi, ps0
-   use ref_pres,            only: ref_pres_init
+   !!!use ref_pres,            only: ref_pres_init_q3d
    use spmd_utils,          only: MPI_MAX, MPI_INTEGER, mpicom
-   use time_manager,        only: get_nstep, get_step_size
+   use time_manager,        only: get_nstep, get_step_size, dtime
    use dp_mapping,          only: dp_init, dp_write
    use native_mapping,      only: do_native_mapping, create_native_mapping_files
 
@@ -160,7 +198,7 @@ subroutine dyn_grid_init()
    type(hybrid_t)              :: hybrid
    integer                     :: ierr
    integer                     :: neltmp(3)
-   integer                     :: dtime
+   !integer                     :: dtime
 
    real(r8), allocatable       ::clat(:), clon(:), areaa(:)
    integer                     :: nets, nete
@@ -184,7 +222,7 @@ subroutine dyn_grid_init()
    end do
 
    ! Initialize reference pressures
-   call ref_pres_init(hypi, hypm, nprlev)
+   call ref_pres_init_q3d(hypi, hypm, nprlev)
 
    if (iam < par%nprocs) then
 
@@ -224,9 +262,10 @@ subroutine dyn_grid_init()
    !
    !  Note: dtime = timestep for physics/dynamics coupling
    !        tstep = the dynamics timestep:
-   dtime = get_step_size()
+   !!!dtime = get_step_size()
    tstep = dtime / real(nsplit*qsplit*rsplit, r8)
    TimeLevel%nstep = get_nstep()*nsplit*qsplit*rsplit
+     write(*,*) '### dyn_grid_init: dtime,tstep,nsplit,qsplit,rsplit = ',dtime,tstep,nsplit,qsplit,rsplit
 
    ! initial SE (subcycled) nstep
    TimeLevel%nstep0 = 0
@@ -1566,6 +1605,80 @@ subroutine create_global_coords(clat, clon, lat_out, lon_out)
    end if  ! (fv_nphys > 0)
 
 end subroutine create_global_coords
+
+!====================================================================================
+subroutine ref_pres_init_q3d(pref_edge_in, pref_mid_in, num_pr_lev_in)
+
+   ! Initialize reference pressures
+
+   ! arguments
+   real(r8), intent(in) :: pref_edge_in(:) ! reference pressure at layer edges (Pa)
+   real(r8), intent(in) :: pref_mid_in(:)  ! reference pressure at layer midpoints (Pa)
+   integer,  intent(in) :: num_pr_lev_in   ! number of top levels using pure pressure representation
+   !---------------------------------------------------------------------------
+
+   pref_edge = pref_edge_in
+   pref_mid  = pref_mid_in
+   num_pr_lev = num_pr_lev_in
+
+   ptop_ref = pref_edge(1)
+   psurf_ref = pref_edge(pverp)
+
+   pref_mid_norm = pref_mid/psurf_ref
+
+   ! Find level corresponding to the top of troposphere clouds.
+   trop_cloud_top_lev = press_lim_idx(trop_cloud_top_press, &
+      top=.true.)
+
+   ! Find level corresponding to the top for MAM processes.
+   clim_modal_aero_top_lev = press_lim_idx(clim_modal_aero_top_press, &
+      top=.true.)
+
+   ! Find level corresponding to the molecular diffusion bottom.
+   do_molec_diff = (ptop_ref < do_molec_press)
+   if (do_molec_diff) then
+      nbot_molec = press_lim_idx(molec_diff_bot_press, &
+         top=.false.)
+   end if
+
+end subroutine ref_pres_init_q3d
+
+!====================================================================================
+  subroutine dyn_grid_get_pref(pref_edge, pref_mid, num_pr_lev)
+    ! arguments
+    real(r8), intent(out) :: pref_edge(:) ! reference pressure at layer edges (Pa)
+    real(r8), intent(out) :: pref_mid(:)  ! reference pressure at layer midpoints (Pa)
+    integer,  intent(out) :: num_pr_lev   ! number of top levels using pure pressure representation
+  end subroutine dyn_grid_get_pref
+
+!====================================================================================
+! Convert pressure limiters to the appropriate level.
+pure function press_lim_idx(p, top) result(k_lim)
+  ! Pressure
+  real(r8), intent(in) :: p
+  ! Is this a top or bottom limit?
+  logical,  intent(in) :: top
+  integer :: k_lim, k
+
+  if (top) then
+     k_lim = pver+1
+     do k = 1, pver
+        if (pref_mid(k) > p) then
+           k_lim = k
+           exit
+        end if
+     end do
+  else
+     k_lim = 0
+     do k = pver, 1, -1
+        if (pref_mid(k) < p) then
+           k_lim = k
+           exit
+        end if
+     end do
+  end if
+
+end function press_lim_idx
 
 !=========================================================================================
 

@@ -286,7 +286,7 @@ subroutine co2_init (state, pbuf2d )
 
 !===========================================================================================
 
-subroutine co2_init_cnst(name, q, gcid)
+subroutine co2_init_cnst(name, latvals, lonvals, mask, q)
 
 !----------------------------------------------------------------------- 
 ! 
@@ -298,8 +298,10 @@ subroutine co2_init_cnst(name, q, gcid)
 !-----------------------------------------------------------------------
 ! Arguments
    character(len=*), intent(in) :: name         ! constituent name
+   real(r8),         intent(in)  :: latvals(:) ! lat in degrees (ncol)
+   real(r8),         intent(in)  :: lonvals(:) ! lon in degrees (ncol)
+   logical,          intent(in)  :: mask(:)    ! Only initialize where .true.
    real(r8), intent(out) :: q(:,:)   !  mass mixing ratio
-   integer, intent(in) :: gcid(:)    ! global column id
 !-----------------------------------------------------------------------
 
    if (.not. co2_flag) return

@@ -691,6 +691,7 @@ integer function get_step_size()
    call chkrc(rc, sub//': error return from ESMF_ClockGet')
    call ESMF_TimeIntervalGet(step_size, s=get_step_size, rc=rc)
    call chkrc(rc, sub//': error return from ESMF_ClockTimeIntervalGet')
+     write(*,*) '### get_step_size: get_step_size = ',get_step_size
 
 end function get_step_size
 !=========================================================================================

@@ -29,11 +29,12 @@ module restart_physics
   public :: write_restart_physics    ! Write the physics restart info out
   public :: read_restart_physics     ! Read the physics restart info in
   public :: init_restart_physics
+  public :: get_abs_restart_filepath
 
 !
 ! Private data
 !
-
+    character(len=256) :: pname  ! Full abs-ems restart filepath
     type(var_desc_t) :: flwds_desc, &
          solld_desc, co2prog_desc, co2diag_desc, sols_desc, soll_desc, &
          solsd_desc
@@ -561,5 +562,12 @@ module restart_physics
 !     call radiation_read_restart(file)
 
    end subroutine read_restart_physics
+
+   character(len=256) function get_abs_restart_filepath ( )
+     !  
+     ! Return the full filepath to the abs-ems restart file
+     !  
+     get_abs_restart_filepath = pname
+   end function get_abs_restart_filepath
 
  end module restart_physics

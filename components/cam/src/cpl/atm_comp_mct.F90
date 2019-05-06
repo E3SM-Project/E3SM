@@ -185,7 +185,9 @@ CONTAINS
 
        ! Initialize MPI for CAM
 
-       call spmdinit(mpicom_atm, calc_proc_smp_map=.false.)
+       !## mdb:  hacking this for now
+       !call spmdinit(mpicom_atm, calc_proc_smp_map=.false.)
+       call spmdinit(mpicom_atm)
        
        ! Redirect share output to cam log
        

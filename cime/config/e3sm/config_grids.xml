@@ -743,6 +743,13 @@
       <mask>oQU240</mask>
     </model_grid>
 
+    <model_grid alias="ne5pg3_ne5pg3_mg37" not_compset="_POP">
+      <grid name="atm">ne5np4.pg3</grid>
+      <grid name="lnd">ne5np4.pg3</grid>
+      <grid name="ocnice">ne5np4.pg3</grid>
+      <mask>gx3v7</mask>
+    </model_grid>
+
     <model_grid alias="armx8v3_armx8v3" compset="(DOCN|XOCN|SOCN|AQP1)">
       <grid name="atm">ne0np4_arm_x8v3_lowcon</grid>
       <grid name="lnd">ne0np4_arm_x8v3_lowcon</grid>
@@ -1475,6 +1482,22 @@
       <file grid="ice|ocn" mask="oQU480">$DIN_LOC_ROOT/share/domains/domain.ocn.ne4np4_oQU480.180702.nc</file>
       <file grid="ice|ocn" mask="oQU240">$DIN_LOC_ROOT/share/domains/domain.ocn.ne4np4_oQU240.160614.nc</file>
       <desc>ne4np4 is Spectral Elem  7.5-deg grid:</desc>
+    </domain>
+
+    <domain name="ne5np4">
+      <nx>1352</nx> <ny>1</ny>
+      <file grid="atm|lnd" mask="gx3v7">$DIN_LOC_ROOT/share/domains/domain.lnd.ne5np4_gx3v7.140810.nc</file>
+      <file grid="ocnice" mask="gx3v7">$DIN_LOC_ROOT/share/domains/domain.ocn.ne5np4_gx3v7.140810.nc</file>
+      <desc>ne5np4 is Spectral Elem 6-deg grid:</desc>
+      <support>For ultra-low resolution spectral element grid testing</support>
+    </domain>
+
+    <domain name="ne5np4.pg3">
+      <nx>1350</nx> <ny>1</ny>
+      <file grid="atm|lnd" mask="gx3v7">$DIN_LOC_ROOT/share/domains/domain.lnd.ne5np4.pg3_gx3v7.170605.nc</file>
+      <file grid="ocnice" mask="gx3v7">$DIN_LOC_ROOT/share/domains/domain.ocn.ne5np4.pg3_gx3v7.170605.nc</file>
+      <desc>ne5np4 is Spectral Elem 6-deg grid with a 3x3 FVM physics grid:</desc>
+      <support>EXPERIMENTAL FVM physics grid</support>
     </domain>
 
     <domain name="ne11np4">

@@ -732,8 +732,9 @@ subroutine derived_phys_dry(phys_state, phys_tend, pbuf2d)
    use check_energy,  only: check_energy_timestep_init
    use hycoef,        only: hyam, hybm, hyai, hybi, ps0
    use shr_vmath_mod, only: shr_vmath_log
-   use gmean_mod,     only: gmean
-   use qneg_module,   only: qneg3
+   !use gmean_mod,     only: gmean
+   use phys_gmean,    only: gmean
+   use qneg_module,   only: qneg3_new
 
    ! arguments
    type(physics_state), intent(inout), dimension(begchunk:endchunk) :: phys_state
@@ -879,7 +880,7 @@ subroutine derived_phys_dry(phys_state, phys_tend, pbuf2d)
       end do
 
       ! Ensure tracers are all positive
-      call qneg3('D_P_COUPLING',lchnk  ,ncol    ,pcols   ,pver    , &
+      call qneg3_new('D_P_COUPLING',lchnk  ,ncol    ,pcols   ,pver    , &
            1, pcnst, qmin  ,phys_state(lchnk)%q)
 
       ! Compute energy and water integrals of input state

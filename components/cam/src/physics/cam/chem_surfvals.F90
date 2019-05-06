@@ -189,10 +189,13 @@ subroutine chem_surfvals_init()
 
    use infnan,  only : posinf, assignment(=)
    use mo_flbc, only : flbc_inti
+   use phys_control, only: q3d_is_on
 
    !---------------------------Local variables-----------------------------
    integer :: yr, mon, day, ncsec
    !-----------------------------------------------------------------------
+
+   if (q3d_is_on) return
 
    if (scenario_ghg == 'FIXED') then
       doRamp_ghg = .false.

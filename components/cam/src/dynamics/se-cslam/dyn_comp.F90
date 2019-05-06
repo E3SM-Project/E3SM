@@ -7,7 +7,9 @@ use physconst,              only: pi
 use spmd_utils,             only: iam, masterproc
 use constituents,           only: pcnst, cnst_get_ind, cnst_name, cnst_longname, &
                                   cnst_read_iv, qmin, cnst_type
-use cam_control_mod,        only: initial_run
+!### MDB mod
+!use cam_control_mod,        only: initial_run
+use cam_control_mod,        only: nsrest
 use cam_initfiles,          only: initial_file_get_id, topo_file_get_id, pertlim
 use phys_control,           only: use_gw_front, use_gw_front_igw
 use dyn_grid,               only: timelevel, hvcoord, edgebuf
@@ -365,7 +367,9 @@ subroutine dyn_readnl(NLFileName)
    end if
 
    ! if restart or branch run
-   if (.not. initial_run) then
+!### mdb mod
+   !!!if (.not. initial_run) then
+   if (nsrest .gt. 0) then
       runtype = 1
    end if
 
@@ -669,7 +673,8 @@ subroutine dyn_init(dyn_in, dyn_out)
 
    call read_phis(dyn_in)
 
-   if (initial_run) then
+   !!!if (initial_run) then
+   if (nsrest == 0) then
       call read_inidat(dyn_in)
       call clean_iodesc_list()
    end if

@@ -46,12 +46,31 @@ module tracers
 
   use shr_kind_mod, only: r8 => shr_kind_r8
   use cam_logfile,  only: iulog
-
+  use spmd_utils,   only: masterproc
+  use cam_abortutils,   only: endrun
   implicit none
+
+  integer, parameter :: num_names_max = 30
+  integer, parameter :: num_analytic  = 8
+
+  ! Data from namelist variables
+  integer           :: test_tracer_num = 0
+  character(len=16) :: test_tracer_names(num_names_max)
+
+  logical :: tracers_suite_flag = .false.  ! true => test tracers provided by tracers_suite module
+
+  character(len=16), parameter :: analytic_names(num_analytic) = &
+   (/'TT_SLOT         ', 'TT_GBALL        ', 'TT_TANH         ', &
+     'TT_EM8          ', 'TT_Y2_2         ', 'TT_Y32_16       ', &
+     'TT_LATP2        ', 'TT_LONP2        ' /)
+
+  logical :: analytic_tracer(num_names_max)
+
   private
   save
 
 ! Public interfaces
+  public tracers_readnl                    ! read namelist
   public tracers_register                  ! register constituent
   public tracers_implements_cnst           ! true if named constituent is implemented by this package
   public tracers_init_cnst                 ! initialize constituent field
@@ -69,6 +88,109 @@ module tracers
   logical :: debug = .false.
   
 contains
+
+subroutine tracers_readnl(nlfile)
+
+   use namelist_utils,  only: find_group_name
+   use units,           only: getunit, freeunit
+   use spmd_utils,      only: mpicom, mstrid=>masterprocid, mpi_integer, mpi_character
+
+   ! args
+   character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
+
+   ! Local variables
+   integer :: unitn, ierr
+   integer :: i, j
+   integer :: num_names
+   character(len=*), parameter :: subname = 'tracers_readnl'
+
+   namelist /test_tracers_nl/ test_tracer_num, test_tracer_names
+   !-----------------------------------------------------------------------------
+
+   test_tracer_names = (/ (' ', i=1,num_names_max) /)
+
+   if (masterproc) then
+      unitn = getunit()
+      open( unitn, file=trim(nlfile), status='old' )
+      call find_group_name(unitn, 'test_tracers_nl', status=ierr)
+      if (ierr == 0) then
+         read(unitn, test_tracers_nl, iostat=ierr)
+         if (ierr /= 0) then
+            call endrun(subname // ':: ERROR reading namelist')
+         end if
+      end if
+      close(unitn)
+      call freeunit(unitn)
+   end if
+
+   call mpi_bcast(test_tracer_names, len(test_tracer_names)*num_names_max, mpi_character, &
+                  mstrid, mpicom, ierr)
+   if (ierr /= 0) call endrun(subname//": FATAL: mpi_bcast: test_tracer_names")
+
+   call mpi_bcast(test_tracer_num,   1, mpi_integer, mstrid, mpicom, ierr)
+   if (ierr /= 0) call endrun(subname//": FATAL: mpi_bcast: iradsw")
+
+   ! If any tracers have been specified then turn on the tracers module
+   if (test_tracer_num > 0) then
+      tracers_flag = .true.
+   else
+      return
+   end if
+
+   ! Determine the number of tracer names supplied:
+   num_names = 0
+   analytic_tracer = .false.
+   do i = 1, num_names_max
+      if (len_trim(test_tracer_names(i)) > 0) then
+         num_names = num_names + 1
+
+         ! Does the tracer have an analytic IC?
+         do j = 1, num_analytic
+            if (trim(test_tracer_names(i)) == trim(analytic_names(j))) then
+               analytic_tracer(i) = .true.
+               exit
+            end if
+         end do
+      else
+         exit
+      end if
+   end do
+
+   if (num_names > 0) then
+      ! If test_tracer_names have been specified, the test_tracer_num should
+      ! equal the number of names supplied.
+      if (num_names /= test_tracer_num) then
+         write(iulog, *) subname//' number of names, number of tracers: ', num_names, test_tracer_num
+         call endrun(subname // ':: number of names does not match number of tracers')
+      end if
+   else
+      ! If no names have been supplied then
+      ! the tracers will be provided by the tracers_suite module.
+      tracers_suite_flag = .true.
+   end if
+
+   ! Print summary to log file
+   if (masterproc) then
+
+      write(iulog, *) 'Test Tracers Module'
+      write(iulog, *) '  Number of Test Tracers:', test_tracer_num
+      if (tracers_suite_flag) then
+         write(iulog, *) '  Tracers will be provided by tracers_suite module.'
+      else
+         do i = 1, num_names
+            if (analytic_tracer(i)) then
+               write(iulog, *) '  '//trim(test_tracer_names(i))//&
+                  ' will be initialized from an analytic expression'
+            else
+               write(iulog, *) '  '//trim(test_tracer_names(i))//&
+                  ' will be initialized from the IC file'
+            end if
+         end do
+      end if
+   end if
+
+end subroutine tracers_readnl
+
 !======================================================================
 subroutine tracers_register
 !----------------------------------------------------------------------- 
@@ -145,7 +267,7 @@ function tracers_implements_cnst(name)
 end function tracers_implements_cnst
 
 !===============================================================================
-subroutine tracers_init_cnst(name, q, gcid)
+subroutine tracers_init_cnst(name, latvals, lonvals, mask, q)
 
 !----------------------------------------------------------------------- 
 !
@@ -159,14 +281,16 @@ subroutine tracers_init_cnst(name, q, gcid)
   implicit none
 
   character(len=*), intent(in) :: name
+  real(r8),         intent(in)  :: latvals(:) ! lat in degrees (ncol)
+  real(r8),         intent(in)  :: lonvals(:) ! lon in degrees (ncol)
+  logical,          intent(in)  :: mask(:)    ! Only initialize where .true.
   real(r8), intent(out), dimension(:,:) :: q    ! kg tracer/kg dry air (gcol,plev)
-  integer,  intent(in)                  :: gcid(:)  ! global column id
 ! Local
   integer m
   if ( tracers_flag ) then 
      do m = 1, trac_ncnst
         if (name ==  get_tracer_name(m))  then
-           call init_cnst_tr(m,q, gcid)
+           call init_cnst_tr(m, latvals, lonvals, mask, q)
         endif
      end do
   end if

@@ -393,7 +393,8 @@ end subroutine restart_printopts
       ! Dynamics, physics, History
       !-----------------------------------------------------------------------
 
-   call initcom ()
+!## mdb: this is another empty subroutine so commenting out this call
+   !call initcom ()
    call read_restart_dynamics(File, dyn_in, dyn_out, NLFileName)   
 
    call phys_grid_init

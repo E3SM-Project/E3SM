@@ -72,7 +72,7 @@ module cam_history_support
      procedure :: dim_sizes_arr => dim_index_2d_dim_size_arr
      generic   :: dim_sizes     => dim_sizes_arr, dim_sizes_2d
   end type dim_index_2d
-  
+
   type, public :: dim_index_3d       ! 3-D dimension index
     integer :: beg1, end1            ! lower & upper bounds of 1st dimension
     integer :: beg2, end2            ! lower & upper bounds of 2nd dimension
@@ -124,6 +124,7 @@ module cam_history_support
     character(len=max_chars) :: sampling_seq ! sampling sequence - if not every timestep, how often field is sampled
     ! (i.e., how often "outfld" is called):  every other; only during LW/SW
     ! radiation calcs; etc.
+    character(len=max_chars) :: cell_methods ! optional cell_methods attribute
   contains
     procedure :: get_shape   => field_info_get_shape
     procedure :: get_bounds  => field_info_get_bounds
@@ -157,9 +158,11 @@ module cam_history_support
 
     integer                   :: hwrt_prec   ! history output precision
     real(r8),         pointer :: hbuf(:,:,:) => NULL()
+    real(r8),         pointer :: sbuf(:,:,:) => NULL() ! for standard deviation
     type(var_desc_t), pointer :: varid(:)    => NULL() ! variable ids
     integer,          pointer :: nacs(:,:)   => NULL() ! accumulation counter
     type(var_desc_t), pointer :: nacs_varid  => NULL()
+    type(var_desc_t), pointer :: sbuf_varid  => NULL()
   end type hentry
 
   !---------------------------------------------------------------------------
@@ -206,8 +209,15 @@ module cam_history_support
     type(var_desc_t) :: time_writtenid   ! var id for time time sample written
     type(var_desc_t) :: f107id           ! var id for f107
     type(var_desc_t) :: f107aid          ! var id for f107a
+    type(var_desc_t) :: f107pid          ! var id for f107p
     type(var_desc_t) :: kpid             ! var id for kp
     type(var_desc_t) :: apid             ! var id for ap
+    type(var_desc_t) :: byimfid          ! var id IMF BY
+    type(var_desc_t) :: bzimfid          ! var id IMF BZ
+    type(var_desc_t) :: swvelid          ! var id solar wind velocity
+    type(var_desc_t) :: swdenid          ! var id solar wind density
+    type(var_desc_t) :: colat_crit1_id   ! critical colatitude
+    type(var_desc_t) :: colat_crit2_id   ! critical colatitude
 
   end type active_entry
 
@@ -241,6 +251,7 @@ module cam_history_support
   type, public :: hist_coord_t
     character(len=max_hcoordname_len) :: name = ''  ! coordinate name
     integer                  :: dimsize = 0       ! size of dimension
+    character(len=max_hcoordname_len) :: dimname = '' ! optional dimension name
     character(len=max_chars) :: long_name = ''    ! 'long_name' attribute
     character(len=max_chars) :: units = ''        ! 'units' attribute
     character(len=max_chars) :: bounds_name = ''  ! 'bounds' attribute (& name of bounds variable)
@@ -342,7 +353,7 @@ contains
 
     dim1 = MAX(0, this%end1 - this%beg1 + 1)
     dim2 = MAX(0, this%end2 - this%beg2 + 1)
-    
+
   end subroutine dim_index_2d_dim_sizes_2d
 
   subroutine dim_index_2d_dim_size_arr(this, dims)
@@ -356,7 +367,7 @@ contains
     end if
 
     call this%dim_sizes(dims(1), dims(2))
-    
+
   end subroutine dim_index_2d_dim_size_arr
 
   subroutine dim_index_3d_dim_sizes_3d(this, dim1, dim2, dim3)
@@ -370,7 +381,7 @@ contains
     dim1 = MAX(0, this%end1 - this%beg1 + 1)
     dim2 = MAX(0, this%end2 - this%beg2 + 1)
     dim3 = MAX(0, this%end3 - this%beg3 + 1)
-    
+
   end subroutine dim_index_3d_dim_sizes_3d
 
   subroutine dim_index_3d_dim_size_arr(this, dims)
@@ -384,7 +395,7 @@ contains
     end if
 
     call this%dim_sizes(dims(1), dims(2), dims(3))
-    
+
   end subroutine dim_index_3d_dim_size_arr
 
   ! field_info_get_dims_2d: Retrieve bounds for stepping through a chunk
@@ -512,6 +523,7 @@ contains
     integer                                 :: i, ierr
     logical                                 :: col_only
     logical                                 :: unstruct
+    character(len=*), parameter             :: subname = 'history_patch_write_attrs'
 
     num_patches = size(this%patches)
     if (associated(this%header_info)) then
@@ -519,7 +531,7 @@ contains
       if (size(this%header_info) /= num_patches) then
         write(errormsg, '(a,2(i0,a))') 'Size mismatch between header_info (', &
              size(this%header_info), ') and patches (', num_patches, ')'
-        call endrun('history_patch_write_attrs: '//errormsg)
+        call endrun(subname//': '//errormsg)
       end if
     else
       allocate(this%header_info(num_patches))
@@ -534,7 +546,7 @@ contains
       col_only = this%collected_output
       if (num_patches == 1) then
         ! Backwards compatibility
-        if (unstruct) then
+        if (unstruct .or. col_only) then
           col_name = 'ncol'
         else
           col_name = ''
@@ -545,11 +557,11 @@ contains
         call patchptr%get_axis_names(lat_name, lon_name, col_name, col_only)
       end if
       ! Define the dimensions (latx/lonx or ncolx)
-      ! col_name is set for unstructured output (ncolx)
+      ! col_name is set for unstructured output or collected columns (ncolx)
       if (len_trim(col_name) > 0) then
         call patchptr%get_global_size(gsize=temp1)
         if (temp1 <= 0) then
-          call endrun('history_patch_write_attrs: col dimsize must be positive')
+          call endrun(subname//': col dimsize must be positive')
         end if
         if (unstruct .and. (.not. col_only)) then
           ! For the case of unstructured output without collected column
@@ -564,13 +576,13 @@ contains
         lat_name = trim(lat_name)//'_'//trim(this%lat_axis_name)
         call patchptr%get_global_size(temp1, temp2)
         if (temp1 <= 0) then
-          call endrun('history_patch_write_attrs: lat dimsize must be positive')
+          call endrun(subname//': lat dimsize must be positive')
         end if
         call cam_pio_def_dim(File, trim(lat_name), temp1, dimid1, existOK=.true.)
         latid = dimid1
         lon_name = trim(lon_name)//'_'//trim(this%lon_axis_name)
         if (temp2 <= 0) then
-          call endrun('history_patch_write_attrs: lon dimsize must be positive')
+          call endrun(subname//': lon dimsize must be positive')
         end if
         call cam_pio_def_dim(File, trim(lon_name), temp2, dimid2, existOK=.true.)
         lonid = dimid2
@@ -588,12 +600,12 @@ contains
       call patchptr%get_coord_long_name('lat', temp_str)
       if (len_trim(temp_str) > 0) then
         ierr = pio_put_att(File, vardesc_lat, 'long_name', trim(temp_str))
-        call cam_pio_handle_error(ierr, 'history_patch_write_attrs: Unable to define long_name')
+        call cam_pio_handle_error(ierr, subname//': Unable to define long_name')
       end if
       call patchptr%get_coord_units('lat', temp_str)
       if (len_trim(temp_str) > 0) then
         ierr = pio_put_att(File, vardesc_lat, 'units', trim(temp_str))
-        call cam_pio_handle_error(ierr, 'history_patch_write_attrs: Unable to define units')
+        call cam_pio_handle_error(ierr, subname//': Unable to define units')
       end if
       !! Define the lonx (coordinate) variable
       if (unstruct .and. (.not. col_only)) then
@@ -607,12 +619,12 @@ contains
       call patchptr%get_coord_long_name('lon', temp_str)
       if (len_trim(temp_str) > 0) then
         ierr = pio_put_att(File, vardesc_lon, 'long_name', trim(temp_str))
-        call cam_pio_handle_error(ierr, 'history_patch_write_attrs: Unable to define long_name')
+        call cam_pio_handle_error(ierr, subname//': Unable to define long_name')
       end if
       call patchptr%get_coord_units('lon', temp_str)
       if (len_trim(temp_str) > 0) then
         ierr = pio_put_att(File, vardesc_lon, 'units', trim(temp_str))
-        call cam_pio_handle_error(ierr, 'history_patch_write_attrs: Unable to define units')
+        call cam_pio_handle_error(ierr, subname//': Unable to define units')
       end if
       call this%header_info(i)%set_varids(vardesc_lon, vardesc_lat)
       nullify(vardesc_lat, vardesc_lon) ! They belong to the header_info now
@@ -665,8 +677,10 @@ contains
     class(history_patch_t)                     :: this
     character(len=*),            intent(inout) :: name
 
-    ! Add patch description info to the variable name
-    name = trim(name)//'_'//trim(this%lon_axis_name)//'_'//trim(this%lat_axis_name)
+    if (.not. this%collected_output) then
+      ! Add patch description info to the variable name
+      name = trim(name)//'_'//trim(this%lon_axis_name)//'_'//trim(this%lat_axis_name)
+    end if
   end subroutine history_patch_field_name
 
   ! history_patch_num_hdims: Find the number of horizontal dimensions for
@@ -681,7 +695,7 @@ contains
     character(len=128)                         :: errormsg
     integer                                    :: i
     integer                                    :: num_patches
- 
+
     ! Basic sanity checks, is this patch OK?
     num_patches = size(this%patches)
     if (associated(this%header_info)) then
@@ -783,7 +797,7 @@ contains
     ! Local variables
     integer                                  :: num_patches
     integer                                  :: i
- 
+
     num_patches = size(this%patches)
 
     ! Find the correct patch by matching grid ID
@@ -811,14 +825,12 @@ contains
     type(cam_grid_patch_t), pointer          :: patchptr
     character(len=128)                       :: errormsg
     integer                                  :: num_patches
-    integer                                  :: i
-    integer                                  :: uid
+    integer                                  :: i, idx
+    integer                                  :: uid ! unlimited dim ID
     type(io_desc_t),        pointer          :: iodesc
     integer                                  :: ierr, nfdims
     integer                                  :: fdimlens(7), dimids(7)
-    integer                                  :: has_unlim_dim     ! 0 or 1 for presence of unlimdim
-    integer                                  :: non_unlim_nxt_idx ! idx to incrementally gather all non-unlim dims
- 
+
     num_patches = size(this%patches)
 
     ! Find the correct patch by matching grid ID
@@ -836,33 +848,17 @@ contains
     end do
 
     ! We have the right grid, write the hbuf
-    call cam_pio_var_info(File, varid, nfdims, dimids, fdimlens,unlimDimID=uid)
-
-    ! Pack non-unlimited dim lens in fdimlens sequentially, leaving out unlimdim.
-    ! This is needed upon calling patchptr%get_decomp, 
-    ! because while the history file can contain unlimited dim, which would be
-    ! included in the returned arrays of nfdims, dimids, and fdimlens, 
-    ! the history field in hbuf does not contain a dimension corresponding to the unlimdim.
-
-    ! Assuming only one unlimited dim, which is allowed to be at any position in dimids
-    ! In current cam history output, only time dimension is unlimited, and increased 
-    ! incrementally during the course of simulation. 
-    !
-    ! If needed, it can be modified to allow for multiple unlimited dimensions
-    
-    has_unlim_dim = 0
-    non_unlim_nxt_idx = 1
-
-    do i=1,nfdims
-      if(dimids(i) /= uid) then
-        fdimlens(non_unlim_nxt_idx) = fdimlens(i)
-        non_unlim_nxt_idx = non_unlim_nxt_idx + 1
-      else
-        has_unlim_dim = 1
+    call cam_pio_var_info(File, varid, nfdims, dimids, fdimlens, unlimDimID=uid)
+    idx = 1
+    do i = 1, nfdims
+      if (i > idx) then
+        dimids(idx) = dimids(i)
+      end if
+      if (dimids(i) /= uid) then
+        idx = idx + 1
       end if
     end do
-    nfdims = nfdims - has_unlim_dim
-
+    nfdims = nfdims - COUNT(dimids(1:nfdims) == uid)
     call patchptr%get_decomp(adims, fdimlens(1:nfdims), dtype, iodesc)
     if (size(adims) == 2) then
       call pio_write_darray(File, varid, iodesc, hbuf(:,1,:), ierr)
@@ -887,7 +883,7 @@ contains
     character(len=128)                         :: errormsg
     integer                                    :: num_patches
     integer                                    :: i
- 
+
     num_patches = size(this%patches)
 
     ! Find the correct patch by matching grid ID
@@ -959,6 +955,7 @@ contains
     f_out%long_name = f_in%long_name                 ! long name
     f_out%units = f_in%units                         ! units
     f_out%sampling_seq =  f_in%sampling_seq          ! sampling sequence - if not every timestep, how often field is sampled
+    f_out%cell_methods = f_in%cell_methods
 
     if(associated(f_in%mdims)) then
       f_out%mdims=>f_in%mdims
@@ -990,7 +987,7 @@ contains
     character(len=*), intent(in)            :: mdimname
     ! Local variable
     integer :: i
-    
+
     get_hist_coord_index = -1
     do i = 1, registeredmdims
       if(trim(mdimname) == trim(hist_coords(i)%name)) then
@@ -1004,7 +1001,7 @@ contains
   character(len=max_hcoordname_len) function hist_coord_name(index)
     ! Input variables
     integer, intent(in)            :: index
-    
+
     if ((index > 0) .and. (index <= registeredmdims)) then
       hist_coord_name = hist_coords(index)%name
     else
@@ -1016,7 +1013,7 @@ contains
   integer function hist_coord_size_int(index)
     ! Input variables
     integer, intent(in)            :: index
-    
+
     if (index > 0) then
       hist_coord_size_int = hist_coords(index)%dimsize
     else
@@ -1030,7 +1027,7 @@ contains
     character(len=*), intent(in)            :: mdimname
     ! Local variable
     integer :: i
-    
+
     i = get_hist_coord_index(mdimname)
     hist_coord_size_char = hist_coord_size(i)
 
@@ -1342,7 +1339,7 @@ contains
   end subroutine add_hist_coord_regonly
 
   subroutine add_hist_coord_int(name, vlen, long_name, units, values,         &
-       positive, standard_name)
+       positive, standard_name, dimname)
 
     ! Input variables
     character(len=*), intent(in)                    :: name
@@ -1352,6 +1349,7 @@ contains
     integer,          intent(in),  target, optional :: values(:)
     character(len=*), intent(in),          optional :: positive
     character(len=*), intent(in),          optional :: standard_name
+    character(len=*), intent(in),          optional :: dimname
 
     ! Local variables
     integer                                         :: i
@@ -1361,39 +1359,44 @@ contains
          i_values=values, positive=positive, standard_name=standard_name)
     ! Register the name if necessary
     if (i == 0) then
-      call add_hist_coord(trim(name), i)
-      !  if(masterproc) write(iulog,*) 'Registering hist coord',name,'(',i,') with length: ',vlen
+       call add_hist_coord(trim(name), i)
+       !  if(masterproc) write(iulog,*) 'Registering hist coord',name,'(',i,') with length: ',vlen
     end if
 
     ! Set the coord's values
     hist_coords(i)%dimsize = vlen
     if (len_trim(long_name) > max_chars) then
-      if(masterproc) then
-        write(iulog,*) 'WARNING: long_name for ',trim(name),' too long'
-      end if
+       if(masterproc) then
+          write(iulog,*) 'WARNING: long_name for ',trim(name),' too long'
+       end if
     end if
     hist_coords(i)%long_name = trim(long_name)
     if (present(units)) then
-      hist_coords(i)%units = trim(units)
+       hist_coords(i)%units = trim(units)
     else
-      hist_coords(i)%units = ''
+       hist_coords(i)%units = ''
     end if
     hist_coords(i)%integer_dim = .true.
     if (present(values)) then
-      hist_coords(i)%integer_values => values
+       hist_coords(i)%integer_values => values
     endif
     if (present(positive)) then
-      hist_coords(i)%positive = trim(positive)
+       hist_coords(i)%positive = trim(positive)
     end if
     if (present(standard_name)) then
-      hist_coords(i)%standard_name = trim(standard_name)
+       hist_coords(i)%standard_name = trim(standard_name)
     end if
     hist_coords(i)%vertical_coord = .false.
+    if (present(dimname)) then
+       hist_coords(i)%dimname = trim(dimname)
+    else
+       hist_coords(i)%dimname = ''
+    end if
 
   end subroutine add_hist_coord_int
 
   subroutine add_hist_coord_r8(name, vlen, long_name, units, values,         &
-       bounds_name, bounds, positive, standard_name, vertical_coord)
+       bounds_name, bounds, positive, standard_name, vertical_coord, dimname)
 
     ! Input variables
     character(len=*),      intent(in)                    :: name
@@ -1406,6 +1409,7 @@ contains
     character(len=*),      intent(in),          optional :: positive
     character(len=*),      intent(in),          optional :: standard_name
     logical,               intent(in),          optional :: vertical_coord
+    character(len=*),      intent(in),          optional :: dimname
 
     ! Local variables
     character(len=120)                                   :: errormsg
@@ -1417,48 +1421,53 @@ contains
          bounds_name=bounds_name, bounds=bounds)
     ! Register the name if necessary
     if (i == 0) then
-      call add_hist_coord(trim(name), i)
-      !  if(masterproc) write(iulog,*) 'Registering hist coord',name,'(',i,') with length: ',vlen
+       call add_hist_coord(trim(name), i)
+       !  if(masterproc) write(iulog,*) 'Registering hist coord',name,'(',i,') with length: ',vlen
     end if
 
     ! Set the coord's size
     hist_coords(i)%dimsize = vlen
     if (len_trim(long_name) > max_chars) then
-      if(masterproc) then
-        write(iulog,*) 'WARNING: long_name for ',trim(name),' too long'
-      end if
+       if(masterproc) then
+          write(iulog,*) 'WARNING: long_name for ',trim(name),' too long'
+       end if
     end if
     hist_coords(i)%long_name = trim(long_name)
     if (len_trim(units) > 0) then
-      hist_coords(i)%units = trim(units)
+       hist_coords(i)%units = trim(units)
     else
-      hist_coords(i)%units = '1'
+       hist_coords(i)%units = '1'
     end if
     hist_coords(i)%integer_dim = .false.
     hist_coords(i)%real_values => values
     if (present(positive)) then
-      hist_coords(i)%positive = trim(positive)
+       hist_coords(i)%positive = trim(positive)
     end if
     if (present(standard_name)) then
-      hist_coords(i)%standard_name = trim(standard_name)
+       hist_coords(i)%standard_name = trim(standard_name)
     end if
     if (present(bounds_name)) then
-      hist_coords(i)%bounds_name = trim(bounds_name)
-      if (.not. present(bounds)) then
-        write(errormsg,*) 'bounds must be present for ',trim(bounds_name)
-        call endrun(errormsg)
-      end if
-      hist_coords(i)%bounds => bounds
+       hist_coords(i)%bounds_name = trim(bounds_name)
+       if (.not. present(bounds)) then
+          write(errormsg,*) 'bounds must be present for ',trim(bounds_name)
+          call endrun(errormsg)
+       end if
+       hist_coords(i)%bounds => bounds
     else if (present(bounds)) then
-      write(errormsg,*) 'bounds_name must be present for bounds values'
-      call endrun(errormsg)
+       write(errormsg,*) 'bounds_name must be present for bounds values'
+       call endrun(errormsg)
     else
-      hist_coords(i)%bounds_name = ''
+       hist_coords(i)%bounds_name = ''
     end if
     if (present(vertical_coord)) then
-      hist_coords(i)%vertical_coord = vertical_coord
+       hist_coords(i)%vertical_coord = vertical_coord
     else
-      hist_coords(i)%vertical_coord = .false.
+       hist_coords(i)%vertical_coord = .false.
+    end if
+    if (present(dimname)) then
+       hist_coords(i)%dimname = trim(dimname)
+    else
+       hist_coords(i)%dimname = ''
     end if
 
   end subroutine add_hist_coord_r8
@@ -1519,9 +1528,18 @@ contains
     integer                          :: dtype
     logical                          :: defvar         ! True if var exists
 
-    ! Check to see if the dimension already exists in the file
-    call cam_pio_def_dim(File, trim(hist_coords(mdimind)%name),               &
-           hist_coords(mdimind)%dimsize, dimid, existOK=.false.)
+    ! Create or check dimension for this coordinate
+    if (len_trim(hist_coords(mdimind)%dimname) > 0) then
+       ! Dim can already exist if different from coord name
+       call cam_pio_def_dim(File, trim(hist_coords(mdimind)%dimname),         &
+            hist_coords(mdimind)%dimsize, dimid,                              &
+            existOK=(trim(hist_coords(mdimind)%dimname) /=                    &
+                     trim(hist_coords(mdimind)%name)))
+    else
+       ! The dimension has the same name as the coord -- must be new dim
+       call cam_pio_def_dim(File, trim(hist_coords(mdimind)%name),            &
+            hist_coords(mdimind)%dimsize, dimid, existOK=.false.)
+    end if
     ! If the caller wants to know the NetCDF dimension ID, set it here
     if (present(mdimid)) then
       mdimid = dimid
@@ -1861,7 +1879,7 @@ contains
     end do
     do j = 1, cnt
       if(mdimindicies(j) < 0) then
-        do i = 1, registeredmdims		
+        do i = 1, registeredmdims
           print *,__FILE__,__LINE__,i,hist_coords(i)%name
         end do
         write(errormsg,*) 'Name ',mdimnames(j),' is not a registered history coordinate'

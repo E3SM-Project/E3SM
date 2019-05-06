@@ -1257,6 +1257,7 @@ contains
     ! Retrieve the global column indices for physics columns
     nullify(gcid)
     physgrid = cam_grid_id('physgrid')
+      write(*,*) '### q3d_comm_read_grid: physgrid = ',physgrid
     call cam_grid_get_gcid(physgrid, gcid)
 
     inquire(file=trim(filename), exist=filefound)

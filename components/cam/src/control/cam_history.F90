@@ -303,6 +303,7 @@ module cam_history
   public :: wshist                    ! Write files out
   public :: outfld                    ! Output a field
   public :: intht                     ! Initialization
+  public :: history_initialized       ! .true. if cam history initialized
   public :: wrapup                    ! process history files at end of run
   public :: write_inithist            ! logical flag to allow dump of IC history buffer to IC file
   public :: addfld                    ! Add a field to history file
@@ -473,6 +474,10 @@ CONTAINS
 
     return
   end subroutine intht
+
+  logical function history_initialized()
+    history_initialized = associated(masterlist)
+  end function history_initialized
 
   subroutine history_readnl(nlfile, dtime)
 

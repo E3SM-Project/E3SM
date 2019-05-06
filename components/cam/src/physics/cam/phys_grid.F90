@@ -101,7 +101,8 @@ module phys_grid
    use cam_logfile,      only: iulog
    use scamMod,          only: single_column, scmlat, scmlon
    use shr_const_mod,    only: SHR_CONST_PI
-   use dyn_grid,         only: dyn_grid_find_gcols
+!### M. Branson: comment this out as it is no longer used
+   !use dyn_grid,         only: dyn_grid_find_gcols
    use dycore,           only: dycore_is
 
    implicit none

@@ -30,6 +30,10 @@ module cldwat
    save
    public inimc, pcond          ! Public interfaces
    public cldwat_readnl
+!### added for q3d
+   public cldwat_init
+!### added for q3d
+
    integer, public::  ktop      ! Level above 10 hPa
 
    real(r8),public ::  icritc               ! threshold for autoconversion of cold ice
@@ -84,6 +88,11 @@ module cldwat
    real(r8) :: critpr               ! critical precip rate collection efficiency changes
    real(r8) :: ciautb               ! coefficient of autoconversion of ice (1/s)
 
+!### added for q3d
+   real(r8) :: psrhmin              ! condensation threshold in polar stratosphere
+   logical  :: do_psrhmin
+!### added for q3d
+
 #ifdef DEBUG
    integer, private,parameter ::  nlook = 1  ! Number of points to examine
    integer, private ::  ilook(nlook)         ! Longitude index to examine
@@ -95,6 +104,24 @@ module cldwat
   real(r8), parameter :: unset_r8 = huge(1.0_r8)
 
 contains
+!===============================================================================
+subroutine cldwat_init(icritw_in, icritc_in, conke_in, r3lcrit_in, psrhmin_in, do_psrhmin_in )
+
+    real(r8), intent(in) :: icritw_in    !   icritw  = threshold for autoconversion of warm ice  
+    real(r8), intent(in) :: icritc_in    !   icritc  = threshold for autoconversion of cold ice  
+    real(r8), intent(in) :: conke_in     !   conke   = tunable constant for evaporation of precip
+    real(r8), intent(in) :: r3lcrit_in   !   r3lcrit = critical radius where liq conversion begins
+    real(r8), intent(in) :: psrhmin_in   ! condensation threadhold in polar stratosphere
+    logical,  intent(in) :: do_psrhmin_in
+
+    icritw  = icritw_in
+    icritc  = icritc_in
+    conke   = conke_in
+    r3lcrit = r3lcrit_in
+    psrhmin = psrhmin_in
+    do_psrhmin = do_psrhmin_in
+
+  end subroutine cldwat_init
 !===============================================================================
   subroutine cldwat_readnl(nlfile)
 
@@ -164,7 +191,8 @@ subroutine inimc( tmeltx, rhonotx, gravitx, rh2ox)
 ! 
 !-----------------------------------------------------------------------
    use pmgrid,       only: plev, plevp
-   use dycore,       only: dycore_is, get_resolution
+!### M. Branson commenting this out as these are not longer used
+   !use dycore,       only: dycore_is, get_resolution
    use ref_pres,     only: pref_mid
 
    integer k

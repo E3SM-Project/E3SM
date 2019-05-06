@@ -50,7 +50,7 @@ subroutine microp_driver_readnl(nlfile)
    select case (microp_scheme)
    case ('MG')
       call micro_mg_cam_readnl(nlfile)
-   case ('RK')
+   case ('NONE', 'RK', 'SPCAM_sam1mom', 'SPCAM_m2005')
       ! microp_driver doesn't handle this one
       continue
    case default
@@ -68,7 +68,7 @@ subroutine microp_driver_register
    select case (microp_scheme)
    case ('MG')
       call micro_mg_cam_register()
-   case ('RK')
+   case ('NONE', 'RK', 'SPCAM_sam1mom', 'SPCAM_m2005')
       ! microp_driver doesn't handle this one
       continue
    case default
@@ -96,7 +96,7 @@ function microp_driver_implements_cnst(name)
    select case (microp_scheme)
    case ('MG')
       microp_driver_implements_cnst = micro_mg_cam_implements_cnst(name)
-   case ('RK')
+   case ('NONE', 'RK', 'SPCAM_sam1mom', 'SPCAM_m2005')
       ! microp_driver doesn't handle this one
       continue
    case default
@@ -107,20 +107,22 @@ end function microp_driver_implements_cnst
 
 !===============================================================================
 
-subroutine microp_driver_init_cnst(name, q, gcid)
+subroutine microp_driver_init_cnst(name, latvals, lonvals, mask, q)
 
    ! Initialize the microphysics constituents, if they are
    ! not read from the initial file.
 
    character(len=*), intent(in)  :: name     ! constituent name
+   real(r8),         intent(in)  :: latvals(:) ! lat in degrees (ncol)
+   real(r8),         intent(in)  :: lonvals(:) ! lon in degrees (ncol)
+   logical,          intent(in)  :: mask(:)    ! Only initialize where .true.
    real(r8),         intent(out) :: q(:,:)   ! mass mixing ratio (gcol, plev)
-   integer,          intent(in)  :: gcid(:)  ! global column id
    !-----------------------------------------------------------------------
 
    select case (microp_scheme)
    case ('MG')
-      call micro_mg_cam_init_cnst(name, q, gcid)
-   case ('RK')
+      call micro_mg_cam_init_cnst(name, latvals, lonvals, mask, q)
+   case ('NONE', 'RK', 'SPCAM_sam1mom', 'SPCAM_m2005')
       ! microp_driver doesn't handle this one
       continue
    case default
@@ -141,7 +143,7 @@ subroutine microp_driver_init(pbuf2d)
    select case (microp_scheme)
    case ('MG')
       call micro_mg_cam_init(pbuf2d)
-   case ('RK')
+   case ('NONE', 'RK', 'SPCAM_sam1mom', 'SPCAM_m2005')
       ! microp_driver doesn't handle this one
       continue
    case default
@@ -182,7 +184,7 @@ subroutine microp_driver_tend(state, ptend, dtime, pbuf)
       call t_startf('microp_mg_cam_tend')
       call micro_mg_cam_tend(state, ptend, dtime, pbuf)
       call t_stopf('microp_mg_cam_tend')
-   case ('RK')
+   case ('NONE', 'RK', 'SPCAM_sam1mom', 'SPCAM_m2005')
       ! microp_driver doesn't handle this one
       continue
    case default

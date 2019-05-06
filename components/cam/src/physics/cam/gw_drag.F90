@@ -31,7 +31,7 @@ module gw_drag
   use physconst,     only: cpair
 
   ! These are the actual switches for different gravity wave sources.
-  use phys_control,  only: use_gw_oro, use_gw_front, use_gw_convect
+  use phys_control,  only: use_gw_oro, use_gw_front, use_gw_convect, q3d_is_on
 
 ! Typical module header
   implicit none
@@ -131,6 +131,8 @@ subroutine gw_drag_readnl(nlfile)
   namelist /gw_drag_nl/ pgwv, gw_dc, tau_0_ubc, effgw_beres, effgw_cm, &
        effgw_oro, fcrit2, frontgfc, gw_drag_file, taubgnd
   !----------------------------------------------------------------------
+
+  if (q3d_is_on) return
 
   if (masterproc) then
      unitn = getunit()

@@ -17,6 +17,7 @@ module conv_water
    !---------------------------------------------------------------------- !
 
   use shr_kind_mod,  only: r8=>shr_kind_r8
+  use spmd_utils,    only: masterproc
   use ppgrid,        only: pcols, pver, pverp
   use physconst,     only: gravit, latvap, latice
   use cam_abortutils,    only: endrun
@@ -28,7 +29,7 @@ module conv_water
   private
   save
 
-  public :: conv_water_register, conv_water_4rad, conv_water_init
+  public :: conv_water_readnl, conv_water_register, conv_water_4rad, conv_water_init
 
 ! pbuf indices
 
@@ -39,7 +40,59 @@ module conv_water
 
   logical :: pergro_mods
 
+! Namelist
+  integer, parameter :: unset_int = huge(1)
+
+  integer  :: conv_water_in_rad = unset_int  ! 0==> No; 1==> Yes-Arithmetic average;
+                                           ! 2==> Yes-Average in emissivity.
+  integer  :: conv_water_mode
+  real(r8) :: frac_limit 
+
   contains
+
+  !============================================================================ !
+
+subroutine conv_water_readnl(nlfile)
+
+   use namelist_utils,  only: find_group_name
+   use units,           only: getunit, freeunit
+   use mpishorthand
+
+   character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
+
+   ! Local variables
+   integer :: unitn, ierr
+   character(len=*), parameter :: subname = 'conv_water_readnl'
+
+   real(r8) :: conv_water_frac_limit = 0._r8
+
+   namelist /conv_water_nl/ conv_water_in_rad, conv_water_frac_limit
+   !-----------------------------------------------------------------------------
+
+   if (masterproc) then
+      unitn = getunit()
+      open( unitn, file=trim(nlfile), status='old' )
+      call find_group_name(unitn, 'conv_water_nl', status=ierr)
+      if (ierr == 0) then
+         read(unitn, conv_water_nl, iostat=ierr)
+         if (ierr /= 0) then
+            call endrun(subname // ':: ERROR reading namelist')
+         end if
+      end if
+      close(unitn)
+      call freeunit(unitn)
+   end if
+
+#ifdef SPMD
+   ! Broadcast namelist variables
+   call mpibcast(conv_water_in_rad,     1, mpiint, 0, mpicom)
+   call mpibcast(conv_water_frac_limit, 1, mpir8,  0, mpicom)
+#endif
+
+   conv_water_mode = conv_water_in_rad
+   frac_limit      = conv_water_frac_limit
+
+end subroutine conv_water_readnl
 
   !============================================================================ !
 

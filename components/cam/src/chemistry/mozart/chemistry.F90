@@ -163,7 +163,7 @@ end function chem_is
 
 !================================================================================================
 
-  subroutine chem_register(species_class)
+  subroutine chem_register
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: register advected constituents and physics buffer fields
@@ -184,7 +184,6 @@ end function chem_is
 
     implicit none
 
-    integer, intent(inout) :: species_class(:)
 !-----------------------------------------------------------------------
 ! Local variables
 !-----------------------------------------------------------------------
@@ -390,7 +389,7 @@ end function chem_is
     endif
     
     ! add fields to pbuf needed by aerosol models
-    call aero_model_register(imozart, species_class) 
+    call aero_model_register() 
 
   end subroutine chem_register
 
@@ -1136,7 +1135,7 @@ end function chem_is_active
 
 !================================================================================
 
-  subroutine chem_init_cnst( name, q, gcid)
+  subroutine chem_init_cnst(name, latvals, lonvals, mask, q)
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -1155,8 +1154,10 @@ end function chem_is_active
 ! Dummy arguments
 !-----------------------------------------------------------------------
     character(len=*), intent(in) :: name                   !  constituent name
-    real(r8), intent(inout) :: q(:,:)           !  mass mixing ratio
-    integer, intent(in)     :: gcid(:)
+    real(r8),         intent(in) :: latvals(:) ! lat in degrees (ncol)
+    real(r8),         intent(in) :: lonvals(:) ! lon in degrees (ncol)
+    logical,          intent(in) :: mask(:)    ! Only initialize where .true.
+    real(r8), intent(inout)      :: q(:,:)           !  mass mixing ratio
 
 !-----------------------------------------------------------------------
 ! Local variables
