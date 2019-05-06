@@ -135,7 +135,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_glc_init(infodata, lnd_c2_glc, ocn_c2_glc)
+  subroutine prep_glc_init(infodata, lnd_c2_glc, ocn_c2_glcshelf)
 
     !---------------------------------------------------------------
     ! Description
@@ -144,7 +144,7 @@ contains
     ! Arguments
     type (seq_infodata_type) , intent(inout) :: infodata
     logical                  , intent(in)    :: lnd_c2_glc ! .true.  => lnd to glc coupling on
-    logical                  , intent(in)    :: ocn_c2_glc ! .true.  => ocn to glc coupling on
+    logical                  , intent(in)    :: ocn_c2_glcshelf ! .true.  => ocn to glc coupling on
     !
     ! Local Variables
     integer                          :: eli, egi, eoi
@@ -242,7 +242,7 @@ contains
 
     end if
 
-    if (glc_present .and. ocn_c2_glc) then
+    if (glc_present .and. ocn_c2_glcshelf) then
 
        call seq_comm_getData(CPLID, &
             mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
@@ -869,7 +869,7 @@ contains
        index_x2g_Fogx_qicehi = mct_avect_indexra(x2g_gx,'Fogx_qicehi',perrwith='quiet')
 
        gsize = mct_aVect_lsize(g2x_gx)
-       write(logunit,*) 'gsize=',gsize
+!JW       write(logunit,*) 'gsize=',gsize
 
        do n=1,gsize
           !Extract glc and ocn-sourced coupler fields used as input to compute_melt_fluxes to local arrays...
@@ -1560,6 +1560,10 @@ contains
     Tlatent = SHR_CONST_LATICE/SHR_CONST_CPSW
     do iCell = 1, nCells
       if (iceFloatingMask(iCell) == 0) cycle ! Only calculate on floating cells
+      if (oceanHeatTransferVelocity(iCell) == 0.0_r8) then
+         write(*,*) 'JW - somethings messed up'
+         cycle 
+      end if
 
       iceHeatFluxCoeff = SHR_CONST_RHOICE*SHR_CONST_CPICE*SHR_CONST_KAPPA_LAND_ICE/iceTemperatureDistance(iCell)
       nu = iceHeatFluxCoeff/(SHR_CONST_RHOSW*SHR_CONST_CPSW*oceanHeatTransferVelocity(iCell))

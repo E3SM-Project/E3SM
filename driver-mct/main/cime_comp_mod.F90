@@ -402,7 +402,7 @@ module cime_comp_mod
   logical  :: lnd_c2_glc             ! .true.  => lnd to glc coupling on
   logical  :: ocn_c2_atm             ! .true.  => ocn to atm coupling on
   logical  :: ocn_c2_ice             ! .true.  => ocn to ice coupling on
-  logical  :: ocn_c2_glc             ! .true.  => ocn to glc coupling on
+  logical  :: ocn_c2_glcshelf        ! .true.  => ocn to glc ice shelf coupling on
   logical  :: ocn_c2_wav             ! .true.  => ocn to wav coupling on
   logical  :: ice_c2_atm             ! .true.  => ice to atm coupling on
   logical  :: ice_c2_ocn             ! .true.  => ice to ocn coupling on
@@ -1437,6 +1437,7 @@ contains
          iceberg_prognostic=iceberg_prognostic, &
          ocn_prognostic=ocn_prognostic,         &
          ocnrof_prognostic=ocnrof_prognostic,   &
+         ocn_c2_glcshelf=ocn_c2_glcshelf,       &
          glc_prognostic=glc_prognostic,         &
          rof_prognostic=rof_prognostic,         &
          wav_prognostic=wav_prognostic,         &
@@ -1493,7 +1494,6 @@ contains
     lnd_c2_glc = .false.
     ocn_c2_atm = .false.
     ocn_c2_ice = .false.
-    ocn_c2_glc = .false.
     ocn_c2_wav = .false.
     ice_c2_atm = .false.
     ice_c2_ocn = .false.
@@ -1525,10 +1525,6 @@ contains
        if (atm_present   ) ocn_c2_atm = .true. ! needed for aoflux calc if aoflux=atm
        if (ice_prognostic) ocn_c2_ice = .true.
        if (wav_prognostic) ocn_c2_wav = .true.
-       if (trim(cime_model) == 'e3sm') then
-          ! Only E3SM is utilizing the iceshelf/ocean coupling
-          if (glc_prognostic) ocn_c2_glc = .true.
-       endif
 
     endif
     if (ice_present) then
@@ -1621,7 +1617,7 @@ contains
        write(logunit,F0L)'lnd_c2_glc            = ',lnd_c2_glc
        write(logunit,F0L)'ocn_c2_atm            = ',ocn_c2_atm
        write(logunit,F0L)'ocn_c2_ice            = ',ocn_c2_ice
-       write(logunit,F0L)'ocn_c2_glc            = ',ocn_c2_glc
+       write(logunit,F0L)'ocn_c2_glcshelf       = ',ocn_c2_glcshelf
        write(logunit,F0L)'ocn_c2_wav            = ',ocn_c2_wav
        write(logunit,F0L)'ice_c2_atm            = ',ice_c2_atm
        write(logunit,F0L)'ice_c2_ocn            = ',ice_c2_ocn
@@ -1697,10 +1693,10 @@ contains
     if ((glclnd_present .or. glcocn_present .or. glcice_present) .and. .not.glc_present) then
        call shr_sys_abort(subname//' ERROR: if glcxxx present must also have glc present')
     endif
-    if ((ocn_c2_glc .and. .not. glcshelf_c2_ocn) .or. (glcshelf_c2_ocn .and. .not. ocn_c2_glc)) then
-       call shr_sys_abort(subname//' ERROR: if glc_c2_ocn must also have ocn_c2_glc and vice versa. '//&
-            'Boundary layer fluxes calculated in coupler require input from both components.')
-    endif
+!JW    if ((ocn_c2_glcshelf .and. .not. glcshelf_c2_ocn) .or. (glcshelf_c2_ocn .and. .not. ocn_c2_glcshelf)) then
+!JW       call shr_sys_abort(subname//' ERROR: if glc_c2_ocn must also have ocn_c2_glc and vice versa. '//&
+!JW            'Boundary layer fluxes calculated in coupler require input from both components.')
+!JW    endif
     if (rofice_present .and. .not.rof_present) then
        call shr_sys_abort(subname//' ERROR: if rofice present must also have rof present')
     endif
@@ -1759,7 +1755,7 @@ contains
 
        call prep_rof_init(infodata, lnd_c2_rof)
 
-       call prep_glc_init(infodata, lnd_c2_glc, ocn_c2_glc)
+       call prep_glc_init(infodata, lnd_c2_glc, ocn_c2_glcshelf)
 
        call prep_wav_init(infodata, atm_c2_wav, ocn_c2_wav, ice_c2_wav)
 
@@ -2128,7 +2124,7 @@ contains
 
     call seq_diag_zero_mct(mode='all')
     if (read_restart .and. iamin_CPLID) then
-       call seq_rest_read(rest_file, infodata, ocn_c2_glc, &
+       call seq_rest_read(rest_file, infodata, ocn_c2_glcshelf, &
             atm, lnd, ice, ocn, rof, glc, wav, esp, &
             fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
             fractions_rx, fractions_gx, fractions_wx)
@@ -3021,7 +3017,7 @@ contains
              call shr_sys_flush(logunit)
           end if
           if (iamin_CPLID) then
-             call seq_rest_read(drv_resume, infodata, ocn_c2_glc,              &
+             call seq_rest_read(drv_resume, infodata, ocn_c2_glcshelf,              &
                   atm, lnd, ice, ocn, rof, glc, wav, esp,                      &
                   fractions_ax, fractions_lx, fractions_ix, fractions_ox,      &
                   fractions_rx, fractions_gx, fractions_wx)
@@ -3700,7 +3696,7 @@ contains
 
     if (glc_present) then
 
-          if (ocn_c2_glc .and. glcshelf_c2_ocn) then
+          if (ocn_c2_glcshelf .and. glcshelf_c2_ocn) then
              ! the boundary flux calculations done in the coupler require inputs from both GLC and OCN,
              ! so they will only be valid if both OCN->GLC and GLC->OCN
 
@@ -3824,7 +3820,7 @@ contains
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
        ! NOTE - only create appropriate input to glc if the avg_alarm is on
-       if (lnd_c2_glc .or. ocn_c2_glc) then
+       if (lnd_c2_glc .or. ocn_c2_glcshelf) then
           if (glcrun_avg_alarm) then
              call prep_glc_accum_avg(timer='CPL:glcprep_avg')
 
@@ -3842,7 +3838,7 @@ contains
           else
              call prep_glc_zero_fields()
           endif ! glcrun_avg_alarm
-       end if ! lnd_c2_glc or ocn_c2_glc
+       end if ! lnd_c2_glc or ocn_c2_glcshelf
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
        call t_drvstopf  ('CPL:GLCPREP',cplrun=.true.)
@@ -4309,7 +4305,7 @@ contains
              call shr_sys_flush(logunit)
           endif
 
-          call seq_rest_write(EClock_d, seq_SyncClock, infodata, ocn_c2_glc, &
+          call seq_rest_write(EClock_d, seq_SyncClock, infodata, ocn_c2_glcshelf, &
                atm, lnd, ice, ocn, rof, glc, wav, esp,                 &
                fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
                fractions_rx, fractions_gx, fractions_wx,               &
