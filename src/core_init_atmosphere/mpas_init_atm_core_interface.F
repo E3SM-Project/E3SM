@@ -112,7 +112,7 @@ module init_atm_core_interface
       type (mpas_io_context_type), intent(inout) :: iocontext
       integer :: ierr
 
-      logical, pointer :: initial_conds, sfc_update
+      logical, pointer :: initial_conds, sfc_update, lbcs
       logical, pointer :: gwd_stage_in, gwd_stage_out, vertical_stage_in, vertical_stage_out, met_stage_in, met_stage_out
       logical, pointer :: config_native_gwd_static, config_static_interp, config_vertical_grid, config_met_interp
       integer, pointer :: config_init_case
@@ -131,6 +131,9 @@ module init_atm_core_interface
 
       nullify(sfc_update)
       call mpas_pool_get_package(packages, 'sfc_updateActive', sfc_update)
+
+      nullify(lbcs)
+      call mpas_pool_get_package(packages, 'lbcsActive', lbcs)
 
       nullify(gwd_stage_in)
       call mpas_pool_get_package(packages, 'gwd_stage_inActive', gwd_stage_in)
@@ -173,6 +176,12 @@ module init_atm_core_interface
          sfc_update = .false.
       end if
 
+      if (config_init_case == 9) then
+         lbcs = .true.
+      else
+         lbcs = .false.
+      end if
+
       if (config_init_case == 7) then
 
          !
@@ -192,6 +201,7 @@ module init_atm_core_interface
                         (.not. config_static_interp) .and. &
                         (.not. config_vertical_grid)
          met_stage_out = config_met_interp
+
       else if (config_init_case == 8) then
          gwd_stage_in = .false.
          gwd_stage_out = .false.
@@ -199,6 +209,21 @@ module init_atm_core_interface
          vertical_stage_out = .false.
          met_stage_in = .false.
          met_stage_out = .false.
+
+      !
+      ! When interpolating LBC fields, we need all inputs that would be needed for the interpolation
+      ! of ICs, so met_stage_in = .true.
+      !
+      else if (config_init_case == 9) then
+         gwd_stage_in = .false.
+         gwd_stage_out = .false.
+         vertical_stage_in = .false.
+         vertical_stage_out = .false.
+         met_stage_in = .true.
+         met_stage_out = .true.
+
+         initial_conds = .false.   ! Also, turn off the initial_conds package to avoid writing the IC "output" stream
+
       else
          gwd_stage_in = .false.
          gwd_stage_out = .false.
