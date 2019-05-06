@@ -12,7 +12,7 @@
 cmake_minimum_required(VERSION 3.3)
 cmake_policy(SET CMP0057 NEW)
 
-project(E3SM CXX Fortran)
+project(E3SM C CXX Fortran)
 
 # Load dependency search path.
 file(STRINGS Filepath FILEPATH_DIRS)
@@ -400,7 +400,7 @@ endif()
 
 foreach(ITEM MOD_NETCDF INC_MPI INC_PNETCDF INC_PETSC INC_TRILINOS INC_ALBANY INC_MOAB)
   if (${ITEM})
-    set(INCLDIR "${INCLDIR} ${${ITEM}}")
+    set(INCLDIR "${INCLDIR} -I${${ITEM}}")
   endif()
 endforeach()
 
@@ -437,7 +437,7 @@ endif()
 
 if (PIO_LIBDIR)
   if (PIO_VERSION STREQUAL ${PIO_VERSION_MAJOR})
-    set(INCLDIR "${INCLDIR} ${PIO_INCDIR}")
+    set(INCLDIR "${INCLDIR} -I${PIO_INCDIR}")
     set(SLIBS "${SLIBS} -L${PIO_LIBDIR}")
   else()
     # If PIO_VERSION_MAJOR doesnt match, build from source
@@ -636,6 +636,110 @@ set(CMAKE_CXX_COMPILER ${CXX})
 set(CMAKE_FC_COMPILER ${FC})
 set(CMAKE_EXE_LINKER_FLAGS ${LDFLAGS})
 
-add_directory(${GLCROOT}/source_cism)
-add_directory(${PIO_SRC_DIR})
+# JGF: We only want to do CAM for now
+# add_directory(${GLCROOT}/source_cism)
+# add_directory(${PIO_SRC_DIR})
 
+#-------------------------------------------------------------------------------
+# Build & include dependency files
+#-------------------------------------------------------------------------------
+
+# JGF, I think we can rely on CMake's built-in dependency analysus
+
+# Get src files
+execute_process(COMMAND ${CASETOOLS}/mkSrcfiles)
+file(STRINGS Srcfiles SOURCES)
+
+foreach(ITEM ${CPP_DIRS})
+  set(INCS "${INCS} -I{}")
+endforeach()
+
+#-------------------------------------------------------------------------------
+# create list of component libraries - hard-wired for current ccsm components
+#-------------------------------------------------------------------------------
+
+if (CIME_MODEL STREQUAL "cesm")
+  if (COMP_LND STREQUAL "clm")
+    set(USE_SHARED_CLM TRUE)
+  else()
+    set(USE_SHARED_CLM FALSE)
+  endif()
+else()
+  set(USE_SHARED_CLM FALSE)
+endif()
+
+if (NOT USE_SHARED_CLM)
+  set(LNDOBJDIR "${EXEROOT}/lnd/obj")
+  set(LNDLIBDIR "${LIBROOT}")
+  if (COMP_LND STREQUAL "clm")
+    set(LNDLIB "libclm.a")
+  else()
+    set(LNDLIB "liblnd.a")
+  endif()
+  set(INCLDIR "${INCLDIR} -I${LNDOBJDIR}")
+else()
+  set(LNDLIB "libclm.a")
+  set(LNDOBJDIR "${SHAREDLIBROOT}/${SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/clm/obj")
+  set(LNDLIBDIR "${EXEROOT}/${SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/lib")
+  set(INCLDIR "${INCLDIR} -I${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/include")
+  if (MODEL STREQUAL "clm")
+    set(INCLUDE_DIR "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/include")
+  endif()
+endif()
+
+if (NOT ULIBDEP)
+  if (LIBROOT)
+    set(ULIBDEP "${ULIBDEP} ${LIBROOT}/libatm.a")
+    set(ULIBDEP "${ULIBDEP} ${LIBROOT}/libice.a")
+    set(ULIBDEP "${ULIBDEP} ${LNDLIBDIR}/${LNDLIB}")
+    set(INCLDIR "${INCLDIR} -I${LNDOBJDIR}")
+    set(ULIBDEP "${ULIBDEP} ${LIBROOT}/libocn.a")
+    set(ULIBDEP "${ULIBDEP} ${LIBROOT}/librof.a")
+    set(ULIBDEP "${ULIBDEP} ${LIBROOT}/libglc.a")
+    set(ULIBDEP "${ULIBDEP} ${LIBROOT}/libwav.a")
+    set(ULIBDEP "${ULIBDEP} ${LIBROOT}/libiac.a")
+    set(ULIBDEP "${ULIBDEP} ${LIBROOT}/libesp.a")
+    if (COMP_GLC STREQUAL "cism")
+      set(ULIBDEP "${ULIBDEP} ${CISM_LIBDIR}/libglimmercismfortran.a")
+      if (CISM_USE_TRILINOS)
+        set(ULIBDEP "${ULIBDEP} ${CISM_LIBDIR}/libglimmercismcpp.a")
+      endif()
+    endif()
+    if (OCN_SUBMODEL STRQUAL "moby")
+      set(ULIBDEP "${ULIBDEP} ${LIBROOT}/libmoby.a")
+    endif()
+  endif()
+endif()
+
+if (COSP_LIBDIR)
+  set(ULIBDEP "${ULIBDEP} ${COSP_LIBDIR}/libcosp.a")
+endif()
+
+# JGF, this kind of thing should be done via target_link_library in cmake
+if (NOT CLIBS)
+  if (ULIBDEP)
+    # For each occurrence of something like /path/to/foo/libbar.a in ULIBDEP,
+    # CLIBS will contain -L/path/to/foo -lbar
+    foreach (ITEM ${ULIBDEP})
+      get_filename_component(ULIB_DIR ${ITEM} DIRECTORY)
+      get_filename_component(ULIB_LIB ${ITEM} NAME)
+      set(CLIBS "${CLIBS} -L${ULIB_DIR} -l${ULIB_LIB}")
+    endforeach()
+  endif()
+endif()
+
+# libcsm_share.a is in ULIBDEP, but -lcsm_share is in ULIBS rather than CLIBS,
+# so this needs to be added after creating CLIBS above
+set(CSMSHARELIB "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/lib/libcsm_share.a")
+set(ULIBDEP "${ULIBDEP} ${CSMSHARELIB}")
+
+#-------------------------------------------------------------------------------
+# build rules:
+#-------------------------------------------------------------------------------
+
+if (MPILIB STREQUAL "mpi-serial")
+  set(MPISERIAL "${INSTALL_SHAREDPATH}/lib/lib-mpi-serial.a")
+  set(MLIBS "${MLIBS} ${MPISERIAL}")
+endif()
+
+# JGF: how to do genf90?
