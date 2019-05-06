@@ -107,6 +107,9 @@
 ! * added local variables for the mass-weighted mean velocities for rain, cloud ice, snow, and graupel from the
 !   Thompson cloud microphysics scheme.
 !   Laura D. Fowler (laura@ucar.edu) / 2017-04-19.
+! * added the local variables cosa_p and sina_p needed in call to subroutine gwdo after updating module_bl_gwdo.F
+!   to that of WRF version 4.0.2
+!   Laura D. Fowler (laura@ucar.edu) / 2019-01-30.
 
 
 !=================================================================================================================
@@ -399,6 +402,10 @@
 !=================================================================================================================
 !... variables and arrays related to parameterization of gravity wave drag over orography:
 !=================================================================================================================
+
+ real(kind=RKIND),dimension(:,:),allocatable:: &
+    cosa_p,           &!cosine of map rotation                                                                 [-]
+    sina_p             !sine of map rotation                                                                   [-]
 
  real(kind=RKIND),dimension(:,:),allocatable:: &
     var2d_p,          &!orographic variance                                                                   [m2]
