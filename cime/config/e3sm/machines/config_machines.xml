@@ -287,6 +287,7 @@
       <command name="load">pmi/5.0.13</command>
 
       <command name="rm">cray-mpich</command>
+      <command name="load">pe_archive/append-path</command>
       <command name="load">cray-mpich/7.6.2</command>
     </modules>
 
@@ -428,6 +429,7 @@
     </modules>
 
     <modules mpilib="mpt">
+      <command name="load">pe_archive/append-path</command>
       <command name="swap">cray-mpich cray-mpich/7.6.2</command>
     </modules>
 
