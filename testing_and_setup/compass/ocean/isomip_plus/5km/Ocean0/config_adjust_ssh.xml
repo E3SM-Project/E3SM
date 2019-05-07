@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <config case="adjust_ssh">
 	<add_link source="../init_step2/graph.info" dest="graph.info"/>
+	<add_link source="../init_step2/ocean.nc" dest="init0.nc"/>
 
 	<add_executable source="model" dest="ocean_model"/>
 
