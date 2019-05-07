@@ -1341,22 +1341,28 @@
                 <var name="north" type="real" dimensions="R3 nCells" units="unitless"
                      description="Cartesian components of the unit vector pointing north"/>
 
-                <var name="bdyMaskCell" type="integer" dimensions="nCells" units="-"
+                <var name="bdyMaskCell" type="integer" dimensions="nCells" default_value="0"
+                     units="-"
                      description="Limited-area specified/relaxation zone index for cells"/>
 
-                <var name="bdyMaskEdge" type="integer" dimensions="nEdges" units="-"
+                <var name="bdyMaskEdge" type="integer" dimensions="nEdges" default_value="0"
+                     units="-"
                      description="Limited-area specified/relaxation zone index for edges"/>
 
-                <var name="bdyMaskVertex" type="integer" dimensions="nVertices" units="-"
+                <var name="bdyMaskVertex" type="integer" dimensions="nVertices" default_value="0"
+                     units="-"
                      description="Limited-area specified/relaxation zone index for vertices"/>
 
-                <var name="specZoneMaskCell" type="real" dimensions="nCells" units="-"
+                <var name="specZoneMaskCell" type="real" dimensions="nCells" default_value="0.0"
+                     units="-"
                      description="0/1 mask on cells, defined as 1 for cells in the limited-area specified zone"/>
 
-                <var name="specZoneMaskEdge" type="real" dimensions="nEdges" units="-"
+                <var name="specZoneMaskEdge" type="real" dimensions="nEdges" default_value="0.0"
+                     units="-"
                      description="0/1 mask on edges, defined as 1 for edges in the limited-area specified zone"/>
 
-                <var name="specZoneMaskVertex" type="real" dimensions="nVertices" units="-"
+                <var name="specZoneMaskVertex" type="real" dimensions="nVertices" default_value="0.0"
+                     units="-"
                      description="0/1 mask on vertices, defined as 1 for vertices in the limited-area specified zone"/>
 
                 <var name="nearestRelaxationCell" type="integer" dimensions="nCells" units="-"

@@ -422,14 +422,11 @@ module mpas_atm_boundaries
 
         !
         ! Setup mask identifying cells/edges/vertices in the specified zone
+        ! NB: The specZoneMask{Cell,Edge,Vertex} fields receive a default value of 0.0 from the Registry,
+        !     so no need to initialize them here
         !
-        specZoneMaskCell(:) = 0.0_RKIND
         where (bdyMaskCell(:) > nRelaxZone) specZoneMaskCell(:) = 1.0_RKIND
-
-        specZoneMaskEdge(:) = 0.0_RKIND
         where (bdyMaskEdge(:) > nRelaxZone) specZoneMaskEdge(:) = 1.0_RKIND
-
-        specZoneMaskVertex(:) = 0.0_RKIND
         where (bdyMaskVertex(:) > nRelaxZone) specZoneMaskVertex(:) = 1.0_RKIND
 
 
