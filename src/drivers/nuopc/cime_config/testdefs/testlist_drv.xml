@@ -5,6 +5,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="nuopc"/>
       <machine name="theia" compiler="intel" category="nuopc"/>
+      <machine name="izumi" compiler="intel" category="nuopc"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -14,6 +15,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="mctcheck"/>
       <machine name="theia" compiler="intel" category="mctcheck"/>
+      <machine name="izumi" compiler="intel" category="mctcheck"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -24,6 +26,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="nuopc"/>
       <machine name="theia" compiler="intel" category="nuopc"/>
+      <machine name="izumi" compiler="intel" category="nuopc"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -33,6 +36,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="mctcheck"/>
       <machine name="theia" compiler="intel" category="mctcheck"/>
+      <machine name="izumi" compiler="intel" category="mctcheck"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -43,6 +47,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="nuopc"/>
       <machine name="theia" compiler="intel" category="nuopc"/>
+      <machine name="izumi" compiler="intel" category="nuopc"/>
     </machines>
     <options>
       <option name="wallclock"> 00:40:00 </option>
@@ -52,6 +57,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="mctcheck"/>
       <machine name="theia" compiler="intel" category="mctcheck"/>
+      <machine name="izumi" compiler="intel" category="mctcheck"/>
     </machines>
     <options>
       <option name="wallclock"> 00:40:00 </option>
@@ -62,6 +68,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="nuopc"/>
       <machine name="theia" compiler="intel" category="nuopc"/>
+      <machine name="izumi" compiler="intel" category="nuopc"/>
     </machines>
     <options>
       <option name="wallclock"> 00:40:00 </option>
@@ -72,6 +79,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="mctcheck"/>
       <machine name="theia" compiler="intel" category="mctcheck"/>
+      <machine name="izumi" compiler="intel" category="mctcheck"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -82,6 +90,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="nuopc"/>
       <machine name="theia" compiler="intel" category="nuopc"/>
+      <machine name="izumi" compiler="intel" category="nuopc"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -92,6 +101,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="mctcheck"/>
       <machine name="theia" compiler="intel" category="mctcheck"/>
+      <machine name="izumi" compiler="intel" category="mctcheck"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -102,6 +112,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="nuopc"/>
       <machine name="theia" compiler="intel" category="nuopc"/>
+      <machine name="izumi" compiler="intel" category="nuopc"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -112,6 +123,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="mctcheck"/>
       <machine name="theia" compiler="intel" category="mctcheck"/>
+      <machine name="izumi" compiler="intel" category="mctcheck"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -122,6 +134,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="nuopc"/>
       <machine name="theia" compiler="intel" category="nuopc"/>
+      <machine name="izumi" compiler="intel" category="nuopc"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -132,6 +145,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="mctcheck"/>
       <machine name="theia" compiler="intel" category="mctcheck"/>
+      <machine name="izumi" compiler="intel" category="mctcheck"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -142,6 +156,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="nuopc"/>
       <machine name="theia" compiler="intel" category="nuopc"/>
+      <machine name="izumi" compiler="intel" category="nuopc"/>
     </machines>
     <options>
       <option name="wallclock"> 00:20:00 </option>
@@ -152,6 +167,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="nuopc"/>
       <machine name="theia" compiler="intel" category="nuopc"/>
+      <machine name="izumi" compiler="intel" category="nuopc"/>
     </machines>
     <options>
       <option name="wallclock"> 00:20:00 </option>
@@ -162,6 +178,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="nuopc"/>
       <machine name="theia" compiler="intel" category="nuopc"/>
+      <machine name="izumi" compiler="intel" category="nuopc"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -172,6 +189,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="nuopc"/>
       <machine name="theia" compiler="intel" category="nuopc"/>
+      <machine name="izumi" compiler="intel" category="nuopc"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -182,6 +200,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="nuopc"/>
       <machine name="theia" compiler="intel" category="nuopc"/>
+      <machine name="izumi" compiler="intel" category="nuopc"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -192,6 +211,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="nuopc"/>
       <machine name="theia" compiler="intel" category="nuopc"/>
+      <machine name="izumi" compiler="intel" category="nuopc"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -201,6 +221,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="mctcheck"/>
       <machine name="theia" compiler="intel" category="mctcheck"/>
+      <machine name="izumi" compiler="intel" category="mctcheck"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -211,6 +232,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="nuopc"/>
       <machine name="theia" compiler="intel" category="nuopc"/>
+      <machine name="izumi" compiler="intel" category="nuopc"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -220,6 +242,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="mctcheck"/>
       <machine name="theia" compiler="intel" category="mctcheck"/>
+      <machine name="izumi" compiler="intel" category="mctcheck"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -230,6 +253,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="nuopc"/>
       <machine name="theia" compiler="intel" category="nuopc"/>
+      <machine name="izumi" compiler="intel" category="nuopc"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -240,6 +264,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="mctcheck"/>
       <machine name="theia" compiler="intel" category="mctcheck"/>
+      <machine name="izumi" compiler="intel" category="mctcheck"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -250,6 +275,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="nuopc"/>
       <machine name="theia" compiler="intel" category="nuopc"/>
+      <machine name="izumi" compiler="intel" category="nuopc"/>
     </machines>
     <options>
       <option name="wallclock"> 00:40:00 </option>
@@ -260,6 +286,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="mctcheck"/>
       <machine name="theia" compiler="intel" category="mctcheck"/>
+      <machine name="izumi" compiler="intel" category="mctcheck"/>
     </machines>
     <options>
       <option name="wallclock"> 00:40:00 </option>
@@ -270,6 +297,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="nuopc"/>
       <machine name="theia" compiler="intel" category="nuopc"/>
+      <machine name="izumi" compiler="intel" category="nuopc"/>
     </machines>
     <options>
       <option name="wallclock"> 00:40:00 </option>
@@ -280,6 +308,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="mctcheck"/>
       <machine name="theia" compiler="intel" category="mctcheck"/>
+      <machine name="izumi" compiler="intel" category="mctcheck"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -290,6 +319,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="nuopc"/>
       <machine name="theia" compiler="intel" category="nuopc"/>
+      <machine name="izumi" compiler="intel" category="nuopc"/>
     </machines>
     <options>
       <option name="wallclock"> 00:20:00 </option>
@@ -300,6 +330,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="mctcheck"/>
       <machine name="theia" compiler="intel" category="mctcheck"/>
+      <machine name="izumi" compiler="intel" category="mctcheck"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -310,6 +341,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="nuopc"/>
       <machine name="theia" compiler="intel" category="nuopc"/>
+      <machine name="izumi" compiler="intel" category="nuopc"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -320,6 +352,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="mctcheck"/>
       <machine name="theia" compiler="intel" category="mctcheck"/>
+      <machine name="izumi" compiler="intel" category="mctcheck"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -330,6 +363,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="nuopc"/>
       <machine name="theia" compiler="intel" category="nuopc"/>
+      <machine name="izumi" compiler="intel" category="nuopc"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -340,6 +374,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="mctcheck"/>
       <machine name="theia" compiler="intel" category="mctcheck"/>
+      <machine name="izumi" compiler="intel" category="mctcheck"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -350,6 +385,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="nuopc"/>
       <machine name="theia" compiler="intel" category="nuopc"/>
+      <machine name="izumi" compiler="intel" category="nuopc"/>
     </machines>
     <options>
       <option name="wallclock"> 00:40:00 </option>
@@ -360,6 +396,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="mctcheck"/>
       <machine name="theia" compiler="intel" category="mctcheck"/>
+      <machine name="izumi" compiler="intel" category="mctcheck"/>
     </machines>
     <options>
       <option name="wallclock"> 00:20:00 </option>
@@ -370,6 +407,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="nuopc"/>
       <machine name="theia" compiler="intel" category="nuopc"/>
+      <machine name="izumi" compiler="intel" category="nuopc"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -380,6 +418,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="mctcheck"/>
       <machine name="theia" compiler="intel" category="mctcheck"/>
+      <machine name="izumi" compiler="intel" category="mctcheck"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -390,6 +429,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="nuopc"/>
       <machine name="theia" compiler="intel" category="nuopc"/>
+      <machine name="izumi" compiler="intel" category="nuopc"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -400,6 +440,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="mctcheck"/>
       <machine name="theia" compiler="intel" category="mctcheck"/>
+      <machine name="izumi" compiler="intel" category="mctcheck"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -410,6 +451,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="nuopc"/>
       <machine name="theia" compiler="intel" category="nuopc"/>
+      <machine name="izumi" compiler="intel" category="nuopc"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
@@ -420,6 +462,7 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="mctcheck"/>
       <machine name="theia" compiler="intel" category="mctcheck"/>
+      <machine name="izumi" compiler="intel" category="mctcheck"/>
     </machines>
     <options>
       <option name="wallclock"> 00:10:00 </option>
