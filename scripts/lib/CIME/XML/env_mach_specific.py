@@ -39,7 +39,7 @@ class EnvMachSpecific(EnvBase):
                 if len(nodes) == 0:
                     value = self.text(default_run_exe_node) if item == "run_exe" else self.text(default_run_misc_suffix_node)
                 else:
-                    value = nodes[0].text
+                    value = self.text(nodes[0])
 
                 entity_node = self.make_child("entry", {"id":item, "value":value}, root=group_node)
 
@@ -475,7 +475,13 @@ class EnvMachSpecific(EnvBase):
         expect(exec_node is not None,"No executable found")
         executable = self.text(exec_node)
 
-        return executable, args
+        run_exe_node = self.get_optional_child('run_exe', root=the_match)
+        run_exe = self.text(run_exe_node)
+
+        run_misc_suffix_node = self.get_optional_child('run_misc_suffix', root=the_match)
+        run_misc_suffix = self.text(run_misc_suffix_node)
+
+        return executable, args, run_exe, run_misc_suffix
 
     def get_type_info(self, vid):
         return "char"

@@ -360,7 +360,7 @@ def _main():
         }
 
         # We can get away with specifying case=None since we're using exe_only=True
-        mpirun_command, _ = machspecific.get_mpirun(None, mpi_attribs, None, exe_only=True)
+        mpirun_command, _, _, _ = machspecific.get_mpirun(None, mpi_attribs, None, exe_only=True)
         mpirun_command = machspecific.get_resolved_value(mpirun_command)
         logger.info("mpirun command is '{}'".format(mpirun_command))
 
