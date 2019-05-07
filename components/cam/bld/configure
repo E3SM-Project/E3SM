@@ -1006,7 +1006,7 @@ my $pbl_pkg = 'uw';
 if ($phys_pkg =~ m/ideal|adiabatic|cam3|cam4/) {
     $pbl_pkg = 'hb';
 }
-if ($phys_pkg = 'q3d') {
+if ($phys_pkg eq 'q3d') {
     $pbl_pkg = 'none';
 }
 if ($clubb_sgs == 1) {
@@ -1084,7 +1084,7 @@ if ($rad_pkg eq 'camrt') {
 } elsif ($rad_pkg eq 'rrtmg' or $rad_pkg eq 'rrtmgp') {
 
     # The rrtmg package doesn't work with the CAM3 prescribed aerosols
-    if ($phys_pkg eq 'cam3'|| ($phys_pkg eq 'q3d'))  {
+    if (($phys_pkg eq 'cam3') || ($phys_pkg eq 'q3d'))  {
         die "configure ERROR: radiation package: $rad_pkg is not compatible\n".
             "                 with physics package $phys_pkg\n";
     }
