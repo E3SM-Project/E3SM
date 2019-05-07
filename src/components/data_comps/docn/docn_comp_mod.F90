@@ -27,6 +27,7 @@ module docn_comp_mod
   use docn_shr_mod   , only: decomp         ! namelist input
   use docn_shr_mod   , only: rest_file      ! namelist input
   use docn_shr_mod   , only: rest_file_strm ! namelist input
+  use docn_shr_mod   , only: rce_sst        ! namelist input
   use docn_shr_mod   , only: nullstr
 
   ! !PUBLIC TYPES:
@@ -666,11 +667,6 @@ CONTAINS
     real(r8), parameter ::   latrad6    = 15._r8*pio180
     real(r8), parameter ::   latrad8    = 30._r8*pio180
     real(r8), parameter ::   lonrad     = 30._r8*pio180
-
-    ! +BPM Make a parameter for the constant RCE SST. This should be namelist input.
-    real(r8), parameter ::   rce_sst    = 26.85_r8  ! degrees C 300 - 273.15 = 26.85
-    ! +BPM allow sst_option to go to 11; #11 is RCE, uniform SST.
-    !-------------------------------------------------------------------------------
 
     pi = SHR_CONST_PI
 
