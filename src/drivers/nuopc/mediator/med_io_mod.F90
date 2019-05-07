@@ -518,10 +518,10 @@ contains
        frame = nt
     endif
     if (present(nx)) then
-       if (nx >= 0) lnx = nx
+       if (nx > 0) lnx = nx
     endif
     if (present(ny)) then
-       if (ny >= 0) lny = ny
+       if (ny > 0) lny = ny
     endif
     if (lnx*lny /= ng) then
        write(tmpstr,*) subname,' ERROR: grid2d size not consistent ',ng,lnx,lny

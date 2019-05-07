@@ -782,7 +782,8 @@
       Setting this to zero will always do flux_max_iteration
     </desc>
     <values>
-      <value cime_model='cesm'>0.0</value>
+      <value cime_model='cesm'>0.01</value>
+      <value cime_model='cesm' atm_grid="0.9x1.25">0.0</value>
       <value cime_model='e3sm'>0.0</value>
     </values>
   </entry>
@@ -795,7 +796,6 @@
       Iterate atmocn flux calculation a max of this value
     </desc>
     <values>
-      <value cime_model='cesm' COMP_ATM="fv3gfs">2</value>
       <value cime_model='cesm'>5</value>
       <value cime_model='e3sm'>2</value>
     </values>
