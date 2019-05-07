@@ -3208,7 +3208,7 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'bdyMaskEdge', bdyMaskEdge)
 
       if (local_advance_density) then
-      call atm_advance_scalars_work_new(num_scalars, nCells, nVertLevels, dt, &
+      call atm_advance_scalars_work(num_scalars, nCells, nVertLevels, dt, &
              cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
              cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd, &
              coef_3rd_order, scalar_old, scalar_new, rho_zz_old, rho_zz_new, kdiff, &
@@ -3220,7 +3220,7 @@ module atm_time_integration
              nCellsSolve, nEdges, horiz_flux_arr, rk_step, config_time_integration_order, &
              local_advance_density, scalar_tend, rho_zz_int)
       else
-      call atm_advance_scalars_work_new(num_scalars, nCells, nVertLevels, dt, &
+      call atm_advance_scalars_work(num_scalars, nCells, nVertLevels, dt, &
              cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
              cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd, &
              coef_3rd_order, scalar_old, scalar_new, rho_zz_old, rho_zz_new, kdiff, &
@@ -3235,278 +3235,8 @@ module atm_time_integration
 
    end subroutine atm_advance_scalars
 
+
    subroutine atm_advance_scalars_work( num_scalars_dummy, nCells, nVertLevels_dummy, dt, &
-             cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
-             cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd, &
-             coef_3rd_order, scalar_old, scalar_new, rho_zz_old, rho_zz_new, kdiff, &
-             uhAvg, wwAvg, deriv_two, dvEdge, &
-             cellsOnEdge, edgesOnCell, nEdgesOnCell, edgesOnCell_sign, invAreaCell, &
-             scalar_tend_save, fnm, fnp, rdnw, meshScalingDel2, meshScalingDel4, &
-             nAdvCellsForEdge, advCellsForEdge, adv_coefs, adv_coefs_3rd, rho_edge, qv_init, zgrid, &
-             nCellsSolve, nEdges, horiz_flux_arr, &
-             advance_density, scalar_tend, rho_zz_int)
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-   !
-   ! Integrate scalar equations - explicit transport plus other tendencies
-   !
-   !  this transport routine is similar to the original atm_advance_scalars, except it also advances
-   !  (re-integrates) the density.  This re-integration allows the scalar transport routine to use a different 
-   !  timestep than the dry dynamics, and also makes possible a spatial splitting of the scalar transport integration
-   !  (and density integration).  The current integration is, however, not spatially split.
-   !
-   !  WCS 18 November 2014
-   !-----------------------
-   ! Input: s - current model state, 
-   !            including tendencies from sources other than resolved transport.
-   !        grid - grid metadata
-   !
-   ! input scalars in state are uncoupled (i.e. not mulitplied by density)
-   ! 
-   ! Output: updated uncoupled scalars (scalars in state).
-   ! Note: scalar tendencies are also modified by this routine.
-   !
-   ! This routine DOES NOT apply any positive definite or monotonic renormalizations.
-   !
-   ! The transport scheme is from Skamarock and Gassmann MWR 2011.
-   !
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-
-      use mpas_atm_dimensions
-
-      implicit none
-
-      integer, intent(in) :: num_scalars_dummy ! for allocating stack variables
-      integer, intent(in) :: nCells           ! for allocating stack variables
-      integer, intent(in) :: nVertLevels_dummy ! for allocating stack variables
-      real (kind=RKIND), intent(in) :: dt
-      integer, intent(in) :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
-      integer, intent(in) :: cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd
-      logical, intent(in) :: advance_density
-      real (kind=RKIND), dimension(:,:,:), intent(in) :: scalar_old
-      real (kind=RKIND), dimension(:,:,:), intent(inout) :: scalar_new
-      real (kind=RKIND), dimension(num_scalars,nVertLevels,nCells+1), intent(inout) :: scalar_tend_save
-      real (kind=RKIND), dimension(:,:,:), intent(in) :: deriv_two
-      real (kind=RKIND), dimension(:,:), intent(in) :: rho_zz_old
-      real (kind=RKIND), dimension(:,:), intent(in) :: uhAvg, wwAvg, rho_edge, zgrid, rho_zz_new, kdiff
-      real (kind=RKIND), dimension(:), intent(in) :: dvEdge, qv_init
-      integer, dimension(:,:), intent(in) :: cellsOnEdge
-      integer, dimension(:,:), intent(in) :: advCellsForEdge, edgesOnCell
-      integer, dimension(:), intent(in) :: nAdvCellsForEdge, nEdgesOnCell
-      real (kind=RKIND), dimension(:,:), intent(in) :: adv_coefs, adv_coefs_3rd, edgesOnCell_sign
-      real (kind=RKIND), dimension(:), intent(in) :: fnm, fnp, rdnw, meshScalingDel2, meshScalingDel4
-      real (kind=RKIND), intent(in) :: coef_3rd_order
-      real (kind=RKIND), dimension(num_scalars,nVertLevels,nEdges+1), intent(inout) :: horiz_flux_arr
-      real (kind=RKIND), dimension(num_scalars,nVertLevels,nCells+1), intent(inout), optional :: scalar_tend
-      real (kind=RKIND), dimension(nVertLevels,nCells+1), intent(inout), optional :: rho_zz_int
-      real (kind=RKIND), dimension(:), intent(in) :: invAreaCell
-      integer, intent(in) :: nCellsSolve, nEdges
-
-      integer :: i, j, iCell, iAdvCell, iEdge, k, iScalar, cell1, cell2
-      real (kind=RKIND) :: rho_zz_new_inv
-
-      real (kind=RKIND) :: scalar_weight
-
-      real (kind=RKIND), dimension( num_scalars, nVertLevels + 1 ) :: wdtn
-
-      real (kind=RKIND), dimension(nVertLevels,10) :: scalar_weight2
-      integer, dimension(10) :: ica
-
-      real (kind=RKIND) :: flux3, flux4
-      real (kind=RKIND) :: q_im2, q_im1, q_i, q_ip1, ua, coef3
-
-      logical :: local_advance_density
-
-      flux4(q_im2, q_im1, q_i, q_ip1, ua) =                     &
-          ua*( 7.*(q_i + q_im1) - (q_ip1 + q_im2) )/12.0
-
-      flux3(q_im2, q_im1, q_i, q_ip1, ua, coef3) =              &
-                flux4(q_im2, q_im1, q_i, q_ip1, ua) +           &
-                coef3*abs(ua)*((q_ip1 - q_im2)-3.*(q_i-q_im1))/12.0
-
-      local_advance_density = advance_density
-
-      !
-      ! Runge Kutta integration, so we compute fluxes from scalar_new values, update starts from scalar_old
-      !
-      !  horizontal flux divergence, accumulate in scalar_tend
-
-
-      !  horiz_flux_arr stores the value of the scalar at the edge.
-      !  a better name perhaps would be scalarEdge
-
-      do iEdge=edgeStart,edgeEnd
-
-         select case(nAdvCellsForEdge(iEdge))
-
-         case(10)
-
-            do j=1,10
-!DIR$ IVDEP
-               do k=1,nVertLevels
-                  scalar_weight2(k,j) = adv_coefs(j,iEdge) + sign(1.0_RKIND,uhAvg(k,iEdge))*adv_coefs_3rd(j,iEdge)
-               end do
-            end do
-            do j=1,10
-               ica(j) = advCellsForEdge(j,iEdge)
-            end do
-!DIR$ IVDEP
-            do k = 1,nVertLevels
-!DIR$ IVDEP
-               do iScalar = 1,num_scalars
-                  horiz_flux_arr(iScalar,k,iEdge) = &
-                       scalar_weight2(k,1)  * scalar_new(iScalar,k,ica(1)) + &
-                       scalar_weight2(k,2)  * scalar_new(iScalar,k,ica(2)) + &
-                       scalar_weight2(k,3)  * scalar_new(iScalar,k,ica(3)) + &
-                       scalar_weight2(k,4)  * scalar_new(iScalar,k,ica(4)) + &
-                       scalar_weight2(k,5)  * scalar_new(iScalar,k,ica(5)) + &
-                       scalar_weight2(k,6)  * scalar_new(iScalar,k,ica(6)) + &
-                       scalar_weight2(k,7)  * scalar_new(iScalar,k,ica(7)) + &
-                       scalar_weight2(k,8)  * scalar_new(iScalar,k,ica(8)) + &
-                       scalar_weight2(k,9)  * scalar_new(iScalar,k,ica(9)) + &
-                       scalar_weight2(k,10) * scalar_new(iScalar,k,ica(10))
-               end do
-            end do
-
-         case default
-
-            horiz_flux_arr(:,:,iEdge) = 0.0
-            do j=1,nAdvCellsForEdge(iEdge)
-               iAdvCell = advCellsForEdge(j,iEdge)
-!DIR$ IVDEP
-               do k=1,nVertLevels
-                  scalar_weight = adv_coefs(j,iEdge) + sign(1.0_RKIND,uhAvg(k,iEdge))*adv_coefs_3rd(j,iEdge)
-!DIR$ IVDEP
-                  do iScalar=1,num_scalars
-                     horiz_flux_arr(iScalar,k,iEdge) = horiz_flux_arr(iScalar,k,iEdge) + scalar_weight * scalar_new(iScalar,k,iAdvCell)
-                  end do
-               end do
-            end do
-
-         end select
-      end do
-
-!$OMP BARRIER
-
-      if (local_advance_density) then
-         if ((.not.present(scalar_tend)) .or. (.not.present(rho_zz_int))) then
-            call mpas_log_write('Error: rho_zz_int or scalar_tend not supplied to atm_advance_scalars( ) when advance_density=.true.', messageType=MPAS_LOG_CRIT)
-         end if
-
-         do iCell=cellSolveStart,cellSolveEnd
-            scalar_tend(:,:,iCell) = scalar_tend_save(:,:,iCell)
-#ifndef DO_PHYSICS
-            scalar_tend(:,:,iCell) = 0.0  !  testing purposes - we have no sources or sinks
-#endif
-
-            rho_zz_int(:,iCell) = 0.0
-
-            do i=1,nEdgesOnCell(iCell)
-               iEdge = edgesOnCell(i,iCell)
-   
-               ! here we add the horizontal flux divergence into the scalar tendency.
-               ! note that the scalar tendency is modified.
-!DIR$ IVDEP
-               do k=1,nVertLevels
-                  rho_zz_int(k,iCell) = rho_zz_int(k,iCell) - edgesOnCell_sign(i,iCell) * uhAvg(k,iEdge)*dvEdge(iEdge) * invAreaCell(iCell)
-!DIR$ IVDEP
-                  do iScalar=1,num_scalars
-                        scalar_tend(iScalar,k,iCell) = scalar_tend(iScalar,k,iCell) &
-                               - edgesOnCell_sign(i,iCell) * uhAvg(k,iEdge)*horiz_flux_arr(iScalar,k,iEdge) * invAreaCell(iCell)
-                  end do
-               end do
-               
-            end do
-
-!DIR$ IVDEP
-            do k=1,nVertLevels
-               rho_zz_int(k,iCell) = rho_zz_old(k,iCell) + dt*( rho_zz_int(k,iCell) - rdnw(k)*(wwAvg(k+1,iCell)-wwAvg(k,iCell)) )
-            end do
-         end do
-
-      else
-
-         do iCell=cellSolveStart,cellSolveEnd
-#ifndef DO_PHYSICS
-            scalar_tend_save(:,:,iCell) = 0.0  !  testing purposes - we have no sources or sinks
-#endif
-
-            do i=1,nEdgesOnCell(iCell)
-               iEdge = edgesOnCell(i,iCell)
-
-               ! here we add the horizontal flux divergence into the scalar tendency.
-               ! note that the scalar tendency is modified.
-!DIR$ IVDEP
-               do k=1,nVertLevels
-!DIR$ IVDEP
-                  do iScalar=1,num_scalars
-                        scalar_tend_save(iScalar,k,iCell) = scalar_tend_save(iScalar,k,iCell) &
-                               - edgesOnCell_sign(i,iCell) * uhAvg(k,iEdge)*horiz_flux_arr(iScalar,k,iEdge) * invAreaCell(iCell)
-                  end do
-               end do
-               
-            end do
-         end do
-
-      end if
-
-      !
-      !  vertical flux divergence and update of the scalars
-      !
-
-      ! zero fluxes at top and bottom
-      wdtn(:,1) = 0.0
-      wdtn(:,nVertLevels+1) = 0.0
-
-
-      do iCell=cellSolveStart,cellSolveEnd
-
-         k = 2
-         do iScalar=1,num_scalars
-            wdtn(iScalar,k) = wwAvg(k,iCell)*(fnm(k)*scalar_new(iScalar,k,iCell)+fnp(k)*scalar_new(iScalar,k-1,iCell))
-         end do
-          
-!DIR$ IVDEP
-         do k=3,nVertLevels-1
-!DIR$ IVDEP
-            do iScalar=1,num_scalars
-               wdtn(iScalar,k) = flux3( scalar_new(iScalar,k-2,iCell),scalar_new(iScalar,k-1,iCell),  &
-                                        scalar_new(iScalar,k  ,iCell),scalar_new(iScalar,k+1,iCell),  &
-                                        wwAvg(k,iCell), coef_3rd_order )
-            end do
-         end do
-         k = nVertLevels
-         do iScalar=1,num_scalars
-            wdtn(iScalar,k) = wwAvg(k,iCell)*(fnm(k)*scalar_new(iScalar,k,iCell)+fnp(k)*scalar_new(iScalar,k-1,iCell))
-         end do
-
-      if (local_advance_density) then
-!DIR$ IVDEP
-         do k=1,nVertLevels
-            rho_zz_new_inv = 1.0_RKIND / rho_zz_int(k,iCell)
-!DIR$ IVDEP
-            do iScalar=1,num_scalars
-               scalar_new(iScalar,k,iCell) = (   scalar_old(iScalar,k,iCell)*rho_zz_old(k,iCell) &
-                     + dt*( scalar_tend(iScalar,k,iCell) -rdnw(k)*(wdtn(iScalar,k+1)-wdtn(iScalar,k)) ) ) * rho_zz_new_inv
-            end do
-         end do
-      else
-!DIR$ IVDEP
-         do k=1,nVertLevels
-            rho_zz_new_inv = 1.0_RKIND / rho_zz_new(k,iCell)
-!DIR$ IVDEP
-            do iScalar=1,num_scalars
-               scalar_new(iScalar,k,iCell) = (   scalar_old(iScalar,k,iCell)*rho_zz_old(k,iCell) &
-                     + dt*( scalar_tend_save(iScalar,k,iCell) -rdnw(k)*(wdtn(iScalar,k+1)-wdtn(iScalar,k)) ) ) * rho_zz_new_inv
-            end do
-         end do
-      end if
-
-      end do
-
-   end subroutine atm_advance_scalars_work
-
-
-   subroutine atm_advance_scalars_work_new( num_scalars_dummy, nCells, nVertLevels_dummy, dt, &
              cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
              cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd, &
              coef_3rd_order, scalar_old, scalar_new, rho_zz_old, rho_zz_new, kdiff, &
@@ -3774,7 +3504,7 @@ module atm_time_integration
 
       end do
 
-   end subroutine atm_advance_scalars_work_new
+   end subroutine atm_advance_scalars_work
 
 
    subroutine atm_advance_scalars_mono(block, tend, state, diag, mesh, configs, nCells, nEdges, nVertLevels_dummy, dt, &
