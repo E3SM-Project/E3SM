@@ -3662,7 +3662,6 @@ end subroutine print_active_fldlst
     integer                          :: mdimsize
     integer                          :: ierr
     integer,          allocatable    :: mdimids(:)
-    integer                          :: amode
     logical                          :: interpolate
     logical                          :: patch_output
 
@@ -3674,12 +3673,10 @@ end subroutine print_active_fldlst
       if(masterproc) write(iulog,*)'Opening netcdf history file ', trim(nhfil(t))
     end if
 
-    amode = PIO_CLOBBER
-
     if(restart) then
-      call cam_pio_createfile (tape(t)%File, hrestpath(t), amode)
+      call cam_pio_createfile (tape(t)%File, hrestpath(t))
     else
-      call cam_pio_createfile (tape(t)%File, nhfil(t), amode)
+      call cam_pio_createfile (tape(t)%File, nhfil(t))
     end if
     if(is_satfile(t)) then
       interpolate = .false. ! !!XXgoldyXX: Do we ever want to support this?

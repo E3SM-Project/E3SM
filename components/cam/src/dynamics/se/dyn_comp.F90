@@ -418,7 +418,7 @@ CONTAINS
     ! Create a CS grid mapping file for postprocessing tools
 
        ! write meta data for physics on GLL nodes
-       call cam_pio_createfile(nc, 'SEMapping.nc', 0)
+       call cam_pio_createfile(nc, 'SEMapping.nc')
    
        ierr = pio_def_dim(nc, 'ncenters', npm12*nelem, dim1)
        ierr = pio_def_dim(nc, 'ncorners', 4, dim2)
