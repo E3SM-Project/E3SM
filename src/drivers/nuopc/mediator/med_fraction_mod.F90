@@ -379,13 +379,13 @@ contains
                 maptype = mapfcopy
              else
                 maptype = mapconsf
-                if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compice,compatm,maptype), rc=rc)) then
-                   call med_map_Fractions_init( gcomp, compice, compatm, &
-                        FBSrc=is_local%wrap%FBImp(compice,compice), &
-                        FBDst=is_local%wrap%FBImp(compice,compatm), &
-                        RouteHandle=is_local%wrap%RH(compice,compatm,maptype), rc=rc)
-                   if (ChkErr(rc,__LINE__,u_FILE_u)) return
-                end if
+             end if
+             if (.not. ESMF_RouteHandleIsCreated(is_local%wrap%RH(compice,compatm,maptype), rc=rc)) then
+                call med_map_Fractions_init( gcomp, compice, compatm, &
+                     FBSrc=is_local%wrap%FBImp(compice,compice), &
+                     FBDst=is_local%wrap%FBImp(compice,compatm), &
+                     RouteHandle=is_local%wrap%RH(compice,compatm,maptype), rc=rc)
+                if (ChkErr(rc,__LINE__,u_FILE_u)) return
              end if
              call FB_FieldRegrid(&
                   is_local%wrap%FBfrac(compice), 'ifrac', &
@@ -646,6 +646,7 @@ contains
     real(r8), pointer          :: Si_imask(:)
     integer                    :: n
     integer                    :: dbrc
+    integer                    :: maptype
     character(len=*),parameter :: subname='(med_fraction_set)'
     !---------------------------------------
     call t_startf('MED:'//subname)
@@ -781,12 +782,18 @@ contains
 
           else
 
+             if (ESMF_RouteHandleIsCreated(is_local%wrap%RH(compice,compatm,mapfcopy), rc=rc)) then
+                maptype = mapfcopy
+             else
+                maptype = mapconsf
+             end if
+
              ! Map 'ifrac' from FBfrac(compice) to FBfrac(compatm)
              if (is_local%wrap%med_coupling_active(compice,compatm)) then
                 call FB_FieldRegrid(&
                      is_local%wrap%FBfrac(compice), 'ifrac', &
                      is_local%wrap%FBfrac(compatm), 'ifrac', &
-                     is_local%wrap%RH(compice,compatm,mapconsf), rc=rc)
+                     is_local%wrap%RH(compice,compatm,maptype), rc=rc)
                 if (ChkErr(rc,__LINE__,u_FILE_u)) return
              end if
 
@@ -795,7 +802,7 @@ contains
                 call FB_FieldRegrid(&
                      is_local%wrap%FBfrac(compice), 'ofrac', &
                      is_local%wrap%FBfrac(compatm), 'ofrac', &
-                     is_local%wrap%RH(compice,compatm,mapconsf), rc=rc)
+                     is_local%wrap%RH(compice,compatm,maptype), rc=rc)
                 if (ChkErr(rc,__LINE__,u_FILE_u)) return
              end if
 
