@@ -621,7 +621,11 @@ contains
                   end if
                end if
             else
-               this%t_soisno_col(c,1:nlevgrnd) = 274._r8
+               !this%t_soisno_col(c,1:nlevgrnd) = 274._r8
+               ! It's better for initCold really for high latitudes.
+               ! The reason is that initial unfrozen soil could be losing water very quickly because cold airs need time to penetrate into soil.
+               ! If not high latitude region, it's fine because warming air will quickly thaw it down.
+               this%t_soisno_col(c,1:nlevgrnd) = 263._r8
             endif
          endif
       end do

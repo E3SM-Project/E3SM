@@ -1210,8 +1210,8 @@ contains
 
         fpg(c)              = clm_bgc_data%fpg_col(c)
         fpi(c)              = clm_bgc_data%fpi_col(c)
-        fpg_p(c)            = clm_bgc_data%fpg_p_col(c)
-        fpi_p(c)            = clm_bgc_data%fpi_p_col(c)
+        fpg_p(c)            = 1.0_r8 !clm_bgc_data%fpg_p_col(c)                         ! currently not available for P cycle (TODO)
+        fpi_p(c)            = 1.0_r8 !clm_bgc_data%fpi_p_col(c)                         ! currently not available for P cycle (TODO)
 
         potential_immob(c)  = clm_bgc_data%potential_immob_col(c)
         actual_immob(c)     = clm_bgc_data%actual_immob_col(c)
@@ -1222,7 +1222,7 @@ contains
         sminp_to_plant(c)     = clm_bgc_data%sminp_to_plant_col(c)
 
         fpi_vr(c,:)                 = clm_bgc_data%fpi_vr_col(c,:)
-        fpi_p_vr(c,:)               = clm_bgc_data%fpi_p_vr_col(c,:)
+        fpi_p_vr(c,:)               = 1.0_r8 !clm_bgc_data%fpi_p_vr_col(c,:)            ! currently not available for P cycle (TODO)
 
         sminn_to_plant_vr(c,:)      = clm_bgc_data%sminn_to_plant_vr_col(c,:)
         smin_no3_to_plant_vr(c,:)   = clm_bgc_data%smin_no3_to_plant_vr_col(c,:)
@@ -1241,13 +1241,13 @@ contains
         no3_net_transport_vr(c,:)   = clm_bgc_data%no3_net_transport_vr_col(c,:)
         nh4_net_transport_vr(c,:)   = clm_bgc_data%nh4_net_transport_vr_col(c,:)
 
-        supplement_to_sminp_vr(c,:) = clm_bgc_data%supplement_to_sminp_vr_col(c,:)
+        supplement_to_sminp_vr(c,:) = clm_bgc_data%supplement_to_sminp_vr_col(c,:)     ! currently not available for P cycle (TODO)
 
-        sminp_to_plant_vr(c,:)      = clm_bgc_data%sminp_to_plant_vr_col(c,:)
-        potential_immob_p_vr(c,:)   = clm_bgc_data%potential_immob_p_vr_col(c,:)
-        actual_immob_p_vr(c,:)      = clm_bgc_data%actual_immob_p_vr_col(c,:)
-        gross_pmin_vr(c,:)          = clm_bgc_data%gross_pmin_vr_col(c,:)
-        net_pmin_vr(c,:)            = clm_bgc_data%net_pmin_vr_col(c,:)     !NOT available in PF
+        sminp_to_plant_vr(c,:)      = clm_bgc_data%sminp_to_plant_vr_col(c,:)          ! currently not available for P cycle (TODO)
+        potential_immob_p_vr(c,:)   = clm_bgc_data%potential_immob_p_vr_col(c,:)       ! currently not available for P cycle (TODO)
+        actual_immob_p_vr(c,:)      = clm_bgc_data%actual_immob_p_vr_col(c,:)          ! currently not available for P cycle (TODO)
+        gross_pmin_vr(c,:)          = clm_bgc_data%gross_pmin_vr_col(c,:)              ! currently not available for P cycle (TODO)
+        net_pmin_vr(c,:)            = clm_bgc_data%net_pmin_vr_col(c,:)                ! currently not available for P cycle (TODO)
 
       end do
     end associate
@@ -1706,9 +1706,9 @@ contains
             clm_bgc_data%fpg_col(c)                                   = fpg(c)
             clm_bgc_data%fpi_col(c)                                   = fpi(c)
             clm_bgc_data%fpi_vr_col(c,:)                              = fpi_vr(c,:)
-            clm_bgc_data%fpg_p_col(c)                                 = fpg_p(c)
-            clm_bgc_data%fpi_p_col(c)                                 = fpi_p(c)
-            clm_bgc_data%fpi_p_vr_col(c,:)                            = fpi_p_vr(c,:)
+            clm_bgc_data%fpg_p_col(c)                                 = 1.0_r8 !fpg_p(c)          ! currently not available for P cycle (TODO)
+            clm_bgc_data%fpi_p_col(c)                                 = 1.0_r8 !fpi_p(c)          ! currently not available for P cycle (TODO)
+            clm_bgc_data%fpi_p_vr_col(c,:)                            = 1.0_r8 !fpi_p_vr(c,:)     ! currently not available for P cycle (TODO)
             clm_bgc_data%potential_immob_col(c)                       = potential_immob(c)
             clm_bgc_data%actual_immob_col(c)                          = actual_immob(c)
             clm_bgc_data%sminn_to_plant_col(c)                        = sminn_to_plant(c)

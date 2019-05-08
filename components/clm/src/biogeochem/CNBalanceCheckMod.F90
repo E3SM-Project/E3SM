@@ -647,6 +647,7 @@ contains
          write(iulog,*)'input mass  = ',col_pinputs(c)*dt
          write(iulog,*)'output mass = ',col_poutputs(c)*dt
          write(iulog,*)'net flux    = ',(col_pinputs(c)-col_poutputs(c))*dt
+         if (.not. (use_pflotran .and. pf_cmode)) &    ! (TODO) checking why P cycle is on when coupling with pflotran (which not included)
          call endrun(msg=errMsg(__FILE__, __LINE__))
       end if
 
