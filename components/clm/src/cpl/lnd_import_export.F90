@@ -682,7 +682,7 @@ contains
         if (yr .lt. 1850) nindex(1:2) = 2
         if (yr .ge. 2010) nindex(1:2) = 161
        
-        if (use_fates == .false.) then 
+        if (use_fates .eqv. .false.) then 
         if (atm2lnd_vars%loaded_bypassdata == 0 .or. (mon .eq. 1 .and. day .eq. 1 .and. tod .eq. 0)) then 
           if (masterproc .and. i .eq. 1) then 
               ! Read pop_dens streams namelist to get filename
