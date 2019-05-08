@@ -9,29 +9,36 @@ from CIME.locked_files          import lock_file, unlock_file
 
 logger = logging.getLogger(__name__)
 
-def get_standard_makefile_args(case):
-    variables = ["CASEROOT", "CASETOOLS", "CIMEROOT", "COMP_INTERFACE",
-                 "COMPILER", "DEBUG", "EXEROOT", "INCROOT", "LIBROOT",
-                 "MACH", "MPILIB", "NINST_VALUE", "OS", "PIO_VERSION",
-                 "SHAREDLIBROOT", "SMP_PRESENT", "USE_ESMF_LIB", "USE_MOAB",
-                 "CAM_CONFIG_OPTS", "COMPARE_TO_NUOPC", "HOMME_TARGET",
-                 "OCN_SUBMODEL", "CISM_USE_TRILINOS", "USE_ALBANY", "USE_PETSC"]
+_CMD_ARGS_FOR_BUILD = \
+    ("CASEROOT", "CASETOOLS", "CIMEROOT", "COMP_INTERFACE",
+     "COMPILER", "DEBUG", "EXEROOT", "INCROOT", "LIBROOT",
+     "MACH", "MPILIB", "NINST_VALUE", "OS", "PIO_VERSION",
+     "SHAREDLIBROOT", "SMP_PRESENT", "USE_ESMF_LIB", "USE_MOAB",
+     "CAM_CONFIG_OPTS", "COMPARE_TO_NUOPC", "HOMME_TARGET",
+     "OCN_SUBMODEL", "CISM_USE_TRILINOS", "USE_ALBANY", "USE_PETSC")
 
+def get_standard_makefile_args(case):
     make_args = "CIME_MODEL={} ".format(case.get_value("MODEL"))
     make_args += " compile_threaded={} ".format(stringify_bool(case.get_build_threaded()))
-    for var in variables:
-        make_args+=xml_to_make_variable(case, var)
+    for var in _CMD_ARGS_FOR_BUILD:
+        make_args += xml_to_make_variable(case, var)
 
     return make_args
 
-def xml_to_make_variable(case, varname):
+def get_standard_cmake_args(case):
+    cmake_args = "-DCIME_MODEL={} ".format(case.get_value("MODEL"))
+    for var in _CMD_ARGS_FOR_BUILD:
+        cmake_args += xml_to_make_variable(case, var, cmake=True)
+
+    return cmake_args
+
+def xml_to_make_variable(case, varname, cmake=False):
     varvalue = case.get_value(varname)
     if varvalue is None:
         return ""
     if type(varvalue) == type(True):
         varvalue = stringify_bool(varvalue)
-    return "{}=\"{}\" ".format(varname, varvalue)
-
+    return "{}{}=\"{}\" ".format("-D" if cmake else "", varname, varvalue)
 
 ###############################################################################
 def _build_model(build_threaded, exeroot, incroot, complist,
