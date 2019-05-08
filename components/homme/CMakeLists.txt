@@ -373,6 +373,6 @@ ADD_CUSTOM_TARGET(clean-all
 IF (NOT "${PROJECT_NAME}" STREQUAL "HOMME")
   # Homme is used as a subproject. We need to make the compiler options available to the outside
   SET (HOMME_C_FLAGS ${CMAKE_C_FLAGS} PARENT_SCOPE)
-  SET (HOMME_CXX_FLAGS "${HOMME_CXX_FLAGS} ${CMAKE_CXX_FLAGS}" PARENT_SCOPE)
+  SET (HOMME_CXX_FLAGS ${CMAKE_CXX_FLAGS} PARENT_SCOPE)
   SET (HOMME_Fortran_FLAGS ${CMAKE_Fortran_FLAGS} PARENT_SCOPE)
 ENDIF ()

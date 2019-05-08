@@ -5,11 +5,10 @@
 #include <share/scream_pack.hpp>
 #include <share/field/field.hpp>
 
-namespace scream
-{
+#include <catch2/catch.hpp>
 
-namespace util
-{
+namespace scream {
+namespace util {
 
 template <typename rngAlg, typename PDF>
 void genRandArray(int *const x, int length, rngAlg &engine, PDF &&pdf) {
@@ -49,8 +48,24 @@ genRandArray(FieldType& field, rngAlg &engine, PDF &&pdf) {
   genRandArray(field.get_view(), engine, pdf);
 }
 
-} // namespace util
+// Do an == check between a scalar result and a packed-C++ result.
+// Expect BFB except when C++ pksize > 1 and fp model is not strict
+template <int Packsize, typename Scalar>
+void catch2_req_pk_sensitive(const Scalar lhs, const Scalar rhs)
+{
+#ifdef SCREAM_STRICT_FP
+  REQUIRE(lhs == rhs);
+#else
+  if (Packsize > 1) {
+    REQUIRE(lhs == Approx(rhs));
+  }
+  else {
+    REQUIRE(lhs == rhs);
+  }
+#endif
+}
 
+} // namespace util
 } // namespace scream
 
 #endif // SCREAM_TEST_UTILS_HPP

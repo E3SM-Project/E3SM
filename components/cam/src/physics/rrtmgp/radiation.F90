@@ -20,7 +20,7 @@ module radiation
    ! RRTMGP gas optics object to store coefficient information. This is imported
    ! here so that we can make the k_dist objects module data and only load them
    ! once.
-   use mo_gas_optics, only: ty_gas_optics
+   use mo_gas_optics_rrtmgp, only: ty_gas_optics_rrtmgp
    use mo_rte_kind, only: wp
 
    ! Use my assertion routines to perform sanity checks
@@ -120,7 +120,7 @@ module radiation
    ! RRTMGP coefficients files, specified by coefficients_file_sw and
    ! coefficients_file_lw in the radiation namelist. They exist as module data
    ! because we only want to load those files once.
-   type(ty_gas_optics) :: k_dist_sw, k_dist_lw
+   type(ty_gas_optics_rrtmgp) :: k_dist_sw, k_dist_lw
 
    ! k-distribution coefficients files to read from. These are set via namelist
    ! variables.
@@ -1003,7 +1003,7 @@ contains
    ! Function to calculate band midpoints from kdist band limits
    function get_band_midpoints(nbands, kdist) result(band_midpoints)
       integer, intent(in) :: nbands
-      type(ty_gas_optics), intent(in) :: kdist
+      type(ty_gas_optics_rrtmgp), intent(in) :: kdist
       real(r8) :: band_midpoints(nbands)
       real(r8) :: band_limits(2,nbands)
       integer :: i

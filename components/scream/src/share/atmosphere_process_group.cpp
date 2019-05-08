@@ -4,20 +4,50 @@
 
 namespace scream {
 
-AtmosphereProcessGroup::AtmosphereProcessGroup (const ParameterList& params) {
+AtmosphereProcessGroup::
+AtmosphereProcessGroup (const Comm& comm, const ParameterList& params)
+ : m_comm(comm)
+{
   // Get number of processes in the group and the scheduling type (Sequential vs Parallel)
   m_group_size = params.get<int>("Number of Entries");
 
   // Create the individual atmosphere processes
   using Factory = AtmosphereProcessFactory;
   for (int i=0; i<m_group_size; ++i) {
+    // The comm to be passed to the processes construction is
+    //  - the same as the input comm if num_entries=1 or sched_type=Sequential
+    //  - a sub-comm of the input comm otherwise
+    Comm proc_comm = m_comm;
+    if (m_group_size>1 && m_group_schedule_type==GroupScheduleType::Parallel) {
+      // This is what's going to happen:
+      //  - the processes in the group are going to be run in parallel
+      //  - each rank is assigned ONE atm process
+      //  - all the atm processes not assigned to this rank are filled with
+      //    an instance of RemoteProcessStub (to be implemented), which is a do-nothing class,
+      //    only responsible to keep track of dependencies
+      //  - the input parameter list should specify for each atm process the number
+      //    of mpi ranks dedicated to it. Obviously, these numbers should add up
+      //    to the size of the input communicator.
+      // We therefore construct entries_comm following the specs of the processs
+      // we have to handle on this rank,  and pass the same comm to all the processes.
+      error::runtime_abort("Error! Parallel schedule type not yet implemented.\n");
+    }
+
     const auto& params_i = params.sublist(util::strint("Process",i));
     const std::string& process_name = params_i.get<std::string>("Process Name");
-    m_atm_processes.emplace_back(Factory::instance().create(process_name,params_i));
+    m_atm_processes.emplace_back(Factory::instance().create(process_name,proc_comm,params_i));
 
     // Update the grid types of the group, given the needs of the newly created process
-    for (auto type : m_atm_processes.back()->get_required_grids()) {
-      m_required_grids.insert(type);
+    for (const auto& name : m_atm_processes.back()->get_required_grids()) {
+      m_required_grids.insert(name);
+    }
+
+    // Add inputs/outputs to the list of inputs/outputs of this group
+    for (const auto& id : m_atm_processes[i]->get_required_fields()) {
+      m_required_fields.insert(id);
+    }
+    for (const auto& id : m_atm_processes[i]->get_computed_fields()) {
+      m_computed_fields.insert(id);
     }
   }
 
@@ -32,51 +62,20 @@ AtmosphereProcessGroup::AtmosphereProcessGroup (const ParameterList& params) {
   error::runtime_check(m_group_schedule_type==GroupScheduleType::Sequential, "Error! Parallel schedule not yet implemented.\n");
 }
 
-void AtmosphereProcessGroup::initialize (const Comm& comm, const std::shared_ptr<const GridsManager> grids_manager) {
-  m_comm = comm;
-
+void AtmosphereProcessGroup::initialize (const std::shared_ptr<const GridsManager> grids_manager) {
   // Now that we have the comm for the processes in the group, we can initialize them
   for (int i=0; i<m_group_size; ++i) {
-    // The comm to be passed to the processes construction is
-    //  - the same as the input comm if num_entries=1 or sched_type=Sequential
-    //  - a sub-comm of the input comm otherwise
-    Comm proc_comm = comm;
-    if (m_group_size>1 && m_group_schedule_type==GroupScheduleType::Parallel) {
-      // This is what's going to happen:
-      //  - the processes in the group are going to be run in parallel
-      //  - each rank is assigned ONE atm process
-      //  - all the atm processes not assigned to this rank are filled with
-      //    an instance of RemoteProcessStub (to be implemented), which is a do-nothing class,
-      //    only responsible to keep track of dependencies
-      //  - the input parameter list should specify for each atm process the number
-      //    of mpi ranks dedicated to it. Obviously, these numbers should add up
-      //    to the size of the input communicator.
-      // We therefore construct entries_comm following the specs of the processs
-      // we have to handle on this rank,  and pass the same comm to all the processes.
-
-      // In order to figure out what atm process this rank should handle,
-      // we need to know how many ranks are assigned to each atm process
-    }
-
-    m_atm_processes[i]->initialize(proc_comm,grids_manager);
-
-    // Add inputs/outputs to the list of inputs/outputs of this group
-    for (const auto& id : m_atm_processes[i]->get_required_fields()) {
-      m_required_fields.insert(id);
-    }
-    for (const auto& id : m_atm_processes[i]->get_computed_fields()) {
-      m_computed_fields.insert(id);
-    }
+    m_atm_processes[i]->initialize(grids_manager);
   }
 }
 
-void AtmosphereProcessGroup::run        (/* what inputs? */) {
+void AtmosphereProcessGroup::run (/* what inputs? */) {
   for (auto atm_proc : m_atm_processes) {
     atm_proc->run(/* what inputs? */);
   }
 }
 
-void AtmosphereProcessGroup::finalize   (/* what inputs? */) {
+void AtmosphereProcessGroup::finalize (/* what inputs? */) {
   for (auto atm_proc : m_atm_processes) {
     atm_proc->finalize(/* what inputs? */);
   }

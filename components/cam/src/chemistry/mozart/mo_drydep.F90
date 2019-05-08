@@ -1997,6 +1997,7 @@ contains
   subroutine get_landuse_and_soilw_from_file(do_soilw)
     use cam_pio_utils, only : cam_pio_openfile
     use ncdio_atm, only : infld
+    use cam_control_mod, only: aqua_planet
     logical, intent(in) :: do_soilw
     logical :: readvar
     
@@ -2004,24 +2005,29 @@ contains
     character(len=shr_kind_cl) :: locfn
     logical :: lexist
     
-    call getfil (drydep_srf_file, locfn, 1, lexist)
-    if(lexist) then
-       call cam_pio_openfile(piofile, locfn, PIO_NOWRITE)
-
-       call infld('fraction_landuse', piofile, 'ncol','class',' ',1,pcols,1,n_land_type, begchunk,endchunk, &
-            fraction_landuse, readvar, gridname='physgrid')
-
-       if(do_soilw) then
-          call infld('soilw', piofile, 'ncol','month',' ',1,pcols,1,12, begchunk,endchunk, &
-               soilw_3d, readvar, gridname='physgrid')
-       end if
-
-       call pio_closefile(piofile)
+    if (aqua_planet) then
+      fraction_landuse = 0.
+      soilw_3d = 0.
     else
-       call endrun('Unstructured grids require drydep_srf_file ')
-    end if
 
+      call getfil (drydep_srf_file, locfn, 1, lexist)
+      if(lexist) then
+         call cam_pio_openfile(piofile, locfn, PIO_NOWRITE)
 
+         call infld('fraction_landuse', piofile, 'ncol','class',' ',1,pcols,1,n_land_type, begchunk,endchunk, &
+              fraction_landuse, readvar, gridname='physgrid')
+
+         if(do_soilw) then
+            call infld('soilw', piofile, 'ncol','month',' ',1,pcols,1,12, begchunk,endchunk, &
+                 soilw_3d, readvar, gridname='physgrid')
+         end if
+
+         call pio_closefile(piofile)
+      else
+         call endrun('Unstructured grids require drydep_srf_file ')
+      end if
+    
+    end if ! aqua_planet
   end subroutine get_landuse_and_soilw_from_file
 
   !-------------------------------------------------------------------------------------
@@ -2098,7 +2104,7 @@ contains
        if (use_camiop) then
           call getfil (ncdata, ncdata_loc)
           call cam_pio_openfile (piofile, trim(ncdata_loc), PIO_NOWRITE)
-          call shr_scam_getCloseLatLon(piofile%fh,scmlat,scmlon,closelat,closelon,latidx,lonidx)
+          call shr_scam_getCloseLatLon(piofile,scmlat,scmlon,closelat,closelon,latidx,lonidx)
           call pio_closefile ( piofile)
           ploniop=size(loniop)
           platiop=size(latiop)

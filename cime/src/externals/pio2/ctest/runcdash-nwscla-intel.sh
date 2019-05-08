@@ -16,7 +16,6 @@ module switch mpt mpt/2.16
 module load cmake/3.7.2
 module load netcdf-mpi/4.4.1.1
 module load pnetcdf/1.8.1
-
 echo "MODULE LIST..."
 module list
 

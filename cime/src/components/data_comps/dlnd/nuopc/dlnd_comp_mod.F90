@@ -30,14 +30,14 @@ module dlnd_comp_mod
   use shr_cal_mod           , only : shr_cal_datetod2string
   use shr_nuopc_scalars_mod , only : flds_scalar_name
   use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-  use dshr_nuopc_mod        , only : fld_list_type
-  use dshr_nuopc_mod        , only : dshr_fld_add
-  use glc_elevclass_mod     , only : glc_get_num_elevation_classes, glc_elevclass_as_string, glc_elevclass_init
+  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_import, dshr_export
+  use glc_elevclass_mod     , only : glc_elevclass_as_string, glc_elevclass_init
   use dlnd_shr_mod          , only : datamode        ! namelist input
   use dlnd_shr_mod          , only : rest_file       ! namelist input
   use dlnd_shr_mod          , only : rest_file_strm  ! namelist input
   use dlnd_shr_mod          , only : domain_fracname ! namelist input
   use dlnd_shr_mod          , only : nullstr
+  use dlnd_shr_mod          , only : SDLND
 
   ! !PUBLIC TYPES:
   implicit none
@@ -50,16 +50,20 @@ module dlnd_comp_mod
   public :: dlnd_comp_advertise
   public :: dlnd_comp_init
   public :: dlnd_comp_run
+  public :: dlnd_comp_export
 
   !--------------------------------------------------------------------------
   ! Private data
   !--------------------------------------------------------------------------
 
+  type(mct_aVect)             :: x2l
+  type(mct_aVect)             :: l2x
   character(len=CS), pointer  :: avifld(:)           ! char array field names coming from streams
   character(len=CS), pointer  :: avofld(:)           ! char array field names to be sent/recd from med
-  character(len=CXX)          :: flds_l2x_mod
-  character(len=CXX)          :: flds_x2l_mod
+  character(len=CXX)          :: flds_l2x = ''
+  character(len=CXX)          :: flds_x2l = ''
   integer                     :: kf                  ! index for frac in AV
+  integer                     :: glc_nec 
   real(R8), pointer           :: lfrac(:)            ! land frac
   character(len=*), parameter :: rpfile = 'rpointer.lnd'
   integer         , parameter :: nec_len = 2         ! length of elevation class index in field names
@@ -71,26 +75,23 @@ contains
 !===============================================================================
 
   subroutine dlnd_comp_advertise(importState, exportState, &
-       lnd_present, lnd_prognostic, glc_nec, &
-       fldsFrLnd_num, fldsFrLnd, fldsToLnd_num, fldsToLnd, &
-       flds_l2x, flds_x2l, rc)
+       lnd_present, lnd_prognostic, glc_nec_in, &
+       fldsFrLnd_num, fldsFrLnd, fldsToLnd_num, fldsToLnd, rc)
 
     ! 1. determine export and import fields to advertise to mediator
     ! 2. determine translation of fields from streams to export/import fields
 
     ! input/output arguments
-    type(ESMF_State)                   :: importState
-    type(ESMF_State)                   :: exportState
-    integer              , intent(in)  :: glc_nec
-    logical              , intent(in)  :: lnd_present
-    logical              , intent(in)  :: lnd_prognostic
-    integer              , intent(out) :: fldsFrLnd_num
-    type (fld_list_type) , intent(out) :: fldsFrLnd(:)
-    integer              , intent(out) :: fldsToLnd_num
-    type (fld_list_type) , intent(out) :: fldsToLnd(:)
-    character(len=*)     , intent(out) :: flds_l2x
-    character(len=*)     , intent(out) :: flds_x2l
-    integer              , intent(out) :: rc
+    type(ESMF_State)                     :: importState
+    type(ESMF_State)                     :: exportState
+    integer              , intent(in)    :: glc_nec_in
+    logical              , intent(in)    :: lnd_present
+    logical              , intent(in)    :: lnd_prognostic
+    integer              , intent(out)   :: fldsFrLnd_num
+    type (fld_list_type) , intent(out)   :: fldsFrLnd(:)
+    integer              , intent(inout) :: fldsToLnd_num
+    type (fld_list_type) , intent(inout) :: fldsToLnd(:)
+    integer              , intent(out)   :: rc
 
     ! local variables
     integer :: n
@@ -103,6 +104,10 @@ contains
 
     if (.not. lnd_present) return
 
+    glc_nec = glc_nec_in
+
+    call glc_elevclass_init(glc_nec)
+
     !-------------------
     ! export fields
     !-------------------
@@ -112,11 +117,9 @@ contains
     fldsFrLnd_num=1
     fldsFrLnd(1)%stdname = trim(flds_scalar_name)
 
-    call dshr_fld_add(model_fld="Sl_lfrin", model_fld_concat=flds_l2x, model_fld_index=kf, &
-         fldlist_num=fldsFrLnd_num, fldlist=fldsFrLnd)
+    call dshr_fld_add(model_fld="Sl_lfrin", model_fld_concat=flds_l2x, model_fld_index=kf)
 
     ! The actual snow field names will have the elevation class index at the end (e.g., Sl_tsrf01, tsrf01)
-    call glc_elevclass_init(glc_nec)
     if (glc_nec > 0) then
        do n = 0, glc_nec
           nec_str = glc_elevclass_as_string(n)
@@ -124,73 +127,57 @@ contains
           data_fld_name  = "tsrf" // nec_str
           model_fld_name = "Sl_tsrf" // nec_str
           call dshr_fld_add(data_fld=trim(data_fld_name), data_fld_array=avifld, &
-               model_fld=trim(model_fld_name), model_fld_array=avofld, &
-               model_fld_concat=flds_l2x, fldlist_num=fldsFrLnd_num, fldlist=fldsFrLnd)
+               model_fld=trim(model_fld_name), model_fld_array=avofld, model_fld_concat=flds_l2x)
 
           data_fld_name  = "topo" // nec_str
           model_fld_name = "Sl_topo" // nec_str
           call dshr_fld_add(data_fld=trim(data_fld_name), data_fld_array=avifld, &
-               model_fld=trim(model_fld_name), model_fld_array=avofld, &
-               model_fld_concat=flds_l2x, fldlist_num=fldsFrLnd_num, fldlist=fldsFrLnd)
+               model_fld=trim(model_fld_name), model_fld_array=avofld, model_fld_concat=flds_l2x)
 
           data_fld_name  = "qice" // nec_str
           model_fld_name = "Flgl_qice" // nec_str
           call dshr_fld_add(data_fld=trim(data_fld_name), data_fld_array=avifld, &
-               model_fld=trim(model_fld_name), model_fld_array=avofld, &
-               model_fld_concat=flds_l2x, fldlist_num=fldsFrLnd_num, fldlist=fldsFrLnd)
+               model_fld=trim(model_fld_name), model_fld_array=avofld, model_fld_concat=flds_l2x)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        end do
+
+       ! The following puts all of the elevation class fields as an
+       ! undidstributed dimension in the export state field
+
+       call dshr_fld_add(med_fld="Sl_lfrin", fldlist_num=fldsFrLnd_num, fldlist=fldsFrLnd)
+       call dshr_fld_add(med_fld='Sl_tsrf_elev', fldlist_num=fldsFrLnd_num, fldlist=fldsFrLnd, &
+            ungridded_lbound=1, ungridded_ubound=glc_nec)
+       call dshr_fld_add(med_fld='Sl_topo_elev', fldlist_num=fldsFrLnd_num, fldlist=fldsFrLnd, &
+            ungridded_lbound=1, ungridded_ubound=glc_nec)
+       call dshr_fld_add(med_fld='Flgl_qice_elev', fldlist_num=fldsFrLnd_num, fldlist=fldsFrLnd, &
+            ungridded_lbound=1, ungridded_ubound=glc_nec)
+
     end if
 
     ! Non snow fields that nead to be added if dlnd is in cplhist mode
-    ! "Sl_t        "
-    ! "Sl_tref     "
-    ! "Sl_qref     "
-    ! "Sl_avsdr    "
-    ! "Sl_anidr    "
-    ! "Sl_avsdf    "
-    ! "Sl_anidf    "
-    ! "Sl_snowh    "
-    ! "Fall_taux   "
-    ! "Fall_tauy   "
-    ! "Fall_lat    "
-    ! "Fall_sen    "
-    ! "Fall_lwup   "
-    ! "Fall_evap   "
-    ! "Fall_swnet  "
-    ! "Sl_landfrac "
-    ! "Sl_fv       "
-    ! "Sl_ram1     "
-    ! "Fall_flxdst1"
-    ! "Fall_flxdst2"
-    ! "Fall_flxdst3"
-    ! "Fall_flxdst4"
+    ! "Sl_t        " "Sl_tref     " "Sl_qref     " "Sl_avsdr    "
+    ! "Sl_anidr    " "Sl_avsdf    " "Sl_anidf    " "Sl_snowh    "
+    ! "Fall_taux   " "Fall_tauy   " "Fall_lat    " "Fall_sen    "
+    ! "Fall_lwup   " "Fall_evap   " "Fall_swnet  " "Sl_landfrac "
+    ! "Sl_fv       " "Sl_ram1     " 
+    ! "Fall_flxdst1" "Fall_flxdst2" "Fall_flxdst3" "Fall_flxdst4"
 
     do n = 1,fldsFrLnd_num
        call NUOPC_Advertise(exportState, standardName=fldsFrLnd(n)%stdname, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     enddo
 
-    !-------------------
-    ! Save flds_l2x and flds_x2l as module variables for use in debugging
-    !-------------------
-
-    flds_x2l_mod = trim(flds_x2l)
-    flds_l2x_mod = trim(flds_l2x)
-
   end subroutine dlnd_comp_advertise
 
   !===============================================================================
 
-  subroutine dlnd_comp_init(x2l, l2x, &
-       SDLND, mpicom, compid, my_task, master_task, &
+  subroutine dlnd_comp_init(mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, read_restart, &
-       scmMode, scmlat, scmlon, calendar, current_ymd, current_tod, mesh)
+       scmMode, scmlat, scmlon, calendar, current_ymd, current_tod, mesh, nxg, nyg)
 
     ! !DESCRIPTION: initialize dlnd model
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(mct_aVect)        , intent(inout) :: x2l, l2x     ! input/output attribute vectors
-    type(shr_strdata_type) , intent(inout) :: SDLND        ! model shr_strdata instance (output)
     integer                , intent(in)    :: mpicom       ! mpi communicator
     integer                , intent(in)    :: compid       ! mct comp id
     integer                , intent(in)    :: my_task      ! my task in mpi communicator mpicom
@@ -205,6 +192,7 @@ contains
     integer                , intent(in)    :: current_ymd  ! model date
     integer                , intent(in)    :: current_tod  ! model sec into model date
     type(ESMF_Mesh)        , intent(in)    :: mesh         ! ESMF docn mesh
+    integer                , intent(out)   :: nxg, nyg     ! global size of model grid
 
     !--- local variables ---
     integer                      :: n,k             ! generic counters
@@ -356,11 +344,13 @@ contains
     !----------------------------------------------------------------------------
 
     if (my_task == master_task) write(logunit,F00) 'allocate AVs'
-
-    call mct_aVect_init(l2x, rList=flds_l2x_mod, lsize=lsize)
+    call mct_aVect_init(l2x, rList=flds_l2x, lsize=lsize)
     call mct_aVect_zero(l2x)
-    call mct_aVect_init(x2l, rList=flds_x2l_mod, lsize=lsize)
+    call mct_aVect_init(x2l, rList=flds_x2l, lsize=lsize)
     call mct_aVect_zero(x2l)
+
+    nxg = SDLND%nxg
+    nyg = SDLND%nyg
 
     !----------------------------------------------------------------------------
     ! Read restart
@@ -410,8 +400,7 @@ contains
     call t_adj_detailf(+2)
 
     write_restart = .false.
-    call dlnd_comp_run(x2l, l2x, &
-         SDLND, mpicom, my_task, master_task, &
+    call dlnd_comp_run(mpicom, my_task, master_task, &
          inst_suffix, logunit, read_restart, write_restart, &
          current_ymd, current_tod)
 
@@ -427,17 +416,13 @@ contains
 
   !===============================================================================
 
-  subroutine dlnd_comp_run(x2l, l2x, &
-       SDLND, mpicom, my_task, master_task, &
+  subroutine dlnd_comp_run(mpicom, my_task, master_task, &
        inst_suffix, logunit, read_restart, write_restart, &
        target_ymd, target_tod, case_name)
 
     ! !DESCRIPTION:  run method for dlnd model
 
     ! input/output variables:
-    type(mct_aVect)        , intent(inout) :: x2l
-    type(mct_aVect)        , intent(inout) :: l2x
-    type(shr_strdata_type) , intent(inout) :: SDLND
     integer                , intent(in)    :: mpicom           ! mpi communicator
     integer                , intent(in)    :: my_task          ! my task in mpi communicator mpicom
     integer                , intent(in)    :: master_task      ! task number of master task
@@ -537,5 +522,42 @@ contains
     call t_stopf('DLND_RUN')
 
   end subroutine dlnd_comp_run
+
+  !===============================================================================
+
+  subroutine dlnd_comp_export(exportState, rc)
+
+    ! input/output variables
+    type(ESMF_State)     :: exportState
+    integer, intent(out) :: rc
+
+    ! local variables
+    integer            :: k,n
+    character(nec_len) :: nec_str  ! elevation class, as character string
+    !----------------------------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    k = mct_aVect_indexRA(l2x, "Sl_lfrin")
+    call dshr_export(l2x%rattr(k,:), exportState, "Sl_lfrin", rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    do n = 1,glc_nec
+       nec_str = glc_elevclass_as_string(n)
+
+       k = mct_aVect_indexRA(l2x, "Sl_tsrf" // nec_str)
+       call dshr_export(l2x%rattr(k,:), exportState, "Sl_tsrf_elev", ungridded_index=n, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       k = mct_aVect_indexRA(l2x, "Sl_topo" // nec_str)
+       call dshr_export(l2x%rattr(k,:), exportState, "Sl_topo_elev", ungridded_index=n, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       k = mct_aVect_indexRA(l2x, "Flgl_qice" // nec_str)
+       call dshr_export(l2x%rattr(k,:), exportState, "Flgl_qice_elev", ungridded_index=n, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    end do
+
+  end subroutine dlnd_comp_export
 
 end module dlnd_comp_mod

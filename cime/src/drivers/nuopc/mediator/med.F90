@@ -48,26 +48,13 @@ contains
     use NUOPC_Mediator          , only: mediator_label_Finalize         => label_Finalize
     use med_phases_history_mod  , only: med_phases_history_write
     use med_phases_restart_mod  , only: med_phases_restart_write
-    use med_connectors_mod      , only: med_connectors_prep_med2atm
-    use med_connectors_mod      , only: med_connectors_prep_med2ocn
-    use med_connectors_mod      , only: med_connectors_prep_med2ice
-    use med_connectors_mod      , only: med_connectors_prep_med2lnd
-    use med_connectors_mod      , only: med_connectors_prep_med2rof
-    use med_connectors_mod      , only: med_connectors_prep_med2wav
-    use med_connectors_mod      , only: med_connectors_prep_med2glc
-    use med_connectors_mod      , only: med_connectors_post_atm2med
-    use med_connectors_mod      , only: med_connectors_post_ocn2med
-    use med_connectors_mod      , only: med_connectors_post_ice2med
-    use med_connectors_mod      , only: med_connectors_post_lnd2med
-    use med_connectors_mod      , only: med_connectors_post_rof2med
-    use med_connectors_mod      , only: med_connectors_post_wav2med
-    use med_connectors_mod      , only: med_connectors_post_glc2med
     use med_phases_prep_atm_mod , only: med_phases_prep_atm
     use med_phases_prep_ice_mod , only: med_phases_prep_ice
     use med_phases_prep_lnd_mod , only: med_phases_prep_lnd
-    use med_phases_prep_rof_mod , only: med_phases_prep_rof
     use med_phases_prep_wav_mod , only: med_phases_prep_wav
     use med_phases_prep_glc_mod , only: med_phases_prep_glc
+    use med_phases_prep_rof_mod , only: med_phases_prep_rof_accum_fast
+    use med_phases_prep_rof_mod , only: med_phases_prep_rof_avg
     use med_phases_prep_ocn_mod , only: med_phases_prep_ocn_map
     use med_phases_prep_ocn_mod , only: med_phases_prep_ocn_merge
     use med_phases_prep_ocn_mod , only: med_phases_prep_ocn_accum_fast
@@ -177,110 +164,6 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !------------------
-    ! prep and post phases for connectors
-    !------------------
-
-    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
-         phaseLabelList=(/"med_connectors_prep_med2atm"/), userRoutine=mediator_routine_Run, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
-         specPhaseLabel="med_connectors_prep_med2atm", specRoutine=med_connectors_prep_med2atm, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
-         phaseLabelList=(/"med_connectors_post_atm2med"/), userRoutine=mediator_routine_Run, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
-         specPhaseLabel="med_connectors_post_atm2med", specRoutine=med_connectors_post_atm2med, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
-         phaseLabelList=(/"med_connectors_prep_med2ocn"/), userRoutine=mediator_routine_Run, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
-         specPhaseLabel="med_connectors_prep_med2ocn", specRoutine=med_connectors_prep_med2ocn, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
-         phaseLabelList=(/"med_connectors_post_ocn2med"/), userRoutine=mediator_routine_Run, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
-         specPhaseLabel="med_connectors_post_ocn2med", specRoutine=med_connectors_post_ocn2med, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
-      phaseLabelList=(/"med_connectors_prep_med2ice"/), &
-      userRoutine=mediator_routine_Run, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
-      specPhaseLabel="med_connectors_prep_med2ice", specRoutine=med_connectors_prep_med2ice, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
-         phaseLabelList=(/"med_connectors_post_ice2med"/), userRoutine=mediator_routine_Run, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
-         specPhaseLabel="med_connectors_post_ice2med", specRoutine=med_connectors_post_ice2med, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
-         phaseLabelList=(/"med_connectors_prep_med2lnd"/), userRoutine=mediator_routine_Run, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
-         specPhaseLabel="med_connectors_prep_med2lnd", specRoutine=med_connectors_prep_med2lnd, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
-         phaseLabelList=(/"med_connectors_post_lnd2med"/), userRoutine=mediator_routine_Run, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
-         specPhaseLabel="med_connectors_post_lnd2med", specRoutine=med_connectors_post_lnd2med, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
-         phaseLabelList=(/"med_connectors_prep_med2rof"/), userRoutine=mediator_routine_Run, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
-         specPhaseLabel="med_connectors_prep_med2rof", specRoutine=med_connectors_prep_med2rof, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
-      phaseLabelList=(/"med_connectors_post_rof2med"/), &
-      userRoutine=mediator_routine_Run, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
-      specPhaseLabel="med_connectors_post_rof2med", specRoutine=med_connectors_post_rof2med, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
-         phaseLabelList=(/"med_connectors_prep_med2wav"/), userRoutine=mediator_routine_Run, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
-         specPhaseLabel="med_connectors_prep_med2wav", specRoutine=med_connectors_prep_med2wav, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
-         phaseLabelList=(/"med_connectors_post_wav2med"/), userRoutine=mediator_routine_Run, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
-      specPhaseLabel="med_connectors_post_wav2med", specRoutine=med_connectors_post_wav2med, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
-         phaseLabelList=(/"med_connectors_prep_med2glc"/), userRoutine=mediator_routine_Run, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
-         specPhaseLabel="med_connectors_prep_med2glc", specRoutine=med_connectors_prep_med2glc, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
-         phaseLabelList=(/"med_connectors_post_glc2med"/), userRoutine=mediator_routine_Run, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
-         specPhaseLabel="med_connectors_post_glc2med", specRoutine=med_connectors_post_glc2med, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !------------------
     ! prep routines for atm
     !------------------
 
@@ -350,10 +233,17 @@ contains
     !------------------
 
     call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
-         phaseLabelList=(/"med_phases_prep_rof"/), userRoutine=mediator_routine_Run, rc=rc)
+         phaseLabelList=(/"med_phases_prep_rof_avg"/), userRoutine=mediator_routine_Run, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
     call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
-         specPhaseLabel="med_phases_prep_rof", specRoutine=med_phases_prep_rof, rc=rc)
+         specPhaseLabel="med_phases_prep_rof_avg", specRoutine=med_phases_prep_rof_avg, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_RUN, &
+         phaseLabelList=(/"med_phases_prep_rof_accum_fast"/), userRoutine=mediator_routine_Run, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call NUOPC_CompSpecialize(gcomp, specLabel=mediator_label_Advance, &
+         specPhaseLabel="med_phases_prep_rof_accum_fast", specRoutine=med_phases_prep_rof_accum_fast, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !------------------
@@ -445,8 +335,9 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine InitializeP0(gcomp, importState, exportState, clock, rc)
+
     use ESMF  , only : ESMF_GridComp, ESMF_State, ESMF_Clock, ESMF_VM, ESMF_SUCCESS
-    use ESMF  , only : ESMF_UtilString2Int, ESMF_GridCompGet, ESMF_VMGet, ESMF_AttributeGet
+    use ESMF  , only : ESMF_GridCompGet, ESMF_VMGet, ESMF_AttributeGet
     use ESMF  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_METHOD_INITIALIZE
     use ESMF  , only : ESMF_GridCompGet
     use NUOPC , only : NUOPC_CompFilterPhaseMap
@@ -459,11 +350,10 @@ contains
 
     ! local variables
     type(ESMF_VM)      :: vm
-    character(len=*),parameter :: subname='(module_MED:InitializeP0)'
-    character(len=128)         :: value
-    integer            :: dbrc
+    character(len=128) :: value
     integer            :: localPet
-    character(len=CX):: msgString
+    character(len=CX)  :: msgString
+    character(len=*),parameter :: subname='(module_MED:InitializeP0)'
     !-----------------------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -478,21 +368,17 @@ contains
          convention="NUOPC", purpose="Instance", rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call ESMF_LogWrite(trim(subname)//": Mediator verbosity is "//trim(value), ESMF_LOGMSG_INFO, rc=dbrc)
-
-!    dbug_flag = ESMF_UtilString2Int(value, &
-!         specialStringList=(/"min","max","high"/), specialValueList=(/0,255,255/), rc=rc)
-!    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_LogWrite(trim(subname)//": Mediator verbosity is "//trim(value), ESMF_LOGMSG_INFO)
 
     write(msgString,'(A,i6)') trim(subname)//' dbug_flag = ',dbug_flag
-    call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
-    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO)
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
 
     ! Switch to IPDv03 by filtering all other phaseMap entries
     call NUOPC_CompFilterPhaseMap(gcomp, ESMF_METHOD_INITIALIZE, acceptStringList=(/"IPDv03p"/), rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
 
   end subroutine InitializeP0
 
@@ -509,12 +395,12 @@ contains
     use med_constants_mod     , only : CS
     use med_internalstate_mod , only : InternalState
     use shr_nuopc_scalars_mod , only : flds_scalar_name, flds_scalar_num
-    use esmFlds               , only : esmFlds_Init
     use esmFlds               , only : ncomps, compmed, compatm, compocn
     use esmFlds               , only : compice, complnd, comprof, compwav, compglc, compname
     use esmFlds               , only : fldListFr, fldListTo
-    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetNumFlds
-    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_GetFldInfo
+    use esmFlds               , only : shr_nuopc_fldList_GetNumFlds
+    use esmFlds               , only : shr_nuopc_fldList_GetFldInfo
+    use esmFldsExchange_mod   , only : esmFldsExchange
 
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
@@ -524,16 +410,14 @@ contains
 
     ! local variables
     character(len=CS)   :: stdname, shortname
-    logical             :: activefld
     integer             :: n, n1, n2, ncomp, nflds
     character(len=CS)   :: transferOffer
     type(InternalState) :: is_local
-    integer             :: dbrc
     integer             :: stat
     character(len=*),parameter :: subname='(module_MED:InitializeIPDv03p1)'
     !-----------------------------------------------------------
 
-    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     rc = ESMF_SUCCESS
 
     !------------------
@@ -590,7 +474,7 @@ contains
     ! Initialize mediator flds (should be identical to the list in esmDict_Init)
     !------------------
 
-    call esmFlds_Init(gcomp, rc)
+    call esmFldsExchange(gcomp, phase='advertise', rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !------------------
@@ -601,41 +485,38 @@ contains
        if (ncomp /= compmed) then
           nflds = shr_nuopc_fldList_GetNumFlds(fldListFr(ncomp))
           do n = 1,nflds
-             call shr_nuopc_fldList_GetFldInfo(fldListFr(ncomp), n, activefld, stdname, shortname)
-             if (activefld) then
-                if (trim(shortname) == flds_scalar_name) then
-                   transferOffer = 'will provide'
-                else
-                   transferOffer = 'cannot provide'
-                end if
-                call NUOPC_Advertise(is_local%wrap%NStateImp(ncomp), standardName=stdname, shortname=shortname, name=shortname, &
-                     TransferOfferGeomObject=transferOffer)
-                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                call ESMF_LogWrite(subname//':Fr_'//trim(compname(ncomp))//': '//trim(shortname), ESMF_LOGMSG_INFO)
-                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             call shr_nuopc_fldList_GetFldInfo(fldListFr(ncomp), n, stdname, shortname)
+             if (trim(shortname) == flds_scalar_name) then
+                transferOffer = 'will provide'
+             else
+                transferOffer = 'cannot provide'
              end if
+             call NUOPC_Advertise(is_local%wrap%NStateImp(ncomp), standardName=stdname, shortname=shortname, name=shortname, &
+                  TransferOfferGeomObject=transferOffer)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             call ESMF_LogWrite(subname//':Fr_'//trim(compname(ncomp))//': '//trim(shortname), ESMF_LOGMSG_INFO)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           end do
 
           nflds = shr_nuopc_fldList_GetNumFlds(fldListTo(ncomp))
           do n = 1,nflds
-             call shr_nuopc_fldList_GetFldInfo(fldListTo(ncomp), n, activefld, stdname, shortname)
-             if (activefld) then
-                if (trim(shortname) == flds_scalar_name) then
-                   transferOffer = 'will provide'
-                else
-                   transferOffer = 'cannot provide'
-                end if
-                call NUOPC_Advertise(is_local%wrap%NStateExp(ncomp), standardName=stdname, shortname=shortname, name=shortname, &
-                     TransferOfferGeomObject=transferOffer)
-                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-                call ESMF_LogWrite(subname//':To_'//trim(compname(ncomp))//': '//trim(shortname), ESMF_LOGMSG_INFO)
-                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             call shr_nuopc_fldList_GetFldInfo(fldListTo(ncomp), n, stdname, shortname)
+             if (trim(shortname) == flds_scalar_name) then
+                transferOffer = 'will provide'
+             else
+                transferOffer = 'cannot provide'
              end if
+             call NUOPC_Advertise(is_local%wrap%NStateExp(ncomp), standardName=stdname, shortname=shortname, name=shortname, &
+                  TransferOfferGeomObject=transferOffer)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+             call ESMF_LogWrite(subname//':To_'//trim(compname(ncomp))//': '//trim(shortname), ESMF_LOGMSG_INFO)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           end do
        end if
     end do ! end of ncomps loop
 
-    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
 
   end subroutine InitializeIPDv03p1
 
@@ -652,8 +533,8 @@ contains
     use med_internalstate_mod , only : InternalState
     use esmFlds               , only : ncomps, compname
     use esmFlds               , only : fldListFr, fldListTo
+    use esmFlds               , only : shr_nuopc_fldList_Realize
     use shr_nuopc_scalars_mod , only : flds_scalar_name, flds_scalar_num
-    use shr_nuopc_fldList_mod , only : shr_nuopc_fldList_Realize
 
     ! Input/output variables
     type(ESMF_GridComp)  :: gcomp
@@ -662,35 +543,24 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    integer                    :: i, j
-    real(kind=R8),pointer      :: lonPtr(:), latPtr(:)
     type(InternalState)        :: is_local
-    real(R8)                   :: intervalSec
-    type(ESMF_TimeInterval)    :: timeStep
-    ! tcx XGrid
-    ! type(ESMF_Field)         :: fieldX, fieldA, fieldO
-    ! type(ESMF_XGrid)         :: xgrid
     type(ESMF_VM)              :: vm
-    integer                    :: n, n1, n2
-    character(CL)              :: cvalue
-    logical                    :: connected
-    integer                    :: dbrc
-    integer                    :: stat
+    integer                    :: n
     character(len=*),parameter :: subname='(module_MED:InitializeIPDv03p3)'
     !-----------------------------------------------------------
 
-    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     rc = ESMF_SUCCESS
 
     ! Get the internal state from Component.
     nullify(is_local%wrap)
     call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! Initialize the internal state members
-    is_local%wrap%vm = vm
+     ! Initialize the internal state mediator vm
+     call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
+     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+     is_local%wrap%vm = vm
 
     ! Realize States
     do n = 1,ncomps
@@ -706,7 +576,7 @@ contains
       endif
     enddo
 
-    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
 
   end subroutine InitializeIPDv03p3
 
@@ -741,11 +611,10 @@ contains
     !    integer, allocatable          :: minIndexPTile(:,:), maxIndexPTile(:,:)
     !    integer, allocatable          :: regDecompPTile(:,:)
     !    integer                       :: i, j, n, n1
-    integer            :: dbrc
     character(len=*),parameter :: subname='(module_MED:realizeConnectedGrid)'
     !-----------------------------------------------------------
 
-    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     rc = ESMF_SUCCESS
 
     ! Get the internal state from the mediator gridded component.
@@ -758,7 +627,7 @@ contains
     !------------------
 
     do n1 = 1,ncomps
-       call ESMF_LogWrite(trim(subname)//": calling for component "//trim(compname(n1)), ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(trim(subname)//": calling for component "//trim(compname(n1)), ESMF_LOGMSG_INFO)
        if (ESMF_StateIsCreated(is_local%wrap%NStateImp(n1),rc=rc)) then
           call realizeConnectedGrid(is_local%wrap%NStateImp(n1), trim(compname(n1))//'Imp', rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -767,9 +636,9 @@ contains
           call realizeConnectedGrid(is_local%wrap%NStateExp(n1), trim(compname(n1))//'Exp', rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
        endif
-       call ESMF_LogWrite(trim(subname)//": finished for component "//trim(compname(n1)), ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(trim(subname)//": finished for component "//trim(compname(n1)), ESMF_LOGMSG_INFO)
     enddo
-    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
 
   contains  !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -810,10 +679,9 @@ contains
       type(ESMF_GeomType_Flag)      :: geomtype
       character(ESMF_MAXSTR),allocatable :: fieldNameList(:)
       type(ESMF_FieldStatus_Flag)   :: fieldStatus
-      integer                       :: dbrc
       character(len=CX)             :: msgString
       character(len=*),parameter :: subname='(module_MEDIATOR:realizeConnectedGrid)'
-
+      !-----------------------------------------------------------
 
       !NOTE: All of the Fields that set their TransferOfferGeomObject Attribute
       !NOTE: to "cannot provide" should now have the accepted Grid available.
@@ -824,7 +692,7 @@ contains
       !TODO: quick implementation, do it for each field one by one
       !TODO: commented out below are application to other fields
 
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
       rc = ESMF_Success
 
       call ESMF_StateGet(State, itemCount=fieldCount, rc=rc)
@@ -874,9 +742,9 @@ contains
                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
                call ESMF_LogWrite(trim(subname)//": geomtype is ESMF_GEOMTYPE_GRID for "//trim(fieldnameList(n)), &
-                    ESMF_LOGMSG_INFO, rc=dbrc)
+                    ESMF_LOGMSG_INFO)
                write(msgString,'(A,i8)') trim(subname)//':arbdimcount =',arbdimcount
-               call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO, rc=dbrc)
+               call ESMF_LogWrite(msgString, ESMF_LOGMSG_INFO)
 
                ! make decision on whether the incoming Grid is arbDistr or not
                if (arbDimCount>0) then
@@ -894,7 +762,7 @@ contains
                   if (grid_arbopt == "grid_reg") then
 
                      call ESMF_LogWrite(trim(subname)//trim(string)//": accept arb2reg grid for "//trim(fieldNameList(n)), &
-                          ESMF_LOGMSG_INFO, rc=dbrc)
+                          ESMF_LOGMSG_INFO)
 
                      ! Use a regDecomp representation for the grid
                      ! first get tile min/max, only single tile supported for arbDistr Grid
@@ -936,7 +804,7 @@ contains
                      ! redistribute the arbSeqIndexList. Here simply keep the DEs of the
                      ! provider Grid.
                      call ESMF_LogWrite(trim(subname)//trim(string)//": accept arb2arb grid for "//trim(fieldNameList(n)), &
-                          ESMF_LOGMSG_INFO, rc=dbrc)
+                          ESMF_LOGMSG_INFO)
 
                   else   ! grid_arbopt
 
@@ -954,7 +822,7 @@ contains
 
                   ! access localDeCount to show this is a real Grid
                   call ESMF_LogWrite(trim(subname)//trim(string)//": accept reg2reg grid for "//&
-                       trim(fieldNameList(n)), ESMF_LOGMSG_INFO, rc=dbrc)
+                       trim(fieldNameList(n)), ESMF_LOGMSG_INFO)
 
                   call ESMF_FieldGet(field, grid=grid, rc=rc)
                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -1000,7 +868,7 @@ contains
                      do i1 = 1,dimCount
                         write(msgString,'(A,5i8)') trim(subname)//':PTile =',i2,i1,minIndexPTile(i1,i2),&
                              maxIndexPTile(i1,i2),regDecompPTile(i1,i2)
-                        call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
+                        call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO)
                      enddo
                   enddo
 
@@ -1082,7 +950,7 @@ contains
             elseif (geomtype == ESMF_GEOMTYPE_MESH) then
 
                call ESMF_LogWrite(trim(subname)//": geomtype is ESMF_GEOMTYPE_MESH for "//trim(fieldnameList(n)), &
-                    ESMF_LOGMSG_INFO, rc=dbrc)
+                    ESMF_LOGMSG_INFO)
 
                if (dbug_flag > 1) then
                   call shr_nuopc_methods_Field_GeomPrint(field,trim(fieldNameList(n))//'_orig',rc)
@@ -1150,12 +1018,12 @@ contains
          elseif (fieldStatus==ESMF_FIELDSTATUS_EMPTY) then
 
             call ESMF_LogWrite(trim(subname)//trim(string)//": provide grid for "//trim(fieldNameList(n)), &
-                 ESMF_LOGMSG_INFO, rc=dbrc)
+                 ESMF_LOGMSG_INFO)
 
          elseif (fieldStatus==ESMF_FIELDSTATUS_COMPLETE) then
 
             call ESMF_LogWrite(trim(subname)//trim(string)//": no grid provided for "//trim(fieldNameList(n)), &
-                 ESMF_LOGMSG_INFO, rc=dbrc)
+                 ESMF_LOGMSG_INFO)
 
          else
 
@@ -1169,7 +1037,7 @@ contains
 
       deallocate(fieldNameList)
 
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
 
     end subroutine realizeConnectedGrid
 
@@ -1200,10 +1068,9 @@ contains
     type(InternalState) :: is_local
     integer             :: n1,n2
     character(len=*),parameter  :: subname='(module_MED:InitializeIPDv03p5)'
-    integer :: dbrc
     !-----------------------------------------------------------
 
-    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
 
     rc = ESMF_SUCCESS
 
@@ -1219,7 +1086,7 @@ contains
 
       if (ESMF_StateIsCreated(is_local%wrap%NStateImp(n1),rc=rc)) then
          call ESMF_LogWrite(trim(subname)//": calling completeFieldInitialize import states from "//trim(compname(n1)), &
-              ESMF_LOGMSG_INFO, rc=dbrc)
+              ESMF_LOGMSG_INFO)
         call completeFieldInitialization(is_local%wrap%NStateImp(n1), rc)
         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -1229,7 +1096,7 @@ contains
 
       if (ESMF_StateIsCreated(is_local%wrap%NStateExp(n1),rc=rc)) then
          call ESMF_LogWrite(trim(subname)//": calling completeFieldInitialize export states to "//trim(compname(n1)), &
-              ESMF_LOGMSG_INFO, rc=dbrc)
+              ESMF_LOGMSG_INFO)
         call completeFieldInitialization(is_local%wrap%NStateExp(n1), rc)
         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -1246,7 +1113,7 @@ contains
       endif
     enddo
 
-    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
 
   contains  !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -1257,6 +1124,7 @@ contains
       use ESMF                  , only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_FieldGet, ESMF_FieldEmptyComplete
       use ESMF                  , only : ESMF_GeomType_Flag, ESMF_FieldCreate, ESMF_GridToMeshCell, ESMF_GEOMTYPE_GRID
       use ESMF                  , only : ESMF_MeshLoc_Element, ESMF_TYPEKIND_R8, ESMF_FIELDSTATUS_GRIDSET
+      use ESMF                  , only : ESMF_AttributeGet
       use NUOPC                 , only : NUOPC_getStateMemberLists, NUOPC_Realize
       use shr_nuopc_scalars_mod , only : flds_scalar_name, flds_scalar_num
       use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_getNumFields
@@ -1275,9 +1143,14 @@ contains
       type(ESMF_Field),pointer    :: fieldList(:)
       type(ESMF_FieldStatus_Flag) :: fieldStatus
       type(ESMF_GeomType_Flag)    :: geomtype
+      integer                     :: gridToFieldMapCount, ungriddedCount
+      integer, allocatable        :: gridToFieldMap(:)
+      integer, allocatable        :: ungriddedLBound(:), ungriddedUBound(:)
+      logical                     :: isPresent
       character(len=*),parameter  :: subname='(module_MED:completeFieldInitialization)'
+      !-----------------------------------------------------------
 
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
       rc = ESMF_Success
 
       call shr_nuopc_methods_State_GetNumFields(State, fieldCount, rc=rc)
@@ -1307,7 +1180,8 @@ contains
             mesh = ESMF_GridToMeshCell(grid,rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-            meshField = ESMF_FieldCreate(mesh, typekind=ESMF_TYPEKIND_R8, meshloc=ESMF_MESHLOC_ELEMENT, name=fieldName, rc=rc)
+            meshField = ESMF_FieldCreate(mesh, typekind=ESMF_TYPEKIND_R8, &
+                 meshloc=ESMF_MESHLOC_ELEMENT, name=fieldName, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
             ! Swap grid for mesh, at this point, only connected fields are in the state
@@ -1318,20 +1192,42 @@ contains
           if (fieldStatus==ESMF_FIELDSTATUS_GRIDSET) then
             call ESMF_LogWrite(subname//" is allocating field memory for field "//trim(fieldName), &
                  ESMF_LOGMSG_INFO, rc=rc)
-            call ESMF_FieldEmptyComplete(fieldList(n), typekind=ESMF_TYPEKIND_R8, rc=rc)
+
+            call ESMF_AttributeGet(fieldList(n), name="GridToFieldMap", convention="NUOPC", &
+                 purpose="Instance", itemCount=gridToFieldMapCount, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            allocate(gridToFieldMap(gridToFieldMapCount))
+            call ESMF_AttributeGet(fieldList(n), name="GridToFieldMap", convention="NUOPC", &
+                 purpose="Instance", valueList=gridToFieldMap, rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+            ungriddedCount=0  ! initialize in case it was not set
+            call ESMF_AttributeGet(fieldList(n), name="UngriddedLBound", convention="NUOPC", &
+                 purpose="Instance", itemCount=ungriddedCount,  isPresent=isPresent, rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            allocate(ungriddedLBound(ungriddedCount), ungriddedUBound(ungriddedCount))
+
+            if (ungriddedCount > 0) then
+               call ESMF_AttributeGet(fieldList(n), name="UngriddedLBound", convention="NUOPC", &
+                    purpose="Instance", valueList=ungriddedLBound, rc=rc)
+               call ESMF_AttributeGet(fieldList(n), name="UngriddedUBound", convention="NUOPC", &
+                    purpose="Instance", valueList=ungriddedUBound, rc=rc)
+            endif
+
+            call ESMF_FieldEmptyComplete(fieldList(n), typekind=ESMF_TYPEKIND_R8, gridToFieldMap=gridToFieldMap, &
+                 ungriddedLbound=ungriddedLbound, ungriddedUbound=ungriddedUbound, rc=rc)
+
+            deallocate(gridToFieldMap, ungriddedLbound, ungriddedUbound)
           endif   ! fieldStatus
 
-          if (dbug_flag > 1) then
-             call shr_nuopc_methods_Field_GeomPrint(fieldList(n), trim(subname)//':'//trim(fieldName), rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-          end if
+          call shr_nuopc_methods_Field_GeomPrint(fieldList(n), trim(subname)//':'//trim(fieldName), rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
         enddo
         deallocate(fieldList)
       endif
 
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
 
     end subroutine completeFieldInitialization
 
@@ -1340,6 +1236,7 @@ contains
   !-----------------------------------------------------------------------------
 
   subroutine DataInitialize(gcomp, rc)
+
     !----------------------------------------------------------
     ! Finish initialization and resolve data dependencies
     ! There will be multiple passes
@@ -1347,10 +1244,9 @@ contains
     !   Do not assume any import fields are connected, just allocate space and such
     !   -- Check present flags
     !   -- Check for active coupling interactions
-    !   -- Initialize connector count arrays in med_internal_state
-    !   -- Create FBs: FBImp, FBExp, FBImpAccum, FBExpAccum
+    !   -- Create FBs: FBImp, FBExp, FBExpAccum
     !   -- Create mediator specific field bundles (not part of import/export states)
-    !   -- Initialize med_infodata, Accums (to zero), and FBImp (from NStateImp)
+    !   -- Initialize FBExpAccums (to zero), and FBImp (from NStateImp)
     !   -- Read mediator restarts
     !   -- Initialize route handles
     !   -- Initialize field bundles for normalization
@@ -1370,7 +1266,8 @@ contains
     use ESMF                    , only : ESMF_GridComp, ESMF_Clock, ESMF_LogWrite, ESMF_LOGMSG_INFO
     use ESMF                    , only : ESMF_State, ESMF_Time, ESMF_Field, ESMF_StateItem_Flag, ESMF_MAXSTR
     use ESMF                    , only : ESMF_GridCompGet, ESMF_AttributeGet, ESMF_ClockGet, ESMF_Success
-    use ESMF                    , only : ESMF_StateIsCreated, ESMF_StateGet, ESMF_LogFlush
+    use ESMF                    , only : ESMF_StateIsCreated, ESMF_StateGet, ESMF_FieldBundleIsCreated, ESMF_LogFlush
+    use ESMF                    , only : ESMF_VM
     use NUOPC                   , only : NUOPC_CompAttributeSet, NUOPC_IsAtTime, NUOPC_SetAttribute
     use NUOPC                   , only : NUOPC_CompAttributeGet
     use med_internalstate_mod   , only : InternalState
@@ -1379,48 +1276,29 @@ contains
     use shr_sys_mod             , only : shr_sys_flush
     use esmFlds                 , only : ncomps, compname, ncomps, compmed, compatm, compocn
     use esmFlds                 , only : compice, complnd, comprof, compwav, compglc, compname
-    use esmFlds                 , only : fldListMed_ocnalb_o, fldListMed_aoflux_a, fldListMed_aoflux_o
+    use esmFlds                 , only : fldListMed_ocnalb, fldListMed_aoflux
+    use esmFlds                 , only : shr_nuopc_fldList_GetNumFlds
+    use esmFlds                 , only : shr_nuopc_fldList_GetFldNames
+    use esmFlds                 , only : shr_nuopc_fldList_Document_Mapping
+    use esmFlds                 , only : shr_nuopc_fldList_Document_Merging
+    use esmFldsExchange_mod     , only : esmFldsExchange
     use shr_nuopc_scalars_mod   , only : flds_scalar_name, flds_scalar_num
+    use shr_nuopc_scalars_mod   , only : flds_scalar_index_nx, flds_scalar_index_ny
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_State_getNumFields
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_Init
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_Init_pointer
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_Reset
     use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_Copy
-    use shr_nuopc_fldList_mod   , only : shr_nuopc_fldList_GetNumFlds
-    use shr_nuopc_fldList_mod   , only : shr_nuopc_fldList_GetFldNames
-    use med_infodata_mod        , only : med_infodata_CopyStateToInfodata
-    use med_infodata_mod        , only : med_infodata
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_FB_FldChk
+    use shr_nuopc_methods_mod   , only : shr_nuopc_methods_State_GetScalar 
     use med_fraction_mod        , only : med_fraction_init, med_fraction_set
     use med_phases_restart_mod  , only : med_phases_restart_read
     use med_phases_prep_atm_mod , only : med_phases_prep_atm
-    use med_phases_prep_ice_mod , only : med_phases_prep_ice
-    use med_phases_prep_lnd_mod , only : med_phases_prep_lnd
-    use med_phases_prep_rof_mod , only : med_phases_prep_rof
-    use med_phases_prep_wav_mod , only : med_phases_prep_wav
-    use med_phases_prep_glc_mod , only : med_phases_prep_glc
-    use med_phases_prep_ocn_mod , only : med_phases_prep_ocn_map
-    use med_phases_prep_ocn_mod , only : med_phases_prep_ocn_merge
-    use med_phases_prep_ocn_mod , only : med_phases_prep_ocn_accum_fast
-    use med_phases_prep_ocn_mod , only : med_phases_prep_ocn_accum_avg
-    use med_phases_profile_mod  , only : med_phases_profile
     use med_phases_ocnalb_mod   , only : med_phases_ocnalb_run
     use med_phases_aofluxes_mod , only : med_phases_aofluxes_run
-    use med_connectors_mod      , only : med_connectors_prep_med2atm
-    use med_connectors_mod      , only : med_connectors_prep_med2ocn
-    use med_connectors_mod      , only : med_connectors_prep_med2ice
-    use med_connectors_mod      , only : med_connectors_prep_med2lnd
-    use med_connectors_mod      , only : med_connectors_prep_med2rof
-    use med_connectors_mod      , only : med_connectors_prep_med2wav
-    use med_connectors_mod      , only : med_connectors_prep_med2glc
-    use med_connectors_mod      , only : med_connectors_post_atm2med
-    use med_connectors_mod      , only : med_connectors_post_ocn2med
-    use med_connectors_mod      , only : med_connectors_post_ice2med
-    use med_connectors_mod      , only : med_connectors_post_lnd2med
-    use med_connectors_mod      , only : med_connectors_post_rof2med
-    use med_connectors_mod      , only : med_connectors_post_wav2med
-    use med_connectors_mod      , only : med_connectors_post_glc2med
+    use med_phases_profile_mod  , only : med_phases_profile
     use med_map_mod             , only : med_map_MapNorm_init, med_map_RouteHandles_init
     use med_io_mod              , only : med_io_init
-
 
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
@@ -1428,6 +1306,7 @@ contains
 
     ! local variables
     type(InternalState)                :: is_local
+    type(ESMF_VM)                      :: vm
     type(ESMF_Clock)                   :: clock
     type(ESMF_State)                   :: importState, exportState
     type(ESMF_Time)                    :: time
@@ -1448,12 +1327,12 @@ contains
     logical,save                       :: ocnDone = .false.
     logical,save                       :: allDone = .false.
     logical,save                       :: first_call = .true.
-    integer                            :: dbrc
+    real(r8)                           :: real_nx, real_ny
     character(len=CX)                  :: msgString
     character(len=*), parameter        :: subname='(module_MED:DataInitialize)'
     !-----------------------------------------------------------
 
-    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     rc = ESMF_SUCCESS
 
     call NUOPC_CompAttributeSet(gcomp, name="InitializeDataComplete", value="false", rc=rc)
@@ -1494,7 +1373,7 @@ contains
         is_local%wrap%comp_present(n1) = (value == "true")
         write(msgString,'(A,L4)') trim(subname)//' comp_present(comp'//trim(compname(n1))//') = ',&
              is_local%wrap%comp_present(n1)
-        call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
+        call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO)
       enddo
 
       !----------------------------------------------------------
@@ -1514,8 +1393,7 @@ contains
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
           if (cntn1 > 0) then
              do n2 = 1,ncomps
-                if (is_local%wrap%comp_present(n2) .and. &
-                    ESMF_StateIsCreated(is_local%wrap%NStateExp(n2),rc=rc) .and. &
+                if (is_local%wrap%comp_present(n2) .and. ESMF_StateIsCreated(is_local%wrap%NStateExp(n2),rc=rc) .and. &
                     med_coupling_allowed(n1,n2)) then
                    call shr_nuopc_methods_State_GetNumFields(is_local%wrap%NStateExp(n2), cntn2, rc=rc) ! Import Field Count
                    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -1569,11 +1447,8 @@ contains
       call ESMF_LogWrite("Starting to Create FBs", ESMF_LOGMSG_INFO)
       call ESMF_LogFlush()
 
-      is_local%wrap%conn_prep_cnt(:) = 0
-      is_local%wrap%conn_post_cnt(:) = 0
-
       !----------------------------------------------------------
-      ! Create various FBs, FBImp, FBExp, FBImpAccum, FBExpAccum
+      ! Create field bundles FBImp, FBExp, FBImpAccum, FBExpAccum
       !----------------------------------------------------------
 
       do n1 = 1,ncomps
@@ -1583,68 +1458,155 @@ contains
 
             if (mastertask) write(logunit,*) subname,' initializing FBs for '//trim(compname(n1))
 
-            call shr_nuopc_methods_FB_init(is_local%wrap%FBImp(n1,n1), flds_scalar_name, &
-                 STgeom=is_local%wrap%NStateImp(n1), &
-                 STflds=is_local%wrap%NStateImp(n1), &
+            ! Create FBImp(:) with pointers directly into NStateImp(:)
+            call shr_nuopc_methods_FB_init_pointer(is_local%wrap%NStateImp(n1), is_local%wrap%FBImp(n1,n1), &
+                 flds_scalar_name, name='FBImp'//trim(compname(n1)), rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+            ! Create FBExp(:) with pointers directly into NStateExp(:)
+            call shr_nuopc_methods_FB_init_pointer(is_local%wrap%NStateExp(n1), is_local%wrap%FBExp(n1), &
+                 flds_scalar_name, name='FBExp'//trim(compname(n1)), rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+            ! Create import accumulation field bundles
+            call shr_nuopc_methods_FB_init(is_local%wrap%FBImpAccum(n1,n1), flds_scalar_name, &
+                 STgeom=is_local%wrap%NStateImp(n1), STflds=is_local%wrap%NStateImp(n1), &
                  name='FBImp'//trim(compname(n1)), rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-            call shr_nuopc_methods_FB_init(is_local%wrap%FBExp(n1), flds_scalar_name, &
-                 STgeom=is_local%wrap%NStateExp(n1), &
-                 STflds=is_local%wrap%NStateExp(n1), &
-                 name='FBExp'//trim(compname(n1)), rc=rc)
+            call shr_nuopc_methods_FB_reset(is_local%wrap%FBImpAccum(n1,n1), value=czero, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            is_local%wrap%FBImpAccumCnt(n1) = 0
 
-            call shr_nuopc_methods_FB_init(is_local%wrap%FBImpAccum(n1), flds_scalar_name, &
-                 STgeom=is_local%wrap%NStateImp(n1), &
-                 STflds=is_local%wrap%NStateImp(n1), &
-                 name='FBImpAccum'//trim(compname(n1)), rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
+            ! Create export accumulation field bundles
             call shr_nuopc_methods_FB_init(is_local%wrap%FBExpAccum(n1), flds_scalar_name, &
-                 STgeom=is_local%wrap%NStateExp(n1), &
-                 STflds=is_local%wrap%NStateExp(n1), &
+                 STgeom=is_local%wrap%NStateExp(n1), STflds=is_local%wrap%NStateExp(n1), &
                  name='FBExpAccum'//trim(compname(n1)), rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-            is_local%wrap%FBImpAccumCnt(n1) = 0
-            is_local%wrap%FBExpAccumCnt(n1) = 0
-
-            call shr_nuopc_methods_FB_reset(is_local%wrap%FBImpAccum(n1), value=czero, rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
             call shr_nuopc_methods_FB_reset(is_local%wrap%FBExpAccum(n1), value=czero, rc=rc)
             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            is_local%wrap%FBExpAccumCnt(n1) = 0
+
          endif
          if (mastertask) call shr_sys_flush(logunit)
 
-         ! These are the FBImp mapped to different grids, FBImp(n1,n1) is handled above
+         ! The following are FBImp and FBImpAccum mapped to different grids.
+         ! FBImp(n1,n1) and FBImpAccum(n1,n1) are handled above
+
          do n2 = 1,ncomps
             if (n1 /= n2 .and. &
                  is_local%wrap%med_coupling_active(n1,n2) .and. &
                  ESMF_StateIsCreated(is_local%wrap%NStateImp(n1),rc=rc) .and. &
-                 ESMF_StateIsCreated(is_local%wrap%NStateExp(n2),rc=rc)) then
-               if (mastertask) write(logunit,*) subname,' initializing FBs for '//trim(compname(n1))//'_'//trim(compname(n2))
+                 ESMF_StateIsCreated(is_local%wrap%NStateImp(n2),rc=rc)) then
 
-               ! TODO:
-               ! The NStateImp(n2) should be used here rather than NStateExp(n2), since
-               ! the export state might only contain control data and no grid information if
-               ! if the target component (n2) is not prognostic only receives control data back
-               ! But if STgeom=is_local%wrap%NStateImp(n2) is substituted for STgeom=is_local%wrap%NStateExp(n2)
-               ! then an error occurs as follows
+               if (mastertask) write(logunit,*) subname,' initializing FBs for '//&
+                    trim(compname(n1))//'_'//trim(compname(n2))
 
                call shr_nuopc_methods_FB_init(is_local%wrap%FBImp(n1,n2), flds_scalar_name, &
                     STgeom=is_local%wrap%NStateImp(n2), &
                     STflds=is_local%wrap%NStateImp(n1), &
                     name='FBImp'//trim(compname(n1))//'_'//trim(compname(n2)), rc=rc)
                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+               call shr_nuopc_methods_FB_init(is_local%wrap%FBImpAccum(n1,n2), flds_scalar_name, &
+                    STgeom=is_local%wrap%NStateImp(n2), &
+                    STflds=is_local%wrap%NStateImp(n1), &
+                    name='FBImpAccum'//trim(compname(n1))//'_'//trim(compname(n2)), rc=rc)
+               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+               call shr_nuopc_methods_FB_reset(is_local%wrap%FBImpAccum(n1,n2), value=czero, rc=rc)
+               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
             endif
-         enddo
-      enddo
+         enddo ! loop over n2
+
+      enddo ! loop over n1
+
       if (mastertask) call shr_sys_flush(logunit)
 
       !---------------------------------------
-      !--- Initialize route handles and required normalization field bunds
+      ! Initialize field bundles needed for ocn albedo and ocn/atm flux calculations
+      !---------------------------------------
+
+      ! NOTE: the NStateImp(compocn) or NStateImp(compatm) used below
+      ! rather than NStateExp(n2), since the export state might only
+      ! contain control data and no grid information if if the target
+      ! component (n2) is not prognostic only receives control data back
+
+      ! NOTE: this section must be done BEFORE the call to esmFldsExchange
+      ! Create field bundles for mediator ocean albedo computation
+
+      if ( is_local%wrap%med_coupling_active(compocn,compatm) .or. &
+           is_local%wrap%med_coupling_active(compatm,compocn)) then
+
+         if (.not. is_local%wrap%med_coupling_active(compatm,compocn)) then
+            is_local%wrap%med_coupling_active(compatm,compocn) = .true.
+         end if
+
+         ! Create field bundles for mediator ocean albedo computation
+         fieldCount = shr_nuopc_fldList_GetNumFlds(fldListMed_ocnalb)
+         if (fieldCount > 0) then
+            allocate(fldnames(fieldCount))
+            call shr_nuopc_fldList_getfldnames(fldListMed_ocnalb%flds, fldnames, rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_ocnalb_a, flds_scalar_name, &
+                 STgeom=is_local%wrap%NStateImp(compatm), fieldnamelist=fldnames, name='FBMed_ocnalb_a', rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            if (mastertask) write(logunit,*) subname,' initializing FB FBMed_ocnalb_a'
+
+            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_ocnalb_o, flds_scalar_name, &
+                 STgeom=is_local%wrap%NStateImp(compocn), fieldnamelist=fldnames, name='FBMed_ocnalb_o', rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            if (mastertask) write(logunit,*) subname,' initializing FB FBMed_ocnalb_o'
+            deallocate(fldnames)
+
+            ! The following assumes that the mediator atm/ocn flux calculation will be done on the ocean grid
+            if (.not. ESMF_FieldBundleIsCreated(is_local%wrap%FBImp(compatm,compocn), rc=rc)) then
+               call ESMF_LogWrite(trim(subname)//' creating field bundle FBImp(compatm,compocn)', ESMF_LOGMSG_INFO)
+               call shr_nuopc_methods_FB_init(is_local%wrap%FBImp(compatm,compocn), flds_scalar_name, &
+                    STgeom=is_local%wrap%NStateImp(compocn), &
+                    STflds=is_local%wrap%NStateImp(compatm), &
+                    name='FBImp'//trim(compname(compatm))//'_'//trim(compname(compocn)), rc=rc)
+               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            end if
+            if (mastertask) write(logunit,*) subname,' initializing FBs for '// &
+                 trim(compname(compatm))//'_'//trim(compname(compocn))
+         end if
+
+         ! Create field bundles for mediator ocean/atmosphere flux computation
+         fieldCount = shr_nuopc_fldList_GetNumFlds(fldListMed_aoflux)
+         if (fieldCount > 0) then
+            allocate(fldnames(fieldCount))
+            call shr_nuopc_fldList_getfldnames(fldListMed_aoflux%flds, fldnames, rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_aoflux_a, flds_scalar_name, &
+                 STgeom=is_local%wrap%NStateImp(compatm), fieldnamelist=fldnames, name='FBMed_aoflux_a', rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            if (mastertask) write(logunit,*) subname,' initializing FB FBMed_aoflux_a'
+
+            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_aoflux_o, flds_scalar_name, &
+                 STgeom=is_local%wrap%NStateImp(compocn), fieldnamelist=fldnames, name='FBMed_aoflux_o', rc=rc)
+            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            if (mastertask) write(logunit,*) subname,' initializing FB FBMed_aoflux_o'
+            deallocate(fldnames)
+         end if
+      end if
+
+      !---------------------------------------
+      ! Determine mapping and merging info for field exchanges in mediator
+      !---------------------------------------
+
+      call esmFldsExchange(gcomp, phase='initialize', rc=rc)
+      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+      if (mastertask) then
+         call shr_nuopc_fldList_Document_Mapping(logunit, is_local%wrap%med_coupling_active)
+         call shr_nuopc_fldList_Document_Merging(logunit, is_local%wrap%med_coupling_active)
+      end if
+
+      !---------------------------------------
+      ! Initialize route handles and required normalization field bunds
       !---------------------------------------
 
       call med_map_RouteHandles_init(gcomp, logunit, rc)
@@ -1653,72 +1615,8 @@ contains
       call med_map_MapNorm_init(gcomp, logunit, rc)
       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-      !---------------------------------------
-      ! Initialize field bundles needed for ocn albedo and ocn/atm flux calculations
-      !---------------------------------------
-
-      if (is_local%wrap%med_coupling_active(compocn,compatm) .or. &
-          is_local%wrap%med_coupling_active(compatm,compocn)) then
-
-         ! NOTE: the NStateImp(compocn) or NStateImp(compatm) used below
-         ! rather than NStateExp(n2), since the export state might only
-         ! contain control data and no grid information if if the target
-         ! component (n2) is not prognostic only receives control data back
-
-         ! Create field bundles for mediator ocean albedo computation
-
-         fieldCount = shr_nuopc_fldList_GetNumFlds(fldListMed_ocnalb_o)
-         if (fieldCount > 0) then
-            allocate(fldnames(fieldCount))
-            call shr_nuopc_fldList_getfldnames(fldListMed_ocnalb_o%flds, fldnames, rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-            
-            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_ocnalb_a, flds_scalar_name, &
-                 STgeom=is_local%wrap%NStateImp(compatm), fieldnamelist=fldnames, name='FBMed_ocnalb_a', rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-            
-            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_ocnalb_o, flds_scalar_name, &
-                 STgeom=is_local%wrap%NStateImp(compocn), fieldnamelist=fldnames, name='FBMed_ocnalb_o', rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-            deallocate(fldnames)
-         end if
-            
-         ! Create field bundles for mediator ocean/atmosphere flux computation
-
-         fieldCount = shr_nuopc_fldList_GetNumFlds(fldListMed_aoflux_o)
-         if (fieldCount > 0) then
-            allocate(fldnames(fieldCount))
-            call shr_nuopc_fldList_getfldnames(fldListMed_aoflux_a%flds, fldnames, rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-            
-            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_aoflux_a, flds_scalar_name, &
-                 STgeom=is_local%wrap%NStateImp(compatm), fieldnamelist=fldnames, name='FBMed_aoflux_a', rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-            
-            call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_aoflux_o, flds_scalar_name, &
-                 STgeom=is_local%wrap%NStateImp(compocn), fieldnamelist=fldnames, name='FBMed_aoflux_o', rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-            deallocate(fldnames)
-         end if
-      end if
-
-      !----------------------------------------------------------
-      ! Create mediator specific field bundles needed in phases routines
-      ! TODO: this needs to be filled in
-      !----------------------------------------------------------
-
-      ! FBs for lnd <-> glc accumulation and elevation class downscaling
-      if (is_local%wrap%comp_present(complnd) .and. is_local%wrap%comp_present(compglc)) then
-         ! call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_l2x_to_glc_accum, &
-         !      STgeom=is_local%wrap%NStateImp(complnd), fieldnamelist=flds_l2x_to_glc, name='FBMed_l2g_l_accum', rc=rc)
-         ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-         ! call shr_nuopc_methods_FB_init(is_local%wrap%FBMed_g2x_to_lnd, &
-         !      STgeom=is_local%wrap%NStateImp(complnd), fieldnamelist=flds_g2x_to_lnd, name='FBMed_g2x_to_lnd', rc=rc)
-         ! if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-      end if
-
       first_call = .false.
+
       call NUOPC_CompAttributeSet(gcomp, name="InitializeDataComplete", value="false", rc=rc)
       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
       return
@@ -1729,6 +1627,9 @@ contains
     ! Initialize mediator fields and infodata
     ! This is called every loop around DataInitialize
     !---------------------------------------
+
+    call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
+    if (shr_nuopc_methods_chkerr(rc,__LINE__,u_FILE_u)) return
 
     do n1 = 1,ncomps
        LocalDone = .true.
@@ -1750,9 +1651,6 @@ contains
 
              if (atCorrectTime) then
                 if (fieldNameList(n) == flds_scalar_name) then
-                   call med_infodata_CopyStateToInfodata(is_local%wrap%NStateImp(n1), med_infodata, &
-                        trim(compname(n1))//'2cpli', is_local%wrap%vm, rc)
-                   if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
                    call ESMF_LogWrite(trim(subname)//" MED - Initialize-Data-Dependency CSTI "//trim(compname(n1)), &
                         ESMF_LOGMSG_INFO, rc=rc)
                    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -1764,9 +1662,11 @@ contains
           deallocate(fieldNameList)
 
           if (LocalDone) then
+             ! This copies NStateImp(n1) TO FBImp(n1, n1)
              call shr_nuopc_methods_FB_copy(is_local%wrap%FBImp(n1,n1), is_local%wrap%NStateImp(n1), rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-             call ESMF_LogWrite(trim(subname)//" MED - Initialize-Data-Dependency Copy Import "//trim(compname(n1)), ESMF_LOGMSG_INFO, rc=rc)
+             call ESMF_LogWrite(trim(subname)//" MED - Initialize-Data-Dependency Copy Import "//&
+                  trim(compname(n1)), ESMF_LOGMSG_INFO, rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
              if (n1 == compocn) ocnDone = .true.
              if (n1 == compatm) atmDone = .true.
@@ -1831,10 +1731,6 @@ contains
           call med_phases_prep_atm(gcomp, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-          ! copy the FBExp(compatm) to NstatExp(compatm)
-          call med_connectors_prep_med2atm(gcomp, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
           ! change 'Updated' attribute to true for ALL exportState fields
           call ESMF_StateGet(is_local%wrap%NStateExp(compatm), itemCount=fieldCount, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -1853,12 +1749,6 @@ contains
           call ESMF_LogWrite("MED - Initialize-Data-Dependency Sending Data to ATM", ESMF_LOGMSG_INFO, rc=rc)
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
       endif
-    else
-       if (is_local%wrap%comp_present(compatm)) then
-          ! Copy the NstateImp(compatm) to FBImp(compatm)
-          call med_connectors_post_atm2med(gcomp, rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       end if
     endif
 
     allDone = .true.
@@ -1894,6 +1784,34 @@ contains
        call ESMF_LogWrite("MED - Initialize-Data-Dependency allDone check Passed", ESMF_LOGMSG_INFO, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
+       !---------------------------------------
+       ! Create component dimensions in mediator internal state
+       !---------------------------------------
+
+       write(logunit,*)
+       do n1 = 1,ncomps
+          if (is_local%wrap%comp_present(n1) .and. ESMF_StateIsCreated(is_local%wrap%NStateImp(n1),rc=rc)) then
+             call shr_nuopc_methods_State_GetScalar(scalar_value=real_nx, scalar_id=flds_scalar_index_nx, &
+                  state=is_local%wrap%NstateImp(n1), flds_scalar_name=flds_scalar_name, &
+                  flds_scalar_num=flds_scalar_num, rc=rc)
+             call shr_nuopc_methods_State_GetScalar(scalar_value=real_ny, scalar_id=flds_scalar_index_ny, &
+                  state=is_local%wrap%NstateImp(n1), flds_scalar_name=flds_scalar_name, &
+                  flds_scalar_num=flds_scalar_num, rc=rc)
+             is_local%wrap%nx(n1) = nint(real_nx)
+             is_local%wrap%ny(n1) = nint(real_ny)
+             write(msgString,'(2i8,2l4)') is_local%wrap%nx(n1), is_local%wrap%ny(n1)
+             if (mastertask) then
+                write(logunit,*) 'global nx,ny sizes for '//trim(compname(n1))//":"//trim(msgString)
+             end if
+             call ESMF_LogWrite(trim(subname)//":"//trim(compname(n1))//":"//trim(msgString), ESMF_LOGMSG_INFO)
+          end if
+       end do
+       write(logunit,*)
+
+       !---------------------------------------
+       ! Initialize mediator IO
+       !---------------------------------------
+
        call med_io_init()
 
       !---------------------------------------
@@ -1921,7 +1839,7 @@ contains
     end if
 
     if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine DataInitialize
@@ -1932,13 +1850,15 @@ contains
 
     use ESMF                  , only : ESMF_GridComp, ESMF_CLOCK, ESMF_Time, ESMF_TimeInterval
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_ClockGet, ESMF_ClockSet
-    use ESMF                  , only : ESMF_Success, ESMF_Alarm, ESMF_ALARMLIST_ALL, ESMF_ClockGetAlarmList
+    use ESMF                  , only : ESMF_Success, ESMF_Failure
+    use ESMF                  , only : ESMF_Alarm, ESMF_ALARMLIST_ALL, ESMF_ClockGetAlarmList
     use ESMF                  , only : ESMF_AlarmCreate, ESMF_AlarmSet, ESMF_ClockAdvance
     use NUOPC                 , only : NUOPC_CompCheckSetClock, NUOPC_CompAttributeGet
     use NUOPC_Mediator        , only : NUOPC_MediatorGet
     use shr_nuopc_time_mod    , only : shr_nuopc_time_alarmInit
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_clock_timeprint
     use shr_nuopc_time_mod    , only : shr_nuopc_time_set_component_stop_alarm
+
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -1953,15 +1873,17 @@ contains
     integer                  :: restart_ymd          ! Restart date (YYYYMMDD)
     type(ESMF_ALARM)         :: restart_alarm
     type(ESMF_ALARM)         :: med_profile_alarm
+    type(ESMF_ALARM)         :: glc_avg_alarm
+    logical                  :: glc_present
+    character(len=16)        :: glc_avg_period
     integer                  :: first_time = .true.
-    integer                  :: dbrc
     character(len=*),parameter :: subname='(module_MED:SetRunClock)'
     !-----------------------------------------------------------
 
     rc = ESMF_SUCCESS
 
     if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
 
     ! query the Mediator for clocks
@@ -1990,10 +1912,13 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
-    ! set restart alarm and med log summary alarm
+    ! set restart alarm,  med log summary alarm and glc averaging alarm if appropriate
     !--------------------------------
 
     if (first_time) then
+
+       ! Set mediator restart alarm
+
        call NUOPC_CompAttributeGet(gcomp, name="restart_option", value=restart_option, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -2014,17 +1939,53 @@ contains
 
        call ESMF_AlarmSet(restart_alarm, clock=mediatorclock, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-       ! med_profile alarm hard coded to daily
+
+       ! Set mediator profile alarm - HARD CODED to daily
+
        call shr_nuopc_time_alarmInit(mediatorclock, med_profile_alarm, 'ndays', &
-            opt_n   = 1,           &
-            alarmname = 'med_profile_alarm', rc=rc)
+            opt_n = 1, alarmname = 'med_profile_alarm', rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call ESMF_AlarmSet(med_profile_alarm, clock=mediatorclock, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
-       call shr_nuopc_time_set_component_stop_alarm(gcomp, rc)
+       ! Set glc averaging alarm if appropriate
+
+       call NUOPC_CompAttributeGet(gcomp, name="glc_present", value=cvalue, rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       glc_present = (cvalue == "true")
+       if (glc_present) then
+          call NUOPC_CompAttributeGet(gcomp, name="glc_avg_period", value=glc_avg_period, rc=rc)
+          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+          if (trim(glc_avg_period) == 'hour') then
+             call shr_nuopc_time_alarmInit(mediatorclock, glc_avg_alarm, 'nhours', &
+                  opt_n = 1, alarmname = 'alarm_glc_avg', rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+          else if (trim(glc_avg_period) == 'day') then
+             call shr_nuopc_time_alarmInit(mediatorclock, glc_avg_alarm, 'ndays', &
+                  opt_n = 1, alarmname = 'alarm_glc_avg', rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+          else if (trim(glc_avg_period) == 'yearly') then
+             call shr_nuopc_time_alarmInit(mediatorclock, glc_avg_alarm, 'nyears', &
+                  opt_n = 1, alarmname = 'alarm_glc_avg', rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+          else
+            call ESMF_LogWrite(trim(subname)//&
+                 ": ERROR glc_avg_period = "//trim(glc_avg_period)//" not supported", &
+                 ESMF_LOGMSG_INFO, rc=rc)
+            rc = ESMF_FAILURE
+            RETURN
+         end if
+         call ESMF_AlarmSet(glc_avg_alarm, clock=mediatorclock, rc=rc)
+         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+      end if
+
+      call shr_nuopc_time_set_component_stop_alarm(gcomp, rc)
+      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
        first_time = .false.
     end if
@@ -2040,18 +2001,18 @@ contains
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (dbug_flag > 5) then
-       call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO)
     endif
 
   end subroutine SetRunClock
-
   !-----------------------------------------------------------------------------
 
   subroutine med_finalize(gcomp, rc)
-    use ESMF, only                  : ESMF_GridComp, ESMF_SUCCESS
-    use med_internalstate_mod, only : logunit, mastertask
-    use shr_nuopc_utils_mod, only   : shr_nuopc_memcheck
-    use shr_file_mod, only          : shr_file_setlogunit
+    use ESMF                   , only : ESMF_GridComp, ESMF_SUCCESS
+    use med_internalstate_mod  , only : logunit, mastertask
+    use med_phases_profile_mod , only : med_phases_profile_finalize
+    use shr_nuopc_utils_mod    , only : shr_nuopc_memcheck
+    use shr_file_mod           , only : shr_file_setlogunit
 
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -2060,7 +2021,8 @@ contains
     rc = ESMF_SUCCESS
     call shr_nuopc_memcheck("med_finalize", 0, mastertask)
     if (mastertask) then
-       write(logunit,*)' SUCCESSFUL TERMINATION '
+       write(logunit,*)' SUCCESSFUL TERMINATION OF CMEPS'
+       call med_phases_profile_finalize()
     end if
 
   end subroutine med_finalize

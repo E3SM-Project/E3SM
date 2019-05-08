@@ -29,12 +29,14 @@ FOREACH (target IN ITEMS ${HOMME_TARGETS})
   ENDIF()
 ENDFOREACH()
 
-# Homme will fill these variables with its flags
-SET (HOMME_C_FLAGS       "" CACHE INTERNAL "List of C compiler flags for Homme")
-SET (HOMME_CXX_FLAGS     "" CACHE INTERNAL "List of CXX compiler flags for Homme")
-SET (HOMME_Fortran_FLAGS "" CACHE INTERNAL "List of Fortran compiler flags for Homme")
-
 ADD_SUBDIRECTORY(homme)
+
+# Take the variable that homme set, and mark them as (internal) cached, so they are globally visible.
+# This is needed since the macro CreateDynamicsLib will be invoked from outside this directory,
+# for instance, from the scream/tests folder.
+SET (HOMME_C_FLAGS       ${HOMME_C_FLAGS}       CACHE INTERNAL "List of C compiler flags for Homme")
+SET (HOMME_CXX_FLAGS     ${HOMME_CXX_FLAGS}     CACHE INTERNAL "List of CXX compiler flags for Homme")
+SET (HOMME_Fortran_FLAGS ${HOMME_Fortran_FLAGS} CACHE INTERNAL "List of Fortran compiler flags for Homme")
 
 SET (DynamicsLibsCreated   "" CACHE INTERNAL "List of created dynamics libraries names")
 
@@ -78,7 +80,9 @@ MACRO (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE USE_PIO USE_ENERGY)
     SET (HOMME_INCLUDE_DIRS ${EXEC_INCLUDE_DIRS})
 
     SET (SCREAM_DYNAMICS_SOURCES
-         ${SCREAM_DYNAMICS_SRC_DIR}/homme_dynamics.cpp
+         ${SCREAM_DYNAMICS_SRC_DIR}/atmosphere_dynamics.cpp
+         ${SCREAM_DYNAMICS_SRC_DIR}/dynamics_driven_grids_manager.cpp
+         ${SCREAM_DYNAMICS_SRC_DIR}/scream_homme_interface.F90
          ${PREQX_DEPS_CXX}
          ${PREQX_DEPS_F90}
     )
@@ -110,12 +114,12 @@ MACRO (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE USE_PIO USE_ENERGY)
     ADD_DEFINITIONS(-DHAVE_CONFIG_H)
 
     # Convert strings to lists
-    STRING(REPLACE " " ";" HOMME_C_FLAGS_LIST       ${HOMME_C_FLAGS})
-    STRING(REPLACE " " ";" HOMME_CXX_FLAGS_LIST     ${HOMME_CXX_FLAGS})
-    STRING(REPLACE " " ";" HOMME_Fortran_FLAGS_LIST ${HOMME_Fortran_FLAGS})
+    STRING(REPLACE " " ";" HOMME_C_FLAGS_LIST       "${HOMME_C_FLAGS}")
+    STRING(REPLACE " " ";" HOMME_CXX_FLAGS_LIST     "${HOMME_CXX_FLAGS}")
+    STRING(REPLACE " " ";" HOMME_Fortran_FLAGS_LIST "${HOMME_Fortran_FLAGS}")
 
     ADD_LIBRARY(${dynLibName} ${SCREAM_DYNAMICS_SOURCES})
-    target_link_libraries(${dynLibName} pio timing)
+    target_link_libraries(${dynLibName} ${SCREAM_DYNAMICS_LINK_LIBRARIES})
     SET_TARGET_PROPERTIES (${dynLibName} PROPERTIES Fortran_MODULE_DIRECTORY ${dynLibDir}/${dynLibName}_modules)
 
     # Add flags, using a generator to achieve language specific behavior

@@ -14,11 +14,31 @@ class DummyProcess : public scream::AtmosphereProcess {
 public:
   using device_type = DeviceType;
 
-  explicit DummyProcess (const ParameterList& params)
+  DummyProcess (const Comm& comm, const ParameterList& params)
    : m_input(FieldIdentifier("INVALID",{FieldTag::Invalid}))
    , m_output(FieldIdentifier("INVALID",{FieldTag::Invalid}))
+   , m_comm(comm)
   {
     m_params = params;
+    m_id = comm.rank();
+    auto size = comm.size();
+
+    std::vector<FieldTag> tags = {FieldTag::Column,FieldTag::Component};
+    std::vector<int> dims = {32, m_params.get<int>("Number of vector components")};
+    FieldLayout layout (tags,dims);
+
+    std::string in_name = "field_";
+    std::string out_name = "field_";
+    if (size==1) {
+      in_name  += "0";
+      out_name += "1";
+    } else {
+      in_name  += std::to_string(m_id);
+      out_name += std::to_string( (m_id + size - 1) % size );
+    }
+
+    m_input_fids.emplace(in_name,layout,"Physics");
+    m_output_fids.emplace(out_name,layout,"Physics");
   }
 
   // The type of the block (dynamics or physics)
@@ -27,7 +47,7 @@ public:
   std::set<std::string> get_required_grids () const {
     // TODO: define what grid the coupling runs on. Check with MOAB folks.
     static std::set<std::string> s;
-    s.insert(e2str(GridType::Undefined));
+    s.insert("Physics");
     return s;
   }
 
@@ -37,10 +57,9 @@ public:
   // The communicator associated with this atm process
   const Comm& get_comm () const { return m_comm; }
 
-  void initialize (const Comm& comm, const std::shared_ptr<const GridsManager> grids_manager) {
-    m_comm = comm;
-    m_id = comm.rank();
-    auto size = comm.size();
+  void initialize (const std::shared_ptr<const GridsManager> grids_manager) {
+    m_id = m_comm.rank();
+    auto size = m_comm.size();
 
     m_grid = grids_manager->get_grid("Physics");
     auto num_cols = m_grid->num_dofs();
@@ -85,13 +104,9 @@ protected:
 
   // Setting the field in the atmosphere process
   void set_required_field_impl (const Field<const Real, device_type>& f) {
-    error::runtime_check(f.get_header().get_identifier()==*m_input_fids.begin(),
-                         "Error! This is not one of my input fields...\n");
     m_input = f;
   }
   void set_computed_field_impl (const Field<      Real, device_type>& f) {
-    error::runtime_check(f.get_header().get_identifier()==*m_output_fids.begin(),
-                         "Error! This is not one of my input fields...\n");
     m_output = f;
   }
 
@@ -110,8 +125,8 @@ protected:
 };
 
 template<typename DeviceType, int PackSize>
-AtmosphereProcess* create_dummy_process (const ParameterList& p) {
-  return new DummyProcess<DeviceType,PackSize>(p);
+AtmosphereProcess* create_dummy_process (const Comm& comm, const ParameterList& p) {
+  return new DummyProcess<DeviceType,PackSize>(comm,p);
 }
 
 // === A dummy physics grids for this test === //
@@ -178,12 +193,11 @@ TEST_CASE("ping-pong", "") {
   // Create the driver
   AtmosphereDriver ad;
 
-  // Init, run, and finalize
+  // Init and run (do not finalize, or you'll clear the field repo!)
   ad.initialize(atm_comm,ad_params);
   for (int i=0; i<num_iters; ++i) {
     ad.run();
   }
-  ad.finalize();
 
   // Every atm proc does out(:) = sin(in(:)+rank)
   Real answer = 0;
@@ -206,6 +220,9 @@ TEST_CASE("ping-pong", "") {
   for (int i=0; i<h_view.extent_int(0); ++i) {
     REQUIRE (h_view(i) == answer);
   }
+
+  // Finalize 
+  ad.finalize();
 }
 
 } // empty namespace

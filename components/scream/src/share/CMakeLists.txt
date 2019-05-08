@@ -44,6 +44,7 @@ set(SHARE_HEADERS
   util/scream_utils.hpp
   util/scream_arch.hpp
   util/scream_kokkos.hpp
+  util/scream_lin_interp.hpp
   scream_workspace.hpp
 )
 

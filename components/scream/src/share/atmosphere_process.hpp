@@ -63,7 +63,7 @@ public:
   // run method can (and usually will) be called multiple times.
   // We should put asserts to verify that the process has been init-ed, when
   // run/finalize is called.
-  virtual void initialize (const Comm& comm, const std::shared_ptr<const GridsManager> grids_manager) = 0;
+  virtual void initialize (const std::shared_ptr<const GridsManager> grids_manager) = 0;
   virtual void run        (/* what inputs? */) = 0;
   virtual void finalize   (/* what inputs? */) = 0;
 
@@ -101,7 +101,7 @@ protected:
 };
 
 // A short name for the factory for atmosphere processes
-using AtmosphereProcessFactory = util::Factory<AtmosphereProcess,util::CaseInsensitiveString,const ParameterList&>;
+using AtmosphereProcessFactory = util::Factory<AtmosphereProcess,util::CaseInsensitiveString,const Comm&,const ParameterList&>;
 
 } // namespace scream
 

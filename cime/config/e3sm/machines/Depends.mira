@@ -5,7 +5,7 @@ $(SSOBJS): %.o: %.F90
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -qsmallstack $<
 
 QSMPFLAGS:=
-ifeq ($(compile_threaded), true)
+ifeq ($(compile_threaded), TRUE)
   QSMPFLAGS += -qsmp=noauto:noomp
 endif
 shr_reprosum_mod.o: shr_reprosum_mod.F90

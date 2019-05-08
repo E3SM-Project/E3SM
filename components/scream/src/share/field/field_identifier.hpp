@@ -2,8 +2,6 @@
 #define SCREAM_FIELD_IDENTIFIER_HPP
 
 #include "share/field/field_layout.hpp"
-#include "share/grid/abstract_grid.hpp"
-#include "share/scream_assert.hpp"
 
 #include <string>
 #include <vector>
@@ -23,8 +21,6 @@ namespace scream
 class FieldIdentifier {
 public:
   using layout_type   = FieldLayout;
-  using grid_type     = AbstractGrid;
-  using grid_ptr_type = std::shared_ptr<grid_type>;
 
   // Constructor(s)
   FieldIdentifier () = delete;
