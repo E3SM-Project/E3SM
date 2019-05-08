@@ -48,4 +48,3 @@ jigsaw-geo-matlab = FULL_PATH_TO_JIGSAW_REPO
 mesh_database = FULL_PATH_TO_LOCAL_MESH_DATABASE
 initial_condition_database = FULL_PATH_TO_LOCAL_INITIAL_CONDITION_DATABASE
 bathymetry_database = FULL_PATH_TO_BATHYMETRY_DATABASE
-jigsaw_to_MPAS = FULL_PATH_TO_MPAS_MODEL_REPORT/testing_and_setup/compass/ocean/jigsaw_to_MPAS
