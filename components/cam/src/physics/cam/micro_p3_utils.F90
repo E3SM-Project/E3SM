@@ -32,19 +32,21 @@ module micro_p3_utils
     ! Signaling NaN bit pattern that represents a limiter that's turned off.
     integer(itype), parameter :: limiter_off = int(Z'7FF1111111111111', itype)
 
-    real(rtype), public, parameter :: qsmall = 1.e-14
-    real(rtype), public, parameter :: nsmall = 1.e-16
+    real(rtype), public, parameter :: qsmall = 1.e-14_rtype
+    real(rtype), public, parameter :: nsmall = 1.e-16_rtype
 
     real(rtype) :: xxlv, xxls, xlf
 
-    real(rtype),public :: rhosur,rhosui,ar,br,f1r,f2r,ecr,rhow,kr,kc,bimm,aimm,rin,mi0,nccnst,  &
+    real(rtype),public :: rhosur,rhosui,ar,br,f1r,f2r,ecr,rhow,kr,kc,aimm,bimm,rin,mi0,nccnst,  &
        eci,eri,bcn,cpw,cons1,cons2,cons3,cons4,cons5,cons6,cons7,         &
-       inv_rhow,bsmall,cp,g,rd,rv,ep_2,inv_cp,mw,osm,   &
-       vi,epsm,rhoa,map,ma,rr,bact,inv_rm1,inv_rm2,sig1,nanew1,f11,f21,sig2, &
-       nanew2,f12,f22,thrd,sxth,piov3,piov6,rho_rimeMin,     &
+       inv_rhow,cp,g,rd,rv,ep_2,inv_cp,   &
+       thrd,sxth,piov3,piov6,rho_rimeMin,     &
        rho_rimeMax,inv_rho_rimeMax,max_total_Ni,dbrk,nmltratio,clbfact_sub,  &
        clbfact_dep
     real(rtype),dimension(16), public :: dnu
+
+    real(rtype), public, parameter :: mu_r_constant = 1.0_rtype
+    real(rtype), public, parameter :: lookup_table_1a_dum1_c = 1.0_rtype/(0.1_rtype*log10(261.7_rtype))
 
     real(rtype),public :: zerodegc  ! Temperature at zero degree celcius ~K
     real(rtype),public :: rainfrze  ! Contact and immersion freexing temp, -4C  ~K
@@ -65,15 +67,15 @@ module micro_p3_utils
     ! = 3 Khairoutdinov and Kogan 2000
     integer, public,parameter :: iparam = 3
 
-    real(rtype), parameter, public :: mincld=0.0001
+    real(rtype), parameter, public :: mincld=0.0001_rtype
     real(rtype), parameter, public :: rhosn = 250._rtype  ! bulk density snow
     real(rtype), parameter, public :: rhoi = 500._rtype   ! bulk density ice
     real(rtype), parameter, public :: rhows = 917._rtype  ! bulk density water solid
 
 
-public :: MGHydrometeorProps
+public :: MicroHydrometeorProps
 
-type :: MGHydrometeorProps
+type :: MicroHydrometeorProps
    ! Density (kg/m^3)
    real(rtype) :: rho
    ! Information for size calculations.
@@ -86,16 +88,16 @@ type :: MGHydrometeorProps
    ! Minimum average particle mass (kg).
    ! Limit is applied at the beginning of the size distribution calculations.
    real(rtype) :: min_mean_mass
-end type MGHydrometeorProps
+end type MicroHydrometeorProps
 
-interface MGHydrometeorProps
-   module procedure NewMGHydrometeorProps
+interface MicroHydrometeorProps
+   module procedure NewMicroHydrometeorProps
 end interface
 
-type(MGHydrometeorProps), public :: mg_liq_props
-type(MGHydrometeorProps), public :: mg_ice_props
-type(MGHydrometeorProps), public :: mg_rain_props
-type(MGHydrometeorProps), public :: mg_snow_props
+type(MicroHydrometeorProps), public :: micro_liq_props
+type(MicroHydrometeorProps), public :: micro_ice_props
+type(MicroHydrometeorProps), public :: micro_rain_props
+type(MicroHydrometeorProps), public :: micro_snow_props
 
 ! particle mass-diameter relationship
 ! currently we assume spherical particles for cloud ice/snow
@@ -159,153 +161,121 @@ end interface var_coef
     masterproc_e3sm = masterproc
 
     ! mathematical/optimization constants
-    thrd  = 1./3.
-    sxth  = 1./6.
+    thrd  = 1._rtype/3._rtype
+    sxth  = 1._rtype/6._rtype 
     pi_e3sm = pi
     piov3 = pi*thrd
     piov6 = pi*sxth
 
     ! maximum total ice concentration (sum of all categories)
-     max_total_Ni = 500.e+3  !(m)
+     max_total_Ni = 500.e+3_rtype  !(m)
 
     ! droplet concentration (m-3)
-    nccnst = 200.e+6
+    nccnst = 200.e+6_rtype
 
     ! parameters for Seifert and Beheng (2001) autoconversion/accretion
-    kc     = 9.44e+9
-    kr     = 5.78e+3
+    kc     = 9.44e+9_rtype
+    kr     = 5.78e+3_rtype
 
     ! Temperature parameters
     zerodegc  = tmelt 
-    homogfrze = tmelt-40.
-    icenuct   = tmelt-15.
-    rainfrze  = tmelt-4.
+    homogfrze = tmelt-40._rtype
+    icenuct   = tmelt-15._rtype
+    rainfrze  = tmelt-4._rtype
 
     ! physical constants
     cp     = cpair ! specific heat of dry air (J/K/kg) !1005.
-    inv_cp = 1./cp ! inverse of cp
+    inv_cp = 1._rtype/cp ! inverse of cp
     g      = gravit ! Gravity (m/s^2) !9.816
     rd     = rair ! Dry air gas constant     ~ J/K/kg     !287.15
     rv     = rh2o ! Water vapor gas constant ~ J/K/kg     !461.51
     ep_2   = mwh2o/mwdry  ! ratio of molecular mass of water to the molecular mass of dry air !0.622
-    rhosur = 100000./(rd*zerodegc) ! density of air at surface
-    rhosui = 60000./(rd*253.15)
-    ar     = 841.99667 
-    br     = 0.8
-    f1r    = 0.78
-    f2r    = 0.32
-    ecr    = 1.
+    rhosur = 100000._rtype/(rd*zerodegc) ! density of air at surface
+    rhosui = 60000._rtype/(rd*253.15_rtype)
+    ar     = 841.99667_rtype 
+    br     = 0.8_rtype
+    f1r    = 0.78_rtype
+    f2r    = 0.32_rtype
+    ecr    = 1._rtype
     rhow   = rhoh2o ! Density of liquid water (STP) !997.
     cpw    = cpliq  ! specific heat of fresh h2o (J/K/kg) !4218.
-    inv_rhow = 1./rhow  !inverse of (max.) density of liquid water
+    inv_rhow = 1._rtype/rhow  !inverse of (max.) density of liquid water
 
     xxlv = latvap           ! latent heat of vaporization
     xxls = latvap + latice  ! latent heat of sublimation
     xlf  = latice           ! latent heat of fusion
 
     ! limits for rime density [kg m-3]
-    rho_rimeMin     =  50.
-    rho_rimeMax     = 900.
-    inv_rho_rimeMax = 1./rho_rimeMax
-
-    ! minium allowable prognostic variables
-    bsmall = qsmall*inv_rho_rimeMax
+    rho_rimeMin     =  50._rtype
+    rho_rimeMax     = 900._rtype
+    inv_rho_rimeMax =   1._rtype/rho_rimeMax
 
     ! Bigg (1953)
     !bimm   = 100.
     !aimm   = 0.66
     ! Barklie and Gokhale (1959)
-    bimm   = 2.
-    aimm   = 0.65
-    rin    = 0.1e-6
-    mi0    = 4.*piov3*900.*1.e-18
+    bimm   = 2._rtype
+    aimm   = 0.65_rtype
+    rin    = 0.1e-6_rtype
+    mi0    = 4._rtype*piov3*900._rtype*1.e-18_rtype
 
-    eci    = 0.5
-    eri    = 1.
-    bcn    = 2.
+    eci    = 0.5_rtype
+    eri    = 1._rtype
+    bcn    = 2._rtype
 
     ! mean size for soft lambda_r limiter [microns]
-    dbrk   = 600.e-6
+    dbrk   = 600.e-6_rtype
     ! ratio of rain number produced to ice number loss from melting
-    nmltratio = 0.2
-
+    nmltratio = 0.2_rtype
 
     cons1 = piov6*rhow
-    cons2 = 4.*piov3*rhow
-    cons3 = 1./(cons2*(25.e-6)**3)
-    cons4 = 1./(dbrk**3*pi*rhow)
+    cons2 = 4._rtype*piov3*rhow
+    cons3 = 1._rtype/(cons2*(25.e-6_rtype)**3)
+    cons4 = 1._rtype/(dbrk**3*pi*rhow)
     cons5 = piov6*bimm
     cons6 = piov6**2*rhow*bimm
-    cons7 = 4.*piov3*rhow*(1.e-6)**3
-
-    ! aerosol/droplet activation parameters
-    mw     = 0.018
-    osm    = 1.
-    vi     = 3.
-    epsm   = 0.9
-    rhoa   = 1777.
-    map    = 0.132
-    ma     = 0.0284
-    rr     = 8.3187
-    bact   = vi*osm*epsm*mw*rhoa/(map*rhow)
-    ! inv_bact = (map*rhow)/(vi*osm*epsm*mw*rhoa)    *** to replace /bact **
-
-    ! mode 1
-    inv_rm1 = 2.e+7           ! inverse aerosol mean size (m-1)
-    sig1    = 2.0             ! aerosol standard deviation
-    nanew1  = 300.e6          ! aerosol number mixing ratio (kg-1)
-    f11     = 0.5*exp(2.5*(log(sig1))**2)
-    f21     = 1. + 0.25*log(sig1)
-
-    ! note: currently only set for a single mode, droplet activation code needs to
-    !       be modified to include the second mode
-    ! mode 2
-    inv_rm2 = 7.6923076e+5    ! inverse aerosol mean size (m-1)
-    sig2    = 2.5             ! aerosol standard deviation
-    nanew2  = 0.              ! aerosol number mixing ratio (kg-1)
-    f12     = 0.5*exp(2.5*(log(sig2))**2)
-    f22     = 1. + 0.25*log(sig2)
+    cons7 = 4._rtype*piov3*rhow*(1.e-6_rtype)**3
 
     ! droplet spectral shape parameter for mass spectra, used for Seifert and Beheng (2001)
     ! warm rain autoconversion/accretion option only (iparam = 1)
 !    allocate(dnu(16))
-    dnu(1)  =  0.000
-    dnu(2)  = -0.557
-    dnu(3)  = -0.430
-    dnu(4)  = -0.307
-    dnu(5)  = -0.186
-    dnu(6)  = -0.067
-    dnu(7)  = -0.050
-    dnu(8)  = -0.167
-    dnu(9)  = -0.282
-    dnu(10) = -0.397
-    dnu(11) = -0.512
-    dnu(12) = -0.626
-    dnu(13) = -0.739
-    dnu(14) = -0.853
-    dnu(15) = -0.966
-    dnu(16) = -0.966
+    dnu(1)  =  0.000_rtype
+    dnu(2)  = -0.557_rtype
+    dnu(3)  = -0.430_rtype
+    dnu(4)  = -0.307_rtype
+    dnu(5)  = -0.186_rtype
+    dnu(6)  = -0.067_rtype
+    dnu(7)  = -0.050_rtype
+    dnu(8)  = -0.167_rtype
+    dnu(9)  = -0.282_rtype
+    dnu(10) = -0.397_rtype
+    dnu(11) = -0.512_rtype
+    dnu(12) = -0.626_rtype
+    dnu(13) = -0.739_rtype
+    dnu(14) = -0.853_rtype
+    dnu(15) = -0.966_rtype
+    dnu(16) = -0.966_rtype
 
     ! calibration factors for ice deposition and sublimation
     !   These are adjustable ad hoc factors used to increase or decrease deposition and/or
     !   sublimation rates.  The representation of the ice capacitances are highly simplified
     !   and the appropriate values in the diffusional growth equation are uncertain.
-    clbfact_dep = 1.
-    clbfact_sub = 1.
+    clbfact_dep = 1._rtype
+    clbfact_sub = 1._rtype
 
     ! Don't specify lambda bounds for cloud liquid, as they are determined by
     ! pgam dynamically.
-    mg_liq_props = MGHydrometeorProps(rhow, dsph, &
+    micro_liq_props = MicroHydrometeorProps(rhow, dsph, &
          min_mean_mass=min_mean_mass_liq)
   
     ! Mean ice diameter can not grow bigger than twice the autoconversion
     ! threshold for snow.
-    ice_lambda_bounds = 1._rtype/[2.*400.e-6_rtype, 10.e-6_rtype] !! dcs 400.e-6
-    mg_ice_props = MGHydrometeorProps(rhoi, dsph, &
+    ice_lambda_bounds = 1._rtype/[2._rtype*400.e-6_rtype, 10.e-6_rtype] !! dcs 400.e-6
+    micro_ice_props = MicroHydrometeorProps(rhoi, dsph, &
          ice_lambda_bounds, min_mean_mass_ice)
   
-    mg_rain_props = MGHydrometeorProps(rhow, dsph, lam_bnd_rain)
-    mg_snow_props = MGHydrometeorProps(rhosn, dsph, lam_bnd_snow)
+    micro_rain_props = MicroHydrometeorProps(rhow, dsph, lam_bnd_rain)
+    micro_snow_props = MicroHydrometeorProps(rhosn, dsph, lam_bnd_snow)
     
     return
     end subroutine micro_p3_utils_init
@@ -350,34 +320,34 @@ end interface var_coef
 
        if (qc.ge.qsmall) then
           qc_incld = qc*inv_lcldm
-          nc_incld = max(nc*inv_lcldm,0.)
+          nc_incld = max(nc*inv_lcldm,0._rtype)
           !AaronDonahue, kai has something about if nccons then nc=ncnst/rho
        else
-          qc_incld = 0.
-          nc_incld = 0.
+          qc_incld = 0._rtype
+          nc_incld = 0._rtype
        end if 
        if (qitot.ge.qsmall) then
           qitot_incld = qitot*inv_icldm
-          nitot_incld = max(nitot*inv_icldm,0.)
+          nitot_incld = max(nitot*inv_icldm,0._rtype)
           !AaronDonahue, kai has something about if nicons then ni=ninst/rho
        else
-          qitot_incld = 0.
-          nitot_incld = 0.
+          qitot_incld = 0._rtype
+          nitot_incld = 0._rtype
        end if 
        if (qirim.ge.qsmall.and.qitot.ge.qsmall) then
           qirim_incld = qirim*inv_icldm
-          birim_incld = max(birim*inv_lcldm,0.)
+          birim_incld = max(birim*inv_lcldm,0._rtype)
        else
-          qirim_incld = 0.
-          birim_incld = 0.
+          qirim_incld = 0._rtype
+          birim_incld = 0._rtype
        end if 
        if (qr.ge.qsmall) then
           qr_incld = qr*inv_rcldm
-          nr_incld = max(nr*inv_rcldm,0.)
+          nr_incld = max(nr*inv_rcldm,0._rtype)
           !AaronDonahue, kai has something about if nccons then nc=ncnst/rho
        else
-          qr_incld = 0.
-          nr_incld = 0.
+          qr_incld = 0._rtype
+          nr_incld = 0._rtype
        end if
        if (qc_incld.gt.incloud_limit .or.qitot_incld.gt.incloud_limit .or. qr_incld.gt.precip_limit .or.birim_incld.gt.incloud_limit) then
 !          write(errmsg,'(a3,i4,3(a5,1x,e16.8,1x))') 'k: ', k, ', qc:',qc_incld, ', qi:',qitot_incld,', qr:',qr_incld
@@ -396,7 +366,7 @@ end interface var_coef
 !__________________________________________________________________________________________!
 ! get cloud droplet size distribution parameters
 elemental subroutine size_dist_param_liq(props, qcic, ncic, rho, pgam, lamc)
-  type(MGHydrometeorProps), intent(in) :: props
+  type(MicroHydrometeorProps), intent(in) :: props
   real(rtype), intent(in) :: qcic
   real(rtype), intent(inout) :: ncic
   real(rtype), intent(in) :: rho
@@ -404,7 +374,7 @@ elemental subroutine size_dist_param_liq(props, qcic, ncic, rho, pgam, lamc)
   real(rtype), intent(out) :: pgam
   real(rtype), intent(out) :: lamc
 
-  type(MGHydrometeorProps) :: props_loc
+  type(MicroHydrometeorProps) :: props_loc
 
   if (qcic > qsmall) then
 
@@ -458,7 +428,7 @@ end subroutine size_dist_param_liq
 !__________________________________________________________________________________________!
 ! Basic routine for getting size distribution parameters.
 elemental subroutine size_dist_param_basic(props, qic, nic, lam, n0)
-  type(MGHydrometeorProps), intent(in) :: props
+  type(MicroHydrometeorProps), intent(in) :: props
   real(rtype), intent(in) :: qic
   real(rtype), intent(inout) :: nic
 
@@ -513,11 +483,11 @@ end function avg_diameter
 !                                                                                          !
 !__________________________________________________________________________________________!
 ! Constructor for a constituent property object.
-function NewMGHydrometeorProps(rho, eff_dim, lambda_bounds, min_mean_mass) &
+function NewMicroHydrometeorProps(rho, eff_dim, lambda_bounds, min_mean_mass) &
      result(res)
   real(rtype), intent(in) :: rho, eff_dim
   real(rtype), intent(in), optional :: lambda_bounds(2), min_mean_mass
-  type(MGHydrometeorProps) :: res
+  type(MicroHydrometeorProps) :: res
 
   res%rho = rho
   res%eff_dim = eff_dim
@@ -534,7 +504,7 @@ function NewMGHydrometeorProps(rho, eff_dim, lambda_bounds, min_mean_mass) &
 
   res%shape_coef = rho*pi_e3sm*gamma(eff_dim+1._rtype)/6._rtype
 
-end function NewMGHydrometeorProps
+end function NewMicroHydrometeorProps
 !__________________________________________________________________________________________!
 !                                                                                          !
 !__________________________________________________________________________________________!
