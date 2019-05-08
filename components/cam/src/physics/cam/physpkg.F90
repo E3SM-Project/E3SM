@@ -370,7 +370,6 @@ subroutine phys_inidat( cam_out, pbuf2d )
 
     ! Flag for clubb warm initialization
     logical :: do_clubb_int
-    logical :: do_output_clubb_int
 
     integer :: ierr
     character(len=8) :: dim1name, dim2name

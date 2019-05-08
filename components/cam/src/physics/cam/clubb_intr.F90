@@ -857,11 +857,11 @@ end subroutine clubb_init_cnst
     if (is_first_step()) then
 
        if (do_clubb_int) then
-        ! other variables will be read from initial files 
-        ! the remindar variables are output by CLUBB  
-        call pbuf_set_field(pbuf2d, tke_idx,     0.0_r8)
-        call pbuf_set_field(pbuf2d, kvh_idx,     0.0_r8)
-        call pbuf_set_field(pbuf2d, fice_idx,    0.0_r8)
+        ! initial conditions will be read from initial files 
+        ! the following variables are output by CLUBB  
+         call pbuf_set_field(pbuf2d, tke_idx,     0.0_r8)
+         call pbuf_set_field(pbuf2d, kvh_idx,     0.0_r8)
+         call pbuf_set_field(pbuf2d, fice_idx,    0.0_r8)
        else
          call pbuf_set_field(pbuf2d, wp2_idx,     w_tol_sqd)
          call pbuf_set_field(pbuf2d, wp3_idx,     0.0_r8)
