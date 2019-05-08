@@ -21,6 +21,8 @@
 # Redistribution and use is allowed according to the terms of the BSD license.
 # For details see the accompanying COPYING-CMAKE-SCRIPTS file.
 #
+# Source: https://github.com/jedbrown/cmake-modules
+#
 
 cmake_policy(VERSION 3.3)
 

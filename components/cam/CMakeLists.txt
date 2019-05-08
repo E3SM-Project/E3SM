@@ -9,10 +9,17 @@
 #
 #===============================================================================
 
+# bmpersch
+# - Read modern cmake docs, use modern features
+# - Use find_package for trilinos and other TPLS
+
 cmake_minimum_required(VERSION 3.3)
 cmake_policy(SET CMP0057 NEW)
 
 project(E3SM C CXX Fortran)
+
+# Set module path
+set(CMAKE_MODULE_PATH ${CIMEROOT}/src/CMake)
 
 # Load dependency search path.
 file(STRINGS Filepath FILEPATH_DIRS)
@@ -147,15 +154,19 @@ endif()
 
 # Not clear how to escape commas for libraries with their own configure
 # script, and they don't need this defined anyway, so leave this out of
-# FPPDEFS. JGF
+# FPPDEFS.
 if (HAS_F2008_CONTIGUOUS)
-  set(CONTIGUOUS_FLAG "-DUSE_CONTIGUOUS=contiguous,")
+  if (CPRE)
+    set(CONTIGUOUS_FLAG "${CPRE}USE_CONTIGUOUS=contiguous,")
+  else()
+    set(CONTIGUOUS_FLAG "-DUSE_CONTIGUOUS=contiguous,")
+  endif()
 else()
-  set(CONTIGUOUS_FLAG "-DUSE_CONTIGUOUS")
-endif()
-
-if (CPRE)
-  set(CONTIGUOUS_FLAG ${CPRE}) # JGF
+  if (CPRE)
+    set(CONTIGUOUS_FLAG "${CPRE}USE_CONTIGUOUS=")
+  else()
+    set(CONTIGUOUS_FLAG "-DUSE_CONTIGUOUS=")
+  endif()
 endif()
 
 if (NOT AR)
@@ -224,8 +235,10 @@ if (USE_PETSC)
     message(FATAL_ERROR "PETSC_PATH must be defined when USE_PETSC is TRUE")
   endif()
 
-  # # Get the "PETSC_LIB" list an env var  JGF
-  #include $(PETSC_PATH)/lib/petsc/conf/variables
+  # Get the "PETSC_LIB" list an env var
+  set(PETSC_DIR ${PETSC_PATH})
+  find_package(PETSc)
+  set(PETSC_LIB ${PETSC_LIBRARIES})
 endif()
 
 if (USE_TRILINOS)
@@ -240,9 +253,8 @@ if (USE_TRILINOS)
     message(FATAL_ERROR "TRILINOS_PATH must be defined when USE_TRILINOS is TRUE")
   endif()
 
-  # # get a bunch of variables related to this trilinos installation;
-  # these variables begin with "Trilinos_" JGF
-  #include $(INC_TRILINOS)/Makefile.export.Trilinos
+  set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${TRILINOS_PATH})
+  find_package(Trilinos)
 endif()
 
 if (USE_ALBANY)
@@ -257,8 +269,9 @@ if (USE_ALBANY)
     message(FATAL_ERROR "ALBANY_PATH must be defined when USE_ALBANY is TRUE")
   endif()
 
-  # # get the "ALBANY_LINK_LIBS" list as an env var JGF
-  #include $(ALBANY_PATH)/export_albany.in
+  # get the "ALBANY_LINK_LIBS" list as an env var
+  file(READ ${ALBANY_PATH}/export_albany.in ALBANY_OUTPUT)
+  string(REPLACE "ALBANY_LINK_LIBS=" "" ALBANY_LINK_LIBS "${ALBANY_OUTPUT}")
 endif()
 
 if (USE_KOKKOS)
@@ -269,22 +282,23 @@ if (USE_KOKKOS)
   set(CXX_LDFLAGS "${CXX_LDFLAGS} ${KOKKOS_LDFLAGS}")
 endif()
 
-if (USE_MOAB)
-  if (MOAB_PATH)
-    set(CPPDEFS "${CPPDEFS} -DHAVE_MOAB")
-    if (NOT INC_MOAB)
-      set(INC_MOAB ${MOAB_PATH}/include)
-    endif()
-    if (NOT LIB_MOAB)
-      set(LIB_MOAB ${MOAB_PATH}/lib)
-    endif()
-  else()
-    message(FATAL_ERROR "MOAB_PATH must be defined when USE_MOAB is TRUE")
-  endif()
+# JGF: No one seems to be using this
+# if (USE_MOAB)
+#   if (MOAB_PATH)
+#     set(CPPDEFS "${CPPDEFS} -DHAVE_MOAB")
+#     if (NOT INC_MOAB)
+#       set(INC_MOAB ${MOAB_PATH}/include)
+#     endif()
+#     if (NOT LIB_MOAB)
+#       set(LIB_MOAB ${MOAB_PATH}/lib)
+#     endif()
+#   else()
+#     message(FATAL_ERROR "MOAB_PATH must be defined when USE_MOAB is TRUE")
+#   endif()
 
-  # # get the "IMESH_LIBS" list as an env var JGF
-  #include $(LIB_MOAB)/iMesh-Defs.inc
-endif()
+#   # # get the "IMESH_LIBS" list as an env var
+#   #include $(LIB_MOAB)/iMesh-Defs.inc
+# endif()
 
 # Set HAVE_SLASHPROC on LINUX systems which are not bluegene or Darwin (OSx)
 string(FIND CPPDEFS "-DLINUX" HAS_DLINUX)
@@ -323,22 +337,27 @@ endif()
 # ESMF_F90LINKRPATHS
 # ESMF_F90ESMFLINKLIBS
 if (USE_ESMF_LIB)
-  # include(${CIME_ESMFMKFILE}) # JGF
-  set(CPPDEFS "${CPPDEFS} -DESMF_VERSION_MAJOR=${ESMF_VERSION_MAJOR} -DESMF_VERSION_MINOR=${ESMF_VERSION_MINOR}")
-  set(FFLAGS "${FFLAGS} ${ESMF_F90COMPILEPATHS}")
-  set(SLIBS "${SLIBS} ${ESMF_F90LINKPATHS} ${ESMF_F90LINKRPATHS} ${ESMF_F90ESMFLINKLIBS}")
+  # include(${CIME_ESMFMKFILE}) # JGF SKIPPING FOR NOW
+  # Will need something like 'make -f esmf.mk  -p 2> /dev/null | grep ESMF_F90COMPILEPATHS'
+  #set(CPPDEFS "${CPPDEFS} -DESMF_VERSION_MAJOR=${ESMF_VERSION_MAJOR} -DESMF_VERSION_MINOR=${ESMF_VERSION_MINOR}")
+  #set(FFLAGS "${FFLAGS} ${ESMF_F90COMPILEPATHS}")
+  #set(SLIBS "${SLIBS} ${ESMF_F90LINKPATHS} ${ESMF_F90LINKRPATHS} ${ESMF_F90ESMFLINKLIBS}")
+  message(FATAL_ERROR "ESMF not supported in CMake yet")
 endif()
 
-# JGF
-# ifdef CPRE
-#   FPPDEFS := $(subst $(comma),\\$(comma),$(CPPDEFS))
-#   FPPDEFS := $(patsubst -D%,$(CPRE)%,$(FPPDEFS))
-#   EXTRA_PIO_FPPDEFS := $(subst $(comma),\\$(comma),$(EXTRA_PIO_CPPDEFS))
-#   EXTRA_PIO_FPPDEFS := $(patsubst -D%,$(CPRE)%,$(EXTRA_PIO_FPPDEFS))
-# else
-#   FPPDEFS := $(CPPDEFS)
-#   EXTRA_PIO_FPPDEFS := $(EXTRA_PIO_CPPDEFS)
-# endif
+if (CPRE)
+  foreach(ITEM ${CPPDEFS})
+    string(REPLACE "-D" "" NOD ${ITEM})
+    set(FPPDEFS "${FPPDEFS} ${CPRE}${NOD}")
+  endforeach()
+  foreach(ITEM ${EXTRA_PIO_CPPDEFS})
+    string(REPLACE "-D" "" NOD ${ITEM})
+    set(EXTRA_PIO_FPPDEFS "${EXTRA_PIO_FPPDEFS} ${CPRE}${NOD}")
+  endforeach()
+else()
+  set(FPPDEFS ${CPPDEFS})
+  set(EXTRA_PIO_FPPDEFS ${EXTRA_PIO_CPPDEFS})
+endif()
 
 #===============================================================================
 # Set config args for pio and mct to blank and then enable serial
@@ -398,7 +417,7 @@ else()
   set(INCLDIR "${INCLDIR} -I${INC_NETCDF_C} -I${INC_NETCDF_FORTRAN}")
 endif()
 
-foreach(ITEM MOD_NETCDF INC_MPI INC_PNETCDF INC_PETSC INC_TRILINOS INC_ALBANY INC_MOAB)
+foreach(ITEM MOD_NETCDF INC_MPI INC_PNETCDF INC_PETSC INC_TRILINOS INC_ALBANY) # INC_MOAB)
   if (${ITEM})
     set(INCLDIR "${INCLDIR} -I${${ITEM}}")
   endif()
@@ -501,18 +520,12 @@ if (MODEL STREQUAL "cam")
   # These RRTMG files take an extraordinarily long time to compile with optimization.
   # Until mods are made to read the data from files, just remove optimization from
   # their compilation.
-
-  # JGF
-# rrtmg_lw_k_g.o: rrtmg_lw_k_g.f90
-# 	$(FC) -c $(FPPFLAGS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS_NOOPT) $<
-
-# rrtmg_sw_k_g.o: rrtmg_sw_k_g.f90
-# 	$(FC) -c $(FPPFLAGS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS_NOOPT) $<
+  set_source_files_properties(rrtmg_lw_k_g.f90 PROPERTIES COMPILE_FLAGS -O0)
+  set_source_files_properties(rrtmg_sw_k_g.f90 PROPERTIES COMPILE_FLAGS -O0)
 
   if (COSP_LIBDIR)
     set(INCLDIR "-I${COSP_LIBDIR} -I${COSP_LIBDIR}/../ -I../${INSTALL_SHAREDPATH}/include -I../${CSM_SHR_INCLUDE}")
-    # JGF
-    add_library(libcosp cam_abortutils.f90)
+    execute_process(COMMAND ${MAKE} -C ${COSP_LIBDIR} F90="${FC}" F90FLAGS="${INCLDIR} ${INCS} ${FREEFLAGS} ${FFLAGS} ${FC_AUTO_R8}" F90FLAGS_noauto="${INCLDIR} ${INCS} ${FREEFLAGS} ${FFLAGS}" F90FLAGS_fixed="${INCLDIR} ${INCS} ${FIXEDFLAGS} ${FFLAGS} ${FC_AUTO_R8}")
   endif()
 
 endif()
@@ -555,9 +568,9 @@ if (USE_ALBANY)
 endif()
 
 # Add MOAB libraries.  These are defined in the MOAB_LINK_LIBS env var that was included above
-if (USE_MOAB)
-  set(SLIBS "${SLIBS} ${IMESH_LIBS}")
-endif()
+# if (USE_MOAB)
+#   set(SLIBS "${SLIBS} ${IMESH_LIBS}")
+# endif()
 
 # Add libraries and flags that we need on the link line when C++ code is included
 # We need to do these additions after CONFIG_ARGS is set, because they can sometimes break configure for mct, etc.,
@@ -649,9 +662,10 @@ set(CMAKE_EXE_LINKER_FLAGS ${LDFLAGS})
 # Get src files
 execute_process(COMMAND ${CASETOOLS}/mkSrcfiles)
 file(STRINGS Srcfiles SOURCES)
+# jgf get genf90 sources
 
 foreach(ITEM ${CPP_DIRS})
-  set(INCS "${INCS} -I{}")
+  set(INCLDIR "${INCLDIR} -I${ITEM}")
 endforeach()
 
 #-------------------------------------------------------------------------------
@@ -742,4 +756,19 @@ if (MPILIB STREQUAL "mpi-serial")
   set(MLIBS "${MLIBS} ${MPISERIAL}")
 endif()
 
-# JGF: how to do genf90?
+# do the necessary genf90s
+foreach (SRC_FILE IN LISTS GEN_F90_SOURCES)
+  add_custom_command (OUTPUT ${SRC_FILE}
+    COMMAND ${CIMEROOT}/src/externals/genf90/genf90.pl
+    ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}.in > ${SRC_FILE}
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}.in)
+endforeach ()
+
+if (${COMPLIB})
+  add_library(${COMPLIB} ${SOURCES})
+endif()
+
+if (${EXEC_SE})
+  add_executable(${EXEC_SE})
+  target_link_library(${EXEC_SE} ${COMPLIB} ${ULIBDEP} ${CSMSHARELIB} ${MCTLIBS} ${PIOLIB} ${GPTLLIB} ${CLIBS} ${ULIBS} ${SLIBS} ${MLIBS} ${F90_LDFLAGS})
+endif()
