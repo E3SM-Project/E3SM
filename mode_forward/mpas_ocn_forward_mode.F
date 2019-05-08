@@ -54,6 +54,7 @@ module ocn_forward_mode
    use ocn_surface_bulk_forcing
    use ocn_surface_land_ice_fluxes
    use ocn_frazil_forcing
+   use ocn_tidal_forcing
 
    use ocn_tracer_hmix
    use ocn_tracer_hmix_redi
@@ -217,6 +218,8 @@ module ocn_forward_mode
       call ocn_surface_land_ice_fluxes_init(err_tmp)
       ierr = ior(ierr, err_tmp)
       call ocn_frazil_forcing_init(err_tmp)
+      ierr = ior(ierr, err_tmp)
+      call ocn_tidal_forcing_init(err_tmp)
       ierr = ior(ierr, err_tmp)
 
       call ocn_tracer_hmix_init(err_tmp)
@@ -583,6 +586,8 @@ module ocn_forward_mode
            call mpas_timer_stop("land_ice_build_arrays")
 
            call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, diagnosticsPool, statePool, err)
+           
+           call ocn_tidal_forcing_build_array(domain, meshPool, forcingPool, diagnosticsPool, statePool, err)
 
            block_ptr => block_ptr % next
          end do
