@@ -415,7 +415,7 @@
     </modules>
 
     <modules mpilib="mpt">
-      <command name="swap">cray-mpich cray-mpich/7.6.2</command>
+      <command name="swap">cray-mpich cray-mpich/7.7.3</command>
     </modules>
 
     <modules mpilib="impi">
