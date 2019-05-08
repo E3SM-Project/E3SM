@@ -452,7 +452,7 @@ class EnvMachSpecific(EnvBase):
 
         # if there are no special arguments required for mpi-serial it need not have an entry in config_machines.xml
         if "mpilib" in attribs and attribs["mpilib"] == "mpi-serial" and best_match is None:
-            return "",[]
+            return "",[],None,None
 
         expect(best_match is not None or default_match is not None,
                "Could not find a matching MPI for attributes: {}".format(attribs))
