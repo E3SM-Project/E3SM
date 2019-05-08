@@ -527,6 +527,9 @@ end subroutine clubb_init_cnst
     ! The similar name to clubb_history is unfortunate...
     logical :: history_amwg, history_clubb
 
+    ! Flag for clubb warm initialization
+    logical :: do_clubb_int
+
     character(len=128) :: errstring             ! error status for CLUBB init
 
     integer :: err_code, iunit                  ! Code for when CLUBB fails
@@ -554,6 +557,7 @@ end subroutine clubb_init_cnst
     call phys_getopts(prog_modal_aero_out=prog_modal_aero, &
                       history_amwg_out=history_amwg, &
                       history_clubb_out=history_clubb,&
+                       do_clubb_int_out=do_clubb_int,&
                       liqcf_fix_out   = liqcf_fix)
 
     !  Select variables to apply tendencies back to CAM
@@ -852,23 +856,30 @@ end subroutine clubb_init_cnst
     !  Is this the first time step?  If so then initialize CLUBB variables as follows
     if (is_first_step()) then
 
-       call pbuf_set_field(pbuf2d, wp2_idx,     w_tol_sqd)
-       call pbuf_set_field(pbuf2d, wp3_idx,     0.0_r8)
-       call pbuf_set_field(pbuf2d, wpthlp_idx,  0.0_r8)
-       call pbuf_set_field(pbuf2d, wprtp_idx,   0.0_r8)
-       call pbuf_set_field(pbuf2d, rtpthlp_idx, 0.0_r8)
-       call pbuf_set_field(pbuf2d, rtp2_idx,    rt_tol**2)
-       call pbuf_set_field(pbuf2d, thlp2_idx,   thl_tol**2)
-       call pbuf_set_field(pbuf2d, up2_idx,     w_tol_sqd)
-       call pbuf_set_field(pbuf2d, vp2_idx,     w_tol_sqd)
+       if (do_clubb_int) then
+        ! other variables will be read from initial files 
+        ! the remindar variables are output by CLUBB  
+        call pbuf_set_field(pbuf2d, tke_idx,     0.0_r8)
+        call pbuf_set_field(pbuf2d, kvh_idx,     0.0_r8)
+        call pbuf_set_field(pbuf2d, fice_idx,    0.0_r8)
+       else
+         call pbuf_set_field(pbuf2d, wp2_idx,     w_tol_sqd)
+         call pbuf_set_field(pbuf2d, wp3_idx,     0.0_r8)
+         call pbuf_set_field(pbuf2d, wpthlp_idx,  0.0_r8)
+         call pbuf_set_field(pbuf2d, wprtp_idx,   0.0_r8)
+         call pbuf_set_field(pbuf2d, rtpthlp_idx, 0.0_r8)
+         call pbuf_set_field(pbuf2d, rtp2_idx,    rt_tol**2)
+         call pbuf_set_field(pbuf2d, thlp2_idx,   thl_tol**2)
+         call pbuf_set_field(pbuf2d, up2_idx,     w_tol_sqd)
+         call pbuf_set_field(pbuf2d, vp2_idx,     w_tol_sqd)
       
-       call pbuf_set_field(pbuf2d, upwp_idx,    0.0_r8)
-       call pbuf_set_field(pbuf2d, vpwp_idx,    0.0_r8)
-       call pbuf_set_field(pbuf2d, tke_idx,     0.0_r8)
-       call pbuf_set_field(pbuf2d, kvh_idx,     0.0_r8)
-       call pbuf_set_field(pbuf2d, fice_idx,    0.0_r8)
-       call pbuf_set_field(pbuf2d, radf_idx,    0.0_r8)
-
+         call pbuf_set_field(pbuf2d, upwp_idx,    0.0_r8)
+         call pbuf_set_field(pbuf2d, vpwp_idx,    0.0_r8)
+         call pbuf_set_field(pbuf2d, tke_idx,     0.0_r8)
+         call pbuf_set_field(pbuf2d, kvh_idx,     0.0_r8)
+         call pbuf_set_field(pbuf2d, fice_idx,    0.0_r8)
+         call pbuf_set_field(pbuf2d, radf_idx,    0.0_r8)
+       end if 
     endif
    
     ! --------------- !
