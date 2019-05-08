@@ -157,17 +157,15 @@ void thomas_solve (const TeamMember& team,
   assert(X.extent_int(0) == nrow);
   assert(dl.extent_int(0) == nrow);
   assert(du.extent_int(0) == nrow);
-  const auto f = [&] (const int& j) {
-    const auto g = [&] () {
-      for (int i = 1; i < nrow; ++i)
-        X(i,j) -= dl(i) * X(i-1,j);
-      X(nrow-1,j) /= d(nrow-1);
-      for (int i = nrow-1; i > 0; --i)
-        X(i-1,j) = (X(i-1,j) - du(i-1) * X(i,j)) / d(i-1);
-    };
-    Kokkos::single(Kokkos::PerThread(team), g);
-  };
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nrhs), f);
+  const int tid = impl::get_thread_id_within_team(team);
+  const int nthr = impl::get_team_nthr(team);
+  for (int j = tid; j < nrhs; j += nthr) {
+    for (int i = 1; i < nrow; ++i)
+      X(i,j) -= dl(i) * X(i-1,j);
+    X(nrow-1,j) /= d(nrow-1);
+    for (int i = nrow-1; i > 0; --i)
+      X(i-1,j) = (X(i-1,j) - du(i-1) * X(i,j)) / d(i-1);
+  }
 }
 
 template <typename DT, typename XT>

@@ -50,6 +50,26 @@ index_and_shift (const Array1& a, const IdxPack& i0, Pack<typename Array1::non_c
 // Turn a View of Packs into a View of scalars.
 // Example: const auto b = scalarize(a);
 
+// 4d
+template <typename T, typename ...Parms, int pack_size> KOKKOS_FORCEINLINE_FUNCTION
+ko::Unmanaged<Kokkos::View<T****, Parms...> >
+scalarize (const Kokkos::View<Pack<T, pack_size>****, Parms...>& vp) {
+  return ko::Unmanaged<Kokkos::View<T****, Parms...> >(
+    reinterpret_cast<T*>(vp.data()),
+    vp.extent_int(0), vp.extent_int(1), vp.extent_int(2),
+    pack_size * vp.extent_int(3));
+}
+
+// 4d const
+template <typename T, typename ...Parms, int pack_size> KOKKOS_FORCEINLINE_FUNCTION
+ko::Unmanaged<Kokkos::View<const T****, Parms...> >
+scalarize (const Kokkos::View<const Pack<T, pack_size>****, Parms...>& vp) {
+  return ko::Unmanaged<Kokkos::View<const T****, Parms...> >(
+    reinterpret_cast<const T*>(vp.data()),
+    vp.extent_int(0), vp.extent_int(1), vp.extent_int(2),
+    pack_size * vp.extent_int(3));
+}
+
 // 3d
 template <typename T, typename ...Parms, int pack_size> KOKKOS_FORCEINLINE_FUNCTION
 ko::Unmanaged<Kokkos::View<T***, Parms...> >
