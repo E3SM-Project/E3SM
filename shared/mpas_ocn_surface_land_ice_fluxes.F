@@ -731,10 +731,7 @@ contains
     outOceanHeatFlux, &
     outIceHeatFlux, &
     nCells, &
-    err, &
-    iceTemperature, &
-    iceTemperatureDistance, &
-    kappa_land_ice) !{{{
+    err) !{{{
 
     !-----------------------------------------------------------------
     !
@@ -753,13 +750,6 @@ contains
       interfacePressure            !< Input: pressure at the ice-ocean interface
 
     integer, intent(in) :: nCells !< Input: number of cells in each array
-
-    real (kind=RKIND), dimension(:), intent(in), optional:: &
-      iceTemperature, &            !< Input: ice temperature in bottom layer
-      iceTemperatureDistance       !< Input: distance to ice temperature from ice-ocean interface
-
-    real (kind=RKIND), intent(in), optional:: &
-      kappa_land_ice     !< Input: the diffusivity of heat in land ice
 
     !-----------------------------------------------------------------
     !
@@ -782,8 +772,8 @@ contains
     !
     !-----------------------------------------------------------------
 
-    real (kind=RKIND) :: T0, transferVelocityRatio, Tlatent, nu, a, b, c, eta, &
-                         iceHeatFluxCoeff, iceDeltaT, dTf_dS
+    real (kind=RKIND) :: T0, transferVelocityRatio, Tlatent, a, b, c, eta, &
+                         dTf_dS
     integer :: iCell
 
     logical :: coupled
@@ -791,22 +781,12 @@ contains
     real (kind=RKIND), parameter :: minInterfaceSalinity = 0.001_RKIND
 
     err = 0
-    coupled = present(iceTemperature) .and. present(iceTemperatureDistance) &
-            .and. present(kappa_land_ice)
     Tlatent = latent_heat_fusion_mks/cp_sw
 
-    !$omp do schedule(runtime) private(iceHeatFluxCoeff, nu, iceDeltaT, T0, transferVelocityRatio, a, b, c)
+    !$omp do schedule(runtime) private(T0, transferVelocityRatio, a, b, c)
     do iCell = 1, nCells
       if (mask(iCell) == 0) cycle
 
-      if(coupled) then
-        iceHeatFluxCoeff = rho_land_ice*cp_land_ice*kappa_land_ice/iceTemperatureDistance(iCell)
-        nu = iceHeatFluxCoeff/(rho_sw*cp_sw*oceanHeatTransferVelocity(iCell))
-        iceDeltaT = T0 - iceTemperature(iCell)
-      else
-        nu = 0.0_RKIND
-        iceDeltaT = 0.0_RKIND
-      end if
       T0 = ocn_freezing_temperature(salinity=0.0_RKIND, pressure=interfacePressure(iCell), &
                                     inLandIceCavity=.true.)
       dTf_dS = ocn_freezing_temperature_salinity_deriv(salinity=0.0_RKIND, pressure=interfacePressure(iCell), &
@@ -814,8 +794,8 @@ contains
 
       transferVelocityRatio = oceanSaltTransferVelocity(iCell)/oceanHeatTransferVelocity(iCell)
 
-      a = -dTf_dS*(1.0_RKIND + nu)
-      b = transferVelocityRatio*Tlatent - nu*iceDeltaT + oceanTemperature(iCell) - T0
+      a = -dTf_dS
+      b = transferVelocityRatio*Tlatent + oceanTemperature(iCell) - T0
       c = -transferVelocityRatio*Tlatent*max(oceanSalinity(iCell), 0.0_RKIND)
 
       ! a is non-negative; c is strictly non-positive so we never get imaginary roots.
@@ -845,10 +825,6 @@ contains
       !      the reference point in the ice (either the surface or the middle of the bottom layer)
       !      and the interface
       outIceHeatFlux(iCell) = -cp_land_ice*outFreshwaterFlux(iCell)*outInterfaceTemperature(iCell)
-      if(coupled) then
-        outIceHeatFlux(iCell) = outIceHeatFlux(iCell) &
-          - iceHeatFluxCoeff*(iceTemperature(iCell) - outInterfaceTemperature(iCell))
-      end if
     end do
     !$omp end do
 
