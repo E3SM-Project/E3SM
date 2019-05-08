@@ -353,6 +353,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
     use comsrf,              only: landm, sgh, sgh30
     use cam_control_mod,     only: aqua_planet
     use phys_control,        only: phys_getopts
+    use constants_clubb,     only: w_tol_sqd, rt_tol, thl_tol
 
     type(cam_out_t),     intent(inout) :: cam_out(begchunk:endchunk)
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
@@ -370,6 +371,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
 
     ! Flag for clubb warm initialization
     logical :: do_clubb_int
+    logical :: all_clubb_int = .true. !default is true
 
     integer :: ierr
     character(len=8) :: dim1name, dim2name
@@ -656,7 +658,6 @@ subroutine phys_inidat( cam_out, pbuf2d )
     call phys_getopts(do_clubb_int_out=do_clubb_int)
 
     if (do_clubb_int) then 
-
       allocate(tptr3d(pcols,pverp,begchunk:endchunk))
       fieldname='UPWP'
       m = pbuf_get_index(fieldname,ierr)
@@ -668,7 +669,8 @@ subroutine phys_inidat( cam_out, pbuf2d )
                call pbuf_set_field(pbuf2d, m, tptr3d, (/1,1,n/),(/pcols,pver,1/))
             end do
          else
-            do_clubb_int = .false.
+            call pbuf_set_field(pbuf2d, m, 0._r8)
+            all_clubb_int = .false.
          end if
        end if
        deallocate(tptr3d)
@@ -684,7 +686,8 @@ subroutine phys_inidat( cam_out, pbuf2d )
                call pbuf_set_field(pbuf2d, m, tptr3d, (/1,1,n/),(/pcols,pver,1/))
             end do
          else
-            do_clubb_int = .false.
+            call pbuf_set_field(pbuf2d, m, 0._r8)
+            all_clubb_int = .false.
          end if
        end if
        deallocate(tptr3d)
@@ -700,7 +703,8 @@ subroutine phys_inidat( cam_out, pbuf2d )
                call pbuf_set_field(pbuf2d, m, tptr3d, (/1,1,n/),(/pcols,pver,1/))
             end do
          else
-            do_clubb_int = .false.
+            call pbuf_set_field(pbuf2d, m, w_tol_sqd)
+            all_clubb_int = .false.
          end if 
        end if
        deallocate(tptr3d)
@@ -716,7 +720,8 @@ subroutine phys_inidat( cam_out, pbuf2d )
                call pbuf_set_field(pbuf2d, m, tptr3d, (/1,1,n/),(/pcols,pver,1/))
             end do
          else
-            do_clubb_int = .false.
+            call pbuf_set_field(pbuf2d, m, 0._r8)
+            all_clubb_int = .false.
          end if
        end if
        deallocate(tptr3d)
@@ -732,7 +737,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
                call pbuf_set_field(pbuf2d, m, tptr3d, (/1,1,n/),(/pcols,pver,1/))
             end do
          else
-            do_clubb_int = .false.
+            all_clubb_int = .false.
          end if
        end if
        deallocate(tptr3d)
@@ -748,7 +753,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
                call pbuf_set_field(pbuf2d, m, tptr3d, (/1,1,n/),(/pcols,pver,1/))
             end do
          else
-            do_clubb_int = .false.
+            all_clubb_int = .false.
          end if
        end if
        deallocate(tptr3d)
@@ -764,7 +769,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
                call pbuf_set_field(pbuf2d, m, tptr3d, (/1,1,n/),(/pcols,pver,1/))
             end do
          else
-            do_clubb_int = .false.
+            all_clubb_int = .false.
          end if
        end if
        deallocate(tptr3d)
@@ -780,7 +785,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
                call pbuf_set_field(pbuf2d, m, tptr3d, (/1,1,n/),(/pcols,pver,1/))
             end do
          else
-            do_clubb_int = .false.
+            all_clubb_int = .false.
          end if
        end if
        deallocate(tptr3d)
@@ -796,7 +801,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
                call pbuf_set_field(pbuf2d, m, tptr3d, (/1,1,n/),(/pcols,pver,1/))
             end do
          else
-            do_clubb_int = .false.
+            all_clubb_int = .false.
          end if
        end if
        deallocate(tptr3d)
@@ -812,7 +817,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
                call pbuf_set_field(pbuf2d, m, tptr3d, (/1,1,n/),(/pcols,pver,1/))
             end do
          else
-            do_clubb_int = .false.
+            all_clubb_int = .false.
          end if
        end if
        deallocate(tptr3d)
@@ -828,7 +833,8 @@ subroutine phys_inidat( cam_out, pbuf2d )
                call pbuf_set_field(pbuf2d, m, tptr3d, (/1,1,n/),(/pcols,pver,1/))
             end do
          else
-            do_clubb_int = .false.
+            call pbuf_set_field(pbuf2d, m, w_tol_sqd)
+            all_clubb_int = .false.
          end if
        end if
        deallocate(tptr3d)
@@ -842,10 +848,52 @@ subroutine phys_inidat( cam_out, pbuf2d )
          if(found) then
             call pbuf_set_field(pbuf2d, m, tptr3d)
          else
-            do_clubb_int = .false.
+            call pbuf_set_field(pbuf2d, m, 0._r8)
+            all_clubb_int = .false.
          end if
        end if
        deallocate(tptr3d)
+
+      !!warm initialization needs to be done for all of required variables!!!!!!!!!
+      !!if any variables is missing, then set back to CLUBB default initialization!
+      if( .not. all_clubb_int ) then
+       fieldname='UP2_nadv'
+       m = pbuf_get_index(fieldname,ierr)
+       call pbuf_set_field(pbuf2d, m,    w_tol_sqd)
+       fieldname='VP2_nadv'
+       m = pbuf_get_index(fieldname,ierr)
+       call pbuf_set_field(pbuf2d, m,    w_tol_sqd)
+       fieldname='WP2_nadv'
+       m = pbuf_get_index(fieldname,ierr)
+       call pbuf_set_field(pbuf2d, m,    w_tol_sqd)
+       fieldname='RTP2_nadv'
+       m = pbuf_get_index(fieldname,ierr)
+       call pbuf_set_field(pbuf2d, m,    rt_tol**2)
+       fieldname='THLP2_nadv'
+       m = pbuf_get_index(fieldname,ierr)
+       call pbuf_set_field(pbuf2d, m,    thl_tol**2)
+       fieldname='WP3_nadv'
+       m = pbuf_get_index(fieldname,ierr)
+       call pbuf_set_field(pbuf2d, m,    0.0_r8)
+       fieldname='WPTHLP_nadv'
+       m = pbuf_get_index(fieldname,ierr)
+       call pbuf_set_field(pbuf2d, m,    0.0_r8)
+       fieldname='WPRTP_nadv'
+       m = pbuf_get_index(fieldname,ierr)
+       call pbuf_set_field(pbuf2d, m,    0.0_r8)
+       fieldname='RTPTHLP_nadv'
+       m = pbuf_get_index(fieldname,ierr)
+       call pbuf_set_field(pbuf2d, m,    0.0_r8)
+       fieldname='UPWP'
+       m = pbuf_get_index(fieldname,ierr)
+       call pbuf_set_field(pbuf2d, m,    0.0_r8)
+       fieldname='VPWP'
+       m = pbuf_get_index(fieldname,ierr)
+       call pbuf_set_field(pbuf2d, m,    0.0_r8)
+       fieldname='RAD_CLUBB'
+       m = pbuf_get_index(fieldname,ierr)
+       call pbuf_set_field(pbuf2d, m,    0.0_r8)
+      end if 
 
     end if 
 
