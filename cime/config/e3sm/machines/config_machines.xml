@@ -2366,6 +2366,82 @@
 	 </environment_variables>
 </machine>
 
+<machine MACH="badger">
+	<DESC>LANL Linux Cluster, 36 pes/node, batch system slurm</DESC>
+        <NODENAME_REGEX>gr-fe.*.lanl.gov</NODENAME_REGEX>
+        <TESTS>e3sm_developer</TESTS>
+        <COMPILERS>gnu,intel</COMPILERS>
+        <MPILIBS>mvapich,openmpi</MPILIBS>
+	<OS>LINUX</OS>
+	<RUNDIR>/lustre/scratch3/turquoise/$ENV{USER}/ACME/cases/$CASE/run</RUNDIR>
+	<EXEROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/cases/$CASE/bld</EXEROOT>
+	<DIN_LOC_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data</DIN_LOC_ROOT>
+	<DIN_LOC_ROOT_CLMFORC>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+	<DOUT_S_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/archive/$CASE</DOUT_S_ROOT>
+	<DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
+	<BASELINE_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines/$COMPILER</BASELINE_ROOT>
+	<CIME_OUTPUT_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/scratch</CIME_OUTPUT_ROOT>
+	<CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
+	<module_system type="module">
+		<init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
+		<init_path lang="python">/usr/share/Modules/init/python.py</init_path>
+		<init_path lang="csh">/etc/profile.d/z00_lmod.csh</init_path>
+		<cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
+		<cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+		<cmd_path lang="sh">module</cmd_path>
+		<cmd_path lang="csh">module</cmd_path>
+
+		<modules>
+			<command name="purge"/>
+			<command name="use">/usr/projects/climate/SHARED_CLIMATE/modulefiles/spack-lmod/linux-rhel7-x86_64</command>
+			<command name="load">python/2.7-anaconda-4.1.1</command>
+		</modules>
+
+		<modules compiler="gnu">
+			<command name="load">gcc/6.4.0</command>
+		</modules>
+		<modules mpilib="openmpi">
+			<command name="load">openmpi/2.1.2</command>
+		</modules>
+		<modules>
+			<command name="load">openmpi/2.1.2-bheb4xe/gcc/6.4.0/netcdf/4.4.1.1-zei2j6r</command>
+			<command name="load">openmpi/2.1.2-bheb4xe/gcc/6.4.0/netcdf-fortran/4.4.4-v6vwmxs</command>
+		</modules>
+		<modules>
+			<command name="load">openmpi/2.1.2-bheb4xe/gcc/6.4.0/parallel-netcdf/1.8.0-2qwcdbn</command>
+		</modules>
+	</module_system>
+	<environment_variables>
+		<env name="PNETCDF_HINTS">romio_ds_write=disable;romio_ds_read=disable;romio_cb_write=enable;romio_cb_read=enable</env>
+		<env name="NETCDF">/usr/projects/climate/SHARED_CLIMATE/software/badger/spack-install/linux-rhel7-x86_64/gcc-6.4.0/netcdf-fortran-4.4.4-v6vwmxsv33t7pmulojlijwdbikrvmwkc</env>
+		<env name="PNETCDF">/usr/projects/climate/SHARED_CLIMATE/software/badger/spack-install/linux-rhel7-x86_64/gcc-6.4.0/parallel-netcdf-1.8.0-2qwcdbnjcq5pnkoqpx2s7um3s7ffo3xd</env>
+	</environment_variables>
+
+	<BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+	<mpirun mpilib="default">
+		<executable>mpirun</executable>
+		<arguments>
+			<arg name="num_tasks"> -n {{ total_tasks }}</arg>
+		</arguments>
+	</mpirun>
+	<mpirun mpilib="openmpi">
+		<executable>mpirun</executable>
+		<arguments>
+			<arg name="num_tasks"> -n {{ total_tasks }}</arg>
+		</arguments>
+	</mpirun>
+	<mpirun mpilib="mpi-serial">
+		<executable></executable>
+	</mpirun>
+	<GMAKE_J>4</GMAKE_J>
+	<MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
+	<MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
+	<PROJECT>e3sm</PROJECT>
+    	<PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    	<SUPPORTED_BY>luke.vanroekel @ gmail.com</SUPPORTED_BY>
+</machine>
+
+
 <machine MACH="grizzly">
 	<DESC>LANL Linux Cluster, 36 pes/node, batch system slurm</DESC>
         <NODENAME_REGEX>gr-fe.*.lanl.gov</NODENAME_REGEX>
