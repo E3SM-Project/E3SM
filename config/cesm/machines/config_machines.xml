@@ -2093,7 +2093,7 @@ This allows using a different mpirun command to launch unit tests
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/work/02503/edwardsj/CESM/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/work/02503/edwardsj/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$WORK/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>$ENV{WORK}/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/work/02503/edwardsj/CESM/cesm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/work/02503/edwardsj/CESM/cime/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
@@ -2151,7 +2151,7 @@ This allows using a different mpirun command to launch unit tests
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/work/02503/edwardsj/CESM/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/work/02503/edwardsj/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$WORK/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>$ENV{WORK}/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/work/02503/edwardsj/CESM/cesm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/work/02503/edwardsj/CESM/cime/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
