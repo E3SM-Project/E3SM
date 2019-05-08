@@ -46,6 +46,7 @@ parser.add_option("--with_critical_passages", action="store_true",
 parser.add_option("-p", "--geom_feat_path", type="string", dest="path",
                   default="geometric_features",
                   help="Path to the geometric_features repository.")
+parser.add_option("--preserve_floodplain", action="store_true", dest="preserve_floodplain", default=False)
 options, args = parser.parse_args()
 
 path = options.path
@@ -184,8 +185,12 @@ if options.with_critical_passages:
     # Run command is:
     # ./MpasCellCuller.x  base_mesh.nc culled_mesh_preliminary.nc -m land_mask_final.nc
     # -p critical_passages_mask.nc
-    args = ['./MpasCellCuller.x', 'base_mesh.nc', 'culled_mesh_preliminary.nc',
-            '-m', 'land_mask_final.nc', '-p', 'critical_passages_mask.nc']
+    if options.preserve_floodplain:
+      args = ['./MpasCellCuller.x', 'base_mesh.nc', 'culled_mesh_preliminary.nc',
+              '-m', 'land_mask_final.nc', '-p', 'critical_passages_mask.nc', '-p', 'base_mesh.nc']
+    else:
+      args = ['./MpasCellCuller.x', 'base_mesh.nc', 'culled_mesh_preliminary.nc',
+              '-m', 'land_mask_final.nc', '-p', 'critical_passages_mask.nc']
     print("running {}".format(' '.join(args)))
 
     subprocess.check_call(args, env=os.environ.copy())
@@ -194,8 +199,12 @@ else:
     # cull the mesh based on the land mask
     # Run command is:
     # ./MpasCellCuller.x  base_mesh.nc culled_mesh_preliminary.nc -m land_mask_final.nc
-    args = ['./MpasCellCuller.x', 'base_mesh.nc', 'culled_mesh_preliminary.nc',
-            '-m', 'land_mask_final.nc']
+    if options.preserve_floodplain:
+      args = ['./MpasCellCuller.x', 'base_mesh.nc', 'culled_mesh_preliminary.nc',
+              '-m', 'land_mask_final.nc', '-p', 'base_mesh.nc']
+    else:
+      args = ['./MpasCellCuller.x', 'base_mesh.nc', 'culled_mesh_preliminary.nc',
+              '-m', 'land_mask_final.nc']
     print("running {}".format(' '.join(args)))
 
     subprocess.check_call(args, env=os.environ.copy())
