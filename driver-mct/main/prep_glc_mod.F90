@@ -869,7 +869,6 @@ contains
        index_x2g_Fogx_qicehi = mct_avect_indexra(x2g_gx,'Fogx_qicehi',perrwith='quiet')
 
        gsize = mct_aVect_lsize(g2x_gx)
-!JW       write(logunit,*) 'gsize=',gsize
 
        do n=1,gsize
           !Extract glc and ocn-sourced coupler fields used as input to compute_melt_fluxes to local arrays...
@@ -1560,9 +1559,10 @@ contains
     Tlatent = SHR_CONST_LATICE/SHR_CONST_CPSW
     do iCell = 1, nCells
       if (iceFloatingMask(iCell) == 0) cycle ! Only calculate on floating cells
+
       if (oceanHeatTransferVelocity(iCell) == 0.0_r8) then
-         write(*,*) 'JW - somethings messed up'
-         cycle 
+         write(logunit,*) 'compute_melt_fluxes ERROR: oceanHeatTransferVelocity value of 0 causes divide by 0 at index ', iCell
+         call shr_sys_abort('compute_melt_fluxes ERROR: oceanHeatTransferVelocity value of 0 causes divide by 0')
       end if
 
       iceHeatFluxCoeff = SHR_CONST_RHOICE*SHR_CONST_CPICE*SHR_CONST_KAPPA_LAND_ICE/iceTemperatureDistance(iCell)
