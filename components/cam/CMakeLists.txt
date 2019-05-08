@@ -22,7 +22,7 @@ project(E3SM C CXX Fortran)
 set(CMAKE_MODULE_PATH ${CIMEROOT}/src/CMake)
 
 # Load dependency search path.
-file(STRINGS Filepath FILEPATH_DIRS)
+file(STRINGS ${CMAKE_BINARY_DIR}/Filepath FILEPATH_DIRS)
 string(REPLACE ";" " " DIRS "${FILEPATH_DIRS}")
 set(DIRS ". ${DIRS}")
 
@@ -86,7 +86,7 @@ endif()
 
 set(CPPDEFS ${USER_CPPDEFS} "-D${OS}")
 
-include(${CASEROOT}/Macros)
+include(${CASEROOT}/Macros.cmake)
 
 # SLIBS comes from Macros, so this append must come after Macros are included
 if (USE_FMS)
@@ -314,7 +314,7 @@ if (PIO_VERSION STREQUAL 2)
   set(EXTRA_PIO_CPPDEFS "-DUSE_MPI_ISEND_FOR_FC")
 else()
   set(EXTRA_PIO_CPPDEFS "-D_NO_MPI_RSEND")
-endif
+endif()
 
 if (LIB_PNETCDF)
   set(CPPDEFS "${CPPDEFS} -D_PNETCDF")
@@ -582,8 +582,8 @@ if (USE_CXX)
 
   if (CXX_LDFLAGS)
     set(LDFLAGS "${SLIBS} ${CXX_LDFLAGS}")
-  endif
-endif
+  endif()
+endif()
 
 # Remove arch flag if it exists
 string(REGEX REPLACE "-arch[^ ]+" "" F90_LDFLAGS "${LDFLAGS}")
@@ -661,7 +661,7 @@ set(CMAKE_EXE_LINKER_FLAGS ${LDFLAGS})
 
 # Get src files
 execute_process(COMMAND ${CASETOOLS}/mkSrcfiles)
-file(STRINGS Srcfiles SOURCES)
+file(STRINGS ${CMAKE_BINARY_DIR}/Srcfiles SOURCES)
 # jgf get genf90 sources
 
 foreach(ITEM ${CPP_DIRS})
@@ -719,7 +719,7 @@ if (NOT ULIBDEP)
         set(ULIBDEP "${ULIBDEP} ${CISM_LIBDIR}/libglimmercismcpp.a")
       endif()
     endif()
-    if (OCN_SUBMODEL STRQUAL "moby")
+    if (OCN_SUBMODEL STREQUAL "moby")
       set(ULIBDEP "${ULIBDEP} ${LIBROOT}/libmoby.a")
     endif()
   endif()
