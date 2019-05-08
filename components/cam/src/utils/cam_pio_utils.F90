@@ -1076,8 +1076,8 @@ contains
   end subroutine clean_iodesc_list
 
   subroutine cam_pio_createfile(file, fname, mode_in)
-    use pio,            only: pio_createfile, file_desc_t, &
-                              pio_noerr, pio_iotask_rank
+    use pio,            only: pio_createfile, file_desc_t, pio_iotask_rank, &
+                              PIO_NOERR, PIO_CLOBBER
     use cam_abortutils, only: endrun
     use cam_instance,   only: atm_id
     use shr_pio_mod,    only: shr_pio_getioformat
@@ -1098,6 +1098,9 @@ contains
     else
       mode = shr_pio_getioformat(atm_id)
     end if
+
+    ! Make sure the above set a mode properly, default to PIO_CLOBBER if not
+    mode = ior(mode, PIO_CLOBBER)
 
     ! Create new file
     ierr = pio_createfile(pio_subsystem, file, pio_iotype, fname, mode)
