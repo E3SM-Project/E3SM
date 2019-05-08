@@ -118,6 +118,8 @@ module seq_rest_mod
   logical     :: wav_prognostic         ! .true.  => wav comp expects input
   logical     :: esp_prognostic         ! .true.  => esp comp expects input
 
+  logical     :: ocn_c2_glcshelf        ! .true.  => ocn to glcshelf coupling on
+
   !--- temporary pointers ---
   type(mct_gsMap), pointer :: gsmap
   type(mct_aVect), pointer :: x2oacc_ox(:)
@@ -135,7 +137,7 @@ module seq_rest_mod
 contains
   !===============================================================================
 
-  subroutine seq_rest_read(rest_file, infodata, ocn_c2_glcshelf, &
+  subroutine seq_rest_read(rest_file, infodata, &
        atm, lnd, ice, ocn, rof, glc, wav, esp,  &
        fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
        fractions_rx, fractions_gx, fractions_wx)
@@ -144,7 +146,6 @@ contains
 
     character(*)           , intent(in) :: rest_file  ! restart file path/name
     type(seq_infodata_type), intent(in) :: infodata
-    logical, intent(in)                 :: ocn_c2_glcshelf ! .true.  => ocn to glc coupling on
     type (component_type) , intent(inout) :: atm(:)
     type (component_type) , intent(inout) :: lnd(:)
     type (component_type) , intent(inout) :: ice(:)
@@ -198,7 +199,8 @@ contains
          ocnrof_prognostic=ocnrof_prognostic,    &
          glc_prognostic=glc_prognostic,      &
          wav_prognostic=wav_prognostic,      &
-         esp_prognostic=esp_prognostic)
+         esp_prognostic=esp_prognostic,      &
+         ocn_c2_glcshelf=ocn_c2_glcshelf)
 
     if (iamin_CPLID) then
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
@@ -299,7 +301,7 @@ contains
 
   !===============================================================================
 
-  subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, ocn_c2_glcshelf, &
+  subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
        atm, lnd, ice, ocn, rof, glc, wav, esp,                 &
        fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
        fractions_rx, fractions_gx, fractions_wx, tag, rest_file)
@@ -309,7 +311,6 @@ contains
     type(ESMF_Clock)       , intent(in)    :: EClock_d      ! driver clock
     type(seq_timemgr_type) , intent(inout) :: seq_SyncClock ! contains ptr to driver clock
     type(seq_infodata_type), intent(in)    :: infodata
-    logical, intent(in)                    :: ocn_c2_glcshelf ! .true.  => ocn to glc coupling on
     type (component_type)       , intent(inout) :: atm(:)
     type (component_type)  , intent(inout) :: lnd(:)
     type (component_type)  , intent(inout) :: ice(:)
@@ -381,6 +382,7 @@ contains
          glc_prognostic=glc_prognostic,      &
          wav_prognostic=wav_prognostic,      &
          esp_prognostic=esp_prognostic,      &
+         ocn_c2_glcshelf=ocn_c2_glcshelf,    &
          case_name=case_name,                &
          model_doi_url=model_doi_url)
 

@@ -1540,10 +1540,8 @@ contains
     if (glc_present) then
        if (glclnd_present .and. lnd_prognostic) glc_c2_lnd = .true.
        if (glcocn_present .and. ocn_prognostic) glc_c2_ocn = .true.
-       if (trim(cime_model) == 'e3sm') then
-          ! Only E3SM is utilizing the iceshelf/ocean coupling
-          if (glcocn_present .and. ocn_prognostic) glcshelf_c2_ocn = .true.
-       endif
+       ! For now, glcshelf->ocn only activated if the ocean has activated ocn->glcshelf
+       if (ocn_c2_glcshelf .and. glcocn_present .and. ocn_prognostic) glcshelf_c2_ocn = .true.
        if (glcice_present .and. iceberg_prognostic) glc_c2_ice = .true.
        if (glcocn_present .and. ice_prognostic) glcshelf_c2_ice = .true.
     endif
@@ -1693,10 +1691,11 @@ contains
     if ((glclnd_present .or. glcocn_present .or. glcice_present) .and. .not.glc_present) then
        call shr_sys_abort(subname//' ERROR: if glcxxx present must also have glc present')
     endif
-!JW    if ((ocn_c2_glcshelf .and. .not. glcshelf_c2_ocn) .or. (glcshelf_c2_ocn .and. .not. ocn_c2_glcshelf)) then
-!JW       call shr_sys_abort(subname//' ERROR: if glc_c2_ocn must also have ocn_c2_glc and vice versa. '//&
-!JW            'Boundary layer fluxes calculated in coupler require input from both components.')
-!JW    endif
+    if ((ocn_c2_glcshelf .and. .not. glcshelf_c2_ocn) .or. (glcshelf_c2_ocn .and. .not. ocn_c2_glcshelf)) then
+       ! Current logic will not allow this to be true, but future changes could make it so, which may be nonsensical
+       call shr_sys_abort(subname//' ERROR: if glc_c2_ocn must also have ocn_c2_glc and vice versa. '//&
+            'Boundary layer fluxes calculated in coupler require input from both components.')
+    endif
     if (rofice_present .and. .not.rof_present) then
        call shr_sys_abort(subname//' ERROR: if rofice present must also have rof present')
     endif
@@ -2124,7 +2123,7 @@ contains
 
     call seq_diag_zero_mct(mode='all')
     if (read_restart .and. iamin_CPLID) then
-       call seq_rest_read(rest_file, infodata, ocn_c2_glcshelf, &
+       call seq_rest_read(rest_file, infodata, &
             atm, lnd, ice, ocn, rof, glc, wav, esp, &
             fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
             fractions_rx, fractions_gx, fractions_wx)
@@ -3017,7 +3016,7 @@ contains
              call shr_sys_flush(logunit)
           end if
           if (iamin_CPLID) then
-             call seq_rest_read(drv_resume, infodata, ocn_c2_glcshelf,              &
+             call seq_rest_read(drv_resume, infodata,                          &
                   atm, lnd, ice, ocn, rof, glc, wav, esp,                      &
                   fractions_ax, fractions_lx, fractions_ix, fractions_ox,      &
                   fractions_rx, fractions_gx, fractions_wx)
@@ -4305,7 +4304,7 @@ contains
              call shr_sys_flush(logunit)
           endif
 
-          call seq_rest_write(EClock_d, seq_SyncClock, infodata, ocn_c2_glcshelf, &
+          call seq_rest_write(EClock_d, seq_SyncClock, infodata,       &
                atm, lnd, ice, ocn, rof, glc, wav, esp,                 &
                fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
                fractions_rx, fractions_gx, fractions_wx,               &
