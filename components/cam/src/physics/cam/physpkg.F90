@@ -669,7 +669,6 @@ subroutine phys_inidat( cam_out, pbuf2d )
                call pbuf_set_field(pbuf2d, m, tptr3d, (/1,1,n/),(/pcols,pver,1/))
             end do
          else
-            call pbuf_set_field(pbuf2d, m, 0._r8)
             all_clubb_int = .false.
          end if
        end if
@@ -686,7 +685,6 @@ subroutine phys_inidat( cam_out, pbuf2d )
                call pbuf_set_field(pbuf2d, m, tptr3d, (/1,1,n/),(/pcols,pver,1/))
             end do
          else
-            call pbuf_set_field(pbuf2d, m, 0._r8)
             all_clubb_int = .false.
          end if
        end if
@@ -703,7 +701,6 @@ subroutine phys_inidat( cam_out, pbuf2d )
                call pbuf_set_field(pbuf2d, m, tptr3d, (/1,1,n/),(/pcols,pver,1/))
             end do
          else
-            call pbuf_set_field(pbuf2d, m, w_tol_sqd)
             all_clubb_int = .false.
          end if 
        end if
@@ -720,7 +717,6 @@ subroutine phys_inidat( cam_out, pbuf2d )
                call pbuf_set_field(pbuf2d, m, tptr3d, (/1,1,n/),(/pcols,pver,1/))
             end do
          else
-            call pbuf_set_field(pbuf2d, m, 0._r8)
             all_clubb_int = .false.
          end if
        end if
@@ -833,7 +829,6 @@ subroutine phys_inidat( cam_out, pbuf2d )
                call pbuf_set_field(pbuf2d, m, tptr3d, (/1,1,n/),(/pcols,pver,1/))
             end do
          else
-            call pbuf_set_field(pbuf2d, m, w_tol_sqd)
             all_clubb_int = .false.
          end if
        end if
@@ -848,7 +843,6 @@ subroutine phys_inidat( cam_out, pbuf2d )
          if(found) then
             call pbuf_set_field(pbuf2d, m, tptr3d)
          else
-            call pbuf_set_field(pbuf2d, m, 0._r8)
             all_clubb_int = .false.
          end if
        end if
