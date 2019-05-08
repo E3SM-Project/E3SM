@@ -465,6 +465,17 @@
     </desc>
   </entry>
 
+  <entry id="MEDIATOR_READ_RESTART">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      A setting of TRUE implies a continuation run for mediator only
+    </desc>
+  </entry>
+
   <entry id="RESUBMIT">
     <type>integer</type>
     <default_value>0</default_value>
