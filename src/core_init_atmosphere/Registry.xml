@@ -382,8 +382,10 @@
                         <var name="fVertex" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
                         <var name="ter" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
                         <var name="landmask" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
-                        <var name="ivgtyp" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
                         <var name="mminlu" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="isice_lu" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="iswater_lu" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="ivgtyp" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
                         <var name="isltyp" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
                         <var name="snoalb" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
                         <var name="soiltemp" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
@@ -478,8 +480,10 @@
                         <var name="fVertex"/>
                         <var name="ter"/>
                         <var name="landmask"/>
-                        <var name="ivgtyp"/>
                         <var name="mminlu"/>
+                        <var name="isice_lu"/>
+                        <var name="iswater_lu"/>
+                        <var name="ivgtyp"/>
                         <var name="isltyp"/>
                         <var name="snoalb"/>
                         <var name="soiltemp"/>
@@ -756,6 +760,12 @@
 
                 <var name="albedo12m" type="real" dimensions="nMonths nCells" units="unitless"
                      description="monthly-mean climatological surface albedo"/>
+
+                <var name="isice_lu" type="integer" dimensions="" units="unitless" default_value="24"
+                     description="Index category for snow/ice"/>
+
+                <var name="iswater_lu" type="integer" dimensions="" units="unitless" default_value="16"
+                     description="Index category for water"/>
 
                 <!-- GWDO fields -->
                 <var name="var2d" type="real" dimensions="nCells" units="m^{2}"
