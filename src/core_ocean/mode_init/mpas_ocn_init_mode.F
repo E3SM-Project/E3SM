@@ -44,6 +44,7 @@ module ocn_init_mode
    use ocn_init_lock_exchange
    use ocn_init_internal_waves
    use ocn_init_overflow
+   use ocn_init_dam_break
    use ocn_init_global_ocean
    use ocn_init_cvmix_WSwSBF
    use ocn_init_iso
@@ -55,6 +56,7 @@ module ocn_init_mode
    use ocn_init_sea_mount
    use ocn_init_isomip
    use ocn_init_isomip_plus
+   use ocn_init_tidal_boundary
 
    implicit none
    private
@@ -269,6 +271,7 @@ module ocn_init_mode
       call ocn_init_setup_lock_exchange(domain, ierr)
       call ocn_init_setup_internal_waves(domain, ierr)
       call ocn_init_setup_overflow(domain, ierr)
+      call ocn_init_setup_dam_break(domain, ierr)
       call ocn_init_setup_global_ocean(domain, ierr)
       call ocn_init_setup_cvmix_WSwSBF(domain, ierr)
       call ocn_init_setup_iso(domain, ierr)
@@ -280,6 +283,7 @@ module ocn_init_mode
       call ocn_init_setup_sea_mount(domain, ierr)
       call ocn_init_setup_isomip(domain, ierr)
       call ocn_init_setup_isomip_plus(domain, ierr)
+      call ocn_init_setup_tidal_boundary(domain, ierr)
       !call ocn_init_setup_TEMPLATE(domain, ierr)
 
       call mpas_log_write( ' Completed setup of: ' // trim(config_init_configuration))
@@ -361,6 +365,8 @@ module ocn_init_mode
       iErr = ior(iErr, err_tmp)
       call ocn_init_validate_overflow(configPool, packagePool, iocontext, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
+      call ocn_init_validate_dam_break(configPool, packagePool, iErr=err_tmp)
+      iErr = ior(iErr, err_tmp)
       call ocn_init_validate_global_ocean(configPool, packagePool, iocontext, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
       call ocn_init_validate_cvmix_WSwSBF(configPool, packagePool, iocontext, iErr=err_tmp)
@@ -382,6 +388,8 @@ module ocn_init_mode
       call ocn_init_validate_isomip(configPool, packagePool, iocontext, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
       call ocn_init_validate_isomip_plus(configPool, packagePool, iocontext, iErr=err_tmp)
+      iErr = ior(iErr, err_tmp)
+      call ocn_init_validate_tidal_boundary(configPool, packagePool, iocontext, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
       ! call ocn_init_validate_TEMPLATE(configPool, packagePool, iocontext, iErr=err_tmp)
       ! iErr = ior(iErr, err_tmp)

@@ -771,6 +771,32 @@
 					possible_values="Real Values greater than zero less than bottomDepth"
 		/>
 	</nml_record>
+	<nml_record name="tidal_forcing" mode="init;forward">
+		<nml_option name="config_use_tidal_forcing" type="logical" default_value=".false." units="unitless"
+					description="Controls if tidal forcing is used."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_tidal_forcing_tau" type="real" default_value="10000" units="s"
+					description="Controls time scale for relaxation of tidal forcing."
+					possible_values="Real non-zero value."
+		/>
+		<nml_option name="config_tidal_forcing_type" type="character" default_value="off" units="unitless"
+					description="Selects the mode in which tidal forcing is computed."
+					possible_values="'off','monochromatic'"
+		/>
+		<nml_option name="config_tidal_forcing_monochromatic_amp" type="real" default_value="2.0" units="m"
+					description="Value of amplitude of monochromatic tide."
+					possible_values="Any positive real number."
+		/>
+		<nml_option name="config_tidal_forcing_monochromatic_period" type="real" default_value="0.5" units="days"
+					description="Value of period of monochromatic tide."
+					possible_values="Any positive real number."
+		/>
+		<nml_option name="config_tidal_forcing_monochromatic_baseline" type="real" default_value="0.0" units="days"
+					description="Value of baseline monochromatic tide, e.g., sea level rise."
+					possible_values="Any positive real number."
+		/>
+	</nml_record>
 	<nml_record name="frazil_ice" mode="forward">
 		<nml_option name="config_use_frazil_ice_formation" type="logical" default_value=".false." units="unitless"
 					description="Controls if fluxes related to frazil ice process are computed."
@@ -914,6 +940,32 @@
 		<nml_option name="config_explicit_bottom_drag_coeff" type="real" default_value="1.0e-3" units="unitless"
 					description="Dimensionless bottom drag coefficient, $c_{drag}$."
 					possible_values="any positive real, typically 1.0e-3"
+		/>
+	</nml_record>
+	<nml_record name="wetting_drying" mode="init;forward">
+		<nml_option name="config_use_wetting_drying" type="logical" default_value=".false." units="unitless"
+					description="If true, use wetting and drying algorithm to allow for dry cells to config_min_cell_height."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_prevent_drying" type="logical" default_value=".false." units="unitless"
+					description="If true, prevent cells from drying past config_min_cell_height."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_drying_min_cell_height" type="real" default_value="1.0e-3" units="m"
+					description="Minimum allowable cell height under drying.  Cell to be kept wet to at least this thickness."
+					possible_values="any positive real, typically 1.0e-3"
+		/>
+		<nml_option name="config_zero_drying_velocity" type="logical" default_value=".false." units="unitless"
+					description="If true, just zero out velocity that is contributing to drying for cell that is drying.  This option can be used to estimate acceptable minimum thicknesses for a run."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_verify_not_dry" type="logical" default_value=".false." units="unitless"
+					description="If true, verify that cells are at least config_min_cell_height thick."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_thickness_flux_type" type="character" default_value="centered" units="unitless"
+					description="If 'upwind', use upwind to evaluate the edge-value for layerThickness, i.e., layerThicknessEdge.  The standard MPAS-O approach is 'centered'."
+					possible_values="'upwind', 'centered'"
 		/>
 	</nml_record>
 	<nml_record name="ocean_constants">
@@ -1252,6 +1304,7 @@
 		<package name="landIceFluxesPKG" description="This package includes varibles required for land ice thickness, momentum and tracer fluxes."/>
 		<package name="landIceCouplingPKG" description="This package includes varibles required for land ice coupling but not land ice fluxes in standalone mode."/>
 		<package name="frazilIce" description="This package includes variables required for frazil ice formation."/>
+		<package name="tidalForcing" description="This package includes variables required for tidal forcing on a boundary."/>
 		<package name="inSituEOS" description="This package includes variables required for to compute in situ equation of state derivatives, like thermal expansion and haline contraction."/>
 		<package name="forwardMode" description="This package controls variables that are intended to be used within the forward run mode of the ocean model."/>
 		<package name="analysisMode" description="This package controls variables that are intended to be used within the analysis run mode of the ocean model."/>
@@ -2329,6 +2382,10 @@
 			 description="horizontal velocity used to transport mass and tracers"
 			 packages="forwardMode;analysisMode"
 		/>
+		<var name="wettingVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+			 description="Velocity to prevent drying of cell."
+			 packages="forwardMode"
+		/>
 		<var name="vertAleTransportTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
 			 description="vertical transport through the layer interface at the top of the cell"
 			 packages="forwardMode;analysisMode"
@@ -3001,6 +3058,18 @@
 		<var name="avgEffectiveDensityInLandIce" type="real" dimensions="nCells Time" units="kg m^{-3}"
 			description="The time-averaged effective ocean density within ice shelves based on Archimedes' principle."
 			packages="landIceCouplingPKG"
+		/>
+
+		<!-- Input fields for forcing due to tides -->
+		<var name="tidalInputMask" type="real" dimensions="nCells" units="unitless"
+			 description="Input mask for application of tidal forcing where 1 is applied tidal forcing"
+			 packages="tidalForcing"
+		/>
+
+		<!-- Output fields for forcing due to tides -->
+		<var name="tidalLayerThicknessTendency" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="layer thickness tendency due to tidal forcing"
+			 packages="tidalForcing"
 		/>
 
 		<!-- Input fields for forcing due to frazil ice -->
