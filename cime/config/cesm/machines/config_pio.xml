@@ -25,6 +25,13 @@
     </values>
   </entry>
 
+  <entry id="PIO_VERSION">
+    <values>
+      <value mach="stampede2-skx">1</value>
+    </values>
+  </entry>
+
+
   <!--- uncomment and fill in relevant sections
   <entry id="PIO_ROOT">
     <values>

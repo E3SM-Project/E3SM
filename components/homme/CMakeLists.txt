@@ -1,30 +1,44 @@
-# Best practice to put cmake required version at the top
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.5)
+IF (NOT DEFINED PROJECT_NAME)
+  # Best practice to put cmake required version at the top
+  CMAKE_MINIMUM_REQUIRED(VERSION 2.8.5)
+  PROJECT(HOMME C Fortran)
 
-PROJECT(HOMME C Fortran)
+  # Print the sha of the last commit,
+  # useful to double check which version was build in the build folder.
+  EXECUTE_PROCESS (COMMAND git rev-parse HEAD
+                     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                     OUTPUT_VARIABLE LAST_GIT_COMMIT_SHA
+                     OUTPUT_STRIP_TRAILING_WHITESPACE)
+  SET (LAST_GIT_COMMIT_SHA ${LAST_GIT_COMMIT_SHA} CACHE STRING "The sha of the last git commit.")
+  MESSAGE (STATUS "The sha of the last commit is ${LAST_GIT_COMMIT_SHA}")
 
-ENABLE_LANGUAGE(Fortran) 
+  # Build executables/tests
+  SET (HOMME_BUILD_EXECS TRUE)
+ELSE ()
+  # Manually enable languages, in case they were not enabled by host project
+  ENABLE_LANGUAGE(C)
+  ENABLE_LANGUAGE(Fortran)
 
-# Print the sha of the last commit,
-# useful to double check which version was build in the build folder.
-EXECUTE_PROCESS (COMMAND git rev-parse HEAD
-                   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-                   OUTPUT_VARIABLE LAST_GIT_COMMIT_SHA
-                   OUTPUT_STRIP_TRAILING_WHITESPACE)
-SET (LAST_GIT_COMMIT_SHA ${LAST_GIT_COMMIT_SHA} CACHE STRING "The sha of the last git commit.")
-MESSAGE (STATUS "The sha of the last commit is ${LAST_GIT_COMMIT_SHA}")
+  # Do not build executables/tests
+  SET (HOMME_BUILD_EXECS FALSE)
+ENDIF ()
 
 INCLUDE(FortranCInterface)
 
-# CTest For Nightly/Experimental Builds
-OPTION(HOMME_USE_CTEST "Use CTest Dashboard" FALSE)
-IF (${HOMME_USE_CTEST})
-  INCLUDE(CTest)
-ENDIF ()
+IF (${HOMME_BUILD_EXECS})
+  OPTION(HOMME_ENABLE_TESTING "Whether tests should be enabled" TRUE)
+  IF (${HOMME_ENABLE_TESTING})
+    # CTest For Nightly/Experimental Builds
+    OPTION(HOMME_USE_CTEST "Use CTest Dashboard" FALSE)
+    IF (${HOMME_USE_CTEST})
+      INCLUDE(CTest)
+    ENDIF ()
 
-# For testing
-ENABLE_TESTING()
-SET (HOMME_TESTING_PROFILE "nightly" CACHE STRING "Determine how long/pervasive the testing is. Currently available options: 'dev', 'short', 'nightly'.")
+    # For testing
+    ENABLE_TESTING()
+    SET (HOMME_TESTING_PROFILE "nightly" CACHE STRING "Determine how long/pervasive the testing is. Currently available options: 'dev', 'short', 'nightly'.")
+  ENDIF()
+ENDIF()
 
 # Add the cmake/CMakeLists.txt file
 SET (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -54,7 +68,7 @@ INCLUDE(HommeMacros)
 
 OPTION(IS_BIG_ENDIAN "Whether the machine is big endian" FALSE)
 #TRY_RUN(IS_BIG_ENDIAN BIG_ENDIAN_COMPILED
-#  ${CMAKE_BINARY_DIR}/tests/compilerTests/
+#  ${HOMME_BINARY_DIR}/tests/compilerTests/
 #  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/compilerTests/isBigEndian.c)
 
 # Default use quad precision
@@ -97,13 +111,13 @@ ENDIF()
 IF (${BUILD_HOMME_PREQX_KOKKOS})
   SET (HOMME_USE_KOKKOS TRUE)
   SET (HOMME_USE_CXX TRUE)
-  IF (NOT ${BUILD_HOMME_PREQX})
+  IF (NOT ${BUILD_HOMME_PREQX} AND ${HOMME_BUILD_EXECS})
     # If we build theta kokkos, we also build theta, so we can compare
     MESSAGE (STATUS "Setting manually disabled BUILD_HOMME_PREQX to ON, since BUILD_HOMME_PREQX_KOKKOS is ON.")
-  ENDIF ()
 
-  # We need to compare against F90 implementation, so turn this on
-  SET (BUILD_HOMME_PREQX TRUE)
+    # We need to compare against F90 implementation, so turn this on
+    SET (BUILD_HOMME_PREQX TRUE)
+  ENDIF ()
 ENDIF ()
 IF (${HOMME_ENABLE_COMPOSE})
   SET (HOMME_USE_CXX TRUE)
@@ -216,7 +230,7 @@ IF (${HOMME_USE_KOKKOS})
     SET (HOMMEXX_DEBUG ON)
   ENDIF()
 
-  CONFIGURE_FILE (${CMAKE_CURRENT_SOURCE_DIR}/src/share/cxx/Hommexx_config.h.in ${CMAKE_BINARY_DIR}/src/share/cxx/Hommexx_config.h)
+  CONFIGURE_FILE (${CMAKE_CURRENT_SOURCE_DIR}/src/share/cxx/Hommexx_config.h.in ${HOMME_BINARY_DIR}/src/share/cxx/Hommexx_config.h)
 
 ENDIF ()
 
@@ -314,13 +328,16 @@ IF (NOT (CPRNC_DIR))
   # needed for CPRNC build system
   file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/tools/cprnc/Macros.cmake" "#dummy Macros file for non-CIME machines")
 
-  SET (CPRNC_INSTALL_DIR ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc)
-  SET (CPRNC_BINARY ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
+  SET (CPRNC_INSTALL_DIR ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc)
+  SET (CPRNC_BINARY ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
   ADD_SUBDIRECTORY(utils/cime/tools/cprnc)
 ENDIF ()
 
 IF (${HOMME_USE_KOKKOS})
   INCLUDE(Kokkos)
+ENDIF ()
+
+IF (${HOMME_USE_KOKKOS} AND ${HOMME_BUILD_EXECS})
   # Add unit tests for C++ code
   ADD_SUBDIRECTORY(test/unit_tests)
 ENDIF ()
@@ -331,7 +348,6 @@ if (HOMME_ENABLE_COMPOSE)
   add_definitions(-DHOMME_ENABLE_COMPOSE)
   set (COMPOSE_LIBRARY "compose")
   add_subdirectory(src/share/compose)
-  set (USE_KOKKOS_KERNELS ON)
 else ()
   message ("-- COMPOSE semi-Lagrangian transport was explicitly disabled")
 endif ()
@@ -370,15 +386,17 @@ IF(${BUILD_HOMME_PRIM})
   ADD_SUBDIRECTORY(src/prim)
 ENDIF()
 
-ADD_SUBDIRECTORY(test_execs)
+# Tests and execs only if this is a standalone build
+IF (${HOMME_BUILD_EXECS})
+  ADD_SUBDIRECTORY(test_execs)
+  ADD_SUBDIRECTORY(dcmip_tests)
+ENDIF()
 
 # Create a "make clean-all" target to delete CMake cache and the cprnc build
 ADD_CUSTOM_TARGET(clean-all
    COMMAND ${CMAKE_BUILD_TOOL} clean
    COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/clean-cmake-files.cmake"
 )
-
-ADD_SUBDIRECTORY(dcmip_tests)
 
 IF (${HOMME_USE_KOKKOS})
   # Put this last so that tribits.cmake's 'check' target doesn't conflict with

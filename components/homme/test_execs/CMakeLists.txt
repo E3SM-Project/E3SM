@@ -163,7 +163,6 @@ ENDIF()
 
 # Add the test exec subdirs for the preqx executable
 IF(${BUILD_HOMME_PREQX})
-  add_subdirectory(stt)
   ADD_SUBDIRECTORY(baroC)
   ADD_SUBDIRECTORY(baroCam)
   ADD_SUBDIRECTORY(preqx-nlev20-interp)
@@ -175,6 +174,9 @@ IF(${BUILD_HOMME_PREQX})
   ADD_SUBDIRECTORY(preqx-nlev60-native)
   IF(${BUILD_HOMME_PREQX_ACC})
     ADD_SUBDIRECTORY(baroCam-acc)
+  ENDIF()
+  IF(HOMME_ENABLE_COMPOSE)
+    ADD_SUBDIRECTORY(stt)
   ENDIF()
 ENDIF()
 
