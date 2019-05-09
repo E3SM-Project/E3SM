@@ -18,7 +18,7 @@ module lnd_import_export
 contains
 
   !===============================================================================
-  subroutine lnd_import( bounds, x2l, atm2lnd_vars, glc2lnd_vars)
+  subroutine lnd_import( bounds, x2l, atm2lnd_vars, glc2lnd_vars, lnd2atm_vars)
 
     !---------------------------------------------------------------------------
     ! !DESCRIPTION:
@@ -44,6 +44,7 @@ contains
     real(r8)           , intent(in)    :: x2l(:,:) ! driver import state to land model
     type(atm2lnd_type) , intent(inout) :: atm2lnd_vars      ! clm internal input data type
     type(glc2lnd_type) , intent(inout) :: glc2lnd_vars      ! clm internal input data type
+    type(lnd2atm_type) , intent(in)    :: lnd2atm_vars
     !
     ! !LOCAL VARIABLES:
     integer  :: g,topo,i,m,thism,nstep,ier  ! indices, number of steps, and error code
@@ -974,7 +975,7 @@ contains
        !set the topounit-level atmospheric state and flux forcings
  !      call downscale_atmo_state_to_topounit(g, i, x2l)
 	   if (use_downscaling_to_topounit) then	   
-			call downscale_grd_to_topounit(g, i, x2l)
+			call downscale_grd_to_topounit(g, i, x2l, lnd2atm_vars)
 	   else
 		   do topo = grc_pp%topi(g), grc_pp%topf(g)
 			 ! first, all the state forcings
