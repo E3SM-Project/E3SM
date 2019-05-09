@@ -66,7 +66,7 @@ def build_mesh(preserve_floodplain=False, floodplain_elevation=20.0,
     if preserve_floodplain:
         print('Step 7. Injecting flag to preserve floodplain')
         inject_preserve_floodplain(mesh_file='base_mesh.nc',
-                                   floodplain_elevation)
+                                   floodplain_elevation=floodplain_elevation)
 
     print('Step 8. Create vtk file for visualization')
     args = ['paraview_vtk_field_extractor.py',
@@ -88,7 +88,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--preserve_floodplain', action='store_true')
     parser.add_argument('--floodplain_elevation', action='store',
-                        default='20.0')
+                        type=float, default=20.0)
     parser.add_argument('--inject_bathymetry', action='store_true')
     cl_args = parser.parse_args()
     build_mesh(cl_args.preserve_floodplain, cl_args.floodplain_elevation,

@@ -1,22 +1,18 @@
 <?xml version="1.0"?>
 <config case="init_step1">
-  <add_link source_path="mpas_tools" source="mesh_tools/periodic_hex/namelist.input" dest="namelist.input.default"/>
-  <add_link source_path="mpas_tools" source="mesh_tools/periodic_hex/periodic_grid" dest="periodic_hex"/>
 
 	<add_executable source="model" dest="ocean_model"/>
-	<add_executable source="cell_culler" dest="MpasCellCuller.x"/>
-	<add_executable source="mesh_converter" dest="MpasMeshConverter.x"/>
 
 	<namelist name="namelist.ocean" mode="init">
 		<option name="config_init_configuration">'dam_break'</option>
 		<option name="config_vert_levels">-1</option>
 		<option name="config_dam_break_vert_levels">3</option>
 		<option name="config_dam_break_eta0">0.6</option>
-		<option name="config_dam_break_dc">0.04</option> 
-		<option name="config_dam_break_Xl">1.0</option> 
-		<option name="config_dam_break_Yl">2.0</option> 
-		<option name="config_dam_break_Inlet">0.4</option> 
-		<option name="config_dam_break_R0">12.0</option> 
+		<option name="config_dam_break_dc">0.04</option>
+		<option name="config_dam_break_Xl">1.0</option>
+		<option name="config_dam_break_Yl">2.0</option>
+		<option name="config_dam_break_Inlet">0.4</option>
+		<option name="config_dam_break_R0">12.0</option>
 		<option name="config_drying_min_cell_height">1.0e-2</option>
 		<option name="config_ocean_run_mode">'init'</option>
 		<option name="config_write_cull_cell_mask">.true.</option>
@@ -46,34 +42,18 @@
 		</stream>
 	</streams>
 	<run_script name="run.py">
-		<step executable="cp">
-			<argument flag="">namelist.input.default</argument>
-			<argument flag="">namelist.input</argument>
-    </step>
-<!-- may be a better way to do this instead of sed -->    
-		<step executable="sed">
-			<argument flag="">-i</argument>
-			<argument flag="">s/nx.*=.*/nx = 325,/g</argument>
-			<argument flag="">namelist.input</argument>
+		<step executable="planar_hex">
+			<argument flag="--nx">325</argument>
+			<argument flag="--ny">700</argument>
+			<argument flag="--dc">0.04</argument>
+			<argument flag="-o">grid.nc</argument>
 		</step>
-		<step executable="sed">
-			<argument flag="">-i</argument>
-			<argument flag="">s/ny.*=.*/ny = 700,/g</argument>
-			<argument flag="">namelist.input</argument>
-		</step>
-		<step executable="sed">
-			<argument flag="">-i</argument>
-			<argument flag="">s/dc.*=.*/dc = 0.04,/g</argument>
-			<argument flag="">namelist.input</argument>
-		</step>
-		<step executable="./periodic_hex">
-		</step>
-		<step executable="./MpasMeshConverter.x">
+		<step executable="MpasMeshConverter.x">
 			<argument flag="">grid.nc</argument>
 		</step>
-    <model_run procs="1" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
-		<step executable="./MpasCellCuller.x">
+		<model_run procs="1" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+		<step executable="MpasCellCuller.x">
 			<argument flag="">ocean.nc</argument>
-    </step>
+		</step>
 	</run_script>
 </config>
