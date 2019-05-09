@@ -1472,7 +1472,7 @@ contains
             tocn , emask, sen , lat , lwup , &
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
-            flux_scheme,
+            flux_scheme, &
             duu10n,ustar, re  , ssq)
        !missval should not be needed if flux calc
        !consistent with mrgx2a fraction

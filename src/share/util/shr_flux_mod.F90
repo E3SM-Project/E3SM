@@ -145,6 +145,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
            &               r16O, rhdo, r18O, &
            &               evap  ,evap_16O, evap_HDO, evap_18O, &
            &               taux  ,tauy  ,tref  ,qref  ,   &
+           &               flux_scheme, &
            &               duu10n,  ustar_sv   ,re_sv ,ssq_sv,   &
            &               missval    )
 
@@ -175,6 +176,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
    real(R8)   ,intent(in) :: us   (nMax) ! ocn u-velocity        (m/s)
    real(R8)   ,intent(in) :: vs   (nMax) ! ocn v-velocity        (m/s)
    real(R8)   ,intent(in) :: ts   (nMax) ! ocn temperature       (K)
+   integer(IN),intent(in) :: flux_scheme
 
    !--- output arguments -------------------------------
    real(R8),intent(out)  ::  sen  (nMax) ! heat flux: sensible    (W/m^2)
@@ -289,6 +291,9 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
 
   !--- for cold air outbreak calc --------------------------------
    tdiff= tbot - ts
+
+   ! Default flux scheme.
+   if (flux_scheme .eq. 0) then
 
    al2 = log(zref/ztref)
    DO n=1,nMax
@@ -434,6 +439,11 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
         if (present(ssq_sv  )) ssq_sv  (n) = spval
      endif
    ENDDO
+
+   else if (flux_scheme .eq. 1) then
+      call shr_sys_abort(subName//" flux_scheme=1 not currently supported")
+   endif
+   
 
 END subroutine shr_flux_atmOcn
 
@@ -1026,6 +1036,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
                            taux  ,tauy  ,tref  ,qref  ,                    &
                            uGust, lwdn , swdn , swup, prec   ,             &
                            swpen, ocnsal, ocn_prognostic, flux_diurnal,    &
+                           flux_scheme,                                    &
                            latt, long , warm , salt , speed, regime,       &
                            warmMax, windMax, qSolAvg, windAvg,             &
                            warmMaxInc, windMaxInc, qSolInc, windInc, nInc, &
@@ -1066,6 +1077,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
    real(R8),intent(inout) :: ocnsal(nMax)       ! NEW (kg/kg)
    logical ,intent(in)    :: ocn_prognostic     ! NEW
    logical ,intent(in)    :: flux_diurnal       ! NEW logical for diurnal on/off
+   integer(IN) ,intent(in)    :: flux_scheme 
 
    real(R8),intent(in)    :: uGust (nMax)      ! NEW not used
    real(R8),intent(in)    :: lwdn  (nMax)       ! NEW
