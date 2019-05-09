@@ -76,16 +76,16 @@ module ocn_particle_list
     module procedure add_halo_data_to_particle_list_1Dint_array
   end interface
 
-  interface add_nonhalo_data_to_particle_list
-    !(particlelist, dataName, data)
-    module procedure add_nonhalo_data_to_particle_list_1Dreal
-    module procedure add_nonhalo_data_to_particle_list_1Dint
-  end interface
+! interface add_nonhalo_data_to_particle_list
+!   !(particlelist, dataName, data)
+!   module procedure add_nonhalo_data_to_particle_list_1Dreal
+!   module procedure add_nonhalo_data_to_particle_list_1Dint
+! end interface
 
-  interface add_nonhalo_data_to_particle_list_array
-    module procedure add_nonhalo_data_to_particle_list_1Dreal_array
-    module procedure add_nonhalo_data_to_particle_list_1Dint_array
-  end interface
+! interface add_nonhalo_data_to_particle_list_array
+!   module procedure add_nonhalo_data_to_particle_list_1Dreal_array
+!   module procedure add_nonhalo_data_to_particle_list_1Dint_array
+! end interface
 
   ! get routines
   interface get_halo_data_from_particle_list
@@ -99,17 +99,17 @@ module ocn_particle_list
     module procedure get_halo_data_from_particle_list_1Dint_array
   end interface
 
-  interface get_nonhalo_data_from_particle_list
-    !(particlelist, dataName, data)
-    module procedure  get_nonhalo_data_from_particle_list_1Dreal
-    module procedure  get_nonhalo_data_from_particle_list_1Dint
-  end interface
+! interface get_nonhalo_data_from_particle_list
+!   !(particlelist, dataName, data)
+!   module procedure  get_nonhalo_data_from_particle_list_1Dreal
+!   module procedure  get_nonhalo_data_from_particle_list_1Dint
+! end interface
 
-  interface get_nonhalo_data_from_particle_list_array
-    !(particlelist, dataName, data)
-    module procedure  get_nonhalo_data_from_particle_list_1Dreal_array
-    module procedure  get_nonhalo_data_from_particle_list_1Dint_array
-  end interface
+! interface get_nonhalo_data_from_particle_list_array
+!   !(particlelist, dataName, data)
+!   module procedure  get_nonhalo_data_from_particle_list_1Dreal_array
+!   module procedure  get_nonhalo_data_from_particle_list_1Dint_array
+! end interface
 
   !-----------------------------------------------------------------
   ! public routines and interfaces
@@ -121,7 +121,7 @@ module ocn_particle_list
   public :: mpas_particle_list_update_particle_block
   public :: mpas_particle_list_update_halos_start, mpas_particle_list_update_halos_end
   public :: mpas_particle_list_transfer_particles_from_block_to_named_block
-  public :: mpas_particle_list_write_halo_data, mpas_particle_list_write_nonhalo_data
+  public :: mpas_particle_list_write_halo_data !, mpas_particle_list_write_nonhalo_data
   public :: mpas_particle_list_test_neighscalc, mpas_particle_list_test_numparticles_to_neighprocs
   public :: mpas_particle_list_test_num_current_particlelist
   public :: mpas_particle_list_self_union_halo_lists
@@ -181,16 +181,17 @@ contains
      call MPI_Barrier(domain % dminfo % comm, err)
 #endif
 
-     ! note that nonhalo data is just initialized with 0
-     ! values are not imported from netCDF input file
-     call read_nonhaloData(domain, err)
+     ! currently there is no nonhalo data
+     !! note that nonhalo data is just initialized with 0
+     !! values are not imported from netCDF input file
+     !call read_nonhaloData(domain, err)
 #ifdef MPAS_DEBUG
-     LIGHT_DEBUG_ALL_WRITE('finished read_nonhaloData 1')
-     call MPI_Barrier(domain % dminfo % comm, err)
+     !LIGHT_DEBUG_ALL_WRITE('finished read_nonhaloData 1')
+     !call MPI_Barrier(domain % dminfo % comm, err)
 
-     call mpas_particle_list_test_num_current_particlelist(domain)
-     LIGHT_DEBUG_ALL_WRITE('finished test in mpas_particle_list_build_and_assign_particle_list')
-     call MPI_Barrier(domain % dminfo % comm, err)
+     !call mpas_particle_list_test_num_current_particlelist(domain)
+     !LIGHT_DEBUG_ALL_WRITE('finished test in mpas_particle_list_build_and_assign_particle_list')
+     !call MPI_Barrier(domain % dminfo % comm, err)
 #endif
      !! test to make sure deallocation is ok before transfer...!{{{
 #ifdef MPAS_DEBUG
@@ -198,7 +199,7 @@ contains
      call clear_block_particlelists(domain,err)
      call build_block_particlelists(domain, err)
      call read_haloData(domain, err)
-     call read_nonhaloData(domain, err)
+     !call read_nonhaloData(domain, err)
      call mpas_particle_list_test_num_current_particlelist(domain)
      call test_currentBlock(domain)
      LIGHT_DEBUG_ALL_WRITE('    Rebuilt data structures-- ok')
@@ -845,16 +846,18 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
      call mpas_timer_stop("communicate_data_halo_LPT")
      LIGHT_DEBUG_WRITE('finished communicate_particle_halo_data')
 
-     call mpas_timer_start("communicate_data_nonhalo_LPT")
-     if(haloOnly) then
-       ! need to also allocate the nonHalo data somehow, it just needs initialized so that it can be "filled in" when
-       ! necessary for output
-       ! can utilize empty 0'd fields for the nonhalo data portion to initialize the field for all the processors
-       call allocate_list_nonHalo_data(domain, listPLRecv)
-     else
-       call communicate_particle_nonhalo_data(domain, procNeighs, nPartSend, nPartRecv, listPLSend, listPLRecv)
-     end if
-     call mpas_timer_stop("communicate_data_nonhalo_LPT")
+     ! note that at present there is no halo data
+     LIGHT_DEBUG_WRITE('there is no halo data to transfer currently')
+     !call mpas_timer_start("communicate_data_nonhalo_LPT")
+     !if(haloOnly) then
+     !  ! need to also allocate the nonHalo data somehow, it just needs initialized so that it can be "filled in" when
+     !  ! necessary for output
+     !  ! can utilize empty 0'd fields for the nonhalo data portion to initialize the field for all the processors
+     !  call allocate_list_nonHalo_data(domain, listPLRecv)
+     !else
+     !  !call communicate_particle_nonhalo_data(domain, procNeighs, nPartSend, nPartRecv, listPLSend, listPLRecv)
+     !end if
+     !call mpas_timer_stop("communicate_data_nonhalo_LPT")
 
      ! now there should be the complete particles on listPLRecv.  These, however, need moved to the blocks of the processor
      ! for use in calculations
@@ -971,13 +974,13 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
               ! reorder
               field1DIntPointer % array = Array1DIntPointer(orderingVector)
             else
-              LIGHT_DEBUG_ALL_WRITE("Different field type than implemented in nonHalo write!")
+              LIGHT_DEBUG_ALL_WRITE("Different field type than implemented in Halo write!")
             end if
           elseif (dimItr % memberType == MPAS_POOL_DIMENSION) then
             ! ignore dimensions for now and have this code so they aren't printed as an error message
           else
             write(message, *) "Different type expected in registry for key ", trim(dimItr % memberName), &
-                              " in nonHalo data for write-- don't know what to do!"
+                              " in Halo data for write-- don't know what to do!"
             LIGHT_DEBUG_ALL_WRITE(message)
           end if
         end do
@@ -1004,102 +1007,102 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
 !>  This routine writes nonhaloData output for this MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_particle_list_write_nonhalo_data(domain, err)!{{{
+!  subroutine mpas_particle_list_write_nonhalo_data(domain, err)!{{{
 
-      implicit none
+!     implicit none
 
-      !-----------------------------------------------------------------
-      ! input variables
-      !-----------------------------------------------------------------
-      type (domain_type), intent(in) :: domain
+!     !-----------------------------------------------------------------
+!     ! input variables
+!     !-----------------------------------------------------------------
+!     type (domain_type), intent(in) :: domain
 
-      !-----------------------------------------------------------------
-      ! output variables
-      !-----------------------------------------------------------------
-      integer, intent(out) :: err !< Output: error flag
+!     !-----------------------------------------------------------------
+!     ! output variables
+!     !-----------------------------------------------------------------
+!     integer, intent(out) :: err !< Output: error flag
 
-      !-----------------------------------------------------------------
-      ! local variables
-      !-----------------------------------------------------------------
-      type (block_type), pointer :: block
-      type (mpas_particle_list_type), pointer :: particlelist
-      type (mpas_pool_type), pointer :: lagrPartTrackPool
-      type (mpas_pool_iterator_type) :: dimItr
-      type (field1DReal), pointer :: field1DRealPointer
-      type (field1DInteger), pointer :: field1DIntPointer
-      real (kind=RKIND), dimension(:), pointer :: Array1DRealPointer => NULL()
-      integer, dimension(:), pointer :: Array1DIntPointer => NULL()
-      integer, dimension(:), pointer :: indexToParticleIDOriginal => NULL(), &
-                                        indexToParticleIDNew => NULL(), &
-                                        orderingVector =>NULL()
-      character (len=StrKIND) :: message
+!     !-----------------------------------------------------------------
+!     ! local variables
+!     !-----------------------------------------------------------------
+!     type (block_type), pointer :: block
+!     type (mpas_particle_list_type), pointer :: particlelist
+!     type (mpas_pool_type), pointer :: lagrPartTrackPool
+!     type (mpas_pool_iterator_type) :: dimItr
+!     type (field1DReal), pointer :: field1DRealPointer
+!     type (field1DInteger), pointer :: field1DIntPointer
+!     real (kind=RKIND), dimension(:), pointer :: Array1DRealPointer => NULL()
+!     integer, dimension(:), pointer :: Array1DIntPointer => NULL()
+!     integer, dimension(:), pointer :: indexToParticleIDOriginal => NULL(), &
+!                                       indexToParticleIDNew => NULL(), &
+!                                       orderingVector =>NULL()
+!     character (len=StrKIND) :: message
 
-      err = 0
+!     err = 0
 
-      block => domain % blocklist
-      do while (associated(block))
-        ! particle related pointers
-        particlelist => block % particlelist
-        ! iterate over each member of the pool and make the relevant assignment
-        call mpas_pool_get_subpool(block % structs, 'lagrPartTrackHalo', lagrPartTrackPool)
-        ! need to compute the ordering matrices
-        call mpas_pool_get_array(lagrPartTrackPool, 'indexToParticleID', indexToParticleIDOriginal)
-        call get_halo_data_from_particle_list_array(particlelist, 'indexToParticleID', indexToParticleIDNew)
-        ! note: orderingVector can be a subset of indexToParticleIDNew because this index can include compute as well as
-        !       IO particles however, it must be of the same size as indexToParticleIDOriginal
-        call compute_ordering_vector(indexToParticleIDOriginal, indexToParticleIDNew, orderingVector)
+!     block => domain % blocklist
+!     do while (associated(block))
+!       ! particle related pointers
+!       particlelist => block % particlelist
+!       ! iterate over each member of the pool and make the relevant assignment
+!       call mpas_pool_get_subpool(block % structs, 'lagrPartTrackHalo', lagrPartTrackPool)
+!       ! need to compute the ordering matrices
+!       call mpas_pool_get_array(lagrPartTrackPool, 'indexToParticleID', indexToParticleIDOriginal)
+!       call get_halo_data_from_particle_list_array(particlelist, 'indexToParticleID', indexToParticleIDNew)
+!       ! note: orderingVector can be a subset of indexToParticleIDNew because this index can include compute as well as
+!       !       IO particles however, it must be of the same size as indexToParticleIDOriginal
+!       call compute_ordering_vector(indexToParticleIDOriginal, indexToParticleIDNew, orderingVector)
 
-        ! iterate over each member of the pool and make the relevant assignment
-        call mpas_pool_get_subpool(block % structs, 'lagrPartTrackNonHalo', lagrPartTrackPool)
-        call mpas_pool_begin_iteration(lagrPartTrackPool)
-        do while(mpas_pool_get_next_member(lagrPartTrackPool, dimItr))
-          ! determine the type of data
-          if (dimItr % memberType == MPAS_POOL_FIELD) then
-            if (dimItr % dataType == MPAS_POOL_REAL) then
-              ! get data and place it in appropriate array
-              call mpas_pool_get_field(lagrPartTrackPool, dimItr % memberName, field1DRealPointer)
-                !{{{
-              LIGHT_DEBUG_WRITE('write nonhalo data')
-              LIGHT_DEBUG_WRITE('member name =' COMMA  dimItr % memberName)
-              LIGHT_DEBUG_WRITE('particlelistSize= ' COMMA  count_particlelist(particlelist))
-              LIGHT_DEBUG_WRITE('memory arraysize= ' COMMA  size(field1DRealPointer % array))
-              !}}}
-              allocate(Array1DRealPointer(count_particlelist(particlelist)))
-              call get_nonhalo_data_from_particle_list_array(particlelist, dimItr % memberName, Array1DRealPointer)
-              ! reorder
-              field1DRealPointer % array = Array1DRealPointer(orderingVector)
-              deallocate(Array1DRealPointer)
-            elseif (dimItr % dataType == MPAS_POOL_INTEGER) then
-              write(message, *) "Integer type in registry for key ", dimItr % memberName, &
-                                " in nonHalo data for write, not yet tested!"
-              LIGHT_DEBUG_ALL_WRITE(message)
-              ! get data and place it in appropriate array
-              call mpas_pool_get_field(lagrPartTrackPool, dimItr % memberName, field1DIntPointer)
-              allocate(Array1DIntPointer(count_particlelist(particlelist)))
-              call get_nonhalo_data_from_particle_list_array(particlelist, dimItr % memberName, Array1DIntPointer)
-              ! reorder
-              field1DIntPointer % array = Array1DIntPointer(orderingVector)
-              deallocate(Array1DIntPointer)
-            else
-              LIGHT_DEBUG_ALL_WRITE("Different field type than implemented in nonHalo write!")
-            end if
-          elseif (dimItr % memberType == MPAS_POOL_DIMENSION) then
-            ! ignore dimensions for now and have this code so they aren't printed as an error message
-          else
-            write(message, *) "Different type expected in registry for key ", trim(dimItr % memberName), &
-                              " in nonHalo data for write-- don't know what to do!"
-            LIGHT_DEBUG_ALL_WRITE(message)
-          end if
-        end do
+!       ! iterate over each member of the pool and make the relevant assignment
+!       call mpas_pool_get_subpool(block % structs, 'lagrPartTrackNonHalo', lagrPartTrackPool)
+!       call mpas_pool_begin_iteration(lagrPartTrackPool)
+!       do while(mpas_pool_get_next_member(lagrPartTrackPool, dimItr))
+!         ! determine the type of data
+!         if (dimItr % memberType == MPAS_POOL_FIELD) then
+!           if (dimItr % dataType == MPAS_POOL_REAL) then
+!             ! get data and place it in appropriate array
+!             call mpas_pool_get_field(lagrPartTrackPool, dimItr % memberName, field1DRealPointer)
+!               !{{{
+!             LIGHT_DEBUG_WRITE('write nonhalo data')
+!             LIGHT_DEBUG_WRITE('member name =' COMMA  dimItr % memberName)
+!             LIGHT_DEBUG_WRITE('particlelistSize= ' COMMA  count_particlelist(particlelist))
+!             LIGHT_DEBUG_WRITE('memory arraysize= ' COMMA  size(field1DRealPointer % array))
+!             !}}}
+!             allocate(Array1DRealPointer(count_particlelist(particlelist)))
+!             call get_nonhalo_data_from_particle_list_array(particlelist, dimItr % memberName, Array1DRealPointer)
+!             ! reorder
+!             field1DRealPointer % array = Array1DRealPointer(orderingVector)
+!             deallocate(Array1DRealPointer)
+!           elseif (dimItr % dataType == MPAS_POOL_INTEGER) then
+!             write(message, *) "Integer type in registry for key ", dimItr % memberName, &
+!                               " in nonHalo data for write, not yet tested!"
+!             LIGHT_DEBUG_ALL_WRITE(message)
+!             ! get data and place it in appropriate array
+!             call mpas_pool_get_field(lagrPartTrackPool, dimItr % memberName, field1DIntPointer)
+!             allocate(Array1DIntPointer(count_particlelist(particlelist)))
+!             call get_nonhalo_data_from_particle_list_array(particlelist, dimItr % memberName, Array1DIntPointer)
+!             ! reorder
+!             field1DIntPointer % array = Array1DIntPointer(orderingVector)
+!             deallocate(Array1DIntPointer)
+!           else
+!             LIGHT_DEBUG_ALL_WRITE("Different field type than implemented in nonHalo write!")
+!           end if
+!         elseif (dimItr % memberType == MPAS_POOL_DIMENSION) then
+!           ! ignore dimensions for now and have this code so they aren't printed as an error message
+!         else
+!           write(message, *) "Different type expected in registry for key ", trim(dimItr % memberName), &
+!                             " in nonHalo data for write-- don't know what to do!"
+!           LIGHT_DEBUG_ALL_WRITE(message)
+!         end if
+!       end do
 
-        ! free memory for the next loop
-        deallocate(indexToParticleIDNew)
-        deallocate(orderingVector)
+!       ! free memory for the next loop
+!       deallocate(indexToParticleIDNew)
+!       deallocate(orderingVector)
 
-        block => block % next
-        end do
+!       block => block % next
+!       end do
 
-   end subroutine mpas_particle_list_write_nonhalo_data!}}}
+!  end subroutine mpas_particle_list_write_nonhalo_data!}}}
 
 !-----------------------------------------------------------------------
 !
@@ -1250,33 +1253,33 @@ end subroutine get_halo_data_from_particle_list_1Dreal !}}}
 !> \details
 !
 !-----------------------------------------------------------------------
-subroutine get_nonhalo_data_from_particle_list_1Dint&  !{{{
-    (particlelist, dataName, field1DIntPointer)
-    ! input data
-    type (mpas_particle_list_type), pointer, intent(in) :: particlelist
-    character(len=*), intent(in) :: dataName
-    type (field1DInteger), pointer, intent(out) :: field1DIntPointer
-
-    ! subroutine data
-    integer :: dataNumber
-    type (mpas_particle_list_type), pointer :: particlelistCurr
-    type (field0DInteger), pointer :: field0DIntPointer
-
-    ! loop over all elements of the list and insert the data
-    dataNumber = 1
-    particlelistCurr => particlelist
-    ! while we have a real link
-    do while(associated(particlelistCurr))
-      call mpas_pool_get_field(particlelistCurr % particle % nonhaloDataPool, dataName, field0DIntPointer)
-      field1DIntPointer % array(dataNumber) = field0DIntPointer % scalar
-
-      ! increment for new dataNumber
-      dataNumber = dataNumber + 1
-      ! get next link
-      particlelistCurr => particlelistCurr % next
-    end do
-
-end subroutine get_nonhalo_data_from_particle_list_1Dint !}}}
+!subroutine get_nonhalo_data_from_particle_list_1Dint&  !{{{
+!    (particlelist, dataName, field1DIntPointer)
+!    ! input data
+!    type (mpas_particle_list_type), pointer, intent(in) :: particlelist
+!    character(len=*), intent(in) :: dataName
+!    type (field1DInteger), pointer, intent(out) :: field1DIntPointer
+!
+!    ! subroutine data
+!    integer :: dataNumber
+!    type (mpas_particle_list_type), pointer :: particlelistCurr
+!    type (field0DInteger), pointer :: field0DIntPointer
+!
+!    ! loop over all elements of the list and insert the data
+!    dataNumber = 1
+!    particlelistCurr => particlelist
+!    ! while we have a real link
+!    do while(associated(particlelistCurr))
+!      call mpas_pool_get_field(particlelistCurr % particle % nonhaloDataPool, dataName, field0DIntPointer)
+!      field1DIntPointer % array(dataNumber) = field0DIntPointer % scalar
+!
+!      ! increment for new dataNumber
+!      dataNumber = dataNumber + 1
+!      ! get next link
+!      particlelistCurr => particlelistCurr % next
+!    end do
+!
+!end subroutine get_nonhalo_data_from_particle_list_1Dint !}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1288,38 +1291,38 @@ end subroutine get_nonhalo_data_from_particle_list_1Dint !}}}
 !> \details
 !
 !-----------------------------------------------------------------------
-subroutine get_nonhalo_data_from_particle_list_1Dint_array &  !{{{
-    (particlelist, dataName, array1DIntPointer)
-    ! input data
-    type (mpas_particle_list_type), pointer, intent(in) :: particlelist
-    character(len=*), intent(in) :: dataName
-    integer, dimension(:), pointer, intent(out) :: array1DIntPointer
-
-    ! subroutine data
-    integer :: dataNumber
-    type (mpas_particle_list_type), pointer :: particlelistCurr
-    type (field0DInteger), pointer :: field0DIntPointer
-
-    ! allocate the array if it isn't allocated
-    if(.not.associated(array1DIntPointer)) then
-      allocate(array1DIntPointer(count_particlelist(particlelist)))
-    end if
-
-    ! loop over all elements of the list and insert the data
-    dataNumber = 1
-    particlelistCurr => particlelist
-    ! while we have a real link
-    do while(associated(particlelistCurr))
-      call mpas_pool_get_field(particlelistCurr % particle % nonhaloDataPool, dataName, field0DIntPointer)
-      array1DIntPointer(dataNumber) = field0DIntPointer % scalar
-
-      ! increment for new dataNumber
-      dataNumber = dataNumber + 1
-      ! get next link
-      particlelistCurr => particlelistCurr % next
-    end do
-
-end subroutine get_nonhalo_data_from_particle_list_1Dint_array !}}}
+!subroutine get_nonhalo_data_from_particle_list_1Dint_array &  !{{{
+!    (particlelist, dataName, array1DIntPointer)
+!    ! input data
+!    type (mpas_particle_list_type), pointer, intent(in) :: particlelist
+!    character(len=*), intent(in) :: dataName
+!    integer, dimension(:), pointer, intent(out) :: array1DIntPointer
+!
+!    ! subroutine data
+!    integer :: dataNumber
+!    type (mpas_particle_list_type), pointer :: particlelistCurr
+!    type (field0DInteger), pointer :: field0DIntPointer
+!
+!    ! allocate the array if it isn't allocated
+!    if(.not.associated(array1DIntPointer)) then
+!      allocate(array1DIntPointer(count_particlelist(particlelist)))
+!    end if
+!
+!    ! loop over all elements of the list and insert the data
+!    dataNumber = 1
+!    particlelistCurr => particlelist
+!    ! while we have a real link
+!    do while(associated(particlelistCurr))
+!      call mpas_pool_get_field(particlelistCurr % particle % nonhaloDataPool, dataName, field0DIntPointer)
+!      array1DIntPointer(dataNumber) = field0DIntPointer % scalar
+!
+!      ! increment for new dataNumber
+!      dataNumber = dataNumber + 1
+!      ! get next link
+!      particlelistCurr => particlelistCurr % next
+!    end do
+!
+!end subroutine get_nonhalo_data_from_particle_list_1Dint_array !}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1331,33 +1334,33 @@ end subroutine get_nonhalo_data_from_particle_list_1Dint_array !}}}
 !> \details
 !
 !-----------------------------------------------------------------------
-subroutine get_nonhalo_data_from_particle_list_1Dreal &  !{{{
-    (particlelist, dataName, field1DRealPointer)
-    ! input data
-    type (mpas_particle_list_type), pointer, intent(in) :: particlelist
-    character(len=*), intent(in) :: dataName
-    type (field1DReal), pointer, intent(out) :: field1DRealPointer
-
-    ! subroutine data
-    integer :: dataNumber
-    type (mpas_particle_list_type), pointer :: particlelistCurr
-    type (field0DReal), pointer :: field0DRealPointer
-
-    ! loop over all elements of the list and insert the data
-    dataNumber = 1
-    particlelistCurr => particlelist
-    ! while we have a real link
-    do while(associated(particlelistCurr))
-      call mpas_pool_get_field(particlelistCurr % particle % nonhaloDataPool, dataName, field0DRealPointer)
-      field1DRealPointer % array(dataNumber) = field0DRealPointer % scalar
-
-      ! increment for new dataNumber
-      dataNumber = dataNumber + 1
-      ! get next link
-      particlelistCurr => particlelistCurr % next
-    end do
-
-end subroutine get_nonhalo_data_from_particle_list_1Dreal !}}}
+!subroutine get_nonhalo_data_from_particle_list_1Dreal &  !{{{
+!    (particlelist, dataName, field1DRealPointer)
+!    ! input data
+!    type (mpas_particle_list_type), pointer, intent(in) :: particlelist
+!    character(len=*), intent(in) :: dataName
+!    type (field1DReal), pointer, intent(out) :: field1DRealPointer
+!
+!    ! subroutine data
+!    integer :: dataNumber
+!    type (mpas_particle_list_type), pointer :: particlelistCurr
+!    type (field0DReal), pointer :: field0DRealPointer
+!
+!    ! loop over all elements of the list and insert the data
+!    dataNumber = 1
+!    particlelistCurr => particlelist
+!    ! while we have a real link
+!    do while(associated(particlelistCurr))
+!      call mpas_pool_get_field(particlelistCurr % particle % nonhaloDataPool, dataName, field0DRealPointer)
+!      field1DRealPointer % array(dataNumber) = field0DRealPointer % scalar
+!
+!      ! increment for new dataNumber
+!      dataNumber = dataNumber + 1
+!      ! get next link
+!      particlelistCurr => particlelistCurr % next
+!    end do
+!
+!end subroutine get_nonhalo_data_from_particle_list_1Dreal !}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1369,38 +1372,38 @@ end subroutine get_nonhalo_data_from_particle_list_1Dreal !}}}
 !> \details
 !
 !-----------------------------------------------------------------------
-subroutine get_nonhalo_data_from_particle_list_1Dreal_array &  !{{{
-    (particlelist, dataName, array1DRealPointer)
-    ! input data
-    type (mpas_particle_list_type), pointer, intent(in) :: particlelist
-    character(len=*), intent(in) :: dataName
-    real (kind=RKIND), dimension(:), pointer, intent(out) :: array1DRealPointer
-
-    ! subroutine data
-    integer :: dataNumber
-    type (mpas_particle_list_type), pointer :: particlelistCurr
-    type (field0DReal), pointer :: field0DRealPointer
-
-    ! allocate the array if it isn't allocated
-    if(.not.associated(array1DRealPointer)) then
-      allocate(array1DRealPointer(count_particlelist(particlelist)))
-    end if
-
-    ! loop over all elements of the list and insert the data
-    dataNumber = 1
-    particlelistCurr => particlelist
-    ! while we have a real link
-    do while(associated(particlelistCurr))
-      call mpas_pool_get_field(particlelistCurr % particle % nonhaloDataPool, dataName, field0DRealPointer)
-      array1DRealPointer(dataNumber) = field0DRealPointer % scalar
-
-      ! increment for new dataNumber
-      dataNumber = dataNumber + 1
-      ! get next link
-      particlelistCurr => particlelistCurr % next
-    end do
-
-end subroutine get_nonhalo_data_from_particle_list_1Dreal_array !}}}
+!subroutine get_nonhalo_data_from_particle_list_1Dreal_array &  !{{{
+!    (particlelist, dataName, array1DRealPointer)
+!    ! input data
+!    type (mpas_particle_list_type), pointer, intent(in) :: particlelist
+!    character(len=*), intent(in) :: dataName
+!    real (kind=RKIND), dimension(:), pointer, intent(out) :: array1DRealPointer
+!
+!    ! subroutine data
+!    integer :: dataNumber
+!    type (mpas_particle_list_type), pointer :: particlelistCurr
+!    type (field0DReal), pointer :: field0DRealPointer
+!
+!    ! allocate the array if it isn't allocated
+!    if(.not.associated(array1DRealPointer)) then
+!      allocate(array1DRealPointer(count_particlelist(particlelist)))
+!    end if
+!
+!    ! loop over all elements of the list and insert the data
+!    dataNumber = 1
+!    particlelistCurr => particlelist
+!    ! while we have a real link
+!    do while(associated(particlelistCurr))
+!      call mpas_pool_get_field(particlelistCurr % particle % nonhaloDataPool, dataName, field0DRealPointer)
+!      array1DRealPointer(dataNumber) = field0DRealPointer % scalar
+!
+!      ! increment for new dataNumber
+!      dataNumber = dataNumber + 1
+!      ! get next link
+!      particlelistCurr => particlelistCurr % next
+!    end do
+!
+!end subroutine get_nonhalo_data_from_particle_list_1Dreal_array !}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1416,33 +1419,33 @@ end subroutine get_nonhalo_data_from_particle_list_1Dreal_array !}}}
 !>  on each particle.
 !
 !-----------------------------------------------------------------------
-subroutine get_nonhalo_data_from_particle_list_2Dreal &  !{{{
-    (particlelist, dataName, field2DRealPointer)
-    ! input data
-    type (mpas_particle_list_type), pointer, intent(in) :: particlelist
-    character(len=*), intent(in) :: dataName
-    type (field2DReal), pointer, intent(out) :: field2DRealPointer
-
-    ! subroutine data
-    integer :: dataNumber
-    type (mpas_particle_list_type), pointer :: particlelistCurr
-    type (field1DReal), pointer :: field1DRealPointer
-
-    ! loop over all elements of the list and insert the data
-    dataNumber = 1
-    particlelistCurr => particlelist
-    ! while we have a real link
-    do while(associated(particlelistCurr))
-      call mpas_pool_get_field(particlelistCurr % particle % nonhaloDataPool, dataName, field1DRealPointer)
-      field2DRealPointer % array(dataNumber, :) = field1DRealPointer % array(:)
-
-      ! increment for new dataNumber
-      dataNumber = dataNumber + 1
-      ! get next link
-      particlelistCurr => particlelistCurr % next
-    end do
-
-end subroutine get_nonhalo_data_from_particle_list_2Dreal !}}}
+!subroutine get_nonhalo_data_from_particle_list_2Dreal &  !{{{
+!    (particlelist, dataName, field2DRealPointer)
+!    ! input data
+!    type (mpas_particle_list_type), pointer, intent(in) :: particlelist
+!    character(len=*), intent(in) :: dataName
+!    type (field2DReal), pointer, intent(out) :: field2DRealPointer
+!
+!    ! subroutine data
+!    integer :: dataNumber
+!    type (mpas_particle_list_type), pointer :: particlelistCurr
+!    type (field1DReal), pointer :: field1DRealPointer
+!
+!    ! loop over all elements of the list and insert the data
+!    dataNumber = 1
+!    particlelistCurr => particlelist
+!    ! while we have a real link
+!    do while(associated(particlelistCurr))
+!      call mpas_pool_get_field(particlelistCurr % particle % nonhaloDataPool, dataName, field1DRealPointer)
+!      field2DRealPointer % array(dataNumber, :) = field1DRealPointer % array(:)
+!
+!      ! increment for new dataNumber
+!      dataNumber = dataNumber + 1
+!      ! get next link
+!      particlelistCurr => particlelistCurr % next
+!    end do
+!
+!end subroutine get_nonhalo_data_from_particle_list_2Dreal !}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1635,35 +1638,35 @@ end subroutine add_halo_data_to_particle_list_1Dreal !}}}
 !>  on each particle.
 !
 !-----------------------------------------------------------------------
-subroutine add_nonhalo_data_to_particle_list_1Dreal_array & !{{{
-    (particlelist, dataName, array1DRealPointer)
-    ! input data
-    type (mpas_particle_list_type), pointer, intent(in) :: particlelist
-    character(len=*), intent(in) :: dataName
-    real (kind=RKIND), dimension(:), pointer :: array1DRealPointer
-
-    ! subroutine data
-    integer :: dataNumber
-    type (mpas_particle_list_type), pointer :: particlelistCurr
-    type (field0DReal), pointer :: field0DRealPointer
-
-    ! loop over all elements of the list and insert the data
-    dataNumber = 1
-    particlelistCurr => particlelist
-    ! while we have a real link
-    do while(associated(particlelistCurr))
-
-      allocate(field0DRealPointer)
-      field0DRealPointer % scalar = array1DRealPointer(dataNumber)
-      call mpas_pool_add_field(particlelistCurr % particle % nonhaloDataPool, dataName, field0DRealPointer)
-
-      ! increment for new dataNumber
-      dataNumber = dataNumber + 1
-      ! get next link
-      particlelistCurr => particlelistCurr % next
-    end do
-
-end subroutine add_nonhalo_data_to_particle_list_1Dreal_array !}}}
+!subroutine add_nonhalo_data_to_particle_list_1Dreal_array & !{{{
+!    (particlelist, dataName, array1DRealPointer)
+!    ! input data
+!    type (mpas_particle_list_type), pointer, intent(in) :: particlelist
+!    character(len=*), intent(in) :: dataName
+!    real (kind=RKIND), dimension(:), pointer :: array1DRealPointer
+!
+!    ! subroutine data
+!    integer :: dataNumber
+!    type (mpas_particle_list_type), pointer :: particlelistCurr
+!    type (field0DReal), pointer :: field0DRealPointer
+!
+!    ! loop over all elements of the list and insert the data
+!    dataNumber = 1
+!    particlelistCurr => particlelist
+!    ! while we have a real link
+!    do while(associated(particlelistCurr))
+!
+!      allocate(field0DRealPointer)
+!      field0DRealPointer % scalar = array1DRealPointer(dataNumber)
+!      call mpas_pool_add_field(particlelistCurr % particle % nonhaloDataPool, dataName, field0DRealPointer)
+!
+!      ! increment for new dataNumber
+!      dataNumber = dataNumber + 1
+!      ! get next link
+!      particlelistCurr => particlelistCurr % next
+!    end do
+!
+!end subroutine add_nonhalo_data_to_particle_list_1Dreal_array !}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1679,35 +1682,35 @@ end subroutine add_nonhalo_data_to_particle_list_1Dreal_array !}}}
 !>  on each particle.
 !
 !-----------------------------------------------------------------------
-subroutine add_nonhalo_data_to_particle_list_1Dreal & !{{{
-    (particlelist, dataName, field1DRealPointer)
-    ! input data
-    type (mpas_particle_list_type), pointer, intent(in) :: particlelist
-    character(len=*), intent(in) :: dataName
-    type (field1DReal), pointer :: field1DRealPointer
-
-    ! subroutine data
-    integer :: dataNumber
-    type (mpas_particle_list_type), pointer :: particlelistCurr
-    type (field0DReal), pointer :: field0DRealPointer
-
-    ! loop over all elements of the list and insert the data
-    dataNumber = 1
-    particlelistCurr => particlelist
-    ! while we have a real link
-    do while(associated(particlelistCurr))
-
-      allocate(field0DRealPointer)
-      field0DRealPointer % scalar = field1DRealPointer % array(dataNumber)
-      call mpas_pool_add_field(particlelistCurr % particle % nonhaloDataPool, dataName, field0DRealPointer)
-
-      ! increment for new dataNumber
-      dataNumber = dataNumber + 1
-      ! get next link
-      particlelistCurr => particlelistCurr % next
-    end do
-
-end subroutine add_nonhalo_data_to_particle_list_1Dreal !}}}
+!subroutine add_nonhalo_data_to_particle_list_1Dreal & !{{{
+!    (particlelist, dataName, field1DRealPointer)
+!    ! input data
+!    type (mpas_particle_list_type), pointer, intent(in) :: particlelist
+!    character(len=*), intent(in) :: dataName
+!    type (field1DReal), pointer :: field1DRealPointer
+!
+!    ! subroutine data
+!    integer :: dataNumber
+!    type (mpas_particle_list_type), pointer :: particlelistCurr
+!    type (field0DReal), pointer :: field0DRealPointer
+!
+!    ! loop over all elements of the list and insert the data
+!    dataNumber = 1
+!    particlelistCurr => particlelist
+!    ! while we have a real link
+!    do while(associated(particlelistCurr))
+!
+!      allocate(field0DRealPointer)
+!      field0DRealPointer % scalar = field1DRealPointer % array(dataNumber)
+!      call mpas_pool_add_field(particlelistCurr % particle % nonhaloDataPool, dataName, field0DRealPointer)
+!
+!      ! increment for new dataNumber
+!      dataNumber = dataNumber + 1
+!      ! get next link
+!      particlelistCurr => particlelistCurr % next
+!    end do
+!
+!end subroutine add_nonhalo_data_to_particle_list_1Dreal !}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1811,35 +1814,35 @@ end subroutine add_halo_data_to_particle_list_1Dint !}}}
 !>  on each particle.
 !
 !-----------------------------------------------------------------------
-subroutine add_nonhalo_data_to_particle_list_1Dint_array & !{{{
-    (particlelist, dataName, array1DIntPointer)
-    ! input data
-    type (mpas_particle_list_type), pointer, intent(in) :: particlelist
-    character(len=*), intent(in) :: dataName
-    integer, dimension(:), pointer, intent(in) :: array1DIntPointer
-
-    ! subroutine data
-    integer :: dataNumber
-    type (mpas_particle_list_type), pointer :: particlelistCurr
-    type (field0DInteger), pointer :: field0DIntPointer
-
-    ! loop over all elements of the list and insert the data
-    dataNumber = 1
-    particlelistCurr => particlelist
-    ! while we have a int link
-    do while(associated(particlelistCurr))
-
-      allocate(field0DIntPointer)
-      field0DIntPointer % scalar = array1DIntPointer(dataNumber)
-      call mpas_pool_add_field(particlelistCurr % particle % nonhaloDataPool, dataName, field0DIntPointer)
-
-      ! increment for new dataNumber
-      dataNumber = dataNumber + 1
-      ! get next link
-      particlelistCurr => particlelistCurr % next
-    end do
-
-end subroutine add_nonhalo_data_to_particle_list_1Dint_array !}}}
+!subroutine add_nonhalo_data_to_particle_list_1Dint_array & !{{{
+!    (particlelist, dataName, array1DIntPointer)
+!    ! input data
+!    type (mpas_particle_list_type), pointer, intent(in) :: particlelist
+!    character(len=*), intent(in) :: dataName
+!    integer, dimension(:), pointer, intent(in) :: array1DIntPointer
+!
+!    ! subroutine data
+!    integer :: dataNumber
+!    type (mpas_particle_list_type), pointer :: particlelistCurr
+!    type (field0DInteger), pointer :: field0DIntPointer
+!
+!    ! loop over all elements of the list and insert the data
+!    dataNumber = 1
+!    particlelistCurr => particlelist
+!    ! while we have a int link
+!    do while(associated(particlelistCurr))
+!
+!      allocate(field0DIntPointer)
+!      field0DIntPointer % scalar = array1DIntPointer(dataNumber)
+!      call mpas_pool_add_field(particlelistCurr % particle % nonhaloDataPool, dataName, field0DIntPointer)
+!
+!      ! increment for new dataNumber
+!      dataNumber = dataNumber + 1
+!      ! get next link
+!      particlelistCurr => particlelistCurr % next
+!    end do
+!
+!end subroutine add_nonhalo_data_to_particle_list_1Dint_array !}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1855,35 +1858,35 @@ end subroutine add_nonhalo_data_to_particle_list_1Dint_array !}}}
 !>  on each particle.
 !
 !-----------------------------------------------------------------------
-subroutine add_nonhalo_data_to_particle_list_1Dint & !{{{
-    (particlelist, dataName, field1DIntPointer)
-    ! input data
-    type (mpas_particle_list_type), pointer, intent(in) :: particlelist
-    character(len=*), intent(in) :: dataName
-    type (field1DInteger), pointer, intent(in) :: field1DIntPointer
-
-    ! subroutine data
-    integer :: dataNumber
-    type (mpas_particle_list_type), pointer :: particlelistCurr
-    type (field0DInteger), pointer :: field0DIntPointer
-
-    ! loop over all elements of the list and insert the data
-    dataNumber = 1
-    particlelistCurr => particlelist
-    ! while we have a int link
-    do while(associated(particlelistCurr))
-
-      allocate(field0DIntPointer)
-      field0DIntPointer % scalar = field1DIntPointer % array(dataNumber)
-      call mpas_pool_add_field(particlelistCurr % particle % nonhaloDataPool, dataName, field0DIntPointer)
-
-      ! increment for new dataNumber
-      dataNumber = dataNumber + 1
-      ! get next link
-      particlelistCurr => particlelistCurr % next
-    end do
-
-end subroutine add_nonhalo_data_to_particle_list_1Dint !}}}
+!subroutine add_nonhalo_data_to_particle_list_1Dint & !{{{
+!    (particlelist, dataName, field1DIntPointer)
+!    ! input data
+!    type (mpas_particle_list_type), pointer, intent(in) :: particlelist
+!    character(len=*), intent(in) :: dataName
+!    type (field1DInteger), pointer, intent(in) :: field1DIntPointer
+!
+!    ! subroutine data
+!    integer :: dataNumber
+!    type (mpas_particle_list_type), pointer :: particlelistCurr
+!    type (field0DInteger), pointer :: field0DIntPointer
+!
+!    ! loop over all elements of the list and insert the data
+!    dataNumber = 1
+!    particlelistCurr => particlelist
+!    ! while we have a int link
+!    do while(associated(particlelistCurr))
+!
+!      allocate(field0DIntPointer)
+!      field0DIntPointer % scalar = field1DIntPointer % array(dataNumber)
+!      call mpas_pool_add_field(particlelistCurr % particle % nonhaloDataPool, dataName, field0DIntPointer)
+!
+!      ! increment for new dataNumber
+!      dataNumber = dataNumber + 1
+!      ! get next link
+!      particlelistCurr => particlelistCurr % next
+!    end do
+!
+!end subroutine add_nonhalo_data_to_particle_list_1Dint !}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1968,7 +1971,7 @@ subroutine build_new_particlelist(nParticles, particlelist, ioBlock) !{{{
     ! allocate memory for the new particle
     allocate(particle)
     call mpas_pool_create_pool(particle % haloDataPool)
-    call mpas_pool_create_pool(particle % nonhaloDataPool)
+    !call mpas_pool_create_pool(particle % nonhaloDataPool)
     if (present(ioBlock)) then
       allocate(ioBlockfield)
       ioBlockfield % scalar = ioBlock
@@ -1987,7 +1990,7 @@ subroutine build_new_particlelist(nParticles, particlelist, ioBlock) !{{{
       ! allocate memory for the  new particle
       allocate(particle)
       call mpas_pool_create_pool(particle % haloDataPool)
-      call mpas_pool_create_pool(particle % nonhaloDataPool)
+      !call mpas_pool_create_pool(particle % nonhaloDataPool)
       if(present(ioBlock)) then
         allocate(ioBlockfield)
         ioBlockfield % scalar = ioBlock
@@ -2069,9 +2072,9 @@ subroutine destroy_particle(particle) !{{{
     if(associated(particle % haloDataPool)) then
       call mpas_pool_destroy_pool(particle % haloDataPool)
     end if
-    if(associated(particle % nonhaloDataPool)) then
-      call mpas_pool_destroy_pool(particle % nonhaloDataPool)
-    end if
+    !if(associated(particle % nonhaloDataPool)) then
+    !  call mpas_pool_destroy_pool(particle % nonhaloDataPool)
+    !end if
     deallocate(particle)
   end if
 
@@ -3223,213 +3226,213 @@ end subroutine allocate_list_particlelists !}}}
 !>  This routine transmitts nonHaloData from particlelists
 !
 !-----------------------------------------------------------------------
-   subroutine communicate_particle_nonhalo_data(domain, procNeighs, nPartSend, nPartRecv, listSend, listRecv) !{{{
-     implicit none
+!  subroutine communicate_particle_nonhalo_data(domain, procNeighs, nPartSend, nPartRecv, listSend, listRecv) !{{{
+!    implicit none
 
-     type (domain_type), intent(in) :: domain
-     integer, dimension(:), pointer, intent(in) :: procNeighs
-     integer, dimension(:), pointer, intent(in) :: nPartSend
-     integer, dimension(:), pointer, intent(in) :: nPartRecv
-     type (mpas_list_of_particle_list_type), dimension(:), pointer :: listSend, listRecv
+!    type (domain_type), intent(in) :: domain
+!    integer, dimension(:), pointer, intent(in) :: procNeighs
+!    integer, dimension(:), pointer, intent(in) :: nPartSend
+!    integer, dimension(:), pointer, intent(in) :: nPartRecv
+!    type (mpas_list_of_particle_list_type), dimension(:), pointer :: listSend, listRecv
 
-     integer :: i, j, numProcs, numFields, numRecv, numSends
-     integer, dimension(:), pointer :: recvRequestID, sendRequestID
-     integer :: mpi_ierr
-     type (mpas_pool_type), pointer :: lagrPartTrackPool
-     type (mpas_pool_iterator_type) :: dimItr
-     type array1DReal_list
-       real (kind=RKIND), dimension(:), pointer :: val
-     end type
-     type array1DInt_list
-       integer, dimension(:), pointer :: val
-     end type
-     type (array1DInt_list), dimension(:), pointer :: array1DIntSend, array1DIntRecv
-     type (array1DReal_list), dimension(:), pointer :: array1DRealSend, array1DRealRecv
-     character (len=StrKIND) :: message
+!    integer :: i, j, numProcs, numFields, numRecv, numSends
+!    integer, dimension(:), pointer :: recvRequestID, sendRequestID
+!    integer :: mpi_ierr
+!    type (mpas_pool_type), pointer :: lagrPartTrackPool
+!    type (mpas_pool_iterator_type) :: dimItr
+!    type array1DReal_list
+!      real (kind=RKIND), dimension(:), pointer :: val
+!    end type
+!    type array1DInt_list
+!      integer, dimension(:), pointer :: val
+!    end type
+!    type (array1DInt_list), dimension(:), pointer :: array1DIntSend, array1DIntRecv
+!    type (array1DReal_list), dimension(:), pointer :: array1DRealSend, array1DRealRecv
+!    character (len=StrKIND) :: message
 
-     ! for each entry in the halo pool, want to send and recv the data
+!    ! for each entry in the halo pool, want to send and recv the data
 
-#ifdef _MPI
-     !call MPI_Barrier(domain % dminfo % comm)
-#endif
+!ifdef _MPI
+!    !call MPI_Barrier(domain % dminfo % comm)
+!endif
 
-     numProcs = size(procNeighs)
-     allocate(array1DRealSend(numProcs), array1DRealRecv(numProcs))
-     allocate(array1DIntSend(numProcs),  array1DIntRecv(numProcs))
+!    numProcs = size(procNeighs)
+!    allocate(array1DRealSend(numProcs), array1DRealRecv(numProcs))
+!    allocate(array1DIntSend(numProcs),  array1DIntRecv(numProcs))
 
-     numSends = 0
-     do i = 1, numProcs
-       if (nPartSend(i) > 0) numSends = numSends + 1
-     end do
-     allocate(sendRequestID(numSends))
+!    numSends = 0
+!    do i = 1, numProcs
+!      if (nPartSend(i) > 0) numSends = numSends + 1
+!    end do
+!    allocate(sendRequestID(numSends))
 
-     numRecv = 0
-     do i = 1, numProcs
-       if (nPartRecv(i) > 0) numRecv = numRecv + 1
-     end do
-     allocate(recvRequestID(numRecv))
+!    numRecv = 0
+!    do i = 1, numProcs
+!      if (nPartRecv(i) > 0) numRecv = numRecv + 1
+!    end do
+!    allocate(recvRequestID(numRecv))
 
-     !Notes !{{{
-     !! get number of items that need transfered from halo pool, numFields which is a constant
-     !call mpas_pool_get_subpool(domain % blocklist % structs, 'lagrPartTrackHalo', lagrPartTrackPool)
-     !call mpas_pool_begin_iteration(lagrPartTrackPool)
-     !numFields = 0
-     !do while(mpas_pool_get_next_member(lagrPartTrackPool, dimItr))
-     !  ! only need to transfer pool
-     !  if (dimItr % memberType == MPAS_POOL_FIELD) then
-     !    numFields = numFields + 1
-     !  end if
-     !end do
-     !! assume, for now, that this will be constant accross processors.  If not, it would need to be sent to other
-     !! processors too.  This also presumes that properties will be fixed accross the processesors.
-     !}}}
+!    !Notes !{{{
+!    !! get number of items that need transfered from halo pool, numFields which is a constant
+!    !call mpas_pool_get_subpool(domain % blocklist % structs, 'lagrPartTrackHalo', lagrPartTrackPool)
+!    !call mpas_pool_begin_iteration(lagrPartTrackPool)
+!    !numFields = 0
+!    !do while(mpas_pool_get_next_member(lagrPartTrackPool, dimItr))
+!    !  ! only need to transfer pool
+!    !  if (dimItr % memberType == MPAS_POOL_FIELD) then
+!    !    numFields = numFields + 1
+!    !  end if
+!    !end do
+!    !! assume, for now, that this will be constant accross processors.  If not, it would need to be sent to other
+!    !! processors too.  This also presumes that properties will be fixed accross the processesors.
+!    !}}}
 
-     ! on each list, transmit relevant fields to associated processors (note using the var struct since it has the names
-     ! required and this information is on each processor, even if the pool's fields are empty their names and types
-     ! are there from the registry).
-     call mpas_pool_get_subpool(domain % blocklist % structs, 'lagrPartTrackNonHalo', lagrPartTrackPool)
-     call mpas_pool_begin_iteration(lagrPartTrackPool)
-     do while(mpas_pool_get_next_member(lagrPartTrackPool, dimItr))
-       if (dimItr % memberType == MPAS_POOL_FIELD) then
-         !print *,  'transfering ', trim(dimItr % memberName)
-         if (dimItr % dataType == MPAS_POOL_REAL) then
-           ! recv
-           j = 1
-           do i=1,numProcs
-             if(nPartRecv(i) > 0) then
-               allocate(array1DRealRecv(i)%val(nPartRecv(i)))
-              !print *,  'receiving real ', trim(dimItr % memberName), ' from ', procNeighs(i)
-               ! receive communicated data
-#ifdef _MPI
-               call MPI_IRecv(array1DRealRecv(i)%val, nPartRecv(i), MPI_REALKIND, procNeighs(i), procNeighs(i), &
-                 domain % dminfo % comm, recvRequestID(j), mpi_ierr)
-#endif
-               j = j + 1
-             end if
-           end do
-           ! send
-           j = 1
-           do i=1,numProcs
-             if (nPartSend(i) > 0) then
-               allocate(array1DRealSend(i)%val(nPartSend(i)))
-               !print *,  'sending real ', trim(dimItr % memberName), ' to ', procNeighs(i)
-               call get_nonhalo_data_from_particle_list_array(listSend(i)%list, dimItr % memberName, &
-                 array1DRealSend(i)%val)
-#ifdef _MPI
-               call MPI_ISend(array1DRealSend(i)%val, nPartSend(i), MPI_REALKIND, procNeighs(i), &
-                 domain % dminfo % my_proc_id, domain % dminfo % comm, sendRequestID(j), mpi_ierr)
-#endif
-               j = j + 1
-             end if
-           end do
+!    ! on each list, transmit relevant fields to associated processors (note using the var struct since it has the names
+!    ! required and this information is on each processor, even if the pool's fields are empty their names and types
+!    ! are there from the registry).
+!    call mpas_pool_get_subpool(domain % blocklist % structs, 'lagrPartTrackNonHalo', lagrPartTrackPool)
+!    call mpas_pool_begin_iteration(lagrPartTrackPool)
+!    do while(mpas_pool_get_next_member(lagrPartTrackPool, dimItr))
+!      if (dimItr % memberType == MPAS_POOL_FIELD) then
+!        !print *,  'transfering ', trim(dimItr % memberName)
+!        if (dimItr % dataType == MPAS_POOL_REAL) then
+!          ! recv
+!          j = 1
+!          do i=1,numProcs
+!            if(nPartRecv(i) > 0) then
+!              allocate(array1DRealRecv(i)%val(nPartRecv(i)))
+!             !print *,  'receiving real ', trim(dimItr % memberName), ' from ', procNeighs(i)
+!              ! receive communicated data
+!ifdef _MPI
+!              call MPI_IRecv(array1DRealRecv(i)%val, nPartRecv(i), MPI_REALKIND, procNeighs(i), procNeighs(i), &
+!                domain % dminfo % comm, recvRequestID(j), mpi_ierr)
+!endif
+!              j = j + 1
+!            end if
+!          end do
+!          ! send
+!          j = 1
+!          do i=1,numProcs
+!            if (nPartSend(i) > 0) then
+!              allocate(array1DRealSend(i)%val(nPartSend(i)))
+!              !print *,  'sending real ', trim(dimItr % memberName), ' to ', procNeighs(i)
+!              call get_nonhalo_data_from_particle_list_array(listSend(i)%list, dimItr % memberName, &
+!                array1DRealSend(i)%val)
+!ifdef _MPI
+!              call MPI_ISend(array1DRealSend(i)%val, nPartSend(i), MPI_REALKIND, procNeighs(i), &
+!                domain % dminfo % my_proc_id, domain % dminfo % comm, sendRequestID(j), mpi_ierr)
+!endif
+!              j = j + 1
+!            end if
+!          end do
 
-#ifdef _MPI
-          call MPI_WaitAll(numRecv, recvRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
-#endif
-          if (mpi_ierr /= 0) call mpas_log_write('recv: mpi_ierr = ' COMMA mpi_ierr)
-#ifdef _MPI
-          call MPI_WaitAll(numSends, sendRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
-#endif
-          if (mpi_ierr /= 0) call mpas_log_write('send: mpi_ierr = ' COMMA mpi_ierr)
+!ifdef _MPI
+!         call MPI_WaitAll(numRecv, recvRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
+!endif
+!         if (mpi_ierr /= 0) call mpas_log_write('recv: mpi_ierr = ' COMMA mpi_ierr)
+!ifdef _MPI
+!         call MPI_WaitAll(numSends, sendRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
+!endif
+!         if (mpi_ierr /= 0) call mpas_log_write('send: mpi_ierr = ' COMMA mpi_ierr)
 
-          ! store values
-          j = 1
-          do i=1,numProcs
-            if(nPartRecv(i) > 0) then
-              ! place it in particle list
-              call add_nonhalo_data_to_particle_list_array(listRecv(i)%list, dimItr % memberName, &
-                array1DRealRecv(i)%val)
-              j = j + 1
-            end if
-          end do
+!         ! store values
+!         j = 1
+!         do i=1,numProcs
+!           if(nPartRecv(i) > 0) then
+!             ! place it in particle list
+!             call add_nonhalo_data_to_particle_list_array(listRecv(i)%list, dimItr % memberName, &
+!               array1DRealRecv(i)%val)
+!             j = j + 1
+!           end if
+!         end do
 
-           do i=1,numProcs
-             if(nPartSend(i) > 0) deallocate(array1DRealSend(i)%val)
-           end do
-           do i=1,numProcs
-             if(nPartRecv(i) > 0) deallocate(array1DRealRecv(i)%val)
-           end do
-          !call mpas_log_write( 'finished'
+!          do i=1,numProcs
+!            if(nPartSend(i) > 0) deallocate(array1DRealSend(i)%val)
+!          end do
+!          do i=1,numProcs
+!            if(nPartRecv(i) > 0) deallocate(array1DRealRecv(i)%val)
+!          end do
+!         !call mpas_log_write( 'finished'
 
-        elseif (dimItr % dataType == MPAS_POOL_INTEGER) then
-          ! recv
-          j = 1
-          do i=1,numProcs
-            if(nPartRecv(i) > 0) then
-              allocate(array1DIntRecv(i)%val(nPartRecv(i)))
-              ! receive communicated data
-              !print *,  'receiving int ', trim(dimItr % memberName), ' from ', procNeighs(i)
-#ifdef _MPI
-              call MPI_IRecv(array1DIntRecv(i)%val, nPartRecv(i), MPI_INTEGERKIND, procNeighs(i), procNeighs(i), &
-                domain % dminfo % comm, recvRequestID(j), mpi_ierr)
-#endif
-              !if( trim(dimItr % memberName) == 'currentBlock') print *,  'currentBlock received ', &
-              !                                                 nPartRecv(i), ' from', procNeighs(i), ' = ', array1DIntRecv(i)%val
-              j = j + 1
-            end if
-          end do
-          ! send
-          j = 1
-          do i=1,numProcs
-            if(nPartSend(i) > 0) then
-              allocate(array1DIntSend(i)%val(nPartSend(i)))
-              !print *,  'sending int ', trim(dimItr % memberName), ' to ', procNeighs(i)
-              call get_nonhalo_data_from_particle_list_array(listSend(i)%list, dimItr % memberName, array1DIntSend(i)%val)
-              !if( trim(dimItr % memberName) == 'currentBlock') print *,  'currentBlock sent ',nPartSend(i), &
-              !                                                 ' to ', procNeighs(i), ' = ', array1DIntSend(i)%val
-#ifdef _MPI
-              call MPI_ISend(array1DIntSend(i)%val, nPartSend(i), MPI_INTEGERKIND, procNeighs(i), &
-                domain % dminfo % my_proc_id, domain % dminfo % comm, sendRequestID(j), mpi_ierr)
-#endif
-              j = j + 1
-            end if
-          end do
+!       elseif (dimItr % dataType == MPAS_POOL_INTEGER) then
+!         ! recv
+!         j = 1
+!         do i=1,numProcs
+!           if(nPartRecv(i) > 0) then
+!             allocate(array1DIntRecv(i)%val(nPartRecv(i)))
+!             ! receive communicated data
+!             !print *,  'receiving int ', trim(dimItr % memberName), ' from ', procNeighs(i)
+!ifdef _MPI
+!             call MPI_IRecv(array1DIntRecv(i)%val, nPartRecv(i), MPI_INTEGERKIND, procNeighs(i), procNeighs(i), &
+!               domain % dminfo % comm, recvRequestID(j), mpi_ierr)
+!endif
+!             !if( trim(dimItr % memberName) == 'currentBlock') print *,  'currentBlock received ', &
+!             !                                                 nPartRecv(i), ' from', procNeighs(i), ' = ', array1DIntRecv(i)%val
+!             j = j + 1
+!           end if
+!         end do
+!         ! send
+!         j = 1
+!         do i=1,numProcs
+!           if(nPartSend(i) > 0) then
+!             allocate(array1DIntSend(i)%val(nPartSend(i)))
+!             !print *,  'sending int ', trim(dimItr % memberName), ' to ', procNeighs(i)
+!             call get_nonhalo_data_from_particle_list_array(listSend(i)%list, dimItr % memberName, array1DIntSend(i)%val)
+!             !if( trim(dimItr % memberName) == 'currentBlock') print *,  'currentBlock sent ',nPartSend(i), &
+!             !                                                 ' to ', procNeighs(i), ' = ', array1DIntSend(i)%val
+!ifdef _MPI
+!             call MPI_ISend(array1DIntSend(i)%val, nPartSend(i), MPI_INTEGERKIND, procNeighs(i), &
+!               domain % dminfo % my_proc_id, domain % dminfo % comm, sendRequestID(j), mpi_ierr)
+!endif
+!             j = j + 1
+!           end if
+!         end do
 
-#ifdef _MPI
-          call MPI_WaitAll(numRecv, recvRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
-#endif
-          if (mpi_ierr /= 0) call mpas_log_write('mpi_ierr = ' COMMA mpi_ierr)
-#ifdef _MPI
-          call MPI_WaitAll(numSends, sendRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
-#endif
-          if (mpi_ierr /= 0) print *,  'mpi_ierr = ', mpi_ierr
+!ifdef _MPI
+!         call MPI_WaitAll(numRecv, recvRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
+!endif
+!         if (mpi_ierr /= 0) call mpas_log_write('mpi_ierr = ' COMMA mpi_ierr)
+!ifdef _MPI
+!         call MPI_WaitAll(numSends, sendRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
+!endif
+!         if (mpi_ierr /= 0) print *,  'mpi_ierr = ', mpi_ierr
 
-          !do i=1,numProcs
-          !  if(nPartRecv(i) > 0) print *,  'Received ', trim(dimItr % memberName), ' = ', array1DIntRecv(i) % val
-          !end do
+!         !do i=1,numProcs
+!         !  if(nPartRecv(i) > 0) print *,  'Received ', trim(dimItr % memberName), ' = ', array1DIntRecv(i) % val
+!         !end do
 
-          ! store values
-          do i=1,numProcs
-            if(nPartRecv(i) > 0) then
-              ! place it in particle list
-              call add_nonhalo_data_to_particle_list_array(listRecv(i)%list, dimItr % memberName, array1DIntRecv(i)%val)
-              j = j + 1
-            end if
-          end do
+!         ! store values
+!         do i=1,numProcs
+!           if(nPartRecv(i) > 0) then
+!             ! place it in particle list
+!             call add_nonhalo_data_to_particle_list_array(listRecv(i)%list, dimItr % memberName, array1DIntRecv(i)%val)
+!             j = j + 1
+!           end if
+!         end do
 
-          do i=1,numProcs
-            if(nPartSend(i) > 0) deallocate(array1DIntSend(i)%val)
-          end do
-          do i=1,numProcs
-            if(nPartRecv(i) > 0) deallocate(array1DIntRecv(i)%val)
-          end do
-          !call mpas_log_write( 'finished')
-        else
-           !call mpas_log_write( "Different field type than implemented during nonHalo communication!")
-         end if
-       elseif (dimItr % memberType == MPAS_POOL_DIMENSION) then
-         ! ignore dimensions for now and have this code so they aren't printed as an error message
-       else
-         write(message, *) "Different type expected in registry for key ", trim(dimItr % memberName), &
-                           " in nonHalo data for communication-- don't know what to do!"
-         LIGHT_DEBUG_ALL_WRITE(message)
-       end if
-     end do
+!         do i=1,numProcs
+!           if(nPartSend(i) > 0) deallocate(array1DIntSend(i)%val)
+!         end do
+!         do i=1,numProcs
+!           if(nPartRecv(i) > 0) deallocate(array1DIntRecv(i)%val)
+!         end do
+!         !call mpas_log_write( 'finished')
+!       else
+!          !call mpas_log_write( "Different field type than implemented during nonHalo communication!")
+!        end if
+!      elseif (dimItr % memberType == MPAS_POOL_DIMENSION) then
+!        ! ignore dimensions for now and have this code so they aren't printed as an error message
+!      else
+!        write(message, *) "Different type expected in registry for key ", trim(dimItr % memberName), &
+!                          " in nonHalo data for communication-- don't know what to do!"
+!        LIGHT_DEBUG_ALL_WRITE(message)
+!      end if
+!    end do
 
-     deallocate(array1DIntSend, array1DIntRecv, array1DRealSend, array1DRealRecv, recvRequestID, sendRequestID)
-     LIGHT_DEBUG_WRITE('Finished primary MPI communication for nonhalo')
+!    deallocate(array1DIntSend, array1DIntRecv, array1DRealSend, array1DRealRecv, recvRequestID, sendRequestID)
+!    LIGHT_DEBUG_WRITE('Finished primary MPI communication for nonhalo')
 
-   end subroutine communicate_particle_nonhalo_data!}}}
+!  end subroutine communicate_particle_nonhalo_data!}}}
 
 !***********************************************************************
 !
@@ -3710,70 +3713,70 @@ end subroutine allocate_list_particlelists !}}}
 !>  This routine allocates space for nonHaloData on the particlelist
 !
 !-----------------------------------------------------------------------
-   subroutine allocate_nonHalo_data(domain, particlelist) !{{{
-     implicit none
+!  subroutine allocate_nonHalo_data(domain, particlelist) !{{{
+!    implicit none
 
-     type (domain_type), intent(in) :: domain
-     type (mpas_particle_list_type), pointer, intent(in) :: particlelist
-     type (mpas_pool_type), pointer :: lagrPartTrackPool
-     type (mpas_pool_iterator_type) :: dimItr
+!    type (domain_type), intent(in) :: domain
+!    type (mpas_particle_list_type), pointer, intent(in) :: particlelist
+!    type (mpas_pool_type), pointer :: lagrPartTrackPool
+!    type (mpas_pool_iterator_type) :: dimItr
 
-     integer :: i, nPart
-     real (kind=RKIND), dimension(:), pointer :: array1DRealPointer
-     integer, dimension(:), pointer :: array1DIntPointer
-     character (len=StrKIND) :: message
+!    integer :: i, nPart
+!    real (kind=RKIND), dimension(:), pointer :: array1DRealPointer
+!    integer, dimension(:), pointer :: array1DIntPointer
+!    character (len=StrKIND) :: message
 
 
-     ! get number of particle on list
-     nPart = count_particlelist(particlelist)
+!    ! get number of particle on list
+!    nPart = count_particlelist(particlelist)
 
-     ! allocate zero arrays
-     allocate(array1DRealPointer(nPart))
-     allocate(array1DIntPointer(nPart))
-     array1DRealPointer = 0.0_RKIND
-     array1DIntPointer = 0
+!    ! allocate zero arrays
+!    allocate(array1DRealPointer(nPart))
+!    allocate(array1DIntPointer(nPart))
+!    array1DRealPointer = 0.0_RKIND
+!    array1DIntPointer = 0
 
-     ! on each list, transmit relevant fields to associated processors
-     call mpas_pool_get_subpool(domain % blocklist % structs, 'lagrPartTrackNonHalo', lagrPartTrackPool)
-     call mpas_pool_begin_iteration(lagrPartTrackPool)
-     do while(mpas_pool_get_next_member(lagrPartTrackPool, dimItr))
-       if (dimItr % memberType == MPAS_POOL_FIELD) then
-         if (dimItr % dataType == MPAS_POOL_REAL) then
-             call add_nonhalo_data_to_particle_list_array(particlelist, dimItr % memberName, array1DRealPointer)
-         elseif (dimItr % dataType == MPAS_POOL_INTEGER) then
-             call add_nonhalo_data_to_particle_list_array(particlelist, dimItr % memberName, array1DIntPointer)
-         else
-           LIGHT_DEBUG_ALL_WRITE("Different field type than implemented during halo communication!")
-         end if
-       elseif (dimItr % memberType == MPAS_POOL_DIMENSION) then
-         ! ignore dimensions for now and have this code so they aren't printed as an error message
-       else
-         write(message, *) "Different type expected in registry for key ", trim(dimItr % memberName), &
-                           " in halo data for communication-- don't know what to do!"
-         LIGHT_DEBUG_ALL_WRITE(message)
-       end if
-     end do
+!    ! on each list, transmit relevant fields to associated processors
+!    call mpas_pool_get_subpool(domain % blocklist % structs, 'lagrPartTrackNonHalo', lagrPartTrackPool)
+!    call mpas_pool_begin_iteration(lagrPartTrackPool)
+!    do while(mpas_pool_get_next_member(lagrPartTrackPool, dimItr))
+!      if (dimItr % memberType == MPAS_POOL_FIELD) then
+!        if (dimItr % dataType == MPAS_POOL_REAL) then
+!            call add_nonhalo_data_to_particle_list_array(particlelist, dimItr % memberName, array1DRealPointer)
+!        elseif (dimItr % dataType == MPAS_POOL_INTEGER) then
+!            call add_nonhalo_data_to_particle_list_array(particlelist, dimItr % memberName, array1DIntPointer)
+!        else
+!          LIGHT_DEBUG_ALL_WRITE("Different field type than implemented during halo communication!")
+!        end if
+!      elseif (dimItr % memberType == MPAS_POOL_DIMENSION) then
+!        ! ignore dimensions for now and have this code so they aren't printed as an error message
+!      else
+!        write(message, *) "Different type expected in registry for key ", trim(dimItr % memberName), &
+!                          " in halo data for communication-- don't know what to do!"
+!        LIGHT_DEBUG_ALL_WRITE(message)
+!      end if
+!    end do
 
-     ! deallocate arrays
-     deallocate(array1DRealPointer)
-     deallocate(array1DIntPointer)
+!    ! deallocate arrays
+!    deallocate(array1DRealPointer)
+!    deallocate(array1DIntPointer)
 
-   end subroutine allocate_nonHalo_data !}}}
+!  end subroutine allocate_nonHalo_data !}}}
 
-   subroutine allocate_list_nonHalo_data(domain, listPL) !{{{
-     implicit none
+!  subroutine allocate_list_nonHalo_data(domain, listPL) !{{{
+!    implicit none
 
-     type (domain_type), intent(in) :: domain
-     type (mpas_list_of_particle_list_type), dimension(:), pointer, intent(inout) :: listPL
+!    type (domain_type), intent(in) :: domain
+!    type (mpas_list_of_particle_list_type), dimension(:), pointer, intent(inout) :: listPL
 
-     integer :: i, numList
+!    integer :: i, numList
 
-     numList = size(listPL)
-     do i=1, numList
-       call allocate_nonHalo_data(domain, listPL(i)%list)
-     end do
+!    numList = size(listPL)
+!    do i=1, numList
+!      call allocate_nonHalo_data(domain, listPL(i)%list)
+!    end do
 
-   end subroutine allocate_list_nonHalo_data !}}}
+!  end subroutine allocate_list_nonHalo_data !}}}
 
 !***********************************************************************
 !
@@ -3942,11 +3945,11 @@ end subroutine allocate_list_particlelists !}}}
                               " in halo data for read-- don't know what to do!"
             LIGHT_DEBUG_WRITE(message)
             ! false warning for
-            !Different type expected in registry for key on_a_sphere in nonHalo data for read, don't know what to do!
-            !Different type expected in registry for key sphere_radius in nonHalo data for read, don't know what to do!
-            !Different type expected in registry for key is_periodic in nonHalo data for read, don't know what to do!
-            !Different type expected in registry for key x_period in nonHalo data for read, don't know what to do!
-            !Different type expected in registry for key y_period in nonHalo data for read, don't know what to do!
+            !Different type expected in registry for key on_a_sphere in Halo data for read, don't know what to do!
+            !Different type expected in registry for key sphere_radius in Halo data for read, don't know what to do!
+            !Different type expected in registry for key is_periodic in Halo data for read, don't know what to do!
+            !Different type expected in registry for key x_period in Halo data for read, don't know what to do!
+            !Different type expected in registry for key y_period in Halo data for read, don't know what to do!
           end if
         end do
 
@@ -3967,69 +3970,69 @@ end subroutine allocate_list_particlelists !}}}
 !>  This routine reads nonhaloData input for this MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
-   subroutine read_nonhaloData(domain, err)!{{{
+!  subroutine read_nonhaloData(domain, err)!{{{
 
-      implicit none
+!     implicit none
 
-      !-----------------------------------------------------------------
-      ! input/output variables
-      !-----------------------------------------------------------------
-      type (domain_type), intent(in) :: domain
+!     !-----------------------------------------------------------------
+!     ! input/output variables
+!     !-----------------------------------------------------------------
+!     type (domain_type), intent(in) :: domain
 
-      !-----------------------------------------------------------------
-      ! output variables
-      !-----------------------------------------------------------------
-      integer, intent(out) :: err !< Output: error flag
+!     !-----------------------------------------------------------------
+!     ! output variables
+!     !-----------------------------------------------------------------
+!     integer, intent(out) :: err !< Output: error flag
 
-      !-----------------------------------------------------------------
-      ! local variables
-      !-----------------------------------------------------------------
-      type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: lagrPartTrackPool
-      type (mpas_pool_iterator_type) :: dimItr
-      type (mpas_particle_list_type), pointer :: particlelist
-      type (field1DReal), pointer :: field1DRealPointer
-      type (field1DInteger), pointer :: field1DIntPointer
-      character (len=StrKIND) :: message
+!     !-----------------------------------------------------------------
+!     ! local variables
+!     !-----------------------------------------------------------------
+!     type (block_type), pointer :: block
+!     type (mpas_pool_type), pointer :: lagrPartTrackPool
+!     type (mpas_pool_iterator_type) :: dimItr
+!     type (mpas_particle_list_type), pointer :: particlelist
+!     type (field1DReal), pointer :: field1DRealPointer
+!     type (field1DInteger), pointer :: field1DIntPointer
+!     character (len=StrKIND) :: message
 
-      err = 0
+!     err = 0
 
-      block => domain % blocklist
-      do while (associated(block))
-        ! allocate pointers
-        particlelist => block % particlelist
-        call mpas_pool_get_subpool(block % structs, 'lagrPartTrackNonHalo', lagrPartTrackPool)
+!     block => domain % blocklist
+!     do while (associated(block))
+!       ! allocate pointers
+!       particlelist => block % particlelist
+!       call mpas_pool_get_subpool(block % structs, 'lagrPartTrackNonHalo', lagrPartTrackPool)
 
-        ! iterate over each member of the pool and make the relevant assignment
-        call mpas_pool_begin_iteration(lagrPartTrackPool)
-        do while(mpas_pool_get_next_member(lagrPartTrackPool, dimItr))
-          ! determine the type of data
-          if (dimItr % memberType == MPAS_POOL_FIELD) then
-            if (dimItr % dataType == MPAS_POOL_REAL) then
-              call mpas_pool_get_field(lagrPartTrackPool, dimItr % memberName, field1DRealPointer)
-              call add_nonhalo_data_to_particle_list(particlelist, dimItr % memberName, field1DRealPointer)
-            elseif (dimItr % dataType == MPAS_POOL_INTEGER) then
-              call mpas_pool_get_field(lagrPartTrackPool, dimItr % memberName, field1DIntPointer)
-              call add_nonhalo_data_to_particle_list(particlelist, dimItr % memberName, field1DIntPointer)
-            else
-              LIGHT_DEBUG_WRITE("Different field type than implemented in nonHalo read!")
-            end if
-          elseif (dimItr % memberType == MPAS_POOL_DIMENSION) then
-            ! ignore dimensions for now and have this code so they aren't printed as an error message
-          else
-            write(message, *) "Different type expected in registry for key ", trim(dimItr % memberName),  &
-                              " in nonHalo data for read-- don't know what to do!"
-            LIGHT_DEBUG_WRITE(message)
-          end if
-        end do
+!       ! iterate over each member of the pool and make the relevant assignment
+!       call mpas_pool_begin_iteration(lagrPartTrackPool)
+!       do while(mpas_pool_get_next_member(lagrPartTrackPool, dimItr))
+!         ! determine the type of data
+!         if (dimItr % memberType == MPAS_POOL_FIELD) then
+!           if (dimItr % dataType == MPAS_POOL_REAL) then
+!             call mpas_pool_get_field(lagrPartTrackPool, dimItr % memberName, field1DRealPointer)
+!             call add_nonhalo_data_to_particle_list(particlelist, dimItr % memberName, field1DRealPointer)
+!           elseif (dimItr % dataType == MPAS_POOL_INTEGER) then
+!             call mpas_pool_get_field(lagrPartTrackPool, dimItr % memberName, field1DIntPointer)
+!             call add_nonhalo_data_to_particle_list(particlelist, dimItr % memberName, field1DIntPointer)
+!           else
+!             LIGHT_DEBUG_WRITE("Different field type than implemented in nonHalo read!")
+!           end if
+!         elseif (dimItr % memberType == MPAS_POOL_DIMENSION) then
+!           ! ignore dimensions for now and have this code so they aren't printed as an error message
+!         else
+!           write(message, *) "Different type expected in registry for key ", trim(dimItr % memberName),  &
+!                             " in nonHalo data for read-- don't know what to do!"
+!           LIGHT_DEBUG_WRITE(message)
+!         end if
+!       end do
 
-        ! alternatively, could initialize these fields or just make sure that they exist!
+!       ! alternatively, could initialize these fields or just make sure that they exist!
 
-         block => block % next
-      end do
-      LIGHT_DEBUG_WRITE('Finished reading non-halo data')
+!        block => block % next
+!     end do
+!     LIGHT_DEBUG_WRITE('Finished reading non-halo data')
 
-   end subroutine read_nonhaloData!}}}
+!  end subroutine read_nonhaloData!}}}
 
 !***********************************************************************
 !

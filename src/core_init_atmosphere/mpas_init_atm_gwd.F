@@ -7,14 +7,34 @@
 !
 module mpas_init_atm_gwd
 
+   use iso_c_binding, only : c_char, c_int, c_float, c_ptr, c_loc
+
    use mpas_derived_types, only : MPAS_LOG_ERR
    use mpas_framework
    use mpas_timekeeping
    use mpas_log, only : mpas_log_write
+   use mpas_c_interfacing, only : mpas_f_to_c_string
 
    public :: compute_gwd_fields
 
    private
+
+   interface
+      subroutine read_geogrid(fname, rarray, nx, ny, nz, isigned, endian, &
+                              scalefactor, wordsize, status) bind(C)
+         use iso_c_binding, only : c_char, c_int, c_float, c_ptr
+         character (c_char), dimension(*), intent(in) :: fname
+         type (c_ptr), value :: rarray
+         integer (c_int), intent(in), value :: nx
+         integer (c_int), intent(in), value :: ny
+         integer (c_int), intent(in), value :: nz
+         integer (c_int), intent(in), value :: isigned
+         integer (c_int), intent(in), value :: endian
+         real (c_float), intent(in), value :: scalefactor
+         integer (c_int), intent(in), value :: wordsize
+         integer (c_int), intent(inout) :: status
+      end subroutine read_geogrid
+   end interface
 
    integer, parameter :: I1KIND = selected_int_kind(2)
 
@@ -314,14 +334,17 @@ module mpas_init_atm_gwd
       integer, parameter :: tile_y = 1200       ! y-dimension of each tile of global 30-arc-second topography
       integer, parameter :: tile_bdr = 3        ! number of layers of border/halo points surrounding each tile
 
-      integer :: istatus
+      integer (c_int) :: istatus
       integer :: ix, iy, ishift, ix_shift
-      integer :: isigned, endian, wordsize, nx, ny, nz
-      real (kind=R4KIND) :: scalefactor
-      real (kind=R4KIND), dimension(:,:,:), allocatable :: tile
+      integer (c_int) :: isigned, endian, wordsize, nx, ny, nz
+      real (c_float) :: scalefactor
+      real (c_float), dimension(:,:,:), pointer, contiguous :: tile
+      type (c_ptr) :: tile_ptr
       character(len=StrKIND) :: filename
+      character(kind=c_char), dimension(StrKIND+1) :: c_filename
 
       allocate(tile(tile_x+2*tile_bdr,tile_y+2*tile_bdr,1))
+      tile_ptr = c_loc(tile)
 
       isigned  = 1
       endian   = 0
@@ -345,7 +368,8 @@ module mpas_init_atm_gwd
       do ix=1,topo_x,tile_x
          write(filename,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(path)//trim(sub_path), ix, '-', (ix+tile_x-1), '.', &
                                                                                       iy, '-', (iy+tile_y-1)
-         call read_geogrid(filename, len_trim(filename), tile, nx, ny, nz, isigned, endian, &
+         call mpas_f_to_c_string(filename, c_filename)
+         call read_geogrid(c_filename, tile_ptr, nx, ny, nz, isigned, endian, &
                            scalefactor, wordsize, istatus)
          if (istatus /= 0) then
             call mpas_log_write('Error reading topography tile '//trim(filename), messageType=MPAS_LOG_ERR)
@@ -389,14 +413,17 @@ module mpas_init_atm_gwd
       integer, parameter :: tile_x = 1200       ! x-dimension of each tile of global 30-arc-second landuse
       integer, parameter :: tile_y = 1200       ! y-dimension of each tile of global 30-arc-second landuse
 
-      integer :: istatus
+      integer (c_int) :: istatus
       integer :: ix, iy
-      integer :: isigned, endian, wordsize, nx, ny, nz
-      real (kind=R4KIND) :: scalefactor
-      real (kind=R4KIND), dimension(:,:,:), allocatable :: tile
+      integer (c_int) :: isigned, endian, wordsize, nx, ny, nz
+      real (c_float) :: scalefactor
+      real (c_float), dimension(:,:,:), pointer, contiguous :: tile
+      type (c_ptr) :: tile_ptr
       character(len=StrKIND) :: filename
+      character(kind=c_char), dimension(StrKIND+1) :: c_filename
 
       allocate(tile(tile_x,tile_y,1))
+      tile_ptr = c_loc(tile)
 
       isigned  = 1
       endian   = 0
@@ -410,7 +437,8 @@ module mpas_init_atm_gwd
       do ix=1,topo_x,tile_x
          write(filename,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(path)//'/landuse_30s/', ix, '-', (ix+tile_x-1), '.', &
                                                                                       iy, '-', (iy+tile_y-1)
-         call read_geogrid(filename, len_trim(filename), tile, nx, ny, nz, isigned, endian, &
+         call mpas_f_to_c_string(filename, c_filename)
+         call read_geogrid(c_filename, tile_ptr, nx, ny, nz, isigned, endian, &
                            scalefactor, wordsize, istatus)
          if (istatus /= 0) then
             call mpas_log_write('Error reading landuse tile '//trim(filename))

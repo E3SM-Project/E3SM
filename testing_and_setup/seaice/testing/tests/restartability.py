@@ -59,8 +59,18 @@ def restartability(mpasDevelopmentDir, domainsDir, domain, configuration, option
     # restart
     nProcs = 32
 
-    nmlChanges = {"seaice_model": {"config_start_time":"file"},
-                  "restart":    {"config_do_restart":True}}
+    bgcRestart = False
+    if ("bgc" in options.keys() and options["bgc"] == "True"):
+        bgcRestart = True
+
+    if (not bgcRestart):
+        nmlChanges = {"seaice_model": {"config_start_time":"file"},
+                      "restart": {"config_do_restart":True}}
+    else:
+        nmlChanges = {"seaice_model": {"config_start_time":"file"},
+                      "restart": {"config_do_restart":True,
+                                  "config_do_restart_bgc":True,
+                                  "config_do_restart_hbrine":True}}
     if (check):
         nmlChanges["unit_test"] = {"config_testing_system_test":True}
 

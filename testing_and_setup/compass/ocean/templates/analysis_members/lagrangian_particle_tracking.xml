@@ -45,11 +45,8 @@
 				<member name="resetTime" type="var"/>
 				<member name="numTimesReset" type="var"/>
 				<member name="buoyancyParticle" type="var"/>
-				<member name="vertexReconstMethod" type="var"/>
-				<member name="horizontalTreatment" type="var"/>
 				<member name="verticalTreatment" type="var"/>
 				<member name="dtParticle" type="var"/>
-				<member name="timeIntegration" type="var"/>
 				<member name="indexLevel" type="var"/>
 				<member name="uVertexVelocity" type="var"/>
 				<member name="vVertexVelocity" type="var"/>
@@ -96,11 +93,8 @@
 				<member name="resetTime" type="var"/>
 				<member name="numTimesReset" type="var"/>
 				<member name="buoyancyParticle" type="var"/>
-				<member name="vertexReconstMethod" type="var"/>
-				<member name="horizontalTreatment" type="var"/>
 				<member name="verticalTreatment" type="var"/>
 				<member name="dtParticle" type="var"/>
-				<member name="timeIntegration" type="var"/>
 				<member name="indexLevel" type="var"/>
 				<member name="transfered" type="var"/>
 				<member name="buoyancySurfaceValues" type="var"/>
@@ -133,11 +127,8 @@
 				<member name="resetTime" type="var"/>
 				<member name="numTimesReset" type="var"/>
 				<member name="buoyancyParticle" type="var"/>
-				<member name="vertexReconstMethod" type="var"/>
-				<member name="horizontalTreatment" type="var"/>
 				<member name="verticalTreatment" type="var"/>
 				<member name="dtParticle" type="var"/>
-				<member name="timeIntegration" type="var"/>
 				<member name="indexLevel" type="var"/>
 				<member name="transfered" type="var"/>
 				<member name="buoyancySurfaceValues" type="var"/>

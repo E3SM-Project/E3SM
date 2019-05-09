@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<registry model="mpas" core="atmosphere" core_abbrev="atm" version="6.0">
+<registry model="mpas" core="atmosphere" core_abbrev="atm" version="6.2">
 
 <!-- **************************************************************************************** -->
 <!-- ************************************** Dimensions ************************************** -->
@@ -101,7 +101,7 @@
 
                 <nml_option name="config_dynamics_split_steps" type="integer" default_value="3"
                      units="-"
-                     description="When config\_split\_dynamics\_transport = T, the number of RK steps per transport step"
+                     description="When config_split_dynamics_transport = T, the number of RK steps per transport step"
                      possible_values="Positive integer values"/>
 
                 <nml_option name="config_h_mom_eddy_visc2" type="real" default_value="0.0"
@@ -255,6 +255,26 @@
                      units="-"
                      description="Maximum w-damping coefficient at model top"
                      possible_values="0 $\leq$ config_xnutr $\leq$ 1"/>
+
+                <nml_option name="config_mpas_cam_coef" type="real" default_value="0.0" in_defaults="false"
+                     units="-"
+                     description="Coefficient for scaling the 2nd-order horizontal mixing in the mpas_cam absorbing layer"
+                     possible_values="0 $\leq$ config_mpas_cam_coef $\leq$ 1, standard value is 0.2"/>
+
+                <nml_option name="config_rayleigh_damp_u" type="logical" default_value="false" in_defaults="false"
+                     units="-"
+                     description="Whether to apply Rayleigh damping on horizontal velocity in the top-most model levels. The number of levels is specified by the config_number_rayleigh_damp_u_levels option, and the damping timescale is specified by the config_rayleigh_damp_u_timescale_days option."
+                     possible_values=".true. or .false."/>
+
+                <nml_option name="config_rayleigh_damp_u_timescale_days" type="real" default_value="5.0" in_defaults="false"
+                     units="days"
+                     description="Timescale, in days (86400 s), for the Rayleigh damping on horizontal velocity in the top-most model levels."
+                     possible_values="Positive real values"/>
+
+                <nml_option name="config_number_rayleigh_damp_u_levels" type="integer" default_value="6" in_defaults="false"
+                     units="-"
+                     description="Number layers in which to apply Rayleigh damping on horizontal velocity at top of model; damping linearly ramps to zero by layer number from the top"
+                     possible_values="Positive integer values"/>
         </nml_record>
 
         <nml_record name="limited_area" in_defaults="true">
@@ -343,6 +363,12 @@
                      possible_values="Non-negative real values"/>
 	</nml_record>
 
+        <nml_record name="assimilation" in_defaults="false">
+                <nml_option name="config_jedi_da" type="logical" default_value="false"
+                     units="-"
+                     description="Whether this run is within the JEDI data assimilation framework; used to add temperature and specific humidity as diagnostics"
+                     possible_values=".true. or .false."/>
+        </nml_record>
 
 <!-- **************************************************************************************** -->
 <!-- **************************************  Packages  ************************************** -->
@@ -360,6 +386,7 @@
 
                 <package name="iau" description="Incremental Analysis Update"/>
                 <package name="limited_area" description="Limited-area simulations, which have lateral boundaries"/>
+                <package name="jedi_da" description="Data Assimilation in JEDI framework"/>
         </packages>
 
 
@@ -433,6 +460,7 @@
 			<var name="zb3"/>
 			<var name="dss"/>
 			<var name="u_init"/>
+			<var name="v_init"/>
 			<var name="t_init"/>
 			<var name="qv_init"/>
 			<var name="deriv_two"/>
@@ -562,6 +590,7 @@
 			<var name="zb3"/>
 			<var name="dss"/>
 			<var name="u_init"/>
+			<var name="v_init"/>
 			<var name="t_init"/>
 			<var name="qv_init"/>
 			<var name="deriv_two"/>
@@ -1302,6 +1331,9 @@
                 <var name="u_init" type="real" dimensions="nVertLevels" units="m s^{-1}"
                      description="u reference profile"/>
 
+                <var name="v_init" type="real" dimensions="nVertLevels" units="m s^{-1}"
+                     description="v reference profile"/>
+
                 <var name="t_init" type="real" dimensions="nVertLevels nCells" units="K"
                      description="theta reference profile"/>
 
@@ -1506,8 +1538,16 @@
                 <var name="theta" type="real" dimensions="nVertLevels nCells Time" units="K"
                      description="Potential temperature"/>
 
+                <var name="temperature" type="real" dimensions="nVertLevels nCells Time" units="K"
+                     description="temperature"
+                     packages="jedi_da"/>
+
                 <var name="relhum" type="real" dimensions="nVertLevels nCells Time" units="percent"
                      description="Relative humidity"/>
+
+                <var name="spechum" type="real" dimensions="nVertLevels nCells Time" units="kg kg^{-1}"
+                     description="Specific humidity"
+                     packages="jedi_da"/>
 
                 <var name="v" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
                      description="Horizontal tangential velocity at edges"/>
@@ -2491,7 +2531,6 @@
                 <var name="i_acswuptc" type="integer" dimensions="nCells Time" units="unitless"
                      description="incidence of accumulated clear-sky upward top-of-atmosphere shortwave radiation greater than config_bucket_radt"/>
 
-
                 <var name="coszr" type="real" dimensions="nCells Time" units="unitless"
                      description="cosine of zenith solar angle"/>
 
@@ -2502,7 +2541,7 @@
                      description="all-sky downward surface shortwave radiation flux"/>
 
                 <var name="swdnbc" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="clear-sky downward surface shortwave radiation flux"/>                
+                     description="clear-sky downward surface shortwave radiation flux"/>
 
                 <var name="swdnt" type="real" dimensions="nCells Time" units="W m^{-2}"
                      description="all-sky downward top-of-atmosphere shortwave radiation flux"/>
@@ -2526,7 +2565,7 @@
                      description="accumulated all-sky downward surface shortwave radiation flux"/>
 
                 <var name="acswdnbc" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="accumulated clear-sky downward surface shortwave radiation flux"/>                
+                     description="accumulated clear-sky downward surface shortwave radiation flux"/>
 
                 <var name="acswdnt" type="real" dimensions="nCells Time" units="W m^{-2}"
                      description="accumulated all-sky downward top-of-atmosphere shortwave radiation flux"/>
@@ -2548,7 +2587,6 @@
 
                 <var name="gsw" type="real" dimensions="nCells Time" units="W m^{-2}"
                      description="net surface shortwave radiation flux"/>
-
 
                 <!-- RRTMG SW ONLY: -->
                 <var name="swdnflx" type="real" dimensions="nVertLevelsP2 nCells Time" units="-"
@@ -2608,22 +2646,22 @@
                      description="clear-sky downward surface longwave radiation flux"/>
 
                 <var name="lwdnt" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="clear-sky downward surface longwave radiation flux"/>
+                     description="all-sky downward top-of-the-atmosphere longwave radiation flux"/>
 
                 <var name="lwdntc" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="clear-sky downward surface longwave radiation flux"/>
+                     description="clear-sky downward top-of-the-atmosphere longwave radiation flux"/>
 
                 <var name="lwupb" type="real" dimensions="nCells Time" units="W m^{-2}"
                      description="all-sky upward surface longwave radiation flux"/>
 
                 <var name="lwupbc" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="all-sky upward surface longwave radiation flux"/>
+                     description="clear-sky upward surface longwave radiation flux"/>
 
                 <var name="lwupt" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="all-sky upward surface longwave radiation flux"/>
+                     description="all-sky upward top-of-the-atmosphere longwave radiation flux"/>
 
                 <var name="lwuptc" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="all-sky upward surface longwave radiation flux"/>
+                     description="clear-sky upward top-of-the-atmosphere longwave radiation flux"/>
 
                 <var name="aclwdnb" type="real" dimensions="nCells Time" units="W m^{-2}"
                      description="accumulated all-sky downward surface longwave radiation flux"/>
@@ -2632,28 +2670,28 @@
                      description="accumulated clear-sky downward surface longwave radiation flux"/>
 
                 <var name="aclwdnt" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="accumulated clear-sky downward surface longwave radiation flux"/>
+                     description="accumulated all-sky downward top-of-the-atmosphere longwave radiation flux"/>
 
                 <var name="aclwdntc" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="accumulated clear-sky downward surface longwave radiation flux"/>
+                     description="accumulated clear-sky downward top-of-the-atmosphere longwave radiation flux"/>
 
                 <var name="aclwupb" type="real" dimensions="nCells Time" units="W m^{-2}"
                      description="accumulated all-sky upward surface longwave radiation flux"/>
 
                 <var name="aclwupbc" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="accumulated all-sky upward surface longwave radiation flux"/>
+                     description="accumulated clear-sky upward surface longwave radiation flux"/>
 
                 <var name="aclwupt" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="accumulated all-sky upward surface longwave radiation flux"/>
+                     description="accumulated all-sky upward top-of-the-atmosphere longwave radiation flux"/>
 
                 <var name="aclwuptc" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="accumulated all-sky upward surface longwave radiation flux"/>
+                     description="accumulated clear-sky upward top-of-the-atmosphere longwave radiation flux"/>
 
                 <var name="olrtoa" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="top-of-atmosphere outgoing longwave radiation flux"/>
+                     description="all-sky top-of-atmosphere outgoing longwave radiation flux"/>
 
                 <var name="glw" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="all downward surface longwave radiation"/>
+                     description="all-sky downward surface longwave radiation"/>
 
                 <var name="rre_cloud" type="real" dimensions="nVertLevels nCells Time" units="microns"
                      description="effective radius of cloud water droplets calculated in RRTMG radiation"/>
@@ -2661,8 +2699,8 @@
                 <var name="rre_ice" type="real" dimensions="nVertLevels nCells Time" units="microns"
                      description="effective radius of cloud ice crystals calculated in RRTMG radiation"/>
 
-                <var name="rre_snow" type="real" dimensions="nVertLevels nCells Time"/>
-                     description="effective radius of cloud ice crystals calculated in RRTMG radiation"/>
+                <var name="rre_snow" type="real" dimensions="nVertLevels nCells Time" units="microns"
+                     description="effective radius of snow crystals calculated in RRTMG radiation"/>
 
 
                 <!-- ================================================================================================== -->
@@ -2758,7 +2796,7 @@
                      description="initial number of time-steps since last snow fall"/>
 
                 <var name="sstsk" type="real" dimensions="nCells Time" units="K"
-                     description="skin sea-aurface temperature"/>
+                     description="skin sea-surface temperature"/>
 
                 <var name="sstsk_dtc" type="real" dimensions="nCells Time" units="K"
                      description="skin sea-surface temperature cooling"/>
