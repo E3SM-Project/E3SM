@@ -479,21 +479,18 @@ contains
 !---------------------------------------------------------------------------
   subroutine phenology_flux_limiter(bounds, num_soilc, filter_soilc,&
       num_soilp, filter_soilp, crop_vars, cnstate_vars,  &
-      carbonflux_vars, carbonstate_vars, &
-      c13_carbonflux_vars, c13_carbonstate_vars, &
-      c14_carbonflux_vars, c14_carbonstate_vars, &
-      nitrogenflux_vars, nitrogenstate_vars, &
-      phosphorusflux_vars, phosphorusstate_vars)
+      veg_cf, veg_cs , c13_veg_cf, c13_veg_cs , c14_veg_cf, c14_veg_cs , &
+      veg_nf, veg_ns, veg_pf, veg_ps)
 
     use decompMod           , only : bounds_type
     use CropType                  , only : crop_type
     use CNStateType               , only : cnstate_type
-    use CNCarbonFluxType          , only : carbonflux_type
-    use CNCarbonStateType         , only : carbonstate_type
-    use CNNitrogenFluxType        , only : nitrogenflux_type
-    use CNNitrogenStateType       , only : nitrogenstate_type
-    use PhosphorusFluxType        , only : phosphorusflux_type
-    use PhosphorusStateType       , only : phosphorusstate_type
+    use VegetationDataType, only : vegetation_carbon_flux
+    use VegetationDataType, only : vegetation_carbon_state
+    use VegetationDataType, only : vegetation_nitrogen_flux
+    use VegetationDataType, only : vegetation_nitrogen_state
+    use VegetationDataType, only : vegetation_phosphorus_flux
+    use VegetationDataType, only : vegetation_phosphorus_state
     use clm_varctl          , only : use_c13, use_c14
     implicit none
     ! !ARGUMENTS:
@@ -504,40 +501,40 @@ contains
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(crop_type)        , intent(inout) :: crop_vars
     type(cnstate_type)       , intent(in)    :: cnstate_vars
-    type(carbonflux_type)  , intent(inout) :: carbonflux_vars
-    type(carbonstate_type) , intent(inout) :: carbonstate_vars
-    type(carbonflux_type)  , intent(inout) :: c13_carbonflux_vars
-    type(carbonstate_type) , intent(inout) :: c13_carbonstate_vars
-    type(carbonflux_type)  , intent(inout) :: c14_carbonflux_vars
-    type(carbonstate_type) , intent(inout) :: c14_carbonstate_vars
-    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
-    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    type(vegetation_carbon_flux) , intent(inout) :: veg_cf
+    type(vegetation_carbon_state), intent(inout) :: veg_cs
+    type(vegetation_carbon_flux)  , intent(inout) :: c13_veg_cf
+    type(vegetation_carbon_state) , intent(inout) :: c13_veg_cs
+    type(vegetation_carbon_flux)  , intent(inout) :: c14_veg_cf
+    type(vegetation_carbon_state) , intent(inout) :: c14_veg_cs
+    type(vegetation_nitrogen_flux)  , intent(inout) :: veg_nf
+    type(vegetation_nitrogen_state) , intent(inout) :: veg_ns
+    type(vegetation_phosphorus_flux)  , intent(inout) :: veg_pf
+    type(vegetation_phosphorus_state) , intent(inout) :: veg_ps
 
   call carbon_flux_limiter(bounds, num_soilc, filter_soilc,&
       num_soilp, filter_soilp, crop_vars,  &
-      carbonflux_vars, carbonstate_vars)
+      veg_cf, veg_cs )
 
   if (use_c13)then
     call carbon_flux_limiter(bounds, num_soilc, filter_soilc,&
       num_soilp, filter_soilp, crop_vars,  &
-      c13_carbonflux_vars, c13_carbonstate_vars)
+      c13_veg_cf, c13_veg_cs )
   endif
 
   if (use_c14)then
     call carbon_flux_limiter(bounds, num_soilc, filter_soilc,&
       num_soilp, filter_soilp, crop_vars,  &
-      c14_carbonflux_vars, c14_carbonstate_vars)
+      c14_veg_cf, c14_veg_cs )
   endif
 
   call nitrogen_flux_limiter(bounds, num_soilc, filter_soilc,&
       num_soilp, filter_soilp, cnstate_vars,  &
-      nitrogenflux_vars, nitrogenstate_vars)
+      veg_nf, veg_ns)
 
   call phosphorus_flux_limiter(bounds, num_soilc, filter_soilc,&
       num_soilp, filter_soilp, cnstate_vars,  &
-      phosphorusflux_vars, phosphorusstate_vars)
+      veg_pf, veg_ps)
 
 
   end subroutine phenology_flux_limiter
@@ -545,12 +542,12 @@ contains
 
   subroutine carbon_flux_limiter(bounds, num_soilc, filter_soilc,&
       num_soilp, filter_soilp, crop_vars,  &
-      carbonflux_vars, carbonstate_vars)
+      veg_cf, veg_cs )
 
     use decompMod           , only : bounds_type
     use CropType                  , only : crop_type
-    use CNCarbonFluxType          , only : carbonflux_type
-    use CNCarbonStateType         , only : carbonstate_type
+    use VegetationDataType, only : vegetation_carbon_flux
+    use VegetationDataType, only : vegetation_carbon_state
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
@@ -558,8 +555,8 @@ contains
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(crop_type)        , intent(inout) :: crop_vars
-    type(carbonflux_type)  , intent(inout) :: carbonflux_vars
-    type(carbonstate_type) , intent(inout) :: carbonstate_vars
+    type(vegetation_carbon_flux) , intent(inout) :: veg_cf
+    type(vegetation_carbon_state), intent(inout) :: veg_cs
 
   integer :: fp, p
   real(r8) :: ystates(n_carbon_states)
@@ -570,9 +567,7 @@ contains
   associate(                                                    &
          ivt                   =>    veg_pp%itype             , & ! Input:  [integer  (:)     ]  pft vegetation type
          woody                 =>    veg_vp%woody             , & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
-         harvdate              =>    crop_vars%harvdate_patch , & ! Input:  [integer  (:)     ]  harvest date
-         cf                    => carbonflux_vars             , &
-         cs                    => carbonstate_vars              &
+         harvdate              =>    crop_vars%harvdate_patch   & ! Input:  [integer  (:)     ]  harvest date
          )
   ! set time steps
   dt = real( get_step_size(), r8 )
@@ -581,114 +576,114 @@ contains
     p = filter_soilp(fp)
     !assemble state variables
     ystates(:)=0._r8
-    mov(ystates(s_cpool)              , cs%cpool_patch(p))
-    mov(ystates(s_leafc)              , cs%leafc_patch(p))
-    mov(ystates(s_leafc_xfer)         , cs%leafc_xfer_patch(p))
-    mov(ystates(s_leafc_storage)      , cs%leafc_storage_patch(p))
-    mov(ystates(s_frootc)             , cs%frootc_patch(p))
-    mov(ystates(s_frootc_xfer)        , cs%frootc_xfer_patch(p))
-    mov(ystates(s_frootc_sotrage)     , cs%frootc_storage_patch(p))
+    mov(ystates(s_cpool)              , veg_cs%cpool(p))
+    mov(ystates(s_leafc)              , veg_cs%leafc(p))
+    mov(ystates(s_leafc_xfer)         , veg_cs%leafc_xfer(p))
+    mov(ystates(s_leafc_storage)      , veg_cs%leafc_storage(p))
+    mov(ystates(s_frootc)             , veg_cs%frootc(p))
+    mov(ystates(s_frootc_xfer)        , veg_cs%frootc_xfer(p))
+    mov(ystates(s_frootc_sotrage)     , veg_cs%frootc_storage(p))
     if (woody(ivt(p)) == 1._r8) then
-      mov(ystates(s_livestemc)          , cs%livestemc_patch(p))
-      mov(ystates(s_livestemc_xfer)     , cs%livestemc_xfer_patch(p))
-      mov(ystates(s_livestemc_storage)  , cs%livestemc_storage_patch(p))
-      mov(ystates(s_livecrootc)         , cs%livecrootc_patch(p))
-      mov(ystates(s_livecrootc_xfer)    , cs%livecrootc_xfer_patch(p))
-      mov(ystates(s_livecrootc_storage) , cs%livecrootc_storage_patch(p))
-      mov(ystates(s_deadstemc)          , cs%deadstemc_patch(p))
-      mov(ystates(s_deadstemc_xfer)     , cs%deadstemc_xfer_patch(p))
-      mov(ystates(s_deadstemc_storage)  , cs%deadstemc_storage_patch(p))
-      mov(ystates(s_deadcrootc)         , cs%deadcrootc_patch(p))
-      mov(ystates(s_deadcrootc_xfer)    , cs%deadcrootc_xfer_patch(p))
-      mov(ystates(s_deadcrootc_storage) , cs%deadcrootc_storage_patch(p))
+      mov(ystates(s_livestemc)          , veg_cs%livestemc(p))
+      mov(ystates(s_livestemc_xfer)     , veg_cs%livestemc_xfer(p))
+      mov(ystates(s_livestemc_storage)  , veg_cs%livestemc_storage(p))
+      mov(ystates(s_livecrootc)         , veg_cs%livecrootc(p))
+      mov(ystates(s_livecrootc_xfer)    , veg_cs%livecrootc_xfer(p))
+      mov(ystates(s_livecrootc_storage) , veg_cs%livecrootc_storage(p))
+      mov(ystates(s_deadstemc)          , veg_cs%deadstemc(p))
+      mov(ystates(s_deadstemc_xfer)     , veg_cs%deadstemc_xfer(p))
+      mov(ystates(s_deadstemc_storage)  , veg_cs%deadstemc_storage(p))
+      mov(ystates(s_deadcrootc)         , veg_cs%deadcrootc(p))
+      mov(ystates(s_deadcrootc_xfer)    , veg_cs%deadcrootc_xfer(p))
+      mov(ystates(s_deadcrootc_storage) , veg_cs%deadcrootc_storage(p))
     endif
     if (ivt(p) >= npcropmin) then
-      mov(ystates(s_livestemc)          , cs%livestemc_patch(p))
-      mov(ystates(s_livestemc_xfer)     , cs%livestemc_xfer_patch(p))
-      mov(ystates(s_livestemc_storage)  , cs%livestemc_storage_patch(p))
-      mov(ystates(s_grainc)             , cs%grainc_patch(p))
-      mov(ystates(s_grainc_xfer)        , cs%grainc_xfer_patch(p))
-      mov(ystates(s_grainc_storage)     , cs%grainc_storage_patch(p))
+      mov(ystates(s_livestemc)          , veg_cs%livestemc(p))
+      mov(ystates(s_livestemc_xfer)     , veg_cs%livestemc_xfer(p))
+      mov(ystates(s_livestemc_storage)  , veg_cs%livestemc_storage(p))
+      mov(ystates(s_grainc)             , veg_cs%grainc(p))
+      mov(ystates(s_grainc_xfer)        , veg_cs%grainc_xfer(p))
+      mov(ystates(s_grainc_storage)     , veg_cs%grainc_storage(p))
     endif
-    mov(ystates(s_gresp_xfer)         , cs%gresp_xfer_patch(p))
-    mov(ystates(s_gresp_storage)      , cs%gresp_storage_patch(p))
+    mov(ystates(s_gresp_xfer)         , veg_cs%gresp_xfer(p))
+    mov(ystates(s_gresp_storage)      , veg_cs%gresp_storage(p))
 
     rfluxes(:) = 0._r8
-    ar_p = cf%leaf_curmr_patch(p)             &
-         + cf%froot_curmr_patch(p)            &
-         + cf%cpool_leaf_gr_patch(p)          &
-         + cf%cpool_froot_gr_patch(p)         &
-         + cf%cpool_leaf_storage_gr_patch(p)  &
-         + cf%cpool_froot_storage_gr_patch(p)
+    ar_p = veg_cf%leaf_curmr(p)             &
+         + veg_cf%froot_curmr(p)            &
+         + veg_cf%cpool_leaf_gr(p)          &
+         + veg_cf%cpool_froot_gr(p)         &
+         + veg_cf%cpool_leaf_storage_gr(p)  &
+         + veg_cf%cpool_froot_storage_gr(p)
     if (woody(ivt(p)) == 1._r8) then
       ar_p = ar_p                                 &
-         + cf%livestem_curmr_patch(p)             &
-         + cf%livecroot_curmr_patch(p)            &
-         + cf%cpool_livestem_gr_patch(p)          &
-         + cf%cpool_deadstem_gr_patch(p)          &
-         + cf%cpool_livecroot_gr_patch(p)         &
-         + cf%cpool_deadcroot_gr_patch(p)         &
-         + cf%cpool_livestem_storage_gr_patch(p)  &
-         + cf%cpool_deadstem_storage_gr_patch(p)  &
-         + cf%cpool_livecroot_storage_gr_patch(p) &
-         + cf%cpool_deadcroot_storage_gr_patch(p)
+         + veg_cf%livestem_curmr(p)             &
+         + veg_cf%livecroot_curmr(p)            &
+         + veg_cf%cpool_livestem_gr(p)          &
+         + veg_cf%cpool_deadstem_gr(p)          &
+         + veg_cf%cpool_livecroot_gr(p)         &
+         + veg_cf%cpool_deadcroot_gr(p)         &
+         + veg_cf%cpool_livestem_storage_gr(p)  &
+         + veg_cf%cpool_deadstem_storage_gr(p)  &
+         + veg_cf%cpool_livecroot_storage_gr(p) &
+         + veg_cf%cpool_deadcroot_storage_gr(p)
     endif
     if (ivt(p) >= npcropmin) then
       ar_p= ar_p                                 &
-        + cf%livestem_curmr_patch(p)             &
-        + cf%grain_curmr_patch(p)                &
-        + cf%cpool_livestem_gr_patch(p)          &
-        + cf%cpool_grain_gr_patch(p)             &
-        + cf%cpool_livestem_storage_gr_patch(p)  &
-        + cf%cpool_grain_storage_gr_patch(p)
+        + veg_cf%livestem_curmr(p)             &
+        + veg_cf%grain_curmr(p)                &
+        + veg_cf%cpool_livestem_gr(p)          &
+        + veg_cf%cpool_grain_gr(p)             &
+        + veg_cf%cpool_livestem_storage_gr(p)  &
+        + veg_cf%cpool_grain_storage_gr(p)
     endif
     !assemble reactive fluxes
-    mov(rfluxes(f_cpool_to_leafc)               , cf%cpool_to_leafc_patch(p))
-    mov(rfluxes(f_cpool_to_leafc_storage)       , cf%cpool_to_leafc_storage_patch(p))
-    mov(rfluxes(f_cpool_to_frootc)              , cf%cpool_to_frootc_patch(p))
-    mov(rfluxes(f_cpool_to_frootc_storage)      , cf%cpool_to_frootc_storage_patch(p))
-    mov(rfluxes(f_cpool_to_xsmrpool)            , cf%cpool_to_xsmrpool_patch(p))
-    mov(rfluxes(f_cpool_to_gresp_storage)       , cf%cpool_to_gresp_storage_patch(p))
+    mov(rfluxes(f_cpool_to_leafc)               , veg_cf%cpool_to_leafc(p))
+    mov(rfluxes(f_cpool_to_leafc_storage)       , veg_cf%cpool_to_leafc_storage(p))
+    mov(rfluxes(f_cpool_to_frootc)              , veg_cf%cpool_to_frootc(p))
+    mov(rfluxes(f_cpool_to_frootc_storage)      , veg_cf%cpool_to_frootc_storage(p))
+    mov(rfluxes(f_cpool_to_xsmrpool)            , veg_cf%cpool_to_xsmrpool(p))
+    mov(rfluxes(f_cpool_to_gresp_storage)       , veg_cf%cpool_to_gresp_storage(p))
     mov(rfluxes(f_cpool_to_ar)                  , ar_p)
     if (woody(ivt(p)) == 1._r8) then
-      mov(rfluxes(f_cpool_to_livestemc)           , cf%cpool_to_livestemc_patch(p))
-      mov(rfluxes(f_cpool_to_livestemc_storage)   , cf%cpool_to_livestemc_storage_patch(p))
-      mov(rfluxes(f_cpool_to_deadstemc)           , cf%cpool_to_deadstemc_patch(p))
-      mov(rfluxes(f_cpool_to_deadstemc_storage)   , cf%cpool_to_deadstemc_storage_patch(p))
-      mov(rfluxes(f_cpool_to_livecrootc)          , cf%cpool_to_livecrootc_patch(p))
-      mov(rfluxes(f_cpool_to_livecrootc_storage)  , cf%cpool_to_livecrootc_storage_patch(p))
-      mov(rfluxes(f_cpool_to_deadcrootc)          , cf%cpool_to_deadcrootc_patch(p))
-      mov(rfluxes(f_cpool_to_deadcrootc_storage)  , cf%cpool_to_deadcrootc_storage_patch(p))
-      mov(rfluxes(f_livestemc_to_deadstemc)       , cf%livestemc_to_deadstemc_patch(p))
-      mov(rfluxes(f_livestemc_xfer_to_livestemc)  , cf%livestemc_xfer_to_livestemc_patch(p))
-      mov(rfluxes(f_livestemc_storage_to_xfer)    , cf%livestemc_storage_to_xfer_patch(p))
-      mov(rfluxes(f_deadstemc_xfer_to_deadstemc)  , cf%deadstemc_xfer_to_deadstemc_patch(p))
-      mov(rfluxes(f_deadstemc_storage_to_xfer)    , cf%deadstemc_storage_to_xfer_patch(p))
-      mov(rfluxes(f_livecrootc_xfer_to_livecrootc), cf%livecrootc_xfer_to_livecrootc_patch(p))
-      mov(rfluxes(f_livecrootc_storage_to_xfer)   , cf%livecrootc_storage_to_xfer_patch(p))
-      mov(rfluxes(f_livecrootc_to_deadcrootc)     , cf%livecrootc_to_deadcrootc_patch(p))
-      mov(rfluxes(f_deadcrootc_xfer_to_deadcrootc), cf%deadcrootc_xfer_to_deadcrootc_patch(p))
-      mov(rfluxes(f_deadcrootc_storage_to_xfer)   , cf%deadcrootc_storage_to_xfer_patch(p))
-      mov(rfluxes(f_gresp_storage_to_xfer)        , cf%gresp_storage_to_xfer_patch(p))
+      mov(rfluxes(f_cpool_to_livestemc)           , veg_cf%cpool_to_livestemc(p))
+      mov(rfluxes(f_cpool_to_livestemc_storage)   , veg_cf%cpool_to_livestemc_storage(p))
+      mov(rfluxes(f_cpool_to_deadstemc)           , veg_cf%cpool_to_deadstemc(p))
+      mov(rfluxes(f_cpool_to_deadstemc_storage)   , veg_cf%cpool_to_deadstemc_storage(p))
+      mov(rfluxes(f_cpool_to_livecrootc)          , veg_cf%cpool_to_livecrootc(p))
+      mov(rfluxes(f_cpool_to_livecrootc_storage)  , veg_cf%cpool_to_livecrootc_storage(p))
+      mov(rfluxes(f_cpool_to_deadcrootc)          , veg_cf%cpool_to_deadcrootc(p))
+      mov(rfluxes(f_cpool_to_deadcrootc_storage)  , veg_cf%cpool_to_deadcrootc_storage(p))
+      mov(rfluxes(f_livestemc_to_deadstemc)       , veg_cf%livestemc_to_deadstemc(p))
+      mov(rfluxes(f_livestemc_xfer_to_livestemc)  , veg_cf%livestemc_xfer_to_livestemc(p))
+      mov(rfluxes(f_livestemc_storage_to_xfer)    , veg_cf%livestemc_storage_to_xfer(p))
+      mov(rfluxes(f_deadstemc_xfer_to_deadstemc)  , veg_cf%deadstemc_xfer_to_deadstemc(p))
+      mov(rfluxes(f_deadstemc_storage_to_xfer)    , veg_cf%deadstemc_storage_to_xfer(p))
+      mov(rfluxes(f_livecrootc_xfer_to_livecrootc), veg_cf%livecrootc_xfer_to_livecrootc(p))
+      mov(rfluxes(f_livecrootc_storage_to_xfer)   , veg_cf%livecrootc_storage_to_xfer(p))
+      mov(rfluxes(f_livecrootc_to_deadcrootc)     , veg_cf%livecrootc_to_deadcrootc(p))
+      mov(rfluxes(f_deadcrootc_xfer_to_deadcrootc), veg_cf%deadcrootc_xfer_to_deadcrootc(p))
+      mov(rfluxes(f_deadcrootc_storage_to_xfer)   , veg_cf%deadcrootc_storage_to_xfer(p))
+      mov(rfluxes(f_gresp_storage_to_xfer)        , veg_cf%gresp_storage_to_xfer(p))
     endif
     if (ivt(p) >= npcropmin) then
-      mov(rfluxes(f_cpool_to_livestemc)           , cf%cpool_to_livestemc_patch(p))
-      mov(rfluxes(f_cpool_to_livestemc_storage)   , cf%cpool_to_livestemc_storage_patch(p))
-      mov(rfluxes(f_cpool_to_grainc)              , cf%cpool_to_grainc_patch(p))
-      mov(rfluxes(f_cpool_to_grainc_storage)      , cf%cpool_to_grainc_storage_patch(p))
-      mov(rfluxes(f_livestemc_xfer_to_livestemc)  , cf%livestemc_xfer_to_livestemc_patch(p))
-      mov(rfluxes(f_livestemc_storage_to_xfer)    , cf%livestemc_storage_to_xfer_patch(p))
-      mov(rfluxes(f_livestemc_to_litter)          , cf%livestemc_to_litter_patch(p))
-      mov(rfluxes(f_grainc_to_food)               , cf%grainc_to_food_patch(p))
-      mov(rfluxes(f_grainc_xfer_to_grainc)        , cf%grainc_xfer_to_grainc_patch(p))
-      mov(rfluxes(f_grainc_storage_to_xfer)       , cf%grainc_storage_to_xfer_patch(p))
+      mov(rfluxes(f_cpool_to_livestemc)           , veg_cf%cpool_to_livestemc(p))
+      mov(rfluxes(f_cpool_to_livestemc_storage)   , veg_cf%cpool_to_livestemc_storage(p))
+      mov(rfluxes(f_cpool_to_grainc)              , veg_cf%cpool_to_grainc(p))
+      mov(rfluxes(f_cpool_to_grainc_storage)      , veg_cf%cpool_to_grainc_storage(p))
+      mov(rfluxes(f_livestemc_xfer_to_livestemc)  , veg_cf%livestemc_xfer_to_livestemc(p))
+      mov(rfluxes(f_livestemc_storage_to_xfer)    , veg_cf%livestemc_storage_to_xfer(p))
+      mov(rfluxes(f_livestemc_to_litter)          , veg_cf%livestemc_to_litter(p))
+      mov(rfluxes(f_grainc_to_food)               , veg_cf%grainc_to_food(p))
+      mov(rfluxes(f_grainc_xfer_to_grainc)        , veg_cf%grainc_xfer_to_grainc(p))
+      mov(rfluxes(f_grainc_storage_to_xfer)       , veg_cf%grainc_storage_to_xfer(p))
     endif
-    mov(rfluxes(f_leafc_to_litter)              , cf%leafc_to_litter_patch(p))
-    mov(rfluxes(f_leafc_xfer_to_leafc)          , cf%leafc_xfer_to_leafc_patch(p))
-    mov(rfluxes(f_leafc_storage_to_xfer)        , cf%leafc_storage_to_xfer_patch(p))
-    mov(rfluxes(f_frootc_to_litter)             , cf%frootc_to_litter_patch(p))
-    mov(rfluxes(f_frootc_xfer_to_frootc)        , cf%frootc_xfer_to_frootc_patch(p))
-    mov(rfluxes(f_frootc_storage_to_xfer)       , cf%frootc_storage_to_xfer_patch(p))
+    mov(rfluxes(f_leafc_to_litter)              , veg_cf%leafc_to_litter(p))
+    mov(rfluxes(f_leafc_xfer_to_leafc)          , veg_cf%leafc_xfer_to_leafc(p))
+    mov(rfluxes(f_leafc_storage_to_xfer)        , veg_cf%leafc_storage_to_xfer(p))
+    mov(rfluxes(f_frootc_to_litter)             , veg_cf%frootc_to_litter(p))
+    mov(rfluxes(f_frootc_xfer_to_frootc)        , veg_cf%frootc_xfer_to_frootc(p))
+    mov(rfluxes(f_frootc_storage_to_xfer)       , veg_cf%frootc_storage_to_xfer(p))
 
     !obtain the limiting factor
 
@@ -697,80 +692,80 @@ contains
 
     !correct the fluxes
 
-    imov(rfluxes(f_cpool_to_leafc)               , cf%cpool_to_leafc_patch(p))
-    imov(rfluxes(f_cpool_to_leafc_storage)       , cf%cpool_to_leafc_storage_patch(p))
-    imov(rfluxes(f_cpool_to_frootc)              , cf%cpool_to_frootc_patch(p))
-    imov(rfluxes(f_cpool_to_frootc_storage)      , cf%cpool_to_frootc_storage_patch(p))
-    imov(rfluxes(f_cpool_to_xsmrpool)            , cf%cpool_to_xsmrpool_patch(p))
-    imov(rfluxes(f_cpool_to_gresp_storage)       , cf%cpool_to_gresp_storage_patch(p))
+    imov(rfluxes(f_cpool_to_leafc)               , veg_cf%cpool_to_leafc(p))
+    imov(rfluxes(f_cpool_to_leafc_storage)       , veg_cf%cpool_to_leafc_storage(p))
+    imov(rfluxes(f_cpool_to_frootc)              , veg_cf%cpool_to_frootc(p))
+    imov(rfluxes(f_cpool_to_frootc_storage)      , veg_cf%cpool_to_frootc_storage(p))
+    imov(rfluxes(f_cpool_to_xsmrpool)            , veg_cf%cpool_to_xsmrpool(p))
+    imov(rfluxes(f_cpool_to_gresp_storage)       , veg_cf%cpool_to_gresp_storage(p))
 
     if (woody(ivt(p)) == 1._r8) then
-      imov(rfluxes(f_cpool_to_livestemc)           , cf%cpool_to_livestemc_patch(p))
-      imov(rfluxes(f_cpool_to_livestemc_storage)   , cf%cpool_to_livestemc_storage_patch(p))
-      imov(rfluxes(f_cpool_to_deadstemc)           , cf%cpool_to_deadstemc_patch(p))
-      imov(rfluxes(f_cpool_to_deadstemc_storage)   , cf%cpool_to_deadstemc_storage_patch(p))
-      imov(rfluxes(f_cpool_to_livecrootc)          , cf%cpool_to_livecrootc_patch(p))
-      imov(rfluxes(f_cpool_to_livecrootc_storage)  , cf%cpool_to_livecrootc_storage_patch(p))
-      imov(rfluxes(f_cpool_to_deadcrootc)          , cf%cpool_to_deadcrootc_patch(p))
-      imov(rfluxes(f_cpool_to_deadcrootc_storage)  , cf%cpool_to_deadcrootc_storage_patch(p))
-      imov(rfluxes(f_livestemc_to_deadstemc)       , cf%livestemc_to_deadstemc_patch(p))
-      imov(rfluxes(f_livestemc_xfer_to_livestemc)  , cf%livestemc_xfer_to_livestemc_patch(p))
-      imov(rfluxes(f_livestemc_storage_to_xfer)    , cf%livestemc_storage_to_xfer_patch(p))
-      imov(rfluxes(f_deadstemc_xfer_to_deadstemc)  , cf%deadstemc_xfer_to_deadstemc_patch(p))
-      imov(rfluxes(f_deadstemc_storage_to_xfer)    , cf%deadstemc_storage_to_xfer_patch(p))
-      imov(rfluxes(f_livecrootc_xfer_to_livecrootc), cf%livecrootc_xfer_to_livecrootc_patch(p))
-      imov(rfluxes(f_livecrootc_storage_to_xfer)   , cf%livecrootc_storage_to_xfer_patch(p))
-      imov(rfluxes(f_livecrootc_to_deadcrootc)     , cf%livecrootc_to_deadcrootc_patch(p))
-      imov(rfluxes(f_deadcrootc_xfer_to_deadcrootc), cf%deadcrootc_xfer_to_deadcrootc_patch(p))
-      imov(rfluxes(f_deadcrootc_storage_to_xfer)   , cf%deadcrootc_storage_to_xfer_patch(p))
-      imov(rfluxes(f_gresp_storage_to_xfer)        , cf%gresp_storage_to_xfer_patch(p))
+      imov(rfluxes(f_cpool_to_livestemc)           , veg_cf%cpool_to_livestemc(p))
+      imov(rfluxes(f_cpool_to_livestemc_storage)   , veg_cf%cpool_to_livestemc_storage(p))
+      imov(rfluxes(f_cpool_to_deadstemc)           , veg_cf%cpool_to_deadstemc(p))
+      imov(rfluxes(f_cpool_to_deadstemc_storage)   , veg_cf%cpool_to_deadstemc_storage(p))
+      imov(rfluxes(f_cpool_to_livecrootc)          , veg_cf%cpool_to_livecrootc(p))
+      imov(rfluxes(f_cpool_to_livecrootc_storage)  , veg_cf%cpool_to_livecrootc_storage(p))
+      imov(rfluxes(f_cpool_to_deadcrootc)          , veg_cf%cpool_to_deadcrootc(p))
+      imov(rfluxes(f_cpool_to_deadcrootc_storage)  , veg_cf%cpool_to_deadcrootc_storage(p))
+      imov(rfluxes(f_livestemc_to_deadstemc)       , veg_cf%livestemc_to_deadstemc(p))
+      imov(rfluxes(f_livestemc_xfer_to_livestemc)  , veg_cf%livestemc_xfer_to_livestemc(p))
+      imov(rfluxes(f_livestemc_storage_to_xfer)    , veg_cf%livestemc_storage_to_xfer(p))
+      imov(rfluxes(f_deadstemc_xfer_to_deadstemc)  , veg_cf%deadstemc_xfer_to_deadstemc(p))
+      imov(rfluxes(f_deadstemc_storage_to_xfer)    , veg_cf%deadstemc_storage_to_xfer(p))
+      imov(rfluxes(f_livecrootc_xfer_to_livecrootc), veg_cf%livecrootc_xfer_to_livecrootc(p))
+      imov(rfluxes(f_livecrootc_storage_to_xfer)   , veg_cf%livecrootc_storage_to_xfer(p))
+      imov(rfluxes(f_livecrootc_to_deadcrootc)     , veg_cf%livecrootc_to_deadcrootc(p))
+      imov(rfluxes(f_deadcrootc_xfer_to_deadcrootc), veg_cf%deadcrootc_xfer_to_deadcrootc(p))
+      imov(rfluxes(f_deadcrootc_storage_to_xfer)   , veg_cf%deadcrootc_storage_to_xfer(p))
+      imov(rfluxes(f_gresp_storage_to_xfer)        , veg_cf%gresp_storage_to_xfer(p))
     endif
     if (ivt(p) >= npcropmin) then
-      imov(rfluxes(f_cpool_to_livestemc)           , cf%cpool_to_livestemc_patch(p))
-      imov(rfluxes(f_cpool_to_livestemc_storage)   , cf%cpool_to_livestemc_storage_patch(p))
-      imov(rfluxes(f_cpool_to_grainc)              , cf%cpool_to_grainc_patch(p))
-      imov(rfluxes(f_cpool_to_grainc_storage)      , cf%cpool_to_grainc_storage_patch(p))
-      imov(rfluxes(f_livestemc_xfer_to_livestemc)  , cf%livestemc_xfer_to_livestemc_patch(p))
-      imov(rfluxes(f_livestemc_storage_to_xfer)    , cf%livestemc_storage_to_xfer_patch(p))
-      imov(rfluxes(f_livestemc_to_litter)          , cf%livestemc_to_litter_patch(p))
-      imov(rfluxes(f_grainc_to_food)               , cf%grainc_to_food_patch(p))
-      imov(rfluxes(f_grainc_xfer_to_grainc)        , cf%grainc_xfer_to_grainc_patch(p))
-      imov(rfluxes(f_grainc_storage_to_xfer)       , cf%grainc_storage_to_xfer_patch(p))
+      imov(rfluxes(f_cpool_to_livestemc)           , veg_cf%cpool_to_livestemc(p))
+      imov(rfluxes(f_cpool_to_livestemc_storage)   , veg_cf%cpool_to_livestemc_storage(p))
+      imov(rfluxes(f_cpool_to_grainc)              , veg_cf%cpool_to_grainc(p))
+      imov(rfluxes(f_cpool_to_grainc_storage)      , veg_cf%cpool_to_grainc_storage(p))
+      imov(rfluxes(f_livestemc_xfer_to_livestemc)  , veg_cf%livestemc_xfer_to_livestemc(p))
+      imov(rfluxes(f_livestemc_storage_to_xfer)    , veg_cf%livestemc_storage_to_xfer(p))
+      imov(rfluxes(f_livestemc_to_litter)          , veg_cf%livestemc_to_litter(p))
+      imov(rfluxes(f_grainc_to_food)               , veg_cf%grainc_to_food(p))
+      imov(rfluxes(f_grainc_xfer_to_grainc)        , veg_cf%grainc_xfer_to_grainc(p))
+      imov(rfluxes(f_grainc_storage_to_xfer)       , veg_cf%grainc_storage_to_xfer(p))
     endif
-    imov(rfluxes(f_leafc_to_litter)              , cf%leafc_to_litter_patch(p))
-    imov(rfluxes(f_leafc_xfer_to_leafc)          , cf%leafc_xfer_to_leafc_patch(p))
-    imov(rfluxes(f_leafc_storage_to_xfer)        , cf%leafc_storage_to_xfer_patch(p))
-    imov(rfluxes(f_frootc_to_litter)             , cf%frootc_to_litter_patch(p))
-    imov(rfluxes(f_frootc_xfer_to_frootc)        , cf%frootc_xfer_to_frootc_patch(p))
-    imov(rfluxes(f_frootc_storage_to_xfer)       , cf%frootc_storage_to_xfer_patch(p))
+    imov(rfluxes(f_leafc_to_litter)              , veg_cf%leafc_to_litter(p))
+    imov(rfluxes(f_leafc_xfer_to_leafc)          , veg_cf%leafc_xfer_to_leafc(p))
+    imov(rfluxes(f_leafc_storage_to_xfer)        , veg_cf%leafc_storage_to_xfer(p))
+    imov(rfluxes(f_frootc_to_litter)             , veg_cf%frootc_to_litter(p))
+    imov(rfluxes(f_frootc_xfer_to_frootc)        , veg_cf%frootc_xfer_to_frootc(p))
+    imov(rfluxes(f_frootc_storage_to_xfer)       , veg_cf%frootc_storage_to_xfer(p))
 
     if(rfluxes(f_cpool_to_ar)  <  ar_p)then
       rscal= rfluxes(f_cpool_to_ar)/ar_p
-      ascal(cf%leaf_curmr_patch(p)                , rscal)
-      ascal(cf%froot_curmr_patch(p)               , rscal)
-      ascal(cf%cpool_leaf_gr_patch(p)             , rscal)
-      ascal(cf%cpool_froot_gr_patch(p)            , rscal)
-      ascal(cf%cpool_leaf_storage_gr_patch(p)     , rscal)
-      ascal(cf%cpool_froot_storage_gr_patch(p)    , rscal)
+      ascal(veg_cf%leaf_curmr(p)                , rscal)
+      ascal(veg_cf%froot_curmr(p)               , rscal)
+      ascal(veg_cf%cpool_leaf_gr(p)             , rscal)
+      ascal(veg_cf%cpool_froot_gr(p)            , rscal)
+      ascal(veg_cf%cpool_leaf_storage_gr(p)     , rscal)
+      ascal(veg_cf%cpool_froot_storage_gr(p)    , rscal)
       if (woody(ivt(p)) == 1._r8) then
-        ascal(cf%livestem_curmr_patch(p)            , rscal)
-        ascal(cf%livecroot_curmr_patch(p)           , rscal)
-        ascal(cf%cpool_livestem_gr_patch(p)         , rscal)
-        ascal(cf%cpool_deadstem_gr_patch(p)         , rscal)
-        ascal(cf%cpool_livecroot_gr_patch(p)        , rscal)
-        ascal(cf%cpool_deadcroot_gr_patch(p)        , rscal)
-        ascal(cf%cpool_livestem_storage_gr_patch(p) , rscal)
-        ascal(cf%cpool_deadstem_storage_gr_patch(p) , rscal)
-        ascal(cf%cpool_livecroot_storage_gr_patch(p), rscal)
-        ascal(cf%cpool_deadcroot_storage_gr_patch(p), rscal)
+        ascal(veg_cf%livestem_curmr(p)            , rscal)
+        ascal(veg_cf%livecroot_curmr(p)           , rscal)
+        ascal(veg_cf%cpool_livestem_gr(p)         , rscal)
+        ascal(veg_cf%cpool_deadstem_gr(p)         , rscal)
+        ascal(veg_cf%cpool_livecroot_gr(p)        , rscal)
+        ascal(veg_cf%cpool_deadcroot_gr(p)        , rscal)
+        ascal(veg_cf%cpool_livestem_storage_gr(p) , rscal)
+        ascal(veg_cf%cpool_deadstem_storage_gr(p) , rscal)
+        ascal(veg_cf%cpool_livecroot_storage_gr(p), rscal)
+        ascal(veg_cf%cpool_deadcroot_storage_gr(p), rscal)
       endif
       if (ivt(p) >= npcropmin) then
-        ascal(cf%livestem_curmr_patch(p)            , rscal)
-        ascal(cf%grain_curmr_patch(p)               , rscal)
-        ascal(cf%cpool_livestem_gr_patch(p)         , rscal)
-        ascal(cf%cpool_grain_gr_patch(p)            , rscal)
-        ascal(cf%cpool_livestem_storage_gr_patch(p) , rscal)
-        ascal(cf%cpool_grain_storage_gr_patch(p)    , rscal)
+        ascal(veg_cf%livestem_curmr(p)            , rscal)
+        ascal(veg_cf%grain_curmr(p)               , rscal)
+        ascal(veg_cf%cpool_livestem_gr(p)         , rscal)
+        ascal(veg_cf%cpool_grain_gr(p)            , rscal)
+        ascal(veg_cf%cpool_livestem_storage_gr(p) , rscal)
+        ascal(veg_cf%cpool_grain_storage_gr(p)    , rscal)
       endif
     endif
   enddo
@@ -779,12 +774,12 @@ contains
 !---------------------------------------------------------------------------
   subroutine nitrogen_flux_limiter(bounds, num_soilc, filter_soilc,&
       num_soilp, filter_soilp, cnstate_vars,  &
-      nitrogenflux_vars, nitrogenstate_vars)
+      veg_nf, veg_ns)
 
     use decompMod           , only : bounds_type
     use CNStateType               , only : cnstate_type
-    use CNNitrogenFluxType        , only : nitrogenflux_type
-    use CNNitrogenStateType       , only : nitrogenstate_type
+    use VegetationDataType, only : vegetation_nitrogen_flux
+    use VegetationDataType, only : vegetation_nitrogen_state
     implicit none
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -793,8 +788,8 @@ contains
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(cnstate_type)       , intent(in)    :: cnstate_vars
-    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+    type(vegetation_nitrogen_flux)  , intent(inout) :: veg_nf
+    type(vegetation_nitrogen_state) , intent(inout) :: veg_ns
 
   integer :: fp, p
   real(r8) :: ystates(n_nutrient_states)
@@ -803,8 +798,8 @@ contains
   associate(                                                       &
          ivt                   => veg_pp%itype                   , & ! Input:  [integer  (:)     ]  pft vegetation type
          woody                 => veg_vp%woody                   , & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
-         nf                    => nitrogenflux_vars              , &
-         ns                    => nitrogenstate_vars               &
+         nf                    => veg_nf              , &
+         ns                    => veg_ns               &
   )
   ! set time steps
   dt = real( get_step_size(), r8 )
@@ -812,146 +807,146 @@ contains
     p = filter_soilp(fp)
     ystates(:) = 0._r8
     !assemble state variables
-    mov(ystates(s_npool)               , ns%npool_patch(p))
-    mov(ystates(s_leafn)               , ns%leafn_patch(p))
-    mov(ystates(s_leafn_xfer)          , ns%leafn_xfer_patch(p))
-    mov(ystates(s_leafn_storage)       , nf%npool_to_leafn_storage_patch(p))
-    mov(ystates(s_frootn)              , ns%frootn_patch(p))
-    mov(ystates(s_frootn_xfer)         , ns%frootn_xfer_patch(p))
-    mov(ystates(s_frootn_sotrage)      , ns%frootn_storage_patch(p))
+    mov(ystates(s_npool)               , veg_ns%npool(p))
+    mov(ystates(s_leafn)               , veg_ns%leafn(p))
+    mov(ystates(s_leafn_xfer)          , veg_ns%leafn_xfer(p))
+    mov(ystates(s_leafn_storage)       , veg_nf%npool_to_leafn_storage(p))
+    mov(ystates(s_frootn)              , veg_ns%frootn(p))
+    mov(ystates(s_frootn_xfer)         , veg_ns%frootn_xfer(p))
+    mov(ystates(s_frootn_sotrage)      , veg_ns%frootn_storage(p))
     if (woody(ivt(p)) == 1.0_r8) then
-      mov(ystates(s_livestemn)           , ns%livestemn_patch(p))
-      mov(ystates(s_livestemn_xfer)      , ns%livestemn_xfer_patch(p))
-      mov(ystates(s_livestemn_storage)   , ns%livestemn_storage_patch(p))
-      mov(ystates(s_deadstemn)           , ns%deadstemn_patch(p))
-      mov(ystates(s_deadstemn_xfer)      , ns%deadstemn_xfer_patch(p))
-      mov(ystates(s_deadstemn_storage)   , ns%deadstemn_storage_patch(p))
-      mov(ystates(s_livecrootn)          , ns%livecrootn_patch(p))
-      mov(ystates(s_livecrootn_xfer)     , ns%livecrootn_xfer_patch(p))
-      mov(ystates(s_livecrootn_storage)  , ns%livecrootn_storage_patch(p))
-      mov(ystates(s_deadcrootn)          , ns%deadcrootn_patch(p))
-      mov(ystates(s_deadcrootn_xfer)     , ns%deadcrootn_xfer_patch(p))
-      mov(ystates(s_deadcrootn_storage)  , ns%deadcrootn_storage_patch(p))
+      mov(ystates(s_livestemn)           , veg_ns%livestemn(p))
+      mov(ystates(s_livestemn_xfer)      , veg_ns%livestemn_xfer(p))
+      mov(ystates(s_livestemn_storage)   , veg_ns%livestemn_storage(p))
+      mov(ystates(s_deadstemn)           , veg_ns%deadstemn(p))
+      mov(ystates(s_deadstemn_xfer)      , veg_ns%deadstemn_xfer(p))
+      mov(ystates(s_deadstemn_storage)   , veg_ns%deadstemn_storage(p))
+      mov(ystates(s_livecrootn)          , veg_ns%livecrootn(p))
+      mov(ystates(s_livecrootn_xfer)     , veg_ns%livecrootn_xfer(p))
+      mov(ystates(s_livecrootn_storage)  , veg_ns%livecrootn_storage(p))
+      mov(ystates(s_deadcrootn)          , veg_ns%deadcrootn(p))
+      mov(ystates(s_deadcrootn_xfer)     , veg_ns%deadcrootn_xfer(p))
+      mov(ystates(s_deadcrootn_storage)  , veg_ns%deadcrootn_storage(p))
     endif
     if (ivt(p) >= npcropmin) then
-      mov(ystates(s_grainn)              , ns%grainn_patch(p))
-      mov(ystates(s_grainn_xfer)         , ns%grainn_xfer_patch(p))
-      mov(ystates(s_grainn_storage)      , ns%grainn_storage_patch(p))
-      mov(ystates(s_livestemn)           , ns%livestemn_patch(p))
-      mov(ystates(s_livestemn_xfer)      , ns%livestemn_xfer_patch(p))
-      mov(ystates(s_livestemn_storage)   , ns%livestemn_storage_patch(p))
+      mov(ystates(s_grainn)              , veg_ns%grainn(p))
+      mov(ystates(s_grainn_xfer)         , veg_ns%grainn_xfer(p))
+      mov(ystates(s_grainn_storage)      , veg_ns%grainn_storage(p))
+      mov(ystates(s_livestemn)           , veg_ns%livestemn(p))
+      mov(ystates(s_livestemn_xfer)      , veg_ns%livestemn_xfer(p))
+      mov(ystates(s_livestemn_storage)   , veg_ns%livestemn_storage(p))
     endif
-    mov(ystates(s_retransn)            , ns%retransn_patch(p))
+    mov(ystates(s_retransn)            , veg_ns%retransn(p))
 
     rfluxes(:) = 0._r8
     !assemble reactive fluxes
-    mov(rfluxes(f_npool_to_leafn)                , nf%npool_to_leafn_patch(p))
-    mov(rfluxes(f_npool_to_leafn_storage)        , nf%npool_to_leafn_storage_patch(p))
-    mov(rfluxes(f_npool_to_frootn)               , nf%npool_to_frootn_patch(p))
-    mov(rfluxes(f_npool_to_frootn_storage)       , nf%npool_to_frootn_storage_patch(p))
+    mov(rfluxes(f_npool_to_leafn)                , veg_nf%npool_to_leafn(p))
+    mov(rfluxes(f_npool_to_leafn_storage)        , veg_nf%npool_to_leafn_storage(p))
+    mov(rfluxes(f_npool_to_frootn)               , veg_nf%npool_to_frootn(p))
+    mov(rfluxes(f_npool_to_frootn_storage)       , veg_nf%npool_to_frootn_storage(p))
     if (woody(ivt(p)) == 1.0_r8) then
-      mov(rfluxes(f_npool_to_livestemn)            , nf%npool_to_livestemn_patch(p))
-      mov(rfluxes(f_npool_to_livestemn_storage)    , nf%npool_to_livestemn_storage_patch(p))
-      mov(rfluxes(f_npool_to_livecrootn)           , nf%npool_to_livecrootn_patch(p))
-      mov(rfluxes(f_npool_to_livecrootn_storage)   , nf%npool_to_livecrootn_storage_patch(p))
-      mov(rfluxes(f_npool_to_deadstemn)            , nf%npool_to_deadstemn_patch(p))
-      mov(rfluxes(f_npool_to_deadcrootn)           , nf%npool_to_deadcrootn_patch(p))
-      mov(rfluxes(f_npool_to_deadstemn_storage)    , nf%npool_to_deadstemn_storage_patch(p))
-      mov(rfluxes(f_npool_to_deadcrootn_storage)   , nf%npool_to_deadcrootn_storage_patch(p))
-      mov(rfluxes(f_livestemn_storage_to_xfer)     , nf%livestemn_storage_to_xfer_patch(p))
-      mov(rfluxes(f_livestemn_xfer_to_livestemn)   , nf%livestemn_xfer_to_livestemn_patch(p))
-      mov(rfluxes(f_livestemn_to_retransn)         , nf%livestemn_to_retransn_patch(p))
-      mov(rfluxes(f_livestemn_to_deadstemn)        , nf%livestemn_to_deadstemn_patch(p))
-      mov(rfluxes(f_livecrootn_to_deadcrootn)      , nf%livecrootn_to_deadcrootn_patch(p))
-      mov(rfluxes(f_livecrootn_to_retransn)        , nf%livecrootn_to_retransn_patch(p))
-      mov(rfluxes(f_livecrootn_storage_to_xfer)    , nf%livecrootn_storage_to_xfer_patch(p))
-      mov(rfluxes(f_livecrootn_xfer_to_livecrootn) , nf%livecrootn_xfer_to_livecrootn_patch(p))
-      mov(rfluxes(f_deadstemn_storage_to_xfer)     , nf%deadstemn_storage_to_xfer_patch(p))
-      mov(rfluxes(f_deadstemn_xfer_to_deadstem)    , nf%deadstemn_xfer_to_deadstemn_patch(p))
-      mov(rfluxes(f_deadcrootn_storage_to_xfer)    , nf%deadcrootn_storage_to_xfer_patch(p))
-      mov(rfluxes(f_deadcrootn_xfer_to_deadcrootn) , nf%deadcrootn_xfer_to_deadcrootn_patch(p))
+      mov(rfluxes(f_npool_to_livestemn)            , veg_nf%npool_to_livestemn(p))
+      mov(rfluxes(f_npool_to_livestemn_storage)    , veg_nf%npool_to_livestemn_storage(p))
+      mov(rfluxes(f_npool_to_livecrootn)           , veg_nf%npool_to_livecrootn(p))
+      mov(rfluxes(f_npool_to_livecrootn_storage)   , veg_nf%npool_to_livecrootn_storage(p))
+      mov(rfluxes(f_npool_to_deadstemn)            , veg_nf%npool_to_deadstemn(p))
+      mov(rfluxes(f_npool_to_deadcrootn)           , veg_nf%npool_to_deadcrootn(p))
+      mov(rfluxes(f_npool_to_deadstemn_storage)    , veg_nf%npool_to_deadstemn_storage(p))
+      mov(rfluxes(f_npool_to_deadcrootn_storage)   , veg_nf%npool_to_deadcrootn_storage(p))
+      mov(rfluxes(f_livestemn_storage_to_xfer)     , veg_nf%livestemn_storage_to_xfer(p))
+      mov(rfluxes(f_livestemn_xfer_to_livestemn)   , veg_nf%livestemn_xfer_to_livestemn(p))
+      mov(rfluxes(f_livestemn_to_retransn)         , veg_nf%livestemn_to_retransn(p))
+      mov(rfluxes(f_livestemn_to_deadstemn)        , veg_nf%livestemn_to_deadstemn(p))
+      mov(rfluxes(f_livecrootn_to_deadcrootn)      , veg_nf%livecrootn_to_deadcrootn(p))
+      mov(rfluxes(f_livecrootn_to_retransn)        , veg_nf%livecrootn_to_retransn(p))
+      mov(rfluxes(f_livecrootn_storage_to_xfer)    , veg_nf%livecrootn_storage_to_xfer(p))
+      mov(rfluxes(f_livecrootn_xfer_to_livecrootn) , veg_nf%livecrootn_xfer_to_livecrootn(p))
+      mov(rfluxes(f_deadstemn_storage_to_xfer)     , veg_nf%deadstemn_storage_to_xfer(p))
+      mov(rfluxes(f_deadstemn_xfer_to_deadstem)    , veg_nf%deadstemn_xfer_to_deadstemn(p))
+      mov(rfluxes(f_deadcrootn_storage_to_xfer)    , veg_nf%deadcrootn_storage_to_xfer(p))
+      mov(rfluxes(f_deadcrootn_xfer_to_deadcrootn) , veg_nf%deadcrootn_xfer_to_deadcrootn(p))
     endif
 
     if (ivt(p) >= npcropmin) then
-      mov(rfluxes(f_npool_to_livestemn)            , nf%npool_to_livestemn_patch(p))
-      mov(rfluxes(f_npool_to_livestemn_storage)    , nf%npool_to_livestemn_storage_patch(p))
-      mov(rfluxes(f_npool_to_grainn)               , nf%npool_to_grainn_patch(p))
-      mov(rfluxes(f_npool_to_grainn_storage)       , nf%npool_to_grainn_storage_patch(p))
-      mov(rfluxes(f_frootn_to_retransn)            , nf%frootn_to_retransn_patch(p))
-      mov(rfluxes(f_livestemn_to_litter)           , nf%livestemn_to_litter_patch(p))
-      mov(rfluxes(f_livestemn_storage_to_xfer)     , nf%livestemn_storage_to_xfer_patch(p))
-      mov(rfluxes(f_livestemn_xfer_to_livestemn)   ,  nf%livestemn_xfer_to_livestemn_patch(p))
-      mov(rfluxes(f_livestemn_to_retransn)         , nf%livestemn_to_retransn_patch(p))
-      mov(rfluxes(f_grainn_xfer_to_grainn)         , nf%grainn_xfer_to_grainn_patch(p))
-      mov(rfluxes(f_grainn_to_food)                , nf%grainn_to_food_patch(p))
+      mov(rfluxes(f_npool_to_livestemn)            , veg_nf%npool_to_livestemn(p))
+      mov(rfluxes(f_npool_to_livestemn_storage)    , veg_nf%npool_to_livestemn_storage(p))
+      mov(rfluxes(f_npool_to_grainn)               , veg_nf%npool_to_grainn(p))
+      mov(rfluxes(f_npool_to_grainn_storage)       , veg_nf%npool_to_grainn_storage(p))
+      mov(rfluxes(f_frootn_to_retransn)            , veg_nf%frootn_to_retransn(p))
+      mov(rfluxes(f_livestemn_to_litter)           , veg_nf%livestemn_to_litter(p))
+      mov(rfluxes(f_livestemn_storage_to_xfer)     , veg_nf%livestemn_storage_to_xfer(p))
+      mov(rfluxes(f_livestemn_xfer_to_livestemn)   ,  veg_nf%livestemn_xfer_to_livestemn(p))
+      mov(rfluxes(f_livestemn_to_retransn)         , veg_nf%livestemn_to_retransn(p))
+      mov(rfluxes(f_grainn_xfer_to_grainn)         , veg_nf%grainn_xfer_to_grainn(p))
+      mov(rfluxes(f_grainn_to_food)                , veg_nf%grainn_to_food(p))
     endif
 
-    mov(rfluxes(f_leafn_to_litter)               , nf%leafn_to_litter_patch(p))
-    mov(rfluxes(f_leafn_xfer_to_leafn)           , nf%leafn_xfer_to_leafn_patch(p))
-    mov(rfluxes(f_leafn_storage_to_xfer)         , nf%leafn_storage_to_xfer_patch(p))
-    mov(rfluxes(f_frootn_xfer_to_frootn)         , nf%frootn_xfer_to_frootn_patch(p))
-    mov(rfluxes(f_frootn_storage_to_xfer)        , nf%frootn_storage_to_xfer_patch(p))
-    mov(rfluxes(f_leafn_to_retransn)             , nf%leafn_to_retransn_patch(p))
-    mov(rfluxes(f_frootn_to_litter)              , nf%frootn_to_litter_patch(p))
+    mov(rfluxes(f_leafn_to_litter)               , veg_nf%leafn_to_litter(p))
+    mov(rfluxes(f_leafn_xfer_to_leafn)           , veg_nf%leafn_xfer_to_leafn(p))
+    mov(rfluxes(f_leafn_storage_to_xfer)         , veg_nf%leafn_storage_to_xfer(p))
+    mov(rfluxes(f_frootn_xfer_to_frootn)         , veg_nf%frootn_xfer_to_frootn(p))
+    mov(rfluxes(f_frootn_storage_to_xfer)        , veg_nf%frootn_storage_to_xfer(p))
+    mov(rfluxes(f_leafn_to_retransn)             , veg_nf%leafn_to_retransn(p))
+    mov(rfluxes(f_frootn_to_litter)              , veg_nf%frootn_to_litter(p))
 
-    mov(rfluxes(f_retransn_to_npool)             , nf%retransn_to_npool_patch(p))
-    mov(rfluxes(f_supplement_to_plantn)          , nf%supplement_to_plantn(p))
+    mov(rfluxes(f_retransn_to_npool)             , veg_nf%retransn_to_npool(p))
+    mov(rfluxes(f_supplement_to_plantn)          , veg_nf%supplement_to_plantn(p))
 
     call flux_correction(spm_nutrient_d%szrow, spm_nutrient_d%szcol, spm_nutrient_p, &
       spm_nutrient_d, dt, ystates, rfluxes)
 
     !correct the fluxes
-    imov(rfluxes(f_npool_to_leafn)                , nf%npool_to_leafn_patch(p))
-    imov(rfluxes(f_npool_to_leafn_storage)        , nf%npool_to_leafn_storage_patch(p))
-    imov(rfluxes(f_npool_to_frootn)               , nf%npool_to_frootn_patch(p))
-    imov(rfluxes(f_npool_to_frootn_storage)       , nf%npool_to_frootn_storage_patch(p))
+    imov(rfluxes(f_npool_to_leafn)                , veg_nf%npool_to_leafn(p))
+    imov(rfluxes(f_npool_to_leafn_storage)        , veg_nf%npool_to_leafn_storage(p))
+    imov(rfluxes(f_npool_to_frootn)               , veg_nf%npool_to_frootn(p))
+    imov(rfluxes(f_npool_to_frootn_storage)       , veg_nf%npool_to_frootn_storage(p))
     if (woody(ivt(p)) == 1.0_r8) then
-      imov(rfluxes(f_npool_to_livestemn)            , nf%npool_to_livestemn_patch(p))
-      imov(rfluxes(f_npool_to_livestemn_storage)    , nf%npool_to_livestemn_storage_patch(p))
-      imov(rfluxes(f_npool_to_livecrootn)           , nf%npool_to_livecrootn_patch(p))
-      imov(rfluxes(f_npool_to_livecrootn_storage)   , nf%npool_to_livecrootn_storage_patch(p))
-      imov(rfluxes(f_npool_to_deadstemn)            , nf%npool_to_deadstemn_patch(p))
-      imov(rfluxes(f_npool_to_deadcrootn)           , nf%npool_to_deadcrootn_patch(p))
-      imov(rfluxes(f_npool_to_deadstemn_storage)    , nf%npool_to_deadstemn_storage_patch(p))
-      imov(rfluxes(f_npool_to_deadcrootn_storage)   , nf%npool_to_deadcrootn_storage_patch(p))
-      imov(rfluxes(f_livestemn_storage_to_xfer)     , nf%livestemn_storage_to_xfer_patch(p))
-      imov(rfluxes(f_livestemn_xfer_to_livestemn)   , nf%livestemn_xfer_to_livestemn_patch(p))
-      imov(rfluxes(f_livestemn_to_retransn)         , nf%livestemn_to_retransn_patch(p))
-      imov(rfluxes(f_livestemn_to_deadstemn)        , nf%livestemn_to_deadstemn_patch(p))
-      imov(rfluxes(f_livecrootn_to_deadcrootn)      , nf%livecrootn_to_deadcrootn_patch(p))
-      imov(rfluxes(f_livecrootn_to_retransn)        , nf%livecrootn_to_retransn_patch(p))
-      imov(rfluxes(f_livecrootn_storage_to_xfer)    , nf%livecrootn_storage_to_xfer_patch(p))
-      imov(rfluxes(f_livecrootn_xfer_to_livecrootn) , nf%livecrootn_xfer_to_livecrootn_patch(p))
-      imov(rfluxes(f_deadstemn_storage_to_xfer)     , nf%deadstemn_storage_to_xfer_patch(p))
-      imov(rfluxes(f_deadstemn_xfer_to_deadstem)    , nf%deadstemn_xfer_to_deadstemn_patch(p))
-      imov(rfluxes(f_deadcrootn_storage_to_xfer)    , nf%deadcrootn_storage_to_xfer_patch(p))
-      imov(rfluxes(f_deadcrootn_xfer_to_deadcrootn) , nf%deadcrootn_xfer_to_deadcrootn_patch(p))
+      imov(rfluxes(f_npool_to_livestemn)            , veg_nf%npool_to_livestemn(p))
+      imov(rfluxes(f_npool_to_livestemn_storage)    , veg_nf%npool_to_livestemn_storage(p))
+      imov(rfluxes(f_npool_to_livecrootn)           , veg_nf%npool_to_livecrootn(p))
+      imov(rfluxes(f_npool_to_livecrootn_storage)   , veg_nf%npool_to_livecrootn_storage(p))
+      imov(rfluxes(f_npool_to_deadstemn)            , veg_nf%npool_to_deadstemn(p))
+      imov(rfluxes(f_npool_to_deadcrootn)           , veg_nf%npool_to_deadcrootn(p))
+      imov(rfluxes(f_npool_to_deadstemn_storage)    , veg_nf%npool_to_deadstemn_storage(p))
+      imov(rfluxes(f_npool_to_deadcrootn_storage)   , veg_nf%npool_to_deadcrootn_storage(p))
+      imov(rfluxes(f_livestemn_storage_to_xfer)     , veg_nf%livestemn_storage_to_xfer(p))
+      imov(rfluxes(f_livestemn_xfer_to_livestemn)   , veg_nf%livestemn_xfer_to_livestemn(p))
+      imov(rfluxes(f_livestemn_to_retransn)         , veg_nf%livestemn_to_retransn(p))
+      imov(rfluxes(f_livestemn_to_deadstemn)        , veg_nf%livestemn_to_deadstemn(p))
+      imov(rfluxes(f_livecrootn_to_deadcrootn)      , veg_nf%livecrootn_to_deadcrootn(p))
+      imov(rfluxes(f_livecrootn_to_retransn)        , veg_nf%livecrootn_to_retransn(p))
+      imov(rfluxes(f_livecrootn_storage_to_xfer)    , veg_nf%livecrootn_storage_to_xfer(p))
+      imov(rfluxes(f_livecrootn_xfer_to_livecrootn) , veg_nf%livecrootn_xfer_to_livecrootn(p))
+      imov(rfluxes(f_deadstemn_storage_to_xfer)     , veg_nf%deadstemn_storage_to_xfer(p))
+      imov(rfluxes(f_deadstemn_xfer_to_deadstem)    , veg_nf%deadstemn_xfer_to_deadstemn(p))
+      imov(rfluxes(f_deadcrootn_storage_to_xfer)    , veg_nf%deadcrootn_storage_to_xfer(p))
+      imov(rfluxes(f_deadcrootn_xfer_to_deadcrootn) , veg_nf%deadcrootn_xfer_to_deadcrootn(p))
     endif
 
     if (ivt(p) >= npcropmin) then
-      imov(rfluxes(f_npool_to_livestemn)            , nf%npool_to_livestemn_patch(p))
-      imov(rfluxes(f_npool_to_livestemn_storage)    , nf%npool_to_livestemn_storage_patch(p))
-      imov(rfluxes(f_npool_to_grainn)               , nf%npool_to_grainn_patch(p))
-      imov(rfluxes(f_npool_to_grainn_storage)       , nf%npool_to_grainn_storage_patch(p))
-      imov(rfluxes(f_frootn_to_retransn)            , nf%frootn_to_retransn_patch(p))
-      imov(rfluxes(f_livestemn_to_litter)           , nf%livestemn_to_litter_patch(p))
-      imov(rfluxes(f_livestemn_storage_to_xfer)     , nf%livestemn_storage_to_xfer_patch(p))
-      imov(rfluxes(f_livestemn_xfer_to_livestemn)   ,  nf%livestemn_xfer_to_livestemn_patch(p))
-      imov(rfluxes(f_livestemn_to_retransn)         , nf%livestemn_to_retransn_patch(p))
-      imov(rfluxes(f_grainn_xfer_to_grainn)         , nf%grainn_xfer_to_grainn_patch(p))
-      imov(rfluxes(f_grainn_to_food)                , nf%grainn_to_food_patch(p))
+      imov(rfluxes(f_npool_to_livestemn)            , veg_nf%npool_to_livestemn(p))
+      imov(rfluxes(f_npool_to_livestemn_storage)    , veg_nf%npool_to_livestemn_storage(p))
+      imov(rfluxes(f_npool_to_grainn)               , veg_nf%npool_to_grainn(p))
+      imov(rfluxes(f_npool_to_grainn_storage)       , veg_nf%npool_to_grainn_storage(p))
+      imov(rfluxes(f_frootn_to_retransn)            , veg_nf%frootn_to_retransn(p))
+      imov(rfluxes(f_livestemn_to_litter)           , veg_nf%livestemn_to_litter(p))
+      imov(rfluxes(f_livestemn_storage_to_xfer)     , veg_nf%livestemn_storage_to_xfer(p))
+      imov(rfluxes(f_livestemn_xfer_to_livestemn)   ,  veg_nf%livestemn_xfer_to_livestemn(p))
+      imov(rfluxes(f_livestemn_to_retransn)         , veg_nf%livestemn_to_retransn(p))
+      imov(rfluxes(f_grainn_xfer_to_grainn)         , veg_nf%grainn_xfer_to_grainn(p))
+      imov(rfluxes(f_grainn_to_food)                , veg_nf%grainn_to_food(p))
     endif
 
-    mov(rfluxes(f_leafn_to_litter)               , nf%leafn_to_litter_patch(p))
-    mov(rfluxes(f_leafn_xfer_to_leafn)           , nf%leafn_xfer_to_leafn_patch(p))
-    mov(rfluxes(f_leafn_storage_to_xfer)         , nf%leafn_storage_to_xfer_patch(p))
-    mov(rfluxes(f_frootn_xfer_to_frootn)         , nf%frootn_xfer_to_frootn_patch(p))
-    mov(rfluxes(f_frootn_storage_to_xfer)        , nf%frootn_storage_to_xfer_patch(p))
-    mov(rfluxes(f_leafn_to_retransn)             , nf%leafn_to_retransn_patch(p))
-    mov(rfluxes(f_frootn_to_litter)              , nf%frootn_to_litter_patch(p))
+    mov(rfluxes(f_leafn_to_litter)               , veg_nf%leafn_to_litter(p))
+    mov(rfluxes(f_leafn_xfer_to_leafn)           , veg_nf%leafn_xfer_to_leafn(p))
+    mov(rfluxes(f_leafn_storage_to_xfer)         , veg_nf%leafn_storage_to_xfer(p))
+    mov(rfluxes(f_frootn_xfer_to_frootn)         , veg_nf%frootn_xfer_to_frootn(p))
+    mov(rfluxes(f_frootn_storage_to_xfer)        , veg_nf%frootn_storage_to_xfer(p))
+    mov(rfluxes(f_leafn_to_retransn)             , veg_nf%leafn_to_retransn(p))
+    mov(rfluxes(f_frootn_to_litter)              , veg_nf%frootn_to_litter(p))
 
-    mov(rfluxes(f_retransn_to_npool)             , nf%retransn_to_npool_patch(p))
-    mov(rfluxes(f_supplement_to_plantn)          , nf%supplement_to_plantn(p))
+    mov(rfluxes(f_retransn_to_npool)             , veg_nf%retransn_to_npool(p))
+    mov(rfluxes(f_supplement_to_plantn)          , veg_nf%supplement_to_plantn(p))
 
   enddo
   end associate
@@ -960,12 +955,12 @@ contains
   !-------------------------------------------------------------------------------
   subroutine phosphorus_flux_limiter(bounds, num_soilc, filter_soilc,&
       num_soilp, filter_soilp, cnstate_vars,  &
-      phosphorusflux_vars, phosphorusstate_vars)
+      veg_pf, veg_ps)
 
     use decompMod           , only : bounds_type
     use CNStateType               , only : cnstate_type
-    use PhosphorusFluxType        , only : phosphorusflux_type
-    use PhosphorusStateType       , only : phosphorusstate_type
+    use VegetationDataType, only : vegetation_phosphorus_flux
+    use VegetationDataType, only : vegetation_phosphorus_state
     implicit none
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -974,8 +969,8 @@ contains
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(cnstate_type)       , intent(in)    :: cnstate_vars
-    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
-    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    type(vegetation_phosphorus_flux)  , intent(inout) :: veg_pf
+    type(vegetation_phosphorus_state) , intent(inout) :: veg_ps
 
   integer :: fp, p
   real(r8) :: ystates(n_nutrient_states)
@@ -986,8 +981,8 @@ contains
   associate(                                                     &
     ivt                   => veg_pp%itype                      , & ! Input:  [integer  (:)     ]  pft vegetation type
     woody                 => veg_vp%woody                      , & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
-    pf                    => phosphorusflux_vars               , &
-    ps                    => phosphorusstate_vars                &
+    pf                    => veg_pf               , &
+    ps                    => veg_ps                &
   )
 
   ! set time steps
@@ -996,145 +991,145 @@ contains
     p = filter_soilp(fp)
     ystates(:) = 0._r8
     !assemble state variables
-    mov(ystates(s_npool)               , ps%ppool_patch(p))
-    mov(ystates(s_leafn)               , ps%leafp_patch(p))
-    mov(ystates(s_leafn_xfer)          , ps%leafp_xfer_patch(p))
-    mov(ystates(s_leafn_storage)       , ps%leafp_storage_patch(p))
-    mov(ystates(s_frootn)              , ps%frootp_patch(p))
-    mov(ystates(s_frootn_xfer)         , ps%frootp_xfer_patch(p))
-    mov(ystates(s_frootn_sotrage)      , pf%ppool_to_frootp_storage_patch(p))
+    mov(ystates(s_npool)               , veg_ps%ppool(p))
+    mov(ystates(s_leafn)               , veg_ps%leafp(p))
+    mov(ystates(s_leafn_xfer)          , veg_ps%leafp_xfer(p))
+    mov(ystates(s_leafn_storage)       , veg_ps%leafp_storage(p))
+    mov(ystates(s_frootn)              , veg_ps%frootp(p))
+    mov(ystates(s_frootn_xfer)         , veg_ps%frootp_xfer(p))
+    mov(ystates(s_frootn_sotrage)      , veg_pf%ppool_to_frootp_storage(p))
     if (woody(ivt(p)) == 1.0_r8) then
-      mov(ystates(s_livestemn)           , ps%livestemp_patch(p))
-      mov(ystates(s_livestemn_xfer)      , ps%livestemp_xfer_patch(p))
-      mov(ystates(s_livestemn_storage)   , ps%livestemp_storage_patch(p))
-      mov(ystates(s_deadstemn)           , ps%deadstemp_patch(p))
-      mov(ystates(s_deadstemn_xfer)      , ps%deadstemp_xfer_patch(p))
-      mov(ystates(s_deadstemn_storage)   , ps%deadstemp_storage_patch(p))
-      mov(ystates(s_livecrootn)          , ps%livecrootp_patch(p))
-      mov(ystates(s_livecrootn_xfer)     , ps%livecrootp_xfer_patch(p))
-      mov(ystates(s_livecrootn_storage)  , ps%livecrootp_storage_patch(p))
-      mov(ystates(s_deadcrootn)          , ps%deadcrootp_patch(p))
-      mov(ystates(s_deadcrootn_xfer)     , ps%deadcrootp_xfer_patch(p))
-      mov(ystates(s_deadcrootn_storage)  , ps%deadcrootp_storage_patch(p))
+      mov(ystates(s_livestemn)           , veg_ps%livestemp(p))
+      mov(ystates(s_livestemn_xfer)      , veg_ps%livestemp_xfer(p))
+      mov(ystates(s_livestemn_storage)   , veg_ps%livestemp_storage(p))
+      mov(ystates(s_deadstemn)           , veg_ps%deadstemp(p))
+      mov(ystates(s_deadstemn_xfer)      , veg_ps%deadstemp_xfer(p))
+      mov(ystates(s_deadstemn_storage)   , veg_ps%deadstemp_storage(p))
+      mov(ystates(s_livecrootn)          , veg_ps%livecrootp(p))
+      mov(ystates(s_livecrootn_xfer)     , veg_ps%livecrootp_xfer(p))
+      mov(ystates(s_livecrootn_storage)  , veg_ps%livecrootp_storage(p))
+      mov(ystates(s_deadcrootn)          , veg_ps%deadcrootp(p))
+      mov(ystates(s_deadcrootn_xfer)     , veg_ps%deadcrootp_xfer(p))
+      mov(ystates(s_deadcrootn_storage)  , veg_ps%deadcrootp_storage(p))
     endif
     if (ivt(p) >= npcropmin) then
-      mov(ystates(s_grainn)              , ps%grainp_patch(p))
-      mov(ystates(s_grainn_xfer)         , ps%grainp_xfer_patch(p))
-      mov(ystates(s_grainn_storage)      , ps%grainp_storage_patch(p))
-      mov(ystates(s_livestemn)           , ps%livestemp_patch(p))
-      mov(ystates(s_livestemn_xfer)      , ps%livestemp_xfer_patch(p))
-      mov(ystates(s_livestemn_storage)   , ps%livestemp_storage_patch(p))
+      mov(ystates(s_grainn)              , veg_ps%grainp(p))
+      mov(ystates(s_grainn_xfer)         , veg_ps%grainp_xfer(p))
+      mov(ystates(s_grainn_storage)      , veg_ps%grainp_storage(p))
+      mov(ystates(s_livestemn)           , veg_ps%livestemp(p))
+      mov(ystates(s_livestemn_xfer)      , veg_ps%livestemp_xfer(p))
+      mov(ystates(s_livestemn_storage)   , veg_ps%livestemp_storage(p))
     endif
-    mov(ystates(s_retransn)              , ps%retransp_patch(p))
+    mov(ystates(s_retransn)              , veg_ps%retransp(p))
 
     rfluxes(:) = 0._r8
     !assemble reactive fluxes
-    mov(rfluxes(f_npool_to_leafn)                , pf%ppool_to_leafp_patch(p))
-    mov(rfluxes(f_npool_to_leafn_storage)        , pf%ppool_to_leafp_storage_patch(p))
-    mov(rfluxes(f_npool_to_frootn)               , pf%ppool_to_frootp_patch(p))
-    mov(rfluxes(f_npool_to_frootn_storage)       , pf%ppool_to_frootp_storage_patch(p))
+    mov(rfluxes(f_npool_to_leafn)                , veg_pf%ppool_to_leafp(p))
+    mov(rfluxes(f_npool_to_leafn_storage)        , veg_pf%ppool_to_leafp_storage(p))
+    mov(rfluxes(f_npool_to_frootn)               , veg_pf%ppool_to_frootp(p))
+    mov(rfluxes(f_npool_to_frootn_storage)       , veg_pf%ppool_to_frootp_storage(p))
     if (woody(ivt(p)) == 1._r8) then
-      mov(rfluxes(f_npool_to_livestemn)            , pf%ppool_to_livestemp_patch(p))
-      mov(rfluxes(f_npool_to_livestemn_storage)    , pf%ppool_to_livestemp_storage_patch(p))
-      mov(rfluxes(f_npool_to_livecrootn)           , pf%ppool_to_livecrootp_patch(p))
-      mov(rfluxes(f_npool_to_livecrootn_storage)   , pf%ppool_to_livecrootp_storage_patch(p))
-      mov(rfluxes(f_npool_to_deadstemn)            , pf%ppool_to_deadstemp_patch(p))
-      mov(rfluxes(f_npool_to_deadcrootn)           , pf%ppool_to_deadcrootp_patch(p))
-      mov(rfluxes(f_npool_to_deadstemn_storage)    , pf%ppool_to_deadstemp_storage_patch(p))
-      mov(rfluxes(f_npool_to_deadcrootn_storage)   , pf%ppool_to_deadcrootp_storage_patch(p))
-      mov(rfluxes(f_livestemn_storage_to_xfer)     , pf%livestemp_storage_to_xfer_patch(p))
-      mov(rfluxes(f_livestemn_xfer_to_livestemn)   , pf%livestemp_xfer_to_livestemp_patch(p))
-      mov(rfluxes(f_livestemn_to_retransn)         , pf%livestemp_to_retransp_patch(p))
-      mov(rfluxes(f_livestemn_to_deadstemn)        , pf%livestemp_to_deadstemp_patch(p))
-      mov(rfluxes(f_livecrootn_to_deadcrootn)      , pf%livecrootp_to_deadcrootp_patch(p))
-      mov(rfluxes(f_livecrootn_to_retransn)        , pf%livecrootp_to_retransp_patch(p))
-      mov(rfluxes(f_livecrootn_storage_to_xfer)    , pf%livecrootp_storage_to_xfer_patch(p))
-      mov(rfluxes(f_livecrootn_xfer_to_livecrootn) , pf%livecrootp_xfer_to_livecrootp_patch(p))
-      mov(rfluxes(f_deadstemn_storage_to_xfer)     , pf%deadstemp_storage_to_xfer_patch(p))
-      mov(rfluxes(f_deadstemn_xfer_to_deadstem)    , pf%deadstemp_xfer_to_deadstemp_patch(p))
-      mov(rfluxes(f_deadcrootn_storage_to_xfer)    , pf%deadcrootp_storage_to_xfer_patch(p))
-      mov(rfluxes(f_deadcrootn_xfer_to_deadcrootn) , pf%deadcrootp_xfer_to_deadcrootp_patch(p))
+      mov(rfluxes(f_npool_to_livestemn)            , veg_pf%ppool_to_livestemp(p))
+      mov(rfluxes(f_npool_to_livestemn_storage)    , veg_pf%ppool_to_livestemp_storage(p))
+      mov(rfluxes(f_npool_to_livecrootn)           , veg_pf%ppool_to_livecrootp(p))
+      mov(rfluxes(f_npool_to_livecrootn_storage)   , veg_pf%ppool_to_livecrootp_storage(p))
+      mov(rfluxes(f_npool_to_deadstemn)            , veg_pf%ppool_to_deadstemp(p))
+      mov(rfluxes(f_npool_to_deadcrootn)           , veg_pf%ppool_to_deadcrootp(p))
+      mov(rfluxes(f_npool_to_deadstemn_storage)    , veg_pf%ppool_to_deadstemp_storage(p))
+      mov(rfluxes(f_npool_to_deadcrootn_storage)   , veg_pf%ppool_to_deadcrootp_storage(p))
+      mov(rfluxes(f_livestemn_storage_to_xfer)     , veg_pf%livestemp_storage_to_xfer(p))
+      mov(rfluxes(f_livestemn_xfer_to_livestemn)   , veg_pf%livestemp_xfer_to_livestemp(p))
+      mov(rfluxes(f_livestemn_to_retransn)         , veg_pf%livestemp_to_retransp(p))
+      mov(rfluxes(f_livestemn_to_deadstemn)        , veg_pf%livestemp_to_deadstemp(p))
+      mov(rfluxes(f_livecrootn_to_deadcrootn)      , veg_pf%livecrootp_to_deadcrootp(p))
+      mov(rfluxes(f_livecrootn_to_retransn)        , veg_pf%livecrootp_to_retransp(p))
+      mov(rfluxes(f_livecrootn_storage_to_xfer)    , veg_pf%livecrootp_storage_to_xfer(p))
+      mov(rfluxes(f_livecrootn_xfer_to_livecrootn) , veg_pf%livecrootp_xfer_to_livecrootp(p))
+      mov(rfluxes(f_deadstemn_storage_to_xfer)     , veg_pf%deadstemp_storage_to_xfer(p))
+      mov(rfluxes(f_deadstemn_xfer_to_deadstem)    , veg_pf%deadstemp_xfer_to_deadstemp(p))
+      mov(rfluxes(f_deadcrootn_storage_to_xfer)    , veg_pf%deadcrootp_storage_to_xfer(p))
+      mov(rfluxes(f_deadcrootn_xfer_to_deadcrootn) , veg_pf%deadcrootp_xfer_to_deadcrootp(p))
     endif
 
     if (ivt(p) >= npcropmin) then
-      mov(rfluxes(f_npool_to_livestemn)            , pf%ppool_to_livestemp_patch(p))
-      mov(rfluxes(f_npool_to_livestemn_storage)    , pf%ppool_to_livestemp_storage_patch(p))
-      mov(rfluxes(f_npool_to_grainn)               , pf%ppool_to_grainp_patch(p))
-      mov(rfluxes(f_npool_to_grainn_storage)       , pf%ppool_to_grainp_storage_patch(p))
-      mov(rfluxes(f_frootn_to_retransn)            , pf%frootp_to_retransp_patch(p))
-      mov(rfluxes(f_livestemn_to_litter)           , pf%livestemp_to_litter_patch(p))
-      mov(rfluxes(f_livestemn_storage_to_xfer)     , pf%livestemp_storage_to_xfer_patch(p))
-      mov(rfluxes(f_livestemn_xfer_to_livestemn)   , pf%livestemp_xfer_to_livestemp_patch(p))
-      mov(rfluxes(f_livestemn_to_retransn)         , pf%livestemp_to_retransp_patch(p))
-      mov(rfluxes(f_grainn_xfer_to_grainn)         , pf%grainp_xfer_to_grainp_patch(p))
-      mov(rfluxes(f_grainn_to_food)                , pf%grainp_to_food_patch(p))
+      mov(rfluxes(f_npool_to_livestemn)            , veg_pf%ppool_to_livestemp(p))
+      mov(rfluxes(f_npool_to_livestemn_storage)    , veg_pf%ppool_to_livestemp_storage(p))
+      mov(rfluxes(f_npool_to_grainn)               , veg_pf%ppool_to_grainp(p))
+      mov(rfluxes(f_npool_to_grainn_storage)       , veg_pf%ppool_to_grainp_storage(p))
+      mov(rfluxes(f_frootn_to_retransn)            , veg_pf%frootp_to_retransp(p))
+      mov(rfluxes(f_livestemn_to_litter)           , veg_pf%livestemp_to_litter(p))
+      mov(rfluxes(f_livestemn_storage_to_xfer)     , veg_pf%livestemp_storage_to_xfer(p))
+      mov(rfluxes(f_livestemn_xfer_to_livestemn)   , veg_pf%livestemp_xfer_to_livestemp(p))
+      mov(rfluxes(f_livestemn_to_retransn)         , veg_pf%livestemp_to_retransp(p))
+      mov(rfluxes(f_grainn_xfer_to_grainn)         , veg_pf%grainp_xfer_to_grainp(p))
+      mov(rfluxes(f_grainn_to_food)                , veg_pf%grainp_to_food(p))
     endif
 
-    mov(rfluxes(f_leafn_to_litter)               , pf%leafp_to_litter_patch(p))
-    mov(rfluxes(f_leafn_xfer_to_leafn)           , pf%leafp_xfer_to_leafp_patch(p))
-    mov(rfluxes(f_leafn_storage_to_xfer)         , pf%ppool_to_leafp_storage_patch(p))
-    mov(rfluxes(f_frootn_xfer_to_frootn)         , pf%frootp_xfer_to_frootp_patch(p))
-    mov(rfluxes(f_frootn_storage_to_xfer)        , pf%frootp_storage_to_xfer_patch(p))
-    mov(rfluxes(f_leafn_to_retransn)             , pf%leafp_to_retransp_patch(p))
-    mov(rfluxes(f_frootn_to_litter)              , pf%frootp_to_litter_patch(p))
-    mov(rfluxes(f_retransn_to_npool)             , pf%retransp_to_ppool_patch(p))
-    mov(rfluxes(f_supplement_to_plantn)          , pf%supplement_to_plantp(p))
+    mov(rfluxes(f_leafn_to_litter)               , veg_pf%leafp_to_litter(p))
+    mov(rfluxes(f_leafn_xfer_to_leafn)           , veg_pf%leafp_xfer_to_leafp(p))
+    mov(rfluxes(f_leafn_storage_to_xfer)         , veg_pf%ppool_to_leafp_storage(p))
+    mov(rfluxes(f_frootn_xfer_to_frootn)         , veg_pf%frootp_xfer_to_frootp(p))
+    mov(rfluxes(f_frootn_storage_to_xfer)        , veg_pf%frootp_storage_to_xfer(p))
+    mov(rfluxes(f_leafn_to_retransn)             , veg_pf%leafp_to_retransp(p))
+    mov(rfluxes(f_frootn_to_litter)              , veg_pf%frootp_to_litter(p))
+    mov(rfluxes(f_retransn_to_npool)             , veg_pf%retransp_to_ppool(p))
+    mov(rfluxes(f_supplement_to_plantn)          , veg_pf%supplement_to_plantp(p))
     !assemble stoichiometry matrix
 
     !obtain the limiting factor
     call flux_correction(spm_nutrient_d%szrow, spm_nutrient_d%szcol, spm_nutrient_p, &
       spm_nutrient_d, dt, ystates, rfluxes)
     !correct the fluxes
-    imov(rfluxes(f_npool_to_leafn)                , pf%ppool_to_leafp_patch(p))
-    imov(rfluxes(f_npool_to_leafn_storage)        , pf%ppool_to_leafp_storage_patch(p))
-    imov(rfluxes(f_npool_to_frootn)               , pf%ppool_to_frootp_patch(p))
-    imov(rfluxes(f_npool_to_frootn_storage)       , pf%ppool_to_frootp_storage_patch(p))
+    imov(rfluxes(f_npool_to_leafn)                , veg_pf%ppool_to_leafp(p))
+    imov(rfluxes(f_npool_to_leafn_storage)        , veg_pf%ppool_to_leafp_storage(p))
+    imov(rfluxes(f_npool_to_frootn)               , veg_pf%ppool_to_frootp(p))
+    imov(rfluxes(f_npool_to_frootn_storage)       , veg_pf%ppool_to_frootp_storage(p))
     if (woody(ivt(p)) == 1._r8) then
-      imov(rfluxes(f_npool_to_livestemn)            , pf%ppool_to_livestemp_patch(p))
-      imov(rfluxes(f_npool_to_livestemn_storage)    , pf%ppool_to_livestemp_storage_patch(p))
-      imov(rfluxes(f_npool_to_livecrootn)           , pf%ppool_to_livecrootp_patch(p))
-      imov(rfluxes(f_npool_to_livecrootn_storage)   , pf%ppool_to_livecrootp_storage_patch(p))
-      imov(rfluxes(f_npool_to_deadstemn)            , pf%ppool_to_deadstemp_patch(p))
-      imov(rfluxes(f_npool_to_deadcrootn)           , pf%ppool_to_deadcrootp_patch(p))
-      imov(rfluxes(f_npool_to_deadstemn_storage)    , pf%ppool_to_deadstemp_storage_patch(p))
-      imov(rfluxes(f_npool_to_deadcrootn_storage)   , pf%ppool_to_deadcrootp_storage_patch(p))
-      imov(rfluxes(f_livestemn_storage_to_xfer)     , pf%livestemp_storage_to_xfer_patch(p))
-      imov(rfluxes(f_livestemn_xfer_to_livestemn)   , pf%livestemp_xfer_to_livestemp_patch(p))
-      imov(rfluxes(f_livestemn_to_retransn)         , pf%livestemp_to_retransp_patch(p))
-      imov(rfluxes(f_livestemn_to_deadstemn)        , pf%livestemp_to_deadstemp_patch(p))
-      imov(rfluxes(f_livecrootn_to_deadcrootn)      , pf%livecrootp_to_deadcrootp_patch(p))
-      imov(rfluxes(f_livecrootn_to_retransn)        , pf%livecrootp_to_retransp_patch(p))
-      imov(rfluxes(f_livecrootn_storage_to_xfer)    , pf%livecrootp_storage_to_xfer_patch(p))
-      imov(rfluxes(f_livecrootn_xfer_to_livecrootn) , pf%livecrootp_xfer_to_livecrootp_patch(p))
-      imov(rfluxes(f_deadstemn_storage_to_xfer)     , pf%deadstemp_storage_to_xfer_patch(p))
-      imov(rfluxes(f_deadstemn_xfer_to_deadstem)    , pf%deadstemp_xfer_to_deadstemp_patch(p))
-      imov(rfluxes(f_deadcrootn_storage_to_xfer)    , pf%deadcrootp_storage_to_xfer_patch(p))
-      imov(rfluxes(f_deadcrootn_xfer_to_deadcrootn) , pf%deadcrootp_xfer_to_deadcrootp_patch(p))
+      imov(rfluxes(f_npool_to_livestemn)            , veg_pf%ppool_to_livestemp(p))
+      imov(rfluxes(f_npool_to_livestemn_storage)    , veg_pf%ppool_to_livestemp_storage(p))
+      imov(rfluxes(f_npool_to_livecrootn)           , veg_pf%ppool_to_livecrootp(p))
+      imov(rfluxes(f_npool_to_livecrootn_storage)   , veg_pf%ppool_to_livecrootp_storage(p))
+      imov(rfluxes(f_npool_to_deadstemn)            , veg_pf%ppool_to_deadstemp(p))
+      imov(rfluxes(f_npool_to_deadcrootn)           , veg_pf%ppool_to_deadcrootp(p))
+      imov(rfluxes(f_npool_to_deadstemn_storage)    , veg_pf%ppool_to_deadstemp_storage(p))
+      imov(rfluxes(f_npool_to_deadcrootn_storage)   , veg_pf%ppool_to_deadcrootp_storage(p))
+      imov(rfluxes(f_livestemn_storage_to_xfer)     , veg_pf%livestemp_storage_to_xfer(p))
+      imov(rfluxes(f_livestemn_xfer_to_livestemn)   , veg_pf%livestemp_xfer_to_livestemp(p))
+      imov(rfluxes(f_livestemn_to_retransn)         , veg_pf%livestemp_to_retransp(p))
+      imov(rfluxes(f_livestemn_to_deadstemn)        , veg_pf%livestemp_to_deadstemp(p))
+      imov(rfluxes(f_livecrootn_to_deadcrootn)      , veg_pf%livecrootp_to_deadcrootp(p))
+      imov(rfluxes(f_livecrootn_to_retransn)        , veg_pf%livecrootp_to_retransp(p))
+      imov(rfluxes(f_livecrootn_storage_to_xfer)    , veg_pf%livecrootp_storage_to_xfer(p))
+      imov(rfluxes(f_livecrootn_xfer_to_livecrootn) , veg_pf%livecrootp_xfer_to_livecrootp(p))
+      imov(rfluxes(f_deadstemn_storage_to_xfer)     , veg_pf%deadstemp_storage_to_xfer(p))
+      imov(rfluxes(f_deadstemn_xfer_to_deadstem)    , veg_pf%deadstemp_xfer_to_deadstemp(p))
+      imov(rfluxes(f_deadcrootn_storage_to_xfer)    , veg_pf%deadcrootp_storage_to_xfer(p))
+      imov(rfluxes(f_deadcrootn_xfer_to_deadcrootn) , veg_pf%deadcrootp_xfer_to_deadcrootp(p))
     endif
 
     if (ivt(p) >= npcropmin) then
-      imov(rfluxes(f_npool_to_livestemn)            , pf%ppool_to_livestemp_patch(p))
-      imov(rfluxes(f_npool_to_livestemn_storage)    , pf%ppool_to_livestemp_storage_patch(p))
-      imov(rfluxes(f_npool_to_grainn)               , pf%ppool_to_grainp_patch(p))
-      imov(rfluxes(f_npool_to_grainn_storage)       , pf%ppool_to_grainp_storage_patch(p))
-      imov(rfluxes(f_frootn_to_retransn)            , pf%frootp_to_retransp_patch(p))
-      imov(rfluxes(f_livestemn_to_litter)           , pf%livestemp_to_litter_patch(p))
-      imov(rfluxes(f_livestemn_storage_to_xfer)     , pf%livestemp_storage_to_xfer_patch(p))
-      imov(rfluxes(f_livestemn_xfer_to_livestemn)   , pf%livestemp_xfer_to_livestemp_patch(p))
-      imov(rfluxes(f_livestemn_to_retransn)         , pf%livestemp_to_retransp_patch(p))
-      imov(rfluxes(f_grainn_xfer_to_grainn)         , pf%grainp_xfer_to_grainp_patch(p))
-      imov(rfluxes(f_grainn_to_food)                , pf%grainp_to_food_patch(p))
+      imov(rfluxes(f_npool_to_livestemn)            , veg_pf%ppool_to_livestemp(p))
+      imov(rfluxes(f_npool_to_livestemn_storage)    , veg_pf%ppool_to_livestemp_storage(p))
+      imov(rfluxes(f_npool_to_grainn)               , veg_pf%ppool_to_grainp(p))
+      imov(rfluxes(f_npool_to_grainn_storage)       , veg_pf%ppool_to_grainp_storage(p))
+      imov(rfluxes(f_frootn_to_retransn)            , veg_pf%frootp_to_retransp(p))
+      imov(rfluxes(f_livestemn_to_litter)           , veg_pf%livestemp_to_litter(p))
+      imov(rfluxes(f_livestemn_storage_to_xfer)     , veg_pf%livestemp_storage_to_xfer(p))
+      imov(rfluxes(f_livestemn_xfer_to_livestemn)   , veg_pf%livestemp_xfer_to_livestemp(p))
+      imov(rfluxes(f_livestemn_to_retransn)         , veg_pf%livestemp_to_retransp(p))
+      imov(rfluxes(f_grainn_xfer_to_grainn)         , veg_pf%grainp_xfer_to_grainp(p))
+      imov(rfluxes(f_grainn_to_food)                , veg_pf%grainp_to_food(p))
     endif
 
-    imov(rfluxes(f_leafn_to_litter)               , pf%leafp_to_litter_patch(p))
-    imov(rfluxes(f_leafn_xfer_to_leafn)           , pf%leafp_xfer_to_leafp_patch(p))
-    imov(rfluxes(f_leafn_storage_to_xfer)         , pf%ppool_to_leafp_storage_patch(p))
-    imov(rfluxes(f_frootn_xfer_to_frootn)         , pf%frootp_xfer_to_frootp_patch(p))
-    imov(rfluxes(f_frootn_storage_to_xfer)        , pf%frootp_storage_to_xfer_patch(p))
-    imov(rfluxes(f_leafn_to_retransn)             , pf%leafp_to_retransp_patch(p))
-    imov(rfluxes(f_frootn_to_litter)              , pf%frootp_to_litter_patch(p))
-    imov(rfluxes(f_retransn_to_npool)             , pf%retransp_to_ppool_patch(p))
-    imov(rfluxes(f_supplement_to_plantn)          , pf%supplement_to_plantp(p))
+    imov(rfluxes(f_leafn_to_litter)               , veg_pf%leafp_to_litter(p))
+    imov(rfluxes(f_leafn_xfer_to_leafn)           , veg_pf%leafp_xfer_to_leafp(p))
+    imov(rfluxes(f_leafn_storage_to_xfer)         , veg_pf%ppool_to_leafp_storage(p))
+    imov(rfluxes(f_frootn_xfer_to_frootn)         , veg_pf%frootp_xfer_to_frootp(p))
+    imov(rfluxes(f_frootn_storage_to_xfer)        , veg_pf%frootp_storage_to_xfer(p))
+    imov(rfluxes(f_leafn_to_retransn)             , veg_pf%leafp_to_retransp(p))
+    imov(rfluxes(f_frootn_to_litter)              , veg_pf%frootp_to_litter(p))
+    imov(rfluxes(f_retransn_to_npool)             , veg_pf%retransp_to_ppool(p))
+    imov(rfluxes(f_supplement_to_plantn)          , veg_pf%supplement_to_plantp(p))
 
   enddo
   end associate
