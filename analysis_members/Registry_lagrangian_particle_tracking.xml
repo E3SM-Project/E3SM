@@ -55,6 +55,50 @@
 			description="Specify whether particles should be reset when they enter the resetInsideRegionMaskValue1 mask."
 			possible_values=".false. or .true."
 		/>
+		<nml_option name="config_AM_lagrPartTrack_sample_horizontal_interp" type="logical" default_value=".true." units="unitless"
+			description="If true, particles horizontally interpolate sample quantities."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_lagrPartTrack_sample_temperature" type="logical" default_value=".true." units="unitless"
+			description="If true, particles sample temperature."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_lagrPartTrack_sample_salinity" type="logical" default_value=".true." units="unitless"
+			description="If true, particles sample salinity."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_lagrPartTrack_sample_DIC" type="logical" default_value=".false." units="unitless"
+			description="If true, particles sample DIC."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_lagrPartTrack_sample_ALK" type="logical" default_value=".false." units="unitless"
+			description="If true, particles sample ALK."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_lagrPartTrack_sample_PO4" type="logical" default_value=".false." units="unitless"
+			description="If true, particles sample PO4."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_lagrPartTrack_sample_NO3" type="logical" default_value=".false." units="unitless"
+			description="If true, particles sample NO3."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_lagrPartTrack_sample_SiO3" type="logical" default_value=".false." units="unitless"
+			description="If true, particles sample SiO3."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_lagrPartTrack_sample_NH4" type="logical" default_value=".false." units="unitless"
+			description="If true, particles sample NH4."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_lagrPartTrack_sample_Fe" type="logical" default_value=".false." units="unitless"
+			description="If true, particles sample Fe."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_lagrPartTrack_sample_O2" type="logical" default_value=".false." units="unitless"
+			description="If true, particles sample O2."
+			possible_values=".true. or .false."
+		/>
 	</nml_record>
 
 	<dims>
@@ -84,9 +128,12 @@
 			<var name="indexToParticleID"/>
 			<var name="currentBlock"/>
 			<var name="currentCell"/>
+			<var name="currentCellGlobalID"/>
 			<var name="xParticle"/>
 			<var name="yParticle"/>
 			<var name="zParticle"/>
+			<var name="lonParticle"/>
+			<var name="latParticle"/>
 			<var name="zLevelParticle"/>
 			<var name="xParticleReset"/>
 			<var name="yParticleReset"/>
@@ -248,7 +295,10 @@
 			 description="current block a particle is on"
 		/>
 		<var name="currentCell" type="integer" dimensions="nParticles Time" units="unitless"
-			 description="current cell a particle is on"
+			 description="current local cell a particle is on"
+		/>
+		<var name="currentCellGlobalID" type="integer" dimensions="nParticles Time" units="unitless"
+			 description="current global cell a particle is on"
 		/>
 		<var name="indexToParticleID" type="integer" dimensions="nParticles" units="unitless"
 			 description="designates global ID for a particle"
@@ -261,6 +311,12 @@
 		/>
 		<var name="zParticle" type="real" dimensions="nParticles Time" units="m"
 			 description="z location of horizontal particle position"
+		/>
+		<var name="lonParticle" type="real" dimensions="nParticles Time" units="m"
+			 description="longitude location of horizontal particle position"
+		/>
+		<var name="latParticle" type="real" dimensions="nParticles Time" units="m"
+			 description="latitude location of horizontal particle position"
 		/>
 		<var name="zLevelParticle" type="real" dimensions="nParticles Time" units="m"
 			 description="z-level for vertical elevation of particle position"
@@ -306,6 +362,37 @@
 		/>
 		<var name="transfered" type ="integer" dimensions="nParticles Time" units="unitless"
 			 description="flag to monitor if the particle was transfered"
+		/>
+<!-- TEMP FIELDS THAT NEED MOVED TO NonHalo below after verifying interpolation is correct -->
+		<var name="particleTemperature" type="real" dimensions="nParticles Time" units="degrees Celsius"
+			 description="sampled temperature for particle"
+		/>
+		<var name="particleSalinity" type="real" dimensions="nParticles Time" units="grams salt per kilogram seawater"
+			 description="sampled salinity for particle"
+		/>
+		<var name="particleDIC" type="real" dimensions="nParticles Time" units="mmol m^{-3}"
+			 description="sampled dissolved inorganic carbon for particle"
+		/>
+		<var name="particleALK" type="real" dimensions="nParticles Time" units="meq m^{-3}"
+			 description="sampled alkalinity for particle"
+		/>
+		<var name="particlePO4" type="real" dimensions="nParticles Time" units="mmol m^{-3}"
+			 description="sampled dissolved inorganic phosphate for particle"
+		/>
+		<var name="particleNO3" type="real" dimensions="nParticles Time" units="meq m^{-3}"
+			 description="sampled dissolved inorganic nitrate for particle"
+		/>
+		<var name="particleSiO3" type="real" dimensions="nParticles Time" units="mmol m^{-3}"
+			 description="sampled dissolved inorganic silicate for particle"
+		/>
+		<var name="particleNH4" type="real" dimensions="nParticles Time" units="meq m^{-3}"
+			 description="sampled dissolved inorganic ammonia for particle"
+		/>
+		<var name="particleFe" type="real" dimensions="nParticles Time" units="mmol m^{-3}"
+			 description="sampled dissolved inorganic iron for particle"
+		/>
+		<var name="particleO2" type="real" dimensions="nParticles Time" units="meq m^{-3}"
+			 description="sampled dissolved oxygen for particle"
 		/>
 	</var_struct>
 <!--
