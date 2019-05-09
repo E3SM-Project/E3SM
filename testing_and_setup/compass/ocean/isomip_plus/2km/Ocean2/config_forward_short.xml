@@ -6,7 +6,6 @@
 	<add_link source="forcing_data_init.nc" dest="forcing_data.nc"/>
 
 	<add_executable source="model" dest="ocean_model"/>
-	<add_executable source="metis" dest="metis"/>
 
 	<namelist name="namelist.ocean" mode="forward">
 		<template file="template_forward.xml" path_base="script_configuration_dir"/>
@@ -32,7 +31,7 @@
 	</streams>
 
 	<run_script name="run.py">
-		<step executable="./metis">
+		<step executable="gpmetis">
 			<argument flag="graph.info">4</argument>
 		</step>
 		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>

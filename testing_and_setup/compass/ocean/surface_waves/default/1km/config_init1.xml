@@ -1,12 +1,6 @@
 <?xml version="1.0"?>
 <config case="init_step1">
-  <add_link source_path="mpas_tools" source="mesh_tools/periodic_hex/namelist.input" dest="namelist.input.default"/>
-  <add_link source_path="mpas_tools" source="mesh_tools/periodic_hex/periodic_grid" dest="periodic_hex"/>
-  <add_link source_path="mpas_tools" source="mesh_tools/periodic_hex/mark_periodic_boundaries_for_culling.py" dest="mark_periodic_boundaries_for_culling.py"/>
-
 	<add_executable source="model" dest="ocean_model"/>
-	<add_executable source="cell_culler" dest="MpasCellCuller.x"/>
-	<add_executable source="mesh_converter" dest="MpasMeshConverter.x"/>
 
 	<namelist name="namelist.ocean" mode="init">
 		<option name="config_ocean_run_mode">'init'</option>
@@ -60,38 +54,18 @@
 	</streams>
 
 	<run_script name="run.py">
-		<step executable="cp">
-			<argument flag="">namelist.input.default</argument>
-			<argument flag="">namelist.input</argument>
-    </step>
-<!-- may be a better way to do this instead of sed -->    
-		<step executable="sed">
-			<argument flag="">-i</argument>
-			<argument flag="">s/nx.*=.*/nx = 6,/g</argument>
-			<argument flag="">namelist.input</argument>
+		<step executable="planar_hex">
+			<argument flag="--nx">6</argument>
+			<argument flag="--ny">30</argument>
+			<argument flag="--dc">1000.0</argument>
+			<argument flag="--npy"></argument>
+			<argument flag="-o">grid.nc</argument>
 		</step>
-		<step executable="sed">
-			<argument flag="">-i</argument>
-			<argument flag="">s/ny.*=.*/ny = 30,/g</argument>
-			<argument flag="">namelist.input</argument>
-		</step>
-		<step executable="sed">
-			<argument flag="">-i</argument>
-			<argument flag="">s/dc.*=.*/dc = 1000.0,/g</argument>
-			<argument flag="">namelist.input</argument>
-		</step>
-		<step executable="./periodic_hex">
-		</step>
-		<step executable="./mark_periodic_boundaries_for_culling.py">
-			<argument flag="">--keepx</argument>
-			<argument flag="">-f</argument>
-			<argument flag="">grid.nc</argument>
-		</step>
-		<step executable="./MpasCellCuller.x">
+		<step executable="MpasCellCuller.x">
 			<argument flag="">grid.nc</argument>
 			<argument flag="">culled_mesh.nc</argument>
 		</step>
-		<step executable="./MpasMeshConverter.x">
+		<step executable="MpasMeshConverter.x">
 			<argument flag="">culled_mesh.nc</argument>
 			<argument flag="">mesh.nc</argument>
 		</step>

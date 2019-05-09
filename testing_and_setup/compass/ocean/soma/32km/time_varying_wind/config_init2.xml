@@ -5,7 +5,6 @@
 	<add_link source_path="script_test_dir" source="compute_forcing.py" dest="compute_forcing.py"/>
 
 	<add_executable source="model" dest="ocean_model"/>
-	<add_executable source="metis" dest="metis"/>
 
 	<namelist name="namelist.ocean" mode="init">
 		<option name="config_init_configuration">'soma'</option>
@@ -63,8 +62,7 @@
 
 	<run_script name="run.py">
 		<model_run procs="1" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
-		<step executable="python">
-			<argument flag="">compute_forcing.py</argument>
+		<step executable="./compute_forcing.py">
 		</step>
 	</run_script>
 

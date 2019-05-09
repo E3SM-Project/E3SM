@@ -24,7 +24,6 @@
 		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
 	</get_file>
 
-	<add_executable source="metis" dest="metis"/>
 
 	<add_link source="../culled_mesh/culled_mesh.nc" dest="mesh.nc"/>
 	<add_link source="../culled_mesh/culled_graph.info" dest="graph.info"/>
@@ -35,7 +34,6 @@
 	<add_link source_path="initial_condition_database" source="windStress.ncep_1958-2000avg.interp3600x2431.151106.nc" dest="wind_stress.nc"/>
 	<add_link source_path="initial_condition_database" source="ETOPO2v2c_f4_151106.nc" dest="topography.nc"/>
 	<add_link source_path="initial_condition_database" source="chlorophyllA_monthly_averages_1deg.151201.nc" dest="swData.nc"/>
-	<add_link source_path="mpas_tools" source="visualization/paraview_vtk_field_extractor/paraview_vtk_field_extractor.py" dest="paraview_vtk_field_extractor.py"/>
 
 	<namelist name="namelist.ocean" mode="init">
 		<template file="template_initial_state.xml" path_base="script_configuration_dir"/>
@@ -51,7 +49,7 @@
 	</streams>
 
 	<run_script name="run.py">
-		<step executable="./metis">
+		<step executable="gpmetis">
 			<argument flag="graph.info">36</argument>
 		</step>
 		<model_run procs="36" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>

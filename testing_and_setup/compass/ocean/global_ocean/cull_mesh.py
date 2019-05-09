@@ -15,12 +15,13 @@ includes:
 10. create masks from transects on the final culled mesh*
 * skipped if flag --with_critical_passages not present
 
-Optionally, the -p flag provides the path to the geometric_features
-repository, which is assumed to be the current directory by default.
-Also, the optional --with_cavities flag indicates that ice-shelf cavities
-are present and the grounded-ice mask from Bedmap2 should be used.
-The optional --with_critical_passages flag indicates that critical
-passages are to be opened. Otherwise, steps 2, 5 and 9 are skipped
+Optionally, the -p flag provides the path to the geometric_data
+directory from the geometric_features repository, which is assumed
+to be the current directory by default. Also, the optional
+--with_cavities flag indicates that ice-shelf cavities are present
+and the grounded-ice mask from Bedmap2 should be used. The optional
+--with_critical_passages flag indicates that critical passages are
+to be opened. Otherwise, steps 2, 5 and 9 are skipped
 """
 
 from __future__ import absolute_import, division, print_function, \
@@ -30,213 +31,131 @@ import os
 import os.path
 import subprocess
 from optparse import OptionParser
+import xarray
 
-
-def removeFile(fileName):
-    try:
-        os.remove(fileName)
-    except OSError:
-        pass
+from geometric_features import GeometricFeatures
+from mpas_tools import conversion
+from mpas_tools.io import write_netcdf
+from mpas_tools.ocean.coastline_alteration import widen_transect_edge_masks, \
+    add_critical_land_blockages, add_land_locked_cells_to_mask
 
 
 parser = OptionParser()
 parser.add_option("--with_cavities", action="store_true", dest="with_cavities")
 parser.add_option("--with_critical_passages", action="store_true",
                   dest="with_critical_passages")
-parser.add_option("-p", "--geom_feat_path", type="string", dest="path",
-                  default="geometric_features",
-                  help="Path to the geometric_features repository.")
-parser.add_option("--preserve_floodplain", action="store_true", dest="preserve_floodplain", default=False)
+parser.add_option("-p", "--geom_data_path", type="string", dest="path",
+                  default="geometric_data",
+                  help="Path to the geometric_data from the geometric_features"
+                       " repository.")
+parser.add_option("--preserve_floodplain", action="store_true",
+                  dest="preserve_floodplain", default=False)
 options, args = parser.parse_args()
 
-path = options.path
+# required for compatibility with MPAS
+netcdfFormat = 'NETCDF3_64BIT'
 
-landCoverage = '{}/natural_earth/region/Land_Coverage/' \
-    'region.geojson'.format(path)
+gf = GeometricFeatures(cacheLocation='{}'.format(options.path),
+                       remoteBranchOrTag='convert_to_package')
 
-landCoverageMask = '{}/ocean/region/Global_Ocean_90S_to_60S/' \
-    'region.geojson'.format(path)
+# start with the land coverage from Natural Earth
+fcLandCoverage = gf.read(componentName='natural_earth', objectType='region',
+                         featureNames=['Land Coverage'])
 
-removeFile('land_coverage.geojson')
-# Mask the land coverage to exclude the region below 60S.
-args = ['{}/difference_features.py'.format(path),
-        '-f', landCoverage,
-        '-m', landCoverageMask,
-        '-o', 'land_coverage.geojson']
-print("running {}".format(' '.join(args)))
+# remove the region south of 60S so we can replace it based on ice-sheet
+# topography
+fcSouthMask = gf.read(componentName='ocean', objectType='region',
+                      featureNames=['Global Ocean 90S to 60S'])
 
-subprocess.check_call(args, env=os.environ.copy())
+fcLandCoverage = fcLandCoverage.difference(fcSouthMask)
 
-# Add the appropriate land coverage below 60S (either all ice or grounded ice).
+# Add "land" coverage from either the full ice sheet or just the grounded
+# part
 if options.with_cavities:
-    antarcticLandCoverage = '{}/bedmap2/region/AntarcticGroundedIceCoverage/' \
-        'region.geojson'.format(path)
+    fcAntarcticLand = gf.read(componentName='bedmap2', objectType='region',
+                              featureNames=['AntarcticGroundedIceCoverage'])
 else:
-    antarcticLandCoverage = '{}/bedmap2/region/AntarcticIceCoverage/' \
-        'region.geojson'.format(path)
+    fcAntarcticLand = gf.read(componentName='bedmap2', objectType='region',
+                              featureNames=['AntarcticIceCoverage'])
 
-args = ['{}/merge_features.py'.format(path), '-f', antarcticLandCoverage,
-        '-o', 'land_coverage.geojson']
-print("running {}".format(' '.join(args)))
+fcLandCoverage.merge(fcAntarcticLand)
 
-subprocess.check_call(args, env=os.environ.copy())
-
+# save the feature collection to a geojson file
+fcLandCoverage.to_geojson('land_coverage.geojson')
 
 # Create the land mask based on the land coverage, i.e. coastline data.
-# Run command is:
-# ./MpasMaskCreator.x  base_mesh.nc land_mask.nc -f land_coverage.geojson
-args = [
-    './MpasMaskCreator.x',
-    'base_mesh.nc',
-    'land_mask_1_from_land_coverage.nc',
-    '-f', 'land_coverage.geojson']
-print("running {}".format(' '.join(args)))
+dsBaseMesh = xarray.open_dataset('base_mesh.nc')
+dsLandMask = conversion.mask(dsBaseMesh, fcMask=fcLandCoverage)
 
-subprocess.check_call(args, env=os.environ.copy())
-
-if options.with_critical_passages:
-    outMaskFile = 'land_mask_2_from_land_locked_cells.nc'
-else:
-    outMaskFile = 'land_mask_final.nc'
-
-# Add land-locked cells to land coverage mask.
-args = ['./add_land_locked_cells_to_mask.py',
-        '-f', 'land_mask_1_from_land_coverage.nc',
-        '-o', outMaskFile,
-        '-m', 'base_mesh.nc',
-        '-l', '43.0',
-        '-n', '20']
-print("running {}".format(' '.join(args)))
-
-subprocess.check_call(args, env=os.environ.copy())
+dsLandMask = add_land_locked_cells_to_mask(dsLandMask, dsBaseMesh,
+                                           latitude_threshold=43.0,
+                                           nSweeps=20)
 
 # create seed points for a flood fill of the ocean
 # use all points in the ocean directory, on the assumption that they are, in
 # fact, in the ocean
-removeFile('seed_points.geojson')
-args = ['{}/merge_features.py'.format(path),
-        '-d', '{}/ocean/point'.format(path),
-        '-t', 'seed_point',
-        '-o', 'seed_points.geojson']
-print("running {}".format(' '.join(args)))
-
-subprocess.check_call(args, env=os.environ.copy())
+fcSeed = gf.read(componentName='ocean', objectType='point',
+                 tags=['seed_point'])
 
 if options.with_critical_passages:
     # merge transects for critical passages into critical_passages.geojson
-    removeFile('critical_passages.geojson')
-    args = ['{}/merge_features.py'.format(path),
-            '-d', '{}/ocean/transect'.format(path),
-            '-t', 'Critical_Passage',
-            '-o', 'critical_passages.geojson']
-    print("running {}".format(' '.join(args)))
-
-    subprocess.check_call(args, env=os.environ.copy())
+    fcCritPassages = gf.read(componentName='ocean', objectType='transect',
+                             tags=['Critical_Passage'])
 
     # create masks from the transects
-    # Run command is:
-    # ./MpasMaskCreator.x  base_mesh.nc critical_passages_mask.nc
-    # -f critical_passages.geojson
-    args = ['./MpasMaskCreator.x', 'base_mesh.nc', 'critical_passages_mask.nc',
-            '-f', 'critical_passages.geojson']
-    print("running {}".format(' '.join(args)))
-
-    subprocess.check_call(args, env=os.environ.copy())
+    dsCritPassMask = conversion.mask(dsBaseMesh, fcMask=fcCritPassages)
 
     # Alter critical passages to be at least two cells wide, to avoid sea ice
     # blockage.
-    args = ['./widen_transect_edge_masks.py',
-            '-f', 'critical_passages_mask.nc',
-            '-m', 'base_mesh.nc',
-            '-l', '43.0']
-    print("running {}".format(' '.join(args)))
-
-    subprocess.check_call(args, env=os.environ.copy())
+    dsCritPassMask = widen_transect_edge_masks(dsCritPassMask, dsBaseMesh,
+                                               latitude_threshold=43.0)
 
     # merge transects for critical land blockages into
     # critical_land_blockages.geojson
-    removeFile('critical_land_blockages.geojson')
-    args = ['{}/merge_features.py'.format(path),
-            '-d', '{}/ocean/transect'.format(path),
-            '-t', 'Critical_Land_Blockage',
-            '-o', 'critical_land_blockages.geojson']
-    print("running {}".format(' '.join(args)))
-
-    subprocess.check_call(args, env=os.environ.copy())
+    fcCritBlockages = gf.read(componentName='ocean', objectType='transect',
+                              tags=['Critical_Land_Blockage'])
 
     # create masks from the transects for critical land blockages
-    args = ['./MpasMaskCreator.x', 'base_mesh.nc',
-            'critical_land_blockages_mask.nc',
-            '-f', 'critical_land_blockages.geojson']
-    print("running {}".format(' '.join(args)))
+    dsCritBlockMask = conversion.mask(dsBaseMesh, fcMask=fcCritBlockages)
 
-    subprocess.check_call(args, env=os.environ.copy())
-
-    # add critical land blockages to land_mask_final.nc
-    args = ['./add_critical_land_blockages_to_mask.py',
-            '-f', 'land_mask_2_from_land_locked_cells.nc',
-            '-o', 'land_mask_final.nc',
-            '-b', 'critical_land_blockages_mask.nc']
-    print("running {}".format(' '.join(args)))
-
-    subprocess.check_call(args, env=os.environ.copy())
+    dsLandMask = add_critical_land_blockages(dsLandMask, dsCritBlockMask)
 
     # Cull the mesh based on the land mask while keeping critical passages open
-    # Run command is:
-    # ./MpasCellCuller.x  base_mesh.nc culled_mesh_preliminary.nc -m land_mask_final.nc
-    # -p critical_passages_mask.nc
     if options.preserve_floodplain:
-      args = ['./MpasCellCuller.x', 'base_mesh.nc', 'culled_mesh_preliminary.nc',
-              '-m', 'land_mask_final.nc', '-p', 'critical_passages_mask.nc', '-p', 'base_mesh.nc']
+        dsCulledMesh = conversion.cull(dsBaseMesh, dsMask=dsLandMask,
+                                       dsPreserve=[dsCritPassMask, dsBaseMesh])
     else:
-      args = ['./MpasCellCuller.x', 'base_mesh.nc', 'culled_mesh_preliminary.nc',
-              '-m', 'land_mask_final.nc', '-p', 'critical_passages_mask.nc']
-    print("running {}".format(' '.join(args)))
+        dsCulledMesh = conversion.cull(dsBaseMesh, dsMask=dsLandMask,
+                                       dsPreserve=dsCritPassMask)
 
-    subprocess.check_call(args, env=os.environ.copy())
 else:
 
     # cull the mesh based on the land mask
-    # Run command is:
-    # ./MpasCellCuller.x  base_mesh.nc culled_mesh_preliminary.nc -m land_mask_final.nc
     if options.preserve_floodplain:
-      args = ['./MpasCellCuller.x', 'base_mesh.nc', 'culled_mesh_preliminary.nc',
-              '-m', 'land_mask_final.nc', '-p', 'base_mesh.nc']
+        dsCulledMesh = conversion.cull(dsBaseMesh, dsMask=dsLandMask,
+                                       dsPreserve=dsBaseMesh)
     else:
-      args = ['./MpasCellCuller.x', 'base_mesh.nc', 'culled_mesh_preliminary.nc',
-              '-m', 'land_mask_final.nc']
-    print("running {}".format(' '.join(args)))
-
-    subprocess.check_call(args, env=os.environ.copy())
+        dsCulledMesh = conversion.cull(dsBaseMesh, dsMask=dsLandMask)
 
 # create a mask for the flood fill seed points
-# Run command is:
-# ./MpasMaskCreator.x  culled_mesh_preliminary.nc seed_mask.nc -s seed_points.geojson
-args = ['./MpasMaskCreator.x', 'culled_mesh_preliminary.nc', 'seed_mask.nc',
-        '-s', 'seed_points.geojson']
-print("running {}".format(' '.join(args)))
-
-subprocess.check_call(args, env=os.environ.copy())
-
+dsSeedMask = conversion.mask(dsCulledMesh, fcSeed=fcSeed)
 
 # cull the mesh a second time using a flood fill from the seed points
-# Run command is:
-# ./MpasCellCuller.x  culled_mesh_preliminary.nc culled_mesh.nc -i seed_mask.nc
-args = ['./MpasCellCuller.x', 'culled_mesh_preliminary.nc', 'culled_mesh.nc',
-        '-i', 'seed_mask.nc']
-
-print("running {}".format(' '.join(args)))
-
-subprocess.check_call(args, env=os.environ.copy())
+dsCulledMesh = conversion.cull(dsCulledMesh, dsInverse=dsSeedMask,
+                               graphInfoFileName='culled_graph.info')
+write_netcdf(dsCulledMesh, 'culled_mesh.nc', format=netcdfFormat)
 
 if options.with_critical_passages:
     # make a new version of the critical passages mask on the culled mesh
-    # Run command is:
-    # ./MpasMaskCreator.x  culled_mesh.nc critical_passages_mask_final.nc
-    # -f critical_passages.geojson
-    args = ['./MpasMaskCreator.x', 'culled_mesh.nc',
-            'critical_passages_mask_final.nc',
-            '-f', 'critical_passages.geojson']
-    print("running {}".format(' '.join(args)))
+    dsCritPassMask = conversion.mask(dsCulledMesh, fcMask=fcCritPassages)
+    write_netcdf(dsCritPassMask, 'critical_passages_mask_final.nc',
+                 format=netcdfFormat)
 
-    subprocess.check_call(args, env=os.environ.copy())
+args = ['paraview_vtk_field_extractor.py',
+        '--ignore_time',
+        '-d', 'maxEdges=',
+        '-v', 'allOnCells',
+        '-f', 'culled_mesh.nc',
+        '-o', 'culled_mesh_vtk']
+print("running", ' '.join(args))
+subprocess.check_call(args, env=os.environ.copy())

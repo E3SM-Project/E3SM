@@ -11,28 +11,28 @@ the MPASMeshConverter.x to produce a valid MPAS mesh.
 # Mesh Conversion Steps
 
 ## JIGSAW mesh
-1. Produce a JIGSAW mesh, e.g., example.msh, from https://github.com/dengwirda/jigsaw-geo-matlab
+1. Produce a JIGSAW mesh, e.g., example.msh, from
+   https://github.com/dengwirda/jigsaw-geo-matlab
 2. `./triangle_jigsaw_to_netcdf.py -m example.msh -s`
-3. `./MpasMeshConverter.x grid.nc`
+3. `MpasMeshConverter.x grid.nc`
 4. Final mesh mesh.nc can then be used to create our initial condition files.
 
 ## TRIANGLE mesh
-1. Produce a TRIANGLE mesh, e.g., produced from http://www.netlib.org/voronoi/triangle.zip
+1. Produce a TRIANGLE mesh, e.g., produced from
+   http://www.netlib.org/voronoi/triangle.zip
 2. `./triangle -p example.poly`
 3. `./triangle_jigsaw_to_netcdf.py -n example.node -e example.ele`
-4. `./MpasMeshConverter.x grid.nc`
+4. `MpasMeshConverter.x grid.nc`
 5. Final mesh mesh.nc can then be used to create our initial condition files.
 
 """
-import sys
-import os
-import glob
-import shutil
+from __future__ import absolute_import, division, print_function, \
+    unicode_literals
+
 import numpy as np
 
-from netCDF4 import *
 from netCDF4 import Dataset as NetCDFFile
-from open_msh import readmsh
+from jigsaw_to_MPAS.open_msh import readmsh
 
 import argparse
 
@@ -67,13 +67,229 @@ def circumcenter(on_sphere, x1, y1, z1, x2, y2, z2, x3, y3, z3):  # {{{
         zv = 0.0
 
         # Optional method to use barycenter instead.
-        #xv = p1.x + p2.x + p3.x
-        #xv = xv / 3.0
-        #yv = p1.y + p2.y + p3.y
-        #yv = yv / 3.0
+        # xv = p1.x + p2.x + p3.x
+        # xv = xv / 3.0
+        # yv = p1.y + p2.y + p3.y
+        # yv = yv / 3.0
     return point(xv, yv, zv)
 
 # }}}
+
+
+def triangle_to_netcdf(node, ele, output_name):
+    on_sphere = False
+    grid = NetCDFFile(output_name, 'w', format='NETCDF3_CLASSIC')
+
+    # Get dimensions
+    # Get nCells
+    cell_info = open(node, 'r')
+    nCells = -1  # There is one header line
+    for block in iter(lambda: cell_info.readline(), ""):
+        if block.startswith("#"):
+            continue  # skip comment lines
+        nCells = nCells + 1
+    cell_info.close()
+
+    # Get vertexDegree and nVertices
+    cov_info = open(ele, 'r')
+    vertexDegree = 3  # always triangles with Triangle!
+    nVertices = -1  # There is one header line
+    for block in iter(lambda: cov_info.readline(), ""):
+        if block.startswith("#"):
+            continue  # skip comment lines
+        nVertices = nVertices + 1
+    cov_info.close()
+
+    if vertexDegree != 3:
+        ValueError("This script can only compute vertices with triangular "
+                   "dual meshes currently.")
+
+    grid.createDimension('nCells', nCells)
+    grid.createDimension('nVertices', nVertices)
+    grid.createDimension('vertexDegree', vertexDegree)
+
+    # Create cell variables and sphere_radius
+    xCell_full = np.zeros((nCells,))
+    yCell_full = np.zeros((nCells,))
+    zCell_full = np.zeros((nCells,))
+
+    cell_info = open(node, 'r')
+    cell_info.readline()  # read header
+    i = 0
+    for block in iter(lambda: cell_info.readline(), ""):
+        block_arr = block.split()
+        if block_arr[0] == "#":
+            continue  # skip comment lines
+        xCell_full[i] = float(block_arr[1])
+        yCell_full[i] = float(block_arr[2])
+        zCell_full[i] = 0.0  # z-position is always 0.0 in a planar mesh
+        i = i + 1
+    cell_info.close()
+
+    grid.on_a_sphere = "NO"
+    grid.sphere_radius = 0.0
+
+    cellsOnVertex_full = np.zeros(
+        (nVertices, vertexDegree), dtype=np.int32)
+
+    cov_info = open(ele, 'r')
+    cov_info.readline()  # read header
+    iVertex = 0
+    for block in iter(lambda: cov_info.readline(), ""):
+        block_arr = block.split()
+        if block_arr[0] == "#":
+            continue  # skip comment lines
+        cellsOnVertex_full[iVertex, :] = int(-1)
+        # skip the first column, which is the triangle number, and then
+        # only get the next 3 columns
+        for j in np.arange(0, 3):
+            cellsOnVertex_full[iVertex, j] = int(block_arr[j + 1])
+
+        iVertex = iVertex + 1
+
+    cov_info.close()
+
+    # Create vertex variables
+    xVertex_full = np.zeros((nVertices,))
+    yVertex_full = np.zeros((nVertices,))
+    zVertex_full = np.zeros((nVertices,))
+
+    for iVertex in np.arange(0, nVertices):
+        cell1 = cellsOnVertex_full[iVertex, 0]
+        cell2 = cellsOnVertex_full[iVertex, 1]
+        cell3 = cellsOnVertex_full[iVertex, 2]
+
+        x1 = xCell_full[cell1 - 1]
+        y1 = yCell_full[cell1 - 1]
+        z1 = zCell_full[cell1 - 1]
+        x2 = xCell_full[cell2 - 1]
+        y2 = yCell_full[cell2 - 1]
+        z2 = zCell_full[cell2 - 1]
+        x3 = xCell_full[cell3 - 1]
+        y3 = yCell_full[cell3 - 1]
+        z3 = zCell_full[cell3 - 1]
+
+        pv = circumcenter(on_sphere, x1, y1, z1, x2, y2, z2, x3, y3, z3)
+        xVertex_full[iVertex] = pv.x
+        yVertex_full[iVertex] = pv.y
+        zVertex_full[iVertex] = pv.z
+
+    meshDensity_full = grid.createVariable(
+        'meshDensity', 'f8', ('nCells',))
+
+    meshDensity_full[0:nCells] = 1.0
+
+    var = grid.createVariable('xCell', 'f8', ('nCells',))
+    var[:] = xCell_full
+    var = grid.createVariable('yCell', 'f8', ('nCells',))
+    var[:] = yCell_full
+    var = grid.createVariable('zCell', 'f8', ('nCells',))
+    var[:] = zCell_full
+    var = grid.createVariable('xVertex', 'f8', ('nVertices',))
+    var[:] = xVertex_full
+    var = grid.createVariable('yVertex', 'f8', ('nVertices',))
+    var[:] = yVertex_full
+    var = grid.createVariable('zVertex', 'f8', ('nVertices',))
+    var[:] = zVertex_full
+    var = grid.createVariable(
+        'cellsOnVertex', 'i4', ('nVertices', 'vertexDegree',))
+    var[:] = cellsOnVertex_full
+
+    grid.sync()
+    grid.close()
+
+
+def jigsaw_to_netcdf(msh_filename, output_name, on_sphere):
+    grid = NetCDFFile(output_name, 'w', format='NETCDF3_CLASSIC')
+
+    # Get dimensions
+    # Get nCells
+    msh = readmsh(msh_filename)
+    nCells = msh['POINT'].shape[0]
+
+    # Get vertexDegree and nVertices
+    vertexDegree = 3  # always triangles with JIGSAW output
+    nVertices = msh['TRIA3'].shape[0]
+
+    if vertexDegree != 3:
+        ValueError("This script can only compute vertices with triangular "
+                   "dual meshes currently.")
+
+    grid.createDimension('nCells', nCells)
+    grid.createDimension('nVertices', nVertices)
+    grid.createDimension('vertexDegree', vertexDegree)
+
+    # Create cell variables and sphere_radius
+    sphere_radius = 6371000
+    xCell_full = msh['POINT'][:, 0]
+    yCell_full = msh['POINT'][:, 1]
+    zCell_full = msh['POINT'][:, 2]
+    for cells in [xCell_full, yCell_full, zCell_full]:
+        assert cells.shape[0] == nCells, 'Number of anticipated nodes is' \
+                                         ' not correct!'
+    if on_sphere:
+        grid.on_a_sphere = "YES"
+        grid.sphere_radius = sphere_radius
+    else:
+        grid.on_a_sphere = "NO"
+        grid.sphere_radius = 0.0
+
+    # Create cellsOnVertex
+    cellsOnVertex_full = msh['TRIA3'][:, :3] + 1
+    assert cellsOnVertex_full.shape == (nVertices, vertexDegree), \
+        'cellsOnVertex_full is not the right shape!'
+
+    # Create vertex variables
+    xVertex_full = np.zeros((nVertices,))
+    yVertex_full = np.zeros((nVertices,))
+    zVertex_full = np.zeros((nVertices,))
+
+    for iVertex in np.arange(0, nVertices):
+        cell1 = cellsOnVertex_full[iVertex, 0]
+        cell2 = cellsOnVertex_full[iVertex, 1]
+        cell3 = cellsOnVertex_full[iVertex, 2]
+
+        x1 = xCell_full[cell1 - 1]
+        y1 = yCell_full[cell1 - 1]
+        z1 = zCell_full[cell1 - 1]
+        x2 = xCell_full[cell2 - 1]
+        y2 = yCell_full[cell2 - 1]
+        z2 = zCell_full[cell2 - 1]
+        x3 = xCell_full[cell3 - 1]
+        y3 = yCell_full[cell3 - 1]
+        z3 = zCell_full[cell3 - 1]
+
+        pv = circumcenter(on_sphere, x1, y1, z1, x2, y2, z2, x3, y3, z3)
+        xVertex_full[iVertex] = pv.x
+        yVertex_full[iVertex] = pv.y
+        zVertex_full[iVertex] = pv.z
+
+    meshDensity_full = grid.createVariable(
+        'meshDensity', 'f8', ('nCells',))
+
+    for iCell in np.arange(0, nCells):
+        meshDensity_full[iCell] = 1.0
+
+    del meshDensity_full
+
+    var = grid.createVariable('xCell', 'f8', ('nCells',))
+    var[:] = xCell_full
+    var = grid.createVariable('yCell', 'f8', ('nCells',))
+    var[:] = yCell_full
+    var = grid.createVariable('zCell', 'f8', ('nCells',))
+    var[:] = zCell_full
+    var = grid.createVariable('xVertex', 'f8', ('nVertices',))
+    var[:] = xVertex_full
+    var = grid.createVariable('yVertex', 'f8', ('nVertices',))
+    var[:] = yVertex_full
+    var = grid.createVariable('zVertex', 'f8', ('nVertices',))
+    var[:] = zVertex_full
+    var = grid.createVariable(
+        'cellsOnVertex', 'i4', ('nVertices', 'vertexDegree',))
+    var[:] = cellsOnVertex_full
+
+    grid.sync()
+    grid.close()
 
 
 if __name__ == "__main__":
@@ -138,187 +354,9 @@ if __name__ == "__main__":
         # These will always be planar meshes for non-JIGSAW inputs
         on_sphere = False
 
-    grid = NetCDFFile(output_name, 'w', format='NETCDF3_CLASSIC')
-
-    # Get dimensions
-
     if options.msh:
-        # Get nCells
-        msh = readmsh(options.msh)
-        nCells = msh['POINT'].shape[0]
-
-        # Get vertexDegree and nVertices
-        vertexDegree = 3  # always triangles with JIGSAW output
-        nVertices = msh['TRIA3'].shape[0]
+        jigsaw_to_netcdf(options.msh, output_name, on_sphere)
     else:
-        # Get nCells
-        cell_info = open(options.node, 'r')
-        nCells = -1  # There is one header line
-        for block in iter(lambda: cell_info.readline(), ""):
-            if block.startswith("#"):
-                continue  # skip comment lines
-            nCells = nCells + 1
-        cell_info.close()
+        triangle_to_netcdf(options.node, options.ele, output_name)
 
-        # Get vertexDegree and nVertices
-        cov_info = open(options.ele, 'r')
-        vertexDegree = 3  # always triangles with Triangle!
-        nVertices = -1  # There is one header line
-        for block in iter(lambda: cov_info.readline(), ""):
-            if block.startswith("#"):
-                continue  # skip comment lines
-            nVertices = nVertices + 1
-        cov_info.close()
-
-    if vertexDegree != 3:
-        parser.error(
-            "This script can only compute vertices with triangular dual meshes currently.")
-
-    nCells_dim = grid.createDimension('nCells', nCells)
-    nVertices_dim = grid.createDimension('nVertices', nVertices)
-    vertexDegree_dim = grid.createDimension('vertexDegree', vertexDegree)
-
-    # Create cell variables and sphere_radius
-    if options.msh:
-        sphere_radius = 6371000
-        xCell_full = msh['POINT'][:, 0]
-        yCell_full = msh['POINT'][:, 1]
-        zCell_full = msh['POINT'][:, 2]
-        for cells in [xCell_full, yCell_full, zCell_full]:
-            assert cells.shape[0] == nCells, 'Number of anticipated nodes is not correct!'
-    else:
-        sphere_radius = 0.0
-        xCell_full = np.zeros((nCells,))
-        yCell_full = np.zeros((nCells,))
-        zCell_full = np.zeros((nCells,))
-
-        cell_info = open(options.node, 'r')
-        cell_info.readline()  # read header
-        i = 0
-        for block in iter(lambda: cell_info.readline(), ""):
-            block_arr = block.split()
-            if block_arr[0] == "#":
-                continue  # skip comment lines
-            xCell_full[i] = float(block_arr[1])
-            yCell_full[i] = float(block_arr[2])
-            zCell_full[i] = 0.0  # z-position is always 0.0 in a planar mesh
-            i = i + 1
-        cell_info.close()
-
-    if on_sphere:
-        grid.on_a_sphere = "YES"
-        grid.sphere_radius = sphere_radius
-    else:
-        grid.on_a_sphere = "NO"
-        grid.sphere_radius = 0.0
-
-    # Create cellsOnVertex
-    if options.msh:
-        cellsOnVertex_full = msh['TRIA3'][:, :3] + 1
-        assert cellsOnVertex_full.shape == (
-            nVertices, vertexDegree), 'cellsOnVertex_full is not the right shape!'
-    else:
-        cellsOnVertex_full = np.zeros(
-            (nVertices, vertexDegree), dtype=np.int32)
-
-        cov_info = open(options.ele, 'r')
-        cov_info.readline()  # read header
-        iVertex = 0
-        for block in iter(lambda: cov_info.readline(), ""):
-            block_arr = block.split()
-            if block_arr[0] == "#":
-                continue  # skip comment lines
-            cellsOnVertex_full[iVertex, :] = int(-1)
-            for j in np.arange(
-                    0,
-                    3):  # skip the first column, which is the triangle number, and then only get the next 3 columns
-                cellsOnVertex_full[iVertex, j] = int(block_arr[j + 1])
-
-            iVertex = iVertex + 1
-
-        cov_info.close()
-
-    # we don't have vertex information from Triangle to read.. I don't think
-    read_vertices = False
-    if read_vertices:
-
-        # Create vertex variables
-        xVertex_full = np.zeros((nVertices,))
-        yVertex_full = np.zeros((nVertices,))
-        zVertex_full = np.zeros((nVertices,))
-
-        vertex_info = open(options.vertices, 'r')
-        i = 0
-        for block in iter(lambda: vertex_info.readline(), ""):
-            block_arr = block.split()
-            xVertex_full[i] = float(block_arr[0])
-            yVertex_full[i] = float(block_arr[1])
-            zVertex_full[i] = float(block_arr[2])
-            i = i + 1
-        vertex_info.close()
-
-    else:
-        # Create vertex variables
-        xVertex_full = np.zeros((nVertices,))
-        yVertex_full = np.zeros((nVertices,))
-        zVertex_full = np.zeros((nVertices,))
-
-        for iVertex in np.arange(0, nVertices):
-            cell1 = cellsOnVertex_full[iVertex, 0]
-            cell2 = cellsOnVertex_full[iVertex, 1]
-            cell3 = cellsOnVertex_full[iVertex, 2]
-
-            x1 = xCell_full[cell1 - 1]
-            y1 = yCell_full[cell1 - 1]
-            z1 = zCell_full[cell1 - 1]
-            x2 = xCell_full[cell2 - 1]
-            y2 = yCell_full[cell2 - 1]
-            z2 = zCell_full[cell2 - 1]
-            x3 = xCell_full[cell3 - 1]
-            y3 = yCell_full[cell3 - 1]
-            z3 = zCell_full[cell3 - 1]
-
-            pv = circumcenter(on_sphere, x1, y1, z1, x2, y2, z2, x3, y3, z3)
-            xVertex_full[iVertex] = pv.x
-            yVertex_full[iVertex] = pv.y
-            zVertex_full[iVertex] = pv.z
-
-    if not options.density:
-        meshDensity_full = grid.createVariable(
-            'meshDensity', 'f8', ('nCells',))
-
-        for iCell in np.arange(0, nCells):
-            meshDensity_full[iCell] = 1.0
-
-        del meshDensity_full
-    else:
-        meshDensity_full = grid.createVariable(
-            'meshDensity', 'f8', ('nCells',))
-        density_info = open(options.density, 'r')
-        iCell = 0
-        for block in iter(lambda: density_info.readline(), ""):
-            meshDensity_full[iCell] = float(block)
-            iCell = iCell + 1
-
-        del meshDensity_full
-
-    var = grid.createVariable('xCell', 'f8', ('nCells',))
-    var[:] = xCell_full
-    var = grid.createVariable('yCell', 'f8', ('nCells',))
-    var[:] = yCell_full
-    var = grid.createVariable('zCell', 'f8', ('nCells',))
-    var[:] = zCell_full
-    var = grid.createVariable('xVertex', 'f8', ('nVertices',))
-    var[:] = xVertex_full
-    var = grid.createVariable('yVertex', 'f8', ('nVertices',))
-    var[:] = yVertex_full
-    var = grid.createVariable('zVertex', 'f8', ('nVertices',))
-    var[:] = zVertex_full
-    var = grid.createVariable(
-        'cellsOnVertex', 'i4', ('nVertices', 'vertexDegree',))
-    var[:] = cellsOnVertex_full
-
-    grid.sync()
-    grid.close()
-
-#! # vim: ai ts=4 sts=4 et sw=4 ft=python
+# vim: ai ts=4 sts=4 et sw=4 ft=python
