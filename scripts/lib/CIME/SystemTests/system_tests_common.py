@@ -302,14 +302,6 @@ class SystemTestsCommon(object):
             else:
                 self._test_status.set_status(STARCHIVE_PHASE, TEST_FAIL_STATUS)
 
-    def _st_archive_case_test(self):
-        result = self._case.test_env_archive()
-        with self._test_status:
-            if result:
-                self._test_status.set_status(STARCHIVE_PHASE, TEST_PASS_STATUS)
-            else:
-                self._test_status.set_status(STARCHIVE_PHASE, TEST_FAIL_STATUS)
-
     def _get_mem_usage(self, cpllog):
         """
         Examine memory usage as recorded in the cpl log file and look for unexpected
