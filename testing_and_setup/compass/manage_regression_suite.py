@@ -513,7 +513,7 @@ if __name__ == "__main__":
         os.chdir(os.path.dirname(os.path.realpath(__file__)))
         git_version = subprocess.check_output(
             ['git', 'describe', '--tags', '--dirty'])
-        git_version = git_version.strip('\n')
+        git_version = git_version.decode('utf-8').strip('\n')
         os.chdir(old_dir)
         calling_command = ""
         for arg in sys.argv:
