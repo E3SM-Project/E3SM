@@ -1050,7 +1050,7 @@
 
 <machine MACH="anvil">
          <DESC>ANL/LCRC Linux Cluster</DESC>
-         <NODENAME_REGEX>blogin.*.lcrc.anl.gov</NODENAME_REGEX>
+         <NODENAME_REGEX>b51.*.lcrc.anl.gov</NODENAME_REGEX>
          <TESTS>e3sm_integration</TESTS>
          <COMPILERS>intel,gnu,pgi</COMPILERS>
          <MPILIBS>mvapich,openmpi</MPILIBS>
@@ -1066,13 +1066,13 @@
          <BASELINE_ROOT>/lcrc/group/acme/acme_baselines/$COMPILER</BASELINE_ROOT>
          <CCSM_CPRNC>/home/ccsm-data/tools/cprnc</CCSM_CPRNC>
          <OS>LINUX</OS>
-	 <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
+	 <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
          <SUPPORTED_BY>E3SM</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
 	 <MAX_MPITASKS_PER_NODE>36</MAX_MPITASKS_PER_NODE>
          <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
-	 <PROJECT>ACME</PROJECT>
+	 <PROJECT>condo</PROJECT>
          <mpirun mpilib="openmpi">
            <executable>mpiexec</executable>
            <arguments>
