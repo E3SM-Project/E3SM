@@ -1,30 +1,36 @@
 module med_io_mod
-  ! !DESCRIPTION: Writes attribute vectors to netcdf
 
-  ! !USES:
+  !------------------------------------------
+  ! Create mediator history files
+  !------------------------------------------
+
   use ESMF                  , only : ESMF_VM, ESMF_LogWrite, ESMF_LOGMSG_INFO
   use ESMF                  , only : ESMF_SUCCESS, ESMF_FAILURE
+  use ESMF                  , only : ESMF_VMBroadCast
   use pio                   , only : file_desc_t, iosystem_desc_t
-  use med_constants_mod     , only : R4, R8, CL
+  use med_constants_mod     , only : R4, R8, I8, CL 
   use med_constants_mod     , only : dbug_flag    => med_constants_dbug_flag
-  use shr_nuopc_utils_mod   , only : chkerr       => shr_nuopc_utils_ChkErr
+  use med_internalstate_mod , only : logunit, med_id
   use shr_nuopc_methods_mod , only : FB_getFieldN => shr_nuopc_methods_FB_getFieldN
   use shr_nuopc_methods_mod , only : FB_getFldPtr => shr_nuopc_methods_FB_getFldPtr
   use shr_nuopc_methods_mod , only : FB_getNameN  => shr_nuopc_methods_FB_getNameN
+  use shr_nuopc_utils_mod   , only : chkerr       => shr_nuopc_utils_ChkErr
 
   implicit none
   private
 
   ! public member functions:
-  public med_io_wopen
-  public med_io_close
-  public med_io_redef
-  public med_io_enddef
-  public med_io_date2yyyymmdd
-  public med_io_sec2hms
-  public med_io_read
-  public med_io_write
-  public med_io_init
+  public :: med_io_wopen
+  public :: med_io_close
+  public :: med_io_redef
+  public :: med_io_enddef
+  public :: med_io_sec2hms
+  public :: med_io_read
+  public :: med_io_write
+  public :: med_io_init
+  public :: med_io_date2yyyymmdd
+  public :: med_io_datetod2string 
+  public :: med_io_ymd2date
 
   ! private member functions
   private :: med_io_file_exists
@@ -47,6 +53,18 @@ module med_io_mod
      module procedure med_io_write_char
      module procedure med_io_write_time
   end interface med_io_write
+  interface med_io_date2ymd
+     module procedure med_io_date2ymd_int
+     module procedure med_io_date2ymd_long
+  end interface med_io_date2ymd
+  interface  med_io_datetod2string
+     module procedure med_io_datetod2string_int
+     module procedure med_io_datetod2string_long
+  end interface med_io_datetod2string
+  interface med_io_ymd2date
+     module procedure med_io_ymd2date_int
+     module procedure med_io_ymd2date_long
+  end interface med_io_ymd2date
 
   !-------------------------------------------------------------------------------
   ! module data
@@ -74,8 +92,6 @@ contains
     !---------------
     ! inquire if i/o file exists
     !---------------
-
-    use ESMF, only : ESMF_VMBroadCast
 
     ! input/output variables
     type(ESMF_VM)                :: vm
@@ -105,8 +121,7 @@ contains
     ! initialize pio
     !---------------
 
-    use shr_pio_mod           , only : shr_pio_getiosys, shr_pio_getiotype, shr_pio_getioformat
-    use med_internalstate_mod , only : med_id
+    use shr_pio_mod , only : shr_pio_getiosys, shr_pio_getiotype, shr_pio_getioformat
 
     io_subsystem => shr_pio_getiosys(med_id)
     pio_iotype   =  shr_pio_getiotype(med_id)
@@ -121,11 +136,10 @@ contains
     ! open netcdf file
     !---------------
 
-    use pio                   , only : PIO_IOTYPE_PNETCDF, PIO_IOTYPE_NETCDF, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR
-    use pio                   , only : pio_openfile, pio_createfile, PIO_GLOBAL, pio_enddef
-    use PIO                   , only : pio_put_att, pio_redef, pio_get_att
-    use pio                   , only : pio_seterrorhandling, pio_file_is_open, pio_clobber, pio_write, pio_noclobber
-    use med_internalstate_mod , only : logunit
+    use pio , only : PIO_IOTYPE_PNETCDF, PIO_IOTYPE_NETCDF, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR
+    use pio , only : pio_openfile, pio_createfile, PIO_GLOBAL, pio_enddef
+    use pio , only : pio_put_att, pio_redef, pio_get_att
+    use pio , only : pio_seterrorhandling, pio_file_is_open, pio_clobber, pio_write, pio_noclobber
 
     ! input/output arguments
     character(*),            intent(in) :: filename
@@ -221,7 +235,6 @@ contains
     !---------------
 
     use pio, only: pio_file_is_open, pio_closefile
-    use med_internalstate_mod, only : logunit
 
     ! input/output variables
     character(*),     intent(in)  :: filename
@@ -278,8 +291,7 @@ contains
   !===============================================================================
   subroutine med_io_enddef(filename,file_ind)
 
-    use med_internalstate_mod , only : logunit
-    use pio                   , only : pio_enddef
+    use pio, only : pio_enddef
 
     ! input/output variables
     character(len=*) , intent(in) :: filename
@@ -299,18 +311,14 @@ contains
   !===============================================================================
   character(len=24) function med_io_date2yyyymmdd (date)
 
-    use shr_cal_mod, only : shr_cal_datetod2string
-
     integer, intent(in) :: date  ! date expressed as an integer: yyyymmdd
 
-    call shr_cal_datetod2string(date_str = med_io_date2yyyymmdd, ymd = date)
+    call med_io_datetod2string(date_str = med_io_date2yyyymmdd, ymd = date)
 
   end function med_io_date2yyyymmdd
 
   !===============================================================================
   character(len=8) function med_io_sec2hms (seconds, rc)
-
-    use med_internalstate_mod , only : logunit
 
     ! input arguments
     integer, intent(in)  :: seconds
@@ -1487,12 +1495,10 @@ contains
     ! Read 1d integer array from netcdf file
     !---------------
 
-    use med_constants_mod     , only : R8
-    use pio                   , only : var_desc_t, file_desc_t, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR, pio_seterrorhandling
-    use pio                   , only : pio_get_var, pio_inq_varid, pio_get_att, pio_openfile
-    use pio                   , only : pio_nowrite, pio_openfile, pio_global
-    use pio                   , only : pio_closefile
-    use med_internalstate_mod , only : logunit
+    use pio , only : var_desc_t, file_desc_t, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR, pio_seterrorhandling
+    use pio , only : pio_get_var, pio_inq_varid, pio_get_att, pio_openfile
+    use pio , only : pio_nowrite, pio_openfile, pio_global
+    use pio , only : pio_closefile
 
     ! input/output arguments
     character(len=*), intent(in)    :: filename ! file
@@ -1574,11 +1580,9 @@ contains
     ! Read 1d double array from netcdf file
     !---------------
 
-    use med_constants_mod     , only : R8
-    use pio                   , only : file_desc_t, var_desc_t, pio_openfile, pio_closefile, pio_seterrorhandling
-    use pio                   , only : PIO_BCAST_ERROR, PIO_INTERNAL_ERROR, pio_inq_varid, pio_get_var
-    use pio                   , only : pio_nowrite, pio_openfile, pio_global, pio_get_att
-    use med_internalstate_mod , only : logunit
+    use pio , only : file_desc_t, var_desc_t, pio_openfile, pio_closefile, pio_seterrorhandling
+    use pio , only : PIO_BCAST_ERROR, PIO_INTERNAL_ERROR, pio_inq_varid, pio_get_var
+    use pio , only : pio_nowrite, pio_openfile, pio_global, pio_get_att
 
     ! input/output arguments
     character(len=*), intent(in)    :: filename ! file
@@ -1631,10 +1635,9 @@ contains
     ! Read char string from netcdf file
     !---------------
 
-    use pio                   , only : file_desc_t, var_desc_t, pio_seterrorhandling, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR
-    use pio                   , only : pio_closefile, pio_inq_varid, pio_get_var
-    use pio                   , only : pio_openfile, pio_global, pio_get_att, pio_nowrite
-    use med_internalstate_mod , only : logunit
+    use pio , only : file_desc_t, var_desc_t, pio_seterrorhandling, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR
+    use pio , only : pio_closefile, pio_inq_varid, pio_get_var
+    use pio , only : pio_openfile, pio_global, pio_get_att, pio_nowrite
 
     ! input/output arguments
     character(len=*), intent(in)    :: filename ! file
@@ -1682,5 +1685,141 @@ contains
 
     call pio_closefile(pioid)
   end subroutine med_io_read_char
+
+  !===============================================================================
+  subroutine med_io_date2ymd_int (date,year,month,day)
+    ! Converts coded-date (yyyymmdd) to year/month/day.
+    ! input/output variables
+    integer,intent(in)  :: date             ! coded-date (yyyymmdd)
+    integer,intent(out) :: year,month,day   ! calendar year,month,day
+    ! local variables
+    integer :: tdate   ! temporary date
+    !-------------------------------------------------------------------------------
+
+    tdate = abs(date)
+    year =int(tdate/10000)
+    if (date < 0) year = -year
+    month = int( mod(tdate,10000)/  100)
+    day = mod(tdate,  100)
+  end subroutine med_io_date2ymd_int
+
+  subroutine med_io_date2ymd_long (date,year,month,day)
+    ! Converts coded-date (yyyymmdd) to year/month/day.
+    ! input/output variables
+    integer(I8),intent(in)  :: date             ! coded-date ([yy]yyyymmdd)
+    integer    ,intent(out) :: year,month,day   ! calendar year,month,day
+    ! local variables
+    integer(I8) :: tdate   ! temporary date
+    character(*),parameter :: subName = "(med_io_date2ymd_long)"
+    !-------------------------------------------------------------------------------
+
+    tdate = abs(date)
+    year =int(tdate/10000)
+    if (date < 0) year = -year
+    month = int( mod(tdate,10000_I8)/  100)
+    day = mod(tdate,  100_I8)
+  end subroutine med_io_date2ymd_long
+
+  !===============================================================================
+  subroutine med_io_datetod2string_int(date_str, ymd, tod)
+    ! Converts coded date (yyyymmdd) and optional time of day to a string like
+    ! 'yyyy-mm-dd-ttttt' (if tod is present) or 'yyyy-mm-dd' (if tod is absent).
+    ! yyyy in the output string will have at least 4 but no more than 6 characters (with
+    ! leading zeroes if necessary).
+
+    ! input/output variables
+    character(len=*) , intent(out) :: date_str
+    integer          , intent(in)  :: ymd
+    integer, optional, intent(in)  :: tod
+
+    ! local variables
+    integer          :: yy, mm, dd
+    character(len=6) :: year_str
+    character(len=3) :: month_str
+    character(len=3) :: day_str
+    character(len=6) :: time_str
+    !---------------------------------------
+
+    call med_io_date2ymd(ymd, yy, mm, dd)
+
+    ! Convert year, month, day and time of day to a string like 'yyyy-mm-dd-ttttt'.
+    ! yyyy in the output string will have at least 4 but no more than 6 characters (with
+    ! leading zeroes if necessary).
+    write(year_str,'(i6.4)') yy
+    year_str = adjustl(year_str)
+    write(month_str,'(a,i2.2)') '-',mm
+    write(day_str  ,'(a,i2.2)') '-',dd
+    if (present(tod)) then
+       write(time_str,'(a,i5.5)') '-',tod
+    else
+       time_str = ' '
+    end if
+    date_str = trim(year_str) // trim(month_str) // trim(day_str) // trim(time_str)
+
+  end subroutine med_io_datetod2string_int
+
+  subroutine med_io_datetod2string_long(date_str, ymd, tod)
+    ! Converts coded date (yyyymmdd) and optional time of day to a string like
+    ! 'yyyy-mm-dd-ttttt' (if tod is present) or 'yyyy-mm-dd' (if tod is absent).
+    ! yyyy in the output string will have at least 4 but no more than 6 characters (with
+    ! leading zeroes if necessary).
+
+    ! input/output variables
+    character(len=*) , intent(out) :: date_str
+    integer(i8)      , intent(in)  :: ymd
+    integer, optional, intent(in)  :: tod
+
+    ! local variables
+    integer          :: yy, mm, dd
+    character(len=6) :: year_str
+    character(len=3) :: month_str
+    character(len=3) :: day_str
+    character(len=6) :: time_str
+    !---------------------------------------
+
+    call med_io_date2ymd(ymd, yy, mm, dd)
+
+    ! Convert year, month, day and time of day to a string like 'yyyy-mm-dd-ttttt'.
+    ! yyyy in the output string will have at least 4 but no more than 6 characters (with
+    ! leading zeroes if necessary).
+    write(year_str,'(i6.4)') yy
+    year_str = adjustl(year_str)
+    write(month_str,'(a,i2.2)') '-',mm
+    write(day_str  ,'(a,i2.2)') '-',dd
+    if (present(tod)) then
+       write(time_str,'(a,i5.5)') '-',tod
+    else
+       time_str = ' '
+    end if
+    date_str = trim(year_str) // trim(month_str) // trim(day_str) // trim(time_str)
+
+  end subroutine med_io_datetod2string_long
+
+  !===============================================================================
+  subroutine med_io_ymd2date_int(year,month,day,date)
+    ! Converts  year, month, day to coded-date
+
+    ! input/output variables
+    integer,intent(in ) :: year,month,day  ! calendar year,month,day
+    integer,intent(out) :: date            ! coded (yyyymmdd) calendar date
+    !---------------------------------------
+
+    ! NOTE: this calendar has a year zero (but no day or month zero)
+    date = abs(year)*10000 + month*100 + day  ! coded calendar date
+    if (year < 0) date = -date
+  end subroutine med_io_ymd2date_int
+
+  subroutine med_io_ymd2date_long(year,month,day,date)
+    ! Converts  year, month, day to coded-date
+
+    ! input/output variables
+    integer    ,intent(in ) :: year,month,day  ! calendar year,month,day
+    integer(I8),intent(out) :: date            ! coded ([yy]yyyymmdd) calendar date
+    !---------------------------------------
+
+    ! NOTE: this calendar has a year zero (but no day or month zero)
+    date = abs(year)*10000_I8 + month*100 + day  ! coded calendar date
+    if (year < 0) date = -date
+  end subroutine med_io_ymd2date_long
 
 end module med_io_mod
