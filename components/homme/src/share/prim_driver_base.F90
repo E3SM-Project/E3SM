@@ -105,9 +105,6 @@ contains
     ! ==================================
     call prim_init1_geometry(elem,par,dom_mt)
 
-    ! Cleanup the tmp stuff used in prim_init1_geometry
-    call prim_init1_cleanup ()
-
     ! ==================================
     ! Initialize element pointers (if any)
     ! ==================================
@@ -121,6 +118,11 @@ contains
     ! Initialize element arrays (fluxes and state)
     ! ==================================
     call prim_init1_elem_arrays(elem,par)
+
+    call prim_init1_compose(par,elem)
+
+    ! Cleanup the tmp stuff used in prim_init1_geometry
+    call prim_init1_cleanup()
 
     ! ==================================
     ! Initialize the buffers for exchanges
@@ -534,7 +536,8 @@ contains
     ! --------------------------------
     use prim_state_mod, only : prim_printstate_init
     use parallel_mod,   only : parallel_t
-    use control_mod,    only : runtype, restartfreq
+    use control_mod,    only : runtype, restartfreq, transport_alg
+    use bndry_mod,      only : sort_neighbor_buffer_mapping
 #ifndef CAM
     use restart_io_mod, only : RestFile,readrestart
 #endif
@@ -574,7 +577,35 @@ contains
     endif
 #endif
 
+    if (transport_alg > 0) then
+      call sort_neighbor_buffer_mapping(par, elem,1,nelemd)
+    end if
+
   end subroutine prim_init1_elem_arrays
+
+  subroutine prim_init1_compose(par, elem)
+    use parallel_mod, only : parallel_t, abortmp
+    use control_mod,  only : transport_alg, semi_lagrange_cdr_alg
+#ifdef HOMME_ENABLE_COMPOSE
+    use compose_mod,  only : kokkos_init, compose_init, cedr_set_ie2gci, cedr_unittest
+#endif
+
+    type (parallel_t), intent(in) :: par
+    type (element_t), pointer, intent(in) :: elem(:)
+    integer :: ie, ierr
+
+    if (transport_alg > 0) then
+#ifdef HOMME_ENABLE_COMPOSE
+       call kokkos_init()
+       call compose_init(par, elem, GridVertex)
+       do ie = 1, nelemd
+          call cedr_set_ie2gci(ie, elem(ie)%vertex%number)
+       end do
+#else
+       call abortmp('COMPOSE SL transport was requested, but HOMME was built without COMPOSE.')
+#endif
+    end if
+  end subroutine prim_init1_compose
 
   subroutine prim_init1_cleanup ()
     use gridgraph_mod, only : deallocate_gridvertex_nbrs
@@ -597,8 +628,7 @@ contains
   end subroutine prim_init1_cleanup
 
   subroutine prim_init1_buffers (elem,par)
-    use bndry_mod,          only : sort_neighbor_buffer_mapping
-    use control_mod,        only : integration, use_semi_lagrange_transport
+    use control_mod,        only : integration
     use edge_mod,           only : initedgebuffer, edge_g
     use parallel_mod,       only : parallel_t
     use prim_advance_mod,   only : prim_advance_init1
@@ -619,16 +649,11 @@ contains
     ! if this is too small, code will abort with an error message
     call initEdgeBuffer(par,edge_g,elem,max((qsize+1)*nlev,6*nlev+1))
 
-
     call prim_advance_init1(par,elem,integration)
 #ifdef TRILINOS
     call prim_implicit_init(par, elem)
 #endif
     call Prim_Advec_Init1(par, elem)
-
-    if ( use_semi_lagrange_transport) then
-      call sort_neighbor_buffer_mapping(par, elem,1,nelemd)
-    end if
 
   end subroutine prim_init1_buffers
 
@@ -1194,7 +1219,7 @@ contains
   !
   !
     use control_mod,        only: statefreq, integration, ftype, qsplit, nu_p, rsplit
-    use control_mod,        only: use_semi_lagrange_transport
+    use control_mod,        only: transport_alg
     use hybvcoord_mod,      only : hvcoord_t
     use parallel_mod,       only: abortmp
     use prim_advance_mod,   only: prim_advance_exp
@@ -1231,7 +1256,7 @@ contains
          elem(ie)%derived%dpdiss_ave=0
          elem(ie)%derived%dpdiss_biharmonic=0
       endif
-      if (use_semi_lagrange_transport) then
+      if (transport_alg > 0) then
         elem(ie)%derived%vstar=elem(ie)%state%v(:,:,:,:,tl%n0)
       end if
       elem(ie)%derived%dp(:,:,:)=elem(ie)%state%dp3d(:,:,:,tl%n0)
@@ -1575,7 +1600,7 @@ contains
   !
   !
     use control_mod,        only: statefreq, integration, ftype, qsplit, nu_p, rsplit
-    use control_mod,        only: use_semi_lagrange_transport
+    use control_mod,        only: transport_alg
     use hybvcoord_mod,      only : hvcoord_t
     use parallel_mod,       only: abortmp
     use prim_advance_mod,   only: prim_advance_exp
@@ -1608,7 +1633,7 @@ contains
          elem(ie)%derived%dpdiss_ave=0
          elem(ie)%derived%dpdiss_biharmonic=0
       endif
-      if (use_semi_lagrange_transport) then
+      if (transport_alg > 0) then
         elem(ie)%derived%vstar=elem(ie)%state%v(:,:,:,:,tl%n0)
       end if
       elem(ie)%derived%dp(:,:,:)=elem(ie)%state%dp3d(:,:,:,tl%n0)

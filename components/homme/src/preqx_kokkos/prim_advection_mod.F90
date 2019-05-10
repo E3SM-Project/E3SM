@@ -12,7 +12,7 @@ module prim_advection_mod
   use hybvcoord_mod, only   : hvcoord_t
   use time_mod, only        : TimeLevel_t
   use hybrid_mod, only      : hybrid_t
-  use control_mod, only     : use_semi_lagrange_transport
+  use control_mod, only     : transport_alg
   use sl_advection, only    : prim_advec_tracers_remap_ALE, sl_init1
   use prim_advection_base, only: prim_advec_init1_rk2, prim_advec_tracers_remap_rk2,&
        prim_advec_init2
@@ -52,8 +52,8 @@ contains
     integer              , intent(in   ) :: nete
 
 
-  if (use_semi_lagrange_transport) then
-    call Prim_Advec_Tracers_remap_ALE( elem , deriv ,                 hybrid , dt , tl , nets , nete )
+  if (transport_alg > 0) then
+    call Prim_Advec_Tracers_remap_ALE( elem , deriv , hvcoord , hybrid , dt , tl , nets , nete )
   else
     call Prim_Advec_Tracers_remap_rk2( elem , deriv , hvcoord , hybrid , dt , tl , nets , nete )
   end if

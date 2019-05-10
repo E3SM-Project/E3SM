@@ -123,8 +123,8 @@ macro(createTestExec execName execType macroNP macroNC
   # Add this executable to a list
   SET(EXEC_LIST ${EXEC_LIST} ${execName} CACHE INTERNAL "List of configured executables")
 
-  TARGET_LINK_LIBRARIES(${execName} pio timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
-  IF (DEFINED USE_KOKKOS_KERNELS)
+  TARGET_LINK_LIBRARIES(${execName} pio timing ${COMPOSE_LIBRARY} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+  IF (HOMME_USE_KOKKOS)
     link_to_kokkos(${execName})
   ENDIF ()
 

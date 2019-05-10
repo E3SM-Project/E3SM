@@ -1541,6 +1541,11 @@
 <interp_gridtype> 1 </interp_gridtype>
 <vthreads> 1 </vthreads>
 
+<transport_alg> 0 </transport_alg>
+<semi_lagrange_cdr_alg> 20 </semi_lagrange_cdr_alg>
+<semi_lagrange_cdr_check> .false. </semi_lagrange_cdr_check>
+<semi_lagrange_nearest_point_lev> 0 </semi_lagrange_nearest_point_lev>
+
 <!-- ================================================================== -->
 <!-- Defaults for driver namelist seq_infodata_inparm                   -->
 <!-- ================================================================== -->
