@@ -171,7 +171,7 @@
     </desc>
     <values>
       <value>fixed_year</value>
-      <value iyear='HIST' cime_model='cesm'>variable_year</value>
+      <value iyear='HIST'>variable_year</value>
     </values>
   </entry>
 
@@ -184,9 +184,9 @@
     </desc>
     <values>
       <value>1990</value>
-      <value iyear="1850" cime_model="cesm">1850</value>
-      <value iyear="2000" cime_model="cesm">2000</value>
-      <value iyear='HIST' cime_model='cesm'>1850</value>
+      <value iyear="1850">1850</value>
+      <value iyear="2000">2000</value>
+      <value iyear='HIST'>1850</value>
     </values>
   </entry>
 
@@ -199,9 +199,9 @@
     </desc>
     <values>
       <value>1990</value>
-      <value iyear="1850" cime_model="cesm">1850</value>
-      <value iyear="2000" cime_model="cesm">2000</value>
-      <value iyear='HIST' cime_model='cesm'>1850</value>
+      <value iyear="1850">1850</value>
+      <value iyear="2000">2000</value>
+      <value iyear='HIST'>1850</value>
     </values>
   </entry>
 
@@ -769,7 +769,7 @@
   </entry>
 
   <!-- =========================================== -->
-  <!-- MED general attributes                      -->
+  <!-- MED atm/ocn fluxes attributes               -->
   <!-- =========================================== -->
 
   <entry id="flux_convergence">
@@ -781,8 +781,8 @@
       Setting this to zero will always do flux_max_iteration
     </desc>
     <values>
-      <value cime_model='cesm'>0.0</value>
-      <value cime_model='cesm' atm_grid="0.9x1.25">0.0</value>
+      <value>0.01</value>
+      <value atm_grid="0.9x1.25">0.0</value>
     </values>
   </entry>
 
@@ -794,7 +794,7 @@
       Iterate atmocn flux calculation a max of this value
     </desc>
     <values>
-      <value cime_model='cesm'>5</value>
+      <value>5</value>
     </values>
   </entry>
 
@@ -806,7 +806,7 @@
       if true use  Mahrt and Sun 1995,MWR modification to surface flux calculation
     </desc>
     <values>
-      <value cime_model='cesm'>.true.</value>
+      <value>.true.</value>
     </values>
   </entry>
 

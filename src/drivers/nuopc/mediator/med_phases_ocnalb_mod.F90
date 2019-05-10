@@ -183,7 +183,6 @@ contains
     use ESMF                  , only : ESMF_RouteHandleIsCreated, ESMF_FieldBundleIsCreated
     use ESMF                  , only : operator(+)
     use NUOPC                 , only : NUOPC_CompAttributeGet
-    use shr_const_mod         , only : shr_const_pi
     use shr_orb_mod           , only : shr_orb_cosz, shr_orb_decl
     use esmFlds               , only : mapconsf, mapnames
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
@@ -192,6 +191,7 @@ contains
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FieldRegrid
     use med_constants_mod     , only : CS, CL, R8
     use med_constants_mod     , only : dbug_flag =>med_constants_dbug_flag
+    use med_constants_mod     , only : shr_const_pi
     use med_internalstate_mod , only : InternalState, logunit
     use esmFlds               , only : compatm, compocn
     use perf_mod              , only : t_startf, t_stopf
