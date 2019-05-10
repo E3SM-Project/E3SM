@@ -36,10 +36,11 @@ if (-f "Filepath") {
 
 my $camdefs = `cat $CASEBUILD/camconf/CCSM_cppdefs`;
 chomp($camdefs);
-my $sysmod = "cmake -DMODEL=cam -DCOMPLIB=${LIBROOT}/libatm.a -DUSER_CPPDEFS=\"${camdefs}\" ${MAKE_ARGS} ${SRCROOT}/components/cam";
+my $sysmod = "cmake -DMODEL=cam -DCOMPLIB=atm -DUSER_CPPDEFS=\"${camdefs}\" ${MAKE_ARGS} ${SRCROOT}/components/cam";
 system($sysmod) == 0 or die "ERROR: cam.buildexe $sysmod failed: $?\n";
 
-my $sysmod = "${GMAKE} -j ${GMAKE_J}";
+#my $sysmod = "${GMAKE} -j ${GMAKE_J}";
+my $sysmod = "${GMAKE} -j1 VERBOSE=1";
 system($sysmod) == 0 or die "ERROR: cam.buildexe $sysmod failed: $?\n";
 
 exit(0);

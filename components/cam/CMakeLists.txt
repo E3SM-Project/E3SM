@@ -23,26 +23,15 @@ set(CMAKE_MODULE_PATH ${CIMEROOT}/src/CMake)
 
 # Load dependency search path.
 file(STRINGS ${CMAKE_BINARY_DIR}/Filepath FILEPATH_DIRS)
-string(REPLACE ";" " " DIRS "${FILEPATH_DIRS}")
-set(DIRS ". ${DIRS}")
+set(CPP_DIRS ${FILEPATH_DIRS})
+list(APPEND CPP_DIRS ".")
 
-set(CPP_DIRS ${DIRS})
 # Add INCROOT to path for Depends and Include
 set(MINCROOT "")
 if (INCROOT)
-  set(CPP_DIRS "${CPP_DIRS} ${INCROOT}")
+  list(APPEND CPP_DIRS ${INCROOT})
   set(MINCROOT ${INCROOT})
 endif ()
-
-# # Expand any tildes in directory names. Change spaces to colons. JGF
-# VPATH := $(foreach dir,$(cpp_dirs),$(wildcard $(dir)))
-# VPATH := $(subst $(space),:,$(VPATH))
-
-# RM    := rm
-# CP    := cp
-
-# exec_se: $(EXEC_SE)  Depends
-# complib: $(COMPLIB)  Depends
 
 # Determine whether to compile threaded or not
 # Set the THREADDIR for the shared build
@@ -83,8 +72,7 @@ endif()
 #===============================================================================
 # set CPP options (must use this before any flags or cflags settings)
 #===============================================================================
-
-set(CPPDEFS ${USER_CPPDEFS} "-D${OS}")
+set(CPPDEFS "${USER_CPPDEFS} -D${OS}")
 
 include(${CASEROOT}/Macros.cmake)
 
@@ -355,8 +343,8 @@ if (CPRE)
     set(EXTRA_PIO_FPPDEFS "${EXTRA_PIO_FPPDEFS} ${CPRE}${NOD}")
   endforeach()
 else()
-  set(FPPDEFS ${CPPDEFS})
-  set(EXTRA_PIO_FPPDEFS ${EXTRA_PIO_CPPDEFS})
+  set(FPPDEFS "${CPPDEFS}")
+  set(EXTRA_PIO_FPPDEFS "${EXTRA_PIO_CPPDEFS}")
 endif()
 
 #===============================================================================
@@ -404,7 +392,7 @@ else()
   endif()
 endif()
 set(CSM_SHR_INCLUDE ${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/include)
-# VPATH+=$(CSM_SHR_INCLUDE) # JGF
+# VPATH+=$(CSM_SHR_INCLUDE) # JGF - not sure if I need to do anything here
 
 #===============================================================================
 # Set include paths (needed after override for any model specific builds below)
@@ -484,7 +472,7 @@ if (NOT GLCROOT)
   set(GLCROOT "${CIMEROOT}/../components/cism")
 endif()
 
-set(INCLDIR "-I${INSTALL_SHAREDPATH}/include")
+set(INCLDIR "${INCLDIR} -I${INSTALL_SHAREDPATH}/include")
 
 #
 # Use the MCT dir for the cache for all configure calls because it is the first one
@@ -524,7 +512,7 @@ if (MODEL STREQUAL "cam")
   set_source_files_properties(rrtmg_sw_k_g.f90 PROPERTIES COMPILE_FLAGS -O0)
 
   if (COSP_LIBDIR)
-    set(INCLDIR "-I${COSP_LIBDIR} -I${COSP_LIBDIR}/../ -I../${INSTALL_SHAREDPATH}/include -I../${CSM_SHR_INCLUDE}")
+    set(INCLDIR "${INCLDIR} -I${COSP_LIBDIR} -I${COSP_LIBDIR}/../ -I../${INSTALL_SHAREDPATH}/include -I../${CSM_SHR_INCLUDE}")
     execute_process(COMMAND ${MAKE} -C ${COSP_LIBDIR} F90="${FC}" F90FLAGS="${INCLDIR} ${INCS} ${FREEFLAGS} ${FFLAGS} ${FC_AUTO_R8}" F90FLAGS_noauto="${INCLDIR} ${INCS} ${FREEFLAGS} ${FFLAGS}" F90FLAGS_fixed="${INCLDIR} ${INCS} ${FIXEDFLAGS} ${FFLAGS} ${FC_AUTO_R8}")
   endif()
 
@@ -592,13 +580,13 @@ string(REGEX REPLACE "-arch[^ ]+" "" F90_LDFLAGS "${LDFLAGS}")
 # Drive configure scripts for support libraries (mct)
 #------------------------------------------------------------------------------
 
-if (NOT EXISTS ${SHAREDLIBROOT}/${SHAREDPATH}/mct/Makefile.conf)
-  execute_process(COMMAND ${CIMEROOT}/src/externals/mct/configure ${CONFIG_ARGS} --srcdir ${CIMEROOT}/src/externals/mct)
-endif()
+# if (NOT EXISTS ${SHAREDLIBROOT}/${SHAREDPATH}/mct/Makefile.conf)
+#   execute_process(COMMAND ${CIMEROOT}/src/externals/mct/configure ${CONFIG_ARGS} --srcdir ${CIMEROOT}/src/externals/mct)
+# endif()
 
-if (NOT EXISTS ${SHAREDLIBROOT}/${SHAREDPATH}/mct/mpi-serial/Makefile.conf)
-  execute_process(COMMAND ${CIMEROOT}/src/externals/mct/mpi-serial/configure ${CONFIG_ARGS} --srcdir ${CIMEROOT}/src/externals/mct/mpi-serial)
-endif()
+# if (NOT EXISTS ${SHAREDLIBROOT}/${SHAREDPATH}/mct/mpi-serial/Makefile.conf)
+#   execute_process(COMMAND ${CIMEROOT}/src/externals/mct/mpi-serial/configure ${CONFIG_ARGS} --srcdir ${CIMEROOT}/src/externals/mct/mpi-serial)
+# endif()
 
 if (PIO_VERSION STREQUAL 2)
   # This is a pio2 library
@@ -646,8 +634,8 @@ endif()
 
 set(CMAKE_C_COMPILER ${CC})
 set(CMAKE_CXX_COMPILER ${CXX})
-set(CMAKE_FC_COMPILER ${FC})
-set(CMAKE_EXE_LINKER_FLAGS ${LDFLAGS})
+set(CMAKE_Fortran_COMPILER ${FC})
+set(CMAKE_EXE_LINKER_FLAGS "${LDFLAGS}")
 
 # JGF: We only want to do CAM for now
 # add_directory(${GLCROOT}/source_cism)
@@ -660,11 +648,26 @@ set(CMAKE_EXE_LINKER_FLAGS ${LDFLAGS})
 # JGF, I think we can rely on CMake's built-in dependency analysus
 
 # Get src files
-execute_process(COMMAND ${CASETOOLS}/mkSrcfiles)
-file(STRINGS ${CMAKE_BINARY_DIR}/Srcfiles SOURCES)
-# jgf get genf90 sources
+# JGF: Cmake does not have a VPATH concept, so we need absolute paths to source files
+#execute_process(COMMAND ${CASETOOLS}/mkSrcfiles)
+#file(STRINGS ${CMAKE_BINARY_DIR}/Srcfiles SOURCES)
 
-foreach(ITEM ${CPP_DIRS})
+foreach(DIRSEARCH ${FILEPATH_DIRS})
+  file(GLOB MATCHES "${DIRSEARCH}/*.[Ffc]" "${DIRSEARCH}/*.[Ff]90" "${DIRSEARCH}/*.cpp" "${DIRSEARCH}/.F90.in")
+  list(APPEND SOURCES ${MATCHES})
+endforeach()
+
+foreach(SOURCE_FILE IN LISTS ${SOURCES})
+  get_filename_component(SOURCE_EXT ${SOURCE_FILE} EXT)
+  if (SOURCE_EXT STREQUAL "F90.in")
+    string(REPLACE ".in" "" SOURCE_NO_IN ${SOURCE_FILE})
+    list(APPEND GEN_F90_SOURCES ${SOURCE_NO_IN})
+    list(APPEND SOURCES ${SOURCE_NO_IN})
+    list(REMOVE_ITEM SOURCE ${SOURCE_FILE})
+  endif()
+endforeach()
+
+foreach(ITEM IN LISTS CPP_DIRS)
   set(INCLDIR "${INCLDIR} -I${ITEM}")
 endforeach()
 
@@ -747,6 +750,11 @@ endif()
 set(CSMSHARELIB "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/lib/libcsm_share.a")
 set(ULIBDEP "${ULIBDEP} ${CSMSHARELIB}")
 
+# Things may have been added to flags
+set(CMAKE_Fortran_FLAGS "${FFLAGS} ${EXTRA_PIO_FPPDEFS} ${INCLDIR}")
+set(CMAKE_C_FLAGS "${CFLAGS} ${EXTRA_PIO_CPPDEFS} ${INCLDIR}")
+set(CMAKE_CXX_FLAGS "${CXXFLAGS} ${EXTRA_PIO_CPPDEFS} ${INCLDIR}")
+
 #-------------------------------------------------------------------------------
 # build rules:
 #-------------------------------------------------------------------------------
@@ -764,11 +772,12 @@ foreach (SRC_FILE IN LISTS GEN_F90_SOURCES)
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}.in)
 endforeach ()
 
-if (${COMPLIB})
-  add_library(${COMPLIB} ${SOURCES})
+if (COMPLIB)
+  add_library(${COMPLIB})
+  target_sources(${COMPLIB} PRIVATE ${SOURCES})
 endif()
 
-if (${EXEC_SE})
+if (EXEC_SE)
   add_executable(${EXEC_SE})
   target_link_library(${EXEC_SE} ${COMPLIB} ${ULIBDEP} ${CSMSHARELIB} ${MCTLIBS} ${PIOLIB} ${GPTLLIB} ${CLIBS} ${ULIBS} ${SLIBS} ${MLIBS} ${F90_LDFLAGS})
 endif()
