@@ -48,7 +48,7 @@ ftn:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 titan-cray:
 	( $(MAKE) all \
@@ -66,7 +66,7 @@ titan-cray:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 pgi:
 	( $(MAKE) all \
@@ -91,7 +91,7 @@ pgi:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 pgi-nersc:
 	( $(MAKE) all \
@@ -112,7 +112,7 @@ pgi-nersc:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 pgi-llnl:
 	( $(MAKE) all \
@@ -133,7 +133,7 @@ pgi-llnl:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 ifort:
 	( $(MAKE) all \
@@ -158,7 +158,7 @@ ifort:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 ifort-scorep:
 	( $(MAKE) all \
@@ -183,7 +183,7 @@ ifort-scorep:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 ifort-gcc:
 	( $(MAKE) all \
@@ -208,7 +208,7 @@ ifort-gcc:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 gfortran:
 	( $(MAKE) all \
@@ -233,7 +233,7 @@ gfortran:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 gfortran-clang:
 	( $(MAKE) all \
@@ -258,7 +258,7 @@ gfortran-clang:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 g95:
 	( $(MAKE) all \
@@ -279,7 +279,7 @@ g95:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 pathscale-nersc:
 	( $(MAKE) all \
@@ -300,7 +300,7 @@ pathscale-nersc:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 cray-nersc:
 	( $(MAKE) all \
@@ -321,7 +321,7 @@ cray-nersc:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 gnu-nersc:
 	( $(MAKE) all \
@@ -344,7 +344,7 @@ gnu-nersc:
 	"DEBUG = $(DEBUG)" \
 	"SERIAL = $(SERIAL)" \
 	"USE_PAPI = $(USE_PAPI)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -DUNDERSCORE -D_MPI $(FILE_OFFSET) $(ZOLTAN_DEFINE)" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI $(FILE_OFFSET) $(ZOLTAN_DEFINE)" )
 
 intel-nersc:
 	( $(MAKE) all \
@@ -369,7 +369,7 @@ intel-nersc:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 bluegene:
 	( $(MAKE) all \
@@ -419,7 +419,7 @@ llvm:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 CPPINCLUDES = 
 FCINCLUDES = 
@@ -744,8 +744,8 @@ pio_test:
 	@# See whether either of the test programs can be compiled
 	@#
 	@echo "Checking for a usable PIO library..."
-	@($(FC) $(FCINCLUDES) $(FFLAGS) $(LDFLAGS) $(LIBS) -o pio1.out pio1.f90 &> /dev/null && echo "=> PIO 1 detected") || \
-	 ($(FC) $(FCINCLUDES) $(FFLAGS) $(LDFLAGS) $(LIBS) -o pio2.out pio2.f90 &> /dev/null && echo "=> PIO 2 detected") || \
+	@($(FC) pio1.f90 $(FCINCLUDES) $(FFLAGS) $(LDFLAGS) $(LIBS) -o pio1.out &> /dev/null && echo "=> PIO 1 detected") || \
+	 ($(FC) pio2.f90 $(FCINCLUDES) $(FFLAGS) $(LDFLAGS) $(LIBS) -o pio2.out &> /dev/null && echo "=> PIO 2 detected") || \
 	 (echo "************ ERROR ************"; \
 	  echo "Failed to compile a PIO test program"; \
 	  echo "Please ensure the PIO environment variable is set to the PIO installation directory"; \
@@ -758,13 +758,13 @@ pio_test:
 	@# Check that what the user has specified agrees with the PIO library version that was detected
 	@#
 ifeq "$(USE_PIO2)" "true"
-	@($(FC) $(FCINCLUDES) $(FFLAGS) $(LDFLAGS) $(LIBS) -o pio2.out pio2.f90 &> /dev/null) || \
+	@($(FC) pio2.f90 $(FCINCLUDES) $(FFLAGS) $(LDFLAGS) $(LIBS) -o pio2.out &> /dev/null) || \
 	(echo "************ ERROR ************"; \
 	 echo "PIO 1 was detected, but USE_PIO2=true was specified in the make command"; \
 	 echo "************ ERROR ************"; \
 	 rm -rf pio[12].f90 pio[12].out; exit 1)
 else
-	@($(FC) $(FCINCLUDES) $(FFLAGS) $(LDFLAGS) $(LIBS) -o pio1.out pio1.f90 &> /dev/null) || \
+	@($(FC) pio1.f90 $(FCINCLUDES) $(FFLAGS) $(LDFLAGS) $(LIBS) -o pio1.out &> /dev/null) || \
 	(echo "************ ERROR ************"; \
 	 echo "PIO 2 was detected. Please specify USE_PIO2=true in the make command"; \
 	 echo "************ ERROR ************"; \

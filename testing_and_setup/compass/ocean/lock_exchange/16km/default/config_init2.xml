@@ -5,7 +5,6 @@
 	<add_link source_path="script_test_dir" source="run_iter.bash" dest="my_script.sh"/>
 
 	<add_executable source="model" dest="ocean_model"/>
-	<add_executable source="metis" dest="metis"/>
 
 	<namelist name="namelist.ocean" mode="init">
 		<option name="config_init_configuration">'lock_exchange'</option>

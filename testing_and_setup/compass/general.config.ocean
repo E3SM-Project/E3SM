@@ -26,11 +26,6 @@ init    = FULL_PATH_TO_MPAS_MODEL_REPO/streams.ocean.init
 # anywhere on the machine.
 [executables]
 model = FULL_PATH_TO_MPAS_MODEL_REPO/ocean_model
-metis = FULL_PATH_TO_METIS
-mesh_converter = FULL_PATH_TO_MPAS_TOOLS_REPO/mesh_tools/mesh_conversion_tools/MpasMeshConverter.x
-cell_culler    = FULL_PATH_TO_MPAS_TOOLS_REPO/mesh_tools/mesh_conversion_tools/MpasCellCuller.x
-mask_creator   = FULL_PATH_TO_MPAS_TOOLS_REPO/mesh_tools/mesh_conversion_tools/MpasMaskCreator.x
-mesh_generator = FULL_PATH_TO_EXECUTABLE_MESH_GENERATION_SCRIPT
 
 # The paths section describes paths that are used within the ocean core test
 # cases.
@@ -42,8 +37,7 @@ mesh_generator = FULL_PATH_TO_EXECUTABLE_MESH_GENERATION_SCRIPT
 # some test cases might download data into them, which will then be reused if
 # the test case is run again later.
 mpas_model = FULL_PATH_TO_MPAS_MODEL_REPO
-mpas_tools = FULL_PATH_TO_MPAS_TOOLS_REPO
-geometric_features = FULL_PATH_TO_LOCAL_CHECKOUT_OF_GEOMETRIC_FEATURES_REPO
+geometric_data = FULL_PATH_TO_PATH_OF_CACHED_GEOMETRIC_FEATURES_DATA
 jigsaw-geo-matlab = FULL_PATH_TO_JIGSAW_REPO
 mesh_database = FULL_PATH_TO_LOCAL_MESH_DATABASE
 initial_condition_database = FULL_PATH_TO_LOCAL_INITIAL_CONDITION_DATABASE

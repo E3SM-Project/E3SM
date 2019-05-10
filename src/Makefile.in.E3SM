@@ -53,12 +53,6 @@ override CPPINCLUDES += -I$(EXEROOT)/$(COMPONENT)/source/inc -I$(INSTALL_SHAREDP
 override FCINCLUDES += -I$(EXEROOT)/$(COMPONENT)/source/inc -I$(INSTALL_SHAREDPATH)/include -I$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include
 LIBS += -L$(PIO) -L$(PNETCDF)/lib -L$(NETCDF)/lib -L$(LIBROOT) -L$(INSTALL_SHAREDPATH)/lib -lpio -lpnetcdf -lnetcdf
 
-ifneq (,$(findstring FORTRANUNDERSCORE, $(CPPFLAGS)))
-ifeq (,$(findstring DUNDERSCORE, $(CPPFLAGS)))
-    override CPPFLAGS += -DUNDERSCORE
-endif
-endif
-
 ifeq ($(DEBUG), TRUE)
     override CPPFLAGS += -DMPAS_DEBUG
 endif

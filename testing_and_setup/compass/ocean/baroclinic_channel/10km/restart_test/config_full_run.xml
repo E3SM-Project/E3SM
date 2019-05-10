@@ -4,7 +4,6 @@
 	<add_link source="../init_step2/graph.info" dest="graph.info"/>
 
 	<add_executable source="model" dest="ocean_model"/>
-	<add_executable source="metis" dest="metis"/>
 
 	<namelist name="namelist.ocean" mode="forward">
 		<template file="baroclinic_channel_10km_template.xml" path_base="script_resolution_dir"/>
@@ -17,7 +16,7 @@
 	</streams>
 
 	<run_script name="run.py">
-		<step executable="./metis">
+		<step executable="gpmetis">
 			<argument flag="graph.info">4</argument>
 		</step>
 

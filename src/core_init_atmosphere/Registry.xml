@@ -60,7 +60,8 @@
                                         6 = mountain wave, \newline
                                         7 = real-data initial conditions from, e.g., GFS, \newline
                                         8 = surface field (SST, sea-ice) update file for use with real-data simulations"
-                     possible_values="1 -- 8"/>
+                                        9 = lateral boundary conditions update file for use with real-data simulations"
+                     possible_values="1 -- 9"/>
 
                 <nml_option name="config_calendar_type" type="character" default_value="gregorian" in_defaults="false"
                      units="-"
@@ -145,15 +146,35 @@
                      description="Interval between SST and sea-ice files (case 8 only)"
                      possible_values="[DDD_]hh:mm:ss"/>
 
-                <nml_option name="config_landuse_data"          type="character"     default_value="USGS"
+                <nml_option name="config_landuse_data"          type="character"     default_value="MODIFIED_IGBP_MODIS_NOAH"
                      units="-"
                      description="The land use classification to use (case 7 only)"
-                     possible_values="`USGS' or `MODIFIED\_IGBP\_MODIS\_NOAH'"/>
+                     possible_values="`USGS' or `MODIFIED_IGBP_MODIS_NOAH'"/>
 
-                <nml_option name="config_topo_data"             type="character"     default_value="GTOPO30"
+                <nml_option name="config_topo_data"             type="character"     default_value="GMTED2010"
                      units="-"
                      description="The topography dataset to use for the model terrain and for GWDO static fields (case 7 only)"
                      possible_values="`GTOPO30' or `GMTED2010'"/>
+
+                <nml_option name="config_vegfrac_data"          type="character"     default_value="MODIS"
+                     units="-"
+                     description="The climatological monthly vegetation fraction dataset to use (case 7 only)"
+                     possible_values="`MODIS' or `NCEP'"/>
+
+                <nml_option name="config_albedo_data"           type="character"     default_value="MODIS"
+                     units="-"
+                     description="The climatological monthly albedo dataset to use (case 7 only)"
+                     possible_values="`MODIS' or `NCEP'"/>
+
+                <nml_option name="config_maxsnowalbedo_data"    type="character"     default_value="MODIS"
+                     units="-"
+                     description="The maximum snow albedo dataset to use (case 7 only)"
+                     possible_values="`MODIS' or `NCEP'"/>
+
+                <nml_option name="config_supersample_factor"    type="integer"       default_value="3"
+                     units="-"
+                     description="The supersampling factor to be used for MODIS maximum snow albedo and monthly albedo datasets (case 7 only)"
+                     possible_values="Positive integer values"/>
 
                 <nml_option name="config_use_spechumd"          type="logical"       default_value="false"
                      units="-"
@@ -192,6 +213,11 @@
                 <nml_option name="config_tc_vertical_grid"      type="logical"       default_value="true"
                      units="-"
                      description="Whether to use the vertical layer profile that was developed for use in real-time TC experiments"
+                     possible_values="true or false"/>
+
+                <nml_option name="config_blend_bdy_terrain"     type="logical"       default_value="true"
+                     units="-"
+                     description="Whether to blend terrain along domain boundaries with first-guess terrain. Only useful for limited-area domains."
                      possible_values="true or false"/>
 
         </nml_record>
@@ -289,6 +315,7 @@
         <packages>
                 <package name="initial_conds" description="Used by test cases that produce initial conditions."/>
                 <package name="sfc_update" description="Used by test cases that produce surface updates."/>
+                <package name="lbcs" description="Active when lateral boundary conditions are interpolated and written."/>
                 <package name="gwd_stage_in" description="Active only if GWD static fields are be generated and other static fields are not being generated"/>
                 <package name="gwd_stage_out" description="Active only if GWD static fields are be generated and other static fields are not being generated"/>
                 <package name="vertical_stage_in" description="Active only if a vertical grid is being generated"/>
@@ -345,6 +372,9 @@
                         <var name="cellsOnVertex"/>
                         <var name="kiteAreasOnVertex"/>
                         <var name="meshDensity"/>
+                        <var name="bdyMaskCell"/>
+                        <var name="bdyMaskEdge"/>
+                        <var name="bdyMaskVertex"/>
                         <var name="edgeNormalVectors" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
                         <var name="localVerticalUnitVectors" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
                         <var name="cellTangentPlane" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
@@ -438,6 +468,9 @@
                         <var name="cellsOnVertex"/>
                         <var name="kiteAreasOnVertex"/>
                         <var name="meshDensity"/>
+                        <var name="bdyMaskCell"/>
+                        <var name="bdyMaskEdge"/>
+                        <var name="bdyMaskVertex"/>
                         <var name="edgeNormalVectors"/>
                         <var name="localVerticalUnitVectors"/>
                         <var name="cellTangentPlane"/>
@@ -534,6 +567,18 @@
 			<var name="xtime"/>
 			<var name="sst"/>
 			<var name="xice"/>
+		</stream>
+
+		<stream name="lbc"
+                        type="output"
+                        filename_template="lbc.$Y-$M-$D_$h.nc"
+                        output_interval="3:00:00"
+                        filename_interval="output_interval"
+                        packages="lbcs"
+                        immutable="true">
+
+			<var name="xtime"/>
+			<var_struct name="lbc_state"/>
 		</stream>
 
 	</streams>
@@ -810,6 +855,15 @@
                 <!-- arrays required for reconstruction of velocity field -->
                 <var name="coeffs_reconstruct" type="real" dimensions="R3 maxEdges nCells" units="unitless"
                      description="Coefficients to reconstruct velocity vectors at cell centers"/>
+
+                <var name="bdyMaskCell" type="integer" dimensions="nCells" default_value="0" units="-"
+                     description="Indicator of whether a cell is an interior cell, a relaxation-zone cell, or a specified-zone cell"/>
+
+                <var name="bdyMaskEdge" type="integer" dimensions="nEdges" default_value="0" units="-"
+                     description="Indicator of whether an edge is an interior edge, a relaxation-zone edge, or a specified-zone edge"/>
+
+                <var name="bdyMaskVertex" type="integer" dimensions="nVertices" default_value="0" units="-"
+                     description="Indicator of whether an vertex is an interior vertex, a relaxation-zone vertex, or a specified-zone vertex"/>
         </var_struct>
 
         <var_struct name="state" time_levs="1">
@@ -845,6 +899,36 @@
                 <!-- Climatology for ocean mixed-layer depth -->
                 <var name="h_oml_initial" type="real" dimensions="nCells Time" units="m"
                      description="Initial depth of ocean mix layer"/>
+        </var_struct>
+
+        <var_struct name="lbc_state" time_levs="1">
+                <var name="lbc_u" type="real" dimensions="nVertLevels nEdges Time" packages="lbcs"
+                     units="m s^{-1}"
+                     description="Horizontal normal velocity on domain lateral boundary edges"/>
+
+                <var name="lbc_w" type="real" dimensions="nVertLevelsP1 nCells Time" packages="lbcs"
+                     units="m s^{-1}"
+                     description="Vertical velocity on domain lateral boundary vertical cell faces"/>
+
+                <var name="lbc_rho" type="real" dimensions="nVertLevels nCells Time" packages="lbcs"
+                     units="kg m^{-3}"
+                     description="Dry air density on lateral boundary cells"/>
+
+                <var name="lbc_theta" type="real" dimensions="nVertLevels nCells Time" packages="lbcs"
+                     units="K"
+                     description="Potential temperature on lateral boundary cells"/>
+
+                <var_array name="lbc_scalars" type="real" dimensions="nVertLevels nCells Time" packages="lbcs">
+                        <var name="lbc_qv" array_group="moist" units="kg kg^{-1}"
+                             description="Water vapor mixing ratio on lateral boundary cells"/>
+
+                        <var name="lbc_qc" array_group="moist" units="kg kg^{-1}"
+                             description="Cloud water mixing ratio on lateral boundary cells"/>
+
+                        <var name="lbc_qr" array_group="moist" units="kg kg^{-1}"
+                             description="Rain water mixing ratio on lateral boundary cells"/>
+                </var_array>
+
         </var_struct>
 
         <var_struct name="fg" time_levs="1">

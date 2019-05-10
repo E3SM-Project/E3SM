@@ -9,24 +9,13 @@ These groups of functions are used to define the cellWidth variable on
 regular lat/lon grids.  The cellWidth variable is a jigsaw input that
 defines the mesh.
 '''
+from __future__ import absolute_import, division, print_function, \
+    unicode_literals
+
 import numpy as np
-import argparse
-from netCDF4 import Dataset
 import matplotlib.pyplot as plt
-import numpy as np
-from scipy import spatial, io
-import timeit
-from mpl_toolkits.basemap import Basemap
-import inject_bathymetry
-import pprint
 plt.switch_backend('agg')
 
-# Constants
-km = 1000.0
-deg2rad = np.pi / 180.0
-rad2deg = 180.0 / np.pi
-
-call_count = 0
 
 ##########################################################################
 # Functions
@@ -141,7 +130,6 @@ def EC_CellWidthVsLat(lat):
     #  latWidthEq =      varargin{7} #
     #  latWidthPole =    varargin{8} #
 
-    degToRad = np.pi / 180.0  # convert degrees to radians
     minCellWidth = min(cellWidthEq, min(cellWidthMidLat, cellWidthPole))
     densityEq = (minCellWidth / cellWidthEq)**4
     densityMidLat = (minCellWidth / cellWidthMidLat)**4
@@ -183,12 +171,11 @@ def RRS_CellWidthVsLat(lat, cellWidthEq, cellWidthPole):
     March 2018 # Last revision: 4/20/2018
     '''
 
-    degToRad = np.pi / 180.0                 # convert degrees to radians
     # ratio between high and low resolution
     gamma = (cellWidthPole / cellWidthEq)**4.0
 
     densityRRS = (1.0 - gamma) * \
-        np.power(np.sin(np.absolute(lat) * degToRad), 4.0) + gamma
+        np.power(np.deg2rad(np.sin(np.absolute(lat))), 4.0) + gamma
     cellWidthOut = cellWidthPole / np.power(densityRRS, 0.25)
     return cellWidthOut
 

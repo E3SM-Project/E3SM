@@ -8,7 +8,6 @@
   <add_link source_path="utility_scripts" source="/LIGHTparticles/make_particle_file.py" dest="make_particles.py"/>
 
 	<add_executable source="model" dest="ocean_model"/>
-	<add_executable source="metis" dest="metis"/>
 
 	<namelist name="namelist.ocean" mode="forward">
 		<template file="ziso_template.xml" path_base="script_configuration_dir"/>
@@ -47,7 +46,7 @@
 	</stream>
 	</streams>
 	<run_script name="run.py">
-		<step executable="./metis">
+		<step executable="gpmetis">
 			<argument flag="graph.info">4</argument>
 		</step>
 		<step executable="python">
