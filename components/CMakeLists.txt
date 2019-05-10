@@ -13,7 +13,7 @@
 # - Read modern cmake docs, use modern features
 # - Use find_package for trilinos and other TPLS
 
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.10)
 cmake_policy(SET CMP0057 NEW)
 
 project(E3SM C CXX Fortran)
@@ -72,9 +72,9 @@ endif()
 #===============================================================================
 # set CPP options (must use this before any flags or cflags settings)
 #===============================================================================
-set(CPPDEFS "${USER_CPPDEFS} -D${OS}")
-
 include(${CASEROOT}/Macros.cmake)
+
+set(CPPDEFS "${CPPDEFS} ${USER_CPPDEFS} -D${OS}")
 
 # SLIBS comes from Macros, so this append must come after Macros are included
 if (USE_FMS)
@@ -477,8 +477,8 @@ set(INCLDIR "${INCLDIR} -I${INSTALL_SHAREDPATH}/include")
 #
 # Use the MCT dir for the cache for all configure calls because it is the first one
 #
-set(CFLAGS "${CPPDEFS}")
-set(CXXFLAGS "${CPPDEFS}")
+set(CFLAGS "${CFLAGS}")
+set(CXXFLAGS "${CXXFLAGS}")
 set(CONFIG_ARGS "CC=\"${CC}\" FC=\"${FC}\" MPICC=\"${MPICC}\" MPIFC=\"${MPIFC}\" FCFLAGS=\"${FFLAGS} ${FREEFLAGS} ${INCLDIR}\" CPPDEFS=\"${CPPDEFS}\" CFLAGS=\"${CFLAGS} -I.. ${INCLDIR}\" LDFLAGS=\"${LDFLAGS}\"")
 
 if (NOT NETCDF_SEPARATE)
@@ -490,9 +490,6 @@ endif()
 if (COMPILER STREQUAL "nag")
   set(CONFIG_ARGS "LIBS=${SLIBS}")
 endif()
-
-set(FFLAGS "${FPPDEFS}")
-set(FFLAGS_NOOPT "${FPPDEFS}")
 
 string(FIND CAM_CONFIG_OPTS "-cosp" HAS_COSP)
 if (NOT HAS_COSP EQUAL -1)
@@ -569,7 +566,7 @@ if (USE_CXX)
   endif()
 
   if (CXX_LDFLAGS)
-    set(LDFLAGS "${SLIBS} ${CXX_LDFLAGS}")
+    set(LDFLAGS "${LDFLAGS} ${SLIBS} ${CXX_LDFLAGS}")
   endif()
 endif()
 
@@ -614,9 +611,9 @@ set(ULIBS "-L${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/l
 # Drive cmake script for cism and pio
 #------------------------------------------------------------------------------
 
-set(CMAKE_Fortran_FLAGS "${FFLAGS} ${EXTRA_PIO_FPPDEFS} ${INCLDIR}")
-set(CMAKE_C_FLAGS "${CFLAGS} ${EXTRA_PIO_CPPDEFS} ${INCLDIR}")
-set(CMAKE_CXX_FLAGS "${CXXFLAGS} ${EXTRA_PIO_CPPDEFS} ${INCLDIR}")
+set(CMAKE_Fortran_FLAGS "${FFLAGS} ${FPPDEFS} ${EXTRA_PIO_FPPDEFS} ${INCLDIR}")
+set(CMAKE_C_FLAGS "${CFLAGS} ${CPPDEFS} ${EXTRA_PIO_CPPDEFS} ${INCLDIR}")
+set(CMAKE_CXX_FLAGS "${CXXFLAGS} ${CPPDEFS} ${EXTRA_PIO_CPPDEFS} ${INCLDIR}")
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
 set(GPTL_PATH "${INSTALL_SHAREDPATH}")
 set(PIO_ENABLE_TESTS FALSE)
@@ -648,13 +645,34 @@ set(CMAKE_EXE_LINKER_FLAGS "${LDFLAGS}")
 # JGF, I think we can rely on CMake's built-in dependency analysus
 
 # Get src files
-# JGF: Cmake does not have a VPATH concept, so we need absolute paths to source files
+# JGF: Cmake does not have a VPATH concept, so we need relative/absolute paths to source files
+# Note: Using absolute paths seems to wreck CMake's ability to do a dep analysis on fortran
+# sources and compile them in the right order.
+#
+# One additional subtley is that, when mkSrcfiles found multiple files with the same basename,
+# only the one found first gets compiled.
+
 #execute_process(COMMAND ${CASETOOLS}/mkSrcfiles)
 #file(STRINGS ${CMAKE_BINARY_DIR}/Srcfiles SOURCES)
 
+set(SRCROOT_REL "${CIMEROOT}/..")
+set(BASENAME_SET)
+file(TO_CMAKE_PATH ${SRCROOT_REL} SRCROOT_ABS)
 foreach(DIRSEARCH ${FILEPATH_DIRS})
-  file(GLOB MATCHES "${DIRSEARCH}/*.[Ffc]" "${DIRSEARCH}/*.[Ff]90" "${DIRSEARCH}/*.cpp" "${DIRSEARCH}/.F90.in")
-  list(APPEND SOURCES ${MATCHES})
+  file(GLOB MATCHES RELATIVE "${SRCROOT_ABS}/components" "${DIRSEARCH}/*.[Ffc]" "${DIRSEARCH}/*.[Ff]90" "${DIRSEARCH}/*.cpp" "${DIRSEARCH}/.F90.in")
+  if (MATCHES)
+    foreach (MATCH IN LISTS MATCHES)
+      get_filename_component(BASENAME ${MATCH} NAME)
+      list(FIND BASENAME_SET ${BASENAME} BASENAME_WAS_FOUND)
+      if (BASENAME_WAS_FOUND EQUAL -1)
+        list(APPEND SOURCES ${MATCH})
+        list(APPEND BASENAME_SET ${BASENAME})
+        message("JGF adding ${MATCH}")
+      else()
+        message("JGF skipping ${MATCH}")
+      endif()
+    endforeach()
+  endif()
 endforeach()
 
 foreach(SOURCE_FILE IN LISTS ${SOURCES})
@@ -750,14 +768,17 @@ endif()
 set(CSMSHARELIB "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/lib/libcsm_share.a")
 set(ULIBDEP "${ULIBDEP} ${CSMSHARELIB}")
 
-# Things may have been added to flags
-set(CMAKE_Fortran_FLAGS "${FFLAGS} ${EXTRA_PIO_FPPDEFS} ${INCLDIR}")
-set(CMAKE_C_FLAGS "${CFLAGS} ${EXTRA_PIO_CPPDEFS} ${INCLDIR}")
-set(CMAKE_CXX_FLAGS "${CXXFLAGS} ${EXTRA_PIO_CPPDEFS} ${INCLDIR}")
+# Things may have been added to flags and we need to remove PIO stuff
+set(CMAKE_Fortran_FLAGS "${FFLAGS} ${INCLDIR} ${FREEFLAGS} ${CONTIGUOUS_FLAG}")
+set(CMAKE_C_FLAGS "${CFLAGS} ${INCLDIR}")
+set(CMAKE_CXX_FLAGS "${CXXFLAGS} ${INCLDIR}")
 
 #-------------------------------------------------------------------------------
 # build rules:
 #-------------------------------------------------------------------------------
+
+# JGF: Todo: machine/compiler specific Depends files will need to be converted to CMake
+#    -include Depends $(CASEROOT)/Depends.$(COMPILER) $(CASEROOT)/Depends.$(MACH) $(CASEROOT)/Depends.$(MACH).$(COMPILER)
 
 if (MPILIB STREQUAL "mpi-serial")
   set(MPISERIAL "${INSTALL_SHAREDPATH}/lib/lib-mpi-serial.a")
@@ -775,6 +796,14 @@ endforeach ()
 if (COMPLIB)
   add_library(${COMPLIB})
   target_sources(${COMPLIB} PRIVATE ${SOURCES})
+
+  # Subtle: In order for fortran dependency scanning to work, our CPPFPP/DEFS must be registered
+  # as COMPILE_DEFINITIONS, not simple added via CMAKE_Fortran_Flags.
+  #string(REPLACE "numpft+1" "\"numpft+1\"" BETTERDEFS "${CPPDEFS}")
+  message("JGF CPPDEFS is ${CPPDEFS}")
+  target_compile_definitions(${COMPLIB} PRIVATE ${CPPDEFS})
+  get_target_property(JGFTEMP ${COMPLIB} COMPILE_DEFINITIONS)
+  message("JGF TEMP is ${JGFTEMP}")
 endif()
 
 if (EXEC_SE)
