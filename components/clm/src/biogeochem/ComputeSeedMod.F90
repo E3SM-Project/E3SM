@@ -130,7 +130,7 @@ contains
 
           my_leaf_seed = 0._r8
           my_deadstem_seed = 0._r8
-
+          my_pool_seed = 0._r8
           pft_type = veg_pp%itype(p)
 
           call LeafProportions( &
