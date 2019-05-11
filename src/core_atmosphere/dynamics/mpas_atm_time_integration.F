@@ -62,7 +62,7 @@ module atm_time_integration
    contains
 
 
-   subroutine atm_timestep(domain, dt, timeStamp, itimestep)
+   subroutine atm_timestep(domain, dt, nowTime, itimestep)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
    ! Advance model state forward in time by the specified time step
    !
@@ -76,7 +76,7 @@ module atm_time_integration
 
       type (domain_type), intent(inout) :: domain
       real (kind=RKIND), intent(in) :: dt
-      character(len=*), intent(in) :: timeStamp
+      type (MPAS_Time_type), intent(in) :: nowTime
       integer, intent(in) :: itimestep
 
 
@@ -98,9 +98,8 @@ module atm_time_integration
          call mpas_log_write('Currently, only ''SRK3'' is supported.', messageType=MPAS_LOG_CRIT)
       end if
 
-      call mpas_set_time(currTime, dateTimeString=timeStamp)
       call mpas_set_timeInterval(dtInterval, dt=dt)
-      currTime = currTime + dtInterval
+      currTime = nowTime + dtInterval
       call mpas_get_time(currTime, dateTimeString=xtime_new)
 
       block => domain % blocklist
