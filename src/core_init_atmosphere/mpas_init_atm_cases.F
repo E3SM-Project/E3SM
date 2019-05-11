@@ -2552,6 +2552,7 @@ module init_atm_cases
 
       real (kind=RKIND), dimension(nVertLevels, nCells) :: rel_hum, temperature, qv
       real (kind=RKIND) :: ptmp, es, rs, rgas_moist, qvs, xnutr, znut, ptemp, rcv
+      real (kind=RKIND) :: eis, ews, r1
       integer :: iter
 
       real (kind=RKIND), dimension(nVertLevels + 1) :: hyai, hybi, znu, znw, znwc, znwv, hyam, hybm
@@ -4662,6 +4663,30 @@ call mpas_log_write('Done with soil consistency check')
          enddo
       endif
 
+! re-compute relhum w.r.t ice above freezing level
+      call mpas_log_write(' *** re-computing RH above freezing level ')
+      do k = 1, nVertLevels
+         do iCell = 1, nCells
+            if ( t(k,iCell) .le. 273.15_RKIND ) then
+! use formula in ungrib to reconstruct RH 
+               eis = .01 * exp (9.550426 - (5723.265 / t(k,iCell)) + (3.53068 * alog(t(k,iCell))) &
+                   - (0.00728332 * t(k,iCell)))
+               ews = 6.112 * exp(17.67 * (t(k,iCell)-273.15) / ((t(k,iCell)-273.15)+243.5))
+               if ( t(k,iCell) .gt. 253.15_RKIND ) then
+! A linear approximation to the GFS blending region ( -20 > T < 0 )
+                  r1 = ((273.15_RKIND - t(k,iCell)) / 20._RKIND)
+                  r1 = (r1 * eis) + ((1._RKIND-r1)*ews)
+               else
+                  r1 = eis
+               end if
+               r1 = max(r1, 1.e-12)
+               ews = max(ews, 0._RKIND)
+               relhum(k,iCell) = ews / r1 * relhum(k,iCell)
+               relhum(k,iCell) = min(relhum(k,iCell), 100._RKIND)
+               relhum(k,iCell) = max(relhum(k,iCell), 0._RKIND)
+            end if
+         enddo
+      enddo
       !
       ! Diagnose fields needed in initial conditions file (u, w, rho, theta)
       ! NB: At this point, "rho_zz" is simple dry density, and "theta_m" is regular potential temperature
