@@ -1,0 +1,89 @@
+<driver_script name="run_test.py">
+	<case name="init_step1">
+		<step executable="./run.py" quiet="true" pre_message=" * Running init_step1" post_message=" - Complete"/>
+	</case>
+	<case name="init_step2">
+		<step executable="./run.py" quiet="true" pre_message=" * Running init_step2" post_message=" - Complete"/>
+	</case>
+	<case name="forward">
+		<step executable="./run.py" quiet="true" pre_message=" * Running forward" post_message=" - Complete"/>
+	</case>
+	<validation>
+		<compare_fields file1="forward/output.nc">
+			<template file="prognostic_comparison.xml" path_base="script_core_dir" path="templates/validations"/>
+		</compare_fields>
+		<compare_fields file1="forward/analysis_members/globalStats.0001-01-01_00.00.00.nc">
+			<field name="kineticEnergyCellMax" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="kineticEnergyCellMin" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="kineticEnergyCellAvg" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="temperatureAvg" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="salinityAvg" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+		</compare_fields>
+		<compare_fields file1="forward/analysis_members/debugDiagnostics.0001-01-01_00.00.00.nc">
+			<field name="rx1MaxCell" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+		</compare_fields>
+		<compare_fields file1="forward/analysis_members/highFrequencyOutput.0001-01-01.nc">
+			<field name="temperatureAt250m" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+		</compare_fields>
+		<compare_fields file1="forward/analysis_members/mixedLayerDepths.0001-01-01.nc">
+			<field name="tThreshMLD" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+		</compare_fields>
+		<compare_fields file1="forward/analysis_members/waterMassCensus.0001-01-01_00.00.00.nc">
+			<field name="waterMassCensusTemperatureValues" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="potentialDensityOfTSDiagram" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+		</compare_fields>
+		<compare_fields file1="forward/analysis_members/eliassenPalm.0001-01-01.nc">
+			<field name="EPFT" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+		</compare_fields>
+		<compare_fields file1="forward/analysis_members/layerVolumeWeightedAverage.0001-01-01_00.00.00.nc">
+			<field name="avgVolumeTemperature" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="avgVolumeRelativeVorticityCell" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+		</compare_fields>
+		<compare_fields file1="forward/analysis_members/okuboWeiss.0001-01-01_00.00.00.nc">
+			<field name="okuboWeiss" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+		</compare_fields>
+		<compare_fields file1="forward/analysis_members/zonalMeans.0001-01-01_00.00.00.nc">
+			<field name="velocityZonalZonalMean" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="temperatureZonalMean" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+		</compare_fields>
+		<compare_fields file1="forward/analysis_members/meridionalHeatTransport.0001-01-01_00.00.00.nc">
+			<field name="meridionalHeatTransportLat" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+		</compare_fields>
+		<compare_fields file1="forward/analysis_members/surfaceAreaWeightedAverages.0001-01-01_00.00.00.nc">
+			<field name="avgSurfaceSalinity" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="avgSeaSurfacePressure" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+		</compare_fields>
+		<compare_fields file1="forward/analysis_members/eddyProductVariables.0001-01-01_00.00.00.nc">
+			<field name="SSHSquared" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="velocityZonalSquared" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+			<field name="velocityZonalTimesTemperature" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+		</compare_fields>
+
+		<compare_timers rundir1="forward">
+			<timer name="compute_globalStats"/>
+			<timer name="write_globalStats"/>
+			<timer name="compute_debugDiagnostics"/>
+			<timer name="write_debugDiagnostics"/>
+			<timer name="compute_eliassenPalm"/>
+			<timer name="write_eliassenPalm"/>
+			<timer name="compute_highFrequency"/>
+			<timer name="write_highFrequency"/>
+			<timer name="compute_layerVolumeWeightedAverage"/>
+			<timer name="write_layerVolumeWeightedAverage"/>
+			<timer name="compute_meridionalHeatTransport"/>
+			<timer name="write_meridionalHeatTransport"/>
+			<timer name="compute_mixedLayerDepths"/>
+			<timer name="write_mixedLayerDepths"/>
+			<timer name="compute_okuboWeiss"/>
+			<timer name="write_okuboWeiss"/>
+			<timer name="compute_surfaceAreaWeightedAverages"/>
+			<timer name="write_surfaceAreaWeightedAverages"/>
+			<timer name="compute_waterMassCensus"/>
+			<timer name="write_waterMassCensus"/>
+			<timer name="compute_zonalMean"/>
+			<timer name="write_eddyProductVariables"/>
+			<timer name="compute_eddyProductVariables"/>
+			<timer name="write_zonalMean"/>
+		</compare_timers>
+	</validation>
+</driver_script>
