@@ -1,10 +1,8 @@
 <?xml version="1.0"?>
 <config case="4blocks_run">
-	<add_link source="../init_step2/ocean.nc" dest="init.nc"/>
-	<add_link source="../init_step2/graph.info" dest="graph.info"/>
-	<add_link source="../init_step2/init_mode_forcing_data.nc" dest="forcing_data.nc"/>
-
-	<add_executable source="metis" dest="metis"/>
+	<add_link source="../../init/initial_state/initial_state.nc" dest="init.nc"/>
+	<add_link source="../../init/initial_state/graph.info" dest="graph.info"/>
+	<add_link source="../../init/initial_state/init_mode_forcing_data.nc" dest="forcing_data.nc"/>
 
 	<namelist name="namelist.ocean" mode="forward">
 		<template file="template_forward.xml" path_base="script_configuration_dir"/>
@@ -29,7 +27,7 @@
 	</streams>
 
 	<run_script name="run.py">
-		<step executable="./metis">
+		<step executable="gpmetis">
 			<argument flag="graph.info">4</argument>
 		</step>
 
