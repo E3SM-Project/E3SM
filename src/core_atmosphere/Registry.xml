@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<registry model="mpas" core="atmosphere" core_abbrev="atm" version="6.2">
+<registry model="mpas" core="atmosphere" core_abbrev="atm" version="6.3">
 
 <!-- **************************************************************************************** -->
 <!-- ************************************** Dimensions ************************************** -->
@@ -1789,7 +1789,7 @@
                      description="logical for configuration of deep soil temperatures"
                      possible_values=".true. for slowly time-varying deep soil temperatures; .false. otherwise"/>
 
-                <nml_option name="config_o3climatology" type="logical" default_value="false" in_defaults="false"
+                <nml_option name="config_o3climatology" type="logical" default_value="true" in_defaults="false"
                      units="-"
                      description="logical for configuration of input ozone data in RRMTG long- and short-wave radiation"
                      possible_values=".true. for using monthly-varying ozone data; .false. for using fixed vertical profile"/>

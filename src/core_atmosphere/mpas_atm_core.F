@@ -36,7 +36,6 @@ module atm_core
       real (kind=RKIND), pointer :: dt
       type (block_type), pointer :: block
 
-      character(len=StrKIND) :: timeStamp
       integer :: i
       logical, pointer :: config_do_restart
 
@@ -796,7 +795,6 @@ module atm_core
       
       type (MPAS_Time_Type) :: startTime, currTime
       type (MPAS_TimeInterval_Type) :: xtimeTime
-      character(len=StrKIND) :: timeStamp
       integer :: s, s_n, s_d
       real (kind=RKIND) :: xtime_s
       integer :: ierr
@@ -811,8 +809,6 @@ module atm_core
       call mpas_get_timeInterval(interval=xtimeTime, S=s, S_n=s_n, S_d=s_d, ierr=ierr)         
       xtime_s = (s + s_n / s_d)
 
-      call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)         
-
 
 #ifdef DO_PHYSICS
       !proceed with physics if moist_physics is set to true:
@@ -822,7 +818,7 @@ module atm_core
       endif
 #endif
 
-      call atm_timestep(domain, dt, timeStamp, itimestep)
+      call atm_timestep(domain, dt, currTime, itimestep)
 
    end subroutine atm_do_timestep
    
