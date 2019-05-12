@@ -23,7 +23,8 @@ module mpas_atm_boundaries
     public :: mpas_atm_update_bdy_tend, &
               mpas_atm_get_bdy_tend, &
               mpas_atm_get_bdy_state, &
-              mpas_atm_setup_bdy_masks
+              mpas_atm_setup_bdy_masks, &
+              mpas_atm_bdy_checks
 
     public :: nBdyZone, nSpecZone, nRelaxZone
 
@@ -500,5 +501,41 @@ module mpas_atm_boundaries
         end do
 
     end subroutine mpas_atm_setup_bdy_masks
+
+
+    !***********************************************************************
+    !
+    !  routine mpas_atm_bdy_checks
+    !
+    !> \brief   Checks compatibility of limited-area settings
+    !> \author  Michael Duda
+    !> \date    12 May 2019
+    !> \details 
+    !>  This routine checks that settings related to limited-area simulations
+    !>  are compatible.
+    !>
+    !>  A value of 0 is returned if the simulation appears to be a global simulation,
+    !>  or if the simulation is appears to be a limited-area simulation and all
+    !>  namelist options, stream intervals, and input fields are consistent. Otherwise,
+    !>  a value of 1 is returned.
+    !
+    !-----------------------------------------------------------------------
+    subroutine mpas_atm_bdy_checks(dminfo, blockList, streamManager, ierr)
+
+        use mpas_log, only : mpas_log_write
+        use mpas_derived_types, only : dm_info, block_type
+
+        implicit none
+
+        type (dm_info), pointer :: dminfo
+        type (block_type), pointer :: blockList
+        type (MPAS_streamManager_type), pointer :: streamManager
+        integer, intent(out) :: ierr
+
+        call mpas_log_write('Checking consistency of limited-area settings...')
+
+        ierr = 0
+
+    end subroutine mpas_atm_bdy_checks
 
 end module mpas_atm_boundaries

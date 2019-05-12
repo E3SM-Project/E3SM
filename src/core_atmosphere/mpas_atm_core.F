@@ -1304,6 +1304,7 @@ module atm_core
    subroutine mpas_atm_run_compatibility(dminfo, blockList, streamManager, ierr)
 
       use mpas_atmphys_control, only : physics_compatibility_check
+      use mpas_atm_boundaries, only : mpas_atm_bdy_checks
 
       implicit none
 
@@ -1316,10 +1317,17 @@ module atm_core
 
       ierr = 0
 
-      ! Physics specific checks found in /physics/mpas_atmphys_control.F
+      !
+      ! Physics specific checks found in physics/mpas_atmphys_control.F
+      !
       call physics_compatibility_check(dminfo, blockList, streamManager, local_ierr)
       ierr = ierr + local_ierr
 
+      !
+      ! Checks for limited-area simulations
+      !
+      call mpas_atm_bdy_checks(dminfo, blockList, streamManager, local_ierr)
+      ierr = ierr + local_ierr
 
    end subroutine mpas_atm_run_compatibility
 
