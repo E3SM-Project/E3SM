@@ -85,17 +85,25 @@ contains
 
        ! active for p<4*ptop (following cd_core.F90 in CAM-FV)
        ! CAM 26L and 30L:  top 2 levels
-       ! E3SM 72L:  top 4 levels
+       ! E3SM 72L:  top 3 levels
        nu_scale_top(k) = 8*(1+tanh(log(ptop_over_press))) ! active for p<4*ptop
 
        ! active for p<7*ptop 
        ! CAM 26L and 30L:  top 3 levels
-       ! E3SM 72L:  top 5 levels
+       ! E3SM 72L:  top ? levels
        !nu_scale_top(k) = 8*(1+.911*tanh(log(ptop_over_press))) ! active for p<6.5*ptop
+
+       ! original CAM3/preqx formula
+       !if (k==1) nu_scale_top(k)=4
+       !if (k==2) nu_scale_top(k)=2
+       !if (k==3) nu_scale_top(k)=1 + 1d-10
+       !if (k>3) nu_scale_top(k)=0
+
 
        if (hybrid%masterthread) then
           if (nu_scale_top(k)>1) write(iulog,*) "  nu_scale_top ",k,nu_scale_top(k)
        end if
+
     end do
     
   end subroutine 
