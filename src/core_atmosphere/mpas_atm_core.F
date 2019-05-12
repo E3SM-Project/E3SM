@@ -583,7 +583,14 @@ module atm_core
       if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, streamID='lbc_in', direction=MPAS_STREAM_INPUT, ierr=ierr)) then
          block_ptr => domain % blocklist
          do while (associated(block_ptr))
-            call mpas_atm_update_bdy_tend(clock, domain % streamManager, block_ptr, .true.)
+            call mpas_atm_update_bdy_tend(clock, domain % streamManager, block_ptr, .true., ierr)
+            if (ierr /= 0) then
+               currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
+               call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp)
+               call mpas_log_write('Failed to process LBC data on or before '//trim(timeStamp), messageType=MPAS_LOG_ERR)
+               return
+            end if
+
             block_ptr => block_ptr % next
          end do
       end if
@@ -605,7 +612,12 @@ module atm_core
          if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, streamID='lbc_in', direction=MPAS_STREAM_INPUT, ierr=ierr)) then
             block_ptr => domain % blocklist
             do while (associated(block_ptr))
-               call mpas_atm_update_bdy_tend(clock, domain % streamManager, block_ptr, .false.)
+               call mpas_atm_update_bdy_tend(clock, domain % streamManager, block_ptr, .false., ierr)
+               if (ierr /= 0) then
+                  call mpas_log_write('Failed to process LBC data at next time after '//trim(timeStamp), messageType=MPAS_LOG_ERR)
+                  return
+               end if
+
                block_ptr => block_ptr % next
             end do
          end if

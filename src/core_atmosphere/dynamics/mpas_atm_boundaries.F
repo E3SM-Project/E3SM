@@ -13,7 +13,6 @@ module mpas_atm_boundaries
     use mpas_pool_routines, only : mpas_pool_get_array, mpas_pool_get_dimension, mpas_pool_get_subpool, mpas_pool_shift_time_levels
     use mpas_kind_types, only : RKIND, StrKIND
     use mpas_timekeeping, only : mpas_get_clock_time, mpas_get_timeInterval, mpas_set_time, operator(-)
-    use mpas_stream_manager, only : mpas_stream_mgr_read
 
     ! Important note: At present, the code in mpas_atm_setup_bdy_masks for
     ! deriving the nearestRelaxationCell field assumes that nSpecZone == 2
@@ -53,9 +52,12 @@ module mpas_atm_boundaries
     !>  in time level 1.
     !
     !-----------------------------------------------------------------------
-    subroutine mpas_atm_update_bdy_tend(clock, streamManager, block, firstCall)
+    subroutine mpas_atm_update_bdy_tend(clock, streamManager, block, firstCall, ierr)
 
         use mpas_constants, only : rvord
+        use mpas_stream_manager, only : mpas_stream_mgr_read
+        use mpas_log, only : mpas_log_write
+        use mpas_derived_types, only : MPAS_STREAM_MGR_NOERR, MPAS_LOG_ERR
 
         implicit none
 
@@ -63,6 +65,7 @@ module mpas_atm_boundaries
         type (MPAS_streamManager_type), intent(inout) :: streamManager
         type (block_type), intent(inout) :: block
         logical, intent(in) :: firstCall
+        integer, intent(out) :: ierr
 
         type (mpas_pool_type), pointer :: mesh
         type (mpas_pool_type), pointer :: state
@@ -95,7 +98,6 @@ module mpas_atm_boundaries
         integer, dimension(:,:), pointer :: cellsOnEdge
         real (kind=RKIND), dimension(:,:), pointer :: zz
 
-        integer :: ierr
         integer :: dd_intv, s_intv, sn_intv, sd_intv
         type (MPAS_Time_Type) :: currTime
         type (MPAS_TimeInterval_Type) :: lbc_interval
@@ -104,6 +106,8 @@ module mpas_atm_boundaries
         integer :: cell1, cell2
 
 
+        ierr = 0
+
         call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
         call mpas_pool_get_subpool(block % structs, 'state', state)
         call mpas_pool_get_subpool(block % structs, 'lbc', lbc)
@@ -111,11 +115,25 @@ module mpas_atm_boundaries
         if (firstCall) then
             call MPAS_stream_mgr_read(streamManager, streamID='lbc_in', timeLevel=2, whence=MPAS_STREAM_LATEST_BEFORE, &
                                       actualWhen=read_time, ierr=ierr)
+            if (ierr /= MPAS_STREAM_MGR_NOERR) then
+               call mpas_log_write('Could not read from ''lbc_in'' stream on or before the current date '// &
+                                   'to update lateral boundary tendencies', messageType=MPAS_LOG_ERR)
+               ierr = 1
+            end if
         else
             call mpas_pool_shift_time_levels(lbc)
             call MPAS_stream_mgr_read(streamManager, streamID='lbc_in', timeLevel=2, whence=MPAS_STREAM_EARLIEST_STRICTLY_AFTER, &
                                       actualWhen=read_time, ierr=ierr)
+            if (ierr /= MPAS_STREAM_MGR_NOERR) then
+               call mpas_log_write('Could not read from ''lbc_in'' stream after the current date '// &
+                                   'to update lateral boundary tendencies', messageType=MPAS_LOG_ERR)
+               ierr = 1
+            end if
         end if
+        if (ierr /= 0) then
+           return
+        end if
+
         call mpas_set_time(currTime, dateTimeString=trim(read_time))
 
         !
