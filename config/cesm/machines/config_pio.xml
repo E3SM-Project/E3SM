@@ -58,7 +58,9 @@
 
   <entry id="PIO_REARRANGER">
     <values>
-      <value>$PIO_VERSION</value>
+      <!-- Note: problem not using box rearranger with nuopc caps -->
+      <!-- <value>$PIO_VERSION</value> -->
+      <value>1</value>
     </values>
   </entry>
 
