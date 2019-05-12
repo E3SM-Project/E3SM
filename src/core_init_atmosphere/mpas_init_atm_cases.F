@@ -2606,6 +2606,7 @@ module init_atm_cases
       real (kind=RKIND), dimension(nVertLevels + 1) :: hyai, hybi, znu, znw, znwc, znwv, hyam, hybm
       real (kind=RKIND), dimension(nVertLevels + 1) :: znuc, znuv, bn, divh, dpn
 
+      real (kind=RKIND), dimension(:), pointer :: specified_zw
       real (kind=RKIND), dimension(nVertLevels + 1) :: sh, zw, ah
       real (kind=RKIND), dimension(nVertLevels) :: zu, dzw, rdzwp, rdzwm
       real (kind=RKIND), dimension(nVertLevels) :: eta, etav, teta, ppi, tt
@@ -2636,6 +2637,7 @@ module init_atm_cases
       real (kind=RKIND), pointer :: config_dzmin
       real (kind=RKIND), pointer :: config_ztop
       logical, pointer :: config_tc_vertical_grid
+      character (len=StrKIND), pointer :: config_specified_zeta_levels
       logical, pointer :: config_use_spechumd
       integer, pointer :: config_nfglevels
       integer, pointer :: config_nfgsoillevels
@@ -2712,6 +2714,7 @@ module init_atm_cases
       call mpas_pool_get_config(configs, 'config_dzmin', config_dzmin)
       call mpas_pool_get_config(configs, 'config_ztop', config_ztop)
       call mpas_pool_get_config(configs, 'config_tc_vertical_grid', config_tc_vertical_grid)
+      call mpas_pool_get_config(configs, 'config_specified_zeta_levels', config_specified_zeta_levels)
       call mpas_pool_get_config(configs, 'config_use_spechumd', config_use_spechumd)
       call mpas_pool_get_config(configs, 'config_nfglevels', config_nfglevels)
       call mpas_pool_get_config(configs, 'config_nfgsoillevels', config_nfgsoillevels)
@@ -2930,7 +2933,36 @@ module init_atm_cases
 
 !     Metrics for hybrid coordinate and vertical stretching
 
-      if (config_tc_vertical_grid) then
+      !
+      ! If a the name of a file with vertical coordinate values has been specified,
+      ! use those values to setup the vertical grid
+      !
+      if (len_trim(config_specified_zeta_levels) > 0) then
+
+         call mpas_log_write('Setting up vertical grid using levels from '''//trim(config_specified_zeta_levels)//'''')
+
+         if (read_text_array(dminfo, trim(config_specified_zeta_levels), specified_zw) /= 0) then
+            call mpas_log_write('Failed to read vertical levels from '''//trim(config_specified_zeta_levels)//'''', &
+                                 messageType=MPAS_LOG_CRIT)
+         end if
+
+         if (size(specified_zw) /= nz) then
+            call mpas_log_write('In the namelist.init_atmosphere file, config_nvertlevels = $i, but ', intArgs=(/nz1/), &
+                                 messageType=MPAS_LOG_ERR)
+            call mpas_log_write('but '''//trim(config_specified_zeta_levels)//''' has $i values.', intArgs=(/size(specified_zw)/), &
+                                 messageType=MPAS_LOG_ERR)
+            call mpas_log_write(''''//trim(config_specified_zeta_levels)//''' must contain nVertLevels+1 ($i) values.', intArgs=(/nz/), &
+                                 messageType=MPAS_LOG_CRIT)
+         end if
+
+         zw(:) = specified_zw(:)
+
+         deallocate(specified_zw)
+
+      !
+      ! Otherwise, see if the user has requested to set up the vertical grid as in the MPAS TC configuration
+      !
+      else if (config_tc_vertical_grid) then
 
          call mpas_log_write('Setting up vertical levels as in 2014 TC experiments')
 
@@ -2976,6 +3008,9 @@ module init_atm_cases
             if (k > 1) dzw(k-1) = zw(k)-zw(k-1)
          end do
 
+      !
+      ! Otherwise, use the vertical level configuration from MPAS v2.0
+      !
       else
 
          call mpas_log_write('Setting up vertical levels as in MPAS 2.0 and earlier')
@@ -6154,5 +6189,124 @@ call mpas_log_write('Done with soil consistency check')
                           messageType=MPAS_LOG_ERR)
 
    end subroutine blend_bdy_terrain
+
+
+   !-----------------------------------------------------------------------
+   !  routine read_text_array
+   !
+   !> \brief Reads a real-valued array from a text file and broadcasts to all tasks
+   !> \author Michael Duda
+   !> \date   11 May 2019
+   !> \details
+   !>  This routine reads a list of real values from the specified text file on
+   !>  the IO_NODE task and broadcasts the values to all other MPI tasks. Upon
+   !>  successful return, the array pointer xarray will have been allocated with
+   !>  a size equal to the number of lines in the text file, the array will be filled
+   !>  with the values from the file, and a value of 0 will be returned.
+   !>
+   !>  This routine will print an error message and return a non-zero value if
+   !>  any of the following conditions occur:
+   !>
+   !>  1) The text file does not exist
+   !>  2) The text file cannot be opened for reading
+   !>  3) The text does not contain readable real values
+   !>
+   !>  If the return value of this function is non-zero, the xarray pointer
+   !>  will be unassociated.
+   !
+   !-----------------------------------------------------------------------
+   function read_text_array(dminfo, filename, xarray) result(ierr)
+
+      use mpas_io_units, only : mpas_new_unit, mpas_release_unit
+      use mpas_log, only : mpas_log_write
+      use mpas_derived_types, only : MPAS_LOG_ERR
+
+      implicit none
+
+      type (dm_info), intent(in) :: dminfo
+      character(len=*), intent(in) :: filename
+      real (kind=RKIND), dimension(:), pointer :: xarray
+
+      integer :: ierr
+
+      integer :: i
+      integer :: nlines
+      integer :: iunit
+      integer :: iexists
+      logical :: exists
+      real (kind=RKIND) :: rtemp
+
+
+      ierr = 1
+      nullify(xarray)
+
+      !
+      ! Check whether the file exists
+      !
+      if (dminfo % my_proc_id == IO_NODE) then
+         inquire(file=filename, exist=exists)
+         if (exists) then
+            iexists = 1
+         else
+            iexists = 0
+         end if
+      end if
+      call mpas_dmpar_bcast_int(dminfo, iexists)
+
+      if (iexists == 0) then
+         call mpas_log_write('Text file '''//filename//''' does not exist.', messageType=MPAS_LOG_ERR)
+         return
+      end if
+
+      !
+      ! Count the number of lines in the file
+      !
+      if (dminfo % my_proc_id == IO_NODE) then
+         call mpas_new_unit(iunit)
+         open(unit=iunit, file=filename, form='formatted', status='old', iostat=ierr)
+         if (ierr /= 0) then
+            nlines = -1
+         else
+            nlines = 0
+            read(unit=iunit, fmt=*, iostat=ierr) rtemp
+            do while (ierr == 0)
+               nlines = nlines + 1
+               read(unit=iunit, fmt=*, iostat=ierr) rtemp
+            end do
+         end if
+         close(unit=iunit)
+         call mpas_release_unit(iunit)
+      end if
+      call mpas_dmpar_bcast_int(dminfo, nlines)
+
+      if (nlines <= 0) then
+         if (nlines < 0) then
+            call mpas_log_write('Text file '''//filename//''' could not be opened for reading.', messageType=MPAS_LOG_ERR)
+         else
+            call mpas_log_write('Text file '''//filename//''' contains no readable real values.', messageType=MPAS_LOG_ERR)
+         end if
+         ierr = 1
+         return
+      end if
+
+      !
+      ! Allocate output array, read, and broadcast
+      !
+      allocate(xarray(nlines))
+      if (dminfo % my_proc_id == IO_NODE) then
+         call mpas_new_unit(iunit)
+         open(unit=iunit, file=filename, form='formatted', status='old', iostat=ierr)
+         do i=1,nlines
+            read(unit=iunit, fmt=*, iostat=ierr) xarray(i)
+         end do
+         close(unit=iunit)
+         call mpas_release_unit(iunit)
+      end if
+
+      call mpas_dmpar_bcast_reals(dminfo, nlines, xarray)
+      ierr = 0
+
+   end function read_text_array
+
 
 end module init_atm_cases
