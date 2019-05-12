@@ -523,7 +523,11 @@ module mpas_atm_boundaries
     subroutine mpas_atm_bdy_checks(dminfo, blockList, streamManager, ierr)
 
         use mpas_log, only : mpas_log_write
-        use mpas_derived_types, only : dm_info, block_type
+        use mpas_kind_types, only : StrKIND
+        use mpas_derived_types, only : dm_info, block_type, MPAS_STREAM_PROPERTY_RECORD_INTV, MPAS_STREAM_MGR_NOERR, &
+                                       MPAS_STREAM_INPUT, MPAS_LOG_ERR
+        use mpas_stream_manager, only : mpas_stream_mgr_get_property
+        use mpas_pool_routines, only : mpas_pool_get_config
 
         implicit none
 
@@ -532,7 +536,35 @@ module mpas_atm_boundaries
         type (MPAS_streamManager_type), pointer :: streamManager
         integer, intent(out) :: ierr
 
+        character(len=StrKIND) :: input_interval
+        logical, pointer :: config_apply_lbcs => null()
+
+
+        call mpas_pool_get_config(blocklist % configs, 'config_apply_lbcs', config_apply_lbcs)
+
         call mpas_log_write('Checking consistency of limited-area settings...')
+        call mpas_log_write(' - config_apply_lbcs = $l', logicArgs=(/config_apply_lbcs/))
+
+        !
+        ! If config_apply_lbcs = true, check that the 'lbc_in' stream has a valid input interval
+        !
+        if (config_apply_lbcs) then
+            call mpas_stream_mgr_get_property(streamManager, 'lbc_in', MPAS_STREAM_PROPERTY_RECORD_INTV, &
+                                              input_interval, MPAS_STREAM_INPUT, ierr)
+            if (ierr /= MPAS_STREAM_MGR_NOERR) then
+                call mpas_log_write('Unable to retrieve input interval for the ''lbc_in'' stream.', messageType=MPAS_LOG_ERR)
+                ierr = 1
+                return
+            end if
+
+            call mpas_log_write(' - Input interval for ''lbc_in'' stream = '''//trim(input_interval)//'''')
+            if (trim(input_interval) == 'none') then
+                call mpas_log_write('Input interval for the ''lbc_in'' stream must be a valid interval '// &
+                                    'when config_apply_lbcs = true.', messageType=MPAS_LOG_ERR)
+                ierr = 1
+                return
+            end if
+        end if
 
         ierr = 0
 
