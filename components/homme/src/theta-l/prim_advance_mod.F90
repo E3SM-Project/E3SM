@@ -88,7 +88,8 @@ contains
     real (kind=real_kind) :: dt2, time, dt_vis, x, eta_ave_w
     real (kind=real_kind) :: itertol,a1,a2,a3,a4,a5,a6,ahat1,ahat2
     real (kind=real_kind) :: ahat3,ahat4,ahat5,ahat6,dhat1,dhat2,dhat3,dhat4
-    real (kind=real_kind) ::  gamma,delta
+    real (kind=real_kind) :: gamma,delta,alphahat,betahat,b1
+    real (kind=real_kind) :: statesave1(np,np,nlevp,nets:nete,6),statesave2(np,np,nlevp,nets:nete,6)
 
     integer :: ie,nm1,n0,np1,nstep,qsplit_stage,k, qn0
     integer :: n,i,j,maxiter
@@ -453,7 +454,156 @@ contains
         deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat3/a3,1d0)
 
       avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
+!=================================================================
+    elseif (tstep_type == 11) then ! stage parallel imex232
+      a1 = 1d0
+      dhat1 = 1d0
+      dhat2 = 1d0
+      a2 = -0.5d0
+      b1 = 1d0
+      a3 = 1d0
+      ahat2 = 1d0
+      alphahat = 2d0
+      betahat = -1d0
+       
+      do ie=nets,nete
+        statesave1(:,:,1:nlev,ie,1)  = elem(ie)%state%v(:,:,1,1:nlev,n0)  
+        statesave1(:,:,1:nlev,ie,2)  = elem(ie)%state%v(:,:,2,1:nlev,n0)  
+        statesave1(:,:,1:nlevp,ie,3) = elem(ie)%state%w_i(:,:,1:nlevp,n0)   
+        statesave1(:,:,1:nlevp,ie,4) = elem(ie)%state%phinh_i(:,:,1:nlevp,n0)  
+        statesave1(:,:,1:nlev,ie,5)  = elem(ie)%state%vtheta_dp(:,:,1:nlev,n0)  
+        statesave1(:,:,1:nlev,ie,6)  = elem(ie)%state%dp3d(:,:,1:nlev,n0)  
+      enddo
 
+   !******************* Can be done in parallel ************************
+      ! compute and store un + dt*a1*n(un=g1) at np1
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a1,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
+
+      ! solve for g3 = un + dt*dhat2*s(g3)
+      maxiter=10
+      itertol=1e-12
+      call compute_stage_value_dirk(n0,qn0,dhat2*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+      max_itercnt_perstep = max(maxiter,max_itercnt_perstep)
+      max_itererr_perstep = max(itertol,max_itererr_perstep)
+
+   !*******************************************************************
+
+   ! store un + dt*at*n(g1) at statesave2
+      do ie=nets,nete
+        statesave2(:,:,1:nlev,ie,1)  = elem(ie)%state%v(:,:,1,1:nlev,np1)
+        statesave2(:,:,1:nlev,ie,2)  = elem(ie)%state%v(:,:,2,1:nlev,np1)
+        statesave2(:,:,1:nlevp,ie,3) = elem(ie)%state%w_i(:,:,1:nlevp,np1)
+        statesave2(:,:,1:nlevp,ie,4) = elem(ie)%state%phinh_i(:,:,1:nlevp,np1)
+        statesave2(:,:,1:nlev,ie,5)  = elem(ie)%state%vtheta_dp(:,:,1:nlev,np1)
+        statesave2(:,:,1:nlev,ie,6)  = elem(ie)%state%dp3d(:,:,1:nlev,np1)
+      enddo
+
+    !****************** Eat the cost of a solve here ********************
+    maxiter=10
+      itertol=1e-12
+      ! solve g2 = un + dt*a1*n(g1=un) + dt*dhat1*s(g2) and store at np1
+      call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+      max_itercnt_perstep = max(maxiter,max_itercnt_perstep)
+      max_itererr_perstep = max(itertol,max_itererr_perstep)
+
+
+   ! at this point, un is at statesave1, g3 is at n0, g2 is at np1, and un+dt*a1*n(g1) is at statesave2
+
+   !*************** Relatively cheap computes for s(g3) and s(g2) *****
+      do ie=nets,nete
+        ! compute and store s(g3) = (g3-un)/(dhat2*dt) at nm1
+        elem(ie)%state%v(:,:,1,1:nlev,nm1) = (elem(ie)%state%v(:,:,1,1:nlev,nm1) - &
+          statesave1(:,:,1:nlev,ie,1))/(dhat2*dt)
+        elem(ie)%state%v(:,:,2,1:nlev,nm1) = (elem(ie)%state%v(:,:,2,1:nlev,nm1) - &
+          statesave1(:,:,1:nlev,ie,2))/(dhat2*dt)
+        elem(ie)%state%w_i(:,:,1:nlevp,nm1) = (elem(ie)%state%w_i(:,:,1:nlevp,nm1) - &
+          statesave1(:,:,1:nlevp,ie,3))/(dhat2*dt)
+        elem(ie)%state%phinh_i(:,:,1:nlevp,nm1) = (elem(ie)%state%phinh_i(:,:,1:nlevp,nm1) - &
+          statesave1(:,:,1:nlevp,ie,4))/(dhat2*dt)
+        elem(ie)%state%vtheta_dp(:,:,1:nlev,nm1) = (elem(ie)%state%vtheta_dp(:,:,1:nlev,nm1) - &
+          statesave1(:,:,1:nlev,ie,5))/(dhat2*dt)
+        elem(ie)%state%dp3d(:,:,1:nlev,nm1) = (elem(ie)%state%dp3d(:,:,1:nlev,nm1) - &
+          statesave1(:,:,1:nlev,ie,6))/(dhat2*dt)
+
+        ! compute and store s(g2) at statesave2
+        statesave2(:,:,1:nlev,ie,1)  = (elem(ie)%state%v(:,:,1,1:nlev,np1) - &
+          statesave2(:,:,1:nlev,ie,1))/(dt*dhat1)
+        statesave2(:,:,1:nlev,ie,2)  = (elem(ie)%state%v(:,:,2,1:nlev,np1) - &
+          statesave2(:,:,1:nlev,ie,2))/(dt*dhat1)
+        statesave2(:,:,1:nlevp,ie,3) = ( elem(ie)%state%w_i(:,:,1:nlevp,np1) - &
+          statesave2(:,:,1:nlevp,ie,3)) / (dt*dhat1)
+        statesave2(:,:,1:nlevp,ie,4) = (elem(ie)%state%phinh_i(:,:,1:nlevp,np1) - &
+          statesave2(:,:,1:nlevp,ie,4))/(dt*dhat1)
+        statesave2(:,:,1:nlev,ie,5)  = (elem(ie)%state%vtheta_dp(:,:,1:nlev,np1) - &
+          statesave2(:,:,1:nlev,ie,5))/(dt*dhat1)
+        statesave2(:,:,1:nlev,ie,6)  = (elem(ie)%state%dp3d(:,:,1:nlev,np1) - &
+          statesave2(:,:,1:nlev,ie,6))/(dt*dhat1)
+      enddo
+
+
+   ! at this point, un is at statesave1, g3 is at n0, g2 is at np1, s(g2) is at nm1, and s(g3) is at statesave2
+   
+   !****************** Can be done in parallel ************************
+      ! compute and store a2*dt*n(g3) at nm1
+      call compute_andor_apply_rhs(n0,n0,n0,qn0,a2*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,0d0)
+      ! solve for g3 = un + dt*dhat1*s(g3)
+     ! compute and store b1*dt*n(g2) at np1
+     call compute_andor_apply_rhs(np1,np1,np1,qn0,b1*dt,elem,hvcoord,hybrid,&
+       deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,0d0)
+
+  
+   !*******************************************************************
+
+   ! at this point, un is at statesave1, a2*dt*n(g3) is at n0, b1*dt*n(g2) is at np1, 
+   ! s(g2) is at nm1, and s(g3) is at statesave2
+
+   ! form g4 = un + dt*b1*n(g2)+dt*a3*n(g3)+dt*ahat2*s(g3) and store at n0
+     do ie=nets,nete
+       elem(ie)%state%v(:,:,1,1:nlev,n0) = statesave1(:,:,1:nlev,ie,1) + dt*ahat2*statesave2(:,:,1:nlev,ie,1) + &
+         elem(ie)%state%v(:,:,1,1:nlev,n0) + elem(ie)%state%v(:,:,1,1:nlev,np1) 
+       elem(ie)%state%v(:,:,2,1:nlev,n0) = statesave1(:,:,1:nlev,ie,2) + dt*ahat2*statesave2(:,:,1:nlev,ie,2) + &
+         elem(ie)%state%v(:,:,2,1:nlev,n0) + elem(ie)%state%v(:,:,2,1:nlev,np1)
+       elem(ie)%state%w_i(:,:,1:nlevp,n0) = statesave1(:,:,1:nlevp,ie,3) + dt*ahat2*statesave2(:,:,1:nlevp,ie,3) + &
+         elem(ie)%state%w_i(:,:,1:nlevp,n0) + elem(ie)%state%w_i(:,:,1:nlevp,np1) 
+       elem(ie)%state%phinh_i(:,:,1:nlevp,n0) = statesave1(:,:,1:nlevp,ie,4) + dt*ahat2*statesave2(:,:,1:nlevp,ie,4) + &
+         elem(ie)%state%phinh_i(:,:,1:nlevp,n0) + elem(ie)%state%phinh_i(:,:,1:nlevp,np1) 
+       elem(ie)%state%vtheta_dp(:,:,1:nlev,n0) = statesave1(:,:,1:nlev,ie,5) + dt*ahat2*statesave2(:,:,1:nlev,ie,5) + &
+         elem(ie)%state%vtheta_dp(:,:,1:nlev,n0) + elem(ie)%state%vtheta_dp(:,:,1:nlev,np1) 
+       elem(ie)%state%dp3d(:,:,1:nlev,n0) = statesave1(:,:,1:nlev,ie,6) + dt*ahat2*statesave2(:,:,1:nlev,ie,6) + &
+         elem(ie)%state%dp3d(:,:,1:nlev,n0) + elem(ie)%state%dp3d(:,:,1:nlev,np1) 
+     enddo
+
+     ! compute and store a3*dt*n(g4) at np1
+     call compute_andor_apply_rhs(np1,n0,n0,qn0,a3*dt,elem,hvcoord,hybrid,&
+       deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,0d0)
+
+     ! form g5 = un+1 = un + dt*(alphahat s2 + bethat s3 + a3 n4)
+     do ie=nets,nete
+       elem(ie)%state%v(:,:,1,1:nlev,np1) = statesave1(:,:,1:nlev,ie,1) + dt*betahat*statesave2(:,:,1:nlev,ie,1) &
+         + elem(ie)%state%v(:,:,1,1:nlev,n0) + alphahat*dt*elem(ie)%state%v(:,:,1,1:nlev,nm1)
+       elem(ie)%state%v(:,:,2,1:nlev,np1) = statesave1(:,:,1:nlev,ie,2) + dt*betahat*statesave2(:,:,1:nlev,ie,2) &
+         + elem(ie)%state%v(:,:,2,1:nlev,n0) + alphahat*dt*elem(ie)%state%v(:,:,2,1:nlev,nm1)
+
+       elem(ie)%state%w_i(:,:,1:nlevp,np1) = statesave1(:,:,1:nlevp,ie,3) + dt*betahat*statesave2(:,:,1:nlevp,ie,3) &
+         + elem(ie)%state%w_i(:,:,1:nlevp,n0) + alphahat*dt*elem(ie)%state%w_i(:,:,1:nlevp,nm1)
+       elem(ie)%state%phinh_i(:,:,1:nlevp,np1) = statesave1(:,:,1:nlevp,ie,4) + dt*betahat*statesave2(:,:,1:nlevp,ie,4) &
+         + elem(ie)%state%phinh_i(:,:,1:nlevp,n0) + alphahat*dt*elem(ie)%state%phinh_i(:,:,1:nlevp,nm1)
+
+       elem(ie)%state%vtheta_dp(:,:,1:nlev,np1) = statesave1(:,:,1:nlev,ie,5) + dt*betahat*statesave2(:,:,1:nlev,ie,5) &
+         + elem(ie)%state%vtheta_dp(:,:,1:nlev,n0) + alphahat*dt*elem(ie)%state%vtheta_dp(:,:,1:nlev,nm1)
+       elem(ie)%state%dp3d(:,:,1:nlev,np1) = statesave1(:,:,1:nlev,ie,6) + dt*betahat*statesave2(:,:,1:nlev,ie,6) &
+         + elem(ie)%state%vtheta_dp(:,:,1:nlev,n0) + alphahat*dt*elem(ie)%state%vtheta_dp(:,:,1:nlev,nm1)
+
+     enddo
+ 
+
+
+
+    
 !===================================================================================
     else
        call abortmp('ERROR: bad choice of tstep_type')
