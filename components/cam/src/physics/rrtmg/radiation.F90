@@ -1432,10 +1432,10 @@ end function radiation_nextsw_cday
                   end do 
 
                   do k = 1, pver_five
-                     aer_tau_five(i,k,:)= aer_tau_five(i,k,:) * pdel_five(1,k)
-                     aer_tau_w_five(i,k,:)= aer_tau_w_five(i,k,:) * pdel_five(1,k)
-                     aer_tau_w_g_five(i,k,:)= aer_tau_w_g_five(i,k,:) * pdel_five(1,k)
-                     aer_tau_w_f_five(i,k,:)= aer_tau_w_f_five(i,k,:) * pdel_five(1,k)
+                     aer_tau_five(i,k,:)= aer_tau_five(i,k,:) * pdel_five(i,k)
+                     aer_tau_w_five(i,k,:)= aer_tau_w_five(i,k,:) * pdel_five(i,k)
+                     aer_tau_w_g_five(i,k,:)= aer_tau_w_g_five(i,k,:) * pdel_five(i,k)
+                     aer_tau_w_f_five(i,k,:)= aer_tau_w_f_five(i,k,:) * pdel_five(i,k)
                   end do 
                 end do
 #endif 
@@ -1632,12 +1632,12 @@ end function radiation_nextsw_cday
                   do k = 1, pver
                       aer_lw_abs(i,k,:)= aer_lw_abs(i,k,:)/state%pdeldry(i,k)
                   end do
-                  do nb = 1, nbndsw
+                  do nb = 1, nbndlw
                     call linear_interp(state%pmid(i,:),pmid_five(i,:), &
                          aer_lw_abs(i,1:pver,nb),aer_lw_abs_five(i,1:pver_five,nb),pver,pver_five)
                   end do
                   do k = 1, pver_five
-                      aer_lw_abs_five(i,k,:)= aer_lw_abs_five(i,k,:) * pdel_five(i,k)
+                      aer_lw_abs_five(i,k,:) = aer_lw_abs_five(i,k,:) * pdel_five(i,k)
                   end do
                 end do
 #endif
