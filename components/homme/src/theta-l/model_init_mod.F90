@@ -81,31 +81,33 @@ contains
        ! sponge layer starts at p=4*ptop 
        ! 
        ! some test cases have ptop=200mb
-       ptop_over_press = hvcoord%etai(1) / hvcoord%etam(k)  ! pure sigma coordinates has etai(1)=0
+       if (hvcoord%etai(1)==0) then
+          ! pure sigma coordinates could have etai(1)=0
+          ptop_over_press = hvcoord%etam(1) / hvcoord%etam(k)  
+       else
+          ptop_over_press = hvcoord%etai(1) / hvcoord%etam(k)  
+       endif
 
        ! active for p<4*ptop (following cd_core.F90 in CAM-FV)
-       ! CAM 26L and 30L:  top 2 levels
+       ! CAM 26L and 30L:  top 3 levels
        ! E3SM 72L:  top 3 levels
        nu_scale_top(k) = 8*(1+tanh(log(ptop_over_press))) ! active for p<4*ptop
+       if (nu_scale_top(k)<0.3d0) nu_scale_top(k)=0
 
        ! active for p<7*ptop 
-       ! CAM 26L and 30L:  top 3 levels
-       ! E3SM 72L:  top ? levels
        !nu_scale_top(k) = 8*(1+.911*tanh(log(ptop_over_press))) ! active for p<6.5*ptop
+       !if (nu_scale_top(k)<0.3d0) nu_scale_top(k)=0
 
        ! original CAM3/preqx formula
        !if (k==1) nu_scale_top(k)=4
        !if (k==2) nu_scale_top(k)=2
-       !if (k==3) nu_scale_top(k)=1 + 1d-10
+       !if (k==3) nu_scale_top(k)=1
        !if (k>3) nu_scale_top(k)=0
 
-
        if (hybrid%masterthread) then
-          if (nu_scale_top(k)>1) write(iulog,*) "  nu_scale_top ",k,nu_scale_top(k)
+          if (nu_scale_top(k)>0) write(iulog,*) "  nu_scale_top ",k,nu_scale_top(k)
        end if
-
     end do
-    
   end subroutine 
 
 
