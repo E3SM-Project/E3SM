@@ -35,14 +35,24 @@ HommeDynamics::HommeDynamics (const Comm& comm,const ParameterList& /* params */
   // Make Homme throw rather than abort. In Homme, abort causes finalization of Kokkos,
   // which is bad, since scream still has outstanding views.
   Homme::Session::m_throw_instead_of_abort = true;
+}
 
+void HommeDynamics::set_grid(const std::shared_ptr<const GridsManager> grids_manager)
+{
   constexpr int NGP  = HOMMEXX_NP;
   constexpr int QSZ  = HOMMEXX_QSIZE_D;
   constexpr int NVL  = HOMMEXX_NUM_PHYSICAL_LEV;
   constexpr int NTL  = HOMMEXX_NUM_TIME_LEVELS;
   constexpr int QNTL = HOMMEXX_Q_NUM_TIME_LEVELS;
 
-  const int ne  = get_homme_param_value<int>("nelemd");
+  auto grid = grids_manager->get_grid("Dynamics");
+  const int num_dofs = grid->num_dofs();
+
+  const int ne  = num_dofs/(NGP*NGP);
+
+  scream_require_msg(get_homme_param_value<int>("nelemd")==ne,
+                     "Error! The number of elements computed from the Dynamis grid num_dof()\n"
+                     "       does not match the number of elements internal in Homme.\n");
   const int nmf = get_homme_param_value<int>("num momentum forcings");
 
   // Create the identifiers of input and output fields
@@ -78,7 +88,7 @@ HommeDynamics::HommeDynamics (const Comm& comm,const ParameterList& /* params */
   m_computed_fields.emplace("qdp",tracers_state_layout,"Dynamics");
 }
 
-void HommeDynamics::initialize (const std::shared_ptr<const GridsManager> /* grids_manager */)
+void HommeDynamics::initialize ()
 {
   // We need to set the pointers in the C++ views to the ones contained in the scream
   // Fields *before* they ever get copied/filled. In particular, we need to make sure
@@ -198,6 +208,22 @@ void HommeDynamics::finalize (/* what inputs? */)
   Homme::Context::singleton().finalize_singleton();
   Homme::MpiContext::singleton().finalize_singleton();
   finalize_homme_f90();
+}
+
+void HommeDynamics::set_required_field_impl (const Field<const Real, device_type>& f) {
+  // Store a copy of the field. We need this in order to do some tracking checks
+  // at the beginning of the run call. Other than that, there would be really
+  // no need to store a scream field here; we could simply set the view ptr
+  // in the Homme's view, and be done with it.
+  m_dyn_fields_in.emplace(f.get_header().get_identifier().name(),f);
+}
+
+void HommeDynamics::set_computed_field_impl (const Field<      Real, device_type>& f) {
+  // Store a copy of the field. We need this in order to do some tracking updates
+  // at the end of the run call. Other than that, there would be really
+  // no need to store a scream field here; we could simply set the view ptr
+  // in the Homme's view, and be done with it.
+  m_dyn_fields_out.emplace(f.get_header().get_identifier().name(),f);
 }
 
 } // namespace scream

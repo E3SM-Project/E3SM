@@ -47,10 +47,15 @@ public:
   // The communicator associated with this atm process
   const Comm& get_comm () const { return m_comm; }
 
+  // Grab the proper grid from the grids manager
+  void set_grid (const std::shared_ptr<const GridsManager> grids_manager);
+
   // The initialization, run, and finalization methods
-  void initialize (const std::shared_ptr<const GridsManager> grids_manager);
+  void initialize ();
   void run        (/* what inputs? */);
   void finalize   (/* what inputs? */);
+
+  void final_setup ();
 
   // Register all fields in the given repo
   void register_fields (FieldRepository<Real, device_type>& field_repo) const;

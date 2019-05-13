@@ -21,24 +21,6 @@ public:
   {
     m_params = params;
     m_id = comm.rank();
-    auto size = comm.size();
-
-    std::vector<FieldTag> tags = {FieldTag::Column,FieldTag::Component};
-    std::vector<int> dims = {32, m_params.get<int>("Number of vector components")};
-    FieldLayout layout (tags,dims);
-
-    std::string in_name = "field_";
-    std::string out_name = "field_";
-    if (size==1) {
-      in_name  += "0";
-      out_name += "1";
-    } else {
-      in_name  += std::to_string(m_id);
-      out_name += std::to_string( (m_id + size - 1) % size );
-    }
-
-    m_input_fids.emplace(in_name,layout,"Physics");
-    m_output_fids.emplace(out_name,layout,"Physics");
   }
 
   // The type of the block (dynamics or physics)
@@ -57,22 +39,31 @@ public:
   // The communicator associated with this atm process
   const Comm& get_comm () const { return m_comm; }
 
-  void initialize (const std::shared_ptr<const GridsManager> grids_manager) {
-    m_id = m_comm.rank();
-    auto size = m_comm.size();
-
+  void set_grid (const std::shared_ptr<const GridsManager> grids_manager) {
     m_grid = grids_manager->get_grid("Physics");
+
     auto num_cols = m_grid->num_dofs();
 
     std::vector<FieldTag> tags = {FieldTag::Column,FieldTag::Component};
     std::vector<int> dims = {num_cols, m_params.get<int>("Number of vector components")};
     FieldLayout layout (tags,dims);
 
-    std::string in_name = "field_" + std::to_string(m_id);
-    std::string out_name = "field_" + std::to_string( (m_id + size - 1) % size );
+    std::string in_name = "field_";
+    std::string out_name = "field_";
+    auto size = m_comm.size();
+    if (size==1) {
+      in_name  += "0";
+      out_name += "1";
+    } else {
+      in_name  += std::to_string(m_id);
+      out_name += std::to_string( (m_id + size - 1) % size );
+    }
 
-    m_input_fids.emplace(in_name,layout,m_grid->name());
-    m_output_fids.emplace(out_name,layout,m_grid->name());
+    m_input_fids.emplace(in_name,layout,"Physics");
+    m_output_fids.emplace(out_name,layout,"Physics");
+  }
+
+  void initialize () {
   }
 
   void run () {

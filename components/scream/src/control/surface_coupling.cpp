@@ -9,7 +9,11 @@ SurfaceCoupling (const Comm& comm, const ParameterList& /*params*/)
   // Grab what you need from the parameter list
 }
 
-void SurfaceCoupling::initialize (const std::shared_ptr<const GridsManager> /* grids_manager */) {
+void SurfaceCoupling::set_grid (const std::shared_ptr<const GridsManager> /* grids_manager */) {
+  // Get the grid from the grids manager.
+}
+
+void SurfaceCoupling::initialize () {
   // Initialize the FieldRepository (FR) for host fields
   // (i.e., fields that are I/O w.r.t the coupler)
 }
