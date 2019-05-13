@@ -667,9 +667,6 @@ foreach(DIRSEARCH ${FILEPATH_DIRS})
       if (BASENAME_WAS_FOUND EQUAL -1)
         list(APPEND SOURCES ${MATCH})
         list(APPEND BASENAME_SET ${BASENAME})
-        message("JGF adding ${MATCH}")
-      else()
-        message("JGF skipping ${MATCH}")
       endif()
     endforeach()
   endif()
@@ -798,12 +795,10 @@ if (COMPLIB)
   target_sources(${COMPLIB} PRIVATE ${SOURCES})
 
   # Subtle: In order for fortran dependency scanning to work, our CPPFPP/DEFS must be registered
-  # as COMPILE_DEFINITIONS, not simple added via CMAKE_Fortran_Flags.
-  #string(REPLACE "numpft+1" "\"numpft+1\"" BETTERDEFS "${CPPDEFS}")
-  message("JGF CPPDEFS is ${CPPDEFS}")
-  target_compile_definitions(${COMPLIB} PRIVATE ${CPPDEFS})
-  get_target_property(JGFTEMP ${COMPLIB} COMPILE_DEFINITIONS)
-  message("JGF TEMP is ${JGFTEMP}")
+  # as COMPILE_DEFINITIONS, not simple added via CMAKE_Fortran_Flags. Also, CPPDEFS *must*
+  # be provided as a list, not a whitespace-separated string; otherwise, things get wonky.
+  separate_arguments(CPPDEFS_LIST UNIX_COMMAND "${CPPDEFS}")
+  target_compile_definitions(${COMPLIB} PRIVATE ${CPPDEFS_LIST})
 endif()
 
 if (EXEC_SE)
