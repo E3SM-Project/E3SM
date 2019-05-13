@@ -262,7 +262,7 @@ def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir,
     regression_script.write("        runtime = np.ceil(float(subprocess."
                             "check_output(\n"
                             "                ['grep', 'real', outputfile])."
-                            "split('\\n')[-2].split()[1]))\n")
+                            "decode('utf-8').split('\\n')[-2].split()[1]))\n")
     regression_script.write("        totaltime += runtime\n")
     regression_script.write("        mins = int(np.floor(runtime/60.0))\n")
     regression_script.write("        secs = int(np.ceil(runtime - mins*60))\n")
