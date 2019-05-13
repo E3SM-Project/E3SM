@@ -57,7 +57,7 @@ program fmain
   nargs = iargc()
   if (nargs == 0) then
      write(6,*)'invoke gen_domain -h for usage'
-     stop
+     call exit(1)
   end if
 
   ! Parse command line arguments
@@ -245,7 +245,7 @@ contains
          pole_fix = .false.
       else
          write(6,*) ' ERROR: nf loop error '
-         stop
+         call exit(1)
       endif
 
       pole_fix = .false.
@@ -369,7 +369,7 @@ contains
                omask(:) = 1
             else
                write(6,*) 'ERROR: mask'//trim(suffix)//' does not exist in inputfile.'
-               stop
+               call exit(1)
             end if
          end if
          ofrac(:) = c0
@@ -405,7 +405,7 @@ contains
                mask_a(:) = 1
             else
                write(6,*) 'ERROR: mask_a not present in inputfile.'
-               stop
+               call exit(1)
             end if
          end if
 
@@ -456,7 +456,7 @@ contains
          if (ni > 1 .and. nj == 1) then
             if (dst_grid_rank /= 2) then
                write(6,*)'pole_fix not appropriate for unstructured grid'
-               stop
+               call exit(1)
             end if
          end if
          do i = 1,dst_grid_dims(1)
@@ -587,7 +587,7 @@ contains
     write(6,*) '    domain.ocn.gridocn.nc'
     write(6,*) '      ocean domain on the ocean grid '
     write(6,*) ' '
-    stop
+    call exit(1)
   end subroutine usage_exit
 
 !===========================================================================
@@ -676,7 +676,7 @@ contains
     call sys_getenv('LOGNAME',user,rcode)
     if (rcode /= 0) then
        write(6,*) ' ERROR: getting LOGNAME'
-       stop
+       call exit(1)
     end if
     str = 'created by '//trim(user)//', '//cdate(1:4)//'-'//cdate(5:6)//'-'//cdate(7:8) &
          &                //' '//ctime(1:2)//':'//ctime(3:4)//':'//ctime(5:6)
@@ -858,7 +858,8 @@ SUBROUTINE sys_getenv(name, val, rcode)
 #else
 
    write(*,F00) 'ERROR: no implementation of getenv for this architecture'
-   stop subname//'no implementation of getenv for this machine'
+   write(*,*)   subname//'no implementation of getenv for this machine'
+   call exit(1)
 
 #endif
 
