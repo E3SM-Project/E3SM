@@ -32,6 +32,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
 !
 ! Input arguments
 !
+   integer, parameter :: r16 = selected_real_kind(24)
    real(r8), intent(inout) :: t2(plev)         ! temp tendency
    real(r8), intent(inout) :: fu(plev)         ! u wind tendency
    real(r8), intent(inout) :: fv(plev)         ! v wind tendency
@@ -115,6 +116,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
    real(r8) dotproda           ! dot product
    real(r8) dotprodb           ! dot product
    integer i,k,m           ! longitude, level, constituent indices
+   real(r16) divt3d_full, divq3d_full
 !
 !     Below are Variables Used in the Advection Diagnostics
 !
@@ -179,7 +181,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
 
    wfldint(plevp) = 0.0_r8
 
-   if (use_3dfrc .and. use_iop) then
+   if (use_3dfrc .and. use_iop .and. .not. use_camiop) then
 
 !  Complete a very simple forecast using supplied 3-dimensional forcing
 !  by the large scale.  Obviates the need for any kind of vertical 
@@ -197,6 +199,27 @@ subroutine forecast(lat, psm1, psm2,ps, &
       go to 1000
 
    end if
+   
+   if (use_3dfrc .and. use_iop .and. use_camiop) then
+
+!  Complete a very simple forecast using supplied 3-dimensional forcing
+!  by the large scale.  Obviates the need for any kind of vertical 
+!  advection calculation.  Skip to diagnostic estimates of vertical term.
+      i=1
+      do k=1,plev
+         divt3d_full = divt3d(k) + divt3d_2(k)
+         tfcst(k) = t3m2(k) + ztodt*t2(k) + ztodt*divt3d_full!divt3d(k)
+      end do
+      do m=1,pcnst
+         do k=1,plev
+	    divq3d_full = divq3d(k,m) + divq3d_2(k,m)
+            qfcst(1,k,m) = qminus(1,k,m) +  divq3d_full*ztodt
+         end do
+      enddo
+
+      go to 1000
+
+   end if   
 
 !
 !  provide an eulerian forecast.  First check to ensure that 2d forcing

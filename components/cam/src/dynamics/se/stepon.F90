@@ -31,6 +31,9 @@ module stepon
    use shr_const_mod,       only: SHR_CONST_PI
 
    implicit none
+   
+   integer, parameter, public :: r16 = selected_real_kind(24)
+   
    private
    save
 
@@ -432,7 +435,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    use cam_logfile, only: iulog
    real(r8), intent(in) :: dtime   ! Time-step
    real(r8) :: ftmp_temp(np,np,nlev,nelemd), ftmp_q(np,np,nlev,pcnst,nelemd)
-   real(r8) :: forcing_temp(npsq,nlev), forcing_q(npsq,nlev,pcnst)
+   real(r8) :: forcing_q(npsq,nlev,pcnst)
    real(r8) :: out_temp(npsq,nlev), out_q(npsq,nlev), out_u(npsq,nlev), &
                out_v(npsq,nlev), out_psv(npsq)  
    real(r8), parameter :: rad2deg = 180.0 / SHR_CONST_PI
@@ -444,6 +447,14 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
    type (element_t), pointer :: elem(:)
    integer :: rc, i, j, k, p, ie, tl_f
+#if (defined BFB_CAM_SCAM_IOP)
+   real(r16) :: forcing_temp, forcing_temp_lrg, threshold
+   real(r8) :: forcing_temp_part1(npsq,nlev), forcing_temp_part2(npsq,nlev)
+   real(r8) :: forcing_q_part1(npsq,nlev,pcnst), forcing_q_part2(npsq,nlev,pcnst)
+   real(r16) :: mult 
+   integer :: forcing_temp_int
+   
+#endif
    
    elem => dyn_out%elem
    
@@ -482,13 +493,27 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
 
    tl_f = TimeLevel%n0
    
+   threshold = 1000._r16
+   mult = 1.0_r16
    do ie=1,nelemd
      do k=1,nlev
        do j=1,np
          do i=1,np
 	 
-	   forcing_temp(i+(j-1)*np,k) = (dyn_in%elem(ie)%state%T(i,j,k,tl_f) - &
+	   forcing_temp = (dyn_in%elem(ie)%state%T(i,j,k,tl_f) - &
 	        ftmp_temp(i,j,k,ie))/dtime - dyn_in%elem(ie)%derived%FT(i,j,k)
+			
+	   mult = 1.0_r16
+	   forcing_temp_lrg = forcing_temp
+	   do while((abs(forcing_temp_lrg) < threshold) .and. (forcing_temp .ne. 0._r16))
+	     forcing_temp_lrg = forcing_temp*mult
+	     if (abs(forcing_temp_lrg) < threshold) mult = mult*10._r16
+	   end do	
+	   
+	   forcing_temp_int = int(forcing_temp_lrg)
+	   forcing_temp_part1(i+(j-1)*np,k)=forcing_temp_int/mult	   
+	   forcing_temp_part2(i+(j-1)*np,k)=(forcing_temp_lrg-forcing_temp_int)/mult
+		
            out_temp(i+(j-1)*np,k) = dyn_in%elem(ie)%state%T(i,j,k,tl_f)
 	   out_u(i+(j-1)*np,k) = dyn_in%elem(ie)%state%v(i,j,1,k,tl_f)
 	   out_v(i+(j-1)*np,k) = dyn_in%elem(ie)%state%v(i,j,2,k,tl_f)
@@ -496,22 +521,36 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
 	   out_psv(i+(j-1)*np) = dyn_in%elem(ie)%state%ps_v(i,j,tl_f)
 
 	   do p=1,pcnst		
-	     forcing_q(i+(j-1)*np,k,p) = (dyn_in%elem(ie)%state%Q(i,j,k,p) - &
+	     forcing_temp = (dyn_in%elem(ie)%state%Q(i,j,k,p) - &
 	        ftmp_q(i,j,k,p,ie))/dtime
+		
+	     mult = 1.0_r16
+	     forcing_temp_lrg = forcing_temp
+	     do while((abs(forcing_temp_lrg) < threshold) .and. (forcing_temp .ne. 0._r16))
+	       forcing_temp_lrg = forcing_temp*mult
+	       if (abs(forcing_temp_lrg) < threshold) mult=mult*10._r16
+	     enddo
+	     
+	     forcing_temp_int = int(forcing_temp_lrg)
+	     forcing_q_part1(i+(j-1)*np,k,p)=forcing_temp_int/mult
+	     forcing_q_part2(i+(j-1)*np,k,p)=(forcing_temp_lrg-forcing_temp_int)/mult
+		
 	   enddo
 	   
 	 enddo
        enddo
      enddo
      
-     call outfld('divT3d',forcing_temp,npsq,ie)
+     call outfld('divT3d',forcing_temp_part1,npsq,ie)
+     call outfld('divT3d_2',forcing_temp_part2,npsq,ie)
      call outfld('Ps',out_psv,npsq,ie)
      call outfld('t',out_temp,npsq,ie)
      call outfld('q',out_q,npsq,ie)
      call outfld('u',out_u,npsq,ie)
      call outfld('v',out_v,npsq,ie)
      do p=1,pcnst
-       call outfld(trim(cnst_name(p))//'_dten',forcing_q(:,:,p),npsq,ie)   
+       call outfld(trim(cnst_name(p))//'_dten',forcing_q_part1(:,:,p),npsq,ie) 
+       call outfld(trim(cnst_name(p))//'_dten_2',forcing_q_part2(:,:,p),npsq,ie)  
      enddo
      
    enddo
