@@ -2552,7 +2552,6 @@ module init_atm_cases
 
       real (kind=RKIND), dimension(nVertLevels, nCells) :: rel_hum, temperature, qv
       real (kind=RKIND) :: ptmp, es, rs, rgas_moist, qvs, xnutr, znut, ptemp, rcv
-      real (kind=RKIND) :: eis, ews, r1
       integer :: iter
 
       real (kind=RKIND), dimension(nVertLevels + 1) :: hyai, hybi, znu, znw, znwc, znwv, hyam, hybm
@@ -4663,30 +4662,14 @@ call mpas_log_write('Done with soil consistency check')
          enddo
       endif
 
-! re-compute relhum w.r.t ice above freezing level
-      call mpas_log_write(' *** re-computing RH above freezing level ')
-      do k = 1, nVertLevels
-         do iCell = 1, nCells
-            if ( t(k,iCell) .le. 273.15_RKIND ) then
-! use formula in ungrib to reconstruct RH 
-               eis = .01 * exp (9.550426 - (5723.265 / t(k,iCell)) + (3.53068 * alog(t(k,iCell))) &
-                   - (0.00728332 * t(k,iCell)))
-               ews = 6.112 * exp(17.67 * (t(k,iCell)-273.15) / ((t(k,iCell)-273.15)+243.5))
-               if ( t(k,iCell) .gt. 253.15_RKIND ) then
-! A linear approximation to the GFS blending region ( -20 > T < 0 )
-                  r1 = ((273.15_RKIND - t(k,iCell)) / 20._RKIND)
-                  r1 = (r1 * eis) + ((1._RKIND-r1)*ews)
-               else
-                  r1 = eis
-               end if
-               r1 = max(r1, 1.e-12)
-               ews = max(ews, 0._RKIND)
-               relhum(k,iCell) = ews / r1 * relhum(k,iCell)
-               relhum(k,iCell) = min(relhum(k,iCell), 100._RKIND)
-               relhum(k,iCell) = max(relhum(k,iCell), 0._RKIND)
-            end if
-         enddo
-      enddo
+      !
+      ! After RH has been used to compute qv (unless config_use_spechumd = T and a valid spechum field
+      ! is available), modify the RH field to be with respect to ice for temperatures below freezing.
+      ! NB: Here we pass in 1:nCells explicitly, since computations involving the "garbage cell" could
+      ! trigger FPEs.
+      !
+      call convert_relhum_wrt_ice(t(:,1:nCells), relhum(:,1:nCells))
+
       !
       ! Diagnose fields needed in initial conditions file (u, w, rho, theta)
       ! NB: At this point, "rho_zz" is simple dry density, and "theta_m" is regular potential temperature
@@ -5216,5 +5199,70 @@ call mpas_log_write('Done with soil consistency check')
       end do
 
    end subroutine decouple_variables
+
+
+   !-----------------------------------------------------------------------
+   !  routine convert_relhum_wrt_ice
+   !
+   !> \brief Converts an RH field given w.r.t. liquid water to RH w.r.t. ice below freezing
+   !> \author Wei Wang
+   !> \date   11 May 2019
+   !> \details
+   !>  This routine takes as input a temperature field (in K) and an RH field (in percent),
+   !>  which is assumed to be with respect to liquid water everywhere. Upon return, the
+   !>  relative humidity for temperatures below 253.15 K has been modified to be with
+   !>  respect to ice. For temperatures in the range (253.15, 273.15] the relative humidity
+   !>  uses a blend of the saturation mixing ratios for liquid water and ice.
+   !>
+   !>  This routine uses the formula from the WPS ungrib program to re-compute RH with
+   !>  respect to ice in an attempt to re-construct RH that is more like the ungrib input.
+   !
+   !-----------------------------------------------------------------------
+   subroutine convert_relhum_wrt_ice(t, relhum)
+
+      implicit none
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: t
+      real (kind=RKIND), dimension(:,:), intent(inout) :: relhum
+
+      integer :: iCell, k
+      integer :: nVertLevels
+      integer :: nCells
+      real (kind=RKIND) :: eis, ews, r1
+
+
+      nVertLevels = size(t, dim=1)
+      nCells = size(t, dim=2)
+
+      call mpas_log_write('')
+      call mpas_log_write('Recomputing RH w.r.t. ice below freezing')
+      call mpas_log_write('')
+
+      do iCell = 1, nCells
+         do k = 1, nVertLevels
+            if ( t(k,iCell) <= 273.15_RKIND ) then
+
+               ! use formula in ungrib to reconstruct RH 
+               eis = 0.01_RKIND * exp (9.550426_RKIND - (5723.265_RKIND / t(k,iCell)) + (3.53068_RKIND * log(t(k,iCell))) &
+                   - (0.00728332_RKIND * t(k,iCell)))
+               ews = 6.112_RKIND * exp(17.67_RKIND * (t(k,iCell)-273.15_RKIND) / ((t(k,iCell)-273.15_RKIND)+243.5_RKIND))
+
+               ! A linear approximation to the GFS blending region ( -20 C > T < 0 C )
+               if ( t(k,iCell) > 253.15_RKIND ) then
+                  r1 = ((273.15_RKIND - t(k,iCell)) / 20.0_RKIND)
+                  r1 = (r1 * eis) + ((1.0_RKIND-r1)*ews)
+               else
+                  r1 = eis
+               end if
+               r1 = max(r1, 1.0e-12_RKIND)
+               ews = max(ews, 0.0_RKIND)
+               relhum(k,iCell) = ews / r1 * relhum(k,iCell)
+               relhum(k,iCell) = min(relhum(k,iCell), 100.0_RKIND)
+               relhum(k,iCell) = max(relhum(k,iCell), 0.0_RKIND)
+            end if
+         end do
+      end do
+
+   end subroutine convert_relhum_wrt_ice
 
 end module init_atm_cases
