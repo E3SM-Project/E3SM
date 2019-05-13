@@ -512,22 +512,25 @@ module mpas_atm_boundaries
     !> \date    12 May 2019
     !> \details 
     !>  This routine checks that settings related to limited-area simulations
-    !>  are compatible.
+    !>  are compatible. Specifically, the following are checked by this routine:
     !>
-    !>  A value of 0 is returned if the simulation appears to be a global simulation,
-    !>  or if the simulation is appears to be a limited-area simulation and all
-    !>  namelist options, stream intervals, and input fields are consistent. Otherwise,
-    !>  a value of 1 is returned.
+    !>  1) If config_apply_lbcs = true, the bdyMaskCell field must have non-zero elements
+    !>  2) If config_apply_lbcs = false, the bdyMaskCell field must not have non-zero elements
+    !>  3) If config_apply_lbcs = true, the lbc_in stream must have a valid input interval
+    !>
+    !>  If any of the above are not true, this routine prints an error message and
+    !>  returns a non-zero value in ierr; otherwise, a value of 0 is returned.
     !
     !-----------------------------------------------------------------------
     subroutine mpas_atm_bdy_checks(dminfo, blockList, streamManager, ierr)
 
         use mpas_log, only : mpas_log_write
         use mpas_kind_types, only : StrKIND
-        use mpas_derived_types, only : dm_info, block_type, MPAS_STREAM_PROPERTY_RECORD_INTV, MPAS_STREAM_MGR_NOERR, &
-                                       MPAS_STREAM_INPUT, MPAS_LOG_ERR
+        use mpas_derived_types, only : dm_info, block_type, mpas_pool_type, MPAS_LOG_ERR, MPAS_STREAM_PROPERTY_RECORD_INTV, &
+                                       MPAS_STREAM_MGR_NOERR, MPAS_STREAM_INPUT
         use mpas_stream_manager, only : mpas_stream_mgr_get_property
-        use mpas_pool_routines, only : mpas_pool_get_config
+        use mpas_pool_routines, only : mpas_pool_get_config, mpas_pool_get_dimension, mpas_pool_get_subpool, mpas_pool_get_array
+        use mpas_dmpar, only : mpas_dmpar_max_int
 
         implicit none
 
@@ -538,12 +541,60 @@ module mpas_atm_boundaries
 
         character(len=StrKIND) :: input_interval
         logical, pointer :: config_apply_lbcs => null()
+        integer, pointer :: nCellsSolve => null()
+        type (mpas_pool_type), pointer :: meshPool => null()
+        type (block_type), pointer :: block => null()
+        integer, dimension(:), pointer :: bdyMaskCell => null()
+        integer :: maxvar2d_local, maxvar2d_global
 
 
         call mpas_pool_get_config(blocklist % configs, 'config_apply_lbcs', config_apply_lbcs)
 
+        call mpas_log_write('')
         call mpas_log_write('Checking consistency of limited-area settings...')
         call mpas_log_write(' - config_apply_lbcs = $l', logicArgs=(/config_apply_lbcs/))
+
+        !
+        ! Check whether any elements of bdyMaskCell have non-zero values
+        !
+        maxvar2d_local = -huge(maxvar2d_local)
+        block => blockList
+        do while (associated(block))
+            call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+            call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+            call mpas_pool_get_array(meshPool, 'bdyMaskCell', bdyMaskCell)
+
+            maxvar2d_local = max(maxvar2d_local, maxval(bdyMaskCell(1:nCellsSolve)))
+
+            block => block % next
+        end do
+
+        call mpas_dmpar_max_int(dminfo, maxvar2d_local, maxvar2d_global)
+        call mpas_log_write(' - Maximum value in bdyMaskCell = $i', intArgs=(/maxvar2d_global/))
+
+        !
+        ! If there are boundary cells, config_apply_lbcs must be set to true
+        !
+        if (.not. config_apply_lbcs .and. maxvar2d_global > 0) then
+            call mpas_log_write('Boundary cells found in the bdyMaskCell field, but config_apply_lbcs = false.', &
+                                messageType=MPAS_LOG_ERR)
+            call mpas_log_write('Please ensure that config_apply_lbcs = true for limited-area simulations.', &
+                                messageType=MPAS_LOG_ERR)
+            ierr = 1
+            return
+        end if
+
+        !
+        ! If there are no boundary cells, config_apply_lbcs must be set to false
+        !
+        if (config_apply_lbcs .and. maxvar2d_global == 0) then
+            call mpas_log_write('config_apply_lbcs = true, but no boundary cells found in the bdyMaskCell field.', &
+                                messageType=MPAS_LOG_ERR)
+            call mpas_log_write('Please ensure that config_apply_lbcs = false for global simulations.', &
+                                messageType=MPAS_LOG_ERR)
+            ierr = 1
+            return
+        end if
 
         !
         ! If config_apply_lbcs = true, check that the 'lbc_in' stream has a valid input interval
@@ -566,6 +617,8 @@ module mpas_atm_boundaries
             end if
         end if
 
+        call mpas_log_write(' ----- done checking limited-area settings -----')
+        call mpas_log_write('')
         ierr = 0
 
     end subroutine mpas_atm_bdy_checks
