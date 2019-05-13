@@ -505,8 +505,8 @@ if (MODEL STREQUAL "cam")
   # These RRTMG files take an extraordinarily long time to compile with optimization.
   # Until mods are made to read the data from files, just remove optimization from
   # their compilation.
-  set_source_files_properties(rrtmg_lw_k_g.f90 PROPERTIES COMPILE_FLAGS -O0)
-  set_source_files_properties(rrtmg_sw_k_g.f90 PROPERTIES COMPILE_FLAGS -O0)
+  set_source_files_properties(cam/src/physics/rrtmg/ext/rrtmg_lw/rrtmg_lw_k_g.f90 PROPERTIES COMPILE_FLAGS -O0)
+  set_source_files_properties(cam/src/physics/rrtmg/ext/rrtmg_sw/rrtmg_sw_k_g.f90 PROPERTIES COMPILE_FLAGS -O0)
 
   if (COSP_LIBDIR)
     set(INCLDIR "${INCLDIR} -I${COSP_LIBDIR} -I${COSP_LIBDIR}/../ -I../${INSTALL_SHAREDPATH}/include -I../${CSM_SHR_INCLUDE}")
