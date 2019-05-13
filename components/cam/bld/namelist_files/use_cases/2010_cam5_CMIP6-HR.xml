@@ -5,7 +5,7 @@
 <cosp_lite>.true.</cosp_lite>
 
 <!-- Atmosphere initial condition -->
-<ncdata>atm/cam/inic/homme/20180716.DECKv1b_A3.ne30_oEC_to_ne120_oRRS18v3.edison.cam.i.2010-01-01-00000_c20190219.nc</ncdata>
+<ncdata>atm/cam/inic/homme/cori-knl.20190214_maint-1.0.F2010C5-CMIP6-HR.ARE.nudgeUV.ne120_oRRS18v3.cam.i.2011-01-01-00000.nc</ncdata>
 
 <!-- Solar constant from CMIP6 input4MIPS -->
 <solar_data_file>atm/cam/solar/Solar_2010control_input4MIPS_c20181017.nc</solar_data_file>
@@ -27,7 +27,7 @@
 <prescribed_volcaero_cycle_yr>1                                                        </prescribed_volcaero_cycle_yr>
 
 <!-- Ice nucleation mods-->
-<use_hetfrz_classnuc    >.true.</use_hetfrz_classnuc>
+<use_hetfrz_classnuc    >.false.</use_hetfrz_classnuc>
 <use_preexisting_ice    >.false.</use_preexisting_ice>
 <hist_hetfrz_classnuc   >.false.</hist_hetfrz_classnuc>
 <micro_mg_dcs_tdep      >.true.</micro_mg_dcs_tdep>
