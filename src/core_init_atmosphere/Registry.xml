@@ -215,6 +215,11 @@
                      description="Whether to use the vertical layer profile that was developed for use in real-time TC experiments"
                      possible_values="true or false"/>
 
+                <nml_option name="config_specified_zeta_levels" type="character"     default_value=""    in_defaults="false"
+                     units="-"
+                     description="The name of a text file containing a list of vertical coordinate (zeta) values in increasing order at layer interfaces."
+                     possible_values="Any valid filename"/>
+
                 <nml_option name="config_blend_bdy_terrain"     type="logical"       default_value="true"
                      units="-"
                      description="Whether to blend terrain along domain boundaries with first-guess terrain. Only useful for limited-area domains."
