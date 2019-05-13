@@ -1078,14 +1078,12 @@ contains
   real (kind=real_kind) :: temp(np,np,nlev)    
   real (kind=real_kind) :: temp_i(np,np,nlevp)    
   real (kind=real_kind) :: dt
-  real (kind=real_kind) :: ps_ref(np,np)
+  real (kind=real_kind) :: ps_ref(np,np),vtheta_dp(np,np)
 
   real (kind=real_kind) :: theta_ref(np,np,nlev,nets:nete)
   real (kind=real_kind) :: phi_ref(np,np,nlevp,nets:nete)
   real (kind=real_kind) :: dp_ref(np,np,nlev,nets:nete)
 
-  real (kind=real_kind) :: v0(np,np,2,nlevp),eps
-  real (kind=real_kind) :: w0(np,np,nlevp)
   integer :: l1p,l2p,l1n,l2n,l
   call t_startf('advance_hypervis')
 
@@ -1155,24 +1153,31 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   do ic=1,hypervis_subcycle
      do ie=nets,nete
-         do k=1,nlev
-           elem(ie)%state%vtheta_dp(:,:,k,nt)=elem(ie)%state%vtheta_dp(:,:,k,nt)-&
-                theta_ref(:,:,k,ie)
-           elem(ie)%state%phinh_i(:,:,k,nt)=elem(ie)%state%phinh_i(:,:,k,nt)-&
-                phi_ref(:,:,k,ie)
-           elem(ie)%state%dp3d(:,:,k,nt)=elem(ie)%state%dp3d(:,:,k,nt)-&
-                dp_ref(:,:,k,ie)
-        enddo
+        ! remove ref state
+        elem(ie)%state%vtheta_dp(:,:,:,nt)=elem(ie)%state%vtheta_dp(:,:,:,nt)-&
+             theta_ref(:,:,:,ie)
+        elem(ie)%state%phinh_i(:,:,:,nt)=elem(ie)%state%phinh_i(:,:,:,nt)-&
+             phi_ref(:,:,:,ie)
+        elem(ie)%state%dp3d(:,:,:,nt)=elem(ie)%state%dp3d(:,:,:,nt)-&
+             dp_ref(:,:,:,ie)
      enddo
      
      call biharmonic_wk_theta(elem,stens,vtens,deriv,edge_g,hybrid,nt,nets,nete)
      
      do ie=nets,nete
+        !add ref state back
+        elem(ie)%state%vtheta_dp(:,:,:,nt)=elem(ie)%state%vtheta_dp(:,:,:,nt)+&
+             theta_ref(:,:,:,ie)
+        elem(ie)%state%phinh_i(:,:,:,nt)=elem(ie)%state%phinh_i(:,:,:,nt)+&
+             phi_ref(:,:,:,ie)
+        elem(ie)%state%dp3d(:,:,:,nt)=elem(ie)%state%dp3d(:,:,:,nt)+&
+             dp_ref(:,:,:,ie)
+        
         
         ! comptue mean flux
         if (nu_p>0) then
            elem(ie)%derived%dpdiss_ave(:,:,:)=elem(ie)%derived%dpdiss_ave(:,:,:)+&
-                (eta_ave_w*elem(ie)%state%dp3d(:,:,:,nt)+dp_ref(:,:,:,ie))/hypervis_subcycle
+                eta_ave_w*elem(ie)%state%dp3d(:,:,:,nt)/hypervis_subcycle
            elem(ie)%derived%dpdiss_biharmonic(:,:,:)=elem(ie)%derived%dpdiss_biharmonic(:,:,:)+&
                 eta_ave_w*stens(:,:,:,1,ie)/hypervis_subcycle
         endif
@@ -1182,10 +1187,12 @@ contains
            ! note: weak operators alreayd have mass matrix "included"
            
            ! biharmonic terms need a negative sign:
-           if (nu_top>0 .and. nu_scale_top(k)>1) then
+           if (nu_top>0 .and. nu_scale_top(k)>0) then
               ! add regular diffusion near top
+              ! for theta equation, laplace(theta_dp) is much more stable than laplace(theta)
+              vtheta_dp(:,:)=elem(ie)%state%vtheta_dp(:,:,k,nt)*elem(ie)%state%dp3d(:,:,k,nt)/hvcoord%dp0(k)
               lap_s(:,:,1)=laplace_sphere_wk(elem(ie)%state%dp3d       (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
-              lap_s(:,:,2)=laplace_sphere_wk(elem(ie)%state%vtheta_dp  (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+              lap_s(:,:,2)=laplace_sphere_wk(vtheta_dp,                           deriv,elem(ie),var_coef=.false.)
               lap_s(:,:,3)=laplace_sphere_wk(elem(ie)%state%w_i        (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
               lap_s(:,:,4)=laplace_sphere_wk(elem(ie)%state%phinh_i    (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
               lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
@@ -1230,14 +1237,6 @@ contains
            stens(:,:,k,2,ie)=dt*stens(:,:,k,2,ie)*elem(ie)%rspheremp(:,:)  ! theta
            stens(:,:,k,3,ie)=dt*stens(:,:,k,3,ie)*elem(ie)%rspheremp(:,:)  ! w
            stens(:,:,k,4,ie)=dt*stens(:,:,k,4,ie)*elem(ie)%rspheremp(:,:)  ! phi
-           
-           !add ref state back
-           elem(ie)%state%vtheta_dp(:,:,k,nt)=elem(ie)%state%vtheta_dp(:,:,k,nt)+&
-                theta_ref(:,:,k,ie)
-           elem(ie)%state%phinh_i(:,:,k,nt)=elem(ie)%state%phinh_i(:,:,k,nt)+&
-                phi_ref(:,:,k,ie)
-           elem(ie)%state%dp3d(:,:,k,nt)=elem(ie)%state%dp3d(:,:,k,nt)+&
-                dp_ref(:,:,k,ie)
            
         enddo
         
