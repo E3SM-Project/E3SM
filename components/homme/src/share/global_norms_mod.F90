@@ -557,12 +557,15 @@ contains
           endif
        endif
        if(nu_top>0) then
-          nu_top_actual=4*nu_top
 #ifdef MODEL_THETA_L
-          ! oops - nu_scale_top not yet computed. assume 4
-#endif
+          nu_top_actual=8*nu_top
+          write(iulog,'(a,f10.2,a)') '8*nu_top viscosity CFL: dt < S*', &
+               1.0d0/(nu_top_actual*((rrearth*max_normDinv)**2)*lambda_vis),'s'
+#else
+          nu_top_actual=4*nu_top
           write(iulog,'(a,f10.2,a)') '4*nu_top viscosity CFL: dt < S*', &
                1.0d0/(nu_top_actual*((rrearth*max_normDinv)**2)*lambda_vis),'s'
+#endif
        end if
 
       if(dcmip16_mu>0)  write(iulog,'(a,f10.2,a)') 'dcmip16_mu   viscosity CFL: dt < S*', &
