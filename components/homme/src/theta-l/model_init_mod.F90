@@ -88,15 +88,14 @@ contains
           ptop_over_press = hvcoord%etai(1) / hvcoord%etam(k)  
        endif
 
-       ! active for p<4*ptop (following cd_core.F90 in CAM-FV)
-       ! CAM 26L and 30L:  top 3 levels
-       ! E3SM 72L:  top 3 levels
+       ! active for p<10*ptop (following cd_core.F90 in CAM-FV)
+       ! CAM 26L and 30L:  top 3 levels 
+       ! E3SM 72L:  top 6 levels
        nu_scale_top(k) = 8*(1+tanh(log(ptop_over_press))) ! active for p<4*ptop
-       if (nu_scale_top(k)<0.3d0) nu_scale_top(k)=0
+       if (nu_scale_top(k)<0.15d0) nu_scale_top(k)=0
 
-       ! active for p<7*ptop 
        !nu_scale_top(k) = 8*(1+.911*tanh(log(ptop_over_press))) ! active for p<6.5*ptop
-       !if (nu_scale_top(k)<0.3d0) nu_scale_top(k)=0
+       !if (nu_scale_top(k)<1d0) nu_scale_top(k)=0
 
        ! original CAM3/preqx formula
        !if (k==1) nu_scale_top(k)=4
