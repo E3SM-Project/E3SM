@@ -63,14 +63,14 @@
       <value compset="^1850_"   >clim_1850</value>
       <value compset="^2000_"   >clim_2000</value>
       <value compset="^2010_"   >clim_2010</value>
-      <value compset="^SSP1-1.9">SSP1-1.9</value>
-      <value compset="^SSP1-2.6">SSP1-2.6</value>
-      <value compset="^SSP2-4.5">SSP2-4.5</value>
-      <value compset="^SSP3-7.0">SSP3-7.0</value>
-      <value compset="^SSP4-3.4">SSP4-3.4</value>
-      <value compset="^SSP4-6.0">SSP4-6.0</value>
-      <value compset="^SSP5-3.4">SSP5-3.4</value>
-      <value compset="^SSP5-8.5">SSP5-8.5</value>
+      <value compset="^SSP119_" >SSP1-1.9</value>
+      <value compset="^SSP126_" >SSP1-2.6</value>
+      <value compset="^SSP245_" >SSP2-4.5</value>
+      <value compset="^SSP370_" >SSP3-7.0</value>
+      <value compset="^SSP434_" >SSP4-3.4</value>
+      <value compset="^SSP460_" >SSP4-6.0</value>
+      <value compset="^SSP534_" >SSP5-3.4</value>
+      <value compset="^SSP585_" >SSP5-8.5</value>
       <value compset="^HIST_"   >trans_1850-2000</value>
       <value compset="^20TR_"   >trans_1850-2000</value>
       <value compset="_DATM%CPLHIST">cplhist</value>
@@ -101,16 +101,16 @@
     <valid_values>none,20tr,20tr.latbnd,SSP1-1.9,SSP1-2.6,SSP2-4.5,SSP3-7.0,SSP4-3.4,SSP4-6.0,SSP5-3.4,SSP5-8.5,SSP1-1.9.latbnd,SSP1-2.6.latbnd,SSP2-4.5.latbnd,SSP3-7.0.latbnd,SSP4-3.4.latbnd,SSP4-6.0.latbnd,SSP5-3.4.latbnd,SSP5-8.5.latbnd</valid_values>
     <default_value>none</default_value>
     <values match="last">
-      <value compset="^SSP1-1.9">SSP1-1.9</value>
-      <value compset="^SSP1-2.6">SSP1-2.6</value>
-      <value compset="^SSP2-4.5">SSP2-4.5</value>
-      <value compset="^SSP3-7.0">SSP3-7.0</value>
-      <value compset="^SSP4-3.4">SSP4-3.4</value>
-      <value compset="^SSP4-6.0">SSP4-6.0</value>
-      <value compset="^SSP5-3.4">SSP5-3.4</value>
-      <value compset="^SSP5-8.5">SSP5-8.5</value>
-      <value compset="^HIST"    >20tr</value>
-      <value compset="^20TR"    >20tr</value>
+      <value compset="^SSP119_">SSP1-1.9</value>
+      <value compset="^SSP126_">SSP1-2.6</value>
+      <value compset="^SSP245_">SSP2-4.5</value>
+      <value compset="^SSP370_">SSP3-7.0</value>
+      <value compset="^SSP434_">SSP4-3.4</value>
+      <value compset="^SSP460_">SSP4-6.0</value>
+      <value compset="^SSP534_">SSP5-3.4</value>
+      <value compset="^SSP585_">SSP5-8.5</value>
+      <value compset="^HIST"   >20tr</value>
+      <value compset="^20TR"   >20tr</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
@@ -207,9 +207,9 @@
       <value compset="20TR.*_DATM%CRU">1901</value>
       <value compset="20TR.*_DATM%GSW">1901</value>
       <value compset="4804.*_DATM%QIA">1</value>
-      <value compset="SSP.*_DATM%QIA">2004</value>
-      <value compset="SSP.*_DATM%CRU">2005</value>
-      <value compset="SSP.*_DATM%GSW">2005</value>
+      <value compset="SSP.*_DATM%QIA">1995</value>
+      <value compset="SSP.*_DATM%CRU">2001</value>
+      <value compset="SSP.*_DATM%GSW">2001</value>
       <value compset="2003.*_DATM%QIA.*_TEST">1</value>
       <value compset="1850.*_DATM%CRU">1</value>
       <value compset="2000.*_DATM%CRU">1</value>
@@ -243,9 +243,9 @@
       <value compset="20TR.*_DATM%CRU">1901</value>
       <value compset="20TR.*_DATM%GSW">1901</value>
       <value compset="4804.*_DATM%QIA">1948</value>
-      <value compset="SSP.*_DATM%QIA" >1972</value>
-      <value compset="SSP.*_DATM%CRU" >1991</value>
-      <value compset="SSP.*_DATM%GSW" >1991</value>
+      <value compset="SSP.*_DATM%QIA" >1995</value>
+      <value compset="SSP.*_DATM%CRU" >2001</value>
+      <value compset="SSP.*_DATM%GSW" >2001</value>
       <value compset="2003.*_DATM%QIA.*_TEST">2002</value>
       <value compset="1850.*_DATM%CRU">1901</value>
       <value compset="2000.*_DATM%CRU">1991</value>
@@ -280,8 +280,8 @@
       <value   compset="20TR.*_DATM%GSW">1920</value>
       <value   compset="4804.*_DATM%QIA">2004</value>
       <value   compset="SSP.*_DATM%QIA">2004</value>
-      <value   compset="SSP.*_DATM%CRU">2010</value>
-      <value   compset="SSP.*_DATM%GSW">2010</value>
+      <value   compset="SSP.*_DATM%CRU">2016</value>
+      <value   compset="SSP.*_DATM%GSW">2014</value>
       <value   compset="2003.*_DATM%QIA.*_TEST">2003</value>
       <value   compset="1850.*_DATM%CRU">1920</value>
       <value   compset="2000.*_DATM%CRU">2010</value>
