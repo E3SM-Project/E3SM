@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<registry model="mpas" core="atmosphere" core_abbrev="atm" version="6.2">
+<registry model="mpas" core="atmosphere" core_abbrev="atm" version="6.3">
 
 <!-- **************************************************************************************** -->
 <!-- ************************************** Dimensions ************************************** -->
@@ -470,6 +470,8 @@
 			<var name="isltyp"/>
 			<var name="ivgtyp"/>
 			<var name="mminlu"/>
+			<var name="isice_lu"/>
+			<var name="iswater_lu"/>
 			<var name="landmask"/>
 			<var name="shdmin"/>
 			<var name="shdmax"/>
@@ -740,6 +742,7 @@
 			<var name="noahres"/>
 			<var name="potevp"/>
 			<var name="sfc_albedo"/>
+			<var name="sfc_albedo_seaice"/>
 			<var name="sfc_emiss"/>
 			<var name="sfc_emibck"/>
 			<var name="sfcrunoff"/>
@@ -787,6 +790,8 @@
 			<var name="isltyp"/>
 			<var name="ivgtyp"/>
 			<var name="mminlu"/>
+			<var name="isice_lu"/>
+			<var name="iswater_lu"/>
 			<var name="landmask"/>
 			<var name="shdmin"/>
 			<var name="shdmax"/>
@@ -936,6 +941,8 @@
 			<var name="pin"/>
 			<var name="ozmixm"/>
 			<var name="mminlu"/>
+			<var name="isice_lu"/>
+			<var name="iswater_lu"/>
 			<var name="xland"/>
 			<var name="skintemp"/>
 			<var name="snow"/>
@@ -1782,7 +1789,7 @@
                      description="logical for configuration of deep soil temperatures"
                      possible_values=".true. for slowly time-varying deep soil temperatures; .false. otherwise"/>
 
-                <nml_option name="config_o3climatology" type="logical" default_value="false" in_defaults="false"
+                <nml_option name="config_o3climatology" type="logical" default_value="true" in_defaults="false"
                      units="-"
                      description="logical for configuration of input ozone data in RRMTG long- and short-wave radiation"
                      possible_values=".true. for using monthly-varying ozone data; .false. for using fixed vertical profile"/>
@@ -2650,6 +2657,9 @@
                 <var name="sfc_albedo" type="real" dimensions="nCells Time" units="unitless"
                      description="surface albedo"/>
 
+                <var name="sfc_albedo_seaice" type="real" dimensions="nCells Time" units="unitless"
+                     description="surface albedo over seaice"/>
+
                 <var name="sfc_emiss" type="real" dimensions="nCells Time" units="unitless"
                      description="surface emissivity"/>
 
@@ -2852,6 +2862,12 @@
 
                 <var name="mminlu" type="text" dimensions="" units="unitless"
                      description="land use classification"/>
+
+                <var name="isice_lu" name_in_code="isice" type="integer" dimensions="" units="unitless" default_value="24"
+                     description="Index category for snow/ice"/>
+
+                <var name="iswater_lu" name_in_code="iswater" type="integer" dimensions="" units="unitless" default_value="16"
+                     description="Index category for water"/>
 
                 <var name="landmask" type="integer"  dimensions="nCells" units="unitless"
                      description="land-ocean mask (1=land ; 0=ocean)"/>

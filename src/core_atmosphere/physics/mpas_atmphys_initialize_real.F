@@ -49,6 +49,9 @@
 ! * In subroutine physics_init_seaice, assign the sea-ice land use category as a function of
 !   the land use category input file (MODIS OR USGS).
 !   Dominikus Heinzeller (IMK) / 2014-07-24.
+! * In subroutine physics_init_seaice, removed the initialization of isice_lu since it is now defined in
+!   Registry.xml and initialized in subroutine init_atm_static.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-01-12.
 
 
  contains
@@ -600,7 +603,7 @@
 
  logical, pointer :: config_frac_seaice
  character(len=StrKIND),pointer:: config_landuse_data
- integer:: isice_lu
+ integer,pointer:: isice_lu
 
 !note that this threshold is also defined in module_physics_vars.F.It is defined here to avoid
 !adding "use module_physics_vars" since this subroutine is only used for the initialization of
@@ -618,6 +621,7 @@
  call mpas_pool_get_dimension(dims, 'nCellsSolve', nCellsSolve)
  call mpas_pool_get_dimension(dims, 'nSoilLevels', nSoilLevels)
 
+ call mpas_pool_get_array(mesh, 'isice_lu', isice_lu)
  call mpas_pool_get_array(mesh, 'landmask', landmask)
  call mpas_pool_get_array(mesh, 'lu_index', ivgtyp)
  call mpas_pool_get_array(mesh, 'soilcat_top', isltyp)
@@ -635,17 +639,6 @@
  call mpas_pool_get_array(input, 'sh2o', sh2o)
  call mpas_pool_get_array(input, 'smcrel', smcrel)
 
-!define the land use category for sea-ice as a function of the land use category input file:
- sfc_input_select1: select case(trim(config_landuse_data))
-    case('OLD')
-       isice_lu = 11
-    case('USGS')
-       isice_lu = 24
-    case('MODIFIED_IGBP_MODIS_NOAH')
-       isice_lu = 15
-    case default
-       CALL physics_error_fatal ('Invalid Land Use Dataset '//trim(config_landuse_data))
- end select sfc_input_select1
  call mpas_log_write('--- isice_lu   = $i', intArgs=(/isice_lu/))
 
 !assign the threshold value for xice as a function of config_frac_seaice:

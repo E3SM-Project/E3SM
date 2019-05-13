@@ -13,6 +13,7 @@
  implicit none
  private
  public:: get_julgmt,             &
+          cal_mon_day,            &
           monthly_interp_to_date, &
           monthly_min_max
 
@@ -37,6 +38,10 @@
 ! * in subroutines get_julgmt_date and split_date_char, changed the declaration of date_str
 !   from StrKIND to *.
 !   Laura D. Fowler (laura@ucar.edu) / 2013-10-18.
+! * added the subroutine cal_mon_day. This subroutine was copied from module_ra_gfdleta.F from WRF version 3.9.0.
+!   It is used in the updated module module_sf_noahdrv.F, but only if we run the urban physics option which we do
+!   not. So this subroutine is currently not used.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-01-10.
 
 
  contains
@@ -77,6 +82,45 @@
  enddo
 
  end subroutine get_julgmt
+
+!=================================================================================================================
+ subroutine cal_mon_day(julday,julyr,jmonth,jday)
+!=================================================================================================================
+
+!input arguments:
+ integer,intent(in):: julday,julyr
+
+!output arguments:
+ integer,intent(out):: jmonth,jday
+
+!local variables:
+ logical:: leap,not_find_date
+ integer:: month (12),itmpday,itmpmon,i
+ data month/31,28,31,30,31,30,31,31,30,31,30,31/
+
+ not_find_date = .true.
+
+ itmpday = julday
+ itmpmon = 1
+ leap=.false.
+ if(mod(julyr,4).eq.0)then
+    month(2)=29
+    leap=.true.
+ endif
+
+ i = 1
+ do while (not_find_date)
+    if(itmpday.gt.month(i))then
+       itmpday=itmpday-month(i)
+    else
+       jday=itmpday
+       jmonth=i
+       not_find_date = .false.
+    endif
+    i = i+1
+ enddo
+
+ end subroutine cal_mon_day
 
 !=================================================================================================================
  subroutine split_date_char(date,century_year,month,day,hour,minute,second,ten_thousandth)
@@ -171,6 +215,7 @@
     endif
  enddo find_month
  
+
  end subroutine monthly_interp_to_date
 
 !=================================================================================================================
