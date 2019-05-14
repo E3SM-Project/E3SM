@@ -2,7 +2,7 @@
 
 #include "share/scream_types.hpp"
 #include "share/util/scream_utils.hpp"
-#include "share/util/scream_kokkos.hpp"
+#include "share/scream_kokkos.hpp"
 #include "share/scream_pack.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "share/util/scream_kokkos_utils.hpp"
