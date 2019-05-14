@@ -369,11 +369,13 @@ void run_test (const TestConfig& tc) {
           re = reldif(scalarize(Bm), scalarize(Ym), nrhs);
         }
         const bool pass = re <= 50*std::numeric_limits<Real>::epsilon();
-        std::stringstream ss;
-        ss << Solver::convert(tc.solver) << " " << tc.n_kokkos_thread
-           << " " << tc.n_kokkos_vec << " | " << nrow << " " << nrhs << " "
-           << A_many << " | log10 reldif " << std::log10(re);
-        if ( ! pass) std::cout << "FAIL: " << ss.str() << "\n";
+        if ( ! pass) {
+          std::stringstream ss;
+          ss << Solver::convert(tc.solver) << " " << tc.n_kokkos_thread
+             << " " << tc.n_kokkos_vec << " | " << nrow << " " << nrhs << " "
+             << A_many << " | log10 reldif " << std::log10(re);
+          std::cout << "FAIL: " << ss.str() << "\n";
+        }
         REQUIRE(pass);
         //std::cout << "PASS: " << ss.str() << "\n";
       }

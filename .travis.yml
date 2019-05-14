@@ -27,7 +27,7 @@ branches:
 script:
 - git clean -fd
 - git clone https://github.com/jgfouca/scream-scripts-mirror.git
-- if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then ln -s $(which g++-6) g++; export PATH="${PWD}:${PATH}"; fi
+- if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then export OMPI_CXX=$(which g++-6); fi
 - gfortran --version
 - git config submodule.externals/kokkos.url https://github.com/kokkos/kokkos.git
 - git submodule update --init externals/kokkos

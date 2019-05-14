@@ -366,6 +366,14 @@ static void unittest_upwind () {
               //            = (r[1]*rho)/(r[0]*rho) = r[1]/r[0].
               // This mixing ratio is tested to show that it does not violate
               // the previous time step's global extrema.
+              //
+              // At the inflow boundary, where inflow is 0, we need to be
+              // careful about sr(k_top)/sr0(k_top) becoming dominated by noise
+              // as each goes to 0. eps^2 relative to a starting value of
+              // sr0(k_top) = 1 at time 0 is unnecessarily small (we could
+              // choose a larger lower bound and still be testing things well),
+              // but it works, so we might as well use it.
+              if (eps*sr0(k) < eps) return;
               const auto mixing_ratio_true = sr(k)/sr0(k);
               r_max = util::max(mixing_ratio_true, r_max);
             };
