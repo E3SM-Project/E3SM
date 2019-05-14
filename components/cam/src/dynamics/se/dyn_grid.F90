@@ -40,17 +40,16 @@ module dyn_grid
   ! Author: Jim Edwards and Patrick Worley
   ! 
   !-------------------------------------------------------------------------------------------------
-  use element_mod,        only: element_t
-  use cam_logfile,        only: iulog
-  use cam_abortutils,     only: endrun
-  use shr_kind_mod,       only: r8 => shr_kind_r8
-  use shr_const_mod,      only: SHR_CONST_PI
-  use cam_grid_support,   only: iMap
-  use scamMod,                only: single_column
-  use dimensions_mod,     only: nelem, nelemd, nelemdmax, ne, np, npsq, fv_nphys
-  use spmd_utils,         only: iam, mpi_integer, mpi_real8, mpicom, npes, masterproc
-  use parallel_mod,       only: par
-   use scamMod,           only: single_column
+  use element_mod,             only: element_t
+  use cam_logfile,             only: iulog
+  use cam_abortutils,          only: endrun
+  use shr_kind_mod,            only: r8 => shr_kind_r8
+  use shr_const_mod,           only: SHR_CONST_PI
+  use cam_grid_support,        only: iMap
+  use dimensions_mod,          only: nelem, nelemd, nelemdmax, ne, np, npsq, fv_nphys
+  use spmd_utils,              only: iam, mpi_integer, mpi_real8, mpicom, npes, masterproc
+  use parallel_mod,            only: par
+  use scamMod,                 only: single_column
 
   implicit none
   private
@@ -65,7 +64,6 @@ module dyn_grid
   integer, public, parameter :: ptimelevels = 2
   real(r8),        parameter :: rad2deg = 180.0_r8 / SHR_CONST_PI
 
-
   type block_global_data
      integer :: UniquePtOffset
      integer :: NumUniqueP
@@ -73,10 +71,10 @@ module dyn_grid
      integer :: Owner
   end type block_global_data
 
-
   type(block_global_data), allocatable :: gblocks(:)
   type(element_t), public, pointer :: elem(:) => null()
 
+  ! FV physics grid stucture
   type, public :: fv_physgrid_struct
     real(kind=r8), allocatable :: area(:,:)   ! spherical area of fv cell
     real(kind=r8), allocatable :: lon(:,:)    ! longitude
@@ -111,13 +109,12 @@ module dyn_grid
   real(r8),          pointer :: pearea(:) => null() ! pe-local areas
   integer(iMap),     pointer :: pemap(:)  => null() ! pe-local map for PIO decomp
 
-
 !===================================================================================================
 contains
 !===================================================================================================
 
   subroutine dyn_grid_init()
-    use derivative_mod, only: allocate_subcell_integration_matrix
+    use derivative_mod,          only: allocate_subcell_integration_matrix
     !----------------------------Local-Variables--------------------------------
     integer :: ie
     !---------------------------------------------------------------------------
@@ -1126,7 +1123,7 @@ contains
       if (present(lon_out)) lon_out(:) = clon(:) * rad2deg
 
       !----------------------------------------------------
-      ! Get cell corners (only for writing scrip file)
+      ! Get cell corners (only needed for writing scrip file)
       !----------------------------------------------------
       if ( present(corner_lat_out) .or. present(corner_lon_out) ) then
         allocate(corner_lat_rad_local(ncol_fv_lcl,4))
@@ -1542,7 +1539,6 @@ contains
   !=================================================================================================
   !
   subroutine fv_physgrid_init()
-    use dof_mod,                only: UniqueCoords, UniquePoints
     use control_mod,            only: cubed_sphere_map
     use kinds,                  only: lng_dbl => longdouble_kind
     use cube_mod,               only: ref2sphere
@@ -1561,15 +1557,15 @@ contains
     real(kind=lng_dbl)      :: corner_offset_j(4)
     type(cartesian3D_t)     :: corner_tmp(4)
     type(cartesian3D_t)     :: center_tmp
-    ! integer  :: ncol_fv_gbl, ncol_fv_lcl
     integer  :: ie, sb, eb, i, j, ip, fv_cnt, c
     integer  :: ierr
     integer  :: ibuf
     real(r8) :: area1, area2
     !---------------------------------------------------------------------------
     
-    ! these offsets define the order of the corners, which should 
-    ! be counter clockwise if being written to a scrip file
+    ! These offsets define the order of the corners of each element subcell, 
+    ! used to define the physics grid coordinates. The specific order does not 
+    ! matter here, but it should generally always be counter-clockwise.
     corner_offset_i = (/-1.,1.,1.,-1./)
     corner_offset_j = (/-1.,-1.,1.,1./)
     
@@ -1588,18 +1584,16 @@ contains
                                 * ( real(i,lng_dbl) - 0.5_lng_dbl )
           ref_j = -1._lng_dbl + 2._lng_dbl/real(fv_nphys,lng_dbl) & 
                                 * ( real(j,lng_dbl) - 0.5_lng_dbl )
-
           !-------------------------------------------------------------------
           ! Although this is a simpler method of defining cell centers, 
           ! it is inconsistent with the method used by TempestRemap.
-          ! Instead use the average of cell corner cartesian coordinates.
+          ! Instead use the average of cell corners in cartesian coordinates.
           !-------------------------------------------------------------------
           ! sphere_coord = ref2sphere(ref_i, ref_j,                         &
           !                           elem(ie)%corners3D, cubed_sphere_map, &
           !                           elem(ie)%corners, elem(ie)%facenum )
           ! fv_physgrid(ie)%lat(i,j) = sphere_coord%lat
           ! fv_physgrid(ie)%lon(i,j) = sphere_coord%lon
-
           !-------------------------------------------------------------------
           ! cell corner locations
           !-------------------------------------------------------------------
@@ -1627,29 +1621,22 @@ contains
             center_tmp%z = center_tmp%z + corner_tmp(c)%z/4._lng_dbl
 
           end do ! c
-
           !-------------------------------------------------------------------
-          ! define cell centers
+          ! define cell centers by converting cartesian to spherical coords
           !-------------------------------------------------------------------
-          ! change cartesian to spherical
           sphere_coord = change_coordinates(center_tmp)
-
           fv_physgrid(ie)%lat(i,j) = sphere_coord%lat
           fv_physgrid(ie)%lon(i,j) = sphere_coord%lon
-
           !-------------------------------------------------------------------
-          ! cell area
+          ! define cell area as the sum of two spherical triangle areas
           !-------------------------------------------------------------------
-          ! area is the sum of 2 triangles defined by the cell corners
           call sphere_tri_area( corner_tmp(1), &
                                 corner_tmp(2), &
                                 corner_tmp(3), area1 )
           call sphere_tri_area( corner_tmp(3), &
                                 corner_tmp(4), &
                                 corner_tmp(1), area2 )
-
           fv_physgrid(ie)%area(i,j) = area1 + area2 
-
           !-------------------------------------------------------------------
           !-------------------------------------------------------------------
         end do ! i
