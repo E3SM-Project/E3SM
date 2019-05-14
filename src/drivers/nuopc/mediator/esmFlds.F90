@@ -38,7 +38,7 @@ module esmflds
   integer , public, parameter :: nmappers       = 8
 
   character(len=*) , public, parameter :: mapnames(nmappers) = & 
-       (/'bilnr', 'consf', 'consd', 'patch', 'fcopy', 'nstod', 'nstod_consd', 'nstod_consf'/)
+       (/'bilnr      ','consf      ', 'consd      ', 'patch      ', 'fcopy      ', 'nstod      ', 'nstod_consd', 'nstod_consf'/)
 
   !-----------------------------------------------
   ! Set coupling mode

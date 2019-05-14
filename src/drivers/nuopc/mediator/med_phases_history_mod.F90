@@ -4,12 +4,13 @@ module med_phases_history_mod
   ! Mediator Phases
   !-----------------------------------------------------------------------------
 
-  use ESMF, only : ESMF_Alarm
+  use ESMF              , only : ESMF_Alarm
+  use med_constants_mod , only : R8, CL, CS, I8
 
   implicit none
   private
 
-  public  :: med_phases_history_write
+  public :: med_phases_history_write
 
   type(ESMF_Alarm)        :: AlarmHist
   type(ESMF_Alarm)        :: AlarmHistAvg
@@ -24,17 +25,20 @@ contains
 
     ! Write mediator history file
 
-    use ESMF                  , only : ESMF_GridComp, ESMF_VM, ESMF_Clock, ESMF_Time, ESMF_TimeInterval, ESMF_CalKind_Flag
-    use ESMF                  , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_ClockGetNextTime, ESMF_VMGet, ESMF_TimeGet
-    use ESMF                  , only : ESMF_TimeIntervalGet, ESMF_AlarmIsRinging, ESMF_AlarmRingerOff
-    use ESMF                  , only : ESMF_CALKIND_GREGORIAN, ESMF_CALKIND_NOLEAP
-    use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_LOGMSG_ERROR, ESMF_SUCCESS, ESMF_FAILURE
+    use ESMF                  , only : ESMF_GridComp, ESMF_GridCompGet
+    use ESMF                  , only : ESMF_VM, ESMF_VMGet
+    use ESMF                  , only : ESMF_Clock, ESMF_ClockGet, ESMF_ClockGetNextTime
+    use ESMF                  , only : ESMF_Calendar
+    use ESMF                  , only : ESMF_Time, ESMF_TimeGet
+    use ESMF                  , only : ESMF_TimeInterval, ESMF_TimeIntervalGet
+    use ESMF                  , only : ESMF_Alarm, ESMF_AlarmIsRinging, ESMF_AlarmRingerOff
+    use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_LOGMSG_ERROR
+    use ESMF                  , only : ESMF_SUCCESS, ESMF_FAILURE
     use ESMF                  , only : operator(==), operator(-)
     use ESMF                  , only : ESMF_FieldBundleIsCreated, ESMF_MAXSTR, ESMF_ClockPrint, ESMF_AlarmIsCreated
     use NUOPC                 , only : NUOPC_CompAttributeGet
     use esmFlds               , only : compatm, complnd, compocn, compice, comprof, compglc, ncomps, compname
     use esmFlds               , only : fldListFr, fldListTo
-    use shr_cal_mod           , only : shr_cal_ymd2date
     use shr_nuopc_utils_mod   , only : chkerr          => shr_nuopc_utils_ChkErr
     use shr_nuopc_methods_mod , only : FB_reset        => shr_nuopc_methods_FB_reset
     use shr_nuopc_methods_mod , only : FB_diagnose     => shr_nuopc_methods_FB_diagnose
@@ -44,12 +48,11 @@ contains
     use shr_nuopc_time_mod    , only : alarmInit       => shr_nuopc_time_alarmInit
     use med_constants_mod     , only : dbug_flag       => med_constants_dbug_flag
     use med_constants_mod     , only : SecPerDay       => med_constants_SecPerDay
-    use med_constants_mod     , only : R8, CL, CS
-    use med_constants_mod     , only : med_constants_noleap, med_constants_gregorian
     use med_map_mod           , only : med_map_FB_Regrid_Norm
     use med_internalstate_mod , only : InternalState, mastertask
     use med_io_mod            , only : med_io_write, med_io_wopen, med_io_enddef
     use med_io_mod            , only : med_io_close, med_io_date2yyyymmdd, med_io_sec2hms
+    use med_io_mod            , only : med_io_ymd2date
     use perf_mod              , only : t_startf, t_stopf
 
     ! input/output variables
@@ -64,7 +67,7 @@ contains
     type(ESMF_Time)         :: starttime
     type(ESMF_Time)         :: nexttime
     type(ESMF_TimeInterval) :: timediff       ! Used to calculate curr_time
-    type(ESMF_CalKind_Flag) :: calkindflag
+    type(ESMF_Calendar)     :: calendar       ! calendar type
     character(len=64)       :: currtimestr
     character(len=64)       :: nexttimestr
     type(InternalState)     :: is_local
@@ -78,7 +81,6 @@ contains
     real(r8)                :: dayssince      ! Time interval since reference time
     integer                 :: fk             ! index
     character(CL)           :: time_units     ! units of time variable
-    character(CL)           :: calendar       ! calendar type
     character(CL)           :: case_name      ! case name
     character(CL)           :: hist_file      ! Local path to history filename
     character(CS)           :: cpl_inst_tag   ! instance tag
@@ -90,11 +92,11 @@ contains
     logical                 :: whead,wdata    ! for writing restart/history cdf files
     integer                 :: dbrc
     integer                 :: iam
+    logical                 :: isPresent
     logical,save            :: first_call = .true.
     character(len=*), parameter :: subname='(med_phases_history_write)'
-    logical :: isPresent
-
     !---------------------------------------
+
     call t_startf('MED:'//subname)
     if (dbug_flag > 5) then
        call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -130,6 +132,7 @@ contains
     else
        cpl_inst_tag = ""
     endif
+
     !---------------------------------------
     ! --- Get the clock info
     !---------------------------------------
@@ -137,24 +140,11 @@ contains
     call ESMF_GridCompGet(gcomp, clock=clock, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call ESMF_ClockGet(clock, currtime=currtime, reftime=reftime, starttime=starttime, rc=rc)
+    call ESMF_ClockGet(clock, currtime=currtime, reftime=reftime, starttime=starttime, calendar=calendar, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_ClockGetNextTime(clock, nextTime=nexttime, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_ClockGet(clock, calkindflag=calkindflag, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (calkindflag == ESMF_CALKIND_GREGORIAN) then
-      calendar = med_constants_gregorian
-    elseif (calkindflag == ESMF_CALKIND_NOLEAP) then
-      calendar = med_constants_noleap
-    else
-      call ESMF_LogWrite(trim(subname)//' ERROR: calendar not supported', ESMF_LOGMSG_ERROR, rc=dbrc)
-      rc=ESMF_Failure
-      return
-    endif
 
     call ESMF_TimeGet(currtime,yy=yr, mm=mon, dd=day, s=sec, rc=dbrc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -174,7 +164,7 @@ contains
     dayssince = day + sec/real(SecPerDay,R8)
 
     call ESMF_TimeGet(reftime, yy=yr, mm=mon, dd=day, s=sec, rc=dbrc)
-    call shr_cal_ymd2date(yr,mon,day,start_ymd)
+    call med_io_ymd2date(yr,mon,day,start_ymd)
     start_tod = sec
     time_units = 'days since ' // trim(med_io_date2yyyymmdd(start_ymd)) // ' ' // med_io_sec2hms(start_tod, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -263,12 +253,12 @@ contains
           call ESMF_LogWrite(trim(subname)//": time "//trim(time_units), ESMF_LOGMSG_INFO, rc=dbrc)
           if (tbnds(1) >= tbnds(2)) then
              call med_io_write(hist_file, iam, &
-                  time_units=time_units, time_cal=calendar, time_val=dayssince, &
+                  time_units=time_units, calendar=calendar, time_val=dayssince, &
                   whead=whead, wdata=wdata, rc=rc)
              if (ChkErr(rc,__LINE__,u_FILE_u)) return
           else
              call med_io_write(hist_file, iam, &
-                  time_units=time_units, time_cal=calendar, time_val=dayssince, &
+                  time_units=time_units, calendar=calendar, time_val=dayssince, &
                   whead=whead, wdata=wdata, tbnds=tbnds, rc=rc)
              if (ChkErr(rc,__LINE__,u_FILE_u)) return
           endif
@@ -311,5 +301,7 @@ contains
     call t_stopf('MED:'//subname)
 
   end subroutine med_phases_history_write
+
+  !===============================================================================
 
 end module med_phases_history_mod

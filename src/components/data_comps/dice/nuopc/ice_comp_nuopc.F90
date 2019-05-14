@@ -230,9 +230,13 @@ contains
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
 
+    call NUOPC_CompAttributeGet(gcomp, name='flds_i2o_per_cat', value=cvalue, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) flds_i2o_per_cat 
+
     call dice_comp_advertise(importstate, exportState, flds_scalar_name, &
-       ice_present, ice_prognostic, &
-       fldsFrIce_num, fldsFrIce, fldsToIce_num, fldsToIce, rc)
+         ice_present, ice_prognostic, flds_i2o_per_cat, &
+         fldsFrIce_num, fldsFrIce, fldsToIce_num, fldsToIce, rc)
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to original values
@@ -347,6 +351,10 @@ contains
     Emesh = ESMF_MeshCreate(filename=trim(cvalue), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
+    if (my_task == master_task) then
+       write(logunit,*) " obtaining dice mesh from " // trim(cvalue)
+    end if
+
     !--------------------------------
     ! Initialize model
     !--------------------------------
@@ -406,7 +414,7 @@ contains
          calendar, modeldt, current_ymd, current_tod, cosArg)
 
     ! Pack export state
-    call dice_comp_export(exportState, rc=rc)
+    call dice_comp_export(exportState, flds_i2o_per_cat, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call State_SetScalar(dble(nxg),flds_scalar_index_nx, exportState, &
@@ -539,7 +547,7 @@ contains
     ! Pack export state
     !--------------------------------
 
-    call dice_comp_export(exportState, rc=rc)
+    call dice_comp_export(exportState, flds_i2o_per_cat, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------

@@ -1958,7 +1958,7 @@ contains
     type(ESMF_ALARM)         :: glc_avg_alarm
     logical                  :: glc_present
     character(len=16)        :: glc_avg_period
-    integer                  :: first_time = .true.
+    logical                :: first_time = .true.
     character(len=*),parameter :: subname='(module_MED:SetRunClock)'
     !-----------------------------------------------------------
 

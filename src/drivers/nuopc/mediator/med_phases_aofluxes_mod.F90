@@ -70,10 +70,6 @@ module med_phases_aofluxes_mod
      real(R8) , pointer :: ustar       (:) ! saved ustar
      real(R8) , pointer :: re          (:) ! saved re
      real(R8) , pointer :: ssq         (:) ! saved sq
-     real(R8) , pointer :: prec_gust   (:) ! atm precip for convective gustiness (kg/m^3)
-
-     ! Fields that are not obtained via GetFldPtr
-     real(R8) , pointer :: uGust       (:) ! wind gust
      logical            :: created         ! has this data type been created
   end type aoflux_type
 
@@ -361,19 +357,6 @@ contains
        allocate(aoflux%shum_HDO(lsize)); aoflux%shum_HDO(:) = 0._R8
     end if
 
-    ! Optional field used for gust parameterization
-    if ( FB_fldchk(FBAtm, 'Faxa_rainc', rc=rc)) then
-       call FB_GetFldPtr(FBAtm, fldname='Faxa_rainc', fldptr1=aoflux%prec_gust, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       aoflux%prec_gust(:) =  0.0_R8
-    end if
-
-    !----------------------------------
-    ! Fields that are not obtained via GetFldPtr
-    !----------------------------------
-    allocate(aoflux%uGust(lsize))
-    aoflux%uGust(:)     =  0.0_R8
-
     !----------------------------------
     ! setup the compute mask.
     !----------------------------------
@@ -432,7 +415,6 @@ contains
     character(CL)           :: cvalue
     integer                 :: n,i                     ! indices
     integer                 :: lsize                   ! local size
-    real(R8)                :: gust_fac = huge(1.0_R8) ! wind gust factor
     real(R8)                :: flux_convergence        ! convergence criteria for imlicit flux computation
     integer                 :: flux_max_iteration      ! maximum number of iterations for convergence
     logical                 :: coldair_outbreak_mod    ! cold air outbreak adjustment  (Mahrt & Sun 1995,MWR)
@@ -448,10 +430,6 @@ contains
     !----------------------------------
 
     if (first_call) then
-       call NUOPC_CompAttributeGet(gcomp, name='gust_fac', value=cvalue, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       read(cvalue,*) gust_fac
-
        call NUOPC_CompAttributeGet(gcomp, name='coldair_outbreak_mod', value=cvalue, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        read(cvalue,*) coldair_outbreak_mod
@@ -503,13 +481,6 @@ contains
     !----------------------------------
     ! Update atmosphere/ocean surface fluxes
     !----------------------------------
-
-    if (associated(aoflux%prec_gust)) then
-       do n = 1,lsize
-         !aoflux%uGust(n) = 1.5_R8*sqrt(uocn(n)**2 + vocn(n)**2) ! there is no wind gust data from ocn
-          aoflux%uGust(n) = 0.0_R8
-       end do
-    end if
 
     if (compute_atm_thbot) then
        do n = 1,lsize

@@ -193,6 +193,14 @@
      # section: atmosphere export
      #-----------------------------------
      #
+     - standard_name: Faxa_nhx
+       canonical_units: kg m-2 s-1
+       description: atmosphere export
+     #
+     - standard_name: Faxa_noy
+       canonical_units: kg m-2 s-1
+       description: atmosphere export
+     #
      - standard_name: Faxa_bcph
        canonical_units: kg m-2 s-1
        description: atmosphere export

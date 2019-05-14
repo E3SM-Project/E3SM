@@ -15,6 +15,7 @@ module med_merge_mod
   use shr_nuopc_methods_mod , only : FB_Reset          => shr_nuopc_methods_FB_reset
   use shr_nuopc_methods_mod , only : FB_GetFldPtr      => shr_nuopc_methods_FB_GetFldPtr
   use shr_nuopc_methods_mod , only : FieldPtr_Compare  => shr_nuopc_methods_FieldPtr_Compare
+  use med_internalstate_mod , only : logunit
 
   implicit none
   private
@@ -32,9 +33,9 @@ module med_merge_mod
   character(*),parameter :: u_FILE_u = &
        __FILE__
 
-!-----------------------------------------------------------------------------
+!===============================================================================
 contains
-!-----------------------------------------------------------------------------
+!===============================================================================
 
   subroutine med_merge_auto(compout_name, FBOut, FBfrac, FBImp, fldListTo, FBMed1, FBMed2, rc)
 
@@ -43,13 +44,10 @@ contains
     use ESMF                  , only : ESMF_SUCCESS, ESMF_FAILURE, ESMF_LogWrite, ESMF_LogMsg_Info
     use ESMF                  , only : ESMF_LogSetError, ESMF_RC_OBJ_NOT_CREATED
     use med_constants_mod     , only : CL, CX, CS
-    use shr_string_mod        , only : shr_string_listGetNum
-    use shr_string_mod        , only : shr_string_listGetName
     use esmFlds               , only : compmed, compname
     use esmFlds               , only : shr_nuopc_fldList_type
     use esmFlds               , only : shr_nuopc_fldList_GetNumFlds
     use esmFlds               , only : shr_nuopc_fldList_GetFldInfo
-    use med_internalstate_mod , only : logunit
     use perf_mod              , only : t_startf, t_stopf
 
     ! ----------------------------------------------
@@ -115,9 +113,10 @@ contains
 
                 ! If merge_field is a colon delimited string then cycle through every field - otherwise by default nm
                 ! will only equal 1
-                do nm = 1,shr_string_listGetNum(merge_fields)
+                do nm = 1,merge_listGetNum(merge_fields)
 
-                   call shr_string_listGetName(merge_fields, nm, merge_field)
+                   call merge_listGetName(merge_fields, nm, merge_field, rc)
+                   if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
                    if (merge_type /= 'unset' .and. merge_field /= 'unset') then
 
@@ -200,7 +199,7 @@ contains
 
   end subroutine med_merge_auto
 
-  !-----------------------------------------------------------------------------
+  !===============================================================================
 
   subroutine med_merge_auto_field(merge_type, FBout, FBoutfld, FB, FBfld, FBw, fldw, rc)
 
@@ -258,7 +257,7 @@ contains
     ! Get appropriate field pointers
     !-------------------------
 
-    ! Get field pointer to output field 
+    ! Get field pointer to output field
     call ESMF_FieldBundleGet(FBout, fieldName=trim(FBoutfld), field=lfield, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
     call ESMF_FieldGet(lfield, rank=lrank, rc=rc)
@@ -355,7 +354,7 @@ contains
 
   end subroutine med_merge_auto_field
 
-  !-----------------------------------------------------------------------------
+  !===============================================================================
 
   subroutine med_merge_field_1D(FBout, fnameout, &
                                 FBinA, fnameA, wgtA, &
@@ -536,7 +535,7 @@ contains
 
   end subroutine med_merge_field_1D
 
-  !-----------------------------------------------------------------------------
+  !===============================================================================
 
   subroutine med_merge_field_2D(FBout, fnameout,     &
                                 FBinA, fnameA, wgtA, &
@@ -721,5 +720,109 @@ contains
     endif
 
   end subroutine med_merge_field_2D
+
+  !===============================================================================
+
+  integer function merge_listGetNum(str)
+
+    !  return number of fields in a colon delimited string list
+
+    ! input/output variables
+    character(*),intent(in) :: str   ! string to search
+
+    ! local variables
+    integer          :: n
+    integer          :: count          ! counts occurances of char
+    character(len=1) :: listDel  = ":" ! note single exec implications
+    !---------------------------------------
+
+    merge_listGetNum = 0
+    if (len_trim(str) > 0) then
+       count = 0
+       do n = 1, len_trim(str)
+          if (str(n:n) == listDel) count = count + 1
+       end do
+       merge_listGetNum = count + 1
+    endif
+
+  end function merge_listGetNum
+
+  !===============================================================================
+
+  subroutine merge_listGetName(list, k, name, rc)
+
+    ! Get name of k-th field in colon deliminted list
+
+    use ESMF, only : ESMF_SUCCESS, ESMF_FAILURE, ESMF_LogWrite, ESMF_LOGMSG_INFO 
+
+    ! input/output variables
+    character(len=*)  ,intent(in)  :: list    ! list/string
+    integer           ,intent(in)  :: k       ! index of field
+    character(len=*)  ,intent(out) :: name    ! k-th name in list
+    integer, optional ,intent(out) :: rc      ! return code
+
+    ! local variables
+    integer          :: i,n   ! generic indecies
+    integer          :: kFlds ! number of fields in list
+    integer          :: i0,i1 ! name = list(i0:i1)
+    integer          :: nChar
+    logical          :: valid_list
+    character(len=1) :: listDel  = ':'
+    character(len=2) :: listDel2 = '::'
+    !---------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    ! check that this is a valid list
+    valid_list = .true.
+    nChar = len_trim(list)
+    if (nChar < 1) then                           ! list is an empty string
+       valid_list = .false.
+    else if (    list(1:1)     == listDel  ) then ! first char is delimiter
+       valid_list = .false.
+    else if (list(nChar:nChar) == listDel  ) then ! last  char is delimiter
+       valid_list = .false.
+    else if (index(trim(list)," " )     > 0) then ! white-space in a field name
+       valid_list = .false.
+    else if (index(trim(list),listDel2) > 0) then ! found zero length field
+       valid_list = .false.
+    end if
+    if (.not. valid_list) then
+       write(logunit,*) "ERROR: invalid list = ",trim(list)
+       call ESMF_LogWrite("ERROR: invalid list = "//trim(list), ESMF_LOGMSG_INFO, rc=rc)
+       rc = ESMF_FAILURE
+       return
+    end if
+
+    !--- check that this is a valid index ---
+    kFlds = merge_listGetNum(list)
+    if (k<1 .or. kFlds<k) then
+       write(logunit,*) "ERROR: invalid index = ",k
+       write(logunit,*) "ERROR:          list = ",trim(list)
+       call ESMF_LogWrite("ERROR: invalid index = "//trim(list), ESMF_LOGMSG_INFO, rc=rc)
+       rc = ESMF_FAILURE
+       return
+    end if
+
+    ! start with whole list, then remove fields before and after desired field ---
+    i0 = 1
+    i1 = len_trim(list)
+
+    ! remove field names before desired field
+    do n=2,k
+       i = index(list(i0:i1),listDel)
+       i0 = i0 + i
+    end do
+
+    ! remove field names after desired field
+    if ( k < kFlds ) then
+       i = index(list(i0:i1),listDel)
+       i1 = i0 + i - 2
+    end if
+
+    ! copy result into output variable
+    name = list(i0:i1)//"   "
+
+  end subroutine merge_listGetName
 
 end module med_merge_mod

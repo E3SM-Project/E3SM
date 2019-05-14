@@ -44,7 +44,7 @@ module med_phases_prep_rof_mod
   character(len=*), parameter :: volr_field             = 'Flrr_volrmch'
   character(len=*), parameter :: irrig_flux_field       = 'Flrl_irrig'
   character(len=*), parameter :: irrig_normalized_field = 'Flrl_irrig_normalized'
-  character(len=*), parameter :: irrig_volr0_field      = 'Flrl_irrig_volr0'
+  character(len=*), parameter :: irrig_volr0_field      =      'Flrl_irrig_volr0     '
 
   character(*)    , parameter :: u_FILE_u = &
        __FILE__
@@ -404,13 +404,13 @@ contains
        call FB_init(FBout=FBlndIrrig, &
             flds_scalar_name=is_local%wrap%flds_scalar_name, &
             FBgeom=is_local%wrap%FBImp(complnd,complnd), &
-            fieldNameList=(/trim(irrig_normalized_field), trim(irrig_volr0_field)/), rc=rc)
+            fieldNameList=(/irrig_normalized_field, irrig_volr0_field/), rc=rc)
        if (chkerr(rc,__line__,u_file_u)) return
 
        call FB_init(FBout=FBrofIrrig, &
             flds_scalar_name=is_local%wrap%flds_scalar_name, &
             FBgeom=is_local%wrap%FBImp(comprof,comprof), &
-            fieldNameList=(/trim(irrig_normalized_field), trim(irrig_volr0_field)/), rc=rc)
+            fieldNameList=(/irrig_normalized_field, irrig_volr0_field/), rc=rc)
        if (chkerr(rc,__line__,u_file_u)) return
     end if
 
@@ -490,7 +490,7 @@ contains
     ! ------------------------------------------------------------------------
 
     call med_map_FB_Regrid_Norm(&
-         (/trim(irrig_normalized_field), trim(irrig_volr0_field)/), &
+         (/irrig_normalized_field, irrig_volr0_field/), &
          FBlndIrrig, FBrofIrrig, &
          is_local%wrap%FBFrac(complnd), 'lfrac', &
          is_local%wrap%RH(complnd, comprof, mapconsf), &

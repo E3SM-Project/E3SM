@@ -108,11 +108,10 @@
     <type>char</type>
     <category>expdef</category>
     <group>DRIVER_attributes</group>
-    <valid_values>e3sm,cesm</valid_values>
+    <valid_values>cesm</valid_values>
     <desc>cime model</desc>
     <values>
       <value cime_model='cesm'>cesm</value>
-      <value cime_model='e3sm'>e3sm</value>
     </values>
   </entry>
 
@@ -172,7 +171,7 @@
     </desc>
     <values>
       <value>fixed_year</value>
-      <value iyear='HIST' cime_model='cesm'>variable_year</value>
+      <value iyear='HIST'>variable_year</value>
     </values>
   </entry>
 
@@ -185,9 +184,9 @@
     </desc>
     <values>
       <value>1990</value>
-      <value iyear="1850" cime_model="cesm">1850</value>
-      <value iyear="2000" cime_model="cesm">2000</value>
-      <value iyear='HIST' cime_model='cesm'>1850</value>
+      <value iyear="1850">1850</value>
+      <value iyear="2000">2000</value>
+      <value iyear='HIST'>1850</value>
     </values>
   </entry>
 
@@ -200,9 +199,9 @@
     </desc>
     <values>
       <value>1990</value>
-      <value iyear="1850" cime_model="cesm">1850</value>
-      <value iyear="2000" cime_model="cesm">2000</value>
-      <value iyear='HIST' cime_model='cesm'>1850</value>
+      <value iyear="1850">1850</value>
+      <value iyear="2000">2000</value>
+      <value iyear='HIST'>1850</value>
     </values>
   </entry>
 
@@ -770,7 +769,7 @@
   </entry>
 
   <!-- =========================================== -->
-  <!-- MED general attributes                      -->
+  <!-- MED atm/ocn fluxes attributes               -->
   <!-- =========================================== -->
 
   <entry id="flux_convergence">
@@ -782,9 +781,8 @@
       Setting this to zero will always do flux_max_iteration
     </desc>
     <values>
-      <value cime_model='cesm'>0.01</value>
-      <value cime_model='cesm' atm_grid="0.9x1.25">0.0</value>
-      <value cime_model='e3sm'>0.0</value>
+      <value>0.01</value>
+      <value atm_grid="0.9x1.25">0.0</value>
     </values>
   </entry>
 
@@ -796,8 +794,7 @@
       Iterate atmocn flux calculation a max of this value
     </desc>
     <values>
-      <value cime_model='cesm'>5</value>
-      <value cime_model='e3sm'>2</value>
+      <value>5</value>
     </values>
   </entry>
 
@@ -809,8 +806,7 @@
       if true use  Mahrt and Sun 1995,MWR modification to surface flux calculation
     </desc>
     <values>
-      <value cime_model='cesm'>.true.</value>
-      <value cime_model='e3sm'>.false.</value>
+      <value>.true.</value>
     </values>
   </entry>
 
@@ -1002,19 +998,6 @@
     </desc>
     <values>
       <value>$EPS_OAREA</value>
-    </values>
-  </entry>
-
-  <entry id="flux_epbal" modify_via_xml="CPL_EPBAL">
-    <type>char</type>
-    <category>control</category>
-    <group>MED_attributes</group>
-    <valid_values>off,ocn</valid_values>
-    <desc>
-      Only used for C,G compsets: if ocn, ocn provides EP balance factor for precip
-    </desc>
-    <values>
-      <value>$CPL_EPBAL</value>
     </values>
   </entry>
 
@@ -1554,8 +1537,7 @@ n    </desc>
       total number of scalars in the scalar coupling field
     </desc>
     <values>
-      <value>3</value>
-      <value compocn="pop">4</value>
+      <value>5</value>
     </values>
   </entry>
 
@@ -1595,6 +1577,18 @@ n    </desc>
     </values>
   </entry>
 
+  <entry id="ScalarFieldIdxValidGlcInput">
+    <type>integer</type>
+    <category>expdef</category>
+    <group>ALLCOMP_attributes</group>
+    <desc>
+      index of valid glc input from mediator
+    </desc>
+    <values>
+      <value>4</value>
+    </values>
+  </entry>
+
   <entry id="ScalarFieldIdxPrecipFactor">
     <type>integer</type>
     <category>expdef</category>
@@ -1603,12 +1597,12 @@ n    </desc>
       index of scalar containing epbal precipitation factor from ocn (only for POP)
     </desc>
     <values>
-      <value>0</value>
-      <value compocn="pop">4</value>
+      <value flux_epbal='off'>0</value>
+      <value flux_epbal="ocn">5</value>
     </values>
   </entry>
 
-  <entry id="atm2ocn_fmapname"    modify_via_xml="ATM2OCN_FMAPNAME">
+  <entry id="atm2ocn_fmapname" modify_via_xml="ATM2OCN_FMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
@@ -1619,7 +1613,7 @@ n    </desc>
     </values>
   </entry>
 
-  <entry id="atm2ocn_smapname"    modify_via_xml="ATM2OCN_SMAPNAME">
+  <entry id="atm2ocn_smapname" modify_via_xml="ATM2OCN_SMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
