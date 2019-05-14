@@ -253,6 +253,7 @@
       <value stream="presaero.clim_2000">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero </value>
       <value stream="presaero.clim_2010">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero </value>
       <value stream="presaero.trans_1850-2000">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
+      <value stream="presaero.SSP5-3.4">null</value>
       <value stream="presaero.SSP">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
       <value stream="topo.observed">$DIN_LOC_ROOT/atm/datm7/topo_forcing</value>
       <value stream="topo.cplhist">null</value>
@@ -347,13 +348,9 @@
       <value stream="presaero.clim_2000">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
       <value stream="presaero.clim_2010">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
       <value stream="presaero.trans_1850-2000">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
-      <value stream="presaero.SSP1-1.9">aerosoldep_rcp2.6_monthly_1849-2104_1.9x2.5_c100402.nc</value>
-      <value stream="presaero.SSP1-2.6">aerosoldep_rcp2.6_monthly_1849-2104_1.9x2.5_c100402.nc</value>
       <value stream="presaero.SSP2-4.5">aerodep_clm_SSP245_b.e21.BWSSP245cmip6.f09_g17.CMIP6-SSP2-4.5-WACCM.001_2014-2101_monthly_0.9x1.25_c190401.nc</value>
       <value stream="presaero.SSP3-7.0">aerodep_clm_SSP370_b.e21.BWSSP370cmip6.f09_g17.CMIP6-SSP3-7.0-WACCM.001_2014-2101_monthly_0.9x1.25_c190402.nc</value>
-      <value stream="presaero.SSP4-3.4">aerodep_clm_SSP245_b.e21.BWSSP245cmip6.f09_g17.CMIP6-SSP2-4.5-WACCM.001_2014-2101_monthly_0.9x1.25_c190401.nc</value>
-      <value stream="presaero.SSP4-6.0">aerodep_clm_SSP370_b.e21.BWSSP370cmip6.f09_g17.CMIP6-SSP3-7.0-WACCM.001_2014-2101_monthly_0.9x1.25_c190402.nc</value>
-      <value stream="presaero.SSP5-3.4">aerodep_clm_SSP245_b.e21.BWSSP245cmip6.f09_g17.CMIP6-SSP2-4.5-WACCM.001_2014-2101_monthly_0.9x1.25_c190401.nc</value>
+      <value stream="presaero.SSP5-3.4">null</value>
       <value stream="presaero.SSP5-8.5">aerodep_clm_SSP585_b.e21.BSSP585cmip6.f09_g17.CMIP6-SSP5-8.5.001_2014-2101_monthly_0.9x1.25_c190419.nc</value>
       <value stream="topo.observed">topodata_0.9x1.25_USGS_070110_stream_c151201.nc</value>
       <value stream="topo.cplhist">null</value>
@@ -462,6 +459,7 @@
       <value stream="BC.CRUNCEP.CMAP.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/cmap/cruncep</value>
       <value stream="Anomaly">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</value>
       <value stream="presaero.cplhist">$DATM_CPLHIST_DIR</value>
+      <value stream="presaero.SSP5-3.4">null</value>
       <value stream="presaero">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
       <value stream="topo.observed">$DIN_LOC_ROOT/atm/datm7/topo_forcing</value>
       <value stream="topo.cplhist">$DATM_CPLHIST_DIR</value>
@@ -1705,14 +1703,10 @@
       <value stream="presaero.SSP5-3.4" atm_grid="CLM_USRDAT">aerosoldep_SSP5-3.4_monthly_1849-2101_${CLM_USRDAT_NAME}.nc</value>
       <value stream="presaero.SSP5-8.5" atm_grid="CLM_USRDAT">aerosoldep_SSP5-8.5_monthly_1849-2101_${CLM_USRDAT_NAME}.nc</value>
 
-      <value stream="presaero.SSP1-1.9">aerosoldep_rcp2.6_monthly_1849-2104_1.9x2.5_c100402.nc</value>
-      <value stream="presaero.SSP1-2.6">aerosoldep_rcp2.6_monthly_1849-2104_1.9x2.5_c100402.nc</value>
       <value stream="presaero.SSP2-4.5">aerodep_clm_SSP245_b.e21.BWSSP245cmip6.f09_g17.CMIP6-SSP2-4.5-WACCM.001_2014-2101_monthly_0.9x1.25_c190401.nc</value>
       <value stream="presaero.SSP3-7.0">aerodep_clm_SSP370_b.e21.BWSSP370cmip6.f09_g17.CMIP6-SSP3-7.0-WACCM.001_2014-2101_monthly_0.9x1.25_c190402.nc</value>
-      <value stream="presaero.SSP4-3.4">aerodep_clm_SSP245_b.e21.BWSSP245cmip6.f09_g17.CMIP6-SSP2-4.5-WACCM.001_2014-2101_monthly_0.9x1.25_c190401.nc</value>
-      <value stream="presaero.SSP4-6.0">aerodep_clm_SSP370_b.e21.BWSSP370cmip6.f09_g17.CMIP6-SSP3-7.0-WACCM.001_2014-2101_monthly_0.9x1.25_c190402.nc</value>
-      <value stream="presaero.SSP5-3.4">aerodep_clm_SSP245_b.e21.BWSSP245cmip6.f09_g17.CMIP6-SSP2-4.5-WACCM.001_2014-2101_monthly_0.9x1.25_c190401.nc</value>
-      <value stream="presaero.SSP5-8.5">aerodep_clm_SSP370_b.e21.BWSSP370cmip6.f09_g17.CMIP6-SSP3-7.0-WACCM.001_2014-2101_monthly_0.9x1.25_c190402.nc</value>
+      <value stream="presaero.SSP5-3.4">null</value>
+      <value stream="presaero.SSP5-8.5">aerodep_clm_SSP585_b.e21.BSSP585cmip6.f09_g17.CMIP6-SSP5-8.5.001_2014-2101_monthly_0.9x1.25_c190419.nc</value>
       <value stream="topo.observed">topodata_0.9x1.25_USGS_070110_stream_c151201.nc</value>
     </values>
   </entry>
