@@ -3195,6 +3195,88 @@ class B_CheckCode(unittest.TestCase):
 
     all_results = None
 
+###############################################################################
+class M_TestGenDomain(unittest.TestCase): #TestCreateTestCommon):
+###############################################################################
+
+    def _get_gen_domain_root(self):
+        gen_domain_root = os.path.abspath(
+                os.path.join(get_cime_root(),"tools","mapping","gen_domain_files")
+                )
+        return gen_domain_root
+
+    def _build(self):
+
+        # Configure
+        run_cmd_no_fail(
+            "%s/tools/configure --macros-format=Makefile --mpilib=mpi-serial"%(get_cime_root())
+            )
+
+        # Build
+        cmd = ". ./.env_mach_specific.sh; cd %s/src; gmake clean; gmake"%self._get_gen_domain_root()
+        run_cmd_assert_result(self, cmd)
+
+
+    def _run(self, mapping_file, ocn_grid, lnd_grid, fminval=0.001, fmaxval=1.0):
+
+        # Start with clean directory
+        for domain_file in glob.glob("%s/domain.*.nc"%self._get_gen_domain_root()):
+            os.remove(domain_file)
+
+        # Run code with specified options
+        cmd = "cd %s; ./gen_domain -m %s -o %s -l %s --fminval %f --fmaxval %f"%(
+                self._get_gen_domain_root(), 
+                mapping_file, ocn_grid, lnd_grid, fminval, fmaxval
+                )
+        cmd = ". ./.env_mach_specific.sh; %s"%cmd
+        run_cmd_assert_result(self, cmd)
+
+        # Return list of output files generated
+        domain_files = glob.glob("%s/domain.*.nc"%(self._get_gen_domain_root()))
+        return domain_files
+
+    def test_baseline_diffs(self):
+
+        # Build code
+        self._build()
+
+        # Setup test case
+        inputdata_root = MACHINE.get_value("DIN_LOC_ROOT")
+        mapping_file = "%s/cpl/gridmaps/oRRS30to10/map_oRRS30to10_to_ne30np4_aave.160419.nc"%inputdata_root
+        baseline_root = "%s/share/domains"%inputdata_root
+        ocn_grid = "oRRS30to10"
+        lnd_grid = "ne30np4"
+
+        # Run the domain tool to get new outputs
+        domain_files = self._run(mapping_file, ocn_grid, lnd_grid)
+
+        # Build cprnc
+        cprnc_root = "%s/tools/cprnc"%get_cime_root()
+        cmd = "cd %s; gmake clean; gmake"%cprnc_root
+        cmd = ". ./.env_mach_specific.sh; %s"%cmd
+        run_cmd_no_fail(cmd)
+
+        # Compare data using cprnc
+        for testfile in domain_files:
+
+            # Find corresponding baseline in baseline_root
+            baseline = sorted(glob.glob("%s/%s.*"%(
+                    baseline_root,
+                    os.path.basename(testfile).rsplit(".", 2)[0]
+                    )))[-1]
+
+            # Run cprnc to compare
+            cmd = "%s/cprnc -m %s %s"%(cprnc_root, testfile, baseline) 
+            cmd = ". ./.env_mach_specific.sh; %s"%(cmd)
+            output = run_cmd_no_fail(cmd)
+            if "files seem to be IDENTICAL" in output:
+                files_match = True
+            else:
+                files_match = False
+
+            self.assertTrue(files_match)
+
+
 def make_pylint_test(pyfile, all_files):
     def test(self):
         if B_CheckCode.all_results is None:
