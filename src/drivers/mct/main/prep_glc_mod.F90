@@ -907,7 +907,7 @@ contains
                                 outFreshwaterFlux=outFreshwaterFlux,&
                                 outOceanHeatFlux=outOceanHeatFlux,&
                                 outIceHeatFlux=outIceHeatFlux,&
-                                nCells=gsize)
+                                gsize=gsize)
 
        !...and assign fluxes to glc and ocn-directed coupler fields
        do n=1,gsize
@@ -1481,22 +1481,22 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine compute_melt_fluxes( &
-    oceanTemperature, &
-    oceanSalinity, &
-    oceanHeatTransferVelocity, &
-    oceanSaltTransferVelocity, &
-    interfacePressure, &
-    iceTemperature, &
-    iceTemperatureDistance, &
-    iceFloatingMask, &
-    outInterfaceSalinity, &
-    outInterfaceTemperature, &
-    outFreshwaterFlux, &
-    outOceanHeatFlux, &
-    outIceHeatFlux, &
-    nCells) !
+       oceanTemperature, &
+       oceanSalinity, &
+       oceanHeatTransferVelocity, &
+       oceanSaltTransferVelocity, &
+       interfacePressure, &
+       iceTemperature, &
+       iceTemperatureDistance, &
+       iceFloatingMask, &
+       outInterfaceSalinity, &
+       outInterfaceTemperature, &
+       outFreshwaterFlux, &
+       outOceanHeatFlux, &
+       outIceHeatFlux, &
+       gsize)
 
-    use shr_const_mod    , only: SHR_CONST_CPICE,  &
+    use shr_const_mod,     only: SHR_CONST_CPICE,  &
                                  SHR_CONST_CPSW,   &
                                  SHR_CONST_LATICE, &
                                  SHR_CONST_RHOICE, &
@@ -1514,17 +1514,17 @@ contains
     !-----------------------------------------------------------------
 
     real (kind=r8), dimension(:), intent(in) :: &
-      oceanTemperature, &          !< Input: ocean temperature in top layer
-      oceanSalinity, &             !< Input: ocean salinity in top layer
-      oceanHeatTransferVelocity, & !< Input: ocean heat transfer velocity
-      oceanSaltTransferVelocity, & !< Input: ocean salt transfer velocity
-      interfacePressure, &         !< Input: pressure at the ice-ocean interface
-      iceTemperature, &            !< Input: ice temperature in bottom layer
-      iceTemperatureDistance       !< Input: distance to ice temperature from ice-ocean interface
+         oceanTemperature, &          !< Input: ocean temperature in top layer
+         oceanSalinity, &             !< Input: ocean salinity in top layer
+         oceanHeatTransferVelocity, & !< Input: ocean heat transfer velocity
+         oceanSaltTransferVelocity, & !< Input: ocean salt transfer velocity
+         interfacePressure, &         !< Input: pressure at the ice-ocean interface
+         iceTemperature, &            !< Input: ice temperature in bottom layer
+         iceTemperatureDistance       !< Input: distance to ice temperature from ice-ocean interface
     integer, dimension(:), intent(in) :: &
-      iceFloatingMask              !< Input: mask of cells that contain floating ice
+         iceFloatingMask              !< Input: mask of cells that contain floating ice
 
-    integer, intent(in) :: nCells !< Input: number of cells in each array
+    integer, intent(in) :: gsize !< Input: number of values in each array
 
     !-----------------------------------------------------------------
     !
@@ -1533,11 +1533,11 @@ contains
     !-----------------------------------------------------------------
 
     real (kind=r8), dimension(:), intent(out) :: &
-      outInterfaceSalinity, &    !< Output: ocean salinity at the interface
-      outInterfaceTemperature, & !< Output: ice/ocean temperature at the interface
-      outFreshwaterFlux, &   !< Output: ocean thickness flux (melt rate)
-      outOceanHeatFlux, & !< Output: the temperature flux into the ocean
-      outIceHeatFlux      !< Output: the temperature flux into the ice
+         outInterfaceSalinity, &    !< Output: ocean salinity at the interface
+         outInterfaceTemperature, & !< Output: ice/ocean temperature at the interface
+         outFreshwaterFlux, &   !< Output: ocean thickness flux (melt rate)
+         outOceanHeatFlux, & !< Output: the temperature flux into the ocean
+         outIceHeatFlux      !< Output: the temperature flux into the ice
 
     !-----------------------------------------------------------------
     !
@@ -1547,7 +1547,7 @@ contains
 
     real (kind=r8) :: T0, transferVelocityRatio, Tlatent, nu, a, b, c, eta, &
                          iceHeatFluxCoeff, iceDeltaT, dTf_dS
-    integer :: iCell
+    integer :: n
     character(*), parameter :: subname = '(compute_melt_fluxes)'
 
     real (kind=r8), parameter :: minInterfaceSalinity = 0.001_r8
@@ -1557,58 +1557,58 @@ contains
     real (kind=r8) :: pressureOffset
 
     Tlatent = SHR_CONST_LATICE/SHR_CONST_CPSW
-    do iCell = 1, nCells
-      if (iceFloatingMask(iCell) == 0) cycle ! Only calculate on floating cells
+    do n = 1, gsize
+       if (iceFloatingMask(n) == 0) cycle ! Only calculate on floating cells
 
-      if (oceanHeatTransferVelocity(iCell) == 0.0_r8) then
-         write(logunit,*) 'compute_melt_fluxes ERROR: oceanHeatTransferVelocity value of 0 causes divide by 0 at index ', iCell
-         call shr_sys_abort('compute_melt_fluxes ERROR: oceanHeatTransferVelocity value of 0 causes divide by 0')
-      end if
+       if (oceanHeatTransferVelocity(n) == 0.0_r8) then
+          write(logunit,*) 'compute_melt_fluxes ERROR: oceanHeatTransferVelocity value of 0 causes divide by 0 at index ', n
+          call shr_sys_abort('compute_melt_fluxes ERROR: oceanHeatTransferVelocity value of 0 causes divide by 0')
+       end if
 
-      iceHeatFluxCoeff = SHR_CONST_RHOICE*SHR_CONST_CPICE*SHR_CONST_KAPPA_LAND_ICE/iceTemperatureDistance(iCell)
-      nu = iceHeatFluxCoeff/(SHR_CONST_RHOSW*SHR_CONST_CPSW*oceanHeatTransferVelocity(iCell))
-      pressureOffset = max(interfacePressure(iCell) - referencePressure, 0.0_r8)
-      T0 = SHR_CONST_TF0 + SHR_CONST_DTF_DP * pressureOffset
-         !Note: These two terms for T0 are not needed because we are evaluating at salinity=0:
-         !+ SHR_CONST_DTF_DS * oceanSalinity(iCell) + SHR_CONST_DTF_DPDS * pressureOffset * oceanSalinity(iCell)
-      iceDeltaT = T0 - iceTemperature(iCell)
-      dTf_dS = SHR_CONST_DTF_DS + SHR_CONST_DTF_DPDS * pressureOffset
+       iceHeatFluxCoeff = SHR_CONST_RHOICE*SHR_CONST_CPICE*SHR_CONST_KAPPA_LAND_ICE/iceTemperatureDistance(n)
+       nu = iceHeatFluxCoeff/(SHR_CONST_RHOSW*SHR_CONST_CPSW*oceanHeatTransferVelocity(n))
+       pressureOffset = max(interfacePressure(n) - referencePressure, 0.0_r8)
+       T0 = SHR_CONST_TF0 + SHR_CONST_DTF_DP * pressureOffset
+            !Note: These two terms for T0 are not needed because we are evaluating at salinity=0:
+            !+ SHR_CONST_DTF_DS * oceanSalinity(n) + SHR_CONST_DTF_DPDS * pressureOffset * oceanSalinity(n)
+       iceDeltaT = T0 - iceTemperature(n)
+       dTf_dS = SHR_CONST_DTF_DS + SHR_CONST_DTF_DPDS * pressureOffset
 
-      transferVelocityRatio = oceanSaltTransferVelocity(iCell)/oceanHeatTransferVelocity(iCell)
+       transferVelocityRatio = oceanSaltTransferVelocity(n)/oceanHeatTransferVelocity(n)
 
-      a = -1.0_r8 * dTf_dS * (1.0_r8 + nu)
-      b = transferVelocityRatio*Tlatent - nu*iceDeltaT + oceanTemperature(iCell) - T0
-      c = -transferVelocityRatio*Tlatent*max(oceanSalinity(iCell), 0.0_r8)
-      ! a is non-negative; c is strictly non-positive so we never get imaginary roots.
-      ! Since a can be zero, we need a solution of the quadratic equation for 1/Si instead of Si.
-      ! Following: https://people.csail.mit.edu/bkph/articles/Quadratics.pdf
-      ! Since a and -c are are non-negative, the term in the square root is also always >= |b|.
-      ! In all reasonable cases, b will be strictly positive, since transferVelocityRatio*Tlatent ~ 2 C,
-      ! T0 ~ -1.8 C and oceanTemperature should never be able to get below about -3 C
-      ! As long as either b or both a and c are greater than zero, the strictly non-negative root is
-      outInterfaceSalinity(iCell) = max(-(2.0_r8*c)/(b + sqrt(b**2 - 4.0_r8*a*c)), minInterfaceSalinity)
+       a = -1.0_r8 * dTf_dS * (1.0_r8 + nu)
+       b = transferVelocityRatio*Tlatent - nu*iceDeltaT + oceanTemperature(n) - T0
+       c = -transferVelocityRatio*Tlatent*max(oceanSalinity(n), 0.0_r8)
+       ! a is non-negative; c is strictly non-positive so we never get imaginary roots.
+       ! Since a can be zero, we need a solution of the quadratic equation for 1/Si instead of Si.
+       ! Following: https://people.csail.mit.edu/bkph/articles/Quadratics.pdf
+       ! Since a and -c are are non-negative, the term in the square root is also always >= |b|.
+       ! In all reasonable cases, b will be strictly positive, since transferVelocityRatio*Tlatent ~ 2 C,
+       ! T0 ~ -1.8 C and oceanTemperature should never be able to get below about -3 C
+       ! As long as either b or both a and c are greater than zero, the strictly non-negative root is
+       outInterfaceSalinity(n) = max(-(2.0_r8*c)/(b + sqrt(b**2 - 4.0_r8*a*c)), minInterfaceSalinity)
 
-      outInterfaceTemperature(iCell) = dTf_dS*outInterfaceSalinity(iCell)+T0
+       outInterfaceTemperature(n) = dTf_dS*outInterfaceSalinity(n)+T0
 
-      outFreshwaterFlux(iCell) = SHR_CONST_RHOSW*oceanSaltTransferVelocity(iCell) &
-        * (oceanSalinity(iCell)/outInterfaceSalinity(iCell) - 1.0_r8)
+       outFreshwaterFlux(n) = SHR_CONST_RHOSW*oceanSaltTransferVelocity(n) &
+            * (oceanSalinity(n)/outInterfaceSalinity(n) - 1.0_r8)
 
-      ! According to Jenkins et al. (2001), the temperature fluxes into the ocean are:
-      !   1. the advection of meltwater into the top layer (or removal for freezing)
-      !   2. the turbulent transfer of heat across the boundary layer, based on the termal driving
-      outOceanHeatFlux(iCell) = SHR_CONST_CPSW*(outFreshwaterFlux(iCell)*outInterfaceTemperature(iCell) &
-        - SHR_CONST_RHOSW*oceanHeatTransferVelocity(iCell)*(oceanTemperature(iCell)-outInterfaceTemperature(iCell)))
+       ! According to Jenkins et al. (2001), the temperature fluxes into the ocean are:
+       !   1. the advection of meltwater into the top layer (or removal for freezing)
+       !   2. the turbulent transfer of heat across the boundary layer, based on the termal driving
+       outOceanHeatFlux(n) = SHR_CONST_CPSW*(outFreshwaterFlux(n)*outInterfaceTemperature(n) &
+            - SHR_CONST_RHOSW*oceanHeatTransferVelocity(n)*(oceanTemperature(n)-outInterfaceTemperature(n)))
 
-      ! the temperature fluxes into the ice are:
-      !   1. the advection of ice at the interface temperature out of the domain due to melting
-      !      (or in due to freezing)
-      !   2. the diffusion (if any) of heat into the ice, based on temperature difference between
-      !      the reference point in the ice (either the surface or the middle of the bottom layer)
-      !      and the interface
-      outIceHeatFlux(iCell) = -SHR_CONST_CPICE*outFreshwaterFlux(iCell)*outInterfaceTemperature(iCell)
+       ! the temperature fluxes into the ice are:
+       !   1. the advection of ice at the interface temperature out of the domain due to melting
+       !      (or in due to freezing)
+       !   2. the diffusion (if any) of heat into the ice, based on temperature difference between
+       !      the reference point in the ice (either the surface or the middle of the bottom layer)
+       !      and the interface
+       outIceHeatFlux(n) = -SHR_CONST_CPICE*outFreshwaterFlux(n)*outInterfaceTemperature(n)
 
-      outIceHeatFlux(iCell) = outIceHeatFlux(iCell) &
-        - iceHeatFluxCoeff*(iceTemperature(iCell) - outInterfaceTemperature(iCell))
+       outIceHeatFlux(n) = outIceHeatFlux(n) &
+            - iceHeatFluxCoeff*(iceTemperature(n) - outInterfaceTemperature(n))
 
     end do
 
