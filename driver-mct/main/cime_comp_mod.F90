@@ -366,8 +366,6 @@ module cime_comp_mod
   ! control flags
   !----------------------------------------------------------------------------
 
-  character(len=cs) :: cime_model    ! model invoking CIME (cesm or e3sm)
-
   logical  :: atm_present            ! .true.  => atm is present
   logical  :: lnd_present            ! .true.  => land is present
   logical  :: ice_present            ! .true.  => ice is present
@@ -1451,8 +1449,7 @@ contains
          glc_nx=glc_nx, glc_ny=glc_ny,          &
          ocn_nx=ocn_nx, ocn_ny=ocn_ny,          &
          wav_nx=wav_nx, wav_ny=wav_ny,          &
-         atm_aero=atm_aero,                     &
-         cime_model=cime_model)
+         atm_aero=atm_aero)
 
     ! derive samegrid flags
 
