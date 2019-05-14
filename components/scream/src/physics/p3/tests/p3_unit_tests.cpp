@@ -323,7 +323,7 @@ static void unittest_upwind () {
             rho(k) = 1 + range/nk;
             inv_rho(k) = 1 / rho(k);
             inv_dz(k) = 1 / (min_dz + range*range / (nk*nk));
-            V[i](k) = 0.4*(1 + range/nk) * max_speed;
+            V[i](k) = 0.5*(1 + range/nk) * max_speed;
             if (i == 1) {
               r[i](k) = 0;
               const auto mask = range >= 2 && range < nk-2;
