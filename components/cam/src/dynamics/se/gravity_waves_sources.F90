@@ -67,9 +67,9 @@ CONTAINS
     real(kind=real_kind), allocatable  ::  frontga_thr(:,:,:,:)
     !---------------------------------------------------------------------------
     !$OMP PARALLEL NUM_THREADS(hthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid,ie,ncols,frontgf_thr,frontga_thr)
-    ithr=omp_get_thread_num()
-    nets=dom_mt(ithr)%start
-    nete=dom_mt(ithr)%end
+    ithr = omp_get_thread_num()
+    nets = dom_mt(ithr)%start
+    nete = dom_mt(ithr)%end
     hybrid = hybrid_create(par,ithr,hthreads)
     call derivinit(deriv(hybrid%ithr))
     allocate(frontgf_thr(nphys,nphys,nlev,nets:nete))
@@ -78,8 +78,8 @@ CONTAINS
     if (fv_nphys>0) then
       do ie = nets,nete
         do k = 1,nlev
-          frontgf(:,k,ie) = RESHAPE(frontgf_thr(:,:,k,ie),(/nphys*nphys/))
-          frontga(:,k,ie) = RESHAPE(frontga_thr(:,:,k,ie),(/nphys*nphys/))
+          frontgf(:,k,ie) = RESHAPE( frontgf_thr(:,:,k,ie), (/nphys*nphys/))
+          frontga(:,k,ie) = RESHAPE( frontga_thr(:,:,k,ie), (/nphys*nphys/))
         end do
       end do
     else
@@ -202,7 +202,8 @@ CONTAINS
 
           do j=1,fv_nphys
             do i=1,fv_nphys
-              frontga(i,j,k,ie) = atan2 ( gradth_fv(i,j,2) , gradth_fv(i,j,1) + 1.e-10_r8 )
+              frontga(i,j,k,ie) = atan2 ( gradth_fv(i,j,2) , &
+                                          gradth_fv(i,j,1) + 1.e-10_r8 )
             end do
           end do
 
