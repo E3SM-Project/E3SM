@@ -116,7 +116,8 @@ subroutine forecast(lat, psm1, psm2,ps, &
    real(r8) dotproda           ! dot product
    real(r8) dotprodb           ! dot product
    integer i,k,m           ! longitude, level, constituent indices
-   real(r16) divt3d_full, divq3d_full
+   real(r16) divt3d_full, divq3d_full, term1, term2, term3, term4
+   real(r16) term5, term6
 !
 !     Below are Variables Used in the Advection Diagnostics
 !
@@ -208,12 +209,22 @@ subroutine forecast(lat, psm1, psm2,ps, &
       i=1
       do k=1,plev
          divt3d_full = divt3d(k) + divt3d_2(k)
-         tfcst(k) = t3m2(k) + ztodt*t2(k) + ztodt*divt3d_full!divt3d(k)
+	 term1 = t3m2(k)
+	 term2 = ztodt
+	 term3 = t2(k)
+	 
+	 term4 = term1 + term2*term3 + term2*divt3d_full
+         tfcst(k) = term4
+!         tfcst(k) = t3m2(k) + ztodt*t2(k) + ztodt*divt3d_full!divt3d(k)
       end do
       do m=1,pcnst
          do k=1,plev
 	    divq3d_full = divq3d(k,m) + divq3d_2(k,m)
-            qfcst(1,k,m) = qminus(1,k,m) +  divq3d_full*ztodt
+	    term1 = qminus(1,k,m)
+	    term2 = ztodt
+	    term3 = term1 + divq3d_full*term2
+	    qfcst(1,k,m) = term3
+!            qfcst(1,k,m) = qminus(1,k,m) +  divq3d_full*ztodt
          end do
       enddo
 

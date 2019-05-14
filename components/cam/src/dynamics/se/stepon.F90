@@ -440,7 +440,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
                out_v(npsq,nlev), out_psv(npsq)  
    real(r8), parameter :: rad2deg = 180.0 / SHR_CONST_PI
    real(r8), parameter :: fac = 1000._r8	
-   real(r8) :: term1, term2        
+!   real(r8) :: term1, term2        
    type(cam_out_t),     intent(inout) :: cam_out(:) ! Output from CAM to surface
    type(physics_state), intent(inout) :: phys_state(begchunk:endchunk)
    type (dyn_import_t), intent(inout) :: dyn_in  ! Dynamics import container
@@ -451,7 +451,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    real(r16) :: forcing_temp, forcing_temp_lrg, threshold
    real(r8) :: forcing_temp_part1(npsq,nlev), forcing_temp_part2(npsq,nlev)
    real(r8) :: forcing_q_part1(npsq,nlev,pcnst), forcing_q_part2(npsq,nlev,pcnst)
-   real(r16) :: mult 
+   real(r16) :: mult, term1, term2, term3, term4 
    integer :: forcing_temp_int
    
 #endif
@@ -500,8 +500,11 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
        do j=1,np
          do i=1,np
 	 
-	   forcing_temp = (dyn_in%elem(ie)%state%T(i,j,k,tl_f) - &
-	        ftmp_temp(i,j,k,ie))/dtime - dyn_in%elem(ie)%derived%FT(i,j,k)
+	   term1=dyn_in%elem(ie)%state%T(i,j,k,tl_f)
+	   term2=ftmp_temp(i,j,k,ie)
+	   term3=dtime
+	   term4=dyn_in%elem(ie)%derived%FT(i,j,k)
+	   forcing_temp = (term1 - term2)/term3 - term4
 			
 	   mult = 1.0_r16
 	   forcing_temp_lrg = forcing_temp
@@ -520,9 +523,11 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
 	   out_q(i+(j-1)*np,k) = dyn_in%elem(ie)%state%Q(i,j,k,1)
 	   out_psv(i+(j-1)*np) = dyn_in%elem(ie)%state%ps_v(i,j,tl_f)
 
-	   do p=1,pcnst		
-	     forcing_temp = (dyn_in%elem(ie)%state%Q(i,j,k,p) - &
-	        ftmp_q(i,j,k,p,ie))/dtime
+	   do p=1,pcnst	
+	     term1=dyn_in%elem(ie)%state%Q(i,j,k,p)
+	     term2=ftmp_q(i,j,k,p,ie)
+	     term3=dtime	
+	     forcing_temp = (term1 - term2)/term3
 		
 	     mult = 1.0_r16
 	     forcing_temp_lrg = forcing_temp
