@@ -57,6 +57,8 @@ Each ``<machine>`` tag requires the following input:
   * May have optional attributes of ``compiler``, ``mpilib`` and/or ``threaded``
   * May have an optional ``<arguments>`` element which in turn contains one or more ``<arg>`` elements.
     These specify the arguments to the mpi executable and are dependent on your mpi library implementation.
+  * May have an option ``<run_exe>`` element which overrides the ``default_run_exe``
+  * May have an option ``<run_misc_suffix>`` element which overrides the ``default_run_misc_suffix``
 
 
 * ``module_system``: How and what modules to load on this system. Module systems allow you to easily load multiple compiler environments on a machine. CIME provides support for two types of module tools: `module <http://www.tacc.utexas.edu/tacc-projects/mclay/lmod>`_ and `soft  <http://www.mcs.anl.gov/hs/software/systems/softenv/softenv-intro.html>`_. If neither of these is available on your machine, simply set ``<module_system type="none"\>``.

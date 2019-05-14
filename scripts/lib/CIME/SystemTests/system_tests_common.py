@@ -93,7 +93,7 @@ class SystemTestsCommon(object):
                     else:
                         excmsg = "Exception during build:\n{}\n{}".format(str(e), traceback.format_exc())
 
-                    append_testlog(excmsg)
+                    append_testlog(excmsg, self._orig_caseroot)
                     raise
 
                 finally:
@@ -163,7 +163,7 @@ class SystemTestsCommon(object):
             else:
                 excmsg = "Exception during run:\n{}\n{}".format(str(e), traceback.format_exc())
 
-            append_testlog(excmsg)
+            append_testlog(excmsg, self._orig_caseroot)
             raise
 
         finally:
@@ -261,7 +261,7 @@ class SystemTestsCommon(object):
 
     def _component_compare_copy(self, suffix):
         comments = copy(self._case, suffix)
-        append_testlog(comments)
+        append_testlog(comments, self._orig_caseroot)
 
     def _component_compare_test(self, suffix1, suffix2,
                                 success_change=False,
@@ -280,7 +280,7 @@ class SystemTestsCommon(object):
         if success_change:
             success = not success
 
-        append_testlog(comments)
+        append_testlog(comments, self._orig_caseroot)
         status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
         with self._test_status:
             self._test_status.set_status("{}_{}_{}".format(COMPARE_PHASE, suffix1, suffix2), status)
@@ -349,7 +349,7 @@ class SystemTestsCommon(object):
             excmsg = "Exception during {}:\n{}\n{}".format(phase, msg, traceback.format_exc())
 
             logger.warning(excmsg)
-            append_testlog(excmsg)
+            append_testlog(excmsg, self._orig_caseroot)
 
             with self._test_status:
                 self._test_status.set_status(phase, TEST_FAIL_STATUS, comments="exception")
@@ -384,7 +384,7 @@ class SystemTestsCommon(object):
                         self._test_status.set_status(MEMLEAK_PHASE, TEST_PASS_STATUS)
                     else:
                         comment = "memleak detected, memory went from {:f} to {:f} in {:d} days".format(originalmem, finalmem, finaldate-originaldate)
-                        append_testlog(comment)
+                        append_testlog(comment, self._orig_caseroot)
                         self._test_status.set_status(MEMLEAK_PHASE, TEST_FAIL_STATUS, comments=comment)
 
     def compare_env_run(self, expected=None):
@@ -449,7 +449,7 @@ class SystemTestsCommon(object):
                     elif self._test_status.get_status(MEMCOMP_PHASE) != TEST_FAIL_STATUS:
                         comment = "Error: Memory usage increase > 10% from baseline"
                         self._test_status.set_status(MEMCOMP_PHASE, TEST_FAIL_STATUS, comments=comment)
-                        append_testlog(comment)
+                        append_testlog(comment, self._orig_caseroot)
 
     def _compare_throughput(self):
         with self._test_status:
@@ -481,7 +481,7 @@ class SystemTestsCommon(object):
                         elif self._test_status.get_status(THROUGHPUT_PHASE) != TEST_FAIL_STATUS:
                             comment = "Error: Computation time increase > {:d} pct from baseline".format(int(tolerance*100))
                             self._test_status.set_status(THROUGHPUT_PHASE, TEST_FAIL_STATUS, comments=comment)
-                            append_testlog(comment)
+                            append_testlog(comment, self._orig_caseroot)
 
     def _compare_baseline(self):
         """
@@ -490,7 +490,7 @@ class SystemTestsCommon(object):
         with self._test_status:
             # compare baseline
             success, comments = compare_baseline(self._case)
-            append_testlog(comments)
+            append_testlog(comments, self._orig_caseroot)
             status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
             baseline_name = self._case.get_value("BASECMP_CASE")
             ts_comments = os.path.dirname(baseline_name) + ": " + get_ts_synopsis(comments)
@@ -503,7 +503,7 @@ class SystemTestsCommon(object):
         with self._test_status:
             # generate baseline
             success, comments = generate_baseline(self._case)
-            append_testlog(comments)
+            append_testlog(comments, self._orig_caseroot)
             status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
             baseline_name = self._case.get_value("BASEGEN_CASE")
             self._test_status.set_status(GENERATE_PHASE, status, comments=os.path.dirname(baseline_name))

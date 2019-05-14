@@ -3,7 +3,7 @@ CIME ERP test.  This class inherits from RestartTest
 
 This is a pes counts hybrid (open-MP/MPI) restart bfb test from
 startup.  This is just like an ERS test but the pe-counts/threading
-count are modified on retart.
+count are modified on restart.
 (1) Do an initial run with pes set up out of the box (suffix base)
 (2) Do a restart test with half the number of tasks and threads (suffix rest)
 """
