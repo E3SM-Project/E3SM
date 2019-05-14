@@ -369,8 +369,8 @@ void run_test (const TestConfig& tc) {
           re = reldif(scalarize(Bm), scalarize(Ym), nrhs);
         }
         const bool pass = re <= 50*std::numeric_limits<Real>::epsilon();
-        std::stringstream ss;
         if ( ! pass) {
+          std::stringstream ss;
           ss << Solver::convert(tc.solver) << " " << tc.n_kokkos_thread
              << " " << tc.n_kokkos_vec << " | " << nrow << " " << nrhs << " "
              << A_many << " | log10 reldif " << std::log10(re);
