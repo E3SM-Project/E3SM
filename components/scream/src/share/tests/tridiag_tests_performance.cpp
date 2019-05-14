@@ -80,125 +80,42 @@ std::string string (const Input& in, const int& nwarp) {
   return ss.str();
 }
 
-template <typename ST, typename DT>
-void pack_data (const ST& a, DT b) {
-  using Pack = typename DT::non_const_value_type;
-  static_assert(Pack::packtag, "DT value type must be Pack");
-  static_assert(std::is_same<typename ST::non_const_value_type,
-                             typename Pack::scalar>::value,
-                "ST value and DT::Pack::scalar types must be the same");
-  const int np = a.extent_int(0);
-  const int m = a.extent_int(1), n = a.extent_int(2), mn = m*n;
-  assert(b.extent_int(0) == np);
-  assert(b.extent_int(1) == m);
-  assert(b.extent_int(2) == (n + Pack::n - 1)/Pack::n);
-  auto f = KOKKOS_LAMBDA (const int i) {
-    const int prob = i / mn;
-    const int row = (i % mn) / n;
-    const int col = i % n;
-    b(prob, row, col / Pack::n)[col % Pack::n] = a(prob,row,col);
-  };
-  Kokkos::parallel_for(np*m*n, f);
-}
-
-template <typename ST, typename DT>
-void unpack_data (const ST& a, DT b) {
-  using Pack = typename ST::non_const_value_type;
-  static_assert(Pack::packtag, "ST value type must be Pack");
-  static_assert(std::is_same<typename DT::non_const_value_type,
-                             typename Pack::scalar>::value,
-                "DT value and ST::Pack::scalar types must be the same");
-  const int np = b.extent_int(0);
-  const int m = b.extent_int(1), n = b.extent_int(2), mn = m*n;
-  assert(a.extent_int(0) == np);
-  assert(a.extent_int(1) == m);
-  assert(a.extent_int(2) == (n + Pack::n - 1)/Pack::n);
-  auto f = KOKKOS_LAMBDA (const int i) {
-    const int prob = i / mn;
-    const int row = (i % mn) / n;
-    const int col = i % n;
-    b(prob,row,col) = a(prob, row, col / Pack::n)[col % Pack::n];
-  };
-  Kokkos::parallel_for(np*m*n, f);
-}
-
-template <typename ST, typename DT>
-void pack_matrix (const ST& a, DT b, const int nrhs) {
-  using Pack = typename DT::non_const_value_type;
-  static_assert(Pack::packtag, "DT value type must be Pack");
-  static_assert(std::is_same<typename ST::non_const_value_type,
-                             typename Pack::scalar>::value,
-                "ST value and DT::Pack::scalar types must be the same");
-  const int np = a.extent_int(0);
-  const int nrow = a.extent_int(2);
-  assert(b.extent_int(0) == np);
-  assert(b.extent_int(1) == 3);
-  assert(b.extent_int(2) == nrow);
-  assert(b.extent_int(3) == (nrhs + Pack::n - 1)/Pack::n);
-  auto f = KOKKOS_LAMBDA (const int i) {
-    const int prob = i / (3*nrow*nrhs);
-    const int c = (i % (3*nrow*nrhs)) / (nrow*nrhs);
-    const int row = (i % (nrow*nrhs)) / nrhs;
-    const int rhs = i % nrhs;
-    b(prob, c, row, rhs / Pack::n)[rhs % Pack::n] = a(prob,c,row);
-  };
-  Kokkos::parallel_for(np*3*nrow*nrhs, f);
-}
-
-template <typename ST, typename DT>
-void pack_scalar_matrix (const ST& a, DT b, const int nrhs) {
-  const int np = a.extent_int(0);
-  const int nrow = a.extent_int(2);
-  assert(b.extent_int(0) == np);
-  assert(b.extent_int(1) == 3);
-  assert(b.extent_int(2) == nrow);
-  assert(b.extent_int(3) == nrhs);
-  auto f = KOKKOS_LAMBDA (const int i) {
-    const int prob = i / (3*nrow*nrhs);
-    const int c = (i % (3*nrow*nrhs)) / (nrow*nrhs);
-    const int row = (i % (nrow*nrhs)) / nrhs;
-    const int rhs = i % nrhs;
-    b(prob,c,row,rhs) = a(prob,c,row);
-  };
-  Kokkos::parallel_for(np*3*nrow*nrhs, f);
-}
-
 using BulkLayout = Kokkos::LayoutRight;
 using TeamLayout = Kokkos::LayoutRight;
 
 template <typename TridiagArray>
 KOKKOS_INLINE_FUNCTION
-Kokkos::View<typename TridiagArray::value_type*>
+Kokkos::View<typename TridiagArray::value_type*, TeamLayout, Kokkos::MemoryUnmanaged>
 get_diag (const TridiagArray& A, const int& ip, const int& diag_idx) {
   assert(A.extent_int(3) == 1);
-  return Kokkos::View<typename TridiagArray::value_type*>(
+  return Kokkos::View<typename TridiagArray::value_type*, TeamLayout, Kokkos::MemoryUnmanaged>(
     &A.impl_map().reference(ip, diag_idx, 0, 0),
     A.extent_int(2));
 }
 
 template <typename TridiagArray>
 KOKKOS_INLINE_FUNCTION
-Kokkos::View<typename TridiagArray::value_type**, TeamLayout>
+Kokkos::View<typename TridiagArray::value_type**, TeamLayout, Kokkos::MemoryUnmanaged>
 get_diags (const TridiagArray& A, const int& ip, const int& diag_idx) {
-  return Kokkos::View<typename TridiagArray::value_type**, TeamLayout>(
+  return Kokkos::View<typename TridiagArray::value_type**, TeamLayout, Kokkos::MemoryUnmanaged>(
     &A.impl_map().reference(ip, diag_idx, 0, 0),
     A.extent_int(2), A.extent_int(3));
 }
 
 template <typename DataArray>
 KOKKOS_INLINE_FUNCTION
-Kokkos::View<typename DataArray::value_type*>
+Kokkos::View<typename DataArray::value_type*, TeamLayout, Kokkos::MemoryUnmanaged>
 get_x (const DataArray& X, const int& ip) {
   assert(X.extent_int(2) == 1);
-  return Kokkos::View<typename DataArray::value_type*>(
+  return Kokkos::View<typename DataArray::value_type*, TeamLayout, Kokkos::MemoryUnmanaged>(
     &X.impl_map().reference(ip, 0, 0), X.extent_int(1));
 }
 
 template <typename DataArray>
 KOKKOS_INLINE_FUNCTION
-Kokkos::View<typename DataArray::value_type**, TeamLayout>
+Kokkos::View<typename DataArray::value_type**, TeamLayout, Kokkos::MemoryUnmanaged>
 get_xs (const DataArray& X, const int& ip) {
-  return Kokkos::View<typename DataArray::value_type**, TeamLayout>(
+  return Kokkos::View<typename DataArray::value_type**, TeamLayout, Kokkos::MemoryUnmanaged>(
     &X.impl_map().reference(ip, 0, 0), X.extent_int(1), X.extent_int(2));
 }
 
@@ -264,13 +181,15 @@ void run (const Input& in) {
 
   auto Am = create_mirror_view(A);
   auto Bm = create_mirror_view(B);
-  for (int i = 0; i < in.nprob; ++i) {
+  const auto fill = [&] (const int i) {
     const auto dl = subview(Am, i, 0, ALL(), ALL());
     const auto d  = subview(Am, i, 1, ALL(), ALL());
     const auto du = subview(Am, i, 2, ALL(), ALL());
     fill_tridiag_matrix(dl, d, du, nA, i);
     fill_data_matrix(subview(Bm, i, ALL(), ALL()), in.nrhs);
-  }
+  };
+  Kokkos::parallel_for(
+    Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, in.nprob), fill);
   deep_copy(A, Am);
   deep_copy(B, Bm);
   deep_copy(Acopy, A);
@@ -303,10 +222,22 @@ void run (const Input& in) {
       t1 = gettime();
     } else {
       if (in.pack) {
-        const int nrhs = npack<DataPack>(in.nrhs);
         for (int trial = 0; trial < 2; ++trial) {
-          if (in.oneA) deep_copy(A, Acopy); else deep_copy(Ap, Apcopy);
-          const auto dc = KOKKOS_LAMBDA (const MT& team) {
+          // Manual deep copy b/c Kokkos::deep_copy has some side effect that
+          // affects performance on SKX and especially KNL.
+          const auto Adc = KOKKOS_LAMBDA (const MT& team) {
+            const auto s = [&] () {
+              const int i = team.league_rank();
+              for (int k = 0; k < 3; ++k)
+                for (int r = 0; r < in.nrow; ++r)
+                  for (int c = 0; c < nA; ++c)
+                    A(i,k,r,c) = Acopy(i,k,r,c);
+            };
+            Kokkos::single(Kokkos::PerTeam(team), s);
+          };
+          Kokkos::parallel_for(policy, Adc);
+          const int nrhs = npack<DataPack>(in.nrhs);
+          const auto Xdc = KOKKOS_LAMBDA (const MT& team) {
             const auto s = [&] () {
               const int i = team.league_rank();
               for (int r = 0; r < in.nrow; ++r)
@@ -315,7 +246,7 @@ void run (const Input& in) {
             };
             Kokkos::single(Kokkos::PerTeam(team), s);
           };
-          Kokkos::parallel_for(policy, dc);
+          Kokkos::parallel_for(policy, Xdc);
           Kokkos::fence();
           t0 = gettime();
           if (in.nrhs == 1) {
@@ -368,10 +299,18 @@ void run (const Input& in) {
         }
       } else {
         for (int trial = 0; trial < 2; ++trial) {
-          deep_copy(A, Acopy);
-          // Kokkos::deep_copy was messing up the timing for some reason. Do it
-          // manually.
-          const auto dc = KOKKOS_LAMBDA (const MT& team) {
+          const auto Adc = KOKKOS_LAMBDA (const MT& team) {
+            const auto s = [&] () {
+              const int i = team.league_rank();
+              for (int k = 0; k < 3; ++k)
+                for (int r = 0; r < in.nrow; ++r)
+                  for (int c = 0; c < nA; ++c)
+                    A(i,k,r,c) = Acopy(i,k,r,c);
+            };
+            Kokkos::single(Kokkos::PerTeam(team), s);
+          };
+          Kokkos::parallel_for(policy, Adc);
+          const auto Xdc = KOKKOS_LAMBDA (const MT& team) {
             const auto s = [&] () {
               const int i = team.league_rank();
               for (int r = 0; r < in.nrow; ++r)
@@ -380,7 +319,7 @@ void run (const Input& in) {
             };
             Kokkos::single(Kokkos::PerTeam(team), s);
           };
-          Kokkos::parallel_for(policy, dc);
+          Kokkos::parallel_for(policy, Xdc);
           Kokkos::fence();
           t0 = gettime();
           if (in.nrhs == 1) {
