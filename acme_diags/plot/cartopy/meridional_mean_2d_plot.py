@@ -45,7 +45,7 @@ def plot_panel(n, fig, proj, var, clevels, cmap,
     #    var_min = float(var.min())
     #    var_max = float(var.max())
     #    var_mean = cdutil.averager(var, axis='xy', weights='generate')
-    #    var = add_cyclic(var)
+    var = add_cyclic(var)
     lon = var.getLongitude()
     #lat = var.getLatitude()
     plev = var.getLevel()
