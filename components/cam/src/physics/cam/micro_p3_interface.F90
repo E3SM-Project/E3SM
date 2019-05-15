@@ -139,7 +139,7 @@ module micro_p3_interface
 
   character(len=8), parameter :: &      ! Constituent names
      cnst_names(8) = (/'CLDLIQ', 'CLDICE','NUMLIQ','NUMICE', &
-                     'RAINQM', 'CLDRIM','NUMRAI','BVRIM'/)
+                     'RAINQM', 'CLDRIM','NUMRAI','BVRIM '/)
 
   character(len=128) :: micro_p3_lookup_dir     = unset_str ! location of p3 input files
   character(len=16)  :: micro_p3_tableversion   = unset_str ! P3 table version
