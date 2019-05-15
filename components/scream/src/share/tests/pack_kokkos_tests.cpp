@@ -99,6 +99,8 @@ TEST_CASE("scalarize", "scream::pack") {
 
   typedef Kokkos::View<Pack<double, 16>*> Array1;
   typedef Kokkos::View<Pack<double, 32>**> Array2;
+  typedef Kokkos::View<Pack<double, 8>***> Array3;
+  typedef Kokkos::View<Pack<double, 24>****> Array4;
 
   {
     const Array1 a1("a1", 10);
@@ -109,12 +111,33 @@ TEST_CASE("scalarize", "scream::pack") {
   }
 
   {
-    const Array2 a1("a1", 10, 4);
+    const Array2 a1("a2", 10, 4);
     const auto a2 = scalarize(a1);
     typedef decltype(a2) VT;
     static_assert(VT::traits::memory_traits::Unmanaged, "Um");
     REQUIRE(a2.extent_int(0) == 10);
     REQUIRE(a2.extent_int(1) == 128);
+  }
+
+  {
+    const Array3 a1("a3", 3, 2, 4);
+    const auto a2 = scalarize(a1);
+    typedef decltype(a2) VT;
+    static_assert(VT::traits::memory_traits::Unmanaged, "Um");
+    REQUIRE(a2.extent_int(0) == 3);
+    REQUIRE(a2.extent_int(1) == 2);
+    REQUIRE(a2.extent_int(2) == 32);
+  }
+
+  {
+    const Array4 a1("a4", 3, 2, 4, 2);
+    const auto a2 = scalarize(a1);
+    typedef decltype(a2) VT;
+    static_assert(VT::traits::memory_traits::Unmanaged, "Um");
+    REQUIRE(a2.extent_int(0) == 3);
+    REQUIRE(a2.extent_int(1) == 2);
+    REQUIRE(a2.extent_int(2) == 4);
+    REQUIRE(a2.extent_int(3) == 48);
   }
 }
 
