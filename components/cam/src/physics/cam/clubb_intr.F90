@@ -601,8 +601,8 @@ end subroutine clubb_init_cnst
    pver_clubb = pver
 #endif 
 
-    allocate(zt_g(pverp_five))
-    allocate(zi_g(pverp_five))
+    allocate(zt_g(pverp_clubb))
+    allocate(zi_g(pverp_clubb))
 
     ! ----------------------------------------------------------------- !
     ! Determine how many constituents CLUBB will transport.  Note that  
