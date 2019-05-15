@@ -3217,22 +3217,23 @@ class M_TestGenDomain(unittest.TestCase): #TestCreateTestCommon):
         run_cmd_assert_result(self, cmd)
 
 
-    def _run(self, mapping_file, ocn_grid, lnd_grid, fminval=0.001, fmaxval=1.0):
+    def _run(self, mapping_file, ocn_grid, lnd_grid, fminval=0.001, fmaxval=1.0, 
+             from_dir=tempfile.mkdtemp()):
 
         # Start with clean directory
         for domain_file in glob.glob("%s/domain.*.nc"%self._get_gen_domain_root()):
             os.remove(domain_file)
 
         # Run code with specified options
-        cmd = "cd %s; ./gen_domain -m %s -o %s -l %s --fminval %f --fmaxval %f"%(
-                self._get_gen_domain_root(), 
+        cmd = "cd %s; %s/gen_domain -m %s -o %s -l %s --fminval %f --fmaxval %f"%(
+                from_dir, self._get_gen_domain_root(), 
                 mapping_file, ocn_grid, lnd_grid, fminval, fmaxval
                 )
         cmd = ". ./.env_mach_specific.sh; %s"%cmd
         run_cmd_assert_result(self, cmd)
 
         # Return list of output files generated
-        domain_files = glob.glob("%s/domain.*.nc"%(self._get_gen_domain_root()))
+        domain_files = glob.glob("%s/domain.*.nc"%(from_dir))
         return domain_files
 
     def test_baseline_diffs(self):
@@ -3240,41 +3241,49 @@ class M_TestGenDomain(unittest.TestCase): #TestCreateTestCommon):
         # Build code
         self._build()
 
-        # Setup test case
+        # Setup test cases
+        # Test MPAS to SE grid, and MPAS to lat/lon grid
         inputdata_root = MACHINE.get_value("DIN_LOC_ROOT")
-        mapping_file = "%s/cpl/gridmaps/oRRS30to10/map_oRRS30to10_to_ne30np4_aave.160419.nc"%inputdata_root
+        mapping_files = ("%s/cpl/gridmaps/oRRS30to10/map_oRRS30to10_to_ne30np4_aave.160419.nc"%inputdata_root,
+                         "%s/cpl/gridmaps/oRRS15to5/map_oRRS15to5_to_360x720cru_aave.190409.nc"%inputdata_root)
         baseline_root = "%s/share/domains"%inputdata_root
         ocn_grid = "oRRS30to10"
         lnd_grid = "ne30np4"
+        temp_dir = tempfile.mkdtemp()
 
-        # Run the domain tool to get new outputs
-        domain_files = self._run(mapping_file, ocn_grid, lnd_grid)
+        for mapping_file in mapping_files:
 
-        # Build cprnc
-        cprnc_root = "%s/tools/cprnc"%get_cime_root()
-        cmd = "cd %s; gmake clean; gmake"%cprnc_root
-        cmd = ". ./.env_mach_specific.sh; %s"%cmd
-        run_cmd_no_fail(cmd)
+            # Run the domain tool to get new outputs
+            domain_files = self._run(mapping_file, ocn_grid, lnd_grid, from_dir=temp_dir)
 
-        # Compare data using cprnc
-        for testfile in domain_files:
+            # Build cprnc
+            cprnc_root = "%s/tools/cprnc"%get_cime_root()
+            cmd = "cd %s; gmake clean; gmake"%cprnc_root
+            cmd = ". ./.env_mach_specific.sh; %s"%cmd
+            run_cmd_no_fail(cmd)
 
-            # Find corresponding baseline in baseline_root
-            baseline = sorted(glob.glob("%s/%s.*"%(
-                    baseline_root,
-                    os.path.basename(testfile).rsplit(".", 2)[0]
-                    )))[-1]
+            # Compare data using cprnc
+            for testfile in domain_files:
 
-            # Run cprnc to compare
-            cmd = "%s/cprnc -m %s %s"%(cprnc_root, testfile, baseline) 
-            cmd = ". ./.env_mach_specific.sh; %s"%(cmd)
-            output = run_cmd_no_fail(cmd)
-            if "files seem to be IDENTICAL" in output:
-                files_match = True
-            else:
-                files_match = False
+                # Find corresponding baseline in baseline_root
+                baseline = sorted(glob.glob("%s/%s.*"%(
+                        baseline_root,
+                        os.path.basename(testfile).rsplit(".", 2)[0]
+                        )))[-1]
 
-            self.assertTrue(files_match)
+                # Run cprnc to compare
+                cmd = "%s/cprnc -m %s %s"%(cprnc_root, testfile, baseline) 
+                cmd = ". ./.env_mach_specific.sh; %s"%(cmd)
+                output = run_cmd_no_fail(cmd)
+                if "files seem to be IDENTICAL" in output:
+                    files_match = True
+                else:
+                    files_match = False
+
+                self.assertTrue(files_match)
+
+        # Clean up
+        shutil.rmtree(temp_dir)
 
 
 def make_pylint_test(pyfile, all_files):
