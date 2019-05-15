@@ -15,6 +15,7 @@ module physics_types
   use phys_control, only: waccmx_is, use_mass_borrower
   use shr_const_mod,only: shr_const_rwv
   use perf_mod,     only: t_startf, t_stopf
+  use dimensions_mod, only: fv_nphys
 
   implicit none
   private          ! Make default type private to the module
@@ -87,7 +88,8 @@ module physics_types
           zm        ! geopotential height above surface at midpoints (m)
 
      real(r8), dimension(:,:,:),allocatable      :: &
-          q         ! constituent mixing ratio (kg/kg moist or dry air depending on type)
+          q,       &! constituent mixing ratio (kg/kg moist or dry air depending on type)
+          qo        ! initial q used for passing tendency back to dynamics when fv_nphys>0 (kg/kg)
 
      real(r8), dimension(:,:),allocatable        :: &
           pint,    &! interface pressure (Pa)
@@ -1565,6 +1567,9 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   
   allocate(state%q(psetcols,pver,pcnst), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%q')
+
+  if (fv_nphys>0) allocate(state%qo(psetcols,pver,pcnst), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%qo')
   
   allocate(state%pint(psetcols,pver+1), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%pint')
@@ -1625,6 +1630,7 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   state%exner(:,:) = inf
   state%zm(:,:) = inf
   state%q(:,:,:) = inf
+  if (fv_nphys>0) state%qo(:,:,:) = inf
       
   state%pint(:,:) = inf
   state%pintdry(:,:) = inf
@@ -1716,6 +1722,9 @@ subroutine physics_state_dealloc(state)
   
   deallocate(state%q, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%q')
+
+  if (fv_nphys>0) deallocate(state%qo, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%qo')
   
   deallocate(state%pint, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%pint')
