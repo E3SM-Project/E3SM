@@ -469,8 +469,6 @@ contains
     real(rtype) :: Eii_fact,epsi
     real(rtype) :: eii ! temperature dependent aggregation efficiency
 
-    real(rtype), dimension(its:ite,kts:kte) :: diam_ice
-
     ! Variables needed for in-cloud calculations
     real(rtype)                             :: ir_cldm, il_cldm, lr_cldm  ! Intersection of cloud fractions for combination of ice (i), rain (r) and liquid (l)
     real(rtype), dimension(its:ite,kts:kte) :: inv_icldm, inv_lcldm, inv_rcldm ! Inverse cloud fractions (1/cld)
@@ -560,7 +558,7 @@ contains
     prec      = 0._rtype
     mu_r      = 0._rtype
     diag_ze   = -99._rtype
-    diam_ice  = 0._rtype
+
     ze_ice    = 1.e-22_rtype
     ze_rain   = 1.e-22_rtype
     diag_effc = 10.e-6_rtype ! default value
@@ -834,10 +832,6 @@ contains
              !impose lower limits to prevent taking log of # < 0
              nitot_incld(i,k) = max(nitot_incld(i,k),nsmall)
              nr_incld(i,k)    = max(nr_incld(i,k),nsmall)
-
-             !compute mean-mass ice diameters (estimated; rigorous approach to be implemented later)
-             dum2 = 500._rtype !ice density
-             diam_ice(i,k) = ((qitot_incld(i,k)*6._rtype)/(nitot_incld(i,k)*dum2*pi))**thrd
 
              call calc_bulkRhoRime(qitot_incld(i,k),qirim_incld(i,k),birim_incld(i,k),rhop)
 
@@ -1294,7 +1288,6 @@ contains
                qinuc = ninuc * mi0
             endif 
          endif 
-
           !.................................................................
           ! droplet activation
 
@@ -2215,14 +2208,6 @@ contains
        ! homogeneous freezing of cloud and rain
 
        k_loop_fz:  do k = kbot,ktop,kdir
-
-          ! compute mean-mass ice diameters (estimated; rigorous approach to be implemented later)
-          diam_ice(i,k) = 0._rtype
-          if (qitot(i,k).ge.qsmall) then
-             dum1 = max(nitot(i,k),nsmall)
-             dum2 = 500._rtype !ice density
-             diam_ice(i,k) = ((qitot(i,k)*6._rtype)/(dum1*dum2*pi))**thrd
-          endif
 
           if (qc(i,k).ge.qsmall .and. t(i,k).lt.homogfrze) then
              Q_nuc = qc(i,k)
