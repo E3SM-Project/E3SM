@@ -106,9 +106,6 @@ def run_diag(parameter):
 
                 mv1_p = cdutil.averager(mv1_p, axis='y')
                 mv2_p = cdutil.averager(mv2_p, axis='y')
-              
-                print(mv1_p.shape,'mv1_p')
-                print(mv2_p.shape,'mv2_p')
 
                 parameter.output_file = '-'.join(
                     [ref_name, var, season, parameter.regions[0]])
@@ -135,7 +132,6 @@ def run_diag(parameter):
                         mv2_reg.setAxis(i,ax)
 
                     mv2_reg = mv2_reg.regrid(grid, regridTool = 'regrid2')[...,0]
-                    print(mv2_reg, 'mv2_reg')
                     # Apply the mask back, since crossSectionRegrid
                     # doesn't preserve the mask.
                     mv2_reg = MV2.masked_where(

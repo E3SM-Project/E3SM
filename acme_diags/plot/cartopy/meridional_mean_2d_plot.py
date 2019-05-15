@@ -77,11 +77,12 @@ def plot_panel(n, fig, proj, var, clevels, cmap,
     if title[2] is not None:
         ax.set_title(title[2], loc='right', fontdict=plotSideTitle)
     ax.set_xticks([0, 60, 120, 180, 240, 300, 359.99])#, crs=ccrs.PlateCarree())
+    ax.set_xticklabels(['0', '60E', '120E',180,'120W', '60W', '0'])
     # ax.set_xticks([-180, -120, -60, 0, 60, 120, 180], crs=ccrs.PlateCarree())
     #ax.set_xticks([-90, -60, -30, 0, 30, 60, 90])  # , crs=ccrs.PlateCarree())
     #ax.set_xlim(-90, 90)
-    lon_formatter = LongitudeFormatter(
-        zero_direction_label=True, number_format='.0f')
+    #lon_formatter = LongitudeFormatter(
+    #    zero_direction_label=True, number_format='.0f')
     #LatitudeFormatter()
     #ax.xaxis.set_major_formatter(lon_formatter)
     # ax.xaxis.set_major_formatter(lat_formatter)
@@ -89,6 +90,7 @@ def plot_panel(n, fig, proj, var, clevels, cmap,
     ax.xaxis.set_ticks_position('bottom')
     ax.yaxis.set_ticks_position('left')
     ax.invert_yaxis()
+    ax.set_ylabel('Pressure (mb)')
 
     # Color bar
     cbax = fig.add_axes(
