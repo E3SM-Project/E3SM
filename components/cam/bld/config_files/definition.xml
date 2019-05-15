@@ -63,9 +63,9 @@ Switch to turn on/off advecting CLUBB moments: 0 => no, 1 => yes
 PBL package: uw (University of Washington), hb (Holtslag and Boville), hbr
  (Holtslag, Boville, and Rasch), clubb_sgs.
 </entry>
-<entry id="rad" valid_values="rrtmg,camrt" value="">
+<entry id="rad" valid_values="rrtmg,rrtmgp,camrt" value="">
 Radiative transfer calculation: 
-camrt (CAM3 and CAM4 RT package), rrtmg (RRTMG package from AER).
+camrt (CAM3 and CAM4 RT package), rrtmg (RRTMG package from AER), rrtmgp (RRTMGP package from AER).
 </entry>
 <entry id="carma" valid_values="none,bc_strat,cirrus,cirrus_dust,dust,meteor_impact,meteor_smoke,mixed_sulfate,pmc,pmc_sulfate,sea_salt,sulfate,tholin,test_detrain,test_growth,test_passive,test_radiative,test_swelling,test_tracers,test_tracers2" value="none">
 CARMA sectional microphysics: 
@@ -107,6 +107,12 @@ Use rtm, stub runoff or no runoff model in cam build: rtm, srof, none
 Use data ocean model (docn or dom), stub ocean (socn), or aqua planet ocean
 (aquaplanet) in cam build.  When built from the CESM scripts the value of
 ocn may be set to pop, but this doesn't impact how CAM is built.
+</entry>
+<entry id="aquaplanet" valid_value="0,1" value="0">
+Switch for aquaplanet mode.  By default this switch sets the ocn component
+to use an analytic expression for SST.  To use aquaplanet with time varying
+SSTs read from a dataset, or with a slab ocean, the ocean component should
+be set to DOCN.
 </entry>
 <entry id="ice" valid_values="cice,sice,none" value="">
 Use cice, stub ice model or no ice model in cam build: cice, sice, none

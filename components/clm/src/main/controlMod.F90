@@ -25,22 +25,22 @@ module controlMod
   use histFileMod             , only: hist_fincl4, hist_fincl5, hist_fincl6, hist_fexcl1, hist_fexcl2, hist_fexcl3
   use histFileMod             , only: hist_fexcl4, hist_fexcl5, hist_fexcl6
   use LakeCon                 , only: deepmixing_depthcrit, deepmixing_mixfact 
-  use CNAllocationMod         , only: suplnitro
-  use CNAllocationMod         , only: suplphos
-  use CNCarbonFluxType        , only: nfix_timeconst
+  use AllocationMod         , only: suplnitro
+  use AllocationMod         , only: suplphos
+  use ColumnDataType          , only: nfix_timeconst
   use CNNitrifDenitrifMod     , only: no_frozen_nitrif_denitrif
-  use CNC14DecayMod           , only: use_c14_bombspike, atm_c14_filename
-  use CNSoilLittVertTranspMod , only: som_adv_flux, max_depth_cryoturb
-  use CNVerticalProfileMod    , only: exponential_rooting_profile, rootprof_exp 
-  use CNVerticalProfileMod    , only: surfprof_exp, pftspecific_rootingprofile  
-  use CNSharedParamsMod       , only: anoxia_wtsat
+  use C14DecayMod           , only: use_c14_bombspike, atm_c14_filename
+  use SoilLittVertTranspMod , only: som_adv_flux, max_depth_cryoturb
+  use VerticalProfileMod    , only: exponential_rooting_profile, rootprof_exp 
+  use VerticalProfileMod    , only: surfprof_exp, pftspecific_rootingprofile  
+  use SharedParamsMod       , only: anoxia_wtsat
   use CanopyfluxesMod         , only: perchroot, perchroot_alt
   use CanopyHydrologyMod      , only: CanopyHydrology_readnl
   use SurfaceAlbedoMod        , only: albice, lake_melt_icealb
   use UrbanParamsType         , only: urban_hac, urban_traffic
   use clm_varcon              , only: h2osno_max
   use clm_varctl              , only: use_dynroot
-  use CNAllocationMod         , only: nu_com_phosphatase,nu_com_nfix 
+  use AllocationMod         , only: nu_com_phosphatase,nu_com_nfix 
   use clm_varctl              , only: nu_com, use_var_soil_thick
   use seq_drydep_mod          , only: drydep_method, DD_XLND, n_drydep
   use clm_varctl              , only: forest_fert_exp
@@ -228,7 +228,8 @@ contains
           use_fates_planthydro, use_fates_ed_st3,       &
           use_fates_ed_prescribed_phys,                 &
           use_fates_inventory_init,                     &
-          fates_inventory_ctrl_filename
+          fates_inventory_ctrl_filename,                &
+          fates_parteh_mode
 
     namelist /clm_inparm / use_betr
         
@@ -244,7 +245,7 @@ contains
 
     namelist /clm_inparm/ &
          use_nofire, use_lch4, use_nitrif_denitrif, use_vertsoilc, use_extralakelayers, &
-         use_vichydro, use_century_decomp, use_cn, use_cndv, use_crop, use_snicar_frc, &
+         use_vichydro, use_century_decomp, use_cn, use_crop, use_snicar_frc, &
          use_vancouver, use_mexicocity, use_noio
 
     ! cpl_bypass variables
@@ -267,6 +268,10 @@ contains
 
     namelist /clm_inparm/ &
          use_petsc_thermal_model
+
+    namelist /clm_inparm/ &
+         do_budgets, budget_inst, budget_daily, budget_month, &
+         budget_ann, budget_ltann, budget_ltend
 
     ! ----------------------------------------------------------------------
     ! Default values
@@ -580,7 +585,6 @@ contains
     call mpi_bcast (use_vichydro, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_century_decomp, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_cn, 1, MPI_LOGICAL, 0, mpicom, ier)
-    call mpi_bcast (use_cndv, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_crop, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_voc, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_snicar_frc, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -646,6 +650,7 @@ contains
     call mpi_bcast (use_fates_inventory_init, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (fates_inventory_ctrl_filename, len(fates_inventory_ctrl_filename), &
           MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (fates_parteh_mode, 1, MPI_INTEGER, 0, mpicom, ier)
 
 
     call mpi_bcast (use_betr, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -772,6 +777,15 @@ contains
     ! PETSc-based thermal model
     call mpi_bcast (use_petsc_thermal_model, 1, MPI_LOGICAL, 0, mpicom, ier)
 
+    ! Budget
+    call mpi_bcast (do_budgets   , 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (budget_inst  , 1, MPI_INTEGER, 0, mpicom, ier)
+    call mpi_bcast (budget_daily , 1, MPI_INTEGER, 0, mpicom, ier)
+    call mpi_bcast (budget_month , 1, MPI_INTEGER, 0, mpicom, ier)
+    call mpi_bcast (budget_ann   , 1, MPI_INTEGER, 0, mpicom, ier)
+    call mpi_bcast (budget_ltann , 1, MPI_INTEGER, 0, mpicom, ier)
+    call mpi_bcast (budget_ltend , 1, MPI_INTEGER, 0, mpicom, ier)
+
   end subroutine control_spmd
 
   !------------------------------------------------------------------------
@@ -782,8 +796,8 @@ contains
     !
     ! !USES:
     !
-    use CNAllocationMod, only : suplnitro, suplnNon
-    use CNAllocationMod, only : suplphos, suplpNon
+    use AllocationMod, only : suplnitro, suplnNon
+    use AllocationMod, only : suplphos, suplpNon
     !
     ! !ARGUMENTS:
     implicit none
@@ -810,7 +824,6 @@ contains
     write(iulog,*) '    use_vichydro = ', use_vichydro
     write(iulog,*) '    use_century_decomp = ', use_century_decomp
     write(iulog,*) '    use_cn = ', use_cn
-    write(iulog,*) '    use_cndv = ', use_cndv
     write(iulog,*) '    use_crop = ', use_crop
     write(iulog,*) '    use_snicar_frc = ', use_snicar_frc
     write(iulog,*) '    use_vancouver = ', use_vancouver
@@ -987,6 +1000,7 @@ contains
        write(iulog, *) '    use_fates_logging = ', use_fates_logging
        write(iulog, *) '    fates_paramfile = ', fates_paramfile
        write(iulog, *) '    use_fates_planthydro = ', use_fates_planthydro
+       write(iulog, *) '    fates_parteh_mode = ', fates_parteh_mode
        write(iulog, *) '    use_fates_ed_st3 = ',use_fates_ed_st3
        write(iulog, *) '    use_fates_ed_prescribed_phys = ',use_fates_ed_prescribed_phys
        write(iulog, *) '    use_fates_inventory_init = ',use_fates_inventory_init

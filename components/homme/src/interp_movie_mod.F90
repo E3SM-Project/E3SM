@@ -596,15 +596,16 @@ contains
                 deallocate(var3d)
              end if
 
+#ifdef _PRIM
+! PRIM codes output 'geo', not 'geop'. why?
+#else
              if(nf_selectedvar('geop', output_varnames)) then
+                if (par%masterproc) print *,'writing geop...'
                 allocate(datall(ncnt,nlev),var3d(np,np,nlev,1))
                 st=1
                 do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    do k=1,nlev
-#ifdef _PRIM
-                      var3d(:,:,k,1) = 0  ! need to compute PHI from hydrostatic relation
-#else
                       if(test_case.eq.'vortex') then
                          var3d(:,:,k,1) = elem(ie)%state%p(:,:,k,n0)
                       elseif(test_case.eq.'swirl') then
@@ -618,8 +619,6 @@ contains
                          if(k.ne.kmass) &
                               var3d(:,:,k,1)=var3d(:,:,k,1)/elem(ie)%state%p(:,:,kmass,n0)
                       endif
-
-#endif
                       call interpolate_scalar(interpdata(ie), var3d(:,:,k,1), &
                            np, datall(st:en,k))
                    end do
@@ -628,7 +627,7 @@ contains
                 call nf_put_var(ncdf(ios),datall,start3d, count3d, name='geop')
                 deallocate(datall,var3d)
              end if
-
+#endif
 
 
 #if 0
@@ -742,7 +741,9 @@ contains
 !            large block of _PRIM only I/O
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
              if(nf_selectedvar('geos', output_varnames)) then
+                ! only write goes on first frame (it does not depend on time)
                 if (nf_get_frame(ncdf(ios))==1) then
+                if (par%masterproc) print *,'writing geos...'
                 st=1
                 allocate (datall(ncnt,1))
                 
@@ -770,6 +771,8 @@ contains
                    enddo
                    call nf_put_var(ncdf(ios),datall(:,1),start2d,count2d,name='precl')
                    deallocate(datall)
+                else
+                   if (par%masterproc) print *,'not writing precl because it was not allocated...'
                 endif
              endif
 

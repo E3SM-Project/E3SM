@@ -21,6 +21,8 @@
 <config_dt ice_grid="oRRS18to6">900.0</config_dt>
 <config_dt ice_grid="oRRS18to6v3">900.0</config_dt>
 <config_dt ice_grid="oRRS15to5">900.0</config_dt>
+<config_dt ice_grid="oARRM60to10">900.0</config_dt>
+<config_dt ice_grid="oARRM60to6">900.0</config_dt>
 <config_calendar_type>'gregorian_noleap'</config_calendar_type>
 <config_start_time>'2000-01-01_00:00:00'</config_start_time>
 <config_stop_time>'none'</config_stop_time>
@@ -63,7 +65,11 @@
 <config_initial_ice_volume>1.0</config_initial_ice_volume>
 <config_initial_snow_volume>0.0</config_initial_snow_volume>
 <config_initial_latitude_north>70.0</config_initial_latitude_north>
+<config_initial_latitude_north ice_grid="oEC60to30v3wLI">75.0</config_initial_latitude_north>
+<config_initial_latitude_north ice_grid="oRRS30to10v3wLI">85.0</config_initial_latitude_north>
 <config_initial_latitude_south>-60.0</config_initial_latitude_south>
+<config_initial_latitude_south ice_grid="oEC60to30v3wLI">-75.0</config_initial_latitude_south>
+<config_initial_latitude_south ice_grid="oRRS30to10v3wLI">-85.0</config_initial_latitude_south>
 <config_initial_velocity_type>'uniform'</config_initial_velocity_type>
 <config_initial_uvelocity>0.0</config_initial_uvelocity>
 <config_initial_vvelocity>0.0</config_initial_vvelocity>
@@ -108,6 +114,8 @@
 <config_dynamics_subcycle_number ice_grid="oRRS18to6">2</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oRRS18to6v3">2</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oRRS15to5">2</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="oARRM60to10">1</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="oARRM60to6">2</config_dynamics_subcycle_number>
 <config_rotate_cartesian_grid>true</config_rotate_cartesian_grid>
 <config_include_metric_terms>true</config_include_metric_terms>
 <config_elastic_subcycle_number>120</config_elastic_subcycle_number>
@@ -349,6 +357,7 @@
 <config_sea_freezing_temperature_type>'mushy'</config_sea_freezing_temperature_type>
 <config_ocean_surface_type>'free'</config_ocean_surface_type>
 <config_couple_biogeochemistry_fields>false</config_couple_biogeochemistry_fields>
+<config_use_data_icebergs>false</config_use_data_icebergs>
 
 <!-- diagnostics -->
 <config_check_state>false</config_check_state>
@@ -376,7 +385,7 @@
 <config_AM_regionalStatistics_ice_extent_limit>0.15</config_AM_regionalStatistics_ice_extent_limit>
 
 <!-- AM_ridgingDiagnostics -->
-<config_AM_ridgingDiagnostics_enable>true</config_AM_ridgingDiagnostics_enable>
+<config_AM_ridgingDiagnostics_enable>false</config_AM_ridgingDiagnostics_enable>
 <config_AM_ridgingDiagnostics_compute_interval>'dt'</config_AM_ridgingDiagnostics_compute_interval>
 <config_AM_ridgingDiagnostics_output_stream>'output'</config_AM_ridgingDiagnostics_output_stream>
 <config_AM_ridgingDiagnostics_compute_on_startup>true</config_AM_ridgingDiagnostics_compute_on_startup>
@@ -391,7 +400,7 @@
 <config_AM_conservationCheck_write_to_logfile>true</config_AM_conservationCheck_write_to_logfile>
 
 <!-- AM_geographicalVectors -->
-<config_AM_geographicalVectors_enable>true</config_AM_geographicalVectors_enable>
+<config_AM_geographicalVectors_enable>false</config_AM_geographicalVectors_enable>
 <config_AM_geographicalVectors_compute_interval>'dt'</config_AM_geographicalVectors_compute_interval>
 <config_AM_geographicalVectors_output_stream>'output'</config_AM_geographicalVectors_output_stream>
 <config_AM_geographicalVectors_compute_on_startup>true</config_AM_geographicalVectors_compute_on_startup>

@@ -16,10 +16,11 @@ module ice_comp_mct
    use seq_cdata_mod
    use seq_infodata_mod
    use seq_timemgr_mod
-   use seq_comm_mct,      only : seq_comm_suffix, seq_comm_inst, seq_comm_name
+   use seq_comm_mct,      only : seq_comm_suffix, seq_comm_inst, seq_comm_name, info_taskmap_comp
    use shr_file_mod 
    use shr_cal_mod,       only : shr_cal_date2ymd
    use shr_sys_mod
+   use shr_taskmap_mod,   only : shr_taskmap_write
    use shr_pio_mod
    use perf_mod
 
@@ -146,12 +147,13 @@ contains
     character(len=StrKIND) :: cpl_seq_option
 
     type (MPAS_Time_Type) :: currTime
-    integer :: iam, ierr, ierr_local
+    integer :: iam, npes, ierr, ierr_local
     integer :: iyear0, imonth0
     character(len=StrKIND)  :: starttype          ! infodata start type
     character(len=StrKIND)  :: timeStamp
     character(len=StrKIND)  :: nml_filename
     character(len=16) :: inst_suffix
+    integer :: inst_index
     integer :: lbnum
 
     type (MPAS_Time_Type) :: alarmStartTime
@@ -161,6 +163,8 @@ contains
     type (MPAS_Pool_Type), pointer :: shortwave
 
     logical :: exists
+    logical :: no_taskmap_output                     ! true then do not write out task-to-node mapping
+    logical :: verbose_taskmap_output                ! true then use verbose task-to-node mapping format
 
     character(kind=c_char), dimension(StrKIND+1) :: c_filename       ! StrKIND+1 for C null-termination character
     integer(kind=c_int) :: c_comm
@@ -176,6 +180,8 @@ contains
     character(kind=c_char), dimension(StrKIND+1) :: c_ref_time_temp
     character(kind=c_char), dimension(StrKIND+1) :: c_filename_interval_temp
     character(kind=c_char), dimension(StrKIND+1) :: c_iotype
+    character(len=8) :: c_inst_index ! instance number
+    character(len=8) :: c_npes       ! number of pes
     type (MPAS_Time_type) :: start_time
     type (MPAS_Time_type) :: ref_time
     type (MPAS_TimeInterval_type) :: filename_interval
@@ -297,6 +303,46 @@ contains
 
     call mpas_framework_init_phase1(domain % dminfo, mpicom_i)
 
+    ! Identify SMP nodes and process/SMP mapping for this instance
+    ! (Assume that processor names are SMP node names on SMP clusters.)
+    inst_index = seq_comm_inst(iceID)
+    write(c_inst_index,'(i8)') inst_index
+
+    if (info_taskmap_comp > 0) then
+
+       no_taskmap_output = .false.
+
+       if (info_taskmap_comp == 1) then
+          verbose_taskmap_output = .false.
+       else
+          verbose_taskmap_output = .true.
+       endif
+
+       call MPI_comm_size(mpicom_i,npes,ierr)
+       write(c_npes,'(i8)') npes
+
+       if (iam==0) then
+          write(iceLogUnit,'(/,3A)') &
+             trim(adjustl(c_npes)), &
+             ' pes participating in computation of MPAS-SEAICE instance #', &
+             trim(adjustl(c_inst_index))
+          call shr_sys_flush(iceLogUnit)
+       endif
+
+    else
+
+       no_taskmap_output = .true.
+       verbose_taskmap_output = .false.
+
+    endif
+
+    call t_startf("shr_taskmap_write")
+    call shr_taskmap_write(iceLogUnit, mpicom_i,                 &
+                           'ICE #'//trim(adjustl(c_inst_index)), &
+                           verbose=verbose_taskmap_output,       &
+                           no_output=no_taskmap_output           )
+    call t_stopf("shr_taskmap_write")
+
     ! Setup function pointers for MPASSI core and domain types
     call seaice_setup_core(corelist)
     call seaice_setup_domain(domain)
@@ -310,7 +356,7 @@ contains
     end if
 
     ! Set core specific options here
-    ! Disable output from all but the master task for ACME!
+    ! Disable output from all but the master task for E3SM!
     ! (This overrides the default set by mpas_log_init based on MPAS_DEBUG setting.)
     if (iam /= 0) then
        domain % logInfo % outputLog % isActive = .false.
@@ -728,7 +774,7 @@ contains
 !!  local variables
 !!
 !!-----------------------------------------------------------------------
-! Variables related to ACME coupler
+! Variables related to E3SM coupler
       integer :: ymd, tod, ihour, iminute, isecond
       integer :: iyear, imonth, iday, curr_ymd, curr_tod
       integer :: shrloglev, shrlogunit
@@ -812,8 +858,13 @@ contains
 
         ! final initialization after clock advance 
         if (first) then
+           call seaice_forcing_get(domain % streamManager, domain, domain % clock, .true.)
+
            call seaice_init_post_clock_advance(domain, domain % clock)
            first = .false.
+        else
+           ! forcing
+           call seaice_forcing_get(domain % streamManager, domain, domain % clock, .false.)
         endif
 
         currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
@@ -831,8 +882,7 @@ contains
         if (debugOn) call mpas_log_write('   Starting forward update', masterOnly=.true.)
         call mpas_timer_start("time integration", .false.)
         ierr = 0
-        call seaice_timestep(domain, domain % clock, itimestep, ierr)
-        call seaice_check_critical_error(domain, ierr)
+        call seaice_timestep(domain, domain % clock, itimestep)
         call mpas_timer_stop("time integration")
         if (debugOn) call mpas_log_write('   Finished forward update', masterOnly=.true.)
 
@@ -872,6 +922,7 @@ contains
       if (seq_timemgr_RestartAlarmIsOn(EClock)) then
          ! Write a restart file, because the coupler asked for it.
          if (debugOn) call mpas_log_write('Writing restart streams', masterOnly=.true.)
+         call seaice_forcing_write_restart_times(domain)
          call mpas_stream_mgr_begin_iteration(domain % streamManager)
          do while ( mpas_stream_mgr_get_next_stream(domain % streamManager, streamID=streamName, &
                     directionProperty=streamDirection, activeProperty=streamActive) )
@@ -1880,6 +1931,7 @@ contains
       atmosCoupling,    &
       atmosFluxes,      &
       oceanFluxes,      &
+      icebergFluxes,    &
       biogeochemistry
 
    integer, pointer :: &
@@ -1889,7 +1941,8 @@ contains
       config_rotate_cartesian_grid,      &
       config_use_topo_meltponds,         &
       config_use_column_biogeochemistry, &
-      config_use_column_shortwave
+      config_use_column_shortwave,       &
+      config_use_data_icebergs
 
    real(kind=RKIND), pointer :: &
       sphere_radius
@@ -1927,6 +1980,8 @@ contains
       oceanShortwaveFlux,          &
       oceanFreshWaterFlux,         &
       oceanSaltFlux,               &
+      bergFreshwaterFlux,          &
+      bergLatentHeatFlux,          &
       oceanNitrateFlux,            &
       oceanSilicateFlux,           &
       oceanAmmoniumFlux,           &
@@ -1958,6 +2013,7 @@ contains
       call MPAS_pool_get_config(configs, "config_use_topo_meltponds", config_use_topo_meltponds)
       call MPAS_pool_get_config(configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
       call MPAS_pool_get_config(configs, "config_use_column_shortwave", config_use_column_shortwave)
+      call MPAS_pool_get_config(configs, "config_use_data_icebergs", config_use_data_icebergs)
 
       call MPAS_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
       call MPAS_pool_get_subpool(block_ptr % structs, "tracers_aggregate", tracersAggregate)
@@ -2007,6 +2063,13 @@ contains
       call MPAS_pool_get_array(oceanFluxes, 'oceanShortwaveFlux', oceanShortwaveFlux)
       call MPAS_pool_get_array(oceanFluxes, 'oceanFreshWaterFlux', oceanFreshWaterFlux)
       call MPAS_pool_get_array(oceanFluxes, 'oceanSaltFlux', oceanSaltFlux)
+
+      if (config_use_data_icebergs) then
+         call MPAS_pool_get_subpool(block_ptr % structs, "berg_fluxes", icebergFluxes)
+
+         call MPAS_pool_get_array(icebergFluxes, "bergFreshwaterFlux", bergFreshwaterFlux)
+         call MPAS_pool_get_array(icebergFluxes, "bergLatentHeatFlux", bergLatentHeatFlux)
+      endif
 
       if (config_use_column_biogeochemistry) then
          call mpas_pool_get_subpool(block_ptr % structs, 'biogeochemistry', biogeochemistry)
@@ -2081,6 +2144,11 @@ contains
 
          !-------states-------------------- 
          i2x_i % rAttr(index_i2x_Si_ifrac ,n)    = ailohi
+
+         if (config_use_data_icebergs) then
+            i2x_i % rAttr(index_i2x_Fioi_bergw,n) = bergFreshwaterFlux(i)
+            i2x_i % rAttr(index_i2x_Fioi_bergh,n) = bergLatentHeatFlux(i)
+         endif
 
          if ( ailohi > 0.0_RKIND ) then
 

@@ -1,0 +1,214 @@
+#!/bin/tcsh 
+#SBATCH --job-name template
+#SBATCH -N 3
+#SBATCH -C knl
+#SBATCH --time=1:30:00
+#XXSBATCH -p debug
+#SBATCH -p regular
+#SBATCH -A acme
+
+
+
+setenv OMP_STACKSIZE 16M     #  Cori has 96GB per node. had to lower to 8M on 3K nodes
+setenv PER_NODE  64          #  MPI per node
+setenv OMP_NUM_THREADS 1
+#setenv OMP_NUM_THREADS 1
+
+# number of virtual cores per MPI task
+#set VC_PER_MPI = 256  # Set this to 272 if using PER_NODE divides 272 instead of 256
+#@ VC_PER_MPI /= $PER_NODE
+set VC_PER_MPI = 4
+
+setenv KMP_AFFINITY granularity=core,scatter
+set bind = --cpu_bind=core
+if (! ${?SLURM_NNODES} ) then
+   set SLURM_NNODES=1
+endif
+set NNODES =  $SLURM_NNODES
+set NMPI = $NNODES
+@ NMPI *= $PER_NODE
+
+
+echo NODES =            $NNODES
+echo NMPI_PER_NODE =    $PER_NODE
+echo NTHREADS_PER_MPI = $OMP_NUM_THREADS
+set mpirun = "srun -n $NMPI -N $NNODES -c $VC_PER_MPI $bind"
+echo mpi commnand:
+echo $mpirun
+
+
+
+set NCPU = 1
+if ( ${?PBS_NNODES} ) then
+  set NCPU = $PBS_NNODES
+endif
+if ( ${?PBS_NODEFILE} ) then
+    set NCPU = `wc $PBS_NODEFILE | awk '{print $1}' - `
+endif
+#@ NCPU /= 4
+echo using NCPU = $NCPU
+#
+# Mark Taylor 2010
+#
+# generate template  files used for SCRIP/ESMF and interpic, and paraview metadata files
+# HOMME is used to run a short (1 timestep) dummy simulation.  the output is then
+# processed to NCO & NCL to produce:
+#   
+# for running CAM physics on GLL points:  (colocated)
+#   ne$NEnp$NP_latlon.nc     template for interpic_new and paraview metadata
+#   ne$NEnp$NP_scrip.nc      template for SCRIP/ESMF mapping utility
+#
+#
+# Cori timings (2019)               F90       NCL
+#  NE=512   3 nodes, io_stride=8:  10min    (not tested - see makegrid-anvil.job)
+# NE=1024  12 nodes, io_stride=8:  13min
+# NE=2048  48 nodes, io_strade=8:  25min
+# NE=3072  128 nodes, io_stride=8: 37min
+# NE=4096  256:  NaN's detected in pentagon iteraiton
+#
+#
+# Note that for NE=1024, we need netcdf4p format to support arrays > 2GB
+#
+# to plot the control volumes, see:   plotgrid.ncl
+#
+# GLL points within each element:
+set NPTS = 4
+set ne = 512
+
+#set HOMME = `cd ../.. ; pwd`  # doesnot work on Anvil
+set HOMME = ~/codes/acme/components/homme
+
+echo src = $HOMME
+#set MACH = $HOMME/cmake/machineFiles/skybridge.cmake
+#set MACH = $HOMME/cmake/machineFiles/climate.cmake
+#set MACH = $HOMME/cmake/machineFiles/rhel5.cmake
+#set MACH = $HOMME/cmake/machineFiles/darwin.cmake
+set MACH = $HOMME/cmake/machineFiles/cori-knl.cmake
+if (! ${?MACH} ) then
+   echo "edit this script to set MACH to your cmake machine file"
+   exit 1
+endif
+
+set wdir = ~/scratch2
+
+mkdir -p $wdir/preqx/template/movies
+mkdir $wdir/preqx/vcoord
+set bld = $wdir/preqx/bld
+mkdir -p $bld
+set wdir = $wdir/preqx/template
+mkdir -p $wdir
+#set exe = preqx.template
+set exe = src/preqx/preqx
+
+
+set input = $HOMME/test/template
+set output = jw_baroclinic1.nc
+
+
+# have to run stable for 1 timestep:
+set nu = 0
+set tstep = 0.0001
+set hypervis_subcycle = 1
+set HYPERVIS_OPTS = 
+
+if ( $ne == 0 ) then
+#    set meshname = kite_grid.g
+#    set meshfile=$HOMME/test/mesh_refine/grids/$meshname
+
+    set meshname = mountain_10_x2.g
+#    set meshname = wpacific_v2.g
+    set meshfile=~/codes/mapping/grids/$meshname
+else
+   # UNIFORM grids
+   set meshfile='none'
+   set meshname = ne{$ne}np{$NPTS}   #eg  ne30np5
+endif
+
+
+
+
+set nlev=20
+set qsize = 0
+
+
+cd $bld
+module unload craype-haswell ; module load craype-mic-knl
+if (!( -f $exe )) then
+    rm -rf CMakeFiles CMakeCache.txt
+    cmake -C $MACH -DPREQX_PLEV=$nlev -DPREQX_USE_PIO=TRUE  -DPREQX_NP=$NPTS  $HOMME 
+    make -j4 clean
+    make -j4 preqx
+    #mv src/preqx/preqx $exe
+    #exit
+endif
+make -j4 preqx
+if ( $status ) exit
+#mv src/preqx/preqx $exe
+
+cd $wdir
+
+rm -f $wdir/input.nl
+sed s/NE/$ne/ $input/explicit20.nl.sed  |\
+sed s:meshfile.\*:"mesh_file = '$meshfile'": \
+> $wdir/input.nl
+
+if ( $status ) exit
+
+rsync -a $HOMME/test/vcoord/*ascii $wdir/../vcoord
+
+set echo
+rm -Rf $wdir/movies/jw*
+date
+$mpirun  $bld/$exe < $wdir/input.nl
+date
+
+if ( $status ) exit
+exit
+
+
+
+
+#
+# make the "latlon" file:  GLL interpIC template (and paraview metadata)
+#
+set echo
+ncks -O -v lat,lon,corners,area movies/$output {$meshname}_tmp.nc
+ncl $input/HOMME2META.ncl  name=\"$meshname\"  ne=$ne  np=$NPTS
+# the GLL metadata is verly slow and not usually needed
+# disable by default, but it can be added later if needed:
+#ncl $input/addGLLmeta.ncl  name=\"$meshname\"  ne=$ne  np=$NPTS
+
+# a little faster, but needs to be debugged:
+#ncks -O  -v lat,lon,corners,area -d lev,0,3 movies/$output {$meshname}_latlon2.nc
+#ncrename -d lev,ncorners  {$meshname}_latlon2.nc
+#ncrename -d nsubelements,ncells {$meshname}_latlon2.nc
+#ncrename -v corners,element_corners {$meshname}_latlon2.nc
+#ncks -x -v ilev {$meshname}_latlon2.nc {$meshname}_latlon3.nc
+
+
+
+#
+# make the "SCIRP" file
+#
+ncks -O -v lat,lon,area,cv_lat,cv_lon movies/$output {$meshname}_tmp.nc
+ncl $input/HOMME2SCRIP.ncl  name=\"$meshname\"  ne=$ne  np=$NPTS
+rm -f {$meshname}_tmp.nc
+date
+
+# make hypervisocity grid plot:
+# ncl $input/plot_hypervis.ncl
+
+
+exit
+
+set t1 = ${meshname}_latlon.nc
+set t2 = ${meshname}_scrip.nc
+
+rm -f $t1.out.new $t2.out.new
+ncdump $t1 > $t1.out.new
+diff  $t1.out.new $t1.out
+
+ncdump $t2 > $t2.out.new
+diff  $t2.out.new $t2.out
+
+

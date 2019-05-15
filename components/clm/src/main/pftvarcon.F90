@@ -10,7 +10,7 @@ module pftvarcon
   use shr_log_mod , only : errMsg => shr_log_errMsg
   use abortutils  , only : endrun
   use clm_varpar  , only : mxpft, numrad, ivis, inir, cft_lb, cft_ub
-  use clm_varctl  , only : iulog, use_cndv, use_vertsoilc
+  use clm_varctl  , only : iulog, use_vertsoilc
   use clm_varpar  , only : nlevdecomp_full, nsoilorder
   use clm_varctl  , only : nu_com
   !
@@ -117,25 +117,24 @@ module pftvarcon
   real(r8), allocatable :: fleafi(:)       !parameter used in CNAllocation
   real(r8), allocatable :: allconsl(:)     !parameter used in CNAllocation
   real(r8), allocatable :: allconss(:)     !parameter used in CNAllocation
-  real(r8), allocatable :: ztopmx(:)       !parameter used in CNVegStructUpdate
-  real(r8), allocatable :: laimx(:)        !parameter used in CNVegStructUpdate
-  real(r8), allocatable :: gddmin(:)       !parameter used in CNPhenology
-  real(r8), allocatable :: hybgdd(:)       !parameter used in CNPhenology
-  real(r8), allocatable :: lfemerg(:)      !parameter used in CNPhenology
-  real(r8), allocatable :: grnfill(:)      !parameter used in CNPhenology
-  integer , allocatable :: mxmat(:)        !parameter used in CNPhenology
+  real(r8), allocatable :: ztopmx(:)       !parameter used in VegStructUpdate
+  real(r8), allocatable :: laimx(:)        !parameter used in VegStructUpdate
+  real(r8), allocatable :: gddmin(:)       !parameter used in Phenology
+  real(r8), allocatable :: hybgdd(:)       !parameter used in Phenology
+  real(r8), allocatable :: lfemerg(:)      !parameter used in Phenology
+  real(r8), allocatable :: grnfill(:)      !parameter used in Phenology
+  integer , allocatable :: mxmat(:)        !parameter used in Phenology
   integer , allocatable :: mnNHplantdate(:)!minimum planting date for NorthHemisphere (YYYYMMDD)
   integer , allocatable :: mxNHplantdate(:)!maximum planting date for NorthHemisphere (YYYYMMDD)
   integer , allocatable :: mnSHplantdate(:)!minimum planting date for SouthHemisphere (YYYYMMDD)
   integer , allocatable :: mxSHplantdate(:)!maximum planting date for SouthHemisphere (YYYYMMDD)
-  real(r8), allocatable :: planttemp(:)    !planting temperature used in CNPhenology (K)
-  real(r8), allocatable :: minplanttemp(:) !mininum planting temperature used in CNPhenology (K)
+  real(r8), allocatable :: planttemp(:)    !planting temperature used in Phenology (K)
+  real(r8), allocatable :: minplanttemp(:) !mininum planting temperature used in Phenology (K)
   real(r8), allocatable :: froot_leaf(:)   !allocation parameter: new fine root C per new leaf C (gC/gC) 
   real(r8), allocatable :: stem_leaf(:)    !allocation parameter: new stem c per new leaf C (gC/gC)
   real(r8), allocatable :: croot_stem(:)   !allocation parameter: new coarse root C per new stem C (gC/gC)
   real(r8), allocatable :: flivewd(:)      !allocation parameter: fraction of new wood that is live (phloem and ray parenchyma) (no units)
   real(r8), allocatable :: fcur(:)         !allocation parameter: fraction of allocation that goes to currently displayed growth, remainder to storage
-  real(r8), allocatable :: fcurdv(:)       !alternate fcur for use with cndv
   real(r8), allocatable :: lf_flab(:)      !leaf litter labile fraction
   real(r8), allocatable :: lf_fcel(:)      !leaf litter cellulose fraction
   real(r8), allocatable :: lf_flig(:)      !leaf litter lignin fraction
@@ -174,14 +173,6 @@ module pftvarcon
   real(r8), allocatable :: convfact(:)     !conversion factor to bu/acre
   real(r8), allocatable :: fyield(:)       !fraction of grain that is actually harvested
   real(r8), allocatable :: root_dmx(:)     !maximum root depth
-
-  ! pft parameters for CNDV code
-  ! from LPJ subroutine pftparameters
-  real(r8), allocatable :: pftpar20(:)       !tree maximum crown area (m2)
-  real(r8), allocatable :: pftpar28(:)       !min coldest monthly mean temperature
-  real(r8), allocatable :: pftpar29(:)       !max coldest monthly mean temperature
-  real(r8), allocatable :: pftpar30(:)       !min growing degree days (>= 5 deg C)
-  real(r8), allocatable :: pftpar31(:)       !upper limit of temperature of the warmest month (twmax)
 
   integer, parameter :: pftname_len = 40    ! max length of pftname       
   character(len=pftname_len) :: pftname(0:mxpft) !PFT description
@@ -424,7 +415,6 @@ contains
     allocate( croot_stem    (0:mxpft) )   
     allocate( flivewd       (0:mxpft) )      
     allocate( fcur          (0:mxpft) )         
-    allocate( fcurdv        (0:mxpft) )       
     allocate( lf_flab       (0:mxpft) )      
     allocate( lf_fcel       (0:mxpft) )      
     allocate( lf_flig       (0:mxpft) )      
@@ -461,11 +451,6 @@ contains
     allocate( convfact      (0:mxpft) )
     allocate( fyield        (0:mxpft) )  
     allocate( root_dmx      (0:mxpft) )
-    allocate( pftpar20      (0:mxpft) )   
-    allocate( pftpar28      (0:mxpft) )   
-    allocate( pftpar29      (0:mxpft) )   
-    allocate( pftpar30      (0:mxpft) )   
-    allocate( pftpar31      (0:mxpft) )   
 
     allocate( VMAX_PLANT_NH4(0:mxpft) )
     allocate( VMAX_PLANT_NO3(0:mxpft) )
@@ -624,8 +609,6 @@ contains
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('fcur',fcur, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
-    call ncd_io('fcurdv',fcurdv, 'read', ncid, readvar=readv, posNOTonfile=.true.)
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('lf_flab',lf_flab, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('lf_fcel',lf_fcel, 'read', ncid, readvar=readv, posNOTonfile=.true.)
@@ -648,16 +631,6 @@ contains
     call ncd_io('stress_decid',stress_decid, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('season_decid',season_decid, 'read', ncid, readvar=readv, posNOTonfile=.true.)
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
-    call ncd_io('pftpar20',pftpar20, 'read', ncid, readvar=readv, posNOTonfile=.true.)
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
-    call ncd_io('pftpar28',pftpar28, 'read', ncid, readvar=readv, posNOTonfile=.true.)
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
-    call ncd_io('pftpar29',pftpar29, 'read', ncid, readvar=readv, posNOTonfile=.true.)
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
-    call ncd_io('pftpar30',pftpar30, 'read', ncid, readvar=readv, posNOTonfile=.true.)  
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
-    call ncd_io('pftpar31',pftpar31, 'read', ncid, readvar=readv, posNOTonfile=.true.)  
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('fertnitro',fertnitro, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
@@ -984,10 +957,6 @@ contains
 
     call set_is_pft_known_to_model()
     call set_num_cfts_known_to_model()
-
-    if (use_cndv) then
-       fcur(:) = fcurdv(:)
-    end if
 
     if( .not. use_fates ) then
        if ( npcropmax /= mxpft )then

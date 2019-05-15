@@ -1,3 +1,4 @@
+! 06/2018: O. Guba  code for new ftypes
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -25,7 +26,7 @@ module prim_advance_mod
   private
   save
   public :: prim_advance_exp, prim_advance_init1, &
-       applyCAMforcing_dynamics, applyCAMforcing, vertical_mesh_init2
+            applyCAMforcing_dynamics
 
   real (kind=real_kind), allocatable :: ur_weights(:)
 
@@ -58,19 +59,6 @@ contains
 
     end subroutine prim_advance_init1
 
-  !_____________________________________________________________________
-  subroutine vertical_mesh_init2(elem, nets, nete, hybrid, hvcoord)
-
-    ! additional solver specific initializations (called from prim_init2)
-
-    type (element_t),			intent(inout), target :: elem(:)! array of element_t structures
-    integer,				intent(in) :: nets,nete		! start and end element indices
-    type (hybrid_t),			intent(in) :: hybrid		! mpi/omp data struct
-    type (hvcoord_t),			intent(inout)	:: hvcoord	! hybrid vertical coord data struct
-
-  end subroutine vertical_mesh_init2
-
-    
 #ifndef CAM
   !_____________________________________________________________________
   subroutine set_prescribed_wind(elem,deriv,hybrid,hv,dt,tl,nets,nete,eta_ave_w)
@@ -125,51 +113,10 @@ contains
 
     enddo
   end subroutine
-#endif
+#endif     
 
   !_____________________________________________________________________
-  subroutine set_prescribed_scm(elem,hv,dt,tl)
-
-    use dimensions_mod, only: qsize
-    use time_mod, only: timelevel_qdp
-    use control_mod, only: qsplit  
-
-    type (element_t),      intent(inout), target  :: elem(:) 
-    type (hvcoord_t),      intent(inout)          :: hv
-    real (kind=real_kind), intent(in)             :: dt
-    type (TimeLevel_t)   , intent(in)             :: tl
-    
-    real (kind=real_kind) :: dp(np,np)! pressure thickness, vflux
-    real(kind=real_kind)  :: eta_dot_dpdn(np,np,nlevp)
-    
-    integer :: ie,k,p,n0,np1,n0_qdp,np1_qdp
-
-    n0    = tl%n0
-    np1   = tl%np1
-
-    call TimeLevel_Qdp(tl, qsplit, n0_qdp, np1_qdp)
-    
-    do k=1,nlev
-      eta_dot_dpdn(:,:,k)=elem(1)%derived%omega_p(1,1,k)   
-    enddo  
-    eta_dot_dpdn(:,:,nlev+1) = eta_dot_dpdn(:,:,nlev) 
-    
-    do k=1,nlev
-      elem(1)%state%dp3d(:,:,k,np1) = elem(1)%state%dp3d(:,:,k,n0) &
-        + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k))    
-    enddo       
-
-    do p=1,qsize
-      do k=1,nlev
-        elem(1)%state%Qdp(:,:,k,p,np1_qdp)=elem(1)%state%Q(:,:,k,p)*elem(1)%state%dp3d(:,:,k,np1)
-      enddo
-    enddo
-    
-  end subroutine       
-
-  !_____________________________________________________________________
-  subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics, &
-               single_column)
+  subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics)
 
     use bndry_mod,      only: bndry_exchangev
     use control_mod,    only: prescribed_wind, qsplit, tstep_type, rsplit, qsplit, integration
@@ -193,7 +140,6 @@ contains
     integer              , intent(in)            :: nets
     integer              , intent(in)            :: nete
     logical,               intent(in)            :: compute_diagnostics
-    logical,               intent(in)            :: single_column
 
     real (kind=real_kind) ::  dt2, time, dt_vis, x, eta_ave_w
 
@@ -279,11 +225,6 @@ contains
        eta_ave_w=ur_weights(qsplit_stage+1)
     else
        method = tstep_type                ! other RK variants
-    endif
-    
-    if (single_column) then
-      call set_prescribed_scm(elem,hvcoord,dt,tl)
-      return
     endif
 
 #ifndef CAM
@@ -604,12 +545,11 @@ contains
 
     call t_stopf('prim_advance_exp')
 !pw call t_adj_detailf(-1)
-    end subroutine prim_advance_exp
+  end subroutine prim_advance_exp
 
 
-
-
-  subroutine applyCAMforcing(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
+!applies tracer tendencies and adjusts ps depending on moisture
+  subroutine applyCAMforcing_tracers(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
 
   use physical_constants, only: Cp
 
@@ -622,7 +562,6 @@ contains
   ! local
   integer :: i,j,k,ie,q
   real (kind=real_kind) :: v1,dp
-  real (kind=real_kind) :: beta(np,np),E0(np,np),ED(np,np),dp0m1(np,np),dpsum(np,np)
 
   do ie=nets,nete
      ! apply forcing to Qdp
@@ -635,17 +574,13 @@ contains
            do j=1,np
               do i=1,np
                  v1 = dt*elem(ie)%derived%FQ(i,j,k,q)
-                 !if (elem(ie)%state%Qdp(i,j,k,q,np1) + v1 < 0 .and. v1<0) then
                  if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
-                    !if (elem(ie)%state%Qdp(i,j,k,q,np1) < 0 ) then
                     if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
                        v1=0  ! Q already negative, dont make it more so
                     else
-                       !v1 = -elem(ie)%state%Qdp(i,j,k,q,np1)
                        v1 = -elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
                     endif
                  endif
-                 !elem(ie)%state%Qdp(i,j,k,q,np1) = elem(ie)%state%Qdp(i,j,k,q,np1)+v1
                  elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)+v1
                  if (q==1) then
                     elem(ie)%derived%FQps(i,j)=elem(ie)%derived%FQps(i,j)+v1/dt
@@ -661,36 +596,6 @@ contains
              dt*elem(ie)%derived%FQps(:,:)
      endif
 
-#if 0
-     ! disabled - energy fixers will be moving into CAM physics
-     ! energy fixer for FQps term
-     ! dp1 = dp0 + d(FQps)
-     ! dp0-dp1 = -d(FQps)
-     ! E0-E1 = sum( dp0*ED) - sum( dp1*ED) = sum( dp0-dp1) * ED )
-     ! compute E0-E1
-     E0=0
-     do k=1,nlev
-        ED(:,:) = ( 0.5d0* &
-             (elem(ie)%state%v(:,:,1,k,np1)**2 + elem(ie)%state%v(:,:,2,k,np1)**2)&
-             + cp*elem(ie)%state%T(:,:,k,np1)  &
-             + elem(ie)%state%phis(:,:) )
-
-        dp0m1(:,:) = -dt*( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%derived%FQps(:,:)
-
-        E0(:,:) = E0(:,:) + dp0m1(:,:)*ED(:,:)
-     enddo
-     ! energy fixer:
-     ! Tnew = T + beta
-     ! cp*dp*beta  = E0-E1   beta = (E0-E1)/(cp*sum(dp))
-
-     dpsum(:,:) = ( hvcoord%hyai(nlev+1) - hvcoord%hyai(1) )*hvcoord%ps0 + &
-          ( hvcoord%hybi(nlev+1) - hvcoord%hybi(1) )*elem(ie)%state%ps_v(:,:,np1)
-
-     beta(:,:)=E0(:,:)/(dpsum(:,:)*cp)
-     do k=1,nlev
-        elem(ie)%state%T(:,:,k,np1)=elem(ie)%state%T(:,:,k,np1)+beta(:,:)
-     enddo
-#endif
 
      ! Qdp(np1) and ps_v(np1) were updated by forcing - update Q(np1)
 #if (defined COLUMN_OPENMP)
@@ -708,15 +613,12 @@ contains
         enddo
      enddo
 
-     elem(ie)%state%T(:,:,:,np1)   = elem(ie)%state%T(:,:,:,np1)   + dt*elem(ie)%derived%FT(:,:,:)
-     elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,:,:)
-
   enddo
-  end subroutine applyCAMforcing
+  end subroutine applyCAMforcing_tracers
 
 
-
-  subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,np1_q,dt,nets,nete)
+!applies dynamic tendencies without dp adjustment
+  subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,dt,nets,nete)
 
   use hybvcoord_mod,  only: hvcoord_t
 
@@ -724,11 +626,12 @@ contains
   type (element_t)     ,  intent(inout) :: elem(:)
   real (kind=real_kind),  intent(in)    :: dt
   type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: np1,nets,nete,np1_q
+  integer,                intent(in)    :: np1,nets,nete
 
   integer :: i,j,k,ie,q
   real (kind=real_kind) :: v1,dp
 
+!any reason to use omp parallel here for i,j, or k?
   do ie=nets,nete
      elem(ie)%state%T(:,:,:,np1)  = elem(ie)%state%T(:,:,:,np1)    + dt*elem(ie)%derived%FT(:,:,:)
      elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,:,:)
@@ -1126,7 +1029,7 @@ contains
 ! dont thread this because of k-1 dependence:
      p(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0 + dp(:,:,1)/2
      do k=2,nlev
-        p(:,:,k)=p(:,:,k-1) + dp(:,:,k-1)/2 + dp(:,:,k)/2
+        p(:,:,k)=p(:,:,k-1) + (dp(:,:,k-1) + dp(:,:,k))/2
      enddo
 
 #if (defined COLUMN_OPENMP)
@@ -1323,13 +1226,13 @@ contains
 
               vtens1(i,j,k) =   - v_vadv(i,j,1,k)                           &
                    + v2*(elem(ie)%fcor(i,j) + vort(i,j,k))        &
-                   - vtemp(i,j,1) - glnps1
+                   - (vtemp(i,j,1) + glnps1)
               !
               ! phl: add forcing term to zonal wind u
               !
               vtens2(i,j,k) =   - v_vadv(i,j,2,k)                            &
                    - v1*(elem(ie)%fcor(i,j) + vort(i,j,k))        &
-                   - vtemp(i,j,2) - glnps2
+                   - (vtemp(i,j,2) + glnps2)
               !
               ! phl: add forcing term to meridional wind v
               !

@@ -4,7 +4,7 @@ Interface to the env_batch.xml file.  This class inherits from EnvBase
 
 from CIME.XML.standard_module_setup import *
 from CIME.XML.env_base import EnvBase
-from CIME.utils import transform_vars, get_cime_root, convert_to_seconds, format_time, get_cime_config, get_batch_script_for_job
+from CIME.utils import transform_vars, get_cime_root, convert_to_seconds, format_time, get_cime_config, get_batch_script_for_job, get_logging_options
 
 from collections import OrderedDict
 import stat, re, math
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 class EnvBatch(EnvBase):
 
-    def __init__(self, case_root=None, infile="env_batch.xml"):
+    def __init__(self, case_root=None, infile="env_batch.xml", read_only=False):
         """
         initialize an object interface to file env_batch.xml in the case directory
         """
@@ -23,7 +23,7 @@ class EnvBatch(EnvBase):
         # This arbitrary setting should always be overwritten
         self._default_walltime = "00:20:00"
         schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_batch.xsd")
-        super(EnvBatch,self).__init__(case_root, infile, schema=schema)
+        super(EnvBatch,self).__init__(case_root, infile, schema=schema, read_only=read_only)
 
     # pylint: disable=arguments-differ
     def set_value(self, item, value, subgroup=None, ignore_type=False):
@@ -95,7 +95,7 @@ class EnvBatch(EnvBase):
         else:
             if subgroup == "PRIMARY":
                 subgroup = "case.test" if "case.test" in self.get_jobs() else "case.run"
-
+            #pylint: disable=assignment-from-none
             value = super(EnvBatch, self).get_value(item, attribute=attribute, resolved=resolved, subgroup=subgroup)
 
         return value
@@ -326,13 +326,24 @@ class EnvBatch(EnvBase):
         roots = self.get_children("batch_system")
         queue = self.get_value("JOB_QUEUE", subgroup=job)
         if self._batchtype != "none" and not queue in self._get_all_queue_names():
+            unknown_queue = True
             qnode = self.get_default_queue()
-            queue = self.text(qnode)
+            default_queue = self.text(qnode)
+        else:
+            unknown_queue = False
 
         for root in roots:
             if root is not None:
                 if directive_prefix is None:
                     directive_prefix = self.get_element_text("batch_directive", root=root)
+
+                if unknown_queue:
+                    unknown_queue_directives = self.get_element_text("unknown_queue_directives",
+                                                                     root=root)
+                    if unknown_queue_directives is None:
+                        queue = default_queue
+                    else:
+                        queue = unknown_queue_directives
 
                 dnodes = self.get_children("directives", root=root)
                 for dnode in dnodes:
@@ -393,7 +404,7 @@ class EnvBatch(EnvBase):
                     if " " in val:
                         try:
                             rval = eval(val)
-                        except:
+                        except Exception:
                             rval = val
                     else:
                         rval = val
@@ -435,7 +446,7 @@ class EnvBatch(EnvBase):
                 else:
                     prereq = case.get_resolved_value(prereq)
                     prereq = eval(prereq)
-            except:
+            except Exception:
                 expect(False,"Unable to evaluate prereq expression '{}' for job '{}'".format(self.get_value('prereq',subgroup=job), job))
 
             if prereq:
@@ -546,15 +557,16 @@ class EnvBatch(EnvBase):
         """
         args = self._build_run_args(job, no_batch, **run_args)
         run_args_str = " ".join(param for _, param in args.values())
-        if run_args_str is None:
-            return ""
+        logging_options = get_logging_options()
+        if logging_options:
+            run_args_str += " {}".format(logging_options)
 
         batch_env_flag = self.get_value("batch_env", subgroup=None)
         if not batch_env_flag:
             return run_args_str
         elif len(run_args_str) > 0:
             batch_system = self.get_value("BATCH_SYSTEM", subgroup=None)
-            logger.info("batch_system: {}: ".format(batch_system))
+            logger.debug("batch_system: {}: ".format(batch_system))
             if batch_system == "lsf":
                 return "{} \"all, ARGS_FOR_SCRIPT={}\"".format(batch_env_flag, run_args_str)
             else:
@@ -574,7 +586,11 @@ class EnvBatch(EnvBase):
             if not dry_run:
                 args = self._build_run_args(job, True, skip_pnl=skip_pnl, set_continue_run=resubmit_immediate,
                                             submit_resubmits=not resubmit_immediate)
-                getattr(case, function_name)(**{k: v for k, (v, _) in args.items()})
+                try:
+                    getattr(case, function_name)(**{k: v for k, (v, _) in args.items()})
+                except Exception as e:
+                    # We don't want exception from the run phases getting into submit phase
+                    logger.warning("Exception from {}: {}".format(function_name, str(e)))
 
             return
 

@@ -23,9 +23,12 @@ module UrbanRadiationMod
   use SurfaceAlbedoType , only : surfalb_type
   use UrbanParamsType   , only : urbanparams_type
   use EnergyFluxType    , only : energyflux_type
+  use TopounitDataType  , only : top_af
   use LandunitType      , only : lun_pp                
-  use ColumnType        , only : col_pp                
-  use VegetationType         , only : veg_pp                
+  use ColumnType        , only : col_pp 
+  use ColumnDataType    , only : col_es, col_ws  
+  use VegetationType    , only : veg_pp                
+  use VegetationDataType, only : veg_es, veg_ef
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -79,7 +82,7 @@ contains
     type(energyflux_type)  , intent(inout) :: energyflux_vars
     !
     ! !LOCAL VARIABLES:
-    integer  :: fp,fl,p,c,l,g              ! indices
+    integer  :: fp,fl,p,c,l,t,g            ! indices
     integer  :: local_secp1                ! seconds into current date in local time
     real(r8) :: dtime                      ! land model time step (sec)
     integer  :: year,month,day             ! temporaries (not used)
@@ -118,15 +121,15 @@ contains
          canyon_hwr         =>    lun_pp%canyon_hwr                             , & ! Input:  [real(r8) (:)   ]  ratio of building height to street width          
          wtroad_perv        =>    lun_pp%wtroad_perv                            , & ! Input:  [real(r8) (:)   ]  weight of pervious road wrt total road            
 
-         forc_solad         =>    atm2lnd_vars%forc_solad_grc                , & ! Input:  [real(r8) (:,:) ]  direct beam radiation  (vis=forc_sols , nir=forc_soll ) (W/m**2)
-         forc_solai         =>    atm2lnd_vars%forc_solai_grc                , & ! Input:  [real(r8) (:,:) ]  diffuse beam radiation (vis=forc_sols , nir=forc_soll ) (W/m**2)
-         forc_solar         =>    atm2lnd_vars%forc_solar_grc                , & ! Input:  [real(r8) (:)   ]  incident solar radiation (W/m**2)                 
-         forc_lwrad         =>    atm2lnd_vars%forc_lwrad_not_downscaled_grc , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)   
+         forc_solad         =>    top_af%solad                               , & ! Input:  [real(r8) (:,:) ]  direct beam radiation  (vis=forc_sols , nir=forc_soll ) (W/m**2)
+         forc_solai         =>    top_af%solai                               , & ! Input:  [real(r8) (:,:) ]  diffuse beam radiation (vis=forc_sols , nir=forc_soll ) (W/m**2)
+         forc_solar         =>    top_af%solar                               , & ! Input:  [real(r8) (:)   ]  incident solar radiation (W/m**2)                 
+         forc_lwrad         =>    top_af%lwrad                               , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)   
 
-         frac_sno           =>    waterstate_vars%frac_sno_col               , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)       
+         frac_sno           =>    col_ws%frac_sno               , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)       
 
-         t_ref2m            =>    temperature_vars%t_ref2m_patch             , & ! Input:  [real(r8) (:)   ]  2 m height surface air temperature (K)            
-         t_grnd             =>    temperature_vars%t_grnd_col                , & ! Input:  [real(r8) (:)   ]  ground temperature (K)                            
+         t_ref2m            =>    veg_es%t_ref2m             , & ! Input:  [real(r8) (:)   ]  2 m height surface air temperature (K)            
+         t_grnd             =>    col_es%t_grnd                , & ! Input:  [real(r8) (:)   ]  ground temperature (K)                            
 
          em_roof            =>    urbanparams_vars%em_roof                   , & ! Input:  [real(r8) (:)   ]  roof emissivity                                   
          em_improad         =>    urbanparams_vars%em_improad                , & ! Input:  [real(r8) (:)   ]  impervious road emissivity                        
@@ -151,9 +154,9 @@ contains
          fsa                =>    solarabs_vars%fsa_patch                    , & ! Output: [real(r8) (:)   ]  solar radiation absorbed (total) (W/m**2)         
          fsa_u              =>    solarabs_vars%fsa_u_patch                  , & ! Output: [real(r8) (:)   ]  urban solar radiation absorbed (total) (W/m**2)   
 
-         eflx_lwrad_out     =>    energyflux_vars%eflx_lwrad_out_patch       , & ! Output: [real(r8) (:)   ]  emitted infrared (longwave) radiation (W/m**2)    
-         eflx_lwrad_net     =>    energyflux_vars%eflx_lwrad_net_patch       , & ! Output: [real(r8) (:)   ]  net infrared (longwave) rad (W/m**2) [+ = to atm] 
-         eflx_lwrad_net_u   =>    energyflux_vars%eflx_lwrad_net_u_patch     , & ! Output: [real(r8) (:)   ]  urban net infrared (longwave) rad (W/m**2) [+ = to atm]
+         eflx_lwrad_out     =>    veg_ef%eflx_lwrad_out       , & ! Output: [real(r8) (:)   ]  emitted infrared (longwave) radiation (W/m**2)    
+         eflx_lwrad_net     =>    veg_ef%eflx_lwrad_net       , & ! Output: [real(r8) (:)   ]  net infrared (longwave) rad (W/m**2) [+ = to atm] 
+         eflx_lwrad_net_u   =>    veg_ef%eflx_lwrad_net_u     , & ! Output: [real(r8) (:)   ]  urban net infrared (longwave) rad (W/m**2) [+ = to atm]
 
          begl               =>    bounds%begl                                , &
          endl               =>    bounds%endl                                  &
@@ -178,6 +181,7 @@ contains
       ! Set input forcing fields
       do fl = 1,num_urbanl
          l = filter_urbanl(fl)
+         t = lun_pp%topounit(l)
          g = lun_pp%gridcell(l) 
 
          ! Need to set the following temperatures to some defined value even if it
@@ -211,7 +215,7 @@ contains
                t_shadewall(l) = t_grnd(c)
             end if
          end do
-         lwdown(l) = forc_lwrad(g)
+         lwdown(l) = forc_lwrad(t)
       end do
 
       ! Net longwave radiation for road and both walls in urban canyon allowing for multiple re-emission
@@ -256,6 +260,7 @@ contains
          p = filter_urbanp(fp)
          c = veg_pp%column(p)
          l = veg_pp%landunit(p)
+         t = veg_pp%topounit(p)
          g = veg_pp%gridcell(p)
 
          ! Solar absorbed and longwave out and net
@@ -266,46 +271,46 @@ contains
             eflx_lwrad_out(p) = lwup_roof(l)
             eflx_lwrad_net(p) = lwnet_roof(l)
             eflx_lwrad_net_u(p) = lwnet_roof(l)
-            sabg(p) = sabs_roof_dir(l,1)*forc_solad(g,1) + &
-                 sabs_roof_dif(l,1)*forc_solai(g,1) + &
-                 sabs_roof_dir(l,2)*forc_solad(g,2) + &
-                 sabs_roof_dif(l,2)*forc_solai(g,2) 
+            sabg(p) = sabs_roof_dir(l,1)*forc_solad(t,1) + &
+                 sabs_roof_dif(l,1)*forc_solai(t,1) + &
+                 sabs_roof_dir(l,2)*forc_solad(t,2) + &
+                 sabs_roof_dif(l,2)*forc_solai(t,2) 
 
          else if (ctype(c) == icol_sunwall) then   
             eflx_lwrad_out(p)   = lwup_sunwall(l)
             eflx_lwrad_net(p)   = lwnet_sunwall(l)
             eflx_lwrad_net_u(p) = lwnet_sunwall(l)
-            sabg(p) = sabs_sunwall_dir(l,1)*forc_solad(g,1) + &
-                 sabs_sunwall_dif(l,1)*forc_solai(g,1) + &
-                 sabs_sunwall_dir(l,2)*forc_solad(g,2) + &
-                 sabs_sunwall_dif(l,2)*forc_solai(g,2) 
+            sabg(p) = sabs_sunwall_dir(l,1)*forc_solad(t,1) + &
+                 sabs_sunwall_dif(l,1)*forc_solai(t,1) + &
+                 sabs_sunwall_dir(l,2)*forc_solad(t,2) + &
+                 sabs_sunwall_dif(l,2)*forc_solai(t,2) 
 
          else if (ctype(c) == icol_shadewall) then   
             eflx_lwrad_out(p)   = lwup_shadewall(l)
             eflx_lwrad_net(p)   = lwnet_shadewall(l)
             eflx_lwrad_net_u(p) = lwnet_shadewall(l)
-            sabg(p) = sabs_shadewall_dir(l,1)*forc_solad(g,1) + &
-                 sabs_shadewall_dif(l,1)*forc_solai(g,1) + &
-                 sabs_shadewall_dir(l,2)*forc_solad(g,2) + &
-                 sabs_shadewall_dif(l,2)*forc_solai(g,2) 
+            sabg(p) = sabs_shadewall_dir(l,1)*forc_solad(t,1) + &
+                 sabs_shadewall_dif(l,1)*forc_solai(t,1) + &
+                 sabs_shadewall_dir(l,2)*forc_solad(t,2) + &
+                 sabs_shadewall_dif(l,2)*forc_solai(t,2) 
 
          else if (ctype(c) == icol_road_perv) then       
             eflx_lwrad_out(p)   = lwup_perroad(l)
             eflx_lwrad_net(p)   = lwnet_perroad(l)
             eflx_lwrad_net_u(p) = lwnet_perroad(l)
-            sabg(p) = sabs_perroad_dir(l,1)*forc_solad(g,1) + &
-                 sabs_perroad_dif(l,1)*forc_solai(g,1) + &
-                 sabs_perroad_dir(l,2)*forc_solad(g,2) + &
-                 sabs_perroad_dif(l,2)*forc_solai(g,2) 
+            sabg(p) = sabs_perroad_dir(l,1)*forc_solad(t,1) + &
+                 sabs_perroad_dif(l,1)*forc_solai(t,1) + &
+                 sabs_perroad_dir(l,2)*forc_solad(t,2) + &
+                 sabs_perroad_dif(l,2)*forc_solai(t,2) 
 
          else if (ctype(c) == icol_road_imperv) then       
             eflx_lwrad_out(p)   = lwup_improad(l)
             eflx_lwrad_net(p)   = lwnet_improad(l)
             eflx_lwrad_net_u(p) = lwnet_improad(l)
-            sabg(p) = sabs_improad_dir(l,1)*forc_solad(g,1) + &
-                 sabs_improad_dif(l,1)*forc_solai(g,1) + &
-                 sabs_improad_dir(l,2)*forc_solad(g,2) + &
-                 sabs_improad_dif(l,2)*forc_solai(g,2) 
+            sabg(p) = sabs_improad_dir(l,1)*forc_solad(t,1) + &
+                 sabs_improad_dif(l,1)*forc_solai(t,1) + &
+                 sabs_improad_dir(l,2)*forc_solad(t,2) + &
+                 sabs_improad_dif(l,2)*forc_solai(t,2) 
          end if
 
          sabv(p)   = 0._r8

@@ -30,7 +30,7 @@ contains
 
 
   subroutine read_inidat( ncid_ini, ncid_topo, dyn_in)
-    use dyn_comp,      only: dyn_import_t
+    use dyn_comp,      only: dyn_import_t, hvcoord
     use parallel_mod,     only: par
     use bndry_mod,     only: bndry_exchangev
     use constituents, only: cnst_name, cnst_read_iv, qmin
@@ -54,13 +54,14 @@ contains
     use phys_control,  only: phys_getopts
     use co2_cycle   , only: co2_implements_cnst, co2_init_cnst
     use unicon_cam,          only: unicon_implements_cnst, unicon_init_cnst
-    use nctopo_util_mod, only: nctopo_util_inidat
     use cam_history_support, only: max_fieldname_len
     use cam_grid_support,    only: cam_grid_get_local_size, cam_grid_get_gcid
     use cam_map_utils,       only: iMap
     use shr_const_mod,       only: SHR_CONST_PI
     use scamMod,             only: setiopupdate, readiopdata
     use se_single_column_mod, only: scm_setinitial
+    use element_ops,         only: set_thermostate
+
     implicit none
     type(file_desc_t),intent(inout) :: ncid_ini, ncid_topo
     type (dyn_import_t), target, intent(inout) :: dyn_in   ! dynamics import
@@ -86,7 +87,7 @@ contains
     integer, allocatable :: rndm_seed(:)
     real(r8) :: pertval
     integer :: sysclk
-    integer :: i, j, indx
+    integer :: i, j, indx, tl
     real(r8), parameter :: D0_0 = 0.0_r8
     real(r8), parameter :: D0_5 = 0.5_r8
     real(r8), parameter :: D1_0 = 1.0_r8
@@ -95,6 +96,16 @@ contains
     character*16 :: subname='READ_INIDAT'
 
     logical :: iop_update_surface
+
+    tl = 1
+
+#ifdef MODEL_THETA_L
+    ! not going to wrap each scm call in ifdef for now,
+    ! but some calls have to be wrapped
+    if (single_column) then
+       call endrun("read_inidat: SCM does not work with cam target theta-l.")
+    endif
+#endif
 
     if(par%dynproc) then
        elem=> dyn_in%elem
@@ -169,8 +180,8 @@ contains
        indx = 1
        do j = 1, np
           do i = 1, np
-             elem(ie)%state%v(i,j,1,:,1) = tmp(indx,:,ie)
-             if (single_column) elem(ie)%state%v(i,j,1,:,1)=tmp(indx_scm,:,ie_scm)
+             elem(ie)%state%v(i,j,1,:,tl) = tmp(indx,:,ie)
+             if (single_column) elem(ie)%state%v(i,j,1,:,tl)=tmp(indx_scm,:,ie_scm)
              indx = indx + 1
           end do
        end do
@@ -188,8 +199,8 @@ contains
        indx = 1
        do j = 1, np
           do i = 1, np
-             elem(ie)%state%v(i,j,2,:,1) = tmp(indx,:,ie)
-             if (single_column) elem(ie)%state%v(i,j,2,:,1) = tmp(indx_scm,:,ie_scm)
+             elem(ie)%state%v(i,j,2,:,tl) = tmp(indx,:,ie)
+             if (single_column) elem(ie)%state%v(i,j,2,:,tl) = tmp(indx_scm,:,ie_scm)
              indx = indx + 1
           end do
        end do
@@ -204,12 +215,21 @@ contains
     end if
 
     do ie=1,nelemd
+#ifdef MODEL_THETA_L
+       elem(ie)%derived%FT=0.0_r8
+#else
        elem(ie)%state%T=0.0_r8
+#endif
        indx = 1
        do j = 1, np
           do i = 1, np
-             elem(ie)%state%T(i,j,:,1) = tmp(indx,:,ie)
-             if (single_column) elem(ie)%state%T(i,j,:,1) = tmp(indx_scm,:,ie_scm)
+#ifdef MODEL_THETA_L
+             elem(ie)%derived%FT(i,j,:) = tmp(indx,:,ie)
+             !no scm in theta-l yet
+#else
+             elem(ie)%state%T(i,j,:,tl) = tmp(indx,:,ie)
+             if (single_column) elem(ie)%state%T(i,j,:,tl) = tmp(indx_scm,:,ie_scm)
+#endif
              indx = indx + 1
           end do
        end do
@@ -251,7 +271,11 @@ contains
                 call random_number(pertval)
               endif
               pertval = D2_0*pertlim*(D0_5 - pertval)
-              elem(ie)%state%T(i,j,k,1) = elem(ie)%state%T(i,j,k,1)*(D1_0 + pertval)
+#ifdef MODEL_THETA_L
+              elem(ie)%derived%FT(i,j,k) = elem(ie)%derived%FT(i,j,k)*(D1_0 + pertval)
+#else
+              elem(ie)%state%T(i,j,k,tl) = elem(ie)%state%T(i,j,k,tl)*(D1_0 + pertval)
+#endif
             end do
           end do
         end do
@@ -403,8 +427,8 @@ contains
           indx = 1
           do j = 1, np
              do i = 1, np
-                elem(ie)%state%ps_v(i,j,1) = tmp(indx,1,ie)
-                if (single_column) elem(ie)%state%ps_v(i,j,1) = tmp(indx_scm,1,ie_scm)
+                elem(ie)%state%ps_v(i,j,tl) = tmp(indx,1,ie)
+                if (single_column) elem(ie)%state%ps_v(i,j,tl) = tmp(indx_scm,1,ie_scm)
                 indx = indx + 1
              end do
           end do
@@ -446,45 +470,81 @@ contains
       ! once we've read all the fields we do a boundary exchange to 
       ! update the redundent columns in the dynamics
       if(par%dynproc) then
+!for nonhydro change size of buf
+!other issues: not inited w_i, phi?
         call initEdgeBuffer(par, edge, elem, (3+pcnst)*nlev+2)
       end if
+
+#ifdef MODEL_THETA_L
       do ie=1,nelemd
         kptr=0
-        call edgeVpack(edge, elem(ie)%state%ps_v(:,:,1),1,kptr,ie)
+        call edgeVpack(edge, elem(ie)%state%ps_v(:,:,tl),1,kptr,ie)
         kptr=kptr+1
         call edgeVpack(edge, elem(ie)%state%phis,1,kptr,ie)
         kptr=kptr+1
-        call edgeVpack(edge, elem(ie)%state%v(:,:,:,:,1),2*nlev,kptr,ie)
+        call edgeVpack(edge, elem(ie)%state%v(:,:,:,:,tl),2*nlev,kptr,ie)
         kptr=kptr+2*nlev
-        call edgeVpack(edge, elem(ie)%state%T(:,:,:,1),nlev,kptr,ie)
+        call edgeVpack(edge, elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
         kptr=kptr+nlev
         call edgeVpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
       end do
+#else
+      do ie=1,nelemd
+        kptr=0
+        call edgeVpack(edge, elem(ie)%state%ps_v(:,:,tl),1,kptr,ie)
+        kptr=kptr+1
+        call edgeVpack(edge, elem(ie)%state%phis,1,kptr,ie)
+        kptr=kptr+1
+        call edgeVpack(edge, elem(ie)%state%v(:,:,:,:,tl),2*nlev,kptr,ie)
+        kptr=kptr+2*nlev
+        call edgeVpack(edge, elem(ie)%state%T(:,:,:,tl),nlev,kptr,ie)
+        kptr=kptr+nlev
+        call edgeVpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
+      end do
+#endif
       if(par%dynproc) then
         call bndry_exchangeV(par,edge)
       end if
+#ifdef MODEL_THETA_L
       do ie=1,nelemd
         kptr=0
-        call edgeVunpack(edge, elem(ie)%state%ps_v(:,:,1),1,kptr,ie)
+        call edgeVunpack(edge, elem(ie)%state%ps_v(:,:,tl),1,kptr,ie)
         kptr=kptr+1
         call edgeVunpack(edge, elem(ie)%state%phis,1,kptr,ie)
         kptr=kptr+1
-        call edgeVunpack(edge, elem(ie)%state%v(:,:,:,:,1),2*nlev,kptr,ie)
+        call edgeVunpack(edge, elem(ie)%state%v(:,:,:,:,tl),2*nlev,kptr,ie)
         kptr=kptr+2*nlev
-        call edgeVunpack(edge, elem(ie)%state%T(:,:,:,1),nlev,kptr,ie)
+        call edgeVunpack(edge, elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
         kptr=kptr+nlev
         call edgeVunpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
       end do
-    
+#else
+      do ie=1,nelemd
+        kptr=0
+        call edgeVunpack(edge, elem(ie)%state%ps_v(:,:,tl),1,kptr,ie)
+        kptr=kptr+1
+        call edgeVunpack(edge, elem(ie)%state%phis,1,kptr,ie)
+        kptr=kptr+1
+        call edgeVunpack(edge, elem(ie)%state%v(:,:,:,:,tl),2*nlev,kptr,ie)
+        kptr=kptr+2*nlev
+        call edgeVunpack(edge, elem(ie)%state%T(:,:,:,tl),nlev,kptr,ie)
+        kptr=kptr+nlev
+        call edgeVunpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
+      end do
+#endif    
     endif
 
 !$omp parallel do private(ie, t, m_cnst)
     do ie=1,nelemd
-       do t=2,3
-          elem(ie)%state%ps_v(:,:,t)=elem(ie)%state%ps_v(:,:,1)
-          elem(ie)%state%v(:,:,:,:,t)=elem(ie)%state%v(:,:,:,:,1)
-          elem(ie)%state%T(:,:,:,t)=elem(ie)%state%T(:,:,:,1)
-       end do
+#ifdef MODEL_THETA_L
+       elem(ie)%state%w_i = 0.0
+       !sets Theta and phi, not w
+       call set_thermostate(elem(ie),elem(ie)%derived%FT,hvcoord)
+       !reset FT?
+       elem(ie)%derived%FT = 0.0
+#else
+       call set_thermostate(elem(ie),elem(ie)%state%T(:,:,:,tl),hvcoord)
+#endif
     end do
 
     if (.not. single_column) then
@@ -492,12 +552,6 @@ contains
         call FreeEdgeBuffer(edge)
       end if
     endif
-
-    !
-    ! This subroutine is used to create nc_topo files, if requested
-    ! 
-
-    call nctopo_util_inidat(ncid_topo,elem)
 
     deallocate(tmp)
 

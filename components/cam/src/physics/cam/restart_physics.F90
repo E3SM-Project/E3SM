@@ -5,8 +5,7 @@ module restart_physics
   use co2_cycle,          only: co2_transport
   use constituents,       only: pcnst
   use radae,              only: abstot_3d, absnxt_3d, emstot_3d, initialize_radbuffer, ntoplw
-  use comsrf,             only: sgh, sgh30, landm, trefmxav, trefmnav, & 
-       fsnt, flns, fsns, fsds, flnt, initialize_comsrf
+  use comsrf,             only: sgh, sgh30, landm, trefmxav, trefmnav, initialize_comsrf 
   use ioFileMod
   use cam_abortutils,     only: endrun
   use camsrfexch,         only: cam_in_t, cam_out_t
@@ -42,8 +41,7 @@ module restart_physics
 
     type(var_desc_t) :: trefmxav_desc, trefmnav_desc, flwds_desc, landm_desc, sgh_desc, &
          sgh30_desc, solld_desc, co2prog_desc, co2diag_desc, sols_desc, soll_desc, &
-         solsd_desc, fsnt_desc, flns_desc, emstot_desc, absnxt_desc(4), &
-         flnt_desc, fsds_desc, fsns_desc
+         solsd_desc, emstot_desc, absnxt_desc(4)
 
     type(var_desc_t) :: bcphidry_desc, bcphodry_desc, ocphidry_desc, ocphodry_desc, &
        dstdry1_desc, dstdry2_desc, dstdry3_desc, dstdry4_desc
@@ -119,11 +117,6 @@ module restart_physics
 
        call cam_pio_def_dim(File, 'pcnst', pcnst, dimids(hdimcnt+1), existOK=.true.)
     
-       ierr = pio_def_var(File, 'FSNT',     pio_double, hdimids, fsnt_desc)
-       ierr = pio_def_var(File, 'FSNS',     pio_double, hdimids, fsns_desc)
-       ierr = pio_def_var(File, 'FSDS',     pio_double, hdimids, fsds_desc)
-       ierr = pio_def_var(File, 'FLNT',     pio_double, hdimids, flnt_desc)
-       ierr = pio_def_var(File, 'FLNS',     pio_double, hdimids, flns_desc)
        ierr = pio_def_var(File, 'LANDM',    pio_double, hdimids, landm_desc)
        ierr = pio_def_var(File, 'SGH',      pio_double, hdimids, sgh_desc)
        ierr = pio_def_var(File, 'SGH30',    pio_double, hdimids, sgh30_desc)
@@ -278,11 +271,6 @@ module restart_physics
          do i=begchunk,endchunk
             ncol = cam_out(i)%ncol
             if(ncol<pcols) then
-               fsnt(ncol+1:pcols,i) = fillvalue
-               fsns(ncol+1:pcols,i) = fillvalue
-               fsds(ncol+1:pcols,i) = fillvalue
-               flnt(ncol+1:pcols,i) = fillvalue
-               flns(ncol+1:pcols,i) = fillvalue
                landm(ncol+1:pcols,i) = fillvalue
                sgh(ncol+1:pcols,i) = fillvalue
                sgh30(ncol+1:pcols,i) = fillvalue
@@ -294,16 +282,10 @@ module restart_physics
 
          ! Comsrf module variables (can following coup_csm definitions be removed?)
          ! This is a group of surface variables so can reuse dims
-         dims(1) = size(fsnt, 1) ! Should be pcols
-         dims(2) = size(fsnt, 2) ! Should be endchunk - begchunk + 1
+         dims(1) = size(landm, 1) ! Should be pcols
+         dims(2) = size(landm, 2) ! Should be endchunk - begchunk + 1
          call cam_grid_get_decomp(physgrid, dims(1:2), gdims(1:nhdims),          &
               pio_double, iodesc)
-         call pio_write_darray(File, fsnt_desc, iodesc, fsnt, ierr)
-         call pio_write_darray(File, fsns_desc, iodesc, fsns, ierr)
-         call pio_write_darray(File, fsds_desc, iodesc, fsds, ierr)
-         call pio_write_darray(File, flnt_desc, iodesc, flnt, ierr)
-         
-         call pio_write_darray(File, flns_desc,  iodesc,  flns, ierr)
          call pio_write_darray(File, landm_desc, iodesc, landm, ierr)
          call pio_write_darray(File, sgh_desc,   iodesc,   sgh, ierr)
          call pio_write_darray(File, sgh30_desc, iodesc, sgh30, ierr)
@@ -584,21 +566,6 @@ module restart_physics
 
         allocate(tmpfield2(pcols, begchunk:endchunk))
         tmpfield2 = fillvalue
-
-        ierr = pio_inq_varid(File, 'FSNT', vardesc)
-        call pio_read_darray(File, vardesc, iodesc, fsnt, ierr)
-
-        ierr = pio_inq_varid(File, 'FSNS', vardesc)
-        call pio_read_darray(File, vardesc, iodesc, fsns, ierr)
-
-        ierr = pio_inq_varid(File, 'FSDS', vardesc)
-        call pio_read_darray(File, vardesc, iodesc, fsds, ierr)
-
-        ierr = pio_inq_varid(File, 'FLNT', vardesc)
-        call pio_read_darray(File, vardesc, iodesc, flnt, ierr)
-
-        ierr = pio_inq_varid(File, 'FLNS', vardesc)
-        call pio_read_darray(File, vardesc, iodesc, flns, ierr)
 
         ierr = pio_inq_varid(File, 'LANDM', vardesc)
         call pio_read_darray(File, vardesc, iodesc, landm, ierr)

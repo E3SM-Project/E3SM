@@ -25,40 +25,45 @@ module LandunitType
   save
   private
   !
-  type, public :: landunit_physical_properties_type
-     ! g/l/c/p hierarchy, local g/l/c/p cells only
-     integer , pointer :: gridcell     (:) ! index into gridcell level quantities
-     real(r8), pointer :: wtgcell      (:) ! weight (relative to gridcell)
-     integer , pointer :: coli         (:) ! beginning column index per landunit
-     integer , pointer :: colf         (:) ! ending column index for each landunit
-     integer , pointer :: ncolumns     (:) ! number of columns for each landunit
-     integer , pointer :: pfti         (:) ! beginning pft index for each landunit
-     integer , pointer :: pftf         (:) ! ending pft index for each landunit
-     integer , pointer :: npfts        (:) ! number of patches for each landunit
+  type, public :: landunit_physical_properties
+     
+     ! indices and weights for higher subgrid levels (topounit, gridcell)
+     integer , pointer :: gridcell     (:) => null() ! index into gridcell level quantities
+     real(r8), pointer :: wtgcell      (:) => null() ! weight (relative to gridcell)
+     integer , pointer :: topounit     (:) => null() ! index into topounit level quantities
+     real(r8), pointer :: wttopounit   (:) => null() ! weight (relative to topounit)
+     
+     ! Starting and ending indices for all subgrid types below the landunit level
+     integer , pointer :: coli         (:) => null() ! beginning column index per landunit
+     integer , pointer :: colf         (:) => null() ! ending column index for each landunit
+     integer , pointer :: ncolumns     (:) => null() ! number of columns for each landunit
+     integer , pointer :: pfti         (:) => null() ! beginning pft index for each landunit
+     integer , pointer :: pftf         (:) => null() ! ending pft index for each landunit
+     integer , pointer :: npfts        (:) => null() ! number of patches for each landunit
 
      ! topological mapping functionality
-     integer , pointer :: itype        (:) ! landunit type
-     logical , pointer :: ifspecial    (:) ! true=>landunit is not vegetated
-     logical , pointer :: lakpoi       (:) ! true=>lake point
-     logical , pointer :: urbpoi       (:) ! true=>urban point
-     logical , pointer :: glcmecpoi    (:) ! true=>glacier_mec point
-     logical , pointer :: active       (:) ! true=>do computations on this landunit 
+     integer , pointer :: itype        (:) => null() ! landunit type
+     logical , pointer :: ifspecial    (:) => null() ! true=>landunit is not vegetated
+     logical , pointer :: lakpoi       (:) => null() ! true=>lake point
+     logical , pointer :: urbpoi       (:) => null() ! true=>urban point
+     logical , pointer :: glcmecpoi    (:) => null() ! true=>glacier_mec point
+     logical , pointer :: active       (:) => null() ! true=>do computations on this landunit 
 
      ! urban properties
-     real(r8), pointer :: canyon_hwr   (:) ! urban landunit canyon height to width ratio (-)   
-     real(r8), pointer :: wtroad_perv  (:) ! urban landunit weight of pervious road column to total road (-)
-     real(r8), pointer :: wtlunit_roof (:) ! weight of roof with respect to urban landunit (-)
-     real(r8), pointer :: ht_roof      (:) ! height of urban roof (m)
-     real(r8), pointer :: z_0_town     (:) ! urban landunit momentum roughness length (m)
-     real(r8), pointer :: z_d_town     (:) ! urban landunit displacement height (m)
+     real(r8), pointer :: canyon_hwr   (:) => null() ! urban landunit canyon height to width ratio (-)   
+     real(r8), pointer :: wtroad_perv  (:) => null() ! urban landunit weight of pervious road column to total road (-)
+     real(r8), pointer :: wtlunit_roof (:) => null() ! weight of roof with respect to urban landunit (-)
+     real(r8), pointer :: ht_roof      (:) => null() ! height of urban roof (m)
+     real(r8), pointer :: z_0_town     (:) => null() ! urban landunit momentum roughness length (m)
+     real(r8), pointer :: z_d_town     (:) => null() ! urban landunit displacement height (m)
 
    contains
 
      procedure, public :: Init => lun_pp_init
      procedure, public :: Clean => lun_pp_clean
      
-  end type landunit_physical_properties_type
-  type(landunit_physical_properties_type), public, target :: lun_pp  !geomorphological landunits
+  end type landunit_physical_properties
+  type(landunit_physical_properties), public, target :: lun_pp  !geomorphological landunits
   !------------------------------------------------------------------------
 
 contains
@@ -67,13 +72,15 @@ contains
   subroutine lun_pp_Init(this, begl, endl)
     !
     ! !ARGUMENTS:
-    class(landunit_physical_properties_type) :: this
+    class(landunit_physical_properties) :: this
     integer, intent(in) :: begl,endl
     !------------------------------------------------------------------------
 
     ! The following is set in InitGridCellsMod
     allocate(this%gridcell     (begl:endl)); this%gridcell  (:) = ispval
     allocate(this%wtgcell      (begl:endl)); this%wtgcell   (:) = nan
+    allocate(this%topounit     (begl:endl)); this%topounit  (:) = ispval
+    allocate(this%wttopounit   (begl:endl)); this%wttopounit(:) = nan
     allocate(this%coli         (begl:endl)); this%coli      (:) = ispval
     allocate(this%colf         (begl:endl)); this%colf      (:) = ispval
     allocate(this%ncolumns     (begl:endl)); this%ncolumns  (:) = ispval
@@ -92,8 +99,8 @@ contains
     ! The following is set in routine urbanparams_vars%Init in module UrbanParamsMod
     allocate(this%canyon_hwr   (begl:endl)); this%canyon_hwr   (:) = nan
     allocate(this%wtroad_perv  (begl:endl)); this%wtroad_perv  (:) = nan
-    allocate(this%ht_roof      (begl:endl)); this%ht_roof      (:) = nan
     allocate(this%wtlunit_roof (begl:endl)); this%wtlunit_roof (:) = nan
+    allocate(this%ht_roof      (begl:endl)); this%ht_roof      (:) = nan
     allocate(this%z_0_town     (begl:endl)); this%z_0_town     (:) = nan
     allocate(this%z_d_town     (begl:endl)); this%z_d_town     (:) = nan
 
@@ -103,11 +110,13 @@ contains
   subroutine lun_pp_clean(this)
     !
     ! !ARGUMENTS:
-    class(landunit_physical_properties_type) :: this
+    class(landunit_physical_properties) :: this
     !------------------------------------------------------------------------
 
     deallocate(this%gridcell     )
     deallocate(this%wtgcell      )
+    deallocate(this%topounit     )
+    deallocate(this%wttopounit   )
     deallocate(this%coli         )
     deallocate(this%colf         )
     deallocate(this%ncolumns     )

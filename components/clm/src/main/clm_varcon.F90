@@ -149,6 +149,7 @@ module clm_varcon
   character(len=16), parameter :: grlnd  = 'lndgrid'      ! name of lndgrid
   character(len=16), parameter :: namea  = 'gridcellatm'  ! name of atmgrid
   character(len=16), parameter :: nameg  = 'gridcell'     ! name of gridcells
+  character(len=16), parameter :: namet  = 'topounit'     ! name of topographic units
   character(len=16), parameter :: namel  = 'landunit'     ! name of landunits
   character(len=16), parameter :: namec  = 'column'       ! name of columns
   character(len=16), parameter :: namep  = 'pft'          ! name of patches
@@ -184,7 +185,7 @@ module clm_varcon
   real(r8) ,allocatable :: dzsoifl(:)      !original soil thickness  (used in interpolation of sand and clay)
 
   !------------------------------------------------------------------
-  ! (Non-tunable) Constants for the CH4 submodel (Tuneable constants in ch4varcon)
+  ! (Non-tunable) Constants for the CH4 submodel (Tuneable constants in CH4varcon)
   !------------------------------------------------------------------
   ! Note some of these constants are also used in CNNitrifDenitrifMod
 
@@ -213,6 +214,12 @@ module clm_varcon
   data kh_theta(1:3) /714.29_r8, 769.23_r8, 29.4_r8/ ! CH4, O2, CO2
 
   real(r8) :: kh_tbase = 298._r8 ! base temperature for calculation of Henry's constant (K)
+
+  !------------------------------------------------------------------
+  ! snow physical constants
+  !------------------------------------------------------------------
+  ! minimum allowed snow effective radius (also "fresh snow" value) [microns]
+  real(r8), public, parameter :: snw_rds_min = 54.526_r8    
   !-----------------------------------------------------------------------
 
 contains

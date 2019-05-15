@@ -84,7 +84,7 @@ subroutine jw_baroclinic(elem,hybrid,hvcoord,nets,nete)
 
    real (kind=real_kind) :: r_d,omg,grv,erad
 
-   real(kind=real_kind), allocatable :: var3d(:,:,:,:)
+   real(kind=real_kind) :: var3d(np,np,nlev,nets:nete)
    real(kind=real_kind) :: temperature(np,np,nlev)
 
    if (hybrid%masterthread) write(iulog,*) 'initializing Jablonowski and Williamson baroclinic instability test V1'
@@ -188,9 +188,7 @@ do ie=nets,nete
        end do
     end do
 
-    do tl=1,timelevels
-       call set_thermostate(elem(ie),temperature,hvcoord,tl,1)
-    enddo
+    call set_thermostate(elem(ie),temperature,hvcoord)
 enddo
 
 
@@ -214,7 +212,6 @@ endif
 ! so lets take truncated values to test qneg fixer
 if (qsize>=2) then
    idex=2 ! prevents a compiler warning when qsize<2
-   allocate(var3d(np,np,nlev,nets:nete))
    call compute_zeta_C0(var3d,elem,hybrid,nets,nete,1)
    do ie=nets,nete
       !do tl=1,3
@@ -229,7 +226,6 @@ if (qsize>=2) then
          enddo
       enddo
    enddo
-   deallocate(var3d)
 endif
 
 
@@ -247,7 +243,6 @@ endif
 ! tracers can be discontinous at element edges due to roundoff
 ! need to DSS the initial condition
 if (qsize==10) then
-   allocate(var3d(np,np,nlev,nets:nete))
    do ie=nets,nete
       do j=1,np
       do i=1,np
@@ -268,7 +263,6 @@ if (qsize==10) then
       elem(ie)%state%Q(:,:,:,idex) = var3d(:,:,:,ie)
    enddo
    enddo
-   deallocate(var3d)
 endif
 
 
@@ -495,9 +489,7 @@ endif
        elem(ie)%state%phis(:,:) = 0.0D0
        elem(ie)%derived%fm = 0.0D0
        temperature(:,:,:)=t1(:,:,ie,:)
-       do tl=1,timelevels
-          call set_thermostate(elem(ie),temperature,hvcoord,tl,1)
-       enddo
+       call set_thermostate(elem(ie),temperature,hvcoord)
 
     end do
 

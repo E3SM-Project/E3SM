@@ -6,16 +6,17 @@ module held_suarez_mod
 
 
   use coordinate_systems_mod, only: spherical_polar_t
-  use dimensions_mod,         only: nlev,np,qsize
+  use dimensions_mod,         only: nlev,np,qsize,nlevp
   use element_mod,            only: element_t
   use element_state,          only: timelevels
-  use element_ops,            only: get_field, set_thermostate
+  use element_ops,            only: set_thermostate, get_temperature
   use hybrid_mod,             only: hybrid_t
   use hybvcoord_mod,          only: hvcoord_t
   use kinds,                  only: real_kind, iulog
-  use physical_constants,     only: p0, kappa,g, dd_pi
+  use physical_constants,     only: p0, kappa,g, dd_pi, Rgas
   use physics_mod,            only: prim_condense
   use time_mod,               only: secpday
+  use common_io_mod,          only: infilenames
 
 implicit none
 private
@@ -45,10 +46,12 @@ contains
     real (kind=real_kind)                   :: pmid,r0,r1,dtf_q,dp,rdp,FQ
     real (kind=real_kind), dimension(np,np) :: psfrc 
     real (kind=real_kind)                   :: temperature(np,np,nlev)
+    real (kind=real_kind)                   :: v(np,np,3,nlev)
+    real (kind=real_kind)                   :: fv(np,np,3,nlev)
     integer                                 :: i,j,k,q
 
     dtf_q = dt
-    call get_field(elemin,'temperature',temperature,hvcoord,nm1,nm1_Q)
+    call get_temperature(elemin,temperature,hvcoord,nm1)
         
     do j=1,np
        do i=1,np
@@ -59,10 +62,21 @@ contains
     elemin%derived%FT(:,:,:) = elemin%derived%FT(:,:,:) + &
          hs_T_forcing(hvcoord,psfrc(1,1),               &
          temperature,elemin%spherep,np, nlev)
-    
-    elemin%derived%FM(:,:,1:2,:)= elemin%derived%FM(:,:,1:2,:) + &
-         hs_v_forcing(hvcoord,psfrc(1,1),& 
-         elemin%state%v(1,1,1,1,nm1),np,nlev)
+
+    v(:,:,1:2,:) = elemin%state%v(:,:,1:2,:,nm1)
+#if ( defined MODEL_THETA_L ) 
+    v(:,:,3,:) = elemin%state%w_i(:,:,1:nlev,nm1)  ! dont apply at surface
+#else
+    v(:,:,3,:) = 0
+#endif
+
+    fv = hs_v_forcing(hvcoord,psfrc(1,1),v,np,nlev)
+
+#if ( defined MODEL_THETA_L ) 
+    elemin%derived%FM(:,:,1:3,:) = elemin%derived%FM(:,:,1:3,:) + fv(:,:,1:3,:)
+#else
+    elemin%derived%FM(:,:,1:2,:) = elemin%derived%FM(:,:,1:2,:) + fv(:,:,1:2,:)
+#endif
 
     if (qsize>=1) then
        ! HS with tracer  (Galewsky type forcing, with flux of  2.3e-5 kg/m^2/s
@@ -106,20 +120,14 @@ contains
     type (hvcoord_t), intent(in)       :: hvcoord
     real (kind=real_kind), intent(in) :: ps(npts,npts)
 
-    real (kind=real_kind), intent(in) :: v(npts,npts,2,nlevels)
-    real (kind=real_kind)             :: hs_v_frc(npts,npts,2,nlevels)
+    real (kind=real_kind), intent(in) :: v(npts,npts,3,nlevels)
+    real (kind=real_kind)             :: hs_v_frc(npts,npts,3,nlevels)
 
     ! Local variables
 
     integer i,j,k
     real (kind=real_kind) :: k_v
-    real (kind=real_kind) :: rps(npts,npts)
     real (kind=real_kind) :: p,etam
-    do j=1,npts
-       do i=1,npts
-         rps(i,j)     = 1.0D0/ps(i,j)
-       end do
-    end do
 
     do k=1,nlevels
        do j=1,npts
@@ -129,6 +137,10 @@ contains
              k_v = k_f*MAX(0.0_real_kind,(etam - sigma_b )/(1.0_real_kind - sigma_b))
              hs_v_frc(i,j,1,k) = -k_v*v(i,j,1,k)
              hs_v_frc(i,j,2,k) = -k_v*v(i,j,2,k)
+
+             etam      = hvcoord%hyai(k) + hvcoord%hybi(k)
+             k_v = k_f*MAX(0.0_real_kind,(etam - sigma_b )/(1.0_real_kind - sigma_b))
+             hs_v_frc(i,j,3,k) = -k_v*v(i,j,3,k)
           end do
        end do
     end do
@@ -157,8 +169,6 @@ contains
     real (kind=real_kind) :: snlatsq(npts,npts)
     real (kind=real_kind) :: cslatsq(npts,npts)
 
-    real (kind=real_kind) :: rps(npts,npts)
-
     real (kind=real_kind) :: rec_one_minus_sigma_b
 
     integer i,j,k
@@ -170,7 +180,6 @@ contains
          snlat        = SIN(sphere(i,j)%lat)
          snlatsq(i,j) = snlat*snlat
          cslatsq(i,j) = 1.0D0 - snlatsq(i,j)
-         rps(i,j)     = 1.0D0/ps(i,j)
        end do
     end do
 
@@ -221,7 +230,7 @@ contains
     integer :: n0 
     integer :: np1
     real (kind=real_kind) :: lat_mtn,lon_mtn,r_mtn,h_mtn,rsq,lat,lon
-    real (kind=real_kind) :: temperature(np,np,nlev)
+    real (kind=real_kind) :: temperature(np,np,nlev),p(np,np),exner(np,np)
 
     if (hybrid%masterthread) write(iulog,*) 'initializing Held-Suarez primitive equations test'
 
@@ -235,7 +244,18 @@ contains
        elem(ie)%state%ps_v(:,:,nm1)=hvcoord%ps0
        elem(ie)%state%ps_v(:,:,np1)=hvcoord%ps0
 
-       elem(ie)%state%phis(:,:)=0.0D0
+       elem(ie)%state%v(:,:,:,:,n0) =0.0D0
+       elem(ie)%state%v(:,:,:,:,nm1)=elem(ie)%state%v(:,:,:,:,n0)
+       elem(ie)%state%v(:,:,:,:,np1)=elem(ie)%state%v(:,:,:,:,n0)
+
+       temperature(:,:,:)=Tinit
+
+       ! if topo file was given in the namelist, PHIS was initilized in prim_main
+       ! otherwise assume 0
+       if (infilenames(1)=='') then
+          elem(ie)%state%phis(:,:)=0.0D0
+       endif
+
 #undef HS_TOPO1
 #ifdef HS_TOPO1
        lat_mtn = dd_pi/6
@@ -252,9 +272,21 @@ contains
        enddo
 #endif
 
-       elem(ie)%state%v(:,:,:,:,n0) =0.0D0
-       elem(ie)%state%v(:,:,:,:,nm1)=elem(ie)%state%v(:,:,:,:,n0)
-       elem(ie)%state%v(:,:,:,:,np1)=elem(ie)%state%v(:,:,:,:,n0)
+
+       ! initialize surface pressure to be consistent with topo
+       elem(ie)%state%ps_v(:,:,n0) = elem(ie)%state%ps_v(:,:,n0)*&
+            exp(-elem(ie)%state%phis(:,:) / (Rgas*Tinit))
+       elem(ie)%state%ps_v(:,:,nm1)=elem(ie)%state%ps_v(:,:,n0)
+       elem(ie)%state%ps_v(:,:,np1)=elem(ie)%state%ps_v(:,:,n0)
+
+#if 0
+       do k=1,nlev
+          p(:,:)=hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,n0)
+          exner(:,:) = (p(:,:)/hvcoord%ps0)**kappa
+          temperature(:,:,k)=(Tinit-150)+150*exner(:,:)
+       enddo
+#endif
+
 
        if (qsize>=1) then
        q=1
@@ -264,10 +296,7 @@ contains
        enddo
        endif
 
-       temperature(:,:,:)=Tinit
-       do tl=1,timelevels
-          call set_thermostate(elem(ie),temperature,hvcoord,n0,1)
-       enddo
+       call set_thermostate(elem(ie),temperature,hvcoord)
     end do
 
   end subroutine hs0_init_state

@@ -8,7 +8,7 @@ SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/sweqx)
 SET(SRC_BASE          ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE         ${HOMME_SOURCE_DIR}/src/share)
 SET(SRC_UTILS         ${HOMME_SOURCE_DIR}/utils/csm_share)
-SET(UTILS_TIMING_DIR  ${CMAKE_BINARY_DIR}/utils/cime/src/share/timing)
+SET(UTILS_TIMING_DIR  ${HOMME_BINARY_DIR}/utils/cime/src/share/timing)
 
 # Find F90 files in target directory
 FILE(GLOB TARGET_F90  ${TARGET_DIR}/*.F90)
@@ -46,6 +46,7 @@ SET(SWEQX_SRCS
   ${SRC_SHARE}/ll_mod.F90
   ${SRC_SHARE}/mass_matrix_mod.F90
   ${SRC_SHARE}/mesh_mod.F90
+  ${SRC_SHARE}/sort_mod.F90
   ${SRC_SHARE}/metagraph_mod.F90
   ${SRC_SHARE}/metis_mod.F90
   ${SRC_SHARE}/namelist_mod.F90

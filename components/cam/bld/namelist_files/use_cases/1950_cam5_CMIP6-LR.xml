@@ -9,7 +9,7 @@
 <solar_data_ymd>19500101</solar_data_ymd>
 <solar_data_type>FIXED</solar_data_type>
 
-<!-- 1850 GHG values from CMIP6 input4MIPS -->
+<!-- 1950 GHG values from CMIP6 input4MIPS -->
 <!-- <co2vmr>312.821e-6</co2vmr> The CMIP6 concentration set by CCSM_CO2_PPMV in cime/src/drivers/mct/cime_config/config_component_acme.xml -->
 <ch4vmr>1163.821e-9</ch4vmr>
 <n2ovmr>289.739e-9</n2ovmr>
@@ -72,6 +72,7 @@
 <seasalt_emis_scale      > 0.85      </seasalt_emis_scale>
 <dust_emis_fact          > 2.05D0    </dust_emis_fact>
 <clubb_gamma_coef        > 0.32      </clubb_gamma_coef>
+<clubb_gamma_coefb> 0.32      </clubb_gamma_coefb>
 <clubb_C8                > 4.3       </clubb_C8>
 <cldfrc2m_rhmaxi         > 1.05D0    </cldfrc2m_rhmaxi>
 <clubb_c_K10             > 0.3       </clubb_c_K10>
@@ -85,6 +86,7 @@
 <zmconv_mx_bot_lyr_adj   > 2         </zmconv_mx_bot_lyr_adj>
 <taubgnd                 > 2.5D-3    </taubgnd>
 <clubb_C1                > 1.335     </clubb_C1>
+<clubb_C1b                > 1.335     </clubb_C1b>
 <raytau0                 > 5.0D0     </raytau0>
 <prc_coef1               > 30500.0D0 </prc_coef1>
 <prc_exp                 > 3.19D0    </prc_exp>
@@ -96,7 +98,6 @@
 <rrtmg_temp_fix          > .true.    </rrtmg_temp_fix>
 
 <!-- Energy fixer options -->
-<l_ieflx_fix> .true.</l_ieflx_fix>
 <ieflx_opt  > 2     </ieflx_opt>
 
 <!-- External forcing for BAM or MAM.  CMIP6 input4mips data -->
@@ -155,7 +156,7 @@
 <sim_year>1955</sim_year>
 
 <!-- land datasets -->
-<!-- Set in components/clm/bld/namelist_files/use_cases/1850_CMIP6_control.xml -->
+<!-- Set in components/clm/bld/namelist_files/use_cases/1950_CMIP6LR_control.xml -->
 
 
 </namelist_defaults>

@@ -253,6 +253,12 @@ Toggle to turn on the FATES
 Toggle to turn on spitfire (only relevant if FATES is being used).
 </entry>
 
+<entry id="fates_parteh_mode" type="integer" category="physics"
+       group="clm_inparm" valid_values="">
+Switch deciding which nutrient model to use in FATES.
+</entry>
+
+
 <entry id="use_fates_logging" type="logical" category="physics"
         group="clm_inparm" valid_values="" value=".false.">
 Toggle to turn on the logging module (only relevant if FATES is being used).
@@ -351,62 +357,62 @@ If TRUE, indicates do NOT output any default history fields (requires you to use
 hist_fincl* to set the exact output fields to use)..
 </entry>
 
-<entry id="hist_fexcl1" type="char*34(1000)" category="history"
+<entry id="hist_fexcl1" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to exclude from history tape series 1.
 </entry>
 
-<entry id="hist_fexcl2" type="char*34(1000)" category="history"
+<entry id="hist_fexcl2" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to exclude from history tape series  2.
 </entry>
 
-<entry id="hist_fexcl3" type="char*34(1000)" category="history"
+<entry id="hist_fexcl3" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to exclude from history tape series  3.
 </entry>
 
-<entry id="hist_fexcl4" type="char*34(1000)" category="history"
+<entry id="hist_fexcl4" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to exclude from history tape series  4.
 </entry>
 
-<entry id="hist_fexcl5" type="char*34(1000)" category="history"
+<entry id="hist_fexcl5" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to exclude from history tape series  5.
 </entry>
 
-<entry id="hist_fexcl6" type="char*34(1000)" category="history"
+<entry id="hist_fexcl6" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to exclude from history tape series  6.
 </entry>
 
-<entry id="hist_fincl1" type="char*34(1000)" category="history"
+<entry id="hist_fincl1" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to add to history tape series  1.
 </entry>
 
-<entry id="hist_fincl2" type="char*34(1000)" category="history"
+<entry id="hist_fincl2" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to add to history tape series  2.
 </entry>
 
-<entry id="hist_fincl3" type="char*34(1000)" category="history"
+<entry id="hist_fincl3" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to add to history tape series  3.
 </entry>
 
-<entry id="hist_fincl4" type="char*34(1000)" category="history"
+<entry id="hist_fincl4" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to add to history tape series  4.
 </entry>
 
-<entry id="hist_fincl5" type="char*34(1000)" category="history"
+<entry id="hist_fincl5" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to add to history tape series  5.
 </entry>
 
-<entry id="hist_fincl6" type="char*34(1000)" category="history"
+<entry id="hist_fincl6" type="char*50(1000)" category="history"
        group="clm_inparm" valid_values="" >
 Fields to add to history tape series  6.
 </entry>
@@ -1180,7 +1186,7 @@ Representative concentration pathway for future scenarios [radiative forcing at 
 
 <entry id="mask" type="char*20" category="default_settings"
        group="default_settings"  
-       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,cruncep,oEC60to30,oEC60to30v3,oEC60to30wLI,oEC60to30v3wLI,oRRS18to6,oRRS18to6v3,oRRS15to5,mp120v1,oQU480,oQU240,oQU240wLI,oQU120,oRRS30to10,oRRS30to10v3,oRRS30to10wLI,oRRS30to10v3wLI,360x720cru,NLDASww3a,tx0.1v2">
+       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,TL319,cruncep,oEC60to30,oEC60to30v3,oEC60to30wLI,oEC60to30v3wLI,oRRS18to6,oRRS18to6v3,oRRS15to5,oARRM60to10,oARRM60to6,mp120v1,oQU480,oQU240,oQU240wLI,oQU120,oRRS30to10,oRRS30to10v3,oRRS30to10wLI,oRRS30to10v3wLI,360x720cru,NLDASww3a,tx0.1v2">
 Land mask description
 </entry> 
 
@@ -1191,7 +1197,7 @@ If TRUE, irrigation will be active (find surface datasets with active irrigation
 
 <entry id="sim_year" type="integer" category="default_settings"
        group="default_settings" valid_values=
-"1000,850,1100,1350,1600,1850,1855,1865,1875,1885,1895,1905,1915,1925,1935,1945,1955,1965,1975,1985,1995,2000,2005,2015,2025,2035,2045,2055,2065,2075,2085,2095,2105">
+"1000,850,1100,1350,1600,1850,1855,1865,1875,1885,1895,1905,1915,1925,1935,1945,1955,1965,1975,1985,1995,2000,2005,2010,2015,2025,2035,2045,2055,2065,2075,2085,2095,2100,2105">
 Year to simulate and to provide datasets for (such as surface datasets, initial conditions, aerosol-deposition, Nitrogen deposition rates etc.)
 A sim_year of 1000 corresponds to data used for testing only, NOT corresponding to any real datasets.
 A sim_year greater than 2005 corresponds to rcp scenario data
@@ -1201,7 +1207,7 @@ CLM datasets exist for years: 1000 (for testing), 1850, and 2000
 
 <entry id="sim_year_range" type="char*9" category="default_settings"
        group="default_settings" valid_values=
-"constant,1000-1002,1000-1004,850-1100,1100-1350,1350-1600,1600-1850,1850-2000,1850-2100,2000-2100">
+"constant,1000-1002,1000-1004,850-1100,1100-1350,1350-1600,1600-1850,1850-2000,1850-2100,2000-2100,2015-2100">
 Range of years to simulate transitory datasets for (such as dynamic: land-use datasets, aerosol-deposition, Nitrogen deposition rates etc.)
 Constant means simulation will be held at a constant year given in sim_year.
 A sim_year_range of 1000-1002 or 1000-1004 corresponds to data used for testing only, NOT corresponding to any real datasets.
@@ -1726,5 +1732,97 @@ Runtime flag to turn on/off PETSc based thermal model.
         group="clm_inparm" valid_values="">
 Runtime flag to turn on/off variable soil thickness.
 </entry>
+
+<!-- ========================================================================================  -->
+<!-- Namelist options for performing water and energy budgets                                  -->
+<!-- ========================================================================================  -->
+<entry id="do_budgets"
+       type="logical"
+       category="budget"
+       group="clm_inparm"
+       valid_values=".true.,.false."
+       value=".false.">
+logical that turns on diagnostic budgets, false means budgets will never be written
+</entry>
+
+<entry id="budget_inst"
+       type="integer"
+       category="budget"
+       group="clm_inparm"
+       valid_values="0,1"
+       value="0">
+sets the diagnotics level of the instantaneous budgets. [0,1],
+written only if BUDGETS variable is true
+0=none,
+1=+net summary budgets,
+default: 0
+</entry>
+
+<entry id="budget_daily"
+       type="integer"
+       category="budget"
+       group="clm_inparm"
+       valid_values="0,1"
+       value="0">
+sets the diagnotics level of the daily budgets. [0,1],
+written only if do_budgets variable is .true.,
+0=none,
+1=+net summary budgets,
+default: 0
+</entry>
+
+<entry id="budget_month"
+       type="integer"
+       category="budget"
+       group="clm_inparm"
+       valid_values="0,1"
+       value="1">
+sets the diagnotics level of the monthy budgets. [0,1],
+written only if do_budgets variable is .true.,
+0=none,
+1=+net summary budgets,
+default: 1
+</entry>
+
+<entry id="budget_ann"
+       type="integer"
+       category="budget"
+       group="clm_inparm"
+       valid_values="0,1"
+       value="1">
+sets the diagnotics level of the annual budgets. [0,1],
+written only if do_budgets variable is .true.,
+0=none,
+1=+net summary budgets,
+default: 1
+</entry>
+
+<entry id="budget_ltann"
+       type="integer"
+       category="budget"
+       group="clm_inparm"
+       valid_values="0,1"
+       value="1">
+sets the diagnotics level of the longterm budgets written at the end
+of the year. [0,1],
+written only if do_budgets variable is .true.,
+0=none,
+1=+net summary budgets,
+default: 1
+</entry>
+
+<entry id="budget_ltend"
+       type="integer"
+       category="budget"
+       group="clm_inparm"
+       valid_values="0,1"
+       value="0">
+sets the diagnotics level of the longterm budgets written at the end
+of each run. [0,1],
+written only if do_budgets variable is .true.,
+0=none,
+1=+net summary budgets,
+default: 0
+  </entry>
 
 </namelist_definition>

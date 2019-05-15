@@ -37,11 +37,12 @@ contains
 !=======================================================================================================! 
 
 
-  subroutine prim_printstate_init(par)
+  subroutine prim_printstate_init(par, elem)
     type (parallel_t) :: par
+    type (element_t), pointer :: elem(:)
 
     real (kind=real_kind) :: time
-    integer               :: c0
+    integer               :: c0,ie
 
     if (par%masterproc) then
        time=0.0D0
@@ -56,6 +57,15 @@ contains
 #endif
     end if
 
+    do ie = 1,nelemd
+       elem(ie)%accum%Qvar=0
+       elem(ie)%accum%Qmass=0
+       elem(ie)%accum%Q1mass=0
+       elem(ie)%accum%KEner=0
+       elem(ie)%accum%IEner=0
+       elem(ie)%accum%PEner=0
+       elem(ie)%accum%IEner_wet=0
+    end do
   end subroutine prim_printstate_init
 !=======================================================================================================! 
 
@@ -138,8 +148,6 @@ contains
     IEner_wet = 0
     ! dynamics timelevels
     n0=tl%n0
-    nm1=tl%nm1
-    np1=tl%np1
 
     dt=tstep*qsplit
     if (rsplit>0) dt = tstep*qsplit*rsplit  ! vertical REMAP timestep 
@@ -314,9 +322,6 @@ contains
        tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0) 
     enddo
     Mass2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
-    do ie=nets,nete
-       tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,np1) 
-    enddo
 
     !
     !   ptop =  hvcoord%hyai(1)*hvcoord%ps0)  + hvcoord%hybi(1)*ps(i,j)
@@ -628,10 +633,32 @@ contains
        time0=time1
     endif
 
+    call print_software_statistics(hybrid, nets, nete)
   call t_stopf('prim_printstate')
   end subroutine prim_printstate
    
-   
+  subroutine print_software_statistics(hybrid, nets, nete)
+    integer :: GPTLget_memusage
+
+    type(hybrid_t), intent(in) :: hybrid
+    integer, intent(in) :: nets, nete
+    integer :: ok, size, rss_int, share, text, datastack, ie
+    real(kind=real_kind) :: rss, rss_min, rss_max, rss_mean
+
+    ok = GPTLget_memusage(size, rss_int, share, text, datastack)
+    rss = rss_int
+    rss_min = ParallelMin(rss, hybrid)
+    rss_max = ParallelMax(rss, hybrid)
+    do ie = nets, nete
+       global_shared_buf(ie,1) = 0
+    end do
+    global_shared_buf(1,1) = rss ! write race allowed b/c all writes the same
+    call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
+    rss_mean = global_shared_sum(1) / hybrid%par%nprocs
+    if (hybrid%par%masterproc) then
+       write(iulog,'(a10,3(f14.2))') "rss   = ", rss_min, rss_max, rss_mean
+    end if
+  end subroutine print_software_statistics
 
 subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 ! 

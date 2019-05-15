@@ -159,10 +159,10 @@ class Machines(GenericXML):
         >>> machobj = Machines(machine="melvin")
         >>> machobj.get_machine_name()
         'melvin'
-        >>> machobj.set_machine("trump")
+        >>> machobj.set_machine("trump") # doctest: +IGNORE_EXCEPTION_DETAIL
         Traceback (most recent call last):
         ...
-        SystemExit: ERROR: No machine trump found
+        CIMEError: ERROR: No machine trump found
         """
         if machine == "Query":
             self.machine = machine
@@ -190,7 +190,6 @@ class Machines(GenericXML):
             node = self.get_optional_child(name, root=self.machine_node, attributes=attributes)
             if node is not None:
                 value = self.text(node)
-
         if resolved:
             if value is not None:
                 value = self.get_resolved_value(value)
@@ -301,6 +300,7 @@ class Machines(GenericXML):
     def set_value(self, vid, value, subgroup=None, ignore_type=True):
         tmproot = self.root
         self.root = self.machine_node
+        #pylint: disable=assignment-from-no-return
         result = super(Machines, self).set_value(vid, value, subgroup=subgroup,
                                                ignore_type=ignore_type)
         self.root = tmproot
@@ -328,28 +328,23 @@ class Machines(GenericXML):
                 print("      max_tasks/node ",self.text(max_tasks_per_node))
 
     def return_values(self):
-        # return a dictionary of machine info
+        """ return a dictionary of machine info
+        This routine is used by external tools in https://github.com/NCAR/CESM_xml2html
+        """
         machines = self.get_children("machine")
         mach_dict = dict()
-        logger.info("Machines return values")
+        logger.debug("Machines return values")
         for machine in machines:
             name = self.get(machine, "MACH")
-            
             desc = self.get_child("DESC", root=machine)
             mach_dict[(name,"description")] = self.text(desc)
-            
             os_  = self.get_child("OS", root=machine)
             mach_dict[(name,"os")] = self.text(os_)
-            
             compilers = self.get_child("COMPILERS", root=machine)
             mach_dict[(name,"compilers")] = self.text(compilers)
-            
             max_tasks_per_node = self.get_child("MAX_TASKS_PER_NODE", root=machine)
-            if max_tasks_per_node is not None:
-                mach_dict[(name,"max_tasks_per_node")] = self.text(max_tasks_per_node)
-
+            mach_dict[(name,"max_tasks_per_node")] = self.text(max_tasks_per_node)
             max_mpitasks_per_node = self.get_child("MAX_MPITASKS_PER_NODE", root=machine)
-            if max_mpitasks_per_node is not None:
-                mach_dict[(name,"max_mpitasks_per_node")] = self.text( max_mpitasks_per_node)
+            mach_dict[(name,"max_mpitasks_per_node")] = self.text(max_mpitasks_per_node)
 
         return mach_dict

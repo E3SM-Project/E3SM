@@ -20,10 +20,11 @@ module glc_comp_mct
   use seq_cdata_mod
   use seq_infodata_mod
   use seq_timemgr_mod
-  use seq_comm_mct,      only : seq_comm_suffix, seq_comm_inst, seq_comm_name
+  use seq_comm_mct,      only : seq_comm_suffix, seq_comm_inst, seq_comm_name, info_taskmap_comp
   use shr_file_mod
   use shr_cal_mod,       only : shr_cal_date2ymd
   use shr_sys_mod
+  use shr_taskmap_mod,   only : shr_taskmap_write
   use shr_pio_mod
   use perf_mod
 
@@ -71,7 +72,7 @@ module glc_comp_mct
 
   integer  :: nsend, nrecv
 
-  character(len=StrKIND) :: runtype  !< ACME run type: initial, continue, branch
+  character(len=StrKIND) :: runtype  !< E3SM run type: initial, continue, branch
   character(len=StrKIND) :: coupleTimeStamp
 
   type(seq_infodata_type), pointer :: infodata  ! coupler infodata
@@ -134,12 +135,13 @@ contains
     character(len=StrKIND) :: cpl_seq_option
 
     type (MPAS_Time_Type) :: currTime
-    integer :: iam, ierr, ierr_local
+    integer :: iam, npes, ierr, ierr_local
     integer :: iyear0, imonth0
     character(len=StrKIND)  :: starttype          ! infodata start type
     character(len=StrKIND)  :: timeStamp
     character(len=StrKIND)  :: nml_filename
     character(len=16) :: inst_suffix
+    integer :: inst_index
     integer :: lbnum
 
     type (MPAS_Time_Type) :: alarmStartTime
@@ -151,6 +153,8 @@ contains
                                       averagePool
 
     logical :: exists
+    logical :: no_taskmap_output                     ! true then do not write out task-to-node mapping
+    logical :: verbose_taskmap_output                ! true then use verbose task-to-node mapping format
 
     character(kind=c_char), dimension(StrKIND+1) :: c_filename       ! StrKIND+1 for C null-termination character
     integer(kind=c_int) :: c_comm
@@ -166,6 +170,8 @@ contains
     character(kind=c_char), dimension(StrKIND+1) :: c_ref_time_temp
     character(kind=c_char), dimension(StrKIND+1) :: c_filename_interval_temp
     character(kind=c_char), dimension(StrKIND+1) :: c_iotype
+    character(len=8) :: c_inst_index ! instance number
+    character(len=8) :: c_npes       ! number of pes
     type (MPAS_Time_type) :: start_time
     type (MPAS_Time_type) :: ref_time
     type (MPAS_TimeInterval_type) :: filename_interval
@@ -283,6 +289,46 @@ contains
 
     call mpas_framework_init_phase1(domain % dminfo, mpicom_g)
 
+    ! Identify SMP nodes and process/SMP mapping for this instance
+    ! (Assume that processor names are SMP node names on SMP clusters.)
+    inst_index = seq_comm_inst(glcID)
+    write(c_inst_index,'(i8)') inst_index
+
+    if (info_taskmap_comp > 0) then
+
+       no_taskmap_output = .false.
+
+       if (info_taskmap_comp == 1) then
+          verbose_taskmap_output = .false.
+       else
+          verbose_taskmap_output = .true.
+       endif
+
+       call MPI_comm_size(mpicom_g,npes,ierr)
+       write(c_npes,'(i8)') npes
+
+       if (iam==0) then
+          write(glcLogUnit,'(/,3A)') &
+             trim(adjustl(c_npes)), &
+             ' pes participating in computation of MPAS-ALBANY-LANDICE instance #', &
+             trim(adjustl(c_inst_index))
+          call shr_sys_flush(glcLogUnit)
+       endif
+
+    else
+
+       no_taskmap_output = .true.
+       verbose_taskmap_output = .false.
+
+    endif
+
+    call t_startf("shr_taskmap_write")
+    call shr_taskmap_write(glcLogUnit, mpicom_g,                 &
+                           'GLC #'//trim(adjustl(c_inst_index)), &
+                           verbose=verbose_taskmap_output,       &
+                           no_output=no_taskmap_output           )
+    call t_stopf("shr_taskmap_write")
+
     ! Setup function pointers for MALI core and domain types
     call li_setup_core(corelist)
     call li_setup_domain(domain)
@@ -296,7 +342,7 @@ contains
     end if
 
     ! Set core specific options here
-    ! Disable output from all but the master task for ACME!
+    ! Disable output from all but the master task for E3SM!
     ! (This overrides the default set by mpas_log_init based on MPAS_DEBUG setting.)
     if (iam /= 0) then
        domain % logInfo % outputLog % isActive = .false.
@@ -752,7 +798,7 @@ contains
 !!  local variables
 !!
 !!-----------------------------------------------------------------------
-! Variables related to ACME coupler
+! Variables related to E3SM coupler
       integer :: shrloglev, shrlogunit
 
 ! Variable related to MALI
@@ -1480,7 +1526,7 @@ contains
        call mpas_log_write('MPAS ymd=$i  MPAS tod=$i', MPAS_LOG_ERR, intArgs=(/ymd, tod/))
        call mpas_log_write('sync ymd=$i  sync tod=$i', MPAS_LOG_ERR, intArgs=(/curr_ymd, curr_tod/))
        call mpas_log_write('Internal mpas clock not in sync with sync clock', MPAS_LOG_ERR)
-       call mpas_log_write("Internal MPAS clock not in sync with ACME sync clock. Aborting...", MPAS_LOG_CRIT)
+       call mpas_log_write("Internal MPAS clock not in sync with E3SM sync clock. Aborting...", MPAS_LOG_CRIT)
     end if
 
    end subroutine check_clocks_sync

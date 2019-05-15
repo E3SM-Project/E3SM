@@ -28,6 +28,7 @@ from CIME.XML.standard_module_setup import *
 from collections import OrderedDict
 
 import os, itertools
+from CIME import expected_fails
 
 TEST_STATUS_FILENAME = "TestStatus"
 
@@ -44,6 +45,10 @@ NAMELIST_FAIL_STATUS = "NLFAIL" # Implies a failure in the NLCOMP phase
 
 # Special strings that can appear in comments, indicating particular types of failures
 TEST_NO_BASELINES_COMMENT = "BFAIL" # Implies baseline directory is missing in the baseline comparison phase
+# The expected and unexpected failure comments aren't used directly in this module, but
+# are included here for symmetry, so other modules can access them from here.
+TEST_EXPECTED_FAILURE_COMMENT = expected_fails.EXPECTED_FAILURE_COMMENT
+TEST_UNEXPECTED_FAILURE_COMMENT_START = expected_fails.UNEXPECTED_FAILURE_COMMENT_START
 
 # The valid phases
 CREATE_NEWCASE_PHASE  = "CREATE_NEWCASE"
@@ -92,10 +97,11 @@ def _test_helper1(file_contents):
     ts._parse_test_status(file_contents) # pylint: disable=protected-access
     return ts._phase_statuses # pylint: disable=protected-access
 
-def _test_helper2(file_contents, wait_for_run=False, check_throughput=False, check_memory=False, ignore_namelists=False, no_run=False):
+def _test_helper2(file_contents, wait_for_run=False, check_throughput=False, check_memory=False, ignore_namelists=False, no_run=False, no_perm=False):
     lines = file_contents.splitlines()
     rv = None
-    for perm in itertools.permutations(lines):
+    perms = [lines] if no_perm else itertools.permutations(lines)
+    for perm in perms:
         ts = TestStatus(test_dir="/", test_name="ERS.foo.A")
         ts._parse_test_status("\n".join(perm)) # pylint: disable=protected-access
         the_status = ts.get_overall_test_status(wait_for_run=wait_for_run,
@@ -226,21 +232,56 @@ class TestStatus(object):
     def get_comment(self, phase):
         return self._phase_statuses[phase][1] if phase in self._phase_statuses else None
 
-    def phase_statuses_dump(self, prefix=''):
+    def phase_statuses_dump(self, prefix='', skip_passes=False, skip_phase_list=None, xfails=None):
         """
         Args:
             prefix: string printed at the start of each line
+            skip_passes: if True, do not output lines that have a PASS status
+            skip_phase_list: list of phases (from the phases given by
+                ALL_PHASES) for which we skip output
+            xfails: object of type ExpectedFails, giving expected failures for this test
         """
+        if skip_phase_list is None:
+            skip_phase_list = []
+        if xfails is None:
+            xfails = expected_fails.ExpectedFails()
         result = ""
         if self._phase_statuses:
             for phase, data in self._phase_statuses.items():
+                if phase in skip_phase_list:
+                    continue
                 status, comments = data
-                if not comments:
-                    result += "{}{} {} {}\n".format(prefix, status, self._test_name, phase)
-                else:
-                    result += "{}{} {} {} {}\n".format(prefix, status, self._test_name, phase, comments)
+                xfail_comment = xfails.expected_fails_comment(phase, status)
+                if skip_passes:
+                    if status == TEST_PASS_STATUS and not xfail_comment:
+                        # Note that we still print the result of a PASSing test if there
+                        # is a comment related to the expected failure status. Typically
+                        # this will indicate that this is an unexpected PASS (and so
+                        # should be removed from the expected fails list).
+                        continue
+                result += "{}{} {} {}".format(prefix, status, self._test_name, phase)
+                if comments:
+                    result += " {}".format(comments)
+                if xfail_comment:
+                    result += " {}".format(xfail_comment)
+                result += "\n"
 
         return result
+
+    def increment_non_pass_counts(self, non_pass_counts):
+        """
+        Increment counts of the number of times given phases did not pass
+
+        non_pass_counts is a dictionary whose keys are phases of
+        interest and whose values are running counts of the number of
+        non-passes. This method increments those counts based on results
+        in the given TestStatus object.
+        """
+        for phase in non_pass_counts:
+            if phase in self._phase_statuses:
+                status, _ = self._phase_statuses[phase]
+                if status != TEST_PASS_STATUS:
+                    non_pass_counts[phase] += 1
 
     def flush(self):
         if self._phase_statuses and not self._no_io:
@@ -306,6 +347,8 @@ class TestStatus(object):
 
             if (status == TEST_PEND_STATUS):
                 rv = TEST_PEND_STATUS
+                if not no_run:
+                    break
 
             elif (status == TEST_FAIL_STATUS):
                 if ( (not check_throughput and phase == THROUGHPUT_PHASE) or
@@ -386,6 +429,22 @@ class TestStatus(object):
         'FAIL'
         >>> _test_helper2('PASS ERS.foo.A MODEL_BUILD\nPEND ERS.foo.A RUN', no_run=True)
         'PASS'
+        >>> s = '''PASS ERS.foo.A CREATE_NEWCASE
+        ... PASS ERS.foo.A XML
+        ... PASS ERS.foo.A SETUP
+        ... PASS ERS.foo.A SHAREDLIB_BUILD time=454
+        ... PASS ERS.foo.A NLCOMP
+        ... PASS ERS.foo.A MODEL_BUILD time=363
+        ... PASS ERS.foo.A SUBMIT
+        ... PASS ERS.foo.A RUN time=73
+        ... PEND ERS.foo.A COMPARE_base_single_thread
+        ... FAIL ERS.foo.A BASELINE master: DIFF
+        ... PASS ERS.foo.A TPUTCOMP
+        ... PASS ERS.foo.A MEMLEAK insuffiencient data for memleak test
+        ... PASS ERS.foo.A SHORT_TERM_ARCHIVER
+        ... '''
+        >>> _test_helper2(s, no_perm=True)
+        'PEND'
         """
         # Core phases take priority
         core_rv = self._get_overall_status_based_on_phases(CORE_PHASES,

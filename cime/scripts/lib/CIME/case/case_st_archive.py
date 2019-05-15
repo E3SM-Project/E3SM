@@ -52,6 +52,7 @@ def _datetime_str(_date):
     """
     Returns the standard format associated with filenames.
 
+    >>> from CIME.date import date
     >>> _datetime_str(date(5, 8, 22))
     '0005-08-22-00000'
     >>> _datetime_str(get_file_date("0011-12-09-00435"))
@@ -68,6 +69,7 @@ def _datetime_str_mpas(_date):
     """
     Returns the mpas format associated with filenames.
 
+    >>> from CIME.date import date
     >>> _datetime_str_mpas(date(5, 8, 22))
     '0005-08-22_00:00:00'
     >>> _datetime_str_mpas(get_file_date("0011-12-09-00435"))
@@ -637,8 +639,8 @@ def case_st_archive(self, last_date_str=None, archive_incomplete_logs=True, copy
             expect(os.path.isfile(".original_host"), "ERROR alcf host file not found")
             with open(".original_host", "r") as fd:
                 sshhost = fd.read()
-            run_cmd("ssh cooleylogin1 ssh {} '{}/case.submit {} --resubmit' "\
-                        .format(sshhost, caseroot, caseroot), verbose=True)
+            run_cmd("ssh cooleylogin1 ssh {} '{case}/case.submit {case} --resubmit' "\
+                        .format(sshhost, case=caseroot), verbose=True)
         else:
             self.submit(resubmit=True)
 

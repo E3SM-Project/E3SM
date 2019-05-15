@@ -56,7 +56,7 @@ contains
 
   select case(name)
 
-    case ('T','temperature'); call get_temperature(elem,field,hvcoord,nt,ntQ)
+    case ('T','temperature'); call get_temperature(elem,field,hvcoord,nt)
     case ('Th','pottemp');    call get_pottemp(elem,field,hvcoord,nt,ntQ)
     case ('geo','phi');       call get_phi(elem,field,hvcoord,nt,ntQ)
 
@@ -128,6 +128,54 @@ contains
 
 
   !_____________________________________________________________________
+  subroutine get_phi_i(elem,phi_i,hvcoord,nt,ntQ)
+  implicit none
+    
+  type (element_t), intent(in)        :: elem
+  real (kind=real_kind), intent(out)  :: phi_i(np,np,nlevp)
+  type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
+  integer, intent(in) :: nt
+  integer, intent(in) :: ntQ
+  
+  !   local
+  real (kind=real_kind) :: pfull(np,np,nlev)
+  real (kind=real_kind) :: dp(np,np,nlev)
+  real (kind=real_kind) :: T_v(np,np,nlev)
+  real (kind=real_kind) :: Qt
+  integer :: k,i,j
+
+
+  do k=1,nlev
+     pfull(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0  &
+          + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
+     dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
+
+
+     if (.not. use_moisture ) then
+        T_v(:,:,k) = elem%state%T(:,:,k,nt)
+     else
+        do j=1,np
+           do i=1,np
+              Qt = elem%state%Qdp(i,j,k,1,ntQ)/dp(i,j,k)
+              T_v(i,j,k) = Virtual_Temperature(elem%state%T(i,j,k,nt),Qt)
+           end do
+        end do
+     endif
+
+  enddo
+
+  phi_i(:,:,nlevp) = elem%state%phis(:,:)
+  ! traditional Hydrostatic integral
+  do k=nlev,1,-1
+     phi_i(:,:,k)=phi_i(:,:,k+1)+Rgas*T_v(:,:,k)*dp(:,:,k)/pfull(:,:,k)
+  enddo
+
+
+  end subroutine get_phi_i
+
+
+  !_____________________________________________________________________
   subroutine get_pottemp(elem,pottemp,hvcoord,nt,ntQ)
   implicit none
     
@@ -156,22 +204,14 @@ contains
 
 
   !_____________________________________________________________________
-  subroutine get_temperature(elem,temperature,hvcoord,nt,ntQ)
+  subroutine get_temperature(elem,temperature,hvcoord,nt)
   implicit none
   
   type (element_t), intent(in)        :: elem
   real (kind=real_kind), intent(out)  :: temperature(np,np,nlev)
   type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
   integer, intent(in) :: nt
-  integer, intent(in) :: ntQ
   
-  !   local
-  real (kind=real_kind) :: p(np,np,nlev)
-  real (kind=real_kind) :: dp(np,np,nlev)
-  real (kind=real_kind) :: kappa_star(np,np,nlev)
-  real (kind=real_kind) :: Qt(np,np,nlev)
-  integer :: k
-
   temperature = elem%state%T(:,:,:,nt)
   
   end subroutine get_temperature
@@ -191,15 +231,20 @@ contains
 
 
   !_____________________________________________________________________
-  subroutine set_thermostate(elem,temperature,hvcoord,n0,n0_q)
+  subroutine set_thermostate(elem,temperature,hvcoord)
   implicit none
   
   type (element_t), intent(inout)   :: elem
   real (kind=real_kind), intent(in) :: temperature(np,np,nlev)
   type (hvcoord_t),     intent(in)  :: hvcoord                      ! hybrid vertical coordinate struct
-  integer :: n0,n0_q
+  integer :: tl
 
-  elem%state%T(:,:,:,n0)=temperature(:,:,:)
+  tl = 1
+  elem%state%T(:,:,:,tl)=temperature(:,:,:)
+  
+  do tl = 2,3
+    call copy_state(elem,1,tl)
+  enddo
 
   end subroutine set_thermostate
 
@@ -221,12 +266,26 @@ contains
 
   end subroutine
 
+
+  subroutine set_state_i(u,v,w,T,ps,phis,p,zm,g,i,j,k,elem,n0,n1)
+  !
+  ! set state variables at node(i,j,k) at layer interfaces
+  ! preqx model has no such variables, so do nothing
+  !
+  real(real_kind),  intent(in)    :: u,v,w,T,ps,phis,p,zm,g
+  integer,          intent(in)    :: i,j,k,n0,n1
+  type(element_t),  intent(inout) :: elem
+
+  end subroutine set_state_i
+
+
   !_____________________________________________________________________
-  subroutine set_elem_state(u,v,w,T,ps,phis,p,dp,zm,g,elem,n0,n1,ntQ)
+  subroutine set_elem_state(u,v,w,w_i,T,ps,phis,p,dp,zm,zi,g,elem,n0,n1,ntQ)
 
     ! set state variables for entire element
 
     real(real_kind), dimension(np,np,nlev), intent(in):: u,v,w,T,p,dp,zm
+    real(real_kind), dimension(np,np,nlevp), intent(in):: w_i,zi
     real(real_kind), dimension(np,np),      intent(in):: ps,phis
     real(real_kind),  intent(in)    :: g
     integer,          intent(in)    :: n0,n1,ntQ
@@ -246,12 +305,13 @@ contains
   end subroutine set_elem_state
 
   !_____________________________________________________________________
-  subroutine get_state(u,v,w,T,pnh,dp,ps,rho,zm,g,elem,hvcoord,nt,ntQ)
+  subroutine get_state(u,v,w,T,pnh,dp,ps,rho,zm,zi,g,elem,hvcoord,nt,ntQ)
 
     ! get state variables at layer midpoints
     ! used by tests to compute idealized physics forcing terms
 
     real(real_kind), dimension(np,np,nlev), intent(inout) :: u,v,w,T,pnh,dp,zm,rho
+    real(real_kind), dimension(np,np,nlevp), intent(inout) :: zi
     real(real_kind), dimension(np,np),      intent(inout) :: ps
     real(real_kind), intent(in)    :: g
     integer,         intent(in)    :: nt,ntQ
@@ -262,6 +322,8 @@ contains
 
     integer :: k
     call  get_phi(elem,phi,hvcoord,nt,ntQ)
+    call  get_phi_i(elem,zi,hvcoord,nt,ntQ)
+    zi=zi/g
     
     ! set prognostic state variables at level midpoints
     u   = elem%state%v   (:,:,1,:,nt)
@@ -301,7 +363,7 @@ contains
 
 
   !_____________________________________________________________________
-  subroutine set_forcing_rayleigh_friction(elem, zm, ztop, zc, tau, u0,v0, n)
+  subroutine set_forcing_rayleigh_friction(elem, zm, zi, ztop, zc, tau, u0,v0, n)
   !
   ! test cases which use rayleigh friciton will call this with the relaxation coefficient
   ! f_d, and the reference state u0,v0.  Currently assume w0 = 0
@@ -310,6 +372,7 @@ contains
 
   type(element_t), intent(inout):: elem
   real(real_kind), intent(in)   :: zm(nlev)       ! height at layer midpoints
+  real(real_kind), intent(in)   :: zi(nlevp)      ! height at interfaces
   real(real_kind), intent(in)   :: ztop           ! top of atm height
   real(real_kind), intent(in)   :: zc             ! cutoff height
   real(real_kind), intent(in)   :: tau            ! damping timescale
@@ -333,15 +396,17 @@ contains
   end subroutine 
 
   !____________________________________________________________________
-  subroutine tests_finalize(elem,hvcoord,ns,ne,ie)
+  subroutine tests_finalize(elem,hvcoord,ie)
   implicit none
 
-  type(hvcoord_t),     intent(in)  :: hvcoord
-  type(element_t),  intent(inout)  :: elem
-  integer,             intent(in)  :: ns,ne
-  integer, optional,   intent(in)   :: ie ! optional element index, to save initial state
+  type(hvcoord_t),     intent(in)     :: hvcoord
+  type(element_t),     intent(inout)  :: elem
+  integer, optional,   intent(in)     :: ie ! optional element index, to save initial state
+  integer                             :: tl
 
-  !do nothing
+  do tl=2,timelevels
+    call copy_state(elem,1,tl)
+  enddo
   end subroutine tests_finalize
 
 

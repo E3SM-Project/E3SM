@@ -76,7 +76,7 @@ module cube_mod
   public  :: cube_assemble
   public  :: vmap,dmap
   public  :: set_corner_coordinates
-  public  :: assign_node_numbers_to_elem
+!  public  :: assign_node_numbers_to_elem
 
 
   public  :: CubeEdgeCount
@@ -461,7 +461,10 @@ contains
        elem%D = elem%D * sqrt(alpha)
        elem%Dinv = elem%Dinv / sqrt(alpha)
        elem%metdet = elem%metdet * alpha
-       elem%rmetdet = elem%rmetdet / alpha
+       ! replace "elem%rmetdet = elem%rmetdet / alpha" with the one below,
+       ! to ensure that elem%rmetdet = 1/elem%metdet
+       ! elem%rmetdet = elem%rmetdet / alpha
+       elem%rmetdet = 1.0D0/elem%metdet
        elem%met = elem%met * alpha
        elem%metinv = elem%metinv / alpha
     elseif( cubed_sphere_map == 2 ) then
@@ -471,7 +474,7 @@ contains
            elem%D(i,j,:,:) = elem%D(i,j,:,:) * sqrt(alpha)
            elem%Dinv(i,j,:,:) = elem%Dinv(i,j,:,:) / sqrt(alpha)
            elem%metdet(i,j) = elem%metdet(i,j) * alpha
-           elem%rmetdet(i,j) = elem%rmetdet(i,j) / alpha
+           elem%rmetdet(i,j) = 1.0D0/elem%metdet(i,j)
            elem%met(i,j,:,:) = elem%met(i,j,:,:) * alpha
            elem%metinv(i,j,:,:) = elem%metinv(i,j,:,:) / alpha
          enddo
@@ -692,8 +695,6 @@ contains
   ! maps quads on the sphere directly to the reference element
   ! ========================================================
   subroutine dmap_elementlocal(D, a,b, corners3D)
-    use element_mod, only : element_t
-
     real (kind=real_kind), intent(out)    :: D(2,2)
     real (kind=real_kind), intent(in)     :: a,b
     type (cartesian3d_t)               ::  corners3D(4)   
@@ -850,7 +851,7 @@ contains
 #endif
   end subroutine set_corner_coordinates
 
-
+#if 0
   subroutine assign_node_numbers_to_elem(elements, GridVertex)
     use element_mod,    only : element_t
     use control_mod,    only : north, south, east, west, neast, seast, swest, nwest
@@ -927,6 +928,7 @@ contains
 !      elements(el)%node_numbers = connectivity(elements(el)%vertex%number, :)
 !    end do
   end subroutine assign_node_numbers_to_elem
+#endif
 
 
   ! ================================================

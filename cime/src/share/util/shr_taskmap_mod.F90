@@ -43,6 +43,7 @@ module shr_taskmap_mod
 !========================================================================
 !
    subroutine shr_taskmap_write (unit_num, comm_id, comm_name, &
+                                 verbose, no_output, &
                                  save_nnodes, save_task_node_map)
 
 !-----------------------------------------------------------------------
@@ -56,6 +57,12 @@ module shr_taskmap_mod
       integer, intent(in)      :: comm_id    ! MPI communicator
       character(*), intent(in) :: comm_name  ! MPI communicator label
 
+      logical, intent(in), optional :: verbose
+                                             ! verbose output flag
+                                             !  (Default is .false.)
+      logical, intent(in), optional :: no_output
+                                             ! no output flag
+                                             !  (Default is .false.)
       integer, intent(out), optional :: save_nnodes
                                              ! return number of nodes
       integer, intent(out), optional :: save_task_node_map(:)
@@ -69,12 +76,23 @@ module shr_taskmap_mod
       integer :: length                 ! node name length
       integer :: c, i, j                ! loop indices
       integer :: nnodes                 ! number of nodes
+      integer :: start, limit           ! loop bounds
+      integer :: head, tail             ! limits of current sequential run
+                                        !  of task ids
 
       ! flag to indicate whether returning number of nodes
       logical :: broadcast_nnodes
 
       ! flag to indicate whether returning task-to-node mapping
       logical :: broadcast_task_node_map
+
+      ! flag to indicate whether to use verbose or compact output format
+      logical :: verbose_output
+
+      ! flag to indicate whether to write out information
+      ! (for when want to calculate nnodes and the task_node_map without 
+      !  output)
+      logical :: output
 
       ! mapping of tasks to ordered list of nodes
       integer, allocatable :: task_node_map(:)
@@ -125,6 +143,22 @@ module shr_taskmap_mod
       ! Get number of MPI tasks
       !
       call mpi_comm_size (comm_id, npes, ier)
+
+      !
+      ! Determine whether to use verbose output format
+      !
+      verbose_output = .false.
+      if (present(verbose)) then
+         verbose_output = verbose
+      endif
+
+      !
+      ! Determine whether to output taskmap
+      !
+      output = .true.
+      if (present(no_output)) then
+         if (no_output) output = .false.
+      endif
 
       !
       ! Determine whether returning number of nodes
@@ -257,36 +291,79 @@ module shr_taskmap_mod
             node_task_tmpcnt(j) = node_task_tmpcnt(j) + 1
          enddo
 
-         !
-         ! Output node/task mapping
-         !
-         write(unit_num,100) '--------------------------------------------------------------'
-100      format(a)
+         if (output) then
+            !
+            ! Output node/task mapping
+            !
+            write(unit_num,100) &
+               '--------------------------------------------------------------'
+100         format(a)
 
-         write(c_npes,'(i8)') npes
-         write(c_nnodes,'(i8)') nnodes
-         write(unit_num,101) trim(comm_name), trim(adjustl(c_nnodes)), trim(adjustl(c_npes))
-101      format(a,' communicator : ',a,' nodes, ',a,' MPI tasks')
+            write(c_npes,'(i8)') npes
+            write(c_nnodes,'(i8)') nnodes
+            write(unit_num,101) trim(comm_name), trim(adjustl(c_nnodes)), &
+                                trim(adjustl(c_npes))
+101         format(a,' communicator : ',a,' nodes, ',a,' MPI tasks')
 
-         write(unit_num,100) 'COMMUNICATOR NODE # [NODE NAME] : (# OF MPI TASKS) TASK # LIST'
+            write(unit_num,100) &
+               'COMMUNICATOR NODE # [NODE NAME] : (# OF MPI TASKS) TASK # LIST'
 
-         do j=0,nnodes-1
-            write(c_nodeid,'(i8)') j
-            write(c_node_npes,'(i8)') node_task_cnt(j)
-            write(unit_num,102,advance='no') trim(comm_name), trim(adjustl(c_nodeid)), &
-                                             trim(node_names(j)), trim(adjustl(c_node_npes))
-102         format(a,' NODE ',a,' [ ',a,' ] : ( ',a,' MPI TASKS )')
+            do j=0,nnodes-1
+               write(c_nodeid,'(i8)') j
+               write(c_node_npes,'(i8)') node_task_cnt(j)
+               write(unit_num,102,advance='no') &
+                  trim(comm_name), trim(adjustl(c_nodeid)), &
+                  trim(node_names(j)), trim(adjustl(c_node_npes))
+102            format(a,' NODE ',a,' [ ',a,' ] : ( ',a,' MPI TASKS )')
 
-            do i=node_task_offset(j),node_task_offset(j)+node_task_cnt(j)-1
-               write(c_taskid,'(i8)') node_task_map(i)
-               write(unit_num,103,advance='no') trim(adjustl(c_taskid))
-103            format(' ',a)
+               start = node_task_offset(j)
+               limit = start+node_task_cnt(j)-1
+
+               if (verbose_output) then
+
+                  do i=start,limit
+                     write(c_taskid,'(i8)') node_task_map(i)
+                     write(unit_num,103,advance='no') trim(adjustl(c_taskid))
+103                  format(' ',a)
+                  enddo
+
+               else
+
+                  head  = node_task_map(start)
+                  tail  = head
+                  do i=start+1,limit
+                     if (node_task_map(i) == tail+1) then
+                        tail = tail + 1
+                     else
+                        write(c_taskid,'(i8)') head
+                        write(unit_num,103,advance='no') trim(adjustl(c_taskid))
+                        if (head /= tail) then
+                           write(c_taskid,'(i8)') tail
+                           write(unit_num,104,advance='no') trim(adjustl(c_taskid))
+104                        format('-',a)
+                        endif
+                        head = node_task_map(i)
+                        tail = head
+                     endif
+                  enddo
+
+                  if (node_task_map(limit) == tail) then
+                     write(c_taskid,'(i8)') head
+                     write(unit_num,103,advance='no') trim(adjustl(c_taskid))
+                     if (head /= tail) then
+                        write(c_taskid,'(i8)') tail
+                        write(unit_num,104,advance='no') trim(adjustl(c_taskid))
+                     endif
+                  endif
+
+               endif
+
+               write(unit_num,105,advance='no')
+105            format(/)
             enddo
-
-            write(unit_num,104,advance='no')
-104         format(/)
-         enddo
-         write(unit_num,100) '--------------------------------------------------------------'
+            write(unit_num,100) &
+               '--------------------------------------------------------------'
+         endif
 
          if (broadcast_nnodes) then
             save_nnodes = nnodes
@@ -304,8 +381,6 @@ module shr_taskmap_mod
          deallocate(node_task_cnt)
          deallocate(node_names)
          deallocate(task_node_map)
-
-      else
 
       endif
 

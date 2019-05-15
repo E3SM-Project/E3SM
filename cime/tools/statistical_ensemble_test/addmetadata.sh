@@ -52,6 +52,8 @@ stop_option=`./xmlquery --value STOP_OPTION`
 test_type="UF-ECT"
 if [ "$stop_option" = "nmonths" ]; then
     test_type="ECT"
+elif [ "$stop_option" = "nyears" ]; then
+    test_type="POP-ECT"
 fi
 
 if hash ncks 2>/dev/null; then

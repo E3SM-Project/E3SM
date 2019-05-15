@@ -14,11 +14,34 @@ module control_mod
   character(len=MAX_STRING_LEN)    , public :: integration    ! time integration (explicit, or full imp)
 
 ! experimental option for preqx model:
-  logical, public  :: use_semi_lagrange_transport   = .false.
-  logical, public  :: use_semi_lagrange_transport_local_conservation   = .false.
+  ! Tracer transport algorithm type:
+  !     0  spectral-element Eulerian
+  !    12 interpolation semi-Lagrangian
+  integer, public  :: transport_alg = 0
+  ! Constrained density reconstructor for SL property preservation; not used if
+  ! transport_alg = 0:
+  !     0  none
+  !     2  QLT
+  !     3  CAAS
+  !    20  QLT  with superlevels
+  !    30  CAAS with superlevels
+  integer, public  :: semi_lagrange_cdr_alg = 20
+  ! If true, check mass conservation and shape preservation. The second
+  ! implicitly checks tracer consistency.
+  logical, public  :: semi_lagrange_cdr_check = .false.
+  ! If > 0 and nu_q > 0, apply hyperviscosity to tracers 1 through this value,
+  ! rather than just those that couple to the dynamics at the dynamical time
+  ! step. These latter are 'active' tracers, in contrast to 'passive' tracers
+  ! that directly couple only to the physics.
+  integer, public  :: semi_lagrange_hv_q = 0
+  ! If >= 1, then the SL algorithm may choose a nearby point inside the element
+  ! halo available to it if the actual point is outside the halo. This is done
+  ! in levels <= this parameter.
+  integer, public :: semi_lagrange_nearest_point_lev = 0
 
-! set to .true. to run the theta nonydrostatic model in hydrostatic mode
-  logical, public :: theta_hydrostatic_mode = .false.  
+! flag used by preqx, theta-l and theta-c models
+! should be renamed to "hydrostatic_mode"
+  logical, public :: theta_hydrostatic_mode
 
 
   integer, public  :: tstep_type= 5                           ! preqx timestepping options
@@ -34,13 +57,17 @@ module control_mod
                                           ! interspace a lf-trapazoidal step every LFTfreq leapfrogs    
                                           ! 0 = disabled
 
-! vert_remap_q_alg:    0  default value, Zerroukat monotonic splines
+! vert_remap_q_alg:   -1  remap without monotone filter, used for some test cases
+!                      0  default value, Zerroukat monotonic splines
 !                      1  PPM vertical remap with mirroring at the boundaries
 !                         (solid wall bc's, high-order throughout)
 !                      2  PPM vertical remap without mirroring at the boundaries
 !                         (no bc's enforced, first-order at two cells bordering top and bottom boundaries)
-  integer, public :: vert_remap_q_alg = 0
+ integer, public :: vert_remap_q_alg = 0
 
+! advect theta 0: conservation form 
+!              1: expanded divergence form (less noisy, non-conservative)
+ integer, public :: theta_advect_form = 0
 
  integer, public :: cubed_sphere_map = -1  ! -1 = chosen at run time
                                            !  0 = equi-angle Gnomonic (default)
@@ -70,8 +97,6 @@ module control_mod
   character(len=MAX_STRING_LEN)    , public :: topology       ! options: "cube" is supported
   character(len=MAX_STRING_LEN)    , public :: test_case      ! options: if cube: "swtc1","swtc2",or "swtc6"  
   integer              , public :: tasknum
-  integer              , public :: remapfreq      ! remap frequency of synopsis of system state (steps)
-  character(len=MAX_STRING_LEN) :: remap_type     ! selected remapping option
   integer              , public :: statefreq      ! output frequency of synopsis of system state (steps)
   integer              , public :: restartfreq
   integer              , public :: runtype 
@@ -138,7 +163,6 @@ module control_mod
 
   ! hyperviscosity parameters used for smoothing topography
   integer, public :: smooth_phis_numcycle = 0   ! 0 = disable
-  integer, public :: smooth_sgh_numcycle = 0   ! 0 = disabled
   real (kind=real_kind), public :: smooth_phis_nudt = 0
 
   integer, public :: prescribed_wind=0    ! fix the velocities?
@@ -198,6 +222,7 @@ module control_mod
 
   ! for dcmip 2016 test 3
   real (kind=real_kind), public :: dcmip16_mu      = 0        ! additional uniform viscosity (momentum)
-  real (kind=real_kind), public :: dcmip16_mu_s    = 0        ! additional uniform viscosity (scalars)
+  real (kind=real_kind), public :: dcmip16_mu_s    = 0        ! additional uniform viscosity (scalar dynamical variables)
+  real (kind=real_kind), public :: dcmip16_mu_q    = -1       ! additional uniform viscosity (scalar tracers); -1 implies it defaults to dcmip16_mu_s value
   real (kind=real_kind), public :: interp_lon0     = 0.0d0
 end module control_mod

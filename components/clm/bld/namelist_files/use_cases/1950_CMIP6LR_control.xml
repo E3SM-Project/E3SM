@@ -18,6 +18,6 @@
 <!-- CMIP6 DECK compsets -->
       
 <fsurdat>lnd/clm2/surfdata_map/surfdata_ne30np4_simyr1950_c180314.nc</fsurdat>
-<finidat>lnd/clm2/initdata/clmi.A_WCYCL1950S_CMIP6_LRtunedHR.ne30_oECv3_ICG_simyr1950_c20180316.nc </finidat>
+<finidat>lnd/clm2/initdata_map/clmi.A_WCYCL1950S_CMIP6_LRtunedHR.ne30_oECv3_ICG_simyr1950_71f4e1927.nc </finidat>
 
 </namelist_defaults>

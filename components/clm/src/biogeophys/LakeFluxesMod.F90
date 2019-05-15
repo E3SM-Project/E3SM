@@ -17,9 +17,12 @@ module LakeFluxesMod
   use TemperatureType      , only : temperature_type
   use WaterfluxType        , only : waterflux_type
   use WaterstateType       , only : waterstate_type
-  use GridcellType         , only : grc_pp                
-  use ColumnType           , only : col_pp                
-  use VegetationType            , only : veg_pp                
+  use GridcellType         , only : grc_pp   
+  use TopounitDataType     , only : top_as, top_af ! atmospheric state and flux variables  
+  use ColumnType           , only : col_pp
+  use ColumnDataType       , only : col_es, col_ws  
+  use VegetationType       , only : veg_pp
+  use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf  
   !    
   ! !PUBLIC TYPES:
   implicit none
@@ -76,7 +79,7 @@ contains
     integer , parameter  :: niters = 4             ! maximum number of iterations for surface temperature
     real(r8), parameter :: beta1 = 1._r8           ! coefficient of convective velocity (in computing W_*) [-]
     real(r8), parameter :: zii = 1000._r8          ! convective boundary height [m]
-    integer  :: i,fc,fp,g,c,p                      ! do loop or array index
+    integer  :: i,fc,fp,g,t,c,p                    ! do loop or array index
     integer  :: fncopy                             ! number of values in pft filter copy
     integer  :: fnold                              ! previous number of pft filter values
     integer  :: fpcopy(num_lakep)                  ! patch filter copy for iteration loop
@@ -151,16 +154,16 @@ contains
          dz_lake          =>    col_pp%dz_lake                            , & ! Input:  [real(r8) (:,:) ]  layer thickness for lake (m)                    
          lakedepth        =>    col_pp%lakedepth                          , & ! Input:  [real(r8) (:)   ]  variable lake depth (m)                           
          
-         forc_t           =>    atm2lnd_vars%forc_t_downscaled_col     , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)                  
-         forc_pbot        =>    atm2lnd_vars%forc_pbot_downscaled_col  , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
-         forc_th          =>    atm2lnd_vars%forc_th_downscaled_col    , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (Kelvin)        
-         forc_q           =>    atm2lnd_vars%forc_q_downscaled_col     , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)             
-         forc_rho         =>    atm2lnd_vars%forc_rho_downscaled_col   , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)                                 
-         forc_lwrad       =>    atm2lnd_vars%forc_lwrad_downscaled_col , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)   
-         forc_snow        =>    atm2lnd_vars%forc_snow_downscaled_col  , & ! Input:  [real(r8) (:)   ]  snow rate [mm/s]                                  
-         forc_rain        =>    atm2lnd_vars%forc_rain_downscaled_col  , & ! Input:  [real(r8) (:)   ]  rain rate [mm/s]                                  
-         forc_u           =>    atm2lnd_vars%forc_u_grc                , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)    
-         forc_v           =>    atm2lnd_vars%forc_v_grc                , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)   
+         forc_t           =>    top_as%tbot                            , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)                  
+         forc_th          =>    top_as%thbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (Kelvin)        
+         forc_pbot        =>    top_as%pbot                            , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
+         forc_q           =>    top_as%qbot                            , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)             
+         forc_rho         =>    top_as%rhobot                          , & ! Input:  [real(r8) (:)   ]  air density (kg/m**3)                                 
+         forc_lwrad       =>    top_af%lwrad                           , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)   
+         forc_snow        =>    top_af%snow                            , & ! Input:  [real(r8) (:)   ]  snow rate (kg H2O/m**2/s, or mm liquid H2O/s)                                  
+         forc_rain        =>    top_af%rain                            , & ! Input:  [real(r8) (:)   ]  rain rate (kg H2O/m**2/s, or mm liquid H2O/s)                                  
+         forc_u           =>    top_as%ubot                            , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)    
+         forc_v           =>    top_as%vbot                            , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)   
          
          fsds_nir_d       =>    solarabs_vars%fsds_nir_d_patch         , & ! Input:  [real(r8) (:)   ]  incident direct beam nir solar radiation (W/m**2) 
          fsds_nir_i       =>    solarabs_vars%fsds_nir_i_patch         , & ! Input:  [real(r8) (:)   ]  incident diffuse nir solar radiation (W/m**2)     
@@ -173,41 +176,41 @@ contains
          savedtke1        =>    lakestate_vars%savedtke1_col           , & ! Input:  [real(r8) (:)   ]  top level eddy conductivity from previous timestep (W/mK)
          lakefetch        =>    lakestate_vars%lakefetch_col           , & ! Input:  [real(r8) (:)   ]  lake fetch from surface data (m)                  
          
-         h2osoi_liq       =>    waterstate_vars%h2osoi_liq_col         , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                            
-         h2osoi_ice       =>    waterstate_vars%h2osoi_ice_col         , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                                
+         h2osoi_liq       =>    col_ws%h2osoi_liq         , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                            
+         h2osoi_ice       =>    col_ws%h2osoi_ice         , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                                
 
-         t_lake           =>    temperature_vars%t_lake_col            , & ! Input:  [real(r8) (:,:) ]  lake temperature (Kelvin)                       
-         t_soisno         =>    temperature_vars%t_soisno_col          , & ! Input:  [real(r8) (:,:) ]  soil (or snow) temperature (Kelvin)             
+         t_lake           =>    col_es%t_lake            , & ! Input:  [real(r8) (:,:) ]  lake temperature (Kelvin)                       
+         t_soisno         =>    col_es%t_soisno          , & ! Input:  [real(r8) (:,:) ]  soil (or snow) temperature (Kelvin)             
 
          forc_hgt_u_patch =>    frictionvel_vars%forc_hgt_u_patch      , & ! Input:  [real(r8) (:)   ]  observational height of wind at pft level [m]     
          forc_hgt_t_patch =>    frictionvel_vars%forc_hgt_t_patch      , & ! Input:  [real(r8) (:)   ]  observational height of temperature at pft level [m]
          forc_hgt_q_patch =>    frictionvel_vars%forc_hgt_q_patch      , & ! Input:  [real(r8) (:)   ]  observational height of specific humidity at pft level [m]
 
-         q_ref2m          =>    waterstate_vars%q_ref2m_patch          , & ! Output: [real(r8) (:)   ]  2 m height surface specific humidity (kg/kg)      
-         rh_ref2m         =>    waterstate_vars%rh_ref2m_patch         , & ! Output: [real(r8) (:)   ]  2 m height surface relative humidity (%)          
-         qflx_evap_soi    =>    waterflux_vars%qflx_evap_soi_patch     , & ! Output: [real(r8) (:)   ]  soil evaporation (mm H2O/s) (+ = to atm)          
-         qflx_evap_tot    =>    waterflux_vars%qflx_evap_tot_patch     , & ! Output: [real(r8) (:)   ]  qflx_evap_soi + qflx_evap_can + qflx_tran_veg     
+         q_ref2m          =>    veg_ws%q_ref2m          , & ! Output: [real(r8) (:)   ]  2 m height surface specific humidity (kg/kg)      
+         rh_ref2m         =>    veg_ws%rh_ref2m         , & ! Output: [real(r8) (:)   ]  2 m height surface relative humidity (%)          
+         qflx_evap_soi    =>    veg_wf%qflx_evap_soi     , & ! Output: [real(r8) (:)   ]  soil evaporation (mm H2O/s) (+ = to atm)          
+         qflx_evap_tot    =>    veg_wf%qflx_evap_tot     , & ! Output: [real(r8) (:)   ]  qflx_evap_soi + qflx_evap_can + qflx_tran_veg     
 
-         qflx_snwcp_ice   =>    waterflux_vars%qflx_snwcp_ice_patch    , & ! Output: [real(r8) (:)   ]  excess snowfall due to snow capping (mm H2O /s) [+]
-         qflx_snwcp_liq   =>    waterflux_vars%qflx_snwcp_liq_patch    , & ! Output: [real(r8) (:)   ]  excess rainfall due to snow capping (mm H2O /s) [+] 
-         qflx_prec_grnd   =>    waterflux_vars%qflx_prec_grnd_patch    , & ! Output: [real(r8) (:)   ]  water onto ground including canopy runoff [kg/(m2 s)]
+         qflx_snwcp_ice   =>    veg_wf%qflx_snwcp_ice    , & ! Output: [real(r8) (:)   ]  excess snowfall due to snow capping (mm H2O /s) [+]
+         qflx_snwcp_liq   =>    veg_wf%qflx_snwcp_liq    , & ! Output: [real(r8) (:)   ]  excess rainfall due to snow capping (mm H2O /s) [+] 
+         qflx_prec_grnd   =>    veg_wf%qflx_prec_grnd    , & ! Output: [real(r8) (:)   ]  water onto ground including canopy runoff [kg/(m2 s)]
 
-         t_veg            =>    temperature_vars%t_veg_patch           , & ! Output: [real(r8) (:)   ]  vegetation temperature (Kelvin)                   
-         t_ref2m          =>    temperature_vars%t_ref2m_patch         , & ! Output: [real(r8) (:)   ]  2 m height surface air temperature (Kelvin)       
-         t_grnd           =>    temperature_vars%t_grnd_col            , & ! Output: [real(r8) (:)   ]  ground temperature (Kelvin)                       
+         t_veg            =>    veg_es%t_veg             , & ! Output: [real(r8) (:)   ]  vegetation temperature (Kelvin)                   
+         t_ref2m          =>    veg_es%t_ref2m         , & ! Output: [real(r8) (:)   ]  2 m height surface air temperature (Kelvin)       
+         t_grnd           =>    col_es%t_grnd            , & ! Output: [real(r8) (:)   ]  ground temperature (Kelvin)                       
 
          ram1             =>    frictionvel_vars%ram1_patch            , & ! Output: [real(r8) (:)   ]  aerodynamical resistance (s/m)                    
 
-         eflx_lwrad_out   =>    energyflux_vars%eflx_lwrad_out_patch   , & ! Output: [real(r8) (:)   ]  emitted infrared (longwave) radiation (W/m**2)    
-         eflx_lwrad_net   =>    energyflux_vars%eflx_lwrad_net_patch   , & ! Output: [real(r8) (:)   ]  net infrared (longwave) rad (W/m**2) [+ = to atm] 
-         eflx_soil_grnd   =>    energyflux_vars%eflx_soil_grnd_patch   , & ! Output: [real(r8) (:)   ]  soil heat flux (W/m**2) [+ = into soil]           
-         eflx_lh_tot      =>    energyflux_vars%eflx_lh_tot_patch      , & ! Output: [real(r8) (:)   ]  total latent heat flux (W/m8*2)  [+ to atm]       
-         eflx_lh_grnd     =>    energyflux_vars%eflx_lh_grnd_patch     , & ! Output: [real(r8) (:)   ]  ground evaporation heat flux (W/m**2) [+ to atm]  
-         eflx_sh_grnd     =>    energyflux_vars%eflx_sh_grnd_patch     , & ! Output: [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]
-         eflx_sh_tot      =>    energyflux_vars%eflx_sh_tot_patch      , & ! Output: [real(r8) (:)   ]  total sensible heat flux (W/m**2) [+ to atm]      
-         eflx_gnet        =>    energyflux_vars%eflx_gnet_patch        , & ! Output: [real(r8) (:)   ]  net heat flux into ground (W/m**2)                
-         taux             =>    energyflux_vars%taux_patch             , & ! Output: [real(r8) (:)   ]  wind (shear) stress: e-w (kg/m/s**2)              
-         tauy             =>    energyflux_vars%tauy_patch             , & ! Output: [real(r8) (:)   ]  wind (shear) stress: n-s (kg/m/s**2)              
+         eflx_lwrad_out   =>    veg_ef%eflx_lwrad_out   , & ! Output: [real(r8) (:)   ]  emitted infrared (longwave) radiation (W/m**2)    
+         eflx_lwrad_net   =>    veg_ef%eflx_lwrad_net   , & ! Output: [real(r8) (:)   ]  net infrared (longwave) rad (W/m**2) [+ = to atm] 
+         eflx_soil_grnd   =>    veg_ef%eflx_soil_grnd   , & ! Output: [real(r8) (:)   ]  soil heat flux (W/m**2) [+ = into soil]           
+         eflx_lh_tot      =>    veg_ef%eflx_lh_tot      , & ! Output: [real(r8) (:)   ]  total latent heat flux (W/m8*2)  [+ to atm]       
+         eflx_lh_grnd     =>    veg_ef%eflx_lh_grnd     , & ! Output: [real(r8) (:)   ]  ground evaporation heat flux (W/m**2) [+ to atm]  
+         eflx_sh_grnd     =>    veg_ef%eflx_sh_grnd     , & ! Output: [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]
+         eflx_sh_tot      =>    veg_ef%eflx_sh_tot      , & ! Output: [real(r8) (:)   ]  total sensible heat flux (W/m**2) [+ to atm]      
+         eflx_gnet        =>    veg_ef%eflx_gnet        , & ! Output: [real(r8) (:)   ]  net heat flux into ground (W/m**2)                
+         taux             =>    veg_ef%taux             , & ! Output: [real(r8) (:)   ]  wind (shear) stress: e-w (kg/m/s**2)              
+         tauy             =>    veg_ef%tauy             , & ! Output: [real(r8) (:)   ]  wind (shear) stress: n-s (kg/m/s**2)              
 
          ks               =>    lakestate_vars%ks_col                  , & ! Output: [real(r8) (:)   ]  coefficient passed to LakeTemperature            
          ws               =>    lakestate_vars%ws_col                  , & ! Output: [real(r8) (:)   ]  surface friction velocity (m/s)                   
@@ -230,6 +233,7 @@ contains
       do fp = 1, num_lakep
          p = filter_lakep(fp)
          c = veg_pp%column(p)
+         t = veg_pp%topounit(p)
          g = col_pp%gridcell(c)
 
          ! Set fetch for prognostic roughness length-- if not found in surface data.
@@ -255,7 +259,7 @@ contains
 
          if (t_grnd(c) > tfrz) then   ! for unfrozen lake
             z0mg(p) = z0mg_col(c)
-            kva = kva0 * (t_grnd(c)/kva0temp)**1.5_r8 * kva0pres/forc_pbot(c) ! kinematic viscosity of air
+            kva = kva0 * (t_grnd(c)/kva0temp)**1.5_r8 * kva0pres/forc_pbot(t) ! kinematic viscosity of air
             sqre0 = (max(z0mg(p)*ust_lake(c)/kva,0.1_r8))**0.5_r8   ! Square root of roughness Reynolds number
             z0hg(p) = z0mg(p) * exp( -vkc/prn*( 4._r8*sqre0 - 3.2_r8) ) ! SH roughness length
             z0qg(p) = z0mg(p) * exp( -vkc/sch*( 4._r8*sqre0 - 4.2_r8) ) ! LH roughness length
@@ -299,13 +303,13 @@ contains
          ! Saturated vapor pressure, specific humidity and their derivatives
          ! at lake surface
 
-         call QSat(t_grnd(c), forc_pbot(c), eg, degdT, qsatg(c), qsatgdT(c))
+         call QSat(t_grnd(c), forc_pbot(t), eg, degdT, qsatg(c), qsatgdT(c))
 
          ! Potential, virtual potential temperature, and wind speed at the
          ! reference height
 
-         thm(p) = forc_t(c) + 0.0098_r8*forc_hgt_t_patch(p)   ! intermediate variable
-         thv(c) = forc_th(c)*(1._r8+0.61_r8*forc_q(c))     ! virtual potential T
+         thm(p) = forc_t(t) + 0.0098_r8*forc_hgt_t_patch(p)   ! intermediate variable
+         thv(c) = forc_th(t)*(1._r8+0.61_r8*forc_q(t))     ! virtual potential T
       end do
 
 
@@ -313,6 +317,7 @@ contains
       do fp = 1, num_lakep
          p = filter_lakep(fp)
          c = veg_pp%column(p)
+         t = veg_pp%topounit(p)
          g = veg_pp%gridcell(p)
 
          nmozsgn(p) = 0
@@ -330,10 +335,10 @@ contains
 
          ! Initialize stability variables
 
-         ur(p)    = max(1.0_r8,sqrt(forc_u(g)*forc_u(g)+forc_v(g)*forc_v(g)))
+         ur(p)    = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
          dth(p)   = thm(p)-t_grnd(c)
-         dqh(p)   = forc_q(c)-qsatg(c)
-         dthv     = dth(p)*(1._r8+0.61_r8*forc_q(c))+0.61_r8*forc_th(c)*dqh(p)
+         dqh(p)   = forc_q(t)-qsatg(c)
+         dthv     = dth(p)*(1._r8+0.61_r8*forc_q(t))+0.61_r8*forc_th(t)*dqh(p)
          zldis(p) = forc_hgt_u_patch(p) - 0._r8
 
          ! Initialize Monin-Obukhov length and wind speed
@@ -362,6 +367,7 @@ contains
          do fp = 1, fncopy
             p = fpcopy(fp)
             c = veg_pp%column(p)
+            t = veg_pp%topounit(p)
             g = veg_pp%gridcell(p)
 
             tgbef(c) = t_grnd(c)
@@ -400,13 +406,13 @@ contains
             ! Changed surface temperature from t_lake(c,1) to tsur(c).
             ! Also adjusted so that if there are snow layers present, the top layer absorption
             ! from SNICAR is assigned to the surface skin.
-            ax  = betaprime(c)*sabg(p) + emg_lake*forc_lwrad(c) + 3._r8*stftg3(p)*tgbef(c) &
-                 + forc_rho(c)*cpair/rah(p)*thm(p) &
-                 - htvp(c)*forc_rho(c)/raw(p)*(qsatg(c)-qsatgdT(c)*tgbef(c) - forc_q(c)) &
+            ax  = betaprime(c)*sabg(p) + emg_lake*forc_lwrad(t) + 3._r8*stftg3(p)*tgbef(c) &
+                 + forc_rho(t)*cpair/rah(p)*thm(p) &
+                 - htvp(c)*forc_rho(t)/raw(p)*(qsatg(c)-qsatgdT(c)*tgbef(c) - forc_q(t)) &
                  + tksur(c)*tsur(c)/dzsur(c)
             !Changed sabg(p) to betaprime(c)*sabg(p).
-            bx  = 4._r8*stftg3(p) + forc_rho(c)*cpair/rah(p) &
-                 + htvp(c)*forc_rho(c)/raw(p)*qsatgdT(c) + tksur(c)/dzsur(c)
+            bx  = 4._r8*stftg3(p) + forc_rho(t)*cpair/rah(p) &
+                 + htvp(c)*forc_rho(t)/raw(p)*qsatgdT(c) + tksur(c)/dzsur(c)
 
             t_grnd(c) = ax/bx
             !prevent too large numerical step
@@ -425,21 +431,21 @@ contains
             ! Surface fluxes of momentum, sensible and latent heat
             ! using ground temperatures from previous time step
 
-            eflx_sh_grnd(p) = forc_rho(c)*cpair*(t_grnd(c)-thm(p))/rah(p)
-            qflx_evap_soi(p) = forc_rho(c)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-tgbef(c))-forc_q(c))/raw(p)
+            eflx_sh_grnd(p) = forc_rho(t)*cpair*(t_grnd(c)-thm(p))/rah(p)
+            qflx_evap_soi(p) = forc_rho(t)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-tgbef(c))-forc_q(t))/raw(p)
 
             ! Re-calculate saturated vapor pressure, specific humidity and their
             ! derivatives at lake surface
 
-            call QSat(t_grnd(c), forc_pbot(c), eg, degdT, qsatg(c), qsatgdT(c))
+            call QSat(t_grnd(c), forc_pbot(t), eg, degdT, qsatg(c), qsatgdT(c))
 
             dth(p)=thm(p)-t_grnd(c)
-            dqh(p)=forc_q(c)-qsatg(c)
+            dqh(p)=forc_q(t)-qsatg(c)
 
             tstar = temp1(p)*dth(p)
             qstar = temp2(p)*dqh(p)
 
-            thvstar=tstar*(1._r8+0.61_r8*forc_q(c)) + 0.61_r8*forc_th(c)*qstar
+            thvstar=tstar*(1._r8+0.61_r8*forc_q(t)) + 0.61_r8*forc_th(t)*qstar
             zeta=zldis(p)*vkc * grav*thvstar/(ustar(p)**2*thv(c))
 
             if (zeta >= 0._r8) then     !stable
@@ -473,7 +479,7 @@ contains
                end if
 
 
-               kva = kva0 * (t_grnd(c)/kva0temp)**1.5_r8 * kva0pres/forc_pbot(c) ! kinematic viscosity of air
+               kva = kva0 * (t_grnd(c)/kva0temp)**1.5_r8 * kva0pres/forc_pbot(t) ! kinematic viscosity of air
                z0mg(p) = max(cus*kva/max(ustar(p),1.e-4_r8), cur*ustar(p)*ustar(p)/grav) ! momentum roughness length
                ! This lower limit on ustar is just to prevent floating point exceptions and
                ! should not be important
@@ -516,6 +522,7 @@ contains
       do fp = 1, num_lakep
          p = filter_lakep(fp)
          c = veg_pp%column(p)
+         t = veg_pp%topounit(p)
          g = veg_pp%gridcell(p)
 
          ! If there is snow on the ground or lake is frozen and t_grnd > tfrz: reset t_grnd = tfrz.
@@ -532,15 +539,15 @@ contains
          if ( (snl(c) < 0 .or. t_lake(c,1) <= tfrz) .and. t_grnd(c) > tfrz) then
             t_grnd_temp = t_grnd(c)
             t_grnd(c) = tfrz
-            eflx_sh_grnd(p) = forc_rho(c)*cpair*(t_grnd(c)-thm(p))/rah(p)
-            qflx_evap_soi(p) = forc_rho(c)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-t_grnd_temp) - forc_q(c))/raw(p)
+            eflx_sh_grnd(p) = forc_rho(t)*cpair*(t_grnd(c)-thm(p))/rah(p)
+            qflx_evap_soi(p) = forc_rho(t)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-t_grnd_temp) - forc_q(t))/raw(p)
          else if ( (t_lake(c,1) > t_grnd(c) .and. t_grnd(c) > tdmax) .or. &
               (t_lake(c,1) < t_grnd(c) .and. t_lake(c,1) > tfrz .and. t_grnd(c) < tdmax) ) then
             ! Convective mixing will occur at surface
             t_grnd_temp = t_grnd(c)
             t_grnd(c) = t_lake(c,1)
-            eflx_sh_grnd(p) = forc_rho(c)*cpair*(t_grnd(c)-thm(p))/rah(p)
-            qflx_evap_soi(p) = forc_rho(c)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-t_grnd_temp) - forc_q(c))/raw(p)
+            eflx_sh_grnd(p) = forc_rho(t)*cpair*(t_grnd(c)-thm(p))/rah(p)
+            qflx_evap_soi(p) = forc_rho(t)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-t_grnd_temp) - forc_q(t))/raw(p)
          end if
 
          ! Update htvp
@@ -554,11 +561,11 @@ contains
          ! eflx_lwrad_out(p) = (1._r8-emg_lake)*forc_lwrad(c) + stftg3(p)*(-3._r8*tgbef(c)+4._r8*t_grnd(c))
          ! What is tgbef doing in this equation? Can't it be exact now? --Zack Subin, 4/14/09
 
-         eflx_lwrad_out(p) = (1._r8-emg_lake)*forc_lwrad(c) + emg_lake*sb*t_grnd(c)**4._r8
+         eflx_lwrad_out(p) = (1._r8-emg_lake)*forc_lwrad(t) + emg_lake*sb*t_grnd(c)**4._r8
 
          ! Ground heat flux
 
-         eflx_soil_grnd(p) = sabg(p) + forc_lwrad(c) - eflx_lwrad_out(p) - &
+         eflx_soil_grnd(p) = sabg(p) + forc_lwrad(t) - eflx_lwrad_out(p) - &
               eflx_sh_grnd(p) - htvp(c)*qflx_evap_soi(p)
          ! The original code in Biogeophysiclake had a bug that calculated incorrect fluxes but conserved energy.
          ! This is kept as the full sabg (not just that absorbed at surface) so that the energy balance check will be correct.
@@ -567,8 +574,8 @@ contains
          ! The variable eflx_gnet will be used to pass the actual heat flux
          !from the ground interface into the lake.
 
-         taux(p) = -forc_rho(c)*forc_u(g)/ram(p)
-         tauy(p) = -forc_rho(c)*forc_v(g)/ram(p)
+         taux(p) = -forc_rho(t)*forc_u(t)/ram(p)
+         tauy(p) = -forc_rho(t)*forc_v(t)/ram(p)
 
          eflx_sh_tot(p)   = eflx_sh_grnd(p)
          qflx_evap_tot(p) = qflx_evap_soi(p)
@@ -579,18 +586,18 @@ contains
          t_ref2m(p) = thm(p) + temp1(p)*dth(p)*(1._r8/temp12m(p) - 1._r8/temp1(p))
 
          ! 2 m height specific humidity
-         q_ref2m(p) = forc_q(c) + temp2(p)*dqh(p)*(1._r8/temp22m(p) - 1._r8/temp2(p))
+         q_ref2m(p) = forc_q(t) + temp2(p)*dqh(p)*(1._r8/temp22m(p) - 1._r8/temp2(p))
 
          ! 2 m height relative humidity
 
-         call QSat(t_ref2m(p), forc_pbot(c), e_ref2m, de2mdT, qsat_ref2m, dqsat2mdT)
+         call QSat(t_ref2m(p), forc_pbot(t), e_ref2m, de2mdT, qsat_ref2m, dqsat2mdT)
          rh_ref2m(p) = min(100._r8, q_ref2m(p) / qsat_ref2m * 100._r8)
 
 
          ! Energy residual used for melting snow
          ! Effectively moved to LakeTemp
 
-         eflx_gnet(p) = betaprime(c) * sabg(p) + forc_lwrad(c) - (eflx_lwrad_out(p) + &
+         eflx_gnet(p) = betaprime(c) * sabg(p) + forc_lwrad(t) - (eflx_lwrad_out(p) + &
               eflx_sh_tot(p) + eflx_lh_tot(p))
          ! This is the actual heat flux from the ground interface into the lake, not including
          ! the light that penetrates the surface.
@@ -617,9 +624,11 @@ contains
       do fp = 1, num_lakep
          p = filter_lakep(fp)
          c = veg_pp%column(p)
-         t_veg(p) = forc_t(c)
-         eflx_lwrad_net(p)  = eflx_lwrad_out(p) - forc_lwrad(c)
-         qflx_prec_grnd(p) = forc_rain(c) + forc_snow(c)
+         t = veg_pp%topounit(p)
+         
+         t_veg(p) = forc_t(t)
+         eflx_lwrad_net(p)  = eflx_lwrad_out(p) - forc_lwrad(t)
+         qflx_prec_grnd(p) = forc_rain(t) + forc_snow(t)
 
          ! Because they will be used in pft2col initialize here.
          ! This will be overwritten in LakeHydrology

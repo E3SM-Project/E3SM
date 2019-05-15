@@ -26,6 +26,19 @@ module model_init_mod
   
 contains
 
+  subroutine vertical_mesh_init2(elem, nets, nete, hybrid, hvcoord)
+
+    ! additional solver specific initializations (called from prim_init2)
+
+    type (element_t),			intent(inout), target :: elem(:)! array of element_t structures
+    integer,				intent(in) :: nets,nete		! start and end element indices
+    type (hybrid_t),			intent(in) :: hybrid		! mpi/omp data struct
+    type (hvcoord_t),			intent(inout)	:: hvcoord	! hybrid vertical coord data struct
+
+  end subroutine vertical_mesh_init2
+
+
+
   subroutine model_init2(elem,hybrid,deriv,hvcoord,tl,nets,nete )
 
     type(element_t)   , intent(in) :: elem(:)
@@ -36,7 +49,8 @@ contains
     integer                        :: nets,nete
 
     ! unit test for analytic jacobian used by IMEX methods
-    call test_imex_jacobian(elem,hybrid,hvcoord,tl,nets,nete)
+    if (.not. theta_hydrostatic_mode) &
+         call test_imex_jacobian(elem,hybrid,hvcoord,tl,nets,nete)
 
     ! other theta specific model initialization should go here
   
@@ -63,7 +77,7 @@ contains
   real (kind=real_kind) :: dp3d(np,np,nlev), phi(np,np,nlev), phis(np,np)
   real (kind=real_kind) :: theta_dp_cp(np,np,nlev), dpnh_dp(np,np,nlev),dpnh(np,np,nlev)
   real (kind=real_kind) :: exner(np,np,nlev)
-  real (kind=real_kind) :: pnh(np,np,nlev),	pnh_i(np,np,nlevp)
+  real (kind=real_kind) :: pnh(np,np,nlev),pnh_i(np,np,nlevp)
   real (kind=real_kind) :: norminfJ0(np,np)
   
   real (kind=real_kind) :: dt,epsie,maxjacerrorvec(5),maxjacerr
@@ -79,7 +93,7 @@ contains
      phi(:,:,:)         = elem(ie)%state%phinh(:,:,:,tl%n0)
      phis(:,:)          = elem(ie)%state%phis(:,:)
      call TimeLevel_Qdp(tl, qsplit, qn0)
-     call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
+     call get_kappa_star(kappa_star,elem(ie)%state%Q(:,:,:,1))
      if (theta_hydrostatic_mode) then
         dpnh_dp(:,:,:)=1.d0
      else
@@ -124,9 +138,9 @@ contains
         if (maxval(abs(JacD(:,:,:)-Jac2D(:,:,:))) > maxjacerrorvec(j)) then 
            maxjacerrorvec(j) = maxval(abs(JacD(:,:,:)-Jac2D(:,:,:)))
         end if
-       	if (maxval(abs(JacL(:,:,:)-Jac2L(:,:,:))) > maxjacerrorvec(j)) then
+        if (maxval(abs(JacL(:,:,:)-Jac2L(:,:,:))) > maxjacerrorvec(j)) then
            maxjacerrorvec(j) = maxval(abs(JacL(:,:,:)-Jac2L(:,:,:)))
-    	end if
+        end if
         if (maxval(abs(JacU(:,:,:)-Jac2U(:,:,:))) > maxjacerrorvec(j)) then
            maxjacerrorvec(j) = maxval(abs(JacU(:,:,:)-Jac2U(:,:,:)))
         end if

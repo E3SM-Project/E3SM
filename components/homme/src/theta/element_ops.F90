@@ -75,7 +75,7 @@ contains
   real(kind=real_kind), dimension(np,np,nlev) :: tmp, p, pnh, dp, omega, rho, T, cp_star, Rstar, kappa_star
 
   select case(name)
-    case ('temperature','T'); call get_temperature(elem,field,hvcoord,nt,ntQ)
+    case ('temperature','T'); call get_temperature(elem,field,hvcoord,nt)
     case ('pottemp','Th');    call get_pottemp(elem,field,hvcoord,nt,ntQ)
     case ('phi','geo');       call get_phi(elem,field,hvcoord,nt,ntQ)
     case ('dpnh_dp');         call get_dpnh_dp(elem,field,hvcoord,nt,ntQ)
@@ -100,9 +100,9 @@ contains
 
       call get_field(elem,'pnh',pnh,hvcoord,nt,ntQ)
       call get_field(elem,'dp',dp,hvcoord,nt,ntQ)
-      call get_cp_star(cp_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
-      call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
-      call get_temperature(elem,T,hvcoord,nt,ntQ)
+      call get_cp_star(cp_star,elem%state%Q(:,:,:,1))
+      call get_kappa_star(kappa_star,elem%state%Q(:,:,:,1))
+      call get_temperature(elem,T,hvcoord,nt)
 
       Rstar = cp_star*kappa_star
       field = pnh/(Rstar*T)
@@ -148,7 +148,7 @@ contains
      dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
   enddo
-  call get_cp_star(cp_star,elem%state%Qdp(:,:,:,1,ntQ),dp(:,:,:))
+  call get_cp_star(cp_star,elem%state%Q(:,:,:,1))
   
   pottemp(:,:,:) = elem%state%theta_dp_cp(:,:,:,nt)/(Cp_star(:,:,:)*dp(:,:,:))
   
@@ -156,7 +156,7 @@ contains
   
 
   !_____________________________________________________________________
-  subroutine get_temperature(elem,temperature,hvcoord,nt,ntQ)
+  subroutine get_temperature(elem,temperature,hvcoord,nt)
   !
   ! Should only be called outside timestep loop, state variables on reference levels
   !
@@ -166,7 +166,6 @@ contains
   real (kind=real_kind), intent(out)  :: temperature(np,np,nlev)
   type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
   integer, intent(in) :: nt
-  integer, intent(in) :: ntQ
   
   !   local
   real (kind=real_kind) :: dp(np,np,nlev)
@@ -186,8 +185,8 @@ contains
      dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
   enddo
-  call get_cp_star(cp_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
-  call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
+  call get_cp_star(cp_star,elem%state%Q(:,:,:,1))
+  call get_kappa_star(kappa_star,elem%state%Q(:,:,:,1))
 
 
   call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),&
@@ -228,7 +227,7 @@ contains
      dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
   enddo
-  call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
+  call get_kappa_star(kappa_star,elem%state%Q(:,:,:,1))
 
   call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),&
        dp,elem%state%phinh(:,:,:,nt),elem%state%phis(:,:),kappa_star,&
@@ -255,7 +254,7 @@ contains
       (hvcoord%hybi(k+1)-hvcoord%hybi(k))*elem%state%ps_v(:,:,nt)
     enddo
 
-    call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
+    call get_kappa_star(kappa_star,elem%state%Q(:,:,:,1))
 
     call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),&
          dp,elem%state%phinh(:,:,:,nt),elem%state%phis(:,:),kappa_star,&
@@ -286,7 +285,7 @@ contains
                (hvcoord%hybi(k+1)-hvcoord%hybi(k))*elem%state%ps_v(:,:,nt)
        enddo
        
-       call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
+       call get_kappa_star(kappa_star,elem%state%Q(:,:,:,1))
        
        call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),&
             dp,elem%state%phinh(:,:,:,nt),elem%state%phis(:,:),kappa_star,&
@@ -300,6 +299,60 @@ contains
        
     else
        phi = elem%state%phinh(:,:,:,nt)
+    endif
+    
+  end subroutine
+
+       
+
+  subroutine get_phi_i(elem,phi_i,hvcoord,nt,ntQ)
+    implicit none
+    
+    type (element_t),       intent(in)  :: elem
+    type (hvcoord_t),       intent(in)  :: hvcoord
+    real (kind=real_kind),  intent(out) :: phi_i(np,np,nlevp)
+    integer,                intent(in)  :: nt
+    integer,                intent(in)  :: ntQ
+    
+    real (kind=real_kind), dimension(np,np,nlev) :: dp,dpnh,kappa_star
+    real (kind=real_kind) :: phi(np,np,nlev)
+    real (kind=real_kind) :: pnh(np,np,nlev)
+    real (kind=real_kind) :: exner(np,np,nlev)
+    real (kind=real_kind) :: temp(np,np,nlev)
+    integer :: k
+
+    ! compute hydrostatic version first:
+
+    do k=1,nlev
+       dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+            (hvcoord%hybi(k+1)-hvcoord%hybi(k))*elem%state%ps_v(:,:,nt)
+    enddo
+    
+    call get_kappa_star(kappa_star,elem%state%Q(:,:,:,1))
+    
+    call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),&
+         dp,elem%state%phinh(:,:,:,nt),elem%state%phis(:,:),kappa_star,&
+         pnh,dpnh,exner)
+    
+    do k=1,nlev
+       !temp(:,:,k) = theta_dp_cp(:,:,k)*(exner_i(:,:,k+1)-exner_i(:,:,k))/dp3d(:,:,k)           
+       temp(:,:,k) = kappa_star(:,:,k)*elem%state%theta_dp_cp(:,:,k,nt)*exner(:,:,k)/pnh(:,:,k)
+    enddo
+    
+    phi_i(:,:,nlevp) = elem%state%phis(:,:)
+    ! traditional Hydrostatic integral
+    do k=nlev,1,-1
+       phi_i(:,:,k)=phi_i(:,:,k+1)+temp(:,:,k)
+    enddo
+    
+    if (.not. theta_hydrostatic_mode) then
+       phi = elem%state%phinh(:,:,:,nt)
+       ! average phinh 
+       phi_i(:,:,2:nlev)= (phi(:,:,2:nlev)+phi(:,:,1:nlev-1))/2
+
+       ! boundaries:
+       phi_i(:,:,nlevp) = elem%state%phis(:,:)
+       phi_i(:,:,1)     = phi(:,:,1)+temp(:,:,1)/2
     endif
     
   end subroutine
@@ -327,7 +380,7 @@ contains
 
 
   !_____________________________________________________________________
-  subroutine set_thermostate(elem,temperature,hvcoord,nt,ntQ)
+  subroutine set_thermostate(elem,temperature,hvcoord)
   !
   ! Assuming a hydrostatic intital state and given surface pressure,
   ! and no moisture, compute theta and phi 
@@ -341,6 +394,7 @@ contains
   real (kind=real_kind), intent(in) :: temperature(np,np,nlev)
   type (hvcoord_t),     intent(in)  :: hvcoord                      ! hybrid vertical coordinate struct
   
+#if 0
   !   local
   real (kind=real_kind) :: p(np,np,nlev)
   real (kind=real_kind) :: dp(np,np,nlev)
@@ -378,6 +432,8 @@ contains
      endif
   enddo
 
+#endif
+
   end subroutine set_thermostate
 
 
@@ -405,13 +461,30 @@ contains
 
   end subroutine set_state
 
+
+
+  subroutine set_state_i(u,v,w,T,ps,phis,p,zm,g,i,j,k,elem,n0,n1)
+  !
+  ! set state variables at node(i,j,k) at layer interfaces
+  ! preqx model has no such variables, so do nothing
+  !
+  real(real_kind),  intent(in)    :: u,v,w,T,ps,phis,p,zm,g
+  integer,          intent(in)    :: i,j,k,n0,n1
+  type(element_t),  intent(inout) :: elem
+
+  end subroutine set_state_i
+
+
+
+
   !_____________________________________________________________________
-  subroutine set_elem_state(u,v,w,T,ps,phis,p,dp,zm,g,elem,n0,n1,ntQ)
+  subroutine set_elem_state(u,v,w,w_i,T,ps,phis,p,dp,zm,zi,g,elem,n0,n1,ntQ)
 
   ! set element state variables
   ! works for both dry and moist initial conditions
 
   real(real_kind), dimension(np,np,nlev), intent(in):: u,v,w,T,p,dp,zm
+  real(real_kind), dimension(np,np,nlevp), intent(in):: w_i,zi
   real(real_kind), dimension(np,np),      intent(in):: ps,phis
   real(real_kind),  intent(in)    :: g
   integer,          intent(in)    :: n0,n1,ntQ
@@ -420,8 +493,8 @@ contains
   real(real_kind), dimension(np,np,nlev) :: cp_star,kappa_star
 
   ! get cp and kappa for dry or moist cases
-  call get_cp_star(cp_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
-  call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
+  call get_cp_star(cp_star,elem%state%Q(:,:,:,1))
+  call get_kappa_star(kappa_star,elem%state%Q(:,:,:,1))
 
   do n=n0,n1
     ! set prognostic state variables at level midpoints
@@ -438,12 +511,13 @@ contains
   end subroutine set_elem_state
 
   !_____________________________________________________________________
-  subroutine get_state(u,v,w,T,pnh,dp,ps,rho,zm,g,elem,hvcoord,nt,ntQ)
+  subroutine get_state(u,v,w,T,pnh,dp,ps,rho,zm,zi,g,elem,hvcoord,nt,ntQ)
 
     ! get state variables at layer midpoints
     ! used by idealized tests to compute idealized physics forcing terms
 
     real(real_kind), dimension(np,np,nlev), intent(inout) :: u,v,w,T,pnh,dp,zm,rho
+    real(real_kind), dimension(np,np,nlevp), intent(inout) :: zi
     real(real_kind), dimension(np,np),      intent(inout) :: ps
     real(real_kind), intent(in)    :: g
     integer,         intent(in)    :: nt,ntQ
@@ -466,8 +540,8 @@ contains
     do k=1,nlev
        dp(:,:,k)=(hvcoord%hyai(k+1)-hvcoord%hyai(k))*hvcoord%ps0 +(hvcoord%hybi(k+1)-hvcoord%hybi(k))*ps(:,:)
     enddo
-    call get_cp_star(cp_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
-    call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
+    call get_cp_star(cp_star,elem%state%Q(:,:,:,1))
+    call get_kappa_star(kappa_star,elem%state%Q(:,:,:,1))
     call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),dp,phi,phis,kappa_star,pnh,dpnh,exner)
 
     T     = elem%state%theta_dp_cp(:,:,:,nt)/(Cp_star*dp)*exner
@@ -476,13 +550,11 @@ contains
     if(theta_hydrostatic_mode) then
        w = -(elem%derived%omega_p*pnh)/(rho*g)
        
-       do k=1,nlev
-          !temp(:,:,k) = theta_dp_cp(:,:,k)*(exner_i(:,:,k+1)-exner_i(:,:,k))/dp3d(:,:,k)           
-          temp(:,:,k) = kappa_star(:,:,k)*elem%state%theta_dp_cp(:,:,k,nt)*exner(:,:,k)/pnh(:,:,k)
-       enddo
-       call preq_hydrostatic_v2(phi,elem%state%phis,temp)
     endif
-    zm  = phi/g   
+    call get_phi(elem,zm,hvcoord,nt,ntQ); zm=zm/g
+    call get_phi_i(elem,zi,hvcoord,nt,ntQ); zi=zi/g
+
+    
 
   end subroutine get_state
 
@@ -501,7 +573,7 @@ contains
 
 
   !_____________________________________________________________________
-  subroutine set_forcing_rayleigh_friction(elem, zm, ztop, zc, tau, u0,v0, n)
+  subroutine set_forcing_rayleigh_friction(elem, zm, zi, ztop, zc, tau, u0,v0, n)
   !
   ! test cases which use rayleigh friciton will call this with the relaxation coefficient
   ! f_d, and the reference state u0,v0.  Currently assume w0 = 0
@@ -510,6 +582,7 @@ contains
 
   type(element_t), intent(inout):: elem
   real(real_kind), intent(in)   :: zm(np,np,nlev) ! height at layer midpoints
+  real(real_kind), intent(in)   :: zi(nlevp)      ! height at interfaces
   real(real_kind), intent(in)   :: ztop           ! top of atm height
   real(real_kind), intent(in)   :: zc             ! cutoff height
   real(real_kind), intent(in)   :: tau            ! damping timescale
@@ -533,7 +606,7 @@ contains
   end subroutine 
 
   !_____________________________________________________________________
-  subroutine tests_finalize(elem, hvcoord,ns,ne,ie)
+  subroutine tests_finalize(elem, hvcoord,ie)
 
   ! Now that all variables have been initialized, set phi to be in hydrostatic balance
 
@@ -541,8 +614,9 @@ contains
 
   type(hvcoord_t),     intent(in)   :: hvcoord
   type(element_t),     intent(inout):: elem
-  integer,             intent(in)   :: ns,ne
   integer, optional,   intent(in)   :: ie ! optional element index, to save initial state
+#if 0
+  integer,             intent(in)   :: ns,ne
 
   integer :: k,tl, ntQ
   real(real_kind), dimension(np,np,nlev) :: dp, kappa_star
@@ -555,7 +629,7 @@ real(real_kind), dimension(np,np,nlev) :: pnh,dpnh,exner
   enddo
 
   ntQ=1
-  call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
+  call get_kappa_star(kappa_star,elem%state%Q(:,:,:,1))
   call get_moist_phinh(hvcoord,elem%state%phis,elem%state%theta_dp_cp(:,:,:,ns),dp,kappa_star,elem%state%phinh(:,:,:,ns))
 
   ! verify discrete hydrostatic balance
@@ -577,7 +651,7 @@ real(real_kind), dimension(np,np,nlev) :: pnh,dpnh,exner
   enddo
 
   if(present(ie)) call save_initial_state(elem%state,ie)
-
+#endif
 
   end subroutine tests_finalize
 
@@ -587,24 +661,17 @@ real(real_kind), dimension(np,np,nlev) :: pnh,dpnh,exner
 
 
 
-
-
-
-
-
-
-
-
   !_____________________________________________________________________
-  subroutine get_kappa_star(kappa_star,Qdp,dp)
+  subroutine get_kappa_star(kappa_star,Q)
   !
-  ! note: interface written in this way so that it can be called outside timelevel loop,
-  ! where dp is computed from reverence levels, or inside timelevel loop where dp = prognostic dp3d
+  ! note: interface written in this way so that it can be called outside
+  ! timelevel loop,
+  ! where dp is computed from reverence levels, or inside timelevel loop where
+  ! dp = prognostic dp3d
   !
   implicit none
   real (kind=real_kind), intent(out)  :: kappa_star(np,np,nlev)
-  real (kind=real_kind), intent(in)   :: Qdp(np,np,nlev)
-  real (kind=real_kind), intent(in)   :: dp(np,np,nlev)
+  real (kind=real_kind), intent(in)   :: Q(np,np,nlev)
   !   local
   integer :: k
 
@@ -613,31 +680,33 @@ real(real_kind), dimension(np,np,nlev) :: pnh,dpnh,exner
   !$omp parallel do default(shared), private(k)
 #endif
      do k=1,nlev
-        kappa_star(:,:,k) = (Rgas + (Rwater_vapor - Rgas)*Qdp(:,:,k)/dp(:,:,k)) / &
-             (Cp + (Cpwater_vapor-Cp)*Qdp(:,:,k)/dp(:,:,k) )
+        kappa_star(:,:,k) = (Rgas + (Rwater_vapor - Rgas)*Q(:,:,k))/ &
+             (Cp + (Cpwater_vapor-Cp)*Q(:,:,k) )
      enddo
   else if (use_moisture .and. use_cpstar==0) then
 #if (defined COLUMN_OPENMP)
   !$omp parallel do default(shared), private(k)
 #endif
      do k=1,nlev
-        kappa_star(:,:,k) = (Rgas + (Rwater_vapor - Rgas)*Qdp(:,:,k)/dp(:,:,k)) / Cp
+        kappa_star(:,:,k) = (Rgas + (Rwater_vapor - Rgas)*Q(:,:,k))/ Cp
      enddo
   else
      kappa_star(:,:,:)=Rgas/Cp
   endif
-  end subroutine 
+  end subroutine
+
 
   !_____________________________________________________________________
-  subroutine get_cp_star(cp_star,Qdp,dp)
+  subroutine get_cp_star(cp_star,Q)
   !
-  ! note: interface written in this way so that it can be called outside timelevel loop,
-  ! where dp is computed from reverence levels, or inside timelevel loop where dp = prognostic dp3d
+  ! note: interface written in this way so that it can be called outside
+  ! timelevel loop,
+  ! where dp is computed from reverence levels, or inside timelevel loop where
+  ! dp = prognostic dp3d
   !
   implicit none
   real (kind=real_kind), intent(out):: cp_star(np,np,nlev)
-  real (kind=real_kind), intent(in) :: Qdp(np,np,nlev)
-  real (kind=real_kind), intent(in) :: dp(np,np,nlev)
+  real (kind=real_kind), intent(in) :: Q(np,np,nlev)
 
   integer :: k
   if (use_moisture .and. use_cpstar==1) then
@@ -645,13 +714,12 @@ real(real_kind), dimension(np,np,nlev) :: pnh,dpnh,exner
   !$omp parallel do default(shared), private(k)
 #endif
      do k=1,nlev
-        cp_star(:,:,k) = (Cp + (Cpwater_vapor-Cp)*Qdp(:,:,k)/dp(:,:,k) )
+        cp_star(:,:,k) = (Cp + (Cpwater_vapor-Cp)*Q(:,:,k) )
      enddo
   else
      cp_star(:,:,:)=Cp
   endif
   end subroutine
-
 
 
 

@@ -15,12 +15,13 @@ module common_movie_mod
 
 
 #ifdef _PRIM
-  integer, parameter :: varcnt =  30
+  integer, parameter :: varcnt =  33
 
   integer, parameter :: maxdims =  6
 
   character*(*), parameter :: varnames(varcnt)=(/'ps         ', &
                                                  'geos       ', &
+                                                 'precl      ', &
                                                  'area       ', &
                                                  'cv_lat     ', &
                                                  'cv_lon     ', &
@@ -32,6 +33,7 @@ module common_movie_mod
                                                  'Th         ', &
                                                  'u          ', &
                                                  'v          ', &
+                                                 'w          ', &
                                                  'ke         ', &
                                                  'hypervis   ', &
                                                  'Q          ', &
@@ -40,6 +42,7 @@ module common_movie_mod
                                                  'Q4         ', &
                                                  'geo        ', &
                                                  'omega      ', &
+                                                 'dp3d       ', &
                                                  'lat        ', &
                                                  'lon        ', &
                                                  'lev        ', &
@@ -52,7 +55,8 @@ module common_movie_mod
 
 
   integer, parameter :: vardims(maxdims,varcnt) =  reshape( (/ 1,5,0,0,0,0, & ! ps
-                                                               1,5,0,0,0,0, & ! geos
+                                                               1,0,0,0,0,0, & ! geos
+                                                               1,5,0,0,0,0, & ! precl
                                                                1,0,0,0,0,0, & ! area
                                                                1,2,0,0,0,0, & ! cv_lat
                                                                1,2,0,0,0,0, & ! cv_lon
@@ -64,6 +68,7 @@ module common_movie_mod
                                                                1,2,5,0,0,0, & ! Th
                                                                1,2,5,0,0,0, & ! u
                                                                1,2,5,0,0,0, & ! v
+                                                               1,2,5,0,0,0, & ! w
                                                                1,2,5,0,0,0, & ! ke
                                                                1,5,0,0,0,0, & ! hypervis
                                                                1,2,5,0,0,0, & ! Q
@@ -72,6 +77,7 @@ module common_movie_mod
                                                                1,2,5,0,0,0, & ! Q4
                                                                1,2,5,0,0,0, & ! geo
                                                                1,2,5,0,0,0, & !omega
+                                                               1,2,5,0,0,0, & !dp3d
                                                                1,0,0,0,0,0, &  ! lat
                                                                1,0,0,0,0,0, &  ! lon
                                                                2,0,0,0,0,0, &  ! lev
@@ -83,17 +89,17 @@ module common_movie_mod
                                                                5,0,0,0,0,0 /),&  ! time
                                                                shape=(/maxdims,varcnt/))
 
-  integer, parameter :: vartype(varcnt)=(/nf_double, nf_double,nf_double,nf_double,nf_double,&
-                                          nf_int,    nf_double,nf_double,nf_double,nf_double,&
-                                          nf_double, nf_double,nf_double,nf_double,nf_double,&
-                                          nf_double, nf_double,nf_double,nf_double,nf_double,&
-                                          nf_double, nf_double,nf_double,nf_double,nf_double,&
+  integer, parameter :: vartype(varcnt)=(/nf_double, nf_double,nf_double, nf_double,nf_double,nf_double,& !ps:cv_lon
+                                          nf_int,    nf_double,nf_double,nf_double,nf_double,& !corners:T
+                               nf_double, nf_double, nf_double,nf_double,nf_double,nf_double,& !Th:hv
+                                          nf_double, nf_double,nf_double,nf_double,nf_double,& !Q:geo
+                                          nf_double, nf_double,nf_double,nf_double,nf_double,nf_double,& !omega:ilev
                                           nf_double, nf_double,nf_double,nf_double,nf_double/)
-  logical, parameter :: varrequired(varcnt)=(/.false.,.false.,.false.,.false.,.false.,&
+  logical, parameter :: varrequired(varcnt)=(/.false.,.false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
+                                      .false.,.false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
-                                              .false.,.false.,.false.,.false.,.false.,&
-                                              .false.,.true. ,.true. ,&
+                                              .false.,.false.,.true. ,.true. ,&
                                               .true. ,.true. ,&   ! lev,ilev
                                               .true. ,.true. ,&   ! hy arrays
                                               .true. ,.true. ,&   ! hy arrays
