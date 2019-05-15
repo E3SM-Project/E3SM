@@ -92,9 +92,11 @@ OPTION(BUILD_HOMME_PREQX_KOKKOS "Primitive equations FEM with Kokkos" OFF)
 OPTION(BUILD_HOMME_PESE  "Primitive equations with vertical spectral elements" OFF)
 OPTION(BUILD_HOMME_SWIM  "Shallow water equations implicit" OFF)
 OPTION(BUILD_HOMME_PRIM  "Primitive equations implicit" OFF)
+OPTION(HOMME_ENABLE_COMPOSE "Build COMPOSE semi-Lagrangian tracer transport code" ON)
 
 #by default we don't need cxx
 SET(HOMME_USE_CXX FALSE)
+SET(HOMME_USE_KOKKOS FALSE)
 
 # swim and prim executables require C++ compiler
 IF(${BUILD_HOMME_SWIM} OR ${BUILD_HOMME_PRIM})
@@ -106,7 +108,6 @@ IF (${HOMME_USE_TRILINOS})
   SET (HOMME_USE_CXX TRUE)
 ENDIF()
 #if kokkos is needed, then so is cxx
-SET (HOMME_USE_KOKKOS FALSE)
 IF (${BUILD_HOMME_PREQX_KOKKOS})
   SET (HOMME_USE_KOKKOS TRUE)
   SET (HOMME_USE_CXX TRUE)
@@ -118,10 +119,15 @@ IF (${BUILD_HOMME_PREQX_KOKKOS})
     SET (BUILD_HOMME_PREQX TRUE)
   ENDIF ()
 ENDIF ()
+IF (${HOMME_ENABLE_COMPOSE})
+  SET (HOMME_USE_CXX TRUE)
+  SET (HOMME_USE_KOKKOS TRUE)
+ENDIF ()
 
 IF (${HOMME_USE_CXX})
   MESSAGE(STATUS "This configuration of HOMME requires a C++ compiler")
   ENABLE_LANGUAGE(CXX)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 ENDIF ()
 
 # Option to use ARKode package from SUNDIALS
@@ -327,10 +333,24 @@ IF (NOT (CPRNC_DIR))
   ADD_SUBDIRECTORY(utils/cime/tools/cprnc)
 ENDIF ()
 
+IF (${HOMME_USE_KOKKOS})
+  INCLUDE(Kokkos)
+ENDIF ()
+
 IF (${HOMME_USE_KOKKOS} AND ${HOMME_BUILD_EXECS})
   # Add unit tests for C++ code
   ADD_SUBDIRECTORY(test/unit_tests)
 ENDIF ()
+
+# Add libcompose, consisting of just C++ files, so we can build it just once for
+# all exes. It does not depend on compile-time sizes.
+if (HOMME_ENABLE_COMPOSE)
+  add_definitions(-DHOMME_ENABLE_COMPOSE)
+  set (COMPOSE_LIBRARY "compose")
+  add_subdirectory(src/share/compose)
+else ()
+  message ("-- COMPOSE semi-Lagrangian transport was explicitly disabled")
+endif ()
 
 SET(EXEC_LIST ""  CACHE INTERNAL "List of configured executables")
 IF(${BUILD_HOMME_SWEQX})
@@ -377,3 +397,9 @@ ADD_CUSTOM_TARGET(clean-all
    COMMAND ${CMAKE_BUILD_TOOL} clean
    COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/clean-cmake-files.cmake"
 )
+
+IF (${HOMME_USE_KOKKOS})
+  # Put this last so that tribits.cmake's 'check' target doesn't conflict with
+  # Homme's.
+  install_kokkos_if_needed()
+ENDIF ()

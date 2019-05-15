@@ -28,6 +28,7 @@ module edgetype_mod
      integer(kind=int_kind)  :: globalID(4*max_elements_attached_to_node-8)
      integer(kind=int_kind)  :: loc2buf(4*max_elements_attached_to_node-8)
      type (cartesian3D_t)  , pointer  :: neigh_corners(:,:) => null()
+     integer(kind=int_kind), pointer  :: globalID_neigh_corners(:) => null() ! GID in the order of neigh_corners
      integer                          :: actual_neigh_edges
      logical(kind=log_kind)  :: reverse(4*max_elements_attached_to_node-8)
   end type EdgeDescriptor_t
