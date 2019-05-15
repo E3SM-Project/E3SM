@@ -21,8 +21,9 @@ module fv_physics_coupling_mod
   use constituents,   only: pcnst, cnst_name
   use dimensions_mod, only: np, npsq, nelemd, nlev, fv_nphys
   use ppgrid,         only: pcols, pver, pverp
-    
+  
   private
+
   ! These method encapsulate the coupling method for the fv phys grid,
   ! they are used by d_p_coupling() and p_d_coupling() in dp_coupling.F90 
   public :: fv_phys_to_dyn
@@ -32,7 +33,9 @@ module fv_physics_coupling_mod
 contains
   !=================================================================================================
   !=================================================================================================
-  subroutine fv_phys_to_dyn(elem,T_tmp,uv_tmp,Q_tmp)
+  subroutine fv_phys_to_dyn(elem,T_tmp,uv_tmp,q_tmp)
+    ! Purpose: Copy physics state to dynamics grid
+    use control_mod,    only: ftype
     implicit none
     !---------------------------------------------------------------------------
     ! interface arguments
@@ -42,8 +45,7 @@ contains
     real(kind=real_kind), intent(inout) :: q_tmp (:,:,:,:)  ! temp to hold advected constituents
     ! local variables
     integer(kind=int_kind)   :: ie, m, i, j, icol, ilyr    ! loop iterators
-    integer(kind=int_kind)   :: gi(2), gj(2)               ! index list used to simplify pg2 case
-    integer(kind=int_kind)   :: di, dj
+    integer(kind=int_kind)   :: ii, jj, gi, gj             ! GLL loop iterator and indices for pg2
     !---------------------------------------------------------------------------
     ! Copy tendencies on the physics grid over to the dynamics grid (GLL)
     !---------------------------------------------------------------------------
@@ -55,7 +57,7 @@ contains
           do ilyr = 1,pver
             !-------------------------------------------------------------------
             !-------------------------------------------------------------------
-            ! the pg1 case is simple, not sure how to generalize with pg2
+            ! the pg1 case is simple, just copy to all GLL nodes in the element
             if (fv_nphys == 1) then
               elem(ie)%derived%FT(:,:,  ilyr)   = T_tmp (icol,  ilyr,ie)
               elem(ie)%derived%FM(:,:,1,ilyr)   = uv_tmp(icol,1,ilyr,ie)
@@ -66,21 +68,28 @@ contains
             end if ! fv_nphys == 1
             !-------------------------------------------------------------------
             !-------------------------------------------------------------------
-            ! for pg2 we need to copy the FV state to quadrants of GLL grid
+            ! for pg2 we need to copy the FV physics state to quadrants of GLL grid
             if (fv_nphys == 2) then
-              ! define indices of GLL points in quadrant
-              di = (i-1)+(i-2)  ! either i=1 & di=-1 or i=2 & di=+1
-              dj = (j-1)+(j-2)  ! either j=1 & dj=-1 or j=2 & dj=+1
-              ! gi & gj are indices of the 4 GLL nodes in each element quadrant
-              gi(1:2) = (/i+1,i+1+di/)
-              gj(1:2) = (/j+1,j+1+dj/)
-              ! copy physics column values to GLL nodes
-              elem(ie)%derived%FT(gi,gj,ilyr)   = T_tmp(icol,   ilyr,ie)
-              elem(ie)%derived%FM(gi,gj,1,ilyr) = uv_tmp(icol,1,ilyr,ie)
-              elem(ie)%derived%FM(gi,gj,2,ilyr) = uv_tmp(icol,2,ilyr,ie)
-              do m = 1,pcnst
-                elem(ie)%derived%FQ(gi,gj,ilyr,m) = q_tmp(icol,ilyr,m,ie)
-              end do
+              do jj = 1,2
+                do ii = 1,2
+                  if (i==1) gi = ii
+                  if (j==1) gj = jj
+                  if (i==2) gi = ii+2
+                  if (j==2) gj = jj+2
+                  elem(ie)%derived%FT(gi,gj,  ilyr) =  T_tmp(icol,  ilyr,ie)
+                  elem(ie)%derived%FM(gi,gj,1,ilyr) = uv_tmp(icol,1,ilyr,ie)
+                  elem(ie)%derived%FM(gi,gj,2,ilyr) = uv_tmp(icol,2,ilyr,ie)
+                  do m = 1,pcnst
+                    if ( ftype==2 .or. ftype==3 ) then
+                      ! Add in dynamics state since initial physics state was taken out
+                      elem(ie)%derived%FQ(gi,gj,ilyr,m) = q_tmp(icol,ilyr,m,ie)&
+                                                         +elem(ie)%state%q(gi,gj,ilyr,m)
+                    else
+                      elem(ie)%derived%FQ(gi,gj,ilyr,m) = q_tmp(icol,ilyr,m,ie)
+                    end if
+                  end do
+                end do ! ii
+              end do ! jj
             end if ! fv_nphys == 2
             !-------------------------------------------------------------------
             !-------------------------------------------------------------------
@@ -90,10 +99,13 @@ contains
     end do ! ie
     !---------------------------------------------------------------------------
     !---------------------------------------------------------------------------
+
   end subroutine fv_phys_to_dyn
   !=================================================================================================
   !=================================================================================================
   subroutine fv_phys_to_dyn_topo(elem,phys_tmp)
+    ! Purpose: topo is initially defined on phys grid, 
+    !          so this routine copys it to the dynamics grid
     use parallel_mod,   only: par
     use edgetype_mod,   only: EdgeBuffer_t
     use edge_mod,       only: initEdgeBuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
@@ -105,11 +117,10 @@ contains
     real(kind=real_kind), intent(inout) :: phys_tmp (:,:) ! temp array to hold PHIS field from file
     ! local variables
     integer(kind=int_kind)   :: ie, i, j, icol            ! loop iterators
-    integer(kind=int_kind)   :: gi(2), gj(2)              ! index list used to simplify pg2 case
-    integer(kind=int_kind)   :: di, dj
+    integer(kind=int_kind)   :: ii, jj, gi, gj            ! GLL loop iterator and indices for pg2
     type(EdgeBuffer_t)       :: edgebuf
     !---------------------------------------------------------------------------
-    ! Copy tendencies on the physics grid over to the dynamics grid (GLL)
+    ! Copy topography on the physics grid over to the dynamics grid (GLL)
     !---------------------------------------------------------------------------
     do ie = 1,nelemd
       icol = 0
@@ -126,14 +137,15 @@ contains
           !-------------------------------------------------------------------
           ! for pg2 we need to copy the FV state to quadrants of GLL grid
           if (fv_nphys == 2) then
-            ! define indices of GLL points in quadrant
-            di = (i-1)+(i-2)  ! either i=1 & di=-1 or i=2 & di=+1
-            dj = (j-1)+(j-2)  ! either j=1 & dj=-1 or j=2 & dj=+1
-            ! gi & gj are indices of the 4 GLL nodes in each element quadrant
-            gi(1:2) = (/i+1,i+1+di/)
-            gj(1:2) = (/j+1,j+1+dj/)
-            ! copy physics column values to GLL nodes
-            elem(ie)%state%phis(gi,gj) = phys_tmp(icol,ie)
+            do jj = 1,2
+              do ii = 1,2
+                if (i==1) gi = ii
+                if (j==1) gj = jj
+                if (i==2) gi = ii+2
+                if (j==2) gj = jj+2
+                elem(ie)%state%phis(gi,gj) = phys_tmp(icol,ie)
+              end do ! ii
+            end do ! jj
           end if ! fv_nphys == 2
           !-------------------------------------------------------------------
           !-------------------------------------------------------------------
@@ -161,6 +173,7 @@ contains
   !=================================================================================================
   !=================================================================================================
   subroutine dyn_to_fv_phys(elem,ps_tmp,zs_tmp,T_tmp,uv_tmp,w_tmp,Q_tmp)
+    ! Purpose: average dynamics state over subcells and assign to physics state
     use derivative_mod,     only: subcell_integration
     use dyn_comp,           only: TimeLevel
     implicit none
@@ -172,17 +185,15 @@ contains
     real(kind=real_kind), intent(inout) :: T_tmp (:,:,:)    ! temp array to hold T
     real(kind=real_kind), intent(inout) :: uv_tmp(:,:,:,:)  ! temp array to hold u and v
     real(kind=real_kind), intent(inout) :: w_tmp (:,:,:)    ! temp array to hold omega
-    real(kind=real_kind), intent(inout) :: q_tmp (:,:,:,:)  ! temp to hold advected constituents
+    real(kind=real_kind), intent(inout) :: Q_tmp (:,:,:,:)  ! temp to hold advected constituents
     ! local variables
     integer(kind=int_kind) :: ie, m, icol, ilyr             ! loop iterators
     integer                :: tl_f                          ! time level
     integer                :: nphys_sq
     real(r8), dimension(np,np)             :: tmp_area
     real(r8), dimension(fv_nphys,fv_nphys) :: inv_area
-    real(r8), dimension(fv_nphys*fv_nphys) :: inv_area_reshape
     real(r8), dimension(np,np)             :: dp_gll
-    real(r8), dimension(fv_nphys,fv_nphys) :: dp_fvm
-    real(r8), dimension(fv_nphys*fv_nphys) :: inv_dp_fvm_reshape
+    real(r8), dimension(fv_nphys,fv_nphys) :: inv_dp_fvm
     !---------------------------------------------------------------------------
     ! Integrate dynamics field with appropriate weighting 
     ! to get average state in each physics cell
@@ -194,43 +205,41 @@ contains
     do ie = 1,nelemd
 
       inv_area(:,:) = 1.0_r8/subcell_integration(tmp_area,np,fv_nphys,elem(ie)%metdet(:,:))
-      inv_area_reshape(:) = RESHAPE( inv_area(:,:), (/nphys_sq/) )
 
       ps_tmp(:,ie) = RESHAPE( subcell_integration(                  &
                      elem(ie)%state%ps_v(:,:,tl_f),                 &
-                     np, fv_nphys, elem(ie)%metdet(:,:) ) ,         &
-                     (/nphys_sq/)  ) * inv_area_reshape
+                     np, fv_nphys, elem(ie)%metdet(:,:) )           &
+                     *inv_area , (/nphys_sq/) )
       zs_tmp(:,ie) = RESHAPE( subcell_integration(                  &
                      elem(ie)%state%phis(:,:),                      &
-                     np, fv_nphys, elem(ie)%metdet(:,:) ) ,         &
-                     (/nphys_sq/) ) * inv_area_reshape
+                     np, fv_nphys, elem(ie)%metdet(:,:) )           &
+                     *inv_area , (/nphys_sq/) )
 
       do ilyr = 1,pver
 
         dp_gll = elem(ie)%state%dp3d(:,:,ilyr,tl_f)
-        dp_fvm = subcell_integration(dp_gll,np,fv_nphys,elem(ie)%metdet(:,:))
-        inv_dp_fvm_reshape = 1.0 / RESHAPE( dp_fvm , (/nphys_sq/) )
+        inv_dp_fvm = 1.0 / subcell_integration(dp_gll,np,fv_nphys,elem(ie)%metdet(:,:))
 
         T_tmp(:,ilyr,ie)      = RESHAPE( subcell_integration(             &
                                 elem(ie)%state%T(:,:,ilyr,tl_f)*dp_gll,   &
-                                np, fv_nphys, elem(ie)%metdet(:,:) ) ,    &
-                                (/nphys_sq/) ) *inv_dp_fvm_reshape
+                                np, fv_nphys, elem(ie)%metdet(:,:) )      &
+                                *inv_dp_fvm, (/nphys_sq/) )
 
         w_tmp(:,ilyr,ie)      = RESHAPE( subcell_integration(             &
                                 elem(ie)%derived%omega_p(:,:,ilyr),       &
-                                np, fv_nphys, elem(ie)%metdet(:,:) ) ,    &
-                                (/nphys_sq/) ) *inv_area_reshape
+                                np, fv_nphys, elem(ie)%metdet(:,:) )      &
+                                *inv_area , (/nphys_sq/) )
         do m = 1,2
           uv_tmp(:,m,ilyr,ie) = RESHAPE( subcell_integration(             &
                                 elem(ie)%state%V(:,:,m,ilyr,tl_f),        &
-                                np, fv_nphys, elem(ie)%metdet(:,:) ) ,    &
-                                (/nphys_sq/) ) *inv_area_reshape
+                                np, fv_nphys, elem(ie)%metdet(:,:) )      &
+                                *inv_area , (/nphys_sq/) )
         end do
         do m = 1,pcnst
           Q_tmp(:,ilyr,m,ie)  = RESHAPE( subcell_integration(             &
                                 elem(ie)%state%Q(:,:,ilyr,m)*dp_gll,      &
-                                np, fv_nphys, elem(ie)%metdet(:,:) ) ,    &
-                                (/nphys_sq/) ) *inv_dp_fvm_reshape
+                                np, fv_nphys, elem(ie)%metdet(:,:) )      &
+                                *inv_dp_fvm, (/nphys_sq/) )
         end do
 
       end do ! ilyr

@@ -62,7 +62,7 @@ CONTAINS
     integer(kind=int_kind)   :: ie                        ! indices over elements
     integer(kind=int_kind)   :: lchnk, icol, ilyr         ! indices over chunks, columns, layers
     integer                  :: tl_f                      ! time level
-    integer                  :: ncols,ierr                ! 
+    integer                  :: ncols, ierr, ncol_d       ! 
     integer                  :: i,j,m                     ! loop iterators
     integer(kind=int_kind)   :: ioff                      ! column index within block
     integer                  :: pgcols(pcols)             ! global column indices for chunk
@@ -73,7 +73,12 @@ CONTAINS
     integer,     allocatable :: bpter(:,:)                ! offsets into block buffer for packing 
     integer                  :: cpter(pcols,0:pver)       ! offsets into chunk buffer for unpacking 
     integer                  :: nphys, nphys_sq           ! physics grid parameters
-    real (kind=real_kind)    :: temperature(np,np,nlev)   ! 
+    real (kind=real_kind)    :: temperature(np,np,nlev)   ! Temperature from dynamics
+    ! Temp arrays for writing initial condition file when physics is on FV grid
+    real(kind=real_kind), allocatable :: ps_tmp_ic (:)
+    real(kind=real_kind), allocatable :: uv_tmp_ic (:,:,:)
+    real(kind=real_kind), allocatable :: T_tmp_ic  (:,:)
+    real(kind=real_kind), allocatable :: q_tmp_ic  (:,:,:)
     ! Frontogenesis
     real (kind=real_kind), allocatable :: frontgf(:,:,:)  ! frontogenesis function
     real (kind=real_kind), allocatable :: frontga(:,:,:)  ! frontogenesis angle 
@@ -124,6 +129,7 @@ CONTAINS
         call t_startf('dyn_to_fv_phys')
         call dyn_to_fv_phys(elem,ps_tmp,zs_tmp,T_tmp,uv_tmp,w_tmp,Q_tmp)
         call t_stopf('dyn_to_fv_phys')
+
         !-----------------------------------------------------------------------
         !-----------------------------------------------------------------------
       else ! fv_nphys > 0
@@ -131,7 +137,7 @@ CONTAINS
         ! Physics on GLL grid: collect unique points before copying
         !-----------------------------------------------------------------------
         call t_startf('UniquePoints')
-        do ie=1,nelemd
+        do ie = 1,nelemd
           ncols = elem(ie)%idxP%NumUniquePts
           call get_temperature(elem(ie),temperature,hvcoord,tl_f)
           call UniquePoints(elem(ie)%idxP,       elem(ie)%state%ps_v(:,:,tl_f), ps_tmp(1:ncols,ie))
@@ -153,13 +159,13 @@ CONTAINS
       uv_tmp(:,:,:,:)  = 0._r8
       w_tmp(:,:,:)     = 0._r8
       zs_tmp(:,:)      = 0._r8
-      Q_tmp(:,:,:,:)   = 0._r8
+      q_tmp(:,:,:,:)   = 0._r8
       if (use_gw_front) then
         frontgf(:,:,:) = 0._r8
         frontga(:,:,:) = 0._r8
       end if
 
-    endif ! par%dynproc
+    end if ! par%dynproc
 
     call t_startf('dpcopy')
     if (local_dp_map) then
@@ -190,15 +196,14 @@ CONTAINS
             if (use_gw_front) then
               pbuf_frontgf(icol,ilyr) = frontgf(ioff,ilyr,ie)
               pbuf_frontga(icol,ilyr) = frontga(ioff,ilyr,ie)
-            endif
+            end if
           end do ! ilyr
 
           do m = 1,pcnst
             do ilyr = 1,pver
-              phys_state(lchnk)%q(icol,ilyr,m)=Q_tmp(ioff,ilyr,m,ie)
-            end do
-          end do 
-
+              phys_state(lchnk)%q(icol,ilyr,m) = q_tmp(ioff,ilyr,m,ie)
+            end do ! ilyr
+          end do ! m
         end do ! icol
       end do ! lchnk
 
@@ -235,7 +240,7 @@ CONTAINS
                 bbuffer(bpter(icol,ilyr)+5) = frontga(icol,ilyr,ie)
               end if
               do m = 1,pcnst
-                bbuffer(bpter(icol,ilyr)+tsize-pcnst-1+m) = Q_tmp(icol,ilyr,m,ie)
+                bbuffer(bpter(icol,ilyr)+tsize-pcnst-1+m) = q_tmp(icol,ilyr,m,ie)
               end do
             end do ! ilyr
           end do ! icol
@@ -270,10 +275,10 @@ CONTAINS
              if (use_gw_front) then
                 pbuf_frontgf(icol,ilyr) = cbuffer(cpter(icol,ilyr)+4)
                 pbuf_frontga(icol,ilyr) = cbuffer(cpter(icol,ilyr)+5)
-             endif
+             end if
              do m = 1,pcnst
                 phys_state(lchnk)%q(icol,ilyr,m) = cbuffer(cpter(icol,ilyr)+tsize-pcnst-1+m)
-             end do
+             end do ! m
           end do ! ilyr
         end do ! icol
       end do ! lchnk
@@ -313,16 +318,69 @@ CONTAINS
     end do ! lchnk
 #endif
 
-    if (write_inithist() ) then
+    ! Set initial physics state for calculating final tendency for dynamics
+    !$omp parallel do private (lchnk, ncols, ilyr, icol)
+    if (fv_nphys > 0) then
       do lchnk = begchunk,endchunk
-        call outfld('T&IC',phys_state(lchnk)%t,pcols,lchnk)
-        call outfld('U&IC',phys_state(lchnk)%u,pcols,lchnk)
-        call outfld('V&IC',phys_state(lchnk)%v,pcols,lchnk)
-        call outfld('PS&IC',phys_state(lchnk)%ps,pcols,lchnk)
-        do m = 1,pcnst
-          call outfld(trim(cnst_name(m))//'&IC',phys_state(lchnk)%q(1,1,m), pcols,lchnk)
-        end do
+        ncols = get_ncols_p(lchnk)
+        do icol = 1,ncols
+          do ilyr = 1,pver
+            do m = 1,pcnst
+              phys_state(lchnk)%qo(icol,ilyr,m) = phys_state(lchnk)%q(icol,ilyr,m)
+            end do ! m
+          end do ! ilyr
+        end do ! icol
       end do ! lchnk
+    end if ! fv_nphys > 0
+
+    if ( write_inithist() ) then
+      if (fv_nphys > 0) then
+
+        ncol_d = np*np
+        ! Allocate temporary arrays
+        ! allocate(ps_tmp_ic (ncol_d))
+        ! allocate(uv_tmp_ic (ncol_d,2,pver))
+        ! allocate(T_tmp_ic  (ncol_d,pver))
+        ! allocate(q_tmp_ic  (ncol_d,pver,pcnst))
+        do ie = 1,nelemd
+          ncols = elem(ie)%idxP%NumUniquePts
+          ! call UniquePoints(elem(ie)%idxP,       elem(ie)%state%ps_v(:,:,tl_f), ps_tmp_ic(1:ncols))
+          ! call UniquePoints(elem(ie)%idxP,2,nlev,elem(ie)%state%V(:,:,:,:,tl_f),uv_tmp_ic(1:ncols,:,:))
+          ! call UniquePoints(elem(ie)%idxP,  nlev,elem(ie)%state%T(:,:,:,tl_f),   T_tmp_ic(1:ncols,:))
+          ! call UniquePoints(elem(ie)%idxP,nlev,pcnst,elem(ie)%state%Q(:,:,:,:),  q_tmp_ic(1:ncols,:,:))
+          ! call outfld('PS&IC',ps_tmp_ic,        ncols,ie)
+          ! call outfld('U&IC', uv_tmp_ic(:,1,:), ncols,ie)
+          ! call outfld('V&IC', uv_tmp_ic(:,2,:), ncols,ie)
+          ! call outfld('T&IC', T_tmp_ic,         ncols,ie)
+          ! do m = 1,pcnst
+          !   call outfld(trim(cnst_name(m))//'&IC',q_tmp_ic(1,1,m), ncols,ie)
+          ! end do ! m
+          call outfld('PS&IC',elem(ie)%state%ps_v(:,:,tl_f),  ncol_d,ie)
+          call outfld('U&IC', elem(ie)%state%V(:,:,1,:,tl_f), ncol_d,ie)
+          call outfld('V&IC', elem(ie)%state%V(:,:,2,:,tl_f), ncol_d,ie)
+          call outfld('T&IC', elem(ie)%state%T(:,:,:,tl_f),   ncol_d,ie)
+          do m = 1,pcnst
+            call outfld(trim(cnst_name(m))//'&IC',elem(ie)%state%Q(:,:,:,m), ncol_d,ie)
+          end do ! m
+        end do ! ie
+        ! deallocate(ps_tmp_ic)
+        ! deallocate(uv_tmp_ic)
+        ! deallocate(T_tmp_ic )
+        ! deallocate(q_tmp_ic )
+        
+      else
+
+        do lchnk = begchunk,endchunk
+          call outfld('T&IC', phys_state(lchnk)%t, pcols,lchnk)
+          call outfld('U&IC', phys_state(lchnk)%u, pcols,lchnk)
+          call outfld('V&IC', phys_state(lchnk)%v, pcols,lchnk)
+          call outfld('PS&IC',phys_state(lchnk)%ps,pcols,lchnk)
+          do m = 1,pcnst
+            call outfld(trim(cnst_name(m))//'&IC',phys_state(lchnk)%q(1,1,m), pcols,lchnk)
+          end do ! m
+        end do ! lchnk
+
+      end if ! fv_nphys > 0
     end if ! write_inithist
    
   end subroutine d_p_coupling
@@ -330,8 +388,9 @@ CONTAINS
   !=================================================================================================
   subroutine p_d_coupling(phys_state, phys_tend,  dyn_in)
     use shr_vmath_mod,           only: shr_vmath_log
-    use cam_control_mod,         only : adiabatic
+    use cam_control_mod,         only: adiabatic
     use fv_physics_coupling_mod, only: fv_phys_to_dyn
+    use control_mod,             only: ftype
     implicit none
     ! INPUT PARAMETERS:
     type(physics_state), intent(inout), dimension(begchunk:endchunk) :: phys_state
@@ -400,7 +459,13 @@ CONTAINS
             uv_tmp(ioff,1,ilyr,ie) = phys_tend(lchnk)%dudt(icol,ilyr)
             uv_tmp(ioff,2,ilyr,ie) = phys_tend(lchnk)%dvdt(icol,ilyr)
             do m = 1,pcnst
-              q_tmp(ioff,ilyr,m,ie) = phys_state(lchnk)%q(icol,ilyr,m)
+              if ( fv_nphys>0 .and. ( ftype==2 .or. ftype==3 ) ) then
+                ! Subtract initial physics state to convert to tendency
+                q_tmp(ioff,ilyr,m,ie) = phys_state(lchnk)%q(icol,ilyr,m) &
+                                       -phys_state(lchnk)%qo(icol,ilyr,m)
+              else
+                q_tmp(ioff,ilyr,m,ie) = phys_state(lchnk)%q(icol,ilyr,m)
+              end if
             end do
           end do ! ilyr
       	end do ! icol
@@ -426,7 +491,13 @@ CONTAINS
             cbuffer(cpter(icol,ilyr)+1) = phys_tend(lchnk)%dudt(icol,ilyr)
             cbuffer(cpter(icol,ilyr)+2) = phys_tend(lchnk)%dvdt(icol,ilyr)
             do m=1,pcnst
-              cbuffer(cpter(icol,ilyr)+2+m) = phys_state(lchnk)%q(icol,ilyr,m)
+              if ( fv_nphys>0 .and. ( ftype==2 .or. ftype==3 ) ) then
+                ! Subtract initial physics state to convert to tendency
+                cbuffer(cpter(icol,ilyr)+2+m) = phys_state(lchnk)%q(icol,ilyr,m)&
+                                               -phys_state(lchnk)%qo(icol,ilyr,m)
+              else
+                cbuffer(cpter(icol,ilyr)+2+m) = phys_state(lchnk)%q(icol,ilyr,m)
+              end if
             end do
           end do ! ilyr
         end do ! icol
@@ -471,7 +542,7 @@ CONTAINS
       if (fv_nphys > 0) then
 
         ! Map FV physics state to dynamics grid
-        call fv_phys_to_dyn(elem,T_tmp,uv_tmp,Q_tmp)
+        call fv_phys_to_dyn(elem,T_tmp,uv_tmp,q_tmp)
 
       else ! physics is on GLL nodes
 

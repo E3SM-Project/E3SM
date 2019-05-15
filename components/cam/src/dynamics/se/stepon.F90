@@ -77,11 +77,12 @@ CONTAINS
 ! !INTERFACE:
 subroutine stepon_init(dyn_in, dyn_out )
 ! !USES:
-  use dimensions_mod, only: nlev, nelemd, npsq
-  use cam_history,    only: addfld, add_default, horiz_only
-  use cam_history,    only: register_vector_field
-  use gravity_waves_sources, only: gws_init
-  use phys_control,   only: use_gw_front
+  use dimensions_mod,         only: nlev, nelemd, npsq,fv_nphys
+  use cam_history,            only: addfld, add_default, horiz_only
+  use cam_history,            only: register_vector_field
+  use gravity_waves_sources,  only: gws_init
+  use phys_control,           only: use_gw_front
+  use cam_history_support,    only: max_fieldname_len
 
 ! !OUTPUT PARAMETERS
 !
@@ -89,6 +90,7 @@ subroutine stepon_init(dyn_in, dyn_out )
   type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
 
   integer :: m
+  character(len=max_fieldname_len) :: grid_name
 ! !DESCRIPTION:
 !
 ! Allocate data, initialize values, setup grid locations and other
@@ -128,24 +130,28 @@ subroutine stepon_init(dyn_in, dyn_out )
   call addfld ('DIFFU   ', (/ 'ilev' /),'A', 'm/s2    ','U horizontal diffusion',                      gridname='physgrid')
   call addfld ('DIFFV   ', (/ 'ilev' /),'A', 'm/s2    ','V horizontal diffusion',                      gridname='physgrid')
   call register_vector_field('DIFFU', 'DIFFV')
-  
   call addfld ('ETADOT', (/ 'ilev' /), 'A', '1/s', 'Vertical (eta) velocity', gridname='physgrid')
-  call addfld ('U&IC',   (/ 'lev' /),  'I', 'm/s', 'Zonal wind',              gridname='physgrid' )
-  call addfld ('V&IC',   (/ 'lev' /),  'I', 'm/s', 'Meridional wind',         gridname='physgrid' )
-  ! Don't need to register U&IC V&IC since we don't interpolate IC files
+
+  if (fv_nphys > 0) then
+    grid_name = 'GLL'
+  else
+    grid_name = 'physgrid'
+  end if 
+
+  call addfld ('PS&IC',horiz_only,'I','Pa', 'Surface pressure',gridname=grid_name)
+  call addfld ('U&IC', (/'lev'/), 'I','m/s','Zonal wind',      gridname=grid_name)
+  call addfld ('V&IC', (/'lev'/), 'I','m/s','Meridional wind', gridname=grid_name)
+  call addfld ('T&IC', (/'lev'/), 'I','K',  'Temperature',     gridname=grid_name)
+  do m = 1,pcnst
+    call addfld (trim(cnst_name(m))//'&IC',(/'lev'/),'I','kg/kg',cnst_longname(m),gridname=grid_name)
+  end do
+  
   call add_default ('U&IC',0, 'I')
   call add_default ('V&IC',0, 'I')
-
-  call addfld ('PS&IC', horiz_only,  'I', 'Pa', 'Surface pressure',gridname='physgrid')
-  call addfld ('T&IC',  (/ 'lev' /), 'I', 'K',  'Temperature',     gridname='physgrid')
-
   call add_default ('PS&IC      ',0, 'I')
   call add_default ('T&IC       ',0, 'I')
   do m = 1,pcnst
-     call addfld (trim(cnst_name(m))//'&IC', (/ 'lev' /), 'I', 'kg/kg', cnst_longname(m), gridname='physgrid')
-  end do
-  do m = 1,pcnst
-     call add_default(trim(cnst_name(m))//'&IC',0, 'I')
+    call add_default(trim(cnst_name(m))//'&IC',0, 'I')
   end do
 
   call addfld('DYN_T'    ,(/ 'lev' /), 'A', 'K',    'Temperature (dyn grid)', gridname='GLL')
@@ -154,6 +160,12 @@ subroutine stepon_init(dyn_in, dyn_out )
   call addfld('DYN_V'    ,(/ 'lev' /), 'A', 'm/s',  'Meridional Velocity',    gridname='GLL')
   call addfld('DYN_OMEGA',(/ 'lev' /), 'A', 'Pa/s', 'Vertical Velocity',      gridname='GLL' )
   call addfld('DYN_PS'   ,horiz_only,  'A', 'Pa',   'Surface pressure',       gridname='GLL')
+
+  call addfld('PGCHK_D' ,horiz_only, 'A', '', 'physgrid check (dyn) ', gridname='GLL')
+  call addfld('PGCHK_P' ,horiz_only, 'A', '', 'physgrid check (phys)', gridname='physgrid')
+
+  call add_default('PGCHK_D',-1,' ')
+  call add_default('PGCHK_P',-1,' ')
 
 end subroutine stepon_init
 
