@@ -1,6 +1,4 @@
-# File copied from Depends.mira which also uses IBM compilers.
-#
-## These routines have problems with stacksize when omp is invoked add -qsmallstack to resolve
+# These routines have problems with stacksize when omp is invoked add -qsmallstack to resolve
 SSOBJS = mo_sethet.o mo_drydep.o time_management.o
 
 $(SSOBJS): %.o: %.F90
@@ -43,23 +41,6 @@ endif
 buffer.o: buffer.F90
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -O0 $<
 
-## lnd files taking more than a minute to compile
-# this takes 4 mins to compile with -O3 -qsmp=omp
-BiogeophysRestMod.o: BiogeophysRestMod.F90
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -O0 -qsmp=noopt $<
-
-# this takes 17 mins to compile with -O3 -qsmp=omp
-CNrestMod.o: CNrestMod.F90
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -O0 -qsmp=noopt $<
-
-# this takes 4 mins to compile with -qsmp=omp
-clmtypeInitMod.o: clmtypeInitMod.F90
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -qsmp=noopt $<
-
-# this takes 2 mins to compile with -qsmp=omp
-clmtype.o: clmtype.F90
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -qsmp=noopt $<
- 
 # disable inlining (some issues with pure functions therein)
 advance_xm_wpxp_module.o: advance_xm_wpxp_module.F90
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -Q! $<
