@@ -193,8 +193,10 @@ module seq_flds_mod
   character(CXX) :: seq_flds_g2o_liq_fluxes
   character(CXX) :: seq_flds_g2o_ice_fluxes
   character(CXX) :: seq_flds_x2g_states
+  character(CXX) :: seq_flds_x2g_states_from_lnd
   character(CXX) :: seq_flds_x2g_states_from_ocn
   character(CXX) :: seq_flds_x2g_fluxes
+  character(CXX) :: seq_flds_x2g_fluxes_from_lnd
 
   character(CXX) :: seq_flds_w2x_states
   character(CXX) :: seq_flds_w2x_fluxes
@@ -314,8 +316,10 @@ contains
     character(CXX) :: g2o_liq_fluxes = ''
     character(CXX) :: g2o_ice_fluxes = ''
     character(CXX) :: x2g_states = ''
+    character(CXX) :: x2g_states_from_lnd = ''
     character(CXX) :: x2g_states_from_ocn = ''
     character(CXX) :: x2g_fluxes = ''
+    character(CXX) :: x2g_fluxes_from_lnd = ''
     character(CXX) :: xao_albedo = ''
     character(CXX) :: xao_states = ''
     character(CXX) :: xao_fluxes = ''
@@ -2334,6 +2338,7 @@ contains
     call set_glc_elevclass_field(name, attname, longname, stdname, units, l2x_fluxes_to_glc, &
          additional_list = .true.)
     call seq_flds_add(x2g_fluxes,trim(name))
+    call seq_flds_add(x2g_fluxes_from_lnd,trim(name))
     call metadata_set(attname, longname, stdname, units)
 
     name = 'Sl_tsrf'
@@ -2345,6 +2350,7 @@ contains
     call set_glc_elevclass_field(name, attname, longname, stdname, units, l2x_states_to_glc, &
          additional_list = .true.)
     call seq_flds_add(x2g_states,trim(name))
+    call seq_flds_add(x2g_states_from_lnd,trim(name))
     call metadata_set(attname, longname, stdname, units)
 
     ! Sl_topo is sent from lnd -> cpl, but is NOT sent to glc (it is only used for the
@@ -3373,6 +3379,7 @@ contains
     seq_flds_g2x_states = trim(g2x_states)
     seq_flds_g2x_states_to_lnd = trim(g2x_states_to_lnd)
     seq_flds_x2g_states = trim(x2g_states)
+    seq_flds_x2g_states_from_lnd = trim(x2g_states_from_lnd)
     seq_flds_x2g_states_from_ocn = trim(x2g_states_from_ocn)
     seq_flds_xao_states = trim(xao_states)
     seq_flds_xao_albedo = trim(xao_albedo)
@@ -3398,6 +3405,7 @@ contains
     seq_flds_g2o_liq_fluxes = trim(g2o_liq_fluxes)
     seq_flds_g2o_ice_fluxes = trim(g2o_ice_fluxes)
     seq_flds_x2g_fluxes = trim(x2g_fluxes)
+    seq_flds_x2g_fluxes_from_lnd = trim(x2g_fluxes_from_lnd)
     seq_flds_xao_fluxes = trim(xao_fluxes)
     seq_flds_r2x_fluxes = trim(r2x_fluxes)
     seq_flds_x2r_fluxes = trim(x2r_fluxes)
