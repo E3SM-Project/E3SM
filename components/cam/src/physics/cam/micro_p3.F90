@@ -902,7 +902,7 @@ contains
 
           !.......................
           ! collection of droplets
-          call droplet_collection(rho(i,k), t(i,k), rhofaci(i,k), f1pr04, qitot_incld(i,k),  qc_incld(i,k),nitot_incld(i,k), nc_incld(i,k), qccol, nccol, qcshd, ncshdc)
+          call ice_droplet_collection(rho(i,k), t(i,k), rhofaci(i,k), f1pr04, qitot_incld(i,k),  qc_incld(i,k),nitot_incld(i,k), nc_incld(i,k), qccol, nccol, qcshd, ncshdc)
 
           !....................
           ! collection of rain
