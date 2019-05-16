@@ -83,7 +83,7 @@ contains
        pres,dzq,npccn,naai,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
        diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc_in, &
        pdel,exner,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm, &
-       pratot,prctot,p3_tend_out) bind(C)
+       pratot,prctot,p3_tend_out,mu_c,lamc) bind(C)
     use micro_p3, only : p3_main
 
     real(kind=c_real), intent(inout), dimension(its:ite,kts:kte) :: qc, nc, qr, nr, ssat, qv, th, th_old, qv_old
@@ -108,6 +108,7 @@ contains
     real(kind=c_real), intent(in),    dimension(its:ite,kts:kte)      :: icldm, lcldm, rcldm
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: pratot,prctot
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte,49)   :: p3_tend_out
+    real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: mu_c,lamc
 
     logical :: log_predictNc
 
@@ -117,7 +118,7 @@ contains
          pres,dzq,npccn,naai,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
          diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc, &
          pdel,exner,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm, &
-         pratot,prctot,p3_tend_out)
+         pratot,prctot,p3_tend_out,mu_c,lamc)
   end subroutine p3_main_c
 
    

@@ -35,6 +35,7 @@ struct FortranData {
   Array2 diag_ze, diag_effc, diag_effi, diag_vmi, diag_di, diag_rhoi, cmeiout, prain, nevapr, prer_evap, rflx, sflx, rcldm, lcldm, icldm;
   Array2 pratot, prctot;
   Array3 p3_tend_out;
+  Array2 mu_c, lamc;
 
   FortranData(Int ncol, Int nlev);
 };

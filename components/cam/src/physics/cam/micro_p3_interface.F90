@@ -795,13 +795,7 @@ end subroutine micro_p3_readnl
     use cam_history,    only: outfld
     use physics_buffer, only: pbuf_col_type_index
     use micro_p3,       only: p3_main
-    use micro_p3_utils, only: size_dist_param_basic, &
-                              size_dist_param_liq, &
-                              micro_liq_props, &
-                              micro_ice_props, &
-                              avg_diameter, &
-                              rhoi, &
-                              rhosn, &
+    use micro_p3_utils, only: avg_diameter, &
                               rhow, &
                               rhows, &
                               qsmall, &
@@ -1136,6 +1130,10 @@ end subroutine micro_p3_readnl
     kts     = 1
     kte     = pver
     pres    = state%pmid(:,:)
+    ! Initialize the raidation dependent variables.
+    mu      = mucon
+    lambdac = (mucon + 1._rtype)/dcon
+    dei     = deicon
     ! Determine the cloud fraction and precip cover
     icldm(:,:) = 1.0_rtype
     lcldm(:,:) = 1.0_rtype
@@ -1181,7 +1179,7 @@ end subroutine micro_p3_readnl
          rei(its:ite,kts:kte),        & ! OUT    effective radius, ice            m
          diag_vmi(its:ite,kts:kte),   & ! OUT    mass-weighted fall speed of ice  m s-1
          diag_di(its:ite,kts:kte),    & ! OUT    mean diameter of ice             m
-         diag_rhoi(its:ite,kts:kte),  & ! OUT    bulk density of ice              kg m-1
+         diag_rhoi(its:ite,kts:kte),  & ! OUT    bulk density of ice              kg m-3
          log_predictNc,               & ! IN     .true.=prognostic Nc, .false.=specified Nc
          ! AaronDonahue new stuff
          state%pdel(its:ite,kts:kte), & ! IN pressure level thickness for computing total mass
@@ -1197,7 +1195,9 @@ end subroutine micro_p3_readnl
          icldm(its:ite,kts:kte),      & ! IN ice cloud fraction
          pratot(its:ite,kts:kte),     & ! OUT accretion of cloud by rain
          prctot(its:ite,kts:kte),     & ! OUT autoconversion of cloud by rain
-         tend_out(its:ite,kts:kte,:)  & ! OUT p3 microphysics tendencies
+         tend_out(its:ite,kts:kte,:), & ! OUT p3 microphysics tendencies
+         mu(its:ite,kts:kte),         & ! OUT Size distribution shape parameter for radiation
+         lambdac(its:ite,kts:kte)     & ! OUT Size distribution slope parameter for radiation
          )
 
     ! UPDATE TH AND QV OLD FOR NEXT P3 STEP
@@ -1254,7 +1254,7 @@ end subroutine micro_p3_readnl
    ! parameter calculations and average it if needed
    
    rho(:ncol,top_lev:) = &
-      state%pmid(:ncol,top_lev:) / (rair*state%t(:ncol,top_lev:))
+      state%pmid(:ncol,top_lev:) / (rair*temp(:ncol,top_lev:))
    ! ------------------------------------------------------------ !
    ! Compute in cloud ice and liquid mixing ratios                !
    ! Note that 'iclwp, iciwp' are used for radiation computation. !
@@ -1287,62 +1287,15 @@ end subroutine micro_p3_readnl
    !! derived fields 
    !!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   !!
-   !! Effective radius for cloud liquid, and size parameters
-   !! mu and lambdac.
-   !!
-   mu = 0._rtype
-   lambdac = 0._rtype
-   rel = 10._rtype
-   !!
-   !! Calculate ncic on the grid
-   !!
-   ncic(:ngrdcol,top_lev:) = nc(:ngrdcol,top_lev:) / &
-        max(mincld,lcldm(:ngrdcol,top_lev:))
-
-   call size_dist_param_liq(&
-           micro_liq_props, &
-           icwmrst(:ngrdcol,top_lev:), & 
-           ncic(:ngrdcol,top_lev:), &
-           rho(:ngrdcol,top_lev:), &
-           mu(:ngrdcol,top_lev:), &
-           lambdac(:ngrdcol,top_lev:))
-
-   where (icwmrst(:ngrdcol,top_lev:) >= qsmall)
-      rel(:ngrdcol,top_lev:) = &
-           (mu(:ngrdcol,top_lev:) + 3._rtype) / &
-           lambdac(:ngrdcol,top_lev:)/2._rtype * 1.e6_rtype
-   elsewhere
-      ! Deal with the fact that size_dist_param_liq sets mu to -100
-      ! wherever there is no cloud.
-      mu(:ngrdcol,top_lev:) = 0._rtype
-   end where
-   !!
-   !! Effective radius and diameter for cloud ice
-   !!
-   
-   rei = 25._rtype
-
-   niic(:ngrdcol,top_lev:) = numice(:ngrdcol,top_lev:) / &
-        max(mincld,icldm(:ngrdcol,top_lev:))
-
-   call size_dist_param_basic( &
-           micro_ice_props, &
-           icimrst(:ngrdcol,top_lev:), &
-           niic(:ngrdcol,top_lev:), &
-           rei(:ngrdcol,top_lev:))
-
-   where (icimrst(:ngrdcol,top_lev:) >= qsmall)
-      rei(:ngrdcol,top_lev:) = &
-         1.5_rtype/rei(:ngrdcol,top_lev:) * 1.e6_rtype
-   elsewhere
-      rei(:ngrdcol,top_lev:) = 25._rtype
-   end where
-
     !cloud_rad_props needs ice effective diameter, which Kai calculates as below:
     !   dei = rei*diag_rhopo(i,k,iice)/rhows*2._rtype
-    !where rhopo is bulk ice density from table lookup (taken from f1pr16, here written as rhoi) and rhows=917.0 is a constant parameter.
-   dei = rei * rhoi/rhows * 2._rtype
+    !where rhopo is bulk ice density from table lookup (taken from f1pr16, here written as diag_rhoi) and rhows=917.0 is a constant parameter.
+   !! Effective radius for cloud liquid
+   rel = rel * 1e6_rtype  ! Rescale rel to be in microns
+   !! Effective radius for cloud ice
+   rei = rei * 1e6_rtype  ! Rescale rei to be in microns
+   !! Effective diameter for cloud ice
+   dei = rei * diag_rhoi/rhows * 2._rtype
 
    !!
    !! Limiters for low cloud fraction
