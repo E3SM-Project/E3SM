@@ -918,25 +918,8 @@ contains
 
           !............................................................
           ! melting
-
-          ! need to add back accelerated melting due to collection of ice mass by rain (pracsw1)
-          ! note 'f1pr' values are normalized, so we need to multiply by N
-
-          if (qitot_incld(i,k).ge.qsmall .and. t(i,k).gt.zerodegc) then
-             qsat0 = 0.622_rtype*e0/(pres(i,k)-e0)
-             !  dum=cpw/xlf(i,k)*(t(i,k)-273.15)*(pracsw1+qcshd)
-             ! currently enhanced melting from collision is neglected
-             ! dum=cpw/xlf(i,k)*(t(i,k)-273.15)*(pracsw1)
-             dum = 0._rtype
-             ! qimlt=(f1pr05+f1pr14*sc**0.3333*(rhofaci(i,k)*rho(i,k)/mu)**0.5)* &
-             !       (t(i,k)-273.15)*2.*pi*kap/xlf(i,k)+dum
-             ! include RH dependence
-             qimlt = ((f1pr05+f1pr14*sc**thrd*(rhofaci(i,k)*rho(i,k)/mu)**0.5_rtype)*((t(i,k)-   &
-                  zerodegc)*kap-rho(i,k)*xxlv(i,k)*dv*(qsat0-qv(i,k)))*2._rtype*pi/xlf(i,k)+     &
-                  dum)*nitot_incld(i,k)
-             qimlt = max(qimlt,0.)
-             nimlt = qimlt*(nitot_incld(i,k)/qitot_incld(i,k))
-          endif
+         call ice_melting(rho(i,k), t(i,k), pres(i,k), rhofaci(i,k), f1pr05, f1pr14, xxlv(i,k), xlf(i,k), & 
+                           dv, sc, mu, kap, qv(i,k), qitot_incld(i,k), nitot_incld(i,k), qimlt, nimlt)
 
           !............................................................
           ! calculate wet growth
@@ -3120,6 +3103,53 @@ contains
 
 
 end subroutine ice_self_collection
+
+
+subroutine ice_melting(rho, t, pres, rhofaci, f1pr05, f1pr14, xxlv, xlf, dv, sc, mu, kap, qv, qitot_incld, nitot_incld, qimlt, nimlt)
+   ! melting
+   ! need to add back accelerated melting due to collection of ice mass by rain (pracsw1)
+   ! note 'f1pr' values are normalized, so we need to multiply by N
+   ! currently enhanced melting from collision is neglected
+   ! include RH dependence
+
+   real(rtype), intent(in) :: rho
+   real(rtype), intent(in) :: t 
+   real(rtype), intent(in) :: pres 
+   real(rtype), intent(in) :: rhofaci 
+   real(rtype), intent(in) :: f1pr05 
+   real(rtype), intent(in) :: f1pr14 
+   real(rtype), intent(in) :: xxlv 
+   real(rtype), intent(in) :: xlf
+   real(rtype), intent(in) :: dv 
+   real(rtype), intent(in) :: sc 
+   real(rtype), intent(in) :: mu 
+   real(rtype), intent(in) :: kap
+   real(rtype), intent(in) :: qv 
+   real(rtype), intent(in) :: qitot_incld 
+   real(rtype), intent(in) :: nitot_incld 
+
+   real(rtype), intent(out) :: qimlt 
+   real(rtype), intent(out) :: nimlt
+
+   real(rtype) :: qsat0
+   real(rtype), parameter :: dum = 0.0_rtype 
+
+   if (qitot_incld .ge.qsmall .and. t.gt.zerodegc) then
+      qsat0 = 0.622_rtype*e0/(pres-e0)
+
+
+      qimlt = ((f1pr05+f1pr14*sc**thrd*(rhofaci*rho/mu)**0.5_rtype)*((t-   &
+      zerodegc)*kap-rho*xxlv*dv*(qsat0-qv))*2._rtype*pi/xlf+     &
+      dum)*nitot_incld
+
+
+      qimlt = max(qimlt,0.)
+      nimlt = qimlt*(nitot_incld/qitot_incld)
+      
+   endif 
+
+
+end subroutine ice_melting
 
 
 
