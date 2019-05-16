@@ -3132,15 +3132,13 @@ subroutine ice_melting(rho, t, pres, rhofaci, f1pr05, f1pr14, xxlv, xlf, dv, sc,
    real(rtype), intent(out) :: nimlt
 
    real(rtype) :: qsat0
-   real(rtype), parameter :: dum = 0.0_rtype 
 
    if (qitot_incld .ge.qsmall .and. t.gt.zerodegc) then
       qsat0 = 0.622_rtype*e0/(pres-e0)
 
 
       qimlt = ((f1pr05+f1pr14*sc**thrd*(rhofaci*rho/mu)**0.5_rtype)*((t-   &
-      zerodegc)*kap-rho*xxlv*dv*(qsat0-qv))*2._rtype*pi/xlf+     &
-      dum)*nitot_incld
+      zerodegc)*kap-rho*xxlv*dv*(qsat0-qv))*2._rtype*pi/xlf)*nitot_incld
 
 
       qimlt = max(qimlt,0.)
