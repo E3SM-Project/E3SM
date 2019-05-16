@@ -431,7 +431,7 @@ module namelist_mod
        if (tstep <= 0) then
           call abortmp('tstep must be > 0')
        end if
-       if (ndays .gt. 0) then
+       if (ndays>0 .and. restartfreq>0) then
           nmax = ndays * (secpday/tstep)
           restartfreq  = restartfreq*(secpday/tstep)
        end if
