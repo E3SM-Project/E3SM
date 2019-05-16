@@ -54,7 +54,7 @@ module element_ops
   use kinds,          only: real_kind, iulog
   use perf_mod,       only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
   use parallel_mod,   only: abortmp
-  use physical_constants, only : p0, Cp, Rgas, Rwater_vapor, Cpwater_vapor, kappa, g, dd_pi
+  use physical_constants, only : p0, Cp, Rgas, Rwater_vapor, Cpwater_vapor, kappa, g, dd_pi, TREF
   use control_mod,    only: use_moisture, theta_hydrostatic_mode
   use eos,            only: pnh_and_exner_from_eos, phi_from_eos
   implicit none
@@ -660,8 +660,8 @@ contains
   ! reference T = 288K.  reference lapse rate = 6.5K/km   = .0065 K/m
   ! Tref = T0+T1*exner
   ! Thetaref = T0/exner + T1
-  T1 = .0065*288d0*Cp/g ! = 191
-  T0 = 288d0-T1         ! = 97
+  T1 = .0065*TREF*Cp/g ! = 191
+  T0 = TREF-T1         ! = 97
 
   p_i(:,:,1) =  hvcoord%hyai(1)*hvcoord%ps0   
   do k=1,nlev
