@@ -1738,14 +1738,14 @@ contains
           p3_tend_out(i,k,34) = 0._rtype  ! used to be qcmul, but that has been removed.  Kept at 0.0 as placeholder.
           p3_tend_out(i,k,35) = ncshdc    ! source for rain number due to cloud water/ice collision above freezing  and shedding (combined with NRSHD in the paper) 
           ! measure microphysics processes tendency output
-          p3_tend_out(i,k,42) = qc(i,k)    - p3_tend_out(i,k,42) ! Liq. microphysics tendency, measure 
-          p3_tend_out(i,k,43) = nc(i,k)    - p3_tend_out(i,k,43) ! Liq. # microphysics tendency, measure 
-          p3_tend_out(i,k,44) = qr(i,k)    - p3_tend_out(i,k,44) ! Rain microphysics tendency, measure 
-          p3_tend_out(i,k,45) = nr(i,k)    - p3_tend_out(i,k,45) ! Rain # microphysics tendency, measure 
-          p3_tend_out(i,k,46) = qitot(i,k) - p3_tend_out(i,k,46) ! Ice  microphysics tendency, measure 
-          p3_tend_out(i,k,47) = nitot(i,k) - p3_tend_out(i,k,47) ! Ice  # microphysics tendency, measure 
-          p3_tend_out(i,k,48) = qv(i,k)    - p3_tend_out(i,k,48) ! Vapor  microphysics tendency, measure 
-          p3_tend_out(i,k,49) = th(i,k)    - p3_tend_out(i,k,49) ! Pot. Temp. microphysics tendency, measure 
+          p3_tend_out(i,k,42) = ( qc(i,k)    - p3_tend_out(i,k,42) ) * odt ! Liq. microphysics tendency, measure 
+          p3_tend_out(i,k,43) = ( nc(i,k)    - p3_tend_out(i,k,43) ) * odt ! Liq. # microphysics tendency, measure 
+          p3_tend_out(i,k,44) = ( qr(i,k)    - p3_tend_out(i,k,44) ) * odt ! Rain microphysics tendency, measure 
+          p3_tend_out(i,k,45) = ( nr(i,k)    - p3_tend_out(i,k,45) ) * odt ! Rain # microphysics tendency, measure 
+          p3_tend_out(i,k,46) = ( qitot(i,k) - p3_tend_out(i,k,46) ) * odt ! Ice  microphysics tendency, measure 
+          p3_tend_out(i,k,47) = ( nitot(i,k) - p3_tend_out(i,k,47) ) * odt ! Ice  # microphysics tendency, measure 
+          p3_tend_out(i,k,48) = ( qv(i,k)    - p3_tend_out(i,k,48) ) * odt ! Vapor  microphysics tendency, measure 
+          p3_tend_out(i,k,49) = ( th(i,k)    - p3_tend_out(i,k,49) ) * odt ! Pot. Temp. microphysics tendency, measure 
           ! Outputs associated with aerocom comparison:
           pratot(i,k) = qcacc ! cloud drop accretion by rain
           prctot(i,k) = qcaut ! cloud drop autoconversion to rain 
@@ -1929,8 +1929,8 @@ contains
           prt_liq(i) = prt_accum*inv_rhow*odt  !note, contribution from rain is added below
 
        endif qc_present
-       p3_tend_out(i,:,36) = qc(i,:) - p3_tend_out(i,:,36) ! Liq. sedimentation tendency, measure
-       p3_tend_out(i,:,37) = nc(i,:) - p3_tend_out(i,:,37) ! Liq. # sedimentation tendency, measure
+       p3_tend_out(i,:,36) = ( qc(i,:) - p3_tend_out(i,:,36) ) * odt ! Liq. sedimentation tendency, measure
+       p3_tend_out(i,:,37) = ( nc(i,:) - p3_tend_out(i,:,37) ) * odt ! Liq. # sedimentation tendency, measure
 
 
        !------------------------------------------------------------------------------------------!
@@ -2063,8 +2063,8 @@ contains
           prt_liq(i) = prt_liq(i) + prt_accum*inv_rhow*odt
 
        endif qr_present
-       p3_tend_out(i,:,38) = qr(i,:) - p3_tend_out(i,:,38) ! Rain sedimentation tendency, measure
-       p3_tend_out(i,:,39) = nr(i,:) - p3_tend_out(i,:,39) ! Rain # sedimentation tendency, measure
+       p3_tend_out(i,:,38) = ( qr(i,:) - p3_tend_out(i,:,38) ) * odt ! Rain sedimentation tendency, measure
+       p3_tend_out(i,:,39) = ( nr(i,:) - p3_tend_out(i,:,39) ) * odt ! Rain # sedimentation tendency, measure
 
 
        !------------------------------------------------------------------------------------------!
@@ -2198,8 +2198,8 @@ contains
           prt_sol(i) = prt_sol(i) + prt_accum*inv_rhow*odt
 
        endif qi_present
-       p3_tend_out(i,:,40) = qitot(i,:) - p3_tend_out(i,:,40) ! Ice sedimentation tendency, measure
-       p3_tend_out(i,:,41) = nitot(i,:) - p3_tend_out(i,:,41) ! Ice # sedimentation tendency, measure
+       p3_tend_out(i,:,40) = ( qitot(i,:) - p3_tend_out(i,:,40) ) * odt ! Ice sedimentation tendency, measure
+       p3_tend_out(i,:,41) = ( nitot(i,:) - p3_tend_out(i,:,41) ) * odt ! Ice # sedimentation tendency, measure
 
        !------------------------------------------------------------------------------------------!
 
