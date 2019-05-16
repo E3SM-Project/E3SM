@@ -246,6 +246,9 @@ contains
     use kinds,       only : real_kind
     use hybrid_mod,  only : hybrid_t
     use element_mod, only : element_t
+#ifdef MODEL_THETA_L
+    use element_state, only : nu_scale_top
+#endif
     use dimensions_mod, only : np,ne,nelem,nelemd,qsize
     use quadrature_mod, only : gausslobatto, quadrature_t
 
@@ -558,7 +561,7 @@ contains
        endif
        if(nu_top>0) then
 #ifdef MODEL_THETA_L
-          nu_top_actual=8*nu_top
+          nu_top_actual=maxval(nu_scale_top)*nu_top
           write(iulog,'(a,f10.2,a)') '8*nu_top viscosity CFL: dt < S*', &
                1.0d0/(nu_top_actual*((rrearth*max_normDinv)**2)*lambda_vis),'s'
 #else
