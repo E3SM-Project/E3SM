@@ -29,6 +29,7 @@ import netCDF4
 import os
 from datetime import datetime
 from netCDF4 import date2num
+import argparse
 
 
 def cleanup(data):
@@ -67,7 +68,7 @@ def build_particle_file(fname_in, fname_outbase, ignore_xtime):
         x = f_in.variables['xParticle'][t]
         y = f_in.variables['yParticle'][t]
         z = f_in.variables['zParticle'][t]
-        print(f'{t}/{Ntime}...')
+        print(f'{t+1}/{Ntime}...')
 
         particleType = f_in.variables['xParticle'].dimensions
         particleTypeStatic = f_in.variables['indexToParticleID'].dimensions
@@ -81,11 +82,12 @@ def build_particle_file(fname_in, fname_outbase, ignore_xtime):
             if dim == particleTypeStatic:
                 particleData[str(v)] = cleanup(f_in.variables[v][:])
 
-        # Set decimal time similar to that in `paraview_vtk_extractor` so that
-        # the `annotate_date` macro from MPAS-Tools can be used.
-        if ignore_xtime:
+        if (ignore_xtime) or ('xtime' not in f_in.variables):
+            # Set time to a simple index.
             time = 2*t
         else:
+            # Set decimal time similar to that in `paraview_vtk_extractor` so
+            # that the `annotate_date` macro from MPAS-Tools can be used.
             xtime = f_in.variables['xtime'][t].tostring().decode('utf-8') \
                         .strip()
             date = datetime(int(xtime[0:4]), int(xtime[5:7]),
@@ -107,34 +109,24 @@ def build_particle_file(fname_in, fname_outbase, ignore_xtime):
 
 
 if __name__ == "__main__":
-    from optparse import OptionParser
-
     # Get command line parameters
-    parser = OptionParser()
-    parser.add_option("-f", "--file", dest="inputfilename",
-                      help="file to open for appending \
-                      particle data 'particle_' extension",
-                      metavar="FILE")
-    parser.add_option("-o", "--output", dest="outputfilename",
-                      help="output file name base for export to *.vtu \
-                      file which stores particle data",
-                      metavar="FILE")
-    parser.add_option("--ignore_xtime", dest="ignore_xtime", required=False,
-                      action="store_true",
-                      help="Ignore the `xtime` variable and just pass integer "
-                           "time to ParaView. (Default is to convert `xtime` "
-                           "to decimal time for `annotate_date` to work "
-                           "from MPAS-Tools.")
-
-    options, args = parser.parse_args()
-
-    if not options.inputfilename:
-        parser.error("Input filename is a required input.")
-
-    if not options.outputfilename:
-        parser.error("Output filename base for vtu files is required input.")
-
-    build_particle_file(options.inputfilename, options.outputfilename,
-                        options.ignore_xtime)
+    ap = argparse.ArgumentParser(
+            description="Converts raw LIGHT output to VTK files for analysis \
+            in ParaView.")
+    ap.add_argument("-f", "--file", dest="inputfilename", required=True,
+                    type=str, help="file to open for appending particle data \
+                            'particle_' extension")
+    ap.add_argument("-o", "--output", dest="outputfilename", required=True,
+                    type=str, help="output file name base for export to *.vtu \
+                            file which stores particle data")
+    ap.add_argument("--ignore_xtime", dest="ignore_xtime", required=False,
+                    action="store_true",
+                    help="Ignore the `xtime` variable and just pass integer "
+                         "time to ParaView. (Default is to convert `xtime` "
+                         "to decimal time for `annotate_date` to work "
+                         "from MPAS-Tools.")
+    args = vars(ap.parse_args())
+    build_particle_file(args['inputfilename'], args['outputfilename'],
+                        args['ignore_xtime'])
 
 # vim: foldmethod=marker ai ts=4 sts=4 et sw=4 ft=python
