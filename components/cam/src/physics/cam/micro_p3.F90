@@ -893,37 +893,28 @@ contains
 
           endif   ! qitot > qsmall
 
-          !----------------------------------------------------------------------
-          ! Begin calculations of microphysical processes
+         !----------------------------------------------------------------------
+         ! Begin calculations of microphysical processes
 
-          !......................................................................
-          ! ice processes
-          !......................................................................
+         !......................................................................
+         ! ice processes
+         !......................................................................
 
-          !.......................
-          ! collection of droplets
-          call ice_droplet_collection(rho(i,k), t(i,k), rhofaci(i,k), f1pr04, qitot_incld(i,k), qc_incld(i,k),nitot_incld(i,k), nc_incld(i,k), qccol, nccol, qcshd, ncshdc)
+         !.......................
+         ! collection of droplets
+         call ice_droplet_collection(rho(i,k), t(i,k), rhofaci(i,k), f1pr04, qitot_incld(i,k), qc_incld(i,k),nitot_incld(i,k), nc_incld(i,k), qccol, nccol, qcshd, ncshdc)
 
-          !....................
-          ! collection of rain
-          call ice_drop_collection(rho(i,k), t(i,k), rhofaci(i,k), logn0r(i,k), f1pr07, f1pr08, qitot_incld(i,k), nitot_incld(i,k), qr_incld(i,k), qrcol, nrcol)
-          !...................................
-          ! collection between ice categories
+         !....................
+         ! collection of rain
+         call ice_drop_collection(rho(i,k), t(i,k), rhofaci(i,k), logn0r(i,k), f1pr07, f1pr08, qitot_incld(i,k), nitot_incld(i,k), qr_incld(i,k), qrcol, nrcol)
+         !...................................
+         ! collection between ice categories
 
-          !PMC nCat deleted lots of stuff here.
+         !PMC nCat deleted lots of stuff here.
 
-          !.............................................
-          ! self-collection of ice (in a given category)
-
-          ! here we multiply rates by collection efficiency, air density,
-          ! and air density correction factor since these are not included
-          ! in the lookup table calculations
-          ! note 'f1pr' values are normalized, so we need to multiply by N
-
-          if (qitot_incld(i,k).ge.qsmall) then
-             nislf = f1pr03*rho(i,k)*eii*Eii_fact*rhofaci(i,k)*nitot_incld(i,k)
-          endif
-
+         !.............................................
+         ! self-collection of ice 
+         call ice_self_collection(rho(i,k), rhofaci(i,k), f1pr03, eii, Eii_fact, qitot_incld(i,k), nitot_incld(i,k), nislf)
 
           !............................................................
           ! melting
@@ -3098,8 +3089,38 @@ contains
       ! expected to lead to shedding)
    end if 
 
-
-
   end subroutine ice_drop_collection
+
+  subroutine ice_self_collection(rho, rhofaci, f1pr03, eii, Eii_fact, qitot_incld, nitot_incld, nislf)
+
+   ! self-collection of ice 
+
+   ! here we multiply rates by collection efficiency, air density,
+   ! and air density correction factor since these are not included
+   ! in the lookup table calculations
+   ! note 'f1pr' values are normalized, so we need to multiply by N
+
+   implicit none 
+
+   real(rtype), intent(in) :: rho 
+   real(rtype), intent(in) :: rhofaci
+   real(rtype), intent(in) :: f1pr03  
+   real(rtype), intent(in) :: eii 
+   real(rtype), intent(in) :: Eii_fact 
+   real(rtype), intent(in) :: qitot_incld
+   real(rtype), intent(in) :: nitot_incld
+
+   real(rtype), intent(out) :: nislf 
+
+   if (qitot_incld.ge.qsmall) then
+      if (qitot_incld.ge.qsmall) then
+         nislf = f1pr03*rho*eii*Eii_fact*rhofaci*nitot_incld
+      endif
+   endif
+
+
+end subroutine ice_self_collection
+
+
 
 end module micro_p3
