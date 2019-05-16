@@ -902,27 +902,7 @@ contains
 
           !.......................
           ! collection of droplets
-
-          ! here we multiply rates by air density, air density fallspeed correction
-          ! factor, and collection efficiency since these parameters are not
-          ! included in lookup table calculations
-          ! for T < 273.15, assume collected cloud water is instantly frozen
-          ! note 'f1pr' values are normalized, so we need to multiply by N
-
-          if (qitot_incld(i,k).ge.qsmall .and. qc_incld(i,k).ge.qsmall .and. t(i,k).le.zerodegc) then
-             qccol = rhofaci(i,k)*f1pr04*qc_incld(i,k)*eci*rho(i,k)*nitot_incld(i,k)
-             nccol = rhofaci(i,k)*f1pr04*nc_incld(i,k)*eci*rho(i,k)*nitot_incld(i,k)
-          endif
-
-          ! for T > 273.15, assume cloud water is collected and shed as rain drops
-
-          if (qitot_incld(i,k).ge.qsmall .and. qc_incld(i,k).ge.qsmall .and. t(i,k).gt.zerodegc) then
-             ! sink for cloud water mass and number, note qcshed is source for rain mass
-             qcshd = rhofaci(i,k)*f1pr04*qc_incld(i,k)*eci*rho(i,k)*nitot_incld(i,k)
-             nccol = rhofaci(i,k)*f1pr04*nc_incld(i,k)*eci*rho(i,k)*nitot_incld(i,k)
-             ! source for rain number, assume 1 mm drops are shed
-             ncshdc = qcshd*1.923e+6_rtype
-          endif
+          call droplet_collection(rho(i,k), t(i,k), rhofaci(i,k), f1pr04, qitot_incld(i,k),  qc_incld(i,k),nitot_incld(i,k), nc_incld(i,k), qccol, nccol, qcshd, ncshdc)
 
           !....................
           ! collection of rain
@@ -3060,6 +3040,48 @@ contains
     endif
 
   end subroutine check_values
-  !===========================================================================================
+
+  subroutine droplet_collection(rho, t, rhofaci, f1pr04, qitot_incld, qc_incld, nitot_incld, nc_incld, qccol, nccol, qcshd, ncshdc)
+   
+   !.......................
+   ! collection of droplets
+
+   ! here we multiply rates by air density, air density fallspeed correction
+   ! factor, and collection efficiency since these parameters are not
+   ! included in lookup table calculations
+   ! for T < 273.15, assume collected cloud water is instantly frozen
+   ! note 'f1pr' values are normalized, so we need to multiply by N
+
+
+   implicit none 
+
+   real(rtype), intent(in) :: rho
+   real(rtype), intent(in) :: t 
+   real(rtype), intent(in) :: rhofaci 
+   real(rtype), intent(in) :: f1pr04
+   real(rtype), intent(in) :: qitot_incld 
+   real(rtype), intent(in) :: qc_incld
+   real(rtype), intent(in) :: nitot_incld 
+   real(rtype), intent(in) :: nc_incld 
+
+   
+   real(rtype), intent(out) :: qccol
+   real(rtype), intent(out) :: nccol
+   real(rtype), intent(out) :: qcshd 
+   real(rtype), intent(out) :: ncshdc
+
+   if (qitot_incld .ge.qsmall .and. qc_incld .ge.qsmall .and. t .le.zerodegc) then
+      qccol = rhofaci*f1pr04*qc_incld*eci*rho*nitot_incld
+      nccol = rhofaci*f1pr04*nc_incld*eci*rho*nitot_incld
+   else if (t .gt. zerodegc) then 
+      ! for T > 273.15, assume cloud water is collected and shed as rain drops
+      ! sink for cloud water mass and number, note qcshed is source for rain mass
+      qcshd = rhofaci*f1pr04*qc_incld*eci*rho*nitot_incld
+      nccol = rhofaci*f1pr04*nc_incld*eci*rho*nitot_incld
+      ! source for rain number, assume 1 mm drops are shed
+      ncshdc = qcshd*1.923e+6_rtype
+   end if 
+
+  end subroutine droplet_collection
 
 end module micro_p3
