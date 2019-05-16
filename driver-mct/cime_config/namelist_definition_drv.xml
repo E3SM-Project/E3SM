@@ -698,7 +698,7 @@
      </values>
   </entry>
 
-  <entry id="flux_scheme">
+  <entry id="ocn_surface_flux_scheme">
      <type>integer</type>
      <category>control</category>
      <group>seq_infodata_inparm</group>
