@@ -902,45 +902,11 @@ contains
 
           !.......................
           ! collection of droplets
-          call ice_droplet_collection(rho(i,k), t(i,k), rhofaci(i,k), f1pr04, qitot_incld(i,k),  qc_incld(i,k),nitot_incld(i,k), nc_incld(i,k), qccol, nccol, qcshd, ncshdc)
+          call ice_droplet_collection(rho(i,k), t(i,k), rhofaci(i,k), f1pr04, qitot_incld(i,k), qc_incld(i,k),nitot_incld(i,k), nc_incld(i,k), qccol, nccol, qcshd, ncshdc)
 
           !....................
           ! collection of rain
-
-          ! here we multiply rates by air density, air density fallspeed correction
-          ! factor, collection efficiency, and n0r since these parameters are not
-          ! included in lookup table calculations
-
-          ! for T < 273.15, assume all collected rain mass freezes
-          ! note this is a sink for rain mass and number and a source
-          ! for ice mass
-
-          ! note 'f1pr' values are normalized, so we need to multiply by N
-
-          if (qitot_incld(i,k).ge.qsmall .and. qr_incld(i,k).ge.qsmall .and. t(i,k).le.zerodegc) then
-             ! note: f1pr08 and logn0r are already calculated as log_10
-             qrcol = 10._rtype**(f1pr08+logn0r(i,k))*rho(i,k)*rhofaci(i,k)*eri*nitot_incld(i,k)
-             nrcol = 10._rtype**(f1pr07+logn0r(i,k))*rho(i,k)*rhofaci(i,k)*eri*nitot_incld(i,k)
-          endif
-
-          ! for T > 273.15, assume collected rain number is shed as
-          ! 1 mm drops
-          ! note that melting of ice number is scaled to the loss
-          ! rate of ice mass due to melting
-          ! collection of rain above freezing does not impact total rain mass
-
-          if (qitot_incld(i,k).ge.qsmall .and. qr_incld(i,k).ge.qsmall .and. t(i,k).gt.zerodegc) then
-             ! rain number sink due to collection
-             nrcol  = 10._rtype**(f1pr07 + logn0r(i,k))*rho(i,k)*rhofaci(i,k)*eri*nitot_incld(i,k)
-             ! rain number source due to shedding = collected rain mass/mass of 1 mm drop
-             dum    = 10._rtype**(f1pr08 + logn0r(i,k))*rho(i,k)*rhofaci(i,k)*eri*nitot_incld(i,k)
-             ! for now neglect shedding of ice collecting rain above freezing, since snow is
-             ! not expected to shed in these conditions (though more hevaily rimed ice would be
-             ! expected to lead to shedding)
-             !             nrshdr = dum*1.923e+6   ! 1./5.2e-7, 5.2e-7 is the mass of a 1 mm raindrop
-          endif
-
-
+          call ice_drop_collection(rho(i,k), t(i,k), rhofaci(i,k), logn0r(i,k), f1pr07, f1pr08, qitot_incld(i,k), nitot_incld(i,k), qr_incld(i,k), qrcol, nrcol)
           !...................................
           ! collection between ice categories
 
@@ -3041,7 +3007,7 @@ contains
 
   end subroutine check_values
 
-  subroutine droplet_collection(rho, t, rhofaci, f1pr04, qitot_incld, qc_incld, nitot_incld, nc_incld, qccol, nccol, qcshd, ncshdc)
+  subroutine ice_droplet_collection(rho, t, rhofaci, f1pr04, qitot_incld, qc_incld, nitot_incld, nc_incld, qccol, nccol, qcshd, ncshdc)
    
    !.......................
    ! collection of droplets
@@ -3082,6 +3048,58 @@ contains
       ncshdc = qcshd*1.923e+6_rtype
    end if 
 
-  end subroutine droplet_collection
+  end subroutine ice_droplet_collection
+
+
+  subroutine ice_drop_collection(rho, t, rhofaci, logn0r, f1pr07, f1pr08, qitot_incld, nitot_incld, qr_incld, qrcol, nrcol)
+   
+   !....................
+   ! collection of rain
+
+   ! here we multiply rates by air density, air density fallspeed correction
+   ! factor, collection efficiency, and n0r since these parameters are not
+   ! included in lookup table calculations
+
+   ! for T < 273.15, assume all collected rain mass freezes
+   ! note this is a sink for rain mass and number and a source
+   ! for ice mass
+
+   ! note 'f1pr' values are normalized, so we need to multiply by N
+
+   implicit none 
+
+   real(rtype), intent(in) :: rho
+   real(rtype), intent(in) :: t 
+   real(rtype), intent(in) :: rhofaci 
+   real(rtype), intent(in) :: logn0r 
+   real(rtype), intent(in) :: f1pr07 
+   real(rtype), intent(in) :: f1pr08
+   real(rtype), intent(in) :: qitot_incld
+   real(rtype), intent(in) :: nitot_incld
+   real(rtype), intent(in) :: qr_incld
+
+   real(rtype), intent(out) :: qrcol 
+   real(rtype), intent(out) :: nrcol 
+
+   if (qitot_incld.ge.qsmall .and. qr_incld.ge.qsmall .and. t.le.zerodegc) then
+      ! note: f1pr08 and logn0r are already calculated as log_10
+      qrcol = 10._rtype**(f1pr08+logn0r)*rho*rhofaci*eri*nitot_incld
+      nrcol = 10._rtype**(f1pr07+logn0r)*rho*rhofaci*eri*nitot_incld
+   else if (t .ge. zerodegc) then
+      ! rain number sink due to collection
+      ! for T > 273.15, assume collected rain number is shed as
+      ! 1 mm drops
+      ! note that melting of ice number is scaled to the loss
+      ! rate of ice mass due to melting
+      ! collection of rain above freezing does not impact total rain mass
+      nrcol  = 10._rtype**(f1pr07 + logn0r)*rho*rhofaci*eri*nitot_incld     
+      ! for now neglect shedding of ice collecting rain above freezing, since snow is
+      ! not expected to shed in these conditions (though more hevaily rimed ice would be
+      ! expected to lead to shedding)
+   end if 
+
+
+
+  end subroutine ice_drop_collection
 
 end module micro_p3
