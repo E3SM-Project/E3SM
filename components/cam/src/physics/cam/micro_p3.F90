@@ -923,32 +923,35 @@ contains
 
           !............................................................
           ! calculate wet growth
+         call wet_growth(rho(i,k), t(i,k), pres(i,k), rhofaci(i,k), f1pr05, f1pr14, xxlv(i,k), xlf(i,k), & 
+         dv, kap, mu, sc, qv(i,k), qc_incld(i,k), qitot_incld(i,k), nitot_incld(i,k), qr_incld(i,k), log_wetgrowth, &
+         qrcol, qccol, qwgrth, nrshdr, qcshd)
 
           ! similar to Musil (1970), JAS
           ! note 'f1pr' values are normalized, so we need to multiply by N
 
-          if (qitot_incld(i,k).ge.qsmall .and. qc_incld(i,k)+qr_incld(i,k).ge.1.e-6_rtype .and. t(i,k).lt.zerodegc) then
+          !if (qitot_incld(i,k).ge.qsmall .and. qc_incld(i,k)+qr_incld(i,k).ge.1.e-6_rtype .and. t(i,k).lt.zerodegc) then
 
-             qsat0  = 0.622_rtype*e0/(pres(i,k)-e0)
-             qwgrth = ((f1pr05 + f1pr14*sc**thrd*(rhofaci(i,k)*rho(i,k)/mu)**0.5_rtype)*       &
-                  2._rtype*pi*(rho(i,k)*xxlv(i,k)*dv*(qsat0-qv(i,k))-(t(i,k)-zerodegc)*           &
-                  kap)/(xlf(i,k)+cpw*(t(i,k)-zerodegc)))*nitot_incld(i,k)
-             qwgrth = max(qwgrth,0._rtype)
+          !   qsat0  = 0.622_rtype*e0/(pres(i,k)-e0)
+          !   qwgrth = ((f1pr05 + f1pr14*sc**thrd*(rhofaci(i,k)*rho(i,k)/mu)**0.5_rtype)*       &
+          !        2._rtype*pi*(rho(i,k)*xxlv(i,k)*dv*(qsat0-qv(i,k))-(t(i,k)-zerodegc)*           &
+          !        kap)/(xlf(i,k)+cpw*(t(i,k)-zerodegc)))*nitot_incld(i,k)
+          !   qwgrth = max(qwgrth,0._rtype)
              !calculate shedding for wet growth
-             dum    = max(0._rtype,(qccol+qrcol)-qwgrth)
-             if (dum.ge.1.e-10_rtype) then
-                nrshdr = nrshdr + dum*1.923e+6_rtype   ! 1/5.2e-7, 5.2e-7 is the mass of a 1 mm raindrop
-                if ((qccol+qrcol).ge.1.e-10_rtype) then
-                   dum1  = 1._rtype/(qccol+qrcol)
-                   qcshd = qcshd + dum*qccol*dum1
-                   qccol = qccol - dum*qccol*dum1
-                   qrcol = qrcol - dum*qrcol*dum1
-                endif
+          !   dum    = max(0._rtype,(qccol+qrcol)-qwgrth)
+          !   if (dum.ge.1.e-10_rtype) then
+          !      nrshdr = nrshdr + dum*1.923e+6_rtype   ! 1/5.2e-7, 5.2e-7 is the mass of a 1 mm raindrop
+          !      if ((qccol+qrcol).ge.1.e-10_rtype) then
+          !         dum1  = 1._rtype/(qccol+qrcol)
+          !         qcshd = qcshd + dum*qccol*dum1
+          !         qccol = qccol - dum*qccol*dum1
+          !         qrcol = qrcol - dum*qrcol*dum1
+          !      endif
                 ! densify due to wet growth
-                log_wetgrowth = .true.
-             endif
+          !      log_wetgrowth = .true.
+          !   endif
 
-          endif
+          !  endif
 
 
           !-----------------------------
@@ -3010,16 +3013,18 @@ contains
    real(rtype), intent(out) :: qcshd 
    real(rtype), intent(out) :: ncshdc
 
-   if (qitot_incld .ge.qsmall .and. qc_incld .ge.qsmall .and. t .le.zerodegc) then
-      qccol = rhofaci*f1pr04*qc_incld*eci*rho*nitot_incld
-      nccol = rhofaci*f1pr04*nc_incld*eci*rho*nitot_incld
-   else if (t .gt. zerodegc) then 
-      ! for T > 273.15, assume cloud water is collected and shed as rain drops
-      ! sink for cloud water mass and number, note qcshed is source for rain mass
-      qcshd = rhofaci*f1pr04*qc_incld*eci*rho*nitot_incld
-      nccol = rhofaci*f1pr04*nc_incld*eci*rho*nitot_incld
-      ! source for rain number, assume 1 mm drops are shed
-      ncshdc = qcshd*1.923e+6_rtype
+   if (qitot_incld .ge.qsmall .and. qc_incld .ge.qsmall) then 
+      if  (t .le.zerodegc) then
+         qccol = rhofaci*f1pr04*qc_incld*eci*rho*nitot_incld
+         nccol = rhofaci*f1pr04*nc_incld*eci*rho*nitot_incld
+      else if (t .gt. zerodegc) then 
+         ! for T > 273.15, assume cloud water is collected and shed as rain drops
+         ! sink for cloud water mass and number, note qcshed is source for rain mass
+         qcshd = rhofaci*f1pr04*qc_incld*eci*rho*nitot_incld
+         nccol = rhofaci*f1pr04*nc_incld*eci*rho*nitot_incld
+         ! source for rain number, assume 1 mm drops are shed
+         ncshdc = qcshd*1.923e+6_rtype
+      end if 
    end if 
 
   end subroutine ice_droplet_collection
@@ -3096,9 +3101,7 @@ contains
    real(rtype), intent(out) :: nislf 
 
    if (qitot_incld.ge.qsmall) then
-      if (qitot_incld.ge.qsmall) then
-         nislf = f1pr03*rho*eii*Eii_fact*rhofaci*nitot_incld
-      endif
+      nislf = f1pr03*rho*eii*Eii_fact*rhofaci*nitot_incld
    endif
 
 
@@ -3111,6 +3114,8 @@ subroutine ice_melting(rho, t, pres, rhofaci, f1pr05, f1pr14, xxlv, xlf, dv, sc,
    ! note 'f1pr' values are normalized, so we need to multiply by N
    ! currently enhanced melting from collision is neglected
    ! include RH dependence
+
+   implicit none 
 
    real(rtype), intent(in) :: rho
    real(rtype), intent(in) :: t 
@@ -3136,7 +3141,6 @@ subroutine ice_melting(rho, t, pres, rhofaci, f1pr05, f1pr14, xxlv, xlf, dv, sc,
    if (qitot_incld .ge.qsmall .and. t.gt.zerodegc) then
       qsat0 = 0.622_rtype*e0/(pres-e0)
 
-
       qimlt = ((f1pr05+f1pr14*sc**thrd*(rhofaci*rho/mu)**0.5_rtype)*((t-   &
       zerodegc)*kap-rho*xxlv*dv*(qsat0-qv))*2._rtype*pi/xlf)*nitot_incld
 
@@ -3149,6 +3153,69 @@ subroutine ice_melting(rho, t, pres, rhofaci, f1pr05, f1pr14, xxlv, xlf, dv, sc,
 
 end subroutine ice_melting
 
+
+subroutine wet_growth(rho, t, pres, rhofaci, f1pr05, f1pr14, xxlv, xlf, &
+                      dv, kap, mu, sc, qv, qc_incld, qitot_incld, nitot_incld, qr_incld, &
+                      log_wetgrowth, &
+                      qrcol, qccol, qwgrth, nrshdr, qcshd)
+
+   implicit none 
+
+   real(rtype), intent(in) :: rho 
+   real(rtype), intent(in) :: t 
+   real(rtype), intent(in) :: pres
+   real(rtype), intent(in) :: rhofaci 
+   real(rtype), intent(in) :: f1pr05
+   real(rtype), intent(in) :: f1pr14 
+   real(rtype), intent(in) :: xxlv
+   real(rtype), intent(in) :: xlf
+   real(rtype), intent(in) :: dv 
+   real(rtype), intent(in) :: kap 
+   real(rtype), intent(in) :: mu 
+   real(rtype), intent(in) :: sc
+   real(rtype), intent(in) :: qv 
+   real(rtype), intent(in) :: qc_incld 
+   real(rtype), intent(in) :: qitot_incld
+   real(rtype), intent(in) :: nitot_incld  
+   real(rtype), intent(in) :: qr_incld
+
+   logical, intent(inout) :: log_wetgrowth
+   real(rtype), intent(inout) :: qrcol 
+   real(rtype), intent(inout) :: qccol 
+   real(rtype), intent(inout) :: qwgrth
+   real(rtype), intent(inout) :: nrshdr 
+   real(rtype), intent(inout) :: qcshd 
+
+   real(rtype) :: qsat0, dum, dum1 
+
+
+   if (qitot_incld.ge.qsmall .and. qc_incld+qr_incld.ge.1.e-6_rtype .and. t.lt.zerodegc) then
+      qsat0  = 0.622_rtype*e0/(pres-e0)
+
+      qwgrth = ((f1pr05 + f1pr14*sc**thrd*(rhofaci*rho/mu)**0.5_rtype)*       &
+      2._rtype*pi*(rho*xxlv*dv*(qsat0-qv)-(t-zerodegc)*           &
+      kap)/(xlf+cpw*(t-zerodegc)))*nitot_incld
+
+      qwgrth = max(qwgrth,0._rtype)
+      dum    = max(0._rtype,(qccol+qrcol)-qwgrth)
+      if (dum.ge.1.e-10_rtype) then
+         nrshdr = nrshdr + dum*1.923e+6_rtype   ! 1/5.2e-7, 5.2e-7 is the mass of a 1 mm raindrop
+         if ((qccol+qrcol).ge.1.e-10_rtype) then
+            dum1  = 1._rtype/(qccol+qrcol)
+            qcshd = qcshd + dum*qccol*dum1
+            qccol = qccol - dum*qccol*dum1
+            qrcol = qrcol - dum*qrcol*dum1
+         endif
+         ! densify due to wet growth
+         log_wetgrowth = .true.
+      endif
+
+   end if 
+
+
+
+
+end subroutine wet_growth 
 
 
 end module micro_p3
