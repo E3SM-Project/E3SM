@@ -582,17 +582,11 @@ contains
     call seq_comm_getdata(CPLID, iamroot=iamroot)
     lsize = mct_aVect_lsize(x2g_g)
 
-    num_flux_fields = shr_string_listGetNum(trim(seq_flds_x2g_fluxes))
-    num_state_fields = shr_string_listGetNum(trim(seq_flds_x2g_states))
+    num_flux_fields = shr_string_listGetNum(trim(seq_flds_x2g_fluxes_from_lnd))
+    num_state_fields = shr_string_listGetNum(trim(seq_flds_x2g_states_from_lnd))
 
     if (first_time) then
-       nflds = mct_aVect_nRattr(x2g_g)
-       if (nflds /= (num_flux_fields + num_state_fields)) then
-          write(logunit,*) subname,' ERROR: nflds /= num_flux_fields + num_state_fields: ', &
-               nflds, num_flux_fields, num_state_fields
-          call shr_sys_abort(subname//' ERROR: nflds /= num_flux_fields + num_state_fields')
-       end if
-
+       nflds = num_flux_fields + num_state_fields
        allocate(mrgstr(nflds))
     end if
 
@@ -618,7 +612,7 @@ contains
     index_lfrac = mct_aVect_indexRA(fractions_g,"lfrac")
     do i = 1, num_flux_fields
 
-       call seq_flds_getField(field, i, seq_flds_x2g_fluxes)
+       call seq_flds_getField(field, i, seq_flds_x2g_fluxes_from_lnd)
        index_l2x = mct_aVect_indexRA(l2x_g, trim(field))
        index_x2g = mct_aVect_indexRA(x2g_g, trim(field))
 
@@ -713,8 +707,8 @@ contains
 
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
 
-    num_flux_fields = shr_string_listGetNum(trim(seq_flds_x2g_fluxes))
-    num_state_fields = shr_string_listGetNum(trim(seq_flds_x2g_states))
+    num_flux_fields = shr_string_listGetNum(trim(seq_flds_x2g_fluxes_from_lnd))
+    num_state_fields = shr_string_listGetNum(trim(seq_flds_x2g_states_from_lnd))
 
     do egi = 1,num_inst_glc
        ! Use fortran mod to address ensembles in merge
@@ -722,7 +716,7 @@ contains
        efi = mod((egi-1),num_inst_frc) + 1
 
        do field_num = 1, num_flux_fields
-          call seq_flds_getField(fieldname, field_num, seq_flds_x2g_fluxes)
+          call seq_flds_getField(fieldname, field_num, seq_flds_x2g_fluxes_from_lnd)
 
           if (trim(fieldname) == qice_fieldname) then
 
@@ -747,7 +741,7 @@ contains
        end do
 
        do field_num = 1, num_state_fields
-          call seq_flds_getField(fieldname, field_num, seq_flds_x2g_states)
+          call seq_flds_getField(fieldname, field_num, seq_flds_x2g_states_from_lnd)
           call prep_glc_map_one_state_field_lnd2glc(egi=egi, eli=eli, &
                fieldname = fieldname, &
                fractions_lx = fractions_lx(efi), &
