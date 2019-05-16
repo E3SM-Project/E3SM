@@ -913,7 +913,7 @@ contains
     logical     :: read_restart    ! .true. => model starting from restart
     logical     :: ocn_prognostic  ! .true. => ocn is prognostic
     logical     :: flux_diurnal    ! .true. => turn on diurnal cycle in atm/ocn fluxes
-    integer     :: flux_scheme     ! 0: E3SMv1  1: COARE  2: UA
+    integer     :: ocn_surface_flux_scheme ! 0: E3SMv1  1: COARE  2: UA
     logical     :: cold_start      ! .true. to initialize internal fields in shr_flux diurnal
     character(len=256) :: fldlist  ! subset of xao fields
     !
@@ -940,7 +940,7 @@ contains
          ocn_nx=ocn_nx, ocn_ny=ocn_ny,  &
          ocn_prognostic=ocn_prognostic, &
          flux_diurnal=flux_diurnal, &
-         flux_scheme=flux_scheme)
+         ocn_surface_flux_scheme=ocn_surface_flux_scheme)
 
     cold_start = .false.   ! use restart data or data from last timestep
 
@@ -1013,7 +1013,7 @@ contains
     end if
 
     if (flux_diurnal) then
-       if (flux_scheme.eq.2) then
+       if (ocn_surface_flux_scheme.eq.2) then
           call shr_sys_abort(trim(subname)//' ERROR cannot use flux_diurnal with UA flux scheme')
        endif
        call shr_flux_atmocn_diurnal (nloc_a2o , zbot , ubot, vbot, thbot, &
@@ -1023,7 +1023,7 @@ contains
             evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
             uGust, lwdn , swdn , swup, prec, &
             fswpen, ocnsal, ocn_prognostic, flux_diurnal,   &
-            flux_scheme, &
+            ocn_surface_flux_scheme, &
             lats , lons , warm , salt , speed, regime,      &
             warmMax, windMax, qSolAvg, windAvg,             &
             warmMaxInc, windMaxInc, qSolInc, windInc, nInc, &
@@ -1031,7 +1031,7 @@ contains
             cskin, cskin_night, tod, dt,          &
             duu10n,ustar, re  , ssq , missval = 0.0_r8, &
             cold_start=cold_start)
-    else if (flux_scheme.eq.2) then
+    else if (ocn_surface_flux_scheme.eq.2) then
        call shr_flux_atmOcn_UA(nloc_a2o , zbot , ubot, vbot, thbot, &
             shum , shum_16O , shum_HDO, shum_18O, dens , tbot, pslv, &
             uocn, vocn , tocn , emask, sen , lat , lwup , &
@@ -1045,7 +1045,7 @@ contains
             tocn , emask, sen , lat , lwup , &
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux, tauy, tref, qref , &
-            flux_scheme, &
+            ocn_surface_flux_scheme, &
             duu10n,ustar, re  , ssq , missval = 0.0_r8 )
     endif
 
@@ -1211,7 +1211,7 @@ contains
     logical     :: read_restart    ! .true. => continue run
     logical     :: ocn_prognostic  ! .true. => ocn is prognostic
     logical     :: flux_diurnal    ! .true. => turn on diurnal cycle in atm/ocn fluxes
-    integer     :: flux_scheme     ! 0: E3SMv1  1: COARE  2: UA
+    integer     :: ocn_surface_flux_scheme ! 0: E3SMv1  1: COARE  2: UA
     real(r8)    :: flux_convergence ! convergence criteria for imlicit flux computation
     integer(in) :: flux_max_iteration ! maximum number of iterations for convergence
     logical :: coldair_outbreak_mod !  cold air outbreak adjustment  (Mahrt & Sun 1995,MWR)
@@ -1228,7 +1228,7 @@ contains
          dead_comps=dead_comps, &
          ocn_prognostic=ocn_prognostic, &
          flux_diurnal=flux_diurnal, &
-         flux_scheme=flux_scheme)
+         ocn_surface_flux_scheme=ocn_surface_flux_scheme)
 
     cold_start = .false.   ! use restart data or data from last timestep
 
@@ -1437,7 +1437,7 @@ contains
     end if
 
     if (flux_diurnal) then
-       if (flux_scheme.eq.2) then
+       if (ocn_surface_flux_scheme.eq.2) then
           call shr_sys_abort(trim(subname)//' ERROR cannot use flux_diurnal with UA flux scheme')
        endif
        
@@ -1448,7 +1448,7 @@ contains
             evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
             uGust, lwdn , swdn , swup, prec, &
             fswpen, ocnsal, ocn_prognostic, flux_diurnal,    &
-            flux_scheme, &
+            ocn_surface_flux_scheme, &
             lats, lons , warm , salt , speed, regime,       &
             warmMax, windMax, qSolAvg, windAvg,             &
             warmMaxInc, windMaxInc, qSolInc, windInc, nInc, &
@@ -1459,7 +1459,7 @@ contains
                                 !consistent with mrgx2a fraction
                                 !duu10n,ustar, re  , ssq, missval = 0.0_r8 )
             cold_start=cold_start)
-    else if (flux_scheme.eq.2) then
+    else if (ocn_surface_flux_scheme.eq.2) then
        call shr_flux_atmOcn_UA(nloc , zbot , ubot, vbot, thbot, &
             shum , shum_16O , shum_HDO, shum_18O, dens , tbot, pslv, &
             uocn, vocn , tocn , emask, sen , lat , lwup , &
@@ -1472,7 +1472,7 @@ contains
             tocn , emask, sen , lat , lwup , &
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
-            flux_scheme, &
+            ocn_surface_flux_scheme, &
             duu10n,ustar, re  , ssq)
        !missval should not be needed if flux calc
        !consistent with mrgx2a fraction
