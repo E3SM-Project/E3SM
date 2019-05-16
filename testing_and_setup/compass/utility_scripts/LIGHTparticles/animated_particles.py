@@ -15,12 +15,20 @@
     LANL
     07/15/2014
 
+    Riley Brady
+    CU Boulder/LANL
+    05/15/2019
+    * Compatible with python3, code cleanup.
+    * VTK time now decimal format and compatible with `annotate_date`.
+    * --ignore_xtime option if `xtime` not in particle output.
 """
 from pyevtk.vtk import VtkGroup
 from pyevtk.hl import pointsToVTK
 import numpy as np
 import netCDF4
 import os
+from datetime import datetime
+from netCDF4 import date2num
 
 
 def cleanup(data):
@@ -30,7 +38,7 @@ def cleanup(data):
     return data
 
 
-def build_particle_file(fname_in, fname_outbase):
+def build_particle_file(fname_in, fname_outbase, ignore_xtime):
     """
     Take existing netCDF4 input f_in and produce
     vtu files for f_outbase with all the particle data
@@ -73,8 +81,18 @@ def build_particle_file(fname_in, fname_outbase):
             if dim == particleTypeStatic:
                 particleData[str(v)] = cleanup(f_in.variables[v][:])
 
-        # set the new time (just use index for simplicity for now)
-        time = 2*t
+        # Set decimal time similar to that in `paraview_vtk_extractor` so that
+        # the `annotate_date` macro from MPAS-Tools can be used.
+        if ignore_xtime:
+            time = 2*t
+        else:
+            xtime = f_in.variables['xtime'][t].tostring().decode('utf-8') \
+                        .strip()
+            date = datetime(int(xtime[0:4]), int(xtime[5:7]),
+                            int(xtime[8:10]), int(xtime[11:13]),
+                            int(xtime[14:16]), int(xtime[17:19]))
+            time = date2num(date, units='days since 0000-01-01',
+                            calendar='noleap')/365
 
         # file name
         f_out = f'{fname_outbase}_{os.path.splitext(fullpath[-1])[0]}_{str(t)}'
@@ -97,11 +115,16 @@ if __name__ == "__main__":
                       help="file to open for appending \
                       particle data 'particle_' extension",
                       metavar="FILE")
-
     parser.add_option("-o", "--output", dest="outputfilename",
                       help="output file name base for export to *.vtu \
                       file which stores particle data",
                       metavar="FILE")
+    parser.add_option("--ignore_xtime", dest="ignore_xtime", required=False,
+                      action="store_true",
+                      help="Ignore the `xtime` variable and just pass integer "
+                           "time to ParaView. (Default is to convert `xtime` "
+                           "to decimal time for `annotate_date` to work "
+                           "from MPAS-Tools.")
 
     options, args = parser.parse_args()
 
@@ -111,6 +134,7 @@ if __name__ == "__main__":
     if not options.outputfilename:
         parser.error("Output filename base for vtu files is required input.")
 
-    build_particle_file(options.inputfilename, options.outputfilename)
+    build_particle_file(options.inputfilename, options.outputfilename,
+                        options.ignore_xtime)
 
 # vim: foldmethod=marker ai ts=4 sts=4 et sw=4 ft=python
