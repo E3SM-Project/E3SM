@@ -42,7 +42,7 @@ def xml_to_make_variable(case, varname, cmake=False):
 
 ###############################################################################
 def _build_model(build_threaded, exeroot, incroot, complist,
-                 lid, caseroot, cimeroot, compiler, buildlist, comp_interface):
+                 lid, caseroot, cimeroot, compiler, buildlist, comp_interface, case):
 ###############################################################################
     logs = []
 
@@ -86,7 +86,7 @@ def _build_model(build_threaded, exeroot, incroot, complist,
         # logs is a list of log files to be compressed and added to the case logs/bld directory
         t = threading.Thread(target=_build_model_thread,
             args=(config_dir, model, comp, caseroot, libroot, bldroot, incroot, file_build,
-                  thread_bad_results, smp, compiler))
+                  thread_bad_results, smp, compiler, case))
         t.start()
 
         logs.append(file_build)
@@ -296,7 +296,7 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
             # logs is a list of log files to be compressed and added to the case logs/bld directory
             thread_bad_results = []
             _build_model_thread(config_lnd_dir, "lnd", comp_lnd, caseroot, libroot, bldroot, incroot,
-                                file_build, thread_bad_results, smp, compiler)
+                                file_build, thread_bad_results, smp, compiler, case)
             logs.append(file_build)
             expect(not thread_bad_results, "\n".join(thread_bad_results))
 
@@ -305,7 +305,7 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
 
 ###############################################################################
 def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldroot, incroot, file_build,
-                        thread_bad_results, smp, compiler):
+                        thread_bad_results, smp, compiler, case):
 ###############################################################################
     logger.info("Building {} with output to {}".format(compclass, file_build))
     t1 = time.time()
@@ -316,14 +316,28 @@ def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldr
         cmd = os.path.join(config_dir, "buildlib")
         expect(os.path.isfile(cmd), "Could not find buildlib for {}".format(compname))
 
-    with open(file_build, "w") as fd:
-        stat = run_cmd("MODEL={} SMP={} {} {} {} {} "
-                       .format(compclass, stringify_bool(smp), cmd, caseroot, libroot, bldroot),
-                       from_dir=bldroot,  arg_stdout=fd,
-                       arg_stderr=subprocess.STDOUT)[0]
+    # Add to this list as components are converted to python/cmake
+    if compname in ["cam"]:
+        try:
+            stat = 0
+            run_sub_or_cmd(cmd, [caseroot, libroot, bldroot], "buildlib",
+                           [bldroot, libroot, case], logfile=file_build)
+        except Exception as e:
+            stat = 1
+
+    else:
+        with open(file_build, "w") as fd:
+            stat = run_cmd("MODEL={} SMP={} {} {} {} {} "
+                           .format(compclass, stringify_bool(smp), cmd, caseroot, libroot, bldroot),
+                           from_dir=bldroot,  arg_stdout=fd,
+                           arg_stderr=subprocess.STDOUT)[0]
+
     analyze_build_log(compclass, file_build, compiler)
-    if (stat != 0):
+
+    if stat != 0:
         thread_bad_results.append("BUILD FAIL: {}.buildlib failed, cat {}".format(compname, file_build))
+
+    analyze_build_log(compclass, file_build, compiler)
 
     for mod_file in glob.glob(os.path.join(bldroot, "*_[Cc][Oo][Mm][Pp]_*.mod")):
         safe_copy(mod_file, incroot)
@@ -505,7 +519,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
             os.environ["USE_KOKKOS"] = "TRUE"
 
         logs.extend(_build_model(build_threaded, exeroot, incroot, complist,
-                                lid, caseroot, cimeroot, compiler, buildlist, comp_interface))
+                                 lid, caseroot, cimeroot, compiler, buildlist, comp_interface, case))
 
         if not buildlist:
             # in case component build scripts updated the xml files, update the case object
