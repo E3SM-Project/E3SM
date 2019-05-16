@@ -797,8 +797,16 @@ foreach (SOURCE_FILE IN LISTS SOURCES)
   endif()
 endforeach()
 
-# JGF: Todo: machine/compiler specific Depends files will need to be converted to CMake
-#    -include Depends $(CASEROOT)/Depends.$(COMPILER) $(CASEROOT)/Depends.$(MACH) $(CASEROOT)/Depends.$(MACH).$(COMPILER)
+# Load machine/compiler specific settings
+set(COMPILER_SPECIFIC_DEPENDS ${CASEROOT}/Depends.${COMPILER}.cmake)
+set(MACHINE_SPECIFIC_DEPENDS ${CASEROOT}/Depends.${MACH}.cmake)
+set(PLATFORM_SPECIFIC_DEPENDS ${CASEROOT}/Depends.${MACH}.${COMPILER}.cmake)
+set(TRY_TO_LOAD ${COMPILER_SPECIFIC_DEPENDS} ${MACHINE_SPECIFIC_DEPENDS} ${PLATFORM_SPECIFIC_DEPENDS})
+foreach(ITEM IN LISTS TRY_TO_LOAD)
+  if (EXISTS ${ITEM})
+    include(${ITEM})
+  endif()
+endforeach()
 
 # Disable optimizations on some files that would take too long to compile, expect these to all be fortran files
 foreach (SOURCE_FILE IN LISTS NOOPT_FILES)
