@@ -926,34 +926,7 @@ contains
          call wet_growth(rho(i,k), t(i,k), pres(i,k), rhofaci(i,k), f1pr05, f1pr14, xxlv(i,k), xlf(i,k), & 
          dv, kap, mu, sc, qv(i,k), qc_incld(i,k), qitot_incld(i,k), nitot_incld(i,k), qr_incld(i,k), log_wetgrowth, &
          qrcol, qccol, qwgrth, nrshdr, qcshd)
-
-          ! similar to Musil (1970), JAS
-          ! note 'f1pr' values are normalized, so we need to multiply by N
-
-          !if (qitot_incld(i,k).ge.qsmall .and. qc_incld(i,k)+qr_incld(i,k).ge.1.e-6_rtype .and. t(i,k).lt.zerodegc) then
-
-          !   qsat0  = 0.622_rtype*e0/(pres(i,k)-e0)
-          !   qwgrth = ((f1pr05 + f1pr14*sc**thrd*(rhofaci(i,k)*rho(i,k)/mu)**0.5_rtype)*       &
-          !        2._rtype*pi*(rho(i,k)*xxlv(i,k)*dv*(qsat0-qv(i,k))-(t(i,k)-zerodegc)*           &
-          !        kap)/(xlf(i,k)+cpw*(t(i,k)-zerodegc)))*nitot_incld(i,k)
-          !   qwgrth = max(qwgrth,0._rtype)
-             !calculate shedding for wet growth
-          !   dum    = max(0._rtype,(qccol+qrcol)-qwgrth)
-          !   if (dum.ge.1.e-10_rtype) then
-          !      nrshdr = nrshdr + dum*1.923e+6_rtype   ! 1/5.2e-7, 5.2e-7 is the mass of a 1 mm raindrop
-          !      if ((qccol+qrcol).ge.1.e-10_rtype) then
-          !         dum1  = 1._rtype/(qccol+qrcol)
-          !         qcshd = qcshd + dum*qccol*dum1
-          !         qccol = qccol - dum*qccol*dum1
-          !         qrcol = qrcol - dum*qrcol*dum1
-          !      endif
-                ! densify due to wet growth
-          !      log_wetgrowth = .true.
-          !   endif
-
-          !  endif
-
-
+         
           !-----------------------------
           ! calcualte total inverse ice relaxation timescale combined for all ice categories
           ! note 'f1pr' values are normalized, so we need to multiply by N
