@@ -916,8 +916,8 @@ contains
          ! self-collection of ice 
          call ice_self_collection(rho(i,k), rhofaci(i,k), f1pr03, eii, Eii_fact, qitot_incld(i,k), nitot_incld(i,k), nislf)
 
-          !............................................................
-          ! melting
+         !............................................................
+         ! melting
          call ice_melting(rho(i,k), t(i,k), pres(i,k), rhofaci(i,k), f1pr05, f1pr14, xxlv(i,k), xlf(i,k), & 
                            dv, sc, mu, kap, qv(i,k), qitot_incld(i,k), nitot_incld(i,k), qimlt, nimlt)
 
@@ -930,13 +930,8 @@ contains
           !-----------------------------
           ! calcualte total inverse ice relaxation timescale combined for all ice categories
           ! note 'f1pr' values are normalized, so we need to multiply by N
-          if (qitot_incld(i,k).ge.qsmall .and. t(i,k).lt.zerodegc) then
-             epsi = ((f1pr05+f1pr14*sc**thrd*(rhofaci(i,k)*rho(i,k)/mu)**0.5_rtype)*2._rtype*pi* &
-                  rho(i,k)*dv)*nitot_incld(i,k)
-             epsi_tot   = epsi_tot + epsi
-          else
-             epsi = 0._rtype
-          endif
+          call ice_relaxation(rho(i,k), t(i,k), rhofaci(i,k), f1pr05, f1pr14, dv, mu, sc, qitot_incld(i,k), nitot_incld(i,k), &
+           epsi, epsi_tot)
 
 
           !.........................
@@ -3189,6 +3184,42 @@ subroutine wet_growth(rho, t, pres, rhofaci, f1pr05, f1pr14, xxlv, xlf, &
 
 
 end subroutine wet_growth 
+
+
+subroutine ice_relaxation(rho, t, rhofaci, f1pr05, f1pr14, dv, mu, sc, qitot_incld, nitot_incld, epsi, epsi_tot)
+
+   !-----------------------------
+   ! calcualte total inverse ice relaxation timescale combined for all ice categories
+   ! note 'f1pr' values are normalized, so we need to multiply by N
+
+   implicit none 
+
+
+   real(rtype), intent(in) :: rho 
+   real(rtype), intent(in) :: t 
+   real(rtype), intent(in) :: rhofaci 
+   real(rtype), intent(in) :: f1pr05 
+   real(rtype), intent(in) :: f1pr14
+   real(rtype), intent(in) :: dv 
+   real(rtype), intent(in) :: mu 
+   real(rtype), intent(in) :: sc 
+   real(rtype), intent(in) :: qitot_incld 
+   real(rtype), intent(in) :: nitot_incld 
+
+   real(rtype), intent(out) :: epsi
+   real(rtype), intent(out) :: epsi_tot 
+
+   if (qitot_incld.ge.qsmall .and. t.lt.zerodegc) then
+      epsi = ((f1pr05+f1pr14*sc**thrd*(rhofaci*rho/mu)**0.5_rtype)*2._rtype*pi* &
+      rho*dv)*nitot_incld
+      epsi_tot   = epsi_tot + epsi
+   else
+      epsi = 0._rtype
+   endif 
+
+
+end subroutine ice_relaxation
+
 
 
 end module micro_p3
