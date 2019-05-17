@@ -43,8 +43,11 @@ public:
   // The communicator used by the dynamics
   const Comm& get_comm () const { return m_dynamics_comm; }
 
+  // Set the grid
+  void set_grid (const std::shared_ptr<const GridsManager> grids_manager);
+
   // These are the three main interfaces:
-  void initialize (const std::shared_ptr<const GridsManager> grids_manager);
+  void initialize ();
   void run        (/* what inputs? */);
   void finalize   (/* what inputs? */);
 
@@ -57,14 +60,9 @@ public:
 
 protected:
 
-  // Setting the field in the atmosphere process
-  void set_required_field_impl (const Field<const Real, device_type>& f) {
-    m_dyn_fields_in.emplace(f.get_header().get_identifier().name(),f);
-  }
-
-  void set_computed_field_impl (const Field<Real, device_type>& f) {
-    m_dyn_fields_out.emplace(f.get_header().get_identifier().name(),f);
-  }
+  // Setting the fields in the atmosphere process
+  void set_required_field_impl (const Field<const Real, device_type>& f);
+  void set_computed_field_impl (const Field<      Real, device_type>& f);
 
   std::set<FieldIdentifier> m_required_fields;
   std::set<FieldIdentifier> m_computed_fields;

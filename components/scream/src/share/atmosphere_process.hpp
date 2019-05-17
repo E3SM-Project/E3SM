@@ -50,6 +50,11 @@ public:
   // The communicator associated with this atm process
   virtual const Comm& get_comm () const = 0;
 
+  // Give the grids manager to the process, so it can grab its grid
+  // IMPORTANT: the process is *expected* to have valid field ids for
+  //            required/computed fields once this method returns
+  virtual void set_grid (const std::shared_ptr<const GridsManager> grids_manager) = 0;
+
   // These are the three main interfaces:
   //   - the initialize method sets up all the stuff the process needs to run,
   //     including arrays/views, parameters, and precomputed stuff.
@@ -63,13 +68,14 @@ public:
   // run method can (and usually will) be called multiple times.
   // We should put asserts to verify that the process has been init-ed, when
   // run/finalize is called.
-  virtual void initialize (const std::shared_ptr<const GridsManager> grids_manager) = 0;
+  virtual void initialize () = 0;
   virtual void run        (/* what inputs? */) = 0;
   virtual void finalize   (/* what inputs? */) = 0;
 
   // These methods set fields in the atm process. Fields live on device and they are all 1d.
   // If the process *needs* to store the field as n-dimensional field, use the
   // template function 'get_reshaped_view' (see field.hpp for details).
+  // Note: this method will be called *after* set_grid, but *before* initialize
   void set_required_field (const Field<const Real, device_type>& f) {
     error::runtime_check(requires(f.get_header().get_identifier()),
                          "Error! This atmosphere process does not require this field. "

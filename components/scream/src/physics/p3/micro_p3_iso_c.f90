@@ -34,10 +34,11 @@ contains
     character(kind=c_char, len=128) :: mu_r_filename, revap_filename, vn_filename, vm_filename
     integer :: len
     logical :: ok
+    character(len=16) :: p3_version="2.8.2"
 
     call c_f_pointer(lookup_file_dir_c, lookup_file_dir)
     len = index(lookup_file_dir, C_NULL_CHAR) - 1
-    call p3_init_a(lookup_file_dir(1:len))
+    call p3_init_a(lookup_file_dir(1:len),p3_version)
 
     info = 0
     ok = .false.
@@ -81,7 +82,8 @@ contains
   subroutine p3_main_c(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,   &
        pres,dzq,npccn,naai,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
        diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc_in, &
-       pdel,exner,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm,p3_tend_out) bind(C)
+       pdel,exner,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm, &
+       pratot,prctot,p3_tend_out,mu_c,lamc) bind(C)
     use micro_p3, only : p3_main
 
     real(kind=c_real), intent(inout), dimension(its:ite,kts:kte) :: qc, nc, qr, nr, ssat, qv, th, th_old, qv_old
@@ -104,7 +106,9 @@ contains
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte+1)    :: rflx
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte+1)    :: sflx
     real(kind=c_real), intent(in),    dimension(its:ite,kts:kte)      :: icldm, lcldm, rcldm
+    real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: pratot,prctot
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte,49)   :: p3_tend_out
+    real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: mu_c,lamc
 
     logical :: log_predictNc
 
@@ -113,7 +117,8 @@ contains
     call p3_main(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,   &
          pres,dzq,npccn,naai,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
          diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc, &
-         pdel,exner,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm,p3_tend_out)
+         pdel,exner,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm, &
+         pratot,prctot,p3_tend_out,mu_c,lamc)
   end subroutine p3_main_c
 
    

@@ -41,14 +41,6 @@ AtmosphereProcessGroup (const Comm& comm, const ParameterList& params)
     for (const auto& name : m_atm_processes.back()->get_required_grids()) {
       m_required_grids.insert(name);
     }
-
-    // Add inputs/outputs to the list of inputs/outputs of this group
-    for (const auto& id : m_atm_processes[i]->get_required_fields()) {
-      m_required_fields.insert(id);
-    }
-    for (const auto& id : m_atm_processes[i]->get_computed_fields()) {
-      m_computed_fields.insert(id);
-    }
   }
 
   if (params.get<std::string>("Schedule Type") == "Sequential") {
@@ -62,10 +54,25 @@ AtmosphereProcessGroup (const Comm& comm, const ParameterList& params)
   error::runtime_check(m_group_schedule_type==GroupScheduleType::Sequential, "Error! Parallel schedule not yet implemented.\n");
 }
 
-void AtmosphereProcessGroup::initialize (const std::shared_ptr<const GridsManager> grids_manager) {
+void AtmosphereProcessGroup::set_grid (const std::shared_ptr<const GridsManager> grids_manager) {
+
+  for (int i=0; i<m_group_size; ++i) {
+    m_atm_processes[i]->set_grid(grids_manager);
+
+    // Add inputs/outputs to the list of inputs/outputs of this group
+    for (const auto& id : m_atm_processes[i]->get_required_fields()) {
+      m_required_fields.insert(id);
+    }
+    for (const auto& id : m_atm_processes[i]->get_computed_fields()) {
+      m_computed_fields.insert(id);
+    }
+  }
+}
+
+void AtmosphereProcessGroup::initialize () {
   // Now that we have the comm for the processes in the group, we can initialize them
   for (int i=0; i<m_group_size; ++i) {
-    m_atm_processes[i]->initialize(grids_manager);
+    m_atm_processes[i]->initialize();
   }
 }
 
