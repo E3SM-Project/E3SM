@@ -383,6 +383,10 @@ contains
           end if  ! if sea-ice is present
        end do
 
+       if (.not. FB_fldchk(is_local%wrap%FBExp(compocn), 'Foxx_swnet', rc=rc)) then
+          deallocate(Foxx_swnet)
+       end if
+
        ! Output to ocean per ice thickness fraction and sw penetrating into ocean
        if ( FB_fldchk(is_local%wrap%FBImp(compice,compice), 'Si_ifrac_n', rc=rc) .and. &
             FB_fldchk(is_local%wrap%FBExp(compocn)        , 'Si_ifrac_n', rc=rc)) then
