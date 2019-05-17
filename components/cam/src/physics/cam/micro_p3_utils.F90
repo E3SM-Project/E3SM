@@ -23,8 +23,8 @@ module micro_p3_utils
     public :: rtype
 #endif
 
-    public :: get_latent_heat, micro_p3_utils_init, size_dist_param_liq, &
-              size_dist_param_basic,avg_diameter, rising_factorial, calculate_incloud_mixingratios
+    public :: get_latent_heat, micro_p3_utils_init, &
+              avg_diameter, calculate_incloud_mixingratios
 
     integer, public :: iulog_e3sm
     logical, public :: masterproc_e3sm
@@ -68,36 +68,8 @@ module micro_p3_utils
     integer, public,parameter :: iparam = 3
 
     real(rtype), parameter, public :: mincld=0.0001_rtype
-    real(rtype), parameter, public :: rhosn = 250._rtype  ! bulk density snow
-    real(rtype), parameter, public :: rhoi = 500._rtype   ! bulk density ice
     real(rtype), parameter, public :: rhows = 917._rtype  ! bulk density water solid
 
-
-public :: MicroHydrometeorProps
-
-type :: MicroHydrometeorProps
-   ! Density (kg/m^3)
-   real(rtype) :: rho
-   ! Information for size calculations.
-   ! Basic calculation of mean size is:
-   !     lambda = (shape_coef*nic/qic)^(1/eff_dim)
-   ! Then lambda is constrained by bounds.
-   real(rtype) :: eff_dim
-   real(rtype) :: shape_coef
-   real(rtype) :: lambda_bounds(2)
-   ! Minimum average particle mass (kg).
-   ! Limit is applied at the beginning of the size distribution calculations.
-   real(rtype) :: min_mean_mass
-end type MicroHydrometeorProps
-
-interface MicroHydrometeorProps
-   module procedure NewMicroHydrometeorProps
-end interface
-
-type(MicroHydrometeorProps), public :: micro_liq_props
-type(MicroHydrometeorProps), public :: micro_ice_props
-type(MicroHydrometeorProps), public :: micro_rain_props
-type(MicroHydrometeorProps), public :: micro_snow_props
 
 ! particle mass-diameter relationship
 ! currently we assume spherical particles for cloud ice/snow
@@ -117,20 +89,6 @@ real(rtype), parameter :: min_mean_mass_ice = 1.e-20_rtype
 REAL(rtype), PARAMETER :: cldm_min   = 1.e-20_rtype !! threshold min value for cloud fraction
 real(rtype), parameter :: incloud_limit = 5.1E-3
 real(rtype), parameter :: precip_limit  = 1.0E-2
-!=========================================================
-! Utilities that are cheaper if the compiler knows that
-! some argument is an integer.
-!=========================================================
-
-interface rising_factorial
-   module procedure rising_factorial_rtype
-   module procedure rising_factorial_integer
-end interface rising_factorial
-
-interface var_coef
-   module procedure var_coef_rtype
-   module procedure var_coef_integer
-end interface var_coef
 
     contains
 !__________________________________________________________________________________________!
@@ -263,20 +221,6 @@ end interface var_coef
     clbfact_dep = 1._rtype
     clbfact_sub = 1._rtype
 
-    ! Don't specify lambda bounds for cloud liquid, as they are determined by
-    ! pgam dynamically.
-    micro_liq_props = MicroHydrometeorProps(rhow, dsph, &
-         min_mean_mass=min_mean_mass_liq)
-  
-    ! Mean ice diameter can not grow bigger than twice the autoconversion
-    ! threshold for snow.
-    ice_lambda_bounds = 1._rtype/[2._rtype*400.e-6_rtype, 10.e-6_rtype] !! dcs 400.e-6
-    micro_ice_props = MicroHydrometeorProps(rhoi, dsph, &
-         ice_lambda_bounds, min_mean_mass_ice)
-  
-    micro_rain_props = MicroHydrometeorProps(rhow, dsph, lam_bnd_rain)
-    micro_snow_props = MicroHydrometeorProps(rhosn, dsph, lam_bnd_snow)
-    
     return
     end subroutine micro_p3_utils_init
 !__________________________________________________________________________________________!
@@ -364,108 +308,6 @@ end interface var_coef
 !__________________________________________________________________________________________!
 !                                                                                          !
 !__________________________________________________________________________________________!
-! get cloud droplet size distribution parameters
-elemental subroutine size_dist_param_liq(props, qcic, ncic, rho, pgam, lamc)
-  type(MicroHydrometeorProps), intent(in) :: props
-  real(rtype), intent(in) :: qcic
-  real(rtype), intent(inout) :: ncic
-  real(rtype), intent(in) :: rho
-
-  real(rtype), intent(out) :: pgam
-  real(rtype), intent(out) :: lamc
-
-  type(MicroHydrometeorProps) :: props_loc
-
-  if (qcic > qsmall) then
-
-     ! Local copy of properties that can be modified.
-     ! (Elemental routines that operate on arrays can't modify scalar
-     ! arguments.)
-     props_loc = props
-
-     ! Get pgam from fit to observations of martin et al. 1994
-#if ! defined(CLUBB_BFB_S2) && ! defined(CLUBB_BFB_ALL)
-     pgam = 0.0005714_rtype*(ncic/1.e6_rtype*rho) + 0.2714_rtype
-     pgam = 1._rtype/(pgam**2) - 1._rtype
-     pgam = max(pgam, 2._rtype)
-     pgam = min(pgam, 15._rtype)
-
-     ! Set coefficient for use in size_dist_param_basic.
-     props_loc%shape_coef = pi_e3sm * props_loc%rho / 6._rtype * &
-          rising_factorial(pgam+1._rtype, props_loc%eff_dim)
-#else
-     pgam = 0.0005714_rtype*1.e-6_rtype*ncic*rho + 0.2714_rtype
-     pgam = 1._rtype/(pgam**2) - 1._rtype
-     pgam = max(pgam, 2._rtype)
-
-     ! Set coefficient for use in size_dist_param_basic.
-     ! The 3D case is so common and optimizable that we specialize it:
-     if (props_loc%eff_dim == 3._rtype) then
-        props_loc%shape_coef = pi_e3sm / 6._rtype * props_loc%rho * &
-             rising_factorial(pgam+1._rtype, 3)
-     else
-        props_loc%shape_coef = pi_e3sm / 6._rtype * props_loc%rho * &
-             rising_factorial(pgam+1._rtype, props_loc%eff_dim)
-     end if
-#endif
-
-     ! Limit to between 2 and 50 microns mean size.
-     props_loc%lambda_bounds = (pgam+1._rtype)*1._rtype/[50.e-6_rtype, 2.e-6_rtype]
-
-     call size_dist_param_basic(props_loc, qcic, ncic, lamc)
-
-  else
-     ! pgam not calculated in this case, so set it to a value likely to
-     ! cause an error if it is accidentally used
-     ! (gamma function undefined for negative integers)
-     pgam = -100._rtype
-     lamc = 0._rtype
-  end if
-
-end subroutine size_dist_param_liq
-!__________________________________________________________________________________________!
-!                                                                                          !
-!__________________________________________________________________________________________!
-! Basic routine for getting size distribution parameters.
-elemental subroutine size_dist_param_basic(props, qic, nic, lam, n0)
-  type(MicroHydrometeorProps), intent(in) :: props
-  real(rtype), intent(in) :: qic
-  real(rtype), intent(inout) :: nic
-
-  real(rtype), intent(out) :: lam
-  real(rtype), intent(out), optional :: n0
-
-  if (qic > qsmall) then
-
-     ! add upper limit to in-cloud number concentration to prevent
-     ! numerical error
-     if (limiter_is_on(props%min_mean_mass)) then
-        nic = min(nic, qic / props%min_mean_mass)
-     end if
-
-     ! lambda = (c n/q)^(1/d)
-     lam = (props%shape_coef * nic/qic)**(1._rtype/props%eff_dim)
-
-     ! check for slope
-     ! adjust vars
-     if (lam < props%lambda_bounds(1)) then
-        lam = props%lambda_bounds(1)
-        nic = lam**(props%eff_dim) * qic/props%shape_coef
-     else if (lam > props%lambda_bounds(2)) then
-        lam = props%lambda_bounds(2)
-        nic = lam**(props%eff_dim) * qic/props%shape_coef
-     end if
-
-  else
-     lam = 0._rtype
-  end if
-
-  if (present(n0)) n0 = nic * lam
-
-end subroutine size_dist_param_basic
-!__________________________________________________________________________________________!
-!                                                                                          !
-!__________________________________________________________________________________________!
 
 real(rtype) elemental function avg_diameter(q, n, rho_air, rho_sub)
   ! Finds the average diameter of particles given their density, and
@@ -479,108 +321,6 @@ real(rtype) elemental function avg_diameter(q, n, rho_air, rho_sub)
   avg_diameter = (pi_e3sm * rho_sub * n/(q*rho_air))**(-1._rtype/3._rtype)
 
 end function avg_diameter
-!__________________________________________________________________________________________!
-!                                                                                          !
-!__________________________________________________________________________________________!
-! Constructor for a constituent property object.
-function NewMicroHydrometeorProps(rho, eff_dim, lambda_bounds, min_mean_mass) &
-     result(res)
-  real(rtype), intent(in) :: rho, eff_dim
-  real(rtype), intent(in), optional :: lambda_bounds(2), min_mean_mass
-  type(MicroHydrometeorProps) :: res
-
-  res%rho = rho
-  res%eff_dim = eff_dim
-  if (present(lambda_bounds)) then
-     res%lambda_bounds = lambda_bounds
-  else
-     res%lambda_bounds = no_limiter()
-  end if
-  if (present(min_mean_mass)) then
-     res%min_mean_mass = min_mean_mass
-  else
-     res%min_mean_mass = no_limiter()
-  end if
-
-  res%shape_coef = rho*pi_e3sm*gamma(eff_dim+1._rtype)/6._rtype
-
-end function NewMicroHydrometeorProps
-!__________________________________________________________________________________________!
-!                                                                                          !
-!__________________________________________________________________________________________!
-!========================================================================
-!UTILITIES
-!========================================================================
-
-pure function no_limiter()
-  real(rtype) :: no_limiter
-
-  no_limiter = transfer(limiter_off, no_limiter)
-
-end function no_limiter
-
-pure function limiter_is_on(lim)
-  real(rtype), intent(in) :: lim
-  logical :: limiter_is_on
-
-  limiter_is_on = transfer(lim, limiter_off) /= limiter_off
-
-end function limiter_is_on
-!========================================================================
-!FORMULAS
-!========================================================================
-
-! Use gamma function to implement rising factorial extended to the reals.
-pure function rising_factorial_rtype(x, n) result(res)
-  real(rtype), intent(in) :: x, n
-  real(rtype) :: res
-
-  res = gamma(x+n)/gamma(x)
-
-end function rising_factorial_rtype
-
-! Rising factorial can be performed much cheaper if n is a small integer.
-pure function rising_factorial_integer(x, n) result(res)
-  real(rtype), intent(in) :: x
-  integer, intent(in) :: n
-  real(rtype) :: res
-
-  integer :: i
-  real(rtype) :: factor
-
-  res = 1._rtype
-  factor = x
-
-  do i = 1, n
-     res = res * factor
-     factor = factor + 1._rtype
-  end do
-
-end function rising_factorial_integer
-
-elemental function var_coef_rtype(relvar, a) result(res)
-  ! Finds a coefficient for process rates based on the relative variance
-  ! of cloud water.
-  real(rtype), intent(in) :: relvar
-  real(rtype), intent(in) :: a
-  real(rtype) :: res
-
-  res = rising_factorial(relvar, a) / relvar**a
-
-end function var_coef_rtype
-
-elemental function var_coef_integer(relvar, a) result(res)
-  ! Finds a coefficient for process rates based on the relative variance
-  ! of cloud water.
-  real(rtype), intent(in) :: relvar
-  integer, intent(in) :: a
-  real(rtype) :: res
-
-  res = rising_factorial(relvar, a) / relvar**a
-
-end function var_coef_integer
-
-
 
 
 end module micro_p3_utils
