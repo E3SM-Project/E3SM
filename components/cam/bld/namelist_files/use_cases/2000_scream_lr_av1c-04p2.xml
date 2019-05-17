@@ -72,7 +72,6 @@
 <rrtmg_temp_fix          >.true.</rrtmg_temp_fix>
 <nucleate_ice_subgrid    >1.2D0</nucleate_ice_subgrid>
 <cld_sed                 >1.0D0</cld_sed>
-<microp_scheme           >P3</microp_scheme>
 
 <!-- Macrophysics/microphysics coupling -->
 <cld_macmic_num_steps    > 6</cld_macmic_num_steps>

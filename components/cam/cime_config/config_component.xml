@@ -116,7 +116,7 @@
       <value compset="_CAM%ADIAB"     >-phys adiabatic</value>              
 
       <!-- SCREAM configurations -->
-      <value compset="_CAM5%SCREAM">-phys cam5 -shoc_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72 -rad rrtmgp</value>
+      <value compset="_CAM5%SCREAM">-phys cam5 -shoc_sgs -microphys p3 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72 -rad rrtmgp</value>
 
       <!-- Aquaplanet -->
       <value compset="_CAM5%AQUA"   >-phys cam5 -nlev 72 -clubb_sgs -microphys mg2 -aquaplanet -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates </value>
