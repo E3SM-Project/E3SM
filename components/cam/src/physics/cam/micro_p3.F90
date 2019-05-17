@@ -892,45 +892,45 @@ contains
 
           endif   ! qitot > qsmall
 
-         !----------------------------------------------------------------------
-         ! Begin calculations of microphysical processes
+          !----------------------------------------------------------------------
+          ! Begin calculations of microphysical processes
 
-         !......................................................................
-         ! ice processes
-         !......................................................................
+          !......................................................................
+          ! ice processes
+          !......................................................................
 
-         !.......................
-         ! collection of droplets
-         call ice_droplet_collection(rho(i,k), t(i,k), rhofaci(i,k), f1pr04, qitot_incld(i,k), qc_incld(i,k),nitot_incld(i,k), nc_incld(i,k), qccol, nccol, qcshd, ncshdc)
+          !.......................
+          ! collection of droplets
+          call ice_droplet_collection(rho(i,k), t(i,k), rhofaci(i,k), f1pr04, qitot_incld(i,k), qc_incld(i,k),nitot_incld(i,k), nc_incld(i,k), qccol, nccol, qcshd, ncshdc)
 
-         !....................
-         ! collection of rain
-         call ice_drop_collection(rho(i,k), t(i,k), rhofaci(i,k), logn0r(i,k), f1pr07, f1pr08, qitot_incld(i,k), nitot_incld(i,k), qr_incld(i,k), qrcol, nrcol)
-         !...................................
-         ! collection between ice categories
+          !....................
+          ! collection of rain
+          call ice_drop_collection(rho(i,k), t(i,k), rhofaci(i,k), logn0r(i,k), f1pr07, f1pr08, qitot_incld(i,k), nitot_incld(i,k), qr_incld(i,k), qrcol, nrcol)
+          !...................................
+          ! collection between ice categories
 
-         !PMC nCat deleted lots of stuff here.
+          !PMC nCat deleted lots of stuff here.
 
-         !.............................................
-         ! self-collection of ice 
-         call ice_self_collection(rho(i,k), rhofaci(i,k), f1pr03, eii, Eii_fact, qitot_incld(i,k), nitot_incld(i,k), nislf)
+          !.............................................
+          ! self-collection of ice 
+          call ice_self_collection(rho(i,k), rhofaci(i,k), f1pr03, eii, Eii_fact, qitot_incld(i,k), nitot_incld(i,k), nislf)
 
-         !............................................................
-         ! melting
-         call ice_melting(rho(i,k), t(i,k), pres(i,k), rhofaci(i,k), f1pr05, f1pr14, xxlv(i,k), xlf(i,k), & 
-                           dv, sc, mu, kap, qv(i,k), qitot_incld(i,k), nitot_incld(i,k), qimlt, nimlt)
+          !............................................................
+          ! melting
+          call ice_melting(rho(i,k), t(i,k), pres(i,k), rhofaci(i,k), f1pr05, f1pr14, xxlv(i,k), xlf(i,k), & 
+            dv, sc, mu, kap, qv(i,k), qitot_incld(i,k), nitot_incld(i,k), qimlt, nimlt)
 
           !............................................................
           ! calculate wet growth
-         call wet_growth(rho(i,k), t(i,k), pres(i,k), rhofaci(i,k), f1pr05, f1pr14, xxlv(i,k), xlf(i,k), & 
-         dv, kap, mu, sc, qv(i,k), qc_incld(i,k), qitot_incld(i,k), nitot_incld(i,k), qr_incld(i,k), log_wetgrowth, &
-         qrcol, qccol, qwgrth, nrshdr, qcshd)
+          call wet_growth(rho(i,k), t(i,k), pres(i,k), rhofaci(i,k), f1pr05, f1pr14, xxlv(i,k), xlf(i,k), & 
+          dv, kap, mu, sc, qv(i,k), qc_incld(i,k), qitot_incld(i,k), nitot_incld(i,k), qr_incld(i,k), log_wetgrowth, &
+          qrcol, qccol, qwgrth, nrshdr, qcshd)
          
           !-----------------------------
           ! calcualte total inverse ice relaxation timescale combined for all ice categories
           ! note 'f1pr' values are normalized, so we need to multiply by N
           call ice_relaxation(rho(i,k), t(i,k), rhofaci(i,k), f1pr05, f1pr14, dv, mu, sc, qitot_incld(i,k), nitot_incld(i,k), &
-           epsi, epsi_tot)
+          epsi, epsi_tot)
 
           !.........................
           ! calculate rime density
@@ -938,16 +938,7 @@ contains
 
           !............................................................
           ! contact and immersion freezing droplets
-
-          if (qc_incld(i,k).ge.qsmall .and. t(i,k).le.rainfrze) then
-             ! for future: calculate gamma(mu_c+4) in one place since its used multiple times  !AaronDonahue, TODO
-             dum   = (1._rtype/lamc(i,k))**3
-             Q_nuc = cons6*cdist1(i,k)*gamma(7._rtype+mu_c(i,k))*exp(aimm*(zerodegc-t(i,k)))*dum**2
-             N_nuc = cons5*cdist1(i,k)*gamma(mu_c(i,k)+4._rtype)*exp(aimm*(zerodegc-t(i,k)))*dum
-             qcheti = Q_nuc
-             ncheti = N_nuc
-          endif
-
+          call droplet_freezing(t(i,k), lamc(i,k), mu_c(i,k), cdist1(i,k), qc_incld(i,k), qcheti, ncheti)
 
           !............................................................
           ! immersion freezing of rain
@@ -3248,8 +3239,36 @@ subroutine rime_density(t, rhofaci, f1pr02, acn, lamc,  mu_c, qc_incld, qccol, v
    else 
       rhorime_c = 400._rtype 
    endif ! qi > qsmall and T < 273.15
-
 end subroutine rime_density
+
+subroutine droplet_freezing(t, lamc, mu_c, cdist1, qc_incld, qcheti, ncheti)
+
+   !............................................................
+   ! contact and immersion freezing droplets
+
+   implicit none 
+
+   real(rtype), intent(in) :: t
+   real(rtype), intent(in) :: lamc
+   real(rtype), intent(in) :: mu_c
+   real(rtype), intent(in) :: cdist1 
+   real(rtype), intent(in) :: qc_incld 
+
+   real(rtype), intent(out) :: qcheti 
+   real(rtype), intent(out) :: ncheti 
+
+   real(rtype) :: dum, Q_nuc, N_nuc 
+
+   if (qc_incld.ge.qsmall .and. t.le.rainfrze) then
+      ! for future: calculate gamma(mu_c+4) in one place since its used multiple times  !AaronDonahue, TODO
+      dum   = (1._rtype/lamc)**3
+      Q_nuc = cons6*cdist1*gamma(7._rtype+mu_c)*exp(aimm*(zerodegc-t))*dum**2
+      N_nuc = cons5*cdist1*gamma(mu_c+4._rtype)*exp(aimm*(zerodegc-t))*dum
+      qcheti = Q_nuc
+      ncheti = N_nuc
+   endif 
+
+end subroutine droplet_freezing 
 
 
 end module micro_p3
