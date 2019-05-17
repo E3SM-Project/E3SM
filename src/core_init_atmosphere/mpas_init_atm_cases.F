@@ -5017,6 +5017,8 @@ call mpas_log_write('Done with soil consistency check')
 
       character (len=StrKIND) :: errstring
 
+      real (kind=RKIND) :: max_zgrid_local, max_zgrid_global
+
 
       call mpas_log_write('Interpolating LBCs at time '//trim(timestamp))
 
@@ -5102,6 +5104,23 @@ call mpas_log_write('Done with soil consistency check')
       p0 = 1.0e+05_RKIND
 
       scalars(:,:,:) = 0.0_RKIND
+
+      !
+      ! Check that we have what looks like a valid zgrid field. If the max value for zgrid is zero,
+      ! the input file likely does not contain vertical grid information.
+      !
+      max_zgrid_local = maxval(zgrid(:,1:nCellsSolve))
+      call mpas_dmpar_max_real(dminfo, max_zgrid_local, max_zgrid_global)
+      if (max_zgrid_global == 0.0_RKIND) then
+         call mpas_log_write('********************************************************************************', &
+                             messageType=MPAS_LOG_ERR)
+         call mpas_log_write('The maximum value of the zgrid field is 0. Please ensure that the ''input'' stream ', &
+                             messageType=MPAS_LOG_ERR)
+         call mpas_log_write('contains valid vertical grid information.', &
+                             messageType=MPAS_LOG_ERR)
+         call mpas_log_write('********************************************************************************', &
+                             messageType=MPAS_LOG_CRIT)
+      end if
 
 
       !
