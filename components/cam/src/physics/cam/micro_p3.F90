@@ -417,7 +417,6 @@ contains
     real(rtype), dimension(its:ite,kts:kte) :: cdist
     real(rtype), dimension(its:ite,kts:kte) :: cdist1
     real(rtype), dimension(its:ite,kts:kte) :: cdistr
-    real(rtype), dimension(its:ite,kts:kte) :: Vt_qc
 
     ! liquid-phase microphysical process rates:
     !  (all Q process rates in kg kg-1 s-1)
@@ -478,7 +477,7 @@ contains
     real(rtype), dimension(its:ite,kts:kte) :: nc_incld, nr_incld, nitot_incld, birim_incld ! In cloud number concentrations
 
     real(rtype), dimension(its:ite,kts:kte)      :: inv_dzq,inv_rho,ze_ice,ze_rain,prec,rho,       &
-         rhofacr,rhofaci,acn,xxls,xxlv,xlf,qvs,qvi,sup,supi,vtrmi1,       &
+         rhofacr,rhofaci,acn,xxls,xxlv,xlf,qvs,qvi,sup,supi,       &
          tmparr1,inv_exner
 
     real(rtype), dimension(kts:kte) ::  V_qr,V_qit,V_nit,V_nr,V_qc,V_nc,flux_qit,        &
@@ -494,7 +493,7 @@ contains
          fluxdiv_qx,fluxdiv_nx,Co_max,dt_sub,      &
          Q_nuc,N_nuc,         &
          deltaD_init,dumt,qcon_satadj,qdep_satadj,sources,sinks,    &
-         timeScaleFactor,dt_left
+         timeScaleFactor,dt_left, vtrmi1, Vt_qc
 
 
     integer :: dumi,i,k,dumj,dumii,dumjj,dumzz,      &
@@ -933,55 +932,9 @@ contains
           call ice_relaxation(rho(i,k), t(i,k), rhofaci(i,k), f1pr05, f1pr14, dv, mu, sc, qitot_incld(i,k), nitot_incld(i,k), &
            epsi, epsi_tot)
 
-
           !.........................
           ! calculate rime density
-
-          !     FUTURE:  Add source term for birim (=qccol/rhorime_c) so that all process rates calculations
-          !              are done together, before conservation.
-
-          ! NOTE: Tc (ambient) is assumed for the surface temperature.  Technically,
-          ! we should diagose graupel surface temperature from heat balance equation.
-          ! (but the ambient temperature is a reasonable approximation; tests show
-          ! very little sensitivity to different assumed values, Milbrandt and Morrison 2012).
-
-          ! Compute rime density: (based on parameterization of Cober and List, 1993 [JAS])
-          ! for simplicty use mass-weighted ice and droplet/rain fallspeeds
-
-          ! if (qitot_incld(i,k).ge.qsmall .and. t(i,k).lt.zerodegc) then
-          !  NOTE:  condition applicable for cloud only; modify when rain is added back
-          if (qccol.ge.qsmall .and. t(i,k).lt.zerodegc) then
-
-             ! get mass-weighted mean ice fallspeed
-             vtrmi1(i,k) = f1pr02*rhofaci(i,k)
-             iTc   = 1._rtype/min(-0.001_rtype,t(i,k)-zerodegc)
-
-             ! cloud:
-             if (qc_incld(i,k).ge.qsmall) then
-                ! droplet fall speed
-                ! (use Stokes' formulation (thus use analytic solution)
-                Vt_qc(i,k) = acn(i,k)*gamma(4._rtype+bcn+mu_c(i,k))/(lamc(i,k)**bcn*gamma(mu_c(i,k)+4._rtype))
-                ! use mass-weighted mean size
-                D_c = (mu_c(i,k)+4._rtype)/lamc(i,k)
-                V_impact  = abs(vtrmi1(i,k)-Vt_qc(i,k))
-                Ri        = -(0.5e+6_rtype*D_c)*V_impact*iTc
-                !               Ri        = max(1.,min(Ri,8.))
-                Ri        = max(1.,min(Ri,12._rtype))
-                if (Ri.le.8.) then
-                   rhorime_c  = (0.051_rtype + 0.114_rtype*Ri - 0.0055_rtype*Ri**2)*1000._rtype
-                else
-                   ! for Ri > 8 assume a linear fit between 8 and 12,
-                   ! rhorime = 900 kg m-3 at Ri = 12
-                   ! this is somewhat ad-hoc but allows a smoother transition
-                   ! in rime density up to wet growth
-                   rhorime_c  = 611._rtype+72.25_rtype*(Ri-8._rtype)
-                endif
-
-             endif    !if qc>qsmall
-
-          else
-             rhorime_c = 400._rtype
-          endif ! qi > qsmall and T < 273.15
+          call rime_density(t(i,k), rhofaci(i,k), f1pr02, acn(i,k), lamc(i,k), mu_c(i,k), qc_incld(i,k), qccol, vtrmi1, rhorime_c)
 
           !............................................................
           ! contact and immersion freezing droplets
@@ -1494,9 +1447,12 @@ contains
                qcheti)*dt
           qitot(i,k) = qitot(i,k) + (qidep+qinuc)*dt + dum
           qirim(i,k) = qirim(i,k) + dum
+         
+
           birim(i,k) = birim(i,k) + (qrcol*inv_rho_rimeMax+qccol/  &
                rhorime_c+(qrheti+     &
                qcheti)*inv_rho_rimeMax)*dt
+
           nitot(i,k) = nitot(i,k) + (ninuc-nimlt-nisub-      &
                nislf+nrheti+          &
                ncheti)*dt
@@ -1516,7 +1472,7 @@ contains
              qirim(i,k) = qitot(i,k)
              birim(i,k) = qirim(i,k)*inv_rho_rimeMax
           endif
-
+           
           ! densify in above freezing conditions and melting
           ! -- future work --
           !   Ideally, this will be treated with the predicted liquid fraction in ice.
@@ -3178,6 +3134,7 @@ subroutine wet_growth(rho, t, pres, rhofaci, f1pr05, f1pr14, xxlv, xlf, &
          log_wetgrowth = .true.
       endif
 
+
    end if 
 
 
@@ -3209,6 +3166,8 @@ subroutine ice_relaxation(rho, t, rhofaci, f1pr05, f1pr14, dv, mu, sc, qitot_inc
    real(rtype), intent(out) :: epsi
    real(rtype), intent(out) :: epsi_tot 
 
+
+
    if (qitot_incld.ge.qsmall .and. t.lt.zerodegc) then
       epsi = ((f1pr05+f1pr14*sc**thrd*(rhofaci*rho/mu)**0.5_rtype)*2._rtype*pi* &
       rho*dv)*nitot_incld
@@ -3220,6 +3179,77 @@ subroutine ice_relaxation(rho, t, rhofaci, f1pr05, f1pr14, dv, mu, sc, qitot_inc
 
 end subroutine ice_relaxation
 
+
+subroutine rime_density(t, rhofaci, f1pr02, acn, lamc,  mu_c, qc_incld, qccol, vtrmi1, rhorime_c) 
+   
+   !.........................
+   ! calculate rime density
+
+   !     FUTURE:  Add source term for birim (=qccol/rhorime_c) so that all process rates calculations
+   !              are done together, before conservation.
+
+   ! NOTE: Tc (ambient) is assumed for the surface temperature.  Technically,
+   ! we should diagose graupel surface temperature from heat balance equation.
+   ! (but the ambient temperature is a reasonable approximation; tests show
+   ! very little sensitivity to different assumed values, Milbrandt and Morrison 2012).
+
+   ! Compute rime density: (based on parameterization of Cober and List, 1993 [JAS])
+   ! for simplicty use mass-weighted ice and droplet/rain fallspeeds
+
+   implicit none 
+
+   real(rtype), intent(in) :: t 
+   real(rtype), intent(in) :: rhofaci 
+   real(rtype), intent(in) :: f1pr02
+   real(rtype), intent(in) :: acn 
+   real(rtype), intent(in) :: lamc 
+   real(rtype), intent(in) :: mu_c 
+   real(rtype), intent(in) :: qc_incld 
+   real(rtype), intent(in) :: qccol 
+
+   real(rtype), intent(out) :: vtrmi1 
+   real(rtype), intent(out) :: rhorime_c 
+
+   real(rtype) :: iTc = 0.0_rtype 
+   real(rtype) :: Vt_qc = 0.0_rtype
+   real(rtype) :: D_c  = 0.0_rtype 
+   real(rtype) :: V_impact = 0.0_rtype 
+   real(rtype) :: Ri = 0.0_rtype 
+
+   ! if (qitot_incld(i,k).ge.qsmall .and. t(i,k).lt.zerodegc) then
+   !  NOTE:  condition applicable for cloud only; modify when rain is added back
+   if (qccol.ge.qsmall .and. t.lt.zerodegc) then
+      ! get mass-weighted mean ice fallspeed
+      vtrmi1 = f1pr02*rhofaci
+      iTc   = 1._rtype/min(-0.001_rtype,t-zerodegc) 
+
+             ! cloud:
+      if (qc_incld.ge.qsmall) then
+         ! droplet fall speed
+         ! (use Stokes' formulation (thus use analytic solution)
+         Vt_qc = acn*gamma(4._rtype+bcn+mu_c)/(lamc**bcn*gamma(mu_c+4._rtype))
+         ! use mass-weighted mean size
+         D_c = (mu_c+4._rtype)/lamc
+         V_impact  = abs(vtrmi1-Vt_qc)
+         Ri        = -(0.5e+6_rtype*D_c)*V_impact*iTc
+         !               Ri        = max(1.,min(Ri,8.))
+         Ri        = max(1.,min(Ri,12._rtype))
+         if (Ri.le.8.) then
+            rhorime_c  = (0.051_rtype + 0.114_rtype*Ri - 0.0055_rtype*Ri**2)*1000._rtype
+         else
+            ! for Ri > 8 assume a linear fit between 8 and 12,
+            ! rhorime = 900 kg m-3 at Ri = 12
+            ! this is somewhat ad-hoc but allows a smoother transition
+            ! in rime density up to wet growth
+            rhorime_c  = 611._rtype+72.25_rtype*(Ri-8._rtype) 
+         endif
+
+      endif    !if qc>qsmall
+   else 
+      rhorime_c = 400._rtype 
+   endif ! qi > qsmall and T < 273.15
+
+end subroutine rime_density
 
 
 end module micro_p3
