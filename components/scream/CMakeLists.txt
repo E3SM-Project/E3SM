@@ -92,9 +92,9 @@ if (SCREAM_POSSIBLY_NO_PACK)
 endif ()
 set (SCREAM_POSSIBLY_NO_PACK_SIZE ${DEFAULT_POSSIBLY_NO_PACK_SIZE})
 # Checks on pack sizes relative to the master one:
-check_pack_size(${SCREAM_PACK_SIZE}, ${SCREAM_SMALL_PACK_SIZE}, "small pack")
+check_pack_size(${SCREAM_PACK_SIZE} ${SCREAM_SMALL_PACK_SIZE} "small pack")
 # This one is an internal check, as the user cannot set SCREAM_POSSIBLY_NO_PACK_SIZE now.
-check_pack_size(${SCREAM_PACK_SIZE}, ${SCREAM_POSSIBLY_NO_PACK_SIZE}, "possibly no pack")
+check_pack_size(${SCREAM_PACK_SIZE} ${SCREAM_POSSIBLY_NO_PACK_SIZE} "possibly no pack")
 
 ## Now we have pack sizes. Proceed with other config options that depend on
 ## these.

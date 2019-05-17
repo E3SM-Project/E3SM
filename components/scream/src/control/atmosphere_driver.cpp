@@ -22,7 +22,11 @@ void AtmosphereDriver::initialize (const Comm& atm_comm, const ParameterList& pa
   const std::string& gm_type = gm_params.get<std::string>("Type");
   m_grids_manager.reset(GridsManagerFactory::instance().create(gm_type,m_atm_comm,gm_params));
 
-  // Let the processes register their fields in the repo
+  // Initialize the processes
+  m_atm_process_group->set_grid(m_grids_manager);
+
+  // By now, the processes should have fully built the ids of their
+  // required/computed fields. Let them register them in the repo
   m_device_field_repo.registration_begins();
   m_atm_process_group->register_fields(m_device_field_repo);
   m_device_field_repo.registration_ends();
@@ -30,7 +34,7 @@ void AtmosphereDriver::initialize (const Comm& atm_comm, const ParameterList& pa
   // TODO: this is a good place where we can insert a DAG analysis, to make sure all
   //       processes have their dependency met.
 
-  // Set all the fields in the processes needing them (before, they only had headers)
+  // Set all the fields in the processes needing them (before, they only had ids)
   // Input fields will be handed to the processes as const
   const auto& inputs  = m_atm_process_group->get_required_fields();
   const auto& outputs = m_atm_process_group->get_computed_fields();
@@ -43,7 +47,7 @@ void AtmosphereDriver::initialize (const Comm& atm_comm, const ParameterList& pa
   }
 
   // Initialize the processes
-  m_atm_process_group->initialize(m_grids_manager);
+  m_atm_process_group->initialize();
 }
 
 void AtmosphereDriver::run ( /* inputs ? */ ) {
