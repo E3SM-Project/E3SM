@@ -59,7 +59,7 @@ def buildlib(bldroot, installpath, case):
     with open(os.path.join(casebuild, "camconf", "CCSM_cppdefs")) as fd:
         camdefs = fd.read().strip()
 
-    run_bld_cmd_ensure_logging('cmake -DMODEL=cam -DCOMPLIB=atm -DUSER_CPPDEFS="{camdefs}" {cmake_args} {srcroot}/components'.format(camdefs=camdefs, cmake_args=cmake_args, srcroot=srcroot), logger, from_dir=bldroot)
+    run_bld_cmd_ensure_logging('cmake -DMODEL=cam -DCOMPLIB=atm -DUSER_CPPDEFS="{camdefs}" {cmake_args} {srcroot}/components'.format(casebuild=casebuild, camdefs=camdefs, cmake_args=cmake_args, srcroot=srcroot), logger, from_dir=bldroot)
     run_bld_cmd_ensure_logging("{} -j {}".format(gmake, gmake_j), logger, from_dir=bldroot)
 
 ###############################################################################

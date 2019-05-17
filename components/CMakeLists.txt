@@ -491,13 +491,10 @@ if (COMPILER STREQUAL "nag")
   set(CONFIG_ARGS "LIBS=${SLIBS}")
 endif()
 
-string(FIND CAM_CONFIG_OPTS "-cosp" HAS_COSP)
+string(FIND "${CAM_CONFIG_OPTS}" "-cosp" HAS_COSP)
 if (NOT HAS_COSP EQUAL -1)
   # The following is for the COSP simulator code:
-  get_filename_component(COSP_LIBDIR ${EXEROOT}/atm/obj/cosp ABSOLUTE)
-  if (MODEL STREQUAL "driver")
-    set(INCLDIR "${INCLDIR} -I${COSP_LIBDIR}")
-  endif()
+  get_filename_component(COSP_LIBDIR ${EXEROOT}/atm/obj/cam/src/physics/cosp ABSOLUTE)
 endif()
 
 
@@ -508,8 +505,8 @@ if (MODEL STREQUAL "cam")
   set(NOOPT_FILES "cam/src/physics/rrtmg/ext/rrtmg_lw/rrtmg_lw_k_g.f90;cam/src/physics/rrtmg/ext/rrtmg_sw/rrtmg_sw_k_g.f90")
 
   if (COSP_LIBDIR)
-    set(INCLDIR "${INCLDIR} -I${COSP_LIBDIR} -I${COSP_LIBDIR}/../ -I../${INSTALL_SHAREDPATH}/include -I../${CSM_SHR_INCLUDE}")
-    execute_process(COMMAND ${MAKE} -C ${COSP_LIBDIR} F90="${FC}" F90FLAGS="${INCLDIR} ${INCS} ${FREEFLAGS} ${FFLAGS} ${FC_AUTO_R8}" F90FLAGS_noauto="${INCLDIR} ${INCS} ${FREEFLAGS} ${FFLAGS}" F90FLAGS_fixed="${INCLDIR} ${INCS} ${FIXEDFLAGS} ${FFLAGS} ${FC_AUTO_R8}")
+    set(INCLDIR "${INCLDIR} -I${COSP_LIBDIR} -I../${INSTALL_SHAREDPATH}/include -I../${CSM_SHR_INCLUDE}")
+    add_subdirectory(cam/src/physics/cosp)
   endif()
 
 endif()
@@ -634,8 +631,8 @@ set(CMAKE_Fortran_COMPILER ${FC})
 set(CMAKE_EXE_LINKER_FLAGS "${LDFLAGS}")
 
 # JGF: We only want to do CAM for now
-# add_directory(${GLCROOT}/source_cism)
-# add_directory(${PIO_SRC_DIR})
+# add_subdirectory(${GLCROOT}/source_cism)
+# add_subdirectory(${PIO_SRC_DIR})
 
 #-------------------------------------------------------------------------------
 # Build & include dependency files
