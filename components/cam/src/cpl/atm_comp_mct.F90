@@ -913,7 +913,7 @@ CONTAINS
     fname_srf_cam = interpret_filename_spec( rsfilename_spec_cam, &
          yr_spec=yr_spec, mon_spec=mon_spec, day_spec=day_spec, sec_spec= sec_spec )
 
-    call cam_pio_createfile(File, fname_srf_cam, 0)
+    call cam_pio_createfile(File, fname_srf_cam)
     call pio_initdecomp(pio_subsystem, pio_double, (/ngcols/), dof, iodesc)
 
     nf_x2a = mct_aVect_nRattr(x2a_a)
