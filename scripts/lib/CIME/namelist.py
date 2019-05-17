@@ -1206,15 +1206,10 @@ class Namelist(object):
                     lines[-1] += "\n"
                     for line in lines:
                         out_file.write(line)
-                if format_ == 'nml':
-                    out_file.write("/\n")
-                if format_ == 'nmlcontents':
-                    out_file.write("\n")
-            else:
-                if format_ == 'nml':
-                    out_file.write("/\n")
-                if format_ == 'nmlcontents':
-                    out_file.write("\n")
+            if format_ == 'nml':
+                out_file.write("/\n")
+            if format_ == 'nmlcontents':
+                out_file.write("\n")
 
     def _write_nuopc(self, out_file, groups, sorted_groups, skip_comps):
         """Unwrapped version of `write` assuming that a file object is input."""
