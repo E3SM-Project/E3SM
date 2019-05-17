@@ -544,7 +544,7 @@ contains
   !
   !=================================================================================================
   !
-  subroutine get_horiz_grid_d(nxy,clat_d_out,clon_d_out,area_d_out,
+  subroutine get_horiz_grid_d(nxy,clat_d_out,clon_d_out,area_d_out, &
                               wght_d_out,lat_d_out,lon_d_out,cost_d_out)
     !--------------------------------------------------------------------------- 
     ! Purpose: Return latitude and longitude (in radians), column surface

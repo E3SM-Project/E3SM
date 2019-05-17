@@ -90,6 +90,7 @@ subroutine stepon_init(dyn_in, dyn_out )
   type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
 
   integer :: m
+  integer :: num_FM_vars
   character(len=max_fieldname_len) :: grid_name
 ! !DESCRIPTION:
 !
@@ -104,11 +105,12 @@ subroutine stepon_init(dyn_in, dyn_out )
   ! This is not done in dyn_init due to a circular dependency issue.
   if(par%dynproc) then
 #ifdef MODEL_THETA_L
-     !buffer to comm forcings, theta-l needs 1 more
-     call initEdgeBuffer(par, edgebuf, dyn_in%elem, (4+pcnst)*nlev)
+      !buffer to comm forcings, theta-l needs 1 more
+      num_FM_vars = 3
 #else
-     call initEdgeBuffer(par, edgebuf, dyn_in%elem, (3+pcnst)*nlev)
+      num_FM_vars = 2
 #endif
+      call initEdgeBuffer(par, edgebuf, dyn_in%elem, (1+num_FM_vars+pcnst)*nlev)
      if (use_gw_front)  call gws_init(dyn_in%elem)
   end if
 
@@ -233,12 +235,11 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
 end subroutine stepon_run1
 
 subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
-   use bndry_mod,      only: bndry_exchangeV
-   use dimensions_mod, only: nlev, nelemd, np, npsq, fv_nphys
-   use dp_coupling,    only: p_d_coupling
-   use parallel_mod,   only: par
-   use dyn_comp,       only: TimeLevel, hvcoord
-   
+   use bndry_mod,       only: bndry_exchangeV
+   use dimensions_mod,  only: nlev, nelemd, np, npsq, fv_nphys
+   use dp_coupling,     only: p_d_coupling
+   use parallel_mod,    only: par
+   use dyn_comp,        only: TimeLevel, hvcoord
    use time_mod,        only: tstep, TimeLevel_Qdp   !  dynamics typestep
    use control_mod,     only: ftype, qsplit
    use hycoef,          only: hyai, hybi, ps0
@@ -246,15 +247,22 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    use prim_driver_base,only: applyCAMforcing_tracers
 
    type(physics_state), intent(inout) :: phys_state(begchunk:endchunk)
-   type(physics_tend), intent(inout) :: phys_tend(begchunk:endchunk)
+   type(physics_tend),  intent(inout) :: phys_tend(begchunk:endchunk)
    type (dyn_import_t), intent(inout) :: dyn_in  ! Dynamics import container
    type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
-   integer :: kptr, ie, ic, i, j, k, tl_f, tl_fQdp, velcomp
+   integer :: kptr, ie, ic, m, i, j, k, tl_f, tl_fQdp, velcomp
    real(r8) :: rec2dt, dyn_ps0
    real(r8) :: dp(np,np,nlev),dp_tmp,fq,fq0,qn0, ftmp(npsq,nlev,2)
    real(r8) :: dtime
+   integer  :: num_FM_vars
 
    dtime = get_step_size()
+
+#ifdef MODEL_THETA_L
+   num_FM_vars = 3
+#else
+   num_FM_vars = 2
+#endif
 
    ! copy from phys structures -> dynamics structures
    call t_barrierf('sync_p_d_coupling', mpicom)
@@ -273,21 +281,18 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
             ! We need to apply mass matrix weighting when FV physics grid is used
             do k = 1,nlev
                dyn_in%elem(ie)%derived%FT(:,:,k)   = dyn_in%elem(ie)%derived%FT(:,:,k)   * dyn_in%elem(ie)%spheremp(:,:)
-               dyn_in%elem(ie)%derived%FM(:,:,1,k) = dyn_in%elem(ie)%derived%FM(:,:,1,k) * dyn_in%elem(ie)%spheremp(:,:)
-               dyn_in%elem(ie)%derived%FM(:,:,2,k) = dyn_in%elem(ie)%derived%FM(:,:,2,k) * dyn_in%elem(ie)%spheremp(:,:)
+               do m = 1,num_FM_vars
+                  dyn_in%elem(ie)%derived%FM(:,:,m,k) = dyn_in%elem(ie)%derived%FM(:,:,m,k) * dyn_in%elem(ie)%spheremp(:,:)
+               end do
                do ic = 1,pcnst
                   dyn_in%elem(ie)%derived%FQ(:,:,k,ic) = dyn_in%elem(ie)%derived%FQ(:,:,k,ic) * dyn_in%elem(ie)%spheremp(:,:)
                end do
             end do ! k = 1, nlev
          end if ! fv_nphys>0
 
-#ifdef MODEL_THETA_L
-         call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),3*nlev,kptr,ie)
-         kptr=kptr+3*nlev
-#else
-        call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),2*nlev,kptr,ie)
-        kptr=kptr+2*nlev
-#endif
+         kptr=0
+         call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),num_FM_vars*nlev,kptr,ie)
+         kptr=kptr+num_FM_vars*nlev
          call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
          kptr=kptr+nlev
          call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
@@ -305,15 +310,8 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       if (.not. single_column) then
 
          kptr=0
-         ! call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),2*nlev,kptr,ie)
-         ! kptr=kptr+2*nlev
-#ifdef MODEL_THETA_L
-         call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),3*nlev,kptr,ie)
-         kptr=kptr+3*nlev
-#else
-         call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),2*nlev,kptr,ie)
-         kptr=kptr+2*nlev
-#endif
+         call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),num_FM_vars*nlev,kptr,ie)
+         kptr=kptr+num_FM_vars*nlev
          call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
          kptr=kptr+nlev
          call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
@@ -322,8 +320,9 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
             ! We need to apply inverse mass matrix weighting when FV physics grid is used
             do k = 1,nlev
                dyn_in%elem(ie)%derived%FT(:,:,k)   = dyn_in%elem(ie)%derived%FT(:,:,k)   * dyn_in%elem(ie)%rspheremp(:,:)
-               dyn_in%elem(ie)%derived%FM(:,:,1,k) = dyn_in%elem(ie)%derived%FM(:,:,1,k) * dyn_in%elem(ie)%rspheremp(:,:)
-               dyn_in%elem(ie)%derived%FM(:,:,2,k) = dyn_in%elem(ie)%derived%FM(:,:,2,k) * dyn_in%elem(ie)%rspheremp(:,:)
+               do m = 1,num_FM_vars
+                  dyn_in%elem(ie)%derived%FM(:,:,m,k) = dyn_in%elem(ie)%derived%FM(:,:,m,k) * dyn_in%elem(ie)%rspheremp(:,:)
+               end do
                do ic = 1,pcnst
                   dyn_in%elem(ie)%derived%FQ(:,:,k,ic) = dyn_in%elem(ie)%derived%FQ(:,:,k,ic) * dyn_in%elem(ie)%rspheremp(:,:)
                end do
