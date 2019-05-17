@@ -943,16 +943,7 @@ contains
           !............................................................
           ! immersion freezing of rain
           ! for future: get rid of log statements below for rain freezing
-
-          if (qr_incld(i,k).ge.qsmall.and.t(i,k).le.rainfrze) then
-             Q_nuc = cons6*exp(log(cdistr(i,k))+log(gamma(7._rtype+mu_r(i,k)))-6._rtype*log(lamr(i,k)))* &
-                  exp(aimm*(zerodegc-T(i,k)))
-             N_nuc = cons5*exp(log(cdistr(i,k))+log(gamma(mu_r(i,k)+4._rtype))-3._rtype*log(lamr(i,k)))* &
-                  exp(aimm*(zerodegc-T(i,k)))
-             qrheti = Q_nuc
-             nrheti = N_nuc
-          endif
-
+          call rain_immersion_freezing(t(i,k), lamr(i,k), mu_r(i,k), cdistr(i,k), qr_incld(i,k), qrheti, nrheti)
 
           !......................................
           ! rime splintering (Hallet-Mossop 1974)
@@ -3270,5 +3261,38 @@ subroutine droplet_freezing(t, lamc, mu_c, cdist1, qc_incld, qcheti, ncheti)
 
 end subroutine droplet_freezing 
 
+subroutine rain_immersion_freezing(t, lamr, mu_r, cdistr, qr_incld, qrheti, nrheti)
+
+   !............................................................
+   ! immersion freezing of rain
+   ! for future: get rid of log statements below for rain freezing
+
+   implicit none 
+   
+   real(rtype), intent(in) :: t 
+   real(rtype), intent(in) :: mu_r 
+   real(rtype), intent(in) :: lamr 
+   real(rtype), intent(in) :: cdistr 
+   real(rtype), intent(in) :: qr_incld
+
+   real(rtype), intent(out) :: qrheti 
+   real(rtype), intent(out) :: nrheti 
+
+   real(rtype) :: Q_nuc, N_nuc 
+
+   if (qr_incld.ge.qsmall .and. t.le.rainfrze) then
+
+      Q_nuc = cons6*exp(log(cdistr)+log(gamma(7._rtype+mu_r))-6._rtype*log(lamr))* &
+      exp(aimm*(zerodegc-t))
+      N_nuc = cons5*exp(log(cdistr)+log(gamma(mu_r+4._rtype))-3._rtype*log(lamr))* &
+      exp(aimm*(zerodegc-t))
+
+      qrheti = Q_nuc 
+      nrheti = N_nuc 
+
+   endif 
+
+
+end subroutine rain_immersion_freezing 
 
 end module micro_p3
