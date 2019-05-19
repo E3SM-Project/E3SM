@@ -68,9 +68,15 @@ implicit none
 
 
   ! check for bad state that will crash exponential function below
-  ierr= any(vtheta_dp(:,:,:) < 0 )  .or. &
-        any(dp3d(:,:,:) < 0 ) .or. &
-        any(phi_i(:,:,1:nlev) <= phi_i(:,:,2:nlevp))
+  if (theta_hydrostatic_mode) then
+    ierr= any(vtheta_dp(:,:,:) < 0 )  .or. &
+          any(dp3d(:,:,:) < 0 )
+  else
+    ierr= any(vtheta_dp(:,:,:) < 0 )  .or. &
+          any(dp3d(:,:,:) < 0 ) .or. &
+          any(phi_i(:,:,1:nlev) <= phi_i(:,:,2:nlevp))
+  endif
+
   if (ierr) then
      if (present(caller)) then
         print *,'bad state in EOS, called from: ',caller

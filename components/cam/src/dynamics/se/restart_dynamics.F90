@@ -327,8 +327,8 @@ CONTAINS
 #ifdef MODEL_THETA_L
     if( .not. theta_hydrostatic_mode ) then
        deallocate(var3dp)
+       call pio_freedecomp(File, iodesc3dp)
     endif
-    call pio_freedecomp(File, iodesc3dp)
 #endif
 
 
