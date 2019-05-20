@@ -406,7 +406,7 @@ contains
 114    format('map_ne',i3.3,'np',i1,'_to_',a,'_',a,'_',3a2,'.nc')
 115    format('map_ne',i4.4,'np',i1,'_to_',a,'_',a,'_',3a2,'.nc')
 
-       call cam_pio_createfile( ogfile,mappingfile , 0)
+       call cam_pio_createfile(ogfile, mappingfile)
 
        ierr = pio_def_dim( ogfile, 'n_a', ncol, na_dim)
        ierr = pio_def_dim( ogfile, 'n_b', npts, nb_dim) 
