@@ -1,0 +1,13 @@
+<driver_script name="run.py">
+	<case name="full_run">
+		<step executable="./run.py" quiet="true" pre_message=" * Running full_run" post_message="  - Complete"/>
+	</case>
+	<case name="restart_run">
+		<step executable="./run.py" quiet="true" pre_message=" * Running restart_run" post_message="  - Complete"/>
+	</case>
+	<validation>
+		<compare_fields file1="full_run/output.nc" file2="restart_run/output.nc">
+			<template file="prognostic_comparison.xml" path_base="script_core_dir" path="templates/validations"/>
+		</compare_fields>
+	</validation>
+</driver_script>

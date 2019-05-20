@@ -50,8 +50,6 @@
 
 	<run_script name="run.py">
 		<step executable="gpmetis">
-			<argument flag="graph.info">36</argument>
+			<argument flag="graph.info">8</argument>
 		</step>
-		<model_run procs="36" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
-	</run_script>
-</config>
+		<model_run procs="8" threads="1" namelist="namelist.ocean" streams="streams.ocean"/> </run_script> </config>

@@ -1,0 +1,13 @@
+<driver_script name="run.py">
+	<case name="4blocks_run">
+		<step executable="./run.py" quiet="true" pre_message=" * Running 4blocks_run" post_message="  - Complete"/>
+	</case>
+	<case name="8blocks_run">
+		<step executable="./run.py" quiet="true" pre_message=" * Running 8blocks_run" post_message="  - Complete"/>
+	</case>
+	<validation>
+		<compare_fields file1="4blocks_run/output.nc" file2="8blocks_run/output.nc">
+			<template file="prognostic_comparison.xml" path_base="script_core_dir" path="templates/validations"/>
+		</compare_fields>
+	</validation>
+</driver_script>
