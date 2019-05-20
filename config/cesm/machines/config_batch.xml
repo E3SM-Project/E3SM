@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<config_batch version="2.0">
+<config_batch version="2.1">
   <!--
      File:    config_batch.xml
      Purpose: abstract out the parts of run scripts that are different, and use this configuration to
@@ -541,25 +541,4 @@
       <queue walltimemax="00:60:00" nodemin="1" nodemax="50" default="true">default</queue>
     </queues>
   </batch_system>
-
-  <batch_jobs>
-    <!-- order matters, with no-batch jobs will be run in the order listed here -->
-    <job name="case.run">
-      <template>template.case.run</template>
-      <prereq>$BUILD_COMPLETE and not $TEST</prereq>
-    </job>
-    <job name="case.test">
-      <template>template.case.test</template>
-      <prereq>$BUILD_COMPLETE and $TEST</prereq>
-    </job>
-    <job name="case.st_archive">
-      <template>template.st_archive</template>
-      <task_count>1</task_count>
-      <walltime>0:20:00</walltime>
-      <!-- If DOUT_S is true and case.run (or case.test) exits successfully then run st_archive-->
-      <dependency>case.run or case.test</dependency>
-      <prereq>$DOUT_S</prereq>
-    </job>
-  </batch_jobs>
-
 </config_batch>

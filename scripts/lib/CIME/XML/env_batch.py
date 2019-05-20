@@ -15,14 +15,15 @@ logger = logging.getLogger(__name__)
 
 class EnvBatch(EnvBase):
 
-    def __init__(self, case_root=None, infile="env_batch.xml"):
+    def __init__(self, case_root=None, infile="env_batch.xml", schema=None):
         """
         initialize an object interface to file env_batch.xml in the case directory
         """
         self._batchtype = None
         # This arbitrary setting should always be overwritten
         self._default_walltime = "00:20:00"
-        schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_batch.xsd")
+        if not schema:
+            schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_batch.xsd")
         super(EnvBatch,self).__init__(case_root, infile, schema=schema)
 
     # pylint: disable=arguments-differ
@@ -31,21 +32,6 @@ class EnvBatch(EnvBase):
         Override the entry_id set_value function with some special cases for this class
         """
         val = None
-
-        if item == "JOB_WALLCLOCK_TIME":
-            #Most systems use %H:%M:%S format for wallclock but LSF
-            #uses %H:%M this code corrects the value passed in to be
-            #the correct format - if we find we have more exceptions
-            #than this we may need to generalize this further
-            walltime_format = self.get_value("walltime_format", subgroup=None)
-            if walltime_format is not None and walltime_format.count(":") != value.count(":"): # pylint: disable=maybe-no-member
-                if value.count(":") == 1:
-                    t_spec = "%H:%M"
-                elif value.count(":") == 2:
-                    t_spec = "%H:%M:%S"
-                else:
-                    expect(False, "could not interpret format for wallclock time {}".format(value))
-                value = format_time(walltime_format, t_spec, value)
 
         if item == "JOB_QUEUE":
             expect(value in self._get_all_queue_names() or ignore_type,
@@ -214,14 +200,16 @@ class EnvBatch(EnvBase):
         # make sure batch script is exectuble
         os.chmod(output_name, os.stat(output_name).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
-    def set_job_defaults(self, batch_jobs, case):
+    def set_job_defaults(self, batch_jobs, case, env_workflow=None):
         if self._batchtype is None:
             self._batchtype = self.get_batch_system_type()
 
         if self._batchtype == "none":
             return
-
-        known_jobs = self.get_jobs()
+        if env_workflow:
+            known_jobs = env_workflow.get_jobs()
+        else:
+            known_jobs = self.get_jobs()
 
         for job, jsect in batch_jobs:
             if job not in known_jobs:
@@ -281,9 +269,12 @@ class EnvBatch(EnvBase):
                     walltime = specs[3]
 
                 walltime = self._default_walltime if walltime is None else walltime # last-chance fallback
-
-            self.set_value("JOB_QUEUE", queue, subgroup=job, ignore_type=specs is None)
-            self.set_value("JOB_WALLCLOCK_TIME", walltime, subgroup=job)
+            if env_workflow:
+                env_workflow.set_value("JOB_QUEUE", queue, subgroup=job, ignore_type=specs is None)
+                env_workflow.set_value("JOB_WALLCLOCK_TIME", walltime, subgroup=job)
+            else:
+                self.set_value("JOB_QUEUE", queue, subgroup=job, ignore_type=specs is None)
+                self.set_value("JOB_WALLCLOCK_TIME", walltime, subgroup=job)
             logger.debug("Job {} queue {} walltime {}".format(job, queue, walltime))
 
     def _match_attribs(self, attribs, case, queue):
@@ -426,8 +417,11 @@ class EnvBatch(EnvBase):
 
     def submit_jobs(self, case, no_batch=False, job=None, user_prereq=None, skip_pnl=False,
                     allow_fail=False, resubmit_immediate=False, mail_user=None, mail_type=None,
-                    batch_args=None, dry_run=False):
-        alljobs = self.get_jobs()
+                    batch_args=None, dry_run=False, runwithcylc=False):
+        if runwithcylc:
+            alljobs = [job]
+        else:
+            alljobs = self.get_jobs()
         startindex = 0
         jobs = []
         firstjob = job
@@ -439,15 +433,20 @@ class EnvBatch(EnvBase):
             logger.debug( "Index {:d} job {} startindex {:d}".format(index, job, startindex))
             if index < startindex:
                 continue
-            try:
-                prereq = self.get_value('prereq', subgroup=job, resolved=False)
-                if prereq is None or job == firstjob or (dry_run and prereq == "$BUILD_COMPLETE"):
-                    prereq = True
-                else:
-                    prereq = case.get_resolved_value(prereq)
-                    prereq = eval(prereq)
-            except:
-                expect(False,"Unable to evaluate prereq expression '{}' for job '{}'".format(self.get_value('prereq',subgroup=job), job))
+            jobfile = get_batch_script_for_job(job)
+            if not os.path.isfile(jobfile):
+                logger.info("Jobfile {} not found in case, skipping job step".format(jobfile))
+                prereq = False
+            else:
+                try:
+                    prereq = self.get_value('prereq', subgroup=job, resolved=False)
+                    if prereq is None or job == firstjob or (dry_run and prereq == "$BUILD_COMPLETE"):
+                        prereq = True
+                    else:
+                        prereq = case.get_resolved_value(prereq)
+                        prereq = eval(prereq)
+                except:
+                    expect(False,"Unable to evaluate prereq expression '{}' for job '{}'".format(self.get_value('prereq',subgroup=job), job))
 
             if prereq:
                 jobs.append((job, self.get_value('dependency', subgroup=job)))
@@ -489,7 +488,7 @@ class EnvBatch(EnvBase):
                                                  resubmit_immediate=resubmit_immediate,
                                                  dep_jobs=dep_jobs,
                                                  allow_fail=allow_fail,
-                                                 no_batch=no_batch,
+                                                 no_batch=no_batch or runwithcylc,
                                                  mail_user=mail_user,
                                                  mail_type=mail_type,
                                                  batch_args=batch_args,
@@ -874,6 +873,14 @@ class EnvBatch(EnvBase):
         machdir  = case.get_value("MACHDIR")
         logger.info("Creating batch scripts")
         for job in self.get_jobs():
-            input_batch_script = os.path.join(machdir,self.get_value('template', subgroup=job))
-            logger.info("Writing {} script from input template {}".format(job, input_batch_script))
-            self.make_batch_script(input_batch_script, job, case)
+            template = self.get_value('template', subgroup=job)
+            template = template.replace('$CASEROOT', self._caseroot)
+            if os.path.isabs(template):
+                input_batch_script = template
+            else:
+                input_batch_script = os.path.join(machdir,template)
+            if os.path.isfile(input_batch_script):
+                logger.info("Writing {} script from input template {}".format(job, input_batch_script))
+                self.make_batch_script(input_batch_script, job, case)
+            else:
+                logger.warning("Input template file {} for job {} does not exist or cannot be read.".format(input_batch_script, job))
