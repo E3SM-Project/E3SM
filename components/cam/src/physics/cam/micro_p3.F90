@@ -2889,8 +2889,8 @@ contains
 
   end subroutine check_values
 
-  subroutine ice_droplet_collection(rho,t,rhofaci,&
-  f1pr04,qitot_incld,qc_incld,nitot_incld,nc_incld,&
+  subroutine ice_droplet_collection(rho,t,rhofaci,    &
+  f1pr04,qitot_incld,qc_incld,nitot_incld,nc_incld,    &
              qccol,nccol,qcshd,ncshdc)
    
    !.......................
@@ -2937,8 +2937,8 @@ contains
   end subroutine ice_droplet_collection
 
 
-  subroutine ice_drop_collection(rho,t,rhofaci,&
-  logn0r,f1pr07,f1pr08,qitot_incld,nitot_incld,qr_incld,&
+  subroutine ice_drop_collection(rho,t,rhofaci,    &
+  logn0r,f1pr07,f1pr08,qitot_incld,nitot_incld,qr_incld,    &
   qrcol, nrcol)
    
    !....................
@@ -2988,8 +2988,8 @@ contains
 
   end subroutine ice_drop_collection
 
-  subroutine ice_self_collection(rho,rhofaci,&
-  f1pr03,eii,Eii_fact,qitot_incld,nitot_incld,&
+  subroutine ice_self_collection(rho,rhofaci,    &
+  f1pr03,eii,Eii_fact,qitot_incld,nitot_incld,    &
              nislf)
 
    ! self-collection of ice 
@@ -3019,8 +3019,8 @@ contains
 end subroutine ice_self_collection
 
 
-subroutine ice_melting(rho,t,pres,rhofaci,&
-f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld,&
+subroutine ice_melting(rho,t,pres,rhofaci,    &
+f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld,    &
            qimlt,nimlt)
    ! melting
    ! need to add back accelerated melting due to collection of ice mass by rain (pracsw1)
@@ -3067,9 +3067,9 @@ f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld,&
 end subroutine ice_melting
 
 
-subroutine wet_growth(rho,t,pres,rhofaci,&
-f1pr05,f1pr14,xxlv,xlf,dv,kap,mu,sc,&
-qv,qc_incld,qitot_incld,nitot_incld,qr_incld,&
+subroutine wet_growth(rho,t,pres,rhofaci,    &
+f1pr05,f1pr14,xxlv,xlf,dv,kap,mu,sc,    &
+qv,qc_incld,qitot_incld,nitot_incld,qr_incld,    &
            log_wetgrowth,qrcol,qccol,qwgrth,nrshdr,qcshd)
 
    implicit none 
@@ -3132,8 +3132,8 @@ qv,qc_incld,qitot_incld,nitot_incld,qr_incld,&
 end subroutine wet_growth 
 
 
-subroutine ice_relaxation(rho,t,rhofaci,&
-f1pr05,f1pr14,dv,mu,sc,qitot_incld,nitot_incld,&
+subroutine ice_relaxation(rho,t,rhofaci,     &
+f1pr05,f1pr14,dv,mu,sc,qitot_incld,nitot_incld,    &
 epsi,epsi_tot)
 
    !-----------------------------
@@ -3171,8 +3171,8 @@ epsi,epsi_tot)
 end subroutine ice_relaxation
 
 
-subroutine rime_density(t,rhofaci,&
-f1pr02,acn,lamc, mu_c,qc_incld,qccol,&
+subroutine rime_density(t,rhofaci,    &
+f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
            vtrmi1,rhorime_c) 
    
    !.........................
@@ -3243,7 +3243,7 @@ f1pr02,acn,lamc, mu_c,qc_incld,qccol,&
    endif ! qi > qsmall and T < 273.15
 end subroutine rime_density
 
-subroutine droplet_freezing(t,lamc,mu_c,cdist1,qc_incld,&
+subroutine droplet_freezing(t,lamc,mu_c,cdist1,qc_incld,    &
            qcheti,ncheti)
 
    !............................................................
@@ -3273,8 +3273,8 @@ subroutine droplet_freezing(t,lamc,mu_c,cdist1,qc_incld,&
 
 end subroutine droplet_freezing 
 
-subroutine rain_immersion_freezing(t,&
-lamr, mu_r, cdistr, qr_incld,&
+subroutine rain_immersion_freezing(t,    &
+lamr, mu_r, cdistr, qr_incld,    &
 qrheti, nrheti)
 
    !............................................................
