@@ -25,8 +25,8 @@ DOCKER_COMMAND += ' e3sm/e3sm_diags:{}'
 
 SINGULARITY_COMMAND = 'singularity run -B $REFERENCE_DATA_PATH:/reference_data_path,'
 SINGULARITY_COMMAND += '$TEST_DATA_PATH:/test_data_path,$RESULTS_DIR:/results_dir '
-# It seems like Singularity doesn't automatically look in $SINGULARITY_CACHEDIR.
-SINGULARITY_COMMAND += '$SINGULARITY_CACHEDIR/e3sm_diags-{}.simg'
+# It seems like Singularity doesn't automatically look in $SINGULARITY_PULLFOLDER.
+SINGULARITY_COMMAND += '$SINGULARITY_PULLFOLDER/e3sm_diags-{}.simg'
 
 def run_cmd(cmd):
     """
