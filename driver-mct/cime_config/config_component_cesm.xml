@@ -564,5 +564,62 @@
     <desc>Freezing point calculation for salt water.</desc>
   </entry>
 
+ <!-- Job Submission stuff -->
+ <entry id="USER_REQUESTED_QUEUE">
+   <type>char</type>
+   <group>job_submission</group>
+   <file>env_workflow.xml</file>
+   <desc>Store user override for queue</desc>
+ </entry>
+
+ <entry id="USER_REQUESTED_WALLTIME">
+   <type>char</type>
+   <group>job_submission</group>
+   <file>env_workflow.xml</file>
+   <desc>Store user override for walltime</desc>
+ </entry>
+
+ <entry id="JOB_QUEUE">
+   <type>char</type>
+   <valid_values></valid_values>
+   <default_value></default_value>
+   <group>job_submission</group>
+   <file>env_workflow.xml</file>
+   <desc>The machine queue in which to submit the job.  Default determined in config_machines.xml can be overwritten by testing</desc>
+ </entry>
+
+ <entry id="JOB_WALLCLOCK_TIME">
+   <type>char</type>
+   <valid_values></valid_values>
+   <default_value></default_value>
+   <group>job_submission</group>
+   <file>env_workflow.xml</file>
+   <desc>The machine wallclock setting.  Default determined in config_machines.xml can be overwritten by testing</desc>
+ </entry>
+
+  <entry id="BATCH_COMMAND_FLAGS">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <group>job_submission</group>
+    <file>env_workflow.xml</file>
+    <desc>Override the batch submit command this job. Do not include executable or dependencies</desc>
+  </entry>
+
+ <entry id="PROJECT">
+   <type>char</type>
+   <default_value></default_value>
+   <group>job_submission</group>
+   <file>env_workflow.xml</file>
+   <desc>project for project-sensitive build and run paths, and job scripts</desc>
+ </entry>
+
+ <entry id="CHARGE_ACCOUNT">
+   <type>char</type>
+   <default_value></default_value>
+   <group>job_submission</group>
+   <file>env_workflow.xml</file>
+   <desc>project to charge in scripts if different from PROJECT</desc>
+ </entry>
 
 </entry_id>
