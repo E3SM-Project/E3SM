@@ -36,7 +36,6 @@ module atm_core
       real (kind=RKIND), pointer :: dt
       type (block_type), pointer :: block
 
-      character(len=StrKIND) :: timeStamp
       integer :: i
       logical, pointer :: config_do_restart
 
@@ -262,6 +261,7 @@ module atm_core
       use mpas_rbf_interpolation
       use mpas_vector_reconstruction
       use mpas_stream_manager
+      use mpas_atm_boundaries, only : mpas_atm_setup_bdy_masks
 #ifdef DO_PHYSICS
 !     use mpas_atmphys_aquaplanet
       use mpas_atmphys_control
@@ -288,6 +288,7 @@ module atm_core
       
       real (kind=RKIND), dimension(:,:), pointer :: u, uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional
       real (kind=RKIND), dimension(:), pointer :: meshScalingDel2, meshScalingDel4
+      real (kind=RKIND), dimension(:), pointer :: meshScalingRegionalCell, meshScalingRegionalEdge
       real (kind=RKIND), dimension(:), pointer :: areaCell, invAreaCell
       real (kind=RKIND), dimension(:), pointer :: dvEdge, invDvEdge
       real (kind=RKIND), dimension(:), pointer :: dcEdge, invDcEdge
@@ -456,6 +457,11 @@ module atm_core
 
       call atm_compute_damping_coefs(mesh, block % configs)
 
+      !
+      ! Set up mask fields used in limited-area simulations
+      !
+      call mpas_atm_setup_bdy_masks(mesh, block % configs)
+
       call mpas_pool_get_dimension(mesh, 'nEdgesSolve', nEdgesSolve)
       call mpas_pool_get_array(mesh, 'meshScalingDel2', meshScalingDel2)
       call mpas_pool_get_array(mesh, 'meshScalingDel4', meshScalingDel4)
@@ -475,6 +481,7 @@ module atm_core
       use mpas_stream_manager
       use mpas_derived_types, only : MPAS_STREAM_LATEST_BEFORE, MPAS_STREAM_INPUT, MPAS_STREAM_INPUT_OUTPUT
       use mpas_timer
+      use mpas_atm_boundaries, only : mpas_atm_update_bdy_tend
       use mpas_atm_diagnostics_manager, only : mpas_atm_diag_update, mpas_atm_diag_compute, mpas_atm_diag_reset
    
       implicit none
@@ -569,6 +576,24 @@ module atm_core
       call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
       call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
 
+      !
+      ! Read initial boundary state
+      !
+      if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, streamID='lbc_in', direction=MPAS_STREAM_INPUT, ierr=ierr)) then
+         block_ptr => domain % blocklist
+         do while (associated(block_ptr))
+            call mpas_atm_update_bdy_tend(clock, domain % streamManager, block_ptr, .true., ierr)
+            if (ierr /= 0) then
+               currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
+               call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp)
+               call mpas_log_write('Failed to process LBC data on or before '//trim(timeStamp), messageType=MPAS_LOG_ERR)
+               return
+            end if
+
+            block_ptr => block_ptr % next
+         end do
+      end if
+
       ! During integration, time level 1 stores the model state at the beginning of the
       !   time step, and time level 2 stores the state advanced dt in time by timestep(...)
       itimestep = 1
@@ -579,6 +604,24 @@ module atm_core
 
          call mpas_log_write('')
          call mpas_log_write('Begin timestep '//trim(timeStamp))
+
+         !
+         ! Read future boundary state and compute boundary tendencies
+         !
+         if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, streamID='lbc_in', direction=MPAS_STREAM_INPUT, ierr=ierr)) then
+            block_ptr => domain % blocklist
+            do while (associated(block_ptr))
+               call mpas_atm_update_bdy_tend(clock, domain % streamManager, block_ptr, .false., ierr)
+               if (ierr /= 0) then
+                  call mpas_log_write('Failed to process LBC data at next time after '//trim(timeStamp), messageType=MPAS_LOG_ERR)
+                  return
+               end if
+
+               block_ptr => block_ptr % next
+            end do
+         end if
+         call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='lbc_in', direction=MPAS_STREAM_INPUT, ierr=ierr)
+
 
          !
          ! Read external field updates
@@ -796,7 +839,6 @@ module atm_core
       
       type (MPAS_Time_Type) :: startTime, currTime
       type (MPAS_TimeInterval_Type) :: xtimeTime
-      character(len=StrKIND) :: timeStamp
       integer :: s, s_n, s_d
       real (kind=RKIND) :: xtime_s
       integer :: ierr
@@ -811,8 +853,6 @@ module atm_core
       call mpas_get_timeInterval(interval=xtimeTime, S=s, S_n=s_n, S_d=s_d, ierr=ierr)         
       xtime_s = (s + s_n / s_d)
 
-      call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)         
-
 
 #ifdef DO_PHYSICS
       !proceed with physics if moist_physics is set to true:
@@ -822,7 +862,7 @@ module atm_core
       endif
 #endif
 
-      call atm_timestep(domain, dt, timeStamp, itimestep)
+      call atm_timestep(domain, dt, currTime, itimestep)
 
    end subroutine atm_do_timestep
    
@@ -883,18 +923,22 @@ module atm_core
       type (mpas_pool_type), intent(inout) :: mesh
       type (mpas_pool_type), intent(in) :: configs
 
-      integer :: iEdge, cell1, cell2
-      integer, pointer :: nEdges
+      integer :: iCell,iEdge, cell1, cell2
+      integer, pointer :: nEdges, nCells
       integer, dimension(:,:), pointer :: cellsOnEdge
       real (kind=RKIND), dimension(:), pointer :: meshDensity, meshScalingDel2, meshScalingDel4
+      real (kind=RKIND), dimension(:), pointer :: meshScalingRegionalCell, meshScalingRegionalEdge
       logical, pointer :: config_h_ScaleWithMesh
 
       call mpas_pool_get_array(mesh, 'meshDensity', meshDensity)
       call mpas_pool_get_array(mesh, 'meshScalingDel2', meshScalingDel2)
       call mpas_pool_get_array(mesh, 'meshScalingDel4', meshScalingDel4)
+      call mpas_pool_get_array(mesh, 'meshScalingRegionalCell', meshScalingRegionalCell)
+      call mpas_pool_get_array(mesh, 'meshScalingRegionalEdge', meshScalingRegionalEdge)
       call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
 
       call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
 
       call mpas_pool_get_config(configs, 'config_h_ScaleWithMesh', config_h_ScaleWithMesh)
 
@@ -909,6 +953,23 @@ module atm_core
             cell2 = cellsOnEdge(2,iEdge)
             meshScalingDel2(iEdge) = 1.0 / ( (meshDensity(cell1) + meshDensity(cell2) )/2.0)**0.25
             meshScalingDel4(iEdge) = 1.0 / ( (meshDensity(cell1) + meshDensity(cell2) )/2.0)**0.75
+         end do
+      end if
+
+      !
+      ! Compute the scaling factors to be used in relaxation zone of regional configuration
+      !
+      meshScalingRegionalCell(:) = 1.0
+      meshScalingRegionalEdge(:) = 1.0
+      if (config_h_ScaleWithMesh) then
+         do iEdge=1,nEdges
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            meshScalingRegionalEdge(iEdge) = 1.0 / ( (meshDensity(cell1) + meshDensity(cell2) )/2.0)**0.25
+         end do
+
+         do iCell=1,nCells
+            meshScalingRegionalCell(iCell) = 1.0 / (meshDensity(iCell))**0.25
          end do
       end if
 
@@ -1239,6 +1300,7 @@ module atm_core
    subroutine mpas_atm_run_compatibility(dminfo, blockList, streamManager, ierr)
 
       use mpas_atmphys_control, only : physics_compatibility_check
+      use mpas_atm_boundaries, only : mpas_atm_bdy_checks
 
       implicit none
 
@@ -1251,10 +1313,17 @@ module atm_core
 
       ierr = 0
 
-      ! Physics specific checks found in /physics/mpas_atmphys_control.F
+      !
+      ! Physics specific checks found in physics/mpas_atmphys_control.F
+      !
       call physics_compatibility_check(dminfo, blockList, streamManager, local_ierr)
       ierr = ierr + local_ierr
 
+      !
+      ! Checks for limited-area simulations
+      !
+      call mpas_atm_bdy_checks(dminfo, blockList, streamManager, local_ierr)
+      ierr = ierr + local_ierr
 
    end subroutine mpas_atm_run_compatibility
 
