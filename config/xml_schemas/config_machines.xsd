@@ -46,6 +46,7 @@
   <xs:element name="GMAKE" type="xs:string"/>
   <xs:element name="GMAKE_J" type="xs:integer"/>
   <xs:element name="TESTS" type="xs:string"/>
+  <xs:element name="NTEST_PARALLEL_JOBS" type="xs:integer"/>
   <xs:element name="BATCH_SYSTEM" type="xs:NCName"/>
   <xs:element name="ALLOCATE_SPARE_NODES" type="upperBoolean"/>
   <xs:element name="SUPPORTED_BY" type="xs:string"/>
@@ -140,6 +141,8 @@
         <xs:element ref="GMAKE_J" minOccurs="0" maxOccurs="1"/>
         <!-- TESTS: (acme only) list of tests to run on this machine -->
         <xs:element ref="TESTS" minOccurs="0" maxOccurs="1"/>
+        <!-- NTEST_PARALLEL_JOBS: number of parallel jobs create_test will launch -->
+        <xs:element ref="NTEST_PARALLEL_JOBS" minOccurs="0" maxOccurs="1"/>
         <!-- BATCH_SYSTEM: batch system used on this machine (none is okay) -->
         <xs:element ref="BATCH_SYSTEM" minOccurs="1" maxOccurs="1"/>
         <!-- ALLOCATE_SPARE_NODES: allocate spare nodes when job is launched default False-->
