@@ -79,7 +79,9 @@ def build_particle_file(fname_in, fname_outbase):
 
         # get particle data
         particleData.clear()
-        for v in f_in.variables:
+        coordinateVars = ['xParticle', 'yParticle', 'zParticle']
+        nonCoords = [i for i in f_in.variables if i not in coordinateVars]
+        for v in nonCoords:
             dim = f_in.variables[v].dimensions
             if dim == particleType:
                 particleData[str(v)] = cleanup(f_in.variables[v][t])
