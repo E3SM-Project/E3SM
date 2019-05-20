@@ -1,0 +1,88 @@
+<?xml version="1.0"?>
+<config_workflow version="2.0">
+  <workflow_jobs>
+    <!-- order matters, with no-batch jobs will be run in the order listed here -->
+    <job name="case.run">
+      <template>template.case.run</template>
+      <prereq>$BUILD_COMPLETE and not $TEST</prereq>
+    </job>
+    <job name="case.test">
+      <template>template.case.test</template>
+      <prereq>$BUILD_COMPLETE and $TEST</prereq>
+    </job>
+    <job name="case.st_archive">
+      <template>template.st_archive</template>
+      <!-- If DOUT_S is true and case.run (or case.test) exits successfully then run st_archive-->
+      <dependency>case.run or case.test</dependency>
+      <prereq>$DOUT_S</prereq>
+      <runtime_parameters>
+	<task_count>1</task_count>
+	<walltime>0:20:00</walltime>
+      </runtime_parameters>
+    </job>
+    <job name="timeseries">
+      <template>$CASEROOT/postprocess/timeseries</template>
+      <dependency>case.st_archive</dependency>
+      <prereq>$CASEROOT/postprocess/pp_config -value --get GENERATE_TIMESERIES</prereq>
+    </job>
+    <job name="timeseriesL">
+      <template>$CASEROOT/postprocess/timeseriesL</template>
+      <dependency>case.st_archive</dependency>
+      <prereq>$CASEROOT/postprocess/pp_config -value --get GENERATE_TIMESERIES</prereq>
+    </job>
+    <job name="xconform">
+      <template>$CASEROOT/postprocess/xconform</template>
+      <dependency>timeseriesL</dependency>
+      <prereq>$CASEROOT/postprocess/pp_config -value --get STANDARDIZE_TIMESERIES</prereq>
+    </job>
+
+    <job name="atm_averages">
+      <template>$CASEROOT/postprocess/atm_averages</template>
+      <dependency>timeseries or case.st_archive</dependency>
+      <prereq>$CASEROOT/postprocess/pp_config -value --get GENERATE_AVGS_ATM</prereq>
+    </job>
+
+    <job name="lnd_averages">
+      <template>$CASEROOT/postprocess/lnd_averages</template>
+      <dependency>:lnd_avg(args)
+timeseries or case.st_archive</dependency>
+      <prereq>$CASEROOT/postprocess/pp_config -value --get GENERATE_AVGS_ATM</prereq>
+    </job>
+
+    <job name="ice_averages">
+      <template>$CASEROOT/postprocess/ice_averages</template>
+      <dependency>timeseries or case.st_archive</dependency>
+      <prereq>$CASEROOT/postprocess/pp_config -value --get GENERATE_AVGS_ATM</prereq>
+    </job>
+
+
+    <job name="ocn_averages">
+      <template>$CASEROOT/postprocess/ocn_averages</template>
+      <dependency>timeseries or case.st_archive</dependency>
+      <prereq>$CASEROOT/postprocess/pp_config -value --get GENERATE_AVGS_ATM</prereq>
+    </job>
+
+    <job name="atm_diagnostics">
+      <template>$CASEROOT/postprocess/atm_diagnostics</template>
+      <dependency>atm_averages</dependency>
+      <prereq>$CASEROOT/postprocess/pp_config -value --get GENERATE_AVGS_ATM</prereq>
+    </job>
+
+    <job name="lnd_diagnostics">
+      <template>$CASEROOT/postprocess/lnd_diagnostics</template>
+      <dependency>lnd_averages</dependency>
+      <prereq>$CASEROOT/postprocess/pp_config -value --get GENERATE_AVGS_ATM</prereq>
+    </job>
+    <job name="ice_diagnostics">
+      <template>$CASEROOT/postprocess/ice_diagnostics</template>
+      <dependency>ice_averages</dependency>
+      <prereq>$CASEROOT/postprocess/pp_config -value --get GENERATE_AVGS_ATM</prereq>
+    </job>
+    <job name="ocn_diagnostics">
+      <template>$CASEROOT/postprocess/ocn_diagnostics</template>
+      <dependency>ocn_averages</dependency>
+      <prereq>$CASEROOT/postprocess/pp_config -value --get GENERATE_AVGS_ATM</prereq>
+    </job>
+
+  </workflow_jobs>
+</config_workflow>
