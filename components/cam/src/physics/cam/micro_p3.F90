@@ -895,13 +895,13 @@ contains
 
           !.......................
           ! collection of droplets
-          call ice_droplet_collection(rho(i,k),t(i,k),rhofaci(i,k),&
+          call ice_cld_liquid_collection(rho(i,k),t(i,k),rhofaci(i,k),&
           f1pr04,qitot_incld(i,k),qc_incld(i,k),nitot_incld(i,k),nc_incld(i,k),&
                qccol,nccol,qcshd,ncshdc)
 
           !....................
           ! collection of rain
-          call ice_drop_collection(rho(i,k),t(i,k),rhofaci(i,k),&
+          call ice_rain_collection(rho(i,k),t(i,k),rhofaci(i,k),&
           logn0r(i,k),f1pr07,f1pr08,qitot_incld(i,k),nitot_incld(i,k),qr_incld(i,k),&
                qrcol,nrcol)
           !...................................
@@ -932,7 +932,7 @@ contains
           !-----------------------------
           ! calcualte total inverse ice relaxation timescale combined for all ice categories
           ! note 'f1pr' values are normalized, so we need to multiply by N
-          call ice_relaxation(rho(i,k),t(i,k),rhofaci(i,k),&
+          call ice_relaxation_timescale(rho(i,k),t(i,k),rhofaci(i,k),&
           f1pr05,f1pr14,dv,mu,sc,qitot_incld(i,k),nitot_incld(i,k),&
                epsi,epsi_tot)
 
@@ -944,14 +944,14 @@ contains
 
           !............................................................
           ! contact and immersion freezing droplets
-          call droplet_freezing(t(i,k),&
+          call cld_liq_immersion_freezing(t(i,k),&
           lamc(i,k),mu_c(i,k),cdist1(i,k),qc_incld(i,k),&
                qcheti,ncheti)
 
           !............................................................
           ! immersion freezing of rain
           ! for future: get rid of log statements below for rain freezing
-          call rain_immersion_freezing(t(i,k),&
+          call cld_rain_immersion_freezing(t(i,k),&
           lamr(i,k),mu_r(i,k),cdistr(i,k),qr_incld(i,k),&
                qrheti,nrheti)
 
@@ -2672,22 +2672,6 @@ contains
 
        ! Apply constant mu_r:  Recall the switch to v4 tables means constant mu_r
        mu_r = mu_r_constant
-       ! AaronDonahue: Comment out the variable mu_r calculation below.
-!       if (inv_dum.lt.282.e-6) then
-!          mu_r = 8.282
-!       elseif (inv_dum.ge.282.e-6 .and. inv_dum.lt.502.e-6) then
-!          ! interpolate
-!          rdumii = (inv_dum-250.e-6)*1.e+6*0.5
-!          rdumii = max(rdumii,1.)
-!          rdumii = min(rdumii,150.)
-!          dumii  = int(rdumii)
-!          dumii  = min(149,dumii)
-!          mu_r   = mu_r_table(dumii)+(mu_r_table(dumii+1)-mu_r_table(dumii))*(rdumii-  &
-!               real(dumii))
-!       elseif (inv_dum.ge.502.e-6) then
-!          mu_r = 0.
-!       endif
-
        lamr   = (cons1*nr*(mu_r+3._rtype)*(mu_r+2._rtype)*(mu_r+1._rtype)/(qr))**thrd  ! recalculate slope based on mu_r
        lammax = (mu_r+1._rtype)*1.e+5_rtype   ! check for slope
        lammin = (mu_r+1._rtype)*1250._rtype   ! set to small value since breakup is explicitly included (mean size 0.8 mm)
@@ -2889,7 +2873,7 @@ contains
 
   end subroutine check_values
 
-  subroutine ice_droplet_collection(rho,t,rhofaci,    &
+  subroutine ice_cld_liquid_collection(rho,t,rhofaci,    &
   f1pr04,qitot_incld,qc_incld,nitot_incld,nc_incld,    &
              qccol,nccol,qcshd,ncshdc)
    
@@ -2908,7 +2892,7 @@ contains
    real(rtype), intent(in) :: rho
    real(rtype), intent(in) :: t 
    real(rtype), intent(in) :: rhofaci 
-   real(rtype), intent(in) :: f1pr04
+   real(rtype), intent(in) :: f1pr04  ! collection of cloud water by ice 
    real(rtype), intent(in) :: qitot_incld 
    real(rtype), intent(in) :: qc_incld
    real(rtype), intent(in) :: nitot_incld 
@@ -2934,10 +2918,10 @@ contains
       end if 
    end if 
 
-  end subroutine ice_droplet_collection
+  end subroutine ice_cld_liquid_collection
 
 
-  subroutine ice_drop_collection(rho,t,rhofaci,    &
+  subroutine ice_rain_collection(rho,t,rhofaci,    &
   logn0r,f1pr07,f1pr08,qitot_incld,nitot_incld,qr_incld,    &
   qrcol, nrcol)
    
@@ -2960,8 +2944,8 @@ contains
    real(rtype), intent(in) :: t 
    real(rtype), intent(in) :: rhofaci 
    real(rtype), intent(in) :: logn0r 
-   real(rtype), intent(in) :: f1pr07 
-   real(rtype), intent(in) :: f1pr08
+   real(rtype), intent(in) :: f1pr07 !collection of rain number by ice 
+   real(rtype), intent(in) :: f1pr08 !collection of rain mass by ice 
    real(rtype), intent(in) :: qitot_incld
    real(rtype), intent(in) :: nitot_incld
    real(rtype), intent(in) :: qr_incld
@@ -2986,7 +2970,7 @@ contains
       ! expected to lead to shedding)
    end if 
 
-  end subroutine ice_drop_collection
+  end subroutine ice_rain_collection
 
   subroutine ice_self_collection(rho,rhofaci,    &
   f1pr03,eii,Eii_fact,qitot_incld,nitot_incld,    &
@@ -3003,7 +2987,7 @@ contains
 
    real(rtype), intent(in) :: rho 
    real(rtype), intent(in) :: rhofaci
-   real(rtype), intent(in) :: f1pr03  
+   real(rtype), intent(in) :: f1pr03 ! ice collection within a category 
    real(rtype), intent(in) :: eii 
    real(rtype), intent(in) :: Eii_fact 
    real(rtype), intent(in) :: qitot_incld
@@ -3034,8 +3018,8 @@ f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld,    &
    real(rtype), intent(in) :: t 
    real(rtype), intent(in) :: pres 
    real(rtype), intent(in) :: rhofaci 
-   real(rtype), intent(in) :: f1pr05 
-   real(rtype), intent(in) :: f1pr14 
+   real(rtype), intent(in) :: f1pr05 ! melting 
+   real(rtype), intent(in) :: f1pr14 ! melting (ventilation term) 
    real(rtype), intent(in) :: xxlv 
    real(rtype), intent(in) :: xlf
    real(rtype), intent(in) :: dv 
@@ -3078,8 +3062,8 @@ qv,qc_incld,qitot_incld,nitot_incld,qr_incld,    &
    real(rtype), intent(in) :: t 
    real(rtype), intent(in) :: pres
    real(rtype), intent(in) :: rhofaci 
-   real(rtype), intent(in) :: f1pr05
-   real(rtype), intent(in) :: f1pr14 
+   real(rtype), intent(in) :: f1pr05 ! melting 
+   real(rtype), intent(in) :: f1pr14 ! melting (ventilation term)
    real(rtype), intent(in) :: xxlv
    real(rtype), intent(in) :: xlf
    real(rtype), intent(in) :: dv 
@@ -3132,7 +3116,7 @@ qv,qc_incld,qitot_incld,nitot_incld,qr_incld,    &
 end subroutine wet_growth 
 
 
-subroutine ice_relaxation(rho,t,rhofaci,     &
+subroutine ice_relaxation_timescale(rho,t,rhofaci,     &
 f1pr05,f1pr14,dv,mu,sc,qitot_incld,nitot_incld,    &
 epsi,epsi_tot)
 
@@ -3146,8 +3130,8 @@ epsi,epsi_tot)
    real(rtype), intent(in) :: rho 
    real(rtype), intent(in) :: t 
    real(rtype), intent(in) :: rhofaci 
-   real(rtype), intent(in) :: f1pr05 
-   real(rtype), intent(in) :: f1pr14
+   real(rtype), intent(in) :: f1pr05 ! melting
+   real(rtype), intent(in) :: f1pr14 ! melting (ventilation term)
    real(rtype), intent(in) :: dv 
    real(rtype), intent(in) :: mu 
    real(rtype), intent(in) :: sc 
@@ -3155,7 +3139,7 @@ epsi,epsi_tot)
    real(rtype), intent(in) :: nitot_incld 
 
    real(rtype), intent(out) :: epsi
-   real(rtype), intent(out) :: epsi_tot 
+   real(rtype), intent(inout) :: epsi_tot 
 
 
 
@@ -3168,7 +3152,7 @@ epsi,epsi_tot)
    endif 
 
 
-end subroutine ice_relaxation
+end subroutine ice_relaxation_timescale
 
 
 subroutine rime_density(t,rhofaci,    &
@@ -3193,7 +3177,7 @@ f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
 
    real(rtype), intent(in) :: t 
    real(rtype), intent(in) :: rhofaci 
-   real(rtype), intent(in) :: f1pr02
+   real(rtype), intent(in) :: f1pr02 !mass-weighted fallspeed 
    real(rtype), intent(in) :: acn 
    real(rtype), intent(in) :: lamc 
    real(rtype), intent(in) :: mu_c 
@@ -3243,7 +3227,7 @@ f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
    endif ! qi > qsmall and T < 273.15
 end subroutine rime_density
 
-subroutine droplet_freezing(t,lamc,mu_c,cdist1,qc_incld,    &
+subroutine cld_liq_immersion_freezing(t,lamc,mu_c,cdist1,qc_incld,    &
            qcheti,ncheti)
 
    !............................................................
@@ -3271,9 +3255,9 @@ subroutine droplet_freezing(t,lamc,mu_c,cdist1,qc_incld,    &
       ncheti = N_nuc
    endif 
 
-end subroutine droplet_freezing 
+end subroutine cld_liq_immersion_freezing
 
-subroutine rain_immersion_freezing(t,    &
+subroutine cld_rain_immersion_freezing(t,    &
 lamr, mu_r, cdistr, qr_incld,    &
 qrheti, nrheti)
 
@@ -3307,6 +3291,6 @@ qrheti, nrheti)
    endif 
 
 
-end subroutine rain_immersion_freezing 
+end subroutine cld_rain_immersion_freezing 
 
 end module micro_p3
