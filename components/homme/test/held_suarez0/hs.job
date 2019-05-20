@@ -60,8 +60,8 @@
 
 
 
-set NCPU = 0  # use max allocated
-echo using NCPU = $NCPU
+#set NCPU = 0  # use max allocated
+#echo using NCPU = $NCPU
 set nlev=26
 set ndays = 1600
 set nmax =  5       # no. of timesteps.  ignored, unless ndays=0
@@ -100,8 +100,8 @@ if ( $ne == 30 ) then
    # 1 degree    
    set tstep = 300       # dynamics timestep
    set nu = 1e15
-   #set topo = '/home/ccsm-data/inputdata/atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc'
-   #set toponame = 16xdel2
+   set topo = '/home/ccsm-data/inputdata/atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc'
+   set toponame = 16xdel2
 endif
 if ( $ne == 60 ) then
    # 0.5 degree     tbird 200 nodes, 560 days: 20h
@@ -233,7 +233,7 @@ if ( $ndays > 0 ) then
    @ nmax = $ndays * 24 * 3600  / $tstep
 endif 
 
-set rtime = `head -100 HommeTime.$$ | grep prim_run | head -1 | awk '{print $6}' - `
+set rtime = `head -100 HommeTime.$$ | grep prim_run | head -1 | awk '{print $7}' - `
 #set time_per_timestep = `echo "scale=8;$rtime / $nmax" | bc`
 set time_per_timestep = `python -c "print($rtime / $nmax)" `
 echo "time for $nmax timesteps = $rtime seconds"

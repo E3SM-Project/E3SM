@@ -15,7 +15,7 @@ module prim_advance_mod
   use bndry_mod,          only: bndry_exchangev
   use control_mod,        only: dcmip16_mu, dcmip16_mu_s, hypervis_order, hypervis_subcycle,&
     integration, nu, nu_div, nu_p, nu_s, nu_top, prescribed_wind, qsplit, rsplit, test_case,&
-    theta_hydrostatic_mode, tstep_type, use_moisture, ftype, theta_advect_form
+    theta_hydrostatic_mode, tstep_type, use_moisture, theta_advect_form
   use derivative_mod,     only: derivative_t, divergence_sphere, gradient_sphere, laplace_sphere_wk,&
     laplace_z, vorticity_sphere, vlaplace_sphere_wk 
   use derivative_mod,     only: subcell_div_fluxes, subcell_dss_fluxes

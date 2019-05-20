@@ -38,12 +38,12 @@ set ne = 30  ; set meshfile=none
 #    16 for uniform grids (with regular del2 smoothing)
 #    12 for RRM grids using tensor del2 smoothing
 #
-set smooth_phis_numcycle=16
+set smooth_phis_numcycle=7
 #
 # set the input and output file names:
 #
-set topo = '/lcrc/group/acme/taylorm/topodata/USGS-gtopo30_ne30np4.nc'
-#set topo = '/lcrc/group/acme/taylorm/topodata/USGS-gtopo30_ne120np4.nc'
+set topo = '/lcrc/group/acme/taylorm/topodata/ne30/USGS-gtopo30_ne30np4.nc'
+#set topo = '/lcrc/group/acme/taylorm/topodata/ne120/ne120np4_x0.nc'
 set topoout = "USGS-gtopo30_ne${ne}np${NPTS}_${smooth_phis_numcycle}xdel2.nc"
 #
 #  end of user settings.  
@@ -61,7 +61,7 @@ echo using NCPU = $NCPU
 
 mkdir -p $wdir/preqx/template/movies
 mkdir $wdir/preqx/vcoord
-set bld = $wdir/preqx/bld
+set bld = $wdir/preqx/bldtopo
 mkdir -p $bld
 set wdir = $wdir/preqx/template
 mkdir -p $wdir

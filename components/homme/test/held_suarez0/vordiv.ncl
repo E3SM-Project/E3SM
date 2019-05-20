@@ -133,7 +133,7 @@ end setvalues
 
 ;  climatology
     k=21
-    zrange=.7  ; means (level 23), no topo
+    zrange=.25  ; means (level 23), no topo
     res@cnMinLevelValF = -zrange
     res@cnMaxLevelValF =  zrange
     res@cnLevelSpacingF = zrange/20
@@ -145,10 +145,9 @@ end setvalues
     contour = gsn_csm_contour_map(wks,field,res)   
     
 ;  climatology
-    k=21
-    zrange=5.0  ; means (level 23), no topo
-    res@cnMinLevelValF = -zrange
-    res@cnMaxLevelValF =  zrange
+    zrange=.4  ; means (level 23), no topo
+    res@cnMinLevelValF = -.4
+    res@cnMaxLevelValF =  1.4
     res@cnLevelSpacingF = zrange/20
     field = fave->omega850(:,:)
     field@long_name = "OMEGA850"
