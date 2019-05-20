@@ -75,7 +75,11 @@ class Comm;
 class ParameterList;
 
 // A short name for the factory for grid managers
-using GridsManagerFactory = util::Factory<GridsManager,util::CaseInsensitiveString,const Comm&,const ParameterList&>;
+using GridsManagerFactory 
+    = util::Factory<GridsManager,
+                    util::CaseInsensitiveString,
+                    std::shared_ptr<GridsManager>,
+                    const Comm&,const ParameterList&>;
 
 } // namespace scream
 

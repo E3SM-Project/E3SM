@@ -65,11 +65,6 @@ protected:
   Comm    m_comm;
 };
 
-template<AtmosphereProcessType PType>
-AtmosphereProcess* create_dummy_process (const Comm& comm, const ParameterList& p) {
-  return new DummyProcess<PType>(comm,p);
-}
-
 TEST_CASE("process_factory", "") {
   using namespace scream;
 
@@ -98,9 +93,9 @@ TEST_CASE("process_factory", "") {
 
   // Create then factory, and register constructors
   auto& factory = AtmosphereProcessFactory::instance();
-  factory.register_product("duMmy pHySics",&create_dummy_process<AtmosphereProcessType::Physics>);
-  factory.register_product("dummY dynAmics",&create_dummy_process<AtmosphereProcessType::Dynamics>);
-  factory.register_product("grouP",&create_atmosphere_process_group);
+  factory.register_product("duMmy pHySics",&create_atmosphere_process<DummyProcess<AtmosphereProcessType::Physics>>);
+  factory.register_product("dummY dynAmics",&create_atmosphere_process<DummyProcess<AtmosphereProcessType::Dynamics>>);
+  factory.register_product("grouP",&create_atmosphere_process<AtmosphereProcessGroup>);
 
   // Create the processes
   std::shared_ptr<AtmosphereProcess> atm_process (factory.create("group",comm,params));

@@ -100,11 +100,6 @@ protected:
   std::set<FieldIdentifier>      m_computed_fields;
 };
 
-inline AtmosphereProcess*
-create_atmosphere_process_group(const Comm& comm, const ParameterList& p) {
-  return new AtmosphereProcessGroup(comm,p);
-}
-
 } // namespace scream
 
 #endif // SCREAM_ATMOSPHERE_PROCESS_GROUP_HPP

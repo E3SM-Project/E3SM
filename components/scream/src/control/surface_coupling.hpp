@@ -68,11 +68,6 @@ protected:
   Comm    m_comm;
 };
 
-inline AtmosphereProcess*
-create_surface_coupling(const Comm& comm, const ParameterList& p) {
-  return new SurfaceCoupling(comm,p);
-}
-
 } // namespace scream
 
 #endif // SCREAM_SURFACE_COUPLING_HPP

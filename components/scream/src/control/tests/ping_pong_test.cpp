@@ -115,11 +115,6 @@ protected:
   Comm    m_comm;
 };
 
-template<typename DeviceType, int PackSize>
-AtmosphereProcess* create_dummy_process (const Comm& comm, const ParameterList& p) {
-  return new DummyProcess<DeviceType,PackSize>(comm,p);
-}
-
 // === A dummy physics grids for this test === //
 
 class DummyPhysicsGrid : public DefaultGrid<GridType::Physics>
@@ -166,7 +161,7 @@ TEST_CASE("ping-pong", "") {
   // which rely on factory for process creation. The initialize method of the AD does that.
   // While we're at it, check that the case insensitive key of the factory works.
   auto& proc_factory = AtmosphereProcessFactory::instance();
-  proc_factory.register_product("duMmy",&create_dummy_process<device_type,SCREAM_PACK_SIZE>);
+  proc_factory.register_product("duMmy",&create_atmosphere_process<DummyProcess<device_type,SCREAM_PACK_SIZE>>);
 
   // Need to register grids managers before we create the driver
   auto& gm_factory = GridsManagerFactory::instance();
