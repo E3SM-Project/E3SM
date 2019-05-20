@@ -197,7 +197,7 @@ contains
   SUBROUTINE p3_init_b()
     implicit none
     integer                      :: i,ii,jj,kk
-    real(rtype)                         :: lamr,mu_r,lamold,dum,initlamr,dm,dum1,dum2,dum3,dum4,dum5,  &
+    real(rtype)                         :: lamr,mu_r,dm,dum1,dum2,dum3,dum4,dum5,  &
          dd,amg,vt,dia
 
     !------------------------------------------------------------------------------------------!
@@ -484,14 +484,14 @@ contains
 
     real(rtype)    :: lammax,lammin,mu,dv,sc,dqsdt,ab,kap,epsr,epsc,xx,aaa,epsilon,epsi_tot, &
          dum,dum1,dum2,    &
-         dumqv,dumqvs,dums,ratio,qsat0,dum3,dum4,dum5,dum6,rdumii, &
-         rdumjj,dqsidt,abi,dumqvi,rhop,V_impact,ri,iTc,D_c,tmp1,  &
+         dumqv,dumqvs,dums,ratio,dum3,dum4,dum5,dum6,rdumii, &
+         rdumjj,dqsidt,abi,dumqvi,rhop,tmp1,  &
          tmp2,inv_dum3,odt,oxx,oabi,     &
          fluxdiv_qit,fluxdiv_nit,fluxdiv_qir,fluxdiv_bir,prt_accum, &
          fluxdiv_qx,fluxdiv_nx,Co_max,dt_sub,      &
          Q_nuc,N_nuc,         &
          deltaD_init,dumt,qcon_satadj,qdep_satadj,sources,sinks,    &
-         timeScaleFactor,dt_left, vtrmi1, Vt_qc
+         timeScaleFactor,dt_left, vtrmi1
 
 
     integer :: dumi,i,k,dumj,dumii,dumjj,dumzz,      &
@@ -817,7 +817,7 @@ contains
                lammin,lammax,cdist(i,k),cdist1(i,k),lcldm(i,k))
           nc(i,k) = nc_incld(i,k)*lcldm(i,k)
 
-          call get_rain_dsd2(qr_incld(i,k),nr_incld(i,k),mu_r(i,k),rdumii,dumii,lamr(i,k),mu_r_table,   &
+          call get_rain_dsd2(qr_incld(i,k),nr_incld(i,k),mu_r(i,k),lamr(i,k),   &
                cdistr(i,k),logn0r(i,k),rcldm(i,k))
           nr(i,k) = nr_incld(i,k)*rcldm(i,k)
 
@@ -1813,8 +1813,8 @@ contains
 
                    !Compute Vq, Vn:
                    nr(i,k)  = max(nr(i,k),nsmall)
-                   call get_rain_dsd2(qr_incld(i,k),nr_incld(i,k),mu_r(i,k),rdumii,dumii,lamr(i,k),     &
-                        mu_r_table,tmp1,tmp2,rcldm(i,k))
+                   call get_rain_dsd2(qr_incld(i,k),nr_incld(i,k),mu_r(i,k),lamr(i,k),     &
+                        tmp1,tmp2,rcldm(i,k))
                    call find_lookupTable_indices_3(dumii,dumjj,dum1,rdumii,rdumjj,inv_dum3, &
                         mu_r(i,k),lamr(i,k))
                    nr(i,k) = nr_incld(i,k)*rcldm(i,k)
@@ -2105,7 +2105,7 @@ contains
           ! rain:
           if (qr(i,k).ge.qsmall) then
 
-             call get_rain_dsd2(qr(i,k),nr(i,k),mu_r(i,k),rdumii,dumii,lamr(i,k),mu_r_table,   &
+             call get_rain_dsd2(qr(i,k),nr(i,k),mu_r(i,k),lamr(i,k),   &
                   !                        cdistr(i,k),logn0r(i,k))
                   tmp1,tmp2,rcldm(i,k))
 
@@ -2644,18 +2644,16 @@ contains
 
 
   !===========================================================================================
-  subroutine get_rain_dsd2(qr,nr,mu_r,rdumii,dumii,lamr,mu_r_table,cdistr,logn0r,rcldm)
+  subroutine get_rain_dsd2(qr,nr,mu_r,lamr,cdistr,logn0r,rcldm)
 
     ! Computes and returns rain size distribution parameters
 
     implicit none
 
     !arguments:
-    real(rtype), dimension(:), intent(in)  :: mu_r_table
     real(rtype),     intent(in)            :: qr,rcldm
     real(rtype),     intent(inout)         :: nr
-    real(rtype),     intent(out)           :: rdumii,lamr,mu_r,cdistr,logn0r
-    integer,  intent(out)           :: dumii
+    real(rtype),     intent(out)           :: lamr,mu_r,cdistr,logn0r
 
     !local variables:
     real(rtype)                            :: inv_dum,lammax,lammin
