@@ -901,11 +901,15 @@ contains
 
           !.......................
           ! collection of droplets
-          call ice_droplet_collection(rho(i,k), t(i,k), rhofaci(i,k), f1pr04, qitot_incld(i,k), qc_incld(i,k),nitot_incld(i,k), nc_incld(i,k), qccol, nccol, qcshd, ncshdc)
+          call ice_droplet_collection(rho(i,k),t(i,k),rhofaci(i,k),&
+          f1pr04,qitot_incld(i,k),qc_incld(i,k),nitot_incld(i,k),nc_incld(i,k),&
+               qccol,nccol,qcshd,ncshdc)
 
           !....................
           ! collection of rain
-          call ice_drop_collection(rho(i,k), t(i,k), rhofaci(i,k), logn0r(i,k), f1pr07, f1pr08, qitot_incld(i,k), nitot_incld(i,k), qr_incld(i,k), qrcol, nrcol)
+          call ice_drop_collection(rho(i,k),t(i,k),rhofaci(i,k),&
+          logn0r(i,k),f1pr07,f1pr08,qitot_incld(i,k),nitot_incld(i,k),qr_incld(i,k),&
+               qrcol,nrcol)
           !...................................
           ! collection between ice categories
 
@@ -913,37 +917,49 @@ contains
 
           !.............................................
           ! self-collection of ice 
-          call ice_self_collection(rho(i,k), rhofaci(i,k), f1pr03, eii, Eii_fact, qitot_incld(i,k), nitot_incld(i,k), nislf)
+          call ice_self_collection(rho(i,k),rhofaci(i,k),&
+          f1pr03,eii,Eii_fact,qitot_incld(i,k),nitot_incld(i,k),&
+               nislf)
 
           !............................................................
           ! melting
-          call ice_melting(rho(i,k), t(i,k), pres(i,k), rhofaci(i,k), f1pr05, f1pr14, xxlv(i,k), xlf(i,k), & 
-            dv, sc, mu, kap, qv(i,k), qitot_incld(i,k), nitot_incld(i,k), qimlt, nimlt)
+          call ice_melting(rho(i,k),t(i,k),pres(i,k),rhofaci(i,k),&
+          f1pr05,f1pr14,xxlv(i,k),xlf(i,k),dv,sc,mu,kap,&
+          qv(i,k),qitot_incld(i,k),nitot_incld(i,k),&
+               qimlt,nimlt)
 
           !............................................................
           ! calculate wet growth
-          call wet_growth(rho(i,k), t(i,k), pres(i,k), rhofaci(i,k), f1pr05, f1pr14, xxlv(i,k), xlf(i,k), & 
-          dv, kap, mu, sc, qv(i,k), qc_incld(i,k), qitot_incld(i,k), nitot_incld(i,k), qr_incld(i,k), log_wetgrowth, &
-          qrcol, qccol, qwgrth, nrshdr, qcshd)
+          call wet_growth(rho(i,k),t(i,k),pres(i,k),rhofaci(i,k),&
+          f1pr05,f1pr14,xxlv(i,k),xlf(i,k),dv,kap,mu,sc,&
+          qv(i,k),qc_incld(i,k),qitot_incld(i,k),nitot_incld(i,k),qr_incld(i,k),log_wetgrowth,&
+               qrcol,qccol,qwgrth,nrshdr,qcshd)
          
           !-----------------------------
           ! calcualte total inverse ice relaxation timescale combined for all ice categories
           ! note 'f1pr' values are normalized, so we need to multiply by N
-          call ice_relaxation(rho(i,k), t(i,k), rhofaci(i,k), f1pr05, f1pr14, dv, mu, sc, qitot_incld(i,k), nitot_incld(i,k), &
-          epsi, epsi_tot)
+          call ice_relaxation(rho(i,k),t(i,k),rhofaci(i,k),&
+          f1pr05,f1pr14,dv,mu,sc,qitot_incld(i,k),nitot_incld(i,k),&
+               epsi,epsi_tot)
 
           !.........................
           ! calculate rime density
-          call rime_density(t(i,k), rhofaci(i,k), f1pr02, acn(i,k), lamc(i,k), mu_c(i,k), qc_incld(i,k), qccol, vtrmi1, rhorime_c)
+          call rime_density(t(i,k),rhofaci(i,k),&
+          f1pr02,acn(i,k),lamc(i,k),mu_c(i,k),qc_incld(i,k),qccol,&
+          vtrmi1,rhorime_c)
 
           !............................................................
           ! contact and immersion freezing droplets
-          call droplet_freezing(t(i,k), lamc(i,k), mu_c(i,k), cdist1(i,k), qc_incld(i,k), qcheti, ncheti)
+          call droplet_freezing(t(i,k),&
+          lamc(i,k),mu_c(i,k),cdist1(i,k),qc_incld(i,k),&
+               qcheti,ncheti)
 
           !............................................................
           ! immersion freezing of rain
           ! for future: get rid of log statements below for rain freezing
-          call rain_immersion_freezing(t(i,k), lamr(i,k), mu_r(i,k), cdistr(i,k), qr_incld(i,k), qrheti, nrheti)
+          call rain_immersion_freezing(t(i,k),&
+          lamr(i,k),mu_r(i,k),cdistr(i,k),qr_incld(i,k),&
+               qrheti,nrheti)
 
           !......................................
           ! rime splintering (Hallet-Mossop 1974)
@@ -2890,7 +2906,9 @@ contains
 
   end subroutine check_values
 
-  subroutine ice_droplet_collection(rho, t, rhofaci, f1pr04, qitot_incld, qc_incld, nitot_incld, nc_incld, qccol, nccol, qcshd, ncshdc)
+  subroutine ice_droplet_collection(rho,t,rhofaci,&
+  f1pr04,qitot_incld,qc_incld,nitot_incld,nc_incld,&
+             qccol,nccol,qcshd,ncshdc)
    
    !.......................
    ! collection of droplets
@@ -2936,7 +2954,9 @@ contains
   end subroutine ice_droplet_collection
 
 
-  subroutine ice_drop_collection(rho, t, rhofaci, logn0r, f1pr07, f1pr08, qitot_incld, nitot_incld, qr_incld, qrcol, nrcol)
+  subroutine ice_drop_collection(rho,t,rhofaci,&
+  logn0r,f1pr07,f1pr08,qitot_incld,nitot_incld,qr_incld,&
+  qrcol, nrcol)
    
    !....................
    ! collection of rain
@@ -2985,7 +3005,9 @@ contains
 
   end subroutine ice_drop_collection
 
-  subroutine ice_self_collection(rho, rhofaci, f1pr03, eii, Eii_fact, qitot_incld, nitot_incld, nislf)
+  subroutine ice_self_collection(rho,rhofaci,&
+  f1pr03,eii,Eii_fact,qitot_incld,nitot_incld,&
+             nislf)
 
    ! self-collection of ice 
 
@@ -3014,7 +3036,9 @@ contains
 end subroutine ice_self_collection
 
 
-subroutine ice_melting(rho, t, pres, rhofaci, f1pr05, f1pr14, xxlv, xlf, dv, sc, mu, kap, qv, qitot_incld, nitot_incld, qimlt, nimlt)
+subroutine ice_melting(rho,t,pres,rhofaci,&
+f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld,&
+           qimlt,nimlt)
    ! melting
    ! need to add back accelerated melting due to collection of ice mass by rain (pracsw1)
    ! note 'f1pr' values are normalized, so we need to multiply by N
@@ -3060,10 +3084,10 @@ subroutine ice_melting(rho, t, pres, rhofaci, f1pr05, f1pr14, xxlv, xlf, dv, sc,
 end subroutine ice_melting
 
 
-subroutine wet_growth(rho, t, pres, rhofaci, f1pr05, f1pr14, xxlv, xlf, &
-                      dv, kap, mu, sc, qv, qc_incld, qitot_incld, nitot_incld, qr_incld, &
-                      log_wetgrowth, &
-                      qrcol, qccol, qwgrth, nrshdr, qcshd)
+subroutine wet_growth(rho,t,pres,rhofaci,&
+f1pr05,f1pr14,xxlv,xlf,dv,kap,mu,sc,&
+qv,qc_incld,qitot_incld,nitot_incld,qr_incld,&
+           log_wetgrowth,qrcol,qccol,qwgrth,nrshdr,qcshd)
 
    implicit none 
 
@@ -3125,7 +3149,9 @@ subroutine wet_growth(rho, t, pres, rhofaci, f1pr05, f1pr14, xxlv, xlf, &
 end subroutine wet_growth 
 
 
-subroutine ice_relaxation(rho, t, rhofaci, f1pr05, f1pr14, dv, mu, sc, qitot_incld, nitot_incld, epsi, epsi_tot)
+subroutine ice_relaxation(rho,t,rhofaci,&
+f1pr05,f1pr14,dv,mu,sc,qitot_incld,nitot_incld,&
+epsi,epsi_tot)
 
    !-----------------------------
    ! calcualte total inverse ice relaxation timescale combined for all ice categories
@@ -3162,7 +3188,9 @@ subroutine ice_relaxation(rho, t, rhofaci, f1pr05, f1pr14, dv, mu, sc, qitot_inc
 end subroutine ice_relaxation
 
 
-subroutine rime_density(t, rhofaci, f1pr02, acn, lamc,  mu_c, qc_incld, qccol, vtrmi1, rhorime_c) 
+subroutine rime_density(t,rhofaci,&
+f1pr02,acn,lamc, mu_c,qc_incld,qccol,&
+           vtrmi1,rhorime_c) 
    
    !.........................
    ! calculate rime density
@@ -3232,7 +3260,8 @@ subroutine rime_density(t, rhofaci, f1pr02, acn, lamc,  mu_c, qc_incld, qccol, v
    endif ! qi > qsmall and T < 273.15
 end subroutine rime_density
 
-subroutine droplet_freezing(t, lamc, mu_c, cdist1, qc_incld, qcheti, ncheti)
+subroutine droplet_freezing(t,lamc,mu_c,cdist1,qc_incld,&
+           qcheti,ncheti)
 
    !............................................................
    ! contact and immersion freezing droplets
@@ -3261,7 +3290,9 @@ subroutine droplet_freezing(t, lamc, mu_c, cdist1, qc_incld, qcheti, ncheti)
 
 end subroutine droplet_freezing 
 
-subroutine rain_immersion_freezing(t, lamr, mu_r, cdistr, qr_incld, qrheti, nrheti)
+subroutine rain_immersion_freezing(t,&
+lamr, mu_r, cdistr, qr_incld,&
+qrheti, nrheti)
 
    !............................................................
    ! immersion freezing of rain
