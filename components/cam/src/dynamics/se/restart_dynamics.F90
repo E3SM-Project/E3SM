@@ -135,7 +135,6 @@ CONTAINS
 
 #ifdef MODEL_THETA_L
     if( .not. theta_hydrostatic_mode ) then
-!what does pio decomp do? do i need ifdef, if here?
        ldof => get_restart_decomp(elem, nlevp)
        call PIO_InitDecomp(pio_subsystem, pio_double, (/nelem*np*np,nlevp/),ldof , iodesc3dp)
        deallocate(ldof)
