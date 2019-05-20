@@ -53,6 +53,8 @@ OPTIONS
      -inst_string          inst_string variable
      -ntasks_glc           NTASKS_GLC for this case
      -ninst_glc            NINST_GLC for this case
+     -mali_dynamic         turns on dynamic ice sheet mode
+                           Options are: FALSE, TRUE
 
 NOTE: The precedence for setting the values of namelist variables is (highest to lowest):
       1. namelist values set by specific command-line options, i.e. (none right now)
@@ -97,6 +99,7 @@ my %opts = ( help          => 0,
              cfg_dir       => $cfgdir,
              ntasks_glc    => 0,
              ninst_glc     => 0,
+             mali_dynamic  => undef,
            );
 
 GetOptions(
@@ -115,6 +118,7 @@ GetOptions(
     "preview"         => \$opts{'preview'},
     "ntasks_glc=i"    => \$opts{'ntasks_glc'},
     "ninst_glc=i"     => \$opts{'ninst_glc'},
+    "mali_dynamic=s"  => \$opts{'mali_dynamic'},
 
 )  or usage();
 
@@ -149,6 +153,7 @@ my $date_stamp    = $opts{'date_stamp'};
 $cfgdir           = $opts{'cfg_dir'};
 my $NINST_GLC     = $opts{'ninst_glc'};
 my $NTASKS_GLC    = $opts{'ntasks_glc'};
+my $MALI_DYNAMIC  = $opts{'mali_dynamic'};
 
 my $CIMEROOT;
 if ( defined $opts{'cimeroot'} ) {
@@ -422,7 +427,11 @@ if ($MALI_USE_ALBANY eq 'TRUE') {
 # Namelist group: velocity_solver #
 ###################################
 
-add_default($nl, 'config_velocity_solver', 'masi_use_albany'=>"$MALI_USE_ALBANY");
+if ($MALI_DYNAMIC eq 'TRUE') {
+    add_default($nl, 'config_velocity_solver', 'masi_use_albany'=>"$MALI_USE_ALBANY");
+} else {
+    add_default($nl, 'config_velocity_solver', 'val'=>"none");
+}
 add_default($nl, 'config_sia_tangent_slope_calculation');
 add_default($nl, 'config_flowParamA_calculation');
 add_default($nl, 'config_do_velocity_reconstruction_for_external_dycore');
@@ -434,8 +443,16 @@ add_default($nl, 'config_beta_use_effective_pressure');
 # Namelist group: advection #
 #############################
 
-add_default($nl, 'config_thickness_advection');
-add_default($nl, 'config_tracer_advection');
+if ($MALI_DYNAMIC eq 'TRUE') {
+    add_default($nl, 'config_thickness_advection');
+} else {
+    add_default($nl, 'config_thickness_advection', 'val'=>"none");
+}
+if ($MALI_DYNAMIC eq 'TRUE') {
+    add_default($nl, 'config_tracer_advection');
+} else {
+    add_default($nl, 'config_tracer_advection', 'val'=>"none");
+}
 
 ###########################
 # Namelist group: calving #

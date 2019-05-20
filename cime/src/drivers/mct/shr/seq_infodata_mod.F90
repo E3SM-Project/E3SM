@@ -186,6 +186,7 @@ MODULE seq_infodata_mod
      logical                 :: ocn_present     ! does component model exist
      logical                 :: ocn_prognostic  ! does component model need input data from driver
      logical                 :: ocnrof_prognostic ! does component need rof data
+     logical                 :: ocn_c2_glcshelf   ! will ocn component send data for ice shelf fluxes in driver
      logical                 :: ice_present     ! does component model exist
      logical                 :: ice_prognostic  ! does component model need input data from driver
      logical                 :: iceberg_prognostic ! does the ice model support icebergs
@@ -719,6 +720,7 @@ CONTAINS
        infodata%rof_prognostic = .false.
        infodata%ocn_prognostic = .false.
        infodata%ocnrof_prognostic = .false.
+       infodata%ocn_c2_glcshelf = .false.
        infodata%ice_prognostic = .false.
        infodata%glc_prognostic = .false.
        ! It's safest to assume glc_coupled_fluxes = .true. if it's not set elsewhere,
@@ -946,9 +948,12 @@ CONTAINS
        start_type, restart_pfile, restart_file, perpetual, perpetual_ymd, &
        aqua_planet,aqua_planet_sst, brnch_retain_casename, &
        single_column, scmlat,scmlon,logFilePostFix, outPathRoot,          &
-       atm_present, atm_prognostic, lnd_present, lnd_prognostic, rof_prognostic, &
-       rof_present, ocn_present, ocn_prognostic, ocnrof_prognostic,       &
-       ice_present, ice_prognostic, glc_present, glc_prognostic,          &
+       atm_present, atm_prognostic,                                       &
+       lnd_present, lnd_prognostic,                                       &
+       rof_present, rof_prognostic,                                       &
+       ocn_present, ocn_prognostic, ocnrof_prognostic, ocn_c2_glcshelf,   &
+       ice_present, ice_prognostic,                                       &
+       glc_present, glc_prognostic,                                       &
        iac_present, iac_prognostic,                                       &
        glc_coupled_fluxes,                                                &
        flood_present, wav_present, wav_prognostic, rofice_present,        &
@@ -1109,6 +1114,7 @@ CONTAINS
     logical,                optional, intent(OUT) :: ocn_present
     logical,                optional, intent(OUT) :: ocn_prognostic
     logical,                optional, intent(OUT) :: ocnrof_prognostic
+    logical,                optional, intent(OUT) :: ocn_c2_glcshelf
     logical,                optional, intent(OUT) :: ice_present
     logical,                optional, intent(OUT) :: ice_prognostic
     logical,                optional, intent(OUT) :: iceberg_prognostic
@@ -1284,6 +1290,7 @@ CONTAINS
     if ( present(ocn_present)    ) ocn_present    = infodata%ocn_present
     if ( present(ocn_prognostic) ) ocn_prognostic = infodata%ocn_prognostic
     if ( present(ocnrof_prognostic) ) ocnrof_prognostic = infodata%ocnrof_prognostic
+    if ( present(ocn_c2_glcshelf) ) ocn_c2_glcshelf = infodata%ocn_c2_glcshelf
     if ( present(ice_present)    ) ice_present    = infodata%ice_present
     if ( present(ice_prognostic) ) ice_prognostic = infodata%ice_prognostic
     if ( present(iceberg_prognostic)) iceberg_prognostic = infodata%iceberg_prognostic
@@ -1472,9 +1479,12 @@ CONTAINS
        start_type, restart_pfile, restart_file, perpetual, perpetual_ymd, &
        aqua_planet,aqua_planet_sst, brnch_retain_casename, &
        single_column, scmlat,scmlon,logFilePostFix, outPathRoot,          &
-       atm_present, atm_prognostic, lnd_present, lnd_prognostic, rof_prognostic, &
-       rof_present, ocn_present, ocn_prognostic, ocnrof_prognostic,       &
-       ice_present, ice_prognostic, glc_present, glc_prognostic,          &
+       atm_present, atm_prognostic,                                       &
+       lnd_present, lnd_prognostic,                                       &
+       rof_present, rof_prognostic,                                       &
+       ocn_present, ocn_prognostic, ocnrof_prognostic, ocn_c2_glcshelf,   &
+       ice_present, ice_prognostic,                                       &
+       glc_present, glc_prognostic,                                       &
        glc_coupled_fluxes,                                                &
        flood_present, wav_present, wav_prognostic, rofice_present,        &
        glclnd_present, glcocn_present, glcice_present, iceberg_prognostic,&
@@ -1633,6 +1643,7 @@ CONTAINS
     logical,                optional, intent(IN)    :: ocn_present
     logical,                optional, intent(IN)    :: ocn_prognostic
     logical,                optional, intent(IN)    :: ocnrof_prognostic
+    logical,                optional, intent(IN)    :: ocn_c2_glcshelf
     logical,                optional, intent(IN)    :: ice_present
     logical,                optional, intent(IN)    :: ice_prognostic
     logical,                optional, intent(IN)    :: iceberg_prognostic
@@ -1806,6 +1817,7 @@ CONTAINS
     if ( present(ocn_present)    ) infodata%ocn_present    = ocn_present
     if ( present(ocn_prognostic) ) infodata%ocn_prognostic = ocn_prognostic
     if ( present(ocnrof_prognostic)) infodata%ocnrof_prognostic = ocnrof_prognostic
+    if ( present(ocn_c2_glcshelf)) infodata%ocn_c2_glcshelf = ocn_c2_glcshelf
     if ( present(ice_present)    ) infodata%ice_present    = ice_present
     if ( present(ice_prognostic) ) infodata%ice_prognostic = ice_prognostic
     if ( present(iceberg_prognostic)) infodata%iceberg_prognostic = iceberg_prognostic
@@ -2104,6 +2116,7 @@ CONTAINS
     call shr_mpi_bcast(infodata%ocn_present,             mpicom)
     call shr_mpi_bcast(infodata%ocn_prognostic,          mpicom)
     call shr_mpi_bcast(infodata%ocnrof_prognostic,       mpicom)
+    call shr_mpi_bcast(infodata%ocn_c2_glcshelf,         mpicom)
     call shr_mpi_bcast(infodata%ice_present,             mpicom)
     call shr_mpi_bcast(infodata%ice_prognostic,          mpicom)
     call shr_mpi_bcast(infodata%iceberg_prognostic,      mpicom)
@@ -2387,6 +2400,7 @@ CONTAINS
        call shr_mpi_bcast(infodata%ocn_present,        mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%ocn_prognostic,     mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%ocnrof_prognostic,  mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%ocn_c2_glcshelf,    mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%ocn_nx,             mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%ocn_ny,             mpicom, pebcast=cmppe)
        ! dead_comps is true if it's ever set to true
@@ -2461,6 +2475,7 @@ CONTAINS
        call shr_mpi_bcast(infodata%ocn_present,        mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%ocn_prognostic,     mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%ocnrof_prognostic,  mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%ocn_c2_glcshelf,    mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%ice_present,        mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%ice_prognostic,     mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%iceberg_prognostic, mpicom, pebcast=cplpe)
@@ -2801,6 +2816,7 @@ CONTAINS
     write(logunit,F0L) subname,'ocn_present              = ', infodata%ocn_present
     write(logunit,F0L) subname,'ocn_prognostic           = ', infodata%ocn_prognostic
     write(logunit,F0L) subname,'ocnrof_prognostic        = ', infodata%ocnrof_prognostic
+    write(logunit,F0L) subname,'ocn_c2_glcshelf          = ', infodata%ocn_c2_glcshelf
     write(logunit,F0L) subname,'ice_present              = ', infodata%ice_present
     write(logunit,F0L) subname,'ice_prognostic           = ', infodata%ice_prognostic
     write(logunit,F0L) subname,'iceberg_prognostic       = ', infodata%iceberg_prognostic

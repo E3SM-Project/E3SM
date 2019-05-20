@@ -62,6 +62,9 @@ module seq_rest_mod
   use prep_rof_mod,    only: prep_rof_get_l2racc_lx_cnt
   use prep_glc_mod,    only: prep_glc_get_l2gacc_lx
   use prep_glc_mod,    only: prep_glc_get_l2gacc_lx_cnt
+  use prep_glc_mod,    only: prep_glc_get_x2gacc_gx
+  use prep_glc_mod,    only: prep_glc_get_x2gacc_gx_cnt
+
   use prep_aoflux_mod, only: prep_aoflux_get_xao_ox
   use prep_aoflux_mod, only: prep_aoflux_get_xao_ax
 
@@ -117,6 +120,8 @@ module seq_rest_mod
   logical     :: esp_prognostic         ! .true.  => esp comp expects input
   logical     :: iac_prognostic         ! .true.  => iac comp expects input
 
+  logical     :: ocn_c2_glcshelf        ! .true.  => ocn to glcshelf coupling on
+
   !--- temporary pointers ---
   type(mct_gsMap), pointer :: gsmap
   type(mct_aVect), pointer :: x2oacc_ox(:)
@@ -125,6 +130,8 @@ module seq_rest_mod
   integer        , pointer :: l2racc_lx_cnt
   type(mct_aVect), pointer :: l2gacc_lx(:)
   integer        , pointer :: l2gacc_lx_cnt
+  type(mct_aVect), pointer :: x2gacc_gx(:)
+  integer        , pointer :: x2gacc_gx_cnt
   type(mct_aVect), pointer :: xao_ox(:)
   type(mct_aVect), pointer :: xao_ax(:)
 
@@ -198,7 +205,8 @@ contains
          glc_prognostic=glc_prognostic,      &
          wav_prognostic=wav_prognostic,      &
          iac_prognostic=iac_prognostic,      &
-         esp_prognostic=esp_prognostic)
+         esp_prognostic=esp_prognostic,      &
+         ocn_c2_glcshelf=ocn_c2_glcshelf)
 
     if (iamin_CPLID) then
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
@@ -227,6 +235,15 @@ contains
           call seq_io_read(rest_file, gsmap, l2gacc_lx, 'l2gacc_lx')
           call seq_io_read(rest_file, l2gacc_lx_cnt ,'l2gacc_lx_cnt')
        end if
+
+       if (ocn_c2_glcshelf) then
+          gsmap         => component_get_gsmap_cx(glc(1))
+          x2gacc_gx     => prep_glc_get_x2gacc_gx()
+          x2gacc_gx_cnt => prep_glc_get_x2gacc_gx_cnt()
+          call seq_io_read(rest_file, gsmap, x2gacc_gx, 'x2gacc_gx')
+          call seq_io_read(rest_file, x2gacc_gx_cnt ,'x2gacc_gx_cnt')
+       end if
+
        if (ocn_present) then
           gsmap         => component_get_gsmap_cx(ocn(1))
           x2oacc_ox     => prep_ocn_get_x2oacc_ox()
@@ -381,6 +398,7 @@ contains
          wav_prognostic=wav_prognostic,      &
          esp_prognostic=esp_prognostic,      &
          iac_prognostic=iac_prognostic,      &
+         ocn_c2_glcshelf=ocn_c2_glcshelf,    &
          case_name=case_name,                &
          model_doi_url=model_doi_url)
 
@@ -494,6 +512,15 @@ contains
              call seq_io_write(rest_file, gsmap, l2gacc_lx, 'l2gacc_lx', &
                   whead=whead, wdata=wdata)
              call seq_io_write(rest_file, l2gacc_lx_cnt, 'l2gacc_lx_cnt', &
+                  whead=whead, wdata=wdata)
+          end if
+          if (ocn_c2_glcshelf) then
+             gsmap         => component_get_gsmap_cx(glc(1))
+             x2gacc_gx => prep_glc_get_x2gacc_gx()
+             x2gacc_gx_cnt => prep_glc_get_x2gacc_gx_cnt()
+             call seq_io_write(rest_file, gsmap, x2gacc_gx , 'x2gacc_gx', &
+                  whead=whead, wdata=wdata)
+             call seq_io_write(rest_file, x2gacc_gx_cnt, 'x2gacc_gx_cnt', &
                   whead=whead, wdata=wdata)
           end if
           if (ocn_present) then
