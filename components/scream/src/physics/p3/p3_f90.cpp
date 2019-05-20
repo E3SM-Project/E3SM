@@ -24,7 +24,7 @@ extern "C" {
                  Real* nevapr, Real* prer_evap,
                  Real* rflx, Real* sflx, // 1 extra column size
                  Real* rcldm, Real* lcldm, Real* icldm, Real* pratot, Real* prctot, 
-                 Real* p3_tend_out);
+                 Real* p3_tend_out, Real* mu_c, Real* lamc);
 }
 
 namespace scream {
@@ -77,6 +77,8 @@ FortranData::FortranData (Int ncol_, Int nlev_)
   pratot = Array2("Cloud drop accretion by rain", ncol, nlev);
   prctot = Array2("Cloud drop autoconversion to rain", ncol, nlev);
   p3_tend_out = Array3("Microphysics Tendencies", ncol, nlev, 49);
+  mu_c = Array2("Size distribution shape paramter", ncol, nlev);
+  lamc = Array2("Size distribution slope paramter", ncol, nlev);
 }
 
 FortranDataIterator::FortranDataIterator (const FortranData::Ptr& d) {
@@ -102,6 +104,7 @@ void FortranDataIterator::init (const FortranData::Ptr& dp) {
   fdipb(rflx); fdipb(sflx);
   fdipb(rcldm); fdipb(lcldm); fdipb(icldm); 
   fdipb(pratot); fdipb(prctot); fdipb(p3_tend_out);
+  fdipb(mu_c); fdipb(lamc);
 #undef fdipb
 }
 
@@ -139,7 +142,7 @@ void p3_main (const FortranData& d) {
             d.nevapr.data(), d.prer_evap.data(),
             d.rflx.data(), d.sflx.data(),
             d.rcldm.data(), d.lcldm.data(), d.icldm.data(),d.pratot.data(),d.prctot.data(),
-            d.p3_tend_out.data());
+            d.p3_tend_out.data(),d.mu_c.data(),d.lamc.data());
 }
 
 int test_FortranData () {

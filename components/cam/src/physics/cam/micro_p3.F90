@@ -325,7 +325,7 @@ contains
        pres,dzq,npccn,naai,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
        diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc, &
        pdel,exner,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm,  &
-       pratot,prctot,p3_tend_out)
+       pratot,prctot,p3_tend_out,mu_c,lamc)
 
     !----------------------------------------------------------------------------------------!
     !                                                                                        !
@@ -373,7 +373,9 @@ contains
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_effi  ! effective radius, ice            m
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_vmi   ! mass-weighted fall speed of ice  m s-1
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_di    ! mean diameter of ice             m
-    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_rhoi  ! bulk density of ice              kg m-1
+    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_rhoi  ! bulk density of ice              kg m-3
+    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: mu_c       ! Size distribution shape parameter for radiation
+    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: lamc       ! Size distribution slope parameter for radiation
 
     integer, intent(in)                                  :: its,ite    ! array bounds (horizontal)
     integer, intent(in)                                  :: kts,kte    ! array bounds (vertical)
@@ -408,10 +410,8 @@ contains
 
     ! 2D size distribution and fallspeed parameters:
 
-    real(rtype), dimension(its:ite,kts:kte) :: lamc
     real(rtype), dimension(its:ite,kts:kte) :: lamr
     real(rtype), dimension(its:ite,kts:kte) :: logn0r
-    real(rtype), dimension(its:ite,kts:kte) :: mu_c
 
     real(rtype), dimension(its:ite,kts:kte) :: nu
     real(rtype), dimension(its:ite,kts:kte) :: cdist
@@ -467,8 +467,6 @@ contains
 
     real(rtype) :: Eii_fact,epsi
     real(rtype) :: eii ! temperature dependent aggregation efficiency
-
-    real(rtype), dimension(its:ite,kts:kte) :: diam_ice
 
     ! Variables needed for in-cloud calculations
     real(rtype)                             :: ir_cldm, il_cldm, lr_cldm  ! Intersection of cloud fractions for combination of ice (i), rain (r) and liquid (l)
@@ -559,7 +557,7 @@ contains
     prec      = 0._rtype
     mu_r      = 0._rtype
     diag_ze   = -99._rtype
-    diam_ice  = 0._rtype
+
     ze_ice    = 1.e-22_rtype
     ze_rain   = 1.e-22_rtype
     diag_effc = 10.e-6_rtype ! default value
@@ -833,10 +831,6 @@ contains
              !impose lower limits to prevent taking log of # < 0
              nitot_incld(i,k) = max(nitot_incld(i,k),nsmall)
              nr_incld(i,k)    = max(nr_incld(i,k),nsmall)
-
-             !compute mean-mass ice diameters (estimated; rigorous approach to be implemented later)
-             dum2 = 500._rtype !ice density
-             diam_ice(i,k) = ((qitot_incld(i,k)*6._rtype)/(nitot_incld(i,k)*dum2*pi))**thrd
 
              call calc_bulkRhoRime(qitot_incld(i,k),qirim_incld(i,k),birim_incld(i,k),rhop)
 
@@ -1136,7 +1130,6 @@ contains
                qinuc = ninuc * mi0
             endif 
          endif 
-
           !.................................................................
           ! droplet activation
 
@@ -1583,14 +1576,14 @@ contains
           p3_tend_out(i,k,34) = 0._rtype  ! used to be qcmul, but that has been removed.  Kept at 0.0 as placeholder.
           p3_tend_out(i,k,35) = ncshdc    ! source for rain number due to cloud water/ice collision above freezing  and shedding (combined with NRSHD in the paper) 
           ! measure microphysics processes tendency output
-          p3_tend_out(i,k,42) = qc(i,k)    - p3_tend_out(i,k,42) ! Liq. microphysics tendency, measure 
-          p3_tend_out(i,k,43) = nc(i,k)    - p3_tend_out(i,k,43) ! Liq. # microphysics tendency, measure 
-          p3_tend_out(i,k,44) = qr(i,k)    - p3_tend_out(i,k,44) ! Rain microphysics tendency, measure 
-          p3_tend_out(i,k,45) = nr(i,k)    - p3_tend_out(i,k,45) ! Rain # microphysics tendency, measure 
-          p3_tend_out(i,k,46) = qitot(i,k) - p3_tend_out(i,k,46) ! Ice  microphysics tendency, measure 
-          p3_tend_out(i,k,47) = nitot(i,k) - p3_tend_out(i,k,47) ! Ice  # microphysics tendency, measure 
-          p3_tend_out(i,k,48) = qv(i,k)    - p3_tend_out(i,k,48) ! Vapor  microphysics tendency, measure 
-          p3_tend_out(i,k,49) = th(i,k)    - p3_tend_out(i,k,49) ! Pot. Temp. microphysics tendency, measure 
+          p3_tend_out(i,k,42) = ( qc(i,k)    - p3_tend_out(i,k,42) ) * odt ! Liq. microphysics tendency, measure 
+          p3_tend_out(i,k,43) = ( nc(i,k)    - p3_tend_out(i,k,43) ) * odt ! Liq. # microphysics tendency, measure 
+          p3_tend_out(i,k,44) = ( qr(i,k)    - p3_tend_out(i,k,44) ) * odt ! Rain microphysics tendency, measure 
+          p3_tend_out(i,k,45) = ( nr(i,k)    - p3_tend_out(i,k,45) ) * odt ! Rain # microphysics tendency, measure 
+          p3_tend_out(i,k,46) = ( qitot(i,k) - p3_tend_out(i,k,46) ) * odt ! Ice  microphysics tendency, measure 
+          p3_tend_out(i,k,47) = ( nitot(i,k) - p3_tend_out(i,k,47) ) * odt ! Ice  # microphysics tendency, measure 
+          p3_tend_out(i,k,48) = ( qv(i,k)    - p3_tend_out(i,k,48) ) * odt ! Vapor  microphysics tendency, measure 
+          p3_tend_out(i,k,49) = ( th(i,k)    - p3_tend_out(i,k,49) ) * odt ! Pot. Temp. microphysics tendency, measure 
           ! Outputs associated with aerocom comparison:
           pratot(i,k) = qcacc ! cloud drop accretion by rain
           prctot(i,k) = qcaut ! cloud drop autoconversion to rain 
@@ -1774,8 +1767,8 @@ contains
           prt_liq(i) = prt_accum*inv_rhow*odt  !note, contribution from rain is added below
 
        endif qc_present
-       p3_tend_out(i,:,36) = qc(i,:) - p3_tend_out(i,:,36) ! Liq. sedimentation tendency, measure
-       p3_tend_out(i,:,37) = nc(i,:) - p3_tend_out(i,:,37) ! Liq. # sedimentation tendency, measure
+       p3_tend_out(i,:,36) = ( qc(i,:) - p3_tend_out(i,:,36) ) * odt ! Liq. sedimentation tendency, measure
+       p3_tend_out(i,:,37) = ( nc(i,:) - p3_tend_out(i,:,37) ) * odt ! Liq. # sedimentation tendency, measure
 
 
        !------------------------------------------------------------------------------------------!
@@ -1908,8 +1901,8 @@ contains
           prt_liq(i) = prt_liq(i) + prt_accum*inv_rhow*odt
 
        endif qr_present
-       p3_tend_out(i,:,38) = qr(i,:) - p3_tend_out(i,:,38) ! Rain sedimentation tendency, measure
-       p3_tend_out(i,:,39) = nr(i,:) - p3_tend_out(i,:,39) ! Rain # sedimentation tendency, measure
+       p3_tend_out(i,:,38) = ( qr(i,:) - p3_tend_out(i,:,38) ) * odt ! Rain sedimentation tendency, measure
+       p3_tend_out(i,:,39) = ( nr(i,:) - p3_tend_out(i,:,39) ) * odt ! Rain # sedimentation tendency, measure
 
 
        !------------------------------------------------------------------------------------------!
@@ -2043,8 +2036,8 @@ contains
           prt_sol(i) = prt_sol(i) + prt_accum*inv_rhow*odt
 
        endif qi_present
-       p3_tend_out(i,:,40) = qitot(i,:) - p3_tend_out(i,:,40) ! Ice sedimentation tendency, measure
-       p3_tend_out(i,:,41) = nitot(i,:) - p3_tend_out(i,:,41) ! Ice # sedimentation tendency, measure
+       p3_tend_out(i,:,40) = ( qitot(i,:) - p3_tend_out(i,:,40) ) * odt ! Ice sedimentation tendency, measure
+       p3_tend_out(i,:,41) = ( nitot(i,:) - p3_tend_out(i,:,41) ) * odt ! Ice # sedimentation tendency, measure
 
        !------------------------------------------------------------------------------------------!
 
@@ -2060,14 +2053,6 @@ contains
        ! homogeneous freezing of cloud and rain
 
        k_loop_fz:  do k = kbot,ktop,kdir
-
-          ! compute mean-mass ice diameters (estimated; rigorous approach to be implemented later)
-          diam_ice(i,k) = 0._rtype
-          if (qitot(i,k).ge.qsmall) then
-             dum1 = max(nitot(i,k),nsmall)
-             dum2 = 500._rtype !ice density
-             diam_ice(i,k) = ((qitot(i,k)*6._rtype)/(dum1*dum2*pi))**thrd
-          endif
 
           if (qc(i,k).ge.qsmall .and. t(i,k).lt.homogfrze) then
              Q_nuc = qc(i,k)
