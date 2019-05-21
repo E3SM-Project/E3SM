@@ -19,7 +19,7 @@ module model_init_mod
   use hybrid_mod,         only: hybrid_t
   use dimensions_mod,     only: np,nlev,nlevp
   use eos          ,      only: pnh_and_exner_from_eos,get_dirk_jacobian
-  use element_state,      only: timelevels, nu_scale_top
+  use element_state,      only: timelevels, nu_scale_top, nlev_tom
   use viscosity_mod,      only: make_c0_vector
   use kinds,              only: real_kind,iulog
   use control_mod,        only: qsplit,theta_hydrostatic_mode
@@ -75,6 +75,7 @@ contains
     ! compute scaling of sponge layer damping 
     !
     if (hybrid%masterthread) write(iulog,*) "sponge layer nu_top viscosity scaling factor"
+    nlev_tom=0
     do k=1,nlev
        !press = (hvcoord%hyam(k)+hvcoord%hybm(k))*hvcoord%ps0
        !ptop  = hvcoord%hyai(1)*hvcoord%ps0
@@ -103,10 +104,16 @@ contains
        !if (k==3) nu_scale_top(k)=1
        !if (k>3) nu_scale_top(k)=0
 
+       if (nu_scale_top(k)>0) nlev_tom=k
+
        if (hybrid%masterthread) then
           if (nu_scale_top(k)>0) write(iulog,*) "  nu_scale_top ",k,nu_scale_top(k)
        end if
     end do
+    if (hybrid%masterthread) then
+       if (nu_scale_top(k)>0) write(iulog,*) "  nlev_tom ",nlev_tom
+    end if
+
   end subroutine 
 
 

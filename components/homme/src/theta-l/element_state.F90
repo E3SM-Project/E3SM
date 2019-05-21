@@ -24,6 +24,7 @@ module element_state
 
   ! pressure based TOM sponge layer
   real (kind=real_kind),public :: nu_scale_top(nlev)
+  integer, public              :: nlev_tom
 
 
 ! =========== PRIMITIVE-EQUATION DATA-STRUCTURES =====================

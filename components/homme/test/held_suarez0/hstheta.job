@@ -12,7 +12,7 @@
 #                           to construct "input.nl" read by HOMME
 #
 #
-# ne30: 12 nodes, 2h  (30 nodes, 1.5h)
+# ne30: 12 nodes, 2h  (20 nodes, 1h)
 # ne120: 80 nodes 20h?   (run for 400days, output after 200 days?)
 #
 #SBATCH --job-name HS
@@ -25,8 +25,6 @@
 
 
 
-set NCPU = 0
-echo using NCPU = $NCPU
 set nlev=26
 set ndays = 1600
 set nmax =  5       # no. of timesteps.  ignored, unless ndays=0
@@ -50,7 +48,6 @@ if ( $ne == 15 ) then
     # tbird 100 nodes, 1200days: 90min
     set tstep = 600
     set nu = 1e16
-    if ( $NCPU > 1350) set NCPU = 1350
  endif
  if ( $ne == 16 ) then
     # 2 degree  anvil 38 nodes, 1600 days: 5min 
@@ -58,7 +55,6 @@ if ( $ne == 15 ) then
     set tstep = 600
     set nu = 7e15    # turn on subcycling for larger values
     #set topo = '/home/ccsm-data/inputdata/atm/cam/topo/USGS-gtopo30_ne16np4_16xconsistentSGH.c20160612.nc'
-    if ( $NCPU > 1536) set NCPU = 1536
  endif
  if ( $ne == 30 ) then
     # 1 degree    H model, 20 nodes, 30min for 1600days
@@ -68,10 +64,10 @@ if ( $ne == 15 ) then
     set nu = 1e15       # 1.5e15 crashed, 1.6e15 ran
     set nu_div = 1e15
 
-    #set topo = '/home/ccsm-data/inputdata/atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc'
+    set topo = '/home/ccsm-data/inputdata/atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc'
     #set topo = '/projects/ccsm/inputdata/atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc'
-    set topo = '/lcrc/group/acme/taylorm/topodata/ne30/USGS-gtopo30_ne30np4_8xdel2.nc'
-    set toponame = 8xdel2-H
+    #set topo = '/lcrc/group/acme/taylorm/topodata/ne30/USGS-gtopo30_ne30np4_8xdel2.nc'
+    set toponame = 16xdel2-H-TOMsplit1
  endif
  if ( $ne == 60 ) then
     # 0.5 degree     tbird 200 nodes, 560 days: 20h
@@ -189,7 +185,6 @@ cat  $wdir/input.nl
 ############################################################
 date
 set echo
-#mpirun -np $NCPU $bld/src/$exe/$exe < $wdir/input.nl 
 mpirun  $bld/src/$exe/$exe < $wdir/input.nl 
 date
 
@@ -207,10 +202,9 @@ if ( $ndays > 0 ) then
 endif 
 
 set rtime = `head -100 HommeTime.$$ | grep prim_run | head -1 | awk '{print $7}' - `
-#set time_per_timestep = `echo "scale=8;$rtime / $nmax" | bc`
 set time_per_timestep = `python -c "print($rtime / $nmax)" `
 echo "time for $nmax timesteps = $rtime seconds"
-echo "NCPU=$NCPU average time (seconds) per timestep:  $time_per_timestep"
+exit
 
 # compute SYPD:  
 # number of timesteps per year:  360*24*3600/tstep

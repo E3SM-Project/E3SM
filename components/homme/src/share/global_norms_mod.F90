@@ -562,7 +562,7 @@ contains
        if(nu_top>0) then
 #ifdef MODEL_THETA_L
           nu_top_actual=maxval(nu_scale_top)*nu_top
-          write(iulog,'(a,f10.2,a)') '8*nu_top viscosity CFL: dt < S*', &
+          write(iulog,'(a,f10.2,a)') 'scaled nu_top viscosity CFL: dt < S*', &
                1.0d0/(nu_top_actual*((rrearth*max_normDinv)**2)*lambda_vis),'s'
 #else
           nu_top_actual=4*nu_top

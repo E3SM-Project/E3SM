@@ -9,13 +9,14 @@
 !  2018/8 TOM sponge layer scaling from P. Lauritzen
 !  09/2018: O. Guba  code for new ftypes
 !  2018/12: M. Taylor apply forcing assuming nearly constant p 
+!  2019/5:  M. Taylor time-split TOM dissipation and hyperviscsity
 !
 module prim_advance_mod
 
   use bndry_mod,          only: bndry_exchangev
   use control_mod,        only: dcmip16_mu, dcmip16_mu_s, hypervis_order, hypervis_subcycle,&
     integration, nu, nu_div, nu_p, nu_s, nu_top, prescribed_wind, qsplit, rsplit, test_case,&
-    theta_hydrostatic_mode, tstep_type, use_moisture, theta_advect_form
+    theta_hydrostatic_mode, tstep_type, theta_advect_form, hypervis_subcycle_tom
   use derivative_mod,     only: derivative_t, divergence_sphere, gradient_sphere, laplace_sphere_wk,&
     laplace_z, vorticity_sphere, vlaplace_sphere_wk 
   use derivative_mod,     only: subcell_div_fluxes, subcell_dss_fluxes
@@ -23,7 +24,7 @@ module prim_advance_mod
   use edge_mod,           only: edge_g, edgevpack_nlyr, edgevunpack_nlyr
   use edgetype_mod,       only: EdgeBuffer_t,  EdgeDescriptor_t, edgedescriptor_t
   use element_mod,        only: element_t
-  use element_state,      only: max_itercnt_perstep,avg_itercnt,max_itererr_perstep, nu_scale_top
+  use element_state,      only: max_itercnt_perstep,avg_itercnt,max_itererr_perstep, nu_scale_top, nlev_tom
   use element_ops,        only: get_temperature, set_theta_ref, state0, get_R_star
   use eos,                only: pnh_and_exner_from_eos,phi_from_eos,get_dirk_jacobian
   use hybrid_mod,         only: hybrid_t
@@ -1058,7 +1059,7 @@ contains
 
   ! local
   real (kind=real_kind) :: eta_ave_w  ! weighting for mean flux terms
-  integer :: k2,k,kptr,i,j,ie,ic,nt,nlyr_tot,ssize
+  integer :: k2,k,kptr,i,j,ie,ic,nt,nlyr_tot,nlyr_tom,ssize,ssize_tom
   real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)      :: vtens
   real (kind=real_kind), dimension(np,np,nlev,4,nets:nete)      :: stens  ! dp3d,theta,w,phi
 
@@ -1077,8 +1078,8 @@ contains
   real (kind=real_kind) :: pnh(np,np,nlevp)    
   real (kind=real_kind) :: temp(np,np,nlev)    
   real (kind=real_kind) :: temp_i(np,np,nlevp)    
-  real (kind=real_kind) :: dt
-  real (kind=real_kind) :: ps_ref(np,np),vtheta_dp(np,np)
+  real (kind=real_kind) :: dt,xfac
+  real (kind=real_kind) :: ps_ref(np,np)
 
   real (kind=real_kind) :: theta_ref(np,np,nlev,nets:nete)
   real (kind=real_kind) :: phi_ref(np,np,nlevp,nets:nete)
@@ -1087,14 +1088,16 @@ contains
   integer :: l1p,l2p,l1n,l2n,l
   call t_startf('advance_hypervis')
 
-  dt=dt2/hypervis_subcycle
-
   if (theta_hydrostatic_mode) then
      nlyr_tot=4*nlev        ! dont bother to dss w_i and phinh_i
+     nlyr_tom=4*nlev_tom
      ssize=2*nlev
+     ssize_tom=2*nlev_tom
   else
      nlyr_tot=6*nlev  ! total amount of data for DSS
+     nlyr_tom=6*nlev_tom
      ssize=4*nlev
+     ssize_tom=4*nlev_tom
   endif
   
   do k=1,nlev
@@ -1114,6 +1117,7 @@ contains
 !        function of dp3d is less noisy at cube edges
 ! 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! compute reference states
@@ -1152,6 +1156,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !  hyper viscosity
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  dt=dt2/hypervis_subcycle
   do ic=1,hypervis_subcycle
      do ie=nets,nete
         ! remove ref state
@@ -1186,31 +1191,11 @@ contains
            ! advace in time.
            ! note: DSS commutes with time stepping, so we can time advance and then DSS.
            ! note: weak operators alreayd have mass matrix "included"
-           
-           ! biharmonic terms need a negative sign:
-           if (nu_top>0 .and. nu_scale_top(k)>0) then
-              ! add regular diffusion near top
-              ! for theta equation, laplace(theta_dp) is much more stable than laplace(theta)
-              vtheta_dp(:,:)=elem(ie)%state%vtheta_dp(:,:,k,nt)*elem(ie)%state%dp3d(:,:,k,nt)/hvcoord%dp0(k)
-              lap_s(:,:,1)=laplace_sphere_wk(elem(ie)%state%dp3d       (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
-              lap_s(:,:,2)=laplace_sphere_wk(vtheta_dp,                           deriv,elem(ie),var_coef=.false.)
-              lap_s(:,:,3)=laplace_sphere_wk(elem(ie)%state%w_i        (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
-              lap_s(:,:,4)=laplace_sphere_wk(elem(ie)%state%phinh_i    (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
-              lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
-              
-              vtens(:,:,:,k,ie)=(  -nu*vtens(:,:,:,k,ie) + nu_scale_top(k)*nu_top*lap_v(:,:,:)) ! u and v
-              stens(:,:,k,1,ie)=(-nu_p*stens(:,:,k,1,ie) + nu_scale_top(k)*nu_top*lap_s(:,:,1)) ! dp3d
-              stens(:,:,k,2,ie)=(  -nu*stens(:,:,k,2,ie) + nu_scale_top(k)*nu_top*lap_s(:,:,2)) ! theta
-              stens(:,:,k,3,ie)=(  -nu*stens(:,:,k,3,ie) + nu_scale_top(k)*nu_top*lap_s(:,:,3)) ! w
-              stens(:,:,k,4,ie)=(-nu_s*stens(:,:,k,4,ie) + nu_scale_top(k)*nu_top*lap_s(:,:,4)) ! phi
-           else
-              vtens(:,:,:,k,ie)=-nu  *vtens(:,:,:,k,ie) ! u,v
-              stens(:,:,k,1,ie)=-nu_p*stens(:,:,k,1,ie) ! dp3d
-              stens(:,:,k,2,ie)=-nu  *stens(:,:,k,2,ie) ! theta
-              stens(:,:,k,3,ie)=-nu  *stens(:,:,k,3,ie) ! w
-              stens(:,:,k,4,ie)=-nu_s*stens(:,:,k,4,ie) ! phi
-           endif
-           
+           vtens(:,:,:,k,ie)=-nu  *vtens(:,:,:,k,ie) ! u,v
+           stens(:,:,k,1,ie)=-nu_p*stens(:,:,k,1,ie) ! dp3d
+           stens(:,:,k,2,ie)=-nu  *stens(:,:,k,2,ie) ! theta
+           stens(:,:,k,3,ie)=-nu  *stens(:,:,k,3,ie) ! w
+           stens(:,:,k,4,ie)=-nu_s*stens(:,:,k,4,ie) ! phi
         enddo
         
         kptr=0;      call edgeVpack_nlyr(edge_g,elem(ie)%desc,vtens(:,:,:,:,ie),2*nlev,kptr,nlyr_tot)
@@ -1304,6 +1289,76 @@ contains
      elem(ie)%state%w_i(:,:,nlevp,nt) = (elem(ie)%state%v(:,:,1,nlev,nt)*elem(ie)%derived%gradphis(:,:,1) + &
           elem(ie)%state%v(:,:,2,nlev,nt)*elem(ie)%derived%gradphis(:,:,2))/g
   enddo	
+
+
+
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !  sponge layer
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  if (nu_top>0) then
+  dt=dt2/hypervis_subcycle_tom
+  do ic=1,hypervis_subcycle_tom
+     do ie=nets,nete
+        do k=1,nlev_tom
+           ! add regular diffusion near top
+           lap_s(:,:,1)=laplace_sphere_wk(elem(ie)%state%dp3d     (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+           lap_s(:,:,2)=laplace_sphere_wk(elem(ie)%state%vtheta_dp(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+           lap_s(:,:,3)=laplace_sphere_wk(elem(ie)%state%w_i      (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+           lap_s(:,:,4)=laplace_sphere_wk(elem(ie)%state%phinh_i  (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+           lap_v=vlaplace_sphere_wk(elem(ie)%state%v            (:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+           
+           xfac=dt*nu_scale_top(k)*nu_top
+
+           vtens(:,:,:,k,ie)=xfac*lap_v(:,:,:)
+           stens(:,:,k,1,ie)=xfac*lap_s(:,:,1)  ! dp3d
+           stens(:,:,k,2,ie)=xfac*lap_s(:,:,2)  ! vtheta_dp
+           stens(:,:,k,3,ie)=xfac*lap_s(:,:,3)  ! w_i
+           stens(:,:,k,4,ie)=xfac*lap_s(:,:,4)  ! phi_i
+        enddo
+        
+        kptr=0;      
+        call edgeVpack_nlyr(edge_g,elem(ie)%desc,vtens(:,:,:,:,ie),2*nlev_tom,kptr,nlyr_tom)
+        kptr=2*nlev_tom; 
+        call edgeVpack_nlyr(edge_g,elem(ie)%desc,stens(:,:,:,:,ie),ssize_tom,kptr,nlyr_tom)
+        
+     enddo
+     
+     call t_startf('ahdp_bexchV2')
+     call bndry_exchangeV(hybrid,edge_g)
+     call t_stopf('ahdp_bexchV2')
+     
+     do ie=nets,nete
+        
+        kptr=0
+        call edgeVunpack_nlyr(edge_g,elem(ie)%desc,vtens(:,:,:,:,ie),2*nlev_tom,kptr,nlyr_tom)
+        kptr=2*nlev_tom
+        call edgeVunpack_nlyr(edge_g,elem(ie)%desc,stens(:,:,:,:,ie),ssize_tom,kptr,nlyr_tom)
+        
+        
+        ! apply inverse mass matrix, add tendency
+        do k=1,nlev_tom
+           elem(ie)%state%v(:,:,1,k,nt)=elem(ie)%state%v(:,:,1,k,nt) + &
+                vtens(:,:,1,k,ie)*elem(ie)%rspheremp(:,:)
+           elem(ie)%state%v(:,:,2,k,nt)=elem(ie)%state%v(:,:,2,k,nt) + &
+                vtens(:,:,2,k,ie)*elem(ie)%rspheremp(:,:)
+           elem(ie)%state%w_i(:,:,k,nt)=elem(ie)%state%w_i(:,:,k,nt) &
+                +stens(:,:,k,3,ie)*elem(ie)%rspheremp(:,:)
+           
+           elem(ie)%state%dp3d(:,:,k,nt)=elem(ie)%state%dp3d(:,:,k,nt) &
+                +stens(:,:,k,1,ie)*elem(ie)%rspheremp(:,:)
+           elem(ie)%state%phinh_i(:,:,k,nt)=elem(ie)%state%phinh_i(:,:,k,nt) &
+                +stens(:,:,k,4,ie)*elem(ie)%rspheremp(:,:)
+
+           elem(ie)%state%vtheta_dp(:,:,k,nt)=elem(ie)%state%vtheta_dp(:,:,k,nt) &
+                +stens(:,:,k,2,ie)*elem(ie)%rspheremp(:,:)
+        enddo
+     enddo ! ie
+  enddo  ! subcycle
+  endif
+
+
 
   call t_stopf('advance_hypervis')
 
