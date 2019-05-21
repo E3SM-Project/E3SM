@@ -176,11 +176,15 @@ def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
         mv1_reg = mv1
         mv2_reg = mv2.regrid(mv_grid, regridTool=regrid_tool,
                              regridMethod=regrid_method)
+        mv2_reg.units = mv2.units
+
     else:
         mv_grid = mv2.getGrid()
         mv2_reg = mv2
         mv1_reg = mv1.regrid(mv_grid, regridTool=regrid_tool,
                              regridMethod=regrid_method)
+        mv1_reg.units = mv1.units
+
     return mv1_reg, mv2_reg
 
 
