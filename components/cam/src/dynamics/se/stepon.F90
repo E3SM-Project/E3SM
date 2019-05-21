@@ -163,12 +163,6 @@ subroutine stepon_init(dyn_in, dyn_out )
   call addfld('DYN_OMEGA',(/ 'lev' /), 'A', 'Pa/s', 'Vertical Velocity',      gridname='GLL' )
   call addfld('DYN_PS'   ,horiz_only,  'A', 'Pa',   'Surface pressure',       gridname='GLL')
 
-  call addfld('PGCHK_D' ,horiz_only, 'A', '', 'physgrid check (dyn) ', gridname='GLL')
-  call addfld('PGCHK_P' ,horiz_only, 'A', '', 'physgrid check (phys)', gridname='physgrid')
-
-  call add_default('PGCHK_D',-1,' ')
-  call add_default('PGCHK_P',-1,' ')
-
 end subroutine stepon_init
 
 !-----------------------------------------------------------------------
