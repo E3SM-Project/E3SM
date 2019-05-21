@@ -52,7 +52,8 @@ Int compare (const std::string& label, const double& tol,
 
 struct Baseline {
   Baseline () {
-    params_.push_back({ic::Factory::mixed, 1800});
+    params_.push_back({ic::Factory::mixed, 1800, 1});
+    params_.push_back({ic::Factory::mixed, 1800, 2});
   }
 
   Int generate_baseline (const std::string& filename) {
@@ -62,7 +63,7 @@ struct Baseline {
     for (auto ps : params_) {
       // Run reference p3 on this set of parameters.
       const auto d = ic::Factory::create(ps.ic);
-      d->dt = ps.dt;
+      set_params(ps, *d);
       p3_init();
       p3_main(*d);
       // Save the fields to the baseline file.
@@ -78,12 +79,13 @@ struct Baseline {
     for (auto ps : params_) {
       // Read the reference impl's data from the baseline file.
       const auto d_ref = ic::Factory::create(ps.ic);
-      d_ref->dt = ps.dt;
+      set_params(ps, *d_ref);
       read(fid, d_ref);
       // Now run a sequence of other impls. This includes the reference
       // implementation b/c it's likely we'll want to change it as we go.
       {
         const auto d = ic::Factory::create(ps.ic);
+        set_params(ps, *d);
         p3_init();
         p3_main(*d);
         ne = compare("ref", tol, d_ref, d);
@@ -98,7 +100,13 @@ private:
   struct ParamSet {
     ic::Factory::IC ic;
     Real dt;
+    Int it;
   };
+
+  static void set_params (const ParamSet& ps, FortranData& d) {
+    d.dt = ps.dt;
+    d.it = ps.it;
+  }
 
   std::vector<ParamSet> params_;
 
