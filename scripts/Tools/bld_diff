@@ -65,9 +65,11 @@ def parse_log(logfile_text):
                     expect(compiled_file is None, "Found multiple things that look like files in '{}'".format(compile_line))
                     compiled_file = item
 
-        expect(compiled_file is not None, "Found nothing that looks like a file in '{}'".format(compile_line))
-        expect(compiled_file not in result, "Found multiple compilations of {}?".format(compiled_file))
-        result[compiled_file] = items
+        if compiled_file is None:
+            print("WARNING: Found nothing that looks like a file in '{}'".format(compile_line))
+        else:
+            expect(compiled_file not in result, "Found multiple compilations of {}?".format(compiled_file))
+            result[compiled_file] = items
 
     # TODO - Need to capture link lines too
 
