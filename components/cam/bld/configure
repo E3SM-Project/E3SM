@@ -2942,17 +2942,17 @@ sub set_horiz_grid
     elsif ( $dyn_pkg eq 'se' ) {
 	$cfg_ref->set('csne', $a{'csne'});
 	$cfg_ref->set('csnp', $a{'csnp'});
-    $cfg_ref->set('npg',  $a{'npg'});
+        $cfg_ref->set('npg',  $a{'npg'});
 	# needed for cice configure script.  sets nlat=1 and nlon=ncol
 	$cfg_ref->set('nlat', 1);
 	$cfg_ref->set('nlon', $a{'ncol'});
-    # To allow more flexibility when matching grid attributes in the namelist
-    # defaults file, split the dynamics (GLL) and physics grid specifiers in 
-    # the hgrid argument to configure, and just store the dynamics (GLL) part 
-    # in the hgrid parameter of the config_cache file.  The physics grid 
-    # specifier is stored separately in the npg parameter.
-    $hgrid =~ s/\.pg\d//;   # strip the '.pgN' extension
-    $cfg_ref->set('hgrid', $hgrid);
+        # To allow more flexibility when matching grid attributes in the namelist
+        # defaults file, split the dynamics (GLL) and physics grid specifiers in 
+        # the hgrid argument to configure, and just store the dynamics (GLL) part 
+        # in the hgrid parameter of the config_cache file.  The physics grid 
+        # specifier is stored separately in the npg parameter.
+        $hgrid =~ s/\.pg\d//;   # strip the '.pgN' extension
+        $cfg_ref->set('hgrid', $hgrid);
     }
 
 
