@@ -3753,7 +3753,6 @@
 		<var name="totalChlorophyll"			type="real"	dimensions="nCells Time"				name_in_code="totalChlorophyll"
 			units="mg/m^2"
 			description="Ice integrated chlorophyll concentration per cell"
-			packages="pkgTracerVerticalAlgae;pkgTracerSkeletalAlgae"
 		/>
 		<var name="totalNitrate"			type="real"	dimensions="nCells Time"				name_in_code="totalNitrate"
 			units="mmol/m^3"
