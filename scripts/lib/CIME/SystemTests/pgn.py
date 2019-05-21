@@ -7,22 +7,26 @@ This class inherits from SystemTestsCommon.
 
 """
 
+from __future__ import division
 
+import os
+import re
+import json
 import shutil
-import numpy as np
-import scipy.stats as stats
+import logging
 
+from collections import OrderedDict
 
-from netCDF4 import Dataset
-from math import sqrt
-from sklearn.metrics import mean_squared_error
-
-from CIME.test_status import *
-from CIME.XML.standard_module_setup import *
+import CIME.test_status
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case.case_setup import case_setup
 from CIME.build import post_build
 from CIME.utils import expect
+
+import evv4esm  # pylint: disable=import-error
+from evv4esm.__main__ import main as evv  # pylint: disable=import-error
+
+evv_lib_dir = os.path.abspath(os.path.dirname(evv4esm.__file__))
 
 # Logic for PGN ensemble runs:
 # ----------------------------
@@ -56,33 +60,29 @@ logger = logging.getLogger(__name__)
 # --------------------------------------------------------
 # Variables which needs global scope for various functions
 # --------------------------------------------------------
-
 # number of initial conditions
 NINIT_COND = 6  # 12
-
 # perturbations for runs
-PRT = [0.0, 1.0e-14, -1.0e-14]
-PRTSTR = ['woprt', 'posprt', 'negprt']
-
+PERTURBATIONS = OrderedDict([('woprt', 0.0),
+                             ('posprt', 1.0e-14),
+                             ('negprt', -1.0e-14),
+                             ])
 # file name for file containing PGE cloud
 FCLD_NC = 'cam.h0.cloud.nc'
-
 # For preparing paths for namelist files for initial condition files
-FILE_PREF_ATM = "SMS_Ly5.ne4_ne4.FC5AV1C-04P2.eos_intel.ne45y.cam.i.0002-"
-FILE_PREF_LND = "SMS_Ly5.ne4_ne4.FC5AV1C-04P2.eos_intel.ne45y.clm2.r.0002-"
-
-FILE_SUF_ATM = "-01-00000.nc"
-FILE_SUF_LND = "-01-00000.nc"
-
+INIT_COND_FILE_TEMPLATE = \
+    "SMS_Ly5.ne4_ne4.FC5AV1C-04P2.eos_intel.ne45y.{}.{}.0002-{:02d}-01-00000.nc"
+# For finding the instance files
+# FIXME: should 'cam' be 'atm' now?
+INSTANCE_FILE_TEMPLATE = '{}.cam_{:04d}.h0.0001-01-01-00000.nc'
 # ------------------------------------------------------------
 # Some flags for debugging or invoking extra features
 # ------------------------------------------------------------
-
-# DEBUGGING: prints out max rmse diffs if set to True
+# prints out max rmse diffs if set to True
 INDEX = False
-
-# generate a plot
-DOPLOT = False  # It impacts performance!
+# Building the model can take a significant amount of time. Setting fake_bld to
+# True can save that time
+FAKE_BUILD = False
 
 
 class PGN(SystemTestsCommon):
@@ -91,52 +91,25 @@ class PGN(SystemTestsCommon):
         """
         initialize an object interface to the PGN test
         """
+        super(PGN, self).__init__(self, case)
 
-        # perturbation values and number of perturbation strings should be same
-        expect(len(PRT) == len(PRTSTR),
-               "Number of perturbation values ({}) are NOT equal to number of "
-               "perturbation strings({})".format(len(PRT), len(PRTSTR)))
-        SystemTestsCommon.__init__(self, case)
 
-    # =================================================================
-    # Compile model with multiple instances
-    # =================================================================
     def build_phase(self, sharedlib_only=False, model_only=False):
 
-        # ------------------------------------------------------
-        # Compute number of instances:
-        # ------------------------------------------------------
-
-        # ------------------------------------------------------
-        # Number of instances:
-        # ~~~~~~~~~~~~~~~~~~~
-        # Compute it from number of initial conditions to use and
-        # number of perturbation ensemble members to use
-        # ------------------------------------------------------
-        nprt = len(PRT)
-        ninst = NINIT_COND * nprt
-
+        ninst = NINIT_COND * len(PERTURBATIONS)
         logger.debug('PGN_INFO: number of instance: '+str(ninst))
-
-        # ------------------------------------------------------
-        # Fake Build:
-        # ~~~~~~~~~~
-        # (for debugging only) Building the model can take
-        # significant amount of time. Setting fake_bld to True
-        # can save that time
-        # ------------------------------------------------------
-        fake_bld = False
 
         # Find number of instance in the default setup
         default_ninst = self._case.get_value("NINST_ATM")
 
         # Sanity check: see if NINST is same for all model components, otherwise
         # exit with error
-        for comp in ['OCN', 'WAV', 'GLC', 'ICE', 'ROF', 'LND']:
-            iinst = self._case.get_value("NINST_{}".format(comp))
-            expect(default_ninst == iinst,
-                   "ERROR: component {}  NINST({}) is different from  component"
-                   " ATM NINST({}).".format(comp, iinst, default_ninst))
+        for comp in self._case.get_values("COMP_CLASSES"):
+            if comp != 'CPL':
+                iinst = self._case.get_value("NINST_{}".format(comp))
+                expect(default_ninst == iinst,
+                       "ERROR: component {}  NINST({}) is different from  component"
+                       " ATM NINST({}).".format(comp, iinst, default_ninst))
 
         # ------------------------------------------------------
         # Setup multi-instances for model components:
@@ -169,51 +142,29 @@ class PGN(SystemTestsCommon):
 
                 case_setup(self._case, test_mode=False, reset=True)
 
-        # Faking a bld can save the time code spend in building the model components
-        if fake_bld:
+        if FAKE_BUILD:
             logger.debug("PGN_INFO: FAKE Build")
             if not sharedlib_only:
                 post_build(self._case, [])
         else:
-            # Build executable with multiple instances
             self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
 
-        # ----------------------------------------------------------------
-        # Namelist settings:
-        # ~~~~~~~~~~~~~~~~~~
-        # Do this already in build_phase so that we can check the xml and
-        # namelist files before job starts running.
-        # ----------------------------------------------------------------
         logger.debug("PGN_INFO: Updating user_nl_* files")
 
         csmdata_root = self._case.get_value("DIN_LOC_ROOT")
-        csmdata_atm = csmdata_root+"/atm/cam/inic/homme/ne4_v1_init/"
-        csmdata_lnd = csmdata_root+"/lnd/clm2/initdata/ne4_v1_init/b58d55680/"
+        csmdata_atm = os.path.join(csmdata_root, "atm/cam/inic/homme/ne4_v1_init")
+        csmdata_lnd = os.path.join(csmdata_root, "lnd/clm2/initdata/ne4_v1_init/b58d55680")
 
         iinst = 1
-        for icond in range(NINIT_COND):
-            icond_label_2digits = str(icond+1).zfill(2)
-            fatm_in = FILE_PREF_ATM + icond_label_2digits + FILE_SUF_ATM
-            flnd_in = FILE_PREF_LND + icond_label_2digits + FILE_SUF_LND
-            for iprt in PRT:
-                with open('user_nl_cam_'+str(iinst).zfill(4), 'w') as atmnlfile, \
-                        open('user_nl_clm_'+str(iinst).zfill(4), 'w') as lndnlfile:
+        for icond in range(1, NINIT_COND+1):
+            fatm_in = os.path.join(csmdata_atm, INIT_COND_FILE_TEMPLATE.format('atm', 'i', icond))
+            flnd_in =  os.path.join(csmdata_lnd, INIT_COND_FILE_TEMPLATE.format('clm2', 'r', icond))
+            for iprt in PERTURBATIONS.values():
+                with open('user_nl_cam_{:04d}'.format(iinst), 'w') as atmnlfile, \
+                        open('user_nl_clm_{:04d}'.format(iinst), 'w') as lndnlfile:
 
-                    # atm/lnd intitial conditions
-
-                    # initial condition files to use for atm and land
-                    # atmnlfile.write("ncdata  = '/pic/projects/uq_climate/"
-                    #                 "wanh895/acme_input/ne4_v1_init/{}'"
-                    #                 " \n".format(fatm_in))
-                    # lndnlfile.write("finidat = '/pic/projects/uq_climate/"
-                    #                 "wanh895/acme_input/ne4_v1_init/{}'"
-                    #                 " \n".format(flnd_in))
-
-                    # uncomment the following when there files are on SVN server
-                    atmnlfile.write("ncdata  = '{}/{}' \n".format(csmdata_atm,
-                                                                  fatm_in))
-                    lndnlfile.write("finidat = '{}/{}' \n".format(csmdata_lnd,
-                                                                  flnd_in))
+                    atmnlfile.write("ncdata  = '{}' \n".format(fatm_in))
+                    lndnlfile.write("finidat = '{}' \n".format(flnd_in))
 
                     # atm model output
                     atmnlfile.write("avgflag_pertape = 'I' \n")
@@ -235,30 +186,11 @@ class PGN(SystemTestsCommon):
 
                     iinst += 1
 
-        # --------------------------------
-        # Settings common to all instances
-        # --------------------------------
-
-        # Coupler settings which are applicable to ALL the instances (as there is
-        # only one coupler for all instances)
         self._case.set_value("STOP_N", "1")
         self._case.set_value("STOP_OPTION", "nsteps")
 
-    # ===========================================================
-    # Some user defined functions to avoid repeated calculations
-    # ===========================================================
 
-    def get_fname_wo_ext(self, rundir, casename, iinst):
-        """
-        construct file name given the input
-        """
-        # form file name withOUT extension
-        if casename != "":
-            casename += '.'
-        return os.path.join(rundir,
-                            '{}cam_{:04d}.h0.0001-01-01-00000'.format(casename,
-                                                                      iinst))
-
+    # FIXME: Can this be done during __init__? Only should be done once right?
     def get_var_list(self):
         """
         Get variable list for pergro specific output vars
@@ -274,116 +206,6 @@ class PGN(SystemTestsCommon):
 
         return map(str.strip, var_list)
 
-    def nc_write_handle(self, fname_nc, rmse_nc_var):
-        """
-        Opens and write netcdf file for PGE curves
-        This function is here purely to avoid duplicate 
-        codes so that it is easy to maintain code longterm        
-        """
-
-        fhndl = Dataset(fname_nc, 'w', format='NETCDF4')
-
-        var_list = self.get_var_list()
-        len_var_list = len(var_list)
-        nprt = len(PRT)
-
-        # create dims
-        fhndl.createDimension('ninit', NINIT_COND)
-        fhndl.createDimension('nprt', nprt)
-        fhndl.createDimension('nprt_m1', nprt-1)
-        fhndl.createDimension('nvars', len_var_list)
-
-        # create variables in the file
-        init_cond_nc = fhndl.createVariable('init_cond_fnames', 'S100', 'ninit')
-        prt_nc = fhndl.createVariable('perturb_strings', 'S10', 'nprt')
-        variables_nc = fhndl.createVariable('perturb_vnames', 'S20', 'nvars')
-        rmse_nc = fhndl.createVariable(rmse_nc_var, 'f8', ('ninit', 'nprt_m1', 'nvars'))
-
-        # assign variables for writing to the netcdf file
-        for iprt in range(nprt):
-            prt_nc[iprt] = PRTSTR[iprt]
-
-        for ivar in range(len_var_list):
-            variables_nc[ivar] = var_list[ivar]
-
-        for icond in range(NINIT_COND):
-            icond_label_2digits = '{:02d}'.format(icond+1)
-            init_cond_nc[icond] = FILE_PREF_ATM + icond_label_2digits + FILE_SUF_ATM
-
-        return fhndl, rmse_nc
-
-    def rmse_var(self, ifile_test, ifile_cntl,  var_list, var_suffix):
-        """
-        Compute RMSE difference between ifile_test and ifile_cntl for
-        variables listed in var_list
-        """
-
-        # ------------------ARGS-------------------------
-        # ifile_test: path of test file
-        # ifile_cntl: path of control file
-        # var_list  : List of all variables
-        # var_suffix: Suffix for var_list (e.g. t_, t_ qv_ etc.)
-        # -----------------------------------------------
-
-        # See if the files exists or not....
-        expect(os.path.isfile(ifile_test),
-               "ERROR: Test file {} does not exist".format(ifile_test))
-        expect(os.path.isfile(ifile_cntl), "ERROR: CNTL file "+ifile_cntl+" does not exist")
-
-        ftest = Dataset(ifile_test,  mode='r')
-        fcntl = Dataset(ifile_cntl, mode='r')
-
-        # if max RMSE/DIFF is to be printed, extract lat lons from a file
-        lat = ftest.variables['lat']
-        lon = ftest.variables['lon']
-
-        rmse = np.zeros(shape=(len(var_list)))
-        icntvar = 0
-
-        dims = len(ftest.variables[var_suffix+var_list[icntvar]].dimensions)
-        for ivar in var_list:
-            var = var_suffix+ivar
-            if var in ftest.variables:
-                vtest = ftest.variables[var.strip()][0, ...]  # first dimension is time (=0)
-                vcntl = fcntl.variables[var.strip()][0, ...]  # first dimension is time (=0)
-
-                # reshape for RMSE
-                if dims == 3:  # see if it is SE grid
-                    nx, ny = vtest.shape  # shape will be same for both arrays
-                    nz = 1
-                else:
-                    nx, ny, nz = vtest.shape  # shape will be same for both arrays
-
-                rmse[icntvar] = sqrt(mean_squared_error(
-                        vtest.reshape((nx, ny*nz)), vcntl.reshape((nx, ny*nz))))
-
-                if INDEX:
-                    # NEED to work on formatting this....
-                    diff_arr = abs(vtest[...] - vcntl[...])
-                    max_diff = np.amax(diff_arr)
-                    ind_max = np.unravel_index(diff_arr.argmax(),
-                                               diff_arr.shape)
-                    print(ind_max)
-                    print("{} {} {} {} {} {} {}".format(var,
-                                                        max_diff,
-                                                        vtest[ind_max],
-                                                        vcntl[ind_max],
-                                                        lat[ind_max[1]],
-                                                        lon[ind_max[1]],
-                                                        ind_max[0]))
-                    # print('{0:15}{1:15}{2:15}\n'.format(name, a, b))  # TRY THIS!!
-
-                # normalize by mean values of the field in the control case
-                rmse[icntvar] = rmse[icntvar]/np.mean(vcntl)
-                icntvar += 1
-                # vtest = None
-                # vcntl = None
-                # var   = None
-
-        ftest.close()
-        fcntl.close()
-
-        return rmse
 
     def _compare_baseline(self):
         """
@@ -391,141 +213,63 @@ class PGN(SystemTestsCommon):
         compare PGE from the test simulation with the baseline 
         cloud
         """
-        # import time
-        # t0 = time.time()
+        with self._test_status:
+            self._test_status.set_status(CIME.test_status.BASELINE_PHASE,
+                                         CIME.test_status.TEST_FAIL_STATUS)
 
-        logger.debug("PGN_INFO:BASELINE COMPARISON STARTS")
+            logger.debug("PGN_INFO:BASELINE COMPARISON STARTS")
 
-        rundir = self._case.get_value("RUNDIR")
-        casename = self._case.get_value("CASE")
+            run_dir = self._case.get_value("RUNDIR")
+            case_name = self._case.get_value("CASE")
+            base_dir = os.path.join(self._case.get_value("BASELINE_ROOT"),
+                                    self._case.get_value("BASECMP_CASE"))
 
-        var_list = self.get_var_list()
-        len_var_list = len(var_list)
-        nprt = len(PRT)
+            var_list = self.get_var_list()
+            path_cld_nc = os.path.join(base_dir, FCLD_NC)
 
-        # baseline directory names
-        base_root = self._case.get_value("BASELINE_ROOT")
-        base_comp = self._case.get_value("BASECMP_CASE")
+            test_name = "{}".format(case_name.split('.')[-1])
+            evv_config = {
+                test_name: {
+                    "module": os.path.join(evv_lib_dir, "extensions", "pg.py"),
+                    "test-case": case_name,
+                    "test-name": "Test",
+                    "test-dir": run_dir,
+                    "ref-name": "Baseline",
+                    "ref-dir": base_dir,
+                    "variables": var_list,
+                    "perturbations": PERTURBATIONS,
+                    "pge-cld": FCLD_NC,
+                    "ninit": NINIT_COND,
+                    "init-file-template": INIT_COND_FILE_TEMPLATE,
+                    "instance-file-template": INSTANCE_FILE_TEMPLATE,
 
-        # baseline directory is:base_root/base_comp
-        base_dir = os.path.join(base_root, base_comp)
+                }
+            }
 
-        # for test cases (new environment etc.)
-        logger.debug("PGN_INFO: Test case comparison...")
+            json_file = os.path.join(run_dir, '.'.join([case_name, 'json']))
+            with open(json_file, 'w') as config_file:
+                json.dump(evv_config, config_file, indent=4)
 
-        # ---------------------------------------------
-        # Write netcdf file for comparison
-        # ---------------------------------------------
-        fcomp_nc = 'comp_cld.nc'
-        fcomp_cld, comp_rmse_nc = self.nc_write_handle(fcomp_nc, 'comp_rmse')
+            evv_out_dir = os.path.join(run_dir, '.'.join([case_name, 'evv']))
+            evv(['-e', json_file, '-o', evv_out_dir])
 
-        iinst = 0
-        for icond in range(NINIT_COND):
-            iinst += 1
-            iprt = 0
-            ifile_cntl = os.path.join(base_dir,
-                                      '{}_woprt.nc'.format(
-                                              self.get_fname_wo_ext('', '', iinst))
-                                      )
-            expect(os.path.isfile(ifile_cntl), "ERROR: File "+ifile_cntl+" does not exist")
-            logger.debug("PGN_INFO:CNTL_TST:"+ifile_cntl)
+            with open(os.path.join(evv_out_dir, 'index.json'), 'r') as evv_f:
+                evv_status = json.load(evv_f)
 
-            for aprt in PRTSTR[1:]:
-                iinst += 1
-                ifile_test = os.path.join(rundir, '{}_{}.nc'.format(
-                        self.get_fname_wo_ext(rundir, casename, iinst),
-                        aprt))
-                expect(os.path.isfile(ifile_test),
-                       "ERROR: File {} does not exist".format(ifile_test))
-                comp_rmse_nc[icond, iprt, 0:len_var_list] = self.rmse_var(
-                        ifile_test, ifile_cntl,  var_list, 't_')
-                logger.debug("PGN_INFO:Compared to TEST_TST:{}".format(ifile_test))
+            for evv_elem in evv_status['Data']['Elements']:
+                # FIXME: TableTitle!
+                if evv_elem['Type'] == 'ValSummary' \
+                        and evv_elem['TableTitle'] == 'Peturbation-Growth':
+                    if evv_elem['Data'][test_name]['']['Ensembles'] == 'identical':
+                        self._test_status.set_status(CIME.test_status.BASELINE_PHASE,
+                                                     CIME.test_status.TEST_PASS_STATUS)
+                        break
 
-                iprt += 1
-
-        # --------------------------------------------
-        # Student's t-test
-        # -------------------------------------------
-
-        # Extract last element of each PGE curve of the cloud
-        path_cld_nc = os.path.join(base_dir, FCLD_NC)
-        expect(os.path.isfile(path_cld_nc),
-               "ERROR: {} does not exist at:{}".format(FCLD_NC, path_cld_nc))
-
-        fcld = Dataset(path_cld_nc, 'r', format='NETCDF4')
-
-        # Get dimentions of cloud PGE curves
-        ninic_cld = fcld.variables['cld_rmse'].shape[0]
-        nprt_cld = fcld.variables['cld_rmse'].shape[1]
-        nvar_cld = fcld.variables['cld_rmse'].shape[2]
-
-        expect(ninic_cld == NINIT_COND,
-               "BASELINE COMPARISON: Number of initial conditions should be same:" 
-               "inic cld:{}  inic comp:{}".format(ninic_cld, NINIT_COND))
-
-        expect(nprt_cld == nprt-1,
-               "BASELINE COMPARISON: Number of perturbations should be same:"
-               "prt cld:{}  prt comp:{}".format(nprt_cld, nprt - 1))
-
-        expect(nvar_cld == len_var_list,
-               "BASELINE COMPARISON: Number of phys update variables should be same:"
-               "nvar cld:{}  nvar comp:{}".format(nvar_cld, len_var_list))
-
-        pgecld = fcld.variables['cld_rmse']
-
-        if DOPLOT:
-            import pylab as pl
-            # generate plot
-            ax = pl.gca()
-            for icond in range(NINIT_COND):
-                for iprt in range(nprt-1):
-                    ax.semilogy(pgecld[icond, iprt, :], color='b')
-                    ax.semilogy(comp_rmse_nc[icond, iprt, :], color='r')
-            pl.savefig('plot_comp.png')
-
-        pge_ends_cld = fcld.variables['cld_rmse'][:, :, len_var_list-1]
-        pge_ends_comp = comp_rmse_nc[:, 0:nprt-1, len_var_list-1]
-
-        # run the t-test
-        pge_ends_cld = pge_ends_cld.flatten()
-        pge_ends_comp = pge_ends_comp.flatten()
-
-        t_stat, p_val = stats.ttest_ind(pge_ends_cld, pge_ends_comp)
-
-        t_stat = abs(t_stat)  # only value of t_stat matters, not the sign
-
-        print("PGN_INFO: T value:"+str(t_stat))
-        print("PGN_INFO: P value:"+str(p_val))
-
-        logger.warn(" T value:"+str(t_stat))
-        logger.warn(" P value:"+str(p_val))
-
-        # There should be multiple criteria to determin pass/fail
-        # This part of decision making should be more polished
-        if t_stat > 3:
-            with self._test_status:
-                self._test_status.set_status(BASELINE_PHASE, TEST_FAIL_STATUS)
-            print('PGN_INFO:TEST FAIL')
-        else:
-            with self._test_status:
-                self._test_status.set_status(BASELINE_PHASE, TEST_PASS_STATUS)
-            print('PGN_INFO:TEST PASS')
-
-        # Close this file after you access "comp_rmse_nc" variable
-        fcomp_cld.close()
-        logger.debug("PGN_INFO: POST PROCESSING PHASE ENDS")
-
-        # t1 = time.time()
-        # print('time: '+str(t1-t0))
-    # =================================================================
-    # run_phase
-    # =================================================================
+    # FIXME: REFACTOR
     def run_phase(self):
         logger.debug("PGN_INFO: RUN PHASE")
 
         self.run_indv()
-
-        # cwd = os.getcwd()
 
         # Here were are in case directory, we need to go to the run directory
         # and rename files
@@ -533,9 +277,8 @@ class PGN(SystemTestsCommon):
         casename = self._case.get_value("CASE")
         logger.debug("PGN_INFO: Case name is:{}".format(casename))
 
-        iinst = 1
         for icond in range(NINIT_COND):
-            for iprt in range(len(PRT)):
+            for iprt, (prt, prt_name) in enumerate(PERTURBATIONS.items()):
 
                 # ------------------------------------------------------
                 # SANITY CHECK - To confirm that history file extension
@@ -543,6 +286,7 @@ class PGN(SystemTestsCommon):
                 # corresponds to the right perturbation
                 # ------------------------------------------------------
                 # find corresponding atm_in_*
+                iinst = _sub2instance(icond, iprt)
                 fatm_in = os.path.join(rundir, 'atm_in_{:04d}'.format(iinst))
                 # see if atm_in_* file has pertlim same as PRT[iprt] (sanity check)
                 found = False
@@ -552,43 +296,35 @@ class PGN(SystemTestsCommon):
                         if line.find('pertlim') > 0:
                             found = True
                             prtval = float(line.split('=')[1])
-                            expect(prtval == PRT[iprt],
+                            expect(prtval == prt,
                                    "ERROR: prtval doesn't match, "
                                    "prtval:{}; prt[{}]:{}".format(
-                                           prtval, iprt, PRT[iprt]))
+                                           prtval, iprt, prt))
                             logger.debug("PGN_INFO:prtval:{}; prt[{}]:{}".format(
-                                    prtval, iprt, PRT[iprt]))
+                                    prtval, iprt, prt))
 
                 if not found:
-                    expect(prtval == PRT[iprt],
+                    expect(prtval == prt,
                            "ERROR: default prtval doesn't match, "
-                           "prtval:{}; prt[{}]:{}".format(prtval, iprt, PRT[iprt]))
+                           "prtval:{}; prt[{}]:{}".format(prtval, iprt, prt))
                     logger.debug("PGN_INFO:def prtval:{}; prt[{}]:{}".format(
-                            prtval, iprt, PRT[iprt]))
+                            prtval, iprt, prt))
 
                 # ---------------------------------------------------------
                 # Rename file
                 # ---------------------------------------------------------
+                fname = os.path.join(rundir, INSTANCE_FILE_TEMPLATE.format(casename, iinst))
+                renamed_fname = re.sub(r'\.nc$', '_{}.nc'.format(prt_name), fname)
 
-                # form file name
-                fname = self.get_fname_wo_ext(rundir, casename, iinst)  # NOTE:without extension
                 logger.debug("PGN_INFO: fname to rename:{}".format(fname))
-
-                renamed_fname = '{}_{}.nc'.format(fname, PRTSTR[iprt])
-                fname_w_ext = '{}.nc'.format(fname)  # add extention
-
-                # see if file exists
-                if os.path.isfile(fname_w_ext):
-                    # rename file
-                    shutil.move(fname_w_ext, renamed_fname)
-                    logger.debug("PGN_INFO: Renamed file:{}".format(renamed_fname))
-                else:
+                logger.debug("PGN_INFO: Renamed file:{}".format(renamed_fname))
+                try:
+                    shutil.move(fname, renamed_fname)
+                except IOError:
                     expect(os.path.isfile(renamed_fname),
                            "ERROR: File {} does not exist".format(renamed_fname))
                     logger.debug("PGN_INFO: Renamed file already exists:"
                                  "{}".format(renamed_fname))
-
-                iinst += 1
 
         # cloud generation
 
@@ -612,23 +348,24 @@ class PGN(SystemTestsCommon):
         iinst = 0
         for icond in range(NINIT_COND):
             iinst += 1
-            iprt = 0
             ifile_cntl = os.path.join(rundir, '{}_{}.nc'.format(
-                    self.get_fname_wo_ext('', casename, iinst), PRTSTR[iprt]))
+                    self.get_fname_wo_ext('', casename, iinst), PERTURBATIONS))
             expect(os.path.isfile(ifile_cntl),
                    "ERROR: File {} does not exist".format(ifile_cntl))
             logger.debug("PGN_INFO:CNTL_CLD:{}".format(ifile_cntl))
 
-            for aprt in PRTSTR[1:]:
+            for iprt, prt_name in enumerate(PERTURBATIONS):
+                if prt_name == 'woprt':
+                    continue
                 iinst += 1
-                # subtracted 1 as we will only get two curves for each inic
-                # (wo-pos and wo-neg)
-                iprt = PRTSTR.index(aprt) - 1
+
                 ifile_test = os.path.join(rundir, '{}_{}.nc'.format(
-                        self.get_fname_wo_ext('', casename, iinst), aprt))
+                        self.get_fname_wo_ext('', casename, iinst), prt_name))
                 expect(os.path.isfile(ifile_test),
                        "ERROR: File {} does not exist".format(ifile_test))
-                cld_rmse_nc[icond, iprt, 0:len_var_list] = self.rmse_var(
+                # NOTE: iprt-1 as we will only get two curves for each inic
+                # (wo-pos and wo-neg)
+                cld_rmse_nc[icond, iprt-1, 0:len_var_list] = self.rmse_var(
                         ifile_test, ifile_cntl,  var_list, 't_')
                 logger.debug("PGN_INFO:Compared to CLD:{}".format(ifile_test))
 
@@ -659,12 +396,38 @@ class PGN(SystemTestsCommon):
 # -----------------------------------------------------
 # DEBUG type 1 (DB1): Ensure that model produces BFB instances
 # -----------------------------------------------------
-# Replace the following lines in the script with the following updated values
-# PRT = [0.0, 0.0]  # DB1
-# PRTSTR = ['woprt', 'posprt']
+# Replace PERTURBATIONS dictionary at the top of the script with the following:
+# PERTURBATIONS = OrderedDict([('woprt', 0.0), ('posprt', 0.0)])
 
 # Comment out all namelist changes so that all instances have same namelist values
 # For testing effect of namelist changes, uncomment namelist changes such that
 # namelists are same for all instances
 
 # Comment out sanity checks as well if needed....
+
+
+def _instance2sub(instance_number):
+    """
+    Converts an instance number (ii) to initial condition index (ci) and
+    perturbation index (pi)  subscripts
+
+    instances use 1-based indexes and vary according to this function:
+        ii = ci * len(PERTURBATIONS) + pi + 1
+    where both pi and ci use 0-based indexes.
+    """
+    perturbation_index = (instance_number - 1) % len(PERTURBATIONS)
+    initial_condition = (instance_number - 1 - perturbation_index) // len(PERTURBATIONS)
+    return initial_condition, perturbation_index
+
+
+def _sub2instance(initial_condition, perturbation_index):
+    """
+    Converts initial condition index (ci) and perturbation index (pi) subscripts
+    to an instance number (ii)
+
+    instances use 1-based indexes and vary according to this function:
+        ii = ci * len(PERTURBATIONS) + pi + 1
+    where both pi and ci use 0-based indexes.
+    """
+    instance = initial_condition * len(PERTURBATIONS) + perturbation_index + 1
+    return instance
