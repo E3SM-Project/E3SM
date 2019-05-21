@@ -766,7 +766,9 @@ add_default($nl, 'config_frazil_use_surface_pressure');
 # Namelist group: land_ice_fluxes #
 ###################################
 
-if ($OCN_ISMF eq 'true') {
+if ($OCN_ISMF eq 'coupled') {
+	add_default($nl, 'config_land_ice_flux_mode', 'val'=>"coupled");
+} elsif ($OCN_ISMF eq 'internal') {
 	add_default($nl, 'config_land_ice_flux_mode', 'val'=>"standalone");
 } else {
 	add_default($nl, 'config_land_ice_flux_mode', 'val'=>"pressure_only");
