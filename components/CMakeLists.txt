@@ -505,8 +505,7 @@ if (MODEL STREQUAL "cam")
   set(NOOPT_FILES "cam/src/physics/rrtmg/ext/rrtmg_lw/rrtmg_lw_k_g.f90;cam/src/physics/rrtmg/ext/rrtmg_sw/rrtmg_sw_k_g.f90")
 
   if (COSP_LIBDIR)
-    set(INCLDIR "${INCLDIR} -I${COSP_LIBDIR} -I../${INSTALL_SHAREDPATH}/include -I../${CSM_SHR_INCLUDE}")
-    add_subdirectory(cam/src/physics/cosp)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cam/src/physics/cosp/Cosp.cmake)
   endif()
 
 endif()
@@ -681,7 +680,9 @@ foreach(SOURCE_FILE IN LISTS SOURCES)
 endforeach()
 
 foreach(ITEM IN LISTS CPP_DIRS)
-  set(INCLDIR "${INCLDIR} -I${ITEM}")
+  if (EXISTS ${ITEM})
+    set(INCLDIR "${INCLDIR} -I${ITEM}")
+  endif()
 endforeach()
 
 #-------------------------------------------------------------------------------
@@ -741,10 +742,6 @@ if (NOT ULIBDEP)
   endif()
 endif()
 
-if (COSP_LIBDIR)
-  set(ULIBDEP "${ULIBDEP} ${COSP_LIBDIR}/libcosp.a")
-endif()
-
 # JGF, this kind of thing should be done via target_link_library in cmake
 if (NOT CLIBS)
   if (ULIBDEP)
@@ -784,13 +781,16 @@ endforeach ()
 
 # Flags are slightly different for different fortran extensions
 foreach (SOURCE_FILE IN LISTS SOURCES)
-  get_filename_component(SOURCE_EXT ${SOURCE_FILE} EXT)
-  if (SOURCE_EXT STREQUAL ".F" OR SOURCE_EXT STREQUAL ".f")
-    set_property(SOURCE ${SOURCE_FILE} APPEND_STRING PROPERTY COMPILE_FLAGS " ${FIXEDFLAGS}")
-  elseif(SOURCE_EXT STREQUAL ".f90")
-    set_property(SOURCE ${SOURCE_FILE} APPEND_STRING PROPERTY COMPILE_FLAGS " ${FREEFLAGS}")
-  elseif(SOURCE_EXT STREQUAL ".F90")
-    set_property(SOURCE ${SOURCE_FILE} APPEND_STRING PROPERTY COMPILE_FLAGS " ${FREEFLAGS} ${CONTIGUOUS_FLAG}")
+  # Cosp manages its own flags
+  if (NOT SOURCE_FILE IN_LIST COSP_SOURCES)
+    get_filename_component(SOURCE_EXT ${SOURCE_FILE} EXT)
+    if (SOURCE_EXT STREQUAL ".F" OR SOURCE_EXT STREQUAL ".f")
+      set_property(SOURCE ${SOURCE_FILE} APPEND_STRING PROPERTY COMPILE_FLAGS " ${FIXEDFLAGS}")
+    elseif(SOURCE_EXT STREQUAL ".f90")
+      set_property(SOURCE ${SOURCE_FILE} APPEND_STRING PROPERTY COMPILE_FLAGS " ${FREEFLAGS}")
+    elseif(SOURCE_EXT STREQUAL ".F90")
+      set_property(SOURCE ${SOURCE_FILE} APPEND_STRING PROPERTY COMPILE_FLAGS " ${FREEFLAGS} ${CONTIGUOUS_FLAG}")
+    endif()
   endif()
 endforeach()
 
