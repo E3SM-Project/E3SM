@@ -22,7 +22,7 @@ from CIME.utils import expect
 import CIME.test_status
 
 import evv4esm  # pylint: disable=import-error
-from evv4esm.__main__ import main as evv # pylint: disable=import-error
+from evv4esm.__main__ import main as evv  # pylint: disable=import-error
 
 evv_lib_dir = os.path.abspath(os.path.dirname(evv4esm.__file__))
 logger = logging.getLogger(__name__)
@@ -168,15 +168,17 @@ class MVK(SystemTestsCommon):
                 # This is here because the comparison is run for each submission
                 # and we only want to compare once the whole run is finished. We
                 # need to return a pass here to continue the submission process.
-                self._test_status.set_status(CIME.test_status.BASELINE_PHASE, CIME.test_status.TEST_PASS_STATUS)
+                self._test_status.set_status(CIME.test_status.BASELINE_PHASE,
+                                             CIME.test_status.TEST_PASS_STATUS)
                 return
 
-            self._test_status.set_status(CIME.test_status.BASELINE_PHASE, CIME.test_status.TEST_FAIL_STATUS)
+            self._test_status.set_status(CIME.test_status.BASELINE_PHASE,
+                                         CIME.test_status.TEST_FAIL_STATUS)
 
             run_dir = self._case.get_value("RUNDIR")
             case_name = self._case.get_value("CASE")
-            basecmp_case = self._case.get_value("BASECMP_CASE")
-            base_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), basecmp_case)
+            base_dir = os.path.join(self._case.get_value("BASELINE_ROOT"),
+                                    self._case.get_value("BASECMP_CASE"))
 
             test_name = "{}".format(case_name.split('.')[-1])
             evv_config = {
@@ -195,16 +197,16 @@ class MVK(SystemTestsCommon):
             with open(json_file, 'w') as config_file:
                 json.dump(evv_config, config_file, indent=4)
 
-            evv_out_dir = os.path.join(run_dir, '.'.join([case_name, 'eve']))
+            evv_out_dir = os.path.join(run_dir, '.'.join([case_name, 'evv']))
             evv(['-e', json_file, '-o', evv_out_dir])
 
             with open(os.path.join(evv_out_dir, 'index.json'), 'r') as evv_f:
                 evv_status = json.load(evv_f)
 
             for evv_elem in evv_status['Data']['Elements']:
-                if evv_elem['Type'] == 'ValSummary':
-                    if evv_elem['TableTitle'] == 'Kolmogorov-Smirnov':
-                        if evv_elem['Data'][test_name]['']['Ensembles'] == 'identical':
-                            self._test_status.set_status(CIME.test_status.BASELINE_PHASE,
-                                                         CIME.test_status.TEST_PASS_STATUS)
-                            break
+                if evv_elem['Type'] == 'ValSummary' \
+                        and evv_elem['TableTitle'] == 'Kolmogorov-Smirnov':
+                    if evv_elem['Data'][test_name]['']['Ensembles'] == 'identical':
+                        self._test_status.set_status(CIME.test_status.BASELINE_PHASE,
+                                                     CIME.test_status.TEST_PASS_STATUS)
+                        break
