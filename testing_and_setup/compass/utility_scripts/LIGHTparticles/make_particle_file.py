@@ -408,6 +408,7 @@ def build_passive_floats(cpts, xCell, yCell, zCell, f_init, nvertlevels, afilter
 
     return Particles(x, y, z, cellindices, 'passiveFloat', zlevel=zlevel, spatialfilter=afilter) #}}}
 
+
 def dense_center_seeding(nVert): #{{{
     """
     Distributes passive floats with 50% of them occurring between 40% and 60%
@@ -422,7 +423,8 @@ def dense_center_seeding(nVert): #{{{
     center = np.linspace(0.4, 0.6, int(nMid) + 2)
     lower = np.linspace(0.6, 1, (int(nRem) // 2) + 1)
     c_wgts = np.concatenate([upper[1:], center[1:-1], lower[0:-1]])
-    return c_wgts
+    return c_wgts #}}}
+
 
 def build_surface_floats(cpts, xCell, yCell, zCell, afilter): #{{{
 
