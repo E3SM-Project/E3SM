@@ -349,26 +349,73 @@ class ParticleList(): #{{{
 #}}}
 
 
-def get_particle_coords(f_init, ): #{{{
-    return f_init.variables['xCell'][:], \
-           f_init.variables['yCell'][:], \
-           f_init.variables['zCell'][:] #}}}
+def get_particle_coords(f_init, loc=None): #{{{
+    #
+    if loc is None:
+        loc = 'center'
+
+    xCell = f_init.variables['xCell'][:]
+    yCell = f_init.variables['yCell'][:]
+    zCell = f_init.variables['zCell'][:]
+
+    if loc == 'center':
+        cells = (xCell, yCell, zCell)
+        cpts = np.arange(len(xCell))
+    elif loc == 'offvertex':
+        xVertex = f_init.variables['xVertex'][:]
+        yVertex = f_init.variables['yVertex'][:]
+        zVertex = f_init.variables['zVertex'][:]
+
+        cellsOnVertex = f_init.variables['cellsOnVertex'][:,:]
+
+        nVertices = len(f_init.dimensions['nVertices'])
+        # assumes particle moves more than 1/100. of cell scale per time step
+        # 10000 m cell, 0.1 m/s flow, 2 hr time step is CFL=0.07
+        CFLmin = 0.005
+        perturbation = CFLmin*np.ones((nVertices,))
+
+        rearth = f_init.sphere_radius
+        allx = []
+        ally = []
+        allz = []
+        allcpts = []
+        for vi in np.arange(3):
+            ids = np.where(cellsOnVertex[:,vi] != 0)[0]
+            theta = perturbation[ids]
+            x = (1.0 - theta)*xVertex[ids] + theta*xCell[cellsOnVertex[ids,vi]-1]
+            y = (1.0 - theta)*yVertex[ids] + theta*yCell[cellsOnVertex[ids,vi]-1]
+            z = (1.0 - theta)*zVertex[ids] + theta*zCell[cellsOnVertex[ids,vi]-1]
+
+            # rescale for correct shell location
+            r = np.sqrt(x*x + y*y + z*z)
+            x *= rearth/r
+            y *= rearth/r
+            z *= rearth/r
+
+            allx.append(x)
+            ally.append(y)
+            allz.append(z)
+            allcpts.append(cellsOnVertex[ids,vi]-1)
+        cells = (np.concatenate(allx), np.concatenate(ally), np.concatenate(allz))
+        cpts = np.concatenate(allcpts)
+
+    return cells, cpts
+    #}}}
 
 
 def expand_nlevels(x, n): #{{{
     return np.tile(x, (n)) #}}}
 
 
-def particle_coords(f_init, downsample): #{{{
+def particle_coords(f_init, downsample, loc): #{{{
 
     f_init = netCDF4.Dataset(f_init,'r')
     nparticles = len(f_init.dimensions['nCells'])
-    xCell, yCell, zCell = get_particle_coords(f_init)
+    cells, cpts = get_particle_coords(f_init, loc=loc)
+    xCell, yCell, zCell = cells
     if downsample:
         tri = f_init.variables['cellsOnVertex'][:,:] - 1
         cpts, xCell, yCell, zCell = downsample_points(xCell, yCell, zCell, tri, downsample)
-    else:
-        cpts = np.arange(len(xCell))
     f_init.close()
 
     return cpts, xCell, yCell, zCell  #}}}
@@ -437,9 +484,9 @@ def build_surface_floats(cpts, xCell, yCell, zCell, afilter): #{{{
     return Particles(x, y, z, cellindices, 'indexLevel', indexlevel=1, zlevel=0, spatialfilter=afilter) #}}}
 
 
-def build_particle_file(f_init, f_name, f_decomp, types, spatialfilter, buoySurf, nVertLevels, downsample, vertseedtype): #{{{
+def build_particle_file(f_init, f_name, f_decomp, types, spatialfilter, buoySurf, nVertLevels, downsample, vertseedtype, loc): #{{{
 
-    cpts, xCell, yCell, zCell = particle_coords(f_init, downsample)
+    cpts, xCell, yCell, zCell = particle_coords(f_init, downsample, loc)
 
     # build particles
     particlelist = []
@@ -514,6 +561,9 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--downsample", dest="downsample",
             metavar="INT", default=0,
             help="Downsample particle positions using AMG a number of times.")
+    parser.add_argument("-l", "--location", dest="loc",
+            metavar="STRING", default='center',
+            help="Place to place particles, default='center', choices = ('center', 'offvertex')")
 
     args = parser.parse_args()
 
@@ -533,7 +583,7 @@ if __name__ == "__main__":
         print('Building particle file...')
         build_particle_file(args.init, args.particles, args.graph, args.types, args.spatialfilter,
                 np.linspace(args.potdensmin, args.potdensmax, int(args.nbuoysurf)), int(args.nvertlevels),
-                int(args.downsample), args.vertseedtype)
+                int(args.downsample), args.vertseedtype, args.loc)
         print('Done building particle file')
     else:
         print('Remapping particles...')
