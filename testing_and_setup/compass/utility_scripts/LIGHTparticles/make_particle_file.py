@@ -20,6 +20,7 @@ from pyamg.classical import split, interpolate as amginterp
 
 verticaltreatments = {'indexLevel':1, 'fixedZLevel': 2, 'passiveFloat': 3, 'buoyancySurface': 4, 'argoFloat': 5}
 defaults = {'dt': 300, 'resettime': 1.0*24.0*60.0*60.0}
+typelist = ['buoyancy', 'passive', 'surface', 'all']
 
 
 def use_defaults(name, val): #{{{
@@ -482,7 +483,7 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--types", dest="types",
             help="Types of particles",
             default="all",
-            metavar="One or more of ['buoyancy', 'passive', 'surface', 'all']")
+            metavar="One or more of " + ''.join(typelist))
     parser.add_argument("--nvertlevels", dest="nvertlevels",
             default=10,
             help="Number of vertical levels for passive, 3D floats",
@@ -525,6 +526,8 @@ if __name__ == "__main__":
         raise OSError('Init file {} not found.'.format(args.init))
     if not os.path.exists(args.graph):
         raise OSError('Graph file {} not found.'.format(args.graph))
+
+    assert set(args.types.split(',')).issubset(typelist), 'Selected particle type is not correct!'
 
     if not args.remap:
         print('Building particle file...')
