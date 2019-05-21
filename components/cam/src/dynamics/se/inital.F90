@@ -19,7 +19,7 @@ subroutine cam_initial(dyn_in, dyn_out, NLFileName)
    use cam_initfiles,        only: initial_file_get_id
    use startup_initialconds, only: initial_conds
    use cam_logfile,          only: iulog
-   use dimensions_mod,       only: fv_nphys
+   use dyn_grid,             only: fv_nphys
    use write_grid_scrip_mod, only: write_grid_scrip
 
    ! modules from SE
@@ -36,8 +36,7 @@ subroutine cam_initial(dyn_in, dyn_out, NLFileName)
    if(par%masterproc  ) write(iulog,*) 'Running phys_grid_init()'
    call phys_grid_init( )
 
-   ! Write scrip file for grid 
-   ! not needed as TempestRemap can create scrip files now
+   ! Write scrip file for grid - not needed, TempestRemap can create scrip files now
    ! if (fv_nphys>0) then
    !    call write_grid_scrip()
    ! end if

@@ -4,10 +4,10 @@
 module dp_coupling
   use constituents,   only: pcnst, cnst_name
   use cam_history,    only: outfld, write_inithist, hist_fld_active
-  use dimensions_mod, only: np, npsq, nelemd, nlev, fv_nphys
+  use dimensions_mod, only: np, npsq, nelemd, nlev
   use dof_mod,        only: UniquePoints, PutUniquePoints
   use dyn_comp,       only: dyn_export_t, dyn_import_t, TimeLevel
-  use dyn_grid,       only: get_gcol_block_d
+  use dyn_grid,       only: get_gcol_block_d, fv_nphys
   use pmgrid,         only: plev
   use element_mod,    only: element_t
   use kinds,          only: real_kind, int_kind
@@ -127,7 +127,7 @@ CONTAINS
         ! Map dynamics state to FV physics grid
         !-----------------------------------------------------------------------
         call t_startf('dyn_to_fv_phys')
-        call dyn_to_fv_phys(elem,ps_tmp,zs_tmp,T_tmp,uv_tmp,w_tmp,Q_tmp)
+        call dyn_to_fv_phys(elem,ps_tmp,zs_tmp,T_tmp,uv_tmp,w_tmp,q_tmp)
         call t_stopf('dyn_to_fv_phys')
 
         !-----------------------------------------------------------------------
@@ -145,7 +145,7 @@ CONTAINS
           call UniquePoints(elem(ie)%idxP,  nlev, temperature,                  T_tmp(1:ncols,:,ie))
           call UniquePoints(elem(ie)%idxP,  nlev,elem(ie)%derived%omega_p,      w_tmp(1:ncols,:,ie))
           call UniquePoints(elem(ie)%idxP,2,nlev,elem(ie)%state%V(:,:,:,:,tl_f),uv_tmp(1:ncols,:,:,ie))
-          call UniquePoints(elem(ie)%idxP,nlev,pcnst,elem(ie)%state%Q(:,:,:,:), Q_tmp(1:ncols,:,:,ie))
+          call UniquePoints(elem(ie)%idxP,nlev,pcnst,elem(ie)%state%Q(:,:,:,:), q_tmp(1:ncols,:,:,ie))
         end do
         call t_stopf('UniquePoints')
         !-----------------------------------------------------------------------
@@ -318,21 +318,6 @@ CONTAINS
     end do ! lchnk
 #endif
 
-    ! Set initial physics state for calculating final tendency for dynamics
-    !$omp parallel do private (lchnk, ncols, ilyr, icol)
-    if (fv_nphys > 0) then
-      do lchnk = begchunk,endchunk
-        ncols = get_ncols_p(lchnk)
-        do icol = 1,ncols
-          do ilyr = 1,pver
-            do m = 1,pcnst
-              phys_state(lchnk)%qo(icol,ilyr,m) = phys_state(lchnk)%q(icol,ilyr,m)
-            end do ! m
-          end do ! ilyr
-        end do ! icol
-      end do ! lchnk
-    end if ! fv_nphys > 0
-
     if ( write_inithist() ) then
       if (fv_nphys > 0) then
 
@@ -459,13 +444,7 @@ CONTAINS
             uv_tmp(ioff,1,ilyr,ie) = phys_tend(lchnk)%dudt(icol,ilyr)
             uv_tmp(ioff,2,ilyr,ie) = phys_tend(lchnk)%dvdt(icol,ilyr)
             do m = 1,pcnst
-              if ( fv_nphys>0 .and. ( ftype==2 .or. ftype==3 ) ) then
-                ! Subtract initial physics state to convert to tendency
-                q_tmp(ioff,ilyr,m,ie) = phys_state(lchnk)%q(icol,ilyr,m) &
-                                       -phys_state(lchnk)%qo(icol,ilyr,m)
-              else
-                q_tmp(ioff,ilyr,m,ie) = phys_state(lchnk)%q(icol,ilyr,m)
-              end if
+              q_tmp(ioff,ilyr,m,ie) = phys_state(lchnk)%q(icol,ilyr,m)
             end do
           end do ! ilyr
       	end do ! icol
@@ -491,13 +470,7 @@ CONTAINS
             cbuffer(cpter(icol,ilyr)+1) = phys_tend(lchnk)%dudt(icol,ilyr)
             cbuffer(cpter(icol,ilyr)+2) = phys_tend(lchnk)%dvdt(icol,ilyr)
             do m=1,pcnst
-              if ( fv_nphys>0 .and. ( ftype==2 .or. ftype==3 ) ) then
-                ! Subtract initial physics state to convert to tendency
-                cbuffer(cpter(icol,ilyr)+2+m) = phys_state(lchnk)%q(icol,ilyr,m)&
-                                               -phys_state(lchnk)%qo(icol,ilyr,m)
-              else
-                cbuffer(cpter(icol,ilyr)+2+m) = phys_state(lchnk)%q(icol,ilyr,m)
-              end if
+              cbuffer(cpter(icol,ilyr)+2+m) = phys_state(lchnk)%q(icol,ilyr,m)
             end do
           end do ! ilyr
         end do ! icol

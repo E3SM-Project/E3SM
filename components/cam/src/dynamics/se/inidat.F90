@@ -32,7 +32,7 @@ contains
     use parallel_mod,            only: par
     use bndry_mod,               only: bndry_exchangev
     use constituents,            only: cnst_name, cnst_read_iv, qmin
-    use dimensions_mod,          only: nelemd, nlev, np, npsq, fv_nphys
+    use dimensions_mod,          only: nelemd, nlev, np, npsq
     use dof_mod,                 only: putUniquePoints
     use edge_mod,                only: edgevpack, edgevunpack, InitEdgeBuffer, FreeEdgeBuffer
     use edgetype_mod,            only: EdgeBuffer_t
@@ -42,7 +42,7 @@ contains
     use cam_abortutils,          only: endrun
     use pio,                     only: file_desc_t, io_desc_t, pio_double, &
                                        pio_get_local_array_size, pio_freedecomp
-    use dyn_grid,                only: get_horiz_grid_dim_d, dyn_decomp
+    use dyn_grid,                only: get_horiz_grid_dim_d, dyn_decomp, fv_nphys
     use chemistry,               only: chem_implements_cnst, chem_init_cnst
     use carma_intr,              only: carma_implements_cnst, carma_init_cnst
     use tracers,                 only: tracers_implements_cnst, tracers_init_cnst

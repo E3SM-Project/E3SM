@@ -24,8 +24,8 @@ end subroutine check
 !===================================================================================================
 subroutine write_grid_scrip()
    use spmd_utils,         only: masterproc
-   use dimensions_mod,     only: nelem, nelemd, nelemdmax, ne, np, npsq, fv_nphys
-   use dyn_grid,           only: compute_global_area, compute_global_coords
+   use dimensions_mod,     only: nelem, nelemd, nelemdmax, ne, np, npsq
+   use dyn_grid,           only: compute_global_area, compute_global_coords, fv_nphys
    use phys_grid,          only: ngcols
    !----------------------------------------------------------------------------
    character(len=100) :: filename

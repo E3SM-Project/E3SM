@@ -19,7 +19,8 @@ module fv_physics_coupling_mod
   use shr_kind_mod,   only: r8=>shr_kind_r8
   use kinds,          only: real_kind, int_kind
   use constituents,   only: pcnst, cnst_name
-  use dimensions_mod, only: np, npsq, nelemd, nlev, fv_nphys
+  use dimensions_mod, only: np, npsq, nelemd, nlev
+  use dyn_grid,       only: fv_nphys
   use ppgrid,         only: pcols, pver, pverp
   
   private
@@ -36,6 +37,8 @@ contains
   subroutine fv_phys_to_dyn(elem,T_tmp,uv_tmp,q_tmp)
     ! Purpose: Copy physics state to dynamics grid
     use control_mod,    only: ftype
+    use dyn_comp,       only: TimeLevel
+    use derivative_mod, only: subcell_integration
     implicit none
     !---------------------------------------------------------------------------
     ! interface arguments
@@ -44,12 +47,34 @@ contains
     real(kind=real_kind), intent(inout) :: uv_tmp(:,:,:,:)  ! temp array to hold u and v
     real(kind=real_kind), intent(inout) :: q_tmp (:,:,:,:)  ! temp to hold advected constituents
     ! local variables
-    integer(kind=int_kind)   :: ie, m, i, j, icol, ilyr    ! loop iterators
-    integer(kind=int_kind)   :: ii, jj, gi, gj             ! GLL loop iterator and indices for pg2
+    integer(kind=int_kind) :: ie, m, i, j, icol, ilyr       ! loop iterators
+    integer(kind=int_kind) :: ii, jj, gi, gj                ! GLL loop iterator and indices for pg2
+    integer                :: tl_f
+    real(kind=real_kind), dimension(fv_nphys*fv_nphys,pver,pcnst) :: qo_phys ! reconstructed initial physics state 
+    real(r8), dimension(np,np)             :: dp_gll
+    real(r8), dimension(fv_nphys,fv_nphys) :: inv_dp_fvm
     !---------------------------------------------------------------------------
     ! Copy tendencies on the physics grid over to the dynamics grid (GLL)
     !---------------------------------------------------------------------------
+    tl_f = TimeLevel%n0
     do ie = 1,nelemd
+      !-------------------------------------------------------------------------
+      ! Recalculate state that was previously sent to physics 
+      !-------------------------------------------------------------------------
+      if (ftype==2.or.ftype==3) then
+        do ilyr = 1,pver
+          dp_gll = elem(ie)%state%dp3d(:,:,ilyr,tl_f)
+          inv_dp_fvm = 1.0 / subcell_integration(dp_gll,np,fv_nphys,elem(ie)%metdet(:,:))
+          do m = 1,pcnst
+            qo_phys(:,ilyr,m)  = RESHAPE( subcell_integration(              &
+                                  elem(ie)%state%Q(:,:,ilyr,m)*dp_gll,      &
+                                  np, fv_nphys, elem(ie)%metdet(:,:) )      &
+                                  *inv_dp_fvm, (/fv_nphys*fv_nphys/) )
+          end do ! m
+        end do ! ilyr
+      end if ! ftype==2.or.ftype==3
+      !-------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
       icol = 0
       do j = 1,fv_nphys
         do i = 1,fv_nphys 
@@ -63,7 +88,13 @@ contains
               elem(ie)%derived%FM(:,:,1,ilyr)   = uv_tmp(icol,1,ilyr,ie)
               elem(ie)%derived%FM(:,:,2,ilyr)   = uv_tmp(icol,2,ilyr,ie)
               do m = 1,pcnst
-                elem(ie)%derived%FQ(:,:,ilyr,m) = q_tmp (icol,  ilyr,m,ie)
+                if ( ftype==2 .or. ftype==3 ) then
+                  elem(ie)%derived%FQ(:,:,ilyr,m) = q_tmp(icol,ilyr,m,ie) &
+                                                    -qo_phys(icol,ilyr,m) &
+                                                    +elem(ie)%state%q(:,:,ilyr,m)
+                else
+                  elem(ie)%derived%FQ(:,:,ilyr,m) = q_tmp(icol,ilyr,m,ie)
+                end if
               end do
             end if ! fv_nphys == 1
             !-------------------------------------------------------------------
@@ -81,8 +112,9 @@ contains
                   elem(ie)%derived%FM(gi,gj,2,ilyr) = uv_tmp(icol,2,ilyr,ie)
                   do m = 1,pcnst
                     if ( ftype==2 .or. ftype==3 ) then
-                      ! Add in dynamics state since initial physics state was taken out
+                      ! subtract initial phys state and add previous dyn state
                       elem(ie)%derived%FQ(gi,gj,ilyr,m) = q_tmp(icol,ilyr,m,ie)&
+                                                         -qo_phys(icol,ilyr,m) &
                                                          +elem(ie)%state%q(gi,gj,ilyr,m)
                     else
                       elem(ie)%derived%FQ(gi,gj,ilyr,m) = q_tmp(icol,ilyr,m,ie)

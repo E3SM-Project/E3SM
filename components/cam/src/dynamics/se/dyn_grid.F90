@@ -46,7 +46,7 @@ module dyn_grid
   use shr_kind_mod,            only: r8 => shr_kind_r8
   use shr_const_mod,           only: SHR_CONST_PI
   use cam_grid_support,        only: iMap
-  use dimensions_mod,          only: nelem, nelemd, nelemdmax, ne, np, npsq, fv_nphys
+  use dimensions_mod,          only: nelem, nelemd, nelemdmax, ne, np, npsq
   use spmd_utils,              only: iam, mpi_integer, mpi_real8, mpicom, npes, masterproc
   use parallel_mod,            only: par
   use scamMod,                 only: single_column
@@ -58,6 +58,9 @@ module dyn_grid
   ! The SE dynamics grid
   integer, parameter, public :: dyn_decomp = 101
   integer, parameter, public :: physgrid_d = 102
+
+  ! FV physics grid resolution (physics on GLL grid if NPG=0)
+  integer, parameter, public :: fv_nphys = NPG  
 
   integer                    :: ngcols_d = 0          ! number of dynamics columns
   logical                    :: gblocks_need_initialized = .true.

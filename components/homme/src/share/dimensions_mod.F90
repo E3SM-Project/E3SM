@@ -21,7 +21,6 @@ module dimensions_mod
 
 
   integer, parameter, public :: np = NP
-  integer           , public :: fv_nphys = NPG  ! FV physics grid resolution 
 
 
   integer         :: qsize = 0

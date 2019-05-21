@@ -52,7 +52,7 @@ CONTAINS
     use parallel_mod, only    : par
     use ppgrid, only          : pver
     use thread_mod, only      : omp_get_thread_num
-    use dimensions_mod, only  : fv_nphys
+    use dyn_grid, only        : fv_nphys
     implicit none
     type (element_t),      intent(inout), dimension(:) :: elem
     integer,               intent(in   ) :: tl
@@ -120,7 +120,7 @@ CONTAINS
     use dyn_comp,           only: hvcoord
     use spmd_utils,         only: iam 
     use parallel_mod,       only: par 
-    use dimensions_mod,     only: fv_nphys
+    use dyn_grid,           only: fv_nphys
     use derivative_mod,     only: subcell_integration
     use element_ops,        only : get_temperature
     implicit none
