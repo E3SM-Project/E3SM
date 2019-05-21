@@ -8,7 +8,7 @@
 		possible_values="Any real number larger than zero."
 		/>
 	<nml_option name="config_dam_break_dc" type="real" default_value="0.04" units="m"
-		description="gird resolution in meter ($dc$)."
+		description="grid resolution in meters ($dc$)."
 		possible_values="Any real number larger than zero."
 		/>
 	<nml_option name="config_dam_break_R0" type="real" default_value="24.2" units="m"
