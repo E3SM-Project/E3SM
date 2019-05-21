@@ -12491,40 +12491,54 @@ contains
     logical, pointer :: &
          config_use_column_biogeochemistry, &
          config_use_column_shortwave, &
-         config_use_column_package
+         config_use_column_package, &
+         config_use_vertical_biochemistry, &
+         config_use_vertical_zsalinity
 
     call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_package", config_use_column_package)
 
-    if (config_use_column_package) then
+     if (config_use_column_package) then
 
        block => domain % blocklist
        do while (associated(block))
 
           ! biogeochemistry
           call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+          call MPAS_pool_get_config(block % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
+          call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
 
           if (config_use_column_biogeochemistry) then
 
              call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistryPool)
 
-             call MPAS_pool_get_array(biogeochemistryPool, "primaryProduction", primaryProduction)
-             call MPAS_pool_get_array(biogeochemistryPool, "totalChlorophyll", totalChlorophyll)
-             call MPAS_pool_get_array(biogeochemistryPool, "netSpecificAlgalGrowthRate", netSpecificAlgalGrowthRate)
+             if (config_use_vertical_biochemistry) then
+                call MPAS_pool_get_array(biogeochemistryPool, "primaryProduction", primaryProduction)
+                call MPAS_pool_get_array(biogeochemistryPool, "totalChlorophyll", totalChlorophyll)
+                call MPAS_pool_get_array(biogeochemistryPool, "netSpecificAlgalGrowthRate", netSpecificAlgalGrowthRate)
+
+                primaryProduction          = 0.0_RKIND
+                totalChlorophyll           = 0.0_RKIND
+                netSpecificAlgalGrowthRate = 0.0_RKIND
+
+             end if
+
+             if (config_use_vertical_zsalinity) then
+                call MPAS_pool_get_array(biogeochemistryPool, "zSalinityFlux", zSalinityFlux)
+                call MPAS_pool_get_array(biogeochemistryPool, "zSalinityGDFlux", zSalinityGDFlux)
+
+                zSalinityFlux              = 0.0_RKIND
+                zSalinityGDFlux            = 0.0_RKIND
+
+             end if
+
              call MPAS_pool_get_array(biogeochemistryPool, "netBrineHeight", netBrineHeight)
-             call MPAS_pool_get_array(biogeochemistryPool, "zSalinityFlux", zSalinityFlux)
-             call MPAS_pool_get_array(biogeochemistryPool, "zSalinityGDFlux", zSalinityGDFlux)
              call MPAS_pool_get_array(biogeochemistryPool, "oceanBioFluxes", oceanBioFluxes)
              call MPAS_pool_get_array(biogeochemistryPool, "atmosIceBioFluxes", atmosIceBioFluxes)
              call MPAS_pool_get_array(biogeochemistryPool, "snowIceBioFluxes", snowIceBioFluxes)
              call MPAS_pool_get_array(biogeochemistryPool, "totalVerticalBiologyIce", totalVerticalBiologyIce)
              call MPAS_pool_get_array(biogeochemistryPool, "totalVerticalBiologySnow", totalVerticalBiologySnow)
 
-             primaryProduction          = 0.0_RKIND
-             totalChlorophyll           = 0.0_RKIND
-             netSpecificAlgalGrowthRate = 0.0_RKIND
              netBrineHeight             = 0.0_RKIND
-             zSalinityFlux              = 0.0_RKIND
-             zSalinityGDFlux            = 0.0_RKIND
              oceanBioFluxes             = 0.0_RKIND
              atmosIceBioFluxes          = 0.0_RKIND
              snowIceBioFluxes           = 0.0_RKIND
