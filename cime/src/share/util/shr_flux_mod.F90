@@ -205,9 +205,9 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
    real(R8),parameter :: zref  = 10.0_R8 ! reference height           (m)
    real(R8),parameter :: ztref =  2.0_R8 ! reference height for air T (m)
 !!++ Large only
-   real(R8),parameter :: cexcd  = 0.0346_R8 ! ratio Ch(water)/CD 
-   real(R8),parameter :: chxcds = 0.018_R8  ! ratio Ch(heat)/CD for stable case
-   real(R8),parameter :: chxcdu = 0.0327_R8 ! ratio Ch(heat)/CD for unstable case
+   !real(R8),parameter :: cexcd  = 0.0346_R8 ! ratio Ch(water)/CD 
+   !real(R8),parameter :: chxcds = 0.018_R8  ! ratio Ch(heat)/CD for stable case
+   !real(R8),parameter :: chxcdu = 0.0327_R8 ! ratio Ch(heat)/CD for unstable case
 !!++ COARE only
    real(R8),parameter :: zpbl =700.0_R8 ! PBL depth [m] for gustiness parametriz.
 
@@ -346,8 +346,9 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
         !--- neutral coefficients, z/L = 0.0 ---
         stable = 0.5_R8 + sign(0.5_R8 , delt)
         rdn    = sqrt(cdn(vmag))
-        rhn    = (1.0_R8-stable) * chxcdu + stable * chxcds
-        ren    = cexcd
+        rhn    = (1.0_R8-stable) * 0.0327_R8 + stable * 0.018_R8 
+                 !(1.0_R8-stable) * chxcdu + stable * chxcds
+        ren    = 0.0346_R8 !cexcd
 
         !--- ustar, tstar, qstar ---
         ustar = rdn * vmag
@@ -374,8 +375,9 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
 
            !--- update transfer coeffs at 10m and neutral stability ---
            rdn = sqrt(cdn(u10n))
-           ren = cexcd
-           rhn = (1.0_R8-stable) * chxcdu + stable * chxcds
+           ren = 0.0346_R8 !cexcd
+           rhn = (1.0_R8-stable)*0.0327_R8 + stable * 0.018_R8
+                 !(1.0_R8-stable) * chxcdu + stable * chxcds
 
            !--- shift all coeffs to measurement height and stability ---
            rd = rdn / (1.0_R8 + rdn/loc_karman*(alz-psimh))
