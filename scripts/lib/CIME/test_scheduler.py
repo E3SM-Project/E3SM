@@ -194,7 +194,7 @@ class TestScheduler(object):
         if parallel_jobs is None:
             mach_parallel_jobs = self._machobj.get_value("NTEST_PARALLEL_JOBS")
             if mach_parallel_jobs is None:
-                mach_parallel_jobs = 3
+                mach_parallel_jobs = self._machobj.get_value("MAX_MPITASKS_PER_NODE")
             self._parallel_jobs = min(len(test_names), mach_parallel_jobs)
         else:
             self._parallel_jobs = parallel_jobs
