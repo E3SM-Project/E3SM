@@ -73,11 +73,6 @@ protected:
   Comm      m_dynamics_comm;
 };
 
-inline AtmosphereProcess*
-create_atmosphere_dynamics(const Comm& comm, const ParameterList& p) {
-  return new HommeDynamics(comm,p);
-}
-
 } // namespace scream
 
 #endif // SCREAM_HOMME_DYNAMICS_HPP

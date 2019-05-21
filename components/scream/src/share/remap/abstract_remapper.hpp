@@ -143,7 +143,11 @@ registration_complete () {
 
 // A short name for an AbstractRemapper factory
 template<typename ScalarType, typename Device>
-using RemapperFactory = util::Factory<AbstractRemapper<ScalarType,Device>,util::CaseInsensitiveString,const ParameterList&>;
+using RemapperFactory =
+    util::Factory<AbstractRemapper<ScalarType,Device>,
+                  util::CaseInsensitiveString,
+                  std::shared_ptr<AbstractRemapper<ScalarType,Device>>,
+                  const ParameterList&>;
 
 } // namespace scream
 

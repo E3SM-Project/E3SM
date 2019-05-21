@@ -28,9 +28,7 @@ public:
 
   void build_grids (const std::set<std::string>& grid_names) {
     for (const auto& name : grid_names) {
-      scream_require_msg (supports_grid(name),
-                          "Error! Grids manager '" + this->name() + "' does not provide grid '" + name + "'.\n"
-                          "       Supported grids are: " + print_supported_grids()  + "\n");
+      build_grid(name);
     }
   }
 
@@ -64,10 +62,11 @@ protected:
 inline GridsManager::grid_ptr_type
 GridsManager::get_grid(const std::string& name) const
 {
-  auto it = get_repo().find(name);
-  scream_require_msg (it!=get_repo().end(), "Error! Grid '" + name + "' not registered.\n");
+  scream_require_msg (supports_grid(name),
+                      "Error! Grids manager '" + this->name() + "' does not provide grid '" + name + "'.\n"
+                      "       Supported grids are: " + print_supported_grids()  + "\n");
 
-  return it->second;
+  return get_repo().at(name);
 }
 
 // Forward declarations
@@ -75,7 +74,11 @@ class Comm;
 class ParameterList;
 
 // A short name for the factory for grid managers
-using GridsManagerFactory = util::Factory<GridsManager,util::CaseInsensitiveString,const Comm&,const ParameterList&>;
+using GridsManagerFactory 
+    = util::Factory<GridsManager,
+                    util::CaseInsensitiveString,
+                    std::shared_ptr<GridsManager>,
+                    const Comm&,const ParameterList&>;
 
 } // namespace scream
 

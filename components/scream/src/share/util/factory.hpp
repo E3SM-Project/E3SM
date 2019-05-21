@@ -14,19 +14,23 @@ namespace util
 
 template<typename AbstractProduct,
          typename KeyType,
+         typename PointerType,
          typename... ConstructorArgs>
 class Factory
 {
 public:
 
-  typedef Factory<AbstractProduct,KeyType,ConstructorArgs...> factory_type;
+  using factory_type  = Factory<AbstractProduct,KeyType,PointerType,ConstructorArgs...>;
+  using key_type      = KeyType;
+  using obj_type      = AbstractProduct;
+  using obj_ptr_type  = PointerType;
+  using creator_type  = obj_ptr_type (*) (const ConstructorArgs... args);
+  using register_type = std::map<key_type,creator_type>;
 
-  typedef KeyType           key_type;
-  typedef AbstractProduct   obj_type;
-  typedef obj_type*         obj_ptr_type;
-
-  typedef obj_ptr_type (*creator_type) (const ConstructorArgs... args);
-  typedef std::map<key_type,creator_type> register_type;
+  // Make sure that obj_ptr_type is indeed some sort of pointer to obj_type
+  using deref_pointer_type = typename std::remove_reference<decltype(*std::declval<PointerType>())>::type;
+  static_assert (std::is_same<AbstractProduct,deref_pointer_type>::value,
+                 "[Factory] Error! Template parameter for AbstractProduct and PointerType are not compatible.");
 
   static factory_type& instance ()
   {
@@ -62,8 +66,9 @@ private:
 
 template<typename AbstractProduct,
          typename KeyType,
+         typename PointerType,
          typename... ConstructorArgs>
-bool Factory<AbstractProduct,KeyType,ConstructorArgs...>::
+bool Factory<AbstractProduct,KeyType,PointerType,ConstructorArgs...>::
 register_product (const key_type& key,
                   const creator_type& creator,
                   const bool replace_if_found)
@@ -80,9 +85,9 @@ register_product (const key_type& key,
 
 template<typename AbstractProduct,
          typename KeyType,
+         typename PointerType,
          typename... ConstructorArgs>
-typename Factory<AbstractProduct,KeyType,ConstructorArgs...>::obj_ptr_type
-Factory<AbstractProduct,KeyType,ConstructorArgs...>::
+PointerType Factory<AbstractProduct,KeyType,PointerType,ConstructorArgs...>::
 create (const key_type& key,ConstructorArgs&& ...args)
 {
   // Check that the factory is not empty.
@@ -106,9 +111,9 @@ create (const key_type& key,ConstructorArgs&& ...args)
 
 template<typename AbstractProduct,
          typename KeyType,
+         typename PointerType,
          typename... ConstructorArgs>
-std::string
-Factory<AbstractProduct,KeyType,ConstructorArgs...>::
+std::string Factory<AbstractProduct,KeyType,PointerType,ConstructorArgs...>::
 print_registered_products () const {
   // This routine simply puts the products name in a string, as "name1, name2, name3,..., name N"
   std::string str;
