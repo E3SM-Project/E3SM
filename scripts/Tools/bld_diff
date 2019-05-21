@@ -31,9 +31,12 @@ OR
 
     parser.add_argument("log2", help="Second log.")
 
+    parser.add_argument("-I", "--ignore-includes", action="store_true",
+                        help="Ignore differences in include flags")
+
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
-    return args.log1, args.log2
+    return args.log1, args.log2, args.ignore_includes
 
 ###############################################################################
 def is_compile_line(line):
@@ -88,7 +91,7 @@ def read_maybe_gzip(filepath):
         return fd.read()
 
 ###############################################################################
-def log_diff(log1, log2, repls):
+def log_diff(log1, log2, repls, ignore_includes):
 ###############################################################################
     """
     Search for build/link commands and compare them
@@ -128,11 +131,12 @@ def log_diff(log1, log2, repls):
 
         # Let's not worry about order yet even though some flags are order-sensitive
         for flag in missing:
-            print("  Missing flag {}".format(flag))
-            are_same = False
+            if not (ignore_includes and flag.startswith("-I")):
+                print("  Missing flag {}".format(flag))
+                are_same = False
 
         for flag in extra:
-            if flag != "-o" and not flag.startswith("CMakeFiles"):
+            if flag != "-o" and not flag.startswith("CMakeFiles") and not (ignore_includes and flag.startswith("-I")):
                 print("  Extra flag {}".format(flag))
                 are_same = False
 
@@ -141,7 +145,7 @@ def log_diff(log1, log2, repls):
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    log1, log2 = parse_command_line(sys.argv, description)
+    log1, log2, ignore_includes = parse_command_line(sys.argv, description)
 
     xml_normalize_fields = ["TEST_TESTID", "SRCROOT"]
     repls = {}
@@ -159,7 +163,7 @@ def _main_func(description):
             logging.warning("Warning, failed to normalize on {}: {}".format(xml_normalize_field, str(e)))
             repls = {}
 
-    same = log_diff(log1, log2, repls)
+    same = log_diff(log1, log2, repls, ignore_includes)
     sys.exit(0 if same == 0 else 1)
 
 ###############################################################################

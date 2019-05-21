@@ -533,11 +533,7 @@ FFLAGS_NOOPT += $(FPPDEFS)
 
 ifeq ($(findstring -cosp,$(CAM_CONFIG_OPTS)),-cosp)
   # The following is for the COSP simulator code:
-  ifeq ($(CIME_MODEL),cesm)
-    COSP_LIBDIR:=$(abspath $(EXEROOT)/atm/obj/cosp)
-  else
-    COSP_LIBDIR:=$(abspath $(EXEROOT)/atm/obj/cam/src/physics/cosp)
-  endif
+  COSP_LIBDIR:=$(abspath $(EXEROOT)/atm/obj/cosp)
   ifeq ($(MODEL),driver)
     INCLDIR+=-I$(COSP_LIBDIR)
   endif
@@ -859,7 +855,9 @@ ifeq ($(ULIBDEP),$(null))
 endif
 
 ifdef COSP_LIBDIR
-  ULIBDEP += $(COSP_LIBDIR)/libcosp.a
+  ifeq ($(CIME_MODEL),cesm)
+    ULIBDEP += $(COSP_LIBDIR)/libcosp.a
+  endif
 endif
 
 
