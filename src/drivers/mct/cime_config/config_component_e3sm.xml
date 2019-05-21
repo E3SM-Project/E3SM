@@ -88,7 +88,11 @@
     <default_value>12</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>
-    <desc>timer detail FIXME - add documentation</desc>
+    <desc>Sets maximum number of run loop timing data checkpoints.
+    This sets values for tprof_option and tprof_n that determine
+    the timing output file frequency. If less than one, uses
+    defaults for tprof_option and tprof_n and also allows them
+    to be set in user_nl_cpl.</desc>
   </entry>
 
   <entry id="DOUT_S_SAVE_INTERIM_RESTART_FILES">
