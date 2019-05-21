@@ -12,7 +12,7 @@
 #                           to construct "input.nl" read by HOMME
 #
 #
-# ne30: 12 nodes, 2h  (20 nodes, 1h)
+# ne30: 12 nodes, 2h  (20 nodes, 1.5h)
 # ne120: 80 nodes 20h?   (run for 400days, output after 200 days?)
 #
 #SBATCH --job-name HS
@@ -22,8 +22,6 @@
 #SBATCH --account=condo
 #SBATCH -N 20
 #SBATCH --time=2:00:00
-
-
 
 set nlev=26
 set ndays = 1600
@@ -67,7 +65,7 @@ if ( $ne == 15 ) then
     set topo = '/home/ccsm-data/inputdata/atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc'
     #set topo = '/projects/ccsm/inputdata/atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc'
     #set topo = '/lcrc/group/acme/taylorm/topodata/ne30/USGS-gtopo30_ne30np4_8xdel2.nc'
-    set toponame = 16xdel2-H-TOMsplit1
+    set toponame = 16xdel2-H-TOMsplit
  endif
  if ( $ne == 60 ) then
     # 0.5 degree     tbird 200 nodes, 560 days: 20h
@@ -185,7 +183,7 @@ cat  $wdir/input.nl
 ############################################################
 date
 set echo
-mpirun  $bld/src/$exe/$exe < $wdir/input.nl 
+srun -c 1 -N $SLURM_NNODES   $bld/src/$exe/$exe < $wdir/input.nl 
 date
 
 # save timing data

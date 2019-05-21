@@ -111,7 +111,7 @@ contains
        end if
     end do
     if (hybrid%masterthread) then
-       if (nu_scale_top(k)>0) write(iulog,*) "  nlev_tom ",nlev_tom
+       write(iulog,*) "  nlev_tom ",nlev_tom
     end if
 
   end subroutine 

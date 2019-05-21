@@ -1059,7 +1059,7 @@ contains
 
   ! local
   real (kind=real_kind) :: eta_ave_w  ! weighting for mean flux terms
-  integer :: k2,k,kptr,i,j,ie,ic,nt,nlyr_tot,nlyr_tom,ssize,ssize_tom
+  integer :: k2,k,kptr,i,j,ie,ic,nt,nlyr_tot,nlyr_tom,ssize
   real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)      :: vtens
   real (kind=real_kind), dimension(np,np,nlev,4,nets:nete)      :: stens  ! dp3d,theta,w,phi
 
@@ -1092,12 +1092,10 @@ contains
      nlyr_tot=4*nlev        ! dont bother to dss w_i and phinh_i
      nlyr_tom=4*nlev_tom
      ssize=2*nlev
-     ssize_tom=2*nlev_tom
   else
      nlyr_tot=6*nlev  ! total amount of data for DSS
      nlyr_tom=6*nlev_tom
      ssize=4*nlev
-     ssize_tom=4*nlev_tom
   endif
   
   do k=1,nlev
@@ -1321,8 +1319,15 @@ contains
         kptr=0;      
         call edgeVpack_nlyr(edge_g,elem(ie)%desc,vtens(:,:,:,:,ie),2*nlev_tom,kptr,nlyr_tom)
         kptr=2*nlev_tom; 
-        call edgeVpack_nlyr(edge_g,elem(ie)%desc,stens(:,:,:,:,ie),ssize_tom,kptr,nlyr_tom)
-        
+        call edgeVpack_nlyr(edge_g,elem(ie)%desc,stens(:,:,:,1,ie),nlev_tom,kptr,nlyr_tom)
+        kptr=kptr+nlev_tom
+        call edgeVpack_nlyr(edge_g,elem(ie)%desc,stens(:,:,:,2,ie),nlev_tom,kptr,nlyr_tom)
+        if (.not.theta_hydrostatic_mode) then
+           kptr=kptr+nlev_tom
+           call edgeVpack_nlyr(edge_g,elem(ie)%desc,stens(:,:,:,3,ie),nlev_tom,kptr,nlyr_tom)
+           kptr=kptr+nlev_tom
+           call edgeVpack_nlyr(edge_g,elem(ie)%desc,stens(:,:,:,4,ie),nlev_tom,kptr,nlyr_tom)
+        endif
      enddo
      
      call t_startf('ahdp_bexchV2')
@@ -1334,7 +1339,15 @@ contains
         kptr=0
         call edgeVunpack_nlyr(edge_g,elem(ie)%desc,vtens(:,:,:,:,ie),2*nlev_tom,kptr,nlyr_tom)
         kptr=2*nlev_tom
-        call edgeVunpack_nlyr(edge_g,elem(ie)%desc,stens(:,:,:,:,ie),ssize_tom,kptr,nlyr_tom)
+        call edgeVunpack_nlyr(edge_g,elem(ie)%desc,stens(:,:,:,1,ie),nlev_tom,kptr,nlyr_tom)
+        kptr=kptr+nlev_tom
+        call edgeVunpack_nlyr(edge_g,elem(ie)%desc,stens(:,:,:,2,ie),nlev_tom,kptr,nlyr_tom)
+        if (.not.theta_hydrostatic_mode) then
+           kptr=kptr+nlev_tom
+           call edgeVunpack_nlyr(edge_g,elem(ie)%desc,stens(:,:,:,3,ie),nlev_tom,kptr,nlyr_tom)
+           kptr=kptr+nlev_tom
+           call edgeVunpack_nlyr(edge_g,elem(ie)%desc,stens(:,:,:,4,ie),nlev_tom,kptr,nlyr_tom)
+        endif
         
         
         ! apply inverse mass matrix, add tendency
