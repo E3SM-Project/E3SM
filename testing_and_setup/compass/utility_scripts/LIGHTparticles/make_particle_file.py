@@ -348,7 +348,7 @@ class ParticleList(): #{{{
 #}}}
 
 
-def get_cell_coords(f_init): #{{{
+def get_particle_coords(f_init, ): #{{{
     return f_init.variables['xCell'][:], \
            f_init.variables['yCell'][:], \
            f_init.variables['zCell'][:] #}}}
@@ -358,11 +358,11 @@ def expand_nlevels(x, n): #{{{
     return np.tile(x, (n)) #}}}
 
 
-def cell_centers(f_init, downsample): #{{{
+def particle_coords(f_init, downsample): #{{{
 
     f_init = netCDF4.Dataset(f_init,'r')
     nparticles = len(f_init.dimensions['nCells'])
-    xCell, yCell, zCell = get_cell_coords(f_init)
+    xCell, yCell, zCell = get_particle_coords(f_init)
     if downsample:
         tri = f_init.variables['cellsOnVertex'][:,:] - 1
         cpts, xCell, yCell, zCell = downsample_points(xCell, yCell, zCell, tri, downsample)
@@ -438,7 +438,7 @@ def build_surface_floats(cpts, xCell, yCell, zCell, afilter): #{{{
 
 def build_particle_file(f_init, f_name, f_decomp, types, spatialfilter, buoySurf, nVertLevels, downsample, vertseedtype): #{{{
 
-    cpts, xCell, yCell, zCell = cell_centers(f_init, downsample)
+    cpts, xCell, yCell, zCell = particle_coords(f_init, downsample)
 
     # build particles
     particlelist = []
