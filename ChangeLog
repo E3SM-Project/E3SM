@@ -1,86 +1,8 @@
 ======================================================================
 
-Originator: Chris Fischer
-Date: 5-15-2019
-Tag: cime5.6.16
-Answer Changes: climate-changing -- new datasets
-Tests:  Ran all 8 ISSP's
-	SMS_D_Ln9.f19_f19_mg16.FX2000.pleiades-has_intel (Overall: PASS)
-	SMS_D_Ln9.f19_f19_mg16.FX2000.pleiades-san_intel (Overall: PASS)
-	SMS_Ld1.f19_f19_mg16.FX2000.pleiades-bro_intel (Overall: PASS)
-	SMS_Ld1.f19_f19_mg16.FX2000.pleiades-has_intel (Overall: PASS)
-	SMS_Ld1.f19_f19_mg16.FX2000.pleiades-ivy_intel (Overall: PASS)
-	SMS_Ld1.f19_f19_mg16.FX2000.pleiades-san_intel (Overall: PASS)
-Dependencies:
-
-Brief Summary:
-    - Add CO2 time-series for CMIP6 future scenarios and three prescribed
-      aerosol CMIP6 future scenarios.
-    - Bring changes to datm Present Day compsets from master to maint-5.6.
-    - pdate intel compiler version and ESMF lib for pleiades.
-    - Fix archive dir for stampede.
-
-User interface changes:
-    - Changes default settings for some compsets.
-
-PR summary: git log --oneline --first-parent [previous_tag]..master
-59960d9 Merge pull request #3112 from ekluzek/addSSPCO2npresaero
-f43ef89 Merge pull request #3110 from ekluzek/datmsettings4PDcompsets
-1e703d8 Merge pull request #3108 from fvitt/pleiades
-29536e1 fix archive dir for stampede
-
-Modified files: git diff --name-status [previous_tag]
-M       config/cesm/machines/config_compilers.xml
-M       config/cesm/machines/config_machines.xml
-M       doc/source/users_guide/compsets.rst
-M       src/components/data_comps/datm/cime_config/config_component.xml
-M       src/components/data_comps/datm/cime_config/namelist_definition_datm.xml
-M       src/drivers/mct/cime_config/config_component_cesm.xml
-M       src/drivers/mct/cime_config/config_compsets.xml
-
-
-======================================================================
-
-======================================================================
-
-Originator: Chris Fischer
-Date: 4-26-2019
-Tag: cime5.6.15
-Answer Changes: None
-Tests: scripts_regression_tests.py, by hand, SMS_P45.f19_g16.X
-       manually test archive_metadata
-Dependencies:
-
-Brief Summary:
-    - Improve reporting of invalid settings in REFCASE when GET_REFCASE=TRUE.
-    - Remove ESMF modules on edison.
-    - Fix issue with setting 2 io tasks.
-    - maint-5.6 archive_metadata update.
-
-
-User interface changes:
-
-PR summary: git log --oneline --first-parent [previous_tag]..master
-a1c0e9d Merge pull request #3095 from jedwards4b/get_refcase_errors
-4abc89e Merge pull request #3080 from ESMCI/fischer/edison
-bfd3e22 Merge pull request #3078 from jedwards4b/shr_pio_bug_fix
-93bd063 Merge pull request #3076 from bertinia/maint-5.6_archive_metadata
-
-
-Modified files: git diff --name-status [previous_tag]
-M       config/cesm/machines/config_machines.xml
-M       scripts/Tools/archive_metadata
-M       scripts/lib/CIME/case/check_input_data.py
-M       src/share/util/shr_pio_mod.F90
-
-
-======================================================================
-
-======================================================================
-
-Originator: Chris Fischer
-Date: 4-08-2019
-Tag: cime5.6.14
+Originator: Chris Fischer 
+Date: 4-23-2019
+Tag: cime5.8.2
 Answer Changes: None
 Tests: scripts_regression_tests
 Dependencies:
@@ -94,7 +16,7 @@ Brief Summary:
     - Introduces a new stub IAC.
     - Master merge to nuopc cmeps.
 
-User interface changes:
+User interface changes: 
 
 PR summary: git log --oneline --first-parent [previous_tag]..master
 57cf4a5 Merge pull request #3086 from ESMCI/fischer/ne_conus
@@ -246,11 +168,11 @@ M	src/share/util/shr_pio_mod.F90
 
 ======================================================================
 
-Originator: Chris Fischer
+Originator: Chris Fischer 
 Date: 04-08-2019
 Tag: cime5.8.1
 Answer Changes: None
-Tests: scripts_regression_tests, many create_newcase with mangled compset names
+Tests: scripts_regression_tests, many create_newcase with mangled compset names 
        hand test xmllint
 Dependencies:
 
@@ -270,7 +192,7 @@ Brief Summary:
     - PET and ERP tests were not setting compile_threaded correctly.
     - Implement 'share' field of test suites.
 
-User interface changes:
+User interface changes: 
     - Stub components are now optional in compset long names. Also there is less order dependency.
 
 PR summary: git log --oneline --first-parent [previous_tag]..master
@@ -356,7 +278,7 @@ M       tools/mapping/gen_mapping_files/runoff_to_ocn/src/Makefile
 
 ======================================================================
 
-Originator: Chris Fischer
+Originator: Chris Fischer 
 Date: 03-12-2019
 Tag: cime5.8.0
 Answer Changes: None
@@ -367,7 +289,7 @@ Brief Summary:
     - Merge maint-5.6 branch.
     - Cleanup of build.
 
-User interface changes:
+User interface changes: 
 
 PR summary: git log --oneline --first-parent [previous_tag]..master
 5f939ae Merge pull request #3039 from ESMCI/maint-5.6
@@ -508,7 +430,7 @@ Brief Summary:
     - Fix test issue for cesm.
     - Better handling of file permissions when copying files.
 
-User interface changes:
+User interface changes: 
 
 PR summary: git log --oneline --first-parent [previous_tag]..master
 5f31182 Merge pull request #3014 from jedwards4b/config_grids_v2.1
@@ -699,11 +621,11 @@ A	tools/cprnc/test_inputs/missing_variables.nc
 
 ======================================================================
 
-Originator: Chris Fischer
+Originator: Chris Fischer 
 Date: 1-15-2019
 Tag: cime5.7.7
 Answer Changes: None
-Tests: scripts_regression_tests
+Tests: scripts_regression_tests 
 Dependencies:
 
 Brief Summary:
@@ -719,7 +641,7 @@ Brief Summary:
     - docn_comp_mod needs fix for optional variable.
     - Remove support for CLM4.0.
 
-User interface changes:
+User interface changes: 
 
 PR summary: git log --oneline --first-parent [previous_tag]..master
 e5c2368 Minor fix to e3sm_cime_mgmt to properly handle exe files
@@ -817,11 +739,11 @@ M	src/share/util/shr_wv_sat_mod.F90
 
 ======================================================================
 
-Originator: Chris Fischer
+Originator: Chris Fischer 
 Date: 01-07-2019
 Tag: cime5.7.6
 Answer Changes: None
-Tests: scripts_regression_tests.py, hand testing of cesm cases
+Tests: scripts_regression_tests.py, hand testing of cesm cases 
        scripts_regression_tests.py with PIO_VERSION=2
        code-checker, by-hand
 Dependencies:
@@ -847,7 +769,7 @@ Brief Summary:
     - Merge latest maint-5.6 changes into master.
     - Fix new pylint errors.
 
-User interface changes:
+User interface changes: 
 
 PR summary: git log --oneline --first-parent [previous_tag]..master
 486c579 Merge pull request #2966 from jedwards4b/cmpgen_needs_write
@@ -1135,20 +1057,20 @@ Brief Summary: Miscellaneous minor bug fixes, including getting
 
 User interface changes: none
 
-Originator: Chris Fischer
+Originator: Chris Fischer 
 Date: 11-29-2018
 Tag: cime_cesm2_1_rel_06
 Answer Changes: None
-Tests: scripts_regression_tests
+Tests: scripts_regression_tests 
 Dependencies:
 
 Brief Summary:
     - Fix new pylint errors.
     - Update addmetadata for POP-ECT tests.
 
-User interface changes:
+User interface changes: 
 
-PR summary: git log --oneline --first-parent [previous_tag]..master
+PR summary: git log --oneline --first-parent [previous_tag]..master 
 5a86646 Merge pull request #2921 from jedwards4b/fixpylint3errors
 98821ff Merge pull request #2919 from ESMCI/fischer/addmetadata
 
@@ -1173,7 +1095,7 @@ M       tools/statistical_ensemble_test/addmetadata.sh
 
 ======================================================================
 
-Originator: Chris Fischer
+Originator: Chris Fischer 
 PR summary: git log --oneline --first-parent [previous_tag]..master
 e882c1c06 Merge pull request #2897 from billsacks/fix_histutils_regex
 fc14d5870 Merge pull request #2895 from billsacks/fix_lnd2glc_averaged_now
