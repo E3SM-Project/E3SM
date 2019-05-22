@@ -61,6 +61,7 @@
 <config_dt ocn_grid="oRRS15to5">'00:03:45'</config_dt>
 <config_dt ocn_grid="oARRM60to10">'00:10:00'</config_dt>
 <config_dt ocn_grid="oARRM60to6">'00:05:00'</config_dt>
+<config_dt ocn_grid="oGNLD60to10">'00:07:30'</config_dt>
 <config_time_integrator>'split_explicit'</config_time_integrator>
 
 <!-- ALE_vertical_grid -->
@@ -101,6 +102,7 @@
 <config_hmix_scaleWithMesh ocn_grid="oRRS15to5">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oARRM60to10">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oARRM60to6">.true.</config_hmix_scaleWithMesh>
+<config_hmix_scaleWithMesh ocn_grid="oGNLD60to10">.true.</config_hmix_scaleWithMesh>
 <config_maxMeshDensity>-1.0</config_maxMeshDensity>
 <config_apvm_scale_factor>0.0</config_apvm_scale_factor>
 
@@ -110,12 +112,14 @@
 <config_use_mom_del2 ocn_grid="oEC60to30v3">.true.</config_use_mom_del2>
 <config_use_mom_del2 ocn_grid="oEC60to30wLI">.true.</config_use_mom_del2>
 <config_use_mom_del2 ocn_grid="oEC60to30v3wLI">.true.</config_use_mom_del2>
+<config_use_mom_del2 ocn_grid="oGNLD60to10">.true.</config_use_mom_del2>
 <config_use_tracer_del2>.false.</config_use_tracer_del2>
 <config_mom_del2>10.0</config_mom_del2>
 <config_mom_del2 ocn_grid="oEC60to30">1000.0</config_mom_del2>
 <config_mom_del2 ocn_grid="oEC60to30v3">1000.0</config_mom_del2>
 <config_mom_del2 ocn_grid="oEC60to30wLI">1000.0</config_mom_del2>
 <config_mom_del2 ocn_grid="oEC60to30v3wLI">1000.0</config_mom_del2>
+<config_mom_del2 ocn_grid="oGNLD60to10">270.0</config_mom_del2>
 <config_tracer_del2>10.0</config_tracer_del2>
 
 <!-- hmix_del4 -->
@@ -138,6 +142,7 @@
 <config_mom_del4 ocn_grid="oRRS15to5">1.9e09</config_mom_del4>
 <config_mom_del4 ocn_grid="oARRM60to10">1.5e10</config_mom_del4>
 <config_mom_del4 ocn_grid="oARRM60to6">3.2e09</config_mom_del4>
+<config_mom_del4 ocn_grid="oGNLD60to10">2.3e09</config_mom_del4>
 <config_mom_del4_div_factor>1.0</config_mom_del4_div_factor>
 <config_tracer_del4>0.0</config_tracer_del4>
 
@@ -165,12 +170,15 @@
 <config_use_standardGM ocn_grid="oRRS15to5">.false.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oARRM60to10">.false.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oARRM60to6">.false.</config_use_standardGM>
+<config_use_standardGM ocn_grid="oGNLD60to10">.true.</config_use_standardGM>
 <config_use_Redi_surface_layer_tapering>.false.</config_use_Redi_surface_layer_tapering>
 <config_Redi_surface_layer_tapering_extent>0.0</config_Redi_surface_layer_tapering_extent>
 <config_use_Redi_bottom_layer_tapering>.false.</config_use_Redi_bottom_layer_tapering>
 <config_Redi_bottom_layer_tapering_depth>0.0</config_Redi_bottom_layer_tapering_depth>
 <config_GM_Bolus_kappa_function>'constant'</config_GM_Bolus_kappa_function>
+<config_GM_Bolus_kappa_function ocn_grid="oGNLD60to10">'ramp'</config_GM_Bolus_kappa_function>
 <config_standardGM_tracer_kappa>1800.0</config_standardGM_tracer_kappa>
+<config_standardGM_tracer_kappa ocn_grid="oGNLD60to10">600.0</config_standardGM_tracer_kappa>
 <config_standardGM_tracer_kappa ocn_forcing="datm_forced_restoring" ocn_grid="oEC60to30v3wLI">600.0</config_standardGM_tracer_kappa>
 <config_GM_Bolus_kappa_min>0.0</config_GM_Bolus_kappa_min>
 <config_GM_Bolus_kappa_max>600.0</config_GM_Bolus_kappa_max>
@@ -374,6 +382,7 @@
 <config_btr_dt ocn_grid="oRRS15to5">'0000_00:00:11.25'</config_btr_dt>
 <config_btr_dt ocn_grid="oARRM60to10">'0000_00:00:24'</config_btr_dt>
 <config_btr_dt ocn_grid="oARRM60to6">'0000_00:00:10'</config_btr_dt>
+<config_btr_dt ocn_grid="oGNLD60to10">'0000_00:00:15'</config_btr_dt>
 <config_n_btr_cor_iter>2</config_n_btr_cor_iter>
 <config_vel_correction>.true.</config_vel_correction>
 <config_btr_subcycle_loop_factor>2</config_btr_subcycle_loop_factor>
@@ -874,6 +883,7 @@
 <config_AM_mocStreamfunction_enable ocn_grid="oRRS15to5">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="oARRM60to10">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="oARRM60to6">.false.</config_AM_mocStreamfunction_enable>
+<config_AM_mocStreamfunction_enable ocn_grid="oGNLD60to10">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_compute_interval>'0000-00-00_01:00:00'</config_AM_mocStreamfunction_compute_interval>
 <config_AM_mocStreamfunction_output_stream>'mocStreamfunctionOutput'</config_AM_mocStreamfunction_output_stream>
 <config_AM_mocStreamfunction_compute_on_startup>.true.</config_AM_mocStreamfunction_compute_on_startup>
