@@ -114,7 +114,9 @@ module control_mod
   real (kind=real_kind), public :: nu_top  = 0.0D5            ! top-of-the-model viscosity
 
   integer, public :: hypervis_subcycle=1                      ! number of subcycles for hyper viscsosity timestep
-  integer, public :: hypervis_subcycle_tom=1                  ! number of subcycles for TOM diffusion
+  integer, public :: hypervis_subcycle_tom=0                  ! number of subcycles for TOM diffusion
+                                                              !   0   apply together with hyperviscosity
+                                                              !   >1  apply timesplit from hyperviscosity
   integer, public :: hypervis_subcycle_q=1                    ! number of subcycles for hyper viscsosity timestep on TRACERS
   integer, public :: hypervis_order=0                         ! laplace**hypervis_order.  0=not used  1=regular viscosity, 2=grad**4
   integer, public :: psurf_vis = 0                            ! 0 = use laplace on eta surfaces

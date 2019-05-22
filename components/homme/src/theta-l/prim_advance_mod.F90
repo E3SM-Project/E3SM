@@ -1187,13 +1187,27 @@ contains
         endif
         do k=1,nlev
            ! advace in time.
-           ! note: DSS commutes with time stepping, so we can time advance and then DSS.
            ! note: weak operators alreayd have mass matrix "included"
-           vtens(:,:,:,k,ie)=-nu  *vtens(:,:,:,k,ie) ! u,v
-           stens(:,:,k,1,ie)=-nu_p*stens(:,:,k,1,ie) ! dp3d
-           stens(:,:,k,2,ie)=-nu  *stens(:,:,k,2,ie) ! theta
-           stens(:,:,k,3,ie)=-nu  *stens(:,:,k,3,ie) ! w
-           stens(:,:,k,4,ie)=-nu_s*stens(:,:,k,4,ie) ! phi
+           if (nu_top>0 .and. nu_scale_top(k)>1 .and. hypervis_subcycle_tom==0) then
+              ! add regular diffusion near top
+              lap_s(:,:,1)=laplace_sphere_wk(elem(ie)%state%dp3d       (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+              lap_s(:,:,2)=laplace_sphere_wk(elem(ie)%state%vtheta_dp  (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+              lap_s(:,:,3)=laplace_sphere_wk(elem(ie)%state%w_i        (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+              lap_s(:,:,4)=laplace_sphere_wk(elem(ie)%state%phinh_i    (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+              lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+              
+              vtens(:,:,:,k,ie)=(  -nu*vtens(:,:,:,k,ie) + nu_scale_top(k)*nu_top*lap_v(:,:,:)) ! u and v
+              stens(:,:,k,1,ie)=(-nu_p*stens(:,:,k,1,ie) + nu_scale_top(k)*nu_top*lap_s(:,:,1)) ! dp3d
+              stens(:,:,k,2,ie)=(  -nu*stens(:,:,k,2,ie) + nu_scale_top(k)*nu_top*lap_s(:,:,2)) ! theta
+              stens(:,:,k,3,ie)=(  -nu*stens(:,:,k,3,ie) + nu_scale_top(k)*nu_top*lap_s(:,:,3)) ! w
+              stens(:,:,k,4,ie)=(-nu_s*stens(:,:,k,4,ie) + nu_scale_top(k)*nu_top*lap_s(:,:,4)) ! phi
+           else
+              vtens(:,:,:,k,ie)=-nu  *vtens(:,:,:,k,ie) ! u,v
+              stens(:,:,k,1,ie)=-nu_p*stens(:,:,k,1,ie) ! dp3d
+              stens(:,:,k,2,ie)=-nu  *stens(:,:,k,2,ie) ! theta
+              stens(:,:,k,3,ie)=-nu  *stens(:,:,k,3,ie) ! w
+              stens(:,:,k,4,ie)=-nu_s*stens(:,:,k,4,ie) ! phi
+           endif
         enddo
         
         kptr=0;      call edgeVpack_nlyr(edge_g,elem(ie)%desc,vtens(:,:,:,:,ie),2*nlev,kptr,nlyr_tot)
@@ -1295,7 +1309,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !  sponge layer
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  if (nu_top>0) then
+  if (nu_top>0 .and. hypervis_subcycle_tom>0 ) then
   dt=dt2/hypervis_subcycle_tom
   do ic=1,hypervis_subcycle_tom
      do ie=nets,nete
