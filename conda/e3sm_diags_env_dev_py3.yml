@@ -1,4 +1,4 @@
-name: e3sm_diags_v1.6.1_py3
+name: e3sm_diags_env_dev_py3
 channels:
   - cdat
   - conda-forge
@@ -86,6 +86,7 @@ dependencies:
   - markupsafe=1.1.1=py36h14c3975_0
   - matplotlib=3.0.3=py36_1
   - matplotlib-base=3.0.3=py36h5f35d83_1
+  - mesalib=18.3.1=h590aaf7_0
   - mpi=1.0=mpich
   - mpich=3.2.1=h1c2f66e_1008
   - msgpack-python=0.6.1=py36h6bb024c_0
@@ -144,7 +145,7 @@ dependencies:
   - urllib3=1.24.3=py36_0
   - vcs=8.1=py_0
   - vcsaddons=8.0=py36_0
-  - vtk-cdat=8.2.0rc2.8.1=py36h413fb2d_0
+  - vtk-cdat=8.2.0rc2.8.1=py36_mesalibh24c825c_0
   - wheel=0.33.4=py36_0
   - x264=1!152.20180806=h14c3975_0
   - xorg-libxau=1.0.9=h14c3975_0
@@ -156,5 +157,5 @@ dependencies:
   - pip:
     - cdms2==3.0.0
     - regrid2==3.0.0
-prefix: /global/homes/z/zshaheen/anaconda2/envs/e3sm_diags_v1.6.1_py3
+prefix: /global/homes/z/zshaheen/anaconda2/envs/e3sm_diags_env_dev_py3
 
