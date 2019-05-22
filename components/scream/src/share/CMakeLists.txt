@@ -13,6 +13,7 @@ set(SHARE_SRC
   util/scream_arch.cpp
   util/array_io.cpp
   util/array_io_mod.f90
+  util/time_stamp.cpp
 )
 
 # So far this is pointless, since we are not installing the library
@@ -45,6 +46,7 @@ set(SHARE_HEADERS
   util/scream_arch.hpp
   util/scream_kokkos.hpp
   util/scream_lin_interp.hpp
+  util/time_stamp.hpp
   scream_workspace.hpp
 )
 
