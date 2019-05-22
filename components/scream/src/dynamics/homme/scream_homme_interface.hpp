@@ -16,14 +16,14 @@ void init_homme1_f90 (const int& f_comm);
 void init_homme2_f90 ();
 bool was_init_homme1_called_f90 ();
 bool was_init_homme2_called_f90 ();
-void run_homme_f90 ();
+void run_homme_f90 (const double& dt);
 void finalize_homme_f90 ();
 
 void get_elem_cols_gids_f90 (const int& ie, int* const& gids);
 int get_num_owned_columns_f90 ();
 int get_homme_int_param_value_f90(const char** name);
-double get_homme_real_param_value_f90 (const char*& name);
-bool get_homme_bool_param_value_f90(const char*& name);
+double get_homme_real_param_value_f90 (const char** name);
+bool get_homme_bool_param_value_f90(const char** name);
 
 } // extern "C"
 
@@ -48,6 +48,13 @@ inline
 int get_homme_param_value<int> (const std::string& name) {
   const char* c_name = name.c_str();
   return get_homme_int_param_value_f90(&c_name);
+}
+
+template<>
+inline
+double get_homme_param_value<double> (const std::string& name) {
+  const char* c_name = name.c_str();
+  return get_homme_real_param_value_f90(&c_name);
 }
 
 } // namespace scream

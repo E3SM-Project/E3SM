@@ -186,11 +186,11 @@ contains
     is_it = is_half_inited
   end function was_init_homme2_called_f90
 
-  subroutine run_homme_f90 () bind(c)
+  subroutine run_homme_f90 (dt) bind(c)
     use control_mod,     only: restartfreq
     use dimensions_mod,  only: nelemd
     use prim_driver_mod, only: prim_run_subcycle
-    use time_mod,        only: dt=>tstep
+    use time_mod,        only: tstep
 #ifdef VERTICAL_INTERPOLATION
     use netcdf_interp_mod, only: netcdf_interp_write
 #elif defined PIO_INTERP
@@ -200,12 +200,19 @@ contains
 #endif
     use common_movie_mod,  only: nextOutputStep
     use restart_io_mod,    only: writerestart
+    !
+    ! Input(s)
+    !
+    real (kind=c_double), intent(in) :: dt
 
     if (.not. is_inited) then
       call abortmp ("Error! Homme was not initialized yet (or was already finalized).\n")
     endif
 
-    call prim_run_subcycle(elem,hybrid,nets,nete,dt,.false.,tl,hvcoord,1)
+    ! Set dt in the time mod
+    tstep = dt
+
+    call prim_run_subcycle(elem,hybrid,nets,nete,tstep,.false.,tl,hvcoord,1)
 
     if (tl%nstep .ge. next_output_step) then
 #ifdef VERTICAL_INTERPOLATION
@@ -370,6 +377,7 @@ contains
   function get_homme_real_param_value_f90 (param_name_c) result(param_value) bind(c)
     use dimensions_mod, only: nelemd
     use control_mod,    only: nu, nu_div, nu_p, nu_q, nu_s, hypervis_scaling
+    use time_mod,       only: tstep
     !
     ! Input(s)
     !
@@ -400,6 +408,8 @@ contains
         param_value = nu_s
       case("hypervis_scaling")
         param_value = hypervis_scaling
+      case("dt")
+        param_value = tstep
       case default
         call abortmp ("[get_homme_real_param_value_f90] Error! Unrecognized parameter name.")
     end select 

@@ -45,15 +45,17 @@ TEST_CASE("scream_homme_stand_alone", "scream_homme_stand_alone") {
   AtmosphereDriver ad;
 
   // Init, run, and finalize
-  ad.initialize(atm_comm,ad_params);
+  util::TimeStamp time (0,0,0);
+  ad.initialize(atm_comm,ad_params,time);
 
   // Have to wait till now to get homme's parameters, cause it only gets init-ed during the driver initialization
   const auto& sp = Homme::Context::singleton().get_simulation_params();
   const int nmax = get_homme_param_value<int>("nmax");
   const int num_dyn_iters = nmax / (sp.qsplit*sp.rsplit);
+  const double dt = get_homme_param_value<Real>("dt");
 
   for (int i=0; i<num_dyn_iters; ++i) {
-    ad.run();
+    ad.run(dt);
   }
   ad.finalize();
 

@@ -47,8 +47,8 @@ public:
   void set_grid (const std::shared_ptr<const GridsManager> grids_manager);
 
   // These are the three main interfaces:
-  void initialize ();
-  void run        (/* what inputs? */);
+  void initialize (const util::TimeStamp& t0);
+  void run        (const double dt);
   void finalize   (/* what inputs? */);
 
   // Register all fields in the given repo
@@ -70,7 +70,8 @@ protected:
   std::map<std::string,const_field_type>  m_dyn_fields_in;
   std::map<std::string,field_type>        m_dyn_fields_out;
 
-  Comm      m_dynamics_comm;
+  util::TimeStamp   m_current_ts;
+  Comm              m_dynamics_comm;
 };
 
 } // namespace scream

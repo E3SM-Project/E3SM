@@ -19,6 +19,7 @@ namespace scream
 namespace util
 {
 
+// Specialize ScalarProperties on Homme's Scalar type
 template<>
 struct ScalarProperties<Homme::Scalar> {
   using scalar_type = Homme::Real;
@@ -88,8 +89,10 @@ void HommeDynamics::set_grid(const std::shared_ptr<const GridsManager> grids_man
   m_computed_fields.emplace("qdp",tracers_state_layout,"Dynamics");
 }
 
-void HommeDynamics::initialize ()
+void HommeDynamics::initialize (const util::TimeStamp& t0)
 {
+  m_current_ts = t0;
+
   // We need to set the pointers in the C++ views to the ones contained in the scream
   // Fields *before* they ever get copied/filled. In particular, we need to make sure
   // that the Elements and Tracers structures contain scream Field's views before:
@@ -192,10 +195,17 @@ void HommeDynamics::register_fields (FieldRepository<Real, device_type>& field_r
   }
 }
 
-void HommeDynamics::run (/* what inputs? */)
+void HommeDynamics::run (const double dt)
 {
   try {
-    run_homme_f90 ();
+    run_homme_f90 (dt);
+
+    m_current_ts += dt;
+
+    // Update all fields time stamp
+    for (auto& it : m_dyn_fields_out) {
+      it.second.get_header().get_tracking().update_time_stamp(m_current_ts);
+    }
   } catch (std::exception& e) {
     error::runtime_abort(e.what());
   } catch (...) {
@@ -216,6 +226,10 @@ void HommeDynamics::set_required_field_impl (const Field<const Real, device_type
   // no need to store a scream field here; we could simply set the view ptr
   // in the Homme's view, and be done with it.
   m_dyn_fields_in.emplace(f.get_header().get_identifier().name(),f);
+
+
+  // Add myself as customer to the field
+  f.get_header_ptr()->get_tracking().add_customer(weak_from_this());
 }
 
 void HommeDynamics::set_computed_field_impl (const Field<      Real, device_type>& f) {
@@ -224,6 +238,9 @@ void HommeDynamics::set_computed_field_impl (const Field<      Real, device_type
   // no need to store a scream field here; we could simply set the view ptr
   // in the Homme's view, and be done with it.
   m_dyn_fields_out.emplace(f.get_header().get_identifier().name(),f);
+
+  // Add myself as provider for the field
+  f.get_header_ptr()->get_tracking().add_provider(weak_from_this());
 }
 
 } // namespace scream

@@ -63,10 +63,11 @@ public:
     m_output_fids.emplace(out_name,layout,"Physics");
   }
 
-  void initialize () {
+  void initialize (const util::TimeStamp& t0) {
+    m_time_stamp = t0;
   }
 
-  void run () {
+  void run (const double dt) {
     auto in = m_input.get_view();
     auto out = m_output.get_view();
     auto id = m_id;
@@ -75,6 +76,9 @@ public:
         out(i) = sin(in(i)+id);
     });
     Kokkos::fence();
+
+    m_time_stamp += dt;
+    m_output.get_header().get_tracking().update_time_stamp(m_time_stamp);
   }
 
   // Clean up
@@ -100,6 +104,8 @@ protected:
   void set_computed_field_impl (const Field<      Real, device_type>& f) {
     m_output = f;
   }
+
+  util::TimeStamp           m_time_stamp;
 
   std::set<FieldIdentifier> m_input_fids;
   std::set<FieldIdentifier> m_output_fids;
@@ -136,7 +142,6 @@ TEST_CASE("ping-pong", "") {
 
   using device_type = AtmosphereDriver::device_type;
 
-  constexpr int num_iters = 10;
   constexpr int num_cols  = 32;
 
   // Create a parameter list for inputs
@@ -180,14 +185,17 @@ TEST_CASE("ping-pong", "") {
   AtmosphereDriver ad;
 
   // Init and run (do not finalize, or you'll clear the field repo!)
-  ad.initialize(atm_comm,ad_params);
-  for (int i=0; i<num_iters; ++i) {
-    ad.run();
+  util::TimeStamp init_time(2019,0,0);
+  util::TimeStamp end_time (2019,1,0);
+  const double dt = 1200.0;
+  ad.initialize(atm_comm,ad_params,init_time);
+  for (auto time=init_time+dt; time<end_time; time+=dt) {
+    ad.run(dt);
   }
 
   // Every atm proc does out(:) = sin(in(:)+rank)
   Real answer = 0;
-  for (int i=0; i<num_iters; ++i) {
+  for (auto time=init_time+dt; time<end_time; time+=dt) {
     for (int pid=0; pid<atm_comm.size(); ++pid) {
       answer = std::sin(answer+pid);
     }

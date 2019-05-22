@@ -57,11 +57,11 @@ AtmosphereProcessGroup (const Comm& comm, const ParameterList& params)
     m_group_schedule_type = GroupScheduleType::Sequential;
   } else if (params.get<std::string>("Schedule Type") == "Parallel") {
     m_group_schedule_type = GroupScheduleType::Parallel;
+    error::runtime_abort("Error! Parallel schedule not yet implemented.\n");
   } else {
     error::runtime_abort("Error! Invalid 'Schedule Type'. Available choices are 'Parallel' and 'Sequential'.\n");
   }
 
-  error::runtime_check(m_group_schedule_type==GroupScheduleType::Sequential, "Error! Parallel schedule not yet implemented.\n");
 }
 
 void AtmosphereProcessGroup::set_grid (const std::shared_ptr<const GridsManager> grids_manager) {
@@ -79,16 +79,16 @@ void AtmosphereProcessGroup::set_grid (const std::shared_ptr<const GridsManager>
   }
 }
 
-void AtmosphereProcessGroup::initialize () {
+void AtmosphereProcessGroup::initialize (const util::TimeStamp& t0) {
   // Now that we have the comm for the processes in the group, we can initialize them
   for (int i=0; i<m_group_size; ++i) {
-    m_atm_processes[i]->initialize();
+    m_atm_processes[i]->initialize(t0);
   }
 }
 
-void AtmosphereProcessGroup::run (/* what inputs? */) {
+void AtmosphereProcessGroup::run (const double dt) {
   for (auto atm_proc : m_atm_processes) {
-    atm_proc->run(/* what inputs? */);
+    atm_proc->run(dt);
   }
 }
 
@@ -103,15 +103,15 @@ void AtmosphereProcessGroup::register_fields (FieldRepository<Real, device_type>
     atm_proc->register_fields(field_repo);
 
     // Make sure processes are not calling methods they shouldn't on the repo
-    error::runtime_check(field_repo.repository_state()==RepoState::Open,
+    scream_require_msg(field_repo.repository_state()==RepoState::Open,
                          "Error! Atmosphere processes are *not* allowed to modify the state of the repository.\n");
 
     // Check that the required fields are indeed in the repo now
     for (const auto& id : atm_proc->get_required_fields()) {
-      error::runtime_check(field_repo.has_field(id), "Error! Process '" + atm_proc->name() +"' failed to register required field '" + id.get_identifier() + "'.\n");
+      scream_require_msg(field_repo.has_field(id), "Error! Process '" + atm_proc->name() + "' failed to register required field '" + id.get_identifier() + "'.\n");
     }
     for (const auto& id : atm_proc->get_computed_fields()) {
-      error::runtime_check(field_repo.has_field(id), "Error! Process '" + atm_proc->name() +"' failed to register computed field '" + id.get_identifier() + "'.\n");
+      scream_require_msg(field_repo.has_field(id), "Error! Process '" + atm_proc->name() + "' failed to register computed field '" + id.get_identifier() + "'.\n");
     }
   }
 }

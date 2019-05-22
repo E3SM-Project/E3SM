@@ -51,8 +51,8 @@ public:
   void set_grid (const std::shared_ptr<const GridsManager> grids_manager);
 
   // The initialization, run, and finalization methods
-  void initialize ();
-  void run        (/* what inputs? */);
+  void initialize (const util::TimeStamp& t0);
+  void run        (const double tnext);
   void finalize   (/* what inputs? */);
 
   void final_setup ();

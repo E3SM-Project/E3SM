@@ -8,9 +8,13 @@ namespace scream {
 
 namespace control {
 
-void AtmosphereDriver::initialize (const Comm& atm_comm, const ParameterList& params) {
+void AtmosphereDriver::initialize (const Comm& atm_comm,
+                                   const ParameterList& params,
+                                   const util::TimeStamp& t0)
+{
   m_atm_comm = atm_comm;
   m_atm_params = params;
+  m_current_ts = t0;
 
   // Create the group of processes. This will recursively create the processes
   // tree, storing also the information regarding parallel execution (if needed).
@@ -50,13 +54,38 @@ void AtmosphereDriver::initialize (const Comm& atm_comm, const ParameterList& pa
   }
 
   // Initialize the processes
-  m_atm_process_group->initialize();
+  m_atm_process_group->initialize(t0);
+
+  // Set time steamp t0 to all fields
+  for (auto& field_map_it : m_device_field_repo) {
+    for (auto& f_it : field_map_it.second) {
+      f_it.second.get_header().get_tracking().update_time_stamp(t0);
+    }
+  }
 }
 
-void AtmosphereDriver::run ( /* inputs ? */ ) {
+void AtmosphereDriver::run (const double dt) {
+  // Make sure the end of the time step is after the current start_time
+  scream_require_msg (dt>0, "Error! Input time step must be positive.\n");
+
   // The class AtmosphereProcessGroup will take care of dispatching arguments to
   // the individual processes, which will be called in the correct order.
-  m_atm_process_group->run( /* inputs ? */ );
+  m_atm_process_group->run(dt);
+
+  // Update old and current time stamps
+  m_old_ts = m_current_ts;
+  m_current_ts += dt;
+
+  // Check that the computed fields have un updated time stamp
+  for (const auto& id : m_atm_process_group->get_computed_fields()) {
+    const auto& f = m_device_field_repo.get_field(id);
+    const auto& ts = f.get_header().get_tracking().get_time_stamp();
+    scream_require_msg(ts==m_current_ts,
+                       "Error! The time stamp of field '" + id.get_identifier() + "' has not been updated.\n"
+                       "       Expected time stamp : " + m_current_ts.to_string() + "\n"
+                       "       Field time stamp    : " + ts.to_string() + "\n");
+
+  }
 }
 
 void AtmosphereDriver::finalize ( /* inputs? */ ) {
