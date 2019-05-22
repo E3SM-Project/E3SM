@@ -612,6 +612,17 @@
 <config_AM_lagrPartTrack_region_stream>'lagrPartTrackRegions'</config_AM_lagrPartTrack_region_stream>
 <config_AM_lagrPartTrack_reset_if_outside_region>.false.</config_AM_lagrPartTrack_reset_if_outside_region>
 <config_AM_lagrPartTrack_reset_if_inside_region>.false.</config_AM_lagrPartTrack_reset_if_inside_region>
+<config_AM_lagrPartTrack_sample_horizontal_interp>.true.</config_AM_lagrPartTrack_sample_horizontal_interp>
+<config_AM_lagrPartTrack_sample_temperature>.true.</config_AM_lagrPartTrack_sample_temperature>
+<config_AM_lagrPartTrack_sample_salinity>.true.</config_AM_lagrPartTrack_sample_salinity>
+<config_AM_lagrPartTrack_sample_DIC>.false.</config_AM_lagrPartTrack_sample_DIC>
+<config_AM_lagrPartTrack_sample_ALK>.false.</config_AM_lagrPartTrack_sample_ALK>
+<config_AM_lagrPartTrack_sample_PO4>.false.</config_AM_lagrPartTrack_sample_PO4>
+<config_AM_lagrPartTrack_sample_NO3>.false.</config_AM_lagrPartTrack_sample_NO3>
+<config_AM_lagrPartTrack_sample_SiO3>.false.</config_AM_lagrPartTrack_sample_SiO3>
+<config_AM_lagrPartTrack_sample_NH4>.false.</config_AM_lagrPartTrack_sample_NH4>
+<config_AM_lagrPartTrack_sample_Fe>.false.</config_AM_lagrPartTrack_sample_Fe>
+<config_AM_lagrPartTrack_sample_O2>.false.</config_AM_lagrPartTrack_sample_O2>
 
 <!-- AM_eliassenPalm -->
 <config_AM_eliassenPalm_enable>.false.</config_AM_eliassenPalm_enable>
