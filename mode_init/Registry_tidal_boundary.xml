@@ -4,11 +4,11 @@
 			possible_values="Any positive integer number greater than 0."
 		/>
 		<nml_option name="config_tidal_boundary_right_bottom_depth" type="real" default_value="10.0" units="m"
-			description="Depth of the bottom of the ocean in northern-most end.
+			description="Depth of the bottom of the ocean in northern-most end."
 			possible_values="Any positive real value greater than 0."
 		/>
 		<nml_option name="config_tidal_boundary_left_bottom_depth" type="real" default_value="10.0" units="m"
-			description="Depth of the bottom of the ocean in southern-most end.
+			description="Depth of the bottom of the ocean in southern-most end."
 			possible_values="Any positive real value greater than 0."
 		/>
 		<nml_option name="config_tidal_boundary_salinity" type="real" default_value="35.0" units="PSU"
