@@ -315,7 +315,7 @@
         <command name="rm">git</command>
         <command name="load">git</command>
         <command name="rm">cmake</command>
-        <command name="load">cmake/3.3.2</command>
+        <command name="load">cmake/3.11.4</command>
       </modules>
     </module_system>
 
@@ -467,7 +467,7 @@
         <command name="rm">git</command>
         <command name="load">git</command>
         <command name="rm">cmake</command>
-        <command name="load">cmake/3.3.2</command>
+        <command name="load">cmake/3.11.4</command>
       </modules>
 
       <!--command name="list">&gt;&amp; ml.txt</command-->
