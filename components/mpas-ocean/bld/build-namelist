@@ -1202,6 +1202,17 @@ add_default($nl, 'config_AM_lagrPartTrack_reset_global_timestamp');
 add_default($nl, 'config_AM_lagrPartTrack_region_stream');
 add_default($nl, 'config_AM_lagrPartTrack_reset_if_outside_region');
 add_default($nl, 'config_AM_lagrPartTrack_reset_if_inside_region');
+add_default($nl, 'config_AM_lagrPartTrack_sample_horizontal_interp');
+add_default($nl, 'config_AM_lagrPartTrack_sample_temperature');
+add_default($nl, 'config_AM_lagrPartTrack_sample_salinity');
+add_default($nl, 'config_AM_lagrPartTrack_sample_DIC');
+add_default($nl, 'config_AM_lagrPartTrack_sample_ALK');
+add_default($nl, 'config_AM_lagrPartTrack_sample_PO4');
+add_default($nl, 'config_AM_lagrPartTrack_sample_NO3');
+add_default($nl, 'config_AM_lagrPartTrack_sample_SiO3');
+add_default($nl, 'config_AM_lagrPartTrack_sample_NH4');
+add_default($nl, 'config_AM_lagrPartTrack_sample_Fe');
+add_default($nl, 'config_AM_lagrPartTrack_sample_O2');
 
 ###################################
 # Namelist group: AM_eliassenPalm #
