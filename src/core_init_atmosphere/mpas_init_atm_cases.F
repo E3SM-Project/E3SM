@@ -66,6 +66,9 @@ module init_atm_cases
       logical, pointer :: config_static_interp
       logical, pointer :: config_native_gwd_static
       logical, pointer :: config_met_interp
+      logical, pointer :: config_blend_bdy_terrain
+      character (len=StrKIND), pointer :: config_start_time
+      character (len=StrKIND), pointer :: config_met_prefix
 
       character(len=StrKIND), pointer :: mminlu
       character(len=StrKIND), pointer :: xtime
@@ -77,6 +80,14 @@ module init_atm_cases
       integer, pointer :: nCells
       integer, pointer :: nEdges
       integer, pointer :: nVertLevels
+
+      ! The next four variables are needed in the argument list for blend_bdy_terrain
+      ! with the dryrun argument set to true; accordingly, we never actually need to
+      ! set these pointers to fields
+      real (kind=RKIND), dimension(:), pointer :: latCell
+      real (kind=RKIND), dimension(:), pointer :: lonCell
+      real (kind=RKIND), dimension(:), pointer :: ter
+      integer, dimension(:), pointer :: bdyMaskCell
 
 
       call mpas_pool_get_config(domain % blocklist % configs, 'config_init_case', config_init_case)
@@ -160,6 +171,7 @@ module init_atm_cases
             call mpas_pool_get_config(block_ptr % configs, 'config_static_interp', config_static_interp)
             call mpas_pool_get_config(block_ptr % configs, 'config_native_gwd_static', config_native_gwd_static)
             call mpas_pool_get_config(block_ptr % configs, 'config_met_interp', config_met_interp)
+            call mpas_pool_get_config(block_ptr % configs, 'config_blend_bdy_terrain', config_blend_bdy_terrain)
 
             call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
             call mpas_pool_get_subpool(block_ptr % structs, 'fg', fg)
@@ -170,6 +182,29 @@ module init_atm_cases
             call mpas_pool_get_dimension(block_ptr % dimensions, 'nCells', nCells)
             call mpas_pool_get_dimension(block_ptr % dimensions, 'nEdges', nEdges)
             call mpas_pool_get_dimension(block_ptr % dimensions, 'nVertLevels', nVertLevels)
+
+            !
+            ! Before proceeding with any other processing that takes non-trivial time (e.g., static field interpolation),
+            ! check that the intermediate file with terrain information exists if config_blend_bdy_terrain = true.
+            !
+            ! NB: When calling blend_bdy_terrain(...) with the 'dryrun' argument set, the nCells, latCell, lonCell,
+            !     bdyMaskCell, and ter arguments are not used -- only the config_met_prefix and config_start_time
+            !     arguments are used.
+            !
+            if (config_blend_bdy_terrain) then
+                call mpas_pool_get_config(block_ptr % configs, 'config_start_time', config_start_time)
+                call mpas_pool_get_config(block_ptr % configs, 'config_met_prefix', config_met_prefix)
+
+                call blend_bdy_terrain(config_met_prefix, config_start_time, &
+                                       nCells, latCell, lonCell, bdyMaskCell, ter, .true., ierr)
+                if (ierr /= 0) then
+                    call mpas_log_write('*************************************************************', messageType=MPAS_LOG_ERR)
+                    call mpas_log_write('Blending of terrain along domain boundaries would fail, and', messageType=MPAS_LOG_ERR)
+                    call mpas_log_write('config_blend_bdy_terrain = true in the namelist.init_atmosphere file.', &
+                                        messageType=MPAS_LOG_ERR)
+                    call mpas_log_write('*************************************************************', messageType=MPAS_LOG_CRIT)
+                end if
+            end if
 
             if (config_static_interp) then
 
@@ -2854,7 +2889,7 @@ module init_atm_cases
          call mpas_pool_get_array(mesh, 'bdyMaskCell', bdyMaskCell)
          call mpas_pool_get_array(mesh, 'ter', ter)
 
-         call blend_bdy_terrain(config_met_prefix, config_start_time, nCells, latCell, lonCell, bdyMaskCell, ter, istatus)
+         call blend_bdy_terrain(config_met_prefix, config_start_time, nCells, latCell, lonCell, bdyMaskCell, ter, .false., istatus)
          if (istatus /= 0) then
              call mpas_log_write('*************************************************************', messageType=MPAS_LOG_ERR)
              call mpas_log_write('* Blending of terrain along domain boundaries failed!       *', messageType=MPAS_LOG_ERR)
@@ -6031,11 +6066,16 @@ call mpas_log_write('Done with soil consistency check')
    !>  and 1, the terrain field is a combination of the first-guess terrain and the high-resolution
    !>  "static" terrain field.
    !>
+   !>  When dryrun=true, the nCells, latCell, lonCell, bdyMaskCell, and ter arguments are not used
+   !>   -- only the config_met_prefix and config_start_time arguments are used. The dryrun argument
+   !>  allows calling code to determine if blend_bdy_terrain will succeed without actually blending
+   !>  the boundary terrain.
+   !>
    !>  For global meshes, where bdyMaskCell == 0 everywhere, this routine will have no impact
    !>  on the model terrain field.
    !
    !-----------------------------------------------------------------------
-   subroutine blend_bdy_terrain(config_met_prefix, config_start_time, nCells, latCell, lonCell, bdyMaskCell, ter, ierr)
+   subroutine blend_bdy_terrain(config_met_prefix, config_start_time, nCells, latCell, lonCell, bdyMaskCell, ter, dryrun, ierr)
 
       use init_atm_read_met, only : read_met_init, read_met_close, read_next_met_field, met_data
       use init_atm_llxy, only : map_init, map_set, proj_info, latlon_to_ij, PROJ_LATLON, PROJ_GAUSS, DEG_PER_RAD
@@ -6050,6 +6090,7 @@ call mpas_log_write('Done with soil consistency check')
       real (kind=RKIND), dimension(:), intent(in) :: lonCell  ! may actually have more than nCells elements, for example,
       integer, dimension(:), intent(in) :: bdyMaskCell        ! if the arrays include a "garbage cell".
       real (kind=RKIND), dimension(:), intent(inout) :: ter   ! 
+      logical, intent(in) :: dryrun
       integer, intent(out) :: ierr
 
       integer, parameter :: nBdyLayers = 7   ! The number of relaxation layers plus the number of specified layers
@@ -6068,7 +6109,9 @@ call mpas_log_write('Done with soil consistency check')
 
       ierr = 0
 
-      call mpas_log_write('Blending first-guess terrain field along domain boundary')
+      if (.not. dryrun) then
+         call mpas_log_write('Blending first-guess terrain field along domain boundary')
+      end if
 
       call read_met_init(trim(config_met_prefix), .false., config_start_time(1:13), istatus)
 
@@ -6090,84 +6133,86 @@ call mpas_log_write('Done with soil consistency check')
       do while (istatus == 0)
          if (trim(field % field) == 'SOILHGT') then
 
-            interp_list(1) = FOUR_POINT
-            interp_list(2) = 0
+            if (.not. dryrun) then
+               interp_list(1) = FOUR_POINT
+               interp_list(2) = 0
 
-            !
-            ! Set up map projection - currently, only the regular lat-lon projection is handled
-            !
-            call map_init(proj)
+               !
+               ! Set up map projection - currently, only the regular lat-lon projection is handled
+               !
+               call map_init(proj)
           
-            if (field % iproj == PROJ_LATLON) then
-               call map_set(PROJ_LATLON, proj, &
-                            latinc = real(field % deltalat,RKIND), &
-                            loninc = real(field % deltalon,RKIND), &
-                            knowni = 1.0_RKIND, &
-                            knownj = 1.0_RKIND, &
-                            lat1 = real(field % startlat,RKIND), &
-                            lon1 = real(field % startlon,RKIND))
-            else if (field % iproj == PROJ_GAUSS) then
-               call map_set(PROJ_GAUSS, proj, &
-                            nlat = nint(field % deltalat), &
-                            loninc = 360.0_RKIND / real(field % nx,RKIND), &
-                            lat1 = real(field % startlat,RKIND), &
-                            lon1 = real(field % startlon,RKIND))
-            end if
-
-            !
-            ! Copy the first-guess terrain field into an array that includes some periodic points
-            !
-            allocate(rslab(-2:field % nx+3, field % ny))
-            rslab(1:field % nx, 1:field % ny) = field % slab(1:field % nx, 1:field % ny)
-            rslab(0, 1:field % ny)  = field % slab(field % nx, 1:field % ny)
-            rslab(-1, 1:field % ny) = field % slab(field % nx-1, 1:field % ny)
-            rslab(-2, 1:field % ny) = field % slab(field % nx-2, 1:field % ny)
-            rslab(field % nx+1, 1:field % ny) = field % slab(1, 1:field % ny)
-            rslab(field % nx+2, 1:field % ny) = field % slab(2, 1:field % ny)
-            rslab(field % nx+3, 1:field % ny) = field % slab(3, 1:field % ny)
-
-            !
-            ! For each cell in the MPAS mesh, perform terrain blending if the cell is a boundary cell
-            !
-            do i=1,nCells
-               if (bdyMaskCell(i) > 0) then
-                  lat = latCell(i)*DEG_PER_RAD
-                  lon = lonCell(i)*DEG_PER_RAD
-                  call latlon_to_ij(proj, lat, lon, x, y)
-                  if (x < 0.5) then
-                     lon = lon + 360.0
-                     call latlon_to_ij(proj, lat, lon, x, y)
-                  else if (x >= real(field%nx)+0.5) then
-                     lon = lon - 360.0
-                     call latlon_to_ij(proj, lat, lon, x, y)
-                  end if
-                  if (y < 0.5) then
-                     y = 1.0
-                  else if (y >= real(field%ny)+0.5) then
-                     y = real(field%ny)
-                  end if
-
-                  !
-                  ! Is this a specified cell?
-                  !
-                  if (bdyMaskCell(i) > (nBdyLayers - nSpecLayers)) then
-                     ter(i) = interp_sequence(x, y, 1, rslab, -2, field%nx + 3, 1, field%ny, &
-                                              1, 1, -1.0E30_RKIND, interp_list, 1)
-
-                  !
-                  ! Or a relaxation cell?
-                  !
-                  else
-                     weight = real(bdyMaskCell(i),kind=RKIND) / real(nBdyLayers - nSpecLayers,kind=RKIND)
-                     ter(i) = weight * interp_sequence(x, y, 1, rslab, -2, field%nx + 3, 1, field%ny, &
-                                                       1, 1, -1.0E30_RKIND, interp_list, 1) &
-                            + (1.0_RKIND - weight) * ter(i)
-
-                  end if
+               if (field % iproj == PROJ_LATLON) then
+                  call map_set(PROJ_LATLON, proj, &
+                               latinc = real(field % deltalat,RKIND), &
+                               loninc = real(field % deltalon,RKIND), &
+                               knowni = 1.0_RKIND, &
+                               knownj = 1.0_RKIND, &
+                               lat1 = real(field % startlat,RKIND), &
+                               lon1 = real(field % startlon,RKIND))
+               else if (field % iproj == PROJ_GAUSS) then
+                  call map_set(PROJ_GAUSS, proj, &
+                               nlat = nint(field % deltalat), &
+                               loninc = 360.0_RKIND / real(field % nx,RKIND), &
+                               lat1 = real(field % startlat,RKIND), &
+                               lon1 = real(field % startlon,RKIND))
                end if
-            end do
 
-            deallocate(rslab)
+               !
+               ! Copy the first-guess terrain field into an array that includes some periodic points
+               !
+               allocate(rslab(-2:field % nx+3, field % ny))
+               rslab(1:field % nx, 1:field % ny) = field % slab(1:field % nx, 1:field % ny)
+               rslab(0, 1:field % ny)  = field % slab(field % nx, 1:field % ny)
+               rslab(-1, 1:field % ny) = field % slab(field % nx-1, 1:field % ny)
+               rslab(-2, 1:field % ny) = field % slab(field % nx-2, 1:field % ny)
+               rslab(field % nx+1, 1:field % ny) = field % slab(1, 1:field % ny)
+               rslab(field % nx+2, 1:field % ny) = field % slab(2, 1:field % ny)
+               rslab(field % nx+3, 1:field % ny) = field % slab(3, 1:field % ny)
+
+               !
+               ! For each cell in the MPAS mesh, perform terrain blending if the cell is a boundary cell
+               !
+               do i=1,nCells
+                  if (bdyMaskCell(i) > 0) then
+                     lat = latCell(i)*DEG_PER_RAD
+                     lon = lonCell(i)*DEG_PER_RAD
+                     call latlon_to_ij(proj, lat, lon, x, y)
+                     if (x < 0.5) then
+                        lon = lon + 360.0
+                        call latlon_to_ij(proj, lat, lon, x, y)
+                     else if (x >= real(field%nx)+0.5) then
+                        lon = lon - 360.0
+                        call latlon_to_ij(proj, lat, lon, x, y)
+                     end if
+                     if (y < 0.5) then
+                        y = 1.0
+                     else if (y >= real(field%ny)+0.5) then
+                        y = real(field%ny)
+                     end if
+
+                     !
+                     ! Is this a specified cell?
+                     !
+                     if (bdyMaskCell(i) > (nBdyLayers - nSpecLayers)) then
+                        ter(i) = interp_sequence(x, y, 1, rslab, -2, field%nx + 3, 1, field%ny, &
+                                                 1, 1, -1.0E30_RKIND, interp_list, 1)
+
+                     !
+                     ! Or a relaxation cell?
+                     !
+                     else
+                        weight = real(bdyMaskCell(i),kind=RKIND) / real(nBdyLayers - nSpecLayers,kind=RKIND)
+                        ter(i) = weight * interp_sequence(x, y, 1, rslab, -2, field%nx + 3, 1, field%ny, &
+                                                          1, 1, -1.0E30_RKIND, interp_list, 1) &
+                               + (1.0_RKIND - weight) * ter(i)
+
+                     end if
+                  end if
+               end do
+
+               deallocate(rslab)
+            end if
 
             !
             ! At this point, we have found and processed the first-guess terrain field, so we can return
