@@ -54,7 +54,6 @@ def runseq(case, coupling_times):
         outfile.write ("  ROF                                     \n" )
         if atm_cpl_dt < rof_cpl_dt:
             outfile.write ("@" + str(atm_cpl_dt) + "              \n" )
-        outfile.write ("  @atm_cpl_dt  # atmosphere coupling step \n" )
         outfile.write ("  MED med_phases_prep_lnd                 \n" )
         outfile.write ("  MED -> LND :remapMethod=redist          \n" )
         outfile.write ("  LND                                     \n" )

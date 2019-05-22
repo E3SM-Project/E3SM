@@ -85,4 +85,4 @@ def runseq(case, coupling_times):
     outfile.write         ("::                                      \n")
 
     outfile.close()
-    shutil.copy(output, rundir)
+    shutil.copy(os.path.join(caseroot, "CaseDocs", "nuopc.runseq"), rundir)
