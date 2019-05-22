@@ -17,7 +17,7 @@ def runseq(case, coupling_times):
     rundir    = case.get_value("RUNDIR")
     caseroot  = case.get_value("CASEROOT")
     cimeroot  = case.get_value("CIMEROOT")
-    comp_rof  = case.get_value("COMP_WAV")
+    comp_wav  = case.get_value("COMP_WAV")
 
     atm_cpl_dt = coupling_times["atm_cpl_dt"]
     ocn_cpl_dt = coupling_times["ocn_cpl_dt"]
@@ -55,7 +55,7 @@ def runseq(case, coupling_times):
         outfile.write ("@                                      \n")
         outfile.write ("::                                     \n")
 
-    if comp_wav == 'ww' or comp_wav == dwav:
+    elif comp_wav == 'ww' or comp_wav == "dwav":
         outfile.write ("runSeq::                             \n")
         outfile.write ("@" + str(atm_cpl_dt) + "             \n") # Assume that atm_cpl_dt >= ocn_cpl_dt 
         outfile.write ("  MED med_phases_prep_ocn_map        \n") # map to ocean (including wav)

@@ -36,7 +36,6 @@ def runseq(case, coupling_times):
     outfile.write ("  MED -> OCN :remapMethod=redist           \n")
     if atm_cpl_dt < ocn_cpl_dt:
         outfile.write ("@" + str(atm_cpl_dt) + "               \n")
-    outfile.write ("  @atm_cpl_dt   # atmosphere coupling step \n")
     outfile.write ("  MED med_phases_prep_ocn_map              \n")
     outfile.write ("  MED med_phases_aofluxes_run              \n")
     outfile.write ("  MED med_phases_prep_ocn_merge            \n")

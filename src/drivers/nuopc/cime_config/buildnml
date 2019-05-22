@@ -293,12 +293,13 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
 ###############################################################################
 def _create_runseq(case, coupling_times):
 ###############################################################################
+
+    caseroot  = case.get_value("CASEROOT")
     user_file = os.path.join(caseroot, "nuopc.runseq")
     if os.path.exists(user_file):
 
         # Determine if there is a user run sequence file in CASEROOT, use it
         rundir    = case.get_value("RUNDIR")
-        caseroot  = case.get_value("CASEROOT")
         shutil.copy(user_file, rundir)
         shutil.copy(user_file, os.path.join(caseroot,"CaseDocs"))
         logger.info("NUOPC run sequence: copying custom run sequence from case root")

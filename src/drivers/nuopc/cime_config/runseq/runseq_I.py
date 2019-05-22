@@ -64,7 +64,7 @@ def runseq(case, coupling_times):
         outfile.write ("  ATM -> MED :remapMethod=redist          \n" )
         outfile.write ("  MED med_phases_profile                  \n" )
         if atm_cpl_dt < rof_cpl_dt:
-        outfile.write ("@                                         \n" )
+            outfile.write ("@                                     \n" )
         outfile.write ("  ROF -> MED :remapMethod=redist          \n" )
         outfile.write ("  MED med_phases_history_write            \n" )
         outfile.write ("  MED med_phases_restart_write            \n" )
@@ -91,7 +91,7 @@ def runseq(case, coupling_times):
         outfile.write ("  ATM -> MED :remapMethod=redist          \n" )
         outfile.write ("  MED med_phases_profile                  \n" )
         if atm_cpl_dt < rof_cpl_dt:
-        outfile.write ("@                                         \n" )
+            outfile.write ("@                                     \n" )
         outfile.write ("  ROF -> MED :remapMethod=redist          \n" )
         outfile.write ("  MED med_phases_history_write            \n" )
         outfile.write ("  MED med_phases_restart_write            \n" )
