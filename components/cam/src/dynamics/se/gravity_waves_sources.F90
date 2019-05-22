@@ -147,29 +147,20 @@ CONTAINS
 
     do ie = nets,nete
       do k = 1,nlev
-        
-        p(:,:) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,tl)
-        call get_temperature(elem(ie),temperature,hvcoord,tl)
-
-        ! potential temperature: theta = T (p/p0)^kappa
-        theta(:,:) = temperature(:,:,k)*(psurf_ref / p(:,:))**kappa
-
         ! pressure at mid points
         p(:,:) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,tl)
-        
+        ! potential temperature: theta = T (p/p0)^kappa
+        call get_temperature(elem(ie),temperature,hvcoord,tl)
+        theta(:,:) = temperature(:,:,k)*(psurf_ref / p(:,:))**kappa
         gradth_gll(:,:,:,k,ie) = gradient_sphere(theta,ederiv,elem(ie)%Dinv)
-        
         ! compute C = (grad(theta) dot grad ) u
         C(:,:,:) = ugradv_sphere(gradth_gll(:,:,:,k,ie), elem(ie)%state%v(:,:,:,k,tl),ederiv,elem(ie))
-        
-        ! gradth dot C
+        ! gradth_gll dot C
         frontgf_gll(:,:,k,ie) = -( C(:,:,1)*gradth_gll(:,:,1,k,ie) + C(:,:,2)*gradth_gll(:,:,2,k,ie)  )
-        
         ! apply mass matrix
-        gradth_gll(:,:,1,k,ie)=gradth_gll(:,:,1,k,ie)*elem(ie)%spheremp(:,:)
-        gradth_gll(:,:,2,k,ie)=gradth_gll(:,:,2,k,ie)*elem(ie)%spheremp(:,:)
-        frontgf_gll(:,:,k,ie)=frontgf_gll(:,:,k,ie)*elem(ie)%spheremp(:,:)
-          
+        gradth_gll(:,:,1,k,ie) = gradth_gll(:,:,1,k,ie)*elem(ie)%spheremp(:,:)
+        gradth_gll(:,:,2,k,ie) = gradth_gll(:,:,2,k,ie)*elem(ie)%spheremp(:,:)
+        frontgf_gll(:,:,k,ie)  = frontgf_gll(:,:,k,ie)*elem(ie)%spheremp(:,:)
       end do ! k
       ! pack
       call edgeVpack(edge3, frontgf_gll(:,:,:,ie),nlev,0,ie)
@@ -180,6 +171,11 @@ CONTAINS
     if (par%dynproc) call bndry_exchangeV(hybrid,edge3)
 
     do ie = nets,nete
+      ! Prepare weights for area averaging
+      if (fv_nphys>0) then
+        tmp_area(:,:) = 1.0_r8
+        inv_area(:,:) = 1.0_r8/subcell_integration(tmp_area,np,fv_nphys,elem(ie)%metdet(:,:))
+      end if
       ! unpack
       call edgeVunpack(edge3, frontgf_gll(:,:,:,ie),nlev,0,ie)
       call edgeVunpack(edge3, gradth_gll(:,:,:,:,ie),2*nlev,nlev,ie)
@@ -189,36 +185,26 @@ CONTAINS
         gradth_gll(:,:,2,k,ie) = gradth_gll(:,:,2,k,ie)*elem(ie)%rspheremp(:,:)
         frontgf_gll(:,:,k,ie) = frontgf_gll(:,:,k,ie)*elem(ie)%rspheremp(:,:)
       end do
-      if (fv_nphys>0) then
-        tmp_area(:,:) = 1.0_r8
-        inv_area(:,:) = 1.0_r8/subcell_integration(tmp_area,np,fv_nphys,elem(ie)%metdet(:,:))
-        do k = 1,nlev
-          
+        if (fv_nphys>0) then
           frontgf(:,:,k,ie) = subcell_integration(frontgf_gll(:,:,k,ie),      &
                               np, fv_nphys, elem(ie)%metdet(:,:) ) * inv_area
-          
           gradth_fv(:,:,1) = subcell_integration(gradth_gll(:,:,1,k,ie),      &
                              np, fv_nphys, elem(ie)%metdet(:,:) ) * inv_area
-
           gradth_fv(:,:,2) = subcell_integration(gradth_gll(:,:,2,k,ie),      &
                              np, fv_nphys, elem(ie)%metdet(:,:) ) * inv_area
-
           do j=1,fv_nphys
             do i=1,fv_nphys
-              frontga(i,j,k,ie) = atan2 ( gradth_fv(i,j,2) , &
-                                          gradth_fv(i,j,1) + 1.e-10_r8 )
-            end do
-          end do
-
-        end do ! k
-      else
-        do k=1,nlev
+              frontga(i,j,k,ie) = atan2(gradth_fv(i,j,2) , &
+                                        gradth_fv(i,j,1) + 1.e-10_r8 )
+            end do ! i
+          end do ! j
+        else ! physics on GLL nodes
           frontgf(:,:,k,ie) = frontgf_gll(:,:,k,ie)
           ! Frontogenesis angle
-          frontga(:,:,k,ie) = atan2 ( gradth_gll(:,:,2,k,ie) , &
-                                      gradth_gll(:,:,1,k,ie) + 1.e-10_real_kind )
-        end do
-      end if ! fv_nphys>0
+          frontga(:,:,k,ie) = atan2(gradth_gll(:,:,2,k,ie) , &
+                                    gradth_gll(:,:,1,k,ie) + 1.e-10_real_kind )
+        end if ! fv_nphys>0
+      end do ! k
     end do ! ie
 
   end subroutine compute_frontogenesis
