@@ -1167,10 +1167,11 @@ for mct, etc.
     <base> -r8 </base>
   </FC_AUTO_R8>
   <FFLAGS>
-    <base> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml -fimf-use-svml=false:asin </base>
+    <base> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml </base>
     <append compile_threaded="TRUE"> -qopenmp </append>
     <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </append>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align </append>
+    <append MPILIB="impi"> -xMIC-AVX512 </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
     <base> -O0 </base>
@@ -1190,6 +1191,11 @@ for mct, etc.
   <SCC> icc </SCC>
   <SCXX> icpc </SCXX>
   <SFC> ifort </SFC>
+  <MPICC MPILIB="impi"> mpiicc </MPICC>
+  <MPICXX MPILIB="impi"> mpiicpc </MPICXX>
+  <MPIFC MPILIB="impi"> mpiifort </MPIFC>
+  <!-- When using Intel MPI, can't use the Cray compiler wrappers. Must also set environment variables in config_machines.xml -->
+  <MPI_LIB_NAME MPILIB="impi">impi</MPI_LIB_NAME>
   <SLIBS>
     <append> -L$ENV{NETCDF_DIR} -lnetcdff -Wl,--as-needed,-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf </append>
     <append> -mkl -lpthread </append>
