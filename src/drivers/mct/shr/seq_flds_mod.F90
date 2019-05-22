@@ -129,11 +129,10 @@ module seq_flds_mod
   use shr_fire_emis_mod , only : shr_fire_emis_readnl, shr_fire_emis_mechcomps_n, shr_fire_emis_ztop_token
   use shr_carma_mod     , only : shr_carma_readnl
   use shr_ndep_mod      , only : shr_ndep_readnl
-  use shr_flds_mod      , only : seq_flds_dom_coord, seq_flds_dom_other
+  use shr_flds_mod      , only : seq_flds_dom_coord=>shr_flds_dom_coord, seq_flds_dom_other=>shr_flds_dom_other
 
   implicit none
   public
-  save
 
   interface seq_flds_lookup; module procedure &
        seq_flds_esmf_metadata_get
@@ -212,6 +211,11 @@ module seq_flds_mod
   character(CXX) :: seq_flds_x2r_fluxes
   character(CXX) :: seq_flds_r2o_liq_fluxes
   character(CXX) :: seq_flds_r2o_ice_fluxes
+
+  !character(CXX) :: seq_flds_x2z_states
+  !character(CXX) :: seq_flds_z2x_states
+  character(CXX) :: seq_flds_z2x_fluxes
+  character(CXX) :: seq_flds_x2z_fluxes
 
   !----------------------------------------------------------------------------
   ! combined state/flux fields
@@ -1411,6 +1415,24 @@ contains
     stdname  = 'surface_snow_melt_flux'
     units    = 'kg m-2 s-1'
     attname  = 'Fioi_meltw'
+    call metadata_set(attname, longname, stdname, units)
+
+    ! Heat flux from melting icebergs
+    call seq_flds_add(i2x_fluxes,"PFioi_bergh")
+    call seq_flds_add(x2o_fluxes,"PFioi_bergh")
+    longname = 'Heat flux from melting icebergs'
+    stdname  = 'surface_iceberg_melt_heat_flux'
+    units    = 'W m-2'
+    attname  = 'PFioi_bergh'
+    call metadata_set(attname, longname, stdname, units)
+
+    ! Water flux from melting icebergs
+    call seq_flds_add(i2x_fluxes,"PFioi_bergw")
+    call seq_flds_add(x2o_fluxes,"PFioi_bergw")
+    longname = 'Water flux due to melting icebergs'
+    stdname  = 'surface_iceberg_melt_flux'
+    units    = 'kg m-2 s-1'
+    attname  = 'PFioi_bergw'
     call metadata_set(attname, longname, stdname, units)
 
     ! Salt flux

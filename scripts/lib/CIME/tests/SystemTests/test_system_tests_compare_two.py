@@ -179,7 +179,7 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwo):
         if caseroot not in self.run_pass_caseroot:
             raise RuntimeError('caseroot not in run_pass_caseroot')
 
-    def _do_compare_test(self, suffix1, suffix2):
+    def _do_compare_test(self, suffix1, suffix2, ignore_fieldlist_diffs=False):
         """
         This fake implementation allows controlling whether compare_test
         passes or fails
@@ -447,7 +447,7 @@ class TestSystemTestsCompareTwo(unittest.TestCase):
 
         # Also verify that comparison is NOT called:
         compare_phase_name = self.get_compare_phase_name(mytest)
-        self.assertIsNone(mytest._test_status.get_status(compare_phase_name))
+        self.assertEqual(test_status.TEST_PEND_STATUS, mytest._test_status.get_status(compare_phase_name))
 
     def test_run_phase_internal_calls_multisubmit_phase2(self):
         # Make sure that the correct calls are made to methods stubbed out by
@@ -496,7 +496,10 @@ class TestSystemTestsCompareTwo(unittest.TestCase):
                                            run_one_should_pass = False)
 
         # Exercise
-        mytest.run()
+        try:
+            mytest.run()
+        except Exception:
+            pass
 
         # Verify
         self.assertEqual(test_status.TEST_FAIL_STATUS,
@@ -512,7 +515,10 @@ class TestSystemTestsCompareTwo(unittest.TestCase):
                                            run_two_should_pass = False)
 
         # Exercise
-        mytest.run()
+        try:
+            mytest.run()
+        except Exception:
+            pass
 
         # Verify
         self.assertEqual(test_status.TEST_FAIL_STATUS,

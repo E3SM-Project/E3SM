@@ -6,6 +6,12 @@ A high-level Parallel I/O Library for structured grid applications
 
 For complete documentation, see our website at [http://ncar.github.io/ParallelIO/](http://ncar.github.io/ParallelIO/).
 
+## Mailing List
+
+The (low-traffic) PIO mailing list is at
+https://groups.google.com/forum/#!forum/parallelio, send email to the
+list at parallelio@googlegroups.com.
+
 ## Nightly Tests
 
 The results of our nightly tests on multiple platforms can be found on our
@@ -13,7 +19,10 @@ cdash site at [http://my.cdash.org/index.php?project=PIO](http://my.cdash.org/in
 
 ## Dependencies
 
-PIO can use NetCDF (version 4.3.3+) and/or PnetCDF (version 1.6.0+) for I/O.
+PIO can use NetCDF (version 4.3.3+) and/or PnetCDF (version 1.6.0+)
+for I/O. NetCDF may be built with or without netCDF-4 features. NetCDF
+is required for PIO, PnetCDF is optional.
+
 Ideally, the NetCDF version should be built with MPI, which requires that it
 be linked with an MPI-enabled version of HDF5.  Optionally, NetCDF can be 
 built with DAP support, which introduces a dependency on CURL.  Additionally,

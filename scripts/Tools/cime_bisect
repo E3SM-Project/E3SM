@@ -127,7 +127,7 @@ def cime_bisect(testargs, good, bad, testroot,
 
     # Formulate the create_test command, let create_test make the test-id, it will use
     # a timestamp that will allow us to avoid collisions
-    bisect_cmd = "{} {} --test-root {}".format(create_test, testargs, testroot)
+    bisect_cmd = "git submodule update && {} {} --test-root {}".format(create_test, testargs, testroot)
 
     is_batch = _MACHINE.has_batch_system()
     if (is_batch and "--no-run" not in testargs and "--no-build" not in testargs and "--no-setup" not in testargs):
@@ -167,7 +167,7 @@ def cime_bisect(testargs, good, bad, testroot,
         logger.warning(run_cmd_no_fail("git show {}".format(bad_commits_filtered.pop())))
 
     finally:
-        run_cmd_no_fail("git bisect reset")
+        run_cmd_no_fail("git bisect reset && git submodule update")
 
 ###############################################################################
 def _main_func(description):

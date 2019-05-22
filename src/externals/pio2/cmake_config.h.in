@@ -1,4 +1,4 @@
-/** @file 
+/** @file
  *
  * This is the template for the config.h file, which is created at
  * build-time by cmake.
@@ -27,5 +27,7 @@
 
 /* buffer size for darray data. */
 #define PIO_BUFFER_SIZE @PIO_BUFFER_SIZE@
+
+#define USE_VARD @USE_VARD@
 
 #endif /* _PIO_CONFIG_ */

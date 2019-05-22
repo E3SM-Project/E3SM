@@ -52,14 +52,15 @@
       <value mach="sooty">netcdf</value>
       <value mach="pleiades.*">netcdf</value>
       <value mach="hobart" compiler="pgi">netcdf</value>
-      <value mach="oic2">netcdf</value>
       <value mach="oic5">netcdf</value>
       <value mach="lawrencium-lr2">netcdf</value>
       <value mach="lawrencium-lr3">netcdf</value>
+      <value mach="lawrencium-lr6">netcdf</value>
       <value mach="cades">netcdf</value>
       <value mach="grizzly">netcdf</value>
-      <value mach="wolf">netcdf</value>
+      <value mach="badger">netcdf</value>
       <value mpilib="mpi-serial">netcdf</value>
+      <value mach="bebop" mpilib="impi" compset=".*CAM5.+MPAS.*">netcdf</value>
     </values>
   </entry>
 
@@ -85,10 +86,10 @@
   </entry>
   -->
 
-
   <entry id="PIO_BUFFER_SIZE_LIMIT">
     <values>
       <value MACH="sandiatoss3">1</value>
+      <value MACH="ghost">1</value>
     </values>
   </entry>
 
@@ -122,13 +123,13 @@
     </values>
   </entry>
   -->
-  <entry id="LND_PIO_REARRANGER">
+<!--  <entry id="LND_PIO_REARRANGER">
     <values>
       <value compset="_CLM40" >2</value>
       <value compset="_CLM45" >1</value>
       <value compset="_CLM50" >1</value>
     </values>
-  </entry>
+  </entry> -->
 
   <!--- uncomment and fill in relevant sections
   <entry id="LND_PIO_STRIDE">
@@ -152,13 +153,11 @@
     </values>
   </entry>
 
-  <!--- uncomment and fill in relevant sections
   <entry id="LND_PIO_TYPENAME">
     <values>
-      <value></value>
+      <value mach="bebop" compset=".*CLM45.+MALI%SIA.*">netcdf</value>
     </values>
   </entry>
-  -->
 
   <!--- uncomment and fill in relevant sections
   <entry id="ROF_PIO_STRIDE">

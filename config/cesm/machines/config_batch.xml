@@ -168,6 +168,25 @@
     </directives>
   </batch_system>
 
+  <!-- athena is lsf -->
+  <batch_system MACH="athena" type="lsf">
+    <submit_args>
+      <arg flag="-q" name="$JOB_QUEUE"/>
+      <arg flag="-W" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-P" name="$PROJECT"/>
+    </submit_args>
+    <directives>
+      <directive                       > -R "span[ptile={{ tasks_per_node }}]"</directive>
+      <directive                       > -N  </directive>
+      <directive default="poe"         > -a {{ poe }} </directive>
+    </directives>
+    <queues>
+      <queue walltimemin="00:00" walltimemax="02:00">poe_short</queue>
+      <queue walltimemin="02:00" walltimemax="04:00" default="true">poe_medium</queue>
+      <queue walltimemin="04:00" walltimemax="08:00">poe_long</queue>
+    </queues>
+  </batch_system>
+
   <!-- bluewaters is PBS -->
   <batch_system MACH="bluewaters" type="pbs" >
     <jobid_pattern>(\d+.bw)$</jobid_pattern>
@@ -210,6 +229,30 @@
       <queue walltimemax="12:00" nodemin="1" nodemax="4032">premium</queue>
       <queue default="true" walltimemax="06:00" jobmin="1" jobmax="18">share</queue>
       <queue walltimemax="12:00" nodemin="1" nodemax="4032">economy</queue>
+    </queues>
+  </batch_system>
+
+  <!-- coeus slurm -->
+  <batch_system MACH="coeus" type="slurm" >
+    <batch_query per_job_arg="-j">squeue</batch_query>
+    <batch_submit>sbatch</batch_submit>
+    <batch_cancel>scancel</batch_cancel>
+    <batch_directive>#SBATCH</batch_directive>
+    <jobid_pattern>(\d+)$</jobid_pattern>
+    <depend_separator>,</depend_separator>
+    <walltime_format>%H:%M:%S</walltime_format>
+    <batch_mail_flag>--mail-user</batch_mail_flag>
+    <batch_mail_type_flag>--mail-type</batch_mail_type_flag>
+    <batch_mail_type>none, all, begin, end, fail</batch_mail_type>
+    <directives>
+      <directive> --job-name={{ job_id }}</directive>
+      <directive> --nodes={{ num_nodes }}</directive>
+      <directive> --ntasks-per-node={{ tasks_per_node }}</directive>
+      <directive> --output={{ job_id }}   </directive>
+      <directive> --exclusive                        </directive>
+    </directives>
+    <queues>
+      <queue nodemin="1" nodemax="96" default="true">medium</queue>
     </queues>
   </batch_system>
 
@@ -359,6 +402,7 @@
 
   <batch_system type="pbs" MACH="izumi" >
     <batch_submit>ssh izumi cd $CASEROOT ; qsub</batch_submit>
+    <jobid_pattern>(\d+.izumi.unified.ucar.edu)$</jobid_pattern>
     <directives>
       <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>

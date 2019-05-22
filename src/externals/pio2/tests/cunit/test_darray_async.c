@@ -104,19 +104,19 @@ int check_darray_file(int iosysid, char *data_filename, int iotype, int my_rank,
             switch (piotype)
             {
             case PIO_BYTE:
-                if (((signed char *)data_in)[r] != (tmp_r/2 + 1) * 10.0 + tmp_r % 2)
+                if (((signed char *)data_in)[r] != (tmp_r/2 + 1) * 10 + tmp_r % 2)
                     ERR(ret);
                 break;
             case PIO_CHAR:
-                if (((char *)data_in)[r] != (tmp_r/2 + 1) * 10.0 + tmp_r % 2)
+                if (((char *)data_in)[r] != (tmp_r/2 + 1) * 10 + tmp_r % 2)
                     ERR(ret);
                 break;
             case PIO_SHORT:
-                if (((short *)data_in)[r] != (tmp_r/2 + 1) * 10.0 + tmp_r % 2)
+                if (((short *)data_in)[r] != (tmp_r/2 + 1) * 10 + tmp_r % 2)
                     ERR(ret);
                 break;
             case PIO_INT:
-                if (((int *)data_in)[r] != (tmp_r/2 + 1) * 10.0 + tmp_r % 2)
+                if (((int *)data_in)[r] != (tmp_r/2 + 1) * 10 + tmp_r % 2)
                     ERR(ret);
                 break;
             case PIO_FLOAT:
@@ -129,23 +129,23 @@ int check_darray_file(int iosysid, char *data_filename, int iotype, int my_rank,
                 break;
 #ifdef _NETCDF4
             case PIO_UBYTE:
-                if (((unsigned char *)data_in)[r] != (tmp_r/2 + 1) * 10.0 + tmp_r % 2)
+                if (((unsigned char *)data_in)[r] != (tmp_r/2 + 1) * 10 + tmp_r % 2)
                     ERR(ret);
                 break;
             case PIO_USHORT:
-                if (((unsigned short *)data_in)[r] != (tmp_r/2 + 1) * 10.0 + tmp_r % 2)
+                if (((unsigned short *)data_in)[r] != (tmp_r/2 + 1) * 10 + tmp_r % 2)
                     ERR(ret);
                 break;
             case PIO_UINT:
-                if (((unsigned int *)data_in)[r] != (tmp_r/2 + 1) * 10.0 + tmp_r % 2)
+                if (((unsigned int *)data_in)[r] != (tmp_r/2 + 1) * 10 + tmp_r % 2)
                     ERR(ret);
                 break;
             case PIO_INT64:
-                if (((long long *)data_in)[r] != (tmp_r/2 + 1) * 10.0 + tmp_r % 2)
+                if (((long long *)data_in)[r] != (tmp_r/2 + 1) * 10 + tmp_r % 2)
                     ERR(ret);
                 break;
             case PIO_UINT64:
-                if (((unsigned long long *)data_in)[r] != (tmp_r/2 + 1) * 10.0 + tmp_r % 2)
+                if (((unsigned long long *)data_in)[r] != (tmp_r/2 + 1) * 10 + tmp_r % 2)
                     ERR(ret);
                 break;
 #endif /* _NETCDF4 */

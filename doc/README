@@ -23,5 +23,13 @@ cime/doc directory:
 >make api
 >make html
 
+To copy the html to the orphan gh-pages, follow these steps:
+
+>git clone -b gh-pages https://github.com/ESMCI/cime.git cime.gh-pages
+>cd cime.gh-pages
+>rm -rf *
+>cp -R /path/to/cime-master/doc/build/html/* .
+>git commit -m 'update HTML for PR #...'
+>git push origin gh-pages
 
 

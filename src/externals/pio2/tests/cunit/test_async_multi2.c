@@ -41,7 +41,7 @@ int main(int argc, char **argv)
     int comp_proc_list2[NUM_COMP_PROCS] = {2};
     int *proc_list[COMPONENT_COUNT] = {comp_proc_list1, comp_proc_list2};
     MPI_Comm test_comm;
-    int verbose = 1;
+    int verbose = 0;
     int ret; /* Return code. */
 
     /* Initialize test. */
@@ -49,9 +49,9 @@ int main(int argc, char **argv)
                               -1, &test_comm)))
         ERR(ERR_INIT);
 
-    /* Is the current process a computation task? */    
+    /* Is the current process a computation task? */
     int comp_task = my_rank < NUM_IO_PROCS ? 0 : 1;
-    
+
     /* Only do something on TARGET_NTASKS tasks. */
     if (my_rank < TARGET_NTASKS)
     {
@@ -86,7 +86,7 @@ int main(int argc, char **argv)
                 /* for (int t = 0; t < num_types; t++) */
                 /*     if ((ret = create_decomposition_2d(NUM_COMP_PROCS, my_rank, iosysid[my_comp_idx], dim_len_2d, &ioid[t], pio_type[t]))) */
                 /*         ERR(ret); */
-            
+
                 /* Create sample file. */
                 if ((ret = create_nc_sample_4(iosysid[my_comp_idx], iotype[i], my_rank, my_comp_idx,
                                               filename, TEST_NAME, verbose, num_types)))

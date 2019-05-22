@@ -997,8 +997,7 @@ int PIOc_inq_varnatts(int ncid, int varid, int *nattsp)
  * please read about this function in the NetCDF documentation at:
  * http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
  *
- * @param ncid the ncid of the open file, obtained from
- * PIOc_openfile() or PIOc_createfile().
+ * @param ncid the ncid of the open file.
  * @param varid the variable ID.
  * @param varidp a pointer that will get the variable id
  * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
@@ -1085,14 +1084,17 @@ int PIOc_inq_varid(int ncid, const char *name, int *varidp)
  *
  * @param ncid the ncid of the open file, obtained from
  * PIOc_openfile() or PIOc_createfile().
- * @param varid the variable ID.
+ * @param varid the variable ID or NC_GLOBAL.
+ * @param name name of the attribute.
+ * @param eh non-zero to handle errors in the function. This will
+ * cause program to halt if PIO error handler is set to INTERNAL.
  * @param xtypep a pointer that will get the type of the attribute.
  * @param lenp a pointer that will get the number of values
  * @return PIO_NOERR for success, error code otherwise.
  * @author Jim Edwards, Ed Hartnett
  */
-int PIOc_inq_att(int ncid, int varid, const char *name, nc_type *xtypep,
-                 PIO_Offset *lenp)
+int PIOc_inq_att_eh(int ncid, int varid, const char *name, int eh,
+                    nc_type *xtypep, PIO_Offset *lenp)
 {
     int msg = PIO_MSG_INQ_ATT;
     iosystem_desc_t *ios;
@@ -1104,7 +1106,6 @@ int PIOc_inq_att(int ncid, int varid, const char *name, nc_type *xtypep,
     if ((ierr = pio_get_file(ncid, &file)))
         return pio_err(NULL, NULL, ierr, __FILE__, __LINE__);
     ios = file->iosystem;
-
     /* User must provide name shorter than NC_MAX_NAME +1. */
     if (!name || strlen(name) > NC_MAX_NAME)
         return pio_err(ios, file, PIO_EINVAL, __FILE__, __LINE__);
@@ -1160,18 +1161,46 @@ int PIOc_inq_att(int ncid, int varid, const char *name, nc_type *xtypep,
     /* Broadcast and check the return code. */
     if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
         return check_mpi(file, mpierr, __FILE__, __LINE__);
-    if (ierr)
+    if (eh && ierr)
         return check_netcdf(file, ierr, __FILE__, __LINE__);
 
-    /* Broadcast results. */
-    if (xtypep)
-        if ((mpierr = MPI_Bcast(xtypep, 1, MPI_INT, ios->ioroot, ios->my_comm)))
-            check_mpi(file, mpierr, __FILE__, __LINE__);
-    if (lenp)
-        if ((mpierr = MPI_Bcast(lenp, 1, MPI_OFFSET, ios->ioroot, ios->my_comm)))
-            check_mpi(file, mpierr, __FILE__, __LINE__);
+    /* Broadcast results if call succeeded. */
+    if (!ierr)
+    {
+        if (xtypep)
+            if ((mpierr = MPI_Bcast(xtypep, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+                check_mpi(file, mpierr, __FILE__, __LINE__);
+        if (lenp)
+            if ((mpierr = MPI_Bcast(lenp, 1, MPI_OFFSET, ios->ioroot, ios->my_comm)))
+                check_mpi(file, mpierr, __FILE__, __LINE__);
+    }
 
-    return PIO_NOERR;
+    return ierr;
+}
+
+/**
+ * @ingroup PIO_inq_att
+ * The PIO-C interface for the NetCDF function nc_inq_att.
+ *
+ * This routine is called collectively by all tasks in the communicator
+ * ios.union_comm. For more information on the underlying NetCDF commmand
+ * please read about this function in the NetCDF documentation at:
+ * http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ *
+ * @param ncid the ncid of the open file, obtained from
+ * PIOc_openfile() or PIOc_createfile().
+ * @param varid the variable ID.
+ * @param varid the variable ID or NC_GLOBAL.
+ * @param name name of the attribute.
+ * @param xtypep a pointer that will get the type of the attribute.
+ * @param lenp a pointer that will get the number of values
+ * @return PIO_NOERR for success, error code otherwise.
+ * @author Jim Edwards, Ed Hartnett
+ */
+int PIOc_inq_att(int ncid, int varid, const char *name, nc_type *xtypep,
+                 PIO_Offset *lenp)
+{
+    return PIOc_inq_att_eh(ncid, varid, name, 1, xtypep, lenp);
 }
 
 /**
@@ -2014,7 +2043,7 @@ int PIOc_def_var(int ncid, const char *name, nc_type xtype, int ndims,
         /* Get the MPI type corresponding with the PIO type. */
         if ((ierr = find_mpi_type(xtype, &mpi_type, NULL)))
             return pio_err(ios, NULL, ierr, __FILE__, __LINE__);
-        
+
         /* Get the size of the MPI type. */
         if ((mpierr = MPI_Type_size(mpi_type, &mpi_type_size)))
             return check_mpi2(ios, NULL, mpierr, __FILE__, __LINE__);
@@ -2208,8 +2237,8 @@ int PIOc_def_var_fill(int ncid, int varid, int fill_mode, const void *fill_value
             return check_netcdf(file, ierr, __FILE__, __LINE__);
         if ((ierr = PIOc_inq_type(ncid, xtype, NULL, &type_size)))
             return check_netcdf(file, ierr, __FILE__, __LINE__);
+        LOG((2, "PIOc_def_var_fill type_size = %d", type_size));
     }
-    LOG((2, "PIOc_def_var_fill type_size = %d", type_size));
 
     /* If async is in use, and this is not an IO task, bcast the parameters. */
     if (ios->async)
@@ -2264,7 +2293,11 @@ int PIOc_def_var_fill(int ncid, int varid, int fill_mode, const void *fill_value
         {
             LOG((2, "defining fill value attribute for netCDF classic file"));
             if (file->do_io)
-                ierr = nc_put_att(file->fh, varid, _FillValue, xtype, 1, fill_valuep);
+            {
+                ierr = nc_set_fill(file->fh, NC_FILL, NULL);
+                if (!ierr)
+                    ierr = nc_put_att(file->fh, varid, _FillValue, xtype, 1, fill_valuep);
+            }
         }
         else
         {
@@ -2505,7 +2538,7 @@ int PIOc_get_att(int ncid, int varid, const char *name, void *ip)
 
     /* Get the type of the attribute. */
     if ((ierr = PIOc_inq_att(ncid, varid, name, &atttype, NULL)))
-        return check_netcdf(file, ierr, __FILE__, __LINE__);
+        return ierr;
     LOG((2, "atttype = %d", atttype));
 
     return PIOc_get_att_tc(ncid, varid, name, atttype, ip);

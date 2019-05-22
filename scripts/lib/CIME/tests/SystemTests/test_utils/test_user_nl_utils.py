@@ -114,4 +114,3 @@ class TestUserNLCopier(unittest.TestCase):
                                 caseroot = self._caseroot,
                                 component = component_for_append,
                                 contents = 'irrelevant contents to append')
-

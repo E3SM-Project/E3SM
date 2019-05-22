@@ -31,10 +31,12 @@ module prep_atm_mod
   public :: prep_atm_get_l2x_ax
   public :: prep_atm_get_i2x_ax
   public :: prep_atm_get_o2x_ax
+  public :: prep_atm_get_z2x_ax
 
   public :: prep_atm_calc_l2x_ax
   public :: prep_atm_calc_i2x_ax
   public :: prep_atm_calc_o2x_ax
+  public :: prep_atm_calc_z2x_ax
 
   public :: prep_atm_get_mapper_So2a
   public :: prep_atm_get_mapper_Fo2a
@@ -65,6 +67,7 @@ module prep_atm_mod
   type(mct_aVect), pointer :: l2x_ax(:)   ! Lnd export, atm grid, cpl pes - allocated in driver
   type(mct_aVect), pointer :: i2x_ax(:)   ! Ice export, atm grid, cpl pes - allocated in driver
   type(mct_aVect), pointer :: o2x_ax(:)   ! Ocn export, atm grid, cpl pes - allocated in driver
+  type(mct_aVect), pointer :: z2x_ax(:)   ! Iac export, atm grid, cpl pes - allocated in driver
 
   ! other module variables
   integer :: mpicom_CPLID  ! MPI cpl communicator
@@ -75,7 +78,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_atm_init(infodata, ocn_c2_atm, ice_c2_atm, lnd_c2_atm)
+  subroutine prep_atm_init(infodata, ocn_c2_atm, ice_c2_atm, lnd_c2_atm, iac_c2_atm)
 
     !---------------------------------------------------------------
     ! Description
@@ -86,6 +89,7 @@ contains
     logical                  , intent(in)    :: ocn_c2_atm ! .true.  => ocn to atm coupling on
     logical                  , intent(in)    :: ice_c2_atm ! .true.  => ice to atm coupling on
     logical                  , intent(in)    :: lnd_c2_atm ! .true.  => lnd to atm coupling on
+    logical                  , intent(in)    :: iac_c2_atm ! .true.  => iac to atm coupling on
     !
     ! Local Variables
     integer                          :: lsize_a
@@ -739,6 +743,21 @@ contains
 
   !================================================================================================
 
+  subroutine prep_atm_calc_z2x_ax(fractions_zx, timer)
+    !---------------------------------------------------------------
+    ! Description
+    ! Create z2x_ax (note that z2x_ax is a local module variable)
+    !
+    ! Arguments
+    type(mct_aVect) , intent(in) :: fractions_zx(:)
+    character(len=*), intent(in) :: timer
+    !
+    ! Local Variables
+
+  end subroutine prep_atm_calc_z2x_ax
+
+  !================================================================================================
+
   function prep_atm_get_l2x_ax()
     type(mct_aVect), pointer :: prep_atm_get_l2x_ax(:)
     prep_atm_get_l2x_ax => l2x_ax(:)
@@ -753,6 +772,11 @@ contains
     type(mct_aVect), pointer :: prep_atm_get_o2x_ax(:)
     prep_atm_get_o2x_ax => o2x_ax(:)
   end function prep_atm_get_o2x_ax
+
+  function prep_atm_get_z2x_ax()
+    type(mct_aVect), pointer :: prep_atm_get_z2x_ax(:)
+    prep_atm_get_z2x_ax => z2x_ax(:)
+  end function prep_atm_get_z2x_ax
 
   function prep_atm_get_mapper_So2a()
     type(seq_map), pointer :: prep_atm_get_mapper_So2a

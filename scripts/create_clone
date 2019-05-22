@@ -42,8 +42,10 @@ def parse_command_line(args):
                         "\nThe default is CIMEROOT/machines.")
 
     parser.add_argument("--project", "-project",
-                        help="Specify a project id. The default is the user-specified environment variable"
-			"\nvariable PROJECT or ACCOUNT or read from ~/.cesm_proj.")
+                        help="Specify a project id for the case (optional)."
+                        "\nUsed for accounting and directory permissions when on a batch system."
+                        "\nThe default is user or machine specified by PROJECT."
+                        "\nAccounting (only) may be overridden by user or machine specified CHARGE_ACCOUNT.")
 
     parser.add_argument("--cime-output-root",
                         help="Specify the root output directory. The default is the setting in the original"

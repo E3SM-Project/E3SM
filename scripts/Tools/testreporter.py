@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
 """
-
 Simple script to populate CESM test database with test results.
-
 """
 
 from standard_script_setup import *
@@ -15,10 +13,7 @@ from CIME.XML.test_reporter         import TestReporter
 from CIME.utils                     import expect
 from CIME.XML.generic_xml import GenericXML
 
-
 import glob
-
-
 
 ###############################################################################
 def parse_command_line(args):
@@ -29,7 +24,7 @@ def parse_command_line(args):
 
     # Parse command line options
 
-#    parser = argparse.ArgumentParser(description='Arguements for testreporter')
+    #parser = argparse.ArgumentParser(description='Arguements for testreporter')
     parser.add_argument("--tagname",
                         help="Name of the tag being tested.")
     parser.add_argument("--testid",
@@ -44,7 +39,6 @@ def parse_command_line(args):
                         help="Dump XML test results to sceen.")
     args = parser.parse_args()
     CIME.utils.parse_args_and_handle_standard_logging_options(args)
-
 
     return args.testroot, args.testid, args.tagname, args.testtype, args.dryrun, args.dumpxml
 
@@ -107,7 +101,7 @@ def get_testreporter_xml(testroot, testid, tagname, testtype):
         #
         try:
             lines = [line.rstrip('\n') for line in open(test_name+"/TestStatus")]
-        except:
+        except (IOError, OSError):
             test_status['STATUS']="FAIL"
             test_status['COMMENT']="TestStatus missing. "
             continue
@@ -208,7 +202,7 @@ def get_testreporter_xml(testroot, testid, tagname, testtype):
                         test_status['COMMENT']+=line.split(' ',3)[3]+' '
                     else:
                         test_status['COMMENT']+=line.split(' ',4)[4]+' '
-            except:
+            except Exception: # Probably want to be more specific here
                 pass
 
         #
@@ -217,7 +211,6 @@ def get_testreporter_xml(testroot, testid, tagname, testtype):
         testxml.add_result(test_name,test_status)
 
     return testxml
-
 
 ##############################################################################
 def _main_func():
@@ -244,5 +237,3 @@ def _main_func():
 
 if __name__ == "__main__":
     _main_func()
-
-

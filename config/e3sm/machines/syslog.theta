@@ -9,14 +9,16 @@ set run = $4
 set timing = $5
 set dir = $6
 
-# Wait until some model output appears before saving output file.
-# Target length was determined empirically (more lines than number of MPICH environment variables), 
-#  so it may need to be adjusted in the future.
+# Wait until job task-to-node mapping information is output before saving output file.
+# Target length was determined empirically (maximum number of lines before job mapping 
+#  information starts + number of nodes), and it may need to be adjusted in the future.
 # (Note that calling script 'touch'es the e3sm log file before spawning this script, so that 'wc' does not fail.)
-set outtarget = 130
-set outlth = 0
-while ($outlth < $outtarget)
-  sleep 10
+set nnodes = `qstat -lf $jid | grep -F Nodes | sed 's/ *Nodes *: *\([0-9]*\) */\1/' `
+@ target_lines = 150 + $nnodes
+sleep 10
+set outlth = `wc \-l $run/e3sm.log.$lid | sed 's/ *\([0-9]*\) *.*/\1/' `
+while ($outlth < $target_lines)
+  sleep 60
   set outlth = `wc \-l $run/e3sm.log.$lid | sed 's/ *\([0-9]*\) *.*/\1/' `
 end
 
@@ -32,7 +34,11 @@ cat > $run/Walltime.Remaining <<EOF1
 $remaining $sample_interval
 EOF1
 /bin/cp --preserve=timestamps $run/e3sm.log.$lid $dir/e3sm.log.$lid.$remaining
-xtnodestat > $dir/xtnodestat.$lid.$remaining
+if ($remaining <= 0) then
+  xtnodestat > $dir/xtnodestat.$lid.$remaining
+  qstat --header JobID:State:Nodes:Location | grep -Fa -e "running" -e "State" -e "starting" -e "exiting" > $dir/qstatn.$lid.$remaining
+  qstat --header JobID:JobName:User:Project:WallTime:RunTime:TimeRemaining:Nodes:State:StartTime:attrs | grep -Fa -e "running" -e "State" -e "starting" -e "exiting" > $dir/qstatr.$lid.$remaining
+endif
 
 while ($remaining > 0)
   echo "Wallclock time remaining: $remaining" >> $dir/atm.log.$lid.step
@@ -53,7 +59,13 @@ while ($remaining > 0)
   qstat --header JobID:State:Nodes:Location | grep -Fa -e "running" -e "State" -e "starting" -e "exiting" > $dir/qstatn.$lid.$remaining
   qstat --header JobID:JobName:User:Project:WallTime:RunTime:TimeRemaining:Nodes:State:StartTime:attrs | grep -Fa -e "running" -e "State" -e "starting" -e "exiting" > $dir/qstatr.$lid.$remaining
   chmod a+r $dir/*
-  sleep $sample_interval
+  # sleep $sample_interval
+  set sleep_remaining = $sample_interval
+  while ($sleep_remaining > 120)
+   sleep 120
+   @ sleep_remaining = $sleep_remaining - 120
+  end
+  sleep $sleep_remaining
   set TimeRemaining = `qstat -l --header TimeRemaining $jid | grep -F TimeRemaining | sed 's/^ *TimeRemaining *: *\([0-9]*:[0-9]*:[0-9]*\) */\1/' `
   set rem_hours     = `echo $TimeRemaining | sed 's/^0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\1/' `
   set rem_mins      = `echo $TimeRemaining | sed 's/^0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\2/' `

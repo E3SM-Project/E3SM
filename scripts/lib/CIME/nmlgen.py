@@ -94,7 +94,7 @@ class NamelistGenerator(object):
     def __exit__(self, *_):
         return False
 
-    def init_defaults(self, infiles, config, skip_groups=None, skip_entry_loop=None ):
+    def init_defaults(self, infiles, config, skip_groups=None, skip_entry_loop=False):
         """Return array of names of all definition nodes
         """
         # first clean out any settings left over from previous calls
@@ -127,8 +127,8 @@ class NamelistGenerator(object):
         if not skip_entry_loop:
             for entry in entry_nodes:
                 self.add_default(self._definition.get(entry, "id"))
-        else:
-            return [self._definition.get(entry, "id") for entry in entry_nodes]
+
+        return [self._definition.get(entry, "id") for entry in entry_nodes]
 
     @staticmethod
     def quote_string(string):
@@ -145,37 +145,39 @@ class NamelistGenerator(object):
         """Transform a literal list as needed for `get_value`."""
         var_type, _, var_size, = self._definition.split_type_string(name)
         if len(literals) > 0:
-            value = expand_literal_list(literals)
+            values = expand_literal_list(literals)
         else:
-            value = ''
-            return value
-        for i, scalar in enumerate(value):
-            if scalar == '':
-                value[i] = None
-            elif var_type == 'character':
-                value[i] = character_literal_to_string(scalar)
-        if var_size == 1:
-            return value[0]
-        else:
-            return value
+            return ""
 
-    def _to_namelist_literals(self, name, value):
+        for i, scalar in enumerate(values):
+            if scalar == '':
+                values[i] = None
+            elif var_type == 'character':
+                values[i] = character_literal_to_string(scalar)
+
+        if var_size == 1:
+            return values[0]
+        else:
+            return values
+
+    def _to_namelist_literals(self, name, values):
         """Transform a literal list as needed for `set_value`.
 
         This is the inverse of `_to_python_value`, except that many of the
         changes have potentially already been performed.
         """
         var_type, _, var_size, =  self._definition.split_type_string(name)
-        if var_size == 1 and not isinstance(value, list):
-            value = [value]
-        for i, scalar in enumerate(value):
+        if var_size == 1 and not isinstance(values, list):
+            values = [values]
+
+        for i, scalar in enumerate(values):
             if scalar is None:
-                value[i] = ""
+                values[i] = ""
             elif var_type == 'character':
                 expect(not isinstance(scalar, list), name)
-                value[i] = self.quote_string(scalar)
-        return compress_literal_list(value)
+                values[i] = self.quote_string(scalar)
 
+        return compress_literal_list(values)
 
     def get_value(self, name):
         """Get the current value of a given namelist variable.
@@ -295,7 +297,6 @@ class NamelistGenerator(object):
         """ Clean the object just enough to introduce a new instance """
         self.clean_streams()
         self._namelist.clean_groups()
-
 
     def _sub_fields(self, varnames):
         """Substitute indicators with given values in a list of fields.
@@ -572,7 +573,7 @@ class NamelistGenerator(object):
                         continue
                     file_path = character_literal_to_string(literal)
                     # NOTE - these are hard-coded here and a better way is to make these extensible
-                    if file_path == 'UNSET' or file_path == 'idmap' or file_path == 'idmap_ignore':
+                    if file_path == 'UNSET' or file_path == 'idmap' or file_path == 'idmap_ignore' or file_path == 'unset':
                         continue
                     if file_path == 'null':
                         continue
@@ -674,14 +675,32 @@ class NamelistGenerator(object):
         if data_list_path is not None:
             self._write_input_files(data_list_path)
 
+
+    # For MCT
     def add_nmlcontents(self, filename, group, append=True, format_="nmlcontents", sorted_groups=True):
         """ Write only contents of nml group """
         self._namelist.write(filename, groups=[group], append=append, format_=format_, sorted_groups=sorted_groups)
 
     def write_seq_maps(self, filename):
-        """ Write out seq_maps.rc"""
+        """ Write mct out seq_maps.rc"""
         self._namelist.write(filename, groups=["seq_maps"], format_="rc")
 
     def write_modelio_file(self, filename):
-        """ Write  component modelio files"""
+        """ Write mct component modelio files"""
         self._namelist.write(filename, groups=["modelio", "pio_inparm"], format_="nml")
+
+    # For NUOPC
+    def write_nuopc_modelio_file(self, filename):
+        """ Write nuopc component modelio files"""
+        self._namelist.write(filename, groups=["pio_inparm"], format_="nml")
+
+
+    # For NUOPC
+    def write_nuopc_config_file(self, filename, data_list_path=None, skip_comps=None):
+        """ Write the nuopc config file"""
+        self._definition.validate(self._namelist)
+        groups = self._namelist.get_group_names()
+        self._namelist.write(filename, skip_comps=skip_comps, groups=groups, format_='nuopc', sorted_groups=False)
+        if data_list_path is not None:
+            # append to input_data_list file
+            self._write_input_files(data_list_path)

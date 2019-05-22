@@ -24,6 +24,7 @@
     ROF  = [DROF, SROF, XROF]
     GLC  = [      SGLC      ]
     WAV  = [DWAV, SWAV      ]
+    IAC  = [      SIAC      ]
     ESP  = [DESP, SESP      ]
 
     The OPTIONAL %phys attributes specify submodes of the given system
@@ -40,7 +41,7 @@
 
   <compset>
     <alias>A</alias>
-    <lname>2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV</lname>
+    <lname>2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV_SIAC</lname>
   </compset>
 
   <compset>
