@@ -58,8 +58,13 @@ module micro_p3
   public  :: p3_init,p3_main
 
   private :: polysvp1,find_lookupTable_indices_1a,find_lookupTable_indices_1b, &
-       find_lookupTable_indices_3,get_cloud_dsd2,        &
-       get_rain_dsd2,calc_bulkRhoRime,impose_max_total_Ni,check_values,qv_sat
+       find_lookupTable_indices_3,get_cloud_dsd2, &
+       get_rain_dsd2,calc_bulkRhoRime,impose_max_total_Ni,check_values,qv_sat, & 
+       ice_cldliq_collection, ice_rain_collection, ice_self_collection, & 
+       ice_melting, ice_cldliq_wet_growth, calc_ice_relaxation_timescale, & 
+       calc_rime_density, cldliq_immersion_freezing, rain_immersion_freezing
+
+
 
   real(rtype),private :: e0
 
@@ -895,7 +900,7 @@ contains
 
           !.......................
           ! collection of droplets
-          call ice_cld_liquid_collection(rho(i,k),t(i,k),rhofaci(i,k),&
+          call ice_cldliq_collection(rho(i,k),t(i,k),rhofaci(i,k),&
           f1pr04,qitot_incld(i,k),qc_incld(i,k),nitot_incld(i,k),nc_incld(i,k),&
                qccol,nccol,qcshd,ncshdc)
 
@@ -932,7 +937,7 @@ contains
           !-----------------------------
           ! calcualte total inverse ice relaxation timescale combined for all ice categories
           ! note 'f1pr' values are normalized, so we need to multiply by N
-          call ice_relaxation_timescale(rho(i,k),t(i,k),rhofaci(i,k),&
+          call calc_ice_relaxation_timescale(rho(i,k),t(i,k),rhofaci(i,k),&
           f1pr05,f1pr14,dv,mu,sc,qitot_incld(i,k),nitot_incld(i,k),&
                epsi,epsi_tot)
 
@@ -944,14 +949,14 @@ contains
 
           !............................................................
           ! contact and immersion freezing droplets
-          call cld_liq_immersion_freezing(t(i,k),&
+          call cldliq_immersion_freezing(t(i,k),&
           lamc(i,k),mu_c(i,k),cdist1(i,k),qc_incld(i,k),&
                qcheti,ncheti)
 
           !............................................................
           ! immersion freezing of rain
           ! for future: get rid of log statements below for rain freezing
-          call cld_rain_immersion_freezing(t(i,k),&
+          call rain_immersion_freezing(t(i,k),&
           lamr(i,k),mu_r(i,k),cdistr(i,k),qr_incld(i,k),&
                qrheti,nrheti)
 
@@ -2873,7 +2878,7 @@ contains
 
   end subroutine check_values
 
-  subroutine ice_cld_liquid_collection(rho,t,rhofaci,    &
+  subroutine ice_cldliq_collection(rho,t,rhofaci,    &
   f1pr04,qitot_incld,qc_incld,nitot_incld,nc_incld,    &
              qccol,nccol,qcshd,ncshdc)
    
@@ -2918,7 +2923,7 @@ contains
       end if 
    end if 
 
-  end subroutine ice_cld_liquid_collection
+  end subroutine ice_cldliq_collection
 
 
   subroutine ice_rain_collection(rho,t,rhofaci,    &
@@ -3116,7 +3121,7 @@ qv,qc_incld,qitot_incld,nitot_incld,qr_incld,    &
 end subroutine ice_cldliq_wet_growth 
 
 
-subroutine ice_relaxation_timescale(rho,t,rhofaci,     &
+subroutine calc_ice_relaxation_timescale(rho,t,rhofaci,     &
 f1pr05,f1pr14,dv,mu,sc,qitot_incld,nitot_incld,    &
 epsi,epsi_tot)
 
@@ -3152,7 +3157,7 @@ epsi,epsi_tot)
    endif 
 
 
-end subroutine ice_relaxation_timescale
+end subroutine calc_ice_relaxation_timescale
 
 
 subroutine calc_rime_density(t,rhofaci,    &
@@ -3227,7 +3232,7 @@ f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
    endif ! qi > qsmall and T < 273.15
 end subroutine calc_rime_density
 
-subroutine cld_liq_immersion_freezing(t,lamc,mu_c,cdist1,qc_incld,    &
+subroutine cldliq_immersion_freezing(t,lamc,mu_c,cdist1,qc_incld,    &
            qcheti,ncheti)
 
    !............................................................
@@ -3255,9 +3260,9 @@ subroutine cld_liq_immersion_freezing(t,lamc,mu_c,cdist1,qc_incld,    &
       ncheti = N_nuc
    endif 
 
-end subroutine cld_liq_immersion_freezing
+end subroutine cldliq_immersion_freezing
 
-subroutine cld_rain_immersion_freezing(t,    &
+subroutine rain_immersion_freezing(t,    &
 lamr, mu_r, cdistr, qr_incld,    &
 qrheti, nrheti)
 
@@ -3291,6 +3296,6 @@ qrheti, nrheti)
    endif 
 
 
-end subroutine cld_rain_immersion_freezing 
+end subroutine rain_immersion_freezing 
 
 end module micro_p3
