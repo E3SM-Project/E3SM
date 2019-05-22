@@ -11,10 +11,10 @@
 			description="sets how alt atm co2 is set"
 			possible_values="none,constant,prognostic,diagnostic"
 		/>
-                <nml_option name="config_ecosys_atm_alt_co2_use_eco" type="logical" default_value=".true." units="unitless"
-                        description="determines whether DIC_ALT is affected by ecosystem dynamics"
-                        possible_values=".true. or .false."
-                />
+		<nml_option name="config_ecosys_atm_alt_co2_use_eco" type="logical" default_value=".true." units="unitless"
+			description="determines whether DIC_ALT is affected by ecosystem dynamics"
+			possible_values=".true. or .false."
+		/>
 		<nml_option name="config_ecosys_atm_co2_constant_value" type="real" default_value="379.0" units="ppmv"
 			description="value of atm co2 when config_ecosys_atm_co2_option = constant"
 			possible_values="positive real number"
@@ -52,24 +52,24 @@
 			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_ecosysTracers_diagnostic_fields_level1" type="logical" default_value=".false." units="unitless"
-					description="if true, make variables in ecosysDiagFieldsLevel1 available for output"
-					possible_values=".true. or .false."
+			description="if true, make variables in ecosysDiagFieldsLevel1 available for output"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_ecosysTracers_diagnostic_fields_level2" type="logical" default_value=".false." units="unitless"
-					description="if true, make variables in ecosysDiagFieldsLevel2 available for output"
-					possible_values=".true. or .false."
+			description="if true, make variables in ecosysDiagFieldsLevel2 available for output"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_ecosysTracers_diagnostic_fields_level3" type="logical" default_value=".false." units="unitless"
-					description="if true, make variables in ecosysDiagFieldsLevel3 available for output"
-					possible_values=".true. or .false."
+			description="if true, make variables in ecosysDiagFieldsLevel3 available for output"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_ecosysTracers_diagnostic_fields_level4" type="logical" default_value=".false." units="unitless"
-					description="if true, make variables in ecosysDiagFieldsLevel4 available for output"
-					possible_values=".true. or .false."
+			description="if true, make variables in ecosysDiagFieldsLevel4 available for output"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_ecosysTracers_diagnostic_fields_level5" type="logical" default_value=".false." units="unitless"
-					description="if true, make variables in ecosysDiagFieldsLevel5 available for output"
-					possible_values=".true. or .false."
+			description="if true, make variables in ecosysDiagFieldsLevel5 available for output"
+			possible_values=".true. or .false."
 		/>
 	</nml_record>
 
@@ -638,9 +638,9 @@
 			<var name="CO2_alt_gas_flux" type="real" dimensions="nCells Time" units="mmol C m^{-3} m s^{-1}"
 				description="CO2 Gas Flux for Alternate CO2"
 			/>
-                        <var name="avgCO2_gas_flux" type="real" dimensions="nCells Time" units="mmol C m^{-3} m s^{-1}"
-                                description="CO2 Gas Flux averaged over a coupling interval"
-                        />
+			<var name="avgCO2_gas_flux" type="real" dimensions="nCells Time" units="mmol C m^{-3} m s^{-1}"
+				description="CO2 Gas Flux averaged over a coupling interval"
+			/>
 		</var_struct>
 
 		<var_struct name="ecosysSeaIceCoupling" time_levs="1" packages="ecosysTracersPKG">

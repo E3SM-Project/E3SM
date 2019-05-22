@@ -83,7 +83,7 @@
 			type="real"
 			dimensions="nVertLevels nCells Time"
 			units="various"
-			description="temporary array to hold pressure " 
+			description="temporary array to hold pressure "
 		/>
 	</var_struct>
   	<streams>

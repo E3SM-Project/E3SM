@@ -515,7 +515,7 @@
 					possible_values="any integer"
 		/>
 		<nml_option name="config_cvmix_use_BLD_smoothing" type="logical" default_value=".true." units="NA"
-					description="If true KPP bld is smoothed with a laplacian filter" 
+					description="If true KPP bld is smoothed with a laplacian filter"
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_cvmix_shear_mixing_scheme" type="character" default_value="PP" units="NA"
@@ -2247,16 +2247,16 @@
 			/>
 		</var_array>
 		<var name="temperatureShortWaveTendency" dimensions="nVertLevels nCells Time" units="degrees Celsius per second" packages="tracerBudget" name_in_code="temperatureShortWaveTendency" type="real"
-			     description="potential temperature tendency due to penetrating shortwave"
+				 description="potential temperature tendency due to penetrating shortwave"
 		/>
 		<var_array name="activeTracerNonLocalTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
-		      <var name="temperatureNonLocalTendency" array_group="activeTracerNLTendGroup" units="degrees Celsius per second" name_in_code="temperatureNonLocalTendency"
-			     description="potential temperature tendency due to kpp non-local flux"
-		      />
-		      <var name="salinityNonLocalTendency" array_group="activeTracerNLTendGroup" units="PSU per second" name_in_code="salinityNonLocalTendency"
-			     description="salinity tendency due to kpp non-local flux"
-		      />
-	    </var_array>
+			  <var name="temperatureNonLocalTendency" array_group="activeTracerNLTendGroup" units="degrees Celsius per second" name_in_code="temperatureNonLocalTendency"
+				 description="potential temperature tendency due to kpp non-local flux"
+			  />
+			  <var name="salinityNonLocalTendency" array_group="activeTracerNLTendGroup" units="PSU per second" name_in_code="salinityNonLocalTendency"
+				 description="salinity tendency due to kpp non-local flux"
+			  />
+		</var_array>
 		<var_array name="activeTracerVerticalAdvectionTopFlux" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
 			<var name="temperatureVerticalAdvectionTopFlux" array_group="activeTracerVertTopFluxGroup" units="C m s^{-1}" name_in_code="temperatureVerticalAdvectionTopFlux"
 				description="potential temperature vertical advective flux through top of cell"
@@ -2290,12 +2290,12 @@
 			/>
 		</var_array>
 		<var_array name="activeTracerVertMixTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
-		      <var name="temperatureVertMixTendency" array_group="activeTracerVertMixTendGroup" units="degrees Celsius per second" name_in_code="temperatureVertMixTendency"
-			     description="potential temperature tendency due to vertical mixing"
-		      />
-		      <var name="salinityVertMixTendency" array_group="activeTracerVertMixTendGroup" units="PSU per second" name_in_code="salinityVertMixTendency"
-			     description="salinity tendency due to vertical mixing"
-		      />
+			  <var name="temperatureVertMixTendency" array_group="activeTracerVertMixTendGroup" units="degrees Celsius per second" name_in_code="temperatureVertMixTendency"
+				 description="potential temperature tendency due to vertical mixing"
+			  />
+			  <var name="salinityVertMixTendency" array_group="activeTracerVertMixTendGroup" units="PSU per second" name_in_code="salinityVertMixTendency"
+				 description="salinity tendency due to vertical mixing"
+			  />
 		</var_array>
 		<var_array name="tracersSurfaceValue" type="real" dimensions="nCells Time">
 			<var name="temperatureSurfaceValue" array_group="surfaceValues" units="degrees Celsius" name_in_code="temperatureSurfaceValue"
@@ -2837,7 +2837,7 @@
 		<var name="nForcingGroupCounter"		type="integer"	dimensions="Time"/>
 		<var name="forcingGroupNames"			type="text"	dimensions="nForcingGroupsMax Time"/>
 		<var name="forcingGroupRestartTimes"		type="text"	dimensions="nForcingGroupsMax Time"/>
-	
+
 		<!-- *********************************************************************
 
 				The fields listed below are constituent fields for coupling.
