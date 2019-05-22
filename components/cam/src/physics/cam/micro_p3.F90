@@ -938,7 +938,7 @@ contains
 
           !.........................
           ! calculate rime density
-          call rime_density(t(i,k),rhofaci(i,k),&
+          call calc_rime_density(t(i,k),rhofaci(i,k),&
           f1pr02,acn(i,k),lamc(i,k),mu_c(i,k),qc_incld(i,k),qccol,&
           vtrmi1,rhorime_c)
 
@@ -3155,7 +3155,7 @@ epsi,epsi_tot)
 end subroutine ice_relaxation_timescale
 
 
-subroutine rime_density(t,rhofaci,    &
+subroutine calc_rime_density(t,rhofaci,    &
 f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
            vtrmi1,rhorime_c) 
    
@@ -3225,7 +3225,7 @@ f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
    else 
       rhorime_c = 400._rtype 
    endif ! qi > qsmall and T < 273.15
-end subroutine rime_density
+end subroutine calc_rime_density
 
 subroutine cld_liq_immersion_freezing(t,lamc,mu_c,cdist1,qc_incld,    &
            qcheti,ncheti)
