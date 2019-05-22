@@ -573,6 +573,39 @@ contains
                 endif !snowVolumeCell
 
              enddo ! iCell
+          else
+
+             snowDensityViaContent(:)    = 0.0_RKIND
+             snowDensityViaCompaction(:) = 0.0_RKIND
+             snowMeltMassCategory(:,:)   = 0.0_RKIND
+             snowMeltMassCell(:)         = 0.0_RKIND
+
+             do iCell = 1, nCellsSolve
+
+                do iCategory = 1, nCategories
+                   if (snowVolumeCategory(1,iCategory,iCell) .gt. 0.0_RKIND) then
+                      do iSnowLayer = 1, nSnowLayers
+                         snowDensityViaContent(iCell) = snowDensityViaContent(iCell) &
+                            + snowVolumeCategory(1,iCategory,iCell) * &
+                            (snowIceMass(iSnowLayer,iCategory,iCell) + &
+                            snowLiquidMass(iSnowLayer,iCategory,iCell))
+                         snowDensityViaCompaction(iCell) = snowDensityViaCompaction(iCell) &
+                            + snowVolumeCategory(1,iCategory,iCell) * &
+                            snowDensity(iSnowLayer,iCategory,iCell)
+                      enddo !iSnowLayer
+                   endif !snowVolumeCategory
+                enddo !iCategory
+                if (snowVolumeCell(iCell) .gt.  seaicePuny) then
+                   snowDensityViaContent(iCell) = snowDensityViaContent(iCell)/ &
+                      (snowVolumeCell(iCell) * real(nSnowLayers,kind=RKIND))  !!!CHECK THIS!!!
+                   snowDensityViaCompaction(iCell) = snowDensityViaCompaction(iCell)/ &
+                      (snowVolumeCell(iCell) * real(nSnowLayers,kind=RKIND))
+                else
+                   snowDensityViaContent(iCell)    = 0.0_RKIND
+                   snowDensityViaCompaction(iCell) = 0.0_RKIND
+                endif !snowVolumeCell
+
+             enddo ! iCell
           endif ! config_do_restart_snow_density
        endif !config_use_effective_snow_density
 
@@ -5636,7 +5669,7 @@ contains
 
     ! snow enthalpy
     do iSnowLayer = 1, nSnowLayers
-       tracerObject % parentIndex(tracerObject % index_snowEnthalpy) = 2
+       tracerObject % parentIndex(tracerObject % index_snowEnthalpy + iSnowLayer - 1) = 2
     enddo ! iSnowLayer
 
     ! ice age
@@ -5676,16 +5709,16 @@ contains
     ! snow density
     if (config_use_effective_snow_density) then
        do iSnowLayer = 1, nSnowLayers
-          tracerObject % parentIndex(tracerObject % index_snowIceMass) = 2
-          tracerObject % parentIndex(tracerObject % index_snowLiquidMass) = 2
-          tracerObject % parentIndex(tracerObject % index_snowDensity) = 2
+          tracerObject % parentIndex(tracerObject % index_snowIceMass + iSnowLayer - 1) = 2
+          tracerObject % parentIndex(tracerObject % index_snowLiquidMass + iSnowLayer - 1) = 2
+          tracerObject % parentIndex(tracerObject % index_snowDensity + iSnowLayer - 1) = 2
        enddo ! iSnowLayer
     endif
 
     ! snow grain radius
     if (config_use_snow_grain_radius) then
        do iSnowLayer = 1, nSnowLayers
-          tracerObject % parentIndex(tracerObject % index_snowGrainRadius) = 2
+          tracerObject % parentIndex(tracerObject % index_snowGrainRadius + iSnowLayer - 1) = 2
        enddo ! iSnowLayer
     endif
 

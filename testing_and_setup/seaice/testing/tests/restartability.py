@@ -66,7 +66,7 @@ def restartability(mpasDevelopmentDir, domainsDir, domain, configuration, option
     snowModsRestart = False
     if ("snow_tracer_physics" in options.keys() and options["snow_tracer_physics"] == "True"):
         snowModsRestart = True
- 
+
     if (not bgcRestart):
         nmlChanges = {"seaice_model": {"config_start_time":"file"},
                       "restart": {"config_do_restart":True}}
