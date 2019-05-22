@@ -7,6 +7,8 @@
 # Disable these because this is our standard setup
 # pylint: disable=wildcard-import,unused-wildcard-import,wrong-import-position
 
+# pylint: disable=import-error
+
 import os, shutil, sys, glob, itertools, imp
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","..")
