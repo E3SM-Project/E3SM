@@ -1930,7 +1930,7 @@ This allows using a different mpirun command to launch unit tests
 	<command name="purge"/>
 	<command name="load">nas</command>
 	<command name="load">pkgsrc</command>
-	<command name="load">comp-intel/2016.2.181</command>
+	<command name="load">comp-intel/2018.3.222</command>
 	<command name="load">mpi-sgi/mpt.2.15r20</command>
 	<command name="load">szip/2.1.1</command>
 	<command name="load">hdf4/4.2.12</command>
@@ -1984,7 +1984,7 @@ This allows using a different mpirun command to launch unit tests
 	<command name="purge"/>
 	<command name="load">nas</command>
 	<command name="load">pkgsrc</command>
-	<command name="load">comp-intel/2016.2.181</command>
+	<command name="load">comp-intel/2018.3.222</command>
 	<command name="load">mpi-sgi/mpt.2.15r20</command>
 	<command name="load">szip/2.1.1</command>
 	<command name="load">hdf4/4.2.12</command>
@@ -2038,7 +2038,7 @@ This allows using a different mpirun command to launch unit tests
 	<command name="purge"/>
 	<command name="load">nas</command>
 	<command name="load">pkgsrc</command>
-	<command name="load">comp-intel/2016.2.181</command>
+	<command name="load">comp-intel/2018.3.222</command>
 	<command name="load">mpi-sgi/mpt.2.15r20</command>
 	<command name="load">szip/2.1.1</command>
 	<command name="load">hdf4/4.2.12</command>
@@ -2092,7 +2092,7 @@ This allows using a different mpirun command to launch unit tests
 	<command name="purge"/>
 	<command name="load">nas</command>
 	<command name="load">pkgsrc</command>
-	<command name="load">comp-intel/2016.2.181</command>
+	<command name="load">comp-intel/2018.3.222</command>
 	<command name="load">mpi-sgi/mpt.2.15r20</command>
 	<command name="load">szip/2.1.1</command>
 	<command name="load">hdf4/4.2.12</command>
@@ -2238,7 +2238,7 @@ This allows using a different mpirun command to launch unit tests
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/work/02503/edwardsj/CESM/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/work/02503/edwardsj/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$WORK/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>$ENV{WORK}/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/work/02503/edwardsj/CESM/cesm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/work/02503/edwardsj/CESM/cime/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
@@ -2318,7 +2318,7 @@ This allows using a different mpirun command to launch unit tests
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/work/02503/edwardsj/CESM/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/work/02503/edwardsj/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$WORK/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>$ENV{WORK}/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/work/02503/edwardsj/CESM/cesm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/work/02503/edwardsj/CESM/cime/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
