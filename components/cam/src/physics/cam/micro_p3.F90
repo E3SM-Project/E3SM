@@ -924,7 +924,7 @@ contains
 
           !............................................................
           ! calculate wet growth
-          call calc_wet_growth(rho(i,k),t(i,k),pres(i,k),rhofaci(i,k),&
+          call ice_cldliq_wet_growth(rho(i,k),t(i,k),pres(i,k),rhofaci(i,k),&
           f1pr05,f1pr14,xxlv(i,k),xlf(i,k),dv,kap,mu,sc,&
           qv(i,k),qc_incld(i,k),qitot_incld(i,k),nitot_incld(i,k),qr_incld(i,k),log_wetgrowth,&
                qrcol,qccol,qwgrth,nrshdr,qcshd)
@@ -3051,7 +3051,7 @@ f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld,    &
 end subroutine ice_melting
 
 
-subroutine calc_wet_growth(rho,t,pres,rhofaci,    &
+subroutine ice_cldliq_wet_growth(rho,t,pres,rhofaci,    &
 f1pr05,f1pr14,xxlv,xlf,dv,kap,mu,sc,    &
 qv,qc_incld,qitot_incld,nitot_incld,qr_incld,    &
            log_wetgrowth,qrcol,qccol,qwgrth,nrshdr,qcshd)
@@ -3113,7 +3113,7 @@ qv,qc_incld,qitot_incld,nitot_incld,qr_incld,    &
 
 
 
-end subroutine calc_wet_growth 
+end subroutine ice_cldliq_wet_growth 
 
 
 subroutine ice_relaxation_timescale(rho,t,rhofaci,     &
