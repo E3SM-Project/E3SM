@@ -184,7 +184,6 @@ CONTAINS
         gradth_gll(:,:,1,k,ie) = gradth_gll(:,:,1,k,ie)*elem(ie)%rspheremp(:,:)
         gradth_gll(:,:,2,k,ie) = gradth_gll(:,:,2,k,ie)*elem(ie)%rspheremp(:,:)
         frontgf_gll(:,:,k,ie) = frontgf_gll(:,:,k,ie)*elem(ie)%rspheremp(:,:)
-      end do
         if (fv_nphys>0) then
           frontgf(:,:,k,ie) = subcell_integration(frontgf_gll(:,:,k,ie),      &
                               np, fv_nphys, elem(ie)%metdet(:,:) ) * inv_area

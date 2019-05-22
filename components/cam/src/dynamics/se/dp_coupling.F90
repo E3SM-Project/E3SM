@@ -21,10 +21,10 @@ module dp_coupling
   use parallel_mod,   only: par
   use scamMod,        only: single_column
   use element_ops,    only: get_temperature
-  use phys_grid,      only: get_ncols_p, get_gcol_all_p, block_to_chunk_send_pters, &
-                            transpose_block_to_chunk, block_to_chunk_recv_pters,    &
-                            chunk_to_block_send_pters, transpose_chunk_to_block,    &
-                            chunk_to_block_recv_pters
+  use phys_grid,      only: get_ncols_p, get_gcol_all_p, &
+                            transpose_block_to_chunk, transpose_chunk_to_block,   &
+                            chunk_to_block_send_pters, chunk_to_block_recv_pters, &
+                            block_to_chunk_recv_pters, block_to_chunk_send_pters
   private
   public :: d_p_coupling, p_d_coupling
 
@@ -186,7 +186,7 @@ CONTAINS
           call get_gcol_block_d(pgcols(icol),1,idmb1,idmb2,idmb3)
           ie = idmb3(1)
           ioff = idmb2(1)
-          phys_state(lchnk)%ps(icol) = ps_tmp(ioff,ie)
+          phys_state(lchnk)%ps(icol)   = ps_tmp(ioff,ie)
           phys_state(lchnk)%phis(icol) = zs_tmp(ioff,ie)
           do ilyr = 1,pver
             phys_state(lchnk)%t(icol,ilyr)     = T_tmp(ioff,ilyr,ie)	   

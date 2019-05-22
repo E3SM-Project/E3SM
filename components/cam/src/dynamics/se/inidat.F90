@@ -70,8 +70,8 @@ contains
     real(r8), allocatable :: tmp(:,:,:)    ! (npsp,nlev,nelemd)
     real(r8), allocatable :: qtmp(:,:)     ! (npsp*nelemd,nlev)
     logical,  allocatable :: tmpmask(:,:)  ! (npsp,nlev,nelemd) unique grid val
-    real(r8), allocatable :: phys_tmp(:,:)    ! (nphys_sq,nelemd)
-    integer :: nphys_sq                   ! # of fv physics columns per element
+    real(r8), allocatable :: phys_tmp(:,:) ! (nphys_sq,nelemd)
+    integer :: nphys_sq                    ! # of fv physics columns per element
     integer :: ie, k, t
     integer :: indx_scm, ie_scm, i_scm, j_scm
     character(len=max_fieldname_len) :: fieldname
@@ -480,7 +480,7 @@ contains
             end do
          end do
       end do
-   end if ! fv_nphys == 0
+    end if ! fv_nphys == 0
     
     if (single_column) then
       iop_update_surface = .false.

@@ -19,7 +19,6 @@ subroutine cam_initial(dyn_in, dyn_out, NLFileName)
    use cam_initfiles,        only: initial_file_get_id
    use startup_initialconds, only: initial_conds
    use cam_logfile,          only: iulog
-   use dyn_grid,             only: fv_nphys
 
    ! modules from SE
    use parallel_mod, only : par
