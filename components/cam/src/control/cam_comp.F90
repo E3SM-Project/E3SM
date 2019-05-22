@@ -442,7 +442,6 @@ subroutine cam_final( cam_out, cam_in )
    use physpkg,          only: phys_final
    use cam_initfiles,    only: cam_initfiles_close
    use camsrfexch,       only: atm2hub_deallocate, hub2atm_deallocate
-   use dyn_grid,         only: dyn_grid_final
    !
    ! Arguments
    !
@@ -490,9 +489,6 @@ subroutine cam_final( cam_out, cam_in )
    call shr_sys_flush( 0 )   ! Flush all output to standard error
    call shr_sys_flush( iulog )   ! Flush all output to standard output
 #endif
-
-   ! Deallocate variables used for the grid
-   call dyn_grid_final()
 
    if (masterproc) then
 #if ( defined SPMD )

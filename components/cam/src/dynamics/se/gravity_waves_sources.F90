@@ -147,8 +147,11 @@ CONTAINS
 
     do ie = nets,nete
       do k = 1,nlev
-        ! potential temperature: theta = T (p/p0)^kappa
+        
+        p(:,:) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,tl)
         call get_temperature(elem(ie),temperature,hvcoord,tl)
+
+        ! potential temperature: theta = T (p/p0)^kappa
         theta(:,:) = temperature(:,:,k)*(psurf_ref / p(:,:))**kappa
 
         ! pressure at mid points
