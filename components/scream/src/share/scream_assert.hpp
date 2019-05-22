@@ -3,6 +3,7 @@
 
 #include <sstream>
 #include <exception>
+#include <stdexcept>  // For std::logic_error
 
 /*
  * Asserts and error checking for Scream.
