@@ -30,7 +30,7 @@ module seq_hist_mod
   use seq_comm_mct,      only: CPLID, GLOID, logunit, loglevel
   use seq_comm_mct,      only: num_inst_atm, num_inst_lnd, num_inst_ocn
   use seq_comm_mct,      only: num_inst_ice, num_inst_glc, num_inst_wav
-  use seq_comm_mct,      only: num_inst_rof, num_inst_xao
+  use seq_comm_mct,      only: num_inst_rof, num_inst_xao, num_inst_iac
 
   use prep_ocn_mod,      only: prep_ocn_get_r2x_ox
   use prep_ocn_mod,      only: prep_ocn_get_x2oacc_ox
@@ -81,6 +81,7 @@ module seq_hist_mod
   logical     :: rof_present            ! .true.  => land runoff is present
   logical     :: glc_present            ! .true.  => glc is present
   logical     :: wav_present            ! .true.  => wav is present
+  logical     :: iac_present            ! .true.  => iac is present
 
   logical     :: atm_prognostic         ! .true.  => atm comp expects input
   logical     :: lnd_prognostic         ! .true.  => lnd comp expects input
@@ -90,6 +91,7 @@ module seq_hist_mod
   logical     :: rof_prognostic         ! .true.  => rof comp expects input
   logical     :: glc_prognostic         ! .true.  => glc comp expects input
   logical     :: wav_prognostic         ! .true.  => wav comp expects input
+  logical     :: iac_prognostic         ! .true.  => iac comp expects input
 
   logical     :: histavg_atm            ! .true.  => write atm fields to average history file
   logical     :: histavg_lnd            ! .true.  => write lnd fields to average history file
@@ -98,8 +100,10 @@ module seq_hist_mod
   logical     :: histavg_rof            ! .true.  => write rof fields to average history file
   logical     :: histavg_glc            ! .true.  => write glc fields to average history file
   logical     :: histavg_wav            ! .true.  => write wav fields to average history file
+  logical     :: histavg_iac            ! .true.  => write iac fields to average history file
   logical     :: histavg_xao            ! .true.  => write flux xao fields to average history file
 
+  logical     :: single_column
 
   !--- domain equivalent 2d grid size ---
   integer(IN) :: atm_nx, atm_ny         ! nx,ny of 2d grid, if known
@@ -109,6 +113,7 @@ module seq_hist_mod
   integer(IN) :: rof_nx, rof_ny         ! nx,ny of 2d grid, if known
   integer(IN) :: glc_nx, glc_ny         ! nx,ny of 2d grid, if known
   integer(IN) :: wav_nx, wav_ny         ! nx,ny of 2d grid, if known
+  integer(IN) :: iac_nx, iac_ny         ! nx,ny of 2d grid, if known
 
   !--- temporary pointers ---
   type(mct_aVect), pointer :: r2x_ox(:)
@@ -123,9 +128,9 @@ contains
   !===============================================================================
 
   subroutine seq_hist_write(infodata, EClock_d, &
-       atm, lnd, ice, ocn, rof, glc, wav, &
+       atm, lnd, ice, ocn, rof, glc, wav, iac, &
        fractions_ax, fractions_lx, fractions_ix, fractions_ox, fractions_rx,  &
-       fractions_gx, fractions_wx, cpl_inst_tag)
+       fractions_gx, fractions_wx, fractions_zx, cpl_inst_tag)
 
     implicit none
     !
@@ -139,6 +144,7 @@ contains
     type (component_type)   , intent(inout) :: rof(:)
     type (component_type)   , intent(inout) :: glc(:)
     type (component_type)   , intent(inout) :: wav(:)
+    type (component_type)   , intent(inout) :: iac(:)
     type(mct_aVect)         , intent(inout) :: fractions_ax(:) ! Fractions on atm grid/decomp
     type(mct_aVect)         , intent(inout) :: fractions_lx(:) ! Fractions on lnd grid/decomp
     type(mct_aVect)         , intent(inout) :: fractions_ix(:) ! Fractions on ice grid/decomp
@@ -146,6 +152,7 @@ contains
     type(mct_aVect)         , intent(inout) :: fractions_rx(:) ! Fractions on rof grid/decomp
     type(mct_aVect)         , intent(inout) :: fractions_gx(:) ! Fractions on glc grid/decomp
     type(mct_aVect)         , intent(inout) :: fractions_wx(:) ! Fractions on wav grid/decomp
+    type(mct_aVect)         , intent(inout) :: fractions_zx(:) ! Fractions on iac grid/decomp
     character(len=*)        ,  intent(in) :: cpl_inst_tag
     !
     ! Local Variables
@@ -186,6 +193,7 @@ contains
          ocn_present=ocn_present,             &
          glc_present=glc_present,             &
          wav_present=wav_present,             &
+         iac_present=iac_present,             &
          atm_prognostic=atm_prognostic,       &
          lnd_prognostic=lnd_prognostic,       &
          ice_prognostic=ice_prognostic,       &
@@ -194,13 +202,16 @@ contains
          rof_prognostic=rof_prognostic,       &
          glc_prognostic=glc_prognostic,       &
          wav_prognostic=wav_prognostic,       &
+         iac_prognostic=iac_prognostic,       &
          atm_nx=atm_nx, atm_ny=atm_ny,        &
          lnd_nx=lnd_nx, lnd_ny=lnd_ny,        &
          rof_nx=rof_nx, rof_ny=rof_ny,        &
          ice_nx=ice_nx, ice_ny=ice_ny,        &
          glc_nx=glc_nx, glc_ny=glc_ny,        &
          wav_nx=wav_nx, wav_ny=wav_ny,        &
+         iac_nx=iac_nx, iac_ny=iac_ny,        &
          ocn_nx=ocn_nx, ocn_ny=ocn_ny,        &
+         single_column=single_column,         &
          case_name=case_name,                 &
          model_doi_url=model_doi_url)
 
@@ -252,13 +263,17 @@ contains
              gsmap => component_get_gsmap_cx(atm(1))
              dom   => component_get_dom_cx(atm(1))
              call seq_io_write(hist_file, gsmap, dom%data, 'dom_ax',  &
-                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='doma')
+                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='doma', &
+                  scolumn=single_column)
              call seq_io_write(hist_file, gsmap, fractions_ax, 'fractions_ax',  &
-                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='fraca')
+                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='fraca', &
+                  scolumn=single_column)
              call seq_io_write(hist_file, atm, 'x2c', 'x2a_ax', &
-                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='x2a')
+                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='x2a', &
+                  scolumn=single_column)
              call seq_io_write(hist_file, atm, 'c2x', 'a2x_ax', &
-                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='a2x')
+                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='a2x', &
+                  scolumn=single_column)
              !call seq_io_write(hist_file, gsmap, l2x_ax, 'l2x_ax',  &
              !    nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='l2x_ax')
              !call seq_io_write(hist_file, gsmap, o2x_ax, 'o2x_ax',  &
@@ -375,6 +390,19 @@ contains
              call seq_io_write(hist_file, wav, 'x2c', 'x2w_wx', &
                   nx=wav_nx, ny=wav_ny, nt=1, whead=whead, wdata=wdata, pre='x2w')
           endif
+
+          if (iac_present) then
+             gsmap => component_get_gsmap_cx(iac(1))
+             dom   => component_get_dom_cx(iac(1))
+             call seq_io_write(hist_file, gsmap, dom%data, 'dom_zx',  &
+                  nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata, pre='domz')
+             call seq_io_write(hist_file, gsmap, fractions_zx, 'fractions_zx',  &
+                  nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata, pre='fracz')
+             call seq_io_write(hist_file, iac, 'c2x', 'z2x_zx', &
+                  nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata, pre='w2x')
+             call seq_io_write(hist_file, iac, 'x2c', 'x2z_zx', &
+                  nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata, pre='x2w')
+          endif
        enddo
 
        call seq_io_close(hist_file)
@@ -386,7 +414,7 @@ contains
   !===============================================================================
 
   subroutine seq_hist_writeavg(infodata, EClock_d, &
-       atm, lnd, ice, ocn, rof, glc, wav, write_now, cpl_inst_tag)
+       atm, lnd, ice, ocn, rof, glc, wav, iac, write_now, cpl_inst_tag)
 
     implicit none
 
@@ -399,6 +427,7 @@ contains
     type (component_type)   ,  intent(in) :: rof(:)
     type (component_type)   ,  intent(in) :: glc(:)
     type (component_type)   ,  intent(in) :: wav(:)
+    type (component_type)   ,  intent(in) :: iac(:)
     logical                 ,  intent(in) :: write_now  ! write or accumulate
     character(len=*)        ,  intent(in) :: cpl_inst_tag
 
@@ -435,6 +464,8 @@ contains
     type(mct_aVect), save  :: x2g_gx_avg(num_inst_glc)
     type(mct_aVect), save  :: w2x_wx_avg(num_inst_wav)
     type(mct_aVect), save  :: x2w_wx_avg(num_inst_wav)
+    type(mct_aVect), save  :: z2x_zx_avg(num_inst_iac)
+    type(mct_aVect), save  :: x2z_zx_avg(num_inst_iac)
     type(mct_aVect), save, pointer  :: xao_ox_avg(:)
     type(mct_aVect), save, pointer  :: xao_ax_avg(:)
 
@@ -471,6 +502,7 @@ contains
          ocn_present=ocn_present,             &
          glc_present=glc_present,             &
          wav_present=wav_present,             &
+         iac_present=iac_present,             &
          atm_prognostic=atm_prognostic,       &
          lnd_prognostic=lnd_prognostic,       &
          ice_prognostic=ice_prognostic,       &
@@ -484,6 +516,7 @@ contains
          ice_nx=ice_nx,  ice_ny=ice_ny,       &
          glc_nx=glc_nx,  glc_ny=glc_ny,       &
          wav_nx=wav_nx,  wav_ny=wav_ny,       &
+         iac_nx=iac_nx,  iac_ny=iac_ny,       &
          ocn_nx=ocn_nx,  ocn_ny=ocn_ny,       &
          histavg_atm=histavg_atm,             &
          histavg_lnd=histavg_lnd,             &
@@ -492,6 +525,7 @@ contains
          histavg_rof=histavg_rof,             &
          histavg_glc=histavg_glc,             &
          histavg_wav=histavg_wav,             &
+         histavg_iac=histavg_iac,             &
          histavg_xao=histavg_xao,             &
          model_doi_url=model_doi_url)
 
@@ -593,6 +627,19 @@ contains
              call mct_aVect_zero(x2w_wx_avg(iidx))
           enddo
        endif
+       if (iac_present .and. histavg_iac) then
+          do iidx = 1,  num_inst_iac
+             c2x => component_get_c2x_cx(iac(iidx))
+             lsize = mct_aVect_lsize(c2x)
+             call mct_aVect_init(z2x_zx_avg(iidx), c2x, lsize)
+             call mct_aVect_zero(z2x_zx_avg(iidx))
+
+             x2c => component_get_x2c_cx(iac(iidx))
+             lsize = mct_aVect_lsize(x2c)
+             call mct_aVect_init(x2z_zx_avg(iidx), x2c, lsize)
+             call mct_aVect_zero(x2z_zx_avg(iidx))
+          enddo
+       endif
        if (ocn_present .and. histavg_xao) then
           allocate(xao_ox_avg(num_inst_xao))
           xao_ox => prep_aoflux_get_xao_ox()
@@ -674,6 +721,14 @@ contains
              x2w_wx_avg(iidx)%rAttr = x2w_wx_avg(iidx)%rAttr + x2c%rAttr
           enddo
        endif
+       if (iac_present .and. histavg_iac) then
+          do iidx = 1,  num_inst_iac
+             c2x => component_get_c2x_cx(iac(iidx))
+             x2c => component_get_x2c_cx(iac(iidx))
+             z2x_zx_avg(iidx)%rAttr = z2x_zx_avg(iidx)%rAttr + c2x%rAttr
+             x2z_zx_avg(iidx)%rAttr = x2z_zx_avg(iidx)%rAttr + x2c%rAttr
+          enddo
+       endif
        if (ocn_present .and. histavg_xao) then
           xao_ox => prep_aoflux_get_xao_ox()
           do iidx = 1,  num_inst_ocn
@@ -745,6 +800,14 @@ contains
              x2c => component_get_x2c_cx(wav(iidx))
              w2x_wx_avg(iidx)%rAttr = (w2x_wx_avg(iidx)%rAttr + c2x%rAttr) / (cnt * 1.0_r8)
              x2w_wx_avg(iidx)%rAttr = (x2w_wx_avg(iidx)%rAttr + x2c%rAttr) / (cnt * 1.0_r8)
+          enddo
+       endif
+       if (iac_present .and. histavg_iac) then
+          do iidx = 1,  num_inst_iac
+             c2x => component_get_c2x_cx(iac(iidx))
+             x2c => component_get_x2c_cx(iac(iidx))
+             z2x_zx_avg(iidx)%rAttr = (z2x_zx_avg(iidx)%rAttr + c2x%rAttr) / (cnt * 1.0_r8)
+             x2z_zx_avg(iidx)%rAttr = (x2z_zx_avg(iidx)%rAttr + x2c%rAttr) / (cnt * 1.0_r8)
           enddo
        endif
        if (ocn_present .and. histavg_xao) then
@@ -895,6 +958,18 @@ contains
                      nx=wav_nx, ny=wav_ny, nt=1, whead=whead, wdata=wdata,  &
                      pre='x2wavg', tavg=.true.)
              endif
+             if (iac_present .and. histavg_iac) then
+                gsmap => component_get_gsmap_cx(iac(1))
+                dom   => component_get_dom_cx(iac(1))
+                call seq_io_write(hist_file, gsmap, dom%data, 'dom_zx',  &
+                     nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata, pre='domw')
+                call seq_io_write(hist_file, gsmap, z2x_zx_avg, 'z2x_zx',  &
+                     nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata,  &
+                     pre='z2xavg', tavg=.true.)
+                call seq_io_write(hist_file, gsmap, x2z_zx_avg, 'x2z_zx',  &
+                     nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata,  &
+                     pre='x2zavg', tavg=.true.)
+             endif
              if (ocn_present .and. histavg_xao) then
                 gsmap => component_get_gsmap_cx(ocn(1))
                 call seq_io_write(hist_file, gsmap, xao_ox_avg, 'xao_ox',  &
@@ -952,6 +1027,12 @@ contains
              do iidx = 1,  num_inst_wav
                 call mct_aVect_zero(w2x_wx_avg(iidx))
                 call mct_aVect_zero(x2w_wx_avg(iidx))
+             enddo
+          endif
+          if (iac_present .and. histavg_iac) then
+             do iidx = 1,  num_inst_wav
+                call mct_aVect_zero(z2x_zx_avg(iidx))
+                call mct_aVect_zero(x2z_zx_avg(iidx))
              enddo
           endif
           if (ocn_present .and. histavg_xao) then
@@ -1164,7 +1245,7 @@ contains
              if (present(yr_offset)) then
                 yy = yy + yr_offset
              end if
-             call shr_cal_ymdtod2string(date_str, yy, mm, dd)
+             call shr_cal_ymdtod2string(date_str, yy, mm, dd, curr_tod)
              write(hist_file(found), "(8a)") &
                   trim(case_name),'.cpl',trim(inst_suffix),'.h',trim(aname),'.',trim(date_str), '.nc'
           else

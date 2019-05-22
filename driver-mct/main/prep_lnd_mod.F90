@@ -34,10 +34,12 @@ module prep_lnd_mod
   public :: prep_lnd_calc_a2x_lx
   public :: prep_lnd_calc_r2x_lx
   public :: prep_lnd_calc_g2x_lx
+  public :: prep_lnd_calc_z2x_lx
 
   public :: prep_lnd_get_a2x_lx
   public :: prep_lnd_get_r2x_lx
   public :: prep_lnd_get_g2x_lx
+  public :: prep_lnd_get_z2x_lx
 
   public :: prep_lnd_get_mapper_Sa2l
   public :: prep_lnd_get_mapper_Fa2l
@@ -67,6 +69,7 @@ module prep_lnd_mod
   type(mct_aVect), pointer :: a2x_lx(:) ! Atm export, lnd grid, cpl pes - allocated in driver
   type(mct_aVect), pointer :: r2x_lx(:) ! Rof export, lnd grid, lnd pes - allocated in lnd gc
   type(mct_aVect), pointer :: g2x_lx(:) ! Glc export, lnd grid, cpl pes - allocated in driver
+  type(mct_aVect), pointer :: z2x_lx(:) ! Iac export, lnd grid, cpl pes - allocated in driver
 
   ! seq_comm_getData variables
   integer :: mpicom_CPLID                         ! MPI cpl communicator
@@ -86,7 +89,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_lnd_init(infodata, atm_c2_lnd, rof_c2_lnd, glc_c2_lnd)
+  subroutine prep_lnd_init(infodata, atm_c2_lnd, rof_c2_lnd, glc_c2_lnd, iac_c2_lnd)
 
     !---------------------------------------------------------------
     ! Description
@@ -98,6 +101,7 @@ contains
     logical                 , intent(in)    :: atm_c2_lnd ! .true.  => atm to lnd coupling on
     logical                 , intent(in)    :: rof_c2_lnd ! .true.  => rof to lnd coupling on
     logical                 , intent(in)    :: glc_c2_lnd ! .true.  => glc to lnd coupling on
+    logical                 , intent(in)    :: iac_c2_lnd ! .true.  => iac to lnd coupling on
     !
     ! Local Variables
     integer                  :: lsize_l
@@ -477,6 +481,26 @@ contains
 
   !================================================================================================
 
+  subroutine prep_lnd_calc_z2x_lx(timer)
+    !---------------------------------------------------------------
+    ! Description
+    ! Create z2x_lx (note that z2x_lx is a local module variable)
+    !
+    ! Arguments
+    character(len=*)     , intent(in) :: timer
+    !
+    ! Local Variables
+    integer :: egi
+    type(mct_aVect), pointer :: z2x_gx
+    character(*), parameter :: subname = '(prep_lnd_calc_z2x_lx)'
+    !---------------------------------------------------------------
+
+    ! Stub
+
+  end subroutine prep_lnd_calc_z2x_lx
+
+  !================================================================================================
+
   function prep_lnd_get_a2x_lx()
     type(mct_aVect), pointer :: prep_lnd_get_a2x_lx(:)
     prep_lnd_get_a2x_lx => a2x_lx(:)
@@ -491,6 +515,11 @@ contains
     type(mct_aVect), pointer :: prep_lnd_get_g2x_lx(:)
     prep_lnd_get_g2x_lx => g2x_lx(:)
   end function prep_lnd_get_g2x_lx
+
+  function prep_lnd_get_z2x_lx()
+    type(mct_aVect), pointer :: prep_lnd_get_z2x_lx(:)
+    prep_lnd_get_z2x_lx => z2x_lx(:)
+  end function prep_lnd_get_z2x_lx
 
   function prep_lnd_get_mapper_Sa2l()
     type(seq_map), pointer :: prep_lnd_get_mapper_Sa2l

@@ -680,6 +680,8 @@
     <values>
       <value cime_model='e3sm'>.false.</value>
       <value cime_model='cesm'>.true.</value>
+      <value cime_model='cesm' atm_grid="T62">.false.</value>
+      <value cime_model='cesm' atm_grid="TL319">.false.</value>
     </values>
   </entry>
 
@@ -723,18 +725,6 @@
     <values>
       <value cime_model='cesm'>5</value>
       <value cime_model='e3sm'>2</value>
-    </values>
-  </entry>
-
-  <entry id="gust_fac">
-    <type>real</type>
-    <category>control</category>
-    <group>seq_infodata_inparm</group>
-    <desc>
-      wind gustiness factor
-    </desc>
-    <values>
-      <value>0.0D0</value>
     </values>
   </entry>
 
@@ -819,6 +809,18 @@
     </desc>
     <values>
       <value>$WAV_GRID</value>
+    </values>
+  </entry>
+
+  <entry id="iac_gnam" modify_via_xml="IAC_GRID">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      IAC_GRID values passed into driver.
+    </desc>
+    <values>
+      <value>$IAC_GRID</value>
     </values>
   </entry>
 
@@ -919,7 +921,7 @@
     <type>char</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
-    <valid_values>CESM1_ORIG,CESM1_MOD,CESM1_ORIG_TIGHT,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2</valid_values>
+    <valid_values>CESM1_MOD,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2,NUOPC,NUOPC_TIGHT</valid_values>
     <desc>
       Set the coupler sequencing.
     </desc>
@@ -1296,6 +1298,19 @@
     </values>
   </entry>
 
+  <entry id="histavg_iac">
+    <type>logical</type>
+    <category>history</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      writes iac fields in coupler average history files.
+      default: true
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
   <entry id="histavg_xao">
     <type>logical</type>
     <category>history</category>
@@ -1479,6 +1494,19 @@
     </values>
   </entry>
 
+  <entry id="reprosum_allow_infnan">
+    <type>logical</type>
+    <category>reprosum</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      Allow INF and NaN in summands
+      default: .false.
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
   <entry id="reprosum_diffmax">
     <type>real</type>
     <category>reprosum</category>
@@ -1619,6 +1647,19 @@
     </desc>
   </entry>
 
+  <entry id="iac_cpl_dt" modify_via_xml="IAC_NCPL" skip_default_entry="true">
+    <type>integer</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      iac coupling interval in seconds
+      set via IAC_NCPL in env_run.xml.
+      IAC_NCPL is the number of times the iac is coupled per NCPL_BASE_PERIOD
+      NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
+      associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
+    </desc>
+  </entry>
+
   <entry id="esp_cpl_dt" skip_default_entry="true">
     <type>integer</type>
     <category>time</category>
@@ -1702,6 +1743,18 @@
     <group>seq_timemgr_inparm</group>
     <desc>
       wav coupling interval offset in seconds default: 0
+    </desc>
+    <values>
+      <value>0</value>
+    </values>
+  </entry>
+
+  <entry id="iac_cpl_offset">
+    <type>integer</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      iac coupling interval offset in seconds default: 0
     </desc>
     <values>
       <value>0</value>
@@ -2186,6 +2239,18 @@
     </desc>
     <values>
       <value>$PAUSE_ACTIVE_WAV</value>
+    </values>
+  </entry>
+
+  <entry id="pause_active_iac" modify_via_xml="PAUSE_ACTIVE_IAC">
+    <type>logical</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Pause signals are active for component iac
+    </desc>
+    <values>
+      <value>$PAUSE_ACTIVE_IAC</value>
     </values>
   </entry>
 
@@ -2688,6 +2753,71 @@
     </values>
   </entry>
 
+  <entry id="iac_ntasks" modify_via_xml="NTASKS_IAC">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>
+      the number of mpi tasks assigned to the iac components.
+      set by NTASKS_IAC in env_configure.xml.
+    </desc>
+    <values>
+      <value>$NTASKS_IAC</value>
+    </values>
+  </entry>
+
+  <entry id="iac_nthreads" modify_via_xml="NTHRDS_IAC">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>
+      the number of threads per mpi task for the iac component.
+      set by NTHRDS_IAC in env_configure.xml.
+    </desc>
+    <values>
+      <value>$NTHRDS_IAC</value>
+    </values>
+  </entry>
+
+  <entry id="iac_rootpe" modify_via_xml="ROOTPE_IAC">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>
+      the global mpi task rank of the root processor assigned to the iac component.
+      set by ROOTPE_IAC in env_configure.xml.
+    </desc>
+    <values>
+      <value>$ROOTPE_IAC</value>
+    </values>
+  </entry>
+
+  <entry id="iac_pestride" modify_via_xml="PSTRID_IAC">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>
+      the mpi global processors stride associated with the mpi tasks for the iac component.
+      set by PSTRID_IAC in env_configure.xml.
+    </desc>
+    <values>
+      <value>$PSTRID_IAC</value>
+    </values>
+  </entry>
+
+  <entry id="iac_layout" modify_via_xml="NINST_IAC_LAYOUT">
+    <type>char</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <valid_values>concurrent,sequential</valid_values>
+    <desc>
+      Layout of multi-instance iacs (if there are more than 1)
+    </desc>
+    <values>
+      <value>$NINST_IAC_LAYOUT</value>
+    </values>
+  </entry>
+
   <entry id="rof_ntasks" modify_via_xml="NTASKS_ROF">
     <type>integer</type>
     <category>cime_pes</category>
@@ -2867,6 +2997,32 @@
     </desc>
     <values>
       <value>$PSTRID_CPL</value>
+    </values>
+  </entry>
+
+  <entry id="info_taskmap_model">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>
+      level of task-to-node mapping output for the whole model 
+      (0: no output; 1: compact; 2: verbose)
+    </desc>
+    <values>
+      <value>$INFO_TASKMAP_MODEL</value>
+    </values>
+  </entry>
+
+  <entry id="info_taskmap_comp">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>
+      level of task-to-node mapping output for individual component models
+      (0: no output; 1: compact; 2: verbose)
+    </desc>
+    <values>
+      <value>$INFO_TASKMAP_COMP</value>
     </values>
   </entry>
 
@@ -4145,6 +4301,126 @@
     </values>
   </entry>
 
+  <entry id="iac2atm_fmapname"    modify_via_xml="IAC2ATM_FMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      iac to atm mapping file for fluxes
+    </desc>
+    <values>
+      <value>$IAC2ATM_FMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="iac2atm_fmaptype"    modify_via_xml="IAC2ATM_FMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$IAC2ATM_FMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="iac2atm_smapname"    modify_via_xml="IAC2ATM_SMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      iac to atm mapping file for states
+    </desc>
+    <values>
+      <value>$IAC2ATM_SMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="iac2atm_smaptype"    modify_via_xml="IAC2ATM_SMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$IAC2ATM_SMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="iac2lnd_fmapname"    modify_via_xml="IAC2LND_FMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      iac to lnd mapping file for fluxes
+    </desc>
+    <values>
+      <value>$IAC2LND_FMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="iac2lnd_fmaptype"    modify_via_xml="IAC2LND_FMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$IAC2LND_FMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="iac2lnd_smapname"    modify_via_xml="IAC2LND_SMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      iac to lnd mapping file for states
+    </desc>
+    <values>
+      <value>$IAC2LND_SMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="iac2lnd_smaptype"    modify_via_xml="IAC2LND_SMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$IAC2LND_SMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
   <entry id="data_assimilation_atm" modify_via_xml="DATA_ASSIMILATION_ATM">
     <type>logical</type>
     <category>data_assimilation</category>
@@ -4190,6 +4466,18 @@
     </desc>
     <values>
       <value>$DATA_ASSIMILATION_WAV</value>
+    </values>
+  </entry>
+
+  <entry id="data_assimilation_iac" modify_via_xml="DATA_ASSIMILATION_IAC">
+    <type>logical</type>
+    <category>data_assimilation</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Data Assimilation is on for component iac
+    </desc>
+    <values>
+      <value>$DATA_ASSIMILATION_IAC</value>
     </values>
   </entry>
 
