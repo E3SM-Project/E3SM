@@ -2,8 +2,8 @@
 #define SCREAM_FIELD_IDENTIFIER_HPP
 
 #include "share/field/field_layout.hpp"
+#include "share/util/string_utils.hpp"
 
-#include <string>
 #include <vector>
 
 namespace scream
@@ -20,7 +20,8 @@ namespace scream
 
 class FieldIdentifier {
 public:
-  using layout_type   = FieldLayout;
+  using layout_type = FieldLayout;
+  using ci_string   = util::CaseInsensitiveString;
 
   // Constructor(s)
   FieldIdentifier () = delete;
@@ -35,8 +36,8 @@ public:
                    const std::initializer_list<FieldTag>& tags,
                    const std::string& grid_name = "");
 
-  // Assignment (defaulted)
-  FieldIdentifier& operator= (const FieldIdentifier&) = default;
+  // Delete assignment, to prevent overwriting identifiers sneakyly
+  FieldIdentifier& operator= (const FieldIdentifier&) = delete;
 
   // ----- Getters ----- //
 
@@ -63,15 +64,15 @@ protected:
 
   void update_identifier ();
 
-  std::string     m_name;
+  ci_string       m_name;
 
   layout_type     m_layout;
 
-  std::string     m_grid_name;
+  ci_string       m_grid_name;
 
   // The identifier string is a conveniet way to display the information of
   // the identifier, so that it can be easily read.
-  std::string     m_identifier;
+  ci_string       m_identifier;
 };
 
 bool operator== (const FieldIdentifier& fid1, const FieldIdentifier& fid2);

@@ -157,13 +157,13 @@ Field<ScalarType,Device>::get_reshaped_view () const {
   const auto& field_layout = m_header->get_identifier().get_layout();
 
   // Make sure input field is allocated
-  error::runtime_check(m_allocated, "Error! Cannot reshape a field that has not been allocated yet.\n");
+  scream_require_msg(m_allocated, "Error! Cannot reshape a field that has not been allocated yet.\n");
 
   // Make sure DstDT has an eligible rank: can only reinterpret if the data type rank does not change or if either src or dst have rank 1.
   constexpr int DstRank = util::GetRanks<DT>::rank;
 
   // Check the reinterpret cast makes sense for the two value types (need integer sizes ratio)
-  error::runtime_check(alloc_prop.template is_allocation_compatible_with_value_type<DstValueType>(),
+  scream_require_msg(alloc_prop.template is_allocation_compatible_with_value_type<DstValueType>(),
                        "Error! Source field allocation is not compatible with the destination field's value type.\n");
 
   // The destination view type
@@ -181,7 +181,7 @@ Field<ScalarType,Device>::get_reshaped_view () const {
       kokkos_layout.dimension[i] = field_layout.dim(i);
 
       // Safety check: field_layout.dim(0)*...*field_layout.dim(field_layout.rank()-2) should divide num_values, so we check
-      error::runtime_check(num_last_dim_values % field_layout.dim(i) == 0, "Error! Something is wrong with the allocation properties.\n");
+      scream_require_msg(num_last_dim_values % field_layout.dim(i) == 0, "Error! Something is wrong with the allocation properties.\n");
       num_last_dim_values /= field_layout.dim(i);
     }
     kokkos_layout.dimension[field_layout.rank()-1] = num_last_dim_values;
@@ -198,7 +198,7 @@ void Field<ScalarType,Device>::allocate_view ()
   // a subview of the field). However, it *seems* suspicious to call
   // this method twice, and I think it's more likely than not that
   // such a scenario would indicate a bug. Therefore, I am prohibiting it.
-  error::runtime_check(!m_allocated, "Error! View was already allocated.\n");
+  scream_require_msg(!m_allocated, "Error! View was already allocated.\n");
 
   // Short names
   const auto& id     = m_header->get_identifier();
@@ -206,7 +206,7 @@ void Field<ScalarType,Device>::allocate_view ()
   auto& alloc_prop   = m_header->get_alloc_properties();
 
   // Check the identifier has all the dimensions set
-  error::runtime_check(layout.are_dimensions_set(), "Error! Cannot create a field until all the field's dimensions are set.\n");
+  scream_require_msg(layout.are_dimensions_set(), "Error! Cannot create a field until all the field's dimensions are set.\n");
 
   // Commit the allocation properties
   alloc_prop.commit();

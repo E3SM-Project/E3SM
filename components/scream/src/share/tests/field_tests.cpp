@@ -26,10 +26,32 @@ TEST_CASE("field_identifier", "") {
   std::vector<int> dims1 = {2, 3, 4};
   std::vector<int> dims2 = {2, 3, 3};
 
+  // Should not be able to set negative dimensions, or a non existing extent
+  REQUIRE_THROWS(fid1.set_dimension(0,-1));
+  REQUIRE_THROWS(fid1.set_dimension(-1,1));
+  REQUIRE_THROWS(fid1.set_dimension(3,1));
+
+  // Should not be able to set a dimensions vector of wrong rank
+  REQUIRE_THROWS(fid1.set_dimensions({1,2}));
+
   fid1.set_dimensions(dims1);
   fid2.set_dimensions(dims2);
 
+  // Should not be able to reset the dimensions once they are set
+  REQUIRE_THROWS(fid2.set_dimensions(dims2));
+
   REQUIRE (fid1!=fid2);
+}
+
+TEST_CASE("field_tracking", "") {
+  using namespace scream;
+
+  FieldTracking track;
+  util::TimeStamp time1(0,0,10);
+  util::TimeStamp time2(0,0,20);
+  REQUIRE_NOTHROW (track.update_time_stamp(time2));
+
+  REQUIRE_THROWS  (track.update_time_stamp(time1));
 }
 
 TEST_CASE("field", "") {
@@ -47,6 +69,7 @@ TEST_CASE("field", "") {
   // Check copy constructor
   SECTION ("copy ctor") {
     Field<Real,Device> f1 (fid);
+
     f1.allocate_view();
 
     Field<const Real,Device> f2 = f1;
@@ -58,7 +81,14 @@ TEST_CASE("field", "") {
   // Check if we can extract a reshaped view
   SECTION ("reshape simple") {
     Field<Real,Device> f1 (fid);
+
+    // Should not be able to reshape before allocating
+    REQUIRE_THROWS(f1.get_reshaped_view<Real*>());
+
     f1.allocate_view();
+
+    // Should not be able to reshape to this data type
+    REQUIRE_THROWS(f1.get_reshaped_view<Pack<Real,8>>());
 
     auto v1d = f1.get_view();
     auto v3d = f1.get_reshaped_view<Real[2][3][12]>();
@@ -107,22 +137,40 @@ TEST_CASE("field_repo", "") {
   fid1.set_dimensions(dims1);
   fid2.set_dimensions(dims2);
 
-  FieldRepository<Real,Device>  repo_dev;
+  FieldRepository<Real,Device>  repo;
 
-  repo_dev.registration_begins();
-  repo_dev.register_field(fid1);
-  repo_dev.register_field(fid2);
-  repo_dev.registration_ends();
+  // Should not be able to register fields yet
+  REQUIRE_THROWS(repo.register_field(fid1,"group_1"));
+
+  repo.registration_begins();
+  repo.register_field(fid1,"group_1");
+  repo.register_field(fid2,"group_2");
+  // Should not be able to register fields to the 'state' group (it's reserved)
+  REQUIRE_THROWS(repo.register_field(fid2,"state"));
+  repo.registration_ends();
+
+  // Should not be able to register fields anymore
+  REQUIRE_THROWS(repo.register_field(fid1,"group_1"));
 
   // Check registration is indeed closed
-  REQUIRE (repo_dev.repository_state()==RepoState::Closed);
-  REQUIRE (repo_dev.size()==2);
+  REQUIRE (repo.repository_state()==RepoState::Closed);
+  REQUIRE (repo.size()==2);
 
-  auto f1 = repo_dev.get_field(fid1);
-  auto f2 = repo_dev.get_field(fid2);
+  auto f1 = repo.get_field(fid1);
+  auto f2 = repo.get_field(fid2);
 
   // Check the two fields identifiers are indeed different
   REQUIRE (f1.get_header().get_identifier()!=f2.get_header().get_identifier());
+
+  // Check that the groups names are in the header. While at it, make sure that case insensitive works fine.
+  REQUIRE (util::contains(f1.get_header().get_tracking().get_groups_names(),"gRouP_1"));
+  REQUIRE (util::contains(f2.get_header().get_tracking().get_groups_names(),"Group_2"));
+
+  // Check that the groups in the repo contain the correct fields
+  REQUIRE (repo.get_field_groups().count("GROUP_1")==1);
+  REQUIRE (repo.get_field_groups().count("GRoup_2")==1);
+  REQUIRE (util::contains(repo.get_field_groups().at("group_1"),"Field_1"));
+  REQUIRE (util::contains(repo.get_field_groups().at("group_2"),"Field_2"));
 }
 
 } // anonymous namespace

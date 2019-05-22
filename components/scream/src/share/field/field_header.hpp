@@ -28,8 +28,8 @@ public:
   FieldHeader (const FieldHeader&) = default;
   explicit FieldHeader (const identifier_type& id);
 
-  // Assignment (defaulted)
-  FieldHeader& operator= (const FieldHeader&) = default;
+  // Assignment deleted, to prevent sneaky overwrites.
+  FieldHeader& operator= (const FieldHeader&) = delete;
 
   // ----- Getters ----- //
 

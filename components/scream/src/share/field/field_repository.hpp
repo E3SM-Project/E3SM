@@ -4,8 +4,11 @@
 #include "share/scream_types.hpp"
 #include "share/scream_assert.hpp"
 #include "share/field/field.hpp"
+#include "share/util/string_utils.hpp"
+#include "share/util/scream_std_utils.hpp"
 
 #include <map>
+#include <set>
 
 namespace scream
 {
@@ -26,8 +29,10 @@ public:
   using field_type      = Field<scalar_type,device_type>;
   using header_type     = typename field_type::header_type;
   using identifier_type = typename header_type::identifier_type;
+  using ci_string       = typename identifier_type::ci_string;
   using map_type        = std::map<identifier_type,field_type>;
-  using repo_type       = std::map<std::string,map_type>;
+  using repo_type       = std::map<ci_string,map_type>;
+  using groups_map_type = std::map<ci_string,std::set<ci_string>>;
 
   // Constructor(s)
   FieldRepository ();
@@ -44,24 +49,41 @@ public:
 
   // Deduce the pack size from the scalar type (which must be of type Pack<ScalarType,N>, for some int N>0, or ScalarType)
   template<typename RequestedValueType = scalar_type>
+  void register_field (const identifier_type& identifier, const std::set<std::string>& groups_names);
+
+  template<typename RequestedValueType = scalar_type>
+  void register_field (const identifier_type& identifier, const std::string& field_group);
+
+  template<typename RequestedValueType = scalar_type>
   void register_field (const identifier_type& identifier);
 
   // Methods to query the database
   int size () const { return m_fields.size(); }
   bool has_field (const identifier_type& identifier) const;
-  field_type get_field (const identifier_type& identifier) const;
+  const field_type& get_field (const identifier_type& identifier) const;
+  const groups_map_type& get_field_groups () const { return m_field_groups; }
+
   RepoState repository_state () const { return m_state; }
 
   typename repo_type::const_iterator begin() const { return m_fields.begin(); }
   typename repo_type::const_iterator end()   const { return m_fields.begin(); }
 
+  typename repo_type::iterator begin() { return m_fields.begin(); }
+  typename repo_type::iterator end()   { return m_fields.begin(); }
+
 protected:
 
   // The state of the repository
-  RepoState       m_state;
+  RepoState           m_state;
 
   // The actual repo.
-  repo_type       m_fields;
+  repo_type           m_fields;
+
+  // The groups
+  groups_map_type     m_field_groups;
+
+  // The reserved groups. Users are not allowed to manually add fields to these groups
+  std::set<ci_string> m_reserved_groups;
 };
 
 // ============================== IMPLEMENTATION ============================= //
@@ -70,12 +92,36 @@ template<typename ScalarType, typename Device>
 FieldRepository<ScalarType,Device>::FieldRepository ()
  : m_state (RepoState::Clean)
 {
-  // Nothing to be done here
+  m_reserved_groups.insert("state");
+  m_reserved_groups.insert("old state");
+
+  // TODO: we should add names to the 'state' and 'old state' group.
+  //       This means that the repo should know the name of the state variables,
+  //       as well as the names of the old state variables (probably "blah old").
+  //       This may require passing a parameter list or a list of strings to the constructor.
 }
 
 template<typename ScalarType, typename Device>
 template<typename RequestedValueType>
 void FieldRepository<ScalarType,Device>::register_field (const identifier_type& id) {
+  std::set<std::string> empty_set;
+  register_field<RequestedValueType>(id,empty_set);
+}
+
+template<typename ScalarType, typename Device>
+template<typename RequestedValueType>
+void FieldRepository<ScalarType,Device>::
+register_field (const identifier_type& id, const std::string& group_name) {
+  std::set<std::string> group_name_set;
+  group_name_set.insert(group_name);
+  register_field<RequestedValueType>(id,group_name_set);
+}
+
+template<typename ScalarType, typename Device>
+template<typename RequestedValueType>
+void FieldRepository<ScalarType,Device>::
+register_field (const identifier_type& id, const std::set<std::string>& groups_names) {
+
   // Check that ScalarOrPackType is indeed ScalarType or Pack<ScalarType,N>, for some N>0.
   static_assert(std::is_same<ScalarType,RequestedValueType>::value ||
                 std::is_same<ScalarType,typename util::ScalarProperties<RequestedValueType>::scalar_type>::value,
@@ -83,7 +129,7 @@ void FieldRepository<ScalarType,Device>::register_field (const identifier_type& 
                 "the template argument 'ScalarType' of this class or be a Pack type based on ScalarType.\n");
 
   // Sanity checks
-  error::runtime_check(m_state==RepoState::Open,"Error! Registration of new fields not started or no longer allowed.\n");
+  scream_require_msg(m_state==RepoState::Open,"Error! Registration of new fields not started or no longer allowed.\n");
 
   // Get the map of all fields with this name
   auto& map = m_fields[id.name()];
@@ -93,6 +139,22 @@ void FieldRepository<ScalarType,Device>::register_field (const identifier_type& 
 
   // Make sure the field can accommodate the requested value type
   it_bool.first->second.get_header().get_alloc_properties().template request_value_type_allocation<RequestedValueType>();
+
+  // Finally, add the field to the given groups
+  for (const auto& group_name : groups_names) {
+    // First, make sure it's not a reserved group
+    scream_require_msg(!util::contains(m_reserved_groups,group_name),"");
+
+    // Add the group name to the field tracking of all the fields with that name
+    // Remember: fields with the same name can differ only because of tags/extents (i.e., different grids).
+    //           Morally, they are different layouts of the same field.
+    for (auto& f_it : map) {
+      f_it.second.get_header().get_tracking().add_to_group(group_name);
+    }
+
+    // Add the field name to the set of fields belonging to this group
+    m_field_groups[group_name].insert(id.name());
+  }
 }
 
 template<typename ScalarType, typename Device>
@@ -103,14 +165,14 @@ has_field (const identifier_type& identifier) const {
 }
 
 template<typename ScalarType, typename Device>
-typename FieldRepository<ScalarType,Device>::field_type
+const typename FieldRepository<ScalarType,Device>::field_type&
 FieldRepository<ScalarType,Device>::get_field (const identifier_type& id) const {
-  error::runtime_check(m_state==RepoState::Closed,"Error! You are not allowed to grab fields from the repo until after the registration phase is completed.\n");
+  scream_require_msg(m_state==RepoState::Closed,"Error! You are not allowed to grab fields from the repo until after the registration phase is completed.\n");
 
   const auto& map = m_fields.find(id.name());
-  error::runtime_check(map!=m_fields.end(), "Error! Field not found.\n");
+  scream_require_msg(map!=m_fields.end(), "Error! Field not found.\n");
   auto it = map->second.find(id);
-  error::runtime_check(it!=map->second.end(), "Error! Field not found.\n");
+  scream_require_msg(it!=map->second.end(), "Error! Field not found.\n");
   return it->second;
 }
 
