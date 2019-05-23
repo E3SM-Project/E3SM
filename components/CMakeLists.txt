@@ -13,7 +13,7 @@
 # - Read modern cmake docs, use modern features
 # - Use find_package for trilinos and other TPLS
 
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.9)
 cmake_policy(SET CMP0057 NEW)
 
 project(E3SM C CXX Fortran)
