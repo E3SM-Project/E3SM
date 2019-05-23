@@ -161,6 +161,15 @@ VECTOR_SIMD_LOOP
     }
     debug_set_invalid(0, num_values - 1);
   }
+
+  KOKKOS_INLINE_FUNCTION
+  value_type reduce_add() {
+    value_type sum = 0.0;
+    for (int i=0; i<vector_length; ++i) {
+      sum += _data[i];
+    }
+    return sum;
+  }
 };
 
 template <typename T, typename SpT, int l>

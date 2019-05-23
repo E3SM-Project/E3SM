@@ -20,6 +20,8 @@ struct PhysicalConstants
   static constexpr Real cp            = 1005.0;
   static constexpr Real kappa         = Rgas / cp;
   static constexpr Real rrearth       = 1.0 / 6.376e6;
+  static constexpr Real g             = 9.80616;
+  static constexpr Real p0            = 100000;         // [mbar]
 };
 
 } // namespace Homme

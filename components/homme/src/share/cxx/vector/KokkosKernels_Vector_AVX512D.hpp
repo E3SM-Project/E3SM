@@ -134,6 +134,11 @@ public:
     debug_set_invalid(0, num_values - 1);
   }
 
+  KOKKOS_INLINE_FUNCTION
+  value_type reduce_add() {
+    return _mm512_reduce_add_pd (_data.v);
+  }
+
   inline value_type &operator[](int i) const { return _data.d[i]; }
 };
 

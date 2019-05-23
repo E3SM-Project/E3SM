@@ -1,14 +1,11 @@
 #include "DiagnosticsBase.hpp"
 
 #include "Context.hpp"
-#include "Elements.hpp"
-#include "PhysicalConstants.hpp"
 #include "SimulationParams.hpp"
 #include "TimeLevel.hpp"
 #include "Tracers.hpp"
 
 #include "utilities/SyncUtils.hpp"
-#include "utilities/SubviewUtils.hpp"
 
 namespace Homme
 {

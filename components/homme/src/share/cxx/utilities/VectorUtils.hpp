@@ -81,6 +81,33 @@ VECTOR_SIMD_LOOP
   return r_val;
 }
 
+// For pow, we use a standard SIMD loop, regardless of what Scalar is.
+// This is because pow implementation may be available only in _some_
+// avx 512 instruction sets (or have a slightly different name)
+template<typename VectorType, typename ExpType>
+KOKKOS_INLINE_FUNCTION
+VectorType
+pow (const VectorType& v, const ExpType p)
+{
+  VectorType vp;
+VECTOR_SIMD_LOOP
+  for (int i = 0; i < VectorType::vector_length; ++i) {
+    vp[i] = std::pow(v[i],p);
+  }
+
+  return vp;
+}
+
+template<typename VectorType, typename ExpType>
+KOKKOS_INLINE_FUNCTION
+void pow_update (VectorType& v, const ExpType p)
+{
+VECTOR_SIMD_LOOP
+  for (int i = 0; i < VectorType::vector_length; ++i) {
+    v[i] = std::pow(v[i],p);
+  }
+}
+
 } // namespace KokkosKernels
 } // namespace Batched
 } // namespace Experimental
