@@ -1421,6 +1421,8 @@
         <command name="load">intel/18.0.1</command>
         <command name="unload">pnetcdf/1.9.0</command>
         <command name="unload">mvapich2</command>
+        <command name="unload">cmake</command>
+        <command name="load">cmake/3.12.1</command>
         <command name="load">mvapich2/2.2</command>
         <command name="load">netcdf-fortran/4.4.4</command>
         <command name="load">pnetcdf/1.9.0</command>
@@ -1474,6 +1476,8 @@
         <command name="load">intel/18.0.1</command>
         <command name="unload">pnetcdf/1.9.0</command>
         <command name="unload">mvapich2</command>
+        <command name="unload">cmake</command>
+        <command name="load">cmake/3.12.1</command>
         <command name="load">mvapich2/2.2</command>
         <command name="load">netcdf-fortran/4.4.4</command>
         <command name="load">pnetcdf/1.9.0</command>
