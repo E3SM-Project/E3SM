@@ -41,4 +41,4 @@ CIME is free software made available under the BSD License. For details see the 
 
 # Digital Object Identifier
 
-doi:10.5065/WE0D-9K91
+DOI:[10.5065/WE0D-9K91](http://dx.doi.org/10.5065/WE0D-9K91)
