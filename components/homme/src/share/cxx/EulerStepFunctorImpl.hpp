@@ -27,23 +27,6 @@
 #include "utilities/VectorUtils.hpp"
 #include "vector/vector_pragmas.hpp"
 
-
-namespace Kokkos {
-struct Real2 {
-  Homme::Real v[2];
-  KOKKOS_FORCEINLINE_FUNCTION Real2 () { v[0] = v[1] = 0; }
-  KOKKOS_FORCEINLINE_FUNCTION Real2 operator+= (const Real2& o) {
-    v[0] += o.v[0];
-    v[1] += o.v[1];
-    return *this;
-  }
-};
-
-template<> struct reduction_identity<Real2> {
-  KOKKOS_FORCEINLINE_FUNCTION static Real2 sum() { return Real2(); }
-};
-}
-
 namespace Homme {
 
 // On older machines, low memory b/w is the most important performance-influence
@@ -155,7 +138,7 @@ public:
     m_sphere_ops.allocate_buffers(Homme::get_default_team_policy<ExecSpace>(m_geometry.num_elems()*m_data.qsize));
   }
 
-  void request_buffers (FunctorsBuffersManager& fbm) {
+  void request_buffers (FunctorsBuffersManager& fbm) const {
     fbm.request_concurrency(m_geometry.num_elems());
     fbm.request_3d_midpoint_buffers(Buffers::num_3d_scalar_mid_buf, Buffers::num_3d_vector_mid_buf);
   }

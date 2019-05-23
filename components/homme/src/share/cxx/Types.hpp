@@ -133,4 +133,24 @@ template <typename T> struct MyDebug {};
 
 } // Homme
 
+// A kokkos-compatible implementation of a static array of 2 Real's
+namespace Kokkos {
+
+struct Real2 {
+  Homme::Real v[2];
+  KOKKOS_FORCEINLINE_FUNCTION Real2 () { v[0] = v[1] = 0; }
+  KOKKOS_FORCEINLINE_FUNCTION Real2& operator+= (const Real2& o) {
+    v[0] += o.v[0];
+    v[1] += o.v[1];
+    return *this;
+  }
+};
+
+// Specialization of a Kokkos structure, needed in the initialization of reduction operations.
+template<> struct reduction_identity<Real2> {
+  KOKKOS_FORCEINLINE_FUNCTION static Real2 sum() { return Real2(); }
+};
+
+} // namespace Kokkos
+
 #endif // HOMMEXX_TYPES_HPP
