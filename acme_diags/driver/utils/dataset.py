@@ -176,132 +176,6 @@ class Dataset():
         return start_yr, end_yr
 
 
-    def _get_start_yr_from_fname(self, var, path):
-        """
-        Based of var, get the start year from the timeseries file
-        located in path.
-        The expected file format is:
-            {var}_{start_yr}01_{end_yr}12.nc
-        """
-        timeseries_path = self._get_timeseries_file_path(var, path)
-
-        if not timeseries_path:
-            msg = 'There\'s no file for {} in {}'.format(var, path)
-            raise IOError(msg)
-
-        file_name = timeseries_path.split('/')[-1]
-        re_str = r'(?:{}_)(.*)(?:01_)'.format(var)
-        matches = re.match(re_str, file_name)
-
-        if not matches:
-            msg = 'Error when extracting the start_yr from the file'
-            msg += ' for var ({}). We used a regex of {} on {},'
-            msg += ' but nothing was found.'
-            msg = msg.format(var, re_str, file_name)
-            raise RuntimeError(msg)
-
-        match = matches.group(1)
-
-        if len(match) != 4:
-            msg = 'Got an invalid value {} when '.format(match)
-            msg += 'parsing the start year from the filename.'
-            raise RuntimeError(msg)
-
-        return match
-
-
-    def _get_end_yr_from_fname(self, var, path):
-        """
-        Based of var, get the end year from the timeseries file
-        located in path.
-        The expected file format is:
-            {var}_{start_yr}01_{end_yr}12.nc
-        """
-        timeseries_path = self._get_timeseries_file_path(var, path)
-
-        if not timeseries_path:
-            msg = 'There\'s no file for {} in {}'.format(var, path)
-            raise IOError(msg)
-
-        file_name = timeseries_path.split('/')[-1]
-        re_str = r'(?:.*01_)(.*)(?:12.nc)'
-        matches = re.match(re_str, file_name)
-        
-        if not matches:
-            msg = 'Error when extracting the end_yr from the file'
-            msg += ' for var ({}). We used a regex of {} on {},'
-            msg += ' but nothing was found.'
-            msg = msg.format(var, re_str, file_name)
-            raise RuntimeError(msg)
-
-        match = matches.group(1)
-
-        if len(match) != 4:
-            msg = 'Got an invalid value {} when '.format(match)
-            msg += 'parsing the end year from the filename.'
-            raise RuntimeError(msg)
-
-        return match
-
-
-    def _get_start_and_end_time_indices(self, var):
-        """
-        Get the start and end years as slices.
-
-        This is based off the passed in var because we need the
-        file that the var corresponds to calculate the offset.
-        """
-        if not self.is_timeseries():
-            msg = 'Input data is not timeseries, can\'t get start and end years.'
-            raise RuntimeError(msg)
-
-        # This is from the user's input.
-        # Ex: 1980, 1989
-        start_yr, end_yr = self.get_start_and_end_years()
-        start_yr, end_yr = int(start_yr), int(end_yr)
-
-        # Get the start and end years based on the file corresponding to var.
-        # Ex1: 1950, 2015
-        # Ex2: 1980, 2015
-        path = self.parameters.reference_data_path if self.ref else self.parameters.test_data_path
-        start_yr_file = self._get_start_yr_from_fname(var, path)
-        end_yr_file = self._get_end_yr_from_fname(var, path)
-        start_yr_file, end_yr_file = int(start_yr_file), int(end_yr_file)
-
-        # Check that the user-inputted year range can work for the file associated to var.
-        if end_yr_file - start_yr_file < end_yr - start_yr:
-            msg = 'For {}, the years you\'re trying to slice ({}, {})'.format(var, start_yr, end_yr)
-            msg += ' don\'t fit within the year ranges for the file ({}, {}).'.format(start_yr_file, end_yr_file)
-            raise RuntimeError(msg)
-
-        if start_yr < start_yr_file:
-            msg = 'The inputted start year ({}) is less'.format(start_yr)
-            msg += ' than that of the file ({}).'.format(start_yr_file)
-            raise RuntimeError(msg)
-
-        if end_yr > end_yr_file:
-            msg = 'The inputted end year ({}) is greater'.format(end_yr)
-            msg += ' than that of the file ({}).'.format(end_yr_file)
-            raise RuntimeError(msg)
-
-        # Calculate the offset, which is needed for when *_yr >= *_yr_file.
-        # Ex1: 1980 - 1950 = 30
-        # Ex2: 1980 - 1980 = 0
-        offset = start_yr - start_yr_file
-
-        # Using the offset, and user inputted years (start_yr, end_yr), calculate the indices.
-        # The +1 is because we want to include the end_yr as well.
-        # Ex1: 0, 10
-        # Ex2: 0, 10
-        start_slice, end_slice = 0, end_yr - start_yr + 1
-        # Ex1: 0+30, 10+30 = 30, 40
-        # Ex2: 0+0, 10+0 = 0, 10
-        start_slice, end_slice = start_slice + offset, end_slice + offset
-
-        # We multiply by 12 since it's monthly data.
-        return start_slice*12, end_slice*12
-
-
     def get_test_filename_climo(self, season):
         """
         Return the path to the test file name based on
@@ -665,9 +539,10 @@ class Dataset():
         for this var exists in data_path.
         The checking is done in _get_first_valid_vars_timeseries().
         """
-        start_time_idx, end_time_idx = self._get_start_and_end_time_indices(var)
+        start_year, end_year = self.get_start_and_end_years()
+        start_time, end_time = '{}-1'.format(start_year), '{}-12'.format(end_year)
         path = self._get_timeseries_file_path(var, data_path)
         var = var_to_get if var_to_get else var
 
         with cdms2.open(path) as f:
-            return f(var, time=slice(start_time_idx, end_time_idx))(squeeze=1)
+            return f(var, time=(start_time, end_time))(squeeze=1)
