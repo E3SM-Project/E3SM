@@ -38,3 +38,7 @@ of NSF's Division of Atmospheric and Geospace Sciences.
 # License
 
 CIME is free software made available under the BSD License. For details see the LICENSE file.
+
+# Digital Object Identifier
+
+doi:10.5065/WE0D-9K91
