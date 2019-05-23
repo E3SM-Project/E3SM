@@ -52,8 +52,9 @@ Int compare (const std::string& label, const double& tol,
 
 struct Baseline {
   Baseline () {
-    params_.push_back({ic::Factory::mixed, 1800, 1});
-    params_.push_back({ic::Factory::mixed, 1800, 2});
+    for (const bool log_predictNc : {true, false})
+      for (const int it : {1, 2})
+        params_.push_back({ic::Factory::mixed, 1800, it, log_predictNc});
   }
 
   Int generate_baseline (const std::string& filename) {
@@ -101,11 +102,13 @@ private:
     ic::Factory::IC ic;
     Real dt;
     Int it;
+    bool log_predictNc;
   };
 
   static void set_params (const ParamSet& ps, FortranData& d) {
     d.dt = ps.dt;
     d.it = ps.it;
+    d.log_predictNc = ps.log_predictNc;
   }
 
   std::vector<ParamSet> params_;
