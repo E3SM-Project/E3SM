@@ -33,7 +33,7 @@ namespace p3 {
 FortranData::FortranData (Int ncol_, Int nlev_)
   : ncol(ncol_), nlev(nlev_)
 {
-
+  log_predictNc = true;
   dt = -1; // model time step, s; set to invalid -1
   it = 1;  // seems essentially unused
   // In/out
@@ -137,7 +137,7 @@ void p3_main (const FortranData& d) {
             d.prt_sol.data(), 1, d.ncol, 1, d.nlev, d.diag_ze.data(),
             d.diag_effc.data(), d.diag_effi.data(), d.diag_vmi.data(),
             d.diag_di.data(), d.diag_rhoi.data(),
-            d.log_predictnc,
+            d.log_predictNc,
             d.pdel.data(), d.exner.data(), d.cmeiout.data(), d.prain.data(),
             d.nevapr.data(), d.prer_evap.data(),
             d.rflx.data(), d.sflx.data(),
