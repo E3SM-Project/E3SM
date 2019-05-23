@@ -34,8 +34,8 @@ def runseq(case, coupling_times):
         n = case.get_value("STOP_N")
         run_duration = atm_cpl_dt * int(n)
         if (run_duration % int(glc_cpl_dt) != 0):
-            logger.warn("WARNING: glc time step={} is not a divisor of runDuration={}".format(int(glc_cpl_dt),run_duration))
-            logger.warn("         resetting glc time step to atm_cpl_dt = {}".format(int(atm_cpl_dt)))
+            logger.warning("WARNING: glc time step={} is not a divisor of runDuration={}".format(int(glc_cpl_dt),run_duration))
+            logger.warning("         resetting glc time step to atm_cpl_dt = {}".format(int(atm_cpl_dt)))
             glc_cpl_dt = atm_cpl_dt
 
     outfile   = open(os.path.join(caseroot, "CaseDocs", "nuopc.runseq"), "w")
