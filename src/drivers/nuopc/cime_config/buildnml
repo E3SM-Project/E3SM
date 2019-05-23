@@ -1,17 +1,12 @@
 #!/usr/bin/env python
 """Namelist creator for CIME's driver.
 """
-# Typically ignore this.
-# pylint: disable=invalid-name
-
-# Disable these because this is our standard setup
-# pylint: disable=wildcard-import,unused-wildcard-import,wrong-import-position
-
-import os, shutil, sys, glob, itertools
+import os, sys
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","..")
 sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
 
+import shutil, glob, itertools
 from standard_script_setup import *
 from CIME.case import Case
 from CIME.nmlgen import NamelistGenerator
@@ -294,111 +289,56 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
 def _create_runseq(case, coupling_times):
 ###############################################################################
 
-    rundir    = case.get_value("RUNDIR")
     caseroot  = case.get_value("CASEROOT")
-    cimeroot  = case.get_value("CIMEROOT")
-    comp_atm  = case.get_value("COMP_ATM")
-    comp_ice  = case.get_value("COMP_ICE")
-    comp_glc  = case.get_value("COMP_GLC")
-    comp_lnd  = case.get_value("COMP_LND")
-    comp_ocn  = case.get_value("COMP_OCN")
-    comp_rof  = case.get_value("COMP_ROF")
-    comp_wav  = case.get_value("COMP_WAV")
-
     user_file = os.path.join(caseroot, "nuopc.runseq")
     if os.path.exists(user_file):
 
         # Determine if there is a user run sequence file in CASEROOT, use it
+        rundir    = case.get_value("RUNDIR")
         shutil.copy(user_file, rundir)
         shutil.copy(user_file, os.path.join(caseroot,"CaseDocs"))
         logger.info("NUOPC run sequence: copying custom run sequence from case root")
 
     else:
 
+        comp_atm  = case.get_value("COMP_ATM")
+        comp_ice  = case.get_value("COMP_ICE")
+        # not yet in use
+        # comp_glc  = case.get_value("COMP_GLC")
+        comp_lnd  = case.get_value("COMP_LND")
+        comp_ocn  = case.get_value("COMP_OCN")
+        comp_rof  = case.get_value("COMP_ROF")
+        comp_wav  = case.get_value("COMP_WAV")
+
+        runseq_a1 = (comp_atm == 'datm' and comp_ocn == "docn" and comp_ice == 'dice' and
+                     comp_rof == 'drof' and comp_wav == 'swav' and comp_lnd == 'slnd') # A compsets
+        runseq_a2 = (comp_atm == 'satm' and comp_ocn == "socn" and comp_ice == 'sice' and
+                     comp_rof == 'srof' and comp_wav == 'swav' and comp_lnd == 'dlnd') # ADWAV
+        runseq_a3 = (comp_atm == 'satm' and comp_ocn == "socn" and comp_ice == 'sice' and
+                     comp_rof == 'srof' and comp_wav == 'dwav' and comp_lnd == 'slnd') # ADLND
+
         # Create a run sequence file appropriate for target compset
-        input_dir = os.path.join(os.path.join(cimeroot,"src","drivers","nuopc","cime_config"))
 
-        if (comp_atm == 'datm' and comp_ocn == "docn" and comp_ice == 'dice' and 
-            comp_rof == 'drof' and comp_wav == 'swav' and comp_lnd == 'slnd'):
-            # for A compsets
-            runseq_input = os.path.join(input_dir, 'nuopc_runseq_A')
+        sys.path.append(os.path.join(_CIMEROOT, "src", "drivers", "nuopc", "cime_config", "runseq"))
 
-        elif (comp_atm == 'satm' and comp_ocn == "socn" and comp_ice == 'sice' and 
-              comp_rof == 'srof' and comp_wav == 'dwav' and comp_lnd == 'slnd'):
-            # for ADWAV compsets
-            runseq_input = os.path.join(input_dir, 'nuopc_runseq_ADWAV')
-
-        elif (comp_atm == 'satm' and comp_ocn == "socn" and comp_ice == 'sice' and 
-              comp_rof == 'srof' and comp_wav == 'swav' and comp_lnd == 'dlnd'):
-            # for ADLND compsets
-            runseq_input = os.path.join(input_dir, 'nuopc_runseq_ADLND')
-
+        if (runseq_a1 or runseq_a2 or runseq_a3):
+            from runseq_A import runseq
         elif (comp_atm == 'xatm' and comp_ocn == "xocn" and comp_ice == 'xice' and comp_rof == 'xrof'):
-            # for X compsets
-            runseq_input = os.path.join(input_dir, 'nuopc_runseq_X')
-
-        elif (comp_atm == 'cam' and comp_lnd == 'clm' and comp_ocn == "docn"):
-            # for F compsets
-            runseq_input = os.path.join(input_dir, 'nuopc_runseq_F')
-
-        elif (comp_atm == 'cam' and comp_lnd == 'slnd' and comp_ice == 'sice' and comp_ocn == "docn"):
-            # for Q (aquaplanet) compsets
-            runseq_input = os.path.join(input_dir, 'nuopc_runseq_Q')
-
-        elif ( (comp_atm == 'datm' and (comp_ocn == "mom" or comp_ocn == 'pop')  and comp_ice == "dice") or 
-               (comp_atm == 'datm' and (comp_ocn == "mom" or comp_ocn == 'pop')  and comp_ice == "cice") or
-               (comp_atm == 'datm' and comp_ocn == "docn" and comp_ice == "cice")):
-            # for C, G and D compsets
-            if comp_wav == 'ww':
-                runseq_input = os.path.join(input_dir, 'nuopc_runseq_C_G_D_ww3')
-            else:
-                runseq_input = os.path.join(input_dir, 'nuopc_runseq_C_G_D_swav')
-
-        elif (comp_atm == 'datm' and comp_lnd == "clm"):
-            # for I compsets
-            if (comp_rof == 'srof' and comp_glc == "sglc"):
-                runseq_input = os.path.join(input_dir, 'nuopc_runseq_I')
-            elif (comp_rof == 'mosart' and comp_glc == "sglc"):
-                runseq_input = os.path.join(input_dir, 'nuopc_runseq_I_mosart')
-            elif (comp_rof == 'mosart' and comp_glc == "glc"):
-                runseq_input = os.path.join(input_dir, 'nuopc_runseq_I_mosart_cism')
-
+            from runseq_X import runseq
+        elif (comp_atm == 'cam' and comp_ocn == "docn"):
+            from runseq_FQ import runseq
+        elif (comp_lnd == "clm" and comp_atm == 'datm'):
+            from runseq_I import runseq
+        elif (comp_ice == "cice" and comp_atm == 'datm' and comp_ocn == "docn"):
+            from runseq_D import runseq
+        elif ((comp_ocn == "mom" or comp_ocn == 'pop') and comp_atm == 'datm'):
+            from runseq_CG import runseq
         elif (comp_atm == 'cam' and comp_lnd == "clm" and comp_ocn == 'mom'):
-            # for CESM fully coupled 
-            if (comp_rof == 'srof' and comp_glc == "sglc"):
-                runseq_input = os.path.join(input_dir, 'nuopc_runseq_B')
-
+            from runseq_B import runseq
         elif (comp_atm == 'fv3gfs' and comp_ocn == "mom" and comp_ice == 'cice'):
-            # for NEMS fully coupled
-            if case.get_value("CONTINUE_RUN") or case.get_value("MEDIATOR_READ_RESTART"):
-                logger.info("NUOPC run sequence: warm start (concurrent)")
-                runseq_input = os.path.join(input_dir, 'nuopc_runseq_NEMS.warm')
-            else:
-                logger.info("NUOPC run sequence: cold start (sequential)")
-                runseq_input = os.path.join(input_dir, 'nuopc_runseq_NEMS.cold')
+            from runseq_NEMS import runseq
 
-        else:
-            # default
-            runseq_input = os.path.join(input_dir, 'nuopc_runseq_default')
-
-        file_input = open(runseq_input, "r")
-
-        #--------------------------------
-        # Write output run sequence file
-        #--------------------------------
-
-        runseq_output = os.path.join(caseroot, 'CaseDocs', 'nuopc.runseq')
-        file_output = open(runseq_output, "w")
-
-        for line in file_input.readlines():
-            for key, value in coupling_times.items():
-                if key in line:
-                    line = line.replace(key, str(value))
-            file_output.write(line)
-        file_output.close()
-
-        # copy the file to rundir
-        shutil.copy(runseq_output, rundir)
+        runseq(case, coupling_times)
 
 ###############################################################################
 def compare_drv_flds_in(first, second, infile1, infile2):
@@ -523,7 +463,7 @@ def buildnml(case, caseroot, component):
     create_namelist_infile(case, user_nl_file, namelist_infile, infile_text)
     infile = [namelist_infile]
 
-    # create the files nuopc.runconfig, nuopc.runseq, drv_in and drv_flds_in 
+    # create the files nuopc.runconfig, nuopc.runseq, drv_in and drv_flds_in
     _create_drv_namelists(case, infile, confdir, nmlgen, files)
 
     # create the files comp_modelio.nml where comp = [atm, lnd...]
