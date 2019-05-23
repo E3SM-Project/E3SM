@@ -1,11 +1,11 @@
 SET(SRC_DIR          ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE_DIR    ${HOMME_SOURCE_DIR}/src/share)
 SET(SRC_PREQX_DIR    ${HOMME_SOURCE_DIR}/src/preqx_kokkos)
-SET(SHARE_UT_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
+SET(PREQX_UT_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
 SET(UTILS_SHARE_DIR  ${HOMME_SOURCE_DIR}/utils/csm_share)
 SET(UTILS_TIMING_DIR ${HOMME_SOURCE_DIR}/utils/cime/src/share/timing)
 
-### Random initialization unit stest
+### Random initialization unit test
 
 SET (RANDOM_INIT_UT_CXX_SRCS
   ${SRC_PREQX_DIR}/cxx/ElementsState.cpp
@@ -16,7 +16,7 @@ SET (RANDOM_INIT_UT_CXX_SRCS
   ${SRC_SHARE_DIR}/cxx/Hommexx_Session.cpp
   ${SRC_SHARE_DIR}/cxx/HybridVCoord.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/Comm.cpp
-  ${SHARE_UT_DIR}/random_init_ut.cpp
+  ${PREQX_UT_DIR}/random_init_ut.cpp
 )
 SET (RANDOM_INIT_UT_F90_SRCS)
 
@@ -25,7 +25,7 @@ SET (RANDOM_INIT_UT_INCLUDE_DIRS
   ${SRC_PREQX_DIR}/cxx
   ${SRC_SHARE_DIR}
   ${SRC_SHARE_DIR}/cxx
-  ${SHARE_UT_DIR}
+  ${PREQX_UT_DIR}
   ${UTILS_TIMING_DIR}
   ${CMAKE_CURRENT_BINARY_DIR}
   ${CMAKE_BINARY_DIR}/src/share/cxx
@@ -44,7 +44,7 @@ SET (REMAP_UT_F90_SRCS
   ${SRC_SHARE_DIR}/parallel_mod.F90
   ${SRC_SHARE_DIR}/vertremap_base.F90
   ${SRC_SHARE_DIR}/physical_constants.F90
-  ${SHARE_UT_DIR}/remap_interface.F90
+  ${PREQX_UT_DIR}/remap_interface.F90
   ${UTILS_TIMING_DIR}/perf_mod.F90
   ${UTILS_TIMING_DIR}/perf_utils.F90
 )
@@ -57,7 +57,7 @@ SET (REMAP_UT_CXX_SRCS
   ${SRC_SHARE_DIR}/cxx/Hommexx_Session.cpp
   ${SRC_SHARE_DIR}/cxx/HybridVCoord.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/Comm.cpp
-  ${SHARE_UT_DIR}/remap_ut.cpp
+  ${PREQX_UT_DIR}/remap_ut.cpp
 )
 
 SET (CONFIG_DEFINES NP=4 NC=4 PLEV=16 QSIZE_D=4 _MPI=1 _PRIM)
@@ -65,7 +65,7 @@ SET (REMAP_UT_INCLUDE_DIRS
   ${SRC_PREQX_DIR}/cxx
   ${SRC_SHARE_DIR}
   ${SRC_SHARE_DIR}/cxx
-  ${SHARE_UT_DIR}
+  ${PREQX_UT_DIR}
   ${UTILS_TIMING_DIR}
   ${CMAKE_BINARY_DIR}/src/share/cxx
 )

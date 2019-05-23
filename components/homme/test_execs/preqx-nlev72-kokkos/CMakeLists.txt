@@ -1,4 +1,4 @@
-PREQX_KOKKOS_SETUP(${USE_KOKKOS_KERNELS})
+PREQX_KOKKOS_SETUP()
 
 # This will be used to determine that we need to link to kokkos
 SET(USE_KOKKOS_KERNELS ON)
