@@ -540,9 +540,10 @@ class Dataset():
         The checking is done in _get_first_valid_vars_timeseries().
         """
         start_year, end_year = self.get_start_and_end_years()
-        start_time, end_time = '{}-1'.format(start_year), '{}-12'.format(end_year)
+        start_time = '{}-01-15'.format(start_year)
+        end_time = '{}-12-15'.format(end_year)
         path = self._get_timeseries_file_path(var, data_path)
         var = var_to_get if var_to_get else var
 
         with cdms2.open(path) as f:
-            return f(var, time=(start_time, end_time))(squeeze=1)
+            return f(var, time=(start_time, end_time, 'ccb'))(squeeze=1)
