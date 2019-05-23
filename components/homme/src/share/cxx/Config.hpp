@@ -14,10 +14,6 @@
 # endif
 #endif
 
-#ifndef USE_KOKKOS_KERNELS
-# define USE_KOKKOS_KERNELS
-#endif
-
 #if ! defined HOMMEXX_CUDA_SPACE && ! defined HOMMEXX_OPENMP_SPACE && ! defined HOMMEXX_THREADS_SPACE && ! defined HOMMEXX_SERIAL_SPACE
 # define HOMMEXX_DEFAULT_SPACE
 #endif

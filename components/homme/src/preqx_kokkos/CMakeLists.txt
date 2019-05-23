@@ -233,8 +233,5 @@ IF (${HOMME_BUILD_EXECS})
   ############################################################################
   # createTestExec(exec_name exec_type NP NC PLEV USE_PIO USE_ENERGY QSIZE_D)
   ############################################################################
-  # Need to set this, so createTestExec will call link_to_kokkos
-  SET (USE_KOKKOS_KERNELS ON)
   createTestExec(preqx_kokkos preqx_kokkos ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY} ${QSIZE_D})
 ENDIF ()
-
