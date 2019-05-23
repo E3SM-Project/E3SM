@@ -11,7 +11,7 @@ begin
 
 ; NETCDF files to process
 fnames =  systemfunc( \
-  "ls movies/held_suarez0-*-1.nc;"  \
+  "ls movies/held_suarez01.nc;"  \
 )
 fuv_all   = addfiles(fnames,"r")       ; Open netCDF files.	
 print("files = "+fnames)
@@ -69,9 +69,9 @@ end if
 print("writing dim_avg ps")
 ncdf->ps = dim_avg_n_Wrap(fuv->ps,0)
 print("writing dim_avg zeta")
-;ncdf->zeta = dim_avg_n_Wrap(fuv->zeta,0)
+ncdf->zeta = dim_avg_n_Wrap(fuv->zeta,0)
 print("writing dim_avg div")
-;ncdf->div = dim_avg_n_Wrap(fuv->div,0)
+ncdf->div = dim_avg_n_Wrap(fuv->div,0)
 
 ncdf->gw = fuv->gw
 ncdf->ilev = fuv->ilev
