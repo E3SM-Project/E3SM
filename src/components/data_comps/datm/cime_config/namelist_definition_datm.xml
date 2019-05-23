@@ -98,7 +98,7 @@
 
     co2tseries.20tr
     co2tseries.20tr.latbnd
-    co2tseries.IAF
+    co2tseries.omip
     co2tseries.SSP1-1.9
     co2tseries.SSP1-2.6
     co2tseries.SSP2-4.5
@@ -316,7 +316,7 @@
       <value stream="CORE_IAF_JRA.CORE2.ArcFactor">CORE2.t_10.ArcFactor.T62.1997-2004.nc</value>
       <value stream="co2tseries.20tr.latbnd">fco2_datm_lat-bands_simyr_1750-2015_CMIP6_c180929.nc</value>
       <value stream="co2tseries.20tr">fco2_datm_global_simyr_1750-2014_CMIP6_c180929.nc</value>
-      <value stream="co2tseries.IAF">fco2_datm_global_ssp585_simyr_1750-2020_CMIP6_c190522.nc</value>
+      <value stream="co2tseries.omip">fco2_datm_global_ssp585_simyr_1750-2020_CMIP6_c190522.nc</value>
       <value stream="co2tseries.SSP1-1.9.latbnd">fco2_datm_lat-bandsSSP1-1.9_simyr_2014-2500_CMIP6_c190514.nc</value>
       <value stream="co2tseries.SSP1-2.6.latbnd">fco2_datm_lat-bandsSSP1-2.6__simyr_2014-2500_CMIP6_c190506.nc</value>
       <value stream="co2tseries.SSP2-4.5.latbnd">fco2_datm_lat-bandsSSP2-4.5__simyr_2014-2500_CMIP6_c190506.nc</value>
@@ -1667,7 +1667,7 @@
       <value stream="CORE_IAF_JRA.CORE2.ArcFactor">CORE2.t_10.ArcFactor.T62.1997-2004.nc</value>
       <value stream="co2tseries.20tr.latbnd">fco2_datm_lat-bands_simyr_1750-2015_CMIP6_c180929.nc</value>
       <value stream="co2tseries.20tr">fco2_datm_global_simyr_1750-2014_CMIP6_c180929.nc</value>
-      <value stream="co2tseries.IAF">fco2_datm_global_ssp585_simyr_1750-2020_CMIP6_c190522.nc</value>
+      <value stream="co2tseries.omip">fco2_datm_global_ssp585_simyr_1750-2020_CMIP6_c190522.nc</value>
       <value stream="co2tseries.SSP1-1.9.latbnd">fco2_datm_lat-bandsSSP1-1.9_simyr_2014-2500_CMIP6_c190514.nc</value>
       <value stream="co2tseries.SSP1-2.6.latbnd">fco2_datm_lat-bandsSSP1-2.6__simyr_2014-2500_CMIP6_c190506.nc</value>
       <value stream="co2tseries.SSP2-4.5.latbnd">fco2_datm_lat-bandsSSP2-4.5__simyr_2014-2500_CMIP6_c190506.nc</value>
@@ -1973,7 +1973,7 @@
       <value  stream="co2tseries.20tr">
         CO2        co2diag
       </value>
-      <value  stream="co2tseries.IAF">
+      <value  stream="co2tseries.omip">
         CO2        co2diag
       </value>
       <value  stream="co2tseries.SSP">
@@ -2071,8 +2071,8 @@
       <value stream="CORE_IAF_JRA">1</value>
       <value stream="co2tseries.20tr">1850</value>
       <!-- ncycles*(year_end-year_start+1)-(year_end-co2_year_start) -->
-      <value stream="co2tseries.IAF" datm_mode="CORE2_IAF">213</value>    <!-- 6*(2009-1948+1)-(2009-1850) -->
-      <value stream="co2tseries.IAF" datm_mode="CORE_IAF_JRA">188</value> <!-- 6*(2016-1958+1)-(2016-1850) -->
+      <value stream="co2tseries.omip" datm_mode="CORE2_IAF">213</value>    <!-- 6*(2009-1948+1)-(2009-1850) -->
+      <value stream="co2tseries.omip" datm_mode="CORE_IAF_JRA">188</value> <!-- 6*(2016-1958+1)-(2016-1850) -->
       <value stream="co2tseries.SSP">2015</value>
       <value stream="BC.QIAN.Precip">1979</value>
       <value stream="BC.CRUNCEP.GPCP.Precip">1979</value>
@@ -2138,7 +2138,7 @@
       <value stream="CORE_IAF_JRA.NCEP.V_10">1958</value>
       <value stream="CORE_IAF_JRA.CORE2.ArcFactor">1958</value>
       <value stream="co2tseries.20tr">1850</value>
-      <value stream="co2tseries.IAF">1850</value>
+      <value stream="co2tseries.omip">1850</value>
       <value stream="co2tseries.SSP">2015</value>
       <value stream="BC.QIAN">1979</value>
       <value stream="BC.CRUNCEP">1979</value>
@@ -2205,7 +2205,7 @@
       <value stream="CORE_IAF_JRA.NCEP.V_10">2016</value>
       <value stream="CORE_IAF_JRA.CORE2.ArcFactor">2016</value>
       <value stream="co2tseries.20tr">2014</value>
-      <value stream="co2tseries.IAF">2019</value>
+      <value stream="co2tseries.omip">2019</value>
       <value stream="co2tseries.SSP">2500</value>
       <value stream="BC.QIAN.Precip">2004</value>
       <value stream="BC.CRUNCEP.GPCP.Precip">2012</value>
@@ -2528,7 +2528,7 @@
     <values>
       <value>cycle</value>
       <value stream="co2tseries.20tr">extend</value>
-      <value stream="co2tseries.IAF">extend</value>
+      <value stream="co2tseries.omip">extend</value>
       <value stream="co2tseries.SSP">extend</value>
       <value stream="presaero.cesm2_omip">limit</value>
       <value datm_mode="CLM1PT">extend</value>
