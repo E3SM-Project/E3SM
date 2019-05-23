@@ -5882,6 +5882,12 @@ Number of hyperviscosity subcycles per dynamics timestep.
 Default: Set by build-namelist (probably 2).
 </entry>
 
+<entry id="hypervis_subcycle_tom" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Number of viscosity subcycles per dynamics timestep.
+Default in homme: 0 (does not use time split wrt HV).
+</entry>
+
 <entry id="hypervis_subcycle_q" type="integer" category="se"
        group="ctl_nl" valid_values="1" >
 Number of hyperviscosity subcycles done in tracer advection code.
