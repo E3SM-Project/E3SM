@@ -145,8 +145,8 @@
       <value compset="_CAM">CO2A</value>
       <value compset="_DATM">none</value>
       <value compset="_DATM%CPLHIST.*_POP2%[^_]*ECO">CO2A</value>
-      <value compset="_DATM%IAF.*_POP2%[^_]*ECO">CO2A</value>
-      <value compset="_DATM%JRA.*_POP2%[^_]*ECO">CO2A</value>
+      <value compset="^OMIP_DATM%IAF.*_POP2%[^_]*ECO">CO2A</value>
+      <value compset="^OMIP_DATM%JRA.*_POP2%[^_]*ECO">CO2A</value>
       <value compset="HIST.*_DATM.*_CLM">CO2A</value>
       <value compset="SSP.*_DATM.*_CLM">CO2A</value>
       <value compset="_BGC%BPRP">CO2C</value>
