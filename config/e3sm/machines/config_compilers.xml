@@ -769,6 +769,8 @@ for mct, etc.
   <SLIBS>
     <append>$SHELL{nf-config --flibs} -mkl</append>
   </SLIBS>
+  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
 </compiler>
 
 <compiler MACH="blues" COMPILER="gnu">
