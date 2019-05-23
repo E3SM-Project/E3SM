@@ -1,14 +1,11 @@
 #!/usr/bin/env python
 
-import os, shutil, sys, glob, itertools
+import os, shutil, sys
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","..")
 sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
 
 from standard_script_setup import *
-from CIME.case import Case
-from CIME.utils import expect
-from textwrap import dedent
 
 logger = logging.getLogger(__name__)
 

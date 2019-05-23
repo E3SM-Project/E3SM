@@ -1,14 +1,11 @@
 #!/usr/bin/env python
 
-import os, shutil, sys, glob, itertools
+import os, shutil, sys
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","..")
 sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
 
 from standard_script_setup import *
-from CIME.case import Case
-from CIME.utils import expect
-from textwrap import dedent
 
 logger = logging.getLogger(__name__)
 
@@ -16,25 +13,25 @@ def runseq(case, coupling_times):
 
     rundir    = case.get_value("RUNDIR")
     caseroot  = case.get_value("CASEROOT")
-    cimeroot  = case.get_value("CIMEROOT")
+#    cimeroot  = case.get_value("CIMEROOT")
     comp_atm  = case.get_value("COMP_ATM")
     comp_ice  = case.get_value("COMP_ICE")
-    comp_glc  = case.get_value("COMP_GLC")
+#    comp_glc  = case.get_value("COMP_GLC")
     comp_lnd  = case.get_value("COMP_LND")
     comp_ocn  = case.get_value("COMP_OCN")
     comp_rof  = case.get_value("COMP_ROF")
     comp_wav  = case.get_value("COMP_WAV")
-    budgets   = case.get_value("BUDGETS")
+#    budgets   = case.get_value("BUDGETS")
 
     atm_cpl_dt = coupling_times["atm_cpl_dt"]
     ocn_cpl_dt = coupling_times["ocn_cpl_dt"]
-    rof_cpl_dt = coupling_times["rof_cpl_dt"]
+#    rof_cpl_dt = coupling_times["rof_cpl_dt"]
     wav_cpl_dt = coupling_times["wav_cpl_dt"]
     lnd_cpl_dt = coupling_times["lnd_cpl_dt"]
 
     outfile   = open(os.path.join(caseroot, "CaseDocs", "nuopc.runseq"), "w")
 
-    if (comp_atm == 'datm' and comp_ocn == "docn" and comp_ice == 'dice' and 
+    if (comp_atm == 'datm' and comp_ocn == "docn" and comp_ice == 'dice' and
         comp_rof == 'drof' and comp_wav == 'swav' and comp_lnd == 'slnd'):
 
         outfile.write ("runSeq::                               \n")
@@ -72,7 +69,7 @@ def runseq(case, coupling_times):
         outfile.write ("@                                      \n")
         outfile.write ("::                                     \n")
 
-    elif (comp_atm == 'satm' and comp_ocn == "socn" and comp_ice == 'sice' and 
+    elif (comp_atm == 'satm' and comp_ocn == "socn" and comp_ice == 'sice' and
           comp_rof == 'srof' and comp_wav == 'dwav' and comp_lnd == 'slnd'):
 
         outfile.write ("runSeq::                          \n" )
@@ -86,7 +83,7 @@ def runseq(case, coupling_times):
         outfile.write ("@                                 \n" )
         outfile.write ("::                                \n" )
 
-    elif (comp_atm == 'satm' and comp_ocn == "socn" and comp_ice == 'sice' and 
+    elif (comp_atm == 'satm' and comp_ocn == "socn" and comp_ice == 'sice' and
           comp_rof == 'srof' and comp_wav == 'swav' and comp_lnd == 'dlnd'):
 
         outfile.write ("runSeq::                         \n" )

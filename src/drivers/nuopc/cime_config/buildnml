@@ -1,19 +1,12 @@
 #!/usr/bin/env python
 """Namelist creator for CIME's driver.
 """
-# Typically ignore this.
-# pylint: disable=invalid-name
-
-# Disable these because this is our standard setup
-# pylint: disable=wildcard-import,unused-wildcard-import,wrong-import-position
-
-# pylint: disable=import-error
-
-import os, shutil, sys, glob, itertools, imp
+import os, sys
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","..")
 sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
 
+import shutil, glob, itertools
 from standard_script_setup import *
 from CIME.case import Case
 from CIME.nmlgen import NamelistGenerator
@@ -310,17 +303,18 @@ def _create_runseq(case, coupling_times):
 
         comp_atm  = case.get_value("COMP_ATM")
         comp_ice  = case.get_value("COMP_ICE")
-        comp_glc  = case.get_value("COMP_GLC")
+        # not yet in use
+        # comp_glc  = case.get_value("COMP_GLC")
         comp_lnd  = case.get_value("COMP_LND")
         comp_ocn  = case.get_value("COMP_OCN")
         comp_rof  = case.get_value("COMP_ROF")
         comp_wav  = case.get_value("COMP_WAV")
 
-        runseq_a1 = (comp_atm == 'datm' and comp_ocn == "docn" and comp_ice == 'dice' and 
+        runseq_a1 = (comp_atm == 'datm' and comp_ocn == "docn" and comp_ice == 'dice' and
                      comp_rof == 'drof' and comp_wav == 'swav' and comp_lnd == 'slnd') # A compsets
-        runseq_a2 = (comp_atm == 'satm' and comp_ocn == "socn" and comp_ice == 'sice' and  
+        runseq_a2 = (comp_atm == 'satm' and comp_ocn == "socn" and comp_ice == 'sice' and
                      comp_rof == 'srof' and comp_wav == 'swav' and comp_lnd == 'dlnd') # ADWAV
-        runseq_a3 = (comp_atm == 'satm' and comp_ocn == "socn" and comp_ice == 'sice' and 
+        runseq_a3 = (comp_atm == 'satm' and comp_ocn == "socn" and comp_ice == 'sice' and
                      comp_rof == 'srof' and comp_wav == 'dwav' and comp_lnd == 'slnd') # ADLND
 
         # Create a run sequence file appropriate for target compset
@@ -469,7 +463,7 @@ def buildnml(case, caseroot, component):
     create_namelist_infile(case, user_nl_file, namelist_infile, infile_text)
     infile = [namelist_infile]
 
-    # create the files nuopc.runconfig, nuopc.runseq, drv_in and drv_flds_in 
+    # create the files nuopc.runconfig, nuopc.runseq, drv_in and drv_flds_in
     _create_drv_namelists(case, infile, confdir, nmlgen, files)
 
     # create the files comp_modelio.nml where comp = [atm, lnd...]

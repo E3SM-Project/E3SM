@@ -1,14 +1,11 @@
 #!/usr/bin/env python
 
-import os, shutil, sys, glob, itertools
+import os, shutil, sys
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","..")
 sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
 
 from standard_script_setup import *
-from CIME.case import Case
-from CIME.utils import expect
-from textwrap import dedent
 
 logger = logging.getLogger(__name__)
 
@@ -16,11 +13,11 @@ def runseq(case, coupling_times):
 
     rundir    = case.get_value("RUNDIR")
     caseroot  = case.get_value("CASEROOT")
-    cimeroot  = case.get_value("CIMEROOT")
-    comp_atm  = case.get_value("COMP_ATM")
-    comp_ice  = case.get_value("COMP_ICE")
-    comp_ocn  = case.get_value("COMP_OCN")
-    comp_rof  = case.get_value("COMP_ROF")
+#    cimeroot  = case.get_value("CIMEROOT")
+#    comp_atm  = case.get_value("COMP_ATM")
+#    comp_ice  = case.get_value("COMP_ICE")
+#    comp_ocn  = case.get_value("COMP_OCN")
+#    comp_rof  = case.get_value("COMP_ROF")
 
     atm_cpl_dt = coupling_times["atm_cpl_dt"]
     ocn_cpl_dt = coupling_times["ocn_cpl_dt"]
