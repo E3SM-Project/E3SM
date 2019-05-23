@@ -1,0 +1,223 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+module element_state
+
+  use kinds,                  only: real_kind, long_kind, int_kind
+  use dimensions_mod,         only: np, npsq, nlev, nlevp, qsize_d
+
+  implicit none
+  private
+
+  public :: allocate_element_arrays
+  public :: setup_element_pointers_ie
+
+#ifdef ARKODE
+  integer, public, parameter :: timelevels = 50
+#else
+  integer, public, parameter :: timelevels = 3
+#endif
+
+  ! maximum number of Newton iterations taken for an IMEX-RK stage per time-step
+  integer, public               :: max_itercnt_perstep
+  ! running average of max_itercnt_perstep
+  real (kind=real_kind), public :: avg_itercnt=0.0
+  ! maximum error of Newton iteration for an IMEX-RK stage per time-step
+  real (kind=real_kind), public :: max_itererr_perstep
+
+  ! pressure based TOM sponge layer
+  real (kind=real_kind),public :: nu_scale_top(nlev)
+
+
+  ! arrays for all state, derived, and accum quantities that need to be passed back and forth to CXX
+
+  real (kind=real_kind), allocatable, target, public :: elem_state_v    (:,:,:,:,:,:)           ! horizontal velocity 
+  real (kind=real_kind), allocatable, target, public :: elem_state_w_i  (:,:,:,:,:)             ! vertical velocity at interfaces
+  real (kind=real_kind), allocatable, target, public :: elem_state_vtheta_dp  (:,:,:,:,:)       ! virtual potential temperature (mass)
+  real (kind=real_kind), allocatable, target, public :: elem_state_phinh_i  (:,:,:,:,:)         ! geopotential used by NH model at interfaces
+  real (kind=real_kind), allocatable, target, public :: elem_state_dp3d (:,:,:,:,:)             ! delta p on levels                  
+  real (kind=real_kind), allocatable, target, public :: elem_state_ps_v (:,:,:,:)               ! surface pressure                   
+  real (kind=real_kind), allocatable, target, public :: elem_state_phis (:,:,:)                 ! surface geopotential (prescribed)  
+  real (kind=real_kind), allocatable, target, public :: elem_state_Q    (:,:,:,:,:)             ! Tracer concentration               
+  real (kind=real_kind), allocatable, target, public :: elem_state_Qdp  (:,:,:,:,:,:)           ! Tracer mass                        
+
+  real (kind=real_kind), allocatable, target, public :: elem_derived_omega_p (:,:,:,:)          ! vertical tendency (derived)
+
+  real (kind=real_kind), allocatable, target, public :: elem_accum_KEner     (:,:,:,:)
+  real (kind=real_kind), allocatable, target, public :: elem_accum_PEner     (:,:,:,:)
+  real (kind=real_kind), allocatable, target, public :: elem_accum_IEner     (:,:,:,:)
+  real (kind=real_kind), allocatable, target, public :: elem_accum_Qvar      (:,:,:,:,:)        ! Q variance at half time levels
+  real (kind=real_kind), allocatable, target, public :: elem_accum_Qmass     (:,:,:,:,:)        ! Q mass at half time levels
+  real (kind=real_kind), allocatable, target, public :: elem_accum_Q1mass    (:,:,:,:)          ! Q mass at full time levels
+
+! =========== PRIMITIVE-EQUATION DATA-STRUCTURES =====================
+
+  type, public :: elem_state_t
+
+    ! prognostic variables for preqx solver
+
+    ! prognostics must match those in prim_restart_mod.F90
+    ! vertically-lagrangian code advects dp3d instead of ps_v
+    ! tracers Q, Qdp always use 2 level time scheme
+
+    real (kind=real_kind), pointer :: v   (:,:,:,:,:)       ! horizontal velocity 
+    real (kind=real_kind), pointer :: w_i (:,:,:,:)         ! vertical velocity at interfaces
+    real (kind=real_kind), pointer :: vtheta_dp(:,:,:,:)    ! virtual potential temperature (mass)
+    real (kind=real_kind), pointer :: phinh_i(:,:,:,:)      ! geopotential used by NH model at interfaces
+    real (kind=real_kind), pointer :: dp3d(:,:,:,:)         ! delta p on levels                  
+    real (kind=real_kind), pointer :: ps_v(:,:,:)           ! surface pressure                   
+    real (kind=real_kind), pointer :: phis(:,:)             ! surface geopotential (prescribed)  
+    real (kind=real_kind), pointer :: Q   (:,:,:,:)         ! Tracer concentration               
+    real (kind=real_kind), pointer :: Qdp (:,:,:,:,:)       ! Tracer mass                        
+
+  end type elem_state_t
+
+  !___________________________________________________________________
+  type, public :: derived_state_t
+
+    ! diagnostic variables for preqx solver
+
+    ! storage for subcycling tracers/dynamics
+
+    real (kind=real_kind) :: vn0  (np,np,2,nlev)                      ! velocity for SE tracer advection
+    real (kind=real_kind) :: vstar(np,np,2,nlev)                      ! velocity on Lagrangian surfaces
+    real (kind=real_kind) :: dpdiss_biharmonic(np,np,nlev)            ! mean dp dissipation tendency, if nu_p>0
+    real (kind=real_kind) :: dpdiss_ave(np,np,nlev)                   ! mean dp used to compute psdiss_tens
+
+    ! diagnostics
+    real (kind=real_kind), pointer :: omega_p(:,:,:)                  ! vertical tendency (derived)
+    real (kind=real_kind) :: eta_dot_dpdn(np,np,nlevp)                ! mean vertical flux from dynamics
+    real (kind=real_kind) :: eta_dot_dpdn_prescribed(np,np,nlevp)     ! prescribed wind test cases
+
+    ! tracer advection fields used for consistency and limiters
+    real (kind=real_kind) :: dp(np,np,nlev)                           ! for dp_tracers at physics timestep
+    real (kind=real_kind) :: divdp(np,np,nlev)                        ! divergence of dp
+    real (kind=real_kind) :: divdp_proj(np,np,nlev)                   ! DSSed divdp
+
+    ! forcing terms for CAM
+    real (kind=real_kind) :: FQ(np,np,nlev,qsize_d)                   ! tracer forcing
+    real (kind=real_kind) :: FM(np,np,3,nlev)                         ! momentum forcing
+    real (kind=real_kind) :: FT(np,np,nlev)                           ! temperature forcing
+    real (kind=real_kind) :: FVTheta(np,np,nlev)                   ! potential temperature forcing
+    real (kind=real_kind) :: FPHI(np,np,nlevp)                        ! PHI (NH) forcing
+    real (kind=real_kind) :: FQps(np,np)                              ! forcing of FQ on ps_v
+
+    real (kind=real_kind) :: gradphis(np,np,2)   ! grad phi at the surface, computed once in model initialization
+  end type derived_state_t
+  
+
+  !___________________________________________________________________
+  type, public :: elem_accum_t
+
+#ifdef ENERGY_DIAGNOSTICS
+    ! Energy equation:
+    real (kind=real_kind) :: KEu_horiz1(np,np)
+    real (kind=real_kind) :: KEu_horiz2(np,np)
+    real (kind=real_kind) :: KEu_vert1(np,np)
+    real (kind=real_kind) :: KEu_vert2(np,np)
+    real (kind=real_kind) :: KEw_horiz1(np,np)  ! nonhydro only
+    real (kind=real_kind) :: KEw_horiz2(np,np)  ! nonhydro only
+    real (kind=real_kind) :: KEw_horiz3(np,np)  ! nonhydro only
+    real (kind=real_kind) :: KEw_vert1(np,np)   ! nonhydro only
+    real (kind=real_kind) :: KEw_vert2(np,np)   ! nonhydro only
+
+    real (kind=real_kind) :: IEvert1(np,np)
+    real (kind=real_kind) :: IEvert2(np,np)     ! nonhydro only
+    real (kind=real_kind) :: PEvert1(np,np)
+    real (kind=real_kind) :: PEvert2(np,np)
+    real (kind=real_kind) :: PEhoriz1(np,np)
+    real (kind=real_kind) :: PEhoriz2(np,np)
+
+    real (kind=real_kind) :: T01(np,np)
+    real (kind=real_kind) :: T2(np,np)
+    real (kind=real_kind) :: S1(np,np)
+    real (kind=real_kind) :: S2(np,np)
+    real (kind=real_kind) :: P1(np,np)
+    real (kind=real_kind) :: P2(np,np)
+    real (kind=real_kind) :: T2_nlevp_term(np,np)
+
+    real (kind=real_kind) :: CONV(np,np,2,nlev)                       ! dpdn u dot CONV = T1 + T2
+#endif
+
+    ! the last dimension is "4" (timelevels) represents data computed at:
+    !  1  t-.5
+    !  2  t+.5   after dynamics
+    !  3  t+.5   after forcing
+    !  4  t+.5   after Robert
+    ! after calling TimeLevelUpdate, all times above decrease by 1.0
+
+    real (kind=real_kind), pointer :: KEner     (:,:,:)
+    real (kind=real_kind), pointer :: PEner     (:,:,:)
+    real (kind=real_kind), pointer :: IEner     (:,:,:)
+    real (kind=real_kind), pointer :: Qvar      (:,:,:,:)             ! Q variance at half time levels
+    real (kind=real_kind), pointer :: Qmass     (:,:,:,:)             ! Q mass at half time levels
+    real (kind=real_kind), pointer :: Q1mass    (:,:,:)               ! Q mass at full time levels
+
+  end type elem_accum_t
+
+contains
+
+  subroutine allocate_element_arrays (nelemd)
+    !
+    ! Inputs
+    !
+    integer, intent(in) :: nelemd
+
+    ! State
+    allocate(elem_state_v         (np,np,2,nlev, timelevels,nelemd) )
+    allocate(elem_state_w_i       (np,np,  nlevp,timelevels,nelemd) )
+    allocate(elem_state_vtheta_dp (np,np,  nlev, timelevels,nelemd) )
+    allocate(elem_state_phinh_i   (np,np,  nlevp,timelevels,nelemd) )
+    allocate(elem_state_dp3d      (np,np,  nlev, timelevels,nelemd) )
+    allocate(elem_state_ps_v      (np,np,        timelevels,nelemd) )
+    allocate(elem_state_phis      (np,np,                   nelemd) )
+    allocate(elem_state_Q         (np,np,  nlev, qsize_d,   nelemd) )
+    allocate(elem_state_Qdp       (np,np,  nlev, qsize_d,2, nelemd) )
+
+    ! Derived
+    allocate(elem_derived_omega_p (np,np,nlev,nelemd) )
+
+    ! Accum
+    allocate(elem_accum_kener     (np,np,        4,nelemd) )
+    allocate(elem_accum_pener     (np,np,        4,nelemd) )
+    allocate(elem_accum_iener     (np,np,        4,nelemd) )
+    allocate(elem_accum_qvar      (np,np,qsize_d,4,nelemd) )
+    allocate(elem_accum_qmass     (np,np,qsize_d,4,nelemd) )
+    allocate(elem_accum_Q1mass    (np,np,qsize_d,  nelemd) )
+
+  end subroutine allocate_element_arrays
+
+  subroutine setup_element_pointers_ie (ie, state, derived, accum)
+    !
+    ! Inputs
+    !
+    integer, intent(in) :: ie
+    type (elem_state_t),    intent(inout) :: state
+    type (derived_state_t), intent(inout) :: derived
+    type (elem_accum_t),    intent(inout) :: accum
+
+    ! State
+    state%v         => elem_state_v(:,:,:,:,:,ie)
+    state%w_i       => elem_state_w_i(:,:,:,:,ie)
+    state%vtheta_dp => elem_state_vtheta_dp(:,:,:,:,ie)
+    state%phinh_i   => elem_state_phinh_i(:,:,:,:,ie)
+    state%dp3d      => elem_state_dp3d(:,:,:,:,ie)
+    state%ps_v      => elem_state_ps_v(:,:,:,ie)
+    state%Q         => elem_state_Q(:,:,:,:,ie)
+    state%Qdp       => elem_state_Qdp(:,:,:,:,:,ie)
+    state%phis      => elem_state_phis(:,:,ie)
+
+    ! Derived
+    derived%omega_p => elem_derived_omega_p(:,:,:,ie)
+
+    ! Accum
+    accum%KEner     => elem_accum_KEner    (:,:,:,ie)
+    accum%PEner     => elem_accum_PEner    (:,:,:,ie)
+    accum%IEner     => elem_accum_IEner    (:,:,:,ie)
+    accum%Qvar      => elem_accum_Qvar     (:,:,:,:,ie)
+    accum%Qmass     => elem_accum_Qmass    (:,:,:,:,ie)
+    accum%Q1mass    => elem_accum_Q1mass   (:,:,:,ie)
+  end subroutine setup_element_pointers_ie
+
+end module 

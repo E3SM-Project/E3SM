@@ -117,15 +117,23 @@ IF (${HOMME_USE_TRILINOS})
   SET (HOMME_USE_CXX TRUE)
 ENDIF()
 #if kokkos is needed, then so is cxx
-IF (${BUILD_HOMME_PREQX_KOKKOS})
+SET (HOMME_USE_KOKKOS FALSE)
+IF (${BUILD_HOMME_PREQX_KOKKOS} OR ${BUILD_HOMME_THETA_KOKKOS})
   SET (HOMME_USE_KOKKOS TRUE)
   SET (HOMME_USE_CXX TRUE)
-  IF (NOT ${BUILD_HOMME_PREQX} AND ${HOMME_BUILD_EXECS})
+  IF (NOT ${BUILD_HOMME_PREQX} AND ${BUILD_HOMME_PREQX_KOKKOS} AND ${HOMME_BUILD_EXECS})
     # If we build preqx kokkos, we also build preqx, so we can compare
     MESSAGE (STATUS "Setting manually disabled BUILD_HOMME_PREQX to ON, since BUILD_HOMME_PREQX_KOKKOS is ON.")
 
     # We need to compare against F90 implementation, so turn this on
     SET (BUILD_HOMME_PREQX TRUE)
+  ENDIF ()
+
+  IF (NOT ${BUILD_HOMME_THETA} AND ${BUILD_HOMME_THETA_KOKKOS} AND ${HOMME_BUILD_EXECS})
+    # If we build theta kokkos, we also build theta, so we can compare
+    MESSAGE (STATUS "Setting manually disabled BUILD_HOMME_THETA to ON, since BUILD_HOMME_THETA_KOKKOS is ON.")
+    # We need to compare against F90 implementation, so turn this on
+    SET (BUILD_HOMME_THETA TRUE)
   ENDIF ()
 ENDIF ()
 IF (${HOMME_ENABLE_COMPOSE})
@@ -390,6 +398,9 @@ IF(${BUILD_HOMME_PREQX_KOKKOS})
   ADD_SUBDIRECTORY(src/preqx_kokkos)
 ENDIF()
 
+IF(${BUILD_HOMME_THETA_KOKKOS})
+  ADD_SUBDIRECTORY(src/theta-l_kokkos)
+ENDIF()
 IF(${BUILD_HOMME_SWIM})
   ADD_SUBDIRECTORY(src/swim)
 ENDIF()

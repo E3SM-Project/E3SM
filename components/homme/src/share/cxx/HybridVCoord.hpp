@@ -75,6 +75,32 @@ struct HybridVCoord
     // Should we remove this and let the user put it from outside if needed?
     kv.team_barrier();
   }
+
+  KOKKOS_INLINE_FUNCTION
+  void compute_ps_ref (KernelVariables& kv,
+                       ExecViewUnmanaged<const Scalar [NP][NP][NUM_LEV]> dp,
+                       ExecViewUnmanaged<      Real   [NP][NP]> ps) const
+  {
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+                         [&](const int idx) {
+      const int igp = idx / NP;
+      const int jgp = idx % NP;
+      Scalar tmp;
+      Dispatch<>::parallel_reduce(kv.team,Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                                  [&](const int ilev, Scalar& sum) {
+        sum += dp(igp,jgp,ilev);
+      },tmp);
+      if (OnGpu<ExecSpace>::value) {
+        ps(igp,jgp) = hybrid_ai(0)*ps0 + tmp[0];
+      } else {
+        ps(igp,jgp) = hybrid_ai(0)*ps0 + tmp.reduce_add();
+      }
+    });
+    kv.team_barrier();
+
+    // Should we remove this and let the user put it from outside if needed?
+    kv.team_barrier();
+  }
 };
 
 } // namespace Homme
