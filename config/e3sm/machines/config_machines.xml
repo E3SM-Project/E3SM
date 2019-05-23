@@ -1612,9 +1612,8 @@
         <command name="rm">cray-netcdf-hdf5parallel</command>
         <command name="rm">cray-libsci</command>
         <command name="rm">craype</command>
-      </modules>
-      <modules>
         <command name="load">craype/2.5.12</command>
+        <command name="load">cmake/3.11.4</command>
       </modules>
       <modules compiler="intel">
         <command name="load">intel/18.0.0.128</command>
