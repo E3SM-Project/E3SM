@@ -386,6 +386,11 @@ contains
           end if  ! if sea-ice is present
        end do
 
+       ! Deallocate Foxx_swnet if it was allocated in this subroutine
+       if (.not. FB_fldchk(is_local%wrap%FBExp(compocn), 'Foxx_swnet', rc=rc)) then
+          deallocate(Foxx_swnet)
+       end if
+
        ! Output to ocean per ice thickness fraction and sw penetrating into ocean
        if ( FB_fldchk(is_local%wrap%FBExp(compocn), 'Sf_afrac', rc=rc)) then
           call FB_GetFldPtr(is_local%wrap%FBExp(compocn), 'Sf_afrac', fldptr1=dataptr_o, rc=rc)
