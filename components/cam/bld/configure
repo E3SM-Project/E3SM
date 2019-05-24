@@ -2426,10 +2426,6 @@ if (($ccsm_seq)) {
 
 } else {
 
-    # Write the Makefile.
-    write_makefile("$cfgdir/Makefile.in", "$cam_bld/Makefile", $cfg_ref, $make_cppdefs);
-    if ($print) { print "creating $cam_bld/Makefile\n"; }
-
     # Write the config.h file for PIO and MCT
     write_config_h("$cam_bld/config.h");
     if ($print) { print "creating $cam_bld/config.h\n"; }
