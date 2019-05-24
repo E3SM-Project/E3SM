@@ -103,7 +103,7 @@ ConcreteType& any_cast (any& src) {
 
   Errors::runtime_check(src_type==req_type, std::string("Error! Invalid cast requested, from '") + src_type.name() + "' to '" + req_type.name() + "'.\n", -1);
 
-  Impl::holder<ConcreteType>* ptr = dynamic_cast<Impl::holder<ConcreteType>>(src.content_ptr());
+  Impl::holder<ConcreteType>* ptr = dynamic_cast<Impl::holder<ConcreteType>*>(src.content_ptr());
 
   Errors::runtime_check(ptr!=nullptr, "Error! Failed dynamic_cast during any_cast. This is an internal problem, please, contact developers.\n", -1);
 

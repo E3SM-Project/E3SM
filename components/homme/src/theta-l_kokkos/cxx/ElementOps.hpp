@@ -2,7 +2,6 @@
 #define HOMMEXX_ELEMENT_OPS_HPP
 
 #include "KernelVariables.hpp"
-#include "PhysicalConstants.hpp"
 #include "utilities/SubviewUtils.hpp"
 #include "utilities/VectorUtils.hpp"
 
@@ -241,7 +240,7 @@ public:
   KOKKOS_INLINE_FUNCTION
   void column_scan (const KernelVariables& kv,
                     const Lambda& input_provider,
-                    const ExecViewUnmanaged<Scalar [numPacks(LENGTH)]>& sum) const
+                    const ExecViewUnmanaged<Scalar [PackInfo<LENGTH>::NumPacks]>& sum) const
   {
     column_scan<ExecSpace,Forward,Inclusive,LENGTH>(kv,input_provider,sum);
   }
@@ -251,19 +250,19 @@ public:
   typename std::enable_if<!OnGpu<ExecSpaceType>::value>::type
   column_scan (const KernelVariables& /* kv */,
                const Lambda& input_provider,
-               const ExecViewUnmanaged<Scalar [numPacks(LENGTH)]>& sum) const
+               const ExecViewUnmanaged<Scalar [PackInfo<LENGTH>::NumPacks]>& sum) const
   {
     // It is easier to write two loops for Forward true/false. There's no runtime penalty,
     // since the if is evaluated at compile time, so no big deal.
-    constexpr int lastPack = numPacks(LENGTH)-1;
+    constexpr int lastPack = PackInfo<LENGTH>::NumPacks - 1;
     if (Forward) {
       // Running integral
       Real integration = 0.0;
 
-      for (int ilev = 0; ilev<numPacks(LENGTH); ++ilev) {
+      for (int ilev = 0; ilev<PackInfo<LENGTH>::NumPacks; ++ilev) {
         // In all but the last level pack, the loop is over the whole vector
-        const int vec_end = ilev == lastPack ? lastPackVecIdx(LENGTH)
-                                             : VECTOR_SIZE - 1;
+        const int vec_end = ilev == lastPack ? PackInfo<LENGTH>::LastPackVecEnd
+                                             : VECTOR_END;
 
         auto input = input_provider(ilev);
         // Integrate
@@ -282,8 +281,8 @@ public:
 
       for (int ilev = lastPack; ilev >= 0; --ilev) {
         // In all but the last level pack, the loop is over the whole vector
-        const int vec_start = ilev == lastPack ? lastPackVecIdx(LENGTH)
-                                               : VECTOR_SIZE - 1;
+        const int vec_start = ilev == lastPack ? PackInfo<LENGTH>::LastPackVecEnd
+                                               : VECTOR_END;
 
         auto input = input_provider(ilev);
         // Integrate
@@ -304,10 +303,10 @@ public:
   typename std::enable_if<OnGpu<ExecSpaceType>::value>::type
   column_scan (const KernelVariables& kv,
                const Lambda& input_provider,
-               const ExecViewUnmanaged<Scalar [numPacks(LENGTH)]>& sum) const
+               const ExecViewUnmanaged<Scalar [PackInfo<LENGTH>::NumPacks]>& sum) const
   {
     // On GPU we rely on the fact that Scalar is basically double[1].
-    static_assert (!OnGpu<ExecSpaceType>::value || numPacks(LENGTH)==LENGTH, "Error! In a GPU build we expect VECTOR_SIZE=1.\n");
+    static_assert (!OnGpu<ExecSpaceType>::value || PackInfo<LENGTH>::NumPacks==LENGTH, "Error! In a GPU build we expect VECTOR_SIZE=1.\n");
 
     if (Forward) {
       // accumulate input in [0,LENGTH].
@@ -328,7 +327,7 @@ public:
         // level must range in (LENGTH,0], while k ranges in [0, LENGTH).
         const int k_bwd = LENGTH-k-1;
 
-        accumulator += input_provider(k)[0];
+        accumulator += input_provider(k_bwd)[0];
 
         constexpr int last_idx = Inclusive ? 0 : 1;
         constexpr int offset = Inclusive ? 0 : 1;

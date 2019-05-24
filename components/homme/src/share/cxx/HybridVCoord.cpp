@@ -206,14 +206,18 @@ void HybridVCoord::compute_eta ()
   // Local copies, to avoid issues on GPU when accessing this-> members
   auto l_etai = etai;
   auto l_etam = etam;
+  auto l_hybrid_am = hybrid_am;
+  auto l_hybrid_bm = hybrid_bm;
+  auto l_hybrid_ai = hybrid_ai;
+  auto l_hybrid_bi = hybrid_bi;
 
   Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0,NUM_LEV),
-                       [&](const int& ilev){
-    l_etam(ilev) = hybrid_am(ilev) + hybrid_bm(ilev);
+                       KOKKOS_LAMBDA(const int& ilev){
+    l_etam(ilev) = l_hybrid_am(ilev) + l_hybrid_bm(ilev);
   });
   Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0,NUM_INTERFACE_LEV),
-                       [&](const int& ilev){
-    l_etai(ilev) = hybrid_ai(ilev) + hybrid_bi(ilev);
+                       KOKKOS_LAMBDA(const int& ilev){
+    l_etai(ilev) = l_hybrid_ai(ilev) + l_hybrid_bi(ilev);
   });
 }
 

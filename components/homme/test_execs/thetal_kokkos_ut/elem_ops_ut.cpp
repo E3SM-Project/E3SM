@@ -16,7 +16,7 @@ using namespace Homme;
 
 // ============= ELEMENT OPS ================ //
 
-TEST_CASE("elem_ops", "elem_ops") {
+TEST_CASE("elem_ops_interpolation", "interpolation") {
 
   constexpr int num_elems = 10;
 
@@ -177,47 +177,41 @@ TEST_CASE("elem_ops", "elem_ops") {
       }
     }
   }
+}
 
-  // Precompute squares.
-  auto square = [](const double x) ->double { return x*x; };
+TEST_CASE("elem_ops_scan_sum", "scan_sum") {
 
-  std::vector<double> mid_squares(NUM_PHYSICAL_LEV);
-  std::vector<double> int_squares(NUM_INTERFACE_LEV);
+  constexpr int num_elems = 10;
 
-  std::iota(mid_squares.begin(),mid_squares.end(), 1.0);
-  std::iota(int_squares.begin(),int_squares.end(), 1.0);
+  ExecViewManaged<Scalar*[NP][NP][NUM_LEV]>   d_midpoints_field_in  ("",num_elems);
+  ExecViewManaged<Scalar*[NP][NP][NUM_LEV_P]> d_interface_field_in  ("",num_elems);
+  ExecViewManaged<Scalar*[NP][NP][NUM_LEV]>   d_midpoints_field_out ("",num_elems);
+  ExecViewManaged<Scalar*[NP][NP][NUM_LEV_P]> d_interface_field_out ("",num_elems);
 
-  std::transform(mid_squares.begin(),mid_squares.end(),mid_squares.begin(),square);
-  std::transform(int_squares.begin(),int_squares.end(),int_squares.begin(),square);
+  auto h_midpoints_field_in  = Kokkos::create_mirror_view(d_midpoints_field_in);
+  auto h_interface_field_in  = Kokkos::create_mirror_view(d_interface_field_in);
+  auto h_midpoints_field_out = Kokkos::create_mirror_view(d_midpoints_field_out);
+  auto h_interface_field_out = Kokkos::create_mirror_view(d_interface_field_out);
 
-  // Copy to host/device views
-  auto h_mid_in_data = reinterpret_cast<Real*>(Homme::subview(h_midpoints_field_in,0,0,0).data());
-  auto h_int_in_data = reinterpret_cast<Real*>(Homme::subview(h_interface_field_in,0,0,0).data());
+  ElementOps elem_ops;
 
-  std::copy(mid_squares.begin(),mid_squares.end(),h_mid_in_data);
-  std::copy(int_squares.begin(),int_squares.end(),h_int_in_data);
-
+  std::random_device rd;
+  using rngAlg = std::mt19937_64;
+  rngAlg engine(rd());
+  std::uniform_real_distribution<Real> pdf(0.01, 1.0);
+  genRandArray(h_midpoints_field_in, engine, pdf);
+  genRandArray(h_interface_field_in, engine, pdf);
   Kokkos::deep_copy(d_midpoints_field_in,h_midpoints_field_in);
   Kokkos::deep_copy(d_interface_field_in,h_interface_field_in);
-
-  // Providers
-  auto provide_square_m = KOKKOS_LAMBDA (const int ilev)->Scalar {
-    return d_midpoints_field_in(0,0,0,ilev);
-  };
-
-  auto provide_square_i = KOKKOS_LAMBDA (const int ilev)->Scalar {
-    return d_interface_field_in(0,0,0,ilev);
-  };
-
+  
+  // To use with std library for checking results
+  std::vector<double> mid_data(NUM_PHYSICAL_LEV);
+  std::vector<double> int_data(NUM_INTERFACE_LEV);
   std::vector<double> mid_sums(NUM_PHYSICAL_LEV);
   std::vector<double> int_sums(NUM_INTERFACE_LEV);
 
-  SECTION("column_scan_fwd_inclusive") {
-
-    std::partial_sum(mid_squares.begin(),mid_squares.end(),mid_sums.begin());
-    std::partial_sum(int_squares.begin(),int_squares.end(),int_sums.begin());
-    
-    // Scan sum forward
+  // Forward and inclusive
+  SECTION("fwd_inclusive") {
     Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(num_elems),
                          KOKKOS_LAMBDA(const TeamMember& team) {
       KernelVariables kv(team);
@@ -226,24 +220,46 @@ TEST_CASE("elem_ops", "elem_ops") {
         const int igp = idx / NP;
         const int jgp = idx % NP;
 
-        elem_ops.column_scan<true,true,NUM_PHYSICAL_LEV>(kv, provide_square_m,
+        // Providers
+        auto provide_field_mid = [&] (const int ilev)->Scalar {
+          return d_midpoints_field_in(kv.ie,igp,jgp,ilev);
+        };
+
+        auto provide_field_int = [&] (const int ilev)->Scalar {
+          return d_interface_field_in(kv.ie,igp,jgp,ilev);
+        };
+
+        elem_ops.column_scan<true,true,NUM_PHYSICAL_LEV>(kv, provide_field_mid,
                                        Homme::subview(d_midpoints_field_out,kv.ie,igp,jgp));
-        elem_ops.column_scan<true,true,NUM_INTERFACE_LEV>(kv, provide_square_i,
+        elem_ops.column_scan<true,true,NUM_INTERFACE_LEV>(kv, provide_field_int,
                                        Homme::subview(d_interface_field_out,kv.ie,igp,jgp));
       });
     });
 
-    // Check answers: out(n) = sum_{k=1}^n k*k
     Kokkos::deep_copy(h_midpoints_field_out,d_midpoints_field_out);
     Kokkos::deep_copy(h_interface_field_out,d_interface_field_out);
 
     for (int ie=0; ie<num_elems; ++ie) {
       for (int igp=0; igp<NP; ++igp) {
         for (int jgp=0; jgp<NP; ++jgp) {
+          // Compute using std functions
+
+          // Copy from host view to std vector
+          auto mid_in = viewAsReal(Homme::subview(h_midpoints_field_in,ie,igp,jgp));
+          auto int_in = viewAsReal(Homme::subview(h_interface_field_in,ie,igp,jgp));
+          std::copy_n(mid_in.data(),NUM_PHYSICAL_LEV,mid_data.begin());
+          std::copy_n(int_in.data(),NUM_INTERFACE_LEV,int_data.begin());
+
+          // scan sum the std vectors
+          std::fill(mid_sums.begin(),mid_sums.end(),0.0);
+          std::fill(int_sums.begin(),int_sums.end(),0.0);
+          std::partial_sum(mid_data.begin(),mid_data.end(),mid_sums.begin());
+          std::partial_sum(int_data.begin(),int_data.end(),int_sums.begin());
+
+          // Check answer
           auto mid_out = viewAsReal(Homme::subview(h_midpoints_field_out,ie,igp,jgp));
           auto int_out = viewAsReal(Homme::subview(h_interface_field_out,ie,igp,jgp));
           for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
-
             REQUIRE (mid_out(k) == mid_sums[k]);
             REQUIRE (int_out(k) == int_sums[k]);
           }
@@ -253,14 +269,8 @@ TEST_CASE("elem_ops", "elem_ops") {
     }
   }
 
-  SECTION("column_scan_bwd_inclusive") {
-    std::fill(mid_sums.begin(),mid_sums.end(),0.0);
-    std::fill(int_sums.begin(),int_sums.end(),0.0);
-
-    std::partial_sum(mid_squares.rbegin(),mid_squares.rend(),mid_sums.rbegin());
-    std::partial_sum(int_squares.rbegin(),int_squares.rend(),int_sums.rbegin());
-    
-    // Scan sum forward
+  // Backward and inclusive
+  SECTION("bwd_inclusive") {
     Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(num_elems),
                          KOKKOS_LAMBDA(const TeamMember& team) {
       KernelVariables kv(team);
@@ -269,25 +279,78 @@ TEST_CASE("elem_ops", "elem_ops") {
         const int igp = idx / NP;
         const int jgp = idx % NP;
 
-        elem_ops.column_scan<false,true,NUM_PHYSICAL_LEV>(kv, provide_square_m,
+        // Providers
+        auto provide_field_mid = [&] (const int ilev)->Scalar {
+          return d_midpoints_field_in(kv.ie,igp,jgp,ilev);
+        };
+
+        auto provide_field_int = [&] (const int ilev)->Scalar {
+          return d_interface_field_in(kv.ie,igp,jgp,ilev);
+        };
+
+        elem_ops.column_scan<false,true,NUM_PHYSICAL_LEV>(kv, provide_field_mid,
                                         Homme::subview(d_midpoints_field_out,kv.ie,igp,jgp));
-        elem_ops.column_scan<false,true,NUM_INTERFACE_LEV>(kv, provide_square_i,
+        elem_ops.column_scan<false,true,NUM_INTERFACE_LEV>(kv, provide_field_int,
                                         Homme::subview(d_interface_field_out,kv.ie,igp,jgp));
       });
     });
 
-    // Check answers: out(n) = sum_{k=1}^n k*k
     Kokkos::deep_copy(h_midpoints_field_out,d_midpoints_field_out);
     Kokkos::deep_copy(h_interface_field_out,d_interface_field_out);
 
     for (int ie=0; ie<num_elems; ++ie) {
       for (int igp=0; igp<NP; ++igp) {
         for (int jgp=0; jgp<NP; ++jgp) {
+          // Compute using std functions
+
+          // Copy from host view to std vector
+          auto mid_in = viewAsReal(Homme::subview(h_midpoints_field_in,ie,igp,jgp));
+          auto int_in = viewAsReal(Homme::subview(h_interface_field_in,ie,igp,jgp));
+          std::copy_n(mid_in.data(),NUM_PHYSICAL_LEV,mid_data.begin());
+          std::copy_n(int_in.data(),NUM_INTERFACE_LEV,int_data.begin());
+
+          // scan sum the std vectors
+          std::fill(mid_sums.begin(),mid_sums.end(),0.0);
+          std::fill(int_sums.begin(),int_sums.end(),0.0);
+          std::partial_sum(mid_data.rbegin(),mid_data.rend(),mid_sums.rbegin());
+          std::partial_sum(int_data.rbegin(),int_data.rend(),int_sums.rbegin());
+
+          // Check answer
           auto mid_out = viewAsReal(Homme::subview(h_midpoints_field_out,ie,igp,jgp));
           auto int_out = viewAsReal(Homme::subview(h_interface_field_out,ie,igp,jgp));
           for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
-// printf("sum {%d^2,...,%d^2} = %3.12f\n",NUM_PHYSICAL_LEV+1,k+1,mid_out(k));
-
+            // if (mid_out(k) != mid_sums[k]) {
+            //   printf ("ie,i,j,k:%d,%d,%d,%d\n",ie,igp,jgp,k);
+            //   printf ("mid data :");
+            //   for (int kk=0; kk<NUM_PHYSICAL_LEV; ++kk) {
+            //     printf(" %3.16f",mid_in(kk));
+            //   }
+            //   printf ("\nmid computed :");
+            //   for (int kk=0; kk<NUM_PHYSICAL_LEV; ++kk) {
+            //     printf(" %3.16f",mid_out(kk));
+            //   }
+            //   printf ("\nmid reference:");
+            //   for (int kk=0; kk<NUM_PHYSICAL_LEV; ++kk) {
+            //     printf(" %3.16f",mid_sums[kk]);
+            //   }
+            //   printf ("\n");
+            // }
+            // if (int_out(k) != int_sums[k]) {
+            //   printf ("ie,i,j,k:%d,%d,%d,%d\n",ie,igp,jgp,k);
+            //   printf ("int data :");
+            //   for (int kk=0; kk<NUM_INTERFACE_LEV; ++kk) {
+            //     printf(" %3.16f",int_in(kk));
+            //   }
+            //   printf ("\nint computed :");
+            //   for (int kk=0; kk<NUM_INTERFACE_LEV; ++kk) {
+            //     printf(" %3.16f",int_out(kk));
+            //   }
+            //   printf ("\nint reference:");
+            //   for (int kk=0; kk<NUM_INTERFACE_LEV; ++kk) {
+            //     printf(" %3.16f",int_sums[kk]);
+            //   }
+            //   printf ("\n");
+            // }
             REQUIRE (mid_out(k) == mid_sums[k]);
             REQUIRE (int_out(k) == int_sums[k]);
           }
@@ -297,16 +360,8 @@ TEST_CASE("elem_ops", "elem_ops") {
     }
   }
 
-  SECTION("column_scan_fwd_exclusive") {
-    std::fill(mid_sums.begin(),mid_sums.end(),0.0);
-    std::fill(int_sums.begin(),int_sums.end(),0.0);
-
-    // std::exclusive_sum is only in c++17, not c++11. To emulate that, do a standard partial sum,
-    // but store results one element later. Obiously, you also have to stop one element sooner
-    std::partial_sum(mid_squares.begin(),--mid_squares.end(),++mid_sums.begin());
-    std::partial_sum(int_squares.begin(),--int_squares.end(),++int_sums.begin());
-    
-    // Scan sum forward
+  // Forward and exclusive
+  SECTION("fwd_exclusive") {
     Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(num_elems),
                          KOKKOS_LAMBDA(const TeamMember& team) {
       KernelVariables kv(team);
@@ -315,24 +370,47 @@ TEST_CASE("elem_ops", "elem_ops") {
         const int igp = idx / NP;
         const int jgp = idx % NP;
 
-        elem_ops.column_scan<true,false,NUM_PHYSICAL_LEV>(kv, provide_square_m,
+        // Providers
+        auto provide_field_mid = [&] (const int ilev)->Scalar {
+          return d_midpoints_field_in(kv.ie,igp,jgp,ilev);
+        };
+
+        auto provide_field_int = [&] (const int ilev)->Scalar {
+          return d_interface_field_in(kv.ie,igp,jgp,ilev);
+        };
+
+        elem_ops.column_scan<true,false,NUM_PHYSICAL_LEV>(kv, provide_field_mid,
                                         Homme::subview(d_midpoints_field_out,kv.ie,igp,jgp));
-        elem_ops.column_scan<true,false,NUM_INTERFACE_LEV>(kv, provide_square_i,
+        elem_ops.column_scan<true,false,NUM_INTERFACE_LEV>(kv, provide_field_int,
                                         Homme::subview(d_interface_field_out,kv.ie,igp,jgp));
       });
     });
 
-    // Check answers: out(n) = sum_{k=1}^n k*k
     Kokkos::deep_copy(h_midpoints_field_out,d_midpoints_field_out);
     Kokkos::deep_copy(h_interface_field_out,d_interface_field_out);
 
     for (int ie=0; ie<num_elems; ++ie) {
       for (int igp=0; igp<NP; ++igp) {
         for (int jgp=0; jgp<NP; ++jgp) {
+          // Compute using std functions
+
+          // Copy from host view to std vector
+          auto mid_in = viewAsReal(Homme::subview(h_midpoints_field_in,ie,igp,jgp));
+          auto int_in = viewAsReal(Homme::subview(h_interface_field_in,ie,igp,jgp));
+          std::copy_n(mid_in.data(),NUM_PHYSICAL_LEV,mid_data.begin());
+          std::copy_n(int_in.data(),NUM_INTERFACE_LEV,int_data.begin());
+
+          // scan sum the std vectors
+          // std::exclusive_sum is only in c++17, not c++11. To emulate that, do a standard partial sum,
+          // but store results one element later. Obiously, you also have to stop one element sooner
+          std::fill(mid_sums.begin(),mid_sums.end(),0.0);
+          std::fill(int_sums.begin(),int_sums.end(),0.0);
+          std::partial_sum(mid_data.begin(),--mid_data.end(),++mid_sums.begin());
+          std::partial_sum(int_data.begin(),--int_data.end(),++int_sums.begin());
+    
           auto mid_out = viewAsReal(Homme::subview(h_midpoints_field_out,ie,igp,jgp));
           auto int_out = viewAsReal(Homme::subview(h_interface_field_out,ie,igp,jgp));
           for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
-
             REQUIRE (mid_out(k) == mid_sums[k]);
             REQUIRE (int_out(k) == int_sums[k]);
           }
@@ -342,16 +420,8 @@ TEST_CASE("elem_ops", "elem_ops") {
     }
   }
 
-  SECTION("column_scan_bwd_exclusive") {
-    std::fill(mid_sums.begin(),mid_sums.end(),0.0);
-    std::fill(int_sums.begin(),int_sums.end(),0.0);
-
-    // std::exclusive_sum is only in c++17, not c++11. To emulate that, do a standard partial sum,
-    // but store results one element later. Obiously, you also have to stop one element sooner
-    std::partial_sum(mid_squares.rbegin(),--mid_squares.rend(),++mid_sums.rbegin());
-    std::partial_sum(int_squares.rbegin(),--int_squares.rend(),++int_sums.rbegin());
-    
-    // Scan sum forward
+  // Backward and exclusive
+  SECTION("bwd_exclusive") {
     Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(num_elems),
                          KOKKOS_LAMBDA(const TeamMember& team) {
       KernelVariables kv(team);
@@ -360,24 +430,47 @@ TEST_CASE("elem_ops", "elem_ops") {
         const int igp = idx / NP;
         const int jgp = idx % NP;
 
-        elem_ops.column_scan<false,false,NUM_PHYSICAL_LEV>(kv, provide_square_m,
+        // Providers
+        auto provide_field_mid = [&] (const int ilev)->Scalar {
+          return d_midpoints_field_in(kv.ie,igp,jgp,ilev);
+        };
+
+        auto provide_field_int = [&] (const int ilev)->Scalar {
+          return d_interface_field_in(kv.ie,igp,jgp,ilev);
+        };
+
+        elem_ops.column_scan<false,false,NUM_PHYSICAL_LEV>(kv, provide_field_mid,
                                          Homme::subview(d_midpoints_field_out,kv.ie,igp,jgp));
-        elem_ops.column_scan<false,false,NUM_INTERFACE_LEV>(kv, provide_square_i,
+        elem_ops.column_scan<false,false,NUM_INTERFACE_LEV>(kv, provide_field_int,
                                          Homme::subview(d_interface_field_out,kv.ie,igp,jgp));
       });
     });
 
-    // Check answers: out(n) = sum_{k=1}^n k*k
     Kokkos::deep_copy(h_midpoints_field_out,d_midpoints_field_out);
     Kokkos::deep_copy(h_interface_field_out,d_interface_field_out);
 
     for (int ie=0; ie<num_elems; ++ie) {
       for (int igp=0; igp<NP; ++igp) {
         for (int jgp=0; jgp<NP; ++jgp) {
+          // Compute using std functions
+
+          // Copy from host view to std vector
+          auto mid_in = viewAsReal(Homme::subview(h_midpoints_field_in,ie,igp,jgp));
+          auto int_in = viewAsReal(Homme::subview(h_interface_field_in,ie,igp,jgp));
+          std::copy_n(mid_in.data(),NUM_PHYSICAL_LEV,mid_data.begin());
+          std::copy_n(int_in.data(),NUM_INTERFACE_LEV,int_data.begin());
+
+          // scan sum the std vectors
+          // std::exclusive_sum is only in c++17, not c++11. To emulate that, do a standard partial sum,
+          // but store results one element later. Obiously, you also have to stop one element sooner
+          std::fill(mid_sums.begin(),mid_sums.end(),0.0);
+          std::fill(int_sums.begin(),int_sums.end(),0.0);
+          std::partial_sum(mid_data.rbegin(),--mid_data.rend(),++mid_sums.rbegin());
+          std::partial_sum(int_data.rbegin(),--int_data.rend(),++int_sums.rbegin());
+    
           auto mid_out = viewAsReal(Homme::subview(h_midpoints_field_out,ie,igp,jgp));
           auto int_out = viewAsReal(Homme::subview(h_interface_field_out,ie,igp,jgp));
           for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
-
             REQUIRE (mid_out(k) == mid_sums[k]);
             REQUIRE (int_out(k) == int_sums[k]);
           }

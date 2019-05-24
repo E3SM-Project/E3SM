@@ -78,13 +78,12 @@ namespace Homme {
   static constexpr int LAST_INTERFACE_VEC_IDX = (NUM_INTERFACE_LEV + VECTOR_SIZE - 1) % VECTOR_SIZE;
 #endif // CUDA_BUILD
 
-constexpr int numPacks (const int length) {
-  return (length + VECTOR_SIZE - 1) / VECTOR_SIZE;
-}
 
-constexpr int lastPackVecIdx (const int length) {
-  return (length + VECTOR_SIZE - 1) % VECTOR_SIZE;
-}
+template<int ARRAY_LENGTH>
+struct PackInfo {
+  static constexpr int NumPacks       = (ARRAY_LENGTH + VECTOR_SIZE - 1) / VECTOR_SIZE;
+  static constexpr int LastPackVecEnd = (ARRAY_LENGTH + VECTOR_SIZE - 1) % VECTOR_SIZE;
+};
 
 } // namespace TinMan
 
