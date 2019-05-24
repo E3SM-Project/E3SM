@@ -1073,22 +1073,15 @@
 	 <MAX_MPITASKS_PER_NODE>36</MAX_MPITASKS_PER_NODE>
          <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
 	 <PROJECT>condo</PROJECT>
-         <mpirun mpilib="openmpi">
-           <executable>mpiexec</executable>
-           <arguments>
-             <arg name="num_tasks"> -n $TOTALPES </arg>
-             <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to core</arg>
-             <!--arg name="label" DEBUG="TRUE">-tag-output</arg>
-             <arg name="bindings" DEBUG="TRUE">-report-bindings</arg-->
-           </arguments>
-         </mpirun>
-         <mpirun mpilib="mvapich">
-           <executable>mpiexec</executable>
-           <arguments>
-             <arg name="label"> -l</arg>
-             <arg name="num_tasks"> -n $TOTALPES </arg>
-           </arguments>
-         </mpirun>
+	 <mpirun mpilib="default">
+	   <executable>srun</executable>
+	   <arguments>
+             <arg name="num_tasks"> -l -n {{ total_tasks }} </arg>
+             <arg name="binding">--cpu_bind=cores</arg>
+             <arg name="thread_count">-c $SHELL{if [ FALSE = `./xmlquery --value SMP_PRESENT` ];then echo 1;else echo $OMP_NUM_THREADS;fi}</arg>
+             <arg name="placement">-m plane=$SHELL{if [ FALSE = `./xmlquery --value SMP_PRESENT` ];then echo 36;else echo 36/$OMP_NUM_THREADS|bc;fi}</arg>
+	   </arguments>
+	 </mpirun>
          <mpirun mpilib="mpi-serial">
              <executable></executable>
          </mpirun>
