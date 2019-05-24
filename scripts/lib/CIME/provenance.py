@@ -19,7 +19,7 @@ def _get_batch_job_id_for_syslog(case):
     try:
         if mach in ['titan']:
             return os.environ["PBS_JOBID"]
-        elif mach in ['anvil', 'edison', 'cori-haswell', 'cori-knl']:
+        elif mach in ['anvil', 'compy', 'cori-haswell', 'cori-knl']:
             return os.environ["SLURM_JOB_ID"]
         elif mach in ['mira', 'theta']:
             return os.environ["COBALT_JOBID"]
@@ -169,7 +169,7 @@ def _save_prerun_timing_e3sm(case, lid):
                 filename = "%s.%s" % (filename, lid)
                 run_cmd_no_fail(cmd, arg_stdout=filename, from_dir=full_timing_dir)
                 gzip_existing_file(os.path.join(full_timing_dir, filename))
-        elif mach in ["edison", "cori-haswell", "cori-knl"]:
+        elif mach in ["cori-haswell", "cori-knl"]:
             for cmd, filename in [("sinfo -a -l", "sinfol"), ("sqs -f %s" % job_id, "sqsf_jobid"),
                                   # ("sqs -f", "sqsf"),
                                   ("squeue -o '%.10i %.15P %.20j %.10u %.7a %.2t %.6D %.8C %.10M %.10l %.20S %.20V'", "squeuef"),
@@ -186,7 +186,7 @@ def _save_prerun_timing_e3sm(case, lid):
                 full_cmd = cmd + " " + filename
                 run_cmd_no_fail(full_cmd + "." + lid, from_dir=full_timing_dir)
                 gzip_existing_file(os.path.join(full_timing_dir, filename + "." + lid))
-        elif mach == "anvil":
+        elif mach in ["anvil", "compy"]:
             for cmd, filename in [("sinfo -l", "sinfol"), 
                                   ("squeue -o '%all' --job {}".format(job_id), "squeueall_jobid"),
                                   ("squeue -o '%.10i %.10P %.15u %.20a %.2t %.6D %.8C %.12M %.12l %.20S %.20V %j'", "squeuef"),
@@ -360,11 +360,14 @@ def _save_postrun_timing_e3sm(case, lid):
             globs_to_copy.append("%s*OU" % job_id)
         elif mach == "anvil":
             globs_to_copy.append("%s*run*%s" % (case.get_value("CASE"), job_id))
+        elif mach == "compy":
+            globs_to_copy.append("slurm.err")
+            globs_to_copy.append("slurm.out")
         elif mach in ["mira", "theta"]:
             globs_to_copy.append("%s*error" % job_id)
             globs_to_copy.append("%s*output" % job_id)
             globs_to_copy.append("%s*cobaltlog" % job_id)
-        elif mach in ["edison", "cori-haswell", "cori-knl"]:
+        elif mach in ["cori-haswell", "cori-knl"]:
             globs_to_copy.append("%s*run*%s" % (case.get_value("CASE"), job_id))
         elif mach == "summit":
             globs_to_copy.append("e3sm.stderr.%s" % job_id)
