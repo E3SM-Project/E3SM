@@ -19,8 +19,11 @@ def setup():
     if ESMCI_REMOTE_NAME not in remotes:
         run_cmd_no_fail("git remote add {} {}".format(ESMCI_REMOTE_NAME, ESMCI_URL), verbose=True)
 
-    run_cmd_no_fail("git fetch --prune {}".format(ESMCI_REMOTE_NAME), verbose=True)
-    run_cmd_no_fail("git fetch --prune {} --tags".format(ESMCI_REMOTE_NAME), verbose=True)
+    for origin in ["origin", ESMCI_REMOTE_NAME]:
+        run_cmd_no_fail("git fetch --prune {}".format(origin), verbose=True)
+        run_cmd_no_fail("git fetch --prune {} --tags".format(origin), verbose=True)
+
+    run_cmd_no_fail("git clean -fd", verbose=True)
 
     run_cmd_no_fail("git clean -fd", verbose=True)
 

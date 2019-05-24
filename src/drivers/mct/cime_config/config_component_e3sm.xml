@@ -88,7 +88,11 @@
     <default_value>12</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>
-    <desc>timer detail FIXME - add documentation</desc>
+    <desc>Sets maximum number of run loop timing data checkpoints.
+    This sets values for tprof_option and tprof_n that determine
+    the timing output file frequency. If less than one, uses
+    defaults for tprof_option and tprof_n and also allows them
+    to be set in user_nl_cpl.</desc>
   </entry>
 
   <entry id="DOUT_S_SAVE_INTERIM_RESTART_FILES">
@@ -352,7 +356,7 @@
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
-      <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
+      <value compset="_DATM.*_SLND.*MPASO.*_MALI">$ATM_NCPL</value>
       <value compset="_CAM.*_CLM.*MPASO">48</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne4np4">$ATM_NCPL</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</value>
@@ -372,7 +376,7 @@
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
-      <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
+      <value compset="_DATM.*_SLND.*MPASO.*_MALI">$ATM_NCPL</value>
       <value compset="_CAM.*_CLM.*MPASO">$ATM_NCPL</value>
     </values>
     <group>run_coupling</group>
@@ -788,6 +792,40 @@
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>glc2ocn state mapping file decomp type</desc>
+  </entry>
+
+  <entry id="GLC2ICE_FMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ice flux mapping file</desc>
+  </entry>
+
+  <entry id="GLC2ICE_FMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>X</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ice flux mapping file decomp type</desc>
+  </entry>
+
+  <entry id="GLC2ICE_SMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ice state mapping file</desc>
+  </entry>
+
+  <entry id="GLC2ICE_SMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>X</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ice state mapping file decomp type</desc>
   </entry>
 
   <entry id="CCSM_GCOST">

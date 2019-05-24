@@ -240,7 +240,7 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
     if mpilib == "mpi-serial":
         libs.insert(0, mpilib)
 
-    if cam_target == "preqx_kokkos":
+    if cam_target in ("preqx_kokkos", "theta-l"):
         libs.append("kokkos")
 
     logs = []
@@ -427,6 +427,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
     multi_driver = case.get_value("MULTI_DRIVER")
     complist = []
     ninst = 1
+    comp_interface      = case.get_value("COMP_INTERFACE")
     for comp_class in comp_classes:
         if comp_class == "CPL":
             config_dir = None
@@ -440,13 +441,14 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
                 ninst = case.get_value("NINST_{}".format(comp_class))
 
         comp = case.get_value("COMP_{}".format(comp_class))
+        if comp_interface == 'nuopc' and comp in ('satm', 'slnd', 'sesp', 'sglc', 'srof', 'sice', 'socn', 'swav', 'siac'):
+            continue
         thrds =  case.get_value("NTHRDS_{}".format(comp_class))
         expect(ninst is not None,"Failed to get ninst for comp_class {}".format(comp_class))
         complist.append((comp_class.lower(), comp, thrds, ninst, config_dir ))
         os.environ["COMP_{}".format(comp_class)] = comp
 
     compiler            = case.get_value("COMPILER")
-    comp_interface      = case.get_value("COMP_INTERFACE")
     mpilib              = case.get_value("MPILIB")
     use_esmf_lib        = case.get_value("USE_ESMF_LIB")
     debug               = case.get_value("DEBUG")
@@ -515,7 +517,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
     if not sharedlib_only:
         os.environ["INSTALL_SHAREDPATH"] = os.path.join(exeroot, sharedpath) # for MPAS makefile generators
         # Set USE_KOKKOS to true if cam is preqx_kokkos
-        if cam_target == "preqx_kokkos":
+        if cam_target in ("preqx_kokkos", "theta-l"):
             os.environ["USE_KOKKOS"] = "TRUE"
 
         logs.extend(_build_model(build_threaded, exeroot, incroot, complist,
