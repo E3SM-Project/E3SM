@@ -450,7 +450,7 @@ contains
       ! methods).
       type(ty_gas_concs) :: available_gases
 
-      real(r8), target :: sw_band_midpoints(nswbands), lw_band_midpoints(nlwbands)
+      real(r8), allocatable :: sw_band_midpoints(:), lw_band_midpoints(:)
       character(len=32) :: subname = 'radiation_init'
 
       !-----------------------------------------------------------------------
@@ -474,11 +474,11 @@ contains
       ! than trying to fully populate the ty_gas_concs object here, which would be
       ! impossible from this initialization routine because I do not thing the
       ! rad_cnst objects are setup yet.
+      ! the other tasks!
+      ! TODO: This needs to be fixed to ONLY read in the data if masterproc, and then broadcast to
       call set_available_gases(active_gases, available_gases)
-      print *, 'Load RRTMGP coefficients from file...'
       call rrtmgp_load_coefficients(k_dist_sw, coefficients_file_sw, available_gases)
       call rrtmgp_load_coefficients(k_dist_lw, coefficients_file_lw, available_gases)
-      print *, 'Done loading RRTMGP coefficients.'
 
       ! Get number of bands used in shortwave and longwave and set module data
       ! appropriately so that these sizes can be used to allocate array sizes.
@@ -556,11 +556,13 @@ contains
       !
       
       ! Register new dimensions
+      allocate(sw_band_midpoints(nswbands), lw_band_midpoints(nlwbands))
       sw_band_midpoints(:) = get_band_midpoints(nswbands, k_dist_sw)
       lw_band_midpoints(:) = get_band_midpoints(nlwbands, k_dist_lw)
       call assert(all(sw_band_midpoints > 0), subname // ': negative sw_band_midpoints')
       call add_hist_coord('swband', nswbands, 'Shortwave band', 'wavelength', sw_band_midpoints)
       call add_hist_coord('lwband', nlwbands, 'Longwave band', 'wavelength', lw_band_midpoints)
+      deallocate(sw_band_midpoints, lw_band_midpoints)
 
       ! Shortwave radiation
       call addfld('TOT_CLD_VISTAU', (/ 'lev' /), 'A',   '1', &
@@ -1145,6 +1147,7 @@ contains
       ! Radiative fluxes
       type(ty_fluxes_byband) :: fluxes_allsky, fluxes_clrsky
 
+
       !----------------------------------------------------------------------
 
       ! Number of physics columns in this "chunk"
@@ -1396,6 +1399,7 @@ contains
       ! simulations...or alternatively add logic within the set_cloud_optics
       ! routines to handle this.
       call t_startf('shortwave cloud optics')
+      call handle_error(cloud_optics_sw%alloc_2str(nday, nlev_rad, k_dist_sw, name='shortwave cloud optics'))
       call set_cloud_optics_sw(state, pbuf, &
                                day_indices(1:nday), &
                                k_dist_sw, cloud_optics_sw)
@@ -1408,8 +1412,9 @@ contains
       ! treatment of aerosol optics in the model, and prevents us from having to
       ! map bands to g-points ourselves since that will all be handled by the
       ! private routines internal to the optics class.
-      call handle_error(aerosol_optics_sw%alloc_2str(nday, nlev_rad, k_dist_sw%get_band_lims_wavenumber()))
-      call aerosol_optics_sw%set_name('shortwave aerosol optics')
+      call handle_error(aerosol_optics_sw%alloc_2str(nday, nlev_rad, &
+                                                     k_dist_sw%get_band_lims_wavenumber(), &
+                                                     name='shortwave aerosol optics'))
 
       ! Loop over diagnostic calls 
       ! TODO: more documentation on what this means
@@ -1562,6 +1567,7 @@ contains
 
       ! Do longwave cloud optics calculations
       call t_startf('longwave cloud optics')
+      call handle_error(cloud_optics_lw%alloc_1scl(ncol, nlev_rad, k_dist_lw, name='longwave cloud optics'))
       call set_cloud_optics_lw(state, pbuf, k_dist_lw, cloud_optics_lw)
       call t_stopf('longwave cloud optics')
 
@@ -1925,7 +1931,7 @@ contains
       ! Albedos are input as broadband (visible, and near-IR), and we need to map
       ! these to appropriate bands. Bands are categorized broadly as "visible" or
       ! "infrared" based on wavenumber, so we get the wavenumber limits here
-      wavenumber_limits = k_dist_sw%get_band_lims_wavenumber()
+      wavenumber_limits(:,:) = k_dist_sw%get_band_lims_wavenumber()
 
       ! Loop over bands, and determine for each band whether it is broadly in the
       ! visible or infrared part of the spectrum (visible or "not visible")

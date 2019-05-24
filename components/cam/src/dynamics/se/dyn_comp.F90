@@ -417,40 +417,40 @@ CONTAINS
 
     ! Create a CS grid mapping file for postprocessing tools
 
-       ! write meta data for physics on GLL nodes
-       call cam_pio_createfile(nc, 'SEMapping.nc', 0)
-   
-       ierr = pio_def_dim(nc, 'ncenters', npm12*nelem, dim1)
-       ierr = pio_def_dim(nc, 'ncorners', 4, dim2)
-       ierr = pio_def_var(nc, 'element_corners', PIO_INT, (/dim1,dim2/),vid)
-    
-       ierr = pio_enddef(nc)
-       if (par%dynproc) then
-          call createmetadata(par, elem, subelement_corners)
-       end if
+    ! write meta data for physics on GLL nodes
+    call cam_pio_createfile(nc, 'SEMapping.nc')
 
-       jj=0
-       do cc=0,3
-          do ie=1,nelemd
-             base = ((elem(ie)%globalid-1)+cc*nelem)*npm12
-             ii=0
-             do j=1,np-1
-                do i=1,np-1
-                   ii=ii+1
-                   jj=jj+1
-                   dof(jj) = base+ii
-                end do
+    ierr = pio_def_dim(nc, 'ncenters', npm12*nelem, dim1)
+    ierr = pio_def_dim(nc, 'ncorners', 4, dim2)
+    ierr = pio_def_var(nc, 'element_corners', PIO_INT, (/dim1,dim2/),vid)
+
+    ierr = pio_enddef(nc)
+    if (par%dynproc) then
+       call createmetadata(par, elem, subelement_corners)
+    end if
+
+    jj=0
+    do cc=0,3
+       do ie=1,nelemd
+          base = ((elem(ie)%globalid-1)+cc*nelem)*npm12
+          ii=0
+          do j=1,np-1
+             do i=1,np-1
+                ii=ii+1
+                jj=jj+1
+                dof(jj) = base+ii
              end do
           end do
        end do
+    end do
 
-       call pio_initdecomp(pio_subsystem, pio_int, (/nelem*npm12,4/), dof, iodesc)
+    call pio_initdecomp(pio_subsystem, pio_int, (/nelem*npm12,4/), dof, iodesc)
 
-       call pio_write_darray(nc, vid, iodesc, reshape(subelement_corners,(/nelemd*npm12*4/)), ierr)
-       
-       call pio_freedecomp(nc, iodesc)
-       
-       call pio_closefile(nc)
+    call pio_write_darray(nc, vid, iodesc, reshape(subelement_corners,(/nelemd*npm12*4/)), ierr)
+
+    call pio_freedecomp(nc, iodesc)
+
+    call pio_closefile(nc)
 
   end subroutine write_grid_mapping
 

@@ -1,9 +1,4 @@
-#ifdef AIX
-@PROCESS ALIAS_SIZE(805306368)
-#endif
 module dwav_comp_mod
-
-  ! !USES:
 
   use NUOPC                 , only : NUOPC_Advertise
   use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_STATE
@@ -13,9 +8,7 @@ module dwav_comp_mod
   use mct_mod               , only : mct_avect, mct_avect_indexRA, mct_avect_zero, mct_aVect_nRattr
   use mct_mod               , only : mct_avect_init, mct_avect_lsize
   use shr_sys_mod           , only : shr_sys_abort
-  use shr_kind_mod          , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
-  use shr_kind_mod          , only : CXX=>SHR_KIND_CXX
-  use shr_string_mod        , only : shr_string_listGetName
+  use shr_kind_mod          , only : r8=>shr_kind_r8, cxx=>shr_kind_cxx, cl=>shr_kind_cl, cs=>shr_kind_cs
   use shr_sys_mod           , only : shr_sys_abort
   use shr_file_mod          , only : shr_file_getunit, shr_file_freeunit
   use shr_mpi_mod           , only : shr_mpi_bcast
@@ -26,10 +19,8 @@ module dwav_comp_mod
   use shr_strdata_mod       , only : shr_strdata_print, shr_strdata_restRead
   use shr_strdata_mod       , only : shr_strdata_advance, shr_strdata_restWrite
   use shr_dmodel_mod        , only : shr_dmodel_translateAV
-  use shr_cal_mod           , only : shr_cal_calendarname
-  use shr_cal_mod           , only : shr_cal_datetod2string
-  use shr_nuopc_scalars_mod , only : flds_scalar_name
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+  use shr_cal_mod           , only : shr_cal_calendarname, shr_cal_datetod2string
+  use dshr_methods_mod      , only : ChkErr
   use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_export
   use dwav_shr_mod          , only : datamode       ! namelist input
   use dwav_shr_mod          , only : rest_file      ! namelist input
@@ -68,7 +59,7 @@ module dwav_comp_mod
 contains
 !===============================================================================
 
-  subroutine dwav_comp_advertise(importState, exportState, &
+  subroutine dwav_comp_advertise(importState, exportState, flds_scalar_name, &
        wav_present, wav_prognostic, &
        fldsFrWav_num, fldsFrWav, fldsToWav_num, fldsToWav, rc)
 
@@ -78,6 +69,7 @@ contains
     ! input/output arguments
     type(ESMF_State)                   :: importState
     type(ESMF_State)                   :: exportState
+    character(len=*)     , intent(in)  :: flds_scalar_name 
     logical              , intent(in)  :: wav_present
     logical              , intent(in)  :: wav_prognostic
     integer              , intent(out) :: fldsFrWav_num
@@ -120,7 +112,7 @@ contains
 
     do n = 1,fldsFrWav_num
        call NUOPC_Advertise(exportState, standardName=fldsFrWav(n)%stdname, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
     enddo
 
   end subroutine dwav_comp_advertise
@@ -193,24 +185,24 @@ contains
 
     ! obtain the distgrid from the mesh that was read in
     call ESMF_MeshGet(Mesh, elementdistGrid=distGrid, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! determin local size on my processor
     call ESMF_distGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! determine global index space for my processor
     allocate(gindex(lsize))
     call ESMF_distGridGet(distGrid, localDe=0, seqIndexList=gindex, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! determine global size of distgrid
     call ESMF_distGridGet(distGrid, dimCount=dimCount, deCount=deCount, tileCount=tileCount, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     allocate(elementCountPTile(tileCount))
     call ESMF_distGridGet(distGrid, elementCountPTile=elementCountPTile, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     gsize = 0
     do n = 1,size(elementCountPTile)
        gsize = gsize + elementCountPTile(n)
@@ -238,11 +230,11 @@ contains
 
     ! obtain mesh lats and lons
     call ESMF_MeshGet(mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     allocate(ownedElemCoords(spatialDim*numOwnedElements))
     allocate(xc(numOwnedElements), yc(numOwnedElements))
     call ESMF_MeshGet(mesh, ownedElemCoords=ownedElemCoords)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     if (numOwnedElements /= lsize) then
        call shr_sys_abort('ERROR: numOwnedElements is not equal to lsize')
     end if
@@ -385,21 +377,23 @@ contains
        inst_suffix, logunit, read_restart, write_restart, &
        target_ymd, target_tod, case_name)
 
-    ! DESCRIPTION:  run method for dwav model
+    ! ----------------------------
+    ! run method for dwav model
+    ! ----------------------------
 
     ! input/output parameters:
-    integer                , intent(in)    :: mpicom           ! mpi communicator
-    integer                , intent(in)    :: my_task          ! my task in mpi communicator mpicom
-    integer                , intent(in)    :: master_task      ! task number of master task
-    character(len=*)       , intent(in)    :: inst_suffix      ! char string associated with instance
-    integer                , intent(in)    :: logunit          ! logging unit number
-    logical                , intent(in)    :: read_restart     ! start from restart
-    logical                , intent(in)    :: write_restart    ! write restart
-    integer(IN)            , intent(in)    :: target_ymd
-    integer(IN)            , intent(in)    :: target_tod
-    character(CL)          , intent(in), optional :: case_name ! case name
+    integer          , intent(in)    :: mpicom           ! mpi communicator
+    integer          , intent(in)    :: my_task          ! my task in mpi communicator mpicom
+    integer          , intent(in)    :: master_task      ! task number of master task
+    character(len=*) , intent(in)    :: inst_suffix      ! char string associated with instance
+    integer          , intent(in)    :: logunit          ! logging unit number
+    logical          , intent(in)    :: read_restart     ! start from restart
+    logical          , intent(in)    :: write_restart    ! write restart
+    integer          , intent(in)    :: target_ymd
+    integer          , intent(in)    :: target_tod
+    character(CL)    , intent(in), optional :: case_name ! case name
 
-    !--- local ---
+    ! local variables
     integer                 :: n                     ! indices
     integer                 :: idt                   ! integer timestep
     integer                 :: nu                    ! unit number
@@ -479,9 +473,6 @@ contains
 
     call t_stopf('dwav')
 
-    !----------------------------------------------------------------------------
-    ! Reset shr logging to original values
-    !----------------------------------------------------------------------------
     call t_stopf('DWAV_RUN')
 
   end subroutine dwav_comp_run
@@ -502,15 +493,15 @@ contains
 
     k = mct_aVect_indexRA(w2x, "Sw_lamult")
     call dshr_export(w2x%rattr(k,:), exportState, "Sw_lamult", rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     k = mct_aVect_indexRA(w2x, "Sw_ustokes")
     call dshr_export(w2x%rattr(k,:), exportState, "Sw_ustokes", rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     k = mct_aVect_indexRA(w2x, "Sw_vstokes")
     call dshr_export(w2x%rattr(k,:), exportState, "Sw_vstokes", rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine dwav_comp_export
 

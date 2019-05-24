@@ -47,6 +47,7 @@ contains
     !--- formats ---
     character(*), parameter :: F00   = "('(dead_read_inparms) ',8a)"
     character(*), parameter :: F01   = "('(dead_read_inparms) ',a,a,4i8)"
+    character(*), parameter :: F02   = "('(dead_read_inparms) ',a,L2)"
     character(*), parameter :: F03   = "('(dead_read_inparms) ',a,a,i8,a)"
     character(*), parameter :: subName = "(dead_read_inpamrs) "
     !-------------------------------------------------------------------------------
@@ -95,7 +96,7 @@ contains
        write(logunit,F00) model,'    inst_name   :  ',trim(inst_name)
        write(logunit,F00) model,'    inst_suffix :  ',trim(inst_suffix)
        if (model.eq.'rof') then
-          write(logunit,F01) ' Flood mode     :  ',flood
+          write(logunit,F02) ' Flood mode     :  ',flood
        endif
        write(logunit,F00) model
        call shr_sys_flush(logunit)

@@ -213,13 +213,14 @@ contains
     call nf_global_attribute(ncdf, 'np', np)
     call nf_global_attribute(ncdf, 'ne', ne)
 
-    call nf_variable_attributes(ncdf, 'ps', 'surface pressure','pascals','coordinates','lat lon')
+    call nf_variable_attributes(ncdf, 'ps', 'surface pressure','Pa','coordinates','lat lon')
     call nf_variable_attributes(ncdf, 'area', 'area weights','radians^2','coordinates','lat lon')
     call nf_variable_attributes(ncdf, 'u', 'longitudinal wind component','meters/second')
     call nf_variable_attributes(ncdf, 'v', 'latitudinal wind component','meters/second')
     call nf_variable_attributes(ncdf, 'T', 'Temperature','degrees kelvin')
 #ifdef _PRIM
     call nf_variable_attributes(ncdf, 'geos', 'surface geopotential','m^2/s^2')
+    call nf_variable_attributes(ncdf, 'precl','Precipitation rate','meters of water/s')
 #endif
     call nf_variable_attributes(ncdf, 'lat', 'column latitude','degrees_north')
     call nf_variable_attributes(ncdf, 'lon', 'column longitude','degrees_east')
@@ -370,7 +371,6 @@ contains
              deallocate(var2d)
           endif
 
-
           if (par%masterproc) print *,'done writing coordinates ios=',ios
        end if
     end do
@@ -415,6 +415,7 @@ contains
     use perf_mod, only : t_startf, t_stopf !_EXTERNAL
     use viscosity_mod, only : compute_zeta_C0
     use element_ops, only : get_field
+    use dcmip16_wrapper, only: precl
 
 
     type (element_t)    :: elem(:)
@@ -468,6 +469,19 @@ contains
                    st=en+1
                 enddo
                 call nf_put_var(ncdf(ios),var2d,start2d,count2d,name='ps')
+             endif
+
+             if(nf_selectedvar('precl', output_varnames)) then
+                if (par%masterproc) print *,'writing precl...'
+                st=1
+                do ie=1,nelemd
+                   vartmp(:,:,1) = precl(:,:,ie)
+                   !vartmp(:,:,1) = elem(ie)%state%Q(:,:,(nlev*2)/3,1)  ! hack for movies
+                   en=st+elem(ie)%idxp%NumUniquePts-1
+                   call UniquePoints(elem(ie)%idxP,vartmp(:,:,1),var2d(st:en))
+                   st=en+1
+                enddo
+                call nf_put_var(ncdf(ios),var2d,start2d,count2d,name='precl')
              endif
 
              if(nf_selectedvar('hypervis', output_varnames)) then
@@ -616,6 +630,19 @@ contains
                    st=en+1
                 enddo
                 call nf_put_var(ncdf(ios),var3d,start, count, name='geo')
+             end if
+
+
+             if(nf_selectedvar('w', output_varnames)) then
+                if (par%masterproc) print *,'writing w...'
+                st=1
+                do ie=1,nelemd
+                   en=st+elem(ie)%idxp%NumUniquePts-1
+                   call get_field(elem(ie),'w',vartmp,hvcoord,n0,n0_Q)
+                   call UniquePoints(elem(ie)%idxP,nlev,vartmp,var3d(st:en,:))
+                   st=en+1
+                enddo
+                call nf_put_var(ncdf(ios),var3d,start, count, name='w')
              end if
 
 

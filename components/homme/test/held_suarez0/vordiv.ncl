@@ -131,6 +131,52 @@ end setvalues
     res@tiMainString=sprintf("%3.0f",eta_mb)+"hPa"
     contour = gsn_csm_contour_map(wks,field,res)   
 
+;  climatology
+    k=21
+    zrange=.7  ; means (level 23), no topo
+    res@cnMinLevelValF = -zrange
+    res@cnMaxLevelValF =  zrange
+    res@cnLevelSpacingF = zrange/20
+    field = fave->omega500(:,:)
+    field@long_name = "OMEGA500"
+    print("omega500 climo min/max ="+min(field)+" "+max(field))
+    print("levels: [" + res@cnMinLevelValF +","+res@cnMaxLevelValF +"] spacing="+res@cnLevelSpacingF)
+    res@tiMainString="Climatology "+sprintf("%3.0f",eta_mb)+"hPa"
+    contour = gsn_csm_contour_map(wks,field,res)   
+    
+;  climatology
+    k=21
+    zrange=5.0  ; means (level 23), no topo
+    res@cnMinLevelValF = -zrange
+    res@cnMaxLevelValF =  zrange
+    res@cnLevelSpacingF = zrange/20
+    field = fave->omega850(:,:)
+    field@long_name = "OMEGA850"
+    print("omega850 climo min/max ="+min(field)+" "+max(field))
+    print("levels: [" + res@cnMinLevelValF +","+res@cnMaxLevelValF +"] spacing="+res@cnLevelSpacingF)
+    res@tiMainString="Climatology "+sprintf("%3.0f",eta_mb)+"hPa"
+    contour = gsn_csm_contour_map(wks,field,res)   
+    
+
+;  snapshots
+    k=21
+    zrange=1.2  ; instantaneous
+    res@cnMinLevelValF = -zrange
+    res@cnMaxLevelValF =  zrange
+    res@cnLevelSpacingF = zrange/20
+
+    pnew=500
+    varlev = f->omega(0,:,:,:)
+    interp = 2     ; type of interpolation: 1 = linear, 2 = log, 3 = loglog
+    extrap = True  ; is extrapolation desired if data is outside the range of PS
+    P0mb = 1000    ; ps in Pa, but this argument must be in mb
+    field = vinth2p(varlev,f->hyam,f->hybm,pnew,f->ps(0,:,:),interp,P0mb,1,extrap)          
+    field@long_name = "OMEGA500"
+    print("omega snapshot min/max ="+min(field)+" "+max(field))
+    print("levels: [" + res@cnMinLevelValF +","+res@cnMaxLevelValF +"] spacing="+res@cnLevelSpacingF)
+    res@tiMainString=sprintf("%3.0f",eta_mb)+"hPa"
+    contour = gsn_csm_contour_map(wks,field,res)   
+
   end do
 delete(wks)
 end

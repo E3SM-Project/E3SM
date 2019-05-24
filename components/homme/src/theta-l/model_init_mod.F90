@@ -18,7 +18,7 @@ module model_init_mod
   use hybvcoord_mod, 	  only: hvcoord_t
   use hybrid_mod,         only: hybrid_t
   use dimensions_mod,     only: np,nlev,nlevp
-  use eos          ,      only: get_pnh_and_exner,get_dirk_jacobian
+  use eos          ,      only: pnh_and_exner_from_eos,get_dirk_jacobian
   use element_state,      only: timelevels, nu_scale_top
   use viscosity_mod,      only: make_c0_vector
   use kinds,              only: real_kind,iulog
@@ -151,7 +151,7 @@ contains
      phi_i(:,:,:)         = elem(ie)%state%phinh_i(:,:,:,tl%n0)
      phis(:,:)          = elem(ie)%state%phis(:,:)
      call TimeLevel_Qdp(tl, qsplit, qn0)
-     call get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_i,&
+     call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_i,&
              pnh,exner,dpnh_dp_i,pnh_i_out=pnh_i)
          
      dt=100.0

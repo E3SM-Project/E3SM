@@ -405,8 +405,6 @@ contains
 
       ! Initialize output cloud optics object
       nday = count(day_indices > 0)
-      call handle_error(optics_out%alloc_2str(nday, nlev_rad, kdist))
-      call optics_out%set_name('shortwave cloud optics')
 
       ! Retrieve the mean in-cloud optical properties via CAM cloud radiative
       ! properties interface (cloud_rad_props). This retrieves cloud optical

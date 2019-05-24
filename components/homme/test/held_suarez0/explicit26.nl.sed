@@ -38,7 +38,7 @@ output_timeunits=1,0,2    ! 1=days, 2=hours, 3=seconds
 output_frequency=1,0,0    ! 0 to disable
 output_start_time=600,0,0
 output_end_time=30000,999999999,0
-output_varnames1='u','v','T','zeta','div','ps','geos'
+output_varnames1='u','v','T','zeta','div','ps','geos','omega'
 !output_varnames1='u','v','T','zeta','ps','Q','DIFFT'
 ! debug output
 output_varnames2='u','v','T','zeta','div','ps','geo','dp3d','geos','Th'

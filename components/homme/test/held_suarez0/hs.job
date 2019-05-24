@@ -49,18 +49,18 @@
 #
 #
 #SBATCH --job-name HS
-#SBATCH -N 17
+#SBATCH -p short,batch
 #SBATCH --account=FY150001
-#SBATCH --time=2:00:00
-#PBS -l walltime=3:00:00
-#PBS -l nodes=22
-#PBS -q acme
+#XXSBATCH -p acme
+#XXSBATCH --account=condo
+#XXSBATCH -N 22
+#XXSBATCH --time=4:00:00
+#SBATCH -N 6
+#SBATCH --time=0:10:00
 
 
-set NCPU = 0
-if ( ${?PBS_NNODES} ) then
-  set NCPU = $PBS_NNODES
-endif
+
+set NCPU = 0  # use max allocated
 echo using NCPU = $NCPU
 set nlev=26
 set ndays = 1600
