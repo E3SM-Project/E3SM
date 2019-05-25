@@ -194,7 +194,6 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    if (single_column) call scm_intht()
    call intht()
 
-   
 
 end subroutine cam_init
 
