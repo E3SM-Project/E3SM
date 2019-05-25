@@ -43,6 +43,8 @@ real(r8) :: ttrice  ! Ice-water transition range
 real(r8) :: epsilo  ! Ice-water transition range
 real(r8) :: omeps   ! 1._r8 - epsilo
 
+!$acc declare create(epsilo, omeps)
+
 ! Indices representing individual schemes
 integer, parameter :: Invalid_idx = -1
 integer, parameter :: OldGoffGratch_idx = 0
@@ -110,9 +112,9 @@ subroutine wv_sat_methods_init(kind, tmelt_in, h2otrip_in, tboil_in, &
   tboil = tboil_in
   ttrice = ttrice_in
   epsilo = epsilo_in
-!$acc update device(tmelt,h2otrip,tboil)
 
   omeps = 1._r8 - epsilo
+!$acc update device(tmelt,h2otrip,tboil,epsilo,omeps)
 
 end subroutine wv_sat_methods_init
 
@@ -181,7 +183,7 @@ end subroutine wv_sat_reset_default
 ! Get saturation specific humidity given pressure and SVP.
 ! Specific humidity is limited to range 0-1.
 elemental function wv_sat_svp_to_qsat(es, p) result(qs)
-
+!$acc routine seq
   real(r8), intent(in) :: es  ! SVP
   real(r8), intent(in) :: p   ! Current pressure.
   real(r8) :: qs
@@ -201,7 +203,7 @@ elemental subroutine wv_sat_qsat_water(t, p, es, qs, idx)
   !   Calculate SVP over water at a given temperature, and then      !
   !   calculate and return saturation specific humidity.             !
   !------------------------------------------------------------------!
-
+!$acc routine seq
   ! Inputs
   real(r8), intent(in) :: t    ! Temperature
   real(r8), intent(in) :: p    ! Pressure
@@ -226,7 +228,7 @@ elemental subroutine wv_sat_qsat_ice(t, p, es, qs, idx)
   !   Calculate SVP over ice at a given temperature, and then        !
   !   calculate and return saturation specific humidity.             !
   !------------------------------------------------------------------!
-
+!$acc routine seq
   ! Inputs
   real(r8), intent(in) :: t    ! Temperature
   real(r8), intent(in) :: p    ! Pressure

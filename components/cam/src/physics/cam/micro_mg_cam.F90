@@ -2280,16 +2280,14 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
          ptend_loc%q(:,:,ixnumsnow) = packer%unpack(packed_nstend, &
               -state_loc%q(:,:,ixnumsnow)/(dtime/num_steps))
       end if
-
       ! Sum into overall ptend
       call physics_ptend_sum(ptend_loc, ptend, ncol)
-
       ! Update local state
       call physics_update(state_loc, ptend_loc, dtime/num_steps)
-
+call t_startf('shan20') 
       ! Sum all outputs for averaging.
       call post_proc%accumulate()
-
+call t_stopf('shan20')
    end do
    call t_stopf('micro_mg_cam_tend_loop')
 

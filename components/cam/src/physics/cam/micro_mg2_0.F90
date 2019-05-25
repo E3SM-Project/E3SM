@@ -112,6 +112,7 @@ use micro_mg_utils, only: &
      as, bs, &
      mi0, &
      rising_factorial
+use perf_mod,         only: t_startf, t_stopf
 
 implicit none
 private
@@ -833,6 +834,7 @@ subroutine micro_mg_tend ( &
 
   ! number of sub-steps for loops over "n" (for sedimentation)
   integer nstep
+  integer, save :: printinfo = .true.
 
   !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
@@ -870,10 +872,16 @@ subroutine micro_mg_tend ( &
   call get_dcst(mgncol,nlev,t,dcst)
 !!== KZ_DCS
 
-
   ! cldn: used to set cldm, unused for subcolumns
   ! liqcldf: used to set lcldm, unused for subcolumns
   ! icecldf: used to set icldm, unused for subcolumns
+
+if (printinfo) then
+  print *, "AA microp_uniform: ", microp_uniform  !F
+  print *, "AA do_cldice, precip_off: ", do_cldice, precip_off, mgncol, nlev !  !T, F, 14/15 66
+  print *, "AA micro_mg_precip_frac_method: ", micro_mg_precip_frac_method !  !in_cloud
+endif
+  printinfo = .false.
 
   if (microp_uniform) then
      ! subcolumns, set cloud fraction variables to one
@@ -902,28 +910,35 @@ subroutine micro_mg_tend ( &
      icldm = max(icecldf,mincld)
   end if
 
+call t_startf('shan30')
   ! Initialize local variables
-
-  ! local physical properties
-  rho = p/(r*t)
-  dv = 8.794E-5_r8 * t**1.81_r8 / p
-  mu = 1.496E-6_r8 * t**1.5_r8 / (t + 120._r8)
-  sc = mu/(rho*dv)
+!$acc parallel loop collapse(2) copyout(rho, rhof, dv, sc, mu,arn,asn,acn,ain) copyin(p, t)
+  do k = 1, nlev
+    do i = 1, mgncol
+      rho(i, k) = p(i,k)/(r*t(i,k))
+      dv(i, k) = 8.794E-5_r8 * t(i,k)**1.81_r8 / p(i,k)
+      mu(i, k) = 1.496E-6_r8 * t(i,k)**1.5_r8 / (t(i,k) + 120._r8)
+      sc(i, k) = mu(i, k)/(rho(i,k)*dv(i,k))
 
   ! air density adjustment for fallspeed parameters
   ! includes air density correction factor to the
   ! power of 0.54 following Heymsfield and Bansemer 2007
 
-  rhof=(rhosu/rho)**0.54_r8
+     rhof(i, k)=(rhosu/rho(i,k))**0.54_r8
 
-  arn=ar*rhof
-  asn=as*rhof
-  acn=g*rhow/(18._r8*mu) * cld_sed
-  ain=ai*(rhosu/rho)**0.35_r8
-
+     arn(i, k)=ar*rhof(i,k)
+     asn(i, k)=as*rhof(i,k)
+     acn(i, k)=g*rhow/(18._r8*mu(i,k)) * cld_sed
+     ain(i, k)=ai*(rhosu/rho(i,k))**0.35_r8
+    end do
+  end do
+!$acc end parallel loop
   !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   ! Get humidity and saturation vapor pressures
 
+call t_stopf('shan30')
+call t_startf('shan31')
+!$acc parallel loop collapse(2) private(k,i) copyin(t,p,q) copyout(esl, qvl, esi, qvi,relhum)
   do k=1,nlev
      do i=1,mgncol
 
@@ -937,10 +952,12 @@ subroutine micro_mg_tend ( &
            call qsat_ice(t(i,k), p(i,k), esi(i,k), qvi(i,k))
         end if
 
+        relhum(i, k) = q(i,k) / max(qvl(i,k), qsmall)
      end do
   end do
+!$acc end parallel loop
 
-  relhum = q / max(qvl, qsmall)
+!!  relhum = q / max(qvl, qsmall)
 
   !===============================================
 
@@ -1137,6 +1154,8 @@ subroutine micro_mg_tend ( &
 
   end if
 
+call t_stopf('shan31')
+call t_startf('shan32')
 
   !=============================================================================
   pre_vert_loop: do k=1,nlev
@@ -1244,6 +1263,8 @@ subroutine micro_mg_tend ( &
      end do pre_col_loop
   end do pre_vert_loop
 
+call t_stopf('shan32')
+call t_startf('shan33')
   !========================================================================
 
   ! for sub-columns cldm has already been set to 1 if cloud
@@ -2005,6 +2026,9 @@ subroutine micro_mg_tend ( &
      ! End of "administration" loop
 
   end do micro_vert_loop ! end k loop
+
+call t_stopf('shan33')
+call t_startf('shan34')
 
   !-----------------------------------------------------
   ! convert rain/snow q and N for output to history, note,
@@ -2850,6 +2874,9 @@ subroutine micro_mg_tend ( &
 
   end do sed_col_loop! i loop
 
+call t_stopf('shan34')
+call t_startf('shan35')
+
   ! DO STUFF FOR OUTPUT:
   !==================================================
 
@@ -2998,6 +3025,8 @@ subroutine micro_mg_tend ( &
   elsewhere
      nfice=0._r8
   end where
+
+call t_stopf('shan35')
 
 end subroutine micro_mg_tend
 

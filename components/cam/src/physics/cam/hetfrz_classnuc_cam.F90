@@ -934,8 +934,7 @@ subroutine hetfrz_classnuc_cam_calc( &
 !$acc& copyin(nc,factnum,lcldm, r3lx, qc, deltatin, supersatice) &
 !$acc& copyin(pmid, t) &
 !$acc& copyout(frzbcdep(:,:),frzduimm(:,:),frzdudep(:,:),errstring,frzbcimm(:,:),frzbccnt(:,:),frzducnt(:,:)) &
-!$acc& present(hetraer, rho, coated_aer_num) &
-!$acc& present(dstcoat,awcam,awfacm,uncoated_aer_num,total_interstitial_aer_num,total_cloudborne_aer_num,total_aer_num)
+!$acc& default(present)
    do i = 1, ncol
       do k = top_lev, pver
 
