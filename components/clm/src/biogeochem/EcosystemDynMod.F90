@@ -680,7 +680,7 @@ contains
            veg_cf, veg_cs, &
            c13_veg_cf, c13_veg_cs, &
            c14_veg_cf, c14_veg_cs, &
-           veg_ns, veg_ns, veg_pf, veg_ps)
+           veg_nf, veg_ns, veg_pf, veg_ps)
          call t_stopf('phenology_flux_limiter')
        endif
        call t_startf('CNLitterToColumn')
