@@ -146,7 +146,7 @@ contains
 
       allocate( qArr(nVertLevels) )
 
-      !$omp do schedule(runtime) private(cell1, cell2, invLength, k, j, eoe, workVorticity)
+      !$omp do schedule(runtime)
       do iEdge = 1, nEdges
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)

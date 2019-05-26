@@ -145,7 +145,7 @@ contains
 
       nCells = nCellsArray( 3 )
 
-      !$omp do schedule(runtime) private(depth, k, depLev)
+      !$omp do schedule(runtime)
       do iCell = 1, nCells
          depth = 0.0_RKIND
          do k = 1, maxLevelCell(iCell)
