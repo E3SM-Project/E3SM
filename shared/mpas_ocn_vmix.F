@@ -273,7 +273,7 @@ contains
       allocate(A(nVertLevels),B(nVertLevels),C(nVertLevels),velTemp(nVertLevels))
       A(1)=0
 
-      !$omp do schedule(runtime) private(N, cell1, cell2, k)
+      !$omp do schedule(runtime)
       do iEdge = 1, nEdges
         N = maxLevelEdgeTop(iEdge)
         if (N .gt. 0) then
@@ -415,7 +415,7 @@ contains
       nCells = nCellsArray( 1 )
 
       call mpas_timer_start('vmix tracers tend imp loop', .false.)
-      !$omp do schedule(runtime) private(N, k)
+      !$omp do schedule(runtime)
       do iCell = 1, nCells
          ! Compute A(k), B(k), C(k) for tracers
          N = maxLevelCell(iCell)

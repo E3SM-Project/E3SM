@@ -10,11 +10,11 @@
 !  ocn_equation_of_state
 !
 !> \brief MPAS ocean equation of state driver
-!> \author Mark Petersen
-!> \date   September 2011
+!> \author Mark Petersen, modified Phil Jones
+!> \date   September 2011, modified May 2018
 !> \details
-!>  This module contains the main driver routine for calling
-!>  the equation of state.
+!>  This module contains the main driver routines for calling
+!>  the equation of state and related quantities.
 !
 !-----------------------------------------------------------------------
 
@@ -56,8 +56,12 @@ module ocn_equation_of_state
    !
    !--------------------------------------------------------------------
 
-   logical :: linearEos, jmEos
+   integer ::                   &
+      ocnEqStateChoice           ! user choice of eq state method
 
+   integer, parameter ::        &! supported equation of state methods
+      ocnEqStateTypeLinear = 1, &! linear equation of state
+      ocnEqStateTypeJM     = 2   ! Jackett-McDougall  eqn of state
 
 !***********************************************************************
 
@@ -67,62 +71,85 @@ contains
 !
 !  routine ocn_equation_of_state
 !
-!> \brief   Calls equation of state
-!> \author  Mark Petersen
-!> \date    September 2011
+!> \brief   Computes density using an ocean equation of state
+!> \author  Mark Petersen, modified by Phil Jones
+!> \date    September 2011, modified May 2018
 !> \details
-!>  This routine calls the equation of state to update the density
+!>  This routine calls the equation of state to compute a density
+!>  from model temperature and salinity.
+!>  If kDisplaced equals 0, density for the current vertical level is
+!>           returned
+!>  If kDisplaced is not 0, density is returned for a parcel
+!>           adiabatically displaced from its original level to level
+!>           kDisplaced.
+!>  When using the linear EOS, these options are ignored since the
+!>           density is independent of pressure/depth.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, nCells, k_displaced, & !{{{
-                                            displacement_type, density, err, thermalExpansionCoeff, &
-                                            salineContractionCoeff, timeLevelIn)
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   !  This module contains routines necessary for computing the density
-   !  from model temperature and salinity using an equation of state.
-   !
-   ! Input: mesh - mesh metadata
-   !        s - state: activeTracers
-   !        k_displaced
-   !
-   !  If k_displaced==0, density is returned with no displacement
-   !
-   !  If k_displaced~=0, density is returned, and is for
-   !  a parcel adiabatically displaced from its original level to level
-   !  k_displaced.  When using the linear EOS, state % displacedDensity is
-   !  still filled, but depth (i.e. pressure) does not modify the output.
-   !
-   ! Output: s - state: computed density
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      implicit none
+   subroutine ocn_equation_of_state_density(statePool, diagnosticsPool,&
+                           meshPool, scratchPool, nCells, kDisplaced,  &
+                           displacement_type, density, err,            &
+                           thermalExpansionCoeff,                      &
+                           salineContractionCoeff, timeLevelIn)
+      !{{{
+      !-----------------------------------------------------------------
+      ! Input variables
+      !-----------------------------------------------------------------
 
-      type (mpas_pool_type), intent(in) :: statePool
-      type (mpas_pool_type), intent(inout) :: diagnosticsPool
-      type (mpas_pool_type), intent(in) :: meshPool
-      type (mpas_pool_type), intent(in) :: scratchPool !< Input/Output: Scratch structure
-      integer, intent(in) :: nCells
-      integer, intent(in), optional :: timeLevelIn
-      type (mpas_pool_type), pointer :: tracersPool
-      integer :: k_displaced
-      character(len=*), intent(in) :: displacement_type
-      real (kind=RKIND), dimension(:,:), intent(out) :: density
-      integer, intent(out) :: err
+      integer, intent(in) :: &
+         nCells,             &! number of horiz mesh cells
+         kDisplaced           ! target vert level for adiab displacement
+
+      integer, intent(in), optional :: &
+         timeLevelIn          ! time level for state variables
+
+      character(len=*), intent(in) :: &
+         displacement_type    ! choice for adiabatic displacement
+
+      type (mpas_pool_type), intent(in) :: &
+         statePool,           &! pool containing state variables
+         diagnosticsPool,     &! pool containing some forcing fields
+         meshPool,            &! pool containing mesh quantities
+         scratchPool           ! pool containing some scratch space
+
+      !-----------------------------------------------------------------
+      ! Output variables
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: &
+         err                   ! returned error flag
+
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+         density               ! computed density of sea water
+
+      ! optional expansion coefficients
+      ! Thermal expansion, defined as $-1/\rho d\rho/dT$ (note neg sign)
+      ! Saline contraction, defined as $1/\rho d\rho/dS$
       real (kind=RKIND), dimension(:,:), intent(out), optional :: &
-         thermalExpansionCoeff,  &! Thermal expansion coefficient (alpha), defined as $-1/\rho d\rho/dT$ (note negative sign)
-         salineContractionCoeff   ! Saline contraction coefficient (beta), defined as $1/\rho d\rho/dS$
+         thermalExpansionCoeff,  &! Thermal expansion coefficient (alpha)
+         salineContractionCoeff   ! Saline contraction coefficient (beta)
 
-      integer, dimension(:), pointer :: maxLevelCell
+      !-----------------------------------------------------------------
+      ! Local variables
+      !-----------------------------------------------------------------
+
+      type (mpas_pool_type), pointer :: tracersPool
+
       real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
-      integer :: iCell, k
-      integer, pointer :: indexT, indexS
-      type (dm_info) :: dminfo
+      integer :: iCell, k, nVertLevels, indexT, indexS
+      integer, pointer :: indexTptr, indexSptr, nVertLevelsPtr
       integer :: timeLevel
 
+      !-----------------------------------------------------------------
+
+      !*** initialize error flag, start timer
       err = 0
 
       call mpas_timer_start("equation of state")
+
+      !*** initialize or extract relevant fields
 
       if (present(timeLevelIn)) then
          timeLevel = timeLevelIn
@@ -130,76 +157,140 @@ contains
          timeLevel = 1
       end if
 
-      call mpas_pool_get_array(diagnosticsPool, 'tracersSurfaceValue', tracersSurfaceValue)
-      call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-      call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
-      call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexT)
-      call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexS)
+      call mpas_pool_get_array(diagnosticsPool, 'tracersSurfaceValue', &
+                                                 tracersSurfaceValue)
+      call mpas_pool_get_subpool  (statePool,   'tracers', &
+                                                 tracersPool)
+      call mpas_pool_get_array    (tracersPool, 'activeTracers', &
+                                                 activeTracers, timeLevel)
+      call mpas_pool_get_dimension(tracersPool, 'index_temperature', &
+                                                 indexTptr)
+      call mpas_pool_get_dimension(tracersPool, 'index_salinity', &
+                                                 indexSptr)
+      call mpas_pool_get_dimension(meshPool,    'nVertLevels', &
+                                                 nVertLevelsPtr)
+      indexT      = indexTptr
+      indexS      = indexSptr
+      nVertLevels = nVertLevelsPtr
 
-      if (linearEos) then
+      !*** call specific equation of state based on user choice
 
-         call ocn_equation_of_state_linear_density(meshPool, nCells, k_displaced, displacement_type, indexT, indexS, &
-                                                   activeTracers, density, err, tracersSurfaceValue, &
-                                                   thermalExpansionCoeff, salineContractionCoeff)
+      select case (ocnEqStateChoice)
 
-      elseif (jmEos) then
+      case (ocnEqStateTypeLinear)
 
-         call ocn_equation_of_state_jm_density(meshPool, scratchPool, nCells, k_displaced, displacement_type, indexT, indexS, &
-                                               activeTracers, density, err, tracersSurfaceValue, thermalExpansionCoeff, &
-                                               salineContractionCoeff)
+         if (present(thermalExpansionCoeff) .or. &
+             present(salineContractionCoeff)) then
+            call ocn_equation_of_state_linear_density(nVertLevels,  &
+                     nCells, kDisplaced, displacement_type,         &
+                     indexT, indexS, activeTracers, density, err,   &
+                     thermalExpansionCoeff, salineContractionCoeff, &
+                     tracersSurfaceValue)
+         else
+            call ocn_equation_of_state_linear_density(nVertLevels, &
+                     nCells, kDisplaced, displacement_type,        &
+                     indexT, indexS, activeTracers, density, err,  &
+                     tracersSurfaceValue)
+         endif
 
-      endif
+      case (ocnEqStateTypeJM)
+
+         if (present(thermalExpansionCoeff) .or. &
+             present(salineContractionCoeff)) then
+            call ocn_equation_of_state_jm_density(nVertLevels,        &
+                     nCells, kDisplaced, displacement_type,           &
+                     indexT, indexS, activeTracers, density, err,     &
+                     thermalExpansionCoeff, salineContractionCoeff,   &
+                     tracersSurfaceValue)
+
+         else
+            call ocn_equation_of_state_jm_density(nVertLevels,        &
+                     nCells, kDisplaced, displacement_type,           &
+                     indexT, indexS, activeTracers, density, err,     &
+                     tracersSurfaceValue)
+         endif
+
+      case default
+         !*** error handled during init
+      end select
+
+      !*** stop timer and exit
 
       call mpas_timer_stop("equation of state")
+
+      !-----------------------------------------------------------------
 
    end subroutine ocn_equation_of_state_density!}}}
 
 !***********************************************************************
 !
-!  routine ocn_equation_of_stateInit
+!  routine ocn_equation_of_state_init
 !
-!> \brief   Initializes ocean momentum horizontal mixing quantities
-!> \author  Mark Petersen
-!> \date    September 2011
+!> \brief   Initializes ocean equation of state quantities
+!> \author  Mark Petersen, modified by Phil Jones
+!> \date    September 2011, modified May 2018
 !> \details
 !>  This routine initializes a variety of quantities related to
-!>  horizontal velocity mixing in the ocean. Since a variety of
-!>  parameterizations are available, this routine primarily calls the
-!>  individual init routines for each parameterization.
+!>  the ocean equation of state for computing the density of sea water.
 !
 !----------------------------------------------------------------------
 
-   subroutine ocn_equation_of_state_init(err)!{{{
+   subroutine ocn_equation_of_state_init(domain, err)!{{{
 
    !--------------------------------------------------------------------
 
       !-----------------------------------------------------------------
-      !
-      ! call individual init routines for each parameterization
-      !
+      ! Input variables
+      !-----------------------------------------------------------------
+
+      type (domain_type), intent(in) :: &
+         domain            ! domain information primarily for vert grid
+
+      !-----------------------------------------------------------------
+      ! Output variables
       !-----------------------------------------------------------------
 
       integer, intent(out) :: err
 
-      character (len=StrKIND), pointer :: config_eos_type
+      !-----------------------------------------------------------------
+      ! Local variables
+      !-----------------------------------------------------------------
+
+      character (len=StrKIND), pointer :: &
+         config_eos_type   ! for extracting EOS choice from use inputs
+
+      !-----------------------------------------------------------------
+
+      !*** initialize error flag
 
       err = 0
 
+      !*** extract user choice for equation of state from config
+
       call mpas_pool_get_config(ocnConfigs, 'config_eos_type', config_eos_type)
 
-      linearEos = .false.
-      jmEos = .false.
+      !*** set use choice based on config and call appropriate
+      !***  init routine
 
-      if (config_eos_type.eq.'linear') then
-         linearEos = .true.
+      select case (trim(config_eos_type))
+
+      case ('linear','Linear','LINEAR')
+
+         ocnEqStateChoice  = ocnEqStateTypeLinear
          call ocn_equation_of_state_linear_init(err)
-      elseif (config_eos_type.eq.'jm') then
-         jmEos = .true.
-         call ocn_equation_of_state_jm_init(err)
-      else
-         call mpas_log_write('Invalid choice for config_eos_type. Choices are: linear, jm')
+
+      case ('jm','JM')
+
+         ocnEqStateChoice  = ocnEqStateTypeJM
+         call ocn_equation_of_state_jm_init(domain, err)
+
+      case default
+
+         call mpas_log_write(&
+         'Invalid choice for config_eos_type. Choices are: linear, jm')
          err = 1
-      endif
+
+      end select
 
    !--------------------------------------------------------------------
 

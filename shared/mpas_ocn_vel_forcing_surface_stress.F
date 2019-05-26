@@ -143,8 +143,7 @@ contains
 
       nEdges = nEdgesArray ( 1 )
 
-      !$omp do schedule(runtime) private(zTop, transmissionCoeffBot, remainingStress, k, transmissionCoeffTop, &
-      !$omp                              cell1, cell2, attenuationCoeff, zBot)
+      !$omp do schedule(runtime)
       do iEdge = 1, nEdges
         zTop = 0.0_RKIND
         cell1 = cellsOnEdge(1,iEdge)

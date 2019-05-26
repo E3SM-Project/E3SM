@@ -491,7 +491,7 @@ contains
       nCells = nCellsArray( size(nCellsArray) )
 
       if(isomipOn) then
-         !$omp do schedule(runtime) private(heatFlux)
+         !$omp do schedule(runtime)
          do iCell = 1, nCells
             if (landIceMask(iCell) == 0) cycle
 
@@ -783,7 +783,7 @@ contains
     err = 0
     Tlatent = latent_heat_fusion_mks/cp_sw
 
-    !$omp do schedule(runtime) private(T0, transferVelocityRatio, a, b, c)
+    !$omp do schedule(runtime)
     do iCell = 1, nCells
       if (mask(iCell) == 0) cycle
 
@@ -928,7 +928,7 @@ contains
 
     err = 0
     cpRatio = cp_land_ice/cp_sw
-    !$omp do schedule(runtime) private(T0, transferVelocityRatio, Tlatent, eta, TlatentStar, a, b, c)
+    !$omp do schedule(runtime) reduction(+:err)
     do iCell = 1, nCells
       if (mask(iCell) == 0) cycle
 
@@ -951,9 +951,7 @@ contains
       outInterfaceSalinity(iCell) = (-b + sqrt(b**2 - 4.0_RKIND*a*c*oceanSalinity(iCell)))/(2.0_RKIND*a)
       if (outInterfaceSalinity(iCell) .le. 0.0_RKIND) then
          err = 1
-         call mpas_log_write( &
-            'interfaceSalinity is negative.', &
-            MPAS_LOG_CRIT)
+         call mpas_log_write('interfaceSalinity is negative.', MPAS_LOG_CRIT)
       end if
       outInterfaceTemperature(iCell) = dTf_dS*outInterfaceSalinity(iCell)+T0
 

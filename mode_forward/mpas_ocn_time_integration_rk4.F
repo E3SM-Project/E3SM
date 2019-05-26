@@ -451,7 +451,6 @@ module ocn_time_integration_rk4
                     * highFreqThicknessTend(:, iCell)
               end do
               !$omp end do
-              call mpas_threading_barrier()
               block => block % next
            end do
 
@@ -692,7 +691,6 @@ module ocn_time_integration_rk4
             normalTransportVelocity(:, iEdge) = normalVelocityNew(:, iEdge)
          end do
          !$omp end do
-         call mpas_threading_barrier()
 
          ! Compute normalGMBolusVelocity and the tracer transport velocity
          if (config_use_standardGM) then
@@ -1214,7 +1212,6 @@ module ocn_time_integration_rk4
          normalTransportVelocity(:, iEdge) = normalVelocityProvis(:, iEdge)
       end do
       !$omp end do
-      call mpas_threading_barrier()
 
       ! Compute normalGMBolusVelocity, relativeSlope and RediDiffVertCoef if respective flags are turned on
       if (config_use_standardGM) then
@@ -1229,7 +1226,6 @@ module ocn_time_integration_rk4
          end do
          !$omp end do
       end if
-      call mpas_threading_barrier()
       ! ------------------------------------------------------------------
       ! End: Accumulating various parametrizations of the transport velocity
       ! ------------------------------------------------------------------

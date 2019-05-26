@@ -178,7 +178,6 @@ module ocn_time_average_coupled
            !$omp end do
         endif
 
-        call mpas_threading_barrier()
         !$omp master
 
         nAccumulatedCoupled = 0
@@ -401,7 +400,6 @@ module ocn_time_average_coupled
            !$omp end do
         endif
 
-        call mpas_threading_barrier()
         !$omp master
 
         nAccumulatedCoupled = nAccumulatedCoupled + 1
