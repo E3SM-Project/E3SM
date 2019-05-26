@@ -180,7 +180,6 @@ contains
       call mpas_allocate_scratch_field(delsq_uField, .true., .false.)
       call mpas_allocate_scratch_field(delsq_divergenceField, .true., .false.)
       call mpas_allocate_scratch_field(delsq_relativeVorticityField, .true., .false.)
-      call mpas_threading_barrier()
 
       delsq_u => delsq_uField % array
       delsq_divergence => delsq_divergenceField % array
@@ -189,7 +188,7 @@ contains
       nEdges = nEdgesArray( 3 )
 
       !Compute delsq_u
-      !$omp do schedule(runtime) private(cell1, cell2, vertex1, vertex2, invDcEdge, invDvEdge)
+      !$omp do schedule(runtime)
       do iEdge = 1, nEdges
          delsq_u(:, iEdge) = 0.0_RKIND
          cell1 = cellsOnEdge(1,iEdge)
@@ -212,7 +211,7 @@ contains
       nVertices = nVerticesArray( 2 )
 
       ! Compute delsq_relativeVorticity
-      !$omp do schedule(runtime) private(invAreaTri1, i, iEdge, k)
+      !$omp do schedule(runtime)
       do iVertex = 1, nVertices
          delsq_relativeVorticity(:, iVertex) = 0.0_RKIND
          invAreaTri1 = 1.0_RKIND / areaTriangle(iVertex)
@@ -229,7 +228,7 @@ contains
       nCells = nCellsArray( 2 )
 
       ! Compute delsq_divergence
-      !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, k)
+      !$omp do schedule(runtime)
       do iCell = 1, nCells
          delsq_divergence(:, iCell) = 0.0_RKIND
          invAreaCell1 = 1.0_RKIND / areaCell(iCell)
@@ -247,7 +246,7 @@ contains
 
       ! Compute - \kappa \nabla^4 u
       ! as  \nabla div(\nabla^2 u) + k \times \nabla ( k \cross curl(\nabla^2 u) )
-      !$omp do schedule(runtime) private(cell1, cell2, vertex1, vertex2, invDcEdge, invDvEdge, r_tmp, u_diffusion, k)
+      !$omp do schedule(runtime)
       do iEdge = 1, nEdges
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
@@ -267,7 +266,6 @@ contains
       end do
       !$omp end do
 
-      call mpas_threading_barrier()
       call mpas_deallocate_scratch_field(delsq_uField, .true.)
       call mpas_deallocate_scratch_field(delsq_divergenceField, .true.)
       call mpas_deallocate_scratch_field(delsq_relativeVorticityField, .true.)
@@ -396,7 +394,6 @@ contains
       call mpas_allocate_scratch_field(outerProductEdgeField, .true.)
       call mpas_allocate_scratch_field(normalVectorEdgeField, .true.)
       call mpas_allocate_scratch_field(tangentialVectorEdgeField, .true.)
-      call mpas_threading_barrier()
 
       strainRateR3Cell => strainRateR3CellField % array
       strainRateR3Edge => strainRateR3EdgeField % array
@@ -476,7 +473,6 @@ contains
       end do
       !$omp end do
 
-      call mpas_threading_barrier()
       call mpas_deallocate_scratch_field(strainRateR3CellField, .true.)
       call mpas_deallocate_scratch_field(strainRateR3EdgeField, .true.)
       call mpas_deallocate_scratch_field(divTensorR3CellField, .true.)

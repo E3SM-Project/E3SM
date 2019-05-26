@@ -397,7 +397,6 @@ module ocn_time_integration_split
 
          call mpas_pool_get_subpool(domain % blocklist % structs, 'diagnostics', diagnosticsPool)
 
-         call mpas_threading_barrier()
          ! ---  update halos for diagnostic ocean boundary layer depth
          if (config_use_cvmix_kpp) then
             call mpas_timer_start("se halo diag obd")
@@ -438,15 +437,12 @@ module ocn_time_integration_split
             end do
             call mpas_timer_stop("se freq-filtered-thick computations")
 
-            call mpas_threading_barrier()
-
             call mpas_timer_start("se freq-filtered-thick halo update")
 
             call mpas_dmpar_field_halo_exch(domain, 'tendHighFreqThickness')
             call mpas_dmpar_field_halo_exch(domain, 'tendLowFreqDivergence')
 
             call mpas_timer_stop("se freq-filtered-thick halo update")
-            call mpas_threading_barrier()
 
             block => domain % blocklist
             do while (associated(block))
@@ -560,7 +556,7 @@ module ocn_time_integration_split
 
                allocate(uTemp(nVertLevels))
 
-               !$omp do schedule(runtime) private(cell1, cell2, k, normalThicknessFluxSum, thicknessSum)
+               !$omp do schedule(runtime)
                do iEdge = 1, nEdges
                   cell1 = cellsOnEdge(1,iEdge)
                   cell2 = cellsOnEdge(2,iEdge)
@@ -608,8 +604,6 @@ module ocn_time_integration_split
 
                block => block % next
             end do
-
-            call mpas_threading_barrier()
 
             call mpas_timer_start("se halo normalBaroclinicVelocity")
             call mpas_dmpar_field_halo_exch(domain, 'normalBaroclinicVelocity', timeLevel=2)
@@ -761,21 +755,16 @@ module ocn_time_integration_split
             edgeHaloComputeCounter = 0
             neededHalos = 1 + config_n_btr_cor_iter
 
-            call mpas_threading_barrier()
-
             call mpas_timer_start('btr se subcycle loop')
             do j = 1, nBtrSubcycles * config_btr_subcycle_loop_factor
                if(cellHaloComputeCounter < neededHalos) then
 
-                 call mpas_threading_barrier()
                  call mpas_timer_start('se halo subcycle')
                  call mpas_dmpar_exch_group_reuse_halo_exch(domain, subcycleGroupName, timeLevel=oldBtrSubcycleTime)
-                 call mpas_threading_barrier()
                  call mpas_timer_stop('se halo subcycle')
 
                  cellHaloComputeCounter = config_num_halos     - mod( config_num_halos, neededHalos )
                  edgeHaloComputeCounter = config_num_halos + 1 - mod( config_num_halos, neededHalos )
-                 call mpas_threading_barrier()
                end if
 
                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -813,7 +802,7 @@ module ocn_time_integration_split
                      nEdges = nEdgesPtr
                      nEdges = nEdgesArray( edgeHaloComputeCounter )
 
-                     !$omp do schedule(runtime) private(cell1, cell2, CoriolisTerm, i, eoe)
+                     !$omp do schedule(runtime)
                      do iEdge = 1, nEdges
 
                         temp_mask = edgeMask(1, iEdge)
@@ -1025,7 +1014,7 @@ module ocn_time_integration_split
 
                    nEdges = nEdgesArray( edgeHaloComputeCounter )
 
-                   !$omp do schedule(runtime) private(cell1, cell2, eoe, CoriolisTerm, i, sshCell1, sshCell2)
+                   !$omp do schedule(runtime)
                    do iEdge = 1, nEdges
 
                      ! asarje: added to avoid redundant computations based on mask
@@ -1235,7 +1224,6 @@ module ocn_time_integration_split
             end do ! j=1,nBtrSubcycles
             call mpas_timer_stop('btr se subcycle loop')
 
-            call mpas_threading_barrier()
             call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
             call mpas_pool_get_field(scratchPool, 'btrvel_temp', btrvel_tempField)
             call mpas_deallocate_scratch_field(btrvel_tempField, .false.)
@@ -1276,8 +1264,6 @@ module ocn_time_integration_split
             end do  ! block
             call mpas_timer_stop('btr se norm')
 
-            call mpas_threading_barrier()
-
             ! boundary update on F
             call mpas_timer_start("se halo F and btr vel")
             call mpas_dmpar_exch_group_create(domain, finalBtrGroupName)
@@ -1287,11 +1273,10 @@ module ocn_time_integration_split
 
             call mpas_threading_barrier()
             call mpas_dmpar_exch_group_full_halo_exch(domain, finalBtrGroupName)
+            call mpas_threading_barrier()
 
             call mpas_dmpar_exch_group_destroy(domain, finalBtrGroupName)
             call mpas_timer_stop("se halo F and btr vel")
-
-            call mpas_threading_barrier()
 
             ! Check that you can compute SSH using the total sum or the individual increments
             ! over the barotropic subcycles.
@@ -1338,7 +1323,7 @@ module ocn_time_integration_split
                   useVelocityCorrection = 0
                endif
 
-               !$omp do schedule(runtime) private(k, normalThicknessFluxSum, thicknessSum, normalVelocityCorrection)
+               !$omp do schedule(runtime)
                do iEdge = 1, nEdges
 
                   ! velocity for normalVelocityCorrectionection is normalBarotropicVelocity + normalBaroclinicVelocity + uBolus
@@ -1443,16 +1428,12 @@ module ocn_time_integration_split
          end do
          call mpas_timer_stop('se thick tend')
 
-         call mpas_threading_barrier()
-
          ! update halo for thickness tendencies
          call mpas_timer_start("se halo thickness")
 
          call mpas_dmpar_field_halo_exch(domain, 'tendLayerThickness')
 
          call mpas_timer_stop("se halo thickness")
-
-         call mpas_threading_barrier()
 
          call mpas_timer_start('se tracer tend', .false.)
          block => domain % blocklist
@@ -1473,8 +1454,6 @@ module ocn_time_integration_split
          end do
          call mpas_timer_stop('se tracer tend')
 
-         call mpas_threading_barrier()
-
          ! update halo for tracer tendencies
          call mpas_timer_start("se halo tracers")
          call mpas_pool_get_subpool(domain % blocklist % structs, 'tend', tendPool)
@@ -1490,8 +1469,6 @@ module ocn_time_integration_split
             end if
          end do
          call mpas_timer_stop("se halo tracers")
-
-         call mpas_threading_barrier()
 
          call mpas_timer_start('se loop fini')
          block => domain % blocklist
@@ -1807,8 +1784,6 @@ module ocn_time_integration_split
         block => block % next
       end do
 
-      call mpas_threading_barrier()
-
       ! Update halo on u and tracers, which were just updated for implicit vertical mixing.  If not done,
       ! this leads to lack of volume conservation.  It is required because halo updates in stage 3 are only
       ! conducted on tendencies, not on the velocity and tracer fields.  So this update is required to
@@ -1831,8 +1806,6 @@ module ocn_time_integration_split
       call mpas_timer_stop('se vmix halos')
 
       call mpas_timer_stop("se implicit vert mix")
-
-      call mpas_threading_barrier()
 
       call mpas_timer_start('se fini')
       block => domain % blocklist
@@ -1930,7 +1903,6 @@ module ocn_time_integration_split
          !$omp end do
 
          call ocn_time_average_coupled_accumulate(diagnosticsPool, statePool, forcingPool, 2)
-         call mpas_threading_barrier()
 
          if (config_use_standardGM) then
             call ocn_reconstruct_gm_vectors(diagnosticsPool, meshPool)
