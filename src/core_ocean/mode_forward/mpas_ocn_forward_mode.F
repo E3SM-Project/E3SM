@@ -246,7 +246,7 @@ module ocn_forward_mode
       call ocn_vmix_init(domain, err_tmp)
       ierr = ior(ierr, err_tmp)
 
-      call ocn_equation_of_state_init(err_tmp)
+      call ocn_equation_of_state_init(domain, err_tmp)
       ierr = ior(ierr, err_tmp)
 
       call ocn_tendency_init(err_tmp)

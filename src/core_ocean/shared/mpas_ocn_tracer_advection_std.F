@@ -116,7 +116,6 @@ module ocn_tracer_advection_std
       call mpas_allocate_scratch_field(highOrderHorizFluxField, .true.)
       call mpas_allocate_scratch_field(tracerCurField, .true.)
       call mpas_allocate_scratch_field(highOrderVertFluxField, .true.)
-      call mpas_threading_barrier()
 
       high_order_horiz_flux => highOrderHorizFluxField % array
       tracer_cur => tracerCurField % array
@@ -223,7 +222,6 @@ module ocn_tracer_advection_std
         !$omp end do
       end do ! iTracer loop
 
-      call mpas_threading_barrier()
       call mpas_deallocate_scratch_field(highOrderHorizFluxField, .true.)
       call mpas_deallocate_scratch_field(tracerCurField, .true.)
       call mpas_deallocate_scratch_field(highOrderVertFluxField, .true.)

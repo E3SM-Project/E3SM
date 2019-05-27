@@ -139,7 +139,7 @@ module ocn_init_mode
       call mpas_timer_stop('reset_io_alarms')
 
       ! Initialize submodules before initializing blocks.
-      call ocn_equation_of_state_init(err_tmp)
+      call ocn_equation_of_state_init(domain, err_tmp)
       ierr = ior(ierr, err_tmp)
       if(ierr.eq.1) then
           call mpas_log_write('An error was encountered while initializing the MPAS-Ocean init mode', MPAS_LOG_CRIT)

@@ -102,7 +102,7 @@ module ocn_analysis_mode
       call mpas_timer_stop('io_reset_alarms')
 
       ! Initialize submodules before initializing blocks.
-      call ocn_equation_of_state_init(err_tmp)
+      call ocn_equation_of_state_init(domain, err_tmp)
       ierr = ior(ierr, err_tmp)
 
       call ocn_analysis_init(domain, err_tmp)
