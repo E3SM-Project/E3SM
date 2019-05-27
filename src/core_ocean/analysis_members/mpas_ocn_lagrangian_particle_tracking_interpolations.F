@@ -575,7 +575,7 @@ module ocn_lagrangian_particle_tracking_interpolations
       ucReconstruct = ucTemp % array
 
       ! deallocate scratch memory
-      call mpas_deallocate_scratch_field(ucTemp , .True.)
+      call mpas_deallocate_scratch_field(ucTemp,.True.)
 
     end subroutine ocn_simple_vector_laplacian_filter !}}}
 
@@ -636,9 +636,9 @@ module ocn_lagrangian_particle_tracking_interpolations
       ! N.B., effect of forgetting halo exchange may be subtle for a single pass
 
       ! deallocate scratch memory
-      call mpas_deallocate_scratch_field(uvX , .True.)
-      call mpas_deallocate_scratch_field(uvY , .True.)
-      call mpas_deallocate_scratch_field(uvZ , .True.)
+      call mpas_deallocate_scratch_field(uvX,.True.)
+      call mpas_deallocate_scratch_field(uvY,.True.)
+      call mpas_deallocate_scratch_field(uvZ,.True.)
 
     end subroutine ocn_simple_vector_shapiro_filter !}}}
 

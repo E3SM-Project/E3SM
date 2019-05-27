@@ -224,6 +224,15 @@ contains
 
       dminfo = domain % dminfo
 
+      ! scratch arrays
+      call mpas_pool_get_field(scratchPool, 'normalThicknessFluxSum', normalThicknessFluxSumField)
+      call mpas_allocate_scratch_field(normalThicknessFluxSumField, .true.)
+      normalThicknessFluxSum => normalThicknessFluxSumField % array
+
+      call mpas_pool_get_field(scratchPool, 'layerThicknessSumEdge', layerThicknessSumEdgeField)
+      call mpas_allocate_scratch_field(layerThicknessSumEdgeField, .true.)
+      layerThicknessSumEdge => layerThicknessSumEdgeField % array
+
       block => domain % blocklist
       do while (associated(block))
          ! get dimensions
@@ -637,15 +646,6 @@ contains
          ! compute barotropic kinetic energy
          !
 
-         ! scratch arrays
-         call mpas_pool_get_field(scratchPool, 'normalThicknessFluxSum', normalThicknessFluxSumField)
-         call mpas_allocate_scratch_field(normalThicknessFluxSumField, .true.)
-         normalThicknessFluxSum => normalThicknessFluxSumField % array
-
-         call mpas_pool_get_field(scratchPool, 'layerThicknessSumEdge', layerThicknessSumEdgeField)
-         call mpas_allocate_scratch_field(layerThicknessSumEdgeField, .true.)
-         layerThicknessSumEdge => layerThicknessSumEdgeField % array
-
          do iEdge = 1, nEdges
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
@@ -690,6 +690,10 @@ contains
 
          block => block % next
       end do
+
+      ! scratch arrays
+      call mpas_deallocate_scratch_field(normalThicknessFluxSumField, .true.)
+      call mpas_deallocate_scratch_field(layerThicknessSumEdgeField, .true.)
 
    end subroutine ocn_compute_high_frequency_output!}}}
 
