@@ -190,7 +190,6 @@ contains
       call mpas_allocate_scratch_field(dTracerdZTopOfCellField, .true., .false.)
       call mpas_allocate_scratch_field(dTracerdZTopOfEdgeField, .true., .false.)
       call mpas_allocate_scratch_field(areaCellSumField, .true., .false.)
-      call mpas_threading_barrier()
 
       gradTracerEdge => gradTracerEdgeField % array
       gradTracerTopOfEdge => gradTracerTopOfEdgeField % array
@@ -221,7 +220,7 @@ contains
       if(.not.config_disable_redi_horizontal_term1) then
 
          nCells = nCellsArray( 1 )
-         !$omp do schedule(runtime) private(invAreaCell, i, iEdge, cell1, cell2, r_tmp, k, s_tmp, iTracer, tracer_turb_flux, flux)
+         !$omp do schedule(runtime)
          do iCell = 1, nCells
             invAreaCell = 1.0_RKIND / areaCell(iCell)
             do i = 1, nEdgesOnCell(iCell)
@@ -253,11 +252,9 @@ contains
 
       ! Compute vertical derivative of tracers at cell center and top of layer
       do iTracer = 1, num_tracers
-         ! Sync threads before starting on tracers
-         call mpas_threading_barrier()
 
          nCells = nCellsArray( 2 )
-         !$omp do schedule(runtime) private(k)
+         !$omp do schedule(runtime)
          do iCell = 1, nCells
             do k = 2, maxLevelCell(iCell)
                dTracerdZTopOfCell(k,iCell) = (tracers(iTracer,k-1,iCell) - tracers(iTracer,k,iCell)) &
@@ -275,7 +272,7 @@ contains
          nEdges = nEdgesArray( 2 )
          ! Compute tracer gradient (gradTracerEdge) along the constant coordinate surface.
          ! The computed variables lives at edge and mid-layer depth
-         !$omp do schedule(runtime) private(cell1, cell2, k)
+         !$omp do schedule(runtime)
          do iEdge = 1, nEdges
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
@@ -288,7 +285,7 @@ contains
 
          nEdges = nEdgesArray( 2 )
          ! Interpolate dTracerdZTopOfCell to edge and top of layer
-         !$omp do schedule(runtime) private(cell1, cell2, k)
+         !$omp do schedule(runtime)
          do iEdge = 1, nEdges
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
@@ -301,7 +298,7 @@ contains
 
          nEdges = nEdgesArray( 2 )
          ! Interpolate gradTracerEdge to edge and top of layer
-         !$omp do schedule(runtime) private(k, h1, h2)
+         !$omp do schedule(runtime)
          do iEdge = 1, nEdges
             do k = 2, maxLevelEdgeTop(iEdge)
                h1 = layerThicknessEdge(k-1,iEdge)
@@ -321,7 +318,7 @@ contains
          ! Compute \nabla\cdot(relativeSlope d\phi/dz)
          if(.not.config_disable_redi_horizontal_term2) then
             nCells = nCellsArray( 1 )
-            !$omp do schedule(runtime) private(invAreaCell, i, iEdge, k, s_tmpU, s_tmpD, flux)
+            !$omp do schedule(runtime)
             do iCell = 1, nCells
                invAreaCell = 1.0_RKIND / areaCell(iCell)
                do i = 1, nEdgesOnCell(iCell)
@@ -346,7 +343,7 @@ contains
          ! Compute relativeSlope\cdot\nabla\phi (variable gradHTracerSlopedTopOfCell) at non-boundary edges
 
          nCells = nCellsArray( 1 )
-         !$omp do schedule(runtime) private(i, iedge, areaEdge, k, r_tmp)
+         !$omp do schedule(runtime)
          do iCell = 1, nCells
             areaCellSum(:, iCell) = 1.0e-34_RKIND
             gradHTracerSlopedTopOfCell(:, iCell) = 0.0_RKIND
@@ -364,7 +361,7 @@ contains
          !$omp end do
 
          nCells = nCellsArray( 1 )
-         !$omp do schedule(runtime) private(k)
+         !$omp do schedule(runtime)
          do iCell=1,nCells
             do k = 1, maxLevelCell(iCell)
                gradHTracerSlopedTopOfCell(k,iCell) = gradHTracerSlopedTopOfCell(k,iCell)/areaCellSum(k,iCell)
@@ -374,7 +371,7 @@ contains
 
          if(.not.config_disable_redi_horizontal_term3) then
             nCells = nCellsArray( 1 )
-            !$omp do schedule(runtime) private(k, s_tmp)
+            !$omp do schedule(runtime)
             do iCell = 1, nCells
                ! impose no-flux boundary conditions at top and bottom of column
                gradHTracerSlopedTopOfCell(1,iCell) = 0.0_RKIND
@@ -389,7 +386,6 @@ contains
 
       end do  ! iTracer
 
-      call mpas_threading_barrier()
       call mpas_deallocate_scratch_field(gradTracerEdgeField, .true.)
       call mpas_deallocate_scratch_field(gradTracerTopOfEdgeField, .true.)
       call mpas_deallocate_scratch_field(gradHTracerSlopedTopOfCellField, .true.)

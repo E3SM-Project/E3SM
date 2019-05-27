@@ -369,7 +369,6 @@ contains
       ! velocity tendency: vertical mixing d/dz( nu_v du/dz))
       !
       call mpas_timer_stop("ocn_tend_vel")
-      call mpas_threading_barrier()
 
    end subroutine ocn_tend_vel!}}}
 
@@ -558,7 +557,6 @@ contains
       !allocate(normalThicknessFlux(nVertLevels, nEdges+1))
       call mpas_pool_get_field(scratchPool, 'normalThicknessFlux', normalThicknessFluxField)
       call mpas_allocate_scratch_field(normalThicknessFluxField, .true.)
-      call mpas_threading_barrier()
 
       normalThicknessFlux => normalThicknessFluxField % array
 
@@ -652,6 +650,9 @@ contains
                                                         tracerGroupSurfaceFluxRemoved, dt, layerThickness, err)
                end if
 
+
+               !$omp master
+
                !
                ! compute ecosystem source-sink tendencies and net surface fluxes
                ! NOTE: must be called before ocn_tracer_surface_flux_tend
@@ -696,6 +697,9 @@ contains
                   call ocn_tracer_MacroMolecules_surface_flux_compute(activeTracers, tracerGroup, forcingPool,  &
                      nTracerGroup, nCellsSolve, zMid, indexTemperature, indexSalinity, tracerGroupSurfaceFlux, err)
                endif
+
+               !$omp end master
+               call mpas_threading_barrier()
 
                !
                ! ocean surface restoring
@@ -909,7 +913,6 @@ contains
          end if
       end do
 
-      call mpas_threading_barrier()
       call mpas_deallocate_scratch_field(normalThicknessFluxField, .true.)
 
       call mpas_timer_stop("ocn_tend_tracer")
@@ -998,7 +1001,7 @@ contains
 
       allocate(div_hu(nVertLevels))
 
-      !$omp do schedule(runtime) private(div_hu_btr, invAreaCell, i, iEdge, k, totalThickness, flux)
+      !$omp do schedule(runtime)
       do iCell = 1, nCells
         tend_lowFreqDivergence(:, iCell) = 0.0_RKIND
         tend_highFreqThickness(:, iCell) = 0.0_RKIND
