@@ -888,8 +888,6 @@ contains
       end do
       !$omp end do
 
-      call mpas_deallocate_scratch_field(normalizedRelativeVorticityVertexField, .true.)
-      call mpas_deallocate_scratch_field(normalizedPlanetaryVorticityVertexField, .true.)
       call mpas_timer_stop('diagnostic solve')
 
    end subroutine ocn_diagnostic_solve!}}}

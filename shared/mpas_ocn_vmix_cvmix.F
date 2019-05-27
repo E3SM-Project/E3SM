@@ -757,6 +757,7 @@ contains
       deallocate(Nsqr_iface)
       deallocate(turbulentScalarVelocityScale)
       deallocate(RiSmoothed)
+      deallocate(RiTemp)
       deallocate(BVFSmoothed)
       deallocate(normalVelocitySum)
       deallocate(potentialDensitySum)
