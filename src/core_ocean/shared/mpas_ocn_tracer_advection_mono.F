@@ -690,6 +690,8 @@ module ocn_tracer_advection_mono
       call mpas_deallocate_scratch_field(tracerCurField, .true.)
       call mpas_deallocate_scratch_field(workTendencyField, .true.)
       call mpas_deallocate_scratch_field(hNewInvField, .true.)
+      call mpas_deallocate_scratch_field(tracerMinField, .true.)
+      call mpas_deallocate_scratch_field(tracerMaxField, .true.)
       call mpas_deallocate_scratch_field(fluxIncomingField, .true.)
       call mpas_deallocate_scratch_field(fluxOutgoingField, .true.)
       call mpas_deallocate_scratch_field(hProvInvField, .true.)
