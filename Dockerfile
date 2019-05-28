@@ -4,8 +4,8 @@
 # that prevented the building process from working properly.
 FROM continuumio/miniconda:4.5.4
 
-LABEL maintainer="shaheen2@llnl.gov"
-LABEL version="1.6.1"
+LABEL maintainer="zhang40@llnl.gov"
+LABEL version="1.7.0"
 
 # Copy the entire project dir because we'll install from source.
 COPY . .

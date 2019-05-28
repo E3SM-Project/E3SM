@@ -1,11 +1,11 @@
 package:
     name: e3sm_diags
-    version: 1.6.1
+    version: 1.7.0
 
 source:
     #path: ..
     git_url: https://github.com/E3SM-Project/e3sm_diags
-    git_rev: v1.6.1
+    git_rev: v1.7.0
 
 build:
     number: 0
