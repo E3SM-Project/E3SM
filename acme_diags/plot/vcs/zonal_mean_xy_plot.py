@@ -76,6 +76,10 @@ def plot(ref, test, diff, metrics_dict, parameters):
 
     ref_test_template = vcs.gettemplate('ref_test_template')
 
+    # Turn off the units of the axes in the plots.
+    ref_test_template.xunits.priority = 0
+    ref_test_template.yunits.priority = 0
+
     ref_test_yaxis_title = managetextcombined(
         'ref_test_yaxis_title', 'ref_test_yaxis_title', vcs_canvas)
     ref_test_yaxis_title.angle = 270
@@ -89,9 +93,6 @@ def plot(ref, test, diff, metrics_dict, parameters):
     ref_test_template.legend.priority = 0
     ref_test_template.title.priority = 0
 
-    # make all of the elements listed have priority = 0
-    # ref_test_template.blank(["mean", "max", "min", "zvalue", "crtime", "ytic2", "xtic2"])
-
     # the actual box around the plot
     ref_test_template.box1.x1 = 0.1223
     ref_test_template.box1.x2 = 0.96
@@ -103,15 +104,6 @@ def plot(ref, test, diff, metrics_dict, parameters):
     ref_test_template.data.x2 = 0.96
     ref_test_template.data.y1 = 0.55
     ref_test_template.data.y2 = 0.90
-
-    # ref_test_template.legend.x1 = 0.88
-    # ref_test_template.legend.x2 = 0.98
-    # ref_test_template.legend.y1 = 0.96
-    # ref_test_template.legend.y2 = 0.88
-    # ref_test_template.legend.textorientation = 'defright'
-
-    # ref_test_template.title.x = 0.5
-    # ref_test_template.title.textorientation = 'defcenter'
 
     ref_test_template.units.textorientation = 'defright'
     ref_test_template.units.x = 0.96
@@ -136,6 +128,10 @@ def plot(ref, test, diff, metrics_dict, parameters):
 
     diff_template = vcs.gettemplate('diff_template')
 
+    # Turn off the units of the axes in the plots.
+    diff_template.xunits.priority = 0
+    diff_template.yunits.priority = 0
+
     diff_yaxis_title = managetextcombined(
         'diff_yaxis_title', 'diff_yaxis_title', vcs_canvas)
     diff_yaxis_title.angle = 270
@@ -154,28 +150,6 @@ def plot(ref, test, diff, metrics_dict, parameters):
     diff_template.ylabel1.x = 0.11  # no ylabel1.y attribute
     diff_template.units.textorientation = 'defright'
     diff_template.units.x = 0.96
-
-    '''
-    diff_template.box1.y1 -= 0.47
-    diff_template.box1.y2 -= 0.47
-
-    diff_template.data.y1 -= 0.47
-    diff_template.data.y2 -= 0.47
-
-    diff_template.legend.y1 -= 0.47
-    diff_template.legend.y2 -= 0.47
-
-    diff_template.title.y -= 0.47
-    diff_template.units.y -= 0.47
-
-    diff_template.xlabel1.y -= 0.47
-
-    diff_template.xtic1.y1 -= 0.47
-    diff_template.xtic1.y2 -= 0.47
-
-    diff_template.xname.y -= 0.47
-    diff_template.yname.y -= 0.47
-    '''
 
     ref_line = vcs_canvas.getxvsy('ref_plot')
     ref_line.datawc_y1 = min(ref.min(), test.min())
@@ -201,7 +175,6 @@ def plot(ref, test, diff, metrics_dict, parameters):
                              -30: "30S", 0: "Eq", 30: "30N",
                              60: "60N", 90: "90N"}
 
-    # ref_line.line = ref_plot_linetype
     ref_line.linetype = ref_plot_linetype
     ref_line.linecolor = ref_plot_color
     ref_line.linewidth = ref_plot_width
@@ -209,16 +182,13 @@ def plot(ref, test, diff, metrics_dict, parameters):
     ref_line.markersize = ref_plot_markersize
     ref_line.markercolor = ref_plot_markercolor
 
-    # test_line.line = test_plot_linetype
     test_line.linetype = test_plot_linetype
     test_line.linecolor = test_plot_color
     test_line.linewidth = test_plot_width
     test_line.marker = test_plot_marker
     test_line.markersize = test_plot_markersize
     test_line.markercolor = test_plot_markercolor
-    # test_line.smooth = 1
 
-    # diff_line.line = diff_plot_linetype
     diff_line.linetype = diff_plot_linetype
     diff_line.linecolor = diff_plot_color
     diff_line.linewidth = diff_plot_width
@@ -229,15 +199,9 @@ def plot(ref, test, diff, metrics_dict, parameters):
     blank_template = vcs_canvas.gettemplate('blank_template')
     blank_template.legend.priority = 0
     blank_template.data.priority = 1
-    # blank_template.blank()
-    # blank_template.legend.priority = 1
-    # blank_template.legend.y1 -= 0.05
-    # blank_template.legend.y2 -= 0.05
 
-    # vcs_canvas.plot(ref, ref_line, ref_test_template, xname='Latitude')
     vcs_canvas.plot(ref, ref_line, ref_test_template)
     vcs_canvas.plot(test, test_line, blank_template)
-    # vcs_canvas.plot(diff, diff_line, diff_template, xname='Latitude')
     vcs_canvas.plot(diff, diff_line, diff_template)
 
     # Plot the main title
@@ -265,18 +229,6 @@ def plot(ref, test, diff, metrics_dict, parameters):
 
     if not parameters.logo:
         vcs_canvas.drawlogooff()
-
-    # ref_test_template.script('plot_set_3.json')
-    # blank_template.script('plot_set_3.json')
-    # diff_template.script('plot_set_3.json')
-    # ref_line.script('plot_set_3.json')
-    # test_line.script('plot_set_3.json')
-    # diff_line.script('plot_set_3.json')
-    # main_title.script('plot_set_3.json')
-    # ref_test_yaxis_title.script('plot_set_3.json')
-    # diff_yaxis_title.script('plot_set_3.json')
-    # test_title.script('plot_set_3.json')
-    # ref_title.script('plot_set_3.json')
 
     fnm = os.path.join(get_output_dir(parameters.current_set,
                                       parameters), parameters.output_file)

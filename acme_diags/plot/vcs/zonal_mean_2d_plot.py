@@ -50,6 +50,14 @@ def plot(reference, test, diff, metrics_dict, parameter):
     template_ref = vcs_canvas.gettemplate('plotset4_0_x_1')
     template_diff = vcs_canvas.gettemplate('plotset4_0_x_2')
 
+    # Turn off the units of the axes in the plots.
+    template_test.xunits.priority = 0
+    template_test.yunits.priority = 0
+    template_ref.xunits.priority = 0
+    template_ref.yunits.priority = 0
+    template_diff.xunits.priority = 0
+    template_diff.yunits.priority = 0
+
     utils.set_units(test, parameter.test_units)
     utils.set_units(reference, parameter.reference_units)
     utils.set_units(diff, parameter.diff_units)

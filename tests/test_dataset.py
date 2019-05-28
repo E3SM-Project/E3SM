@@ -2,27 +2,91 @@ import unittest
 import os
 import cdms2
 from collections import OrderedDict
-from acme_diags.derivations import acme
+from acme_diags.derivations import acme as acme_derivations
 from acme_diags.acme_parameter import ACMEParameter
-
+from acme_diags.driver.utils.dataset import Dataset
 
 def get_abs_file_path(relative_path):
-    return os.path.dirname(os.path.abspath(__file__)) + '/' + relative_path
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), relative_path)
 
 
-class TestACMEDerivations(unittest.TestCase):
+class TestDataset(unittest.TestCase):
     def setUp(self):
         self.parameter = ACMEParameter()
 
     def test_convert_units(self):
-        precc_file = cdms2.open(get_abs_file_path('precc.nc'))
-        var = precc_file('PRECC')
-        precc_file.close()
+        with cdms2.open(get_abs_file_path('precc.nc')) as precc_file:
+            var = precc_file('PRECC')
 
-        new_var = acme.convert_units(var, 'mm/day')
-
+        new_var = acme_derivations.convert_units(var, 'mm/day')
         self.assertEqual(new_var.units, 'mm/day')
 
+    def test_add_user_derived_vars(self):
+        my_vars = {
+            'A_NEW_VAR': {
+                ('v1', 'v2'): lambda v1, v2: v1+v2,
+                ('v3', 'v4'): lambda v3, v4: v3-v4
+            },
+            'PRECT': {
+                ('MY_PRECT',): lambda my_prect: my_prect 
+            }
+        }
+        self.parameter.derived_variables = my_vars
+        data = Dataset(self.parameter, test=True)
+        self.assertTrue('A_NEW_VAR' in data.derived_vars)
+
+        # In the default my_vars, each entry
+        # ('PRECT', 'A_NEW_VAR', etc) is an OrderedDict.
+        # We must check that what the user inserted is
+        # first, so it's used first.
+        self.assertTrue(data.derived_vars['PRECT'].keys()[0] == ('MY_PRECT',))
+
+    def test_is_timeseries(self):
+        self.parameter.ref_timeseries_input = True
+        data = Dataset(self.parameter, ref=True)
+        self.assertTrue(data.is_timeseries())
+
+        self.parameter.test_timeseries_input = True
+        data = Dataset(self.parameter, test=True)
+        self.assertTrue(data.is_timeseries())
+
+        self.parameter.ref_timeseries_input = False
+        data = Dataset(self.parameter, ref=True)
+        self.assertFalse(data.is_timeseries())
+
+        self.parameter.test_timeseries_input = False
+        data = Dataset(self.parameter, test=True)
+        self.assertFalse(data.is_timeseries())
+
+    def test_is_climo(self):
+        self.parameter.ref_timeseries_input = True
+        data = Dataset(self.parameter, ref=True)
+        self.assertFalse(data.is_climo())
+
+        self.parameter.test_timeseries_input = True
+        data = Dataset(self.parameter, test=True)
+        self.assertFalse(data.is_climo())
+
+        self.parameter.ref_timeseries_input = False
+        data = Dataset(self.parameter, ref=True)
+        self.assertTrue(data.is_climo())
+
+        self.parameter.test_timeseries_input = False
+        data = Dataset(self.parameter, test=True)
+        self.assertTrue(data.is_climo())
+
+    def test_get_attr_from_climo(self):
+        # We pass in the path to a file, so the input directory
+        # to the tests doesn't need to be like how it is for when e3sm_diags
+        # is ran wit a bunch of diags.
+        self.parameter.reference_data_path = './system'
+        self.parameter.ref_file = "ta_ERA-Interim_ANN_198001_201401_climo.nc"        
+        data = Dataset(self.parameter, ref=True)
+        self.assertEqual(data.get_attr_from_climo('Conventions', 'ANN'), 'CF-1.0')
+
+
+
+    '''
     def test_process_derived_var_passes(self):
         derived_var = {
             'PRECT': {
@@ -32,7 +96,7 @@ class TestACMEDerivations(unittest.TestCase):
         }
 
         precc_file = cdms2.open(get_abs_file_path('precc.nc'))
-        acme.process_derived_var('PRECT', derived_var,
+        acme_derivations.process_derived_var('PRECT', derived_var,
                                  precc_file, self.parameter)
         precc_file.close()
 
@@ -47,7 +111,7 @@ class TestACMEDerivations(unittest.TestCase):
 
         precc_file = cdms2.open(get_abs_file_path('precc.nc'))
         with self.assertRaises(RuntimeError):
-            acme.process_derived_var(
+            acme_derivations.process_derived_var(
                 'PRECT', wrong_derived_var, precc_file, self.parameter)
         precc_file.close()
 
@@ -67,7 +131,7 @@ class TestACMEDerivations(unittest.TestCase):
         # add derived_var_dict to default_derived_vars
         precc_file = cdms2.open(get_abs_file_path('precc.nc'))
         self.parameter.derived_variables = derived_var_dict
-        acme.process_derived_var(
+        acme_derivations.process_derived_var(
             'PRECT', default_derived_vars, precc_file, self.parameter)
         precc_file.close()
 
@@ -86,7 +150,7 @@ class TestACMEDerivations(unittest.TestCase):
         derived_var_dict = {
             'PRECT': {('PRECC'): lambda x: 'PRECC'}
         }
-        # use this instead of the acme.derived_variables one
+        # use this instead of the acme_derivations.derived_variables one
         default_derived_vars = {
             'PRECT': {
                 ('pr'): lambda x: x,
@@ -97,7 +161,7 @@ class TestACMEDerivations(unittest.TestCase):
         # add derived_var_dict to default_derived_vars
         precc_file = cdms2.open(get_abs_file_path('precc.nc'))
         self.parameter.derived_variables = derived_var_dict
-        msg = acme.process_derived_var(
+        msg = acme_derivations.process_derived_var(
             'PRECT', default_derived_vars, precc_file, self.parameter)
         precc_file.close()
         if msg != 'PRECC':
@@ -119,23 +183,21 @@ class TestACMEDerivations(unittest.TestCase):
 
         precc_file = cdms2.open(get_abs_file_path('precc.nc'))
         self.parameter.derived_variables = derived_var_dict
-        acme.process_derived_var(
+        acme_derivations.process_derived_var(
             'PRECT', default_derived_vars, precc_file, self.parameter)
         precc_file.close()
         # Check that 'something' was inserted first
         self.assertEqual(['something', 'pr', 'PRECC'],
                          default_derived_vars['PRECT'].keys())
 
-    def test_mask_by_passes(self):
-        precc_file = cdms2.open(get_abs_file_path('precc.nc'))
-        prcc = precc_file('PRECC')
-        precl_file = cdms2.open(get_abs_file_path('precl.nc'))
-        prcl = precl_file('PRECL')
+    def test_mask_by(self):
+        with cdms2.open(get_abs_file_path('precc.nc')) as precc_file:
+            prcc = precc_file('PRECC')
+        with cdms2.open(get_abs_file_path('precl.nc')) as precl_file:
+            prcl = precl_file('PRECL')
 
-        acme.mask_by(prcc, prcl, low_limit=2.0)
-        precc_file.close()
-        precl_file.close()
-
+        acme_derivations.mask_by(prcc, prcl, low_limit=2.0)
+    '''
 
 if __name__ == '__main__':
     unittest.main()
