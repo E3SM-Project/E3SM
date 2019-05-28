@@ -2,6 +2,7 @@
 #define HOMMEXX_ELEMENT_OPS_HPP
 
 #include "KernelVariables.hpp"
+#include "HommexxEnums.hpp"
 #include "utilities/SubviewUtils.hpp"
 #include "utilities/VectorUtils.hpp"
 
@@ -56,7 +57,7 @@ public:
       Scalar tmp = x_i(MIDPOINTS::LastPack);
       tmp.shift_left(1);
       tmp[MIDPOINTS::LastVecEnd] = x_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd];
-      x_m(MIDPOINTS::LastPack) = (x_i(INTERFACES::LastPack-1) + tmp) / 2;
+      x_m(MIDPOINTS::LastPack) = (x_i(MIDPOINTS::LastPack) + tmp) / 2;
     }
   }
 
@@ -201,21 +202,28 @@ public:
     }
   }
 
+  template<BCType bcType = BCType::Zero>
   KOKKOS_INLINE_FUNCTION
   void compute_interface_delta (const KernelVariables& kv,
                                 ExecViewUnmanaged<const Scalar [NUM_LEV]  > x_m,
                                 ExecViewUnmanaged<      Scalar [NUM_LEV_P]> dx_i) const
   {
+    static_assert (bcType==BCType::Zero || bcType == BCType::DoNothing,
+                   "Error! Invalid bcType for interface delta calculation.\n");
+
     // Compute increment of midpoint values at interfaces. Top and bottom interfaces are set to 0.
     if (OnGpu<ExecSpace>::value) {
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,1,NUM_PHYSICAL_LEV),
                            [=](const int& ilev) {
         dx_i(ilev) = x_m(ilev)-x_m(ilev-1);
       });
-      // Fix the top/bottom
-      Kokkos::single(Kokkos::PerThread(kv.team),[&](){
-        dx_i(0) = dx_i(NUM_INTERFACE_LEV-1) = 0.0;
-      });
+
+      if (bcType==BCType::Zero) {
+        // Fix the top/bottom
+        Kokkos::single(Kokkos::PerThread(kv.team),[&](){
+          dx_i(0) = dx_i(NUM_INTERFACE_LEV-1) = 0.0;
+        });
+      }
     } else {
       // Try to use SIMD operations as much as possible
       for (int ilev=1; ilev<NUM_LEV; ++ilev) {
@@ -230,8 +238,10 @@ public:
       tmp.shift_right(1);
       dx_i(0) = x_m(0) - tmp;
 
-      // Fix the top/bottom levels
-      dx_i(0)[0] = dx_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd] = 0.0;
+      if (bcType==BCType::Zero) {
+        // Fix the top/bottom levels
+        dx_i(0)[0] = dx_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd] = 0.0;
+      }
     }
   }
 
@@ -245,22 +255,23 @@ public:
                     const Lambda& input_provider,
                     const ExecViewUnmanaged<Scalar [ColInfo<LENGTH>::NumPacks]>& sum) const
   {
-    column_scan<ExecSpace,Forward,Inclusive,LENGTH>(kv,input_provider,sum);
+    column_scan_impl<ExecSpace,Forward,Inclusive,LENGTH>(kv,input_provider,sum);
   }
 
   template<typename ExecSpaceType,bool Forward,bool Inclusive,int LENGTH,typename Lambda>
   KOKKOS_INLINE_FUNCTION
   typename std::enable_if<!OnGpu<ExecSpaceType>::value>::type
-  column_scan (const KernelVariables& /* kv */,
-               const Lambda& input_provider,
-               const ExecViewUnmanaged<Scalar [ColInfo<LENGTH>::NumPacks]>& sum) const
+  column_scan_impl (const KernelVariables& /* kv */,
+                    const Lambda& input_provider,
+                    const ExecViewUnmanaged<Scalar [ColInfo<LENGTH>::NumPacks]>& sum,
+                    const Real s0 = 0.0) const
   {
     // It is easier to write two loops for Forward true/false. There's no runtime penalty,
     // since the if is evaluated at compile time, so no big deal.
     constexpr int lastPack = ColInfo<LENGTH>::NumPacks - 1;
     if (Forward) {
       // Running integral
-      Real integration = 0.0;
+      Real integration = s0;
 
       for (int ilev = 0; ilev<ColInfo<LENGTH>::NumPacks; ++ilev) {
         // In all but the last level pack, the loop is over the whole vector
@@ -280,7 +291,7 @@ public:
       }
     } else {
       // Running integral
-      Real integration = 0.0;
+      Real integration = s0;
 
       for (int ilev = lastPack; ilev >= 0; --ilev) {
         // In all but the last level pack, the loop is over the whole vector
@@ -304,9 +315,10 @@ public:
   template<typename ExecSpaceType,bool Forward,bool Inclusive,int LENGTH,typename Lambda>
   KOKKOS_INLINE_FUNCTION
   typename std::enable_if<OnGpu<ExecSpaceType>::value>::type
-  column_scan (const KernelVariables& kv,
-               const Lambda& input_provider,
-               const ExecViewUnmanaged<Scalar [ColInfo<LENGTH>::NumPacks]>& sum) const
+  column_scan_impl (const KernelVariables& kv,
+                    const Lambda& input_provider,
+                    const ExecViewUnmanaged<Scalar [ColInfo<LENGTH>::NumPacks]>& sum,
+                    const Real s0 = 0.0) const
   {
     // On GPU we rely on the fact that Scalar is basically double[1].
     static_assert (!OnGpu<ExecSpaceType>::value || ColInfo<LENGTH>::NumPacks==LENGTH, "Error! In a GPU build we expect VECTOR_SIZE=1.\n");
@@ -316,6 +328,9 @@ public:
       Dispatch<ExecSpaceType>::parallel_scan(kv.team, LENGTH,
                                             [&](const int k, Real& accumulator, const bool last) {
         accumulator += input_provider(k)[0];
+        if (k==0) {
+          accumulator += s0;
+        }
 
         constexpr int last_idx = Inclusive ? LENGTH-1 : LENGTH-2;
         constexpr int offset = Inclusive ? 0 : 1;
@@ -331,6 +346,9 @@ public:
         const int k_bwd = LENGTH-k-1;
 
         accumulator += input_provider(k_bwd)[0];
+        if (k==0) {
+          accumulator += s0;
+        }
 
         constexpr int last_idx = Inclusive ? 0 : 1;
         constexpr int offset = Inclusive ? 0 : 1;
@@ -338,6 +356,50 @@ public:
           sum(k_bwd-offset) = accumulator;
         }
       });
+    }
+  }
+
+  // Special case where input is on midpoints, but output is on interfaces.
+  // In this case (for forward case), we perform sum(k+1) = sum(k) + provider(k),
+  // for k=0,NUM_LEV. This can be done with an exclusive sum, using sum(0) as
+  // initial value. Similarly for backward sum
+  // Note: we are *assuming* that the first (or last, for bwd) entry of  sum
+  //       contains the desired initial value
+  template<bool Forward>
+  KOKKOS_INLINE_FUNCTION
+  void column_scan_mid_to_int (const KernelVariables& kv,
+                               const ExecViewUnmanaged<const Scalar[NUM_LEV]>& input,
+                               const ExecViewUnmanaged<Scalar [NUM_LEV_P]>& sum) const
+  {
+    auto input_provider = [&](const int ilev)->Scalar {
+      return input(ilev);
+    };
+
+    using Specs = ColInfo<NUM_INTERFACE_LEV>;
+    const Real s0 = Forward ? sum(0)[0] : sum(Specs::LastPack)[Specs::LastVecEnd];
+    column_scan_impl<ExecSpace,Forward,false,NUM_INTERFACE_LEV>(kv,input_provider,sum,s0);
+  }
+
+  // Special case where input is on midpoints, but output is on interfaces.
+  // In this case, we perform sum(k+1) = sum(k) + provider(k), k=0,NUM_LEV.
+  // For this reason, we do an exclusive sum, with initial value sum(0).
+  template<bool Forward,typename Lambda>
+  KOKKOS_INLINE_FUNCTION
+  void column_scan_mid_to_int (const KernelVariables& kv,
+                               const Lambda& input_provider,
+                               const ExecViewUnmanaged<Scalar [NUM_LEV_P]>& sum) const
+  {
+    if (Forward) {
+      // It's safe to pass the output as it is, and claim is Exclusive over NUM_INTERFACE_LEV
+      column_scan_impl<ExecSpace,true,false,NUM_INTERFACE_LEV>(kv,input_provider,sum,sum(0)[0]);
+    } else {
+      // Tricky: the input is not defined at NUM_INTEFACE_LEV-1. So we cast this scan sum
+      //         into an inclusive sum over NUM_PHYSICAL_LEV, with output cropped to NUM_LEV packs.
+      // Note: we also need to init sum at NUM_PHYSICAL_LEV-1
+      ExecViewUnmanaged<Scalar[NUM_LEV]> sum_cropped(sum.data());
+      const Real s0 = sum(INTERFACES::LastPack)[INTERFACES::LastVecEnd];
+      sum_cropped(MIDPOINTS::LastPack)[MIDPOINTS::LastVecEnd] = s0;
+      column_scan_impl<ExecSpace,false,true,NUM_PHYSICAL_LEV>(kv,input_provider,sum_cropped,s0);
     }
   }
 };

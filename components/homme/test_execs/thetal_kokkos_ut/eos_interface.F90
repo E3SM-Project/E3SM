@@ -30,37 +30,66 @@ contains
 
   end subroutine init_f90
 
-  subroutine pnh_and_exner_from_eos_f90(num_elems, vtheta_dp_ptr, dp3d_ptr, phi_i_ptr, pnh_ptr, exner_ptr, dpnh_dp_i_ptr) bind(c)
+  subroutine pnh_and_exner_from_eos_f90(num_elems, vtheta_dp_ptr, dp_ptr, phi_i_ptr, pnh_ptr, exner_ptr, dpnh_dp_i_ptr) bind(c)
     use eos, only: pnh_and_exner_from_eos
     !
     ! Inputs
     !
     integer (kind=c_int), intent(in) :: num_elems
-    type (c_ptr), intent(in) :: vtheta_dp_ptr, dp3d_ptr, phi_i_ptr, pnh_ptr, exner_ptr, dpnh_dp_i_ptr
+    type (c_ptr), intent(in) :: vtheta_dp_ptr, dp_ptr, phi_i_ptr, pnh_ptr, exner_ptr, dpnh_dp_i_ptr
 
     !
     ! Locals
     !
-    real (kind=real_kind), dimension(:,:,:,:),  pointer :: vtheta_dp, dp3d, phi_i, pnh, exner, dpnh_dp_i
+    real (kind=real_kind), dimension(:,:,:,:),  pointer :: vtheta_dp, dp, phi_i, pnh, exner, dpnh_dp_i
     integer :: ie
 
     call c_f_pointer(vtheta_dp_ptr, vtheta_dp, [np,np,nlev, num_elems])
-    call c_f_pointer(dp3d_ptr,      dp3d,      [np,np,nlev, num_elems])
+    call c_f_pointer(dp_ptr,        dp,        [np,np,nlev, num_elems])
     call c_f_pointer(phi_i_ptr,     phi_i,     [np,np,nlevp,num_elems])
     call c_f_pointer(pnh_ptr,       pnh,       [np,np,nlev, num_elems])
-    call c_f_pointer(exner_ptr,     exner,     [np,np,nlev,num_elems])
-    call c_f_pointer(dpnh_dp_i_ptr, dpnh_dp_i, [np,np,nlev,num_elems])
+    call c_f_pointer(exner_ptr,     exner,     [np,np,nlev, num_elems])
+    call c_f_pointer(dpnh_dp_i_ptr, dpnh_dp_i, [np,np,nlevp,num_elems])
 
     do ie=1,num_elems
-      call pnh_and_exner_from_eos(hvcoord,               &
-                                  vtheta_dp(:,:,:,ie),   &
-                                  dp3d(:,:,:,ie),        &
-                                  phi_i(:,:,:,ie),       &
-                                  pnh(:,:,:,ie),         &
-                                  exner(:,:,:,ie),       &
+      call pnh_and_exner_from_eos(hvcoord,             &
+                                  vtheta_dp(:,:,:,ie), &
+                                  dp(:,:,:,ie),        &
+                                  phi_i(:,:,:,ie),     &
+                                  pnh(:,:,:,ie),       &
+                                  exner(:,:,:,ie),     &
                                   dpnh_dp_i(:,:,:,ie))
     enddo
 
   end subroutine pnh_and_exner_from_eos_f90
+
+  subroutine phi_from_eos_f90(num_elems, phis_ptr, vtheta_dp_ptr, dp_ptr, phi_i_ptr) bind(c)
+    use eos, only: phi_from_eos
+    !
+    ! Inputs
+    !
+    integer (kind=c_int), intent(in) :: num_elems
+    type (c_ptr), intent(in) :: phis_ptr, vtheta_dp_ptr, dp_ptr, phi_i_ptr
+
+    !
+    ! Locals
+    !
+    real (kind=real_kind), dimension(:,:,:,:), pointer :: vtheta_dp, dp, phi_i
+    real (kind=real_kind), dimension(:,:,:),   pointer :: phis
+    integer :: ie
+
+    call c_f_pointer(phis_ptr,      phis,      [np,np,      num_elems])
+    call c_f_pointer(vtheta_dp_ptr, vtheta_dp, [np,np,nlev, num_elems])
+    call c_f_pointer(dp_ptr,        dp,        [np,np,nlev, num_elems])
+    call c_f_pointer(phi_i_ptr,     phi_i,     [np,np,nlevp,num_elems])
+
+    do ie=1,num_elems
+      call phi_from_eos(hvcoord,             &
+                        phis(:,:,ie),        &
+                        vtheta_dp(:,:,:,ie), &
+                        dp(:,:,:,ie),        &
+                        phi_i(:,:,:,ie))
+    enddo
+  end subroutine phi_from_eos_f90
 
 end module eos_interface

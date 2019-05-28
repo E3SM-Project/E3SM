@@ -102,6 +102,13 @@ inline bool is_implicit (const TimeStepType& ts) {
   return ts==TimeStepType::BE || ts==TimeStepType::BDF2;
 }
 
+// ========================== BC Types ============================ //
+
+enum class BCType {
+  Zero = 0,
+  DoNothing = 0
+};
+
 // =================== Euler Step DSS Option ====================== //
 
 enum class DSSOption {

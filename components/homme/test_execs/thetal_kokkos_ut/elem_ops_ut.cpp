@@ -114,6 +114,7 @@ TEST_CASE("elem_ops_interpolation", "interpolation") {
                                              Homme::subview(d_interface_field_out,kv.ie,igp,jgp));
       });
     });
+    Kokkos::fence();
 
     // Check answers
     Kokkos::deep_copy(h_midpoints_field_out,d_midpoints_field_out);
@@ -323,38 +324,6 @@ TEST_CASE("elem_ops_scan_sum", "scan_sum") {
           auto mid_out = viewAsReal(Homme::subview(h_midpoints_field_out,ie,igp,jgp));
           auto int_out = viewAsReal(Homme::subview(h_interface_field_out,ie,igp,jgp));
           for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
-            // if (mid_out(k) != mid_sums[k]) {
-            //   printf ("ie,i,j,k:%d,%d,%d,%d\n",ie,igp,jgp,k);
-            //   printf ("mid data :");
-            //   for (int kk=0; kk<NUM_PHYSICAL_LEV; ++kk) {
-            //     printf(" %3.16f",mid_in(kk));
-            //   }
-            //   printf ("\nmid computed :");
-            //   for (int kk=0; kk<NUM_PHYSICAL_LEV; ++kk) {
-            //     printf(" %3.16f",mid_out(kk));
-            //   }
-            //   printf ("\nmid reference:");
-            //   for (int kk=0; kk<NUM_PHYSICAL_LEV; ++kk) {
-            //     printf(" %3.16f",mid_sums[kk]);
-            //   }
-            //   printf ("\n");
-            // }
-            // if (int_out(k) != int_sums[k]) {
-            //   printf ("ie,i,j,k:%d,%d,%d,%d\n",ie,igp,jgp,k);
-            //   printf ("int data :");
-            //   for (int kk=0; kk<NUM_INTERFACE_LEV; ++kk) {
-            //     printf(" %3.16f",int_in(kk));
-            //   }
-            //   printf ("\nint computed :");
-            //   for (int kk=0; kk<NUM_INTERFACE_LEV; ++kk) {
-            //     printf(" %3.16f",int_out(kk));
-            //   }
-            //   printf ("\nint reference:");
-            //   for (int kk=0; kk<NUM_INTERFACE_LEV; ++kk) {
-            //     printf(" %3.16f",int_sums[kk]);
-            //   }
-            //   printf ("\n");
-            // }
             REQUIRE (mid_out(k) == mid_sums[k]);
             REQUIRE (int_out(k) == int_sums[k]);
           }
@@ -476,6 +445,205 @@ TEST_CASE("elem_ops_scan_sum", "scan_sum") {
           auto int_out = viewAsReal(Homme::subview(h_interface_field_out,ie,igp,jgp));
           for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
             REQUIRE (mid_out(k) == mid_sums[k]);
+            REQUIRE (int_out(k) == int_sums[k]);
+          }
+          REQUIRE (int_out(NUM_INTERFACE_LEV-1) == int_sums[NUM_INTERFACE_LEV-1]);
+        }
+      }
+    }
+  }
+
+  // Forward midpoints to interfaces
+  SECTION("fwd_mid_to_int_field") {
+    const Real s0 = pdf(engine);
+    Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(num_elems),
+                         KOKKOS_LAMBDA(const TeamMember& team) {
+      KernelVariables kv(team);
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+                           [&](const int idx) {
+        const int igp = idx / NP;
+        const int jgp = idx % NP;
+
+        auto in  = Homme::subview(d_midpoints_field_in,kv.ie,igp,jgp);
+        auto out = Homme::subview(d_interface_field_out,kv.ie,igp,jgp);
+
+        out(0)[0] = s0;
+        elem_ops.column_scan_mid_to_int<true>(kv, in, out);
+      });
+    });
+
+    Kokkos::deep_copy(h_interface_field_out,d_interface_field_out);
+
+    for (int ie=0; ie<num_elems; ++ie) {
+      for (int igp=0; igp<NP; ++igp) {
+        for (int jgp=0; jgp<NP; ++jgp) {
+          // Compute manually
+
+          // Copy from host view to std vector
+          auto mid_in = viewAsReal(Homme::subview(h_midpoints_field_in,ie,igp,jgp));
+          std::copy_n(mid_in.data(),NUM_PHYSICAL_LEV,mid_data.begin());
+
+          std::fill(int_sums.begin(),int_sums.end(),0.0);
+          int_sums[0] = s0; // Init the first entry
+          for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
+            int_sums[k+1] = int_sums[k] + mid_in[k];
+          }
+
+          // Check answer
+          auto int_out = viewAsReal(Homme::subview(h_interface_field_out,ie,igp,jgp));
+          for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
+            REQUIRE (int_out(k) == int_sums[k]);
+          }
+          REQUIRE (int_out(NUM_INTERFACE_LEV-1) == int_sums[NUM_INTERFACE_LEV-1]);
+        }
+      }
+    }
+  }
+
+  // Backward midpoints to interfaces
+  SECTION("bwd_mid_to_int_field") {
+    const Real s0 = pdf(engine);
+    using Specs = ColInfo<NUM_INTERFACE_LEV>;
+    Kokkos::deep_copy(d_interface_field_out,0.0);
+    Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(num_elems),
+                         KOKKOS_LAMBDA(const TeamMember& team) {
+      KernelVariables kv(team);
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+                           [&](const int idx) {
+        const int igp = idx / NP;
+        const int jgp = idx % NP;
+
+        auto in  = Homme::subview(d_midpoints_field_in,kv.ie,igp,jgp);
+        auto out = Homme::subview(d_interface_field_out,kv.ie,igp,jgp);
+
+        out(Specs::LastPack)[Specs::LastVecEnd] = s0;
+        elem_ops.column_scan_mid_to_int<false>(kv, in, out);
+      });
+    });
+
+    Kokkos::deep_copy(h_interface_field_out,d_interface_field_out);
+
+    for (int ie=0; ie<num_elems; ++ie) {
+      for (int igp=0; igp<NP; ++igp) {
+        for (int jgp=0; jgp<NP; ++jgp) {
+          // Compute manually
+
+          // Copy from host view to std vector
+          auto mid_in = viewAsReal(Homme::subview(h_midpoints_field_in,ie,igp,jgp));
+          std::copy_n(mid_in.data(),NUM_PHYSICAL_LEV,mid_data.begin());
+
+          std::fill(int_sums.begin(),int_sums.end(),0.0);
+          int_sums[NUM_INTERFACE_LEV-1] = s0; // Init the last entry
+          for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
+            int kk = NUM_INTERFACE_LEV - 1 - k;
+            int_sums[kk-1] = int_sums[kk] + mid_in[kk-1];
+          }
+
+          // Check answer
+          auto int_out = viewAsReal(Homme::subview(h_interface_field_out,ie,igp,jgp));
+          for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
+            REQUIRE (int_out(k) == int_sums[k]);
+          }
+          REQUIRE (int_out(NUM_INTERFACE_LEV-1) == int_sums[NUM_INTERFACE_LEV-1]);
+        }
+      }
+    }
+  }
+
+  // Forward midpoints to interfaces
+  SECTION("fwd_mid_to_int_provider") {
+    const Real s0 = pdf(engine);
+    Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(num_elems),
+                         KOKKOS_LAMBDA(const TeamMember& team) {
+      KernelVariables kv(team);
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+                           [&](const int idx) {
+        const int igp = idx / NP;
+        const int jgp = idx % NP;
+
+        auto in  = Homme::subview(d_midpoints_field_in,kv.ie,igp,jgp);
+        auto provider = [&](const int ilev) -> Scalar{
+          return in(ilev);
+        };
+        auto out = Homme::subview(d_interface_field_out,kv.ie,igp,jgp);
+
+        out(0)[0] = s0;
+        elem_ops.column_scan_mid_to_int<true>(kv, provider, out);
+      });
+    });
+
+    Kokkos::deep_copy(h_interface_field_out,d_interface_field_out);
+
+    for (int ie=0; ie<num_elems; ++ie) {
+      for (int igp=0; igp<NP; ++igp) {
+        for (int jgp=0; jgp<NP; ++jgp) {
+          // Compute manually
+
+          // Copy from host view to std vector
+          auto mid_in = viewAsReal(Homme::subview(h_midpoints_field_in,ie,igp,jgp));
+          std::copy_n(mid_in.data(),NUM_PHYSICAL_LEV,mid_data.begin());
+
+          std::fill(int_sums.begin(),int_sums.end(),0.0);
+          int_sums[0] = s0; // Init the first entry
+          for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
+            int_sums[k+1] = int_sums[k] + mid_in[k];
+          }
+
+          // Check answer
+          auto int_out = viewAsReal(Homme::subview(h_interface_field_out,ie,igp,jgp));
+          for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
+            REQUIRE (int_out(k) == int_sums[k]);
+          }
+          REQUIRE (int_out(NUM_INTERFACE_LEV-1) == int_sums[NUM_INTERFACE_LEV-1]);
+        }
+      }
+    }
+  }
+
+  // Backward midpoints to interfaces
+  SECTION("bwd_mid_to_int_provider") {
+    const Real s0 = pdf(engine);
+    using Specs = ColInfo<NUM_INTERFACE_LEV>;
+    Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(num_elems),
+                         KOKKOS_LAMBDA(const TeamMember& team) {
+      KernelVariables kv(team);
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+                           [&](const int idx) {
+        const int igp = idx / NP;
+        const int jgp = idx % NP;
+
+        auto in  = Homme::subview(d_midpoints_field_in,kv.ie,igp,jgp);
+        auto provider = [&](const int ilev) -> Scalar{
+          return in(ilev);
+        };
+        auto out = Homme::subview(d_interface_field_out,kv.ie,igp,jgp);
+
+        out(Specs::LastPack)[Specs::LastVecEnd] = s0;
+        elem_ops.column_scan_mid_to_int<false>(kv, provider, out);
+      });
+    });
+
+    Kokkos::deep_copy(h_interface_field_out,d_interface_field_out);
+
+    for (int ie=0; ie<num_elems; ++ie) {
+      for (int igp=0; igp<NP; ++igp) {
+        for (int jgp=0; jgp<NP; ++jgp) {
+          // Compute manually
+
+          // Copy from host view to std vector
+          auto mid_in = viewAsReal(Homme::subview(h_midpoints_field_in,ie,igp,jgp));
+          std::copy_n(mid_in.data(),NUM_PHYSICAL_LEV,mid_data.begin());
+
+          std::fill(int_sums.begin(),int_sums.end(),0.0);
+          int_sums[NUM_INTERFACE_LEV-1] = s0; // Init the last entry
+          for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
+            int kk = NUM_INTERFACE_LEV - 1 - k;
+            int_sums[kk-1] = int_sums[kk] + mid_in[kk-1];
+          }
+
+          // Check answer
+          auto int_out = viewAsReal(Homme::subview(h_interface_field_out,ie,igp,jgp));
+          for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
             REQUIRE (int_out(k) == int_sums[k]);
           }
           REQUIRE (int_out(NUM_INTERFACE_LEV-1) == int_sums[NUM_INTERFACE_LEV-1]);

@@ -58,8 +58,8 @@ public:
                            [&](const int ilev) {
 
         // TODO: should do *= Rgas/p0, but would lose BFB with F90.
-        pnh(ilev) = (-PhysicalConstants::Rgas)*vtheta_dp(ilev) / exner(ilev);
-        pnh(ilev) /= PhysicalConstants::p0;
+        exner(ilev) = (-PhysicalConstants::Rgas)*vtheta_dp(ilev) / exner(ilev);
+        pnh(ilev) = exner(ilev)/PhysicalConstants::p0;
         pnh(ilev) = pow(pnh(ilev),1.0/(1.0-PhysicalConstants::kappa));
         pnh(ilev) *= PhysicalConstants::p0;
 
@@ -99,6 +99,86 @@ public:
       const Real pnh_i_last = pnh_last + dp_last/2;
       dpnh_dp_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd] = 2*(pnh_i_last - pnh_last)/dp_last;
     }
+  }
+
+  // Note: if p is hydrostatic, this will compute the hydrostatic geopotential,
+  //       otherwise it will be the non-hydrostatic. In particular, if the pressure
+  //       p is computed using dp from pnh, this will be the discrete inverse of
+  //       the compute_pnh_and_exner method.
+  KOKKOS_INLINE_FUNCTION
+  void compute_phi_i (const KernelVariables& kv,
+                      const ExecViewUnmanaged<const Real   [NP][NP]           >& phis,
+                      const ExecViewUnmanaged<const Scalar [NP][NP][NUM_LEV]  >& vtheta_dp,
+                      const ExecViewUnmanaged<const Scalar [NP][NP][NUM_LEV]  >& p,
+                      const ExecViewUnmanaged<      Scalar [NP][NP][NUM_LEV_P]>& phi_i) const {
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+                         [&](const int idx) {
+      const int igp = idx / NP;
+      const int jgp = idx % NP;
+      compute_phi_i(kv, phis(igp,jgp),
+                    Homme::subview(vtheta_dp,igp,jgp),
+                    Homme::subview(p,igp,jgp),
+                    Homme::subview(phi_i,igp,jgp));
+    });
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void compute_phi_i (const KernelVariables& kv, const Real phis,
+                      const ExecViewUnmanaged<const Scalar [NUM_LEV]  >& vtheta_dp,
+                      const ExecViewUnmanaged<const Scalar [NUM_LEV]  >& p,
+                      const ExecViewUnmanaged<      Scalar [NUM_LEV_P]>& phi_i) const
+  {
+    // Init phi on surface with phis
+    phi_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd] = phis;
+
+    // Use ElementOps to do the scan sum
+    auto integrand_provider = [&](const int ilev)->Scalar {
+      constexpr Real p0    = PhysicalConstants::p0;
+      constexpr Real kappa = PhysicalConstants::kappa;
+      constexpr Real Rgas  = PhysicalConstants::Rgas;
+      return (Rgas*vtheta_dp(ilev) * pow(p(ilev)/p0,kappa-1)) / p0;
+    };
+
+    m_elem_ops.column_scan_mid_to_int<false>(kv,integrand_provider,phi_i);
+  }
+
+  // If exner is available, then use exner/p instead of (p/p0)^(k-1)/p0, to avoid dealing with exponentials
+  KOKKOS_INLINE_FUNCTION
+  void compute_phi_i (const KernelVariables& kv,
+                      const ExecViewUnmanaged<const Real   [NP][NP]           >& phis,
+                      const ExecViewUnmanaged<const Scalar [NP][NP][NUM_LEV]  >& vtheta_dp,
+                      const ExecViewUnmanaged<const Scalar [NP][NP][NUM_LEV]  >& p,
+                      const ExecViewUnmanaged<const Scalar [NP][NP][NUM_LEV]  >& exner,
+                      const ExecViewUnmanaged<      Scalar [NP][NP][NUM_LEV_P]>& phi_i) const {
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+                         [&](const int idx) {
+      const int igp = idx / NP;
+      const int jgp = idx % NP;
+      compute_phi_i(kv, phis(igp,jgp),
+                    Homme::subview(vtheta_dp,igp,jgp),
+                    Homme::subview(p,igp,jgp),
+                    Homme::subview(exner,igp,jgp),
+                    Homme::subview(phi_i,igp,jgp));
+    });
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void compute_phi_i (const KernelVariables& kv, const Real phis,
+                      const ExecViewUnmanaged<const Scalar [NUM_LEV]  >& vtheta_dp,
+                      const ExecViewUnmanaged<const Scalar [NUM_LEV]  >& p,
+                      const ExecViewUnmanaged<const Scalar [NUM_LEV]  >& exner,
+                      const ExecViewUnmanaged<      Scalar [NUM_LEV_P]>& phi_i) const
+  {
+    // Init phi on surface with phis
+    phi_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd] = phis;
+
+    // Use ElementOps to do the scan sum
+    auto integrand_provider = [&](const int ilev)->Scalar {
+      constexpr Real Rgas  = PhysicalConstants::Rgas;
+      return Rgas*vtheta_dp(ilev)*exner(ilev)/p(ilev);
+    };
+
+    m_elem_ops.column_scan_mid_to_int<false>(kv,integrand_provider,phi_i);
   }
 
 private:
