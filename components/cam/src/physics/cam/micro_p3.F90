@@ -58,8 +58,13 @@ module micro_p3
   public  :: p3_init,p3_main
 
   private :: polysvp1,find_lookupTable_indices_1a,find_lookupTable_indices_1b, &
-       find_lookupTable_indices_3,get_cloud_dsd2,        &
-       get_rain_dsd2,calc_bulkRhoRime,impose_max_total_Ni,check_values,qv_sat
+       find_lookupTable_indices_3,get_cloud_dsd2, &
+       get_rain_dsd2,calc_bulkRhoRime,impose_max_total_Ni,check_values,qv_sat, & 
+       ice_cldliq_collection, ice_rain_collection, ice_self_collection, & 
+       ice_melting, ice_cldliq_wet_growth, calc_ice_relaxation_timescale, & 
+       calc_rime_density, cldliq_immersion_freezing, rain_immersion_freezing
+
+
 
   real(rtype),private :: e0
 
@@ -197,7 +202,7 @@ contains
   SUBROUTINE p3_init_b()
     implicit none
     integer                      :: i,ii,jj,kk
-    real(rtype)                         :: lamr,mu_r,lamold,dum,initlamr,dm,dum1,dum2,dum3,dum4,dum5,  &
+    real(rtype)                         :: lamr,mu_r,dm,dum1,dum2,dum3,dum4,dum5,  &
          dd,amg,vt,dia
 
     !------------------------------------------------------------------------------------------!
@@ -417,7 +422,6 @@ contains
     real(rtype), dimension(its:ite,kts:kte) :: cdist
     real(rtype), dimension(its:ite,kts:kte) :: cdist1
     real(rtype), dimension(its:ite,kts:kte) :: cdistr
-    real(rtype), dimension(its:ite,kts:kte) :: Vt_qc
 
     ! liquid-phase microphysical process rates:
     !  (all Q process rates in kg kg-1 s-1)
@@ -476,7 +480,7 @@ contains
     real(rtype), dimension(its:ite,kts:kte) :: nc_incld, nr_incld, nitot_incld, birim_incld ! In cloud number concentrations
 
     real(rtype), dimension(its:ite,kts:kte)      :: inv_dzq,inv_rho,ze_ice,ze_rain,prec,rho,       &
-         rhofacr,rhofaci,acn,xxls,xxlv,xlf,qvs,qvi,sup,supi,vtrmi1,       &
+         rhofacr,rhofaci,acn,xxls,xxlv,xlf,qvs,qvi,sup,supi,       &
          tmparr1,inv_exner
 
     real(rtype), dimension(kts:kte) ::  V_qr,V_qit,V_nit,V_nr,V_qc,V_nc,flux_qit,        &
@@ -485,14 +489,14 @@ contains
 
     real(rtype)    :: lammax,lammin,mu,dv,sc,dqsdt,ab,kap,epsr,epsc,xx,aaa,epsilon,epsi_tot, &
          dum,dum1,dum2,    &
-         dumqv,dumqvs,dums,ratio,qsat0,dum3,dum4,dum5,dum6,rdumii, &
-         rdumjj,dqsidt,abi,dumqvi,rhop,V_impact,ri,iTc,D_c,tmp1,  &
+         dumqv,dumqvs,dums,ratio,dum3,dum4,dum5,dum6,rdumii, &
+         rdumjj,dqsidt,abi,dumqvi,rhop,tmp1,  &
          tmp2,inv_dum3,odt,oxx,oabi,     &
          fluxdiv_qit,fluxdiv_nit,fluxdiv_qir,fluxdiv_bir,prt_accum, &
          fluxdiv_qx,fluxdiv_nx,Co_max,dt_sub,      &
          Q_nuc,N_nuc,         &
          deltaD_init,dumt,qcon_satadj,qdep_satadj,sources,sinks,    &
-         timeScaleFactor,dt_left
+         timeScaleFactor,dt_left, vtrmi1
 
 
     integer :: dumi,i,k,dumj,dumii,dumjj,dumzz,      &
@@ -818,7 +822,7 @@ contains
                lammin,lammax,cdist(i,k),cdist1(i,k),lcldm(i,k))
           nc(i,k) = nc_incld(i,k)*lcldm(i,k)
 
-          call get_rain_dsd2(qr_incld(i,k),nr_incld(i,k),mu_r(i,k),rdumii,dumii,lamr(i,k),mu_r_table,   &
+          call get_rain_dsd2(qr_incld(i,k),nr_incld(i,k),mu_r(i,k),lamr(i,k),   &
                cdistr(i,k),logn0r(i,k),rcldm(i,k))
           nr(i,k) = nr_incld(i,k)*rcldm(i,k)
 
@@ -896,222 +900,65 @@ contains
 
           !.......................
           ! collection of droplets
-
-          ! here we multiply rates by air density, air density fallspeed correction
-          ! factor, and collection efficiency since these parameters are not
-          ! included in lookup table calculations
-          ! for T < 273.15, assume collected cloud water is instantly frozen
-          ! note 'f1pr' values are normalized, so we need to multiply by N
-
-          if (qitot_incld(i,k).ge.qsmall .and. qc_incld(i,k).ge.qsmall .and. t(i,k).le.zerodegc) then
-             qccol = rhofaci(i,k)*f1pr04*qc_incld(i,k)*eci*rho(i,k)*nitot_incld(i,k)
-             nccol = rhofaci(i,k)*f1pr04*nc_incld(i,k)*eci*rho(i,k)*nitot_incld(i,k)
-          endif
-
-          ! for T > 273.15, assume cloud water is collected and shed as rain drops
-
-          if (qitot_incld(i,k).ge.qsmall .and. qc_incld(i,k).ge.qsmall .and. t(i,k).gt.zerodegc) then
-             ! sink for cloud water mass and number, note qcshed is source for rain mass
-             qcshd = rhofaci(i,k)*f1pr04*qc_incld(i,k)*eci*rho(i,k)*nitot_incld(i,k)
-             nccol = rhofaci(i,k)*f1pr04*nc_incld(i,k)*eci*rho(i,k)*nitot_incld(i,k)
-             ! source for rain number, assume 1 mm drops are shed
-             ncshdc = qcshd*1.923e+6_rtype
-          endif
+          call ice_cldliq_collection(rho(i,k),t(i,k),rhofaci(i,k),&
+          f1pr04,qitot_incld(i,k),qc_incld(i,k),nitot_incld(i,k),nc_incld(i,k),&
+               qccol,nccol,qcshd,ncshdc)
 
           !....................
           ! collection of rain
-
-          ! here we multiply rates by air density, air density fallspeed correction
-          ! factor, collection efficiency, and n0r since these parameters are not
-          ! included in lookup table calculations
-
-          ! for T < 273.15, assume all collected rain mass freezes
-          ! note this is a sink for rain mass and number and a source
-          ! for ice mass
-
-          ! note 'f1pr' values are normalized, so we need to multiply by N
-
-          if (qitot_incld(i,k).ge.qsmall .and. qr_incld(i,k).ge.qsmall .and. t(i,k).le.zerodegc) then
-             ! note: f1pr08 and logn0r are already calculated as log_10
-             qrcol = 10._rtype**(f1pr08+logn0r(i,k))*rho(i,k)*rhofaci(i,k)*eri*nitot_incld(i,k)
-             nrcol = 10._rtype**(f1pr07+logn0r(i,k))*rho(i,k)*rhofaci(i,k)*eri*nitot_incld(i,k)
-          endif
-
-          ! for T > 273.15, assume collected rain number is shed as
-          ! 1 mm drops
-          ! note that melting of ice number is scaled to the loss
-          ! rate of ice mass due to melting
-          ! collection of rain above freezing does not impact total rain mass
-
-          if (qitot_incld(i,k).ge.qsmall .and. qr_incld(i,k).ge.qsmall .and. t(i,k).gt.zerodegc) then
-             ! rain number sink due to collection
-             nrcol  = 10._rtype**(f1pr07 + logn0r(i,k))*rho(i,k)*rhofaci(i,k)*eri*nitot_incld(i,k)
-             ! rain number source due to shedding = collected rain mass/mass of 1 mm drop
-             dum    = 10._rtype**(f1pr08 + logn0r(i,k))*rho(i,k)*rhofaci(i,k)*eri*nitot_incld(i,k)
-             ! for now neglect shedding of ice collecting rain above freezing, since snow is
-             ! not expected to shed in these conditions (though more hevaily rimed ice would be
-             ! expected to lead to shedding)
-             !             nrshdr = dum*1.923e+6   ! 1./5.2e-7, 5.2e-7 is the mass of a 1 mm raindrop
-          endif
-
-
+          call ice_rain_collection(rho(i,k),t(i,k),rhofaci(i,k),&
+          logn0r(i,k),f1pr07,f1pr08,qitot_incld(i,k),nitot_incld(i,k),qr_incld(i,k),&
+               qrcol,nrcol)
           !...................................
           ! collection between ice categories
 
           !PMC nCat deleted lots of stuff here.
 
           !.............................................
-          ! self-collection of ice (in a given category)
-
-          ! here we multiply rates by collection efficiency, air density,
-          ! and air density correction factor since these are not included
-          ! in the lookup table calculations
-          ! note 'f1pr' values are normalized, so we need to multiply by N
-
-          if (qitot_incld(i,k).ge.qsmall) then
-             nislf = f1pr03*rho(i,k)*eii*Eii_fact*rhofaci(i,k)*nitot_incld(i,k)
-          endif
-
+          ! self-collection of ice 
+          call ice_self_collection(rho(i,k),rhofaci(i,k),&
+          f1pr03,eii,Eii_fact,qitot_incld(i,k),nitot_incld(i,k),&
+               nislf)
 
           !............................................................
           ! melting
-
-          ! need to add back accelerated melting due to collection of ice mass by rain (pracsw1)
-          ! note 'f1pr' values are normalized, so we need to multiply by N
-
-          if (qitot_incld(i,k).ge.qsmall .and. t(i,k).gt.zerodegc) then
-             qsat0 = 0.622_rtype*e0/(pres(i,k)-e0)
-             !  dum=cpw/xlf(i,k)*(t(i,k)-273.15)*(pracsw1+qcshd)
-             ! currently enhanced melting from collision is neglected
-             ! dum=cpw/xlf(i,k)*(t(i,k)-273.15)*(pracsw1)
-             dum = 0._rtype
-             ! qimlt=(f1pr05+f1pr14*sc**0.3333*(rhofaci(i,k)*rho(i,k)/mu)**0.5)* &
-             !       (t(i,k)-273.15)*2.*pi*kap/xlf(i,k)+dum
-             ! include RH dependence
-             qimlt = ((f1pr05+f1pr14*sc**thrd*(rhofaci(i,k)*rho(i,k)/mu)**0.5_rtype)*((t(i,k)-   &
-                  zerodegc)*kap-rho(i,k)*xxlv(i,k)*dv*(qsat0-qv(i,k)))*2._rtype*pi/xlf(i,k)+     &
-                  dum)*nitot_incld(i,k)
-             qimlt = max(qimlt,0.)
-             nimlt = qimlt*(nitot_incld(i,k)/qitot_incld(i,k))
-          endif
+          call ice_melting(rho(i,k),t(i,k),pres(i,k),rhofaci(i,k),&
+          f1pr05,f1pr14,xxlv(i,k),xlf(i,k),dv,sc,mu,kap,&
+          qv(i,k),qitot_incld(i,k),nitot_incld(i,k),&
+               qimlt,nimlt)
 
           !............................................................
           ! calculate wet growth
-
-          ! similar to Musil (1970), JAS
-          ! note 'f1pr' values are normalized, so we need to multiply by N
-
-          if (qitot_incld(i,k).ge.qsmall .and. qc_incld(i,k)+qr_incld(i,k).ge.1.e-6_rtype .and. t(i,k).lt.zerodegc) then
-
-             qsat0  = 0.622_rtype*e0/(pres(i,k)-e0)
-             qwgrth = ((f1pr05 + f1pr14*sc**thrd*(rhofaci(i,k)*rho(i,k)/mu)**0.5_rtype)*       &
-                  2._rtype*pi*(rho(i,k)*xxlv(i,k)*dv*(qsat0-qv(i,k))-(t(i,k)-zerodegc)*           &
-                  kap)/(xlf(i,k)+cpw*(t(i,k)-zerodegc)))*nitot_incld(i,k)
-             qwgrth = max(qwgrth,0._rtype)
-             !calculate shedding for wet growth
-             dum    = max(0._rtype,(qccol+qrcol)-qwgrth)
-             if (dum.ge.1.e-10_rtype) then
-                nrshdr = nrshdr + dum*1.923e+6_rtype   ! 1/5.2e-7, 5.2e-7 is the mass of a 1 mm raindrop
-                if ((qccol+qrcol).ge.1.e-10_rtype) then
-                   dum1  = 1._rtype/(qccol+qrcol)
-                   qcshd = qcshd + dum*qccol*dum1
-                   qccol = qccol - dum*qccol*dum1
-                   qrcol = qrcol - dum*qrcol*dum1
-                endif
-                ! densify due to wet growth
-                log_wetgrowth = .true.
-             endif
-
-          endif
-
-
+          call ice_cldliq_wet_growth(rho(i,k),t(i,k),pres(i,k),rhofaci(i,k),&
+          f1pr05,f1pr14,xxlv(i,k),xlf(i,k),dv,kap,mu,sc,&
+          qv(i,k),qc_incld(i,k),qitot_incld(i,k),nitot_incld(i,k),qr_incld(i,k),log_wetgrowth,&
+               qrcol,qccol,qwgrth,nrshdr,qcshd)
+         
           !-----------------------------
           ! calcualte total inverse ice relaxation timescale combined for all ice categories
           ! note 'f1pr' values are normalized, so we need to multiply by N
-          if (qitot_incld(i,k).ge.qsmall .and. t(i,k).lt.zerodegc) then
-             epsi = ((f1pr05+f1pr14*sc**thrd*(rhofaci(i,k)*rho(i,k)/mu)**0.5_rtype)*2._rtype*pi* &
-                  rho(i,k)*dv)*nitot_incld(i,k)
-             epsi_tot   = epsi_tot + epsi
-          else
-             epsi = 0._rtype
-          endif
-
+          call calc_ice_relaxation_timescale(rho(i,k),t(i,k),rhofaci(i,k),&
+          f1pr05,f1pr14,dv,mu,sc,qitot_incld(i,k),nitot_incld(i,k),&
+               epsi,epsi_tot)
 
           !.........................
           ! calculate rime density
-
-          !     FUTURE:  Add source term for birim (=qccol/rhorime_c) so that all process rates calculations
-          !              are done together, before conservation.
-
-          ! NOTE: Tc (ambient) is assumed for the surface temperature.  Technically,
-          ! we should diagose graupel surface temperature from heat balance equation.
-          ! (but the ambient temperature is a reasonable approximation; tests show
-          ! very little sensitivity to different assumed values, Milbrandt and Morrison 2012).
-
-          ! Compute rime density: (based on parameterization of Cober and List, 1993 [JAS])
-          ! for simplicty use mass-weighted ice and droplet/rain fallspeeds
-
-          ! if (qitot_incld(i,k).ge.qsmall .and. t(i,k).lt.zerodegc) then
-          !  NOTE:  condition applicable for cloud only; modify when rain is added back
-          if (qccol.ge.qsmall .and. t(i,k).lt.zerodegc) then
-
-             ! get mass-weighted mean ice fallspeed
-             vtrmi1(i,k) = f1pr02*rhofaci(i,k)
-             iTc   = 1._rtype/min(-0.001_rtype,t(i,k)-zerodegc)
-
-             ! cloud:
-             if (qc_incld(i,k).ge.qsmall) then
-                ! droplet fall speed
-                ! (use Stokes' formulation (thus use analytic solution)
-                Vt_qc(i,k) = acn(i,k)*gamma(4._rtype+bcn+mu_c(i,k))/(lamc(i,k)**bcn*gamma(mu_c(i,k)+4._rtype))
-                ! use mass-weighted mean size
-                D_c = (mu_c(i,k)+4._rtype)/lamc(i,k)
-                V_impact  = abs(vtrmi1(i,k)-Vt_qc(i,k))
-                Ri        = -(0.5e+6_rtype*D_c)*V_impact*iTc
-                !               Ri        = max(1.,min(Ri,8.))
-                Ri        = max(1.,min(Ri,12._rtype))
-                if (Ri.le.8.) then
-                   rhorime_c  = (0.051_rtype + 0.114_rtype*Ri - 0.0055_rtype*Ri**2)*1000._rtype
-                else
-                   ! for Ri > 8 assume a linear fit between 8 and 12,
-                   ! rhorime = 900 kg m-3 at Ri = 12
-                   ! this is somewhat ad-hoc but allows a smoother transition
-                   ! in rime density up to wet growth
-                   rhorime_c  = 611._rtype+72.25_rtype*(Ri-8._rtype)
-                endif
-
-             endif    !if qc>qsmall
-
-          else
-             rhorime_c = 400._rtype
-          endif ! qi > qsmall and T < 273.15
+          call calc_rime_density(t(i,k),rhofaci(i,k),&
+          f1pr02,acn(i,k),lamc(i,k),mu_c(i,k),qc_incld(i,k),qccol,&
+          vtrmi1,rhorime_c)
 
           !............................................................
           ! contact and immersion freezing droplets
-
-          if (qc_incld(i,k).ge.qsmall .and. t(i,k).le.rainfrze) then
-             ! for future: calculate gamma(mu_c+4) in one place since its used multiple times  !AaronDonahue, TODO
-             dum   = (1._rtype/lamc(i,k))**3
-             Q_nuc = cons6*cdist1(i,k)*gamma(7._rtype+mu_c(i,k))*exp(aimm*(zerodegc-t(i,k)))*dum**2
-             N_nuc = cons5*cdist1(i,k)*gamma(mu_c(i,k)+4._rtype)*exp(aimm*(zerodegc-t(i,k)))*dum
-             qcheti = Q_nuc
-             ncheti = N_nuc
-          endif
-
+          call cldliq_immersion_freezing(t(i,k),&
+          lamc(i,k),mu_c(i,k),cdist1(i,k),qc_incld(i,k),&
+               qcheti,ncheti)
 
           !............................................................
           ! immersion freezing of rain
           ! for future: get rid of log statements below for rain freezing
-
-          if (qr_incld(i,k).ge.qsmall.and.t(i,k).le.rainfrze) then
-             Q_nuc = cons6*exp(log(cdistr(i,k))+log(gamma(7._rtype+mu_r(i,k)))-6._rtype*log(lamr(i,k)))* &
-                  exp(aimm*(zerodegc-T(i,k)))
-             N_nuc = cons5*exp(log(cdistr(i,k))+log(gamma(mu_r(i,k)+4._rtype))-3._rtype*log(lamr(i,k)))* &
-                  exp(aimm*(zerodegc-T(i,k)))
-             qrheti = Q_nuc
-             nrheti = N_nuc
-          endif
-
+          call rain_immersion_freezing(t(i,k),&
+          lamr(i,k),mu_r(i,k),cdistr(i,k),qr_incld(i,k),&
+               qrheti,nrheti)
 
           !......................................
           ! rime splintering (Hallet-Mossop 1974)
@@ -1596,9 +1443,12 @@ contains
                qcheti)*dt
           qitot(i,k) = qitot(i,k) + (qidep+qinuc)*dt + dum
           qirim(i,k) = qirim(i,k) + dum
+         
+
           birim(i,k) = birim(i,k) + (qrcol*inv_rho_rimeMax+qccol/  &
                rhorime_c+(qrheti+     &
                qcheti)*inv_rho_rimeMax)*dt
+
           nitot(i,k) = nitot(i,k) + (ninuc-nimlt-nisub-      &
                nislf+nrheti+          &
                ncheti)*dt
@@ -1618,7 +1468,7 @@ contains
              qirim(i,k) = qitot(i,k)
              birim(i,k) = qirim(i,k)*inv_rho_rimeMax
           endif
-
+           
           ! densify in above freezing conditions and melting
           ! -- future work --
           !   Ideally, this will be treated with the predicted liquid fraction in ice.
@@ -1968,8 +1818,8 @@ contains
 
                    !Compute Vq, Vn:
                    nr(i,k)  = max(nr(i,k),nsmall)
-                   call get_rain_dsd2(qr_incld(i,k),nr_incld(i,k),mu_r(i,k),rdumii,dumii,lamr(i,k),     &
-                        mu_r_table,tmp1,tmp2,rcldm(i,k))
+                   call get_rain_dsd2(qr_incld(i,k),nr_incld(i,k),mu_r(i,k),lamr(i,k),     &
+                        tmp1,tmp2,rcldm(i,k))
                    call find_lookupTable_indices_3(dumii,dumjj,dum1,rdumii,rdumjj,inv_dum3, &
                         mu_r(i,k),lamr(i,k))
                    nr(i,k) = nr_incld(i,k)*rcldm(i,k)
@@ -2260,7 +2110,7 @@ contains
           ! rain:
           if (qr(i,k).ge.qsmall) then
 
-             call get_rain_dsd2(qr(i,k),nr(i,k),mu_r(i,k),rdumii,dumii,lamr(i,k),mu_r_table,   &
+             call get_rain_dsd2(qr(i,k),nr(i,k),mu_r(i,k),lamr(i,k),   &
                   !                        cdistr(i,k),logn0r(i,k))
                   tmp1,tmp2,rcldm(i,k))
 
@@ -2799,18 +2649,16 @@ contains
 
 
   !===========================================================================================
-  subroutine get_rain_dsd2(qr,nr,mu_r,rdumii,dumii,lamr,mu_r_table,cdistr,logn0r,rcldm)
+  subroutine get_rain_dsd2(qr,nr,mu_r,lamr,cdistr,logn0r,rcldm)
 
     ! Computes and returns rain size distribution parameters
 
     implicit none
 
     !arguments:
-    real(rtype), dimension(:), intent(in)  :: mu_r_table
     real(rtype),     intent(in)            :: qr,rcldm
     real(rtype),     intent(inout)         :: nr
-    real(rtype),     intent(out)           :: rdumii,lamr,mu_r,cdistr,logn0r
-    integer,  intent(out)           :: dumii
+    real(rtype),     intent(out)           :: lamr,mu_r,cdistr,logn0r
 
     !local variables:
     real(rtype)                            :: inv_dum,lammax,lammin
@@ -2829,22 +2677,6 @@ contains
 
        ! Apply constant mu_r:  Recall the switch to v4 tables means constant mu_r
        mu_r = mu_r_constant
-       ! AaronDonahue: Comment out the variable mu_r calculation below.
-!       if (inv_dum.lt.282.e-6) then
-!          mu_r = 8.282
-!       elseif (inv_dum.ge.282.e-6 .and. inv_dum.lt.502.e-6) then
-!          ! interpolate
-!          rdumii = (inv_dum-250.e-6)*1.e+6*0.5
-!          rdumii = max(rdumii,1.)
-!          rdumii = min(rdumii,150.)
-!          dumii  = int(rdumii)
-!          dumii  = min(149,dumii)
-!          mu_r   = mu_r_table(dumii)+(mu_r_table(dumii+1)-mu_r_table(dumii))*(rdumii-  &
-!               real(dumii))
-!       elseif (inv_dum.ge.502.e-6) then
-!          mu_r = 0.
-!       endif
-
        lamr   = (cons1*nr*(mu_r+3._rtype)*(mu_r+2._rtype)*(mu_r+1._rtype)/(qr))**thrd  ! recalculate slope based on mu_r
        lammax = (mu_r+1._rtype)*1.e+5_rtype   ! check for slope
        lammin = (mu_r+1._rtype)*1250._rtype   ! set to small value since breakup is explicitly included (mean size 0.8 mm)
@@ -3045,6 +2877,425 @@ contains
     endif
 
   end subroutine check_values
-  !===========================================================================================
+
+  subroutine ice_cldliq_collection(rho,t,rhofaci,    &
+  f1pr04,qitot_incld,qc_incld,nitot_incld,nc_incld,    &
+             qccol,nccol,qcshd,ncshdc)
+   
+   !.......................
+   ! collection of droplets
+
+   ! here we multiply rates by air density, air density fallspeed correction
+   ! factor, and collection efficiency since these parameters are not
+   ! included in lookup table calculations
+   ! for T < 273.15, assume collected cloud water is instantly frozen
+   ! note 'f1pr' values are normalized, so we need to multiply by N
+
+
+   implicit none 
+
+   real(rtype), intent(in) :: rho
+   real(rtype), intent(in) :: t 
+   real(rtype), intent(in) :: rhofaci 
+   real(rtype), intent(in) :: f1pr04  ! collection of cloud water by ice 
+   real(rtype), intent(in) :: qitot_incld 
+   real(rtype), intent(in) :: qc_incld
+   real(rtype), intent(in) :: nitot_incld 
+   real(rtype), intent(in) :: nc_incld 
+
+   
+   real(rtype), intent(out) :: qccol
+   real(rtype), intent(out) :: nccol
+   real(rtype), intent(out) :: qcshd 
+   real(rtype), intent(out) :: ncshdc
+
+   if (qitot_incld .ge.qsmall .and. qc_incld .ge.qsmall) then 
+      if  (t .le.zerodegc) then
+         qccol = rhofaci*f1pr04*qc_incld*eci*rho*nitot_incld
+         nccol = rhofaci*f1pr04*nc_incld*eci*rho*nitot_incld
+      else if (t .gt. zerodegc) then 
+         ! for T > 273.15, assume cloud water is collected and shed as rain drops
+         ! sink for cloud water mass and number, note qcshed is source for rain mass
+         qcshd = rhofaci*f1pr04*qc_incld*eci*rho*nitot_incld
+         nccol = rhofaci*f1pr04*nc_incld*eci*rho*nitot_incld
+         ! source for rain number, assume 1 mm drops are shed
+         ncshdc = qcshd*1.923e+6_rtype
+      end if 
+   end if 
+
+  end subroutine ice_cldliq_collection
+
+
+  subroutine ice_rain_collection(rho,t,rhofaci,    &
+  logn0r,f1pr07,f1pr08,qitot_incld,nitot_incld,qr_incld,    &
+  qrcol, nrcol)
+   
+   !....................
+   ! collection of rain
+
+   ! here we multiply rates by air density, air density fallspeed correction
+   ! factor, collection efficiency, and n0r since these parameters are not
+   ! included in lookup table calculations
+
+   ! for T < 273.15, assume all collected rain mass freezes
+   ! note this is a sink for rain mass and number and a source
+   ! for ice mass
+
+   ! note 'f1pr' values are normalized, so we need to multiply by N
+
+   implicit none 
+
+   real(rtype), intent(in) :: rho
+   real(rtype), intent(in) :: t 
+   real(rtype), intent(in) :: rhofaci 
+   real(rtype), intent(in) :: logn0r 
+   real(rtype), intent(in) :: f1pr07 !collection of rain number by ice 
+   real(rtype), intent(in) :: f1pr08 !collection of rain mass by ice 
+   real(rtype), intent(in) :: qitot_incld
+   real(rtype), intent(in) :: nitot_incld
+   real(rtype), intent(in) :: qr_incld
+
+   real(rtype), intent(out) :: qrcol 
+   real(rtype), intent(out) :: nrcol 
+
+   if (qitot_incld.ge.qsmall .and. qr_incld.ge.qsmall .and. t.le.zerodegc) then
+      ! note: f1pr08 and logn0r are already calculated as log_10
+      qrcol = 10._rtype**(f1pr08+logn0r)*rho*rhofaci*eri*nitot_incld
+      nrcol = 10._rtype**(f1pr07+logn0r)*rho*rhofaci*eri*nitot_incld
+   else if (t .ge. zerodegc) then
+      ! rain number sink due to collection
+      ! for T > 273.15, assume collected rain number is shed as
+      ! 1 mm drops
+      ! note that melting of ice number is scaled to the loss
+      ! rate of ice mass due to melting
+      ! collection of rain above freezing does not impact total rain mass
+      nrcol  = 10._rtype**(f1pr07 + logn0r)*rho*rhofaci*eri*nitot_incld     
+      ! for now neglect shedding of ice collecting rain above freezing, since snow is
+      ! not expected to shed in these conditions (though more hevaily rimed ice would be
+      ! expected to lead to shedding)
+   end if 
+
+  end subroutine ice_rain_collection
+
+  subroutine ice_self_collection(rho,rhofaci,    &
+  f1pr03,eii,Eii_fact,qitot_incld,nitot_incld,    &
+             nislf)
+
+   ! self-collection of ice 
+
+   ! here we multiply rates by collection efficiency, air density,
+   ! and air density correction factor since these are not included
+   ! in the lookup table calculations
+   ! note 'f1pr' values are normalized, so we need to multiply by N
+
+   implicit none 
+
+   real(rtype), intent(in) :: rho 
+   real(rtype), intent(in) :: rhofaci
+   real(rtype), intent(in) :: f1pr03 ! ice collection within a category 
+   real(rtype), intent(in) :: eii 
+   real(rtype), intent(in) :: Eii_fact 
+   real(rtype), intent(in) :: qitot_incld
+   real(rtype), intent(in) :: nitot_incld
+
+   real(rtype), intent(out) :: nislf 
+
+   if (qitot_incld.ge.qsmall) then
+      nislf = f1pr03*rho*eii*Eii_fact*rhofaci*nitot_incld
+   endif
+
+
+end subroutine ice_self_collection
+
+
+subroutine ice_melting(rho,t,pres,rhofaci,    &
+f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld,    &
+           qimlt,nimlt)
+   ! melting
+   ! need to add back accelerated melting due to collection of ice mass by rain (pracsw1)
+   ! note 'f1pr' values are normalized, so we need to multiply by N
+   ! currently enhanced melting from collision is neglected
+   ! include RH dependence
+
+   implicit none 
+
+   real(rtype), intent(in) :: rho
+   real(rtype), intent(in) :: t 
+   real(rtype), intent(in) :: pres 
+   real(rtype), intent(in) :: rhofaci 
+   real(rtype), intent(in) :: f1pr05 ! melting 
+   real(rtype), intent(in) :: f1pr14 ! melting (ventilation term) 
+   real(rtype), intent(in) :: xxlv 
+   real(rtype), intent(in) :: xlf
+   real(rtype), intent(in) :: dv 
+   real(rtype), intent(in) :: sc 
+   real(rtype), intent(in) :: mu 
+   real(rtype), intent(in) :: kap
+   real(rtype), intent(in) :: qv 
+   real(rtype), intent(in) :: qitot_incld 
+   real(rtype), intent(in) :: nitot_incld 
+
+   real(rtype), intent(out) :: qimlt 
+   real(rtype), intent(out) :: nimlt
+
+   real(rtype) :: qsat0
+
+   if (qitot_incld .ge.qsmall .and. t.gt.zerodegc) then
+      qsat0 = 0.622_rtype*e0/(pres-e0)
+
+      qimlt = ((f1pr05+f1pr14*sc**thrd*(rhofaci*rho/mu)**0.5_rtype)*((t-   &
+      zerodegc)*kap-rho*xxlv*dv*(qsat0-qv))*2._rtype*pi/xlf)*nitot_incld
+
+
+      qimlt = max(qimlt,0.)
+      nimlt = qimlt*(nitot_incld/qitot_incld)
+      
+   endif 
+
+
+end subroutine ice_melting
+
+
+subroutine ice_cldliq_wet_growth(rho,t,pres,rhofaci,    &
+f1pr05,f1pr14,xxlv,xlf,dv,kap,mu,sc,    &
+qv,qc_incld,qitot_incld,nitot_incld,qr_incld,    &
+           log_wetgrowth,qrcol,qccol,qwgrth,nrshdr,qcshd)
+
+   implicit none 
+
+   real(rtype), intent(in) :: rho 
+   real(rtype), intent(in) :: t 
+   real(rtype), intent(in) :: pres
+   real(rtype), intent(in) :: rhofaci 
+   real(rtype), intent(in) :: f1pr05 ! melting 
+   real(rtype), intent(in) :: f1pr14 ! melting (ventilation term)
+   real(rtype), intent(in) :: xxlv
+   real(rtype), intent(in) :: xlf
+   real(rtype), intent(in) :: dv 
+   real(rtype), intent(in) :: kap 
+   real(rtype), intent(in) :: mu 
+   real(rtype), intent(in) :: sc
+   real(rtype), intent(in) :: qv 
+   real(rtype), intent(in) :: qc_incld 
+   real(rtype), intent(in) :: qitot_incld
+   real(rtype), intent(in) :: nitot_incld  
+   real(rtype), intent(in) :: qr_incld
+
+   logical, intent(inout) :: log_wetgrowth
+   real(rtype), intent(inout) :: qrcol 
+   real(rtype), intent(inout) :: qccol 
+   real(rtype), intent(inout) :: qwgrth
+   real(rtype), intent(inout) :: nrshdr 
+   real(rtype), intent(inout) :: qcshd 
+
+   real(rtype) :: qsat0, dum, dum1 
+
+
+   if (qitot_incld.ge.qsmall .and. qc_incld+qr_incld.ge.1.e-6_rtype .and. t.lt.zerodegc) then
+      qsat0  = 0.622_rtype*e0/(pres-e0)
+
+      qwgrth = ((f1pr05 + f1pr14*sc**thrd*(rhofaci*rho/mu)**0.5_rtype)*       &
+      2._rtype*pi*(rho*xxlv*dv*(qsat0-qv)-(t-zerodegc)*           &
+      kap)/(xlf+cpw*(t-zerodegc)))*nitot_incld
+
+      qwgrth = max(qwgrth,0._rtype)
+      dum    = max(0._rtype,(qccol+qrcol)-qwgrth)
+      if (dum.ge.1.e-10_rtype) then
+         nrshdr = nrshdr + dum*1.923e+6_rtype   ! 1/5.2e-7, 5.2e-7 is the mass of a 1 mm raindrop
+         if ((qccol+qrcol).ge.1.e-10_rtype) then
+            dum1  = 1._rtype/(qccol+qrcol)
+            qcshd = qcshd + dum*qccol*dum1
+            qccol = qccol - dum*qccol*dum1
+            qrcol = qrcol - dum*qrcol*dum1
+         endif
+         ! densify due to wet growth
+         log_wetgrowth = .true.
+      endif
+
+
+   end if 
+
+
+
+
+end subroutine ice_cldliq_wet_growth 
+
+
+subroutine calc_ice_relaxation_timescale(rho,t,rhofaci,     &
+f1pr05,f1pr14,dv,mu,sc,qitot_incld,nitot_incld,    &
+epsi,epsi_tot)
+
+   !-----------------------------
+   ! calcualte total inverse ice relaxation timescale combined for all ice categories
+   ! note 'f1pr' values are normalized, so we need to multiply by N
+
+   implicit none 
+
+
+   real(rtype), intent(in) :: rho 
+   real(rtype), intent(in) :: t 
+   real(rtype), intent(in) :: rhofaci 
+   real(rtype), intent(in) :: f1pr05 ! melting
+   real(rtype), intent(in) :: f1pr14 ! melting (ventilation term)
+   real(rtype), intent(in) :: dv 
+   real(rtype), intent(in) :: mu 
+   real(rtype), intent(in) :: sc 
+   real(rtype), intent(in) :: qitot_incld 
+   real(rtype), intent(in) :: nitot_incld 
+
+   real(rtype), intent(out) :: epsi
+   real(rtype), intent(inout) :: epsi_tot 
+
+
+
+   if (qitot_incld.ge.qsmall .and. t.lt.zerodegc) then
+      epsi = ((f1pr05+f1pr14*sc**thrd*(rhofaci*rho/mu)**0.5_rtype)*2._rtype*pi* &
+      rho*dv)*nitot_incld
+      epsi_tot   = epsi_tot + epsi
+   else
+      epsi = 0._rtype
+   endif 
+
+
+end subroutine calc_ice_relaxation_timescale
+
+
+subroutine calc_rime_density(t,rhofaci,    &
+f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
+           vtrmi1,rhorime_c) 
+   
+   !.........................
+   ! calculate rime density
+
+   !     FUTURE:  Add source term for birim (=qccol/rhorime_c) so that all process rates calculations
+   !              are done together, before conservation.
+
+   ! NOTE: Tc (ambient) is assumed for the surface temperature.  Technically,
+   ! we should diagose graupel surface temperature from heat balance equation.
+   ! (but the ambient temperature is a reasonable approximation; tests show
+   ! very little sensitivity to different assumed values, Milbrandt and Morrison 2012).
+
+   ! Compute rime density: (based on parameterization of Cober and List, 1993 [JAS])
+   ! for simplicty use mass-weighted ice and droplet/rain fallspeeds
+
+   implicit none 
+
+   real(rtype), intent(in) :: t 
+   real(rtype), intent(in) :: rhofaci 
+   real(rtype), intent(in) :: f1pr02 !mass-weighted fallspeed 
+   real(rtype), intent(in) :: acn 
+   real(rtype), intent(in) :: lamc 
+   real(rtype), intent(in) :: mu_c 
+   real(rtype), intent(in) :: qc_incld 
+   real(rtype), intent(in) :: qccol 
+
+   real(rtype), intent(out) :: vtrmi1 
+   real(rtype), intent(out) :: rhorime_c 
+
+   real(rtype) :: iTc = 0.0_rtype 
+   real(rtype) :: Vt_qc = 0.0_rtype
+   real(rtype) :: D_c  = 0.0_rtype 
+   real(rtype) :: V_impact = 0.0_rtype 
+   real(rtype) :: Ri = 0.0_rtype 
+
+   ! if (qitot_incld(i,k).ge.qsmall .and. t(i,k).lt.zerodegc) then
+   !  NOTE:  condition applicable for cloud only; modify when rain is added back
+   if (qccol.ge.qsmall .and. t.lt.zerodegc) then
+      ! get mass-weighted mean ice fallspeed
+      vtrmi1 = f1pr02*rhofaci
+      iTc   = 1._rtype/min(-0.001_rtype,t-zerodegc) 
+
+             ! cloud:
+      if (qc_incld.ge.qsmall) then
+         ! droplet fall speed
+         ! (use Stokes' formulation (thus use analytic solution)
+         Vt_qc = acn*gamma(4._rtype+bcn+mu_c)/(lamc**bcn*gamma(mu_c+4._rtype))
+         ! use mass-weighted mean size
+         D_c = (mu_c+4._rtype)/lamc
+         V_impact  = abs(vtrmi1-Vt_qc)
+         Ri        = -(0.5e+6_rtype*D_c)*V_impact*iTc
+         !               Ri        = max(1.,min(Ri,8.))
+         Ri        = max(1.,min(Ri,12._rtype))
+         if (Ri.le.8.) then
+            rhorime_c  = (0.051_rtype + 0.114_rtype*Ri - 0.0055_rtype*Ri**2)*1000._rtype
+         else
+            ! for Ri > 8 assume a linear fit between 8 and 12,
+            ! rhorime = 900 kg m-3 at Ri = 12
+            ! this is somewhat ad-hoc but allows a smoother transition
+            ! in rime density up to wet growth
+            rhorime_c  = 611._rtype+72.25_rtype*(Ri-8._rtype) 
+         endif
+
+      endif    !if qc>qsmall
+   else 
+      rhorime_c = 400._rtype 
+   endif ! qi > qsmall and T < 273.15
+end subroutine calc_rime_density
+
+subroutine cldliq_immersion_freezing(t,lamc,mu_c,cdist1,qc_incld,    &
+           qcheti,ncheti)
+
+   !............................................................
+   ! contact and immersion freezing droplets
+
+   implicit none 
+
+   real(rtype), intent(in) :: t
+   real(rtype), intent(in) :: lamc
+   real(rtype), intent(in) :: mu_c
+   real(rtype), intent(in) :: cdist1 
+   real(rtype), intent(in) :: qc_incld 
+
+   real(rtype), intent(out) :: qcheti 
+   real(rtype), intent(out) :: ncheti 
+
+   real(rtype) :: dum, Q_nuc, N_nuc 
+
+   if (qc_incld.ge.qsmall .and. t.le.rainfrze) then
+      ! for future: calculate gamma(mu_c+4) in one place since its used multiple times  !AaronDonahue, TODO
+      dum   = (1._rtype/lamc)**3
+      Q_nuc = cons6*cdist1*gamma(7._rtype+mu_c)*exp(aimm*(zerodegc-t))*dum**2
+      N_nuc = cons5*cdist1*gamma(mu_c+4._rtype)*exp(aimm*(zerodegc-t))*dum
+      qcheti = Q_nuc
+      ncheti = N_nuc
+   endif 
+
+end subroutine cldliq_immersion_freezing
+
+subroutine rain_immersion_freezing(t,    &
+lamr, mu_r, cdistr, qr_incld,    &
+qrheti, nrheti)
+
+   !............................................................
+   ! immersion freezing of rain
+   ! for future: get rid of log statements below for rain freezing
+
+   implicit none 
+   
+   real(rtype), intent(in) :: t 
+   real(rtype), intent(in) :: mu_r 
+   real(rtype), intent(in) :: lamr 
+   real(rtype), intent(in) :: cdistr 
+   real(rtype), intent(in) :: qr_incld
+
+   real(rtype), intent(out) :: qrheti 
+   real(rtype), intent(out) :: nrheti 
+
+   real(rtype) :: Q_nuc, N_nuc 
+
+   if (qr_incld.ge.qsmall .and. t.le.rainfrze) then
+
+      Q_nuc = cons6*exp(log(cdistr)+log(gamma(7._rtype+mu_r))-6._rtype*log(lamr))* &
+      exp(aimm*(zerodegc-t))
+      N_nuc = cons5*exp(log(cdistr)+log(gamma(mu_r+4._rtype))-3._rtype*log(lamr))* &
+      exp(aimm*(zerodegc-t))
+
+      qrheti = Q_nuc 
+      nrheti = N_nuc 
+
+   endif 
+
+
+end subroutine rain_immersion_freezing 
 
 end module micro_p3
