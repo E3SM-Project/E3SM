@@ -17,6 +17,7 @@ SET_NAME_MAPPING = {
     ('5', 'lat_lon'): 'lat_lon',
     ('7', 'polar'): 'polar',
     ('13', 'cosp_histogram'): 'cosp_histogram',
+    ('meridional_mean_2d'): 'meridional_mean_2d',
 }
 
 SET_NAMES = list(SET_NAME_MAPPING.values())

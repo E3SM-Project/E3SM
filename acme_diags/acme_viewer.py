@@ -192,6 +192,8 @@ def _better_page_name(old_name):
         return 'Polar contour maps'
     elif old_name == 'cosp_histogram':
         return 'CloudTopHeight-Tau joint histograms'
+    elif old_name == 'meridional_mean_2d':
+        return 'Pressure-Longitude meridional mean contour plots'
     else:
         return old_name
     
