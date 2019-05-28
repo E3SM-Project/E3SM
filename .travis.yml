@@ -15,14 +15,17 @@ before_install:
       wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
     fi
   - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$PATH"
+  - source $HOME/miniconda/etc/profile.d/conda.sh
+  - conda activate base
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda config --set anaconda_upload no
 
-  - conda install python=$TRAVIS_PYTHON_VERSION cdp=1.1.0 vcs=2.12 vtk-cdat=7.1.0.2.12 vcsaddons=2.12 dv3d=2.12 cdms2=2.12 cdutil=2.12 genutil=2.12 cdtime=2.12 numpy "matplotlib<=2.0.2" cartopy beautifulsoup4 lxml flake8 -c conda-forge -c uvcdat -y
+  - conda create -n e3sm_diags python=$TRAVIS_PYTHON_VERSION cdp=1.4.2 vcs=8.1 vtk-cdat=8.2.0rc2.8.1 vcsaddons=8.1 dv3d=8.1 cdms2=3.1.2 cdutil=8.1 genutil=8.1.1 cdtime=3.1.2 numpy matplotlib cartopy beautifulsoup4 lxml flake8 -c conda-forge -c cdat -c cdat/label/v81 -y
+  - conda activate e3sm_diags
   - export UVCDAT_ANONYMOUS_LOG=False
+
 
 install:
   - python setup.py install
