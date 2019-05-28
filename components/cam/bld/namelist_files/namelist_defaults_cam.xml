@@ -152,6 +152,7 @@
 <ncdata dyn="se" hgrid="ne30np4"  nlev="26"             ic_ymd="901" >atm/cam/inic/homme/cami_0000-09-01_ne30np4_L26_c040422.nc</ncdata>
 <ncdata dyn="se" hgrid="ne30np4"  nlev="30"             ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-01_ne30np4_L30_c130424.nc</ncdata>
 <ncdata dyn="se" hgrid="ne30np4"  nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne30np4_L72_c160214.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4"  nlev="93"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne30np4_L93_c160214.nc</ncdata>
 <ncdata dyn="se" hgrid="ne60np4"  nlev="30"             ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-ne60np4_L30_c090306.nc</ncdata>
 <ncdata dyn="se" hgrid="ne120np4" nlev="26"             ic_ymd="901" >atm/cam/inic/homme/cami_0000-09-01_ne120np4_L26_c061106.nc</ncdata>
 <ncdata dyn="se" hgrid="ne120np4" nlev="26"             ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne120np4_L26_c110304.nc</ncdata>
@@ -901,6 +902,7 @@
 <!-- SHOC_SGS -->
 <do_shoc_sgs                 > .false. </do_shoc_sgs>
 <do_shoc_sgs   shoc_sgs="1"  > .true. </do_shoc_sgs>
+<shoc_timestep               > 300.0D0 </shoc_timestep>
 
 <!-- CLUBB options -->
 <clubb_rainevap_turb                              > .false. </clubb_rainevap_turb>

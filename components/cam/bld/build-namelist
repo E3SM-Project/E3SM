@@ -3478,6 +3478,9 @@ else {
 # SHOC_SGS
 add_default($nl, 'do_shoc_sgs');
 my $shoc_sgs = $nl->get_value('do_shoc_sgs');
+if ($shoc_sgs  =~ /$TRUE/io) {
+   add_default($nl, 'shoc_timestep');
+}
 
 # P3
 add_default($nl, 'micro_p3_lookup_dir');
