@@ -28,14 +28,13 @@ class ValueSetting(object):
     has_special_case
     """
 
-    def __init__(self, value, do_append, conditions, set_up, tear_down, force_no_append=False): #  pylint: disable=too-many-arguments
+    def __init__(self, value, do_append, conditions, set_up, tear_down): #  pylint: disable=too-many-arguments
         """Create a ValueSetting object by specifying all its data."""
         self.value = value
         self.do_append = do_append
         self.conditions = conditions
         self.set_up = set_up
         self.tear_down = tear_down
-        self.force_no_append = force_no_append
 
     def is_ambiguous_with(self, other):
         """Check to see if this setting conflicts with another one.

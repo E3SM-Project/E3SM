@@ -686,6 +686,7 @@ contains
          (pio_iotype .eq. PIO_IOTYPE_PNETCDF .or. &
          pio_iotype .eq. PIO_IOTYPE_NETCDF4P)) then
        pio_numiotasks = 2
+       pio_stride = min(pio_stride, npes/2)
     endif
 
     !--------------------------------------------------------------------------
