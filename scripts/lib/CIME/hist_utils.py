@@ -572,7 +572,7 @@ def _generate_baseline_impl(case, baseline_dir=None, allow_baseline_overwrite=Fa
         safe_copy(newestcpllogfile, os.path.join(basegen_dir, "{}.log.gz".format(cplname)), preserve_meta=False)
 
     testname = case.get_value("TESTCASE")
-    testopts = parse_test_name(testcase)[1]
+    testopts = parse_test_name(case.get_value("CASEBASEID"))[1]
     testopts = [] if testopts is None else testopts
     expect(num_gen > 0 or (testname == "PFS" or "B" in testopts),
            "Could not generate any hist files for case '{}', something is seriously wrong".format(os.path.join(rundir, testcase)))
