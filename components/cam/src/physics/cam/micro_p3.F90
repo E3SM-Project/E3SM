@@ -960,6 +960,8 @@ contains
           lamr(i,k),mu_r(i,k),cdistr(i,k),qr_incld(i,k),&
                qrheti,nrheti)
 
+          ! AaronDonahue: The following should be removed or moved to a separate
+          ! subroutine? 
           !......................................
           ! rime splintering (Hallet-Mossop 1974)
 
@@ -972,38 +974,10 @@ contains
           !   (use semi-analytic formulation)
 
           ! calculate rain evaporation including ventilation
-          if (qr_incld(i,k).ge.qsmall) then
-             call find_lookupTable_indices_3(dumii,dumjj,dum1,rdumii,rdumjj,inv_dum3,mu_r(i,k),lamr(i,k))
-             !interpolate value at mu_r
-! bug fix 12/23/18
-!             dum1 = revap_table(dumii,dumjj)+(rdumii-real(dumii))*inv_dum3*                  &
-!                    (revap_table(dumii+1,dumjj)-revap_table(dumii,dumjj))
 
-             dum1 = revap_table(dumii,dumjj)+(rdumii-real(dumii))*                            &
-                    (revap_table(dumii+1,dumjj)-revap_table(dumii,dumjj))
-
-             !interoplate value at mu_r+1
-! bug fix 12/23/18
-!             dum2 = revap_table(dumii,dumjj+1)+(rdumii-real(dumii))*inv_dum3*                &
-!                  (revap_table(dumii+1,dumjj+1)-revap_table(dumii,dumjj+1))
-             dum2 = revap_table(dumii,dumjj+1)+(rdumii-real(dumii))*                          &
-                    (revap_table(dumii+1,dumjj+1)-revap_table(dumii,dumjj+1))    
-             !final interpolation
-             dum  = dum1+(rdumjj-real(dumjj))*(dum2-dum1)
-
-             epsr = 2._rtype*pi*cdistr(i,k)*rho(i,k)*dv*(f1r*gamma(mu_r(i,k)+2._rtype)/(lamr(i,k))+f2r*   &
-                  (rho(i,k)/mu)**0.5_rtype*sc**thrd*dum)
-          else
-             epsr = 0._rtype
-          endif
-
-          if (qc_incld(i,k).ge.qsmall) then
-             epsc = 2._rtype*pi*rho(i,k)*dv*cdist(i,k)
-          else
-             epsc = 0._rtype
-          endif
-          !===
-
+          call calc_liq_relaxation_timescale(rho(i,k),f1r,f2r,     &
+          dv,mu,sc,mu_r(i,k),lamr(i,k),cdistr(i,k),cdist(i,k),qr_incld(i,k),qc_incld(i,k), &
+          epsr,epsc)  
           !PMC moved oabi outside t<273.15 loop. oabi is only *used* where t<273.15, but
           !t could be updated before oabi is used, resulting in unititialized use. Note
           !that t is not currently being updated before oabi is used, so this is just future-proofing.
@@ -1054,61 +1028,19 @@ contains
           xx  = max(1.e-20_rtype,xx)   ! set lower bound on xx to prevent division by zero
           oxx = 1._rtype/xx
 
-          if (qc_incld(i,k).ge.qsmall) &
-               qccon = (aaa*epsc*oxx+(ssat(i,k)-aaa*oxx)*odt*epsc*oxx*(1.-dexp(-dble(xx*dt))))/ab
-          if (qr_incld(i,k).ge.qsmall) &
-               qrcon = (aaa*epsr*oxx+(ssat(i,k)-aaa*oxx)*odt*epsr*oxx*(1.-dexp(-dble(xx*dt))))/ab
+          call evaporate_sublimate_precip(qc_incld(i,k),qr_incld(i,k),nr_incld(i,k),t(i,k),pres(i,k), &
+          aaa,xx,dt,ab,epsr,epsc,qv(i,k),sup(i,k),ssat(i,k),xxlv(i,k), &
+          qccon,qrcon,qcevp,qrevp,nrevp)
 
-          !for very small water contents, evaporate instantly
-          if (sup(i,k).lt.-0.001_rtype .and. qc_incld(i,k).lt.1.e-12_rtype)  qccon = -qc_incld(i,k)*odt
-          if (sup(i,k).lt.-0.001_rtype .and. qr_incld(i,k).lt.1.e-12_rtype)  qrcon = -qr_incld(i,k)*odt
+          ! AaronDonahue: The below subroutine should be moved to within
+          ! evaporate_sublimate_precip, but doing so leads to a non-BFB
+          ! solution.
+          call evaporate_sublimate_precip_limiter(t(i,k),pres(i,k),qv(i,k),xxlv(i,k),odt, &
+          qccon,qrcon,qcevp,qrevp)
 
-          if (qccon.lt.0._rtype) then
-             qcevp = -qccon
-             qccon = 0._rtype
-          endif
-
-          if (qrcon.lt.0._rtype) then
-             qrevp = -qrcon
-             nrevp = qrevp*(nr_incld(i,k)/qr_incld(i,k))
-             !nrevp = nrevp*exp(-0.2*mu_r(i,k))  !add mu dependence [Seifert (2008), neglecting size dependence]
-             qrcon = 0._rtype
-          endif
-
-          !limit total condensation/evaporation to saturation adjustment
-          dumqvs = qv_sat(t(i,k),pres(i,k),0)
-          qcon_satadj  = (qv(i,k)-dumqvs)/(1._rtype+xxlv(i,k)**2*dumqvs/(cp*rv*t(i,k)**2))*odt
-          if (qccon+qrcon.gt.0._rtype) then
-             ratio = max(0._rtype,qcon_satadj)/(qccon+qrcon)
-             ratio = min(1._rtype,ratio)
-             qccon = qccon*ratio
-             qrcon = qrcon*ratio
-          elseif (qcevp+qrevp.gt.0._rtype) then
-             ratio = max(0._rtype,-qcon_satadj)/(qcevp+qrevp)
-             ratio = min(1._rtype,ratio)
-             qcevp = qcevp*ratio
-             qrevp = qrevp*ratio
-          endif
-
-          if (qitot_incld(i,k).ge.qsmall.and.t(i,k).lt.zerodegc) then
-             qidep = (aaa*epsi*oxx+(ssat(i,k)-aaa*oxx)*odt*epsi*oxx*   &
-                  (1._rtype-dexp(-dble(xx*dt))))*oabi+(qvs(i,k)-dumqvi)*epsi*oabi
-          endif
-
-          !for very small ice contents in dry air, sublimate all ice instantly
-          if (supi(i,k).lt.-0.001_rtype .and. qitot_incld(i,k).lt.1.e-12_rtype) &
-               qidep = -qitot_incld(i,k)*odt
-
-          if (qidep.lt.0._rtype) then
-             !note: limit to saturation adjustment (for dep and subl) is applied later
-             qisub = -qidep
-             qisub = qisub*clbfact_sub
-             qisub = min(qisub, qitot_incld(i,k)*dt)
-             nisub = qisub*(nitot_incld(i,k)/qitot_incld(i,k))
-             qidep = 0._rtype
-          else
-             qidep = qidep*clbfact_dep
-          endif
+          call ice_deposition_sublimation(qitot_incld(i,k), nitot_incld(i,k), t(i,k), &
+          aaa,xx,dt,qvs(i,k),dumqvi,ssat(i,k),epsi,oabi,supi(i,k), &
+          qidep, qisub, nisub)
 
 444       continue
 
@@ -3160,6 +3092,56 @@ epsi,epsi_tot)
 end subroutine calc_ice_relaxation_timescale
 
 
+subroutine calc_liq_relaxation_timescale(rho,f1r,f2r,     &
+dv,mu,sc,mu_r,lamr,cdistr,cdist,qr_incld,qc_incld, &
+epsr,epsc)  
+
+   real(rtype), intent(in)  :: rho
+   real(rtype), intent(in)  :: f1r
+   real(rtype), intent(in)  :: f2r
+   real(rtype), intent(in)  :: dv
+   real(rtype), intent(in)  :: mu
+   real(rtype), intent(in)  :: sc
+   real(rtype), intent(in)  :: mu_r
+   real(rtype), intent(in)  :: lamr
+   real(rtype), intent(in)  :: cdistr
+   real(rtype), intent(in)  :: cdist
+   real(rtype), intent(in)  :: qr_incld
+   real(rtype), intent(in)  :: qc_incld
+   real(rtype), intent(out) :: epsr
+   real(rtype), intent(out) :: epsc
+
+   integer     :: dumii, dumjj
+   real(rtype) :: rdumii, rdumjj
+   real(rtype) :: dum, dum1, dum2, inv_dum3
+
+   if (qr_incld.ge.qsmall) then
+      call find_lookupTable_indices_3(dumii,dumjj,dum1,rdumii,rdumjj,inv_dum3,mu_r,lamr)
+      !interpolate value at mu_r
+      dum1 = revap_table(dumii,dumjj)+(rdumii-real(dumii))*                            &
+             (revap_table(dumii+1,dumjj)-revap_table(dumii,dumjj))
+
+      !interoplate value at mu_r+1
+      dum2 = revap_table(dumii,dumjj+1)+(rdumii-real(dumii))*                          &
+             (revap_table(dumii+1,dumjj+1)-revap_table(dumii,dumjj+1))    
+      !final interpolation
+      dum  = dum1+(rdumjj-real(dumjj))*(dum2-dum1)
+
+      epsr = 2._rtype*pi*cdistr*rho*dv*(f1r*gamma(mu_r+2._rtype)/(lamr)+f2r*   &
+           (rho/mu)**0.5_rtype*sc**thrd*dum)
+   else
+      epsr = 0._rtype
+   endif
+
+   if (qc_incld.ge.qsmall) then
+      epsc = 2._rtype*pi*rho*dv*cdist
+   else
+      epsc = 0._rtype
+   endif
+
+end subroutine calc_liq_relaxation_timescale
+
+
 subroutine calc_rime_density(t,rhofaci,    &
 f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
            vtrmi1,rhorime_c) 
@@ -3297,5 +3279,161 @@ qrheti, nrheti)
 
 
 end subroutine rain_immersion_freezing 
+
+
+subroutine ice_deposition_sublimation(qitot_incld, nitot_incld, t, &
+aaa,xx,dt,qvs,dumqvi,ssat,epsi,oabi,supi, &
+qidep, qisub, nisub)
+
+   real(rtype), intent(in)  :: qitot_incld
+   real(rtype), intent(in)  :: nitot_incld
+   real(rtype), intent(in)  :: t
+   real(rtype), intent(in)  :: aaa
+   real(rtype), intent(in)  :: xx
+   real(rtype), intent(in)  :: dt
+   real(rtype), intent(in)  :: qvs
+   real(rtype), intent(in)  :: dumqvi
+   real(rtype), intent(in)  :: ssat
+   real(rtype), intent(in)  :: epsi
+   real(rtype), intent(in)  :: oabi
+   real(rtype), intent(in)  :: supi
+   real(rtype), intent(out) :: qidep
+   real(rtype), intent(out) :: qisub
+   real(rtype), intent(out) :: nisub
+
+   real(rtype) :: oxx, odt
+
+   
+   oxx = 1._rtype/xx
+   odt = 1._rtype/dt   ! inverse model time step
+   if (qitot_incld.ge.qsmall.and.t.lt.zerodegc) then
+      qidep = (aaa*epsi*oxx+(ssat-aaa*oxx)*odt*epsi*oxx*   &
+           (1._rtype-dexp(-dble(xx*dt))))*oabi+(qvs-dumqvi)*epsi*oabi
+   endif
+   !for very small ice contents in dry air, sublimate all ice instantly
+   if (supi.lt.-0.001_rtype .and. qitot_incld.lt.1.e-12_rtype) &
+        qidep = -qitot_incld*odt
+
+   if (qidep.lt.0._rtype) then
+      !note: limit to saturation adjustment (for dep and subl) is applied later
+      qisub = -qidep
+      qisub = qisub*clbfact_sub
+      qisub = min(qisub, qitot_incld*dt)
+      nisub = qisub*(nitot_incld/qitot_incld)
+      qidep = 0._rtype
+   else
+      qidep = qidep*clbfact_dep
+   endif
+
+end subroutine ice_deposition_sublimation
+
+
+subroutine evaporate_sublimate_precip(qc_incld,qr_incld,nr_incld,t,pres, &
+aaa,xx,dt,ab,epsr,epsc,qv,sup,ssat,xxlv, &
+qccon,qrcon,qcevp,qrevp,nrevp)
+
+   real(rtype), intent(in)  :: qc_incld
+   real(rtype), intent(in)  :: qr_incld
+   real(rtype), intent(in)  :: nr_incld
+   real(rtype), intent(in)  :: t
+   real(rtype), intent(in)  :: pres
+   real(rtype), intent(in)  :: aaa
+   real(rtype), intent(in)  :: xx
+   real(rtype), intent(in)  :: dt
+   real(rtype), intent(in)  :: ab
+   real(rtype), intent(in)  :: epsr
+   real(rtype), intent(in)  :: epsc
+   real(rtype), intent(in)  :: qv
+   real(rtype), intent(in)  :: sup
+   real(rtype), intent(in)  :: ssat
+   real(rtype), intent(in)  :: xxlv
+   real(rtype), intent(out) :: qccon
+   real(rtype), intent(out) :: qrcon
+   real(rtype), intent(out) :: qcevp
+   real(rtype), intent(out) :: qrevp
+   real(rtype), intent(out) :: nrevp
+
+   real(rtype) :: odt, oxx
+   real(rtype) :: dumqvs, qcon_satadj, ratio
+
+   oxx = 1._rtype/xx
+   odt = 1._rtype/dt   ! inverse model time step
+
+   if (qc_incld.ge.qsmall) &
+        qccon = (aaa*epsc*oxx+(ssat-aaa*oxx)*odt*epsc*oxx*(1.-dexp(-dble(xx*dt))))/ab
+   if (qr_incld.ge.qsmall) &
+        qrcon = (aaa*epsr*oxx+(ssat-aaa*oxx)*odt*epsr*oxx*(1.-dexp(-dble(xx*dt))))/ab
+
+   !for very small water contents, evaporate instantly
+   if (sup.lt.-0.001_rtype .and. qc_incld.lt.1.e-12_rtype)  qccon = -qc_incld*odt
+   if (sup.lt.-0.001_rtype .and. qr_incld.lt.1.e-12_rtype)  qrcon = -qr_incld*odt
+
+   if (qccon.lt.0._rtype) then
+      qcevp = -qccon
+      qccon = 0._rtype
+   endif
+
+   if (qrcon.lt.0._rtype) then
+      qrevp = -qrcon
+      nrevp = qrevp*(nr_incld/qr_incld)
+      !nrevp = nrevp*exp(-0.2*mu_r)  !add mu dependence [Seifert (2008), neglecting size dependence]
+      qrcon = 0._rtype
+   endif
+
+!-- AaronDonahue: The below code should be uncommented, but doing so leads to a
+! non-BFB solution.  Separating this chunk of code into it's own subroutine and
+! calling at the p3_main layer retains BFB status.
+
+   !limit total condensation/evaporation to saturation adjustment
+!   dumqvs = qv_sat(t,pres,0)
+!   qcon_satadj  = (qv-dumqvs)/(1._rtype+xxlv**2*dumqvs/(cp*rv*t**2))*odt
+!   if (qccon+qrcon.gt.0._rtype) then
+!      ratio = max(0._rtype,qcon_satadj)/(qccon+qrcon)
+!      ratio = min(1._rtype,ratio)
+!      qccon = qccon*ratio
+!      qrcon = qrcon*ratio
+!   elseif (qcevp+qrevp.gt.0._rtype) then
+!      ratio = max(0._rtype,-qcon_satadj)/(qcevp+qrevp)
+!      ratio = min(1._rtype,ratio)
+!      qcevp = qcevp*ratio
+!      qrevp = qrevp*ratio
+!   endif
+
+   return
+
+end subroutine evaporate_sublimate_precip
+
+subroutine evaporate_sublimate_precip_limiter(t,pres,qv,xxlv,odt, &
+qccon,qrcon,qcevp,qrevp)
+
+   real(rtype), intent(in)    :: t
+   real(rtype), intent(in)    :: pres
+   real(rtype), intent(in)    :: qv
+   real(rtype), intent(in)    :: xxlv
+   real(rtype), intent(in)    :: odt
+   real(rtype), intent(inout) :: qccon
+   real(rtype), intent(inout) :: qrcon
+   real(rtype), intent(inout) :: qcevp
+   real(rtype), intent(inout) :: qrevp
+
+   real(rtype) :: dumqvs, qcon_satadj, ratio
+
+   !limit total condensation/evaporation to saturation adjustment
+   dumqvs = qv_sat(t,pres,0)
+   qcon_satadj  = (qv-dumqvs)/(1._rtype+xxlv**2*dumqvs/(cp*rv*t**2))*odt
+   if (qccon+qrcon.gt.0._rtype) then
+      ratio = max(0._rtype,qcon_satadj)/(qccon+qrcon)
+      ratio = min(1._rtype,ratio)
+      qccon = qccon*ratio
+      qrcon = qrcon*ratio
+   elseif (qcevp+qrevp.gt.0._rtype) then
+      ratio = max(0._rtype,-qcon_satadj)/(qcevp+qrevp)
+      ratio = min(1._rtype,ratio)
+      qcevp = qcevp*ratio
+      qrevp = qrevp*ratio
+   endif
+ 
+   return
+end subroutine evaporate_sublimate_precip_limiter
 
 end module micro_p3
