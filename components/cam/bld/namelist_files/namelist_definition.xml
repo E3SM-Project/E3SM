@@ -2900,6 +2900,13 @@ liq cloud fraction bug in macro and micro physics
 Default: .false.
 </entry>
 
+<!-- SHOC timestep -->
+<entry id="shoc_timestep" type="real" category="pblrad"
+       group="shocpbl_diff_nl" valid_values="" >
+SHOC timestep.
+Default: set by build-namelist
+</entry>
+
 <entry id="clubb_cloudtop_cooling" type="logical"  category="pblrad"
        group="clubbpbl_diff_nl" valid_values="" >
 Apply cloud top radiative cooling parameterization

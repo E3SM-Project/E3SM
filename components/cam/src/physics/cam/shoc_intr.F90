@@ -92,8 +92,11 @@ module shoc_intr
   logical            :: micro_do_icesupersat
   
   character(len=16)  :: eddy_scheme      ! Default set in phys_control.F90
-  character(len=16)  :: deep_scheme      ! Default set in phys_control.F90  
+  character(len=16)  :: deep_scheme      ! Default set in phys_control.F90 
   
+  real(r8), parameter :: unset_r8 = huge(1.0_r8)
+  
+  real(r8) :: shoc_timestep = unset_r8  ! Default SHOC timestep, unless overwriten by namelist
   real(r8) :: dp1
   
   integer :: edsclr_dim
@@ -204,7 +207,38 @@ end function shoc_implements_cnst
   !   (currently none)                                                 !
   !------------------------------------------------------------------- !  
 
+    use units,           only: getunit, freeunit
+    use namelist_utils,  only: find_group_name
+    use cam_abortutils,  only: endrun
+    use mpishorthand
+
     character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
+    
+    integer :: iunit, read_status
+    
+    namelist /shocpbl_diff_nl/ shoc_timestep
+    
+    !  Read namelist to determine if SHOC history should be called
+    if (masterproc) then
+      iunit = getunit()
+      open( iunit, file=trim(nlfile), status='old' )
+
+      call find_group_name(iunit, 'shocpbl_diff_nl', status=read_status)
+      if (read_status == 0) then
+         read(unit=iunit, nml=shocpbl_diff_nl, iostat=read_status)
+         if (read_status /= 0) then
+            call endrun('shoc_readnl:  error reading namelist')
+         end if
+      end if
+
+      close(unit=iunit)
+      call freeunit(iunit)
+    end if    
+    
+#ifdef SPMD
+! Broadcast namelist variables
+      call mpibcast(shoc_timestep,           1,   mpir8,   0, mpicom)
+#endif
   
   end subroutine shoc_readnl   
   
@@ -660,7 +694,7 @@ end function shoc_implements_cnst
    !  instances when a 5 min time step will not be possible (based on 
    !  host model time step or on macro-micro sub-stepping   
    
-   dtime = 300.0_r8  
+   dtime = shoc_timestep 
    
    !  Now check to see if dtime is greater than the host model 
    !    (or sub stepped) time step.  If it is, then simply 

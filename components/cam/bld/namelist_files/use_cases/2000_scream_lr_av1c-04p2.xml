@@ -104,4 +104,7 @@
 <!-- sim_year used for CLM datasets and SSTs forcings -->
 <sim_year>2000</sim_year>
 
+<!-- default initial condition file -->
+<ncdata dyn="se" hgrid="ne30np4" >atm/cam/inic/homme/cami_mam3_Linoz_ne30np4_L72_c160214.nc</ncdata>
+
 </namelist_defaults>
