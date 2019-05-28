@@ -134,6 +134,12 @@ If TRUE consider priority of plant to get a fraction of
 symbiotic N fixation and P phosphatase
 </entry>
 
+<entry id="use_phenolmter" type="logical" category="clm_physics"
+       group="clm_inparm" valid_values="" >
+If TRUE, apply flux limiter to phenology fluxes to avoid overextraction
+of plant carbon and nutrient fluxes
+</entry>
+
 <entry id="create_crop_landunit" type="logical" category="clm_physics"
        group="clm_inparm" valid_values="" >
 If TRUE, separate the vegetated landunit into a crop landunit and a natural vegetation landunit

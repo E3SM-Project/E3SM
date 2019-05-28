@@ -360,6 +360,10 @@ module clm_varctl
   character(len=256), public :: domain_decomp_type    = 'round_robin'
 
   !-----------------------------------------------------------------------
+  ! flux limiter for phenology flux calculation
+  logical, public :: use_phenolmter = .false.
+
+  !-----------------------------------------------------------------------
   ! bgc & pflotran interface
   !
   logical, public :: use_clm_interface  = .false.
