@@ -1,6 +1,6 @@
 Steps to preprocess the analysis data
 A. Generate env for data pre-processing
-conda create -n obs_env cdtime cdms2 cdutil numpy pytz nco cdo -c conda-forge -c cdat
+conda create -n obs_env cdtime cdms2 cdutil numpy pytz nco cdo python=2.7 -c conda-forge -c cdat
 The obs_en.yml file saved here as part of the provenance included the exact packages that generated the resulting datasets
 
 B. Generate climo and time-series for each datasets:
