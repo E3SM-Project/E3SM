@@ -224,6 +224,14 @@ class Case(object):
             return None
         expect(False,"Could not find object for {} in case".format(full_name))
 
+    def check_timestamps(self, short_name=None):
+        if short_name is not None:
+            env_file = self.get_env(short_name)
+            env_file.check_timestamp()
+        else:
+            for env_file in self._files:
+                env_file.check_timestamp()
+
     def copy(self, newcasename, newcaseroot, newcimeroot=None, newsrcroot=None):
         newcase = deepcopy(self)
         for env_file in newcase._files: # pylint: disable=protected-access
