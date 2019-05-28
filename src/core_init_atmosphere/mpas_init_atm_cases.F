@@ -3094,8 +3094,6 @@ module init_atm_cases
 !      cf3 = d1*d2*(d2-d1)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
 
 
-      call mpas_log_write(' cf1, cf2, cf3 = ', realArgs=(/cf1,cf2,cf3/))
-
 !     Smoothing algorithm for coordinate surfaces 
 
       smooth = config_smooth_surfaces
