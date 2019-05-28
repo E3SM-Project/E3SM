@@ -66,7 +66,7 @@ def buildlib(bldroot, installpath, case):
         os.makedirs(pio_dir)
     casetools = case.get_value("CASETOOLS")
     cmake_opts = "\"-D GENF90_PATH=$CIMEROOT/src/externals/genf90 \""
-    stdargs = get_standard_makefile_args(case)
+    stdargs = get_standard_makefile_args(case, shared_lib=True)
 
     gmake_opts = "{pio_dir}/Makefile -C {pio_dir} CASEROOT={caseroot} MODEL={pio_model} USER_CMAKE_OPTS={cmake_opts} "\
         "PIO_LIBDIR={pio_dir} CASETOOLS={casetools} "\

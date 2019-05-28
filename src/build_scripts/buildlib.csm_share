@@ -44,7 +44,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
 def buildlib(bldroot, installpath, case):
 ###############################################################################
-    gmake_args = get_standard_makefile_args(case)
+    gmake_args = get_standard_makefile_args(case, shared_lib=True)
     comp_interface = case.get_value("COMP_INTERFACE")
     cimeroot = case.get_value("CIMEROOT")
     caseroot = case.get_value("CASEROOT")
