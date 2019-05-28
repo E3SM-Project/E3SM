@@ -5,8 +5,8 @@
 		<option name="config_run_duration">'0000_01:00:00'</option>
 		<option name="config_mom_del4">1.5e10</option>
 		<option name="config_hmix_scaleWithMesh">.true.</option>
-		<option name="config_use_standardGM">.true.</option>
-		<option name="config_GM_Bolus_kappa_function">"ramp"</option>
+		<option name="config_use_GM">.true.</option>
+		<option name="config_GM_kappa_function">"ramp"</option>
 		<option name="config_check_ssh_consistency">.false.</option>
 		<option name="config_land_ice_flux_mode">'standalone'</option>
 	</namelist>
