@@ -303,7 +303,7 @@ CONTAINS
     call t_stopf('derived_phys')
 
 !for theta there is no need to multiply omega_p by p
-#ifndef MODEL_THETA_
+#ifndef MODEL_THETA_L
     !$omp parallel do private (lchnk, ncols, ilyr, icol)
     do lchnk = begchunk,endchunk
       ncols = get_ncols_p(lchnk)
