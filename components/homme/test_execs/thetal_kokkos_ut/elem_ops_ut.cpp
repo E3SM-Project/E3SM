@@ -18,6 +18,10 @@ using namespace Homme;
 
 TEST_CASE("elem_ops_interpolation", "interpolation") {
 
+  constexpr auto LAST_LEV_P = ColInfo<NUM_INTERFACE_LEV>::LastPack;
+  constexpr auto LAST_LEV   = ColInfo<NUM_PHYSICAL_LEV>::LastPack;
+  constexpr auto LAST_MIDPOINT_VEC_IDX  = ColInfo<NUM_PHYSICAL_LEV>::LastVecEnd;
+
   constexpr int num_elems = 10;
 
   ExecViewManaged<Scalar*[NP][NP][NUM_LEV]>   d_midpoints_field_in  ("",num_elems);

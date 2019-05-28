@@ -98,16 +98,6 @@ VECTOR_SIMD_LOOP
   return vp;
 }
 
-template<typename VectorType, typename ExpType>
-KOKKOS_INLINE_FUNCTION
-void pow_update (VectorType& v, const ExpType p)
-{
-VECTOR_SIMD_LOOP
-  for (int i = 0; i < VectorType::vector_length; ++i) {
-    v[i] = std::pow(v[i],p);
-  }
-}
-
 } // namespace KokkosKernels
 } // namespace Batched
 } // namespace Experimental

@@ -27,7 +27,10 @@ void pnh_and_exner_from_eos_f90(const int& num_elems,
 
 TEST_CASE("pnh_and_exner_from_eos", "pnh_and_exner_from_eos") {
 
-  constexpr int num_elems = 2;
+  constexpr auto LAST_LEV_P = ColInfo<NUM_INTERFACE_LEV>::LastPack;
+  constexpr auto LAST_INTERFACE_VEC_IDX = ColInfo<NUM_INTERFACE_LEV>::LastVecEnd;
+
+  constexpr int num_elems = 10;
 
   HostViewManaged<Real*[NUM_PHYSICAL_LEV][NP][NP]>  vtheta_dp_f90("",num_elems);
   HostViewManaged<Real*[NUM_INTERFACE_LEV][NP][NP]> phi_i_f90("",num_elems);
@@ -73,8 +76,6 @@ TEST_CASE("pnh_and_exner_from_eos", "pnh_and_exner_from_eos") {
   }
 
   // Copy to f90 views
-  constexpr int last_midpoint_idx = (NUM_PHYSICAL_LEV + VECTOR_SIZE - 1) % VECTOR_SIZE; 
-  constexpr int last_interface_idx = (last_midpoint_idx+1) % VECTOR_SIZE;
 
   auto h_vtheta_dp = Kokkos::create_mirror_view(vtheta_dp_cxx);
   auto h_phi_i = Kokkos::create_mirror_view(phi_i_cxx);
@@ -90,12 +91,12 @@ TEST_CASE("pnh_and_exner_from_eos", "pnh_and_exner_from_eos") {
           phi_i_f90(ie,k,igp,jgp) = h_phi_i(ie,igp,jgp,ilev)[ivec];
           dp3d_f90(ie,k,igp,jgp) = h_dp3d(ie,igp,jgp,ilev)[ivec];
         }
-        phi_i_f90(ie,NUM_INTERFACE_LEV-1,igp,jgp) = h_phi_i(ie,igp,jgp,NUM_LEV_P-1)[last_interface_idx];
+        phi_i_f90(ie,NUM_INTERFACE_LEV-1,igp,jgp) = h_phi_i(ie,igp,jgp,LAST_LEV_P)[LAST_INTERFACE_VEC_IDX];
       }
     }
   }
 
-  bool hydrostatic = false;//(pdf(engine) > 0.5);
+  bool hydrostatic = pdf(engine) > 0.5;
 
   HybridVCoord hvcoord;
   hvcoord.random_init(rd());
@@ -202,14 +203,10 @@ TEST_CASE("pnh_and_exner_from_eos", "pnh_and_exner_from_eos") {
           const int ivec = k % VECTOR_SIZE;
 
           // REQUIRE (h_exner(ie,igp,jgp,ilev)[ivec] == exner_f90(ie,k,igp,jgp));
-if (h_pnh(ie,igp,jgp,ilev)[ivec] != pnh_f90(ie,k,igp,jgp)) {
-  std::cout << "ie,igp,jgp,k,cxx,f90,diff: " << ie << "," << igp << "," << jgp << "," << k << "," << h_pnh(ie,igp,jgp,ilev)[ivec] << "," << pnh_f90(ie,k,igp,jgp) << ","
-            << h_pnh(ie,igp,jgp,ilev)[ivec]-pnh_f90(ie,k,igp,jgp) << "\n";
-}
           REQUIRE (h_pnh(ie,igp,jgp,ilev)[ivec] == pnh_f90(ie,k,igp,jgp));
-          // REQUIRE (h_dpnh_dp_i(ie,igp,jgp,ilev)[ivec] == dpnh_dp_i_f90(ie,k,igp,jgp));
+          REQUIRE (h_dpnh_dp_i(ie,igp,jgp,ilev)[ivec] == dpnh_dp_i_f90(ie,k,igp,jgp));
         }
-        // REQUIRE (h_dpnh_dp_i(ie,igp,jgp,NUM_LEV_P-1)[NUM_INTERFACE_LEV % VECTOR_SIZE] == dpnh_dp_i_f90(ie,NUM_INTERFACE_LEV-1,igp,jgp));
+        REQUIRE (h_dpnh_dp_i(ie,igp,jgp,LAST_LEV_P)[LAST_INTERFACE_VEC_IDX] == dpnh_dp_i_f90(ie,NUM_INTERFACE_LEV-1,igp,jgp));
       }
     }
   }

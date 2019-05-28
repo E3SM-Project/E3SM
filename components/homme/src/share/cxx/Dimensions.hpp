@@ -30,13 +30,6 @@ namespace Homme {
   #define NUM_LEV             NUM_PHYSICAL_LEV
   #define NUM_LEV_P           (NUM_LEV + 1)
   #define NUM_INTERFACE_LEV   NUM_LEV_P
-
-  // Note: on CUDA these are somewhat an overkill, since VECTOR_SIZE=1. However, if GPU change,
-  //       and they start to support 2+ double precision vector units, then this would make sense
-  #define LAST_LEV                (NUM_LEV-1)
-  #define LAST_LEV_P              (NUM_LEV_P-1)
-  #define LAST_MIDPOINT_VEC_IDX   ((NUM_PHYSICAL_LEV + VECTOR_SIZE - 1) % VECTOR_SIZE)
-  #define LAST_INTERFACE_VEC_IDX  ((LAST_MIDPOINT_VEC_IDX+1) % VECTOR_SIZE)
 #else
 
   #ifdef CAM
@@ -66,23 +59,27 @@ namespace Homme {
 
   static constexpr const int NUM_TIME_LEVELS = 3;
   static constexpr const int Q_NUM_TIME_LEVELS = 2;
-
-  // Note: the last midpoint is in the pack NUM_LEV, at position (NUM_PHYSICAL_LEV-1)%VECTOR_SIZE;
-  //       the last interface is in the pack NUM_LEV_P, one position after the last midpoint (mod VECTOR_SIZE).
-  //       This is true regardless of whether NUM_LEV_P>NUM_LEV or not, so one formula works for all cases:
-  //         - if NUM_LEV=NUM_LEV_P, then last_midpoint_vec_idx<VECTOR_SIZE-1, so the formula clearly works
-  //         - otherwise, last_midpoint_vec_idx=VECTOR_SIZE-1, so last_interface_vec_idx=VECTOR_SIZE%VECTOR_SIZE=0, which is correct.
-  static constexpr int LAST_LEV               = NUM_LEV-1;
-  static constexpr int LAST_LEV_P             = NUM_LEV_P-1;
-  static constexpr int LAST_MIDPOINT_VEC_IDX  = (NUM_PHYSICAL_LEV + VECTOR_SIZE - 1) % VECTOR_SIZE;
-  static constexpr int LAST_INTERFACE_VEC_IDX = (NUM_INTERFACE_LEV + VECTOR_SIZE - 1) % VECTOR_SIZE;
 #endif // CUDA_BUILD
 
+template<int PHYSICAL_LENGTH>
+struct ColInfo {
+private:
+  template<int LENGTH>
+  struct Helper {
+    static constexpr int NumPacks   = (LENGTH + VECTOR_SIZE - 1) / VECTOR_SIZE;
+    static constexpr int LastVecLen = LENGTH - (NumPacks-1)*VECTOR_SIZE;
 
-template<int ARRAY_LENGTH>
-struct PackInfo {
-  static constexpr int NumPacks       = (ARRAY_LENGTH + VECTOR_SIZE - 1) / VECTOR_SIZE;
-  static constexpr int LastPackVecEnd = (ARRAY_LENGTH + VECTOR_SIZE - 1) % VECTOR_SIZE;
+    static constexpr int LastPack   = NumPacks - 1;
+    static constexpr int LastVecEnd = LastVecLen - 1;
+  };
+public:
+  static constexpr int NumPacks   = Helper<PHYSICAL_LENGTH>::NumPacks;
+  static constexpr int LastPack   = Helper<PHYSICAL_LENGTH>::LastPack;
+  static constexpr int LastVecLen = Helper<PHYSICAL_LENGTH>::LastVecLen;
+  static constexpr int LastVecEnd = Helper<PHYSICAL_LENGTH>::LastVecEnd;
+
+  static constexpr int PenultLevPackIdx = Helper<PHYSICAL_LENGTH-1>::NumPacks;
+  static constexpr int PenultLevVecIdx  = Helper<PHYSICAL_LENGTH-1>::LastVecEnd;
 };
 
 } // namespace TinMan

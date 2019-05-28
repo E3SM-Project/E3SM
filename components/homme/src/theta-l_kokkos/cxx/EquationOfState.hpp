@@ -15,6 +15,9 @@ namespace Homme {
 class EquationOfState {
 public:
 
+  using MIDPOINTS = ColInfo<NUM_PHYSICAL_LEV>;
+  using INTERFACES = ColInfo<NUM_INTERFACE_LEV>;
+
   EquationOfState () = default;
 
   void init (const bool theta_hydrostatic_mode,
@@ -40,23 +43,24 @@ public:
         // Avoid temporaries
         exner(ilev) = pi(ilev);
         exner(ilev) /= PhysicalConstants::p0;
-        pow_update(exner(ilev),PhysicalConstants::kappa);
+        exner(ilev) = pow(exner(ilev),PhysicalConstants::kappa);
       });
     } else {
-      // Compute p_over_exner = Rgas*vtheta_dp/delta(phi_i)
-      // Then, pnh = p0 (p_over_exner/p0)^(1/(1-kappa))
-      //       exner = pnh/p_over_exner
+      // Compute:
+      //  1) p_over_exner = -Rgas*vtheta_dp/delta(phi_i)
+      //  2) pnh = p0 (p_over_exner/p0)^(1/(1-kappa))
+      //  3) exner = pnh/p_over_exner
 
-      // To avoid temporaries, store p_over_exner inside exner
+      // To avoid temporaries, use exner to store some temporaries
       m_elem_ops.compute_midpoint_delta(kv,phi_i,exner);
 
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
 
-        // TODO: could do *= Rgas/p0, but may lose BFB with F90.
-        pnh(ilev) = PhysicalConstants::Rgas*vtheta_dp(ilev) / (-exner(ilev));
+        // TODO: should do *= Rgas/p0, but would lose BFB with F90.
+        pnh(ilev) = (-PhysicalConstants::Rgas)*vtheta_dp(ilev) / exner(ilev);
         pnh(ilev) /= PhysicalConstants::p0;
-        pow_update(pnh(ilev),1.0/(1.0-PhysicalConstants::kappa));
+        pnh(ilev) = pow(pnh(ilev),1.0/(1.0-PhysicalConstants::kappa));
         pnh(ilev) *= PhysicalConstants::p0;
 
         exner(ilev) = pnh(ilev)/exner(ilev);
@@ -66,9 +70,9 @@ public:
 
   KOKKOS_INLINE_FUNCTION
   void compute_dpnh_dp_i (KernelVariables& kv,
-                          ExecViewUnmanaged<const Scalar[NUM_LEV  ]> pnh,
-                          ExecViewUnmanaged<const Scalar[NUM_LEV_P]> dp_i,
-                          ExecViewUnmanaged<      Scalar[NUM_LEV_P]> dpnh_dp_i) const
+                          const ExecViewUnmanaged<const Scalar[NUM_LEV  ]>& pnh,
+                          const ExecViewUnmanaged<const Scalar[NUM_LEV_P]>& dp_i,
+                          const ExecViewUnmanaged<      Scalar[NUM_LEV_P]>& dpnh_dp_i) const
   {
     if (m_theta_hydrostatic_mode) {
       // Set dpnh_dp_i to 1.0
@@ -77,29 +81,23 @@ public:
         dpnh_dp_i(ilev) = 1.0;
       });
     } else {
-      // Start with dpnh_dp_i = delta(pnh)/dp_i
-      m_elem_ops.compute_interface_delta(kv.team,pnh,dpnh_dp_i);
+      // Start with dpnh_dp_i = delta(pnh)/dp_i. Skip bc's, cause we do our own here
+      m_elem_ops.compute_interface_delta<BCType::DoNothing>(kv.team,pnh,dpnh_dp_i);
 
-      // Note: top and bottom need special treatment, so we may as well stop at NUM_LEV here
+      // Note: top and bottom need special treatment, so we may as well stop at NUM_LEV here (rather than NUM_LEV_P)
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
         dpnh_dp_i(ilev) /= dp_i(ilev);
       });
 
-      // Note: the last midpoint is in the pack NUM_LEV, at position (NUM_PHYSICAL_LEV-1)%VECTOR_SIZE;
-      //       the last interface is in the pack NUM_LEV_P, one position after the last midpoint (mod VECTOR_SIZE).
-      //       This is true regardless of whether NUM_LEV_P>NUM_LEV or not, so one formula works for all cases
-      constexpr int last_midpoint_idx = (NUM_PHYSICAL_LEV + VECTOR_SIZE - 1) % VECTOR_SIZE; 
-      constexpr int last_interface_idx = (last_midpoint_idx+1) % VECTOR_SIZE;
-
       // Boundaries: delta(x) = 2*(x_m(last)-x_i(last)).
-      // Top: pnh_i = pi_i.
+      // Top: pnh_i = pi_i = hyai(0)*ps0.
       // Bottom: approximate with hydrostatic, so that dpnh_dp_i=1
       dpnh_dp_i(0)[0] = 2*(pnh(0)[0] - m_hvcoord.hybrid_ai(0)*m_hvcoord.ps0)/dp_i(0)[0];
-      const Real pnh_last = pnh(NUM_LEV-1)[last_midpoint_idx];
-      const Real dp_last = dp_i(NUM_LEV_P-1)[last_interface_idx];
-      const Real pnh_i_last = pnh_last + dp_last;
-      dpnh_dp_i(NUM_LEV_P-1)[last_interface_idx] = 2*(pnh_i_last - pnh_last)/dp_last;
+      const Real pnh_last = pnh(MIDPOINTS::LastPack)[MIDPOINTS::LastVecEnd];
+      const Real dp_last = dp_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd];
+      const Real pnh_i_last = pnh_last + dp_last/2;
+      dpnh_dp_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd] = 2*(pnh_i_last - pnh_last)/dp_last;
     }
   }
 

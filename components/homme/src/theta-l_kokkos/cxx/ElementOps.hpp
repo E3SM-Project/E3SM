@@ -27,6 +27,9 @@ namespace Homme {
 class ElementOps {
 public:
 
+  using MIDPOINTS = ColInfo<NUM_PHYSICAL_LEV>;
+  using INTERFACES = ColInfo<NUM_INTERFACE_LEV>;
+
   ElementOps () = default;
 
   KOKKOS_INLINE_FUNCTION
@@ -42,7 +45,7 @@ public:
       });
     } else {
       // Try to use SIMD operations as much as possible.
-      for (int ilev=0; ilev<LAST_LEV; ++ilev) {
+      for (int ilev=0; ilev<MIDPOINTS::LastPack; ++ilev) {
         Scalar tmp = x_i(ilev);
         tmp.shift_left(1);
         tmp[VECTOR_END] = x_i(ilev+1)[0];
@@ -50,10 +53,10 @@ public:
       }
 
       // Last level pack treated separately, since ilev+1 may throw depending if NUM_LEV=NUM_LEV_P
-      Scalar tmp = x_i(LAST_LEV);
+      Scalar tmp = x_i(MIDPOINTS::LastPack);
       tmp.shift_left(1);
-      tmp[LAST_MIDPOINT_VEC_IDX] = x_i(LAST_LEV_P)[LAST_INTERFACE_VEC_IDX];
-      x_m(LAST_LEV) = (x_i(LAST_LEV) + tmp) / 2;
+      tmp[MIDPOINTS::LastVecEnd] = x_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd];
+      x_m(MIDPOINTS::LastPack) = (x_i(INTERFACES::LastPack-1) + tmp) / 2;
     }
   }
 
@@ -72,7 +75,7 @@ public:
       });
     } else {
       // Try to use SIMD operations as much as possible: the first NUM_LEV-1 packs can be vectorized
-      for (int ilev=0; ilev<LAST_LEV; ++ilev) {
+      for (int ilev=0; ilev<MIDPOINTS::LastPack; ++ilev) {
         Scalar tmp = x_i(ilev);
         tmp *= y_i(ilev);
         tmp.shift_left(1);
@@ -83,13 +86,13 @@ public:
       }
 
       // Last level pack treated separately, since ilev+1 may throw depending if NUM_LEV=NUM_LEV_P
-      Scalar tmp = x_i(LAST_LEV);
-      tmp *= y_i(LAST_LEV);
+      Scalar tmp = x_i(MIDPOINTS::LastPack);
+      tmp *= y_i(MIDPOINTS::LastPack);
       tmp.shift_left(1);
-      tmp[VECTOR_END] = x_i(LAST_LEV_P)[0]*y_i(LAST_LEV_P)[0];
-      tmp += x_i(LAST_LEV)*y_i(LAST_LEV);
+      tmp[VECTOR_END] = x_i(INTERFACES::LastPack)[0]*y_i(INTERFACES::LastPack)[0];
+      tmp += x_i(MIDPOINTS::LastPack)*y_i(MIDPOINTS::LastPack);
       tmp *= coeff/2.0;
-      xy_m(LAST_LEV) += tmp;
+      xy_m(MIDPOINTS::LastPack) += tmp;
     }
   }
 
@@ -126,7 +129,7 @@ public:
       x_i(0)[0] = x_m(0)[0];
 
       // The last interface is x_i=x_m.
-      x_i(LAST_LEV_P)[LAST_INTERFACE_VEC_IDX] = x_m(LAST_LEV)[LAST_MIDPOINT_VEC_IDX];
+      x_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd] = x_m(MIDPOINTS::LastPack)[MIDPOINTS::LastVecEnd];
     }
   }
 
@@ -166,7 +169,7 @@ public:
       x_i(0)[0] = x_m(0)[0];
 
       // The last interface is p_i=p_m.
-      x_i(LAST_LEV_P)[LAST_INTERFACE_VEC_IDX] = x_m(LAST_LEV)[LAST_MIDPOINT_VEC_IDX];
+      x_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd] = x_m(MIDPOINTS::LastPack)[MIDPOINTS::LastVecEnd];
     }
   }
 
@@ -183,7 +186,7 @@ public:
       });
     } else {
       // Try to use SIMD operations as much as possible. First NUM_LEV-1 packs can be treated the same
-      for (int ilev=0; ilev<LAST_LEV; ++ilev) {
+      for (int ilev=0; ilev<MIDPOINTS::LastPack; ++ilev) {
         Scalar tmp = x_i(ilev);
         tmp.shift_left(1);
         tmp[VECTOR_END] = x_i(ilev+1)[0];
@@ -191,10 +194,10 @@ public:
       }
 
       // Last pack does not necessarily have a next pack, so needs to be treated a part.
-      Scalar tmp = x_i(LAST_LEV);
+      Scalar tmp = x_i(MIDPOINTS::LastPack);
       tmp.shift_left(1);
-      tmp[LAST_MIDPOINT_VEC_IDX] = x_i(LAST_LEV_P)[LAST_INTERFACE_VEC_IDX];
-      dx_m(LAST_LEV) = tmp - x_i(LAST_LEV);
+      tmp[MIDPOINTS::LastVecEnd] = x_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd];
+      dx_m(MIDPOINTS::LastPack) = tmp - x_i(MIDPOINTS::LastPack);
     }
   }
 
@@ -228,7 +231,7 @@ public:
       dx_i(0) = x_m(0) - tmp;
 
       // Fix the top/bottom levels
-      dx_i(0)[0] = dx_i(LAST_LEV_P)[LAST_INTERFACE_VEC_IDX] = 0.0;
+      dx_i(0)[0] = dx_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd] = 0.0;
     }
   }
 
@@ -240,7 +243,7 @@ public:
   KOKKOS_INLINE_FUNCTION
   void column_scan (const KernelVariables& kv,
                     const Lambda& input_provider,
-                    const ExecViewUnmanaged<Scalar [PackInfo<LENGTH>::NumPacks]>& sum) const
+                    const ExecViewUnmanaged<Scalar [ColInfo<LENGTH>::NumPacks]>& sum) const
   {
     column_scan<ExecSpace,Forward,Inclusive,LENGTH>(kv,input_provider,sum);
   }
@@ -250,18 +253,18 @@ public:
   typename std::enable_if<!OnGpu<ExecSpaceType>::value>::type
   column_scan (const KernelVariables& /* kv */,
                const Lambda& input_provider,
-               const ExecViewUnmanaged<Scalar [PackInfo<LENGTH>::NumPacks]>& sum) const
+               const ExecViewUnmanaged<Scalar [ColInfo<LENGTH>::NumPacks]>& sum) const
   {
     // It is easier to write two loops for Forward true/false. There's no runtime penalty,
     // since the if is evaluated at compile time, so no big deal.
-    constexpr int lastPack = PackInfo<LENGTH>::NumPacks - 1;
+    constexpr int lastPack = ColInfo<LENGTH>::NumPacks - 1;
     if (Forward) {
       // Running integral
       Real integration = 0.0;
 
-      for (int ilev = 0; ilev<PackInfo<LENGTH>::NumPacks; ++ilev) {
+      for (int ilev = 0; ilev<ColInfo<LENGTH>::NumPacks; ++ilev) {
         // In all but the last level pack, the loop is over the whole vector
-        const int vec_end = ilev == lastPack ? PackInfo<LENGTH>::LastPackVecEnd
+        const int vec_end = ilev == lastPack ? ColInfo<LENGTH>::LastVecEnd
                                              : VECTOR_END;
 
         auto input = input_provider(ilev);
@@ -281,7 +284,7 @@ public:
 
       for (int ilev = lastPack; ilev >= 0; --ilev) {
         // In all but the last level pack, the loop is over the whole vector
-        const int vec_start = ilev == lastPack ? PackInfo<LENGTH>::LastPackVecEnd
+        const int vec_start = ilev == lastPack ? ColInfo<LENGTH>::LastVecEnd
                                                : VECTOR_END;
 
         auto input = input_provider(ilev);
@@ -303,10 +306,10 @@ public:
   typename std::enable_if<OnGpu<ExecSpaceType>::value>::type
   column_scan (const KernelVariables& kv,
                const Lambda& input_provider,
-               const ExecViewUnmanaged<Scalar [PackInfo<LENGTH>::NumPacks]>& sum) const
+               const ExecViewUnmanaged<Scalar [ColInfo<LENGTH>::NumPacks]>& sum) const
   {
     // On GPU we rely on the fact that Scalar is basically double[1].
-    static_assert (!OnGpu<ExecSpaceType>::value || PackInfo<LENGTH>::NumPacks==LENGTH, "Error! In a GPU build we expect VECTOR_SIZE=1.\n");
+    static_assert (!OnGpu<ExecSpaceType>::value || ColInfo<LENGTH>::NumPacks==LENGTH, "Error! In a GPU build we expect VECTOR_SIZE=1.\n");
 
     if (Forward) {
       // accumulate input in [0,LENGTH].

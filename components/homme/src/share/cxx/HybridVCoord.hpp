@@ -56,19 +56,20 @@ struct HybridVCoord
 
   // This reference dp is computed several times in the code, so we decide
   KOKKOS_INLINE_FUNCTION
-  void compute_dp_ref (KernelVariables& kv,
-                       ExecViewUnmanaged<const Real[NP][NP]> ps,
-                       ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV]> dp) const
+  void compute_dp_ref (const KernelVariables& kv,
+                       const ExecViewUnmanaged<const Real[NP][NP]>& ps,
+                       const ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV]>& dp) const
   {
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int& point_idx) {
       const int igp = point_idx / NP;
       const int jgp = point_idx % NP;
       auto point_dp = Homme::subview(dp,igp,jgp);
+      const Real point_ps = ps(igp,jgp);
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int& ilev) {
         point_dp(ilev) = hybrid_ai_delta(ilev)*ps0 +
-                         hybrid_bi_delta(ilev)*ps(igp,jgp);
+                         hybrid_bi_delta(ilev)*point_ps;
       });
     });
 
@@ -77,9 +78,20 @@ struct HybridVCoord
   }
 
   KOKKOS_INLINE_FUNCTION
-  void compute_ps_ref (KernelVariables& kv,
-                       ExecViewUnmanaged<const Scalar [NP][NP][NUM_LEV]> dp,
-                       ExecViewUnmanaged<      Real   [NP][NP]> ps) const
+  void compute_dp_ref (const KernelVariables& kv, const Real ps,
+                       const ExecViewUnmanaged<Scalar [NUM_LEV]>& dp) const
+  {
+    Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                         [&](const int& ilev) {
+      dp(ilev) = hybrid_ai_delta(ilev)*ps0 +
+                 hybrid_bi_delta(ilev)*ps;
+    });
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void compute_ps_ref (const KernelVariables& kv,
+                       const ExecViewUnmanaged<const Scalar [NP][NP][NUM_LEV]>& dp,
+                       const ExecViewUnmanaged<      Real   [NP][NP]>& ps) const
   {
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {
@@ -90,15 +102,14 @@ struct HybridVCoord
                                   [&](const int ilev, Scalar& sum) {
         sum += dp(igp,jgp,ilev);
       },tmp);
+
+      // Compile-time if
       if (OnGpu<ExecSpace>::value) {
         ps(igp,jgp) = hybrid_ai(0)*ps0 + tmp[0];
       } else {
         ps(igp,jgp) = hybrid_ai(0)*ps0 + tmp.reduce_add();
       }
     });
-    kv.team_barrier();
-
-    // Should we remove this and let the user put it from outside if needed?
     kv.team_barrier();
   }
 };

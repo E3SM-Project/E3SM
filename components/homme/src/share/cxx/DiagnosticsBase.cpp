@@ -45,31 +45,29 @@ void DiagnosticsBase::prim_diag_scalars (const bool before_advance, const int iv
     t2_qdp = tl.np1_qdp;
   }
 
-  if (params.time_step_type>0) {
-    const Tracers& tracers = Context::singleton().get<Tracers>();
+  const Tracers& tracers = Context::singleton().get<Tracers>();
 
-    sync_to_host(tracers.Q,h_Q);
+  sync_to_host(tracers.Q,h_Q);
 
-    // Copy back tracers concentration and mass
-    auto qdp_h = Kokkos::create_mirror_view(tracers.qdp);
-    Kokkos::deep_copy(qdp_h,tracers.qdp);
-    for (int ie=0; ie<m_num_elems; ++ie) {
-      for (int iq=0; iq<params.qsize; ++iq) {
-        for (int igp=0; igp<NP; ++igp) {
-          for (int jgp=0; jgp<NP; ++jgp) {
-            Real accum_qdp_q = 0;
-            Real accum_qdp = 0;
+  // Copy back tracers concentration and mass
+  auto qdp_h = Kokkos::create_mirror_view(tracers.qdp);
+  Kokkos::deep_copy(qdp_h,tracers.qdp);
+  for (int ie=0; ie<m_num_elems; ++ie) {
+    for (int iq=0; iq<params.qsize; ++iq) {
+      for (int igp=0; igp<NP; ++igp) {
+        for (int jgp=0; jgp<NP; ++jgp) {
+          Real accum_qdp_q = 0;
+          Real accum_qdp = 0;
 
-            HostViewUnmanaged<Real[NUM_PHYSICAL_LEV]> qdp(&qdp_h(ie, t2_qdp, iq, igp, jgp, 0)[0]);
-            for (int level=0; level<NUM_PHYSICAL_LEV; ++level) {
-              accum_qdp_q += qdp(level)*h_Q(ie, iq, level, igp, jgp);
-              accum_qdp   += qdp(level);
-            }
-            h_Qvar(ie, ivar, iq, igp, jgp) = accum_qdp_q;
-
-            h_Qmass(ie, ivar, iq, igp, jgp) = accum_qdp;
-            h_Q1mass(ie, iq, igp, jgp) = accum_qdp;
+          HostViewUnmanaged<Real[NUM_PHYSICAL_LEV]> qdp(&qdp_h(ie, t2_qdp, iq, igp, jgp, 0)[0]);
+          for (int level=0; level<NUM_PHYSICAL_LEV; ++level) {
+            accum_qdp_q += qdp(level)*h_Q(ie, iq, level, igp, jgp);
+            accum_qdp   += qdp(level);
           }
+          h_Qvar(ie, ivar, iq, igp, jgp) = accum_qdp_q;
+
+          h_Qmass(ie, ivar, iq, igp, jgp) = accum_qdp;
+          h_Q1mass(ie, iq, igp, jgp) = accum_qdp;
         }
       }
     }

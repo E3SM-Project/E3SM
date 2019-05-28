@@ -51,17 +51,18 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
     auto v = e.m_state.m_v;
     auto gradphis = e.m_geometry.m_gradphis;
     auto n0 = tl.n0;
+    constexpr auto LAST_LEV_P = ColInfo<NUM_INTERFACE_LEV>::LastPack;
+    constexpr auto LAST_LEV   = ColInfo<NUM_PHYSICAL_LEV>::LastPack;
+    constexpr auto LAST_INTERFACE_VEC_IDX = ColInfo<NUM_INTERFACE_LEV>::LastVecEnd;
+    constexpr auto LAST_MIDPOINT_VEC_IDX  = ColInfo<NUM_PHYSICAL_LEV>::LastVecEnd;
     Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0,NP*NP*e.m_geometry.num_elems()),
                          KOKKOS_LAMBDA(const int idx) {
       const int ie  = idx / (NP*NP);
       const int igp = idx / NP;
       const int jgp = idx % NP;
-      w_i(ie,n0,igp,jgp,NUM_PHYSICAL_LEV) = (v(ie,n0,0,igp,jgp,NUM_PHYSICAL_LEV-1)*gradphis(ie,0,igp,jgp) +
-                                             v(ie,n0,1,igp,jgp,NUM_PHYSICAL_LEV-1)*gradphis(ie,1,igp,jgp))/PhysicalConstants::g;
-    // do ie=nets,nete
-    //    elem(ie)%state%w_i(:,:,nlevp,n0) = (elem(ie)%state%v(:,:,1,nlev,n0)*elem(ie)%derived%gradphis(:,:,1) + &
-    //                                        elem(ie)%state%v(:,:,2,nlev,n0)*elem(ie)%derived%gradphis(:,:,2))/g
-    // enddo
+      w_i(ie,n0,igp,jgp,LAST_LEV_P)[LAST_INTERFACE_VEC_IDX] = 
+                      (v(ie,n0,0,igp,jgp,LAST_LEV)[LAST_MIDPOINT_VEC_IDX]*gradphis(ie,0,igp,jgp) +
+                       v(ie,n0,1,igp,jgp,LAST_LEV)[LAST_MIDPOINT_VEC_IDX]*gradphis(ie,1,igp,jgp))/PhysicalConstants::g;
     });
   }
 
