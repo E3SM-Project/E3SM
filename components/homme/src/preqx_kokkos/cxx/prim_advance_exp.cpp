@@ -39,20 +39,7 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
   }
 
   // Set eta_ave_w
-  int method = params.time_step_type;
   Real eta_ave_w = 1.0/params.qsplit;
-
-  if (params.time_step_type==0) {
-    std::string msg = "[prim_advance_exp_iter]:";
-    msg += "missing some code for this time step method. ";
-    msg += "The program should have errored out earlier though. Plese, investigate.";
-    Errors::runtime_abort(msg,Errors::err_not_implemented);
-  } else if (params.time_step_type==1) {
-    std::string msg = "[prim_advance_exp_iter]:";
-    msg += "missing some code for this time step method. ";
-    msg += "The program should have errored out earlier though. Plese, investigate.";
-    Errors::runtime_abort(msg,Errors::err_not_implemented);
-  }
 
 #ifndef CAM
   // if "prescribed wind" set dynamics explicitly and skip time-integration
@@ -63,8 +50,8 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
 #endif
 
   // Perform time-advance
-  switch (method) {
-    case 5:
+  switch (params.time_step_type) {
+    case TimeStepType::ULLRICH_RK35:
       // Perform RK stages
       u3_5stage_timestep(tl, dt, eta_ave_w, compute_diagnostics);
       break;
@@ -84,14 +71,7 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
   }
 #endif
 
-  if (params.time_step_type==0) {
-    std::string msg = "[prim_advance_exp_iter]:";
-    msg += "missing some code for this time step method. ";
-    msg += "The program should have errored out earlier though. Plese, investigate.";
-    Errors::runtime_abort(msg,Errors::err_not_implemented);
-    // call advance_hypervis_lf(edge3p1,elem,hvcoord,hybrid,deriv,nm1,n0,np1,nets,nete,dt_vis)
-
-  } else if (params.time_step_type<=10) {
+  if (!is_implicit(params.time_step_type)) {
     // Get and run the HVF
     HyperviscosityFunctor& functor = Context::singleton().get<HyperviscosityFunctor>();
     GPTLstart("tl-ae advance_hypervis_dp");

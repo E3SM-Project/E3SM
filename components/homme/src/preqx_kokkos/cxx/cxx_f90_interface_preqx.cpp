@@ -66,11 +66,13 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   } else if (remap_alg == 3) {
     params.remap_alg = RemapAlg::PPM_FIXED_MEANS;
   }
+  if (time_step_type==5) {
+    params.time_step_type = TimeStepType::ULLRICH_RK35;;
+  }
 
   params.limiter_option                = limiter_option;
   params.rsplit                        = rsplit;
   params.qsplit                        = qsplit;
-  params.time_step_type                = time_step_type;
   params.prescribed_wind               = prescribed_wind;
   params.state_frequency               = state_frequency;
   params.qsize                         = qsize;

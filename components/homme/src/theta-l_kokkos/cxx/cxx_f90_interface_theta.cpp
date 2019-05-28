@@ -36,7 +36,7 @@ extern "C"
 void init_simulation_params_c (const int& remap_alg, const int& limiter_option, const int& rsplit, const int& qsplit,
                                const int& time_step_type, const int& qsize, const int& state_frequency,
                                const Real& nu, const Real& nu_p, const Real& nu_q, const Real& nu_s, const Real& nu_div, const Real& nu_top,
-                               const int& hypervis_order, const int& hypervis_subcycle, const double& hypervis_scaling,
+                               const int& hypervis_order, const int& hypervis_subcycle, const double& hypervis_scaling, const double& dcmip16_mu,
                                const int& ftype, const bool& prescribed_wind, const bool& moisture, const bool& disable_diagnostics,
                                const bool& use_cpstar, const bool& use_semi_lagrangian_transport, const bool& theta_hydrostatic_mode)
 {
@@ -47,7 +47,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   Errors::check_option("init_simulation_params_c","prescribed_wind",prescribed_wind,{false});
   Errors::check_option("init_simulation_params_c","hypervis_order",hypervis_order,{2});
   Errors::check_option("init_simulation_params_c","use_semi_lagrangian_transport",use_semi_lagrangian_transport,{false});
-  Errors::check_option("init_simulation_params_c","time_step_type",time_step_type,{5,6,7});
+  Errors::check_option("init_simulation_params_c","time_step_type",time_step_type,{1,4,5,6,7});
   Errors::check_option("init_simulation_params_c","qsize",qsize,0,Errors::ComparisonOp::GE);
   Errors::check_option("init_simulation_params_c","qsize",qsize,QSIZE_D,Errors::ComparisonOp::LE);
   Errors::check_option("init_simulation_params_c","limiter_option",limiter_option,{8,9});
@@ -70,7 +70,6 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   params.limiter_option                = limiter_option;
   params.rsplit                        = rsplit;
   params.qsplit                        = qsplit;
-  params.time_step_type                = time_step_type;
   params.prescribed_wind               = prescribed_wind;
   params.state_frequency               = state_frequency;
   params.qsize                         = qsize;
@@ -88,6 +87,26 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   params.use_cpstar                    = use_cpstar;
   params.use_semi_lagrangian_transport = use_semi_lagrangian_transport;
   params.theta_hydrostatic_mode        = theta_hydrostatic_mode;
+  params.dcmip16_mu                    = dcmip16_mu;
+  if (time_step_type==0) {
+    params.time_step_type = TimeStepType::LF;
+  } else if (time_step_type==1) {
+    params.time_step_type = TimeStepType::RK2;
+  } else if (time_step_type==4) {
+    params.time_step_type = TimeStepType::IMEX_KG254_EX;
+  } else if (time_step_type==5) {
+    params.time_step_type = TimeStepType::ULLRICH_RK35;
+  } else if (time_step_type==6) {
+    params.time_step_type = TimeStepType::IMEX_KG243;
+  } else if (time_step_type==7) {
+    params.time_step_type = TimeStepType::IMEX_KG254;
+  } else if (time_step_type==8) {
+    params.time_step_type = TimeStepType::IMEX_KG253;
+  } else if (time_step_type==9) {
+    params.time_step_type = TimeStepType::IMEX_KG252;
+  } else if (time_step_type==10) {
+    params.time_step_type = TimeStepType::IMEX_KG232b;
+  }
 
   //set nu_ratios values
   if (params.nu != params.nu_div) {
@@ -160,8 +179,9 @@ void cxx_push_results_to_f90(F90Ptr &elem_state_v_ptr,         F90Ptr &elem_stat
 }
 
 // Probably not needed
-void cxx_push_forcing_to_f90(F90Ptr elem_derived_FM, F90Ptr elem_derived_FT,
-                             F90Ptr elem_derived_FQ) {
+void cxx_push_forcing_to_f90(F90Ptr /* elem_derived_FM */,
+                             F90Ptr /* elem_derived_FT */,
+                             F90Ptr /* elem_derived_FQ */) {
   // Elements &elements = Context::singleton().get<Elements>();
   // Tracers &tracers = Context::singleton().get<Tracers>();
 
@@ -183,9 +203,10 @@ void cxx_push_forcing_to_f90(F90Ptr elem_derived_FM, F90Ptr elem_derived_FT,
   // }
 }
 
-void f90_push_forcing_to_cxx(F90Ptr elem_derived_FM, F90Ptr elem_derived_FT,
-                             F90Ptr elem_derived_FQ,
-                             F90Ptr elem_state_Qdp_ptr) {
+void f90_push_forcing_to_cxx(F90Ptr /* elem_derived_FM */,
+                             F90Ptr /* elem_derived_FT */,
+                             F90Ptr /* elem_derived_FQ */,
+                             F90Ptr /* elem_state_Qdp_ptr */) {
   // Elements &elements = Context::singleton().get<Elements>();
 
   // HostViewUnmanaged<Real * [NUM_PHYSICAL_LEV][2][NP][NP]> fm_f90(

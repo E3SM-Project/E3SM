@@ -79,6 +79,29 @@ enum class UpdateType {
   FORWARD
 };
 
+enum class TimeStepType {
+  // Explicit
+  LF              =  0, // LeapFrog
+  RK2             =  1,
+  IMEX_KG254_EX   =  4, // Explicit table from IMEX_KG254
+  ULLRICH_RK35    =  5,
+
+  // Implicit-Explicit
+  IMEX_KG243      =  6,
+  IMEX_KG254      =  7,
+  IMEX_KG253      =  8,
+  IMEX_KG252      =  9,
+  IMEX_KG232b     = 10,
+
+  // Implicit
+  BE              = 11, // Backward Euler
+  BDF2            = 12
+};
+
+inline bool is_implicit (const TimeStepType& ts) {
+  return ts==TimeStepType::BE || ts==TimeStepType::BDF2;
+}
+
 // =================== Euler Step DSS Option ====================== //
 
 enum class DSSOption {

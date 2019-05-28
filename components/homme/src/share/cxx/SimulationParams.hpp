@@ -20,15 +20,16 @@ struct SimulationParams
 {
   SimulationParams() : ftype(ForcingAlg::FORCING_OFF), params_set(false) {}
 
-  int       time_step_type; // TODO: convert to enum
-  int       rsplit;
-  int       qsplit;
-  int       qsize;
+  TimeStepType  time_step_type;
+  MoistDry      moisture;
+  RemapAlg      remap_alg;
+  TestCase      test_case;
+  ForcingAlg    ftype;
 
-  MoistDry  moisture;
-  RemapAlg  remap_alg;
-  TestCase  test_case;
-  ForcingAlg ftype;
+  int           rsplit;
+  int           qsplit;
+  int           qsize;
+
 
   int       limiter_option; // TODO: convert to enum
 

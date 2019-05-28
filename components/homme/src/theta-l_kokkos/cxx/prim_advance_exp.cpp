@@ -17,11 +17,12 @@
 namespace Homme
 {
 
+// Declare all the timestepping schemes routines
 void RK2_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w, const bool compute_diagnostics);
 void imex_KG254_explicit_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w, const bool compute_diagnostics);
 void u3_5stage_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w, const bool compute_diagnostics);
-void imex_KGNO243_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w, const bool compute_diagnostics);
-void imex_KGO254_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w, const bool compute_diagnostics);
+void imex_KG243_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w, const bool compute_diagnostics);
+void imex_KG254_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w, const bool compute_diagnostics);
 
 // -------------- IMPLEMENTATIONS -------------- //
 
@@ -36,10 +37,6 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
 
   // Get simulation params
   SimulationParams& params = Context::singleton().get<SimulationParams>();
-
-  // Note: In the following, all the checks are superfluous, since we already check that
-  //       the options are supported when we init the simulation params. However, this way
-  //       we remind ourselves that in these cases there is some missing code to convert from Fortran
 
   // Determine the tracers time level
   tl.update_tracers_levels(params.qsplit);
@@ -77,26 +74,26 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
 #endif
 
   switch (params.time_step_type) {
-    case 1:
+    case TimeStepType::RK2:
       RK2_timestep (tl, dt, eta_ave_w, compute_diagnostics);
       break;
-    case 4:
+    case TimeStepType::IMEX_KG254_EX:
       imex_KG254_explicit_timestep (tl, dt, eta_ave_w, compute_diagnostics);
       break;
-    case 5:
+    case TimeStepType::ULLRICH_RK35:
       u3_5stage_timestep (tl, dt, eta_ave_w, compute_diagnostics);
       break;
-    case 6:
-      imex_KGNO243_timestep (tl, dt, eta_ave_w, compute_diagnostics);
+    case TimeStepType::IMEX_KG243:
+      imex_KG243_timestep (tl, dt, eta_ave_w, compute_diagnostics);
       break;
-    case 7:
-      imex_KGO254_timestep (tl, dt, eta_ave_w, compute_diagnostics);
+    case TimeStepType::IMEX_KG254:
+      imex_KG254_timestep (tl, dt, eta_ave_w, compute_diagnostics);
       break;
     default:
       {
         std::string msg = "[prim_advance_exp]:";
         msg += "missing some code for time step method ";
-        msg += params.time_step_type;
+        msg += etoi(params.time_step_type);
         msg += ".\n";
         Errors::runtime_abort(msg,Errors::err_not_implemented);
       }
@@ -181,13 +178,13 @@ void u3_5stage_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w
   GPTLstop("tl-ae U3-5stage_timestep");
 }
 
-void imex_KGNO243_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w, const bool compute_diagnostics)
+void imex_KG243_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w, const bool compute_diagnostics)
 {
   // TODO
   assert(false);
 }
 
-void imex_KGO254_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w, const bool compute_diagnostics)
+void imex_KG254_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w, const bool compute_diagnostics)
 {
   // TODO
   assert(false);
