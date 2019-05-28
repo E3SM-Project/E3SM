@@ -36,7 +36,7 @@ endif ()
 # Determine whether to compile threaded or not
 # Set the THREADDIR for the shared build
 # based on the threaded build status
-if (SMP OR SMP_PRESENT)
+if (SMP_PRESENT)
   set(THREADDIR "threads")
   set(compile_threaded TRUE)
 else()
@@ -264,11 +264,12 @@ if (USE_ALBANY)
 endif()
 
 if (USE_KOKKOS)
-  include(${INSTALL_SHAREDPATH}/Kokkos)
-  # JGF - convert kokkos lists to strings
-  set(SLIBS "${SLIBS} ${KOKKOS_LIBS}")
-  set(CXXFLAGS "${CXXFLAGS} ${KOKKOS_CXXFLAGS}")
-  set(CXX_LDFLAGS "${CXX_LDFLAGS} ${KOKKOS_LDFLAGS}")
+  include(${INSTALL_SHAREDPATH}/kokkos_generated_settings.cmake)
+  string (REPLACE ";" " " KOKKOS_CXXFLAGS_STR "${KOKKOS_CXXFLAGS}")
+  string (REPLACE ";" " " KOKKOS_LDFLAGS_STR "${KOKKOS_LDFLAGS}")
+  set(SLIBS "${SLIBS} ${KOKKOS_LIBS_LIST}")
+  set(CXXFLAGS "${CXXFLAGS} ${KOKKOS_CXXFLAGS_STR}")
+  set(CXX_LDFLAGS "${CXX_LDFLAGS} ${KOKKOS_LDFLAGS_STR}")
 endif()
 
 # JGF: No one seems to be using this
