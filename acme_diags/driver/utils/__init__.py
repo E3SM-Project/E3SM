@@ -1,2 +1,2 @@
-import general
-import dataset
+from . import general
+from . import dataset
