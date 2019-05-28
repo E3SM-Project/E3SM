@@ -28,7 +28,7 @@ before_install:
 
 
 install:
-  - python setup.py install
+  - pip install .
 
 script:
   - bash tests/test.sh

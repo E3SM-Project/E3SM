@@ -21,7 +21,7 @@ SHELL ["/bin/bash", "-c"]
 RUN conda env update -n base --file conda/e3sm_diags_env_dev.yml && \
         conda clean --all -y && \
         source activate base && \
-        python setup.py install && \
+        pip install . && \
         rm -r build/
 
 # Needs to be a list, otherwise arguments aren't
