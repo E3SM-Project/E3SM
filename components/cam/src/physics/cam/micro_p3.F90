@@ -2890,23 +2890,25 @@ contains
    real(rtype), intent(out) :: qrcol 
    real(rtype), intent(out) :: nrcol 
 
-   if (qitot_incld.ge.qsmall .and. qr_incld.ge.qsmall .and. t.le.zerodegc) then
-      ! note: f1pr08 and logn0r are already calculated as log_10
-      qrcol = 10._rtype**(f1pr08+logn0r)*rho*rhofaci*eri*nitot_incld
-      nrcol = 10._rtype**(f1pr07+logn0r)*rho*rhofaci*eri*nitot_incld
-   else if (t .ge. zerodegc) then
-      ! rain number sink due to collection
-      ! for T > 273.15, assume collected rain number is shed as
-      ! 1 mm drops
-      ! note that melting of ice number is scaled to the loss
-      ! rate of ice mass due to melting
-      ! collection of rain above freezing does not impact total rain mass
-      nrcol  = 10._rtype**(f1pr07 + logn0r)*rho*rhofaci*eri*nitot_incld     
-      ! for now neglect shedding of ice collecting rain above freezing, since snow is
-      ! not expected to shed in these conditions (though more hevaily rimed ice would be
-      ! expected to lead to shedding)
-   end if 
-
+   if (qitot_incld.ge.qsmall .and. qr_incld.ge.qsmall) then 
+      if (t.le.zerodegc) then
+         ! note: f1pr08 and logn0r are already calculated as log_10
+         qrcol = 10._rtype**(f1pr08+logn0r)*rho*rhofaci*eri*nitot_incld
+         nrcol = 10._rtype**(f1pr07+logn0r)*rho*rhofaci*eri*nitot_incld
+      else if (t .gt. zerodegc) then
+         ! rain number sink due to collection
+         ! for T > 273.15, assume collected rain number is shed as
+         ! 1 mm drops
+         ! note that melting of ice number is scaled to the loss
+         ! rate of ice mass due to melting
+         ! collection of rain above freezing does not impact total rain mass
+         nrcol  = 10._rtype**(f1pr07 + logn0r)*rho*rhofaci*eri*nitot_incld     
+         ! for now neglect shedding of ice collecting rain above freezing, since snow is
+         ! not expected to shed in these conditions (though more hevaily rimed ice would be
+         ! expected to lead to shedding)      
+      endif 
+   endif 
+   
   end subroutine ice_rain_collection
 
   subroutine ice_self_collection(rho,rhofaci,    &
