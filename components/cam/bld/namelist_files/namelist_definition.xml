@@ -5866,6 +5866,7 @@ tstep_type=2  RK2-SSP 3 stage (as used by tracers)
 tstep_type=3  classic Runga-Kutta (RK) 3 stage
 tstep_type=4  Kinnmark&Gray Runga-Kutta (RK) 4 stage
 tstep_type=5  Kinnmark&Gray Runga-Kutta (RK) 5 stage (3rd order accurate in time)
+tstep_type=7  Kinnmark&Gray Runga-Kutta IMEX
 Default: Set by build-namelist.
 </entry>
 
