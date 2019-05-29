@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+
+<compsets>
+   <help>
+   Compset format is explained in cime/config/e3sm/allactive/config_compsets.xml
+   or in the CIME documenation
+   </help>
+
+  <!-- IAC compsets: stubs, and coupled with lnd --> 	
+
+   <compset>	
+     <alias>Z</alias>
+     <lname>2000_SATM_SLND_SICE_SOCN_SROF_SGLC_SWAV_GCAM</lname>
+   </compset>
+
+   <compset>
+     <alias>ZLND</alias>
+     <lname>2000_SATM_CLM45_SICE_SOCN_SROF_SGLC_SWAV_GCAM</lname>
+   </compset>
+</compsets>	

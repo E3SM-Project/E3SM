@@ -12,13 +12,13 @@
   </entry>
 
   <description>
-    <desc compset="_IAC">GCAM:</desc>
+    <desc compset="_GCAM">GCAM active</desc>
   </description>
 
   <help>
     =========================================
     IAC naming conventions
     =========================================
-  </help-->
+  </help>
 
 </definitions_variables>
