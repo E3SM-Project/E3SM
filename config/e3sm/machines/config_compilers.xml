@@ -99,7 +99,6 @@ for mct, etc.
   </FFLAGS>
   <FFLAGS_NOOPT>
     <base> -O0 </base>
-    <append compile_threaded="FALSE"> -h noomp </append>
   </FFLAGS_NOOPT>
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
   <LDFLAGS>
@@ -243,6 +242,9 @@ for mct, etc.
     <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt -qsuppress=1520-045 </append>
     <append DEBUG="TRUE"> -qinitauto=7FF7FFFF -qflttrap=ov:zero:inv:en </append>
   </FFLAGS>
+  <FFLAGS_NOOPT>
+    <base> -O0 </base>
+  </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base>  -qsuffix=f=f -qfixed=132 </base>
   </FIXEDFLAGS>
@@ -290,7 +292,6 @@ for mct, etc.
   </FFLAGS>
   <FFLAGS_NOOPT>
     <base> -O0 </base>
-    <append compile_threaded="TRUE"> -qopenmp </append>
   </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base> -fixed -132 </base>
@@ -338,16 +339,6 @@ for mct, etc.
     <append DEBUG="TRUE" compile_threaded="FALSE"> -gline </append>
     <append compile_threaded="TRUE"> -openmp </append>
   </FFLAGS>
-  <FFLAGS_NOOPT>
-    <base> $FFLAGS </base>
-    <append DEBUG="FALSE"> -ieee=full     </append>
-    <!-- Hack! If DEBUG="TRUE", put runtime checks in FFLAGS, but not into     -->
-    <!-- FFLAGS_NOOPT, allowing strict checks to be removed from files by      -->
-    <!-- having them use FFLAGS_NOOPT in Depends.nag                           -->
-    <append DEBUG="TRUE"> -g -time -f2003 -ieee=stop </append>
-    <append DEBUG="TRUE" compile_threaded="FALSE"> -gline        </append>
-    <append compile_threaded="TRUE"> -openmp </append>
-  </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base> -fixed </base>
   </FIXEDFLAGS>
@@ -441,9 +432,7 @@ for mct, etc.
     <append MODEL="docn"> -Mnovect </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
-    <base> -O0 -g -Ktrap=fp -Mbounds -Kieee  </base>
-    <append compile_threaded="FALSE"> </append>
-    <append compile_threaded="TRUE"> -mp </append>
+    <base> -O0 </base>
   </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base> -Mfixed </base>
@@ -521,9 +510,7 @@ for mct, etc.
     <append MODEL="docn"> -Mnovect </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
-    <base> -O0 -g -Ktrap=fp -Mbounds -Kieee  </base>
-    <append compile_threaded="FALSE"> </append>
-    <append compile_threaded="TRUE"> -mp </append>
+    <base> -O0 </base>
   </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base> -Mfixed </base>
@@ -724,6 +711,9 @@ for mct, etc.
     <append>$SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --flibs}  -L$ENV{MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm -ldl </append>
     <append> $SHELL{$ENV{NETCDF_C_PATH}/bin/nc-config --libs} </append>
   </SLIBS>
+  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
 </compiler>
 
 <compiler MACH="anvil" COMPILER="intel">
@@ -740,9 +730,6 @@ for mct, etc.
     <append compile_threaded="TRUE"> -static-intel</append>
     <append compile_threaded="TRUE" DEBUG="TRUE">-heap-arrays</append>
   </FFLAGS>
-  <FFLAGS_NOOPT>
-    <append compile_threaded="TRUE"> -static-intel</append>
-  </FFLAGS_NOOPT>
   <LDFLAGS>
     <append compile_threaded="TRUE"> -static-intel</append>
   </LDFLAGS>
@@ -752,6 +739,9 @@ for mct, etc.
     <append> $SHELL{$ENV{NETCDF_C_PATH}/bin/nc-config --libs} </append>
     <append>-mkl</append>
   </SLIBS>
+  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
 </compiler>
 
 <compiler MACH="anvil" COMPILER="pgi">
@@ -760,6 +750,9 @@ for mct, etc.
     <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
     <append> -rpath $ENV{NETCDF_PATH}/lib </append>
   </SLIBS>
+  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
 </compiler>
 
 <compiler MACH="bebop" COMPILER="intel">
@@ -779,6 +772,9 @@ for mct, etc.
   <SLIBS>
     <append>$SHELL{nf-config --flibs} -mkl</append>
   </SLIBS>
+  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
 </compiler>
 
 <compiler MACH="blues" COMPILER="gnu">
@@ -888,9 +884,6 @@ for mct, etc.
     <append DEBUG="TRUE"> -g -Wall </append>
     <!-- <append MODEL="clm"> -I/lustre/or-hydra/cades-ccsi/$USER/models/pflotran-interface/src/clm-pflotran</append> -->
   </FFLAGS>
-  <FFLAGS_NOOPT>
-    <base> -O0 </base>
-  </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base>  -ffixed-form </base>
   </FIXEDFLAGS>
@@ -1172,10 +1165,6 @@ for mct, etc.
     <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </append>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align </append>
   </FFLAGS>
-  <FFLAGS_NOOPT>
-    <base> -O0 </base>
-    <append compile_threaded="TRUE"> -qopenmp </append>
-  </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base> -fixed -132 </base>
   </FIXEDFLAGS>
@@ -1272,10 +1261,6 @@ for mct, etc.
     <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </append>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align </append>
   </FFLAGS>
-  <FFLAGS_NOOPT>
-    <base> -O0 </base>
-    <append compile_threaded="TRUE"> -qopenmp </append>
-  </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base> -fixed -132 </base>
   </FIXEDFLAGS>
@@ -1366,9 +1351,6 @@ for mct, etc.
     <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 </append>
     <append DEBUG="FALSE"> -O2 </append>
   </FFLAGS>
-  <FFLAGS_NOOPT>
-    <base> -O0 </base>
-  </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base> -fixed -132 </base>
   </FIXEDFLAGS>
@@ -1550,10 +1532,6 @@ for mct, etc.
     <append compile_threaded="TRUE"> -qopenmp </append>
     <append MODEL="driver">-L$(NETCDF_FORTRAN_PATH)/lib64</append>
   </LDFLAGS>
-  <FFLAGS_NOOPT>
-    <base> -O0 </base>
-    <append compile_threaded="TRUE"> -qopenmp </append>
-  </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base> -fixed -132 </base>
   </FIXEDFLAGS>
@@ -1598,9 +1576,6 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 </append>
     <append DEBUG="FALSE"> -O2 </append>
   </FFLAGS>
-  <FFLAGS_NOOPT>
-    <base> -O0 </base>
-  </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base> -fixed -132 </base>
   </FIXEDFLAGS>
@@ -1841,9 +1816,6 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <append> -qzerosize -qfree=f90 -qxlf2003=polymorphic</append>
     <append> -qspillsize=2500 -qextname=flush </append>
   </FFLAGS>
-  <FFLAGS_NOOPT>
-    <append> -O0 -g -qfree=f90  </append>
-  </FFLAGS_NOOPT>
   <LDFLAGS>
     <append>-lxlopt -lxl -lxlsmp -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
     <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 </append>
@@ -1909,9 +1881,6 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <FFLAGS>
     <append> -qzerosize -qfree=f90 -qxlf2003=polymorphic</append>
   </FFLAGS>
-  <FFLAGS_NOOPT>
-    <append> -O0 -g -qfree=f90  </append>
-  </FFLAGS_NOOPT>
   <LDFLAGS>
     <append>-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib64 -llapack</append>
   </LDFLAGS>
@@ -2237,9 +2206,6 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <LDFLAGS>
     <base>compile_threaded="TRUE"> -qopenmp</base>
   </LDFLAGS>
-  <FFLAGS_NOOPT>
-    <base>compile_threaded="TRUE"> -qopenmp</base>
-  </FFLAGS_NOOPT>
 </compiler>
 
 <compiler MACH="userdefined">
