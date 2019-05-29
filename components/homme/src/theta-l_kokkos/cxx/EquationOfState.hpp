@@ -2,7 +2,7 @@
 #define HOMMEXX_EQUATION_OF_STATE_HPP
 
 #include "Types.hpp"
-#include "ElementOps.hpp"
+#include "ColumnOps.hpp"
 #include "HybridVCoord.hpp"
 #include "KernelVariables.hpp"
 #include "PhysicalConstants.hpp"
@@ -52,7 +52,7 @@ public:
       //  3) exner = pnh/p_over_exner
 
       // To avoid temporaries, use exner to store some temporaries
-      m_elem_ops.compute_midpoint_delta(kv,phi_i,exner);
+      m_col_ops.compute_midpoint_delta(kv,phi_i,exner);
 
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
@@ -82,7 +82,7 @@ public:
       });
     } else {
       // Start with dpnh_dp_i = delta(pnh)/dp_i. Skip bc's, cause we do our own here
-      m_elem_ops.compute_interface_delta<CombineMode::Replace,BCType::DoNothing>(kv.team,pnh,dpnh_dp_i);
+      m_col_ops.compute_interface_delta<CombineMode::Replace,BCType::DoNothing>(kv.team,pnh,dpnh_dp_i);
 
       // Note: top and bottom need special treatment, so we may as well stop at NUM_LEV here (rather than NUM_LEV_P)
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
@@ -131,7 +131,7 @@ public:
     // Init phi on surface with phis
     phi_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd] = phis;
 
-    // Use ElementOps to do the scan sum
+    // Use ColumnOps to do the scan sum
     auto integrand_provider = [&](const int ilev)->Scalar {
       constexpr Real p0    = PhysicalConstants::p0;
       constexpr Real kappa = PhysicalConstants::kappa;
@@ -139,7 +139,7 @@ public:
       return (Rgas*vtheta_dp(ilev) * pow(p(ilev)/p0,kappa-1)) / p0;
     };
 
-    m_elem_ops.column_scan_mid_to_int<false>(kv,integrand_provider,phi_i);
+    m_col_ops.column_scan_mid_to_int<false>(kv,integrand_provider,phi_i);
   }
 
   // If exner is available, then use exner/p instead of (p/p0)^(k-1)/p0, to avoid dealing with exponentials
@@ -172,19 +172,19 @@ public:
     // Init phi on surface with phis
     phi_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd] = phis;
 
-    // Use ElementOps to do the scan sum
+    // Use ColumnOps to do the scan sum
     auto integrand_provider = [&](const int ilev)->Scalar {
       constexpr Real Rgas  = PhysicalConstants::Rgas;
       return Rgas*vtheta_dp(ilev)*exner(ilev)/p(ilev);
     };
 
-    m_elem_ops.column_scan_mid_to_int<false>(kv,integrand_provider,phi_i);
+    m_col_ops.column_scan_mid_to_int<false>(kv,integrand_provider,phi_i);
   }
 
 private:
 
   bool            m_theta_hydrostatic_mode;
-  ElementOps      m_elem_ops;
+  ColumnOps       m_col_ops;
   HybridVCoord    m_hvcoord;
 };
 

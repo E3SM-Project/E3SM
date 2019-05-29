@@ -35,7 +35,7 @@ TEST_CASE("eos", "eos") {
   constexpr auto LAST_LEV_P = ColInfo<NUM_INTERFACE_LEV>::LastPack;
   constexpr auto LAST_INTERFACE_VEC_IDX = ColInfo<NUM_INTERFACE_LEV>::LastVecEnd;
 
-  constexpr int num_elems = 1;
+  constexpr int num_elems = 2;
 
   // F90 and CXX views (and host mirrors of cxx views)
   HostViewManaged<Real*[NUM_PHYSICAL_LEV][NP][NP]>  vtheta_dp_f90("",num_elems);
@@ -78,7 +78,7 @@ TEST_CASE("eos", "eos") {
   Kokkos::deep_copy(hyai,hvcoord.hybrid_ai);
   const Real* hyai_ptr = hyai.data();
 
-  ElementOps elem_ops;
+  ColumnOps col_ops;
   EquationOfState eos;
 
   SECTION ("pnh_and_exner") {
@@ -129,7 +129,7 @@ TEST_CASE("eos", "eos") {
 
           // Compute p_i from dp with an exclusive, forward scan sum
           p_i(0)[0] = hvcoord.hybrid_ai0*hvcoord.ps0;
-          elem_ops.column_scan_mid_to_int<true>(kv,dp,p_i);
+          col_ops.column_scan_mid_to_int<true>(kv,dp,p_i);
 
           // Compute p from p_i and dp, as p(k) = p_i(k) + dp(k)/2
           Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
@@ -161,7 +161,7 @@ TEST_CASE("eos", "eos") {
           auto dp   = Homme::subview(dp_cxx,kv.ie,igp,jgp);
           auto dp_i = Homme::subview(dp_i_cxx,kv.ie,igp,jgp);
 
-          elem_ops.compute_interface_values(kv,dp,dp_i);
+          col_ops.compute_interface_values(kv,dp,dp_i);
 
           auto pnh = Homme::subview(pnh_cxx,kv.ie,igp,jgp);
           auto dpnh_dp_i = Homme::subview(dpnh_dp_i_cxx,kv.ie,igp,jgp);
@@ -229,10 +229,10 @@ TEST_CASE("eos", "eos") {
 
         // Compute p_i from dp with an exclusive, forward scan sum
         p_i(0)[0] = hvcoord.hybrid_ai(0)*hvcoord.ps0;
-        elem_ops.column_scan_mid_to_int<true>(kv,dp,p_i);
+        col_ops.column_scan_mid_to_int<true>(kv,dp,p_i);
 
         // Compute p from p_i
-        elem_ops.compute_midpoint_values(kv,p_i,p);
+        col_ops.compute_midpoint_values(kv,p_i,p);
 
         // Now compute the geopotential
         auto phis = phis_cxx(kv.ie,igp,jgp);

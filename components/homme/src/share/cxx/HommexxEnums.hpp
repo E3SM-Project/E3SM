@@ -118,6 +118,7 @@ enum class CombineMode {
 
 enum class BCType {
   Zero = 0,
+  Value,
   DoNothing
 };
 
