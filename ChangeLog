@@ -1,6 +1,37 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 5-29-2019
+Tag: cime5.6.17
+Answer Changes: None
+Tests:  Manually ran archive_metadata
+        By hand
+Dependencies:
+
+Brief Summary:
+    - Update archive_metadata strip to lstrip.
+    - Correct error messages from wget interface.
+    - Fix README
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+bacf1db Merge pull request #3122 from bertinia/maint-5.6_archive_metadata
+c050233 Merge pull request #3119 from jedwards4b/wget_message_fix
+bd7e7fd fix README
+
+Modified files: git diff --name-status [previous_tag]
+M       ChangeLog
+M       scripts/Tools/archive_metadata
+M       scripts/lib/CIME/Servers/wget.py
+M       tools/statistical_ensemble_test/README
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 5-15-2019
 Tag: cime5.6.16
 Answer Changes: climate-changing -- new datasets
