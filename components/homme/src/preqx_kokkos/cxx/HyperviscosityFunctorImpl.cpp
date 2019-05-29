@@ -50,18 +50,43 @@ HyperviscosityFunctorImpl (const SimulationParams&       params,
   m_sphere_ops.allocate_buffers(m_policy_first_laplace);
 }
 
-void HyperviscosityFunctorImpl::request_buffers (FunctorsBuffersManager& fbm) const {
-  fbm.request_concurrency(m_state.num_elems());
-  fbm.request_3d_midpoint_buffers(Buffers::num_3d_scalar_mid_buf, Buffers::num_3d_vector_mid_buf);
+int HyperviscosityFunctorImpl::requested_buffer_size () const {
+  constexpr int size_scalar =   NP*NP*NUM_LEV;
+  constexpr int size_vector = 2*NP*NP*NUM_LEV;
+
+  const int ne = m_geometry.num_elems();
+  const int nteams = get_num_concurrent_teams(m_policy_pre_exchange); 
+
+  return ne * (Buffers::num_scalars*size_scalar+Buffers::num_vectors*size_vector) +
+         nteams * (Buffers::num_tmp_scalars*size_scalar+Buffers::num_tmp_vectors*size_vector);
 }
 
 void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm) {
-  m_buffers.dptens     = fbm.get_3d_scalar_midpoint_buffer(0);
-  m_buffers.laplace_dp = fbm.get_3d_scalar_midpoint_buffer(1);
-  m_buffers.ttens      = fbm.get_3d_scalar_midpoint_buffer(2);
-  m_buffers.laplace_t  = fbm.get_3d_scalar_midpoint_buffer(3);
-  m_buffers.vtens      = fbm.get_3d_vector_midpoint_buffer(0);
-  m_buffers.laplace_v  = fbm.get_3d_vector_midpoint_buffer(1);
+  Errors::runtime_check(fbm.allocated_size()>requested_buffer_size(), "Error! Buffers size not sufficient.\n");
+
+  constexpr int size_scalar =   NP*NP*NUM_LEV;
+  constexpr int size_vector = 2*NP*NP*NUM_LEV;
+
+  Scalar* mem = reinterpret_cast<Scalar*>(fbm.get_memory());
+  const int ne = m_geometry.num_elems();
+  const int nteams = get_num_concurrent_teams(m_policy_pre_exchange); 
+
+  m_buffers.dptens     = decltype(m_buffers.dptens    )(mem,ne);
+  mem += size_scalar*ne;
+
+  m_buffers.laplace_dp = decltype(m_buffers.laplace_dp)(mem,nteams);
+  mem += size_scalar*nteams;
+
+  m_buffers.ttens      = decltype(m_buffers.ttens     )(mem,ne);
+  mem += size_scalar*ne;
+
+  m_buffers.laplace_t  = decltype(m_buffers.laplace_t )(mem,nteams);
+  mem += size_scalar*nteams;
+
+  m_buffers.vtens      = decltype(m_buffers.vtens     )(mem,ne);
+  mem += size_vector*ne;
+
+  m_buffers.laplace_v  = decltype(m_buffers.laplace_v )(mem,nteams);
 }
 
 void HyperviscosityFunctorImpl::init_boundary_exchanges () {

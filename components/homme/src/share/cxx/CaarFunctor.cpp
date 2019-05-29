@@ -56,9 +56,9 @@ CaarFunctor::~CaarFunctor ()
   // would be in the header file, where CaarFunctorImpl type is incomplete.
 }
 
-void CaarFunctor::request_buffers (FunctorsBuffersManager& fbm) const {
+int CaarFunctor::requested_buffer_size () const {
   assert (m_caar_impl);
-  m_caar_impl->request_buffers(fbm);
+  return m_caar_impl->requested_buffer_size();
 }
 
 void CaarFunctor::init_buffers(const FunctorsBuffersManager& fbm) {

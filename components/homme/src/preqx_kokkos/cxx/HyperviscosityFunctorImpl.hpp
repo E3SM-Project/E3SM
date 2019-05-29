@@ -52,16 +52,22 @@ class HyperviscosityFunctorImpl
   };
 
   struct Buffers {
-    static constexpr int num_3d_scalar_mid_buf = 4;
-    static constexpr int num_3d_vector_mid_buf = 2;
+    static constexpr int num_scalars = 2;
+    static constexpr int num_vectors = 1;
+    static constexpr int num_tmp_scalars = 2;
+    static constexpr int num_tmp_vectors = 1;
 
-    ExecViewUnmanaged<Scalar*   [NP][NP][NUM_LEV]>  ttens;
-    ExecViewUnmanaged<Scalar*   [NP][NP][NUM_LEV]>  dptens;
-    ExecViewUnmanaged<Scalar*[2][NP][NP][NUM_LEV]>  vtens;
-
+    // These are temporary buffers, thrown away at the end of an outer pfor iteration
+    // They are minimally sized so to not waste memory.
     ExecViewUnmanaged<Scalar*   [NP][NP][NUM_LEV]>  laplace_t;
     ExecViewUnmanaged<Scalar*   [NP][NP][NUM_LEV]>  laplace_dp;
     ExecViewUnmanaged<Scalar*[2][NP][NP][NUM_LEV]>  laplace_v;
+
+    // These are persistent buffers, meaning they survive between different parallel regions.
+    // They need to be sized to the number of elements, so they can store data for all elements.
+    ExecViewUnmanaged<Scalar*   [NP][NP][NUM_LEV]>  ttens;
+    ExecViewUnmanaged<Scalar*   [NP][NP][NUM_LEV]>  dptens;
+    ExecViewUnmanaged<Scalar*[2][NP][NP][NUM_LEV]>  vtens;
   };
 
 public:
@@ -76,7 +82,7 @@ public:
   HyperviscosityFunctorImpl (const SimulationParams&       params,
                              const Elements&               elements);
 
-  void request_buffers (      FunctorsBuffersManager& fbm) const;
+  int requested_buffer_size () const;
   void init_buffers    (const FunctorsBuffersManager& fbm);
   void init_boundary_exchanges();
 
@@ -194,10 +200,6 @@ public:
     });
     kv.team_barrier();
 
-    // Alias these for more descriptive names
-    auto &laplace_v = m_buffers.laplace_v;
-    auto &laplace_t = m_buffers.laplace_t;
-    auto &laplace_dp = m_buffers.laplace_dp;
     // laplace subfunctors cannot be called from a TeamThreadRange or
     // ThreadVectorRange
     constexpr int NUM_BIHARMONIC_PHYSICAL_LEVELS = 3;
@@ -211,21 +213,21 @@ public:
             // input
             Homme::subview(m_state.m_v, kv.ie, m_data.np1),
             // output
-            Homme::subview(laplace_v, kv.ie));
+            Homme::subview(m_buffers.laplace_v, kv.team_idx));
 
       m_sphere_ops.laplace_simple<NUM_LEV,NUM_BIHARMONIC_LEV>(
             kv,
             // input
             Homme::subview(m_state.m_t, kv.ie, m_data.np1),
             // output
-            Homme::subview(laplace_t, kv.ie));
+            Homme::subview(m_buffers.laplace_t, kv.team_idx));
 
       m_sphere_ops.laplace_simple<NUM_LEV,NUM_BIHARMONIC_LEV>(
             kv,
             // input
             Homme::subview(m_state.m_dp3d, kv.ie, m_data.np1),
             // output
-            Homme::subview(laplace_dp, kv.ie));
+            Homme::subview(m_buffers.laplace_dp, kv.team_idx));
     }//if nu_top>0
     kv.team_barrier();
 
@@ -246,18 +248,18 @@ public:
                            [&](const int ilev) {
           m_buffers.vtens(kv.ie, 0, igp, jgp, ilev) +=
               m_nu_scale_top[ilev] *
-              laplace_v(kv.ie, 0, igp, jgp, ilev);
+              m_buffers.laplace_v(kv.team_idx, 0, igp, jgp, ilev);
           m_buffers.vtens(kv.ie, 1, igp, jgp, ilev) +=
               m_nu_scale_top[ilev] *
-              laplace_v(kv.ie, 1, igp, jgp, ilev);
+              m_buffers.laplace_v(kv.team_idx, 1, igp, jgp, ilev);
 
           m_buffers.ttens(kv.ie, igp, jgp, ilev) +=
               m_nu_scale_top[ilev] *
-              laplace_t(kv.ie, igp, jgp, ilev);
+              m_buffers.laplace_t(kv.team_idx, igp, jgp, ilev);
 
           m_buffers.dptens(kv.ie, igp, jgp, ilev) +=
               m_nu_scale_top[ilev] *
-              laplace_dp(kv.ie, igp, jgp, ilev);
+              m_buffers.laplace_dp(kv.team_idx, igp, jgp, ilev);
         });
       }
       // While for T and v we exchange the tendencies, for dp3d we exchange the updated state.

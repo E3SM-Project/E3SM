@@ -17,8 +17,8 @@ void EulerStepFunctor::reset (const SimulationParams& params) {
   p_->reset(params);
 }
 
-void EulerStepFunctor::request_buffers (FunctorsBuffersManager& fbm) {
-  p_->request_buffers(fbm);
+int EulerStepFunctor::requested_buffer_size () const {
+  return p_->requested_buffer_size();
 }
 void EulerStepFunctor::init_buffers (const FunctorsBuffersManager& fbm) {
   p_->init_buffers(fbm);

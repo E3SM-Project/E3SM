@@ -33,9 +33,9 @@ HyperviscosityFunctor::~HyperviscosityFunctor ()
   // would be in the header file, where HyperviscosityFunctorImpl type is incomplete.
 }
 
-void HyperviscosityFunctor::request_buffers (FunctorsBuffersManager& fbm) const {
+int HyperviscosityFunctor::requested_buffer_size () const {
   assert (m_hvf_impl);
-  m_hvf_impl->request_buffers(fbm);
+  return m_hvf_impl->requested_buffer_size();
 }
 
 void HyperviscosityFunctor::init_buffers (const FunctorsBuffersManager& fbm) {

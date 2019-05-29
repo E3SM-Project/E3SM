@@ -322,10 +322,10 @@ void init_functors_c ()
 
   // Make the functor request their buffer to the buffers manager
   // Note: diagnostics also needs buffers
-  caar.request_buffers(fbm);
-  esf.request_buffers(fbm);
-  hvf.request_buffers(fbm);
-  diag.request_buffers(fbm);
+  fbm.request_size(caar.requested_buffer_size());
+  fbm.request_size(esf.requested_buffer_size());
+  fbm.request_size(hvf.requested_buffer_size());
+  fbm.request_size(diag.requested_buffer_size());
 
   // Allocate the buffers in the FunctorsBuffersManager, then tell the functors to grab their buffers
   fbm.allocate();
@@ -379,7 +379,7 @@ void init_diagnostics_c (F90Ptr& elem_state_q_ptr, F90Ptr& elem_accum_qvar_ptr, 
   auto& params  = Context::singleton().get<SimulationParams>();
   auto& hvcoord = Context::singleton().get<HybridVCoord>();
   
-  diagnostics.init(elements.m_state, hvcoord, params.theta_hydrostatic_mode,
+  diagnostics.init(elements.m_state, elements.m_geometry, hvcoord, params.theta_hydrostatic_mode,
                    elem_state_q_ptr, elem_accum_qvar_ptr, elem_accum_qmass_ptr, elem_accum_q1mass_ptr,
                    elem_accum_iener_ptr, elem_accum_kener_ptr, elem_accum_pener_ptr);
 }

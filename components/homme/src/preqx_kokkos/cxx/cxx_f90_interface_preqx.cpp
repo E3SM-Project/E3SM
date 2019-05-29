@@ -277,9 +277,9 @@ void init_functors_c ()
   Context::singleton().create<VerticalRemapManager>();
 
   // Ask the functors to request buffers to the buffers manager
-  caar.request_buffers(fbm);
-  esf.request_buffers(fbm);
-  hvf.request_buffers(fbm);
+  fbm.request_size(caar.requested_buffer_size());
+  fbm.request_size(esf.requested_buffer_size());
+  fbm.request_size(hvf.requested_buffer_size());
 
   // Allocate the buffers
   fbm.allocate();

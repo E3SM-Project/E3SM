@@ -96,32 +96,77 @@ struct CaarFunctorImpl {
     m_sphere_ops.allocate_buffers(m_policy);
   }
 
-  void request_buffers (FunctorsBuffersManager& fbm) const {
+  int requested_buffer_size () const {
+
     // Ask the buffers manager to allocate enough buffers to satisfy Caar's needs
-    fbm.request_concurrency(get_num_concurrent_teams(m_policy));
-    fbm.request_2d_buffers(Buffers::num_2d_scalar_buf, 0);
-    fbm.request_3d_midpoint_buffers(Buffers::num_3d_scalar_mid_buf, Buffers::num_3d_vector_mid_buf);
-    fbm.request_3d_interface_buffers(Buffers::num_3d_scalar_int_buf, 0);
+    const int nteams = get_num_concurrent_teams(m_policy);
+
+    // Do 2d scalar and 3d interface scalar right away
+    int size = Buffers::num_2d_scalar_buf*NP*NP*nteams +
+               Buffers::num_3d_scalar_int_buf*NP*NP*NUM_LEV_P*VECTOR_SIZE*nteams;
+
+    // Add all 3d midpoints quantities
+    constexpr int size_scalar =   NP*NP*NUM_LEV*VECTOR_SIZE;
+    constexpr int size_vector = 2*NP*NP*NUM_LEV*VECTOR_SIZE;
+    size += nteams*(size_scalar*Buffers::num_3d_scalar_mid_buf + size_vector*Buffers::num_3d_vector_mid_buf);
+
+    return size;
   }
 
   void init_buffers (const FunctorsBuffersManager& fbm) {
-    m_buffers.sdot_sum = fbm.get_2d_scalar_buffer(0);
+    Errors::runtime_check(fbm.allocated_size()>requested_buffer_size(), "Error! Buffers size not sufficient.\n");
 
-    m_buffers.pressure         = fbm.get_3d_scalar_midpoint_buffer(0);
-    m_buffers.temperature_virt = fbm.get_3d_scalar_midpoint_buffer(1);
-    m_buffers.ephi             = fbm.get_3d_scalar_midpoint_buffer(2);
-    m_buffers.div_vdp          = fbm.get_3d_scalar_midpoint_buffer(3);
-    m_buffers.vorticity        = fbm.get_3d_scalar_midpoint_buffer(4);
-    m_buffers.t_vadv           = fbm.get_3d_scalar_midpoint_buffer(5);
-    m_buffers.omega_p          = fbm.get_3d_scalar_midpoint_buffer(6);
+    const int nteams = get_num_concurrent_teams(m_policy);
 
-    m_buffers.pressure_grad    = fbm.get_3d_vector_midpoint_buffer(0);
-    m_buffers.energy_grad      = fbm.get_3d_vector_midpoint_buffer(1);
-    m_buffers.vdp              = fbm.get_3d_vector_midpoint_buffer(2);
-    m_buffers.temperature_grad = fbm.get_3d_vector_midpoint_buffer(3);
-    m_buffers.v_vadv           = fbm.get_3d_vector_midpoint_buffer(4);
+    // Do only Real* field first
+    Real* r_mem = fbm.get_memory();
 
-    m_buffers.eta_dot_dpdn = fbm.get_3d_scalar_interface_buffer(0);
+    m_buffers.sdot_sum = decltype(m_buffers.sdot_sum)(r_mem,nteams);
+    r_mem += nteams*NP*NP;
+
+    // Do 3d fields
+    Scalar* mem = reinterpret_cast<Scalar*>(r_mem);
+
+    constexpr int size_scalar =   NP*NP*NUM_LEV;
+    constexpr int size_vector = 2*NP*NP*NUM_LEV;
+
+    m_buffers.pressure         = decltype(m_buffers.pressure        )(mem,nteams);
+    mem += nteams*size_scalar;
+
+    m_buffers.temperature_virt = decltype(m_buffers.temperature_virt)(mem,nteams);
+    mem += nteams*size_scalar;
+
+    m_buffers.ephi             = decltype(m_buffers.ephi            )(mem,nteams);
+    mem += nteams*size_scalar;
+
+    m_buffers.div_vdp          = decltype(m_buffers.div_vdp         )(mem,nteams);
+    mem += nteams*size_scalar;
+
+    m_buffers.vorticity        = decltype(m_buffers.vorticity       )(mem,nteams);
+    mem += nteams*size_scalar;
+
+    m_buffers.t_vadv           = decltype(m_buffers.t_vadv          )(mem,nteams);
+    mem += nteams*size_scalar;
+
+    m_buffers.omega_p          = decltype(m_buffers.omega_p         )(mem,nteams);
+    mem += nteams*size_scalar;
+
+    m_buffers.pressure_grad    = decltype(m_buffers.pressure_grad   )(mem,nteams);
+    mem += nteams*size_vector;
+
+    m_buffers.energy_grad      = decltype(m_buffers.energy_grad     )(mem,nteams);
+    mem += nteams*size_vector;
+
+    m_buffers.vdp              = decltype(m_buffers.vdp             )(mem,nteams);
+    mem += nteams*size_vector;
+
+    m_buffers.temperature_grad = decltype(m_buffers.temperature_grad)(mem,nteams);
+    mem += nteams*size_vector;
+
+    m_buffers.v_vadv           = decltype(m_buffers.v_vadv          )(mem,nteams);
+    mem += nteams*size_vector;
+
+    m_buffers.eta_dot_dpdn     = decltype(m_buffers.eta_dot_dpdn    )(mem,nteams);
 
     m_buffers.kernel_start_times = ExecViewManaged<clock_t*>("kernel start times",m_state.num_elems());
     m_buffers.kernel_end_times   = ExecViewManaged<clock_t*>("kernel end times",m_state.num_elems());

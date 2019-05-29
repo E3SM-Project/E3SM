@@ -4,8 +4,9 @@
 #include "Types.hpp"
 
 #include "DiagnosticsBase.hpp"
+#include "ElementsGeometry.hpp"
 #include "ElementsState.hpp"
-#include "ElementOps.hpp"
+#include "ColumnOps.hpp"
 #include "EquationOfState.hpp"
 #include "HybridVCoord.hpp"
 #include "KernelVariables.hpp"
@@ -22,9 +23,7 @@ class DiagnosticsTheta : public DiagnosticsBase
 private:
   struct Buffers {
     static constexpr int num_3d_scalar_mid_buf = 4;
-    static constexpr int num_3d_vector_mid_buf = 0;
     static constexpr int num_3d_scalar_int_buf = 1;
-    static constexpr int num_3d_vector_int_buf = 0;
 
     ExecViewUnmanaged<Scalar *[NP][NP][NUM_LEV]>    pnh;
     ExecViewUnmanaged<Scalar *[NP][NP][NUM_LEV]>    exner;
@@ -35,14 +34,14 @@ private:
   };
 
 public:
-  void init (const ElementsState state,
+  void init (const ElementsState& state, const ElementsGeometry& geometry,
              const HybridVCoord& hvcoord, const bool theta_hydrostatic_mode,
              F90Ptr& elem_state_q_ptr,
              F90Ptr& elem_accum_qvar_ptr,  F90Ptr& elem_accum_qmass_ptr,
              F90Ptr& elem_accum_q1mass_ptr,F90Ptr& elem_accum_iener_ptr,
              F90Ptr& elem_accum_kener_ptr, F90Ptr& elem_accum_pener_ptr);
 
-  void request_buffers (FunctorsBuffersManager& fbm) const;
+  int requested_buffer_size () const;
   void init_buffers (const FunctorsBuffersManager& fbm);
 
   void prim_energy_halftimes (const bool before_advance, const int ivar);
@@ -117,11 +116,13 @@ public:
                                      Homme::subview(exner,igp,jgp));
 
       if (m_theta_hydrostatic_mode) {
-        m_elem_ops.compute_phi_i(kv.team, vtheta_dp, exner, pnh, phi_i);
+        m_eos.compute_phi_i(kv.team,
+                            Homme::subview(m_geometry.m_phis,kv.ie),
+                            vtheta_dp, exner, pnh, phi_i);
       }
 
       // Compute phi at midpoints
-      m_elem_ops.compute_midpoint_values(kv,Homme::subview(phi_i,igp,jgp),
+      m_col_ops.compute_midpoint_values(kv,Homme::subview(phi_i,igp,jgp),
                                             Homme::subview(phi,  igp,jgp));
 
       auto& KEner = m_KEner(kv.ie,m_ivar,igp,jgp);
@@ -182,7 +183,8 @@ private:
   HybridVCoord      m_hvcoord;
   EquationOfState   m_eos;
   ElementsState     m_state;
-  ElementOps        m_elem_ops;
+  ElementsGeometry  m_geometry;
+  ColumnOps         m_col_ops;
   Buffers           m_buffers;
 
   int t1,t1_qdp;

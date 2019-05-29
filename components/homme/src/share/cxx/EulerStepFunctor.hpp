@@ -25,7 +25,7 @@ public:
 
   void reset(const SimulationParams& params);
 
-  void request_buffers (      FunctorsBuffersManager& fbm);
+  int requested_buffer_size () const;
   void init_buffers    (const FunctorsBuffersManager& fbm);
   void init_boundary_exchanges();
 

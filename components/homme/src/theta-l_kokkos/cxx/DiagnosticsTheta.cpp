@@ -1,7 +1,6 @@
 #include "DiagnosticsTheta.hpp"
 
 #include "Context.hpp"
-#include "ElementsState.hpp"
 #include "FunctorsBuffersManager.hpp"
 #include "HybridVCoord.hpp"
 #include "PhysicalConstants.hpp"
@@ -15,7 +14,7 @@
 namespace Homme
 {
 
-void DiagnosticsTheta::init (const ElementsState state, 
+void DiagnosticsTheta::init (const ElementsState& state, const ElementsGeometry& geometry,
                              const HybridVCoord& hvcoord, const bool theta_hydrostatic_mode,
                              F90Ptr& elem_state_q_ptr,
                              F90Ptr& elem_accum_qvar_ptr,  F90Ptr& elem_accum_qmass_ptr,
@@ -37,17 +36,30 @@ void DiagnosticsTheta::init (const ElementsState state,
   m_PEner  = ExecViewManaged<Real*[4][NP][NP]>("Potential Energy", m_num_elems);
 }
 
-void DiagnosticsTheta::request_buffers (FunctorsBuffersManager& fbm) const {
-  fbm.request_concurrency(get_num_concurrent_teams(Homme::get_default_team_policy<ExecSpace,EnergyHalfTimesTag>(m_num_elems)));
-  fbm.request_3d_midpoint_buffers(Buffers::num_3d_scalar_mid_buf,Buffers::num_3d_vector_mid_buf);
-  fbm.request_3d_interface_buffers(Buffers::num_3d_scalar_int_buf,Buffers::num_3d_vector_int_buf);
+int DiagnosticsTheta::requested_buffer_size () const {
+  const int nteams = get_num_concurrent_teams(Homme::get_default_team_policy<ExecSpace,EnergyHalfTimesTag>(m_num_elems));
+
+  constexpr int size_mid_scalar = NP*NP*NUM_LEV*VECTOR_SIZE;
+  constexpr int size_int_scalar = NP*NP*NUM_LEV_P*VECTOR_SIZE;
+  return nteams * (Buffers::num_3d_scalar_mid_buf*size_mid_scalar +
+                   Buffers::num_3d_scalar_mid_buf*size_int_scalar);
 }
 
 void DiagnosticsTheta::init_buffers (const FunctorsBuffersManager& fbm) {
-  m_buffers.pnh    = fbm.get_3d_scalar_midpoint_buffer(0);
-  m_buffers.exner  = fbm.get_3d_scalar_midpoint_buffer(1);
-  m_buffers.phi    = fbm.get_3d_scalar_midpoint_buffer(2);
-  m_buffers.dp_ref = fbm.get_3d_scalar_midpoint_buffer(3);
+  Scalar* mem = reinterpret_cast<Scalar*>(fbm.get_memory());
+
+  const int nteams = get_num_concurrent_teams(Homme::get_default_team_policy<ExecSpace,EnergyHalfTimesTag>(m_num_elems));
+
+  m_buffers.pnh    = decltype(m_buffers.pnh)(mem,nteams);
+  mem += nteams*NP*NP*NUM_LEV;
+
+  m_buffers.exner  = decltype(m_buffers.exner)(mem,nteams);
+  mem += nteams*NP*NP*NUM_LEV;
+
+  m_buffers.phi    = decltype(m_buffers.phi)(mem,nteams);
+  mem += nteams*NP*NP*NUM_LEV;
+
+  m_buffers.dp_ref = decltype(m_buffers.dp_ref)(mem,nteams);
 }
 
 void DiagnosticsTheta::prim_energy_halftimes (const bool before_advance, const int ivar)

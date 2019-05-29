@@ -138,14 +138,30 @@ public:
     m_sphere_ops.allocate_buffers(Homme::get_default_team_policy<ExecSpace>(m_geometry.num_elems()*m_data.qsize));
   }
 
-  void request_buffers (FunctorsBuffersManager& fbm) const {
-    fbm.request_concurrency(m_geometry.num_elems());
-    fbm.request_3d_midpoint_buffers(Buffers::num_3d_scalar_mid_buf, Buffers::num_3d_vector_mid_buf);
+  int requested_buffer_size () const {
+    constexpr int size_scalar =   NP*NP*NUM_LEV*VECTOR_SIZE;
+    constexpr int size_vector = 2*NP*NP*NUM_LEV*VECTOR_SIZE;
+    constexpr int num_scalars = Buffers::num_3d_scalar_mid_buf;
+    constexpr int num_vectors = Buffers::num_3d_vector_mid_buf;
+
+    return m_geometry.num_elems() * (num_scalars*size_scalar + num_vectors*size_vector);
   }
+
   void init_buffers (const FunctorsBuffersManager& fbm) {
-    m_buffers.dp      = fbm.get_3d_scalar_midpoint_buffer(0);
-    m_buffers.dpdissk = fbm.get_3d_scalar_midpoint_buffer(1);
-    m_buffers.vstar   = fbm.get_3d_vector_midpoint_buffer(0);
+    Errors::runtime_check(fbm.allocated_size()>requested_buffer_size(), "Error! Buffers size not sufficient.\n");
+
+    constexpr int size_scalar =   NP*NP*NUM_LEV;
+    const int ne = m_geometry.num_elems();
+
+    Scalar* mem = reinterpret_cast<Scalar*>(fbm.get_memory());
+
+    m_buffers.dp      = decltype(m_buffers.dp)(mem,ne);
+    mem += size_scalar*ne;
+
+    m_buffers.dpdissk = decltype(m_buffers.dpdissk)(mem,ne);
+    mem += size_scalar*ne;
+
+    m_buffers.vstar   = decltype(m_buffers.vstar)(mem,ne);
   }
 
   void init_boundary_exchanges () {

@@ -25,7 +25,7 @@ public:
 
   ~HyperviscosityFunctor ();
 
-  void request_buffers (FunctorsBuffersManager& fbm) const;
+  int requested_buffer_size () const;
   void init_buffers    (const FunctorsBuffersManager& fbm);
 
   void init_boundary_exchanges();
