@@ -131,7 +131,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: &
         latCell, lonCell, bottomDepth, surfaceBuoyancyForcing, surfaceFrictionVelocity, fCell, &
         boundaryLayerDepth, ssh, indexBoundaryLayerDepth, dcEdge, dvEdge, areaCell, iceFraction, &
-        boundaryLayerDepthSmooth
+        boundaryLayerDepthSmooth, windSpeed10m
 
       real (kind=RKIND), dimension(:,:), pointer :: &
         vertViscTopOfCell, vertDiffTopOfCell, layerThickness, &
@@ -166,6 +166,8 @@ contains
       logical :: bulkRichardsonFlag
 
       real (kind=RKIND), pointer :: config_cvmix_background_viscosity, config_cvmix_background_diffusion
+      real (kind=RKIND) :: langmuirEnhancementFactor, langmuirNumber
+      logical, pointer :: config_cvmix_kpp_use_theory_wave
 
       !-----------------------------------------------------------------
       !
@@ -211,6 +213,7 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_cvmix_use_BLD_smoothing', config_cvmix_use_BLD_smoothing)
       call mpas_pool_get_config(ocnConfigs, 'configure_cvmix_kpp_minimum_OBL_under_sea_ice', &
                                 configure_cvmix_kpp_minimum_OBL_under_sea_ice)
+      call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_use_theory_wave', config_cvmix_kpp_use_theory_wave)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       call mpas_pool_get_dimension(meshPool, 'nVertLevelsP1', nVertLevelsP1)
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
@@ -262,6 +265,7 @@ contains
       ! set pointers for fields related to ocean forcing state
       !
       call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
+      call mpas_pool_get_array(forcingPool, 'windSpeed10m', windSpeed10m)
 
       !
       ! set pointers for fields related forcing at ocean surface
@@ -462,6 +466,24 @@ contains
               k=min(maxLevelCell(iCell)+1,nVertLevels)
               Nsqr_iface(k:maxLevelCell(iCell)+1) = Nsqr_iface(k-1)
 
+              ! compute Langmuir number and Langmuir enhancement factor
+              ! TODO: theory-wave is the only option to get Langmuir number and enhancement factor for now <06-09-18, Qing Li> !
+              if (config_cvmix_kpp_use_theory_wave .and. iceFraction(iCell) .lt. 0.05_RKIND) then
+                 langmuirNumber =  sqrt(surfaceFrictionVelocity(iCell) / &
+                         cvmix_kpp_ustokes_SL_model(windSpeed10m(iCell), &
+                                                    boundaryLayerDepth(iCell), &
+                                                    cvmix_global_params))
+                 langmuirEnhancementFactor =  &
+                         cvmix_kpp_EFactor_model(windSpeed10m(iCell), &
+                                                 surfaceFrictionVelocity(iCell), &
+                                                 boundaryLayerDepth(iCell), &
+                                                 cvmix_global_params)
+              else
+                 ! arbitrarily large Langmuir number
+                 langmuirNumber = 1.e10_RKIND
+                 langmuirEnhancementFactor = 1.0_RKIND
+              end if
+
               ! compute bulk Richardson number
               ! assume boundary layer depth is at bottom of every kIndexOBL cell
               bulkRichardsonNumberStop = config_cvmix_kpp_stop_OBL_search * config_cvmix_kpp_criticalBulkRichardsonNumber
@@ -546,7 +568,12 @@ contains
                    delta_buoy_cntr = bulkRichardsonNumberBuoy(1:maxLevelCell(iCell),iCell), &
                    delta_Vsqr_cntr = bulkRichardsonNumberShear(1:maxLevelCell(iCell),iCell), &
                    ws_cntr = turbulentScalarVelocityScale(:), &
-                   Nsqr_iface = Nsqr_iface(1:maxLevelCell(iCell)+1) )
+                   Nsqr_iface = Nsqr_iface(1:maxLevelCell(iCell)+1), &
+                   EFactor = langmuirEnhancementFactor, &
+                   LaSL = langmuirNumber, &
+                   bfsfc = cvmix_variables%SurfaceBuoyancyForcing, &
+                   ustar = cvmix_variables%SurfaceFriction )
+              ! TODO: the surface buoyancy forcing here does not include penetrative solar radiation? <05-09-18, Qing Li> !
 
               ! each level of bulk Richardson is computed as if OBL resided at bottom of that level
 
@@ -611,8 +638,19 @@ contains
                           zt_cntr = cvmix_variables%zt_cntr(1:maxLevelCell(iCell)),    &
                           OBL_depth = boundaryLayerDepth(iCell) )
 
+            ! update Langmuir enhancement factor
+            ! TODO: theory-wave is the only option to get Langmuir number and enhancement factor for now <06-09-18, Qing Li> !
+            if (config_cvmix_kpp_use_theory_wave .and. iceFraction(iCell) .lt. 0.05_RKIND) then
+               langmuirEnhancementFactor =  &
+                       cvmix_kpp_EFactor_model(windSpeed10m(iCell), &
+                                               surfaceFrictionVelocity(iCell), &
+                                               boundaryLayerDepth(iCell), &
+                                               cvmix_global_params)
+            else
+               langmuirEnhancementFactor = 1.0_RKIND
+            end if
 
-             !           call mpas_timer_start('cvmix coeffs kpp', .false.)
+!           call mpas_timer_start('cvmix coeffs kpp', .false.)
             call cvmix_coeffs_kpp(                                              &
                           Mdiff_out = cvmix_variables % Mdiff_iface(1:maxLevelCell(iCell)+1),       &
                           Tdiff_out = cvmix_variables % Tdiff_iface(1:maxLevelCell(iCell)+1),       &
@@ -629,7 +667,8 @@ contains
                           surf_fric = cvmix_variables%SurfaceFriction,                      &
                           surf_buoy = cvmix_variables%SurfaceBuoyancyForcing,               &
                           nlev = maxLevelCell(iCell),                                  &
-                          max_nlev = nVertLevels)
+                          max_nlev = nVertLevels,                                      &
+                          Langmuir_EFactor = langmuirEnhancementFactor )
 !           call mpas_timer_stop('cvmix coeffs kpp')
 
             ! intent out of BoundaryLayerDepth is boundary layer depth measured in meters and vertical index
@@ -738,7 +777,7 @@ contains
              boundaryLayerDepth(iCell) = boundaryLayerDepthSmooth(iCell)
           enddo
          !$omp end do
-     
+
        endif !stage 1 BLD smoothing
       end do ! kpp_stage
       call mpas_timer_stop('cvmix cell loop')
@@ -838,6 +877,11 @@ contains
       real (kind=RKIND), pointer :: config_cvmix_kpp_criticalBulkRichardsonNumber, &
                                     config_cvmix_kpp_surface_layer_extent, &
                                     config_cvmix_kpp_stop_OBL_search
+
+      ! Langmuir turbulence
+      character (len=StrKIND), pointer :: config_cvmix_kpp_langmuir_mixing_opt, &
+                                          config_cvmix_kpp_langmuir_entrainment_opt
+
       !
       ! assume no errors during initialization and set to 1 when error is encountered
       !
@@ -874,6 +918,9 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_cvmix_convective_diffusion', config_cvmix_convective_diffusion)
       call mpas_pool_get_config(ocnConfigs, 'config_cvmix_convective_viscosity', config_cvmix_convective_viscosity)
       call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_use_enhanced_diff', config_cvmix_kpp_use_enhanced_diff)
+      call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_langmuir_mixing_opt', config_cvmix_kpp_langmuir_mixing_opt)
+      call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_langmuir_entrainment_opt', &
+                                config_cvmix_kpp_langmuir_entrainment_opt)
       cvmixOn = config_use_cvmix
       cvmixBackgroundOn = config_use_cvmix_background
       backgroundVisc = config_cvmix_background_viscosity
@@ -902,6 +949,7 @@ contains
       !
       call cvmix_put(cvmix_global_params,  'max_nlev', nVertLevels)
       call cvmix_put(cvmix_global_params,  'prandtl',  config_cvmix_prandtl_number)
+      call cvmix_put(cvmix_global_params,  'Gravity',  gravity)
 
       !
       ! initialize background mixing
@@ -986,6 +1034,29 @@ contains
            return
         endif
 
+        if (trim(config_cvmix_kpp_langmuir_mixing_opt) .ne. "NONE" .and. &
+            trim(config_cvmix_kpp_langmuir_mixing_opt) .ne. "LWF16" .and. &
+            trim(config_cvmix_kpp_langmuir_mixing_opt) .ne. "RWHGK16") then
+           call mpas_log_write( &
+              "Unknown value for config_cvmix_kpp_langmuir_mixing_opt, supported values are:" // &
+              "         NONE or LWF16 or RWHGK16", &
+              MPAS_LOG_CRIT)
+           err = 1
+           return
+        endif
+
+        if (trim(config_cvmix_kpp_langmuir_entrainment_opt) .ne. "NONE" .and. &
+            trim(config_cvmix_kpp_langmuir_entrainment_opt) .ne. "LWF16" .and. &
+            trim(config_cvmix_kpp_langmuir_entrainment_opt) .ne. "LF17" .and. &
+            trim(config_cvmix_kpp_langmuir_entrainment_opt) .ne. "RWHGK16") then
+           call mpas_log_write( &
+              "Unknown value for config_cvmix_kpp_langmuir_entrainment_opt, supported values are:" // &
+              "         NONE or LWF16 or LF17 or RWHGK16", &
+              MPAS_LOG_CRIT)
+           err = 1
+           return
+        endif
+
         call cvmix_init_kpp ( &
                ri_crit = config_cvmix_kpp_criticalBulkRichardsonNumber, &
                interp_type = config_cvmix_kpp_interpolationOMLType, &
@@ -994,6 +1065,8 @@ contains
                lMonOb = config_cvmix_kpp_MonObOBL, &
                MatchTechnique = config_cvmix_kpp_matching, &
                surf_layer_ext = config_cvmix_kpp_surface_layer_extent, &
+               langmuir_mixing_str = config_cvmix_kpp_langmuir_mixing_opt, &
+               langmuir_entrainment_str = config_cvmix_kpp_langmuir_entrainment_opt, &
                lenhanced_diff = config_cvmix_kpp_use_enhanced_diff)
       endif
 
