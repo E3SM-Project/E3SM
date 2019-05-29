@@ -23,6 +23,11 @@ static Int compare (const std::string& label, const Scalar* a,
     den = std::max(den, std::abs(a[i]));
   Real worst = 0;
   for (Int i = 0; i < n; ++i) {
+    if (std::isnan(a[i]) || std::isinf(a[i]) ||
+        std::isnan(b[i]) || std::isinf(b[i])) {
+      ++nerr;
+      continue;
+    }
     const auto num = std::abs(a[i] - b[i]);
     if (num > tol*den) {
       ++nerr;
