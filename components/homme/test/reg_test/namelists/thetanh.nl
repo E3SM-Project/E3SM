@@ -25,10 +25,10 @@
   hypervis_order    = 2                         ! 2 = hyperviscosity
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
   moisture          = '${HOMME_TEST_MOISTURE}'
-  theta_hydrostatic_mode = .false.
   dcmip16_prec_type = 0                         ! 0=kessler,     1= reed-jablonowski
   dcmip16_pbl_type  = 0                         ! 0=basic pbl,   1= bryan pbl
   vert_remap_q_alg  = 1
+  theta_hydrostatic_mode = .${HOMME_TEST_HYDROSTATIC_MODE}.
 /
 &vert_nl
   vform         = "ccm"

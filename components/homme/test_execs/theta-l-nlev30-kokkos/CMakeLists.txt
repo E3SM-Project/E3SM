@@ -19,6 +19,7 @@ SET (HOMME_TEST_QSIZE 4)
 SET (HOMME_TEST_RSPLIT 2)
 SET (HOMME_TEST_QSPLIT 2)
 SET (HOMME_TEST_MOISTURE dry)
+SET (HOMME_TEST_HYDROSTATIC_MODE "false")
 
 # Copy the needed input files to the binary dir
 CONFIGURE_FILE (${CMAKE_SOURCE_DIR}/test/reg_test/namelists/thetanh.nl
