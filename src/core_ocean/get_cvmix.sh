@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ## CVMix Tag for build
-CVMIX_TAG=v0.84-beta
+CVMIX_TAG=v0.94b-beta
 ## Subdirectory in CVMix repo to use
 CVMIX_SUBDIR=src/shared
 
@@ -38,36 +38,36 @@ fi
 
 # CVmix Doesn't exist, need to acquire souce code
 # If might have been flushed from the above if, in the case where it was svn or wget that acquired the source.
-if [ ! -d cvmix ]; then 
+if [ ! -d cvmix ]; then
 	if [ -d .cvmix_all ]; then
 		rm -rf .cvmix_all
 	fi
 
-	if [ "${GIT}" != "" ]; then 
+	if [ "${GIT}" != "" ]; then
 		echo " ** Using git to acquire cvmix source. ** "
 		PROTOCOL="git ssh"
 		git clone ${CVMIX_GIT_SSH_ADDRESS} .cvmix_all &> /dev/null
-		if [ -d .cvmix_all ]; then 
-			cd .cvmix_all 
+		if [ -d .cvmix_all ]; then
+			cd .cvmix_all
 			git checkout ${CVMIX_TAG} &> /dev/null
-			cd ../ 
-			ln -sf .cvmix_all/${CVMIX_SUBDIR} cvmix 
-		else 
+			cd ../
+			ln -sf .cvmix_all/${CVMIX_SUBDIR} cvmix
+		else
 			git clone ${CVMIX_GIT_HTTP_ADDRESS} .cvmix_all &> /dev/null
 			PROTOCOL="git http"
-			if [ -d .cvmix_all ]; then 
-				cd .cvmix_all 
+			if [ -d .cvmix_all ]; then
+				cd .cvmix_all
 				git checkout ${CVMIX_TAG} &> /dev/null
-				cd ../ 
-				ln -sf .cvmix_all/${CVMIX_SUBDIR} cvmix 
-			fi 
-		fi 
-	elif [ "${SVN}" != "" ]; then 
+				cd ../
+				ln -sf .cvmix_all/${CVMIX_SUBDIR} cvmix
+			fi
+		fi
+	elif [ "${SVN}" != "" ]; then
 		echo " ** Using svn to acquire cvmix source. ** "
 		PROTOCOL="svn"
 		svn co ${CVMIX_SVN_ADDRESS}/${CVMIX_TAG} .cvmix_all &> /dev/null
 		ln -sf .cvmix_all/${CVMIX_SUBDIR} cvmix
-	else 
+	else
 		echo " ** Using wget to acquire cvmix source. ** "
 		PROTOCOL="svn"
 		CVMIX_ZIP_DIR=`echo ${CVMIX_TAG} | sed 's/v//g'`
@@ -77,9 +77,9 @@ if [ ! -d cvmix ]; then
 		fi
 		unzip ${CVMIX_TAG}.zip &> /dev/null
 		mv ${CVMIX_TAG}.zip .${CVMIX_TAG}.zip
-		mv ${CVMIX_ZIP_DIR} .cvmix_all 
-		ln -sf .cvmix_all/${CVMIX_SUBDIR} cvmix 
-	fi 
+		mv ${CVMIX_ZIP_DIR} .cvmix_all
+		ln -sf .cvmix_all/${CVMIX_SUBDIR} cvmix
+	fi
 fi
 
 if [ ! -d cvmix ]; then
