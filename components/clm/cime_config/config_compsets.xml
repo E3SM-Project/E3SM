@@ -443,12 +443,12 @@
 
    <compset>
      <alias>I20TRCRUCNRDCTCBC</alias>
-     <lname>20TR_DATM%CRU_CLM45%CNRDCTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+     <lname>1850_DATM%CRU_CLM45%CNRDCTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
    </compset>
 
    <compset>
     <alias>I20TRCRUCNPRDCTCBC</alias>
-    <lname>20TR_DATM%CRU_CLM45%CNPRDCTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+    <lname>1850_DATM%CRU_CLM45%CNPRDCTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
    </compset>
    
    <!---I GSWP3 compsets-->
@@ -604,12 +604,12 @@
 
    <compset>
      <alias>I20TRGSWCNRDCTCBC</alias>
-     <lname>20TR_DATM%GSWP3v1_CLM45%CNRDCTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+     <lname>1850_DATM%GSWP3v1_CLM45%CNRDCTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
    </compset>
 
    <compset>
     <alias>I20TRGSWCNPRDCTCBC</alias>
-    <lname>20TR_DATM%GSWP3v1_CLM45%CNPRDCTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+    <lname>1850_DATM%GSWP3v1_CLM45%CNPRDCTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
    </compset>
 
   <!---I compset system tests -->
