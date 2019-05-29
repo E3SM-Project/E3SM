@@ -4,7 +4,7 @@ Interface to the env_batch.xml file.  This class inherits from EnvBase
 
 from CIME.XML.standard_module_setup import *
 from CIME.XML.env_base import EnvBase
-from CIME.utils import transform_vars, get_cime_root, convert_to_seconds, format_time, get_cime_config, get_batch_script_for_job, get_logging_options
+from CIME.utils import transform_vars, get_cime_root, convert_to_seconds, get_cime_config, get_batch_script_for_job, get_logging_options
 
 from collections import OrderedDict
 import stat, re, math
@@ -417,9 +417,9 @@ class EnvBatch(EnvBase):
 
     def submit_jobs(self, case, no_batch=False, job=None, user_prereq=None, skip_pnl=False,
                     allow_fail=False, resubmit_immediate=False, mail_user=None, mail_type=None,
-                    batch_args=None, dry_run=False, runwithcylc=False):
-        if runwithcylc:
-            alljobs = [job]
+                    batch_args=None, dry_run=False, env_workflow=None):
+        if env_workflow:
+            alljobs = env_workflow.get_jobs()
         else:
             alljobs = self.get_jobs()
         startindex = 0
@@ -447,13 +447,11 @@ class EnvBatch(EnvBase):
                         prereq = eval(prereq)
                 except:
                     expect(False,"Unable to evaluate prereq expression '{}' for job '{}'".format(self.get_value('prereq',subgroup=job), job))
-
             if prereq:
                 jobs.append((job, self.get_value('dependency', subgroup=job)))
 
             if self._batchtype == "cobalt":
                 break
-
         depid = OrderedDict()
         jobcmds = []
 
@@ -466,7 +464,7 @@ class EnvBatch(EnvBase):
             num_submit = 1
 
         prev_job = None
-
+        batch_job_id = None
         for _ in range(num_submit):
             for job, dependency in jobs:
                 if dependency is not None:
@@ -488,16 +486,18 @@ class EnvBatch(EnvBase):
                                                  resubmit_immediate=resubmit_immediate,
                                                  dep_jobs=dep_jobs,
                                                  allow_fail=allow_fail,
-                                                 no_batch=no_batch or runwithcylc,
+                                                 no_batch=no_batch,
                                                  mail_user=mail_user,
                                                  mail_type=mail_type,
                                                  batch_args=batch_args,
                                                  dry_run=dry_run)
+                print "HERE job {} result {}".format(job,result)
                 batch_job_id = str(alljobs.index(job)) if dry_run else result
                 depid[job] = batch_job_id
                 jobcmds.append( (job, result) )
                 if self._batchtype == "cobalt":
                     break
+            expect(batch_job_id, "No result from jobs {}".format(jobs))
             prev_job = batch_job_id
 
 
@@ -569,6 +569,7 @@ class EnvBatch(EnvBase):
     def _submit_single_job(self, case, job, dep_jobs=None, allow_fail=False,
                            no_batch=False, skip_pnl=False, mail_user=None, mail_type=None,
                            batch_args=None, dry_run=False, resubmit_immediate=False):
+
         if not dry_run:
             logger.warning("Submit job {}".format(job))
         batch_system = self.get_value("BATCH_SYSTEM", subgroup=None)
@@ -659,7 +660,7 @@ class EnvBatch(EnvBase):
             sequence = (batchsubmit, submitargs, batchredirect, get_batch_script_for_job(job), run_args)
 
         submitcmd = " ".join(s.strip() for s in sequence if s is not None)
-
+        print "submitcmd is {}".format(submitcmd)
         if dry_run:
             return submitcmd
         else:
@@ -871,10 +872,19 @@ class EnvBatch(EnvBase):
 
     def make_all_batch_files(self, case):
         machdir  = case.get_value("MACHDIR")
+        env_workflow = case.get_env("workflow")
         logger.info("Creating batch scripts")
-        for job in self.get_jobs():
-            template = self.get_value('template', subgroup=job)
+        if env_workflow:
+            jobs = env_workflow.get_jobs()
+        else:
+            jobs = self.get_jobs()
+        for job in jobs:
+            if env_workflow:
+                template = env_workflow.get_value('template', subgroup=job)
+            else:
+                template = self.get_value('template', subgroup=job)
             template = template.replace('$CASEROOT', self._caseroot)
+
             if os.path.isabs(template):
                 input_batch_script = template
             else:

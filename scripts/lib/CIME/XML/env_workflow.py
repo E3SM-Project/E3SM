@@ -1,19 +1,17 @@
 """
-Interface to the env_batch.xml file.  This class inherits from EnvBase
+Interface to the env_workflow.xml file.  This class inherits from EnvBase
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.XML.env_batch import EnvBatch
-from CIME.utils import transform_vars, get_cime_root, convert_to_seconds, format_time, get_cime_config, get_batch_script_for_job, get_logging_options
-
-from collections import OrderedDict
-import stat, re, math
+from CIME.XML.env_base import EnvBase
+from CIME.utils import get_cime_root
+import re
 
 logger = logging.getLogger(__name__)
 
 # pragma pylint: disable=attribute-defined-outside-init
 
-class EnvWorkflow(EnvBatch):
+class EnvWorkflow(EnvBase):
 
     def __init__(self, case_root=None, infile="env_workflow.xml"):
         """
@@ -63,31 +61,7 @@ class EnvWorkflow(EnvBatch):
         results = []
         for group in groups:
             results.append(self.get(group, "id"))
-
         return results
-
-    # pylint: disable=arguments-differ
-    def get_value(self, item, attribute=None, resolved=True, subgroup="PRIMARY"):
-        """
-        Must default subgroup to something in order to provide single return value
-        """
-        value = None
-        if subgroup is None:
-            node = self.get_optional_child(item, attribute)
-            if node is not None:
-                value = self.text(node)
-                if resolved:
-                    value = self.get_resolved_value(value)
-            else:
-                value = super(EnvWorkflow, self).get_value(item,attribute,resolved)
-
-        else:
-            if subgroup == "PRIMARY":
-                subgroup = "case.test" if "case.test" in self.get_jobs() else "case.run"
-            #pylint: disable=assignment-from-none
-            value = super(EnvWorkflow, self).get_value(item, attribute=attribute, resolved=resolved, subgroup=subgroup)
-
-        return value
 
     def get_type_info(self, vid):
         gnodes = self.get_children("group")
@@ -109,10 +83,6 @@ class EnvWorkflow(EnvBatch):
         Override the entry_id set_value function with some special cases for this class
         """
         val = None
-
-        if item == "JOB_QUEUE":
-            expect(value in super(EnvWorkflow, self)._get_all_queue_names() or ignore_type,
-                   "Unknown Job Queue specified use --force to set")
 
         # allow the user to set item for all jobs if subgroup is not provided
         if subgroup is None:
