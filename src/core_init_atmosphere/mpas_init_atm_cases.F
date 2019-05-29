@@ -2991,6 +2991,7 @@ module init_atm_cases
          end if
 
          zw(:) = specified_zw(:)
+         zt = zw(nz)
 
          deallocate(specified_zw)
 
