@@ -225,6 +225,7 @@ contains
       dminfo = domain % dminfo
 
       ! scratch arrays
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
       call mpas_pool_get_field(scratchPool, 'normalThicknessFluxSum', normalThicknessFluxSumField)
       call mpas_allocate_scratch_field(normalThicknessFluxSumField, .true.)
       normalThicknessFluxSum => normalThicknessFluxSumField % array
@@ -246,7 +247,6 @@ contains
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
          call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
          call mpas_pool_get_subpool(domain % blocklist % structs, 'highFrequencyOutputAM', highFrequencyOutputAMPool)
 
          ! get static data from mesh pool
