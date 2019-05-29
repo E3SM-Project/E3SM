@@ -790,9 +790,14 @@ contains
     if ( trim(config_land_ice_flux_mode) .eq. 'pressure_only' ) then
        call seq_infodata_PutData( infodata, ocn_prognostic=.true., ocnrof_prognostic=.true., &
                                             ocn_c2_glcshelf=.false.)
-    else
+    else if ( trim(config_land_ice_flux_mode) .eq. 'standalone' ) then
+       call seq_infodata_PutData( infodata, ocn_prognostic=.true., ocnrof_prognostic=.true., &
+                                            ocn_c2_glcshelf=.false.)
+    else if ( trim(config_land_ice_flux_mode) .eq. 'coupled' ) then
        call seq_infodata_PutData( infodata, ocn_prognostic=.true., ocnrof_prognostic=.true., &
                                             ocn_c2_glcshelf=.true.)
+    else
+       call mpas_log_write('ERROR: unknown land_ice_flux_mode: ' // trim(config_land_ice_flux_mode), MPAS_LOG_CRIT)
     end if
 
 !-----------------------------------------------------------------------
