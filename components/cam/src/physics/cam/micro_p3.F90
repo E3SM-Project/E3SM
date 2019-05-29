@@ -177,26 +177,36 @@ contains
     !PMC: deleted ice-ice collision lookup table here b/c only used for nCat>1.
     ! So there is no need to fill lookup values for lookup table 2.
 
+   return
+
   END SUBROUTINE p3_init_a
 
   subroutine p3_get_tables(mu_r_user, revap_user, vn_user, vm_user)
     ! This can be called instead of p3_init_b.
+    implicit none
     real(rtype), dimension(150), intent(out) :: mu_r_user
     real(rtype), dimension(300,10), intent(out) :: vn_user, vm_user, revap_user
     mu_r_user(:) = mu_r_table(:)
     revap_user(:,:) = revap_table(:,:)
     vn_user(:,:) = vn_table(:,:)
     vm_user(:,:) = vm_table(:,:)
+
+   return
+
   end subroutine p3_get_tables
 
   subroutine p3_set_tables(mu_r_user, revap_user, vn_user, vm_user)
     ! This can be called instead of p3_init_b.
+    implicit none
     real(rtype), dimension(150), intent(in) :: mu_r_user
     real(rtype), dimension(300,10), intent(in) :: vn_user, vm_user, revap_user
     mu_r_table(:) = mu_r_user(:)
     revap_table(:,:) = revap_user(:,:)
     vn_table(:,:) = vn_user(:,:)
     vm_table(:,:) = vm_user(:,:)
+
+   return
+
   end subroutine p3_set_tables
 
   SUBROUTINE p3_init_b()
@@ -321,6 +331,8 @@ contains
        enddo meansize_loop
 
     enddo mu_r_loop
+
+   return
 
   END SUBROUTINE p3_init_b
 
@@ -800,23 +812,9 @@ contains
           if (log_exitlevel) goto 444   !i.e. skip to nucleation
 
           !time/space varying physical variables
-          mu     = 1.496e-6_rtype*t(i,k)**1.5_rtype/(t(i,k)+120._rtype)
-          dv     = 8.794e-5_rtype*t(i,k)**1.81_rtype/pres(i,k)
-          sc     = mu/(rho(i,k)*dv)
-          dum    = 1._rtype/(rv*t(i,k)**2)
-          dqsdt  = xxlv(i,k)*qvs(i,k)*dum
-          dqsidt = xxls(i,k)*qvi(i,k)*dum
-          ab     = 1._rtype+dqsdt*xxlv(i,k)*inv_cp
-          abi    = 1._rtype+dqsidt*xxls(i,k)*inv_cp
-          kap    = 1.414e+3_rtype*mu
-          ! very simple temperature dependent aggregation efficiency
-          if (t(i,k).lt.253.15_rtype) then
-             eii=0.1_rtype
-          else if (t(i,k).ge.253.15_rtype.and.t(i,k).lt.268.15_rtype) then
-             eii=0.1_rtype+(t(i,k)-253.15_rtype)/15._rtype*0.9_rtype  ! linear ramp from 0.1 to 1 between 253.15 and 268.15 K
-          else
-             eii=1._rtype
-          end if
+          call get_time_space_phys_variables( &
+          t(i,k),pres(i,k),rho(i,k),xxlv(i,k),xxls(i,k),qvs(i,k),qvi(i,k), &
+          mu,dv,sc,dqsdt,dqsidt,ab,abi,kap,eii)
 
           call get_cloud_dsd2(qc_incld(i,k),nc_incld(i,k),mu_c(i,k),rho(i,k),nu(i,k),dnu,lamc(i,k),     &
                lammin,lammax,cdist(i,k),cdist1(i,k),lcldm(i,k))
@@ -870,25 +868,6 @@ contains
              nitot_incld(i,k) = min(nitot_incld(i,k),f1pr09*nitot_incld(i,k))
              nitot_incld(i,k) = max(nitot_incld(i,k),f1pr10*nitot_incld(i,k))
 
-             !PMC nCat delete stuff below!!!
-
-             ! Determine additional collection efficiency factor to be applied to ice-ice collection.
-             ! The computed values of qicol and nicol are multipiled by Eii_fact to gradually shut off collection
-             ! if ice is highly rimed.
-             if (qirim_incld(i,k)>0._rtype) then
-                tmp1 = qirim_incld(i,k)/qitot_incld(i,k)   !rime mass fraction
-                if (tmp1.lt.0.6_rtype) then
-                   Eii_fact=1._rtype
-                else if (tmp1.ge.0.6_rtype.and.tmp1.lt.0.9_rtype) then
-                   ! linear ramp from 1 to 0 for Fr between 0.6 and 0.9
-                   Eii_fact = 1._rtype-(tmp1-0.6_rtype)/0.3_rtype
-                else
-                   Eii_fact = 0._rtype
-                endif
-             else
-                Eii_fact = 1._rtype
-             endif
-
           endif   ! qitot > qsmall
 
           !----------------------------------------------------------------------
@@ -917,7 +896,7 @@ contains
           !.............................................
           ! self-collection of ice 
           call ice_self_collection(rho(i,k),rhofaci(i,k),&
-          f1pr03,eii,Eii_fact,qitot_incld(i,k),nitot_incld(i,k),&
+          f1pr03,eii,qirim_incld(i,k),qitot_incld(i,k),nitot_incld(i,k),&
                nislf)
 
           !............................................................
@@ -960,11 +939,8 @@ contains
           lamr(i,k),mu_r(i,k),cdistr(i,k),qr_incld(i,k),&
                qrheti,nrheti)
 
-          ! AaronDonahue: The following should be removed or moved to a separate
-          ! subroutine? 
           !......................................
           ! rime splintering (Hallet-Mossop 1974)
-
           !PMC comment: Morrison and Milbrandt 2015 part 1 and 2016 part 3 both say
           !that Hallet-Mossop should be neglected if 1 category to compensate for
           !artificial smearing out of ice DSD
@@ -974,72 +950,20 @@ contains
           !   (use semi-analytic formulation)
 
           ! calculate rain evaporation including ventilation
-
           call calc_liq_relaxation_timescale(rho(i,k),f1r,f2r,     &
           dv,mu,sc,mu_r(i,k),lamr(i,k),cdistr(i,k),cdist(i,k),qr_incld(i,k),qc_incld(i,k), &
-          epsr,epsc)  
-          !PMC moved oabi outside t<273.15 loop. oabi is only *used* where t<273.15, but
-          !t could be updated before oabi is used, resulting in unititialized use. Note
-          !that t is not currently being updated before oabi is used, so this is just future-proofing.
-          oabi = 1._rtype/abi
-          
-          if (t(i,k).lt.zerodegc) then
-             xx   = epsc + epsr + epsi_tot*(1._rtype+xxls(i,k)*inv_cp*dqsdt)*oabi
-          else
-             xx   = epsc + epsr
-          endif
-
-          dumqvi = qvi(i,k)   !no modification due to latent heating
-          !----
-          ! !      ! modify due to latent heating from riming rate
-          ! !      !   - currently this is done by simple linear interpolation
-          ! !      !     between conditions for dry and wet growth --> in wet growth it is assumed
-          ! !      !     that particle surface temperature is at 0 C and saturation vapor pressure
-          ! !      !     is that with respect to liquid. This simple treatment could be improved in the future.
-          ! !        if (qwgrth.ge.1.e-20) then
-          ! !           dum = (qccol+qrcol)/qwgrth
-          ! !        else
-          ! !           dum = 0.
-          ! !        endif
-          ! !        dumqvi = qvi(i,k) + dum*(qvs(i,k)-qvi(i,k))
-          ! !        dumqvi = min(qvs(i,k),dumqvi)
-          !====
-
-
-          ! 'A' term including ice (Bergeron process)
-          ! note: qv and T tendencies due to mixing and radiation are
-          ! currently neglected --> assumed to be much smaller than cooling
-          ! due to vertical motion which IS included
-
-          ! The equivalent vertical velocity is set to be consistent with dT/dt
-          ! since -g/cp*dum = dT/dt therefore dum = -cp/g*dT/dt
-          ! note this formulation for dT/dt is not exact since pressure
-          ! may change and t and t_old were both diagnosed using the current pressure
-          ! errors from this assumption are small
-          dum = -cp/g*(t(i,k)-t_old(i,k))*odt
-
-          if (t(i,k).lt.zerodegc) then
-             aaa = (qv(i,k)-qv_old(i,k))*odt - dqsdt*(-dum*g*inv_cp)-(qvs(i,k)-dumqvi)*     &
-                  (1._rtype+xxls(i,k)*inv_cp*dqsdt)*oabi*epsi_tot
-          else
-             aaa = (qv(i,k)-qv_old(i,k))*odt - dqsdt*(-dum*g*inv_cp)
-          endif
-
-          xx  = max(1.e-20_rtype,xx)   ! set lower bound on xx to prevent division by zero
-          oxx = 1._rtype/xx
+          epsr,epsc) 
+ 
+          call calc_xx_aaa(t(i,k),t_old(i,k),qv(i,k),qv_old(i,k), &
+          dt,dqsdt,qvs(i,k),qvi(i,k),xxls(i,k),abi,epsi_tot,epsc,epsr, &
+          aaa,xx,dumqvi)
 
           call evaporate_sublimate_precip(qc_incld(i,k),qr_incld(i,k),nr_incld(i,k),t(i,k),pres(i,k), &
           aaa,xx,dt,ab,epsr,epsc,qv(i,k),sup(i,k),ssat(i,k),xxlv(i,k), &
           qccon,qrcon,qcevp,qrevp,nrevp)
 
-          ! AaronDonahue: The below subroutine should be moved to within
-          ! evaporate_sublimate_precip, but doing so leads to a non-BFB
-          ! solution.
-          call evaporate_sublimate_precip_limiter(t(i,k),pres(i,k),qv(i,k),xxlv(i,k),odt, &
-          qccon,qrcon,qcevp,qrevp)
-
           call ice_deposition_sublimation(qitot_incld(i,k), nitot_incld(i,k), t(i,k), &
-          aaa,xx,dt,qvs(i,k),dumqvi,ssat(i,k),epsi,oabi,supi(i,k), &
+          aaa,xx,dt,qvs(i,k),dumqvi,ssat(i,k),epsi,abi,supi(i,k), &
           qidep, qisub, nisub)
 
 444       continue
@@ -2212,6 +2136,8 @@ contains
     ! get final process rate
     proc   = tmp1+(dum5-real(dumjj))*(tmp2-tmp1)
 
+   return
+
   END SUBROUTINE access_lookup_table
 
   !------------------------------------------------------------------------------------------!
@@ -2281,6 +2207,8 @@ contains
 
     ! interpolate over density to get final values
     proc    = tmp1+(dum5-real(dumjj))*(tmp2-tmp1)
+
+   return
 
   END SUBROUTINE access_lookup_table_coll
 
@@ -2362,6 +2290,7 @@ contains
 
     endif
 
+   return
 
   end function polysvp1
 
@@ -2427,6 +2356,8 @@ contains
     dum6  = -99
     dumzz = -99
 
+   return
+
   end subroutine find_lookupTable_indices_1a
 
   !======================================================================================!
@@ -2467,6 +2398,8 @@ contains
        dumj  = 1
        dum3  = 1._rtype
     endif
+
+   return
 
   end subroutine find_lookupTable_indices_1b
 
@@ -2515,6 +2448,8 @@ contains
     dumjj  = int(rdumjj)
     dumjj  = max(dumjj,1)
     dumjj  = min(dumjj,9)
+
+   return
 
   end subroutine find_lookupTable_indices_3
 
@@ -2577,6 +2512,8 @@ contains
 
     endif
 
+   return
+
   end subroutine get_cloud_dsd2
 
 
@@ -2633,6 +2570,8 @@ contains
 
     endif
 
+   return
+
   end subroutine get_rain_dsd2
 
 
@@ -2681,6 +2620,7 @@ contains
        bi_rim = 0._rtype
     endif
 
+   return
 
   end subroutine calc_bulkRhoRime
 
@@ -2737,6 +2677,7 @@ contains
     qv_sat = ep_2*e_pres/max(1.e-3_rtype,(p_atm-e_pres))
 
     return
+
   end function qv_sat
 
   !===========================================================================================
@@ -2808,6 +2749,8 @@ contains
        if (source_ind/=100) stop
     endif
 
+   return
+
   end subroutine check_values
 
   subroutine ice_cldliq_collection(rho,t,rhofaci,    &
@@ -2854,6 +2797,8 @@ contains
          ncshdc = qcshd*1.923e+6_rtype
       end if 
    end if 
+
+   return
 
   end subroutine ice_cldliq_collection
 
@@ -2908,11 +2853,13 @@ contains
          ! expected to lead to shedding)      
       endif 
    endif 
+
+   return
    
   end subroutine ice_rain_collection
 
   subroutine ice_self_collection(rho,rhofaci,    &
-  f1pr03,eii,Eii_fact,qitot_incld,nitot_incld,    &
+  f1pr03,eii,qirim_incld,qitot_incld,nitot_incld,    &
              nislf)
 
    ! self-collection of ice 
@@ -2928,16 +2875,36 @@ contains
    real(rtype), intent(in) :: rhofaci
    real(rtype), intent(in) :: f1pr03 ! ice collection within a category 
    real(rtype), intent(in) :: eii 
-   real(rtype), intent(in) :: Eii_fact 
+   real(rtype), intent(in) :: qirim_incld 
    real(rtype), intent(in) :: qitot_incld
    real(rtype), intent(in) :: nitot_incld
 
    real(rtype), intent(out) :: nislf 
 
+   real(rtype) :: tmp1, Eii_fact
+
    if (qitot_incld.ge.qsmall) then
+      ! Determine additional collection efficiency factor to be applied to ice-ice collection.
+      ! The computed values of qicol and nicol are multipiled by Eii_fact to gradually shut off collection
+      ! if ice is highly rimed.
+      if (qirim_incld>0._rtype) then
+         tmp1 = qirim_incld/qitot_incld   !rime mass fraction
+         if (tmp1.lt.0.6_rtype) then
+            Eii_fact=1._rtype
+         else if (tmp1.ge.0.6_rtype.and.tmp1.lt.0.9_rtype) then
+            ! linear ramp from 1 to 0 for Fr between 0.6 and 0.9
+            Eii_fact = 1._rtype-(tmp1-0.6_rtype)/0.3_rtype
+         else
+            Eii_fact = 0._rtype
+         endif
+      else
+         Eii_fact = 1._rtype
+      endif
+
       nislf = f1pr03*rho*eii*Eii_fact*rhofaci*nitot_incld
    endif
 
+   return
 
 end subroutine ice_self_collection
 
@@ -2986,6 +2953,7 @@ f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld,    &
       
    endif 
 
+   return
 
 end subroutine ice_melting
 
@@ -3049,8 +3017,7 @@ qv,qc_incld,qitot_incld,nitot_incld,qr_incld,    &
 
    end if 
 
-
-
+   return
 
 end subroutine ice_cldliq_wet_growth 
 
@@ -3090,6 +3057,7 @@ epsi,epsi_tot)
       epsi = 0._rtype
    endif 
 
+   return
 
 end subroutine calc_ice_relaxation_timescale
 
@@ -3097,6 +3065,8 @@ end subroutine calc_ice_relaxation_timescale
 subroutine calc_liq_relaxation_timescale(rho,f1r,f2r,     &
 dv,mu,sc,mu_r,lamr,cdistr,cdist,qr_incld,qc_incld, &
 epsr,epsc)  
+
+   implicit none
 
    real(rtype), intent(in)  :: rho
    real(rtype), intent(in)  :: f1r
@@ -3140,6 +3110,8 @@ epsr,epsc)
    else
       epsc = 0._rtype
    endif
+
+   return
 
 end subroutine calc_liq_relaxation_timescale
 
@@ -3214,6 +3186,9 @@ f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
    else 
       rhorime_c = 400._rtype 
    endif ! qi > qsmall and T < 273.15
+
+   return
+
 end subroutine calc_rime_density
 
 subroutine cldliq_immersion_freezing(t,lamc,mu_c,cdist1,qc_incld,    &
@@ -3243,6 +3218,8 @@ subroutine cldliq_immersion_freezing(t,lamc,mu_c,cdist1,qc_incld,    &
       qcheti = Q_nuc
       ncheti = N_nuc
    endif 
+
+   return
 
 end subroutine cldliq_immersion_freezing
 
@@ -3279,13 +3256,16 @@ qrheti, nrheti)
 
    endif 
 
+   return
 
 end subroutine rain_immersion_freezing 
 
 
 subroutine ice_deposition_sublimation(qitot_incld, nitot_incld, t, &
-aaa,xx,dt,qvs,dumqvi,ssat,epsi,oabi,supi, &
+aaa,xx,dt,qvs,dumqvi,ssat,epsi,abi,supi, &
 qidep, qisub, nisub)
+
+   implicit none
 
    real(rtype), intent(in)  :: qitot_incld
    real(rtype), intent(in)  :: nitot_incld
@@ -3297,17 +3277,18 @@ qidep, qisub, nisub)
    real(rtype), intent(in)  :: dumqvi
    real(rtype), intent(in)  :: ssat
    real(rtype), intent(in)  :: epsi
-   real(rtype), intent(in)  :: oabi
+   real(rtype), intent(in)  :: abi
    real(rtype), intent(in)  :: supi
    real(rtype), intent(out) :: qidep
    real(rtype), intent(out) :: qisub
    real(rtype), intent(out) :: nisub
 
-   real(rtype) :: oxx, odt
+   real(rtype) :: oxx, odt, oabi
 
    
-   oxx = 1._rtype/xx
-   odt = 1._rtype/dt   ! inverse model time step
+   oxx  = 1._rtype/xx
+   odt  = 1._rtype/dt   ! inverse model time step
+   oabi = 1._rtype/abi
    if (qitot_incld.ge.qsmall.and.t.lt.zerodegc) then
       qidep = (aaa*epsi*oxx+(ssat-aaa*oxx)*odt*epsi*oxx*   &
            (1._rtype-dexp(-dble(xx*dt))))*oabi+(qvs-dumqvi)*epsi*oabi
@@ -3327,12 +3308,16 @@ qidep, qisub, nisub)
       qidep = qidep*clbfact_dep
    endif
 
+   return
+
 end subroutine ice_deposition_sublimation
 
 
 subroutine evaporate_sublimate_precip(qc_incld,qr_incld,nr_incld,t,pres, &
 aaa,xx,dt,ab,epsr,epsc,qv,sup,ssat,xxlv, &
 qccon,qrcon,qcevp,qrevp,nrevp)
+
+   implicit none
 
    real(rtype), intent(in)  :: qc_incld
    real(rtype), intent(in)  :: qr_incld
@@ -3382,44 +3367,6 @@ qccon,qrcon,qcevp,qrevp,nrevp)
       qrcon = 0._rtype
    endif
 
-!-- AaronDonahue: The below code should be uncommented, but doing so leads to a
-! non-BFB solution.  Separating this chunk of code into it's own subroutine and
-! calling at the p3_main layer retains BFB status.
-
-   !limit total condensation/evaporation to saturation adjustment
-!   dumqvs = qv_sat(t,pres,0)
-!   qcon_satadj  = (qv-dumqvs)/(1._rtype+xxlv**2*dumqvs/(cp*rv*t**2))*odt
-!   if (qccon+qrcon.gt.0._rtype) then
-!      ratio = max(0._rtype,qcon_satadj)/(qccon+qrcon)
-!      ratio = min(1._rtype,ratio)
-!      qccon = qccon*ratio
-!      qrcon = qrcon*ratio
-!   elseif (qcevp+qrevp.gt.0._rtype) then
-!      ratio = max(0._rtype,-qcon_satadj)/(qcevp+qrevp)
-!      ratio = min(1._rtype,ratio)
-!      qcevp = qcevp*ratio
-!      qrevp = qrevp*ratio
-!   endif
-
-   return
-
-end subroutine evaporate_sublimate_precip
-
-subroutine evaporate_sublimate_precip_limiter(t,pres,qv,xxlv,odt, &
-qccon,qrcon,qcevp,qrevp)
-
-   real(rtype), intent(in)    :: t
-   real(rtype), intent(in)    :: pres
-   real(rtype), intent(in)    :: qv
-   real(rtype), intent(in)    :: xxlv
-   real(rtype), intent(in)    :: odt
-   real(rtype), intent(inout) :: qccon
-   real(rtype), intent(inout) :: qrcon
-   real(rtype), intent(inout) :: qcevp
-   real(rtype), intent(inout) :: qrevp
-
-   real(rtype) :: dumqvs, qcon_satadj, ratio
-
    !limit total condensation/evaporation to saturation adjustment
    dumqvs = qv_sat(t,pres,0)
    qcon_satadj  = (qv-dumqvs)/(1._rtype+xxlv**2*dumqvs/(cp*rv*t**2))*odt
@@ -3434,8 +3381,136 @@ qccon,qrcon,qcevp,qrevp)
       qcevp = qcevp*ratio
       qrevp = qrevp*ratio
    endif
- 
+
    return
-end subroutine evaporate_sublimate_precip_limiter
+
+end subroutine evaporate_sublimate_precip
+
+
+subroutine calc_xx_aaa(t,t_old,qv,qv_old, &
+dt,dqsdt,qvs,qvi,xxls,abi,epsi_tot,epsc,epsr, &
+aaa,xx,dumqvi)
+
+   implicit none
+
+   real(rtype), intent(in)  :: t
+   real(rtype), intent(in)  :: t_old
+   real(rtype), intent(in)  :: qv
+   real(rtype), intent(in)  :: qv_old
+   real(rtype), intent(in)  :: dt
+   real(rtype), intent(in)  :: dqsdt
+   real(rtype), intent(in)  :: qvs
+   real(rtype), intent(in)  :: qvi
+   real(rtype), intent(in)  :: xxls
+   real(rtype), intent(in)  :: abi
+   real(rtype), intent(in)  :: epsi_tot
+   real(rtype), intent(in)  :: epsc
+   real(rtype), intent(in)  :: epsr
+   real(rtype), intent(out) :: aaa
+   real(rtype), intent(out) :: xx
+   real(rtype), intent(out) :: dumqvi
+
+   real(rtype) :: oabi, dum, odt 
+
+   oabi = 1._rtype/abi
+   odt  = 1._rtype/dt
+   
+   if (t.lt.zerodegc) then
+      xx   = epsc + epsr + epsi_tot*(1._rtype+xxls*inv_cp*dqsdt)*oabi
+   else
+      xx   = epsc + epsr
+   endif
+
+   dumqvi = qvi   !no modification due to latent heating
+   !----
+   ! !      ! modify due to latent heating from riming rate
+   ! !      !   - currently this is done by simple linear interpolation
+   ! !      !     between conditions for dry and wet growth --> in wet growth it is assumed
+   ! !      !     that particle surface temperature is at 0 C and saturation vapor pressure
+   ! !      !     is that with respect to liquid. This simple treatment could be improved in the future.
+   ! !        if (qwgrth.ge.1.e-20) then
+   ! !           dum = (qccol+qrcol)/qwgrth
+   ! !        else
+   ! !           dum = 0.
+   ! !        endif
+   ! !        dumqvi = qvi + dum*(qvs-qvi)
+   ! !        dumqvi = min(qvs,dumqvi)
+   !====
+
+
+   ! 'A' term including ice (Bergeron process)
+   ! note: qv and T tendencies due to mixing and radiation are
+   ! currently neglected --> assumed to be much smaller than cooling
+   ! due to vertical motion which IS included
+
+   ! The equivalent vertical velocity is set to be consistent with dT/dt
+   ! since -g/cp*dum = dT/dt therefore dum = -cp/g*dT/dt
+   ! note this formulation for dT/dt is not exact since pressure
+   ! may change and t and t_old were both diagnosed using the current pressure
+   ! errors from this assumption are small
+   dum = -cp/g*(t-t_old)*odt
+
+   if (t.lt.zerodegc) then
+      aaa = (qv-qv_old)*odt - dqsdt*(-dum*g*inv_cp)-(qvs-dumqvi)*     &
+           (1._rtype+xxls*inv_cp*dqsdt)*oabi*epsi_tot
+   else
+      aaa = (qv-qv_old)*odt - dqsdt*(-dum*g*inv_cp)
+   endif
+
+   xx  = max(1.e-20_rtype,xx)   ! set lower bound on xx to prevent division by zero
+
+   return
+
+end subroutine calc_xx_aaa
+
+
+subroutine get_time_space_phys_variables( &
+t,pres,rho,xxlv,xxls,qvs,qvi, &
+mu,dv,sc,dqsdt,dqsidt,ab,abi,kap,eii)
+
+   implicit none
+
+   real(rtype), intent(in)  :: t
+   real(rtype), intent(in)  :: pres
+   real(rtype), intent(in)  :: rho
+   real(rtype), intent(in)  :: xxlv
+   real(rtype), intent(in)  :: xxls
+   real(rtype), intent(in)  :: qvs
+   real(rtype), intent(in)  :: qvi
+   real(rtype), intent(out) :: mu
+   real(rtype), intent(out) :: dv
+   real(rtype), intent(out) :: sc
+   real(rtype), intent(out) :: dqsdt
+   real(rtype), intent(out) :: dqsidt
+   real(rtype), intent(out) :: ab
+   real(rtype), intent(out) :: abi
+   real(rtype), intent(out) :: kap
+   real(rtype), intent(out) :: eii
+
+   real(rtype) :: dum
+
+   !time/space varying physical variables
+   mu     = 1.496e-6_rtype*t**1.5_rtype/(t+120._rtype)
+   dv     = 8.794e-5_rtype*t**1.81_rtype/pres
+   sc     = mu/(rho*dv)
+   dum    = 1._rtype/(rv*t**2)
+   dqsdt  = xxlv*qvs*dum
+   dqsidt = xxls*qvi*dum
+   ab     = 1._rtype+dqsdt*xxlv*inv_cp
+   abi    = 1._rtype+dqsidt*xxls*inv_cp
+   kap    = 1.414e+3_rtype*mu
+   ! very simple temperature dependent aggregation efficiency
+   if (t.lt.253.15_rtype) then
+      eii=0.1_rtype
+   else if (t.ge.253.15_rtype.and.t.lt.268.15_rtype) then
+      eii=0.1_rtype+(t-253.15_rtype)/15._rtype*0.9_rtype  ! linear ramp from 0.1 to 1 between 253.15 and 268.15 K
+   else
+      eii=1._rtype
+   end if
+
+   return
+
+end subroutine get_time_space_phys_variables
+
 
 end module micro_p3
