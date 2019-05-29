@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ## CVMix Tag for build
-CVMIX_TAG=v0.94b-beta
+CVMIX_TAG=v0.95-beta
 ## Subdirectory in CVMix repo to use
 CVMIX_SUBDIR=src/shared
 
