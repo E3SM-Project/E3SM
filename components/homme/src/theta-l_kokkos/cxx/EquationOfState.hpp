@@ -82,7 +82,7 @@ public:
       });
     } else {
       // Start with dpnh_dp_i = delta(pnh)/dp_i. Skip bc's, cause we do our own here
-      m_elem_ops.compute_interface_delta<BCType::DoNothing>(kv.team,pnh,dpnh_dp_i);
+      m_elem_ops.compute_interface_delta<CombineMode::Replace,BCType::DoNothing>(kv.team,pnh,dpnh_dp_i);
 
       // Note: top and bottom need special treatment, so we may as well stop at NUM_LEV here (rather than NUM_LEV_P)
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),

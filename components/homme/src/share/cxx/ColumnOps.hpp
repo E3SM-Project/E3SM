@@ -1,5 +1,5 @@
-#ifndef HOMMEXX_ELEMENT_OPS_HPP
-#define HOMMEXX_ELEMENT_OPS_HPP
+#ifndef HOMMEXX_COLUMN_OPS_HPP
+#define HOMMEXX_COLUMN_OPS_HPP
 
 #include "KernelVariables.hpp"
 #include "HommexxEnums.hpp"
@@ -8,41 +8,79 @@
 
 namespace Homme {
 
+// Small helper function to combine a new value with an old one.
+// The template argument help reducing the number of operations
+// performed (the if is resolved at compile time). In the most
+// complete form, the function performs
+//    result = beta*result + alpha*newVal
+// This routine should have no overhead compared to a manual
+// update (assuming you call it with the proper CM)
+template<CombineMode CM, typename Scalar1, typename Scalar2>
+KOKKOS_FORCEINLINE_FUNCTION
+void combine (const Scalar1& newVal, Scalar2& result,
+              const Real alpha = 1.0, const Real beta = 1.0){
+  switch (CM) {
+    case CombineMode::Replace:
+      result = newVal;
+      break;
+    case CombineMode::Scale:
+      result = alpha*newVal;
+      break;
+    case CombineMode::Update:
+      result *= beta;
+      result += newVal;
+      break;
+    case CombineMode::ScaleUpdate:
+      result *= beta;
+      result += alpha*newVal;
+      break;
+    case CombineMode::ScaleAdd:
+      result += alpha*newVal;
+      break;
+    case CombineMode::Add:
+      result += newVal;
+      break;
+    case CombineMode::ProdUpdate:
+      result *= newVal;
+      break;
+  }
+}
+
 /*
- *  ElementOps: a series of utility kernels inside an element
+ *  ColumnOps: a series of utility kernels inside an element
  *
- *  The name is mimicing the f90 module name, but ColumnOps would have
- *  been a more appropriate name, probably. In fact, this class is responsible
- *  of implementing common kernels used in the Theta model to compute quantities
- *  at level midpoints and level interfaces. For instance, compute interface
- *  quantities from midpoints ones, or integrate over a column, or compute
- *  increments of midpoint quantities (which will be defined at interfaces).
+ *  This class is responsible of implementing common kernels used in the
+ *  preqx and theta models to compute quantities at level midpoints and
+ *  level interfaces. For instance, compute interface quantities from midpoints
+ *  ones, or integrate over a column, or compute increments of midpoint
+ *  quantities (which will be defined at interfaces).
  *  The kernels are meant to be launched from within a parallel region, with
  *  team policy. More precisely, they are meant to be called from a parallel
  *  region dispatched over the number of thread in a single team. In other words,
  *  you should be inside a TeamThreadRange parallel loop before calling these
  *  kernels, but you should *not* be inside a ThreadVectorRange loop, since these
- *  kernels will attempt create such loops.
+ *  kernels will attempt to create such loops.
  */
-
-class ElementOps {
+class ColumnOps {
 public:
-
   using MIDPOINTS = ColInfo<NUM_PHYSICAL_LEV>;
   using INTERFACES = ColInfo<NUM_INTERFACE_LEV>;
 
-  ElementOps () = default;
+  ColumnOps () = default;
 
+  template<CombineMode CM = CombineMode::Replace>
   KOKKOS_INLINE_FUNCTION
   void compute_midpoint_values (const KernelVariables& kv,
-                                ExecViewUnmanaged<const Scalar [NUM_LEV_P]> x_i,
-                                ExecViewUnmanaged<      Scalar [NUM_LEV]  > x_m) const
+                                const ExecViewUnmanaged<const Scalar [NUM_LEV_P]>& x_i,
+                                const ExecViewUnmanaged<      Scalar [NUM_LEV]  >& x_m,
+                                const Real alpha = 1.0, const Real beta = 0.0) const
   {
     // Compute midpoint quanitiy. Note: the if statement is evaluated at compile time, so no penalization. Only requirement is both branches must compile.
     if (OnGpu<ExecSpace>::value) {
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_PHYSICAL_LEV),
-                           [=](const int& ilev) {
-        x_m(ilev) = (x_i(ilev) + x_i(ilev+1))/2.0;
+                           [&](const int& ilev) {
+        Scalar tmp = (x_i(ilev) + x_i(ilev+1))/2.0;
+        combine<CM>(tmp, x_m(ilev), alpha, beta);
       });
     } else {
       // Try to use SIMD operations as much as possible.
@@ -50,29 +88,36 @@ public:
         Scalar tmp = x_i(ilev);
         tmp.shift_left(1);
         tmp[VECTOR_END] = x_i(ilev+1)[0];
-        x_m(ilev) = (x_i(ilev) + tmp) / 2;
+        tmp += x_i(ilev);
+        tmp /= 2.0;
+        combine<CM>(tmp, x_m(ilev), alpha, beta);
       }
 
       // Last level pack treated separately, since ilev+1 may throw depending if NUM_LEV=NUM_LEV_P
       Scalar tmp = x_i(MIDPOINTS::LastPack);
       tmp.shift_left(1);
       tmp[MIDPOINTS::LastVecEnd] = x_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd];
-      x_m(MIDPOINTS::LastPack) = (x_i(MIDPOINTS::LastPack) + tmp) / 2;
+      tmp += x_i(MIDPOINTS::LastPack);
+      tmp /= 2.0;
+      combine<CM>(tmp, x_m(MIDPOINTS::LastPack), alpha, beta);
     }
   }
 
   // Computes the average of x_i*y_i and adds it to xy_m
+  template<CombineMode CM = CombineMode::Replace>
   KOKKOS_INLINE_FUNCTION
-  void update_midpoint_values_with_product (const KernelVariables& kv, const Real coeff,
-                                            ExecViewUnmanaged<const Scalar [NUM_LEV_P]> x_i,
-                                            ExecViewUnmanaged<const Scalar [NUM_LEV_P]> y_i,
-                                            ExecViewUnmanaged<      Scalar [NUM_LEV]  > xy_m) const
+  void compute_midpoint_product (const KernelVariables& kv,
+                                 const ExecViewUnmanaged<const Scalar [NUM_LEV_P]>& x_i,
+                                 const ExecViewUnmanaged<const Scalar [NUM_LEV_P]>& y_i,
+                                 const ExecViewUnmanaged<      Scalar [NUM_LEV]  >& xy_m,
+                                 const Real alpha = 1.0, const Real beta = 0.0) const
   {
     // Compute midpoint quanitiy. Note: the if statement is evaluated at compile time, so no penalization. Only requirement is both branches must compile.
     if (OnGpu<ExecSpace>::value) {
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_PHYSICAL_LEV),
                            [=](const int& ilev) {
-        xy_m(ilev) += coeff * (x_i(ilev)*y_i(ilev) + x_i(ilev+1)*y_i(ilev+1))/2.0;
+        Scalar tmp = (x_i(ilev)*y_i(ilev) + x_i(ilev+1)*y_i(ilev+1))/2.0;
+        combine<CM>( tmp, xy_m(ilev), alpha, beta);
       });
     } else {
       // Try to use SIMD operations as much as possible: the first NUM_LEV-1 packs can be vectorized
@@ -82,8 +127,8 @@ public:
         tmp.shift_left(1);
         tmp[VECTOR_END] = x_i(ilev+1)[0]*y_i(ilev+1)[0];
         tmp += x_i(ilev)*y_i(ilev);
-        tmp *= coeff/2.0;
-        xy_m(ilev) += tmp;
+        tmp /= 2.0;
+        combine<CM>(tmp, xy_m(ilev), alpha, beta);
       }
 
       // Last level pack treated separately, since ilev+1 may throw depending if NUM_LEV=NUM_LEV_P
@@ -92,26 +137,29 @@ public:
       tmp.shift_left(1);
       tmp[VECTOR_END] = x_i(INTERFACES::LastPack)[0]*y_i(INTERFACES::LastPack)[0];
       tmp += x_i(MIDPOINTS::LastPack)*y_i(MIDPOINTS::LastPack);
-      tmp *= coeff/2.0;
-      xy_m(MIDPOINTS::LastPack) += tmp;
+      tmp /= 2.0;
+      combine<CM>(tmp, xy_m(MIDPOINTS::LastPack), alpha, beta);
     }
   }
 
+  template<CombineMode CM = CombineMode::Replace>
   KOKKOS_INLINE_FUNCTION
   void compute_interface_values (const KernelVariables& kv,
-                                 ExecViewUnmanaged<const Scalar [NUM_LEV]  > x_m,
-                                 ExecViewUnmanaged<      Scalar [NUM_LEV_P]> x_i) const
+                                 const ExecViewUnmanaged<const Scalar [NUM_LEV]  >& x_m,
+                                 const ExecViewUnmanaged<      Scalar [NUM_LEV_P]>& x_i,
+                                 const Real alpha = 1.0, const Real beta = 0.0) const
   {
     // Compute interface quanitiy.
     if (OnGpu<ExecSpace>::value) {
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,1,NUM_PHYSICAL_LEV),
                            [=](const int& ilev) {
-        x_i(ilev) = (x_m(ilev) + x_m(ilev-1)) / 2.0;
+        Scalar tmp = (x_m(ilev) + x_m(ilev-1)) / 2.0;
+        combine<CM>(tmp, x_i(ilev), alpha, beta);
       });
       // Fix the top/bottom
       Kokkos::single(Kokkos::PerThread(kv.team),[&](){
-        x_i(0) = x_m(0);
-        x_i(NUM_INTERFACE_LEV-1) = x_m(NUM_PHYSICAL_LEV-1);
+        combine<CM>(x_m(0), x_i(0), alpha, beta);
+        combine<CM>(x_m(NUM_PHYSICAL_LEV-1), x_i(NUM_INTERFACE_LEV-1), alpha, beta);
       });
     } else {
       // Try to use SIMD operations as much as possible: the last NUM_LEV-1 packs are treated uniformly, and can be vectorized
@@ -119,39 +167,46 @@ public:
         Scalar tmp = x_m(ilev);
         tmp.shift_right(1);
         tmp[0] = x_m(ilev-1)[VECTOR_END];
-        x_i(ilev) = (x_m(ilev) + tmp) / 2.0;
+        tmp += x_m(ilev);
+        tmp /= 2.0;
+        combine<CM>(tmp, x_i(ilev), alpha, beta);
       }
 
       // First pack does not have a previous pack, and the extrapolation of the 1st interface is x_i = x_m.
       // Luckily, shift_right inserts leading 0's, so the formula is almost the same
       Scalar tmp = x_m(0);
       tmp.shift_right(1);
-      x_i(0) = (x_m(0) + tmp) / 2.0;
-      x_i(0)[0] = x_m(0)[0];
+      tmp += x_m(0);
+      tmp /= 2.0;
+      combine<CM>(tmp, x_i(0), alpha, beta);
 
-      // The last interface is x_i=x_m.
-      x_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd] = x_m(MIDPOINTS::LastPack)[MIDPOINTS::LastVecEnd];
+      // Fix top/bottom
+      combine<CM>(x_m(0)[0], x_i(0)[0], alpha, beta);
+      combine<CM>(x_m(MIDPOINTS::LastPack)[MIDPOINTS::LastVecEnd], x_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd], alpha, beta);
     }
   }
 
   // Similar to the above, but uses layers thicknesses as averaging weights
+  template<CombineMode CM = CombineMode::Replace>
   KOKKOS_INLINE_FUNCTION
   void compute_interface_values (const KernelVariables& kv,
                                  ExecViewUnmanaged<const Scalar [NUM_LEV]  > dp_m,
                                  ExecViewUnmanaged<const Scalar [NUM_LEV_P]> dp_i,
                                  ExecViewUnmanaged<const Scalar [NUM_LEV]  > x_m,
-                                 ExecViewUnmanaged<      Scalar [NUM_LEV_P]> x_i) const
+                                 ExecViewUnmanaged<      Scalar [NUM_LEV_P]> x_i,
+                                 const Real alpha = 1.0, const Real beta = 0.0) const
   {
     // Compute interface quanitiy.
     if (OnGpu<ExecSpace>::value) {
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,1,NUM_PHYSICAL_LEV),
                            [=](const int& ilev) {
-        x_i(ilev) = (x_m(ilev)*dp_m(ilev) + x_m(ilev-1)*dp_m(ilev-1)) / (2.0*dp_i(ilev));
+        Scalar tmp = (x_m(ilev)*dp_m(ilev) + x_m(ilev-1)*dp_m(ilev-1)) / (2.0*dp_i(ilev));
+        combine<CM>(tmp,x_i(ilev),alpha,beta);
       });
       // Fix the top/bottom
       Kokkos::single(Kokkos::PerThread(kv.team),[&](){
-        x_i(0) = x_m(0);
-        x_i(NUM_INTERFACE_LEV-1) = x_m(NUM_PHYSICAL_LEV-1);
+        combine<CM>(x_m(0),x_i(0),alpha,beta);
+        combine<CM>(x_m(NUM_INTERFACE_LEV-1),x_i(NUM_PHYSICAL_LEV-1),alpha,beta);
       });
     } else {
       // Try to use SIMD operations as much as possible: the last NUM_LEV-1 packs are treated uniformly, and can be vectorized
@@ -159,31 +214,38 @@ public:
         Scalar tmp = x_m(ilev)*dp_m(ilev);
         tmp.shift_right(1);
         tmp[0] = x_m(ilev-1)[VECTOR_END]*dp_m(ilev-1)[VECTOR_END];
-        x_i(ilev) = (x_m(ilev)*dp_m(ilev) + tmp) / (2.0*dp_i(ilev));
+        tmp += x_m(ilev)*dp_m(ilev);
+        tmp /= 2.0*dp_i(ilev);
+        combine<CM>(tmp,x_i(ilev),alpha,beta);
       }
 
       // First pack does not have a previous pack, and the extrapolation of the 1st interface is x_i = x_m.
       // Luckily, dp_i(0) = dp_m(0), and shift_right inserts leading 0's, so the formula is almost the same
       Scalar tmp = x_m(0)*dp_m(0);
       tmp.shift_right(1);
-      x_i(0) = (x_m(0)*dp_m(0) + tmp) / (2.0*dp_i(0));
-      x_i(0)[0] = x_m(0)[0];
+      tmp += x_m(0)*dp_m(0);
+      tmp /= 2.0*dp_i(0);
+      combine<CM>(tmp, x_i(0), alpha, beta);
 
-      // The last interface is p_i=p_m.
-      x_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd] = x_m(MIDPOINTS::LastPack)[MIDPOINTS::LastVecEnd];
+      // Fix top/bottom
+      combine<CM>(x_m(0)[0], x_i(0)[0], alpha, beta);
+      combine<CM>(x_m(MIDPOINTS::LastPack)[MIDPOINTS::LastVecEnd],x_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd],alpha,beta);
     }
   }
 
+  template<CombineMode CM = CombineMode::Replace>
   KOKKOS_INLINE_FUNCTION
   void compute_midpoint_delta (const KernelVariables& kv,
                                ExecViewUnmanaged<const Scalar [NUM_LEV_P]> x_i,
-                               ExecViewUnmanaged<      Scalar [NUM_LEV]  > dx_m) const
+                               ExecViewUnmanaged<      Scalar [NUM_LEV]  > dx_m,
+                               const Real alpha = 1.0, const Real beta = 0.0) const
   {
     // Compute increment of interface values at midpoints.
     if (OnGpu<ExecSpace>::value) {
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,0,NUM_PHYSICAL_LEV),
                            [=](const int& ilev) {
-        dx_m(ilev) = x_i(ilev+1)-x_i(ilev);
+        Scalar tmp = x_i(ilev+1)-x_i(ilev);
+        combine<CM>(tmp,dx_m(ilev),alpha,beta);
       });
     } else {
       // Try to use SIMD operations as much as possible. First NUM_LEV-1 packs can be treated the same
@@ -191,22 +253,24 @@ public:
         Scalar tmp = x_i(ilev);
         tmp.shift_left(1);
         tmp[VECTOR_END] = x_i(ilev+1)[0];
-        dx_m(ilev) = tmp - x_i(ilev);
+        combine<CM>(tmp - x_i(ilev),dx_m(ilev),alpha,beta);
       }
 
       // Last pack does not necessarily have a next pack, so needs to be treated a part.
       Scalar tmp = x_i(MIDPOINTS::LastPack);
       tmp.shift_left(1);
       tmp[MIDPOINTS::LastVecEnd] = x_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd];
-      dx_m(MIDPOINTS::LastPack) = tmp - x_i(MIDPOINTS::LastPack);
+      combine<CM>(tmp - x_i(MIDPOINTS::LastPack),dx_m(MIDPOINTS::LastPack),alpha,beta);
     }
   }
 
-  template<BCType bcType = BCType::Zero>
+  template<CombineMode CM = CombineMode::Replace, BCType bcType = BCType::Zero>
   KOKKOS_INLINE_FUNCTION
   void compute_interface_delta (const KernelVariables& kv,
                                 ExecViewUnmanaged<const Scalar [NUM_LEV]  > x_m,
-                                ExecViewUnmanaged<      Scalar [NUM_LEV_P]> dx_i) const
+                                ExecViewUnmanaged<      Scalar [NUM_LEV_P]> dx_i,
+                                const Real bcVal = 0.0,
+                                const Real alpha = 1.0, const Real beta = 0.0) const
   {
     static_assert (bcType==BCType::Zero || bcType == BCType::DoNothing,
                    "Error! Invalid bcType for interface delta calculation.\n");
@@ -215,13 +279,20 @@ public:
     if (OnGpu<ExecSpace>::value) {
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,1,NUM_PHYSICAL_LEV),
                            [=](const int& ilev) {
-        dx_i(ilev) = x_m(ilev)-x_m(ilev-1);
+        combine<CM>(x_m(ilev)-x_m(ilev-1),dx_i(ilev),alpha,beta);
       });
 
       if (bcType==BCType::Zero) {
         // Fix the top/bottom
         Kokkos::single(Kokkos::PerThread(kv.team),[&](){
-          dx_i(0) = dx_i(NUM_INTERFACE_LEV-1) = 0.0;
+          combine<CM>(0.0, dx_i(0)[0], alpha, beta);
+          combine<CM>(0.0, dx_i(NUM_INTERFACE_LEV-1)[0], alpha, beta);
+        });
+      } else if (bcType==BCType::Value) {
+        // Fix the top/bottom
+        Kokkos::single(Kokkos::PerThread(kv.team),[&](){
+          combine<CM>(bcVal, dx_i(0)[0], alpha, beta);
+          combine<CM>(bcVal, dx_i(NUM_INTERFACE_LEV-1)[0], alpha, beta);
         });
       }
     } else {
@@ -230,17 +301,22 @@ public:
         Scalar tmp = x_m(ilev);
         tmp.shift_right(1);
         tmp[0] = x_m(ilev-1)[VECTOR_END];
-        dx_i(ilev) = x_m(ilev) - tmp;
+        combine<CM>(x_m(ilev) - tmp, dx_i(ilev), alpha, beta);
       }
 
       // First pack does not have a previous pack. Luckily, shift_right inserts leading 0's, so the formula is the same, without the tmp[0] modification
       Scalar tmp = x_m(0);
       tmp.shift_right(1);
-      dx_i(0) = x_m(0) - tmp;
+      combine<CM>(x_m(0) - tmp, dx_i(0), alpha, beta);
 
       if (bcType==BCType::Zero) {
         // Fix the top/bottom levels
-        dx_i(0)[0] = dx_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd] = 0.0;
+        combine<CM>(0.0, dx_i(0)[0], alpha, beta);
+        combine<CM>(0.0, dx_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd], alpha, beta);
+      } else if (bcType==BCType::Value) {
+        // Fix the top/bottom levels
+        combine<CM>(bcVal, dx_i(0)[0], alpha, beta);
+        combine<CM>(bcVal, dx_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd], alpha, beta);
       }
     }
   }
@@ -406,4 +482,4 @@ public:
 
 } // namespace Homme
 
-#endif // HOMMEXX_ELEMENT_OPS_HPP
+#endif // HOMMEXX_COLUMN_OPS_HPP

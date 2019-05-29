@@ -5,35 +5,6 @@ SET(THETA_UT_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
 SET(UTILS_SHARE_DIR  ${HOMME_SOURCE_DIR}/utils/csm_share)
 SET(UTILS_TIMING_DIR ${HOMME_SOURCE_DIR}/utils/cime/src/share/timing)
 
-### ElementOps unit tests
-
-SET (ELEM_OPS_UT_CXX_SRCS
-  ${SRC_SHARE_DIR}/cxx/Context.cpp
-  ${SRC_SHARE_DIR}/cxx/ErrorDefs.cpp
-  ${SRC_SHARE_DIR}/cxx/ExecSpaceDefs.cpp
-  ${SRC_SHARE_DIR}/cxx/Hommexx_Session.cpp
-  ${SRC_SHARE_DIR}/cxx/mpi/Comm.cpp
-  ${THETA_UT_DIR}/elem_ops_ut.cpp
-)
-
-SET (CONFIG_DEFINES PIO_INTERP NP=4 PLEV=11 QSIZE_D=4 _MPI=1)
-SET (ELEM_OPS_UT_INCLUDE_DIRS
-  ${SRC_THETA_DIR}/cxx
-  ${SRC_SHARE_DIR}
-  ${SRC_SHARE_DIR}/cxx
-  ${THETA_UT_DIR}
-  ${UTILS_TIMING_DIR}
-  ${CMAKE_CURRENT_BINARY_DIR}
-  ${CMAKE_BINARY_DIR}/src/share/cxx
-)
-
-IF (USE_NUM_PROCS)
-  SET (NUM_CPUS ${USE_NUM_PROCS})
-ELSE()
-  SET (NUM_CPUS 1)
-ENDIF()
-cxx_unit_test (elem_ops_ut "${ELEM_OPS_UT_F90_SRCS}" "${ELEM_OPS_UT_CXX_SRCS}" "${ELEM_OPS_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
-
 ### Equation of state unit tests
 
 SET (EOS_UT_CXX_SRCS

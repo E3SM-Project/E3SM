@@ -102,11 +102,23 @@ inline bool is_implicit (const TimeStepType& ts) {
   return ts==TimeStepType::BE || ts==TimeStepType::BDF2;
 }
 
+// ======= How to combine output/input during calculations ========== //
+
+enum class CombineMode {
+  Replace  = 0,   // out = in
+  Scale,          // out = alpha*in
+  Update,         // out = beta*out + in
+  ScaleUpdate,    // out = beta*out + alpha*in
+  ScaleAdd,       // out = out + alpha*in (special case of ScaleUpdate with beta=1)
+  Add,            // out = out + in (special case of ScaleAdd/Update with alpha=1, beta=1.0)
+  ProdUpdate      // out = out*in
+};
+
 // ========================== BC Types ============================ //
 
 enum class BCType {
   Zero = 0,
-  DoNothing = 0
+  DoNothing
 };
 
 // =================== Euler Step DSS Option ====================== //

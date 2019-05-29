@@ -1,9 +1,8 @@
 #include <catch2/catch.hpp>
 
-#include <iostream>
 #include <random>
 
-#include "ElementOps.hpp"
+#include "ColumnOps.hpp"
 #include "Types.hpp"
 
 #include "utilities/TestUtils.hpp"
@@ -14,9 +13,9 @@
 using namespace Homme;
 
 
-// ============= ELEMENT OPS ================ //
+// ============= COLUMN OPS ================ //
 
-TEST_CASE("elem_ops_interpolation", "interpolation") {
+TEST_CASE("col_ops_interpolation", "interpolation") {
 
   constexpr auto LAST_LEV_P = ColInfo<NUM_INTERFACE_LEV>::LastPack;
   constexpr auto LAST_LEV   = ColInfo<NUM_PHYSICAL_LEV>::LastPack;
@@ -34,7 +33,7 @@ TEST_CASE("elem_ops_interpolation", "interpolation") {
   auto h_midpoints_field_out = Kokkos::create_mirror_view(d_midpoints_field_out);
   auto h_interface_field_out = Kokkos::create_mirror_view(d_interface_field_out);
 
-  ElementOps elem_ops;
+  ColumnOps col_ops;
 
   // Fill input fields columns with 0,1,2,3,...
   for (int ie=0; ie<num_elems; ++ie) {
@@ -65,9 +64,9 @@ TEST_CASE("elem_ops_interpolation", "interpolation") {
         const int igp = idx / NP;
         const int jgp = idx % NP;
 
-        elem_ops.compute_midpoint_delta(kv,Homme::subview(d_interface_field_in,kv.ie,igp,jgp),
+        col_ops.compute_midpoint_delta(kv,Homme::subview(d_interface_field_in,kv.ie,igp,jgp),
                                            Homme::subview(d_midpoints_field_out,kv.ie,igp,jgp));
-        elem_ops.compute_interface_delta(kv,Homme::subview(d_midpoints_field_in,kv.ie,igp,jgp),
+        col_ops.compute_interface_delta(kv,Homme::subview(d_midpoints_field_in,kv.ie,igp,jgp),
                                             Homme::subview(d_interface_field_out,kv.ie,igp,jgp));
       });
     });
@@ -108,9 +107,9 @@ TEST_CASE("elem_ops_interpolation", "interpolation") {
         const int igp = idx / NP;
         const int jgp = idx % NP;
 
-        elem_ops.compute_midpoint_values(kv,Homme::subview(d_interface_field_in,kv.ie,igp,jgp),
+        col_ops.compute_midpoint_values(kv,Homme::subview(d_interface_field_in,kv.ie,igp,jgp),
                                             Homme::subview(d_midpoints_field_out,kv.ie,igp,jgp));
-        elem_ops.compute_interface_values(kv,Homme::subview(d_midpoints_field_in,kv.ie,igp,jgp),
+        col_ops.compute_interface_values(kv,Homme::subview(d_midpoints_field_in,kv.ie,igp,jgp),
                                              Homme::subview(d_interface_field_out,kv.ie,igp,jgp));
       });
     });
@@ -157,8 +156,8 @@ TEST_CASE("elem_ops_interpolation", "interpolation") {
         const int igp = idx / NP;
         const int jgp = idx % NP;
 
-        elem_ops.update_midpoint_values_with_product(
-                  kv,1.0,
+        col_ops.compute_midpoint_product<CombineMode::Add>(
+                  kv,
                   Homme::subview(d_interface_field_in,kv.ie,igp,jgp),
                   Homme::subview(d_interface_field_in,kv.ie,igp,jgp),
                   Homme::subview(d_midpoints_field_out,kv.ie,igp,jgp)
@@ -184,7 +183,7 @@ TEST_CASE("elem_ops_interpolation", "interpolation") {
   }
 }
 
-TEST_CASE("elem_ops_scan_sum", "scan_sum") {
+TEST_CASE("col_ops_scan_sum", "scan_sum") {
 
   constexpr int num_elems = 10;
 
@@ -198,7 +197,7 @@ TEST_CASE("elem_ops_scan_sum", "scan_sum") {
   auto h_midpoints_field_out = Kokkos::create_mirror_view(d_midpoints_field_out);
   auto h_interface_field_out = Kokkos::create_mirror_view(d_interface_field_out);
 
-  ElementOps elem_ops;
+  ColumnOps col_ops;
 
   std::random_device rd;
   using rngAlg = std::mt19937_64;
@@ -234,9 +233,9 @@ TEST_CASE("elem_ops_scan_sum", "scan_sum") {
           return d_interface_field_in(kv.ie,igp,jgp,ilev);
         };
 
-        elem_ops.column_scan<true,true,NUM_PHYSICAL_LEV>(kv, provide_field_mid,
+        col_ops.column_scan<true,true,NUM_PHYSICAL_LEV>(kv, provide_field_mid,
                                        Homme::subview(d_midpoints_field_out,kv.ie,igp,jgp));
-        elem_ops.column_scan<true,true,NUM_INTERFACE_LEV>(kv, provide_field_int,
+        col_ops.column_scan<true,true,NUM_INTERFACE_LEV>(kv, provide_field_int,
                                        Homme::subview(d_interface_field_out,kv.ie,igp,jgp));
       });
     });
@@ -293,9 +292,9 @@ TEST_CASE("elem_ops_scan_sum", "scan_sum") {
           return d_interface_field_in(kv.ie,igp,jgp,ilev);
         };
 
-        elem_ops.column_scan<false,true,NUM_PHYSICAL_LEV>(kv, provide_field_mid,
+        col_ops.column_scan<false,true,NUM_PHYSICAL_LEV>(kv, provide_field_mid,
                                         Homme::subview(d_midpoints_field_out,kv.ie,igp,jgp));
-        elem_ops.column_scan<false,true,NUM_INTERFACE_LEV>(kv, provide_field_int,
+        col_ops.column_scan<false,true,NUM_INTERFACE_LEV>(kv, provide_field_int,
                                         Homme::subview(d_interface_field_out,kv.ie,igp,jgp));
       });
     });
@@ -352,9 +351,9 @@ TEST_CASE("elem_ops_scan_sum", "scan_sum") {
           return d_interface_field_in(kv.ie,igp,jgp,ilev);
         };
 
-        elem_ops.column_scan<true,false,NUM_PHYSICAL_LEV>(kv, provide_field_mid,
+        col_ops.column_scan<true,false,NUM_PHYSICAL_LEV>(kv, provide_field_mid,
                                         Homme::subview(d_midpoints_field_out,kv.ie,igp,jgp));
-        elem_ops.column_scan<true,false,NUM_INTERFACE_LEV>(kv, provide_field_int,
+        col_ops.column_scan<true,false,NUM_INTERFACE_LEV>(kv, provide_field_int,
                                         Homme::subview(d_interface_field_out,kv.ie,igp,jgp));
       });
     });
@@ -412,9 +411,9 @@ TEST_CASE("elem_ops_scan_sum", "scan_sum") {
           return d_interface_field_in(kv.ie,igp,jgp,ilev);
         };
 
-        elem_ops.column_scan<false,false,NUM_PHYSICAL_LEV>(kv, provide_field_mid,
+        col_ops.column_scan<false,false,NUM_PHYSICAL_LEV>(kv, provide_field_mid,
                                          Homme::subview(d_midpoints_field_out,kv.ie,igp,jgp));
-        elem_ops.column_scan<false,false,NUM_INTERFACE_LEV>(kv, provide_field_int,
+        col_ops.column_scan<false,false,NUM_INTERFACE_LEV>(kv, provide_field_int,
                                          Homme::subview(d_interface_field_out,kv.ie,igp,jgp));
       });
     });
@@ -468,7 +467,7 @@ TEST_CASE("elem_ops_scan_sum", "scan_sum") {
         auto out = Homme::subview(d_interface_field_out,kv.ie,igp,jgp);
 
         out(0)[0] = s0;
-        elem_ops.column_scan_mid_to_int<true>(kv, in, out);
+        col_ops.column_scan_mid_to_int<true>(kv, in, out);
       });
     });
 
@@ -517,7 +516,7 @@ TEST_CASE("elem_ops_scan_sum", "scan_sum") {
         auto out = Homme::subview(d_interface_field_out,kv.ie,igp,jgp);
 
         out(Specs::LastPack)[Specs::LastVecEnd] = s0;
-        elem_ops.column_scan_mid_to_int<false>(kv, in, out);
+        col_ops.column_scan_mid_to_int<false>(kv, in, out);
       });
     });
 
@@ -568,7 +567,7 @@ TEST_CASE("elem_ops_scan_sum", "scan_sum") {
         auto out = Homme::subview(d_interface_field_out,kv.ie,igp,jgp);
 
         out(0)[0] = s0;
-        elem_ops.column_scan_mid_to_int<true>(kv, provider, out);
+        col_ops.column_scan_mid_to_int<true>(kv, provider, out);
       });
     });
 
@@ -619,7 +618,7 @@ TEST_CASE("elem_ops_scan_sum", "scan_sum") {
         auto out = Homme::subview(d_interface_field_out,kv.ie,igp,jgp);
 
         out(Specs::LastPack)[Specs::LastVecEnd] = s0;
-        elem_ops.column_scan_mid_to_int<false>(kv, provider, out);
+        col_ops.column_scan_mid_to_int<false>(kv, provider, out);
       });
     });
 
