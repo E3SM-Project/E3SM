@@ -243,7 +243,6 @@ using a fortran linker.
   </FFLAGS>
   <FFLAGS_NOOPT>
     <base> -O0 </base>
-    <append compile_threaded="TRUE"> -qopenmp </append>
   </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base> -fixed  </base>
@@ -301,13 +300,7 @@ using a fortran linker.
     <append MODEL="cism"> -mismatch_all </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
-    <base>-Wp,-macro=no_com -convert=BIG_ENDIAN -indirect $ENV{CIMEROOT}/config/cesm/machines/nag_mpi_argument.txt</base>
-    <append DEBUG="FALSE"> -ieee=full     </append>
-    <!-- Hack! If DEBUG="TRUE", put runtime checks in FFLAGS, but not into     -->
-    <!-- FFLAGS_NOOPT, allowing strict checks to be removed from files by      -->
-    <!-- having them use FFLAGS_NOOPT in Depends.nag                           -->
-    <append DEBUG="TRUE"> -g -time -f2003 -ieee=stop </append>
-    <append DEBUG="TRUE" compile_threaded="FALSE"> -gline        </append>
+    <base> -O0 </base>
   </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base> -fixed </base>
@@ -379,8 +372,7 @@ using a fortran linker.
     <append MODEL="docn"> -Mnovect </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
-    <base> -O0 -g -Ktrap=fp -Mbounds -Kieee  </base>
-    <append compile_threaded="TRUE"> -mp </append>
+    <base> -O0 </base>
   </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base> -Mfixed </base>

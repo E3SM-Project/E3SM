@@ -41,31 +41,9 @@ endif
 buffer.o: buffer.F90
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -O0 $<
 
-## lnd files taking more than a minute to compile
-# this takes 4 mins to compile with -O3 -qsmp=omp
-BiogeophysRestMod.o: BiogeophysRestMod.F90
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -O0 -qsmp=noopt $<
-
-# this takes 17 mins to compile with -O3 -qsmp=omp
-CNrestMod.o: CNrestMod.F90
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -O0 -qsmp=noopt $<
-
-# this takes 4 mins to compile with -qsmp=omp
-clmtypeInitMod.o: clmtypeInitMod.F90
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -qsmp=noopt $<
-
-# this takes 2 mins to compile with -qsmp=omp
-clmtype.o: clmtype.F90
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -qsmp=noopt $<
- 
 # disable inlining (some issues with pure functions therein)
 advance_xm_wpxp_module.o: advance_xm_wpxp_module.F90
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -Q! $<
 advance_wp2_wp3_module.o: advance_wp2_wp3_module.F90
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -Q! $<
 ### end
-
-# lower -O flag for ne120-coupled cases
-ifneq (,$(and $(findstring a%ne120,$(shell $(CASEROOT)/xmlquery --value GRID --caseroot $(CASEROOT) )),$(findstring MPASO,$(shell $(CASEROOT)/xmlquery --value COMPSET --caseroot $(CASEROOT) ))))
-FFLAGS:=$(subst O3,O2,$(FFLAGS))
-endif

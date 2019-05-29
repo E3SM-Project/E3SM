@@ -51,7 +51,7 @@ def buildlib(bldroot, installpath, case):
     # We want to get the compiler and kokkos_options from Macros.make
     # (generated from config_compilers.xml), but we want to otherwise
     # let kokkos control flags
-    make_args = get_standard_makefile_args(case)
+    make_args = get_standard_makefile_args(case, shared_lib=True)
     stat, output, _ = run_cmd("make -f Macros.make {} -p | grep KOKKOS_OPTIONS".format(make_args))
     if stat == 0:
         kokkos_options = output.split(":=")[-1].strip()
