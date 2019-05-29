@@ -55,34 +55,26 @@ class EnvBatch(EnvBase):
         return val
 
     # pylint: disable=arguments-differ
-    def get_value(self, item, attribute=None, resolved=True, subgroup="PRIMARY"):
+    def get_value(self, item, attribute=None, resolved=True, subgroup=None):
         """
         Must default subgroup to something in order to provide single return value
         """
 
         value = None
-        if subgroup is None:
-            node = self.get_optional_child(item, attribute)
-            if node is None:
-                # this will take the last instance of item listed in all batch_system elements
-                bs_nodes = self.get_children("batch_system")
-                for bsnode in bs_nodes:
-                    cnode = self.get_optional_child(item, attribute, root=bsnode)
-                    if cnode is not None:
-                        node = cnode
-
-            if node is not None:
-                value = self.text(node)
-                if resolved:
-                    value = self.get_resolved_value(value)
-            else:
-                value = super(EnvBatch, self).get_value(item,attribute,resolved)
-
+        node = self.get_optional_child(item, attribute)
+        if node is None:
+            # this will take the last instance of item listed in all batch_system elements
+            bs_nodes = self.get_children("batch_system")
+            for bsnode in bs_nodes:
+                cnode = self.get_optional_child(item, attribute, root=bsnode)
+                if cnode is not None:
+                    node = cnode
+        if node is None or item in ("BATCH_SYSTEM", "PROJECT_REQUIRED"):
+            value = super(EnvBatch, self).get_value(item,attribute,resolved)
         else:
-            if subgroup == "PRIMARY":
-                subgroup = "case.test" if "case.test" in self.get_jobs() else "case.run"
-            #pylint: disable=assignment-from-none
-            value = super(EnvBatch, self).get_value(item, attribute=attribute, resolved=resolved, subgroup=subgroup)
+            value = self.text(node)
+            if resolved:
+                value = self.get_resolved_value(value)
 
         return value
 
@@ -174,11 +166,15 @@ class EnvBatch(EnvBase):
 
     def make_batch_script(self, input_template, job, case, outfile=None):
         expect(os.path.exists(input_template), "input file '{}' does not exist".format(input_template))
-        task_count = self.get_value("task_count", subgroup=job)
+        env_workflow = case.get_env('workflow')
+        task_count = env_workflow.get_value("task_count", subgroup=job)
+        tasks_per_node = env_workflow.get_value("tasks_per_node", subgroup=job)
+        if not tasks_per_node:
+            tasks_per_node = case.tasks_per_node
         overrides = {}
         if task_count is not None:
             overrides["total_tasks"] = int(task_count)
-            overrides["num_nodes"]   = int(math.ceil(float(task_count)/float(case.tasks_per_node)))
+            overrides["num_nodes"]   = int(math.ceil(float(task_count)/float(tasks_per_node)))
         else:
             task_count = case.get_value("TOTALPES")*int(case.thread_count)
         if int(task_count) < case.get_value("MAX_TASKS_PER_NODE"):
@@ -200,16 +196,14 @@ class EnvBatch(EnvBase):
         # make sure batch script is exectuble
         os.chmod(output_name, os.stat(output_name).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
-    def set_job_defaults(self, batch_jobs, case, env_workflow=None):
+    def set_job_defaults(self, batch_jobs, case):
         if self._batchtype is None:
             self._batchtype = self.get_batch_system_type()
 
         if self._batchtype == "none":
             return
-        if env_workflow:
-            known_jobs = env_workflow.get_jobs()
-        else:
-            known_jobs = self.get_jobs()
+        env_workflow = case.get_env('workflow')
+        known_jobs = env_workflow.get_jobs()
 
         for job, jsect in batch_jobs:
             if job not in known_jobs:
@@ -269,12 +263,8 @@ class EnvBatch(EnvBase):
                     walltime = specs[3]
 
                 walltime = self._default_walltime if walltime is None else walltime # last-chance fallback
-            if env_workflow:
-                env_workflow.set_value("JOB_QUEUE", queue, subgroup=job, ignore_type=specs is None)
-                env_workflow.set_value("JOB_WALLCLOCK_TIME", walltime, subgroup=job)
-            else:
-                self.set_value("JOB_QUEUE", queue, subgroup=job, ignore_type=specs is None)
-                self.set_value("JOB_WALLCLOCK_TIME", walltime, subgroup=job)
+            env_workflow.set_value("JOB_QUEUE", queue, subgroup=job, ignore_type=specs is None)
+            env_workflow.set_value("JOB_WALLCLOCK_TIME", walltime, subgroup=job)
             logger.debug("Job {} queue {} walltime {}".format(job, queue, walltime))
 
     def _match_attribs(self, attribs, case, queue):
@@ -417,38 +407,33 @@ class EnvBatch(EnvBase):
 
     def submit_jobs(self, case, no_batch=False, job=None, user_prereq=None, skip_pnl=False,
                     allow_fail=False, resubmit_immediate=False, mail_user=None, mail_type=None,
-                    batch_args=None, dry_run=False, env_workflow=None):
-        if env_workflow:
-            alljobs = env_workflow.get_jobs()
-        else:
-            alljobs = self.get_jobs()
+                    batch_args=None, dry_run=False):
+        env_workflow = case.get_env('workflow')
+        alljobs = env_workflow.get_jobs()
+        alljobs = [j for j in alljobs
+                   if os.path.isfile(os.path.join(self._caseroot,get_batch_script_for_job(j)))]
         startindex = 0
         jobs = []
         firstjob = job
         if job is not None:
             expect(job in alljobs, "Do not know about batch job {}".format(job))
             startindex = alljobs.index(job)
-
         for index, job in enumerate(alljobs):
             logger.debug( "Index {:d} job {} startindex {:d}".format(index, job, startindex))
             if index < startindex:
                 continue
             jobfile = get_batch_script_for_job(job)
-            if not os.path.isfile(jobfile):
-                logger.info("Jobfile {} not found in case, skipping job step".format(jobfile))
-                prereq = False
-            else:
-                try:
-                    prereq = self.get_value('prereq', subgroup=job, resolved=False)
-                    if prereq is None or job == firstjob or (dry_run and prereq == "$BUILD_COMPLETE"):
-                        prereq = True
-                    else:
-                        prereq = case.get_resolved_value(prereq)
-                        prereq = eval(prereq)
-                except:
-                    expect(False,"Unable to evaluate prereq expression '{}' for job '{}'".format(self.get_value('prereq',subgroup=job), job))
+            try:
+                prereq = self.get_value('prereq', subgroup=job, resolved=False)
+                if prereq is None or job == firstjob or (dry_run and prereq == "$BUILD_COMPLETE"):
+                    prereq = True
+                else:
+                    prereq = case.get_resolved_value(prereq)
+                    prereq = eval(prereq)
+            except:
+                expect(False,"Unable to evaluate prereq expression '{}' for job '{}'".format(self.get_value('prereq',subgroup=job), job))
             if prereq:
-                jobs.append((job, self.get_value('dependency', subgroup=job)))
+                jobs.append((job, env_workflow.get_value('dependency', subgroup=job)))
 
             if self._batchtype == "cobalt":
                 break
@@ -491,7 +476,6 @@ class EnvBatch(EnvBase):
                                                  mail_type=mail_type,
                                                  batch_args=batch_args,
                                                  dry_run=dry_run)
-                print "HERE job {} result {}".format(job,result)
                 batch_job_id = str(alljobs.index(job)) if dry_run else result
                 depid[job] = batch_job_id
                 jobcmds.append( (job, result) )
@@ -660,7 +644,6 @@ class EnvBatch(EnvBase):
             sequence = (batchsubmit, submitargs, batchredirect, get_batch_script_for_job(job), run_args)
 
         submitcmd = " ".join(s.strip() for s in sequence if s is not None)
-        print "submitcmd is {}".format(submitcmd)
         if dry_run:
             return submitcmd
         else:
@@ -796,8 +779,7 @@ class EnvBatch(EnvBase):
         return nodes
 
     def get_children(self, name=None, attributes=None, root=None):
-        if name in ("JOB_WALLCLOCK_TIME", "PROJECT", "CHARGE_ACCOUNT",
-                        "PROJECT_REQUIRED", "JOB_QUEUE", "BATCH_COMMAND_FLAGS"):
+        if name == "PROJECT_REQUIRED":
             nodes = super(EnvBatch, self).get_children("entry", attributes={"id":name}, root=root)
         else:
             nodes = super(EnvBatch, self).get_children(name, attributes=attributes, root=root)
@@ -874,15 +856,9 @@ class EnvBatch(EnvBase):
         machdir  = case.get_value("MACHDIR")
         env_workflow = case.get_env("workflow")
         logger.info("Creating batch scripts")
-        if env_workflow:
-            jobs = env_workflow.get_jobs()
-        else:
-            jobs = self.get_jobs()
+        jobs = env_workflow.get_jobs()
         for job in jobs:
-            if env_workflow:
-                template = env_workflow.get_value('template', subgroup=job)
-            else:
-                template = self.get_value('template', subgroup=job)
+            template = env_workflow.get_value('template', subgroup=job)
             template = template.replace('$CASEROOT', self._caseroot)
 
             if os.path.isabs(template):

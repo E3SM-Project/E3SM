@@ -45,6 +45,7 @@ class EnvWorkflow(EnvBase):
             elif name == "case.run.sh":
                 pass # skip
             else:
+                print "jdict is {}".format(jdict)
                 new_job_group = self.make_child("group", {"id":name})
                 for field in jdict.keys():
                     if field == "runtime_parameters":
@@ -77,6 +78,20 @@ class EnvWorkflow(EnvBase):
                             "Inconsistent type_info for entry id={} {} {}".format(vid, new_type_info, type_info))
         return type_info
 
+    def get_value(self, item, attribute=None, resolved=True, subgroup="PRIMARY"):
+        """
+        Must default subgroup to something in order to provide single return value
+        """
+        value = None
+        if subgroup == "PRIMARY":
+            subgroup = "case.test" if "case.test" in self.get_jobs() else "case.run"
+
+        #pylint: disable=assignment-from-none
+        if value is None:
+            value = super(EnvWorkflow, self).get_value(item, attribute=attribute, resolved=resolved, subgroup=subgroup)
+
+        return value
+
     # pylint: disable=arguments-differ
     def set_value(self, item, value, subgroup=None, ignore_type=False):
         """
@@ -100,3 +115,12 @@ class EnvWorkflow(EnvBase):
                     val = self._set_value(node, value, vid=item, ignore_type=ignore_type)
 
         return val
+
+    def get_children(self, name=None, attributes=None, root=None):
+        if name in ("JOB_WALLCLOCK_TIME", "PROJECT", "CHARGE_ACCOUNT",
+                    "JOB_QUEUE", "BATCH_COMMAND_FLAGS"):
+            nodes = super(EnvWorkflow, self).get_children("entry", attributes={"id":name}, root=root)
+        else:
+            nodes = super(EnvWorkflow, self).get_children(name, attributes=attributes, root=root)
+
+        return nodes

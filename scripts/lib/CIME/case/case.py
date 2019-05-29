@@ -943,20 +943,12 @@ class Case(object):
         batch_system_type = machobj.get_value("BATCH_SYSTEM")
         logger.info("Batch_system_type is {}".format(batch_system_type))
         batch = Batch(batch_system=batch_system_type, machine=machine_name, files=files)
-        bjobs = batch.get_batch_jobs()
-        # Workflow is optional in cime5.6 to support backward compatibility
-        # it was originally part of the config_batch/env_batch file.
-        workflow = None
-        if not bjobs:
-            workflow = Workflow(files=files)
-            bjobs = workflow.get_workflow_jobs()
-            env_workflow = self.get_env("workflow")
+        workflow = Workflow(files=files)
+        bjobs = workflow.get_workflow_jobs(machine=machine_name)
+        env_workflow = self.get_env("workflow")
 
         env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
-        if workflow:
-            env_workflow.create_job_groups(bjobs, test)
-        else:
-            env_batch.create_job_groups(bjobs, test)
+        env_workflow.create_job_groups(bjobs, test)
         env_batch.set_job_defaults(bjobs, self)
 
         if walltime:
@@ -1204,14 +1196,12 @@ directory, NOT in this subdirectory."""
     def submit_jobs(self, no_batch=False, job=None, skip_pnl=None, prereq=None, allow_fail=False,
                     resubmit_immediate=False, mail_user=None, mail_type=None, batch_args=None,
                     dry_run=False):
-        env_workflow = self.get_env('workflow')
         env_batch = self.get_env('batch')
         result =  env_batch.submit_jobs(self, no_batch=no_batch, skip_pnl=skip_pnl,
                                         job=job, user_prereq=prereq, allow_fail=allow_fail,
                                         resubmit_immediate=resubmit_immediate,
                                         mail_user=mail_user, mail_type=mail_type,
-                                        batch_args=batch_args, dry_run=dry_run,
-                                        env_workflow=env_workflow)
+                                        batch_args=batch_args, dry_run=dry_run)
         return result
 
     def get_job_info(self):

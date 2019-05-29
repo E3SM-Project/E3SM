@@ -31,7 +31,7 @@ class Workflow(GenericXML):
         if os.path.exists(infile):
             GenericXML.read(self, infile)
 
-    def get_workflow_jobs(self):
+    def get_workflow_jobs(self, machine):
         """
         Return a list of jobs with the first element the name of the case script
         and the second a dict of qualifiers for the job
@@ -43,7 +43,19 @@ class Workflow(GenericXML):
                 name = self.get(jnode, "name")
                 jdict = {}
                 for child in self.get_children(root=jnode):
-                    jdict[self.name(child)] = self.text(child)
+                    if self.name(child) == "runtime_parameters":
+                        attrib = self.attrib(child)
+                        print "myattrib is {}".format(attrib)
+                        if attrib and attrib == {'MACH' : machine}:
+                            for rtchild in self.get_children(root=child):
+                                jdict[self.name(rtchild)] = self.text(rtchild)
+                        elif not attrib:
+                            for rtchild in self.get_children(root=child):
+                                if self.name(rtchild) not in jdict:
+                                    jdict[self.name(rtchild)] = self.text(rtchild)
+
+                    else:
+                        jdict[self.name(child)] = self.text(child)
 
             jobs.append((name, jdict))
 
