@@ -78,6 +78,7 @@ class EnvWorkflow(EnvBase):
                             "Inconsistent type_info for entry id={} {} {}".format(vid, new_type_info, type_info))
         return type_info
 
+    # pylint: disable=arguments-differ
     def get_value(self, item, attribute=None, resolved=True, subgroup="PRIMARY"):
         """
         Must default subgroup to something in order to provide single return value

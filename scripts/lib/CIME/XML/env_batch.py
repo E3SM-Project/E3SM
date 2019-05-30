@@ -422,7 +422,6 @@ class EnvBatch(EnvBase):
             logger.debug( "Index {:d} job {} startindex {:d}".format(index, job, startindex))
             if index < startindex:
                 continue
-            jobfile = get_batch_script_for_job(job)
             try:
                 prereq = env_workflow.get_value('prereq', subgroup=job, resolved=False)
                 if prereq is None or job == firstjob or (dry_run and prereq == "$BUILD_COMPLETE"):
