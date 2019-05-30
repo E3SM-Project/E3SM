@@ -479,6 +479,7 @@ contains
     real(rtype) :: qcshd     ! source for rain mass due to cloud water/ice collision above freezing and shedding or wet growth and shedding
     real(rtype) :: rhorime_c ! density of rime (from cloud)
     real(rtype) :: ncshdc    ! source for rain number due to cloud water/ice collision above freezing  and shedding (combined with NRSHD in the paper)
+    real(rtype) :: qiberg    ! Bergeron process
    
     logical   :: log_wetgrowth
 
@@ -754,7 +755,7 @@ contains
           qrheti  = 0._rtype;     qinuc   = 0._rtype;     nimlt   = 0._rtype
           nccol   = 0._rtype;     ncshdc  = 0._rtype
           ncheti  = 0._rtype;     nrcol   = 0._rtype;     nislf   = 0._rtype
-          ninuc   = 0._rtype;     qidep   = 0._rtype
+          ninuc   = 0._rtype;     qidep   = 0._rtype;     qiberg  = 0._rtype
           nrheti  = 0._rtype;     nisub   = 0._rtype;     qwgrth  = 0._rtype
  
           ! initialize microphysics processes tendency output
@@ -963,8 +964,8 @@ contains
           qccon,qrcon,qcevp,qrevp,nrevp)
 
           call ice_deposition_sublimation(qitot_incld(i,k), nitot_incld(i,k), t(i,k), &
-          aaa,xx,dt,qvs(i,k),dumqvi,ssat(i,k),epsi,abi,supi(i,k), &
-          qidep, qisub, nisub)
+          aaa,xx,dt,qvs(i,k),dumqvi,ssat(i,k),epsi,abi,supi(i,k),qv(i,k), &
+          qidep,qisub,nisub,qiberg)
 
 444       continue
 
@@ -1206,6 +1207,7 @@ contains
           qidep   = qidep*icldm(i,k)  ! Vapor deposition to ice phase
           nrheti  = nrheti*rcldm(i,k) ! Change in number due to immersion freezing of rain
           nisub   = nisub*icldm(i,k)  ! Number change due to sublimation of ice
+          qiberg  = qiberg*il_cldm    ! Bergeron process
             ! AaronDonahue: These variables are related to aerosol activation and their usage will be changed in a later PR.
           qinuc   = qinuc             ! Deposition and condensation-freezing nucleation, already cell-averaged
           ninuc   = ninuc             ! Number change due to deposition and condensation-freezing, already cell-averaged
@@ -1224,7 +1226,8 @@ contains
           !   simultaneously (outside of iice-loops) to distribute reduction proportionally
           !   amongst categories.
           !PMC - might need to rethink above statement since only one category now.
-
+          ! AaronDonahue: Do we need the below checks for the new definition of
+          ! how qidep and qisub are derived?
           dumqvi = qv_sat(t(i,k),pres(i,k),1)
           qdep_satadj = (qv(i,k)-dumqvi)/(1._rtype+xxls(i,k)**2*dumqvi/(cp*rv*t(i,k)**2))*odt
           qidep  = qidep*min(1._rtype,max(0._rtype, qdep_satadj)/max(qidep, 1.e-20_rtype))
@@ -1235,7 +1238,7 @@ contains
           !          cannot possibly overdeplete qv
 
           ! cloud
-          sinks   = (qcaut+qcacc+qccol+qcevp+qcheti+qcshd)*dt
+          sinks   = (qcaut+qcacc+qccol+qcevp+qcheti+qcshd+qiberg)*dt
           sources = qc(i,k) + (qccon+qcnuc)*dt
           if (sinks.gt.sources .and. sinks.ge.1.e-20_rtype) then
              ratio  = sources/sinks
@@ -1245,6 +1248,13 @@ contains
              qccol  = qccol*ratio
              qcheti = qcheti*ratio
              qcshd  = qcshd*ratio
+             qiberg = qiberg*ratio
+             !PMC: ratio is also frac of step w/ liq. thus we apply qiberg for
+             !"ratio" of timestep and vapor deposition for the remaining frac of
+             !the timestep.
+             if (qiberg.gt.0_rtype) qidep  = qidep*(1._rtype-ratio)
+          else
+             if (qiberg.gt.0_rtype) qidep  = 0._rtype ! If not limiting qiberg then must not have run out of qc
           endif
 
           ! rain
@@ -1260,7 +1270,7 @@ contains
           ! ice
           sinks   = (qisub+qimlt)*dt
           sources = qitot(i,k) + (qidep+qinuc+qrcol+qccol+  &
-               qrheti+qcheti)*dt
+               qrheti+qcheti+qiberg)*dt
           if (sinks.gt.sources .and. sinks.ge.1.e-20_rtype) then
              ratio = sources/sinks
              qisub = qisub*ratio
@@ -1274,7 +1284,7 @@ contains
 
           !-- ice-phase dependent processes:
 
-          qc(i,k) = qc(i,k) + (-qcheti-qccol-qcshd)*dt
+          qc(i,k) = qc(i,k) + (-qcheti-qccol-qcshd-qiberg)*dt
           if (log_predictNc) then
              nc(i,k) = nc(i,k) + (-nccol-ncheti)*dt
           endif
@@ -1297,7 +1307,7 @@ contains
 
           dum             = (qrcol+qccol+qrheti+          &
                qcheti)*dt
-          qitot(i,k) = qitot(i,k) + (qidep+qinuc)*dt + dum
+          qitot(i,k) = qitot(i,k) + (qidep+qinuc+qiberg)*dt + dum
           qirim(i,k) = qirim(i,k) + dum
          
 
@@ -1336,7 +1346,7 @@ contains
 
           th(i,k) = th(i,k) + exner(i,k)*((qidep-qisub+qinuc)*     &
                xxls(i,k)*inv_cp +(qrcol+qccol+   &
-               qcheti+qrheti-qimlt)*       &  
+               qcheti+qrheti-qimlt+qiberg)*       &  
                xlf(i,k)*inv_cp)*dt
 
           !==
@@ -3262,8 +3272,8 @@ end subroutine rain_immersion_freezing
 
 
 subroutine ice_deposition_sublimation(qitot_incld, nitot_incld, t, &
-aaa,xx,dt,qvs,dumqvi,ssat,epsi,abi,supi, &
-qidep, qisub, nisub)
+aaa,xx,dt,qvs,dumqvi,ssat,epsi,abi,supi,qv, &
+qidep,qisub,nisub,qiberg)
 
    implicit none
 
@@ -3279,36 +3289,90 @@ qidep, qisub, nisub)
    real(rtype), intent(in)  :: epsi
    real(rtype), intent(in)  :: abi
    real(rtype), intent(in)  :: supi
+   real(rtype), intent(in)  :: qv
    real(rtype), intent(out) :: qidep
    real(rtype), intent(out) :: qisub
    real(rtype), intent(out) :: nisub
+   real(rtype), intent(out) :: qiberg
 
    real(rtype) :: oxx, odt, oabi
+   logical :: orig_version = .false.  ! AaronDonahue: I will delete this and the code associated 
+                                     ! with it being true when we commit to the new derivation of 
+                                     ! qiberg, qidep, qisub and nisub.  Just
+                                     ! have it here so we can go back and forth
+                                     ! between old and new approach.
 
-   
-   oxx  = 1._rtype/xx
-   odt  = 1._rtype/dt   ! inverse model time step
    oabi = 1._rtype/abi
-   if (qitot_incld.ge.qsmall.and.t.lt.zerodegc) then
-      qidep = (aaa*epsi*oxx+(ssat-aaa*oxx)*odt*epsi*oxx*   &
-           (1._rtype-dexp(-dble(xx*dt))))*oabi+(qvs-dumqvi)*epsi*oabi
-   endif
-   !for very small ice contents in dry air, sublimate all ice instantly
-   if (supi.lt.-0.001_rtype .and. qitot_incld.lt.1.e-12_rtype) &
-        qidep = -qitot_incld*odt
-
-   if (qidep.lt.0._rtype) then
-      !note: limit to saturation adjustment (for dep and subl) is applied later
-      qisub = -qidep
-      qisub = qisub*clbfact_sub
-      qisub = min(qisub, qitot_incld*dt)
-      nisub = qisub*(nitot_incld/qitot_incld)
-      qidep = 0._rtype
-   else
-      qidep = qidep*clbfact_dep
-   endif
+   if (orig_version) then   
+      oxx  = 1._rtype/xx
+      odt  = 1._rtype/dt   ! inverse model time step
+      if (qitot_incld.ge.qsmall.and.t.lt.zerodegc) then
+         qidep = (aaa*epsi*oxx+(ssat-aaa*oxx)*odt*epsi*oxx*   &
+              (1._rtype-dexp(-dble(xx*dt))))*oabi+(qvs-dumqvi)*epsi*oabi
+      endif
+      !for very small ice contents in dry air, sublimate all ice instantly
+      if (supi.lt.-0.001_rtype .and. qitot_incld.lt.1.e-12_rtype) &
+           qidep = -qitot_incld*odt
+   
+      if (qidep.lt.0._rtype) then
+         !note: limit to saturation adjustment (for dep and subl) is applied later
+         qisub = -qidep
+         qisub = qisub*clbfact_sub
+         qisub = min(qisub, qitot_incld*dt)
+         nisub = qisub*(nitot_incld/qitot_incld)
+         qidep = 0._rtype
+      else
+         qidep = qidep*clbfact_dep
+         qisub = 0._rtype
+         nisub = 0._rtype
+      endif
+      qiberg = 0._rtype
+   else  ! AaronDonahue, below is the new code for handling these tendencies.
+         ! Once approved it will become the only code in this subroutine.
+   ! AaronDonahue: Some thoughts here.  
+   ! 1) Above there is a reliance on dt, below
+   ! there is no normalizing by dt.  Is this intentional? Or should we be using
+   ! odt to reduce the tendency?
+   ! 2) Above there is a check to force qidep to be proportional to qitot_incld
+   ! if supi is small.  Do we need something like this below?
+   ! 3) Not sure if this is a bug or just sloppy, but in the original code nisub
+   ! and qisub are only assigned a value if qidep < 0.  I guess in the original
+   ! code nisub and qisub were initialized to zero right away so it was needed.
+      if (qitot_incld>=qsmall) then
+         !Compute deposition/sublimation
+         qidep = epsi * oabi * (qv - dumqvi)
+         !Split into deposition or sublimation.
+         if (t < zerodegc .and. qidep>0._rtype) then
+            qisub=0._rtype
+         else
+         ! make qisub positive for consistency with other evap/sub processes
+            qisub=-min(qidep,0._rtype)
+            qidep=0._rtype
+         end if
+         !sublimation occurs @ any T. Not so for berg.
+         if (t < zerodegc) then
+            !Compute bergeron rate assuming cloud for whole step.
+            qiberg = max(epsi*oabi*(qvs - dumqvi), 0._rtype)
+         else !T>frz
+            qiberg=0._rtype
+         end if !T<frz
+         nisub = qisub*(nitot_incld/qitot_incld)
+      else
+         qiberg = 0._rtype
+         qidep  = 0._rtype
+         qisub  = 0._rtype
+         nisub  = 0._rtype
+      end if
+   end if
 
    return
+
+   ! AaronDonahue: General comment.  In testing these two approaches using the
+   ! p3 standalone I found that qidep is around two orders of magnitude greater for the
+   ! new approach than for the old approach. If we look at the expressions, in
+   ! the old approach we use qvs-dumqvi instead of qv-dumqvi.  qv is 3 or 4
+   ! times larger than qvs which contributes to this huge difference.  Should we
+   ! be using qv?
 
 end subroutine ice_deposition_sublimation
 
