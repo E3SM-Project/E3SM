@@ -610,6 +610,18 @@
 					description="flag that moves the non-local computation and application of tendency to after main timestep loop"
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_cvmix_kpp_use_theory_wave" type="logical" default_value=".false." units="NA"
+					description="Flag for use of theory-wave in Li et al. (2017) to approximate the Langmuir number and enhancement factor"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_cvmix_kpp_langmuir_mixing_opt" type="character" default_value="NONE" units="NA"
+					description="Option of Langmuir enhanced mixing parameterization"
+					possible_values="NONE, LWF16, RWHGK16"
+		/>
+		<nml_option name="config_cvmix_kpp_langmuir_entrainment_opt" type="character" default_value="NONE" units="NA"
+					description="Option of Langmuir enhanced entrainment parameterization"
+					possible_values="NONE, LWF16, LF17, RWHGK16"
+		/>
 	</nml_record>
 	<nml_record name="vmix_const" mode="forward">
 		<nml_option name="config_use_const_visc" type="logical" default_value=".false." units="unitless"
@@ -1810,6 +1822,7 @@
 			<var name="rainFlux"/>
 			<var name="snowFlux"/>
 			<var name="iceFraction"/>
+			<var name="windSpeed10m"/>
 			<var name="nAccumulatedCoupled"/>
 			<var name="thermalExpansionCoeff"/>
 			<var name="salineContractionCoeff"/>
@@ -2954,6 +2967,9 @@
 		<!-- Misc. coupling fields -->
 		<var name="iceFraction" type="real" dimensions="nCells Time" units="fractional"
 			 description="Fraction of sea ice coverage at cell centers from coupler. Positive into the ocean."
+		/>
+        <var name="windSpeed10m" type="real" dimensions="nCells Time" units="m s^{-1}"
+			 description="Wind speed at 10 meter."
 		/>
 
 		<!-- Output fields for coupling -->
