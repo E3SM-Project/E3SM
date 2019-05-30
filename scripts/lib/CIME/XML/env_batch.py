@@ -424,7 +424,7 @@ class EnvBatch(EnvBase):
                 continue
             jobfile = get_batch_script_for_job(job)
             try:
-                prereq = self.get_value('prereq', subgroup=job, resolved=False)
+                prereq = env_workflow.get_value('prereq', subgroup=job, resolved=False)
                 if prereq is None or job == firstjob or (dry_run and prereq == "$BUILD_COMPLETE"):
                     prereq = True
                 else:
