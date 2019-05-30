@@ -331,7 +331,7 @@ def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldr
             stat = 0
             run_sub_or_cmd(cmd, [caseroot, libroot, bldroot], "buildlib",
                            [bldroot, libroot, case], logfile=file_build)
-        except Exception as e:
+        except Exception:
             stat = 1
 
     else:
