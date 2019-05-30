@@ -5,6 +5,7 @@ module LSparseMatMod
   ! sparse matrix capability
   use bshr_kind_mod , only : r8 => shr_kind_r8
   use bshr_log_mod  , only : errMsg => shr_log_errMsg
+  use clm_varctl    , only : iulog
 implicit none
   private
   type, public :: spm_list_type
@@ -269,7 +270,6 @@ contains
     !
     use BetrstatusType     , only : betr_status_type
     use betr_constants     , only : betr_errmsg_len
-    use clm_varctl         , only : iulog
     implicit none
     ! !ARGUMENTS:
     class(lom_type), intent(in) :: this
@@ -363,6 +363,7 @@ contains
   !
   ! DESCRIPTION
   ! correcting the fluxes to avoid negative state variables
+  ! Reference: Tang and Riley, Biogeosciences, 2016, doi: 10.5194/bg-13-723-2016
   use abortutils             , only : endrun
   implicit none
   integer, intent(in) :: nvars
@@ -382,6 +383,8 @@ contains
   type(lom_type) :: lom
   logical :: lneg
   integer, parameter :: itmax=40
+
+  !initialize the iterator and adjustment scalar vector for the destruction fluxes 
   it=0
   rscal=0._r8
   do
@@ -399,17 +402,22 @@ contains
     if(errinfo<0)then
       call endrun(msg='ERROR:: in spm_axpy '//errMsg(__FILE__, __LINE__))
     endif
+    !obtain flux reducing scalar for all primary variables
     call lom%calc_state_pscal(spm_d%szrow, dtime, ystates, p_dt,  d_dt, &
       pscal, lneg, errinfo)
     if(errinfo<0)then
       call endrun(msg='ERROR:: in calc_state_pscal '//errMsg(__FILE__, __LINE__))
     endif
+
+    !obtain the adjustment scalar for each destruction flux based on the stoichiometry matrix
     if(lneg .and. it<=itmax)then
       call lom%calc_reaction_rscal(spm_d%szrow, spm_d%szcol,  pscal, &
         spm_d,rscal)
 
       call lom%apply_reaction_rscal(spm_d%szcol, rscal, rfluxes)
     else
+      !terminate the loop and write a warning if maximum iteration is reached.
+      if(it==itmax)write(iulog,*)'maximum iterations reached in flux_correction in LSparseMatMod'
       exit
     endif
     it = it + 1

@@ -4,8 +4,6 @@ module PhenologyFLuxLimitMod
 ! limit the allocation fluxes resulting from pheonology
 ! calculation to avoid negative state varaibles for
 ! carbon, nitrogen and phosphours.
-! The current implementation does not use sparse
-! matrix, future version should consider this possibility.
 
   use LSparseMatMod               , only : sparseMat_type, flux_correction,spm_list_type
   use shr_kind_mod                , only : r8 => shr_kind_r8

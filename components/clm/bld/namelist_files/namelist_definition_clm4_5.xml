@@ -134,7 +134,7 @@ If TRUE consider priority of plant to get a fraction of
 symbiotic N fixation and P phosphatase
 </entry>
 
-<entry id="use_phenolmter" type="logical" category="clm_physics"
+<entry id="use_pheno_flux_limiter" type="logical" category="clm_physics"
        group="clm_inparm" valid_values="" >
 If TRUE, apply flux limiter to phenology fluxes to avoid overextraction
 of plant carbon and nutrient fluxes

@@ -361,7 +361,7 @@ module clm_varctl
 
   !-----------------------------------------------------------------------
   ! flux limiter for phenology flux calculation
-  logical, public :: use_phenolmter = .false.
+  logical, public :: use_pheno_flux_limiter = .false.
 
   !-----------------------------------------------------------------------
   ! bgc & pflotran interface
