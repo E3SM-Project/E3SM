@@ -303,10 +303,10 @@ class TestScheduler(object):
         for build_group in self._build_groups:
             self._build_group_exeroots[build_group] = None
 
-        logger.info("Build groups are:")
+        logger.debug("Build groups are:")
         for build_group in self._build_groups:
             for test_name in build_group:
-                logger.info("{}{}".format("  " if test_name == build_group[0] else "    ", test_name))
+                logger.debug("{}{}".format("  " if test_name == build_group[0] else "    ", test_name))
 
         # By the end of this constructor, this program should never hard abort,
         # instead, errors will be placed in the TestStatus files for the various
