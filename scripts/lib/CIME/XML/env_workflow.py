@@ -45,7 +45,6 @@ class EnvWorkflow(EnvBase):
             elif name == "case.run.sh":
                 pass # skip
             else:
-                print "jdict is {}".format(jdict)
                 new_job_group = self.make_child("group", {"id":name})
                 for field in jdict.keys():
                     if field == "runtime_parameters":
