@@ -27,27 +27,22 @@ def create_viewer(root_dir, parameters, extension='png'):
     certain extension and create the viewer in root_dir.
     """
     
-    # A map of the viewer to a list of parameters that are
-    # needed to be processed to that viewer.
-    # Ex: {default_viewer.create_viewer: [Parameter, Parameter, ...]}
-    viewer_to_parameters = collections.defaultdict(list)
+    # Group each parameter object based on the `sets` parameter.
+    set_to_parameters = collections.defaultdict(list)
     for param in parameters:
-        # For the `sets` parameter in each of the parameter objects,
-        # group them based on the viewer they are mapped to.
-        # Parameters with the same viewer are grouped together.
         for set_name in param.sets:
-            viewer = SET_TO_VIEWER[set_name]
-            viewer_to_parameters[viewer].append(param)
+            set_to_parameters.append(param)
     
-    print(viewer_to_parameters)
+    print(set_to_parameters)
 
     # A list of (title, url) tuples that each viewer generates.
     # This is used to create the main index.
     title_and_url_list = []
     # Now call the viewers with the parameters as the arguments.
-    for viewer, parameters in viewer_to_parameters.items():
-        titles_and_url_for_viewer = viewer(parameters)
-        title_and_url_list.extend(titles_and_url_for_viewer)
+    for set_name, parameters in set_to_parameters.items():
+        viewer_function = SET_TO_VIEWER[set_name]
+        title, url = viewer_function(parameters)
+        title_and_url_list.append((title, url))
     
     index_url = create_index(title_and_url_list)
 
