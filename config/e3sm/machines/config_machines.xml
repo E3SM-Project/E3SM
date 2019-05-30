@@ -2039,6 +2039,9 @@
       <modules>
         <command name="purge"/>
       </modules>
+      <modules>
+	<command name="load">cmake/3.11.4</command>
+      </modules>
       <modules compiler="intel">
         <command name="load">intel/19.0.3</command>
       </modules>
