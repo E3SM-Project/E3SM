@@ -1070,9 +1070,14 @@ contains
 
         ! define here the tag that will be projected back from atmosphere
         !  TODO where do we want to define this?
-        tagnameProj = 'a2oTAG_proj'//CHAR(0)
+        tagnameProj = 'a2oTbot_proj'//CHAR(0)
         tagtype = 1  ! dense, double
         numco = 1 !  one value per cell
+        ierr = iMOAB_DefineTagStorage(mpoid, tagnameProj, tagtype, numco,  tagindex )
+        ! define more tags
+        tagnameProj = 'a2oUbot_proj'//CHAR(0)  ! U component of velocity
+        ierr = iMOAB_DefineTagStorage(mpoid, tagnameProj, tagtype, numco,  tagindex )
+        tagnameProj = 'a2oVbot_proj'//CHAR(0)  ! V component of velocity
         ierr = iMOAB_DefineTagStorage(mpoid, tagnameProj, tagtype, numco,  tagindex )
 
 
