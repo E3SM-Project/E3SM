@@ -45,7 +45,6 @@ class Workflow(GenericXML):
                 for child in self.get_children(root=jnode):
                     if self.name(child) == "runtime_parameters":
                         attrib = self.attrib(child)
-                        print "myattrib is {}".format(attrib)
                         if attrib and attrib == {'MACH' : machine}:
                             for rtchild in self.get_children(root=child):
                                 jdict[self.name(rtchild)] = self.text(rtchild)
