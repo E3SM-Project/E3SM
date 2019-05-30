@@ -344,7 +344,6 @@ contains
 
         term_B(:ncol,:pver) = - 0.5_r8*ltend(:ncol,:pver)
 
-
      case(3)
      ! For testing only: Following Zhang et al. (2003), assume the in-cloud A_l
      ! equals the grid-box mean A_l.! Hence, - (\overline{A_l} - f \hat{A_l}) =
@@ -355,20 +354,6 @@ contains
         where( ltend(:ncol,:pver) .lt. 0._r8)
           term_B(:ncol,:pver) = 0._r8
         end where
-
-     case(12)
-     ! For testing only: replace Al with a*Av to investigate the impact of 
-     ! the intrisic properties of Al on the convergence rate. Al is noisier
-     ! than Av, and may not continuous at the moment when cloudy-clear/clear-cloud
-     ! conversion happens. here, we let a=0.1
-        term_B(:ncol,:pver) = - (1._r8 - ast(:ncol,:pver))*qtend(:ncol,:pver)*0.1_r8
-
-     case(13)
-     ! For testing only: replace Al with a*Av to investigate the impact of 
-     ! the intrisic properties of Al on the convergence rate. Al is noisier
-     ! than Av, and may not continuous at the moment when cloudy-clear/clear-cloud
-     ! conversion happens. here we let a=0.5 
-        term_B(:ncol,:pver) = - (1._r8 -ast(:ncol,:pver))*qtend(:ncol,:pver)*0.5_r8
 
      case(20) 
      !!Origionally, there are only two terms on the right side of RK98 formula, 
@@ -468,41 +453,6 @@ contains
         term_A(:ncol,:pver) = term_A(:ncol,:pver)*rdenom(:ncol,:pver) 
         term_B(:ncol,:pver) = term_B(:ncol,:pver)*rdenom(:ncol,:pver) 
 
-     case(3) ! df/dt = df/dRH * dRH/dt = df/dRH * (C_alpha * A_V - C_beta * A_T + C_gamma*Qbar_old(in tn-1 step)) 
-        zforcing(:ncol,:pver) = ( qtend(:ncol,:pver)  &
-                                -ttend(:ncol,:pver)*rhgbm(:ncol,:pver)*dqsatdT(:ncol,:pver) ) &
-                                /qsat(:ncol,:pver) !C_alpha * A_V - C_beta * A_T
-        zc3(:ncol,:pver) = ( 1._r8 + rhgbm(:ncol,:pver)*gam(:ncol,:pver))/qsat(:ncol,:pver) !C_gamma
-        term_C(:ncol,:pver) = ql_incld(:ncol,:pver)*dastdRH(:ncol,:pver)* &
-                              (zforcing(:ncol,:pver) - zc3(:ncol,:pver)*qmeold(:ncol,:pver))
-
-     case(4) ! test only for a different formula for df/dRH 
-     !!!here we use dlnf/dRH instead of df/dRH to make termC smoother 
-        zforcing(:ncol,:pver) = ( qtend(:ncol,:pver)  &
-                                 -ttend(:ncol,:pver)*rhgbm(:ncol,:pver)*dqsatdT(:ncol,:pver)) &
-                               /qsat(:ncol,:pver)
-        zc3(:ncol,:pver)    = ( 1._r8 + rhgbm(:ncol,:pver)*gam(:ncol,:pver))/qsat(:ncol,:pver)
-        rdenom(:ncol,:pver) = 1._r8/( 1._r8 + state%q(:ncol,:pver,ixcldliq)*dlnastdRH(:ncol,:pver)*zc3(:ncol,:pver) )
-        term_C(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)*dlnastdRH(:ncol,:pver)*zforcing(:ncol,:pver)
-        term_C(:ncol,:pver) = term_C(:ncol,:pver)*rdenom(:ncol,:pver)
-        term_A(:ncol,:pver) = term_A(:ncol,:pver)*rdenom(:ncol,:pver)
-        term_B(:ncol,:pver) = term_B(:ncol,:pver)*rdenom(:ncol,:pver)
-
-     case(5) ! The same as case (2) except that df/dRH is estimated after the condensation model
-        zforcing(:ncol,:pver) = ( qtend(:ncol,:pver)  &
-                                 -ttend(:ncol,:pver)*rhgbm(:ncol,:pver)*dqsatdT(:ncol,:pver) ) &
-                               /qsat(:ncol,:pver)
-
-        zc3(:ncol,:pver) = ( 1._r8 + rhgbm(:ncol,:pver)*gam(:ncol,:pver) )/qsat(:ncol,:pver)
-
-        rdenom(:ncol,:pver) = 1._r8/( 1._r8 + ql_incld(:ncol,:pver)*dfacdRH(:ncol,:pver)*zc3(:ncol,:pver) )
-
-        term_C(:ncol,:pver) = ql_incld(:ncol,:pver)*dfacdRH(:ncol,:pver)*zforcing(:ncol,:pver)
-
-        term_C(:ncol,:pver) = term_C(:ncol,:pver)*rdenom(:ncol,:pver)
-        term_A(:ncol,:pver) = term_A(:ncol,:pver)*rdenom(:ncol,:pver)
-        term_B(:ncol,:pver) = term_B(:ncol,:pver)*rdenom(:ncol,:pver)
-
      case(21) !!term C for RK98 scheme with the finite difference method the same as case (1)
         ! use the finite difference to estimate df/dt, which is (fnew-fold)/(tn+1-tn)
         ! term_C = ql_incld*(df/dt)/(1+f*alpha*beta)
@@ -561,12 +511,6 @@ contains
   
      case(2)
          dfdt(:ncol,:pver) = dastdRH(:ncol,:pver) *( zforcing(:ncol,:pver) - zc3(:ncol,:pver)*qme(:ncol,:pver) )
-
-     case(3)
-         dfdt(:ncol,:pver) = dastdRH(:ncol,:pver) *( zforcing(:ncol,:pver) - zc3(:ncol,:pver)*qmeold(:ncol,:pver) )
-
-     case(4)
-         dfdt(:ncol,:pver) = ast(:ncol,:pver)*dlnastdRH(:ncol,:pver) *( zforcing(:ncol,:pver) - zc3(:ncol,:pver)*qme(:ncol,:pver) )
 
      case(21)
          dfdt(:ncol,:pver) = rdtime*( ast(:ncol,:pver) - ast_old(:ncol,:pver) )
