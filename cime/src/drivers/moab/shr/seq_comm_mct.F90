@@ -515,7 +515,7 @@ contains
     if (ierr /= 0) then
        write(logunit,*) trim(subname),' ERROR initialize MOAB '
     endif
-#ifdef MOABDEBUG
+#ifdef MOABDDD
 !   write the global_mype , for easier debugging with ddd
 !   will never use ddd for more than 10 processes
     if (global_mype .le. 10) then
