@@ -79,8 +79,9 @@ def parse_command_line(args, description):
     parser.add_argument("--single-exe", action="store_true",
                         default=False,
                         help="Use a single build for all cases. This can "
-                        "\ndrastically improve test throughput but is current use-at-your-own risk."
-                        "\nIt's up to the user to ensure that all cases are build-compatible")
+                        "\ndrastically improve test throughput but is currently use-at-your-own risk."
+                        "\nIt's up to the user to ensure that all cases are build-compatible."
+                        "\nE3SM tests belonging to a suite with share enabled will always share exes.")
 
     default = get_default_setting(config, "SINGLE_SUBMIT", False, check_main=False)
 
@@ -404,19 +405,6 @@ def parse_command_line(args, description):
         args.compiler = mach_obj.get_default_compiler() if args.compiler is None else args.compiler
 
         test_names = get_tests.get_full_test_names(args.testargs, mach_obj.get_machine_name(), args.compiler)
-        if len(args.testargs) == 1 and \
-           args.testargs[0] in get_tests.get_test_suites() and \
-           get_tests.get_test_data(args.testargs[0])[2] and \
-           not args.single_exe:
-            logging.info("Suite supports shared executables, setting --single-exe to True")
-            args.single_exe = True
-
-        if len(args.testargs) == 1 and \
-           args.testargs[0] in get_tests.get_test_suites() and \
-           get_tests.get_test_data(args.testargs[0])[2] and \
-           not args.single_exe:
-            logging.info("Suite supports shared executables, setting --single-exe to True")
-            args.single_exe = True
 
     expect(mach_obj.is_valid_compiler(args.compiler),
            "Compiler %s not valid for machine %s" % (args.compiler, mach_obj.get_machine_name()))
