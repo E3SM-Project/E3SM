@@ -62,7 +62,7 @@ module li_constants
                                                            !< http://www.csgnetwork.com/h2ofreezecalc.html (25 Nov. 2014)
 
    real (kind=RKIND), parameter, public :: &
-        iceMeltingPointPressureDependence = 0.0e-8_RKIND  ! Dependence of ice melting point on pressure (K Pa^-1)
+        iceMeltingPointPressureDependence = 9.7456e-8_RKIND  ! Dependence of ice melting point on pressure (K Pa^-1)
 
    !  conversion factors
    real (kind=RKIND), parameter, public :: kelvin_to_celsius = 273.15_RKIND    !< factor to convert Kelvin to Celsius
