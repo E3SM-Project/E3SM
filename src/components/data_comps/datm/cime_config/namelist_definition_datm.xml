@@ -191,7 +191,7 @@
       <value datm_mode="CLMGSWP3v1">CLMGSWP3v1.Solar,CLMGSWP3v1.Precip,CLMGSWP3v1.TPQW</value>
       <value datm_mode="CORE2_NYF" >CORE2_NYF.GISS,CORE2_NYF.GXGXS,CORE2_NYF.NCEP</value>
       <value datm_mode="CORE2_IAF" >CORE2_IAF.GCGCS.PREC,CORE2_IAF.GISS.LWDN,CORE2_IAF.GISS.SWDN,CORE2_IAF.GISS.SWUP,CORE2_IAF.NCEP.DN10,CORE2_IAF.NCEP.Q_10,CORE2_IAF.NCEP.SLP_,CORE2_IAF.NCEP.T_10,CORE2_IAF.NCEP.U_10,CORE2_IAF.NCEP.V_10,CORE2_IAF.CORE2.ArcFactor</value>
-      <value datm_mode="CORE_IAF_JRA" >CORE_IAF_JRA.GCGCS.PREC,CORE_IAF_JRA.GISS.LWDN,CORE_IAF_JRA.GISS.SWDN,CORE_IAF_JRA.NCEP.Q_10,CORE_IAF_JRA.NCEP.SLP_,CORE_IAF_JRA.NCEP.T_10,CORE_IAF_JRA.NCEP.U_10,CORE_IAF_JRA.NCEP.V_10,CORE_IAF_JRA.CORE2.ArcFactor</value>
+      <value datm_mode="CORE_IAF_JRA" >CORE_IAF_JRA.GCGCS.PREC,CORE_IAF_JRA.GISS.LWDN,CORE_IAF_JRA.GISS.SWDN,CORE_IAF_JRA.NCEP.Q_10,CORE_IAF_JRA.NCEP.SLP_,CORE_IAF_JRA.NCEP.T_10,CORE_IAF_JRA.NCEP.U_10,CORE_IAF_JRA.NCEP.V_10</value>
       <value datm_mode="CORE2_IAF" atm_grid="01col" >CORE2_IAF.NCEP.DENS.SOFS,CORE2_IAF.NCEP.PSLV.SOFS,CORE2_IAF.PREC.SOFS.DAILY,CORE2_IAF.LWDN.SOFS.DAILY,CORE2_IAF.SWDN.SOFS.DAILY,CORE2_IAF.SWUP.SOFS.DAILY,CORE2_IAF.SHUM.SOFS.6HOUR,CORE2_IAF.TBOT.SOFS.6HOUR,CORE2_IAF.U.SOFS.6HOUR,CORE2_IAF.V.SOFS.6HOUR,CORE2_IAF.CORE2.ArcFactor</value>
       <value datm_mode="CPLHIST">CPLHISTForcing.Solar,CPLHISTForcing.nonSolarFlux,CPLHISTForcing.State3hr,CPLHISTForcing.State1hr</value>
     </values>
@@ -244,7 +244,6 @@
       <value stream="CORE_IAF_JRA.NCEP.T_10">$DIN_LOC_ROOT/atm/datm7/JRA55</value>
       <value stream="CORE_IAF_JRA.NCEP.U_10">$DIN_LOC_ROOT/atm/datm7/JRA55</value>
       <value stream="CORE_IAF_JRA.NCEP.V_10">$DIN_LOC_ROOT/atm/datm7/JRA55</value>
-      <value stream="CORE_IAF_JRA.CORE2.ArcFactor">$DIN_LOC_ROOT/atm/datm7/CORE2</value>
       <value stream="co2tseries">$DIN_LOC_ROOT/atm/datm7/CO2 </value>
       <value stream="BC.QIAN.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/gpcp/qian</value>
       <value stream="BC.CRUNCEP.GPCP.Precip">$DIN_LOC_ROOT/atm/datm7/clm_output/cruncep_precip_1deg/gpcp_1deg_bias_correction</value>
@@ -313,7 +312,6 @@
       <value stream="CORE_IAF_JRA.NCEP.T_10">domain.atm.TL319.151007.nc</value>
       <value stream="CORE_IAF_JRA.NCEP.U_10">domain.atm.TL319.151007.nc</value>
       <value stream="CORE_IAF_JRA.NCEP.V_10">domain.atm.TL319.151007.nc</value>
-      <value stream="CORE_IAF_JRA.CORE2.ArcFactor">CORE2.t_10.ArcFactor.T62.1997-2004.nc</value>
       <value stream="co2tseries.20tr.latbnd">fco2_datm_lat-bands_simyr_1750-2015_CMIP6_c180929.nc</value>
       <value stream="co2tseries.20tr">fco2_datm_global_simyr_1750-2014_CMIP6_c180929.nc</value>
       <value stream="co2tseries.omip">fco2_datm_global_ssp585_simyr_1750-2020_CMIP6_c190522.nc</value>
@@ -457,7 +455,6 @@
       <value stream="CORE_IAF_JRA.NCEP.T_10">$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap</value>
       <value stream="CORE_IAF_JRA.NCEP.U_10">$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap</value>
       <value stream="CORE_IAF_JRA.NCEP.V_10">$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap</value>
-      <value stream="CORE_IAF_JRA.CORE2.ArcFactor">$DIN_LOC_ROOT/atm/datm7/CORE2</value>
       <value stream="co2tseries">$DIN_LOC_ROOT/atm/datm7/CO2</value>
       <value stream="BC.QIAN.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/gpcp/qian</value>
       <value stream="BC.CRUNCEP.GPCP.Precip">$DIN_LOC_ROOT/atm/datm7/clm_output/cruncep_precip_1deg/gpcp_1deg_bias_correction</value>
@@ -1664,7 +1661,6 @@
         JRA.v1.3.v_10.TL319.2015.171019.nc
         JRA.v1.3.v_10.TL319.2016.171019.nc
       </value> 
-      <value stream="CORE_IAF_JRA.CORE2.ArcFactor">CORE2.t_10.ArcFactor.T62.1997-2004.nc</value>
       <value stream="co2tseries.20tr.latbnd">fco2_datm_lat-bands_simyr_1750-2015_CMIP6_c180929.nc</value>
       <value stream="co2tseries.20tr">fco2_datm_global_simyr_1750-2014_CMIP6_c180929.nc</value>
       <value stream="co2tseries.omip">fco2_datm_global_ssp585_simyr_1750-2020_CMIP6_c190522.nc</value>
@@ -1967,9 +1963,6 @@
       <value  stream="CORE_IAF_JRA.NCEP.V_10">
         v_10  v
       </value>
-      <value  stream="CORE_IAF_JRA.CORE2.ArcFactor">
-        TarcFactor tarcf
-      </value>
       <value  stream="co2tseries.20tr">
         CO2        co2diag
       </value>
@@ -2136,7 +2129,6 @@
       <value stream="CORE_IAF_JRA.NCEP.T_10">1958</value>
       <value stream="CORE_IAF_JRA.NCEP.U_10">1958</value>
       <value stream="CORE_IAF_JRA.NCEP.V_10">1958</value>
-      <value stream="CORE_IAF_JRA.CORE2.ArcFactor">1958</value>
       <value stream="co2tseries.20tr">1850</value>
       <value stream="co2tseries.omip">1850</value>
       <value stream="co2tseries.SSP">2015</value>
@@ -2203,7 +2195,6 @@
       <value stream="CORE_IAF_JRA.NCEP.T_10">2016</value>
       <value stream="CORE_IAF_JRA.NCEP.U_10">2016</value>
       <value stream="CORE_IAF_JRA.NCEP.V_10">2016</value>
-      <value stream="CORE_IAF_JRA.CORE2.ArcFactor">2016</value>
       <value stream="co2tseries.20tr">2014</value>
       <value stream="co2tseries.omip">2019</value>
       <value stream="co2tseries.SSP">2500</value>
@@ -2574,7 +2565,6 @@
     <values>
       <value>1.5</value>
       <value stream="CORE2_IAF.CORE2.ArcFactor">1.e30</value>
-      <value stream="CORE_IAF_JRA.CORE2.ArcFactor">1.e30</value>
       <value stream="CPLHISTForcing.Solar">3.0</value>
       <value stream="CPLHISTForcing.nonSolarFlux">3.0</value>
       <value stream="CPLHISTForcing.State3hr">3.0</value>
