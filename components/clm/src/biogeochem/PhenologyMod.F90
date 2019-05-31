@@ -240,7 +240,7 @@ contains
     ! to operate only on the relevant patches
 
     call PhenologyClimate(num_soilp, filter_soilp, num_pcropp, filter_pcropp, &
-         temperature_vars, cnstate_vars)
+         temperature_vars, cnstate_vars, crop_vars)
 
     call CNEvergreenPhenology(num_soilp, filter_soilp, &
          cnstate_vars) 
@@ -368,7 +368,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine PhenologyClimate (num_soilp, filter_soilp, num_pcropp, filter_pcropp, &
-       temperature_vars, cnstate_vars)
+       temperature_vars, cnstate_vars, crop_vars)
     !
     ! !DESCRIPTION:
     ! For coupled carbon-nitrogen code (CN).
@@ -384,11 +384,12 @@ contains
     integer                , intent(in)    :: filter_pcropp(:)! filter for prognostic crop patches
     type(temperature_type) , intent(inout) :: temperature_vars
     type(cnstate_type)     , intent(inout) :: cnstate_vars
+    type(crop_type)        , intent(inout) :: crop_vars
+
     !
     ! !LOCAL VARIABLES:
     integer :: p                    ! indices
     integer :: fp                   ! lake filter pft index
-    integer :: nyrs                 ! number of years prognostic crop has run
     real(r8):: dayspyr              ! days per year (days)
     integer kyr                     ! current year
     integer kmo                     !         month of year  (1, ..., 12)
@@ -399,6 +400,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                  & 
+         nyrs_crop_active => crop_vars%nyrs_crop_active_patch,   & ! InOut:  [integer (:)  ]  number of years this crop patch has been active
          t_ref2m        => veg_es%t_ref2m     , & ! Input:  [real(r8) (:) ]  2m air temperature (K)                            
          gdd0           => veg_es%gdd0        , & ! Output: [real(r8) (:) ]  growing deg. days base 0 deg C (ddays)            
          gdd8           => veg_es%gdd8        , & ! Output: [real(r8) (:) ]     "     "    "    "   8  "  "    "               
@@ -429,18 +431,17 @@ contains
       if (num_pcropp > 0) then
          ! get time-related info
          call get_curr_date(kyr, kmo, kda, mcsec)
-         nyrs = cnstate_vars%CropRestYear
       end if
 
       do fp = 1,num_pcropp
          p = filter_pcropp(fp)
-         if (kmo == 1 .and. kda == 1 .and. nyrs == 0) then ! YR 1:
+         if (kmo == 1 .and. kda == 1 .and. nyrs_crop_active(p) == 0) then ! YR 1:
             gdd020(p)  = 0._r8                             ! set gdd..20 variables to 0
             gdd820(p)  = 0._r8                             ! and crops will not be planted
             gdd1020(p) = 0._r8
          end if
          if (kmo == 1 .and. kda == 1 .and. mcsec == 0) then        ! <-- END of EVERY YR:
-            if (nyrs  == 1) then                                   ! <-- END of YR 1
+            if (nyrs_crop_active(p)  == 1) then                    ! <-- END of YR 1
                gdd020(p)  = gdd0(p)                                ! <-- END of YR 1
                gdd820(p)  = gdd8(p)                                ! <-- END of YR 1
                gdd1020(p) = gdd10(p)                               ! <-- END of YR 1

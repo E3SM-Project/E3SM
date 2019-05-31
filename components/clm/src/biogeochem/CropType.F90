@@ -52,6 +52,7 @@ module CropType
      procedure, public  :: InitAccVars
      procedure, public  :: Restart
      procedure, public  :: UpdateAccVars
+     procedure, public  :: CropIncrementYear
 
      procedure, private :: InitAllocate 
      procedure, private :: InitHistory
@@ -455,6 +456,46 @@ contains
   end subroutine UpdateAccVars
 
   !-----------------------------------------------------------------------
+  subroutine CropIncrementYear (this, num_pcropp, filter_pcropp)
+    !
+    ! !DESCRIPTION:
+    ! Increment the crop year, if appropriate
+    !
+    ! This routine should be called every time step
+    !
+    ! !USES:
+    use clm_time_manager , only : get_curr_date, is_first_step
+    !
+    ! !ARGUMENTS:
+    class(crop_type) :: this
+    integer , intent(in) :: num_pcropp       ! number of prog. crop patches in filter
+    integer , intent(in) :: filter_pcropp(:) ! filter for prognostic crop patches
+    !
+    ! !LOCAL VARIABLES:
+    integer kyr   ! current year
+    integer kmo   ! month of year  (1, ..., 12)
+    integer kda   ! day of month   (1, ..., 31)
+    integer mcsec ! seconds of day (0, ..., seconds/day)
+    integer :: fp, p
+    !-----------------------------------------------------------------------
+
+    call get_curr_date (   kyr, kmo, kda, mcsec)
+    ! Update nyrs when it's the end of the year (unless it's the very start of
+    ! the
+    ! run). This assumes that, if this patch is active at the end of the year,
+    ! then it was
+    ! active for the whole year.
+    if ((kmo == 1 .and. kda == 1 .and. mcsec == 0) .and. .not. is_first_step()) then
+       do fp = 1, num_pcropp
+          p = filter_pcropp(fp)
+
+          this%nyrs_crop_active_patch(p) = this%nyrs_crop_active_patch(p) + 1
+       end do
+    end if
+
+  end subroutine CropIncrementYear
+
+ !-----------------------------------------------------------------------
   subroutine checkDates( )
     !
     ! !DESCRIPTION: 

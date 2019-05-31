@@ -235,9 +235,6 @@ contains
     
     if (do_budgets) call WaterBudget_Reset()
 
-    ! Update time-related info
-
-    call cnstate_vars%CropRestIncYear()
 
     ! ============================================================================
     ! Specified phenology
@@ -889,6 +886,10 @@ contains
        ! ============================================================================
 
        call t_startf('ecosysdyn')
+       if (use_cn)then
+          call crop_vars%CropIncrementYear(filter(nc)%num_pcropp, filter(nc)%pcropp)
+       endif
+
        if(use_betr)then
          !right now betr bgc is intended only for non-ed mode
          
