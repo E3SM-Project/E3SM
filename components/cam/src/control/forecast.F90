@@ -117,7 +117,9 @@ subroutine forecast(lat, psm1, psm2,ps, &
    real(r8) dotprodb           ! dot product
    integer i,k,m           ! longitude, level, constituent indices
    real(r16) divt3d_full, divq3d_full, term1, term2, term3, term4
-   real(r16) term5, term6
+   real(r16) reconst1, reconst2, mult_reconst
+   real(r16) term5, term6, mult
+   real(r8) e_count
 !
 !     Below are Variables Used in the Advection Diagnostics
 !
@@ -208,7 +210,12 @@ subroutine forecast(lat, psm1, psm2,ps, &
 !  advection calculation.  Skip to diagnostic estimates of vertical term.
       i=1
       do k=1,plev
-         divt3d_full = divt3d(k) + divt3d_2(k)
+         e_count=divt3d_3(k)
+	 mult_reconst=1.0_r16*10._r16**(e_count)
+	 reconst2=divt3d_2(k)
+	 reconst1=divt3d(k)
+	 divt3d_full = reconst2 + reconst1/mult_reconst
+
 	 term1 = t3m2(k)
 	 term2 = ztodt
 	 term3 = t2(k)
@@ -219,7 +226,13 @@ subroutine forecast(lat, psm1, psm2,ps, &
       end do
       do m=1,pcnst
          do k=1,plev
-	    divq3d_full = divq3d(k,m) + divq3d_2(k,m)
+            e_count=divq3d_3(k,m)
+	    mult_reconst=1.0_r16*10._r16**(e_count)
+	    reconst2=divq3d_2(k,m)
+	    reconst1=divq3d(k,m)	 
+	 
+	    divq3d_full = reconst2 + reconst1/mult_reconst	 
+
 	    term1 = qminus(1,k,m)
 	    term2 = ztodt
 	    term3 = term1 + divq3d_full*term2

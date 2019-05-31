@@ -101,7 +101,9 @@ CONTAINS
     call addfld ('divT3d',(/ 'lev' /), 'A','K','Dynamics Residual for T',gridname=trim(dyngrid))
     call add_default ('divT3d',2,' ')
     call addfld ('divT3d_2',(/ 'lev' /), 'A','K','Dynamics Residual for T',gridname=trim(dyngrid))
-    call add_default ('divT3d_2',2,' ')    
+    call add_default ('divT3d_2',2,' ')  
+    call addfld ('divT3d_3',(/ 'lev' /), 'A','K','Dynamics Residual for T',gridname=trim(dyngrid))
+    call add_default ('divT3d_3',2,' ')      
 
     call addfld ('heat_glob',horiz_only, 'A', 'K/s', 'Global mean total energy difference')
     call add_default ('heat_glob',2,' ')
@@ -113,7 +115,11 @@ CONTAINS
        
        call addfld (trim(cnst_name(m))//'_dten_2',(/ 'lev' /), 'A','kg/kg', &
             trim(cnst_name(m))//' IOP Dynamics Residual for '//trim(cnst_name(m)),gridname=trim(dyngrid))
-       call add_default (trim(cnst_name(m))//'_dten_2',2,' ')       
+       call add_default (trim(cnst_name(m))//'_dten_2',2,' ') 
+       
+       call addfld (trim(cnst_name(m))//'_dten_3',(/ 'lev' /), 'A','kg/kg', &
+            trim(cnst_name(m))//' IOP Dynamics Residual for '//trim(cnst_name(m)),gridname=trim(dyngrid))
+       call add_default (trim(cnst_name(m))//'_dten_3',2,' ')             
       
     end do
     call addfld ('shflx',horiz_only,    'A','W/m2','Surface sensible heat flux for scam')

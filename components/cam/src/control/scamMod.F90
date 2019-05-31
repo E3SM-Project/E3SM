@@ -96,8 +96,10 @@ module scamMod
 
   real(r8), public ::      divq3d(plev,pcnst)  ! 3D q advection
   real(r8), public ::      divq3d_2(plev,pcnst)  ! 3D q advection
+  real(r8), public ::      divq3d_3(plev,pcnst)  ! 3D q advection
   real(r8), public ::      divt3d(plev)        ! 3D T advection
   real(r8), public ::      divt3d_2(plev)        ! 3D T advection
+  real(r8), public ::      divt3d_3(plev)        ! 3D T advection
   real(r8), public ::      vertdivq(plev,pcnst)! vertical q advection
   real(r8), public ::      vertdivt(plev)      ! vertical T advection
   real(r8), public ::      ptend               ! surface pressure tendency
@@ -156,6 +158,7 @@ module scamMod
   logical*4, public ::  have_vertdivq ! dataset contains vertdivq 
   logical*4, public ::  have_divt3d   ! dataset contains divt3d
   logical*4, public ::  have_divt3d_2 ! dataset contains divt3d_2 
+  logical*4, public ::  have_divt3d_3 ! dataset contains divt3d_2
   logical*4, public ::  have_divu     ! dataset contains divu
   logical*4, public ::  have_divv     ! dataset contains divv 
   logical*4, public ::  have_omega    ! dataset contains omega
@@ -1136,7 +1139,18 @@ endif !scm_observed_aero
            divq3d_2(1:,m)=0._r8
          else
            have_cnst(m) = .true.
-         endif             
+         endif 
+	 
+         call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, trim(cnst_name(m))//'_dten_3', &
+           have_srf, srf(1), fill_ends, scm_crm_mode, &
+           dplevs, nlev,psobs, hyam, hybm, divq3d_3(:,m), status )
+         if ( status .ne. nf90_noerr ) then
+           have_cnst(m) = .false.
+           divq3d_3(1:,m)=0._r8
+         else
+           have_cnst(m) = .true.
+         endif 	 
+	             
        endif
 
        call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, trim(cnst_name(m))//'_dqfx', &
@@ -1320,6 +1334,15 @@ endif !scm_observed_aero
        else
          have_divt3d_2 = .true.
        endif
+       
+       call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'divT3d_3', &
+         have_srf, srf(1), fill_ends, scm_crm_mode, &
+         dplevs, nlev,psobs, hyam, hybm, divt3d_3, status )
+       if ( status .ne. nf90_noerr ) then
+         have_divt3d_3 = .false.
+       else
+         have_divt3d_3 = .true.
+       endif       
      
      endif     
 
