@@ -729,6 +729,8 @@ class J_TestCreateNewcase(unittest.TestCase):
         cls = self.__class__
         model = CIME.utils.get_model()
         for driver in ("nuopc", "moab"):
+            if not os.path.exists(os.path.join(get_cime_root(),"src","drivers",driver)):
+                                  self.skipTest("Skipping driver test for {}, driver not found".format(driver))
             if ((model == 'cesm' and driver == 'moab') or
                 (model == 'e3sm' and driver == 'nuopc')):
                 continue
