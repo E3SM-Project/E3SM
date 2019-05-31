@@ -169,6 +169,10 @@ OPTIONS
 
      -e3smreplay        Configure E3SM to generate an IOP file that can be used to drive the SCM.
                         This switch only works with the Spectral Element dycore.
+     -e3smreplay_b4b    Configure E3SM to generate an IOP file that can be used to drive the SCM.
+                        This switch only works with the Spectral Element dycore.	
+			This result will produce output that is capable of providing a bit-4-bit
+			solution in the E3SM single column model.  		
      -scam              Compiles model in single column mode.  Only works with SE dycore.
 
   CAM parallelization:
@@ -310,6 +314,7 @@ GetOptions(
     "cam_exe=s"                 => \$opts{'cam_exe'},
     "cam_exedir=s"              => \$opts{'cam_exedir'},
     "e3smreplay"                => \$opts{'e3smreplay'},
+    "e3smreplay_b4b"            => \$opts{'e3smreplay_b4b'},
     "cc=s"                      => \$opts{'cc'},
     "ccsm_seq"                  => \$opts{'ccsm_seq'},
     "cflags=s"                  => \$opts{'cflags'},
@@ -1226,10 +1231,17 @@ if ($print>=2) { print "CAM single column mode (SCAM): $scam$eol"; }
 if (defined $opts{'e3smreplay'}) {
     $cfg_ref->set('e3smreplay', 1);
 }
+
 my $e3smreplay = $cfg_ref->get('e3smreplay') ? "ON" : "OFF";
 
+if (defined $opts{'e3smreplay_b4b'}) {
+    $cfg_ref->set('e3smreplay_b4b', 1);
+}
+
+my $e3smreplay_b4b = $cfg_ref->get('e3smreplay_b4b') ? "ON" : "OFF";
+
 # The only dycore supported in REPLAY mode is Spectral Element
-if ($e3smreplay eq 'ON' and $dyn_pkg ne 'se') {
+if (($e3smreplay eq 'ON' | $e3smreplay_b4b eq 'ON')  and $dyn_pkg ne 'se') {
     die <<"EOF";
 **  ERROR: REPLAY mode only works with Spectral Element dycore.
 **         Requested dycore is: $dyn_pkg
@@ -1237,6 +1249,8 @@ EOF
 }
 
 if ($print>=2) { print "Produce IOP file for SCAM: $e3smreplay$eol"; }
+
+if ($print>=2) { print "Produce B4B capable IOP file for SCAM: $e3smreplay_b4b$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Horizontal grid parameters
@@ -1950,6 +1964,11 @@ if ($pergro eq "ON") { $cfg_cppdefs .= " -DPERGRO"; }
 
 # Configure CAM to produce IOP files for SCAM
 if ($e3smreplay eq 'ON') { $cfg_cppdefs .= " -DE3SM_SCM_REPLAY"; }
+
+if ($e3smreplay_b4b eq 'ON'){
+    $cfg_cppdefs .= " -DE3SM_SCM_REPLAY";
+    $cfg_cppdefs .= " -DE3SM_SCM_REPLAY_B4B";
+}
 
 # Resolution parameters for rectangular lat/lon grids
 my $nlon = $cfg_ref->get('nlon');

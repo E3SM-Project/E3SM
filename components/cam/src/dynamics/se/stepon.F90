@@ -32,8 +32,6 @@ module stepon
 
    implicit none
    
-   integer, parameter, public :: r16 = selected_real_kind(24)
-   
    private
    save
 
@@ -435,12 +433,10 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    use cam_logfile, only: iulog
    real(r8), intent(in) :: dtime   ! Time-step
    real(r8) :: ftmp_temp(np,np,nlev,nelemd), ftmp_q(np,np,nlev,pcnst,nelemd)
-   real(r8) :: forcing_q(npsq,nlev,pcnst)
    real(r8) :: out_temp(npsq,nlev), out_q(npsq,nlev), out_u(npsq,nlev), &
                out_v(npsq,nlev), out_psv(npsq)  
    real(r8), parameter :: rad2deg = 180.0 / SHR_CONST_PI
    real(r8), parameter :: fac = 1000._r8	
-   integer, parameter :: i8 = selected_int_kind(12)
 !   real(r8) :: term1, term2        
    type(cam_out_t),     intent(inout) :: cam_out(:) ! Output from CAM to surface
    type(physics_state), intent(inout) :: phys_state(begchunk:endchunk)
@@ -448,15 +444,20 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
    type (element_t), pointer :: elem(:)
    integer :: rc, i, j, k, p, ie, tl_f
-#if (defined E3SM_SCM_REPLAY)
-   real(r16) :: forcing_temp, forcing_temp_lrg, forcing_temp_lrg_test, threshold
+#if defined (E3SM_SCM_REPLAY) && !defined(E3SM_SCM_REPLAY_B4B)
+   real(r8) :: forcing_temp(npsq,nlev), forcing_q(npsq,nlev,pcnst)
+#endif   
+#if (defined E3SM_SCM_REPLAY_B4B)
+   integer, parameter :: r16 = selected_real_kind(24)
+   integer, parameter :: i8 = selected_int_kind(12)
+   real(r16) :: forcing_temp, forcing_temp_lrg, forcing_temp_lrg_test
    real(r8) :: forcing_temp_part1(npsq,nlev), forcing_temp_part2(npsq,nlev), forcing_temp_part3(npsq,nlev)
    real(r8) :: forcing_q_part1(npsq,nlev,pcnst), forcing_q_part2(npsq,nlev,pcnst), forcing_q_part3(npsq,nlev,pcnst)
    real(r16) :: mult, mult_test, term1, term2, term3, term4 
    integer(i8) :: forcing_temp_int
    real(r8) :: forcing_temp_float, mult_float, second_part, e_count
-   real(r16) :: forcing_temp_float_16, second_part_16
-   
+   real(r16) :: forcing_temp_float_16, second_part_16 
+   real(r16), parameter :: threshold = 1.E10_r16
 #endif
    
    elem => dyn_out%elem
@@ -495,14 +496,13 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
 #if (defined E3SM_SCM_REPLAY) 
 
    tl_f = TimeLevel%n0
-   
-   threshold = 1.E10_r16
-   mult = 1.0_r16
+
    do ie=1,nelemd
      do k=1,nlev
        do j=1,np
          do i=1,np
 	 
+#if (defined E3SM_SCM_REPLAY_B4B)	   
 	   term1=dyn_in%elem(ie)%state%T(i,j,k,tl_f)
 	   term2=ftmp_temp(i,j,k,ie)
 	   term3=dtime
@@ -532,6 +532,10 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
 	   forcing_temp_part1(i+(j-1)*np,k)=forcing_temp_float	   
 	   forcing_temp_part2(i+(j-1)*np,k)=second_part
 	   forcing_temp_part3(i+(j-1)*np,k)=e_count
+#else
+	   forcing_temp(i+(j-1)*np,k) = (dyn_in%elem(ie)%state%T(i,j,k,tl_f) - &
+	        ftmp_temp(i,j,k,ie))/dtime - dyn_in%elem(ie)%derived%FT(i,j,k)
+#endif
 		
            out_temp(i+(j-1)*np,k) = dyn_in%elem(ie)%state%T(i,j,k,tl_f)
 	   out_u(i+(j-1)*np,k) = dyn_in%elem(ie)%state%v(i,j,1,k,tl_f)
@@ -539,7 +543,8 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
 	   out_q(i+(j-1)*np,k) = dyn_in%elem(ie)%state%Q(i,j,k,1)
 	   out_psv(i+(j-1)*np) = dyn_in%elem(ie)%state%ps_v(i,j,tl_f)
 
-	   do p=1,pcnst	
+	   do p=1,pcnst
+#if (defined E3SM_SCM_REPLAY_B4B) 	
 	     term1=dyn_in%elem(ie)%state%Q(i,j,k,p)
 	     term2=ftmp_q(i,j,k,p,ie)
 	     term3=dtime	
@@ -566,27 +571,38 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
 	     forcing_temp_float=forcing_temp_float_16
 	     forcing_q_part1(i+(j-1)*np,k,p)=forcing_temp_float	   
 	     forcing_q_part2(i+(j-1)*np,k,p)=second_part
-	     forcing_q_part3(i+(j-1)*np,k,p)=e_count	 
-		
+	     forcing_q_part3(i+(j-1)*np,k,p)=e_count
+#else	 		
+	     forcing_q(i+(j-1)*np,k,p) = (dyn_in%elem(ie)%state%Q(i,j,k,p) - &
+	       ftmp_q(i,j,k,p,ie))/dtime
+#endif	     		
 	   enddo
 	   
 	 enddo
        enddo
      enddo
      
-     call outfld('divT3d',forcing_temp_part1,npsq,ie)
-     call outfld('divT3d_2',forcing_temp_part2,npsq,ie)
-     call outfld('divT3d_3',forcing_temp_part3,npsq,ie)
      call outfld('Ps',out_psv,npsq,ie)
      call outfld('t',out_temp,npsq,ie)
      call outfld('q',out_q,npsq,ie)
      call outfld('u',out_u,npsq,ie)
      call outfld('v',out_v,npsq,ie)
+
+#if (defined E3SM_SCM_REPLAY_B4B)     
+     call outfld('divT3d',forcing_temp_part1,npsq,ie)
+     call outfld('divT3d_2',forcing_temp_part2,npsq,ie)
+     call outfld('divT3d_3',forcing_temp_part3,npsq,ie)
      do p=1,pcnst
        call outfld(trim(cnst_name(p))//'_dten',forcing_q_part1(:,:,p),npsq,ie) 
        call outfld(trim(cnst_name(p))//'_dten_2',forcing_q_part2(:,:,p),npsq,ie)
        call outfld(trim(cnst_name(p))//'_dten_3',forcing_q_part3(:,:,p),npsq,ie)  
      enddo
+#else
+     call outfld('divT3d',forcing_temp,npsq,ie)
+     do p=1,pcnst
+       call outfld(trim(cnst_name(p))//'_dten',forcing_q(:,:,p),npsq,ie)   
+     enddo
+#endif     
      
    enddo
 
