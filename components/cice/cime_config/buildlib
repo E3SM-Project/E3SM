@@ -52,7 +52,7 @@ def buildlib(bldroot, installpath, case):
     # Build the library
     #-------------------------------------------------------
 
-    run_bld_cmd_ensure_logging('cmake -DMODEL=cice -DCOMPLIB=cice -DUSER_CPPDEFS="{cppdefs}" {cmake_args} {srcroot}/components'.format(cppdefs=cppdefs, cmake_args=cmake_args, srcroot=srcroot), logger, from_dir=bldroot)
+    run_bld_cmd_ensure_logging('cmake -DMODEL=cice -DCOMPLIB=ice -DUSER_CPPDEFS="{cppdefs}" {cmake_args} {srcroot}/components'.format(cppdefs=cppdefs, cmake_args=cmake_args, srcroot=srcroot), logger, from_dir=bldroot)
     run_bld_cmd_ensure_logging("{} -j {}".format(gmake, gmake_j), logger, from_dir=bldroot)
 
 ###############################################################################
