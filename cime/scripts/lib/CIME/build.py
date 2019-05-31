@@ -326,7 +326,7 @@ def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldr
         expect(os.path.isfile(cmd), "Could not find buildlib for {}".format(compname))
 
     # Add to this list as components are converted to python/cmake
-    if compname in ["cam"] and get_model() == "e3sm":
+    if compname in ["cam", "clm"] and get_model() == "e3sm":
         try:
             stat = 0
             run_sub_or_cmd(cmd, [caseroot, libroot, bldroot], "buildlib",
