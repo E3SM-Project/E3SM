@@ -263,7 +263,7 @@ def get_output_dir(set_num, parameter, ignore_container=False):
     if not os.path.exists(pth):
         # When running diags in parallel, sometimes another process will create the dir.
         try:
-            os.makedirs(pth, 0o775)
+            os.makedirs(pth, 0o755)
         except OSError as e:
             if e.errno != os.errno.EEXIST:
                 raise

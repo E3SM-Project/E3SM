@@ -21,7 +21,7 @@ import subprocess
 import cdp.cdp_run
 import acme_diags
 from acme_diags.acme_parser import ACMEParser
-from acme_diags.acme_viewer import create_viewer
+from acme_diags.viewer.main import create_viewer
 from acme_diags.driver import utils
 from acme_diags import container
 
@@ -130,7 +130,7 @@ def save_provenance(results_dir, parser):
     """
     results_dir = os.path.join(results_dir, 'prov')
     if not os.path.exists(results_dir):
-        os.makedirs(results_dir, 0o775)
+        os.makedirs(results_dir, 0o755)
 
     # Create a PHP file to list the contents of the prov dir.
     php_path = os.path.join(results_dir, 'index.php')
@@ -225,14 +225,13 @@ def main():
     parameters = get_parameters(parser)
 
     if not os.path.exists(parameters[0].results_dir):
-        os.makedirs(parameters[0].results_dir, 0o775)
+        os.makedirs(parameters[0].results_dir, 0o755)
     if not parameters[0].no_viewer:  # Only save provenance for full runs.
         save_provenance(parameters[0].results_dir, parser)
 
     if container.is_container():
         print('Running e3sm_diags in a container.')
-        # Parameters will decontainerized by the viewer later.
-        # That's to make sure the command shown in the viewer works with or without the viewer.
+        # Modify the parmeters so that it runs in the container as if it usually runs.
         for p in parameters:
             container.containerize_parameter(p)
 
@@ -245,18 +244,22 @@ def main():
 
     parameters = _collapse_results(parameters)
 
+    if container.is_container():
+        for p in parameters:
+            container.decontainerize_parameter(p)
+
     if not parameters:
         print('There was not a single valid diagnostics run, no viewer created.')
     else:
         if parameters[0].no_viewer:
             print('Viewer not created because the no_viewer parameter is True.')
         else:
-            pth = os.path.join(parameters[0].results_dir, 'viewer')
-            if not os.path.exists(pth):
-                os.makedirs(pth)
-            create_viewer(pth, parameters, parameters[0].output_format[0])
             path = os.path.join(parameters[0].results_dir, 'viewer')
-            print('Viewer HTML generated at {}/index.html'.format(path))
+            if not os.path.exists(path):
+                os.makedirs(path)
+            
+            index_path = create_viewer(path, parameters)
+            print('Viewer HTML generated at {}'.format(index_path))
 
 if __name__ == '__main__':
     main()

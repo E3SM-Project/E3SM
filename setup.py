@@ -70,7 +70,10 @@ data_files = [
      ),
     (os.path.join(INSTALL_PATH, 'control_runs'),
      control_runs_files
-     )
+     ),
+    (os.path.join(INSTALL_PATH, 'viewer'),
+     ['acme_diags/viewer/index_template.html'
+      ])
 ]
 
 setup(

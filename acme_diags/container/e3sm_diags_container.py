@@ -111,7 +111,7 @@ def set_env_vars(args):
         msg = '{} does not exist.'.format(test_data_path)
         raise IOError(msg)
     if not os.path.exists(results_dir):
-        os.makedirs(results_dir, 0o775)
+        os.makedirs(results_dir, 0o755)
     
     # Make the paths absolute.
     # Docker needs this.
