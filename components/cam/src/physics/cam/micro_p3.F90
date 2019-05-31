@@ -1115,26 +1115,8 @@ contains
 
           !................................................................
           ! deposition/condensation-freezing nucleation
-          ! allow ice nucleation if < -15 C and > 5% ice supersaturation
-          ! use CELL-AVERAGE values, freezing of vapor
+          call ice_nucleation(t(i,k), inv_rho(i,k), nitot(i,k), naai(i,k), supi(i,k), odt, log_predictNc, qinuc, ninuc)
 
-          if ( t(i,k).lt.icenuct .and. supi(i,k).ge.0.05_rtype) then
-            if(.not. log_predictNc) then 
-               ! dum = exp(-0.639+0.1296*100.*supi(i,k))*1000.*inv_rho(i,k)  !Meyers et al. (1992)
-               dum = 0.005_rtype*exp(0.304_rtype*(zerodegc-t(i,k)))*1000._rtype*inv_rho(i,k)   !Cooper (1986)
-               dum = min(dum,100.e3_rtype*inv_rho(i,k))
-               N_nuc = max(0._rtype,(dum-nitot(i,k))*odt)
-               if (N_nuc.ge.1.e-20_rtype) then
-                  Q_nuc = max(0._rtype,(dum-nitot(i,k))*mi0*odt)
-                  qinuc = Q_nuc
-                  ninuc = N_nuc
-               endif
-            else 
-            ! Ice nucleation predicted by aerosol scheme 
-               ninuc = max(0._rtype, (naai(i,k) - nitot(i,k))*odt)
-               qinuc = ninuc * mi0
-            endif 
-         endif 
           !.................................................................
           ! droplet activation
 
@@ -3298,6 +3280,56 @@ qrheti, nrheti)
    endif 
 
 
-end subroutine rain_immersion_freezing 
+end subroutine rain_immersion_freezing
+
+
+subroutine ice_nucleation(t, inv_rho, nitot, naai, supi, odt, log_predictNc, qinuc, ninuc)
+
+   !................................................................
+   ! deposition/condensation-freezing nucleation
+   ! allow ice nucleation if < -15 C and > 5% ice supersaturation
+   ! use CELL-AVERAGE values, freezing of vapor
+
+   implicit none
+   
+   real(rtype), intent(in) :: t
+   real(rtype), intent(in) :: inv_rho
+   real(rtype), intent(in) :: nitot 
+   real(rtype), intent(in) :: naai 
+   real(rtype), intent(in) :: supi 
+   real(rtype), intent(in) :: odt 
+   logical, intent(in) :: log_predictNc 
+
+   real(rtype), intent(inout) :: qinuc 
+   real(rtype), intent(inout) :: ninuc 
+
+
+   real(rtype) :: dum, N_nuc, Q_nuc 
+   if ( t .lt.icenuct .and. supi.ge.0.05_rtype) then
+      if(.not. log_predictNc) then 
+!         ! dum = exp(-0.639+0.1296*100.*supi(i,k))*1000.*inv_rho(i,k)  !Meyers et al. (1992)
+         dum = 0.005_rtype*exp(0.304_rtype*(zerodegc-t))*1000._rtype*inv_rho   !Cooper (1986)
+         dum = min(dum,100.e3_rtype*inv_rho)
+         N_nuc = max(0._rtype,(dum-nitot)*odt)
+         if (N_nuc.ge.1.e-20_rtype) then
+            Q_nuc = max(0._rtype,(dum-nitot)*mi0*odt)
+            qinuc = Q_nuc
+            ninuc = N_nuc 
+         endif
+      else 
+      ! Ice nucleation predicted by aerosol scheme 
+         ninuc = max(0._rtype, (naai - nitot)*odt) 
+         qinuc = ninuc * mi0 
+      endif 
+   endif 
+
+
+
+
+
+end subroutine 
+
+
+
 
 end module micro_p3
