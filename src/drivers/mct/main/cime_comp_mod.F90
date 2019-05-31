@@ -3907,36 +3907,36 @@ contains
 
     if (glc_present) then
 
-          if (ocn_c2_glcshelf .and. glcshelf_c2_ocn) then
-             ! the boundary flux calculations done in the coupler require inputs from both GLC and OCN,
-             ! so they will only be valid if both OCN->GLC and GLC->OCN
+       if (ocn_c2_glcshelf .and. glcshelf_c2_ocn) then
+          ! the boundary flux calculations done in the coupler require inputs from both GLC and OCN,
+          ! so they will only be valid if both OCN->GLC and GLC->OCN
 
-             call prep_glc_calc_o2x_gx(timer='CPL:glcprep_ocn2glc') !remap ocean fields to o2x_g at ocean couping interval
+          call prep_glc_calc_o2x_gx(timer='CPL:glcprep_ocn2glc') !remap ocean fields to o2x_g at ocean couping interval
 
-             call prep_glc_calculate_subshelf_boundary_fluxes ! this is actual boundary layer flux calculation
-                                           !this outputs
-                                           !x2g_g/g2x_g, where latter is going
-                                           !to ocean, so should get remapped to
-                                           !ocean grid in prep_ocn_shelf_calc_g2x_ox
-             call prep_ocn_shelf_calc_g2x_ox(timer='CPL:glcpost_glcshelf2ocn')
-                                           !Map g2x_gx shelf fields that were updated above, to g2x_ox.
-                                           !Do this at intrinsic coupling
-                                           !frequency
-             call prep_ice_shelf_calc_g2x_ix(timer='CPL:glcpost_glcshelf2ice')
-                                           !Map g2x_gx shelf fields to g2x_ix.
-                                           !Do this at intrinsic coupling
-                                           !frequency.  This is perhaps an
-                                           !unnecessary place to put this
-                                           !call, since these fields aren't
-                                           !changing on the intrinsic
-                                           !timestep.  But I don't think it's
-                                           !unsafe to do it here.
+          call prep_glc_calculate_subshelf_boundary_fluxes ! this is actual boundary layer flux calculation
+                                        !this outputs
+                                        !x2g_g/g2x_g, where latter is going
+                                        !to ocean, so should get remapped to
+                                        !ocean grid in prep_ocn_shelf_calc_g2x_ox
+          call prep_ocn_shelf_calc_g2x_ox(timer='CPL:glcpost_glcshelf2ocn')
+                                        !Map g2x_gx shelf fields that were updated above, to g2x_ox.
+                                        !Do this at intrinsic coupling
+                                        !frequency
+          call prep_ice_shelf_calc_g2x_ix(timer='CPL:glcpost_glcshelf2ice')
+                                        !Map g2x_gx shelf fields to g2x_ix.
+                                        !Do this at intrinsic coupling
+                                        !frequency.  This is perhaps an
+                                        !unnecessary place to put this
+                                        !call, since these fields aren't
+                                        !changing on the intrinsic
+                                        !timestep.  But I don't think it's
+                                        !unsafe to do it here.
 
-             call prep_glc_accum_ocn(timer='CPL:glcprep_accum_ocn') !accum x2g_g fields here into x2g_gacc
-
-          endif
+          call prep_glc_accum_ocn(timer='CPL:glcprep_accum_ocn') !accum x2g_g fields here into x2g_gacc
 
        endif
+
+    endif
 
   end subroutine cime_run_ocnglc_coupling
 
