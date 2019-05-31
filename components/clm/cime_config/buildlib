@@ -41,7 +41,7 @@ def buildlib(bldroot, installpath, case):
     # create the library in libroot
     #-------------------------------------------------------
 
-    # Note that casebuild/clmconf/CESM_cppdefs is created
+    # Note that casebuild/clmconf/CCSM_cppdefs is created
     # by the call to clm's bld/configure in clm's cime_config/buildnml
 
     with open(os.path.join(casebuild, "clmconf", "CCSM_cppdefs"), "r") as fd:
