@@ -36,7 +36,7 @@ _TESTS = {
         },
 
     "e3sm_atm_developer" : {
-        "inherit" : ("eam_preqx_ftypes", "eam_theta_ftypes"),
+        "inherit" : ("eam_preqx", "eam_theta"),
         "tests"   : (
             "ERP_Ln9.ne4_ne4.FC5AV1C-L",
             "SMS_Ln9.ne4_ne4.FC5AV1C-L.cam-outfrq9s",
@@ -44,7 +44,6 @@ _TESTS = {
             "SMS_R_Ld5.T42_T42.FSCM5A97",
             "SMS_R_Ld5.ne4_ne4.FSCM5A97",
             "SMS_D_Ln5.ne4_ne4.FC5AV1C-L",
-            "SMS.ne4_ne4.FC5AV1C-L.cam-thetasl",
             )
         },
 
@@ -184,16 +183,19 @@ _TESTS = {
 
     #atmopheric tests for ftypes with 2 builds only
     #ftype2 is a default and tested in other suites for preqx
-    #ftype1 will be added in ftype1 verification pr
-    #1st: preqx ftype0
-    #2nd: preqx ftype4
-    #3rd: theta-l hy ftype0
-    #4th: theta-l hy ftype2
-    #5th: theta-l hy ftype4
-    #6th: theta-l nh ftype0
-    #7th: theta-l nh ftype2
-    #8th: theta-l nh ftype4
-    "eam_preqx_ftypes" : {
+    # preqx ftype0
+    # preqx ftype1
+    # preqx ftype4
+    # theta-l hy ftype0
+    # theta-l hy ftype1
+    # theta-l hy ftype2
+    # theta-l hy ftype4
+    # theta-l nh ftype0
+    # theta-l nh ftype1
+    # theta-l nh ftype2
+    # theta-l nh ftype4
+    # theta-l hy SL
+    "eam_preqx" : {
         "share"    : True,
         "time"     : "01:00:00",
         "tests"    : (
@@ -202,7 +204,7 @@ _TESTS = {
                  "SMS.ne4_ne4.FC5AV1C-H01A.cam-preqx_ftype4",
                  )
     },
-    "eam_theta_ftypes" : {
+    "eam_theta" : {
         "share"    : True,
         "time"     : "02:00:00",
         "tests"    : (
@@ -214,6 +216,7 @@ _TESTS = {
                  "SMS.ne4_ne4.FC5AV1C-H01A.cam-thetanh_ftype1",
                  "SMS.ne4_ne4.FC5AV1C-H01A.cam-thetanh_ftype2",
                  "SMS.ne4_ne4.FC5AV1C-H01A.cam-thetanh_ftype4",
+                 "SMS.ne4_ne4.FC5AV1C-H01A.cam-thetahy_sl",
                  )
     },
 
