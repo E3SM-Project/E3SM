@@ -1845,8 +1845,8 @@
     <domain name="ne30np4.pg2">
       <nx>21600</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="gx1v6">DUMMY</file>
-      <file grid="ice|ocn" mask="gx1v6">DUMMY</file>
+      <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30pg2_oQU240.190321.nc</file>
+      <file grid="ice|ocn" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30pg2_oQU240.190321.nc</file>
       <desc>ne30np4.pg2 is Spectral Elem 1-deg grid w/ 2x2 FV physics grid per element:</desc>
     </domain>
 
@@ -1855,73 +1855,73 @@
     <domain name="ne32np4">
       <nx>55298</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30np4_gx1v6.110905.nc</file>
-      <file grid="ice|ocn" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30np4_gx1v6_110217.nc</file>
-      <desc>ne32np4 is Spectral Elem 1-deg grid:</desc>
+      <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/DUMMY</file>
+      <file grid="ice|ocn" mask="gx1v6">$DIN_LOC_ROOT/share/domains/DUMMY</file>
+      <desc> ne32np4 Spectral Elem grid:</desc>
     </domain>
     <domain name="ne32np4.pg2">
       <nx>24576</nx>
       <ny>1</ny>
       <file grid="atm|lnd" mask="gx1v6">DUMMY</file>
       <file grid="ice|ocn" mask="gx1v6">DUMMY</file>
-      <desc>ne30np4.pg2 is Spectral Elem 1-deg grid w/ 2x2 FV physics grid per element:</desc>
+      <desc> ne32np4 Spectral Elem grid w/ 2x2 FV physics grid:</desc>
     </domain>
 
     <domain name="ne25np4">
       <nx>33752</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30np4_gx1v6.110905.nc</file>
-      <file grid="ice|ocn" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30np4_gx1v6_110217.nc</file>
-      <desc>ne??np4 is Spectral Elem ~1-deg grid:</desc>
+      <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/DUMMY</file>
+      <file grid="ice|ocn" mask="gx1v6">$DIN_LOC_ROOT/share/domains/DUMMY</file>
+      <desc> ne25np4 Spectral Elem grid:</desc>
     </domain>
     <domain name="ne25np4.pg2">
       <nx>15000</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30np4_gx1v6.110905.nc</file>
-      <file grid="ice|ocn" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30np4_gx1v6_110217.nc</file>
-      <desc>ne??np4 is Spectral Elem ~1-deg grid:</desc>
+      <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/DUMMY</file>
+      <file grid="ice|ocn" mask="gx1v6">$DIN_LOC_ROOT/share/domains/DUMMY</file>
+      <desc> ne25np4 Spectral Elem grid w/ 2x2 FV physics grid:</desc>
     </domain>
     <domain name="ne35np4">
       <nx>66152</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30np4_gx1v6.110905.nc</file>
-      <file grid="ice|ocn" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30np4_gx1v6_110217.nc</file>
-      <desc>ne??np4 is Spectral Elem ~1-deg grid:</desc>
+      <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/DUMMY</file>
+      <file grid="ice|ocn" mask="gx1v6">$DIN_LOC_ROOT/share/domains/DUMMY</file>
+      <desc> ne35np4 Spectral Elem grid:</desc>
     </domain>
     <domain name="ne35np4.pg2">
       <nx>29400</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30np4_gx1v6.110905.nc</file>
-      <file grid="ice|ocn" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30np4_gx1v6_110217.nc</file>
-      <desc>ne??np4 is Spectral Elem ~1-deg grid:</desc>
+      <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/DUMMY</file>
+      <file grid="ice|ocn" mask="gx1v6">$DIN_LOC_ROOT/share/domains/DUMMY</file>
+      <desc> ne35np4 Spectral Elem grid w/ 2x2 FV physics grid:</desc>
     </domain>
     <domain name="ne40np4">
       <nx>86402</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30np4_gx1v6.110905.nc</file>
-      <file grid="ice|ocn" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30np4_gx1v6_110217.nc</file>
-      <desc>ne??np4 is Spectral Elem ~1-deg grid:</desc>
+      <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/DUMMY</file>
+      <file grid="ice|ocn" mask="gx1v6">$DIN_LOC_ROOT/share/domains/DUMMY</file>
+      <desc> ne40np4 Spectral Elem grid:</desc>
     </domain>
     <domain name="ne40np4.pg2">
       <nx>38400</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30np4_gx1v6.110905.nc</file>
-      <file grid="ice|ocn" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30np4_gx1v6_110217.nc</file>
-      <desc>ne??np4 is Spectral Elem ~1-deg grid:</desc>
+      <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/DUMMY</file>
+      <file grid="ice|ocn" mask="gx1v6">$DIN_LOC_ROOT/share/domains/DUMMY</file>
+      <desc> ne40np4 Spectral Elem grid w/ 2x2 FV physics grid:</desc>
     </domain>
     <domain name="ne45np4">
       <nx>109352</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30np4_gx1v6.110905.nc</file>
-      <file grid="ice|ocn" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30np4_gx1v6_110217.nc</file>
-      <desc>ne??np4 is Spectral Elem ~1-deg grid:</desc>
+      <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/DUMMY</file>
+      <file grid="ice|ocn" mask="gx1v6">$DIN_LOC_ROOT/share/domains/DUMMY</file>
+      <desc> ne45np4 Spectral Elem grid:</desc>
     </domain>
     <domain name="ne45np4.pg2">
       <nx>48600</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30np4_gx1v6.110905.nc</file>
-      <file grid="ice|ocn" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30np4_gx1v6_110217.nc</file>
-      <desc>ne??np4 is Spectral Elem ~1-deg grid:</desc>
+      <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/DUMMY</file>
+      <file grid="ice|ocn" mask="gx1v6">$DIN_LOC_ROOT/share/domains/DUMMY</file>
+      <desc> ne45np4 Spectral Elem grid w/ 2x2 FV physics grid:</desc>
     </domain>
 
     <!--=====================================================================-->
