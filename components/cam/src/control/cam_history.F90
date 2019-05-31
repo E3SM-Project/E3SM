@@ -3408,7 +3408,7 @@ end subroutine print_active_fldlst
       ierr=pio_inq_varid (tape(t)%File,'time_bnds',   tape(t)%tbndid)
       ierr=pio_inq_varid (tape(t)%File,'date_written',tape(t)%date_writtenid)
       ierr=pio_inq_varid (tape(t)%File,'time_written',tape(t)%time_writtenid)
-#if ( defined BFB_CAM_SCAM_IOP )
+#if ( defined BFB_E3SM_SCM_IOP )
       ierr=pio_inq_varid (tape(t)%File,'tsec    ',tape(t)%tsecid)
       ierr=pio_inq_varid (tape(t)%File,'bdate   ',tape(t)%bdateid)
 #endif
@@ -3764,8 +3764,8 @@ end subroutine print_active_fldlst
     str = 'CF-1.0'
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'Conventions', trim(str))
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'source', 'CAM')
-#if ( defined BFB_CAM_SCAM_IOP )
-    ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'CAM_GENERATED_FORCING','create SCAM IOP dataset')
+#if ( defined BFB_E3SM_SCM_IOP )
+    ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'E3SM_GENERATED_FORCING','create SCM IOP dataset')
 #endif
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'case',caseid)
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'title',ctitle)
@@ -3825,7 +3825,7 @@ end subroutine print_active_fldlst
       str = 'base date (YYYYMMDD)'
       ierr=pio_put_att (tape(t)%File, tape(t)%nbdateid, 'long_name', trim(str))
 
-#if ( defined BFB_CAM_SCAM_IOP )
+#if ( defined BFB_E3SM_SCM_IOP )
       ierr=pio_def_var (tape(t)%File,'bdate',PIO_INT,tape(t)%bdateid)
       str = 'base date (YYYYMMDD)'
       ierr=pio_put_att (tape(t)%File, tape(t)%bdateid, 'long_name', trim(str))
@@ -3902,7 +3902,7 @@ end subroutine print_active_fldlst
       end if
 
 
-#if ( defined BFB_CAM_SCAM_IOP )
+#if ( defined BFB_E3SM_SCM_IOP )
       ierr=pio_def_var (tape(t)%File,'tsec ',pio_int,(/timdim/), tape(t)%tsecid)
       str = 'current seconds of current date needed for scam'
       ierr=pio_put_att (tape(t)%File, tape(t)%tsecid, 'long_name', trim(str))
@@ -4145,7 +4145,7 @@ end subroutine print_active_fldlst
 
       ierr = pio_put_var(tape(t)%File, tape(t)%nbdateid, (/nbdate/))
       call cam_pio_handle_error(ierr, 'h_define: cannot put nbdate')
-#if ( defined BFB_CAM_SCAM_IOP )
+#if ( defined BFB_E3SM_SCM_IOP )
       ierr = pio_put_var(tape(t)%File, tape(t)%bdateid, (/nbdate/))
       call cam_pio_handle_error(ierr, 'h_define: cannot put bdate')
 #endif
@@ -4526,7 +4526,7 @@ end subroutine print_active_fldlst
     character(len=max_string_len) :: fname ! Filename
     logical :: prev              ! Label file with previous date rather than current
     integer :: ierr
-#if ( defined BFB_CAM_SCAM_IOP )
+#if ( defined BFB_E3SM_SCM_IOP )
     integer :: tsec             ! day component of current time
     integer :: dtime            ! seconds component of current time
 #endif
@@ -4670,7 +4670,7 @@ end subroutine print_active_fldlst
           end if
 
           ierr = pio_put_var (tape(t)%File, tape(t)%datesecid,(/start/),(/count1/),(/ncsec/))
-#if ( defined BFB_CAM_SCAM_IOP )
+#if ( defined BFB_E3SM_SCM_IOP )
           dtime = get_step_size()
           tsec=dtime*nstep
           ierr = pio_put_var (tape(t)%File, tape(t)%tsecid,(/start/),(/count1/),(/tsec/))

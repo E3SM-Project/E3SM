@@ -30,7 +30,7 @@ subroutine scam_use_iop_srf( cam_in )
      !       preserve the cold-start that is used in the full model
      !       Else, temperature should be initialized as specified 
      !       in the IOP forcing file 
-             if (use_camiop .and. is_first_step()) then
+             if (use_replay .and. is_first_step()) then
                cam_in(c)%ts(:ncol) = cam_in(c)%ts(:ncol)
                cam_in(c)%lwup(:ncol) = cam_in(c)%lwup(:ncol) 
              else 

@@ -31,7 +31,7 @@ subroutine scm_setinitial(elem)
   integer i, j, k, ie, thelev
   integer inumliq, inumice, icldliq, icldice
 
-  if (.not. use_camiop .and. get_nstep() .eq. 0) then
+  if (.not. use_replay .and. get_nstep() .eq. 0) then
     call cnst_get_ind('NUMLIQ', inumliq, abort=.false.)
     call cnst_get_ind('NUMICE', inumice, abort=.false.)
     call cnst_get_ind('CLDLIQ', icldliq)

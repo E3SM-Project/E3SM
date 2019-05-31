@@ -195,7 +195,7 @@ module cam_history_support
     type(var_desc_t) :: f12vmrid         ! var id for f12 volume mixing ratio
     type(var_desc_t) :: sol_tsiid        ! var id for total solar irradiance (W/m2)
     type(var_desc_t) :: datesecid        ! var id for curent seconds of current date
-#if ( defined BFB_CAM_SCAM_IOP )
+#if ( defined BFB_E3SM_SCM_IOP )
     type(var_desc_t) :: bdateid         ! var id for base date
     type(var_desc_t) :: tsecid        ! var id for curent seconds of current date
 #endif
