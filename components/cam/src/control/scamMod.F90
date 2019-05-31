@@ -193,6 +193,7 @@ module scamMod
   logical*4, public ::  lwrad_off     ! turn off LW radiation
   logical*4, public ::  precip_off    ! turn off precipitation processes
   logical*4, public ::  use_replay    ! use e3sm generated forcing 
+  logical*4, public ::  use_replay_b4b ! use e3sm generated forcing to get b4b results
   logical*4, public ::  use_3dfrc     ! use 3d forcing
   logical*4, public ::  have_heat_glob ! dataset contains global energy fixer
 

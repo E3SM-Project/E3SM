@@ -844,7 +844,7 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     ptend%s(:ncol,:pver) = heat_glob
 !!$    write(iulog,*) "chk_fix: heat", state%lchnk, ncol, heat_glob
 
-#if ( defined BFB_E3SM_SCM_IOP )
+#if ( defined E3SM_SCM_REPLAY )
     if (nstep > 0) then
       heat_out(:ncol) = heat_glob
       call outfld('heat_glob',  heat_out(:ncol), pcols, lchnk)

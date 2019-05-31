@@ -448,7 +448,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
    type (element_t), pointer :: elem(:)
    integer :: rc, i, j, k, p, ie, tl_f
-#if (defined BFB_E3SM_SCM_IOP)
+#if (defined E3SM_SCM_REPLAY)
    real(r16) :: forcing_temp, forcing_temp_lrg, forcing_temp_lrg_test, threshold
    real(r8) :: forcing_temp_part1(npsq,nlev), forcing_temp_part2(npsq,nlev), forcing_temp_part3(npsq,nlev)
    real(r8) :: forcing_q_part1(npsq,nlev,pcnst), forcing_q_part2(npsq,nlev,pcnst), forcing_q_part3(npsq,nlev,pcnst)
@@ -461,7 +461,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    
    elem => dyn_out%elem
    
-#if (defined BFB_E3SM_SCM_IOP)   
+#if (defined E3SM_SCM_REPLAY)   
 
    tl_f = TimeLevel%n0   ! timelevel which was adjusted by physics
    
@@ -492,7 +492,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    call t_stopf  ('dyn_run')
    
    ! Update to get tendency 
-#if (defined BFB_E3SM_SCM_IOP) 
+#if (defined E3SM_SCM_REPLAY) 
 
    tl_f = TimeLevel%n0
    

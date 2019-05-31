@@ -1949,7 +1949,7 @@ $cfg_cppdefs .= " -DMAXPATCH_PFT=numpft+1 -DLSMLAT=1 -DLSMLON=1";
 if ($pergro eq "ON") { $cfg_cppdefs .= " -DPERGRO"; }
 
 # Configure CAM to produce IOP files for SCAM
-if ($e3smreplay eq 'ON') { $cfg_cppdefs .= " -DBFB_E3SM_SCM_IOP"; }
+if ($e3smreplay eq 'ON') { $cfg_cppdefs .= " -DE3SM_SCM_REPLAY"; }
 
 # Resolution parameters for rectangular lat/lon grids
 my $nlon = $cfg_ref->get('nlon');
