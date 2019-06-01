@@ -34,7 +34,10 @@ module scamMod
   public scam_default_opts        ! SCAM default run-time options 
   public scam_setopts             ! SCAM run-time options 
   public setiopupdate
-  public readiopdata         
+  public readiopdata
+  public replay_b4b_output         
+
+  integer, parameter :: r16 = selected_real_kind(24)
 
 !
 ! !PUBLIC MODULE DATA:
@@ -1602,5 +1605,46 @@ endif !scm_observed_aero
    return
 end subroutine readiopdata
 
+subroutine replay_b4b_output(tendency,part_one,part_two,part_three)
+   
+   real(r16), intent(in) :: tendency
+   real(r8), intent(out) :: part_one
+   real(r8), intent(out) :: part_two
+   real(r8), intent(out) :: part_three
+   
+   real(r16) :: mult_test, tendency_16_test, tendency_lrg_16
+   real(r16) :: mult, part_one_16, part_two_16
+   real(r16) :: tendency_int2float_16
+   real(r8) :: e_count   
+   real(r16), parameter :: threshold = 1.E10_r16
+   
+   integer(i8) :: tendency_int
+   
+   ! Start code
+   mult_test = 1.0_r16
+   e_count = 1.0_r8
+   tendency_16_test = tendency
+   do while((abs(tendency_16_test) < threshold) .and. (tendency .ne. 0._r16))
+     tendency_16_test = tendency*mult_test
+     if (abs(tendency_16_test) < threshold) then
+       mult_test = mult_test*10._r16
+       e_count = e_count + 1.0_r8
+     endif
+   enddo
+   
+   mult = mult_test
+   tendency_lrg_16 = tendency*mult
+   tendency_int = int8(tendency_lrg_16)
+   tendency_int2float_16 = tendency_int
+   
+   part_one = tendency_int2float_16
+   
+   part_two_16 = (tendency_lrg_16 - tendency_int2float_16)/mult
+   part_two = part_two_16 
+   
+   part_three = e_count
+   
+   return
+end subroutine replay_b4b_output
 
 end module scamMod

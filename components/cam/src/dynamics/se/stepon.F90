@@ -26,7 +26,8 @@ module stepon
    use edge_mod,       only: initEdgeBuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
    use parallel_mod,   only : par
    use scamMod,        only: use_iop, doiopupdate, single_column, &
-                             setiopupdate, readiopdata
+                             setiopupdate, readiopdata, &
+			     replay_b4b_output
    use element_mod,    only: element_t
    use shr_const_mod,       only: SHR_CONST_PI
 
@@ -449,15 +450,11 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
 #endif   
 #if (defined E3SM_SCM_REPLAY_B4B)
    integer, parameter :: r16 = selected_real_kind(24)
-   integer, parameter :: i8 = selected_int_kind(12)
-   real(r16) :: forcing_temp, forcing_temp_lrg, forcing_temp_lrg_test
+   real(r16) :: forcing_temp
    real(r8) :: forcing_temp_part1(npsq,nlev), forcing_temp_part2(npsq,nlev), forcing_temp_part3(npsq,nlev)
    real(r8) :: forcing_q_part1(npsq,nlev,pcnst), forcing_q_part2(npsq,nlev,pcnst), forcing_q_part3(npsq,nlev,pcnst)
-   real(r16) :: mult, mult_test, term1, term2, term3, term4 
-   integer(i8) :: forcing_temp_int
-   real(r8) :: forcing_temp_float, mult_float, second_part, e_count
-   real(r16) :: forcing_temp_float_16, second_part_16 
-   real(r16), parameter :: threshold = 1.E10_r16
+   real(r16) :: term1, term2, term3, term4 
+   real(r8) :: replay_one,replay_two,replay_three
 #endif
    
    elem => dyn_out%elem
@@ -509,29 +506,11 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
 	   term4=dyn_in%elem(ie)%derived%FT(i,j,k)
 	   forcing_temp = (term1 - term2)/term3 - term4
 			
-	   mult_test = 1.0_r16
-	   e_count = 1.0_r8
-	   forcing_temp_lrg_test = forcing_temp
-	   do while((abs(forcing_temp_lrg_test) < threshold) .and. (forcing_temp .ne. 0._r16))
-	     forcing_temp_lrg_test = forcing_temp*mult_test
-	     if (abs(forcing_temp_lrg_test) < threshold) then
-	       mult_test = mult_test*10._r16
-	       e_count = e_count + 1.0_r8
-	     endif
-	   end do	
-	   
-	   mult=mult_test
-	   forcing_temp_lrg=forcing_temp*mult
-	   forcing_temp_int = int8(forcing_temp_lrg)
-	   forcing_temp_float_16 = forcing_temp_int
-	 
-	   second_part_16 = (forcing_temp_lrg - forcing_temp_float_16)/mult
-	   second_part = second_part_16
+           call replay_b4b_output(forcing_temp,replay_one,replay_two,replay_three)
 
-	   forcing_temp_float=forcing_temp_float_16
-	   forcing_temp_part1(i+(j-1)*np,k)=forcing_temp_float	   
-	   forcing_temp_part2(i+(j-1)*np,k)=second_part
-	   forcing_temp_part3(i+(j-1)*np,k)=e_count
+	   forcing_temp_part1(i+(j-1)*np,k)=replay_one	   
+	   forcing_temp_part2(i+(j-1)*np,k)=replay_two
+	   forcing_temp_part3(i+(j-1)*np,k)=replay_three
 #else
 	   forcing_temp(i+(j-1)*np,k) = (dyn_in%elem(ie)%state%T(i,j,k,tl_f) - &
 	        ftmp_temp(i,j,k,ie))/dtime - dyn_in%elem(ie)%derived%FT(i,j,k)
@@ -550,28 +529,11 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
 	     term3=dtime	
 	     forcing_temp = (term1 - term2)/term3
 	     
-	     mult_test = 1.0_r16
-	     e_count = 0.0_r8
-	     forcing_temp_lrg_test = forcing_temp
-	     do while((abs(forcing_temp_lrg_test) < threshold) .and. (forcing_temp .ne. 0._r16))
-	       forcing_temp_lrg_test = forcing_temp*mult_test
-	       if (abs(forcing_temp_lrg_test) < threshold) then
-	         mult_test = mult_test*10._r16
-		 e_count = e_count + 1.0_r8
-	       endif
-	     end do	     
-		
-	     mult=mult_test
-	     forcing_temp_lrg=forcing_temp*mult
-	     forcing_temp_int = int8(forcing_temp_lrg)
-	     forcing_temp_float_16 = forcing_temp_int
-	 
-	     second_part_16 = (forcing_temp_lrg - forcing_temp_float_16)/mult
-	     second_part = second_part_16
-	     forcing_temp_float=forcing_temp_float_16
-	     forcing_q_part1(i+(j-1)*np,k,p)=forcing_temp_float	   
-	     forcing_q_part2(i+(j-1)*np,k,p)=second_part
-	     forcing_q_part3(i+(j-1)*np,k,p)=e_count
+	     call replay_b4b_output(forcing_temp,replay_one,replay_two,replay_three)
+	     
+	     forcing_q_part1(i+(j-1)*np,k,p)=replay_one	   
+	     forcing_q_part2(i+(j-1)*np,k,p)=replay_two
+	     forcing_q_part3(i+(j-1)*np,k,p)=replay_three
 #else	 		
 	     forcing_q(i+(j-1)*np,k,p) = (dyn_in%elem(ie)%state%Q(i,j,k,p) - &
 	       ftmp_q(i,j,k,p,ie))/dtime
