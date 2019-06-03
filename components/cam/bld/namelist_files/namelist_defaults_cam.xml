@@ -164,17 +164,6 @@
 <ncdata dyn="se" hgrid="ne4np4"   nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne4np4_L72_c190218.nc</ncdata>
 <ncdata dyn="se" hgrid="ne16np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne16np4_L72_c190311.nc</ncdata>
 <ncdata dyn="se" hgrid="ne30np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne30np4_L72_c190215.nc</ncdata>
-<!-- Need to update these -->
-<ncdata dyn="se" hgrid="ne8np4"   nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_dummy.nc</ncdata>
-<ncdata dyn="se" hgrid="ne25np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_dummy.nc</ncdata>
-<ncdata dyn="se" hgrid="ne32np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_dummy.nc</ncdata>
-<ncdata dyn="se" hgrid="ne35np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_dummy.nc</ncdata>
-<ncdata dyn="se" hgrid="ne40np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_dummy.nc</ncdata>
-<ncdata dyn="se" hgrid="ne45np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_dummy.nc</ncdata>
-<ncdata dyn="se" hgrid="ne60np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_dummy.nc</ncdata>
-<ncdata dyn="se" hgrid="ne64np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_dummy.nc</ncdata>
-<ncdata dyn="se" hgrid="ne120np4" nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_dummy.nc</ncdata>
-
 
 
 <ncdata dyn="se" hgrid="ne240np4" nlev="30"              >atm/cam/inic/homme/cami-mam3_0000-01-ne240np4_L30_c111004.nc</ncdata>
@@ -1716,8 +1705,6 @@
 <fatmlndfrc hgrid="ne60np4"   >share/domains/domain.lnd.ne60np4_gx1v6.120406.nc</fatmlndfrc>
 <fatmlndfrc hgrid="ne120np4"  >share/domains/domain.lnd.ne120np4_gx1v6.111226.nc</fatmlndfrc>
 <fatmlndfrc hgrid="ne240np4"  >share/domains/domain.lnd.ne240np4_gx1v6.120125.nc</fatmlndfrc>
-
-<!-- <fatmlndfrc hgrid="ne30np4.pg2">DUMMY</fatmlndfrc> -->
 
 <fatmlndfrc hgrid="ne0np4_enax4v1">share/domains/domain.lnd.enax4v1_oRRS18to6.170621.nc</fatmlndfrc>
 
