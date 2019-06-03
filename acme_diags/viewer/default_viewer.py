@@ -115,7 +115,7 @@ def create_viewer(root_dir, parameters):
                         # Format the filename to support relative paths.
                         ROW_INFO[set_name][parameter.case_id][row_name][season]['image_path'] = os.path.join(
                             '..', '{}'.format(set_name), parameter.case_id, fnm)
-                        ROW_INFO[set_name][parameter.case_id][row_name][season]['metadata'] = _create_metadata(parameter)
+                        ROW_INFO[set_name][parameter.case_id][row_name][season]['metadata'] = create_metadata(parameter)
 
     save_netcdf = parameters[0].save_netcdf
     ext = parameters[0].output_format[0]
@@ -174,7 +174,7 @@ def _add_to_lat_lon_metrics_table(lat_lon_table_info, metrics_path, season, row_
         lat_lon_table_info[season][row_name]['metrics'] = metrics_dict
 
 
-def _create_metadata(parameter):
+def create_metadata(parameter):
     """
     From a set of parameters, extract the metadata.
     """

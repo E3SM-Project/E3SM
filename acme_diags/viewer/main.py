@@ -1,7 +1,7 @@
 import os
 import collections
 from bs4 import BeautifulSoup
-from . import default_viewer, utils
+from . import default_viewer, utils, area_mean_time_series_viewer
 import acme_diags
 
 # A mapping of each diagnostics set to the viewer
@@ -12,7 +12,8 @@ SET_TO_VIEWER = {
     'zonal_mean_xy': default_viewer.create_viewer,
     'zonal_mean_2d': default_viewer.create_viewer,
     'meridional_mean_2d': default_viewer.create_viewer,
-    'cosp_histogram': default_viewer.create_viewer
+    'cosp_histogram': default_viewer.create_viewer,
+    'area_mean_time_series': area_mean_time_series_viewer.create_viewer
 }
 
 def create_index(root_dir, title_and_url_list):

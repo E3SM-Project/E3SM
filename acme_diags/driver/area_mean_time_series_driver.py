@@ -1,15 +1,14 @@
 import os
 import collections
 import cdms2
-import acme_diags
-from acme_diags.driver import utils
-from acme_diags.metrics import mean
 import cdutil
-
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 import numpy as np
+import acme_diags
+from acme_diags.driver import utils
+from acme_diags.metrics import mean
 from acme_diags.driver.utils.general import get_output_dir
 
 
@@ -26,7 +25,7 @@ def create_metrics(ref_domain):
 def run_diag(parameter):
     variables = parameter.variables
     regions = parameter.regions
-    ref_names_regional_mean = getattr(parameter, 'ref_names_regional_mean', [])
+    area_mean_ref_names = getattr(parameter, 'area_mean_time_series_ref_names', [])
 
     # Both input data sets must be time-series files.
     # Raising an error will cause this specific set of
@@ -38,14 +37,14 @@ def run_diag(parameter):
 
     for var in variables:
         # The data that'll be sent to the plotting function.
-        # There are six tuples, each will be plotted like so:
-        # [ 0 ]   [ 1 ]
-        # [   ]   [   ]
+        # There are eight tuples, each will be plotted like so:
+        # [ 0 ]   [ 1 ]   [ 2 ]
+        # [   ]   [   ]   [   ]
         #
-        # [ 2 ]   [ 3 ]
-        # [   ]   [   ]
+        # [ 3 ]   [ 4 ]   [ 5 ]
+        # [   ]   [   ]   [   ]
         #
-        # [ 4 ]   [ 5 ]
+        # [ 6 ]   [ 7 ]
         # [   ]   [   ]
         regions_to_data = collections.OrderedDict()
         print('Variable: {}'.format(var))
@@ -78,7 +77,7 @@ def run_diag(parameter):
 
             refs = []
 
-            for ref_name in ref_names_regional_mean:    
+            for ref_name in area_mean_ref_names:    
                 setattr(parameter, 'ref_name', ref_name)
                 ref_data = utils.dataset.Dataset(parameter, ref=True)
             
@@ -116,14 +115,14 @@ def run_diag(parameter):
         #print(regions_to_data.values())
         # plot(parameter.current_set, data, parameter)
         
-        plot(regions_to_data, parameter)
+        plot(var, regions_to_data, parameter)
         # TODO: How will this work when there are a bunch of plots for each image?
         # Yes, these files should be saved.
         # utils.general.save_ncfiles(parameter.current_set,
         #                     mv1_domain, mv2_domain, diff, parameter)
     return parameter
 
-def plot(regions_to_data, parameter):
+def plot(var, regions_to_data, parameter):
     # Data is a list based on the len of the regions parameter.
     # Each element is a tuple with ref data,
     # test data, and metrics for that region.
@@ -155,11 +154,10 @@ def plot(regions_to_data, parameter):
              ]
     
     
-    # Create figure
-    figsize = [11.0,8.5]
+    # Create the figure.
+    figsize = [11.0, 8.5]
     dpi = 150
     fig = plt.figure(figsize=figsize, dpi=dpi)
-    #fig = plt.figure(figsize=parameter.figsize, dpi=parameter.dpi)
     num_year = int(parameter.test_end_yr) - int(parameter.test_start_yr) +1
 
     for i_region, data_set_for_region in enumerate(regions_to_data.values()):
@@ -180,57 +178,22 @@ def plot(regions_to_data, parameter):
             #ax1.set_ylabel(test.long_name + ' (' + test.units + ')')
         ax1.legend(loc=1, prop={'size': 6})
         fig.text(panel[i_region][0]+0.12, panel[i_region][1]+panel[i_region][3]-0.015, parameter.regions[i_region],ha='center', color='black')
-    # Figure title
-    fig.suptitle('Annual mean ' + parameter.var_id + ' over regions ' + parameter.test_name_yrs, x=0.5, y=0.97, fontsize=15)
+    # Figure title.
+    fig.suptitle('Annual mean ' + var + ' over regions ' + parameter.test_name_yrs, x=0.5, y=0.97, fontsize=15)
 
-    # Save figure
-    parameter.output_file = 'time_series'
+    # Save the figure.
+    output_file_name = var
     for f in parameter.output_format:
         f = f.lower().split('.')[-1]
         fnm = os.path.join(get_output_dir(parameter.current_set,
-            parameter), parameter.output_file + '.' + f)
+            parameter), output_file_name + '.' + f)
         plt.savefig(fnm)
         # Get the filename that the user has passed in and display that.
         # When running in a container, the paths are modified.
         fnm = os.path.join(get_output_dir(parameter.current_set, parameter,
-            ignore_container=True), parameter.output_file + '.' + f)
+            ignore_container=True), output_file_name + '.' + f)
         print('Plot saved in: ' + fnm)
 
-    # Save individual subplots
-    for f in parameter.output_format_subplot:
-        fnm = os.path.join(get_output_dir(
-            parameter.current_set, parameter), parameter.output_file)
-        page = fig.get_size_inches()
-        i = 0
-        for p in panel:
-            # Extent of subplot
-            subpage = np.array(p).reshape(2,2)
-            subpage[1,:] = subpage[0,:] + subpage[1,:]
-            subpage = subpage + np.array(border).reshape(2,2)
-            subpage = list(((subpage)*page).flatten())
-            extent = matplotlib.transforms.Bbox.from_extents(*subpage)
-            # Save subplot
-            fname = fnm + '.%i.' %(i) + f
-            plt.savefig(fname, bbox_inches=extent)
-
-            orig_fnm = os.path.join(get_output_dir(parameter.current_set, parameter,
-                ignore_container=True), parameter.output_file)
-            fname = orig_fnm + '.%i.' %(i) + f
-            print('Sub-plot saved in: ' + fname)
-            
-            i += 1
 
     plt.close()
-#    plt.savefig('/global/project/projectdirs/acme/www/zhang40/figs/test_pr.png')
 
-
-#        # You can have multiple reference data, so we
-#        # make a list of all the data to plot.s
-#        data_to_plot = refs + [test]
-#        print('In this plot, we have {} data sets'.format(len(data_to_plot)))
-#        #metrics = data_set_for_region.metrics
-#    
-#        for data in data_to_plot:
-#            # Plot each of these data sets.
-#            print('data',data)    
-#            pass
