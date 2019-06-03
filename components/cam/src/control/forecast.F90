@@ -116,10 +116,11 @@ subroutine forecast(lat, psm1, psm2,ps, &
    real(r8) dotproda           ! dot product
    real(r8) dotprodb           ! dot product
    integer i,k,m           ! longitude, level, constituent indices
-   real(r16) divt3d_full, divq3d_full, term1, term2, term3, term4
-   real(r16) reconst1, reconst2, mult_reconst
-   real(r16) term5, term6, mult
-   real(r8) e_count
+   real(r16) divt3d_r16, divq3d_r16
+   real(r16) reconst1_r16, reconst2_r16, mult_reconst_r16
+   real(r16) timestep_r16, phystend_r16
+   real(r16) var_beforedyn_r16, var_afterdyn_r16
+   real(r8) exp_count
 !
 !     Below are Variables Used in the Advection Diagnostics
 !
@@ -183,12 +184,19 @@ subroutine forecast(lat, psm1, psm2,ps, &
    end do
 
    wfldint(plevp) = 0.0_r8
-
+ 
    if (use_3dfrc .and. use_iop .and. .not. use_replay_b4b) then
+
+!  If using the E3SM REPLAY option, then this method will not 
+!    give exact b4b results with the GCM column, though this 
+!    should faithful represent the behavior and regime of
+!    the column with small error.  For b4b, more output from 
+!    the GCM is required to compute the tendency in quad precision
 
 !  Complete a very simple forecast using supplied 3-dimensional forcing
 !  by the large scale.  Obviates the need for any kind of vertical 
 !  advection calculation.  Skip to diagnostic estimates of vertical term.
+
       i=1
       do k=1,plev
          tfcst(k) = t3m2(k) + ztodt*t2(k) + ztodt*divt3d(k)
@@ -204,40 +212,72 @@ subroutine forecast(lat, psm1, psm2,ps, &
    end if
    
    if (use_3dfrc .and. use_iop .and. use_replay_b4b) then
+   
+!  If the user generated the adequte forcing from the GCM to produce 
+!    b4b results with the GCM column, then we will compute the forecast
+!    in quad precicion (r16).  To do this we must reconstruct the r16
+!    dynamics tendency and convert all needed terms for the forecast
+!    in r16.  Afterwards, this r16 forecast value is converted back
+!    to r8
 
 !  Complete a very simple forecast using supplied 3-dimensional forcing
 !  by the large scale.  Obviates the need for any kind of vertical 
 !  advection calculation.  Skip to diagnostic estimates of vertical term.
       i=1
       do k=1,plev
-         e_count=divt3d_3(k)
-	 mult_reconst=1.0_r16*10._r16**(e_count)
-	 reconst2=divt3d_2(k)
-	 reconst1=divt3d(k)
-	 divt3d_full = reconst2 + reconst1/mult_reconst
-
-	 term1 = t3m2(k)
-	 term2 = ztodt
-	 term3 = t2(k)
+         ! read in exponent value of the "Multiplier"
+         exp_count=divt3d_3(k)
 	 
-	 term4 = term1 + term2*term3 + term2*divt3d_full
-         tfcst(k) = term4
-!         tfcst(k) = t3m2(k) + ztodt*t2(k) + ztodt*divt3d_full!divt3d(k)
+	 ! Reconstsruct the multiplier value so that it is
+	 ! exacly the same as it was when the tedency was broken
+	 ! down in routine "replay_b4b_output"
+	 mult_reconst_r16=1.0_r16*10._r16**(exp_count)
+	 
+	 ! Read in part two of the dynamics tendency
+	 reconst2_r16=divt3d_2(k)
+	 
+	 ! Read in part one of the dynamics tendency
+	 reconst1_r16=divt3d(k)
+	 
+	 ! Now we have all terms to reconstruct the r16 
+	 !  dynamics tendency needed for our forecast.  This 
+	 !  needs to be computed EXACTLY the same way as it was 
+	 !  done in routine "replay_b4b_output".  In this routine
+	 !  we computed reconst2 as:
+	 !     reconst2 = (divt3d_full - reconst1)/mult_reconst
+	 !  Thus, we will rearrange to solve for divt2d_full as:
+
+	 divt3d_r16 = reconst2_r16 + reconst1_r16/mult_reconst_r16
+
+         ! Now we have the appropriate forcing term at r16, but all 
+	 !  terms of our forecast now need to be in r16 so the forecast
+	 !  can be as precise as possible for b4b
+	 var_beforedyn_r16 = t3m2(k) ! temperature before dynamics
+	 timestep_r16 = ztodt        ! timestep
+	 phystend_r16 = t2(k)        ! physics tendency
+
+         ! compute the forecast in r16	 
+	 var_afterdyn_r16 = var_beforedyn_r16 + timestep_r16*phystend_r16 &
+	     + phystend_r16*divt3d_r16
+	     
+	 ! Now convert the r16 forecast to r8
+         tfcst(k) = var_afterdyn_r16
       end do
+      ! Do the same for tracers.  Yes, there are lack of comments,
+      !   but logic follows that exactly of that of temperature.
       do m=1,pcnst
          do k=1,plev
-            e_count=divq3d_3(k,m)
-	    mult_reconst=1.0_r16*10._r16**(e_count)
-	    reconst2=divq3d_2(k,m)
-	    reconst1=divq3d(k,m)	 
+            exp_count=divq3d_3(k,m)
+	    mult_reconst_r16=1.0_r16*10._r16**(exp_count)
+	    reconst2_r16=divq3d_2(k,m)
+	    reconst1_r16=divq3d(k,m)	 
 	 
-	    divq3d_full = reconst2 + reconst1/mult_reconst	 
+	    divq3d_r16 = reconst2_r16 + reconst1_r16/mult_reconst_r16	 
 
-	    term1 = qminus(1,k,m)
-	    term2 = ztodt
-	    term3 = term1 + divq3d_full*term2
-	    qfcst(1,k,m) = term3
-!            qfcst(1,k,m) = qminus(1,k,m) +  divq3d_full*ztodt
+	    var_beforedyn_r16 = qminus(1,k,m)
+	    timestep_r16 = ztodt
+	    var_afterdyn_r16 = var_beforedyn_r16 + divq3d_r16*timestep_r16
+	    qfcst(1,k,m) = var_afterdyn_r16
          end do
       enddo
 

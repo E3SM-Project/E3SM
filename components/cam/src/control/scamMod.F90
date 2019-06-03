@@ -1626,37 +1626,75 @@ subroutine replay_b4b_output(tendency,part_one,part_two,part_three)
    real(r8), intent(out) :: part_two
    real(r8), intent(out) :: part_three
    
-   real(r16) :: mult_test, tendency_16_test, tendency_lrg_16
-   real(r16) :: mult, part_one_16, part_two_16
-   real(r16) :: tendency_int2float_16
-   real(r8) :: e_count   
+   real(r16) :: mult_test, tendency_r16_test, tendency_lrg_r16
+   real(r16) :: mult, part_one_r16, part_two_r16
+   real(r16) :: tendency_int2float_r16
+   real(r8) :: exp_count   
    real(r16), parameter :: threshold = 1.E10_r16
    
    integer(i8) :: tendency_int
    
-   ! Start code
-   mult_test = 1.0_r16
-   e_count = 1.0_r8
-   tendency_16_test = tendency
-   do while((abs(tendency_16_test) < threshold) .and. (tendency .ne. 0._r16))
-     tendency_16_test = tendency*mult_test
-     if (abs(tendency_16_test) < threshold) then
+   ! If the user wishes to replay a column of E3SM with
+   ! b4b results in the SCM, then the tendency must be 
+   ! computed in r16 precision.  However, it is not possible
+   ! to produce output in r16 precision in E3SM, therefore
+   ! in order to reconstruct the tendency as accurately as 
+   ! possible in r16 in forecast.F90, three r8 values 
+   ! must be computed, done in this subroutine.  
+   
+   ! We first need to bring the tendency above a certain 
+   ! threshold so that we can save an integer value of that 
+   mult_test = 1.0_r16 ! Initialize multiplier needed to get value
+                       ! above a certain threshold
+   exp_count = 0.0_r8  ! Keep count of the exponent of the multiplier
+   tendency_r16_test = tendency ! Make a copy of the tendency to be multiplied
+   
+   ! Now loop until the input tendency is above a certain "threshold"
+   do while((abs(tendency_r16_test) < threshold) .and. (tendency .ne. 0._r16))
+     tendency_r16_test = tendency*mult_test
+     
+     ! If threshold still isn't attained then increase multiplier by
+     !   and order of magnitude while keeping track of the desired exponent
+     if (abs(tendency_r16_test) < threshold) then
        mult_test = mult_test*10._r16
-       e_count = e_count + 1.0_r8
+       exp_count = exp_count + 1.0_r8
      endif
    enddo
    
-   mult = mult_test
-   tendency_lrg_16 = tendency*mult
-   tendency_int = int8(tendency_lrg_16)
-   tendency_int2float_16 = tendency_int
+   ! Make a copy of the multiplier
+   mult = mult_test 
    
-   part_one = tendency_int2float_16
+   ! Now compute the "large" version of the tendency
+   !  that satisifies the threshold value
+   tendency_lrg_r16 = tendency*mult
    
-   part_two_16 = (tendency_lrg_16 - tendency_int2float_16)/mult
-   part_two = part_two_16 
+   ! Take an integer value of this tendency
+   tendency_int = int8(tendency_lrg_r16)
    
-   part_three = e_count
+   ! Convert this integer value back to a r16 value
+   tendency_int2float_r16 = tendency_int
+   
+   ! Save the first part one of our output, which represents 
+   !  an r8 version of "first" part of our large 
+   !  tendency (i.e. tendency*mult) 
+   part_one = tendency_int2float_r16
+   
+   ! Now compute part two of our output, which represents the
+   !  trailing digits of our r16 tendency 
+   part_two_r16 = (tendency_lrg_r16 - tendency_int2float_r16)/mult
+   ! Convert this to r8 so it can be saved in the output files
+   part_two = part_two_r16 
+   
+   ! Save the exponent of the multipler (in r8).  We save this instead
+   !  of the multipler itself because we can reconstruct the multiplier
+   !  more accurately vs. instances where the multiplier is very large
+   part_three = exp_count
+   
+   ! NOTE: that when this tendency is reconstructed in forecast.F90
+   !  we will be actively solving for "tendency_lrg_r16" and we need 
+   !  to do this the exact same way as it is done in "part_two_16 = "
+   !  line above to get the most precise representation of the r16 tendency
+   !  as possible, to achieve b4b.  This is why three terms must be saved.
    
    return
 end subroutine replay_b4b_output
