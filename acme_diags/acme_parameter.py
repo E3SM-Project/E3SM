@@ -14,7 +14,8 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.test_timeseries_input = False
         self.viewer_descr = {}
 
-        self.sets = ['zonal_mean_xy', 'zonal_mean_2d', 'lat_lon', 'polar', 'cosp_histogram']
+        self.sets = ['zonal_mean_xy', 'zonal_mean_2d', 'meridional_mean_2d',
+            'lat_lon', 'polar', 'cosp_histogram']
         self.dataset = ''
         self.run_type = 'model_vs_obs'
         self.variables = []

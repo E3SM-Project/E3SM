@@ -13,7 +13,6 @@ textcombined_objs = {}
 def plot(reference, test, diff, metrics_dict, parameter):
     vcs_canvas = vcs.init(bg=True, geometry=(
         parameter.canvas_size_w, parameter.canvas_size_h))
-    parameter.case_id
 
     file_path = os.path.join(acme_diags.INSTALL_PATH, 'lat_lon')
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_5.json'))
@@ -22,6 +21,14 @@ def plot(reference, test, diff, metrics_dict, parameter):
     template_test = vcs_canvas.gettemplate('plotset5_0_x_0')
     template_ref = vcs_canvas.gettemplate('plotset5_0_x_1')
     template_diff = vcs_canvas.gettemplate('plotset5_0_x_2')
+
+    # Turn off the units of the axes in the plots.
+    template_test.xunits.priority = 0
+    template_test.yunits.priority = 0
+    template_ref.xunits.priority = 0
+    template_ref.yunits.priority = 0
+    template_diff.xunits.priority = 0
+    template_diff.yunits.priority = 0
 
     utils.set_units(test, parameter.test_units)
     utils.set_units(reference, parameter.reference_units)

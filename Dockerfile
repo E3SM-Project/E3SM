@@ -4,7 +4,8 @@
 # that prevented the building process from working properly.
 FROM continuumio/miniconda:4.5.4
 
-LABEL maintainer="shaheen2@llnl.gov"
+LABEL maintainer="zhang40@llnl.gov"
+LABEL version="1.7.0"
 
 # Copy the entire project dir because we'll install from source.
 COPY . .
@@ -20,7 +21,7 @@ SHELL ["/bin/bash", "-c"]
 RUN conda env update -n base --file conda/e3sm_diags_env_dev.yml && \
         conda clean --all -y && \
         source activate base && \
-        python setup.py install && \
+        pip install . && \
         rm -r build/
 
 # Needs to be a list, otherwise arguments aren't

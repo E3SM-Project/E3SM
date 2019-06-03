@@ -10,7 +10,7 @@ import collections
 import traceback
 import cdms2
 import acme_diags.derivations.acme
-from . import general, climo
+from . import climo
 
 
 class Dataset():
@@ -132,12 +132,12 @@ class Dataset():
 
         elif self.ref:
             # Get the reference variable from climo files.
-            filename = general.get_ref_filename(self.parameters, season)
+            filename = self.get_ref_filename_climo(season)
             variables = self._get_climo_var(filename, *args, **kwargs)
 
         elif self.test:
             # Get the test variable from climo files.
-            filename = general.get_test_filename(self.parameters, season)
+            filename = self.get_test_filename_climo(season)
             variables = self._get_climo_var(filename, *args, **kwargs)
 
         else:
@@ -190,9 +190,9 @@ class Dataset():
             raise RuntimeError('Cannot get a global attribute from timeseries files.')
 
         if self.ref:
-            filename = general.get_ref_filename(self.parameters, season)
+            filename = self.get_ref_filename_climo(season)
         else:
-            filename = general.get_test_filename(self.parameters, season)
+            filename = self.get_test_filename_climo(season)
         
         with cdms2.open(filename) as f:
             return f.getglobal(attr)
@@ -213,112 +213,74 @@ class Dataset():
         return start_yr, end_yr
 
 
-    def _get_start_yr_from_fname(self, var, path):
+    def get_test_filename_climo(self, season):
         """
-        Based of var, get the start year from the timeseries file
-        located in path.
-        The expected file format is:
-            {var}_{start_yr}01_{end_yr}12.nc
+        Return the path to the test file name based on
+        the season and other parameters.
+        For climo files only.
         """
-        timeseries_path = self._get_timeseries_file_path(var, path)
+        path = self.parameters.test_data_path
+        data_name = self.parameters.test_name
 
-        if not timeseries_path:
-            msg = 'There\'s no file for {} in {}'.format(var, path)
-            raise IOError(msg)
+        if hasattr(self.parameters, 'test_file'):
+            fnm = os.path.join(path, self.parameters.test_file)
+            if not os.path.exists(fnm):
+                raise IOError('File not found: {}'.format(fnm))
+            return fnm
 
-        file_name = timeseries_path.split('/')[-1]
-        re_str = r'(?:{}_)(.*)(?:01_)'.format(var)
-        match = re.match(re_str, file_name).group(1)
-
-        if len(match) != 4:
-            msg = 'Got an invalid value {} when '.format(match)
-            msg += 'parsing the start year from the filename.'
-            raise RuntimeError(msg)
-
-        return match
+        return self._get_climo_filename(path, data_name, season)
 
 
-    def _get_end_yr_from_fname(self, var, path):
+    def get_ref_filename_climo(self, season):
         """
-        Based of var, get the end year from the timeseries file
-        located in path.
-        The expected file format is:
-            {var}_{start_yr}01_{end_yr}12.nc
+        Return the path to the reference file name based on
+        the season and other parameters.
+        For climo files only.
         """
-        timeseries_path = self._get_timeseries_file_path(var, path)
+        path = self.parameters.reference_data_path
+        data_name = self.parameters.ref_name
 
-        if not timeseries_path:
-            msg = 'There\'s no file for {} in {}'.format(var, path)
-            raise IOError(msg)
+        if hasattr(self.parameters, 'ref_file'):
+            fnm = os.path.join(path, self.parameters.ref_file)
+            if not os.path.exists(fnm):
+                raise IOError('File not found: {}'.format(fnm))
+            return fnm
 
-        file_name = timeseries_path.split('/')[-1]
-        re_str = r'(?:.*01_)(.*)(?:12.nc)'
-        match = re.match(re_str, file_name).group(1)
-
-        if len(match) != 4:
-            msg = 'Got an invalid value {} when '.format(match)
-            msg += 'parsing the end year from the filename.'
-            raise RuntimeError(msg)
-
-        return match
+        return self._get_climo_filename(path, data_name, season)
 
 
-    def _get_start_and_end_time_indices(self, var):
+    def _get_climo_filename(self, path, data_name, season):
         """
-        Get the start and end years as slices.
-
-        This is based off the passed in var because we need the
-        file that the var corresponds to calculate the offset.
+        For climo files, return the path of the file based on the parameters.
+        If the file isn't found, try looking for it in path/data_name/ dir as well.
         """
-        if not self.is_timeseries():
-            msg = 'Input data is not timeseries, can\'t get start and end years.'
-            raise RuntimeError(msg)
+        fnm = self._find_climo_file(path, data_name, season)
+        if not os.path.exists(fnm):
+            # Try looking for the file nested in a folder, based on the test_name.
+            pth = os.path.join(path, data_name)
+            if os.path.exists(pth):
+                fnm = self._find_climo_file(pth, data_name, season)
 
-        # This is from the user's input.
-        # Ex: 1980, 1989
-        start_yr, end_yr = self.get_start_and_end_years()
-        start_yr, end_yr = int(start_yr), int(end_yr)
+        if not os.path.exists(fnm):
+            raise IOError("No file found for {} and {} in {}".format(data_name, season, path))
 
-        # Get the start and end years based on the file corresponding to var.
-        # Ex1: 1950, 2015
-        # Ex2: 1980, 2015
-        path = self.parameters.reference_data_path if self.ref else self.parameters.test_data_path
-        start_yr_file = self._get_start_yr_from_fname(var, path)
-        end_yr_file = self._get_end_yr_from_fname(var, path)
-        start_yr_file, end_yr_file = int(start_yr_file), int(end_yr_file)
+        return fnm
 
-        # Check that the user-inputted year range can work for the file associated to var.
-        if end_yr_file - start_yr_file < end_yr - start_yr:
-            msg = 'For {}, the years you\'re trying to slice ({}, {})'.format(var, start_yr, end_yr)
-            msg += ' don\'t fit within the year ranges for the file ({}, {}).'.format(start_yr_file, end_yr_file)
-            raise RuntimeError(msg)
 
-        if start_yr < start_yr_file:
-            msg = 'The inputted start year ({}) is less'.format(start_yr)
-            msg += ' than that of the file ({}).'.format(start_yr_file)
-            raise RuntimeError(msg)
-
-        if end_yr > end_yr_file:
-            msg = 'The inputted end year ({}) is greater'.format(end_yr)
-            msg += ' than that of the file ({}).'.format(end_yr_file)
-            raise RuntimeError(msg)
-
-        # Calculate the offset, which is needed for when *_yr >= *_yr_file.
-        # Ex1: 1980 - 1950 = 30
-        # Ex2: 1980 - 1980 = 0
-        offset = start_yr - start_yr_file
-
-        # Using the offset, and user inputted years (start_yr, end_yr), calculate the indices.
-        # The +1 is because we want to include the end_yr as well.
-        # Ex1: 0, 10
-        # Ex2: 0, 10
-        start_slice, end_slice = 0, end_yr - start_yr + 1
-        # Ex1: 0+30, 10+30 = 30, 40
-        # Ex2: 0+0, 10+0 = 0, 10
-        start_slice, end_slice = start_slice + offset, end_slice + offset
-
-        # We multiply by 12 since it's monthly data.
-        return start_slice*12, end_slice*12
+    def _find_climo_file(self, path_name, data_name, season):
+        """
+        Locate climatology file name based on data_name and season.
+        """
+        dir_files = sorted(os.listdir(path_name))
+        for filename in dir_files:
+            if filename.startswith(data_name + '_' + season):
+                return os.path.join(path_name, filename)
+        # The below is only ran on model data, because a shorter name is passed into this software.
+        for filename in dir_files:
+            if filename.startswith(data_name) and season in filename:
+                return os.path.join(path_name, filename)
+        # No file found.
+        return ''
 
 
     def _get_climo_var(self, filename, extra_vars_only=False):
@@ -328,7 +290,6 @@ class Dataset():
 
         If self.extra_vars is also defined, get them as well.
         """
-        
         vars_to_get = []
         if not extra_vars_only:
             vars_to_get.append(self.var)
@@ -383,7 +344,7 @@ class Dataset():
         If none of the derived variables work, we try to just get this from the data_file.
         """
         vars_in_file = set(data_file.variables)
-        possible_vars = vars_to_func_dict.keys()  # ex: [('pr',), ('PRECC', 'PRECL')]
+        possible_vars = list(vars_to_func_dict.keys())  # ex: [('pr',), ('PRECC', 'PRECL')]
 
         for list_of_vars in possible_vars:
             if vars_in_file.issuperset(list_of_vars):
@@ -413,7 +374,7 @@ class Dataset():
         """
         # Since there's only one set of vars, we get the first
         # and only set of vars from the dictionary.
-        vars_to_get = vars_to_func_dict.keys()[0]
+        vars_to_get = list(vars_to_func_dict.keys())[0]
 
         variables = [data_file(var)(squeeze=1) for var in vars_to_get]
 
@@ -471,7 +432,7 @@ class Dataset():
             # from the 'first' original var.
             # Ex: We have {('PRECC', 'PRECL'): func} for PRECT.
             #     Any extra variables must come from PRECC_{start_yr}01_{end_yr}12.nc.
-            first_orig_var = vars_to_func_dict.keys()[0][0]
+            first_orig_var = list(vars_to_func_dict.keys())[0][0]
             for extra_var in self.extra_vars:
                 v = self._get_var_from_timeseries_file(first_orig_var, data_path, var_to_get=extra_var)
                 return_variables.append(v)
@@ -511,7 +472,7 @@ class Dataset():
             {self.var}_{start_yr}01_{end_yr}12.nc
         located in data_path.
         """
-        possible_vars = vars_to_func_dict.keys()  # ex: [('pr',), ('PRECC', 'PRECL')]
+        possible_vars = list(vars_to_func_dict.keys())  # ex: [('pr',), ('PRECC', 'PRECL')]
 
         for list_of_vars in possible_vars:
             # Check that there are files in data_path that exist for all variables in list_of_vars.
@@ -595,7 +556,7 @@ class Dataset():
         """
         # Since there's only one set of vars, we get the first
         # and only set of vars from the dictionary.
-        vars_to_get = vars_to_func_dict.keys()[0]
+        vars_to_get = list(vars_to_func_dict.keys())[0]
 
         variables = []
         for var in vars_to_get:
@@ -614,10 +575,11 @@ class Dataset():
         for this var exists in data_path.
         The checking is done in _get_first_valid_vars_timeseries().
         """
-        start_time_idx, end_time_idx = self._get_start_and_end_time_indices(var)
+        start_year, end_year = self.get_start_and_end_years()
+        start_time = '{}-01-15'.format(start_year)
+        end_time = '{}-12-15'.format(end_year)
         path = self._get_timeseries_file_path(var, data_path)
         var = var_to_get if var_to_get else var
 
         with cdms2.open(path) as f:
-            return f(var, time=slice(start_time_idx, end_time_idx))(squeeze=1)
-
+            return f(var, time=(start_time, end_time, 'ccb'))(squeeze=1)

@@ -18,6 +18,7 @@ SET_NAME_MAPPING = {
     ('7', 'polar'): 'polar',
     ('13', 'cosp_histogram'): 'cosp_histogram',
     ('regional_mean_time_series'): 'regional_mean_time_series',
+    ('meridional_mean_2d'): 'meridional_mean_2d',
 }
 
 SET_NAMES = list(SET_NAME_MAPPING.values())
@@ -62,47 +63,6 @@ def get_name_and_yrs(parameters, dataset, season=''):
         name_yrs = '{} ({})'.format(name_yrs, yrs_averaged)
     
     return name_yrs
-
-
-def _findfile(path_name, data_name, season):
-    """Locate file name based on data_name and season."""
-    dir_files = sorted(os.listdir(path_name))
-    for filename in dir_files:
-        if filename.startswith(data_name + '_' + season):
-            return os.path.join(path_name, filename)
-    # only ran on model data, because a shorter name is used
-    for filename in dir_files:
-        if filename.startswith(data_name) and season in filename:
-            return os.path.join(path_name, filename)
-    raise IOError("No file found for {} and {} in {}".format(data_name, season, path_name))
-
-
-def get_test_filename(parameters, season):
-    """Return the test file name based on
-    the season and other parameters"""
-    if hasattr(parameters, 'test_file'):
-        print(parameters.test_data_path)
-        print(parameters.test_file)
-        fnm = os.path.join(parameters.test_data_path, parameters.test_file)
-        if not os.path.exists(fnm):
-            raise IOError('File not found: {}'.format(fnm))
-    else:
-        fnm = _findfile(parameters.test_data_path,
-                        parameters.test_name, season)
-    return fnm
-
-
-def get_ref_filename(parameters, season):
-    """Return the reference file name based on
-    the season and other parameters"""
-    if hasattr(parameters, 'ref_file'):
-        fnm = os.path.join(parameters.reference_data_path, parameters.ref_file)
-        if not os.path.exists(fnm):
-            raise IOError('File not found: {}'.format(fnm))
-    else:
-        fnm = _findfile(parameters.reference_data_path,
-                        parameters.ref_name, season)
-    return fnm
 
 
 def convert_to_pressure_levels(mv, plevs, dataset, var, season):
@@ -218,11 +178,15 @@ def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
         mv1_reg = mv1
         mv2_reg = mv2.regrid(mv_grid, regridTool=regrid_tool,
                              regridMethod=regrid_method)
+        mv2_reg.units = mv2.units
+
     else:
         mv_grid = mv2.getGrid()
         mv2_reg = mv2
         mv1_reg = mv1.regrid(mv_grid, regridTool=regrid_tool,
                              regridMethod=regrid_method)
+        mv1_reg.units = mv1.units
+
     return mv1_reg, mv2_reg
 
 
@@ -300,7 +264,7 @@ def get_output_dir(set_num, parameter, ignore_container=False):
     if not os.path.exists(pth):
         # When running diags in parallel, sometimes another process will create the dir.
         try:
-            os.makedirs(pth, 0o775)
+            os.makedirs(pth, 0o755)
         except OSError as e:
             if e.errno != os.errno.EEXIST:
                 raise

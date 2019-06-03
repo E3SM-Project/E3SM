@@ -1,6 +1,6 @@
 Steps to preprocess the analysis data
 A. Generate env for data pre-processing
-conda create -n obs_env cdtime cdms2 cdutil numpy pytz nco cdo -c conda-forge -c cdat
+conda create -n obs_env cdtime cdms2 cdutil numpy pytz nco cdo python=2.7 -c conda-forge -c cdat
 The obs_en.yml file saved here as part of the provenance included the exact packages that generated the resulting datasets
 
 B. Generate climo and time-series for each datasets:
@@ -10,11 +10,13 @@ B. Generate climo and time-series for each datasets:
   -Run create_GPCP_climo.py to generate climatology from time series data
 
 2. HadISST
+  -Run fix_HadISST_timebounds_sic_mask.py to fix overlapping timebounds inherented from original file
   -Run create_HadISST_climo.py for both time series and climo (PI[1870-1900], PD[1999-2016], CL[1999-2011])
 
 3. CERES-EBAF
   -Run create_ceres_ebaf_surface_climo.sh for CERES-EBAF surface Ed4.0 and Ed2.8
   -Run create_ceres_ebaf_toa_climo.sh  for CERES-EBAF toa Ed4.0 and Ed2.8
+  -Modify split_vars.py to split varibles in a multi-variable file
 
 4. ERA-Interim
   -Run create_ERA-Interim_climo.sh for ERA-Interim reanalysis data
@@ -28,4 +30,4 @@ B. Generate climo and time-series for each datasets:
 7. OAFLUX
   -Run create_OAFLUX_climo.py for surface heat flux from WHOI OAFLUX
 
-As of Aug 29th 2018, climos of other variables used in E3SM diags are used from data distributed with NCAR's AMWG diagnostics package. 
+As of Oct 24th 2018, climos of other variables (CRU_IPCC, cloud simulators related[COSP], SSMI) used in E3SM diags are used from data distributed with NCAR's AMWG diagnostics package.We did use analysis_scripts_more_fix.py to add yrs_averaged attritute for data that with this information available. 

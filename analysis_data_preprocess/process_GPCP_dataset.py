@@ -33,12 +33,16 @@ cdm.setAutoBounds(1) ; # Ensure bounds on time and depth axes are generated
 #=============================================
 # I/O location and names
 #input_hostpath='/work/terai1/ACME/GPCP/'    #!!! change directory to wherever you have downloaded GPCP data
-input_hostpath='/p/user_pub/e3sm/zhang40/analysis_data_e3sm_diags/GPCP/original_data/'    #!!! change directory to wherever you have downloaded GPCP data
+data_name = 'GPCP'
+input_hostpath='/p/user_pub/e3sm/zhang40/analysis_data_e3sm_diags/'+data_name+'/original_data/'    #!!! change directory to wherever you have downloaded GPCP data
 input_filename='precip.mon.mean.nc'
 input_hostANDfilename="".join([input_hostpath, input_filename])
 #output_hostpath='/work/terai1/ACME/GPCP/'    #!!! change directory to wherever you want to save processed data
-output_hostpath='/p/user_pub/e3sm/zhang40/analysis_data_e3sm_diags/GPCP/time_series/'    #!!! change directory to wherever you want to save processed data
-output_filename='PRCET_197901_201412.nc'
+output_hostpath='/p/user_pub/e3sm/zhang40/analysis_data_e3sm_diags/'+data_name+'/time_series/'    #!!! change directory to wherever you want to save processed data
+if data_name == 'GPCP_v2.2':
+    output_filename = 'PRECT_197901_201412.nc'
+elif data_name == 'GPCP':
+    output_filename='PRECT_197901_201712.nc'
 #==============================================
 # Git has script location
 #GIT_HASH = "~/ACME/PreAndPostProcessingScripts/utils/add_git_hash_to_netcdf_metadata "
@@ -62,7 +66,10 @@ for fi in fisc:
     print "".join(["** Processing: ",fi," **"])
     #GRAB DATA - make sure it works and print the shape of data
     try:
-        dattable=f_in(fi,time=("1978-12-31 23:59:59","2015-01-01 00:00:00"))
+        if data_name == 'GPCP_v2.2':
+            dattable=f_in(fi,time=("1978-12-31 23:59:59","2015-01-01 00:00:00"))
+        elif data_name == 'GPCP':
+            dattable=f_in(fi,time=("1978-12-31 23:59:59","2018-01-01 00:00:00"))
         print dattable.shape
     except:
         print "Couldn't access data for ",fi
@@ -73,13 +80,14 @@ for fi in fisc:
     dattable.long_name='Average Monthly Rate of Precipitation'
     var_missing_value=dattable.missing_value
     
-    #right side up the globe
-    lat=dattable.getAxis(1)
-    bnd=lat.getBounds()[::-1]
-    lat[:]=lat[::-1]
-    lat.setBounds(bnd)
-    dattable=dattable[:,::-1,:]
-    dattable.setAxis(1,lat)
+    if data_name =='GPCP_v2.2':
+        #right side up the globe
+        lat=dattable.getAxis(1)
+        bnd=lat.getBounds()[::-1]
+        lat[:]=lat[::-1]
+        lat.setBounds(bnd)
+        dattable=dattable[:,::-1,:]
+        dattable.setAxis(1,lat)
     if filecount==0:
         outfile="".join([output_hostpath,output_filename])
         f_out=cdm.open(outfile,'w')
