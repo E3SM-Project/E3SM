@@ -1391,10 +1391,6 @@
 <statefreq> 480 </statefreq>
 <integration> "explicit" </integration>
 
-<cubed_sphere_map> 0 </cubed_sphere_map>
-<cubed_sphere_map npg="1" > 2 </cubed_sphere_map>
-<cubed_sphere_map npg="2" > 2 </cubed_sphere_map>
-
 <mesh_file>/dev/null</mesh_file>
 <mesh_file hgrid="ne0np4_arm_x8v3_lowcon"  >atm/cam/inic/homme/arm_x8v3_lowcon.g</mesh_file>
 <mesh_file hgrid="ne0np4_conus_x4v1_lowcon"  >atm/cam/inic/homme/conusx4v1.g</mesh_file>
