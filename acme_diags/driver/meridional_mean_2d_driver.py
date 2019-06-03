@@ -13,7 +13,9 @@ from acme_diags.driver import utils
 
 
 def create_metrics(ref, test, ref_regrid, test_regrid, diff):
-    """Creates the mean, max, min, rmse, corr in a dictionary"""
+    """
+    Creates the mean, max, min, rmse, corr in a dictionary.
+    """
     orig_bounds = cdms2.getAutoBounds()
     cdms2.setAutoBounds(1)
     lev = ref.getLevel()
@@ -78,8 +80,8 @@ def run_diag(parameter):
 
         # Get land/ocean fraction for masking.
         try:
-            land_frac = test_data.get_variable('LANDFRAC', season)
-            ocean_frac = test_data.get_variable('OCNFRAC', season)
+            land_frac = test_data.get_climo_variable('LANDFRAC', season)
+            ocean_frac = test_data.get_climo_variable('OCNFRAC', season)
         except:
             mask_path = os.path.join(acme_diags.INSTALL_PATH, 'acme_ne30_ocean_land_mask.nc')
             with cdms2.open(mask_path) as f:
@@ -90,8 +92,8 @@ def run_diag(parameter):
             print('Variable: {}'.format(var))
             parameter.var_id = var
 
-            mv1 = test_data.get_variable(var, season)
-            mv2 = ref_data.get_variable(var, season)
+            mv1 = test_data.get_climo_variable(var, season)
+            mv2 = ref_data.get_climo_variable(var, season)
 
             parameter.viewer_descr[var] = mv1.long_name if hasattr(
                 mv1, 'long_name') else 'No long_name attr in test data.'
@@ -141,7 +143,8 @@ def run_diag(parameter):
                     lev_out = mv2_p.getLevel()
                     lon_out = mv2_p.getLongitude()
                     mv1_reg = mv1_p.crossSectionRegrid(lev_out, lon_out)
-                    # in order to use regrid tool we need to have at least two latitude bands, so generate new grid first
+                    # In order to use regrid tool we need to have at least two
+                    # latitude bands, so generate new grid first.
                     lat = cdms2.createAxis([0])
                     lat.setBounds(numpy.array([-1,1]))
                     lat.designateLatitude()

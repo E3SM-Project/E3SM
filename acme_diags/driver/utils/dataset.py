@@ -178,7 +178,7 @@ class Dataset():
         if not extra_vars:
             raise RuntimeError('Extra variables cannot be empty.')
 
-        return self.get_variable(var, season, extra_vars, extra_vars_only=True)
+        return self.get_climo_variable(var, season, extra_vars, extra_vars_only=True)
 
 
     def get_attr_from_climo(self, attr, season):

@@ -20,6 +20,7 @@ import traceback
 import subprocess
 import cdp.cdp_run
 import acme_diags
+from acme_diags.acme_parameter import ACMEParameter
 from acme_diags.acme_parser import ACMEParser
 from acme_diags.viewer.main import create_viewer
 from acme_diags.driver import utils
@@ -31,8 +32,6 @@ def _get_default_diags(set_name, run_type):
     Returns the path for the default diags for plotset set_name.
     These are different depending on the run_type.
     """
-    set_num = utils.general.get_set_name(set_name)
-
     folder = '{}'.format(set_name)
     fnm = '{}_{}.cfg'.format(set_name, run_type)
     pth = os.path.join(acme_diags.INSTALL_PATH, folder, fnm)
@@ -176,7 +175,7 @@ def get_parameters(parser=ACMEParser()):
 
         # Load the default cfg files.
         run_type = getattr(original_parameter, 'run_type', 'model_vs_obs')
-        default_diags_paths = [_get_default_diags(set_name, run_type) for set_name in utils.general.SET_NAMES]
+        default_diags_paths = [_get_default_diags(set_name, run_type) for set_name in ACMEParameter().sets]
 
         other_parameters = parser.get_other_parameters(files_to_open=default_diags_paths, argparse_vals_only=False)
 
@@ -201,8 +200,7 @@ def run_diag(parameters):
     For a single set of parameters, run the corresponding diags.
     """
     results = []
-    for pset in parameters.sets:
-        set_name = utils.general.get_set_name(pset)
+    for set_name in parameters.sets:
 
         parameters.current_set = set_name
         mod_str = 'acme_diags.driver.{}_driver'.format(set_name)
