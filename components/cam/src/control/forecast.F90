@@ -184,7 +184,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
 
    wfldint(plevp) = 0.0_r8
 
-   if (use_3dfrc .and. use_iop .and. .not. use_replay) then
+   if (use_3dfrc .and. use_iop .and. .not. use_replay_b4b) then
 
 !  Complete a very simple forecast using supplied 3-dimensional forcing
 !  by the large scale.  Obviates the need for any kind of vertical 
@@ -203,7 +203,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
 
    end if
    
-   if (use_3dfrc .and. use_iop .and. use_replay) then
+   if (use_3dfrc .and. use_iop .and. use_replay_b4b) then
 
 !  Complete a very simple forecast using supplied 3-dimensional forcing
 !  by the large scale.  Obviates the need for any kind of vertical 

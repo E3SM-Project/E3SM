@@ -347,6 +347,13 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
            use_replay = .false.
         endif
 	
+	if ( nf90_inquire_attribute( ncid, NF90_GLOBAL, 'E3SM_B4B_GENERATED_FORCING', attnum=i ).EQ. NF90_NOERR ) then
+           use_replay_b4b = .true.
+	   use_replay = .true. 
+        else
+           use_replay_b4b = .false.
+        endif	
+	
 	if (dycore_is('SE') .and. use_replay) then
 	  call wrap_inq_dimid( ncid, 'ncol', londimid   )
 	  call wrap_inq_dimlen( ncid, londimid, lonsiz   )
@@ -696,6 +703,13 @@ end subroutine setiopupdate
    else
       use_replay = .false.
    endif
+   
+   if ( nf90_inquire_attribute( ncid, NF90_GLOBAL, 'E3SM_B4B_GENERATED_FORCING',attnum=i ).EQ. NF90_NOERR ) then
+      use_replay_b4b = .true.
+      use_replay = .true. 
+   else
+      use_replay_b4b = .false.
+   endif   
 
 !=====================================================================
 !     
@@ -1134,7 +1148,7 @@ endif !scm_observed_aero
          have_cnst(m) = .true.
        endif
        
-       if (use_replay) then
+       if (use_replay_b4b) then
          call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, trim(cnst_name(m))//'_dten_2', &
            have_srf, srf(1), fill_ends, scm_crm_mode, &
            dplevs, nlev,psobs, hyam, hybm, divq3d_2(:,m), status )
@@ -1328,7 +1342,7 @@ endif !scm_observed_aero
        have_divt3d = .true.
      endif
      
-     if (use_replay) then
+     if (use_replay_b4b) then
      
        call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'divT3d_2', &
          have_srf, srf(1), fill_ends, scm_crm_mode, &
