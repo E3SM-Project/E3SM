@@ -454,8 +454,6 @@ def get_pp_status(case_dict):
     # get xconform status
     case_dict['xconform_path'] = ''
     case_dict['xconform_path'] = get_pp_path(pp_dir, 'xconform')
-    if (len(case_dict['xconform_path']) > 2):
-        case_dict['xconform_path'] = os.path.join(case_dict['xconform_path'], str(case_dict['case_id']))
     case_dict['xconform_status'] = 'Unknown'
     case_dict['xconform_size'] = get_disk_usage(case_dict['xconform_path'])
     case_dict['xconform_dates'] = case_dict['timeseries_dates']

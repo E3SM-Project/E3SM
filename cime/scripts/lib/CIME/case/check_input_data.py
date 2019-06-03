@@ -210,6 +210,8 @@ def stage_refcase(self, input_data_root=None, data_list_dir=None):
 
         if os.path.isabs(run_refdir):
             refdir = run_refdir
+            expect(os.path.isdir(refdir), "Reference case directory {} does not exist or is not readable".format(refdir))
+
         else:
             refdir = os.path.join(din_loc_root, run_refdir, run_refcase, run_refdate)
             if not os.path.isdir(refdir):
@@ -230,12 +232,12 @@ def stage_refcase(self, input_data_root=None, data_list_dir=None):
         if (not os.path.exists(rundir)):
             logger.debug("Creating run directory: {}".format(rundir))
             os.makedirs(rundir)
-
+        rpointerfile = None
         # copy the refcases' rpointer files to the run directory
         for rpointerfile in glob.iglob(os.path.join("{}","*rpointer*").format(refdir)):
             logger.info("Copy rpointer {}".format(rpointerfile))
             safe_copy(rpointerfile, rundir)
-
+        expect(rpointerfile,"Reference case directory {} does not contain any rpointer files".format(refdir))
         # link everything else
 
         for rcfile in glob.iglob(os.path.join(refdir,"*")):
