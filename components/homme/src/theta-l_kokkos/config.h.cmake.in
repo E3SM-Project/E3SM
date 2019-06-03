@@ -45,20 +45,17 @@
 /* Quadruple-precision */
 #cmakedefine01 HOMME_QUAD_PREC
 
-/* Horizontal OpenMP (over elements) */
-#cmakedefine HORIZ_OPENMP
-
 /* Vertical OpenMP (within elements) */
 #cmakedefine COLUMN_OPENMP
-
-/* Nested OpenMP (both horizontal and vertical) */
-#cmakedefine NESTED_OPENMP
 
 /* Zoltan partitioning library */
 #cmakedefine01 HAVE_ZOLTAN
 
-/* Using Accelerator */
-#cmakedefine IS_ACCELERATOR
+/* TRILINOS  library */
+#cmakedefine01 HAVE_TRILINOS
+
+/* ZOLTAN2 SUBPACKAGE OF TRILINOS  library */
+#cmakedefine01 TRILINOS_HAVE_ZOLTAN2
 
 /* Whether to use OpenMP4 */
 #cmakedefine OMP4

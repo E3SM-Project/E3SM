@@ -48,9 +48,6 @@
 /* Zoltan partitioning library */
 #cmakedefine01 HAVE_ZOLTAN
 
-/* Enable persistent MPI comm */
-#cmakedefine MPI_PERSISTENT
-
 /* TRILINOS  library */
 #cmakedefine01 HAVE_TRILINOS
 
