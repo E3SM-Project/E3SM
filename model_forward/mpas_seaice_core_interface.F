@@ -583,11 +583,15 @@ module seaice_core_interface
      logical, pointer :: &
           config_use_forcing, &
           config_use_data_icebergs, &
-          config_testing_system_test
+          config_testing_system_test, &
+          config_use_snicar
 
      logical, pointer :: &
           pkgForcingActive, &
-          pkgTestingSystemTestActive
+          pkgTestingSystemTestActive, &
+          pkgSnicarActive
+
+     ierr = 0
 
      ierr = 0
 
@@ -613,10 +617,14 @@ module seaice_core_interface
 
      ! see if we are testing the testing system
      if (config_testing_system_test) then
-
         pkgTestingSystemTestActive = .true.
-
      endif
+
+     ! pkgSnicar
+     call MPAS_pool_get_config(configPool, "config_use_snicar", config_use_snicar)
+     call MPAS_pool_get_package(packagePool, "pkgSnicarActive", pkgSnicarActive)
+     ! see if we are using the snicar system
+      pkgSnicarActive = .true.
 
    end subroutine setup_packages_other!}}}
 
