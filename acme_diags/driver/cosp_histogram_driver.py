@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 import os
-import sys
 import cdms2
 import acme_diags
 from acme_diags.plot import plot
@@ -38,73 +37,43 @@ def create_metrics(ref, test, ref_regrid, test_regrid, diff):
 
 
 def run_diag(parameter):
-    parameter.reference_data_path
-    parameter.test_data_path
-
     variables = parameter.variables
     seasons = parameter.seasons
-    ref_name = parameter.ref_name
+    ref_name = getattr(parameter, 'ref_name', '')
     regions = parameter.regions
 
+    test_data = utils.dataset.Dataset(parameter, test=True)
+    ref_data = utils.dataset.Dataset(parameter, ref=True)    
+
     for season in seasons:
+        # Get the name of the data, appended with the years averaged.
+        parameter.test_name_yrs = utils.general.get_name_and_yrs(parameter, test_data, season)
+        parameter.ref_name_yrs = utils.general.get_name_and_yrs(parameter, ref_data, season)
+
+        # Get land/ocean fraction for masking.
         try:
-            filename1 = utils.get_test_filename(parameter, season)
-            filename2 = utils.get_ref_filename(parameter, season)
-        except IOError as e:
-            print(e)
-            # the file for the current parameters wasn't found, move to next
-            # parameters
-            continue
-
-        print('test file: {}'.format(filename1))
-        print('reference file: {}'.format(filename2))
-
-        f_mod = cdms2.open(filename1)
-        f_obs = cdms2.open(filename2)
-
-        if parameter.short_test_name:
-            parameter.test_name_yrs = parameter.short_test_name
-        else:
-            parameter.test_name_yrs = parameter.test_name
-
-        try:
-            yrs_averaged =  f_mod.getglobal('yrs_averaged')
-            parameter.test_name_yrs = parameter.test_name_yrs + ' (' + yrs_averaged +')'
-
+            land_frac = test_data.get_variable('LANDFRAC', season)
+            ocean_frac = test_data.get_variable('OCNFRAC', season)
         except:
-            print('No yrs_averaged exists in global attributes')
-            parameter.test_name_yrs = parameter.test_name_yrs
-
-        # save land/ocean fraction for masking
-        try:
-            land_frac = f_mod('LANDFRAC')
-            ocean_frac = f_mod('OCNFRAC')
-        except BaseException:
             mask_path = os.path.join(acme_diags.INSTALL_PATH, 'acme_ne30_ocean_land_mask.nc')
-            f0 = cdms2.open(mask_path)
-            land_frac = f0('LANDFRAC')
-            ocean_frac = f0('OCNFRAC')
-            f0.close()
+            with cdms2.open(mask_path) as f:
+                land_frac = f('LANDFRAC')
+                ocean_frac = f('OCNFRAC')
 
         for var in variables:
             print('Variable: {}'.format(var))
             parameter.var_id = var
-            mv1 = acme.process_derived_var(
-                var, acme.derived_variables, f_mod, parameter)
-            mv2 = acme.process_derived_var(
-                var, acme.derived_variables, f_obs, parameter)
+
+            mv1 = test_data.get_variable(var, season)
+            mv2 = ref_data.get_variable(var, season)
 
             parameter.viewer_descr[var] = mv1.long_name if hasattr(
                 mv1, 'long_name') else 'No long_name attr in test data.'
 
-            # select region
-            if len(regions) == 0:
-                regions = ['global']
-
             for region in regions:
                 print("Selected region: {}".format(region))
 
-                mv1_domain, mv2_domain = utils.select_region(
+                mv1_domain, mv2_domain = utils.general.select_region(
                     region, mv1, mv2, land_frac, ocean_frac, parameter)
 
                 parameter.output_file = '-'.join(
@@ -113,17 +82,16 @@ def run_diag(parameter):
 
                 mv1_domain_mean = mean(mv1_domain)
                 mv2_domain_mean = mean(mv2_domain)
-
                 diff = mv1_domain_mean - mv2_domain_mean
+
                 mv1_domain_mean.id = var
                 mv2_domain_mean.id = var
                 diff.id = var
-                parameter.backend = 'cartopy'
+                
+                parameter.backend = 'mpl'  # For now, there's no vcs support for this set.
                 plot(parameter.current_set, mv2_domain_mean,
                      mv1_domain_mean, diff, {}, parameter)
-#                    plot(parameter.current_set, mv2_domain, mv1_domain, diff, metrics_dict, parameter)
-#                    utils.save_ncfiles(parameter.current_set, mv1_domain, mv2_domain, diff, parameter)
+                utils.general.save_ncfiles(parameter.current_set,
+                                   mv1_domain, mv2_domain, diff, parameter)
 
-        f_obs.close()
-        f_mod.close()
     return parameter

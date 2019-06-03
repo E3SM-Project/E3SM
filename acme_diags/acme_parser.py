@@ -22,7 +22,39 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
         self.add_argument(
             '--reference_data_path',
             dest='reference_data_path',
-            help='Path for the reference climatologies.',
+            help='Path for the reference data.',
+            required=False)
+
+        self.add_argument(
+            '--ref_timeseries_input',
+            dest='ref_timeseries_input',
+            help='The input reference data are timeseries files.',
+            action='store_const',
+            const=True,
+            required=False)
+
+        self.add_argument(
+            '--ref_start_yr',
+            dest='ref_start_yr',
+            help="Start year for the reference timeseries files.",
+            required=False)
+
+        self.add_argument(
+            '--ref_end_yr',
+            dest='ref_end_yr',
+            help="End year for the reference timeseries files.",
+            required=False)
+
+        self.add_argument(
+            '--ref_start_time_slice',
+            dest='ref_start_time_slice',
+            help="Starting time slice year for the reference timeseries files.",
+            required=False)
+
+        self.add_argument(
+            '--ref_end_time_slice',
+            dest='ref_end_time_slice',
+            help="Ending time slice year for the reference timeseries files.",
             required=False)
         
         self.add_argument(
@@ -49,7 +81,39 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
         self.add_argument(
             '--test_data_path',
             dest='test_data_path',
-            help='Path for the test climatologies.',
+            help='Path for the test data.',
+            required=False)
+
+        self.add_argument(
+            '--test_timeseries_input',
+            dest='test_timeseries_input',
+            help='The input test data are timeseries files.',
+            action='store_const',
+            const=True,
+            required=False)
+
+        self.add_argument(
+            '--test_start_yr',
+            dest='test_start_yr',
+            help="Start year for the test timeseries files.",
+            required=False)
+
+        self.add_argument(
+            '--test_end_yr',
+            dest='test_end_yr',
+            help="End year for the test timeseries files.",
+            required=False)
+
+        self.add_argument(
+            '--test_start_time_slice',
+            dest='test_start_time_slice',
+            help="Starting time slice year for the test timeseries files.",
+            required=False)
+
+        self.add_argument(
+            '--test_end_time_slice',
+            dest='test_end_time_slice',
+            help="Ending time slice year for the test timeseries files.",
             required=False)
 
         self.add_argument(

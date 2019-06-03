@@ -8,8 +8,8 @@ import cdutil
 import MV2
 import genutil
 import cdms2
+from acme_diags import container
 from acme_diags.derivations.default_regions import regions_specs
-
 
 SET_NAME_MAPPING = {
     ('3', 'zonal_mean_xy'): 'zonal_mean_xy',
@@ -17,6 +17,7 @@ SET_NAME_MAPPING = {
     ('5', 'lat_lon'): 'lat_lon',
     ('7', 'polar'): 'polar',
     ('13', 'cosp_histogram'): 'cosp_histogram',
+    ('meridional_mean_2d'): 'meridional_mean_2d',
 }
 
 SET_NAMES = list(SET_NAME_MAPPING.values())
@@ -32,45 +33,58 @@ def get_set_name(set_name):
     raise RuntimeError('Invalid set option: {}'.format(set_name))
 
 
-def _findfile(path_name, data_name, season):
-    """Locate file name based on data_name and season."""
-    dir_files = sorted(os.listdir(path_name))
-    for filename in dir_files:
-        if filename.startswith(data_name + '_' + season):
-            return os.path.join(path_name, filename)
-    # only ran on model data, because a shorter name is used
-    for filename in dir_files:
-        if filename.startswith(data_name) and season in filename:
-            return os.path.join(path_name, filename)
-    raise IOError("No file found for {} and {}".format(data_name, season))
-
-
-def get_test_filename(parameters, season):
-    """Return the test file name based on
-    the season and other parameters"""
-    if hasattr(parameters, 'test_file'):
-        print(parameters.test_data_path)
-        print(parameters.test_file)
-        fnm = os.path.join(parameters.test_data_path, parameters.test_file)
-        if not os.path.exists(fnm):
-            raise IOError('File not found: {}'.format(fnm))
+def get_name_and_yrs(parameters, dataset, season):
+    """
+    Given either test or ref data, get the name of the data
+    (test_name or reference_name), along with the years averaged.
+    """
+    if dataset.test:
+        if parameters.short_test_name:
+            name_yrs = parameters.short_test_name
+        else:
+            name_yrs = parameters.test_name
     else:
-        fnm = _findfile(parameters.test_data_path,
-                        parameters.test_name, season)
-    return fnm
+        if parameters.short_ref_name:
+            name_yrs = parameters.short_ref_name
+        else:
+            # TODO: Or is this ref_name?
+            name_yrs = parameters.reference_name
 
-
-def get_ref_filename(parameters, season):
-    """Return the reference file name based on
-    the season and other parameters"""
-    if hasattr(parameters, 'ref_file'):
-        fnm = os.path.join(parameters.reference_data_path, parameters.ref_file)
-        if not os.path.exists(fnm):
-            raise IOError('File not found: {}'.format(fnm))
+    if dataset.is_climo():
+        try:
+            yrs_averaged = dataset.get_attr_from_climo('yrs_averaged', season)
+            name_yrs = '{} ({})'.format(name_yrs, yrs_averaged)
+        except:
+            print("No 'yrs_averaged' exists in the global attributes.")
     else:
-        fnm = _findfile(parameters.reference_data_path,
-                        parameters.ref_name, season)
-    return fnm
+        start_yr, end_yr = dataset.get_start_and_end_years()
+        yrs_averaged = '{}-{}'.format(start_yr, end_yr)
+        name_yrs = '{} ({})'.format(name_yrs, yrs_averaged)
+    
+    return name_yrs
+
+
+def convert_to_pressure_levels(mv, plevs, dataset, var, season):
+    """
+    Given either test or reference data with a z-axis,
+    convert to the desired pressure levels.
+    """
+    mv_plv = mv.getLevel()
+    # var(time,lev,lon,lat) convert from hybrid level to pressure
+    if mv_plv.long_name.lower().find('hybrid') != -1:
+        extra_vars = ['hyam', 'hybm', 'PS']
+        hyam, hybm, ps = dataset.get_extra_variables_only(var, season, extra_vars=extra_vars)
+        mv_p = hybrid_to_plevs(mv, hyam, hybm, ps, plevs)
+
+    # levels are pressure levels
+    elif mv_plv.long_name.lower().find('pressure') != -1 or mv_plv.long_name.lower().find('isobaric') != -1:
+        mv_p = pressure_to_plevs(mv, plevs)
+
+    else:
+        raise RuntimeError(
+            "Vertical level is neither hybrid nor pressure. Aborting.")
+            
+    return mv_p
 
 
 def hybrid_to_plevs(var, hyam, hybm, ps, plev):
@@ -94,6 +108,8 @@ def pressure_to_plevs(var, plev):
     """Convert from pressure coordinate to desired pressure level(s)."""
     # Construct pressure level for interpolation
     var_plv = var.getLevel()
+    if var_plv.units == 'Pa':
+        var_plv[:] = var_plv[:]/100.0 #convert Pa to mb
     levels_orig = MV2.array(var_plv[:])
     levels_orig.setAxis(0, var_plv)
     # grow 1d levels_orig to mv dimention
@@ -108,6 +124,7 @@ def pressure_to_plevs(var, plev):
         levels_orig = levels_orig(lev=slice(-1, None, -1))
     var_p = cdutil.vertical.logLinearInterpolation(
         var(squeeze=1), levels_orig(squeeze=1), plev)
+
     return var_p
 
 
@@ -121,7 +138,6 @@ def select_region(region, var1, var2, land_frac, ocean_frac, parameter):
         elif region.find('ocean') != -1:
             land_ocean_frac = ocean_frac
         region_value = regions_specs[region]['value']
-        print('region_value', region_value)
 
         var1_domain = mask_by(
             var1, land_ocean_frac, low_limit=region_value)
@@ -136,15 +152,16 @@ def select_region(region, var1, var2, land_frac, ocean_frac, parameter):
     try:
         # if region.find('global') == -1:
         domain = regions_specs[region]['domain']
-        print(domain)
-    except BaseException:
-        print("no domain selector")
-    var1_domain = var1_domain(domain)
-    var2_domain = var2_domain(domain)
-    var1_domain.units = var1.units
-    var2_domain.units = var1.units
+        print('Domain: ', domain)
+    except:
+        print("No domain selector.")
 
-    return var1_domain, var2_domain
+    var1_domain_selected = var1_domain(domain)
+    var2_domain_selected = var2_domain(domain)
+    var1_domain_selected.units = var1.units
+    var2_domain_selected.units = var1.units
+
+    return var1_domain_selected, var2_domain_selected
 
 
 def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
@@ -160,11 +177,15 @@ def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
         mv1_reg = mv1
         mv2_reg = mv2.regrid(mv_grid, regridTool=regrid_tool,
                              regridMethod=regrid_method)
+        mv2_reg.units = mv2.units
+
     else:
         mv_grid = mv2.getGrid()
         mv2_reg = mv2
         mv1_reg = mv1.regrid(mv_grid, regridTool=regrid_tool,
                              regridMethod=regrid_method)
+        mv1_reg.units = mv1.units
+
     return mv1_reg, mv2_reg
 
 
@@ -193,7 +214,10 @@ def mask_by(input_var, maskvar, low_limit=None, high_limit=None):
 
 
 def save_ncfiles(set_num, test, ref, diff, parameter):
-    """Saves the test, reference, and difference nc files."""
+    """
+    Saves the test, reference, and difference
+    data being plotted as nc files.
+    """
     if parameter.save_netcdf:
         # Save files being plotted
         # Set cdms preferences - no compression, no shuffling, no complaining
@@ -202,36 +226,42 @@ def save_ncfiles(set_num, test, ref, diff, parameter):
         cdms2.setNetcdfDeflateLevelFlag(0)
         cdms2.setNetcdfShuffleFlag(0)
         cdms2.setCompressionWarnings(0)  # Turn off warning messages
-        # Save test file
+
         pth = get_output_dir(set_num, parameter)
-        test_pth = os.path.join(pth, parameter.output_file + '_test.nc')
-        file_test = cdms2.open(test_pth, 'w+')
+
+        # Save test file
         test.id = parameter.var_id
-        file_test.write(test)
-        file_test.close()
+        test_pth = os.path.join(pth, parameter.output_file + '_test.nc')
+        with cdms2.open(test_pth, 'w+') as file_test:
+            file_test.write(test)
 
         # Save reference file
-        ref_pth = os.path.join(pth, parameter.output_file + '_ref.nc')
-        file_ref = cdms2.open(ref_pth, 'w+')
         ref.id = parameter.var_id
-        file_ref.write(ref)
-        file_ref.close()
+        ref_pth = os.path.join(pth, parameter.output_file + '_ref.nc')
+        with cdms2.open(ref_pth, 'w+') as file_ref:
+            file_ref.write(ref)
 
         # Save difference file
-        diff_pth = os.path.join(pth, parameter.output_file + '_diff.nc')
-        file_diff = cdms2.open(diff_pth, 'w+')
         diff.id = parameter.var_id + '(test - reference)'
-        file_diff.write(diff)
-        file_diff.close()
+        diff_pth = os.path.join(pth, parameter.output_file + '_diff.nc')
+        with cdms2.open(diff_pth, 'w+') as file_diff:
+            file_diff.write(diff)
 
 
-def get_output_dir(set_num, parameter):
-    """Get the directory of where to save the outputs for a run."""
-    pth = os.path.join(parameter.results_dir,
+def get_output_dir(set_num, parameter, ignore_container=False):
+    """
+    Get the directory of where to save the outputs for a run.
+    If ignore_container is True and the software is being ran in a container,
+      get the path that the user passed in.
+    """
+    results_dir = parameter.results_dir
+    if ignore_container and container.is_container():
+        results_dir = parameter.orig_results_dir
+    
+    pth = os.path.join(results_dir,
                        '{}'.format(set_num), parameter.case_id)
     if not os.path.exists(pth):
-        # When running diags in parallel, sometimes another process will create
-        # the dir
+        # When running diags in parallel, sometimes another process will create the dir.
         try:
             os.makedirs(pth, 0o775)
         except OSError as e:

@@ -5,7 +5,7 @@ import sys
 import vcs
 import acme_diags
 import acme_diags.plot.vcs as utils
-from acme_diags.driver.utils import get_output_dir
+from acme_diags.driver.utils.general import get_output_dir
 
 textcombined_objs = {}
 
@@ -13,7 +13,6 @@ textcombined_objs = {}
 def plot(reference, test, diff, metrics_dict, parameter):
     vcs_canvas = vcs.init(bg=True, geometry=(
         parameter.canvas_size_w, parameter.canvas_size_h))
-    parameter.case_id
 
     file_path = os.path.join(acme_diags.INSTALL_PATH, 'lat_lon')
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_5.json'))
@@ -22,6 +21,14 @@ def plot(reference, test, diff, metrics_dict, parameter):
     template_test = vcs_canvas.gettemplate('plotset5_0_x_0')
     template_ref = vcs_canvas.gettemplate('plotset5_0_x_1')
     template_diff = vcs_canvas.gettemplate('plotset5_0_x_2')
+
+    # Turn off the units of the axes in the plots.
+    template_test.xunits.priority = 0
+    template_test.yunits.priority = 0
+    template_ref.xunits.priority = 0
+    template_ref.yunits.priority = 0
+    template_diff.xunits.priority = 0
+    template_diff.yunits.priority = 0
 
     utils.set_units(test, parameter.test_units)
     utils.set_units(reference, parameter.reference_units)
@@ -32,7 +39,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     diff.long_name = parameter.diff_title
 
     test.id = parameter.test_name_yrs
-    reference.id = parameter.reference_name
+    reference.id = parameter.ref_name_yrs
     diff.id = parameter.diff_name
 
     # model and observation graph
@@ -102,5 +109,9 @@ def plot(reference, test, diff, metrics_dict, parameter):
             vcs_canvas.pdf(fnm)
         elif f == 'svg':
             vcs_canvas.svg(fnm)
+        # Get the filename that the user has passed in and display that.
+        # When running in a container, the paths are modified.
+        fnm = os.path.join(get_output_dir(parameter.current_set, parameter,
+            ignore_container=True), parameter.output_file)
         print('Plot saved in: ' + fnm + '.' + f)
     vcs_canvas.clear()

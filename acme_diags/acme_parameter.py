@@ -10,6 +10,8 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         # The user must define these, so don't give any defaults.
         # self.reference_data_path = ''
         # self.test_data_path = ''
+        self.ref_timeseries_input = False
+        self.test_timeseries_input = False
         self.viewer_descr = {}
 
         self.sets = ['zonal_mean_xy', 'zonal_mean_2d', 'lat_lon', 'polar', 'cosp_histogram']
@@ -43,7 +45,9 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.test_colormap = 'cet_rainbow.rgb'
         self.test_units = ''
 
+        self.ref_name = ''
         self.reference_name = ''
+        self.short_ref_name = ''
         self.reference_title = ''
         self.reference_colormap = 'cet_rainbow.rgb'
         self.reference_units = ''
@@ -63,12 +67,20 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
 
         self.granulate = ['variables', 'seasons', 'regions', 'plevs']
         self.selectors = ['sets', 'seasons']
+        self.viewer_descr = {}
 
     def check_values(self):
-        if not hasattr(self, 'reference_data_path'):
-            msg = 'You need to specify reference_data_path in the parameters file or in the command line using --reference_data_path'
-            raise RuntimeError(msg)
-        if not hasattr(self, 'test_data_path'):
-            msg = 'You need to specify test_data_path in the parameters file or in the command line using --test_data_path'
-            raise RuntimeError(msg)
+        must_have_params = ['reference_data_path', 'test_data_path', 'results_dir']
 
+        for param in must_have_params:
+            if not hasattr(self, param):
+                msg = 'You need to specify {p} in the parameters file or via the command line using --{p}'.format(p=param)
+                raise RuntimeError(msg)
+
+        if self.ref_timeseries_input and not (hasattr(self, 'ref_start_yr') and hasattr(self, 'ref_end_yr')):
+            msg = "You need to define both the 'ref_start_yr' and 'ref_end_yr' parameter."
+            raise RuntimeError(msg)
+            
+        if self.test_timeseries_input and not (hasattr(self, 'test_start_yr') and hasattr(self, 'test_end_yr')):
+            msg = "You need to define both the 'test_start_yr' and 'test_end_yr' parameter."
+            raise RuntimeError(msg)

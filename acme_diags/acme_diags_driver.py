@@ -22,7 +22,8 @@ import cdp.cdp_run
 import acme_diags
 from acme_diags.acme_parser import ACMEParser
 from acme_diags.acme_viewer import create_viewer
-from acme_diags.driver.utils import get_set_name, SET_NAMES
+from acme_diags.driver import utils
+from acme_diags import container
 
 
 def _get_default_diags(set_name, run_type):
@@ -30,7 +31,7 @@ def _get_default_diags(set_name, run_type):
     Returns the path for the default diags for plotset set_name.
     These are different depending on the run_type.
     """
-    set_name = get_set_name(set_name)
+    set_num = utils.general.get_set_name(set_name)
 
     folder = '{}'.format(set_name)
     fnm = '{}_{}.cfg'.format(set_name, run_type)
@@ -65,7 +66,7 @@ def _save_env_yml(results_dir):
     Save the yml to recreate the environment in results_dir.
     """
     cmd = 'conda env export'
-    p = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    p = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output, err = p.communicate()
 
     if err:
@@ -87,6 +88,8 @@ def _save_parameter_files(results_dir, parser):
     cmd_used = ' '.join(sys.argv)
     fnm = os.path.join(results_dir, 'cmd_used.txt')
     with open(fnm, 'w') as f:
+        if container.is_container():
+            f.write('# e3sm_diags was ran in a container.\n')
         f.write(cmd_used)
     print('Saved command used to: {}'.format(fnm))
 
@@ -99,7 +102,7 @@ def _save_parameter_files(results_dir, parser):
         else:
             with open(fnm, 'r') as f:
                 contents = ''.join(f.readlines())
-            # Remove any path, just keep the filename
+            # Remove any path, just keep the filename.
             new_fnm = fnm.split('/')[-1]
             new_fnm = os.path.join(results_dir, new_fnm)
             with open(new_fnm, 'w') as f:
@@ -113,7 +116,7 @@ def _save_parameter_files(results_dir, parser):
         else:
             with open(fnm, 'r') as f:
                 contents = ''.join(f.readlines())
-            # Remove any path, just keep the filename
+            # Remove any path, just keep the filename.
             new_fnm = fnm.split('/')[-1]
             new_fnm = os.path.join(results_dir, new_fnm)
             with open(new_fnm, 'w') as f:
@@ -129,6 +132,26 @@ def save_provenance(results_dir, parser):
     if not os.path.exists(results_dir):
         os.makedirs(results_dir, 0o775)
 
+    # Create a PHP file to list the contents of the prov dir.
+    php_path = os.path.join(results_dir, 'index.php')
+    with open(php_path, 'w') as f:
+        contents = """
+        <?php
+        # Taken from:
+        # https://stackoverflow.com/questions/3785055/how-can-i-create-a-simple-index-html-file-which-lists-all-files-directories
+        $path = ".";
+        $dh = opendir($path);
+        $i=1;
+        while (($file = readdir($dh)) !== false) {
+            if($file != "." && $file != ".." && $file != "index.php" && $file != ".htaccess" && $file != "error_log" && $file != "cgi-bin") {
+                echo "<a href='$path/$file'>$file</a><br /><br />";
+                $i++;
+            }
+        }
+        closedir($dh);
+        ?>
+        """
+        f.write(contents)
     try:
         _save_env_yml(results_dir)
     except:
@@ -143,7 +166,7 @@ def get_parameters(parser=ACMEParser()):
     """
     args = parser.view_args()
 
-    # There weren't any arguments defined
+    # There weren't any arguments defined.
     if not any(getattr(args, arg) for arg in vars(args)):
         parser.print_help()
         sys.exit()
@@ -153,7 +176,7 @@ def get_parameters(parser=ACMEParser()):
 
         # Load the default cfg files.
         run_type = getattr(original_parameter, 'run_type', 'model_vs_obs')
-        default_diags_paths = [_get_default_diags(set_name, run_type) for set_name in SET_NAMES]
+        default_diags_paths = [_get_default_diags(set_name, run_type) for set_name in utils.general.SET_NAMES]
 
         other_parameters = parser.get_other_parameters(files_to_open=default_diags_paths, argparse_vals_only=False)
 
@@ -165,6 +188,11 @@ def get_parameters(parser=ACMEParser()):
 
     parser.check_values_of_params(parameters)
 
+    if not parameters:
+        msg = 'No parameters were able to be created. Please check your .py '
+        msg += 'file, and any .cfg files or command line args you\'re using.'
+        raise RuntimeError(msg)
+
     return parameters
 
 
@@ -174,7 +202,7 @@ def run_diag(parameters):
     """
     results = []
     for pset in parameters.sets:
-        set_name = get_set_name(pset)
+        set_name = utils.general.get_set_name(pset)
 
         parameters.current_set = set_name
         mod_str = 'acme_diags.driver.{}_driver'.format(set_name)
@@ -196,15 +224,17 @@ def main():
     parser = ACMEParser()
     parameters = get_parameters(parser)
 
-    dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    for p in parameters:
-        if not hasattr(p, 'results_dir'):
-            p.results_dir = '{}-{}'.format('e3sm_diags_results', dt)
-
     if not os.path.exists(parameters[0].results_dir):
         os.makedirs(parameters[0].results_dir, 0o775)
     if not parameters[0].no_viewer:  # Only save provenance for full runs.
         save_provenance(parameters[0].results_dir, parser)
+
+    if container.is_container():
+        print('Running e3sm_diags in a container.')
+        # Parameters will decontainerized by the viewer later.
+        # That's to make sure the command shown in the viewer works with or without the viewer.
+        for p in parameters:
+            container.containerize_parameter(p)
 
     if parameters[0].multiprocessing:
         parameters = cdp.cdp_run.multiprocess(run_diag, parameters)
@@ -217,7 +247,7 @@ def main():
 
     if not parameters:
         print('There was not a single valid diagnostics run, no viewer created.')
-    else:        
+    else:
         if parameters[0].no_viewer:
             print('Viewer not created because the no_viewer parameter is True.')
         else:
@@ -225,7 +255,8 @@ def main():
             if not os.path.exists(pth):
                 os.makedirs(pth)
             create_viewer(pth, parameters, parameters[0].output_format[0])
-
+            path = os.path.join(parameters[0].results_dir, 'viewer')
+            print('Viewer HTML generated at {}/index.html'.format(path))
 
 if __name__ == '__main__':
     main()

@@ -5,7 +5,7 @@ import sys
 import vcs
 import acme_diags
 import acme_diags.plot.vcs as utils
-from acme_diags.driver.utils import get_output_dir
+from acme_diags.driver.utils.general import get_output_dir
 
 textcombined_objs = {}
 
@@ -22,6 +22,14 @@ def plot(reference, test, diff, metrics_dict, parameter):
     template_test = vcs_canvas.gettemplate('plotset7_0_x_0')
     template_ref = vcs_canvas.gettemplate('plotset7_0_x_1')
     template_diff = vcs_canvas.gettemplate('plotset7_0_x_2')
+
+    # Turn off the units of the axes in the plots.
+    template_test.xunits.priority = 0
+    template_test.yunits.priority = 0
+    template_ref.xunits.priority = 0
+    template_ref.yunits.priority = 0
+    template_diff.xunits.priority = 0
+    template_diff.yunits.priority = 0
 
     template_test.title.x = 0.01
     template_test.dataname.x = 0.01
@@ -50,7 +58,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     diff.long_name = parameter.diff_title
 
     test.id = parameter.test_name_yrs
-    reference.id = parameter.reference_name
+    reference.id = parameter.ref_name_yrs
     diff.id = parameter.diff_name
 
     # model and observation graph
@@ -154,5 +162,9 @@ def plot(reference, test, diff, metrics_dict, parameter):
             vcs_canvas.pdf(fnm)
         elif f == 'svg':
             vcs_canvas.svg(fnm)
+        # Get the filename that the user has passed in and display that.
+        # When running in a container, the paths are modified.
+        fnm = os.path.join(get_output_dir(parameter.current_set, parameter,
+            ignore_container=True), parameter.output_file)
         print('Plot saved in: ' + fnm + '.' + f)
     vcs_canvas.clear()

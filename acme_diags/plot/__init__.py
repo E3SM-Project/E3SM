@@ -10,7 +10,7 @@ import numpy
 from matplotlib.colors import LinearSegmentedColormap
 from vcs.colors import matplotlib2vcs
 import acme_diags
-from acme_diags.driver.utils import get_set_name
+from acme_diags.driver.utils.general import get_set_name
 
 
 def _get_plot_fcn(backend, set_num):

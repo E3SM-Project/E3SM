@@ -12,7 +12,7 @@ machine:
 dependencies:
   override:
     - ${HOME}/miniconda/bin/conda install python=2.7.13 cdp=1.1.0 vcs=2.12 vtk-cdat=7.1.0.2.12 vcsaddons=2.12 dv3d=2.12 cdms2=2.12 cdutil=2.12 genutil=2.12 cdtime=2.12 numpy "matplotlib<=2.0.2" cartopy beautifulsoup4 lxml flake8 -c conda-forge -c uvcdat -y
-    - ${HOME}/miniconda/bin/python setup.py install
+    - ${HOME}/miniconda/bin/pip install .
 
 test:
   override:

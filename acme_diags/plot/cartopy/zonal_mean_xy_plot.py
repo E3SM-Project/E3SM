@@ -7,7 +7,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from cartopy.mpl.ticker import LatitudeFormatter
-from acme_diags.driver.utils import get_output_dir
+from acme_diags.driver.utils.general import get_output_dir
 
 plotTitle = {'fontsize': 12.5}
 plotSideTitle = {'fontsize': 11.5}
@@ -48,7 +48,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     test_title = "Test" if parameter.test_title == '' else parameter.test_title
     test_title += ' : {}'.format(parameter.test_name_yrs)
     ref_title = "Reference" if parameter.reference_title == '' else parameter.reference_title
-    ref_title += ' : {}'.format(parameter.reference_name)
+    ref_title += ' : {}'.format(parameter.ref_name_yrs)
     fig.text(panel[0][0], panel[0][1]+panel[0][3]+0.03, test_title,
              ha='left', fontdict=plotSideTitle, color='black')
     fig.text(panel[0][0], panel[0][1]+panel[0][3]+0.01, ref_title,
@@ -71,10 +71,14 @@ def plot(reference, test, diff, metrics_dict, parameter):
     # Save figure
     for f in parameter.output_format:
         f = f.lower().split('.')[-1]
-        fnm = os.path.join(get_output_dir(
-            parameter.current_set, parameter), parameter.output_file)
-        plt.savefig(fnm + '.' + f)
-        print('Plot saved in: ' + fnm + '.' + f)
+        fnm = os.path.join(get_output_dir(parameter.current_set,
+            parameter), parameter.output_file + '.' + f)
+        plt.savefig(fnm)
+        # Get the filename that the user has passed in and display that.
+        # When running in a container, the paths are modified.
+        fnm = os.path.join(get_output_dir(parameter.current_set, parameter,
+            ignore_container=True), parameter.output_file + '.' + f)
+        print('Plot saved in: ' + fnm)
 
     # Save individual subplots
     for f in parameter.output_format_subplot:
@@ -89,10 +93,15 @@ def plot(reference, test, diff, metrics_dict, parameter):
             subpage = subpage + np.array(border).reshape(2,2)
             subpage = list(((subpage)*page).flatten())
             extent = matplotlib.transforms.Bbox.from_extents(*subpage)
-            # Save suplot
+            # Save subplot
             fname = fnm + '.%i.' %(i) + f
             plt.savefig(fname, bbox_inches=extent)
+
+            orig_fnm = os.path.join(get_output_dir(parameter.current_set, parameter,
+                ignore_container=True), parameter.output_file)
+            fname = orig_fnm + '.%i.' %(i) + f
             print('Sub-plot saved in: ' + fname)
+            
             i += 1
 
     plt.close()
