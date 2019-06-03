@@ -34,6 +34,12 @@ def xml_to_make_variable(case, varname):
 
 
 ###############################################################################
+def uses_kokkos(case):
+###############################################################################
+    cam_target = case.get_value("CAM_TARGET")
+    return cam_target in ("preqx_kokkos", "theta-l")
+
+###############################################################################
 def _build_model(build_threaded, exeroot, incroot, complist,
                  lid, caseroot, cimeroot, compiler, buildlist, comp_interface):
 ###############################################################################
@@ -228,12 +234,11 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
             os.makedirs(shared_item)
 
     mpilib = case.get_value("MPILIB")
-    cam_target = case.get_value("CAM_TARGET")
     libs = ["gptl", "mct", "pio", "csm_share"]
     if mpilib == "mpi-serial":
         libs.insert(0, mpilib)
 
-    if cam_target == "preqx_kokkos":
+    if uses_kokkos(case):
         libs.append("kokkos")
 
     logs = []
@@ -444,8 +449,6 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
     if get_model() == "e3sm" and mach == "titan" and compiler == "pgiacc":
         case.set_value("CAM_TARGET", "preqx_acc")
 
-    cam_target = case.get_value("CAM_TARGET")
-
     # This is a timestamp for the build , not the same as the testid,
     # and this case may not be a test anyway. For a production
     # experiment there may be many builds of the same case.
@@ -495,8 +498,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
 
     if not sharedlib_only:
         os.environ["INSTALL_SHAREDPATH"] = os.path.join(exeroot, sharedpath) # for MPAS makefile generators
-        # Set USE_KOKKOS to true if cam is preqx_kokkos
-        if cam_target == "preqx_kokkos":
+        if uses_kokkos(case):
             os.environ["USE_KOKKOS"] = "TRUE"
 
         logs.extend(_build_model(build_threaded, exeroot, incroot, complist,
