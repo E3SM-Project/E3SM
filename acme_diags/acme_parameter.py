@@ -23,6 +23,7 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.regrid_tool = 'esmf'
         self.regrid_method = 'conservative'
         self.plevs = []
+        self.zonal_mean_2d_plevs = []
 
         # Plotting related.
         self.main_title = ''
