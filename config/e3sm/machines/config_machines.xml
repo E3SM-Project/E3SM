@@ -923,7 +923,7 @@
         <command name="load">sems-env</command>
         <command name="load">sems-git</command>
         <command name="load">sems-python/2.7.9</command>
-        <command name="load">sems-cmake</command>
+        <command name="load">sems-cmake/3.12.2</command>
         <command name="load">gnu/4.9.2</command>
         <command name="load">sems-intel/17.0.0</command>
       </modules>
