@@ -153,7 +153,7 @@ module seaice_time_series_stats
     'repeat_interval'
   character (len=StrKIND), parameter :: RESET_INTERVAL_TOKEN = 'reset_interval'
 
-  character (len=StrKIND), parameter :: CURRENT_CORE_NAME = 'MPAS-Ocean'
+  character (len=StrKIND), parameter :: CURRENT_CORE_NAME = 'MPAS-Seaice'
   character (len=4), parameter :: NONE_TOKEN = 'none'
 
 !***********************************************************************
@@ -206,12 +206,12 @@ end subroutine seaice_bootstrap_time_series_stats!}}}
 !***********************************************************************
 ! routine seaice_init_time_series_stats
 !
-!> \brief Initialize MPAS-Ocean analysis member
+!> \brief Initialize MPAS-Seaice analysis member
 !> \author  Jon Woodring
 !> \date    September 1, 2015
 !> \details
 !>  This routine conducts all initializations required for the
-!>  MPAS-Ocean analysis member.
+!>  MPAS-Seaice analysis member.
 !-----------------------------------------------------------------------
 subroutine seaice_init_time_series_stats(domain, instance, err)!{{{
   ! input variables
@@ -268,12 +268,12 @@ end subroutine seaice_init_time_series_stats!}}}
 !***********************************************************************
 ! routine seaice_compute_time_series_stats
 !
-!> \brief Compute MPAS-Ocean analysis member
+!> \brief Compute MPAS-Seaice analysis member
 !> \author  Jon Woodring
 !> \date    September 1, 2015
 !> \details
 !>  This routine conducts all computation required for this
-!>  MPAS-Ocean analysis member.
+!>  MPAS-Seaice analysis member.
 !-----------------------------------------------------------------------
 subroutine seaice_compute_time_series_stats(domain, timeLevel, instance, err)!{{{
   ! input variables
@@ -348,12 +348,12 @@ end subroutine seaice_compute_time_series_stats!}}}
 !***********************************************************************
 ! routine seaice_restart_time_series_stats
 !
-!> \brief Save restart for MPAS-Ocean analysis member
+!> \brief Save restart for MPAS-Seaice analysis member
 !> \author  Jon Woodring
 !> \date    September 1, 2015
 !> \details
 !>  This routine conducts computation required to save a restart state
-!>  for the MPAS-Ocean analysis member.
+!>  for the MPAS-Seaice analysis member.
 !-----------------------------------------------------------------------
 subroutine seaice_restart_time_series_stats(domain, instance, err)!{{{
   ! input variables
@@ -377,12 +377,12 @@ end subroutine seaice_restart_time_series_stats!}}}
 !***********************************************************************
 ! routine seaice_finalize_time_series_stats
 !
-!> \brief Finalize MPAS-Ocean analysis member
+!> \brief Finalize MPAS-Seaice analysis member
 !> \author  Jon Woodring
 !> \date    September 1, 2015
 !> \details
 !>  This routine conducts all finalizations required for this
-!>  MPAS-Ocean analysis member.
+!>  MPAS-Seaice analysis member.
 !-----------------------------------------------------------------------
 subroutine seaice_finalize_time_series_stats(domain, instance, err)!{{{
   ! input variables

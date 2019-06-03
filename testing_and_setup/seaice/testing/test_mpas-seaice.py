@@ -94,6 +94,8 @@ print_colour("Testing MPAS-Seaice", "title")
 
 print "Test suite: ", testSuite
 print
+print "Domains directory: ", domainsDir
+print
 
 # loop over configurations
 for configuration in testsuite:

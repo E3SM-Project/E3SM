@@ -96,7 +96,7 @@ contains
 !
 !  routine seaice_analysis_setup_packages
 !
-!> \brief   Setup packages for MPAS-Ocean analysis driver
+!> \brief   Setup packages for MPAS-Seaice analysis driver
 !> \author  Mark Petersen
 !> \date    November 2013
 !> \details
@@ -351,12 +351,12 @@ contains
 !
 !  routine seaice_analysis_init
 !
-!> \brief   Initialize MPAS-Ocean analysis driver
+!> \brief   Initialize MPAS-Seaice analysis driver
 !> \author  Mark Petersen
 !> \date    November 2013
 !> \details
 !>  This routine calls all initializations required for the
-!>  MPAS-Ocean analysis driver.
+!>  MPAS-Seaice analysis driver.
 !
 !-----------------------------------------------------------------------
 
@@ -493,12 +493,12 @@ contains
 !
 !  routine seaice_analysis_compute_startup
 !
-!> \brief   Driver for MPAS-Ocean analysis computations
+!> \brief   Driver for MPAS-Seaice analysis computations
 !> \author  Mark Petersen
 !> \date    November 2013
 !> \details
 !>  This routine calls all computation subroutines required for the
-!>  MPAS-Ocean analysis driver.
+!>  MPAS-Seaice analysis driver.
 !
 !-----------------------------------------------------------------------
 
@@ -592,7 +592,7 @@ contains
 !  routine seaice_analysis_precompute
 !
 !> \brief   Driver for MPAS-Seaice analysis computations
-!> \author  MPAS-Ocean/Seaice development team
+!> \author  MPAS-Seaice/Seaice development team
 !> \date    November 2013
 !> \details
 !>  This routine calls all pre timestep computation subroutines
@@ -685,12 +685,12 @@ contains
 !
 !  routine seaice_analysis_compute
 !
-!> \brief   Driver for MPAS-Ocean analysis computations
+!> \brief   Driver for MPAS-Seaice analysis computations
 !> \author  Mark Petersen
 !> \date    November 2013
 !> \details
 !>  This routine calls all computation subroutines required for the
-!>  MPAS-Ocean analysis driver.
+!>  MPAS-Seaice analysis driver.
 !
 !-----------------------------------------------------------------------
 
@@ -781,12 +781,12 @@ contains
 !
 !  routine seaice_analysis_restart
 !
-!> \brief   Save restart for MPAS-Ocean analysis driver
+!> \brief   Save restart for MPAS-Seaice analysis driver
 !> \author  Mark Petersen
 !> \date    November 2013
 !> \details
 !>  This routine calls all subroutines required to prepare to save
-!>  the restart state for the MPAS-Ocean analysis driver.
+!>  the restart state for the MPAS-Seaice analysis driver.
 !
 !-----------------------------------------------------------------------
 
@@ -855,12 +855,12 @@ contains
 !
 !  routine seaice_analysis_write
 !
-!> \brief   Driver for MPAS-Ocean analysis output
+!> \brief   Driver for MPAS-Seaice analysis output
 !> \author  Mark Petersen
 !> \date    November 2013
 !> \details
 !>  This routine calls all output writing subroutines required for the
-!>  MPAS-Ocean analysis driver.
+!>  MPAS-Seaice analysis driver.
 !>  At this time this is just a stub, and all analysis output is written
 !>  to the output file specified by config_output_name.
 !
@@ -978,12 +978,12 @@ contains
 !
 !  routine seaice_analysis_finalize
 !
-!> \brief   Finalize MPAS-Ocean analysis driver
+!> \brief   Finalize MPAS-Seaice analysis driver
 !> \author  Mark Petersen
 !> \date    November 2013
 !> \details
 !>  This routine calls all finalize routines required for the
-!>  MPAS-Ocean analysis driver.
+!>  MPAS-Seaice analysis driver.
 !
 !-----------------------------------------------------------------------
 
