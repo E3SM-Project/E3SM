@@ -15,7 +15,7 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.viewer_descr = {}
 
         self.sets = ['zonal_mean_xy', 'zonal_mean_2d', 'meridional_mean_2d',
-            'lat_lon', 'polar', 'cosp_histogram']
+            'lat_lon', 'polar', 'area_mean_time_series', 'cosp_histogram']
         self.dataset = ''
         self.run_type = 'model_vs_obs'
         self.variables = []
@@ -65,7 +65,7 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.no_viewer = False
         self.debug = False
 
-        self.granulate = ['variables', 'seasons', 'regions', 'plevs']
+        self.granulate = ['variables', 'seasons', 'plevs']
         self.selectors = ['sets', 'seasons']
         self.viewer_descr = {}
 
