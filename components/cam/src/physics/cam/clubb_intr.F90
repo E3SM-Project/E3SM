@@ -903,7 +903,7 @@ end subroutine clubb_init_cnst
 
    use physics_types,  only: physics_state, physics_ptend, &
                              physics_state_copy, physics_ptend_init, &
-                             physics_ptend_sum
+                             physics_ptend_sum, set_dry_to_wet
 
    use physics_update_mod, only: physics_update
 
@@ -911,7 +911,7 @@ end subroutine clubb_init_cnst
                              pbuf_set_field, physics_buffer_desc
 
    use ppgrid,         only: pver, pverp, pcols
-   use constituents,   only: cnst_get_ind
+   use constituents,   only: cnst_get_ind, cnst_type
    use camsrfexch,     only: cam_in_t
    use ref_pres,       only: top_lev => trop_cloud_top_lev  
    use time_manager,   only: is_first_step   
@@ -1256,6 +1256,9 @@ end subroutine clubb_init_cnst
    endif
 
    call physics_state_copy(state,state1)
+
+   ! constituents are all treated as wet mmr by clubb
+   call set_dry_to_wet(state1)
 
    if (micro_do_icesupersat) then
      naai_idx      = pbuf_get_index('NAAI')
@@ -2202,6 +2205,18 @@ end subroutine clubb_init_cnst
    call physics_ptend_sum(ptend_loc,ptend_all,ncol)
    call physics_update(state1,ptend_loc,hdtime)
 
+   ! ptend_all now has all accumulated tendencies.  Convert the tendencies for the
+   ! dry constituents to dry air basis.
+   do ixind = 1, pcnst
+      if (lq(ixind) .and. cnst_type(ixind).eq.'dry') then
+         do k = 1, pver
+            do i = 1, ncol
+               ptend_all%q(i,k,ixind) = ptend_all%q(i,k,ixind)*state1%pdel(i,k)/state1%pdeldry(i,k)
+            end do
+         end do
+      end if
+   end do
+
    ! ------------------------------------------------- !
    ! Diagnose relative cloud water variance            !
    ! ------------------------------------------------- !
@@ -2548,10 +2563,12 @@ end subroutine clubb_init_cnst
 !   None
 !-------------------------------------------------------------------------------
 
-    use physics_types,          only: physics_state, physics_ptend, physics_ptend_init
+    use physics_types,          only: physics_state, physics_ptend, &
+                                      physics_ptend_init, &
+                                      set_dry_to_wet, set_wet_to_dry
     use physconst,              only: gravit, zvir, latvap
     use ppgrid,                 only: pver, pcols
-    use constituents,           only: pcnst, cnst_get_ind
+    use constituents,           only: pcnst, cnst_get_ind, cnst_type
     use camsrfexch,             only: cam_in_t
     
     implicit none
@@ -2560,7 +2577,7 @@ end subroutine clubb_init_cnst
     ! Input Auguments !
     ! --------------- !
 
-    type(physics_state), intent(in)     :: state                ! Physics state variables
+    type(physics_state), intent(inout)  :: state                ! Physics state variables
     type(cam_in_t),      intent(in)     :: cam_in
     
     real(r8),            intent(in)     :: ztodt                ! 2 delta-t        [ s ] 
@@ -2604,6 +2621,8 @@ end subroutine clubb_init_cnst
     ! Main Computation Begins !
     ! ----------------------- !
 
+    ! Assume 'wet' mixing ratios in surface diffusion code.
+    call set_dry_to_wet(state)
 
     call cnst_get_ind('Q',ixq)
     
@@ -2635,6 +2654,15 @@ end subroutine clubb_init_cnst
     enddo
     
     ptend%q(:ncol,:pver,:) = (ptend%q(:ncol,:pver,:) - state%q(:ncol,:pver,:)) * rztodt
+
+    ! Convert tendencies of dry constituents to dry basis.
+    do m = 1,pcnst
+       if (cnst_type(m).eq.'dry') then
+          ptend%q(:ncol,:pver,m) = ptend%q(:ncol,:pver,m)*state%pdel(:ncol,:pver)/state%pdeldry(:ncol,:pver)
+       endif
+    end do
+    ! convert wet mmr back to dry before conservation check
+    call set_wet_to_dry(state)
     
     return
 
