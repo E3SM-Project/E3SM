@@ -489,44 +489,6 @@ if (MODEL STREQUAL "cam")
 
 endif()
 
-# JGF: For some reason, CMake was not able to discover the dependency of MathfuncMod on
-# bshr_assert_mod on its own. We could try adding betr via add_subdirectory because
-# it does have a CMake build system of its own.
-if (MODEL STREQUAL "clm")
-  set_source_files_properties(
-    clm/src/external_models/sbetr/src/betr/betr_util/bshr_assert_mod.F90
-    PROPERTIES
-    OBJECT_OUTPUTS ${CMAKE_BINARY_DIR}/bshr_assert_mod.mod
-  )
-
-  set_source_files_properties(
-    clm/src/external_models/sbetr/src/betr/betr_math/MathfuncMod.F90
-    clm/src/external_models/sbetr/src/Applications/soil-farm/CENT_ECACNP/BgcCentCnpType.F90
-    clm/src/external_models/sbetr/src/Applications/soil-farm/CENT_ECACNP/BgcReactionsCentECACnpType.F90
-    clm/src/external_models/sbetr/src/Applications/soil-farm/CENT_ECACNP/PlantSoilBgcCnpType.F90
-    clm/src/external_models/sbetr/src/betr/betr_core/BeTRTracerType.F90
-    clm/src/external_models/sbetr/src/betr/betr_core/TransportMod.F90
-    clm/src/external_models/sbetr/src/betr/betr_main/BetrBGCMod.F90
-    clm/src/external_models/sbetr/src/betr/betr_math/InterpolationMod.F90
-    clm/src/external_models/sbetr/src/betr/betr_math/KineticsMod.F90
-    clm/src/external_models/sbetr/src/betr/betr_math/MathfuncMod.F90
-    clm/src/external_models/sbetr/src/betr/betr_para/TracerParamSetMod.F90
-    clm/src/external_models/sbetr/src/betr/betr_para/TracerParamSetWatIsoMod.F90
-    clm/src/external_models/sbetr/src/betr/betr_para/TracerParamsMod.F90
-    clm/src/external_models/sbetr/src/betr/betr_rxns/DIOCBGCReactionsType.F90
-    clm/src/external_models/sbetr/src/betr/betr_rxns/DIOCPlantSoilBGCType.F90
-    clm/src/external_models/sbetr/src/betr/betr_rxns/H2OIsotopeBGCReactionsType.F90
-    clm/src/external_models/sbetr/src/betr/betr_rxns/H2OIsotopePlantSoilBGCType.F90
-    clm/src/external_models/sbetr/src/betr/betr_rxns/MockBGCReactionsType.F90
-    clm/src/external_models/sbetr/src/betr/betr_rxns/MockPlantSoilBGCType.F90
-    clm/src/external_models/sbetr/src/betr/betr_util/bshr_string_mod.F90
-    clm/src/external_models/sbetr/src/driver/shared/BeTRType.F90
-
-    PROPERTIES OBJECT_DEPENDS ${CMAKE_BINARY_DIR}/bshr_assert_mod.mod
-  )
-
-endif()
-
 # System libraries (netcdf, mpi, pnetcdf, esmf, trilinos, etc.)
 if (NOT SLIBS)
   if (NOT NETCDF_SEPARATE)
