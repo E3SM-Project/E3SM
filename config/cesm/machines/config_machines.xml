@@ -2293,10 +2293,9 @@ This allows using a different mpirun command to launch unit tests
       <env name="OMP_STACKSIZE">256M</env>
      </environment_variables>
     <environment_variables comp_interface="nuopc" mpilib="impi">
-      <env name="ESMFMKFILE">/work/06242/tg855414/stampede2/ESMF-INSTALL/8.0.0bs29/lib/libO/Linux.intel.64.intelmpi.default/esmf.mk</env>
+      <env name="ESMFMKFILE">/work/01118/tg803972/stampede2/ESMF-INSTALL/8.0.0bs36_fix_for_stampede2/lib/libO/Linux.intel.64.intelmpi.default/esmf.mk</env>
     </environment_variables>
     <environment_variables comp_interface="nuopc">
-      <env name="PROJECT">TG-ATM140004</env>
       <env name="ESMF_RUNTIME_PROFILE">ON</env>
       <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
       <env name="UGCSINPUTPATH">/work/06242/tg855414/stampede2/FV3GFS/benchmark-inputs/2012010100/gfs/fcst</env>

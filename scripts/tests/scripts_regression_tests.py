@@ -3231,7 +3231,8 @@ def write_provenance_info():
         logging.info("Testing compiler = %s"% TEST_COMPILER)
     if TEST_MPILIB is not None:
         logging.info("Testing mpilib = %s"% TEST_MPILIB)
-    logging.info("Test root: %s\n" % TEST_ROOT)
+    logging.info("Test root: %s" % TEST_ROOT)
+    logging.info("Test driver: %s\n" % CIME.utils.get_cime_default_driver())
 
 def _main_func(description):
     global MACHINE
