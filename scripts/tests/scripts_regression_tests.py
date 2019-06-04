@@ -1829,7 +1829,7 @@ class K_TestCimeCase(TestCreateTestCommon):
         testdir = os.path.join(TEST_ROOT, testcase_name)
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
-        args = "--case {} --script-root {} --compset X --res f19_g16 --handle-preexisting-dirs=r --output-root {}".format(testcase_name, testdir, testdir)
+        args = "--case {name} --script-root {testdir} --compset X --res f19_g16 --handle-preexisting-dirs=r --output-root {testdir}".format(name=testcase_name, testdir=testdir)
         if CIME.utils.get_cime_default_driver() == 'nuopc':
             args += " --run-unsupported"
 
