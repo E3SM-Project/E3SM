@@ -672,7 +672,6 @@ contains
           diff = abs(data1(n)-data2(n))
           max_diff = max(max_diff,diff)
           if (diff > eps) then
-             ! debug: write(logunit,*)'n= ',n,' data1= ',data1(n),' data2= ',data2(n),' diff= ',diff, ' eps= ',eps
              write(logunit,150) n,data1(n),data2(n),diff,eps
              ndiff = ndiff + 1
           endif
