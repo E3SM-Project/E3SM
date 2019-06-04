@@ -190,6 +190,9 @@ contains
 
     call dshr_fld_add(data_fld="dens", data_fld_array=avifld, model_fld="Sa_dens", model_fld_array=avofld, &
          model_fld_concat=flds_a2x, model_fld_index=kdens, fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm)
+    
+    call dshr_fld_add(data_fld="uovern", data_fld_array=avifld,model_fld="Sa_uovern", model_fld_array=avofld, &
+         model_fld_concat=flds_a2x, model_fld_index=kdens,fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm)
 
     call dshr_fld_add(data_fld="pslv", data_fld_array=avifld, model_fld="Sa_pslv", model_fld_array=avofld, &
          model_fld_concat=flds_a2x, model_fld_index=kpslv, fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm)

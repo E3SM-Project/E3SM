@@ -63,8 +63,8 @@ contains
     use QsatMod         , only : Qsat
     !
     ! !ARGUMENTS:
-    type(integer)                    , intent(in)    :: g  
-    type(integer)                    , intent(in)    :: i
+    integer                    , intent(in)    :: g  
+    integer                    , intent(in)    :: i
     real(r8)                         , intent(in)    :: x2l(:,:)
     type(lnd2atm_type)               , intent(in)    :: lnd2atm_vars
 	
@@ -193,12 +193,12 @@ contains
     use QsatMod         , only : Qsat
     !
     ! !ARGUMENTS:
-    type(integer)                    , intent(in)    :: g  
-    type(integer)                    , intent(in)    :: i
-    type(integer)                    , intent(in)    :: t
+    integer                    , intent(in)    :: g  
+    integer                    , intent(in)    :: i
+    integer                    , intent(in)    :: t
     real(r8)                         , intent(in)    :: x2l(:,:)
     type(lnd2atm_type)               , intent(in)    :: lnd2atm_vars
-    type(integer)                    , intent(in)    :: method
+    integer                    , intent(in)    :: method
     !
     ! !LOCAL VARIABLES:
     integer :: l, c, fc         ! indices
@@ -298,12 +298,12 @@ contains
     use clm_varctl      , only : glcmec_downscale_longwave
     !
     ! !ARGUMENTS:
-    type(integer)                    , intent(in)    :: g
-    type(integer)                    , intent(in)    :: i
-    type(integer)                    , intent(in)    :: t
+    integer                    , intent(in)    :: g
+    integer                    , intent(in)    :: i
+    integer                    , intent(in)    :: t
     real(r8)                         , intent(in)    :: x2l(:,:)
     type(lnd2atm_type)               , intent(in)    :: lnd2atm_vars
-    type(integer)                    , intent(in)    :: method
+    integer                    , intent(in)    :: method
     !
     ! !LOCAL VARIABLES:
     integer  :: c,l,fc     ! indices
@@ -375,13 +375,32 @@ contains
 	real(r8) :: topoElv            ! Topounit elevation
 	real(r8) :: h
 	real(r8) :: r
-	type(integer)                    , intent(in)    :: t
+	integer                    , intent(in)    :: t
   
 
 	r = topoElv - grdElv
 	h = min(uovern_t,r)
-	top_af%rain(t) = rain_g + (rain_g*(h/mxElv))
-    top_af%snow(t) = snow_g + (snow_g*(h/mxElv))
+	if(mxElv < 0) then
+		mxElv = abs(mxElv) ! avoid the situation where -ve r can force lower areas more rain than higher elevation areas.
+        end if	
+
+	if(mxElv == 0) then  ! avoid dividing by 0
+		top_af%rain(t) = rain_g
+		top_af%snow(t) = snow_g	
+	else		
+		if(rain_g > 0) then
+			top_af%rain(t) = rain_g + (rain_g*(h/mxElv))
+		else
+			top_af%rain(t) = rain_g
+		end if
+		
+		if(snow_g > 0) then
+			top_af%snow(t) = snow_g + (snow_g*(h/mxElv))
+		else
+			top_af%snow(t) = snow_g
+		end if
+
+        end if
 
   end subroutine downscale_precip_to_topounit  
   

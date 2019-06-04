@@ -105,8 +105,8 @@ module ncdio_pio
 
      !DIMS 0,1
      module procedure ncd_io_{DIMS}d_log_glob
-
-     !DIMS 0,1,2,3
+     
+     !DIMS 0,1,2,3,4  
      !TYPE int,double
      module procedure ncd_io_{DIMS}d_{TYPE}_glob
 
@@ -1250,7 +1250,7 @@ contains
   end subroutine ncd_io_{DIMS}d_log_glob
 
   !------------------------------------------------------------------------
-  !DIMS 0,1,2,3
+  !DIMS 0,1,2,3,4
   !TYPE int,double
   subroutine ncd_io_{DIMS}d_{TYPE}_glob(varname, data, flag, ncid, readvar, nt, posNOTonfile) 
     !
@@ -1269,7 +1269,7 @@ contains
     ! !LOCAL VARIABLES:
     integer           :: m
     integer           :: varid              ! netCDF variable id
-    integer           :: start(4), count(4) ! output bounds
+    integer           :: start(5), count(5) ! output bounds
     integer           :: status             ! error code
     logical           :: varpresent         ! if true, variable is on tape
     logical           :: found              ! if true, found lat/lon dims on file
@@ -1336,6 +1336,13 @@ contains
           start(2) = 1  ; count(2) = size(data,dim=2)
           start(3) = 1  ; count(3) = size(data,dim=3)
           start(4) = nt ; count(4) = 1
+          status = pio_put_var(ncid, varid, start, count, data)
+#elif ({DIMS}==4) 
+          start(1) = 1  ; count(1) = size(data,dim=1)
+          start(2) = 1  ; count(2) = size(data,dim=2)
+          start(3) = 1  ; count(3) = size(data,dim=3)
+          start(4) = 1  ; count(4) = size(data,dim=4)
+          start(5) = nt ; count(5) = 1
           status = pio_put_var(ncid, varid, start, count, data)
 #endif
        else

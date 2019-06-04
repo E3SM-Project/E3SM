@@ -53,6 +53,7 @@ module seq_flux_mct
   real(r8), allocatable ::  roce_HDO (:)  ! ocn HDO ratio
   real(r8), allocatable ::  roce_18O (:)  ! ocn H218O ratio
   real(r8), allocatable ::  dens (:)  ! atm density
+  real(r8), allocatable ::  uovern(:) ! atm uovern
   real(r8), allocatable ::  tbot (:)  ! atm bottom surface T
   real(r8), allocatable ::  sen  (:)  ! heat flux: sensible
   real(r8), allocatable ::  lat  (:)  ! heat flux: latent
@@ -119,6 +120,7 @@ module seq_flux_mct
   integer :: index_a2x_Sa_shum_HDO
   integer :: index_a2x_Sa_shum_18O
   integer :: index_a2x_Sa_dens
+  integer :: index_a2x_Sa_uovern
   integer :: index_a2x_Faxa_swndr
   integer :: index_a2x_Faxa_swndf
   integer :: index_a2x_Faxa_swvdr
@@ -246,6 +248,9 @@ contains
     allocate(dens(nloc),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate dens',ier)
     dens = 0.0_r8
+    allocate(uovern(nloc),stat=ier)
+    if(ier/=0) call mct_die(subName,'allocate uovern',ier)
+    uovern = 0.0_r8
     allocate(tbot(nloc),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate tbot',ier)
     tbot = 0.0_r8
@@ -1009,7 +1014,7 @@ contains
 
     if (flux_diurnal) then
        call shr_flux_atmocn_diurnal (nloc_a2o , zbot , ubot, vbot, thbot, &
-            shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
+            shum , shum_16O , shum_HDO, shum_18O, dens, tbot, uocn, vocn , &
             tocn , emask, sen , lat , lwup , &
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
@@ -1024,7 +1029,7 @@ contains
             cold_start=cold_start)
     else
        call shr_flux_atmocn (nloc_a2o , zbot , ubot, vbot, thbot, prec_gust, gust_fac, &
-            shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
+            shum , shum_16O , shum_HDO, shum_18O, dens, tbot, uocn, vocn , &
             tocn , emask, sen , lat , lwup , &
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux, tauy, tref, qref , &
@@ -1270,6 +1275,7 @@ contains
        index_a2x_Sa_shum_HDO   = mct_aVect_indexRA(a2x,'Sa_shum_HDO', perrWith='quiet')
        index_a2x_Sa_shum_18O   = mct_aVect_indexRA(a2x,'Sa_shum_18O', perrWith='quiet')
        index_a2x_Sa_dens   = mct_aVect_indexRA(a2x,'Sa_dens')
+       index_a2x_Sa_uovern   = mct_aVect_indexRA(a2x,'Sa_uovern')
        index_a2x_Faxa_lwdn = mct_aVect_indexRA(a2x,'Faxa_lwdn')
        index_a2x_Faxa_rainc= mct_aVect_indexRA(a2x,'Faxa_rainc')
        index_a2x_Faxa_rainl= mct_aVect_indexRA(a2x,'Faxa_rainl')
@@ -1325,6 +1331,7 @@ contains
           roce_HDO(n) = 1.0_r8   ! HDO   surface ratio     ~ mol/mol
           roce_18O(n) = 1.0_r8   ! H218O surface ratio     ~ mol/mol
           dens(n) =   1.0_r8 ! atm density                ~ kg/m^3
+          uovern(n) =   1.0_r8 ! atm uovern
           tbot(n) = 300.0_r8 ! atm temperature            ~ Kelvin
           uGust(n)=   0.0_r8
           lwdn(n) =   0.0_r8
@@ -1368,6 +1375,7 @@ contains
              if ( index_a2x_Sa_shum_HDO /= 0 ) shum_HDO(n) = a2x%rAttr(index_a2x_Sa_shum_HDO,n)
              if ( index_a2x_Sa_shum_18O /= 0 ) shum_18O(n) = a2x%rAttr(index_a2x_Sa_shum_18O,n)
              dens(n) = a2x%rAttr(index_a2x_Sa_dens,n)
+             uovern(n) = a2x%rAttr(index_a2x_Sa_uovern,n)
              tbot(n) = a2x%rAttr(index_a2x_Sa_tbot,n)
              tocn(n) = o2x%rAttr(index_o2x_So_t   ,n)
              uocn(n) = o2x%rAttr(index_o2x_So_u   ,n)
@@ -1419,7 +1427,7 @@ contains
 
     if (flux_diurnal) then
        call shr_flux_atmocn_diurnal (nloc , zbot , ubot, vbot, thbot, &
-            shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
+            shum , shum_16O , shum_HDO, shum_18O, dens, tbot, uocn, vocn , &
             tocn , emask, sen , lat , lwup , &
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
@@ -1437,7 +1445,7 @@ contains
             cold_start=cold_start)
     else
        call shr_flux_atmocn (nloc , zbot , ubot, vbot, thbot, prec_gust, gust_fac, &
-            shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
+            shum , shum_16O , shum_HDO, shum_18O, dens, tbot, uocn, vocn , &
             tocn , emask, sen , lat , lwup , &
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &

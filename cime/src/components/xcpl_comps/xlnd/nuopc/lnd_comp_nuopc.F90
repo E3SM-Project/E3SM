@@ -227,6 +227,7 @@ contains
        call fld_list_add(fldsToLnd_num, fldsToLnd, 'Sa_ptem'      )
        call fld_list_add(fldsToLnd_num, fldsToLnd, 'Sa_pbot'      )
        call fld_list_add(fldsToLnd_num, fldsToLnd, 'Sa_tbot'      )
+       call fld_list_add(fldsToLnd_num, fldsToLnd, 'Sa_uovern'      )
        call fld_list_add(fldsToLnd_num, fldsToLnd, 'Sa_shum'      )
        call fld_list_add(fldsToLnd_num, fldsToLnd, 'Flrr_volr'    )
        call fld_list_add(fldsToLnd_num, fldsToLnd, 'Flrr_volrmch' )

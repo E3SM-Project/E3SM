@@ -193,6 +193,11 @@ contains
     stdname  = 'air_density'
     units    = 'kg m-3'
     call shr_nuopc_fldList_AddMetadata('Sa_dens', longname, stdname, units)
+    
+    longname = 'Froude Number'
+    stdname  = 'uovern'
+    units    = 'Unitless'
+    call shr_nuopc_fldList_AddMetadata('Sa_uovern', longname, stdname, units)
 
     longname = 'Convective precipitation rate'
     stdname  = 'convective_precipitation_flux'
