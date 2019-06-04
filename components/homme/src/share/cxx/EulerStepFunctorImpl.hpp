@@ -148,7 +148,7 @@ public:
   }
 
   void init_buffers (const FunctorsBuffersManager& fbm) {
-    Errors::runtime_check(fbm.allocated_size()>requested_buffer_size(), "Error! Buffers size not sufficient.\n");
+    Errors::runtime_check(fbm.allocated_size()>=requested_buffer_size(), "Error! Buffers size not sufficient.\n");
 
     constexpr int size_scalar =   NP*NP*NUM_LEV;
     const int ne = m_geometry.num_elems();

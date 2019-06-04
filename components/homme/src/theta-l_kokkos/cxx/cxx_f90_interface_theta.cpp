@@ -399,14 +399,13 @@ void init_boundary_exchanges_c ()
   esf.reset(params);
   esf.init_boundary_exchanges();
 
-  // // RK stages BE's
-  // auto& cf = Context::singleton().get<CaarFunctor>();
-  // auto connectivity = Context::singleton().get_ptr<Connectivity>();
-  // cf.init_boundary_exchanges(Context::singleton().get<BuffersManagerMap>(connectivity)[MPI_EXCHANGE]);
+  // RK stages BE's
+  auto& cf = Context::singleton().get<CaarFunctor>();
+  cf.init_boundary_exchanges(bmm[MPI_EXCHANGE]);
 
-  // // HyperviscosityFunctor's BE's
-  // auto& hvf = Context::singleton().get<HyperviscosityFunctor>();
-  // hvf.init_boundary_exchanges();
+  // HyperviscosityFunctor's BE's
+  auto& hvf = Context::singleton().get<HyperviscosityFunctor>();
+  hvf.init_boundary_exchanges();
 }
 
 } // extern "C"

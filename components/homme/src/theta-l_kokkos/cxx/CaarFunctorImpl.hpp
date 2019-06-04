@@ -9,7 +9,7 @@
 
 #include "Types.hpp"
 #include "Elements.hpp"
-#include "ElementOps.hpp"
+#include "ColumnOps.hpp"
 #include "EquationOfState.hpp"
 #include "FunctorsBuffersManager.hpp"
 #include "HybridVCoord.hpp"
@@ -77,7 +77,7 @@ struct CaarFunctorImpl {
   const ElementsDerivedState  m_derived;
   const ElementsGeometry      m_geometry;
   EquationOfState             m_eos;
-  ElementOps                  m_elem_ops;
+  ColumnOps                   m_col_ops;
   Buffers                     m_buffers;
   const deriv_type            m_deriv;
 
@@ -125,42 +125,69 @@ struct CaarFunctorImpl {
     m_sphere_ops.allocate_buffers(m_policy_pre);
   }
 
-  void request_buffers (FunctorsBuffersManager& fbm) const {
+  int requested_buffer_size () const {
     // Ask the buffers manager to allocate enough buffers to satisfy Caar's needs
-    fbm.request_concurrency(get_num_concurrent_teams(m_policy_pre));
-    fbm.request_3d_midpoint_buffers(Buffers::num_3d_scalar_mid_buf, Buffers::num_3d_vector_mid_buf);
-    fbm.request_3d_interface_buffers(Buffers::num_3d_scalar_int_buf, Buffers::num_3d_vector_int_buf);
+    const int nteams = get_num_concurrent_teams(m_policy_pre);
+
+    // Do 2d scalar and 3d interface scalar right away
+    return Buffers::num_3d_scalar_mid_buf*NP*NP*NUM_LEV*VECTOR_SIZE*nteams
+         + Buffers::num_3d_scalar_int_buf*NP*NP*NUM_LEV_P*VECTOR_SIZE*nteams
+         + Buffers::num_3d_vector_mid_buf*2*NP*NP*NUM_LEV*VECTOR_SIZE*nteams
+         + Buffers::num_3d_vector_int_buf*2*NP*NP*NUM_LEV_P*VECTOR_SIZE*nteams;
   }
 
   void init_buffers (const FunctorsBuffersManager& fbm) {
-    m_buffers.pnh        = fbm.get_3d_scalar_midpoint_buffer(0);
-    m_buffers.pi         = fbm.get_3d_scalar_midpoint_buffer(1);
-    m_buffers.exner      = fbm.get_3d_scalar_midpoint_buffer(2);
-    m_buffers.div_vdp    = fbm.get_3d_scalar_midpoint_buffer(3);
-    m_buffers.phi        = fbm.get_3d_scalar_midpoint_buffer(4);
-    m_buffers.div_vdp    = fbm.get_3d_scalar_midpoint_buffer(5);
-    m_buffers.omega_p    = fbm.get_3d_scalar_midpoint_buffer(6);
-    m_buffers.theta_vadv = fbm.get_3d_scalar_midpoint_buffer(7);
+    Errors::runtime_check(fbm.allocated_size()>=requested_buffer_size(), "Error! Buffers size not sufficient.\n");
 
-    m_buffers.v_vadv    = fbm.get_3d_vector_midpoint_buffer(0);
-    m_buffers.grad_tmp  = fbm.get_3d_vector_midpoint_buffer(1);
-    m_buffers.vdp       = fbm.get_3d_vector_midpoint_buffer(2);
+    Scalar* mem = reinterpret_cast<Scalar*>(fbm.get_memory());
+    const int nteams = get_num_concurrent_teams(m_policy_pre);
 
-    m_buffers.dp_i         = fbm.get_3d_scalar_interface_buffer(0);
-    m_buffers.vtheta_i     = fbm.get_3d_scalar_interface_buffer(1);
-    m_buffers.dpnh_dp_i    = fbm.get_3d_scalar_interface_buffer(2);
-    m_buffers.w_vadv       = fbm.get_3d_scalar_interface_buffer(3);
-    m_buffers.phi_vadv     = fbm.get_3d_scalar_interface_buffer(4);
-    m_buffers.eta_dot_dpdn = fbm.get_3d_scalar_interface_buffer(5);
+    // Midpoints scalars
+    m_buffers.pnh        = decltype(m_buffers.pnh       )(mem,nteams);
+    mem += nteams*NP*NP*NUM_LEV;
+    m_buffers.pi         = decltype(m_buffers.pi        )(mem,nteams);
+    mem += nteams*NP*NP*NUM_LEV;
+    m_buffers.exner      = decltype(m_buffers.exner     )(mem,nteams);
+    mem += nteams*NP*NP*NUM_LEV;
+    m_buffers.div_vdp    = decltype(m_buffers.div_vdp   )(mem,nteams);
+    mem += nteams*NP*NP*NUM_LEV;
+    m_buffers.phi        = decltype(m_buffers.phi       )(mem,nteams);
+    mem += nteams*NP*NP*NUM_LEV;
+    m_buffers.div_vdp    = decltype(m_buffers.div_vdp   )(mem,nteams);
+    mem += nteams*NP*NP*NUM_LEV;
+    m_buffers.omega_p    = decltype(m_buffers.omega_p   )(mem,nteams);
+    mem += nteams*NP*NP*NUM_LEV;
+    m_buffers.theta_vadv = decltype(m_buffers.theta_vadv)(mem,nteams);
+    mem += nteams*NP*NP*NUM_LEV;
 
-    m_buffers.v_i          = fbm.get_3d_vector_interface_buffer(0);
-    m_buffers.grad_phinh_i = fbm.get_3d_vector_interface_buffer(1);
-    m_buffers.grad_w_i     = fbm.get_3d_vector_interface_buffer(2);
+    // Midpoints vectors
+    m_buffers.v_vadv   = decltype(m_buffers.v_vadv  )(mem,nteams);
+    mem += nteams*2*NP*NP*NUM_LEV;
+    m_buffers.grad_tmp = decltype(m_buffers.grad_tmp)(mem,nteams);
+    mem += nteams*2*NP*NP*NUM_LEV;
+    m_buffers.vdp      = decltype(m_buffers.vdp     )(mem,nteams);
+    mem += nteams*2*NP*NP*NUM_LEV;
 
-    // Now that our buffers are allocated, we can init the elem ops object.
-    // NOTE: we use the temp buffer in m_elem_ops before we actually compute phi,
-    //       so we can use the same buffer.
-    // m_elem_ops.init(m_buffers.phi);
+    // Interface scalars
+    m_buffers.dp_i         = decltype(m_buffers.dp_i        )(mem,nteams);
+    mem += nteams*NP*NP*NUM_LEV_P;
+    m_buffers.vtheta_i     = decltype(m_buffers.vtheta_i    )(mem,nteams);
+    mem += nteams*NP*NP*NUM_LEV_P;
+    m_buffers.dpnh_dp_i    = decltype(m_buffers.dpnh_dp_i   )(mem,nteams);
+    mem += nteams*NP*NP*NUM_LEV_P;
+    m_buffers.w_vadv       = decltype(m_buffers.w_vadv      )(mem,nteams);
+    mem += nteams*NP*NP*NUM_LEV_P;
+    m_buffers.phi_vadv     = decltype(m_buffers.phi_vadv    )(mem,nteams);
+    mem += nteams*NP*NP*NUM_LEV_P;
+    m_buffers.eta_dot_dpdn = decltype(m_buffers.eta_dot_dpdn)(mem,nteams);
+    mem += nteams*NP*NP*NUM_LEV_P;
+
+    // Interface vectors
+    m_buffers.v_i          = decltype(m_buffers.v_i         )(mem,nteams);
+    mem += nteams*2*NP*NP*NUM_LEV_P;
+    m_buffers.grad_phinh_i = decltype(m_buffers.grad_phinh_i)(mem,nteams);
+    mem += nteams*2*NP*NP*NUM_LEV_P;
+    m_buffers.grad_w_i     = decltype(m_buffers.grad_w_i    )(mem,nteams);
   }
 
   void init_boundary_exchanges (const std::shared_ptr<MpiBuffersManager>& bm_exchange) {
@@ -168,13 +195,14 @@ struct CaarFunctorImpl {
       m_bes[tl] = std::make_shared<BoundaryExchange>();
       auto& be = *m_bes[tl];
       be.set_buffers_manager(bm_exchange);
-      be.set_num_fields(0,0,4);
+      be.set_num_fields(0,0,4,2);
       be.register_field(m_state.m_v,tl,2,0);
       be.register_field(m_state.m_vtheta_dp,1,tl);
       be.register_field(m_state.m_dp3d,1,tl);
       // Note: phinh_i at the surface (last level) is constant, so it doesn't *need* bex.
-      //       however, if bex(constant)=constant, we might just do it, if it's simpler than
-      //       devising a way to exchange only the first NUM_PHYSICAL_LEV interfaces.
+      //       If bex(constant)=constant, we might just do it. This would not eliminate
+      //       the need for halo-exchange of interface-based quantities though, since
+      //       we would still need to exchange w_i.
       be.register_field(m_state.m_w_i,1,tl);
       be.register_field(m_state.m_phinh_i,1,tl);
       be.registration_completed();
@@ -356,7 +384,7 @@ struct CaarFunctorImpl {
       });
 
       // Average omega_i to midpoints
-      m_elem_ops.compute_midpoint_values(kv,Homme::subview(m_buffers.dpnh_dp_i,kv.team_idx,igp,jgp),
+      m_col_ops.compute_midpoint_values(kv,Homme::subview(m_buffers.dpnh_dp_i,kv.team_idx,igp,jgp),
                                             Homme::subview(m_buffers.omega_p,kv.team_idx,igp,jgp));
     });
     kv.team_barrier();
@@ -398,11 +426,11 @@ struct CaarFunctorImpl {
       auto dp_i = Homme::subview(m_buffers.dp_i,kv.team_idx,igp,jgp);
 
       // Compute interface dp
-      m_elem_ops.compute_interface_values(kv.team,dp,dp_i);
+      m_col_ops.compute_interface_values(kv.team,dp,dp_i);
 
       // Compute interface horiz velocity
-      m_elem_ops.compute_interface_values(kv.team,dp,dp_i,u,u_i);
-      m_elem_ops.compute_interface_values(kv.team,dp,dp_i,v,v_i);
+      m_col_ops.compute_interface_values(kv.team,dp,dp_i,u,u_i);
+      m_col_ops.compute_interface_values(kv.team,dp,dp_i,v,v_i);
 
       // Compute interface vtheta_i, with an energy preserving scheme
 
@@ -418,8 +446,8 @@ struct CaarFunctorImpl {
                                  dpnh_dp_i);
 
       // vtheta_i(k) = -dpnh_dp_i(k)*(phi(k)-phi(k-1)) / (exner(k)-exner(k-1)) / Cp
-      m_elem_ops.compute_interface_delta(kv,phi,vtheta_i);
-      m_elem_ops.compute_interface_delta(kv,exner,dexner_i);
+      m_col_ops.compute_interface_delta(kv,phi,vtheta_i);
+      m_col_ops.compute_interface_delta(kv,exner,dexner_i);
       // Fix dexner_i(0)[0] to avoid 0/0
       dexner_i(0)[0] = 1.0;
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
@@ -441,14 +469,15 @@ struct CaarFunctorImpl {
 
       // Compute phi_i (if hydrostatic mode)
       if (m_theta_hydrostatic_mode) {
-        m_elem_ops.compute_phi_i(kv,Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.n0,igp,jgp),
-                                    Homme::subview(m_buffers.exner,kv.team_idx,igp,jgp),
-                                    Homme::subview(m_buffers.pnh,kv.team_idx,igp,jgp),
-                                    Homme::subview(m_state.m_phinh_i,kv.ie,m_data.n0,igp,jgp));
+        m_eos.compute_phi_i(kv, m_geometry.m_phis(kv.ie,igp,jgp),
+                            Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.n0,igp,jgp),
+                            Homme::subview(m_buffers.exner,kv.team_idx,igp,jgp),
+                            Homme::subview(m_buffers.pnh,kv.team_idx,igp,jgp),
+                            Homme::subview(m_state.m_phinh_i,kv.ie,m_data.n0,igp,jgp));
       }
 
       // Compute phi at midpoints
-      m_elem_ops.compute_midpoint_values(kv,Homme::subview(m_state.m_phinh_i,kv.ie,m_data.n0,igp,jgp),
+      m_col_ops.compute_midpoint_values(kv,Homme::subview(m_state.m_phinh_i,kv.ie,m_data.n0,igp,jgp),
                                             Homme::subview(m_buffers.phi,kv.team_idx,igp,jgp));
     });
     kv.team_barrier();
@@ -546,7 +575,7 @@ struct CaarFunctorImpl {
     });
 
     auto theta_vadv = Homme::subview(m_buffers.theta_vadv,kv.team_idx,igp,jgp);
-    m_elem_ops.compute_midpoint_delta(kv,vtheta_i,theta_vadv);
+    m_col_ops.compute_midpoint_delta(kv,vtheta_i,theta_vadv);
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -554,16 +583,17 @@ struct CaarFunctorImpl {
     // w_vadv = average(temp)/dp3d_i.
     // temp = average(eta_dot)*delta(w_i)
     // Note: pi and pnh are no longer used, so we can recycle them
-    auto dw_i = Homme::subview(m_buffers.pi,kv.team_idx,igp,jgp);
+    auto dw = Homme::subview(m_buffers.pi,kv.team_idx,igp,jgp);
     auto tmp = Homme::subview(m_buffers.pnh,kv.team_idx,igp,jgp);
     auto w_i = Homme::subview(m_state.m_w_i,kv.ie,m_data.n0,igp,jgp);
     auto dp_i = Homme::subview(m_buffers.dp_i,kv.ie,igp,jgp);
     auto eta_dot_dpdn = Homme::subview(m_buffers.eta_dot_dpdn,kv.team_idx,igp,jgp);
     auto w_vadv = Homme::subview(m_buffers.w_vadv,kv.team_idx,igp,jgp);
 
-    m_elem_ops.compute_midpoint_delta(kv,w_i,dw_i);
-    m_elem_ops.compute_midpoint_delta(kv,eta_dot_dpdn,tmp);
-    m_elem_ops.compute_interface_values(kv,tmp,w_vadv);
+    m_col_ops.compute_midpoint_delta(kv,w_i,dw);
+    m_col_ops.compute_midpoint_values<CombineMode::ProdUpdate>(kv,eta_dot_dpdn,dw);
+    
+    m_col_ops.compute_interface_values(kv,tmp,w_vadv);
     Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                          [&](const int ilev) {
       w_vadv(ilev) /= dp_i(ilev);
@@ -578,7 +608,7 @@ struct CaarFunctorImpl {
     auto eta_dot_dpdn = Homme::subview(m_buffers.eta_dot_dpdn,kv.team_idx,igp,jgp);
     auto dp_i = Homme::subview(m_buffers.dp_i,kv.ie,igp,jgp);
 
-    m_elem_ops.compute_interface_delta(kv,phi,phi_vadv);
+    m_col_ops.compute_interface_delta(kv,phi,phi_vadv);
     Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                          [&](const int ilev) {
       phi_vadv(ilev) *= eta_dot_dpdn(ilev);
@@ -636,10 +666,10 @@ struct CaarFunctorImpl {
     // Note: avoid temporaries *_tens, by storing directly in *_i(np1)
     auto grad_w_i = Homme::subview(m_buffers.grad_w_i,kv.team_idx);
     auto grad_phinh_i = Homme::subview(m_buffers.grad_phinh_i,kv.team_idx);
-    m_sphere_ops.gradient_sphere<NUM_LEV_P>(kv,Homme::subview(m_state.m_phinh_i,kv.ie,m_data.n0),
-                                               grad_phinh_i);
-    m_sphere_ops.gradient_sphere<NUM_LEV_P>(kv,Homme::subview(m_state.m_w_i,kv.ie,m_data.n0),
-                                               grad_w_i);
+    m_sphere_ops.gradient_sphere(kv,Homme::subview(m_state.m_phinh_i,kv.ie,m_data.n0),
+                                        grad_phinh_i);
+    m_sphere_ops.gradient_sphere(kv,Homme::subview(m_state.m_w_i,kv.ie,m_data.n0),
+                                        grad_w_i);
 
     auto v_i = Homme::subview(m_buffers.v_i,kv.team_idx);
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
@@ -725,7 +755,7 @@ struct CaarFunctorImpl {
         Scalar temp;
 
         // Compute dp_tens
-        m_elem_ops.compute_midpoint_values(kv,Homme::subview(m_buffers.eta_dot_dpdn,kv.team_idx,igp,jgp), dp_np1);
+        m_col_ops.compute_midpoint_values(kv,Homme::subview(m_buffers.eta_dot_dpdn,kv.team_idx,igp,jgp), dp_np1);
         dp_np1(ilev) += m_buffers.div_vdp(kv.team_idx,igp,jgp,ilev);
 
         // Add to dp_nm1 and multiply by spheremp
@@ -790,7 +820,7 @@ struct CaarFunctorImpl {
         vort(igp,jgp,ilev) += m_geometry.m_fcor(kv.ie,igp,jgp);
       });
 
-      m_elem_ops.compute_midpoint_values(kv, w_sq, Homme::subview(m_buffers.pi,kv.team_idx,igp,jgp));
+      m_col_ops.compute_midpoint_values(kv, w_sq, Homme::subview(m_buffers.pi,kv.team_idx,igp,jgp));
     });
 
     // Compute grad(average(w^2/2))
@@ -798,8 +828,8 @@ struct CaarFunctorImpl {
                                      vtens);
 
     // Compute grad(w)
-    m_sphere_ops.gradient_sphere<NUM_LEV_P>(kv, Homme::subview(m_state.m_w_i,kv.ie,m_data.n0),
-                                                Homme::subview(m_buffers.v_i,kv.team_idx));
+    m_sphere_ops.gradient_sphere(kv, Homme::subview(m_state.m_w_i,kv.ie,m_data.n0),
+                                                  Homme::subview(m_buffers.v_i,kv.team_idx));
 
     // Compute average(w*grad(w)) and subtract from grad(average(w^2/2)).
     // Also, compute average(dpnh_dp_i*gradphinh_i), and add to the result
@@ -809,21 +839,21 @@ struct CaarFunctorImpl {
       const int jgp = idx % NP;
 
       // Compute vtens = grad(average(w^2/2)) - averate(w*grad(w))
-      m_elem_ops.update_midpoint_values_with_product(kv,-1.0,
-                                                     Homme::subview(m_buffers.v_i,kv.team_idx,0,igp,jgp),
-                                                     Homme::subview(m_state.m_w_i,kv.ie,m_data.n0,igp,jgp),
-                                                     Homme::subview(vtens,0,igp,jgp));
-      m_elem_ops.update_midpoint_values_with_product(kv,-1.0,
+      m_col_ops.compute_midpoint_product<CombineMode::ScaleAdd>(kv,
+                                          Homme::subview(m_buffers.v_i,kv.team_idx,0,igp,jgp),
+                                          Homme::subview(m_state.m_w_i,kv.ie,m_data.n0,igp,jgp),
+                                          Homme::subview(vtens,0,igp,jgp),-1.0);
+      m_col_ops.compute_midpoint_product<CombineMode::ScaleAdd>(kv,
                                                      Homme::subview(m_buffers.v_i,kv.team_idx,1,igp,jgp),
                                                      Homme::subview(m_state.m_w_i,kv.ie,m_data.n0,igp,jgp),
-                                                     Homme::subview(vtens,1,igp,jgp));
+                                                     Homme::subview(vtens,1,igp,jgp),-1.0);
 
       // Compute average(dpnh_dp_i*grad(phinh_i)), and add to vtens
-      m_elem_ops.update_midpoint_values_with_product(kv,1.0,
+      m_col_ops.compute_midpoint_product<CombineMode::Add>(kv,
                                                      Homme::subview(m_buffers.grad_phinh_i,kv.team_idx,0,igp,jgp),
                                                      Homme::subview(m_buffers.dpnh_dp_i,kv.team_idx,igp,jgp),
                                                      Homme::subview(vtens,0,igp,jgp));
-      m_elem_ops.update_midpoint_values_with_product(kv,1.0,
+      m_col_ops.compute_midpoint_product<CombineMode::Add>(kv,
                                                      Homme::subview(m_buffers.grad_phinh_i,kv.team_idx,0,igp,jgp),
                                                      Homme::subview(m_buffers.dpnh_dp_i,kv.team_idx,igp,jgp),
                                                      Homme::subview(vtens,1,igp,jgp));

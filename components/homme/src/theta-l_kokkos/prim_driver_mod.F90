@@ -19,7 +19,8 @@ contains
                                  nu, nu_p, nu_q, nu_s, nu_div, nu_top, vert_remap_q_alg, &
                                  hypervis_order, hypervis_subcycle, hypervis_scaling,    &
                                  ftype, prescribed_wind, moisture, disable_diagnostics,  &
-                                 use_cpstar, transport_alg, theta_hydrostatic_mode
+                                 use_cpstar, transport_alg, theta_hydrostatic_mode,      &
+                                 dcmip16_mu
     use dimensions_mod,   only : qsize, nelemd, np, qsize
     use element_mod,      only : element_t
     use element_state,    only : elem_state_v, elem_state_w_i, elem_state_vtheta_dp,   &
@@ -45,15 +46,16 @@ contains
       subroutine init_simulation_params_c (remap_alg, limiter_option, rsplit, qsplit, time_step_type,    &
                                            qsize, state_frequency, nu, nu_p, nu_q, nu_s, nu_div, nu_top, &
                                            hypervis_order, hypervis_subcycle, hypervis_scaling,          &
-                                           ftype, prescribed_wind, moisture, disable_diagnostics,        &
-                                           use_cpstar, use_semi_lagrange_transport, theta_hydrostatic_mode) bind(c)
+                                           dcmip16_mu, ftype, prescribed_wind, moisture,                 &
+                                           disable_diagnostics, use_cpstar, use_semi_lagrange_transport, &
+                                           theta_hydrostatic_mode) bind(c)
         use iso_c_binding, only: c_int, c_bool, c_double
         !
         ! Inputs
         !
         integer(kind=c_int),  intent(in) :: remap_alg, limiter_option, rsplit, qsplit, time_step_type
         integer(kind=c_int),  intent(in) :: state_frequency, qsize
-        real(kind=c_double),  intent(in) :: nu, nu_p, nu_q, nu_s, nu_div, nu_top, hypervis_scaling
+        real(kind=c_double),  intent(in) :: nu, nu_p, nu_q, nu_s, nu_div, nu_top, hypervis_scaling, dcmip16_mu
         integer(kind=c_int),  intent(in) :: hypervis_order, hypervis_subcycle
         integer(kind=c_int),  intent(in) :: ftype
         logical(kind=c_bool), intent(in) :: prescribed_wind, moisture, disable_diagnostics, use_cpstar
@@ -171,7 +173,8 @@ contains
     call init_simulation_params_c (vert_remap_q_alg, limiter_option, rsplit, qsplit, tstep_type,  &
                                    qsize, statefreq, nu, nu_p, nu_q, nu_s, nu_div, nu_top,        &
                                    hypervis_order, hypervis_subcycle, hypervis_scaling,           &
-                                   ftype, LOGICAL(prescribed_wind==1,c_bool),                     &
+                                   dcmip16_mu, ftype,                                             &
+                                   LOGICAL(prescribed_wind==1,c_bool),                            &
                                    LOGICAL(moisture/="dry",c_bool),                               &
                                    LOGICAL(disable_diagnostics,c_bool),                           &
                                    LOGICAL(use_cpstar==1,c_bool),                                 &
