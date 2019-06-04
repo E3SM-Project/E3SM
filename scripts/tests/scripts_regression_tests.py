@@ -1829,10 +1829,11 @@ class K_TestCimeCase(TestCreateTestCommon):
         testdir = os.path.join(TEST_ROOT, testcase_name)
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
-        run_cmd_assert_result(self, ("{}/create_newcase --case {} --script-root {} " +
+        args = "--case {} --script-root {} --compset X --res f19_g16 --handle-preexisting-dirs=r --output-root {}".format(testcase_name, testdir, testdir)
+        if CIME.utils.get_cime_default_driver() == 'nuopc':
+            args += " --run-unsupported"
 
-                                     "--compset X --res f19_g16 --handle-preexisting-dirs=r --output-root {}").format(
-                                         SCRIPT_DIR, testcase_name, testdir, testdir),
+        run_cmd_assert_result(self, "{}/create_newcase {}".format(SCRIPT_DIR, args),
                               from_dir=SCRIPT_DIR)
         return testdir
 
