@@ -51,6 +51,9 @@ class HyperviscosityFunctorImpl
     bool consthv;
   };
 
+  static constexpr int NUM_BIHARMONIC_PHYSICAL_LEVELS = 3;
+  static constexpr int NUM_BIHARMONIC_LEV = ColInfo<NUM_BIHARMONIC_PHYSICAL_LEVELS>::NumPacks;
+
   struct Buffers {
     static constexpr int num_scalars = 2;
     static constexpr int num_vectors = 1;
@@ -59,9 +62,9 @@ class HyperviscosityFunctorImpl
 
     // These are temporary buffers, thrown away at the end of an outer pfor iteration
     // They are minimally sized so to not waste memory.
-    ExecViewUnmanaged<Scalar*   [NP][NP][NUM_LEV]>  laplace_t;
-    ExecViewUnmanaged<Scalar*   [NP][NP][NUM_LEV]>  laplace_dp;
-    ExecViewUnmanaged<Scalar*[2][NP][NP][NUM_LEV]>  laplace_v;
+    ExecViewUnmanaged<Scalar*   [NP][NP][NUM_BIHARMONIC_LEV]>  laplace_t;
+    ExecViewUnmanaged<Scalar*   [NP][NP][NUM_BIHARMONIC_LEV]>  laplace_dp;
+    ExecViewUnmanaged<Scalar*[2][NP][NP][NUM_BIHARMONIC_LEV]>  laplace_v;
 
     // These are persistent buffers, meaning they survive between different parallel regions.
     // They need to be sized to the number of elements, so they can store data for all elements.
@@ -202,27 +205,24 @@ public:
 
     // laplace subfunctors cannot be called from a TeamThreadRange or
     // ThreadVectorRange
-    constexpr int NUM_BIHARMONIC_PHYSICAL_LEVELS = 3;
-    constexpr int NUM_BIHARMONIC_LEV = (NUM_BIHARMONIC_PHYSICAL_LEVELS + VECTOR_SIZE - 1) / VECTOR_SIZE;
-
     if (m_data.nu_top > 0) {
 
       //for top 3 levels and laplace, there is trivial nu_ratio only
-      m_sphere_ops.vlaplace_sphere_wk_contra<NUM_LEV,NUM_BIHARMONIC_LEV>(
+      m_sphere_ops.vlaplace_sphere_wk_contra<NUM_BIHARMONIC_LEV,NUM_LEV>(
             kv, 1.0,
             // input
             Homme::subview(m_state.m_v, kv.ie, m_data.np1),
             // output
             Homme::subview(m_buffers.laplace_v, kv.team_idx));
 
-      m_sphere_ops.laplace_simple<NUM_LEV,NUM_BIHARMONIC_LEV>(
+      m_sphere_ops.laplace_simple<NUM_BIHARMONIC_LEV,NUM_LEV>(
             kv,
             // input
             Homme::subview(m_state.m_t, kv.ie, m_data.np1),
             // output
             Homme::subview(m_buffers.laplace_t, kv.team_idx));
 
-      m_sphere_ops.laplace_simple<NUM_LEV,NUM_BIHARMONIC_LEV>(
+      m_sphere_ops.laplace_simple<NUM_BIHARMONIC_LEV,NUM_LEV>(
             kv,
             // input
             Homme::subview(m_state.m_dp3d, kv.ie, m_data.np1),
