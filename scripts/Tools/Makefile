@@ -814,17 +814,17 @@ ifeq ($(ULIBDEP),$(null))
    endif
 endif
 ifeq ($(COMP_GLC), cism)
-  ULIBDEP += $(CISM_LIBDIR)/libglimmercismfortran.a
+  override ULIBDEP += $(CISM_LIBDIR)/libglimmercismfortran.a
   ifeq ($(CISM_USE_TRILINOS), TRUE)
-    ULIBDEP += $(CISM_LIBDIR)/libglimmercismcpp.a
+    override ULIBDEP += $(CISM_LIBDIR)/libglimmercismcpp.a
   endif
 endif
 ifeq ($(OCN_SUBMODEL),moby)
-  ULIBDEP += $(LIBROOT)/libmoby.a
+  override ULIBDEP += $(LIBROOT)/libmoby.a
 endif
 
 ifdef COSP_LIBDIR
-  ULIBDEP += $(COSP_LIBDIR)/libcosp.a
+  override ULIBDEP += $(COSP_LIBDIR)/libcosp.a
 endif
 
 
@@ -839,7 +839,7 @@ endif
 # libcsm_share.a is in ULIBDEP, but -lcsm_share is in ULIBS rather than CLIBS,
 # so this needs to be added after creating CLIBS above
 CSMSHARELIB = $(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/lib/libcsm_share.a
-ULIBDEP += $(CSMSHARELIB)
+override ULIBDEP += $(CSMSHARELIB)
 
 #-------------------------------------------------------------------------------
 # build rules:
