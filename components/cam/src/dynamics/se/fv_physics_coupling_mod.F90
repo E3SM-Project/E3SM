@@ -221,7 +221,7 @@ contains
     ! local variables
     integer(kind=int_kind) :: ie, m, icol, ilyr             ! loop iterators
     integer                :: tl_f                          ! time level
-    integer                :: nphys_sq
+    integer                :: ncol
     real(r8), dimension(np,np)             :: tmp_area
     real(r8), dimension(fv_nphys,fv_nphys) :: inv_area
     real(r8), dimension(np,np)             :: dp_gll
@@ -231,7 +231,7 @@ contains
     ! to get average state in each physics cell
     !---------------------------------------------------------------------------
     tl_f = TimeLevel%n0
-    nphys_sq = fv_nphys*fv_nphys
+    ncol = fv_nphys*fv_nphys
     tmp_area(:,:) = 1.0_r8
 
     do ie = 1,nelemd
@@ -241,37 +241,37 @@ contains
       ps_tmp(:,ie) = RESHAPE( subcell_integration(                  &
                      elem(ie)%state%ps_v(:,:,tl_f),                 &
                      np, fv_nphys, elem(ie)%metdet(:,:) )           &
-                     *inv_area , (/nphys_sq/) )
+                     *inv_area , (/ncol/) )
       zs_tmp(:,ie) = RESHAPE( subcell_integration(                  &
                      elem(ie)%state%phis(:,:),                      &
                      np, fv_nphys, elem(ie)%metdet(:,:) )           &
-                     *inv_area , (/nphys_sq/) )
+                     *inv_area , (/ncol/) )
 
       do ilyr = 1,pver
 
         dp_gll = elem(ie)%state%dp3d(:,:,ilyr,tl_f)
         inv_dp_fvm = 1.0 / subcell_integration(dp_gll,np,fv_nphys,elem(ie)%metdet(:,:))
 
-        T_tmp(:,ilyr,ie)      = RESHAPE( subcell_integration(             &
-                                elem(ie)%state%T(:,:,ilyr,tl_f)*dp_gll,   &
-                                np, fv_nphys, elem(ie)%metdet(:,:) )      &
-                                *inv_dp_fvm, (/nphys_sq/) )
+        T_tmp(:ncol,ilyr,ie)      = RESHAPE( subcell_integration(             &
+                                    elem(ie)%state%T(:,:,ilyr,tl_f)*dp_gll,   &
+                                    np, fv_nphys, elem(ie)%metdet(:,:) )      &
+                                    *inv_dp_fvm, (/ncol/) )
 
-        w_tmp(:,ilyr,ie)      = RESHAPE( subcell_integration(             &
-                                elem(ie)%derived%omega_p(:,:,ilyr),       &
-                                np, fv_nphys, elem(ie)%metdet(:,:) )      &
-                                *inv_area , (/nphys_sq/) )
+        w_tmp(:ncol,ilyr,ie)      = RESHAPE( subcell_integration(             &
+                                    elem(ie)%derived%omega_p(:,:,ilyr),       &
+                                    np, fv_nphys, elem(ie)%metdet(:,:) )      &
+                                    *inv_area , (/ncol/) )
         do m = 1,2
-          uv_tmp(:,m,ilyr,ie) = RESHAPE( subcell_integration(             &
-                                elem(ie)%state%V(:,:,m,ilyr,tl_f),        &
-                                np, fv_nphys, elem(ie)%metdet(:,:) )      &
-                                *inv_area , (/nphys_sq/) )
+          uv_tmp(:ncol,m,ilyr,ie) = RESHAPE( subcell_integration(             &
+                                    elem(ie)%state%V(:,:,m,ilyr,tl_f),        &
+                                    np, fv_nphys, elem(ie)%metdet(:,:) )      &
+                                    *inv_area , (/ncol/) )
         end do
         do m = 1,pcnst
-          Q_tmp(:,ilyr,m,ie)  = RESHAPE( subcell_integration(             &
-                                elem(ie)%state%Q(:,:,ilyr,m)*dp_gll,      &
-                                np, fv_nphys, elem(ie)%metdet(:,:) )      &
-                                *inv_dp_fvm, (/nphys_sq/) )
+          Q_tmp(:ncol,ilyr,m,ie)  = RESHAPE( subcell_integration(             &
+                                    elem(ie)%state%Q(:,:,ilyr,m)*dp_gll,      &
+                                    np, fv_nphys, elem(ie)%metdet(:,:) )      &
+                                    *inv_dp_fvm, (/ncol/) )
         end do
 
       end do ! ilyr

@@ -51,12 +51,12 @@ CONTAINS
     type(physics_state), intent(inout), dimension(begchunk:endchunk) :: phys_state
     type(physics_tend ), intent(inout), dimension(begchunk:endchunk) :: phys_tend 
     ! LOCAL VARIABLES
-    real(kind=real_kind), allocatable :: ps_tmp(:,:)      ! temp array to hold ps
-    real(kind=real_kind), allocatable :: zs_tmp(:,:)      ! temp array to hold phis  
-    real(kind=real_kind), allocatable :: T_tmp (:,:,:)    ! temp array to hold T
-    real(kind=real_kind), allocatable :: uv_tmp(:,:,:,:)  ! temp array to hold u and v
-    real(kind=real_kind), allocatable :: q_tmp (:,:,:,:)  ! temp to hold advected constituents
-    real(kind=real_kind), allocatable :: w_tmp (:,:,:)    ! temp array to hold omega
+    real(kind=real_kind), dimension(npsq,nelemd)            :: ps_tmp ! temp array to hold ps
+    real(kind=real_kind), dimension(npsq,nelemd)            :: zs_tmp ! temp array to hold phis  
+    real(kind=real_kind), dimension(npsq,pver,nelemd)       :: T_tmp  ! temp array to hold T
+    real(kind=real_kind), dimension(npsq,2,pver,nelemd)     :: uv_tmp ! temp array to hold u and v
+    real(kind=real_kind), dimension(npsq,pver,pcnst,nelemd) :: q_tmp  ! temp to hold advected constituents
+    real(kind=real_kind), dimension(npsq,pver,nelemd)       :: w_tmp  ! temp array to hold omega
     type(element_t),          pointer :: elem(:)          ! pointer to dyn_out element array
     type(physics_buffer_desc),pointer :: pbuf_chnk(:)     ! temporary pbuf pointer
     integer(kind=int_kind)   :: ie                        ! indices over elements
@@ -74,11 +74,6 @@ CONTAINS
     integer                  :: cpter(pcols,0:pver)       ! offsets into chunk buffer for unpacking 
     integer                  :: nphys, nphys_sq           ! physics grid parameters
     real (kind=real_kind)    :: temperature(np,np,nlev)   ! Temperature from dynamics
-    ! Temp arrays for writing initial condition file when physics is on FV grid
-    real(kind=real_kind), allocatable :: ps_tmp_ic (:)
-    real(kind=real_kind), allocatable :: uv_tmp_ic (:,:,:)
-    real(kind=real_kind), allocatable :: T_tmp_ic  (:,:)
-    real(kind=real_kind), allocatable :: q_tmp_ic  (:,:,:)
     ! Frontogenesis
     real (kind=real_kind), allocatable :: frontgf(:,:,:)  ! frontogenesis function
     real (kind=real_kind), allocatable :: frontga(:,:,:)  ! frontogenesis angle 
@@ -99,14 +94,6 @@ CONTAINS
       nphys = np
     end if
     nphys_sq = nphys*nphys
-
-    ! Allocate temporary arrays to hold data for physics decomposition
-    allocate(ps_tmp (nphys_sq,nelemd))
-    allocate(zs_tmp (nphys_sq,nelemd))
-    allocate(T_tmp  (nphys_sq,pver,nelemd))
-    allocate(uv_tmp (nphys_sq,2,pver,nelemd))
-    allocate(q_tmp  (nphys_sq,pver,pcnst,nelemd))
-    allocate(w_tmp  (nphys_sq,pver,nelemd))
 
     if (use_gw_front) then
        allocate(frontgf(nphys_sq,pver,nelemd), stat=ierr)
@@ -290,14 +277,6 @@ CONTAINS
     end if ! local_dp_map
     call t_stopf('dpcopy')
 
-    ! Deallocate the temporary arrays
-    deallocate(ps_tmp)
-    deallocate(zs_tmp)
-    deallocate(T_tmp)
-    deallocate(uv_tmp)
-    deallocate(q_tmp)
-    deallocate(w_tmp)
-
     call t_startf('derived_phys')
     call derived_phys(phys_state,phys_tend,pbuf2d)
     call t_stopf('derived_phys')
@@ -367,9 +346,9 @@ CONTAINS
     type(element_t), pointer :: elem(:)                    ! pointer to dyn_in element array
     integer(kind=int_kind)   :: ie, iep                    ! indices over elements
     integer(kind=int_kind)   :: lchnk, icol, ilyr          ! indices over chunks, columns, layers
-    real (kind=real_kind), allocatable :: T_tmp (:,:,:)    ! temp array to hold T
-    real (kind=real_kind), allocatable :: uv_tmp(:,:,:,:)  ! temp array to hold u and v
-    real (kind=real_kind), allocatable :: q_tmp (:,:,:,:)  ! temp to hold advected constituents
+    real (kind=real_kind), dimension(npsq,pver,nelemd)       :: T_tmp  ! temp array to hold T
+    real (kind=real_kind), dimension(npsq,2,pver,nelemd)     :: uv_tmp ! temp array to hold u and v
+    real (kind=real_kind), dimension(npsq,pver,pcnst,nelemd) :: q_tmp  ! temp to hold advected constituents
     integer(kind=int_kind)   :: m, i, j, k                 ! loop iterators
     integer(kind=int_kind)   :: gi(2), gj(2)               ! index list used to simplify pg2 case
     integer(kind=int_kind)   :: di, dj
@@ -397,10 +376,6 @@ CONTAINS
       nphys = np
     end if
     nphys_sq = nphys*nphys
-
-    allocate(T_tmp  (nphys_sq,pver,nelemd))
-    allocate(uv_tmp (nphys_sq,2,pver,nelemd))
-    allocate(q_tmp  (nphys_sq,pver,pcnst,nelemd))
 
     T_tmp  = 0.0_r8
     uv_tmp = 0.0_r8
@@ -513,10 +488,6 @@ CONTAINS
 
       end if ! fv_nphys > 0
     end if ! par%dynproc
-
-    deallocate(T_tmp)
-    deallocate(uv_tmp)
-    deallocate(q_tmp)
 
   end subroutine p_d_coupling
   !=================================================================================================
