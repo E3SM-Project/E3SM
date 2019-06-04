@@ -291,10 +291,10 @@ endif()
 # endif()
 
 # Set HAVE_SLASHPROC on LINUX systems which are not bluegene or Darwin (OSx)
-string(FIND CPPDEFS "-DLINUX" HAS_DLINUX)
-string(FIND CPPDEFS "DBG" HAS_DBG)
-string(FIND CPPDEFS "Darwin" HAS_DARWIN)
-if (NOT HAS_DLINUX EQUAL -1 AND HAS_DBG EQUAL -1 AND HASDARWIN EQUAL -1)
+string(FIND "${CPPDEFS}" "-DLINUX" HAS_DLINUX)
+string(FIND "${CPPDEFS}" "DBG" HAS_DBG)
+string(FIND "${CPPDEFS}" "Darwin" HAS_DARWIN)
+if (NOT HAS_DLINUX EQUAL -1 AND HAS_DBG EQUAL -1 AND HAS_DARWIN EQUAL -1)
   set(CPPDEFS "${CPPDEFS} -DHAVE_SLASHPROC")
 endif()
 
@@ -355,7 +355,7 @@ endif()
 if (NOT CONFIG_ARGS)
   set(CONFIG_ARGS "")
 endif()
-string(FIND MODEL "pio" HAS_PIO)
+string(FIND "${MODEL}" "pio" HAS_PIO)
 if (NOT HAS_PIO EQUAL -1)
   set(CONFIG_ARGS "${CONFIG_ARGS} --enable-timing")
   if (DEBUG)
@@ -486,6 +486,44 @@ if (MODEL STREQUAL "cam")
   if (COSP_LIBDIR)
     include(${CMAKE_CURRENT_SOURCE_DIR}/cam/src/physics/cosp/Cosp.cmake)
   endif()
+
+endif()
+
+# JGF: For some reason, CMake was not able to discover the dependency of MathfuncMod on
+# bshr_assert_mod on its own. We could try adding betr via add_subdirectory because
+# it does have a CMake build system of its own.
+if (MODEL STREQUAL "clm")
+  set_source_files_properties(
+    clm/src/external_models/sbetr/src/betr/betr_util/bshr_assert_mod.F90
+    PROPERTIES
+    OBJECT_OUTPUTS ${CMAKE_BINARY_DIR}/bshr_assert_mod.mod
+  )
+
+  set_source_files_properties(
+    clm/src/external_models/sbetr/src/betr/betr_math/MathfuncMod.F90
+    clm/src/external_models/sbetr/src/Applications/soil-farm/CENT_ECACNP/BgcCentCnpType.F90
+    clm/src/external_models/sbetr/src/Applications/soil-farm/CENT_ECACNP/BgcReactionsCentECACnpType.F90
+    clm/src/external_models/sbetr/src/Applications/soil-farm/CENT_ECACNP/PlantSoilBgcCnpType.F90
+    clm/src/external_models/sbetr/src/betr/betr_core/BeTRTracerType.F90
+    clm/src/external_models/sbetr/src/betr/betr_core/TransportMod.F90
+    clm/src/external_models/sbetr/src/betr/betr_main/BetrBGCMod.F90
+    clm/src/external_models/sbetr/src/betr/betr_math/InterpolationMod.F90
+    clm/src/external_models/sbetr/src/betr/betr_math/KineticsMod.F90
+    clm/src/external_models/sbetr/src/betr/betr_math/MathfuncMod.F90
+    clm/src/external_models/sbetr/src/betr/betr_para/TracerParamSetMod.F90
+    clm/src/external_models/sbetr/src/betr/betr_para/TracerParamSetWatIsoMod.F90
+    clm/src/external_models/sbetr/src/betr/betr_para/TracerParamsMod.F90
+    clm/src/external_models/sbetr/src/betr/betr_rxns/DIOCBGCReactionsType.F90
+    clm/src/external_models/sbetr/src/betr/betr_rxns/DIOCPlantSoilBGCType.F90
+    clm/src/external_models/sbetr/src/betr/betr_rxns/H2OIsotopeBGCReactionsType.F90
+    clm/src/external_models/sbetr/src/betr/betr_rxns/H2OIsotopePlantSoilBGCType.F90
+    clm/src/external_models/sbetr/src/betr/betr_rxns/MockBGCReactionsType.F90
+    clm/src/external_models/sbetr/src/betr/betr_rxns/MockPlantSoilBGCType.F90
+    clm/src/external_models/sbetr/src/betr/betr_util/bshr_string_mod.F90
+    clm/src/external_models/sbetr/src/driver/shared/BeTRType.F90
+
+    PROPERTIES OBJECT_DEPENDS ${CMAKE_BINARY_DIR}/bshr_assert_mod.mod
+  )
 
 endif()
 

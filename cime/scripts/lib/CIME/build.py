@@ -325,21 +325,11 @@ def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldr
         cmd = os.path.join(config_dir, "buildlib")
         expect(os.path.isfile(cmd), "Could not find buildlib for {}".format(compname))
 
-    # Add to this list as components are converted to python/cmake
-    if compname in ["cam"] and get_model() == "e3sm":
-        try:
-            stat = 0
-            run_sub_or_cmd(cmd, [caseroot, libroot, bldroot], "buildlib",
-                           [bldroot, libroot, case], logfile=file_build)
-        except Exception:
-            stat = 1
-
-    else:
-        with open(file_build, "w") as fd:
-            stat = run_cmd("MODEL={} SMP={} {} {} {} {} "
-                           .format(compclass, stringify_bool(smp), cmd, caseroot, libroot, bldroot),
-                           from_dir=bldroot,  arg_stdout=fd,
-                           arg_stderr=subprocess.STDOUT)[0]
+    with open(file_build, "w") as fd:
+        stat = run_cmd("MODEL={} SMP={} {} {} {} {} "
+                       .format(compclass, stringify_bool(smp), cmd, caseroot, libroot, bldroot),
+                       from_dir=bldroot,  arg_stdout=fd,
+                       arg_stderr=subprocess.STDOUT)[0]
 
     analyze_build_log(compclass, file_build, compiler)
 
