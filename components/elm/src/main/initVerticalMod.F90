@@ -704,7 +704,7 @@ contains
                	  col_pp%nlevbed(c) = 5
                else
                   ! check for near zero DTBs, set minimum value
-	          beddep = max(dtb(g,ti), 0.2_r8)
+	          beddep = max(dtb(g,ti), zsoi(1))    ! better to use first-layer thickness
 	          j = 0
 	          zimid = 0._r8
                   do while (zimid < beddep .and. j < nlevgrnd)
@@ -716,7 +716,7 @@ contains
                      end if
 	             j = j + 1
                   enddo
-	          nlevbed = max(nlevbed, 5)
+	          nlevbed = max(nlevbed, 1)   ! better to use first-layer thickness as the minimal
 	          nlevbed = min(nlevbed, nlevgrnd)
                   col_pp%nlevbed(c) = nlevbed
 	          col_pp%zibed(c) = zisoi(nlevbed)
