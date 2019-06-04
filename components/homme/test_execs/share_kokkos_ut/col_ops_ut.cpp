@@ -155,11 +155,13 @@ TEST_CASE("col_ops_interpolation", "interpolation") {
                            [&](const int idx) {
         const int igp = idx / NP;
         const int jgp = idx % NP;
+        auto int_in = Homme::subview(d_interface_field_in,kv.ie,igp,jgp);
 
-        col_ops.compute_midpoint_product<CombineMode::Add>(
-                  kv,
-                  Homme::subview(d_interface_field_in,kv.ie,igp,jgp),
-                  Homme::subview(d_interface_field_in,kv.ie,igp,jgp),
+        auto prod_provider = [&](const int ilev)->Scalar {
+          return int_in(ilev)*int_in(ilev);
+        };
+        col_ops.compute_midpoint_values<CombineMode::Add>(
+                  kv, prod_provider,
                   Homme::subview(d_midpoints_field_out,kv.ie,igp,jgp)
         );
       });

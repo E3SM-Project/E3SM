@@ -48,7 +48,7 @@ void combine (const Scalar1& newVal, Scalar2& result,
 
 /*
  *  ColumnOps: a series of utility kernels inside an element
- *
+ * 
  *  This class is responsible of implementing common kernels used in the
  *  preqx and theta models to compute quantities at level midpoints and
  *  level interfaces. For instance, compute interface quantities from midpoints
@@ -60,19 +60,32 @@ void combine (const Scalar1& newVal, Scalar2& result,
  *  you should be inside a TeamThreadRange parallel loop before calling these
  *  kernels, but you should *not* be inside a ThreadVectorRange loop, since these
  *  kernels will attempt to create such loops.
+ * 
+ *  In the compute_* methods, InputProvider can either be a functor (e.g., a lambda) or a 1d view.
+ *  The only requirement is that operator()(int)->Scalar is defined.
+ *  For instance, one could use a lambda to compute the midpoint average of the product of two
+ *  interface quantities, like this:
+ *  
+ *    auto prod = [&](const int ilev)->Scalar { return x(ilev)*y(ilev); }
+ *    column_ops.compute_midpoint_values(kv,prod,output);
  */
+  
 class ColumnOps {
 public:
   using MIDPOINTS = ColInfo<NUM_PHYSICAL_LEV>;
   using INTERFACES = ColInfo<NUM_INTERFACE_LEV>;
 
+  using DefaultMidProvider = ExecViewUnmanaged<const Scalar [NUM_LEV]>;
+  using DefaultIntProvider = ExecViewUnmanaged<const Scalar [NUM_LEV_P]>;
+
+
   ColumnOps () = default;
 
-  template<CombineMode CM = CombineMode::Replace>
+  template<CombineMode CM = CombineMode::Replace, typename InputProvider = DefaultIntProvider>
   KOKKOS_INLINE_FUNCTION
   void compute_midpoint_values (const KernelVariables& kv,
-                                const ExecViewUnmanaged<const Scalar [NUM_LEV_P]>& x_i,
-                                const ExecViewUnmanaged<      Scalar [NUM_LEV]  >& x_m,
+                                const InputProvider& x_i,
+                                const ExecViewUnmanaged<Scalar [NUM_LEV]>& x_m,
                                 const Real alpha = 1.0, const Real beta = 0.0) const
   {
     // Compute midpoint quanitiy. Note: the if statement is evaluated at compile time, so no penalization. Only requirement is both branches must compile.
@@ -103,50 +116,11 @@ public:
     }
   }
 
-  // Computes the average of x_i*y_i and adds it to xy_m
-  template<CombineMode CM = CombineMode::Replace>
-  KOKKOS_INLINE_FUNCTION
-  void compute_midpoint_product (const KernelVariables& kv,
-                                 const ExecViewUnmanaged<const Scalar [NUM_LEV_P]>& x_i,
-                                 const ExecViewUnmanaged<const Scalar [NUM_LEV_P]>& y_i,
-                                 const ExecViewUnmanaged<      Scalar [NUM_LEV]  >& xy_m,
-                                 const Real alpha = 1.0, const Real beta = 0.0) const
-  {
-    // Compute midpoint quanitiy. Note: the if statement is evaluated at compile time, so no penalization. Only requirement is both branches must compile.
-    if (OnGpu<ExecSpace>::value) {
-      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_PHYSICAL_LEV),
-                           [=](const int& ilev) {
-        Scalar tmp = (x_i(ilev)*y_i(ilev) + x_i(ilev+1)*y_i(ilev+1))/2.0;
-        combine<CM>( tmp, xy_m(ilev), alpha, beta);
-      });
-    } else {
-      // Try to use SIMD operations as much as possible: the first NUM_LEV-1 packs can be vectorized
-      for (int ilev=0; ilev<MIDPOINTS::LastPack; ++ilev) {
-        Scalar tmp = x_i(ilev);
-        tmp *= y_i(ilev);
-        tmp.shift_left(1);
-        tmp[VECTOR_END] = x_i(ilev+1)[0]*y_i(ilev+1)[0];
-        tmp += x_i(ilev)*y_i(ilev);
-        tmp /= 2.0;
-        combine<CM>(tmp, xy_m(ilev), alpha, beta);
-      }
-
-      // Last level pack treated separately, since ilev+1 may throw depending if NUM_LEV=NUM_LEV_P
-      Scalar tmp = x_i(MIDPOINTS::LastPack);
-      tmp *= y_i(MIDPOINTS::LastPack);
-      tmp.shift_left(1);
-      tmp[VECTOR_END] = x_i(INTERFACES::LastPack)[0]*y_i(INTERFACES::LastPack)[0];
-      tmp += x_i(MIDPOINTS::LastPack)*y_i(MIDPOINTS::LastPack);
-      tmp /= 2.0;
-      combine<CM>(tmp, xy_m(MIDPOINTS::LastPack), alpha, beta);
-    }
-  }
-
-  template<CombineMode CM = CombineMode::Replace>
+  template<CombineMode CM = CombineMode::Replace, typename InputProvider = DefaultMidProvider>
   KOKKOS_INLINE_FUNCTION
   void compute_interface_values (const KernelVariables& kv,
-                                 const ExecViewUnmanaged<const Scalar [NUM_LEV]  >& x_m,
-                                 const ExecViewUnmanaged<      Scalar [NUM_LEV_P]>& x_i,
+                                 const InputProvider& x_m,
+                                 const ExecViewUnmanaged<Scalar [NUM_LEV_P]>& x_i,
                                  const Real alpha = 1.0, const Real beta = 0.0) const
   {
     // Compute interface quanitiy.
@@ -186,21 +160,24 @@ public:
     }
   }
 
-  // Similar to the above, but uses layers thicknesses as averaging weights
-  template<CombineMode CM = CombineMode::Replace>
+  // Similar to the above, but uses midpoints/interface weights when computing the average
+  template<CombineMode CM = CombineMode::Replace,
+           typename WeightsMidProvider = DefaultMidProvider,
+           typename WeightsIntProvider = DefaultIntProvider,
+           typename InputProvider = DefaultMidProvider>
   KOKKOS_INLINE_FUNCTION
   void compute_interface_values (const KernelVariables& kv,
-                                 ExecViewUnmanaged<const Scalar [NUM_LEV]  > dp_m,
-                                 ExecViewUnmanaged<const Scalar [NUM_LEV_P]> dp_i,
-                                 ExecViewUnmanaged<const Scalar [NUM_LEV]  > x_m,
-                                 ExecViewUnmanaged<      Scalar [NUM_LEV_P]> x_i,
+                                 const WeightsMidProvider& weights_m,
+                                 const WeightsIntProvider& weights_i,
+                                 const InputProvider& x_m,
+                                 const ExecViewUnmanaged<Scalar [NUM_LEV_P]>& x_i,
                                  const Real alpha = 1.0, const Real beta = 0.0) const
   {
     // Compute interface quanitiy.
     if (OnGpu<ExecSpace>::value) {
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,1,NUM_PHYSICAL_LEV),
                            [=](const int& ilev) {
-        Scalar tmp = (x_m(ilev)*dp_m(ilev) + x_m(ilev-1)*dp_m(ilev-1)) / (2.0*dp_i(ilev));
+        Scalar tmp = (x_m(ilev)*weights_m(ilev) + x_m(ilev-1)*weights_m(ilev-1)) / (2.0*weights_i(ilev));
         combine<CM>(tmp,x_i(ilev),alpha,beta);
       });
       // Fix the top/bottom
@@ -211,20 +188,20 @@ public:
     } else {
       // Try to use SIMD operations as much as possible: the last NUM_LEV-1 packs are treated uniformly, and can be vectorized
       for (int ilev=1; ilev<NUM_LEV; ++ilev) {
-        Scalar tmp = x_m(ilev)*dp_m(ilev);
+        Scalar tmp = x_m(ilev)*weights_m(ilev);
         tmp.shift_right(1);
-        tmp[0] = x_m(ilev-1)[VECTOR_END]*dp_m(ilev-1)[VECTOR_END];
-        tmp += x_m(ilev)*dp_m(ilev);
-        tmp /= 2.0*dp_i(ilev);
+        tmp[0] = x_m(ilev-1)[VECTOR_END]*weights_m(ilev-1)[VECTOR_END];
+        tmp += x_m(ilev)*weights_m(ilev);
+        tmp /= 2.0*weights_i(ilev);
         combine<CM>(tmp,x_i(ilev),alpha,beta);
       }
 
       // First pack does not have a previous pack, and the extrapolation of the 1st interface is x_i = x_m.
       // Luckily, dp_i(0) = dp_m(0), and shift_right inserts leading 0's, so the formula is almost the same
-      Scalar tmp = x_m(0)*dp_m(0);
+      Scalar tmp = x_m(0)*weights_m(0);
       tmp.shift_right(1);
-      tmp += x_m(0)*dp_m(0);
-      tmp /= 2.0*dp_i(0);
+      tmp += x_m(0)*weights_m(0);
+      tmp /= 2.0*weights_i(0);
       combine<CM>(tmp, x_i(0), alpha, beta);
 
       // Fix top/bottom
@@ -233,11 +210,12 @@ public:
     }
   }
 
-  template<CombineMode CM = CombineMode::Replace>
+  template<CombineMode CM = CombineMode::Replace,
+           typename InputProvider = DefaultIntProvider>
   KOKKOS_INLINE_FUNCTION
   void compute_midpoint_delta (const KernelVariables& kv,
-                               ExecViewUnmanaged<const Scalar [NUM_LEV_P]> x_i,
-                               ExecViewUnmanaged<      Scalar [NUM_LEV]  > dx_m,
+                               const InputProvider& x_i,
+                               const ExecViewUnmanaged<Scalar [NUM_LEV]>& dx_m,
                                const Real alpha = 1.0, const Real beta = 0.0) const
   {
     // Compute increment of interface values at midpoints.
@@ -264,15 +242,17 @@ public:
     }
   }
 
-  template<CombineMode CM = CombineMode::Replace, BCType bcType = BCType::Zero>
+  template<CombineMode CM = CombineMode::Replace,
+           BCType bcType = BCType::Zero,
+           typename InputProvider = DefaultMidProvider>
   KOKKOS_INLINE_FUNCTION
   void compute_interface_delta (const KernelVariables& kv,
-                                ExecViewUnmanaged<const Scalar [NUM_LEV]  > x_m,
-                                ExecViewUnmanaged<      Scalar [NUM_LEV_P]> dx_i,
+                                const InputProvider& x_m,
+                                const ExecViewUnmanaged<Scalar [NUM_LEV_P]> dx_i,
                                 const Real bcVal = 0.0,
                                 const Real alpha = 1.0, const Real beta = 0.0) const
   {
-    static_assert (bcType==BCType::Zero || bcType == BCType::DoNothing,
+    static_assert (bcType==BCType::Zero || bcType==BCType::Value || bcType == BCType::DoNothing,
                    "Error! Invalid bcType for interface delta calculation.\n");
 
     // Compute increment of midpoint values at interfaces. Top and bottom interfaces are set to 0.
@@ -325,20 +305,21 @@ public:
   // Note: the first value of sum_i (at 0 or NUM_INTERFACE_LEV, depending on Forward), is
   //       assumed to be VALID. In other words, the boundary condition of the integral must
   //       be set from OUTSIDE this kernel
-  template<bool Forward,bool Inclusive,int LENGTH,typename Lambda>
+  // Note: InputProvider could be a lambda or a 1d view.
+  template<bool Forward, bool Inclusive, int LENGTH, typename InputProvider>
   KOKKOS_INLINE_FUNCTION
   void column_scan (const KernelVariables& kv,
-                    const Lambda& input_provider,
+                    const InputProvider& input_provider,
                     const ExecViewUnmanaged<Scalar [ColInfo<LENGTH>::NumPacks]>& sum) const
   {
     column_scan_impl<ExecSpace,Forward,Inclusive,LENGTH>(kv,input_provider,sum);
   }
 
-  template<typename ExecSpaceType,bool Forward,bool Inclusive,int LENGTH,typename Lambda>
+  template<typename ExecSpaceType,bool Forward,bool Inclusive,int LENGTH,typename InputProvider>
   KOKKOS_INLINE_FUNCTION
   typename std::enable_if<!OnGpu<ExecSpaceType>::value>::type
   column_scan_impl (const KernelVariables& /* kv */,
-                    const Lambda& input_provider,
+                    const InputProvider& input_provider,
                     const ExecViewUnmanaged<Scalar [ColInfo<LENGTH>::NumPacks]>& sum,
                     const Real s0 = 0.0) const
   {
@@ -388,11 +369,11 @@ public:
     }
   }
 
-  template<typename ExecSpaceType,bool Forward,bool Inclusive,int LENGTH,typename Lambda>
+  template<typename ExecSpaceType,bool Forward,bool Inclusive,int LENGTH,typename InputProvider>
   KOKKOS_INLINE_FUNCTION
   typename std::enable_if<OnGpu<ExecSpaceType>::value>::type
   column_scan_impl (const KernelVariables& kv,
-                    const Lambda& input_provider,
+                    const InputProvider& input_provider,
                     const ExecViewUnmanaged<Scalar [ColInfo<LENGTH>::NumPacks]>& sum,
                     const Real s0 = 0.0) const
   {
@@ -441,35 +422,17 @@ public:
   // initial value. Similarly for backward sum
   // Note: we are *assuming* that the first (or last, for bwd) entry of  sum
   //       contains the desired initial value
-  template<bool Forward>
+  template<bool Forward,typename InputProvider>
   KOKKOS_INLINE_FUNCTION
   void column_scan_mid_to_int (const KernelVariables& kv,
-                               const ExecViewUnmanaged<const Scalar[NUM_LEV]>& input,
-                               const ExecViewUnmanaged<Scalar [NUM_LEV_P]>& sum) const
-  {
-    auto input_provider = [&](const int ilev)->Scalar {
-      return input(ilev);
-    };
-
-    using Specs = ColInfo<NUM_INTERFACE_LEV>;
-    const Real s0 = Forward ? sum(0)[0] : sum(Specs::LastPack)[Specs::LastVecEnd];
-    column_scan_impl<ExecSpace,Forward,false,NUM_INTERFACE_LEV>(kv,input_provider,sum,s0);
-  }
-
-  // Special case where input is on midpoints, but output is on interfaces.
-  // In this case, we perform sum(k+1) = sum(k) + provider(k), k=0,NUM_LEV.
-  // For this reason, we do an exclusive sum, with initial value sum(0).
-  template<bool Forward,typename Lambda>
-  KOKKOS_INLINE_FUNCTION
-  void column_scan_mid_to_int (const KernelVariables& kv,
-                               const Lambda& input_provider,
+                               const InputProvider& input_provider,
                                const ExecViewUnmanaged<Scalar [NUM_LEV_P]>& sum) const
   {
     if (Forward) {
       // It's safe to pass the output as it is, and claim is Exclusive over NUM_INTERFACE_LEV
       column_scan_impl<ExecSpace,true,false,NUM_INTERFACE_LEV>(kv,input_provider,sum,sum(0)[0]);
     } else {
-      // Tricky: the input is not defined at NUM_INTEFACE_LEV-1. So we cast this scan sum
+      // Tricky: likely, the provider does not provide input at NUM_INTEFACE_LEV-1. So we cast this scan sum
       //         into an inclusive sum over NUM_PHYSICAL_LEV, with output cropped to NUM_LEV packs.
       // Note: we also need to init sum at NUM_PHYSICAL_LEV-1
       ExecViewUnmanaged<Scalar[NUM_LEV]> sum_cropped(sum.data());
