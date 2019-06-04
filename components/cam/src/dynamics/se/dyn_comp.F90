@@ -325,7 +325,7 @@ CONTAINS
     ! initialize dp3d from ps for FV physics grid
     ! Normally this is not set until prim_run_subcycle
     ! but we need it for d_p_coupling() called in stepon_run1()
-    if (fv_nphys>0) then
+    if (fv_nphys>0.and.par%dynproc) then
       do ie = nets,nete
         do k = 1,nlev
           elem(ie)%state%dp3d(:,:,k,TimeLevel%n0)=&

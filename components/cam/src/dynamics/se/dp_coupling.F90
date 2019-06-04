@@ -322,24 +322,8 @@ CONTAINS
       if (fv_nphys > 0) then
 
         ncol_d = np*np
-        ! Allocate temporary arrays
-        ! allocate(ps_tmp_ic (ncol_d))
-        ! allocate(uv_tmp_ic (ncol_d,2,pver))
-        ! allocate(T_tmp_ic  (ncol_d,pver))
-        ! allocate(q_tmp_ic  (ncol_d,pver,pcnst))
         do ie = 1,nelemd
           ncols = elem(ie)%idxP%NumUniquePts
-          ! call UniquePoints(elem(ie)%idxP,       elem(ie)%state%ps_v(:,:,tl_f), ps_tmp_ic(1:ncols))
-          ! call UniquePoints(elem(ie)%idxP,2,nlev,elem(ie)%state%V(:,:,:,:,tl_f),uv_tmp_ic(1:ncols,:,:))
-          ! call UniquePoints(elem(ie)%idxP,  nlev,elem(ie)%state%T(:,:,:,tl_f),   T_tmp_ic(1:ncols,:))
-          ! call UniquePoints(elem(ie)%idxP,nlev,pcnst,elem(ie)%state%Q(:,:,:,:),  q_tmp_ic(1:ncols,:,:))
-          ! call outfld('PS&IC',ps_tmp_ic,        ncols,ie)
-          ! call outfld('U&IC', uv_tmp_ic(:,1,:), ncols,ie)
-          ! call outfld('V&IC', uv_tmp_ic(:,2,:), ncols,ie)
-          ! call outfld('T&IC', T_tmp_ic,         ncols,ie)
-          ! do m = 1,pcnst
-          !   call outfld(trim(cnst_name(m))//'&IC',q_tmp_ic(1,1,m), ncols,ie)
-          ! end do ! m
           call outfld('PS&IC',elem(ie)%state%ps_v(:,:,tl_f),  ncol_d,ie)
           call outfld('U&IC', elem(ie)%state%V(:,:,1,:,tl_f), ncol_d,ie)
           call outfld('V&IC', elem(ie)%state%V(:,:,2,:,tl_f), ncol_d,ie)
@@ -348,10 +332,6 @@ CONTAINS
             call outfld(trim(cnst_name(m))//'&IC',elem(ie)%state%Q(:,:,:,m), ncol_d,ie)
           end do ! m
         end do ! ie
-        ! deallocate(ps_tmp_ic)
-        ! deallocate(uv_tmp_ic)
-        ! deallocate(T_tmp_ic )
-        ! deallocate(q_tmp_ic )
         
       else
 
