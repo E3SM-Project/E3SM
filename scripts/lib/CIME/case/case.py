@@ -1324,8 +1324,9 @@ directory, NOT in this subdirectory."""
             #   called if run_unsupported is False.
             tests = Testlist(tests_spec_file, files)
             testlist = tests.get_tests(compset=compset_alias, grid=grid_name, supported_only=True)
+            test_categories = ["prealpha", "prebeta", "test_release"]
             for test in testlist:
-                if test["category"] == "prealpha" or test["category"] == "prebeta" or "aux_" in test["category"]:
+                if test["category"] in test_categories or "aux_" in test["category"]:
                     testcnt += 1
         if testcnt > 0:
             logger.warning("\n*********************************************************************************************************************************")
