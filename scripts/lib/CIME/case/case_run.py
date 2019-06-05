@@ -191,7 +191,7 @@ def _post_run_check(case, lid):
         for cpl_logfile in cpl_logs:
             if not os.path.isfile(cpl_logfile):
                 break
-            with open(cpl_logfile, 'r') as fd:
+            with open(cpl_logfile, 'r', encoding='utf-8') as fd:
                 if 'SUCCESSFUL TERMINATION' in fd.read():
                     count_ok += 1
         if count_ok != cpl_ninst:
