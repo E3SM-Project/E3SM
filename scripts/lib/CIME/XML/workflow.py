@@ -31,31 +31,50 @@ class Workflow(GenericXML):
         if os.path.exists(infile):
             GenericXML.read(self, infile)
 
-    def get_workflow_jobs(self, machine):
+    def get_workflow_jobs(self, machine, workflow_case="default"):
         """
         Return a list of jobs with the first element the name of the case script
         and the second a dict of qualifiers for the job
         """
         jobs = []
-        bnode = self.get_child("workflow_jobs")
-        for jnode in self.get_children(root=bnode):
-            if self.name(jnode) == "job":
-                name = self.get(jnode, "name")
-                jdict = {}
-                for child in self.get_children(root=jnode):
-                    if self.name(child) == "runtime_parameters":
-                        attrib = self.attrib(child)
-                        if attrib and attrib == {'MACH' : machine}:
-                            for rtchild in self.get_children(root=child):
-                                jdict[self.name(rtchild)] = self.text(rtchild)
-                        elif not attrib:
-                            for rtchild in self.get_children(root=child):
-                                if self.name(rtchild) not in jdict:
+        bnodes = []
+        findmore = True
+        prepend = False
+        while findmore:
+            bnode = self.get_optional_child("workflow_jobs", attributes={"case":workflow_case})
+            expect(bnode,"No workflow_case {} found in file {}".format(workflow_case, self.filename))
+            if prepend:
+                bnodes = [bnode] + bnodes
+            else:
+                bnodes.append(bnode)
+            prepend = False
+            workflow_attribs = self.attrib(bnode)
+            if "prepend" in workflow_attribs:
+                workflow_case = workflow_attribs["prepend"]
+                prepend = True
+            elif "append" in workflow_attribs:
+                workflow_case = workflow_attribs["append"]
+            else:
+                findmore = False
+        for bnode in bnodes:
+            for jnode in self.get_children(root=bnode):
+                if self.name(jnode) == "job":
+                    name = self.get(jnode, "name")
+                    jdict = {}
+                    for child in self.get_children(root=jnode):
+                        if self.name(child) == "runtime_parameters":
+                            attrib = self.attrib(child)
+                            if attrib and attrib == {'MACH' : machine}:
+                                for rtchild in self.get_children(root=child):
                                     jdict[self.name(rtchild)] = self.text(rtchild)
+                            elif not attrib:
+                                for rtchild in self.get_children(root=child):
+                                    if self.name(rtchild) not in jdict:
+                                        jdict[self.name(rtchild)] = self.text(rtchild)
 
-                    else:
-                        jdict[self.name(child)] = self.text(child)
+                        else:
+                            jdict[self.name(child)] = self.text(child)
 
-            jobs.append((name, jdict))
+                jobs.append((name, jdict))
 
         return jobs

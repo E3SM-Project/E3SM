@@ -27,7 +27,7 @@
 	  The runtime_parameters block may have an optional MACH attribute.
 
   -->
-  <workflow_jobs>
+  <workflow_jobs case="default">
     <!-- order matters, with no-batch jobs will be run in the order listed here -->
     <job name="case.run">
       <template>template.case.run</template>
@@ -48,6 +48,9 @@
 	<walltime>0:20:00</walltime>
       </runtime_parameters>
     </job>
+  </workflow_jobs>
+
+  <workflow_jobs case="diagnostics" prepend="default">
     <job name="timeseries">
       <template>$CASEROOT/postprocess/timeseries</template>
       <dependency>case.st_archive</dependency>

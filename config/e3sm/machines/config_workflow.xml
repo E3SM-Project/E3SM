@@ -27,7 +27,7 @@
 	  The runtime_parameters block may have an optional MACH attribute.
 
   -->
-  <workflow_jobs>
+  <workflow_jobs case="default">
     <!-- order matters, with no-batch jobs will be run in the order listed here -->
     <job name="case.run">
       <template>template.case.run</template>

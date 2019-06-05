@@ -6,6 +6,10 @@
   <!-- attributes -->
   <xs:attribute name="version" type="xs:decimal"/>
   <xs:attribute name="MACH" type="xs:NCName"/>
+  <xs:attribute name="case" type="xs:NCName"/>
+  <xs:attribute name="prepend" type="xs:NCName"/>
+  <xs:attribute name="append" type="xs:NCName"/>
+  <xs:attribute name="name" type="xs:NCName"/>
 
   <!-- simple elements -->
   <xs:element name="template" type="xs:anyURI"/>
@@ -20,7 +24,7 @@
   <xs:element name="config_workflow">
     <xs:complexType>
       <xs:sequence>
-        <xs:element ref="workflow_jobs" minOccurs="0" maxOccurs="1"/>
+        <xs:element ref="workflow_jobs" minOccurs="1" maxOccurs="unbounded"/>
       </xs:sequence>
       <xs:attribute ref="version" use="required"/>
     </xs:complexType>
@@ -31,6 +35,9 @@
       <xs:sequence>
         <xs:element maxOccurs="unbounded" ref="job"/>
       </xs:sequence>
+      <xs:attribute ref="case" use="required"/>
+      <xs:attribute ref="prepend"/>
+      <xs:attribute ref="append"/>
     </xs:complexType>
   </xs:element>
 
@@ -54,7 +61,7 @@
         <xs:element ref="prereq"/>
 	<xs:element ref="runtime_parameters" minOccurs="0" maxOccurs="unbounded"/>
       </xs:sequence>
-      <xs:attribute name="name" use="required" type="xs:NCName"/>
+      <xs:attribute ref="name" use="required"/>
     </xs:complexType>
   </xs:element>
 
