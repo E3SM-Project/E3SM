@@ -941,6 +941,7 @@ end subroutine clubb_init_cnst
    use stats_clubb_utilities,     only: stats_begin_timestep
    use advance_xp2_xpyp_module,   only: update_xp2_mc
    use macrop_driver,             only: ice_macro_tend
+   use co2_cycle,                 only: co2_transport, co2_cycle_set_cnst_type
     
 #endif
 
@@ -1161,6 +1162,7 @@ end subroutine clubb_init_cnst
    type(pdf_parameter), dimension(pverp) :: pdf_params                  ! PDF parameters                    [units vary]
    character(len=200)                    :: temp1, sub                  ! Strings needed for CLUBB output
    logical                               :: l_Lscale_plume_centered, l_use_ice_latent
+   character(len=3), dimension(pcnst)    :: cnst_type_loc               ! local override option for constituents cnst_type
 
 
    ! --------------- !
@@ -1258,7 +1260,14 @@ end subroutine clubb_init_cnst
    call physics_state_copy(state,state1)
 
    ! constituents are all treated as wet mmr by clubb
-   call set_dry_to_wet(state1)
+   do ixind = 1,pcnst
+      cnst_type_loc(ixind) = cnst_type(ixind)
+   end do
+   ! set co2 tracers back to 'wet' in cnst_type_loc
+   if (co2_transport()) then
+      call co2_cycle_set_cnst_type(cnst_type_loc, 'wet')
+   end if
+   call set_dry_to_wet(state1, cnst_type_loc)
 
    if (micro_do_icesupersat) then
      naai_idx      = pbuf_get_index('NAAI')

@@ -37,6 +37,7 @@ public co2_init_cnst                 ! initialize mixing ratios if not read from
 public co2_init                      ! initialize (history) variables
 public co2_time_interp_ocn           ! time interpolate co2 flux
 public co2_time_interp_fuel          ! time interpolate co2 flux
+public co2_cycle_set_cnst_type       ! set co2 tracers mixing type for local versions of cnst_type
 
 ! Public data
  
@@ -316,6 +317,33 @@ subroutine co2_init_cnst(name, q, gcid)
    end select
 
 end subroutine co2_init_cnst
+
+!===========================================================================================
+
+subroutine co2_cycle_set_cnst_type(cnst_type_loc, name)
+
+!----------------------------------------------------------------------- 
+! 
+! Purpose: 
+! Set a local copy of cnst_type to be 'wet' or 'dry'       
+!
+!-----------------------------------------------------------------------
+   use constituents, only: pcnst
+
+! Arguments
+   character(len=3), intent(inout) :: cnst_type_loc(pcnst) ! a local copy of cnst_type
+   character(len=3), intent(in)    :: name                 ! set mmr type: 'wet' or 'dry'
+   integer                         :: i                    ! loop index
+!-----------------------------------------------------------------------
+
+   if (.not. co2_flag) return
+
+   ! set cnst_type_loc for each CO2 tracer
+   do i = 1, ncnst
+      cnst_type_loc(c_i(i)) = name
+   end do
+
+end subroutine co2_cycle_set_cnst_type
 !===============================================================================
  
 end module co2_cycle
