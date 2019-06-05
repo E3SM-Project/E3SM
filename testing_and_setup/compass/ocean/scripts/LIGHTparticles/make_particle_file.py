@@ -11,7 +11,7 @@ Example usage is
 Phillip J. Wolfram
 Last Modified: 08/03/2018
 """
-
+import pdb
 import netCDF4
 import numpy as np
 from scipy import spatial
@@ -349,19 +349,15 @@ class ParticleList(): #{{{
 #}}}
 
 
-def get_particle_coords(f_init, loc=None): #{{{
-    #
-    if loc is None:
-        loc = 'center'
-
+def get_particle_coords(f_init, seed_center=True, seed_vertex=False, add_noise=False): #{{{
     xCell = f_init.variables['xCell'][:]
     yCell = f_init.variables['yCell'][:]
     zCell = f_init.variables['zCell'][:]
 
-    if loc == 'center':
-        cells = (xCell, yCell, zCell)
-        cpts = np.arange(len(xCell))
-    elif loc == 'offvertex':
+    if seed_center:
+        cells_center = (xCell, yCell, zCell)
+        cpts_center = np.arange(len(xCell))
+    if seed_vertex:
         xVertex = f_init.variables['xVertex'][:]
         yVertex = f_init.variables['yVertex'][:]
         zVertex = f_init.variables['zVertex'][:]
@@ -396,9 +392,21 @@ def get_particle_coords(f_init, loc=None): #{{{
             ally.append(y)
             allz.append(z)
             allcpts.append(cellsOnVertex[ids,vi]-1)
-        cells = (np.concatenate(allx), np.concatenate(ally), np.concatenate(allz))
-        cpts = np.concatenate(allcpts)
+        cells_vertex = (np.concatenate(allx), np.concatenate(ally), np.concatenate(allz))
+        cpts_vertex = np.concatenate(allcpts)
 
+    # Allows for both cell-center and cell-vertex seeding.
+    if seed_center and not seed_vertex:
+        cells = cells_center
+        cpts = cpts_center
+    elif not seed_center and seed_vertex:
+        cells = cells_vertex
+        cpts = cpts_vertex
+    else:
+        cpts = np.concatenate((cpts_vertex, cpts_center))
+        cells = (np.concatenate((cells_vertex[0], cells_center[0])),
+                 np.concatenate((cells_vertex[1], cells_center[1])),
+                 np.concatenate((cells_vertex[2], cells_center[2])))
     return cells, cpts
     #}}}
 
@@ -407,11 +415,11 @@ def expand_nlevels(x, n): #{{{
     return np.tile(x, (n)) #}}}
 
 
-def particle_coords(f_init, downsample, loc): #{{{
+def particle_coords(f_init, downsample, seed_center, seed_vertex, add_noise): #{{{
 
     f_init = netCDF4.Dataset(f_init,'r')
     nparticles = len(f_init.dimensions['nCells'])
-    cells, cpts = get_particle_coords(f_init, loc=loc)
+    cells, cpts = get_particle_coords(f_init, seed_center, seed_vertex, add_noise)
     xCell, yCell, zCell = cells
     if downsample:
         tri = f_init.variables['cellsOnVertex'][:,:] - 1
@@ -484,9 +492,9 @@ def build_surface_floats(cpts, xCell, yCell, zCell, afilter): #{{{
     return Particles(x, y, z, cellindices, 'indexLevel', indexlevel=1, zlevel=0, spatialfilter=afilter) #}}}
 
 
-def build_particle_file(f_init, f_name, f_decomp, types, spatialfilter, buoySurf, nVertLevels, downsample, vertseedtype, loc): #{{{
+def build_particle_file(f_init, f_name, f_decomp, types, spatialfilter, buoySurf, nVertLevels, downsample, vertseedtype, seed_center, seed_vertex, add_noise): #{{{
 
-    cpts, xCell, yCell, zCell = particle_coords(f_init, downsample, loc)
+    cpts, xCell, yCell, zCell = particle_coords(f_init, downsample, seed_center, seed_vertex, add_noise)
 
     # build particles
     particlelist = []
@@ -561,9 +569,13 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--downsample", dest="downsample",
             metavar="INT", default=0,
             help="Downsample particle positions using AMG a number of times.")
-    parser.add_argument("-l", "--location", dest="loc",
-            metavar="STRING", default='center',
-            help="Place to place particles, default='center', choices = ('center', 'offvertex')")
+    parser.add_argument("-c", "--center", dest="seed_center",
+            action="store_true",
+            help="Seed particles on cell centers. (default true)")
+    parser.add_argument("-v", "--vertex", dest="seed_vertex", action="store_true",
+            help="Seed particles on cell vertices.")
+    parser.add_argument("-n", "--add_noise", dest="add_noise", action="store_true",
+            help="Add gaussian noise to generate three particles around the cell center.")
 
     args = parser.parse_args()
 
@@ -578,6 +590,10 @@ if __name__ == "__main__":
         raise OSError('Graph file {} not found.'.format(args.graph))
 
     assert set(args.types.split(',')).issubset(typelist), 'Selected particle type is not correct!'
+
+    # Defaults to center seeding for particles.
+    if not args.seed_center and not args.seed_vertex:
+        args.seed_center = True
 
     if not args.remap:
         print('Building particle file...')
