@@ -1835,9 +1835,9 @@ int get_nearest_point (const nearest_point::Mesh& m, const MeshNearestPointData&
 }
 
 Int unittest (const nearest_point::Mesh& m, const Int tgt_elem) {
-  Int nerr = 0, ne;
+  Int nerr = 0, ne = 0;
   const Int nc = len(m.e);
-  for (Int ic = 0, ne = 0; ic < nc; ++ic) {
+  for (Int ic = 0; ic < nc; ++ic) {
     const auto cell = slice(m.e, ic);
     static const Real alphas[] = { 0.01, 0.99, 0, 1 };
     static const int nalphas = sizeof(alphas)/sizeof(*alphas);
@@ -2022,6 +2022,8 @@ struct Advecter {
       local_mesh_nearest_point_data_.resize(nelem);
   }
 
+  void fill_nearest_points_if_needed();
+
   Int np  () const { return np_ ; }
   Int np2 () const { return np2_; }
   Int np4 () const { return np4_; }
@@ -2127,9 +2129,13 @@ void Advecter::init_local_mesh_if_needed (const Int ie, const Array3D& corners,
   m.tgt_elem = slmm::get_src_cell(m, p_inside);
   slmm_assert(m.tgt_elem >= 0 &&
               m.tgt_elem < ncell);
+}
+
+void Advecter::fill_nearest_points_if_needed () {
   if (nearest_point_permitted_lev_bdy_ >= 0)
-    init_nearest_point_data(local_mesh_[ie],
-                            local_mesh_nearest_point_data_[ie]);
+    for (Int ie = 0; ie < static_cast<Int>(local_mesh_.size()); ++ie)
+      init_nearest_point_data(local_mesh_[ie],
+                              local_mesh_nearest_point_data_[ie]);
 }
 
 void Advecter::check_ref2sphere (const Int ie, const Real* p_homme) {
@@ -3297,6 +3303,7 @@ CslMpi::Ptr init (const slmm::Advecter::ConstPtr& advecter,
 // already has a ref to the const'ed one.
 void finalize_local_meshes (CslMpi& cm, slmm::Advecter& advecter) {
   if (cm.halo == 2) extend_halo::extend_local_meshes(*cm.p, cm.ed, advecter);
+  advecter.fill_nearest_points_if_needed();
 }
 
 // Set pointers to HOMME data arrays.
