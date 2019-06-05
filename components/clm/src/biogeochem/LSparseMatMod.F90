@@ -307,7 +307,6 @@ contains
     real(r8) :: yt
     integer  :: j
     real(r8),parameter :: p_par=0.999_r8
-    real(r8), parameter :: tiny_val=-1.e-14_r8
     real(r8) :: tmp
 
     lneg =.false.
