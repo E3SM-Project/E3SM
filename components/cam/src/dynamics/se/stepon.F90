@@ -576,7 +576,7 @@ end subroutine stepon_run3
 !
 ! !INTERFACE:
 subroutine stepon_final(dyn_in, dyn_out)
-   use dyn_grid,         only: fv_physgrid_final
+   use dyn_grid,         only: fv_physgrid_final, fv_nphys
 ! !PARAMETERS:
   ! WARNING: intent(out) here means that pointers in dyn_in and dyn_out
   ! are nullified. Unless this memory is released in some other routine,

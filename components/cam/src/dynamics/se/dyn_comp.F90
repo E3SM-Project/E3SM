@@ -85,7 +85,7 @@ CONTAINS
     use pmgrid,              only: dyndecomp_set
     use dyn_grid,            only: dyn_grid_init, elem, get_dyn_grid_parm,&
                                    set_horiz_grid_cnt_d, define_cam_grids,&
-                                   fv_physgrid_init
+                                   fv_physgrid_init, fv_nphys
     use rgrid,               only: fullgrid
     use spmd_utils,          only: mpi_integer, mpicom, mpi_logical
     use spmd_dyn,            only: spmd_readnl
