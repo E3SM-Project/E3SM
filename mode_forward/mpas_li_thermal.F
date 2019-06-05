@@ -1086,7 +1086,8 @@ module li_thermal
                         (basalTemperature(iCell)-temperature(nVertLevels,iCell))/(1.0_RKIND - layerCenterSigma(nVertLevels))
                     ! TZ: The basal conductive flux should be calculated using temperature, not
                     ! enthalpy. If we use enthalpy, basalConductiveFlux will always equals to basal heat flux, causing problem
-                    ! At ice surface, it is unlikely there will be temperate ice. So enthalpy can just be used
+                    ! At ice surface, it is unlikely there will be temperate ice. In addition, we can't know exactly the water fraction
+                    ! if the ice is temperate at surface. So in this case we will just use enthalpy and don't consider the latent heat of water
 
 
                      if (verboseColumn) then
@@ -2673,9 +2674,15 @@ module li_thermal
            harmonic_avg  = .false.  ! if true, take the harmonic average of diffusivity in adjacent layers
                                     ! if false, take the arithmetic average
 
-      tempDiffusivityFactor = 1.0e-5_RKIND
-      ! TZ: this value is somehow empirical, and is picked according to Kleiner's benchemark B. 
-      ! In Greve and Blatter (2016) 'Comparison of thermodynamics solvers in the polythermal ice sheet model SICOPOLIS', it was 1.0e-3
+      character(len=RKIND), pointer :: &
+           config_temp_diffusive_factor ! option for basal mass balance of floating ice
+
+      call mpas_pool_get_config(liConfigs, 'config_temp_diffusive_factor', config_temp_diffusive_factor)
+
+      tempDiffusivityFactor = config_temp_diffusive_factor
+      ! TZ: this value is somehow empirical, and the default value (1.0e-5) is picked according to Kleiner's benchemark B. 
+      ! In Greve and Blatter (2016) 'Comparison of thermodynamics solvers in the polythermal ice sheet model SICOPOLIS', it was 1.0e-3 [] (p14, section 4)
+      ! i.e., kt = 1.0e-3 * kc
 
       diffusivityCold = iceConductivity / (rhoi*cp_ice)
       diffusivityTemperate = diffusivityCold * tempDiffusivityFactor
