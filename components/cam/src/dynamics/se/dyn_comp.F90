@@ -84,7 +84,8 @@ CONTAINS
 
     use pmgrid,              only: dyndecomp_set
     use dyn_grid,            only: dyn_grid_init, elem, get_dyn_grid_parm,&
-                                   set_horiz_grid_cnt_d, define_cam_grids
+                                   set_horiz_grid_cnt_d, define_cam_grids,&
+                                   fv_physgrid_init
     use rgrid,               only: fullgrid
     use spmd_utils,          only: mpi_integer, mpicom, mpi_logical
     use spmd_dyn,            only: spmd_readnl
@@ -120,6 +121,9 @@ CONTAINS
        call pbuf_add_field("FRONTGA", "global", dtype_r8, (/pcols,pver/), &
             frontga_idx)
     end if
+
+    ! Initialize dynamics grid variables
+    call dyn_grid_init()
 
     ! Read in the number of tasks to be assigned to SE (needed by initmp)
     call spmd_readnl(NLFileName, npes_se, npes_se_stride)
@@ -202,8 +206,10 @@ CONTAINS
        TimeLevel%nstep = get_nstep()*se_nsplit*qsplit*rsplit
     endif
 
-    ! Initialize dynamics grid variables
-    call dyn_grid_init()
+    ! Initialize FV physics grid variables
+    if (fv_nphys > 0) then
+      call fv_physgrid_init()
+    end if
 
     ! Define the CAM grids (this has to be after dycore spinup).
     ! Physics-grid will be defined later by phys_grid_init

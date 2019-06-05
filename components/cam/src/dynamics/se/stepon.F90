@@ -576,7 +576,7 @@ end subroutine stepon_run3
 !
 ! !INTERFACE:
 subroutine stepon_final(dyn_in, dyn_out)
-   use dyn_grid,         only: dyn_grid_final
+   use dyn_grid,         only: fv_physgrid_final
 ! !PARAMETERS:
   ! WARNING: intent(out) here means that pointers in dyn_in and dyn_out
   ! are nullified. Unless this memory is released in some other routine,
@@ -594,8 +594,10 @@ subroutine stepon_final(dyn_in, dyn_out)
 !-----------------------------------------------------------------------
 !BOC
 
-   ! Deallocate variables used for the grid
-   call dyn_grid_final()
+   ! Deallocate variables needed for the FV physics grid
+   if (fv_nphys > 0) then
+      call fv_physgrid_final()
+   end if ! fv_nphys > 0
 
 !EOC
 end subroutine stepon_final
