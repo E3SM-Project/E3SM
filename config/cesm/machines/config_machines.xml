@@ -176,7 +176,7 @@ This allows using a different mpirun command to launch unit tests
 	<arg name="ntasks"> -np {{ total_tasks }} </arg>
       </arguments>
     </mpirun>
-    <module_system type="module">
+    <module_system type="module" allow_error="true">
       <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
       <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
       <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
@@ -189,10 +189,9 @@ This allows using a different mpirun command to launch unit tests
 	<command name="purge"/>
       </modules>
       <modules compiler="gnu">
-	<command name="load">compiler/gnu/7.2.0</command>
-	<command name="load">mpi/gcc/mpich-3.2</command>
-	<command name="load">tool/netcdf/4.4.1.1/gcc</command>
-	<command name="load">tool/parallel-netcdf/mpich</command>
+	<command name="load">compiler/gnu/8.2.0</command>
+	<command name="load">mpi/3.3/gcc-8.2.0</command>
+	<command name="load">tool/netcdf/4.6.1/gcc-8.1.0</command>
       </modules>
     </module_system>
     <environment_variables>
