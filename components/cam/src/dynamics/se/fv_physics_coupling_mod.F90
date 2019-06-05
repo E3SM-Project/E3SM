@@ -204,7 +204,7 @@ contains
   end subroutine fv_phys_to_dyn_topo
   !=================================================================================================
   !=================================================================================================
-  subroutine dyn_to_fv_phys(elem,ps_tmp,zs_tmp,T_tmp,uv_tmp,w_tmp,Q_tmp)
+  subroutine dyn_to_fv_phys(elem,ps_tmp,zs_tmp,T_tmp,uv_tmp,om_tmp,Q_tmp)
     ! Purpose: average dynamics state over subcells and assign to physics state
     use derivative_mod,     only: subcell_integration
     use dyn_comp,           only: TimeLevel
@@ -216,7 +216,7 @@ contains
     real(kind=real_kind), intent(inout) :: zs_tmp(:,:)      ! temp array to hold phis  
     real(kind=real_kind), intent(inout) :: T_tmp (:,:,:)    ! temp array to hold T
     real(kind=real_kind), intent(inout) :: uv_tmp(:,:,:,:)  ! temp array to hold u and v
-    real(kind=real_kind), intent(inout) :: w_tmp (:,:,:)    ! temp array to hold omega
+    real(kind=real_kind), intent(inout) :: om_tmp(:,:,:)    ! temp array to hold omega
     real(kind=real_kind), intent(inout) :: Q_tmp (:,:,:,:)  ! temp to hold advected constituents
     ! local variables
     integer(kind=int_kind) :: ie, m, icol, ilyr             ! loop iterators
@@ -257,7 +257,7 @@ contains
                                     np, fv_nphys, elem(ie)%metdet(:,:) )      &
                                     *inv_dp_fvm, (/ncol/) )
 
-        w_tmp(:ncol,ilyr,ie)      = RESHAPE( subcell_integration(             &
+        om_tmp(:ncol,ilyr,ie)      = RESHAPE( subcell_integration(             &
                                     elem(ie)%derived%omega_p(:,:,ilyr),       &
                                     np, fv_nphys, elem(ie)%metdet(:,:) )      &
                                     *inv_area , (/ncol/) )

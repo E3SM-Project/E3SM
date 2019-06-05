@@ -56,7 +56,7 @@ CONTAINS
     real(kind=real_kind), dimension(npsq,pver,nelemd)       :: T_tmp  ! temp array to hold T
     real(kind=real_kind), dimension(npsq,2,pver,nelemd)     :: uv_tmp ! temp array to hold u and v
     real(kind=real_kind), dimension(npsq,pver,pcnst,nelemd) :: q_tmp  ! temp to hold advected constituents
-    real(kind=real_kind), dimension(npsq,pver,nelemd)       :: w_tmp  ! temp array to hold omega
+    real(kind=real_kind), dimension(npsq,pver,nelemd)       :: om_tmp ! temp array to hold omega
     type(element_t),          pointer :: elem(:)          ! pointer to dyn_out element array
     type(physics_buffer_desc),pointer :: pbuf_chnk(:)     ! temporary pbuf pointer
     integer(kind=int_kind)   :: ie                        ! indices over elements
@@ -70,7 +70,7 @@ CONTAINS
     integer                  :: idmb2(1)                  ! column index within block
     integer                  :: idmb3(1)                  ! local block id
     integer                  :: tsize                     ! # vars per grid point passed to physics
-    integer,     allocatable :: bpter(:,:)                ! offsets into block buffer for packing 
+    integer                  :: bpter(npsq,0:pver)        ! offsets into block buffer for packing 
     integer                  :: cpter(pcols,0:pver)       ! offsets into chunk buffer for unpacking 
     integer                  :: nphys, nphys_sq           ! physics grid parameters
     real (kind=real_kind)    :: temperature(np,np,nlev)   ! Temperature from dynamics
@@ -114,7 +114,7 @@ CONTAINS
         ! Map dynamics state to FV physics grid
         !-----------------------------------------------------------------------
         call t_startf('dyn_to_fv_phys')
-        call dyn_to_fv_phys(elem,ps_tmp,zs_tmp,T_tmp,uv_tmp,w_tmp,q_tmp)
+        call dyn_to_fv_phys(elem,ps_tmp,zs_tmp,T_tmp,uv_tmp,om_tmp,q_tmp)
         call t_stopf('dyn_to_fv_phys')
 
         !-----------------------------------------------------------------------
@@ -130,7 +130,7 @@ CONTAINS
           call UniquePoints(elem(ie)%idxP,       elem(ie)%state%ps_v(:,:,tl_f), ps_tmp(1:ncols,ie))
           call UniquePoints(elem(ie)%idxP,       elem(ie)%state%phis,           zs_tmp(1:ncols,ie))
           call UniquePoints(elem(ie)%idxP,  nlev, temperature,                  T_tmp(1:ncols,:,ie))
-          call UniquePoints(elem(ie)%idxP,  nlev,elem(ie)%derived%omega_p,      w_tmp(1:ncols,:,ie))
+          call UniquePoints(elem(ie)%idxP,  nlev,elem(ie)%derived%omega_p,      om_tmp(1:ncols,:,ie))
           call UniquePoints(elem(ie)%idxP,2,nlev,elem(ie)%state%V(:,:,:,:,tl_f),uv_tmp(1:ncols,:,:,ie))
           call UniquePoints(elem(ie)%idxP,nlev,pcnst,elem(ie)%state%Q(:,:,:,:), q_tmp(1:ncols,:,:,ie))
         end do
@@ -144,7 +144,7 @@ CONTAINS
       ps_tmp(:,:)      = 0._r8
       T_tmp(:,:,:)     = 0._r8
       uv_tmp(:,:,:,:)  = 0._r8
-      w_tmp(:,:,:)     = 0._r8
+      om_tmp(:,:,:)    = 0._r8
       zs_tmp(:,:)      = 0._r8
       q_tmp(:,:,:,:)   = 0._r8
       if (use_gw_front) then
@@ -179,7 +179,7 @@ CONTAINS
             phys_state(lchnk)%t(icol,ilyr)     = T_tmp(ioff,ilyr,ie)	   
             phys_state(lchnk)%u(icol,ilyr)     = uv_tmp(ioff,1,ilyr,ie)
             phys_state(lchnk)%v(icol,ilyr)     = uv_tmp(ioff,2,ilyr,ie)
-            phys_state(lchnk)%omega(icol,ilyr) = w_tmp(ioff,ilyr,ie)
+            phys_state(lchnk)%omega(icol,ilyr) = om_tmp(ioff,ilyr,ie)
             if (use_gw_front) then
               pbuf_frontgf(icol,ilyr) = frontgf(ioff,ilyr,ie)
               pbuf_frontga(icol,ilyr) = frontga(ioff,ilyr,ie)
@@ -201,13 +201,12 @@ CONTAINS
 
       allocate(bbuffer(tsize*block_buf_nrecs))
       allocate(cbuffer(tsize*chunk_buf_nrecs))
-      allocate(bpter(nphys_sq,0:pver))
 
       if (par%dynproc) then
 
         !$omp parallel do private (ie, bpter, icol, ilyr, m)
         do ie = 1,nelemd
-          call block_to_chunk_send_pters(elem(ie)%GlobalID,nphys_sq,pver+1,tsize,bpter)
+          call block_to_chunk_send_pters(elem(ie)%GlobalID,nphys_sq,pver+1,tsize,bpter(1:nphys_sq,:))
           if (fv_nphys > 0) then
             ncols = nphys_sq
           else
@@ -221,7 +220,7 @@ CONTAINS
               bbuffer(bpter(icol,ilyr))   = T_tmp(icol,ilyr,ie)
               bbuffer(bpter(icol,ilyr)+1) = uv_tmp(icol,1,ilyr,ie)
               bbuffer(bpter(icol,ilyr)+2) = uv_tmp(icol,2,ilyr,ie)
-              bbuffer(bpter(icol,ilyr)+3) = w_tmp(icol,ilyr,ie)
+              bbuffer(bpter(icol,ilyr)+3) = om_tmp(icol,ilyr,ie)
               if (use_gw_front) then
                 bbuffer(bpter(icol,ilyr)+4) = frontgf(icol,ilyr,ie)
                 bbuffer(bpter(icol,ilyr)+5) = frontga(icol,ilyr,ie)
@@ -272,7 +271,6 @@ CONTAINS
 
       deallocate( bbuffer )
       deallocate( cbuffer )
-      deallocate( bpter )
 
     end if ! local_dp_map
     call t_stopf('dpcopy')
@@ -360,7 +358,7 @@ CONTAINS
     integer                  :: nphys, nphys_sq
     integer                  :: tsize                 ! # vars per grid point passed to physics
     integer                  :: cpter(pcols,0:pver)   ! offsets into chunk buffer for packing 
-    integer,     allocatable :: bpter(:,:)            ! offsets into block buffer for unpacking 
+    integer                  :: bpter(npsq,0:pver)    ! offsets into block buffer for unpacking 
     ! Transpose buffers
     real (kind=real_kind), allocatable, dimension(:) :: bbuffer, cbuffer 
     !---------------------------------------------------------------------------
@@ -437,7 +435,6 @@ CONTAINS
       call t_stopf  ('chunk_to_block')
 
       if (par%dynproc) then
-        allocate(bpter(nphys_sq,0:pver))
         !$omp parallel do private (ie, bpter, icol, ilyr, m)
         do ie = 1,nelemd
           if (fv_nphys > 0) then
@@ -445,7 +442,7 @@ CONTAINS
           else
             ncols = elem(ie)%idxP%NumUniquePts
           end if
-          call chunk_to_block_recv_pters(elem(ie)%GlobalID,nphys_sq,pver+1,tsize,bpter)
+          call chunk_to_block_recv_pters(elem(ie)%GlobalID,nphys_sq,pver+1,tsize,bpter(1:nphys_sq,:))
           do icol = 1,ncols
             do ilyr = 1,pver
               T_tmp  (icol,ilyr,ie)   = bbuffer(bpter(icol,ilyr))
@@ -457,7 +454,6 @@ CONTAINS
             end do ! ilyr
           end do ! icol
         end do ! ie
-        deallocate(bpter)
       end if ! par%dynproc
 
       deallocate( bbuffer )
