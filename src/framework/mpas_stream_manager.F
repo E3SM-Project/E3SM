@@ -3833,6 +3833,8 @@ module mpas_stream_manager
                   call mpas_createStream(testStream, manager % ioContext, test_filename, stream % io_type, MPAS_IO_READ, precision=stream % precision, ierr=local_ierr)
               else
                   STREAM_DEBUG_WRITE(' Filename: ' // trim(test_filename) // ' does not exist.')
+                  ierr = MPAS_STREAM_MGR_ERROR
+                  return
               end if
            end if
 
