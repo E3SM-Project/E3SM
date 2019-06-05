@@ -1,6 +1,36 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 6-5-2019
+Tag: cime5.6.18
+Answer Changes: Round Off for centos7-linux and cori
+Tests: scripts_regression_tests on cori and cheyenne
+Dependencies:
+
+Brief Summary:
+   - Update modules for centos7-linux, fix py3 error in case_run.py.
+   - Update modules on cori-haswell and cori-knl.
+   - Add test_release as a test category consulted to determine if a compset -- grid combination is supported.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+6704570 Merge pull request #3133 from jedwards4b/centos7-update
+d40e715 Merge pull request #3132 from jedwards4b/cori_update
+d86457d Merge pull request #3128 from gold2718/add_test_release
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/config_machines.xml
+M       scripts/lib/CIME/case/case.py
+M       scripts/lib/CIME/case/case_run.py
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 5-29-2019
 Tag: cime5.6.17
 Answer Changes: None
