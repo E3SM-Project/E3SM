@@ -184,7 +184,9 @@ contains
   end subroutine fpmax
 !------------------------------------------------------------
   function ic_next(id)result(ans)
-
+  !
+  ! DESCRIPTION
+  ! add one to id
   implicit none
   integer, intent(inout) :: id
   integer :: ans
@@ -194,9 +196,13 @@ contains
   !-------------------------------------------------------------------------------
   subroutine init_phenofluxl_counters()
 
+  !
+  ! DESCRIPTION
+  ! initialize the array member location counters
   implicit none
   integer :: id
 
+  !carbon state variables
   id = 0
   s_cpool              = ic_next(id)
   s_leafc              = ic_next(id)
@@ -223,6 +229,8 @@ contains
   s_gresp_xfer         = ic_next(id)
   s_gresp_storage      = ic_next(id)
   num_carbon_states = id
+
+  !carbon flux variables
   id=0
   f_cpool_to_leafc               = ic_next(id)
   f_cpool_to_leafc_storage       = ic_next(id)
@@ -264,6 +272,7 @@ contains
   f_gresp_storage_to_xfer        = ic_next(id)
   num_carbon_fluxes = id
 
+  !nutrient state variables
   id=0
   s_npool               = ic_next(id)
   s_leafn               = ic_next(id)
@@ -290,6 +299,7 @@ contains
   s_retransn            = ic_next(id)
   num_nutrient_states = id
 
+  !nutrient flux variables
   id = 0
   f_npool_to_leafn                = ic_next(id)
   f_npool_to_leafn_storage        = ic_next(id)
@@ -335,6 +345,9 @@ contains
   !-------------------------------------------------------------------------------
   subroutine InitPhenoFluxLimiter()
 
+  !
+  ! DESCRIPTION
+  ! initialize the phenology flux limiter
   use LSparseMatMod, only : spm_list_type,  spm_list_to_mat
   use LSparseMatMod, only : spm_list_init, spm_list_insert
   implicit none
@@ -343,6 +356,7 @@ contains
 
   call init_phenofluxl_counters
 
+  !initialize stoichiometric relationship between carbon consumption flux and state varaibles
   call spm_list_init(spm_list, -1._r8, f_cpool_to_leafc                , s_cpool, nelms)
   call spm_list_insert(spm_list, -1._r8, f_cpool_to_leafc_storage      , s_cpool, nelms)
   call spm_list_insert(spm_list, -1._r8, f_cpool_to_frootc              , s_cpool, nelms)
@@ -381,11 +395,11 @@ contains
   call spm_list_insert(spm_list, -1._r8, f_grainc_xfer_to_grainc        , s_grainc_xfer, nelms)
   call spm_list_insert(spm_list, -1._r8, f_grainc_storage_to_xfer       , s_grainc_storage, nelms)
   call spm_list_insert(spm_list, -1._r8, f_gresp_storage_to_xfer        , s_gresp_storage,nelms)
-
+  !turn the list into sparse matrix form
   call spm_list_to_mat(spm_list, spm_carbon_d, nelms, f_gresp_storage_to_xfer)
-
-  call spm_list_init(spm_list, 0._r8, f_cpool_to_leafc               , s_cpool, nelms)
-  call spm_list_insert(spm_list, 1._r8, f_cpool_to_leafc             , s_leafc, nelms)
+  
+  !initialize stoichiometric relationship between carbon production flux and corresponding state varaibles
+  call spm_list_init(spm_list, 1._r8, f_cpool_to_leafc             , s_leafc, nelms)
   call spm_list_insert(spm_list, 1._r8, f_leafc_xfer_to_leafc        , s_leafc, nelms)
   call spm_list_insert(spm_list, 1._r8, f_leafc_storage_to_xfer      , s_leafc_xfer, nelms)
   call spm_list_insert(spm_list, 1._r8, f_cpool_to_leafc_storage     , s_leafc_storage, nelms)
@@ -418,8 +432,10 @@ contains
   call spm_list_insert(spm_list, 1._r8, f_gresp_storage_to_xfer      , s_gresp_xfer,nelms)
   call spm_list_insert(spm_list, 1._r8, f_cpool_to_gresp_storage     , s_gresp_storage, nelms)
 
+   
+  !turn the list into sparse matrix form
   call spm_list_to_mat(spm_list, spm_carbon_p, nelms, f_gresp_storage_to_xfer)
-
+  !initialize stoichiometry relationship between nutrient consumption and corresponding state variables
   call spm_list_init(spm_list, -1._r8, f_npool_to_leafn                 , s_npool, nelms)
   call spm_list_insert(spm_list, -1._r8, f_npool_to_leafn_storage       , s_npool, nelms)
   call spm_list_insert(spm_list, -1._r8, f_npool_to_frootn              , s_npool, nelms)
@@ -458,9 +474,9 @@ contains
   call spm_list_insert(spm_list, -1._r8, f_grainn_to_food               , s_grainn, nelms)
   call spm_list_insert(spm_list, -1._r8, f_grainn_xfer_to_grainn        , s_grainn_xfer,nelms)
   call spm_list_insert(spm_list, -1._r8, f_retransn_to_npool            , s_retransn, nelms)
-
+  !turn the list into sparse matrix form  
   call spm_list_to_mat(spm_list, spm_nutrient_d, nelms, f_supplement_to_plantn)
-
+  !initialize stoichiometry relationship between nutrient production and corresponding state variables
   call spm_list_init(spm_list, 1._r8, f_retransn_to_npool                , s_npool, nelms)
   call spm_list_insert(spm_list, 1._r8, f_supplement_to_plantn           , s_npool, nelms)
   call spm_list_insert(spm_list, 1._r8, f_npool_to_leafn                 , s_leafn, nelms)
@@ -496,7 +512,7 @@ contains
   call spm_list_insert(spm_list, 1._r8, f_frootn_to_retransn             , s_retransn, nelms)
   call spm_list_insert(spm_list, 1._r8, f_livestemn_to_retransn          , s_retransn, nelms)
   call spm_list_insert(spm_list, 1._r8, f_livecrootn_to_retransn         , s_retransn, nelms)
-
+  !turn the list into sparse matrix form  
   call spm_list_to_mat(spm_list, spm_nutrient_p, nelms, f_supplement_to_plantn)
   end subroutine InitPhenoFluxLimiter
 !---------------------------------------------------------------------------
@@ -505,6 +521,9 @@ contains
       veg_cf, veg_cs , c13_veg_cf, c13_veg_cs , c14_veg_cf, c14_veg_cs , &
       veg_nf, veg_ns, veg_pf, veg_ps)
 
+    !
+    ! DESCRIPTION
+    !  apply the phenology flux limiter to avoid potential negative fluxes.
     use decompMod           , only : bounds_type
     use CropType                  , only : crop_type
     use CNStateType               , only : cnstate_type
@@ -535,6 +554,7 @@ contains
     type(vegetation_phosphorus_flux)  , intent(inout) :: veg_pf
     type(vegetation_phosphorus_state) , intent(inout) :: veg_ps
 
+  !apply the carbon flux limiter
   call carbon_flux_limiter(bounds, num_soilc, filter_soilc,&
       num_soilp, filter_soilp, crop_vars,  &
       veg_cf, veg_cs )
@@ -551,10 +571,12 @@ contains
       c14_veg_cf, c14_veg_cs )
   endif
 
+  !apply the nitrogen flux limiter
   call nitrogen_flux_limiter(bounds, num_soilc, filter_soilc,&
       num_soilp, filter_soilp, cnstate_vars,  &
       veg_nf, veg_ns)
 
+  !apply the phoshporus flux limiter
   call phosphorus_flux_limiter(bounds, num_soilc, filter_soilc,&
       num_soilp, filter_soilp, cnstate_vars,  &
       veg_pf, veg_ps)
@@ -566,7 +588,9 @@ contains
   subroutine carbon_flux_limiter(bounds, num_soilc, filter_soilc,&
       num_soilp, filter_soilp, crop_vars,  &
       veg_cf, veg_cs )
-
+    !
+    ! DESCRIPTION
+    ! the flux limiter for phenology carbon fluxes
     use decompMod           , only : bounds_type
     use CropType                  , only : crop_type
     use VegetationDataType, only : vegetation_carbon_flux
@@ -799,6 +823,9 @@ contains
       num_soilp, filter_soilp, cnstate_vars,  &
       veg_nf, veg_ns)
 
+    !
+    ! DESCRIPTION
+    ! the flux limiter for phenology nitrogen fluxes
     use decompMod           , only : bounds_type
     use CNStateType               , only : cnstate_type
     use VegetationDataType, only : vegetation_nitrogen_flux
@@ -979,7 +1006,8 @@ contains
   subroutine phosphorus_flux_limiter(bounds, num_soilc, filter_soilc,&
       num_soilp, filter_soilp, cnstate_vars,  &
       veg_pf, veg_ps)
-
+    ! DESCRIPTION
+    ! the flux limiter for phenology phosphorus  fluxes
     use decompMod           , only : bounds_type
     use CNStateType               , only : cnstate_type
     use VegetationDataType, only : vegetation_phosphorus_flux

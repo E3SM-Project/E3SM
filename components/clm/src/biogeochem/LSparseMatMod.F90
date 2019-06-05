@@ -25,8 +25,8 @@ implicit none
     real(r8), pointer :: val(:)      !nonzero val
     integer , pointer :: icol(:)     !col id for each val
     integer , pointer :: pB(:)       !first nonzero column id (as in val) in each row
-    integer , pointer :: ncol(:)     !number of nonzero columns in eacho row
-    integer :: szcol                 ! number of columns of the matrix
+    integer , pointer :: ncol(:)     !number of nonzero columns in each row
+    integer :: szcol                 !number of columns of the matrix
     integer :: szrow
   contains
     procedure, public :: init
@@ -70,6 +70,9 @@ contains
 
 !---------------------------------------------------------------
   subroutine spm_pack(Amat, nelms)
+  !
+  ! DESCRIPTION
+  ! Pack a full matrix into a sparse matrix
 
   implicit none
   real(r8), dimension(:,:),intent(in) :: Amat
@@ -85,6 +88,7 @@ contains
 
   call spm%init(nelms, nrows, szcol)
 
+  !pack the nonzero element (defined with absolute values greater than tiny_val) into the sparse matrix
   kk = 0
   do ii = 1, nrows
     first =.true.
@@ -108,6 +112,8 @@ contains
 
   subroutine spm_unpack(spm, bmat)
 
+  ! DESCRIPTION
+  ! unpack a sparse matrix spm into a full matrix bmat
   implicit none
   class(sparseMat_type), intent(in) :: spm
   real(r8), pointer :: bmat(:,:)
@@ -118,7 +124,8 @@ contains
   nrs = size(spm%ncol)
   ncs = spm%szcol
   allocate(bmat(nrs,ncs))
-
+  !unpack the matrix
+  bmat(:,:)=0._r8
   do i = 1, nrs
     do j = 1, spm%ncol(i)
       id=j+spm%pB(i)
@@ -131,6 +138,10 @@ contains
 !---------------------------------------------------------------
 
   subroutine spm_axpy(nx, ny, a, x, spm, y, errinfo)
+  !
+  ! DESCRIPTION
+  ! y=y+a*spm*x
+  ! with x, y being vectors, and a a scalar, and spm a sparse matrix. 
   implicit none
   real(r8), intent(in) :: a
   integer , intent(in) :: nx
@@ -161,6 +172,9 @@ contains
 
 
   subroutine spm_list_init(self, val, icol, irow, nelms)
+  !
+  ! DESCRIPTION
+  ! initialize a sparse matrix
   implicit none
   type(spm_list_type), pointer :: self
   real(r8), intent(in) :: val
@@ -178,6 +192,9 @@ contains
 !---------------------------------------------------------------
 
   subroutine spm_list_insert(self, val, icol, irow, nelms)
+  ! 
+  ! DESCRIPTION
+  ! add a specified element to sparse matrix
   implicit none
   type(spm_list_type), pointer :: self
   real(r8), intent(in) :: val
@@ -208,6 +225,9 @@ contains
 !---------------------------------------------------------------
 
   subroutine spm_list_free(self)
+  !
+  ! DESCRIPTION
+  ! Free the allocated memory associated with the sparse matrix
   implicit none
   type(spm_list_type), pointer :: self
   type(spm_list_type), pointer :: current
@@ -266,7 +286,7 @@ contains
   subroutine calc_state_pscal(this, nprimvars, dtime, ystate, p_dt,  d_dt, pscal, lneg, errinfo)
     !
     ! !DESCRIPTION:
-    ! calcualte limiting factor from each primary state variable
+    ! calculate limiting factor from each primary state variable
     !
     use BetrstatusType     , only : betr_status_type
     use betr_constants     , only : betr_errmsg_len
@@ -314,7 +334,7 @@ contains
   subroutine calc_reaction_rscal(this, nprimvars, nr, pscal, spm_d, rscal)
     !
     ! !DESCRIPTION:
-    ! calcualte limiting factor for each reaction
+    ! calculate limiting factor for each reaction
     ! !USES:
     use BetrstatusType     , only : betr_status_type
     implicit none
