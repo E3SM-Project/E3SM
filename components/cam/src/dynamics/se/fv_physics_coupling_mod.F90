@@ -61,7 +61,7 @@ contains
       !-------------------------------------------------------------------------
       ! Recalculate state that was previously sent to physics 
       !-------------------------------------------------------------------------
-      if (ftype==2.or.ftype==3) then
+      if (ftype==2.or.ftype==4) then
         do ilyr = 1,pver
           dp_gll = elem(ie)%state%dp3d(:,:,ilyr,tl_f)
           inv_dp_fvm = 1.0 / subcell_integration(dp_gll,np,fv_nphys,elem(ie)%metdet(:,:))
@@ -72,7 +72,7 @@ contains
                                   *inv_dp_fvm, (/fv_nphys*fv_nphys/) )
           end do ! m
         end do ! ilyr
-      end if ! ftype==2.or.ftype==3
+      end if ! ftype==2.or.ftype==4
       !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
       icol = 0
@@ -88,7 +88,7 @@ contains
               elem(ie)%derived%FM(:,:,1,ilyr)   = uv_tmp(icol,1,ilyr,ie)
               elem(ie)%derived%FM(:,:,2,ilyr)   = uv_tmp(icol,2,ilyr,ie)
               do m = 1,pcnst
-                if ( ftype==2 .or. ftype==3 ) then
+                if ( ftype==2 .or. ftype==4 ) then
                   elem(ie)%derived%FQ(:,:,ilyr,m) = q_tmp(icol,ilyr,m,ie) &
                                                     -qo_phys(icol,ilyr,m) &
                                                     +elem(ie)%state%q(:,:,ilyr,m)
@@ -111,7 +111,7 @@ contains
                   elem(ie)%derived%FM(gi,gj,1,ilyr) = uv_tmp(icol,1,ilyr,ie)
                   elem(ie)%derived%FM(gi,gj,2,ilyr) = uv_tmp(icol,2,ilyr,ie)
                   do m = 1,pcnst
-                    if ( ftype==2 .or. ftype==3 ) then
+                    if ( ftype==2 .or. ftype==4 ) then
                       ! subtract initial phys state and add previous dyn state
                       elem(ie)%derived%FQ(gi,gj,ilyr,m) = q_tmp(icol,ilyr,m,ie)&
                                                          -qo_phys(icol,ilyr,m) &
