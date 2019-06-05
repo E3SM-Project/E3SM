@@ -671,6 +671,7 @@ class J_TestCreateNewcase(unittest.TestCase):
             with open(os.path.join(dir1,_file),"r") as fi:
                 file_text = fi.read()
                 file_text = file_text.replace(os.path.basename(testdir1),"PATH")
+                file_text = re.sub(r"logfile =.*","",file_text)
             with open(os.path.join(dir2,_file), "w") as fo:
                 fo.write(file_text)
         cleancasedocs1 = dir2
@@ -700,6 +701,7 @@ class J_TestCreateNewcase(unittest.TestCase):
             with open(os.path.join(dir1,_file),"r") as fi:
                 file_text = fi.read()
                 file_text = file_text.replace(os.path.basename(testdir2),"PATH")
+                file_text = re.sub(r"logfile =.*","",file_text)
             with open(os.path.join(dir2,_file), "w") as fo:
                 fo.write(file_text)
 
