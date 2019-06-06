@@ -51,6 +51,13 @@ module element_state
   real (kind=real_kind), allocatable, target, public :: elem_accum_Qmass     (:,:,:,:,:)        ! Q mass at half time levels
   real (kind=real_kind), allocatable, target, public :: elem_accum_Q1mass    (:,:,:,:)          ! Q mass at full time levels
 
+  real (kind=real_kind), allocatable, target, public :: elem_derived_FQ(:,:,:,:,:)              ! tracer forcing
+  real (kind=real_kind), allocatable, target, public :: elem_derived_FM(:,:,:,:,:)              ! momentum forcing
+  real (kind=real_kind), allocatable, target, public :: elem_derived_FT(:,:,:,:)                ! temperature forcing
+  real (kind=real_kind), allocatable, target, public :: elem_derived_FVTheta(:,:,:,:)           ! potential temperature forcing
+  real (kind=real_kind), allocatable, target, public :: elem_derived_FPHI(:,:,:,:)              ! PHI (NH) forcing
+  real (kind=real_kind), allocatable, target, public :: elem_derived_FQps(:,:,:)                ! forcing of FQ on ps_v
+
 ! =========== PRIMITIVE-EQUATION DATA-STRUCTURES =====================
 
   type, public :: elem_state_t
@@ -96,12 +103,12 @@ module element_state
     real (kind=real_kind) :: divdp_proj(np,np,nlev)                   ! DSSed divdp
 
     ! forcing terms for CAM
-    real (kind=real_kind) :: FQ(np,np,nlev,qsize_d)                   ! tracer forcing
-    real (kind=real_kind) :: FM(np,np,3,nlev)                         ! momentum forcing
-    real (kind=real_kind) :: FT(np,np,nlev)                           ! temperature forcing
-    real (kind=real_kind) :: FVTheta(np,np,nlev)                   ! potential temperature forcing
-    real (kind=real_kind) :: FPHI(np,np,nlevp)                        ! PHI (NH) forcing
-    real (kind=real_kind) :: FQps(np,np)                              ! forcing of FQ on ps_v
+    real (kind=real_kind), pointer :: FQ(:,:,:,:)                     ! tracer forcing
+    real (kind=real_kind), pointer :: FM(:,:,:,:)                     ! momentum forcing
+    real (kind=real_kind), pointer :: FT(:,:,:)                       ! temperature forcing
+    real (kind=real_kind), pointer :: FVTheta(:,:,:)                  ! potential temperature forcing
+    real (kind=real_kind), pointer :: FPHI(:,:,:)                     ! PHI (NH) forcing
+    real (kind=real_kind), pointer :: FQps(:,:)                       ! forcing of FQ on ps_v
 
     real (kind=real_kind) :: gradphis(np,np,2)   ! grad phi at the surface, computed once in model initialization
   end type derived_state_t
@@ -186,6 +193,14 @@ contains
     allocate(elem_accum_qmass     (np,np,qsize_d,4,nelemd) )
     allocate(elem_accum_Q1mass    (np,np,qsize_d,  nelemd) )
 
+    ! Forcing
+    allocate(elem_derived_FM      (np,np,3,nlev,nelemd) )
+    allocate(elem_derived_FT      (np,np,nlev,nelemd) )
+    allocate(elem_derived_FVTheta (np,np,nlev,nelemd) )
+    allocate(elem_derived_FPHI    (np,np,nlevp,nelemd) )
+    allocate(elem_derived_FQ      (np,np,nlev,qsize_d,nelemd) )
+    allocate(elem_derived_FQps    (np,np,nelemd) )
+
   end subroutine allocate_element_arrays
 
   subroutine setup_element_pointers_ie (ie, state, derived, accum)
@@ -218,6 +233,14 @@ contains
     accum%Qvar      => elem_accum_Qvar     (:,:,:,:,ie)
     accum%Qmass     => elem_accum_Qmass    (:,:,:,:,ie)
     accum%Q1mass    => elem_accum_Q1mass   (:,:,:,ie)
+
+    ! Forcing
+    derived%FM      => elem_derived_FM(:,:,:,:,ie)
+    derived%FT      => elem_derived_FT(:,:,:,ie)
+    derived%FVTheta => elem_derived_FVTheta(:,:,:,ie)
+    derived%FPHI    => elem_derived_FPHI(:,:,:,ie)
+    derived%FQ      => elem_derived_FQ(:,:,:,:,ie)
+    derived%FQps    => elem_derived_FQps(:,:,ie)
   end subroutine setup_element_pointers_ie
 
 end module 

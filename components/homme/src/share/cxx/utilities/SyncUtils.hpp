@@ -128,6 +128,7 @@ sync_to_host(Source_T source, Dest_T dest)
   }
 }
 
+
 template <typename Source_T, typename Dest_T>
 typename std::enable_if
   <
@@ -192,11 +193,11 @@ sync_to_host(Source_T source, Dest_T dest) {
   }
 }
 
-template <typename Source_T, typename Dest_T>
+template <int DIM, typename Source_T, typename Dest_T>
 typename std::enable_if
   <
-    (exec_view_mappable<Source_T, Scalar * [2][NP][NP][NUM_LEV]>::value &&
-     host_view_mappable<Dest_T, Real * [NUM_PHYSICAL_LEV][2][NP][NP]>::value),
+    (exec_view_mappable<Source_T, Scalar * [DIM][NP][NP][NUM_LEV]>::value &&
+     host_view_mappable<Dest_T, Real * [NUM_PHYSICAL_LEV][DIM][NP][NP]>::value),
     void
   >::type
 sync_to_host(Source_T source, Dest_T dest)
@@ -209,8 +210,9 @@ sync_to_host(Source_T source, Dest_T dest)
       const int ivec = level % VECTOR_SIZE;
       for (int igp = 0; igp < NP; ++igp) {
         for (int jgp = 0; jgp < NP; ++jgp) {
-          dest(ie, level, 0, igp, jgp) = source_mirror(ie, 0, igp, jgp, ilev)[ivec];
-          dest(ie, level, 1, igp, jgp) = source_mirror(ie, 1, igp, jgp, ilev)[ivec];
+          for (int idim=0 ; idim<DIM; ++idim) {
+            dest(ie, level, idim, igp, jgp) = source_mirror(ie, idim, igp, jgp, ilev)[ivec];
+          }
         }
       }
     }
@@ -416,11 +418,11 @@ sync_to_device(Source_T source, Dest_T dest) {
   Kokkos::deep_copy(dest, dest_mirror);
 }
 
-template <typename Source_T, typename Dest_T>
+template <int DIM, typename Source_T, typename Dest_T>
 typename std::enable_if
   <
-    (host_view_mappable<Source_T, Real * [NUM_PHYSICAL_LEV][2][NP][NP]>::value &&
-     exec_view_mappable<Dest_T, Scalar * [2][NP][NP][NUM_LEV]>::value),
+    (host_view_mappable<Source_T, Real * [NUM_PHYSICAL_LEV][DIM][NP][NP]>::value &&
+     exec_view_mappable<Dest_T, Scalar * [DIM][NP][NP][NUM_LEV]>::value),
     void
   >::type
 sync_to_device(Source_T source, Dest_T dest)
@@ -432,8 +434,9 @@ sync_to_device(Source_T source, Dest_T dest)
       const int ivec = level % VECTOR_SIZE;
       for (int igp = 0; igp < NP; ++igp) {
         for (int jgp = 0; jgp < NP; ++jgp) {
-          dest_mirror(ie, 0, igp, jgp, ilev)[ivec] = source(ie, level, 0, igp, jgp);
-          dest_mirror(ie, 1, igp, jgp, ilev)[ivec] = source(ie, level, 1, igp, jgp);
+          for (int idim=0 ; idim<DIM; ++idim) {
+            dest_mirror(ie, idim, igp, jgp, ilev)[ivec] = source(ie, level, idim, igp, jgp);
+          }
         }
       }
     }

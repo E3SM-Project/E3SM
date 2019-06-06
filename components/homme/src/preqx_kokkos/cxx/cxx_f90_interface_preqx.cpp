@@ -166,7 +166,7 @@ void cxx_push_forcing_to_f90(F90Ptr elem_derived_FM, F90Ptr elem_derived_FT,
 
   HostViewUnmanaged<Real * [NUM_PHYSICAL_LEV][2][NP][NP]> fm_f90(
       elem_derived_FM, elements.num_elems());
-  sync_to_host(elements.m_forcing.m_fm, fm_f90);
+  sync_to_host<2>(elements.m_forcing.m_fm, fm_f90);
   HostViewUnmanaged<Real * [NUM_PHYSICAL_LEV][NP][NP]> ft_f90(
       elem_derived_FT, elements.num_elems());
   sync_to_host(elements.m_forcing.m_ft, ft_f90);
@@ -189,7 +189,7 @@ void f90_push_forcing_to_cxx(F90Ptr elem_derived_FM, F90Ptr elem_derived_FT,
 
   HostViewUnmanaged<Real * [NUM_PHYSICAL_LEV][2][NP][NP]> fm_f90(
       elem_derived_FM, elements.num_elems());
-  sync_to_device(fm_f90, elements.m_forcing.m_fm);
+  sync_to_device<2>(fm_f90, elements.m_forcing.m_fm);
 
   HostViewUnmanaged<Real * [NUM_PHYSICAL_LEV][NP][NP]> ft_f90(
       elem_derived_FT, elements.num_elems());

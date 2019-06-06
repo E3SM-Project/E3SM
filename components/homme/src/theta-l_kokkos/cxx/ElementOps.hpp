@@ -6,7 +6,6 @@
 #include "HybridVCoord.hpp"
 #include "ColumnOps.hpp"
 #include "PhysicalConstants.hpp"
-#include "Context.hpp"
 
 namespace Homme {
 
@@ -19,26 +18,32 @@ public:
     m_hvcoord = hvcoord;
   }
 
+  template<typename InputProvider>
   KOKKOS_INLINE_FUNCTION
-  void compute_theta_ref (const KernelVariables& kv,
-                          const ExecViewUnmanaged<const Scalar[NP][NP][NUM_LEV]>& p,
-                          const ExecViewUnmanaged<      Scalar[NP][NP][NUM_LEV]>& theta_ref) const {
-
-    assert (m_hvcoord.m_inited);
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
-                         [&](const int idx) {
-      const int igp = idx / NP;
-      const int jgp = idx % NP;
-
-      compute_theta_ref (kv, Homme::subview(p,igp,jgp),
-                             Homme::subview(theta_ref,igp,jgp));
-    });
+  void get_R_star (const KernelVariables& kv,
+                   const bool use_moisture,
+                   const InputProvider& Q,
+                   const ExecViewUnmanaged<Scalar[NUM_LEV]>& R) const {
+    if (use_moisture) {
+      constexpr Real Rgas = PhysicalConstants::Rgas;
+      constexpr Real Rwv  = PhysicalConstants::Rwater_vapor;
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                           [&](const int ilev) {
+        R(ilev) = (Rgas + (Rwv-Rgas)*Q(ilev));
+      });
+    } else {
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                           [&](const int ilev) {
+        R(ilev) = PhysicalConstants::Rgas;
+      });
+    }
   }
 
+  template<typename InputProvider>
   KOKKOS_INLINE_FUNCTION
   void compute_theta_ref (const KernelVariables& kv,
-                          const ExecViewUnmanaged<const Scalar[NUM_LEV]>& p,
-                          const ExecViewUnmanaged<      Scalar[NUM_LEV]>& theta_ref) const {
+                          const InputProvider& p,
+                          const ExecViewUnmanaged<Scalar[NUM_LEV]>& theta_ref) const {
     assert (m_hvcoord.m_inited);
     // theta_ref = T0/exner + T1, with T0,T1 fixed
     // exner = (p/p0)^k

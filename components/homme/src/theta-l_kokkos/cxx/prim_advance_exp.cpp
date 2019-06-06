@@ -58,7 +58,7 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
     Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0,NP*NP*e.m_geometry.num_elems()),
                          KOKKOS_LAMBDA(const int idx) {
       const int ie  = idx / (NP*NP);
-      const int igp = idx / NP;
+      const int igp = (idx / NP) % NP;
       const int jgp = idx % NP;
       w_i(ie,n0,igp,jgp,LAST_LEV_P)[LAST_INTERFACE_VEC_IDX] = 
                       (v(ie,n0,0,igp,jgp,LAST_LEV)[LAST_MIDPOINT_VEC_IDX]*gradphis(ie,0,igp,jgp) +

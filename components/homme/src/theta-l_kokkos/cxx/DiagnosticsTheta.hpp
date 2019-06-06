@@ -90,35 +90,23 @@ public:
       auto vtheta_dp_real = viewAsReal(Homme::subview(vtheta_dp,igp,jgp));
       auto exner_real     = viewAsReal(Homme::subview(exner,igp,jgp));
 
-      // Compute hydrostatic pressure, store in phi. This is only needed in compute_pnh_and_exner,
-      // so by the time we *need* the buffer for phi, it should be available
-      auto& pi_real = phi_real;
-      Kokkos::single(Kokkos::PerThread(kv.team),[&]() {
-        phi_real(0) = m_hvcoord.ps0*m_hvcoord.hybrid_ai0;
-      });
-
-      // Scan sums at interfaces
-      Dispatch<>::parallel_scan(kv.team,NUM_PHYSICAL_LEV,
-                                [&](const int ilev, Real& accumulator, const bool last) {
-        // v[0] accumulates dp3d, v[1] accumulates div_vdp
-        accumulator += dpt1_real(ilev);
-
-        if (last) {
-          pi_real(ilev) = dpt1_real(ilev)/2;
-        }
-      });
-
       // Compute exner and pnh
-      m_eos.compute_pnh_and_exner(kv,Homme::subview(vtheta_dp,igp,jgp),
-                                     Homme::subview(phi_i,igp,jgp),
-                                     Homme::subview(phi,igp,jgp),
-                                     Homme::subview(pnh,igp,jgp),
-                                     Homme::subview(exner,igp,jgp));
-
       if (m_theta_hydrostatic_mode) {
+        // Use phi_i to store the temporary p_i
+        m_eos.compute_hydrostatic_p(kv,Homme::subview(dpt1,igp,jgp),
+                                       Homme::subview(phi_i,igp,jgp),
+                                       Homme::subview(pnh,igp,jgp));
+        m_eos.compute_exner(kv,Homme::subview(pnh,igp,jgp),
+                               Homme::subview(exner,igp,jgp));
+
         m_eos.compute_phi_i(kv.team,
                             Homme::subview(m_geometry.m_phis,kv.ie),
                             vtheta_dp, exner, pnh, phi_i);
+      } else {
+        m_eos.compute_pnh_and_exner(kv,Homme::subview(vtheta_dp,igp,jgp),
+                                       Homme::subview(phi_i,igp,jgp),
+                                       Homme::subview(pnh,igp,jgp),
+                                       Homme::subview(exner,igp,jgp));
       }
 
       // Compute phi at midpoints

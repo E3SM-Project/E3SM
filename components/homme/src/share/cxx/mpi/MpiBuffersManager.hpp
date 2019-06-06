@@ -104,6 +104,7 @@ public:
   void unlock_buffers ();
 
   bool are_buffers_busy () const { return m_buffers_busy; }
+  bool are_views_valid () const { return m_views_are_valid; }
 
   ExecViewUnmanaged<Real*> get_send_buffer           () const;
   ExecViewUnmanaged<Real*> get_recv_buffer           () const;

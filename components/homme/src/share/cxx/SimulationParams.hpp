@@ -25,6 +25,7 @@ struct SimulationParams
   RemapAlg      remap_alg;
   TestCase      test_case;
   ForcingAlg    ftype;
+  AdvectionForm theta_adv_form; // Only for theta model
 
   int           rsplit;
   int           qsplit;

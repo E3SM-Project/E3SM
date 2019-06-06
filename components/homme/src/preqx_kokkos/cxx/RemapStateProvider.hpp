@@ -8,7 +8,7 @@
 #define HOMMEXX_REMAP_STATE_PROVIDER_HPP
 
 #include "Types.hpp"
-#include "ElementsState.hpp"
+#include "Elements.hpp"
 #include "ErrorDefs.hpp"
 #include "KernelVariables.hpp"
 #include "utilities/SubviewUtils.hpp"
@@ -20,16 +20,41 @@ struct RemapStateProvider {
 
   ElementsState m_state;
 
-  explicit RemapStateProvider(const ElementsState& state)
-   : m_state(state) {}
+  explicit RemapStateProvider(const Elements& elements)
+   : m_state(elements.m_state) {}
+
+  template<typename Tag>
+  void allocate_buffers(const Kokkos::TeamPolicy<ExecSpace,Tag>& /* policy */) {
+    // preqx does not do anything during states pre/post processing,
+    // so no need to create any buffer
+  }
 
   int num_states_remap() const { return 3;}
+  int num_states_preprocess() const { return 0;}
+  int num_states_postprocess() const { return 0;}
 
-  void preprocess_states  (const int /* np1 */) const {
+  bool is_intrinsic_state (const int istate) const {
+    // Sanity check
+    assert (istate>=0 && istate<num_states_remap());
+    static_assert(sizeof(decltype(istate))>0,"Silence compiler warning went wrong.\n");
+
+    // All states are intrinsic in preqx, so they all need to be multiplied by dp
+    // during the remap procedure
+
+    return true;
+  }
+
+  void preprocess_state (const KernelVariables& /* kv */,
+                         const int /* istate */,
+                         const int /* np1 */,
+                         ExecViewUnmanaged<const Scalar[NP][NP][NUM_LEV]> /* dp */) const {
     // Nothing to do here for preqx
   }
 
-  void postprocess_states (const int /* np1 */) const {
+  void postprocess_state (const KernelVariables& /* kv */,
+                          const int /* istate */,
+                          const int /* np1 */,
+                          ExecViewUnmanaged<const Scalar[NP][NP][NUM_LEV]> /* dp */) const {
     // Nothing to do here for preqx
   }
 

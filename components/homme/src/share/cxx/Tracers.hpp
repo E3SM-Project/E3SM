@@ -27,6 +27,10 @@ struct Tracers {
     return nt;
   }
 
+  int num_elems () const {
+    return ne;
+  }
+
   bool inited () const { return m_inited; }
 
   ExecViewManaged<Scalar*[Q_NUM_TIME_LEVELS][QSIZE_D][NP][NP][NUM_LEV]> qdp;
@@ -37,6 +41,7 @@ struct Tracers {
 
 private:
   int nt;
+  int ne;
   bool m_inited;
 };
 

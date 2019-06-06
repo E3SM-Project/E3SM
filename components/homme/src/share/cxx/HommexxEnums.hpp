@@ -41,6 +41,7 @@ enum class ComparisonOp {
 enum class ForcingAlg {
   FORCING_OFF,
   FORCING_DEBUG,
+  FORCING_0, // Unsupported
   FORCING_1, // Unsupported
   FORCING_2, // TODO: Rename FORCING_1 and FORCING_2 to something more descriptive
 };
@@ -48,6 +49,11 @@ enum class ForcingAlg {
 enum class MoistDry {
   MOIST,
   DRY
+};
+
+enum class AdvectionForm {
+  Conservative,
+  NonConservative
 };
 
 enum class RemapAlg {
@@ -71,7 +77,10 @@ enum class TestCase {
   DCMIP2012_TEST2_2,
   DCMIP2012_TEST3,
   HELD_SUAREZ0,
-  JW_BAROCLINIC
+  JW_BAROCLINIC,
+  DCMIP2016_TEST1,
+  DCMIP2016_TEST2,
+  DCMIP2016_TEST3
 };
 
 enum class UpdateType {

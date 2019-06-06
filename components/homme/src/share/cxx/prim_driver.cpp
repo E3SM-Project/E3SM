@@ -161,10 +161,13 @@ void apply_test_forcing () {
   // Get simulation params
   SimulationParams& params = Context::singleton().get<SimulationParams>();
 
-  if (params.test_case==TestCase::DCMIP2012_TEST2_1 ||
-      params.test_case==TestCase::DCMIP2012_TEST2_2) {
-    Errors::runtime_abort("Test case not yet available in C++ build.\n",
-                          Errors::err_not_implemented);
+  switch (params.test_case) {
+    case TestCase::JW_BAROCLINIC:
+      break;  // Do nothing
+    case TestCase::DCMIP2016_TEST2:
+    default:
+      Errors::runtime_abort("Test case not yet available in C++ build.\n",
+                            Errors::err_not_implemented);
   }
 }
 

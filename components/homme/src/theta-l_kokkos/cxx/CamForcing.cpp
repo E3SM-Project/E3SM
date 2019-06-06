@@ -6,25 +6,36 @@
 
 #include "Context.hpp"
 #include "CamForcing.hpp"
-#include "Tracers.hpp"
-#include "Elements.hpp"
-#include "TimeLevel.hpp"
-#include "HybridVCoord.hpp"
+#include "ForcingFunctor.hpp"
 #include "SimulationParams.hpp"
-#include "KernelVariables.hpp"
-#include "vector/vector_pragmas.hpp"
+#include "TimeLevel.hpp"
 #include "profiling.hpp"
+
+#include "utilities/MathUtils.hpp"
 
 namespace Homme {
 
-
-void apply_cam_forcing(const Real &dt) {
+void apply_cam_forcing(const Real dt) {
   GPTLstart("ApplyCAMForcing");
+
+  const auto& p  = Context::singleton().get<SimulationParams>();
+  const auto& tl = Context::singleton().get<TimeLevel>();
+  auto& ff = Context::singleton().get<ForcingFunctor>();
+ 
+  ff.tracers_forcing(dt,tl.n0,tl.n0_qdp,p.moisture);
+  ff.states_forcing(dt,tl.np1);
+
   GPTLstop("ApplyCAMForcing");
 }
 
-void apply_cam_forcing_dynamics(const Real &dt) {
+void apply_cam_forcing_dynamics(const Real dt) {
   GPTLstart("ApplyCAMForcing_dynamics");
+
+  const auto& tl = Context::singleton().get<TimeLevel>();
+  auto& ff = Context::singleton().get<ForcingFunctor>();
+
+  ff.states_forcing(dt,tl.np1);
+
   GPTLstop("ApplyCAMForcing_dynamics");
 }
 

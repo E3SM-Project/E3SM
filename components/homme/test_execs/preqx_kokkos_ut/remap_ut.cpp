@@ -401,15 +401,18 @@ TEST_CASE("ppm_fixed_means", "vertical remap") {
 
 TEST_CASE("remap_interface", "vertical remap") {
   constexpr int num_elems = 4;
-  ElementsState state;
-  state.random_init(num_elems);
+  Elements elements;
+  elements.random_init(num_elems);
+  Tracers tracers;
+  tracers.init(num_elems,QSIZE_D);
+  tracers.random_init();
   HybridVCoord hvcoord;
   hvcoord.random_init(std::random_device()());
 
   Real dp3d_min;
   {
-    auto h_dp3d = Kokkos::create_mirror_view(state.m_dp3d);
-    Kokkos::deep_copy(h_dp3d,state.m_dp3d);
+    auto h_dp3d = Kokkos::create_mirror_view(elements.m_state.m_dp3d);
+    Kokkos::deep_copy(h_dp3d,elements.m_state.m_dp3d);
     Real* ptr = reinterpret_cast<Real*>(h_dp3d.data());
     dp3d_min = *std::min_element(ptr,ptr+h_dp3d.size()*VECTOR_SIZE);
   }
@@ -436,21 +439,21 @@ TEST_CASE("remap_interface", "vertical remap") {
     constexpr bool rsplit_non_zero = true;
     constexpr int qsize = 0;
     using _Remap = RemapFunctor<rsplit_non_zero, PpmVertRemap, PpmMirrored>;
-    _Remap remap(qsize, state, eta_dot_dpdn, qdp, hvcoord);
+    _Remap remap(qsize, elements, tracers, hvcoord);
     remap.run_remap(np1, n0_qdp, dt);
   }
   SECTION("tracers_only") {
     constexpr bool rsplit_non_zero = false;
     constexpr int qsize = QSIZE_D;
     using _Remap = RemapFunctor<rsplit_non_zero, PpmVertRemap, PpmMirrored>;
-    _Remap remap(qsize, state, eta_dot_dpdn, qdp, hvcoord);
+    _Remap remap(qsize, elements, tracers, hvcoord);
     remap.run_remap(np1, n0_qdp, dt);
   }
   SECTION("states_tracers") {
     constexpr bool rsplit_non_zero = true;
     constexpr int qsize = QSIZE_D;
     using _Remap = RemapFunctor<rsplit_non_zero, PpmVertRemap, PpmMirrored>;
-    _Remap remap(qsize, state, eta_dot_dpdn, qdp, hvcoord);
+    _Remap remap(qsize, elements, tracers, hvcoord);
     remap.run_remap(np1, n0_qdp, dt);
   }
 }

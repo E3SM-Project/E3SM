@@ -8,6 +8,7 @@
 #define HOMMEXX_HYBRID_V_COORD_HPP
 
 #include "KernelVariables.hpp"
+#include "PhysicalConstants.hpp"
 #include "Types.hpp"
 #include "utilities/SubviewUtils.hpp"
 
@@ -51,6 +52,7 @@ struct HybridVCoord
   // ExecViewManaged<Scalar[NUM_LEV]>         delta_etam;
 
   ExecViewManaged<Scalar[NUM_LEV]> dp0;
+  ExecViewManaged<Scalar[NUM_LEV]> exner0;
 
   bool m_inited;
 
@@ -89,7 +91,7 @@ struct HybridVCoord
   }
 
   KOKKOS_INLINE_FUNCTION
-  void compute_ps_ref (const KernelVariables& kv,
+  void compute_ps_ref_from_dp (const KernelVariables& kv,
                        const ExecViewUnmanaged<const Scalar [NP][NP][NUM_LEV]>& dp,
                        const ExecViewUnmanaged<      Real   [NP][NP]>& ps) const
   {
@@ -109,6 +111,21 @@ struct HybridVCoord
       } else {
         ps(igp,jgp) = hybrid_ai(0)*ps0 + tmp.reduce_add();
       }
+    });
+    kv.team_barrier();
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void compute_ps_ref_from_phis (const KernelVariables& kv,
+                       const ExecViewUnmanaged<const Real [NP][NP]>& phis,
+                       const ExecViewUnmanaged<      Real [NP][NP]>& ps) const
+  {
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+                         [&](const int idx) {
+      const int igp = idx / NP;
+      const int jgp = idx % NP;
+
+      ps(igp,jgp) = ps0*exp( - phis(igp,jgp)/ (PhysicalConstants::Rgas*300) );
     });
     kv.team_barrier();
   }

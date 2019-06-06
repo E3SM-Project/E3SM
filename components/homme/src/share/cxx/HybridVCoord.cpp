@@ -5,7 +5,9 @@
  *******************************************************************************/
 
 #include "HybridVCoord.hpp"
+#include "ColumnOps.hpp"
 #include "ErrorDefs.hpp"
+#include "PhysicalConstants.hpp"
 #include "utilities/TestUtils.hpp"
 
 #include <random>
@@ -44,8 +46,8 @@ void HybridVCoord::init(const Real ps0_in,
   // Copy inputs into class members
   Kokkos::deep_copy(hybrid_ai, host_hybrid_ai);
   Kokkos::deep_copy(hybrid_bi, host_hybrid_bi);
-  Kokkos::deep_copy(hybrid_ai, host_hybrid_ai);
-  Kokkos::deep_copy(hybrid_bi, host_hybrid_bi);
+  Kokkos::deep_copy(hybrid_am, host_hybrid_am);
+  Kokkos::deep_copy(hybrid_bm, host_hybrid_bm);
 
   // i don't think this saves us much now
   {
@@ -84,6 +86,8 @@ void HybridVCoord::random_init(int seed) {
 
   decltype(hybrid_ai)::HostMirror host_hybrid_ai("Host hybrid ai coefs");
   decltype(hybrid_bi)::HostMirror host_hybrid_bi("Host hybrid bi coefs");
+  decltype(hybrid_am)::HostMirror host_hybrid_am("Host hybrid am coefs");
+  decltype(hybrid_bm)::HostMirror host_hybrid_bm("Host hybrid bm coefs");
   const Real eta_min = 0.001;
 
   // The proportionality constant between a and b.
@@ -133,15 +137,23 @@ void HybridVCoord::random_init(int seed) {
   host_hybrid_bi(NUM_PHYSICAL_LEV) = 1;
   
   // Safety check: a+b should be monotone here
+  // Also, set midpoints
+  HostViewUnmanaged<Real[NUM_PHYSICAL_LEV]> host_hybrid_am_real(reinterpret_cast<Real*>(host_hybrid_am.data()));
+  HostViewUnmanaged<Real[NUM_PHYSICAL_LEV]> host_hybrid_bm_real(reinterpret_cast<Real*>(host_hybrid_bm.data()));
   for (int i=1; i<NUM_INTERFACE_LEV; ++i) {
     Real curr = host_hybrid_ai(i) + host_hybrid_bi(i);
     Real prev = host_hybrid_ai(i-1) + host_hybrid_bi(i-1);   
 
     Errors::runtime_check(curr>prev,"Error! hybrid_a+hybrid_b is not increasing.\n", -1);
+
+    host_hybrid_am_real(i-1) = (host_hybrid_ai(i) + host_hybrid_ai(i))/2.0;
+    host_hybrid_am_real(i-1) = (curr+prev)/2.0;
   }
 
   Kokkos::deep_copy(hybrid_ai, host_hybrid_ai);
   Kokkos::deep_copy(hybrid_bi, host_hybrid_bi);
+  Kokkos::deep_copy(hybrid_am, host_hybrid_am);
+  Kokkos::deep_copy(hybrid_bm, host_hybrid_bm);
 
   hybrid_ai0 = host_hybrid_ai(0);
 
@@ -153,48 +165,36 @@ void HybridVCoord::random_init(int seed) {
 
 void HybridVCoord::compute_deltas ()
 {
-  const auto host_hybrid_ai = Kokkos::create_mirror_view(hybrid_ai);
-  const auto host_hybrid_bi = Kokkos::create_mirror_view(hybrid_bi);
-  Kokkos::deep_copy(host_hybrid_ai, hybrid_ai);
-  Kokkos::deep_copy(host_hybrid_bi, hybrid_bi);
+  // This is obviously not for speed (tiny amount of work, and only at setup),
+  // but rather to delegate the logic to a single place (namely ColumnOps),
+  // so that we avoid making mistakes by replicating the same algorithm
+  ColumnOps col_ops;
+  hybrid_ai_delta = ExecViewManaged<Scalar[NUM_LEV]>("delta hyai");
+  hybrid_bi_delta = ExecViewManaged<Scalar[NUM_LEV]>("delta hybi");
+  dp0 = ExecViewManaged<Scalar[NUM_LEV]>("dp0");
 
-  hybrid_ai_delta = ExecViewManaged<Scalar[NUM_LEV]>(
-      "Difference in Hybrid a coordinates between consecutive interfaces");
-  hybrid_bi_delta = ExecViewManaged<Scalar[NUM_LEV]>(
-      "Difference in Hybrid b coordinates between consecutive interfaces");
+  // Create Scalar version of Real views
+  ExecViewUnmanaged<Scalar[NUM_LEV_P]> hyai(reinterpret_cast<Scalar*>(hybrid_ai.data()));
+  ExecViewUnmanaged<Scalar[NUM_LEV_P]> hybi(reinterpret_cast<Scalar*>(hybrid_bi.data()));
 
-  decltype(hybrid_ai_delta)::HostMirror host_hybrid_ai_delta =
-      Kokkos::create_mirror_view(hybrid_ai_delta);
-  decltype(hybrid_bi_delta)::HostMirror host_hybrid_bi_delta =
-      Kokkos::create_mirror_view(hybrid_bi_delta);
-  for (int level = 0; level < NUM_PHYSICAL_LEV; ++level) {
-    const int ilev = level / VECTOR_SIZE;
-    const int ivec = level % VECTOR_SIZE;
-
-    host_hybrid_ai_delta(ilev)[ivec] =
-        host_hybrid_ai(level + 1) - host_hybrid_ai(level);
-    host_hybrid_bi_delta(ilev)[ivec] =
-        host_hybrid_bi(level + 1) - host_hybrid_bi(level);
-  }
-  for(int level = NUM_PHYSICAL_LEV; level < NUM_LEV * VECTOR_SIZE; ++level) {
-    const int ilev = level / VECTOR_SIZE;
-    const int ivec = level % VECTOR_SIZE;
-
-    host_hybrid_ai_delta(ilev)[ivec] = std::numeric_limits<Real>::quiet_NaN();
-    host_hybrid_bi_delta(ilev)[ivec] = std::numeric_limits<Real>::quiet_NaN();
-  }
-  Kokkos::deep_copy(hybrid_ai_delta, host_hybrid_ai_delta);
-  Kokkos::deep_copy(hybrid_bi_delta, host_hybrid_bi_delta);
-  {
-    dp0 = ExecViewManaged<Scalar[NUM_LEV]>("dp0");
-    const auto hdp0 = Kokkos::create_mirror_view(dp0);
-    for (int ilev = 0; ilev < NUM_LEV; ++ilev) {
-      // BFB way of writing it.
-      hdp0(ilev) =
-          host_hybrid_ai_delta(ilev) * ps0 + host_hybrid_bi_delta(ilev) * ps0;
-    }
-    Kokkos::deep_copy(dp0, hdp0);
-  }
+  // Create local copies, to avoid issue of lambda on GPU
+  auto dhyai = hybrid_ai_delta;
+  auto dhybi = hybrid_bi_delta;
+  auto ldp0 = dp0;
+  auto lps0 = ps0;
+  auto policy = Homme::get_default_team_policy<ExecSpace>(1);
+  Kokkos::parallel_for("[HybridVCoord::compute_deltas]",policy,
+                       KOKKOS_LAMBDA(const TeamMember& team) {
+    KernelVariables kv(team);
+    Kokkos::single(Kokkos::PerTeam(kv.team),[&](){
+      col_ops.compute_midpoint_delta(kv,hyai,dhyai);
+      col_ops.compute_midpoint_delta(kv,hybi,dhybi);
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                           [&](const int ilev) {
+        ldp0(ilev) = dhyai(ilev) * lps0 + dhybi(ilev) * lps0;
+      });
+    });
+  });
 }
 
 void HybridVCoord::compute_eta ()
@@ -202,10 +202,12 @@ void HybridVCoord::compute_eta ()
   // Create device views
   etai = ExecViewManaged<Real[NUM_INTERFACE_LEV]>("Eta coordinate at interfaces");
   etam = ExecViewManaged<Scalar[NUM_LEV]>("Eta coordinate at midpoints");
+  exner0 = ExecViewManaged<Scalar[NUM_LEV]>("exner0");
 
   // Local copies, to avoid issues on GPU when accessing this-> members
   auto l_etai = etai;
   auto l_etam = etam;
+  auto l_exner0 = exner0;
   auto l_hybrid_am = hybrid_am;
   auto l_hybrid_bm = hybrid_bm;
   auto l_hybrid_ai = hybrid_ai;
@@ -214,6 +216,7 @@ void HybridVCoord::compute_eta ()
   Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0,NUM_LEV),
                        KOKKOS_LAMBDA(const int& ilev){
     l_etam(ilev) = l_hybrid_am(ilev) + l_hybrid_bm(ilev);
+    l_exner0(ilev) = pow(l_etam(ilev)*ps0/PhysicalConstants::p0,PhysicalConstants::kappa);
   });
   Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0,NUM_INTERFACE_LEV),
                        KOKKOS_LAMBDA(const int& ilev){

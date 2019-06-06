@@ -23,6 +23,7 @@
 #include "mpi/BoundaryExchange.hpp"
 #include "utilities/SubviewUtils.hpp"
 #include "utilities/ViewUtils.hpp"
+#include "utilities/MathUtils.hpp"
 
 #include "profiling.hpp"
 #include "ErrorDefs.hpp"
@@ -71,6 +72,7 @@ struct CaarFunctorImpl {
 
   const int                   m_rsplit;
   const bool                  m_theta_hydrostatic_mode;
+  const AdvectionForm         m_theta_advection_form;
 
   const HybridVCoord          m_hvcoord;
   const ElementsState         m_state;
@@ -109,6 +111,7 @@ struct CaarFunctorImpl {
                   const SphereOperators &sphere_ops, const SimulationParams& params)
       : m_rsplit(params.rsplit)
       , m_theta_hydrostatic_mode(params.theta_hydrostatic_mode)
+      , m_theta_advection_form(params.theta_adv_form)
       , m_hvcoord(hvcoord)
       , m_state(elements.m_state)
       , m_derived(elements.m_derived)
@@ -130,7 +133,11 @@ struct CaarFunctorImpl {
     const int nteams = get_num_concurrent_teams(m_policy_pre);
 
     // Do 2d scalar and 3d interface scalar right away
-    return Buffers::num_3d_scalar_mid_buf*NP*NP*NUM_LEV*VECTOR_SIZE*nteams
+    int num_scalar_mid = Buffers::num_3d_scalar_mid_buf;
+    if (m_theta_hydrostatic_mode) {
+      --num_scalar_mid;
+    }
+    return num_scalar_mid*NP*NP*NUM_LEV*VECTOR_SIZE*nteams
          + Buffers::num_3d_scalar_int_buf*NP*NP*NUM_LEV_P*VECTOR_SIZE*nteams
          + Buffers::num_3d_vector_mid_buf*2*NP*NP*NUM_LEV*VECTOR_SIZE*nteams
          + Buffers::num_3d_vector_int_buf*2*NP*NP*NUM_LEV_P*VECTOR_SIZE*nteams;
@@ -145,8 +152,14 @@ struct CaarFunctorImpl {
     // Midpoints scalars
     m_buffers.pnh        = decltype(m_buffers.pnh       )(mem,nteams);
     mem += nteams*NP*NP*NUM_LEV;
-    m_buffers.pi         = decltype(m_buffers.pi        )(mem,nteams);
-    mem += nteams*NP*NP*NUM_LEV;
+    if (m_theta_hydrostatic_mode) {
+      // pi = pnh
+      m_buffers.pi = m_buffers.pnh;
+    } else {
+      m_buffers.pi         = decltype(m_buffers.pi        )(mem,nteams);
+      mem += nteams*NP*NP*NUM_LEV;
+    }
+
     m_buffers.exner      = decltype(m_buffers.exner     )(mem,nteams);
     mem += nteams*NP*NP*NUM_LEV;
     m_buffers.div_vdp    = decltype(m_buffers.div_vdp   )(mem,nteams);
@@ -256,12 +269,17 @@ struct CaarFunctorImpl {
       const int jgp = idx % NP;
 
       // Use EOS to compute pnh, exner, and dpnh_dp_i. Use some unused buffers for pnh_i
-      m_eos.compute_pnh_and_exner(kv,
-                                  Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.n0,igp,jgp),
-                                  Homme::subview(m_state.m_phinh_i,kv.ie,m_data.n0,igp,jgp),
-                                  Homme::subview(m_buffers.pi,kv.team_idx,igp,jgp),
-                                  Homme::subview(m_buffers.pnh,kv.team_idx,igp,jgp),
-                                  Homme::subview(m_buffers.exner,kv.team_idx,igp,jgp));
+      if (m_theta_hydrostatic_mode) {
+        // Recall that, in this case, pnh aliases pi, and pi was already computed
+        m_eos.compute_exner(kv,Homme::subview(m_buffers.pnh,kv.team_idx,igp,jgp),
+                               Homme::subview(m_buffers.exner,kv.team_idx,igp,jgp));
+      } else {
+        m_eos.compute_pnh_and_exner(kv,
+                                    Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.n0,igp,jgp),
+                                    Homme::subview(m_state.m_phinh_i,kv.ie,m_data.n0,igp,jgp),
+                                    Homme::subview(m_buffers.pnh,kv.team_idx,igp,jgp),
+                                    Homme::subview(m_buffers.exner,kv.team_idx,igp,jgp));
+      }
     });
 
     if (m_theta_hydrostatic_mode) {
@@ -269,7 +287,6 @@ struct CaarFunctorImpl {
     }
 
     compute_interface_quantities(kv);
-
 
     if (m_rsplit>0) {
       Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
@@ -359,33 +376,23 @@ struct CaarFunctorImpl {
       // TODO; skip calculation of omega_i
       // Note: pi_i and omega_i are not needed after computin pi and omega,
       //       so simply grab unused buffers
-      auto dp      = viewAsReal(Homme::subview(m_state.m_dp3d,kv.ie,m_data.n0,igp,jgp));
-      auto div_vdp = viewAsReal(Homme::subview(m_buffers.div_vdp,kv.team_idx,igp,jgp));
-      auto pi      = viewAsReal(Homme::subview(m_buffers.pi,kv.team_idx,igp,jgp));
-      auto omega_i = viewAsReal(Homme::subview(m_buffers.dpnh_dp_i,kv.team_idx,igp,jgp));
+      auto dp      = Homme::subview(m_state.m_dp3d,kv.ie,m_data.n0,igp,jgp);
+      auto div_vdp = Homme::subview(m_buffers.div_vdp,kv.team_idx,igp,jgp);
+      auto pi      = Homme::subview(m_buffers.pi,kv.team_idx,igp,jgp);
+      auto omega_i = Homme::subview(m_buffers.dpnh_dp_i,kv.team_idx,igp,jgp);
 
       Kokkos::single(Kokkos::PerThread(kv.team),[&]() {
-        pi(0) = m_hvcoord.ps0*m_hvcoord.hybrid_ai0;
-        omega_i(0) = 0.0;
+        pi(0)[0] = m_hvcoord.ps0*m_hvcoord.hybrid_ai0;
+        omega_i(0)[0] = 0.0;
       });
 
-      // Scan sums at interfaces
-      Dispatch<>::parallel_scan(kv.team,NUM_PHYSICAL_LEV,
-                                [&](const int ilev, Kokkos::Real2& accumulator, const bool last) {
-        // v[0] accumulates dp3d, v[1] accumulates div_vdp
-        accumulator.v[0] += dp(ilev);
-        accumulator.v[1] += div_vdp(ilev);
+      m_col_ops.column_scan<true,true,NUM_PHYSICAL_LEV>(kv,dp,pi);
+      m_col_ops.column_scan_mid_to_int<true>(kv,div_vdp,omega_i);
 
-        if (last) {
-          pi(ilev) = dp(ilev)/2;
-          // Store with sign changed, since later omega=v*grad(pi)-average(omega_i)
-          omega_i(ilev+1) = -accumulator.v[1];
-        }
-      });
-
-      // Average omega_i to midpoints
-      m_col_ops.compute_midpoint_values(kv,Homme::subview(m_buffers.dpnh_dp_i,kv.team_idx,igp,jgp),
-                                            Homme::subview(m_buffers.omega_p,kv.team_idx,igp,jgp));
+      // Average omega_i to midpoints, and change sign, since later
+      //   omega=v*grad(pi)-average(omega_i)
+      auto omega = Homme::subview(m_buffers.omega_p,kv.team_idx,igp,jgp);
+      m_col_ops.compute_midpoint_values<CombineMode::Scale>(kv,omega_i,omega,-1.0);
     });
     kv.team_barrier();
 
@@ -729,8 +736,7 @@ struct CaarFunctorImpl {
     // Compute div(v*vtheta_dp)
     // Compute theta_tens=scale1*(-theta_vadv-div(v*vtheta_dp)
     // Update vtheta_dp(np1) = spheremp*(scale3*vtheta_dp(nm1) + dt*theta_tens)
-
-    if (m_data.m_theta_advection_form==RKStageData::ThetaAdvectionForm::DivOfProduct) {
+    if (m_theta_advection_form==AdvectionForm::Conservative) {
       m_sphere_ops.divergence_product_sphere(kv,Homme::subview(m_state.m_v,kv.ie,m_data.n0),
                                                 Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.n0),
                                                 Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.np1));
@@ -766,12 +772,11 @@ struct CaarFunctorImpl {
 
         // Compute theta_tens
         // NOTE: if the condition is false, then vtheta_np1 contains div(v*theta*dp) already
-        if (m_data.m_theta_advection_form==RKStageData::ThetaAdvectionForm::GradPlusDiv) {
+        if (m_theta_advection_form==AdvectionForm::NonConservative) {
           vtheta_np1(ilev)  = m_buffers.div_vdp(kv.team_idx,igp,jgp,ilev)*m_state.m_vtheta_dp(kv.ie,m_data.n0,igp,jgp,ilev);
           vtheta_np1(ilev) += m_buffers.grad_tmp(kv.team_idx,0,igp,jgp,ilev)*m_buffers.vdp(kv.team_idx,0,igp,jgp,ilev);
           vtheta_np1(ilev) += m_buffers.grad_tmp(kv.team_idx,1,igp,jgp,ilev)*m_buffers.vdp(kv.team_idx,1,igp,jgp,ilev);
         }
-        vtheta_np1(ilev) += m_buffers.theta_vadv(kv.team_idx,igp,jgp,ilev);
 
         // Add to vtheta_nm1 and multiply by spheremp
         vtheta_np1(ilev) *= -m_data.dt*m_data.scale1*spheremp;
@@ -839,24 +844,36 @@ struct CaarFunctorImpl {
       const int jgp = idx % NP;
 
       // Compute vtens = grad(average(w^2/2)) - averate(w*grad(w))
-      m_col_ops.compute_midpoint_product<CombineMode::ScaleAdd>(kv,
-                                          Homme::subview(m_buffers.v_i,kv.team_idx,0,igp,jgp),
-                                          Homme::subview(m_state.m_w_i,kv.ie,m_data.n0,igp,jgp),
+      auto u_i = Homme::subview(m_buffers.v_i,kv.team_idx,0,igp,jgp);
+      auto v_i = Homme::subview(m_buffers.v_i,kv.team_idx,1,igp,jgp);
+      auto w_i = Homme::subview(m_state.m_w_i,kv.ie,m_data.n0,igp,jgp);
+      const auto prod_uw = [&u_i,&w_i](const int ilev)->Scalar {
+        return u_i(ilev)*w_i(ilev);
+      };
+      const auto prod_vw = [&v_i,&w_i](const int ilev)->Scalar {
+        return v_i(ilev)*w_i(ilev);
+      };
+      
+      m_col_ops.compute_midpoint_values<CombineMode::ScaleAdd>(kv,
+                                          prod_uw,
                                           Homme::subview(vtens,0,igp,jgp),-1.0);
-      m_col_ops.compute_midpoint_product<CombineMode::ScaleAdd>(kv,
-                                                     Homme::subview(m_buffers.v_i,kv.team_idx,1,igp,jgp),
-                                                     Homme::subview(m_state.m_w_i,kv.ie,m_data.n0,igp,jgp),
-                                                     Homme::subview(vtens,1,igp,jgp),-1.0);
+      m_col_ops.compute_midpoint_values<CombineMode::ScaleAdd>(kv,
+                                          prod_vw,
+                                          Homme::subview(vtens,1,igp,jgp),-1.0);
 
       // Compute average(dpnh_dp_i*grad(phinh_i)), and add to vtens
-      m_col_ops.compute_midpoint_product<CombineMode::Add>(kv,
-                                                     Homme::subview(m_buffers.grad_phinh_i,kv.team_idx,0,igp,jgp),
-                                                     Homme::subview(m_buffers.dpnh_dp_i,kv.team_idx,igp,jgp),
-                                                     Homme::subview(vtens,0,igp,jgp));
-      m_col_ops.compute_midpoint_product<CombineMode::Add>(kv,
-                                                     Homme::subview(m_buffers.grad_phinh_i,kv.team_idx,0,igp,jgp),
-                                                     Homme::subview(m_buffers.dpnh_dp_i,kv.team_idx,igp,jgp),
-                                                     Homme::subview(vtens,1,igp,jgp));
+      const auto phinh_i_x = Homme::subview(m_buffers.grad_phinh_i,kv.team_idx,0,igp,jgp);
+      const auto phinh_i_y = Homme::subview(m_buffers.grad_phinh_i,kv.team_idx,0,igp,jgp);
+      const auto dpnh_dp_i = Homme::subview(m_buffers.dpnh_dp_i,kv.team_idx,igp,jgp);
+      const auto prod_x = [&phinh_i_x,&dpnh_dp_i](const int ilev)->Scalar {
+        return phinh_i_x(ilev)*dpnh_dp_i(ilev);
+      };
+      const auto prod_y = [&phinh_i_y,&dpnh_dp_i](const int ilev)->Scalar {
+        return phinh_i_y(ilev)*dpnh_dp_i(ilev);
+      };
+      
+      m_col_ops.compute_midpoint_values<CombineMode::Add>(kv,prod_x,Homme::subview(vtens,0,igp,jgp));
+      m_col_ops.compute_midpoint_values<CombineMode::Add>(kv,prod_y,Homme::subview(vtens,1,igp,jgp));
 
       // Compute KE. Use pi as temporary.
       auto u  = Homme::subview(m_state.m_v,kv.ie,m_data.n0,0,igp,jgp);

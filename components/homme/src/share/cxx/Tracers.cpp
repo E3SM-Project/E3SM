@@ -24,12 +24,15 @@ Tracers::Tracers(const int num_elems, const int num_tracers)
 
 void Tracers::init(const int num_elems, const int num_tracers)
 {
+  ne = num_elems;
   nt = num_tracers;
 
   Q = decltype(Q)("tracers concentration", num_elems);
   qdp = decltype(qdp)("tracers mass", num_elems);
   qtens_biharmonic = decltype(qtens_biharmonic)("qtens(_biharmonic)", num_elems);
   qlim = decltype(qlim)("qlim", num_elems);
+
+  fq = decltype(fq)("fq",num_elems);
 
   m_inited = true;
 }

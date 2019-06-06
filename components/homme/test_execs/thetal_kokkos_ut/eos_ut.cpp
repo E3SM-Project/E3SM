@@ -123,27 +123,21 @@ TEST_CASE("eos", "eos") {
           const int igp = idx / NP;
           const int jgp = idx % NP;
 
-          auto dp  = Homme::subview(dp_cxx,kv.ie,igp,jgp);
-          auto p   = Homme::subview(p_cxx,kv.ie,igp,jgp);
-          auto p_i = Homme::subview(p_i_cxx,kv.ie,igp,jgp);
-
-          // Compute p_i from dp with an exclusive, forward scan sum
-          p_i(0)[0] = hvcoord.hybrid_ai0*hvcoord.ps0;
-          col_ops.column_scan_mid_to_int<true>(kv,dp,p_i);
-
-          // Compute p from p_i and dp, as p(k) = p_i(k) + dp(k)/2
-          Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-                               [&](const int ilev) {
-            p(ilev) = p_i(ilev) + dp(ilev)/2;
-          });
-
-          // Compute pnh and exner
-          auto vtheta_dp = Homme::subview(vtheta_dp_cxx,kv.ie,igp,jgp);
-          auto phi_i = Homme::subview(phi_i_cxx,kv.ie,igp,jgp);
           auto pnh = Homme::subview(pnh_cxx,kv.ie,igp,jgp);
           auto exner = Homme::subview(exner_cxx,kv.ie,igp,jgp);
+          if (hydrostatic) {
+            auto dp  = Homme::subview(dp_cxx,kv.ie,igp,jgp);
+            auto p_i = Homme::subview(p_i_cxx,kv.ie,igp,jgp);
 
-          eos.compute_pnh_and_exner(kv,vtheta_dp,phi_i,p,pnh,exner);
+            eos.compute_hydrostatic_p(kv,dp,p_i,pnh);
+            eos.compute_exner(kv,pnh,exner);
+          } else {
+            // Compute pnh and exner
+            auto vtheta_dp = Homme::subview(vtheta_dp_cxx,kv.ie,igp,jgp);
+            auto phi_i = Homme::subview(phi_i_cxx,kv.ie,igp,jgp);
+
+            eos.compute_pnh_and_exner(kv,vtheta_dp,phi_i,pnh,exner);
+          }
         });
         kv.team_barrier();
       });
@@ -331,16 +325,13 @@ TEST_CASE("eos", "eos") {
         const int igp = idx / NP;
         const int jgp = idx % NP;
 
-        // If not hydrostatic, p is ignored in compute_pnh_and_exner, but we still need to pass it
-        auto p = Homme::subview(p_cxx,kv.ie,igp,jgp);
-
         // Compute pnh and exner
         auto vtheta_dp = Homme::subview(vtheta_dp_cxx,kv.ie,igp,jgp);
         auto phi_i = Homme::subview(phi_i_cxx,kv.ie,igp,jgp);
         auto pnh = Homme::subview(pnh_cxx,kv.ie,igp,jgp);
         auto exner = Homme::subview(exner_cxx,kv.ie,igp,jgp);
 
-        eos.compute_pnh_and_exner(kv,vtheta_dp,phi_i,p,pnh,exner);
+        eos.compute_pnh_and_exner(kv,vtheta_dp,phi_i,pnh,exner);
       });
       kv.team_barrier();
     });

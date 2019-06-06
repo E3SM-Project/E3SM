@@ -34,13 +34,6 @@ struct RKStageData {
 
   bool    compute_diagnostics;
 
-  enum ThetaAdvectionForm {
-    DivOfProduct = 1,
-    GradPlusDiv  = 2
-  };
-
-  ThetaAdvectionForm m_theta_advection_form;
-
   Real    scale1;
   Real    scale2;
   Real    scale3;

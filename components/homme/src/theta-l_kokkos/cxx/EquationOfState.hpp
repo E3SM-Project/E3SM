@@ -24,52 +24,69 @@ public:
              const HybridVCoord& hvcoord) {
     m_theta_hydrostatic_mode = theta_hydrostatic_mode;
     m_hvcoord = hvcoord;
+    assert (m_hvcoord.m_inited);
   }
 
   KOKKOS_INLINE_FUNCTION
-  void compute_pnh_and_exner (KernelVariables& kv,
-                              ExecViewUnmanaged<const Scalar[NUM_LEV  ]> vtheta_dp,
-                              ExecViewUnmanaged<const Scalar[NUM_LEV_P]> phi_i,
-                              ExecViewUnmanaged<const Scalar[NUM_LEV  ]> pi,
-                              ExecViewUnmanaged<      Scalar[NUM_LEV  ]> pnh,
-                              ExecViewUnmanaged<      Scalar[NUM_LEV  ]> exner) const
+  void compute_hydrostatic_p (const KernelVariables& kv,
+                              const ExecViewUnmanaged<const Scalar[NUM_LEV  ]>& dp,
+                              const ExecViewUnmanaged<      Scalar[NUM_LEV_P]>& p_i,
+                              const ExecViewUnmanaged<      Scalar[NUM_LEV  ]>& pi) const
   {
-    if (m_theta_hydrostatic_mode) {
-      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-                           [&](const int ilev) {
-        // Copy pi into pnh, and set exner = (pi/p0)^kappa
-        pnh(ilev) = pi(ilev);
-
-        // Avoid temporaries
-        exner(ilev) = pi(ilev);
-        exner(ilev) /= PhysicalConstants::p0;
-        exner(ilev) = pow(exner(ilev),PhysicalConstants::kappa);
-      });
-    } else {
-      // Compute:
-      //  1) p_over_exner = -Rgas*vtheta_dp/delta(phi_i)
-      //  2) pnh = p0 (p_over_exner/p0)^(1/(1-kappa))
-      //  3) exner = pnh/p_over_exner
-
-      // To avoid temporaries, use exner to store some temporaries
-      m_col_ops.compute_midpoint_delta(kv,phi_i,exner);
-
-      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-                           [&](const int ilev) {
-
-        // TODO: should do *= Rgas/p0, but would lose BFB with F90.
-        exner(ilev) = (-PhysicalConstants::Rgas)*vtheta_dp(ilev) / exner(ilev);
-        pnh(ilev) = exner(ilev)/PhysicalConstants::p0;
-        pnh(ilev) = pow(pnh(ilev),1.0/(1.0-PhysicalConstants::kappa));
-        pnh(ilev) *= PhysicalConstants::p0;
-
-        exner(ilev) = pnh(ilev)/exner(ilev);
-      });
-    }
+    // If you're not hydrostatic, check outside the function
+    assert (m_theta_hydrostatic_mode);
+    p_i(0)[0] = m_hvcoord.hybrid_ai0*m_hvcoord.ps0;
+    m_col_ops.column_scan_mid_to_int<true>(kv,dp,p_i);
+    m_col_ops.compute_midpoint_values(kv,p_i,pi);
   }
 
   KOKKOS_INLINE_FUNCTION
-  void compute_dpnh_dp_i (KernelVariables& kv,
+  void compute_exner (const KernelVariables& kv,
+                      const ExecViewUnmanaged<const Scalar[NUM_LEV]>& pi,
+                      const ExecViewUnmanaged<      Scalar[NUM_LEV]>& exner) const
+  {
+    Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                         [&](const int ilev) {
+      // Avoid temporaries
+      exner(ilev) = pi(ilev);
+      exner(ilev) /= PhysicalConstants::p0;
+      exner(ilev) = pow(exner(ilev),PhysicalConstants::kappa);
+    });
+  }
+
+  template<typename VThetaProvider, typename PhiProvider>
+  KOKKOS_INLINE_FUNCTION
+  void compute_pnh_and_exner (const KernelVariables& kv,
+                              const VThetaProvider& vtheta_dp,
+                              const PhiProvider&    phi_i,
+                              const ExecViewUnmanaged<Scalar[NUM_LEV  ]>& pnh,
+                              const ExecViewUnmanaged<Scalar[NUM_LEV  ]>& exner) const
+  {
+    // If you're hydrostatic, check outside the function
+    assert (!m_theta_hydrostatic_mode);
+    // Compute:
+    //  1) p_over_exner = -Rgas*vtheta_dp/delta(phi_i)
+    //  2) pnh = p0 (p_over_exner/p0)^(1/(1-kappa))
+    //  3) exner = pnh/p_over_exner
+
+    // To avoid temporaries, use exner to store some temporaries
+    m_col_ops.compute_midpoint_delta(kv,phi_i,exner);
+
+    Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                         [&](const int ilev) {
+
+      // TODO: should do *= Rgas/p0, but would lose BFB with F90.
+      exner(ilev) = (-PhysicalConstants::Rgas)*vtheta_dp(ilev) / exner(ilev);
+      pnh(ilev) = exner(ilev)/PhysicalConstants::p0;
+      pnh(ilev) = pow(pnh(ilev),1.0/(1.0-PhysicalConstants::kappa));
+      pnh(ilev) *= PhysicalConstants::p0;
+
+      exner(ilev) = pnh(ilev)/exner(ilev);
+    });
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void compute_dpnh_dp_i (const KernelVariables& kv,
                           const ExecViewUnmanaged<const Scalar[NUM_LEV  ]>& pnh,
                           const ExecViewUnmanaged<const Scalar[NUM_LEV_P]>& dp_i,
                           const ExecViewUnmanaged<      Scalar[NUM_LEV_P]>& dpnh_dp_i) const
@@ -139,6 +156,7 @@ public:
       constexpr Real p0    = PhysicalConstants::p0;
       constexpr Real kappa = PhysicalConstants::kappa;
       constexpr Real Rgas  = PhysicalConstants::Rgas;
+      // TODO: remove temporaries
       return (Rgas*vtheta_dp(ilev) * pow(p(ilev)/p0,kappa-1)) / p0;
     };
 

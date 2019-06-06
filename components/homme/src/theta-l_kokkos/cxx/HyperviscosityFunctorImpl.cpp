@@ -27,7 +27,7 @@ HyperviscosityFunctorImpl (const SimulationParams&       params,
  , m_sphere_ops (Context::singleton().get<SphereOperators>())
  , m_hvcoord (Context::singleton().get<HybridVCoord>())
  , m_policy_ref_states (Homme::get_default_team_policy<ExecSpace,TagRefStates>(elements.num_elems()))
- , m_policy_update_states (0, elements.num_elems()*NP*NP*NUM_LEV)
+ , m_policy_update_states (Homme::get_default_team_policy<ExecSpace,TagUpdateStates>(elements.num_elems()))
  , m_policy_first_laplace (Homme::get_default_team_policy<ExecSpace,TagFirstLaplaceHV>(elements.num_elems()))
  , m_policy_pre_exchange (Homme::get_default_team_policy<ExecSpace, TagHyperPreExchange>(elements.num_elems()))
 {
@@ -52,18 +52,34 @@ HyperviscosityFunctorImpl (const SimulationParams&       params,
   // Init ElementOps
   m_elem_ops.init(m_hvcoord);
 
+  // Init Equation of state
+  m_theta_hydrostatic_mode = params.theta_hydrostatic_mode;
+  m_eos.init(m_theta_hydrostatic_mode,m_hvcoord);
+
   // Make sure the sphere operators have buffers large enough to accommodate this functor's needs
   m_sphere_ops.allocate_buffers(Homme::get_default_team_policy<ExecSpace>(m_state.num_elems()));
 }
 
 int HyperviscosityFunctorImpl::requested_buffer_size () const {
-  constexpr int size_mid_scalar = NP*NP*NUM_LEV;
-  constexpr int size_int_scalar = NP*NP*NUM_LEV_P;
+  constexpr int size_mid_scalar =   NP*NP*NUM_LEV;
+  constexpr int size_mid_vector = 2*NP*NP*NUM_LEV_P;
+  constexpr int size_int_scalar =   NP*NP*NUM_LEV_P;
+  constexpr int size_bhm_scalar =   NP*NP*NUM_BIHARMONIC_LEV;
+  constexpr int size_bhm_vector = 2*NP*NP*NUM_BIHARMONIC_LEV;
 
-  const int ne = m_geometry.num_elems();
+  const int nelems = m_geometry.num_elems();
   const int nteams = get_num_concurrent_teams(m_policy_pre_exchange); 
 
-  return 3*ne*size_mid_scalar + 2*ne*size_int_scalar + nteams*NP*NP;
+#ifdef XX_NONBFB_COMING
+  // Even though we don't compute wtens at last interface, it makes
+  // the code MUCH cleaner when computing the heating term, cause
+  // we can then use ColumnOps to average w*wtens
+  return nelems*(7*size_mid_scalar + size_mid_vector + size_int_scalar) + 
+         nteams*(4*size_bhm_scalar + size_bhm_vector + size_int_scalar);
+#else
+  return nelems*(8*size_mid_scalar + size_mid_vector) + 
+         nteams*(4*size_bhm_scalar + size_bhm_vector + size_int_scalar);
+#endif
 }
 
 void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm) {
@@ -72,57 +88,65 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
   constexpr int size_mid_scalar =   NP*NP*NUM_LEV;
   constexpr int size_mid_vector = 2*NP*NP*NUM_LEV;
   constexpr int size_int_scalar =   NP*NP*NUM_LEV_P;
+  constexpr int size_bhm_scalar =   NP*NP*NUM_BIHARMONIC_LEV;
+  constexpr int size_bhm_vector = 2*NP*NP*NUM_BIHARMONIC_LEV;
 
   Scalar* mem = reinterpret_cast<Scalar*>(fbm.get_memory());
-  const int ne = m_geometry.num_elems();
+  const int nelems = m_geometry.num_elems();
   const int nteams = get_num_concurrent_teams(m_policy_pre_exchange); 
 
   // Midpoints fields
-  m_buffers.dp_ref = decltype(m_buffers.dp_ref)(mem,ne);
-  mem += size_mid_scalar*ne;
 
-  m_buffers.p = decltype(m_buffers.p)(mem,ne);
-  mem += size_mid_scalar*ne;
+  m_buffers.dp_ref = decltype(m_buffers.dp_ref)(mem,nelems);
+  mem += size_mid_scalar*nelems;
 
-  m_buffers.theta_ref = decltype(m_buffers.theta_ref)(mem,ne);
-  mem += size_mid_scalar*ne;
+  m_buffers.p = decltype(m_buffers.p)(mem,nelems);
+  mem += size_mid_scalar*nelems;
 
-  m_buffers.dptens = decltype(m_buffers.dptens)(mem,ne);
-  mem += size_mid_scalar*ne;
+  m_buffers.theta_ref = decltype(m_buffers.theta_ref)(mem,nelems);
+  mem += size_mid_scalar*nelems;
 
-  m_buffers.ttens = decltype(m_buffers.ttens)(mem,ne);
-  mem += size_mid_scalar*ne;
+  m_buffers.dptens = decltype(m_buffers.dptens)(mem,nelems);
+  mem += size_mid_scalar*nelems;
 
-  m_buffers.vtens = decltype(m_buffers.vtens)(mem,ne);
-  mem += size_mid_vector*ne;
+  m_buffers.ttens = decltype(m_buffers.ttens)(mem,nelems);
+  mem += size_mid_scalar*nelems;
 
-  m_buffers.lapl_dp = decltype(m_buffers.lapl_dp)(mem,ne);
-  mem += size_mid_scalar*ne;
+  m_buffers.phi_i_ref = decltype(m_buffers.phi_i_ref)(mem,nelems);
+  mem += size_mid_scalar*nelems;
 
-  m_buffers.lapl_theta = decltype(m_buffers.lapl_theta)(mem,ne);
-  mem += size_mid_scalar*ne;
+  m_buffers.wtens = decltype(m_buffers.wtens)(mem,nelems);
+#ifdef XX_NONBFB_COMING
+  mem += size_int_scalar*nelems;
+#else
+  mem += size_mid_scalar*nelems;
+#endif
 
-  m_buffers.lapl_v = decltype(m_buffers.lapl_v)(mem,ne);
-  mem += size_mid_vector*ne;
+  m_buffers.phitens = decltype(m_buffers.phitens)(mem,nelems);
+  mem += size_mid_scalar*nelems;
+
+  m_buffers.vtens = decltype(m_buffers.vtens)(mem,nelems);
+  mem += size_mid_vector*nelems;
 
   // Interfaces fields
-  m_buffers.p_i       = decltype(m_buffers.p_i)(mem,ne);
-  mem += size_int_scalar*ne;
+  m_buffers.p_i       = decltype(m_buffers.p_i)(mem,nteams);
+  mem += size_int_scalar*nteams;
 
-  m_buffers.phi_i_ref = decltype(m_buffers.phi_i_ref)(mem,ne);
-  mem += size_int_scalar*ne;
+  // Biharmonic fields
+  m_buffers.lapl_dp = decltype(m_buffers.lapl_dp)(mem,nteams);
+  mem += size_bhm_scalar*nteams;
 
-  m_buffers.wtens = decltype(m_buffers.wtens)(mem,ne);
-  mem += size_int_scalar*ne;
+  m_buffers.lapl_w = decltype(m_buffers.lapl_w)(mem,nteams);
+  mem += size_bhm_scalar*nteams;
 
-  m_buffers.phitens = decltype(m_buffers.phitens)(mem,ne);
-  mem += size_int_scalar*ne;
+  m_buffers.lapl_phi = decltype(m_buffers.lapl_phi)(mem,nteams);
+  mem += size_bhm_scalar*nteams;
 
-  m_buffers.lapl_w = decltype(m_buffers.lapl_w)(mem,ne);
-  mem += size_int_scalar*ne;
+  m_buffers.lapl_theta = decltype(m_buffers.lapl_theta)(mem,nteams);
+  mem += size_bhm_scalar*nteams;
 
-  m_buffers.lapl_phi = decltype(m_buffers.lapl_phi)(mem,ne);
-  mem += size_int_scalar*ne;
+  m_buffers.lapl_v = decltype(m_buffers.lapl_v)(mem,nteams);
+  mem += size_bhm_vector*nteams;
 
   // ps_ref can alias anything (except dp_ref), since it's used to compute dp_ref, then tossed
   m_buffers.ps_ref = decltype(m_buffers.ps_ref)(reinterpret_cast<Real*>(m_buffers.p.data()),nteams);
@@ -131,19 +155,21 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
 
 void HyperviscosityFunctorImpl::init_boundary_exchanges () {
   m_be = std::make_shared<BoundaryExchange>();
-  auto& be = *m_be;
   auto bm_exchange = Context::singleton().get<MpiBuffersManagerMap>()[MPI_EXCHANGE];
-  if (!bm_exchange->is_connectivity_set()) {
-    bm_exchange->set_connectivity(Context::singleton().get_ptr<Connectivity>());
-  }
-  be.set_buffers_manager(bm_exchange);
-  be.set_num_fields(0, 0, 4, 2);
-  be.register_field(m_buffers.dptens);
-  be.register_field(m_buffers.ttens);
-  be.register_field(m_buffers.wtens);
-  be.register_field(m_buffers.phitens);
-  be.register_field(m_buffers.vtens, 2, 0);
-  be.registration_completed();
+  assert (bm_exchange->are_views_valid());
+
+  m_be->set_buffers_manager(bm_exchange);
+#ifdef XX_NONBFB_COMING
+  m_be->set_num_fields(0, 0, 5, 1);
+#else
+  m_be->set_num_fields(0, 0, 6);
+#endif
+  m_be->register_field(m_buffers.dptens);
+  m_be->register_field(m_buffers.ttens);
+  m_be->register_field(m_buffers.wtens);
+  m_be->register_field(m_buffers.phitens);
+  m_be->register_field(m_buffers.vtens, 2, 0);
+  m_be->registration_completed();
 }
 
 void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real eta_ave_w)
@@ -162,14 +188,14 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
     Kokkos::parallel_for(m_policy_pre_exchange, *this);
     Kokkos::fence();
 
-    // // Exchange
-    // assert (m_be->is_registration_completed());
-    // GPTLstart("hvf-bexch");
-    // m_be->exchange();
-    // GPTLstop("hvf-bexch");
+    // Exchange
+    assert (m_be->is_registration_completed());
+    GPTLstart("hvf-bexch");
+    m_be->exchange(m_geometry.m_rspheremp);
+    GPTLstop("hvf-bexch");
 
-    // // Update states
-    // Kokkos::parallel_for(policy_update_states, *this);
+    // Update states
+    Kokkos::parallel_for(m_policy_update_states, *this);
     Kokkos::fence();
   }
 }

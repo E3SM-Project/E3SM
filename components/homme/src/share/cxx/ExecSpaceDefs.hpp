@@ -154,13 +154,13 @@ struct DefaultThreadsDistribution<Hommexx_Cuda> {
 // Return a TeamPolicy using defaults that, so far, have been good for all use
 // cases. Use of this function means you don't have to use
 // DefaultThreadsDistribution.
-template <typename ExecSpace, typename Tag=void>
-Kokkos::TeamPolicy<ExecSpace, Tag>
+template <typename ExecSpace, typename... Tags>
+Kokkos::TeamPolicy<ExecSpace, Tags...>
 get_default_team_policy(const int num_parallel_iterations) {
   const auto threads_vectors =
     DefaultThreadsDistribution<ExecSpace>::team_num_threads_vectors(
       num_parallel_iterations);
-  auto policy = Kokkos::TeamPolicy<ExecSpace, Tag>(num_parallel_iterations,
+  auto policy = Kokkos::TeamPolicy<ExecSpace, Tags...>(num_parallel_iterations,
                                                    threads_vectors.first,
                                                    threads_vectors.second);
   policy.set_chunk_size(1);

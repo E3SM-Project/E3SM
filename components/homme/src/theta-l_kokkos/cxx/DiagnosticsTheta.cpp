@@ -60,6 +60,9 @@ void DiagnosticsTheta::init_buffers (const FunctorsBuffersManager& fbm) {
   mem += nteams*NP*NP*NUM_LEV;
 
   m_buffers.dp_ref = decltype(m_buffers.dp_ref)(mem,nteams);
+  mem += nteams*NP*NP*NUM_LEV;
+
+  m_buffers.dpnh_dp_i = decltype(m_buffers.dpnh_dp_i)(mem,nteams);
 }
 
 void DiagnosticsTheta::prim_energy_halftimes (const bool before_advance, const int ivar)

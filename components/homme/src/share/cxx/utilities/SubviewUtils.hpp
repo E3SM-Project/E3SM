@@ -9,6 +9,7 @@
 
 #include "Types.hpp"
 #include "ExecSpaceDefs.hpp"
+#include "ViewUtils.hpp"
 
 #include <functional>
 
@@ -349,6 +350,17 @@ subview(ViewType<ScalarType ** [DIM1][DIM2][DIM3][DIM4], MemSpace,
   assert(idim2 >= 0);
   return ViewUnmanaged<ScalarType[DIM3][DIM4], MemSpace>(
     &v_in.impl_map().reference(ie, remap_idx, idim1, idim2, 0, 0));
+}
+
+// Force a subview to be const
+template<typename View, typename... Ints>
+auto
+subviewConst(const View& v, const Ints... idx) ->
+  // The compile will match the correct method above.
+ typename ViewConst<decltype(Homme::subview(v,idx...))>::type
+{
+  // Upon return, the view will be copied into one with const scalar type
+  return Homme::subview(v,idx...);
 }
 
 } // namespace Homme

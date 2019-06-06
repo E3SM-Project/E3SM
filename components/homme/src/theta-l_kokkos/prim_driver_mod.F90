@@ -20,7 +20,7 @@ contains
                                  hypervis_order, hypervis_subcycle, hypervis_scaling,    &
                                  ftype, prescribed_wind, moisture, disable_diagnostics,  &
                                  use_cpstar, transport_alg, theta_hydrostatic_mode,      &
-                                 dcmip16_mu
+                                 dcmip16_mu, theta_advect_form
     use dimensions_mod,   only : qsize, nelemd, np, qsize
     use element_mod,      only : element_t
     use element_state,    only : elem_state_v, elem_state_w_i, elem_state_vtheta_dp,   &
@@ -46,7 +46,7 @@ contains
       subroutine init_simulation_params_c (remap_alg, limiter_option, rsplit, qsplit, time_step_type,    &
                                            qsize, state_frequency, nu, nu_p, nu_q, nu_s, nu_div, nu_top, &
                                            hypervis_order, hypervis_subcycle, hypervis_scaling,          &
-                                           dcmip16_mu, ftype, prescribed_wind, moisture,                 &
+                                           dcmip16_mu, ftype, theta_adv_form, prescribed_wind, moisture, &
                                            disable_diagnostics, use_cpstar, use_semi_lagrange_transport, &
                                            theta_hydrostatic_mode) bind(c)
         use iso_c_binding, only: c_int, c_bool, c_double
@@ -57,7 +57,7 @@ contains
         integer(kind=c_int),  intent(in) :: state_frequency, qsize
         real(kind=c_double),  intent(in) :: nu, nu_p, nu_q, nu_s, nu_div, nu_top, hypervis_scaling, dcmip16_mu
         integer(kind=c_int),  intent(in) :: hypervis_order, hypervis_subcycle
-        integer(kind=c_int),  intent(in) :: ftype
+        integer(kind=c_int),  intent(in) :: ftype, theta_adv_form
         logical(kind=c_bool), intent(in) :: prescribed_wind, moisture, disable_diagnostics, use_cpstar
         logical(kind=c_bool), intent(in) :: use_semi_lagrange_transport, theta_hydrostatic_mode
       end subroutine init_simulation_params_c
@@ -173,7 +173,7 @@ contains
     call init_simulation_params_c (vert_remap_q_alg, limiter_option, rsplit, qsplit, tstep_type,  &
                                    qsize, statefreq, nu, nu_p, nu_q, nu_s, nu_div, nu_top,        &
                                    hypervis_order, hypervis_subcycle, hypervis_scaling,           &
-                                   dcmip16_mu, ftype,                                             &
+                                   dcmip16_mu, ftype, theta_advect_form,                           &
                                    LOGICAL(prescribed_wind==1,c_bool),                            &
                                    LOGICAL(moisture/="dry",c_bool),                               &
                                    LOGICAL(disable_diagnostics,c_bool),                           &
@@ -239,6 +239,9 @@ contains
                                  elem_state_phinh_i_ptr, elem_state_dp3d_ptr, elem_state_ps_v_ptr, &
                                  elem_state_Qdp_ptr)
 
+    ! Initialize the C++ functors in the C++ context
+    call init_functors_c ()
+
     ! Initialize the diagnostics arrays in C++
     elem_state_q_ptr         = c_loc(elem_state_q)
     elem_accum_qvar_ptr      = c_loc(elem_accum_qvar)
@@ -251,9 +254,6 @@ contains
                              elem_accum_q1mass_ptr, elem_accum_iener_ptr,                 &
                              elem_accum_kener_ptr, elem_accum_pener_ptr)
 
-    ! Initialize the C++ functors in the C++ context
-    call init_functors_c ()
-
     ! Initialize boundary exchange structure in C++
     call init_boundary_exchanges_c ()
 
@@ -264,9 +264,11 @@ contains
     use control_mod,    only : qsplit, rsplit, statefreq
     use dimensions_mod, only : nelemd
     use element_mod,    only : element_t
-    use element_state,  only : elem_state_v, elem_state_w_i, elem_state_vtheta_dp,   &
-                               elem_state_phinh_i, elem_state_dp3d, elem_state_ps_v, &
-                               elem_state_Qdp, elem_state_Q, elem_derived_omega_p
+    use element_state,  only : elem_state_v, elem_state_w_i, elem_state_vtheta_dp,     &
+                               elem_state_phinh_i, elem_state_dp3d, elem_state_ps_v,   &
+                               elem_state_Qdp, elem_state_Q, elem_derived_omega_p,     &
+                               elem_derived_FM, elem_derived_FVTheta, elem_derived_FT, &
+                               elem_derived_FPHI, elem_derived_FQ
     use hybrid_mod,     only : hybrid_t
     use hybvcoord_mod,  only : hvcoord_t
     use kinds,          only : real_kind
@@ -275,6 +277,18 @@ contains
     use parallel_mod,   only : abortmp
     use prim_state_mod, only: prim_printstate
     interface
+
+      subroutine push_forcing_to_c(FM, FVTheta, FT, FPHI, FQ) bind(c)
+        use iso_c_binding,  only: c_double
+        use dimensions_mod, only: np, nlev, nlevp, nelemd, qsize_d
+        !
+        ! Inputs
+        !
+         real (kind=c_double), intent(in) :: FM(np,np,3,nlev,nelemd)
+         real (kind=c_double), intent(in) :: FVTheta(np,np,nlev,nelemd), FT(np,np,nlev,nelemd)
+         real (kind=c_double), intent(in) :: FPHI(np,np,nlevp,nelemd), FQ(np,np,nlev,qsize_d,nelemd)
+      end subroutine push_forcing_to_c
+
       subroutine prim_run_subcycle_c(tstep,nstep,nm1,n0,np1,next_output_step) bind(c)
         use iso_c_binding, only: c_int, c_double
         !
@@ -292,9 +306,9 @@ contains
         !
         ! Inputs
         !
-        type (c_ptr),          intent(in) :: elem_state_v_ptr, elem_state_w_i_ptr, elem_state_vtheta_dp_ptr
-        type (c_ptr),          intent(in) :: elem_state_phinh_i_ptr, elem_state_dp3d_ptr, elem_state_ps_v_ptr
-        type (c_ptr),          intent(in) :: elem_state_Qdp_ptr, elem_state_Q_ptr, elem_derived_omega_p_ptr
+        type (c_ptr), intent(in) :: elem_state_v_ptr, elem_state_w_i_ptr, elem_state_vtheta_dp_ptr
+        type (c_ptr), intent(in) :: elem_state_phinh_i_ptr, elem_state_dp3d_ptr, elem_state_ps_v_ptr
+        type (c_ptr), intent(in) :: elem_state_Qdp_ptr, elem_state_Q_ptr, elem_derived_omega_p_ptr
       end subroutine cxx_push_results_to_f90
     end interface
     !
@@ -330,6 +344,9 @@ contains
     if (MODULO(nstep_end,statefreq)==0 .or. (tl%nstep <= tl%nstep0+(nstep_end-tl%nstep) )) then
       compute_diagnostics = .true.
     endif
+
+    call push_forcing_to_c(elem_derived_FM,   elem_derived_FVTheta, elem_derived_FT, &
+                           elem_derived_FPHI, elem_derived_FQ)
 
     call prim_run_subcycle_c(dt,nstep_c,nm1_c,n0_c,np1_c,nextOutputStep)
 
