@@ -191,8 +191,8 @@ def _post_run_check(case, lid):
         for cpl_logfile in cpl_logs:
             if not os.path.isfile(cpl_logfile):
                 break
-            with open(cpl_logfile, 'r', encoding='utf-8') as fd:
-                if 'SUCCESSFUL TERMINATION' in fd.read():
+            with open(cpl_logfile, 'r') as fd:
+                if 'SUCCESSFUL TERMINATION' in fd.read().decode("UTF-8"):
                     count_ok += 1
         if count_ok != cpl_ninst:
             expect(False, "Model did not complete - see {} \n " .format(cpl_logfile))
