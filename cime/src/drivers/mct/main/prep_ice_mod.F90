@@ -174,19 +174,19 @@ contains
        endif
 
        if (glcshelf_c2_ice) then
-	 if (iamroot_CPLID) then
+         if (iamroot_CPLID) then
                write(logunit,*) ' '
                write(logunit,F00) 'Initializing mapper_Sg2i'
-	 end if
-	 call seq_map_init_rcfile(mapper_Sg2i, glc(1), ice(1), &
+         end if
+         call seq_map_init_rcfile(mapper_Sg2i, glc(1), ice(1), &
               'seq_maps.rc','glc2ice_smapname:','glc2ice_smaptype:',samegrid_ig, &
               'mapper_Sg2i initialization', esmf_map_flag)
 
-	 if (iamroot_CPLID) then
+         if (iamroot_CPLID) then
                write(logunit,*) ' '
                write(logunit,F00) 'Initializing mapper_Fg2i'
-	 end if
-	 call seq_map_init_rcfile(mapper_Fg2i, glc(1), ice(1), &
+         end if
+         call seq_map_init_rcfile(mapper_Fg2i, glc(1), ice(1), &
               'seq_maps.rc','glc2ice_fmapname:','glc2ice_fmaptype:',samegrid_ig, &
               'mapper_Fg2i initialization', esmf_map_flag)
        endif

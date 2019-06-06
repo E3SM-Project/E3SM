@@ -503,6 +503,38 @@ using a fortran linker.
   <TRILINOS_PATH MPILIB="mpich2">$ENV{TRILINOS_PATH}</TRILINOS_PATH>
 </compiler>
 
+<compiler MACH="athena">
+  <CPPDEFS>
+    <!-- these flags enable nano timers -->
+    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
+  </CPPDEFS>
+  <NETCDF_PATH>$ENV{NETCDF}</NETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
+  <PNETCDF_PATH>$ENV{PNETCDF}</PNETCDF_PATH>
+  <AR>xiar</AR>
+  <ARFLAGS>
+    <base>cru</base>
+  </ARFLAGS>
+</compiler>
+
+<compiler MACH="athena" COMPILER="intel">
+  <CFLAGS>
+    <append>  -xHost </append>
+  </CFLAGS>
+  <CPPDEFS>
+    <append> -DINTEL_MKL -DHAVE_SSE2 </append>
+  </CPPDEFS>
+  <FFLAGS>
+    <append>  -xHost </append>
+  </FFLAGS>
+  <MPICXX MPILIB="mpich2">mpiicpc</MPICXX>
+  <MPICC MPILIB="mpich2">mpiicc</MPICC>
+  <MPIFC MPILIB="mpich2">mpiifort</MPIFC>
+  <SCC>icc</SCC>
+  <SFC>ifort</SFC>
+  <TRILINOS_PATH MPILIB="mpich2">$ENV{TRILINOS_PATH}</TRILINOS_PATH>
+</compiler>
+
 <compiler MACH="bluewaters">
   <CPPDEFS>
     <append MODEL="gptl"> -DHAVE_PAPI </append>
@@ -590,8 +622,8 @@ using a fortran linker.
   </CMAKE_OPTS>
   <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="FALSE">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.2.8_cheyenne_Intel17.0.1_noMPI_noOpenMP</PFUNIT_PATH>
   <PFUNIT_PATH MPILIB="mpt" compile_threaded="TRUE">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.2.8_cheyenne_Intel17.0.1_MPI_openMP</PFUNIT_PATH>
-  <!-- Bug in the intel/17.0.1 compiler requires this, remove this line when compiler is updated -->
-  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
+  <!-- SET to FALSE for intel 17 and 18 TRUE otherwise -->
+  <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
 </compiler>
 
 <compiler MACH="cheyenne" COMPILER="pgi">
@@ -1071,7 +1103,7 @@ using a fortran linker.
   <SLIBS>
     <append>-L$ENV{NETCDF}/lib -lnetcdff -lnetcdf</append>
   </SLIBS>
-  <ESMF_LIBDIR>/home6/fvitt/esmf_7_0_0/esmf/lib/libO/Linux.intel.64.mpi.default</ESMF_LIBDIR>
+  <ESMF_LIBDIR>/home6/fvitt/esmf_7_1_0r/esmf/lib/libO/Linux.intel.64.mpi.default</ESMF_LIBDIR>
 </compiler>
 
 <compiler MACH="pleiades-has">
@@ -1085,7 +1117,7 @@ using a fortran linker.
   <SLIBS>
     <append>-L$ENV{NETCDF}/lib -lnetcdff -lnetcdf</append>
   </SLIBS>
-  <ESMF_LIBDIR>/home6/fvitt/esmf_7_0_0/esmf/lib/libO/Linux.intel.64.mpi.default</ESMF_LIBDIR>
+  <ESMF_LIBDIR>/home6/fvitt/esmf_7_1_0r/esmf/lib/libO/Linux.intel.64.mpi.default</ESMF_LIBDIR>
 </compiler>
 
 <compiler MACH="pleiades-ivy">
@@ -1099,7 +1131,7 @@ using a fortran linker.
   <SLIBS>
     <append>-L$ENV{NETCDF}/lib -lnetcdff -lnetcdf</append>
   </SLIBS>
-  <ESMF_LIBDIR>/home6/fvitt/esmf_7_0_0/esmf/lib/libO/Linux.intel.64.mpi.default</ESMF_LIBDIR>
+  <ESMF_LIBDIR>/home6/fvitt/esmf_7_1_0r/esmf/lib/libO/Linux.intel.64.mpi.default</ESMF_LIBDIR>
 </compiler>
 
 <compiler MACH="pleiades-san">
@@ -1113,7 +1145,7 @@ using a fortran linker.
   <SLIBS>
     <append>-L$ENV{NETCDF}/lib -lnetcdff -lnetcdf</append>
   </SLIBS>
-  <ESMF_LIBDIR>/home6/fvitt/esmf_7_0_0/esmf/lib/libO/Linux.intel.64.mpi.default</ESMF_LIBDIR>
+  <ESMF_LIBDIR>/home6/fvitt/esmf_7_1_0r/esmf/lib/libO/Linux.intel.64.mpi.default</ESMF_LIBDIR>
 </compiler>
 
 <compiler MACH="sandiatoss3" COMPILER="intel">
