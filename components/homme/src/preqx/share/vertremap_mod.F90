@@ -61,15 +61,12 @@ contains
   real (kind=real_kind), dimension(np,np,nlev,2)  :: ttmp
 #ifdef FIVE
   real (kind=real_kind), dimension(np,np,pverp)  :: pint_host
-  real (kind=real_kind), dimension(np,np,pverp)  :: pint_star_host
   real (kind=real_kind), dimension(np,np,pver)   :: pmid_host
-  real (kind=real_kind), dimension(np,np,pver)   :: pmid_star_host
   real (kind=real_kind), dimension(np,np,pverp_five)  :: pint_five
   real (kind=real_kind), dimension(np,np,pver_five)   :: pmid_five
   real (kind=real_kind), dimension(np,np,pver_five)   :: dp_five
   real (kind=real_kind), dimension(np,np,pver_five)   :: dp_star_five
-  real (kind=real_kind), dimension(np,np,pverp_five)  :: pint_star_five
-  real (kind=real_kind), dimension(np,np,pver_five)   :: pmid_star_five
+  real (kind=real_kind), dimension(np,np,pverp_five)  :: eta_dot_dpdn_five
   real (kind=real_kind), dimension(np,np,pver_five)   :: dp3d_five
 
   real (kind=real_kind), dimension(np,np,pver_five)  :: ttmp_five
@@ -119,7 +116,6 @@ contains
 #ifdef FIVE
   pint_host = 0.
   pmid_host = 0.
-  pint_star_host = 0. 
   ttmp_five = 0.
   utmp_five = 0.
   vtmp_five = 0.
@@ -146,9 +142,6 @@ contains
 #ifdef FIVE
         pint_host(:,:,k) = hvcoord%hyai(k)*hvcoord%ps0+hvcoord%hybi(k)*elem(ie)%state%ps_v(:,:,np1)
         pmid_host(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0+hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,np1)
-        pint_star_host(:,:,1) = pint_host(:,:,1)
-        pint_star_host(:,:,k+1) = pint_star_host(:,:,k) + dp_star(:,:,k)
-        pmid_star_host(:,:,k) = (pint_star_host(:,:,k)+pint_star_host(:,:,k+1))/2.0
 #endif
      enddo
 #ifdef FIVE
@@ -179,13 +172,13 @@ contains
 
      do i=1,np
      do j=1,np
-        call linear_interp(pint_host(i,j,:),pint_five(i,j,:),pint_star_host(i,j,1:pverp),pint_star_five(i,j,1:pverp_five),pverp,pverp_five)  
+        call linear_interp(pint_host(i,j,:),pint_five(i,j,:),elem(ie)%derived%eta_dot_dpdn(i,j,1:pverp),&
+                     eta_dot_dpdn_five(i,j,1:pverp_five),pverp,pverp_five)  
      enddo
      enddo
 
      do k=1,pver_five
-        dp_star_five(:,:,k) = pint_star_five(:,:,k+1)-pint_star_five(:,:,k)
-        pmid_star_five(:,:,k) = (pint_star_five(:,:,k)+pint_star_five(:,:,k+1))/2.0
+        dp_star_five(:,:,k) = dp_five(:,:,k) + dt*(eta_dot_dpdn_five(:,:,k+1) - eta_dot_dpdn_five(:,:,k))
      enddo
 #endif
 
@@ -195,11 +188,11 @@ contains
      do i=1,np
      do j=1,np
 ! get t, v, u, dp. In the future, they shoudl pass from pbuf, like T_five
-        call linear_interp(pmid_star_host(i,j,:),pmid_star_five(i,j,:),elem(ie)%state%t(i,j,:,np1),ttmp_five(i,j,:),pver,pver_five)
-        call linear_interp(pmid_star_host(i,j,:),pmid_star_five(i,j,:),elem(ie)%state%v(i,j,1,:,np1),utmp_five(i,j,:),pver,pver_five)
-        call linear_interp(pmid_star_host(i,j,:),pmid_star_five(i,j,:),elem(ie)%state%v(i,j,2,:,np1),vtmp_five(i,j,:),pver,pver_five)
+        call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),elem(ie)%state%t(i,j,:,np1),ttmp_five(i,j,:),pver,pver_five)
+        call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),elem(ie)%state%v(i,j,1,:,np1),utmp_five(i,j,:),pver,pver_five)
+        call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),elem(ie)%state%v(i,j,2,:,np1),vtmp_five(i,j,:),pver,pver_five)
        do q = 1, qsize 
-         call linear_interp(pmid_star_host(i,j,:),pmid_star_five(i,j,:),elem(ie)%state%Qdp(i,j,:,q,np1_qdp),Qdptmp_five(i,j,:,q),pver,pver_five)
+         call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),elem(ie)%state%Qdp(i,j,:,q,np1_qdp),Qdptmp_five(i,j,:,q),pver,pver_five)
          Qdptmp_five_old(i,j,:,q) = Qdptmp_five(i,j,:,q)
        enddo 
      enddo 
@@ -249,7 +242,8 @@ contains
 !-------------------
 ! should calculate rho_five before or after remap??
      rho_five = pmid_five/(rair*ttmp_five)
-     rho_host = pmid_host/(rair*ttmp(:,:,:,1)/dp)
+     !rho_host = pmid_host/(rair*ttmp(:,:,:,1)/dp)
+     rho_host = pmid_host/(rair*elem(ie)%state%t(:,:,:,np1)/dp)
      dz_five = dp_five/(rho_five*gravit)
      dz_host = dp/(rho_host*gravit)
 
