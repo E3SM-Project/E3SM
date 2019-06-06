@@ -121,7 +121,7 @@ thkHalfar = halfar(numtime[timelev]-numtime[0], xCell, yCell, flowA, flow_n, rho
 iceCells = np.where( thk[timelev,:] > 0.0)
 print "# ice cells=", len(iceCells[0])
 thkDiff = (thk[timelev, :] - thkHalfar) 
-thkDiffIce = thkDiff[iceCells]  # Restrict to cells modeled to have ice
+thkDiffIce = thkDiff.data[iceCells]  # Restrict to cells modeled to have ice
 RMS = ( (thkDiffIce**2).sum() / float(len(thkDiffIce)) )**0.5
 #RMSwtd = ( ((thkDiffIce * areaCell[iceCells] / areaCell[iceCells].sum())**2).sum() / float(len(thkDiffIce)) )**0.5
 #RMSwtd = ( ((thkDiffIce * areaCell[iceCells])**2 ).sum() / areaCell[iceCells]**0.5.sum()
@@ -146,7 +146,7 @@ markersize = 35.0
 gray = np.ones(3)*0.8
 
 fig.add_subplot(1,3,1)
-maskindices = np.nonzero(thk[:][timelev,:] > 0.0)[:]
+maskindices = np.nonzero(thk[:][timelev,:] > 0.0)[0]
 plt.scatter(xCell/1000.0,yCell/1000.0,markersize,gray, marker='.', edgecolors='none')
 plt.scatter(xCell[maskindices]/1000.0,yCell[maskindices]/1000.0,markersize,thk[timelev,maskindices], marker='h', edgecolors='none')
 plt.colorbar()
