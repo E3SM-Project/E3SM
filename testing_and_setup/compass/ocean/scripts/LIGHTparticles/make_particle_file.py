@@ -11,7 +11,6 @@ Example usage is
 Phillip J. Wolfram
 Last Modified: 08/03/2018
 """
-import pdb
 import netCDF4
 import numpy as np
 from scipy import spatial
@@ -362,28 +361,38 @@ def get_particle_coords(f_init, seed_center=True, seed_vertex=False, add_noise=F
     xCell = f_init.variables['xCell'][:]
     yCell = f_init.variables['yCell'][:]
     zCell = f_init.variables['zCell'][:]
-
+    
+    # assumes particle moves more than 1/100 of a cell scale per time step
+    # 10000 m cell, 0.1m/s flow, 2 hr time step is CFL=0.07
+    CFLmin = 0.005
+    # Case of only cell-center seeding a single particle.
     if seed_center and not add_noise:
         cells_center = (xCell, yCell, zCell)
         cpts_center = np.arange(len(xCell))
+
+    # Case of cell-center seeding with 3 particles distributed around the center by noise.
     elif seed_center and add_noise:
-        cellsOnCell = f_init.variables['cellsOnCell'][:]
-        CFLmin = 0.005
+        cellsOnCell = f_init.variables['cellsOnCell'][:, :]
+
         nCells = len(f_init.dimensions['nCells'])
         perturbation = CFLmin*np.ones((nCells,))
+
         allx = []
         ally = []
         allz = []
         allcpts = []
-        cellDirs = np.random.choice(np.arange(6), size=3, replace=False)
-        for ci in cellDirs:
+        # There are six potential cell neighbors to perturb the particles for. This selects three random
+        # directions (without replacement) at every cell.
+        cellDirs = np.stack([np.random.choice(np.arange(6), size=3, replace=False) for _ in range(nCells)])
+        for ci in np.arange(3):
             epsilon = np.abs(np.random.normal(size=nCells))
             epsilon /= epsilon.max()
-            theta = perturbation * epsilon
+            # Adds gaussian noise at each cell, creating range of [CFLMin, 2*CFLMin]
+            theta = perturbation * epsilon + perturbation
 
-            x = (1.0 - theta)*xCell + theta*xCell[cellsOnCell[:, ci]-1]
-            y = (1.0 - theta)*yCell + theta*yCell[cellsOnCell[:, ci]-1]
-            z = (1.0 - theta)*zCell + theta*zCell[cellsOnCell[:, ci]-1]
+            x = (1.0 - theta)*xCell + theta*xCell[cellsOnCell[range(nCells), cellDirs[:, ci]]-1]
+            y = (1.0 - theta)*yCell + theta*yCell[cellsOnCell[range(nCells), cellDirs[:, ci]]-1]
+            z = (1.0 - theta)*zCell + theta*zCell[cellsOnCell[range(nCells), cellDirs[:, ci]]-1]
 
             x, y, z = rescale_for_shell(f_init, x, y, z)
 
@@ -393,18 +402,15 @@ def get_particle_coords(f_init, seed_center=True, seed_vertex=False, add_noise=F
             allcpts.append(cellsOnCell[:, ci]-1)
         cells_center = (np.concatenate(allx), np.concatenate(ally), np.concatenate(allz))
         cpts_center = np.concatenate(allcpts)
-
+    
+    # Case of seeding 3 particles by a small epsilon around the vertices.
     if seed_vertex:
+        cellsOnVertex = f_init.variables['cellsOnVertex'][:,:]
         xVertex = f_init.variables['xVertex'][:]
         yVertex = f_init.variables['yVertex'][:]
         zVertex = f_init.variables['zVertex'][:]
 
-        cellsOnVertex = f_init.variables['cellsOnVertex'][:,:]
-
         nVertices = len(f_init.dimensions['nVertices'])
-        # assumes particle moves more than 1/100. of cell scale per time step
-        # 10000 m cell, 0.1 m/s flow, 2 hr time step is CFL=0.07
-        CFLmin = 0.005
         perturbation = CFLmin*np.ones((nVertices,))
 
         allx = []
@@ -414,6 +420,7 @@ def get_particle_coords(f_init, seed_center=True, seed_vertex=False, add_noise=F
         for vi in np.arange(3):
             ids = np.where(cellsOnVertex[:,vi] != 0)[0]
             theta = perturbation[ids]
+
             x = (1.0 - theta)*xVertex[ids] + theta*xCell[cellsOnVertex[ids,vi]-1]
             y = (1.0 - theta)*yVertex[ids] + theta*yCell[cellsOnVertex[ids,vi]-1]
             z = (1.0 - theta)*zVertex[ids] + theta*zCell[cellsOnVertex[ids,vi]-1]
@@ -524,7 +531,9 @@ def build_surface_floats(cpts, xCell, yCell, zCell, afilter): #{{{
     return Particles(x, y, z, cellindices, 'indexLevel', indexlevel=1, zlevel=0, spatialfilter=afilter) #}}}
 
 
-def build_particle_file(f_init, f_name, f_decomp, types, spatialfilter, buoySurf, nVertLevels, downsample, vertseedtype, seed_center, seed_vertex, add_noise): #{{{
+def build_particle_file(f_init, f_name, f_decomp, types, spatialfilter, buoySurf, 
+                        nVertLevels, downsample, vertseedtype, seed_center, seed_vertex, 
+                        add_noise): #{{{
 
     cpts, xCell, yCell, zCell = particle_coords(f_init, downsample, seed_center, seed_vertex, add_noise)
 
@@ -604,8 +613,8 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--center", dest="seed_center",
             action="store_true",
             help="Seed particles on cell centers. (default true)")
-    parser.add_argument("-v", "--vertex", dest="seed_vertex", action="store_true",
-            help="Seed particles on cell vertices.")
+    parser.add_argument("-v", "--off_vertex", dest="seed_vertex", action="store_true",
+            help="Seed three particles by a fixed epsilon off each cell vertex.")
     parser.add_argument("-n", "--add_noise", dest="add_noise", action="store_true",
             help="Add gaussian noise to generate three particles around the cell center.")
 
@@ -626,6 +635,10 @@ if __name__ == "__main__":
     # Defaults to center seeding for particles.
     if not args.seed_center and not args.seed_vertex:
         args.seed_center = True
+
+    if args.add_noise and not args.seed_center:
+        raise ValueError('Gaussian noise requested but center-seeding not requested. ' +
+        'Please resubmit this function with `--center` and `--add_noise`.')
 
     if not args.remap:
         print('Building particle file...')
