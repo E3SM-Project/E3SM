@@ -36,7 +36,6 @@ _TESTS = {
         },
 
     "e3sm_atm_developer" : {
-        "inherit" : ("eam_preqx", "eam_theta"),
         "tests"   : (
             "ERP_Ln9.ne4_ne4.FC5AV1C-L",
             "SMS_Ln9.ne4_ne4.FC5AV1C-L.cam-outfrq9s",
@@ -48,6 +47,7 @@ _TESTS = {
         },
 
     "e3sm_atm_integration" : {
+        "inherit" : ("eam_preqx", "eam_theta"),
         "tests" : (
             "ERP_Ln9.ne4_ne4.F-EAMv1-AQP1",
             "SMS_Ld1.ne4_ne4.F-EAMv1-AQP1.cam-clubb_only",
