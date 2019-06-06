@@ -580,7 +580,7 @@
 
 		<stream name="lbc"
                         type="output"
-                        filename_template="lbc.$Y-$M-$D_$h.nc"
+                        filename_template="lbc.$Y-$M-$D_$h.$m.$s.nc"
                         output_interval="3:00:00"
                         filename_interval="output_interval"
                         packages="lbcs"
