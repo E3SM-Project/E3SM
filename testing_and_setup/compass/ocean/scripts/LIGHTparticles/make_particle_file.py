@@ -348,15 +348,52 @@ class ParticleList(): #{{{
         return #}}}
 #}}}
 
+def rescale_for_shell(f_init, x, y, z): #{{{
+    rearth = f_init.sphere_radius
+    r = np.sqrt(x*x + y*y + z*z)
+    x *= rearth/r
+    y *= rearth/r
+    z *= rearth/r
+    return x, y, z
+#}}}
+
 
 def get_particle_coords(f_init, seed_center=True, seed_vertex=False, add_noise=False): #{{{
     xCell = f_init.variables['xCell'][:]
     yCell = f_init.variables['yCell'][:]
     zCell = f_init.variables['zCell'][:]
 
-    if seed_center:
+    if seed_center and not add_noise:
         cells_center = (xCell, yCell, zCell)
         cpts_center = np.arange(len(xCell))
+    elif seed_center and add_noise:
+        cellsOnCell = f_init.variables['cellsOnCell'][:]
+        CFLmin = 0.005
+        nCells = len(f_init.dimensions['nCells'])
+        perturbation = CFLmin*np.ones((nCells,))
+        allx = []
+        ally = []
+        allz = []
+        allcpts = []
+        cellDirs = np.random.choice(np.arange(6), size=3, replace=False)
+        for ci in cellDirs:
+            epsilon = np.abs(np.random.normal(size=nCells))
+            epsilon /= epsilon.max()
+            theta = perturbation * epsilon
+
+            x = (1.0 - theta)*xCell + theta*xCell[cellsOnCell[:, ci]-1]
+            y = (1.0 - theta)*yCell + theta*yCell[cellsOnCell[:, ci]-1]
+            z = (1.0 - theta)*zCell + theta*zCell[cellsOnCell[:, ci]-1]
+
+            x, y, z = rescale_for_shell(f_init, x, y, z)
+
+            allx.append(x)
+            ally.append(y)
+            allz.append(z)
+            allcpts.append(cellsOnCell[:, ci]-1)
+        cells_center = (np.concatenate(allx), np.concatenate(ally), np.concatenate(allz))
+        cpts_center = np.concatenate(allcpts)
+
     if seed_vertex:
         xVertex = f_init.variables['xVertex'][:]
         yVertex = f_init.variables['yVertex'][:]
@@ -370,7 +407,6 @@ def get_particle_coords(f_init, seed_center=True, seed_vertex=False, add_noise=F
         CFLmin = 0.005
         perturbation = CFLmin*np.ones((nVertices,))
 
-        rearth = f_init.sphere_radius
         allx = []
         ally = []
         allz = []
@@ -382,11 +418,7 @@ def get_particle_coords(f_init, seed_center=True, seed_vertex=False, add_noise=F
             y = (1.0 - theta)*yVertex[ids] + theta*yCell[cellsOnVertex[ids,vi]-1]
             z = (1.0 - theta)*zVertex[ids] + theta*zCell[cellsOnVertex[ids,vi]-1]
 
-            # rescale for correct shell location
-            r = np.sqrt(x*x + y*y + z*z)
-            x *= rearth/r
-            y *= rearth/r
-            z *= rearth/r
+            x, y, z = rescale_for_shell(f_init, x, y, z)
 
             allx.append(x)
             ally.append(y)
