@@ -199,24 +199,24 @@ _TESTS = {
         "share"    : True,
         "time"     : "01:00:00",
         "tests"    : (
-                 "SMS.ne4_ne4.FC5AV1C-H01A.cam-preqx_ftype0",
-                 "SMS.ne4_ne4.FC5AV1C-H01A.cam-preqx_ftype1",
-                 "SMS.ne4_ne4.FC5AV1C-H01A.cam-preqx_ftype4",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-preqx_ftype0",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-preqx_ftype1",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-preqx_ftype4",
                  )
     },
     "eam_theta" : {
         "share"    : True,
         "time"     : "02:00:00",
         "tests"    : (
-                 "SMS.ne4_ne4.FC5AV1C-H01A.cam-thetahy_ftype0",
-                 "SMS.ne4_ne4.FC5AV1C-H01A.cam-thetahy_ftype1",
-                 "SMS.ne4_ne4.FC5AV1C-H01A.cam-thetahy_ftype2",
-                 "SMS.ne4_ne4.FC5AV1C-H01A.cam-thetahy_ftype4",
-                 "SMS.ne4_ne4.FC5AV1C-H01A.cam-thetanh_ftype0",
-                 "SMS.ne4_ne4.FC5AV1C-H01A.cam-thetanh_ftype1",
-                 "SMS.ne4_ne4.FC5AV1C-H01A.cam-thetanh_ftype2",
-                 "SMS.ne4_ne4.FC5AV1C-H01A.cam-thetanh_ftype4",
-                 "SMS.ne4_ne4.FC5AV1C-H01A.cam-thetahy_sl",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetahy_ftype0",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetahy_ftype1",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetahy_ftype2",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetahy_ftype4",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetanh_ftype0",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetanh_ftype1",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetanh_ftype2",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetanh_ftype4",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetahy_sl",
                  )
     },
 
