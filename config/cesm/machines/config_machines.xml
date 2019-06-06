@@ -623,6 +623,7 @@ This allows using a different mpirun command to launch unit tests
       <modules>
 	<command name="load">cray-memkind</command>
 	<command name="swap">craype craype/2.5.15</command>
+	<command name="load">craype-mic-knl</command>
       </modules>
       <modules>
 	<command name="switch">cray-libsci/18.03.1</command>
