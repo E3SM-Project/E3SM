@@ -353,6 +353,58 @@ ifeq ($(USE_ESMF_LIB), TRUE)
   SLIBS  += $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) $(ESMF_F90ESMFLINKLIBS)
 endif
 
+# Stub libraries do not need to be built for nuopc driver
+# so it will override these settings on the command line
+ATM_PRESENT ?= TRUE
+ICE_PRESENT ?= TRUE
+LND_PRESENT ?= TRUE
+OCN_PRESENT ?= TRUE
+ROF_PRESENT ?= TRUE
+GLC_PRESENT ?= TRUE
+WAV_PRESENT ?= TRUE
+ESP_PRESENT ?= TRUE
+IAC_PRESENT ?= TRUE
+ifeq ($(ULIBDEP),$(null))
+  ifneq ($(LIBROOT),$(null))
+    ifeq ($(ATM_PRESENT),TRUE)
+      ULIBDEP += $(LIBROOT)/libatm.a
+      CPPDEFS += -DATM_PRESENT
+    endif
+    ifeq ($(ICE_PRESENT),TRUE)
+      ULIBDEP += $(LIBROOT)/libice.a
+      CPPDEFS += -DICE_PRESENT
+    endif
+    ifeq ($(LND_PRESENT),TRUE)
+      ULIBDEP += $(LNDLIBDIR)/$(LNDLIB)
+      INCLDIR += -I$(LNDOBJDIR)
+      CPPDEFS += -DLND_PRESENT
+    endif
+    ifeq ($(OCN_PRESENT),TRUE)
+      ULIBDEP += $(LIBROOT)/libocn.a
+      CPPDEFS += -DOCN_PRESENT
+    endif
+    ifeq ($(ROF_PRESENT),TRUE)
+      ULIBDEP += $(LIBROOT)/librof.a
+      CPPDEFS += -DROF_PRESENT
+    endif
+    ifeq ($(GLC_PRESENT),TRUE)
+      ULIBDEP += $(LIBROOT)/libglc.a
+      CPPDEFS += -DGLC_PRESENT
+    endif
+    ifeq ($(WAV_PRESENT),TRUE)
+      ULIBDEP += $(LIBROOT)/libwav.a
+      CPPDEFS += -DWAV_PRESENT
+    endif
+    ifeq ($(ESP_PRESENT),TRUE)
+      ULIBDEP += $(LIBROOT)/libesp.a
+      CPPDEFS += -DESP_PRESENT
+    endif
+    ifeq ($(IAC_PRESENT),TRUE)
+      ULIBDEP += $(LIBROOT)/libiac.a
+    endif
+  endif
+endif
+
 ifdef CPRE
   FPPDEFS := $(subst $(comma),\\$(comma),$(CPPDEFS))
   FPPDEFS := $(patsubst -D%,$(CPRE)%,$(FPPDEFS))
@@ -797,57 +849,7 @@ else
     INCLUDE_DIR = $(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/include
   endif
 endif
-# Stub libraries do not need to be built for nuopc driver
-# so it will override these settings on the command line
-ATM_PRESENT:=TRUE
-ICE_PRESENT:=TRUE
-LND_PRESENT:=TRUE
-OCN_PRESENT:=TRUE
-ROF_PRESENT:=TRUE
-GLC_PRESENT:=TRUE
-WAV_PRESENT:=TRUE
-ESP_PRESENT:=TRUE
-IAC_PRESENT:=TRUE
-ifeq ($(ULIBDEP),$(null))
-  ifneq ($(LIBROOT),$(null))
-    ifeq ($(ATM_PRESENT),TRUE)
-      ULIBDEP += $(LIBROOT)/libatm.a
-      CPPDEFS += -DATM_PRESENT
-    endif
-    ifeq ($(ICE_PRESENT),TRUE)
-      ULIBDEP += $(LIBROOT)/libice.a
-      CPPDEFS += -DICE_PRESENT
-    endif
-    ifeq ($(LND_PRESENT),TRUE)
-      ULIBDEP += $(LNDLIBDIR)/$(LNDLIB)
-      INCLDIR += -I$(LNDOBJDIR)
-      CPPDEFS += -DLND_PRESENT
-    endif
-    ifeq ($(OCN_PRESENT),TRUE)
-      ULIBDEP += $(LIBROOT)/libocn.a
-      CPPDEFS += -DOCN_PRESENT
-    endif
-    ifeq ($(ROF_PRESENT),TRUE)
-      ULIBDEP += $(LIBROOT)/librof.a
-      CPPDEFS += -DROF_PRESENT
-    endif
-    ifeq ($(GLC_PRESENT),TRUE)
-      ULIBDEP += $(LIBROOT)/libglc.a
-      CPPDEFS += -DGLC_PRESENT
-    endif
-    ifeq ($(WAV_PRESENT),TRUE)
-      ULIBDEP += $(LIBROOT)/libwav.a
-      CPPDEFS += -DWAV_PRESENT
-    endif
-    ifeq ($(ESP_PRESENT),TRUE)
-      ULIBDEP += $(LIBROOT)/libesp.a
-      CPPDEFS += -DESP_PRESENT
-    endif
-    ifeq ($(IAC_PRESENT),TRUE)
-      ULIBDEP += $(LIBROOT)/libiac.a
-    endif
-  endif
-endif
+
 ifeq ($(COMP_GLC), cism)
   ULIBDEP += $(CISM_LIBDIR)/libglimmercismfortran.a
   ifeq ($(CISM_USE_TRILINOS), TRUE)
