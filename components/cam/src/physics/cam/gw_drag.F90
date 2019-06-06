@@ -569,6 +569,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   use gw_oro,     only: gw_oro_src
   use gw_front,   only: gw_cm_src
   use gw_convect, only: gw_beres_src
+  use co2_cycle,  only: co2_transport, co2_cycle_set_cnst_type
   !------------------------------Arguments--------------------------------
   type(physics_state), intent(in) :: state      ! physics state structure
   ! Standard deviation of orography.
@@ -661,13 +662,23 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   real(r8) :: rdpm(state%ncol,pver)
   real(r8) :: zm(state%ncol,pver)
 
+  ! local override option for constituents cnst_type
+  character(len=3), dimension(pcnst) :: cnst_type_loc
+
   !------------------------------------------------------------------------
 
   ! Make local copy of input state.
   call physics_state_copy(state, state1)
 
   ! constituents are all treated as wet mmr
-  call set_dry_to_wet(state1)
+  do m = 1,pcnst
+      cnst_type_loc(m) = cnst_type(m)
+  end do
+  ! set co2 tracers to 'wet' in cnst_type_loc
+  if (co2_transport()) then
+      call co2_cycle_set_cnst_type(cnst_type_loc, 'wet')
+  end if
+  call set_dry_to_wet(state1, cnst_type_loc)
 
   lchnk = state1%lchnk
   ncol  = state1%ncol

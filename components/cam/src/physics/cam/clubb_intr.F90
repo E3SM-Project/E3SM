@@ -1263,7 +1263,7 @@ end subroutine clubb_init_cnst
    do ixind = 1,pcnst
       cnst_type_loc(ixind) = cnst_type(ixind)
    end do
-   ! set co2 tracers back to 'wet' in cnst_type_loc
+   ! set co2 tracers to 'wet' in cnst_type_loc
    if (co2_transport()) then
       call co2_cycle_set_cnst_type(cnst_type_loc, 'wet')
    end if
@@ -2579,6 +2579,7 @@ end subroutine clubb_init_cnst
     use ppgrid,                 only: pver, pcols
     use constituents,           only: pcnst, cnst_get_ind, cnst_type
     use camsrfexch,             only: cam_in_t
+    use co2_cycle,              only: co2_transport, co2_cycle_set_cnst_type
     
     implicit none
     
@@ -2621,6 +2622,9 @@ end subroutine clubb_init_cnst
     
     logical  :: lq(pcnst)
 
+    character(len=3), dimension(pcnst) :: cnst_type_loc         ! local override option for constituents cnst_type
+
+
 #endif
     obklen(pcols) = 0.0_r8
     ustar(pcols)  = 0.0_r8
@@ -2631,7 +2635,14 @@ end subroutine clubb_init_cnst
     ! ----------------------- !
 
     ! Assume 'wet' mixing ratios in surface diffusion code.
-    call set_dry_to_wet(state)
+    do m = 1,pcnst
+       cnst_type_loc(m) = cnst_type(m)
+    end do
+    ! set co2 tracers to 'wet' in cnst_type_loc
+    if (co2_transport()) then
+       call co2_cycle_set_cnst_type(cnst_type_loc, 'wet')
+    end if
+    call set_dry_to_wet(state, cnst_type_loc)
 
     call cnst_get_ind('Q',ixq)
     
@@ -2671,7 +2682,15 @@ end subroutine clubb_init_cnst
        endif
     end do
     ! convert wet mmr back to dry before conservation check
-    call set_wet_to_dry(state)
+    ! reset cnst_type_loc to equal cnst_type
+    do m = 1,pcnst
+       cnst_type_loc(m) = cnst_type(m)
+    end do
+    ! set co2 tracers to 'wet' in cnst_type_loc
+    if (co2_transport()) then
+       call co2_cycle_set_cnst_type(cnst_type_loc, 'wet')
+    end if
+    call set_wet_to_dry(state, cnst_type_loc)
     
     return
 

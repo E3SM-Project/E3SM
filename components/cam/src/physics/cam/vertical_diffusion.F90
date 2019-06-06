@@ -662,6 +662,7 @@ contains
     use constituents,       only : cnst_get_type_byind, cnst_name, cnst_fixed_ubc, cnst_fixed_ubflx
     use physconst,          only : pi
     use pbl_utils,          only : virtem, calc_obklen
+    use co2_cycle,          only : co2_transport, co2_cycle_set_cnst_type
 
     ! --------------- !
     ! Input Arguments !
@@ -815,12 +816,22 @@ contains
 
     logical  :: lq(pcnst)
 
+    character(len=3), dimension(pcnst) :: cnst_type_loc            ! local override option for constituents cnst_type
+
     ! ----------------------- !
     ! Main Computation Begins !
     ! ----------------------- !
 
     ! Assume 'wet' mixing ratios in diffusion code.
-    call set_dry_to_wet(state)
+    do m = 1,pcnst
+       cnst_type_loc(m) = cnst_type(m)
+    end do
+    ! set co2 tracers to 'wet' in cnst_type_loc
+    if (co2_transport()) then
+       call co2_cycle_set_cnst_type(cnst_type_loc, 'wet')
+    end if
+    call set_dry_to_wet(state, cnst_type_loc)
+
 
     rztodt = 1._r8 / ztodt
     lchnk  = state%lchnk
@@ -1226,7 +1237,15 @@ contains
        endif
     end do
     ! convert wet mmr back to dry before conservation check
-    call set_wet_to_dry(state)
+    ! reset cnst_type_loc to equal cnst_type
+    do m = 1,pcnst
+       cnst_type_loc(m) = cnst_type(m)
+    end do
+    ! set co2 tracers to 'wet' in cnst_type_loc
+    if (co2_transport()) then
+       call co2_cycle_set_cnst_type(cnst_type_loc, 'wet')
+    end if
+    call set_wet_to_dry(state, cnst_type_loc)
 
     slten(:ncol,:)         = ( sl(:ncol,:) - sl_prePBL(:ncol,:) ) * rztodt
     qtten(:ncol,:)         = ( qt(:ncol,:) - qt_prePBL(:ncol,:) ) * rztodt
