@@ -6712,6 +6712,12 @@ Set to TRUE to turn on single column mode.
 Default: FALSE
 </entry>
 
+<entry id="do_small_column" type="logical" category="scam"
+       group="seq_infodata_inparm" valid_values="">
+Set to TRUE to turn on small planet mode.
+Default: FALSE
+</entry>
+
 <entry id="start_type" type="char*8"  category="driver"
        group="seq_infodata_inparm" valid_values="startup,continue,branch" >
 Run type.  'startup' is an initial run.  'continue' is a restart run.
@@ -7199,6 +7205,12 @@ Default: set to shr_const value
 <entry id="rearth" type="real" category="physconst"
        group="physconst_nl" valid_values="" >
 Radius of Earth [m].
+Default: set to shr_const value
+</entry>
+
+<entry id="omega" type="real" category="physconst"
+       group="physconst_nl" valid_values="" >
+Earth Rotation rate [m/s].
 Default: set to shr_const value
 </entry>
 

@@ -65,7 +65,7 @@ module physconst
    real(r8), public, parameter :: mwnh4       =  18._r8
 
 
-   ! modifiable physical constants for aquaplanet
+   ! modifiable physical constants for aquaplanet or SCREAM small planet
 
    real(r8), public           :: gravit       = shr_const_g     ! gravitational acceleration (m/s**2)
    real(r8), public           :: sday         = shr_const_sday  ! sec in siderial day ~ sec
@@ -74,12 +74,12 @@ module physconst
    real(r8), public           :: mwdry        = shr_const_mwdair! molecular weight dry air
    real(r8), public           :: rearth       = shr_const_rearth! radius of earth (m)
    real(r8), public           :: tmelt        = shr_const_tkfrz ! Freezing point of water (K)
+   real(r8), public           :: omega        = shr_const_omega ! earth rot ~ rad/sec   
 
 !---------------  Variables below here are derived from those above -----------------------
 
    real(r8), public           :: rga          = 1._r8/shr_const_g                 ! reciprocal of gravit
    real(r8), public           :: ra           = 1._r8/shr_const_rearth            ! reciprocal of earth radius
-   real(r8), public           :: omega        = shr_const_omega                   ! earth rot ~ rad/sec
    real(r8), public           :: rh2o         = shr_const_rwv                     ! Water vapor gas constant ~ J/K/kg
    real(r8), public           :: rair         = shr_const_rdair   ! Dry air gas constant     ~ J/K/kg
    real(r8), public           :: epsilo       = shr_const_mwwv/shr_const_mwdair   ! ratio of h2o to dry air molecular weights 
@@ -156,10 +156,11 @@ contains
       ! Local variables
       integer :: unitn, ierr
       character(len=*), parameter :: subname = 'physconst_readnl'
-      logical       newg, newsday, newmwh2o, newcpwv, newmwdry, newrearth, newtmelt
+      logical       newg, newsday, newmwh2o, newcpwv, newmwdry, newrearth, newtmelt, newomega
 
       ! Physical constants needing to be reset (ie. for aqua planet experiments)
-      namelist /physconst_nl/  cpwv, gravit, mwdry, mwh2o, rearth, sday, tmelt, tms_orocnst, tms_z0fac
+      namelist /physconst_nl/  cpwv, gravit, mwdry, mwh2o, rearth, sday, tmelt, tms_orocnst,&
+                               omega, tms_z0fac
 
       !-----------------------------------------------------------------------------
 
@@ -188,6 +189,7 @@ contains
       call mpibcast(tmelt,     1,                   mpir8,   0, mpicom)
       call mpibcast(tms_orocnst, 1,                 mpir8,   0, mpicom)
       call mpibcast(tms_z0fac, 1,                   mpir8,   0, mpicom)
+      call mpibcast(omega,     1,                   mpir8,   0, mpicom)
 #endif
 
 
@@ -199,10 +201,11 @@ contains
       newmwdry =  mwdry  .ne. shr_const_mwdair
       newrearth=  rearth .ne. shr_const_rearth
       newtmelt =  tmelt  .ne. shr_const_tkfrz
+      newomega =  omega  .ne. shr_const_omega
       
       
       
-      if (newg .or. newsday .or. newmwh2o .or. newcpwv .or. newmwdry .or. newrearth .or. newtmelt) then
+      if (newg .or. newsday .or. newmwh2o .or. newcpwv .or. newmwdry .or. newrearth .or. newtmelt .or. newomega) then
          if (masterproc) then
             write(iulog,*)'****************************************************************************'
             write(iulog,*)'***    New Physical Constant Values set via namelist                     ***'
@@ -215,12 +218,17 @@ contains
             if (newmwdry)   write(iulog,*)'***       MWDRY     ',shr_const_mwdair,mwdry,'***'
             if (newrearth)  write(iulog,*)'***       REARTH    ',shr_const_rearth,rearth,'***'
             if (newtmelt)   write(iulog,*)'***       TMELT     ',shr_const_tkfrz,tmelt,'***'
+	    if (newomega)   write(iulog,*)'***       OMEGA     ',shr_const_omega,omega,'***'
             write(iulog,*)'****************************************************************************'
          end if
          rga         = 1._r8/gravit 
          ra          = 1._r8/rearth
-         omega       = 2.0_R8*pi/sday
-         cpvir       = cpwv/cpair - 1._r8
+	 
+	 if (.not. newomega) then
+           omega       = 2.0_R8*pi/sday
+	 endif
+         
+	 cpvir       = cpwv/cpair - 1._r8
          epsilo      = mwh2o/mwdry      
          
          !  rair and rh2o have to be defined before any of the variables that use them

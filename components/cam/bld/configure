@@ -171,6 +171,10 @@ OPTIONS
      -camiop            Configure CAM to generate an IOP file that can be used to drive SCAM.
                         This switch only works with the Eulerian dycore.
      -scam              Compiles model in single column mode.  Only works with Eulerian dycore.
+     
+  Options relevent to SCREAM small planet mode:
+  
+     -small_planet   
 
   CAM parallelization:
 
@@ -376,6 +380,7 @@ GetOptions(
     "res=s"                     => \$opts{'res'},
     "rof=s"                     => \$opts{'rof'},
     "scam"                      => \$opts{'scam'},
+    "small_planet"              => \$opts{'small_planet'},
     "s|silent"                  => \$opts{'silent'},
     "smp!"                      => \$opts{'smp'},
     "spmd!"                     => \$opts{'spmd'},
@@ -1251,6 +1256,23 @@ EOF
 }
 
 if ($print>=2) { print "CAM single column mode (SCAM): $scam$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Small Planet Mode
+if (defined $opts{'small_planet'}) {
+    $cfg_ref->set('small_planet', 1);
+}
+my $small_planet = $cfg_ref->get('small_planet') ? "ON" : "OFF";
+
+# Currently only Spectral Element dycores support SCREAM small planet
+if ($small_planet eq 'ON' and $dyn_pkg ne 'se') {
+    die <<"EOF";
+**  ERROR: Small Planet mode only works with Spectral Element dycore.
+**         Requested dycore is: $dyn_pkg
+EOF
+}
+
+if ($print>=2) { print "SCREAM Small Planet mode: $small_planet$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Generate IOP

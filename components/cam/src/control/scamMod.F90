@@ -65,6 +65,7 @@ module scamMod
   logical, public ::  l_conv                ! use flux divergence terms for T and q?     
   logical, public ::  l_divtr               ! use flux divergence terms for constituents?
   logical, public ::  l_diag                ! do we want available diagnostics?
+  logical, public ::  do_small_planet       ! do small planet configuration
 
   integer, public ::  error_code            ! Error code from netCDF reads
   integer, public ::  initTimeIdx
@@ -205,7 +206,8 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
 	single_column_out,scm_iop_srf_prop_out, scm_relaxation_out, &
 	scm_relaxation_low_out, scm_relaxation_high_out, &
         scm_diurnal_avg_out, scm_crm_mode_out, scm_observed_aero_out, &
-	swrad_off_out, lwrad_off_out, precip_off_out, scm_clubb_iop_name_out)
+	swrad_off_out, lwrad_off_out, precip_off_out, scm_clubb_iop_name_out,&
+	do_small_planet_out)
 !-----------------------------------------------------------------------
    real(r8), intent(out), optional :: scmlat_out,scmlon_out
    character*(max_path_len), intent(out), optional ::  iopfile_out
@@ -218,6 +220,7 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    logical, intent(out), optional ::  swrad_off_out
    logical, intent(out), optional ::  lwrad_off_out
    logical, intent(out), optional ::  precip_off_out
+   logical, intent(out), optional ::  do_small_planet_out
    real(r8), intent(out), optional ::  scm_relaxation_low_out
    real(r8), intent(out), optional ::  scm_relaxation_high_out   
    character(len=*), intent(out), optional ::  scm_clubb_iop_name_out
@@ -236,6 +239,7 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    if ( present(swrad_off_out))         swrad_off_out = .false.
    if ( present(lwrad_off_out))         lwrad_off_out = .false.
    if ( present(precip_off_out))        precip_off_out = .false.
+   if ( present(do_small_planet_out))   do_small_planet_out = .true.
    if ( present(scm_clubb_iop_name_out) ) scm_clubb_iop_name_out  = ' '
 
 end subroutine scam_default_opts
@@ -244,7 +248,8 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
                          scm_iop_srf_prop_in, scm_relaxation_in, &
 			 scm_relaxation_low_in, scm_relaxation_high_in, &
                          scm_diurnal_avg_in, scm_crm_mode_in, scm_observed_aero_in, &
-			 swrad_off_in, lwrad_off_in, precip_off_in, scm_clubb_iop_name_in)
+			 swrad_off_in, lwrad_off_in, precip_off_in, scm_clubb_iop_name_in,&
+			 do_small_planet_in)
 !-----------------------------------------------------------------------
   real(r8), intent(in), optional       :: scmlon_in, scmlat_in
   character*(max_path_len), intent(in), optional :: iopfile_in
@@ -257,6 +262,7 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   logical, intent(in), optional        :: swrad_off_in
   logical, intent(in), optional        :: lwrad_off_in
   logical, intent(in), optional        :: precip_off_in
+  logical, intent(in), optional        :: do_small_planet_in
   character(len=*), intent(in), optional :: scm_clubb_iop_name_in
   real(r8), intent(in), optional       :: scm_relaxation_low_in
   real(r8), intent(in), optional       :: scm_relaxation_high_in  
@@ -266,6 +272,10 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   
   if (present (single_column_in ) ) then 
      single_column=single_column_in
+  endif
+  
+  if (present (do_small_planet_in ) ) then 
+     do_small_planet=do_small_planet_in
   endif
 
   if (present (scm_iop_srf_prop_in)) then
