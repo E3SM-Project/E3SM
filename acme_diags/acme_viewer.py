@@ -8,6 +8,7 @@ import copy
 import csv
 import json
 import matplotlib
+import numpy
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from bs4 import BeautifulSoup
@@ -548,7 +549,9 @@ def create_metadata(parameter):
     for param_name in parameter.__dict__:
         param = parameter.__dict__[param_name]
         # we don't want to include blank values
-        if not param:
+        
+        if (isinstance(param, numpy.ndarray) and not param.all()) or \
+            (not isinstance(param, numpy.ndarray) and not param):
             continue
 
         if param_name in supported_cmd_args:
