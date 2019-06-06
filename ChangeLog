@@ -1,6 +1,33 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 6-6-2019
+Tag: cime5.6.19
+Answer Changes: None
+Tests: scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+    - Remove changes to case_run, fix a module issue on cori-knl.
+    - Fix was not py2 compatible, this one is.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+1adcdeb Merge pull request #3136 from jedwards4b/cori_and_case_run
+40615b7 Merge pull request #3134 from jedwards4b/encodefixagain
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/config_machines.xml
+M       scripts/lib/CIME/case/case_run.py
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 6-5-2019
 Tag: cime5.6.18
 Answer Changes: Round Off for centos7-linux and cori
