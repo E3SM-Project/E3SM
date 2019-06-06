@@ -220,7 +220,7 @@
                      description="The name of a text file containing a list of vertical coordinate (zeta) values in increasing order at layer interfaces."
                      possible_values="Any valid filename"/>
 
-                <nml_option name="config_blend_bdy_terrain"     type="logical"       default_value="true"
+                <nml_option name="config_blend_bdy_terrain"     type="logical"       default_value="false"
                      units="-"
                      description="Whether to blend terrain along domain boundaries with first-guess terrain. Only useful for limited-area domains."
                      possible_values="true or false"/>
