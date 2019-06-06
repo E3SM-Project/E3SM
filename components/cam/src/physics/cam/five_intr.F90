@@ -49,6 +49,13 @@ module five_intr
   
   real(r8), parameter :: ps0 = 1.0e5_r8
   
+  ! for dynamics 
+  integer, parameter :: five_max_levels = 1000
+  real(r8), public :: hyai_five_toshare(five_max_levels)
+  real(r8), public :: hyam_five_toshare(five_max_levels)
+  real(r8), public :: hybi_five_toshare(five_max_levels)
+  real(r8), public :: hybm_five_toshare(five_max_levels)
+ 
   ! define physics buffer indicies here for the FIVE
   !  variables added to the PBUF
   integer :: t_five_idx, &
@@ -323,7 +330,18 @@ module five_intr
     do k=1,pver_five
       alev_five(k) = (ailev_five(k)+ailev_five(k+1))/2.0_r8
     enddo      
-	
+
+    ! Now define hyai_five_toshare for dynamic 
+    hyai_five_toshare = 0.
+    hybi_five_toshare = 0.
+    hyam_five_toshare = 0.
+    hybm_five_toshare = 0.
+
+    hyai_five_toshare(1:pverp_five) = hyai_five(1:pverp_five)
+    hybi_five_toshare(1:pverp_five) = hybi_five(1:pverp_five)
+    hyam_five_toshare(1:pver_five) = hyam_five(1:pver_five)
+    hybm_five_toshare(1:pver_five) = hybm_five(1:pver_five)
+
     ! write out some useful stuff
     write(iulog,*) 'Number of FIVE levels: ', kh-1    
     write(iulog,*) 'Index of bottom layer to add FIVE levels to: ', five_bot_k
@@ -854,7 +872,7 @@ module five_intr
 	  var_high(kh) * dz_high(kh)
 	rho_host_avg(k) = rho_host_avg(k) + rho_high(kh) * &
 	  dz_high(kh)
-	  
+
 	kh = kh + 1 ! increase high res model by one layer
 	if (kh .gt. pver_five) goto 10
 	
@@ -863,7 +881,7 @@ module five_intr
       
       ! Compute rho on host grid
       rho_host_avg(k) = rho_host_avg(k)/dz_host(k)
-      
+
       var_host(k) = var_host(k)/(rho_host_avg(k)*dz_host(k))
 
     enddo
