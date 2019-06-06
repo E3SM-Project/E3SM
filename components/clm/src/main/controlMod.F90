@@ -246,7 +246,7 @@ contains
     namelist /clm_inparm/ &
          use_nofire, use_lch4, use_nitrif_denitrif, use_vertsoilc, use_extralakelayers, &
          use_vichydro, use_century_decomp, use_cn, use_crop, use_snicar_frc, &
-         use_vancouver, use_mexicocity, use_noio
+         use_snicar_ad, use_vancouver, use_mexicocity, use_noio
 
     ! cpl_bypass variables
     namelist /clm_inparm/ metdata_type, metdata_bypass, metdata_biases, &
@@ -588,6 +588,7 @@ contains
     call mpi_bcast (use_crop, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_voc, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_snicar_frc, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_snicar_ad, 1, MPI_LOGICAL, 0, mpicom, ier)   
     call mpi_bcast (use_vancouver, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_mexicocity, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_noio, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -826,6 +827,7 @@ contains
     write(iulog,*) '    use_cn = ', use_cn
     write(iulog,*) '    use_crop = ', use_crop
     write(iulog,*) '    use_snicar_frc = ', use_snicar_frc
+    write(iulog,*) '    use_snicar_ad = ', use_snicar_ad
     write(iulog,*) '    use_vancouver = ', use_vancouver
     write(iulog,*) '    use_mexicocity = ', use_mexicocity
     write(iulog,*) '    use_noio = ', use_noio
