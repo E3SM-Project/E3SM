@@ -147,24 +147,35 @@ git clone git@github.com:dengwirda/jigsaw-geo-matlab.git
 
 ## 5. Checking out an MPAS branch and building the model
 
-Add a “worktree”, a copy of the repo that we can point to a different branch.
-We will work with my branch `ocean/develop`, where the latest MPAS-Ocean development 
-is taking place.  In general, `ocean/develop` is the place to start, since the `master` 
-branch is updated only rarely when we make releases:
+**Note: this is a good place to come back to when you need to start over on
+a new branch.**
+
+Add a "worktree", a copy of the repo that we can point to a different branch.
+We will work with my branch `ocean/update_isomip_plus_viz`, where I have added some
+new viz tools.  This is based off of the latest `ocean/develop`. In general, 
+`ocean/develop` is the place to start, since the `master`  branch is updated only 
+rarely when we make releases:
 ```bash
 cd /usr/projects/climate/cbegeman/mpas/model/reop
-git worktree add ../ocean/develop -b ocean/develop
-cd ../ocean/develop
+```
+Let's make sure we have the latest version of all the branches on all of the remotes
+```bash
+git fetch --all -p
+```
+Okay, now we're ready to make a new folder to work from.
+```bash
+git worktree add ../ocean/update_isomip_plus_viz -b ocean/update_isomip_plus_viz
+cd ../ocean/update_isomip_plus_viz
 ```
 Take a look at which branch were on:
 ```
 git logg
 ```
-We don't start off on `MPAS-Dev/MPAS-Model/ocean/develop` (even though
+We don't start off on `MPAS-Dev/MPAS-Model/ocean/update_isomip_plus_viz` (even though
 the name of the local branch might trick you into thinking you're there), so we need 
 to do a hard reset to put us there:
 ```bash
-git reset --hard MPAS-Dev/MPAS-Model/ocean/develop
+git reset --hard xylar/MPAS-Model/ocean/update_isomip_plus_viz
 git logg
 ```
 Now source the file with modules and settings for building MPAS on grizzly:
@@ -175,18 +186,13 @@ If all goes well, you should see `comapss_py3.7` as part of your command prompt 
 ```bash
 make ifort
 ```
-There are currently 2 files involved in the build that aren't python 3 compatible.  They are downloaded by the build
-process, so they can't easily be fixed before starting the build.  The way to handle them is to wait for the build to
-fail (twice) and then run some intermediate commands to replace the broken files.  (I'm sorry for this, but it looks
+There is currently a file involved in the build that isn't python 3 compatible.  It is downloaded by the build
+process, so it can't easily be fixed before starting the build.  The way to handle it is to wait for the build to
+fail and then run some intermediate commands to replace the broken file.  (I'm sorry for this, but it looks
 like a proper solution is a little ways off).
 
-After the first build error, which should mention something about `makedep.py` ins a directory with something about
-CVMix, run the following:
-```bash
-wget https://raw.githubusercontent.com/CVMix/CVMix-src/master/src/shared/makedep.py -O src/core_ocean/.cvmix_all/src/shared/makedep.py
-make ifort
-```
-Then, after a second, very similar error but which should mention something about BGC this time, run:
+After the build error, which should mention something about `makedep.py` ins a directory with something about
+BGC, run the following:
 ```bash
 wget https://raw.githubusercontent.com/xylar/Ocean-BGC/python_3_support/makedep.py -O src/core_ocean/.BGC_all/makedep.py
 make ifort
@@ -215,8 +221,8 @@ thing on Grizzly.  Open a file `config.ocean` and put the following in it:
 # init namelists in the default_inputs directory after a successful build of
 # the ocean model.
 [namelists]
-forward = /usr/projects/climate/cbegeman/mpas/model/ocean/develop/namelist.ocean.forward
-init = /usr/projects/climate/cbegeman/mpas/model/ocean/develop/namelist.ocean.init
+forward = /usr/projects/climate/cbegeman/mpas/model/ocean/update_isomip_plus_viz/namelist.ocean.forward
+init = /usr/projects/climate/cbegeman/mpas/model/ocean/update_isomip_plus_viz/namelist.ocean.init
 
 
 # The streams section defines paths to template streams files that will be used
@@ -224,8 +230,8 @@ init = /usr/projects/climate/cbegeman/mpas/model/ocean/develop/namelist.ocean.in
 # init streams files in the default_inputs directory after a successful build of
 # the ocean model.
 [streams]
-forward = /usr/projects/climate/cbegeman/mpas/model/ocean/develop/streams.ocean.forward
-init = /usr/projects/climate/cbegeman/mpas/model/ocean/develop/streams.ocean.init
+forward = /usr/projects/climate/cbegeman/mpas/model/ocean/update_isomip_plus_viz/streams.ocean.forward
+init = /usr/projects/climate/cbegeman/mpas/model/ocean/update_isomip_plus_viz/streams.ocean.init
 
 
 # The executables section defines paths to required executables. These
@@ -233,7 +239,7 @@ init = /usr/projects/climate/cbegeman/mpas/model/ocean/develop/streams.ocean.ini
 # Full paths should be provided in order to access the executables from
 # anywhere on the machine.
 [executables]
-model = /usr/projects/climate/cbegeman/mpas/model/ocean/develop/ocean_model
+model = /usr/projects/climate/cbegeman/mpas/model/ocean/update_isomip_plus_viz/ocean_model
 
 
 # The paths section describes paths that are used within the ocean core test
@@ -245,7 +251,7 @@ model = /usr/projects/climate/cbegeman/mpas/model/ocean/develop/ocean_model
 # the same directory, or different directory. Additionally, if they are empty
 # some test cases might download data into them, which will then be reused if
 # the test case is run again later.
-mpas_model = /usr/projects/climate/cbegeman/mpas/model/ocean/develop
+mpas_model = /usr/projects/climate/cbegeman/mpas/model/ocean/update_isomip_plus_viz
 jigsaw-geo-matlab = /usr/projects/climate/cbegeman/mpas/jigsaw-geo-matlab
 mesh_database = /usr/projects/regionalclimate/COMMON_MPAS/ocean/grids/mesh_database
 initial_condition_database = /usr/projects/regionalclimate/COMMON_MPAS/ocean/grids/initial_condition_database
@@ -256,7 +262,7 @@ In theory, you can point to default namelists, streams files and executables for
 the one you're currently on but that's very rarely (if ever) going to be useful to you so you'll
 just have to bear with all these redundant references to 
 ```
-/usr/projects/climate/cbegeman/mpas/model/ocean/develop
+/usr/projects/climate/cbegeman/mpas/model/ocean/update_isomip_plus_viz
 ```
 If you want to set up a worktree for a different branch, the `config.ocean` looks the same except
 that you would need to replace the above path with the one for your new worktree.
@@ -367,3 +373,202 @@ starting guidelines for how to do python viz.  You can also look at output in pa
 up and add instructions for viz in the near future as I have time.
 
 
+## 9. Visualization
+
+### 9.1 Running the default viz
+
+Viz should be light enough weight that you can run it on the login node but you could get an interactive job if you prefer.
+It produces images, rather than anything interactive, so no need for x-windows or anything like that.
+
+There should be a link to `viz` in the `forward` output directory.  This is a link to a python package (you can tell because
+it contains a `__init__.py` (which is empty) and a `__main__.py`, which is the main script for visualization.  To start
+with, we'll run the default viz.  If you don't already have the compass conda environment loaded, do:
+```bash
+source /usr/projects/climate/SHARED_CLIMATE/anaconda_envs/base/etc/profile.d/conda.sh
+conda activate compass_py3.7
+```
+Then, run:
+```bash
+python -m viz
+```
+This will run the `main()` function in `__main__.py`.  You could optionally set the input directory and the experiment
+number but the defaults are the current directory and `Ocean0`, respectively, so there's no need in this case.
+This will take maybe 10 or 15 minutes (most of it on the overturning streamfunction).  You should see something like:
+```
+barotropic streamfunction: 100% |##############################| Time:  0:00:15
+compute and caching transport on MPAS grid:
+[########################################] | 100% Completed |  7.2s
+interpolating tansport on z-level grid: 100% |#################| Time:  0:10:13
+caching transport on z-level grid:
+[########################################] | 100% Completed |  2.2s
+compute and caching vertical transport sum on z-level grid:
+[########################################] | 100% Completed |  2.4s
+bin overturning streamfunction: 100% |#########################| Time:  0:02:03
+plotting barotropic streamfunction: 100% |#####################| Time:  0:00:08
+plotting overturning streamfunction: 100% |####################| Time:  0:00:05
+plotting melt rate: 100% |#####################################| Time:  0:00:07
+plotting heat flux from ocean to ice-ocean interface: 100% |###| Time:  0:00:07
+plotting heat flux into ice at ice-ocean interface: 100% |#####| Time:  0:00:07
+plotting thermal driving: 100% |###############################| Time:  0:00:07
+plotting haline driving: 100% |################################| Time:  0:00:07
+plotting friction velocity: 100% |#############################| Time:  0:00:08
+plotting top temperature: 100% |###############################| Time:  0:00:09
+plotting bot temperature: 100% |###############################| Time:  0:00:08
+plotting temperature section: 100% |###########################| Time:  0:00:05
+plotting top salinity: 100% |##################################| Time:  0:00:08
+plotting bot salinity: 100% |##################################| Time:  0:00:08
+plotting salinity section: 100% |##############################| Time:  0:00:05
+plotting top potential density: 100% |#########################| Time:  0:00:10
+plotting bot potential density: 100% |#########################| Time:  0:00:08
+plotting potential density section: 100% |#####################| Time:  0:00:05
+running ffmpeg -y -r 30 -i ./plots/botPotRho/botPotRho_%04d.png -b:v 32000k -r 30 ./movies/botPotRho.mp4
+running ffmpeg -y -r 30 -i ./plots/botSalinity/botSalinity_%04d.png -b:v 32000k -r 30 ./movies/botSalinity.mp4
+running ffmpeg -y -r 30 -i ./plots/botTemp/botTemp_%04d.png -b:v 32000k -r 30 ./movies/botTemp.mp4
+running ffmpeg -y -r 30 -i ./plots/bsf/bsf_%04d.png -b:v 32000k -r 30 ./movies/bsf.mp4
+running ffmpeg -y -r 30 -i ./plots/frictionVelocity/frictionVelocity_%04d.png -b:v 32000k -r 30 ./movies/frictionVelocity.mp4
+running ffmpeg -y -r 30 -i ./plots/halineDriving/halineDriving_%04d.png -b:v 32000k -r 30 ./movies/halineDriving.mp4
+running ffmpeg -y -r 30 -i ./plots/iceHeatFlux/iceHeatFlux_%04d.png -b:v 32000k -r 30 ./movies/iceHeatFlux.mp4
+running ffmpeg -y -r 30 -i ./plots/meltRate/meltRate_%04d.png -b:v 32000k -r 30 ./movies/meltRate.mp4
+running ffmpeg -y -r 30 -i ./plots/oceanHeatFlux/oceanHeatFlux_%04d.png -b:v 32000k -r 30 ./movies/oceanHeatFlux.mp4
+running ffmpeg -y -r 30 -i ./plots/osf/osf_%04d.png -b:v 32000k -r 30 ./movies/osf.mp4
+running ffmpeg -y -r 30 -i ./plots/sectionPotRho/sectionPotRho_%04d.png -b:v 32000k -r 30 ./movies/sectionPotRho.mp4
+running ffmpeg -y -r 30 -i ./plots/sectionSalinity/sectionSalinity_%04d.png -b:v 32000k -r 30 ./movies/sectionSalinity.mp4
+running ffmpeg -y -r 30 -i ./plots/sectionTemp/sectionTemp_%04d.png -b:v 32000k -r 30 ./movies/sectionTemp.mp4
+running ffmpeg -y -r 30 -i ./plots/thermalDriving/thermalDriving_%04d.png -b:v 32000k -r 30 ./movies/thermalDriving.mp4
+running ffmpeg -y -r 30 -i ./plots/topPotRho/topPotRho_%04d.png -b:v 32000k -r 30 ./movies/topPotRho.mp4
+running ffmpeg -y -r 30 -i ./plots/topSalinity/topSalinity_%04d.png -b:v 32000k -r 30 ./movies/topSalinity.mp4
+running ffmpeg -y -r 30 -i ./plots/topTemp/topTemp_%04d.png -b:v 32000k -r 30 ./movies/topTemp.mp4
+```
+
+The more intresting results should be a series of movies in `movies` and 4 time series plots in `plots` 
+(mean melt rate, total melt flux, mean thermal driving and mean friction velocity) and the same plots in 
+`timeSeriesBelow300m`, but this time averaged only over the deepest part of the ice shelf (where much of the action is).
+
+You'll likely need to scp or rsync them to your laptop to view them.  Let me know if it's not clear what these are.
+
+### 9.2 Doing your own viz
+
+A starting point for doing your own viz is to make a local copy of `__main__.py` to edit:
+```bash
+cp viz/__main__.py myviz.py
+vim myviz.py
+```
+You could, for example, take out the slow streamfunction stuff if you don't need that (it was added because I required it
+as standard output in MISOMIP).
+
+The script imports the following
+```py
+from viz.streamfunction import compute_barotropic_streamfunction, \
+    compute_overturning_streamfunction
+```
+These are functions for computing the stream functions and writing them to NetCDF files.
+```py
+from viz.plot import MoviePlotter, TimeSeriesPlotter
+```
+These can be used to create "plotter" object that can then produce either time-series plots or a series of image for making movies.
+```py
+from viz.misomip import compute_misomip_interp_coeffs, interp_misomip
+```
+These are used to write out MISOMIP standard output on a regular grid.
+
+You can look at `streamfunction.py`, `plot.py` and `misomip.py` to learn a bit more about what these do.  There's a bit
+of commenting, particularly for the "public" functions that don't start with an underscore.
+
+Maybe simplify it down to eliminate the streamfunction and MISOMIP stuff, and don't worry about the plots averaged over
+the deeper part of the ice draft (none of this is probably all that relevant to you):
+```py
+#!/usr/bin/env python
+
+import xarray
+import argparse
+
+from viz.plot import MoviePlotter, TimeSeriesPlotter
+
+def main():
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument("-f", "--folder", dest="folder",
+                        help="Folder for plots", default='.')
+    parser.add_argument("-e", "--expt", dest="expt",
+                        help="Experiment number (0, 1 or 2)", default=0)
+    args = parser.parse_args()
+
+    folder = args.folder
+    expt = args.expt
+
+    dsMesh = xarray.open_dataset('{}/init.nc'.format(folder))
+
+    ds = xarray.open_mfdataset('{}/timeSeriesStatsMonthly*.nc'.format(folder),
+                               concat_dim='Time')
+
+    tsPlotter = TimeSeriesPlotter(inFolder=folder,
+                                  outFolder='{}/plots'.format(folder),
+                                  expt=expt)
+    tsPlotter.plot_melt_time_series()
+
+    mPlotter = MoviePlotter(inFolder=folder,
+                           outFolder='{}/plots'.format(folder),
+                           expt=expt)
+
+    mPlotter.plot_melt_rates()
+    mPlotter.plot_ice_shelf_boundary_variables()
+    mPlotter.plot_temperature()
+    mPlotter.plot_salinity()
+    mPlotter.plot_potential_density()
+
+    mPlotter.images_to_movies(outFolder='{}/movies'.format(folder),
+                              framesPerSecond=30, extension='mp4')
+
+if __name__ == '__main__':
+    main()
+```
+
+I've set things up to plot some of the more common fields by default.  The following plot either time series or
+movies of some common fields related to the ice-ocean interface -- melt rates, thermal driving, friction velocity,
+etc.
+```py
+    tsPlotter.plot_melt_time_series()
+    ...
+    mPlotter.plot_melt_rates()
+    mPlotter.plot_ice_shelf_boundary_variables()
+```
+
+These functions plot 3D fields at the top of the ocean (either the ice draft or the sea surace), the sea floor
+and in a transect through the middle of the domain:
+```py
+    mPlotter.plot_temperature()
+    mPlotter.plot_salinity()
+    mPlotter.plot_potential_density()
+```
+
+You could also add your own custom fields as long as they're available in the `timeSeriesStatsMonthly*.nc` files.  
+Here are a couple of examples:
+```
+    # plot a time series of SST
+    areaCell = tsPlotter.dsMesh.areaCell
+    temperature = tsPlotter.ds.timeMonthly_avg_activeTracers_temperature
+    sst = temperature.isel(nVertLevels=0)
+    meanSST = (sst*areaCell).sum(dim='nCells')/areaCell.sum(dim='nCells')
+
+    tsPlotter.plot_time_series(meanSST, 'mean sea-surface temperature',
+                               prefix='meanSST', units='deg C')
+...
+    # plot the x and y components of velocity at top, bottom and transect
+    da = mPlotter.ds.timeMonthly_avg_velocityX
+    mPlotter.plot_3d_field_top_bot_section(
+        da, nameInTitle='x velocity', prefix='Vx', units='m/s',
+        vmin=-0.2, vmax=0.2)
+    da = mPlotter.ds.timeMonthly_avg_velocityY
+    mPlotter.plot_3d_field_top_bot_section(
+        da, nameInTitle='y velocity', prefix='Vy', units='m/s',
+        vmin=-0.2, vmax=0.2)
+```
+Make sure any new plots with the movie plotter happen before movies are made (`mPlotter.images_to_movies()`)
+so they get included in the movies.
+
+The data sets (`ds`) and data arrays (`da`) come from `xarray`, which is a really handy package for working with
+NetCDF-style files in memory in python.  It's a lot smarter about named dimensions than `numpy` and a lot more easy
+to manipulate than default python `NetCDF4` data sets.  But there's a bit of a learning curve involving a lot of Googling
+the documentation and StackOverflow.
+
+Hopefully that's a start...
