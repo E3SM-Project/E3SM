@@ -63,7 +63,6 @@ class TimeSeriesPlotter(object):
         except OSError:
             pass
 
-
     def plot_melt_time_series(self, sshMax=None):
         '''
         Plot a series of image for each of several variables related to melt
@@ -261,6 +260,7 @@ class MoviePlotter(object):
                                       maxval=nTime).start()
 
         for tIndex in range(nTime):
+            self.update_date(tIndex)
             bsf = ds.bsfCell.isel(Time=tIndex)
             outFileName = '{}/bsf/bsf_{:04d}.png'.format(
                 self.outFolder, tIndex+1)
@@ -291,6 +291,7 @@ class MoviePlotter(object):
                                       maxval=nTime).start()
 
         for tIndex in range(nTime):
+            self.update_date(tIndex)
             osf = ds.osf.isel(Time=tIndex)
             outFileName = '{}/osf/osf_{:04d}.png'.format(self.outFolder,
                                                          tIndex+1)
@@ -431,6 +432,7 @@ class MoviePlotter(object):
                                       maxval=nTime).start()
 
         for tIndex in range(nTime):
+            self.update_date(tIndex)
             field = da.isel(Time=tIndex).values
             outFileName = '{}/{}/{}_{:04d}.png'.format(
                 self.outFolder, prefix, prefix, tIndex+1)
@@ -510,6 +512,7 @@ class MoviePlotter(object):
                                       maxval=nTime).start()
 
         for tIndex in range(nTime):
+            self.update_date(tIndex)
             mask = numpy.logical_not(self.sectionMask)
             field = numpy.ma.masked_array(daSection.isel(Time=tIndex).values.T,
                                           mask=mask)
@@ -551,12 +554,20 @@ class MoviePlotter(object):
             with open(logFileName, 'w') as logFile:
                 args = ['ffmpeg', '-y', '-r', framesPerSecond,
                         '-i', imageFileTemplate, '-b:v', '32000k',
-                        '-r', framesPerSecond, outFileName]
+                        '-r', framesPerSecond, '-pix_fmt', 'yuv420p',
+                        outFileName]
                 print('running {}'.format(' '.join(args)))
                 subprocess.check_call(args, stdout=logFile, stderr=logFile)
 
+    def update_date(self, tIndex):
+        xtime = self.ds.xtime_startMonthly.isel(Time=tIndex).values
+        xtime = ''.join(str(xtime.astype('U'))).strip()
+        year = xtime[0:4]
+        month = xtime[5:7]
+        self.date = '{}-{}'.format(month, year)
+
     def _plot_horiz_field(self, field, title, outFileName, oceanDomain=True,
-                          vmin=None, vmax=None, figsize=[12, 4]):
+                          vmin=None, vmax=None, figsize=[9, 3]):
 
         try:
             os.makedirs(os.path.dirname(outFileName))
@@ -583,13 +594,13 @@ class MoviePlotter(object):
         plt.axis([0, 500, 0, 1000])
         ax.set_aspect('equal')
         ax.autoscale(tight=True)
-        plt.title(title)
+        plt.title('{} {}'.format(title, self.date))
         plt.tight_layout(pad=0.5)
         plt.savefig(outFileName)
         plt.close()
 
     def _plot_vert_field(self, inX, inZ, field, title, outFileName, vmin=None,
-                         vmax=None, figsize=[9, 6]):
+                         vmax=None, figsize=[9, 5]):
         try:
             os.makedirs(os.path.dirname(outFileName))
         except OSError:
@@ -605,7 +616,7 @@ class MoviePlotter(object):
         plt.colorbar()
         ax.autoscale(tight=True)
         plt.ylim([numpy.amin(inZ), 20])
-        plt.title(title)
+        plt.title('{} {}'.format(title, self.date))
         plt.tight_layout(pad=0.5)
         plt.savefig(outFileName)
         plt.close()
