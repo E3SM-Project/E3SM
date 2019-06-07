@@ -51,15 +51,15 @@
 
                 <nml_option name="config_init_case"             type="integer"       default_value="7"
                      units="-"
-                     description="config\_init\_case & Type of initial conditions to create: \newline
-                                        1 = Jablonowski \& Williamson barolinic wave (no initial perturbation), \newline
-                                        2 = Jablonowski \& Williamson barolinic wave (with initial perturbation), \newline
-                                        3 = Jablonowski \& Williamson barolinic wave (with normal-mode perturbation), \newline
+                     description="Type of initial conditions to create: \newline
+                                        1 = Jablonowski &amp; Williamson barolinic wave (no initial perturbation), \newline
+                                        2 = Jablonowski &amp; Williamson barolinic wave (with initial perturbation), \newline
+                                        3 = Jablonowski &amp; Williamson barolinic wave (with normal-mode perturbation), \newline
                                         4 = squall line, \newline
                                         5 = super-cell, \newline
                                         6 = mountain wave, \newline
                                         7 = real-data initial conditions from, e.g., GFS, \newline
-                                        8 = surface field (SST, sea-ice) update file for use with real-data simulations"
+                                        8 = surface field (SST, sea-ice) update file for use with real-data simulations \newline
                                         9 = lateral boundary conditions update file for use with real-data simulations"
                      possible_values="1 -- 9"/>
 
@@ -70,12 +70,12 @@
 
                 <nml_option name="config_start_time"            type="character"     default_value="2010-10-23_00:00:00"
                      units="-"
-                     description="Time to begin processing first-guess data (cases 7 and 8 only)"
+                     description="Time to begin processing first-guess data (cases 7, 8, and 9 only)"
                      possible_values="`YYYY-MM-DD_hh:mm:ss'"/>
 
                 <nml_option name="config_stop_time"             type="character"     default_value="2010-10-23_00:00:00"
                      units="-"
-                     description="Time to end processing first-guess data (case 8 only)"
+                     description="Time to end processing first-guess data (cases 8 and 9 only)"
                      possible_values="`YYYY-MM-DD_hh:mm:ss'"/>
 
                 <nml_option name="config_theta_adv_order" type="integer" default_value="3"
@@ -109,7 +109,7 @@
 
                 <nml_option name="config_nfglevels"             type="integer"       default_value="38"
                      units="-"
-                     description="The number of atmospheric levels (including surface and sea-level) in the first-guess dataset (case 7 only)"
+                     description="The number of atmospheric levels (including surface and sea-level) in the first-guess dataset (cases 7 and 9 only)"
                      possible_values="Positive integer values"/>
 
                 <nml_option name="config_nfgsoillevels"         type="integer"       default_value="4"
@@ -133,7 +133,7 @@
 
                 <nml_option name="config_met_prefix"            type="character"     default_value="CFSR"
                      units="-"
-                     description="Filename prefix of ungrib intermediate file to use for initial conditions (case 7 only)"
+                     description="Filename prefix of ungrib intermediate file to use for initial conditions (cases 7 and 9 only)"
                      possible_values="Any alpha-numeric string"/>
 
                 <nml_option name="config_sfc_prefix"            type="character"     default_value="SST"
@@ -143,7 +143,7 @@
 
                 <nml_option name="config_fg_interval"           type="integer"       default_value="86400"
                      units="-"
-                     description="Interval between SST and sea-ice files (case 8 only)"
+                     description="Interval between intermediate files (cases 8 and 9 only)"
                      possible_values="[DDD_]hh:mm:ss"/>
 
                 <nml_option name="config_landuse_data"          type="character"     default_value="MODIFIED_IGBP_MODIS_NOAH"
@@ -220,7 +220,7 @@
                      description="The name of a text file containing a list of vertical coordinate (zeta) values in increasing order at layer interfaces."
                      possible_values="Any valid filename"/>
 
-                <nml_option name="config_blend_bdy_terrain"     type="logical"       default_value="true"
+                <nml_option name="config_blend_bdy_terrain"     type="logical"       default_value="false"
                      units="-"
                      description="Whether to blend terrain along domain boundaries with first-guess terrain. Only useful for limited-area domains."
                      possible_values="true or false"/>
@@ -580,7 +580,7 @@
 
 		<stream name="lbc"
                         type="output"
-                        filename_template="lbc.$Y-$M-$D_$h.nc"
+                        filename_template="lbc.$Y-$M-$D_$h.$m.$s.nc"
                         output_interval="3:00:00"
                         filename_interval="output_interval"
                         packages="lbcs"
