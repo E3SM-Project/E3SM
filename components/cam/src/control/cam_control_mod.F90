@@ -32,6 +32,9 @@ module cam_control_mod
 !
 !------------------------------------------------------------
 
+!SZ and HW
+      logical :: l_jw_baroclinic = .true.
+
 ! from perturb.h
       real(r8) :: pertlim     = 0.0_r8
       logical  :: new_random  = .false.
