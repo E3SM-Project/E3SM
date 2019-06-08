@@ -12,7 +12,7 @@ module dp_coupling
   use pmgrid,         only: plev
   use element_mod,    only: element_t
   use kinds,          only: real_kind, int_kind
-  use shr_kind_mod,   only: r8=>shr_kind_r8
+  use shr_kind_mod,   only: r8=>shr_kind_r8, r4=>shr_kind_r4
   use physics_types,  only: physics_state, physics_tend
   
   use phys_grid,      only: get_ncols_p, get_gcol_all_p, block_to_chunk_send_pters, transpose_block_to_chunk, &
@@ -111,6 +111,8 @@ CONTAINS
        call t_startf('UniquePoints')
        do ie=1,nelemd
           ncols = elem(ie)%idxP%NumUniquePts
+          elem(ie)%state%V(:,:,:,:,tl_f) = real(real(elem(ie)%state%V(:,:,:,:,tl_f), kind = r4), kind = r8)
+
           call UniquePoints(elem(ie)%idxP, elem(ie)%state%ps_v(:,:,tl_f), ps_tmp(1:ncols,ie))
           call UniquePoints(elem(ie)%idxP, nlev, elem(ie)%state%T(:,:,:,tl_f), T_tmp(1:ncols,:,ie))
           call UniquePoints(elem(ie)%idxP, 2, nlev, elem(ie)%state%V(:,:,:,:,tl_f), uv_tmp(1:ncols,:,:,ie))
