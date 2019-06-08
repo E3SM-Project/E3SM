@@ -3047,6 +3047,8 @@ module mpas_stream_manager
     !-----------------------------------------------------------------------
     subroutine write_stream(manager, stream, blockID, timeLevel, mgLevel, forceWritenow, writeTime, ierr) !{{{
 
+        use mpas_dmpar, only : IO_NODE
+
         implicit none
 
         type (MPAS_streamManager_type), intent(inout) :: manager
@@ -3154,7 +3156,10 @@ module mpas_stream_manager
                    STREAM_DEBUG_WRITE(' -- Cobber mode is overwrite or append...')
     
                    ! Check if the file exists
-                   inquire(file=trim(stream % filename), exist=recordSeek)
+                   if (manager % ioContext % dminfo % my_proc_id == IO_NODE) then
+                       inquire(file=trim(stream % filename), exist=recordSeek)
+                   end if
+                   call mpas_dmpar_bcast_logical(manager % ioContext % dminfo, recordSeek)
                end if
 
                !
@@ -3237,7 +3242,10 @@ module mpas_stream_manager
                        STREAM_DEBUG_WRITE(' -- Cobber mode is overwrite or append...')
            
                        ! Check if the file exists
-                       inquire(file=trim(stream % filename), exist=recordSeek)
+                       if (manager % ioContext % dminfo % my_proc_id == IO_NODE) then
+                           inquire(file=trim(stream % filename), exist=recordSeek)
+                       end if
+                       call mpas_dmpar_bcast_logical(manager % ioContext % dminfo, recordSeek)
                    end if
 
                    stream % nRecords = 1
@@ -3548,6 +3556,8 @@ module mpas_stream_manager
     !-----------------------------------------------------------------------
     subroutine read_stream(manager, stream, timeLevel, mgLevel, forceReadNow, when, whence, actualWhen, ierr) !{{{
 
+        use mpas_dmpar, only : IO_NODE
+
         implicit none
 
         type (MPAS_streamManager_type), intent(inout) :: manager
@@ -3813,13 +3823,18 @@ module mpas_stream_manager
 
               STREAM_DEBUG_WRITE(' --- Retesting filename is ' // trim(test_filename))
 
-              inquire(file=trim(test_filename), exist=retestFile)
+              if (manager % ioContext % dminfo % my_proc_id == IO_NODE) then
+                 inquire(file=trim(test_filename), exist=retestFile)
+              end if
+              call mpas_dmpar_bcast_logical(manager % ioContext % dminfo, retestFile)
 
               ! If file exists, the testing stream needs to be built.
               if ( retestFile ) then
                   call mpas_createStream(testStream, manager % ioContext, test_filename, stream % io_type, MPAS_IO_READ, precision=stream % precision, ierr=local_ierr)
               else
                   STREAM_DEBUG_WRITE(' Filename: ' // trim(test_filename) // ' does not exist.')
+                  ierr = MPAS_STREAM_MGR_ERROR
+                  return
               end if
            end if
 
