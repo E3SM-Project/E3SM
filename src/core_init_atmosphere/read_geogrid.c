@@ -9,10 +9,6 @@
 
    Sample subroutine to read an array from the geogrid binary format.
 
-   Notes: Depending on the compiler and compiler flags, the name of 
-   the read_geogrid() routine may need to be adjusted with respect
-   to the number of trailing underscores when calling from Fortran.
-
    Michael G. Duda, NCAR/MMM
 */
 
@@ -20,27 +16,43 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef UNDERSCORE
-#define read_geogrid read_geogrid_
-#endif
-#ifdef DOUBLEUNDERSCORE
-#define read_geogrid read_geogrid__
-#endif
 
 #define GEOG_BIG_ENDIAN    0
 #define GEOG_LITTLE_ENDIAN 1
 
+/*  In Fortran, use the following as an interface for read_geogrid:
+
+ use iso_c_binding, only : c_char, c_int, c_float, c_ptr, c_loc
+
+ interface
+    subroutine read_geogrid(fname, rarray, nx, ny, nz, isigned, endian, &
+                            scalefactor, wordsize, status) bind(C)
+       use iso_c_binding, only : c_char, c_int, c_float, c_ptr
+       character (c_char), dimension(*), intent(in) :: fname
+       type (c_ptr), value :: rarray
+       integer (c_int), intent(in), value :: nx
+       integer (c_int), intent(in), value :: ny
+       integer (c_int), intent(in), value :: nz
+       integer (c_int), intent(in), value :: isigned
+       integer (c_int), intent(in), value :: endian
+       real (c_float), intent(in), value :: scalefactor
+       integer (c_int), intent(in), value :: wordsize
+       integer (c_int), intent(inout) :: status
+    end subroutine read_geogrid
+ end interface
+
+*/
+
 int read_geogrid(
       char * fname,            /* The name of the file to read from */
-      int * len,               /* The length of the filename */
       float * rarray,          /* The array to be filled */
-      int * nx,                /* x-dimension of the array */
-      int * ny,                /* y-dimension of the array */
-      int * nz,                /* z-dimension of the array */
-      int * isigned,           /* 0=unsigned data, 1=signed data */
-      int * endian,            /* 0=big endian, 1=little endian */
-      float * scalefactor,     /* value to multiply array elements by before truncation to integers */
-      int * wordsize,          /* number of bytes to use for each array element */
+      int nx,                /* x-dimension of the array */
+      int ny,                /* y-dimension of the array */
+      int nz,                /* z-dimension of the array */
+      int isigned,           /* 0=unsigned data, 1=signed data */
+      int endian,            /* 0=big endian, 1=little endian */
+      float scalefactor,     /* value to multiply array elements by before truncation to integers */
+      int wordsize,          /* number of bytes to use for each array element */
       int * status)
 {
    int i, ival, cnt, narray;
@@ -48,27 +60,22 @@ int read_geogrid(
    int A3, B3, C3;
    int A4, B4, C4, D4;
    unsigned char * c;
-   char local_fname[1024];
    FILE * bfile;
 
    *status = 0;
 
-   narray = (*nx) * (*ny) * (*nz);
-
-   /* Make a null-terminated local copy of the filename */
-   strncpy(local_fname,fname,*len);
-   local_fname[*len]='\0';
+   narray = (nx) * (ny) * (nz);
 
    /* Attempt to open file for reading */
-   if (!(bfile = fopen(local_fname,"rb")))
+   if (!(bfile = fopen(fname,"rb")))
    {
       *status = 1;
       return 1;
    }
 
    /* Allocate memory to hold bytes from file and read data */ 
-   c = (unsigned char *)malloc(sizeof(unsigned char)*(*wordsize) * narray);
-   cnt = fread((void *)c, sizeof(unsigned char), narray*(*wordsize), bfile);
+   c = (unsigned char *)malloc(sizeof(unsigned char)* wordsize * narray);
+   cnt = fread((void *)c, sizeof(unsigned char), narray * wordsize, bfile);
  
    fclose(bfile);
 
@@ -83,7 +90,7 @@ int read_geogrid(
       A, B, C, D give the offsets of the LSB through MSB (i.e., for 
       word ABCD, A=MSB, D=LSB) in the array from the beginning of a word 
    */
-   if (*endian == GEOG_BIG_ENDIAN) {
+   if (endian == GEOG_BIG_ENDIAN) {
       A2 = 0; B2 = 1;
       A3 = 0; B3 = 1; C3 = 2;
       A4 = 0; B4 = 1; C4 = 2; D4 = 3;
@@ -95,12 +102,12 @@ int read_geogrid(
    }
 
    /* Convert words from native byte order */
-   switch(*wordsize) {
+   switch(wordsize) {
       case 1:
          for(i=0; i<narray; i++)
          {
             ival = (int)(c[i]);      
-            if ((*isigned) && (ival > (1 << 7))) ival -= (1 << 8);
+            if ((isigned) && (ival > (1 << 7))) ival -= (1 << 8);
             rarray[i] = (float)ival;
          }
          break;
@@ -109,7 +116,7 @@ int read_geogrid(
          for(i=0; i<narray; i++)
          {
             ival = (int)((c[2*i+A2]<<8) | (c[2*i+B2]));      
-            if ((*isigned) && (ival > (1 << 15))) ival -= (1 << 16);
+            if ((isigned) && (ival > (1 << 15))) ival -= (1 << 16);
             rarray[i] = (float)ival;
          }
          break;
@@ -118,7 +125,7 @@ int read_geogrid(
          for(i=0; i<narray; i++)
          {
             ival = (int)((c[3*i+A3]<<16) | (c[3*i+B3]<<8) | c[3*i+C3]);      
-            if ((*isigned) * (ival > (1 << 23))) ival -= (1 << 24);
+            if ((isigned) * (ival > (1 << 23))) ival -= (1 << 24);
             rarray[i] = (float)ival;
          }
          break;
@@ -127,7 +134,7 @@ int read_geogrid(
          for(i=0; i<narray; i++)
          {
             ival = (int)((c[4*i+A4]<<24) | (c[4*i+B4]<<16) | (c[4*i+C4]<<8) | c[4*i+D4]);      
-            if ((*isigned) && (ival > (1 << 31))) ival = -(~ival + 1);
+            if ((isigned) && (ival > (1 << 31))) ival = -(~ival + 1);
             rarray[i] = (float)ival;
          }
          break;
@@ -136,10 +143,10 @@ int read_geogrid(
    free(c);
 
    /* Scale real-valued array by scalefactor */
-   if (*scalefactor != 1.0)
+   if (scalefactor != 1.0)
    {
       for (i=0; i<narray; i++)
-         rarray[i] = rarray[i] * (*scalefactor);
+         rarray[i] = rarray[i] * (scalefactor);
    }
 
    return 0;

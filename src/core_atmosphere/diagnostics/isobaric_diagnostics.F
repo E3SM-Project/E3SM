@@ -839,7 +839,7 @@ module isobaric_diagnostics
             !!!!!!!!!!! Calculate mean temperature in 500 hPa - 300 hPa layer !!!!!!!!!!!
      
             if (need_meanT_500_300) then
-                call compute_layer_mean(meanT_500_300, 50000.0, 30000.0, field_in, press_in)
+                call compute_layer_mean(meanT_500_300, 50000.0_RKIND, 30000.0_RKIND, field_in, press_in)
             end if
      
      

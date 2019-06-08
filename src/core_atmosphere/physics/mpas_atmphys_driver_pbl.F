@@ -66,6 +66,9 @@
 ! * since we removed the local variable pbl_scheme from mpas_atmphys_vars.F, now defines pbl_scheme as a pointer
 !   to config_pbl_scheme.
 !   Laura D. Fowler (laura@ucar.edu) / 2917-02-16.
+! * after updating module_bl_ysu.F to WRF version 4.0.3, corrected call to subroutine ysu to output diagnostics of
+!   exchange coefficients exch_h and exch_m.
+!   Laura D. Fowler (laura@ucar.edu) / 2019-03-12.
 
 
  contains
@@ -508,7 +511,7 @@
 
     kzh(k,i) = kzh_p(i,k,j)
     kzm(k,i) = kzm_p(i,k,j)
-    kzq(k,i) = kzq_p(i,k,j)
+    kzq(k,i) = kzh_p(i,k,j)
  enddo
  enddo
  enddo
@@ -626,12 +629,11 @@
                  ust      = ust_p      , hpbl     = hpbl_p      , psim     = psim_p     , &
                  psih     = psih_p     , xland    = xland_p     , hfx      = hfx_p      , &
                  qfx      = qfx_p      , wspd     = wspd_p      , br       = br_p       , &
-                 dt       = dt_pbl     , kpbl2d   = kpbl_p      , exch_h   = exch_p     , &
-                 wstar    = wstar_p    , delta    = delta_p     , uoce     = uoce_p     , &
-                 voce     = voce_p     , rthraten = rthraten_p  , u10      = u10_p      , &
-                 v10      = v10_p      , ctopo    = ctopo_p     , ctopo2   = ctopo2_p   , &
-                 regime   = regime_p   , rho      = rho_p       , kzhout   = kzh_p      , &
-                 kzmout   = kzm_p      , kzqout   = kzq_p       ,                         & 
+                 dt       = dt_pbl     , kpbl2d   = kpbl_p      , exch_h   = kzh_p      , &
+                 exch_m   = kzm_p      , wstar    = wstar_p     , delta    = delta_p    , &
+                 uoce     = uoce_p     , voce     = voce_p      , rthraten = rthraten_p , &
+                 u10      = u10_p      , v10      = v10_p       , ctopo    = ctopo_p    , &
+                 ctopo2   = ctopo2_p   , regime   = regime_p    ,                         &
                  ysu_topdown_pblmix = ysu_pblmix ,                                        &
                  ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde  , &
                  ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme  , &

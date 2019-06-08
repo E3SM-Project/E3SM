@@ -26,9 +26,9 @@
  *  Interface routines for building streams at run-time; defined in mpas_stream_manager.F
  */
 void stream_mgr_create_stream_c(void *, const char *, int *, const char *, const char *, const char *, const char *, int *, int *, int *, int *, int *);
-void mpas_stream_mgr_add_field_c(void *, const char *, const char *, const char *, int *);
-void mpas_stream_mgr_add_immutable_stream_fields_c(void *, const char *, const char *, const char *, int *);
-void mpas_stream_mgr_add_pool_c(void *, const char *, const char *, const char *, int *);
+void stream_mgr_add_field_c(void *, const char *, const char *, const char *, int *);
+void stream_mgr_add_immutable_stream_fields_c(void *, const char *, const char *, const char *, int *);
+void stream_mgr_add_pool_c(void *, const char *, const char *, const char *, int *);
 void stream_mgr_add_alarm_c(void *, const char *, const char *, const char *, const char *, int *);
 void stream_mgr_add_pkg_c(void *, const char *, const char *, int *);
 

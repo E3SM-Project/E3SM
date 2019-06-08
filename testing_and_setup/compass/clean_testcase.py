@@ -6,6 +6,10 @@ setup.
 It will remove directories / driver scripts that were generated as part of
 setting up a test case.
 """
+
+from __future__ import absolute_import, division, print_function, \
+    unicode_literals
+
 import sys
 import os
 import shutil
@@ -21,7 +25,7 @@ if __name__ == "__main__":
             description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
 
     parser.add_argument("-o", "--core", dest="core",
-                        help="Core that conatins configurations to clean",
+                        help="Core that contains configurations to clean",
                         metavar="CORE")
     parser.add_argument("-c", "--configuration", dest="configuration",
                         help="Configuration to clean", metavar="CONFIG")
@@ -51,16 +55,16 @@ if __name__ == "__main__":
     if not args.case_num and (not args.core and not args.configuration and
                               not args.resolution and not args.test) \
             and not args.clean_all:
-        print 'Must be run with either the --case_number argument, the ' \
-              '--all argument, or all of the core, configuration, ' \
-              'resolution, and test arguments.'
+        print('Must be run with either the --case_number argument, the '
+              '--all argument, or all of the core, configuration, '
+              'resolution, and test arguments.')
         parser.error(' Invalid configuration. Exiting...')
 
     if args.case_num and args.core and args.configuration and args.resoltuion \
             and args.test and args.clean_all:
-        print 'Can only be configured with either --case_number (-n), --all ' \
-              '(-a), or all of --core (-o), --configuration (-c), ' \
-              '--resolution (-r), and --test (-t).'
+        print('Can only be configured with either --case_number (-n), --all '
+              '(-a), or all of --core (-o), --configuration (-c), '
+              '--resolution (-r), and --test (-t).')
         parser.error(' Invalid configuration. Too many options used. '
                      'Exiting...')
 
@@ -153,8 +157,8 @@ if __name__ == "__main__":
                         if os.path.isdir('{}/{}'.format(work_dir, case_base)):
                             shutil.rmtree('{}/{}'.format(work_dir, case_base))
                             write_history = True
-                            print ' -- Removed case {}/{}'.format(work_dir,
-                                                                  case_base)
+                            print(' -- Removed case {}/{}'.format(work_dir,
+                                                                  case_base))
 
                 # Process <driver_script> files
                 elif config_root.tag == 'driver_script':
@@ -164,8 +168,8 @@ if __name__ == "__main__":
                     if os.path.exists('{}/{}'.format(work_dir, script_name)):
                         os.remove('{}/{}'.format(work_dir, script_name))
                         write_history = True
-                        print ' -- Removed driver script ' \
-                              '{}/{}'.format(work_dir, script_name)
+                        print(' -- Removed driver script '
+                              '{}/{}'.format(work_dir, script_name))
 
                 del config_tree
                 del config_root
