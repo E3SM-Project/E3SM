@@ -49,6 +49,9 @@ public :: &
 integer,public, allocatable :: cosp_cnt(:)       ! counter for cosp
 integer,public              :: cosp_cnt_init = 0 !initial value for cosp counter
 
+integer, public, parameter   :: kiss_seed_num = 4
+integer, public, allocatable :: rad_randn_seedrst(:,:,:), tot_chnk_till_this_prc(:) !total number of chunks till this processor
+
 ! Private module data
 
 ! Default values for namelist variables
