@@ -43,6 +43,8 @@ CONTAINS
     use gravity_waves_sources, only: gws_src_fnct
     use dyn_comp,       only: frontgf_idx, frontga_idx
     use phys_control,   only: use_gw_front
+    use rp_emulator
+
     implicit none
 !-----------------------------------------------------------------------
 ! !INPUT PARAMETERS:
@@ -53,7 +55,13 @@ CONTAINS
 
     type(physics_state), intent(inout), dimension(begchunk:endchunk) :: phys_state
     type(physics_tend ), intent(inout), dimension(begchunk:endchunk) :: phys_tend
-    
+ 
+    type(rpe_var) :: ps_rpe(np,np)           ! temporary array to hold ps
+    type(rpe_var) :: phis_rpe(np,np)         ! temporary array to hold phis  
+    type(rpe_var) :: T_rpe(np,np,nlev)       ! temporary array to hold T
+    type(rpe_var) :: uv_rpe(np,np,2,nlev)    ! temporary array to hold u and v
+    type(rpe_var) :: q_rpe(np,np,nlev,pcnst) ! temporary to hold advected constituents
+    type(rpe_var) :: omega_rpe(np,np,nlev)   ! temporary array to hold omega
 
 ! LOCAL VARIABLES
     type(element_t), pointer :: elem(:)               ! pointer to dyn_out element array
@@ -86,6 +94,15 @@ CONTAINS
 
     type(physics_buffer_desc), pointer :: pbuf_chnk(:)
 
+    !reduce precision for selected variables 
+    integer, parameter :: sigbits = 10
+    ps_rpe%sbits    = sigbits
+    phis_rpe%sbits  = sigbits
+    T_rpe%sbits     = sigbits
+    uv_rpe%sbits    = sigbits
+    q_rpe%sbits     = sigbits
+    omega_rpe%sbits = sigbits
+
     !----------------------------------------------------------------------
 
     nullify(pbuf_chnk)
@@ -111,6 +128,10 @@ CONTAINS
        call t_startf('UniquePoints')
        do ie=1,nelemd
           ncols = elem(ie)%idxP%NumUniquePts
+
+          uv_rpe(:,:,:,:)  = elem(ie)%state%V(:,:,:,:,tl_f)
+          elem(ie)%state%V(:,:,:,:,tl_f) = uv_rpe(:,:,:,:)
+
           call UniquePoints(elem(ie)%idxP, elem(ie)%state%ps_v(:,:,tl_f), ps_tmp(1:ncols,ie))
           call UniquePoints(elem(ie)%idxP, nlev, elem(ie)%state%T(:,:,:,tl_f), T_tmp(1:ncols,:,ie))
           call UniquePoints(elem(ie)%idxP, 2, nlev, elem(ie)%state%V(:,:,:,:,tl_f), uv_tmp(1:ncols,:,:,ie))
