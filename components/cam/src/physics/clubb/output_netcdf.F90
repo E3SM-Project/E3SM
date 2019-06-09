@@ -593,7 +593,7 @@ module output_netcdf
 
 
     select case (core_rknd)
-      case ( selected_real_kind( p=5 ) )
+      case ( selected_real_kind( p=6 ) )
         netcdf_precision = NF90_FLOAT
       case ( selected_real_kind( p=12 ) )
         netcdf_precision = NF90_DOUBLE

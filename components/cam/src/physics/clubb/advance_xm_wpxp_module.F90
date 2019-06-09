@@ -1842,6 +1842,8 @@ module advance_xm_wpxp_module
 
     use clubb_precision, only: &
       core_rknd ! Variable(s)
+   
+    use cam_logfile,   only: iulog
 
     implicit none
 
@@ -1865,6 +1867,13 @@ module advance_xm_wpxp_module
     real( kind = core_rknd ), optional, intent(out) :: &
       rcond ! Est. of the reciprocal of the condition #
 
+   ! write(iulog,*)'band_solve input:'
+   ! write(iulog,*)'  ndim   = ',2*gr%nz
+   ! write(iulog,*)'  nrhs   = ',nrhs
+   ! write(iulog,*)'  lhs    = ',lhs(1,1)
+   ! write(iulog,*)'  rhs    = ',rhs(1,1)
+   ! write(iulog,*)'  kind    = ',kind(lhs(1,1))
+   ! write(iulog,*)'  kind    = ',kind(rhs(1,1))
     err_code = clubb_no_error  ! Initialize to the value for no errors
 
     if ( present( rcond ) ) then
