@@ -941,6 +941,8 @@ end subroutine clubb_init_cnst
    use stats_clubb_utilities,     only: stats_begin_timestep
    use advance_xp2_xpyp_module,   only: update_xp2_mc
    use macrop_driver,             only: ice_macro_tend
+
+   use rp_emulator
     
 #endif
 
@@ -1217,6 +1219,15 @@ end subroutine clubb_init_cnst
    integer :: ixorg
 
    intrinsic :: selected_real_kind, max
+
+   ! Declare temperary arrays for rp_emulator
+   type(rpe_var) :: rpe_1d(pverp)          ! temporary array to hold variables
+   type(rpe_var) :: rpe_sclr               ! temporary array to hold variables
+
+   integer, parameter :: sigbits = 10      ! significant digts for reduced precision
+   rpe_1d%sbits   = sigbits
+   rpe_sclr%sbits = sigbits
+
 
 #endif
    det_s(:)   = 0.0_r8
@@ -1568,20 +1579,24 @@ end subroutine clubb_init_cnst
       zt_g(1) = -1._r8*zt_g(2)
 
       !  Set the elevation of the surface
-      sfc_elevation = state1%zi(i,pver+1)
+      rpe_sclr = state1%zi(i,pver+1) ;  sfc_elevation = rpe_sclr 
 
       !  Compute thermodynamic stuff needed for CLUBB on thermo levels.  
       !  Inputs for the momentum levels are set below setup_clubb core
       do k=1,pver
-         p_in_Pa(k+1)         = state1%pmid(i,pver-k+1)                              ! Pressure profile
-         exner(k+1)           = 1._r8/exner_clubb(i,pver-k+1)
-         rho_ds_zt(k+1)       = (1._r8/gravit)*(state1%pdel(i,pver-k+1)/dz_g(pver-k+1))
+         rpe_sclr = state1%pmid(i,pver-k+1)       ; p_in_Pa(k+1) = rpe_sclr ! Pressure profile
+         rpe_sclr = 1._r8/exner_clubb(i,pver-k+1) ; exner(k+1)   = rpe_sclr 
+         rpe_sclr = (1._r8/gravit)*(state1%pdel(i,pver-k+1)/dz_g(pver-k+1)) ; rho_ds_zt(k+1) = rpe_sclr 
+
+         ! rho_ds_zt already in reduced precision. No need to change the next two lines
          invrs_rho_ds_zt(k+1) = 1._r8/(rho_ds_zt(k+1))                               ! Inverse ds rho at thermo
          rho(i,k+1)           = rho_ds_zt(k+1)                                       ! rho on thermo 
-         thv_ds_zt(k+1)       = thv(i,pver-k+1)                                      ! thetav on thermo
-         rfrzm(k+1)           = state1%q(i,pver-k+1,ixcldice)   
-         radf(k+1)            = radf_clubb(i,pver-k+1)
-         qrl_clubb(k+1)       = qrl(i,pver-k+1)/(cpair*state1%pdel(i,pver-k+1))
+
+         rpe_sclr = thv(i,pver-k+1)                ; thv_ds_zt(k+1) = rpe_sclr   ! thetav on thermo
+         rpe_sclr = state1%q(i,pver-k+1,ixcldice)  ; rfrzm(k+1)     = rpe_sclr 
+         rpe_sclr = radf_clubb(i,pver-k+1)         ; radf(k+1)      = rpe_sclr 
+
+         rpe_sclr = qrl(i,pver-k+1)/(cpair*state1%pdel(i,pver-k+1)) ; qrl_clubb(k+1) = rpe_sclr 
       enddo
 
       !  Below computes the same stuff for the ghost point.  May or may
@@ -1600,7 +1615,7 @@ end subroutine clubb_init_cnst
       !  Compute mean w wind on thermo grid, convert from omega to w 
       wm_zt(1) = 0._r8
       do k=1,pver
-         wm_zt(k+1) = -1._r8*state1%omega(i,pver-k+1)/(rho(i,k+1)*gravit)
+         rpe_sclr = -1._r8*state1%omega(i,pver-k+1)/(rho(i,k+1)*gravit) ; wm_zt(k+1) = rpe_sclr 
       enddo
     
       ! ------------------------------------------------- !
@@ -1650,8 +1665,8 @@ end subroutine clubb_init_cnst
         endif
     
         !  Compute the surface momentum fluxes, if this is a SCAM simulation       
-        upwp_sfc = -um(i,pver)*ustar**2/ubar
-        vpwp_sfc = -vm(i,pver)*ustar**2/ubar
+        rpe_sclr = -um(i,pver)*ustar**2/ubar ; upwp_sfc = rpe_sclr 
+        rpe_sclr = -vm(i,pver)*ustar**2/ubar ; vpwp_sfc = rpe_sclr
     
       endif   
 
@@ -1696,17 +1711,17 @@ end subroutine clubb_init_cnst
  
       !  Compute some inputs from the thermodynamic grid
       !  to the momentum grid
-      rho_ds_zm       = zt2zm(rho_ds_zt)
-      rho_zm          = zt2zm(rho_zt)
-      invrs_rho_ds_zm = zt2zm(invrs_rho_ds_zt)
-      thv_ds_zm       = zt2zm(thv_ds_zt)
-      wm_zm           = zt2zm(wm_zt)
+      rpe_1d = zt2zm(rho_ds_zt)       ; rho_ds_zm       = rpe_1d 
+      rpe_1d = zt2zm(rho_zt)          ; rho_zm          = rpe_1d 
+      rpe_1d = zt2zm(invrs_rho_ds_zt) ; invrs_rho_ds_zm = rpe_1d 
+      rpe_1d = zt2zm(thv_ds_zt)       ; thv_ds_zm       = rpe_1d
+      rpe_1d = zt2zm(wm_zt)           ; wm_zm           = rpe_1d 
       
       !  Surface fluxes provided by host model
-      wpthlp_sfc = cam_in%shf(i)/(cpair*rho_ds_zm(1))       ! Sensible heat flux
-      wprtp_sfc  = cam_in%cflx(i,1)/(rho_ds_zm(1))      ! Latent heat flux
-      upwp_sfc   = cam_in%wsx(i)/rho_ds_zm(1)               ! Surface meridional momentum flux
-      vpwp_sfc   = cam_in%wsy(i)/rho_ds_zm(1)               ! Surface zonal momentum flux  
+      rpe_sclr = cam_in%shf(i)/(cpair*rho_ds_zm(1)) ; wpthlp_sfc = rpe_sclr  ! Sensible heat flux
+      rpe_sclr = cam_in%cflx(i,1)/(rho_ds_zm(1))    ; wprtp_sfc  = rpe_sclr  ! Latent heat flux
+      rpe_sclr = cam_in%wsx(i)/rho_ds_zm(1)         ; upwp_sfc   = rpe_sclr  ! Surface meridional momentum flux
+      rpe_sclr = cam_in%wsy(i)/rho_ds_zm(1)         ; vpwp_sfc   = rpe_sclr  ! Surface zonal momentum flux  
       
       ! ------------------------------------------------- !
       ! Apply TMS                                         !
@@ -1718,25 +1733,25 @@ end subroutine clubb_init_cnst
   
       !  Need to flip arrays around for CLUBB core
       do k=1,pverp
-         um_in(k)      = um(i,pverp-k+1)
-         vm_in(k)      = vm(i,pverp-k+1)
-         upwp_in(k)    = upwp(i,pverp-k+1)
-         vpwp_in(k)    = vpwp(i,pverp-k+1)
-         up2_in(k)     = up2(i,pverp-k+1)
-         vp2_in(k)     = vp2(i,pverp-k+1)
-         wp2_in(k)     = wp2(i,pverp-k+1)
-         wp3_in(k)     = wp3(i,pverp-k+1)
-         rtp2_in(k)    = rtp2(i,pverp-k+1)
-         thlp2_in(k)   = thlp2(i,pverp-k+1)
-         thlm_in(k)    = thlm(i,pverp-k+1)
-         rtm_in(k)     = rtm(i,pverp-k+1)
-         rvm_in(k)     = rvm(i,pverp-k+1)
-         wprtp_in(k)   = wprtp(i,pverp-k+1)
-         wpthlp_in(k)  = wpthlp(i,pverp-k+1)
-         rtpthlp_in(k) = rtpthlp(i,pverp-k+1)
+         rpe_sclr = um(i,pverp-k+1)     ;  um_in(k)     = rpe_sclr
+         rpe_sclr = vm(i,pverp-k+1)     ;  vm_in(k)     = rpe_sclr
+         rpe_sclr = upwp(i,pverp-k+1)   ;  upwp_in(k)   = rpe_sclr
+         rpe_sclr = vpwp(i,pverp-k+1)   ;  vpwp_in(k)   = rpe_sclr
+         rpe_sclr = up2(i,pverp-k+1)    ;  up2_in(k)    = rpe_sclr
+         rpe_sclr = vp2(i,pverp-k+1)    ;  vp2_in(k)    = rpe_sclr
+         rpe_sclr = wp2(i,pverp-k+1)    ;  wp2_in(k)    = rpe_sclr
+         rpe_sclr = wp3(i,pverp-k+1)    ;  wp3_in(k)    = rpe_sclr
+         rpe_sclr = rtp2(i,pverp-k+1)   ;  rtp2_in(k)   = rpe_sclr
+         rpe_sclr = thlp2(i,pverp-k+1)  ;  thlp2_in(k)  = rpe_sclr
+         rpe_sclr = thlm(i,pverp-k+1)   ;  thlm_in(k)   = rpe_sclr
+         rpe_sclr = rtm(i,pverp-k+1)    ;  rtm_in(k)    = rpe_sclr
+         rpe_sclr = rvm(i,pverp-k+1)    ;  rvm_in(k)    = rpe_sclr
+         rpe_sclr = wprtp(i,pverp-k+1)  ;  wprtp_in(k)  = rpe_sclr
+         rpe_sclr = wpthlp(i,pverp-k+1) ;  wpthlp_in(k) = rpe_sclr
+         rpe_sclr = rtpthlp(i,pverp-k+1);  rtpthlp_in(k)= rpe_sclr
  
          if (k .ne. 1) then
-            pre_in(k)    = prer_evap(i,pverp-k+1)
+            rpe_sclr  = prer_evap(i,pverp-k+1) ; pre_in(k) = rpe_sclr 
          endif
 
          !  Initialize these to prevent crashing behavior
@@ -1794,7 +1809,7 @@ end subroutine clubb_init_cnst
          if (lq(ixind))  then 
             icnt=icnt+1
             do k=1,pver
-               edsclr_in(k+1,icnt) = state1%q(i,pver-k+1,ixind)
+               rpe_sclr = state1%q(i,pver-k+1,ixind) ; edsclr_in(k+1,icnt) = rpe_sclr 
             enddo
             edsclr_in(1,icnt) = edsclr_in(2,icnt)
          end if
@@ -1802,15 +1817,15 @@ end subroutine clubb_init_cnst
       
       if (do_expldiff) then 
         do k=1,pver
-          edsclr_in(k+1,icnt+1) = thlm(i,pver-k+1)
-          edsclr_in(k+1,icnt+2) = rtm(i,pver-k+1)
+          rpe_sclr = thlm(i,pver-k+1); edsclr_in(k+1,icnt+1) = rpe_sclr 
+          rpe_sclr = rtm(i,pver-k+1) ; edsclr_in(k+1,icnt+2) = rpe_sclr 
         enddo
         
         edsclr_in(1,icnt+1) = edsclr_in(2,icnt+1)
         edsclr_in(1,icnt+2) = edsclr_in(2,icnt+2)  
       endif    
 
-      rho_in(:) = rho(i,:)
+      rho_in(:) = rho(i,:) 
      
       ! --------------------------------------------------------- !
       ! Compute cloud-top radiative cooling contribution to CLUBB !
@@ -1834,7 +1849,8 @@ end subroutine clubb_init_cnst
          endif
        
          ! Now compute new entrainment rate based on organization
-         varmu2 = mu / (1._r8 + orgparam * 100._r8)
+         rpe_sclr = mu / (1._r8 + orgparam * 100._r8)
+         varmu2 = rpe_sclr
          varmu(i) = varmu2
      
       endif
