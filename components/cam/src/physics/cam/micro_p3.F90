@@ -1181,31 +1181,7 @@ contains
 
           !............................
           ! accretion of cloud by rain
-
-          if (qr_incld(i,k).ge.qsmall .and. qc_incld(i,k).ge.qsmall) then
-
-             if (iparam.eq.1) then
-                !Seifert and Beheng (2001)
-                dum   = 1._rtype-qc_incld(i,k)/(qc_incld(i,k)+qr_incld(i,k))
-                dum1  = (dum/(dum+5.e-4_rtype))**4
-                qcacc = kr*rho(i,k)*0.001_rtype*qc_incld(i,k)*qr_incld(i,k)*dum1
-                ncacc = qcacc*rho(i,k)*0.001_rtype*(nc_incld(i,k)*rho(i,k)*1.e-6_rtype)/(qc_incld(i,k)*rho(i,k)*   &
-                     0.001_rtype)*1.e+6_rtype*inv_rho(i,k)
-             elseif (iparam.eq.2) then
-                !Beheng (994)
-                qcacc = 6._rtype*rho(i,k)*(qc_incld(i,k)*qr_incld(i,k))
-                ncacc = qcacc*rho(i,k)*1.e-3_rtype*(nc_incld(i,k)*rho(i,k)*1.e-6_rtype)/(qc_incld(i,k)*rho(i,k)*1.e-3_rtype)* &
-                     1.e+6_rtype*inv_rho(i,k)
-             elseif (iparam.eq.3) then
-                !Khroutdinov and Kogan (2000)
-                qcacc = 67._rtype*(qc_incld(i,k)*qr_incld(i,k))**1.15_rtype
-                ncacc = qcacc*nc_incld(i,k)/qc_incld(i,k)
-             endif
-
-             if (qcacc.eq.0._rtype) ncacc = 0._rtype
-             if (ncacc.eq.0._rtype) qcacc = 0._rtype
-
-          endif
+          call cloud_rain_accretion(rho(i,k), inv_rho(i,k), qc_incld(i,k), nc_incld(i,k), qr_incld(i,k), qcacc, ncacc)
 
           !.....................................
           ! self-collection and breakup of rain
@@ -3396,6 +3372,51 @@ subroutine droplet_self_collection(rho, inv_rho, qc_incld, mu_c, nu, ncautc, ncs
    endif
 
 end subroutine droplet_self_collection
+
+subroutine cloud_rain_accretion(rho, inv_rho, qc_incld, nc_incld, qr_incld, qcacc, ncacc)
+
+!............................
+! accretion of cloud by rain
+
+implicit none 
+
+real(rtype), intent(in) :: rho 
+real(rtype), intent(in) :: inv_rho
+real(rtype), intent(in) :: qc_incld
+real(rtype), intent(in) :: nc_incld 
+real(rtype), intent(in) :: qr_incld
+
+real(rtype), intent(out) :: qcacc
+real(rtype), intent(out) :: ncacc  
+
+real(rtype) :: dum, dum1 
+
+if (qr_incld.ge.qsmall .and. qc_incld.ge.qsmall) then
+
+   if (iparam.eq.1) then
+      !Seifert and Beheng (2001)
+      dum   = 1._rtype-qc_incld/(qc_incld+qr_incld)
+      dum1  = (dum/(dum+5.e-4_rtype))**4
+      qcacc = kr*rho*0.001_rtype*qc_incld*qr_incld*dum1
+      ncacc = qcacc*rho*0.001_rtype*(nc_incld*rho*1.e-6_rtype)/(qc_incld*rho*   &
+           0.001_rtype)*1.e+6_rtype*inv_rho
+   elseif (iparam.eq.2) then
+      !Beheng (994)
+      qcacc = 6._rtype*rho*(qc_incld*qr_incld)
+      ncacc = qcacc*rho*1.e-3_rtype*(nc_incld*rho*1.e-6_rtype)/(qc_incld*rho*1.e-3_rtype)* &
+           1.e+6_rtype*inv_rho
+   elseif (iparam.eq.3) then
+      !Khroutdinov and Kogan (2000)
+      qcacc = 67._rtype*(qc_incld*qr_incld)**1.15_rtype
+      ncacc = qcacc*nc_incld/qc_incld
+   endif
+
+   if (qcacc.eq.0._rtype) ncacc = 0._rtype
+   if (ncacc.eq.0._rtype) qcacc = 0._rtype
+
+endif
+
+end subroutine cloud_rain_accretion 
 
 
 end module micro_p3
