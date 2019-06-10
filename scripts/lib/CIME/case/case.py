@@ -177,10 +177,7 @@ class Case(object):
         threads_per_core = 1 if (threads_per_node <= max_mpitasks_per_node) else smt_factor
         self.cores_per_task = self.thread_count / threads_per_core
 
-        if self.get_build_threaded():
-            os.environ["OMP_NUM_THREADS"] = str(self.thread_count)
-        elif "OMP_NUM_THREADS" in os.environ:
-            del os.environ["OMP_NUM_THREADS"]
+        os.environ["OMP_NUM_THREADS"] = str(self.thread_count)
 
         self.srun_binding = smt_factor*max_mpitasks_per_node / self.tasks_per_node
 
@@ -1428,10 +1425,7 @@ directory, NOT in this subdirectory."""
         if not self._is_env_loaded or reset:
             if job is None:
                 job = self.get_primary_job()
-            if self.get_build_threaded():
-                os.environ["OMP_NUM_THREADS"] = str(self.thread_count)
-            elif "OMP_NUM_THREADS" in os.environ:
-                del os.environ["OMP_NUM_THREADS"]
+            os.environ["OMP_NUM_THREADS"] = str(self.thread_count)
             env_module = self.get_env("mach_specific")
             env_module.load_env(self, job=job, verbose=verbose)
             self._is_env_loaded = True
