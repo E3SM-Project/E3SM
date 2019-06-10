@@ -113,7 +113,7 @@ def run_diag(parameter):
                 print('Selected pressure level: {}'.format(plev))
 
                 mv1_p = utils.general.convert_to_pressure_levels(mv1, plev, test_data, var, season)
-                mv2_p = utils.general.convert_to_pressure_levels(mv2, plev, test_data, var, season)
+                mv2_p = utils.general.convert_to_pressure_levels(mv2, plev, ref_data, var, season)
 
                 # Select plev.
                 for ilev in range(len(plev)):
