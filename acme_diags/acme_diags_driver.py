@@ -20,8 +20,8 @@ import traceback
 import subprocess
 import cdp.cdp_run
 import acme_diags
-from acme_diags.acme_parameter import ACMEParameter
-from acme_diags.acme_parser import ACMEParser
+from acme_diags.parameter.core_parameter import CoreParameter
+from acme_diags.parser.core_parser import CoreParser
 from acme_diags.viewer.main import create_viewer
 from acme_diags.driver import utils
 from acme_diags import container
@@ -159,7 +159,7 @@ def save_provenance(results_dir, parser):
     _save_parameter_files(results_dir, parser)
 
 
-def get_parameters(parser=ACMEParser()):
+def get_parameters(parser=CoreParser()):
     """
     Get the parameters from the parser.
     """
@@ -175,7 +175,7 @@ def get_parameters(parser=ACMEParser()):
 
         # Load the default cfg files.
         run_type = getattr(original_parameter, 'run_type', 'model_vs_obs')
-        default_diags_paths = [_get_default_diags(set_name, run_type) for set_name in ACMEParameter().sets]
+        default_diags_paths = [_get_default_diags(set_name, run_type) for set_name in CoreParameter().sets]
 
         other_parameters = parser.get_other_parameters(files_to_open=default_diags_paths, argparse_vals_only=False)
 
@@ -218,9 +218,10 @@ def run_diag(parameters):
     return results
 
 
-def main():
-    parser = ACMEParser()
-    parameters = get_parameters(parser)
+def main(parameters=[]):
+    parser = CoreParser()
+    if not parameters:
+        parameters = get_parameters(parser)
 
     if not os.path.exists(parameters[0].results_dir):
         os.makedirs(parameters[0].results_dir, 0o755)

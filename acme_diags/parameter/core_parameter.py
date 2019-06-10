@@ -4,7 +4,7 @@ import sys
 import cdp.cdp_parameter
 
 
-class ACMEParameter(cdp.cdp_parameter.CDPParameter):
+class CoreParameter(cdp.cdp_parameter.CDPParameter):
     def __init__(self):
         self.case_id = ''
         # The user must define these, so don't give any defaults.

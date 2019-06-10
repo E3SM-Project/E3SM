@@ -12,7 +12,7 @@ import traceback
 import cdms2
 import acme_diags
 from acme_diags.acme_diags_driver import get_parameters
-from acme_diags.acme_parser import ACMEParser
+from acme_diags.parser.core_parser import CoreParser
 from acme_diags.derivations.acme import derived_variables
 
 DUMMY_FILE_PATH = '/Users/shaheen2/test_model_data_for_acme_diags/20161118.beta0.FC5COSP.ne30_ne30.edison_ANN_climo.nc'
@@ -41,7 +41,7 @@ def list_of_vars_in_user_file():
     with cdms2.open(path) as f:
         return f.variables.keys()
 
-parser = ACMEParser()
+parser = CoreParser()
 parser.add_argument('path', default=DUMMY_FILE_PATH, nargs='?')
 
 def list_of_vars_in_e3sm_diags():

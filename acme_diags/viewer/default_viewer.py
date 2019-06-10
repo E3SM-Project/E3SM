@@ -7,7 +7,7 @@ import os
 import collections
 import json
 from cdp.cdp_viewer import OutputViewer
-from acme_diags.acme_parser import ACMEParser
+from acme_diags.parser.core_parser import CoreParser
 import acme_diags
 from . import utils, lat_lon_viewer
 
@@ -20,7 +20,7 @@ SET_TO_NAME = {
     'meridional_mean_2d': 'Pressure-Longitude meridional mean contour plots',
     'lat_lon': 'Latitude-Longitude contour maps',
     'polar': 'Polar contour maps',
-    'cosp_histogram': 'CloudTopHeight-Tau joint histograms'
+    'cosp_histogram': 'CloudTopHeight-Tau joint histograms',
 }
 
 # The ordering of the columns in the viewer.
@@ -115,7 +115,7 @@ def create_viewer(root_dir, parameters):
                         # Format the filename to support relative paths.
                         ROW_INFO[set_name][parameter.case_id][row_name][season]['image_path'] = os.path.join(
                             '..', '{}'.format(set_name), parameter.case_id, fnm)
-                        ROW_INFO[set_name][parameter.case_id][row_name][season]['metadata'] = _create_metadata(parameter)
+                        ROW_INFO[set_name][parameter.case_id][row_name][season]['metadata'] = create_metadata(parameter)
 
     save_netcdf = parameters[0].save_netcdf
     ext = parameters[0].output_format[0]
@@ -174,7 +174,7 @@ def _add_to_lat_lon_metrics_table(lat_lon_table_info, metrics_path, season, row_
         lat_lon_table_info[season][row_name]['metrics'] = metrics_dict
 
 
-def _create_metadata(parameter):
+def create_metadata(parameter):
     """
     From a set of parameters, extract the metadata.
     """
@@ -183,7 +183,7 @@ def _create_metadata(parameter):
     metadata[msg] = ''
     cmd = 'e3sm_diags --no_viewer '
 
-    parser = ACMEParser()
+    parser = CoreParser()
 
     args = parser.view_args()
     supported_cmd_args = list(args.__dict__.keys())
