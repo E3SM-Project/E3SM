@@ -1119,30 +1119,9 @@ contains
 
           !.................................................................
           ! droplet activation
+          call droplet_activation(t(i,k), pres(i,k), qv(i,k), qc(i,k), inv_rho(i,k), sup(i,k), xxlv(i,k), npccn(i,k), log_predictNc, odt, it, qcnuc, ncnuc)
 
-          if (log_predictNc) then
-            ! for predicted Nc, use activation predicted by aerosol scheme
-            ! note that this is also applied at the first time step
-            if (sup(i,k).gt.1.e-6) then
-               ncnuc = npccn(i,k)
-               if (it.eq.1) then
-                  qcnuc = 0._rtype
-               else
-                  !TODO Limit qcnuc so that conditions never become sub-saturated 
-                  qcnuc = ncnuc*cons7
-               endif
-            endif
-         else if (sup(i,k).gt.1.e-6.and.it.gt.1) then
-           ! for specified Nc, make sure droplets are present if conditions are supersaturated
-           ! this is not applied at the first time step, since saturation adjustment is applied at the first step
-            dum   = nccnst*inv_rho(i,k)*cons7-qc(i,k)
-            dum   = max(0._rtype,dum)
-            dumqvs = qv_sat(t(i,k),pres(i,k),0)
-            dqsdt = xxlv(i,k)*dumqvs/(rv*t(i,k)*t(i,k))
-            ab    = 1._rtype + dqsdt*xxlv(i,k)*inv_cp
-            dum   = min(dum,(qv(i,k)-dumqvs)/ab)  ! limit overdepletion of supersaturation
-            qcnuc = dum*odt
-         endif
+
 
           !................................................................
           ! saturation adjustment to get initial cloud water
@@ -3323,11 +3302,60 @@ subroutine ice_nucleation(t, inv_rho, nitot, naai, supi, odt, log_predictNc, qin
       endif 
    endif 
 
-
-
-
-
 end subroutine 
+
+
+subroutine droplet_activation(t, pres, qv, qc, inv_rho, sup, xxlv, npccn, log_predictNc, odt, it, qcnuc, ncnuc)
+
+
+implicit none 
+
+real(rtype), intent(in) :: t
+real(rtype), intent(in) :: pres
+real(rtype), intent(in) :: qv  
+real(rtype), intent(in) :: qc
+real(rtype), intent(in) :: inv_rho 
+real(rtype), intent(in) :: sup 
+real(rtype), intent(in) :: xxlv 
+real(rtype), intent(in) :: npccn 
+
+logical, intent(in) :: log_predictNc
+real(rtype), intent(in)  :: odt 
+integer, intent(in) :: it 
+
+real(rtype), intent(inout) :: qcnuc 
+real(rtype), intent(inout) :: ncnuc 
+
+real(rtype) :: dum, dumqvs, dqsdt, ab 
+
+!.................................................................
+! droplet activation
+
+   if (log_predictNc) then
+      ! for predicted Nc, use activation predicted by aerosol scheme
+      ! note that this is also applied at the first time step
+      if (sup.gt.1.e-6) then
+         ncnuc = npccn
+         if (it.eq.1) then
+            qcnuc = 0._rtype
+         else
+            !TODO Limit qcnuc so that conditions never become sub-saturated 
+            qcnuc = ncnuc*cons7
+         endif
+      endif
+   else if (sup.gt.1.e-6.and.it.gt.1) then
+     ! for specified Nc, make sure droplets are present if conditions are supersaturated
+     ! this is not applied at the first time step, since saturation adjustment is applied at the first step
+      dum   = nccnst*inv_rho*cons7-qc
+      dum   = max(0._rtype,dum)
+      dumqvs = qv_sat(t,pres,0)
+      dqsdt = xxlv*dumqvs/(rv*t*t)
+      ab    = 1._rtype + dqsdt*xxlv*inv_cp
+      dum   = min(dum,(qv-dumqvs)/ab)  ! limit overdepletion of supersaturation
+      qcnuc = dum*odt
+   endif
+
+end subroutine droplet_activation 
 
 
 
