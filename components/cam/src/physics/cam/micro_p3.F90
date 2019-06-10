@@ -1177,22 +1177,7 @@ contains
 
           !............................
           ! self-collection of droplets
-
-          if (qc_incld(i,k).ge.qsmall) then
-
-             if (iparam.eq.1) then
-                !Seifert and Beheng (2001)
-                ncslf = -kc*(1.e-3_rtype*rho(i,k)*qc_incld(i,k))**2*(nu(i,k)+2._rtype)/(nu(i,k)+1._rtype)*         &
-                     1.e+6_rtype*inv_rho(i,k)+ncautc
-             elseif (iparam.eq.2) then
-                !Beheng (994)
-                ncslf = -5.5e+16_rtype*inv_rho(i,k)*mu_c(i,k)**(-0.63_rtype)*(1.e-3_rtype*rho(i,k)*qc_incld(i,k))**2
-             elseif (iparam.eq.3) then
-                !Khroutdinov and Kogan (2000)
-                ncslf = 0._rtype
-             endif
-
-          endif
+          call droplet_self_collection(rho(i,k), inv_rho(i,k), qc_incld(i,k), mu_c(i,k), nu(i,k), ncautc, ncslf)
 
           !............................
           ! accretion of cloud by rain
@@ -3378,5 +3363,39 @@ if (it .eq. 1 ) then
 endif
 
 end subroutine initial_saturation_adjustment
+
+subroutine droplet_self_collection(rho, inv_rho, qc_incld, mu_c, nu, ncautc, ncslf)
+   !............................
+   ! self-collection of droplets
+
+   implicit none 
+
+   real(rtype), intent(in) :: rho
+   real(rtype), intent(in) :: inv_rho
+   real(rtype), intent(in) :: qc_incld 
+   real(rtype), intent(in) :: mu_c
+   real(rtype), intent(in) :: nu
+   real(rtype), intent(in) :: ncautc 
+
+   real(rtype), intent(out) :: ncslf 
+
+   if (qc_incld.ge.qsmall) then
+
+      if (iparam.eq.1) then
+         !Seifert and Beheng (2001)
+         ncslf = -kc*(1.e-3_rtype*rho*qc_incld)**2*(nu+2._rtype)/(nu+1._rtype)*         &
+              1.e+6_rtype*inv_rho+ncautc
+      elseif (iparam.eq.2) then
+         !Beheng (994)
+         ncslf = -5.5e+16_rtype*inv_rho*mu_c**(-0.63_rtype)*(1.e-3_rtype*rho*qc_incld)**2
+      elseif (iparam.eq.3) then
+         !Khroutdinov and Kogan (2000)
+         ncslf = 0._rtype
+      endif
+
+   endif
+
+end subroutine droplet_self_collection
+
 
 end module micro_p3
