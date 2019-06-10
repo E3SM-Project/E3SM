@@ -489,13 +489,13 @@ contains
 
     real(rtype)    :: lammax,lammin,mu,dv,sc,dqsdt,ab,kap,epsr,epsc,xx,aaa,epsilon,epsi_tot, &
          dum,dum1,dum2,    &
-         dumqv,dumqvs,dums,ratio,dum3,dum4,dum5,dum6,rdumii, &
+         dumqvs,ratio,dum3,dum4,dum5,dum6,rdumii, &
          rdumjj,dqsidt,abi,dumqvi,rhop,tmp1,  &
          tmp2,inv_dum3,odt,oxx,oabi,     &
          fluxdiv_qit,fluxdiv_nit,fluxdiv_qir,fluxdiv_bir,prt_accum, &
          fluxdiv_qx,fluxdiv_nx,Co_max,dt_sub,      &
          Q_nuc,N_nuc,         &
-         deltaD_init,dumt,qcon_satadj,qdep_satadj,sources,sinks,    &
+         deltaD_init,qcon_satadj,qdep_satadj,sources,sinks,    &
          timeScaleFactor,dt_left, vtrmi1
 
 
