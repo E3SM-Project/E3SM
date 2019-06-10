@@ -1186,32 +1186,7 @@ contains
           !.....................................
           ! self-collection and breakup of rain
           ! (breakup following modified Verlinde and Cotton scheme)
-
-          if (qr_incld(i,k).ge.qsmall) then
-
-             ! include breakup
-             dum1 = 280.e-6_rtype
-
-             ! use mass-mean diameter (do this by using
-             ! the old version of lambda w/o mu dependence)
-             ! note there should be a factor of 6^(1/3), but we
-             ! want to keep breakup threshold consistent so 'dum'
-             ! is expressed in terms of lambda rather than mass-mean D
-
-             dum2 = (qr_incld(i,k)/(pi*rhow*nr_incld(i,k)))**thrd
-             if (dum2.lt.dum1) then
-                dum = 1._rtype
-             else if (dum2.ge.dum1) then
-                dum = 2._rtype-exp(2300._rtype*(dum2-dum1))
-             endif
-
-             if (iparam.eq.1) then
-                nrslf = dum*kr*1.e-3_rtype*qr_incld(i,k)*nr_incld(i,k)*rho(i,k)
-             elseif (iparam.eq.2 .or. iparam.eq.3) then
-                nrslf = dum*5.78_rtype*nr_incld(i,k)*qr_incld(i,k)*rho(i,k)
-             endif
-
-          endif
+          call rain_self_collection(rho(i,k), qr_incld(i,k), nr_incld(i,k), nrslf)
 
           ! Here we map the microphysics tendency rates back to CELL-AVERAGE quantities for updating
           ! cell-average quantities.
@@ -3418,5 +3393,47 @@ endif
 
 end subroutine cloud_rain_accretion 
 
+subroutine rain_self_collection(rho, qr_incld, nr_incld, nrslf)
+   
+   !.....................................
+   ! self-collection and breakup of rain
+   ! (breakup following modified Verlinde and Cotton scheme)
+
+   implicit none 
+   
+   real(rtype), intent(in) :: rho 
+   real(rtype), intent(in) :: qr_incld
+   real(rtype), intent(in) :: nr_incld
+   real(rtype), intent(out) :: nrslf 
+
+   real(rtype) :: dum, dum1, dum2 
+
+   if (qr_incld.ge.qsmall) then
+
+      ! include breakup
+      dum1 = 280.e-6_rtype
+
+      ! use mass-mean diameter (do this by using
+      ! the old version of lambda w/o mu dependence)
+      ! note there should be a factor of 6^(1/3), but we
+      ! want to keep breakup threshold consistent so 'dum'
+      ! is expressed in terms of lambda rather than mass-mean D
+
+      dum2 = (qr_incld/(pi*rhow*nr_incld))**thrd
+      if (dum2.lt.dum1) then
+         dum = 1._rtype
+      else if (dum2.ge.dum1) then
+         dum = 2._rtype-exp(2300._rtype*(dum2-dum1))
+      endif
+
+      if (iparam.eq.1) then
+         nrslf = dum*kr*1.e-3_rtype*qr_incld*nr_incld*rho
+      elseif (iparam.eq.2 .or. iparam.eq.3) then
+         nrslf = dum*5.78_rtype*nr_incld*qr_incld*rho
+      endif
+
+   endif
+
+end subroutine rain_self_collection
 
 end module micro_p3
