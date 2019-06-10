@@ -1121,23 +1121,9 @@ contains
           ! droplet activation
           call droplet_activation(t(i,k), pres(i,k), qv(i,k), qc(i,k), inv_rho(i,k), sup(i,k), xxlv(i,k), npccn(i,k), log_predictNc, odt, it, qcnuc, ncnuc)
 
-
-
           !................................................................
           ! saturation adjustment to get initial cloud water
-
-          ! This is only called once at the beginning of the simulation
-          ! to remove any supersaturation in the intial conditions
-
-          if (it.eq.1) then
-             dumt   = th(i,k)*inv_exner(i,k) !(pres(i,k)*1.e-5)**(rd*inv_cp)
-             dumqv  = qv(i,k)
-             dumqvs = qv_sat(dumt,pres(i,k),0)
-             dums   = dumqv-dumqvs
-             qccon  = dums/(1._rtype+xxlv(i,k)**2*dumqvs/(cp*rv*dumt**2))*odt
-             qccon  = max(0._rtype,qccon)
-             if (qccon.le.1.e-7_rtype) qccon = 0._rtype
-          endif
+          call initial_saturation_adjustment(pres(i,k), qv(i,k), th(i,k), inv_exner(i,k), xxlv(i,k), odt, it, qccon)
 
           !................
 
@@ -3358,6 +3344,39 @@ real(rtype) :: dum, dumqvs, dqsdt, ab
 end subroutine droplet_activation 
 
 
+subroutine initial_saturation_adjustment(pres, qv, th, inv_exner, xxlv, odt, it, qccon) 
 
+!................................................................
+! saturation adjustment to get initial cloud water
+
+! This is only called once at the beginning of the simulation
+! to remove any supersaturation in the intial conditions
+
+implicit none 
+
+real(rtype), intent(in) :: pres 
+real(rtype), intent(in) :: qv 
+real(rtype), intent(in) :: th 
+real(rtype), intent(in) :: inv_exner 
+real(rtype), intent(in) :: xxlv 
+real(rtype), intent(in) :: odt 
+
+
+integer, intent(in) :: it 
+real(rtype), intent(out) :: qccon 
+
+real(rtype) :: dumt, dums, dumqv, dumqvs 
+
+if (it .eq. 1 ) then 
+   dumt   = th*inv_exner !(pres(i,k)*1.e-5)**(rd*inv_cp)
+   dumqv  = qv
+   dumqvs = qv_sat(dumt,pres,0)
+   dums   = dumqv-dumqvs
+   qccon  = dums/(1._rtype+xxlv**2*dumqvs/(cp*rv*dumt**2))*odt
+   qccon  = max(0._rtype,qccon)
+   if (qccon.le.1.e-7_rtype) qccon = 0._rtype 
+endif
+
+end subroutine initial_saturation_adjustment
 
 end module micro_p3
