@@ -2033,8 +2033,8 @@
       <arguments>
         <arg name="mpi">--mpi=none</arg>
         <arg name="num_tasks">--ntasks={{ total_tasks }}</arg>
-        <arg name="cpu_bind">--cpu_bind=sockets --cpu_bind=verbose</arg>
         <arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
+        <arg name="cpu_bind">-l --cpu_bind=cores -c $ENV{OMP_NUM_THREADS} -m plane=$SHELL{echo 40/$OMP_NUM_THREADS|bc}</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -2075,6 +2075,10 @@
     </environment_variables>
     <environment_variables>
       <env name="MKL_PATH">$ENV{MKLROOT}</env>
+    </environment_variables>
+    <environment_variables>
+      <env name="MV2_ENABLE_AFFINITY">0</env>
+      <env name="MV2_SHOW_CPU_BINDING">1</env>
     </environment_variables>
   </machine>
 
