@@ -1,15 +1,14 @@
 import os
 import collections
 import cdms2
-import acme_diags
-from acme_diags.driver import utils
-from acme_diags.metrics import mean
 import cdutil
-
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 import numpy as np
+import acme_diags
+from acme_diags.driver import utils
+from acme_diags.metrics import mean
 from acme_diags.driver.utils.general import get_output_dir
 
 
@@ -26,7 +25,7 @@ def create_metrics(ref_domain):
 def run_diag(parameter):
     variables = parameter.variables
     regions = parameter.regions
-    ref_names_regional_mean = getattr(parameter, 'ref_names_regional_mean', [])
+    area_mean_ref_names = getattr(parameter, 'area_mean_time_series_ref_names', [])
 
     # Both input data sets must be time-series files.
     # Raising an error will cause this specific set of
@@ -38,14 +37,14 @@ def run_diag(parameter):
 
     for var in variables:
         # The data that'll be sent to the plotting function.
-        # There are six tuples, each will be plotted like so:
-        # [ 0 ]   [ 1 ]
-        # [   ]   [   ]
+        # There are eight tuples, each will be plotted like so:
+        # [ 0 ]   [ 1 ]   [ 2 ]
+        # [   ]   [   ]   [   ]
         #
-        # [ 2 ]   [ 3 ]
-        # [   ]   [   ]
+        # [ 3 ]   [ 4 ]   [ 5 ]
+        # [   ]   [   ]   [   ]
         #
-        # [ 4 ]   [ 5 ]
+        # [ 6 ]   [ 7 ]
         # [   ]   [   ]
         regions_to_data = collections.OrderedDict()
         print('Variable: {}'.format(var))
@@ -78,7 +77,7 @@ def run_diag(parameter):
 
             refs = []
 
-            for ref_name in ref_names_regional_mean:    
+            for ref_name in area_mean_ref_names:    
                 setattr(parameter, 'ref_name', ref_name)
                 ref_data = utils.dataset.Dataset(parameter, ref=True)
             
@@ -151,7 +150,7 @@ def plot(var, regions_to_data, parameter):
              (0.7, 0.08, 0.25, 0.25),
              ]
     
-    # Create figure
+    # Create the figure.
     figsize = [11.0, 8.5]
     dpi = 150
     fig = plt.figure(figsize=figsize, dpi=dpi)
@@ -178,8 +177,8 @@ def plot(var, regions_to_data, parameter):
     # Figure title.
     fig.suptitle('Annual mean ' + var + ' over regions ' + parameter.test_name_yrs, x=0.5, y=0.97, fontsize=15)
 
-    # Save figure.
-    output_file_name = '{}'.format(var)
+    # Save the figure.
+    output_file_name = var
     for f in parameter.output_format:
         f = f.lower().split('.')[-1]
         fnm = os.path.join(get_output_dir(parameter.current_set,
