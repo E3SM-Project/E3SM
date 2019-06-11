@@ -936,10 +936,12 @@ if ($ocn_bgc eq 'eco_only' || $ocn_bgc eq 'eco_and_dms' || $ocn_bgc eq 'eco_and_
 if ($ocn_co2_type eq 'constant' ) {
         add_default($nl, 'config_ecosys_atm_co2_option', 'val'=>"constant");
         add_default($nl, 'config_ecosys_atm_alt_co2_option', 'val'=>"constant");
+        add_default($nl, 'config_ecosys_atm_alt_co2_use_eco', 'val'=>".false.");
         add_default($nl, 'config_ecosys_atm_co2_constant_value', 'val'=>$atm_co2_const_val);
 } else {
         add_default($nl, 'config_ecosys_atm_co2_option', 'val'=>"diagnostic");
         add_default($nl, 'config_ecosys_atm_alt_co2_option', 'val'=>"diagnostic");
+        add_default($nl, 'config_ecosys_atm_alt_co2_use_eco', 'val'=>".true.");
         add_default($nl, 'config_ecosys_atm_co2_constant_value', 'val'=>$atm_co2_const_val);
 }
 add_default($nl, 'config_use_ecosysTracers_surface_bulk_forcing');
@@ -1309,6 +1311,40 @@ add_default($nl, 'config_AM_timeSeriesStatsClimatology_duration_intervals');
 add_default($nl, 'config_AM_timeSeriesStatsClimatology_repeat_intervals');
 add_default($nl, 'config_AM_timeSeriesStatsClimatology_reset_intervals');
 add_default($nl, 'config_AM_timeSeriesStatsClimatology_backward_output_offset');
+
+################################################
+# Namelist group: AM_timeSeriesStatsMonthlyMax #
+################################################
+
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_enable');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_compute_on_startup');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_write_on_startup');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_compute_interval');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_output_stream');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_restart_stream');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_operation');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_reference_times');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_duration_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_repeat_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_reset_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_backward_output_offset');
+
+################################################
+# Namelist group: AM_timeSeriesStatsMonthlyMin #
+################################################
+
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_enable');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_compute_on_startup');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_write_on_startup');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_compute_interval');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_output_stream');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_restart_stream');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_operation');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_reference_times');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_duration_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_repeat_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_reset_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_backward_output_offset');
 
 ############################################
 # Namelist group: AM_timeSeriesStatsCustom #
