@@ -143,9 +143,9 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <lmask type="vic"              >GRDC</lmask>
 <lmask type="ch4"              >cruncep</lmask>
 <lmask type="pho"              >GSDTG2000</lmask>
-<lmask type="grvl"             >nomask</lmask>
-<lmask type="slp10"            >nomask</lmask>
-<lmask type="ero"              >nomask</lmask>
+<lmask type="grvl"             >ISRIC-WISE</lmask>
+<lmask type="slp10"            >AVHRR</lmask>
+<lmask type="ero"              >AVHRR</lmask>
 
 <!-- Grid resolutions for different types of mksurfdata_map input files -->
 <hgrid type="lak"              >3x3min</hgrid>
@@ -171,7 +171,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <hgrid type="vic"              >0.9x1.25</hgrid>
 <hgrid type="ch4"              >360x720cru</hgrid>
 <hgrid type="pho"              >0.5x0.5</hgrid>
-<hgrid type="grvl"             >0.5x0.5</hgrid>
+<hgrid type="grvl"             >5x5min</hgrid>
 <hgrid type="slp10"            >0.5x0.5</hgrid>
 <hgrid type="ero"              >0.5x0.5</hgrid>
 
@@ -299,13 +299,13 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 >lnd/clm2/rawdata/mksrf_soilphos_0.5x0.5_simyr1850.c170623.nc</mksrf_fphosphorus>
 
 <!-- soil erosion dataset -->
-<mksrf_fgrvl hgrid="0.5x0.5" lmask="nomask"
->lnd/clm2/rawdata/mksrf_gravel_10level_0.5x0.5.c190603.nc</mksrf_fgrvl>
+<mksrf_fgrvl hgrid="5x5min" lmask="ISRIC-WISE"
+>lnd/clm2/rawdata/mksrf_gravel_10level_5min.c190603.nc</mksrf_fgrvl>
 
-<mksrf_fslp10 hgrid="0.5x0.5" lmask="nomask"
+<mksrf_fslp10 hgrid="0.5x0.5" lmask="AVHRR"
 >lnd/clm2/rawdata/mksrf_slope_10p_0.5x0.5.c190603.nc</mksrf_fslp10>
 
-<mksrf_fero hgrid="0.5x0.5" lmask="nomask"
+<mksrf_fero hgrid="0.5x0.5" lmask="AVHRR"
 >lnd/clm2/rawdata/mksrf_soilero_0.5x0.5.c190603.nc</mksrf_fero>
 
 <!-- mksrf_fvegtyp -->
