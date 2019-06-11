@@ -324,6 +324,7 @@ if [ "$phys" = "clm4_5" ]; then
         "360x720cru_cruncep"                    \
         "1km-merge-10min_HYDRO1K-merge-nomask"  \
         "0.5x0.5_GSDTG2000"                     \
+        "0.5x0.5_nomask"			\
     )
 else
     echo "ERROR: Unknown value for phys: $phys"

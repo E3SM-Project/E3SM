@@ -176,19 +176,11 @@ contains
             Tc = 0._r8
             if (qflx_surf(c)>0) then
                Qs = 8.64d4 * qflx_surf(c)  ! mm/d
-               nslp = size(hslp_p10(c,:))
+               nslp = size(hslp_p10(c,:)) - 1
+               fslp = 1.0 / DBLE(nslp)
                factor_slp = 0._r8
                do j = 1, nslp
-                  if (j==1) then
-                     fslp = 1.5 / DBLE(nslp)
-                  else if (j<nslp-1) then
-                     fslp = 1.0 / DBLE(nslp)
-                  else if (j==nslp-1) then
-                     fslp = 1.3 / DBLE(nslp)
-                  else
-                     fslp = 0.2 / DBLE(nslp)
-                  end if
-                  sinslp = sin(atan(max(hslp_p10(c,j),1d-4)))
+                  sinslp = sin(atan(max(0.5*(hslp_p10(c,j)+hslp_p10(c,j+1)),1d-4)))
                   factor_slp = factor_slp + fslp * sinslp
                end do
                Es_Q = 19.1 * qfactor(c) * 2.0 / COH * factor_slp * &
