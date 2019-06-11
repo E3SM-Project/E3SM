@@ -90,7 +90,7 @@
          nslyr   , & ! number of snow layers
          ntrcr       ! number of tracers in use
 
-      real (kind=dbl_kind), dimension(0:ncat), intent(inout) :: &
+      real (kind=dbl_kind), dimension(0:ncat), intent(in) :: &
          hin_max      ! category boundaries (m)
 
       integer (kind=int_kind), dimension (:), intent(in) :: &
@@ -196,8 +196,6 @@
       !-----------------------------------------------------------------
 
       l_stop = .false.
-
-      hin_max(ncat) = 999.9_dbl_kind ! arbitrary big number
 
       do n = 1, ncat
          donor(n) = 0

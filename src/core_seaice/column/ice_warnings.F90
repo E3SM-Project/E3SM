@@ -33,7 +33,7 @@ contains
 
     ! number of array elements to increase size of warnings array if that array has run out of space
     integer, parameter :: &
-         nWarningsBuffer = 10
+         nWarningsBuffer = 100
 
     ! temporary array to store previous warnings while warning array is increased in size
     character(len=char_len_long), dimension(:), allocatable :: &

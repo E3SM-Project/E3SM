@@ -259,6 +259,10 @@
 
       endif ! kcatbound
 
+      if (kitd == 1) then
+         hin_max(ncat) = 999.9_dbl_kind ! arbitrary big number
+      endif
+
       end subroutine colpkg_init_itd
 
 !=======================================================================
@@ -2329,7 +2333,7 @@
       logical (kind=log_kind), intent(in) :: &
          update_ocn_f     ! if true, update fresh water and salt fluxes
 
-      real (kind=dbl_kind), dimension(0:ncat), intent(inout) :: &
+      real (kind=dbl_kind), dimension(0:ncat), intent(in) :: &
          hin_max      ! category boundaries (m)
 
       real (kind=dbl_kind), intent(in) :: &
@@ -3525,6 +3529,7 @@
       if (present(uvel)) then
          worku = uvel
       endif
+      ! should this be for vvel,workv?
       if (present(uvel)) then
          worku = uvel
       endif
