@@ -887,7 +887,7 @@
     <PROXY>wwwproxy.sandia.gov:80</PROXY>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>openmpi</MPILIBS>
-    <PROJECT>fy150001</PROJECT>
+    <PROJECT>fy190158</PROJECT>
     <SAVE_TIMING_DIR>/projects/ccsm/timings</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>/gpfs1/$USER/acme_scratch/sandiatoss3</CIME_OUTPUT_ROOT>
@@ -963,7 +963,7 @@
     <PROXY>wwwproxy.sandia.gov:80</PROXY>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>openmpi</MPILIBS>
-    <PROJECT>fy150001</PROJECT>
+    <PROJECT>fy190158</PROJECT>
 
     <CIME_OUTPUT_ROOT>/gscratch/$USER/acme_scratch/ghost</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
