@@ -1926,6 +1926,14 @@ Valid values: 'ccsm3' or 'constant'
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_snicar" type="logical"
+	category="shortwave" group="shortwave">
+If true turn on snicar 5-band snow system
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_visible_ice_albedo" type="real"
 	category="shortwave" group="shortwave">
 Visible ice albedo for ice thickness greater than config_variable_albedo_thickness_limit.
