@@ -127,7 +127,7 @@ def run_diag(parameter):
                 print('Selected pressure level: {}'.format(plevs))
 
                 mv1_p = utils.general.convert_to_pressure_levels(mv1, plevs, test_data, var, season)
-                mv2_p = utils.general.convert_to_pressure_levels(mv2, plevs, test_data, var, season)
+                mv2_p = utils.general.convert_to_pressure_levels(mv2, plevs, ref_data, var, season)
 
                 mv1_p = cdutil.averager(mv1_p, axis='x')
                 mv2_p = cdutil.averager(mv2_p, axis='x')
