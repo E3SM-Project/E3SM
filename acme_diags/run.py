@@ -32,7 +32,8 @@ class Run():
             msg = 'You passed in two or more parameters of the same type.'
             raise RuntimeError(msg)
 
-        final_params = self._get_other_diags(parameters[0].run_type)
+        final_params = []
+        other_params = self._get_other_diags(parameters[0].run_type)
 
         for set_name in self.sets_to_run:
             # For each of the set_names, corresponding parameter.
@@ -40,12 +41,13 @@ class Run():
             self._remove_attrs_with_default_values(param)
             param.sets = [set_name]
 
-            final_params = self.parser.get_parameters(orig_parameters=param, other_parameters=final_params,
+            params = self.parser.get_parameters(orig_parameters=param, other_parameters=other_params,
                 cmd_default_vars=False, argparse_vals_only=False)
             # The select() call in get_parameters() was made for the original
             # command-line way of using CDP.
             # We just call it manually with the parameter object param.
-            final_params = self.parser.select(param, final_params)
+            params = self.parser.select(param, params)
+            final_params.extend(params)
 
         self.parser.check_values_of_params(final_params)
 
