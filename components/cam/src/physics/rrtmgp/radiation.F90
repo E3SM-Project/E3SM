@@ -1131,8 +1131,8 @@ contains
 
       ! Clear-sky heating rates are not on the physics buffer, and we have no
       ! reason to put them there, so declare these are regular arrays here
-      real(r8) :: qrsc(pcols,pver) = 0._r8
-      real(r8) :: qrlc(pcols,pver) = 0._r8
+      real(r8) :: qrsc(pcols,pver)
+      real(r8) :: qrlc(pcols,pver)
 
       ! Flag to carry (QRS,QRL)*dp across time steps. 
       ! TODO: what does this mean?
