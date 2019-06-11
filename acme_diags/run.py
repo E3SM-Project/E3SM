@@ -31,37 +31,37 @@ class Run():
         if len(types) != len(parameters):
             msg = 'You passed in two or more parameters of the same type.'
             raise RuntimeError(msg)
-                
-        other_parameters = self._get_other_diags(parameters[0].run_type)
 
-        # print([p.sets for p in other_parameters])
-        # print([p.variables for p in other_parameters])
+        final_params = self._get_other_diags(parameters[0].run_type)
 
         for set_name in self.sets_to_run:
             # For each of the set_names, corresponding parameter.
-            param_class = SET_TO_PARAMETERS[set_name]
-            param = self._get_instance_of_param_class(param_class, parameters)
+            param = self._get_instance_of_param_class(set_name, parameters)
+            self._remove_attrs_with_default_values(param)
+            param.sets = [set_name]
 
-            # Combine the key-value pairs from param into other_parameters.
-            self._combine_params(param, other_parameters)
+            final_params = self.parser.get_parameters(orig_parameters=param, other_parameters=final_params,
+                cmd_default_vars=False, argparse_vals_only=False)
+            # The select() call in get_parameters() was made for the original
+            # command-line way of using CDP.
+            # We just call it manually with the parameter object param.
+            final_params = self.parser.select(param, final_params)
 
-        # for _ in range(5):
-        #     print('*'*40)
-        # print([p.sets for p in other_parameters])
-        # print([p.variables for p in other_parameters])
+        self.parser.check_values_of_params(final_params)
 
-        main(other_parameters)
+        main(final_params)
 
 
     def _remove_attrs_with_default_values(self, param):
         """
-        In the param, remove any parameters that
-        have their default value.
+        In the param, remove any parameters that have their default value.
+        However, since `selectors` and `granulate` are special parameters
+        (from these, more parameter objects are created), don't remove them.
         """
         new_instance = param.__class__()
         for attr in dir(param):
             # Ignore any of the hidden attributes.
-            if attr.startswith('_'):
+            if attr.startswith('_') or attr in ['selectors', 'granulate']:
                 continue
             
             if hasattr(new_instance, attr) and \
@@ -69,51 +69,13 @@ class Run():
                 delattr(param, attr)
 
 
-    def _add_attrs_with_default_values(self, param):
+    def _get_instance_of_param_class(self, set_name, parameters):
         """
-        In the param, add in any missing attributes.
-        When adding them, the original attribute is added.
+        In the list of parameters, get the class for
+        the parameter object corresponding to set_name.
         """
-        new_instance = param.__class__()
-        for attr in dir(new_instance):
-            # Ignore any of the hidden attributes.
-            if attr.startswith('_'):
-                continue
-            
-            if not hasattr(param, attr):
-                val = getattr(new_instance, attr)
-                setattr(param, attr, val)
+        class_type = SET_TO_PARAMETERS[set_name]
 
-
-    def _combine_params(self, param, other_params):
-        """
-        Combine a single parameter object param with a list
-        of parameter objects other_params.
-        """
-        cmdline_parameters = self.parser.get_cmdline_parameters(argparse_vals_only=False)
-        
-        # We don't want to add the selectors to each of the parameters.
-        # Because if we do, it'll select all of the parameters at the end during the selection step.
-        vars_to_ignore = self.parser._get_selectors(cmdline_parameters, param, other_params)
-        # We need to remove any parameters that still have their default value.
-        # Ex: param.variables == [] is the default value for the variables parameter.
-        #     We need to remove this, otherwise after combining the parameters,
-        #     each will have a value of variables == [].
-        #     This doesn't make any sense.
-        self._remove_attrs_with_default_values(param)
-        print(vars(other_params[0]))
-        self.parser.combine_params(orig_parameters=param, other_parameters=other_params, vars_to_ignore=vars_to_ignore)
-        for param in other_params:
-            # After combining, these default parameters need to be added back in.
-            self._add_attrs_with_default_values(param)
-
-        print(vars(other_params[0]))
-
-
-    def _get_instance_of_param_class(self, class_type, parameters):
-        """
-        In the list of parameters, get the first class of instance class_type.
-        """
         for p in parameters:
             if isinstance(p, class_type):
                 return p
