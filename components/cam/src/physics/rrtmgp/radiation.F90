@@ -1157,6 +1157,11 @@ contains
       ! modified in this routine.
       call pbuf_get_field(pbuf, pbuf_get_index('QRS'), qrs)
       call pbuf_get_field(pbuf, pbuf_get_index('QRL'), qrl)
+
+      ! Initialize clearsky-heating rates to make sure we do not get garbage
+      ! for columns beyond ncol or nday
+      qrsc(:,:) = 0
+      qrlc(:,:) = 0
      
       ! Do shortwave stuff...
       if (radiation_do('sw')) then
