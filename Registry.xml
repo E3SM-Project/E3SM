@@ -1931,8 +1931,8 @@
       				filename_interval="none"
      			 	input_interval="initial_only"
       				immutable="true">
-  			<var name="iceAsymmtryParameterDirect"/>
-  			<var name="iceAsymmtryParameterDiffuse"/>
+  			<var name="iceAsymmetryParameterDirect"/>
+  			<var name="iceAsymmetryParameterDiffuse"/>
   			<var name="iceSingleScatterAlbedoDirect"/>
   			<var name="iceSingleScatterAlbedoDiffuse"/>
   			<var name="iceMassExtinctionCrossSectionDirect"/>
@@ -3815,8 +3815,8 @@
 
 	<!-- Snicar 5-band optical property varables -->
 	<var_struct name="snicar" time_levs="1" packages="pkgSnicar">
-		<var name="iceAsymmtryParameterDirect"	type="real"	 dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR" 	 name_in_code="iceAsymmtryParameterDirect"/>
-		<var name="iceAsymmtryParameterDiffuse" 	type="real" 	 dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR"	name_in_code="iceAsymmtryParameterDiffuse"/>
+		<var name="iceAsymmetryParameterDirect"	type="real"	 dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR" 	 name_in_code="iceAsymmetryParameterDirect"/>
+		<var name="iceAsymmetryParameterDiffuse" 	type="real" 	 dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR"	name_in_code="iceAsymmetryParameterDiffuse"/>
 		<var name="iceSingleScatterAlbedoDirect"	type="real"	dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR"	 name_in_code="iceSingleScatterAlbedoDirect"/>
 		<var name="iceSingleScatterAlbedoDiffuse"	 type="real"	 dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR"	 name_in_code="iceSingleScatterAlbedoDiffuse"/>
 		<var name="iceMassExtinctionCrossSectionDirect"		type="real"	 dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR"	 name_in_code="iceMassExtinctionCrossSectionDirect"/>
