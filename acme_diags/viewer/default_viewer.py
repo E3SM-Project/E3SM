@@ -16,7 +16,6 @@ from . import utils, lat_lon_viewer
 # These are all of the sets that this viewer supports.
 SET_TO_NAME = {
     'zonal_mean_xy': 'Zonal mean line plots',
-    'zonal_mean_2d': 'Pressure-Latitude zonal mean contour plots',
     'meridional_mean_2d': 'Pressure-Longitude meridional mean contour plots',
     'lat_lon': 'Latitude-Longitude contour maps',
     'polar': 'Polar contour maps',
@@ -54,7 +53,7 @@ def create_viewer(root_dir, parameters):
     set_name = parameters[0].sets[0]
 
     viewer = OutputViewer(path=root_dir)
-    cols = ['Description'] + _seasons_used(parameters)
+    cols = ['Description'] + seasons_used(parameters)
     viewer.add_page(SET_TO_NAME[set_name], short_name=set_name, columns=cols)
 
     for parameter in parameters:
@@ -140,7 +139,7 @@ def create_viewer(root_dir, parameters):
     return (name, url)
 
 
-def _seasons_used(parameters):
+def seasons_used(parameters):
     """
     Get a list of the seasons used for this set of parameters.
     """

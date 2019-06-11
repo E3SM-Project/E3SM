@@ -123,11 +123,11 @@ def run_diag(parameter):
 
             # For variables with a z-axis.
             if mv1.getLevel() and mv2.getLevel():
-                plev = numpy.logspace(2.0, 3.0, num=17)
-                print('Selected pressure level: {}'.format(plev))
+                plevs = parameter.plevs
+                print('Selected pressure level: {}'.format(plevs))
 
-                mv1_p = utils.general.convert_to_pressure_levels(mv1, plev, test_data, var, season)
-                mv2_p = utils.general.convert_to_pressure_levels(mv2, plev, test_data, var, season)
+                mv1_p = utils.general.convert_to_pressure_levels(mv1, plevs, test_data, var, season)
+                mv2_p = utils.general.convert_to_pressure_levels(mv2, plevs, test_data, var, season)
 
                 mv1_p = cdutil.averager(mv1_p, axis='x')
                 mv2_p = cdutil.averager(mv2_p, axis='x')

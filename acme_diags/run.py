@@ -1,4 +1,5 @@
 import os
+import copy
 import cdp.cdp_run
 import acme_diags
 from acme_diags.acme_diags_driver import main
@@ -17,9 +18,19 @@ class Run():
         self.sets_to_run = CoreParameter().sets
         self.parser = CoreParser()
 
+
     def run_diags(self, parameters):
         """
         Based on sets_to_run, run the diags with the list of parameters.
+        """
+        final_params = self.get_final_parameters(parameters)
+        main(final_params)
+
+
+    def get_final_parameters(self, parameters):
+        """
+        Based on sets_to_run and the list of parameters,
+        get the final list of paremeters to run the diags on.
         """
         if not parameters or not isinstance(parameters, list):
             msg = 'You must pass in a list of parameter objects.'
@@ -31,18 +42,27 @@ class Run():
         if len(types) != len(parameters):
             msg = 'You passed in two or more parameters of the same type.'
             raise RuntimeError(msg)
+                
+        self._add_parent_attrs_to_children(parameters)
 
         final_params = []
         other_params = self._get_other_diags(parameters[0].run_type)
 
         for set_name in self.sets_to_run:
-            # For each of the set_names, corresponding parameter.
-            param = self._get_instance_of_param_class(set_name, parameters)
+            # For each of the set_names, get the corresponding parameter.
+            param = self._get_instance_of_param_class(SET_TO_PARAMETERS[set_name], parameters)
+            # Since each parameter will have lots of default values, we want to remove them.
+            # Otherwise when calling get_parameters(), these default values
+            # will take precedence over values defined in other_params.
             self._remove_attrs_with_default_values(param)
             param.sets = [set_name]
 
             params = self.parser.get_parameters(orig_parameters=param, other_parameters=other_params,
                 cmd_default_vars=False, argparse_vals_only=False)
+            
+            # Makes sure that any parameters that are selectors
+            # will be in param.
+            self._add_attrs_with_default_values(param)
             # The select() call in get_parameters() was made for the original
             # command-line way of using CDP.
             # We just call it manually with the parameter object param.
@@ -51,19 +71,73 @@ class Run():
 
         self.parser.check_values_of_params(final_params)
 
-        main(final_params)
+        return final_params
 
+
+    def _add_parent_attrs_to_children(self, parameters):
+        """
+        For any parameter class that's inherited from another, copy
+        the attributes of the parent to the child.
+        
+        Ex: If the user wants to run set-specific parameters for
+        'zonal_mean_2d', they'd pass in a ZonalMean2dParameter
+        and a CoreParameter.
+        But most of the important parameters are in CoreParameter,
+        so copy them over to the ZonalMean2dParameter.
+        """
+        def get_parent(param):
+            """
+            From parameters, get any object that's a parent
+            type to param.
+            """
+            try:
+                parent_class = param.__class__.__mro__[1]
+                parent = self._get_instance_of_param_class(parent_class, parameters)
+            except RuntimeError:
+                parent = None
+            
+            return parent
+
+        for i in range(len(parameters)):
+            parent = get_parent(parameters[i])
+            # Make sure that the new object is actually a parent.
+            if not parent or type(parent) == type(parameters[i]):
+                continue
+
+            # Otherwise, add the the parent's attributes.
+            # Since we're modifying this parent object (by
+            # removing the default values before addition)
+            # make a deepcopy first.
+            parent = copy.deepcopy(parent)
+            self._remove_attrs_with_default_values(parent)
+            parameters[i] += parent
+
+
+    def _add_attrs_with_default_values(self, param):
+        """
+        In the param, add any missing parameters
+        with their default value.
+        """
+        new_instance = param.__class__()
+        for attr in dir(new_instance):
+            # Ignore any of the hidden attributes.
+            if attr.startswith('_'):
+                continue
+            
+            if not hasattr(param, attr):
+                val = getattr(new_instance, attr)
+                setattr(param, attr, val)
+    
 
     def _remove_attrs_with_default_values(self, param):
         """
-        In the param, remove any parameters that have their default value.
-        However, since `selectors` and `granulate` are special parameters
-        (from these, more parameter objects are created), don't remove them.
+        In the param, remove any parameters that
+        have their default value.
         """
         new_instance = param.__class__()
         for attr in dir(param):
             # Ignore any of the hidden attributes.
-            if attr.startswith('_') or attr in ['selectors', 'granulate']:
+            if attr.startswith('_'):
                 continue
             
             if hasattr(new_instance, attr) and \
@@ -71,19 +145,29 @@ class Run():
                 delattr(param, attr)
 
 
-    def _get_instance_of_param_class(self, set_name, parameters):
+    def _get_instance_of_param_class(self, cls, parameters):
         """
         In the list of parameters, get the class for
-        the parameter object corresponding to set_name.
+        the parameter object corresponding to cls.
         """
-        class_type = SET_TO_PARAMETERS[set_name]
+        # Get the Method Resolution Order (MRO) for this class.
+        # So get the list of the classes in the inheritance ordering.
 
-        for p in parameters:
-            if isinstance(p, class_type):
-                return p
+        # Ex: For the 'zonal_mean_2d' set, ZonalMean2dParameter is
+        # the parameter for it.
+        # But if a user doesn't want to modify the set-specific
+        # parameters for 'zonal_mean_2d', they can just pass in
+        # a single CoreParameter object to run_diags().
+        # Using this, we handle this use-case.
+        class_types = cls.__mro__
+
+        for cls_type in class_types:
+            for p in parameters:
+                if isinstance(p, cls_type):
+                    return p
         
-        msg = "There's no class of type {} in your parameters."
-        raise RuntimeError(msg.format(class_type))
+        msg = "There's weren\'t any class of types {} in your parameters."
+        raise RuntimeError(msg.format(class_types))
 
 
     def _get_default_diags_path(self, set_name, run_type):
@@ -111,7 +195,14 @@ class Run():
 
         # If the user has passed in args with -d.
         if args.other_parameters:
-            return self.parser.get_other_parameters(argparse_vals_only=False)
+            params = self.parser.get_other_parameters(argparse_vals_only=False)
         else:
             default_diags_paths = [self._get_default_diags_path(set_name, run_type) for set_name in self.sets_to_run]
-            return self.parser.get_other_parameters(files_to_open=default_diags_paths, argparse_vals_only=False)
+            params = self.parser.get_other_parameters(files_to_open=default_diags_paths, argparse_vals_only=False)
+
+        # For each of the params, add in the default values
+        # using the parameter classes in SET_TO_PARAMETERS.
+        for i in range(len(params)):
+            params[i] = SET_TO_PARAMETERS[params[i].sets[0]]() + params[i]
+        
+        return params

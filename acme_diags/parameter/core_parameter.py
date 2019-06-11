@@ -65,7 +65,7 @@ class CoreParameter(cdp.cdp_parameter.CDPParameter):
         self.no_viewer = False
         self.debug = False
 
-        self.granulate = ['variables', 'seasons', 'plevs']
+        self.granulate = ['variables', 'seasons', 'plevs', 'regions']
         self.selectors = ['sets', 'seasons']
         self.viewer_descr = {}
 
