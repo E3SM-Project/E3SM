@@ -1126,8 +1126,8 @@ contains
       ! ---------------------------------------------------------------------------
 
       ! Pointers to heating rates on physics buffer
-      real(r8), pointer :: qrs(:,:) => null()  ! shortwave radiative heating rate 
-      real(r8), pointer :: qrl(:,:) => null()  ! longwave  radiative heating rate 
+      real(r8), pointer :: qrs(:,:)  ! shortwave radiative heating rate 
+      real(r8), pointer :: qrl(:,:)  ! longwave  radiative heating rate 
 
       ! Clear-sky heating rates are not on the physics buffer, and we have no
       ! reason to put them there, so declare these are regular arrays here
