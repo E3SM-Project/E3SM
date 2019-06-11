@@ -2631,12 +2631,13 @@ file(WRITE query.out "${{{}}}")
         with open(macros_file_name, "w") as macros_file:
             for key in var:
                 macros_file.write("set({} {})\n".format(key, var[key]))
+            for key in env:
+                macros_file.write("set({} {})\n".format(key, env[key]))
+
             macros_file.write(self.cmake_string)
         with open(cmakelists_name, "w") as cmakelists:
             cmakelists.write(self._cmakelists_template.format(var_name))
 
-        environment = os.environ.copy()
-        environment.update(env)
         os_ = MACHINE.get_value("OS")
         # cmake will not work on cray systems without this flag
         if os_ == "CNL":
@@ -2644,7 +2645,7 @@ file(WRITE query.out "${{{}}}")
         else:
             cmake_args = ""
 
-        run_cmd_assert_result(self.parent, "cmake %s . 2>&1" % cmake_args, from_dir=temp_dir, env=environment)
+        run_cmd_assert_result(self.parent, "cmake %s . 2>&1" % cmake_args, from_dir=temp_dir)
 
         with open(output_name, "r") as output:
             query_result = output.read().strip()
