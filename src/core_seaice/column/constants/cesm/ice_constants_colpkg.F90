@@ -117,6 +117,12 @@
       real(kind=dbl_kind),public :: eccf   ! earth orbit eccentricity factor
       logical(kind=log_kind),public :: log_print ! Flags print of status/error
     
+      ! snow parameters
+      real (kind=dbl_kind), parameter, public :: &
+         snwlvlfac =   0.3_dbl_kind, & ! 30% rule: fractional increase in snow depth
+                                       ! over ridged ice, compared with level ice
+         rhosmin   = 100.0_dbl_kind    ! minimum snow density (kg/m^3)
+
       !-----------------------------------------------------------------
       ! numbers used in column package
       !-----------------------------------------------------------------
