@@ -60,7 +60,7 @@
 			<argument flag="">-p</argument>
 			<argument flag="">4</argument>
 			<argument flag="">--types</argument>
-			<argument flag="">["buoyancy"]</argument>
+			<argument flag="">buoyancy</argument>
 		</step>
 		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
 	</run_script>
