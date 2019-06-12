@@ -723,7 +723,7 @@
 <config_AM_timeSeriesStatsClimatology_backward_output_offset>'00-03-00_00:00:00'</config_AM_timeSeriesStatsClimatology_backward_output_offset>
 
 <!-- AM_timeSeriesStatsMonthlyMax -->
-<config_AM_timeSeriesStatsMonthlyMax_enable>.false.</config_AM_timeSeriesStatsMonthlyMax_enable>
+<config_AM_timeSeriesStatsMonthlyMax_enable>.true.</config_AM_timeSeriesStatsMonthlyMax_enable>
 <config_AM_timeSeriesStatsMonthlyMax_compute_on_startup>.false.</config_AM_timeSeriesStatsMonthlyMax_compute_on_startup>
 <config_AM_timeSeriesStatsMonthlyMax_write_on_startup>.false.</config_AM_timeSeriesStatsMonthlyMax_write_on_startup>
 <config_AM_timeSeriesStatsMonthlyMax_compute_interval>'00-00-00_01:00:00'</config_AM_timeSeriesStatsMonthlyMax_compute_interval>
@@ -737,7 +737,7 @@
 <config_AM_timeSeriesStatsMonthlyMax_backward_output_offset>'00-01-00_00:00:00'</config_AM_timeSeriesStatsMonthlyMax_backward_output_offset>
 
 <!-- AM_timeSeriesStatsMonthlyMin -->
-<config_AM_timeSeriesStatsMonthlyMin_enable>.false.</config_AM_timeSeriesStatsMonthlyMin_enable>
+<config_AM_timeSeriesStatsMonthlyMin_enable>.true.</config_AM_timeSeriesStatsMonthlyMin_enable>
 <config_AM_timeSeriesStatsMonthlyMin_compute_on_startup>.false.</config_AM_timeSeriesStatsMonthlyMin_compute_on_startup>
 <config_AM_timeSeriesStatsMonthlyMin_write_on_startup>.false.</config_AM_timeSeriesStatsMonthlyMin_write_on_startup>
 <config_AM_timeSeriesStatsMonthlyMin_compute_interval>'00-00-00_01:00:00'</config_AM_timeSeriesStatsMonthlyMin_compute_interval>
