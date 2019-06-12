@@ -175,6 +175,11 @@ module cime_comp_mod
   ! --- timing routines ---
   use t_drv_timers_mod
 
+#ifdef MOABDEBUGMCT
+  ! --- expose grid with MOAB
+  use component_type_mod , only: expose_mct_grid_moab
+#endif
+
   implicit none
 
   private
@@ -2078,6 +2083,31 @@ contains
        write(logunit,*) ' '
        call shr_sys_flush(logunit)
     endif
+
+#ifdef MOABDEBUGMCT
+    if (iamroot_CPLID )then
+       write(logunit,*) ' '
+       write(logunit,F00) ' start output mct data with MOAB '
+       write(logunit,*) ' '
+       call shr_sys_flush(logunit)
+    endif
+    if (atm_present) then
+      call expose_mct_grid_moab(atm(1))
+    endif
+    if (lnd_present) then
+      call expose_mct_grid_moab(lnd(1))
+    endif
+    if (ocn_present) then
+      call expose_mct_grid_moab(ocn(1))
+    endif
+    if (ice_present) then
+      call expose_mct_grid_moab(ice(1))
+    endif
+    if (rof_present) then
+      call expose_mct_grid_moab(rof(1))
+    endif
+
+#endif
 
     call t_adj_detailf(-1)
     call t_stopf('CPL:cime_init')
