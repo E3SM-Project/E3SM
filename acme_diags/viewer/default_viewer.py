@@ -7,7 +7,7 @@ import os
 import collections
 import json
 from cdp.cdp_viewer import OutputViewer
-from acme_diags.parser.core_parser import CoreParser
+from acme_diags.parser import SET_TO_PARSER
 import acme_diags
 from . import utils, lat_lon_viewer
 
@@ -182,7 +182,7 @@ def create_metadata(parameter):
     metadata[msg] = ''
     cmd = 'e3sm_diags --no_viewer '
 
-    parser = CoreParser()
+    parser = SET_TO_PARSER[parameter.sets[0]]()
 
     args = parser.view_args()
     supported_cmd_args = list(args.__dict__.keys())

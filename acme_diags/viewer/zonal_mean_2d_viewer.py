@@ -24,11 +24,6 @@ def create_viewer(root_dir, parameters):
     # ['ANN', 'DJF', ..., 'SON'] order instead of alphabetical.
     parameters.sort(key=lambda x: (x.case_id, x.variables[0], SEASONS.index(x.seasons[0])))
 
-    # We use a set because we don't want duplicate groups.
-    #case_ids = set([p.case_id for p in parameters])
-    #for c_id in sorted(case_ids):
-    #    viewer.add_group(c_id)
-
     for param in parameters:
         ref_name = getattr(param, 'ref_name', '')
         for var in param.variables:
@@ -56,7 +51,6 @@ def create_viewer(root_dir, parameters):
                     ext = param.output_format[0]
                     fnm = '{}-{}-{}-{}'.format(ref_name, var, season, region)
                     file_name = os.path.join('..', set_name, param.case_id, '{}.{}'.format(fnm, ext))
-                    print(file_name)
                     viewer.add_col(file_name, is_file=True, title=season,
                         meta=create_metadata(param))
 

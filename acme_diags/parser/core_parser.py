@@ -4,11 +4,11 @@ from acme_diags.parameter.core_parameter import CoreParameter
 
 class CoreParser(cdp.cdp_parser.CDPParser):
     def __init__(self, *args, **kwargs):
-        super(CoreParser, self).__init__(CoreParameter, *args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def load_default_args(self, files=[]):
-        # this has '-p' and '--parameter' reserved
-        super(CoreParser, self).load_default_args(files)
+        # This has '-p' and '--parameter' reserved.
+        super().load_default_args(files)
 
         self.add_argument(
             '-r', '--reference_data_set',
