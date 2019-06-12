@@ -85,7 +85,7 @@
 
       integer (kind=int_kind), parameter, public :: &
          nspint = 3             ,& ! number of solar spectral intervals
-         nspint_5bd = 5            ! number of solar spectral intervals with config_use_snicar
+         nspint_5bd = 5            ! number of solar spectral intervals with config_use_snicar_ad
 
       ! weights for albedos 
       ! 4 Jan 2007 BPB  Following are appropriate for complete cloud

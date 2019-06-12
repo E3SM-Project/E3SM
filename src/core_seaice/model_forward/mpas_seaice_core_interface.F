@@ -599,7 +599,7 @@ module seaice_core_interface
           config_use_forcing, &
           config_use_data_icebergs, &
           config_testing_system_test, &
-          config_use_snicar
+          config_use_snicar_ad
 
      logical, pointer :: &
           pkgForcingActive, &
@@ -636,9 +636,9 @@ module seaice_core_interface
      endif
 
      ! pkgSnicar
-     call MPAS_pool_get_config(configPool, "config_use_snicar", config_use_snicar)
+     call MPAS_pool_get_config(configPool, "config_use_snicar_ad", config_use_snicar_ad)
      call MPAS_pool_get_package(packagePool, "pkgSnicarActive", pkgSnicarActive)
-     ! see if we are using the snicar system
+     ! see if we are using the snicar_ad system
       pkgSnicarActive = .true.
 
    end subroutine setup_packages_other!}}}
