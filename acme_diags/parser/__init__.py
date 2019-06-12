@@ -8,6 +8,7 @@ SET_TO_PARSER = {
     'meridional_mean_2d': CoreParser,
     'lat_lon': CoreParser,
     'polar': CoreParser,
-    'cosp_histogram': CoreParser
+    'cosp_histogram': CoreParser,
+    'area_mean_time_series': CoreParser
 }
 

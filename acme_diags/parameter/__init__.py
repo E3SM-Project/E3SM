@@ -7,5 +7,6 @@ SET_TO_PARAMETERS = {
     'meridional_mean_2d': CoreParameter,
     'lat_lon': CoreParameter,
     'polar': CoreParameter,
-    'cosp_histogram': CoreParameter
+    'cosp_histogram': CoreParameter,
+    'area_mean_time_series': CoreParameter
 }
