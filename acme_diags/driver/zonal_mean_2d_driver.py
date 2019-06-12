@@ -10,6 +10,7 @@ from acme_diags.plot import plot
 from acme_diags.derivations import acme
 from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 from acme_diags.driver import utils
+from acme_diags.parameter.zonal_mean_2d_parameter import ZonalMean2dParameter
 
 
 def create_metrics(ref, test, ref_regrid, test_regrid, diff):
@@ -123,7 +124,9 @@ def run_diag(parameter):
 
             # For variables with a z-axis.
             if mv1.getLevel() and mv2.getLevel():
-                plevs = parameter.plevs
+                # Since the default is now stored in ZonalMean2dParameter,
+                # we must get it from there if the plevs param is blank.
+                plevs = parameter.plevs if parameter.plevs else ZonalMean2dParameter().plevs
                 print('Selected pressure level: {}'.format(plevs))
 
                 mv1_p = utils.general.convert_to_pressure_levels(mv1, plevs, test_data, var, season)
