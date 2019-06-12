@@ -1518,6 +1518,8 @@ my @groups = qw(run_modes
                 am_timeseriesstatsdaily
                 am_timeseriesstatsmonthly
                 am_timeseriesstatsclimatology
+                am_timeseriesstatsmonthlymax
+                am_timeseriesstatsmonthlymin
                 am_timeseriesstatscustom
                 am_pointwisestats
                 am_debugdiagnostics
