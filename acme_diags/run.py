@@ -42,13 +42,14 @@ class Run():
         if len(types) != len(parameters):
             msg = 'You passed in two or more parameters of the same type.'
             raise RuntimeError(msg)
-                
+
         self._add_parent_attrs_to_children(parameters)
 
         final_params = []
-        other_params = self._get_other_diags(parameters[0].run_type)
 
         for set_name in self.sets_to_run:
+            other_params = self._get_other_diags(parameters[0].run_type)
+
             # For each of the set_names, get the corresponding parameter.
             param = self._get_instance_of_param_class(SET_TO_PARAMETERS[set_name], parameters)
             # Since each parameter will have lots of default values, we want to remove them.
@@ -59,7 +60,7 @@ class Run():
 
             params = self.parser.get_parameters(orig_parameters=param, other_parameters=other_params,
                 cmd_default_vars=False, argparse_vals_only=False)
-            
+           
             # Makes sure that any parameters that are selectors
             # will be in param.
             self._add_attrs_with_default_values(param)
@@ -67,6 +68,7 @@ class Run():
             # command-line way of using CDP.
             # We just call it manually with the parameter object param.
             params = self.parser.select(param, params)
+
             final_params.extend(params)
 
         self.parser.check_values_of_params(final_params)
@@ -163,7 +165,7 @@ class Run():
 
         for cls_type in class_types:
             for p in parameters:
-                if isinstance(p, cls_type):
+                if type(p) == cls_type:
                     return p
         
         msg = "There's weren\'t any class of types {} in your parameters."
@@ -190,3 +192,7 @@ class Run():
             params[i] = SET_TO_PARAMETERS[params[i].sets[0]]() + params[i]
         
         return params
+
+
+runner = Run()
+
