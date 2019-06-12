@@ -376,7 +376,6 @@ ifeq ($(ULIBDEP),$(null))
     endif
     ifeq ($(LND_PRESENT),TRUE)
       ULIBDEP += $(LNDLIBDIR)/$(LNDLIB)
-      INCLDIR += -I$(LNDOBJDIR)
       CPPDEFS += -DLND_PRESENT
     endif
     ifeq ($(OCN_PRESENT),TRUE)
@@ -849,7 +848,9 @@ else
     INCLUDE_DIR = $(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/include
   endif
 endif
-
+ifeq ($(LND_PRESENT),TRUE)
+  INCLDIR += -I$(LNDOBJDIR)
+endif
 ifeq ($(COMP_GLC), cism)
   ULIBDEP += $(CISM_LIBDIR)/libglimmercismfortran.a
   ifeq ($(CISM_USE_TRILINOS), TRUE)
