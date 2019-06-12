@@ -14,7 +14,7 @@ module initVerticalMod
   use spmdMod        , only : masterproc
   use clm_varpar     , only : more_vertlayers, nlevsno, nlevgrnd, nlevlak
   use clm_varpar     , only : toplev_equalspace, nlev_equalspace
-  use clm_varpar     , only : nlevsoi, nlevsoifl, nlevurb 
+  use clm_varpar     , only : nlevsoi, nlevsoifl, nlevurb, nlevslp 
   use clm_varctl     , only : fsurdat, iulog, use_var_soil_thick
   use clm_varctl     , only : use_vancouver, use_mexicocity, use_vertsoilc, use_extralakelayers
   use clm_varctl     , only : use_erosion
@@ -576,7 +576,7 @@ contains
       deallocate(std)
 
       if (use_erosion) then
-         allocate(hslp_p10(bounds%begg:bounds%endg,10))
+         allocate(hslp_p10(bounds%begg:bounds%endg,nlevslp))
          call ncd_io(ncid=ncid, varname='SLP_P10', flag='read', data=hslp_p10, dim1name=grlnd, readvar=readvar)
          if (.not. readvar) then
             call shr_sys_abort(' ERROR: hillslope slope percentiles NOT on surfdata file'//&

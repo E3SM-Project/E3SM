@@ -20,7 +20,7 @@ module ColumnType
   !
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-  use clm_varpar     , only : nlevsno, nlevgrnd, nlevlak
+  use clm_varpar     , only : nlevsno, nlevgrnd, nlevlak, nlevslp
   use clm_varcon     , only : spval, ispval
   !
   ! !PUBLIC TYPES:
@@ -125,7 +125,7 @@ contains
     allocate(this%n_melt      (begc:endc))                     ; this%n_melt      (:)   = nan 
     allocate(this%topo_slope  (begc:endc))                     ; this%topo_slope  (:)   = nan
     allocate(this%topo_std    (begc:endc))                     ; this%topo_std    (:)   = nan
-    allocate(this%hslp_p10    (begc:endc,10))                  ; this%hslp_p10    (:,:) = nan
+    allocate(this%hslp_p10    (begc:endc,nlevslp))             ; this%hslp_p10    (:,:) = nan
     allocate(this%nlevbed     (begc:endc))                     ; this%nlevbed     (:)   = ispval
     allocate(this%zibed       (begc:endc))                     ; this%zibed       (:)   = nan
 

@@ -59,6 +59,8 @@ module clm_varpar
 
   integer, parameter :: nsoilorder  =  15     ! number of soil orders
 
+  integer, parameter :: nlevslp = 11          ! number of slope percentile levels
+
   ! constants for decomposition cascade
 
   integer :: i_met_lit 

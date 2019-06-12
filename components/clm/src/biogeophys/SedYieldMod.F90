@@ -11,6 +11,7 @@ module SedYieldMod
   use decompMod         , only : bounds_type
   use clm_varcon        , only : grav, denh2o, rpi
   use clm_varpar        , only : mxpft, nlevsno, max_patch_per_col
+  use clm_varpar        , only : nlevslp
   use atm2lndType       , only : atm2lnd_type
   use CanopyStateType   , only : CanopyState_type
   use EnergyFluxType    , only : energyflux_type
@@ -68,7 +69,6 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: c, fc, p, pi, l, j                         ! indices
     integer  :: dtime                                      ! timestep size [seconds]
-    integer  :: nslp                                       ! slope level #
     real(r8) :: sinslp, fslp, factor_slp                   ! topo gradient
     real(r8) :: gndbare, vegcc, fbare                      ! veg cover factors
     real(r8) :: fungrvl                                    ! ground uncovered by gravel
@@ -176,10 +176,9 @@ contains
             Tc = 0._r8
             if (qflx_surf(c)>0) then
                Qs = 8.64d4 * qflx_surf(c)  ! mm/d
-               nslp = size(hslp_p10(c,:)) - 1
-               fslp = 1.0 / DBLE(nslp)
+               fslp = 1.0 / DBLE(nlevslp-1)
                factor_slp = 0._r8
-               do j = 1, nslp
+               do j = 1, nlevslp-1
                   sinslp = sin(atan(max(0.5*(hslp_p10(c,j)+hslp_p10(c,j+1)),1d-4)))
                   factor_slp = factor_slp + fslp * sinslp
                end do
