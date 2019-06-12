@@ -123,6 +123,37 @@ def _save_parameter_files(results_dir, parser):
             print('Saved cfg file to: {}'.format(new_fnm))
 
 
+def _save_python_script(results_dir, parser):
+    """
+    When using a Python script to run the
+    diags via the API, dump a copy of the script.
+    """
+    args = parser.view_args()
+    # If running the legacy way, there's
+    # nothing to be saved.
+    if args.parameters:
+        return
+
+    # Get the last argument that has .py in it.
+    # The reason we're getting the last .py file
+    # is for this case when running in a container:
+    #     python e3sm_diag_container.py run_diags.py
+    fnm = [f for f in sys.argv if f.endswith('.py')][-1]
+
+    if not os.path.isfile(fnm):
+        print('File does not exist: {}'.format(fnm))
+        return
+
+    with open(fnm, 'r') as f:
+        contents = ''.join(f.readlines())
+    # Remove any path, just keep the filename.
+    new_fnm = fnm.split('/')[-1]
+    new_fnm = os.path.join(results_dir, new_fnm)
+    with open(new_fnm, 'w') as f:
+        f.write(contents)
+    print('Saved Python script to: {}'.format(new_fnm))
+
+
 def save_provenance(results_dir, parser):
     """
     Store the provenance in results_dir.
@@ -158,6 +189,7 @@ def save_provenance(results_dir, parser):
 
     _save_parameter_files(results_dir, parser)
 
+    _save_python_script(results_dir, parser)
 
 def get_parameters(parser=CoreParser()):
     """
