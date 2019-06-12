@@ -21,13 +21,14 @@ import subprocess
 import cdp.cdp_run
 import acme_diags
 from acme_diags.parameter.core_parameter import CoreParameter
+from acme_diags.parser import SET_TO_PARSER
 from acme_diags.parser.core_parser import CoreParser
 from acme_diags.viewer.main import create_viewer
 from acme_diags.driver import utils
 from acme_diags import container
 
 
-def _get_default_diags(set_name, run_type):
+def get_default_diags_path(set_name, run_type):
     """
     Returns the path for the default diags for plotset set_name.
     These are different depending on the run_type.
@@ -191,23 +192,36 @@ def save_provenance(results_dir, parser):
 
     _save_python_script(results_dir, parser)
 
+
 def get_parameters(parser=CoreParser()):
     """
     Get the parameters from the parser.
     """
     args = parser.view_args()
 
+    # Below is the legacy way to run this software, pre v2.0.0.
     # There weren't any arguments defined.
     if not any(getattr(args, arg) for arg in vars(args)):
         parser.print_help()
         sys.exit()
 
-    if args.parameters and not args.other_parameters:  # -p only
+    # For when a user runs the software with commands like:
+    #    e3sm_diags lat_lon [the other parameters]
+    # This use-case is usually ran when the provenance
+    # command is copied and pasted from the viewers.
+    if args.set_name in SET_TO_PARSER:
+       parser = SET_TO_PARSER[args.set_name]()
+       parameters = parser.get_parameters(cmd_default_vars=False, argparse_vals_only=False) 
+
+    # The below two clauses are for the legacy way to
+    # run this software, pre v2.0.0.
+    # Ex: e3sm_diags -p params.py -d diags.cfg
+    elif args.parameters and not args.other_parameters:  # -p only
         original_parameter = parser.get_orig_parameters(argparse_vals_only=False)
 
         # Load the default cfg files.
         run_type = getattr(original_parameter, 'run_type', 'model_vs_obs')
-        default_diags_paths = [_get_default_diags(set_name, run_type) for set_name in CoreParameter().sets]
+        default_diags_paths = [get_default_diags_path(set_name, run_type) for set_name in CoreParameter().sets]
 
         other_parameters = parser.get_other_parameters(files_to_open=default_diags_paths, argparse_vals_only=False)
 
@@ -262,7 +276,8 @@ def main(parameters=[]):
 
     if container.is_container():
         print('Running e3sm_diags in a container.')
-        # Modify the parmeters so that it runs in the container as if it usually runs.
+        # Modify the parmeters so that it runs in
+        # the container as if it usually runs.
         for p in parameters:
             container.containerize_parameter(p)
 

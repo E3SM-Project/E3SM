@@ -180,9 +180,10 @@ def create_metadata(parameter):
     metadata = collections.OrderedDict()
     msg = 'Use this command to recreate this image:'
     metadata[msg] = ''
-    cmd = 'e3sm_diags --no_viewer '
 
-    parser = SET_TO_PARSER[parameter.sets[0]]()
+    set_name = parameter.sets[0]
+    parser = SET_TO_PARSER[set_name]()
+    cmd = 'e3sm_diags {} --no_viewer '.format(set_name)
 
     args = parser.view_args()
     supported_cmd_args = list(args.__dict__.keys())

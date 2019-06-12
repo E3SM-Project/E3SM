@@ -2,7 +2,7 @@ import os
 import copy
 import cdp.cdp_run
 import acme_diags
-from acme_diags.acme_diags_driver import main
+from acme_diags.acme_diags_driver import main, get_default_diags_path
 from acme_diags.parser.core_parser import CoreParser
 from acme_diags.parameter import SET_TO_PARAMETERS
 from acme_diags.parameter.core_parameter import CoreParameter
@@ -170,22 +170,6 @@ class Run():
         raise RuntimeError(msg.format(class_types))
 
 
-    def _get_default_diags_path(self, set_name, run_type):
-        """
-        Returns the path for the default diags for plotset set_name.
-        These are different depending on the run_type.
-        """
-        folder = '{}'.format(set_name)
-        fnm = '{}_{}.cfg'.format(set_name, run_type)
-        pth = os.path.join(acme_diags.INSTALL_PATH, folder, fnm)
-
-        print('Using {} for {}.'.format(pth, set_name))
-        if not os.path.exists(pth):
-            raise RuntimeError(
-                "Plotting via set '{}' not supported, file {} not installed".format(set_name, fnm))
-        return pth
-
-
     def _get_other_diags(self, run_type):
         """
         If the user has ran the script with a -d, get the diags for that.
@@ -197,7 +181,7 @@ class Run():
         if args.other_parameters:
             params = self.parser.get_other_parameters(argparse_vals_only=False)
         else:
-            default_diags_paths = [self._get_default_diags_path(set_name, run_type) for set_name in self.sets_to_run]
+            default_diags_paths = [get_default_diags_path(set_name, run_type) for set_name in self.sets_to_run]
             params = self.parser.get_other_parameters(files_to_open=default_diags_paths, argparse_vals_only=False)
 
         # For each of the params, add in the default values
