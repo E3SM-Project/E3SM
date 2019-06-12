@@ -1859,14 +1859,11 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 </append>
   </LDFLAGS>
   <!--
-  Titan:
-  <CXX_LIBS>
-    <base> -lfmpich -lmpichf90_pgi $ENV{PGI_PATH}/linux86-64/$ENV{PGI_VERSION}/lib/f90main.o /opt/gcc/default/snos/lib64/libstdc++.a  </base>
-  </CXX_LIBS>
-  -->
+  Summit (backup in case defaults are not picking up):
   <CXX_LIBS>
     <base>/sw/summit/gcc/6.4.0/lib/gcc/powerpc64le-none-linux-gnu/6.4.0/crtbegin.o -L/sw/summit/gcc/6.4.0/lib64 -lstdc++ -latomic</base>
   </CXX_LIBS>
+  -->
   <MPICC> mpicc </MPICC>
   <MPICXX> mpiCC </MPICXX>
   <MPIFC> mpif90 </MPIFC>
