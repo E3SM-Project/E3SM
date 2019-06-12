@@ -72,7 +72,7 @@ contains
                                   *inv_dp_fvm, (/fv_nphys*fv_nphys/) )
           end do ! m
         end do ! ilyr
-      end if ! ftype==2.or.ftype==4
+      end if 
       !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
       icol = 0
@@ -90,8 +90,8 @@ contains
               do m = 1,pcnst
                 if ( ftype==2 .or. ftype==4 ) then
                   elem(ie)%derived%FQ(:,:,ilyr,m) = q_tmp(icol,ilyr,m,ie) &
-                                                    -qo_phys(icol,ilyr,m) &
-                                                    +elem(ie)%state%q(:,:,ilyr,m)
+                                                   -qo_phys(icol,ilyr,m) &
+                                                   +elem(ie)%state%q(:,:,ilyr,m)
                 else
                   elem(ie)%derived%FQ(:,:,ilyr,m) = q_tmp(icol,ilyr,m,ie)
                 end if
@@ -257,7 +257,7 @@ contains
                                     np, fv_nphys, elem(ie)%metdet(:,:) )      &
                                     *inv_dp_fvm, (/ncol/) )
 
-        om_tmp(:ncol,ilyr,ie)      = RESHAPE( subcell_integration(             &
+        om_tmp(:ncol,ilyr,ie)     = RESHAPE( subcell_integration(             &
                                     elem(ie)%derived%omega_p(:,:,ilyr),       &
                                     np, fv_nphys, elem(ie)%metdet(:,:) )      &
                                     *inv_area , (/ncol/) )
