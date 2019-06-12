@@ -87,7 +87,7 @@ source git-completion.bash
 In a terminal window, log in to a LANL machine (I use Grizzly from here on
   except where stated): 
 ```bash
-ssh -t wtrw ssh gr-fe1`
+ssh -t wtrw ssh gr-fe1
 ```
 Make a directory for the code, e.g.:
 ```bash
@@ -98,7 +98,7 @@ cd mpas/model/
 ```
 Clone the repo:
 ```bash
-git clone git@github.com:cbegeman/MPAS-Model.git repo`
+git clone git@github.com:cbegeman/MPAS-Model.git repo
 cd repo
 ```
 Rename your remote so it’s easier to not confuse it with other forks:
