@@ -479,17 +479,6 @@ contains
           call endrun(msg='after setting, found points sum to zero'//errMsg(__FILE__, __LINE__)) 
        end if
 
-       if ( grvl3d(g,1) == 0.0_r8 )then
-          if ( any( grvl3d(g,:) /= 0.0_r8 ) )then
-             call endrun(msg='found depth points that do NOT sum to zero when surface does'//&
-                  errMsg(__FILE__, __LINE__))
-          end if
-          grvl3d(g,:) = 1.0_r8
-       end if
-       if ( any( grvl3d(g,:) == 0.0_r8 ) )then
-          call endrun(msg='after setting, found points sum to zero'//errMsg(__FILE__, __LINE__))
-       end if
-
        this%sandfrac_patch(p) = sand3d(g,1)/100.0_r8
        this%clayfrac_patch(p) = clay3d(g,1)/100.0_r8
        this%grvlfrac_patch(p) = grvl3d(g,1)/100.0_r8
