@@ -983,6 +983,38 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '        output_interval="none">' . "\n";
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
+	print $stream_file '<stream name="timeSeriesStatsMonthlyMaxRestart"' . "\n";
+	print $stream_file '        type="input;output"' . "\n";
+        if ( $OCN_GRID =~ m/^oRRS1/ ) {
+        	print $stream_file '        io_type="pnetcdf,cdf5"' . "\n";
+        } else {
+		print $stream_file '        io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
+        }
+	print $stream_file '        filename_template="mpaso.rst.am.timeSeriesStatsMonthlyMax.$Y-$M-$D_$S.nc"' . "\n";
+	print $stream_file '        filename_interval="output_interval"' . "\n";
+	print $stream_file '        clobber_mode="truncate"' . "\n";
+	print $stream_file '        input_interval="none"' . "\n";
+	print $stream_file '        packages="timeSeriesStatsMonthlyMaxAMPKG"' . "\n";
+	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
+	print $stream_file '        output_interval="none">' . "\n";
+	print $stream_file '</stream>' . "\n";
+	print $stream_file '' . "\n";
+	print $stream_file '<stream name="timeSeriesStatsMonthlyMinRestart"' . "\n";
+	print $stream_file '        type="input;output"' . "\n";
+        if ( $OCN_GRID =~ m/^oRRS1/ ) {
+        	print $stream_file '        io_type="pnetcdf,cdf5"' . "\n";
+        } else {
+		print $stream_file '        io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
+        }
+	print $stream_file '        filename_template="mpaso.rst.am.timeSeriesStatsMonthlyMin.$Y-$M-$D_$S.nc"' . "\n";
+	print $stream_file '        filename_interval="output_interval"' . "\n";
+	print $stream_file '        clobber_mode="truncate"' . "\n";
+	print $stream_file '        input_interval="none"' . "\n";
+	print $stream_file '        packages="timeSeriesStatsMonthlyMinAMPKG"' . "\n";
+	print $stream_file '        reference_time="01-01-01_00:00:00"' . "\n";
+	print $stream_file '        output_interval="none">' . "\n";
+	print $stream_file '</stream>' . "\n";
+	print $stream_file '' . "\n";
 	print $stream_file '<stream name="timeSeriesStatsClimatologyRestart"' . "\n";
 	print $stream_file '        type="input;output"' . "\n";
 	print $stream_file '        io_type="' . "$OCN_PIO_TYPENAME" . '"' . "\n";
