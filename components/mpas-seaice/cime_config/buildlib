@@ -1,76 +1,70 @@
-#! /usr/bin/env perl
-use strict;
-use File::Compare;
+#!/usr/bin/env python
 
-my $component = "mpas-seaice";
-my $component_dir = "ice";
-my $component_driver = "seaice_acme_driver";
-my $core = "seaice";
-my $esm = "E3SM";
+"""
+build mpas-si library
+"""
 
-if ($#ARGV == -1) {
-    die " ERROR $component buildlib: must specify a caseroot input argument";
-}
+import sys, os
 
-my ($CASEROOT) = @ARGV;
-chdir "${CASEROOT}";
+_CIMEROOT = os.environ.get("CIMEROOT")
+if _CIMEROOT is None:
+    raise SystemExit("ERROR: must set CIMEROOT environment variable")
 
-my $SRCROOT      = `./xmlquery SRCROOT     -value`;
-my $OBJROOT      = `./xmlquery OBJROOT      -value`;
-my $CASEBUILD    = `./xmlquery CASEBUILD    -value`;
-my $CASETOOLS    = `./xmlquery CASETOOLS    -value`;
-my $OBJROOT      = `./xmlquery OBJROOT	    -value`;
-my $LIBROOT      = `./xmlquery LIBROOT	    -value`;
-my $GMAKE_J      = `./xmlquery GMAKE_J	    -value`;
-my $GMAKE        = `./xmlquery GMAKE	    -value`;
-my $MACH         = `./xmlquery MACH         -value`;
-my $MAKE_ARGS    = `./Tools/get_standard_makefile_args`;
-chomp($MAKE_ARGS);
+_LIBDIR = os.path.join(_CIMEROOT, "scripts", "Tools")
+sys.path.append(_LIBDIR)
 
-#---------------------------------------------------------------------------
-# Copy MPASSI source
-#---------------------------------------------------------------------------
+from standard_script_setup import *
+from CIME.buildlib         import parse_input
+from CIME.case             import Case
+from CIME.utils            import expect, run_bld_cmd_ensure_logging, safe_copy
+from CIME.build            import get_standard_cmake_args
 
-mkdir "$OBJROOT/$component_dir";
-mkdir "$OBJROOT/$component_dir/source";
-my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/Makefile* $OBJROOT/$component_dir/source/.";
-system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
-my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/core_seaice $OBJROOT/$component_dir/source/.";
-system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
-my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/external $OBJROOT/$component_dir/source/.";
-system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
-my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/operators $OBJROOT/$component_dir/source/.";
-system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
-my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/framework $OBJROOT/$component_dir/source/.";
-system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
-my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/tools $OBJROOT/$component_dir/source/.";
-system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
+logger = logging.getLogger(__name__)
 
-my $drvcpy = "cp -fpR $SRCROOT/components/$component/driver ${OBJROOT}/$component_dir/source/$component_driver";
-system($drvcpy) == 0 or die "ERROR: $component buildlib $drvcpy failed: $?\n";
+###############################################################################
+def buildlib(bldroot, installpath, case):
+###############################################################################
+    component = "mpas-seaice"
+    component_dir = "ice"
+    component_driver = "seaice_acme_driver"
+    core = "seaice"
 
-my $root_path = "$OBJROOT/$component_dir/source";
+    srcroot     = case.get_value("SRCROOT")
+    objroot     = case.get_value("OBJROOT")
+    casebuild   = case.get_value("CASEBUILD")
+    casetools   = case.get_value("CASETOOLS")
+    objroot     = case.get_value("OBJROOT")
+    libroot     = case.get_value("LIBROOT")
+    gmake_j     = case.get_value("GMAKE_J")
+    gmake       = case.get_value("GMAKE")
+    mach        = case.get_value("MACH")
+    cmake_args = get_standard_cmake_args(case)
 
-my $bldcmd = "cd $root_path; ${GMAKE} all ${MAKE_ARGS} CORE=$core ESM=$esm DRIVER=$component_driver GEN_F90=true";
-$bldcmd .= ' ROOT_DIR="';
-$bldcmd .= "$root_path";
-$bldcmd .= '"';
+    #---------------------------------------------------------------------------
+    # Build MPAS-O source
+    #---------------------------------------------------------------------------
 
-if ( $MACH eq "edison" ) {
-	$bldcmd .= ' TOOL_TARGET_ARCH="-target-cpu=sandybridge"';
-} elsif ( $MACH eq "titan" ) {
-	$bldcmd .= ' TOOL_TARGET_ARCH="-target-cpu=istanbul"';
-}
-if (defined $ENV{MPAS_TOOL_DIR}) {
-	$bldcmd .= " MPAS_TOOL_DIR=$ENV{MPAS_TOOL_DIR}";
-}
+    if mach == "edison":
+        cmake_args += ' -DTOOL_TARGET_ARCH="-target-cpu=sandybridge"'
+    elif mach == "titan":
+        cmake_args += ' -DTOOL_TARGET_ARCH="-target-cpu=istanbul"'
 
-system($bldcmd) == 0 or die "ERROR: $component buildlib $bldcmd failed: $?\n";
+    if "MPAS_TOOL_DIR" in os.environ:
+        cmake_args += " -DMPAS_TOOL_DIR={}".format(os.environ["MPAS_TOOL_DIR"])
 
-my $cpyobjs = "find $root_path -name *.mod -exec cp -p {} $OBJROOT/$component_dir/obj/. \\\;";
+    cmake_args += " -DGEN_F90=True"
 
-system($cpyobjs) == 0 or die "ERROR: $component buildlib $cpyobjs failed: $?\n";
+    run_bld_cmd_ensure_logging('cmake -DCORE={core} -DDRIVER={component_driver} {cmake_args} {srcroot}/components/mpas-source/src'.format(core=core, component_driver=component_driver, cmake_args=cmake_args, srcroot=srcroot), logger, from_dir=bldroot)
+    run_bld_cmd_ensure_logging("{} -j {}".format(gmake, gmake_j), logger, from_dir=bldroot)
 
-my $cpylib = "cp -p $root_path/lib$component_dir.a ${LIBROOT}/lib$component_dir.a";
+###############################################################################
+def _main_func():
+###############################################################################
+    caseroot, libroot, bldroot = parse_input(sys.argv)
+    with Case(caseroot, read_only=False) as case:
+        buildlib(bldroot, libroot, case)
 
-system($cpylib) == 0 or die "ERROR: $component buildlib $cpylib failed: $?\n";
+###############################################################################
+
+if __name__ == "__main__":
+    _main_func()
