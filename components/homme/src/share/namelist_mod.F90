@@ -133,7 +133,9 @@ module namelist_mod
        MAX_INFILES
 #endif
   use physical_constants, only: omega
-!  use common_movie_mod,   only : setvarnames
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+  use common_movie_mod,   only : setvarnames
+#endif
 #endif
 
   use interpolate_mod, only : set_interp_parameter, get_interp_parameter
@@ -164,7 +166,9 @@ module namelist_mod
     character(len=*), intent(in) :: NLFilename  ! namelist filename
 #else
   subroutine readnl(par)
-!    use mesh_mod, only : MeshOpen
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    use mesh_mod, only : MeshOpen
+#endif
 #endif
     type (parallel_t), intent(in) ::  par
     character(len=MAX_FILE_LEN) :: mesh_file
@@ -498,7 +502,7 @@ module namelist_mod
        end if
 #endif
 
-#if 0
+#ifndef HOMME_WITHOUT_PIOLIBRARY
 
 !      Default interpolation grid  (0 = auto compute based on ne,nv)  interpolation is off by default
 #ifdef PIO_INTERP
