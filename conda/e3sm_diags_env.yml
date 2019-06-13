@@ -155,7 +155,7 @@ dependencies:
   - yaml=0.1.7
   - zict=0.1.4
   - zlib=1.2.11
-  - e3sm_diags=1.7.0
+  - e3sm_diags=1.7.1
   - pip:
     - cdms2==3.0.0
     - regrid2==3.0.0

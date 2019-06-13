@@ -5,7 +5,7 @@
 FROM continuumio/miniconda3:4.6.14
 
 LABEL maintainer="zhang40@llnl.gov"
-LABEL version="1.7.0"
+LABEL version="1.7.1"
 
 # Copy the entire project dir because we'll install from source.
 COPY . .
