@@ -139,7 +139,13 @@ def _save_python_script(results_dir, parser):
     # The reason we're getting the last .py file
     # is for this case when running in a container:
     #     python e3sm_diag_container.py run_diags.py
-    fnm = [f for f in sys.argv if f.endswith('.py')][-1]
+    py_files = [f for f in sys.argv if f.endswith('.py')]
+    # User didn't pass in a Python file, so they maybe ran:
+    #    e3sm_diags -d diags.cfg
+    if not py_files:
+        return
+
+    fnm = py_files[-1]
 
     if not os.path.isfile(fnm):
         print('File does not exist: {}'.format(fnm))

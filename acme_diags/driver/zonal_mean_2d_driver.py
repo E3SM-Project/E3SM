@@ -127,8 +127,8 @@ def run_diag(parameter):
                 # Since the default is now stored in ZonalMean2dParameter,
                 # we must get it from there if the plevs param is blank.
                 plevs = parameter.plevs
-                if (isinstance(parameter, numpy.ndarray) and not parameter.all()) or \
-                    (not isinstance(parameter, numpy.ndarray) and not parameter):
+                if (isinstance(plevs, numpy.ndarray) and not plevs.all()) or \
+                    (not isinstance(plevs, numpy.ndarray) and not plevs):
                     plevs = ZonalMean2dParameter().plevs
 
                 print('Selected pressure level: {}'.format(plevs))
