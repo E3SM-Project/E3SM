@@ -130,7 +130,7 @@ dependencies:
   - qt=5.9.7
   - readline=7.0
   - requests=2.22.0
-  - scipy=1.2.1=py36_blas_openblash1522bff_0
+  - scipy=1.2.1
   - setuptools=41.0.1
   - shapely=1.6.4
   - sip=4.19.8
