@@ -12,7 +12,7 @@ module mesh_mod
 
   implicit none
   logical, public           :: MeshUseMeshFile = .false.
-#if 0
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   public  :: MeshOpen           ! Must be called first
 
   

@@ -3,6 +3,7 @@
 #endif
 
 module prim_movie_mod
+#ifndef HOMME_WITHOUT_PIOLIBRARY
 #ifndef PIO_INTERP
   use kinds, only : real_kind, longdouble_kind
   use dimensions_mod, only :  nlev, nelem, nelemd, np, ne, nelemdmax, GlobalUniqueCols, nlevp, qsize
@@ -93,7 +94,6 @@ contains
   end subroutine GetDOF
 
   subroutine prim_movie_init(elem, par, hvcoord,tl)
-#if 0
     use hybvcoord_mod, only : hvcoord_t
     use parallel_mod, only : abortmp
     use pio, only : PIO_InitDecomp, pio_setdebuglevel, pio_int, pio_double, pio_closefile !_EXTERNAL
@@ -377,16 +377,13 @@ contains
        end if
     end do
     deallocate(latp,lonp)
-#endif
   end subroutine prim_movie_init
 
 
 
   subroutine prim_movie_finish
-#if 0
 ! ncdf is a module global
   call nf_close_all(ncdf)
-#endif
   end subroutine prim_movie_finish
 
 
@@ -415,7 +412,6 @@ contains
  end function nextoutputstep
 
   subroutine prim_movie_output(elem, tl, hvcoord, par)
-#if 0
     use piolib_mod, only : Pio_SetDebugLevel !_EXTERNAL
     use pio, only : pio_syncfile !_EXTERNAL
     use perf_mod, only : t_startf, t_stopf !_EXTERNAL
@@ -688,9 +684,11 @@ contains
        end if
     end do
     call t_stopf('prim_movie_output:pio')
-#endif
  end subroutine prim_movie_output
 
 #endif
+!for PIOINTERP
+#endif
+!for WITHOUT_PIOLIB
 end module prim_movie_mod
 

@@ -3,7 +3,7 @@
 #endif
 
 module common_io_mod
-#if 0
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   use control_mod, only : MAX_STRING_LEN         !HOMME Specific: MAX_STRING_LEN
 #if defined( PIO ) || defined ( PIO_INTERP )
   use pio, only : var_desc_t, file_desc_t, io_desc_t, nfsizekind=>PIO_OFFSET_KIND, iosystem_desc_t, & ! _EXTERNAL
@@ -196,5 +196,6 @@ contains
     
   end subroutine nf_addrequiredvar
 
-#endif
+#endif 
+
 end module common_io_mod

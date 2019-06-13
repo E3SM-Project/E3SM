@@ -13,7 +13,7 @@
 
 
 module interpolate_driver_mod
-#if 0
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   use pio, only : file_desc_t, var_desc_t , io_desc_t, & ! _EXTERNAL
    pio_get_att, pio_setdebuglevel, pio_closefile, &
    pio_put_att, pio_global, pio_put_var, pio_iotask_rank, &

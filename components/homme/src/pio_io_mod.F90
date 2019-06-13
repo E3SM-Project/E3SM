@@ -3,7 +3,7 @@
 #endif
 
 module pio_io_mod
-#if 0
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   use kinds, only : int_kind, real_kind
   use pio, nfsizekind=>PIO_OFFSET_KIND ! _EXTERNAL
   use pio_types ! _EXTERNAL

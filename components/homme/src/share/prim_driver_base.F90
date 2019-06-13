@@ -138,7 +138,9 @@ contains
 
 #ifndef CAM
   subroutine prim_init1_no_cam(par)
-!    use mesh_mod,       only : MeshUseMeshFile, MeshCubeElemCount
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    use mesh_mod,       only : MeshUseMeshFile, MeshCubeElemCount
+#endif
     use cube_mod,       only : cubeelemcount
     use parallel_mod,   only : parallel_t, abortmp
     use namelist_mod,   only : readnl
@@ -162,11 +164,15 @@ contains
     ! =====================================
     ! cam readnl is called in spmd_dyn (needed prior to mpi_init)
     call readnl(par)
-!    if (MeshUseMeshFile) then
-!       total_nelem = MeshCubeElemCount()
-!    else
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    if (MeshUseMeshFile) then
+       total_nelem = MeshCubeElemCount()
+    else
+#endif
        total_nelem = CubeElemCount()
-!    end if
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    end if
+#endif
 
     approx_elements_per_task = dble(total_nelem)/dble(par%nprocs)
     if  (approx_elements_per_task < 1.0D0) then
@@ -220,8 +226,10 @@ contains
                           set_corner_coordinates, &
                           set_area_correction_map0, set_area_correction_map2
     ! --------------------------------
-!    use mesh_mod, only : MeshSetCoordinates, MeshUseMeshFile, MeshCubeTopology, &
-!                         MeshCubeElemCount, MeshCubeEdgeCount, MeshCubeTopologyCoords
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    use mesh_mod, only : MeshSetCoordinates, MeshUseMeshFile, MeshCubeTopology, &
+                         MeshCubeElemCount, MeshCubeEdgeCount, MeshCubeTopologyCoords
+#endif
     ! --------------------------------
     use metagraph_mod, only : localelemcount, initmetagraph, printmetavertex
     ! --------------------------------
@@ -283,13 +291,17 @@ contains
     ! ===============================================================
     ! Allocate and initialize the graph (array of GridVertex_t types)
     ! ===============================================================
-!    if (MeshUseMeshFile) then
-!       nelem = MeshCubeElemCount()
-!       nelem_edge = MeshCubeEdgeCount()
-!    else
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    if (MeshUseMeshFile) then
+       nelem = MeshCubeElemCount()
+       nelem_edge = MeshCubeEdgeCount()
+    else
+#endif
        nelem      = CubeElemCount()
        nelem_edge = CubeEdgeCount()
-!    end if
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    end if
+#endif
 
     ! we want to exit elegantly when we are using too many processors.
     if (nelem < par%nprocs) then
@@ -298,7 +310,9 @@ contains
 
     can_scalably_init_grid = &
          topology == "cube" .and. &
-!         .not. MeshUseMeshFile .and. &
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+         .not. MeshUseMeshFile .and. &
+#endif
          partmethod .eq. SFCURVE .and. &
          .not. (is_zoltan_partition(partmethod) .or. is_zoltan_task_mapping(z2_map_method))
 
@@ -319,7 +333,7 @@ contains
           call allocate_gridvertex_nbrs(GridVertex(j))
        end do
 
-#if 0
+#ifndef HOMME_WITHOUT_PIOLIBRARY
        if (MeshUseMeshFile) then
            if (par%masterproc) then
                write(iulog,*) "Set up grid vertex from mesh..."
@@ -333,7 +347,9 @@ contains
            call CubeTopology(GridEdge,GridVertex)
            if (is_zoltan_partition(partmethod) .or. is_zoltan_task_mapping(z2_map_method)) then
               call getfixmeshcoordinates(GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
-!           endif
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+           endif
+#endif
         end if
 
        if(par%masterproc)       write(iulog,*)"...done."
@@ -476,13 +492,17 @@ contains
 
     if (topology=="cube") then
        if(par%masterproc) write(iulog,*) "initializing cube elements..."
-!       if (MeshUseMeshFile) then
-!           call MeshSetCoordinates(elem)
-!       else
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+       if (MeshUseMeshFile) then
+           call MeshSetCoordinates(elem)
+       else
+#endif
            do ie=1,nelemd
                call set_corner_coordinates(elem(ie))
            end do
-!       end if
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+       end if
+#endif
        do ie=1,nelemd
           call cube_init_atomic(elem(ie),gp%points)
        enddo

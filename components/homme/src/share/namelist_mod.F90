@@ -110,7 +110,7 @@ module namelist_mod
 
 #ifndef CAM
   use interpolate_mod, only : vector_uvars, vector_vvars, max_vecvars, interpolate_analysis, replace_vec_by_vordiv
-#if 0
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   use common_io_mod, only : &
        output_prefix,       &
        output_type,         &
@@ -158,7 +158,9 @@ module namelist_mod
 #ifdef CAM
   subroutine readnl(par, NLFileName)
     use units, only : getunit, freeunit
-!    use mesh_mod, only : MeshOpen
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    use mesh_mod, only : MeshOpen
+#endif
     character(len=*), intent(in) :: NLFilename  ! namelist filename
 #else
   subroutine readnl(par)
@@ -287,7 +289,7 @@ module namelist_mod
       vfile_int,          &
       vanalytic,          & ! use analytically generated vertical levels
       vtop                  ! top coordinate level. used when vanaltic=1
-#if 0
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     namelist /analysis_nl/    &
       output_prefix,       &
       output_timeunits,    &
@@ -540,7 +542,7 @@ module namelist_mod
 #endif
 
 
-#if 0
+#ifndef HOMME_WITHOUT_PIOLIBRARY
        write(iulog,*)"reading analysis namelist..."
 #if defined(OSF1) || defined(_NAMELIST_FROM_FILE)
        read(unit=7,nml=analysis_nl)
@@ -564,7 +566,7 @@ module namelist_mod
          num_io_procs=par%nprocs/io_stride
       end if
 
-#if 0
+#ifndef HOMME_WITHOUT_PIOLIBRARY
       if(output_varnames1(1).eq.'     ') then
          if( runtype>=0) then
             call setvarnames(output_varnames1)
@@ -708,7 +710,9 @@ module namelist_mod
     call MPI_bcast(u_perturb     ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(rotate_grid   ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(integration,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
-!    call MPI_bcast(mesh_file,MAX_FILE_LEN,MPIChar_t ,par%root,par%comm,ierr)
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    call MPI_bcast(mesh_file,MAX_FILE_LEN,MPIChar_t ,par%root,par%comm,ierr)
+#endif
     call MPI_bcast(theta_hydrostatic_mode ,1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(transport_alg ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(semi_lagrange_cdr_alg ,1,MPIinteger_t,par%root,par%comm,ierr)
@@ -742,7 +746,7 @@ module namelist_mod
     call MPI_bcast(vtop     , 1,              MPIreal_t   , par%root, par%comm,ierr)
 
 #ifndef CAM
-#if 0
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     call MPI_bcast(output_prefix,MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
     call MPI_bcast(output_timeunits ,max_output_streams,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(output_start_time ,max_output_streams,MPIinteger_t,par%root,par%comm,ierr)
@@ -820,7 +824,7 @@ module namelist_mod
     end if
     end if
     if (par%masterproc) write (iulog,*) "Mesh File:", trim(mesh_file)
-#if 0
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     if (ne.eq.0) then
        call set_mesh_dimensions()
        if (par%masterproc) write (iulog,*) "Opening Mesh File:", trim(mesh_file)
@@ -1019,7 +1023,7 @@ module namelist_mod
        end if
 
 #ifndef CAM
-#if 0
+#ifndef HOMME_WITHOUT_PIOLIBRARY
        write(iulog,*)"  analysis: output_prefix = ",TRIM(output_prefix)
        write(iulog,*)"  analysis: io_stride = ",io_stride
        write(iulog,*)"  analysis: num_io_procs = ",num_io_procs
