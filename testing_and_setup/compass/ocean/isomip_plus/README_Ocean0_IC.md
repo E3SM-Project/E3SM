@@ -186,17 +186,6 @@ If all goes well, you should see `comapss_py3.7` as part of your command prompt 
 ```bash
 make ifort
 ```
-There is currently a file involved in the build that isn't python 3 compatible.  It is downloaded by the build
-process, so it can't easily be fixed before starting the build.  The way to handle it is to wait for the build to
-fail and then run some intermediate commands to replace the broken file.  (I'm sorry for this, but it looks
-like a proper solution is a little ways off).
-
-After the build error, which should mention something about `makedep.py` ins a directory with something about
-BGC, run the following:
-```bash
-wget https://raw.githubusercontent.com/xylar/Ocean-BGC/python_3_support/makedep.py -O src/core_ocean/.BGC_all/makedep.py
-make ifort
-```
 Take a coffee break, this will take some time.
 ...
 
