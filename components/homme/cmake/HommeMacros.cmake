@@ -110,11 +110,10 @@ macro(createTestExec execName execType macroNP macroNC
   ADD_EXECUTABLE(${execName} ${EXEC_SOURCES})
   SET_TARGET_PROPERTIES(${execName} PROPERTIES LINKER_LANGUAGE Fortran)
 
-#app check is not working
-#  IF (${CXXLIB_SUPPORTED})
-#    MESSAGE(STATUS "   Linking Fortran with -cxxlib")
-#    TARGET_LINK_LIBRARIES(${execName} -cxxlib)
-#  ENDIF ()
+  IF (CXXLIB_SUPPORTED_CACHE)
+    MESSAGE(STATUS "   Linking Fortran with -cxxlib")
+    TARGET_LINK_LIBRARIES(${execName} -cxxlib)
+  ENDIF ()
 
   STRING(TOUPPER "${PERFORMANCE_PROFILE}" PERF_PROF_UPPER)
   IF ("${PERF_PROF_UPPER}" STREQUAL "VTUNE")
@@ -124,7 +123,12 @@ macro(createTestExec execName execType macroNP macroNC
   # Add this executable to a list
   SET(EXEC_LIST ${EXEC_LIST} ${execName} CACHE INTERNAL "List of configured executables")
 
-  TARGET_LINK_LIBRARIES(${execName} timing ${COMPOSE_LIBRARY} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+  if(BUILD_HOMME_WITHOUT_PIOLIBRARY)
+    TARGET_LINK_LIBRARIES(${execName} timing ${COMPOSE_LIBRARY} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+  ELSE()
+    TARGET_LINK_LIBRARIES(${execName} pio timing ${COMPOSE_LIBRARY} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+  ENDIF ()
+
   IF (HOMME_USE_KOKKOS)
     link_to_kokkos(${execName})
   ENDIF ()

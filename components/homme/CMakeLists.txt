@@ -40,6 +40,19 @@ IF (${HOMME_BUILD_EXECS})
   ENDIF()
 ENDIF()
 
+#option to build without pio and any netcdf in homme (no mesh runs either),
+#by default is not on.
+IF(NOT DEFINED BUILD_HOMME_WITHOUT_PIOLIBRARY)
+  SET(BUILD_HOMME_WITHOUT_PIOLIBRARY FALSE CACHE BOOL "")
+ENDIF()
+IF(BUILD_HOMME_WITHOUT_PIOLIBRARY)
+  ADD_DEFINITIONS(-DHOMME_WITHOUT_PIOLIBRARY)
+  MESSAGE(STATUS "This configuration builds without PIO library and NetCDF calls")
+  IF (HOMME_BUILD_SWEQX)
+    MESSAGE (FATAL ERROR "For SWEQX there is no option to build without PIO library and netcdf.")
+  ENDIF()
+ENDIF()
+
 # Add the cmake/CMakeLists.txt file
 SET (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -286,21 +299,23 @@ SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/pio
 # to variables used by PIO.  Newer machine files sould direclty set
 # necessyar PIO variables:
 #
+#OG: is this a part of PIO build requirement?
 ADD_DEFINITIONS(-D_NO_MPI_RSEND)
 
-#SET(NetCDF_PATH ${NETCDF_DIR})
-#SET(PnetCDF_PATH ${PNETCDF_DIR})
-#message("** Configuring PIO with:")
-#message("-- NetCDF_PATH = ${NetCDF_PATH}")
-#message("-- PnetCDF_PATH = ${PnetCDF_PATH}")
-#message("-- NetCDF_Fortran_PATH = ${NetCDF_Fortran_PATH}")
-#message("-- NetCDF_C_PATH = ${NetCDF_C_PATH}")
-#message("-- PnetCDF_Fortran_PATH = ${PnetCDF_Fortran_PATH}")
-#message("-- PnetCDF_C_PATH = ${PnetCDF_C_PATH}")
+if(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
+SET(NetCDF_PATH ${NETCDF_DIR})
+SET(PnetCDF_PATH ${PNETCDF_DIR})
+message("** Configuring PIO with:")
+message("-- NetCDF_PATH = ${NetCDF_PATH}")
+message("-- PnetCDF_PATH = ${PnetCDF_PATH}")
+message("-- NetCDF_Fortran_PATH = ${NetCDF_Fortran_PATH}")
+message("-- NetCDF_C_PATH = ${NetCDF_C_PATH}")
+message("-- PnetCDF_Fortran_PATH = ${PnetCDF_Fortran_PATH}")
+message("-- PnetCDF_C_PATH = ${PnetCDF_C_PATH}")
 # pio needs cime/externals/genf90/genf90.pl
 SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/genf90)
-#ADD_SUBDIRECTORY(utils/cime/src/externals/pio1)
-
+ADD_SUBDIRECTORY(utils/cime/src/externals/pio1)
+ENDIF()
 
 
 # CPRNC locations
@@ -316,23 +331,26 @@ IF (CPRNC_DIR)
   ENDIF ()
 ENDIF ()
 
-#IF (NOT (CPRNC_DIR))
-#  # compile CPRNC from CIME source code. Requires CIME support for machine
-#  message("-- CPRNC_BINARY = will compile from source")
-#  message("-- If cmake aborts, set CPRNC_DIR to location of external cprnc executable")
+#compile cprnc only if pio is built
+if(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
+  IF (NOT (CPRNC_DIR))
+    # compile CPRNC from CIME source code. Requires CIME support for machine
+    message("-- CPRNC_BINARY = will compile from source")
+    message("-- If cmake aborts, set CPRNC_DIR to location of external cprnc executable")
 
-#  # cprnc's cmake wont search for netcdf, so we have to find it first:
-#  FIND_PACKAGE(NetCDF "4.0" COMPONENTS C Fortran)
-#  set(NETCDF_LIBRARIES ${NetCDF_Fortran_LIBRARIES})
-#  set(NETCDF_INCLUDE_DIR ${NetCDF_Fortran_INCLUDE_DIRS})
+    # cprnc's cmake wont search for netcdf, so we have to find it first:
+    FIND_PACKAGE(NetCDF "4.0" COMPONENTS C Fortran)
+    set(NETCDF_LIBRARIES ${NetCDF_Fortran_LIBRARIES})
+    set(NETCDF_INCLUDE_DIR ${NetCDF_Fortran_INCLUDE_DIRS})
 
-#  # needed for CPRNC build system
-#  file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/tools/cprnc/Macros.cmake" "#dummy Macros file for non-CIME machines")
+    # needed for CPRNC build system
+    file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/tools/cprnc/Macros.cmake" "#dummy Macros file for non-CIME machines")
 
-#  SET (CPRNC_INSTALL_DIR ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc)
-#  SET (CPRNC_BINARY ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
-#  ADD_SUBDIRECTORY(utils/cime/tools/cprnc)
-#ENDIF ()
+    SET (CPRNC_INSTALL_DIR ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc)
+    SET (CPRNC_BINARY ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
+    ADD_SUBDIRECTORY(utils/cime/tools/cprnc)
+  ENDIF ()
+ENDIF ()
 
 IF (${HOMME_USE_KOKKOS})
   INCLUDE(Kokkos)
