@@ -20,7 +20,7 @@ requirements:
 
   run:
     - python
-    - cdp >=1.4.1
+    - cdp >=1.6.0
     - vcs >=8.0
     - vtk-cdat 8.2.0rc2.8.1
     - vcsaddons >=8.0
