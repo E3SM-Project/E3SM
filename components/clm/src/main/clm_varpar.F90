@@ -38,6 +38,7 @@ module clm_varpar
   integer, parameter :: nlevcan     =   1     ! number of leaf layers in canopy layer
   integer, parameter :: numwat      =   5     ! number of water types (soil, ice, 2 lakes, wetland)
   integer, parameter :: numrad      =   2     ! number of solar radiation bands: vis, nir
+  integer, parameter :: nmonth      =   12    ! number of months in year for crop planting
   integer, parameter :: ivis        =   1     ! index for visible band
   integer, parameter :: inir        =   2     ! index for near-infrared band
   integer, parameter :: numsolar    =   2     ! number of solar type bands: direct, diffuse
