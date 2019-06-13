@@ -3979,7 +3979,7 @@ if ($cfg->get('scam')) {
 }
 
 # CAM generates IOP file for SCAM
-if ($cfg->get('e3smreplay')) {
+if ($cfg->get('e3smreplay') or $cfg->get('e3smreplay_b4b')) {
     add_default($nl, 'inithist', 'val'=>'CAMIOP');
     add_default($nl, 'ndens', 'val'=>'1,1');
     add_default($nl, 'mfilt', 'val'=>'1,10');

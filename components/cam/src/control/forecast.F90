@@ -239,13 +239,15 @@ subroutine forecast(lat, psm1, psm2,ps, &
 	 ! Read in part one of the dynamics tendency
 	 reconst1_r16=divt3d(k)
 	 
+!	 write(*,*) 'PARTTWOandTHREE ', exp_count, reconst2_r16
+	 
 	 ! Now we have all terms to reconstruct the r16 
 	 !  dynamics tendency needed for our forecast.  This 
 	 !  needs to be computed EXACTLY the same way as it was 
 	 !  done in routine "replay_b4b_output".  In this routine
 	 !  we computed reconst2 as:
 	 !     reconst2 = (divt3d_full - reconst1)/mult_reconst
-	 !  Thus, we will rearrange to solve for divt2d_full as:
+	 !  Thus, we will rearrange to solve for divt3d_full as:
 
 	 divt3d_r16 = reconst2_r16 + reconst1_r16/mult_reconst_r16
 
@@ -258,7 +260,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
 
          ! compute the forecast in r16	 
 	 var_afterdyn_r16 = var_beforedyn_r16 + timestep_r16*phystend_r16 &
-	     + phystend_r16*divt3d_r16
+	     + timestep_r16*divt3d_r16
 	     
 	 ! Now convert the r16 forecast to r8
          tfcst(k) = var_afterdyn_r16
