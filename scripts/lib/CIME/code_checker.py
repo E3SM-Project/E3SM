@@ -96,7 +96,6 @@ def check_code(files, num_procs=10, interactive=False):
     files_to_check = []
     if files:
         repo_files = get_all_checkable_files()
-#        repo_files = run_cmd_no_fail('git ls-files', from_dir=get_cime_root(), verbose=False).splitlines()
         for filearg in files:
             if os.path.exists(filearg):
                 files_to_check.append(os.path.abspath(filearg))
