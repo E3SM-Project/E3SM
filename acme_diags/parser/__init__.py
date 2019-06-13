@@ -9,6 +9,6 @@ SET_TO_PARSER = {
     'lat_lon': CoreParser,
     'polar': CoreParser,
     'cosp_histogram': CoreParser,
-    'area_mean_time_series': CoreParser
+    'area_mean_time_series': CoreParser,
 }
 

@@ -13,7 +13,7 @@ SET_TO_VIEWER = {
     'zonal_mean_2d': zonal_mean_2d_viewer.create_viewer,
     'meridional_mean_2d': default_viewer.create_viewer,
     'cosp_histogram': default_viewer.create_viewer,
-    'area_mean_time_series': area_mean_time_series_viewer.create_viewer
+    'area_mean_time_series': area_mean_time_series_viewer.create_viewer,
 }
 
 def create_index(root_dir, title_and_url_list):

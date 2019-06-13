@@ -8,5 +8,5 @@ SET_TO_PARAMETERS = {
     'lat_lon': CoreParameter,
     'polar': CoreParameter,
     'cosp_histogram': CoreParameter,
-    'area_mean_time_series': CoreParameter
+    'area_mean_time_series': CoreParameter,
 }
