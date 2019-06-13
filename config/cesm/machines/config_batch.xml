@@ -571,13 +571,16 @@
     </queues>
   </batch_system>
 
-  <batch_system type="slurm" MACH="theia" >
+  <batch_system MACH="theia" type="slurm" >
+    <batch_submit>sbatch</batch_submit>
     <submit_args>
       <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
-      <arg flag="-p" name="$JOB_QUEUE"/>
+      <arg flag="-q" name="$JOB_QUEUE"/>
       <arg flag="--account" name="$PROJECT"/>
-      <arg flag="--partition=" name="theia"/>
     </submit_args>
+    <directives>
+      <directive>--partition=theia</directive>
+    </directives>
     <queues>
       <queue walltimemax="01:00:00" nodemin="1" nodemax="171">batch</queue>
     </queues>
