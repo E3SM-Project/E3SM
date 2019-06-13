@@ -48,7 +48,8 @@ module prim_movie_mod
   use coordinate_systems_mod, only : cartesian2D_t, spherical_polar_t, cartesian3D_t, spherical_to_cart
   use physical_constants, only : g, kappa, p0, dd_pi
   use dof_mod, only : UniquePoints, UniqueCoords, UniqueNcolsP, createmetadata
-  use pio, only  : io_desc_t, pio_iotask_rank !_EXTERNAL
+
+!  use pio, only  : io_desc_t, pio_iotask_rank !_EXTERNAL
 
 
     use hybrid_mod, only : hybrid_t, hybrid_create
@@ -65,7 +66,7 @@ module prim_movie_mod
 
   type(nf_handle) :: ncdf(max_output_streams)
   integer, private :: nxyp
-  integer(kind=nfsizekind) :: piostart2d, piocount2d, piocount3d(2), piostart3d(2)
+!  integer(kind=nfsizekind) :: piostart2d, piocount2d, piocount3d(2), piostart3d(2)
 
 contains
 
@@ -92,6 +93,7 @@ contains
   end subroutine GetDOF
 
   subroutine prim_movie_init(elem, par, hvcoord,tl)
+#if 0
     use hybvcoord_mod, only : hvcoord_t
     use parallel_mod, only : abortmp
     use pio, only : PIO_InitDecomp, pio_setdebuglevel, pio_int, pio_double, pio_closefile !_EXTERNAL
@@ -375,13 +377,16 @@ contains
        end if
     end do
     deallocate(latp,lonp)
+#endif
   end subroutine prim_movie_init
 
 
 
   subroutine prim_movie_finish
+#if 0
 ! ncdf is a module global
   call nf_close_all(ncdf)
+#endif
   end subroutine prim_movie_finish
 
 
@@ -410,6 +415,7 @@ contains
  end function nextoutputstep
 
   subroutine prim_movie_output(elem, tl, hvcoord, par)
+#if 0
     use piolib_mod, only : Pio_SetDebugLevel !_EXTERNAL
     use pio, only : pio_syncfile !_EXTERNAL
     use perf_mod, only : t_startf, t_stopf !_EXTERNAL
@@ -682,6 +688,7 @@ contains
        end if
     end do
     call t_stopf('prim_movie_output:pio')
+#endif
  end subroutine prim_movie_output
 
 #endif

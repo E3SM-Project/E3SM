@@ -138,7 +138,7 @@ contains
 
 #ifndef CAM
   subroutine prim_init1_no_cam(par)
-    use mesh_mod,       only : MeshUseMeshFile, MeshCubeElemCount
+!    use mesh_mod,       only : MeshUseMeshFile, MeshCubeElemCount
     use cube_mod,       only : cubeelemcount
     use parallel_mod,   only : parallel_t, abortmp
     use namelist_mod,   only : readnl
@@ -162,11 +162,11 @@ contains
     ! =====================================
     ! cam readnl is called in spmd_dyn (needed prior to mpi_init)
     call readnl(par)
-    if (MeshUseMeshFile) then
-       total_nelem = MeshCubeElemCount()
-    else
+!    if (MeshUseMeshFile) then
+!       total_nelem = MeshCubeElemCount()
+!    else
        total_nelem = CubeElemCount()
-    end if
+!    end if
 
     approx_elements_per_task = dble(total_nelem)/dble(par%nprocs)
     if  (approx_elements_per_task < 1.0D0) then
@@ -220,8 +220,8 @@ contains
                           set_corner_coordinates, &
                           set_area_correction_map0, set_area_correction_map2
     ! --------------------------------
-    use mesh_mod, only : MeshSetCoordinates, MeshUseMeshFile, MeshCubeTopology, &
-                         MeshCubeElemCount, MeshCubeEdgeCount, MeshCubeTopologyCoords
+!    use mesh_mod, only : MeshSetCoordinates, MeshUseMeshFile, MeshCubeTopology, &
+!                         MeshCubeElemCount, MeshCubeEdgeCount, MeshCubeTopologyCoords
     ! --------------------------------
     use metagraph_mod, only : localelemcount, initmetagraph, printmetavertex
     ! --------------------------------
@@ -283,13 +283,13 @@ contains
     ! ===============================================================
     ! Allocate and initialize the graph (array of GridVertex_t types)
     ! ===============================================================
-    if (MeshUseMeshFile) then
-       nelem = MeshCubeElemCount()
-       nelem_edge = MeshCubeEdgeCount()
-    else
+!    if (MeshUseMeshFile) then
+!       nelem = MeshCubeElemCount()
+!       nelem_edge = MeshCubeEdgeCount()
+!    else
        nelem      = CubeElemCount()
        nelem_edge = CubeEdgeCount()
-    end if
+!    end if
 
     ! we want to exit elegantly when we are using too many processors.
     if (nelem < par%nprocs) then
@@ -298,7 +298,7 @@ contains
 
     can_scalably_init_grid = &
          topology == "cube" .and. &
-         .not. MeshUseMeshFile .and. &
+!         .not. MeshUseMeshFile .and. &
          partmethod .eq. SFCURVE .and. &
          .not. (is_zoltan_partition(partmethod) .or. is_zoltan_task_mapping(z2_map_method))
 
@@ -319,6 +319,7 @@ contains
           call allocate_gridvertex_nbrs(GridVertex(j))
        end do
 
+#if 0
        if (MeshUseMeshFile) then
            if (par%masterproc) then
                write(iulog,*) "Set up grid vertex from mesh..."
@@ -328,10 +329,11 @@ contains
 
 
        else
+#endif
            call CubeTopology(GridEdge,GridVertex)
            if (is_zoltan_partition(partmethod) .or. is_zoltan_task_mapping(z2_map_method)) then
               call getfixmeshcoordinates(GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
-           endif
+!           endif
         end if
 
        if(par%masterproc)       write(iulog,*)"...done."
@@ -474,13 +476,13 @@ contains
 
     if (topology=="cube") then
        if(par%masterproc) write(iulog,*) "initializing cube elements..."
-       if (MeshUseMeshFile) then
-           call MeshSetCoordinates(elem)
-       else
+!       if (MeshUseMeshFile) then
+!           call MeshSetCoordinates(elem)
+!       else
            do ie=1,nelemd
                call set_corner_coordinates(elem(ie))
            end do
-       end if
+!       end if
        do ie=1,nelemd
           call cube_init_atomic(elem(ie),gp%points)
        enddo

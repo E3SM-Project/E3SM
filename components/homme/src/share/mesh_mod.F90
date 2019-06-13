@@ -8,10 +8,11 @@ module mesh_mod
   use physical_constants, only : DD_PI
   use control_mod, only : MAX_FILE_LEN
 
-  use netcdf ! _EXTERNAL
+!  use netcdf ! _EXTERNAL
 
   implicit none
   logical, public           :: MeshUseMeshFile = .false.
+#if 0
   public  :: MeshOpen           ! Must be called first
 
   
@@ -111,10 +112,10 @@ contains
     implicit none
     integer                        :: status
 
-    status = nf90_open(p_mesh_file_name, NF90_NOWRITE, p_ncid)
-    if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
- 
-    MeshUseMeshFile = .true. 
+!    status = nf90_open(p_mesh_file_name, NF90_NOWRITE, p_ncid)
+!    if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
+
+!    MeshUseMeshFile = .true. 
 
   end subroutine open_mesh_file
 
@@ -126,8 +127,8 @@ contains
     implicit none
     integer              :: status
     
-    status = nf90_close(p_ncid)
-    if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
+!    status = nf90_close(p_ncid)
+!    if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
     
   end subroutine close_mesh_file
  
@@ -143,12 +144,12 @@ contains
      integer              :: status, number_of_dim_id
 
      ! Get the id of 'num_elem', if such dimension is not there panic and quit :P
-    status = nf90_inq_dimid(p_ncid, "num_dim", number_of_dim_id)
-    if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
+!    status = nf90_inq_dimid(p_ncid, "num_dim", number_of_dim_id)
+!    if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
 
     ! How many values for 'num_elem' are there?
-    status = nf90_inquire_dimension(p_ncid, number_of_dim_id, len = number_dimensions)
-    if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
+!    status = nf90_inquire_dimension(p_ncid, number_of_dim_id, len = number_dimensions)
+!    if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
 
   end function get_number_of_dimensions
 
@@ -163,12 +164,12 @@ contains
     integer              :: status, number_of_elements_id
 
     ! Get the id of 'num_elem', if such dimension is not there panic and quit :P
-    status = nf90_inq_dimid(p_ncid, "num_elem", number_of_elements_id)
-    if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
+!    status = nf90_inq_dimid(p_ncid, "num_elem", number_of_elements_id)
+!    if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
 
     ! How many values for 'num_elem' are there?
-    status = nf90_inquire_dimension(p_ncid, number_of_elements_id, len = number_elements)
-    if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
+!    status = nf90_inquire_dimension(p_ncid, number_of_elements_id, len = number_elements)
+!    if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
 
   end function get_number_of_elements
 
@@ -1783,7 +1784,7 @@ contains
     call mesh_connectivity (element_nodes)
   end subroutine test_private_methods
 
-
+#endif
 end module mesh_mod
 
 

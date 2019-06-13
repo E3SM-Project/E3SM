@@ -110,6 +110,7 @@ module namelist_mod
 
 #ifndef CAM
   use interpolate_mod, only : vector_uvars, vector_vvars, max_vecvars, interpolate_analysis, replace_vec_by_vordiv
+#if 0
   use common_io_mod, only : &
        output_prefix,       &
        output_type,         &
@@ -130,9 +131,9 @@ module namelist_mod
        varname_len,         &
        infilenames,         &
        MAX_INFILES
-
+#endif
   use physical_constants, only: omega
-  use common_movie_mod,   only : setvarnames
+!  use common_movie_mod,   only : setvarnames
 #endif
 
   use interpolate_mod, only : set_interp_parameter, get_interp_parameter
@@ -157,11 +158,11 @@ module namelist_mod
 #ifdef CAM
   subroutine readnl(par, NLFileName)
     use units, only : getunit, freeunit
-    use mesh_mod, only : MeshOpen
+!    use mesh_mod, only : MeshOpen
     character(len=*), intent(in) :: NLFilename  ! namelist filename
 #else
   subroutine readnl(par)
-    use mesh_mod, only : MeshOpen
+!    use mesh_mod, only : MeshOpen
 #endif
     type (parallel_t), intent(in) ::  par
     character(len=MAX_FILE_LEN) :: mesh_file
@@ -286,7 +287,7 @@ module namelist_mod
       vfile_int,          &
       vanalytic,          & ! use analytically generated vertical levels
       vtop                  ! top coordinate level. used when vanaltic=1
-
+#if 0
     namelist /analysis_nl/    &
       output_prefix,       &
       output_timeunits,    &
@@ -312,6 +313,7 @@ module namelist_mod
       interp_gridtype,     &
       interp_type,         &
       interpolate_analysis
+#endif
 #endif
 ! ^ ifndef CAM
 
@@ -494,6 +496,8 @@ module namelist_mod
        end if
 #endif
 
+#if 0
+
 !      Default interpolation grid  (0 = auto compute based on ne,nv)  interpolation is off by default
 #ifdef PIO_INTERP
        interpolate_analysis=.true.
@@ -533,7 +537,10 @@ module namelist_mod
        num_io_procs=0
        output_type = 'netcdf' ! Change by MNL
 !     output_type = 'pnetcdf'
+#endif
 
+
+#if 0
        write(iulog,*)"reading analysis namelist..."
 #if defined(OSF1) || defined(_NAMELIST_FROM_FILE)
        read(unit=7,nml=analysis_nl)
@@ -557,6 +564,7 @@ module namelist_mod
          num_io_procs=par%nprocs/io_stride
       end if
 
+#if 0
       if(output_varnames1(1).eq.'     ') then
          if( runtype>=0) then
             call setvarnames(output_varnames1)
@@ -585,6 +593,8 @@ module namelist_mod
           if(output_end_time(i)<0) output_end_time(i)=nEndStep
           if ( output_start_time(i) > output_end_time(i) ) output_frequency(i)=0
        end do
+#endif
+#endif
 
 #if (defined MODEL_THETA_L && defined ARKODE)
        write(iulog,*)"reading arkode namelist..."
@@ -698,7 +708,7 @@ module namelist_mod
     call MPI_bcast(u_perturb     ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(rotate_grid   ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(integration,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
-    call MPI_bcast(mesh_file,MAX_FILE_LEN,MPIChar_t ,par%root,par%comm,ierr)
+!    call MPI_bcast(mesh_file,MAX_FILE_LEN,MPIChar_t ,par%root,par%comm,ierr)
     call MPI_bcast(theta_hydrostatic_mode ,1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(transport_alg ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(semi_lagrange_cdr_alg ,1,MPIinteger_t,par%root,par%comm,ierr)
@@ -732,6 +742,7 @@ module namelist_mod
     call MPI_bcast(vtop     , 1,              MPIreal_t   , par%root, par%comm,ierr)
 
 #ifndef CAM
+#if 0
     call MPI_bcast(output_prefix,MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
     call MPI_bcast(output_timeunits ,max_output_streams,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(output_start_time ,max_output_streams,MPIinteger_t,par%root,par%comm,ierr)
@@ -748,6 +759,7 @@ module namelist_mod
     call MPI_bcast(num_io_procs , 1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(output_type , 9,MPIChar_t,par%root,par%comm,ierr)
     call MPI_bcast(infilenames ,160*MAX_INFILES ,MPIChar_t,par%root,par%comm,ierr)
+#endif
 
 #if (defined MODEL_THETA_L && defined ARKODE)
     call MPI_bcast(rel_tol, 1, MPIreal_t, par%root, par%comm, ierr)
@@ -808,11 +820,13 @@ module namelist_mod
     end if
     end if
     if (par%masterproc) write (iulog,*) "Mesh File:", trim(mesh_file)
+#if 0
     if (ne.eq.0) then
        call set_mesh_dimensions()
        if (par%masterproc) write (iulog,*) "Opening Mesh File:", trim(mesh_file)
       call MeshOpen(mesh_file, par)
     end if
+#endif
     ! set map
     if (cubed_sphere_map<0) then
 #if ( defined MODEL_THETA_C || defined MODEL_THETA_L ) 
@@ -1005,6 +1019,7 @@ module namelist_mod
        end if
 
 #ifndef CAM
+#if 0
        write(iulog,*)"  analysis: output_prefix = ",TRIM(output_prefix)
        write(iulog,*)"  analysis: io_stride = ",io_stride
        write(iulog,*)"  analysis: num_io_procs = ",num_io_procs
@@ -1029,6 +1044,7 @@ module namelist_mod
              end select
           end if
        end do
+#endif
 
 #if (defined MODEL_THETA_L && defined ARKODE)
        write(iulog,*)""

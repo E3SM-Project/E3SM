@@ -3,6 +3,7 @@
 #endif
 
 module common_movie_mod
+#if 0
   use control_mod, only : test_case, max_string_len
   use common_io_mod, only : output_start_time, output_end_time, &
        max_output_streams, output_frequency, nf_double, nf_int, &
@@ -180,4 +181,5 @@ contains
        nextoutputstep=min(nextoutputstep,tl%nstep+restartfreq-MODULO(tl%nstep,restartfreq))    
     end if
  end function nextoutputstep
+#endif
 end module common_movie_mod

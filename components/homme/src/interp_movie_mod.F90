@@ -3,6 +3,7 @@
 #endif
 
 module interp_movie_mod
+#if 0
   use kinds, only : real_kind
   use dimensions_mod, only :  nlev, nelemd, np, ne, qsize
   use interpolate_mod, only : interpolate_t, setup_latlon_interp, interpdata_t, &
@@ -1117,5 +1118,5 @@ contains
 
 
 
-
+#endif
 end module interp_movie_mod

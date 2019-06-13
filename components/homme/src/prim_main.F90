@@ -18,8 +18,8 @@ program prim_main
   use control_mod,      only: restartfreq, vfile_mid, vfile_int, runtype
   use domain_mod,       only: domain1d_t
   use element_mod,      only: element_t
-  use common_io_mod,    only: output_dir, infilenames
-  use common_movie_mod, only: nextoutputstep
+!  use common_io_mod,    only: output_dir, infilenames
+!  use common_movie_mod, only: nextoutputstep
   use perf_mod,         only: t_initf, t_prf, t_finalizef, t_startf, t_stopf ! _EXTERNAL
   use restart_io_mod ,  only: restartheader_t, writerestart
   use hybrid_mod,       only: hybrid_create
@@ -28,6 +28,7 @@ program prim_main
 #endif
   use compose_test_mod, only: compose_test
 
+#if 0
 #ifdef VERTICAL_INTERPOLATION
   use netcdf_interp_mod, only: netcdf_interp_init, netcdf_interp_write, netcdf_interp_finish
 #endif
@@ -38,6 +39,7 @@ program prim_main
 #else
   use prim_movie_mod,   only : prim_movie_output, prim_movie_finish,prim_movie_init
   use interpolate_driver_mod, only : pio_read_phis
+#endif
 #endif
 
   implicit none
@@ -131,7 +133,7 @@ program prim_main
   end if
 
 
-
+#if 0
 #ifdef PIO_INTERP
   if(runtype<0) then
      ! Interpolate a netcdf file from one grid to another
@@ -139,9 +141,11 @@ program prim_main
      call haltmp('interpolation complete')
   end if
 #endif
+#endif
+
   ! this should really be called from test_mod.F90, but it has be be called outside
   ! the threaded region
-  if (infilenames(1)/='') call pio_read_phis(elem,hybrid%par)
+!  if (infilenames(1)/='') call pio_read_phis(elem,hybrid%par)
 
   if(par%masterproc) print *,"Primitive Equation Initialization..."
 #if (defined HORIZ_OPENMP)
@@ -169,14 +173,14 @@ program prim_main
   ! library (SIGABRT:signal 6) which in most
   ! architectures produces a core dump.
   if (par%masterproc) then 
-     open(unit=447,file=trim(output_dir) // "/output_dir_test",iostat=ierr)
-     if ( ierr==0 ) then
-        print *,'Directory ',trim(output_dir), ' does exist: initialing IO'
-        close(447)
-     else
-        print *,'Error creating file in directory ',trim(output_dir)
-        call abortmp("Please be sure the directory exist or specify 'output_dir' in the namelist.")
-     end if
+!     open(unit=447,file=trim(output_dir) // "/output_dir_test",iostat=ierr)
+!     if ( ierr==0 ) then
+!        print *,'Directory ',trim(output_dir), ' does exist: initialing IO'
+!        close(447)
+!     else
+!        print *,'Error creating file in directory ',trim(output_dir)
+!        call abortmp("Please be sure the directory exist or specify 'output_dir' in the namelist.")
+!     end if
   endif
 #if 0
   this ALWAYS fails on lustre filesystems.  replaced with the check above
@@ -188,7 +192,10 @@ program prim_main
      call abortmp("Please get sure the directory exist or specify one via output_dir in the namelist file.")
   end if
 #endif
-  
+ 
+
+
+#if 0 
   if(par%masterproc) print *,"I/O init..."
 ! initialize history files.  filename constructed with restart time
 ! so we have to do this after ReadRestart in prim_init2 above
@@ -213,6 +220,7 @@ program prim_main
      call prim_movie_output(elem, tl, hvcoord, par)
 #endif
   endif
+#endif
 
   call compose_test(par, hvcoord, dom_mt, elem)
 
@@ -228,22 +236,25 @@ program prim_main
      nets=dom_mt(ithr)%start
      nete=dom_mt(ithr)%end
      
-     nstep = nextoutputstep(tl)
-     do while(tl%nstep<nstep)
+!     nstep = nextoutputstep(tl)
+!     do while(tl%nstep<nstep)
         call t_startf('prim_run')
         call prim_run_subcycle(elem, hybrid,nets,nete, tstep, .false., tl, hvcoord,1)
         call t_stopf('prim_run')
-     end do
+!     end do
 #if (defined HORIZ_OPENMP)
      !$OMP END PARALLEL
 #endif
 
+
+#if 0
 #ifdef VERTICAL_INTERPOLATION
      call netcdf_interp_write(elem, tl, hybrid, hvcoord)
 #elif defined PIO_INTERP
      call interp_movie_output(elem, tl, par, 0d0,hvcoord=hvcoord)
 #else
      call prim_movie_output(elem, tl, hvcoord, par)
+#endif
 #endif
 
      ! ============================================================
@@ -259,12 +270,14 @@ program prim_main
   call prim_finalize()
   if(par%masterproc) print *,"closing history files"
 
+#if 0
 #ifdef VERTICAL_INTERPOLATION
   call netcdf_interp_finish
 #elif defined PIO_INTERP
   call interp_movie_finish
 #else
   call prim_movie_finish
+#endif
 #endif
 
 #if (defined MODEL_THETA_L && defined ARKODE)

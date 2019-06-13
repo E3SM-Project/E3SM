@@ -13,6 +13,7 @@
 
 
 module interpolate_driver_mod
+#if 0
   use pio, only : file_desc_t, var_desc_t , io_desc_t, & ! _EXTERNAL
    pio_get_att, pio_setdebuglevel, pio_closefile, &
    pio_put_att, pio_global, pio_put_var, pio_iotask_rank, &
@@ -1154,6 +1155,7 @@ contains
     end do
 	
   end subroutine getcompdof
+#endif
 
 end module interpolate_driver_mod
 

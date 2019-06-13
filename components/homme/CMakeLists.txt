@@ -287,18 +287,19 @@ SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/pio
 # necessyar PIO variables:
 #
 ADD_DEFINITIONS(-D_NO_MPI_RSEND)
-SET(NetCDF_PATH ${NETCDF_DIR})
-SET(PnetCDF_PATH ${PNETCDF_DIR})
-message("** Configuring PIO with:")
-message("-- NetCDF_PATH = ${NetCDF_PATH}")
-message("-- PnetCDF_PATH = ${PnetCDF_PATH}")
-message("-- NetCDF_Fortran_PATH = ${NetCDF_Fortran_PATH}")
-message("-- NetCDF_C_PATH = ${NetCDF_C_PATH}")
-message("-- PnetCDF_Fortran_PATH = ${PnetCDF_Fortran_PATH}")
-message("-- PnetCDF_C_PATH = ${PnetCDF_C_PATH}")
+
+#SET(NetCDF_PATH ${NETCDF_DIR})
+#SET(PnetCDF_PATH ${PNETCDF_DIR})
+#message("** Configuring PIO with:")
+#message("-- NetCDF_PATH = ${NetCDF_PATH}")
+#message("-- PnetCDF_PATH = ${PnetCDF_PATH}")
+#message("-- NetCDF_Fortran_PATH = ${NetCDF_Fortran_PATH}")
+#message("-- NetCDF_C_PATH = ${NetCDF_C_PATH}")
+#message("-- PnetCDF_Fortran_PATH = ${PnetCDF_Fortran_PATH}")
+#message("-- PnetCDF_C_PATH = ${PnetCDF_C_PATH}")
 # pio needs cime/externals/genf90/genf90.pl
 SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/genf90)
-ADD_SUBDIRECTORY(utils/cime/src/externals/pio1)
+#ADD_SUBDIRECTORY(utils/cime/src/externals/pio1)
 
 
 
@@ -315,23 +316,23 @@ IF (CPRNC_DIR)
   ENDIF ()
 ENDIF ()
 
-IF (NOT (CPRNC_DIR))
-  # compile CPRNC from CIME source code. Requires CIME support for machine
-  message("-- CPRNC_BINARY = will compile from source")
-  message("-- If cmake aborts, set CPRNC_DIR to location of external cprnc executable")
+#IF (NOT (CPRNC_DIR))
+#  # compile CPRNC from CIME source code. Requires CIME support for machine
+#  message("-- CPRNC_BINARY = will compile from source")
+#  message("-- If cmake aborts, set CPRNC_DIR to location of external cprnc executable")
 
-  # cprnc's cmake wont search for netcdf, so we have to find it first:
-  FIND_PACKAGE(NetCDF "4.0" COMPONENTS C Fortran)
-  set(NETCDF_LIBRARIES ${NetCDF_Fortran_LIBRARIES})
-  set(NETCDF_INCLUDE_DIR ${NetCDF_Fortran_INCLUDE_DIRS})
+#  # cprnc's cmake wont search for netcdf, so we have to find it first:
+#  FIND_PACKAGE(NetCDF "4.0" COMPONENTS C Fortran)
+#  set(NETCDF_LIBRARIES ${NetCDF_Fortran_LIBRARIES})
+#  set(NETCDF_INCLUDE_DIR ${NetCDF_Fortran_INCLUDE_DIRS})
 
-  # needed for CPRNC build system
-  file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/tools/cprnc/Macros.cmake" "#dummy Macros file for non-CIME machines")
+#  # needed for CPRNC build system
+#  file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/tools/cprnc/Macros.cmake" "#dummy Macros file for non-CIME machines")
 
-  SET (CPRNC_INSTALL_DIR ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc)
-  SET (CPRNC_BINARY ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
-  ADD_SUBDIRECTORY(utils/cime/tools/cprnc)
-ENDIF ()
+#  SET (CPRNC_INSTALL_DIR ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc)
+#  SET (CPRNC_BINARY ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
+#  ADD_SUBDIRECTORY(utils/cime/tools/cprnc)
+#ENDIF ()
 
 IF (${HOMME_USE_KOKKOS})
   INCLUDE(Kokkos)
