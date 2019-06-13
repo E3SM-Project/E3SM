@@ -67,7 +67,7 @@ contains
     type(sedflux_type)       , intent(inout) :: sedflux_vars
     !
     ! !LOCAL VARIABLES:
-    integer  :: c, fc, p, pi, l, j                         ! indices
+    integer  :: c, fc, p, t, pi, l, j                      ! indices
     integer  :: dtime                                      ! timestep size [seconds]
     real(r8) :: sinslp, fslp, factor_slp                   ! topo gradient
     real(r8) :: gndbare, vegcc, fbare                      ! veg cover factors
@@ -117,6 +117,7 @@ contains
          do fc = 1, num_hydrologyc
             c = filter_hydrologyc(fc)
             l = col_pp%landunit(c)
+            t = col_pp%topounit(c)
 
             ! initialization
             flx_p_ero(c)          = 0._r8
@@ -137,7 +138,7 @@ contains
             K = SoilDetachability(stxt)
             COH = SoilCohesion(stxt)
             Es_P = 0._r8    ! detachment by throughfall + leap drip
-            if (forc_t(c)>T0 .and. forc_rain(c)>0._r8) then
+            if (forc_t(t)>T0 .and. forc_rain(t)>0._r8) then
                fungrvl = 1. - 0.01 * fgrvl(c,1)
                do pi = 1, max_patch_per_col
                   if ( pi<=col_pp%npfts(c) ) then
@@ -145,7 +146,7 @@ contains
                      if (veg_pp%active(p) .and. veg_pp%wtcol(p)>0) then
                         ! throughfall power
                         Ptot = qflx_dirct_rain(p) * dtime   ! mm
-                        Ie = 3.6d3 * forc_rain(c)           ! mm/hr
+                        Ie = 3.6d3 * forc_rain(t)           ! mm/hr
                         KE_DT = Ptot * fungrvl * max(0._r8,8.95+8.44*log10(Ie))
                         ! leaf drip power
                         Dl = max(0._r8, qflx_leafdrip(p)*dtime)      ! mm
