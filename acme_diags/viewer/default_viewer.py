@@ -6,6 +6,7 @@ E3SM Diagnostics as of v1.7.0.
 import os
 import collections
 import json
+import numpy
 from cdp.cdp_viewer import OutputViewer
 from acme_diags.parser import SET_TO_PARSER
 import acme_diags
@@ -196,12 +197,14 @@ def create_metadata(parameter):
 
     for param_name in parameter.__dict__:
         param = parameter.__dict__[param_name]
-        # we don't want to include blank values
-        if not param:
+        # We don't want to include blank values.
+        if (isinstance(param, numpy.ndarray) and not param.all()) or \
+            (not isinstance(param, numpy.ndarray) and not param):
             continue
 
         if param_name in supported_cmd_args:
-            if isinstance(param, list) or isinstance(param, tuple):
+            if isinstance(param, list) or isinstance(param, tuple) or \
+                isinstance(param, numpy.ndarray):
                 # ex: --diff_levels -7, -6, -5, -4
                 cmd += "--{} ".format(param_name)
                 for p in param:

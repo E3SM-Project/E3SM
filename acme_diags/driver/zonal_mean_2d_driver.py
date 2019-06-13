@@ -126,7 +126,11 @@ def run_diag(parameter):
             if mv1.getLevel() and mv2.getLevel():
                 # Since the default is now stored in ZonalMean2dParameter,
                 # we must get it from there if the plevs param is blank.
-                plevs = parameter.plevs if parameter.plevs else ZonalMean2dParameter().plevs
+                plevs = parameter.plevs
+                if (isinstance(parameter, numpy.ndarray) and not parameter.all()) or \
+                    (not isinstance(parameter, numpy.ndarray) and not parameter):
+                    plevs = ZonalMean2dParameter().plevs
+
                 print('Selected pressure level: {}'.format(plevs))
 
                 mv1_p = utils.general.convert_to_pressure_levels(mv1, plevs, test_data, var, season)
