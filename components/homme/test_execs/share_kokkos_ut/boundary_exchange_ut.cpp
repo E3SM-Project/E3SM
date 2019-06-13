@@ -18,9 +18,10 @@ extern "C" {
 
 void initmp_f90 ();
 void init_cube_geometry_f90 (const int& ne);
-void init_connectivity_f90 (const int& num_min_max_fields_1d, const int& num_scalar_fields_2d,
-                            const int& num_scalar_fields_3d,  const int& num_scalar_fields_3d_int,
-                            const int& num_vector_fields_3d,  const int& vector_dim);
+void init_connectivity_f90 ();
+void init_edges_structs_f90 (const int& num_min_max_fields_1d, const int& num_scalar_fields_2d,
+                             const int& num_scalar_fields_3d,  const int& num_scalar_fields_3d_int,
+                             const int& num_vector_fields_3d,  const int& vector_dim);
 void cleanup_f90 ();
 void boundary_exchange_test_f90 (F90Ptr& field_min_1d_ptr, F90Ptr& field_max_1d_ptr,
                                  F90Ptr& field_2d_ptr, F90Ptr& field_3d_ptr,
@@ -65,7 +66,8 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
   init_cube_geometry_f90(ne);
 
   // Create connectivity
-  init_connectivity_f90(num_min_max_fields_1d,num_scalar_fields_2d, num_scalar_fields_3d, num_scalar_interface_fields_3d, num_vector_fields_3d, DIM);
+  init_connectivity_f90();
+  init_edges_structs_f90(num_min_max_fields_1d,num_scalar_fields_2d, num_scalar_fields_3d, num_scalar_interface_fields_3d, num_vector_fields_3d, DIM);
 
   // Note: init_connectivity_f90 calls init_connectivity, which in turns creates
   //       a Connectivity object in the Context, making the following call safe.

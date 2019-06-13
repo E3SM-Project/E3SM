@@ -62,6 +62,7 @@ SET (BOUNDARY_EXCHANGE_UT_F90_SRCS
   ${SRC_PREQX_DIR}/edge_mod.F90
   ${SRC_PREQX_DIR}/element_state.F90
   ${SHARE_UT_DIR}/boundary_exchange_ut.F90
+  ${SHARE_UT_DIR}/geometry_interface.F90
   ${UTILS_SHARE_DIR}/shr_kind_mod.F90
   ${UTILS_SHARE_DIR}/shr_mpi_mod.F90
   ${UTILS_SHARE_DIR}/shr_sys_mod.F90
