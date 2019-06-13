@@ -112,14 +112,15 @@ class Batch(GenericXML):
         and the second a dict of qualifiers for the job
         """
         jobs = []
-        bnode = self.get_child("batch_jobs")
-        for jnode in self.get_children(root=bnode):
-            if self.name(jnode) == "job":
-                name = self.get(jnode, "name")
-                jdict = {}
-                for child in self.get_children(root=jnode):
-                    jdict[self.name(child)] = self.text(child)
+        bnode = self.get_optional_child("batch_jobs")
+        if bnode:
+            for jnode in self.get_children(root=bnode):
+                if self.name(jnode) == "job":
+                    name = self.get(jnode, "name")
+                    jdict = {}
+                    for child in self.get_children(root=jnode):
+                        jdict[self.name(child)] = self.text(child)
 
-            jobs.append((name, jdict))
+                    jobs.append((name, jdict))
 
         return jobs

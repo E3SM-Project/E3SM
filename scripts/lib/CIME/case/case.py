@@ -22,6 +22,7 @@ from CIME.XML.component             import Component
 from CIME.XML.compsets              import Compsets
 from CIME.XML.grids                 import Grids
 from CIME.XML.batch                 import Batch
+from CIME.XML.workflow              import Workflow
 from CIME.XML.pio                   import PIO
 from CIME.XML.archive               import Archive
 from CIME.XML.env_test              import EnvTest
@@ -32,6 +33,7 @@ from CIME.XML.env_build             import EnvBuild
 from CIME.XML.env_run               import EnvRun
 from CIME.XML.env_archive           import EnvArchive
 from CIME.XML.env_batch             import EnvBatch
+from CIME.XML.env_workflow          import EnvWorkflow
 from CIME.XML.generic_xml           import GenericXML
 from CIME.user_mod_support          import apply_user_mods
 from CIME.aprun import get_aprun_cmd_for_case
@@ -201,6 +203,7 @@ class Case(object):
         self._env_entryid_files.append(EnvBuild(self._caseroot, components=components))
         self._env_entryid_files.append(EnvMachPes(self._caseroot, components=components))
         self._env_entryid_files.append(EnvBatch(self._caseroot))
+        self._env_entryid_files.append(EnvWorkflow(self._caseroot))
         if os.path.isfile(os.path.join(self._caseroot,"env_test.xml")):
             self._env_entryid_files.append(EnvTest(self._caseroot, components=components))
         self._env_generic_files = []
@@ -758,7 +761,7 @@ class Case(object):
                   multi_driver=False, ninst=1, test=False,
                   walltime=None, queue=None, output_root=None,
                   run_unsupported=False, answer=None,
-                  input_dir=None, driver=None):
+                  input_dir=None, driver=None, workflow_case="default"):
 
         expect(check_name(compset_name, additional_chars='.'), "Invalid compset name {}".format(compset_name))
 
@@ -939,18 +942,19 @@ class Case(object):
 
         batch_system_type = machobj.get_value("BATCH_SYSTEM")
         logger.info("Batch_system_type is {}".format(batch_system_type))
-        batch = Batch(batch_system=batch_system_type, machine=machine_name)
-        bjobs = batch.get_batch_jobs()
+        batch = Batch(batch_system=batch_system_type, machine=machine_name, files=files)
+        workflow = Workflow(files=files)
+        bjobs = workflow.get_workflow_jobs(machine=machine_name, workflow_case=workflow_case)
+        env_workflow = self.get_env("workflow")
 
         env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
-        env_batch.create_job_groups(bjobs, test)
+        env_workflow.create_job_groups(bjobs, test)
+        env_batch.set_job_defaults(bjobs, self)
 
         if walltime:
             self.set_value("USER_REQUESTED_WALLTIME", walltime, subgroup=self.get_primary_job())
         if queue:
             self.set_value("USER_REQUESTED_QUEUE", queue, subgroup=self.get_primary_job())
-
-        env_batch.set_job_defaults(bjobs, self)
 
         # Make sure that parallel IO is not specified if total_tasks==1
         if self.total_tasks == 1:
@@ -1364,6 +1368,8 @@ directory, NOT in this subdirectory."""
                     new_env_file = EnvMachPes(infile=xmlfile, components=components)
                 elif ftype == "env_batch.xml":
                     new_env_file = EnvBatch(infile=xmlfile)
+                elif ftype == "env_workflow.xml":
+                    new_env_file = EnvWorkflow(infile=xmlfile)
                 elif ftype == "env_test.xml":
                     new_env_file = EnvTest(infile=xmlfile)
             if new_env_file is not None:
@@ -1425,7 +1431,7 @@ directory, NOT in this subdirectory."""
                multi_driver=False, ninst=1, test=False,
                walltime=None, queue=None, output_root=None,
                run_unsupported=False, answer=None,
-               input_dir=None, driver=None):
+               input_dir=None, driver=None, workflow_case="default"):
         try:
             # Set values for env_case.xml
             self.set_lookup_value("CASE", os.path.basename(casename))
@@ -1441,7 +1447,7 @@ directory, NOT in this subdirectory."""
                            walltime=walltime, queue=queue,
                            output_root=output_root,
                            run_unsupported=run_unsupported, answer=answer,
-                           input_dir=input_dir, driver=driver)
+                           input_dir=input_dir, driver=driver, workflow_case=workflow_case)
 
             self.create_caseroot()
 
