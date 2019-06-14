@@ -1,14 +1,47 @@
-from . import corr
-from . import rmse
-from . import max_cdms
-from . import mean
-from . import min_cdms
-from . import std
+import numpy
+import genutil
+import cdutil
 
-corr = corr.CORR()
-rmse = rmse.RMSE()
-max_cdms = max_cdms.Max()
-mean = mean.Mean()
-min_cdms = min_cdms.Min()
-std = std.STD()
 
+def corr(model, obs, axis='xy'):
+    corr = -numpy.infty
+    try:
+        corr = float(genutil.statistics.correlation(
+            model, obs, axis=axis, weights='generate'))
+    except Exception as err:
+        print(err)
+
+    return corr
+
+
+def max_cdms(variable):
+    return float(variable.max())
+
+
+def mean(variable, axis='xy'):
+    return cdutil.averager(variable, axis=axis, weights='generate')
+
+
+def min_cdms(variable):
+    return float(variable.min())
+
+
+def rmse(model, obs, axis='xy'):
+    rmse = -numpy.infty
+    try:
+        rmse = float(genutil.statistics.rms(
+            model, obs, axis=axis, weights='generate'))
+    except Exception as err:
+        print(err)
+    return rmse
+
+
+def std(variable, axis='xy'):
+    std = -numpy.infty
+    try:
+        std = float(genutil.statistics.std(
+            variable, axis=axis, weights='generate'))
+    except Exception as err:
+        print(err)
+
+    return std
