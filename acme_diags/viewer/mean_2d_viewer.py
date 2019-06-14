@@ -13,9 +13,13 @@ def create_viewer(root_dir, parameters):
     """
     viewer = OutputViewer(path=root_dir)
 
+    set_name = parameters[0].sets[0]
     # The name that's displayed on the viewer.
-    display_name = 'Pressure-Latitude zonal mean contour plots'
-    set_name = 'zonal_mean_2d'
+    if set_name == 'zonal_mean_2d':
+        display_name = 'Pressure-Latitude zonal mean contour plots'
+    elif set_name == 'meridional_mean_2d':
+        display_name = 'Pressure-Longitude meridional mean contour plots'
+
     cols = ['Description'] + seasons_used(parameters)
     viewer.add_page(display_name, short_name=set_name, columns=cols)
 

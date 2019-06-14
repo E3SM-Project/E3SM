@@ -17,7 +17,6 @@ from . import utils, lat_lon_viewer
 # These are all of the sets that this viewer supports.
 SET_TO_NAME = {
     'zonal_mean_xy': 'Zonal mean line plots',
-    'meridional_mean_2d': 'Pressure-Longitude meridional mean contour plots',
     'lat_lon': 'Latitude-Longitude contour maps',
     'polar': 'Polar contour maps',
     'cosp_histogram': 'CloudTopHeight-Tau joint histograms',

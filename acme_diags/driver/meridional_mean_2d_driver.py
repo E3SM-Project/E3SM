@@ -100,11 +100,17 @@ def run_diag(parameter):
 
             # For variables with a z-axis.
             if mv1.getLevel() and mv2.getLevel():
-                plev = numpy.logspace(2.0, 3.0, num=17)
-                print('Selected pressure level: {}'.format(plev))
+                # Since the default is now stored in MeridionalMean2dParameter,
+                # we must get it from there if the plevs param is blank.
+                plevs = parameter.plevs
+                if (isinstance(plevs, numpy.ndarray) and not plevs.all()) or \
+                    (not isinstance(plevs, numpy.ndarray) and not plevs):
+                    plevs = ZonalMean2dParameter().plevs
 
-                mv1_p = utils.general.convert_to_pressure_levels(mv1, plev, test_data, var, season)
-                mv2_p = utils.general.convert_to_pressure_levels(mv2, plev, test_data, var, season)
+                print('Selected pressure level: {}'.format(plevs))
+
+                mv1_p = utils.general.convert_to_pressure_levels(mv1, plevs, test_data, var, season)
+                mv2_p = utils.general.convert_to_pressure_levels(mv2, plevs, ref_data, var, season)
 
                 mv1_p = cdutil.averager(mv1_p, axis='y')
                 mv2_p = cdutil.averager(mv2_p, axis='y')
