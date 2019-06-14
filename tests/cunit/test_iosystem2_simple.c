@@ -152,8 +152,8 @@ int main(int argc, char **argv)
         int ncid2;
         for (int i = 0; i < num_flavors; i++)
         {
-            char fn[NUM_FILES][NC_MAX_NAME + 1];
-            char dimname[NUM_FILES][NC_MAX_NAME + 1];
+            char fn[NUM_FILES][PIO_MAX_NAME + 1];
+            char dimname[NUM_FILES][PIO_MAX_NAME + 1];
 
             /* Create the test files. */
             for (int f = 0; f < NUM_FILES; f++)
@@ -193,7 +193,7 @@ int main(int argc, char **argv)
                 return ret;
 
             /* Check the first file. */
-            char dimname_in[NC_MAX_NAME + 1];
+            char dimname_in[PIO_MAX_NAME + 1];
             if ((ret = PIOc_inq_dimname(ncid, 0, dimname_in)))
                 return ret;
             if (strcmp(dimname_in, dimname[0]))
@@ -221,12 +221,12 @@ int main(int argc, char **argv)
             MPIERR(ret);
 
         /* Finalize PIO odd/even intracomm. */
-        if ((ret = PIOc_finalize(iosysid)))
+        if ((ret = PIOc_free_iosystem(iosysid)))
             ERR(ret);
 
 
         /* Finalize PIO world intracomm. */
-        if ((ret = PIOc_finalize(iosysid_world)))
+        if ((ret = PIOc_free_iosystem(iosysid_world)))
             ERR(ret);
     }/* my_rank < TARGET_NTASKS */
 
