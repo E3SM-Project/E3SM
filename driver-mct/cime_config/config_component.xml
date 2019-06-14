@@ -2313,7 +2313,7 @@
 
   <entry id="PIO_VERSION">
     <type>integer</type>
-    <default_value>1</default_value>
+    <default_value>2</default_value>
     <valid_values>1,2</valid_values>
     <group>build_macros</group>
     <file>env_build.xml</file>
