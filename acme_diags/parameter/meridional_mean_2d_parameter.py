@@ -7,5 +7,5 @@ class MeridionalMean2dParameter(CoreParameter):
         super(MeridionalMean2dParameter, self).__init__()
         self.plevs = numpy.logspace(2.0, 3.0, num=17)
         # Granulating plevs causes duplicate plots in this case.
-        # So we don't include that parameter below.
-        self.granulate = ['variables', 'seasons', 'regions']
+        # So keep all of the default values except plevs. 
+        self.granulate.remove('plevs')

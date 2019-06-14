@@ -1,6 +1,7 @@
 from .core_parameter import CoreParameter
 from .zonal_mean_2d_parameter import ZonalMean2dParameter
 from .meridional_mean_2d_parameter import MeridionalMean2dParameter
+from .area_mean_time_series_parameter import AreaMeanTimeSeriesParameter
 
 
 SET_TO_PARAMETERS = {
@@ -10,5 +11,5 @@ SET_TO_PARAMETERS = {
     'lat_lon': CoreParameter,
     'polar': CoreParameter,
     'cosp_histogram': CoreParameter,
-    'area_mean_time_series': CoreParameter,
+    'area_mean_time_series': AreaMeanTimeSeriesParameter,
 }
