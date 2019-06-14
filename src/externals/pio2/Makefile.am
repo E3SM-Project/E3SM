@@ -2,11 +2,6 @@
 
 # Ed Hartnett
 
-<<<<<<< HEAD
-SUBDIRS = src tests examples
-
-=======
->>>>>>> 41c0649af5afdb078515bffa6b4c35bd31325045
 # Look in the m4 directory for autotools stuff.
 ACLOCAL_AMFLAGS= -I m4
 

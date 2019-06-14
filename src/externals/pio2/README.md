@@ -13,12 +13,6 @@ The (low-traffic) PIO mailing list is at
 https://groups.google.com/forum/#!forum/parallelio, send email to the
 list at parallelio@googlegroups.com.
 
-## Mailing List
-
-The (low-traffic) PIO mailing list is at
-https://groups.google.com/forum/#!forum/parallelio, send email to the
-list at parallelio@googlegroups.com.
-
 ## Nightly Tests
 
 The results of our nightly tests on multiple platforms can be found on our
@@ -26,11 +20,7 @@ cdash site at [http://my.cdash.org/index.php?project=PIO](http://my.cdash.org/in
 
 ## Dependencies
 
-<<<<<<< HEAD
-PIO can use NetCDF (version 4.3.3+) and/or PnetCDF (version 1.6.0+)
-=======
 PIO can use NetCDF (version 4.6.1+) and/or PnetCDF (version 1.9.0+)
->>>>>>> 41c0649af5afdb078515bffa6b4c35bd31325045
 for I/O. NetCDF may be built with or without netCDF-4 features. NetCDF
 is required for PIO, PnetCDF is optional.
 
