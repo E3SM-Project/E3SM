@@ -203,7 +203,14 @@ def get_parameters(parser=CoreParser()):
     """
     Get the parameters from the parser.
     """
-    args = parser.view_args()
+    # A separate parser to just get the args used.
+    # The reason it's a separate object than `parser`
+    # is so we can parse the known args.
+    parser_for_args = CoreParser()
+    # The unknown args are _.
+    # These are any set-specific args that aren't needed
+    # for now, we just want to know what args are used.
+    args, _ = parser_for_args.parse_known_args()
 
     # Below is the legacy way to run this software, pre v2.0.0.
     # There weren't any arguments defined.
