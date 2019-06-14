@@ -24,6 +24,11 @@ class Run():
         Based on sets_to_run, run the diags with the list of parameters.
         """
         final_params = self.get_final_parameters(parameters)
+        if not final_params:
+            msg = 'No parameters we able to be extracted.'
+            msg += ' Please check the parameters you defined.'
+            raise RuntimeError(msg)
+
         main(final_params)
 
 
