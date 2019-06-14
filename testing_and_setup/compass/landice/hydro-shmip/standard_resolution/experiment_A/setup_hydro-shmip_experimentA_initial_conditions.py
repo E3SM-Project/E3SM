@@ -4,6 +4,8 @@ Generate initial conditions for hydro-SHMIP land ice test case A
 Details here: http://shmip.bitbucket.org/
 '''
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 from netCDF4 import Dataset as NetCDFFile
 import numpy as np
 import sys
@@ -16,7 +18,7 @@ parser.add_option("-n", "--number", dest="number", type='int', help="test varian
 options, args = parser.parse_args()
 if not options.filename:
    options.filename = 'landice_grid.nc'
-   print 'No file specified.  Attempting to use landice_grid.nc'
+   print('No file specified.  Attempting to use landice_grid.nc')
 
 # Setup dictionaries of parameter values for each experiment
 a_params = {1:7.93e-11,  2:1.59e-09, 3:5.79e-09, 4:2.5e-8, 5:4.5e-8, 6:5.79e-7}
@@ -53,7 +55,7 @@ if yVertex[:].min() != 0.0:
    yCell[:] = yCell[:] - yShift
    yEdge[:] = yEdge[:] - yShift
    yVertex[:] = yVertex[:] - yShift
-print "Min/Max yVertex:", yVertex[:].min(), yVertex[:].max()
+print("Min/Max yVertex: {}  {}".format(yVertex[:].min(), yVertex[:].max()))
 if np.absolute(np.unique(yVertex[:])[-2] - np.unique(yVertex[:])[1] - 20000.0) > gridfile.variables['dcEdge'][:].min() * 0.866:
    sys.exit('Error: Domain width is too far from 20000.0! Adjust ny in periodic_hex namelist and/or --remove_extra_y argument to mark_periodic_boundaries_for_culling.py.  Target is the difference between the second to last vertices in north and south to be within 0.866*dcEdge of 20000.0.')
 
@@ -75,12 +77,12 @@ waterFluxMask[np.nonzero(xEdge[:]==np.unique(xEdge[:])[-1])] = 2  # last 3 edge 
 gridfile.variables['waterFluxMask'][0,:] = waterFluxMask
 
 
-print "Setting up test number:", options.number
+print("Setting up test number: {}".format(options.number))
 
 # Setup layerThicknessFractions
 layerThicknessFractions[:] = 1.0 / nVertLevels
 
-print "Using water input value (m/s) of:", a_params[options.number]
+print("Using water input value (m/s) of: ".format(a_params[options.number])
 waterInput = gridfile.variables['externalWaterInput'][0,:]
 waterInput[:] = a_params[options.number] * 1000.0  # Convert from m/s to kg/m2/s
 #scale down the source term in the 'tents' in the N and S rows - there is no x-dir throughflow here so excess water is introduced
@@ -105,5 +107,5 @@ gridfile.variables['waterPressure'][:] = 0.5 * 9.81 * 910.0 * thickness[:]
 
 gridfile.close()
 
-print 'Successfully added initial conditions to: ', options.filename
+print('Successfully added initial conditions to: ' + options.filename)
 

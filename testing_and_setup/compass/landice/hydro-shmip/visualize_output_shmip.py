@@ -2,6 +2,9 @@
 '''
 Plots profiles for hydro-ship test case
 '''
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import sys
 import numpy as np
 import netCDF4
@@ -28,11 +31,11 @@ parser.add_option("-5", dest="A5", action="store_true", help="plot GLADS results
 options, args = parser.parse_args()
 
 if not options.filename:
-	print "No filename provided. Using output.nc."
+	print("No filename provided. Using output.nc.")
         options.filename = "output.nc"
 
 if not options.time:
-	print "No time provided. Using time -1."
+	print("No time provided. Using time -1.")
         time_slice = -1
 else:
         time_slice = int(options.time)
@@ -68,12 +71,12 @@ q = u*h
 #fin = netCDF4.Dataset('landice_grid.nc','r')
 #H = fin.variables['thickness'][0,:]
 
-print "Using time level ", time_slice, ", which is xtime=",''.join( xtime[time_slice,:])
+print("Using time level {}, which is xtime = {}".format(time_slice, ''.join( xtime[time_slice,:])))
 
 # Find center row  - currently files are set up to have central row at y=0
 unique_ys=np.unique(yCell[:])
-centerY=unique_ys[len(unique_ys)/2]
-print "number of ys, center y index, center Y value", len(unique_ys), len(unique_ys)/2, centerY
+centerY=unique_ys[len(unique_ys)//2]
+print("number of ys={}, center y index={}, center Y value={}".format(len(unique_ys), len(unique_ys)//2, centerY))
 ind = np.nonzero(yCell[:] == centerY)
 x = xCell[ind]/1000.0
 
@@ -97,7 +100,7 @@ for i in range(len(allx)):
     q_min[i] = q[ np.logical_and(xCell == allx[i], np.in1d(yCell, middley) ) ].min()
     q_max[i] = q[ np.logical_and(xCell == allx[i], np.in1d(yCell, middley) ) ].max()
 
-print "start plotting."
+print("start plotting.")
 
 ############################
 # SHMIP Werder plot with optional comparison to GLADS
@@ -259,7 +262,7 @@ try:
    plt.plot(allxEdge/1000.0, np.absolute(Q_sum), 'bx', label='MPAS sum')
 
 except:
-   print "Skipping plotting of channel output."
+   print("Skipping plotting of channel output.")
 
 plt.xlabel('X-position (km)')
 plt.ylabel('channel water flux (m^3/s)')
@@ -384,25 +387,25 @@ try:
       plt.plot(days/365.0, dtAc, '--', label='Ac')
       plt.plot(days/365.0, dtDc, '--', label='Dc')
    except:
-      print "Skipping plot of channel maximum time steps.  Channel may be disabled or an error occurred."
+      print("Skipping plot of channel maximum time steps.  Channel may be disabled or an error occurred.")
    plt.legend()
    plt.xlabel('Time (yr)')
    plt.ylabel('Allowable time step (s)')
 except:
-   print "Skipping plot of maximum time steps due to missing information or error."
+   print("Skipping plot of maximum time steps due to missing information or error.")
 
-print "plotting complete"
+print("plotting complete")
 
 plt.draw()
 if options.saveimages:
-        print "Saving figures to files."
+        print("Saving figures to files.")
         plt.savefig('GL-position.png')
 
 
 
 
 if options.hidefigs:
-     print "Plot display disabled with -n argument."
+     print("Plot display disabled with -n argument.")
 else:
      plt.show()
 

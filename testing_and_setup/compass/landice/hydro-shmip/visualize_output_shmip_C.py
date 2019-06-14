@@ -6,6 +6,9 @@ It plots the daily time series for quantities of interest
 for the last full some (?) days of the specified file.
 It also plots the difference in the time series between the final two days.
 '''
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import sys
 import numpy as np
 import netCDF4
@@ -29,7 +32,7 @@ options, args = parser.parse_args()
 
 if not options.filename:
         options.filename = "output2.nc"
-        print "No filename provided. Using:"+options.filename
+        print("No filename provided. Using:"+options.filename)
 
 
 class DailyData:
@@ -84,8 +87,8 @@ class DailyData:
             #print todayInd
 
             if len(todayInd) != 24:
-               print "Error: Day {} does not have 24 time levels in it.".format(thisDay)
-               print len(todayInd)
+               print"Error: Day {} does not have 24 time levels in it.".format(thisDay))
+               #print len(todayInd)
 
             for hr in range(len(todayInd)):  # loop through hours on this day
                N_now = N[todayInd[0]+hr, :]
@@ -239,22 +242,22 @@ if 1: #(thisYearData.days == lastYearData.days).all():
    plt.xlabel('DOY')
 
 else:
-   print "Time indices for the two years do not match. Skipping difference plot."
-   print "This year times:", thisYearData.days
-   print "Last year times:", lastYearData.days
+   print("Time indices for the two years do not match. Skipping difference plot.")
+   print("This year times: {}".format(thisYearData.days))
+   print("Last year times: {}".format(lastYearData.days))
 
 
 
 plt.draw()
 
-print "plotting complete"
+print("plotting complete")
 
 if options.saveimages:
-        print "Saving figures to files."
+        print("Saving figures to files.")
         plt.savefig('GL-position.png')
 
 if options.hidefigs:
-     print "Plot display disabled with -n argument."
+     print("Plot display disabled with -n argument.")
 else:
      plt.show()
 
