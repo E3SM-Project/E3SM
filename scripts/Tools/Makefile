@@ -131,29 +131,6 @@ ifeq (,$(SHAREDPATH))
   INSTALL_SHAREDPATH = $(EXEROOT)/$(SHAREDPATH)
 endif
 
-# Decide whether to use a C++ or Fortran linker, based on whether we
-# are using any C++ code and the compiler-dependent CXX_LINKER variable
-ifeq ($(USE_CXX), TRUE)
-  # The following is essentially an "if... elseif... else", but gmake
-  # 3.80 and earlier doesn't support elseif
-  ifeq ($(CXX_LINKER), CXX)
-    LD := $(MPICXX)
-  endif
-  ifeq ($(CXX_LINKER), FORTRAN)
-    LD := $(MPIFC)
-  endif
-endif
-# Use this if LD has not already been defined.
-ifeq ($(origin LD), default)
-  ifeq ($(strip $(MPILIB)),mpi-serial)
-    LD := $(SFC)
-  else
-    LD := $(MPIFC)
-  endif
-endif
-
-
-
 ifeq ($(USE_CXX), TRUE)
   ifeq ($(SUPPORTS_CXX), FALSE)
     $(error Fatal attempt to include C++ code on a compiler/machine combo that has not been set up to support C++)
@@ -457,6 +434,19 @@ else
     LIB_MPI := $(MPI_PATH)/lib
   endif
 endif
+# Decide whether to use a C++ or Fortran linker, based on whether we
+# are using any C++ code and the compiler-dependent CXX_LINKER variable
+ifeq ($(USE_CXX), TRUE)
+  # The following is essentially an "if... elseif... else", but gmake
+  # 3.80 and earlier doesn't support elseif
+  ifeq ($(CXX_LINKER), CXX)
+    LD := $(MPICXX)
+  endif
+  ifeq ($(CXX_LINKER), FORTRAN)
+    LD := $(MPIFC)
+  endif
+endif
+
 CSM_SHR_INCLUDE:=$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/include
 # This is needed so that dependancies are found
 VPATH+=$(CSM_SHR_INCLUDE)
