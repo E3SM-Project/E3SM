@@ -8,7 +8,9 @@ module mesh_mod
   use physical_constants, only : DD_PI
   use control_mod, only : MAX_FILE_LEN
 
-!  use netcdf ! _EXTERNAL
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+  use netcdf ! _EXTERNAL
+#endif
 
   implicit none
   logical, public           :: MeshUseMeshFile = .false.
