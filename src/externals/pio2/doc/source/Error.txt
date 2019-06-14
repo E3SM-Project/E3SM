@@ -1,27 +1,16 @@
-/******************************************************************************
- *
- * 
- *
- * Copyright (C) 2009 
- *
- * Permission to use, copy, modify, and distribute this software and its
- * documentation under the terms of the GNU General Public License is hereby 
- * granted. No representations are made about the suitability of this software 
- * for any purpose. It is provided "as is" without express or implied warranty.
- * See the GNU General Public License for more details.
- *
- * Documents produced by Doxygen are derivative works derived from the
- * input used in their production; they are not affected by this license.
- *
- */ /*! 
+/*! 
 \page error Error Handling
 
 By default, PIO handles errors internally by printing a string
-describing the error and then calling mpi_abort.  Application
+describing the error and then calling mpi_abort. Application
 developers can change this behaivior with a call to
-\ref PIO_seterrorhandling
+\ref PIO_seterrorhandling or PIOc_set_iosystem_error_handling().
 
-\verbinclude errorhandle
+The three types of error handling are:
 
-\copydoc PIO_error_method
+1 - ::PIO_INTERNAL_ERROR abort on error from any task.
+
+2 - ::PIO_BCAST_ERROR broadcast error to all tasks on IO communicator
+
+3 - ::PIO_RETURN_ERROR return error and do nothing else
 */

@@ -1,61 +1,42 @@
- /*!  \page api PIO user interface
+ /*!  \page api PIO Fortran Interface
   This is a list of all user interface routines:
 
-  \section api_fileops PIO file Operations
-     - \ref PIO_openfile
-     - \ref PIO_createfile
-     - \ref PIO_syncfile
-     - \ref PIO_closefile
-  \section api_system PIO startup and shutdown routines
-     - \ref PIO_init
-     - \ref PIO_finalize
-  \section api_decomp PIO decomposition routines
-    - \ref PIO_initdecomp
-    - \ref PIO_freedecomp
-  \section readwrite Reading and Writing distributed variables
-    - \ref PIO_read_darray
-    - \ref PIO_write_darray
-  \section utility Utility routines
-    - \ref PIO_set_hint
-    - \ref PIO_setframe
-    - \ref PIO_advanceframe
-    - \ref PIO_setdebuglevel
-    - \ref PIO_seterrorhandling
-    - \ref PIO_get_local_array_size
+  \section api_system PIO Startup and Shutdown
+    - \ref PIO_init
+    - \ref PIO_finalize
     - \ref PIO_getnumiotasks
     - \ref PIO_set_blocksize
-  \section netcdf NetCDF format specific routines 
-     Also see: http://www.unidata.ucar.edu/software/netcdf/docs/
-     \subsection putget Reading/Writing netcdf metadata  
-         - \ref PIO_get_att
-         - \ref PIO_put_att
-         - \ref PIO_get_var
-         - \ref PIO_put_var
-     \subsection utilnc Netcdf utility routines
+    - \ref PIO_set_hint
+  \section api_fileops File Operations
+    - \ref PIO_openfile
+    - \ref PIO_createfile
+    - \ref PIO_syncfile
     - \ref PIO_enddef
-    - \ref PIO_redef
+    - \ref PIO_closefile
+  \section inqnc Inquiry
+    - \ref PIO_inquire
+    - \ref PIO_inquire_dimension
+    - \ref PIO_inquire_variable
+    - \ref PIO_inq_att
+  \section metadata Defining Metadata
     - \ref PIO_def_dim 
     - \ref PIO_def_var
-     \subsection inqnc NetCDF file inquiry routines
-    - \ref PIO_inquire
-    - \ref PIO_inq_attname
-    - \ref PIO_inq_att
-    - \ref PIO_inq_attlen
-    - \ref PIO_inq_var
-    - \ref PIO_inq_varid
-    - \ref PIO_inq_varname
-    - \ref PIO_inq_vartype
-    - \ref PIO_inq_varndims
-    - \ref PIO_inq_vardimid
-    - \ref PIO_inq_varnatts
-    - \ref PIO_inq_dimid
-    - \ref PIO_inq_dimname
-    - \ref PIO_inq_dimlen
-    - \ref PIO_inq_ndims
-    - \ref PIO_inq_nvars
-    - \ref PIO_inq_natts
-    - \ref PIO_inquire_variable
-    - \ref PIO_inquire_dimension
-    - \ref PIO_inquire_dimension
+    - \ref PIO_get_att
+    - \ref PIO_put_att
+  \section api_decomp Distributed Arrays
+    - \ref PIO_initdecomp
+    - \ref PIO_freedecomp
+    - \ref PIO_setframe
+    - \ref PIO_read_darray
+    - \ref PIO_write_darray
+    - \ref PIO_get_local_array_size
+  \section standard_arrays Standard Arrays
+    - \ref PIO_get_var
+    - \ref PIO_put_var
+  \section utility Errors
+    - \ref PIO_seterrorhandling
+    - \ref PIO_setdebuglevel
+
+Also see: http://www.unidata.ucar.edu/software/netcdf/docs/
 
 */

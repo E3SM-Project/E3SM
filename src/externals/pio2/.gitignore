@@ -28,3 +28,7 @@ build/
 m4/
 *.nc
 *.log
+<<<<<<< HEAD
+=======
+*.gz
+>>>>>>> 41c0649af5afdb078515bffa6b4c35bd31325045
