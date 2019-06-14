@@ -11,6 +11,8 @@ Created on Tue Sep  8 09:29:09 2015
 Modified by William Lipscomb
 """
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 from netCDF4 import Dataset
 import numpy as np
 import matplotlib.pyplot as plt
@@ -36,7 +38,7 @@ def garplot(ncfile, label, color, marker):
     try:
        ncid = Dataset(ncfile, 'r')
     except:
-       print "Failed to open file: {}. Skipping.".format(ncfile)
+       print("Failed to open file: {}. Skipping.".format(ncfile))
        return 0
     gar = ncid.variables["groundedArea"][:]*1e-6*1e-3
     time = ncid.variables["time"][:]
@@ -57,7 +59,7 @@ def glplot(ncfile, times, colora, label):
     try:
        ncid = Dataset(ncfile, 'r')
     except:
-       print "Failed to open file: {}. Skipping.".format(ncfile)
+       print("Failed to open file: {}. Skipping.".format(ncfile))
        return 350.0, 500.0
 
     time = ncid.variables["time"][:]
@@ -126,4 +128,4 @@ plotname = 'mismip+PlotGL.pdf'
 plt.savefig(plotname)
 plt.close()
 
-print 'Created test plot', plotname
+print('Created test plot', plotname)

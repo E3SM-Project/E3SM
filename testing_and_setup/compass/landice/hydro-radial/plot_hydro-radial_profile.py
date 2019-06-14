@@ -2,16 +2,14 @@
 '''
 Plots profiles for hydro-margin test case
 '''
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import numpy as np
 import netCDF4
-#import datetime
-# import math
-# from pylab import *
 from optparse import OptionParser
 import matplotlib.pyplot as plt
 from matplotlib import cm
-# from matplotlib.contour import QuadContourSet
-# import time
 
 secInYr = 3600.0 * 24.0 * 365.0  # Note: this may be slightly wrong for some calendar types!
 
@@ -24,11 +22,11 @@ parser.add_option("-n", "--nodisp", action="store_true", dest="hidefigs", help="
 options, args = parser.parse_args()
 
 if not options.filename:
-	print "No filename provided. Using output.nc."
+	print("No filename provided. Using output.nc.")
         options.filename = "output.nc"
 
 if not options.time:
-	print "No time provided. Using time -1."
+	print("No time provided. Using time -1.")
         time_slice = -1
 else:
         time_slice = int(options.time)
@@ -54,23 +52,23 @@ sliding = f.variables['basalSpeed'][time_slice,:]
 days = f.variables['daysSinceStart'][:]
 xtime = f.variables['xtime'][:]
 
-print "Total number of time levels=", len(days)
-print "Using time slice", time_slice, " which is year ", days[time_slice]/365.0
-print "xtime=", ''.join(xtime[time_slice,:])
+print("Total number of time levels={}".format(len(days))
+print("Using time slice {}, which is year {}".format(time_slice, days[time_slice]/365.0))
+print("xtime=" + ''.join(xtime[time_slice,:]))
 
-print "Attempting to read thickness field from landice_grid.nc."
+print("Attempting to read thickness field from landice_grid.nc.")
 fin = netCDF4.Dataset("landice_grid.nc",'r')
 H = fin.variables['thickness'][0,:]
 
 
 # Find center row  - currently files are set up to have central row at y=0
 unique_ys=np.unique(yCell[:])
-centerY=unique_ys[len(unique_ys)/2]
-print "number of ys, center y index, center Y value", len(unique_ys), len(unique_ys)/2, centerY
+centerY=unique_ys[len(unique_ys)//2]
+print("number of ys={}, center y index={}, center Y value={}".format(len(unique_ys), len(unique_ys)//2, centerY))
 ind = np.nonzero(yCell[:] == centerY)
 x = xCell[ind]/1000.0
 
-print "start plotting."
+print("start plotting.")
 
 fig = plt.figure(1, facecolor='w')
 # water thickness
@@ -215,8 +213,8 @@ plt.grid(True)
 plt.legend()
 plt.xlabel('delta x (m)')
 plt.ylabel('error in W (m)')
-print "avg W err=", Werr[hasice].mean()
-print "max W err=", Werr[hasice].max()
+print("avg W err={}".format(Werr[hasice].mean()))
+print("max W err={}".format(Werr[hasice].max()))
 
 
 ax = fig.add_subplot(2,1,2)
@@ -227,21 +225,21 @@ plt.grid(True)
 plt.legend()
 plt.xlabel('delta x (m)')
 plt.ylabel('error in P (bar)')
-print "avg P err=", Perr[hasice].mean()/1.0e5
-print "max P err=", Perr[hasice].max()/1.0e5
+print("avg P err={}".format(Perr[hasice].mean()/1.0e5))
+print("max P err={}".format(Perr[hasice].max()/1.0e5))
 
 
-print "plotting complete"
+print("plotting complete")
 plt.draw()
 if options.saveimages:
-        print "Saving figures to files."
+        print("Saving figures to files.")
         plt.savefig('GL-position.png')
 
 
 
 
 if options.hidefigs:
-     print "Plot display disabled with -n argument."
+     print("Plot display disabled with -n argument.")
 else:
      plt.show()
 

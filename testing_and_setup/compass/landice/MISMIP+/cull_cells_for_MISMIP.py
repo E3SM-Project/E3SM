@@ -16,6 +16,8 @@ all neighboring cells and mark for culling any cell pairs that have
 distances greater than, say, half of the range in x/y values of the entire mesh.
 """
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import sys
 import netCDF4
 import numpy as np
@@ -23,7 +25,7 @@ import numpy as np
 from optparse import OptionParser
 
 
-print "== Gathering information.  (Invoke with --help for more details. All arguments are optional)"
+print("== Gathering information.  (Invoke with --help for more details. All arguments are optional)")
 parser = OptionParser()
 parser.description = "This script takes an MPAS grid file and marks the edge rows and columns for culling, e.g., to remove periodicity."
 parser.add_option("-f", "--file", dest="inFile", help="MPAS grid file name used as input.", default="grid.nc", metavar="FILENAME")
@@ -32,7 +34,7 @@ for option in parser.option_list:
         option.help += (" " if option.help else "") + "[default: %default]"
 options, args = parser.parse_args()
 
-print '' # make a space in stdout before further output
+print('' # make a space in stdout before further output
 
 
 # ===============================================
@@ -54,14 +56,14 @@ cullCell_local = np.zeros( (nCells,) )
 # For a periodic hex, the upper and lower rows need to be marked
 # Plus an extra row along the top
 unique_ys=np.array(sorted(list(set(yCell[:]))))
-print "Found ", len(unique_ys), " unique y values"
+print("Found {} unique y values".format(len(unique_ys)))
 cullCell_local[np.nonzero(yCell == unique_ys[0])] = 1
 cullCell_local[np.nonzero(yCell == unique_ys[1])] = 1
 cullCell_local[np.nonzero(yCell == unique_ys[-1])] = 1
 
 # For a periodidic hex the leftmost and rightmost *TWO* columns need to be marked
 unique_Xs=np.array(sorted(list(set(xCell[:]))))
-print "Found ", len(unique_Xs), " unique x values"
+print("Found {} unique x values".format(unique_Xs))
 cullCell_local[np.nonzero(xCell == unique_Xs[0])] = 1
 cullCell_local[np.nonzero(xCell == unique_Xs[1])] = 1
 cullCell_local[np.nonzero(xCell == unique_Xs[-1])] = 1
@@ -71,4 +73,4 @@ cullCell[:] = cullCell_local
 
 fin.close()
 
-print "Marked cells for culling.  Use MpasCellCuller.x to cull the cells."
+print("Marked cells for culling.  Use MpasCellCuller.x to cull the cells.")

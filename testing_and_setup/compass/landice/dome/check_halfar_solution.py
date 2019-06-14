@@ -1,14 +1,14 @@
 #!/usr/bin/env python
-# A script to compare MPAS model output to the Halfar analytic solution of the dome test case.
-# Matt Hoffman, LANL, September 2013
+"""
+A script to compare MPAS model output to the Halfar analytic solution of the dome test case.
+Matt Hoffman, LANL, September 2013
+"""
+
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import sys
 import datetime
-try:
-    import netCDF4
-except ImportError:
-    print 'Unable to import netCDF4 python modules:'
-    sys.exit
+import netCDF4
 from optparse import OptionParser
 import numpy as np
 import matplotlib.pyplot as plt
@@ -22,12 +22,12 @@ parser.add_option("-n", "--nodisp", action="store_true", dest="hidefigs", help="
 options, args = parser.parse_args()
 if not options.filename:
    options.filename = 'output.nc'
-   print 'No file specified.  Attempting to use output.nc'
+   print('No file specified.  Attempting to use output.nc')
 if options.t:
    timelev = int(options.t)
 else:
    timelev = -1
-   print 'No time level specified.  Attempting to use final time.'
+   print('No time level specified.  Attempting to use final time.')
 
 ################### DEFINE FUNCTIONS ######################
 # Define the function to calculate the Halfar thickness
@@ -89,29 +89,29 @@ xtime = filein.variables['xtime'][:]
 areaCell = filein.variables['areaCell'][:]
 
 thk = filein.variables['thickness'][:]
-xtime = filein.variables['xtime'][:] 
+xtime = filein.variables['xtime'][:]
 numtime = xtime2numtime(xtime)
 
 # Find out what the ice density and flowA values for this run were.
-print '\nCollecting parameter values from the output file.'
+print('\nCollecting parameter values from the output file.')
 
 flowA = filein.config_default_flowParamA
-print 'Using a flowParamA value of: ' + str(flowA)
+print('Using a flowParamA value of: ' + str(flowA))
 flow_n = filein.config_flowLawExponent
-print 'Using a flowLawExponent value of: ' + str(flow_n)
+print('Using a flowLawExponent value of: ' + str(flow_n))
 if flow_n != 3:
-        print 'Error: The Halfar script currently only supports a flow law exponent of 3.'
+        print('Error: The Halfar script currently only supports a flow law exponent of 3.')
         sys.exit
 rhoi = filein.config_ice_density
-print 'Using an ice density value of: ' + str(rhoi)
+print('Using an ice density value of: ' + str(rhoi))
 
 dynamicThickness = filein.config_dynamic_thickness
-print '\nDynamic thickness for this run = ' + str(dynamicThickness)
+print('\nDynamic thickness for this run = ' + str(dynamicThickness))
 
-print 'Using model time of ' + xtime[timelev,:].tostring().strip() + '\n'
+print('Using model time of ' + xtime[timelev,:].tostring().strip() + '\n')
 
 if filein.config_calendar_type != "gregorian_noleap":
-        print 'Error: The Halfar script currently assumes a gregorian_noleap calendar.  Modify it to proceed with your calendar type of: ', filein.config_calendar_type
+        print('Error: The Halfar script currently assumes a gregorian_noleap calendar.  Modify it to proceed with your calendar type of: '+filein.config_calendar_type)
         sys.exit
 
 
@@ -119,8 +119,8 @@ if filein.config_calendar_type != "gregorian_noleap":
 thkHalfar = halfar(numtime[timelev]-numtime[0], xCell, yCell, flowA, flow_n, rhoi)
 
 iceCells = np.where( thk[timelev,:] > 0.0)
-print "# ice cells=", len(iceCells[0])
-thkDiff = (thk[timelev, :] - thkHalfar) 
+print("# ice cells={}".format(len(iceCells[0])))
+thkDiff = (thk[timelev, :] - thkHalfar)
 thkDiffIce = thkDiff.data[iceCells]  # Restrict to cells modeled to have ice
 RMS = ( (thkDiffIce**2).sum() / float(len(thkDiffIce)) )**0.5
 #RMSwtd = ( ((thkDiffIce * areaCell[iceCells] / areaCell[iceCells].sum())**2).sum() / float(len(thkDiffIce)) )**0.5
@@ -129,16 +129,16 @@ RMSwtd = ( (thkDiffIce**2 * areaCell[iceCells] / (areaCell[iceCells]).sum() ).su
 
 
 # Print some stats about the error
-print 'Error statistics for cells modeled to have ice:'
-print '* RMS error = ' + str( RMS )
-print '* RMS error (area weighted) = ' + str( RMSwtd )
-print '* Minimum error = ' + str( thkDiffIce.min() )
-print '* Maximum error = ' + str( thkDiffIce.max() )
-print '* Mean error = ' + str( thkDiffIce.mean() )
-print '* Median error = ' + str( np.median(thkDiffIce) )
-print '* Mean absolute error = ' + str( np.absolute(thkDiffIce).mean() )
-print '* Median absolute error = ' + str( np.median(np.absolute(thkDiffIce)) )
-print ''
+print('Error statistics for cells modeled to have ice:')
+print('* RMS error = ' + str( RMS ))
+print('* RMS error (area weighted) = ' + str( RMSwtd ))
+print('* Minimum error = ' + str( thkDiffIce.min() ))
+print('* Maximum error = ' + str( thkDiffIce.max() ))
+print('* Mean error = ' + str( thkDiffIce.mean() ))
+print('* Median error = ' + str( np.median(thkDiffIce) ))
+print('* Mean absolute error = ' + str( np.absolute(thkDiffIce).mean() ))
+print('* Median absolute error = ' + str( np.median(np.absolute(thkDiffIce)) ))
+print('')
 
 # Plot the results
 fig = plt.figure(1, figsize=(16, 4.5), facecolor='w', dpi=100)
@@ -151,7 +151,7 @@ plt.scatter(xCell/1000.0,yCell/1000.0,markersize,gray, marker='.', edgecolors='n
 plt.scatter(xCell[maskindices]/1000.0,yCell[maskindices]/1000.0,markersize,thk[timelev,maskindices], marker='h', edgecolors='none')
 plt.colorbar()
 plt.axis('equal')
-plt.title('Modeled thickness (m) \n at time ' + netCDF4.chartostring(xtime)[timelev].strip() ) 
+plt.title('Modeled thickness (m) \n at time ' + netCDF4.chartostring(xtime)[timelev].strip() )
 plt.xlabel('x (km)'); plt.ylabel('y (km)')
 
 fig.add_subplot(1,3,2)
@@ -160,7 +160,7 @@ plt.scatter(xCell/1000.0,yCell/1000.0,markersize,gray, marker='.', edgecolors='n
 plt.scatter(xCell[halmaskindices]/1000.0,yCell[halmaskindices]/1000.0,markersize,thkHalfar[halmaskindices], marker='h', edgecolors='none')
 plt.colorbar()
 plt.axis('equal')
-plt.title('Analytic thickness (m) \n at time ' + netCDF4.chartostring(xtime)[timelev].strip() ) 
+plt.title('Analytic thickness (m) \n at time ' + netCDF4.chartostring(xtime)[timelev].strip() )
 plt.xlabel('x (km)'); plt.ylabel('y (km)')
 
 fig.add_subplot(1,3,3)
@@ -169,7 +169,7 @@ plt.scatter(xCell/1000.0,yCell/1000.0,markersize,thkDiff, marker='h', edgecolors
 plt.colorbar()
 plt.clim([-1.0*np.absolute(thkDiff).max(), np.absolute(thkDiff).max()])
 plt.axis('equal')
-plt.title('Modeled thickness - Analytic thickness (m) \n at time ' + netCDF4.chartostring(xtime)[timelev].strip() ) 
+plt.title('Modeled thickness - Analytic thickness (m) \n at time ' + netCDF4.chartostring(xtime)[timelev].strip() )
 plt.xlabel('x (km)'); plt.ylabel('y (km)')
 
 plt.draw()
@@ -177,12 +177,12 @@ plt.draw()
 if options.saveimage:
     plotname = 'halfar-results.png'
     plt.savefig(plotname, dpi=150)
-    print 'Saved plot as ' + plotname
+    print('Saved plot as ' + plotname)
 
 if options.hidefigs:
-     print "Plot display disabled with -n argument."
+     print("Plot display disabled with -n argument.")
 else:
-     print 'Showing plot...  Close plot window to exit.'
+     print('Showing plot...  Close plot window to exit.')
      plt.show()
 
 

@@ -2,13 +2,11 @@
 # A script to compare MPAS model output to the EISMINT2 test cases.
 # Matt Hoffman, LANL, December 2014
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import sys, os
 import datetime
-try:
-    import netCDF4
-except ImportError:
-    print 'Unable to import netCDF4 python modules:'
-    sys.exit
+import netCDF4
 from optparse import OptionParser
 import numpy as np
 import matplotlib.pyplot as plt
@@ -26,7 +24,7 @@ if not options.exp:
     sys.exit('Error: No experiment specified.  Please specify an experiment to visualize with the -e option')
 experiment = options.exp.lower()  # allow lower or upper case to be input, but use lower case in the script logic
 if experiment in ('a','b','c','d','f', 'g'):
-    print 'Visualizing EISMINT2 Experiment ' + experiment
+    print('Visualizing EISMINT2 Experiment ' + experiment)
 else:
     sys.exit("Error: Invalid experiment specified.  Please specify an experiment between 'a' and 'g', excluding 'e'")
 
@@ -111,7 +109,7 @@ layerThicknessFractions = filein.variables['layerThicknessFractions'][:]
 secInYr = 365.0*24.0*3600.0
 
 timelev = -1  # Use final time
-print 'Using final model time of ' + xtime[timelev,:].tostring().strip() + '\n'
+print('Using final model time of ' + xtime[timelev,:].tostring().strip() + '\n')
 
 
 ##### Print some stats about the error
@@ -140,7 +138,7 @@ if nCells**0.5 < 100.0:
 else:
   markersize=  max( int(round(  1800.0/(nCells**0.5)  )), 1)
   markershape = '.'
-print 'Using a markersize of ', markersize
+print('Using a markersize of ', markersize)
 
 
 fig = plt.figure(1, facecolor='w')

@@ -1,5 +1,9 @@
 #!/usr/bin/env python
-# Generate initial conditions for dome land ice test case
+"""
+Generate initial conditions for dome land ice test case
+"""
+
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import sys, numpy
 from netCDF4 import Dataset as NetCDFFile
@@ -13,16 +17,16 @@ parser.add_option("-d", "--dome", dest="dometype", type='choice', choices=('half
 options, args = parser.parse_args()
 if options.dometype:
    if options.dometype == 'cism' or options.dometype == 'halfar':
-      print 'Setting up the dome type: ' + options.dometype
+      print('Setting up the dome type: ' + options.dometype)
    else:
-      print "Error: Invalid dome type specified.  Valid types are 'halfar' or 'cism'."
+      print("Error: Invalid dome type specified.  Valid types are 'halfar' or 'cism'.")
       sys.exit
 else:
    options.dometype='halfar'
-   print 'No dome type specified.  Setting up the Halfar dome by default.'
+   print('No dome type specified.  Setting up the Halfar dome by default.')
 if not options.filename:
    options.filename = 'landice_grid.nc'
-   print 'No file specified.  Attempting to use landice_grid.nc'
+   print('No file specified.  Attempting to use landice_grid.nc')
 
 
 # Open the file, get needed dimensions
@@ -80,7 +84,7 @@ if options.dometype == 'cism':
 else:
    # halfar dome
    thickness_field[r<r0] = h0 * (1.0 - (r[r<r0] / r0)**(4.0/3.0))**(3.0/7.0)
-thickness[0,:] = thickness_field   
+thickness[0,:] = thickness_field
 
 # zero velocity everywhere
 #normalVelocity[:] = 0.0
@@ -113,5 +117,5 @@ if hydro:
 
 gridfile.close()
 
-print 'Successfully added dome initial conditions to: ', options.filename
+print('Successfully added dome initial conditions to: ' + options.filename)
 

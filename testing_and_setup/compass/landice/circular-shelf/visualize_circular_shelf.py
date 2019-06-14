@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import numpy as np
 from netCDF4 import Dataset as NetCDFFile
 from optparse import OptionParser
@@ -17,7 +20,7 @@ parser.add_option("-n", "--nodisp", action="store_true", dest="hidefigs", help="
 options, args = parser.parse_args()
 
 if not options.filename:
-	print "No filename provided. Using output.nc."
+	print("No filename provided. Using output.nc.")
         options.filename = "output.nc"
 
 time_slice = 0
@@ -34,7 +37,7 @@ dcedge = f.variables['dcEdge']
 try:
    bedTopography = f.variables['bedTopography']  # not needed
 except:
-   print "bedTopography not in file.  Continuing without it."
+   print("bedTopography not in file.  Continuing without it.")
 xCell = f.variables['xCell'][:]/1000.0
 yCell = f.variables['yCell'][:]/1000.0
 xEdge = f.variables['xEdge'][:]/1000.0
@@ -53,7 +56,7 @@ time_length = times.shape[0]
 
 
 velnorm = (uReconstructX[:]**2 + uReconstructY[:]**2)**0.5 * secInYr
-print "Maximum velocity (m/yr) at cell centers in domain:", velnorm.max()
+print("Maximum velocity (m/yr) at cell centers in domain: {}".format(velnorm.max()))
 
 
 ##################
@@ -103,7 +106,7 @@ plt.plot(xCell[indXsectIce], lowerSurface[time_slice, indXsectIce], 'bo-', label
 try:
    plt.plot(xCell[indXsect], bedTopography[time_slice, indXsect], 'go-', label="Bed topography")
 except:
-   print "Skipping plotting of bedTopography."
+   print("Skipping plotting of bedTopography.")
 plt.plot(xCell[indXsect], xCell[indXsect] * 0.0, ':k', label="sea level")
 plt.legend(loc='best')
 plt.title('cross-section at y=0' )
@@ -131,7 +134,7 @@ if options.saveimages:
 
 
 if options.hidefigs:
-     print "Plot display disabled with -n argument."
+     print("Plot display disabled with -n argument.")
 else:     
      plt.show()
 

@@ -8,6 +8,8 @@ See bisicles_ssa_tsai_datasheet.pdf from Supplement from Asay-Davis paper for ex
 by Matt Hoffman, modified from mismip+PlotGL.py script.
 """
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 from netCDF4 import Dataset
 import numpy as np
 import matplotlib.pyplot as plt
@@ -27,10 +29,10 @@ def vafplot(resolution, color, marker):
        time1r = ncid.variables["time"][:]
        ncid.close()
     except:
-       print "Failed to open file: {}. Skipping.".format(fname)
+       print"Failed to open file: {}. Skipping.".format(fname))
        vaf1r = []
        time1r = []
-       
+
     # repeat for 1ra
     fname = '{}/Ice1ra/Ice1ra{}.nc'.format(resolution, model)
     label = "{}".format(resolution)
@@ -40,7 +42,7 @@ def vafplot(resolution, color, marker):
        time1ra = ncid.variables["time"][:]
        ncid.close()
     except:
-       print "Failed to open file: {}. Skipping.".format(fname)
+       print("Failed to open file: {}. Skipping.".format(fname))
        vaf1ra = []
        time1ra = []
 
@@ -53,7 +55,7 @@ def vafplot(resolution, color, marker):
        time1rax = ncid.variables["time"][:]
        ncid.close()
     except:
-       print "Failed to open file: {}. Skipping.".format(fname)
+       print("Failed to open file: {}. Skipping.".format(fname))
        vaf1rax = []
        time1rax = []
 
@@ -74,7 +76,7 @@ def glplot(ncfile, times, colora, label):
     try:
        ncid = Dataset(ncfile, 'r')
     except:
-       print "Failed to open file: {}. Skipping.".format(ncfile)
+       print("Failed to open file: {}. Skipping.".format(ncfile))
        return 350.0, 500.0
 
     time = ncid.variables["time"][:]
@@ -136,4 +138,4 @@ plt.savefig(plotname)
 plt.show()
 plt.close()
 
-print 'Created test plot', plotname
+print('Created test plot'+plotname)

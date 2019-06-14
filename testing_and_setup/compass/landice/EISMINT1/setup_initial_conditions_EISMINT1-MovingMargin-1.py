@@ -1,5 +1,9 @@
 #!/usr/bin/env python
-# Generate initial conditions for EISMINT-1 moving margin land ice test case
+"""
+Generate initial conditions for EISMINT-1 moving margin land ice test case
+"""
+
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import sys, numpy
 from netCDF4 import Dataset as NetCDFFile
@@ -14,7 +18,7 @@ options, args = parser.parse_args()
 
 if not options.filename:
    options.filename = 'landice_grid.nc'
-   print 'No file specified.  Attempting to use landice_grid.nc'
+   print('No file specified.  Attempting to use landice_grid.nc')
 
 
 # Open the file, get needed dimensions
@@ -90,5 +94,5 @@ SMB[0,:] = smb * rhoi / scyr  # in kg/m2/s
 
 
 gridfile.close()
-print 'Successfully added initial conditions for EISMINT1-Moving Margin, experiment 1 to the file: ', options.filename
+print('Successfully added initial conditions for EISMINT1-Moving Margin, experiment 1 to the file: '+options.filename)
 

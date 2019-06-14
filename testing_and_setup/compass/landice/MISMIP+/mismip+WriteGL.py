@@ -7,7 +7,7 @@ files following the protocol in Asay-Davis et al. (2016, GMD).
 The following input fields are needed to create the grounding-line file
 (assuming GL points are tracked at cell edges)::
 
-     Dimensions: 
+     Dimensions:
          nCells
          nEdges
          nVertLevels
@@ -18,7 +18,7 @@ The following input fields are needed to create the grounding-line file
          cellsOnEdge
          areaCell
          layerThicknessFractions
-       
+
      Prognostic quantities:
          edgeMask
          cellMask
@@ -30,6 +30,8 @@ The following input fields are needed to create the grounding-line file
 Authors William Lipscomb and Matthew Hoffman
 
 """
+
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os, sys
 import numpy as np
@@ -70,7 +72,7 @@ else:
 
 def xtime2numtime(xtime):
     """Define a function to convert xtime character array to numeric time values using datetime objects"""
-    # First parse the xtime character array into a string 
+    # First parse the xtime character array into a string
     xtimestr = netCDF4.chartostring(xtime) # convert from the character array to an array of strings using the netCDF4 module's function
 
     dt = []
@@ -82,14 +84,14 @@ def xtime2numtime(xtime):
 	    dt.append( datetime.datetime(*results) ) # * notation passes in the array as arguments
 
 	    # use the netCDF4 module's function for converting a datetime to a time number
-            numtime = netCDF4.date2num(dt, units='seconds since '+str(dt[0]))   
+            numtime = netCDF4.date2num(dt, units='seconds since '+str(dt[0]))
 	    numtime /= (3600.0 * 24.0 * 365.0)
 	    numtime -= numtime[0]  # return years from start
     return numtime
 
 def xtimeGetYear(xtime):
     """Get an array of years from an xtime array, ignoring any partial year information"""
-    # First parse the xtime character array into a string 
+    # First parse the xtime character array into a string
     xtimestr = netCDF4.chartostring(xtime) # convert from the character array to an array of strings using the netCDF4 module's function
     years = np.zeros( (len(xtimestr),) )
     for i in range(len(xtimestr)):
@@ -105,7 +107,7 @@ def glplot(ncfile, times, colora, label):
     ncid = netCDF4.Dataset(ncfile, 'r')
     ltime = ncid.variables["time"][:]
 
-    print 'ltime:', ltime[:]
+    print('ltime: {}'.format(ltime[:]))
 
     lxmax = 0.0
     lxmin = 800.0
@@ -125,18 +127,18 @@ outputFile = options.filename
 
 for expt in experiments:
 
-    print '\n Looking for output file', outputFile, 'in directory', expt
+    print('\n Looking for output file {} in directory {}'.format(outputFile, expt))
 
     try:
         os.chdir(expt)
     except:
-        print 'Could not find a directory for this experiment. Skipping.'
+        print('Could not find a directory for this experiment. Skipping.')
         continue
 
     try:
         ncfile = netCDF4.Dataset(outputFile, 'r')
     except:
-        print 'Could not find the output file in this directory. Skipping.'
+        print('Could not find the output file in this directory. Skipping.')
         continue
 
     # Get dimensions
@@ -162,7 +164,7 @@ for expt in experiments:
     bedTopography = ncfile.variables['bedTopography'][:,:]
     uReconstructZonal = ncfile.variables['uReconstructZonal'][:,:,:]
     uReconstructMeridional = ncfile.variables['uReconstructMeridional'][:,:,:]
-    
+
     # Get prognostic fields on edges
     edgeMask = ncfile.variables['edgeMask'][:,:]
 
@@ -174,13 +176,13 @@ for expt in experiments:
         uMeanZonal[:,:] += layerThicknessFractions[k] * 0.5 * (uReconstructZonal[:,:,k] + uReconstructZonal[:,:,k+1])
         uMeanMeridional[:,:] += layerThicknessFractions[k] * 0.5 * (uReconstructMeridional[:,:,k] + uReconstructMeridional[:,:,k+1])
 
-    # Create GL file 
+    # Create GL file
     GLfile = expt + model + '.nc'
     ncfile = netCDF4.Dataset(GLfile, 'w')
 
-    print 'Creating output GL file', GLfile
+    print('Creating output GL file {}'.format(GLfile))
 
-    # Set dimensions                                                                                  
+    # Set dimensions
     glptdim = ncfile.createDimension('nPointGL', size = None)
     timedim = ncfile.createDimension('nTime', size = nTime)
 
@@ -201,17 +203,17 @@ for expt in experiments:
     iceVAF = ncfile.createVariable('iceVAF', 'f4', ('nTime'))
     groundedArea = ncfile.createVariable('groundedArea', 'f4', ('nTime'))
 
-    iceVolume = np.zeros((nTime,)) 
-    iceVAF = np.zeros((nTime,)) 
-    groundedArea = np.zeros((nTime,)) 
+    iceVolume = np.zeros((nTime,))
+    iceVAF = np.zeros((nTime,))
+    groundedArea = np.zeros((nTime,))
 
-    print 'Created output variables'
+    print('Created output variables')
 
     # Loop over time slices
     for iTime in range(nTime):
 
         time[iTime] = years[iTime]
-        print 'iTime, time =', iTime, time[iTime] 
+        print('iTime={}, time={}'.format(iTime, time[iTime]))
 
         # Loop over edges to gather GL info
         nGL = 0
@@ -229,7 +231,7 @@ for expt in experiments:
 
                 # find indices of adjacent cells
                 # subtract 1 from cellsOnEdge because indexing of cell-centered fields starts at 0
-                iCell1 = cellsOnEdge[iEdge,0] - 1  
+                iCell1 = cellsOnEdge[iEdge,0] - 1
                 iCell2 = cellsOnEdge[iEdge,1] - 1
 
                 xGL[m,iTime] = xEdge[iEdge]
@@ -264,13 +266,13 @@ for expt in experiments:
                 else:
                     iceVAF[iTime] += areaCell[iCell] * thickness[iTime,iCell]
 
-            if np.logical_and( (cellMask[iTime,iCell] & Icebit), 
+            if np.logical_and( (cellMask[iTime,iCell] & Icebit),
                                ( (cellMask[iTime,iCell] & Floatbit) != Floatbit) ):   # ice is present and not floating
                 groundedArea[iTime] += areaCell[iCell]
 
-        print 'ice volume (m^3) =', iceVolume[iTime]
-        print 'ice VAF (m^3) =', iceVAF[iTime]
-        print 'grounded area (m^2) =', groundedArea[iTime]
+        print('ice volume (m^3) = {}'.format(iceVolume[iTime]))
+        print('ice VAF (m^3) = {}'.format(iceVAF[iTime]))
+        print('grounded area (m^2) = {}'.format(roundedArea[iTime]))
 
         ncfile.variables['iceVolume'][:] = iceVolume[:]
         ncfile.variables['iceVAF'][:] = iceVAF[:]
@@ -282,11 +284,11 @@ for expt in experiments:
     # Make sure the grounded area is reasonable
     ncfile = netCDF4.Dataset(GLfile, 'r')
     groundedArea = ncfile.variables['groundedArea'][:]
-    print 'groundedArea =', groundedArea[:]
+    print('groundedArea = {}'.format(groundedArea[:]))
     ncfile.close()
 
     # Create a test plot from the data in this file
-    print 'Making plot from file', GLfile
+    print('Making plot from file' + GLfile)
 
     if expt == 'Ice0' or expt == 'Ice1r' or expt == 'Ice2r':
         timeList = [0, 20, 40, 60, 80, 100]
@@ -312,7 +314,7 @@ for expt in experiments:
     plt.savefig(plotname)
     plt.clf()
 
-    print 'Created test plot', plotname
+    print('Created test plot' + plotname)
 
     # Change to parent directory to process the next experiment
     os.chdir('..')

@@ -1,13 +1,12 @@
 #!/usr/bin/env python
+
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import numpy
-# from netCDF import *
-# import math
 from Scientific.IO.NetCDF import *
-# from pylab import *
 from optparse import OptionParser
 import matplotlib.pyplot as plt
-# from matplotlib.contour import QuadContourSet
-# import time
 
 
 parser = OptionParser()
@@ -22,11 +21,11 @@ parser.add_option("-n", "--nodisp", action="store_true", dest="hidefigs", help="
 options, args = parser.parse_args()
 
 if not options.filename:
-	print "No filename provided. Using output.nc."
+	print("No filename provided. Using output.nc.")
         options.filename = "output.nc"
 
 if not options.time:
-	print "No time provided. Using time 0."
+	print("No time provided. Using time 0.")
         time_slice = 0
 else:
         time_slice = int(options.time)
@@ -76,7 +75,7 @@ vert_levs = f.dimensions['nVertLevels']
 time_length = times.shape[0]
 
 # print "nx = ", nx, " ny = ", ny
-print "vert_levs = ", vert_levs, " time_length = ", time_length
+print("vert_levs = {};  time_length = {}".format(vert_levs, time_length))
 
 
 # print "Computing global max and min"
@@ -106,7 +105,7 @@ plt.colorbar()
 plt.title('thickness at time ' + str(time_slice) )
 plt.draw()
 if options.saveimages:
-        print "Saving figures to files."
+        print("Saving figures to files.")
         plt.savefig('dome_thickness.png')
 
 fig = plt.figure(2)
@@ -171,8 +170,8 @@ if options.saveimages:
 
 
 if options.hidefigs:
-     print "Plot display disabled with -n argument."
-else:     
+     print("Plot display disabled with -n argument.")
+else:
      plt.show()
 
 f.close()
