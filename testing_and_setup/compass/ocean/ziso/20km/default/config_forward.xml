@@ -5,7 +5,7 @@
 	<add_link source="../init_step2/mesh.nc" dest="mesh.nc"/>
 	<add_link source="../init_step2/graph.info" dest="graph.info"/>
 
-  <add_link source_path="utility_scripts" source="/LIGHTparticles/make_particle_file.py" dest="make_particles.py"/>
+	<add_link source_path="mpas_model" source="testing_and_setup/compass/ocean/scripts/LIGHTparticles/make_particle_file.py" dest="make_particles.py"/>
 
 	<add_executable source="model" dest="ocean_model"/>
 
@@ -60,7 +60,7 @@
 			<argument flag="">-p</argument>
 			<argument flag="">4</argument>
 			<argument flag="">--types</argument>
-			<argument flag="">["buoyancy"]</argument>
+			<argument flag="">buoyancy</argument>
 		</step>
 		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
 	</run_script>
