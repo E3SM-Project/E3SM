@@ -268,14 +268,10 @@
       </queues>
     </batch_system>
 
-    <!-- anvil is PBS -->
-    <batch_system MACH="anvil" type="pbs" >
-      <directives>
-        <directive>-A {{ PROJECT }}</directive>
-        <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-      </directives>
+    <!-- anvil is slurm -->
+    <batch_system MACH="anvil" type="slurm" >
       <queues>
-	<queue walltimemax="01:00:00" nodemin="1" nodemax="120" default="true">acme</queue>
+	<queue walltimemax="01:00:00" default="true">acme-centos6</queue>
       </queues>
     </batch_system>
 

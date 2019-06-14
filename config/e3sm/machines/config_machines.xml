@@ -1052,7 +1052,7 @@
 
 <machine MACH="anvil">
          <DESC>ANL/LCRC Linux Cluster</DESC>
-         <NODENAME_REGEX>blogin.*.lcrc.anl.gov</NODENAME_REGEX>
+         <NODENAME_REGEX>b51.*.lcrc.anl.gov</NODENAME_REGEX>
          <TESTS>e3sm_integration</TESTS>
          <COMPILERS>intel,gnu,pgi</COMPILERS>
          <MPILIBS>mvapich,openmpi</MPILIBS>
@@ -1068,29 +1068,22 @@
          <BASELINE_ROOT>/lcrc/group/acme/acme_baselines/$COMPILER</BASELINE_ROOT>
          <CCSM_CPRNC>/home/ccsm-data/tools/cprnc</CCSM_CPRNC>
          <OS>LINUX</OS>
-	 <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
+	 <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
          <SUPPORTED_BY>E3SM</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
 	 <MAX_MPITASKS_PER_NODE>36</MAX_MPITASKS_PER_NODE>
          <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
-	 <PROJECT>ACME</PROJECT>
-         <mpirun mpilib="openmpi">
-           <executable>mpiexec</executable>
-           <arguments>
-             <arg name="num_tasks"> -n $TOTALPES </arg>
-             <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to core</arg>
-             <!--arg name="label" DEBUG="TRUE">-tag-output</arg>
-             <arg name="bindings" DEBUG="TRUE">-report-bindings</arg-->
-           </arguments>
-         </mpirun>
-         <mpirun mpilib="mvapich">
-           <executable>mpiexec</executable>
-           <arguments>
-             <arg name="label"> -l</arg>
-             <arg name="num_tasks"> -n $TOTALPES </arg>
-           </arguments>
-         </mpirun>
+	 <PROJECT>condo</PROJECT>
+	 <mpirun mpilib="default">
+	   <executable>srun</executable>
+	   <arguments>
+             <arg name="num_tasks"> -l -n {{ total_tasks }} </arg>
+             <arg name="binding">--cpu_bind=cores</arg>
+             <arg name="thread_count">-c $SHELL{if [ FALSE = `./xmlquery --value SMP_PRESENT` ];then echo 1;else echo $OMP_NUM_THREADS;fi}</arg>
+             <arg name="placement">-m plane=$SHELL{if [ FALSE = `./xmlquery --value SMP_PRESENT` ];then echo 36;else echo 36/$OMP_NUM_THREADS|bc;fi}</arg>
+	   </arguments>
+	 </mpirun>
          <mpirun mpilib="mpi-serial">
              <executable></executable>
          </mpirun>
@@ -1146,28 +1139,28 @@
     <environment_variables mpilib="!mpi-serial">
       <env name="PNETCDF_PATH">$SHELL{which pnetcdf_version | xargs dirname | xargs dirname}</env>
     </environment_variables>
+    <environment_variables mpilib="mvapich">
+      <env name="MV2_ENABLE_AFFINITY">0</env>
+      <env name="MV2_SHOW_CPU_BINDING">1</env>
+    </environment_variables>
+    <environment_variables mpilib="mvapich" DEBUG="TRUE">
+      <env name="MV2_DEBUG_SHOW_BACKTRACE">1</env>
+      <env name="MV2_SHOW_ENV_INFO">2</env>
+    </environment_variables>
+    <environment_variables mpilib="impi" DEBUG="TRUE">
+      <env name="I_MPI_DEBUG">10</env>
+    </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">64M</env>
       <env name="KMP_HOT_TEAMS_MODE">1</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" DEBUG="FALSE">
-      <env name="KMP_AFFINITY">scatter</env>
+    <environment_variables SMP_PRESENT="TRUE" compiler="intel">
+      <env name="KMP_AFFINITY">granularity=thread,scatter</env>
+      <env name="KMP_HOT_TEAMS_MODE">1</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" DEBUG="TRUE">
-      <env name="KMP_AFFINITY">verbose,scatter</env>
-      <env name="OMP_DISPLAY_ENV">verbose</env>
-    </environment_variables>
-    <environment_variables mpilib="mvapich">
-      <env name="MV2_ENABLE_AFFINITY">1</env>
-      <env name="MV2_USE_SHARED_MEM">1</env>
-      <env name="MV2_SMP_USE_CMA">1</env>
-    </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" mpilib="mvapich">
-      <!--e.g. 6 threads: MV2_CPU_MAPPING=0-5:6-11:12-17:18-23:24-29:30-35: -->
-      <env name="MV2_CPU_MAPPING">$SHELL{t=$ENV{OMP_NUM_THREADS};b=0;r=$[36/$t];while [ $r -gt 0 ];do printf "$b-$[$b+$t-1]:";((r--));((b=b+t));done;}</env>
-    </environment_variables>
-    <environment_variables DEBUG="TRUE" mpilib="mvapich">
-      <env name="MV2_SHOW_CPU_BINDING">1</env>
+    <environment_variables SMP_PRESENT="TRUE" compiler="!intel">
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
     </environment_variables>
 </machine>
 
