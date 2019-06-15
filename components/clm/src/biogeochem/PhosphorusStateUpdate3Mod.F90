@@ -296,19 +296,20 @@ contains
 
     ! soil P loss due to soil erosion
     if ( use_erosion .and. ero_ccycle ) then
-      do l = 1, ndecomp_pools
+      ! column loop
+      do fc = 1, num_soilc
+         c = filter_soilc(fc)
          do j = 1, nlevdecomp
-            ! column loop
-            do fc = 1, num_soilc
-               c = filter_soilc(fc)
+            ! pool loop
+            do l = 1, ndecomp_pools
                if ( decomp_cascade_con%is_soil(l) ) then
-                  col_ps%decomp_ppools_vr(c,j,l) = col_ps%decomp_ppools_vr(c,j,l) - col_pf%decomp_ppools_yield_vr(c,j,l) * dt 
+                  col_ps%decomp_ppools_vr(c,j,l) = col_ps%decomp_ppools_vr(c,j,l) - col_pf%decomp_ppools_yield_vr(c,j,l) * dt
                end if
-               col_ps%labilep_vr(c,j) = col_ps%labilep_vr(c,j) - col_pf%labilep_yield_vr(c,j) * dt
-               col_ps%secondp_vr(c,j) = col_ps%secondp_vr(c,j) - col_pf%secondp_yield_vr(c,j) * dt
-               col_ps%occlp_vr(c,j)   = col_ps%occlp_vr(c,j)   - col_pf%occlp_yield_vr(c,j) * dt
-               col_ps%primp_vr(c,j)   = col_ps%primp_vr(c,j)   - col_pf%primp_yield_vr(c,j) * dt
             end do
+            col_ps%labilep_vr(c,j) = col_ps%labilep_vr(c,j) - col_pf%labilep_yield_vr(c,j) * dt
+            col_ps%secondp_vr(c,j) = col_ps%secondp_vr(c,j) - col_pf%secondp_yield_vr(c,j) * dt
+            col_ps%occlp_vr(c,j)   = col_ps%occlp_vr(c,j)   - col_pf%occlp_yield_vr(c,j) * dt
+            col_ps%primp_vr(c,j)   = col_ps%primp_vr(c,j)   - col_pf%primp_yield_vr(c,j) * dt
          end do
       end do
     end if

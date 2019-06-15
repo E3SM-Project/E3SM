@@ -12,6 +12,7 @@ module EcosystemDynMod
   use perf_mod            , only : t_startf, t_stopf
   use spmdMod             , only : masterproc
   use clm_varctl          , only : use_century_decomp
+  use clm_varctl          , only : use_erosion
   use CNStateType         , only : cnstate_type
   use CNCarbonFluxType    , only : carbonflux_type
   use CNCarbonStateType   , only : carbonstate_type
@@ -819,9 +820,11 @@ contains
             cnstate_vars, carbonstate_vars, nitrogenstate_vars, &
             carbonflux_vars,nitrogenflux_vars,phosphorusstate_vars,phosphorusflux_vars)
 
-       call ErosionFluxes(bounds, num_soilc, filter_soilc, soilstate_vars, sedflux_vars, &
-            carbonstate_vars, nitrogenstate_vars, phosphorusstate_vars, carbonflux_vars, &
-            nitrogenflux_vars, phosphorusflux_vars)
+       if ( use_erosion ) then
+            call ErosionFluxes(bounds, num_soilc, filter_soilc, soilstate_vars, sedflux_vars, &
+                 carbonstate_vars, nitrogenstate_vars, phosphorusstate_vars, carbonflux_vars, &
+                 nitrogenflux_vars, phosphorusflux_vars)
+       end if
 
        call t_stopf('CNUpdate2')
 

@@ -6729,16 +6729,18 @@ contains
     end do
 
     ! vertically integrate column-level carbon erosion flux
-    do l = 1, ndecomp_pools
-       do j = 1, nlev
-          do fc = 1, num_soilc
-             c = filter_soilc(fc)
-             this%decomp_cpools_yield(c,l) = &
-                  this%decomp_cpools_yield(c,l) + &
-                  this%decomp_cpools_yield_vr(c,j,l) * dzsoi_decomp(j)
+    if (use_erosion) then
+       do l = 1, ndecomp_pools
+          do j = 1, nlev
+             do fc = 1, num_soilc
+                c = filter_soilc(fc)
+                this%decomp_cpools_yield(c,l) = &
+                     this%decomp_cpools_yield(c,l) + &
+                     this%decomp_cpools_yield_vr(c,j,l)*dzsoi_decomp(j)
+             end do
           end do
        end do
-    end do
+    end if
 
     ! column-level carbon losses to fire, including pft losses
     do fc = 1,num_soilc
@@ -8949,16 +8951,18 @@ contains
     end do
 
     ! vertically integrate column-level N erosion flux
-    do l = 1, ndecomp_pools
-       do j = 1, nlev
-          do fc = 1, num_soilc
-             c = filter_soilc(fc)
-             this%decomp_npools_yield(c,l) = &
-                  this%decomp_npools_yield(c,l) + &
-                  this%decomp_npools_yield_vr(c,j,l) * dzsoi_decomp(j)
+    if ( use_erosion ) then
+       do l = 1, ndecomp_pools
+          do j = 1, nlev
+             do fc = 1, num_soilc
+                c = filter_soilc(fc)
+                this%decomp_npools_yield(c,l) = &
+                     this%decomp_npools_yield(c,l) + &
+                     this%decomp_npools_yield_vr(c,j,l) * dzsoi_decomp(j)
+             end do
           end do
        end do
-    end do
+    end if
 
     ! total column-level fire N losses
     do fc = 1,num_soilc
@@ -10458,16 +10462,18 @@ contains
     end do
 
     ! vertically integrate column-level P erosion flux
-    do l = 1, ndecomp_pools
-       do j = 1, nlevdecomp
-          do fc = 1, num_soilc
-             c = filter_soilc(fc)
-             this%decomp_ppools_yield(c,l) = &
-                  this%decomp_ppools_yield(c,l) + &
-                  this%decomp_ppools_yield_vr(c,j,l) * dzsoi_decomp(j)
+    if (use_erosion) then
+       do l = 1, ndecomp_pools
+          do j = 1, nlevdecomp
+             do fc = 1, num_soilc
+                c = filter_soilc(fc)
+                this%decomp_ppools_yield(c,l) = &
+                     this%decomp_ppools_yield(c,l) + &
+                     this%decomp_ppools_yield_vr(c,j,l) * dzsoi_decomp(j)
+             end do
           end do
        end do
-    end do
+    end if
 
     ! total column-level fire P losses
     do fc = 1,num_soilc
