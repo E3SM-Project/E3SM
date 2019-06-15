@@ -110,7 +110,6 @@ module namelist_mod
 
 #ifndef CAM
   use interpolate_mod, only : vector_uvars, vector_vvars, max_vecvars, interpolate_analysis, replace_vec_by_vordiv
-#ifndef HOMME_WITHOUT_PIOLIBRARY
   use common_io_mod, only : &
        output_prefix,       &
        output_type,         &
@@ -131,11 +130,8 @@ module namelist_mod
        varname_len,         &
        infilenames,         &
        MAX_INFILES
-#endif
   use physical_constants, only: omega
-#ifndef HOMME_WITHOUT_PIOLIBRARY
   use common_movie_mod,   only : setvarnames
-#endif
 #endif
 
   use interpolate_mod, only : set_interp_parameter, get_interp_parameter
@@ -293,7 +289,6 @@ module namelist_mod
       vfile_int,          &
       vanalytic,          & ! use analytically generated vertical levels
       vtop                  ! top coordinate level. used when vanaltic=1
-#ifndef HOMME_WITHOUT_PIOLIBRARY
     namelist /analysis_nl/    &
       output_prefix,       &
       output_timeunits,    &
@@ -319,7 +314,6 @@ module namelist_mod
       interp_gridtype,     &
       interp_type,         &
       interpolate_analysis
-#endif
 #endif
 ! ^ ifndef CAM
 
@@ -502,7 +496,6 @@ module namelist_mod
        end if
 #endif
 
-#ifndef HOMME_WITHOUT_PIOLIBRARY
 
 !      Default interpolation grid  (0 = auto compute based on ne,nv)  interpolation is off by default
 #ifdef PIO_INTERP
@@ -543,7 +536,6 @@ module namelist_mod
        num_io_procs=0
        output_type = 'netcdf' ! Change by MNL
 !     output_type = 'pnetcdf'
-#endif
 
 
 #ifndef HOMME_WITHOUT_PIOLIBRARY
@@ -570,7 +562,6 @@ module namelist_mod
          num_io_procs=par%nprocs/io_stride
       end if
 
-#ifndef HOMME_WITHOUT_PIOLIBRARY
       if(output_varnames1(1).eq.'     ') then
          if( runtype>=0) then
             call setvarnames(output_varnames1)
@@ -599,7 +590,6 @@ module namelist_mod
           if(output_end_time(i)<0) output_end_time(i)=nEndStep
           if ( output_start_time(i) > output_end_time(i) ) output_frequency(i)=0
        end do
-#endif
 #endif
 
 #if (defined MODEL_THETA_L && defined ARKODE)

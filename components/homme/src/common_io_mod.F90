@@ -34,10 +34,7 @@ module common_io_mod
   character(len=160), public, target :: infilenames(MAX_INFILES)
 !  character(len=10), public :: vector_uvars(MAX_VECVARS), vector_vvars(MAX_VECVARS)
 
-#ifndef HOMME_WITHOUT_PIOLIBRARY
-  public :: nfsizekind, nf_noerr
-
-  character(len=varname_len), public, target,  dimension(max_output_variables) :: output_varnames1   
+  character(len=varname_len), public, target,  dimension(max_output_variables) :: output_varnames1
   character(len=varname_len), public, target,  dimension(max_output_variables) :: output_varnames2
   character(len=varname_len), public, target,  dimension(max_output_variables) :: output_varnames3
   character(len=varname_len), public, target,  dimension(max_output_variables) :: output_varnames4
@@ -48,6 +45,9 @@ module common_io_mod
   integer, public :: num_agg
   integer, public :: io_stride
 
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+  public :: nfsizekind, nf_noerr
+
   ! end of analysis_nl namelist variables
   public :: nf_selectedvar
   public :: get_varindex
@@ -55,9 +55,6 @@ module common_io_mod
   public :: nf_addrequiredvar
   public :: nf_dim, nf_variable, nf_handle, nf_int, nf_double
   public :: unlim_dim
-
-
-
 
   integer, parameter, public :: beginstate=1, dimsstate=2,varsstate=3,readystate=4 
 

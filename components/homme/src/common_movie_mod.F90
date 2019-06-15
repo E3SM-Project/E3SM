@@ -11,10 +11,10 @@ module common_movie_mod
   implicit none
   private
   public ::  varrequired, vartype, varnames, varcnt, vardims, &
-	dimnames, maxdims, setvarnames
+             dimnames, maxdims
 #endif
 
-  public :: nextoutputstep
+  public :: nextoutputstep, setvarnames
 
 #ifndef HOMME_WITHOUT_PIOLIBRARY
 
@@ -145,12 +145,11 @@ module common_movie_mod
 
 contains
 
-#ifndef HOMME_WITHOUT_PIOLIBRARY
-
 !
 ! This gets the default var list for namelist_mod
 !
   subroutine setvarnames(nlvarnames)
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     character*(*), intent(out) :: nlvarnames(:)
     integer :: lvarcnt
     if (varcnt > max_output_variables) then
@@ -160,13 +159,13 @@ contains
     lvarcnt=varcnt
     nlvarnames(1:varcnt) = varnames
     !print *,__FILE__,__LINE__,varcnt, size(nlvarnames),varnames
+#endif
   end subroutine setvarnames
+
 !
 ! This function returns the next step number in which an output (either restart or movie) 
 ! needs to be written.
 !
-#endif
-
   integer function nextoutputstep(tl)
     use time_mod, only : Timelevel_t, nendstep  
     use control_mod, only : restartfreq
