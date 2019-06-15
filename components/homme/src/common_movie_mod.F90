@@ -11,9 +11,12 @@ module common_movie_mod
   implicit none
   private
   public ::  varrequired, vartype, varnames, varcnt, vardims, &
-	dimnames, maxdims, setvarnames, nextoutputstep
+	dimnames, maxdims, setvarnames
+#endif
 
+  public :: nextoutputstep
 
+#ifndef HOMME_WITHOUT_PIOLIBRARY
 
 #ifdef _PRIM
   integer, parameter :: varcnt =  33
@@ -138,7 +141,11 @@ module common_movie_mod
 
   ! end of analysis_nl namelist variables
 
+#endif
+
 contains
+
+#ifndef HOMME_WITHOUT_PIOLIBRARY
 
 !
 ! This gets the default var list for namelist_mod
@@ -158,10 +165,13 @@ contains
 ! This function returns the next step number in which an output (either restart or movie) 
 ! needs to be written.
 !
+#endif
+
   integer function nextoutputstep(tl)
     use time_mod, only : Timelevel_t, nendstep  
     use control_mod, only : restartfreq
     type(timelevel_t), intent(in) :: tl
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     integer :: ios, nstep(max_output_streams)
 
     nstep(:) = nEndStep
@@ -180,6 +190,7 @@ contains
     if(restartfreq>0) then
        nextoutputstep=min(nextoutputstep,tl%nstep+restartfreq-MODULO(tl%nstep,restartfreq))    
     end if
- end function nextoutputstep
 #endif
+ end function nextoutputstep
+
 end module common_movie_mod

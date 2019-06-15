@@ -211,18 +211,20 @@ module interp_movie_mod
   integer(kind=nfsizekind) :: start2d(3), count2d(3), start3d(4), count3d(4)
   type(nf_handle), save :: ncdf(max_output_streams)
 
+#endif
 
 contains
   subroutine interp_movie_init(elem,par,hvcoord,tl)
     use time_mod, only : timelevel_t
     use element_mod, only: element_t
-    use pio, only : pio_setdebuglevel, PIO_Put_att, pio_put_var, pio_global ! _EXTERNAL
     use parallel_mod, only : parallel_t, haltmp, syncmp
-    use interpolate_mod, only : get_interp_lat, get_interp_lon, get_interp_gweight
 #if defined(_PRIM)
     use hybvcoord_mod, only : hvcoord_t
 #endif
-
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    use pio, only : pio_setdebuglevel, PIO_Put_att, pio_put_var, pio_global ! _EXTERNAL
+    use interpolate_mod, only : get_interp_lat, get_interp_lon, get_interp_gweight
+#endif
     type (TimeLevel_t), intent(in)         :: tl     ! time level struct
     type(element_t) :: elem(:)
     type(parallel_t), intent(in) :: par
@@ -233,6 +235,7 @@ contains
     ! ignored
     integer, optional :: hvcoord
 #endif
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     integer :: dimsize(maxdims)   
     integer, pointer :: ldof2d(:),ldof3d(:), iodof2d(:), iodof3d(:)
     integer, pointer :: latdof(:), londof(:), iodoflon(:), iodoflat(:)
@@ -404,12 +407,15 @@ contains
     deallocate(lat,lon,gw)
     deallocate(lev,ilev)
     call syncmp(par)
+#endif
   end subroutine interp_movie_init
 
 
 
   subroutine interp_movie_finish
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     call nf_close_all(ncdf)
+#endif
   end subroutine interp_movie_finish
 
 
@@ -427,8 +433,9 @@ contains
 #endif
     use derivative_mod, only : derivinit, derivative_t, laplace_sphere_wk
     use hybrid_mod, only : hybrid_t
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     use pio, only : pio_setdebuglevel, pio_syncfile ! _EXTERNAL
-
+#endif
     use viscosity_mod, only : compute_zeta_C0, make_c0, compute_zeta_c0_contra,&
                               compute_div_c0,compute_div_c0_contra
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
@@ -444,7 +451,7 @@ contains
     integer,optional    :: hvcoord
 #endif
     real (kind=real_kind), intent(in) :: phimean
-
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     character(len=varname_len), pointer :: output_varnames(:)
     integer :: ie,ios, i, j, k
     real (kind=real_kind) :: pfull, pr0
@@ -1012,12 +1019,13 @@ contains
        end if ! output stream is enabled
     end do  ! do ios=1,max_output_streams
     call t_stopf('interp_movie_output')
+#endif
   end subroutine interp_movie_output
 
 
 
 
-
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   subroutine GetIODOF(ndims, gdims, iorank, iodof, start, count)
     integer, intent(in) :: ndims
     integer, intent(in) :: gdims(ndims)
@@ -1114,9 +1122,7 @@ contains
 
   end subroutine GetIODOF
 
-
-
-
-
 #endif
+
+
 end module interp_movie_mod
