@@ -296,7 +296,6 @@ SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/pio
 # to variables used by PIO.  Newer machine files sould direclty set
 # necessyar PIO variables:
 #
-#OG: is this a part of PIO build requirement?
 ADD_DEFINITIONS(-D_NO_MPI_RSEND)
 
 if(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
