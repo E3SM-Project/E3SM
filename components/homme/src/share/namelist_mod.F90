@@ -818,13 +818,15 @@ module namelist_mod
     end if
     end if
     if (par%masterproc) write (iulog,*) "Mesh File:", trim(mesh_file)
-#ifndef HOMME_WITHOUT_PIOLIBRARY
     if (ne.eq.0) then
+#ifndef HOMME_WITHOUT_PIOLIBRARY
        call set_mesh_dimensions()
        if (par%masterproc) write (iulog,*) "Opening Mesh File:", trim(mesh_file)
-      call MeshOpen(mesh_file, par)
-    end if
+       call MeshOpen(mesh_file, par)
+#else
+       call abortmp("Build is without PIO library, mesh runs (ne=0) are not supported.")
 #endif
+    end if
     ! set map
     if (cubed_sphere_map<0) then
 #if ( defined MODEL_THETA_C || defined MODEL_THETA_L ) 
