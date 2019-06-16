@@ -340,8 +340,6 @@ if(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
     set(NETCDF_INCLUDE_DIR ${NetCDF_Fortran_INCLUDE_DIRS})
 
     # needed for CPRNC build system
-    file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/tools/cprnc/Macros.cmake" "#dummy Macros file for non-CIME machines")
-
     set (cprnc_dummy_file "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/tools/cprnc/Macros.cmake")
     if (NOT EXISTS "${cprnc_dummy_file}")
       file(WRITE "${cprnc_dummy_file}" "#dummy Macros file for non-CIME machines")
