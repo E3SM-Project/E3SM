@@ -84,6 +84,10 @@ macro(createTestExec execName execType macroNP macroNC
     SET(PIO_INTERP TRUE)
   ENDIF ()
 
+  IF(BUILD_HOMME_WITHOUT_PIOLIBRARY AND (NOT PIO_INTERP))
+    MESSAGE(ERROR "For building without PIO library set PREQX_USE_PIO to false")
+  ENDIF ()
+
   IF (${macroWITH_ENERGY})
     SET(ENERGY_DIAGNOSTICS TRUE)
   ELSE()
@@ -123,10 +127,9 @@ macro(createTestExec execName execType macroNP macroNC
   # Add this executable to a list
   SET(EXEC_LIST ${EXEC_LIST} ${execName} CACHE INTERNAL "List of configured executables")
 
-  if(BUILD_HOMME_WITHOUT_PIOLIBRARY)
-    TARGET_LINK_LIBRARIES(${execName} timing ${COMPOSE_LIBRARY} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
-  ELSE()
-    TARGET_LINK_LIBRARIES(${execName} pio timing ${COMPOSE_LIBRARY} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+  TARGET_LINK_LIBRARIES(${execName} timing ${COMPOSE_LIBRARY} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+  IF(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
+    TARGET_LINK_LIBRARIES(${execName} pio)
   ENDIF ()
 
   IF (HOMME_USE_KOKKOS)

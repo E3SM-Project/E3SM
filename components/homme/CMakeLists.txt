@@ -48,9 +48,6 @@ ENDIF()
 IF(BUILD_HOMME_WITHOUT_PIOLIBRARY)
   ADD_DEFINITIONS(-DHOMME_WITHOUT_PIOLIBRARY)
   MESSAGE(STATUS "This configuration builds without PIO library and NetCDF calls")
-  IF (HOMME_BUILD_SWEQX)
-    MESSAGE (FATAL ERROR "For SWEQX there is no option to build without PIO library and netcdf.")
-  ENDIF()
 ENDIF()
 
 # Add the cmake/CMakeLists.txt file
@@ -345,6 +342,11 @@ if(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
 
     # needed for CPRNC build system
     file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/tools/cprnc/Macros.cmake" "#dummy Macros file for non-CIME machines")
+
+    set (cprnc_dummy_file "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/tools/cprnc/Macros.cmake")
+    if (NOT EXISTS "${cprnc_dummy_file}")
+      file(WRITE "${cprnc_dummy_file}" "#dummy Macros file for non-CIME machines")
+    endif ()
 
     SET (CPRNC_INSTALL_DIR ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc)
     SET (CPRNC_BINARY ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
