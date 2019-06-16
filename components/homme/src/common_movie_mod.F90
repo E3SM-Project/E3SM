@@ -3,13 +3,21 @@
 #endif
 
 module common_movie_mod
-#ifndef HOMME_WITHOUT_PIOLIBRARY
   use control_mod, only : test_case, max_string_len
+
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   use common_io_mod, only : output_start_time, output_end_time, &
        max_output_streams, output_frequency, nf_double, nf_int, &
        max_output_variables
+#else
+  use common_io_mod, only : output_start_time, output_end_time, &
+       max_output_streams, output_frequency,                    &
+       max_output_variables
+#endif
   implicit none
   private
+
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   public ::  varrequired, vartype, varnames, varcnt, vardims, &
              dimnames, maxdims
 #endif
@@ -149,8 +157,8 @@ contains
 ! This gets the default var list for namelist_mod
 !
   subroutine setvarnames(nlvarnames)
-#ifndef HOMME_WITHOUT_PIOLIBRARY
     character*(*), intent(out) :: nlvarnames(:)
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     integer :: lvarcnt
     if (varcnt > max_output_variables) then
        print *,__FILE__,__LINE__,"varcnt > max_output_varnames"
@@ -169,8 +177,8 @@ contains
   integer function nextoutputstep(tl)
     use time_mod, only : Timelevel_t, nendstep  
     use control_mod, only : restartfreq
+
     type(timelevel_t), intent(in) :: tl
-#ifndef HOMME_WITHOUT_PIOLIBRARY
     integer :: ios, nstep(max_output_streams)
 
     nstep(:) = nEndStep
@@ -189,7 +197,6 @@ contains
     if(restartfreq>0) then
        nextoutputstep=min(nextoutputstep,tl%nstep+restartfreq-MODULO(tl%nstep,restartfreq))    
     end if
-#endif
  end function nextoutputstep
 
 end module common_movie_mod
