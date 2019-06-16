@@ -131,6 +131,7 @@ program prim_main
   end if
 
 
+
 #ifdef PIO_INTERP
   if(runtype<0) then
      ! Interpolate a netcdf file from one grid to another
@@ -138,7 +139,6 @@ program prim_main
      call haltmp('interpolation complete')
   end if
 #endif
-
   ! this should really be called from test_mod.F90, but it has be be called outside
   ! the threaded region
   if (infilenames(1)/='') call pio_read_phis(elem,hybrid%par)
@@ -188,9 +188,7 @@ program prim_main
      call abortmp("Please get sure the directory exist or specify one via output_dir in the namelist file.")
   end if
 #endif
- 
-
-
+  
   if(par%masterproc) print *,"I/O init..."
 ! initialize history files.  filename constructed with restart time
 ! so we have to do this after ReadRestart in prim_init2 above
@@ -229,7 +227,7 @@ program prim_main
      hybrid = hybrid_create(par,ithr,hthreads)
      nets=dom_mt(ithr)%start
      nete=dom_mt(ithr)%end
-
+     
      nstep = nextoutputstep(tl)
      do while(tl%nstep<nstep)
         call t_startf('prim_run')
@@ -240,14 +238,13 @@ program prim_main
      !$OMP END PARALLEL
 #endif
 
-
 #ifdef VERTICAL_INTERPOLATION
      call netcdf_interp_write(elem, tl, hybrid, hvcoord)
 #elif defined PIO_INTERP
      call interp_movie_output(elem, tl, par, 0d0,hvcoord=hvcoord)
 #else
      call prim_movie_output(elem, tl, hvcoord, par)
-#endif 
+#endif
 
      ! ============================================================
      ! Write restart files if required 
@@ -262,9 +259,6 @@ program prim_main
   call prim_finalize()
   if(par%masterproc) print *,"closing history files"
 
-
-!OG temp: with WITHOUT_PIOLIBRARY we need PIO_INTERP and !VERTICAL_INTERPOLATION
-!is ti reasonable to set these two properly in cmake then?
 #ifdef VERTICAL_INTERPOLATION
   call netcdf_interp_finish
 #elif defined PIO_INTERP
