@@ -66,6 +66,8 @@ if (isfilevar(fuv,"omega")) then
   delete(omegap)
 end if
 
+print("writing dim_avg ps")
+ncdf->ps = dim_avg_n_Wrap(fuv->ps,0)
 print("writing dim_avg zeta")
 ncdf->zeta = dim_avg_n_Wrap(fuv->zeta,0)
 print("writing dim_avg div")

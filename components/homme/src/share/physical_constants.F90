@@ -74,4 +74,6 @@ module physical_constants
   real (kind=real_kind), public            :: rrearth      = rrearth0
 #endif
 
+  real (kind=real_kind), public, parameter :: TREF = 288
+
 end module physical_constants

@@ -13,6 +13,7 @@ end setvalues
 ;  output_format = "X11"
 
   fave = addfile("hsmapave.nc","r")
+;  f = addfile("movies/held_suarez0-000480000-1.nc","r")
   f = addfile("movies/held_suarez01.nc","r")
 
 
@@ -132,8 +133,10 @@ end setvalues
     contour = gsn_csm_contour_map(wks,field,res)   
 
 ;  climatology
+    if (isfilevar(fave,"omega500")) then
     k=21
-    zrange=.7  ; means (level 23), no topo
+    zrange=.25  ; means (level 23), no topo
+    ;zrange=.5  ; means (level 23), no topo
     res@cnMinLevelValF = -zrange
     res@cnMaxLevelValF =  zrange
     res@cnLevelSpacingF = zrange/20
@@ -143,12 +146,13 @@ end setvalues
     print("levels: [" + res@cnMinLevelValF +","+res@cnMaxLevelValF +"] spacing="+res@cnLevelSpacingF)
     res@tiMainString="Climatology "+sprintf("%3.0f",eta_mb)+"hPa"
     contour = gsn_csm_contour_map(wks,field,res)   
+    end if
     
 ;  climatology
-    k=21
-    zrange=5.0  ; means (level 23), no topo
-    res@cnMinLevelValF = -zrange
-    res@cnMaxLevelValF =  zrange
+    if (isfilevar(fave,"omega850")) then
+    zrange=.4  ; means (level 23), no topo
+    res@cnMinLevelValF = -.4
+    res@cnMaxLevelValF =  1.4
     res@cnLevelSpacingF = zrange/20
     field = fave->omega850(:,:)
     field@long_name = "OMEGA850"
@@ -156,9 +160,10 @@ end setvalues
     print("levels: [" + res@cnMinLevelValF +","+res@cnMaxLevelValF +"] spacing="+res@cnLevelSpacingF)
     res@tiMainString="Climatology "+sprintf("%3.0f",eta_mb)+"hPa"
     contour = gsn_csm_contour_map(wks,field,res)   
-    
+    end if
 
 ;  snapshots
+    if (isfilevar(f,"omega")) then
     k=21
     zrange=1.2  ; instantaneous
     res@cnMinLevelValF = -zrange
@@ -176,6 +181,7 @@ end setvalues
     print("levels: [" + res@cnMinLevelValF +","+res@cnMaxLevelValF +"] spacing="+res@cnLevelSpacingF)
     res@tiMainString=sprintf("%3.0f",eta_mb)+"hPa"
     contour = gsn_csm_contour_map(wks,field,res)   
+    end if
 
   end do
 delete(wks)

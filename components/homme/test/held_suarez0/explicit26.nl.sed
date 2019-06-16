@@ -21,9 +21,11 @@ runtype       = RUNTYPE
 tstep         = TSTEP
 integration   = "explicit"
 nu            = NU1
-nu_s          = NU2
-nu_p          = NUP
-!nu_top = 2.5e5
+nu_s          = NU1
+nu_p          = NU1
+nu_q          = NU1
+nu_div        = NU2
+nu_top = 2.5e5
 hypervis_order = 2
 hypervis_subcycle = 1
 /
@@ -51,11 +53,3 @@ io_stride = 32
 profile_outpe_num = 100
 profile_single_file		= .true.
 /
-
-
-
-
-
-
-
-
