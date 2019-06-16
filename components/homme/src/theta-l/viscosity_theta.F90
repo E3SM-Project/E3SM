@@ -85,8 +85,8 @@ endif
          nu_ratio2=1
       else
          ! since operator is applied twice, take the sqrt
-         nu_ratio1=sqrt(nu_div/nu)
-         nu_ratio2=sqrt(nu_div/nu)
+         nu_ratio1=(nu_div/nu)
+         nu_ratio2=1
       endif
    endif
 

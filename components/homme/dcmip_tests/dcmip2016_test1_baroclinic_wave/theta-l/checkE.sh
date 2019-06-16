@@ -35,6 +35,7 @@ echo "tstep=" $tstep "run to 15 days and write restart file..."
 \rm -f restart/*
 mpirun $EXEC < input.nl  > $logfile1
 
+grep SHA $logfile1
 
 # restart from day 15, run 1h
 let nmax=3*1200/$tstep
@@ -48,7 +49,6 @@ sed s:nmax.\*:"nmax=$nmax":  |
 sed s:restartfile.\*:"restartfile='$rname'":  > input.nl
 echo "nmax=" $nmax " restartfile=" $rname " restart run..."
 mpirun  $EXEC < input.nl > $logfile2
-
 
 echo "diagnostics 3rd timsteps:"
 grep "d/dt" $logfile2 | head -12 | tail -4
