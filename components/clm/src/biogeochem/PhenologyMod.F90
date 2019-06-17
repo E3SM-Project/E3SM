@@ -242,7 +242,11 @@ contains
          temperature_vars, cnstate_vars)
 
     call CNEvergreenPhenology(num_soilp, filter_soilp, &
-         cnstate_vars) 
+         cnstate_vars,&
+         carbonstate_vars,carbonflux_vars,&
+         nitrogenstate_vars,nitrogenflux_vars,&
+         phosphorusstate_vars,phosphorusflux_vars&
+         ) 
 
     call CNSeasonDecidPhenology(num_soilp, filter_soilp, &
          temperature_vars, cnstate_vars, dgvs_vars, &
@@ -456,7 +460,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CNEvergreenPhenology (num_soilp, filter_soilp , &
-       cnstate_vars) 
+       cnstate_vars,cstate_vars,cflux_vars,nstate_vars,nflux_vars,pstate_vars,pflux_vars) 
     !
     ! !DESCRIPTION:
     ! For coupled carbon-nitrogen code (CN).
@@ -469,6 +473,13 @@ contains
     integer           , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer           , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(cnstate_type), intent(inout) :: cnstate_vars
+    type(carbonstate_type),intent(in) :: cstate_vars
+    type(carbonflux_type),intent(inout):: cflux_vars
+    type(nitrogenstate_type),intent(in) :: nstate_vars
+    type(nitrogenflux_type),intent(inout):: nflux_vars
+    type(phosphorusstate_type),intent(in) :: pstate_vars
+    type(phosphorusflux_type),intent(inout):: pflux_vars
+
     !
     ! !LOCAL VARIABLES:
     real(r8):: dayspyr                ! Days per year
@@ -485,7 +496,9 @@ contains
          bglfr_leaf  => cnstate_vars%bglfr_leaf_patch , & ! Output: [real(r8) (:) ]  background leaf litterfall rate (1/s)                  
          bglfr_froot => cnstate_vars%bglfr_froot_patch, & ! Output: [real(r8) (:) ]  background fine root litterfall (1/s)
          bgtr        => cnstate_vars%bgtr_patch  , & ! Output: [real(r8) (:) ]  background transfer growth rate (1/s)             
-         lgsf        => cnstate_vars%lgsf_patch    & ! Output: [real(r8) (:) ]  long growing season factor [0-1]                  
+         lgsf        => cnstate_vars%lgsf_patch  ,  & ! Output: [real(r8) (:) ]  long growing season factor [0-1]                  
+        
+         woody       => veg_vp%woody              &
          )
 
       dayspyr   = get_days_per_year()
@@ -495,8 +508,42 @@ contains
          if (evergreen(ivt(p)) == 1._r8) then
             bglfr_leaf(p)  = 1._r8/(leaf_long(ivt(p)) * dayspyr * secspday)
             bglfr_froot(p) = 1._r8/(froot_long(ivt(p)) * dayspyr * secspday)
-            bgtr(p)  = 0._r8
+            ! bgtr(p)  = 0._r8
+            ! B. Sulman: set background transfer rate based on interpreting fstor2tran as a per-year fraction 
+            ! If bgtr is nonzero, C/N/P will automatically be transferred from xfer to displayed pools in CNOnsetGrowth
+            bgtr(p)   = fstor2tran/(dayspyr * secspday) 
             lgsf(p)  = 0._r8
+
+            ! B. Sulman: Allow evergreen plants to transfer C/N/P from storage pools to growth, at a constant rate (for now)
+            cflux_vars%leafc_storage_to_xfer_patch(p)  = bgtr(p) * cstate_vars%leafc_storage_patch(p)
+            cflux_vars%frootc_storage_to_xfer_patch(p)  = bgtr(p) * cstate_vars%frootc_storage_patch(p)
+            if (woody(ivt(p)) == 1.0_r8) then
+                cflux_vars%livestemc_storage_to_xfer_patch(p)  = bgtr(p) * cstate_vars%livestemc_storage_patch(p)
+                cflux_vars%deadstemc_storage_to_xfer_patch(p)  = bgtr(p) * cstate_vars%deadstemc_storage_patch(p)
+                cflux_vars%livecrootc_storage_to_xfer_patch(p) = bgtr(p) * cstate_vars%livecrootc_storage_patch(p)
+                cflux_vars%deadcrootc_storage_to_xfer_patch(p) = bgtr(p) * cstate_vars%deadcrootc_storage_patch(p)
+                cflux_vars%gresp_storage_to_xfer_patch(p)      = bgtr(p) * cstate_vars%gresp_storage_patch(p)
+            end if
+
+            ! set nitrogen fluxes for shifting storage pools to transfer pools
+            nflux_vars%leafn_storage_to_xfer_patch(p)  = bgtr(p) * nstate_vars%leafn_storage_patch(p)
+            nflux_vars%frootn_storage_to_xfer_patch(p) = bgtr(p) * nstate_vars%frootn_storage_patch(p)
+            if (woody(ivt(p)) == 1.0_r8) then
+                 nflux_vars%livestemn_storage_to_xfer_patch(p)  = bgtr(p) * nstate_vars%livestemn_storage_patch(p)
+                 nflux_vars%deadstemn_storage_to_xfer_patch(p)  = bgtr(p) * nstate_vars%deadstemn_storage_patch(p)
+                 nflux_vars%livecrootn_storage_to_xfer_patch(p) = bgtr(p) * nstate_vars%livecrootn_storage_patch(p)
+                 nflux_vars%deadcrootn_storage_to_xfer_patch(p) = bgtr(p) * nstate_vars%deadcrootn_storage_patch(p)
+            end if
+
+            ! set phosphorus fluxes for shifting storage pools to transfer pools
+            pflux_vars%leafp_storage_to_xfer_patch(p)  = bgtr(p) * pstate_vars%leafp_storage_patch(p)
+            pflux_vars%frootp_storage_to_xfer_patch(p) = bgtr(p) * pstate_vars%frootp_storage_patch(p)
+            if (woody(ivt(p)) == 1.0_r8) then
+                pflux_vars%livestemp_storage_to_xfer_patch(p)  = bgtr(p) * pstate_vars%livestemp_storage_patch(p)
+                pflux_vars%deadstemp_storage_to_xfer_patch(p)  = bgtr(p) * pstate_vars%deadstemp_storage_patch(p)
+                pflux_vars%livecrootp_storage_to_xfer_patch(p) = bgtr(p) * pstate_vars%livecrootp_storage_patch(p)
+                pflux_vars%deadcrootp_storage_to_xfer_patch(p) = bgtr(p) * pstate_vars%deadcrootp_storage_patch(p)
+            end if
          end if
       end do
 
