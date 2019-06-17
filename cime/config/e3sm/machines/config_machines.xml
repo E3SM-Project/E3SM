@@ -3028,7 +3028,7 @@
       </modules>
       <!-- List of modules elements, executing commands if compiler and mpilib condition applies -->
       <modules compiler="pgi.*">
-        <command name="load">pgi/18.10</command>
+        <command name="load">pgi/19.4</command>
       </modules>
       <modules compiler="ibm">
         <command name="load">xl/16.1.1-1</command>
@@ -3044,13 +3044,13 @@
       <!-- mpi lib settings -->
       <!-- Sometimes,same versions of libraries are not available for different compilers, hence the split below -->
       <modules compiler="ibm" mpilib="!mpi-serial">
-        <command name="load">spectrum-mpi/10.2.0.10-20181214</command>
+        <command name="load">spectrum-mpi/10.3.0.0-20190419</command>
       </modules>
       <modules compiler="pgi.*" mpilib="!mpi-serial">
-        <command name="load">spectrum-mpi/10.2.0.10-20181214</command>
+        <command name="load">spectrum-mpi/10.3.0.0-20190419</command>
       </modules>
       <modules compiler="gnu" mpilib="!mpi-serial">
-        <command name="load">spectrum-mpi/10.2.0.10-20181214</command>
+        <command name="load">spectrum-mpi/10.3.0.0-20190419</command>
       </modules>
 
       <modules>

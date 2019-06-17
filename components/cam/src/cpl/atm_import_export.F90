@@ -1,6 +1,7 @@
 module atm_import_export
 
   use shr_kind_mod  , only: r8 => shr_kind_r8, cl=>shr_kind_cl
+  use spmd_utils,       only: masterproc, iam
   implicit none
 
 contains
@@ -47,6 +48,8 @@ contains
     ig=1
     do c=begchunk,endchunk
        ncols = get_ncols_p(c) 
+
+! print *, "DDD ", iam, " chunk ", c, " cols ", ncols
 
        ! initialize constituent surface fluxes to zero
        ! NOTE:overwrite_flds is .FALSE. for the first restart
