@@ -461,7 +461,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CNEvergreenPhenology (num_soilp, filter_soilp , &
-       cnstate_vars) 
+       cnstate_vars)
     !
     ! !DESCRIPTION:
     ! For coupled carbon-nitrogen code (CN).
@@ -474,6 +474,7 @@ contains
     integer           , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer           , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(cnstate_type), intent(inout) :: cnstate_vars
+
     !
     ! !LOCAL VARIABLES:
     real(r8):: dayspyr                ! Days per year
@@ -481,16 +482,61 @@ contains
     integer :: fp                     ! lake filter pft index
     !-----------------------------------------------------------------------
 
-    associate(                                    & 
-         ivt         => veg_pp%itype                , & ! Input:  [integer  (:) ]  pft vegetation type                                
+    associate(                                          &
+         ivt         => veg_pp%itype                  , & ! Input:  [integer  (:) ]  pft vegetation type
 
-         evergreen   => veg_vp%evergreen     , & ! Input:  [real(r8) (:) ]  binary flag for evergreen leaf habit (0 or 1)     
-         leaf_long   => veg_vp%leaf_long     , & ! Input:  [real(r8) (:) ]  leaf longevity (yrs)                              
-         froot_long  => veg_vp%froot_long    , & ! Input:  [real(r8) (:) ]  fine root longevity (yrs)
+         evergreen   => veg_vp%evergreen              , & ! Input:  [real(r8) (:) ]  binary flag for evergreen leaf habit (0 or 1)
+         leaf_long   => veg_vp%leaf_long              , & ! Input:  [real(r8) (:) ]  leaf longevity (yrs)
+         froot_long  => veg_vp%froot_long             , & ! Input:  [real(r8) (:) ]  fine root longevity (yrs)
          bglfr_leaf  => cnstate_vars%bglfr_leaf_patch , & ! Output: [real(r8) (:) ]  background leaf litterfall rate (1/s)                  
          bglfr_froot => cnstate_vars%bglfr_froot_patch, & ! Output: [real(r8) (:) ]  background fine root litterfall (1/s)
-         bgtr        => cnstate_vars%bgtr_patch  , & ! Output: [real(r8) (:) ]  background transfer growth rate (1/s)             
-         lgsf        => cnstate_vars%lgsf_patch    & ! Output: [real(r8) (:) ]  long growing season factor [0-1]                  
+         bgtr        => cnstate_vars%bgtr_patch       , & ! Output: [real(r8) (:) ]  background transfer growth rate (1/s)
+         lgsf        => cnstate_vars%lgsf_patch       , & ! Output: [real(r8) (:) ]  long growing season factor [0-1]
+        
+         woody                               =>    veg_vp%woody                        , &
+
+         leafc_storage                       =>    veg_cs%leafc_storage                , & ! Input:  [real(r8)  (:)   ]  (gC/m2) leaf C storage
+         frootc_storage                      =>    veg_cs%frootc_storage               , & ! Input:  [real(r8)  (:)   ]  (gC/m2) fine root C storage
+         livestemc_storage                   =>    veg_cs%livestemc_storage            , & ! Input:  [real(r8)  (:)   ]  (gC/m2) live stem C storage
+         deadstemc_storage                   =>    veg_cs%deadstemc_storage            , & ! Input:  [real(r8)  (:)   ]  (gC/m2) dead stem C storage
+         livecrootc_storage                  =>    veg_cs%livecrootc_storage           , & ! Input:  [real(r8)  (:)   ]  (gC/m2) live coarse root C storage
+         deadcrootc_storage                  =>    veg_cs%deadcrootc_storage           , & ! Input:  [real(r8)  (:)   ]  (gC/m2) dead coarse root C storage
+         gresp_storage                       =>    veg_cs%gresp_storage                , & ! Input:  [real(r8)  (:)   ]  (gC/m2) growth respiration storage
+
+         leafn_storage                       =>    veg_ns%leafn_storage                , & ! Input:  [real(r8)  (:)   ]  (gN/m2) leaf N storage
+         frootn_storage                      =>    veg_ns%frootn_storage               , & ! Input:  [real(r8)  (:)   ]  (gN/m2) fine root N storage
+         livestemn_storage                   =>    veg_ns%livestemn_storage            , & ! Input:  [real(r8)  (:)   ]  (gN/m2) live stem N storage
+         deadstemn_storage                   =>    veg_ns%deadstemn_storage            , & ! Input:  [real(r8)  (:)   ]  (gN/m2) dead stem N storage
+         livecrootn_storage                  =>    veg_ns%livecrootn_storage           , & ! Input:  [real(r8)  (:)   ]  (gN/m2) live coarse root N storage
+         deadcrootn_storage                  =>    veg_ns%deadcrootn_storage           , & ! Input:  [real(r8)  (:)   ]  (gN/m2) dead coarse root N storage
+
+         leafp_storage                       =>    veg_ps%leafp_storage                , & ! Input:  [real(r8)  (:)   ]  (gP/m2) leaf P storage
+         frootp_storage                      =>    veg_ps%frootp_storage               , & ! Input:  [real(r8)  (:)   ]  (gP/m2) fine root P storage
+         livestemp_storage                   =>    veg_ps%livestemp_storage            , & ! Input:  [real(r8)  (:)   ]  (gP/m2) live stem P storage
+         deadstemp_storage                   =>    veg_ps%deadstemp_storage            , & ! Input:  [real(r8)  (:)   ]  (gP/m2) dead stem P storage
+         livecrootp_storage                  =>    veg_ps%livecrootp_storage           , & ! Input:  [real(r8)  (:)   ]  (gP/m2) live coarse root P storage
+         deadcrootp_storage                  =>    veg_ps%deadcrootp_storage           , & ! Input:  [real(r8)  (:)   ]  (gP/m2) dead coarse root P storage
+
+         leafc_storage_to_xfer               =>    veg_cf%leafc_storage_to_xfer        , & ! Output:  [real(r8) (:)   ]
+         frootc_storage_to_xfer              =>    veg_cf%frootc_storage_to_xfer       , & ! Output:  [real(r8) (:)   ]
+         livestemc_storage_to_xfer           =>    veg_cf%livestemc_storage_to_xfer    , & ! Output:  [real(r8) (:)   ]
+         deadstemc_storage_to_xfer           =>    veg_cf%deadstemc_storage_to_xfer    , & ! Output:  [real(r8) (:)   ]
+         livecrootc_storage_to_xfer          =>    veg_cf%livecrootc_storage_to_xfer   , & ! Output:  [real(r8) (:)   ]
+         deadcrootc_storage_to_xfer          =>    veg_cf%deadcrootc_storage_to_xfer   , & ! Output:  [real(r8) (:)   ]
+         gresp_storage_to_xfer               =>    veg_cf%gresp_storage_to_xfer        , & ! Output:  [real(r8) (:)   ]
+         leafn_storage_to_xfer               =>    veg_nf%leafn_storage_to_xfer        , & ! Output:  [real(r8) (:)   ]
+         frootn_storage_to_xfer              =>    veg_nf%frootn_storage_to_xfer       , & ! Output:  [real(r8) (:)   ]
+         livestemn_storage_to_xfer           =>    veg_nf%livestemn_storage_to_xfer    , & ! Output:  [real(r8) (:)   ]
+         deadstemn_storage_to_xfer           =>    veg_nf%deadstemn_storage_to_xfer    , & ! Output:  [real(r8) (:)   ]
+         livecrootn_storage_to_xfer          =>    veg_nf%livecrootn_storage_to_xfer   , & ! Output:  [real(r8) (:)   ]
+         deadcrootn_storage_to_xfer          =>    veg_nf%deadcrootn_storage_to_xfer   , & ! Output:  [real(r8) (:)   ]
+
+         leafp_storage_to_xfer               =>    veg_pf%leafp_storage_to_xfer        , & ! Output:  [real(r8) (:)   ]
+         frootp_storage_to_xfer              =>    veg_pf%frootp_storage_to_xfer       , & ! Output:  [real(r8) (:)   ]
+         livestemp_storage_to_xfer           =>    veg_pf%livestemp_storage_to_xfer    , & ! Output:  [real(r8) (:)   ]
+         deadstemp_storage_to_xfer           =>    veg_pf%deadstemp_storage_to_xfer    , & ! Output:  [real(r8) (:)   ]
+         livecrootp_storage_to_xfer          =>    veg_pf%livecrootp_storage_to_xfer   , & ! Output:  [real(r8) (:)   ]
+         deadcrootp_storage_to_xfer          =>    veg_pf%deadcrootp_storage_to_xfer     & ! Output:  [real(r8) (:)   ]
          )
 
       dayspyr   = get_days_per_year()
@@ -500,8 +546,42 @@ contains
          if (evergreen(ivt(p)) == 1._r8) then
             bglfr_leaf(p)  = 1._r8/(leaf_long(ivt(p)) * dayspyr * secspday)
             bglfr_froot(p) = 1._r8/(froot_long(ivt(p)) * dayspyr * secspday)
-            bgtr(p)  = 0._r8
+            ! bgtr(p)  = 0._r8
+            ! B. Sulman: set background transfer rate based on interpreting fstor2tran as a per-year fraction 
+            ! If bgtr is nonzero, C/N/P will automatically be transferred from xfer to displayed pools in CNOnsetGrowth
+            bgtr(p)   = fstor2tran/(dayspyr * secspday) 
             lgsf(p)  = 0._r8
+
+            ! B. Sulman: Allow evergreen plants to transfer C/N/P from storage pools to growth, at a constant rate (for now)
+            leafc_storage_to_xfer(p)  = bgtr(p) * leafc_storage(p)
+            frootc_storage_to_xfer(p)  = bgtr(p) * frootc_storage(p)
+            if (woody(ivt(p)) == 1.0_r8) then
+                livestemc_storage_to_xfer(p)  = bgtr(p) * livestemc_storage(p)
+                deadstemc_storage_to_xfer(p)  = bgtr(p) * deadstemc_storage(p)
+                livecrootc_storage_to_xfer(p) = bgtr(p) * livecrootc_storage(p)
+                deadcrootc_storage_to_xfer(p) = bgtr(p) * deadcrootc_storage(p)
+                gresp_storage_to_xfer(p)      = bgtr(p) * gresp_storage(p)
+            end if
+
+            ! set nitrogen fluxes for shifting storage pools to transfer pools
+            leafn_storage_to_xfer(p)  = bgtr(p) * leafn_storage(p)
+            frootn_storage_to_xfer(p) = bgtr(p) * frootn_storage(p)
+            if (woody(ivt(p)) == 1.0_r8) then
+                 livestemn_storage_to_xfer(p)  = bgtr(p) * livestemn_storage(p)
+                 deadstemn_storage_to_xfer(p)  = bgtr(p) * deadstemn_storage(p)
+                 livecrootn_storage_to_xfer(p) = bgtr(p) * livecrootn_storage(p)
+                 deadcrootn_storage_to_xfer(p) = bgtr(p) * deadcrootn_storage(p)
+            end if
+
+            ! set phosphorus fluxes for shifting storage pools to transfer pools
+            leafp_storage_to_xfer(p)  = bgtr(p) * leafp_storage(p)
+            frootp_storage_to_xfer(p) = bgtr(p) * frootp_storage(p)
+            if (woody(ivt(p)) == 1.0_r8) then
+                livestemp_storage_to_xfer(p)  = bgtr(p) * livestemp_storage(p)
+                deadstemp_storage_to_xfer(p)  = bgtr(p) * deadstemp_storage(p)
+                livecrootp_storage_to_xfer(p) = bgtr(p) * livecrootp_storage(p)
+                deadcrootp_storage_to_xfer(p) = bgtr(p) * deadcrootp_storage(p)
+            end if
          end if
       end do
 
