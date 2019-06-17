@@ -2,10 +2,10 @@
 # This is so we create the same image each time.
 # Also, there are/were many issues with older versions
 # that prevented the building process from working properly.
-FROM continuumio/miniconda:4.5.4
+FROM continuumio/miniconda3:4.6.14
 
 LABEL maintainer="zhang40@llnl.gov"
-LABEL version="1.7.0"
+LABEL version="1.7.1"
 
 # Copy the entire project dir because we'll install from source.
 COPY . .
@@ -18,10 +18,11 @@ SHELL ["/bin/bash", "-c"]
 #   RUN conda env create -f e3sm_diags_env_dev.yml
 # This caused many issues.
 # We just update the base environment.
+
 RUN conda env update -n base --file conda/e3sm_diags_env_dev.yml && \
         conda clean --all -y && \
         source activate base && \
-        pip install . && \
+        pip install --user . && \
         rm -r build/
 
 # Needs to be a list, otherwise arguments aren't
