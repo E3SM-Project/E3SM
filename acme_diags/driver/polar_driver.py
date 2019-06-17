@@ -53,8 +53,8 @@ def run_diag(parameter):
 
         # Get land/ocean fraction for masking.
         try:
-            land_frac = test_data.get_variable('LANDFRAC', season)
-            ocean_frac = test_data.get_variable('OCNFRAC', season)
+            land_frac = test_data.get_climo_variable('LANDFRAC', season)
+            ocean_frac = test_data.get_climo_variable('OCNFRAC', season)
         except:
             mask_path = os.path.join(acme_diags.INSTALL_PATH, 'acme_ne30_ocean_land_mask.nc')
             with cdms2.open(mask_path) as f:
@@ -65,8 +65,8 @@ def run_diag(parameter):
             print('Variable: {}'.format(var))
             parameter.var_id = var
 
-            mv1 = test_data.get_variable(var, season)
-            mv2 = ref_data.get_variable(var, season)
+            mv1 = test_data.get_climo_variable(var, season)
+            mv2 = ref_data.get_climo_variable(var, season)
 
             parameter.viewer_descr[var] = mv1.long_name if hasattr(
                 mv1, 'long_name') else 'No long_name attr in test data.'

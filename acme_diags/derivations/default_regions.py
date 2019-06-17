@@ -13,6 +13,7 @@ regions_specs = {
     '50N90N': {'domain': cdutil.region.domain(latitude=(50., 90, 'ccb'))},
     '60S90N': {'domain': cdutil.region.domain(latitude=(-60., 90, 'ccb'))},
     'ocean': {'value': 0.65, },
+    'ocean_seaice': {'value': 0.65, },
     'land': {'value': 0.65, },
     'land_60S90N': {'value': 0.65, 'domain': cdutil.region.domain(latitude=(-60., 90, 'ccb'))},
     'ocean_TROPICS': {'value': 0.65, 'domain': cdutil.region.domain(latitude=(-30., 30, 'ccb'))},

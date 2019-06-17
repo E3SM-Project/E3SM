@@ -1,15 +1,24 @@
 import cdp.cdp_parser
-import acme_diags.acme_parameter
+from acme_diags.parameter.core_parameter import CoreParameter
 
 
-class ACMEParser(cdp.cdp_parser.CDPParser):
+class CoreParser(cdp.cdp_parser.CDPParser):
     def __init__(self, *args, **kwargs):
-        super(ACMEParser, self).__init__(
-            acme_diags.acme_parameter.ACMEParameter, *args, **kwargs)
+        if 'parameter_cls' in kwargs:
+            super().__init__(*args, **kwargs)
+        else:
+            super().__init__(parameter_cls=CoreParameter, *args, **kwargs)
 
     def load_default_args(self, files=[]):
-        # this has '-p' and '--parameter' reserved
-        super(ACMEParser, self).load_default_args(files)
+        # This has '-p' and '--parameter' reserved.
+        super().load_default_args(files)
+
+        self.add_argument(
+            'set_name',
+            type=str,
+            help='Name of the diags set to send ' + 
+                 'these arguments to.',
+            nargs='?')
 
         self.add_argument(
             '-r', '--reference_data_set',

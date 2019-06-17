@@ -96,8 +96,8 @@ def run_diag(parameter):
             print('Variable: {}'.format(var))
             parameter.var_id = var
 
-            mv1 = test_data.get_variable(var, season)
-            mv2 = ref_data.get_variable(var, season)
+            mv1 = test_data.get_climo_variable(var, season)
+            mv2 = ref_data.get_climo_variable(var, season)
 
             parameter.viewer_descr[var] = mv1.long_name if hasattr(
                 mv1, 'long_name') else 'No long_name attr in test data.'

@@ -64,9 +64,43 @@ class Dataset():
                 self.derived_vars[derived_var] = original_vars
 
 
-    def get_variable(self, var, season, extra_vars=[], *args, **kwargs):
+    def get_timeseries_variable(self, var, extra_vars=[], *args, **kwargs):
         """
-        For a given season, get the variable and any extra variables.
+        Get the variable and any extra variables, only if they are timeseries files.
+        These variables can either be from the test data or reference data.
+        """
+        self.var = var
+        self.extra_vars = extra_vars
+
+        if not self.is_timeseries():
+            msg = 'You can only use this function with timeseries data.'
+            raise RuntimeError(msg)
+        
+        if self.ref:
+            # Get the reference variable from timeseries files.
+            data_path = self.parameters.reference_data_path
+            variables = self._get_timeseries_var(data_path, *args, **kwargs)
+
+        elif self.test:
+            # Get the test variable from timeseries files.
+            data_path = self.parameters.test_data_path
+            variables = self._get_timeseries_var(data_path, *args, **kwargs)
+
+        else:
+            msg = 'Error when determining what kind (ref or test)of variable to get.'
+            raise RuntimeError(msg)
+
+        # Needed so we can do:
+        #   v1 = Dataset.get_variable('v1', season)
+        # and also:
+        #   v1, v2, v3 = Dataset.get_variable('v1', season, extra_vars=['v2', 'v3'])
+        return variables[0] if len(variables) == 1 else variables
+
+
+    def get_climo_variable(self, var, season, extra_vars=[], *args, **kwargs):
+        """
+        For a given season, get the variable and any extra variables and run
+        the climatology on them.
         These variables can either be from the test data or reference data.
         """
         self.var = var
@@ -85,12 +119,16 @@ class Dataset():
         if self.ref and self.is_timeseries():
             # Get the reference variable from timeseries files.
             data_path = self.parameters.reference_data_path
-            variables = self._get_timeseries_var(data_path, season, *args, **kwargs)
-            
+            timeseries_vars = self._get_timeseries_var(data_path, *args, **kwargs)
+            # Run climo on the variables.
+            variables = [self.climo_fcn(v, season) for v in timeseries_vars]
+
         elif self.test and self.is_timeseries():
             # Get the test variable from timeseries files.
             data_path = self.parameters.test_data_path
-            variables = self._get_timeseries_var(data_path, season, *args, **kwargs)
+            timeseries_vars = self._get_timeseries_var(data_path, *args, **kwargs)
+            # Run climo on the variables.
+            variables = [self.climo_fcn(v, season) for v in timeseries_vars]
 
         elif self.ref:
             # Get the reference variable from climo files.
@@ -103,10 +141,9 @@ class Dataset():
             variables = self._get_climo_var(filename, *args, **kwargs)
 
         else:
-            msg = '''
-            Error when determining what kind (ref or test) of variable to get and
-            where to get it from (climo or timeseries files).
-            '''
+            msg = 'Error when determining what kind (ref or test) '
+            msg += 'of variable to get and where to get it from '
+            msg += '(climo or timeseries files).'
             raise RuntimeError(msg)
 
         # Needed so we can do:
@@ -141,7 +178,7 @@ class Dataset():
         if not extra_vars:
             raise RuntimeError('Extra variables cannot be empty.')
 
-        return self.get_variable(var, season, extra_vars, extra_vars_only=True)
+        return self.get_climo_variable(var, season, extra_vars, extra_vars_only=True)
 
 
     def get_attr_from_climo(self, attr, season):
@@ -353,7 +390,7 @@ class Dataset():
             return vars_to_func_dict[k]
 
 
-    def _get_timeseries_var(self, data_path, season, extra_vars_only=False):
+    def _get_timeseries_var(self, data_path, extra_vars_only=False):
         """
         For a given season and timeseries input data,
         get the variable (self.var).
@@ -420,8 +457,7 @@ class Dataset():
             msg += ' it defined in the derived variables dictionary.'
             raise RuntimeError(msg)
 
-        # Call the climo on the variables.
-        return [self.climo_fcn(v, season) for v in return_variables]
+        return return_variables
 
 
     def _get_first_valid_vars_timeseries(self, vars_to_func_dict, data_path):

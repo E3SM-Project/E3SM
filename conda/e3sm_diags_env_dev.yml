@@ -8,20 +8,20 @@ dependencies:
   - attrs=19.1.0
   - beautifulsoup4=4.7.1
   - blas=1.1=openblas
-  - bokeh=1.1.0
+  - bokeh=1.2.0
   - bzip2=1.0.6
   - ca-certificates=2019.3.9
   - cartopy=0.17.0
   - cdat_info=8.1.1
-  - cdp=1.4.2
+  - cdp=1.6.0
   - cdtime=3.1.2
   - cdutil=8.1
   - certifi=2019.3.9
   - cffi=1.12.3
   - chardet=3.0.4
   - click=7.0
-  - cloudpickle=1.0.0
-  - cryptography=2.6.1
+  - cloudpickle=1.2.1
+  - cryptography=2.7
   - curl=7.64.1
   - cycler=0.10.0
   - cytoolz=0.9.0.1
@@ -47,10 +47,10 @@ dependencies:
   - glib=2.58.3
   - gmp=6.1.2
   - gnutls=3.5.19
-  - gst-plugins-base=1.14.4
-  - gstreamer=1.14.4
+  - gst-plugins-base=1.14.5
+  - gstreamer=1.14.5
   - hdf4=4.2.13
-  - hdf5=1.10.4
+  - hdf5=1.10.5=nompi_h3c11f04_1100
   - heapdict=1.0.0
   - icu=58.2
   - idna=2.8
@@ -69,23 +69,24 @@ dependencies:
   - libdrs_f=3.1.2
   - libedit=3.1.20170329
   - libffi=3.2.1
-  - libgcc-ng=8.2.0
+  - libgcc-ng=9.1.0
   - libgfortran-ng=7.3.0
   - libiconv=1.15
   - libnetcdf=4.6.2
   - libpng=1.6.37
   - libssh2=1.8.2
-  - libstdcxx-ng=8.2.0
+  - libstdcxx-ng=9.1.0
   - libtiff=4.0.10
   - libuuid=2.32.1
   - libxcb=1.13
   - libxml2=2.9.9
   - libxslt=1.1.32
   - locket=0.2.0
-  - lxml=4.3.3
+  - lxml=4.3.4
+  - lz4-c=1.8.3
   - markupsafe=1.1.1
-  - matplotlib=3.0.3
-  - matplotlib-base=3.0.3
+  - matplotlib=3.1.0
+  - matplotlib-base=3.1.0
   - mesalib=18.3.1
   - mpi=1.0=mpich
   - mpich=3.2.1
@@ -99,16 +100,16 @@ dependencies:
   - openblas=0.3.3
   - openh264=1.8.0
   - openssl=1.1.1b
-  - output_viewer=1.2.5
+  - output_viewer=1.3.0
   - owslib=0.17.1
   - packaging=19.0
   - pandas=0.24.2
-  - partd=0.3.9
+  - partd=0.3.10
   - pcre=8.41
   - pillow=6.0.0
-  - pip=19.1
+  - pip=19.1.1
   - proj4=5.2.0
-  - psutil=5.6.2
+  - psutil=5.6.3
   - pthread-stubs=0.4
   - pycparser=2.19
   - pyepsg=0.4.0
@@ -123,19 +124,19 @@ dependencies:
   - python=3.6.7
   - python-dateutil=2.8.0
   - pytz=2019.1
-  - pyyaml=5.1
+  - pyyaml=5.1.1
   - qt=5.9.7
   - readline=7.0
-  - requests=2.21.0
-  - scipy=1.2.1=py36_blas_openblash1522bff_0
+  - requests=2.22.0
+  - scipy=1.2.1
   - setuptools=41.0.1
   - shapely=1.6.4
   - sip=4.19.8
   - six=1.12.0
   - sortedcontainers=2.1.0
   - soupsieve=1.9.1
-  - sqlite=3.26.0
-  - tblib=1.3.2
+  - sqlite=3.28.0
+  - tblib=1.4.0
   - tk=8.6.9
   - toolchain3=1.1.1
   - toolz=0.9.0
@@ -154,6 +155,7 @@ dependencies:
   - yaml=0.1.7
   - zict=0.1.4
   - zlib=1.2.11
+  - zstd=1.4.0
   - pip:
     - cdms2==3.0.0
     - regrid2==3.0.0

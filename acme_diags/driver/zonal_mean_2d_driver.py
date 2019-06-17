@@ -10,6 +10,7 @@ from acme_diags.plot import plot
 from acme_diags.derivations import acme
 from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 from acme_diags.driver import utils
+from acme_diags.parameter.zonal_mean_2d_parameter import ZonalMean2dParameter
 
 
 def create_metrics(ref, test, ref_regrid, test_regrid, diff):
@@ -78,8 +79,8 @@ def run_diag(parameter):
 
         # Get land/ocean fraction for masking.
         try:
-            land_frac = test_data.get_variable('LANDFRAC', season)
-            ocean_frac = test_data.get_variable('OCNFRAC', season)
+            land_frac = test_data.get_climo_variable('LANDFRAC', season)
+            ocean_frac = test_data.get_climo_variable('OCNFRAC', season)
         except:
             mask_path = os.path.join(acme_diags.INSTALL_PATH, 'acme_ne30_ocean_land_mask.nc')
             with cdms2.open(mask_path) as f:
@@ -90,8 +91,8 @@ def run_diag(parameter):
             print('Variable: {}'.format(var))
             parameter.var_id = var
 
-            mv1 = test_data.get_variable(var, season)
-            mv2 = ref_data.get_variable(var, season)
+            mv1 = test_data.get_climo_variable(var, season)
+            mv2 = ref_data.get_climo_variable(var, season)
 
             parameter.viewer_descr[var] = mv1.long_name if hasattr(
                 mv1, 'long_name') else 'No long_name attr in test data.'
@@ -123,14 +124,17 @@ def run_diag(parameter):
 
             # For variables with a z-axis.
             if mv1.getLevel() and mv2.getLevel():
-                if parameter.zonal_mean_2d_plevs != []:
-                    plev = parameter.zonal_mean_2d_plevs
-                else:
-                    plev = numpy.logspace(2.0, 3.0, num=17)
-                print('Selected pressure level: {}'.format(plev))
+                # Since the default is now stored in ZonalMean2dParameter,
+                # we must get it from there if the plevs param is blank.
+                plevs = parameter.plevs
+                if (isinstance(plevs, numpy.ndarray) and not plevs.all()) or \
+                    (not isinstance(plevs, numpy.ndarray) and not plevs):
+                    plevs = ZonalMean2dParameter().plevs
 
-                mv1_p = utils.general.convert_to_pressure_levels(mv1, plev, test_data, var, season)
-                mv2_p = utils.general.convert_to_pressure_levels(mv2, plev, ref_data, var, season)
+                print('Selected pressure level: {}'.format(plevs))
+
+                mv1_p = utils.general.convert_to_pressure_levels(mv1, plevs, test_data, var, season)
+                mv2_p = utils.general.convert_to_pressure_levels(mv2, plevs, ref_data, var, season)
 
                 mv1_p = cdutil.averager(mv1_p, axis='x')
                 mv2_p = cdutil.averager(mv2_p, axis='x')

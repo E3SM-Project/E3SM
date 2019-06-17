@@ -3,7 +3,7 @@ import os
 import cdms2
 from collections import OrderedDict
 from acme_diags.derivations import acme as acme_derivations
-from acme_diags.acme_parameter import ACMEParameter
+from acme_diags.parameter.core_parameter import CoreParameter
 from acme_diags.driver.utils.dataset import Dataset
 
 def get_abs_file_path(relative_path):
@@ -12,7 +12,7 @@ def get_abs_file_path(relative_path):
 
 class TestDataset(unittest.TestCase):
     def setUp(self):
-        self.parameter = ACMEParameter()
+        self.parameter = CoreParameter()
 
     def test_convert_units(self):
         with cdms2.open(get_abs_file_path('precc.nc')) as precc_file:

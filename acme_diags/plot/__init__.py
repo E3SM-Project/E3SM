@@ -10,28 +10,26 @@ import numpy
 from matplotlib.colors import LinearSegmentedColormap
 from vcs.colors import matplotlib2vcs
 import acme_diags
-from acme_diags.driver.utils.general import get_set_name
 
 
-def _get_plot_fcn(backend, set_num):
-    """Get the actual plot() function based on the backend and set_num."""
+def _get_plot_fcn(backend, set_name):
+    """Get the actual plot() function based on the backend and set_name."""
     try:
         if backend in ['matplotlib', 'mpl']:
             backend = 'cartopy'
 
-        set_num = get_set_name(set_num)
-        mod_str = 'acme_diags.plot.{}.{}_plot'.format(backend, set_num)
+        mod_str = 'acme_diags.plot.{}.{}_plot'.format(backend, set_name)
         module = importlib.import_module(mod_str)
         return module.plot
 
     except ImportError:
         print(
             'Plotting for set {} with {} is not supported'.format(
-                set_num, backend))
+                set_name, backend))
         traceback.print_exc()
 
-def plot(set_num, ref, test, diff, metrics_dict, parameter):
-    """Based on set_num and parameter.backend,
+def plot(set_name, ref, test, diff, metrics_dict, parameter):
+    """Based on set_name and parameter.backend,
     call the correct plotting function."""
     if hasattr(parameter, 'plot'):
         parameter.plot(ref, test, diff, metrics_dict, parameter)
@@ -40,11 +38,11 @@ def plot(set_num, ref, test, diff, metrics_dict, parameter):
             raise RuntimeError(
                 'Invalid backend, choose either "vcs" or "matplotlib"/"mpl"/"cartopy"')
 
-        plot_fcn = _get_plot_fcn(parameter.backend, set_num)
+        plot_fcn = _get_plot_fcn(parameter.backend, set_name)
         try:
             plot_fcn(ref, test, diff, metrics_dict, parameter)
         except Exception as e:
-            print('Error while plotting {} with backend {}'.format(set_num, parameter.backend))
+            print('Error while plotting {} with backend {}'.format(set_name, parameter.backend))
             traceback.print_exc()
             if parameter.debug:
                 sys.exit()

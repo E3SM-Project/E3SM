@@ -11,29 +11,8 @@ import cdms2
 from acme_diags import container
 from acme_diags.derivations.default_regions import regions_specs
 
-SET_NAME_MAPPING = {
-    ('3', 'zonal_mean_xy'): 'zonal_mean_xy',
-    ('4', 'zonal_mean_2d'): 'zonal_mean_2d',
-    ('5', 'lat_lon'): 'lat_lon',
-    ('7', 'polar'): 'polar',
-    ('13', 'cosp_histogram'): 'cosp_histogram',
-    ('meridional_mean_2d'): 'meridional_mean_2d',
-}
 
-SET_NAMES = list(SET_NAME_MAPPING.values())
-
-def get_set_name(set_name):
-    """Get the correct set name from the argument.
-    Ex: '3' -> 'zonal_mean_xy', etc. """
-    set_name = str(set_name)
-    for possible_names in SET_NAME_MAPPING:
-        if set_name in possible_names:
-            return SET_NAME_MAPPING[possible_names]
-
-    raise RuntimeError('Invalid set option: {}'.format(set_name))
-
-
-def get_name_and_yrs(parameters, dataset, season):
+def get_name_and_yrs(parameters, dataset, season=''):
     """
     Given either test or ref data, get the name of the data
     (test_name or reference_name), along with the years averaged.
@@ -263,7 +242,7 @@ def get_output_dir(set_num, parameter, ignore_container=False):
     if not os.path.exists(pth):
         # When running diags in parallel, sometimes another process will create the dir.
         try:
-            os.makedirs(pth, 0o775)
+            os.makedirs(pth, 0o755)
         except OSError as e:
             if e.errno != os.errno.EEXIST:
                 raise
