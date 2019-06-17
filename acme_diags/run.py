@@ -188,7 +188,7 @@ class Run():
         if args.other_parameters:
             params = self.parser.get_other_parameters(argparse_vals_only=False)
         else:
-            default_diags_paths = [get_default_diags_path(set_name, run_type) for set_name in self.sets_to_run]
+            default_diags_paths = [get_default_diags_path(set_name, run_type, False) for set_name in self.sets_to_run]
             params = self.parser.get_other_parameters(files_to_open=default_diags_paths, argparse_vals_only=False)
 
         # For each of the params, add in the default values

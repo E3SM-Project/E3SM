@@ -28,7 +28,7 @@ from acme_diags.driver import utils
 from acme_diags import container
 
 
-def get_default_diags_path(set_name, run_type):
+def get_default_diags_path(set_name, run_type, print_path=True):
     """
     Returns the path for the default diags for plotset set_name.
     These are different depending on the run_type.
@@ -37,7 +37,9 @@ def get_default_diags_path(set_name, run_type):
     fnm = '{}_{}.cfg'.format(set_name, run_type)
     pth = os.path.join(acme_diags.INSTALL_PATH, folder, fnm)
 
-    print('Using {} for {}.'.format(pth, set_name))
+    if print_path:
+        print('Using {} for {}.'.format(pth, set_name))
+
     if not os.path.exists(pth):
         raise RuntimeError(
             "Plotting via set '{}' not supported, file {} not installed".format(set_name, fnm))
