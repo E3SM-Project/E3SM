@@ -13,6 +13,8 @@
 		<option name="config_run_duration">'0000-00-00_01:00:00'</option>
 		<option name="config_pio_num_iotasks">1</option>
 		<option name="config_pio_stride">4</option>
+		<option name="config_pressure_gradient_type">'Jacobian_from_TS'</option>
+		<option name="config_eos_type">'jm'</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">

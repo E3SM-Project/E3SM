@@ -16,6 +16,8 @@
 		<option name="config_pio_num_iotasks">1</option>
 		<option name="config_pio_stride">4</option>
 		<option name="config_iterative_init_variable">'ssh'</option>
+		<option name="config_pressure_gradient_type">'Jacobian_from_TS'</option>
+		<option name="config_eos_type">'jm'</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">

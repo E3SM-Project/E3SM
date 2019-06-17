@@ -22,6 +22,8 @@
 		<option name="config_time_varying_land_ice_forcing_cycle_start">'none'</option>
 		<option name="config_time_varying_land_ice_forcing_cycle_duration">'0002-00-00_00:00:00'</option>
 		<option name="config_time_varying_land_ice_forcing_interval">'0001-00-00_00:00:00'</option>
+		<option name="config_pressure_gradient_type">'Jacobian_from_TS'</option>
+		<option name="config_eos_type">'jm'</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">
