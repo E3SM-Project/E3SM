@@ -397,6 +397,19 @@ class MoviePlotter(object):
                                            prefix='PotRho', units='kg/m^3',
                                            vmin=1027., vmax=1028.)
 
+    def plot_haney_number(self):
+        '''
+        Plot a series of images of the Haney number rx1 at the sea surface or
+        ice-ocean interface, sea floor and in an x-z section
+        '''
+
+        ds = xarray.open_dataset('{}/haney.nc'.format(self.inFolder))
+
+        self.plot_3d_field_top_bot_section(ds.haneyCell,
+                                           nameInTitle='Haney Number (rx1)',
+                                           prefix='Haney', units=None,
+                                           vmin=0., vmax=8.)
+
     def plot_horiz_series(self, da, nameInTitle, prefix, oceanDomain,
                           units=None, vmin=None, vmax=None):
         '''
