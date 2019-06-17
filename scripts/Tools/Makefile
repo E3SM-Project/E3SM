@@ -434,6 +434,7 @@ else
     LIB_MPI := $(MPI_PATH)/lib
   endif
 endif
+LD := $(MPIFC)
 # Decide whether to use a C++ or Fortran linker, based on whether we
 # are using any C++ code and the compiler-dependent CXX_LINKER variable
 ifeq ($(USE_CXX), TRUE)
