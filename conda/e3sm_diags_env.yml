@@ -33,7 +33,6 @@ dependencies:
   - distarray=2.12.2
   - distributed=1.28.1
   - dv3d=8.0
-  - e3sm_diags=1.7.0
   - esmf=7.1.0
   - esmpy=7.1.0
   - expat=2.2.5
