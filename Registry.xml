@@ -793,6 +793,10 @@
 					possible_values="Real non-zero value."
 		/>
 		<nml_option name="config_tidal_forcing_type" type="character" default_value="off" units="unitless"
+					description="Selects the way tidal forcing is applied."
+					possible_values="'thickness_source','direct'"
+		/>
+		<nml_option name="config_tidal_forcing_model" type="character" default_value="off" units="unitless"
 					description="Selects the mode in which tidal forcing is computed."
 					possible_values="'off','monochromatic'"
 		/>
@@ -3079,6 +3083,10 @@
 		<!-- Input fields for forcing due to tides -->
 		<var name="tidalInputMask" type="real" dimensions="nCells" units="unitless"
 			 description="Input mask for application of tidal forcing where 1 is applied tidal forcing"
+			 packages="tidalForcing"
+		/>
+		<var name="tidalBCValue" type="real" dimensions="nCells Time" units="m"
+			 description="Value of ssh height in cell for tidal boundary condition"
 			 packages="tidalForcing"
 		/>
 
