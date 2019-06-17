@@ -1,0 +1,25 @@
+microp_aero.o: microp_aero.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -ta=nvidia,cc70,ptxinfo -Minfo=accel $(FREEFLAGS) $<
+ref_pres.o: ref_pres.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -ta=nvidia,cc70,ptxinfo -Minfo=accel $(FREEFLAGS) $<
+wv_sat_methods.o: wv_sat_methods.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -ta=nvidia,cc70,ptxinfo -Minfo=accel $(FREEFLAGS) $<
+wv_saturation.o: wv_saturation.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -ta=nvidia,cc70,ptxinfo -Minfo=accel $(FREEFLAGS) $<
+hetfrz_classnuc.o: hetfrz_classnuc.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -ta=nvidia,cc70,ptxinfo -Minfo=accel $(FREEFLAGS) $<
+
+cam_logfile.o: cam_logfile.F90 
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -ta=nvidia,cc70,ptxinfo -Minfo=accel $(FREEFLAGS) $<
+physconst.o: physconst.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -ta=nvidia,cc70,ptxinfo -Minfo=accel $(FREEFLAGS) $<
+ndrop.o: ndrop.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -ta=nvidia,cc70,ptxinfo -Minfo=accel -Mnostack_arrays $(FREEFLAGS) $<
+micro_mg2_0.o: micro_mg2_0.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -ta=nvidia,cc70,ptxinfo -Minfo=accel $(FREEFLAGS) $<
+
+hetfrz_classnuc_cam.o: hetfrz_classnuc_cam.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -ta=nvidia,cc70,ptxinfo -Minfo=accel $(FREEFLAGS) $<
+
+
+

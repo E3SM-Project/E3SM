@@ -457,7 +457,7 @@ for mct, etc.
        the "contiguous" attribute is incompatible with "intent".-->
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
   <LDFLAGS>
-    <base> -time -Wl,--allow-multiple-definition </base>
+    <base> -acc -time -Wl,--allow-multiple-definition </base>
     <append compile_threaded="false"> </append>
     <append compile_threaded="true"> -mp </append>
   </LDFLAGS>
