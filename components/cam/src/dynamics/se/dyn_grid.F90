@@ -1508,7 +1508,7 @@ contains
     use cube_mod,               only: ref2sphere
     use coordinate_systems_mod, only: spherical_polar_t, cartesian3D_t
     use coordinate_systems_mod, only: sphere_tri_area, change_coordinates 
-    use derivative_mod,          only: allocate_subcell_integration_matrix
+    use derivative_mod,         only: allocate_subcell_integration_matrix
     !------------------------------Arguments------------------------------------
     ! type(element_t)         , intent(in   ) :: elem(:)
     ! type(fv_physgrid_struct), intent(inout) :: fv_physgrid(nelemd)
@@ -1633,6 +1633,8 @@ contains
       deallocate( fv_physgrid(ie)%lat  )
       deallocate( fv_physgrid(ie)%lon  )
       deallocate( fv_physgrid(ie)%area )
+      deallocate( fv_physgrid(ie)%corner_lat )
+      deallocate( fv_physgrid(ie)%corner_lon )
     end do ! ie
   end subroutine fv_physgrid_final
   !

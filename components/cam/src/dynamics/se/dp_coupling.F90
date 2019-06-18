@@ -114,9 +114,9 @@ CONTAINS
         ! Map dynamics state to FV physics grid
         !-----------------------------------------------------------------------
         call t_startf('dyn_to_fv_phys')
-        call dyn_to_fv_phys(elem,ps_tmp(1:ncol,:),zs_tmp(1:ncol,:),     \
-                                 T_tmp(1:ncol,:,:),uv_tmp(1:ncol,:,:,:),  \
-                                 om_tmp(1:ncol,:,:),q_tmp(1:ncol,:,:,:))
+        call dyn_to_fv_phys(elem,ps_tmp(1:nphys_sq,:),zs_tmp(1:nphys_sq,:),     \
+                                 T_tmp(1:nphys_sq,:,:),uv_tmp(1:nphys_sq,:,:,:),  \
+                                 om_tmp(1:nphys_sq,:,:),q_tmp(1:nphys_sq,:,:,:))
         call t_stopf('dyn_to_fv_phys')
 
         !-----------------------------------------------------------------------
@@ -468,7 +468,9 @@ CONTAINS
       if (fv_nphys > 0) then
 
         ! Map FV physics state to dynamics grid
-        call fv_phys_to_dyn(elem,T_tmp(1:ncol,:,:),uv_tmp(1:ncol,:,:,:),q_tmp(1:ncol,:,:,:))
+        call fv_phys_to_dyn(elem,T_tmp(1:nphys_sq,:,:),   \
+                                 uv_tmp(1:nphys_sq,:,:,:),\
+                                 q_tmp(1:nphys_sq,:,:,:))
 
       else ! physics is on GLL nodes
 
