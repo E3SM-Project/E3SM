@@ -37,7 +37,7 @@ contains
   subroutine fv_phys_to_dyn(elem,T_tmp,uv_tmp,q_tmp)
     ! Purpose: Copy physics state to dynamics grid
     use control_mod,    only: ftype
-    use dyn_comp,       only: TimeLevel
+    use dyn_comp,       only: TimeLevel, hvcoord
     use derivative_mod, only: subcell_integration
     implicit none
     !---------------------------------------------------------------------------
