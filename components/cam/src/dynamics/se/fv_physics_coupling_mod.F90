@@ -208,7 +208,7 @@ contains
   subroutine dyn_to_fv_phys(elem,ps_tmp,zs_tmp,T_tmp,uv_tmp,om_tmp,Q_tmp)
     ! Purpose: average dynamics state over subcells and assign to physics state
     use derivative_mod,     only: subcell_integration
-    use dyn_comp,           only: TimeLevel
+    use dyn_comp,           only: TimeLevel, hvcoord
     implicit none
     !---------------------------------------------------------------------------
     ! interface arguments
