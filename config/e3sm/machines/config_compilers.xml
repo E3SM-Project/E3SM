@@ -2040,6 +2040,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <FFLAGS>
     <base>-convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent</base>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align -fp-speculation=off</append>
+    <append> -DHAVE_ERF_INTRINSICS </append>
   </FFLAGS>
   <SCC> icc </SCC>
   <SCXX> icpc </SCXX>
