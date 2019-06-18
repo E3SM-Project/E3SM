@@ -328,19 +328,6 @@ CONTAINS
        call write_grid_mapping(par, elem)
     end if
 
-    ! initialize dp3d from ps for FV physics grid
-    ! Normally this is not set until prim_run_subcycle
-    ! but we need it for d_p_coupling() called in stepon_run1()
-    if (fv_nphys>0.and.par%dynproc) then
-      do ie = nets,nete
-        do k = 1,nlev
-          elem(ie)%state%dp3d(:,:,k,TimeLevel%n0)=&
-               ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,TimeLevel%n0)
-        end do
-      end do
-    end if ! fv_nphys>0
-
   end subroutine dyn_init2
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !-----------------------------------------------------------------------

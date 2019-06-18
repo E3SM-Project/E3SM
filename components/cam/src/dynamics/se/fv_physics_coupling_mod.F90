@@ -63,7 +63,8 @@ contains
       !-------------------------------------------------------------------------
       if (ftype==2.or.ftype==4) then
         do ilyr = 1,pver
-          dp_gll = elem(ie)%state%dp3d(:,:,ilyr,tl_f)
+          dp_gll(:,:) = ( hvcoord%hyai(ilyr+1)-hvcoord%hyai(ilyr) )*hvcoord%ps0 + &
+                        ( hvcoord%hybi(ilyr+1)-hvcoord%hybi(ilyr) )*elem(ie)%state%ps_v(:,:,tl_f)
           inv_dp_fvm = 1.0 / subcell_integration(dp_gll,np,fv_nphys,elem(ie)%metdet(:,:))
           do m = 1,pcnst
             qo_phys(:,ilyr,m)  = RESHAPE( subcell_integration(              &
@@ -249,7 +250,9 @@ contains
 
       do ilyr = 1,pver
 
-        dp_gll = elem(ie)%state%dp3d(:,:,ilyr,tl_f)
+        dp_gll(:,:) = ( hvcoord%hyai(ilyr+1)-hvcoord%hyai(ilyr) )*hvcoord%ps0 + &
+                      ( hvcoord%hybi(ilyr+1)-hvcoord%hybi(ilyr) )*elem(ie)%state%ps_v(:,:,tl_f)
+      
         inv_dp_fvm = 1.0 / subcell_integration(dp_gll,np,fv_nphys,elem(ie)%metdet(:,:))
 
         T_tmp(:ncol,ilyr,ie)      = RESHAPE( subcell_integration(             &
