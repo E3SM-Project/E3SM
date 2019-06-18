@@ -13,7 +13,6 @@ module metagraph_mod
   use gridgraph_mod, only : gridvertex_t, gridedge_t, &
        deallocate_gridvertex_nbrs, allocate_gridvertex_nbrs, assignment ( = )
 
-  use pio_types ! _EXTERNAL
 
   implicit none 
   private 
