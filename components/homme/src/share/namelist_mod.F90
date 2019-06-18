@@ -65,6 +65,7 @@ module namelist_mod
     hypervis_order,       &
     hypervis_power,       &
     hypervis_subcycle,    &
+    hypervis_subcycle_tom,&
     hypervis_subcycle_q,  &
     smooth_phis_numcycle, &
     smooth_phis_nudt,     &
@@ -243,6 +244,7 @@ module namelist_mod
       hypervis_order,    &
       hypervis_power,    &
       hypervis_subcycle, &
+      hypervis_subcycle_tom, &
       hypervis_subcycle_q, &
       hypervis_scaling, &
       smooth_phis_numcycle, &
@@ -442,9 +444,9 @@ module namelist_mod
        if (tstep <= 0) then
           call abortmp('tstep must be > 0')
        end if
-       if (ndays .gt. 0) then
+       if (ndays>0) then
           nmax = ndays * (secpday/tstep)
-          restartfreq  = restartfreq*(secpday/tstep)
+          if (restartfreq>0) restartfreq=restartfreq*(secpday/tstep)
        end if
        nEndStep = nmax
 #endif
@@ -691,6 +693,7 @@ module namelist_mod
     call MPI_bcast(hypervis_power,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_scaling,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_subcycle,1,MPIinteger_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(hypervis_subcycle_tom,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_subcycle_q,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(smooth_phis_numcycle,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(smooth_phis_nudt,1,MPIreal_t   ,par%root,par%comm,ierr)
@@ -986,8 +989,9 @@ module namelist_mod
           write(iulog,*)"Constant (hyper)viscosity used."
        endif
 
-       write(iulog,*)"hypervis_subcycle, hypervis_subcycle_q = ",&
-            hypervis_subcycle,hypervis_subcycle_q
+       write(iulog,*)"hypervis_subcycle     = ",hypervis_subcycle
+       write(iulog,*)"hypervis_subcycle_tom = ",hypervis_subcycle_tom
+       write(iulog,*)"hypervis_subcycle_q   = ",hypervis_subcycle_q
        !write(iulog,*)"psurf_vis: ",psurf_vis
        write(iulog,'(a,2e9.2)')"viscosity:  nu (vor/div) = ",nu,nu_div
        write(iulog,'(a,2e9.2)')"viscosity:  nu_s      = ",nu_s

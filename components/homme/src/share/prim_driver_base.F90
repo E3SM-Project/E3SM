@@ -937,13 +937,16 @@ contains
        enddo
     endif
 
+    call model_init2(elem(:), hybrid,deriv1,hvcoord,tl,nets,nete)
+
+    ! advective and viscious CFL estimates
+    ! may also adjust tensor coefficients based on CFL
+    call print_cfl(elem,hybrid,nets,nete,dtnu)
+
     ! smooth elem%phis if requested.
     if (smooth_phis_numcycle>0) &
           call smooth_topo_datasets(elem,hybrid,nets,nete)
 
-
-    ! timesteps to use for advective stability:  tstep*qsplit and tstep
-    call print_cfl(elem,hybrid,nets,nete,dtnu)
 
     if (hybrid%masterthread) then
        ! CAM has set tstep based on dtime before calling prim_init2(),
@@ -965,10 +968,8 @@ contains
 #endif
     end if
 
-
     if (hybrid%masterthread) write(iulog,*) "initial state:"
     call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete)
-    call model_init2(elem(:), hybrid,deriv1,hvcoord,tl,nets,nete)
     call Prim_Advec_Init2(elem(:), hvcoord, hybrid)
 
   end subroutine prim_init2
