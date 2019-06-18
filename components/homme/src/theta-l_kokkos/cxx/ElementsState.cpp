@@ -16,33 +16,50 @@
 
 namespace Homme {
 
+void StateStorage::init_storage(const int num_elems) {
+
+  m_v         = ExecViewManaged<Scalar * [NUM_TIME_LEVELS][2][NP][NP][NUM_LEV  ]>("Horizontal velocity", num_elems);
+  m_w_i       = ExecViewManaged<Scalar * [NUM_TIME_LEVELS]   [NP][NP][NUM_LEV_P]>("Vertical velocity at interfaces", num_elems);
+  m_vtheta_dp = ExecViewManaged<Scalar * [NUM_TIME_LEVELS]   [NP][NP][NUM_LEV  ]>("Virtual potential temperature", num_elems);
+  m_phinh_i   = ExecViewManaged<Scalar * [NUM_TIME_LEVELS]   [NP][NP][NUM_LEV_P]>("Geopotential at interfaces", num_elems);
+  m_dp3d      = ExecViewManaged<Scalar * [NUM_TIME_LEVELS]   [NP][NP][NUM_LEV  ]>("Delta p at levels", num_elems);
+
+  m_ps_v = ExecViewManaged<Real * [NUM_TIME_LEVELS][NP][NP]>("PS_V", num_elems);
+}
+
+void StateStorage::copy_state(const StateStorage& src) {
+
+  Kokkos::deep_copy(m_v        , src.m_v         );
+  Kokkos::deep_copy(m_w_i      , src.m_w_i       );
+  Kokkos::deep_copy(m_vtheta_dp, src.m_vtheta_dp );
+  Kokkos::deep_copy(m_phinh_i  , src.m_phinh_i   );
+  Kokkos::deep_copy(m_dp3d     , src.m_dp3d      );
+  Kokkos::deep_copy(m_ps_v     , src.m_ps_v      );
+}
+
 void ElementsState::init(const int num_elems) {
   m_num_elems = num_elems;
-
-  m_v         = ExecViewManaged<Scalar * [NUM_TIME_LEVELS][2][NP][NP][NUM_LEV  ]>("Horizontal velocity", m_num_elems);
-  m_w_i       = ExecViewManaged<Scalar * [NUM_TIME_LEVELS]   [NP][NP][NUM_LEV_P]>("Vertical velocity at interfaces", m_num_elems);
-  m_vtheta_dp = ExecViewManaged<Scalar * [NUM_TIME_LEVELS]   [NP][NP][NUM_LEV  ]>("Virtual potential temperature", m_num_elems);
-  m_phinh_i   = ExecViewManaged<Scalar * [NUM_TIME_LEVELS]   [NP][NP][NUM_LEV_P]>("Geopotential at interfaces", m_num_elems);
-  m_dp3d      = ExecViewManaged<Scalar * [NUM_TIME_LEVELS]   [NP][NP][NUM_LEV  ]>("Delta p at levels", m_num_elems);
-
-  m_ps_v = ExecViewManaged<Real * [NUM_TIME_LEVELS][NP][NP]>("PS_V", m_num_elems);
+  StateStorage::init_storage(num_elems);
 }
 
 //test for tensor hv is needed
-void ElementsState::random_init(int num_elems, Real max_pressure) {
-  std::random_device rd;
+void ElementsState::random_init(const int num_elems, const int seed, const Real max_pressure) {
   HybridVCoord hv;
-  hv.random_init(rd());
-  random_init(num_elems,max_pressure,hv);
+  hv.random_init(seed);
+  random_init(num_elems,seed,max_pressure,hv);
 }
 
-void ElementsState::random_init(int num_elems, Real max_pressure, const HybridVCoord& hvcoord) {
+void ElementsState::random_init(const int num_elems, const int seed, 
+                                const Real max_pressure, const HybridVCoord& hvcoord) {
   // arbitrary minimum value to generate and minimum determinant allowed
   constexpr const Real min_value = 0.015625;
-  // 1 is for const hv
-  init(num_elems);
-  std::random_device rd;
-  std::mt19937_64 engine(rd());
+
+  // We may re-init elements in a unit test. If so, don't reallocate, since it could mess up
+  // the Context structure.
+  if (m_num_elems==0) {
+    init(num_elems);
+  }
+  std::mt19937_64 engine(seed);
   std::uniform_real_distribution<Real> random_dist(min_value, 1.0 / min_value);
 
   genRandArray(m_v,         engine, random_dist);
@@ -117,6 +134,14 @@ void ElementsState::random_init(int num_elems, Real max_pressure, const HybridVC
       }
     }
   }
+}
+
+void ElementsState::save_state ()
+{
+  if (m_state0.m_v.extent_int(0)==0) {
+    m_state0.init_storage(m_num_elems);
+  }
+  m_state0.copy_state(*this);
 }
 
 void ElementsState::pull_from_f90_pointers (CF90Ptr& state_v,         CF90Ptr& state_w_i,

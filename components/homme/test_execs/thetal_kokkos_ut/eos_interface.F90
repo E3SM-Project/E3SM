@@ -14,28 +14,26 @@ module eos_interface
   public :: pnh_and_exner_from_eos_f90
 contains
 
-  subroutine init_f90 (hyai, ps0, hydrostatic) bind(c)
-    use control_mod, only: theta_hydrostatic_mode
+  subroutine init_f90 (hyai, ps0) bind(c)
     !
     ! Inputs
     !
     real (kind=real_kind), intent(in) :: hyai(nlevp)
     real (kind=real_kind), intent(in) :: ps0
-    logical (kind=C_BOOL), intent(in) :: hydrostatic
 
     hvcoord%hyai = hyai
     hvcoord%ps0 = ps0
 
-    theta_hydrostatic_mode = hydrostatic
-
   end subroutine init_f90
 
-  subroutine pnh_and_exner_from_eos_f90(num_elems, vtheta_dp_ptr, dp_ptr, phi_i_ptr, pnh_ptr, exner_ptr, dpnh_dp_i_ptr) bind(c)
+  subroutine pnh_and_exner_from_eos_f90(num_elems, hydrostatic, vtheta_dp_ptr, dp_ptr, phi_i_ptr, pnh_ptr, exner_ptr, dpnh_dp_i_ptr) bind(c)
+    use control_mod, only: theta_hydrostatic_mode
     use eos, only: pnh_and_exner_from_eos
     !
     ! Inputs
     !
     integer (kind=c_int), intent(in) :: num_elems
+    logical (kind=C_BOOL), intent(in) :: hydrostatic
     type (c_ptr), intent(in) :: vtheta_dp_ptr, dp_ptr, phi_i_ptr, pnh_ptr, exner_ptr, dpnh_dp_i_ptr
 
     !
@@ -50,6 +48,8 @@ contains
     call c_f_pointer(pnh_ptr,       pnh,       [np,np,nlev, num_elems])
     call c_f_pointer(exner_ptr,     exner,     [np,np,nlev, num_elems])
     call c_f_pointer(dpnh_dp_i_ptr, dpnh_dp_i, [np,np,nlevp,num_elems])
+
+    theta_hydrostatic_mode = hydrostatic
 
     do ie=1,num_elems
       call pnh_and_exner_from_eos(hvcoord,             &

@@ -156,7 +156,6 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
 void HyperviscosityFunctorImpl::init_boundary_exchanges () {
   m_be = std::make_shared<BoundaryExchange>();
   auto bm_exchange = Context::singleton().get<MpiBuffersManagerMap>()[MPI_EXCHANGE];
-  assert (bm_exchange->are_views_valid());
 
   m_be->set_buffers_manager(bm_exchange);
 #ifdef XX_NONBFB_COMING
@@ -205,9 +204,7 @@ void HyperviscosityFunctorImpl::biharmonic_wk_theta() const
   // For the first laplacian we use a differnt kernel, which uses directly the states
   // at timelevel np1 as inputs, and subtracts the reference states.
   // This way we avoid copying the states to *tens buffers.
-  
-  auto policy_first_laplace = Homme::get_default_team_policy<ExecSpace,TagFirstLaplaceHV>(m_geometry.num_elems());
-  Kokkos::parallel_for(policy_first_laplace, *this);
+  Kokkos::parallel_for(m_policy_first_laplace, *this);
   Kokkos::fence();
 
   // Exchange
@@ -216,14 +213,14 @@ void HyperviscosityFunctorImpl::biharmonic_wk_theta() const
   m_be->exchange(m_geometry.m_rspheremp);
   GPTLstop("hvf-bexch");
 
-  // TODO: update m_data.nu_ratio if nu_div!=nu
   // Compute second laplacian, tensor or const hv
+  const int ne = m_geometry.num_elems();
   if ( m_data.consthv ) {
-    auto policy_second_laplace = Homme::get_default_team_policy<ExecSpace,TagSecondLaplaceConstHV>(m_geometry.num_elems());
-    Kokkos::parallel_for(policy_second_laplace, *this);
+    auto policy = Homme::get_default_team_policy<ExecSpace,TagSecondLaplaceConstHV>(ne);
+    Kokkos::parallel_for(policy, *this);
   }else{
-    auto policy_second_laplace = Homme::get_default_team_policy<ExecSpace,TagSecondLaplaceTensorHV>(m_geometry.num_elems());
-    Kokkos::parallel_for(policy_second_laplace, *this);
+    auto policy = Homme::get_default_team_policy<ExecSpace,TagSecondLaplaceTensorHV>(ne);
+    Kokkos::parallel_for(policy, *this);
   }
   Kokkos::fence();
 }

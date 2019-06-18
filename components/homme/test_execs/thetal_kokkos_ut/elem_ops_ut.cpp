@@ -26,12 +26,13 @@ TEST_CASE("elem_ops", "elem_ops") {
   constexpr int num_elems = 2;
 
   std::random_device rd;
+  const int seed = rd();
   using rngAlg = std::mt19937_64;
   rngAlg engine(rd());
   std::uniform_real_distribution<Real> pdf(0.01, 1.0);
 
   HybridVCoord hvcoord;
-  hvcoord.random_init(rd());
+  hvcoord.random_init(seed);
 
   decltype(hvcoord.hybrid_ai)::HostMirror hyai = Kokkos::create_mirror_view(hvcoord.hybrid_ai);
   Kokkos::deep_copy(hyai,hvcoord.hybrid_ai);

@@ -11,6 +11,7 @@ module element_state
   private
 
   public :: allocate_element_arrays
+  public :: deallocate_element_arrays
   public :: setup_element_pointers_ie
 
 #ifdef ARKODE
@@ -203,6 +204,50 @@ contains
 
   end subroutine allocate_element_arrays
 
+  subroutine deallocate_element_arrays ()
+    ! This subroutine is pointless in a normal run, since all
+    ! allocatable variables are automatically deallocated upon
+    ! program termination. However, it is useful in cxx unit
+    ! tests that compare against f90, due to how catch2 testing
+    ! mechanism works. There, the same block of code is executed multiple
+    ! times, which means the init functions are called multiple
+    ! times. To make the 'allocate' calls above succeed, the
+    ! variable must not be already allocated. Therefore, at the
+    ! end of the unit test code, we clean up the f90 stuff,
+    ! so that any potential subsequent call to initialization
+    ! subroutines will not generate an error
+
+    ! State
+    deallocate(elem_state_v         )
+    deallocate(elem_state_w_i       )
+    deallocate(elem_state_vtheta_dp )
+    deallocate(elem_state_phinh_i   )
+    deallocate(elem_state_dp3d      )
+    deallocate(elem_state_ps_v      )
+    deallocate(elem_state_phis      )
+    deallocate(elem_state_Q         )
+    deallocate(elem_state_Qdp       )
+
+    ! Derived
+    deallocate(elem_derived_omega_p )
+
+    ! Accum
+    deallocate(elem_accum_kener     )
+    deallocate(elem_accum_pener     )
+    deallocate(elem_accum_iener     )
+    deallocate(elem_accum_qvar      )
+    deallocate(elem_accum_qmass     )
+    deallocate(elem_accum_Q1mass    )
+
+    ! Forcing
+    deallocate(elem_derived_FM      )
+    deallocate(elem_derived_FT      )
+    deallocate(elem_derived_FVTheta )
+    deallocate(elem_derived_FPHI    )
+    deallocate(elem_derived_FQ      )
+    deallocate(elem_derived_FQps    )
+  end subroutine deallocate_element_arrays
+
   subroutine setup_element_pointers_ie (ie, state, derived, accum)
     !
     ! Inputs
@@ -242,5 +287,4 @@ contains
     derived%FQ      => elem_derived_FQ(:,:,:,:,ie)
     derived%FQps    => elem_derived_FQps(:,:,ie)
   end subroutine setup_element_pointers_ie
-
 end module 

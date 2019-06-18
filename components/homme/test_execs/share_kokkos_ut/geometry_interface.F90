@@ -172,6 +172,13 @@ contains
     deallocate(elem)
     deallocate(GridVertex)
     deallocate(GridEdge)
+
+    deallocate(Schedule(1)%SendCycle)
+    deallocate(Schedule(1)%RecvCycle)
+    deallocate(Schedule(1)%MoveCycle)
+    deallocate(Schedule(1)%pIndx)
+    deallocate(Schedule(1)%gIndx)
+    deallocate(Schedule(1)%Local2Global)
     deallocate(Schedule)
   end subroutine cleanup_geometry_f90
 

@@ -28,6 +28,8 @@ struct FunctorsBuffersManager;
 
 class HyperviscosityFunctorImpl
 {
+  // TODO: don't pass nu_ratio1/2. Instead, do like in F90: compute them from
+  //       nu, nu_div, and hv_scaling
   struct HyperviscosityData {
     HyperviscosityData(const int hypervis_subcycle_in, const Real nu_ratio1_in, const Real nu_ratio2_in, const Real nu_top_in,
                        const Real nu_in, const Real nu_p_in, const Real nu_s_in,
@@ -37,11 +39,10 @@ class HyperviscosityFunctorImpl
                       , hypervis_scaling(hypervis_scaling_in)
                       , consthv(hypervis_scaling_in == 0){}
 
-
     const int   hypervis_subcycle;
 
-    const Real  nu_ratio1;
-    const Real  nu_ratio2;
+    Real  nu_ratio1;
+    Real  nu_ratio2;
 
     const Real  nu_top;
     const Real  nu;
@@ -101,8 +102,8 @@ public:
   struct TagApplyInvMass {};
   struct TagHyperPreExchange {};
 
-  HyperviscosityFunctorImpl (const SimulationParams&       params,
-                             const Elements&               elements);
+  HyperviscosityFunctorImpl (const SimulationParams& params,
+                             const Elements&         elements);
 
   int requested_buffer_size () const;
   void init_buffers (const FunctorsBuffersManager& fbm);
@@ -343,8 +344,8 @@ public:
                            (exner(ilev)*PhysicalConstants::cp);
         });
       } else {
-        using Info = ColInfo<NUM_PHYSICAL_LEV>;
 #ifdef XX_NONBFB_COMING
+        using Info = ColInfo<NUM_PHYSICAL_LEV>;
         // Here, we fix f90 logic, and use k2=k+1, with the agreement that wtens(nlevp)=0.
         wtens(Info::LastPack)[Info::LastVecEnd] = 0.0;
         auto provider = [&w,&wtens](const int ilev)->Scalar {
@@ -357,6 +358,7 @@ public:
           heating(ilev) /= (exner(ilev)*PhysicalConstants::cp);
         });
 #else
+        using Info = ColInfo<NUM_INTERFACE_LEV>;
         // Here, we keep the original f90 logic, and exploit that k2=nlev.
         const Real last_lev_term = 
                 w(Info::LastPack)[Info::LastVecEnd]*wtens(Info::LastPack)[Info::LastVecEnd];
@@ -484,7 +486,7 @@ public:
     });
   }
 
-private:
+protected:
 
   HyperviscosityData    m_data;
   ElementsState         m_state;

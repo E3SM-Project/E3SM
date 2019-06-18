@@ -3,6 +3,8 @@ module boundary_exchange_ut
   use edgetype_mod,           only: EdgeBuffer_t
   use kinds,                  only: real_kind
 
+  implicit none
+
   type (EdgeBuffer_t) :: edge
   type (EdgeBuffer_t) :: edgeMinMax
 contains
@@ -53,8 +55,8 @@ contains
     real (kind=real_kind), dimension(:,:,:,:,:,:), pointer :: field_4d
     integer :: ie, kptr
 
-    call c_f_pointer(field_min_1d_ptr, field_min_1d, [nlev,num_min_max_fields_1d,nelemd])
-    call c_f_pointer(field_max_1d_ptr, field_max_1d, [nlev,num_min_max_fields_1d,nelemd])
+    call c_f_pointer(field_min_1d_ptr, field_min_1d, [nlev,qsize,nelemd])
+    call c_f_pointer(field_max_1d_ptr, field_max_1d, [nlev,qsize,nelemd])
     call c_f_pointer(field_2d_ptr,     field_2d,     [np,np,num_time_levels,nelemd])
     call c_f_pointer(field_3d_ptr,     field_3d,     [np,np,nlev,num_time_levels,nelemd])
     call c_f_pointer(field_3d_int_ptr, field_3d_int, [np,np,nlevp,num_time_levels,nelemd])

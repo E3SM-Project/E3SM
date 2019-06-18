@@ -15,8 +15,9 @@ using namespace Homme;
 // ============= EQUATION OF STATE ================ //
 
 extern "C" {
-void init_f90 (const Real* hyai_ptr, const Real& ps0, const bool& hydrostatic);
+void init_f90 (const Real* hyai_ptr, const Real& ps0);
 void pnh_and_exner_from_eos_f90(const int& num_elems,
+                                const bool& hydrostatic,
                                 const Real*& vtheta_dp,
                                 const Real*& dp,
                                 const Real*& phi_i,
@@ -31,9 +32,6 @@ void phi_from_eos_f90(const int& num_elems,
 } // extern "C"
 
 TEST_CASE("eos", "eos") {
-
-  constexpr auto LAST_LEV_P = ColInfo<NUM_INTERFACE_LEV>::LastPack;
-  constexpr auto LAST_INTERFACE_VEC_IDX = ColInfo<NUM_INTERFACE_LEV>::LastVecEnd;
 
   constexpr int num_elems = 2;
 
@@ -67,24 +65,25 @@ TEST_CASE("eos", "eos") {
   auto h_dpnh_dp_i = Kokkos::create_mirror_view(dpnh_dp_i_cxx);
 
   std::random_device rd;
+  const int seed = rd();
   using rngAlg = std::mt19937_64;
-  rngAlg engine(rd());
+  rngAlg engine(seed);
   std::uniform_real_distribution<Real> pdf(0.01, 1.0);
 
   HybridVCoord hvcoord;
   hvcoord.random_init(rd());
 
+  // Init f90
   decltype(hvcoord.hybrid_ai)::HostMirror hyai = Kokkos::create_mirror_view(hvcoord.hybrid_ai);
   Kokkos::deep_copy(hyai,hvcoord.hybrid_ai);
   const Real* hyai_ptr = hyai.data();
+  init_f90(hyai_ptr,hvcoord.ps0);
 
   ColumnOps col_ops;
   EquationOfState eos;
 
   SECTION ("pnh_and_exner") {
     for (bool hydrostatic : {false,true}) {
-      // Init f90
-      init_f90(hyai_ptr,hvcoord.ps0,hydrostatic);
 
       eos.init(hydrostatic,hvcoord);
 
@@ -173,7 +172,7 @@ TEST_CASE("eos", "eos") {
       Real* pnh_ptr = pnh_f90.data();
       Real* exner_ptr = exner_f90.data();
       Real* dpnh_dp_i_ptr = dpnh_dp_i_f90.data();
-      pnh_and_exner_from_eos_f90(num_elems,vtheta_dp_ptr,dp_ptr,phi_i_ptr,pnh_ptr,exner_ptr,dpnh_dp_i_ptr);
+      pnh_and_exner_from_eos_f90(num_elems,hydrostatic,vtheta_dp_ptr,dp_ptr,phi_i_ptr,pnh_ptr,exner_ptr,dpnh_dp_i_ptr);
 
       // Now, compare results
       Kokkos::deep_copy(h_exner,exner_cxx);
@@ -181,17 +180,22 @@ TEST_CASE("eos", "eos") {
       Kokkos::deep_copy(h_dpnh_dp_i,dpnh_dp_i_cxx);
 
       for (int ie=0; ie<num_elems; ++ie) {
+        auto pnh_cxx_ie = viewAsReal(Homme::subview(h_pnh,ie));
+        auto exner_cxx_ie = viewAsReal(Homme::subview(h_exner,ie));
+        auto dpnhdp_cxx_ie = viewAsReal(Homme::subview(h_dpnh_dp_i,ie));
         for (int igp=0; igp<NP; ++igp) {
           for (int jgp=0; jgp<NP; ++jgp) {
             for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
-              const int ilev = k / VECTOR_SIZE;
-              const int ivec = k % VECTOR_SIZE;
-
-              REQUIRE (h_exner(ie,igp,jgp,ilev)[ivec] == exner_f90(ie,k,igp,jgp));
-              REQUIRE (h_pnh(ie,igp,jgp,ilev)[ivec] == pnh_f90(ie,k,igp,jgp));
-              REQUIRE (h_dpnh_dp_i(ie,igp,jgp,ilev)[ivec] == dpnh_dp_i_f90(ie,k,igp,jgp));
+              REQUIRE (exner_cxx_ie(igp,jgp,k) == exner_f90(ie,k,igp,jgp));
+if (pnh_cxx_ie(igp,jgp,k) != pnh_f90(ie,k,igp,jgp)) {
+  printf("ie,igp,jgp,k: %d, %d, %d, %d\n",ie,k,igp,jgp);
+  printf("pnh_cxx: %3.20f\n",pnh_cxx_ie(igp,jgp,k));
+  printf("pnh_f90: %3.20f\n",pnh_f90(ie,k,igp,jgp));
+}
+              REQUIRE (pnh_cxx_ie(igp,jgp,k) == pnh_f90(ie,k,igp,jgp));
+              REQUIRE (dpnhdp_cxx_ie(igp,jgp,k) == dpnh_dp_i_f90(ie,k,igp,jgp));
             }
-            REQUIRE (h_dpnh_dp_i(ie,igp,jgp,LAST_LEV_P)[LAST_INTERFACE_VEC_IDX] == dpnh_dp_i_f90(ie,NUM_INTERFACE_LEV-1,igp,jgp));
+            REQUIRE (dpnhdp_cxx_ie(igp,jgp,NUM_INTERFACE_LEV-1) == dpnh_dp_i_f90(ie,NUM_INTERFACE_LEV-1,igp,jgp));
           }
         }
       }
@@ -249,13 +253,11 @@ TEST_CASE("eos", "eos") {
     // Now, compare results
     Kokkos::deep_copy(h_phi_i,phi_i_cxx);
     for (int ie=0; ie<num_elems; ++ie) {
+      auto phi_i_cxx_ie = viewAsReal(Homme::subview(h_phi_i,ie));
       for (int igp=0; igp<NP; ++igp) {
         for (int jgp=0; jgp<NP; ++jgp) {
           for (int k=0; k<NUM_INTERFACE_LEV; ++k) {
-            const int ilev = k / VECTOR_SIZE;
-            const int ivec = k % VECTOR_SIZE;
-
-            REQUIRE (h_phi_i(ie,igp,jgp,ilev)[ivec] == phi_i_f90(ie,k,igp,jgp));
+            REQUIRE (phi_i_cxx_ie(igp,jgp,k) == phi_i_f90(ie,k,igp,jgp));
           }
         }
       }
@@ -361,13 +363,12 @@ TEST_CASE("eos", "eos") {
     // Now, compare results
     Kokkos::deep_copy(h_phi_i,phi_i_cxx);
     for (int ie=0; ie<num_elems; ++ie) {
+      auto phi_i_out_ie = viewAsReal(Homme::subview(h_phi_i,ie));
+      auto phi_i_in_ie = viewAsReal(Homme::subview(h_phi_i_in,ie));
       for (int igp=0; igp<NP; ++igp) {
         for (int jgp=0; jgp<NP; ++jgp) {
           for (int k=0; k<NUM_INTERFACE_LEV; ++k) {
-            const int ilev = k / VECTOR_SIZE;
-            const int ivec = k % VECTOR_SIZE;
-
-            REQUIRE (compare_answers(h_phi_i_in(ie,igp,jgp,ilev)[ivec],h_phi_i(ie,igp,jgp,ilev)[ivec])<1e-14);
+            REQUIRE (compare_answers(phi_i_in_ie(igp,jgp,k),phi_i_out_ie(igp,jgp,k))<1e-14);
           }
         }
       }
@@ -398,13 +399,12 @@ TEST_CASE("eos", "eos") {
     // Now, compare results
     Kokkos::deep_copy(h_phi_i,phi_i_cxx);
     for (int ie=0; ie<num_elems; ++ie) {
+      auto phi_i_out_ie = viewAsReal(Homme::subview(h_phi_i,ie));
+      auto phi_i_in_ie = viewAsReal(Homme::subview(h_phi_i_in,ie));
       for (int igp=0; igp<NP; ++igp) {
         for (int jgp=0; jgp<NP; ++jgp) {
           for (int k=0; k<NUM_INTERFACE_LEV; ++k) {
-            const int ilev = k / VECTOR_SIZE;
-            const int ivec = k % VECTOR_SIZE;
-
-            REQUIRE (compare_answers(h_phi_i_in(ie,igp,jgp,ilev)[ivec],h_phi_i(ie,igp,jgp,ilev)[ivec])<1e-14);
+            REQUIRE (compare_answers(phi_i_in_ie(igp,jgp,k),phi_i_out_ie(igp,jgp,k))<1e-14);
           }
         }
       }
