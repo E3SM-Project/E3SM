@@ -41,8 +41,8 @@ public:
 
   int num_elems () const { return m_num_elems; }
 
-  void init (int num_elems, bool consthv);
-  void random_init (int num_elems, Real max_pressure = 1.0);
+  void init (const int num_elems, const bool consthv);
+  void random_init (const int num_elems, const int seed, const Real max_pressure = 1.0);
 
   bool inited () const { return m_inited; }
 

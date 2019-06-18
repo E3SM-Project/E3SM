@@ -401,13 +401,21 @@ TEST_CASE("ppm_fixed_means", "vertical remap") {
 
 TEST_CASE("remap_interface", "vertical remap") {
   constexpr int num_elems = 4;
+  std::random_device rd;
+  int seed;
+
   Elements elements;
-  elements.random_init(num_elems);
+  seed = rd();
+  elements.random_init(num_elems,seed);
+
   Tracers tracers;
   tracers.init(num_elems,QSIZE_D);
-  tracers.random_init();
+  seed = rd();
+  tracers.random_init(seed);
+
   HybridVCoord hvcoord;
-  hvcoord.random_init(std::random_device()());
+  seed = rd();
+  hvcoord.random_init(seed);
 
   Real dp3d_min;
   {
@@ -423,8 +431,8 @@ TEST_CASE("remap_interface", "vertical remap") {
   // TODO: make dt random
   constexpr int np1 = 0;
   constexpr int n0_qdp = 0;
-  std::random_device rd;
-  std::mt19937_64 engine(rd());
+  seed = rd();
+  std::mt19937_64 engine(seed);
   // Note: the bounds on the distribution for dt are strictly linked to how ps_v is (randomly)
   //       init-ed in ElementsState, and how eta_dot_dpdn is (randomly) init-ed in ElementsDerivedState
   //       (here we are initing eta_dot_dpdn in the same way). In particular, this interval *should* ensure that

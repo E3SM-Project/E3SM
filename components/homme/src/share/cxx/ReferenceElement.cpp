@@ -54,9 +54,8 @@ void ReferenceElement::init_mass(CF90Ptr &mass_ptr) {
   Kokkos::deep_copy(m_mass, mass_host);
 }
 
-void ReferenceElement::random_init() {
-  std::random_device rd;
-  std::mt19937_64 engine(rd());
+void ReferenceElement::random_init(const int seed) {
+  std::mt19937_64 engine(seed);
   using urd = std::uniform_real_distribution<Real>;
 
   genRandArray(m_deriv, engine, urd(16.0,8192.0));

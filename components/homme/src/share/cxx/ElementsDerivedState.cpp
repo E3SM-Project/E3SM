@@ -29,13 +29,12 @@ void ElementsDerivedState::init(const int num_elems) {
   m_dpdiss_ave        = ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>("derived_dpdiss_ave", m_num_elems);
 }
 
-void ElementsDerivedState::random_init(int num_elems, Real dp3d_min) {
+void ElementsDerivedState::random_init(const int num_elems, const int seed, const Real dp3d_min) {
   init(num_elems);
 
   // arbitrary minimum value to generate
   constexpr const Real min_value = 0.015625;
-  std::random_device rd;
-  std::mt19937_64 engine(rd());
+  std::mt19937_64 engine(seed);
   std::uniform_real_distribution<Real> random_dist(min_value, 1.0 / min_value);
 
   genRandArray(m_omega_p, engine, random_dist);

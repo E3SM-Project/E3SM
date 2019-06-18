@@ -32,7 +32,7 @@ public:
   void init_deriv(CF90Ptr& deriv);
   void init_mass(CF90Ptr& mass);
 
-  void random_init();
+  void random_init(const int seed);
 
   KOKKOS_INLINE_FUNCTION
   ExecViewManaged<const Real[NP][NP]> get_deriv() const { return m_deriv; }

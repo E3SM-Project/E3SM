@@ -27,20 +27,18 @@ void ElementsState::init(const int num_elems) {
 }
 
 //test for tensor hv is needed
-void ElementsState::random_init(int num_elems, Real max_pressure) {
-  std::random_device rd;
+void ElementsState::random_init(const int num_elems, const int seed, const Real max_pressure) {
   HybridVCoord hv;
-  hv.random_init(rd());
-  random_init(num_elems,max_pressure,hv);
+  hv.random_init(seed);
+  random_init(num_elems,seed, max_pressure,hv);
 }
 
-void ElementsState::random_init(int num_elems, Real max_pressure, const HybridVCoord& hvcoord) {
+void ElementsState::random_init(const int num_elems, const int seed, const Real max_pressure, const HybridVCoord& hvcoord) {
   // arbitrary minimum value to generate and minimum determinant allowed
   constexpr const Real min_value = 0.015625;
   // 1 is for const hv
   init(num_elems);
-  std::random_device rd;
-  std::mt19937_64 engine(rd());
+  std::mt19937_64 engine(seed);
   std::uniform_real_distribution<Real> random_dist(min_value, 1.0 / min_value);
 
   genRandArray(m_v, engine, random_dist);

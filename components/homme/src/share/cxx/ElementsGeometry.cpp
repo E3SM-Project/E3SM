@@ -145,14 +145,13 @@ void ElementsGeometry::init (const int ie,
 }
 
 //test for tensor hv is needed
-void ElementsGeometry::random_init(int num_elems) {
+void ElementsGeometry::random_init(int num_elems, const int seed) {
   // For testing, we enable tensor viscosity (since we may need it in the test)
-  init (num_elems, true);
+  init (num_elems, false);
 
   // Arbitrary minimum value to generate and minimum determinant allowed
   constexpr const Real min_value = 0.015625;
-  std::random_device rd;
-  std::mt19937_64 engine(rd());
+  std::mt19937_64 engine(seed);
   std::uniform_real_distribution<Real> random_dist(min_value, 1.0 / min_value);
 
   genRandArray(m_fcor,         engine, random_dist);

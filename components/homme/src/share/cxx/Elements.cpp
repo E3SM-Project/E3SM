@@ -24,10 +24,11 @@ void Elements::init(const int num_elems, const bool consthv) {
 }
 
 //test for tensor hv is needed
-void Elements::random_init(int num_elems, Real max_pressure) {
+void Elements::random_init(const int num_elems, const int seed, const Real max_pressure) {
   m_num_elems = num_elems;
-  m_geometry.random_init(num_elems);
-  m_state.random_init(num_elems,max_pressure);
+
+  m_geometry.random_init(num_elems,seed);
+  m_state.random_init(num_elems,seed,max_pressure);
 
   Real dp3d_min = std::numeric_limits<Real>::max();
   for (int ie = 0; ie < m_num_elems; ++ie) {
@@ -50,7 +51,7 @@ void Elements::random_init(int num_elems, Real max_pressure) {
     }
   }
 
-  m_derived.random_init(num_elems,dp3d_min);
+  m_derived.random_init(num_elems,seed,dp3d_min);
 
   m_inited = true;
 }

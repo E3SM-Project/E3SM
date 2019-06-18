@@ -1,12 +1,13 @@
 #include <catch2/catch.hpp>
 
-#include <iostream>
-
 #include "ElementsState.hpp"
 #include "ElementsGeometry.hpp"
 #include "Types.hpp"
 #include "utilities/TestUtils.hpp"
 #include "utilities/SubviewUtils.hpp"
+
+#include <iostream>
+#include <random>
 
 using namespace Homme;
 
@@ -17,7 +18,10 @@ TEST_CASE("dp3d_intervals", "Testing Elements::random_init") {
   constexpr Real max_pressure = 32.0;
   constexpr Real rel_threshold = 128.0 * std::numeric_limits<Real>::epsilon();
   ElementsState state;
-  state.random_init(num_elems, max_pressure);
+
+  std::random_device rd;
+  const int seed = rd();
+  state.random_init(num_elems, seed, max_pressure);
   HostViewManaged<Scalar * [NUM_TIME_LEVELS][NP][NP][NUM_LEV]> dp3d("host dp3d",
                                                                     num_elems);
   Kokkos::deep_copy(dp3d, state.m_dp3d);
@@ -45,8 +49,11 @@ TEST_CASE("dp3d_intervals", "Testing Elements::random_init") {
 TEST_CASE("d_dinv_check", "Testing Elements::random_init") {
   constexpr int num_elems = 5;
   constexpr Real rel_threshold = 1e-10;
+  std::random_device rd;
+  const int seed = rd();
+
   ElementsGeometry geometry;
-  geometry.random_init(num_elems);
+  geometry.random_init(num_elems,seed);
   HostViewManaged<Real * [2][2][NP][NP]> d("host d", num_elems);
   HostViewManaged<Real * [2][2][NP][NP]> dinv("host dinv", num_elems);
   Kokkos::deep_copy(d, geometry.m_d);

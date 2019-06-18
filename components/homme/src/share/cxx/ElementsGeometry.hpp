@@ -45,7 +45,7 @@ public:
 
   void init(const int num_elems, const bool consthv);
 
-  void random_init(int num_elems);
+  void random_init(const int num_elems, const int seed);
 
   KOKKOS_INLINE_FUNCTION
   int num_elems() const { return m_num_elems; }

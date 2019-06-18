@@ -15,8 +15,9 @@
 namespace Homme
 {
 
-struct HybridVCoord
+class HybridVCoord
 {
+public:
   HybridVCoord () : m_inited(false) {}
 
   // This method should only be called from the host

@@ -29,8 +29,8 @@ public:
 
   void init(const int num_elems);
 
-  void random_init(int num_elems, Real max_pressure = 1.0);
-  void random_init(int num_elems, Real max_pressure, const HybridVCoord& hvcoord);
+  void random_init(const int num_elems, const int seed, const Real max_pressure = 1.0);
+  void random_init(const int num_elems, const int seed, const Real max_pressure, const HybridVCoord& hvcoord);
 
   KOKKOS_INLINE_FUNCTION
   int num_elems() const { return m_num_elems; }
