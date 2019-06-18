@@ -290,6 +290,10 @@ public:
     m_bmm[MPI_EXCHANGE_MIN_MAX]->set_connectivity(connectivity);
   }
 
+  bool is_connectivity_set () const {
+    return m_bmm.at(MPI_EXCHANGE)->is_connectivity_set();
+  }
+
   std::shared_ptr<MpiBuffersManager> operator() (int exchange_type) const {
     return m_bmm.at(exchange_type);
   }

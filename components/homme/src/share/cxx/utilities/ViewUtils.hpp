@@ -12,49 +12,71 @@
 
 namespace Homme {
 
-template<typename ScalarType>
-struct ScalarTypeHelper
-{
-  static_assert(std::is_same<typename std::remove_const<ScalarType>::type,Scalar>::value,
-                "Error! The ScalarTypeHelper struct can only be templated on 'Scalar' and 'const Scalar'.\n");
-
-  static constexpr bool is_const = std::is_const<ScalarType>::value;
-  using type = typename std::conditional<is_const,const Real, Real>::type;
+// This helper struct (and its shorter alias) simply provide
+// the map 'Scalar->Real' and 'const Scalar->const Real'
+namespace Impl {
+template<typename In, typename Out>
+struct ConstIfConst {
+  static constexpr bool is_const = std::is_const<In>::value;
+  using type = typename std::conditional<is_const,
+                  typename std::add_const<Out>::type,
+                  typename std::remove_const<Out>::type
+               >::type;
 };
+} // namespace Impl
+
+template<typename ScalarType>
+using RealType = typename Impl::ConstIfConst<ScalarType,Real>::type;
 
 // ================ Reinterpret a view of Scalar as a view of Real ======================= //
 // Note: we template on ScalarType to allow both const and non-const, but the underlying
 //       type (the one you get with std::remove_const) *must* be Scalar (as defined in Types.hpp).
-template <typename ScalarType, int DIM1, typename MemSpace, typename... Properties>
+template <typename ScalarType, int DIM1, typename... Properties>
 KOKKOS_INLINE_FUNCTION
-ViewUnmanaged<typename ScalarTypeHelper<ScalarType>::type[DIM1*VECTOR_SIZE], MemSpace>
-viewAsReal(ViewType<ScalarType [DIM1], MemSpace, Properties...> v_in) {
-  using ReturnST = typename ScalarTypeHelper<ScalarType>::type;
-  return ViewUnmanaged<ReturnST [DIM1*VECTOR_SIZE], MemSpace>(reinterpret_cast<ReturnST*>(v_in.data()));
+typename
+std::enable_if<std::is_same<typename std::remove_const<ScalarType>::type,Scalar>::value,
+               Unmanaged<ViewType<RealType<ScalarType>[DIM1*VECTOR_SIZE],Properties...>>
+              >::type
+viewAsReal(ViewType<ScalarType [DIM1], Properties...> v_in) {
+  using ReturnST = RealType<ScalarType>;
+  using ReturnView = Unmanaged<ViewType<RealType<ScalarType>[DIM1*VECTOR_SIZE],Properties...>>;
+  return ReturnView(reinterpret_cast<ReturnST*>(v_in.data()));
 }
 
-template <typename ScalarType, int DIM1, int DIM2, typename MemSpace, typename... Properties>
+template <typename ScalarType, int DIM1, int DIM2, typename... Properties>
 KOKKOS_INLINE_FUNCTION
-ViewUnmanaged<typename ScalarTypeHelper<ScalarType>::type[DIM1][DIM2*VECTOR_SIZE], MemSpace>
-viewAsReal(ViewType<ScalarType [DIM1][DIM2], MemSpace, Properties...> v_in) {
-  using ReturnST = typename ScalarTypeHelper<ScalarType>::type;
-  return ViewUnmanaged<ReturnST [DIM1][DIM2*VECTOR_SIZE], MemSpace>(reinterpret_cast<ReturnST*>(v_in.data()));
+typename
+std::enable_if<std::is_same<typename std::remove_const<ScalarType>::type,Scalar>::value,
+               Unmanaged<ViewType<RealType<ScalarType>[DIM1][DIM2*VECTOR_SIZE],Properties...>>
+              >::type
+viewAsReal(ViewType<ScalarType [DIM1][DIM2], Properties...> v_in) {
+  using ReturnST = RealType<ScalarType>;
+  using ReturnView = Unmanaged<ViewType<RealType<ScalarType>[DIM1][DIM2*VECTOR_SIZE],Properties...>>;
+  return ReturnView(reinterpret_cast<ReturnST*>(v_in.data()));
 }
 
-template <typename ScalarType, int DIM1, int DIM2, int DIM3, typename MemSpace, typename... Properties>
+template <typename ScalarType, int DIM1, int DIM2, int DIM3, typename... Properties>
 KOKKOS_INLINE_FUNCTION
-ViewUnmanaged<typename ScalarTypeHelper<ScalarType>::type[DIM1][DIM2][DIM3*VECTOR_SIZE], MemSpace>
-viewAsReal(ViewType<ScalarType [DIM1][DIM2][DIM3], MemSpace, Properties...> v_in) {
-  using ReturnST = typename ScalarTypeHelper<ScalarType>::type;
-  return ViewUnmanaged<ReturnST [DIM1][DIM2][DIM3*VECTOR_SIZE], MemSpace>(reinterpret_cast<ReturnST*>(v_in.data()));
+typename
+std::enable_if<std::is_same<typename std::remove_const<ScalarType>::type,Scalar>::value,
+               Unmanaged<ViewType<RealType<ScalarType>[DIM1][DIM2][DIM3*VECTOR_SIZE],Properties...>>
+              >::type
+viewAsReal(ViewType<ScalarType [DIM1][DIM2][DIM3], Properties...> v_in) {
+  using ReturnST = RealType<ScalarType>;
+  using ReturnView = Unmanaged<ViewType<RealType<ScalarType>[DIM1][DIM2][DIM3*VECTOR_SIZE],Properties...>>;
+  return ReturnView(reinterpret_cast<ReturnST*>(v_in.data()));
 }
 
-template <typename ScalarType, int DIM1, int DIM2, int DIM3, int DIM4, typename MemSpace, typename... Properties>
+template <typename ScalarType, int DIM1, int DIM2, int DIM3, int DIM4, typename... Properties>
 KOKKOS_INLINE_FUNCTION
-ViewUnmanaged<typename ScalarTypeHelper<ScalarType>::type[DIM1][DIM2][DIM3][DIM4*VECTOR_SIZE], MemSpace>
-viewAsReal(ViewType<ScalarType [DIM1][DIM2][DIM3][DIM4], MemSpace, Properties...> v_in) {
-  using ReturnST = typename ScalarTypeHelper<ScalarType>::type;
-  return ViewUnmanaged<ReturnST [DIM1][DIM2][DIM3][DIM4*VECTOR_SIZE], MemSpace>(reinterpret_cast<ReturnST*>(v_in.data()));
+typename
+std::enable_if<std::is_same<typename std::remove_const<ScalarType>::type,Scalar>::value,
+               Unmanaged<ViewType<RealType<ScalarType>[DIM1][DIM2][DIM3][DIM4*VECTOR_SIZE],Properties...>>
+              >::type
+viewAsReal(ViewType<ScalarType [DIM1][DIM2][DIM3][DIM4], Properties...> v_in) {
+  using ReturnST = RealType<ScalarType>;
+  using ReturnView = Unmanaged<ViewType<RealType<ScalarType>[DIM1][DIM2][DIM3][DIM4*VECTOR_SIZE],Properties...>>;
+  return ReturnView(reinterpret_cast<ReturnST*>(v_in.data()));
 }
 
 // Structure to define the type of a view that has a const data type,

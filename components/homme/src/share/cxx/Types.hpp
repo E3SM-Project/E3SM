@@ -126,6 +126,35 @@ using MPIViewUnmanaged = MPIView<DataType, MemoryUnmanaged>;
 template <typename DataType>
 using ScratchView = ViewType<DataType, ScratchMemSpace, MemoryUnmanaged>;
 
+namespace Impl {
+// Turn a View's MemoryTraits (traits::memory_traits) into the equivalent
+// unsigned int mask. This is an implementation detail for Unmanaged; see next.
+template <typename View>
+  struct MemoryTraitsMask {
+    enum : unsigned int {
+      value = ((View::traits::memory_traits::RandomAccess ? Kokkos::RandomAccess : 0) |
+               (View::traits::memory_traits::Atomic ? Kokkos::Atomic : 0) |
+               (View::traits::memory_traits::Restrict ? Kokkos::Restrict : 0) |
+               (View::traits::memory_traits::Aligned ? Kokkos::Aligned : 0) |
+               (View::traits::memory_traits::Unmanaged ? Kokkos::Unmanaged : 0))
+        };
+  };
+}
+
+template <typename View>
+using Unmanaged =
+  // Provide a full View type specification, augmented with Unmanaged.
+  Kokkos::View<typename View::traits::scalar_array_type,
+               typename View::traits::array_layout,
+               typename View::traits::device_type,
+               Kokkos::MemoryTraits<
+                 // All the current values...
+                 Impl::MemoryTraitsMask<View>::value |
+                 // ... |ed with the one we want, whether or not it's
+                 // already there.
+                 Kokkos::Unmanaged> >;
+
+
 // To view the fully expanded name of a complicated template type T,
 // just try to access some non-existent field of MyDebug<T>. E.g.:
 // MyDebug<T>::type i;

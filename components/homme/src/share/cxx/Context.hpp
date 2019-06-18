@@ -37,6 +37,18 @@ public:
   template<typename ConcreteType, typename... Args>
   ConcreteType& create (Args&&... args);
 
+  // More relaxed than create, it won't throw if the
+  // object already exists, and simply return it.
+  // NOTE: this is allows more flexibility in the cxx-f90
+  //       interfaces, in that you have more freedom in
+  //       the order of certain function calls.
+  //       With 'create', you have to either check if an
+  //       object was already created (and create it if it wasn't),
+  //       or make sure that the function that calls 'create<T>'
+  //       is *always* invoked *before* those that call 'get<T>'.
+  template<typename ConcreteType, typename... Args>
+  ConcreteType& create_if_not_there (Args&&... args);
+
   // Creates a concrete type and sets a second entry in the map, with
   // BaseType's name as key, so one can access the concrete type either
   // with the base or derived type name.
@@ -79,6 +91,20 @@ bool Context::has () const {
   const std::string& name = typeid(ConcreteType).name();
   auto it = m_members.find(name);
   return it!=m_members.end();
+}
+
+template<typename ConcreteType, typename... Args>
+ConcreteType& Context::create_if_not_there (Args&&... args) {
+  // This is needed for emplacing a type whose constructor takes no arguments.
+  // We could do emplace(name,ConcreteType()), but then we would be assuming
+  // that ConcreteType *has* a move constructor. This implementation here is
+  // probably the most cumbersome, but also the safest.
+  auto it_bool = m_members.emplace(typeid(ConcreteType).name(),Homme::any());
+  if (it_bool.second) {
+    // We created it, so init it.
+    it_bool.first->second.reset<ConcreteType>(args...);
+  }
+  return *any_ptr_cast<ConcreteType>(it_bool.first->second);
 }
 
 template<typename ConcreteType, typename... Args>
