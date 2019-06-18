@@ -14,3 +14,8 @@ How to change MPI tasks
 =======================
 1. modify env_mach_pes.xml
 
+CPU only
+========
+You can simply remove the Depends.summit.pgi file in the compile directory and rebuild.
+
+
