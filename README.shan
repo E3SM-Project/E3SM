@@ -1,0 +1,16 @@
+How to create and run OpenACC test case on summit:
+(For other platforms, the process is similar)
+==================================================
+1. cd E3SM/cime/scripts
+2. ./create_test SMS_PS_Ld5.ne4_ne4.FC5AV1C-L -t report --compiler pgi --walltime 00:30 --no-run
+   This command will create a directory called at $SCRATCH file system
+   /gpfs/alpine/proj-shared/cli115/hshan/e3sm_scratch/SMS_PS_Ld5.ne4_ne4.FC5AV1C-L.summit_pgi.report
+3. cd "above created dir"
+4. ./case.build --clean
+5. ./case.build
+6  ./case.submit
+
+How to change MPI tasks
+=======================
+1. modify env_mach_pes.xml
+
