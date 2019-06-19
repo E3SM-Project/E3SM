@@ -13,7 +13,8 @@ module  PhotosynthesisMod
   use abortutils          , only : endrun
   use clm_varctl          , only : iulog, use_c13, use_c14, use_cn, use_fates
   use clm_varpar          , only : nlevcan
-  use clm_varpar          , only : use_hydrstress, nvegwcs, mxpft
+  use clm_varctl          , only : use_hydrstress
+  use clm_varpar          , only : nvegwcs, mxpft
   use clm_varcon          , only : namep
   use decompMod           , only : bounds_type
   use QuadraticMod        , only : quadratic
@@ -34,18 +35,14 @@ module  PhotosynthesisMod
   use clm_varctl          , only : cnallocate_carbonphosphorus_only
   use clm_varctl          , only : iulog
   use pftvarcon           , only : noveg
-<<<<<<< HEAD
   use SharedParamsMod     , only : ParamsShareInst
   use TopounitDataType    , only : top_as
   use VegetationDataType  , only : veg_es, veg_ns, veg_ps  
-  
-=======
-  use SharedParamsMod   , only : ParamsShareInst
-  use TopounitType        , only : top_as  
+  use VegetationDataType, only : veg_wf, veg_ws
+  use ColumnDataType      , only : col_es, col_ws, col_wf 
   use SoilStateType              , only : soilstate_type
   use WaterFluxType              , only : waterflux_type
   use WaterStateType             , only : waterstate_type
->>>>>>> Add simple phs scheme from Kennedy et al.
   !
   implicit none
   save
@@ -1844,7 +1841,7 @@ contains
     SHR_ASSERT_ALL((ubound(qaf)         == (/bounds%endp/)), errMsg(__FILE__, __LINE__))
 
     associate(                                                 &
-            qflx_rootsoi_col    => waterflux_inst%qflx_rootsoi_col    , & ! Output: [real(r8) (:,:) ]  
+            qflx_rootsoi_col    => col_wf%qflx_rootsoi    , & ! Output: [real(r8) (:,:) ]  
          k_soil_root  => soilstate_inst%k_soil_root_patch    , & ! Input: [real(r8) (:,:) ]  soil-root interface conductance (mm/s)
          hk_l         =>    soilstate_inst%hk_l_col          , & ! Input: [real(r8) (:,:) ]  hydraulic conductivity (mm/s) 
          hksat        => soilstate_inst%hksat_col            , & ! Input: [real(r8) (:,:) ]  hydraulic conductivity at saturation (mm H2O /s)
@@ -1871,9 +1868,9 @@ contains
          !s_flnr     => veg_vp%s_flnr                         , & ! Input:  [real(r8) (:)   ]  
          forc_pbot  => top_as%pbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)
 
-         t_veg      => temperature_inst%t_veg_patch          , & ! Input:  [real(r8) (:)   ]  vegetation temperature (Kelvin)
-         t10        => temperature_inst%t_a10_patch          , & ! Input:  [real(r8) (:)   ]  10-day running mean of the 2 m temperature (K)
-         tgcm       => temperature_inst%thm_patch            , & ! Input:  [real(r8) (:)   ]  air temperature at agcm reference height (kelvin)
+         t_veg         => veg_es%t_veg             , & ! Input:  [real(r8) (:)   ]  vegetation temperature (Kelvin)                                       
+         t10           => veg_es%t_a10             , & ! Input:  [real(r8) (:)   ]  10-day running mean of the 2 m temperature (K)                        
+         tgcm          => veg_es%thm               , & ! Input:  [real(r8) (:)   ]  air temperature at agcm reference height (kelvin)                     
          nrad       => surfalb_inst%nrad_patch               , & ! Input:  [integer  (:)   ]  pft number of canopy layers, above snow for radiative transfer
          tlai_z     => surfalb_inst%tlai_z_patch             , & ! Input:  [real(r8) (:,:) ]  pft total leaf area index for canopy layer
          tlai       => canopystate_inst%tlai_patch           , & ! Input:  [real(r8)(:)    ]  one-sided leaf area index, no burying by snow  
@@ -1898,12 +1895,12 @@ contains
          !lnc        => photosyns_inst%lnca_patch             , & ! Output: [real(r8) (:)   ]  top leaf layer leaf N concentration (gN leaf/m^2)
          !leaf_acc   => photosyns_inst%leaf_acc               , & ! Input:  [logical        ]  flag for respiratory acclimation of leaves
          !light_inhibit=> photosyns_inst%light_inhibit        , & ! Input:  [logical        ]  flag if light should inhibit respiration
-         leafn         => nitrogenstate_vars%leafn_patch           , &
-         leafn_storage => nitrogenstate_vars%leafn_storage_patch   , &
-         leafn_xfer    => nitrogenstate_vars%leafn_xfer_patch      , &
-         leafp         => phosphorusstate_vars%leafp_patch         , &
-         leafp_storage => phosphorusstate_vars%leafp_storage_patch , &
-         leafp_xfer    => phosphorusstate_vars%leafp_xfer_patch    , &
+         leafn         => veg_ns%leafn           , &
+         leafn_storage => veg_ns%leafn_storage   , &
+         leafn_xfer    => veg_ns%leafn_xfer      , &
+         leafp         => veg_ps%leafp         , &
+         leafp_storage => veg_ps%leafp_storage , &
+         leafp_xfer    => veg_ps%leafp_xfer    , &
          i_vcmax       => veg_vp%i_vc                          , &
          s_vcmax       => veg_vp%s_vc                          , &
          bsw           => soilstate_inst%bsw_col                , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"
@@ -2837,7 +2834,7 @@ contains
     !------------------------------------------------------------------------------
     
     associate(                                                    &
-         qflx_tran_veg => waterflux_inst%qflx_tran_veg_patch    , & ! Input:  [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)
+         qflx_tran_veg => veg_wf%qflx_tran_veg    , & ! Input:  [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)
          vegwp         => canopystate_inst%vegwp_patch            & ! Input/Output: [real(r8) (:,:) ]  vegetation water matric potential (mm)
     )
 
@@ -3457,14 +3454,14 @@ contains
          elai          => canopystate_inst%elai_patch           , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow
          esai          => canopystate_inst%esai_patch           , & ! Input:  [real(r8) (:)   ]  one-sided stem area index with burying by snow
          tsai          => canopystate_inst%tsai_patch           , & ! Input:  [real(r8) (:)   ]  patch canopy one-sided stem area index, no burying by snow
-         fdry          => waterstate_inst%fdry_patch            , & ! Input:  [real(r8) (:)   ]  fraction of foliage that is green and dry [-]
+         fdry          => veg_ws%fdry            , & ! Input:  [real(r8) (:)   ]  fraction of foliage that is green and dry [-]
          forc_pbot     => top_as%pbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                                             
          forc_rho      => top_as%rhobot                         , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)
 !         forc_rho      => atm2lnd_inst%forc_rho_downscaled_col  , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)
 !         forc_pbot     => atm2lnd_inst%forc_pbot_downscaled_col , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)
-         tgcm          => temperature_inst%thm_patch            , & ! Input:  [real(r8) (:)   ]  air temperature at agcm reference height (kelvin)
+         tgcm          => veg_es%thm            , & ! Input:  [real(r8) (:)   ]  air temperature at agcm reference height (kelvin)
          bsw           => soilstate_inst%bsw_col                , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"
-         qflx_tran_veg => waterflux_inst%qflx_tran_veg_patch    , & ! Input:  [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)
+         qflx_tran_veg => veg_wf%qflx_tran_veg    , & ! Input:  [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)
          sucsat        => soilstate_inst%sucsat_col               & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)
          )
 
@@ -3844,7 +3841,7 @@ contains
          tsai          => canopystate_inst%tsai_patch           , & ! Input:  [real(r8) (:)   ]  patch canopy one-sided stem area index, no burying by snow
          smp           => soilstate_inst%smp_l_col              , & ! Input: [real(r8) (:,:) ]  soil matrix potential [mm]
          !ivt           => patch%itype                           , & ! Input:  [integer  (:)   ]  patch vegetation type
-         qflx_tran_veg => waterflux_inst%qflx_tran_veg_patch    , & ! Input:  [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)
+         qflx_tran_veg => veg_wf%qflx_tran_veg    , & ! Input:  [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)
          z             => col_pp%z                                   & ! Input:  [real(r8) (:,:) ]  layer node depth (m)
          )
     
@@ -4025,12 +4022,12 @@ contains
          laisha        => canopystate_inst%laisha_patch         , & ! Input: [real(r8) (:)   ]  shaded leaf area
          elai          => canopystate_inst%elai_patch           , & ! Input: [real(r8) (:)   ]  one-sided leaf area index with burying by snow
          esai          => canopystate_inst%esai_patch           , & ! Input: [real(r8) (:)   ]  one-sided stem area index with burying by snow
-         fdry          => waterstate_inst%fdry_patch            , & ! Input: [real(r8) (:)   ]  fraction of foliage that is green and dry [-]
+         fdry          => veg_ws%fdry            , & ! Input: [real(r8) (:)   ]  fraction of foliage that is green and dry [-]
          forc_pbot     => top_as%pbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                                             
          forc_rho      => top_as%rhobot                         , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)
 !         forc_rho      => atm2lnd_inst%forc_rho_downscaled_col  , & ! Input: [real(r8) (:)   ]  density (kg/m**3)
 !         forc_pbot     => atm2lnd_inst%forc_pbot_downscaled_col , & ! Input: [real(r8) (:)   ]  atmospheric pressure (Pa)
-         tgcm          => temperature_inst%thm_patch              & ! Input: [real(r8) (:)   ]  air temperature at agcm reference height (kelvin)
+         tgcm          => veg_es%thm              & ! Input: [real(r8) (:)   ]  air temperature at agcm reference height (kelvin)
          )
     
     
