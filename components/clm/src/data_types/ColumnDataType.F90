@@ -21,6 +21,7 @@ module ColumnDataType
   use clm_varcon      , only : watmin, bdsno, zsoi, zisoi, dzsoi_decomp
   use clm_varcon      , only : c13ratio, c14ratio, secspday
   use clm_varctl      , only : use_fates, use_fates_planthydro, create_glacier_mec_landunit
+  use clm_varctl      , only : use_hydrstress
   use clm_varctl      , only : bound_h2osoi, use_cn, iulog, use_vertsoilc, spinup_state
   use clm_varctl      , only : use_clm_interface, use_pflotran, pf_cmode
   use clm_varctl      , only : hist_wrtch4diag, use_nitrif_denitrif, use_century_decomp
@@ -1477,7 +1478,7 @@ contains
                 if (j > nlevbed) then
                    this%h2osoi_vol(c,j) = 0.0_r8
                 else
-		             if (use_fates_planthydro) then
+		             if (use_fates_planthydro .or. use_hydrstress) then
                       this%h2osoi_vol(c,j) = 0.70_r8*watsat_input(c,j) !0.15_r8 to avoid very dry conditions that cause errors in FATES HYDRO
                    else
                       this%h2osoi_vol(c,j) = 0.15_r8

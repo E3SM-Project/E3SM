@@ -1322,11 +1322,11 @@ contains
                                                                             ! soil-root interface conductance (mm/s)
               qflx_phs_neg_col    => waterflux_vars%qflx_phs_neg_col    , & ! Input:  [real(r8) (:)   ]  n
                                                                             ! net neg hydraulic redistribution flux(mm H2O/s)
-              qflx_tran_veg_col   => waterflux_vars%qflx_tran_veg_col   , & ! Input:  [real(r8) (:)   ]  
+              qflx_tran_veg_col   => col_wf%qflx_tran_veg   , & ! Input:  [real(r8) (:)   ]  
                                                                             ! vegetation transpiration (mm H2O/s) (+ = to atm)
-              qflx_tran_veg_patch => waterflux_vars%qflx_tran_veg_patch , & ! Input:  [real(r8) (:)   ]  
+              qflx_tran_veg_patch => veg_wf%qflx_tran_veg , & ! Input:  [real(r8) (:)   ]  
                                                                             ! vegetation transpiration (mm H2O/s) (+ = to atm)
-              qflx_rootsoi_col    => waterflux_vars%qflx_rootsoi_col    , & ! Output: [real(r8) (:)   ]
+              qflx_rootsoi_col    => col_wf%qflx_rootsoi    , & ! Output: [real(r8) (:)   ]
                                                                             ! col root and soil water 
                                                                             ! exchange [mm H2O/s] [+ into root]
               rootr_col           => soilstate_vars%rootr_col           , & ! Input:  [real(r8) (:,:) ]
