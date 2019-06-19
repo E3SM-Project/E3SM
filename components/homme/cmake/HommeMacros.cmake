@@ -84,6 +84,10 @@ macro(createTestExec execName execType macroNP macroNC
     SET(PIO_INTERP TRUE)
   ENDIF ()
 
+  IF(BUILD_HOMME_WITHOUT_PIOLIBRARY AND (NOT PIO_INTERP))
+    MESSAGE(ERROR "For building without PIO library set PREQX_USE_PIO to false")
+  ENDIF ()
+
   IF (${macroWITH_ENERGY})
     SET(ENERGY_DIAGNOSTICS TRUE)
   ELSE()
@@ -110,7 +114,7 @@ macro(createTestExec execName execType macroNP macroNC
   ADD_EXECUTABLE(${execName} ${EXEC_SOURCES})
   SET_TARGET_PROPERTIES(${execName} PROPERTIES LINKER_LANGUAGE Fortran)
 
-  IF (${CXXLIB_SUPPORTED})
+  IF (CXXLIB_SUPPORTED_CACHE)
     MESSAGE(STATUS "   Linking Fortran with -cxxlib")
     TARGET_LINK_LIBRARIES(${execName} -cxxlib)
   ENDIF ()
@@ -123,7 +127,11 @@ macro(createTestExec execName execType macroNP macroNC
   # Add this executable to a list
   SET(EXEC_LIST ${EXEC_LIST} ${execName} CACHE INTERNAL "List of configured executables")
 
-  TARGET_LINK_LIBRARIES(${execName} pio timing ${COMPOSE_LIBRARY} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+  TARGET_LINK_LIBRARIES(${execName} timing ${COMPOSE_LIBRARY} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+  IF(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
+    TARGET_LINK_LIBRARIES(${execName} pio)
+  ENDIF ()
+
   IF (HOMME_USE_KOKKOS)
     link_to_kokkos(${execName})
   ENDIF ()

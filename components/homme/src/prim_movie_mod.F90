@@ -3,6 +3,7 @@
 #endif
 
 module prim_movie_mod
+#ifndef HOMME_WITHOUT_PIOLIBRARY
 #ifndef PIO_INTERP
   use kinds, only : real_kind, longdouble_kind
   use dimensions_mod, only :  nlev, nelem, nelemd, np, ne, nelemdmax, GlobalUniqueCols, nlevp, qsize
@@ -48,8 +49,9 @@ module prim_movie_mod
   use coordinate_systems_mod, only : cartesian2D_t, spherical_polar_t, cartesian3D_t, spherical_to_cart
   use physical_constants, only : g, kappa, p0, dd_pi
   use dof_mod, only : UniquePoints, UniqueCoords, UniqueNcolsP, createmetadata
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   use pio, only  : io_desc_t, pio_iotask_rank !_EXTERNAL
-
+#endif
 
     use hybrid_mod, only : hybrid_t, hybrid_create
     use edgetype_mod, only : EdgeBuffer_t
@@ -65,7 +67,9 @@ module prim_movie_mod
 
   type(nf_handle) :: ncdf(max_output_streams)
   integer, private :: nxyp
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   integer(kind=nfsizekind) :: piostart2d, piocount2d, piocount3d(2), piostart3d(2)
+#endif
 
 contains
 
@@ -685,5 +689,8 @@ contains
  end subroutine prim_movie_output
 
 #endif
+!for PIOINTERP
+#endif
+!for WITHOUT_PIOLIB
 end module prim_movie_mod
 
