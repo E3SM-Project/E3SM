@@ -1325,6 +1325,7 @@ contains
     use pftvarcon        , only : nwcerealirrig, nsoybeanirrig, ncornirrig, nscerealirrig
     use pftvarcon        , only : lfemerg, grnfill, mxmat, minplanttemp, planttemp
     use clm_varcon       , only : spval, secspday
+    use CropType         , only : tcvp, tcvt, cst
     !
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_pcropp       ! number of prog crop patches in filter
@@ -1359,8 +1360,6 @@ contains
     logical p_season  ! precipitation seasonal
     logical t_season  ! temperature seasonal
     logical no_season ! neither temperature or precipitation seasonal
-    real(r8), parameter :: tcvp = 0.4       ! threshold of CV of precipitation to indicate seasonality
-    real(r8), parameter :: tcvt = 0.01      ! threshold of CV of temperature to indicate seasonality
     real(r8), parameter :: minrain = 0.1    ! minimum rainfall for planting
     real(r8), parameter :: minwet = 0.2     ! minimum fraction of saturation for planting
     real(r8), parameter :: maxwet = 0.8     ! maximum fraction of saturation for planting
@@ -1582,7 +1581,7 @@ contains
                no_season = .false.
                if (cvp(p) > tcvp) then        ! precipitation CV indicator
                   if (cvt(p) >= tcvt) then    ! Both temperature and precip seasonality
-                     if (minval(xt_bar(p,:)) .lt. 283._r8)then ! cold season exists (i.e., min temp below 10 deg C)
+                     if (minval(xt_bar(p,:)) .lt. cst)then ! cold season exists (i.e., min temp below 10 deg C)
                         t_season = .true.
                      else                            ! no cold season
                         p_season = .true.

@@ -98,6 +98,7 @@ contains
 
     ! !USES:
     use pftvarcon        , only : planttemp
+    use CropType          , only : tcvp, tcvt, cst
     ! !ARGUMENTS:
     implicit none
     integer,  intent(in)  :: p
@@ -111,8 +112,6 @@ contains
     ! !Local Variables:
     integer :: i
     real(r8) :: r, t_m
-    real(r8), parameter :: tcvp = 0.4       ! threshold of CV of precipitation to indicate seasonality
-    real(r8), parameter :: tcvt = 0.01      ! threshold of CV of temperature to indicate seasonality
     integer,  dimension(12) ::  month = (/10,11,12,1,2,3,4,5,6,7,8,9/)
     integer,  dimension(12) ::  jday  = (/1,32,60,91,121,152,182,213,244,274,305,335/)
     real(r8), dimension(12) ::  indx  = (/1,2,3,4,5,6,7,8,9,10,11,12/)
@@ -130,7 +129,7 @@ contains
     end do
     if (cvp > tcvp) then
        if (cvt >= tcvt) then    ! Both temperature and precip seasonality
-          if (minval(temp) .lt. 283._r8)then ! cold season exists
+          if (minval(temp) .lt. cst)then ! cold season exists
               plantmonth = t_m
           else                            ! no cold season
               plantmonth = month(maxloc(p2e))

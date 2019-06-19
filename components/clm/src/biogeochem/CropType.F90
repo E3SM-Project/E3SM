@@ -22,6 +22,11 @@ module CropType
   private
   save
   !
+
+  real(r8), public, parameter :: tcvp = 0.4_r8
+  real(r8), public, parameter :: tcvt = 0.01_r8
+  real(r8), public, parameter :: cst  = 283._r8
+
   ! !PUBLIC DATA TYPES:
   !
   ! Crop state variables structure
