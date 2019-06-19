@@ -122,7 +122,7 @@ contains
 
       err = 0
 
-      if ( .not. rayleighFrictionOn ) return
+      if ( .not. (rayleighFrictionOn .or. rayleighBottomFrictionOn)) return
 
       call mpas_timer_start('vel rayleigh forcing')
 
