@@ -105,6 +105,7 @@ MODULE seq_infodata_mod
      character(SHR_KIND_CL)  :: flux_epbal      ! selects E,P,R adjustment technique
      logical                 :: flux_albav      ! T => no diurnal cycle in ocn albedos
      logical                 :: flux_diurnal    ! T => diurnal cycle in atm/ocn fluxes
+     integer                 :: ocn_surface_flux_scheme  ! 0: E3SMv1 1: COARE 2: UA
      logical                 :: coldair_outbreak_mod ! (Mahrt & Sun 1995,MWR)
      real(SHR_KIND_R8)       :: flux_convergence   ! atmocn flux calc convergence value
      integer                 :: flux_max_iteration ! max number of iterations of atmocn flux loop
@@ -351,6 +352,7 @@ CONTAINS
     character(SHR_KIND_CL) :: flux_epbal         ! selects E,P,R adjustment technique
     logical                :: flux_albav         ! T => no diurnal cycle in ocn albedos
     logical                :: flux_diurnal       ! T => diurnal cycle in atm/ocn fluxes
+    integer                :: ocn_surface_flux_scheme  ! 0: E3SMv1 1: COARE  2: UA
     logical                 :: coldair_outbreak_mod ! (Mahrt & Sun 1995,MWR)
     real(SHR_KIND_R8)       :: flux_convergence   ! atmocn flux calc convergence value
     integer                 :: flux_max_iteration ! max number of iterations of atmocn flux loop
@@ -424,6 +426,7 @@ CONTAINS
          restart_pfile, restart_file, run_barriers,        &
          single_column, scmlat, force_stop_at,             &
          scmlon, logFilePostFix, outPathRoot, flux_diurnal,&
+         ocn_surface_flux_scheme, &
          coldair_outbreak_mod, &
          flux_convergence, flux_max_iteration,             &
          perpetual, perpetual_ymd, flux_epbal, flux_albav, &
@@ -504,6 +507,7 @@ CONTAINS
        flux_epbal            = 'off'
        flux_albav            = .false.
        flux_diurnal          = .false.
+       ocn_surface_flux_scheme = 0
        coldair_outbreak_mod = .false.
        flux_convergence      = 0.0_SHR_KIND_R8
        flux_max_iteration    = 2
@@ -631,6 +635,7 @@ CONTAINS
        infodata%flux_epbal            = flux_epbal
        infodata%flux_albav            = flux_albav
        infodata%flux_diurnal          = flux_diurnal
+       infodata%ocn_surface_flux_scheme = ocn_surface_flux_scheme
        infodata%flux_convergence      = flux_convergence
        infodata%coldair_outbreak_mod      = coldair_outbreak_mod
        infodata%flux_max_iteration    = flux_max_iteration
@@ -966,6 +971,7 @@ CONTAINS
        nextsw_cday, precip_fact, flux_epbal, flux_albav,                  &
        glc_g2lupdate, atm_aero, run_barriers, esmf_map_flag,              &
        do_budgets, do_histinit, drv_threading, flux_diurnal,              &
+       ocn_surface_flux_scheme, &
        coldair_outbreak_mod, &
        flux_convergence, flux_max_iteration,                              &
        budget_inst, budget_daily, budget_month, wall_time_limit,          &
@@ -1036,6 +1042,7 @@ CONTAINS
     character(len=*),       optional, intent(OUT) :: flux_epbal              ! selects E,P,R adjustment technique
     logical,                optional, intent(OUT) :: flux_albav              ! T => no diurnal cycle in ocn albedos
     logical,                optional, intent(OUT) :: flux_diurnal            ! T => diurnal cycle in atm/ocn flux
+    integer,                optional, intent(OUT) :: ocn_surface_flux_scheme ! 0: E3SMv1  1: COARE  2: UA
     real(SHR_KIND_R8), optional, intent(out)      :: flux_convergence   ! atmocn flux calc convergence value
     logical, optional, intent(out) :: coldair_outbreak_mod        ! (Mahrt & Sun 1995, MWR)
     integer, optional, intent(OUT)                :: flux_max_iteration ! max number of iterations of atmocn flux loop
@@ -1213,6 +1220,8 @@ CONTAINS
     if ( present(flux_epbal)     ) flux_epbal     = infodata%flux_epbal
     if ( present(flux_albav)     ) flux_albav     = infodata%flux_albav
     if ( present(flux_diurnal)   ) flux_diurnal   = infodata%flux_diurnal
+    if ( present(ocn_surface_flux_scheme) ) ocn_surface_flux_scheme = &
+         infodata%ocn_surface_flux_scheme
     if ( present(coldair_outbreak_mod)) coldair_outbreak_mod = infodata%coldair_outbreak_mod
     if ( present(flux_convergence)) flux_convergence = infodata%flux_convergence
     if ( present(flux_max_iteration)) flux_max_iteration = infodata%flux_max_iteration
@@ -1497,6 +1506,7 @@ CONTAINS
        nextsw_cday, precip_fact, flux_epbal, flux_albav,                  &
        glc_g2lupdate, atm_aero, esmf_map_flag, wall_time_limit,           &
        do_budgets, do_histinit, drv_threading, flux_diurnal,              &
+       ocn_surface_flux_scheme, &
        coldair_outbreak_mod,                                                           &
        flux_convergence, flux_max_iteration,                              &
        budget_inst, budget_daily, budget_month, force_stop_at,            &
@@ -1566,6 +1576,7 @@ CONTAINS
     character(len=*),       optional, intent(IN)    :: flux_epbal              ! selects E,P,R adjustment technique
     logical,                optional, intent(IN)    :: flux_albav              ! T => no diurnal cycle in ocn albedos
     logical,                optional, intent(IN)    :: flux_diurnal            ! T => diurnal cycle in atm/ocn flux
+    integer,                optional, intent(IN)    :: ocn_surface_flux_scheme ! 0: E3SMv1 1: COARE 2:UA
     logical, optional, intent(in) :: coldair_outbreak_mod
     real(SHR_KIND_R8),      optional, intent(IN)    :: flux_convergence   ! atmocn flux calc convergence value
     integer,                optional, intent(IN)    :: flux_max_iteration ! max number of iterations of atmocn flux loop
@@ -1740,6 +1751,8 @@ CONTAINS
     if ( present(flux_epbal)     ) infodata%flux_epbal     = flux_epbal
     if ( present(flux_albav)     ) infodata%flux_albav     = flux_albav
     if ( present(flux_diurnal)   ) infodata%flux_diurnal   = flux_diurnal
+    if ( present(ocn_surface_flux_scheme) ) infodata%ocn_surface_flux_scheme = &
+         ocn_surface_flux_scheme
     if ( present(coldair_outbreak_mod)   ) infodata%coldair_outbreak_mod  = coldair_outbreak_mod
     if ( present(flux_convergence)) infodata%flux_convergence  = flux_convergence
     if ( present(flux_max_iteration)) infodata%flux_max_iteration   = flux_max_iteration
@@ -2039,7 +2052,8 @@ CONTAINS
     call shr_mpi_bcast(infodata%flux_epbal,              mpicom)
     call shr_mpi_bcast(infodata%flux_albav,              mpicom)
     call shr_mpi_bcast(infodata%flux_diurnal,            mpicom)
-    call shr_mpi_bcast(infodata%coldair_outbreak_mod,            mpicom)
+    call shr_mpi_bcast(infodata%ocn_surface_flux_scheme, mpicom)
+    call shr_mpi_bcast(infodata%coldair_outbreak_mod,    mpicom)
     call shr_mpi_bcast(infodata%flux_convergence,        mpicom)
     call shr_mpi_bcast(infodata%flux_max_iteration,      mpicom)
     call shr_mpi_bcast(infodata%glc_renormalize_smb,     mpicom)
@@ -2735,6 +2749,7 @@ CONTAINS
     write(logunit,F0A) subname,'flux_epbal               = ', trim(infodata%flux_epbal)
     write(logunit,F0L) subname,'flux_albav               = ', infodata%flux_albav
     write(logunit,F0L) subname,'flux_diurnal             = ', infodata%flux_diurnal
+    write(logunit,F0L) subname,'ocn_surface_flux_scheme  = ', infodata%ocn_surface_flux_scheme
     write(logunit,F0L) subname,'coldair_outbreak_mod            = ', infodata%coldair_outbreak_mod
     write(logunit,F0R) subname,'flux_convergence         = ', infodata%flux_convergence
     write(logunit,F0I) subname,'flux_max_iteration       = ', infodata%flux_max_iteration
