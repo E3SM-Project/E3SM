@@ -97,7 +97,7 @@ contains
     !
     ! How big are the various arrays?
     !
-    if(nf90_open(trim(fileName), NF90_WRITE, ncid) /= NF90_NOERR) &
+    if(nf90_open(trim(fileName), NF90_NOWRITE, ncid) /= NF90_NOERR) &
       call stop_on_err("load_and_init(): can't open file " // trim(fileName))
     ntemps            = get_dim_size(ncid,'temperature')
     npress            = get_dim_size(ncid,'pressure')
