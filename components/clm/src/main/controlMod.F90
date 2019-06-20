@@ -46,6 +46,7 @@ module controlMod
   use clm_varctl              , only: forest_fert_exp
   use clm_varctl              , only: ECA_Pconst_RGspin
   use clm_varctl              , only: NFIX_PTASE_plant
+  use clm_varctl              , only : use_pheno_flux_limiter
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -172,6 +173,9 @@ contains
          ECA_Pconst_RGspin
     namelist /clm_inparm/ &
          NFIX_PTASE_plant
+
+    namelist /clm_inparm/ &
+         use_pheno_flux_limiter
          
     namelist /clm_inparm/  &
          suplnitro,suplphos
@@ -635,6 +639,7 @@ contains
     call mpi_bcast (forest_fert_exp, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (ECA_Pconst_RGspin, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (NFIX_PTASE_plant, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_pheno_flux_limiter, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! isotopes
     call mpi_bcast (use_c13, 1, MPI_LOGICAL, 0, mpicom, ier)
