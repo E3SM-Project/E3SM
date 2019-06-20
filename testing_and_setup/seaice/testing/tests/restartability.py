@@ -68,22 +68,19 @@ def restartability(mpasDevelopmentDir, domainsDir, domain, configuration, option
         snowModsRestart = True
 
     if (not bgcRestart):
-        nmlChanges = {"seaice_model": {"config_start_time":"file"},
-                      "restart": {"config_do_restart":True}}
+        if (not snowModsRestart):
+             nmlChanges = {"seaice_model": {"config_start_time":"file"},
+                           "restart": {"config_do_restart":True}}
+        else:
+             nmlChanges = {"seaice_model": {"config_start_time":"file"},
+                      "restart": {"config_do_restart":True,
+                                  "config_do_restart_snow_density":True,
+                                  "config_do_restart_snow_grain_radius":True}}
     else:
         nmlChanges = {"seaice_model": {"config_start_time":"file"},
                       "restart": {"config_do_restart":True,
                                   "config_do_restart_bgc":True,
                                   "config_do_restart_hbrine":True}}
-
-    if (not snowModsRestart):
-        nmlChanges = {"seaice_model": {"config_start_time":"file"},
-                      "restart": {"config_do_restart":True}}
-    else:
-        nmlChanges = {"seaice_model": {"config_start_time":"file"},
-                      "restart": {"config_do_restart":True,
-                                  "config_do_restart_snow_density":True,
-                                  "config_do_restart_snow_grain_radius":True}}
 
     if (check):
         nmlChanges["unit_test"] = {"config_testing_system_test":True}
