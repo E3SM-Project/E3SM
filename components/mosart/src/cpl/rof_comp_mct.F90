@@ -24,11 +24,14 @@ module rof_comp_mct
   use RunoffMod        , only : rtmCTL, TRunoff
   use RtmVar           , only : rtmlon, rtmlat, ice_runoff, iulog, &
                                 nsrStartup, nsrContinue, nsrBranch, & 
-                                inst_index, inst_suffix, inst_name, RtmVarSet
+                                inst_index, inst_suffix, inst_name, RtmVarSet, wrmflag
   use RtmSpmd          , only : masterproc, mpicom_rof, npes, iam, RtmSpmdInit, ROFID
   use RtmMod           , only : Rtmini, Rtmrun
-  use RtmTimeManager   , only : timemgr_setup, get_curr_date, get_step_size, advance_timestep 
+  use RtmTimeManager   , only : timemgr_setup, get_curr_date, get_step_size!, advance_timestep
   use perf_mod         , only : t_startf, t_stopf, t_barrierf
+!#ifdef INCLUDE_WRM
+  use WRM_type_mod     , only : StorWater
+!#endif
   use rof_cpl_indices  , only : rof_cpl_indices_set, nt_rtm, rtm_tracers, &
                                 index_x2r_Flrl_rofsur, index_x2r_Flrl_rofi, &
                                 index_x2r_Flrl_rofgwl, index_x2r_Flrl_rofsub, &
@@ -36,6 +39,7 @@ module rof_comp_mct
                                 index_r2x_Forr_rofl, index_r2x_Forr_rofi, &
                                 index_r2x_Flrr_flood, &
                                 index_r2x_Flrr_volr, index_r2x_Flrr_volrmch
+                                !index_r2x_Flrr_supply , index_r2x_Flrr_supplyfrac, index_x2r_Flrl_demand, 
   use mct_mod
   use ESMF
 !
@@ -112,7 +116,7 @@ contains
     character(len=SHR_KIND_CL) :: version            ! Model version
     character(len=SHR_KIND_CL) :: username           ! user running the model
     character(len=8)           :: c_inst_index       ! instance number
-    character(len=8)           :: c_npes             ! number of pes
+    character(len=8)           :: c_npes             ! number of pes                                                                      
     character(len=32), parameter :: sub = 'rof_init_mct'
     character(len=*),  parameter :: format = "('("//trim(sub)//") :',A)"
     !---------------------------------------------------------------------------
@@ -135,11 +139,11 @@ contains
     endif
 #endif                      
 
+    ! Initialize io log unit
     inst_name   = seq_comm_name(ROFID)
     inst_index  = seq_comm_inst(ROFID)
     inst_suffix = seq_comm_suffix(ROFID)
 
-    ! Initialize io log unit
     call shr_file_getLogUnit (shrlogunit)
     if (masterproc) then
        inquire(file='rof_modelio.nml'//trim(inst_suffix),exist=exists)
@@ -160,7 +164,7 @@ contains
        write(iulog,*) ' mosart iam  = ',iam
        write(iulog,*) ' inst_name = ',trim(inst_name)
     endif
-
+    
     ! Identify SMP nodes and process/SMP mapping for this instance.
     ! (Assume that processor names are SMP node names on SMP clusters.)
     write(c_inst_index,'(i8)') inst_index
@@ -198,7 +202,7 @@ contains
                            verbose=verbose_taskmap_output,       &
                            no_output=no_taskmap_output           )
     call t_stopf("shr_taskmap_write")
-
+    
     ! Initialize mosart
     call seq_timemgr_EClockGetData(EClock,                               &
                                    start_ymd=start_ymd,                  &
@@ -248,11 +252,11 @@ contains
        lsize = mct_gsMap_lsize(gsMap_rof, mpicom_rof)
        call rof_domain_mct( lsize, gsMap_rof, dom_r )
        
-       ! Initialize lnd -> mosart attribute vector		
+       ! Initialize lnd -> mosart attribute vector  
        call mct_aVect_init(x2r_r, rList=seq_flds_x2r_fields, lsize=lsize)
        call mct_aVect_zero(x2r_r)
        
-       ! Initialize mosart -> ocn attribute vector		
+       ! Initialize mosart -> ocn attribute vector  
        call mct_aVect_init(r2x_r, rList=seq_flds_r2x_fields, lsize=lsize)
        call mct_aVect_zero(r2x_r) 
        
@@ -340,10 +344,11 @@ contains
 
     ! Run mosart (input is *runin, output is rtmCTL%runoff)
     ! First advance mosart time step
+
     write(rdate,'(i4.4,"-",i2.2,"-",i2.2,"-",i5.5)') yr_sync,mon_sync,day_sync,tod_sync
     nlend = seq_timemgr_StopAlarmIsOn( EClock )
     rstwr = seq_timemgr_RestartAlarmIsOn( EClock )
-    call advance_timestep()
+    !call advance_timestep()
     call Rtmrun(rstwr,nlend,rdate)
 
     ! Map roff data to MCT datatype (input is rtmCTL%runoff, output is r2x_r)
@@ -591,11 +596,25 @@ contains
        else
           rtmCTL%qdto(n,nliq) = 0.0_r8
        endif
+!       rtmCTL%qdem(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_demand,n2) * (rtmCTL%area(n)*0.001_r8)
 
        rtmCTL%qsur(n,nfrz) = x2r_r%rAttr(index_x2r_Flrl_rofi,n2) * (rtmCTL%area(n)*0.001_r8)
        rtmCTL%qsub(n,nfrz) = 0.0_r8
        rtmCTL%qgwl(n,nfrz) = 0.0_r8
        rtmCTL%qdto(n,nfrz) = 0.0_r8
+!       rtmCTL%qdem(n,nfrz) = 0.0_r8
+
+       ! tcxcpl
+       !?? = x2r_r%rAttr(index_x2r_Sa_tbot,n2)
+       !?? = x2r_r%rAttr(index_x2r_Sa_pbot,n2)
+       !?? = x2r_r%rAttr(index_x2r_Sa_u   ,n2)
+       !?? = x2r_r%rAttr(index_x2r_Sa_v   ,n2)
+       !?? = x2r_r%rAttr(index_x2r_Sa_shum,n2)
+       !?? = x2r_r%rAttr(index_x2r_Faxa_lwdn ,n2)
+       !?? = x2r_r%rAttr(index_x2r_Faxa_swvdr,n2)
+       !?? = x2r_r%rAttr(index_x2r_Faxa_swvdf,n2)
+       !?? = x2r_r%rAttr(index_x2r_Faxa_swndr,n2)
+       !?? = x2r_r%rAttr(index_x2r_Faxa_swndf,n2)
 
     enddo
 
@@ -692,6 +711,14 @@ contains
        r2x_r%rattr(index_r2x_Flrr_flood,ni)   = -rtmCTL%flood(n) / (rtmCTL%area(n)*0.001_r8)
        r2x_r%rattr(index_r2x_Flrr_volr,ni)    = (Trunoff%wr(n,nliq) + Trunoff%wt(n,nliq)) / rtmCTL%area(n)
        r2x_r%rattr(index_r2x_Flrr_volrmch,ni) = Trunoff%wr(n,nliq) / rtmCTL%area(n)
+!       r2x_r%rattr(index_r2x_Flrr_supply,ni)  = 0._r8  ! tcxcpl
+!       !r2x_r%rattr(index_r2x_Flrr_supplyfrac,ni)  = 0._r8  ! Tian
+!#ifdef INCLUDE_WRM
+!       if (wrmflag) then
+!          r2x_r%rattr(index_r2x_Flrr_supply,ni)  = StorWater%Supply(n) / (rtmCTL%area(n)*0.001_r8)   ! tcxcpl   !! converted to mm/s during budget check (Tian)
+!          !r2x_r%rattr(index_r2x_Flrr_supplyfrac,ni)  = StorWater%SupplyFrac(n) ! passing fraction use instead of the supply flux rate (Tian June 2018)
+!       endif
+!#endif
     end do
 
   end subroutine rof_export_mct

@@ -11,6 +11,10 @@ module RtmHistFlds
   use shr_kind_mod   , only: r8 => shr_kind_r8
   use RunoffMod      , only : rtmCTL
   use RtmHistFile    , only : RtmHistAddfld, RtmHistPrintflds
+  use RtmVar         , only : wrmflag, inundflag
+!#ifdef INCLUDE_WRM
+  use WRM_type_mod  , only : ctlSubwWRM, WRMUnit, StorWater
+!#endif
   use rof_cpl_indices, only : nt_rtm, rtm_tracers  
 
   implicit none
@@ -37,6 +41,22 @@ contains
     ! ARGUMENTS:
     implicit none
     !-------------------------------------------------------
+
+    call RtmHistAddfld (fname='MASK', units='none',  &
+         avgflag='A', long_name='MOSART mask 1=land 2=ocean 3=outlet ', &
+         ptr_rof=rtmCTL%rmask, default='active')
+
+    call RtmHistAddfld (fname='GINDEX', units='none',  &
+         avgflag='A', long_name='MOSART global index ', &
+         ptr_rof=rtmCTL%rgindex, default='active')
+
+    call RtmHistAddfld (fname='DSIG', units='none',  &
+         avgflag='A', long_name='MOSART downstream index ', &
+         ptr_rof=rtmCTL%rdsig, default='active')
+
+    call RtmHistAddfld (fname='OUTLETG', units='none',  &
+         avgflag='A', long_name='MOSART outlet index ', &
+         ptr_rof=rtmCTL%routletg, default='active')
 
     call RtmHistAddfld (fname='RIVER_DISCHARGE_OVER_LAND'//'_'//trim(rtm_tracers(1)), units='m3/s',  &
          avgflag='A', long_name='MOSART river basin flow: '//trim(rtm_tracers(1)), &
@@ -95,12 +115,14 @@ contains
          ptr_rof=rtmCTL%dvolrdtocn_nt2, default='inactive')
 
     call RtmHistAddfld (fname='QSUR'//'_'//trim(rtm_tracers(1)), units='m3/s',  &
-         avgflag='A', long_name='MOSART input surface runoff: '//trim(rtm_tracers(1)), &
+         avgflag='A', long_name='ALM irrigation demand: '//trim(rtm_tracers(1)), &
          ptr_rof=rtmCTL%qsur_nt1, default='active')
+       !MOSART input surface runoff was modified to ALM irrigation demand by Yuna 1/29/2018
 
     call RtmHistAddfld (fname='QSUR'//'_'//trim(rtm_tracers(2)), units='m3/s',  &
-         avgflag='A', long_name='MOSART input surface runoff: '//trim(rtm_tracers(2)), &
+         avgflag='A', long_name='ALM irrigation demand: '//trim(rtm_tracers(2)), &
          ptr_rof=rtmCTL%qsur_nt2, default='active')
+       !MOSART input surface runoff was modified to ALM irrigation demand by Yuna 1/29/2018
 
     call RtmHistAddfld (fname='QSUB'//'_'//trim(rtm_tracers(1)), units='m3/s',  &
          avgflag='A', long_name='MOSART input subsurface runoff: '//trim(rtm_tracers(1)), &
@@ -126,6 +148,61 @@ contains
          avgflag='A', long_name='MOSART input direct to ocean runoff: '//trim(rtm_tracers(2)), &
          ptr_rof=rtmCTL%qdto_nt2, default='active')
 
+    call RtmHistAddfld (fname='QDEM'//'_'//trim(rtm_tracers(1)), units='m3/s',  &
+         avgflag='A', long_name='MOSART input surface runoff: '//trim(rtm_tracers(1)), &
+         ptr_rof=rtmCTL%qdem_nt1, default='active')
+
+    call RtmHistAddfld (fname='QDEM'//'_'//trim(rtm_tracers(2)), units='m3/s',  &
+         avgflag='A', long_name='MOSART input surface runoff: '//trim(rtm_tracers(2)), &
+         ptr_rof=rtmCTL%qdem_nt2, default='active')
+
+!#ifdef INCLUDE_WRM
+    if (wrmflag) then
+
+      call RtmHistAddfld (fname='WRM_SUPPLY', units='m3/s',  &
+         avgflag='A', long_name='WRM supply provided ', &
+         ptr_rof=StorWater%Supply, default='active')
+      !call RtmHistAddfld (fname='WRM_SUPPLY_FRACTION', units='none',  &
+      !   avgflag='A', long_name='WRM supply fraction relative to demand ', &
+      !   ptr_rof=StorWater%SupplyFrac, default='active')                                                                                                                               
+
+      call RtmHistAddfld (fname='WRM_DEMAND', units='m3/s',  &
+         avgflag='A', long_name='WRM new demand after supply: same as deficit ', &
+         ptr_rof=StorWater%demand, default='active')
+
+      call RtmHistAddfld (fname='WRM_DEMAND0', units='m3/s',  &
+         avgflag='A', long_name='WRM demand requested ', &
+         ptr_rof=StorWater%demand0, default='active')
+
+      call RtmHistAddfld (fname='WRM_DEFICIT', units='m3/s',  &
+         avgflag='A', long_name='WRM deficit ', &
+         ptr_rof=StorWater%deficit, default='active')
+
+      call RtmHistAddfld (fname='WRM_STORAGE', units='m3',  &
+         avgflag='A', long_name='WRM storage ', &
+         ptr_rof=StorWater%storageG, default='active')
+    endif
+!#endif
+
+!#ifdef INCLUDE_INUND
+    if (inundflag) then
+      call RtmHistAddfld (fname='FLOODPLAIN_VOLUME', units='m3',  &
+         avgflag='A', long_name='MOSART floodplain water volume', &
+         ptr_rof=rtmCTL%inundwf, default='active')
+      call RtmHistAddfld (fname='FLOODPLAIN_DEPTH', units='m',  &
+         avgflag='A', long_name='MOSART floodplain water depth', &
+         ptr_rof=rtmCTL%inundhf, default='active')
+        !!!!!!!!!!! added by Tian Dec 2017 
+      call RtmHistAddfld (fname='FLOODPLAIN_FRACTION', units='none',  &
+         avgflag='A', long_name='MOSART floodplain water area fraction', &
+         ptr_rof=rtmCTL%inundff, default='active')
+      call RtmHistAddfld (fname='FLOODED_FRACTION', units='none',  &
+         avgflag='A', long_name='MOSART flooded water area fraction', &
+         ptr_rof=rtmCTL%inundffunit, default='active')
+		!!!!!!!!!!!!!!!!!!!!!!!!
+    endif
+!#endif
+
     ! Print masterlist of history fields
 
     call RtmHistPrintflds()
@@ -141,9 +218,15 @@ contains
     ! Set mosart history fields as 1d poitner arrays
     !
     implicit none
+    integer :: idam, ig
     !-----------------------------------------------------------------------
 
     ! Currently only have two tracers
+
+    rtmCTL%rmask(:)          = rtmCTL%mask(:)
+    rtmCTL%rgindex(:)        = rtmCTL%gindex(:)
+    rtmCTL%rdsig(:)          = rtmCTL%dsig(:)
+    rtmCTL%routletg(:)       = rtmCTL%outletg(:)
 
     rtmCTL%runofflnd_nt1(:)  = rtmCTL%runofflnd(:,1)
     rtmCTL%runofflnd_nt2(:)  = rtmCTL%runofflnd(:,2)
@@ -177,6 +260,19 @@ contains
 
     rtmCTL%qdto_nt1(:)       = rtmCTL%qdto(:,1)
     rtmCTL%qdto_nt2(:)       = rtmCTL%qdto(:,2)
+
+    rtmCTL%qdem_nt1(:)       = rtmCTL%qdem(:,1)
+    rtmCTL%qdem_nt2(:)       = rtmCTL%qdem(:,2)
+
+!#ifdef INCLUDE_WRM
+    if (wrmflag) then
+       StorWater%storageG = 0._r8
+       do idam = 1, ctlSubwWRM%localNumDam
+          ig = WRMUnit%icell(idam)
+          StorWater%storageG(ig) = StorWater%storage(idam)
+       enddo
+    endif
+!#endif
 
   end subroutine RtmHistFldsSet
 
