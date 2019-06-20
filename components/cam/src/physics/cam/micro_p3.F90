@@ -959,8 +959,8 @@ contains
           dt,dqsdt,qvs(i,k),qvi(i,k),xxls(i,k),abi,epsi_tot,epsc,epsr, &
           aaa,xx,dumqvi)
 
-          call evaporate_sublimate_precip(qc_incld(i,k),qr_incld(i,k),nr_incld(i,k),t(i,k),pres(i,k), &
-          aaa,xx,dt,ab,epsr,epsc,qv(i,k),sup(i,k),ssat(i,k),xxlv(i,k), &
+          call evaporate_sublimate_precip(qc_incld(i,k),qr_incld(i,k),nr_incld(i,k),qitot_incld(i,k), &
+          t(i,k),pres(i,k),lcldm(i,k),rcldm(i,k),qvs(i,k),aaa,xx,dt,ab,epsr,epsc,qv(i,k),sup(i,k),ssat(i,k),xxlv(i,k), &
           qccon,qrcon,qcevp,qrevp,nrevp)
 
           call ice_deposition_sublimation(qitot_incld(i,k), nitot_incld(i,k), t(i,k), &
@@ -1220,26 +1220,13 @@ contains
           ! The rates are adjusted here (where necessary) such that the sum of the sinks of mass cannot
           ! be greater than the sum of the sources, thereby resulting in overdepletion.
 
-          !-- Limit ice process rates to prevent overdepletion of sources such that
-          !   the subsequent adjustments are done with maximum possible rates for the
-          !   time step.  (note: most ice rates are adjusted here since they must be done
-          !   simultaneously (outside of iice-loops) to distribute reduction proportionally
-          !   amongst categories.
-          !PMC - might need to rethink above statement since only one category now.
-          ! AaronDonahue: Do we need the below checks for the new definition of
-          ! how qidep and qisub are derived?
-          dumqvi = qv_sat(t(i,k),pres(i,k),1)
-          qdep_satadj = (qv(i,k)-dumqvi)/(1._rtype+xxls(i,k)**2*dumqvi/(cp*rv*t(i,k)**2))*odt
-          qidep  = qidep*min(1._rtype,max(0._rtype, qdep_satadj)/max(qidep, 1.e-20_rtype))
-          qisub  = qisub*min(1._rtype,max(0._rtype,-qdep_satadj)/max(qisub, 1.e-20_rtype))
-          !==
-
           ! vapor -- not needed, since all sinks already have limits imposed and the sum, therefore,
           !          cannot possibly overdeplete qv
 
           ! cloud
           sinks   = (qcaut+qcacc+qccol+qcevp+qcheti+qcshd+qiberg)*dt
           sources = qc(i,k) + (qccon+qcnuc)*dt
+          ratio = 0.0 ! Initialize ratio in order to only limit qidep and qisub when needed.  See below.
           if (sinks.gt.sources .and. sinks.ge.1.e-20_rtype) then
              ratio  = sources/sinks
              qcaut  = qcaut*ratio
@@ -1249,13 +1236,18 @@ contains
              qcheti = qcheti*ratio
              qcshd  = qcshd*ratio
              qiberg = qiberg*ratio
-             !PMC: ratio is also frac of step w/ liq. thus we apply qiberg for
-             !"ratio" of timestep and vapor deposition for the remaining frac of
-             !the timestep.
-             if (qiberg.gt.0_rtype) qidep  = qidep*(1._rtype-ratio)
           else
-             if (qiberg.gt.0_rtype) qidep  = 0._rtype ! If not limiting qiberg then must not have run out of qc
+             ratio = 1.0 ! If not limiting qiberg then must not have run out of qc
           endif
+
+          !PMC: ratio is also frac of step w/ liq. thus we apply qiberg for
+          !"ratio" of timestep and vapor deposition and sublimation  for the 
+          !remaining frac of the timestep.  Only limit if there will be cloud
+          !water to begin with.
+          if ((qc(i,k)+sources).gt.1.e-20_rtype) then
+             qidep  = qidep*(1._rtype-ratio)
+             qisub  = qisub*(1._rtype-ratio)
+          end if
 
           ! rain
           sinks   = (qrevp+qrcol+qrheti)*dt
@@ -3296,7 +3288,7 @@ qidep,qisub,nisub,qiberg)
    real(rtype), intent(out) :: qiberg
 
    real(rtype) :: oxx, odt, oabi
-   logical :: orig_version = .false.  ! AaronDonahue: I will delete this and the code associated 
+   logical :: orig_version = .true.  ! AaronDonahue: I will delete this and the code associated 
                                      ! with it being true when we commit to the new derivation of 
                                      ! qiberg, qidep, qisub and nisub.  Just
                                      ! have it here so we can go back and forth
@@ -3367,18 +3359,11 @@ qidep,qisub,nisub,qiberg)
 
    return
 
-   ! AaronDonahue: General comment.  In testing these two approaches using the
-   ! p3 standalone I found that qidep is around two orders of magnitude greater for the
-   ! new approach than for the old approach. If we look at the expressions, in
-   ! the old approach we use qvs-dumqvi instead of qv-dumqvi.  qv is 3 or 4
-   ! times larger than qvs which contributes to this huge difference.  Should we
-   ! be using qv?
-
 end subroutine ice_deposition_sublimation
 
 
-subroutine evaporate_sublimate_precip(qc_incld,qr_incld,nr_incld,t,pres, &
-aaa,xx,dt,ab,epsr,epsc,qv,sup,ssat,xxlv, &
+subroutine evaporate_sublimate_precip(qc_incld,qr_incld,nr_incld,qitot_incld,t,pres, &
+lcldm,rcldm,qvs,aaa,xx,dt,ab,epsr,epsc,qv,sup,ssat,xxlv, &
 qccon,qrcon,qcevp,qrevp,nrevp)
 
    implicit none
@@ -3386,8 +3371,12 @@ qccon,qrcon,qcevp,qrevp,nrevp)
    real(rtype), intent(in)  :: qc_incld
    real(rtype), intent(in)  :: qr_incld
    real(rtype), intent(in)  :: nr_incld
+   real(rtype), intent(in)  :: qitot_incld
    real(rtype), intent(in)  :: t
    real(rtype), intent(in)  :: pres
+   real(rtype), intent(in)  :: lcldm
+   real(rtype), intent(in)  :: rcldm
+   real(rtype), intent(in)  :: qvs
    real(rtype), intent(in)  :: aaa
    real(rtype), intent(in)  :: xx
    real(rtype), intent(in)  :: dt
@@ -3406,10 +3395,18 @@ qccon,qrcon,qcevp,qrevp,nrevp)
 
    real(rtype) :: odt, oxx
    real(rtype) :: dumqvs, qcon_satadj, ratio
+   real(rtype) :: qclr, cld
+
+   logical :: orig_version = .true.  ! AaronDonahue: I will delete this and the code associated 
+                                     ! with it being true when we commit to the new derivation of 
+                                     ! qccon, qrcon, qcevp, qrevp and nrevp.  Just
+                                     ! have it here so we can go back and forth
+                                     ! between old and new approach.
 
    oxx = 1._rtype/xx
    odt = 1._rtype/dt   ! inverse model time step
 
+   if (orig_version) then
    if (qc_incld.ge.qsmall) &
         qccon = (aaa*epsc*oxx+(ssat-aaa*oxx)*odt*epsc*oxx*(1.-dexp(-dble(xx*dt))))/ab
    if (qr_incld.ge.qsmall) &
@@ -3445,6 +3442,39 @@ qccon,qrcon,qcevp,qrevp,nrevp)
       qcevp = qcevp*ratio
       qrevp = qrevp*ratio
    endif
+
+   else  ! orig_version
+
+   ! Determine temporary cloud fraction, set to zero if cloud water + ice is
+   ! very small.  This will ensure that evap/subl of precip occurs over entire
+   ! grid cell, since min cloud fraction is specified otherwise.
+   if (qc_incld + qitot_incld < 1.e-6_rtype) then
+      cld = 0._rtype
+   else
+      cld = lcldm
+   end if
+  
+   ! Only calculate if there is some rain fraction > cloud fraction
+   qrevp = 0.0_rtype
+   if (rcldm > cld) then
+      ! calculate q for out-of-cloud region
+      qclr = (qv-cld*qvs)/(1._rtype-cld)
+
+      ! rain evaporation
+      if (qr_incld.ge.qsmall) then
+         qrevp = epsr * (qclr-qvs)/ab
+      end if
+ 
+      ! only evap in out-of-cloud region
+      qrevp = -min(qrevp*(rcldm-cld),0._rtype)
+      qrevp = qrevp/rcldm
+   end if ! rcld>cld
+   if (qr_incld(i,k).gt.qsmall)  nrevp = qrevp*(nr_incld(i,k)/qr_incld(i,k))
+   ! No condensation, or evaporation of liquid
+   qccon = 0._rtype
+   qcevp = 0._rtype
+   qrcon = 0._rtype
+   end if ! orig_verstion
 
    return
 
