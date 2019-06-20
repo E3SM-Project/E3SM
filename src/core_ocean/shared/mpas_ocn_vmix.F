@@ -67,6 +67,7 @@ module ocn_vmix
 
    logical :: velVmixOn, tracerVmixOn
    real (kind=RKIND) :: implicitBottomDragCoef
+   real (kind=RKIND) :: rayleighDampingCoef, rayleighBottomDampingCoef
 
 !***********************************************************************
 
@@ -271,7 +272,7 @@ contains
       nEdges = nEdgesArray( 1 )
 
       allocate(A(nVertLevels),B(nVertLevels),C(nVertLevels),velTemp(nVertLevels))
-      A(1)=0
+      A(1)=0.0_RKIND
 
       !$omp do schedule(runtime)
       do iEdge = 1, nEdges
@@ -304,13 +305,14 @@ contains
          ! B is diagonal term
          B(1) = 1 - C(1)
          do k = 2, N-1
-            B(k) = 1 - A(k) - C(k)
+            B(k) = 1.0_RKIND - A(k) - C(k) + dt*rayleighDampingCoef
          enddo
 
          ! Apply bottom drag boundary condition on the viscous term
          ! second line uses sqrt(2.0*kineticEnergyEdge(k,iEdge))
-         B(N) = 1 - A(N) + dt*implicitBottomDragCoef &
-              * sqrt(kineticEnergyCell(k,cell1) + kineticEnergyCell(k,cell2)) / layerThicknessEdge(k,iEdge)
+         B(N) = 1.0_RKIND - A(N) + dt*implicitBottomDragCoef &
+              * sqrt(kineticEnergyCell(k,cell1) + kineticEnergyCell(k,cell2)) / layerThicknessEdge(k,iEdge) &
+              + dt*(rayleighDampingCoef + rayleighBottomDampingCoef)
 
          call tridiagonal_solve(A(2:N),B,C(1:N-1),normalVelocity(:,iEdge),velTemp,N)
 
@@ -661,6 +663,8 @@ contains
       logical, pointer :: config_disable_vel_vmix, config_disable_tr_vmix
       logical, pointer :: config_use_implicit_bottom_drag
       real (kind=RKIND), pointer :: config_implicit_bottom_drag_coeff
+      logical, pointer :: config_Rayleigh_friction, config_Rayleigh_bottom_friction
+      real (kind=RKIND), pointer :: config_Rayleigh_damping_coeff, config_Rayleigh_bottom_damping_coeff
 
       err = 0
 
@@ -668,6 +672,26 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_disable_tr_vmix', config_disable_tr_vmix)
       call mpas_pool_get_config(ocnConfigs, 'config_use_implicit_bottom_drag', config_use_implicit_bottom_drag)
       call mpas_pool_get_config(ocnConfigs, 'config_implicit_bottom_drag_coeff', config_implicit_bottom_drag_coeff)
+      call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_friction', &
+                                             config_Rayleigh_friction)
+      call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_bottom_friction', &
+                                             config_Rayleigh_bottom_friction)
+      call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_damping_coeff', &
+                                             config_Rayleigh_damping_coeff)
+      call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_bottom_damping_coeff', &
+                                             config_Rayleigh_bottom_damping_coeff)
+
+      rayleighDampingCoef = 0.0_RKIND
+
+      if (config_Rayleigh_friction) then
+          rayleighDampingCoef = config_Rayleigh_damping_coeff
+      endif
+
+      rayleighBottomDampingCoef = 0.0_RKIND
+
+      if (config_Rayleigh_bottom_friction) then
+          rayleighBottomDampingCoef = config_Rayleigh_bottom_damping_coeff
+      endif
 
       velVmixOn = .true.
       tracerVmixOn = .true.
