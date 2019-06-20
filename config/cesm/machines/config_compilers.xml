@@ -74,6 +74,13 @@ using a fortran linker.
   <SUPPORTS_CXX>FALSE</SUPPORTS_CXX>
 </compiler>
 
+<compiler>
+  <CPPDEFS>
+    <append MODEL="nemo"> -Dkey_diaar5 -Dkey_diahth -Dkey_dynspg_ts -Dkey_ldfslp -Dkey_trabbl -Dkey_traldf_c2d -Dkey_zdfddm -Dkey_zdftke -Dkey_mpp_mpi -Dkey_mpp_rep -Dkey_iomput -Dkey_xios2 -Dkey_coupled -DCCSMCOUPLED </append>
+    <append DEBUG="TRUE" MODEL="nemo"> -Dkey_nosignedzero </append>
+  </CPPDEFS>
+</compiler>
+
 <compiler COMPILER="cray">
   <CFLAGS>
     <append compile_threaded="false"> -h noomp </append>
@@ -484,6 +491,12 @@ using a fortran linker.
   <FFLAGS>
     <append>  -xHost </append>
   </FFLAGS>
+  <FFLAGS>
+    <append MODEL="nemo"> $(FC_AUTO_R8) -O3 -assume norealloc_lhs </append>
+  </FFLAGS>
+  <SLIBS>
+    <append> $SHELL{${NETCDF_PATH}/bin/nc-config --flibs}</append>
+  </SLIBS>
   <MPICXX MPILIB="mpich2">mpiicpc</MPICXX>
   <MPICC MPILIB="mpich2">mpiicc</MPICC>
   <MPIFC MPILIB="mpich2">mpiifort</MPIFC>

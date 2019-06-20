@@ -131,6 +131,7 @@ This allows using a different mpirun command to launch unit tests
       <env name="I_MPI_LSF_USE_COLLECTIVE_LAUNCH">1</env>
       <env name="I_MPI_DAPL_UD">on</env>
       <env name="I_MPI_DAPL_SCALABLE_PROGRESS">on</env>
+      <env name="XIOS_PATH">/users/home/models/nemo/xios-cmip6/intel_xe_2013</env>
     </environment_variables>
   </machine>
 

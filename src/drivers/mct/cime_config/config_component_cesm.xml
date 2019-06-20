@@ -284,6 +284,7 @@
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_XOCN">$ATM_NCPL</value>
       <value compset="_SOCN">$ATM_NCPL</value>
+      <value compset="_NEMO">24</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
