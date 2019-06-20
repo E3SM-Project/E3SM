@@ -51,7 +51,11 @@ module ocn_gm
    logical, pointer :: config_use_Redi_bottom_layer_tapering
    real (kind=RKIND), pointer :: config_Redi_surface_layer_tapering_extent
    real (kind=RKIND), pointer :: config_Redi_bottom_layer_tapering_depth
-
+   logical, pointer :: config_gm_lat_variable_c2
+   logical, pointer :: config_gm_kappa_lat_depth_variable
+   logical, pointer :: config_gm_kappa_lat_variable
+   real (kind=RKIND), pointer :: config_gm_min_stratification_ratio
+   real (kind=RKIND), pointer :: config_gm_min_phase_speed
    real (kind=RKIND), parameter :: epsGM = 1.0e-12_RKIND
 
 !***********************************************************************
@@ -102,14 +106,16 @@ contains
          layerThicknessEdge, gradDensityEdge, gradDensityTopOfEdge, gradDensityConstZTopOfEdge, gradZMidEdge, &
          gradZMidTopOfEdge, relativeSlopeTopOfEdge, relativeSlopeTopOfCell, k33, gmStreamFuncTopOfEdge, BruntVaisalaFreqTop, &
          gmStreamFuncTopOfCell, dDensityDzTopOfEdge, dDensityDzTopOfCell, relativeSlopeTapering, relativeSlopeTaperingCell, &
-         areaCellSum
-      real(kind=RKIND), dimension(:), pointer   :: boundaryLayerDepth, gmBolusKappa
+         areaCellSum, kappaGM3D
+
+      real(kind=RKIND), dimension(:), pointer   :: boundaryLayerDepth, gmBolusKappa,  cGMphaseSpeed, bottomDepth
       real(kind=RKIND), dimension(:), pointer   :: areaCell, dcEdge, dvEdge, tridiagA, tridiagB, tridiagC, rightHandSide
       integer, dimension(:), pointer   :: maxLevelEdgeTop, maxLevelCell, nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell
       integer                          :: i, k, iEdge, cell1, cell2, iCell, N, iter
       real(kind=RKIND)                 :: h1, h2, areaEdge, c, BruntVaisalaFreqTopEdge, rtmp, stmp, maxSlopeK33
-
+      real(kind=RKIND)                 :: bottomAv, sumN2, countN2, maxN, kappaSum, ltSum
+      
       ! Dimensions
       integer :: nCells, nEdges
       integer, pointer :: nVertLevels
@@ -124,6 +130,8 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'displacedDensity', displacedDensity)
       call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
 
+      call mpas_pool_get_array(diagnosticsPool, 'cGMphaseSpeed', cGMphaseSpeed)
+      call mpas_pool_get_array(diagnosticsPool, 'kappaGM3D', kappaGM3D)
       call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfEdge', relativeSlopeTopOfEdge)
       call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfCell', relativeSlopeTopOfCell)
@@ -141,6 +149,7 @@ contains
       if (config_use_Redi_surface_layer_tapering) call mpas_pool_get_array(diagnosticsPool, 'boundaryLayerDepth', &
           boundaryLayerDepth)
 
+      call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop',  maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'maxLevelCell',  maxLevelCell)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge',  cellsOnEdge)
@@ -516,7 +525,68 @@ contains
       !
       !--------------------------------------------------------------------
 
-      c = config_gravWaveSpeed_trunc**2
+
+      cGMphaseSpeed(:) = config_gravWaveSpeed_trunc**2
+      if (config_gm_lat_variable_c2) then
+          nEdges = nEdgesArray( 3 )
+          sumN2 = 0.0
+          countN2 = 0
+          !$omp do schedule(runtime) private(cell1, cell2, k, BruntVaisalaFreqTopEdge, sumN2, countN2, bottomAv)
+          do iEdge = 1, nEdges
+             cell1 = cellsOnEdge(1,iEdge)
+             cell2 = cellsOnEdge(2,iEdge)
+             
+             do k=2,maxLevelEdgeTop(iEdge)
+
+                BruntVaisalaFreqTopEdge = 0.5_RKIND * (BruntVaisalaFreqTop(k,cell1) + BruntVaisalaFreqTop(k,cell2))
+                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
+                
+                sumN2 = sumN2 + BruntVaisalaFreqTopEdge
+                countN2 = countN2 +1
+
+             enddo
+
+             bottomAv = 0.5_RKIND*(bottomDepth(cell1)+bottomDepth(cell2))
+
+             if(countN2 > 0) cGMphaseSpeed(iEdge) = max(config_gm_min_phase_speed ,sqrt(sumN2/countN2)*bottomAv / pii)
+
+          enddo
+          !$omp end do
+
+      endif
+
+      !$omp do schedule(runtime)
+      do iEdge=1,nEdges
+         kappaGM3D(:,iEdge) = gmBolusKappa(iEdge)
+      enddo 
+      !$omp end do
+
+      if (config_gm_kappa_lat_depth_variable) then
+
+         !$omp do schedule(runtime) private(cell1, cell2, k, BruntVaisalaFreqTopEdge, maxN)
+         do iEdge = 1,nEdges
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+
+            maxN = -1.0_RKIND
+            do k=2,maxLevelEdgeTop(iEdge)
+               BruntVaisalaFreqTopEdge = 0.5_RKIND * (BruntVaisalaFreqTop(k,cell1) + BruntVaisalaFreqTop(k,cell2))
+               BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
+
+               maxN = max(maxN,BruntVaisalaFreqTopEdge)
+            enddo
+
+            do k=2,maxLevelEdgeTop(iEdge)
+               BruntVaisalaFreqTopEdge = 0.5_RKIND * (BruntVaisalaFreqTop(k,cell1) + BruntVaisalaFreqTop(k,cell2))
+               BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
+
+               kappaGM3D(k,iEdge) = gmBolusKappa(iEdge)*max(config_gm_min_stratification_ratio, &
+                       BruntVaisalaFreqTopEdge / (maxN + 1.0E-10_RKIND))
+            enddo
+         enddo
+         !$omp end do
+
+      endif
 
       nEdges = nEdgesArray( 3 )
 
@@ -533,34 +603,34 @@ contains
             k = 2
             BruntVaisalaFreqTopEdge = 0.5_RKIND * (BruntVaisalaFreqTop(k,cell1) + BruntVaisalaFreqTop(k,cell2))
             BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
-            tridiagB(k-1) = - 2.0_RKIND * config_gravWaveSpeed_trunc**2 / (layerThicknessEdge(k-1,iEdge) &
+            tridiagB(k-1) = - 2.0_RKIND * cGMphaseSpeed(iEdge)**2 / (layerThicknessEdge(k-1,iEdge) &
                           * layerThicknessEdge(k,iEdge)) - BruntVaisalaFreqTopEdge
-            tridiagC(k-1) = 2.0_RKIND * config_gravWaveSpeed_trunc**2 / layerThicknessEdge(k, iEdge) &
+            tridiagC(k-1) = 2.0_RKIND * cGMphaseSpeed(iEdge)**2 / layerThicknessEdge(k, iEdge) &
                           / (layerThicknessEdge(k-1, iEdge) + layerThicknessEdge(k, iEdge))
-            rightHandSide(k-1) = gmBolusKappa(iEdge) * gravity / rho_sw * gradDensityConstZTopOfEdge(k,iEdge)
+            rightHandSide(k-1) = kappaGM3D(k-1,iEdge) * gravity / rho_sw * gradDensityConstZTopOfEdge(k,iEdge)
 
             ! Second to next to the last rows
             do k = 3, maxLevelEdgeTop(iEdge)-1
                BruntVaisalaFreqTopEdge = 0.5_RKIND * (BruntVaisalaFreqTop(k,cell1) + BruntVaisalaFreqTop(k,cell2))
                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
-               tridiagA(k-2) = 2.0_RKIND * config_gravWaveSpeed_trunc**2 / layerThicknessEdge(k-1, iEdge) &
+               tridiagA(k-2) = 2.0_RKIND * cGMphaseSpeed(iEdge)**2 / layerThicknessEdge(k-1, iEdge) &
                              / (layerThicknessEdge(k-1, iEdge) + layerThicknessEdge(k, iEdge))
-               tridiagB(k-1) = - 2.0_RKIND * config_gravWaveSpeed_trunc**2 / (layerThicknessEdge(k-1, iEdge) &
+               tridiagB(k-1) = - 2.0_RKIND * cGMphaseSpeed(iEdge)**2 / (layerThicknessEdge(k-1, iEdge) &
                              * layerThicknessEdge(k, iEdge) ) - BruntVaisalaFreqTopEdge
-               tridiagC(k-1) = 2.0_RKIND * config_gravWaveSpeed_trunc**2 / layerThicknessEdge(k, iEdge) &
+               tridiagC(k-1) = 2.0_RKIND * cGMphaseSpeed(iEdge)**2 / layerThicknessEdge(k, iEdge) &
                              / (layerThicknessEdge(k-1, iEdge) + layerThicknessEdge(k, iEdge))
-               rightHandSide(k-1) = gmBolusKappa(iEdge) * gravity / rho_sw * gradDensityConstZTopOfEdge(k,iEdge)
+               rightHandSide(k-1) = kappaGM3D(k-1,iEdge) * gravity / rho_sw * gradDensityConstZTopOfEdge(k,iEdge)
             end do
 
             ! Last row
             k = maxLevelEdgeTop(iEdge)
             BruntVaisalaFreqTopEdge = 0.5_RKIND * (BruntVaisalaFreqTop(k,cell1) + BruntVaisalaFreqTop(k,cell2))
             BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
-            tridiagA(k-2) = 2.0_RKIND * config_gravWaveSpeed_trunc**2 / layerThicknessEdge(k-1,iEdge) &
+            tridiagA(k-2) = 2.0_RKIND * cGMphaseSpeed(iEdge)**2 / layerThicknessEdge(k-1,iEdge) &
                           / (layerThicknessEdge(k-1,iEdge) + layerThicknessEdge(k,iEdge))
-            tridiagB(k-1) = - 2.0_RKIND * config_gravWaveSpeed_trunc**2 / (layerThicknessEdge(k-1, iEdge) &
+            tridiagB(k-1) = - 2.0_RKIND * cGMphaseSpeed(iEdge)**2 / (layerThicknessEdge(k-1, iEdge) &
                           * layerThicknessEdge(k, iEdge)) - BruntVaisalaFreqTopEdge
-            rightHandSide(k-1) = gmBolusKappa(iEdge) * gravity / rho_sw * gradDensityConstZTopOfEdge(k,iEdge)
+            rightHandSide(k-1) = kappaGM3D(k-1,iEdge) * gravity / rho_sw * gradDensityConstZTopOfEdge(k,iEdge)
 
             ! Total number of rows
             N = maxLevelEdgeTop(iEdge) - 1
@@ -747,7 +817,11 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_use_Redi_bottom_layer_tapering',config_use_Redi_bottom_layer_tapering)
       call mpas_pool_get_config(ocnConfigs, 'config_Redi_surface_layer_tapering_extent',config_Redi_surface_layer_tapering_extent)
       call mpas_pool_get_config(ocnConfigs, 'config_Redi_bottom_layer_tapering_depth',config_Redi_bottom_layer_tapering_depth)
-
+      call mpas_pool_get_config(ocnConfigs, 'config_gm_lat_variable_c2',config_gm_lat_variable_c2)
+      call mpas_pool_get_config(ocnConfigs, 'config_gm_kappa_lat_depth_variable', config_gm_kappa_lat_depth_variable)
+      call mpas_pool_get_config(ocnConfigs, 'config_gm_kappa_lat_variable', config_gm_kappa_lat_variable)
+      call mpas_pool_get_config(ocnConfigs, 'config_gm_min_stratification_ratio', config_gm_min_stratification_ratio)
+      call mpas_pool_get_config(ocnConfigs, 'config_gm_min_phase_speed', config_gm_min_phase_speed)
 
       block => domain % blocklist
       do while (associated(block))
@@ -787,6 +861,7 @@ contains
             err = 1
             call mpas_dmpar_finalize(domain % dminfo)
          end if
+
 
          block => block % next
       end do
