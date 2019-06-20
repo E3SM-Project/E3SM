@@ -375,6 +375,22 @@
 					description="If true, the standard GM for the tracer advection and mixing is turned on. This includes the redi portion which is captured in hmix."
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_gm_lat_variable_c2" type="logical" default_value=".false." units="NA"
+					description="If true, spatially variable phase speed is used Following Ferrari et al (2010)"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_gm_kappa_lat_depth_variable" type="logical" default_value=".false." units="NA"
+					description="If true, spatitally and deph varying Bolus Kappa is used, following Danabasoglu et al (2007)"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_gm_min_stratification_ratio" type="real" default_value="0.1" units="NA"
+					description="minimum value for N2/Nmax2 ratio"
+					possible_values="small positive reals"
+		/>
+		<nml_option name="config_gm_min_phase_speed" type="real" default_value="0.1" units="m s^{-1}"
+					description="minimum allowed phase speed for spatially variable computation"
+					possible_values="small positive reals"
+		/>
 		<nml_option name="config_use_Redi_surface_layer_tapering" type="logical" default_value=".false." units="NA"
 					description="If true, the Redi K33 vertical mixing is limited in and just below the ocean boundary layer."
 					possible_values=".true. or .false."
@@ -2556,6 +2572,15 @@
 		<var name="normalGMBolusVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization"
 			 packages="forwardMode;analysisMode"
+		/>
+		<var name="cGMphaseSpeed" type="real" dimensions="nEdges Time" units="m s^{-1}"
+			description="phase speed for the bolus velocity calculation"
+			packages="forwardMode;analysisMode"
+			/>
+		<var name="kappaGM3D" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+			description="spatially and depth varying GM kappa"
+			packages="forwardMode;analysisMode"
+
 		/>
 		<var name="GMBolusVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, x-direction"
