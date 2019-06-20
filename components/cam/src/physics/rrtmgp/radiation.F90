@@ -1126,13 +1126,13 @@ contains
       ! ---------------------------------------------------------------------------
 
       ! Pointers to heating rates on physics buffer
-      real(r8), pointer :: qrs(:,:) => null()  ! shortwave radiative heating rate 
-      real(r8), pointer :: qrl(:,:) => null()  ! longwave  radiative heating rate 
+      real(r8), pointer :: qrs(:,:)  ! shortwave radiative heating rate 
+      real(r8), pointer :: qrl(:,:)  ! longwave  radiative heating rate 
 
       ! Clear-sky heating rates are not on the physics buffer, and we have no
       ! reason to put them there, so declare these are regular arrays here
-      real(r8) :: qrsc(pcols,pver) = 0._r8
-      real(r8) :: qrlc(pcols,pver) = 0._r8
+      real(r8) :: qrsc(pcols,pver)
+      real(r8) :: qrlc(pcols,pver)
 
       ! Flag to carry (QRS,QRL)*dp across time steps. 
       ! TODO: what does this mean?
@@ -1157,6 +1157,11 @@ contains
       ! modified in this routine.
       call pbuf_get_field(pbuf, pbuf_get_index('QRS'), qrs)
       call pbuf_get_field(pbuf, pbuf_get_index('QRL'), qrl)
+
+      ! Initialize clearsky-heating rates to make sure we do not get garbage
+      ! for columns beyond ncol or nday
+      qrsc(:,:) = 0
+      qrlc(:,:) = 0
      
       ! Do shortwave stuff...
       if (radiation_do('sw')) then
