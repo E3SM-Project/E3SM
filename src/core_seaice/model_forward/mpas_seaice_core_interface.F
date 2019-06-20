@@ -253,7 +253,9 @@ module seaice_core_interface
           config_use_humics, &
           config_use_DON, &
           config_use_iron, &
-          config_use_zaerosols
+          config_use_zaerosols, &
+          config_use_snow_grain_radius, &
+          config_use_effective_snow_density
 
      logical, pointer :: &
           pkgColumnTracerIceAgeActive, &
@@ -285,7 +287,9 @@ module seaice_core_interface
           pkgTracerVerticalDONActive, &
           pkgTracerVerticalIronActive, &
           pkgTracerZAerosolsActive, &
-          pkgTracerZSalinityActive
+          pkgTracerZSalinityActive, &
+          pkgColumnTracerEffectiveSnowDensityActive, &
+          pkgColumnTracerSnowGrainRadiusActive
 
      ! other packages
      logical, pointer :: &
@@ -352,6 +356,8 @@ module seaice_core_interface
      !pkgTracerVerticalIron
      !pkgTracerZAerosols
      !pkgTracerZSalinity
+     !pkgColumnTracerEffectiveSnowDensity
+     !pkgColumnTracerSnowGrainRadius
 
      call MPAS_pool_get_config(configPool, "config_use_ice_age", config_use_ice_age)
      call MPAS_pool_get_config(configPool, "config_use_first_year_ice", config_use_first_year_ice)
@@ -376,6 +382,8 @@ module seaice_core_interface
      call MPAS_pool_get_config(configPool, "config_use_DON", config_use_DON)
      call MPAS_pool_get_config(configPool, "config_use_iron", config_use_iron)
      call MPAS_pool_get_config(configPool, "config_use_zaerosols", config_use_zaerosols)
+     call MPAS_pool_get_config(configPool, "config_use_effective_snow_density", config_use_effective_snow_density)
+     call MPAS_pool_get_config(configPool, "config_use_snow_grain_radius", config_use_snow_grain_radius)
 
      call MPAS_pool_get_package(packagePool, "pkgColumnTracerIceAgeActive", pkgColumnTracerIceAgeActive)
      call MPAS_pool_get_package(packagePool, "pkgColumnTracerFirstYearIceActive", pkgColumnTracerFirstYearIceActive)
@@ -407,6 +415,8 @@ module seaice_core_interface
      call MPAS_pool_get_package(packagePool, "pkgTracerVerticalIronActive", pkgTracerVerticalIronActive)
      call MPAS_pool_get_package(packagePool, "pkgTracerZAerosolsActive", pkgTracerZAerosolsActive)
      call MPAS_pool_get_package(packagePool, "pkgTracerZSalinityActive", pkgTracerZSalinityActive)
+     call MPAS_pool_get_package(packagePool, "pkgColumnTracerEffectiveSnowDensityActive", pkgColumnTracerEffectiveSnowDensityActive)
+     call MPAS_pool_get_package(packagePool, "pkgColumnTracerSnowGrainRadiusActive", pkgColumnTracerSnowGrainRadiusActive)
 
      use_meltponds = (config_use_cesm_meltponds .or. config_use_level_meltponds .or. config_use_topo_meltponds)
 
@@ -442,6 +452,9 @@ module seaice_core_interface
      pkgTracerZAerosolsActive            = config_use_zaerosols
      pkgTracerZSalinityActive            = config_use_vertical_zsalinity
 
+     pkgColumnTracerEffectiveSnowDensityActive = config_use_effective_snow_density
+     pkgColumnTracerSnowGrainRadiusActive = config_use_snow_grain_radius
+
      if (.not. config_use_column_package) then
         pkgColumnTracerIceAgeActive       = .false.
         pkgColumnTracerFirstYearIceActive = .false.
@@ -473,6 +486,8 @@ module seaice_core_interface
         pkgTracerVerticalIronActive         = .false.
         pkgTracerZAerosolsActive            = .false.
         pkgTracerZSalinityActive            = .false.
+        pkgColumnTracerEffectiveSnowDensityActive = .false.
+        pkgColumnTracerSnowGrainRadiusActive      = .false.
      endif
 
      if (.not. config_use_column_biogeochemistry .and. config_use_column_package) then

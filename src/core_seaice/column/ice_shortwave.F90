@@ -1,4 +1,3 @@
-
 !  SVN:$Id: ice_shortwave.F90 1182 2017-03-16 19:29:26Z njeffery $
 !=======================================================================
 !
@@ -46,8 +45,9 @@
       use ice_constants_colpkg, only: c0, c1, c1p5, c2, c3, c4, c10, &
           p01, p1, p15, p25, p5, p75, puny, &
           albocn, Timelt, snowpatch, awtvdr, awtidr, awtvdf, awtidf, &
-          kappav, hs_min, rhofresh, rhos, nspint, nspint_5bd
+          kappav, hs_min, rhofresh, rhos, nspint, nspint_5bd, snwlvlfac
       use ice_colpkg_shared, only: hi_ssl, hs_ssl, modal_aero, max_aero
+      use ice_colpkg_shared, only: hi_ssl, hs_ssl, modal_aero, rsnw_fall
       use ice_warnings, only: add_warning
 
       implicit none
@@ -685,6 +685,8 @@
                           vsnon,    Tsfcn,     &
                           alvln,    apndn,     &
                           hpndn,    ipndn,     &
+                          snwredist,           &
+                          rsnow,    tr_rsnw,   &
                           aeron,    kalg,      &
                           zbion,               &
                           heat_capacity,       &
@@ -716,6 +718,7 @@
                           albpndn,  apeffn,    &
                           snowfracn,           &
                           dhsn,     ffracn,    &
+                          rsnw_dEddn,          &
                           l_print_point,       &
                           initonly,            &
                           use_snicar,          &
@@ -752,6 +755,7 @@
          tr_pond_cesm, & ! if .true., use explicit topography-based ponds
          tr_pond_lvl , & ! if .true., use explicit topography-based ponds
          tr_pond_topo, & ! if .true., use explicit topography-based ponds
+         tr_rsnw,      & ! if .true., use snow grain radius tracer
          dEdd_algae,   & ! .true. use prognostic chla in dEdd
          tr_bgc_N,     & ! .true. active bgc (skl or z)
          tr_zaero,     & ! .true. use zaerosols
@@ -836,11 +840,16 @@
            hpndn, & ! pond depth (m)
            ipndn    ! pond refrozen lid thickness (m)
 
+      character(len=char_len), intent(in) :: & 
+           snwredist   ! type of snow redistribution
+
       real(kind=dbl_kind), dimension(:,:), intent(in) :: &
+           rsnow, & ! snow grain radius tracer (10^-6 m)
            aeron, & ! aerosols (kg/m^3)
            zbion    ! zaerosols (kg/m^3) + chlorophyll on shorthwave grid
 
       real(kind=dbl_kind), dimension(:), intent(inout) :: &
+           rsnw_dEddn, & ! snow grain radius if .not. tr_rsnw (10^-6 m)
            dhsn     ! depth difference for snow on sea ice and pond ice
 
       real(kind=dbl_kind), intent(inout) :: &
@@ -882,7 +891,10 @@
       ! snow variables for Delta-Eddington shortwave
       real (kind=dbl_kind) :: &
          fsn         , & ! snow horizontal fraction
-         hsn             ! snow depth (m)
+         hsn         , & ! snow depth (m)
+         hsnlvl      , & ! snow depth over level ice (m)
+         vsn         , & ! snow volume
+         alvl            ! area fraction of level ice
 
       real (kind=dbl_kind), dimension (nslyr) :: &
          rhosnwn     , & ! snow density (kg/m3)
@@ -895,6 +907,7 @@
 
       integer (kind=int_kind) :: &
          n           , & ! thickness category index
+         k           , & ! snow layer index
          na              ! aerosol index               
 
       real (kind=dbl_kind) :: &
@@ -906,6 +919,7 @@
          hmx         , & ! maximum available snow infiltration equivalent depth
          dhs         , & ! local difference in snow depth on sea ice and pond ice
          spn         , & ! snow depth on refrozen pond (m)
+         rnslyr      , & ! 1/nslyr
          tmp             ! 0 or 1
 
       logical (kind=log_kind) :: &
@@ -939,6 +953,7 @@
          rsnwn(:)   = c0
          apeffn(n)    = c0 ! for history
          snowfracn(n) = c0 ! for history
+         rsnw_dEddn(n) = c0 ! for history
 
          if (aicen(n) > puny) then
 
@@ -947,7 +962,8 @@
                                          aicen(n),   vsnon(n), &
                                          Tsfcn(n),   fsn,      &
                                          hs0,        hsn,      &
-                                         rhosnwn,    rsnwn)    
+                                         rhosnwn,    rsnwn,    &
+                                         rsnow(:,n), tr_rsnw)
 
             ! set pond properties
             if (tr_pond_cesm) then
@@ -966,6 +982,26 @@
                fsn = min(fsn, c1-fpn)
                apeffn(n) = fpn ! for history
             elseif (tr_pond_lvl) then
+               hsnlvl = hsn ! initialize
+               if (trim(snwredist) == '30percentsw') then
+                  hsnlvl = hsn / (c1 + snwlvlfac*(c1-alvln(n)))
+                  ! snow volume over level ice
+                  alvl = aicen(n) * alvln(n)
+                  if (alvl > puny) then
+                     vsn = hsnlvl * alvl
+                  else
+                     vsn = vsnon(n)
+                     alvl = aicen(n)
+                  endif
+                  ! set snow properties over level ice
+                  call shortwave_dEdd_set_snow(nslyr,      R_snw,    &
+                                               dT_mlt,     rsnw_mlt, &
+                                               alvl,       vsn,      &
+                                               Tsfcn(n),   fsn,      &
+                                               hs0,        hsnlvl,   &
+                                               rhosnwn(:), rsnwn(:), &
+                                               rsnow(:,n), tr_rsnw)
+               endif ! snwredist
                fpn = c0  ! fraction of ice covered in pond
                hpn = c0  ! pond depth over fpn
                ! refrozen pond lid thickness avg over ice
@@ -974,8 +1010,8 @@
                dhs = dhsn(n) ! snow depth difference, sea ice - pond
                if (.not. linitonly .and. ipn > puny .and. &
                     dhs < puny .and. fsnow*dt > hs_min) &
-                    dhs = hsn - fsnow*dt ! initialize dhs>0
-               spn = hsn - dhs   ! snow depth on pond ice
+                    dhs = hsnlvl - fsnow*dt ! initialize dhs>0
+               spn = hsnlvl - dhs   ! snow depth on pond ice
                if (.not. linitonly .and. ipn*spn < puny) dhs = c0
                dhsn(n) = dhs ! save: constant until reset to 0
                   
@@ -1000,7 +1036,7 @@
                ! infiltrate snow
                hp = hpn
                if (hp > puny) then
-                  hs = hsn
+                  hs = hsnlvl      ! melt ponds reside on level ice
                   rp = rhofresh*hp/(rhofresh*hp + rhos*hs)
                   if (rp < p15) then
                      fpn = c0
@@ -1009,8 +1045,9 @@
                      hmx = hs*(rhofresh - rhos)/rhofresh
                      tmp = max(c0, sign(c1, hp-hmx)) ! 1 if hp>=hmx, else 0
                      hp = (rhofresh*hp + rhos*hs*tmp) &
-                          / (rhofresh    - rhos*(c1-tmp))
-                     hsn = hs - hp*fpn*(c1-tmp)
+                        / (rhofresh    - rhos*(c1-tmp))
+!echmod                     hsn = hs - hp*fpn*(c1-tmp)
+                     hsn = hsn - hp*fpn*(c1-tmp)
                      hpn = hp * tmp
                      fpn = fpn * tmp
                   endif
@@ -1056,7 +1093,7 @@
                fpn = c0
                hpn = c0
             endif ! pond type
-            
+
          snowfracn(n) = fsn ! for history
 
          call shortwave_dEdd(n_aero,        n_zaero,        &
@@ -1076,7 +1113,7 @@
                              kaer_bc_tab,                   &
                              waer_bc_tab,                   &
                              gaer_bc_tab,                   &
-                             bcenh,         modal_aero,     &   
+                             bcenh,         modal_aero,     &
                              kalg,                          &
                              swvdr,         swvdf,          &
                              swidr,         swidf,          &
@@ -1104,6 +1141,13 @@
                              waer_bc_tab_5bd,               &
                              gaer_bc_tab_5bd,               &  
                              bcenh_5bd)
+
+         if (.not. tr_rsnw) then
+           rnslyr = c1/max(c1,(real(nslyr,kind=dbl_kind)))
+           do k = 1,nslyr
+             rsnw_dEddn(n) = rsnw_dEddn(n) + rsnwn(k)*rnslyr
+           enddo
+         endif
 
          endif ! aicen > puny
 
@@ -3582,7 +3626,8 @@
                                          aice,     vsno,     &
                                          Tsfc,     fs,       &
                                          hs0,      hs,       &
-                                         rhosnw,   rsnw)
+                                         rhosnw,   rsnw,     &
+                                         rsnow,    tr_rsnw)
 
       integer (kind=int_kind), intent(in) :: & 
          nslyr      ! number of snow layers
@@ -3602,9 +3647,15 @@
          fs     , & ! horizontal coverage of snow
          hs         ! snow depth
 
-      real (kind=dbl_kind), dimension (:), intent(out) :: &
+      real (kind=dbl_kind), dimension (:), intent(in) :: &
+         rsnow      ! snow grain radius tracer (micro-meters)
+
+      real (kind=dbl_kind), dimension (:), intent(inout) :: &
          rhosnw , & ! density in snow layer (kg/m3)
          rsnw       ! grain radius in snow layer (micro-meters)
+
+      logical(kind=log_kind), intent(in) :: &
+         tr_rsnw    ! if true, use rsnow
 
       ! local variables
 
@@ -3632,23 +3683,35 @@
          if (hs0 > puny) fs = min(hs/hs0, c1)
       endif
       
-      ! bare ice, temperature dependence
-      dTs = Timelt - Tsfc
-      fT  = -min(dTs/dT_mlt-c1,c0)
-      ! tune nonmelt snow grain radius if desired: note that
-      ! the sign is negative so that if R_snw is 1, then the
-      ! snow grain radius is reduced and thus albedo increased.
-      rsnw_nm = rsnw_nonmelt - R_snw*rsnw_sig
-      rsnw_nm = max(rsnw_nm, rsnw_fresh)
-      rsnw_nm = min(rsnw_nm, rsnw_mlt) 
-      do ks = 1, nslyr
-         ! snow density ccsm3 constant value
-         rhosnw(ks) = rhos
-         ! snow grain radius between rsnw_nonmelt and rsnw_mlt
-         rsnw(ks) = rsnw_nm + (rsnw_mlt-rsnw_nm)*fT
-         rsnw(ks) = max(rsnw(ks), rsnw_fresh)
-         rsnw(ks) = min(rsnw(ks), rsnw_mlt)
-      enddo        ! ks
+      if (tr_rsnw) then  !use snow grain tracer
+
+          do ks = 1, nslyr
+            rsnw(ks)   = max(rsnw_fall,rsnow(ks))
+            rhosnw(ks) = rhos
+          enddo
+
+      else
+
+        ! bare ice, temperature dependence
+        dTs = Timelt - Tsfc
+        fT  = -min(dTs/dT_mlt-c1,c0)
+        ! tune nonmelt snow grain radius if desired: note that
+        ! the sign is negative so that if R_snw is 1, then the
+        ! snow grain radius is reduced and thus albedo increased.
+        rsnw_nm = rsnw_nonmelt - R_snw*rsnw_sig
+        rsnw_nm = max(rsnw_nm, rsnw_fresh)
+        rsnw_nm = min(rsnw_nm, rsnw_mlt) 
+      
+        do ks = 1, nslyr
+           ! snow density ccsm3 constant value
+           rhosnw(ks) = rhos
+           ! snow grain radius between rsnw_nonmelt and rsnw_mlt
+           rsnw(ks) = rsnw_nm + (rsnw_mlt-rsnw_nm)*fT
+           rsnw(ks) = max(rsnw(ks), rsnw_fresh)
+           rsnw(ks) = min(rsnw(ks), rsnw_mlt)
+        enddo        ! ks
+
+      endif
 
       end subroutine shortwave_dEdd_set_snow
 
