@@ -188,18 +188,18 @@ contains
     !---------------------------------------------------------------------------
     ! Boundary exchange to make field continuous
     !---------------------------------------------------------------------------
-    if(par%dynproc) then
+    if (par%dynproc) then
       call initEdgeBuffer(par, edgebuf, elem, (3+pcnst)*nlev)
-    end if
-    do ie = 1,nelemd
-      elem(ie)%state%phis(:,:) = elem(ie)%state%phis(:,:) * elem(ie)%spheremp(:,:)
-      call edgeVpack(edgebuf,elem(ie)%state%phis(:,:),0,0,ie)
-    end do ! ie
-    call bndry_exchangeV(par, edgebuf)
-    do ie = 1,nelemd
-      call edgeVunpack(edgebuf,elem(ie)%state%phis(:,:),0,0,ie)
-      elem(ie)%state%phis(:,:) = elem(ie)%state%phis(:,:) * elem(ie)%rspheremp(:,:)
-    end do ! ie
+      do ie = 1,nelemd
+        elem(ie)%state%phis(:,:) = elem(ie)%state%phis(:,:) * elem(ie)%spheremp(:,:)
+        call edgeVpack(edgebuf,elem(ie)%state%phis(:,:),0,0,ie)
+      end do ! ie
+      call bndry_exchangeV(par, edgebuf)
+      do ie = 1,nelemd
+        call edgeVunpack(edgebuf,elem(ie)%state%phis(:,:),0,0,ie)
+        elem(ie)%state%phis(:,:) = elem(ie)%state%phis(:,:) * elem(ie)%rspheremp(:,:)
+      end do ! ie
+    end if ! par%dynproc
     !---------------------------------------------------------------------------
     !---------------------------------------------------------------------------
   end subroutine fv_phys_to_dyn_topo
