@@ -1171,16 +1171,9 @@ contains
 
           ! cloud
           call cloud_water_conservation(qc(i,k), qccon, qcnuc, dt, qcaut, qcacc, qcevp, qccol, qcheti, qcshd)
-          
+
           ! rain
-          sinks   = (qrevp+qrcol+qrheti)*dt
-          sources = qr(i,k) + (qrcon+qcaut+qcacc+qimlt+qcshd)*dt
-          if (sinks.gt.sources .and. sinks.ge.1.e-20_rtype) then
-             ratio  = sources/sinks
-             qrevp  = qrevp*ratio
-             qrcol  = qrcol*ratio
-             qrheti = qrheti*ratio
-          endif
+          call rain_water_conservation(qr(i,k), qrcon, qcaut, qcacc, qimlt, qcshd, dt, qrevp, qrcol, qrheti)
 
           ! ice
           sinks   = (qisub+qimlt)*dt
@@ -3527,5 +3520,25 @@ subroutine cloud_water_conservation(qc, qccon, qcnuc, dt, qcaut, qcacc, qcevp, q
    endif
 
 end subroutine cloud_water_conservation 
+
+subroutine rain_water_conservation(qr, qrcon, qcaut, qcacc, qimlt, qcshd, dt, qrevp, qrcol, qrheti)
+
+   implicit none 
+
+   real(rtype), intent(in) :: qr, qrcon, qcaut, qcacc, qimlt, qcshd, dt
+   real(rtype), intent(inout) :: qrevp, qrcol, qrheti 
+
+   real(rtype) :: sinks, sources, ratio 
+
+   sinks   = (qrevp+qrcol+qrheti)*dt
+   sources = qr + (qrcon+qcaut+qcacc+qimlt+qcshd)*dt
+   if (sinks.gt.sources .and. sinks.ge.1.e-20_rtype) then
+      ratio  = sources/sinks
+      qrevp  = qrevp*ratio
+      qrcol  = qrcol*ratio
+      qrheti = qrheti*ratio
+   endif
+
+end subroutine rain_water_conservation 
 
 end module micro_p3
