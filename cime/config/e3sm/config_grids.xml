@@ -1137,7 +1137,7 @@
       <mask>tx0.1v2</mask>
     </model_grid>
 
-    <model_grid alias="ne1024_360x720cru_ne1024" compset="(DOCN|XOCN|SOCN|AQP1)">
+    <model_grid alias="ne1024np4_360x720cru_ne1024np4" compset="(DOCN|XOCN|SOCN|AQP1)">
       <grid name="atm">ne1024np4</grid>
       <grid name="lnd">360x720cru</grid>
       <grid name="ocnice">ne1024np4</grid>
