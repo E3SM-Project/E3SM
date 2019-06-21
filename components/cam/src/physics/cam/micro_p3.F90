@@ -1170,18 +1170,8 @@ contains
           !          cannot possibly overdeplete qv
 
           ! cloud
-          sinks   = (qcaut+qcacc+qccol+qcevp+qcheti+qcshd)*dt
-          sources = qc(i,k) + (qccon+qcnuc)*dt
-          if (sinks.gt.sources .and. sinks.ge.1.e-20_rtype) then
-             ratio  = sources/sinks
-             qcaut  = qcaut*ratio
-             qcacc  = qcacc*ratio
-             qcevp  = qcevp*ratio
-             qccol  = qccol*ratio
-             qcheti = qcheti*ratio
-             qcshd  = qcshd*ratio
-          endif
-
+          call cloud_water_conservation(qc(i,k), qccon, qcnuc, dt, qcaut, qcacc, qcevp, qccol, qcheti, qcshd)
+          
           ! rain
           sinks   = (qrevp+qrcol+qrheti)*dt
           sources = qr(i,k) + (qrcon+qcaut+qcacc+qimlt+qcshd)*dt
@@ -3514,5 +3504,28 @@ subroutine prevent_ice_overdepletion(pres, t,  qv, xxls, odt, qidep, qisub)
    qisub  = qisub*min(1._rtype,max(0._rtype,-qdep_satadj)/max(qisub, 1.e-20_rtype))
 
 end subroutine prevent_ice_overdepletion
+
+subroutine cloud_water_conservation(qc, qccon, qcnuc, dt, qcaut, qcacc, qcevp, qccol, qcheti, qcshd)
+   implicit none 
+   
+   real(rtype), intent(in) :: qc, qccon, qcnuc, dt 
+   real(rtype), intent(inout) :: qcaut, qcacc, qcevp, qccol, qcheti, qcshd 
+   
+
+   real(rtype) :: sinks, sources, ratio 
+
+   sinks   = (qcaut+qcacc+qccol+qcevp+qcheti+qcshd)*dt
+   sources = qc + (qccon+qcnuc)*dt
+   if (sinks.gt.sources .and. sinks.ge.1.e-20_rtype) then
+      ratio  = sources/sinks
+      qcaut  = qcaut*ratio
+      qcacc  = qcacc*ratio
+      qcevp  = qcevp*ratio
+      qccol  = qccol*ratio
+      qcheti = qcheti*ratio
+      qcshd  = qcshd*ratio
+   endif
+
+end subroutine cloud_water_conservation 
 
 end module micro_p3
