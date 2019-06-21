@@ -73,15 +73,19 @@ contains
 
     type(element_t), intent(in) :: elem(:)
     integer, intent(in) :: gcols, nz
-    integer, intent(out) :: compdof(:)
-    integer :: k, i, ie, icnt
+    integer*8, intent(out) :: compdof(:)
+    integer :: k, i, ie
+    integer*8 :: icnt,gcols8
 
     icnt=0
     do k=1,nz
        do ie=1,nelemd
           do i=1,elem(ie)%idxp%NumUniquePts
              icnt=icnt+1
-             compDOF(icnt)=elem(ie)%idxp%UniquePtOffset+i-1+(k-1)*GCols
+             if (icnt < 0 ) call abortmp('ERROR: UniquePts integer overflow')
+             Gcols8=Gcols ! force I*8 calcluation
+             compDOF(icnt)=elem(ie)%idxp%UniquePtOffset+i-1+(k-1)*GCols8
+             if (compDOF(icnt) < 0 ) call abortmp('ERROR: compDOF integer overflow')
           end do
        end do
     end do
@@ -104,10 +108,10 @@ contains
     integer :: ie, v1(4), i, ios, istartP
     integer,dimension(maxdims) :: dimsize
     integer :: st, en, icnt, kmax,kmax2
-    integer :: j,jj,cc,ii,k, iorank,base, global_nsub
+    integer :: j,cc,k, iorank, global_nsub
+    integer*8 :: ii,jj,base
     integer(kind=nfsizekind) :: start(2), count(2)
-    integer, allocatable :: compDOF(:)
-    integer, allocatable :: dof(:)
+    integer*8, allocatable :: compDOF(:)
     type(io_desc_t) :: iodescv, iodescvp1
     integer,allocatable  :: subelement_corners(:,:)
     real(kind=real_kind),allocatable  :: var1(:,:),var2(:,:)
@@ -143,10 +147,12 @@ contains
     ! Create the DOF arrays for GLL points
     iorank=pio_iotask_rank(pio_subsystem)
 
+    if (par%masterproc) print *,'compDOF for 2d'
     call getDOF(elem, GlobalUniqueCols, 1, compdof)
     call PIO_initDecomp(pio_subsystem, pio_double,(/GlobalUniqueCols/),&
          compDOF(1:nxyp),IOdesc2D)
 
+    if (par%masterproc) print *,'compDOF for 3d'
     call getDOF(elem, GlobalUniqueCols, nlev, compdof)
     call PIO_initDecomp(pio_subsystem, pio_double,(/GlobalUniqueCols,nlev/),&
          compDOF,IOdesc3D)
@@ -181,23 +187,25 @@ contains
 
 
 ! the GLL based element subgrid
-    allocate(dof((np-1)*(np-1)*nelemd*nlev))
+    if (par%masterproc) print *,'compDOF for subcell '
+    allocate(compdof((np-1)*(np-1)*nelemd*nlev))
     jj=0
     do cc=0,nlev-1
        do ie=1,nelemd
-          base = ((elem(ie)%globalid-1)+cc*nelem)*(np-1)*(np-1)
+          base = (INT(elem(ie)%globalid-1,8)+INT(cc,8)*nelem)*(np-1)*(np-1)
           ii=0
           do j=1,np-1
              do i=1,np-1
                 ii=ii+1
                 jj=jj+1
-                dof(jj) = base+ii
+                compdof(jj) = base+ii
+                if (compdof(jj)<0) call abortmp('ERROR: compDOF subcell integer overflow')
              end do
           end do
        end do
     end do
-    call pio_initdecomp(pio_subsystem, pio_int, (/global_nsub,nlev/), dof, iodesc3d_subelem)
-    deallocate(dof)
+    call pio_initdecomp(pio_subsystem, pio_int, (/global_nsub,nlev/), compdof, iodesc3d_subelem)
+    deallocate(compdof)
 
 
     if (par%masterproc) print *,'registering NETCDF variables'

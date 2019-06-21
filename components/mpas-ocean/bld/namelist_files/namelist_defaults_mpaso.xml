@@ -171,7 +171,7 @@
 <config_Redi_bottom_layer_tapering_depth>0.0</config_Redi_bottom_layer_tapering_depth>
 <config_GM_Bolus_kappa_function>'constant'</config_GM_Bolus_kappa_function>
 <config_standardGM_tracer_kappa>1800.0</config_standardGM_tracer_kappa>
-<config_standardGM_tracer_kappa ocn_grid="oEC60to30v3wLI" ocn_forcing="core_forced_restoring" >600.0</config_standardGM_tracer_kappa>
+<config_standardGM_tracer_kappa ocn_grid="oEC60to30v3wLI" ocn_forcing="datm_forced_restoring" >600.0</config_standardGM_tracer_kappa>
 <config_GM_Bolus_kappa_min>0.0</config_GM_Bolus_kappa_min>
 <config_GM_Bolus_kappa_max>600.0</config_GM_Bolus_kappa_max>
 <config_GM_Bolus_cell_size_min>20e3</config_GM_Bolus_cell_size_min>

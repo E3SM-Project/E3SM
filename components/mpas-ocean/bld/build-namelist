@@ -47,7 +47,7 @@ OPTIONS
      -ocn_grid             OCN_GRID variable
      -ocn_forcing          variable for defining if the ocn model is forced with an active atm
                            or using CORE forcing.  
-                           Options are: active_atm, core_forced, core_forced_restoring
+                           Options are: active_atm, datm_forced, datm_forced_restoring
      -ocn_iceberg          variable for defining if the ocn model is expecting coupling fields
                            for icebergs from the seaice model
                            Options are: false, true
@@ -926,7 +926,7 @@ add_default($nl, 'config_rx1_min_layer_thickness');
 
 add_default($nl, 'config_use_activeTracers');
 add_default($nl, 'config_use_activeTracers_surface_bulk_forcing');
-if ($OCN_FORCING eq 'core_forced_restoring') {
+if ($OCN_FORCING eq 'datm_forced_restoring') {
 	add_default($nl, 'config_use_activeTracers_surface_restoring', 'val'=>".true.");
 	add_default($nl, 'config_use_surface_salinity_monthly_restoring', 'val'=>".true.");
 	add_default($nl, 'config_salinity_restoring_constant_piston_velocity', 'val'=>"1.585e-6");

@@ -190,18 +190,22 @@ def buildnml(case, caseroot, compname):
         ic_prefix += 'ocean.ARRM60to10'
         decomp_date += '180723'
         decomp_prefix += 'mpas-o.graph.info.'
+        restoring_file += 'sss.monthlyClimatology.PHC2_salx.2004_08_03.ARRM60to10.190129.nc'
+        analysis_mask_file += 'ARRM60to10_SingleRegionAtlanticWTransportTransects_masks.nc'
     elif ocn_grid == 'oARRM60to6':
         ic_date += '180803'
         ic_prefix += 'ocean.ARRM60to6'
         decomp_date += '180820'
         decomp_prefix += 'mpas-o.graph.info.'
+        restoring_file += 'sss.monthlyClimatology.PHC2_salx.2004_08_03.ARRM60to6.190214.nc'
+        analysis_mask_file += 'ARRM60to6_SingleRegionAtlanticWTransportTransects_masks.nc'
 
     #--------------------------------------------------------------------
-    # Set OCN_FORCING = core_forced_restoring if restoring file is available
+    # Set OCN_FORCING = datm_forced_restoring if restoring file is available
     #--------------------------------------------------------------------
-    if ocn_forcing == 'core_forced':
+    if ocn_forcing == 'datm_forced':
         if restoring_file != '':
-            ocn_forcing = 'core_forced_restoring'
+            ocn_forcing = 'datm_forced_restoring'
         else:
             logger.warning("WARNING: Should be running with salinity restoring on!")
             logger.warning("         But no file available for this grid.")
@@ -227,7 +231,7 @@ def buildnml(case, caseroot, compname):
         if analysis_mask_file != '':
             input_list.write("moc = {}/ocn/mpas-o/{}/{}\n".format(din_loc_root, ocn_mask, analysis_mask_file))
 
-        if ocn_forcing == 'core_forced_restoring':
+        if ocn_forcing == 'datm_forced_restoring':
             input_list.write("sss = {}/ocn/mpas-o/{}/{}\n".format(din_loc_root, ocn_mask, restoring_file))
 
         if eco_forcing_file != '':
@@ -453,7 +457,7 @@ def buildnml(case, caseroot, compname):
         lines.append('the analysis data.')
         lines.append('-->')
         lines.append('')
-        if ocn_forcing == 'core_forced_restoring':
+        if ocn_forcing == 'datm_forced_restoring':
             lines.append('<stream name="surface_salinity_monthly_data"')
             lines.append('       type="input"')
             lines.append('       filename_template="{}/ocn/mpas-o/{}/{}"'.format(din_loc_root, ocn_mask, restoring_file))
@@ -866,6 +870,8 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="velocityMeridionalSquared"/>')
         lines.append('    <var name="velocityZonalTimesTemperature"/>')
         lines.append('    <var name="velocityMeridionalTimesTemperature"/>')
+        lines.append('    <var_array name="activeTracerVerticalAdvectionTopFlux"/>')
+        lines.append('    <var_array name="activeTracerHorizontalAdvectionEdgeFlux"/>')
         if ocn_iceberg == 'true':
             lines.append('    <var name="icebergHeatFlux"/>')
             lines.append('    <var name="icebergFreshWaterFlux"/>')

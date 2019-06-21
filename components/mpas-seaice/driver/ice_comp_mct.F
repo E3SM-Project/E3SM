@@ -16,7 +16,7 @@ module ice_comp_mct
    use seq_cdata_mod
    use seq_infodata_mod
    use seq_timemgr_mod
-   use seq_comm_mct,      only : seq_comm_suffix, seq_comm_inst, seq_comm_name
+   use seq_comm_mct,      only : seq_comm_suffix, seq_comm_inst, seq_comm_name, info_taskmap_comp
    use shr_file_mod 
    use shr_cal_mod,       only : shr_cal_date2ymd
    use shr_sys_mod
@@ -163,6 +163,8 @@ contains
     type (MPAS_Pool_Type), pointer :: shortwave
 
     logical :: exists
+    logical :: no_taskmap_output                     ! true then do not write out task-to-node mapping
+    logical :: verbose_taskmap_output                ! true then use verbose task-to-node mapping format
 
     character(kind=c_char), dimension(StrKIND+1) :: c_filename       ! StrKIND+1 for C null-termination character
     integer(kind=c_int) :: c_comm
@@ -303,20 +305,42 @@ contains
 
     ! Identify SMP nodes and process/SMP mapping for this instance
     ! (Assume that processor names are SMP node names on SMP clusters.)
-    call MPI_comm_size(mpicom_i,npes,ierr)
-    write(c_npes,'(i8)') npes
-
     inst_index = seq_comm_inst(iceID)
     write(c_inst_index,'(i8)') inst_index
 
-    if (iam==0) then
-       write(iceLogUnit,100) trim(adjustl(c_npes)), trim(adjustl(c_inst_index))
-100    format(/,a,' pes participating in computation of MPAS-SEAICE instance #',a)
-       call flush(iceLogUnit)
+    if (info_taskmap_comp > 0) then
+
+       no_taskmap_output = .false.
+
+       if (info_taskmap_comp == 1) then
+          verbose_taskmap_output = .false.
+       else
+          verbose_taskmap_output = .true.
+       endif
+
+       call MPI_comm_size(mpicom_i,npes,ierr)
+       write(c_npes,'(i8)') npes
+
+       if (iam==0) then
+          write(iceLogUnit,'(/,3A)') &
+             trim(adjustl(c_npes)), &
+             ' pes participating in computation of MPAS-SEAICE instance #', &
+             trim(adjustl(c_inst_index))
+          call shr_sys_flush(iceLogUnit)
+       endif
+
+    else
+
+       no_taskmap_output = .true.
+       verbose_taskmap_output = .false.
+
     endif
 
     call t_startf("shr_taskmap_write")
-    call shr_taskmap_write(iceLogUnit, mpicom_i, 'ICE #'//trim(adjustl(c_inst_index)))
+    call shr_taskmap_write(iceLogUnit, mpicom_i,                 &
+                           'ICE #'//trim(adjustl(c_inst_index)), &
+                           verbose=verbose_taskmap_output,       &
+                           no_output=no_taskmap_output           )
     call t_stopf("shr_taskmap_write")
 
     ! Setup function pointers for MPASSI core and domain types
@@ -898,6 +922,7 @@ contains
       if (seq_timemgr_RestartAlarmIsOn(EClock)) then
          ! Write a restart file, because the coupler asked for it.
          if (debugOn) call mpas_log_write('Writing restart streams', masterOnly=.true.)
+         call seaice_forcing_write_restart_times(domain)
          call mpas_stream_mgr_begin_iteration(domain % streamManager)
          do while ( mpas_stream_mgr_get_next_stream(domain % streamManager, streamID=streamName, &
                     directionProperty=streamDirection, activeProperty=streamActive) )

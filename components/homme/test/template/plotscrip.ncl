@@ -1,19 +1,19 @@
-
 load "$NCARG_NCARG/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_NCARG/nclscripts/csm/gsn_csm.ncl"
 
 begin
-#
-#  plot the cells in a HOMME SCRIP-format mapping template file:   *_scrip.nc
-#
-#
+;
+;  plot the cells in a HOMME SCRIP-format mapping template file:   *_scrip.nc
+;
+;
 
 
 rad2deg1 = 1.0
 ;fnames = systemfunc("ls  ~/scratch1/preqx/template/ne4np4_subelem_scrip.nc")
 ;fnames = systemfunc("ls  ~/scratch1/preqx/template/ARM_30_x8.g_scrip.nc")
 ;fnames = systemfunc("ls  ~/scratch1/preqx/template/ne16np4_scrip.nc")
-fnames = systemfunc("ls  ~/scratch1/preqx/template/arm_30_x8_lowconn.g_scrip.nc")
+;fnames = systemfunc("ls  ~/scratch1/preqx/template/arm_30_x8_lowconn.g_scrip.nc")
+fnames = systemfunc("ls  ~/scratch2/preqx/template/ne8np4_scrip.nc")
 
 
 fg1     = addfile(fnames,"rw")       ; Open netCDF files.	
@@ -80,10 +80,10 @@ fg1     = addfile(fnames,"rw")       ; Open netCDF files.
  irange1a = 0
 ; irange1a = n-100
  irange1b = n-1
-if (irange1b .gt. 2000) then
-   irange1b = 500
-end if
- irange1b = 5000
+;if (irange1b .gt. 2000) then
+;   irange1b = 500
+;end if
+; irange1b = 5000
  
 
 ; size of grid points

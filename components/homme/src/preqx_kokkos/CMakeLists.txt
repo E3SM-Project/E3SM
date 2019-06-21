@@ -5,6 +5,7 @@ MACRO(PREQX_KOKKOS_SETUP)
 INCLUDE_DIRECTORIES ( SYSTEM ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS} )
 LINK_DIRECTORIES    ( ${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS} )
 
+SET(PREQX_SHARE_DIR       ${HOMME_SOURCE_DIR}/src/preqx/share)
 SET(TARGET_DIR            ${HOMME_SOURCE_DIR}/src/preqx_kokkos)
 SET(UTILS_SHARE_DIR       ${HOMME_SOURCE_DIR}/utils/csm_share)
 SET(SRC_DIR               ${HOMME_SOURCE_DIR}/src)
@@ -20,6 +21,7 @@ SET (EXEC_INCLUDE_DIRS
   ${PIO_INCLUDE_DIRS}
   ${UTILS_TIMING_DIR}
   ${UTILS_TIMING_SRC_DIR}
+  ${PREQX_SHARE_DIR}
   ${SRC_SHARE_DIR}/cxx
   ${CMAKE_BINARY_DIR}/src/share/cxx)
 
@@ -29,16 +31,16 @@ SET (TARGET_F90
   ${TARGET_DIR}/derivative_mod.F90
   ${TARGET_DIR}/edge_mod.F90
   ${TARGET_DIR}/element_state.F90
-  ${TARGET_DIR}/element_ops.F90
   ${TARGET_DIR}/model_init_mod.F90
-  ${TARGET_DIR}/prim_advance_mod.F90
   ${TARGET_DIR}/prim_advection_mod.F90
   ${TARGET_DIR}/prim_driver_mod.F90
-  ${TARGET_DIR}/prim_state_mod.F90
   ${TARGET_DIR}/sl_advection.F90
-  ${TARGET_DIR}/vertremap_mod.F90
   ${TARGET_DIR}/viscosity_mod.F90
-  ${TARGET_DIR}/viscosity_preqx_base.F90
+  ${PREQX_SHARE_DIR}/element_ops.F90
+  ${PREQX_SHARE_DIR}/prim_advance_mod.F90
+  ${PREQX_SHARE_DIR}/prim_state_mod.F90
+  ${PREQX_SHARE_DIR}/viscosity_preqx_base.F90
+  ${PREQX_SHARE_DIR}/vertremap_mod.F90
 )
 
 SET (SRC_SHARE_F90

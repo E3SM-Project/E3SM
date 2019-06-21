@@ -132,10 +132,6 @@ mkdir -p $run/movies
 cd $run
 
 
-# default: assume pure sigma levels:
-set vfile_mid     = "./acme-72m.ascii"
-set vfile_int     = "./acme-72i.ascii"
-
 # copy all vertical levels to run directory
 rsync -a  $vdir/sab?-128.ascii  $run   
 

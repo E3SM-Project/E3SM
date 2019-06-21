@@ -3509,6 +3509,7 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'clubb_tk2');
    add_default($nl, 'clubb_wpxp_L_thresh');
    add_default($nl, 'relvar_fix');
+   add_default($nl, 'clubb_use_sgv');
 }
 
 add_default($nl, 'do_aerocom_ind3');
@@ -3579,6 +3580,7 @@ add_default($nl, 'zmconv_tiedke_add');
 add_default($nl, 'zmconv_cape_cin');
 add_default($nl, 'zmconv_mx_bot_lyr_adj');
 add_default($nl, 'zmconv_dmpdz');
+add_default($nl, 'zmconv_tp_fac');
 
 # moist convection rainwater coefficients
 add_default($nl, 'hkconv_cmftau');

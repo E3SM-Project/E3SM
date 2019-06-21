@@ -73,6 +73,9 @@ GLLnodes = new ( (/np,np,nelem/), "integer")
 
 isubs=0
 do ie = 0,nelem-1
+  if (mod(ie,50000) .eq. 0) then
+    print("processing element ie="+ie+"/"+nelem)
+  end if
    ; note that the order of these loops (i changes fastest) has to
    ; match the fortran code that created element_corners:
   ;        ii=0

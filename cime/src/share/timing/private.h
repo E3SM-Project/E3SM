@@ -60,6 +60,8 @@ typedef struct {
   double accum;             /* accumulated time */
   float max;                /* longest time for start/stop pair */
   float min;                /* shortest time for start/stop pair */
+  float prev_min;           /* previous shortest time for start/stop pair */
+  int latest_is_min;        /* whether min is current latest (1) or not (0) */
 } Wallstats;
 
 typedef struct {

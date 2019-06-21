@@ -572,10 +572,14 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
       do k = 1 , nlev
         kk = k  !Keep from an order n^2 search operation by assuming the old cell index is close.
         !Find the index of the old grid cell in which this new cell's bottom interface resides.
-        do while ( pio(kk) <= pin(k+1) )
-          kk = kk + 1
-        enddo
-        kk = kk - 1                   !kk is now the cell index we're integrating over.
+        if (pio(kk) <= pin(k+1)) then
+           do while ( pio(kk) <= pin(k+1) )
+              kk = kk + 1
+           enddo
+           kk = kk - 1                   !kk is now the cell index we're integrating over.
+        else
+           call binary_search(pio, pin(k+1), kk)
+        end if
         if (kk == nlev+1) kk = nlev   !This is to keep the indices in bounds.
                                       !Top bounds match anyway, so doesn't matter what coefficients are used
         kid(k) = kk                   !Save for reuse
@@ -736,7 +740,30 @@ end function integrate_parabola
 
 !=============================================================================================!
 
+  ! Find k such that pio(k) <= pivot < pio(k+1). Provide a reasonable input
+  ! value for k.
+  subroutine binary_search(pio, pivot, k)
+    real(kind=real_kind), intent(in) :: pio(nlev+2), pivot
+    integer, intent(inout) :: k
+    integer :: lo, hi, mid
 
+    if (pio(k) > pivot) then
+       lo = 1
+       hi = k
+    else
+       lo = k
+       hi = nlev+2
+    end if
+    do while (hi > lo + 1)
+       k = (lo + hi)/2
+       if (pio(k) > pivot) then
+          hi = k
+       else
+          lo = k
+       end if
+    end do
+    k = lo
+  end subroutine binary_search
 
 end module vertremap_base
 

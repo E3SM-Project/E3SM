@@ -113,9 +113,10 @@ contains
 !                 optimal: for windspeeds ~120m/s,gravity: 340m/2
 !                 run with qsplit=1
 !                 (K&G 2nd order method has CFL=4. tiny CFL improvement not worth 2nd order)
-!   tstep_type=6  IMEX-KG243 
-!   tstep_type=7  IMEX-KG254
-!   
+!   tstep_type=6  IMKG243a 
+!   tstep_type=7  IMKG254a
+!   tstep_type=8  IMKG252a
+!
 
 ! default weights for computing mean dynamics fluxes
     eta_ave_w = 1d0/qsplit
@@ -253,7 +254,7 @@ contains
 
 !==============================================================================================
     elseif (tstep_type == 7) then 
-
+ 
       max_itercnt_perstep = 0
       max_itererr_perstep = 0.0
 
@@ -343,7 +344,52 @@ contains
         deriv,nets,nete,compute_diagnostics,eta_ave_w,1d0,ahat5/a5,1d0)
 
       avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
+!================================================================================
+    elseif (tstep_type == 8) then ! IMKG252a
+ 
+      max_itercnt_perstep = 0
+      max_itererr_perstep = 0.0
 
+      a1 = 1/4d0
+      a2 = 1/6d0
+      a3 = 3/8d0
+      a4 = 1/2d0
+      a5 = 1
+      ahat5 = 1
+
+      dhat3 = (2d0+sqrt(2d0))/2d0
+      dhat4 = (2d0+sqrt(2d0))/2d0
+      ahat4 = -(1d0+sqrt(2d0))/2d0
+
+      call compute_andor_apply_rhs(np1,n0,n0,qn0,a1*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
+
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,a2*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
+
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,a3*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0) 
+      maxiter=10
+      itertol=1e-12
+      call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
+      max_itererr_perstep = max(itertol,max_itererr_perstep)
+
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,a4*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat4/a4,1d0)
+      maxiter=10
+      itertol=1e-12
+      call compute_stage_value_dirk(np1,qn0,dhat4*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
+      max_itererr_perstep = max(itertol,max_itererr_perstep)
+
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,eta_ave_w,1d0,ahat5/a5,1d0)
+
+      avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
+!===================================================================================
     else
        call abortmp('ERROR: bad choice of tstep_type')
     endif
@@ -630,7 +676,53 @@ contains
 
       if (calc_nonlinear_stats) then
         call update_nonlinear_stats(1, sumiter)
-      end if
+      end if 
+!=========================================================================================
+    elseif (tstep_type == 8) then ! imkg252
+
+      max_itercnt_perstep = 0
+      max_itererr_perstep = 0.0
+
+      a1 = 1/4d0
+      a2 = 1/6d0
+      a3 = 3/8d0
+      a4 = 1/2d0
+      a5 = 1
+      ahat1 = 0
+      ahat5 = 1
+
+      dhat3 = (2d0+sqrt(2d0))/2d0
+      dhat4 = (2d0+sqrt(2d0))/2d0
+      ahat4 = -(1d0+sqrt(2d0))/2d0 
+
+      call compute_andor_apply_rhs(np1,n0,n0,qn0,a1*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
+
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,a2*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
+
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,a3*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
+      maxiter=10
+      itertol=1e-12
+      call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+      sumiter = sumiter + maxiter
+
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,a4*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat4/a4,1d0)
+      maxiter=10
+      itertol=1e-12
+      call compute_stage_value_dirk(np1,qn0,dhat4*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+      sumiter = sumiter + maxiter
+
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,eta_ave_w,1d0,ahat5/a5,1d0)
+
+      if (calc_nonlinear_stats) then
+        call update_nonlinear_stats(1, sumiter)
+      end if 
 !=========================================================================================
     else if (tstep_type==20) then ! ARKode RK2
       call set_Butcher_tables(arkode_parameters, arkode_tables%RK2)
@@ -713,7 +805,7 @@ contains
     else if (tstep_type==46) then ! ARKode IMKG 3rd-order, 5 stage, variant b
       call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG343b)
 
-    else
+    else 
        call abortmp('ERROR: bad choice of tstep_type')
     endif
 
@@ -1197,7 +1289,7 @@ contains
               heating(:,:,k)= (elem(ie)%state%v(:,:,1,k,nt)*vtens(:,:,1,k,ie) + &
                    elem(ie)%state%v(:,:,2,k,nt)*vtens(:,:,2,k,ie)  +&
                    (elem(ie)%state%w_i(:,:,k,nt)*stens(:,:,k,3,ie)  +&
-                     elem(ie)%state%w_i(:,:,k2,nt)*stens(:,:,k2,3,ie))/2 ) /  +&
+                     elem(ie)%state%w_i(:,:,k2,nt)*stens(:,:,k2,3,ie))/2 ) /  &
                    (exner(:,:,k)*Cp)  
            endif
            elem(ie)%state%vtheta_dp(:,:,k,nt)=elem(ie)%state%vtheta_dp(:,:,k,nt) &

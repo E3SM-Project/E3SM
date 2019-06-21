@@ -5,6 +5,7 @@ module atm_comp_mct
                                pio_closefile, pio_write_darray, pio_def_var, pio_inq_varid, &
 	                       pio_noerr, pio_bcast_error, pio_internal_error, pio_seterrorhandling 
   use mct_mod
+  use seq_comm_mct     , only: info_taskmap_comp
   use seq_cdata_mod
   use esmf
 
@@ -118,6 +119,8 @@ CONTAINS
     type(mct_gGrid), pointer   :: dom_a
     integer :: ATMID
     integer :: mpicom_atm
+    logical :: no_taskmap_output ! if true, do not write out task-to-node mapping
+    logical :: verbose_taskmap_output ! if true, use verbose task-to-node mapping format
     integer :: lsize
     integer :: iradsw
     logical :: exists           ! true if file exists
@@ -201,21 +204,43 @@ CONTAINS
 
        ! Identify SMP nodes and process/SMP mapping for this instance
        ! (Assume that processor names are SMP node names on SMP clusters.)
-
        write(c_inst_index,'(i8)') inst_index
-       write(c_npes,'(i8)') npes
 
-       if (masterproc) then
-          write(iulog,100) trim(adjustl(c_npes)), trim(adjustl(c_inst_index))
-100       format(/,a,' pes participating in computation of CAM instance #',a)
-          call flush(iulog)
+       if (info_taskmap_comp > 0) then
+
+          no_taskmap_output = .false.
+
+          if (info_taskmap_comp == 1) then
+             verbose_taskmap_output = .false.
+          else
+             verbose_taskmap_output = .true.
+          endif
+
+          write(c_npes,'(i8)') npes
+
+          if (masterproc) then
+             write(iulog,'(/,3A)') &
+                trim(adjustl(c_npes)), &
+                ' pes participating in computation of CAM instance #', &
+                trim(adjustl(c_inst_index))
+             call shr_sys_flush(iulog)
+          endif
+
+       else
+
+          no_taskmap_output = .true.
+          verbose_taskmap_output = .false.
+
        endif
 
        call t_startf("shr_taskmap_write")
-       call shr_taskmap_write(iulog, mpicom_atm, &
+       call shr_taskmap_write(iulog, mpicom_atm,                    &
                               'ATM #'//trim(adjustl(c_inst_index)), &
-                              save_nnodes=nsmps, &
-                              save_task_node_map=proc_smp_map)
+                              verbose=verbose_taskmap_output,       &
+                              no_output=no_taskmap_output,          &
+                              save_nnodes=nsmps,                    &
+                              save_task_node_map=proc_smp_map       )
+       call shr_sys_flush(iulog)
        call t_stopf("shr_taskmap_write")
 
        ! 

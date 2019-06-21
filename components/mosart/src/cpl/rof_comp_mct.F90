@@ -14,6 +14,7 @@ module rof_comp_mct
   use shr_const_mod    , only : SHR_CONST_REARTH
   use shr_taskmap_mod  , only : shr_taskmap_write
   use seq_cdata_mod    , only : seq_cdata, seq_cdata_setptrs
+  use seq_comm_mct     , only : info_taskmap_comp
   use seq_timemgr_mod  , only : seq_timemgr_EClockGetData, seq_timemgr_StopAlarmIsOn, &
                                 seq_timemgr_RestartAlarmIsOn, seq_timemgr_EClockDateInSync
   use seq_infodata_mod , only : seq_infodata_type, seq_infodata_GetData, seq_infodata_PutData, &
@@ -90,6 +91,8 @@ contains
     integer :: lsize                                 ! size of attribute vector
     integer :: g,i,j,n                               ! indices
     logical :: exists                                ! true if file exists
+    logical :: no_taskmap_output                     ! true then do not write out task-to-node mapping
+    logical :: verbose_taskmap_output                ! true then use verbose task-to-node mapping format
     integer :: nsrest                                ! restart type
     integer :: ref_ymd                               ! reference date (YYYYMMDD)
     integer :: ref_tod                               ! reference time of day (sec)
@@ -160,18 +163,40 @@ contains
 
     ! Identify SMP nodes and process/SMP mapping for this instance.
     ! (Assume that processor names are SMP node names on SMP clusters.)
-
     write(c_inst_index,'(i8)') inst_index
+
+    if (info_taskmap_comp > 0) then
+
+       no_taskmap_output = .false.
+
+       if (info_taskmap_comp == 1) then
+          verbose_taskmap_output = .false.
+       else
+          verbose_taskmap_output = .true.
+       endif
+
        write(c_npes,'(i8)') npes
 
-    if (masterproc) then
-       write(iulog,100) trim(adjustl(c_npes)), trim(adjustl(c_inst_index))
-100    format(/,a,' pes participating in computation of MOSART instance #',a)
-       call flush(iulog)
+       if (masterproc) then
+          write(iulog,'(/,3A)') &
+             trim(adjustl(c_npes)), &
+             ' pes participating in computation of MOSART instance #', &
+             trim(adjustl(c_inst_index))
+          call shr_sys_flush(iulog)
+       endif
+
+    else
+
+       no_taskmap_output = .true.
+       verbose_taskmap_output = .false.
+
     endif
 
     call t_startf("shr_taskmap_write")
-    call shr_taskmap_write(iulog, mpicom_rof, 'ROF #'//trim(adjustl(c_inst_index)))
+    call shr_taskmap_write(iulog, mpicom_rof,                    &
+                           'ROF #'//trim(adjustl(c_inst_index)), &
+                           verbose=verbose_taskmap_output,       &
+                           no_output=no_taskmap_output           )
     call t_stopf("shr_taskmap_write")
 
     ! Initialize mosart
