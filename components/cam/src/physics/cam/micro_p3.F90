@@ -474,7 +474,6 @@ contains
     real(rtype) :: eii ! temperature dependent aggregation efficiency
 
     ! Variables needed for in-cloud calculations
-    real(rtype)                             :: ir_cldm, il_cldm, lr_cldm  ! Intersection of cloud fractions for combination of ice (i), rain (r) and liquid (l)
     real(rtype), dimension(its:ite,kts:kte) :: inv_icldm, inv_lcldm, inv_rcldm ! Inverse cloud fractions (1/cld)
     real(rtype), dimension(its:ite,kts:kte) :: qc_incld, qr_incld, qitot_incld, qirim_incld ! In cloud mass-mixing ratios
     real(rtype), dimension(its:ite,kts:kte) :: nc_incld, nr_incld, nitot_incld, birim_incld ! In cloud number concentrations
@@ -1156,53 +1155,11 @@ contains
 
           ! Here we map the microphysics tendency rates back to CELL-AVERAGE quantities for updating
           ! cell-average quantities.
-          ir_cldm = min(icldm(i,k),rcldm(i,k))  ! Intersection of ICE and RAIN cloud
-          il_cldm = min(icldm(i,k),lcldm(i,k))  ! Intersection of ICE and LIQUID cloud
-          lr_cldm = min(lcldm(i,k),rcldm(i,k))  ! Intersection of LIQUID and RAIN cloud
-
-          ! Some process rates take place within the intersection of liquid, rain and ice cloud fractions.
-          ! We calculate the intersection as the minimum between combinations of cloud fractions and use 
-          ! these values to map back to cell-average quantities where applicable.
+          call back_to_cell_average(lcldm(i,k), rcldm(i,k), icldm(i,k), qcacc, qrevp,  qccon, qcaut,& 
+          qcevp, qrcon, ncacc, ncslf, ncautc, nrslf, nrevp, ncautr, qcnuc, ncnuc, qisub, nrshdr, qcheti,& 
+          qrcol, qcshd, qimlt, qccol, qrheti, nimlt, nccol, ncshdc, ncheti, nrcol, nislf,& 
+          qidep, nrheti, nisub, qinuc, ninuc)
           
-          ! map warm-phase process rates to cell-avg
-          qcacc   = qcacc*lr_cldm     ! Accretion of liquid to rain
-          qrevp   = qrevp*rcldm(i,k)  ! Evaporation of rain
-          qccon   = qccon*lcldm(i,k)  ! Condensation of liquid
-          qcaut   = qcaut*lcldm(i,k)  ! Autoconversion of liquid
-          qcevp   = qcevp*lcldm(i,k)  ! Evaporation of liquid, AaronDonahue: there is no equivalent ncevp, this should be investigated
-          qrcon   = qrcon*rcldm(i,k)  ! Condensation of rain
-          ncacc   = ncacc*lr_cldm     ! Number change due to accretion
-          ncslf   = ncslf*lcldm(i,k)  ! Self collection occurs locally in liq. cloud
-          ncautc  = ncautc*lcldm(i,k) ! Impact of autoconversion on number
-          nrslf   = nrslf*rcldm(i,k)  ! Self collection occurs locally in rain cloud
-          nrevp   = nrevp*rcldm(i,k)  ! Change in rain number due to evaporation 
-          ncautr  = ncautr*lr_cldm    ! Autoconversion of rain drops within rain/liq cloud
-            ! AaronDonahue: These variables are related to aerosol activation and their usage will be changed in a later PR.
-          qcnuc   = qcnuc*lcldm(i,k)  ! Impact on liq. from nucleation
-          ncnuc   = ncnuc*lcldm(i,k)  ! Number change due to aerosol activation
-
-          ! map ice-phase  process rates to cell-avg
-          qisub   = qisub*icldm(i,k)  ! Sublimation of ice in ice cloud
-          nrshdr  = nrshdr*il_cldm    ! Rain # increase due to shedding from rain-ice collisions, occurs when ice and liquid interact
-          qcheti  = qcheti*il_cldm    ! Immersion freezing of cloud drops
-          qrcol   = qrcol*ir_cldm     ! Collection of rain mass by ice
-          qcshd   = qcshd*il_cldm     ! Rain mass growth due to shedding of fain drops after collisions with ice, occurs when ice and liquid interact
-          qimlt   = qimlt*icldm(i,k)  ! Melting of ice
-          qccol   = qccol*il_cldm     ! Collection of water by ice
-          qrheti  = qrheti*rcldm(i,k) ! Immersion freezing of rain
-          nimlt   = nimlt*icldm(i,k)  ! Change in number due to melting
-          nccol   = nccol*il_cldm     ! Cloud # change due to collection of cld water by ice
-          ncshdc  = ncshdc*il_cldm    ! Number change due to shedding, occurs when ice and liquid interact
-          ncheti  = ncheti*lcldm(i,k) ! Number change associated with freexzing of cld drops
-          nrcol   = nrcol*ir_cldm     ! Rain number change due to collection from ice
-          nislf   = nislf*icldm(i,k)  ! Ice self collection
-          qidep   = qidep*icldm(i,k)  ! Vapor deposition to ice phase
-          nrheti  = nrheti*rcldm(i,k) ! Change in number due to immersion freezing of rain
-          nisub   = nisub*icldm(i,k)  ! Number change due to sublimation of ice
-            ! AaronDonahue: These variables are related to aerosol activation and their usage will be changed in a later PR.
-          qinuc   = qinuc             ! Deposition and condensation-freezing nucleation, already cell-averaged
-          ninuc   = ninuc             ! Number change due to deposition and condensation-freezing, already cell-averaged
-
           !.................................................................
           ! conservation of water
           !.................................................................
@@ -3472,5 +3429,75 @@ subroutine cloud_water_autoconversion(rho, inv_rho, qc_incld, nc_incld, qr_incld
 
 end subroutine cloud_water_autoconversion
 
+subroutine back_to_cell_average(lcldm, rcldm, icldm, qcacc, qrevp,  qccon, qcaut,& 
+   qcevp, qrcon, ncacc, ncslf, ncautc, nrslf, nrevp, ncautr, qcnuc, ncnuc, qisub, nrshdr, qcheti,& 
+   qrcol, qcshd, qimlt, qccol, qrheti, nimlt, nccol, ncshdc, ncheti, nrcol, nislf,& 
+   qidep, nrheti, nisub, qinuc, ninuc)
+
+   ! Here we map the microphysics tendency rates back to CELL-AVERAGE quantities for updating
+   ! cell-average quantities.
+
+   implicit none 
+
+   ! Intersection of cloud fractions for combination of ice (i), rain (r) and liquid (l)
+   real(rtype), intent(in) :: lcldm 
+   real(rtype), intent(in) :: rcldm 
+   real(rtype), intent(in) :: icldm 
+
+   real(rtype), intent(inout) :: qcacc, qrevp,  qccon, qcaut, qcevp, qrcon, ncacc, ncslf, ncautc, nrslf, nrevp, ncautr
+   real(rtype), intent(inout) :: qcnuc, ncnuc
+   real(rtype), intent(inout) :: qisub, nrshdr, qcheti, qrcol, qcshd, qimlt, qccol, qrheti, nimlt, nccol, ncshdc, ncheti, nrcol, nislf, qidep
+   real(rtype), intent(inout) :: nrheti, nisub, qinuc, ninuc 
+
+   real(rtype) :: ir_cldm, il_cldm, lr_cldm 
+
+   ir_cldm = min(icldm,rcldm)  ! Intersection of ICE and RAIN cloud
+   il_cldm = min(icldm,lcldm)  ! Intersection of ICE and LIQUID cloud
+   lr_cldm = min(lcldm,rcldm)  ! Intersection of LIQUID and RAIN cloud
+
+   ! Some process rates take place within the intersection of liquid, rain and ice cloud fractions.
+   ! We calculate the intersection as the minimum between combinations of cloud fractions and use 
+   ! these values to map back to cell-average quantities where applicable.
+
+   ! map warm-phase process rates to cell-avg
+   qcacc   = qcacc*lr_cldm     ! Accretion of liquid to rain
+   qrevp   = qrevp*rcldm  ! Evaporation of rain
+   qccon   = qccon*lcldm  ! Condensation of liquid
+   qcaut   = qcaut*lcldm  ! Autoconversion of liquid
+   qcevp   = qcevp*lcldm  ! Evaporation of liquid, AaronDonahue: there is no equivalent ncevp, this should be investigated
+   qrcon   = qrcon*rcldm  ! Condensation of rain
+   ncacc   = ncacc*lr_cldm     ! Number change due to accretion
+   ncslf   = ncslf*lcldm  ! Self collection occurs locally in liq. cloud
+   ncautc  = ncautc*lcldm ! Impact of autoconversion on number
+   nrslf   = nrslf*rcldm  ! Self collection occurs locally in rain cloud
+   nrevp   = nrevp*rcldm  ! Change in rain number due to evaporation 
+   ncautr  = ncautr*lr_cldm    ! Autoconversion of rain drops within rain/liq cloud
+   ! AaronDonahue: These variables are related to aerosol activation and their usage will be changed in a later PR.
+   qcnuc   = qcnuc*lcldm  ! Impact on liq. from nucleation
+   ncnuc   = ncnuc*lcldm  ! Number change due to aerosol activation
+
+   ! map ice-phase  process rates to cell-avg
+   qisub   = qisub*icldm  ! Sublimation of ice in ice cloud
+   nrshdr  = nrshdr*il_cldm    ! Rain # increase due to shedding from rain-ice collisions, occurs when ice and liquid interact
+   qcheti  = qcheti*il_cldm    ! Immersion freezing of cloud drops
+   qrcol   = qrcol*ir_cldm     ! Collection of rain mass by ice
+   qcshd   = qcshd*il_cldm     ! Rain mass growth due to shedding of fain drops after collisions with ice, occurs when ice and liquid interact
+   qimlt   = qimlt*icldm  ! Melting of ice
+   qccol   = qccol*il_cldm     ! Collection of water by ice
+   qrheti  = qrheti*rcldm ! Immersion freezing of rain
+   nimlt   = nimlt*icldm  ! Change in number due to melting
+   nccol   = nccol*il_cldm     ! Cloud # change due to collection of cld water by ice
+   ncshdc  = ncshdc*il_cldm    ! Number change due to shedding, occurs when ice and liquid interact
+   ncheti  = ncheti*lcldm ! Number change associated with freexzing of cld drops
+   nrcol   = nrcol*ir_cldm     ! Rain number change due to collection from ice
+   nislf   = nislf*icldm  ! Ice self collection
+   qidep   = qidep*icldm  ! Vapor deposition to ice phase
+   nrheti  = nrheti*rcldm ! Change in number due to immersion freezing of rain
+   nisub   = nisub*icldm  ! Number change due to sublimation of ice
+   ! AaronDonahue: These variables are related to aerosol activation and their usage will be changed in a later PR.
+   qinuc   = qinuc             ! Deposition and condensation-freezing nucleation, already cell-averaged
+   ninuc   = ninuc             ! Number change due to deposition and condensation-freezing, already cell-averaged
+
+end subroutine back_to_cell_average 
 
 end module micro_p3
