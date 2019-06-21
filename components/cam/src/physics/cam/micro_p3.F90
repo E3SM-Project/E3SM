@@ -494,7 +494,7 @@ contains
          fluxdiv_qit,fluxdiv_nit,fluxdiv_qir,fluxdiv_bir,prt_accum, &
          fluxdiv_qx,fluxdiv_nx,Co_max,dt_sub,      &
          Q_nuc,N_nuc,         &
-         deltaD_init,qcon_satadj,sources,sinks,    &
+         deltaD_init,qcon_satadj,    &
          timeScaleFactor,dt_left, vtrmi1
 
 
@@ -1176,15 +1176,7 @@ contains
           call rain_water_conservation(qr(i,k), qrcon, qcaut, qcacc, qimlt, qcshd, dt, qrevp, qrcol, qrheti)
 
           ! ice
-          sinks   = (qisub+qimlt)*dt
-          sources = qitot(i,k) + (qidep+qinuc+qrcol+qccol+  &
-               qrheti+qcheti)*dt
-          if (sinks.gt.sources .and. sinks.ge.1.e-20_rtype) then
-             ratio = sources/sinks
-             qisub = qisub*ratio
-             qimlt = qimlt*ratio
-          endif
-
+          call ice_water_conservation(qitot(i,k), qidep, qinuc, qrcol, qccol, qrheti, qcheti, dt, qisub, qimlt)
 
           !---------------------------------------------------------------------------------
           ! update prognostic microphysics and thermodynamics variables
@@ -3540,5 +3532,24 @@ subroutine rain_water_conservation(qr, qrcon, qcaut, qcacc, qimlt, qcshd, dt, qr
    endif
 
 end subroutine rain_water_conservation 
+
+subroutine ice_water_conservation(qitot, qidep, qinuc, qrcol, qccol, qrheti, qcheti, dt, qisub, qimlt) 
+
+implicit none 
+
+real(rtype), intent(in) :: qitot, qidep, qinuc, qrcol, qccol, qrheti, qcheti, dt
+real(rtype), intent(inout) :: qisub, qimlt 
+real(rtype) :: sinks, sources, ratio 
+
+sinks   = (qisub+qimlt)*dt
+sources = qitot + (qidep+qinuc+qrcol+qccol+  &
+     qrheti+qcheti)*dt
+if (sinks.gt.sources .and. sinks.ge.1.e-20_rtype) then
+   ratio = sources/sinks
+   qisub = qisub*ratio
+   qimlt = qimlt*ratio
+endif
+
+end subroutine ice_water_conservation 
 
 end module micro_p3
