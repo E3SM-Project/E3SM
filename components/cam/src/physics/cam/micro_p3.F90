@@ -494,7 +494,7 @@ contains
          fluxdiv_qit,fluxdiv_nit,fluxdiv_qir,fluxdiv_bir,prt_accum, &
          fluxdiv_qx,fluxdiv_nx,Co_max,dt_sub,      &
          Q_nuc,N_nuc,         &
-         deltaD_init,qcon_satadj,qdep_satadj,sources,sinks,    &
+         deltaD_init,qcon_satadj,sources,sinks,    &
          timeScaleFactor,dt_left, vtrmi1
 
 
@@ -1163,23 +1163,8 @@ contains
           !.................................................................
           ! conservation of water
           !.................................................................
-
-          ! The microphysical process rates are computed above, based on the environmental conditions.
-          ! The rates are adjusted here (where necessary) such that the sum of the sinks of mass cannot
-          ! be greater than the sum of the sources, thereby resulting in overdepletion.
-
-          !-- Limit ice process rates to prevent overdepletion of sources such that
-          !   the subsequent adjustments are done with maximum possible rates for the
-          !   time step.  (note: most ice rates are adjusted here since they must be done
-          !   simultaneously (outside of iice-loops) to distribute reduction proportionally
-          !   amongst categories.
-          !PMC - might need to rethink above statement since only one category now.
-
-          dumqvi = qv_sat(t(i,k),pres(i,k),1)
-          qdep_satadj = (qv(i,k)-dumqvi)/(1._rtype+xxls(i,k)**2*dumqvi/(cp*rv*t(i,k)**2))*odt
-          qidep  = qidep*min(1._rtype,max(0._rtype, qdep_satadj)/max(qidep, 1.e-20_rtype))
-          qisub  = qisub*min(1._rtype,max(0._rtype,-qdep_satadj)/max(qisub, 1.e-20_rtype))
-          !==
+         
+          call prevent_ice_overdepletion(pres(i,k), t(i,k), qv(i,k), xxls(i,k), odt, qidep, qisub)
 
           ! vapor -- not needed, since all sinks already have limits imposed and the sum, therefore,
           !          cannot possibly overdeplete qv
@@ -3499,5 +3484,35 @@ subroutine back_to_cell_average(lcldm, rcldm, icldm, qcacc, qrevp,  qccon, qcaut
    ninuc   = ninuc             ! Number change due to deposition and condensation-freezing, already cell-averaged
 
 end subroutine back_to_cell_average 
+
+subroutine prevent_ice_overdepletion(pres, t,  qv, xxls, odt, qidep, qisub)
+
+   !-- Limit ice process rates to prevent overdepletion of sources such that
+   !   the subsequent adjustments are done with maximum possible rates for the
+   !   time step.  (note: most ice rates are adjusted here since they must be done
+   !   simultaneously (outside of iice-loops) to distribute reduction proportionally
+   !   amongst categories.
+   !PMC - might need to rethink above statement since only one category now.
+
+   implicit none 
+
+   real(rtype), intent(in) :: pres
+   real(rtype), intent(in) :: t
+   real(rtype), intent(in) :: qv
+   real(rtype), intent(in) :: xxls 
+   real(rtype), intent(in) :: odt 
+
+   real(rtype), intent(inout) :: qidep
+   real(rtype), intent(inout) :: qisub 
+
+   real(rtype) :: dumqvi, qdep_satadj 
+
+
+   dumqvi = qv_sat(t,pres,1)
+   qdep_satadj = (qv-dumqvi)/(1._rtype+xxls**2*dumqvi/(cp*rv*t**2))*odt
+   qidep  = qidep*min(1._rtype,max(0._rtype, qdep_satadj)/max(qidep, 1.e-20_rtype))
+   qisub  = qisub*min(1._rtype,max(0._rtype,-qdep_satadj)/max(qisub, 1.e-20_rtype))
+
+end subroutine prevent_ice_overdepletion
 
 end module micro_p3
