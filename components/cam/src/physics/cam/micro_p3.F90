@@ -1115,32 +1115,44 @@ contains
 
           !................................................................
           ! deposition/condensation-freezing nucleation
-          call ice_nucleation(t(i,k), inv_rho(i,k), nitot(i,k), naai(i,k), supi(i,k), odt, log_predictNc, qinuc, ninuc)
+          call ice_nucleation(t(i,k),inv_rho(i,k),& 
+            nitot(i,k),naai(i,k),supi(i,k),odt,log_predictNc,& 
+            qinuc, ninuc)
 
           !.................................................................
           ! droplet activation
-          call droplet_activation(t(i,k), pres(i,k), qv(i,k), qc(i,k), inv_rho(i,k), sup(i,k), xxlv(i,k), npccn(i,k), log_predictNc, odt, it, qcnuc, ncnuc)
+          call droplet_activation(t(i,k),pres(i,k),qv(i,k),qc(i,k),inv_rho(i,k),& 
+             sup(i,k),xxlv(i,k),npccn(i,k),log_predictNc,odt,it,& 
+             qcnuc,ncnuc)
 
           !................................................................
           ! saturation adjustment to get initial cloud water
-          call initial_saturation_adjustment(pres(i,k), qv(i,k), th(i,k), inv_exner(i,k), xxlv(i,k), odt, it, qccon)
+          call initial_saturation_adjustment(pres(i,k),qv(i,k),th(i,k),& 
+            inv_exner(i,k),xxlv(i,k),odt,it,&  
+            qccon)
 
           !................
           ! cloud water autoconversion 
-          call cloud_water_autoconversion(rho(i,k), inv_rho(i,k), qc_incld(i,k), nc_incld(i,k), qr_incld(i,k), mu_c(i,k), nu(i,k), qcaut, ncautc, ncautr)
+          call cloud_water_autoconversion(rho(i,k), inv_rho(i,k),qc_incld(i,k),& 
+            nc_incld(i,k),qr_incld(i,k),mu_c(i,k),nu(i,k),& 
+            qcaut,ncautc,ncautr)
 
           !............................
           ! self-collection of droplets
-          call droplet_self_collection(rho(i,k), inv_rho(i,k), qc_incld(i,k), mu_c(i,k), nu(i,k), ncautc, ncslf)
+          call droplet_self_collection(rho(i,k),inv_rho(i,k),qc_incld(i,k),& 
+            mu_c(i,k),nu(i,k),ncautc,ncslf)
 
           !............................
           ! accretion of cloud by rain
-          call cloud_rain_accretion(rho(i,k), inv_rho(i,k), qc_incld(i,k), nc_incld(i,k), qr_incld(i,k), qcacc, ncacc)
+          call cloud_rain_accretion(rho(i,k),inv_rho(i,k),& 
+            qc_incld(i,k),nc_incld(i,k), qr_incld(i,k),& 
+            qcacc, ncacc)
 
           !.....................................
           ! self-collection and breakup of rain
           ! (breakup following modified Verlinde and Cotton scheme)
-          call rain_self_collection(rho(i,k), qr_incld(i,k), nr_incld(i,k), nrslf)
+          call rain_self_collection(rho(i,k),qr_incld(i,k),nr_incld(i,k),& 
+            nrslf)
 
           ! Here we map the microphysics tendency rates back to CELL-AVERAGE quantities for updating
           ! cell-average quantities.
@@ -3459,5 +3471,6 @@ subroutine cloud_water_autoconversion(rho, inv_rho, qc_incld, nc_incld, qr_incld
    endif qc_not_small
 
 end subroutine cloud_water_autoconversion
+
 
 end module micro_p3
