@@ -2,19 +2,16 @@
 '''
 Plots velocity profiles for a diagnostic solve for a range of resolutions, with and without GLP.
 '''
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import numpy as np
 import netCDF4
-#import datetime
-# import math
-# from pylab import *
 from optparse import OptionParser
 import matplotlib.pyplot as plt
 from matplotlib import cm
-# from matplotlib.contour import QuadContourSet
-# import time
 
 reslist = (10000, 5000, 2000, 1000, 500, 250)
-GLbit = 256
 secInYr = 3600.0 * 24.0 * 365.0  # Note: this may be slightly wrong for some calendar types!
 
 parser = OptionParser()
@@ -26,11 +23,11 @@ parser.add_option("-n", "--nodisp", action="store_true", dest="hidefigs", help="
 options, args = parser.parse_args()
 
 if not options.filename:
-	print "No filename provided. Using output.nc."
+	print("No filename provided. Using output.nc.")
         options.filename = "output.nc"
 
 if not options.time:
-	print "No time provided. Using time 0."
+	print("No time provided. Using time 0.")
         time_slice = 0
 else:
         time_slice = int(options.time)
@@ -66,12 +63,12 @@ for i in range(len(reslist)):
   res = reslist[i]
   # no glp first
   fname = "{}m.nc".format(res)
-  print "Processing file", fname
+  print("Processing file"+fname)
   x, u = get_data(fname)
   plt.plot(x, u, '.-', color=colors[i], label="{}m, no GLP".format(res))
   # glp next
   fname = "{}m-glp.nc".format(res)
-  print "Processing file", fname
+  print("Processing file"+fname)
   x, u = get_data(fname)
   plt.plot(x, u, '.--', color=colors[i], label="{}m, GLP".format(res))
 
@@ -82,14 +79,14 @@ plt.title('Profile at y=0')
 plt.legend()
 plt.draw()
 if options.saveimages:
-        print "Saving figures to files."
+        print("Saving figures to files.")
         plt.savefig('GL-position.png')
 
 
 
 
 if options.hidefigs:
-     print "Plot display disabled with -n argument."
+     print("Plot display disabled with -n argument.")
 else:     
      plt.show()
 
