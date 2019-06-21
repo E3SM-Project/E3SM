@@ -59,6 +59,7 @@
 <horiz_grid dyn="se"    hgrid="ne120np4"     ncol="777602"  csne="120" csnp="4" npg="0" />
 <horiz_grid dyn="se"    hgrid="ne120np4.pg2" ncol="345600"  csne="120" csnp="4" npg="2" />
 <horiz_grid dyn="se"    hgrid="ne240np4"     ncol="3110402" csne="240" csnp="4" npg="0" />
+<horiz_grid dyn="se"    hgrid="ne1024np4"    ncol="56623106" csne="1024" csnp="4" npg="0" />
 
 <!-- Spectral Element w/ Regional Refinement -->
 <horiz_grid dyn="se" hgrid="ne0np4_arm_x8v3_lowcon"           ncol="92558"  csne="0" csnp="4" npg="0" />
