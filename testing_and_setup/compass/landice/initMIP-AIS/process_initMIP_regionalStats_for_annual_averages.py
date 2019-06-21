@@ -6,6 +6,9 @@ Output file is in MALI regionalStats format.
 Note that because fluxes at time 0 are meant to be from the end of the spinup,
 a globalStats file from the final year of the spinup is also required.
 '''
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 from netCDF4 import Dataset
 import matplotlib.pyplot as plt
 import numpy as np
@@ -13,7 +16,7 @@ from optparse import OptionParser
 import sys
 
 
-print "== Gathering information.  (Invoke with --help for more details. All arguments are optional)\n"
+print("== Gathering information.  (Invoke with --help for more details. All arguments are optional)\n")
 parser = OptionParser()
 parser.description = __doc__
 parser.add_option("-f", "--file", dest="inputFile", help="name of source (input) file.", default="regionalStats.nc", metavar="FILENAME")
@@ -25,7 +28,7 @@ for option in parser.option_list:
 
 
 rhoi = 910.0
-print "Using ice density of:", rhoi
+print("Using ice density of: {}".format(rhoi))
 
 
 inputData = Dataset(options.inputFile,'r')
@@ -41,7 +44,7 @@ evenYrInd = np.zeros_like(yrList).astype(int)
 for t in range(len(yrList)):
    yr = yrList[t]
    evenYrInd[t] = np.nonzero(years >= yr)[0][0]  # get first index after the even year (just in case we don't exactly have an even year)
-   print "Found time ", years[evenYrInd[t]], " for index ", t
+   print("Found time " + str( years[evenYrInd[t]] ) + " for index " + str(t))
 
 # also need spinup for flux data at t=0 :(
 spinupData = Dataset(options.spinupFile,'r')
@@ -59,7 +62,7 @@ def annualAverage(varName):
          newVar[t,:] = varSpinupData.mean(axis=0)
       else:
          yr = yrList[t]
-         print yr
+         #print yr
          ind = np.nonzero(np.logical_and(years>yr-1, years<=yr))[0]  # todo could skip redoing this for each var if slow
          assert dt[ind].sum() == secInYr, "sec in yr={}".format(dt[ind].sum())
          for r in range(nRegions):
@@ -142,5 +145,5 @@ inputData.close()
 spinupData.close()
 
 
-print "Complete."
+print("Complete.")
 
