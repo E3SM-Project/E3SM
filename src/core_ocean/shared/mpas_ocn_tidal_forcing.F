@@ -192,11 +192,13 @@ contains
 
       real (kind=RKIND), dimension(:,:), pointer :: tidalLayerThicknessTendency
       real (kind=RKIND), dimension(:), pointer :: tidalInputMask
+      real (kind=RKIND), dimension(:), pointer :: tidalBCValue
       real (kind=RKIND), pointer :: config_tidal_forcing_monochromatic_amp
       real (kind=RKIND), pointer :: config_tidal_forcing_monochromatic_period
       real (kind=RKIND), pointer :: config_tidal_forcing_monochromatic_baseline
       real (kind=RKIND), pointer :: config_use_tidal_forcing_tau
       character (len=StrKIND), pointer :: config_tidal_forcing_type
+      character (len=StrKIND), pointer :: config_tidal_forcing_model
 
       integer :: iCell, k, nCells
       integer, dimension(:), pointer :: nCellsArray
@@ -215,7 +217,7 @@ contains
       character (len=StrKIND), pointer :: simulationStartTime, xtime
       real (kind=RKIND), pointer :: daysSinceStartOfSim
       type (MPAS_Time_type) :: startTime, xtime_timeType, simulationStartTime_timeType
-      
+
       if ( .not. tidalfluxOn ) return
 
       call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
@@ -223,11 +225,13 @@ contains
       call mpas_pool_get_array(forcingPool, 'tidalLayerThicknessTendency', &
                                              tidalLayerThicknessTendency)
       call mpas_pool_get_array(forcingPool, 'tidalInputMask', tidalInputMask)
+      call mpas_pool_get_array(forcingPool, 'tidalBCValue', tidalBCValue)
 
       ! compute time since start of simulation, in days
       call mpas_pool_get_array(diagnosticsPool, 'daysSinceStartOfSim', daysSinceStartOfSim)
 
       call mpas_pool_get_config(ocnConfigs, 'config_tidal_forcing_type', config_tidal_forcing_type)
+      call mpas_pool_get_config(ocnConfigs, 'config_tidal_forcing_model', config_tidal_forcing_model)
       call mpas_pool_get_config(ocnConfigs, 'config_tidal_forcing_monochromatic_amp', &
                                              config_tidal_forcing_monochromatic_amp)
       call mpas_pool_get_config(ocnConfigs, 'config_tidal_forcing_monochromatic_period', &
@@ -247,10 +251,13 @@ contains
       do iCell = 1, nCells
 
         ! compute the tidalHeight
-        if (trim(config_tidal_forcing_type) == 'monochromatic') then
+        if (trim(config_tidal_forcing_model) == 'monochromatic') then
           tidalHeight = config_tidal_forcing_monochromatic_amp * &
             SIN(2.0_RKIND*pii/config_tidal_forcing_monochromatic_period * daysSinceStartOfSim) - &
             config_tidal_forcing_monochromatic_baseline
+        !else if (trim(config_tidal_forcing_type) == 'data') then
+        !  ! data option
+        !  ! pass
         else
           tidalHeight = 0.0_RKIND
         end if
@@ -261,12 +268,24 @@ contains
           totalDepth = totalDepth + layerThickness(k,iCell)
         end do
 
-        ! distribute tidal forcing tendency fractionally over water column
         do k = 1, maxLevelCell(iCell)
-          tidalLayerThicknessTendency(k,iCell) = tidalInputMask(iCell) / config_use_tidal_forcing_tau &
-            * (layerThickness(k,iCell)/totalDepth) * (tidalHeight - ssh(iCell))
+          tidalLayerThicknessTendency(:,iCell) = 0.0_RKIND
         end do
-      enddo   ! do iCell = 1, nCells
+        if (trim(config_tidal_forcing_type) == 'thickness_source') then
+          ! distribute tidal forcing tendency fractionally over water column
+          do k = 1, maxLevelCell(iCell)
+            tidalLayerThicknessTendency(k,iCell) = tidalInputMask(iCell) / config_use_tidal_forcing_tau &
+              * (layerThickness(k,iCell)/totalDepth) * (tidalHeight - ssh(iCell))
+          end do
+          ! else if
+          ! using the 'direct' option to immediately force the free surface as a prescribe boundary
+          ! in src/core_ocean/mode_forward/mpas_ocn_time_integration_rk4.F
+        end if
+
+        ! store tidal boundary cell values (e.g., for config_tidal_forcing_type == 'direct')
+        tidalBCValue(iCell) = tidalHeight
+
+      end do   ! do iCell = 1, nCells
 
    end subroutine ocn_tidal_forcing_build_array !}}}
 
