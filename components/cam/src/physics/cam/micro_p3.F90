@@ -1126,54 +1126,8 @@ contains
           call initial_saturation_adjustment(pres(i,k), qv(i,k), th(i,k), inv_exner(i,k), xxlv(i,k), odt, it, qccon)
 
           !................
-
-          qc_not_small: if (qc_incld(i,k).ge.1.e-8_rtype) then
-
-             if (iparam.eq.1) then
-
-                !Seifert and Beheng (2001)
-                dum   = 1._rtype-qc_incld(i,k)/(qc_incld(i,k)+qr_incld(i,k))
-                dum1  = 600._rtype*dum**0.68_rtype*(1.-dum**0.68_rtype)**3
-                ! qcaut = kc/(20.*2.6e-7)*(nu(i,k)+2.)*(nu(i,k)+4.)/(nu(i,k)+1.)**2*         &
-                !         (rho(i,k)*qc_incld(i,k)/1000.)**4/(rho(i,k)*nc_incld(i,k)/1.e+6)**2*(1.+       &
-                !         dum1/(1.-dum)**2)*1000.*inv_rho(i,k)
-                ! ncautc = qcaut*2./2.6e-7*1000.
-                qcaut =  kc*1.9230769e-5_rtype*(nu(i,k)+2._rtype)*(nu(i,k)+4._rtype)/(nu(i,k)+1.)**2*        &
-                     (rho(i,k)*qc_incld(i,k)*1.e-3_rtype)**4/(rho(i,k)*nc_incld(i,k)*1.e-6_rtype)**2*(1._rtype+      &
-                     dum1/(1._rtype-dum)**2)*1000._rtype*inv_rho(i,k)
-                ncautc = qcaut*7.6923076e+9_rtype
-
-             elseif (iparam.eq.2) then
-
-                !Beheng (1994)
-                if (nc_incld(i,k)*rho(i,k)*1.e-6_rtype .lt. 100._rtype) then
-                   qcaut = 6.e+28_rtype*inv_rho(i,k)*mu_c(i,k)**(-1.7_rtype)*(1.e-6_rtype*rho(i,k)*          &
-                        nc_incld(i,k))**(-3.3_rtype)*(1.e-3_rtype*rho(i,k)*qc_incld(i,k))**4.7_rtype
-                else
-                   !2D interpolation of tabled logarithmic values
-                   dum   = 41.46_rtype + (nc_incld(i,k)*1.e-6_rtype*rho(i,k)-100._rtype)*(37.53_rtype-41.46_rtype)*5.e-3_rtype
-                   dum1  = 39.36_rtype + (nc_incld(i,k)*1.e-6_rtype*rho(i,k)-100._rtype)*(30.72_rtype-39.36_rtype)*5.e-3_rtype
-                   qcaut = dum+(mu_c(i,k)-5._rtype)*(dum1-dum)*0.1_rtype
-                   ! 1000/rho is for conversion from g cm-3/s to kg/kg
-                   qcaut = exp(qcaut)*(1.e-3_rtype*rho(i,k)*qc_incld(i,k))**4.7_rtype*1000._rtype*inv_rho(i,k)
-                endif
-                ncautc = 7.7e+9_rtype*qcaut
-
-             elseif (iparam.eq.3) then
-
-                !Khroutdinov and Kogan (2000)
-                dum   = qc_incld(i,k)
-                qcaut = 1350._rtype*dum**2.47_rtype*(nc_incld(i,k)*1.e-6_rtype*rho(i,k))**(-1.79_rtype)
-                ! note: ncautr is change in Nr; ncautc is change in Nc
-                ncautr = qcaut*cons3
-                ncautc = qcaut*nc_incld(i,k)/qc_incld(i,k)
-
-             endif
-
-             if (qcaut .eq.0._rtype) ncautc = 0._rtype
-             if (ncautc.eq.0._rtype) qcaut  = 0._rtype
-
-          endif qc_not_small
+          ! cloud water autoconversion 
+          call cloud_water_autoconversion(rho(i,k), inv_rho(i,k), qc_incld(i,k), nc_incld(i,k), qr_incld(i,k), mu_c(i,k), nu(i,k), qcaut, ncautc, ncautr)
 
           !............................
           ! self-collection of droplets
@@ -3435,5 +3389,75 @@ subroutine rain_self_collection(rho, qr_incld, nr_incld, nrslf)
    endif
 
 end subroutine rain_self_collection
+
+
+subroutine cloud_water_autoconversion(rho, inv_rho, qc_incld, nc_incld, qr_incld, mu_c, nu, qcaut, ncautc, ncautr)
+
+   implicit none 
+
+   real(rtype), intent(in) :: rho
+   real(rtype), intent(in) :: inv_rho
+   real(rtype), intent(in) :: qc_incld
+   real(rtype), intent(in) :: nc_incld 
+   real(rtype), intent(in) :: qr_incld
+   real(rtype), intent(in) :: mu_c 
+   real(rtype), intent(in) :: nu 
+
+   real(rtype), intent(out) :: qcaut
+   real(rtype), intent(out) :: ncautc 
+   real(rtype), intent(out) :: ncautr
+
+   logical :: qc_not_small 
+   real(rtype) :: dum, dum1 
+
+   qc_not_small: if (qc_incld.ge.1.e-8_rtype) then
+
+      if (iparam.eq.1) then
+
+         !Seifert and Beheng (2001)
+         dum   = 1._rtype-qc_incld/(qc_incld+qr_incld)
+         dum1  = 600._rtype*dum**0.68_rtype*(1.-dum**0.68_rtype)**3
+         ! qcaut = kc/(20.*2.6e-7)*(nu(i,k)+2.)*(nu(i,k)+4.)/(nu(i,k)+1.)**2*         &
+         !         (rho(i,k)*qc_incld(i,k)/1000.)**4/(rho(i,k)*nc_incld(i,k)/1.e+6)**2*(1.+       &
+         !         dum1/(1.-dum)**2)*1000.*inv_rho(i,k)
+         ! ncautc = qcaut*2./2.6e-7*1000.
+         qcaut =  kc*1.9230769e-5_rtype*(nu+2._rtype)*(nu+4._rtype)/(nu+1.)**2*        &
+              (rho*qc_incld*1.e-3_rtype)**4/(rho*nc_incld*1.e-6_rtype)**2*(1._rtype+      &
+              dum1/(1._rtype-dum)**2)*1000._rtype*inv_rho
+         ncautc = qcaut*7.6923076e+9_rtype
+
+      elseif (iparam.eq.2) then
+
+         !Beheng (1994)
+         if (nc_incld*rho*1.e-6_rtype .lt. 100._rtype) then
+            qcaut = 6.e+28_rtype*inv_rho*mu_c**(-1.7_rtype)*(1.e-6_rtype*rho*          &
+               nc_incld)**(-3.3_rtype)*(1.e-3_rtype*rho*qc_incld)**4.7_rtype
+         else
+            !2D interpolation of tabled logarithmic values
+            dum   = 41.46_rtype + (nc_incld*1.e-6_rtype*rho-100._rtype)*(37.53_rtype-41.46_rtype)*5.e-3_rtype
+            dum1  = 39.36_rtype + (nc_incld*1.e-6_rtype*rho-100._rtype)*(30.72_rtype-39.36_rtype)*5.e-3_rtype
+            qcaut = dum+(mu_c-5._rtype)*(dum1-dum)*0.1_rtype
+            ! 1000/rho is for conversion from g cm-3/s to kg/kg
+            qcaut = exp(qcaut)*(1.e-3_rtype*rho*qc_incld)**4.7_rtype*1000._rtype*inv_rho
+         endif
+         ncautc = 7.7e+9_rtype*qcaut
+
+      elseif (iparam.eq.3) then
+
+         !Khroutdinov and Kogan (2000)
+         dum   = qc_incld
+         qcaut = 1350._rtype*dum**2.47_rtype*(nc_incld*1.e-6_rtype*rho)**(-1.79_rtype)
+         ! note: ncautr is change in Nr; ncautc is change in Nc
+         ncautr = qcaut*cons3
+         ncautc = qcaut*nc_incld/qc_incld
+
+      endif
+
+      if (qcaut .eq.0._rtype) ncautc = 0._rtype
+      if (ncautc.eq.0._rtype) qcaut  = 0._rtype
+
+   endif qc_not_small
+
+end subroutine cloud_water_autoconversion
 
 end module micro_p3
