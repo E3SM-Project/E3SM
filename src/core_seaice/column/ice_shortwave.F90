@@ -3950,8 +3950,10 @@
 !    For now, these two subroutines are seperated for testing new features.
 !
 ! The justification and explaination for above changes can be find in paper:
-!    Dang et al., 2018, in prep, cdang5@uci.edu
-!
+! Dang, C., Zender, C. S., and Flanner, M. G.: Inter-comparison and improvement 
+! of 2-stream shortwave radiative transfer models for unified treatment of 
+! cryospheric surfaces in ESMs, The Cryosphere Discuss., 
+! https://doi.org/10.5194/tc-2019-22, in review, 2019
 
       subroutine compute_dEdd_5bd (nilyr,    nslyr,    klev,  klevp,  &
                     n_zaero,   zbio,     dEdd_algae,                  &
@@ -4750,8 +4752,8 @@
       do ns = 1, nspint_5bd
         ! for snow-covered sea ice, comput 5 bands
         !if( srftyp == 1 ) then
-          ! note: major changeds:
-          ! 1. loop through 5bands: do ns = 1, nspint_5bd
+          ! SNICAR-AD major changes
+          ! 1. loop through 5bands: do ns = 1, nspint_5bd based on nsky
           ! 2. use snow grain size rsnow, not scaled frsnw
           ! 3. replace $IOPs_tab with $IOPs_snicar
           ! 4. replace wghtns with wghtns_5bd
@@ -4800,7 +4802,7 @@
               !print *, "ns, ks, kabs_chl_5bd(ns,k), ",ns, ks, kabs_chl_5bd(ns,k)
 
             enddo       ! k
-        elseif (nsky == 2) then ! diffuse  incident
+          elseif (nsky == 2) then ! diffuse  incident
             do k=0,nslyr
               ! use top rsnw, rhosnw for snow ssl and rest of top layer
               ksnow = k - min(k-1,0)
@@ -4839,12 +4841,9 @@
               !write(warning, *) "sky, k, tau, w0, g =", nsky, k, tau(k), w0(k), g(k)
               !write(warning, *) "ns, ks, kabs_chl_5bd(ns,k), ", ns, ks, kabs_chl_5bd(ns,k)
               !call add_warning(warning)
-              !print *, "rsnw(ksnow)", rsnw(ksnow)
-              !print *, "sky, k, tau, w0, g =", nsky, k, tau(k), w0(k), g(k)
-              !print *, "ns, ks, kabs_chl_5bd(ns,k), ",ns, ks, kabs_chl_5bd(ns,k)
             enddo       ! k
           endif ! end if nsky for snow IOPs assignment
-!------------------------------------------------------------------------------
+          !------------------------------------------------------------------------------
 
          !aerosol in snow
           if (tr_zaero .and. dEdd_algae) then
@@ -5146,9 +5145,9 @@
                      tau(k) = tau(k) + taer
                   enddo ! k
                endif ! tr_aero
-
 ! ---------------------------------------------------------------------------
-      ! set reflectivities for ocean underlying sea ice
+    
+    ! set reflectivities for ocean underlying sea ice
       ! if ns == 1 (visible), albedo is 0.1, else, albedo is zero
       rns = real(ns-1, kind=dbl_kind)
       albodr = cp01 * (c1 - min(rns, c1))
@@ -5281,7 +5280,6 @@
          swdr = swidr
          swdf = swidf
 
-
          ! let fr2(3,4,5) = alb_2(3,4,5)*swd*wght2(3,4,5)
          ! the ns=2(3,4,5) reflected fluxes respectively,
          ! where alb_2(3,4,5) are the band
@@ -5372,7 +5370,7 @@
       ! due to corrected snow albedo is absorbed by the snow single
       ! scattering layer only - this is generally true if snow SSL >= 2 cm
       ! by the default model set up:
-      !      if snow_depth >= 8 cm, SSL = 4 cm, satisify
+      !      if snow_depth >= 8 cm, SSL = 4 cm, satisfy
       ! esle if snow_depth >= 4 cm, SSL = snow_depth/2 >= 2 cm, satisfy
       ! esle    snow_depth < 4 cm, SSL = snow_depth/2, may overcool SSL layer
       fswsfc  = fswsfc  + (fsfc- (sza_factor-c1)*aidr*swidr)*fi
