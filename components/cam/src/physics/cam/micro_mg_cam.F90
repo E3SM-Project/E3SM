@@ -1082,7 +1082,7 @@ end subroutine micro_mg_cam_init
 
 !===============================================================================
 
-subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
+subroutine micro_mg_cam_tend(state, ptend, macmic_it, dtime, pbuf)
 
    use micro_mg_utils, only: size_dist_param_basic, size_dist_param_liq, &
         mg_liq_props, mg_ice_props, avg_diameter, rhoi, rhosn, rhow, rhows, &
@@ -1106,6 +1106,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    type(physics_state),         intent(in)    :: state
    type(physics_ptend),         intent(out)   :: ptend
    real(r8),                    intent(in)    :: dtime
+   integer,                     intent(in)    :: macmic_it
    type(physics_buffer_desc),   pointer       :: pbuf(:)
 
    ! Local variables
@@ -1579,6 +1580,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    integer :: col_type ! Flag to store whether accessing grid or sub-columns in pbuf_get_field
 
    character(128) :: errstring   ! return status (non-blank for error return)
+   character(200) :: ptendname   ! Strings for ptend name at each sub step
 
    ! For rrtmg optics. specified distribution.
    real(r8), parameter :: dcon   = 25.e-6_r8         ! Convective size distribution effective radius (meters)
@@ -1813,7 +1815,9 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
 
    ! the name 'cldwat' triggers special tests on cldliq
    ! and cldice in physics_update
-   call physics_ptend_init(ptend, psetcols, "cldwat_mic", ls=.true., lq=lq)
+   !call physics_ptend_init(ptend, psetcols, "cldwat_mic", ls=.true., lq=lq)
+   write (ptendname, "(A14,I2.2)") "cldwat_mic_sub", macmic_it
+   call physics_ptend_init(ptend, psetcols, trim(ptendname), ls=.true., lq=lq)
 
    select case (micro_mg_version)
    case (1)
@@ -2251,7 +2255,10 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
 
       call handle_errmsg(errstring, subname="micro_mg_tend")
 
-      call physics_ptend_init(ptend_loc, psetcols, "micro_mg", &
+     !call physics_ptend_init(ptend_loc, psetcols, "micro_mg", &
+     !                         ls=.true., lq=lq)
+       write (ptendname, "(A12,I2.2)") "micro_mg_sub", macmic_it
+      call physics_ptend_init(ptend_loc, psetcols, trim(ptendname), &
                               ls=.true., lq=lq)
 
       ! Set local tendency.

@@ -35,9 +35,9 @@ module physics_update_mod
   save
 
   character(len = 25), parameter :: fname = 'pergro_ptend_names.txt'
-  character(len = fieldname_len) :: plist(70)
+  character(len = fieldname_len) :: plist(300)
   logical :: pergro_test_active
-  integer :: unitn, pid
+  integer :: unitn, pid, unitm
 
   !Following arrays and variables are declared so that we can add all variables in a loop to the history files for pergro test.
   !For adding any new variables, we need to do the following:
@@ -47,9 +47,12 @@ module physics_update_mod
   !2. If the variable is not present in the constituent array,add a "case" statement for that variable in the "select case" 
   !   construct in get_var function in this module
 
-  integer, public, parameter :: nvars_prtrb_hist = 11
-  character(len=6), public, parameter :: hist_vars(nvars_prtrb_hist) = ['s     ', 't     ', 'Q     ', 'v     ', &
-       'CLDLIQ', 'NUMLIQ', 'CLDICE', 'NUMICE', 'num_a1','num_a2','num_a3']
+  !integer, public, parameter :: nvars_prtrb_hist = 11
+  !character(len=6), public, parameter :: hist_vars(nvars_prtrb_hist) = ['s     ', 't     ', 'Q     ', 'v     ', &
+  !     'CLDLIQ', 'NUMLIQ', 'CLDICE', 'NUMICE', 'num_a1','num_a2','num_a3']
+  integer, public, parameter :: nvars_prtrb_hist = 10
+  character(len=6), public, parameter :: hist_vars(nvars_prtrb_hist) = ['s     ', 't     ', 'Q     ', 'u     ', 'v     ', &
+       'omega ', 'CLDLIQ', 'NUMLIQ', 'CLDICE', 'NUMICE']
   
 contains 
 
@@ -88,7 +91,7 @@ contains
     !purpose: This subroutine calls physics_update_main (old physics_update)
     !and also output variables for pergro test
 
-    use time_manager,  only: is_first_step
+    use time_manager,  only: is_first_step, get_nstep
 
     
     !Arguments
@@ -103,7 +106,7 @@ contains
     character(len = fieldname_len)   :: pname, varname, vsuffix
     
     logical                          :: outfld_active, add_pname
-    integer                          :: lchnk, stat, ip, ihist
+    integer                          :: lchnk, stat, ip, ihist, nstep
     
     lchnk = state%lchnk
     
@@ -157,6 +160,13 @@ contains
           varname  = trim(adjustl(vsuffix))//'_'//trim(adjustl(pname)) ! form variable name
           !find the prognostic variable associated with this hist_vars(ihist) via "get_var" function
           call outfld( trim(adjustl(varname)), get_var(state,vsuffix), pcols, lchnk )          
+          if(masterproc .and. lchnk == begchunk ) then
+            nstep = get_nstep()
+            write(unitn,*,iostat=stat) 'lchnk = ',lchnk, 'nstep = ', nstep, 'variable = ', trim(adjustl(varname))
+             if( stat > 0 ) then
+                call endrun('Error writing variable information in '//fname//' file')
+             endif
+          end if 
        enddo
     endif
   end subroutine physics_update
@@ -190,7 +200,11 @@ contains
           prg_var(1:pcols,1:pver) = state%s(1:pcols,1:pver)
        case('t')
           prg_var(1:pcols,1:pver) = state%t(1:pcols,1:pver)
+       case('u')
+          prg_var(1:pcols,1:pver) = state%t(1:pcols,1:pver)
        case('v')
+          prg_var(1:pcols,1:pver) = state%v(1:pcols,1:pver)
+       case('omega')
           prg_var(1:pcols,1:pver) = state%v(1:pcols,1:pver)
        case default
           call endrun('physics_update_mod.F90 - func get_var, unrecognized variable: '// trim(adjustl(hist_var)))
