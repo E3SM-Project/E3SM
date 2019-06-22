@@ -701,8 +701,7 @@ contains
        rtmCTL%qsub(n,nfrz) = 0.0_r8
        rtmCTL%qgwl(n,nfrz) = 0.0_r8
        rtmCTL%qdto(n,nfrz) = 0.0_r8
- !      rtmCTL%qdem(n,nfrz) = 0.0_r8
-
+       !rtmCTL%qdem(n,nfrz) = 0.0_r8
        ! tcxcpl
        !?? = x2r_r%rAttr(index_x2r_Sa_tbot,n2)
        !?? = x2r_r%rAttr(index_x2r_Sa_pbot,n2)

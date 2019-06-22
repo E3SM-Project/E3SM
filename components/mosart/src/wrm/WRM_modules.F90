@@ -60,7 +60,7 @@ MODULE WRM_modules
      real(r8) :: temp_erout(nt_rtm), localDeltaT
      character(len=*),parameter :: subname='(Euler_WRM)'
 
-     if (Tctl%RoutingFlag == 1) then
+     if(Tctl%RoutingFlag == 1) then
         !print*, "Running WRM Euler"
         do iunit=rtmCTL%begr,rtmCTL%endr
            call hillslopeRouting(iunit, Tctl%DeltaT)
@@ -336,11 +336,11 @@ MODULE WRM_modules
         endif
      endif
 
-     ! debug (N. Sun)
-     if (StorWater%demand(iunit)>0 .and. iunit==1175) then
-        write(iulog,*) ' channel supply = m3', iunit, StorWater%supply(iunit)
-        write(iulog,*) ' demand = m3', iunit, StorWater%demand(iunit)
-     endif
+     ! debug 
+     !if (StorWater%demand(iunit)>0 .and. iunit==1175) then
+     !   write(iulog,*) ' channel supply = m3', iunit, StorWater%supply(iunit)
+     !   write(iulog,*) ' demand = m3', iunit, StorWater%demand(iunit)
+     !endif
 
      if (check_local_budget) then
         budget = budget - (Trunoff%wr(iunit,nt_nliq) + StorWater%supply(iunit))

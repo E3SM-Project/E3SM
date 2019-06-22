@@ -115,14 +115,12 @@ contains
          ptr_rof=rtmCTL%dvolrdtocn_nt2, default='inactive')
 
     call RtmHistAddfld (fname='QSUR'//'_'//trim(rtm_tracers(1)), units='m3/s',  &
-         avgflag='A', long_name='ALM irrigation demand: '//trim(rtm_tracers(1)), &
+         avgflag='A', long_name='MOSART input surface runoff: '//trim(rtm_tracers(1)), &
          ptr_rof=rtmCTL%qsur_nt1, default='active')
-       !MOSART input surface runoff was modified to ALM irrigation demand by Yuna 1/29/2018
 
     call RtmHistAddfld (fname='QSUR'//'_'//trim(rtm_tracers(2)), units='m3/s',  &
-         avgflag='A', long_name='ALM irrigation demand: '//trim(rtm_tracers(2)), &
+         avgflag='A', long_name='MOSART input surface runoff: '//trim(rtm_tracers(2)), &
          ptr_rof=rtmCTL%qsur_nt2, default='active')
-       !MOSART input surface runoff was modified to ALM irrigation demand by Yuna 1/29/2018
 
     call RtmHistAddfld (fname='QSUB'//'_'//trim(rtm_tracers(1)), units='m3/s',  &
          avgflag='A', long_name='MOSART input subsurface runoff: '//trim(rtm_tracers(1)), &

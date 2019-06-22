@@ -62,7 +62,9 @@ MODULE MOSART_physics_mod
     !------------------
 
     call get_curr_date(yr, mon, day, tod)
-
+#if (1 == 0)
+  print*, "Tian testing hashtag comment "
+#endif
     !------------------
     ! WRM prep
     !------------------
@@ -383,7 +385,7 @@ MODULE MOSART_physics_mod
     TRunoff%ehout(iunit,nt) = -CREHT_nosqrt(TUnit%hslpsqrt(iunit), TUnit%nh(iunit), TUnit%Gxr(iunit), TRunoff%yh(iunit,nt))
     if(TRunoff%ehout(iunit,nt) < 0._r8 .and. &
        TRunoff%wh(iunit,nt) + (TRunoff%qsur(iunit,nt) + TRunoff%ehout(iunit,nt)) * theDeltaT < TINYVALUE) then
-         TRunoff%ehout(iunit,nt) = -(TRunoff%qsur(iunit,nt) + TRunoff%wh(iunit,nt) / theDeltaT)
+       TRunoff%ehout(iunit,nt) = -(TRunoff%qsur(iunit,nt) + TRunoff%wh(iunit,nt) / theDeltaT)  
     end if
     TRunoff%dwh(iunit,nt) = (TRunoff%qsur(iunit,nt) + TRunoff%ehout(iunit,nt)) 
 
@@ -575,18 +577,17 @@ MODULE MOSART_physics_mod
     integer, intent(in) :: iunit,nt
     character(len=*),parameter :: subname = '(updateState_subnetwork)'
 
-    if (TUnit%tlen(iunit) > 0._r8 .and. TRunoff%wt(iunit,nt) > 0._r8) then
-       TRunoff%mt(iunit,nt) = GRMR(TRunoff%wt(iunit,nt), TUnit%tlen(iunit)) 
-       TRunoff%yt(iunit,nt) = GRHT(TRunoff%mt(iunit,nt), TUnit%twidth(iunit))
-       TRunoff%pt(iunit,nt) = GRPT(TRunoff%yt(iunit,nt), TUnit%twidth(iunit))
-       TRunoff%rt(iunit,nt) = GRRR(TRunoff%mt(iunit,nt), TRunoff%pt(iunit,nt))
-    else
-       TRunoff%mt(iunit,nt) = 0._r8
-       TRunoff%yt(iunit,nt) = 0._r8
-       TRunoff%pt(iunit,nt) = 0._r8
-       TRunoff%rt(iunit,nt) = 0._r8
-    end if
-
+       if(TUnit%tlen(iunit) > 0._r8 .and. TRunoff%wt(iunit,nt) > 0._r8) then
+          TRunoff%mt(iunit,nt) = GRMR(TRunoff%wt(iunit,nt), TUnit%tlen(iunit)) 
+          TRunoff%yt(iunit,nt) = GRHT(TRunoff%mt(iunit,nt), TUnit%twidth(iunit))
+          TRunoff%pt(iunit,nt) = GRPT(TRunoff%yt(iunit,nt), TUnit%twidth(iunit))
+          TRunoff%rt(iunit,nt) = GRRR(TRunoff%mt(iunit,nt), TRunoff%pt(iunit,nt))
+       else
+          TRunoff%mt(iunit,nt) = 0._r8
+          TRunoff%yt(iunit,nt) = 0._r8
+          TRunoff%pt(iunit,nt) = 0._r8
+          TRunoff%rt(iunit,nt) = 0._r8
+       end if
   end subroutine updateState_subnetwork
 
 !-----------------------------------------------------------------------
@@ -597,24 +598,23 @@ MODULE MOSART_physics_mod
     integer, intent(in) :: iunit, nt
     character(len=*),parameter :: subname = '(updateState_mainchannel)'
 
-    if (TUnit%rlen(iunit) > 0._r8 .and. TRunoff%wr(iunit,nt) > 0._r8) then
-       TRunoff%mr(iunit,nt) = GRMR(TRunoff%wr(iunit,nt), TUnit%rlen(iunit)) 
-       TRunoff%yr(iunit,nt) = GRHR(TRunoff%mr(iunit,nt), TUnit%rwidth(iunit), TUnit%rwidth0(iunit), TUnit%rdepth(iunit))
-       TRunoff%pr(iunit,nt) = GRPR(TRunoff%yr(iunit,nt), TUnit%rwidth(iunit), TUnit%rwidth0(iunit), TUnit%rdepth(iunit))
-       TRunoff%rr(iunit,nt) = GRRR(TRunoff%mr(iunit,nt), TRunoff%pr(iunit,nt))
-    else
-       TRunoff%mr(iunit,nt) = 0._r8
-       TRunoff%yr(iunit,nt) = 0._r8
-       TRunoff%pr(iunit,nt) = 0._r8
-       TRunoff%rr(iunit,nt) = 0._r8
-    end if
-
+       if(TUnit%rlen(iunit) > 0._r8 .and. TRunoff%wr(iunit,nt) > 0._r8) then
+          TRunoff%mr(iunit,nt) = GRMR(TRunoff%wr(iunit,nt), TUnit%rlen(iunit)) 
+          TRunoff%yr(iunit,nt) = GRHR(TRunoff%mr(iunit,nt), TUnit%rwidth(iunit), TUnit%rwidth0(iunit), TUnit%rdepth(iunit))
+          TRunoff%pr(iunit,nt) = GRPR(TRunoff%yr(iunit,nt), TUnit%rwidth(iunit), TUnit%rwidth0(iunit), TUnit%rdepth(iunit))
+          TRunoff%rr(iunit,nt) = GRRR(TRunoff%mr(iunit,nt), TRunoff%pr(iunit,nt))
+       else
+          TRunoff%mr(iunit,nt) = 0._r8
+          TRunoff%yr(iunit,nt) = 0._r8
+          TRunoff%pr(iunit,nt) = 0._r8
+          TRunoff%rr(iunit,nt) = 0._r8
+       end if
   end subroutine updateState_mainchannel
 
 !-----------------------------------------------------------------------
     
   function CRVRMAN(slp_, n_, rr_) result(v_)
-  ! ! Function for calculating channel velocity according to Manning's equation.
+  ! Function for calculating channel velocity according to Manning's equation.
     implicit none
     real(r8), intent(in) :: slp_, n_, rr_ ! slope, manning's roughness coeff., hydraulic radius
     real(r8)             :: v_            ! v_ is  discharge
@@ -644,7 +644,7 @@ MODULE MOSART_physics_mod
 !-----------------------------------------------------------------------
     
   function CRVRMAN_nosqrt(sqrtslp_, n_, rr_) result(v_)
-  ! ! Function for calculating channel velocity according to Manning's equation.
+  ! Function for calculating channel velocity according to Manning's equation.
     implicit none
     real(r8), intent(in) :: sqrtslp_, n_, rr_ ! sqrt(slope), manning's roughness coeff., hydraulic radius
     real(r8)             :: v_            ! v_ is  discharge
@@ -674,7 +674,7 @@ MODULE MOSART_physics_mod
 !-----------------------------------------------------------------------
 
   function CREHT(hslp_, nh_, Gxr_, yh_) result(eht_)
-  ! ! Function for overland from hillslope into the sub-network channels
+  ! Function for overland from hillslope into the sub-network channels
     implicit none
     real(r8), intent(in) :: hslp_, nh_, Gxr_, yh_ ! topographic slope, manning's roughness coeff., drainage density, overland flow depth
     real(r8)                   :: eht_            ! velocity, specific discharge
@@ -706,7 +706,7 @@ MODULE MOSART_physics_mod
 !-----------------------------------------------------------------------
 
   function GRMR(wr_, rlen_) result(mr_)
-  ! ! Function for estimate wetted channel area
+  ! Function for estimate wetted channel area
     implicit none
     real(r8), intent(in) :: wr_, rlen_      ! storage of water, channel length
     real(r8)             :: mr_             ! wetted channel area
@@ -719,7 +719,7 @@ MODULE MOSART_physics_mod
 !-----------------------------------------------------------------------
 
   function GRHT(mt_, twid_) result(ht_)
-  ! ! Function for estimating water depth assuming rectangular channel
+  ! Function for estimating water depth assuming rectangular channel
     implicit none
     real(r8), intent(in) :: mt_, twid_      ! wetted channel area, channel width
     real(r8)             :: ht_             ! water depth
@@ -736,7 +736,7 @@ MODULE MOSART_physics_mod
 !-----------------------------------------------------------------------
 
   function GRPT(ht_, twid_) result(pt_)
-  ! ! Function for estimating wetted perimeter assuming rectangular channel
+  ! Function for estimating wetted perimeter assuming rectangular channel
     implicit none
     real(r8), intent(in) :: ht_, twid_      ! water depth, channel width
     real(r8)             :: pt_             ! wetted perimeter
@@ -753,7 +753,7 @@ MODULE MOSART_physics_mod
 !-----------------------------------------------------------------------
 
   function GRRR(mr_, pr_) result(rr_)
-  ! ! Function for estimating hydraulic radius
+  ! Function for estimating hydraulic radius
     implicit none
     real(r8), intent(in) :: mr_, pr_        ! wetted area and perimeter
     real(r8)             :: rr_             ! hydraulic radius
@@ -770,11 +770,11 @@ MODULE MOSART_physics_mod
 !-----------------------------------------------------------------------
 
   function GRHR(mr_, rwidth_, rwidth0_, rdepth_) result(hr_)
-  ! ! Function for estimating maximum water depth assuming rectangular channel and tropezoidal flood plain
-  ! ! here assuming the channel cross-section consists of three parts, from bottom to up,
-  ! ! part 1 is a rectangular with bankfull depth (rdep) and bankfull width (rwid)
-  ! ! part 2 is a tropezoidal, bottom width rwid and top width rwid0, height 0.1*((rwid0-rwid)/2), assuming slope is 0.1
-  ! ! part 3 is a rectagular with the width rwid0
+  ! Function for estimating maximum water depth assuming rectangular channel and tropezoidal flood plain
+  ! here assuming the channel cross-section consists of three parts, from bottom to up,
+  ! part 1 is a rectangular with bankfull depth (rdep) and bankfull width (rwid)
+  ! part 2 is a tropezoidal, bottom width rwid and top width rwid0, height 0.1*((rwid0-rwid)/2), assuming slope is 0.1
+  ! part 3 is a rectagular with the width rwid0
     implicit none
     real(r8), intent(in) :: mr_, rwidth_, rwidth0_, rdepth_ ! wetted channel area, channel width, flood plain wid, water depth
     real(r8)             :: hr_                             ! water depth
@@ -806,11 +806,11 @@ MODULE MOSART_physics_mod
 !-----------------------------------------------------------------------
 
   function GRPR(hr_, rwidth_, rwidth0_,rdepth_) result(pr_)
-  ! ! Function for estimating maximum water depth assuming rectangular channel and tropezoidal flood plain
-  ! ! here assuming the channel cross-section consists of three parts, from bottom to up,
-  ! ! part 1 is a rectangular with bankfull depth (rdep) and bankfull width (rwid)
-  ! ! part 2 is a tropezoidal, bottom width rwid and top width rwid0, height 0.1*((rwid0-rwid)/2), assuming slope is 0.1
-  ! ! part 3 is a rectagular with the width rwid0
+  ! Function for estimating maximum water depth assuming rectangular channel and tropezoidal flood plain
+  ! here assuming the channel cross-section consists of three parts, from bottom to up,
+  ! part 1 is a rectangular with bankfull depth (rdep) and bankfull width (rwid)
+  ! part 2 is a tropezoidal, bottom width rwid and top width rwid0, height 0.1*((rwid0-rwid)/2), assuming slope is 0.1
+  ! part 3 is a rectagular with the width rwid0
     implicit none
     real(r8), intent(in) :: hr_, rwidth_, rwidth0_, rdepth_ ! wwater depth, channel width, flood plain wid, water depth
     real(r8)             :: pr_                             ! water depth
@@ -851,8 +851,8 @@ MODULE MOSART_physics_mod
   ! !DESCRIPTION: create a new file. if a file with the same name exists, delete it then create a new one
     implicit none
     character(len=*), intent(in) :: fname ! file name
-    integer, intent(in) :: nio            !unit of the file to create
-
+      integer, intent(in) :: nio            !unit of the file to create
+    
     integer :: ios
     logical :: filefound
     character(len=1000) :: cmd

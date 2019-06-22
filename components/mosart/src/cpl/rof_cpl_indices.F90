@@ -55,7 +55,7 @@ module rof_cpl_indices
   integer, public :: index_r2x_Flrr_flood = 0   ! rof->lnd flood runoff (>fthresh) back to land
   integer, public :: index_r2x_Flrr_volr = 0    ! rof->lnd volr total volume back to land
   integer, public :: index_r2x_Flrr_volrmch = 0 ! rof->lnd volr main channel back to land
-!  integer, public :: index_r2x_Flrr_supply = 0  ! rof->lnd supply flux for land use
+  !integer, public :: index_r2x_Flrr_supply = 0  ! rof->lnd supply flux for land use
   !integer, public :: index_r2x_Flrr_supplyfrac = 0  ! rof->lnd supply fraction for surfacewater irrigation
   integer, public :: nflds_r2x = 0
 
@@ -99,7 +99,6 @@ contains
     index_x2r_Flrl_rofdto = mct_avect_indexra(avtmp,'Flrl_rofdto',perrwith='quiet')
     index_x2r_Flrl_rofi   = mct_avect_indexra(avtmp,'Flrl_rofi')
 !    index_x2r_Flrl_demand = mct_avect_indexra(avtmp,'Flrl_demand')
-
 !    index_x2r_Sa_tbot     = mct_avect_indexra(avtmp,'Sa_tbot')
 !    index_x2r_Sa_pbot     = mct_avect_indexra(avtmp,'Sa_pbot')
 !    index_x2r_Sa_u        = mct_avect_indexra(avtmp,'Sa_u')
@@ -124,7 +123,7 @@ contains
     index_r2x_Flrr_flood = mct_avect_indexra(avtmp,'Flrr_flood')
     index_r2x_Flrr_volr  = mct_avect_indexra(avtmp,'Flrr_volr')
     index_r2x_Flrr_volrmch = mct_avect_indexra(avtmp,'Flrr_volrmch')
-!    index_r2x_Flrr_supply = mct_avect_indexra(avtmp,'Flrr_supply')
+    !index_r2x_Flrr_supply = mct_avect_indexra(avtmp,'Flrr_supply')
     !index_r2x_Flrr_supplyfrac = mct_avect_indexra(avtmp,'Flrr_supplyfrac')
     nflds_r2x = mct_avect_nRattr(avtmp)
 
@@ -133,3 +132,5 @@ contains
   end subroutine rof_cpl_indices_set
 
 end module rof_cpl_indices
+
+

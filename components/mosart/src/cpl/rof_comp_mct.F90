@@ -116,7 +116,7 @@ contains
     character(len=SHR_KIND_CL) :: version            ! Model version
     character(len=SHR_KIND_CL) :: username           ! user running the model
     character(len=8)           :: c_inst_index       ! instance number
-    character(len=8)           :: c_npes             ! number of pes                                                                      
+    character(len=8)           :: c_npes             ! number of pes
     character(len=32), parameter :: sub = 'rof_init_mct'
     character(len=*),  parameter :: format = "('("//trim(sub)//") :',A)"
     !---------------------------------------------------------------------------
@@ -164,7 +164,7 @@ contains
        write(iulog,*) ' mosart iam  = ',iam
        write(iulog,*) ' inst_name = ',trim(inst_name)
     endif
-    
+
     ! Identify SMP nodes and process/SMP mapping for this instance.
     ! (Assume that processor names are SMP node names on SMP clusters.)
     write(c_inst_index,'(i8)') inst_index
@@ -202,7 +202,7 @@ contains
                            verbose=verbose_taskmap_output,       &
                            no_output=no_taskmap_output           )
     call t_stopf("shr_taskmap_write")
-    
+
     ! Initialize mosart
     call seq_timemgr_EClockGetData(EClock,                               &
                                    start_ymd=start_ymd,                  &
@@ -252,11 +252,11 @@ contains
        lsize = mct_gsMap_lsize(gsMap_rof, mpicom_rof)
        call rof_domain_mct( lsize, gsMap_rof, dom_r )
        
-       ! Initialize lnd -> mosart attribute vector  
+       ! Initialize lnd -> mosart attribute vector		
        call mct_aVect_init(x2r_r, rList=seq_flds_x2r_fields, lsize=lsize)
        call mct_aVect_zero(x2r_r)
        
-       ! Initialize mosart -> ocn attribute vector  
+       ! Initialize mosart -> ocn attribute vector		
        call mct_aVect_init(r2x_r, rList=seq_flds_r2x_fields, lsize=lsize)
        call mct_aVect_zero(r2x_r) 
        
@@ -344,7 +344,6 @@ contains
 
     ! Run mosart (input is *runin, output is rtmCTL%runoff)
     ! First advance mosart time step
-
     write(rdate,'(i4.4,"-",i2.2,"-",i2.2,"-",i5.5)') yr_sync,mon_sync,day_sync,tod_sync
     nlend = seq_timemgr_StopAlarmIsOn( EClock )
     rstwr = seq_timemgr_RestartAlarmIsOn( EClock )

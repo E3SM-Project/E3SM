@@ -51,7 +51,6 @@ module RtmMod
   use mct_mod
   use perf_mod
   use pio
-  
 !
 ! !PUBLIC TYPES:
   implicit none
@@ -787,8 +786,6 @@ contains
           nrof = nrof + 1
        endif
     enddo
-
-    ! N.Sun
     if (masterproc) then
        write(iulog,*) 'Number of outlet basins (if ocean) = ',nout
        write(iulog,*) 'Number of total  basins (either ocean or land-ocean outlet) = ',nbas
@@ -1262,7 +1259,6 @@ contains
        gindex(nr-rtmCTL%begr+1) = rtmCTL%gindex(nr)
     enddo
     call mct_gsMap_init( gsMap_r, gindex, mpicom_rof, ROFID, lsize, gsize )
-!   write(iulog,*) subname,' gsMap_r lsize = ',iam,mct_gsMap_lsize(gsMap_r,mpicom_rof)
     deallocate(gindex)
 
     if (smat_option == 'opt') then
@@ -1277,8 +1273,8 @@ contains
        enddo
 
        call mct_sMat_init(sMat, gsize, gsize, cnt)
-       igcol = mct_sMat_indexIA(sMat,'gcol')   ! src
-       igrow = mct_sMat_indexIA(sMat,'grow')   ! dst
+       igrow = mct_sMat_indexIA(sMat,'grow')
+       igcol = mct_sMat_indexIA(sMat,'gcol')
        iwgt  = mct_sMat_indexRA(sMat,'weight')
        cnt = 0
        do nr = rtmCTL%begr,rtmCTL%endr
@@ -1318,7 +1314,6 @@ contains
        enddo
        call mct_avect_gather(avtmp,avtmpG,gsmap_r,mastertask,mpicom_rof)
        call mct_avect_clean(avtmp)
-
        if (masterproc) then
           cnt = 0
           do n = 1,rtmlon*rtmlat
@@ -1336,9 +1331,9 @@ contains
           do n = 1,rtmlon*rtmlat
              if (avtmpG%rAttr(2,n) > 0) then
                 cnt = cnt + 1
+                sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
                 sMat%data%iAttr(igcol,cnt) = avtmpG%rAttr(1,n)
                 sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(2,n)
-                sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
              endif
           enddo
        else
@@ -1581,7 +1576,6 @@ contains
         (nsrest == nsrBranch  )) then
        call RtmRestFileRead( file=fnamer )
        !write(iulog,*) ' MOSART init file is read'
-
        TRunoff%wh   = rtmCTL%wh
        TRunoff%wt   = rtmCTL%wt
        TRunoff%wr   = rtmCTL%wr
@@ -1741,15 +1735,15 @@ contains
 !#endif
     else
 
-       do nt = 1,nt_rtm
-       do nr = rtmCTL%begr,rtmCTL%endr
-          call UpdateState_hillslope(nr,nt)
-          call UpdateState_subnetwork(nr,nt)
-          call UpdateState_mainchannel(nr,nt)
-          rtmCTL%volr(nr,nt) = (TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + &
-                                TRunoff%wh(nr,nt)*rtmCTL%area(nr))
-       enddo
-       enddo
+    do nt = 1,nt_rtm
+    do nr = rtmCTL%begr,rtmCTL%endr
+       call UpdateState_hillslope(nr,nt)
+       call UpdateState_subnetwork(nr,nt)
+       call UpdateState_mainchannel(nr,nt)
+       rtmCTL%volr(nr,nt) = (TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + &
+                             TRunoff%wh(nr,nt)*rtmCTL%area(nr))
+    enddo
+    enddo
     endif
 
     call t_stopf('mosarti_restart')
@@ -2201,7 +2195,7 @@ contains
           write(iulog,'(2a,i6,l4)') trim(subname),' euler_calc for nt = ',nt,TUnit%euler_calc(nt)
        enddo
     endif
-  
+
     nsub = coupling_period/delt_mosart
     if (nsub*delt_mosart < coupling_period) then
        nsub = nsub + 1
@@ -2216,7 +2210,7 @@ contains
     nsub_save = nsub
     delt_save = delt
     Tctl%DeltaT = delt
-  
+
     !-----------------------------------
     ! mosart euler solver
     ! --- convert TRunoff fields from m3/s to m/s before calling Euler
@@ -3679,7 +3673,7 @@ contains
      allocate (TRunoff%qgwl(begr:endr,nt_rtm))
      TRunoff%qgwl = 0._r8
       
-     allocate (TRunoff%qdem(begr:endr,nt_rtm)) !added by Yuna 1/29/2018
+     allocate (TRunoff%qdem(begr:endr,nt_rtm)) 
      TRunoff%qdem = 0._r8
   
      allocate (TRunoff%ehout(begr:endr,nt_rtm))
@@ -3856,8 +3850,8 @@ contains
      call pio_freedecomp(ncid, iodesc_int)
      call pio_closefile(ncid)
 
-     ! control parameters and some other derived parameters
-     ! estimate derived input variables
+   ! control parameters and some other derived parameters
+   ! estimate derived input variables
 
 !#ifdef INCLUDE_INUND
      if (inundflag .and. Tctl%OPT_inund == 1) then
@@ -4018,7 +4012,7 @@ contains
   !    fname = '/lustre/liho745/DCLM_model/ccsm_hy/run/clm_MOSART_subw2/run/test.dat'
   !    call createFile(1111,fname)
   !end if
-  
+
   end subroutine MOSART_init
 
 !----------------------------------------------------------------------------
