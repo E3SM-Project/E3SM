@@ -21,7 +21,7 @@ module prim_state_mod
   use element_state,    only: max_itercnt_perstep,max_itererr_perstep,avg_itercnt
   use eos,              only: get_pnh_and_exner
   use viscosity_mod,    only: compute_zeta_C0
-  use reduction_mod,    only: parallelmax,parallelmin,parallelmaxwithindex
+  use reduction_mod,    only: parallelmax,parallelmin,parallelmaxwithindex,parallelminwithindex
   use perf_mod,         only: t_startf, t_stopf
   use physical_constants, only : p0,Cp,g,Rgas
 
@@ -343,7 +343,7 @@ contains
        call findExtremaWithLevel(elem,newwmax_local,'w_i','max',n0,nets,nete)
        call ParallelMaxWithIndex(newwmax_local, hybrid)
        call findExtremaWithLevel(elem,newwmin_local,'w_i','min',n0,nets,nete)
-       call ParallelMaxWithIndex(newwmin_local, hybrid)
+       call ParallelMinWithIndex(newwmin_local, hybrid)
     endif
 
     !JMD This is a Thread Safe Reduction 
