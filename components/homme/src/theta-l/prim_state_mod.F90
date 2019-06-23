@@ -147,7 +147,7 @@ contains
     real (kind=real_kind) :: fusum_p, fvsum_p, ftsum_p, fqsum_p
     real (kind=real_kind) :: fumin_p, fvmin_p, ftmin_p, fqmin_p
     real (kind=real_kind) :: fumax_p, fvmax_p, ftmax_p, fqmax_p
-    real (kind=real_kind) :: wmax_p, wmin_p, wsum_p, newwmax_local(2)  !, newwmax_p(2)
+    real (kind=real_kind) :: wmax_p, wmin_p, wsum_p, newwmax_local(2), newwmin_local(2)  !, newwmax_p(2)
     real (kind=real_kind) :: phimax_p, phimin_p, phisum_p
 
 
@@ -250,6 +250,12 @@ contains
        umax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,1,:,n0))
        vmax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,2,:,n0))
        if ( .not. theta_hydrostatic_mode) then
+
+!if(hybrid%par%rank == 3) then
+!elem(5)%state%w_i(2,3,17,n0) = 99.0
+!print *, 'BBBBBBBBBBBBBBBBBBBBBBBB', elem(5)%state%w_i(2,3,17,n0)
+!endif
+
           wmax_local(ie)    = minmax_with_level(elem(ie)%state%w_i(:,:,:,n0),'max')
        endif
        phimax_local(ie)  = MAXVAL(dphi(:,:,:))
@@ -331,8 +337,13 @@ contains
     end do
 
     if ( .not. theta_hydrostatic_mode ) then
-       call findExtrema(elem,newwmax_local,'w_i','max',n0,nets,nete)
+
+!print *, 'MY RANK IS ', hybrid%par%rank
+
+       call findExtremaWithLevel(elem,newwmax_local,'w_i','max',n0,nets,nete)
        call ParallelMaxWithIndex(newwmax_local, hybrid)
+       call findExtremaWithLevel(elem,newwmin_local,'w_i','min',n0,nets,nete)
+       call ParallelMaxWithIndex(newwmin_local, hybrid)
     endif
 
     !JMD This is a Thread Safe Reduction 
@@ -458,7 +469,8 @@ contains
           write(iulog,*)'max abs(w) over time : ',global_max_w, ' at level ', gm_w_lev
           write(iulog,*)'^not reliable for vals <= 1e-4'
 
-          write(iulog,*)'HERE WE ARE', newwmax_local(1),nint(newwmax_local(2))
+          write(iulog,*)'HERE WE ARE MAX', newwmax_local(1),nint(newwmax_local(2))
+          write(iulog,*)'HERE WE ARE MIN', newwmin_local(1),nint(newwmin_local(2))
        endif
     end if
  
@@ -1030,7 +1042,7 @@ subroutine prim_diag_scalars(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 end subroutine prim_diag_scalars
 
 !doing extrema with level for all elems
-subroutine findExtrema(elem,res,field,operation,n0,nets,nete)
+subroutine findExtremaWithLevel(elem,res,field,operation,n0,nets,nete)
     use kinds, only : real_kind
     use dimensions_mod, only : np, np, nlev, nlevp
     implicit none
@@ -1055,35 +1067,45 @@ subroutine findExtrema(elem,res,field,operation,n0,nets,nete)
 
     !decide size of the column
     ksize=-1
-    if( field == 'w_i' ) ksize=nlevp
+    if( field == 'w_i' ) then 
+       ksize=nlevp
+       res(1) = elem(nets)%state%w_i(1,1,1,n0); res(2) = 1
+    endif
     if( ksize < 1) call abortmp('set ksize in routine findExtrema()')
 
+
+!do better moving if statement
     do ie=nets,nete
+
+!if(ie == 5)then
+!print *, 'CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC ',elem(ie)%state%w_i(2,3,17,n0)
+!endif
+
       do j=1,np
         do i=1,np
-          do k=1,ksize
-            if(field == 'w_i')then
-              column(k) = elem(ie)%state%w_i(i,j,k,n0)
-            endif
-          enddo !k
+          if(field == 'w_i')then
+            column(1:ksize) = elem(ie)%state%w_i(i,j,1:ksize,n0)
+          endif
           !now find min or max
           !avoid flexibility of maxval/maxloc...
  
           if( operation == 'min' )then
-             res(1) = column(1); res(2) = 1;
              do k=2,ksize
                 if(column(k) < res(1)) then
                    res(1) = column(k); res(2) = k;
                 endif
              enddo
           elseif( operation == 'max' )then
-             res(1) = column(1); res(2) = 1;
              do k=2,ksize
                 if(column(k) > res(1)) then
                    res(1) = column(k); res(2) = k;
                 endif
              enddo
           endif
+
+!if(ie == 5)then
+!print *, 'DDDDDDDDDDDDDDDDD',
+!endif
 
 !          if( operation == 'min' )then
 !            val = MINVAL(column(1:ksize))
@@ -1101,7 +1123,7 @@ subroutine findExtrema(elem,res,field,operation,n0,nets,nete)
         enddo !j
       enddo !i       
     enddo !ie
-end subroutine findExtrema
+end subroutine findExtremaWithLevel
 
 !only on nlevp field
 function minmax_with_level(field, which) result(res)

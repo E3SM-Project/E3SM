@@ -53,7 +53,7 @@ module parallel_mod
 !    integer :: node_rank                  ! local rank in node_comm
 !    integer :: node_nprocs                ! local rank in node_comm
     logical :: masterproc                
-    logical :: dynproc                    ! Designation of a dynamics processor - AaronDonahue
+    logical :: dynproc                    ! Designation of a dynamics processor
   end type
 
 #ifdef CAM
