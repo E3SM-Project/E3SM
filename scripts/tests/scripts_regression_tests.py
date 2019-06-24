@@ -1573,6 +1573,8 @@ class K_TestCimeCase(TestCreateTestCommon):
                                      "--compset X --res f19_g16 --output-root {}").format(
                                          SCRIPT_DIR, testcase_name, testdir, testdir),
                               from_dir=SCRIPT_DIR)
+        run_cmd_assert_result(self, "./case.setup", from_dir=testdir)
+
         return testdir
 
     ###########################################################################

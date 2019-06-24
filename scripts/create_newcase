@@ -86,6 +86,14 @@ def parse_command_line(args, cimeroot, description):
                         help="Full pathname of config grid file to use. "
                         "\nThis should be a copy of config/config_grids.xml with the new user grid changes added to it. \n")
 
+    if cime_config and cime_config.has_option('main','workflow'):
+        workflow_default = cime_config.get('main', 'workflow')
+    else:
+        workflow_default = "default"
+
+    parser.add_argument("--workflow-case",default=workflow_default,
+                        help="A workflow from config_workflow.xml to apply to this case. ")
+
 
     if cime_config and cime_config.has_option('main','SRCROOT'):
         srcroot_default = cime_config.get('main', 'srcroot')
@@ -165,7 +173,7 @@ def parse_command_line(args, cimeroot, description):
         args.user_mods_dir, args.pesfile, \
         args.gridfile, args.srcroot, args.test, args.multi_driver, \
         args.ninst, args.walltime, args.queue, args.output_root, args.script_root, \
-        run_unsupported, args.answer, args.input_dir, args.driver
+        run_unsupported, args.answer, args.input_dir, args.driver, args.workflow_case
 
 ###############################################################################
 def _main_func(description):
@@ -177,7 +185,7 @@ def _main_func(description):
         user_mods_dir, pesfile, \
         gridfile, srcroot, test, multi_driver, ninst, walltime, \
         queue, output_root, script_root, run_unsupported, \
-        answer, input_dir, driver = parse_command_line(sys.argv, cimeroot, description)
+        answer, input_dir, driver, workflow = parse_command_line(sys.argv, cimeroot, description)
 
     if script_root is None:
         caseroot = os.path.abspath(casename)
@@ -202,7 +210,7 @@ def _main_func(description):
                     multi_driver=multi_driver, ninst=ninst, test=test,
                     walltime=walltime, queue=queue, output_root=output_root,
                     run_unsupported=run_unsupported, answer=answer,
-                    input_dir=input_dir, driver=driver)
+                    input_dir=input_dir, driver=driver, workflow_case=workflow)
 
 ###############################################################################
 
