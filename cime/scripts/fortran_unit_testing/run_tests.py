@@ -332,14 +332,8 @@ def _main():
 
     fake_case = FakeCase(compiler, mpilib, debug, comp_interface)
     machspecific.load_env(fake_case)
-    os.environ["OS"] = os_
-    os.environ["COMPILER"] = compiler
-    os.environ["DEBUG"] = stringify_bool(debug)
-    os.environ["MPILIB"] = mpilib
-    if use_openmp:
-        os.environ["compile_threaded"] = "TRUE"
-    else:
-        os.environ["compile_threaded"] = "FALSE"
+    cmake_args = "{}-DOS={} -DCOMPILER={} -DDEBUG={} -DMPILIB={} -Dcompile_threaded={}".format(
+        "" if not cmake_args else " ", os_, compiler, stringify_bool(debug), mpilib, stringify_bool(use_openmp))
 
     os.environ["UNIT_TEST_HOST"] = socket.gethostname()
     if "NETCDF_PATH" in os.environ and not "NETCDF" in os.environ:

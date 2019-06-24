@@ -1614,8 +1614,11 @@ contains
        if (glcocn_present .and. ocn_prognostic) glc_c2_ocn = .true.
        ! For now, glcshelf->ocn only activated if the ocean has activated ocn->glcshelf
        if (ocn_c2_glcshelf .and. glcocn_present .and. ocn_prognostic) glcshelf_c2_ocn = .true.
+       ! For now, glacshelf->ice also controlled by ocean's ocn_c2_glcshelf flag
+       !    Note that ice also has to be prognostic for glcshelf_c2_ice to be true.
+       !    It is not expected that glc and ice would ever be run without ocn prognostic.
+       if (ocn_c2_glcshelf .and. glcice_present .and. ice_prognostic) glcshelf_c2_ice = .true.
        if (glcice_present .and. iceberg_prognostic) glc_c2_ice = .true.
-       if (glcocn_present .and. ice_prognostic) glcshelf_c2_ice = .true.
     endif
     if (wav_present) then
        if (ocn_prognostic) wav_c2_ocn = .true.
@@ -3922,6 +3925,10 @@ contains
                                         !Map g2x_gx shelf fields that were updated above, to g2x_ox.
                                         !Do this at intrinsic coupling
                                         !frequency
+          call prep_glc_accum_ocn(timer='CPL:glcprep_accum_ocn') !accum x2g_g fields here into x2g_gacc
+       endif
+
+       if (glcshelf_c2_ice) then
           call prep_ice_shelf_calc_g2x_ix(timer='CPL:glcpost_glcshelf2ice')
                                         !Map g2x_gx shelf fields to g2x_ix.
                                         !Do this at intrinsic coupling
@@ -3931,9 +3938,6 @@ contains
                                         !changing on the intrinsic
                                         !timestep.  But I don't think it's
                                         !unsafe to do it here.
-
-          call prep_glc_accum_ocn(timer='CPL:glcprep_accum_ocn') !accum x2g_g fields here into x2g_gacc
-
        endif
 
     endif
