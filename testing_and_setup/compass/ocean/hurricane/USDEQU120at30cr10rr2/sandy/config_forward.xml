@@ -5,9 +5,6 @@
 	<add_link source="../init/atmospheric_forcing.nc" dest="atmospheric_forcing.nc"/>
 	<add_link source="../init/points.nc" dest="points.nc"/>
 
-	<add_executable source="model" dest="ocean_model"/>
-	<add_executable source="metis" dest="metis"/>
-
 	<namelist name="namelist.ocean" mode="forward">
                 <option name="config_start_time">'2012-10-01_00:00:00'</option>
                 <option name="config_stop_time">'2012-11-08_00:00:00'</option>
@@ -84,7 +81,7 @@
 	</streams>
 
 	<run_script name="run.py">
-		<step executable="./metis">
+		<step executable="gpmetis">
 			<argument flag="graph.info">360</argument>
 		</step>
 		<model_run procs="360" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
