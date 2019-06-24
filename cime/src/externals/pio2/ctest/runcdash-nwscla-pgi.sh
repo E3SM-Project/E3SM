@@ -10,7 +10,7 @@ fi
 module reset
 module unload netcdf
 module swap intel pgi/17.9
-module swap mpt mpt/2.18
+module swap mpt mpt/2.19
 module load git/2.10.2
 module load cmake/3.12.1
 module load netcdf-mpi/4.6.1
@@ -28,10 +28,10 @@ fi
 cd "$PIO_DASHBOARD_ROOT"
 
 if [ ! -d src ]; then
-  git clone --branch develop https://github.com/PARALLELIO/ParallelIO src
+  git clone  https://github.com/PARALLELIO/ParallelIO src
 fi
 cd src
-git checkout develop
-git pull origin develop
+git checkout master
+git pull origin master
 
 ctest -S CTestScript.cmake,${model} -VV
