@@ -32,8 +32,8 @@
     </gridmap>
 
     <gridmap lnd_grid="ne0np4CONUS.ne30x8" rof_grid="r05">
-      <map name="LND2ROF_FMAPNAME">cpl/gridmaps/ne0np4CONUS.ne30x8/map_ne0CONUSne30x8_TO_0.5x0.5_nomask_aave.190227.nc</map>
-      <map name="ROF2LND_FMAPNAME">cpl/gridmaps/ne0np4CONUS.ne30x8/map_0.5x0.5_nomask_TO_ne0CONUSne30x8_aave.190227.nc</map>
+      <map name="LND2ROF_FMAPNAME">cpl/gridmaps/ne0np4CONUS.ne30x8/map_ne0CONUSne30x8_TO_0.5x0.5_nomask_aave.190322.nc</map>
+      <map name="ROF2LND_FMAPNAME">cpl/gridmaps/ne0np4CONUS.ne30x8/map_0.5x0.5_nomask_TO_ne0CONUSne30x8_aave.190322.nc</map>
     </gridmap>
 
     <gridmap lnd_grid="360x720cru" rof_grid="r05">
