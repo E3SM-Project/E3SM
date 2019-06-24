@@ -18,7 +18,7 @@ MODULE MOSARTinund_Core_MOD
   use RunoffMod, only: rtmCTL, Tctl, TUnit, TRunoff, &
       SMatP_upstrm, avsrc_upstrm, avdst_upstrm, SMatP_dnstrm
   use MOSARTinund_PreProcs_MOD, only: con1Em3
-  use RtmVar, only: barrier_timers, iulog
+  use RtmVar, only: barrier_timers, iulog, inundflag
   use RtmSpmd, only: mpicom_rof
   use mct_mod
   

@@ -19,7 +19,7 @@ module RtmMod
                                frivinp_rtm, finidat_rtm, nrevsn_rtm, &
                                nsrContinue, nsrBranch, nsrStartup, nsrest, &
                                inst_index, inst_suffix, inst_name, wrmflag, inundflag, &
-                               smat_option, decomp_option, barrier_timers
+                               smat_option, decomp_option, barrier_timers, heatflag, sediflag
   use RtmFileUtils    , only : getfil, getavu, relavu
   use RtmTimeManager  , only : timemgr_init, get_nstep, get_curr_date, advance_timestep
   use RtmHistFlds     , only : RtmHistFldsInit, RtmHistFldsSet 
@@ -253,14 +253,16 @@ contains
          rtmhist_fexcl1,  rtmhist_fexcl2, rtmhist_fexcl3, &
          rtmhist_avgflag_pertape, decomp_option, wrmflag, &
          inundflag, smat_option, delt_mosart, barrier_timers, &
-         RoutingMethod, DLevelH2R, DLevelR
+         RoutingMethod, DLevelH2R, DLevelR, sediflag, heatflag
 
 !#ifdef INCLUDE_INUND
+if (inundflag) then
     namelist /inund_inparm / opt_inund, &
          opt_truedw, opt_calcnr, nr_max, nr_min, &
          nr_uniform, rdepth_max, rdepth_min, rwidth_max, rwidth_min, &
          rslp_assume, minl_tribrouting, opt_elevprof, npt_elevprof, &
          threshold_slpratio
+endif
 !#endif
 
     ! Preset values
@@ -269,6 +271,8 @@ contains
     ice_runoff  = .true.
     wrmflag     = .false.
     inundflag   = .false.
+	sediflag    = .false.
+	heatflag    = .false.
     barrier_timers = .false.
     finidat_rtm = ' '
     nrevsn_rtm  = ' '
@@ -316,6 +320,7 @@ contains
        end do
        call relavu( unitn )
 !#ifdef INCLUDE_INUND
+       if (inundflag) then
        unitn = getavu()
        write(iulog,*) 'Read in inund_inparm namelist from: ', trim(nlfilename_rof)
        open( unitn, file=trim(nlfilename_rof), status='old' )
@@ -327,6 +332,7 @@ contains
           endif
        end do
        call relavu( unitn )
+	   end if
 !#endif
     end if
 
@@ -363,6 +369,7 @@ contains
     call mpi_bcast (rtmhist_avgflag_pertape, size(rtmhist_avgflag_pertape), MPI_CHARACTER, 0, mpicom_rof, ier)
 
 !#ifdef INCLUDE_INUND
+ if (inundflag) then
     call mpi_bcast (OPT_inund,          1, MPI_INTEGER, 0, mpicom_rof, ier)
     call mpi_bcast (OPT_trueDW,         1, MPI_INTEGER, 0, mpicom_rof, ier)
     call mpi_bcast (OPT_calcNr,         1, MPI_INTEGER, 0, mpicom_rof, ier)
@@ -378,6 +385,7 @@ contains
     call mpi_bcast (OPT_elevProf,       1, MPI_INTEGER, 0, mpicom_rof, ier)
     call mpi_bcast (npt_elevProf,       1, MPI_INTEGER, 0, mpicom_rof, ier)
     call mpi_bcast (threshold_slpRatio, 1, MPI_REAL8  , 0, mpicom_rof, ier)
+ end if
 !#endif
 
     runtyp(:)               = 'missing'
@@ -390,6 +398,7 @@ contains
     Tctl%DLevelR       = DLevelR
 
 !#ifdef INCLUDE_INUND
+    if (inundflag) then
     Tctl%OPT_inund = OPT_inund     !
     Tctl%OPT_trueDW = OPT_trueDW   ! diffusion wave method
     Tctl%OPT_calcNr = OPT_calcNr   ! method to calculate channel Manning
@@ -405,6 +414,7 @@ contains
     Tctl%OPT_elevProf = OPT_elevProf
     Tctl%npt_elevProf = npt_elevProf
     Tctl%threshold_slpRatio = threshold_slpRatio
+	end if
 !#endif
 
     if (masterproc) then
@@ -467,14 +477,12 @@ contains
        RETURN
     end if
 
-    if (inundflag) then
 !#ifdef INCLUDE_INUND
        ! OK
 !#else
 !       write(iulog,*) subname,' ERROR MOSART INCLUDE_INUND and inundflag not consistent'
 !       call shr_sys_abort( subname//' ERROR: INCLUDE_INUND and inundflag not consistent' )
 !#endif
-    endif
 
     if (wrmflag .and. inundflag) then
        write(iulog,*) subname,' ERROR MOSART wrmflag and inundflag cannot both be true'
@@ -1128,6 +1136,7 @@ contains
     erlat_avg(:,:)   = 0._r8
 
 !#ifdef INCLUDE_INUND
+ if (inundflag) then
     ! If inundation scheme is turned on :
     !if ( Tctl%OPT_inund .eq. 1 ) then
       allocate ( fa_fp_cplPeriod(rtmCTL%begr : rtmCTL%endr), stat=ier )
@@ -1151,6 +1160,7 @@ contains
     totalVelo_up(:) = 0._r8
     chnlNum_down(:) = 0
     chnlNum_up(:) = 0
+ end if
 !#endif
 
     !-------------------------------------------------------
@@ -1554,11 +1564,13 @@ contains
     call t_stopf('mosarti_mosart_init')
 
 !#ifdef INCLUDE_WRM
+ if (wrmflag) then
     call t_startf('mosarti_wrm_init')
     if (wrmflag) then
        call WRM_init()
     endif
     call t_startf('mosarti_wrm_init')
+ end if
 !#endif
 
     !-------------------------------------------------------
@@ -1582,6 +1594,7 @@ contains
        TRunoff%erout= rtmCTL%erout
 
 !#ifdef INCLUDE_INUND
+ if (inundflag) then
        ! If inundation scheme is turned on :
        if ( Tctl%OPT_inund .eq. 1 ) then
          !TRunoff%wf_ini(:) = rtmCTL%wf(:, 1)
@@ -1594,6 +1607,7 @@ contains
          ! Inundation flooded fraction      
          TRunoff%ffunit_ini(:) = rtmCTL%inundffunit(:)
        end if
+ end if
 !#endif
 
     else
@@ -1967,6 +1981,7 @@ contains
     rtmCTL%dvolrdtocn = spval     ! dvolrdt masked for ocn  (mm/s)
 
 !#ifdef INCLUDE_INUND
+ if (inundflag) then
     ! If inundation scheme is turned on :
     if ( Tctl%OPT_inund .eq. 1 ) then
       vol_chnl2fp = 0._r8
@@ -1978,6 +1993,7 @@ contains
     totalVelo_up(:) = 0._r8
     chnlNum_down(:) = 0
     chnlNum_up(:) = 0
+ end if
 !#endif
 
     if (budget_check) then
@@ -2140,9 +2156,20 @@ contains
           !---- water outside the basin ---
           !---- *** DO NOT TURN THIS ONE OFF, conservation will fail *** ---
 !#ifdef INCLUDE_INUND
+     if (inundflag) then
           if ( rtmCTL%mask(nr) .eq. 1 .or. rtmCTL%mask(nr) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
+          else
+             avsrc_direct%rAttr(nt,cnt) = avsrc_direct%rAttr(nt,cnt) + &
+                TRunoff%qsub(nr,nt) + &
+                TRunoff%qsur(nr,nt) + &
+                TRunoff%qgwl(nr,nt)
+             TRunoff%qsub(nr,nt) = 0._r8
+             TRunoff%qsur(nr,nt) = 0._r8
+             TRunoff%qgwl(nr,nt) = 0._r8
+          end if
+     else
 !#else
-!          if (TUnit%mask(nr) > 0) then
+          if (TUnit%mask(nr) > 0) then		  
 !#endif
              ! mosart euler
           else
@@ -2153,7 +2180,8 @@ contains
              TRunoff%qsub(nr,nt) = 0._r8
              TRunoff%qsur(nr,nt) = 0._r8
              TRunoff%qgwl(nr,nt) = 0._r8
-          endif
+          end if
+      end if
 
           !---- all nt=2 water ---
           !---- can turn off euler_calc for this tracer ----
@@ -2249,7 +2277,7 @@ contains
           call t_stopf('mosartr_inund_sim')
        else
           call t_startf('mosartr_euler')
-          ! debug (N. Sun)
+          ! debug 
           write(iulog,*) 'clm-mosart subT: (call Euler) ns=', ns
           call Euler()
           call t_stopf('mosartr_euler')
@@ -2297,6 +2325,7 @@ contains
        !-----------------------------------
 
 !#ifdef INCLUDE_INUND
+if (inundflag) then
 ! tcraig, this is redundant and missing some diagnostics and only operating on tracer 1
 !
 !        do nt = 1, 1
@@ -2313,6 +2342,7 @@ contains
 !        enddo
 !
 !#else
+else
        do nt = 1,nt_rtm
        do nr = rtmCTL%begr,rtmCTL%endr
           flow(nr,nt) = flow(nr,nt) + TRunoff%flow(nr,nt)
@@ -2324,12 +2354,13 @@ contains
           erlat_avg(nr,nt) = erlat_avg(nr,nt) + TRunoff%erlat_avg(nr,nt)
        enddo
        enddo
+endif
 !#endif
 
 !#ifdef INCLUDE_INUND
-
+if (inundflag) then
        ! If 'budget_check' is true & inundation scheme is turned on :
-       if ( inundflag .and. budget_check .and. Tctl%OPT_inund .eq. 1 ) then
+       if ( budget_check .and. Tctl%OPT_inund .eq. 1 ) then
 
          do nt = 1, 1
            do nr = rtmCTL%begr, rtmCTL%endr
@@ -2378,7 +2409,7 @@ contains
          end do
 
        end if
-
+endif
 !#endif
 
     enddo ! nsub
@@ -2396,8 +2427,10 @@ contains
     erlat_avg   = erlat_avg   / float(nsub)
 
 !#ifdef INCLUDE_INUND
+if (inundflag) then
     ! Mean inundated floodplain area for all sub-steps of coupling period (for each land grid cell):
     fa_fp_cplPeriod = fa_fp_cplPeriod / float(nsub)
+endif
 !#endif
 
     !-----------------------------------
@@ -2526,7 +2559,7 @@ contains
 !#endif
 
 !#ifdef INCLUDE_INUND
-
+if (inundflag) then
        do nt = 1, nt_rtm
          do nr = rtmCTL%begr, rtmCTL%endr
            if (rtmCTL%mask(nr) .eq. 3) then        ! 3 -- Basin outlet (downstream is ocean).
@@ -2645,7 +2678,7 @@ contains
 
        end do
        !--- Debug ---
-
+endif
 !#endif
 
        ! accumulate the budget total over the run to make sure it's decreasing on avg
@@ -2808,7 +2841,7 @@ contains
           write(iulog,'(a)') '----------------------------------- '
 
 !#ifdef INCLUDE_INUND
-
+if (inundflag) then
           write(iulog,'(a)') ' '
           write(iulog,'(a)') '=================================================== '
           write(iulog,'(a)') ' '
@@ -3015,7 +3048,7 @@ contains
           write(iulog,'(a)') ' '
           write(iulog,'(a)') '=================================================== '
           write(iulog,'(a)') ' '
-
+endif
 !#endif
        endif   ! (End of if (masterproc). --Inund.)
 
@@ -3372,6 +3405,7 @@ contains
 
      if (inundflag) then
 !#ifdef INCLUDE_INUND
+if (inundflag) then
        do n = rtmCtl%begr, rtmCTL%endr
          if ( rtmCTL%mask(n) .eq. 1 .or. rtmCTL%mask(n) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
 
@@ -3382,6 +3416,7 @@ contains
 
          end if
        end do
+endif
 !#endif
      end if
 
@@ -3401,8 +3436,10 @@ contains
   
      if (inundflag) then
 !#ifdef INCLUDE_INUND
+if (inundflag) then
         ! Calculate channel Manning roughness coefficients :
         call calc_chnlMannCoe ( )
+endif
 !#endif
      else
         !!allocate(TUnit%nr(begr:endr))   !(Repetitive, removed on 6-1-17. --Inund.)
@@ -3913,7 +3950,9 @@ contains
 
         if (inundflag) then
 !#ifdef INCLUDE_INUND
+if (inundflag) then
            TUnit%rslp(iunit) = Tctl%rslp_assume
+endif
 !#endif
         else
            TUnit%rslp(iunit) = 0.0001_r8

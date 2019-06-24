@@ -29,6 +29,8 @@ module RtmVar
                                                        ! by default this is not allowed
   logical, public :: wrmflag = .false.                 ! water management model flag
   logical, public :: inundflag = .false.               ! inundation model flag
+  logical, public :: sediflag = .false.                ! sediment model flag
+  logical, public :: heatflag = .false.                ! heat model flag
   logical, public :: noland = .false.                  ! true => no valid land points -- do NOT run
   character(len=32) , public :: decomp_option          ! decomp option
   character(len=32) , public :: smat_option            ! smatrix multiply option (opt, Xonly, Yonly)

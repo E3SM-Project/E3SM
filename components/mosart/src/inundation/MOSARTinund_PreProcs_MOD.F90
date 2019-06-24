@@ -133,22 +133,11 @@ MODULE MOSARTinund_PreProcs_MOD
     real( r8 ) :: ds        ! The volume between two elevations of an adjusted elevation profile (m^3).
     character( len = * ), parameter :: subname = '(preprocess_elevProf)'
     
-    ! Area fraction of a computation unit (grid cell or subbasin) (dimensionless) :
-    ! TUnit%a_eprof(:,1) = 0.0_r8
-    ! TUnit%a_eprof(:,2) = 0.1_r8
-    ! TUnit%a_eprof(:,3) = 0.2_r8
-    ! TUnit%a_eprof(:,4) = 0.3_r8
-    ! TUnit%a_eprof(:,5) = 0.4_r8
-    ! TUnit%a_eprof(:,6) = 0.5_r8
-    ! TUnit%a_eprof(:,7) = 0.6_r8
-    ! TUnit%a_eprof(:,8) = 0.7_r8
-    ! TUnit%a_eprof(:,9) = 0.8_r8
-    ! TUnit%a_eprof(:,10) = 0.9_r8
-    ! TUnit%a_eprof(:,11) = 1.0_r8
-    ! TUnit%a_eprof(:,12) = 1.0_r8
+    
     do iu = rtmCTL%begr, rtmCTL%endr
       !if ( TUnit%mask( iu ) .gt. 0 ) then
       if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
+	    ! Area fraction of a computation unit (grid cell or subbasin) (dimensionless) :
         TUnit%a_eprof(iu,1) = 0.0_r8
         TUnit%a_eprof(iu,2) = 0.1_r8
         TUnit%a_eprof(iu,3) = 0.2_r8
@@ -163,13 +152,6 @@ MODULE MOSARTinund_PreProcs_MOD
         TUnit%a_eprof(iu,12) = 1.0_r8
       end if
     end do
-    
-    ! Elevations in the hypothetical elevation profile :
-    ! Gentle slope (m) :
-    !TUnit%e_eprof_std = (/ 0.0_r8, 1.0_r8, 2.0_r8, 3.0_r8, 4.0_r8, 5.0_r8, 7.0_r8, 11.0_r8, 19.0_r8, 35.0_r8, 75.0_r8, 10000.0_r8 /)                  
-
-    ! Steep slope (m) :
-    !TUnit%e_eprof_std = (/ 0.0_r8, 15.0_r8, 35.0_r8, 60.0_r8, 90.0_r8, 125.0_r8, 165.0_r8, 205.0_r8, 245.0_r8, 285.0_r8, 325.0_r8, 10000.0_r8 /)     
 
     ! 1 -- use real elevation profile data :
     if ( Tctl%OPT_elevProf .eq. 1 ) then      
@@ -192,7 +174,6 @@ MODULE MOSARTinund_PreProcs_MOD
         !if ( TUnit%mask( iu ) .gt. 0 ) then
         if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
           do k = 1, 12
-            !TUnit%e_eprof( iu, k ) = TUnit%e_eprof_std(k)
             TUnit%e_eprof( iu, k ) = Tctl%e_eprof_std(k)
           end do        
         end if  

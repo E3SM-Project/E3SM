@@ -14,7 +14,7 @@ module RtmRestFile
   use RtmSpmd       , only : masterproc 
   use RtmVar        , only : rtmlon, rtmlat, iulog, inst_suffix, rpntfil, &
                              caseid, nsrest, brnch_retain_casename, &
-                             finidat_rtm, nrevsn_rtm, wrmflag, &
+                             finidat_rtm, nrevsn_rtm, wrmflag, inundflag, &
                              nsrContinue, nsrBranch, nsrStartup, &
                              ctitle, version, username, hostname, conventions, source
   use RtmHistFile   , only : RtmHistRestart
@@ -397,9 +397,12 @@ contains
     release_read = .true.
     stormth_read = .true.
 !#ifdef INCLUDE_WRM
+if (wrmflag) then
     nvmax = 10
+else
 !#else
-!    nvmax = 7
+    nvmax = 7
+endif
 !#endif
 
     do nv = 1,nvmax

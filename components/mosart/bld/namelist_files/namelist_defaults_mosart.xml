@@ -20,6 +20,8 @@ for the CLM data in the CESM distribution
 <ice_runoff>.true.</ice_runoff>
 <wrmflag>.false.</wrmflag>
 <inundflag>.false.</inundflag>
+<sediflag>.false.</sediflag>
+<heatflag>.false.</heatflag>
 <barrier_timers>.false.</barrier_timers>
 <RoutingMethod>1</RoutingMethod>
 <DLevelH2R>5</DLevelH2R>

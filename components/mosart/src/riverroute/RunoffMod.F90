@@ -151,7 +151,7 @@ module RunoffMod
      character(len=80), pointer :: out_name(:)  ! the name of the outlets  
      character(len=80) :: curOutlet    ! the name of the current outlet
    
-!#ifdef INCLUDE_INUND     
+!#ifdef INCLUDE_INUND   
      integer :: OPT_inund            ! Options for inundation, 0=inundation off, 1=inundation on
      integer :: OPT_trueDW           ! Options for diffusion wave channel routing method:
                                      !     1 -- True diffusion wave method for channel routing;
@@ -188,8 +188,7 @@ module RunoffMod
      ! (2) Steep slope:
      !real(r8) :: e_eprof_std(12) = (/ 0.0_r8, 15.0_r8, 35.0_r8, 60.0_r8, 90.0_r8, 125.0_r8, 165.0_r8, 205.0_r8, 245.0_r8, 285.0_r8, 325.0_r8, 10000.0_r8 /)
 
-!#endif
-   
+!#endif   
   end type Tcontrol
   
   ! --- Topographic and geometric properties, applicable for both grid- and subbasin-based representations

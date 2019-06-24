@@ -84,6 +84,22 @@ Default: .false.
 If .true., inundation model will be turned on.
 </entry>
 
+<entry id="sediflag" 
+       type="logical" 
+       category="mosart"
+       group="mosart_inparm">
+Default: .false.
+If .true., sediment model will be turned on.
+</entry>
+
+<entry id="heatflag" 
+       type="logical" 
+       category="mosart"
+       group="mosart_inparm">
+Default: .false.
+If .true., heat model will be turned on.
+</entry>
+
 <entry id="do_rtm" 
        type="logical" 
        category="mosart"

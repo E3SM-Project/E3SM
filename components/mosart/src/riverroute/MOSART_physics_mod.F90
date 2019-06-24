@@ -13,7 +13,7 @@ MODULE MOSART_physics_mod
   use shr_kind_mod  , only : r8 => shr_kind_r8, SHR_KIND_CL
   use shr_const_mod , only : SHR_CONST_REARTH, SHR_CONST_PI
   use shr_sys_mod   , only : shr_sys_abort
-  use RtmVar        , only : iulog, barrier_timers, wrmflag
+  use RtmVar        , only : iulog, barrier_timers, wrmflag, inundflag, sediflag, heatflag
   use RunoffMod     , only : Tctl, TUnit, TRunoff, TPara, rtmCTL, &
                              SMatP_upstrm, avsrc_upstrm, avdst_upstrm
   use RtmSpmd       , only : masterproc, mpicom_rof, iam
@@ -63,8 +63,9 @@ MODULE MOSART_physics_mod
 
     call get_curr_date(yr, mon, day, tod)
 #if (1 == 0)
-  print*, "Tian testing hashtag comment "
+  print*, "Tian testing hashtag comment working"
 #endif
+  print*, "Tian testing hashtag comment not working"
     !------------------
     ! WRM prep
     !------------------

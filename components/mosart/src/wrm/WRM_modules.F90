@@ -15,11 +15,11 @@ MODULE WRM_modules
                               MPI_REAL8,MPI_INTEGER,MPI_CHARACTER,MPI_LOGICAL,MPI_MAX
   use RtmTimeManager , only : get_curr_date
 #if (1 == 0)
-  use MOSART_physics_mod, only : updatestate_hillslope, updatestate_subnetwork, &
-                                 updatestate_mainchannel, hillsloperouting, &
-                                 subnetworkrouting, mainchannelrouting
-  use rof_cpl_indices, only : nt_rtm
-  use WRM_returnflow , only : insert_returnflow_channel
+!  use MOSART_physics_mod, only : updatestate_hillslope, updatestate_subnetwork, &
+!                                 updatestate_mainchannel, hillsloperouting, &
+!                                 subnetworkrouting, mainchannelrouting
+!  use rof_cpl_indices, only : nt_rtm
+!  use WRM_returnflow , only : insert_returnflow_channel
 #endif
   use WRM_type_mod   , only : ctlSubwWRM, WRMUnit, StorWater, &
                               aVect_wg, aVect_wd, sMatP_g2d, sMatP_d2g, &
@@ -35,7 +35,7 @@ MODULE WRM_modules
 
 ! !PUBLIC MEMBER FUNCTIONS:
 #if (1 == 0)
-  public Euler_WRM  
+!  public Euler_WRM  
 #endif
   public irrigationExtraction
   public irrigationExtractionSubNetwork
@@ -268,14 +268,7 @@ MODULE WRM_modules
         StorWater%supply(iunit)= StorWater%supply(iunit) + flow_vol
         StorWater%demand(iunit)= StorWater%demand(iunit) - flow_vol
         flow_vol = 0._r8
-     endif
-
-     ! debug (N. Sun)
-     if (StorWater%demand(iunit)>0 .and. iunit==1175) then
-        write(iulog,*) ' subnetwork supply = m3', iunit, StorWater%supply(iunit)
-        write(iulog,*) ' demand = m3', iunit, StorWater%demand(iunit)
-     endif     ! debug (N. Sun)
-        
+     endif        
   
      !Trunoff%etin(iunit,nt_nliq) = flow_vol / (TheDeltaT)
      Trunoff%wt(iunit,nt_nliq) = flow_vol 
