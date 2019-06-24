@@ -4,8 +4,8 @@ common utilities for buildlib
 
 from CIME.XML.standard_module_setup import *
 from CIME.case import Case
-from CIME.utils import parse_args_and_handle_standard_logging_options, setup_standard_logging_options
-from CIME.build import get_standard_makefile_args
+from CIME.utils import parse_args_and_handle_standard_logging_options, setup_standard_logging_options, get_model, run_bld_cmd_ensure_logging
+from CIME.build import get_standard_makefile_args, get_standard_cmake_args
 import sys, os, argparse
 logger = logging.getLogger(__name__)
 
@@ -62,21 +62,20 @@ def build_cime_component_lib(case, compname, libroot, bldroot):
             out.write(os.path.join(cimeroot, "src", "components", "stub_comps", compname, comp_interface) + "\n")
 
     # Build the component
-    run_gmake(case, compclass, libroot, bldroot)
+    if get_model() == "e3sm":
+        run_cmake(case, compclass, libroot, bldroot)
+    else:
+        run_gmake(case, compclass, libroot, bldroot)
 
 ###############################################################################
-def run_gmake(case, compclass, libroot, bldroot, libname="", user_cppdefs=""):
+def run_gmake(case, compclass, _, bldroot, libname="", user_cppdefs=""):
 ###############################################################################
     gmake_args = get_standard_makefile_args(case)
 
     gmake_j   = case.get_value("GMAKE_J")
     gmake     = case.get_value("GMAKE")
 
-    complib = ""
-    if libname:
-        complib  = os.path.join(libroot, "lib{}.a".format(libname))
-    else:
-        complib  = os.path.join(libroot, "lib{}.a".format(compclass))
+    complib = libname if libname else compclass
 
     makefile = os.path.join(case.get_value("CASETOOLS"), "Makefile")
 
@@ -87,3 +86,21 @@ def run_gmake(case, compclass, libroot, bldroot, libname="", user_cppdefs=""):
 
     _, out, _ = run_cmd(cmd, combine_output=True)
     print(out.encode('utf-8'))
+
+###############################################################################
+def run_cmake(case, compclass, _, bldroot, libname="", user_cppdefs=""):
+###############################################################################
+    cmake_args = get_standard_cmake_args(case)
+
+    srcroot    = case.get_value("SRCROOT")
+    gmake_j   = case.get_value("GMAKE_J")
+    gmake     = case.get_value("GMAKE")
+
+    complib = libname if libname else compclass
+
+    cmd = 'cmake -DCOMPLIB={complib} -DMODEL={compclass} -DUSER_CPPDEFS="{user_cppdefs}" {cmake_args} {srcroot}/components' \
+        .format(compclass=compclass, complib=complib, cmake_args=cmake_args, user_cppdefs=user_cppdefs, srcroot=srcroot)
+
+    run_bld_cmd_ensure_logging(cmd, logger, from_dir=bldroot)
+    run_bld_cmd_ensure_logging("{} -j {}".format(gmake, gmake_j), logger, from_dir=bldroot)
+
