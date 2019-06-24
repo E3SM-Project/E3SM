@@ -2,19 +2,13 @@
 <config case="2000m">
 
         <!-- Set up needed files and executables -->
-        <add_executable source="periodic_hex" dest="periodic_grid"/>
-        <add_executable source="mesh_converter" dest="MpasMeshConverter.x"/>
-        <add_executable source="cell_culler" dest="MpasCellCuller.x"/>
-        <add_executable source="grid_to_li_grid" dest="create_landice_grid_from_generic_MPAS_grid.py"/>
         <add_executable source="model" dest="landice_model"/>
-        <add_executable source="metis" dest="metis"/>
         <add_link source_path="script_configuration_dir" source="cull_cells_for_MISMIP.py" dest="."/>
         <add_link source_path="script_configuration_dir" source="setup_mismip+_initial_conditions.py" dest="."/>
         <add_link source_path="script_configuration_dir" source="setup_mismip+_subdirectories.py" dest="."/>
         <add_link source_path="script_configuration_dir" source="mismip+WriteGL.py" dest="."/> -->
         <add_link source_path="script_configuration_dir" source="mismip+PlotGL.py" dest="."/> -->
         <add_link source_path="script_configuration_dir" source="albany_input.yaml" dest="."/>
-        <add_link source_path="script_test_dir" source="namelist.input" dest="namelist.input"/>
         <add_link source_path="work_case_dir" source="culled_graph.info" dest="graph.info"/>
 
 
@@ -231,10 +225,38 @@
         </streams>
 
 
+        <!--
+             planar_hex settings for different resolutions
+
+   dc = 9237.604307,
+   nx = 73,
+   ny = 14,
+
+   dc = 4618.802154,
+   nx = 144,
+   ny = 24,
+
+   dc = 2309.401077,
+   nx = 284,
+   ny = 44,
+
+   dc = 1154.700538,
+   nx = 566,
+   ny = 84,
+
+   dc = 577.350269,
+   nx = 1129,
+   ny = 164,
+        -->
+
+
         <run_script name="setup_test.py">
 
                 <!-- make base mesh -->
-                <step executable="./periodic_grid" pre_message="\n\n### Creating periodic_hex mesh\n\n" post_message="\n\n### periodic_hex mesh creation complete\n\n">
+                <step executable="planar_hex" pre_message="\n\n### Creating periodic_hex mesh\n\n" post_message="\n\n### periodic_hex mesh creation complete\n\n">
+                        <argument flag="--nx">284</argument>
+                        <argument flag="--ny">44</argument>
+                        <argument flag="--dc">2309.401077</argument>
                 </step>
 
                 <!-- mark cells for culling -->
@@ -243,13 +265,13 @@
                 </step>
 
                 <!-- cull cells -->
-                <step executable="./MpasCellCuller.x" >
+                <step executable="MpasCellCuller.x" >
                         <argument flag="">grid.nc</argument>
                         <argument flag="">culled_grid.nc</argument>
                 </step>
 
                 <!-- Convert from basic MPAS mesh to MPASLI mesh -->
-                <step executable="./create_landice_grid_from_generic_MPAS_grid.py" pre_message="\n\n### Creating LI mesh\n\n" post_message="\n\n### LI mesh creation complete\n\n">
+                <step executable="create_landice_grid_from_generic_MPAS_grid.py" pre_message="\n\n### Creating LI mesh\n\n" post_message="\n\n### LI mesh creation complete\n\n">
                         <argument flag="-i">culled_grid.nc</argument>
                         <argument flag="-o">landice_grid.nc</argument>
                         <argument flag="-l">10</argument>
@@ -264,7 +286,7 @@
                 </step>
 
                 <!-- Set up needed graph file -->
-                <step executable="./metis" pre_message="\n\n### Creating graph.info.part file\n\n" post_message="\n\n### graph.info.part file creation complete\n\n">
+                <step executable="gpmetis" pre_message="\n\n### Creating graph.info.part file\n\n" post_message="\n\n### graph.info.part file creation complete\n\n">
                         <argument flag="graph.info">16</argument>
                 </step>
 
