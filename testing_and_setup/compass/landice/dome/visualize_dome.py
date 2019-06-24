@@ -4,7 +4,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy
-from Scientific.IO.NetCDF import *
+import netCDF4
 from optparse import OptionParser
 import matplotlib.pyplot as plt
 
@@ -21,14 +21,14 @@ parser.add_option("-n", "--nodisp", action="store_true", dest="hidefigs", help="
 options, args = parser.parse_args()
 
 if not options.filename:
-	print("No filename provided. Using output.nc.")
-        options.filename = "output.nc"
+   print("No filename provided. Using output.nc.")
+   options.filename = "output.nc"
 
 if not options.time:
-	print("No time provided. Using time 0.")
-        time_slice = 0
+   print("No time provided. Using time 0.")
+   time_slice = 0
 else:
-        time_slice = int(options.time)
+   time_slice = int(options.time)
 
 #if not options.variable:
 #	parser.error("Variable is a required input.")
@@ -51,7 +51,7 @@ else:
 secInYr = 3600.0 * 24.0 * 365.0  # Note: this may be slightly wrong for some calendar types!
 
 
-f = NetCDFFile(options.filename,'r')
+f = netCDF4.Dataset(options.filename,'r')
 
 times = f.variables['xtime']
 thickness = f.variables['thickness']

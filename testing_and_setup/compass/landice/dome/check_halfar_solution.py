@@ -108,7 +108,7 @@ print('Using an ice density value of: ' + str(rhoi))
 dynamicThickness = filein.config_dynamic_thickness
 print('\nDynamic thickness for this run = ' + str(dynamicThickness))
 
-print('Using model time of ' + xtime[timelev,:].tostring().strip() + '\n')
+print('Using model time of ' + xtime[timelev,:].tostring().decode('utf-8').strip() + '\n')
 
 if filein.config_calendar_type != "gregorian_noleap":
         print('Error: The Halfar script currently assumes a gregorian_noleap calendar.  Modify it to proceed with your calendar type of: '+filein.config_calendar_type)
@@ -143,7 +143,7 @@ print('')
 # Plot the results
 fig = plt.figure(1, figsize=(16, 4.5), facecolor='w', dpi=100)
 markersize = 35.0
-gray = np.ones(3)*0.8
+gray = [np.ones(3)*0.8,]
 
 fig.add_subplot(1,3,1)
 maskindices = np.nonzero(thk[:][timelev,:] > 0.0)[0]
