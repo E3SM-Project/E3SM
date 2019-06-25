@@ -1,10 +1,12 @@
 #!/bin/tcsh -f 
 #SBATCH -N 1
-#SBATCH --account=FY127788
-#SBATCH --time=0:10:00
-#PBS -l walltime=0:30:00
-#PBS -l nodes=10
-#PBS -q acme
+#SBATCH --account=acme
+#SBATCH --partition=regular
+#SBATCH --constraint=knl
+#SBATCH --time=1:10:00
+##PBS -l walltime=0:30:00
+##PBS -l nodes=10
+##PBS -q acme
 
 #
 # Mark Taylor 2018
@@ -20,17 +22,20 @@
 #  output will be in $wdir/preqx/template
 #
 set HOMME = `cd ../.. ; pwd`  # path to HOMME code. assume we are running from homme/test/template
-set MACH = $HOMME/cmake/machineFiles/anvil.cmake
+#set MACH = $HOMME/cmake/machineFiles/anvil.cmake
 #set MACH = $HOMME/cmake/machineFiles/edison.cmake
-set wdir = ~/scratch1
+set MACH = $HOMME/cmake/machineFiles/cori-knl.cmake 
+set wdir = /project/projectdirs/acme/eroesler
+#set wdir = ~/scratch1
 
 #
 # grid information.  set ne for cubed-sphere grids, or ne=0 and meshfile
 # for RRM grids
 #
 set NPTS = 4
-set ne = 30  ; set meshfile=none
+#set ne = 30  ; set meshfile=none
 #set ne=0 ; set meshfile=~/codes/mapping/grids/mountain_10_x2.g
+set ne=0 ; set meshfile=/project/projectdirs/acme/eroesler/grids/northamericax4v1/northamericax4v1.g
 
 #
 # set the amount of smoothing.  Useful range 4-32
@@ -38,16 +43,20 @@ set ne = 30  ; set meshfile=none
 #    16 for uniform grids (with regular del2 smoothing)
 #    12 for RRM grids using tensor del2 smoothing
 #
-set smooth_phis_numcycle=7
+set smooth_phis_numcycle=12
 #
 # set the input and output file names:
 #
-set topo = '/lcrc/group/acme/taylorm/topodata/ne30/USGS-gtopo30_ne30np4.nc'
+set topo = '/project/projectdirs/acme/eroesler/grids/northamericax4v1/topo/USGS_northamericax4v1_360x720cru_oRRS15to5_unsmoothed_190614.nc'
+#set topo = '/lcrc/group/acme/taylorm/topodata/ne30/USGS-gtopo30_ne30np4.nc'
 #set topo = '/lcrc/group/acme/taylorm/topodata/ne120/ne120np4_x0.nc'
 set topoout = "USGS-gtopo30_ne${ne}np${NPTS}_${smooth_phis_numcycle}xdel2.nc"
 #
 #  end of user settings.  
 #
+
+# get netcdf paths
+source /global/homes/e/eroesler/codes/e3sm/branches/master/cime/tools/.env_mach_specific.sh
 
 
 set NCPU = 1
@@ -102,6 +111,7 @@ endif
 set nlev=20
 set qsize = 0
 
+
 cd $bld
 if (!( -f CMakeCache.txt )) then
     cmake -C $MACH -DPREQX_PLEV=$nlev -DPREQX_USE_PIO=TRUE  -DPREQX_NP=$NPTS  $HOMME 
@@ -128,7 +138,8 @@ if ( $status ) exit
 rsync -a $HOMME/test/vcoord/*ascii $wdir/../vcoord
 
 rm -Rf $wdir/movies/held_suarez0*
-mpirun  $bld/src/preqx/preqx < $wdir/input.nl
+# mpirun  $bld/src/preqx/preqx < $wdir/input.nl
+srun  $bld/src/preqx/preqx < $wdir/input.nl
 if ( $status ) exit
 
 
