@@ -2335,14 +2335,6 @@ Valid values: none,constant,prognostic,diagnostic
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_ecosys_atm_alt_co2_use_eco" type="logical"
-	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
-determines whether DIC_ALT is affected by ecosystem dynamics
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_ecosys_atm_co2_constant_value" type="real"
 	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
 value of atm co2 when config_ecosys_atm_co2_option = constant

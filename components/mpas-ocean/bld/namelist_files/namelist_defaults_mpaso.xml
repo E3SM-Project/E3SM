@@ -430,7 +430,6 @@
 <config_use_ecosysTracers>.false.</config_use_ecosysTracers>
 <config_ecosys_atm_co2_option>none</config_ecosys_atm_co2_option>
 <config_ecosys_atm_alt_co2_option>none</config_ecosys_atm_alt_co2_option>
-<config_ecosys_atm_alt_co2_use_eco>.true.</config_ecosys_atm_alt_co2_use_eco>
 <config_ecosys_atm_co2_constant_value>379.000</config_ecosys_atm_co2_constant_value>
 <config_use_ecosysTracers_surface_bulk_forcing>.false.</config_use_ecosysTracers_surface_bulk_forcing>
 <config_use_ecosysTracers_surface_restoring>.false.</config_use_ecosysTracers_surface_restoring>
