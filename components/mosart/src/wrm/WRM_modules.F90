@@ -14,13 +14,7 @@ MODULE WRM_modules
   use RtmSpmd        , only : iam, mpicom_rof, mastertask, masterproc, &
                               MPI_REAL8,MPI_INTEGER,MPI_CHARACTER,MPI_LOGICAL,MPI_MAX
   use RtmTimeManager , only : get_curr_date
-#if (1 == 0)
-!  use MOSART_physics_mod, only : updatestate_hillslope, updatestate_subnetwork, &
-!                                 updatestate_mainchannel, hillsloperouting, &
-!                                 subnetworkrouting, mainchannelrouting
-!  use rof_cpl_indices, only : nt_rtm
-!  use WRM_returnflow , only : insert_returnflow_channel
-#endif
+
   use WRM_type_mod   , only : ctlSubwWRM, WRMUnit, StorWater, &
                               aVect_wg, aVect_wd, sMatP_g2d, sMatP_d2g, &
                               gsMap_wg, gsMap_wd
@@ -611,8 +605,6 @@ MODULE WRM_modules
 
      if (damID > ctlSubwWRM%LocalNumDam .OR. damID <= 0 .or. WRMUnit%MeanMthFlow(damID,13) <= 0.01_r8) then
         return
-        !write(iulog,*) "Error in Regulation with DamID ",damID
-        !call shr_sys_abort(subname//' error in damID')
      end if
 
      stor_init = StorWater%storage(damID)
@@ -682,13 +674,6 @@ MODULE WRM_modules
      !endif
      ! commented out because evap need to be takren into consideration in the releases
 
-
-!test NV
-!     if ( damID .eq. 80) then 
-!       flow_vol = flow_vol /  theDeltaT
-!       flow_res = flow_res /  theDeltaT
-!       write(iulog,'(2a,i8,3f20.2)') subname,'check Coulee',damID,flow_vol,flow_res,StorWater%storage(damID)
-!     endif
   end subroutine Regulation
 
 !-----------------------------------------------------------------------
@@ -779,8 +764,6 @@ MODULE WRM_modules
 !might need to add constraint here in order to make sure that 10% of the flow us
 !maintained and not taken out by grid cell - environment flow NV
 
-!debug     write(iulog,*) subname,' initial flow_vol ',minval(flow_vol),maxval(flow_vol)
-
      done = .false.
      iter = 0
 
@@ -805,12 +788,6 @@ MODULE WRM_modules
            aVect_wg%rAttr(1,cnt) = StorWater%demand(iunit)
         enddo
 
-!tcx debug
-!        call mct_aVect_gather(aVect_wg,aVect_wgG,gsMap_wg,mastertask,mpicom_rof)
-!        if (masterproc) then
-!           write(iulog,'(2a,2i8,3g20.10)') subname,' sw demand = ',iter,iam,minval(aVect_wgG%rAttr(1,:)),maxval(aVect_wgG%rAttr(1,:)),sum(aVect_wgG%rAttr(1,:))
-!        endif
-!        call mct_aVect_clean(aVect_wgG)
 
         !---------------------------
         ! mct_sMat_avMult sums gridcell demand to dams index
@@ -830,13 +807,6 @@ MODULE WRM_modules
         call mct_sMat_avMult(aVect_wg, sMatP_g2d, aVect_wd)
         call t_stopf('moswrm_ERFlow_avmult')
 
-!tcx debug
-!        call mct_aVect_gather(aVect_wd,aVect_wdG,gsMap_wd,mastertask,mpicom_rof)
-!        if (masterproc) then
-!           write(iulog,'(2a,2i8,3g20.10)') subname,' smm demand = ',iter,iam,minval(aVect_wdG%rAttr(1,:)),maxval(aVect_wdG%rAttr(1,:)),sum(aVect_wdG%rAttr(1,:))
-!        endif
-!        call mct_aVect_clean(aVect_wdG)
-
         !---------------------------
         ! compute new dam fraction from total gridcell demand
         ! aVect_wd has total demand per dam, modify this field
@@ -844,18 +814,15 @@ MODULE WRM_modules
         ! If flow_vol/demand > 1, it means there is more water than is demanded of dam
         !---------------------------
 
-!debug        write(iulog,*) subname,' dam demand = ',iam,minval(aVect_wd%rAttr(1,:)),maxval(aVect_wd%rAttr(1,:))
         do idam = 1,ctlSubwWRM%LocalNumDam
            demand = aVect_wd%rAttr(1,idam)
            if (demand > 0._r8) then
-!debug              write(iulog,'(2a,3i6,2g20.10)') subname,' volumes ',WRMUnit%damID(idam),iam,idam,flow_vol(idam),demand
+
               aVect_wd%rAttr(1,idam) = flow_vol(idam)/demand
            else
               aVect_wd%rAttr(1,idam) = 0._r8
            endif
         enddo
-
-!debug        write(iulog,'(2a,i8,2g20.10)') subname,' locdam frac =',iam,minval(aVect_wd%rAttr(1,:)),maxval(aVect_wd%rAttr(1,:))
 
         !---------------------------
         ! gather and bcast dam fraction.
@@ -883,14 +850,6 @@ MODULE WRM_modules
         call t_startf('moswrm_ERFlow_bcast')
         call mct_aVect_bcast(aVect_wdG,mastertask,mpicom_rof)
         call t_stopf('moswrm_ERFlow_bcast')
-
-!tcx debug
-!        write(iulog,'(2a,2i8,3g20.10)') subname,' dam frac =',iter,iam,minval(aVect_wdG%rAttr(1,:)),maxval(aVect_wdG%rAttr(1,:)),sum(aVect_wdG%rAttr(1,:))
-!        if (masterproc) then
-!           do idam = 1,ctlSubwWRM%NDam
-!              write(iulog,'(2a,2i8,g20.10)') subname,' dam frac =',iam,idam,aVect_wdG%rAttr(1,idam)
-!           enddo
-!        endif
 
         !---------------------------
         ! Covert dam flow_vol to gridcell supply.  In doing so, reduce the flow_vol
@@ -1105,20 +1064,14 @@ MODULE WRM_modules
 
      call t_startf('moswrm_ERFlow_writ1')
      !--- g2d sum ---
-!     do idam = 1,ctlSubwWRM%LocalNumDam
-!NV check
-!        idam = 80
-!        write(iulog,'(2a,2i8,2g20.10)') subname,' Coulee demand =',idam,WRMUnit%damID(idam),aVect_wd%rAttr(1,idam),StorWater%storage(idam)
-!     enddo
+
      call t_stopf('moswrm_ERFlow_writ1')
 
      !--- copy dam supply into aVect_wd ---
      call t_startf('moswrm_ERFlow_copy2')
      call mct_aVect_zero(aVect_wd)
      do idam = 1,ctlSubwWRM%LocalNumDam
-!tcx test        aVect_wd%rAttr(1,cnt) = StorWater%storage(idam)
         aVect_wd%rAttr(1,idam) = WRMUnit%damID(idam)
-!        write(iulog,'(2a,i8,g20.10)') subname,' idam setting =',idam,aVect_wd%rAttr(1,idam)
      enddo
      call t_stopf('moswrm_ERFlow_copy2')
 

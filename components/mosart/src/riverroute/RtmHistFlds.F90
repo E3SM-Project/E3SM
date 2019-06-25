@@ -159,10 +159,7 @@ contains
 
       call RtmHistAddfld (fname='WRM_SUPPLY', units='m3/s',  &
          avgflag='A', long_name='WRM supply provided ', &
-         ptr_rof=StorWater%Supply, default='active')
-      !call RtmHistAddfld (fname='WRM_SUPPLY_FRACTION', units='none',  &
-      !   avgflag='A', long_name='WRM supply fraction relative to demand ', &
-      !   ptr_rof=StorWater%SupplyFrac, default='active')                                                                                                                               
+         ptr_rof=StorWater%Supply, default='active')                                                                                                                              
 
       call RtmHistAddfld (fname='WRM_DEMAND', units='m3/s',  &
          avgflag='A', long_name='WRM new demand after supply: same as deficit ', &
@@ -190,14 +187,12 @@ contains
       call RtmHistAddfld (fname='FLOODPLAIN_DEPTH', units='m',  &
          avgflag='A', long_name='MOSART floodplain water depth', &
          ptr_rof=rtmCTL%inundhf, default='active')
-        !!!!!!!!!!! added by Tian Dec 2017 
       call RtmHistAddfld (fname='FLOODPLAIN_FRACTION', units='none',  &
          avgflag='A', long_name='MOSART floodplain water area fraction', &
          ptr_rof=rtmCTL%inundff, default='active')
       call RtmHistAddfld (fname='FLOODED_FRACTION', units='none',  &
          avgflag='A', long_name='MOSART flooded water area fraction', &
          ptr_rof=rtmCTL%inundffunit, default='active')
-		!!!!!!!!!!!!!!!!!!!!!!!!
     endif
 !#endif
 

@@ -396,14 +396,14 @@ contains
     storage_read = .true.
     release_read = .true.
     stormth_read = .true.
-!#ifdef INCLUDE_WRM
+
 if (wrmflag) then
     nvmax = 10
 else
-!#else
+
     nvmax = 7
 endif
-!#endif
+
 
     do nv = 1,nvmax
     do nt = 1,nt_rtm
@@ -445,7 +445,6 @@ endif
           lname = 'instataneous flow out of main channel in cell'
           uname = 'm3/s'
           dfld  => rtmCTL%erout(:,nt)
-!#ifdef INCLUDE_WRM
        elseif (nv == 8 .and. trim(rtm_tracers(nt)) == 'LIQ') then
           varok = .false.
           if (wrmflag) then
@@ -494,7 +493,6 @@ endif
              uname = 'm3'
              dfld  => WRMUnit%StorMthStOpG(:)
           endif
-!#endif
        else
           varok = .false.
        endif
@@ -540,13 +538,13 @@ endif
              if (abs(rtmCTL%wr(n,nt))      > 1.e30) rtmCTL%wr(n,nt) = 0.
              if (abs(rtmCTL%erout(n,nt))   > 1.e30) rtmCTL%erout(n,nt) = 0.
           end do  ! nt
-!#ifdef INCLUDE_WRM
+
           if (wrmflag) then
              if (abs(storWater%storageG(n)) > 1.e30) storWater%storageG(n) = 0.
              if (abs(storWater%releaseG(n)) > 1.e30) storWater%releaseG(n) = 0.
              if (abs(WRMUnit%StorMthStOpG(n)) > 1.e30) WRMUnit%StorMthStOpG(n) = 0.
           endif
-!#endif
+
           if (rtmCTL%mask(n) == 1) then
              do nt = 1,nt_rtm
                 rtmCTL%runofflnd(n,nt) = rtmCTL%runoff(n,nt)
@@ -560,8 +558,7 @@ endif
           endif
        enddo  ! n
 
-!#ifdef INCLUDE_WRM
-       ! only overwrite fields that have been read, otherwise, use initial values
+
        if (wrmflag) then
           do idam = 1, ctlSubwWRM%localNumDam
              ig = WRMUnit%icell(idam)
@@ -573,7 +570,7 @@ endif
              call WRM_computeRelease()
           endif
        endif
-!#endif
+
     endif  ! read
 
   end subroutine RtmRestart

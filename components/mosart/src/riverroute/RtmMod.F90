@@ -477,13 +477,6 @@ endif
        RETURN
     end if
 
-!#ifdef INCLUDE_INUND
-       ! OK
-!#else
-!       write(iulog,*) subname,' ERROR MOSART INCLUDE_INUND and inundflag not consistent'
-!       call shr_sys_abort( subname//' ERROR: INCLUDE_INUND and inundflag not consistent' )
-!#endif
-
     if (wrmflag .and. inundflag) then
        write(iulog,*) subname,' ERROR MOSART wrmflag and inundflag cannot both be true'
        call shr_sys_abort( subname//' ERROR: wrmflag and inundflag both set' )
@@ -2511,22 +2504,6 @@ endif
              if (StorWater%supply(nr) > 0) then            
                StorWater%supply(nr) = StorWater%supply(nr)/delt_coupling               
              endif
-			 
-			  !!!!!!!!!!!!!!!!!!
-            ! do iunit=rtmCTL%begr,rtmCTL%endr
-			!if (StorWater%demand0(nr) >0) then
-             ! StorWater%SupplyFrac(nr) = StorWater%Supply(nr) / StorWater%demand0(nr)   ! calculate the supply percentage relative to demand0, Tian June 2018
-			  !StorWater%SupplyFrac(nr) = StorWater%Supply(nr) / (StorWater%demand(nr) + StorWater%Supply(nr))  ! calculate the supply percentage relative to demand0, Tian June 2018
-
-			  !write(iulog,*)'Tian get supply frac'
-              !write(iulog,*)'supply is ',StorWater%Supply(nr)
-              !write(iulog,*)'demand0 is ',StorWater%demand0(nr)
-              !write(iulog,*)'frac is ',StorWater%SupplyFrac(nr)
-            ! else
-             ! StorWater%SupplyFrac(nr) = 0._r8
-            !end if
-            !end do
-      !!!!!!!!!!!!!!!!!!!
           end do
           do idam = 1,ctlSubwWRM%LocalNumDam
              budget_terms(bv_dstor_f,nt) = budget_terms(bv_dstor_f,nt) + StorWater%storage(idam)
@@ -3991,23 +3968,12 @@ endif
      enddo
      call shr_mpi_sum(areatot_tmp, areatot_new, mpicom_rof, 'areatot_new', all=.true.)
 
-     !if (masterproc) then
-     !   write(iulog,*) trim(subname),' areatot calc ',tcnt,areatot_new
-     !endif
-
   enddo
 
   if (areatot_new /= areatot_prev) then
      write(iulog,*) trim(subname),' MOSART ERROR: areatot incorrect ',areatot_new, areatot_prev
      call shr_sys_abort(trim(subname)//' ERROR areatot incorrect')
   endif
-
-!  do nr = rtmCTL%begr,rtmCTL%endr
-!     if (TUnit%areatotal(nr) > 0._r8 .and. Tunit%areatotal2(nr) /= TUnit%areatotal(nr)) then
-!        write(iulog,'(2a,i12,2e16.4,f16.4)') trim(subname),' areatot diff ',nr,TUnit%areatotal(nr),Tunit%areatota!l2(nr),&
-!           abs(TUnit%areatotal(nr)-Tunit%areatotal2(nr))/(TUnit%areatotal(nr))
-!     endif
-!  enddo
 
   call SubTimestep ! prepare for numerical computation
 
@@ -4019,12 +3985,7 @@ endif
      write(iulog,*) subname,' numDT_r max  = ',numDT_r
      write(iulog,*) subname,' numDT_t   = ',minval(Tunit%numDT_t),maxval(Tunit%numDT_t)
      write(iulog,*) subname,' numDT_t max  = ',numDT_t
-  endif
-    
-  !if(masterproc) then
-  !    fname = '/lustre/liho745/DCLM_model/ccsm_hy/run/clm_MOSART_subw2/run/test.dat'
-  !    call createFile(1111,fname)
-  !end if
+  endif 
 
   end subroutine MOSART_init
 

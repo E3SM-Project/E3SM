@@ -18,7 +18,7 @@ MODULE MOSART_physics_mod
                              SMatP_upstrm, avsrc_upstrm, avdst_upstrm
   use RtmSpmd       , only : masterproc, mpicom_rof, iam
   use RtmTimeManager, only : get_curr_date, is_new_month
-!#ifdef INCLUDE_WRM
+
   use WRM_type_mod  , only : ctlSubwWRM, WRMUnit, StorWater
   use WRM_modules   , only : irrigationExtractionSubNetwork, &
                              irrigationExtractionMainChannel, &
@@ -27,7 +27,7 @@ MODULE MOSART_physics_mod
                              insert_returnflow_soilcolumn, &
                              estimate_returnflow_deficit
   use WRM_subw_io_mod, only : WRM_readDemand, WRM_computeRelease
-!#endif
+
   use rof_cpl_indices, only : nt_rtm, rtm_tracers, nt_nliq
   use perf_mod, only: t_startf, t_stopf
   use mct_mod
@@ -63,16 +63,11 @@ MODULE MOSART_physics_mod
 
     call get_curr_date(yr, mon, day, tod)
 	
-!#if (1 == 0)
-!  if (masterproc) write(iulog,*) trim(subname), 'Tian testing hashtag comment working'
-!#endif
-!  if (masterproc) write(iulog,*) trim(subname), 'Tian testing hashtag comment not working'
-!  write(iulog,*) trim(subname),' updating monthly data at ',yr,mon,day,tod
     !------------------
     ! WRM prep
     !------------------
 
-!#ifdef INCLUDE_WRM
+
     if (wrmflag) then
        if ( ctlSubwWRM%ReturnFlowFlag > 0) then
           call insert_returnflow_soilcolumn
@@ -105,7 +100,6 @@ MODULE MOSART_physics_mod
        !StorWater%supply = 0._r8
        !StorWater%deficit =0._r8
     endif
-!#endif
 
     !------------------
     ! hillslope
@@ -119,8 +113,6 @@ MODULE MOSART_physics_mod
           call hillslopeRouting(iunit,nt,Tctl%DeltaT)
           TRunoff%wh(iunit,nt) = TRunoff%wh(iunit,nt) + TRunoff%dwh(iunit,nt) * Tctl%DeltaT
           call UpdateState_hillslope(iunit,nt)
-! NV WARNNG WARNING JUST FOR TESTING
-!          TRunoff%qsub(iunit,nt) = TRunoff%qsub(iunit,nt) / 1.6_r8
           TRunoff%etin(iunit,nt) = (-TRunoff%ehout(iunit,nt) + TRunoff%qsub(iunit,nt)) * TUnit%area(iunit) * TUnit%frac(iunit)
        endif
     end do
@@ -280,16 +272,8 @@ MODULE MOSART_physics_mod
                       call UpdateState_mainchannel(iunit,nt)
                    endif
 ! tcraig, moved out of loop
-                   !if ( ctlSubwWRM%RegulationFlag>0 .and. WRMUnit%INVicell(iunit) > 0 .and. WRMUnit%MeanMthFlow(iunit,13) > 0.01_r8 ) then
-
                    if ( ctlSubwWRM%RegulationFlag>0 ) then
-!                     call t_startf('mosartr_wrm_Reg')
                       call Regulation(iunit, localDeltaT)
-!                     call t_stopf('mosartr_wrm_Reg')
-!                      if ( ctlSubwWRM%ExtractionFlag > 0 ) then
-!                         call ExtractionRegulatedFlow(iunit, localDeltaT)
-!                      endif
- 
                    endif
                 endif
 !                ! do not update wr after regulation or extraction from reservoir release. Because of the regulation, 
@@ -890,16 +874,6 @@ MODULE MOSART_physics_mod
                      TRunoff%etin(IDlist(3),1)/TUnit%area(IDlist(3)), TRunoff%erlateral(IDlist(3),1)/TUnit%area(IDlist(3)), TRunoff%flow(IDlist(3),1), &
                      TRunoff%etin(IDlist(4),1)/TUnit%area(IDlist(4)), TRunoff%erlateral(IDlist(4),1)/TUnit%area(IDlist(4)), TRunoff%flow(IDlist(4),1), &
                      TRunoff%etin(IDlist(5),1)/TUnit%area(IDlist(5)), TRunoff%erlateral(IDlist(5),1)/TUnit%area(IDlist(5)), TRunoff%flow(IDlist(5),1)
-    !nt = 1
-    !write(unit=nio,fmt="((a10),(e20.11))") theTime, TRunoff%flow(ii,nt)
-    !write(unit=nio,fmt="((a10),6(e20.11))") theTime, TRunoff%qsur(ii,nt), TRunoff%qsub(ii,nt), TRunoff%etin(ii,nt)/(TUnit%area(ii)*TUnit%frac(ii)), TRunoff%erlateral(ii,nt)/(TUnit%area(ii)*TUnit%frac(ii)), TRunoff%erin(ii,nt), TRunoff%flow(ii,nt)
-    !if(TRunoff%yr(ii,nt) > 0._r8) then
-    !    write(unit=nio,fmt="((a10),6(e20.11))") theTime, TRunoff%mr(ii,nt)/TRunoff%yr(ii,nt),TRunoff%yr(ii,nt), TRunoff%vr(ii,nt), TRunoff%erin(ii,nt), TRunoff%erout(ii,nt)/(TUnit%area(ii)*TUnit%frac(ii)), TRunoff%flow(ii,nt)
-      !else
-    !    write(unit=nio,fmt="((a10),6(e20.11))") theTime, TRunoff%mr(ii,nt)-TRunoff%mr(ii,nt),TRunoff%yr(ii,nt), TRunoff%vr(ii,nt), TRunoff%erin(ii,nt), TRunoff%erout(ii,nt)/(TUnit%area(ii)*TUnit%frac(ii)), TRunoff%flow(ii,nt)
-    !end if
-    !write(unit=nio,fmt="((a10),7(e20.11))") theTime, TRunoff%erlateral(ii,nt)/(TUnit%area(ii)*TUnit%frac(ii)), TRunoff%wr(ii,nt),TRunoff%mr(ii,nt), TRunoff%yr(ii,nt), TRunoff%pr(ii,nt), TRunoff%rr(ii,nt), TRunoff%flow(ii,nt)
-    !write(unit=nio,fmt="((a10),7(e20.11))") theTime, TRunoff%yh(ii,nt), TRunoff%dwh(ii,nt),TRunoff%etin(ii,nt), TRunoff%vr(ii,nt), TRunoff%erin(ii,nt), TRunoff%erout(ii,nt)/(TUnit%area(ii)*TUnit%frac(ii)), TRunoff%flow(ii,nt)
   
   end subroutine printTest
 

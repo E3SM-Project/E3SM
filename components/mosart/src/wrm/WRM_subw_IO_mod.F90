@@ -91,15 +91,6 @@ MODULE WRM_subw_IO_mod
      if (masterproc) write(iulog,FORMI) subname,' begr endr = ',iam,begr,endr
      call shr_sys_flush(iulog)
 
-     !paraFile = '/pic/scratch/tcraig/wm_data/US_reservoir_8th_NLDAS2.nc'
-     !demandPath = '/pic/scratch/tcraig/wm_data/NLDAS2_GCAM_water_demand_'
-     !ExtractionFlag = 1
-     !ExtractionMainChannelFlag = 1
-     !RegulationFlag = 1
-     !ReturnFlowFlag = 0
-     !TotalDemandFlag = 1
-     !GroundWaterFlag = 0
-
      nlfilename_wrm = "mosart_in" // trim(inst_suffix)
      inquire (file = trim(nlfilename_wrm), exist = lexist)
      if ( .not. lexist ) then
@@ -298,11 +289,6 @@ MODULE WRM_subw_IO_mod
 
      allocate (WRMUnit%dam_Ndepend(ctlSubwWRM%localNumDam))
      WRMUnit%dam_Ndepend = 0
-! tcraig, not on dataset anymore, compute on the fly below
-!     ier = pio_inq_varid (ncid, name='numGrid_from_Dam', vardesc=vardesc)
-!     call pio_read_darray(ncid, vardesc, iodesc_int_grd2dam , WRMUnit%dam_Ndepend, ier)
-!     write(iulog,FORMI) trim(subname),' read numGrid_from_Dam',iam,minval(WRMUnit%dam_Ndepend),maxval(WRMUnit%dam_Ndepend)
-!     call shr_sys_flush(iulog)
 
      !--- read in entire gridID_from_Dam field on all pes
      allocate(temp_gridID_from_Dam(ctlSubwWRM%NDam, maxNumDependentGrid))
@@ -709,10 +695,6 @@ MODULE WRM_subw_IO_mod
            if (masterproc) write(iulog,FORMR) trim(subname),' read Qmon',minval(WRMUnit%MeanMthFlow(:,mth)),maxval(WRMUnit%MeanMthFlow(:,mth))
            call shr_sys_flush(iulog)
         enddo
-!NV not okay at all but needed for checking as too much flow comng in with
-!respect to set up parameters - need to be removed after test
-!        WRMUnit%MeanMthFlow = WRMUnit%MeanMthFlow * 1.6_r8
-! end not okay
 
         do idam = 1,ctlSubwWRM%LocalNumDam
            WRMUnit%MeanMthFlow(idam,13) = sum(WRMUnit%MeanMthFlow(idam,1:12))/12.0_r8
@@ -767,9 +749,7 @@ MODULE WRM_subw_IO_mod
               write(iulog,*) subname, "Error negative max cap for reservoir ", idam, WRMUnit%StorCap(idam)
               call shr_sys_abort(subname//' ERROR: negative max cap for reservoir')
            end if
-           if (idam == 80) then
-              write(iulog,*) subname, "storage ",StorWater%pre_release(idam,1), StorWater%storage(idam)
-           endif
+
         end do
 
 !NV
@@ -789,52 +769,6 @@ MODULE WRM_subw_IO_mod
         !--- initialize start of the operational year based on long term simulation
 
         call WRM_init_StOp_FC
-
-! tcraig below is from Nathalie. need to add this check back at some point for performance
-!! need to adjust for reservoir with zero inflow, do not  need to read the remaining
-!           if ( WRMUnit%MeanMthFlow(idam,13) <= 0._r8 ) then
-!              WRMUnit%dam_Ndepend(idam) = 0 ! this reservoir will not provide water to any subw, relieve database
-!           end if
-!
-!           do ng = 1,WRMUnit%dam_Ndepend(idam)
-!              call split(stemp,' ',stmp1)
-!              call str2num(stmp1, ctlSubwWRM%localNumDam, ierror) 
-!!need additional check due to regionalization, need to remove non existing grid cell NV
-!              if (  WRMUnit%INVisubw(ctlSubwWRM%localNumDam) .lt. 1 ) then
-!                 WRMUnit%dam_Ndepend(idam) = WRMUnit%dam_Ndepend(idam) - 1
-!              else
-!                 WRMUnit%dam_depend(idam,ng) = nd 
-!              endif
-!           end do
-
-        !check the dependence database consistencies
-!        do idam = 1,ctlSubwWRM%localNumDam
-!           do ng = 1,WRMUnit%dam_Ndepend(idam)
-!              !if (WRMUnit%dam_depend(idam,ng).eq.0) then
-!              !   WRMUnit%dam_depend(idam,ng) = WRMUnit%dam_depend(idam,ng) * 1
-!              !end if
-!              idepend = WRMUnit%dam_depend(idam,ng)
-!              if ( idepend <= 0 ) then
-!                 write(iulog,'(2a,4i12)') subname," Error: checking dependency, zero idepend", idam, WRMUnit%dam_Ndepend(idam), ng, idepend
-!                 call shr_sys_abort(subname//' ERROR: zero idepend')
-!              endif
-!!tcx this should be accumlating global data, not just local data, idepend could be outside begr:endr
-!!              WRMUnit%TotStorCapDepend(idepend) = WRMUnit%TotStorCapDepend(idepend) + WRMUnit%StorCap(idam)
-!!              WRMUnit%TotInflowDepend(idepend) = WRMUnit%TotInflowDepend(idepend) + WRMUnit%MeanMthFlow(idam,13)
-!           end do
-!        end do
-
-!recommented out after discussion with tcx
-! NV here I extracted piece of code without the databse check but needed for the
-! remaining of the code
-        !do idam = 1,ctlSubwWRM%localNumDam
-        !   do ng = 1,WRMUnit%dam_Ndepend(idam)
-        !      WRMUnit%TotStorCapDepend(idepend) =
-!WRMUnit%TotStorCapDepend(idepend) + WRMUnit%StorCap(idam)
-!              WRMUnit%TotInflowDepend(idepend) =
-!WRMUnit%TotInflowDepend(idepend) + WRMUnit%MeanMthFlow(idam,13)
-!           end do
-!        end do
 
      end if !Regulation Flag
 
