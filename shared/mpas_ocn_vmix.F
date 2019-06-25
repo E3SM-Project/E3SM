@@ -67,7 +67,8 @@ module ocn_vmix
 
    logical :: velVmixOn, tracerVmixOn
    real (kind=RKIND) :: implicitBottomDragCoef
-   real (kind=RKIND) :: rayleighDampingCoef, rayleighBottomDampingCoef
+   real (kind=RKIND) :: rayleighDampingCoef, rayleighBottomDampingCoef, &
+                        rayleighDepthVariable
 
 !***********************************************************************
 
@@ -258,6 +259,7 @@ contains
       integer, dimension(:,:), pointer :: cellsOnEdge
 
       real (kind=RKIND), dimension(:), allocatable :: A, B, C, velTemp
+      real (kind=RKIND) :: edgeThicknessTotal
 
       err = 0
 
@@ -284,8 +286,10 @@ contains
          ! so recompute layerThicknessEdge here.
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
+         edgeThicknessTotal = 0.0_RKIND
          do k = 1, N
             layerThicknessEdge(k,iEdge) = 0.5_RKIND * (layerThickness(k,cell1) + layerThickness(k,cell2))
+            edgeThicknessTotal = edgeThicknessTotal + layerThicknessEdge(k,iEdge)
          end do
 
          ! A is lower diagonal term
@@ -303,16 +307,18 @@ contains
          enddo
 
          ! B is diagonal term
-         B(1) = 1 - C(1)
+         B(1) = 1 - C(1) + dt*rayleighDampingCoef/((1.0_RKIND - rayleighDepthVariable) + rayleighDepthVariable*edgeThicknessTotal)
          do k = 2, N-1
-            B(k) = 1.0_RKIND - A(k) - C(k) + dt*rayleighDampingCoef
+            B(k) = 1.0_RKIND - A(k) - C(k) + &
+              dt*(rayleighDampingCoef/((1.0_RKIND - rayleighDepthVariable) + rayleighDepthVariable*edgeThicknessTotal))
          enddo
 
          ! Apply bottom drag boundary condition on the viscous term
          ! second line uses sqrt(2.0*kineticEnergyEdge(k,iEdge))
          B(N) = 1.0_RKIND - A(N) + dt*implicitBottomDragCoef &
               * sqrt(kineticEnergyCell(k,cell1) + kineticEnergyCell(k,cell2)) / layerThicknessEdge(k,iEdge) &
-              + dt*(rayleighDampingCoef + rayleighBottomDampingCoef)
+              + dt*(rayleighBottomDampingCoef + &
+                    rayleighDampingCoef /((1.0_RKIND - rayleighDepthVariable) + rayleighDepthVariable*edgeThicknessTotal))
 
          call tridiagonal_solve(A(2:N),B,C(1:N-1),normalVelocity(:,iEdge),velTemp,N)
 
@@ -663,7 +669,8 @@ contains
       logical, pointer :: config_disable_vel_vmix, config_disable_tr_vmix
       logical, pointer :: config_use_implicit_bottom_drag
       real (kind=RKIND), pointer :: config_implicit_bottom_drag_coeff
-      logical, pointer :: config_Rayleigh_friction, config_Rayleigh_bottom_friction
+      logical, pointer :: config_Rayleigh_friction, config_Rayleigh_bottom_friction, &
+                          config_Rayleigh_damping_coeff_depth_variable
       real (kind=RKIND), pointer :: config_Rayleigh_damping_coeff, config_Rayleigh_bottom_damping_coeff
 
       err = 0
@@ -678,6 +685,8 @@ contains
                                              config_Rayleigh_bottom_friction)
       call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_damping_coeff', &
                                              config_Rayleigh_damping_coeff)
+      call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_damping_coeff_depth_variable', &
+                                             config_Rayleigh_damping_coeff_depth_variable)
       call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_bottom_damping_coeff', &
                                              config_Rayleigh_bottom_damping_coeff)
 
@@ -692,6 +701,11 @@ contains
       if (config_Rayleigh_bottom_friction) then
           rayleighBottomDampingCoef = config_Rayleigh_bottom_damping_coeff
       endif
+
+      rayleighDepthVariable = 0.0_RKIND
+      if (config_Rayleigh_damping_coeff_depth_variable) then
+        rayleighDepthVariable = 1.0_RKIND
+      end if
 
       velVmixOn = .true.
       tracerVmixOn = .true.
