@@ -31,15 +31,15 @@ def jigsaw_driver(cellWidth, lon, lat):
     # save HFUN data to file
     hmat = jigsawpy.jigsaw_msh_t()
     hmat.mshID = 'ELLIPSOID-GRID'
-    hmat.xgrid = numpy.deg2rad(lon)
-    hmat.ygrid = numpy.det2rad(lat)
+    hmat.xgrid = numpy.radians(lon)
+    hmat.ygrid = numpy.radians(lat)
     hmat.value = cellWidth
     jigsawpy.savemsh(opts.hfun_file, hmat)
    
     # define JIGSAW geometry
     geom = jigsawpy.jigsaw_msh_t()
     geom.mshID = 'ELLIPSOID-MESH'
-    geom.radii = 6371.*numpy.ones((3, 1), float)
+    geom.radii = 6371.*numpy.ones(3, float)
     jigsawpy.savemsh(opts.geom_file, geom)
    
     # build mesh via JIGSAW!
