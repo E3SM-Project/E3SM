@@ -3635,7 +3635,9 @@ void calc_q (const CslMpi& cm, const Int& src_lid, const Int& lev,
   if (use_q) {
     // We can use q from calc_q_extrema.
     const Real* const qs0 = ed.q + levos;
-#   pragma ivdep
+    // It was found that Intel 18 produced code that was not BFB between runs
+    // due to this pragma.
+    //#pragma ivdep
     for (Int iq = 0; iq < cm.qsize; ++iq) {
       const Real* const qs = qs0 + iq*np2nlev;
       q_tgt[iq] =
@@ -3648,7 +3650,8 @@ void calc_q (const CslMpi& cm, const Int& src_lid, const Int& lev,
     // q from calc_q_extrema is being overwritten, so have to use qdp/dp.
     const Real* const dp = ed.dp + levos;
     const Real* const qdp0 = ed.qdp + levos;
-#   pragma ivdep
+    // I'm commented out this pragma, too, to be safe.
+    //#pragma ivdep
     for (Int iq = 0; iq < cm.qsize; ++iq) {
       const Real* const qdp = qdp0 + iq*np2nlev;
       q_tgt[iq] = (ry[0]*(rx[0]*(qdp[ 0]/dp[ 0]) + rx[1]*(qdp[ 1]/dp[ 1])  +
