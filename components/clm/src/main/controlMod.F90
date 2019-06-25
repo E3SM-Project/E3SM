@@ -47,7 +47,9 @@ module controlMod
   use clm_varctl              , only: ECA_Pconst_RGspin
   use clm_varctl              , only: NFIX_PTASE_plant
   use clm_varctl              , only : use_pheno_flux_limiter
-  !
+  use clm_varctl              , only: startdate_add_temperature, startdate_add_co2
+  use clm_varctl              , only: add_temperature, add_co2
+ !
   ! !PUBLIC TYPES:
   implicit none
   save
@@ -173,6 +175,16 @@ contains
          ECA_Pconst_RGspin
     namelist /clm_inparm/ &
          NFIX_PTASE_plant
+
+    ! For experimental manipulations
+    namelist /clm_inparm/ &
+         startdate_add_temperature
+    namelist /clm_inparm/ &
+         startdate_add_co2
+    namelist /clm_inparm/ &
+         add_temperature
+    namelist /clm_inparm/ &
+         add_co2
 
     namelist /clm_inparm/ &
          use_pheno_flux_limiter
@@ -647,6 +659,10 @@ contains
     call mpi_bcast (ECA_Pconst_RGspin, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (NFIX_PTASE_plant, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_pheno_flux_limiter, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (startdate_add_temperature, 1, MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (startdate_add_co2, 1, MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (add_co2, 1, MPI_REAL8, 0, mpicom, ier)
+    call mpi_bcast (add_temperature, 1, MPI_REAL8, 0, mpicom, ier)
 
     ! isotopes
     call mpi_bcast (use_c13, 1, MPI_LOGICAL, 0, mpicom, ier)
