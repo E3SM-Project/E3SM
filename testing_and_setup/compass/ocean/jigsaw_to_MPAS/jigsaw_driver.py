@@ -51,4 +51,4 @@ def jigsaw_driver(cellWidth, lon, lat):
     opts.optm_qlim = 0.9375
     opts.verbosity = +1
    
-    jigsawpy.lib.jigsaw(opts, geom, mesh, init=None, hfun=hmat)
+    jigsawpy.cmd.jigsaw(opts)
