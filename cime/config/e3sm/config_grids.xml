@@ -814,6 +814,16 @@
       <mask>tx0.1v2</mask>
     </model_grid>
 
+    <model_grid alias="northamericax4v1_northamericax4v1" compset="(DOCN|XOCN|SOCN|AQP1)">
+      <grid name="atm">ne0np4_northamerica_x4v1_lowcon</grid>
+      <grid name="lnd">ne0np4_northamerica_x4v1_lowcon</grid>
+      <grid name="ocnice">ne0np4_northamerica_x4v1_lowcon</grid>
+      <grid name="rof">null</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>tx0.1v2</mask>
+    </model_grid>
+
     <model_grid alias="svalbardx8v1_svalbardx8v1" compset="(DOCN|XOCN|SOCN|AQP1)">
       <grid name="atm">ne0np4_svalbard_x8v1_lowcon</grid>
       <grid name="lnd">ne0np4_svalbard_x8v1_lowcon</grid>
@@ -2232,6 +2242,14 @@
       <file grid="atm|lnd" mask="tx0.1v2">$DIN_LOC_ROOT/share/domains/domain.lnd.conusx4v1_tx0.1v2.161129.nc</file>
       <file grid="ice|ocn" mask="tx0.1v2">$DIN_LOC_ROOT/share/domains/domain.ocn.conusx4v1_tx0.1v2.161129.nc</file>
       <desc>1-deg with 1/4-deg over CONUS (version 1):</desc>
+    </domain>
+
+    <domain name="ne0np4_northamerica_x4v1_lowcon">
+      <nx>89147</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="tx0.1v2">$DIN_LOC_ROOT/share/domains/domain.lnd.northamericax4v1_oRRS15to5.190614.nc</file>
+      <file grid="ice|ocn" mask="tx0.1v2">$DIN_LOC_ROOT/share/domains/domain.ocn.northamericax4v1_oRRS15to5.190614.nc</file>
+      <desc>1-deg with 1/4-deg over North America (version 1):</desc>
     </domain>
 
     <domain name="tx0.1v2">
