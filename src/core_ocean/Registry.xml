@@ -992,8 +992,8 @@
 	</nml_record>
 	<nml_record name="pressure_gradient" mode="forward">
 		<nml_option name="config_pressure_gradient_type" type="character" default_value="pressure_and_zmid" units="unitless"
-					description="Form of pressure gradient terms in momentum equation. For most applications, the gradient of pressure and layer mid-depth are appropriate.  For isopycnal coordinates, one may use the gradient of the Montgomery potential."
-					possible_values="'pressure_and_zmid' or 'Jacobian_from_density' or 'Jacobian_from_TS' or 'MontgomeryPotential'"
+					description="Form of pressure gradient terms in momentum equation. For most applications, the gradient of pressure and layer mid-depth are appropriate.  For isopycnal coordinates, one may use the gradient of the Montgomery potential.  The sea surface height gradient (ssh_gradient) option is for barotropic, depth-averaged pressure."
+					possible_values="'ssh_gradient', 'pressure_and_zmid' or 'Jacobian_from_density' or 'Jacobian_from_TS' or 'MontgomeryPotential'"
 		/>
 		<nml_option name="config_common_level_weight" type="real" default_value="0.5" units="unitless"
 					description="The weight between standard Jacobian and weighted Jacobian, $\gamma$."
