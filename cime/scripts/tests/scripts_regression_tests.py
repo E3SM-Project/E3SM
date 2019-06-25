@@ -3257,7 +3257,6 @@ class M_TestGenDomain(unittest.TestCase): #TestCreateTestCommon):
             domain_files = self._run(mapping_file, ocn_grid, lnd_grid, from_dir=temp_dir)
 
             # Build cprnc
-            print('temp_dir = ', temp_dir)
             cprnc_root = "%s/tools/cprnc"%get_cime_root()
             cmd = "cd %s; gmake clean; gmake"%cprnc_root
             cmd = ". ./.env_mach_specific.sh; %s"%cmd
@@ -3271,7 +3270,6 @@ class M_TestGenDomain(unittest.TestCase): #TestCreateTestCommon):
                         baseline_root,
                         os.path.basename(testfile).rsplit(".", 2)[0]
                         )))[-1]
-                print('%s <-> %s'%(baseline, testfile))
 
                 # Run cprnc to compare
                 cmd = "%s/cprnc -m %s %s"%(cprnc_root, testfile, baseline) 
