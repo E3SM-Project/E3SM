@@ -354,6 +354,13 @@ module clm_varctl
   logical, public :: NFIX_PTASE_plant = .false.
 
   !-----------------------------------------------------------------------
+  !CO2 and warming experiments
+  character(len=8), public :: startdate_add_temperature ='99991231'
+  character(len=8), public :: startdate_add_co2         ='99991231'
+  real(r8), public         :: add_co2 = 0d0
+  real(r8), public         :: add_temperature = 0d0
+
+  !-----------------------------------------------------------------------
   ! Lateral grid connectivity
   !-----------------------------------------------------------------------
   logical, public            :: lateral_connectivity  = .false.

@@ -134,6 +134,26 @@ If TRUE consider priority of plant to get a fraction of
 symbiotic N fixation and P phosphatase
 </entry>
 
+<entry id="startdate_add_temperature" type="char*8" category="clm_physics"
+       group="clm_inparm" valid_values="" >
+Set date for beginning of adding temperature to atmospheric forcing
+</entry>
+
+<entry id="startdate_add_co2" type="char*8" category="clm_physics"
+       group="clm_inparm" valid_values="" >
+Set date for beginning of adding CO2 to atmospheric forcing
+</entry>
+
+<entry id="add_temperature" type="real" category="clm_physics"
+       group="clm_inparm" valid_values="" >
+Amount of added temperature (K) to atmospheric forcing
+</entry>
+
+<entry id="add_co2" type="real" category="clm_physics"
+       group="clm_inparm" valid_values="" >
+Amount of added CO2 (ppmv) to atmospheric forcing
+</entry>
+
 <entry id="use_pheno_flux_limiter" type="logical" category="clm_physics"
        group="clm_inparm" valid_values="" >
 If TRUE, apply flux limiter to phenology fluxes to avoid overextraction
