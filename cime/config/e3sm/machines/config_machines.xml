@@ -2044,7 +2044,7 @@
       </modules>
       <modules>
         <command name="load">mkl/2017</command>
-        <command name="load">/lustre/or-hydra/cades-ccsi/proj-shared/tools/cmake/3.6.1</command>
+        <command name="load">cmake/3.11.0</command>
         <command name="load">python/2.7.12</command>
         <command name="load">/lustre/or-hydra/cades-ccsi/proj-shared/tools/nco/4.6.4</command>
         <command name="load">hdf5-parallel/1.8.17</command>
