@@ -542,11 +542,9 @@ ifdef LIB_MPI
    endif
 endif
 
-#DP+
 ifdef XIOS_PATH
   SLIBS += -L$(XIOS_PATH)/lib -lxios -lstdc++
 endif
-#DP-
 
 # For compiling and linking with external ESMF.
 # If linking to external ESMF library then include esmf.mk
