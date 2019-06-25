@@ -43,6 +43,7 @@ _TESTS = {
             "SMS_R_Ld5.T42_T42.FSCM5A97",
             "SMS_R_Ld5.ne4_ne4.FSCM5A97",
             "SMS_D_Ln5.ne4_ne4.FC5AV1C-L",
+            "SMS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L",
             )
         },
 
@@ -68,7 +69,6 @@ _TESTS = {
             "SMS_D_Ln5.ne30_ne30.FC5AV1C-L",
             "ERP_Ln5.ne30_ne30.FC5AV1C-L",
             "SMS_Ly1.ne4_ne4.FC5AV1C-L",
-            "SMS_Ln5.ne30pg2_ne30pg2.FC5AV1C-L",
             )
         },
 
