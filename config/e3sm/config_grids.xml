@@ -1742,7 +1742,7 @@
     <domain name="ne4np4.pg2">
       <nx>384</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="oQU240">DUMMY</file>
+      <file grid="atm|lnd" mask="oQU240">domain.lnd.ne4pg2_oQU240.190321.nc</file>
       <file grid="ice|ocn" mask="oQU240">domain.ocn.ne4pg2_oQU240.190321.nc</file>
       <desc>ne4np4.pg2 is Spectral Elem 7.5-deg grid w/ 2x2 FV physics grid per element:</desc>
     </domain>
