@@ -1398,6 +1398,39 @@ for mct, etc.
   <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi -L$(MKL_PATH) -lmkl_rt</SLIBS>
 </compiler>
 
+<compiler COMPILER="pgi" MACH="compy">
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="TRUE"> -C -Mbounds -traceback -Mchkfpstk -Mchkstk -Mdalign  -Mdepchk  -Mextend -Miomutex -Mrecursive  -Ktrap=fp -O0 -g -byteswapio -Meh_frame </ADD_FFLAGS>
+  <NETCDF_PATH> $(NETCDF_HOME)</NETCDF_PATH>
+  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <ADD_CPPDEFS> -DLINUX -DNO_MPIMOD</ADD_CPPDEFS>
+  <SFC>pgfortran</SFC>
+  <SCC>pgcc</SCC>
+  <SCXX>pgc++</SCXX>
+  <SLIBS> -lmpi -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff </SLIBS>
+</compiler>
+
+<compiler COMPILER="intel" MACH="compy">
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <NETCDF_PATH> $(NETCDF_HOME)</NETCDF_PATH>
+  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
+  <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv -init=snan</ADD_FFLAGS>
+  <SFC> ifort </SFC>
+  <SCC> icc </SCC>
+  <SCXX> icpc </SCXX>
+  <MPIFC MPILIB="impi"> mpiifort </MPIFC>
+  <MPICC MPILIB="impi"> mpiicc  </MPICC>
+  <MPICXX MPILIB="impi"> mpiicpc </MPICXX>
+  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi -L$(MKL_PATH) -lmkl_rt</SLIBS>
+</compiler>
+
 
 <compiler MACH="grizzly" COMPILER="gnu">
 	<PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
