@@ -303,7 +303,7 @@ contains
          enddo
 
          ! B is diagonal term
-         B(1) = 1 - C(1)
+         B(1) = 1 - C(1) + dt*rayleighDampingCoef
          do k = 2, N-1
             B(k) = 1.0_RKIND - A(k) - C(k) + dt*rayleighDampingCoef
          enddo
