@@ -1085,6 +1085,30 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_cvmix_kpp_use_theory_wave" type="logical"
+	category="cvmix" group="cvmix">
+Flag for use of theory-wave in Li et al. (2017) to approximate the Langmuir number and enhancement factor
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix_kpp_langmuir_mixing_opt" type="char*1024"
+	category="cvmix" group="cvmix">
+Option of Langmuir enhanced mixing parameterization
+
+Valid values: NONE, LWF16, RWHGK16
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix_kpp_langmuir_entrainment_opt" type="char*1024"
+	category="cvmix" group="cvmix">
+Option of Langmuir enhanced entrainment parameterization
+
+Valid values: NONE, LWF16, LF17, RWHGK16
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- vmix_const -->
 
