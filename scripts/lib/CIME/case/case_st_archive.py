@@ -496,44 +496,77 @@ def _archive_restarts_date_comp(case, casename, rundir, archive, archive_entry,
 			logger.debug("nemo restart file {}".format(flist))
 			if len(flist) > 2:
                             flist0 = glob.glob(rundir + "/" + casename + "_*_restart_0000.nc")
+                            if len(flist0) > 1:
+		                rstfl01 = flist0[0]
+                                rstfl01spl = rstfl01.split("/")
+		                logger.debug("splitted name {}".format(rstfl01spl))
+		                rstfl01nm = rstfl01spl[-1]
+		                rstfl01nmspl = rstfl01nm.split("_")
+		                logger.debug("splitted name step2 {}".format(rstfl01nmspl))
+		                rsttm01 = rstfl01nmspl[-3]
+
+		                rstfl02 = flist0[1]
+                                rstfl02spl = rstfl02.split("/")
+		                logger.debug("splitted name {}".format(rstfl02spl))
+		                rstfl02nm = rstfl02spl[-1]
+		                rstfl02nmspl = rstfl02nm.split("_")
+		                logger.debug("splitted name step2 {}".format(rstfl02nmspl))
+		                rsttm02 = rstfl02nmspl[-3]
+
+		                if int(rsttm01) > int(rsttm02):
+		                    restlist = glob.glob(rundir + "/" + casename + "_" + rsttm02  + "_restart_*.nc")
+		                else:
+		                    restlist = glob.glob(rundir + "/" + casename + "_" + rsttm01  + "_restart_*.nc")
+		                logger.debug("nemo restart list {}".format(restlist))
+		                if restlist:
+            	                    for restfile in restlist:
+		                        srcfile = os.path.join(rundir, restfile)
+                                        logger.info("removing interim restart file {}".format(srcfile))
+		                        if (os.path.isfile(srcfile)):
+	                                    try:
+	                                        os.remove(srcfile)
+	                                    except OSError:
+	                                        logger.warning("unable to remove interim restart file {}".format(srcfile))
+	                                else:
+	                                    logger.warning("interim restart file {} does not exist".format(srcfile))
                         elif len(flist) == 2:
                             flist0 = glob.glob(rundir + "/" + casename + "_*_restart.nc")
+                            if len(flist0) > 1:
+		                rstfl01 = flist0[0]
+                                rstfl01spl = rstfl01.split("/")
+		                logger.debug("splitted name {}".format(rstfl01spl))
+		                rstfl01nm = rstfl01spl[-1]
+		                rstfl01nmspl = rstfl01nm.split("_")
+		                logger.debug("splitted name step2 {}".format(rstfl01nmspl))
+		                rsttm01 = rstfl01nmspl[-2]
+
+		                rstfl02 = flist0[1]
+                                rstfl02spl = rstfl02.split("/")
+		                logger.debug("splitted name {}".format(rstfl02spl))
+		                rstfl02nm = rstfl02spl[-1]
+		                rstfl02nmspl = rstfl02nm.split("_")
+		                logger.debug("splitted name step2 {}".format(rstfl02nmspl))
+		                rsttm02 = rstfl02nmspl[-2]
+
+		                if int(rsttm01) > int(rsttm02):
+		                    restlist = glob.glob(rundir + "/" + casename + "_" + rsttm02  + "_restart_*.nc")
+		                else:
+		                    restlist = glob.glob(rundir + "/" + casename + "_" + rsttm01  + "_restart_*.nc")
+		                logger.debug("nemo restart list {}".format(restlist))
+		                if restlist:
+            	                    for restfile in restlist:
+		                        srcfile = os.path.join(rundir, restfile)
+                                        logger.info("removing interim restart file {}".format(srcfile))
+		                        if (os.path.isfile(srcfile)):
+	                                    try:
+	                                        os.remove(srcfile)
+	                                    except OSError:
+	                                        logger.warning("unable to remove interim restart file {}".format(srcfile))
+	                                else:
+	                                    logger.warning("interim restart file {} does not exist".format(srcfile))
                         else:
                             logger.warning("unable to find NEMO restart file in {}".format(rundir))
-                        logger.debug("nemo selected restart file {}".format(flist))
-                        if len(flist0) > 1:
-		            rstfl01 = flist0[0]
-                            rstfl01spl = rstfl01.split("/")
-		            logger.debug("splitted name {}".format(rstfl01spl))
-		            rstfl01nm = rstfl01spl[-1]
-		            rstfl01nmspl = rstfl01nm.split("_")
-		            logger.debug("splitted name step2 {}".format(rstfl01nmspl))
-		            rsttm01 = rstfl01nmspl[-3]
 
-		            rstfl02 = flist0[1]
-                            rstfl02spl = rstfl02.split("/")
-		            logger.debug("splitted name {}".format(rstfl02spl))
-		            rstfl02nm = rstfl02spl[-1]
-		            rstfl02nmspl = rstfl02nm.split("_")
-		            logger.debug("splitted name step2 {}".format(rstfl02nmspl))
-		            rsttm02 = rstfl02nmspl[-3]
-
-		            if int(rsttm01) > int(rsttm02):
-		                restlist = glob.glob(rundir + "/" + casename + "_" + rsttm02  + "_restart_*.nc")
-		            else:
-		                restlist = glob.glob(rundir + "/" + casename + "_" + rsttm01  + "_restart_*.nc")
-		            logger.debug("nemo restart list {}".format(restlist))
-		            if restlist:
-            	                for restfile in restlist:
-		            	    srcfile = os.path.join(rundir, restfile)
-                            	    logger.info("removing interim restart file {}".format(srcfile))
-		            	    if (os.path.isfile(srcfile)):
-	                                try:
-	                                    os.remove(srcfile)
-	                                except OSError:
-	                                    logger.warning("unable to remove interim restart file {}".format(srcfile))
-	                            else:
-	                                    logger.warning("interim restart file {} does not exist".format(srcfile))
 
 		    else:
                         srcfile = os.path.join(rundir, restfile)
