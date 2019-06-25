@@ -6035,6 +6035,13 @@ nearest point in the halo to the departure point, when necessary.
 Default: 0
 </entry>
 
+<entry id="semi_lagrange_hv_q" type="integer" category="se"
+       group="ctl_nl" valid_values="">
+Number of tracers, starting from 1, to which to apply hyperviscosity. For
+example, to apply hyperviscosity to moisture, the first tracer, set the value to
+1. Hyperviscosity is applied using nu_q as the coefficient.
+</entry>
+
 <!-- CAM I/O  -->
 
 <entry id="pio_stride" type="integer" category="pio"
