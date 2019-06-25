@@ -356,8 +356,8 @@ module RunoffMod
     !real(r8), pointer :: yr_ini(:)     ! Channel water depth at beginning of step (m).
     real(r8), pointer :: wf_ini(:)      ! Floodplain water volume at beginning of step (m^3).
     real(r8), pointer :: hf_ini(:)      ! Floodplain max water depth (i.e., elevation difference between water level and channel banktop) at beginning of step (m).
-    real(r8), pointer :: ff_ini(:)      ! Floodplain water area fraction at beginning of step (dimensionless). added by Tian Dec 2017
-    real(r8), pointer :: ffunit_ini(:)      ! Flooded water area fraction at beginning of step (dimensionless). added by Yuna 7/25/2018
+    real(r8), pointer :: ff_ini(:)      ! Floodplain water area fraction at beginning of step (dimensionless).
+    real(r8), pointer :: ffunit_ini(:)      ! Flooded water area fraction at beginning of step (dimensionless).
 
     real(r8), pointer :: se_rf(:)       ! Amount of channel--floodplain exchange (positive: flow from channel to floodplain; vice versa ) (m^3).
     real(r8), pointer :: ff_unit(:)       ! = area of inundated area (including channel area) divided by the computation-unit total area (dimensionless).

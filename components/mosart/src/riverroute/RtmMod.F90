@@ -1384,10 +1384,6 @@ endif
     call mct_aVect_init(avdst_upstrm,rList=rList,lsize=rtmCTL%lnumr)
     call mct_aVect_init(avsrc_dnstrm,rList=rList,lsize=rtmCTL%lnumr)
     call mct_aVect_init(avdst_dnstrm,rList=rList,lsize=rtmCTL%lnumr)
-!    write(iulog,*) subname,' avsrc_upstrm lsize = ',iam,mct_aVect_lsize(avsrc_upstrm)
-!    write(iulog,*) subname,' avdst_upstrm lsize = ',iam,mct_aVect_lsize(avdst_upstrm)
-!    write(iulog,*) subname,' avsrc_dnstrm lsize = ',iam,mct_aVect_lsize(avsrc_dnstrm)
-!    write(iulog,*) subname,' avdst_dnstrm lsize = ',iam,mct_aVect_lsize(avdst_dnstrm)
 
     lsize = mct_smat_gNumEl(sMatP_upstrm%Matrix,mpicom_rof)
     if (masterproc) write(iulog,*) subname," Done initializing SmatP_upstrm, nElements = ",lsize
@@ -1674,7 +1670,7 @@ endif
           if ( Tctl%OPT_inund .eq. 1 ) then
             rtmCTL%inundwf(nr) = 0._r8
             rtmCTL%inundhf(nr) = 0._r8
-            rtmCTL%inundff(nr) = 0._r8   ! added by Tian Dec 2017
+            rtmCTL%inundff(nr) = 0._r8
             rtmCTL%inundffunit(nr) = 0._r8
           end if
 
@@ -1878,7 +1874,6 @@ endif
     integer,parameter :: bmask_uOcnrOut = 38 ! Tunit%mask() is ocean, rtmCTL%mask() is outlet.
     integer,parameter :: bmask_uOcnrOcn = 39 ! Tunit%mask() is ocean, rtmCTL%mask() is ocean.
 !#endif
-
     ! Input TERMS (rates, m3/s)
     integer,parameter :: br_qsur   = 20 ! input qsur
     integer,parameter :: br_qsub   = 21 ! input qsub
@@ -2158,18 +2153,20 @@ endif
 !#ifdef INCLUDE_INUND
      if (inundflag) then
           if ( rtmCTL%mask(nr) .eq. 1 .or. rtmCTL%mask(nr) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
-          else
-             avsrc_direct%rAttr(nt,cnt) = avsrc_direct%rAttr(nt,cnt) + &
+		  
+		  else
+                avsrc_direct%rAttr(nt,cnt) = avsrc_direct%rAttr(nt,cnt) + &
                 TRunoff%qsub(nr,nt) + &
                 TRunoff%qsur(nr,nt) + &
                 TRunoff%qgwl(nr,nt)
-             TRunoff%qsub(nr,nt) = 0._r8
-             TRunoff%qsur(nr,nt) = 0._r8
-             TRunoff%qgwl(nr,nt) = 0._r8
+                TRunoff%qsub(nr,nt) = 0._r8
+                TRunoff%qsur(nr,nt) = 0._r8
+                TRunoff%qgwl(nr,nt) = 0._r8
           end if
+
      else
 !#else
-          if (TUnit%mask(nr) > 0) then		  
+          if (TUnit%mask(nr) > 0) then
 !#endif
              ! mosart euler
           else
@@ -2324,25 +2321,6 @@ endif
        ! accumulate local flow field
        !-----------------------------------
 
-!#ifdef INCLUDE_INUND
-if (inundflag) then
-! tcraig, this is redundant and missing some diagnostics and only operating on tracer 1
-!
-!        do nt = 1, 1
-!          do nr = rtmCTL%begr, rtmCTL%endr
-!            ! Flows of previous time step :
-!            eroutup_avg(nr,nt) = eroutup_avg(nr,nt) + TRunoff%eroutup_avg(nr,nt)
-!            eroup_lagi(nr,nt) = eroup_lagi(nr,nt) + TRunoff%eroup_lagi(nr,nt)
-!
-!            ! Flows of current time step :
-!            erlat_avg(nr,nt) = erlat_avg(nr,nt) + TRunoff%erlat_avg(nr,nt)
-!            flow(nr,nt) = flow(nr,nt) + TRunoff%flow(nr,nt)
-!            eroup_lagf(nr,nt) = eroup_lagf(nr,nt) + TRunoff%eroup_lagf(nr,nt)
-!          enddo
-!        enddo
-!
-!#else
-else
        do nt = 1,nt_rtm
        do nr = rtmCTL%begr,rtmCTL%endr
           flow(nr,nt) = flow(nr,nt) + TRunoff%flow(nr,nt)
@@ -2354,13 +2332,12 @@ else
           erlat_avg(nr,nt) = erlat_avg(nr,nt) + TRunoff%erlat_avg(nr,nt)
        enddo
        enddo
-endif
-!#endif
+
 
 !#ifdef INCLUDE_INUND
 if (inundflag) then
        ! If 'budget_check' is true & inundation scheme is turned on :
-       if ( budget_check .and. Tctl%OPT_inund .eq. 1 ) then
+       if ( inundflag .and. budget_check .and. Tctl%OPT_inund .eq. 1 ) then
 
          do nt = 1, 1
            do nr = rtmCTL%begr, rtmCTL%endr
@@ -2407,9 +2384,8 @@ if (inundflag) then
              end if
            end do
          end do
-
        end if
-endif
+end if
 !#endif
 
     enddo ! nsub
@@ -3405,7 +3381,7 @@ endif
 
      if (inundflag) then
 !#ifdef INCLUDE_INUND
-if (inundflag) then
+
        do n = rtmCtl%begr, rtmCTL%endr
          if ( rtmCTL%mask(n) .eq. 1 .or. rtmCTL%mask(n) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
 
@@ -3416,7 +3392,7 @@ if (inundflag) then
 
          end if
        end do
-endif
+
 !#endif
      end if
 
@@ -3436,10 +3412,8 @@ endif
   
      if (inundflag) then
 !#ifdef INCLUDE_INUND
-if (inundflag) then
         ! Calculate channel Manning roughness coefficients :
         call calc_chnlMannCoe ( )
-endif
 !#endif
      else
         !!allocate(TUnit%nr(begr:endr))   !(Repetitive, removed on 6-1-17. --Inund.)
@@ -3589,7 +3563,7 @@ endif
 
           allocate( TUnit%e_eprof_in2( 11, begr:endr ) )    
           ! --------------------------------- 
-          ! Need code to read in real elevation profiles (assign elevation values to TUnit%e_eprof_in2( :, : ) ). Tian Apr. 2018
+          ! (assign elevation values to TUnit%e_eprof_in2( :, : ) ). Tian Apr. 2018
 		   
      ier = pio_inq_varid(ncid, name='ele0', vardesc=vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(1,:), ier)

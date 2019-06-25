@@ -147,11 +147,11 @@ contains
          ptr_rof=rtmCTL%qdto_nt2, default='active')
 
     call RtmHistAddfld (fname='QDEM'//'_'//trim(rtm_tracers(1)), units='m3/s',  &
-         avgflag='A', long_name='MOSART input surface runoff: '//trim(rtm_tracers(1)), &
+         avgflag='A', long_name='MOSART total demand: '//trim(rtm_tracers(1)), &
          ptr_rof=rtmCTL%qdem_nt1, default='active')
 
     call RtmHistAddfld (fname='QDEM'//'_'//trim(rtm_tracers(2)), units='m3/s',  &
-         avgflag='A', long_name='MOSART input surface runoff: '//trim(rtm_tracers(2)), &
+         avgflag='A', long_name='MOSART total demand: '//trim(rtm_tracers(2)), &
          ptr_rof=rtmCTL%qdem_nt2, default='active')
 
 !#ifdef INCLUDE_WRM

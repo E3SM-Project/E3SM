@@ -62,10 +62,12 @@ MODULE MOSART_physics_mod
     !------------------
 
     call get_curr_date(yr, mon, day, tod)
-#if (1 == 0)
-  print*, "Tian testing hashtag comment working"
-#endif
-  print*, "Tian testing hashtag comment not working"
+	
+!#if (1 == 0)
+!  if (masterproc) write(iulog,*) trim(subname), 'Tian testing hashtag comment working'
+!#endif
+!  if (masterproc) write(iulog,*) trim(subname), 'Tian testing hashtag comment not working'
+!  write(iulog,*) trim(subname),' updating monthly data at ',yr,mon,day,tod
     !------------------
     ! WRM prep
     !------------------

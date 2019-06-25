@@ -68,6 +68,16 @@ otherwise ice runoff will be zero and all runoff directed to liquid
 stream.
 </entry>
 
+<entry id="rtm_mode"
+       type="char*256"
+       category="rtm"
+       group="rtm_inparm"
+       valid_values="ACTIVE,NULL" >
+If ACTIVE, turn on rtm river routing
+Default: ACTIVE
+If the value rtm_mode is NULL, then rof_present will be set to false at runtime
+</entry>
+
 <entry id="wrmflag" 
        type="logical" 
        category="mosart"
