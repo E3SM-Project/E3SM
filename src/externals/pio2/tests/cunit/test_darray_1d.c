@@ -865,7 +865,7 @@ int main(int argc, char **argv)
             }
 
             /* Finalize PIO system. */
-            if ((ret = PIOc_finalize(iosysid)))
+            if ((ret = PIOc_free_iosystem(iosysid)))
                 return ret;
         } /* next rearranger */
 
