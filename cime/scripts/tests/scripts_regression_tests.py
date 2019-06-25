@@ -3246,17 +3246,18 @@ class M_TestGenDomain(unittest.TestCase): #TestCreateTestCommon):
         inputdata_root = MACHINE.get_value("DIN_LOC_ROOT")
         mapping_files = ("%s/cpl/gridmaps/oRRS30to10/map_oRRS30to10_to_ne30np4_aave.160419.nc"%inputdata_root,
                          "%s/cpl/gridmaps/oRRS15to5/map_oRRS15to5_to_360x720cru_aave.190409.nc"%inputdata_root)
+        ocn_grids = ("oRRS30to10", "oRRS15to5")
+        lnd_grids = ("ne30np4", "360x720cru")
         baseline_root = "%s/share/domains"%inputdata_root
-        ocn_grid = "oRRS30to10"
-        lnd_grid = "ne30np4"
         temp_dir = tempfile.mkdtemp()
 
-        for mapping_file in mapping_files:
+        for (mapping_file, ocn_grid, lnd_grid) in zip(mapping_files, ocn_grids, lnd_grids):
 
             # Run the domain tool to get new outputs
             domain_files = self._run(mapping_file, ocn_grid, lnd_grid, from_dir=temp_dir)
 
             # Build cprnc
+            print('temp_dir = ', temp_dir)
             cprnc_root = "%s/tools/cprnc"%get_cime_root()
             cmd = "cd %s; gmake clean; gmake"%cprnc_root
             cmd = ". ./.env_mach_specific.sh; %s"%cmd
@@ -3270,6 +3271,7 @@ class M_TestGenDomain(unittest.TestCase): #TestCreateTestCommon):
                         baseline_root,
                         os.path.basename(testfile).rsplit(".", 2)[0]
                         )))[-1]
+                print('%s <-> %s'%(baseline, testfile))
 
                 # Run cprnc to compare
                 cmd = "%s/cprnc -m %s %s"%(cprnc_root, testfile, baseline) 
