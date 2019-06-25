@@ -637,7 +637,9 @@ class EnvBatch(EnvBase):
         batch_env_flag = self.get_value("batch_env", subgroup=None)
         run_args = self._build_run_args_str(job, False, skip_pnl=skip_pnl, set_continue_run=resubmit_immediate,
                                             submit_resubmits=not resubmit_immediate)
-        if batch_env_flag:
+	if batch_system == 'lsf':
+            sequence = (run_args, batchsubmit, submitargs, batchredirect, get_batch_script_for_job(job))
+        elif batch_env_flag:
             sequence = (batchsubmit, submitargs, run_args, batchredirect, get_batch_script_for_job(job))
         else:
             sequence = (batchsubmit, submitargs, batchredirect, get_batch_script_for_job(job), run_args)

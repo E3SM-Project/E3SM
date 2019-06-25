@@ -110,16 +110,10 @@ def _get_component_archive_entries(components, archive):
     case's compset components.
     """
     for compname in components:
-#DP+
-#        logger.debug("compname is {} ".format(compname))
-        logger.info("compname is {} ".format(compname))
-#DP-
+        logger.debug("compname is {} ".format(compname))
         archive_entry = archive.get_entry(compname)
         if archive_entry is None:
-#DP+
-#            logger.debug("No entry found for {}".format(compname))
-            logger.info("No entry found for {}".format(compname))
-#DP-
+            logger.debug("No entry found for {}".format(compname))
             compclass = None
         else:
             compclass = archive.get(archive_entry, "compclass")
@@ -227,7 +221,6 @@ def _archive_history_files(archive, archive_entry,
     if compname == 'clm':
         compname = r'clm2?'
 
-#DP+
     if compname == 'nemo':
 	archive_rblddir = os.path.join(dout_s_root, compclass, 'rebuild')
         if not os.path.exists(archive_rblddir):
@@ -257,7 +250,6 @@ def _archive_history_files(archive, archive_entry,
                 destfile = join(archive_histdir, hstfile)
                 logger.info("moving {} to {} ".format(srcfile, destfile))
                 archive_file_fn(srcfile, destfile)
-#DP-
 
     # determine ninst and ninst_string
 
@@ -350,11 +342,9 @@ def _archive_restarts_date(case, casename, rundir, archive,
     """
     logger.info('-------------------------------------------')
     logger.info('Archiving restarts for date {}'.format(datename))
-#DP+
-    logger.info('last date {}'.format(last_date))
-    logger.info('date is last? {}'.format(datename_is_last))
-    logger.info('components are {}'.format(components))
-#DP-
+    logger.debug('last date {}'.format(last_date))
+    logger.debug('date is last? {}'.format(datename_is_last))
+    logger.debug('components are {}'.format(components))
     logger.info('-------------------------------------------')
     logger.debug("last date: {}".format(last_date))
 
@@ -362,9 +352,6 @@ def _archive_restarts_date(case, casename, rundir, archive,
         components = case.get_compset_components()
         components.append('drv')
         components.append('dart')
-#DP+
-	logger.info('components are {}'.format(components))
-#DP-
 
     histfiles_savein_rundir_by_compname = {}
 
@@ -435,12 +422,10 @@ def _archive_restarts_date_comp(case, casename, rundir, archive, archive_entry,
             pattern = compname + r'\.' + suffix + r'\.' + '_'.join(datename_str.rsplit('-', 1))
             pfile = re.compile(pattern)
             restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
-#DP+
 	elif compname == 'nemo':
 	    pattern = r'_*_' + suffix + r'[0-9]*'
 	    pfile = re.compile(pattern)
 	    restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
-#DP-
         else:
             pattern = r"^{}\.{}[\d_]*\.".format(casename, compname)
             pfile = re.compile(pattern)
@@ -506,47 +491,51 @@ def _archive_restarts_date_comp(case, casename, rundir, archive, archive_entry,
                         logger.info("copying {} to {}".format(srcfile, destfile))
                         safe_copy(srcfile, destfile)
                 else:
-#DP+
 		    if compname == 'nemo':
-			flist = glob.glob(rundir + "/" + casename + "_*_restart_0000.nc")
+			flist = glob.glob(rundir + "/" + casename + "_*_restart*.nc")
 			logger.debug("nemo restart file {}".format(flist))
-			if len(flist) > 1:
+			if len(flist) > 2:
+                            flist0 = glob.glob(rundir + "/" + casename + "_*_restart_0000.nc")
+                        elif len(flist) == 2:
+                            flist0 = glob.glob(rundir + "/" + casename + "_*_restart.nc")
+                        else:
+                            logger.warning("unable to find NEMO restart file in {}".format(rundir))
+                        logger.debug("nemo selected restart file {}".format(flist))
+                        if len(flist0) > 1:
+		            rstfl01 = flist0[0]
+                            rstfl01spl = rstfl01.split("/")
+		            logger.debug("splitted name {}".format(rstfl01spl))
+		            rstfl01nm = rstfl01spl[-1]
+		            rstfl01nmspl = rstfl01nm.split("_")
+		            logger.debug("splitted name step2 {}".format(rstfl01nmspl))
+		            rsttm01 = rstfl01nmspl[-3]
 
-		  		rstfl01 = flist[0]
-                        	rstfl01spl = rstfl01.split("/")
-				logger.debug("splitted name {}".format(rstfl01spl))
-				rstfl01nm = rstfl01spl[-1]
-				rstfl01nmspl = rstfl01nm.split("_")
-				logger.debug("splitted name step2 {}".format(rstfl01nmspl))
-				rsttm01 = rstfl01nmspl[-3]
+		            rstfl02 = flist0[1]
+                            rstfl02spl = rstfl02.split("/")
+		            logger.debug("splitted name {}".format(rstfl02spl))
+		            rstfl02nm = rstfl02spl[-1]
+		            rstfl02nmspl = rstfl02nm.split("_")
+		            logger.debug("splitted name step2 {}".format(rstfl02nmspl))
+		            rsttm02 = rstfl02nmspl[-3]
 
-			  	rstfl02 = flist[1]
-                	        rstfl02spl = rstfl02.split("/")
-				logger.debug("splitted name {}".format(rstfl02spl))
-				rstfl02nm = rstfl02spl[-1]
-				rstfl02nmspl = rstfl02nm.split("_")
-				logger.debug("splitted name step2 {}".format(rstfl02nmspl))
-				rsttm02 = rstfl02nmspl[-3]
-
-				if int(rsttm01) > int(rsttm02):
-					restlist = glob.glob(rundir + "/" + casename + "_" + rsttm02  + "_restart_*.nc")
-				else:
-					restlist = glob.glob(rundir + "/" + casename + "_" + rsttm01  + "_restart_*.nc")
-				logger.debug("nemo restart list {}".format(restlist))
-
-				if restlist:
-            			    for restfile in restlist:
-					srcfile = os.path.join(rundir, restfile)
-                       			logger.info("removing interim restart file {}".format(srcfile))
-					if (os.path.isfile(srcfile)):
-	                                    try:
-	                                        os.remove(srcfile)
-	                                    except OSError:
-	                                        logger.warning("unable to remove interim restart file {}".format(srcfile))
-	                                else:
+		            if int(rsttm01) > int(rsttm02):
+		                restlist = glob.glob(rundir + "/" + casename + "_" + rsttm02  + "_restart_*.nc")
+		            else:
+		                restlist = glob.glob(rundir + "/" + casename + "_" + rsttm01  + "_restart_*.nc")
+		            logger.debug("nemo restart list {}".format(restlist))
+		            if restlist:
+            	                for restfile in restlist:
+		            	    srcfile = os.path.join(rundir, restfile)
+                            	    logger.info("removing interim restart file {}".format(srcfile))
+		            	    if (os.path.isfile(srcfile)):
+	                                try:
+	                                    os.remove(srcfile)
+	                                except OSError:
+	                                    logger.warning("unable to remove interim restart file {}".format(srcfile))
+	                            else:
 	                                    logger.warning("interim restart file {} does not exist".format(srcfile))
+
 		    else:
-#DP-
                         srcfile = os.path.join(rundir, restfile)
                         logger.info("removing interim restart file {}".format(srcfile))
                         if (os.path.isfile(srcfile)):
@@ -579,9 +568,6 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
         components = case.get_compset_components()
         components.append('drv')
         components.append('dart')
-#DP+
-    logger.info("components are {}".format(components))
-#DP-
 
     archive_file_fn = _get_archive_file_fn(copy_only)
 
@@ -601,10 +587,6 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
         logger.debug("datename {} last_date {}".format(datename,last_date))
         if last_date is None or datename <= last_date:
             archive_restdir = join(dout_s_root, 'rest', _datetime_str(datename))
-
-#DP+
-            logger.info("components are {}".format(components))
-#DP-
 
             histfiles_savein_rundir_by_compname_this_date = _archive_restarts_date(
                 case, casename, rundir, archive, datename, datename_is_last,
@@ -695,9 +677,7 @@ def case_st_archive(self, last_date_str=None, archive_incomplete_logs=True, copy
     """
     Create archive object and perform short term archiving
     """
-#DP+
-    logger.info("resubmit {}".format(resubmit))
-#DP-
+    logger.debug("resubmit {}".format(resubmit))
     caseroot = self.get_value("CASEROOT")
     self.load_env(job="case.st_archive")
     if last_date_str is not None:
@@ -733,10 +713,7 @@ def case_st_archive(self, last_date_str=None, archive_incomplete_logs=True, copy
 
     # resubmit case if appropriate
     resubmit_cnt = self.get_value("RESUBMIT")
-#DP+
-   # logger.debug("resubmit_cnt {} resubmit {}".format(resubmit_cnt, resubmit))
-    logger.info("resubmit_cnt {} resubmit {}".format(resubmit_cnt, resubmit))
-#DP-
+    logger.debug("resubmit_cnt {} resubmit {}".format(resubmit_cnt, resubmit))
     if resubmit_cnt > 0 and resubmit:
         logger.info("resubmitting from st_archive, resubmit={:d}".format(resubmit_cnt))
         if self.get_value("MACH") == "mira":

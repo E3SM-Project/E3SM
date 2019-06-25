@@ -235,6 +235,8 @@ def _resubmit_check(case):
 
         case.submit(job=job, resubmit=True)
 
+    logger.debug("resubmit after check is {}".format(resubmit))
+
 ###############################################################################
 def _do_external(script_name, caseroot, rundir, lid, prefix):
 ###############################################################################
@@ -306,6 +308,8 @@ def case_run(self, skip_pnl=False, set_continue_run=False, submit_resubmits=Fals
                        self.get_value("RESUBMIT_SETS_CONTINUE_RUN"))
 
     logger.warning("check for resubmit")
+    
+    logger.debug("submit_resubmits is {}".format(submit_resubmits))
     if submit_resubmits:
         _resubmit_check(self)
 

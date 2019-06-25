@@ -101,6 +101,7 @@
     <batch_submit>bsub</batch_submit>
     <batch_cancel>bkill</batch_cancel>
     <batch_redirect>&lt;</batch_redirect>
+    <batch_env> </batch_env>
     <batch_directive>#BSUB</batch_directive>
     <jobid_pattern>&lt;(\d+)&gt;</jobid_pattern>
     <depend_string> -w 'done(jobid)'</depend_string>
