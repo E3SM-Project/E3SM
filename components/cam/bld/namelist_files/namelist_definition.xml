@@ -5891,7 +5891,7 @@ Default in homme: 0 (does not use time split wrt HV).
 </entry>
 
 <entry id="hypervis_subcycle_q" type="integer" category="se"
-       group="ctl_nl" valid_values="1" >
+       group="ctl_nl" valid_values="" >
 Number of hyperviscosity subcycles done in tracer advection code.
 The only supported value in CAM is 1.
 Default: Set by build-namelist.
