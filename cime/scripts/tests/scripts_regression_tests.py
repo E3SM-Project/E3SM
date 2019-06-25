@@ -671,6 +671,7 @@ class J_TestCreateNewcase(unittest.TestCase):
             with open(os.path.join(dir1,_file),"r") as fi:
                 file_text = fi.read()
                 file_text = file_text.replace(os.path.basename(testdir1),"PATH")
+                file_text = re.sub(r"logfile =.*","",file_text)
             with open(os.path.join(dir2,_file), "w") as fo:
                 fo.write(file_text)
         cleancasedocs1 = dir2
@@ -700,6 +701,7 @@ class J_TestCreateNewcase(unittest.TestCase):
             with open(os.path.join(dir1,_file),"r") as fi:
                 file_text = fi.read()
                 file_text = file_text.replace(os.path.basename(testdir2),"PATH")
+                file_text = re.sub(r"logfile =.*","",file_text)
             with open(os.path.join(dir2,_file), "w") as fo:
                 fo.write(file_text)
 
@@ -1829,10 +1831,11 @@ class K_TestCimeCase(TestCreateTestCommon):
         testdir = os.path.join(TEST_ROOT, testcase_name)
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
-        run_cmd_assert_result(self, ("{}/create_newcase --case {} --script-root {} " +
+        args = "--case {name} --script-root {testdir} --compset X --res f19_g16 --handle-preexisting-dirs=r --output-root {testdir}".format(name=testcase_name, testdir=testdir)
+        if CIME.utils.get_cime_default_driver() == 'nuopc':
+            args += " --run-unsupported"
 
-                                     "--compset X --res f19_g16 --handle-preexisting-dirs=r --output-root {}").format(
-                                         SCRIPT_DIR, testcase_name, testdir, testdir),
+        run_cmd_assert_result(self, "{}/create_newcase {}".format(SCRIPT_DIR, args),
                               from_dir=SCRIPT_DIR)
         return testdir
 
@@ -2775,17 +2778,17 @@ class H_TestMakeMacros(unittest.TestCase):
         xml3 = """<compiler MACH="{}" COMPILER="{}"><CFLAGS><append>x y z</append></CFLAGS></compiler>""".format(self.test_machine,self.test_compiler)
         xml4 = """<compiler MACH="{}" COMPILER="{}"><CFLAGS><base>x y z</base></CFLAGS></compiler>""".format(self.test_machine,self.test_compiler)
         tester = self.xml_to_tester(xml1)
-        tester.assert_variable_equals("CFLAGS", "a b c",env={"COMPILER":self.test_compiler})
+        tester.assert_variable_equals("CFLAGS", "a b c",var={"COMPILER":self.test_compiler})
         tester = self.xml_to_tester(xml1+xml2)
-        tester.assert_variable_equals("CFLAGS", "a b c",env={"COMPILER":self.test_compiler})
+        tester.assert_variable_equals("CFLAGS", "a b c",var={"COMPILER":self.test_compiler})
         tester = self.xml_to_tester(xml2+xml1)
-        tester.assert_variable_equals("CFLAGS", "a b c",env={"COMPILER":self.test_compiler})
+        tester.assert_variable_equals("CFLAGS", "a b c",var={"COMPILER":self.test_compiler})
         tester = self.xml_to_tester(xml1+xml3)
-        tester.assert_variable_equals("CFLAGS", "a b c x y z",env={"COMPILER":self.test_compiler})
+        tester.assert_variable_equals("CFLAGS", "a b c x y z",var={"COMPILER":self.test_compiler})
         tester = self.xml_to_tester(xml1+xml4)
-        tester.assert_variable_equals("CFLAGS", "x y z",env={"COMPILER":self.test_compiler})
+        tester.assert_variable_equals("CFLAGS", "x y z",var={"COMPILER":self.test_compiler})
         tester = self.xml_to_tester(xml4+xml1)
-        tester.assert_variable_equals("CFLAGS", "x y z",env={"COMPILER":self.test_compiler})
+        tester.assert_variable_equals("CFLAGS", "x y z",var={"COMPILER":self.test_compiler})
 
     def test_mach_beats_os(self):
         """The macro writer chooses machine-specific over os-specific matches."""
@@ -2813,12 +2816,12 @@ class H_TestMakeMacros(unittest.TestCase):
         xml3 = """<compiler><MPI_PATH>/path/to/default</MPI_PATH></compiler>"""
         tester = self.xml_to_tester(xml1+xml2+xml3)
         tester.assert_variable_equals("MPI_PATH", "/path/to/default")
-        tester.assert_variable_equals("MPI_PATH", "/path/to/mpich", env={"MPILIB": "mpich"})
-        tester.assert_variable_equals("MPI_PATH", "/path/to/openmpi", env={"MPILIB": "openmpi"})
+        tester.assert_variable_equals("MPI_PATH", "/path/to/mpich", var={"MPILIB": "mpich"})
+        tester.assert_variable_equals("MPI_PATH", "/path/to/openmpi", var={"MPILIB": "openmpi"})
         tester = self.xml_to_tester(xml3+xml2+xml1)
         tester.assert_variable_equals("MPI_PATH", "/path/to/default")
-        tester.assert_variable_equals("MPI_PATH", "/path/to/mpich", env={"MPILIB": "mpich"})
-        tester.assert_variable_equals("MPI_PATH", "/path/to/openmpi", env={"MPILIB": "openmpi"})
+        tester.assert_variable_equals("MPI_PATH", "/path/to/mpich", var={"MPILIB": "mpich"})
+        tester.assert_variable_equals("MPI_PATH", "/path/to/openmpi", var={"MPILIB": "openmpi"})
 
     def test_reject_duplicate_defaults(self):
         """The macro writer dies if given many defaults."""
@@ -2852,7 +2855,7 @@ class H_TestMakeMacros(unittest.TestCase):
         xml1 = """<compiler><SUPPORTS_CXX>FALSE</SUPPORTS_CXX></compiler>"""
         xml2 = """<compiler COMPILER="gnu"><SUPPORTS_CXX>TRUE</SUPPORTS_CXX></compiler>"""
         tester = self.xml_to_tester(xml1+xml2)
-        tester.assert_variable_equals("SUPPORTS_CXX", "TRUE", env={"COMPILER": "gnu"})
+        tester.assert_variable_equals("SUPPORTS_CXX", "TRUE", var={"COMPILER": "gnu"})
         tester.assert_variable_equals("SUPPORTS_CXX", "FALSE")
 
     def test_base_flags(self):
@@ -2874,7 +2877,7 @@ class H_TestMakeMacros(unittest.TestCase):
         xml2 = """<compiler><FFLAGS><base DEBUG="TRUE">-O3</base></FFLAGS></compiler>"""
         tester = self.xml_to_tester(xml1+xml2)
         tester.assert_variable_equals("FFLAGS", "-O2")
-        tester.assert_variable_equals("FFLAGS", "-O3", env={"DEBUG": "TRUE"})
+        tester.assert_variable_equals("FFLAGS", "-O3", var={"DEBUG": "TRUE"})
 
     def test_build_time_base_flags_same_parent(self):
         """Test selection of base flags in the same parent element."""
@@ -2882,11 +2885,11 @@ class H_TestMakeMacros(unittest.TestCase):
         xml2 = """<base DEBUG="TRUE">-O3</base>"""
         tester = self.xml_to_tester("<compiler><FFLAGS>"+xml1+xml2+"</FFLAGS></compiler>")
         tester.assert_variable_equals("FFLAGS", "-O2")
-        tester.assert_variable_equals("FFLAGS", "-O3", env={"DEBUG": "TRUE"})
+        tester.assert_variable_equals("FFLAGS", "-O3", var={"DEBUG": "TRUE"})
         # Check for order independence here, too.
         tester = self.xml_to_tester("<compiler><FFLAGS>"+xml2+xml1+"</FFLAGS></compiler>")
         tester.assert_variable_equals("FFLAGS", "-O2")
-        tester.assert_variable_equals("FFLAGS", "-O3", env={"DEBUG": "TRUE"})
+        tester.assert_variable_equals("FFLAGS", "-O3", var={"DEBUG": "TRUE"})
 
     def test_append_flags(self):
         """Test appending flags to a list."""
@@ -2935,7 +2938,7 @@ class H_TestMakeMacros(unittest.TestCase):
         xml2 = """<compiler><FFLAGS><append DEBUG="TRUE">-and-pie</append></FFLAGS></compiler>"""
         tester = self.xml_to_tester(xml1+xml2)
         tester.assert_variable_equals("FFLAGS", "-cake")
-        tester.assert_variable_matches("FFLAGS", "^(-cake -and-pie|-and-pie -cake)$", env={"DEBUG": "TRUE"})
+        tester.assert_variable_matches("FFLAGS", "^(-cake -and-pie|-and-pie -cake)$", var={"DEBUG": "TRUE"})
 
     def test_environment_variable_insertion(self):
         """Test that ENV{..} inserts environment variables."""
@@ -3021,17 +3024,17 @@ class H_TestMakeMacros(unittest.TestCase):
 
         tester = self.xml_to_tester(xml1+xml2)
 
-        tester.assert_variable_equals("SCC", "icc", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
-        tester.assert_variable_equals("MPICXX", "mpifoo", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
-        tester.assert_variable_equals("MPIFC", "mpiffoo", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
-        tester.assert_variable_equals("MPICC", "mpicc", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("SCC", "icc", var={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPICXX", "mpifoo", var={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPIFC", "mpiffoo", var={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPICC", "mpicc", var={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
 
         tester = self.xml_to_tester(xml2+xml1)
 
-        tester.assert_variable_equals("SCC", "icc", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
-        tester.assert_variable_equals("MPICXX", "mpifoo", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
-        tester.assert_variable_equals("MPIFC", "mpiffoo", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
-        tester.assert_variable_equals("MPICC", "mpicc", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("SCC", "icc", var={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPICXX", "mpifoo", var={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPIFC", "mpiffoo", var={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPICC", "mpicc", var={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
 
     def test_override_with_machine_and_same_attributes(self):
         """Test that machine-specific conditional overrides with the same attribute work correctly."""
@@ -3047,11 +3050,11 @@ class H_TestMakeMacros(unittest.TestCase):
 
         tester = self.xml_to_tester(xml1+xml2)
 
-        tester.assert_variable_equals("MPIFC", "mpif90", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPIFC", "mpif90", var={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
 
         tester = self.xml_to_tester(xml2+xml1)
 
-        tester.assert_variable_equals("MPIFC", "mpif90", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPIFC", "mpif90", var={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
 
     def test_appends_not_overriden(self):
         """Test that machine-specific base value changes don't interfere with appends."""
@@ -3073,15 +3076,15 @@ class H_TestMakeMacros(unittest.TestCase):
 
         tester = self.xml_to_tester(xml1+xml2)
 
-        tester.assert_variable_equals("FFLAGS", "-base2", env={"COMPILER": self.test_compiler})
-        tester.assert_variable_equals("FFLAGS", "-base2 -debug2", env={"COMPILER": self.test_compiler, "DEBUG": "TRUE"})
-        tester.assert_variable_equals("FFLAGS", "-base2 -debug1", env={"COMPILER": self.test_compiler, "DEBUG": "FALSE"})
+        tester.assert_variable_equals("FFLAGS", "-base2", var={"COMPILER": self.test_compiler})
+        tester.assert_variable_equals("FFLAGS", "-base2 -debug2", var={"COMPILER": self.test_compiler, "DEBUG": "TRUE"})
+        tester.assert_variable_equals("FFLAGS", "-base2 -debug1", var={"COMPILER": self.test_compiler, "DEBUG": "FALSE"})
 
         tester = self.xml_to_tester(xml2+xml1)
 
-        tester.assert_variable_equals("FFLAGS", "-base2", env={"COMPILER": self.test_compiler})
-        tester.assert_variable_equals("FFLAGS", "-base2 -debug2", env={"COMPILER": self.test_compiler, "DEBUG": "TRUE"})
-        tester.assert_variable_equals("FFLAGS", "-base2 -debug1", env={"COMPILER": self.test_compiler, "DEBUG": "FALSE"})
+        tester.assert_variable_equals("FFLAGS", "-base2", var={"COMPILER": self.test_compiler})
+        tester.assert_variable_equals("FFLAGS", "-base2 -debug2", var={"COMPILER": self.test_compiler, "DEBUG": "TRUE"})
+        tester.assert_variable_equals("FFLAGS", "-base2 -debug1", var={"COMPILER": self.test_compiler, "DEBUG": "FALSE"})
 
     def test_multilevel_specificity(self):
         """Check that settings with multiple levels of machine-specificity can be resolved."""
@@ -3110,9 +3113,9 @@ class H_TestMakeMacros(unittest.TestCase):
         testers.append(self.xml_to_tester(xml3+xml2+xml1))
 
         for tester in testers:
-            tester.assert_variable_equals("MPIFC", "mpif90", env={"COMPILER": self.test_compiler, "MPILIB": self.test_mpilib, "DEBUG": "TRUE"})
-            tester.assert_variable_equals("MPIFC", "mpif03", env={"COMPILER": self.test_compiler, "MPILIB": self.test_mpilib, "DEBUG": "FALSE"})
-            tester.assert_variable_equals("MPIFC", "mpifc", env={"COMPILER": self.test_compiler, "MPILIB": "NON_MATCHING_MPI", "DEBUG": "FALSE"})
+            tester.assert_variable_equals("MPIFC", "mpif90", var={"COMPILER": self.test_compiler, "MPILIB": self.test_mpilib, "DEBUG": "TRUE"})
+            tester.assert_variable_equals("MPIFC", "mpif03", var={"COMPILER": self.test_compiler, "MPILIB": self.test_mpilib, "DEBUG": "FALSE"})
+            tester.assert_variable_equals("MPIFC", "mpifc", var={"COMPILER": self.test_compiler, "MPILIB": "NON_MATCHING_MPI", "DEBUG": "FALSE"})
 
     def test_remove_dependency_issues(self):
         """Check that overridden settings don't cause inter-variable dependencies."""
@@ -3231,7 +3234,8 @@ def write_provenance_info():
         logging.info("Testing compiler = %s"% TEST_COMPILER)
     if TEST_MPILIB is not None:
         logging.info("Testing mpilib = %s"% TEST_MPILIB)
-    logging.info("Test root: %s\n" % TEST_ROOT)
+    logging.info("Test root: %s" % TEST_ROOT)
+    logging.info("Test driver: %s\n" % CIME.utils.get_cime_default_driver())
 
 def _main_func(description):
     global MACHINE

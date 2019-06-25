@@ -298,7 +298,7 @@ class TestScheduler(object):
             # Any test that's in a shared-enabled suite with other tests should share exes
             self._build_groups = get_build_groups(self._tests)
         else:
-            self._build_groups = [ [item] for item in self._tests ]
+            self._build_groups = [ (item,) for item in self._tests ]
 
         # Build group to exeroot map
         self._build_group_exeroots = {}
