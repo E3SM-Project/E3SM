@@ -628,7 +628,7 @@ contains
     integer                      :: ncols_p_lcl         ! local column count
     integer                      :: ncols_p_gbl         ! global column count
     integer(iMap),       pointer :: physgrid_map(:)
-    real(r8),        allocatable :: physgrid_area(:)
+    real(r8),            pointer :: physgrid_area(:)
     real(r8),        allocatable :: physgrid_lat(:)
     real(r8),        allocatable :: physgrid_lon(:)
     !---------------------------------------------------------------------------
@@ -765,7 +765,7 @@ contains
 
       deallocate(physgrid_lat)
       deallocate(physgrid_lon)
-      deallocate(physgrid_area)
+      nullify(physgrid_area)
       nullify(physgrid_map)
       nullify(grid_map_p)
 
