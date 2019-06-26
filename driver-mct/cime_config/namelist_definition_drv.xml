@@ -696,7 +696,22 @@
      <values>
       <value>.false.</value>
      </values>
-   </entry>
+  </entry>
+
+  <entry id="ocn_surface_flux_scheme">
+     <type>integer</type>
+     <category>control</category>
+     <group>seq_infodata_inparm</group>
+     <desc>
+      0: standard surface flux calculation as in E3SMv1 
+      1: COAREv3.0 flux computation (Fairall et al., 2003)
+      2: University of Arizona algorithm (Zeng et al., 1998)
+      default: 0
+     </desc>
+     <values>
+      <value>0</value>
+     </values>
+  </entry>
 
   <entry id="flux_convergence">
     <type>real</type>
