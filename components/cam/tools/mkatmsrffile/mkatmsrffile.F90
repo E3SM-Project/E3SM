@@ -79,7 +79,7 @@ program mkatmsrffile
   call nc_check(nf90_inq_dimid(ncid_map,"n_a", dimid) )
   call nc_check(nf90_inquire_dimension(ncid_map, dimid, len = n_a) )
 
-  !Sanitay check
+  !Sanity check
   if(n_a .ne. srfnx) then
      print*,'ERROR: Map dimension (n_a) is not equal to srf grid size dimension (grid_size)'
      print*,'n_a=',n_a,' and srf grid_size=',srfnx
@@ -90,7 +90,7 @@ program mkatmsrffile
   call nc_check(nf90_inq_dimid(ncid_map,"n_b", dimid) )
   call nc_check(nf90_inquire_dimension(ncid_map, dimid, len = n_b) )
 
-  !Sanitay check
+  !Sanity check
   if(n_b .ne. atmnx) then
      print*,'ERROR: Map dimension (n_b) is not equal to atm grid size dimension (grid_size)'
      print*,'n_b=',n_b,' and atm grid_size=',atmnx
@@ -132,7 +132,7 @@ program mkatmsrffile
   !For reshaping arrays to 1d compute total # of grid points
   total_grd_pts = nlon*nlat
 
-  !Sanitay check
+  !Sanity check
   if(total_grd_pts .ne. srfnx) then
      print*,'ERROR: Land file nlat*nlon is not equal to srf grid size dimension (grid_size)'
      print*,'nlon*nlat=',total_grd_pts,' and srf grid_size=',srfnx
