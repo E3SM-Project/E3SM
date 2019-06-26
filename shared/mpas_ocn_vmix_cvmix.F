@@ -469,10 +469,10 @@ contains
               ! compute Langmuir number and Langmuir enhancement factor
               ! TODO: theory-wave is the only option to get Langmuir number and enhancement factor for now <06-09-18, Qing Li> !
               if (config_cvmix_kpp_use_theory_wave .and. iceFraction(iCell) .lt. 0.05_RKIND) then
-                 langmuirNumber =  sqrt(surfaceFrictionVelocity(iCell) / &
+                 langmuirNumber =  sqrt(surfaceFrictionVelocity(iCell) / ( &
                          cvmix_kpp_ustokes_SL_model(windSpeed10m(iCell), &
                                                     boundaryLayerDepth(iCell), &
-                                                    cvmix_global_params))
+                                                    cvmix_global_params)+1e-15_RKIND) )
                  langmuirEnhancementFactor =  &
                          cvmix_kpp_EFactor_model(windSpeed10m(iCell), &
                                                  surfaceFrictionVelocity(iCell), &
