@@ -5891,7 +5891,7 @@ Default in homme: 0 (does not use time split wrt HV).
 </entry>
 
 <entry id="hypervis_subcycle_q" type="integer" category="se"
-       group="ctl_nl" valid_values="1" >
+       group="ctl_nl" valid_values="" >
 Number of hyperviscosity subcycles done in tracer advection code.
 The only supported value in CAM is 1.
 Default: Set by build-namelist.
@@ -6033,6 +6033,13 @@ Default: False
 Number of levels, counting from the top, that are allowed to use the
 nearest point in the halo to the departure point, when necessary.
 Default: 0
+</entry>
+
+<entry id="semi_lagrange_hv_q" type="integer" category="se"
+       group="ctl_nl" valid_values="">
+Number of tracers, starting from 1, to which to apply hyperviscosity. For
+example, to apply hyperviscosity to moisture, the first tracer, set the value to
+1. Hyperviscosity is applied using nu_q as the coefficient.
 </entry>
 
 <!-- CAM I/O  -->
