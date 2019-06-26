@@ -311,9 +311,6 @@ contains
     end do
 
     if ( .not. theta_hydrostatic_mode ) then
-
-!print *, 'MY RANK IS ', hybrid%par%rank
-
        call findExtremaWithLevel(elem,newwmax_local,'w_i','max',n0,nets,nete)
        call ParallelMaxWithIndex(newwmax_local, hybrid)
        call findExtremaWithLevel(elem,newwmin_local,'w_i','min',n0,nets,nete)
@@ -417,8 +414,9 @@ contains
        if(ftmin_p.ne.ftmax_p) write(iulog,100) "ft = ",ftmin_p,ftmax_p,ftsum_p
        if(fqmin_p.ne.fqmax_p) write(iulog,100) "fq = ",fqmin_p, fqmax_p, fqsum_p
        if (.not.theta_hydrostatic_mode) then
-          write(iulog,*)'HERE WE ARE MAX', newwmax_local(1),nint(newwmax_local(2))
-          write(iulog,*)'HERE WE ARE MIN', newwmin_local(1),nint(newwmin_local(2))
+          write(iulog,'(a,1f10.2)')'min .5*dz/w (CFL condition)',.5/(w_over_dz_p)
+          write(iulog,*)'W max with layer number', newwmax_local(1),nint(newwmax_local(2))
+          write(iulog,*)'W min with layer number', newwmin_local(1),nint(newwmin_local(2))
        endif
     end if
  
@@ -1021,22 +1019,14 @@ subroutine findExtremaWithLevel(elem,res,field,operation,n0,nets,nete)
     endif
     if( ksize < 1) call abortmp('set ksize in routine findExtrema()')
 
-
-!do better moving if statement
+    !do better moving if statement
     do ie=nets,nete
-
-!if(ie == 5)then
-!print *, 'CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC ',elem(ie)%state%w_i(2,3,17,n0)
-!endif
-
       do j=1,np
         do i=1,np
           if(field == 'w_i')then
             column(1:ksize) = elem(ie)%state%w_i(i,j,1:ksize,n0)
           endif
           !now find min or max
-          !avoid flexibility of maxval/maxloc...
- 
           if( operation == 'min' )then
              do k=2,ksize
                 if(column(k) < res(1)) then
@@ -1050,23 +1040,6 @@ subroutine findExtremaWithLevel(elem,res,field,operation,n0,nets,nete)
                 endif
              enddo
           endif
-
-!if(ie == 5)then
-!print *, 'DDDDDDDDDDDDDDDDD',
-!endif
-
-!          if( operation == 'min' )then
-!            val = MINVAL(column(1:ksize))
-!            if( val < res(1) )then 
-!              res(1) = val; res(2) = MINLOC(column(1:ksize))
-!            endif
-!          elseif( operation == 'max' )then
-!            val = MAXVAL(column(1:ksize))
-!            if( val > res(1) )then
-!              res(1) = val; res(2) = MAXLOC(column(1:ksize))
-!            endif       
-!          endif
-
 
         enddo !j
       enddo !i       

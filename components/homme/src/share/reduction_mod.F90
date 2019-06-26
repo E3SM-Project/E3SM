@@ -319,7 +319,6 @@ contains
     red%ctr = hybrid%ithr
     !$OMP END SINGLE
 
-
     ! all other threads now do the max_op wrt the first thread's data
     !$OMP CRITICAL (CRITMAX)
     if (hybrid%ithr /= red%ctr) then
