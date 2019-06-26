@@ -12,6 +12,7 @@ Step 5. Create vtk file for visualization
 from __future__ import absolute_import, division, print_function, \
     unicode_literals
 
+import scipy.io as sio
 import subprocess
 import os
 import xarray
@@ -37,30 +38,35 @@ def build_mesh(preserve_floodplain=False, floodplain_elevation=20.0,
     print('Step 1. Build cellWidth array as function of latitude and '
           'longitude')
     cellWidth, lon, lat = define_base_mesh.cellWidthVsLatLon()
+    sio.savemat(
+        'cellWidthVsLatLon.mat', {
+            'cellWidth': cellWidth, 'lon': lon, 'lat': lat})
+
+    print('Step 2. Generate mesh with JIGSAW')
     jigsaw_driver(cellWidth, lon, lat)
 
-    print('Step 2. Convert triangles from jigsaw format to netcdf')
+    print('Step 3. Convert triangles from jigsaw format to netcdf')
     jigsaw_to_netcdf(msh_filename='mesh-MESH.msh',
                      output_name='mesh_triangles.nc', on_sphere=True)
 
-    print('Step 3. Convert from triangles to MPAS mesh')
+    print('Step 4. Convert from triangles to MPAS mesh')
     write_netcdf(convert(xarray.open_dataset('mesh_triangles.nc')),
                  'base_mesh.nc')
 
-    print('Step 4. Inject correct meshDensity variable into base mesh file')
+    print('Step 5. Inject correct meshDensity variable into base mesh file')
     inject_meshDensity(mat_filename='cellWidthVsLatLon.mat',
                        mesh_filename='base_mesh.nc')
 
     if do_inject_bathymetry:
-        print('Step 5. Injecting bathymetry')
+        print('Step 6. Injecting bathymetry')
         inject_bathymetry(mesh_file='base_mesh.nc')
 
     if preserve_floodplain:
-        print('Step 6. Injecting flag to preserve floodplain')
+        print('Step 7. Injecting flag to preserve floodplain')
         inject_preserve_floodplain(mesh_file='base_mesh.nc',
                                    floodplain_elevation=floodplain_elevation)
 
-    print('Step 7. Create vtk file for visualization')
+    print('Step 8. Create vtk file for visualization')
     args = ['paraview_vtk_field_extractor.py',
             '--ignore_time',
             '-l',
