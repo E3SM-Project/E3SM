@@ -386,6 +386,7 @@ contains
     redp(1:2) = red_max_index%buf(1:2)
 #endif
     !$OMP BARRIER
+
   end subroutine ParallelMaxWithIndex
 
 
@@ -434,6 +435,7 @@ contains
     redp(1:2) = red_min_index%buf(1:2)
 #endif
     !$OMP BARRIER
+
   end subroutine ParallelMinWithIndex
 
 
@@ -549,7 +551,8 @@ contains
           call MPI_Gatherv(variable,nelemd,MPIreal_t,buffer, &
                recvcount,displs,MPIreal_t,hybrid%par%root, &
                hybrid%par%comm,ierr)
-          if(ierr .ne. MPI_SUCCESS) then 
+          if(ierr .ne. MPI_SUCCESS) then
+             errorcode=ierr 
              call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
              print *,'ElementSum_1d: Error after call to MPI_Gatherv: ',errorstring
           endif

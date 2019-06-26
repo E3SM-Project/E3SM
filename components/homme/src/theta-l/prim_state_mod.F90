@@ -37,14 +37,6 @@ private
   public :: prim_energy_halftimes
   public :: prim_diag_scalars
 
-  real (kind=real_kind), public :: global_max_w = 0.0
-  real (kind=real_kind), public :: gm_w_time = 0.0 ! by abs value, in secs
-  integer, public               :: gm_w_lev = -1
-
-  real (kind=real_kind), parameter :: gm_mult1  = 1e4
-  real (kind=real_kind), parameter :: gm_mult2  = 1e8
-  real (kind=real_kind), parameter :: gm_rmult1 = 1.0/gm_mult1
-  real (kind=real_kind), parameter :: gm_rmult2 = 1.0/gm_mult2
 
 contains
 !=======================================================================================================! 
@@ -80,10 +72,6 @@ contains
        elem(ie)%accum%IEner=0
        elem(ie)%accum%PEner=0
     end do
-
-!    global_max_w = 0.0
-!    gm_w_time = 0.0
-!    gm_w_lev = -1  
 
   end subroutine prim_printstate_init
 !=======================================================================================================! 
@@ -147,7 +135,7 @@ contains
     real (kind=real_kind) :: fusum_p, fvsum_p, ftsum_p, fqsum_p
     real (kind=real_kind) :: fumin_p, fvmin_p, ftmin_p, fqmin_p
     real (kind=real_kind) :: fumax_p, fvmax_p, ftmax_p, fqmax_p
-    real (kind=real_kind) :: wmax_p, wmin_p, wsum_p, newwmax_local(2), newwmin_local(2)  !, newwmax_p(2)
+    real (kind=real_kind) :: wmax_p, wmin_p, wsum_p, newwmax_local(2), newwmin_local(2)
     real (kind=real_kind) :: phimax_p, phimin_p, phisum_p
 
 
@@ -163,8 +151,6 @@ contains
     real (kind=real_kind) :: ddt_tot,ddt_diss, ddt_diss_adj
     integer               :: n0, n0q
     integer               :: npts,n,q
-    real (kind=real_kind) :: current_max, tempmax
-    integer               :: templev
 
     call t_startf('prim_printstate')
     if (hybrid%masterthread) then 
@@ -249,15 +235,6 @@ contains
        !======================================================  
        umax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,1,:,n0))
        vmax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,2,:,n0))
-       if ( .not. theta_hydrostatic_mode) then
-
-!if(hybrid%par%rank == 3) then
-!elem(5)%state%w_i(2,3,17,n0) = 99.0
-!print *, 'BBBBBBBBBBBBBBBBBBBBBBBB', elem(5)%state%w_i(2,3,17,n0)
-!endif
-
-          wmax_local(ie)    = minmax_with_level(elem(ie)%state%w_i(:,:,:,n0),'max')
-       endif
        phimax_local(ie)  = MAXVAL(dphi(:,:,:))
        w_over_dz_local(ie)  = MAXVAL(w_over_dz)
        thetamax_local(ie) = MAXVAL(elem(ie)%state%vtheta_dp(:,:,:,n0)) 
@@ -277,9 +254,6 @@ contains
 
        umin_local(ie)    = MINVAL(elem(ie)%state%v(:,:,1,:,n0))
        vmin_local(ie)    = MINVAL(elem(ie)%state%v(:,:,2,:,n0))
-       if( .not. theta_hydrostatic_mode ) then
-          Wmin_local(ie)    = minmax_with_level(elem(ie)%state%w_i(:,:,:,n0),'min')
-       endif
        thetamin_local(ie) = MINVAL(elem(ie)%state%vtheta_dp(:,:,:,n0))
        phimin_local(ie)  = MINVAL(dphi)
 
@@ -387,23 +361,6 @@ contains
 
     w_over_dz_p = ParallelMax(w_over_dz_local,hybrid)
 
-    !find min/max of w with index
-    
-
-    if ( .not. theta_hydrostatic_mode ) then
-!restore level and value:
-!for val > 0 : abs(int(1e8*(val1-floor(val1)))), nint(val1)*gm_rmult1
-!for val < 0 : abs(nint(1e8*(val1-ceiling(val1)))),nint(val1)*gm_rmult1
-      current_max = max(abs(wmin_p),abs(wmax_p))
-      templev = int(gm_mult2*(current_max-floor(current_max)))
-      current_max = nint(current_max)*gm_rmult1
-      if (global_max_w < current_max) then
-         global_max_w = current_max
-         gm_w_lev = templev
-         !gm_w_time = tl%?
-      endif
-    endif
-
     call wrap_repro_sum(nvars=12, comm=hybrid%par%comm)
     usum_p = global_shared_sum(1)
     vsum_p = global_shared_sum(2)
@@ -442,12 +399,7 @@ contains
     if(hybrid%masterthread) then
        write(iulog,100) "u     = ",umin_p,umax_p,usum_p
        write(iulog,100) "v     = ",vmin_p,vmax_p,vsum_p
-       if (.not.theta_hydrostatic_mode) then
-          !min max values are affected by multiplier
-          write(iulog,100) "w     =",wmin_p*gm_rmult1,wmax_p*gm_rmult1,wsum_p
-       else
-          write(iulog,100) "w     = ",wmin_p,wmax_p,wsum_p
-       endif
+       write(iulog,100) "w     = ",wmin_p,wmax_p,wsum_p
        write(iulog,100) "tdiag = ",tmin_p,tmax_p,tsum_p
        write(iulog,100) "theta = ",thetamin_p,thetamax_p,thetasum_p
        write(iulog,100) "dz(m) = ",phimin_p/g,phimax_p/g,phisum_p/g
@@ -465,10 +417,6 @@ contains
        if(ftmin_p.ne.ftmax_p) write(iulog,100) "ft = ",ftmin_p,ftmax_p,ftsum_p
        if(fqmin_p.ne.fqmax_p) write(iulog,100) "fq = ",fqmin_p, fqmax_p, fqsum_p
        if (.not.theta_hydrostatic_mode) then
-          write(iulog,'(a,1f10.2)')'min .5*dz/w (CFL condition)',.5/(w_over_dz_p)
-          write(iulog,*)'max abs(w) over time : ',global_max_w, ' at level ', gm_w_lev
-          write(iulog,*)'^not reliable for vals <= 1e-4'
-
           write(iulog,*)'HERE WE ARE MAX', newwmax_local(1),nint(newwmax_local(2))
           write(iulog,*)'HERE WE ARE MIN', newwmin_local(1),nint(newwmin_local(2))
        endif
@@ -1124,60 +1072,5 @@ subroutine findExtremaWithLevel(elem,res,field,operation,n0,nets,nete)
       enddo !i       
     enddo !ie
 end subroutine findExtremaWithLevel
-
-!only on nlevp field
-function minmax_with_level(field, which) result(res)
-    use kinds, only : real_kind
-    use dimensions_mod, only : np, np, nlevp
-
-    implicit none
-
-    real (kind=real_kind)             :: res
-    real (kind=real_kind), intent(in) :: field(np,np,nlevp)
-    character(len=*),      intent(in) :: which
-
-    integer                           :: k,level
-    real (kind=real_kind)             :: val1, val2
- 
-    val1 = real(nint(field(1,1,1) * gm_mult1), real_kind)
-    level=1
-    if ( which == 'min' ) then 
-       do k=1,nlevp
-          val2 = real(nint(minval(field(:,:,k)) * gm_mult1), real_kind) 
-                if (val2 < val1) then
-                   val1 = val2
-                   level=k
-                endif
-       enddo
-    elseif( which == 'max' ) then
-       do k=1,nlevp
-          val2 = real(nint(minval(field(:,:,k)) * gm_mult1), real_kind) 
-                if (val2 > val1) then
-                   val1 = val2
-                   level=k
-                endif
-       enddo
-    endif
-    !now add info on level, say level is 71, we need to add 0.00000072
-    if(val1 > 0) then
-!print *, 'and+', val1, level, val1 + real(level, real_kind)*gm_rmult2
-       val1 = val1 + real(level, real_kind)*gm_rmult2
-!print *, 'and+ result', val1 ; 
-!print *, 'now restore ', abs(int(1e8*(val1-floor(val1)))), nint(val1)*gm_rmult1
-    elseif(val1 < 0) then
-!print *, 'and-', val1, level, val1 - real(level, real_kind)*1e-8 
-       val1 = val1 - real(level, real_kind)*gm_rmult2
-!print *, 'and- result', val1 ; 
-!print *, 'now restore ', abs(nint(1e8*(val1-ceiling(val1)))),nint(val1)*gm_rmult1
-    else
-       val1 = 0.0
-    endif
-
-!if ( which == 'max' ) val2 = maxval(field(:,:,:))
-!if ( which == 'min' ) val2 = minval(field(:,:,:))
-!print *, 'compare', val2
-
-    res = val1
-end function minmax_with_level
 
 end module prim_state_mod
