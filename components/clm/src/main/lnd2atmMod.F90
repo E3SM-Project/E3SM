@@ -138,10 +138,11 @@ contains
     type(vocemis_type)     , intent(in)     :: vocemis_vars
     type(dust_type)        , intent(in)     :: dust_vars
     type(ch4_type)         , intent(in)     :: ch4_vars
+    type(soilhydrology_type), intent(in)    :: soilhydrology_vars
     type(lnd2atm_type)     , intent(inout)  :: lnd2atm_vars 
     !
     ! !LOCAL VARIABLES:
-    integer :: g             ! index
+    integer :: g, lvl             ! index
     real(r8), parameter :: amC   = 12.0_r8 ! Atomic mass number for Carbon
     real(r8), parameter :: amO   = 16.0_r8 ! Atomic mass number for Oxygen
     real(r8), parameter :: amCO2 = amC + 2.0_r8*amO ! Atomic mass number for CO2
