@@ -11,7 +11,7 @@ program mkatmsrffile
   use netcdf, only: nf90_open, nf90_inq_dimid, nf90_inquire_dimension,      &
        nf90_inq_varid, nf90_get_var, nf90_close, NF90_NOWRITE, nf90_create, &
        nf90_def_dim, nf90_def_var, nf90_enddef, nf90_put_var, NF90_NOERR,   &
-       nf90_strerror, NF90_CLOBBER, NF90_DOUBLE
+       nf90_strerror, NF90_DOUBLE, nf90_netcdf4
 
   implicit none
 
@@ -36,7 +36,7 @@ program mkatmsrffile
   character(len=shr_kind_cx) :: srf2atmFmapname
 
   integer :: i_lp, j_lp, k_lp                       !loop indices
-  integer :: srfnx, atmnx, dimid, nlat, nlon, dim1, dim2, npft, ntime
+  integer :: srfnx, atmnx, dimid, nlat, nlon, dim1, dim2, dim3,npft, ntime
   integer :: ncid_map, ncid_land, ncid_soil, ncid_out
   integer :: varid, varid1, varid2, n_a, n_b, num_elements
   integer :: total_grd_pts, irow, icol, nclass
@@ -75,9 +75,9 @@ program mkatmsrffile
   !--------------------------------------------------
 
   !Read map file for weights and other parameters required for remapping
-  call nc_check(nf90_open(trim(srf2atmFmapname), NF90_NOWRITE, ncid_map))
-  call nc_check(nf90_inq_dimid(ncid_map,"n_a", dimid) )
-  call nc_check(nf90_inquire_dimension(ncid_map, dimid, len = n_a) )
+  call nc_check(nf90_open(trim(srf2atmFmapname), NF90_NOWRITE, ncid_map), __LINE__)
+  call nc_check(nf90_inq_dimid(ncid_map,"n_a", dimid), __LINE__ )
+  call nc_check(nf90_inquire_dimension(ncid_map, dimid, len = n_a), __LINE__ )
 
   !Sanity check
   if(n_a .ne. srfnx) then
@@ -87,8 +87,8 @@ program mkatmsrffile
      call exit(1)
   endif
 
-  call nc_check(nf90_inq_dimid(ncid_map,"n_b", dimid) )
-  call nc_check(nf90_inquire_dimension(ncid_map, dimid, len = n_b) )
+  call nc_check(nf90_inq_dimid(ncid_map,"n_b", dimid), __LINE__ )
+  call nc_check(nf90_inquire_dimension(ncid_map, dimid, len = n_b), __LINE__ )
 
   !Sanity check
   if(n_b .ne. atmnx) then
@@ -98,36 +98,36 @@ program mkatmsrffile
      call exit(1)
   endif
 
-  call nc_check(nf90_inq_dimid(ncid_map,"n_s", dimid) )
-  call nc_check(nf90_inquire_dimension(ncid_map, dimid, len = num_elements) )
+  call nc_check(nf90_inq_dimid(ncid_map,"n_s", dimid), __LINE__ )
+  call nc_check(nf90_inquire_dimension(ncid_map, dimid, len = num_elements), __LINE__ )
 
   !allocate and read map file variables
   allocate(col(num_elements))
-  call nc_check(nf90_inq_varid(ncid_map,'col',varid))
-  call nc_check(nf90_get_var(ncid_map,varid,col))
+  call nc_check(nf90_inq_varid(ncid_map,'col',varid), __LINE__)
+  call nc_check(nf90_get_var(ncid_map,varid,col), __LINE__)
 
   allocate(row(num_elements))
-  call nc_check(nf90_inq_varid(ncid_map,'row',varid))
-  call nc_check(nf90_get_var(ncid_map,varid,row))
+  call nc_check(nf90_inq_varid(ncid_map,'row',varid), __LINE__)
+  call nc_check(nf90_get_var(ncid_map,varid,row), __LINE__)
 
   allocate(wgt(num_elements))
-  call nc_check(nf90_inq_varid(ncid_map,'S',varid))
-  call nc_check(nf90_get_var(ncid_map,varid,wgt))
+  call nc_check(nf90_inq_varid(ncid_map,'S',varid), __LINE__)
+  call nc_check(nf90_get_var(ncid_map,varid,wgt), __LINE__)
 
   !Close map file
-  call nc_check(nf90_close ( ncid_map ))
+  call nc_check(nf90_close ( ncid_map ), __LINE__)
 
   !--------------------------------------------------
   ! READ LAND INPUT FILE
   !--------------------------------------------------
 
   !Read Land file
-  call nc_check(nf90_open(landfilename, NF90_NOWRITE, ncid_land))
+  call nc_check(nf90_open(landfilename, NF90_NOWRITE, ncid_land), __LINE__)
   
-  call nc_check(nf90_inq_dimid(ncid_land, "lon", dimid) )
-  call nc_check(nf90_inquire_dimension(ncid_land, dimid, len = nlon) )
-  call nc_check(nf90_inq_dimid(ncid_land, "lat", dimid) )
-  call nc_check(nf90_inquire_dimension(ncid_land, dimid, len = nlat) )
+  call nc_check(nf90_inq_dimid(ncid_land, "lon", dimid), __LINE__ )
+  call nc_check(nf90_inquire_dimension(ncid_land, dimid, len = nlon), __LINE__ )
+  call nc_check(nf90_inq_dimid(ncid_land, "lat", dimid), __LINE__ )
+  call nc_check(nf90_inquire_dimension(ncid_land, dimid, len = nlat), __LINE__ )
 
   !For reshaping arrays to 1d compute total # of grid points
   total_grd_pts = nlon*nlat
@@ -140,8 +140,8 @@ program mkatmsrffile
      call exit(1)
   endif
 
-  call nc_check(nf90_inq_dimid(ncid_land, "pft", dimid) )
-  call nc_check(nf90_inquire_dimension(ncid_land, dimid, len = npft) )
+  call nc_check(nf90_inq_dimid(ncid_land, "pft", dimid), __LINE__ )
+  call nc_check(nf90_inquire_dimension(ncid_land, dimid, len = npft), __LINE__ )
 
   !Allocate temporary variables to read data from the netcdf file
   allocate(tmp2d(nlon,nlat),tmp3d(nlon,nlat,npft))
@@ -149,14 +149,14 @@ program mkatmsrffile
   tmp3d(:,:,:) = huge_real
 
   allocate(lake(total_grd_pts))
-  call nc_check(nf90_inq_varid(ncid_land,'PCT_LAKE',varid))
-  call nc_check(nf90_get_var(ncid_land,varid,tmp2d))
+  call nc_check(nf90_inq_varid(ncid_land,'PCT_LAKE',varid), __LINE__)
+  call nc_check(nf90_get_var(ncid_land,varid,tmp2d), __LINE__)
   lake(:) = reshape(tmp2d,(/total_grd_pts/)) !reshape to 1d array
   lake = lake * 0.01_r8
 
 
-  call nc_check(nf90_inq_varid(ncid_land,'PCT_PFT',varid))
-  call nc_check(nf90_get_var(ncid_land,varid,tmp3d))
+  call nc_check(nf90_inq_varid(ncid_land,'PCT_PFT',varid), __LINE__)
+  call nc_check(nf90_get_var(ncid_land,varid,tmp3d), __LINE__)
 
   allocate(pft(npft),apft(npft)) ! apft is allocated here for atm
 
@@ -173,47 +173,47 @@ program mkatmsrffile
 
   tmp2d(:,:)   = huge_real  !Reinitialize tmp2d to inf
   allocate(wetland(total_grd_pts))
-  call nc_check(nf90_inq_varid(ncid_land,'PCT_WETLAND',varid))
-  call nc_check(nf90_get_var(ncid_land,varid,tmp2d))
+  call nc_check(nf90_inq_varid(ncid_land,'PCT_WETLAND',varid), __LINE__)
+  call nc_check(nf90_get_var(ncid_land,varid,tmp2d), __LINE__)
   wetland = reshape(tmp2d,(/total_grd_pts/))
   wetland = wetland * 0.01_r8
 
   tmp2d(:,:)   = huge_real  !Reinitialize tmp2d to inf
   allocate(urban(total_grd_pts))
-  call nc_check(nf90_inq_varid(ncid_land,'PCT_URBAN',varid))
-  call nc_check(nf90_get_var(ncid_land,varid,tmp2d))
+  call nc_check(nf90_inq_varid(ncid_land,'PCT_URBAN',varid), __LINE__)
+  call nc_check(nf90_get_var(ncid_land,varid,tmp2d), __LINE__)
 
   urban = reshape(tmp2d,(/total_grd_pts/))
   urban = urban * 0.01_r8
 
   tmp2d(:,:)   = huge_real    !Reinitialize tmp2d to inf
   allocate(landmask(srfnx))
-  call nc_check(nf90_inq_varid(ncid_land,'LANDMASK',varid))
-  call nc_check(nf90_get_var(ncid_land,varid,tmp2d))
+  call nc_check(nf90_inq_varid(ncid_land,'LANDMASK',varid), __LINE__)
+  call nc_check(nf90_get_var(ncid_land,varid,tmp2d), __LINE__)
   landmask = reshape(tmp2d,(/total_grd_pts/))
 
   deallocate(tmp2d)
 
   !close land file
-  call nc_check(nf90_close ( ncid_land ))
+  call nc_check(nf90_close ( ncid_land ), __LINE__)
 
   !--------------------------------------------------
   ! READ SOIL FILE
   !--------------------------------------------------
 
   !open soil file
-  call nc_check(nf90_open(soilwfilename, NF90_NOWRITE, ncid_soil))
-  call nc_check(nf90_inq_dimid(ncid_soil, "time", dimid) )
-  call nc_check(nf90_inquire_dimension(ncid_land, dimid, len = ntime) )
+  call nc_check(nf90_open(soilwfilename, NF90_NOWRITE, ncid_soil), __LINE__)
+  call nc_check(nf90_inq_dimid(ncid_soil, "time", dimid), __LINE__ )
+  call nc_check(nf90_inquire_dimension(ncid_land, dimid, len = ntime), __LINE__ )
 
   deallocate(tmp3d) !deallocate as shape of tmp3d will change for next read
 
   allocate(tmp3d(nlon,nlat,ntime))
-  call nc_check(nf90_inq_varid(ncid_soil,'SOILW',varid))
-  call nc_check(nf90_get_var(ncid_soil,varid,tmp3d))
+  call nc_check(nf90_inq_varid(ncid_soil,'SOILW',varid), __LINE__)
+  call nc_check(nf90_get_var(ncid_soil,varid,tmp3d), __LINE__)
 
   !close soil file
-  call nc_check(nf90_close ( ncid_soil ))
+  call nc_check(nf90_close ( ncid_soil ), __LINE__)
 
   allocate(soilw(ntime),asoilw(ntime)) ! allocate corresponding atm var asoilw as well
   do i_lp = 1, ntime
@@ -318,20 +318,21 @@ program mkatmsrffile
   !--------------------------------------------------
   ! Create output file and add fields
   !--------------------------------------------------
-  call nc_check(nf90_create(trim(outputfilename), NF90_CLOBBER, ncid_out) ) ! NEW NCID VAR?
 
-  call nc_check(nf90_def_dim(ncid_out, 'ncol', atmnx, dim1) )
-  call nc_check(nf90_def_dim(ncid_out, 'class', nclass, dim2) )
-  call nc_check(nf90_def_var(ncid_out, 'fraction_landuse', NF90_DOUBLE, (/dim1,dim2/), varid1) )
-  call nc_check(nf90_def_dim(ncid_out,'month',ntime, dim2))
-  call nc_check(nf90_def_var(ncid_out,'soilw', NF90_DOUBLE, (/dim1,dim2/), varid2))
+  call nc_check(nf90_create(trim(outputfilename), nf90_netcdf4, ncid = ncid_out), __LINE__ )   
 
-  call nc_check(nf90_enddef(ncid_out) )
+  call nc_check(nf90_def_dim(ncid_out, 'ncol', atmnx, dim1), __LINE__ )
+  call nc_check(nf90_def_dim(ncid_out, 'class', nclass, dim2), __LINE__ )
+  call nc_check(nf90_def_dim(ncid_out, 'month', ntime, dim3), __LINE__)
+  call nc_check(nf90_def_var(ncid_out, 'soilw', NF90_DOUBLE, (/dim1,dim3/), varid2), __LINE__)
+  call nc_check(nf90_def_var(ncid_out, 'fraction_landuse', NF90_DOUBLE, (/dim1,dim2/), varid1),__LINE__ )
+  
+  call nc_check(nf90_enddef(ncid_out), __LINE__ )
 
-  call nc_check(nf90_put_var(ncid_out, varid1, fraction_landuse))
-  call nc_check(nf90_put_var(ncid_out, varid2, total_soilw ))
+  call nc_check(nf90_put_var(ncid_out, varid1, fraction_landuse), __LINE__)
+  call nc_check(nf90_put_var(ncid_out, varid2, total_soilw ), __LINE__)
 
-  call nc_check(nf90_close(ncid_out) )
+  call nc_check(nf90_close(ncid_out), __LINE__ )
 
   !Deallocate memory
   deallocate(fraction_landuse,total_soilw)
@@ -342,18 +343,20 @@ contains
     character(len=*), intent(in) :: filename
     integer, intent(out) :: nx
 
-    call nc_check(nf90_open(filename, NF90_NOWRITE, ncid_out))
+    call nc_check(nf90_open(filename, NF90_NOWRITE, ncid_out), __LINE__)
 
-    call nc_check(nf90_inq_dimid(ncid_out, "grid_size", dimid) )
-    call nc_check(nf90_inquire_dimension(ncid_out, dimid, len = nx) )
-    call nc_check(nf90_close ( ncid_out ))
+    call nc_check(nf90_inq_dimid(ncid_out, "grid_size", dimid), __LINE__ )
+    call nc_check(nf90_inquire_dimension(ncid_out, dimid, len = nx), __LINE__ )
+    call nc_check(nf90_close ( ncid_out ), __LINE__)
   end subroutine openfile_and_initdecomp
 
-  subroutine nc_check(status)
-    integer, intent ( in) :: status
+  subroutine nc_check(status, line_num)
+    integer, intent(in) :: status
+    integer, intent(in) :: line_num !line number on which error occured
     
     if(status /= nf90_noerr) then 
       print *, trim(nf90_strerror(status))
+      print*,'Error at line ',line_num, ' of file ', __FILE__
       print*,'Exiting'
       call exit(1)
     end if
