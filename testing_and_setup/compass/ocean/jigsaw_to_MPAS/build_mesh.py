@@ -12,7 +12,6 @@ Step 5. Create vtk file for visualization
 from __future__ import absolute_import, division, print_function, \
     unicode_literals
 
-import scipy.io as sio
 import subprocess
 import os
 import xarray
@@ -20,7 +19,6 @@ import argparse
 
 from mpas_tools.conversion import convert
 from mpas_tools.io import write_netcdf
-
 
 from jigsaw_to_MPAS.jigsaw_driver import jigsaw_driver
 from jigsaw_to_MPAS.triangle_jigsaw_to_netcdf import jigsaw_to_netcdf
@@ -38,9 +36,12 @@ def build_mesh(preserve_floodplain=False, floodplain_elevation=20.0,
     print('Step 1. Build cellWidth array as function of latitude and '
           'longitude')
     cellWidth, lon, lat = define_base_mesh.cellWidthVsLatLon()
-    sio.savemat(
-        'cellWidthVsLatLon.mat', {
-            'cellWidth': cellWidth, 'lon': lon, 'lat': lat})
+    da = xarray.DataArray(cellWidth,
+                          dims=['lat','lon'],
+                          coords={'lat':lat,'lon':lon},
+                          name='cellWidth')
+    da.to_netcdf('cellWidthVsLatLon.nc')
+    
 
     print('Step 2. Generate mesh with JIGSAW')
     jigsaw_driver(cellWidth, lon, lat)
@@ -54,7 +55,7 @@ def build_mesh(preserve_floodplain=False, floodplain_elevation=20.0,
                  'base_mesh.nc')
 
     print('Step 5. Inject correct meshDensity variable into base mesh file')
-    inject_meshDensity(mat_filename='cellWidthVsLatLon.mat',
+    inject_meshDensity(cw_filename='cellWidthVsLatLon.nc',
                        mesh_filename='base_mesh.nc')
 
     if do_inject_bathymetry:
