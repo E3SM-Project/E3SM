@@ -197,6 +197,7 @@ contains
                list2 = irrig_flux_field, &
                listout = lnd2rof_normal_fluxes)
        endif
+    end if
 
     if (rof_present .and. atm_present) then
 
