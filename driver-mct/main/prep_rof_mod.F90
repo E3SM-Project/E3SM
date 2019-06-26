@@ -197,6 +197,8 @@ contains
                list2 = irrig_flux_field, &
                listout = lnd2rof_normal_fluxes)
        endif
+       call shr_sys_flush(logunit)
+
     end if
 
     if (rof_present .and. atm_present) then
