@@ -995,7 +995,6 @@ int rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
     int niotasks;
     int mpierr; /* Return code from MPI calls. */
     int ret;
-    void *tmparray;
 
     /* Check inputs. */
     pioassert(ios && iodesc, "invalid input", __FILE__, __LINE__);
