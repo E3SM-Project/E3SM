@@ -27,7 +27,7 @@ cdm.setCompressionWarnings(0) ; # Suppress warnings
 cdm.setNetcdfShuffleFlag(0)
 cdm.setNetcdfDeflateFlag(1) ; # was 0 130717
 cdm.setNetcdfDeflateLevelFlag(9) ; # was 0 130717
-cdm.setAutoBounds(1) ; # Ensure bounds on time and depth axes are generated
+#cdm.setAutoBounds(1) ; # Ensure bounds on time and depth axes are generated
 
 
 #=============================================
@@ -51,8 +51,8 @@ elif data_name == 'GPCP':
 
 # Input data
 f_in=cdm.open(input_hostANDfilename)
-varlist=['precip']
-varidname=['PRECT']
+varlist=['precip','time_bnds']
+varidname=['PRECT','bounds_time']
 varstandardname=['precipitation_flux']
 data=[]
 locs=[]
@@ -74,11 +74,12 @@ for fi in fisc:
     except:
         print "Couldn't access data for ",fi
         continue #go on to next var in loop.
-    dattable.standard_name=varstandardname[f_index]
-    dattable.id=varidname[f_index]
-    dattable.units='mm/d'
-    dattable.long_name='Average Monthly Rate of Precipitation'
-    var_missing_value=dattable.missing_value
+    if f_index == 0:
+        dattable.standard_name=varstandardname[f_index]
+        dattable.id=varidname[f_index]
+        dattable.units='mm/d'
+        dattable.long_name='Average Monthly Rate of Precipitation'
+        var_missing_value=dattable.missing_value
     
     if data_name =='GPCP_v2.2':
         #right side up the globe
@@ -124,6 +125,7 @@ f_out.close()
 print 'got data from '+str(filecount)+' variables.'
 print "      adding _FillValue attribute"
 call("".join(["ncatted -a _FillValue,PRECT,o,f,",str(var_missing_value)," ",outfile]), shell=True)
+call("".join(["ncatted -a bounds,time,o,c,", 'time_bnds'," ",outfile]), shell=True)
 call("".join(["ncatted -a _FillValue,'^bounds',d,, ",outfile]), shell=True)
 
 #Add git hash to obs
