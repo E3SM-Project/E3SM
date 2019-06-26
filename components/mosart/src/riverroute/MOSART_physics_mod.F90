@@ -120,22 +120,6 @@ MODULE MOSART_physics_mod
     end do
     call t_stopf('mosartr_hillslope')
 
-!moved inside the subnetwork channel routing and work on wt instead of etin
-!#ifdef INCLUDE_WRM
-!    if (wrmflag) then
-!       call t_startf('mosartr_wrm_IESubN')
-!       ! extraction from available surface runoff 
-!       if (ctlSubwWRM%ExtractionFlag > 0) then
-!          do iunit=rtmCTL%begr,rtmCTL%endr
-!             if (TUnit%mask(iunit) > 0) then
-!                call irrigationExtractionSubNetwork(iunit, Tctl%DeltaT )
-!             endif
-!          enddo
-!       end if
-!       call t_stopf('mosartr_wrm_IESubN')
-!    endif
-!#endif
-
     TRunoff%flow = 0._r8
     TRunoff%eroup_lagi = 0._r8
     TRunoff%eroup_lagf = 0._r8
@@ -256,7 +240,7 @@ MODULE MOSART_physics_mod
              end do
              temp_erout = temp_erout / TUnit%numDT_r(iunit)
              TRunoff%erout(iunit,nt) = temp_erout
-!#ifdef INCLUDE_WRM
+
              if (wrmflag) then
                 if (nt == nt_nliq) then
                    localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R
@@ -271,15 +255,15 @@ MODULE MOSART_physics_mod
                       TRunoff%wr(iunit,nt) = TRunoff%wr(iunit,nt) + TRunoff%dwr(iunit,nt) * localDeltaT
                       call UpdateState_mainchannel(iunit,nt)
                    endif
-! tcraig, moved out of loop
+                ! moved out of loop
                    if ( ctlSubwWRM%RegulationFlag>0 ) then
                       call Regulation(iunit, localDeltaT)
                    endif
                 endif
-!                ! do not update wr after regulation or extraction from reservoir release. Because of the regulation, 
-!                ! the wr might get to crazy uncontrolled values, assume in this case wr is not changed. The storage in reservoir handles it.
+                ! do not update wr after regulation or extraction from reservoir release. Because of the regulation, 
+                ! the wr might get to crazy uncontrolled values, assume in this case wr is not changed. The storage in reservoir handles it.
              endif
-!#endif
+
              Trunoff%eroup_lagf(iunit,nt) = Trunoff%eroup_lagf(iunit,nt) - Trunoff%erout(iunit,nt)
              TRunoff%flow(iunit,nt) = TRunoff%flow(iunit,nt) - TRunoff%erout(iunit,nt)
           endif
@@ -310,7 +294,6 @@ MODULE MOSART_physics_mod
     ! assume in this case wr is not changed. The storage in reservoir handles it.
     !------------------
 
-!#ifdef INCLUDE_WRM
     if (wrmflag) then
        if (ctlSubwWRM%RegulationFlag>0) then
           ! compute the erowm_reg terms and adjust the flow diagnostic
@@ -339,13 +322,11 @@ MODULE MOSART_physics_mod
           enddo
        endif
     endif
-!#endif
 
     !------------------
     ! WRM post Euler updates
     !------------------
 
-!#ifdef INCLUDE_WRM
     if (wrmflag) then
        call t_startf('mosartr_wrm_estrfdef')
        call estimate_returnflow_deficit()
@@ -354,7 +335,6 @@ MODULE MOSART_physics_mod
        endif
        call t_stopf('mosartr_wrm_estrfdef')
     endif
-!#endif
 
   end subroutine Euler
 
@@ -448,11 +428,6 @@ MODULE MOSART_physics_mod
     ! estimate the inflow from upstream units
     TRunoff%erin(iunit,nt) = 0._r8
 
-! tcraig, moved this out of the inner main channel loop to before main channel call
-! now it's precomputed as TRunoff%eroutUp
-!    do k=1,TUnit%nUp(iunit)
-!       TRunoff%erin(iunit,nt) = TRunoff%erin(iunit,nt) - TRunoff%erout(TUnit%iUp(iunit,k),nt)
-!    end do
     TRunoff%erin(iunit,nt) = TRunoff%erin(iunit,nt) - TRunoff%eroutUp(iunit,nt)
 
     ! estimate the outflow
@@ -463,7 +438,6 @@ MODULE MOSART_physics_mod
        if(TUnit%areaTotal2(iunit)/TUnit%rwidth(iunit)/TUnit%rlen(iunit) > 1e6_r8) then
           TRunoff%erout(iunit,nt) = -TRunoff%erin(iunit,nt)-TRunoff%erlateral(iunit,nt)
        else
-!        !TRunoff%vr(iunit,nt) = CRVRMAN(TUnit%rslp(iunit), TUnit%nr(iunit), TRunoff%rr(iunit,nt))
           TRunoff%vr(iunit,nt) = CRVRMAN_nosqrt(TUnit%rslpsqrt(iunit), TUnit%nr(iunit), TRunoff%rr(iunit,nt))
           TRunoff%erout(iunit,nt) = -TRunoff%vr(iunit,nt) * TRunoff%mr(iunit,nt)
           if(-TRunoff%erout(iunit,nt) > TINYVALUE .and. TRunoff%wr(iunit,nt) + (TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%erout(iunit,nt)) * theDeltaT < TINYVALUE) then

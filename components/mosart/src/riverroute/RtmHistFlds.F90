@@ -12,9 +12,9 @@ module RtmHistFlds
   use RunoffMod      , only : rtmCTL
   use RtmHistFile    , only : RtmHistAddfld, RtmHistPrintflds
   use RtmVar         , only : wrmflag, inundflag, sediflag, heatflag
-!#ifdef INCLUDE_WRM
+
   use WRM_type_mod  , only : ctlSubwWRM, WRMUnit, StorWater
-!#endif
+
   use rof_cpl_indices, only : nt_rtm, rtm_tracers  
 
   implicit none
@@ -154,7 +154,6 @@ contains
          avgflag='A', long_name='MOSART total demand: '//trim(rtm_tracers(2)), &
          ptr_rof=rtmCTL%qdem_nt2, default='active')
 
-!#ifdef INCLUDE_WRM
     if (wrmflag) then
 
       call RtmHistAddfld (fname='WRM_SUPPLY', units='m3/s',  &
@@ -177,9 +176,7 @@ contains
          avgflag='A', long_name='WRM storage ', &
          ptr_rof=StorWater%storageG, default='active')
     endif
-!#endif
 
-!#ifdef INCLUDE_INUND
     if (inundflag) then
       call RtmHistAddfld (fname='FLOODPLAIN_VOLUME', units='m3',  &
          avgflag='A', long_name='MOSART floodplain water volume', &
@@ -194,7 +191,6 @@ contains
          avgflag='A', long_name='MOSART flooded water area fraction', &
          ptr_rof=rtmCTL%inundffunit, default='active')
     endif
-!#endif
 
     ! Print masterlist of history fields
 
@@ -257,7 +253,6 @@ contains
     rtmCTL%qdem_nt1(:)       = rtmCTL%qdem(:,1)
     rtmCTL%qdem_nt2(:)       = rtmCTL%qdem(:,2)
 
-!#ifdef INCLUDE_WRM
     if (wrmflag) then
        StorWater%storageG = 0._r8
        do idam = 1, ctlSubwWRM%localNumDam
@@ -265,7 +260,6 @@ contains
           StorWater%storageG(ig) = StorWater%storage(idam)
        enddo
     endif
-!#endif
 
   end subroutine RtmHistFldsSet
 
