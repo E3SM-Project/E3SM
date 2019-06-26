@@ -1,0 +1,50 @@
+#! /usr/bin/env perl
+use strict;
+
+if ($#ARGV == -1) {
+    die " ERROR gcam.buildlib: must specify a caseroot input argument";
+}
+my ($CASEROOT) = @ARGV;
+chdir "${CASEROOT}";
+
+my $CASEBUILD = `./xmlquery CASEBUILD -value`;
+my $SRCROOT  = `./xmlquery SRCROOT  -value`;
+my $CASETOOLS = `./xmlquery CASETOOLS -value`;
+my $OBJROOT   = `./xmlquery OBJROOT   -value`;
+my $LIBROOT   = `./xmlquery LIBROOT   -value`;
+my $GMAKE_J   = `./xmlquery GMAKE_J   -value`;
+my $GMAKE     = `./xmlquery GMAKE     -value`;
+my $MAKE_ARGS = `./Tools/get_standard_makefile_args`;
+chomp($MAKE_ARGS);
+
+chdir "${OBJROOT}/iac/obj";
+
+# PRobably have to dig deeper into what directories are called from where.
+open(file,">tmp_filepath") or die "ERROT: gcam.buildlib could not open file Filepath to write";
+print file "$CASEROOT/SourceMods/src.gcam \n";
+print file "$SRCROOT/components/gcam/src/iac/coupling \n";
+
+# This has the build Makefile for gcam - gcam itself is structured in a
+# weird way:
+# print file $SRCROOT/components/gcam/src/iac/gcam/cvs/objects/build/linux
+print file "$SRCROOT/components/gcam/src/iac/gcam \n";
+
+print file "$SRCROOT/components/gcam/src/iac/glm \n";
+print file "$SRCROOT/components/gcam/src/cpl \n";
+close(file);
+
+if (-f "Filepath") {
+    my $sysmod = "cmp -s tmp_filepath Filepath || mv -f tmp_filepath Filepath ";
+    system($sysmod) == 0 or die "ERROR: gcam.buildlib $sysmod failed: $?\n";
+} else {
+    my $sysmod = "mv -f tmp_filepath Filepath ";
+    system($sysmod) == 0 or die "ERROR: gcam.buildlib $sysmod failed: $?\n";
+}
+
+my $sysmod = "$GMAKE complib -j $GMAKE_J MODEL=gcam COMPLIB=$LIBROOT/libiac.a -f $CASETOOLS/Makefile ${MAKE_ARGS}";
+system($sysmod) == 0 or die "ERROR: gcam.buildlib $sysmod failed: $?\n";
+
+exit(0);
+
+
+
