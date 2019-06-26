@@ -90,6 +90,8 @@ thickness[0,:] = thickness_field
 #normalVelocity[:] = 0.0
 # flat bed at sea level
 bedTopography[:] = 0.0
+# this line will make a small shelf:
+#bedTopography[0,xCell[:]<-10000.0]=-2000.0
 # Setup layerThicknessFractions
 layerThicknessFractions[:] = 1.0 / nVertLevels
 

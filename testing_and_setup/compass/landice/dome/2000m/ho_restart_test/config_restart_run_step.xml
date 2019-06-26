@@ -13,8 +13,8 @@
         <namelist name="namelist.landice" mode="forward">
                 <template file="dome_2000m_template.xml" path_base="script_resolution_dir"/>
                 <option name="config_start_time">0000-01-01_00:00:00</option>
-                <option name="config_run_duration">'0001-00-00_00:00:00'</option>
-                <option name="config_dt">'0001-00-00_00:00:00'</option>
+                <option name="config_run_duration">'0000-00-01_00:00:00'</option>
+                <option name="config_dt">'0000-00-01_00:00:00'</option>
                 <option name="config_write_output_on_startup">.true.</option>
                 <option name="config_do_restart">.false.</option>
                 <option name="config_velocity_solver">'FO'</option>
@@ -22,9 +22,9 @@
 
         <namelist name="namelist.landice.rst" mode="forward">
                 <template file="dome_2000m_template.xml" path_base="script_resolution_dir"/>
-                <option name="config_start_time">0001-01-01_00:00:00</option>
-                <option name="config_run_duration">'0001-00-00_00:00:00'</option>
-                <option name="config_dt">'0001-00-00_00:00:00'</option>
+                <option name="config_start_time">'file'</option>
+                <option name="config_run_duration">'0000-00-01_00:00:00'</option>
+                <option name="config_dt">'0000-00-01_00:00:00'</option>
                 <option name="config_write_output_on_startup">.true.</option>
                 <option name="config_do_restart">.true.</option>
                 <option name="config_velocity_solver">'FO'</option>
@@ -33,14 +33,14 @@
         <streams name="streams.landice" keep="immutable" mode="forward">
                 <template file="dome_2000m_template.xml" path_base="script_resolution_dir"/>
                 <stream name="output">
-                        <attribute name="output_interval">0001-00-00_00:00:00</attribute>
+                        <attribute name="output_interval">0000-00-01_00:00:00</attribute>
                         <attribute name="clobber_mode">overwrite</attribute>
                         <attribute name="reference_time">0000-01-01_00:00:00</attribute>
                 </stream>
                 <stream name="restart">
-                        <attribute name="filename_template">rst.$Y.nc</attribute>
+                        <attribute name="filename_template">rst.$Y.$M.$D.nc</attribute>
                         <attribute name="filename_interval">output_interval</attribute>
-                        <attribute name="output_interval">0001-00-00_00:00:00</attribute>
+                        <attribute name="output_interval">0000-00-01_00:00:00</attribute>
                 </stream>
         </streams>
 
