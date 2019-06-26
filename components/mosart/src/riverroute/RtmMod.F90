@@ -31,7 +31,7 @@ module RtmMod
                                max_tapes, max_namlen
   use RtmRestFile     , only : RtmRestTimeManager, RtmRestGetFile, RtmRestFileRead, &
                                RtmRestFileWrite, RtmRestFileName
-  use RunoffMod       , only : RunoffInit, rtmCTL, Tctl, Tunit, TRunoff, Tpara, &
+  use RunoffMod       , only : RunoffInit, rtmCTL, Tctl, Tunit, TRunoff, Tpara, Theat, &
                                gsmap_r, &
                                SMatP_dnstrm, avsrc_dnstrm, avdst_dnstrm, &
                                SMatP_upstrm, avsrc_upstrm, avdst_upstrm, &
@@ -1379,6 +1379,7 @@ endif
     do nt = 2,nt_rtm
        write(rList,'(a,i3.3)') trim(rList)//':tr',nt
     enddo
+    write(rList,'(a,i3.3)') trim(rList)//':tr',nt_rtm+1
     if (masterproc) write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
     call mct_aVect_init(avsrc_upstrm,rList=rList,lsize=rtmCTL%lnumr)
     call mct_aVect_init(avdst_upstrm,rList=rList,lsize=rtmCTL%lnumr)
@@ -1494,6 +1495,7 @@ endif
     do nt = 2,nt_rtm
        write(rList,'(a,i3.3)') trim(rList)//':tr',nt
     enddo
+    write(rList,'(a,i3.3)') trim(rList)//':tr',nt_rtm+1
     if (masterproc) write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
     call mct_aVect_init(avsrc_direct,rList=rList,lsize=rtmCTL%lnumr)
     call mct_aVect_init(avdst_direct,rList=rList,lsize=rtmCTL%lnumr)
@@ -1991,6 +1993,19 @@ endif
  end if
 !#endif
 
+    rtmCTL%templand_Tqsur = spval
+    rtmCTL%templand_Tqsub = spval
+    rtmCTL%templand_Ttrib = spval
+    rtmCTL%templand_Tchanr = spval
+    do n = rtmCTL%begr,rtmCTL%endr
+        if (rtmCTL%mask(n) .eq. 1 .or. rtmCTL%mask(n) .eq. 3) then
+            rtmCTL%templand_Tqsur(n) = 0._r8
+            rtmCTL%templand_Tqsub(n) = 0._r8
+            rtmCTL%templand_Ttrib(n) = 0._r8
+            rtmCTL%templand_Tchanr(n) = 0._r8
+        end if
+    end do
+    
     if (budget_check) then
        call t_startf('mosartr_budget')
        do nt = 1,nt_rtm
@@ -2388,6 +2403,15 @@ if (inundflag) then
 end if
 !#endif
 
+       do n = rtmCTL%begr,rtmCTL%endr
+           if (rtmCTL%mask(n) .eq. 1 .or. rtmCTL%mask(n) .eq. 3) then
+               rtmCTL%templand_Tqsur(n) = rtmCTL%templand_Tqsur(n) + THeat%Tqsur(n)
+               rtmCTL%templand_Tqsub(n) = rtmCTL%templand_Tqsub(n) + THeat%Tqsub(n)
+               rtmCTL%templand_Ttrib(n) = rtmCTL%templand_Ttrib(n) + THeat%Tt_avg(n)
+               rtmCTL%templand_Tchanr(n) = rtmCTL%templand_Tchanr(n) + THeat%Tr_avg(n)
+           end if
+       enddo
+       
     enddo ! nsub
 
     !-----------------------------------
@@ -2430,6 +2454,26 @@ endif
     end if
 
 !#endif
+
+    rtmCTL%Tqsur   = THeat%Tqsur
+    rtmCTL%Tqsub   = THeat%Tqsub
+    rtmCTL%Tt      = THeat%Tt
+    rtmCTL%Tr      = THeat%Tr
+    rtmCTL%Ha_rout   = THeat%Ha_rout
+
+    do n = rtmCTL%begr,rtmCTL%endr
+       if(rtmCTL%mask(n) .eq. 1 .or. rtmCTL%mask(n) .eq. 3) then
+          rtmCTL%templand_Tqsur(n) = rtmCTL%templand_Tqsur(n) / float(nsub)
+          rtmCTL%templand_Tqsub(n) = rtmCTL%templand_Tqsub(n) / float(nsub)
+          rtmCTL%templand_Ttrib(n) = rtmCTL%templand_Ttrib(n) / float(nsub)
+          rtmCTL%templand_Tchanr(n) = rtmCTL%templand_Tchanr(n) / float(nsub)
+       else
+          rtmCTL%templand_Tqsur(n) = spval
+          rtmCTL%templand_Tqsub(n) = spval
+          rtmCTL%templand_Ttrib(n) = spval
+          rtmCTL%templand_Tchanr(n) = spval
+       end if
+    end do
 
     do nt = 1,nt_rtm
     do nr = rtmCTL%begr,rtmCTL%endr
@@ -3856,6 +3900,103 @@ endif
         endif
      end if
 !#endif
+
+        ! initialize heat states and fluxes
+        allocate (THeat%forc_t(begr:endr))
+        THeat%forc_t = 273.15_r8
+        allocate (THeat%forc_pbot(begr:endr))
+        THeat%forc_pbot = 0._r8
+        allocate (THeat%forc_vp(begr:endr))
+        THeat%forc_vp = 0._r8
+        allocate (THeat%forc_wind(begr:endr))
+        THeat%forc_wind = 0._r8
+        allocate (THeat%forc_lwrad(begr:endr))
+        THeat%forc_lwrad = 0._r8
+        allocate (THeat%forc_solar(begr:endr))
+        THeat%forc_solar = 0._r8
+
+        allocate (THeat%Tqsur(begr:endr))
+        THeat%Tqsur = 273.15_r8
+        allocate (THeat%Tqsub(begr:endr))
+        THeat%Tqsub = 273.15_r8
+
+        allocate (THeat%Tt(begr:endr))
+        THeat%Tt = 273.15_r8
+        !allocate (THeat%Ha_t(begr:endr))
+        !THeat%Ha_t = 0._r8
+        allocate (THeat%Ha_h2t(begr:endr))
+        THeat%Ha_h2t = 0._r8
+        allocate (THeat%Ha_t2r(begr:endr))
+        THeat%Ha_t2r = 0._r8
+        allocate (THeat%Ha_lateral(begr:endr))
+        THeat%Ha_lateral = 0._r8
+        allocate (THeat%Hs_t(begr:endr))
+        THeat%Hs_t = 0._r8
+        allocate (THeat%Hl_t(begr:endr))
+        THeat%Hl_t = 0._r8
+        allocate (THeat%He_t(begr:endr))
+        THeat%He_t = 0._r8
+        allocate (THeat%Hh_t(begr:endr))
+        THeat%Hh_t = 0._r8
+        allocate (THeat%Hc_t(begr:endr))
+        THeat%Hc_t = 0._r8
+        allocate (THeat%deltaH_t(begr:endr))
+        THeat%deltaH_t = 0._r8
+        allocate (THeat%deltaM_t(begr:endr))
+        THeat%deltaM_t = 0._r8
+
+        allocate (THeat%Tr(begr:endr))
+        THeat%Tr = 273.15_r8
+        !allocate (THeat%Ha_r(begr:endr))
+        !THeat%Ha_r = 0._r8
+        allocate (THeat%Ha_rin(begr:endr))
+        THeat%Ha_rin = 0._r8
+        allocate (THeat%Ha_rout(begr:endr))
+        THeat%Ha_rout = 0._r8
+        allocate (THeat%Ha_eroutUp(begr:endr))
+        THeat%Ha_eroutUp = 0._r8
+        allocate (THeat%Ha_eroutUp_avg(begr:endr))
+        THeat%Ha_eroutUp_avg = 0._r8
+        allocate (THeat%Ha_erlat_avg(begr:endr))
+        THeat%Ha_erlat_avg = 0._r8
+        allocate (THeat%Hs_r(begr:endr))
+        THeat%Hs_r = 0._r8
+        allocate (THeat%Hl_r(begr:endr))
+        THeat%Hl_r = 0._r8
+        allocate (THeat%He_r(begr:endr))
+        THeat%He_r = 0._r8
+        allocate (THeat%Hh_r(begr:endr))
+        THeat%Hh_r = 0._r8
+        allocate (THeat%Hc_r(begr:endr))
+        THeat%Hc_r = 0._r8
+        allocate (THeat%deltaH_r(begr:endr))
+        THeat%deltaH_r = 0._r8
+        allocate (THeat%deltaM_r(begr:endr))
+        THeat%deltaM_r = 0._r8
+
+        allocate (THeat%Tt_avg(begr:endr))
+        THeat%Tt_avg = 273.15_r8
+        allocate (THeat%Tr_avg(begr:endr))
+        THeat%Tr_avg = 273.15_r8
+     
+    ! read the parameters for mosart-heat
+     if(endr >= begr) then
+         !call check_ret(nf_open(frivinp_rtm, 0, ncid), 'Reading file: ' // frivinp_rtm)
+         allocate(TPara%t_alpha(begr:endr))    
+        TPara%t_alpha = 27.19_r8
+         !call MOSART_read_dbl(ncid, 'alpha', TPara%t_alpha)
+         allocate(TPara%t_beta(begr:endr))
+        TPara%t_beta = 13.63_r8
+         !call MOSART_read_dbl(ncid, 'beta', TPara%t_beta)
+         allocate(TPara%t_gamma(begr:endr))
+        TPara%t_gamma = 0.1576_r8
+         !call MOSART_read_dbl(ncid, 'gamma', TPara%t_gamma)
+          allocate(TPara%t_mu(begr:endr))
+        TPara%t_mu = 0.5278_r8
+         !call MOSART_read_dbl(ncid, 'mu', TPara%t_mu)
+        
+         !call check_ret(nf_close(ncid), subname)
+     end if
 
      call pio_freedecomp(ncid, iodesc_dbl)
      call pio_freedecomp(ncid, iodesc_int)

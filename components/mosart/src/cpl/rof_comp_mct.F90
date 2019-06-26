@@ -21,7 +21,7 @@ module rof_comp_mct
                                 seq_infodata_start_type_start, seq_infodata_start_type_cont,   &
                                 seq_infodata_start_type_brnch
   use seq_comm_mct     , only : seq_comm_suffix, seq_comm_inst, seq_comm_name
-  use RunoffMod        , only : rtmCTL, TRunoff
+  use RunoffMod        , only : rtmCTL, TRunoff, THeat
   use RtmVar           , only : rtmlon, rtmlat, ice_runoff, iulog, &
                                 nsrStartup, nsrContinue, nsrBranch, & 
                                 inst_index, inst_suffix, inst_name, RtmVarSet, wrmflag
@@ -38,6 +38,7 @@ module rof_comp_mct
                                 index_x2r_Flrl_rofdto, &
                                 index_r2x_Forr_rofl, index_r2x_Forr_rofi, &
                                 index_r2x_Flrr_flood, &
+								index_x2r_Flrl_Tqsur, index_x2r_Flrl_Tqsub, &
                                 index_r2x_Flrr_volr, index_r2x_Flrr_volrmch
                                 !index_r2x_Flrr_supply , index_r2x_Flrr_supplyfrac, index_x2r_Flrl_demand, 
   use mct_mod
@@ -562,6 +563,7 @@ contains
     !
     ! LOCAL VARIABLES
     integer :: n2, n, nt, begr, endr, nliq, nfrz
+	real(R8) :: tmp1, tmp2
     character(len=32), parameter :: sub = 'rof_import_mct'
     !---------------------------------------------------------------------------
     
@@ -614,6 +616,19 @@ contains
        !?? = x2r_r%rAttr(index_x2r_Faxa_swvdf,n2)
        !?? = x2r_r%rAttr(index_x2r_Faxa_swndr,n2)
        !?? = x2r_r%rAttr(index_x2r_Faxa_swndf,n2)
+	   rtmCTL%Tqsur(n) = x2r_r%rAttr(index_x2r_Flrl_Tqsur,n2)
+	   rtmCTL%Tqsub(n) = x2r_r%rAttr(index_x2r_Flrl_Tqsub,n2)
+	   THeat%Tqsur(n) = rtmCTL%Tqsur(n)
+	   THeat%Tqsub(n) = rtmCTL%Tqsub(n)
+
+	   THeat%forc_t(n) = x2r_r%rAttr(index_x2r_Sa_tbot,n2)
+	   THeat%forc_pbot(n) = x2r_r%rAttr(index_x2r_Sa_pbot,n2)
+	   tmp1 = x2r_r%rAttr(index_x2r_Sa_u   ,n2)
+	   tmp2 = x2r_r%rAttr(index_x2r_Sa_v   ,n2)
+	   THeat%forc_wind(n) = sqrt(tmp1*tmp1 + tmp2*tmp2)
+	   THeat%forc_lwrad(n)= x2r_r%rAttr(index_x2r_Faxa_lwdn ,n2)
+	   THeat%forc_solar(n)= x2r_r%rAttr(index_x2r_Faxa_swvdr,n2) + x2r_r%rAttr(index_x2r_Faxa_swvdf,n2) + &
+	                        x2r_r%rAttr(index_x2r_Faxa_swndr,n2) + x2r_r%rAttr(index_x2r_Faxa_swndf,n2)
 
     enddo
 

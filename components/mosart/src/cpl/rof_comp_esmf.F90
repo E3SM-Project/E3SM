@@ -25,7 +25,7 @@ module rof_comp_esmf
   use seq_flds_mod
   use esmf
   use esmfshr_mod
-  use RunoffMod        , only : rtmCTL, TRunoff
+  use RunoffMod        , only : rtmCTL, TRunoff, THeat
   use RtmVar           , only : rtmlon, rtmlat, ice_runoff, iulog, &
                                 nsrStartup, nsrContinue, nsrBranch, & 
                                 inst_index, inst_suffix, inst_name, RtmVarSet
@@ -41,6 +41,7 @@ module rof_comp_esmf
                                 index_x2r_Flrl_rofgwl, index_x2r_Flrl_rofsub, &
                                 index_x2r_Flrl_rofdto, &
                                 index_r2x_Flrr_flood, &
+								index_x2r_Flrl_Tqsur, index_x2r_Flrl_Tqsub, &
                                 index_r2x_Flrr_volr, index_r2x_Flrr_volrmch
                                 !index_r2x_Flrr_supply , index_r2x_Flrr_supplyfrac, index_x2r_Flrl_demand
   use perf_mod         , only : t_startf, t_stopf, t_barrierf
@@ -659,6 +660,7 @@ contains
     ! LOCAL VARIABLES
     real(R8), pointer :: fptr(:, :)
     integer :: n2, n, nt, begr, endr, nliq, nfrz
+	real(R8) :: tmp1, tmp2
     character(len=32), parameter :: sub = 'rof_import_mct'
     !---------------------------------------------------------------------------
     
@@ -713,6 +715,19 @@ contains
        !?? = x2r_r%rAttr(index_x2r_Faxa_swvdf,n2)
        !?? = x2r_r%rAttr(index_x2r_Faxa_swndr,n2)
        !?? = x2r_r%rAttr(index_x2r_Faxa_swndf,n2)
+	   rtmCTL%Tqsur(n) = fptr(index_x2r_Flrl_Tqsur,n2) !x2r_r%rAttr(index_x2r_Flrl_Tqsur,n2)
+	   rtmCTL%Tqsub(n) = fptr(index_x2r_Flrl_Tqsub,n2) !x2r_r%rAttr(index_x2r_Flrl_Tqsub,n2)
+	   THeat%Tqsur(n) = rtmCTL%Tqsur(n)
+	   THeat%Tqsub(n) = rtmCTL%Tqsub(n)
+	   
+	   THeat%forc_t(n) = fptr(index_x2r_Sa_tbot,n2)
+	   THeat%forc_pbot(n) = fptr(index_x2r_Sa_pbot,n2)
+	   tmp1 = fptr(index_x2r_Sa_u   ,n2)
+	   tmp2 = fptr(index_x2r_Sa_v   ,n2)
+	   THeat%forc_wind(n) = sqrt(tmp1*tmp1 + tmp2*tmp2)
+	   THeat%forc_lwrad(n)= fptr(index_x2r_Faxa_lwdn ,n2)
+	   THeat%forc_solar(n)= fptr(index_x2r_Faxa_swvdr,n2) + fptr(index_x2r_Faxa_swvdf,n2) + &
+	                        fptr(index_x2r_Faxa_swndr,n2) + fptr(index_x2r_Faxa_swndf,n2)
 
     enddo
 

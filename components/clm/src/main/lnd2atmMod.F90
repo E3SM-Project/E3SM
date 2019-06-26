@@ -7,9 +7,10 @@ module lnd2atmMod
   ! !USES:
   use shr_kind_mod         , only : r8 => shr_kind_r8
   use shr_infnan_mod       , only : nan => shr_infnan_nan, assignment(=)
+  use abortutils           , only : endrun
   use shr_log_mod          , only : errMsg => shr_log_errMsg
   use shr_megan_mod        , only : shr_megan_mechcomps_n
-  use clm_varpar           , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
+  use clm_varpar           , only : numrad, ndst, nlevgrnd, nlevsno, nlevsoi !ndst = number of dust bins.
   use clm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
   use clm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc
   use tracer_varcon        , only : is_active_betr_bgc
@@ -34,7 +35,7 @@ module lnd2atmMod
   use GridcellDataType     , only : grc_ef, grc_ws, grc_wf
   use ColumnDataType       , only : col_ws, col_wf, col_cf  
   use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
-
+  use SoilHydrologyType    , only : soilhydrology_type 
   
   !
   ! !PUBLIC TYPES:
@@ -114,7 +115,7 @@ contains
        atm2lnd_vars, surfalb_vars, temperature_vars, frictionvel_vars, &
        waterstate_vars, waterflux_vars, energyflux_vars, &
        solarabs_vars, carbonflux_vars, drydepvel_vars, &
-       vocemis_vars, dust_vars, ch4_vars, lnd2atm_vars) 
+       vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, lnd2atm_vars) 
     !
     ! !DESCRIPTION:
     ! Compute lnd2atm_vars component of gridcell derived type
@@ -330,6 +331,118 @@ contains
        grc_ws%tws(g) = grc_ws%tws(g) + atm2lnd_vars%volr_grc(g) / grc_pp%area(g) * 1.e-3_r8
     enddo
 
+
+    call c2g( bounds, &
+         temperature_vars%t_grnd_col (bounds%begc:bounds%endc), &
+         lnd2atm_vars%t_grnd_grc   (bounds%begg:bounds%endg), &
+         c2l_scale_type= 'urbans', l2g_scale_type='unity' )
+
+    do lvl = -nlevsno+1, nlevgrnd
+        call c2g( bounds, &
+            temperature_vars%t_soisno_col(bounds%begc:bounds%endc, lvl), & 
+            lnd2atm_vars%t_soisno_grc(bounds%begg:bounds%endg, lvl), &
+            c2l_scale_type= 'urbans', l2g_scale_type='unity' )
+    enddo
+    
+    do g = bounds%begg,bounds%endg
+       ! TODO temperary treatment in case weird values after c2g
+       if(lnd2atm_vars%t_soisno_grc(g, 1) > 400._r8) then
+           write(iulog,*)'lnd2atm_vars%t_soisno_grc(g, 1) is',lnd2atm_vars%t_soisno_grc(g, 1)
+		   call endrun( msg=' lnd2atm ERROR: lnd2atm_vars%t_soisno_grc >  400 Kelvin degree.'//errMsg(__FILE__, __LINE__))
+       end if
+       lnd2atm_vars%Tqsur_grc(g) = avg_tsoil_surf(lnd2atm_vars%t_soisno_grc(g,-nlevsno+1:nlevgrnd))
+       lnd2atm_vars%Tqsub_grc(g) = avg_tsoil(lnd2atm_vars%zwt_grc(g),lnd2atm_vars%t_soisno_grc(g,-nlevsno+1:nlevgrnd))
+
+    end do
+
+    call c2g( bounds, &
+         soilhydrology_vars%zwt_col (bounds%begc:bounds%endc), &
+         lnd2atm_vars%zwt_grc   (bounds%begg:bounds%endg), &
+         c2l_scale_type= 'urbans', l2g_scale_type='unity' )    
+        
   end subroutine lnd2atm
+
+
+    function avg_tsoil_surf(Tsoil_) result(avgT_)
+    ! Function for estimating average soil temperature within the top few layers (which closely interacts with surface runoff)
+        implicit none
+        real(r8), intent(in) :: Tsoil_(-nlevsno+1:nlevgrnd)       ! water table depth, soil temperature
+        real(r8) :: avgT_             ! average soil temperature within the saturated layers
+        
+        integer :: ilvl   !local index
+        real(r8) :: depth_(nlevsoi), h_layer(nlevsoi), sum_h, sum_ht
+        
+        ! calculate the thickness of each 15 soil layer, refer to Eqn. (6.5) and (6.6) in CLM4.0 tech note
+        do ilvl = 1, nlevsoi
+            depth_(ilvl) = 0.025_r8*(EXP(0.5_r8*(REAL(ilvl)-0.5_r8))-1._r8)
+        enddo
+        h_layer(1) = 0.5_r8*(depth_(1)+depth_(2))
+        do ilvl = 2, nlevsoi-1
+            h_layer(ilvl) = 0.5_r8*(depth_(ilvl+1)-depth_(ilvl-1))
+        end do
+        h_layer(nlevsoi) = depth_(nlevsoi) - depth_(nlevsoi-1)
+        
+        sum_h = 0._r8
+        sum_ht = 0._r8 
+        do ilvl = 1, 3
+            sum_h = sum_h + h_layer(ilvl)
+            sum_ht = sum_ht + h_layer(ilvl)*Tsoil_(ilvl)
+        enddo
+        avgT_ = sum_ht/sum_h
+        
+        return
+    end function avg_tsoil_surf  
+
+    function avg_tsoil(zwt_, Tsoil_) result(avgT_)
+    ! Function for estimating average soil temperature within the saturated soil zone (which produces subsurface runoff)
+        implicit none
+        real(r8), intent(in) :: zwt_, Tsoil_(-nlevsno+1:nlevgrnd)       ! water table depth, soil temperature
+        real(r8) :: avgT_             ! average soil temperature within the saturated layers
+        
+        integer :: ilvl,izwt   !local index
+        real(r8) :: depth_(nlevsoi), h_layer(nlevsoi), sum_h, sum_ht
+        
+        ! calculate the thickness of each 15 soil layer, refer to Eqn. (6.5) and (6.6) in CLM4.0 tech note
+        do ilvl = 1, nlevsoi
+            depth_(ilvl) = 0.025_r8*(EXP(0.5_r8*(REAL(ilvl)-0.5_r8))-1._r8)
+        enddo
+        h_layer(1) = 0.5_r8*(depth_(1)+depth_(2))
+        do ilvl = 2, nlevsoi-1
+            h_layer(ilvl) = 0.5_r8*(depth_(ilvl+1)-depth_(ilvl-1))
+        end do
+        h_layer(nlevsoi) = depth_(nlevsoi) - depth_(nlevsoi-1)
+        
+        if(zwt_ <= 0._r8) then ! water table close to ground surface, average over the whole soil column
+            sum_h = 0._r8
+            sum_ht = 0._r8
+            do ilvl = 1, nlevsoi
+                sum_h = sum_h + h_layer(ilvl)
+                sum_ht = sum_ht + h_layer(ilvl)*Tsoil_(ilvl)
+            enddo
+            avgT_ = sum_ht/sum_h
+        else if(zwt_ >= depth_(nlevsoi)) then ! water table deeper than the total soil depth, taking the temperature of the deepes
+            avgT_ = Tsoil_(nlevsoi)
+        else
+            sum_h = 0._r8
+            sum_ht = 0._r8
+            ! find out which soil layer the water table is located
+            do ilvl = 1, nlevsoi
+                if(zwt_ <= depth_(ilvl)) then
+                    izwt = ilvl
+                    sum_h = depth_(ilvl) - zwt_
+                    sum_ht = (depth_(ilvl) - zwt_)*Tsoil_(ilvl)
+                    exit
+                end if
+            enddo
+            ! calculate mean soil temperature of the total saturated soil zone
+            do ilvl = izwt + 1, nlevsoi
+                sum_h = sum_h + h_layer(ilvl)
+                sum_ht = sum_ht + h_layer(ilvl)*Tsoil_(ilvl)
+            enddo
+            avgT_ = sum_ht/sum_h
+        end if
+        
+        return
+    end function avg_tsoil
 
 end module lnd2atmMod

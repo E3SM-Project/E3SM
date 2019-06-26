@@ -90,6 +90,10 @@ contains
          avgflag='A', long_name='MOSART direct discharge into ocean: '//trim(rtm_tracers(2)), &
          ptr_rof=rtmCTL%runoffdir_nt2, default='active')
 
+    call RtmHistAddfld (fname='Main_Channel_STORAGE'//'_'//trim(rtm_tracers(1)), units='m3',  &
+         avgflag='A', long_name='MOSART main channel storage: '//trim(rtm_tracers(1)), &
+         ptr_rof=rtmCTL%wr_nt1, default='active')
+
     call RtmHistAddfld (fname='STORAGE'//'_'//trim(rtm_tracers(1)), units='m3',  &
          avgflag='A', long_name='MOSART storage: '//trim(rtm_tracers(1)), &
          ptr_rof=rtmCTL%volr_nt1, default='active')
@@ -201,6 +205,22 @@ contains
     endif
 !#endif
 
+    call RtmHistAddfld (fname='TEMP_QSUR', units='Kelvin',  &
+         avgflag='A', long_name='Temperature of surface runoff', &
+         ptr_rof=rtmCTL%templand_Tqsur_nt1)
+
+    call RtmHistAddfld (fname='TEMP_QSUB', units='Kelvin',  &
+         avgflag='A', long_name='Temperature of subsurface runoff', &
+         ptr_rof=rtmCTL%templand_Tqsub_nt1)
+
+    call RtmHistAddfld (fname='TEMP_TRIB', units='Kelvin',  &
+         avgflag='A', long_name='Water temperature of tributary channels', &
+         ptr_rof=rtmCTL%templand_Ttrib_nt1)
+
+    call RtmHistAddfld (fname='TEMP_CHANR', units='Kelvin',  &
+         avgflag='A', long_name='Water temperature of main channels', &
+         ptr_rof=rtmCTL%templand_Tchanr_nt1)		 
+		 
     ! Print masterlist of history fields
 
     call RtmHistPrintflds()
@@ -244,6 +264,8 @@ contains
     rtmCTL%dvolrdtocn_nt1(:) = rtmCTL%dvolrdtocn(:,1)
     rtmCTL%dvolrdtocn_nt2(:) = rtmCTL%dvolrdtocn(:,2)
 
+    rtmCTL%wr_nt1(:)         = rtmCTL%wr(:,1)
+
     rtmCTL%volr_nt1(:)       = rtmCTL%volr(:,1)
     rtmCTL%volr_nt2(:)       = rtmCTL%volr(:,2)
 
@@ -272,6 +294,15 @@ contains
     endif
 !#endif
 
+	rtmCTL%templand_Tqsur_nt1(:) = rtmCTL%templand_Tqsur(:)
+	rtmCTL%templand_Tqsur_nt2(:) = rtmCTL%templand_Tqsur(:)
+	rtmCTL%templand_Tqsub_nt1(:) = rtmCTL%templand_Tqsub(:)
+	rtmCTL%templand_Tqsub_nt2(:) = rtmCTL%templand_Tqsub(:)
+	rtmCTL%templand_Ttrib_nt1(:) = rtmCTL%templand_Ttrib(:)
+	rtmCTL%templand_Ttrib_nt2(:) = rtmCTL%templand_Ttrib(:)
+	rtmCTL%templand_Tchanr_nt1(:) = rtmCTL%templand_Tchanr(:)
+	rtmCTL%templand_Tchanr_nt2(:) = rtmCTL%templand_Tchanr(:)
+	
   end subroutine RtmHistFldsSet
 
 
