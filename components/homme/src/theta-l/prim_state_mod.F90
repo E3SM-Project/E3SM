@@ -1000,7 +1000,7 @@ subroutine findExtremaWithLevel(elem,res,field,operation,n0,nets,nete)
     integer                              :: i,j,k,ie,ksize
     real (kind=real_kind)                :: column(1:nlevp), val, BIGVAL    
 
-!reuse from a module
+    !did not find an approp module to put this in
     BIGVAL = 1e15
     
     !first val is min or max, second value is level for it

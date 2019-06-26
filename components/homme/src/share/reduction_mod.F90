@@ -343,14 +343,13 @@ contains
 
 
 !max with location index
+!at the end result is in redp thread local array
   subroutine ParallelMaxWithIndex(redp,hybrid)
     use hybrid_mod, only : hybrid_t
 #ifdef _MPI
     use parallel_mod, only: mpi_maxloc, mpi2real_t
 #endif
 
-!use red_max_index
-!    type (ReductionBuffer_r_1d_t)     :: red     ! shared memory reduction buffer struct
     real (kind=real_kind), intent(inout) :: redp(2) ! thread private vector of partial sum
     type (hybrid_t),       intent(in)    :: hybrid  ! parallel handle
 
@@ -372,14 +371,11 @@ contains
     end if
     !$OMP END CRITICAL (CRITMAXIND)
 
-
-!does one need barrier right after critical?
 #ifdef _MPI
     !$OMP BARRIER
     if (hybrid%ithr==0) then
        call MPI_Allreduce(red_max_index%buf(1),redp,1,MPI2real_t, &
             MPI_MAXLOC,hybrid%par%comm,ierr)
-!       red%buf(1:len)=redp(1:len)
     end if
 #else
     redp(1:2) = red_max_index%buf(1:2)
@@ -389,17 +385,14 @@ contains
   end subroutine ParallelMaxWithIndex
 
 
-
 !max with location index
+!result is in redp thread local array
   subroutine ParallelMinWithIndex(redp,hybrid)
     use hybrid_mod, only : hybrid_t
 #ifdef _MPI
     use parallel_mod, only: mpi_minloc, mpi2real_t
 #endif
 
-!use red_min_index
-!    type (ReductionBuffer_r_1d_t)     :: red     ! shared memory reduction
-!    buffer struct
     real (kind=real_kind), intent(inout) :: redp(2) ! thread private vector of partial sum
     type (hybrid_t),       intent(in)    :: hybrid  ! parallel handle
 
@@ -421,8 +414,6 @@ contains
     end if
     !$OMP END CRITICAL (CRITMAXIND)
 
-
-!does one need barrier right after critical?
 #ifdef _MPI
     !$OMP BARRIER
     if (hybrid%ithr==0) then
@@ -436,15 +427,6 @@ contains
     !$OMP BARRIER
 
   end subroutine ParallelMinWithIndex
-
-
-
-
-
-
-
-
-
 
 
   ! =======================================
