@@ -1020,15 +1020,15 @@ class Case(object):
         except Exception as e:
             logger.warning("FAILED to set up exefiles: {}".format(str(e)))
 
-	if "NEMO" in self._compsetname:
-	    nemodir = os.path.join(self.get_value("CIMEROOT"),"..","components","nemo","NEMO36","bld")
+        if "NEMO" in self._compsetname:
+            nemodir = os.path.join(self.get_value("CIMEROOT"),"..","components","nemo","NEMO36","bld")
             toolfiles = [os.path.join(toolsdir, "check_lockedfiles"),
                          os.path.join(toolsdir, "getTiming"),
                          os.path.join(toolsdir, "save_provenance"),
                          os.path.join(toolsdir,"Makefile"),
                          os.path.join(toolsdir,"mkSrcfiles"),
                          os.path.join(nemodir,"mkDepends")]
-	else:
+        else:
             toolfiles = [os.path.join(toolsdir, "check_lockedfiles"),
                          os.path.join(toolsdir, "getTiming"),
                          os.path.join(toolsdir, "save_provenance"),
