@@ -5,19 +5,22 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !  ocn_tracer_advection_std
 !
 !> \brief MPAS standard tracer advection
-!> \author Doug Jacobsen
-!> \date   03/09/12
+!> \author Doug Jacobsen, Phil Jones
+!> \date   03/09/12, updated May 2019
 !> \details
-!>  This module contains routines for standard advection of tracers
+!>  This module contains routines for advection of tracers using a standard
+!>  FV algorithm in MPAS discretization.
 !
-!-----------------------------------------------------------------------
+!-------------------------------------------------------------------------------
+
 module ocn_tracer_advection_std
 
+   ! module includes
    use mpas_kind_types
    use mpas_derived_types
    use mpas_pool_routines
@@ -30,11 +33,19 @@ module ocn_tracer_advection_std
    private
    save
 
-   real (kind=RKIND) :: coef_3rd_order
-   integer :: horizOrder
-   logical :: vert2ndOrder, vert3rdOrder, vert4thOrder
-   logical :: positiveDzDk, monotonicityCheck
+   ! private module variables
+   real (kind=RKIND) :: &
+      coef3rdOrder       !< coefficient for blending high-order terms
 
+   integer :: vertOrder  !< choice of order for vertical advection
+   integer, parameter :: &! enumerator for supported vertical adv order
+      vertOrder2=2,      &!< 2nd order
+      vertOrder3=3,      &!< 3rd order
+      vertOrder4=4        !< 4th order
+
+   logical :: monotonicityCheck !< flag to check monotonicity
+
+   ! public method interfaces
    public :: ocn_tracer_advection_std_tend, &
              ocn_tracer_advection_std_init
 
@@ -116,6 +127,7 @@ module ocn_tracer_advection_std
       call mpas_allocate_scratch_field(highOrderHorizFluxField, .true.)
       call mpas_allocate_scratch_field(tracerCurField, .true.)
       call mpas_allocate_scratch_field(highOrderVertFluxField, .true.)
+      call mpas_threading_barrier()
 
       high_order_horiz_flux => highOrderHorizFluxField % array
       tracer_cur => tracerCurField % array
@@ -147,18 +159,19 @@ module ocn_tracer_advection_std
           high_order_vert_flux(k,iCell) = w(k,iCell)*(verticalWeightK*tracer_cur(k,iCell)+verticalWeightKm1*tracer_cur(k-1,iCell))
 
           do k=3,maxLevelCell(iCell)-1
-             if(vert4thOrder) then
+             select case (vertOrder)
+             case (vertOrder4)
                high_order_vert_flux(k, iCell) = mpas_tracer_advection_vflux4( tracer_cur(k-2,iCell),tracer_cur(k-1,iCell),  &
                                       tracer_cur(k  ,iCell),tracer_cur(k+1,iCell), w(k,iCell))
-             else if(vert3rdOrder) then
+             case (vertOrder3)
                high_order_vert_flux(k, iCell) = mpas_tracer_advection_vflux3( tracer_cur(k-2,iCell),tracer_cur(k-1,iCell),  &
-                                      tracer_cur(k  ,iCell),tracer_cur(k+1,iCell), w(k,iCell), coef_3rd_order )
-             else if (vert2ndOrder) then
+                                      tracer_cur(k  ,iCell),tracer_cur(k+1,iCell), w(k,iCell), coef3rdOrder )
+             case (vertOrder2)
                verticalWeightK = verticalCellSize(k-1, iCell) / (verticalCellSize(k, iCell) + verticalCellSize(k-1, iCell))
                verticalWeightKm1 = verticalCellSize(k, iCell) / (verticalCellSize(k, iCell) + verticalCellSize(k-1, iCell))
                high_order_vert_flux(k,iCell) = w(k, iCell) * (verticalWeightK * tracer_cur(k, iCell) &
                                              + verticalWeightKm1 * tracer_cur(k-1, iCell))
-             end if
+             end select ! vertOrder
           end do
 
           k = max(1, maxLevelCell(iCell))
@@ -187,7 +200,7 @@ module ocn_tracer_advection_std
           do i = 1, nAdvCellsForEdge(iEdge)
             iCell = advCellsForEdge(i,iEdge)
             do k = 1, maxLevelCell(iCell)
-              tracer_weight = highOrderAdvectionMask(k, iEdge) * (adv_coefs(i,iEdge) + coef_3rd_order &
+              tracer_weight = highOrderAdvectionMask(k, iEdge) * (adv_coefs(i,iEdge) + coef3rdOrder &
                             * sign(1.0_RKIND,normalThicknessFlux(k,iEdge))*adv_coefs_3rd(i,iEdge))
 
               tracer_weight = normalThicknessFlux(k,iEdge)*tracer_weight
@@ -222,6 +235,7 @@ module ocn_tracer_advection_std
         !$omp end do
       end do ! iTracer loop
 
+      call mpas_threading_barrier()
       call mpas_deallocate_scratch_field(highOrderHorizFluxField, .true.)
       call mpas_deallocate_scratch_field(tracerCurField, .true.)
       call mpas_deallocate_scratch_field(highOrderVertFluxField, .true.)
@@ -230,57 +244,80 @@ module ocn_tracer_advection_std
 
    end subroutine ocn_tracer_advection_std_tend!}}}
 
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !  routine ocn_tracer_advection_std_init
 !
 !> \brief MPAS initialize standard tracer advection tendency.
-!> \author Doug Jacobsen
-!> \date   03/09/12
+!> \author Doug Jacobsen, Phil Jones
+!> \date   03/09/12, updated May 2019
 !> \details
-!>  This routine initializes the standard tracer advection tendencity.
+!>  This routine initializes constants and choices for the standard tracer
+!>  advection tendency.
 !
-!-----------------------------------------------------------------------
-   subroutine ocn_tracer_advection_std_init(horiz_adv_order, vert_adv_order, coef_3rd_order_in, dzdk_positive, & !{{{
-                                            check_monotonicity, err)
-      integer, intent(in) :: horiz_adv_order !< Input: Order for horizontal advection
-      integer, intent(in) :: vert_adv_order !< Input: Order for vertical advection
-      real (kind=RKIND), intent(in) :: coef_3rd_order_in !< Input: coefficient for blending advection orders.
-      logical, intent(in) :: dzdk_positive !< Input: Logical flag determining if dzdk is positive or negative.
-      logical, intent(in) :: check_monotonicity !< Input: Logical flag determining check on monotonicity of tracers
-      integer, intent(inout) :: err !< Input/Output: Error Flag
+!-------------------------------------------------------------------------------
 
-      err = 0
+   subroutine ocn_tracer_advection_std_init(horzAdvOrder, vertAdvOrder, &
+                                            inCoef3rdOrder,             &
+                                            checkMonotonicity, err) !{{{
 
-      vert2ndOrder = .false.
-      vert3rdOrder = .false.
-      vert4thOrder = .false.
+      !*** input parameters
 
-      if ( horiz_adv_order == 3) then
-          coef_3rd_order = coef_3rd_order_in
-      else if(horiz_adv_order == 2 .or. horiz_adv_order == 4) then
-          coef_3rd_order = 0.0_RKIND
-      end if
+      integer, intent(in) :: &
+         horzAdvOrder         !< [in] Order for horizontal advection
+      integer, intent(in) :: &
+         vertAdvOrder         !< [in] Order for vertical advection
+      real (kind=RKIND), intent(in) :: &
+         inCoef3rdOrder       !< [in] Coefficient for blending advection orders
+      logical, intent(in) :: &
+         checkMonotonicity    !< [in] Flag to check on monotonicity of tracers
 
-      horizOrder = horiz_adv_order
+      !*** output parameters
 
-      if (vert_adv_order == 3) then
-          vert3rdOrder = .true.
-      else if (vert_adv_order == 4) then
-          vert4thOrder = .true.
-      else
-          vert2ndOrder = .true.
-          if(vert_adv_order /= 2) then
-             call mpas_log_write( &
-                'Invalid value for vert_adv_order, defaulting to 2nd order', &
-                MPAS_LOG_WARN)
-          end if
-      end if
+      integer, intent(out) :: err !< [out] Error Flag
 
-      positiveDzDk = dzdk_positive
-      monotonicityCheck = check_monotonicity
+      ! end of preamble
+      !----------------
+      ! begin code
+
+      err = 0 ! set error code to success
+
+      ! set monotonicity flag
+      monotonicityCheck = checkMonotonicity
+
+      ! set 3rd order coefficient based on horizontal order choice
+      select case (horzAdvOrder)
+      case (2)
+         coef3rdOrder = 0.0_RKIND
+      case (3)
+         coef3rdOrder = inCoef3rdOrder
+      case (4)
+         coef3rdOrder = 0.0_RKIND
+      case default
+         call mpas_log_write( &
+            'Invalid value for horz advection order, defaulting to 2nd order', &
+            MPAS_LOG_WARN)
+      end select ! horzAdvOrder
+
+      ! set choice of vertical advection order
+      select case (vertAdvOrder)
+      case (2)
+         vertOrder = vertOrder2
+      case (3)
+         vertOrder = vertOrder3
+      case (4)
+         vertOrder = vertOrder4
+      case default
+         vertOrder = vertOrder2
+         call mpas_log_write( &
+         'Invalid value for vertical advection order, defaulting to 2nd order',&
+         MPAS_LOG_WARN)
+      end select ! vertAdvOrder
 
    end subroutine ocn_tracer_advection_std_init!}}}
 
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
 end module ocn_tracer_advection_std
 
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
