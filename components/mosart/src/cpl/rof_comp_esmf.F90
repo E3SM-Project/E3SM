@@ -36,14 +36,20 @@ module rof_comp_esmf
   use WRM_type_mod     , only : StorWater
 !#endif
   use rof_cpl_indices  , only : rof_cpl_indices_set, nt_rtm, rtm_tracers, &
-                                index_r2x_Forr_rofl, index_r2x_Forr_rofi, &
-                                index_x2r_Flrl_rofi, index_x2r_Flrl_rofsur, &
+                                index_x2r_Flrl_rofsur, index_x2r_Flrl_rofi, &
                                 index_x2r_Flrl_rofgwl, index_x2r_Flrl_rofsub, &
                                 index_x2r_Flrl_rofdto, &
-                                index_r2x_Flrr_flood, &
 								index_x2r_Flrl_Tqsur, index_x2r_Flrl_Tqsub, &
+                                index_x2r_Sa_tbot, index_x2r_Sa_pbot, &
+                                index_x2r_Sa_u   , index_x2r_Sa_v   , &
+                                index_x2r_Sa_shum, &
+                                index_x2r_Faxa_lwdn , &
+                                index_x2r_Faxa_swvdr, index_x2r_Faxa_swvdf, &
+                                index_x2r_Faxa_swndr, index_x2r_Faxa_swndf, &
+                                index_r2x_Forr_rofl, index_r2x_Forr_rofi, &
+                                index_r2x_Flrr_flood, &
                                 index_r2x_Flrr_volr, index_r2x_Flrr_volrmch
-                                !index_r2x_Flrr_supply , index_r2x_Flrr_supplyfrac, index_x2r_Flrl_demand
+                                !index_r2x_Flrr_supply , index_r2x_Flrr_supplyfrac, index_x2r_Flrl_demand, 
   use perf_mod         , only : t_startf, t_stopf, t_barrierf
 !
 ! !PUBLIC MEMBER FUNCTIONS:
