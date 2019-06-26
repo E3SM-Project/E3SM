@@ -597,7 +597,6 @@ MODULE WRM_modules
 
      damID = WRMUnit%INVicell(iunit) 
      isDam = WRMUnit%isDam(iunit)
-!d     write(iulog,*) subname,' tcx1 ',isDam,iam,damID
 
      !---------------------------------------------
      !--- return and do nothing under certain conditions
