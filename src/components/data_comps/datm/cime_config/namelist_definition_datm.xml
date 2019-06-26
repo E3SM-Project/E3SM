@@ -348,6 +348,7 @@
       <value stream="presaero.clim_2000">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
       <value stream="presaero.clim_2010">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
       <value stream="presaero.trans_1850-2000">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
+      <value stream="presaero.SSP1-2.6">aerodep_clm_SSP126_b.e21.BSSP126cmip6.f09_g17.CMIP6-SSP1-2.6.001_2014-2101_monthly_0.9x1.25_c190523.nc</value>
       <value stream="presaero.SSP2-4.5">aerodep_clm_SSP245_b.e21.BWSSP245cmip6.f09_g17.CMIP6-SSP2-4.5-WACCM.001_2014-2101_monthly_0.9x1.25_c190401.nc</value>
       <value stream="presaero.SSP3-7.0">aerodep_clm_SSP370_b.e21.BWSSP370cmip6.f09_g17.CMIP6-SSP3-7.0-WACCM.001_2014-2101_monthly_0.9x1.25_c190402.nc</value>
       <value stream="presaero.SSP5-3.4">null</value>
@@ -1703,6 +1704,7 @@
       <value stream="presaero.SSP5-3.4" atm_grid="CLM_USRDAT">aerosoldep_SSP5-3.4_monthly_1849-2101_${CLM_USRDAT_NAME}.nc</value>
       <value stream="presaero.SSP5-8.5" atm_grid="CLM_USRDAT">aerosoldep_SSP5-8.5_monthly_1849-2101_${CLM_USRDAT_NAME}.nc</value>
 
+      <value stream="presaero.SSP1-2.6">aerodep_clm_SSP126_b.e21.BSSP126cmip6.f09_g17.CMIP6-SSP1-2.6.001_2014-2101_monthly_0.9x1.25_c190523.nc</value>
       <value stream="presaero.SSP2-4.5">aerodep_clm_SSP245_b.e21.BWSSP245cmip6.f09_g17.CMIP6-SSP2-4.5-WACCM.001_2014-2101_monthly_0.9x1.25_c190401.nc</value>
       <value stream="presaero.SSP3-7.0">aerodep_clm_SSP370_b.e21.BWSSP370cmip6.f09_g17.CMIP6-SSP3-7.0-WACCM.001_2014-2101_monthly_0.9x1.25_c190402.nc</value>
       <value stream="presaero.SSP5-3.4">null</value>
