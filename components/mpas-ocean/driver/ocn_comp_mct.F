@@ -2067,6 +2067,9 @@ contains
    call mpas_pool_get_field(forcingPool, 'landIceHeatFlux', landIceHeatFluxField)
    call mpas_pool_get_field(forcingPool, 'landIceFraction', landIceFractionField)
    call mpas_pool_get_field(forcingPool, 'landIceInterfaceTracers', landIceInterfaceTracersField)
+
+   call mpas_pool_get_field(forcingPool, 'windSpeed10m', windSpeed10mField)
+
    call mpas_pool_get_dimension(forcingPool, 'index_landIceInterfaceTemperature', indexIT)
    call mpas_pool_get_dimension(forcingPool, 'index_landIceInterfaceSalinity', indexIS)
    !call mpas_pool_get_field(forcingPool, 'landIcePressure', landIcePressureField)
@@ -2178,6 +2181,10 @@ contains
 !   if ( landIcePressureField % isActive ) then
 !      call mpas_dmpar_exch_halo_field(landIcePressureField)
 !   end if
+
+   if ( windSpeed10mField % isActive ) then
+      call mpas_dmpar_exch_halo_field(windSpeed10mField)
+   end if
 
    ! BGC fields
    if (config_use_ecosysTracers) then
