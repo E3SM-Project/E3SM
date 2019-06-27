@@ -350,9 +350,6 @@ contains
     FQmin_p = ParallelMin(FQmin_local,hybrid)
     FQmax_p = ParallelMax(FQmax_local,hybrid)
 
-    Wmin_p = ParallelMin(Wmin_local,hybrid)
-    Wmax_p = ParallelMax(Wmax_local,hybrid)
-
     phimin_p = ParallelMin(phimin_local,hybrid)
     phimax_p = ParallelMax(phimax_local,hybrid)
 
@@ -394,9 +391,10 @@ contains
     Mass = Mass2*scale
 
     if(hybrid%masterthread) then
-       write(iulog,100) "u     = ",umin_p,umax_p,usum_p
-       write(iulog,100) "v     = ",vmin_p,vmax_p,vsum_p
-       write(iulog,100) "w     = ",wmin_p,wmax_p,wsum_p
+       write(iulog,108) "u     = ",umin_p,"     ",umax_p,"     ",usum_p
+       write(iulog,108) "v     = ",vmin_p,"     ",vmax_p,"     ",vsum_p
+       write(iulog,109) "w     = ",newwmin_local(1),"(",nint(newwmin_local(2)),")",&
+                                   newwmax_local(1),"(",nint(newwmax_local(2)),")",wsum_p
        write(iulog,100) "tdiag = ",tmin_p,tmax_p,tsum_p
        write(iulog,100) "theta = ",thetamin_p,thetamax_p,thetasum_p
        write(iulog,100) "dz(m) = ",phimin_p/g,phimax_p/g,phisum_p/g
@@ -420,6 +418,9 @@ contains
        endif
     end if
  
+100 format (A10,3(E23.15))
+108 format (A10,E23.15,A5,E23.15,A5,E23.15)
+109 format (A10,E23.15,A1,I3,A1,E23.15,A1,I3,A1,E23.15)
 
     if ( test_case(1:10) == "baroclinic" ) then
        ! zeta does not need to be made continious, but we  
@@ -773,7 +774,6 @@ contains
       write(iulog,'(a,E23.15)') 'Max error in last time-step        :', max_itererr_perstep
     endif
     
-100 format (A10,3(E23.15))
     
     
     ! initialize "E0" for printout of E-E0/E0
