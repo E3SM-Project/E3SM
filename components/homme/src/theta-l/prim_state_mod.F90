@@ -389,10 +389,10 @@ contains
     Mass = Mass2*scale
 
     if(hybrid%masterthread) then
-       write(iulog,108) "u     = ",umin_p,"     ",umax_p,"     ",usum_p
-       write(iulog,108) "v     = ",vmin_p,"     ",vmax_p,"     ",vsum_p
-       write(iulog,109) "w     = ",wmin_local(1),"(",nint(wmin_local(2)),")",&
-                                   wmax_local(1),"(",nint(wmax_local(2)),")",wsum_p
+       write(iulog,108) "u     = ",umin_p,"      ",umax_p,"     ",usum_p
+       write(iulog,108) "v     = ",vmin_p,"      ",vmax_p,"     ",vsum_p
+       write(iulog,109) "w     = ",wmin_local(1)," (",nint(wmin_local(2)),")",&
+                                   wmax_local(1)," (",nint(wmax_local(2)),")",wsum_p
        write(iulog,100) "tdiag = ",tmin_p,tmax_p,tsum_p
        write(iulog,100) "theta = ",thetamin_p,thetamax_p,thetasum_p
        write(iulog,100) "dz(m) = ",phimin_p/g,phimax_p/g,phisum_p/g
@@ -415,8 +415,8 @@ contains
     end if
  
 100 format (A10,3(E23.15))
-108 format (A10,E23.15,A5,E23.15,A5,E23.15)
-109 format (A10,E23.15,A1,I3,A1,E23.15,A1,I3,A1,E23.15)
+108 format (A10,E23.15,A6,E23.15,A6,E23.15)
+109 format (A10,E23.15,A2,I3,A1,E23.15,A2,I3,A1,E23.15)
 
     if ( test_case(1:10) == "baroclinic" ) then
        ! zeta does not need to be made continious, but we  
