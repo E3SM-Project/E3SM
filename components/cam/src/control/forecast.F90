@@ -32,7 +32,6 @@ subroutine forecast(lat, psm1, psm2,ps, &
 !
 ! Input arguments
 !
-   integer, parameter :: r16 = selected_real_kind(24)
    real(r8), intent(inout) :: t2(plev)         ! temp tendency
    real(r8), intent(inout) :: fu(plev)         ! u wind tendency
    real(r8), intent(inout) :: fv(plev)         ! v wind tendency
@@ -116,11 +115,6 @@ subroutine forecast(lat, psm1, psm2,ps, &
    real(r8) dotproda           ! dot product
    real(r8) dotprodb           ! dot product
    integer i,k,m           ! longitude, level, constituent indices
-   real(r16) divt3d_r16, divq3d_r16
-   real(r16) reconst1_r16, reconst2_r16, mult_reconst_r16
-   real(r16) timestep_r16, phystend_r16
-   real(r16) var_beforedyn_r16, var_afterdyn_r16
-   real(r8) exp_count
 !
 !     Below are Variables Used in the Advection Diagnostics
 !

@@ -36,8 +36,6 @@ module scamMod
   public setiopupdate
   public readiopdata        
 
-  integer, parameter :: r16 = selected_real_kind(24)
-
 !
 ! !PUBLIC MODULE DATA:
 !
@@ -97,11 +95,7 @@ module scamMod
   real(r8), public ::  dqfxcam(plon,plev,pcnst)
 
   real(r8), public ::      divq3d(plev,pcnst)  ! 3D q advection
-  real(r8), public ::      divq3d_2(plev,pcnst)  ! 3D q advection
-  real(r8), public ::      divq3d_3(plev,pcnst)  ! 3D q advection
   real(r8), public ::      divt3d(plev)        ! 3D T advection
-  real(r8), public ::      divt3d_2(plev)        ! 3D T advection
-  real(r8), public ::      divt3d_3(plev)        ! 3D T advection
   real(r8), public ::      vertdivq(plev,pcnst)! vertical q advection
   real(r8), public ::      vertdivt(plev)      ! vertical T advection
   real(r8), public ::      ptend               ! surface pressure tendency
@@ -142,7 +136,7 @@ module scamMod
                                                ! mo_drydep algorithm
 					       
   real(r8), public ::  scm_relaxation_low      ! lowest level to apply relaxation
-  real(r8), public ::  scm_relaxation_high     ! highest level to apply relaxation					       
+  real(r8), public ::  scm_relaxation_high     ! highest level to apply relaxation			       
 					       
   real(r8), public, pointer :: loniop(:)
   real(r8), public, pointer :: latiop(:)
@@ -159,8 +153,6 @@ module scamMod
   logical*4, public ::  have_vertdivt ! dataset contains vertdivt
   logical*4, public ::  have_vertdivq ! dataset contains vertdivq 
   logical*4, public ::  have_divt3d   ! dataset contains divt3d
-  logical*4, public ::  have_divt3d_2 ! dataset contains divt3d_2 
-  logical*4, public ::  have_divt3d_3 ! dataset contains divt3d_2
   logical*4, public ::  have_divu     ! dataset contains divu
   logical*4, public ::  have_divv     ! dataset contains divv 
   logical*4, public ::  have_omega    ! dataset contains omega
