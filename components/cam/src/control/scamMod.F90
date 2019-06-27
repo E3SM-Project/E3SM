@@ -606,7 +606,7 @@ subroutine setiopupdate
 
 end subroutine setiopupdate
 
-  subroutine readiopdata(iop_update_surface,hyam,hybm)
+  subroutine readiopdata(iop_update_phase1,hyam,hybm)
 
 !-----------------------------------------------------------------------
 !     
@@ -631,7 +631,7 @@ end subroutine setiopupdate
 #endif
 !------------------------------Locals-----------------------------------
 !     
-   logical, intent(in) :: iop_update_surface
+   logical, intent(in) :: iop_update_phase1
    integer NCID, status
    integer time_dimID, lev_dimID,lev_varID,mod_dimID,&
            mod_varID,sps_varID,sps_dimID
@@ -752,7 +752,7 @@ end subroutine setiopupdate
 ! =====================================================
 !     read observed aersol data
 
- if(scm_observed_aero .and. .not. iop_update_surface) then
+ if(scm_observed_aero .and. .not. iop_update_phase1) then
    status = NF90_INQ_DIMID( ncid, 'mod', mod_dimID )
    if ( status .ne. nf90_noerr ) then
       write(iulog,* )'ERROR - readiopdata.F:Could not find variable dim ID  for lev'
@@ -908,7 +908,7 @@ endif !scm_observed_aero
    cnt4(3)  = 1
    cnt4(4)  = 1
 
-   if (.not. iop_update_surface) then
+   if (.not. iop_update_phase1) then
 
      status = nf90_inq_varid( ncid, 'Ps', varid   )
      if ( status .ne. nf90_noerr ) then

@@ -59,7 +59,7 @@ module stepon
 ! !PRIVATE DATA MEMBERS:
 !
 
-  logical :: iop_update_surface
+  logical :: iop_update_phase1
 
   type (derivative_t)   :: deriv           ! derivative struct
   type (quadrature_t)   :: gv,gp           ! quadratures on velocity and pressure grids
@@ -203,9 +203,9 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
   end if
   
   if (single_column) then
-    iop_update_surface = .true. 
-    if (doiopupdate) call readiopdata( iop_update_surface,hyam,hybm )
-    call scm_setfield(elem,iop_update_surface)       
+    iop_update_phase1 = .true. 
+    if (doiopupdate) call readiopdata( iop_update_phase1,hyam,hybm )
+    call scm_setfield(elem,iop_update_phase1)       
   endif 
   
    call t_barrierf('sync_d_p_coupling', mpicom)
@@ -465,11 +465,11 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
      
      ! Update IOP properties e.g. omega, divT, divQ
      
-     iop_update_surface = .false. 
+     iop_update_phase1 = .false. 
      if (doiopupdate) then
        call scm_setinitial(elem)
-       call readiopdata(iop_update_surface,hyam,hybm)
-       call scm_setfield(elem,iop_update_surface)
+       call readiopdata(iop_update_phase1,hyam,hybm)
+       call scm_setfield(elem,iop_update_phase1)
      endif   
 
    endif   
