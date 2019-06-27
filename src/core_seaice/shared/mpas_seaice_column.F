@@ -721,11 +721,11 @@ contains
 
     logical, pointer :: &
          config_do_restart, &
-         config_use_snicar
+         config_use_snicar_ad
 
     call MPAS_pool_get_config(domain % configs, "config_shortwave_type", config_shortwave_type)
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
-    call MPAS_pool_get_config(domain % configs, "config_use_snicar", config_use_snicar)
+    call MPAS_pool_get_config(domain % configs, "config_use_snicar_ad", config_use_snicar_ad)
 
     if (trim(config_shortwave_type) == "dEdd") then
 
@@ -9577,7 +9577,7 @@ contains
          config_use_skeletal_biochemistry, &
          config_use_vertical_zsalinity, &
          config_use_modal_aerosols, &
-         config_use_snicar, &
+         config_use_snicar_ad, &
          config_use_snow_liquid_ponds
 
     real(kind=RKIND), pointer :: &
@@ -9752,7 +9752,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_slow_mode_critical_porosity", config_slow_mode_critical_porosity)
     call MPAS_pool_get_config(domain % configs, "config_congelation_ice_porosity", config_congelation_ice_porosity)
     call MPAS_pool_get_config(domain % configs, "config_shortwave_type", config_shortwave_type)
-    call MPAS_pool_get_config(domain % configs, "config_use_snicar", config_use_snicar)
+    call MPAS_pool_get_config(domain % configs, "config_use_snicar_ad", config_use_snicar_ad)
     call MPAS_pool_get_config(domain % configs, "config_albedo_type", config_albedo_type)
     call MPAS_pool_get_config(domain % configs, "config_visible_ice_albedo", config_visible_ice_albedo)
     call MPAS_pool_get_config(domain % configs, "config_infrared_ice_albedo", config_infrared_ice_albedo)
@@ -9952,7 +9952,7 @@ contains
          config_slow_mode_critical_porosity, &
          config_congelation_ice_porosity, &
          config_shortwave_type, &
-         config_use_snicar, &
+         config_use_snicar_ad, &
          config_albedo_type, &
          config_visible_ice_albedo, &
          config_infrared_ice_albedo, &
