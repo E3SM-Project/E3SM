@@ -2331,7 +2331,7 @@
     </domain>
 
     <domain name="ne0np4_northamerica_x4v1_lowcon">
-      <nx>89147</nx>
+      <nx>130088</nx>
       <ny>1</ny>
       <file grid="atm|lnd" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.lnd.northamericax4v1_oRRS15to5.190614.nc</file>
       <file grid="ice|ocn" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.ocn.northamericax4v1_oRRS15to5.190614.nc</file>
