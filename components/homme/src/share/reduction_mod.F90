@@ -362,7 +362,7 @@ contains
     red_max_index%ctr = hybrid%ithr
     !$OMP END SINGLE
 
-    ! all other threads now do the max_op wrt the first thread's data
+    ! all threads now do the max_op wrt the first thread's data
     !$OMP CRITICAL (CRITMAXIND)
     if (hybrid%ithr /= red_max_index%ctr) then
        if (red_max_index%buf(1) < redp(1)) then
@@ -371,8 +371,8 @@ contains
     end if
     !$OMP END CRITICAL (CRITMAXIND)
 
-#ifdef _MPI
     !$OMP BARRIER
+#ifdef _MPI
     if (hybrid%ithr==0) then
        call MPI_Allreduce(red_max_index%buf(1),redp,1,MPI2real_t, &
             MPI_MAXLOC,hybrid%par%comm,ierr)
@@ -405,7 +405,7 @@ contains
     red_min_index%ctr = hybrid%ithr
     !$OMP END SINGLE
 
-    ! all other threads now do the max_op wrt the first thread's data
+    ! all threads now do the max_op wrt the first thread's data
     !$OMP CRITICAL (CRITMAXIND)
     if (hybrid%ithr /= red_min_index%ctr) then
        if (red_min_index%buf(1) > redp(1)) then
@@ -414,12 +414,11 @@ contains
     end if
     !$OMP END CRITICAL (CRITMAXIND)
 
-#ifdef _MPI
     !$OMP BARRIER
+#ifdef _MPI
     if (hybrid%ithr==0) then
        call MPI_Allreduce(red_min_index%buf(1),redp,1,MPI2real_t, &
             MPI_MINLOC,hybrid%par%comm,ierr)
-!       red%buf(1:len)=redp(1:len)
     end if
 #else
     redp(1:2) = red_min_index%buf(1:2)
