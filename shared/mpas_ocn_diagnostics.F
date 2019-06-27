@@ -1367,7 +1367,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell
       real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFlux, surfaceThicknessFlux, &
            surfaceBuoyancyForcing, surfaceFrictionVelocity, penetrativeTemperatureFluxOBL, &
-           normalVelocitySurfaceLayer, surfaceThicknessFluxRunoff
+           normalVelocitySurfaceLayer, surfaceThicknessFluxRunoff, rainFlux, evaporationFlux
       real (kind=RKIND), pointer :: config_flux_attenuation_coefficient, config_flux_attenuation_coefficient_runoff
 
       real (kind=RKIND), dimension(:), pointer :: surfaceStress, surfaceStressMagnitude
@@ -1441,6 +1441,8 @@ contains
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
       call mpas_pool_get_array(forcingPool, 'surfaceStress', surfaceStress)
       call mpas_pool_get_array(forcingPool, 'surfaceStressMagnitude', surfaceStressMagnitude)
+      call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
+      call mpas_pool_get_array(forcingPool, 'evaporationFlux', evaporationFlux)
 
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
       call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFlux', activeTracersSurfaceFlux)
@@ -1496,12 +1498,15 @@ contains
        ! transport code.  This includes tracer forcing due to thickness
 
        nonLocalSurfaceTracerFlux(indexTempFlux, iCell) = activeTracersSurfaceFlux(indexTempFlux,iCell) &
-               + penetrativeTemperatureFlux(iCell) - penetrativeTemperatureFluxOBL(iCell) - fracAbsorbed * &
-               surfaceThicknessFlux(iCell) * activeTracers(indexTempFlux,1,iCell) + &
-               activeTracersSurfaceFluxRunoff(indexTempFlux,iCell) * fracAbsorbedRunoff
+               + penetrativeTemperatureFlux(iCell) - penetrativeTemperatureFluxOBL(iCell)  &
+               - fracAbsorbed * (rainFlux(iCell) + evaporationFlux(iCell)) * activeTracers(indexTempFlux,1,iCell)/rho_sw  &
+               - fracAbsorbedRunoff * surfaceThicknessFluxRunoff(iCell) * (  &
+                   max(activeTracers(indexTempFlux,1,iCell),0.0_RKIND) &
+                 + min(activeTracers(indexTempFlux,1,iCell),0.0_RKIND)    )/rho_sw
 
        nonLocalSurfaceTracerFlux(indexSaltFlux,iCell) = activeTracersSurfaceFlux(indexSaltFlux,iCell) &
-               - fracAbsorbed * surfaceThicknessFlux(iCell) * activeTracers(indexSaltFlux,1,iCell)
+               - fracAbsorbed * surfaceThicknessFlux(iCell) * activeTracers(indexSaltFlux,1,iCell) &
+               - fracAbsorbedRunoff * surfaceThicknessFluxRunoff(iCell) * activeTracers(indexSaltFlux,1,iCell)
 
        surfaceBuoyancyForcing(iCell) =  thermalExpansionCoeff (1,iCell) &
               * nonLocalSurfaceTracerFlux(indexTempFlux,iCell) &
