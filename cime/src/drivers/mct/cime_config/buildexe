@@ -12,51 +12,49 @@ sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
 from standard_script_setup import *
 from CIME.buildlib         import parse_input
 from CIME.case             import Case
-from CIME.utils            import expect, run_cmd
-from CIME.build            import get_standard_makefile_args
+from CIME.utils            import expect, run_bld_cmd_ensure_logging
+from CIME.build            import get_standard_cmake_args
 
 logger = logging.getLogger(__name__)
 
 ###############################################################################
-def _main_func():
+def buildexe(case, bldroot):
 ###############################################################################
-
-    caseroot, _, _ = parse_input(sys.argv)
-
     logger.info("Building a single executable version of target coupled model")
 
-    with Case(caseroot) as case:
-        casetools = case.get_value("CASETOOLS")
-        cimeroot  = case.get_value("CIMEROOT")
-        gmake     = case.get_value("GMAKE")
-        gmake_j   = case.get_value("GMAKE_J")
-        num_esp   = case.get_value("NUM_COMP_INST_ESP")
-        ocn_model = case.get_value("COMP_OCN")
-        atm_model = case.get_value("COMP_ATM")
-        gmake_opts = get_standard_makefile_args(case)
+    caseroot  = case.get_value("CASEROOT")
+    srcroot   = case.get_value("SRCROOT")
+    cimeroot  = case.get_value("CIMEROOT")
+    gmake     = case.get_value("GMAKE")
+    gmake_j   = case.get_value("GMAKE_J")
+    num_esp   = case.get_value("NUM_COMP_INST_ESP")
+    ocn_model = case.get_value("COMP_OCN")
+    atm_model = case.get_value("COMP_ATM")
+    cmake_args = get_standard_cmake_args(case)
 
     if ocn_model == 'mom' or atm_model == "fv3gfs":
-        gmake_opts += "USE_FMS=TRUE"
-
+        cmake_args += "-DUSE_FMS=TRUE"
 
     expect((num_esp is None) or (int(num_esp) == 1), "ESP component restricted to one instance")
-
 
     with open('Filepath', 'w') as out:
         out.write(os.path.join(caseroot, "SourceMods", "src.drv") + "\n")
         out.write(os.path.join(cimeroot, "src", "drivers", "mct", "main") + "\n")
 
     # build model executable
+    exename = case.get_value("MODEL") + ".exe"
+    cmd = "cmake -DEXEC_SE={exename} -DMODEL=driver {cmake_args} {srcroot}/components".\
+        format(exename=exename, cmake_args=cmake_args, srcroot=srcroot)
 
-    makefile = os.path.join(casetools, "Makefile")
-    exename = os.path.join(case.get_value("EXEROOT"), case.get_value("MODEL") + ".exe")
+    run_bld_cmd_ensure_logging(cmd, logger, from_dir=bldroot)
+    run_bld_cmd_ensure_logging("{} -j {}".format(gmake, gmake_j), logger, from_dir=bldroot)
 
-    cmd = "{gmake} exec_se -j {gmake_j} EXEC_SE={exename} MODEL=driver {gmake_opts} -f {makefile} ".format(gmake=gmake, gmake_j=gmake_j, exename=exename,
-                                                                                                           gmake_opts=gmake_opts, makefile=makefile)
-
-    rc, out, _ = run_cmd(cmd, combine_output=True)
-    expect(rc==0,"Command %s failed rc=%d\nout=%s"%(cmd,rc,out))
-    logger.info(out)
+###############################################################################
+def _main_func():
+###############################################################################
+    caseroot, _, bldroot = parse_input(sys.argv)
+    with Case(caseroot, read_only=False) as case:
+        buildexe(case, bldroot)
 
 ###############################################################################
 
