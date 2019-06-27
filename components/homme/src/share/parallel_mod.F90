@@ -184,6 +184,10 @@ contains
     else
        MPIreal_t    = MPI_REAL8
     endif
+
+    ! this type is only to use mpi_minloc and mpi_maxloc in print_state()
+    ! on a machine where MPIreal_t != MPI_DOUBLE_PRECISION there will be
+    ! truncation in calls with maxloc, minloc and loss of reproducibility
     MPI2real_t   = MPI_2DOUBLE_PRECISION
 
     MPIinteger_t = MPI_INTEGER
