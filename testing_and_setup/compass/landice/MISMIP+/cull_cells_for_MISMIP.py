@@ -34,7 +34,7 @@ for option in parser.option_list:
         option.help += (" " if option.help else "") + "[default: %default]"
 options, args = parser.parse_args()
 
-print('' # make a space in stdout before further output
+print('') # make a space in stdout before further output
 
 
 # ===============================================
