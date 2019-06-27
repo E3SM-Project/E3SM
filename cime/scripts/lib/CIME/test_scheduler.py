@@ -637,6 +637,7 @@ class TestScheduler(object):
                     for comp in comps:
                         envtest.set_test_parameter("NTASKS_"+comp, "1")
                         envtest.set_test_parameter("NTHRDS_"+comp, "1")
+			envtest.set_test_parameter("ROOTPE_"+comp, "0")
 
                 elif (opt.startswith('I') or # Marker to distinguish tests with same name - ignored
                       opt.startswith('M') or # handled in create_newcase
