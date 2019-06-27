@@ -37,7 +37,6 @@ private
   public :: prim_energy_halftimes
   public :: prim_diag_scalars
 
-
 contains
 !=======================================================================================================! 
 
@@ -72,7 +71,6 @@ contains
        elem(ie)%accum%IEner=0
        elem(ie)%accum%PEner=0
     end do
-
   end subroutine prim_printstate_init
 !=======================================================================================================! 
 
@@ -108,6 +106,7 @@ contains
     real (kind=real_kind)  :: w_over_dz(np,np,nlev),w_over_dz_local(nets:nete),w_over_dz_p
     real (kind=real_kind)  :: tdiag(np,np,nlev)
     !    real (kind=real_kind)  :: E(np,np)
+
 
     real (kind=real_kind) :: umin_local(nets:nete), umax_local(nets:nete), usum_local(nets:nete), &
          vmin_local(nets:nete), vmax_local(nets:nete), vsum_local(nets:nete), &
@@ -235,6 +234,7 @@ contains
        !======================================================  
        umax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,1,:,n0))
        vmax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,2,:,n0))
+       wmax_local(ie)    = MAXVAL(elem(ie)%state%w_i(:,:,:,n0))
        phimax_local(ie)  = MAXVAL(dphi(:,:,:))
        w_over_dz_local(ie)  = MAXVAL(w_over_dz)
        thetamax_local(ie) = MAXVAL(elem(ie)%state%vtheta_dp(:,:,:,n0)) 
@@ -254,6 +254,7 @@ contains
 
        umin_local(ie)    = MINVAL(elem(ie)%state%v(:,:,1,:,n0))
        vmin_local(ie)    = MINVAL(elem(ie)%state%v(:,:,2,:,n0))
+       Wmin_local(ie)    = MINVAL(elem(ie)%state%w_i(:,:,:,n0))
        thetamin_local(ie) = MINVAL(elem(ie)%state%vtheta_dp(:,:,:,n0))
        phimin_local(ie)  = MINVAL(dphi)
 
@@ -270,7 +271,6 @@ contains
 
 
        psmin_local(ie) = MINVAL(tmp(:,:,ie))
-
        !======================================================
 
        usum_local(ie)    = SUM(elem(ie)%state%v(:,:,1,:,n0))
