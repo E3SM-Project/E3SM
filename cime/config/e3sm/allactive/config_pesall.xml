@@ -7726,7 +7726,7 @@
       </pes>
     </mach>
     <mach name="compy">
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+" pesize="S">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+" pesize="S">
         <comment> -compset A_WCYCL* -res ne30_oEC* on 27 nodes pure-MPI </comment>
         <ntasks>
           <ntasks_atm>900</ntasks_atm>
@@ -7753,7 +7753,7 @@
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+" pesize="any">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+" pesize="any">
         <comment> -compset A_WCYCL* -res ne30_oEC* on 40 nodes pure-MPI </comment>
         <ntasks>
           <ntasks_atm>1350</ntasks_atm>
@@ -7780,7 +7780,7 @@
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+" pesize="L">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+" pesize="L">
         <comment> -compset A_WCYCL* -res ne30_oEC* on 80 nodes pure-MPI </comment>
         <ntasks>
           <ntasks_atm>2700</ntasks_atm>
@@ -7807,7 +7807,7 @@
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+" pesize="XL">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+" pesize="XL">
         <comment> -compset A_WCYCL* -res ne30_oEC* on 160 nodes pure-MPI </comment>
         <ntasks>
           <ntasks_atm>5400</ntasks_atm>
@@ -8232,7 +8232,7 @@
       </pes>
     </mach>
     <mach name="edison">
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.*" pesize="any">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.*" pesize="any">
         <comment>"edison ne4 coupled compest on 6 nodes, OCN by itself on 2 nodes sypd=45.2"</comment>
         <ntasks>
           <ntasks_atm>96</ntasks_atm>
@@ -8547,7 +8547,7 @@
   </grid>
   <grid name=".*T62_oi%oRRS18to6*">
     <mach name="cori-knl">
-      <pes compset=".*MPASSI.+MPASO.+" pesize="any">
+      <pes compset=".*MPASCICE.+MPASO.+" pesize="any">
         <comment>cori-knl, hires (18to6) G case on 150 nodes, 64x2, sypd=0.5</comment>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
@@ -8576,7 +8576,7 @@
   </grid>
   <grid name=".*T62_oi%oEC60to30.*">
     <mach name="cori-knl">
-      <pes compset=".*MPASSI.+MPASO.+" pesize="any">
+      <pes compset=".*MPASCICE.+MPASO.+" pesize="any">
         <comment>cori-knl, lowres (60to30) G case on 16 nodes, 64x2, sypd=2.42</comment>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
