@@ -34,7 +34,7 @@ module scamMod
   public scam_default_opts        ! SCAM default run-time options 
   public scam_setopts             ! SCAM run-time options 
   public setiopupdate
-  public readiopdata        
+  public readiopdata      
 
 !
 ! !PUBLIC MODULE DATA:
@@ -136,7 +136,7 @@ module scamMod
                                                ! mo_drydep algorithm
 					       
   real(r8), public ::  scm_relaxation_low      ! lowest level to apply relaxation
-  real(r8), public ::  scm_relaxation_high     ! highest level to apply relaxation			       
+  real(r8), public ::  scm_relaxation_high     ! highest level to apply relaxation
 					       
   real(r8), public, pointer :: loniop(:)
   real(r8), public, pointer :: latiop(:)
@@ -335,7 +335,7 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
            use_replay = .true.
         else
            use_replay = .false.
-        endif	
+        endif
 	
 	if (dycore_is('SE') .and. use_replay) then
 	  call wrap_inq_dimid( ncid, 'ncol', londimid   )
@@ -685,7 +685,7 @@ end subroutine setiopupdate
       use_replay = .true.
    else
       use_replay = .false.
-   endif 
+   endif
 
 !=====================================================================
 !     
@@ -1293,7 +1293,7 @@ endif !scm_observed_aero
        have_divt3d = .false.
      else
        have_divt3d = .true.
-     endif    
+     endif
 
      status = nf90_inq_varid( ncid, 'Ptend', varid   )
      if ( status .ne. nf90_noerr ) then
@@ -1549,5 +1549,6 @@ endif !scm_observed_aero
 
    return
 end subroutine readiopdata
+
 
 end module scamMod

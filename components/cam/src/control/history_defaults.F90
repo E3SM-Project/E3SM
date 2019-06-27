@@ -99,7 +99,7 @@ CONTAINS
     call addfld ('Ps',horiz_only, 'A','Pa','Ps for scam',gridname=trim(dyngrid))
     call add_default ('Ps',2,' ')
     call addfld ('divT3d',(/ 'lev' /), 'A','K','Dynamics Residual for T',gridname=trim(dyngrid))
-    call add_default ('divT3d',2,' ')   
+    call add_default ('divT3d',2,' ')
 
     call addfld ('heat_glob',horiz_only, 'A', 'K/s', 'Global mean total energy difference')
     call add_default ('heat_glob',2,' ')
@@ -107,8 +107,7 @@ CONTAINS
     do m=1,pcnst
        call addfld (trim(cnst_name(m))//'_dten',(/ 'lev' /), 'A','kg/kg', &
             trim(cnst_name(m))//' IOP Dynamics Residual for '//trim(cnst_name(m)),gridname=trim(dyngrid))
-       call add_default (trim(cnst_name(m))//'_dten',2,' ')             
-      
+       call add_default (trim(cnst_name(m))//'_dten',2,' ')
     end do
     call addfld ('shflx',horiz_only,    'A','W/m2','Surface sensible heat flux for scam')
     call add_default ('shflx ',2,' ')

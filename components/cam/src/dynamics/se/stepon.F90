@@ -31,7 +31,6 @@ module stepon
    use shr_const_mod,       only: SHR_CONST_PI
 
    implicit none
-   
    private
    save
 
@@ -483,7 +482,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
 #if (defined E3SM_SCM_REPLAY) 
 
    tl_f = TimeLevel%n0
-
+   
    do ie=1,nelemd
      do k=1,nlev
        do j=1,np
@@ -521,7 +520,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
      call outfld('divT3d',forcing_temp,npsq,ie)
      do p=1,pcnst
        call outfld(trim(cnst_name(p))//'_dten',forcing_q(:,:,p),npsq,ie)   
-     enddo    
+     enddo 
      
    enddo
 

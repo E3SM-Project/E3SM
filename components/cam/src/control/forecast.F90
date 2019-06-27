@@ -178,18 +178,12 @@ subroutine forecast(lat, psm1, psm2,ps, &
    end do
 
    wfldint(plevp) = 0.0_r8
- 
-   if (use_3dfrc .and. use_iop) then
 
-!  If using the E3SM REPLAY option, then this method will not 
-!    give exact b4b results with the GCM column, though this 
-!    should faithful represent the behavior and regime of
-!    the column with small error.  
+   if (use_3dfrc .and. use_iop) then
 
 !  Complete a very simple forecast using supplied 3-dimensional forcing
 !  by the large scale.  Obviates the need for any kind of vertical 
 !  advection calculation.  Skip to diagnostic estimates of vertical term.
-
       i=1
       do k=1,plev
          tfcst(k) = t3m2(k) + ztodt*t2(k) + ztodt*divt3d(k)
@@ -202,7 +196,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
 
       go to 1000
 
-   end if  
+   end if 
 
 !
 !  provide an eulerian forecast.  First check to ensure that 2d forcing
