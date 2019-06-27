@@ -116,7 +116,7 @@ contains
          fvmin_local(nets:nete),fvmax_local(nets:nete),fvsum_local(nets:nete), &
          ftmin_local(nets:nete),ftmax_local(nets:nete),ftsum_local(nets:nete), &
          fqmin_local(nets:nete),fqmax_local(nets:nete),fqsum_local(nets:nete), &
-         wmin_local(nets:nete),wmax_local(nets:nete),wsum_local(nets:nete),&
+         wsum_local(nets:nete),&
          phimin_local(nets:nete),phimax_local(nets:nete),phisum_local(nets:nete),&
          dpmin_local(nets:nete), dpmax_local(nets:nete), dpsum_local(nets:nete)
 
@@ -134,7 +134,7 @@ contains
     real (kind=real_kind) :: fusum_p, fvsum_p, ftsum_p, fqsum_p
     real (kind=real_kind) :: fumin_p, fvmin_p, ftmin_p, fqmin_p
     real (kind=real_kind) :: fumax_p, fvmax_p, ftmax_p, fqmax_p
-    real (kind=real_kind) :: wmax_p, wmin_p, wsum_p, newwmax_local(2), newwmin_local(2)
+    real (kind=real_kind) :: wsum_p,  wmax_local(2), wmin_local(2)
     real (kind=real_kind) :: phimax_p, phimin_p, phisum_p
 
 
@@ -234,7 +234,6 @@ contains
        !======================================================  
        umax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,1,:,n0))
        vmax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,2,:,n0))
-       wmax_local(ie)    = MAXVAL(elem(ie)%state%w_i(:,:,:,n0))
        phimax_local(ie)  = MAXVAL(dphi(:,:,:))
        w_over_dz_local(ie)  = MAXVAL(w_over_dz)
        thetamax_local(ie) = MAXVAL(elem(ie)%state%vtheta_dp(:,:,:,n0)) 
@@ -254,7 +253,6 @@ contains
 
        umin_local(ie)    = MINVAL(elem(ie)%state%v(:,:,1,:,n0))
        vmin_local(ie)    = MINVAL(elem(ie)%state%v(:,:,2,:,n0))
-       Wmin_local(ie)    = MINVAL(elem(ie)%state%w_i(:,:,:,n0))
        thetamin_local(ie) = MINVAL(elem(ie)%state%vtheta_dp(:,:,:,n0))
        phimin_local(ie)  = MINVAL(dphi)
 
@@ -311,10 +309,10 @@ contains
     end do
 
     if ( .not. theta_hydrostatic_mode ) then
-       call findExtremaWithLevel(elem,newwmax_local,'w_i','max',n0,nets,nete)
-       call ParallelMaxWithIndex(newwmax_local, hybrid)
-       call findExtremaWithLevel(elem,newwmin_local,'w_i','min',n0,nets,nete)
-       call ParallelMinWithIndex(newwmin_local, hybrid)
+       call findExtremaWithLevel(elem,wmax_local,'w_i','max',n0,nets,nete)
+       call ParallelMaxWithIndex(wmax_local, hybrid)
+       call findExtremaWithLevel(elem,wmin_local,'w_i','min',n0,nets,nete)
+       call ParallelMinWithIndex(wmin_local, hybrid)
     endif
 
     !JMD This is a Thread Safe Reduction 
@@ -393,8 +391,8 @@ contains
     if(hybrid%masterthread) then
        write(iulog,108) "u     = ",umin_p,"     ",umax_p,"     ",usum_p
        write(iulog,108) "v     = ",vmin_p,"     ",vmax_p,"     ",vsum_p
-       write(iulog,109) "w     = ",newwmin_local(1),"(",nint(newwmin_local(2)),")",&
-                                   newwmax_local(1),"(",nint(newwmax_local(2)),")",wsum_p
+       write(iulog,109) "w     = ",wmin_local(1),"(",nint(wmin_local(2)),")",&
+                                   wmax_local(1),"(",nint(wmax_local(2)),")",wsum_p
        write(iulog,100) "tdiag = ",tmin_p,tmax_p,tsum_p
        write(iulog,100) "theta = ",thetamin_p,thetamax_p,thetasum_p
        write(iulog,100) "dz(m) = ",phimin_p/g,phimax_p/g,phisum_p/g
@@ -413,8 +411,6 @@ contains
        if(fqmin_p.ne.fqmax_p) write(iulog,100) "fq = ",fqmin_p, fqmax_p, fqsum_p
        if (.not.theta_hydrostatic_mode) then
           write(iulog,'(a,1f10.2)')'min .5*dz/w (CFL condition)',.5/(w_over_dz_p)
-          write(iulog,*)'W max with layer number', newwmax_local(1),nint(newwmax_local(2))
-          write(iulog,*)'W min with layer number', newwmin_local(1),nint(newwmin_local(2))
        endif
     end if
  
