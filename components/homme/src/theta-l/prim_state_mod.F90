@@ -107,7 +107,6 @@ contains
     real (kind=real_kind)  :: tdiag(np,np,nlev)
     !    real (kind=real_kind)  :: E(np,np)
 
-
     real (kind=real_kind) :: umin_local(nets:nete), umax_local(nets:nete), usum_local(nets:nete), &
          vmin_local(nets:nete), vmax_local(nets:nete), vsum_local(nets:nete), &
          tmin_local(nets:nete), tmax_local(nets:nete), tsum_local(nets:nete), &
@@ -120,6 +119,7 @@ contains
          wmin_local(nets:nete),wmax_local(nets:nete),wsum_local(nets:nete),&
          phimin_local(nets:nete),phimax_local(nets:nete),phisum_local(nets:nete),&
          dpmin_local(nets:nete), dpmax_local(nets:nete), dpsum_local(nets:nete)
+
 
     real (kind=real_kind) :: umin_p, vmin_p, tmin_p, qvmin_p(qsize_d),&
          psmin_p, dpmin_p, thetamin_p
