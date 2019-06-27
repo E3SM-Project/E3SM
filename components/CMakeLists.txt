@@ -492,9 +492,9 @@ endif()
 # System libraries (netcdf, mpi, pnetcdf, esmf, trilinos, etc.)
 if (NOT SLIBS)
   if (NOT NETCDF_SEPARATE)
-    set(SLIBS "${SLIBS} -L${LIB_NETCDF} -lnetcdff -lnetcdf")
+    set(SLIBS "-L${LIB_NETCDF} -lnetcdff -lnetcdf")
   else()
-    set(SLIBS "${SLIBS} -L${LIB_NETCDF_FORTRAN} -L${LIB_NETCDF_C} -lnetcdff -lnetcdf")
+    set(SLIBS "-L${LIB_NETCDF_FORTRAN} -L${LIB_NETCDF_C} -lnetcdff -lnetcdf")
   endif()
 endif()
 
@@ -578,8 +578,6 @@ endif()
 set(MCTLIBS "${MCT_LIBDIR}/libmct.a ${MCT_LIBDIR}/libmpeu.a")
 
 set(GPTLLIB "${GPTL_LIBDIR}/libgptl.a")
-
-set(ULIBS "-L${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/lib -lcsm_share -L${INSTALL_SHAREDPATH}/lib ${PIOLIBNAME} -lgptl -lmct -lmpeu")
 
 #------------------------------------------------------------------------------
 # Drive cmake script for cism and pio
@@ -699,7 +697,7 @@ endif()
 
 if (NOT ULIBDEP)
   if (LIBROOT)
-    set(ULIBDEP "${ULIBDEP} ${LIBROOT}/libatm.a")
+    set(ULIBDEP "${LIBROOT}/libatm.a")
     set(ULIBDEP "${ULIBDEP} ${LIBROOT}/libice.a")
     set(ULIBDEP "${ULIBDEP} ${LNDLIBDIR}/${LNDLIB}")
     set(INCLDIR "${INCLDIR} -I${LNDOBJDIR}")
@@ -724,21 +722,6 @@ if (OCN_SUBMODEL STREQUAL "moby")
   set(ULIBDEP "${ULIBDEP} ${LIBROOT}/libmoby.a")
 endif()
 
-# JGF, this kind of thing should be done via target_link_library in cmake
-if (NOT CLIBS)
-  if (ULIBDEP)
-    # For each occurrence of something like /path/to/foo/libbar.a in ULIBDEP,
-    # CLIBS will contain -L/path/to/foo -lbar
-    foreach (ITEM ${ULIBDEP})
-      get_filename_component(ULIB_DIR ${ITEM} DIRECTORY)
-      get_filename_component(ULIB_LIB ${ITEM} NAME)
-      set(CLIBS "${CLIBS} -L${ULIB_DIR} -l${ULIB_LIB}")
-    endforeach()
-  endif()
-endif()
-
-# libcsm_share.a is in ULIBDEP, but -lcsm_share is in ULIBS rather than CLIBS,
-# so this needs to be added after creating CLIBS above
 set(CSMSHARELIB "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/lib/libcsm_share.a")
 set(ULIBDEP "${ULIBDEP} ${CSMSHARELIB}")
 
@@ -803,6 +786,7 @@ endif()
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../../lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../../lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../..)
 
 if (COMPLIB)
   add_library(${COMPLIB})
@@ -818,5 +802,10 @@ endif()
 
 if (EXEC_SE)
   add_executable(${EXEC_SE})
-  target_link_library(${EXEC_SE} ${COMPLIB} ${ULIBDEP} ${CSMSHARELIB} ${MCTLIBS} ${PIOLIB} ${GPTLLIB} ${CLIBS} ${ULIBS} ${SLIBS} ${MLIBS} ${F90_LDFLAGS})
+  target_sources(${EXEC_SE} PRIVATE ${SOURCES})
+  set(ALL_LIBS "${ULIBDEP} ${MCTLIBS} ${PIOLIB} ${GPTLLIB} ${SLIBS} ${MLIBS} ${F90_LDFLAGS}")
+  separate_arguments(ALL_LIBS_LIST UNIX_COMMAND "${ALL_LIBS}")
+  foreach(ITEM IN LISTS ALL_LIBS_LIST)
+    target_link_libraries(${EXEC_SE} ${ITEM})
+  endforeach()
 endif()
