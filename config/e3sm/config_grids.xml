@@ -1863,6 +1863,8 @@
     <required_gridmap grid1="atm_grid" grid2="lnd_grid">ATM2LND_SMAPNAME</required_gridmap>
     <required_gridmap grid1="atm_grid" grid2="lnd_grid">LND2ATM_FMAPNAME</required_gridmap>
     <required_gridmap grid1="atm_grid" grid2="lnd_grid">LND2ATM_SMAPNAME</required_gridmap>
+    <required_gridmap grid1="atm_grid" grid2="rof_grid">ATM2ROF_FMAPNAME</required_gridmap>
+    <required_gridmap grid1="atm_grid" grid2="rof_grid">ATM2ROF_SMAPNAME</required_gridmap>
     <required_gridmap grid1="atm_grid" grid2="wav_grid">ATM2WAV_SMAPNAME</required_gridmap>
     <required_gridmap grid1="ocn_grid" grid2="wav_grid">OCN2WAV_SMAPNAME</required_gridmap>
     <required_gridmap grid1="ocn_grid" grid2="wav_grid">ICE2WAV_SMAPNAME</required_gridmap> <!-- ??? -->
@@ -2379,6 +2381,11 @@
       <map name="ATM2LND_SMAPNAME">cpl/gridmaps/T341/map_T341_to_fv0.23x0.31_aave_110413.nc</map>
       <map name="LND2ATM_FMAPNAME">cpl/gridmaps/fv0.23x0.31/map_fv0.23x0.31_to_T341_aave_110413.nc</map>
       <map name="LND2ATM_SMAPNAME">cpl/gridmaps/fv0.23x0.31/map_fv0.23x0.31_to_T341_aave_110413.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne30np4" rof_grid="r05">
+      <map name="ATM2ROF_FMAPNAME">lnd/clm2/mappingdata/maps/ne30np4/map_ne30np4_to_0.5x0.5rtm_aave_da_110320.nc</map>
+      <map name="ATM2ROF_SMAPNAME">lnd/clm2/mappingdata/maps/ne30np4/map_ne30np4_to_0.5x0.5rtm_aave_da_110320.nc</map>
     </gridmap>
 
     <!--  QL, 150525, wav to ocn, atm, ice mapping files  -->
