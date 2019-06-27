@@ -20,8 +20,8 @@ EXE := exe_mkatmsrffile
 #---------------------------
 
 #include string
-INC = -I$(NETCDF_ROOT)/include
-LIB = -L$(NETCDF_ROOT)/lib -lnetcdf -lnetcdff
+INC = -I$(INC_NETCDF)
+LIB = -L$(LIB_NETCDF) -lnetcdf -lnetcdff
 
 FFLAGS = -O2
 
