@@ -533,7 +533,7 @@ contains
                recvcount,displs,MPIreal_t,hybrid%par%root, &
                hybrid%par%comm,ierr)
           if(ierr .ne. MPI_SUCCESS) then
-             errorcode=ierr 
+             errorcode=ierr
              call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
              print *,'ElementSum_1d: Error after call to MPI_Gatherv: ',errorstring
           endif

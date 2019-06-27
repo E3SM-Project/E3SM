@@ -26,8 +26,11 @@ module parallel_mod
   integer,      public            :: MaxNumberFrames, numframes
   logical,      public            :: PartitionForNodes
   integer,      public :: MPIreal_t,MPIinteger_t,MPIChar_t,MPILogical_t
-  integer,      public :: MPI2real_t
   integer,      public :: iam
+
+#ifdef _MPI
+  integer, public            :: MPI2real_t
+#endif
 
   integer,      public, allocatable    :: status(:,:)
   integer,      public, allocatable    :: Rrequest(:)
@@ -178,14 +181,11 @@ contains
        ! LAM MPI defined MPI_REAL8 differently from MPI_DOUBLE_PRECISION
        ! and LAM MPI's allreduce does not accept on MPI_REAL8
        MPIreal_t    = MPI_DOUBLE_PRECISION
-       MPI2real_t   = MPI_2DOUBLE_PRECISION
     else
        MPIreal_t    = MPI_REAL8
-!not sure this will work, derived type
-!       MPI2real_t   = MPI_2REAL8
-!dummy
-       MPI2real_t    = MPI_2DOUBLE_PRECISION
     endif
+    MPI2real_t   = MPI_2DOUBLE_PRECISION
+
     MPIinteger_t = MPI_INTEGER
     MPIchar_t    = MPI_CHARACTER 
     MPILogical_t = MPI_LOGICAL
