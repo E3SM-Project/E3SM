@@ -1883,7 +1883,7 @@
     <MAX_MPITASKS_PER_NODE>40</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="mpi-serial">
-      <executable/>
+      <executable> </executable>
     </mpirun>
     <mpirun mpilib="mvapich2">
       <executable>srun</executable>
@@ -1930,9 +1930,13 @@
       <modules mpilib="impi">
         <command name="load">intelmpi/2019u3</command>
       </modules>
-      <modules>
+      <modules mpilib="!mpi-serial">
         <command name="load">netcdf/4.6.3</command>
         <command name="load">pnetcdf/1.9.0</command>
+        <command name="load">mkl/2019u3</command>
+      </modules>
+      <modules mpilib="mpi-serial">
+        <command name="load">netcdf/4.6.3</command>
         <command name="load">mkl/2019u3</command>
       </modules>
     </module_system>
@@ -1953,6 +1957,9 @@
       <env name="OMP_STACKSIZE">64M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
+    </environment_variables>
+    <environment_variables mpilib="!mpi-serial">
+      <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
     </environment_variables>
   </machine>
 
