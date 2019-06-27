@@ -33,7 +33,7 @@ module lnd2atmMod
   use WaterstateType       , only : waterstate_type
   use GridcellType         , only : grc_pp
   use GridcellDataType     , only : grc_ef, grc_ws, grc_wf
-  use ColumnDataType       , only : col_ws, col_wf, col_cf  
+  use ColumnDataType       , only : col_ws, col_wf, col_cf, col_es  
   use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
   use SoilHydrologyType    , only : soilhydrology_type 
   
@@ -112,7 +112,7 @@ contains
 
   !------------------------------------------------------------------------
   subroutine lnd2atm(bounds, &
-       atm2lnd_vars, surfalb_vars, temperature_vars, frictionvel_vars, &
+       atm2lnd_vars, surfalb_vars, frictionvel_vars, &
        waterstate_vars, waterflux_vars, energyflux_vars, &
        solarabs_vars, carbonflux_vars, drydepvel_vars, &
        vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, lnd2atm_vars) 
@@ -127,7 +127,6 @@ contains
     type(bounds_type)      , intent(in)     :: bounds  
     type(atm2lnd_type)     , intent(in)     :: atm2lnd_vars
     type(surfalb_type)     , intent(in)     :: surfalb_vars
-    type(temperature_type) , intent(in)     :: temperature_vars
     type(frictionvel_type) , intent(in)     :: frictionvel_vars
     type(waterstate_type)  , intent(inout)  :: waterstate_vars
     type(waterflux_type)   , intent(in)     :: waterflux_vars
@@ -334,17 +333,22 @@ contains
 
 
     call c2g( bounds, &
-         temperature_vars%t_grnd_col (bounds%begc:bounds%endc), &
+         col_es%t_grnd (bounds%begc:bounds%endc), &
          lnd2atm_vars%t_grnd_grc   (bounds%begg:bounds%endg), &
          c2l_scale_type= 'urbans', l2g_scale_type='unity' )
 
     do lvl = -nlevsno+1, nlevgrnd
         call c2g( bounds, &
-            temperature_vars%t_soisno_col(bounds%begc:bounds%endc, lvl), & 
+            col_es%t_soisno(bounds%begc:bounds%endc, lvl), & 
             lnd2atm_vars%t_soisno_grc(bounds%begg:bounds%endg, lvl), &
             c2l_scale_type= 'urbans', l2g_scale_type='unity' )
     enddo
     
+    call c2g( bounds, &
+         soilhydrology_vars%zwt_col (bounds%begc:bounds%endc), &
+         lnd2atm_vars%zwt_grc   (bounds%begg:bounds%endg), &
+         c2l_scale_type= 'urbans', l2g_scale_type='unity' )    
+        
     do g = bounds%begg,bounds%endg
        ! TODO temperary treatment in case weird values after c2g
        if(lnd2atm_vars%t_soisno_grc(g, 1) > 400._r8) then
@@ -356,11 +360,6 @@ contains
 
     end do
 
-    call c2g( bounds, &
-         soilhydrology_vars%zwt_col (bounds%begc:bounds%endc), &
-         lnd2atm_vars%zwt_grc   (bounds%begg:bounds%endg), &
-         c2l_scale_type= 'urbans', l2g_scale_type='unity' )    
-        
   end subroutine lnd2atm
 
 
