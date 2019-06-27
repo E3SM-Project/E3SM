@@ -44,10 +44,10 @@ module co2_data_flux
   integer :: latsiz  ! size of latitude dimension
 
   !Following state data type is declared so that we can send state as an argument 
-  !in advance_trcdata call. Only "zi" (interface height) is used from state variable
-  !to facilitate vertical interpolation. Therefore a state computed at the model initialization
-  !should suffice
-  type(physics_state), pointer :: state_at_init(:)
+  !in advance_trcdata call. Only "pint" (or pmid) is used from state variable
+  !to facilitate vertical interpolation. Therefore a state computed at the model 
+  !initialization should suffice
+  type(physics_state),pointer :: state_at_init(:)
  
 !--------------------------------------------------------------------------------------------------
 TYPE :: read_interp          
