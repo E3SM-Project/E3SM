@@ -13,6 +13,7 @@ module co2_data_flux
   use cam_abortutils,     only : endrun
   use netcdf,         only : nf90_inq_dimid, nf90_inquire_dimension, nf90_inq_varid, nf90_get_var, nf90_open
   use cam_logfile,    only : iulog
+  use physics_types,  only: physics_state, physics_state_copy
 #ifdef CO2_BILIN_REGRID
   use tracer_data,    only : trfld, trfile, trcdata_init, advance_trcdata
 #endif
@@ -41,6 +42,12 @@ module co2_data_flux
   real(r8), parameter :: daysperyear = 365.0_r8  ! Number of days in a year         
   integer :: lonsiz  ! size of longitude dimension, dataset is 2d(lat,lon), in CAM grid
   integer :: latsiz  ! size of latitude dimension
+
+  !Following state data type is declared so that we can send state as an argument 
+  !in advance_trcdata call. Only "zi" (interface height) is used from state variable
+  !to facilitate vertical interpolation. Therefore a state computed at the model initialization
+  !should suffice
+  type(physics_state), pointer :: state_at_init(:)
  
 !--------------------------------------------------------------------------------------------------
 TYPE :: read_interp          
@@ -84,7 +91,6 @@ subroutine read_data_flux (input_file, xin, state, pbuf2d)
                            is_perpetual, get_perp_date, get_step_size, is_first_step
   use ioFileMod,    only : getfil
   
-  use physics_types,  only: physics_state
   use physics_buffer, only: physics_buffer_desc
 
   implicit none
@@ -107,7 +113,7 @@ subroutine read_data_flux (input_file, xin, state, pbuf2d)
   integer dtime                 ! timestep size [seconds]
   integer cnt3(3)               ! array of counts for each dimension
   integer strt3(3)              ! array of starting indices
-  integer n                     ! indices
+  integer n, c                  ! indices
   integer j                     ! latitude index
   integer istat                 ! error return
   integer  :: yr, mon, day      ! components of a date
@@ -136,7 +142,12 @@ subroutine read_data_flux (input_file, xin, state, pbuf2d)
 ! Some of the arguments passed here are hardwired which can be replaced with variables
 ! if need be.
   call trcdata_init(specifier, input_file , '', '', xin%fields, xin%file, .false., 0, 0, 0, 'SERIAL')
-
+  
+  !allocate state and copy the state at init 
+  allocate(state_at_init(begchunk:endchunk))
+  do c = begchunk, endchunk
+     call physics_state_copy(state(c),state_at_init(c))
+  enddo
 #else
  
   xin%nm_f = 1
@@ -334,7 +345,7 @@ subroutine interp_time_flux (xin, prev_timestep)
   integer :: icol      ! indices
 
   !Read next data if needed and interpolate (space and time)
-  call advance_trcdata( xin%fields, xin%file)
+  call advance_trcdata( xin%fields, xin%file, state_at_init)
 
   !Assign 
   do lchnk   = begchunk, endchunk
