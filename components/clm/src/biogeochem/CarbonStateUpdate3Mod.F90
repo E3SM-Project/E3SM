@@ -102,7 +102,7 @@ contains
       endif !
 
       ! SOM C losses due to erosion
-      if ( use_erosion .and. ero_ccycle ) then
+      if ( ero_ccycle ) then
          do l = 1, ndecomp_pools
             if ( decomp_cascade_con%is_soil(l) ) then
                do j = 1, nlevdecomp

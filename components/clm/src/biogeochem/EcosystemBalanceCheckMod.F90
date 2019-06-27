@@ -250,7 +250,7 @@ contains
          col_coutputs = col_coutputs - som_c_leached(c)
 
          ! add erosion flux
-         if (use_erosion .and. ero_ccycle) then
+         if (ero_ccycle) then
             col_coutputs = col_coutputs + som_c_yield(c)
          end if
 
@@ -290,7 +290,7 @@ contains
             write(iulog,*)'endcb                 = ',col_endcb(c),col_cs%totsomc(c)
             write(iulog,*)'delta store           = ',col_endcb(c)-col_begcb(c)
 
-            if (use_erosion .and. ero_ccycle) then
+            if (ero_ccycle) then
                write(iulog,*)'erosion               = ',som_c_yield(c)*dt
             end if
 
@@ -437,7 +437,7 @@ contains
          col_noutputs(c) = col_noutputs(c) - som_n_leached(c)
 
          ! subtracted erosion flux
-         if (use_erosion .and. ero_ccycle) then
+         if (ero_ccycle) then
             col_noutputs(c) = col_noutputs(c) + som_n_yield(c)
          end if
 
@@ -482,7 +482,7 @@ contains
          endif
          write(iulog,*)'fire                  = ',col_fire_nloss(c)*dt
 
-         if (use_erosion .and. ero_ccycle) then
+         if (ero_ccycle) then
             write(iulog,*)'erosion               = ',som_n_yield(c)*dt
          end if
 
@@ -660,9 +660,9 @@ contains
          col_poutputs(c) = col_poutputs(c) + col_prod1p_loss(c)
 
          ! soil erosion
-         if (use_erosion .and. ero_ccycle) then
+         if (ero_ccycle) then
             col_poutputs(c) = col_poutputs(c) + som_p_yield(c) + labilep_yield(c) + &
-               secondp_yield(c) + occlp_yield(c) + primp_yield(c)
+               secondp_yield(c) !+ occlp_yield(c) + primp_yield(c)
          end if
          
          ! calculate the total column-level phosphorus balance error for this time step
@@ -686,7 +686,7 @@ contains
          write(iulog,*)'input mass  = ',col_pinputs(c)*dt
          write(iulog,*)'output mass = ',col_poutputs(c)*dt
          write(iulog,*)'net flux    = ',(col_pinputs(c)-col_poutputs(c))*dt
-         if (use_erosion .and. ero_ccycle) then
+         if (ero_ccycle) then
             write(iulog,*)'SOP erosion = ',som_p_yield(c)*dt
             write(iulog,*)'SIP erosion = ',(labilep_yield(c)+secondp_yield(c)+occlp_yield(c)+primp_yield(c))*dt
          end if

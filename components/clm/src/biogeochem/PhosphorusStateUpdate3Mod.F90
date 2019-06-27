@@ -295,7 +295,7 @@ contains
     endif !is_active_betr_bgc
 
     ! soil P loss due to soil erosion
-    if ( use_erosion .and. ero_ccycle ) then
+    if ( ero_ccycle ) then
       ! column loop
       do fc = 1, num_soilc
          c = filter_soilc(fc)

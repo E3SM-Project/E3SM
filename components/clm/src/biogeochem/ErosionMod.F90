@@ -181,19 +181,19 @@ contains
 
             ! SOC content in eroded soil (only mud in surface)
             if (dh>0._r8 .and. dh<=dzsoi_decomp(1)) then
-               soc = 0.1 * soc_yld / 1460._r8 / dh
+               soc = 0.1_r8 * soc_yld / 1460._r8 / dh
             else if (dh>dzsoi_decomp(1)) then
-               soc = 0.1 * soc_yld / dm_yld
+               soc = 0.1_r8 * soc_yld / dm_yld
             else
                soc = 0._r8
             end if
-            son = 0.116 * soc - 0.019           ! Beusen et al. (2005)
+            son = 0.116_r8 * soc - 0.019_r8     ! Beusen et al. (2005)
             if (soc>0._r8 .and. son>0._r8) then
                pn2poc = son / soc 
             else
-               pn2poc = 1._r8 / 10.2            ! Beusen et al. (2005)
+               pn2poc = 1._r8 / 10.2_r8         ! Beusen et al. (2005)
             end if
-            pp2poc = 1._r8 / 22                 ! Meybeck (1982)
+            pp2poc = 1._r8 / 22_r8              ! Meybeck (1982)
 
             ! equivalent erosion heights for N and P
             dm = pn2poc * soc_yld
@@ -202,7 +202,7 @@ contains
             do j = 1, nlevdecomp
                ntot = 0._r8
                do l = 1, ndecomp_pools
-                  if ( decomp_cascade_con%is_soil(l) .and. all(decomp_npools_vr(c,:,l)>=0) ) then
+                  if ( decomp_cascade_con%is_soil(l) .and. all(decomp_npools_vr(c,:,l)>=0._r8) ) then
                      ntot = ntot + decomp_npools_vr(c,j,l)   
                   end if
                end do
@@ -221,20 +221,20 @@ contains
             do j = 1, nlevdecomp
                ptot = 0._r8
                do l = 1, ndecomp_pools
-                  if ( decomp_cascade_con%is_soil(l) .and. all(decomp_ppools_vr(c,:,l)>=0) ) then
+                  if ( decomp_cascade_con%is_soil(l) .and. all(decomp_ppools_vr(c,:,l)>=0._r8) ) then
                      ptot = ptot + decomp_ppools_vr(c,j,l)
                   end if
                end do
-               if ( all(labilep_vr(c,:)>=0) ) then
+               if ( all(labilep_vr(c,:)>=0._r8) ) then
                   ptot = ptot + labilep_vr(c,j)
                end if
-               if ( all(secondp_vr(c,:)>=0) ) then
+               if ( all(secondp_vr(c,:)>=0._r8) ) then
                   ptot = ptot + secondp_vr(c,j)
                end if
-               if ( all(occlp_vr(c,:)>=0) ) then
+               if ( all(occlp_vr(c,:)>=0._r8) ) then
                   ptot = ptot + occlp_vr(c,j)
                end if
-               if ( all(primp_vr(c,:)>=0) ) then
+               if ( all(primp_vr(c,:)>=0._r8) ) then
                   ptot = ptot + primp_vr(c,j)
                end if
                if (dm<=ptot*dzsoi_decomp(j)) then
@@ -262,7 +262,7 @@ contains
                   end if
                   if (k1==k2) then
                      do l = 1, ndecomp_pools
-                        if ( all(decomp_cpools_vr(c,:,l)>=0) ) then
+                        if ( all(decomp_cpools_vr(c,:,l)>=0._r8) ) then
                            if (k1<=nlevdecomp) then
                               decomp_cpools_vr_new(l) = decomp_cpools_vr(c,k1,l)
                            else
@@ -274,7 +274,7 @@ contains
                      end do
                   else
                      do l = 1, ndecomp_pools
-                        if ( all(decomp_cpools_vr(c,:,l)>=0) ) then
+                        if ( all(decomp_cpools_vr(c,:,l)>=0._r8) ) then
                            if (k2<=nlevdecomp) then
                               decomp_cpools_vr_new(l) = decomp_cpools_vr(c,k1,l)*(zsoi_tot-zsoi_top)/dzsoi_decomp(j) + &
                                  decomp_cpools_vr(c,k2,l)*(1._r8-(zsoi_tot-zsoi_top)/dzsoi_decomp(j)) 
@@ -315,7 +315,7 @@ contains
                   end if
                   if (k1==k2) then
                      do l = 1, ndecomp_pools
-                        if ( all(decomp_npools_vr(c,:,l)>=0) ) then
+                        if ( all(decomp_npools_vr(c,:,l)>=0._r8) ) then
                            if (k1<=nlevdecomp) then
                               decomp_npools_vr_new(l) = decomp_npools_vr(c,k1,l)
                            else
@@ -327,7 +327,7 @@ contains
                      end do
                   else
                      do l = 1, ndecomp_pools
-                        if ( all(decomp_npools_vr(c,:,l)>=0) ) then
+                        if ( all(decomp_npools_vr(c,:,l)>=0._r8) ) then
                            if (k2<=nlevdecomp) then
                               decomp_npools_vr_new(l) = decomp_npools_vr(c,k1,l)*(zsoi_tot-zsoi_top)/dzsoi_decomp(j) + & 
                                  decomp_npools_vr(c,k2,l)*(1._r8-(zsoi_tot-zsoi_top)/dzsoi_decomp(j))
@@ -368,7 +368,7 @@ contains
                   end if
                   if (k1==k2) then
                      do l = 1, ndecomp_pools
-                        if ( all(decomp_ppools_vr(c,:,l)>=0) ) then
+                        if ( all(decomp_ppools_vr(c,:,l)>=0._r8) ) then
                            if (k1<=nlevdecomp) then
                               decomp_ppools_vr_new(l) = decomp_ppools_vr(c,k1,l)
                            else
@@ -378,7 +378,7 @@ contains
                            decomp_ppools_vr_new(l) = decomp_ppools_vr(c,j,l)
                         end if
                      end do
-                     if ( all(labilep_vr(c,:)>=0) ) then
+                     if ( all(labilep_vr(c,:)>=0._r8) ) then
                         if (k1<=nlevdecomp) then
                            labilep_vr_new = labilep_vr(c,k1)
                         else
@@ -387,7 +387,7 @@ contains
                      else
                         labilep_vr_new = labilep_vr(c,j) 
                      end if
-                     if ( all(secondp_vr(c,:)>=0) ) then
+                     if ( all(secondp_vr(c,:)>=0._r8) ) then
                         if (k1<=nlevdecomp) then
                            secondp_vr_new = secondp_vr(c,k1)
                         else
@@ -396,7 +396,7 @@ contains
                      else
                         secondp_vr_new = secondp_vr(c,j)
                      end if
-                     if ( all(occlp_vr(c,:)>=0) ) then
+                     if ( all(occlp_vr(c,:)>=0._r8) ) then
                         if (k1<=nlevdecomp) then
                            occlp_vr_new = occlp_vr(c,k1)
                         else
@@ -405,7 +405,7 @@ contains
                      else
                         occlp_vr_new = occlp_vr(c,j)
                      end if
-                     if ( all(primp_vr(c,:)>=0) ) then
+                     if ( all(primp_vr(c,:)>=0._r8) ) then
                         if (k1<=nlevdecomp) then
                            primp_vr_new = primp_vr(c,k1)
                         else
@@ -416,7 +416,7 @@ contains
                      end if
                   else
                      do l = 1, ndecomp_pools
-                        if ( all(decomp_ppools_vr(c,:,l)>=0) ) then
+                        if ( all(decomp_ppools_vr(c,:,l)>=0._r8) ) then
                            if (k2<=nlevdecomp) then
                               decomp_ppools_vr_new(l) = decomp_ppools_vr(c,k1,l)*(zsoi_tot-zsoi_top)/dzsoi_decomp(j) + &
                                  decomp_ppools_vr(c,k2,l)*(1._r8-(zsoi_tot-zsoi_top)/dzsoi_decomp(j)) 
@@ -427,7 +427,7 @@ contains
                            decomp_ppools_vr_new(l) = decomp_ppools_vr(c,j,l)
                         end if
                      end do
-                     if ( all(labilep_vr(c,:)>=0) ) then
+                     if ( all(labilep_vr(c,:)>=0._r8) ) then
                         if (k2<=nlevdecomp) then
                            labilep_vr_new = labilep_vr(c,k1)*(zsoi_tot-zsoi_top)/dzsoi_decomp(j) + &
                               labilep_vr(c,k2)*(1._r8-(zsoi_tot-zsoi_top)/dzsoi_decomp(j)) 
@@ -437,7 +437,7 @@ contains
                      else
                         labilep_vr_new = labilep_vr(c,j)
                      end if
-                     if ( all(secondp_vr(c,:)>=0) ) then
+                     if ( all(secondp_vr(c,:)>=0._r8) ) then
                         if (k2<=nlevdecomp) then
                            secondp_vr_new = secondp_vr(c,k1)*(zsoi_tot-zsoi_top)/dzsoi_decomp(j) + &
                               secondp_vr(c,k2)*(1._r8-(zsoi_tot-zsoi_top)/dzsoi_decomp(j))
@@ -447,7 +447,7 @@ contains
                      else
                         secondp_vr_new = secondp_vr(c,j)
                      end if
-                     if ( all(occlp_vr(c,:)>=0) ) then
+                     if ( all(occlp_vr(c,:)>=0._r8) ) then
                         if (k2<=nlevdecomp) then
                            occlp_vr_new = occlp_vr(c,k1)*(zsoi_tot-zsoi_top)/dzsoi_decomp(j) + &
                               occlp_vr(c,k2)*(1._r8-(zsoi_tot-zsoi_top)/dzsoi_decomp(j))
@@ -457,7 +457,7 @@ contains
                      else
                         occlp_vr_new = occlp_vr(c,j)
                      end if
-                     if ( all(primp_vr(c,:)>=0) ) then
+                     if ( all(primp_vr(c,:)>=0._r8) ) then
                         if (k2<=nlevdecomp) then
                            primp_vr_new = primp_vr(c,k1)*(zsoi_tot-zsoi_top)/dzsoi_decomp(j) + &
                               primp_vr(c,k2)*(1._r8-(zsoi_tot-zsoi_top)/dzsoi_decomp(j))

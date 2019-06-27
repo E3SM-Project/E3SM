@@ -262,7 +262,7 @@ module pftvarcon
   real(r8)              :: laimax
   ! Hydrology
   real(r8)              :: rsub_top_globalmax
-  ! Z. Tan add pft dependent parameters for ground cover
+  ! Soil erosion ground cover
   real(r8), allocatable :: gcpsi(:)            !bare ground LAI-decay parameter
   real(r8), allocatable :: pftcc(:)            !plant cover reduction factor for transport capacity
 

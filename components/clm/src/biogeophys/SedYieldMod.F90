@@ -8,6 +8,7 @@ module SedYieldMod
   use shr_const_mod     , only : T0 => SHR_CONST_TKFRZ
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use shr_log_mod       , only : errMsg => shr_log_errMsg
+  use abortutils        , only : endrun
   use decompMod         , only : bounds_type
   use clm_varcon        , only : grav, denh2o, rpi
   use clm_varpar        , only : mxpft, nlevsno, max_patch_per_col
@@ -133,31 +134,31 @@ contains
             end if
 
             ! soil detachment by rainfall
-            stxt = (/fclay(c,1), 100.-fclay(c,1)-fsand(c,1), fsand(c,1), &
+            stxt = (/fclay(c,1), 100._r8-fclay(c,1)-fsand(c,1), fsand(c,1), &
                 fgrvl(c,1)/)  
             K = SoilDetachability(stxt)
             COH = SoilCohesion(stxt)
             Es_P = 0._r8    ! detachment by throughfall + leap drip
             if (forc_t(t)>T0 .and. forc_rain(t)>0._r8) then
-               fungrvl = 1. - 0.01 * fgrvl(c,1)
+               fungrvl = 1._r8 - 0.01_r8 * fgrvl(c,1)
                do pi = 1, max_patch_per_col
                   if ( pi<=col_pp%npfts(c) ) then
                      p = col_pp%pfti(c) + pi - 1
-                     if (veg_pp%active(p) .and. veg_pp%wtcol(p)>0) then
+                     if (veg_pp%active(p) .and. veg_pp%wtcol(p)>0._r8) then
                         ! throughfall power
                         Ptot = qflx_dirct_rain(p) * dtime   ! mm
-                        Ie = 3.6d3 * forc_rain(t)           ! mm/hr
-                        KE_DT = Ptot * fungrvl * max(0._r8,8.95+8.44*log10(Ie))
+                        Ie = 3.6e3_r8 * forc_rain(t)           ! mm/hr
+                        KE_DT = Ptot * fungrvl * max(0._r8,8.95_r8+8.44_r8*log10(Ie))
                         ! leaf drip power
                         Dl = max(0._r8, qflx_leafdrip(p)*dtime)      ! mm
-                        KE_LD = max(0._r8,15.8*sqrt(0.5*(htop(p)+hbot(p)))-5.87) * &
+                        KE_LD = max(0._r8,15.8_r8*sqrt(0.5_r8*(htop(p)+hbot(p)))-5.87_r8) * &
                            fungrvl * Dl
                         Es_P = Es_P + pfactor(c) * veg_pp%wtcol(p) * K * (KE_DT+KE_LD)
                      end if
                   end if
                end do
             end if
-            Es_P = 1d-7 / 8.64 * Es_P   ! kg/m2/s
+            Es_P = 1e-7_r8 / 8.64_r8 * Es_P   ! kg/m2/s
 
             ! soil detachment by runoff
             gndbare = 0._r8
@@ -175,20 +176,20 @@ contains
             
             Es_Q = 0._r8
             Tc = 0._r8
-            if (qflx_surf(c)>0) then
-               Qs = 8.64d4 * qflx_surf(c)  ! mm/d
-               fslp = 1.0 / DBLE(nlevslp-1)
+            if (qflx_surf(c)>0._r8) then
+               Qs = 8.64e4_r8 * qflx_surf(c)  ! mm/d
+               fslp = 1.0_r8 / DBLE(nlevslp-1)
                factor_slp = 0._r8
                do j = 1, nlevslp-1
-                  sinslp = sin(atan(max(0.5*(hslp_p10(c,j)+hslp_p10(c,j+1)),1d-4)))
+                  sinslp = sin(atan(max(0.5_r8*(hslp_p10(c,j)+hslp_p10(c,j+1)),1e-4_r8)))
                   factor_slp = factor_slp + fslp * sinslp
                end do
-               Es_Q = 19.1 * qfactor(c) * 2.0 / COH * factor_slp * &
-                  gndbare * Qs**1.5
-               Tc = 19.1 * tfactor(c) * factor_slp * vegcc * Qs**2.0
+               Es_Q = 19.1_r8 * qfactor(c) * 2.0_r8 / COH * factor_slp * &
+                  gndbare * Qs**1.5_r8
+               Tc = 19.1_r8 * tfactor(c) * factor_slp * vegcc * Qs**2.0_r8
             end if
-            Es_Q = 1d-7 / 8.64 * Es_Q
-            Tc = 1d-7 / 8.64 * Tc
+            Es_Q = 1e-7_r8 / 8.64_r8 * Es_Q
+            Tc = 1e-7_r8 / 8.64_r8 * Tc
 
             ! assign flux values
             flx_p_ero(c) = flx_p_ero(c) + Es_P
@@ -219,33 +220,38 @@ contains
     clay = stxt(1) / tsum 
     silt = stxt(2) / tsum
     sand = stxt(3) / tsum
-    if (silt + 1.5*clay < 15) then
+    if ( silt + 1.5_r8*clay < 15._r8 ) then
        SoilTextureType = 'sand'
-    else if (silt + 2*clay < 30) then
+    else if ( silt + 2.0_r8*clay < 30._r8 ) then
        SoilTextureType = 'loamy sand'
-    else if (((clay>=7 .and. clay<20) .and. sand>52) .or. &
-            (clay<7 .and. silt<50)) then
+    else if ( ((clay>=7._r8 .and. clay<20._r8) .and. sand>52._r8) .or. &
+            (clay<7._r8 .and. silt<50._r8) ) then
        SoilTextureType = 'sandy loam'
-    else if ((clay>=7 .and. clay<27) .and. (silt>=28 .and. silt<50) .and. &
-            sand<=52) then
+    else if ( (clay>=7._r8 .and. clay<27._r8) .and. & 
+            (silt>=28._r8 .and. silt<50._r8) .and. sand<=52._r8 ) then
        SoilTextureType = 'loam'
-    else if ((silt>=50 .and. (clay>=12 .and. clay<27)) .or. &
-            ((silt>=50 .and. silt<80) .and. clay<12)) then
+    else if ( (silt>=50._r8 .and. (clay>=12._r8 .and. clay<27._r8)) .or. &
+            ((silt>=50._r8 .and. silt<80._r8) .and. clay<12._r8) ) then
        SoilTextureType = 'silt loam'
-    else if (silt>=80 .and. clay<12) then
+    else if ( silt>=80._r8 .and. clay<12._r8 ) then
        SoilTextureType = 'silt'
-    else if ((clay>=20 .and. clay<35) .and. silt<28 .and. sand>45) then
+    else if ( (clay>=20._r8 .and. clay<35._r8) .and. &
+            silt<28._r8 .and. sand>45._r8 ) then
        SoilTextureType = 'sandy clay loam'
-    else if ((clay>=27 .and. clay<40) .and. (sand>20 .and. sand<=45)) then
+    else if ( (clay>=27._r8 .and. clay<40._r8) .and. &
+            (sand>20._r8 .and. sand<=45._r8) ) then
        SoilTextureType = 'clay loam'
-    else if ((clay>=27 .and. clay<40) .and. sand<=20) then
+    else if ( (clay>=27._r8 .and. clay<40._r8) .and. sand<=20._r8 ) then
        SoilTextureType = 'silty clay loam'
-    else if (clay>=35 .and. sand>45) then
+    else if ( clay>=35._r8 .and. sand>45._r8 ) then
        SoilTextureType = 'sandy clay'
-    else if (clay>=40 .and. silt>=40) then
+    else if ( clay>=40._r8 .and. silt>=40._r8 ) then
        SoilTextureType = 'silty clay'
-    else if (clay>=40 .and. sand<=45 .and. silt<40) then
-       SoilTextureType = 'clay'     
+    else if ( clay>=40._r8 .and. sand<=45._r8 .and. silt<40._r8 ) then
+       SoilTextureType = 'clay'
+    else
+       call endrun(msg=' ERROR: soil clay, silt and sand are out of bounds.'//&
+            errMsg(__FILE__, __LINE__))
     end if
 
   end function SoilTextureType
@@ -268,29 +274,32 @@ contains
 
     txttype = SoilTextureType(stxt) 
     if (trim(txttype)=='clay') then
-       SoilDetachability = 0.05
+       SoilDetachability = 0.05_r8
     else if (trim(txttype)=='silty clay') then
-       SoilDetachability = 0.5
+       SoilDetachability = 0.5_r8
     else if (trim(txttype)=='sandy clay') then
-       SoilDetachability = 0.3
+       SoilDetachability = 0.3_r8
     else if (trim(txttype)=='silty clay loam') then
-       SoilDetachability = 0.8
+       SoilDetachability = 0.8_r8
     else if (trim(txttype)=='clay loam') then
-       SoilDetachability = 0.7
+       SoilDetachability = 0.7_r8
     else if (trim(txttype)=='sandy clay loam') then
-       SoilDetachability = 0.1
+       SoilDetachability = 0.1_r8
     else if (trim(txttype)=='silt') then
-       SoilDetachability = 1.0
+       SoilDetachability = 1.0_r8
     else if (trim(txttype)=='silt loam') then
-       SoilDetachability = 0.9
+       SoilDetachability = 0.9_r8
     else if (trim(txttype)=='loam') then
-       SoilDetachability = 0.8
+       SoilDetachability = 0.8_r8
     else if (trim(txttype)=='sandy loam') then
-       SoilDetachability = 0.7
+       SoilDetachability = 0.7_r8
     else if (trim(txttype)=='loamy sand') then
-       SoilDetachability = 0.3
+       SoilDetachability = 0.3_r8
     else if (trim(txttype)=='sand') then
-       SoilDetachability = 1.9
+       SoilDetachability = 1.9_r8
+    else
+       call endrun(msg=' ERROR: no soil texture type is found.'//&
+            errMsg(__FILE__, __LINE__)) 
     end if
 
   end function SoilDetachability
@@ -313,29 +322,32 @@ contains
 
     txttype = SoilTextureType(stxt)
     if (trim(txttype)=='clay') then
-       SoilCohesion = 12.0
+       SoilCohesion = 12.0_r8
     else if (trim(txttype)=='silty clay') then
-       SoilCohesion = 10.0
+       SoilCohesion = 10.0_r8
     else if (trim(txttype)=='sandy clay') then
-       SoilCohesion = 10.0
+       SoilCohesion = 10.0_r8
     else if (trim(txttype)=='silty clay loam') then
-       SoilCohesion = 9.0
+       SoilCohesion = 9.0_r8
     else if (trim(txttype)=='clay loam') then
-       SoilCohesion = 10.0
+       SoilCohesion = 10.0_r8
     else if (trim(txttype)=='sandy clay loam') then
-       SoilCohesion = 3.0
+       SoilCohesion = 3.0_r8
     else if (trim(txttype)=='silt') then
-       SoilCohesion = 3.0
+       SoilCohesion = 3.0_r8
     else if (trim(txttype)=='silt loam') then
-       SoilCohesion = 3.0
+       SoilCohesion = 3.0_r8
     else if (trim(txttype)=='loam') then
-       SoilCohesion = 3.0
+       SoilCohesion = 3.0_r8
     else if (trim(txttype)=='sandy loam') then
-       SoilCohesion = 2.0
+       SoilCohesion = 2.0_r8
     else if (trim(txttype)=='loamy sand') then
-       SoilCohesion = 2.0
+       SoilCohesion = 2.0_r8
     else if (trim(txttype)=='sand') then
-       SoilCohesion = 2.0
+       SoilCohesion = 2.0_r8
+    else
+       call endrun(msg=' ERROR: no soil texture type is found.'//&
+            errMsg(__FILE__, __LINE__))
     end if
 
   end function SoilCohesion

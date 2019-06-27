@@ -421,7 +421,7 @@ contains
     ! --------------------------------------------------------------------
 
     if (masterproc) then
-       write(iulog,*) 'Attempting to read soil color, sand and clay, gravel boundary data .....'
+       write(iulog,*) 'Attempting to read soil color, sand and clay boundary data .....'
     end if
 
     call getfil (fsurdat, locfn, 0)

@@ -5583,7 +5583,6 @@ contains
             avgflag='A', long_name='C loss due to peat burning', &
             ptr_col=this%somc_fire, default='inactive')
 
-       ! Z. Tan
        this%somc_erode(begc:endc) = spval
        call hist_addfld1d (fname='SOMC_ERO', units='gC/m^2/s', &
             avgflag='A', long_name='SOC detachment', &
@@ -7777,7 +7776,6 @@ contains
        end if
     end do
 
-    ! Z. Tan
     this%somn_erode(begc:endc) = spval
     call hist_addfld1d (fname='SOMN_ERO', units='gN/m^2/s', &
          avgflag='A', long_name='SON detachment', &
@@ -9614,7 +9612,6 @@ contains
        end if
     end do
 
-    ! Z. Tan
     this%somp_erode(begc:endc) = spval
     call hist_addfld1d (fname='SOMP_ERO', units='gP/m^2/s', &
          avgflag='A', long_name='SOP detachment', &
@@ -9719,7 +9716,6 @@ contains
             ptr_col=this%sminp_leached_vr, default='inactive')
     endif
 
-    ! Z. Tan
     this%labilep_erode(begc:endc) = spval
     call hist_addfld1d (fname='LABILEP_ERO', units='gP/m^2/s', &
          avgflag='A', long_name='labile mineral P detachment', &
