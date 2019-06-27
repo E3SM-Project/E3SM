@@ -377,8 +377,8 @@
 		            description="Prints additional information about thermal calculations (if enabled)."
 		            possible_values=".true. or .false."
 		/>
-		<nml_option name="config_always_compute_fem_grid" type="logical" default_value=".false." units="unitless"
-		            description="Always compute finite-element grid information for external dycores rather than only doing so when the ice extent changes."
+		<nml_option name="config_always_compute_fem_grid" type="logical" default_value=".true." units="unitless"
+		            description="Always compute finite-element grid information for external dycores rather than only doing so when the ice extent changes.  As of June 2019 (and earlier) there is a bug which requires this to be set to true if there are ice shelves in the model domain."
 		            possible_values=".true. or .false."
 		/>
 		<nml_option name="config_print_velocity_cleanup_details" type="logical" default_value=".false." units="unitless"
