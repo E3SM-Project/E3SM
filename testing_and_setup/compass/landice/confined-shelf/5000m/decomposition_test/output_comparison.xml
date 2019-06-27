@@ -1,7 +1,7 @@
 <template>
         <validation>
                 <compare_fields>
-                        <field name="normalVelocity" l2_norm="1.0e-6"/>
+                        <field name="normalVelocity" l2_norm="1.0e-4"/>
                         <field name="uReconstructX" l2_norm="1.0e-6"/>
                         <field name="uReconstructY" l2_norm="1.0e-6"/>
                 </compare_fields>
