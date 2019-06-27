@@ -1406,11 +1406,14 @@ for mct, etc.
   <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <ADD_CPPDEFS> -DLINUX -DNO_MPIMOD</ADD_CPPDEFS>
+  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
   <SFC>pgfortran</SFC>
   <SCC>pgcc</SCC>
   <SCXX>pgc++</SCXX>
-  <SLIBS> -lmpi -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff </SLIBS>
+  <SLIBS> -lpmi -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -L$(MKL_PATH)/lib/intel64/ -lmkl_rt $(PNETCDF_LIBRARIES) </SLIBS>
+  <MPIFC MPILIB="impi"> mpipgf90 </MPIFC>
+  <MPICC MPILIB="impi"> mpipgcc  </MPICC>
+  <MPICXX MPILIB="impi"> mpipgcxx </MPICXX>
 </compiler>
 
 <compiler COMPILER="intel" MACH="compy">
@@ -1425,10 +1428,10 @@ for mct, etc.
   <SFC> ifort </SFC>
   <SCC> icc </SCC>
   <SCXX> icpc </SCXX>
+  <SLIBS> -lpmi -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -L$(MKL_PATH)/lib/intel64/ -lmkl_rt $(PNETCDF_LIBRARIES)</SLIBS>
   <MPIFC MPILIB="impi"> mpiifort </MPIFC>
   <MPICC MPILIB="impi"> mpiicc  </MPICC>
   <MPICXX MPILIB="impi"> mpiicpc </MPICXX>
-  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi -L$(MKL_PATH) -lmkl_rt</SLIBS>
 </compiler>
 
 
