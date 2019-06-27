@@ -1020,7 +1020,6 @@ class Case(object):
         except Exception as e:
             logger.warning("FAILED to set up exefiles: {}".format(str(e)))
 
-        # set up utility files in caseroot/Tools/
         toolfiles = [os.path.join(toolsdir, "check_lockedfiles"),
                      os.path.join(toolsdir, "getTiming"),
                      os.path.join(toolsdir, "save_provenance"),

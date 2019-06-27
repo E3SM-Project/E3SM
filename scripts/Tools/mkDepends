@@ -34,8 +34,8 @@
 #
 # ChangeLog:
 # -----------------------------------------------------------------------------
-# Modifications to Brian Eaton's original to relax the restrictions on
-# source file name matching module name and only one module per source
+# Modifications to Brian Eaton's original to relax the restrictions on 
+# source file name matching module name and only one module per source 
 # file.  Also added a new "-d depfile" option which allows an additional
 # file to be added to every dependence.
 #
@@ -71,29 +71,86 @@
 #   CESM Software Engineering Group, NCAR
 #   Mar 2013
 # -----------------------------------------------------------------------------
+# Modifications to Santos' version needed by the NEMO ocean model:
+#
+#  - Handling of module use statements activated by CPP macros, i.e.:
+#
+#     #ifdef KEY
+#       USE mod1
+#     #else
+#       USE mod2
+#     #endif
+#
+#  - Handling of Fortran code inclusion through CPP "#include"
+#    (NEMO's *.h90 files)
+#
+# When preprocessing is required (-p option) fortran files *.F and *.F90 are
+# preprocessed before serching for module dependencies. Preprocessed files are
+# saved in a temp subdir of the current dir which is removed at the end of execution.
+# The default preprocessor command is 'cpp'.
+# User can override it setting the env variable CPP before execution.
+# CPP macros can be defined (-D option) or undefined (-U option).
+# CPP search path can be defined (-I option).
+# Defined/undefined macros and search path can be passed in the env variable
+# CPPFLAGS too.
+#
+#   Pier Giuseppe Fogli
+#   ANS, CMCC
+#   Jun 2013
+# -----------------------------------------------------------------------------
 
-
-use Getopt::Std;
+use Getopt::Long qw(:config bundling);
 use File::Basename;
+use File::Temp qw/ :POSIX /;
 
 # Check for usage request.
 @ARGV >= 2                          or usage();
 
 # Process command line.
-my %opt = ();
-getopts( "t:wd:m:", \%opt )        or usage();
+my $opt_w = 0;
+my $obj_dir;
+my $additional_file;
+my $do_cpp = 0;
+my $mangle_scheme = "lower";
+my @cpp_def_key;
+my @cpp_undef_key;
+my @cpp_inc_path;
+GetOptions('p' => \$do_cpp,
+	'w' => \$opt_w,
+	'D=s' => \@cpp_def_key,
+	'U=s' => \@cpp_undef_key,
+	'I=s' => \@cpp_inc_path,
+	't=s' => \$obj_dir,
+	'd=s' => \$additional_file,
+	'm=s' => \$mangle_scheme,
+) or usage();
+@ARGV == 2                        or usage();  # Check that only 2 files remain
 my $filepath_arg = shift()        or usage();
 my $srcfile_arg = shift()         or usage();
 @ARGV == 0                        or usage();  # Check that all args were processed.
 
-my $obj_dir = "";
-if ( defined $opt{'t'} ) { $obj_dir = $opt{'t'}."/"; }
-
-my $additional_file = "";
-if ( defined $opt{'d'} ) { $additional_file = $opt{'d'}; }
-
-my $mangle_scheme = "lower";
-if ( defined $opt{'m'} ) { $mangle_scheme = $opt{'m'}; }
+# Setup CPP stuff if needed
+my $cpp = "cpp";
+my $red = " ";
+if ($do_cpp){
+    my @cpp_keys = ();
+    my @cpp_path = ();
+    #
+    # Override default cpp from env
+    $ENV{"CPP"} and $cpp = $ENV{"CPP"} ;
+    $ENV{"CPPFLAGS"} and @$cpp_keys = $ENV{"CPPFLAGS"} ;
+    #
+    foreach $k (@cpp_def_key){
+	push @$cpp_keys, "-D".$k ;
+    }
+    foreach $k (@cpp_undef_key){
+	push @$cpp_keys, "-U".$k ;
+    }
+    foreach $k (@cpp_inc_path){
+	push @$cpp_path, "-I".$k ;
+    }
+    if ($cpp =~ /gcc/){ $red = ">"; }
+}
 
 open(FILEPATH, $filepath_arg) or die "Can't open $filepath_arg: $!\n";
 open(SRCFILES, $srcfile_arg) or die "Can't open $srcfile_arg: $!\n";
@@ -106,7 +163,7 @@ close(FILEPATH);
 chomp @file_paths;
 unshift(@file_paths,'.');
 foreach $dir (@file_paths) {  # (could check that directories exist here)
-    $dir =~ s!/?\s*$!!;  # remove / and any whitespace at end of directory name
+    $dir =~ s!/?\s*$!!;  #!# remove / and any whitespace at end of directory name
     ($dir) = glob $dir;  # Expand tildes in path names.
 }
 
@@ -117,10 +174,11 @@ chomp @src;
 
 my %module_files = ();
 
-# Attempt to parse each file for /^\s*module/ and extract module names
-# for each file.
+# Attempt to parse each file for /^\s*module/ and extract module names 
+# for each file.  
 my ($f, $name, $path, $suffix, $mod);
-my @suffixes = ('\.[fF]90', '\.[fF]','\.F90\.in' );
+# include NEMO's *.h90 files
+my @suffixes = ('\.[fFh]90', '\.[fF]','\.F90\.in' );
 foreach $f (@src) {
     ($name, $path, $suffix) = fileparse($f, @suffixes);
     # find the file in the list of directorys (in @file_paths)
@@ -130,7 +188,7 @@ foreach $f (@src) {
 	# Search for module definitions.
 	if ( /^\s*MODULE\s+(\w+)\s*(\!.*)?$/i ) {
 	    ($mod = $1) =~ tr/A-Z/a-z/;
-            if ( defined $module_files{$mod} ) {
+            if ( defined $module_files{$mod} ) { 
                 die "Duplicate definitions of module $mod in $module_files{$mod} and $name: $!\n";
             }
             $module_files{$mod} = $name;
@@ -141,7 +199,7 @@ foreach $f (@src) {
 
 # Now make a list of .mod files in the file_paths.  If a source dependency
 # can't be found based on the module_files list above, then maybe a .mod
-# module dependency can if the mod file is visible.
+# module dependency can if the mod file is visible.  
 my %trumod_files = ();
 my ($dir);
 my ($f, $name, $path, $suffix, $mod);
@@ -169,12 +227,32 @@ my %file_modules = ();
 my %file_includes = ();
 my @check_includes = ();
 my %modules_used = ();
+
+# Create a temp dir for preprocessed files if needed
+my $tmp_dir;
+my $tmp_file;
+if ($do_cpp){
+    my $tmp_nam = tmpnam();
+    $tmp_dir = basename($tmp_nam);
+    my $cmd = "mkdir " . $tmp_dir;
+    system($cmd) == 0 or die "Failed to run command $cmd !\n";
+}
+
 foreach $f ( @src ) {
 
     # Find the file in the seach path (@file_paths).
     unless ($file_path = find_file($f)) {
-	if (defined $opt{'w'}) {print STDERR "$f not found\n";}
+	if ($opt_w) {print STDERR "$f not found\n";}
 	next;
+    }
+
+    # Preprocess if required
+    ($name, $path, $suffix) = fileparse($f, @suffixes);
+    if ($do_cpp && $suffix =~ /\.F/){
+        $tmp_file = catfile($tmp_dir, $name . lc($suffix));
+	my $cmd = $cpp . " " . "@$cpp_path" . " " . "@$cpp_keys" . " " . $file_path . $red . $tmp_file ;
+	system($cmd) == 0 or die "Failed to run command $cmd !\n";
+	$file_path = $tmp_file;
     }
 
     # Find the module and include dependencies.
@@ -189,16 +267,22 @@ foreach $f ( @src ) {
     push @check_includes, @{$file_includes{$f}};
 }
 
-print STDERR "\%file_modules\n";
-while ( ($k,$v) = each %file_modules ) {
-    print STDERR "$k => @$v\n";
+# Remove temp preprocessed file
+if ($do_cpp){
+  my $cmd = "rm -rf " . $tmp_dir;
+  system($cmd) == 0 or die "Failed to run command: $cmd !\n";
 }
-print STDERR "\%file_includes\n";
-while ( ($k,$v) = each %file_includes ) {
-    print STDERR "$k => @$v\n";
-}
-print STDERR "\@check_includes\n";
-print STDERR "@check_includes\n";
+
+#print STDERR "\%file_modules\n";
+#while ( ($k,$v) = each %file_modules ) {
+#    print STDERR "$k => @$v\n";
+#}
+#print STDERR "\%file_includes\n";
+#while ( ($k,$v) = each %file_includes ) {
+#    print STDERR "$k => @$v\n";
+#}
+#print STDERR "\@check_includes\n";
+#print STDERR "@check_includes\n";
 
 # Find include file dependencies.
 my %include_depends = ();
@@ -281,14 +365,14 @@ print "# Declare all module files used to build each object.\n";
 foreach $f (sort keys %file_modules) {
     my $file;
     if($f =~ /\.F90\.in$/){
-	$f =~ /(.+)\.F90\.in/;
+    	$f =~ /(.+)\.F90\.in/;
 	$file = $1;
     }else{
-	$f =~ /(.+)\./;
+        $f =~ /(.+)\./;
 	$file = $1;
     }
     $target = $obj_dir."$file.o";
-    print "$target : $f @{$file_modules{$f}} @{$file_includes{$f}} $additional_file \n";
+    print "$target : @{$file_modules{$f}} @{$file_includes{$f}} $additional_file \n";
 }
 
 print "# The following section relates each module to the corresponding file.\n";
@@ -326,22 +410,15 @@ sub find_dependencies {
     my @suffixes = ('\.[fF]90', '\.[fF]','\.F90\.in' );
     ($name, $path, $suffix) = fileparse($file, @suffixes);
     $target = "$name.o";
-    my $include;
+
     while ( <FH> ) {
-	# Search for "#include" and strip filename when found.
-	if ( /^#include\s+[<"](.*)[>"]/ ) {
-	    $include = $1;
-	}
+	# Search for CPP include and strip filename when found.
+	if ( /^#\s*include\s+[<"](.*)[>"]/ ) {
+	     push @incs, $1;
+	 } 
 	# Search for Fortran include dependencies.
 	elsif ( /^\s*include\s+['"](.*)['"]/ ) {                   #" for emacs fontlock
-	    $include = $1;
-	}
-	if(defined($include)){
-	    if($include =~ /shr_assert.h/){
-		push @mods, "$obj_dir".mangle_modfile("shr_assert_mod");
-	    }
-	    push @incs, $include;
-	    undef $include;
+	     push @incs, $1;
 	}
 	# Search for module dependencies.
 	elsif ( /^\s*USE(?:\s+|\s*\:\:\s*|\s*,\s*non_intrinsic\s*\:\:\s*)(\w+)/i ) {
@@ -355,7 +432,7 @@ sub find_dependencies {
 		}
 	    }
             # If we already have a .mod file around.
-            elsif ( defined $trumod_files{$module} ) {
+            elsif ( defined $trumod_files{$module} ) { 
                 push @mods, "$obj_dir".mangle_modfile($trumod_files{$module});
             }
 	}
@@ -429,8 +506,22 @@ sub usage {
     ($ProgName = $0) =~ s!.*/!!;            # name of program
     die <<EOF
 SYNOPSIS
-     $ProgName [-d depfile] [-m mangle_scheme] [-t dir] [-w] Filepath Srcfiles
+     $ProgName [-p [-Dmacro[=val]] [-Umacro] [-Idir]] [-d depfile]
+               [-m mangle_scheme] [-t dir] [-w] Filepath Srcfiles
 OPTIONS
+     -p
+          Preprocess files (suffix .F and .F90) before  searching
+	  for module dependencies. Default CPP preprocessor: cpp.
+	  Set env variables CPP and/or CPPFLAGS to override.
+     -D macro[=val]
+          Define the CPP macro with val as its value.
+	  Ignored when -p option is not active.
+     -U macro
+          Undefine the CPP macro.
+	  Ignored when -p option is not active.
+     -I dir
+          Add dir to the include path for CPP.
+	  Ignored when -p option is not active.
      -d depfile
           Additional file to be added to every .o dependence.
      -m mangle_scheme
@@ -444,7 +535,7 @@ OPTIONS
           targets in the dependency rules have the form dir/file.o.
      -w   Print warnings to STDERR about files or dependencies not found.
 ARGUMENTS
-     Filepath is the name of a file containing the directories (one per
+     Filepath is the name of a file containing the directories (one per 
      line) to be searched for dependencies.  Srcfiles is the name of a
      file containing the names of files (one per line) for which
      dependencies will be generated.
