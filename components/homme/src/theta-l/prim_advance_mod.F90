@@ -486,12 +486,12 @@ contains
       max_itererr_perstep = max(itertol,max_itererr_perstep)
    !********************************************************************
 
-   !********************************************************************
-   ! g3 is at nm1, un+dt*a1*n1 is at np1, and un0 is at statesave1 and n0
-   !********************************************************************
-
    ! copy un + dt*a1*n1 at np1 to statesave1
    call copy_state(statesave1,statesave1,elem,1,1d0,1d0,np1,np1,np1,nets,nete)
+
+   !********************************************************************
+   ! g3 is at nm1, un+dt*a1*n1 is at np1 and statesave1, and un0 is at n0
+   !********************************************************************
 
    !******************* Can be done in parallel ************************
    ! solve for g2 = un + dt*a1*n1+dt*dhat1*s2 and store at np1
@@ -502,16 +502,16 @@ contains
       max_itercnt_perstep = max(maxiter,max_itercnt_perstep)
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
-   ! compute s3 = (g3-un0)/(dhat2*dt) and store at statesave3, noting that g3 is at elem(nm1)
+   ! compute s3 = (g3-un0)/(dhat2*dt) and store at statesave3, noting that g3 is at elem(nm1) and un is at elem(n0)
    call copy_state(statesave3,statesave3,elem,7,1d0/(dhat2*dt),-1d0/(dhat2*dt),nm1,n0,n0,nets,nete)
    !********************************************************************
 
    ! compute s2 = (g2 - un - dt*a1*n1)/(dt*dhat1) = (elem(np1)-statesave1)/(dt*dhat1) and store at statesave2
-   call copy_state(statesave2,statesave1,elem,7,1d0/(dhat1*dt),-1d0/(dhat1*dt),np1,np1,np1,nets,nete)
+   call copy_state(statesave2,statesave1,elem,6,1d0/(dhat1*dt),-1d0/(dhat1*dt),np1,np1,np1,nets,nete)
 
-   !*******************************************************************
+   !********************************************************************
    ! s2 is at statesave2, s3 is at statesave3, un0 is at n0,  g2 is at np1, and g3 is at nm1
-   !*******************************************************************
+   !********************************************************************
 
    !******************* Can be done in parallel ************************
    ! compute n2 at store at np1
@@ -523,15 +523,15 @@ contains
      deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,0d0)
    !********************************************************************
 
-   !*******************************************************************
+   !********************************************************************
    ! s2 is at statesave2, s3 is at statesave3, un0 is at n0,  n2 is at np1, and n3 is at nm1
-   !*******************************************************************
+   !********************************************************************
    ! g4 = um + dt*b1*n2 + dt*a2*n3 + dt*ahat2*s3
    ! first compute um + dt*a2*n3 and store at nm1
    call copy_state(statesave1,statesave1,elem,5,1d0,a2*dt,nm1,n0,nm1,nets,nete)
    ! next compute um + dt*a2*n3 + dt*b1*n2 and store at nm1
    call copy_state(statesave1,statesave1,elem,5,1d0,b1*dt,nm1,nm1,np1,nets,nete)
-   ! finall compute um + dt*a2*n3+dt*b1*n2 + dt*ahat2*s3 and store at nm1
+   ! finally compute um + dt*a2*n3+dt*b1*n2 + dt*ahat2*s3 and store at nm1
    call copy_state(statesave3,statesave3,elem,4,1d0,ahat2*dt,nm1,nm1,nm1,nets,nete)
 
 
@@ -2488,7 +2488,6 @@ contains
         state1(:,:,1:nlev,ie,5)  =  state2(:,:,1:nlev,ie,5)   
         state1(:,:,1:nlev,ie,6)  =  state2(:,:,1:nlev,ie,6)  
       enddo
-  
     elseif (par.eq.1) then ! copy element to state
       do ie=nets,nete
         state1(:,:,1:nlev,ie,1)  = elem(ie)%state%v(:,:,1,1:nlev,n1)
@@ -2520,8 +2519,8 @@ contains
      do ie=nets,nete 
         elem(ie)%state%v(:,:,1,1:nlev,n1)       = a1*elem(ie)%state%v(:,:,1,1:nlev,n2) + a2*state1(:,:,1:nlev,ie,1)
         elem(ie)%state%v(:,:,2,1:nlev,n1)       = a1*elem(ie)%state%v(:,:,2,1:nlev,n2) + a2*state1(:,:,1:nlev,ie,2)
-        elem(ie)%state%w_i(:,:,1:nlevp,n1)      = a1*elem(ie)%state%w_i(:,:,1:nlevp,n2) + a2*state1(:,:,1:nlev,ie,3)
-        elem(ie)%state%phinh_i(:,:,1:nlevp,n1)  = a1*elem(ie)%state%phinh_i(:,:,1:nlevp,n2) + a2*state1(:,:,1:nlev,ie,4)
+        elem(ie)%state%w_i(:,:,1:nlevp,n1)      = a1*elem(ie)%state%w_i(:,:,1:nlevp,n2) + a2*state1(:,:,1:nlevp,ie,3)
+        elem(ie)%state%phinh_i(:,:,1:nlevp,n1)  = a1*elem(ie)%state%phinh_i(:,:,1:nlevp,n2) + a2*state1(:,:,1:nlevp,ie,4)
         elem(ie)%state%vtheta_dp(:,:,1:nlev,n1) = a1*elem(ie)%state%vtheta_dp(:,:,1:nlev,n2) + a2*state1(:,:,1:nlev,ie,5)
         elem(ie)%state%dp3d(:,:,1:nlev,n1)      = a1*elem(ie)%state%dp3d(:,:,1:nlev,n2) + a2*state1(:,:,1:nlev,ie,6)
       end do
@@ -2537,21 +2536,21 @@ contains
  
     elseif (par.eq.6) then ! copy element+state to state
      do ie=nets,nete 
-        state1(:,:,1:nlev,ie,1)  = a1*elem(ie)%state%v(:,:,1,1:nlev,n2) + a2*state2(:,:,1:nlev,ie,1)
-        state1(:,:,1:nlev,ie,2)  = a1*elem(ie)%state%v(:,:,2,1:nlev,n2) + a2*state2(:,:,1:nlev,ie,2)
-        state1(:,:,1:nlevp,ie,3) = a1*elem(ie)%state%w_i(:,:,1:nlevp,n2) + a2*state2(:,:,1:nlev,ie,3)
-        state1(:,:,1:nlevp,ie,4) = a1*elem(ie)%state%phinh_i(:,:,1:nlevp,n2) + a2*state2(:,:,1:nlev,ie,4)
-        state1(:,:,1:nlev,ie,5)  = a1*elem(ie)%state%vtheta_dp(:,:,1:nlev,n2) + a2*state2(:,:,1:nlev,ie,5)
-        state1(:,:,1:nlev,ie,6)  = a1*elem(ie)%state%dp3d(:,:,1:nlev,n2) + a2*state2(:,:,1:nlev,ie,6)
+        state1(:,:,1:nlev,ie,1)  = a1*elem(ie)%state%v(:,:,1,1:nlev,n1) + a2*state2(:,:,1:nlev,ie,1)
+        state1(:,:,1:nlev,ie,2)  = a1*elem(ie)%state%v(:,:,2,1:nlev,n1) + a2*state2(:,:,1:nlev,ie,2)
+        state1(:,:,1:nlevp,ie,3) = a1*elem(ie)%state%w_i(:,:,1:nlevp,n1) + a2*state2(:,:,1:nlevp,ie,3)
+        state1(:,:,1:nlevp,ie,4) = a1*elem(ie)%state%phinh_i(:,:,1:nlevp,n1) + a2*state2(:,:,1:nlevp,ie,4)
+        state1(:,:,1:nlev,ie,5)  = a1*elem(ie)%state%vtheta_dp(:,:,1:nlev,n1) + a2*state2(:,:,1:nlev,ie,5)
+        state1(:,:,1:nlev,ie,6)  = a1*elem(ie)%state%dp3d(:,:,1:nlev,n1) + a2*state2(:,:,1:nlev,ie,6)
       end do
     elseif (par.eq.7) then ! copy element+element to state
        do ie=nets,nete
-        state1(:,:,1:nlev,ie,1)  = a1*elem(ie)%state%v(:,:,1,1:nlev,n2) + a2*elem(ie)%state%v(:,:,1,1:nlev,n3)
-        state1(:,:,1:nlev,ie,2)  = a1*elem(ie)%state%v(:,:,2,1:nlev,n2) + a2*elem(ie)%state%v(:,:,2,1:nlev,n3)
-        state1(:,:,1:nlevp,ie,3) = a1*elem(ie)%state%w_i(:,:,1:nlevp,n2) + a2*elem(ie)%state%w_i(:,:,1:nlevp,n3)
-        state1(:,:,1:nlevp,ie,4) = a1*elem(ie)%state%phinh_i(:,:,1:nlevp,n2) + a2*elem(ie)%state%phinh_i(:,:,1:nlevp,n3)
-        state1(:,:,1:nlev,ie,5)  = a1*elem(ie)%state%vtheta_dp(:,:,1:nlev,n2) + a2*elem(ie)%state%vtheta_dp(:,:,1:nlev,n3)
-        state1(:,:,1:nlev,ie,6)  = a1*elem(ie)%state%dp3d(:,:,1:nlev,n2) + a2*elem(ie)%state%dp3d(:,:,1:nlev,n3)
+        state1(:,:,1:nlev,ie,1)  = a1*elem(ie)%state%v(:,:,1,1:nlev,n1) + a2*elem(ie)%state%v(:,:,1,1:nlev,n2)
+        state1(:,:,1:nlev,ie,2)  = a1*elem(ie)%state%v(:,:,2,1:nlev,n1) + a2*elem(ie)%state%v(:,:,2,1:nlev,n2)
+        state1(:,:,1:nlevp,ie,3) = a1*elem(ie)%state%w_i(:,:,1:nlevp,n1) + a2*elem(ie)%state%w_i(:,:,1:nlevp,n2)
+        state1(:,:,1:nlevp,ie,4) = a1*elem(ie)%state%phinh_i(:,:,1:nlevp,n1) + a2*elem(ie)%state%phinh_i(:,:,1:nlevp,n2)
+        state1(:,:,1:nlev,ie,5)  = a1*elem(ie)%state%vtheta_dp(:,:,1:nlev,n1) + a2*elem(ie)%state%vtheta_dp(:,:,1:nlev,n2)
+        state1(:,:,1:nlev,ie,6)  = a1*elem(ie)%state%dp3d(:,:,1:nlev,n1) + a2*elem(ie)%state%dp3d(:,:,1:nlev,n2)
       end do
 
     end if 
