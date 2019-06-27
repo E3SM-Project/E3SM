@@ -34,8 +34,7 @@ module scamMod
   public scam_default_opts        ! SCAM default run-time options 
   public scam_setopts             ! SCAM run-time options 
   public setiopupdate
-  public readiopdata
-  public replay_b4b_output         
+  public readiopdata        
 
   integer, parameter :: r16 = selected_real_kind(24)
 
@@ -196,7 +195,6 @@ module scamMod
   logical*4, public ::  lwrad_off     ! turn off LW radiation
   logical*4, public ::  precip_off    ! turn off precipitation processes
   logical*4, public ::  use_replay    ! use e3sm generated forcing 
-  logical*4, public ::  use_replay_b4b ! use e3sm generated forcing to get b4b results
   logical*4, public ::  use_3dfrc     ! use 3d forcing
   logical*4, public ::  have_heat_glob ! dataset contains global energy fixer
 
@@ -345,13 +343,6 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
            use_replay = .true.
         else
            use_replay = .false.
-        endif
-	
-	if ( nf90_inquire_attribute( ncid, NF90_GLOBAL, 'E3SM_B4B_GENERATED_FORCING', attnum=i ).EQ. NF90_NOERR ) then
-           use_replay_b4b = .true.
-	   use_replay = .true. 
-        else
-           use_replay_b4b = .false.
         endif	
 	
 	if (dycore_is('SE') .and. use_replay) then
@@ -702,14 +693,7 @@ end subroutine setiopupdate
       use_replay = .true.
    else
       use_replay = .false.
-   endif
-   
-   if ( nf90_inquire_attribute( ncid, NF90_GLOBAL, 'E3SM_B4B_GENERATED_FORCING',attnum=i ).EQ. NF90_NOERR ) then
-      use_replay_b4b = .true.
-      use_replay = .true. 
-   else
-      use_replay_b4b = .false.
-   endif   
+   endif 
 
 !=====================================================================
 !     
@@ -1147,29 +1131,6 @@ endif !scm_observed_aero
        else
          have_cnst(m) = .true.
        endif
-       
-       if (use_replay_b4b) then
-         call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, trim(cnst_name(m))//'_dten_2', &
-           have_srf, srf(1), fill_ends, scm_crm_mode, &
-           dplevs, nlev,psobs, hyam, hybm, divq3d_2(:,m), status )
-         if ( status .ne. nf90_noerr ) then
-           have_cnst(m) = .false.
-           divq3d_2(1:,m)=0._r8
-         else
-           have_cnst(m) = .true.
-         endif 
-	 
-         call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, trim(cnst_name(m))//'_dten_3', &
-           have_srf, srf(1), fill_ends, scm_crm_mode, &
-           dplevs, nlev,psobs, hyam, hybm, divq3d_3(:,m), status )
-         if ( status .ne. nf90_noerr ) then
-           have_cnst(m) = .false.
-           divq3d_3(1:,m)=0._r8
-         else
-           have_cnst(m) = .true.
-         endif 	 
-	             
-       endif
 
        call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, trim(cnst_name(m))//'_dqfx', &
          have_srf, srf(1), fill_ends, scm_crm_mode, &
@@ -1340,29 +1301,7 @@ endif !scm_observed_aero
        have_divt3d = .false.
      else
        have_divt3d = .true.
-     endif
-     
-     if (use_replay_b4b) then
-     
-       call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'divT3d_2', &
-         have_srf, srf(1), fill_ends, scm_crm_mode, &
-         dplevs, nlev,psobs, hyam, hybm, divt3d_2, status )
-       if ( status .ne. nf90_noerr ) then
-         have_divt3d_2 = .false.
-       else
-         have_divt3d_2 = .true.
-       endif
-       
-       call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'divT3d_3', &
-         have_srf, srf(1), fill_ends, scm_crm_mode, &
-         dplevs, nlev,psobs, hyam, hybm, divt3d_3, status )
-       if ( status .ne. nf90_noerr ) then
-         have_divt3d_3 = .false.
-       else
-         have_divt3d_3 = .true.
-       endif       
-     
-     endif     
+     endif    
 
      status = nf90_inq_varid( ncid, 'Ptend', varid   )
      if ( status .ne. nf90_noerr ) then
@@ -1618,85 +1557,5 @@ endif !scm_observed_aero
 
    return
 end subroutine readiopdata
-
-subroutine replay_b4b_output(tendency,part_one,part_two,part_three)
-   
-   real(r16), intent(in) :: tendency
-   real(r8), intent(out) :: part_one
-   real(r8), intent(out) :: part_two
-   real(r8), intent(out) :: part_three
-   
-   real(r16) :: mult_test, tendency_r16_test, tendency_lrg_r16
-   real(r16) :: mult, part_one_r16, part_two_r16
-   real(r16) :: tendency_int2float_r16
-   real(r8) :: exp_count   
-   real(r16), parameter :: threshold = 1.E10_r16
-   
-   integer(i8) :: tendency_int
-   
-   ! If the user wishes to replay a column of E3SM with
-   ! b4b results in the SCM, then the tendency must be 
-   ! computed in r16 precision.  However, it is not possible
-   ! to produce output in r16 precision in E3SM, therefore
-   ! in order to reconstruct the tendency as accurately as 
-   ! possible in r16 in forecast.F90, three r8 values 
-   ! must be computed, done in this subroutine.  
-   
-   ! We first need to bring the tendency above a certain 
-   ! threshold so that we can save an integer value of that 
-   mult_test = 1.0_r16 ! Initialize multiplier needed to get value
-                       ! above a certain threshold
-   exp_count = 0.0_r8  ! Keep count of the exponent of the multiplier
-   tendency_r16_test = tendency ! Make a copy of the tendency to be multiplied
-   
-   ! Now loop until the input tendency is above a certain "threshold"
-   do while((abs(tendency_r16_test) < threshold) .and. (tendency .ne. 0._r16))
-     tendency_r16_test = tendency*mult_test
-     
-     ! If threshold still isn't attained then increase multiplier by
-     !   and order of magnitude while keeping track of the desired exponent
-     if (abs(tendency_r16_test) < threshold) then
-       mult_test = mult_test*10._r16
-       exp_count = exp_count + 1.0_r8
-     endif
-   enddo
-   
-   ! Make a copy of the multiplier
-   mult = mult_test 
-   
-   ! Now compute the "large" version of the tendency
-   !  that satisifies the threshold value
-   tendency_lrg_r16 = tendency*mult
-   
-   ! Take an integer value of this tendency
-   tendency_int = int8(tendency_lrg_r16)
-   
-   ! Convert this integer value back to a r16 value
-   tendency_int2float_r16 = tendency_int
-   
-   ! Save the first part one of our output, which represents 
-   !  an r8 version of "first" part of our large 
-   !  tendency (i.e. tendency*mult) 
-   part_one = tendency_int2float_r16
-   
-   ! Now compute part two of our output, which represents the
-   !  trailing digits of our r16 tendency 
-   part_two_r16 = (tendency_lrg_r16 - tendency_int2float_r16)/mult
-   ! Convert this to r8 so it can be saved in the output files
-   part_two = part_two_r16 
-   
-   ! Save the exponent of the multipler (in r8).  We save this instead
-   !  of the multipler itself because we can reconstruct the multiplier
-   !  more accurately vs. instances where the multiplier is very large
-   part_three = exp_count
-   
-   ! NOTE: that when this tendency is reconstructed in forecast.F90
-   !  we will be actively solving for "tendency_lrg_r16" and we need 
-   !  to do this the exact same way as it is done in "part_two_16 = "
-   !  line above to get the most precise representation of the r16 tendency
-   !  as possible, to achieve b4b.  This is why three terms must be saved.
-   
-   return
-end subroutine replay_b4b_output
 
 end module scamMod

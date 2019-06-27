@@ -3764,11 +3764,8 @@ end subroutine print_active_fldlst
     str = 'CF-1.0'
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'Conventions', trim(str))
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'source', 'CAM')
-#if defined (E3SM_SCM_REPLAY) && !defined(E3SM_SCM_REPLAY_B4B)
+#if defined (E3SM_SCM_REPLAY)
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'E3SM_GENERATED_FORCING','create SCM IOP dataset')
-#endif
-#if defined (E3SM_SCM_REPLAY_B4B)
-    ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'E3SM_B4B_GENERATED_FORCING','create SCM IOP dataset')
 #endif
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'case',caseid)
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'title',ctitle)

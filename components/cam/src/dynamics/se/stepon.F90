@@ -26,8 +26,7 @@ module stepon
    use edge_mod,       only: initEdgeBuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
    use parallel_mod,   only : par
    use scamMod,        only: use_iop, doiopupdate, single_column, &
-                             setiopupdate, readiopdata, &
-			     replay_b4b_output
+                             setiopupdate, readiopdata
    use element_mod,    only: element_t
    use shr_const_mod,       only: SHR_CONST_PI
 
@@ -444,17 +443,9 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
    type (element_t), pointer :: elem(:)
    integer :: rc, i, j, k, p, ie, tl_f
-#if defined (E3SM_SCM_REPLAY) && !defined(E3SM_SCM_REPLAY_B4B)
+#if defined (E3SM_SCM_REPLAY)
    real(r8) :: forcing_temp(npsq,nlev), forcing_q(npsq,nlev,pcnst)
 #endif   
-#if (defined E3SM_SCM_REPLAY_B4B)
-   integer, parameter :: r16 = selected_real_kind(24)
-   real(r16) :: forcing_r16
-   real(r8) :: forcing_temp_part1(npsq,nlev), forcing_temp_part2(npsq,nlev), forcing_temp_part3(npsq,nlev)
-   real(r8) :: forcing_q_part1(npsq,nlev,pcnst), forcing_q_part2(npsq,nlev,pcnst), forcing_q_part3(npsq,nlev,pcnst)
-   real(r16) :: var_afterdyn_r16, var_beforedyn_r16, timestep_r16, phystend_r16
-   real(r8) :: replay_one,replay_two,replay_three
-#endif
    
    elem => dyn_out%elem
    
@@ -498,51 +489,11 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
        do j=1,np
          do i=1,np
 	 
-#if (defined E3SM_SCM_REPLAY_B4B)	   
-           ! If the user wishes to replay a column of E3SM with
-           ! b4b results in the SCM, then the tendency must be 
-           ! computed in quad (r16) precision.  However, it is not possible
-           ! to produce output in r16 precision in E3SM, therefore
-           ! in order to reconstruct the tendency as accurately as 
-           ! possible in r16 in forecast.F90, three r8 values 
-           ! must be computed (in subroutine replay_b4b_output) 
-           ! and saved.  Without this step with quad precision, we cannot
-	   ! expect b4b in the SCM with a simple tendency calculation in r8
-	   ! if the GCM and SCM do not do the EXACT same calculations
-	   ! to achieve this tendency.  
-
-           ! First step is to compute the dynamics tendency in r16
-           ! This involves converting all terms of the tendency to r16
-
-           ! Save temperature state after dynamics in r16
-	   var_afterdyn_r16=dyn_in%elem(ie)%state%T(i,j,k,tl_f) 
-	   
-	   ! Save the temperature state before dynamics in r16
-	   var_beforedyn_r16=ftmp_temp(i,j,k,ie)
-	   
-	   ! Save the timestep in r16
-	   timestep_r16=dtime
-	   
-	   ! Save the physics tendency in r16
-	   phystend_r16=dyn_in%elem(ie)%derived%FT(i,j,k)
-	   
-	   ! Compute the dynamics tedency in r16
-	   forcing_r16 = (var_afterdyn_r16 - var_beforedyn_r16)/timestep_r16 - phystend_r16
-			
-	   ! This subroutine will compute the three r8 parts that can be saved
-	   !   and then used to reconstruct the r16 tendency 
-           call replay_b4b_output(forcing_r16,replay_one,replay_two,replay_three)
-
-           ! Save the three parts to appropriate output arrays
-	   forcing_temp_part1(i+(j-1)*np,k)=replay_one	   
-	   forcing_temp_part2(i+(j-1)*np,k)=replay_two
-	   forcing_temp_part3(i+(j-1)*np,k)=replay_three
-#else
-           ! If B4B results are not desired in the SCM, then we simply need
-	   !  to compute the tendency in r8
+           ! Note that this calculation will not provide b4b results with 
+	   !  an E3SM because the dynamics tendency is not computed in the exact
+	   !  same way as an E3SM run.
 	   forcing_temp(i+(j-1)*np,k) = (dyn_in%elem(ie)%state%T(i,j,k,tl_f) - &
 	        ftmp_temp(i,j,k,ie))/dtime - dyn_in%elem(ie)%derived%FT(i,j,k)
-#endif
 		
            out_temp(i+(j-1)*np,k) = dyn_in%elem(ie)%state%T(i,j,k,tl_f)
 	   out_u(i+(j-1)*np,k) = dyn_in%elem(ie)%state%v(i,j,1,k,tl_f)
@@ -550,37 +501,11 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
 	   out_q(i+(j-1)*np,k) = dyn_in%elem(ie)%state%Q(i,j,k,1)
 	   out_psv(i+(j-1)*np) = dyn_in%elem(ie)%state%ps_v(i,j,tl_f)
 
-	   do p=1,pcnst
-#if (defined E3SM_SCM_REPLAY_B4B) 	
-             ! This block of code for q follows the same logic as that
-	     ! for temperature (see comments above)
-	     
-	     ! Save tracer state after dynamics in r16
-	     var_afterdyn_r16=dyn_in%elem(ie)%state%Q(i,j,k,p)
-	     
-	     ! Save tracer state after dynamics in r16
-	     var_beforedyn_r16=ftmp_q(i,j,k,p,ie)
-	     
-	     ! Save the timestep in r16
-	     timestep_r16=dtime	
-	     
-	     ! Compute the dynamics tedency in r16
-	     forcing_r16 = (var_afterdyn_r16 - var_beforedyn_r16)/timestep_r16
-
-	     ! This subroutine will compute the three r8 parts that can be saved
-	     !   and then used to reconstruct the r16 tendency	     
-	     call replay_b4b_output(forcing_r16,replay_one,replay_two,replay_three)
-	     
-	     ! Save the three parts to appropriate output arrays
-	     forcing_q_part1(i+(j-1)*np,k,p)=replay_one	   
-	     forcing_q_part2(i+(j-1)*np,k,p)=replay_two
-	     forcing_q_part3(i+(j-1)*np,k,p)=replay_three
-#else	 
+	   do p=1,pcnst	 
              ! If B4B results are not desired in the SCM, then we simply need
 	     !  to compute the tendency in r8		
 	     forcing_q(i+(j-1)*np,k,p) = (dyn_in%elem(ie)%state%Q(i,j,k,p) - &
-	       ftmp_q(i,j,k,p,ie))/dtime
-#endif	     		
+	       ftmp_q(i,j,k,p,ie))/dtime		
 	   enddo
 	   
 	 enddo
@@ -593,25 +518,10 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
      call outfld('u',out_u,npsq,ie)
      call outfld('v',out_v,npsq,ie)
 
-#if (defined E3SM_SCM_REPLAY_B4B)  
-     ! If we want to reproduce an E3SM column b4b, then we 
-     !   need to save three r8 parts of a r16 number   
-     call outfld('divT3d',forcing_temp_part1,npsq,ie)
-     call outfld('divT3d_2',forcing_temp_part2,npsq,ie)
-     call outfld('divT3d_3',forcing_temp_part3,npsq,ie)
-     do p=1,pcnst
-       call outfld(trim(cnst_name(p))//'_dten',forcing_q_part1(:,:,p),npsq,ie) 
-       call outfld(trim(cnst_name(p))//'_dten_2',forcing_q_part2(:,:,p),npsq,ie)
-       call outfld(trim(cnst_name(p))//'_dten_3',forcing_q_part3(:,:,p),npsq,ie)  
-     enddo
-#else
-     ! If we do not need B4B in SCM then outputing the tendency in 
-     !   r8 is adequate to get near-b4b answers
      call outfld('divT3d',forcing_temp,npsq,ie)
      do p=1,pcnst
        call outfld(trim(cnst_name(p))//'_dten',forcing_q(:,:,p),npsq,ie)   
-     enddo
-#endif     
+     enddo    
      
    enddo
 

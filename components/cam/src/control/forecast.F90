@@ -185,13 +185,12 @@ subroutine forecast(lat, psm1, psm2,ps, &
 
    wfldint(plevp) = 0.0_r8
  
-   if (use_3dfrc .and. use_iop .and. .not. use_replay_b4b) then
+   if (use_3dfrc .and. use_iop) then
 
 !  If using the E3SM REPLAY option, then this method will not 
 !    give exact b4b results with the GCM column, though this 
 !    should faithful represent the behavior and regime of
-!    the column with small error.  For b4b, more output from 
-!    the GCM is required to compute the tendency in quad precision
+!    the column with small error.  
 
 !  Complete a very simple forecast using supplied 3-dimensional forcing
 !  by the large scale.  Obviates the need for any kind of vertical 
@@ -209,83 +208,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
 
       go to 1000
 
-   end if
-   
-   if (use_3dfrc .and. use_iop .and. use_replay_b4b) then
-   
-!  If the user generated the adequte forcing from the GCM to produce 
-!    b4b results with the GCM column, then we will compute the forecast
-!    in quad precicion (r16).  To do this we must reconstruct the r16
-!    dynamics tendency and convert all needed terms for the forecast
-!    in r16.  Afterwards, this r16 forecast value is converted back
-!    to r8
-
-!  Complete a very simple forecast using supplied 3-dimensional forcing
-!  by the large scale.  Obviates the need for any kind of vertical 
-!  advection calculation.  Skip to diagnostic estimates of vertical term.
-      i=1
-      do k=1,plev
-         ! read in exponent value of the "Multiplier"
-         exp_count=divt3d_3(k)
-	 
-	 ! Reconstsruct the multiplier value so that it is
-	 ! exacly the same as it was when the tedency was broken
-	 ! down in routine "replay_b4b_output"
-	 mult_reconst_r16=1.0_r16*10._r16**(exp_count)
-	 
-	 ! Read in part two of the dynamics tendency
-	 reconst2_r16=divt3d_2(k)
-	 
-	 ! Read in part one of the dynamics tendency
-	 reconst1_r16=divt3d(k)
-	 
-!	 write(*,*) 'PARTTWOandTHREE ', exp_count, reconst2_r16
-	 
-	 ! Now we have all terms to reconstruct the r16 
-	 !  dynamics tendency needed for our forecast.  This 
-	 !  needs to be computed EXACTLY the same way as it was 
-	 !  done in routine "replay_b4b_output".  In this routine
-	 !  we computed reconst2 as:
-	 !     reconst2 = (divt3d_full - reconst1)/mult_reconst
-	 !  Thus, we will rearrange to solve for divt3d_full as:
-
-	 divt3d_r16 = reconst2_r16 + reconst1_r16/mult_reconst_r16
-
-         ! Now we have the appropriate forcing term at r16, but all 
-	 !  terms of our forecast now need to be in r16 so the forecast
-	 !  can be as precise as possible for b4b
-	 var_beforedyn_r16 = t3m2(k) ! temperature before dynamics
-	 timestep_r16 = ztodt        ! timestep
-	 phystend_r16 = t2(k)        ! physics tendency
-
-         ! compute the forecast in r16	 
-	 var_afterdyn_r16 = var_beforedyn_r16 + timestep_r16*phystend_r16 &
-	     + timestep_r16*divt3d_r16
-	     
-	 ! Now convert the r16 forecast to r8
-         tfcst(k) = var_afterdyn_r16
-      end do
-      ! Do the same for tracers.  Yes, there are lack of comments,
-      !   but logic follows that exactly of that of temperature.
-      do m=1,pcnst
-         do k=1,plev
-            exp_count=divq3d_3(k,m)
-	    mult_reconst_r16=1.0_r16*10._r16**(exp_count)
-	    reconst2_r16=divq3d_2(k,m)
-	    reconst1_r16=divq3d(k,m)	 
-	 
-	    divq3d_r16 = reconst2_r16 + reconst1_r16/mult_reconst_r16	 
-
-	    var_beforedyn_r16 = qminus(1,k,m)
-	    timestep_r16 = ztodt
-	    var_afterdyn_r16 = var_beforedyn_r16 + divq3d_r16*timestep_r16
-	    qfcst(1,k,m) = var_afterdyn_r16
-         end do
-      enddo
-
-      go to 1000
-
-   end if   
+   end if  
 
 !
 !  provide an eulerian forecast.  First check to ensure that 2d forcing

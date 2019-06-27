@@ -99,14 +99,7 @@ CONTAINS
     call addfld ('Ps',horiz_only, 'A','Pa','Ps for scam',gridname=trim(dyngrid))
     call add_default ('Ps',2,' ')
     call addfld ('divT3d',(/ 'lev' /), 'A','K','Dynamics Residual for T',gridname=trim(dyngrid))
-    call add_default ('divT3d',2,' ')
-    
-#if (defined E3SM_SCM_REPLAY_B4B)
-    call addfld ('divT3d_2',(/ 'lev' /), 'A','K','Part two dynamics Residual for T',gridname=trim(dyngrid))
-    call add_default ('divT3d_2',2,' ')  
-    call addfld ('divT3d_3',(/ 'lev' /), 'A','-','Exponent for dynamics Residual for T',gridname=trim(dyngrid))
-    call add_default ('divT3d_3',2,' ')  
-#endif    
+    call add_default ('divT3d',2,' ')   
 
     call addfld ('heat_glob',horiz_only, 'A', 'K/s', 'Global mean total energy difference')
     call add_default ('heat_glob',2,' ')
@@ -114,17 +107,7 @@ CONTAINS
     do m=1,pcnst
        call addfld (trim(cnst_name(m))//'_dten',(/ 'lev' /), 'A','kg/kg', &
             trim(cnst_name(m))//' IOP Dynamics Residual for '//trim(cnst_name(m)),gridname=trim(dyngrid))
-       call add_default (trim(cnst_name(m))//'_dten',2,' ')
-
-#if (defined E3SM_SCM_REPLAY_B4B)       
-       call addfld (trim(cnst_name(m))//'_dten_2',(/ 'lev' /), 'A','kg/kg', &
-            trim(cnst_name(m))//' Part two IOP Dynamics Residual for '//trim(cnst_name(m)),gridname=trim(dyngrid))
-       call add_default (trim(cnst_name(m))//'_dten_2',2,' ') 
-       
-       call addfld (trim(cnst_name(m))//'_dten_3',(/ 'lev' /), 'A','-', &
-            trim(cnst_name(m))//' Exponent for IOP Dynamics Residual for '//trim(cnst_name(m)),gridname=trim(dyngrid))
-       call add_default (trim(cnst_name(m))//'_dten_3',2,' ')
-#endif             
+       call add_default (trim(cnst_name(m))//'_dten',2,' ')             
       
     end do
     call addfld ('shflx',horiz_only,    'A','W/m2','Surface sensible heat flux for scam')

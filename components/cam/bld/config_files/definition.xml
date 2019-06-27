@@ -146,10 +146,6 @@ supported for the Eulerian dycore.
 Configure E3SM to generate an IOP file that can be used to drive the SCM: 0=no, 1=yes.
 This option only supported for the Spectral Element dycore.
 </entry>
-<entry id="e3smreplay_b4b" valid_values="0,1" value="0">
-Configure E3SM to generate an IOP file that can be used to drive the SCM with b4b results: 0=no, 1=yes.
-This option only supported for the Spectral Element dycore.
-</entry>
 <entry id="hgrid" value="">
 Horizontal grid specifier.  The recognized values depend on
 the dynamics type and are contained in the config_horiz_grid.xml file.
