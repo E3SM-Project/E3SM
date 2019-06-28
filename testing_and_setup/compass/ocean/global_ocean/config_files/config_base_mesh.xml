@@ -2,9 +2,6 @@
 <config case="base_mesh">
 
 	<add_link source_path="mpas_model" source="testing_and_setup/compass/ocean/jigsaw_to_MPAS" dest="jigsaw_to_MPAS"/>
-	<add_link source_path="mpas_model" source="testing_and_setup/compass/ocean/jigsaw_to_MPAS/jigsaw_driver.m" dest="jigsaw_driver.m"/>
-	<add_link source_path="jigsaw-geo-matlab" source="." dest="jigsaw-geo-matlab"/>
-	<add_link source_path="jigsaw-geo-matlab" source="jigsaw/geo/topo.msh" dest="topo.msh"/>
 	<add_link source_path="script_test_dir" source="." dest="define_base_mesh"/>
 
 	<run_script name="run.py">
