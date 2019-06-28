@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <config case="base_mesh">
-	<get_file dest_path="case" file_name="topo.msh">
-		<mirror protocol="wget" url="https://raw.githubusercontent.com/dengwirda/jigsaw-geo-python/dev/files/">
+	<get_file dest_path="work_case_dir" file_name="topo.msh">
+		<mirror protocol="wget" url="https://raw.githubusercontent.com/dengwirda/jigsaw-geo-python/dev/files/"/>
 	</get_file>
 
 	<add_link source_path="mpas_model" source="testing_and_setup/compass/ocean/jigsaw_to_MPAS" dest="jigsaw_to_MPAS"/>
