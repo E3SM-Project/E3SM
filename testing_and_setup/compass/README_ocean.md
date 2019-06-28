@@ -6,8 +6,9 @@ To set up and run ocean test cases from COMPASS, you will need a conda
 environment.  First, install Miniconda3 (if miniconda is not already
 installed), then create a new conda environment as follows:
 ``` bash
-conda create -n compass_py3.7 -c conda-forge python=3.7 geometric_features
-    mpas_tools jigsaw metis pyflann scikit-image basemap pyamg ffmpeg
+conda create -n compass_py3.7 -c conda-forge python=3.7 \
+    geometric_features=0.1.1 mpas_tools=0.0.3 jigsaw=0.9.10 metis pyflann \
+    scikit-image basemap pyamg ffmpeg
 ```
 Each time you want to work with COMPASS, you will need to run:
 ```
@@ -26,9 +27,9 @@ conda activate compass_py3.7
 The file `general.config.ocean` is a template containing a set of config
 options that the COMPASS user must set in order to set up ocean test cases.
 Make a copy of this file (e.g. `config.ocean`) and set the options as follows.
-Replace `FULL_PATH_TO_MPAS_MODEL_REPO` with the path where you have checked
-out (and built) the branch of MPAS-Model you are planning to use.  Five other
-paths are required, as explained below.
+In six places, replace `FULL_PATH_TO_MPAS_MODEL_REPO` with the path where you
+have checked out (and built) the branch of MPAS-Model you are planning to use.
+Five other paths are required, as explained below.
 
 ### geometric_data
 
