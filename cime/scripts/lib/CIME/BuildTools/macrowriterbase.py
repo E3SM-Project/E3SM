@@ -315,7 +315,7 @@ def _parse_hash(macros, fd, depth, output_format, cmakedebug=""):
                 if key.startswith("ADD_"):
                     fd.write("{} {} += {}\n".format(" " * width, key[4:], value))
                 else:
-                    fd.write("{} {} += {}\n".format(" " * width, key, value))
+                    fd.write("{} {} := {}\n".format(" " * width, key, value))
 
             else:
                 value = value.replace("(", "{").replace(")", "}")

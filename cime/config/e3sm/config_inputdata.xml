@@ -8,10 +8,6 @@
   </server>
   <server>
     <protocal>svn</protocal>
-    <address>https://acme-svn2.ornl.gov/acme-repo/acme/inputdata</address>
-  </server>
-  <server>
-    <protocal>svn</protocal>
     <address>https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata</address>
   </server>
 
