@@ -1116,13 +1116,8 @@ contains
          end if
       end do
       num_filterc_tot = num_filterc_tot+num_filterc
-!      if(use_hydrstress) then
-!         call Compute_EffecRootFrac_And_VertTranSink_HydStress_Roads(bounds, &
-!               num_filterc,filterc, soilstate_inst, waterflux_inst)
-!      else
-         call Compute_EffecRootFrac_And_VertTranSink_Default(bounds, &
+      call Compute_EffecRootFrac_And_VertTranSink_Default(bounds, &
                num_filterc,filterc, soilstate_inst, waterflux_inst)
-!      end if
 
 
       num_filterc = 0

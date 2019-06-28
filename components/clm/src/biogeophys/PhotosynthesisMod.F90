@@ -1854,7 +1854,6 @@ contains
          z            => col_pp%z                               , & ! Input: [real(r8) (:,:) ]  layer depth (m)
 
          c3psn      => veg_vp%c3psn                          , & ! Input:  photosynthetic pathway: 0. = c4, 1. = c3
-         !crop       => veg_vp%crop                           , & ! Input:  crop or not (0 =not crop and 1 = crop)
          leafcn     => veg_vp%leafcn                         , & ! Input:  leaf C:N (gC/gN)
          flnr       => veg_vp%flnr                           , & ! Input:  fraction of leaf N in the Rubisco enzyme (gN Rubisco / gN leaf)
          fnitr      => veg_vp%fnitr                          , & ! Input:  foliage nitrogen limitation factor (-)
@@ -1862,10 +1861,6 @@ contains
          stem_leaf     => veg_vp%stem_leaf                         , & ! allocation parameter: new stem c per new leaf C (gC/gC)
          froot_leaf     => veg_vp%froot_leaf                         , & ! allocation parameter: new fine root C per new leaf C (gC/gC)
          croot_stem     => veg_vp%croot_stem                         , & ! allocation parameter: new coarse root C per new stem C (gC/gC)
-         !i_vcad     => veg_vp%i_vcad                         , & ! Input:  [real(r8) (:)   ]  
-         !s_vcad     => veg_vp%s_vcad                         , & ! Input:  [real(r8) (:)   ]  
-         !i_flnr     => veg_vp%i_flnr                         , & ! Input:  [real(r8) (:)   ]  
-         !s_flnr     => veg_vp%s_flnr                         , & ! Input:  [real(r8) (:)   ]  
          forc_pbot  => top_as%pbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)
 
          t_veg         => veg_es%t_veg             , & ! Input:  [real(r8) (:)   ]  vegetation temperature (Kelvin)                                       
@@ -1892,9 +1887,6 @@ contains
          bbb        => photosyns_inst%bbb_patch              , & ! Output: [real(r8) (:)   ]  Ball-Berry minimum leaf conductance (umol H2O/m**2/s)
          mbb        => photosyns_inst%mbb_patch              , & ! Output: [real(r8) (:)   ]  Ball-Berry slope of conductance-photosynthesis relationship
          rh_leaf    => photosyns_inst%rh_leaf_patch          , & ! Output: [real(r8) (:)   ]  fractional humidity at leaf surface (dimensionless)
-         !lnc        => photosyns_inst%lnca_patch             , & ! Output: [real(r8) (:)   ]  top leaf layer leaf N concentration (gN leaf/m^2)
-         !leaf_acc   => photosyns_inst%leaf_acc               , & ! Input:  [logical        ]  flag for respiratory acclimation of leaves
-         !light_inhibit=> photosyns_inst%light_inhibit        , & ! Input:  [logical        ]  flag if light should inhibit respiration
          leafn         => veg_ns%leafn           , &
          leafn_storage => veg_ns%leafn_storage   , &
          leafn_xfer    => veg_ns%leafn_xfer      , &
@@ -1906,17 +1898,12 @@ contains
          bsw           => soilstate_inst%bsw_col                , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"
          sucsat        => soilstate_inst%sucsat_col             ,  & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)
          ivt           => veg_pp%itype                             & ! Input:  [integer  (:)   ]  patch vegetation type
-         !leafresp_method=> photosyns_inst%leafresp_method     , & ! Input:  [integer        ]  method type to use for leaf-maint.-respiration at 25C canopy top
-     )
-         !leaf_mr_vcm => canopystate_inst%leaf_mr_vcm           & ! Input:  [real(r8)       ]  scalar constant of leaf respiration with Vcmax         )
       an_sun        =>    photosyns_inst%an_sun_patch         ! Output: [real(r8) (:,:) ]  net sunlit leaf photosynthesis (umol CO2/m**2/s)
       an_sha        =>    photosyns_inst%an_sha_patch         ! Output: [real(r8) (:,:) ]  net shaded leaf photosynthesis (umol CO2/m**2/s)
       par_z_sun     =>    solarabs_inst%parsun_z_patch        ! Input:  [real(r8) (:,:) ]  par absorbed per unit lai for canopy layer (w/m**2)
       lai_z_sun     =>    canopystate_inst%laisun_z_patch     ! Input:  [real(r8) (:,:) ]  leaf area index for canopy layer, sunlit or shaded
       vcmaxcint_sun =>    surfalb_inst%vcmaxcintsun_patch     ! Input:  [real(r8) (:)   ]  leaf to canopy scaling coefficient
       alphapsn_sun  =>    photosyns_inst%alphapsnsun_patch    ! Input:  [real(r8) (:)   ]  13C fractionation factor for PSN ()
-      !o3coefv_sun   =>    ozone_inst%o3coefvsun_patch         ! Input:  [real(r8) (:)   ]  O3 coefficient used in photosynthesis calculation
-      !o3coefg_sun   =>    ozone_inst%o3coefgsun_patch         ! Input:  [real(r8) (:)   ]  O3 coefficient used in rs calculation
       ci_z_sun      =>    photosyns_inst%cisun_z_patch        ! Output: [real(r8) (:,:) ]  intracellular leaf CO2 (Pa)
       rs_sun        =>    photosyns_inst%rssun_patch          ! Output: [real(r8) (:)   ]  leaf stomatal resistance (s/m)
       rs_z_sun      =>    photosyns_inst%rssun_z_patch        ! Output: [real(r8) (:,:) ]  canopy layer: leaf stomatal resistance (s/m)
@@ -1932,8 +1919,6 @@ contains
       lai_z_sha     =>    canopystate_inst%laisha_z_patch     ! Input:  [real(r8) (:,:) ]  leaf area index for canopy layer, sunlit or shaded
       vcmaxcint_sha =>    surfalb_inst%vcmaxcintsha_patch     ! Input:  [real(r8) (:)   ]  leaf to canopy scaling coefficient
       alphapsn_sha  =>    photosyns_inst%alphapsnsha_patch    ! Input:  [real(r8) (:)   ]  13C fractionation factor for PSN ()
-      !o3coefv_sha   =>    ozone_inst%o3coefvsha_patch         ! Input:  [real(r8) (:)   ]  O3 coefficient used in photosynthesis calculation
-      !o3coefg_sha   =>    ozone_inst%o3coefgsha_patch         ! Input:  [real(r8) (:)   ]  O3 coefficient used in rs calculation
       ci_z_sha      =>    photosyns_inst%cisha_z_patch        ! Output: [real(r8) (:,:) ]  intracellular leaf CO2 (Pa)
       rs_sha        =>    photosyns_inst%rssha_patch          ! Output: [real(r8) (:)   ]  leaf stomatal resistance (s/m)
       rs_z_sha      =>    photosyns_inst%rssha_z_patch        ! Output: [real(r8) (:,:) ]  canopy layer: leaf stomatal resistance (s/m)
@@ -1950,7 +1935,7 @@ contains
       ! Photosynthesis and stomatal conductance parameters, from:
       ! Bonan et al (2011) JGR, 116, doi:10.1029/2010JG001593
       !==============================================================================!
-! calculate root-soil interface conductance 
+      ! calculate root-soil interface conductance 
       do f = 1, fn
          p = filterp(f)
          c = veg_pp%column(p)
@@ -1960,31 +1945,31 @@ contains
 
          do j = 1,nlevsoi
 
-! calculate conversion from conductivity to conductance
+            ! calculate conversion from conductivity to conductance
             root_biomass_density = c_to_b * froot_carbon(p) * rootfr(p,j) / dz(c,j)
-! ensure minimum root biomass (using 1gC/m2)
+            ! ensure minimum root biomass (using 1gC/m2)
             root_biomass_density = max(c_to_b*1._r8,root_biomass_density)
 
-          ! Root length density: m root per m3 soil
+            ! Root length density: m root per m3 soil
             root_cross_sec_area = rpi*veg_vp%root_radius(veg_pp%itype(p))**2
             root_length_density = root_biomass_density / (veg_vp%root_density(veg_pp%itype(p)) * root_cross_sec_area)
 
             ! Root-area index (RAI)
             rai(j) = (tsai(p)+tlai(p)) * veg_vp%froot_leaf(veg_pp%itype(p)) * rootfr(p,j)
 
-! fix coarse root_average_length to specified length
+            ! fix coarse root_average_length to specified length
             croot_average_length = croot_lateral_length
 
-! calculate r_soil using Gardner/spa equation (Bonan, GMD, 2014)
+            ! calculate r_soil using Gardner/spa equation (Bonan, GMD, 2014)
             r_soil = sqrt(1./(rpi*root_length_density))
 
             ! length scale approach
             soil_conductance = min(hksat(c,j),hk_l(c,j))/(1.e3*r_soil)
 
-! use vegetation plc function to adjust root conductance
-               fs(j)=  plc(smp(c,j),p,c,root,veg)
+            ! use vegetation plc function to adjust root conductance
+            fs(j)=  plc(smp(c,j),p,c,root,veg)
 
-! krmax is root conductance per area per length
+            ! krmax is root conductance per area per length
             root_conductance = (fs(j)*rai(j)*params_inst%krmax(veg_pp%itype(p)))/(croot_average_length + z(c,j))
 
             soil_conductance = max(soil_conductance, 1.e-16_r8)
@@ -1993,20 +1978,16 @@ contains
             root_conductance_patch(p,j) = root_conductance
             soil_conductance_patch(p,j) = soil_conductance
 
-! sum resistances in soil and root
+            ! sum resistances in soil and root
             rs_resis = 1._r8/soil_conductance + 1._r8/root_conductance
 
-! conductance is inverse resistance
-! explicitly set conductance to zero for top soil layer
+            ! conductance is inverse resistance
+            ! explicitly set conductance to zero for top soil layer
             if(rai(j)*rootfr(p,j) > 0._r8 .and. j > 1) then
                k_soil_root(p,j) =  1._r8/rs_resis
             else
                k_soil_root(p,j) =  0.
             endif
-!Fang
-!             fs_n(j)=min(1._r8,hk_l(c,j)/(hksat(c,j)*(-params_inst%psi_soil_ref(veg_pp%itype(p))/sucsat(c,j))**(-2._r8-3._r8/bsw(c,j))))
-!             rai_n(j)   = tsai(p) * rootfr(p,j)
-!             k_soil_root(p,j) = rai_n(j) * params_inst%krmax(veg_pp%itype(p)) * fs_n(j)
          end do
       enddo
 
@@ -2233,17 +2214,6 @@ contains
                      jmax25top = 0.0_r8
                   end if
 
-!                  if (lnc(p) >= 0.1_r8 .and. lnc(p) <=3.0_r8 .and. lpc(p) >= 0.05_r8 .and. lpc(p) <= 0.5_r8) then
-!                     vcmax25top = exp(3.946_r8 + 0.921_r8*log(lnc(p)) + 0.121_r8*log(lpc(p)) + 0.282_r8*log(lnc(p))*log(lpc(p))) * dayl_factor(p)
-!                     jmax25top = exp(1.246_r8 + 0.886_r8*log(vcmax25top) + 0.089_r8*log(lpc(p))) * dayl_factor(p)
-!                  else if (lnc(p) < 0.1_r8 .or. lpc(p) < 0.05_r8) then
-!                     vcmax25top = 10.0_r8
-!                     jmax25top  = 10.0_r8
-!                  else
-!                     vcmax25top = 150.0_r8
-!                     jmax25top  = 250.0_r8
-!                  end if
-
                else
                   lnc(p)     = 0.0_r8
                   vcmax25top = 0.0_r8
@@ -2405,15 +2375,6 @@ contains
 
             end if
 
-           ! Change to add in light inhibition of respiration. 0.67 from Lloyd et al. 2010, & Metcalfe et al. 2012
-           ! Also pers. comm from Peter Reich (Nov 2015). Might potentially be updated pending findings of Atkin et al. (in prep)
-           ! review of light inhibition database.
-           !if ( light_inhibit .and. par_z_sun(p,1) > 0._r8) then ! are the lights on?
-           !   lmr_z_sun(p,iv) = lmr_z_sun(p,iv) * 0.67_r8 ! inhibit respiration accordingly.
-           !end if
-           !if ( light_inhibit .and. par_z_sha(p,1) > 0._r8) then ! are the lights on?
-           !   lmr_z_sha(p,iv) = lmr_z_sha(p,iv) * 0.67_r8 ! inhibit respiration accordingly.
-           !end if
 
          end do       ! canopy layer loop
       end do          ! patch loop
@@ -2443,16 +2404,8 @@ contains
 
                !zqz temporary signal for night time
                vegwp(p,1)=1._r8
-!               if (      stomatalcond_mtd == stomatalcond_mtd_bb1987 )then
-                  gsminsun = bbb(p)
-                  gsminsha = bbb(p)
-!               else if ( stomatalcond_mtd == stomatalcond_mtd_medlyn2011 )then
-!                  gsminsun = medlynintercept(veg_pp%itype(p))
-!                  gsminsha = medlynintercept(veg_pp%itype(p))
-!               else
-!                  gsminsun = nan
-!                  gsminsha = nan
-!               end if
+               gsminsun = bbb(p)
+               gsminsha = bbb(p)
 
 
                call calcstress(p,c,t,vegwp(p,:),bsun(p),bsha(p),gb_mol(p),bbb(p),bbb(p), &
@@ -2491,14 +2444,7 @@ contains
 
                !now the constraint is no longer needed, Jinyun Tang
                ceair = min( eair(p),  esat_tv(p) )
-!               rh_can = ceair / esat_tv(p)
-!               if ( stomatalcond_mtd == stomatalcond_mtd_bb1987 )then
-                  rh_can = ceair / esat_tv(p)
-!               else if ( stomatalcond_mtd == stomatalcond_mtd_medlyn2011 )then
-                  ! Put some constraints on RH in the canopy when Medlyn
-                  ! stomatal conductance is being used
-!                  rh_can = max((esat_tv(p) - ceair), 50._r8) * 0.001_r8
-!               end if
+               rh_can = ceair / esat_tv(p)
 
 
                ! Electron transport rate for C3 plants. Convert par from W/m2 to
@@ -2537,24 +2483,13 @@ contains
                                qsatl(p), qaf(p), iter1, iter2, atm2lnd_inst, photosyns_inst, &
                                canopystate_inst, waterstate_inst, soilstate_inst, temperature_inst, waterflux_inst)
 
-!               if ( stomatalcond_mtd == stomatalcond_mtd_medlyn2011 )then
-!                  gsminsun     = medlynintercept(veg_pp%itype(p))
-!                  gsminsha     = medlynintercept(veg_pp%itype(p))
-!                  gs_slope_sun = medlynslope(veg_pp%itype(p))
-!                  gs_slope_sha = medlynslope(veg_pp%itype(p))
-!               else if ( stomatalcond_mtd == stomatalcond_mtd_bb1987 )then
-                  gsminsun     = bbb(p)
-                  gsminsha     = bbb(p)
-                  gs_slope_sun = mbb(p)
-                  gs_slope_sha = mbb(p)
-!               end if
+               gsminsun     = bbb(p)
+               gsminsha     = bbb(p)
+               gs_slope_sun = mbb(p)
+               gs_slope_sha = mbb(p)
 
                ! End of ci iteration.  Check for an < 0, in which case gs_mol = bbb
 
-               !KO  Follow CLM photosynthesis to limit bbb
-!               if (an_sun(p,iv) < 0._r8) gs_mol_sun(p,iv) = max( bsun(p)*bbb(p), 1._r8 )
-               !KO  Follow CLM photosynthesis to limit bbb
-!               if (an_sha(p,iv) < 0._r8) gs_mol_sha(p,iv) = max( bsha(p)*bbb(p), 1._r8 )
                if (an_sun(p,iv) < 0._r8) gs_mol_sun(p,iv) = max(bsun(p)*gsminsun, 1._r8 )
                if (an_sha(p,iv) < 0._r8) gs_mol_sha(p,iv) = max(bsha(p)*gsminsha, 1._r8 )
 
@@ -2577,15 +2512,12 @@ contains
 
                gs = gs_mol_sun(p,iv) / cf
                rs_z_sun(p,iv) = min(1._r8/gs, rsmax0)
-               !rs_z_sun(p,iv) = rs_z_sun(p,iv) / o3coefg_sun(p)
                gs = gs_mol_sha(p,iv) / cf
                rs_z_sha(p,iv) = min(1._r8/gs, rsmax0)
-               !rs_z_sha(p,iv) = rs_z_sha(p,iv) / o3coefg_sha(p)
 
                ! Photosynthesis. Save rate-limiting photosynthesis
 
                psn_z_sun(p,iv) = ag(p,sun,iv)
-               !psn_z_sun(p,iv) = psn_z_sun(p,iv) * o3coefv_sun(p)
 
                psn_wc_z_sun(p,iv) = 0._r8
                psn_wj_z_sun(p,iv) = 0._r8
@@ -2656,8 +2588,6 @@ contains
       ! unit leaf area), which are used in other parts of the model. Here, laican
       ! sums to either laisun or laisha.
 
-!Fang for clmphs qflx calculation
-!add         qflx_rootsoi_col(c,1:nlevsoi) = 0._r8
     grav2(1:nlevsoi) = z(c,1:nlevsoi) * 1000._r8
       do f = 1, fn
          p = filterp(f)
@@ -2738,10 +2668,6 @@ contains
             btran(p) = bsun(p)
          end if
 
-!Fang to add
-!  qflx_rootsoi_col(c,1:nlevsoi) = qflx_rootsoi_col(c,1:nlevsoi) + veg_pp%wtcol(p) * &
-!         (-( k_soil_root(p,1:nlevsoi) * (vegwp(p,root)+grav2(1:nlevsoi)) ) &
-!         + ( k_soil_root(p,1:nlevsoi) * smp(c,1:nlevsoi) ))
       end do
 
     end associate
@@ -3202,9 +3128,6 @@ contains
     associate(                                                 &
          forc_pbot     => top_as%pbot                              , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                                             
          c3flag     => photosyns_inst%c3flag_patch           , & ! Input:  [logical  (:)   ]    true if C3 and false if C4
-         !medlynslope=> pftcon%medlynslope                    , & ! Input:  [real(r8) (:)   ]  Slope for Medlyn stomatal conductance model method
-         !medlynintercept=> pftcon%medlynintercept            , & ! Input:  [real(r8) (:)   ]  Intercept for Medlyn stomatal conductance model method
-         !stomatalcond_mtd=> photosyns_inst%stomatalcond_mtd  , & ! Input:  [integer        ]  method type to use for stomatal conductance.GC.fnlprmsn15_r22845
          ac         => photosyns_inst%ac_phs_patch           , & ! Output: [real(r8) (:,:,:) ]  Rubisco-limited gross photosynthesis (umol CO2/m**2/s)
          aj         => photosyns_inst%aj_phs_patch           , & ! Output: [real(r8) (:,:,:) ]  RuBP-limited gross photosynthesis (umol CO2/m**2/s)
          ap         => photosyns_inst%ap_phs_patch           , & ! Output: [real(r8) (:,:,:) ]  product-limited (C3) or CO2-limited (C4) gross photosynthesis (umol CO2/m**2/s)
@@ -3297,24 +3220,12 @@ contains
     an_sha(p,iv) = ag(p,sha,iv) - bsha * lmr_z_sha
     
     if (an_sun(p,iv) < 0._r8) then
-!       if ( stomatalcond_mtd == stomatalcond_mtd_medlyn2011 )then
-!          gs_mol_sun = medlynintercept(veg_pp%itype(p))
-       !else if ( stomatalcond_mtd == stomatalcond_mtd_bb1987 )then
-          gs_mol_sun = bbb(p)
-       !else
-       !   gs_mol_sun = nan
-       !end if
+       gs_mol_sun = bbb(p)
        gs_mol_sun = max( bsun*gs_mol_sun, 1._r8)
        fvalsun = 0._r8  ! really tho? zqz
     endif
     if (an_sha(p,iv) < 0._r8) then
-       !if ( stomatalcond_mtd == stomatalcond_mtd_medlyn2011 )then
-       !   gs_mol_sha = medlynintercept(veg_pp%itype(p))
-       !else if ( stomatalcond_mtd == stomatalcond_mtd_bb1987 )then
-          gs_mol_sha = bbb(p)
-       !else
-       !   gs_mol_sha = nan
-       !end if
+       gs_mol_sha = bbb(p)
        gs_mol_sha = max( bsha*gs_mol_sha, 1._r8)
        fvalsha = 0._r8
     endif
@@ -3329,49 +3240,21 @@ contains
     cs_sun = cair - 1.4_r8/gb_mol * an_sun(p,iv) * forc_pbot(t)
     cs_sun = max(cs_sun,10.e-06_r8)
 
-!    if ( stomatalcond_mtd == stomatalcond_mtd_medlyn2011 )then
-!       term = 1.6_r8 * an_sun(p,iv) / (cs_sun / forc_pbot(c) * 1.e06_r8)
-!       aquad = 1.0_r8
-!       bquad = -(2.0 * (medlynintercept(veg_pp%itype(p))*1.e-06_r8 + term) + (medlynslope(veg_pp%itype(p)) * term)**2 / &
-!               (gb_mol*1.e-06_r8 * rh_can))
-!       cquad = medlynintercept(veg_pp%itype(p))*medlynintercept(veg_pp%itype(p))*1.e-12_r8 + &
-!               (2.0*medlynintercept(veg_pp%itype(p))*1.e-06_r8 + term * &
-!               (1.0 - medlynslope(veg_pp%itype(p))* medlynslope(veg_pp%itype(p)) / rh_can)) * term
-
-!       call quadratic (aquad, bquad, cquad, r1, r2)
-!       gs_mol_sun = max(r1,r2) * 1.e06_r8
-   
-       ! Shaded
-!       cs_sha = cair - 1.4_r8/gb_mol * an_sha(p,iv) * forc_pbot(c)
-!       cs_sha = max(cs_sha,10.e-06_r8)
-   
-!       term = 1.6_r8 * an_sha(p,iv) / (cs_sha / forc_pbot(c) * 1.e06_r8)
-!       aquad = 1.0_r8
-!       bquad = -(2.0 * (medlynintercept(veg_pp%itype(p))*1.e-06_r8 + term) + (medlynslope(veg_pp%itype(p)) * term)**2 / &
-!               (gb_mol*1.e-06_r8 * rh_can))
-!       cquad = medlynintercept(veg_pp%itype(p))*medlynintercept(veg_pp%itype(p))*1.e-12_r8 + &
-!               (2.0*medlynintercept(veg_pp%itype(p))*1.e-06_r8 + term * (1.0 - medlynslope(veg_pp%itype(p))* &
-!               medlynslope(veg_pp%itype(p)) / rh_can)) * term
-
-!       call quadratic (aquad, bquad, cquad, r1, r2)
-!       gs_mol_sha = max(r1,r2)* 1.e06_r8
-!    else if ( stomatalcond_mtd == stomatalcond_mtd_bb1987 )then
-       aquad = cs_sun
-       bquad = cs_sun*(gb_mol - max(bsun*bbb(p),1._r8)) - mbb(p)*an_sun(p,iv)*forc_pbot(t)
-       cquad = -gb_mol*(cs_sun*max(bsun*bbb(p),1._r8) + mbb(p)*an_sun(p,iv)*forc_pbot(t)*rh_can)
-       call quadratic (aquad, bquad, cquad, r1, r2)
-       gs_mol_sun = max(r1,r2)
+    aquad = cs_sun
+    bquad = cs_sun*(gb_mol - max(bsun*bbb(p),1._r8)) - mbb(p)*an_sun(p,iv)*forc_pbot(t)
+    cquad = -gb_mol*(cs_sun*max(bsun*bbb(p),1._r8) + mbb(p)*an_sun(p,iv)*forc_pbot(t)*rh_can)
+    call quadratic (aquad, bquad, cquad, r1, r2)
+    gs_mol_sun = max(r1,r2)
     
-       ! Shaded
-       cs_sha = cair - 1.4_r8/gb_mol * an_sha(p,iv) * forc_pbot(t)
-       cs_sha = max(cs_sha,10.e-06_r8)
+    ! Shaded
+    cs_sha = cair - 1.4_r8/gb_mol * an_sha(p,iv) * forc_pbot(t)
+    cs_sha = max(cs_sha,10.e-06_r8)
     
-       aquad = cs_sha
-       bquad = cs_sha*(gb_mol - max(bsha*bbb(p),1._r8)) - mbb(p)*an_sha(p,iv)*forc_pbot(t)
-       cquad = -gb_mol*(cs_sha*max(bsha*bbb(p),1._r8) + mbb(p)*an_sha(p,iv)*forc_pbot(t)*rh_can)
-       call quadratic (aquad, bquad, cquad, r1, r2)
-       gs_mol_sha = max(r1,r2)
-!    end if
+    aquad = cs_sha
+    bquad = cs_sha*(gb_mol - max(bsha*bbb(p),1._r8)) - mbb(p)*an_sha(p,iv)*forc_pbot(t)
+    cquad = -gb_mol*(cs_sha*max(bsha*bbb(p),1._r8) + mbb(p)*an_sha(p,iv)*forc_pbot(t)*rh_can)
+    call quadratic (aquad, bquad, cquad, r1, r2)
+    gs_mol_sha = max(r1,r2)
     
     ! Derive new estimate for cisun,cisha
     if (an_sun(p,iv) >= 0._r8) then
@@ -3840,7 +3723,6 @@ contains
          htop          => canopystate_inst%htop_patch           , & ! Input:  [real(r8) (:)   ]  patch canopy top (m)
          tsai          => canopystate_inst%tsai_patch           , & ! Input:  [real(r8) (:)   ]  patch canopy one-sided stem area index, no burying by snow
          smp           => soilstate_inst%smp_l_col              , & ! Input: [real(r8) (:,:) ]  soil matrix potential [mm]
-         !ivt           => patch%itype                           , & ! Input:  [integer  (:)   ]  patch vegetation type
          qflx_tran_veg => veg_wf%qflx_tran_veg    , & ! Input:  [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)
          z             => col_pp%z                                   & ! Input:  [real(r8) (:,:) ]  layer node depth (m)
          )
@@ -3865,8 +3747,6 @@ contains
 
     waterflux_inst%sapflow_patch = & 
             tsai(p)*params_inst%kmax(veg_pp%itype(p),xyl) / htop(p) * fr * (x(root)-x(xyl)-grav1)
-!           laisun(p) * params_inst%kmax(veg_pp%itype(p),sun) * fx * (x(xyl)-x(sun))&
-!         + laisha(p) * params_inst%kmax(veg_pp%itype(p),sha) * fx * (x(xyl)-x(sha))
 
     if (laisha(p)<tol_lai) then
        ! special case for laisha ~ 0
@@ -4025,8 +3905,6 @@ contains
          fdry          => veg_ws%fdry            , & ! Input: [real(r8) (:)   ]  fraction of foliage that is green and dry [-]
          forc_pbot     => top_as%pbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                                             
          forc_rho      => top_as%rhobot                         , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)
-!         forc_rho      => atm2lnd_inst%forc_rho_downscaled_col  , & ! Input: [real(r8) (:)   ]  density (kg/m**3)
-!         forc_pbot     => atm2lnd_inst%forc_pbot_downscaled_col , & ! Input: [real(r8) (:)   ]  atmospheric pressure (Pa)
          tgcm          => veg_es%thm              & ! Input: [real(r8) (:)   ]  air temperature at agcm reference height (kelvin)
          )
     
@@ -4100,8 +3978,6 @@ contains
        else
          plc=2._r8**(-(x/params_inst%psi50(veg_pp%itype(p),level))**params_inst%ck(veg_pp%itype(p),level))
        end if
-!      plc = &
-!          (1._r8 + (x/params_inst%psi50(veg_pp%itype(p),level))**params_inst%ck(veg_pp%itype(p),level))**(-1._r8)
        if ( plc < 0.005_r8) plc = 0._r8
     case default
        print *,'must choose plc method'
@@ -4141,10 +4017,6 @@ contains
          d1plc= -params_inst%ck(ivt(p),level) * log(2._r8) * (2._r8**(-(x/params_inst%psi50(ivt(p),level)) &
               **params_inst%ck(ivt(p),level))) &
               * ((x/params_inst%psi50(ivt(p),level))**params_inst%ck(ivt(p),level)) / x
-!     d1plc= -1._r8 * (1._r8 + (x/params_inst%psi50(ivt(p),level))**params_inst%ck(ivt(p),level))**(-2._r8) * &
-!                          params_inst%ck(ivt(p),level)/params_inst%psi50(ivt(p),level)
-!&
-!                          *(x/params_inst%psi50(ivt(p),level))**(params_inst%ck(ivt(p),level)-1._r8)
        end if 
     case default
        print *,'must choose plc method'
