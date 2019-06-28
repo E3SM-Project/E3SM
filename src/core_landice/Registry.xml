@@ -538,8 +538,9 @@
 			<!-- uReconstructX/Y are only needed for exact restarts of HO iterative solvers -->
 			<var name="uReconstructX" packages="higherOrderVelocity"/>
 			<var name="uReconstructY" packages="higherOrderVelocity"/>
-                        <!-- beta is only used for HO solvers -->
+                        <!-- beta and efffectivePressure are only used for HO solvers -->
 			<var name="beta" packages="higherOrderVelocity"/>
+			<var name="effectivePressure" packages="higherOrderVelocity"/>
                         <!-- dirichletVelocityMask is only used for HO solvers -->
                         <var name="dirichletVelocityMask" packages="higherOrderVelocity"/>
                         <!-- fields only needed by SGH -->
