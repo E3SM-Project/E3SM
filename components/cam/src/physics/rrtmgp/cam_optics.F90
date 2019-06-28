@@ -499,7 +499,7 @@ contains
       call handle_error(optics_out%delta_scale())
 
       ! Check cloud optics_sw
-!      call handle_error(optics_out%validate())
+      call handle_error(optics_out%validate())
 
       call optics_cam%finalize()
 
@@ -765,7 +765,7 @@ contains
       end do
 
       ! Check values
-!      call handle_error(optics_out%validate())
+      call handle_error(optics_out%validate())
       
    end subroutine set_aerosol_optics_sw
 
