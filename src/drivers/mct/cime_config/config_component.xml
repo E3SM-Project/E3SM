@@ -1858,9 +1858,6 @@
 
   <entry id="EPS_OGRID">
     <type>real</type>
-    <!-- <default_value>1.0e-02</default_value> -->
-    <!-- relax EPS_OGRID for MOM6+CICE, since MOM6 is on C grid and reads a supergrid, whereas-->
-    <!-- CICE is on B grid and constructs TLAT/TLON by interpolating ULAT/ULON - aa, 180606-->
     <default_value>1.0e-01</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
