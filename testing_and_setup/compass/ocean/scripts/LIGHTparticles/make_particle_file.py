@@ -582,7 +582,7 @@ if __name__ == "__main__":
     if not args.remap:
         print('Building particle file...')
         build_particle_file(args.init, args.particles, args.graph, args.types, args.spatialfilter,
-                np.linspace(args.potdensmin, args.potdensmax, int(args.nbuoysurf)), int(args.nvertlevels),
+                np.linspace(float(args.potdensmin), float(args.potdensmax), int(args.nbuoysurf)), int(args.nvertlevels),
                 int(args.downsample), args.vertseedtype, args.loc)
         print('Done building particle file')
     else:
