@@ -38,7 +38,6 @@ model = FULL_PATH_TO_MPAS_MODEL_REPO/ocean_model
 # the test case is run again later.
 mpas_model = FULL_PATH_TO_MPAS_MODEL_REPO
 geometric_data = FULL_PATH_TO_PATH_OF_CACHED_GEOMETRIC_FEATURES_DATA
-jigsaw-geo-matlab = FULL_PATH_TO_JIGSAW_REPO
 mesh_database = FULL_PATH_TO_LOCAL_MESH_DATABASE
 initial_condition_database = FULL_PATH_TO_LOCAL_INITIAL_CONDITION_DATABASE
 bathymetry_database = FULL_PATH_TO_BATHYMETRY_DATABASE

@@ -136,16 +136,7 @@ module load intel/17.0.1 openmpi/1.10.5 netcdf/4.4.1 parallel-netcdf/1.5.0 pio/1
 export CORE=ocean
 ```
 
-## 4. Cloning JIGSAW
-
-There's one more bit of code that some test cases need (not Ocean0, but it's best to get
-in in case you want to work with other test cases) so we'll clone that, too.
-```bash
-cd /usr/projects/climate/cbegeman/mpas
-git clone git@github.com:dengwirda/jigsaw-geo-matlab.git
-```
-
-## 5. Checking out an MPAS branch and building the model
+## 4. Checking out an MPAS branch and building the model
 
 **Note: this is a good place to come back to when you need to start over on
 a new branch.**
@@ -189,7 +180,7 @@ make ifort
 Take a coffee break, this will take some time.
 ...
 
-## 6. Setting up a test case
+## 5. Setting up a test case
 
 Okay you're back and refreshed?  Let's set up a test case.
 ```bash
@@ -241,7 +232,6 @@ model = /usr/projects/climate/cbegeman/mpas/model/ocean/update_isomip_plus_viz/o
 # some test cases might download data into them, which will then be reused if
 # the test case is run again later.
 mpas_model = /usr/projects/climate/cbegeman/mpas/model/ocean/update_isomip_plus_viz
-jigsaw-geo-matlab = /usr/projects/climate/cbegeman/mpas/jigsaw-geo-matlab
 mesh_database = /usr/projects/regionalclimate/COMMON_MPAS/ocean/grids/mesh_database
 initial_condition_database = /usr/projects/regionalclimate/COMMON_MPAS/ocean/grids/initial_condition_database
 geometric_data = /usr/projects/regionalclimate/COMMON_MPAS/ocean/grids/geometric_data_v0.1.1
@@ -276,7 +266,7 @@ Set up the test case as follows:
 ./setup_testcase.py -o ocean -c isomip_plus -r 2km -t Ocean0 -f config.ocean -m runtime_definitions/srun.xml --work_dir /lustre/scratch4/turquoise/cbegeman/isomip_plus_Ocean0
 ```
 
-## 7. Running the test case
+## 6. Running the test case
 
 We'll do a short test run (1 month) to make sure everything is working, rathere than jumping into a 2-year simulation.
 ```bash
@@ -295,7 +285,7 @@ If you don't have access to the `e3sm` account, ask Steve or Mark for help to ge
 HPC website, there is a way to ask for access, but they may just be able to add you directly.
 
 
-## 8. Running a full 2-year Ocean0 simulation
+## 7. Running a full 2-year Ocean0 simulation
 
 For this one, you should use a job script.
 ```
@@ -362,9 +352,9 @@ starting guidelines for how to do python viz.  You can also look at output in pa
 up and add instructions for viz in the near future as I have time.
 
 
-## 9. Visualization
+## 8. Visualization
 
-### 9.1 Running the default viz
+### 8.1 Running the default viz
 
 Viz should be light enough weight that you can run it on the login node but you could get an interactive job if you prefer.
 It produces images, rather than anything interactive, so no need for x-windows or anything like that.
@@ -435,7 +425,7 @@ The more intresting results should be a series of movies in `movies` and 4 time 
 
 You'll likely need to scp or rsync them to your laptop to view them.  Let me know if it's not clear what these are.
 
-### 9.2 Doing your own viz
+### 8.2 Doing your own viz
 
 A starting point for doing your own viz is to make a local copy of `__main__.py` to edit:
 ```bash

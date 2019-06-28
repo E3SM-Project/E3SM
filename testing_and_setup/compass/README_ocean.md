@@ -7,8 +7,8 @@ environment.  First, install Miniconda3 (if miniconda is not already
 installed), then create a new conda environment as follows:
 ``` bash
 conda create -n compass_py3.7 -c conda-forge python=3.7 \
-    geometric_features=0.1.1 mpas_tools=0.0.3 jigsaw=0.9.10 metis pyflann \
-    scikit-image basemap pyamg ffmpeg
+    geometric_features=0.1.1 mpas_tools=0.0.3 jigsaw=0.9.10 jigsawpy=0.0.2 \
+    metis pyflann scikit-image basemap pyamg ffmpeg
 ```
 Each time you want to work with COMPASS, you will need to run:
 ```
@@ -55,22 +55,6 @@ On LANL IC, a full checkout is already available at:
 ```
 geometric_data = /usr/projects/regionalclimate/COMMON_MPAS/ocean/grids/geometric_data_v0.1
 ```
-
-### jigsaw-geo-matlab
-
-For any test cases using the `JIGSAW` tool to generate meshes, you will need
-a local checkout fo the repository of Matlab routines for `JIGSAW` check out
-a local copy of the repo with:
-```
-git clone git@github.com:dengwirda/jigsaw-geo-matlab.git
-```
-Then, point `jigsaw-geo-matlab` in your config file to the path to the local
-check-out of the repo.
-
-If you have already checked out `jigsaw-geo-matlab` previously, be sure to
-update to the latest master.  Changes made in early May 2019 are required in
-order for these scripts to be able to use the version of `jigsaw` from the
-conda package, rather than requiring a local build.
 
 ### mesh_database and initial_condition_database
 
