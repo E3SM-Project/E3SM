@@ -309,9 +309,9 @@ contains
     end do
 
     if ( .not. theta_hydrostatic_mode ) then
-       call findExtremaWithLevel(elem,wmax_local,'w_i','max',n0,nets,nete)
+       call findExtremumWithLevel(elem,wmax_local,'w_i','max',n0,nets,nete)
        call ParallelMaxWithIndex(wmax_local, hybrid)
-       call findExtremaWithLevel(elem,wmin_local,'w_i','min',n0,nets,nete)
+       call findExtremumWithLevel(elem,wmin_local,'w_i','min',n0,nets,nete)
        call ParallelMinWithIndex(wmin_local, hybrid)
     endif
 
@@ -984,62 +984,55 @@ subroutine prim_diag_scalars(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 end subroutine prim_diag_scalars
 
 !doing extrema with level for all elems
-subroutine findExtremaWithLevel(elem,res,field,operation,n0,nets,nete)
+subroutine findExtremumWithLevel(elem,res,which,operation,n0,nets,nete)
     use kinds, only : real_kind
     use dimensions_mod, only : np, np, nlev, nlevp
     implicit none
-    real (kind=real_kind), intent(inout) :: res(1:2) ! extrema and level where it happened
-    character(len=*),      intent(in)    :: field, operation
+    real (kind=real_kind), intent(out)   :: res(1:2) ! extrema and level where it happened
+    character(len=*),      intent(in)    :: which, operation
     integer,               intent(in)    :: nets,nete,n0
     type (element_t),      intent(in), target :: elem(:)
 
-    integer                              :: i,j,k,ie,ksize
-    real (kind=real_kind)                :: column(1:nlevp), val, BIGVAL    
+    integer                              :: ie,ksize
+    real (kind=real_kind)                :: val, BIGVAL    
+    integer                              :: location(3)
+    real (kind=real_kind)                :: field(np,np,nlevp)
 
-    !did not find an approp module to put this in
+    if((operation /= 'max').and.(operation /= 'min')) call abortmp('unknown operation in findExtremumWithLevel()')
+
     BIGVAL = 1e15
-    
-    !first val is min or max, second value is level for it
-    res(2) = -1; 
-    if( operation == 'min' )then
-      res(1) = BIGVAL; column = BIGVAL
-    elseif( operation == 'max' )then
-      res(1) = -BIGVAL; column = -BIGVAL
-    endif
-
+    res(2) = -1
+    if( operation == 'min' ) res(1) =  BIGVAL
+    if( operation == 'max' ) res(1) = -BIGVAL
+          
     !decide size of the column
     ksize=-1
-    if( field == 'w_i' ) then 
-       ksize=nlevp
-       res(1) = elem(nets)%state%w_i(1,1,1,n0); res(2) = 1
-    endif
-    if( ksize < 1) call abortmp('set ksize in routine findExtrema()')
+    if( which == 'w_i' ) ksize=nlevp
 
-    !do better moving if statement
+    if( ksize < 1) call abortmp('unset ksize in routine findExtremumWithLevel()')
+   
+    ! find max or min
     do ie=nets,nete
-      do j=1,np
-        do i=1,np
-          if(field == 'w_i')then
-            column(1:ksize) = elem(ie)%state%w_i(i,j,1:ksize,n0)
+       if( which == 'w_i' )then
+          field(1:np,1:np,1:ksize) = elem(ie)%state%w_i(1:np,1:np,1:ksize,n0)
+       endif
+       if( operation == 'min' )then
+          val = MINVAL(field)
+          if( val < res(1) ) then
+             location = MINLOC(field)
+             res(2)   = location(3)
+             res(1)   = val
+          endif 
+       elseif ( operation == 'max' )then
+          val = MAXVAL(field)
+          if( val > res(1) ) then
+             location = MAXLOC(field)
+             res(2)   = location(3)
+             res(1)   = val          
           endif
-          !now find min or max
-          if( operation == 'min' )then
-             do k=2,ksize
-                if(column(k) < res(1)) then
-                   res(1) = column(k); res(2) = k;
-                endif
-             enddo
-          elseif( operation == 'max' )then
-             do k=2,ksize
-                if(column(k) > res(1)) then
-                   res(1) = column(k); res(2) = k;
-                endif
-             enddo
-          endif
+       endif
+    enddo !ie 
 
-        enddo !j
-      enddo !i       
-    enddo !ie
-end subroutine findExtremaWithLevel
+end subroutine findExtremumWithLevel
 
 end module prim_state_mod
