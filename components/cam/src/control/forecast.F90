@@ -196,7 +196,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
 
       go to 1000
 
-   end if 
+   end if
 
 !
 !  provide an eulerian forecast.  First check to ensure that 2d forcing

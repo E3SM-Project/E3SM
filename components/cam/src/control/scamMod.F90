@@ -34,7 +34,7 @@ module scamMod
   public scam_default_opts        ! SCAM default run-time options 
   public scam_setopts             ! SCAM run-time options 
   public setiopupdate
-  public readiopdata      
+  public readiopdata         
 
 !
 ! !PUBLIC MODULE DATA:
@@ -1306,24 +1306,6 @@ endif !scm_observed_aero
        ptend= srf(1)
      endif
 
-     if (.not. use_replay) then
-       call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
-         'omega', .true., ptend, fill_ends, scm_crm_mode, &
-         dplevs, nlev,psobs, hyam, hybm, wfld, status )
-       if ( status .ne. nf90_noerr ) then
-         have_omega = .false.
-         write(iulog,*)'Could not find variable omega'
-         if ( .not. use_userdata ) then
-           status = nf90_close( ncid )
-           return
-         else
-           write(iulog,*) 'Using value from Analysis Dataset'
-         endif
-       else
-         have_omega = .true.
-       endif
-     endif
-
      call plevs0(1    ,plon   ,plev    ,psobs   ,pint,pmid ,pdel)
      call shr_sys_flush( iulog )
 !
@@ -1478,23 +1460,21 @@ endif !scm_observed_aero
        have_tg = .true.
      endif
      
-     if (use_replay) then
-       call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
-         'omega', .true., ptend, fill_ends, scm_crm_mode, &
-         dplevs, nlev,psobs, hyam, hybm, wfld, status )
-       if ( status .ne. nf90_noerr ) then
-         have_omega = .false.
-         write(iulog,*)'Could not find variable omega'
-         if ( .not. use_userdata ) then
-           status = nf90_close( ncid )
-           return
-         else
-           write(iulog,*) 'Using value from Analysis Dataset'
-         endif
-       else
-         have_omega = .true.
-       endif
-     endif      
+     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
+       'omega', .true., ptend, fill_ends, scm_crm_mode, &
+        dplevs, nlev,psobs, hyam, hybm, wfld, status )
+     if ( status .ne. nf90_noerr ) then
+        have_omega = .false.
+        write(iulog,*)'Could not find variable omega'
+        if ( .not. use_userdata ) then
+          status = nf90_close( ncid )
+          return
+        else
+          write(iulog,*) 'Using value from Analysis Dataset'
+        endif
+     else
+        have_omega = .true.
+     endif     
      
      ! If REPLAY is used, then need to read in the global
      !   energy fixer

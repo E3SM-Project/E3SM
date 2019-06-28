@@ -504,7 +504,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
              ! If B4B results are not desired in the SCM, then we simply need
 	     !  to compute the tendency in r8		
 	     forcing_q(i+(j-1)*np,k,p) = (dyn_in%elem(ie)%state%Q(i,j,k,p) - &
-	       ftmp_q(i,j,k,p,ie))/dtime		
+	        ftmp_q(i,j,k,p,ie))/dtime	
 	   enddo
 	   
 	 enddo
@@ -520,7 +520,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
      call outfld('divT3d',forcing_temp,npsq,ie)
      do p=1,pcnst
        call outfld(trim(cnst_name(p))//'_dten',forcing_q(:,:,p),npsq,ie)   
-     enddo 
+     enddo
      
    enddo
 
