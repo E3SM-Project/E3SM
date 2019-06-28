@@ -23,11 +23,7 @@ logger = logging.getLogger(__name__)
 ###############################################################################
 def buildlib(bldroot, installpath, case):
 ###############################################################################
-    caseroot  = case.get_value("CASEROOT")
-    srcroot   = case.get_value("SRCROOT")
-    gmake_j   = case.get_value("GMAKE_J")
-    gmake     = case.get_value("GMAKE")
-    cmake_args = get_standard_cmake_args(case)
+    casebuild    = case.get_value("CASEBUILD")
 
     #-------------------------------------------------------
     # create Filepath in bldroot, unlike most other components,
@@ -41,15 +37,11 @@ def buildlib(bldroot, installpath, case):
 {srcroot}/components/mosart/src/cpl_share
 """.format(caseroot=caseroot, srcroot=srcroot)
 
-    with open(os.path.join(bldroot, "Filepath"), "w") as fd:
+    with open(os.path.join(casebuild, "mosartconf", "Filepath"), "w") as fd:
         fd.write(filepaths)
 
-    #-------------------------------------------------------
-    # create the library in libroot
-    #-------------------------------------------------------
-
-    run_bld_cmd_ensure_logging('cmake -DMODEL=mosart -DCOMPLIB=rof {cmake_args} {srcroot}/components'.format(cmake_args=cmake_args, srcroot=srcroot), logger, from_dir=bldroot)
-    run_bld_cmd_ensure_logging("{} -j {}".format(gmake, gmake_j), logger, from_dir=bldroot)
+    with open(os.path.join(casebuild, "mosartconf", "CCSM_cppdefs"), "w") as fd:
+        fd.write("")
 
 ###############################################################################
 def _main_func():
