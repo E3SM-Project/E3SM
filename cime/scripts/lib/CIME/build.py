@@ -1,7 +1,7 @@
 """
 functions for building CIME models
 """
-import glob, shutil, time, threading, subprocess
+import glob, shutil, time, threading, subprocess, imp
 from CIME.XML.standard_module_setup  import *
 from CIME.utils                 import get_model, analyze_build_log, stringify_bool, run_and_log_case_status, get_timestamp, run_sub_or_cmd, run_cmd, get_batch_script_for_job, gzip_existing_file, safe_copy
 from CIME.provenance            import save_build_provenance as save_build_provenance_sub
@@ -29,6 +29,12 @@ def get_standard_makefile_args(case, shared_lib=False):
 
 def get_standard_cmake_args(case, shared_lib=False):
     cmake_args = "-DCIME_MODEL={} ".format(case.get_value("MODEL"))
+
+    ocn_model = case.get_value("COMP_OCN")
+    atm_model = case.get_value("COMP_ATM")
+    if ocn_model == 'mom' or atm_model == "fv3gfs":
+        cmake_args += " -DUSE_FMS=TRUE"
+
     if not shared_lib:
         cmake_args += " -DUSE_KOKKOS={} ".format(stringify_bool(uses_kokkos(case)))
     for var in _CMD_ARGS_FOR_BUILD:
@@ -96,7 +102,7 @@ def _build_model(build_threaded, exeroot, incroot, complist,
         # logs is a list of log files to be compressed and added to the case logs/bld directory
         t = threading.Thread(target=_build_model_thread,
             args=(config_dir, model, comp, caseroot, libroot, bldroot, incroot, file_build,
-                  thread_bad_results, smp, compiler, case))
+                  thread_bad_results, smp, compiler))
         t.start()
 
         logs.append(file_build)
@@ -136,6 +142,50 @@ def _build_model(build_threaded, exeroot, incroot, complist,
         logs.append(file_build)
 
     return logs
+
+###############################################################################
+def _build_model_cmake(build_threaded, exeroot, incroot, complist,
+                       lid, caseroot, cimeroot, compiler, buildlist, comp_interface, case):
+###############################################################################
+    model      = get_model()
+    bldroot    = os.path.join(exeroot, "bld")
+    libroot    = os.path.join(exeroot, "lib")
+    bldlog     = os.path.join(exeroot, "{}.bldlog.{}".format(model, lid))
+    srcroot    = case.get_value("SRCROOT")
+    gmake_j    = case.get_value("GMAKE_J")
+    gmake      = case.get_value("GMAKE")
+
+    # make sure bldroot and libroot exist
+    for build_dir in [bldroot, libroot]:
+        if not os.path.exists(build_dir):
+            os.makedirs(build_dir)
+
+    for model, _, nthrds, _, config_dir in complist:
+        if buildlist is not None and model.lower() not in buildlist:
+            continue
+
+        # Create the Filepath and CCSM_cppde3fs files
+        if model == "cpl":
+            config_dir = os.path.join(cimeroot, "src", "drivers", comp_interface, "cime_config")
+
+        _create_build_metadata_for_component(config_dir, libroot, bldroot, case)
+
+    # Call CMake
+    cmake_args = get_standard_cmake_args(case)
+    cmake_cmd = "cmake {} {}/components &> {}".format(cmake_args, srcroot, bldlog)
+    logger.info("Configuring with cmake cmd: {}".format(cmake_cmd))
+    stat = run_cmd(cmake_cmd, from_dir=bldroot)[0]
+
+    # Call Make
+    if stat == 0:
+        stat = run_cmd("{} -j {} >> {} 2>&1".format(gmake, gmake_j, bldlog), from_dir=bldroot)[0]
+
+    expect(stat == 0, "BUILD FAIL: build {} failed, cat {}".format(model, bldlog))
+
+    # Copy the just-built ${MODEL}.exe to ${MODEL}.exe.$LID
+    safe_copy("{}/{}.exe".format(exeroot, model), "{}/{}.exe.{}".format(exeroot, model, lid))
+
+    return [bldlog]
 
 ###############################################################################
 def _build_checks(case, build_threaded, comp_interface, use_esmf_lib,
@@ -305,7 +355,7 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
             # logs is a list of log files to be compressed and added to the case logs/bld directory
             thread_bad_results = []
             _build_model_thread(config_lnd_dir, "lnd", comp_lnd, caseroot, libroot, bldroot, incroot,
-                                file_build, thread_bad_results, smp, compiler, case)
+                                file_build, thread_bad_results, smp, compiler)
             logs.append(file_build)
             expect(not thread_bad_results, "\n".join(thread_bad_results))
 
@@ -314,7 +364,7 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
 
 ###############################################################################
 def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldroot, incroot, file_build,
-                        thread_bad_results, smp, compiler, _): # (case not used yet)
+                        thread_bad_results, smp, compiler):
 ###############################################################################
     logger.info("Building {} with output to {}".format(compclass, file_build))
     t1 = time.time()
@@ -331,8 +381,6 @@ def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldr
                        from_dir=bldroot,  arg_stdout=fd,
                        arg_stderr=subprocess.STDOUT)[0]
 
-    analyze_build_log(compclass, file_build, compiler)
-
     if stat != 0:
         thread_bad_results.append("BUILD FAIL: {}.buildlib failed, cat {}".format(compname, file_build))
 
@@ -343,6 +391,12 @@ def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldr
 
     t2 = time.time()
     logger.info("{} built in {:f} seconds".format(compname, (t2 - t1)))
+
+###############################################################################
+def _create_build_metadata_for_component(config_dir, libroot, bldroot, case):
+###############################################################################
+    buildlib = imp.load_source("buildlib", os.path.join(config_dir, "buildlib"))
+    buildlib.buildlib(bldroot, libroot, case)
 
 ###############################################################################
 def _clean_impl(case, cleanlist, clean_all, clean_depends):
@@ -514,8 +568,12 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
     if not sharedlib_only:
         os.environ["INSTALL_SHAREDPATH"] = os.path.join(exeroot, sharedpath) # for MPAS makefile generators
 
-        logs.extend(_build_model(build_threaded, exeroot, incroot, complist,
-                                 lid, caseroot, cimeroot, compiler, buildlist, comp_interface, case))
+        if get_model() == "e3sm":
+            logs.extend(_build_model_cmake(build_threaded, exeroot, incroot, complist,
+                                           lid, caseroot, cimeroot, compiler, buildlist, comp_interface, case))
+        else:
+            logs.extend(_build_model(build_threaded, exeroot, incroot, complist,
+                                     lid, caseroot, cimeroot, compiler, buildlist, comp_interface, case))
 
         if not buildlist:
             # in case component build scripts updated the xml files, update the case object
