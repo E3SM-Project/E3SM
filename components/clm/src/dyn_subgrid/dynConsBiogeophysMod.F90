@@ -20,9 +20,6 @@ module dynConsBiogeophysMod
   use TemperatureType   , only : temperature_type
   use WaterfluxType     , only : waterflux_type
   use WaterstateType    , only : waterstate_type
-  use LandunitType      , only : lun_pp                
-  use ColumnType        , only : col_pp                
-  use VegetationType         , only : veg_pp                
   use TotalWaterAndHeatMod, only : ComputeLiqIceMassNonLake, ComputeLiqIceMassLake
   use TotalWaterAndHeatMod, only : ComputeHeatNonLake, ComputeHeatLake
   use TotalWaterAndHeatMod, only : AdjustDeltaHeatForDeltaLiq
@@ -30,7 +27,11 @@ module dynConsBiogeophysMod
   use clm_varcon        , only : tfrz, cpliq
   use subgridAveMod     , only : p2c, c2g
   use dynSubgridControlMod, only : get_for_testing_zero_dynbal_fluxes
-  use clm_varcon      , only : spval
+  use clm_varcon        , only : spval
+  use GridcellDataType  , only : grc_es, grc_ef, grc_ws, grc_wf
+  use LandunitType      , only : lun_pp                
+  use ColumnType        , only : col_pp                
+  use VegetationType    , only : veg_pp                
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -82,16 +83,16 @@ contains
          num_nolakec, filter_nolakec,                                     &
          num_lakec, filter_lakec,                                         &
          soilhydrology_vars, waterstate_vars, lakestate_vars,             &
-         liquid_mass = waterstate_vars%liq1_grc(bounds%begg:bounds%endg), &
-         ice_mass    = waterstate_vars%ice1_grc(bounds%begg:bounds%endg))
+         liquid_mass = grc_ws%liq1(bounds%begg:bounds%endg), &
+         ice_mass    = grc_ws%ice1(bounds%begg:bounds%endg))
 
     call dyn_heat_content( bounds,                                        &
          num_nolakec, filter_nolakec,                                     &
          num_lakec, filter_lakec,                                         &
          urbanparams_vars, soilstate_vars, soilhydrology_vars,            &
          temperature_vars, waterstate_vars,                               &
-         heat_grc = temperature_vars%heat1_grc(bounds%begg:bounds%endg),  &
-         liquid_water_temp_grc = temperature_vars%liquid_water_temp1_grc(bounds%begg:bounds%endg))
+         heat_grc = grc_es%heat1(bounds%begg:bounds%endg),  &
+         liquid_water_temp_grc = grc_es%liquid_water_temp1(bounds%begg:bounds%endg))
 
   end subroutine dyn_hwcontent_init
 
@@ -139,16 +140,16 @@ contains
          num_nolakec, filter_nolakec, &
          num_lakec, filter_lakec, &
          soilhydrology_vars, waterstate_vars, lakestate_vars, &
-         liquid_mass = waterstate_vars%liq2_grc(bounds%begg:bounds%endg), &
-         ice_mass    = waterstate_vars%ice2_grc(bounds%begg:bounds%endg))
+         liquid_mass = grc_ws%liq2(bounds%begg:bounds%endg), &
+         ice_mass    = grc_ws%ice2(bounds%begg:bounds%endg))
 
     call dyn_heat_content( bounds,                                &
          num_nolakec, filter_nolakec, &
          num_lakec, filter_lakec, &
          urbanparams_vars, soilstate_vars, soilhydrology_vars, &
          temperature_vars, waterstate_vars, &
-         heat_grc = temperature_vars%heat2_grc(bounds%begg:bounds%endg), &
-         liquid_water_temp_grc = temperature_vars%liquid_water_temp2_grc(bounds%begg:bounds%endg))
+         heat_grc = grc_es%heat2(bounds%begg:bounds%endg), &
+         liquid_water_temp_grc = grc_es%liquid_water_temp2(bounds%begg:bounds%endg))
 
     if (get_for_testing_zero_dynbal_fluxes()) then
        do g = begg, endg
@@ -158,12 +159,12 @@ contains
       end do
     else
        do g = begg, endg
-          delta_liq(g)  = waterstate_vars%liq2_grc(g) - waterstate_vars%liq1_grc(g)
-          delta_ice(g)  = waterstate_vars%ice2_grc(g) - waterstate_vars%ice1_grc(g)
-          delta_heat(g) = temperature_vars%heat2_grc(g) - temperature_vars%heat1_grc(g)
-          waterflux_vars%qflx_liq_dynbal_grc (g) = delta_liq(g)/dtime
-          waterflux_vars%qflx_ice_dynbal_grc (g) = delta_ice(g)/dtime
-          energyflux_vars%eflx_dynbal_grc    (g) = delta_heat(g)/dtime
+          delta_liq(g)  = grc_ws%liq2(g) - grc_ws%liq1(g)
+          delta_ice(g)  = grc_ws%ice2(g) - grc_ws%ice1(g)
+          delta_heat(g) = grc_es%heat2(g) - grc_es%heat1(g)
+          grc_wf%qflx_liq_dynbal (g) = delta_liq(g)/dtime
+          grc_wf%qflx_ice_dynbal (g) = delta_ice(g)/dtime
+          grc_ef%eflx_dynbal    (g) = delta_heat(g)/dtime
        end do
     end if
 
@@ -174,15 +175,15 @@ contains
     !     liquid_water_temp2 = temperature_vars%liquid_water_temp2_grc(bounds%begg:bounds%endg), &
     !     delta_heat = delta_heat(bounds%begg:bounds%endg))
 
-    !call waterflux_vars%qflx_liq_dynbal_dribbler%set_curr_delta(bounds, &
+    !call grc_wf%qflx_liq_dynbal_dribbler%set_curr_delta(bounds, &
     !     delta_liq(begg:endg))
-    !call waterflux_vars%qflx_liq_dynbal_dribbler%get_curr_flux(bounds, &
-    !     waterflux_vars%qflx_liq_dynbal_grc(begg:endg))
+    !call grc_wf%qflx_liq_dynbal_dribbler%get_curr_flux(bounds, &
+    !     grc_wf%qflx_liq_dynbal(begg:endg))
 
-    !call waterflux_vars%qflx_ice_dynbal_dribbler%set_curr_delta(bounds, &
+    !call grc_wf%qflx_ice_dynbal_dribbler%set_curr_delta(bounds, &
     !     delta_ice(begg:endg))
-    !call waterflux_vars%qflx_ice_dynbal_dribbler%get_curr_flux(bounds, &
-    !     waterflux_vars%qflx_ice_dynbal_grc(begg:endg))
+    !call grc_wf%qflx_ice_dynbal_dribbler%get_curr_flux(bounds, &
+    !     grc_wf%qflx_ice_dynbal(begg:endg))
 
     !call energyflux_vars%eflx_dynbal_dribbler%set_curr_delta(bounds, &
     !     delta_heat(begg:endg))

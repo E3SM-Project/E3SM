@@ -45,6 +45,7 @@
       <grid name="wav"    compset="DWAV">ww3a</grid>
       <grid name="wav"    compset="WW3">ww3a</grid>
       <grid name="wav"    compset="XWAV">ww3a</grid>
+      <grid name="iac"    compset="SIAC">null</grid>
     </model_grid_defaults>
 
     <model_grid alias="g16_g16" compset="DATM.+DROF">
@@ -1229,6 +1230,16 @@
       <grid name="glc">mpas.ais20km</grid>
       <grid name="wav">null</grid>
       <mask>oQU120</mask>
+    </model_grid>
+
+    <model_grid alias="T62_oEC60to30v3wLI_ais20" compset="MPASO.*_MALI">
+      <grid name="atm">T62</grid>
+      <grid name="lnd">T62</grid>
+      <grid name="ocnice">oEC60to30v3wLI</grid>
+      <grid name="rof">rx1</grid>
+      <grid name="glc">mpas.ais20km</grid>
+      <grid name="wav">null</grid>
+      <mask>oEC60to30v3wLI</mask>
     </model_grid>
 
     <!-- The following grid is only used for ADWAV testing -->
@@ -2954,12 +2965,25 @@
     </gridmap>
 
     <gridmap glc_grid="mpas.ais20km" ocn_grid="oQU120">
+      <map name="GLC2ICE_FMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU120_aave.160331.nc</map>
+      <map name="GLC2ICE_SMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU120_nearestdtos.160331.nc</map>
       <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU120_aave.160331.nc</map>
-      <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/oQU120/map_oQU120_to_ais20km_aave.160331.nc</map>
       <map name="GLC2OCN_SMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU120_nearestdtos.160331.nc</map>
       <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU120_nearestdtos.160331.nc</map>
       <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU120_nearestdtos.160331.nc</map>
-      <map name="OCN2GLC_SMAPNAME">cpl/gridmaps/oQU120/map_oQU120_to_ais20km_nearestdtos.160331.nc</map>
+      <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/oQU120/map_oQU120_to_ais20km_aave.160331.nc</map>
+      <map name="OCN2GLC_SMAPNAME">cpl/gridmaps/oQU120/map_oQU120_to_ais20km_neareststod.160331.nc</map>
+    </gridmap>
+
+    <gridmap glc_grid="mpas.ais20km" ocn_grid="oEC60to30v3wLI">
+      <map name="GLC2ICE_FMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oEC60to30v3wLI_nomask_aave.190207.nc</map>
+      <map name="GLC2ICE_SMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oEC60to30v3wLI_nomask_nearestdtos.190207.nc</map>
+      <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oEC60to30v3wLI_nomask_aave.190207.nc</map>
+      <map name="GLC2OCN_SMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oEC60to30v3wLI_nomask_nearestdtos.190207.nc</map>
+      <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oEC60to30v3wLI_nomask_nearestdtos.190207.nc</map>
+      <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oEC60to30v3wLI_nomask_nearestdtos.190207.nc</map>
+      <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/oEC60to30v3wLI/map_oEC60to30v3wLI_nomask_to_ais20km_aave.190207.nc</map>
+      <map name="OCN2GLC_SMAPNAME">cpl/gridmaps/oEC60to30v3wLI/map_oEC60to30v3wLI_nomask_to_ais20km_neareststod.190207.nc</map>
     </gridmap>
 
   </gridmaps>

@@ -134,6 +134,12 @@ If TRUE consider priority of plant to get a fraction of
 symbiotic N fixation and P phosphatase
 </entry>
 
+<entry id="use_pheno_flux_limiter" type="logical" category="clm_physics"
+       group="clm_inparm" valid_values="" >
+If TRUE, apply flux limiter to phenology fluxes to avoid overextraction
+of plant carbon and nutrient fluxes
+</entry>
+
 <entry id="create_crop_landunit" type="logical" category="clm_physics"
        group="clm_inparm" valid_values="" >
 If TRUE, separate the vegetated landunit into a crop landunit and a natural vegetation landunit
@@ -1197,7 +1203,7 @@ If TRUE, irrigation will be active (find surface datasets with active irrigation
 
 <entry id="sim_year" type="integer" category="default_settings"
        group="default_settings" valid_values=
-"1000,850,1100,1350,1600,1850,1855,1865,1875,1885,1895,1905,1915,1925,1935,1945,1955,1965,1975,1985,1995,2000,2005,2010,2015,2025,2035,2045,2055,2065,2075,2085,2095,2105">
+"1000,850,1100,1350,1600,1850,1855,1865,1875,1885,1895,1905,1915,1925,1935,1945,1955,1965,1975,1985,1995,2000,2005,2010,2015,2025,2035,2045,2055,2065,2075,2085,2095,2100,2105">
 Year to simulate and to provide datasets for (such as surface datasets, initial conditions, aerosol-deposition, Nitrogen deposition rates etc.)
 A sim_year of 1000 corresponds to data used for testing only, NOT corresponding to any real datasets.
 A sim_year greater than 2005 corresponds to rcp scenario data
@@ -1207,7 +1213,7 @@ CLM datasets exist for years: 1000 (for testing), 1850, and 2000
 
 <entry id="sim_year_range" type="char*9" category="default_settings"
        group="default_settings" valid_values=
-"constant,1000-1002,1000-1004,850-1100,1100-1350,1350-1600,1600-1850,1850-2000,1850-2100,2000-2100">
+"constant,1000-1002,1000-1004,850-1100,1100-1350,1350-1600,1600-1850,1850-2000,1850-2100,2000-2100,2015-2100">
 Range of years to simulate transitory datasets for (such as dynamic: land-use datasets, aerosol-deposition, Nitrogen deposition rates etc.)
 Constant means simulation will be held at a constant year given in sim_year.
 A sim_year_range of 1000-1002 or 1000-1004 corresponds to data used for testing only, NOT corresponding to any real datasets.

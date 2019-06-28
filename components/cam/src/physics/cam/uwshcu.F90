@@ -2,7 +2,9 @@
 module uwshcu
 
   use cam_history,    only: outfld, addfld
+#ifndef HAVE_ERF_INTRINSICS
   use shr_spfn_mod,   only: erfc => shr_spfn_erfc
+#endif
   use cam_logfile,    only: iulog
   use ppgrid,         only: pcols, pver, pverp
   use cam_abortutils,     only: endrun

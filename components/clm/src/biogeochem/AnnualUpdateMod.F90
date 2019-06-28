@@ -8,6 +8,8 @@ module AnnualUpdateMod
   use decompMod        , only : bounds_type
   use CNCarbonFluxType , only : carbonflux_type
   use CNStateType      , only : cnstate_type
+  use ColumnDataType   , only : col_cf
+  use VegetationDataType, only : veg_cf
   !
   implicit none
   save
@@ -32,7 +34,6 @@ contains
     use clm_time_manager, only: get_step_size, get_days_per_year
     use clm_varcon      , only: secspday
     use SubgridAveMod   , only: p2c
-    use clm_varctl      , only: use_cndv 
     !
     ! !ARGUMENTS:
     type(bounds_type)     , intent(in)    :: bounds  
@@ -83,21 +84,15 @@ contains
              cnstate_vars%tempavg_t2m_patch(p) = 0._r8
 
              ! update annual NPP accumulator, convert to annual total
-             carbonflux_vars%annsum_npp_patch(p) = carbonflux_vars%tempsum_npp_patch(p) * dt
-             carbonflux_vars%tempsum_npp_patch(p) = 0._r8
+             veg_cf%annsum_npp(p) = veg_cf%tempsum_npp(p) * dt
+             veg_cf%tempsum_npp(p) = 0._r8
 
-             if (use_cndv) then
-                ! update annual litfall accumulator, convert to annual total
-                carbonflux_vars%annsum_litfall_patch(p) = carbonflux_vars%tempsum_litfall_patch(p) * dt
-                carbonflux_vars%tempsum_litfall_patch(p) = 0._r8
-             end if
           end do
-
           ! use p2c routine to get selected column-average pft-level fluxes and states
 
           call p2c(bounds, num_soilc, filter_soilc, &
-               carbonflux_vars%annsum_npp_patch(bounds%begp:bounds%endp), &
-               carbonflux_vars%annsum_npp_col(bounds%begc:bounds%endc))
+               veg_cf%annsum_npp(bounds%begp:bounds%endp), &
+               col_cf%annsum_npp(bounds%begc:bounds%endc))
 
           call p2c(bounds, num_soilc, filter_soilc, &
                cnstate_vars%annavg_t2m_patch(bounds%begp:bounds%endp), &

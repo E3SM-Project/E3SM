@@ -2,8 +2,6 @@ module ColumnType
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
-  !DW  Converted from ColumnType
-  !DW  Change the old function into PhysicalPropertiesType
   ! Column data type allocation and initialization
   ! -------------------------------------------------------- 
   ! column types can have values of
@@ -24,14 +22,16 @@ module ColumnType
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use clm_varpar     , only : nlevsno, nlevgrnd, nlevlak
   use clm_varcon     , only : spval, ispval
-  use column_varcon  , only : is_hydrologically_active
   !
   ! !PUBLIC TYPES:
   implicit none
   save
   private
-  !
-  type, public :: column_physical_properties_type
+  
+  !-----------------------------------------------------------------------
+  ! Define the data structure that holds physical property information at the column level.
+  !-----------------------------------------------------------------------
+  type, public :: column_physical_properties
      ! indices and weights for higher subgrid levels (landunit, topounit, gridcell)
      integer , pointer :: gridcell     (:) => null() ! index into gridcell level quantities
      real(r8), pointer :: wtgcell      (:) => null() ! weight (relative to gridcell)
@@ -76,9 +76,14 @@ module ColumnType
      procedure, public :: Init => col_pp_init
      procedure, public :: Clean => col_pp_clean
 
-  end type column_physical_properties_type
+  end type column_physical_properties
 
-  type(column_physical_properties_type), public, target :: col_pp !column data structure (soil/snow/canopy columns)
+ 
+  !-----------------------------------------------------------------------
+  ! declare the public instance of column-level meta-data type
+  !-----------------------------------------------------------------------
+  type(column_physical_properties)   , public, target :: col_pp    ! column physical properties
+
   !------------------------------------------------------------------------
 
 contains
@@ -87,7 +92,7 @@ contains
   subroutine col_pp_init(this, begc, endc)
     !
     ! !ARGUMENTS:
-    class(column_physical_properties_type)  :: this
+    class(column_physical_properties)  :: this
     integer, intent(in) :: begc,endc
     !------------------------------------------------------------------------
 
@@ -130,7 +135,7 @@ contains
   subroutine col_pp_clean(this)
     !
     ! !ARGUMENTS:
-    class(column_physical_properties_type) :: this
+    class(column_physical_properties) :: this
     !------------------------------------------------------------------------
 
     deallocate(this%gridcell   )
@@ -162,6 +167,6 @@ contains
     deallocate(this%hydrologically_active)
 
   end subroutine col_pp_clean
-
-
+  
 end module ColumnType
+

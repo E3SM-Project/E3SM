@@ -217,9 +217,10 @@ contains
   ! !INTERFACE: ------------------------------------------------------------------
 
   subroutine seq_frac_init( infodata,         &
-       atm, ice, lnd, ocn, glc, rof, wav,     &
+       atm, ice, lnd, ocn, glc, rof, wav, iac,&
        fractions_a, fractions_i, fractions_l, &
-       fractions_o, fractions_g, fractions_r, fractions_w)
+       fractions_o, fractions_g, fractions_r, &
+       fractions_w, fractions_z)
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(seq_infodata_type) , intent(in)    :: infodata
@@ -230,6 +231,7 @@ contains
     type(component_type)    , intent(in)    :: glc
     type(component_type)    , intent(in)    :: rof
     type(component_type)    , intent(in)    :: wav
+    type(component_type)    , intent(in)    :: iac
     type(mct_aVect)         , intent(inout) :: fractions_a   ! Fractions on atm grid/decomp
     type(mct_aVect)         , intent(inout) :: fractions_i   ! Fractions on ice grid/decomp
     type(mct_aVect)         , intent(inout) :: fractions_l   ! Fractions on lnd grid/decomp
@@ -237,6 +239,7 @@ contains
     type(mct_aVect)         , intent(inout) :: fractions_g   ! Fractions on glc grid/decomp
     type(mct_aVect)         , intent(inout) :: fractions_r   ! Fractions on rof grid/decomp
     type(mct_aVect)         , intent(inout) :: fractions_w   ! Fractions on wav grid/decomp
+    type(mct_aVect)         , intent(inout) :: fractions_z   ! Fractions on iac grid/decomp
     !EOP
 
     !----- local -----
@@ -247,6 +250,7 @@ contains
     type(mct_ggrid), pointer    :: dom_g
     type(mct_ggrid), pointer    :: dom_r
     type(mct_ggrid), pointer    :: dom_w
+    type(mct_ggrid), pointer    :: dom_z
 
     logical :: atm_present   ! .true. => atm is present
     logical :: ice_present   ! .true. => ice is present
@@ -255,6 +259,7 @@ contains
     logical :: glc_present   ! .true. => glc is present
     logical :: rof_present   ! .true. => rof is present
     logical :: wav_present   ! .true. => wav is present
+    logical :: iac_present   ! .true. => iac is present
     logical :: dead_comps    ! .true. => dead models present
 
     integer :: n            ! indices
@@ -270,6 +275,7 @@ contains
     character(*),parameter :: fraclist_g = 'gfrac:lfrac'
     character(*),parameter :: fraclist_r = 'lfrac:rfrac'
     character(*),parameter :: fraclist_w = 'wfrac'
+    character(*),parameter :: fraclist_z = 'afrac:lfrac'
 
     !----- formats -----
     character(*),parameter :: subName = '(seq_frac_init) '
@@ -286,6 +292,7 @@ contains
          ocn_present=ocn_present,       &
          glc_present=glc_present,       &
          wav_present=wav_present,       &
+         iac_present=iac_present,       &
          dead_comps=dead_comps)
 
     dom_a => component_get_dom_cx(atm)
@@ -295,6 +302,7 @@ contains
     dom_r => component_get_dom_cx(rof)
     dom_g => component_get_dom_cx(glc)
     dom_w => component_get_dom_cx(wav)
+    dom_z => component_get_dom_cx(iac)
 
     debug_old = seq_frac_debug
     seq_frac_debug = 2
@@ -361,6 +369,15 @@ contains
        call mct_aVect_init(fractions_w,rList=fraclist_w,lsize=lsize)
        call mct_aVect_zero(fractions_w)
        fractions_w%rAttr(:,:) = 1.0_r8
+    end if
+
+    ! Initialize fractions on iac grid decomp, just an initial "guess", updated later
+
+    if (iac_present) then
+       lSize = mct_aVect_lSize(dom_z%data)
+       call mct_aVect_init(fractions_z,rList=fraclist_z,lsize=lsize)
+       call mct_aVect_zero(fractions_z)
+       fractions_z%rAttr(:,:) = 1.0_r8
     end if
 
     ! Initialize fractions on ice grid/decomp (initialize ice fraction to zero)
@@ -471,6 +488,7 @@ contains
     if (glc_present) call seq_frac_check(fractions_g,'glc init')
     if (rof_present) call seq_frac_check(fractions_r,'rof init')
     if (wav_present) call seq_frac_check(fractions_w,'wav init')
+    if (iac_present) call seq_frac_check(fractions_z,'iac init')
     if (ice_present) call seq_frac_check(fractions_i,'ice init')
     if (ocn_present) call seq_frac_check(fractions_o,'ocn init')
     if (atm_present .and. (lnd_present.or.ice_present.or.ocn_present)) &
@@ -621,11 +639,12 @@ contains
     real(r8) :: gminval,gmaxval   ! used for glc
     real(r8) :: rminval,rmaxval   ! used for rof
     real(r8) :: wminval,wmaxval   ! used for wav
+    real(r8) :: zminval,zmaxval   ! used for iac
     real(r8) :: kminval,kmaxval   ! used for lnd, lfrin
     real(r8) :: sminval,smaxval   ! used for sum
     real(r8) :: tmpmin, tmpmax    ! global tmps
     integer  :: tmpsum            ! global tmp
-    integer  :: ka,kl,ki,ko,kg,kk,kr,kw
+    integer  :: ka,kl,ki,ko,kg,kk,kr,kw,kz
     character(len=128) :: lstring
     logical :: error
 
@@ -655,6 +674,7 @@ contains
     kg = -1
     kr = -1
     kw = -1
+    kz = -1
     aminval =  999.0_r8
     amaxval = -999.0_r8
     lminval =  999.0_r8
@@ -673,6 +693,8 @@ contains
     rmaxval = -999.0_r8
     wminval =  999.0_r8
     wmaxval = -999.0_r8
+    zminval =  999.0_r8
+    zmaxval = -999.0_r8
 
     lsize = mct_avect_lsize(fractions)
     ka = mct_aVect_indexRA(fractions,"afrac",perrWith='quiet')
@@ -682,6 +704,7 @@ contains
     kg = mct_aVect_indexRA(fractions,"gfrac",perrWith='quiet')
     kr = mct_aVect_indexRA(fractions,"rfrac",perrWith='quiet')
     kw = mct_aVect_indexRA(fractions,"wfrac",perrWith='quiet')
+    kz = mct_aVect_indexRA(fractions,"zfrac",perrWith='quiet')
     kk = mct_aVect_indexRA(fractions,"lfrin",perrWith='quiet')
 
     if (ka > 0) then
@@ -711,6 +734,10 @@ contains
     if (kw > 0) then
        wminval = minval(fractions%rAttr(kw,:))
        wmaxval = maxval(fractions%rAttr(kw,:))
+    endif
+    if (kz > 0) then
+       zminval = minval(fractions%rAttr(kz,:))
+       zmaxval = maxval(fractions%rAttr(kz,:))
     endif
     if (kk > 0) then
        kminval = minval(fractions%rAttr(kk,:))
@@ -743,6 +770,7 @@ contains
     if (gminval < 0.0_r8-eps_fracval .or. gmaxval > 1.0_r8+eps_fracval) error = .true.
     if (rminval < 0.0_r8-eps_fracval .or. rmaxval > 1.0_r8+eps_fracval) error = .true.
     if (wminval < 0.0_r8-eps_fracval .or. wmaxval > 1.0_r8+eps_fracval) error = .true.
+    if (zminval < 0.0_r8-eps_fracval .or. zmaxval > 1.0_r8+eps_fracval) error = .true.
     if (kminval < 0.0_r8-eps_fracval .or. kmaxval > 1.0_r8+eps_fracval) error = .true.
 
     if (error .or. seq_frac_debug > 1) then
@@ -780,6 +808,11 @@ contains
           call shr_mpi_min(wminval,tmpmin,mpicom,subname//':wfrac',all=.false.)
           call shr_mpi_max(wmaxval,tmpmax,mpicom,subname//':wfrac',all=.false.)
           if (iamroot) write(logunit,F02) trim(lstring),' wfrac min/max   = ',tmpmin,tmpmax
+       endif
+       if (kz > 0) then
+          call shr_mpi_min(kminval,tmpmin,mpicom,subname//':zfrac',all=.false.)
+          call shr_mpi_max(kmaxval,tmpmax,mpicom,subname//':zfrac',all=.false.)
+          if (iamroot) write(logunit,F02) trim(lstring),' zfrac min/max   = ',tmpmin,tmpmax
        endif
        if (kk > 0) then
           call shr_mpi_min(kminval,tmpmin,mpicom,subname//':lfrin',all=.false.)

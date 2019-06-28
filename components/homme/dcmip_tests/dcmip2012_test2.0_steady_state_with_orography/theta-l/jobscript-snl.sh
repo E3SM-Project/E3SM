@@ -3,27 +3,22 @@
 # hydrostatic: 4 nodes: 3min
 # NH:  10 nodes ?  
 #
-#SBATCH -p ec
 #SBATCH --job-name d20-theta
-#SBATCH --account=FY150001
-#SBATCH -N 25
-#SBATCH --time=3:00:00
-#XXSBATCH -N 4
-#XXSBATCH --time=0:10:00
-#PBS -q acme
-#PBS -l walltime=0:30:00
-#PBS -l nodes=20    
+#XXSBATCH -p short,batch
+#XXSBATCH --account=FY150001
+#SBATCH -p acme
+#SBATCH --account=condo
+#SBATCH -N 4
+#SBATCH --time=0:10:00
 
 
 set OMP_NUM_THREADS = 1
 set NCPU = 40 
-if ( ${?PBS_ENVIRONMENT} ) then   # anvil
-  set NCPU = $PBS_NNODES
-  if ( $PBS_ENVIRONMENT == PBS_BATCH ) cd $PBS_O_WORKDIR     
-endif
 if ( ${?SLURM_NNODES} ) then   
     set NCPU = $SLURM_NNODES
-    @ NCPU *= 16
+    if ( ${?SLURM_CPUS_ON_NODE} ) then   
+       @ NCPU *= $SLURM_CPUS_ON_NODE 
+    endif
     @ NCPU /= $OMP_NUM_THREADS
 endif
 

@@ -12,6 +12,8 @@ module WaterBudgetMod
   use WaterfluxType     , only : waterflux_type
   use spmdMod           , only : masterproc
   use SoilHydrologyType , only : soilhydrology_type
+  use GridcellDataType  , only : grc_ws
+  use ColumnDataType    , only : col_ws
 
   implicit none
   save
@@ -292,21 +294,21 @@ contains
          qflx_rofliq_qsub   => lnd2atm_vars%qflx_rofliq_qsub_grc         , &
          qflx_rofliq_qsubp  => lnd2atm_vars%qflx_rofliq_qsubp_grc        , &
          qflx_rofliq_qgwl   => lnd2atm_vars%qflx_rofliq_qgwl_grc         , &
-         begwb_grc          => waterstate_vars%begwb_grc                 , &
-         endwb_grc          => waterstate_vars%endwb_grc                 , &
+         begwb_grc          => grc_ws%begwb                 , &
+         endwb_grc          => grc_ws%endwb                 , &
          beg_wa_grc         => soilhydrology_vars%beg_wa_grc             , &
-         beg_h2ocan_grc     => waterstate_vars%beg_h2ocan_grc            , &
-         beg_h2osno_grc     => waterstate_vars%beg_h2osno_grc            , &
-         beg_h2osfc_grc     => waterstate_vars%beg_h2osfc_grc            , &
-         beg_h2osoi_liq_grc => waterstate_vars%beg_h2osoi_liq_grc        , &
-         beg_h2osoi_ice_grc => waterstate_vars%beg_h2osoi_ice_grc        , &
+         beg_h2ocan_grc     => grc_ws%beg_h2ocan            , &
+         beg_h2osno_grc     => grc_ws%beg_h2osno            , &
+         beg_h2osfc_grc     => grc_ws%beg_h2osfc            , &
+         beg_h2osoi_liq_grc => grc_ws%beg_h2osoi_liq        , &
+         beg_h2osoi_ice_grc => grc_ws%beg_h2osoi_ice        , &
          end_wa_grc         => soilhydrology_vars%end_wa_grc             , &
-         end_h2ocan_grc     => waterstate_vars%end_h2ocan_grc            , &
-         end_h2osno_grc     => waterstate_vars%end_h2osno_grc            , &
-         end_h2osfc_grc     => waterstate_vars%end_h2osfc_grc            , &
-         end_h2osoi_liq_grc => waterstate_vars%end_h2osoi_liq_grc        , &
-         end_h2osoi_ice_grc => waterstate_vars%end_h2osoi_ice_grc        , &
-         errh2o_grc         => waterstate_vars%errh2o_grc                  &
+         end_h2ocan_grc     => grc_ws%end_h2ocan            , &
+         end_h2osno_grc     => grc_ws%end_h2osno            , &
+         end_h2osfc_grc     => grc_ws%end_h2osfc            , &
+         end_h2osoi_liq_grc => grc_ws%end_h2osoi_liq        , &
+         end_h2osoi_ice_grc => grc_ws%end_h2osoi_ice        , &
+         errh2o_grc         => grc_ws%errh2o                  &
          )
 
       ip = p_inst
@@ -685,9 +687,9 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                       & 
-         begwb             =>    waterstate_vars%begwb_col         , & ! Output: [real(r8) (:)   ]  water mass begining of the time step
-         endwb             =>    waterstate_vars%endwb_col         , & ! Output: [real(r8) (:)   ]  water mass begining of the time step
-         tws_month_beg_grc =>    waterstate_vars%tws_month_beg_grc   & ! Output: [real(r8) (:)   ]  grid-level water mass at the begining of a month
+         begwb             =>    col_ws%begwb         , & ! Output: [real(r8) (:)   ]  water mass begining of the time step
+         endwb             =>    col_ws%endwb         , & ! Output: [real(r8) (:)   ]  water mass begining of the time step
+         tws_month_beg_grc =>    grc_ws%tws_month_beg   & ! Output: [real(r8) (:)   ]  grid-level water mass at the begining of a month
          )
 
       ! Get current and previous dates to determine if a new month started
@@ -737,8 +739,8 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                       & 
-         endwb             =>    waterstate_vars%endwb_col         , & ! Output: [real(r8) (:)   ]  water mass at end of the time step
-         tws_month_end_grc =>    waterstate_vars%tws_month_end_grc   & ! Output: [real(r8) (:)   ]  grid-level water mass at the end of a month
+         endwb             =>    col_ws%endwb         , & ! Output: [real(r8) (:)   ]  water mass at end of the time step
+         tws_month_end_grc =>    grc_ws%tws_month_end   & ! Output: [real(r8) (:)   ]  grid-level water mass at the end of a month
          )
 
       ! If this is the end of a month, save grid-level total water storage

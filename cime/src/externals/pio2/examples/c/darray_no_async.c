@@ -6,7 +6,7 @@
  * (one unlimited) and one variable. It first writes, then reads the
  * sample file using distributed arrays.
  *
- * This example can be run in parallel for 4 processors.
+ * This example can be run in parallel for 16 processors.
  */
 
 #include "config.h"
@@ -32,10 +32,10 @@
 #define NUM_TIMESTEPS 2
 
 /* The length of our sample data in X dimension.*/
-#define DIM_LEN_X 4
+#define DIM_LEN_X 8
 
 /* The length of our sample data in Y dimension.*/
-#define DIM_LEN_Y 4
+#define DIM_LEN_Y 8
 
 /* The name of the variable in the netCDF output file. */
 #define VAR_NAME "foo"
@@ -48,7 +48,7 @@
 #define START_DATA_VAL 42
 
 /* Number of tasks this example runs on. */
-#define TARGET_NTASKS 4
+#define TARGET_NTASKS 16
 
 /* Logging level. */
 #define LOG_LEVEL -1
@@ -58,6 +58,11 @@ int dim_len[NDIM3] = {NC_UNLIMITED, DIM_LEN_X, DIM_LEN_Y};
 
 /* Names of dimensions. */
 char dim_name[NDIM3][PIO_MAX_NAME + 1] = {"unlimted", "x", "y"};
+
+/* These are used when writing the decomposition file. */
+#define DECOMP_FILENAME "darray_no_async_decomp.nc"
+#define DECOMP_TITLE "Example Decomposition from darray_no_async.c"
+#define DECOMP_HISTORY "This file is created by the program darray_no_async in the PIO C library"
 
 /* Handle MPI errors. This should only be used with MPI library
  * function calls. */
@@ -105,7 +110,7 @@ int check_file(int iosysid, int ntasks, char *filename, int iotype,
     nc_type xtype;    /* NetCDF data type of this variable. */
     int ret;          /* Return code for function calls. */
     int dimids[NDIM3]; /* Dimension ids for this variable. */
-    char var_name[NC_MAX_NAME];   /* Name of the variable. */
+    char var_name[PIO_MAX_NAME];   /* Name of the variable. */
     /* size_t start[NDIM3];           /\* Zero-based index to start read. *\/ */
     /* size_t count[NDIM3];           /\* Number of elements to read. *\/ */
     /* int buffer[DIM_LEN_X];          /\* Buffer to read in data. *\/ */
@@ -125,7 +130,7 @@ int check_file(int iosysid, int ntasks, char *filename, int iotype,
         return ERR_BAD;
     for (int d = 0; d < NDIM3; d++)
     {
-        char my_dim_name[NC_MAX_NAME];
+        char my_dim_name[PIO_MAX_NAME];
         PIO_Offset dimlen;
 
         if ((ret = PIOc_inq_dim(ncid, d, my_dim_name, &dimlen)))
@@ -149,6 +154,7 @@ int check_file(int iosysid, int ntasks, char *filename, int iotype,
     for (int t = 0; t < NUM_TIMESTEPS; t++)
     {
         int varid = 0; /* There's only one var in sample file. */
+
         /* This is the data we expect for this timestep. */
         for (int i = 0; i < elements_per_pe; i++)
             buffer[i] = 100 * t + START_DATA_VAL + my_rank;
@@ -174,29 +180,38 @@ int check_file(int iosysid, int ntasks, char *filename, int iotype,
 }
 
 /* Write, then read, a simple example with darrays.
+
    The sample file created by this program is a small netCDF file. It
    has the following contents (as shown by ncdump):
 
    <pre>
-   netcdf darray_no_async_iotype_1 {
-   dimensions:
-   unlimted = UNLIMITED ; // (2 currently)
-   x = 4 ;
-   y = 4 ;
-   variables:
-   int foo(unlimted, x, y) ;
-   data:
+netcdf darray_no_async_iotype_1 {
+dimensions:
+	unlimted = UNLIMITED ; // (2 currently)
+	x = 8 ;
+	y = 8 ;
+variables:
+	int foo(unlimted, x, y) ;
+data:
 
-   foo =
-   42, 42, 42, 42,
-   43, 43, 43, 43,
-   44, 44, 44, 44,
-   45, 45, 45, 45,
-   142, 142, 142, 142,
-   143, 143, 143, 143,
-   144, 144, 144, 144,
-   145, 145, 145, 145 ;
-   }
+ foo =
+  42, 42, 42, 42, 43, 43, 43, 43,
+  44, 44, 44, 44, 45, 45, 45, 45,
+  46, 46, 46, 46, 47, 47, 47, 47,
+  48, 48, 48, 48, 49, 49, 49, 49,
+  50, 50, 50, 50, 51, 51, 51, 51,
+  52, 52, 52, 52, 53, 53, 53, 53,
+  54, 54, 54, 54, 55, 55, 55, 55,
+  56, 56, 56, 56, 57, 57, 57, 57,
+  142, 142, 142, 142, 143, 143, 143, 143,
+  144, 144, 144, 144, 145, 145, 145, 145,
+  146, 146, 146, 146, 147, 147, 147, 147,
+  148, 148, 148, 148, 149, 149, 149, 149,
+  150, 150, 150, 150, 151, 151, 151, 151,
+  152, 152, 152, 152, 153, 153, 153, 153,
+  154, 154, 154, 154, 155, 155, 155, 155,
+  156, 156, 156, 156, 157, 157, 157, 157 ;
+}
    </pre>
 
 */
@@ -212,7 +227,7 @@ int main(int argc, char* argv[])
     int dimid[NDIM3];    /* The dimension ID. */
     int varid;    /* The ID of the netCDF varable. */
     int ioid;     /* The I/O description ID. */
-    char filename[NC_MAX_NAME + 1]; /* Test filename. */
+    char filename[PIO_MAX_NAME + 1]; /* Test filename. */
     int num_flavors = 0;            /* Number of iotypes available in this build. */
     int format[NUM_NETCDF_FLAVORS]; /* Different output flavors. */
     int ret;                        /* Return value. */
@@ -237,7 +252,7 @@ int main(int argc, char* argv[])
 
     /* Check that a valid number of processors was specified. */
     if (ntasks != TARGET_NTASKS)
-        fprintf(stderr, "Number of processors must be 4!\n");
+        fprintf(stderr, "Number of processors must be 16!\n");
     printf("%d: ParallelIO Library darray_no_async example running on %d processors.\n",
            my_rank, ntasks);
 
@@ -251,7 +266,7 @@ int main(int argc, char* argv[])
 
     /* Initialize the PIO IO system. This specifies how many and
      * which processors are involved in I/O. */
-    if ((ret = PIOc_Init_Intracomm(MPI_COMM_WORLD, 1, ioproc_stride,
+    if ((ret = PIOc_Init_Intracomm(MPI_COMM_WORLD, 4, ioproc_stride,
                                    ioproc_start, PIO_REARR_BOX, &iosysid)))
         ERR(ret);
 
@@ -266,9 +281,15 @@ int main(int argc, char* argv[])
     /* Create the PIO decomposition for this example. Since this
      * is a variable with an unlimited dimension, we want to
      * create a 2-D composition which represents one record. */
-    printf("rank: %d Creating decomposition...\n", my_rank);
+    printf("rank: %d Creating decomposition, elements_per_pe %lld...\n", my_rank,
+           elements_per_pe);
     if ((ret = PIOc_init_decomp(iosysid, PIO_INT, NDIM3 - 1, &dim_len[1], elements_per_pe,
-                                compdof, &ioid, 0, NULL, NULL)))
+                                compdof, &ioid, PIO_REARR_SUBSET, NULL, NULL)))
+        ERR(ret);
+
+    /* Write the decomposition file. */
+    if ((ret = PIOc_write_nc_decomp(iosysid, DECOMP_FILENAME, NC_CLOBBER,
+                                    ioid, DECOMP_TITLE, DECOMP_HISTORY, 0)))
         ERR(ret);
 
     /* The number of favors may change with the build parameters. */
@@ -344,7 +365,7 @@ int main(int argc, char* argv[])
 
     /* Finalize the IO system. */
     printf("rank: %d Freeing PIO resources...\n", my_rank);
-    if ((ret = PIOc_finalize(iosysid)))
+    if ((ret = PIOc_free_iosystem(iosysid)))
         ERR(ret);
 
     /* Finalize the MPI library. */

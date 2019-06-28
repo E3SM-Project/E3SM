@@ -34,11 +34,18 @@ def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resub
         rundir = case.get_value("RUNDIR")
         expect(os.path.isdir(rundir),
                "CONTINUE_RUN is true but RUNDIR {} does not exist".format(rundir))
-        expect(os.path.exists(os.path.join(rundir,"rpointer.drv")),
-               "CONTINUE_RUN is true but this case does not appear to have restart files staged in {}".format(rundir))
-        # Finally we open the rpointer.drv file and check that it's correct
+        # only checks for the first instance in a multidriver case
+        if case.get_value("COMP_INTERFACE") == "nuopc":
+            rpointer = "rpointer.med"
+        elif case.get_value("MULTI_DRIVER"):
+            rpointer = "rpointer.drv_0001"
+        else:
+            rpointer = "rpointer.drv"
+        expect(os.path.exists(os.path.join(rundir,rpointer)),
+               "CONTINUE_RUN is true but this case does not appear to have restart files staged in {} {}".format(rundir,rpointer))
+        # Finally we open the rpointer file and check that it's correct
         casename = case.get_value("CASE")
-        with open(os.path.join(rundir,"rpointer.drv"), "r") as fd:
+        with open(os.path.join(rundir,rpointer), "r") as fd:
             ncfile = fd.readline().strip()
             expect(ncfile.startswith(casename) and
                    os.path.exists(os.path.join(rundir,ncfile)),
@@ -48,10 +55,35 @@ def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resub
     # if case.submit is called with the no_batch flag then we assume that this
     # flag will stay in effect for the duration of the RESUBMITs
     env_batch = case.get_env("batch")
-    if resubmit:
-        if env_batch.get_batch_system_type() == "none":
-            no_batch = True
 
+    if resubmit and env_batch.get_batch_system_type() == "none":
+        no_batch = True
+    if no_batch:
+        batch_system = "none"
+    else:
+        batch_system = env_batch.get_batch_system_type()
+
+    case.set_value("BATCH_SYSTEM", batch_system)
+
+    env_batch_has_changed = False
+    try:
+        case.check_lockedfile(os.path.basename(env_batch.filename))
+    except:
+        env_batch_has_changed = True
+
+    if batch_system != "none" and env_batch_has_changed:
+        # May need to regen batch files if user made batch setting changes (e.g. walltime, queue, etc)
+        logger.warning(\
+"""
+env_batch.xml appears to have changed, regenerating batch scripts
+manual edits to these file will be lost!
+""")
+        env_batch.make_all_batch_files(case)
+
+    unlock_file(os.path.basename(env_batch.filename))
+    lock_file(os.path.basename(env_batch.filename))
+
+    if resubmit:
         # This is a resubmission, do not reinitialize test values
         if job == "case.test":
             case.set_value("IS_FIRST_RUN", False)
@@ -145,7 +177,7 @@ def submit(self, job=None, no_batch=False, prereq=None, allow_fail=False, resubm
     # any submit options used on the original submit and use them again
     submit_options = os.path.join(caseroot, ".submit_options")
     if resubmit and os.path.exists(submit_options):
-        config = configparser.SafeConfigParser()
+        config = configparser.RawConfigParser()
         config.read(submit_options)
         if not skip_pnl and config.has_option('SubmitOptions','skip_pnl'):
             skip_pnl = config.getboolean('SubmitOptions', 'skip_pnl')

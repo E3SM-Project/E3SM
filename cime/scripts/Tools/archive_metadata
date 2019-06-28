@@ -454,8 +454,6 @@ def get_pp_status(case_dict):
     # get xconform status
     case_dict['xconform_path'] = ''
     case_dict['xconform_path'] = get_pp_path(pp_dir, 'xconform')
-    if (len(case_dict['xconform_path']) > 2):
-        case_dict['xconform_path'] = os.path.join(case_dict['xconform_path'], str(case_dict['case_id']))
     case_dict['xconform_status'] = 'Unknown'
     case_dict['xconform_size'] = get_disk_usage(case_dict['xconform_path'])
     case_dict['xconform_dates'] = case_dict['timeseries_dates']
@@ -474,7 +472,8 @@ def get_pp_status(case_dict):
             with open(log_file, 'r') as fname:
                 log_content = fname.readlines()
             total_time = [line for line in log_content if 'Total Time:' in line]
-            case_dict['xconform_total_time'] = ' '.join(total_time[0].split())
+            if total_time:
+                case_dict['xconform_total_time'] = ' '.join(total_time[0].split())
         else:
             case_dict['xconform_status'] = 'Started'
 
@@ -564,7 +563,7 @@ def get_case_status(case_dict):
             # exclude the proc directories in the sta size estimates
             for subdir in ['atm/hist', 'cpl/hist', 'esp/hist', 'ice/hist', 'glc/hist',
                            'lnd/hist', 'logs', 'ocn/hist', 'rest', 'rof/hist',
-                           'wav/hist']:
+                           'wav/hist', 'iac/hist']:
                 path = os.path.join(case_dict['sta_path'], subdir)
                 if os.path.isdir(path):
                     case_dict['sta_size'] += get_disk_usage(path)
@@ -846,7 +845,7 @@ def update_repo_add_file(filename, dir1, dir2):
     logger.debug('left_only: '+src+' -> '+dest)
     if not os.path.exists(dest):
         shutil.copy2(src, dest)
-        cmd = ['svn', 'add', dest]
+        cmd = ['svn', 'add', '--parents', dest]
         try:
             subprocess.check_call(cmd)
         except subprocess.CalledProcessError as error:
@@ -1428,13 +1427,6 @@ def main_func(options):
 
     (case_dict, username, password) = initialize_main(options)
 
-    # loop through the _xml_vars gathering values
-    with Case(case_dict['CASEROOT'], read_only=True) as case:
-        if case_dict['dryrun']:
-            logger.info('Dryrun - calling get_case_vars')
-        else:
-            case_dict = get_case_vars(case_dict, case)
-
     # check if query_cmip6 argument is specified
     if options.query_cmip6:
         if case_dict['dryrun']:
@@ -1442,10 +1434,10 @@ def main_func(options):
         else:
             if query_expdb_cmip6(case_dict, username, password):
                 logger.info('Casename "%s" CMIP6 global attribute '\
-                            'metadata written to "./archive_files/%s" ' \
+                            'metadata written to "%s/archive_files/%s" ' \
                             'from "%s"',
-                            case_dict['q_casename'], case_dict['q_outfile'],
-                            case_dict['query_expdb_url'])
+                            case_dict['workdir'], case_dict['q_casename'],
+                            case_dict['q_outfile'], case_dict['query_expdb_url'])
                 logger.info('Successful completion of archive_metadata')
                 sys.exit(0)
             else:
@@ -1453,6 +1445,13 @@ def main_func(options):
                             'in experiments database at "%s".',
                             case_dict['q_casename'], case_dict['query_expdb_url'])
                 sys.exit(1)
+
+    # loop through the _xml_vars gathering values
+    with Case(case_dict['CASEROOT'], read_only=True) as case:
+        if case_dict['dryrun']:
+            logger.info('Dryrun - calling get_case_vars')
+        else:
+            case_dict = get_case_vars(case_dict, case)
 
     # check reserved casename expdb for CMIP6 experiments
     if case_dict['expType'].lower() == 'cmip6':

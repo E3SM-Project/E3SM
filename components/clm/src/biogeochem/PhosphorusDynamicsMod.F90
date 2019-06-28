@@ -14,8 +14,7 @@ module PhosphorusDynamicsMod
   use clm_varcon          , only : dzsoi_decomp, zisoi
   use subgridAveMod       , only : p2c
   use atm2lndType         , only : atm2lnd_type
-  use CNCarbonFluxType    , only : carbonflux_type, nfix_timeconst
-  
+  use CNCarbonFluxType    , only : carbonflux_type  
   use clm_varpar          , only : nlevdecomp
   use clm_varctl          , only : use_vertsoilc
   use PhosphorusFluxType  , only : phosphorusflux_type
@@ -27,7 +26,9 @@ module PhosphorusDynamicsMod
   use WaterFluxType       , only : waterflux_type
   use CropType            , only : crop_type
   use ColumnType          , only : col_pp
-  use VegetationType           , only : veg_pp
+  use ColumnDataType      , only : col_ws, col_wf, nfix_timeconst, col_ps, col_pf
+  use VegetationType      , only : veg_pp
+  use VegetationDataType  , only : veg_ns, veg_pf
   use VegetationPropertiesType      , only : veg_vp
   use clm_varctl          , only : NFIX_PTASE_plant
 
@@ -71,7 +72,7 @@ contains
 
     associate(&
          forc_pdep     =>  atm2lnd_vars%forc_pdep_grc           , & ! Input:  [real(r8) (:)]  Phosphorus deposition rate (gP/m2/s)                
-         pdep_to_sminp =>  phosphorusflux_vars%pdep_to_sminp_col   & ! Output: [real(r8) (:)]                                                    
+         pdep_to_sminp =>  col_pf%pdep_to_sminp   & ! Output: [real(r8) (:)]                                                    
          )
 
       ! Loop through columns
@@ -119,8 +120,8 @@ contains
     associate(&
 
          isoilorder     => cnstate_vars%isoilorder                 ,&
-         primp          => phosphorusstate_vars%primp_vr_col       ,& 
-         primp_to_labilep => phosphorusflux_vars%primp_to_labilep_vr_col  &         
+         primp          => col_ps%primp_vr       ,& 
+         primp_to_labilep => col_pf%primp_to_labilep_vr  &         
 
          )
 
@@ -186,9 +187,9 @@ contains
     associate(&
 
          isoilorder     => cnstate_vars%isoilorder                 ,&
-         solutionp   => phosphorusstate_vars%solutionp_vr_col      ,&
-         labilep     => phosphorusstate_vars%labilep_vr_col        ,&
-         labilep_to_secondp => phosphorusflux_vars%labilep_to_secondp_vr_col &
+         solutionp   => col_ps%solutionp_vr      ,&
+         labilep     => col_ps%labilep_vr        ,&
+         labilep_to_secondp => col_pf%labilep_to_secondp_vr &
 
          )
 
@@ -255,8 +256,8 @@ contains
     associate(&
 
          isoilorder     => cnstate_vars%isoilorder              ,&
-         secondp     => phosphorusstate_vars%secondp_vr_col     ,&
-         secondp_to_labilep => phosphorusflux_vars%secondp_to_labilep_vr_col &
+         secondp     => col_ps%secondp_vr     ,&
+         secondp_to_labilep => col_pf%secondp_to_labilep_vr &
 
          )
 
@@ -324,8 +325,8 @@ contains
     associate(&
 
          isoilorder     => cnstate_vars%isoilorder                      ,&
-         secondp     => phosphorusstate_vars%secondp_vr_col             ,&
-         secondp_to_occlp => phosphorusflux_vars%secondp_to_occlp_vr_col &
+         secondp     => col_ps%secondp_vr             ,&
+         secondp_to_occlp => col_pf%secondp_to_occlp_vr &
 
          )
 
@@ -392,13 +393,13 @@ contains
     !-----------------------------------------------------------------------
 
     associate(&
-         h2osoi_liq          => waterstate_vars%h2osoi_liq_col            , & !Input:  [real(r8) (:,:) ]  liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
+         h2osoi_liq          => col_ws%h2osoi_liq            , & !Input:  [real(r8) (:,:) ]  liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
 
-         qflx_drain          => waterflux_vars%qflx_drain_col             , & !Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)                    
-         qflx_surf           => waterflux_vars%qflx_surf_col              , & !Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)                        
+         qflx_drain          => col_wf%qflx_drain             , & !Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)                    
+         qflx_surf           => col_wf%qflx_surf              , & !Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)                        
 
-         solutionp_vr            => phosphorusstate_vars%solutionp_vr_col           , & !Input:  [real(r8) (:,:) ]  (gP/m3) soil mineral N                          
-         sminp_leached_vr    => phosphorusflux_vars%sminp_leached_vr_col     & !Output: [real(r8) (:,:) ]  rate of mineral N leaching (gP/m3/s)            
+         solutionp_vr            => col_ps%solutionp_vr           , & !Input:  [real(r8) (:,:) ]  (gP/m3) soil mineral N                          
+         sminp_leached_vr    => col_pf%sminp_leached_vr     & !Output: [real(r8) (:,:) ]  rate of mineral N leaching (gP/m3/s)            
          )
 
       ! set time steps
@@ -519,11 +520,11 @@ contains
     associate(&
 
          isoilorder     => cnstate_vars%isoilorder                            ,&
-         decomp_ppools_vr_col => phosphorusstate_vars%decomp_ppools_vr_col    ,&
+         decomp_ppools_vr_col => col_ps%decomp_ppools_vr    ,&
   
-         biochem_pmin_ppools_vr_col  => phosphorusflux_vars%biochem_pmin_ppools_vr_col  ,&
-         biochem_pmin_vr_col  => phosphorusflux_vars%biochem_pmin_vr_col      ,&
-         biochem_pmin_col     => phosphorusflux_vars%biochem_pmin_col         , & 
+         biochem_pmin_ppools_vr_col  => col_pf%biochem_pmin_ppools_vr  ,&
+         biochem_pmin_vr_col  => col_pf%biochem_pmin_vr      ,&
+         biochem_pmin_col     => col_pf%biochem_pmin         , & 
          fpi_vr_col           => cnstate_vars%fpi_vr_col                      ,&
          fpi_p_vr_col           => cnstate_vars%fpi_p_vr_col                   &
          )
@@ -628,15 +629,15 @@ contains
 
     associate(                                                              &
          froot_prof           => cnstate_vars%froot_prof_patch            , & ! fine root vertical profile Zeng, X. 2001. Global vegetation root distribution for land modeling. J. Hydrometeor. 2:525-530
-         biochem_pmin_vr      => phosphorusflux_vars%biochem_pmin_vr_col  , &
-         biochem_pmin_ppools_vr_col  => phosphorusflux_vars%biochem_pmin_ppools_vr_col ,&
-         biochem_pmin_to_ecosysp_vr_col => phosphorusflux_vars%biochem_pmin_to_ecosysp_vr_col , &
-         biochem_pmin_to_plant_patch    => phosphorusflux_vars%biochem_pmin_to_plant_patch , &
-         npimbalance          => nitrogenstate_vars%npimbalance_patch     , &
+         biochem_pmin_vr      => col_pf%biochem_pmin_vr  , &
+         biochem_pmin_ppools_vr_col  => col_pf%biochem_pmin_ppools_vr ,&
+         biochem_pmin_to_ecosysp_vr_col => col_pf%biochem_pmin_to_ecosysp_vr , &
+         biochem_pmin_to_plant_patch    => veg_pf%biochem_pmin_to_plant , &
+         npimbalance          => veg_ns%npimbalance     , &
          vmax_ptase           => veg_vp%vmax_ptase                    , &
          km_ptase             => veg_vp%km_ptase                      , &
          alpha_ptase          => veg_vp%alpha_ptase                   , &
-         decomp_ppools_vr_col => phosphorusstate_vars%decomp_ppools_vr_col, &
+         decomp_ppools_vr_col => col_ps%decomp_ppools_vr, &
          lamda_ptase          => veg_vp%lamda_ptase                   ,  & ! critical value of nitrogen cost of phosphatase activity induced phosphorus uptake
          cn_scalar             => cnstate_vars%cn_scalar               , &
          cp_scalar             => cnstate_vars%cp_scalar               , &

@@ -1,14 +1,12 @@
 /**
  * @file
- * Internal PIO functions to get and put attributes and data
- * (excluding varm functions).
+ * Internal PIO functions to get and put attributes and data.
+ *
+ * @see https://github.com/NCAR/ParallelIO
  *
  * @author Ed Hartnett
- * @date  2016
- *
- * @see http://code.google.com/p/parallelio/
+ * @date 2016
  */
-
 #include <config.h>
 #include <pio.h>
 #include <pio_internal.h>
@@ -16,21 +14,23 @@
 /**
  * Write a netCDF attribute of any type, converting to any type.
  *
- * This routine is called collectively by all tasks in the communicator
- * ios.union_comm.
+ * This routine is called collectively by all tasks in the
+ * communicator ios.union_comm.
  *
  * @param ncid the ncid of the open file, obtained from
  * PIOc_openfile() or PIOc_createfile().
  * @param varid the variable ID.
  * @param name the name of the attribute.
- * @param atttype the nc_type of the attribute.
+ * @param atttype the nc_type of the attribute in the file.
  * @param len the length of the attribute array.
+ * @param memtype the nc_type of the attribute data in memory.
  * @param op a pointer with the attribute data.
  * @return PIO_NOERR for success, error code otherwise.
  * @author Ed Hartnett
  */
-int PIOc_put_att_tc(int ncid, int varid, const char *name, nc_type atttype,
-                    PIO_Offset len, nc_type memtype, const void *op)
+int
+PIOc_put_att_tc(int ncid, int varid, const char *name, nc_type atttype,
+                PIO_Offset len, nc_type memtype, const void *op)
 {
     iosystem_desc_t *ios;  /* Pointer to io system information. */
     file_desc_t *file;     /* Pointer to file information. */
@@ -109,15 +109,15 @@ int PIOc_put_att_tc(int ncid, int varid, const char *name, nc_type atttype,
 
         /* Handle MPI errors. */
         if ((mpierr2 = MPI_Bcast(&mpierr, 1, MPI_INT, ios->comproot, ios->my_comm)))
-            check_mpi(file, mpierr2, __FILE__, __LINE__);
+            check_mpi(NULL, file, mpierr2, __FILE__, __LINE__);
         if (mpierr)
-            return check_mpi(file, mpierr, __FILE__, __LINE__);
+            return check_mpi(NULL, file, mpierr, __FILE__, __LINE__);
 
         /* Broadcast values currently only known on computation tasks to IO tasks. */
         if ((mpierr = MPI_Bcast(&atttype_len, 1, MPI_OFFSET, ios->comproot, ios->my_comm)))
-            check_mpi(file, mpierr, __FILE__, __LINE__);
+            check_mpi(NULL, file, mpierr, __FILE__, __LINE__);
         if ((mpierr = MPI_Bcast(&memtype_len, 1, MPI_OFFSET, ios->comproot, ios->my_comm)))
-            check_mpi(file, mpierr, __FILE__, __LINE__);
+            check_mpi(NULL, file, mpierr, __FILE__, __LINE__);
         LOG((2, "PIOc_put_att bcast from comproot = %d atttype_len = %d", ios->comproot,
              atttype_len, memtype_len));
     }
@@ -211,7 +211,7 @@ int PIOc_put_att_tc(int ncid, int varid, const char *name, nc_type atttype,
 
     /* Broadcast and check the return code. */
     if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
-        return check_mpi(file, mpierr, __FILE__, __LINE__);
+        return check_mpi(NULL, file, mpierr, __FILE__, __LINE__);
     if (ierr)
         return check_netcdf(file, ierr, __FILE__, __LINE__);
 
@@ -236,7 +236,8 @@ int PIOc_put_att_tc(int ncid, int varid, const char *name, nc_type atttype,
  * @return PIO_NOERR for success, error code otherwise.
  * @author Ed Hartnett
  */
-int PIOc_get_att_tc(int ncid, int varid, const char *name, nc_type memtype, void *ip)
+int
+PIOc_get_att_tc(int ncid, int varid, const char *name, nc_type memtype, void *ip)
 {
     iosystem_desc_t *ios;   /* Pointer to io system information. */
     file_desc_t *file;      /* Pointer to file information. */
@@ -326,19 +327,19 @@ int PIOc_get_att_tc(int ncid, int varid, const char *name, nc_type memtype, void
 
         /* Handle MPI errors. */
         if ((mpierr2 = MPI_Bcast(&mpierr, 1, MPI_INT, ios->comproot, ios->my_comm)))
-            check_mpi(file, mpierr2, __FILE__, __LINE__);
+            check_mpi(NULL, file, mpierr2, __FILE__, __LINE__);
         if (mpierr)
-            return check_mpi(file, mpierr, __FILE__, __LINE__);
+            return check_mpi(NULL, file, mpierr, __FILE__, __LINE__);
         LOG((2, "mpi errors handled"));
 
         /* Broadcast values currently only known on computation tasks to IO tasks. */
         LOG((2, "PIOc_get_att_tc bcast from comproot = %d attlen = %d atttype_len = %d", ios->comproot, attlen, atttype_len));
         if ((mpierr = MPI_Bcast(&attlen, 1, MPI_OFFSET, ios->comproot, ios->my_comm)))
-            return check_mpi(file, mpierr, __FILE__, __LINE__);
+            return check_mpi(NULL, file, mpierr, __FILE__, __LINE__);
         if ((mpierr = MPI_Bcast(&atttype_len, 1, MPI_OFFSET, ios->comproot, ios->my_comm)))
-            return check_mpi(file, mpierr, __FILE__, __LINE__);
+            return check_mpi(NULL, file, mpierr, __FILE__, __LINE__);
         if ((mpierr = MPI_Bcast(&memtype_len, 1, MPI_OFFSET, ios->comproot, ios->my_comm)))
-            return check_mpi(file, mpierr, __FILE__, __LINE__);
+            return check_mpi(NULL, file, mpierr, __FILE__, __LINE__);
         LOG((2, "PIOc_get_att_tc bcast complete attlen = %d atttype_len = %d memtype_len = %d", attlen, atttype_len,
              memtype_len));
     }
@@ -434,7 +435,7 @@ int PIOc_get_att_tc(int ncid, int varid, const char *name, nc_type memtype, void
     /* Broadcast and check the return code. */
     LOG((2, "ierr = %d", ierr));
     if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
-        return check_mpi(file, mpierr, __FILE__, __LINE__);
+        return check_mpi(NULL, file, mpierr, __FILE__, __LINE__);
     if (ierr)
         return check_netcdf(file, ierr, __FILE__, __LINE__);
 
@@ -442,7 +443,7 @@ int PIOc_get_att_tc(int ncid, int varid, const char *name, nc_type memtype, void
     LOG((2, "bcasting att values attlen = %d memtype_len = %d", attlen, memtype_len));
     if ((mpierr = MPI_Bcast(ip, (int)attlen * memtype_len, MPI_BYTE, ios->ioroot,
                             ios->my_comm)))
-        return check_mpi(file, mpierr, __FILE__, __LINE__);
+        return check_mpi(NULL, file, mpierr, __FILE__, __LINE__);
 
     LOG((2, "get_att_tc data bcast complete"));
     return PIO_NOERR;
@@ -483,8 +484,9 @@ int PIOc_get_att_tc(int ncid, int varid, const char *name, nc_type memtype, void
  * @return PIO_NOERR on success, error code otherwise.
  * @author Ed Hartnett
  */
-int PIOc_get_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                     const PIO_Offset *stride, nc_type xtype, void *buf)
+int
+PIOc_get_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
+                 const PIO_Offset *stride, nc_type xtype, void *buf)
 {
     iosystem_desc_t *ios;  /* Pointer to io system information. */
     file_desc_t *file;     /* Pointer to file information. */
@@ -495,6 +497,8 @@ int PIOc_get_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
     char start_present = start ? true : false;
     char count_present = count ? true : false;
     char stride_present = stride ? true : false;
+    PIO_Offset one = 1; /* For fake_stride. */
+    PIO_Offset *fake_stride = &one; /* Needed for NULL stride bug in netcdf-4.6.2. */
     int mpierr = MPI_SUCCESS, mpierr2;  /* Return code from MPI function codes. */
     int ierr;                           /* Return code. */
 
@@ -590,22 +594,39 @@ int PIOc_get_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 
         /* Handle MPI errors. */
         if ((mpierr2 = MPI_Bcast(&mpierr, 1, MPI_INT, ios->comproot, ios->my_comm)))
-            return check_mpi(file, mpierr2, __FILE__, __LINE__);
+            return check_mpi(NULL, file, mpierr2, __FILE__, __LINE__);
         if (mpierr)
-            return check_mpi(file, mpierr, __FILE__, __LINE__);
+            return check_mpi(NULL, file, mpierr, __FILE__, __LINE__);
 
         /* Broadcast values currently only known on computation tasks to IO tasks. */
         if ((mpierr = MPI_Bcast(&num_elem, 1, MPI_OFFSET, ios->comproot, ios->my_comm)))
-            check_mpi(file, mpierr, __FILE__, __LINE__);
+            check_mpi(NULL, file, mpierr, __FILE__, __LINE__);
         if ((mpierr = MPI_Bcast(&typelen, 1, MPI_OFFSET, ios->comproot, ios->my_comm)))
-            check_mpi(file, mpierr, __FILE__, __LINE__);
+            check_mpi(NULL, file, mpierr, __FILE__, __LINE__);
         if ((mpierr = MPI_Bcast(&xtype, 1, MPI_INT, ios->comproot, ios->my_comm)))
-            check_mpi(file, mpierr, __FILE__, __LINE__);
+            check_mpi(NULL, file, mpierr, __FILE__, __LINE__);
+        if ((mpierr = MPI_Bcast(&ndims, 1, MPI_INT, ios->comproot, ios->my_comm)))
+            check_mpi(NULL, file, mpierr, __FILE__, __LINE__);
+    }
+
+    if (ndims)
+    {
+        if (!stride_present)
+        {
+            LOG((2, "stride not present "));
+            if (!(fake_stride = malloc(ndims * sizeof(PIO_Offset))))
+                return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
+            for (int d = 0; d < ndims; d++)
+                fake_stride[d] = 1;
+        }
+        else
+            fake_stride = (PIO_Offset *)stride;
     }
 
     /* If this is an IO task, then call the netCDF function. */
     if (ios->ioproc)
     {
+
         LOG((2, "file->iotype = %d xtype = %d file->do_io = %d", file->iotype, xtype, file->do_io));
 #ifdef _PNETCDF
         if (file->iotype == PIO_IOTYPE_PNETCDF)
@@ -653,72 +674,93 @@ int PIOc_get_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
         }
 #endif /* _PNETCDF */
 
+        LOG((2, "duck ndims %d", ndims));
+        for (int d = 0; d < ndims; d++)
+        {
+            LOG((2, "start[%d]  %d", d, start[d]));
+            LOG((2, "count[%d]  %d", d, count[d]));
+            LOG((2, "fake_stride[%d]  %d", d, fake_stride[d]));
+        }
+
         if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
+        {
             switch(xtype)
             {
             case NC_BYTE:
                 ierr = nc_get_vars_schar(file->fh, varid, (size_t *)start, (size_t *)count,
-                                         (ptrdiff_t *)stride, buf);
+                                         (ptrdiff_t *)fake_stride, buf);
                 break;
             case NC_CHAR:
                 ierr = nc_get_vars_text(file->fh, varid, (size_t *)start, (size_t *)count,
-                                        (ptrdiff_t *)stride, buf);
+                                        (ptrdiff_t *)fake_stride, buf);
                 break;
             case NC_SHORT:
                 ierr = nc_get_vars_short(file->fh, varid, (size_t *)start, (size_t *)count,
-                                         (ptrdiff_t *)stride, buf);
+                                         (ptrdiff_t *)fake_stride, buf);
                 break;
             case NC_INT:
                 ierr = nc_get_vars_int(file->fh, varid, (size_t *)start, (size_t *)count,
-                                       (ptrdiff_t *)stride, buf);
+                                       (ptrdiff_t *)fake_stride, buf);
                 break;
             case PIO_LONG_INTERNAL:
                 ierr = nc_get_vars_long(file->fh, varid, (size_t *)start, (size_t *)count,
-                                        (ptrdiff_t *)stride, buf);
+                                        (ptrdiff_t *)fake_stride, buf);
                 break;
             case NC_FLOAT:
                 ierr = nc_get_vars_float(file->fh, varid, (size_t *)start, (size_t *)count,
-                                         (ptrdiff_t *)stride, buf);
+                                         (ptrdiff_t *)fake_stride, buf);
                 break;
             case NC_DOUBLE:
                 ierr = nc_get_vars_double(file->fh, varid, (size_t *)start, (size_t *)count,
-                                          (ptrdiff_t *)stride, buf);
+                                          (ptrdiff_t *)fake_stride, buf);
                 break;
 #ifdef _NETCDF4
             case NC_UBYTE:
                 ierr = nc_get_vars_uchar(file->fh, varid, (size_t *)start, (size_t *)count,
-                                         (ptrdiff_t *)stride, buf);
+                                         (ptrdiff_t *)fake_stride, buf);
                 break;
             case NC_USHORT:
                 ierr = nc_get_vars_ushort(file->fh, varid, (size_t *)start, (size_t *)count,
-                                          (ptrdiff_t *)stride, buf);
+                                          (ptrdiff_t *)fake_stride, buf);
                 break;
             case NC_UINT:
                 ierr = nc_get_vars_uint(file->fh, varid, (size_t *)start, (size_t *)count,
-                                        (ptrdiff_t *)stride, buf);
+                                        (ptrdiff_t *)fake_stride, buf);
                 break;
             case NC_INT64:
                 LOG((3, "about to call nc_get_vars_longlong"));
                 ierr = nc_get_vars_longlong(file->fh, varid, (size_t *)start, (size_t *)count,
-                                            (ptrdiff_t *)stride, buf);
+                                            (ptrdiff_t *)fake_stride, buf);
                 break;
             case NC_UINT64:
                 ierr = nc_get_vars_ulonglong(file->fh, varid, (size_t *)start, (size_t *)count,
-                                             (ptrdiff_t *)stride, buf);
+                                             (ptrdiff_t *)fake_stride, buf);
                 break;
                 /* case NC_STRING: */
                 /*      ierr = nc_get_vars_string(file->fh, varid, (size_t *)start, (size_t *)count, */
-                /*                                (ptrdiff_t *)stride, (void *)buf); */
+                /*                                (ptrdiff_t *)fake_stride, (void *)buf); */
                 /*      break; */
 #endif /* _NETCDF4 */
             default:
                 return pio_err(ios, file, PIO_EBADTYPE, __FILE__, __LINE__);
             }
+        }
+
     }
+
+    LOG((2, "howdy ndims %d", ndims));
+    for (int d = 0; d < ndims; d++)
+    {
+        LOG((2, "fake_stride[%d]  %d", d, fake_stride[d]));
+    }
+
+    /* Free malloced resources. */
+    if (ndims && !stride_present)
+        free(fake_stride);
 
     /* Broadcast and check the return code. */
     if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
-        return check_mpi(file, mpierr, __FILE__, __LINE__);
+        return check_mpi(NULL, file, mpierr, __FILE__, __LINE__);
     if (ierr)
         return check_netcdf(file, ierr, __FILE__, __LINE__);
 
@@ -726,7 +768,7 @@ int PIOc_get_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
     LOG((2, "PIOc_get_vars_tc bcasting data num_elem = %d typelen = %d ios->ioroot = %d", num_elem,
          typelen, ios->ioroot));
     if ((mpierr = MPI_Bcast(buf, num_elem * typelen, MPI_BYTE, ios->ioroot, ios->my_comm)))
-        return check_mpi(file, mpierr, __FILE__, __LINE__);
+        return check_mpi(NULL, file, mpierr, __FILE__, __LINE__);
     LOG((2, "PIOc_get_vars_tc bcasting data complete"));
 
     return PIO_NOERR;
@@ -749,8 +791,9 @@ int PIOc_get_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
  * @return PIO_NOERR on success, error code otherwise.
  * @author Ed Hartnett
  */
-int PIOc_get_var1_tc(int ncid, int varid, const PIO_Offset *index, nc_type xtype,
-                     void *buf)
+int
+PIOc_get_var1_tc(int ncid, int varid, const PIO_Offset *index, nc_type xtype,
+                 void *buf)
 {
     iosystem_desc_t *ios;  /* Pointer to io system information. */
     file_desc_t *file;     /* Pointer to file information. */
@@ -782,15 +825,13 @@ int PIOc_get_var1_tc(int ncid, int varid, const PIO_Offset *index, nc_type xtype
  *
  * @param ncid identifies the netCDF file
  * @param varid the variable ID number
- * @param index an array of start indicies (must have same number of
- * entries as variable has dimensions). If NULL, indices of 0 will be
- * used.
  * @param xtype the netcdf type of the variable.
  * @param buf pointer that will get the data.
  * @return PIO_NOERR on success, error code otherwise.
  * @author Ed Hartnett
  */
-int PIOc_get_var_tc(int ncid, int varid, nc_type xtype, void *buf)
+int
+PIOc_get_var_tc(int ncid, int varid, nc_type xtype, void *buf)
 {
     iosystem_desc_t *ios;  /* Pointer to io system information. */
     file_desc_t *file;     /* Pointer to file information. */
@@ -819,15 +860,24 @@ int PIOc_get_var_tc(int ncid, int varid, nc_type xtype, void *buf)
         int dimids[ndims];
         if ((ierr = PIOc_inq_vardimid(ncid, varid, dimids)))
             return pio_err(ios, file, ierr, __FILE__, __LINE__);
-	if (!(startp = malloc(ndims * sizeof(PIO_Offset))))
-	    return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
-	if (!(countp = malloc(ndims * sizeof(PIO_Offset))))
-	    return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
+        if (!(startp = malloc(ndims * sizeof(PIO_Offset))))
+            return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
+        if (!(countp = malloc(ndims * sizeof(PIO_Offset))))
+        {
+            free(startp);
+            return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
+        }
 
         /* Find the dimension lengths. */
         for (int d = 0; d < ndims; d++)
+        {
             if ((ierr = PIOc_inq_dimlen(ncid, dimids[d], &countp[d])))
+            {
+                free(startp);
+                free(countp);
                 return pio_err(ios, file, ierr, __FILE__, __LINE__);
+            }
+        }
 
         /* Set up start array. */
         for (int d = 0; d < ndims; d++)
@@ -840,10 +890,10 @@ int PIOc_get_var_tc(int ncid, int varid, nc_type xtype, void *buf)
     }
 
     ierr = PIOc_get_vars_tc(ncid, varid, startp, countp, NULL, xtype, buf);
-    if(startp != NULL)
-	free(startp);
-    if(countp != NULL)
-	free(countp);
+    if (startp)
+        free(startp);
+    if (countp)
+        free(countp);
     return ierr;
 
 }
@@ -884,8 +934,9 @@ int PIOc_get_var_tc(int ncid, int varid, nc_type xtype, void *buf)
  * @return PIO_NOERR on success, error code otherwise.
  * @author Ed Hartnett
  */
-int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                     const PIO_Offset *stride, nc_type xtype, const void *buf)
+int
+PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
+                 const PIO_Offset *stride, nc_type xtype, const void *buf)
 {
     iosystem_desc_t *ios;  /* Pointer to io system information. */
     file_desc_t *file;  /* Pointer to file information. */
@@ -896,6 +947,7 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
     char count_present = count ? true : false;    /* Is count non-NULL? */
     char stride_present = stride ? true : false;  /* Is stride non-NULL? */
     nc_type vartype;   /* The type of the var we are reading from. */
+    PIO_Offset *fake_stride;
     int mpierr = MPI_SUCCESS, mpierr2;  /* Return code from MPI function codes. */
     int ierr;          /* Return code from function calls. */
 
@@ -994,23 +1046,37 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 
         /* Handle MPI errors. */
         if ((mpierr2 = MPI_Bcast(&mpierr, 1, MPI_INT, ios->comproot, ios->my_comm)))
-            return check_mpi(file, mpierr2, __FILE__, __LINE__);
+            return check_mpi(NULL, file, mpierr2, __FILE__, __LINE__);
         if (mpierr)
-            check_mpi(file, mpierr, __FILE__, __LINE__);
+            check_mpi(NULL, file, mpierr, __FILE__, __LINE__);
         LOG((2, "PIOc_put_vars_tc checked mpierr = %d", mpierr));
 
         /* Broadcast values currently only known on computation tasks to IO tasks. */
         LOG((2, "PIOc_put_vars_tc bcast from comproot"));
         if ((mpierr = MPI_Bcast(&ndims, 1, MPI_INT, ios->comproot, ios->my_comm)))
-            return check_mpi(file, mpierr, __FILE__, __LINE__);
+            return check_mpi(NULL, file, mpierr, __FILE__, __LINE__);
         if ((mpierr = MPI_Bcast(&xtype, 1, MPI_INT, ios->comproot, ios->my_comm)))
-            return check_mpi(file, mpierr, __FILE__, __LINE__);
+            return check_mpi(NULL, file, mpierr, __FILE__, __LINE__);
         LOG((2, "PIOc_put_vars_tc complete bcast from comproot ndims = %d", ndims));
     }
 
     /* If this is an IO task, then call the netCDF function. */
     if (ios->ioproc)
     {
+        if (ndims)
+        {
+            if (!stride_present)
+            {
+                LOG((2, "stride not present"));
+                if (!(fake_stride = malloc(ndims * sizeof(PIO_Offset))))
+                    return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
+                for (int d = 0; d < ndims; d++)
+                    fake_stride[d] = 1;
+            }
+            else
+                fake_stride = (PIO_Offset *)stride;
+        }
+
 #ifdef _PNETCDF
         if (file->iotype == PIO_IOTYPE_PNETCDF)
         {
@@ -1065,20 +1131,8 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
             else
             {
                 /* This is not a scalar var. */
-                PIO_Offset *fake_stride;
                 var_desc_t *vdesc;
                 int *request;
-
-                if (!stride_present)
-                {
-                    LOG((2, "stride not present"));
-                    if (!(fake_stride = malloc(ndims * sizeof(PIO_Offset))))
-                        return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
-                    for (int d = 0; d < ndims; d++)
-                        fake_stride[d] = 1;
-                }
-                else
-                    fake_stride = (PIO_Offset *)stride;
 
                 LOG((2, "PIOc_put_vars_tc calling pnetcdf function"));
                 /*vdesc = &file->varlist[varid];*/
@@ -1129,9 +1183,6 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
                 flush_output_buffer(file, false, 0);
                 LOG((2, "PIOc_put_vars_tc flushed output buffer"));
 
-                /* Free malloced resources. */
-                if (!stride_present)
-                    free(fake_stride);
             } /* endif ndims == 0 */
         }
 #endif /* _PNETCDF */
@@ -1144,56 +1195,56 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
             {
             case NC_BYTE:
                 ierr = nc_put_vars_schar(file->fh, varid, (size_t *)start, (size_t *)count,
-                                         (ptrdiff_t *)stride, buf);
+                                         (ptrdiff_t *)fake_stride, buf);
                 break;
             case NC_CHAR:
                 ierr = nc_put_vars_text(file->fh, varid, (size_t *)start, (size_t *)count,
-                                        (ptrdiff_t *)stride, buf);
+                                        (ptrdiff_t *)fake_stride, buf);
                 break;
             case NC_SHORT:
                 ierr = nc_put_vars_short(file->fh, varid, (size_t *)start, (size_t *)count,
-                                         (ptrdiff_t *)stride, buf);
+                                         (ptrdiff_t *)fake_stride, buf);
                 break;
             case NC_INT:
                 ierr = nc_put_vars_int(file->fh, varid, (size_t *)start, (size_t *)count,
-                                       (ptrdiff_t *)stride, buf);
+                                       (ptrdiff_t *)fake_stride, buf);
                 break;
             case PIO_LONG_INTERNAL:
                 ierr = nc_put_vars_long(file->fh, varid, (size_t *)start, (size_t *)count,
-                                        (ptrdiff_t *)stride, buf);
+                                        (ptrdiff_t *)fake_stride, buf);
                 break;
             case NC_FLOAT:
                 ierr = nc_put_vars_float(file->fh, varid, (size_t *)start, (size_t *)count,
-                                         (ptrdiff_t *)stride, buf);
+                                         (ptrdiff_t *)fake_stride, buf);
                 break;
             case NC_DOUBLE:
                 ierr = nc_put_vars_double(file->fh, varid, (size_t *)start, (size_t *)count,
-                                          (ptrdiff_t *)stride, buf);
+                                          (ptrdiff_t *)fake_stride, buf);
                 break;
 #ifdef _NETCDF4
             case NC_UBYTE:
                 ierr = nc_put_vars_uchar(file->fh, varid, (size_t *)start, (size_t *)count,
-                                         (ptrdiff_t *)stride, buf);
+                                         (ptrdiff_t *)fake_stride, buf);
                 break;
             case NC_USHORT:
                 ierr = nc_put_vars_ushort(file->fh, varid, (size_t *)start, (size_t *)count,
-                                          (ptrdiff_t *)stride, buf);
+                                          (ptrdiff_t *)fake_stride, buf);
                 break;
             case NC_UINT:
                 ierr = nc_put_vars_uint(file->fh, varid, (size_t *)start, (size_t *)count,
-                                        (ptrdiff_t *)stride, buf);
+                                        (ptrdiff_t *)fake_stride, buf);
                 break;
             case NC_INT64:
                 ierr = nc_put_vars_longlong(file->fh, varid, (size_t *)start, (size_t *)count,
-                                            (ptrdiff_t *)stride, buf);
+                                            (ptrdiff_t *)fake_stride, buf);
                 break;
             case NC_UINT64:
                 ierr = nc_put_vars_ulonglong(file->fh, varid, (size_t *)start, (size_t *)count,
-                                             (ptrdiff_t *)stride, buf);
+                                             (ptrdiff_t *)fake_stride, buf);
                 break;
                 /* case NC_STRING: */
                 /*      ierr = nc_put_vars_string(file->fh, varid, (size_t *)start, (size_t *)count, */
-                /*                                (ptrdiff_t *)stride, (void *)buf); */
+                /*                                (ptrdiff_t *)fake_stride, (void *)buf); */
                 /*      break; */
 #endif /* _NETCDF4 */
             default:
@@ -1201,13 +1252,20 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
             }
             LOG((2, "PIOc_put_vars_tc io_rank 0 done with netcdf call, ierr=%d", ierr));
         }
+
+        /* Free malloced resources. */
+        if (ndims && !stride_present)
+            free(fake_stride);
+
+        if (ierr)
+            return check_netcdf(file, ierr, __FILE__, __LINE__);
     }
 
     /* Broadcast and check the return code. */
-    if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
-        return check_mpi(file, mpierr, __FILE__, __LINE__);
-    if (ierr)
-        return check_netcdf(file, ierr, __FILE__, __LINE__);
+    /* if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm))) */
+    /*     return check_mpi(NULL, file, mpierr, __FILE__, __LINE__); */
+    /* if (ierr) */
+    /*     return check_netcdf(file, ierr, __FILE__, __LINE__); */
     LOG((2, "PIOc_put_vars_tc bcast netcdf return code %d complete", ierr));
 
     return PIO_NOERR;
@@ -1242,8 +1300,9 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
  * @return PIO_NOERR on success, error code otherwise.
  * @author Ed Hartnett
  */
-int PIOc_put_var1_tc(int ncid, int varid, const PIO_Offset *index, nc_type xtype,
-                     const void *op)
+int
+PIOc_put_var1_tc(int ncid, int varid, const PIO_Offset *index, nc_type xtype,
+                 const void *op)
 {
     iosystem_desc_t *ios;  /* Pointer to io system information. */
     file_desc_t *file;     /* Pointer to file information. */
@@ -1293,7 +1352,8 @@ int PIOc_put_var1_tc(int ncid, int varid, const PIO_Offset *index, nc_type xtype
  * @return PIO_NOERR on success, error code otherwise.
  * @author Ed Hartnett
  */
-int PIOc_put_var_tc(int ncid, int varid, nc_type xtype, const void *op)
+int
+PIOc_put_var_tc(int ncid, int varid, nc_type xtype, const void *op)
 {
     iosystem_desc_t *ios;  /* Pointer to io system information. */
     file_desc_t *file;     /* Pointer to file information. */
@@ -1319,10 +1379,14 @@ int PIOc_put_var_tc(int ncid, int varid, nc_type xtype, const void *op)
     if (ndims)
     {
         int dimid[ndims];
-	if (!(startp = malloc(ndims * sizeof(PIO_Offset))))
-	    return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
-	if (!(countp = malloc(ndims * sizeof(PIO_Offset))))
-	    return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
+        if (!(startp = malloc(ndims * sizeof(PIO_Offset))))
+            return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
+        if (!(countp = malloc(ndims * sizeof(PIO_Offset))))
+        {
+            free(startp);
+            return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
+        }
+
 
         /* Set up start array. */
         for (int d = 0; d < ndims; d++)
@@ -1330,19 +1394,147 @@ int PIOc_put_var_tc(int ncid, int varid, nc_type xtype, const void *op)
 
         /* Get the dimids for this var. */
         if ((ierr = PIOc_inq_vardimid(ncid, varid, dimid)))
+        {
+            free(startp);
+            free(countp);
             return check_netcdf(file, ierr, __FILE__, __LINE__);
+        }
 
         /* Count array are the dimlens. */
         for (int d = 0; d < ndims; d++)
+        {
             if ((ierr = PIOc_inq_dimlen(ncid, dimid[d], &countp[d])))
+            {
+                free(startp);
+                free(countp);
                 return pio_err(ios, file, ierr, __FILE__, __LINE__);
+            }
+        }
 
     }
 
+    /* Call the vars function. */
     ierr = PIOc_put_vars_tc(ncid, varid, startp, countp, NULL, xtype, op);
-    if (startp != NULL)
-	free(startp);
-    if (countp != NULL)
-	free(countp);
+
+    /* Free any allocated resources. */
+    if (startp)
+        free(startp);
+    if (countp)
+        free(countp);
+
     return ierr;
+}
+
+/**
+ * Internal PIO function which provides a type-neutral interface to
+ * PIOc_get_vard() and related functions. This function gets
+ * distributed arrays of any type, converting them to any type.
+ *
+ * This routine is called collectively by all tasks in the
+ * communicator ios.union_comm.
+ *
+ * @param ncid identifies the netCDF file
+ * @param varid the variable ID number
+ * @param decompid the decomposition ID.
+ * @param recnum the record number.
+ * @param xtype the netCDF type of the data being passed in buf. Data
+ * will be automatically covnerted from the type of the variable being
+ * read from to this type. If NC_NAT then the variable's file type
+ * will be used. Use special PIO_LONG_INTERNAL for _long() functions.
+ * @param buf pointer to the data to be written.
+ * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
+ */
+int
+PIOc_get_vard_tc(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                 nc_type xtype, void *buf)
+{
+    iosystem_desc_t *ios;  /* Pointer to io system information. */
+    file_desc_t *file;     /* Pointer to file information. */
+    var_desc_t *vdesc;     /* Pointer to var information. */
+    int ret;
+
+    LOG((1, "PIOc_get_vard_tc ncid %d varid %d decompid %d recnum %d "
+         "xtype %d", ncid, varid, decompid, recnum, xtype));
+
+    /* Get file info. */
+    if ((ret = pio_get_file(ncid, &file)))
+        return pio_err(NULL, NULL, ret, __FILE__, __LINE__);
+    ios = file->iosystem;
+
+    /* Set the value of the record dimension. */
+    if ((ret = PIOc_setframe(ncid, varid, recnum)))
+        return ret;
+
+    /* Get var info. */
+    if ((ret = get_var_desc(varid, &file->varlist, &vdesc)))
+        return pio_err(ios, file, ret, __FILE__, __LINE__);
+    LOG((2, "vdesc->pio_type %d", vdesc->pio_type));
+
+    /* Disallow type conversion for now. */
+    if (xtype != NC_NAT && xtype != vdesc->pio_type)
+        return pio_err(ios, file, PIO_EBADTYPE, __FILE__, __LINE__);
+
+    /* Read the distributed array. */
+    if ((ret = PIOc_read_darray(ncid, varid, decompid, 0, buf)))
+        return ret;
+
+    return PIO_NOERR;
+}
+
+/**
+ * Internal PIO function which provides a type-neutral interface to
+ * PIOc_get_vard() and related functions. This function puts
+ * distributed arrays of any type, converting them to any type.
+ *
+ * @param ncid identifies the netCDF file
+ * @param varid the variable ID number
+ * @param decompid the decomposition ID.
+ * @param recnum the record number.
+ * @param xtype the netCDF type of the data being passed in buf. Data
+ * will be automatically covnerted from this type to the type of the
+ * variable being written to. If NC_NAT then the variable's file type
+ * will be used. Use special PIO_LONG_INTERNAL for _long() functions.
+ * @param buf pointer to the data to be written.
+ *
+ * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
+ */
+int
+PIOc_put_vard_tc(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                 nc_type xtype, const void *buf)
+{
+    iosystem_desc_t *ios;  /* Pointer to io system information. */
+    io_desc_t *iodesc;     /* The IO description. */
+    file_desc_t *file;     /* Pointer to file information. */
+    var_desc_t *vdesc;     /* Pointer to var information. */
+    int ret;
+
+    /* Get file info. */
+    if ((ret = pio_get_file(ncid, &file)))
+        return pio_err(NULL, NULL, ret, __FILE__, __LINE__);
+    ios = file->iosystem;
+
+    /* Set the value of the record dimension. */
+    if ((ret = PIOc_setframe(ncid, varid, recnum)))
+        return pio_err(ios, file, ret, __FILE__, __LINE__);
+
+    /* Get decomposition information. */
+    if (!(iodesc = pio_get_iodesc_from_id(decompid)))
+        return pio_err(ios, file, PIO_EBADID, __FILE__, __LINE__);
+
+    /* Get var info. */
+    if ((ret = get_var_desc(varid, &file->varlist, &vdesc)))
+        return pio_err(ios, file, ret, __FILE__, __LINE__);
+
+    /* Disallow type conversion for now. */
+    if (xtype != NC_NAT && xtype != vdesc->pio_type)
+        return pio_err(ios, file, PIO_EBADTYPE, __FILE__, __LINE__);
+
+    /* Write the distributed array. */
+    if ((ret = PIOc_write_darray(ncid, varid, decompid, iodesc->ndof,
+                                 (void *)buf, NULL)))
+        return ret;
+
+    return PIO_NOERR;
 }

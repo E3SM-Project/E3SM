@@ -33,12 +33,6 @@ module shr_nuopc_methods_mod
     shr_nuopc_methods_FieldPtr_compare2
   end interface
 
-  ! tcraig, interfaces cannot be differentiated, revisit later
-  !  interface shr_nuopc_methods_FB_FieldMerge ; module procedure &
-  !    shr_nuopc_methods_FB_FieldMerge_1D, &
-  !    shr_nuopc_methods_FB_FieldMerge_2D
-  !  end interface
-
   interface shr_nuopc_methods_UpdateTimestamp; module procedure &
     shr_nuopc_methods_State_UpdateTimestamp, &
     shr_nuopc_methods_Field_UpdateTimestamp
@@ -47,12 +41,9 @@ module shr_nuopc_methods_mod
   ! used/reused in module
 
   logical                               :: isPresent
-  logical                               :: rhprint_flag = .false.
-  integer                               :: srcTermProcessing_Value = 0
   character(len=1024)                   :: msgString
   type(ESMF_GeomType_Flag)              :: geomtype
   type(ESMF_FieldStatus_Flag)           :: status
-  type(ESMF_PoleMethod_Flag), parameter :: polemethod=ESMF_POLEMETHOD_ALLAVG
   character(*)      , parameter         :: u_FILE_u = &
        __FILE__
 
@@ -60,18 +51,18 @@ module shr_nuopc_methods_mod
   public shr_nuopc_methods_FB_accum
   public shr_nuopc_methods_FB_average
   public shr_nuopc_methods_FB_init
+  public shr_nuopc_methods_FB_init_pointer
   public shr_nuopc_methods_FB_reset
   public shr_nuopc_methods_FB_clean
   public shr_nuopc_methods_FB_diagnose
-  public shr_nuopc_methods_FB_Regrid
   public shr_nuopc_methods_FB_FldChk
-  public shr_nuopc_methods_FB_FieldRegrid
-  public shr_nuopc_methods_FB_FieldMerge_1D
-  public shr_nuopc_methods_FB_FieldMerge_2D
   public shr_nuopc_methods_FB_GetFldPtr
   public shr_nuopc_methods_FB_getNameN
   public shr_nuopc_methods_FB_getFieldN
+  public shr_nuopc_methods_FB_FieldRegrid
+  public shr_nuopc_methods_FB_getNumflds
   public shr_nuopc_methods_FB_Field_diagnose
+  public shr_nuopc_methods_Field_diagnose
   public shr_nuopc_methods_State_reset
   public shr_nuopc_methods_State_diagnose
   public shr_nuopc_methods_State_GeomPrint
@@ -88,6 +79,8 @@ module shr_nuopc_methods_mod
   public shr_nuopc_methods_ChkErr
   public shr_nuopc_methods_Distgrid_Match
   public shr_nuopc_methods_Print_FieldExchInfo
+  public shr_nuopc_methods_FieldPtr_compare
+  public shr_nuopc_methods_States_GetSharedFlds
 
   private shr_nuopc_methods_Grid_Write
   private shr_nuopc_methods_Grid_Print
@@ -100,7 +93,6 @@ module shr_nuopc_methods_mod
   private shr_nuopc_methods_FB_GeomWrite
   private shr_nuopc_methods_FB_RWFields
   private shr_nuopc_methods_FB_getFieldByName
-  private shr_nuopc_methods_FB_FieldCopy
   private shr_nuopc_methods_FB_SetFldPtr
   private shr_nuopc_methods_FB_copyFB2FB
   private shr_nuopc_methods_FB_copyFB2ST
@@ -108,19 +100,18 @@ module shr_nuopc_methods_mod
   private shr_nuopc_methods_FB_accumFB2FB
   private shr_nuopc_methods_FB_accumST2FB
   private shr_nuopc_methods_FB_accumFB2ST
-  private shr_nuopc_methods_FieldPtr_compare1
-  private shr_nuopc_methods_FieldPtr_compare2
   private shr_nuopc_methods_State_UpdateTimestamp
   private shr_nuopc_methods_State_getNameN
   private shr_nuopc_methods_State_getFieldByName
   private shr_nuopc_methods_State_SetFldPtr
   private shr_nuopc_methods_Array_diagnose
 
-  !-----------------------------------------------------------------------------
-  contains
-  !-----------------------------------------------------------------------------
+!-----------------------------------------------------------------------------
+contains
+!-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_FB_RWFields(mode,fname,FB,flag,rc)
+
     ! ----------------------------------------------
     ! Read or Write Field Bundles
     ! ----------------------------------------------
@@ -138,18 +129,17 @@ module shr_nuopc_methods_mod
     character(len=ESMF_MAXSTR) :: name
     integer                    :: fieldcount, n
     logical                    :: fexists
-    integer :: dbrc
     character(len=*), parameter :: subname='(shr_nuopc_methods_FB_RWFields)'
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
     if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//trim(fname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//trim(fname)//": called", ESMF_LOGMSG_INFO)
     endif
 
     if (mode == 'write') then
       if (dbug_flag > 5) then
-         call ESMF_LogWrite(trim(subname)//": write "//trim(fname), ESMF_LOGMSG_INFO, rc=dbrc)
+         call ESMF_LogWrite(trim(subname)//": write "//trim(fname), ESMF_LOGMSG_INFO)
       end if
       call ESMF_FieldBundleWrite(FB, fname, &
         singleFile=.true., status=ESMF_FILESTATUS_REPLACE, iofmt=ESMF_IOFMT_NETCDF, rc=rc)
@@ -160,7 +150,7 @@ module shr_nuopc_methods_mod
       inquire(file=fname,exist=fexists)
       if (fexists) then
         if (dbug_flag > 5) then
-           call ESMF_LogWrite(trim(subname)//": read "//trim(fname), ESMF_LOGMSG_INFO, rc=dbrc)
+           call ESMF_LogWrite(trim(subname)//": read "//trim(fname), ESMF_LOGMSG_INFO)
         end if
         !-----------------------------------------------------------------------------------------------------
         ! tcraig, ESMF_FieldBundleRead fails if a field is not on the field bundle, but we really want to just
@@ -176,7 +166,8 @@ module shr_nuopc_methods_mod
           if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
           call ESMF_FieldRead (field, fname, iofmt=ESMF_IOFMT_NETCDF, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-            line=__LINE__, file=u_FILE_u)) call ESMF_LogWrite(trim(subname)//' WARNING missing field '//trim(name),rc=dbrc)
+               line=__LINE__, file=u_FILE_u)) call ESMF_LogWrite(trim(subname)//&
+               ' WARNING missing field '//trim(name))
         enddo
 
         call shr_nuopc_methods_FB_diagnose(FB, 'read '//trim(fname), rc)
@@ -184,57 +175,210 @@ module shr_nuopc_methods_mod
       endif
 
     else
-      call ESMF_LogWrite(trim(subname)//": mode WARNING "//trim(fname)//" mode="//trim(mode), ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": mode WARNING "//trim(fname)//" mode="//trim(mode), ESMF_LOGMSG_INFO)
     endif
 
     if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//trim(fname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//trim(fname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_FB_RWFields
 
   !-----------------------------------------------------------------------------
 
-  subroutine shr_nuopc_methods_FB_init(FBout, flds_scalar_name, fieldNameList, FBgeom, STgeom, FBflds, STflds, name, rc)
+  subroutine shr_nuopc_methods_FB_init_pointer(StateIn, FBout, flds_scalar_name, name, rc)
 
-    use ESMF              , only : ESMF_Field, ESMF_FieldBundle, ESMF_FieldBundleCreate, ESMF_FieldBundleGet
-    use ESMF              , only : ESMF_State, ESMF_Grid, ESMF_Mesh, ESMF_StaggerLoc, ESMF_MeshLoc
-    use ESMF              , only : ESMF_StateGet, ESMF_FieldGet, ESMF_FieldBundleAdd, ESMF_FieldCreate
-    use ESMF              , only : ESMF_TYPEKIND_R8, ESMF_GEOMTYPE_MESH, ESMF_GEOMTYPE_GRID
-    use ESMF              , only : ESMF_FIELDSTATUS_EMPTY
-    use med_constants_mod , only : spval_init => med_constants_spval_init
+    ! ----------------------------------------------
+    ! Create FBout from StateIn mesh and pointer
+    ! ----------------------------------------------
+
+    use ESMF              , only : ESMF_Field, ESMF_FieldGet, ESMF_FieldCreate
+    use ESMF              , only : ESMF_FieldBundle, ESMF_FieldBundleAdd, ESMF_FieldBundleCreate 
+    use ESMF              , only : ESMF_State, ESMF_StateGet, ESMF_Mesh, ESMF_MeshLoc
+    use ESMF              , only : ESMF_AttributeGet, ESMF_INDEX_DELOCAL
+    use med_constants_mod , only : R8
+
+    ! input/output variables
+    type(ESMF_State)      , intent(in)           :: StateIn          ! input state
+    type(ESMF_FieldBundle), intent(inout)        :: FBout            ! output field bundle 
+    character(len=*)      , intent(in)           :: flds_scalar_name ! name of scalar fields
+    character(len=*)      , intent(in)           :: name
+    integer               , intent(out)          :: rc
+
+    ! local variables
+    logical            :: isPresent 
+    integer            :: n,n1
+    type(ESMF_Field)   :: lfield
+    type(ESMF_Field)   :: newfield
+    type(ESMF_MeshLoc) :: meshloc
+    type(ESMF_Mesh)    :: lmesh
+    integer            :: lrank
+    integer            :: fieldCount
+    integer            :: ungriddedCount
+    integer            :: gridToFieldMapCount
+    integer            :: ungriddedLBound(1)
+    integer            :: ungriddedUBound(1)
+    integer            :: gridToFieldMap(1)
+    real(R8), pointer  :: dataptr1d(:)
+    real(R8), pointer  :: dataptr2d(:,:)
+    character(ESMF_MAXSTR), allocatable :: lfieldNameList(:)
+    character(len=*), parameter :: subname='(shr_nuopc_methods_FB_init_pointer)'
+    ! ----------------------------------------------
+
+    ! Create empty FBout
+    FBout = ESMF_FieldBundleCreate(name=trim(name), rc=rc)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! Get fields from StateIn
+    call ESMF_StateGet(StateIn, itemCount=fieldCount, rc=rc)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    allocate(lfieldNameList(fieldCount))
+    call ESMF_StateGet(StateIn, itemNameList=lfieldNameList, rc=rc)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! Remove scalar field and blank fields from field bundle
+    do n = 1, fieldCount
+      if (trim(lfieldnamelist(n)) == trim(flds_scalar_name) .or. trim(lfieldnamelist(n)) == '') then
+        do n1 = n, fieldCount-1
+          lfieldnamelist(n1) = lfieldnamelist(n1+1)
+        enddo
+        fieldCount = fieldCount - 1
+      endif
+    enddo  ! n
+
+    ! Only create the fieldbundle if the number of non-scalar fields is > 0
+    if (fieldCount > 0) then
+
+       ! Get mesh from first non-scalar field in StateIn (assumes all the fields have the same mesh)
+       call ESMF_StateGet(StateIn, itemName=lfieldNameList(1), field=lfield, rc=rc)
+       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_FieldGet(lfield, mesh=lmesh, meshloc=meshloc, rc=rc)
+       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       ! Loop over fields in StateIn skipping the field with just scalar data
+       do n = 1, fieldCount
+          ! get field from StateIn
+          call ESMF_StateGet(StateIn, itemName=lfieldNameList(n), field=lfield, rc=rc)
+          if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+          ! determine rank of field
+          call ESMF_FieldGet(lfield, rank=lrank, rc=rc)
+          if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+          if (lrank == 2) then
+
+             ! determine ungridded lower and upper bounds for lfield
+             call ESMF_AttributeGet(lfield, name="UngriddedLBound", convention="NUOPC", &
+                  purpose="Instance", itemCount=ungriddedCount,  isPresent=isPresent, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             if (ungriddedCount /= 1) then
+                call ESMF_LogWrite(trim(subname)//": ERROR ungriddedCount for "// &
+                     trim(lfieldnamelist(n))//" must be 1 if rank is 2 ", ESMF_LOGMSG_INFO, rc=rc)
+                rc = ESMF_FAILURE
+                return
+             end if
+
+             ! set ungridded dimensions and GridToFieldMap for field
+             call ESMF_AttributeGet(lfield, name="UngriddedLBound", convention="NUOPC", &
+                  purpose="Instance", valueList=ungriddedLBound, rc=rc)
+             call ESMF_AttributeGet(lfield, name="UngriddedUBound", convention="NUOPC", &
+                  purpose="Instance", valueList=ungriddedUBound, rc=rc)
+             call ESMF_AttributeGet(lfield, name="GridToFieldMap", convention="NUOPC", &
+                  purpose="Instance", valueList=gridToFieldMap, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+             ! get 2d pointer for field
+             call ESMF_FieldGet(lfield, farrayptr=dataptr2d, rc=rc)
+             if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+             ! create new field with an ungridded dimension
+             newfield = ESMF_FieldCreate(lmesh, dataptr2d, ESMF_INDEX_DELOCAL, &
+                  meshloc=meshloc, name=lfieldNameList(n), &
+                  ungriddedLbound=ungriddedLbound, ungriddedUbound=ungriddedUbound, gridToFieldMap=gridtoFieldMap, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+          else if (lrank == 1) then
+
+             ! get 1d pointer for field
+             call ESMF_FieldGet(lfield, farrayptr=dataptr1d, rc=rc)
+             if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+             ! create new field without an ungridded dimension 
+             newfield = ESMF_FieldCreate(lmesh, dataptr1d, ESMF_INDEX_DELOCAL, &
+                  meshloc=meshloc, name=lfieldNameList(n), rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+          else
+
+             call ESMF_LogWrite(trim(subname)//": ERROR only rank1 and rank2 are supported for rank of fields ", &
+                  ESMF_LOGMSG_INFO, rc=rc)
+             rc = ESMF_FAILURE
+             return
+
+          end if
+
+          ! Add new field to FBout
+          call ESMF_FieldBundleAdd(FBout, (/newfield/), rc=rc)
+          if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       end do ! end of loop over input state fields
+    end if  ! end of fieldcount > 0
+
+    deallocate(lfieldNameList)
+
+    if (dbug_flag > 5) then
+       call ESMF_LogWrite(trim(subname)//": FBout from input State and field pointers", ESMF_LOGMSG_INFO, rc=rc)
+    end if
+
+  end subroutine shr_nuopc_methods_FB_init_pointer
+
+  !-----------------------------------------------------------------------------
+
+  subroutine shr_nuopc_methods_FB_init(FBout, flds_scalar_name, fieldNameList, FBgeom, STgeom, FBflds, STflds, name, rc)
 
     ! ----------------------------------------------
     ! Create FBout from fieldNameList, FBflds, STflds, FBgeom or STgeom in that order or priority
-    ! Pass in FBgeom OR STgeom, get grid/mesh from that object
+    ! Pass in FBgeom OR STgeom, get mesh from that object
     ! ----------------------------------------------
-    type(ESMF_FieldBundle), intent(inout) :: FBout
-    character(len=*)      , intent(in)    :: flds_scalar_name
-    character(len=*)      , intent(in), optional :: fieldNameList(:)
-    type(ESMF_FieldBundle), intent(in), optional :: FBgeom
-    type(ESMF_State)      , intent(in), optional :: STgeom
-    type(ESMF_FieldBundle), intent(in), optional :: FBflds
-    type(ESMF_State)      , intent(in), optional :: STflds
-    character(len=*)      , intent(in), optional :: name
-    integer               , intent(out) :: rc
+
+    use ESMF              , only : ESMF_Field, ESMF_FieldBundle, ESMF_FieldBundleCreate, ESMF_FieldBundleGet
+    use ESMF              , only : ESMF_State, ESMF_Mesh, ESMF_StaggerLoc, ESMF_MeshLoc
+    use ESMF              , only : ESMF_StateGet, ESMF_FieldGet, ESMF_FieldBundleAdd, ESMF_FieldCreate
+    use ESMF              , only : ESMF_TYPEKIND_R8, ESMF_FIELDSTATUS_EMPTY, ESMF_AttributeGet
+    use med_constants_mod , only : spval_init => med_constants_spval_init
+
+    ! input/output variables
+    type(ESMF_FieldBundle), intent(inout)        :: FBout            ! output field bundle 
+    character(len=*)      , intent(in)           :: flds_scalar_name ! name of scalar fields
+    character(len=*)      , intent(in), optional :: fieldNameList(:) ! names of fields to use in output field bundle
+    type(ESMF_FieldBundle), intent(in), optional :: FBgeom           ! input field bundle geometry to use
+    type(ESMF_State)      , intent(in), optional :: STgeom           ! input state geometry to use
+    type(ESMF_FieldBundle), intent(in), optional :: FBflds           ! input field bundle fields
+    type(ESMF_State)      , intent(in), optional :: STflds           ! input state fields
+    character(len=*)      , intent(in), optional :: name             ! name to use for output field bundle
+    integer               , intent(out)          :: rc
 
     ! local variables
-    integer                    :: i,j,n,n1
-    integer                    :: fieldCount,fieldCountgeom
-    logical                    :: found
-    character(ESMF_MAXSTR)     :: lname
-    character(ESMF_MAXSTR),allocatable :: lfieldNameList(:)
-    type(ESMF_Field)           :: field,lfield
-    type(ESMF_Grid)            :: lgrid
-    type(ESMF_Mesh)            :: lmesh
-    type(ESMF_StaggerLoc)      :: staggerloc
-    type(ESMF_MeshLoc)         :: meshloc
-    integer :: dbrc
-    character(len=*),parameter :: subname='(shr_nuopc_methods_FB_init)'
+    integer                :: i,j,n,n1
+    integer                :: fieldCount,fieldCountgeom
+    logical                :: found
+    character(ESMF_MAXSTR) :: lname
+    type(ESMF_Field)       :: field,lfield
+    type(ESMF_Mesh)        :: lmesh
+    type(ESMF_StaggerLoc)  :: staggerloc
+    type(ESMF_MeshLoc)     :: meshloc
+    integer                :: ungriddedCount
+    integer, allocatable   :: ungriddedLBound(:)
+    integer, allocatable   :: ungriddedUBound(:)
+    integer                :: gridToFieldMapCount
+    integer, allocatable   :: gridToFieldMap(:)
+    logical                :: isPresent
+    character(ESMF_MAXSTR), allocatable :: lfieldNameList(:)
+    character(len=*), parameter :: subname='(shr_nuopc_methods_FB_init)'
     ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
@@ -251,21 +395,21 @@ module shr_nuopc_methods_mod
 
     if (present(fieldNameList) .and. present(FBflds) .and. present(STflds)) then
       call ESMF_LogWrite(trim(subname)//": ERROR only fieldNameList, FBflds, or STflds can be an argument", &
-            ESMF_LOGMSG_INFO, rc=rc)
+            ESMF_LOGMSG_INFO)
       rc = ESMF_FAILURE
       return
     endif
 
     if (present(FBgeom) .and. present(STgeom)) then
        call ESMF_LogWrite(trim(subname)//": ERROR FBgeom and STgeom cannot both be arguments", &
-            ESMF_LOGMSG_INFO, rc=rc)
+            ESMF_LOGMSG_INFO)
       rc = ESMF_FAILURE
       return
     endif
 
     if (.not.present(FBgeom) .and. .not.present(STgeom)) then
        call ESMF_LogWrite(trim(subname)//": ERROR FBgeom or STgeom must be an argument", &
-            ESMF_LOGMSG_INFO, rc=rc)
+            ESMF_LOGMSG_INFO)
       rc = ESMF_FAILURE
       return
     endif
@@ -277,7 +421,7 @@ module shr_nuopc_methods_mod
       call ESMF_StateGet(STgeom, itemCount=fieldCountGeom, rc=rc)
       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
     else
-      call ESMF_LogWrite(trim(subname)//": ERROR FBgeom or STgeom must be passed", ESMF_LOGMSG_INFO, rc=rc)
+      call ESMF_LogWrite(trim(subname)//": ERROR FBgeom or STgeom must be passed", ESMF_LOGMSG_INFO)
       rc = ESMF_FAILURE
       return
     endif
@@ -331,7 +475,7 @@ module shr_nuopc_methods_mod
       end if
     else
        call ESMF_LogWrite(trim(subname)//": ERROR fieldNameList, FBflds, STflds, FBgeom, or STgeom must be passed", &
-            ESMF_LOGMSG_INFO, rc=rc)
+            ESMF_LOGMSG_INFO)
       rc = ESMF_FAILURE
       return
     endif
@@ -351,27 +495,26 @@ module shr_nuopc_methods_mod
     enddo  ! n
 
     !---------------------------------
-    ! create the grid (lgrid) or mesh(lmesh)
-    ! that will be used for FBout fields
+    ! create the mesh(lmesh) that will be used for FBout fields
     !---------------------------------
 
     if (fieldcount > 0 .and. fieldcountgeom > 0) then
 
-      ! Look at only the first field in either the FBgeom and STgeom to get the grid
+      ! Look at only the first field in either the FBgeom and STgeom to get the mesh
       if (present(FBgeom)) then
         call shr_nuopc_methods_FB_getFieldN(FBgeom, 1, lfield, rc=rc)
         if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
         if (dbug_flag > 5) then
-           call ESMF_LogWrite(trim(subname)//":"//trim(lname)//" grid/mesh from FBgeom", ESMF_LOGMSG_INFO, rc=rc)
+           call ESMF_LogWrite(trim(subname)//":"//trim(lname)//" mesh from FBgeom", ESMF_LOGMSG_INFO)
         end if
       elseif (present(STgeom)) then
         call shr_nuopc_methods_State_getFieldN(STgeom, 1, lfield, rc=rc)
         if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
         if (dbug_flag > 5) then
-           call ESMF_LogWrite(trim(subname)//":"//trim(lname)//" grid/mesh from STgeom", ESMF_LOGMSG_INFO, rc=rc)
+           call ESMF_LogWrite(trim(subname)//":"//trim(lname)//" mesh from STgeom", ESMF_LOGMSG_INFO)
         end if
       else
-        call ESMF_LogWrite(trim(subname)//": ERROR FBgeom or STgeom must be passed", ESMF_LOGMSG_INFO, rc=rc)
+        call ESMF_LogWrite(trim(subname)//": ERROR FBgeom or STgeom must be passed", ESMF_LOGMSG_INFO)
         rc = ESMF_FAILURE
         return
       endif
@@ -381,32 +524,17 @@ module shr_nuopc_methods_mod
       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
       if (status == ESMF_FIELDSTATUS_EMPTY) then
          call ESMF_LogWrite(trim(subname)//":"//trim(lname)//": ERROR field does not have a geom yet ", &
-              ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+              ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u)
         rc = ESMF_FAILURE
         return
       endif
 
-      ! Determine if first field in either FBgeom or STgeom is on a grid or a mesh
-      call ESMF_FieldGet(lfield, geomtype=geomtype, rc=rc)
+      ! Assume field is on mesh
+      call ESMF_FieldGet(lfield, mesh=lmesh, meshloc=meshloc, rc=rc)
       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-      if (geomtype == ESMF_GEOMTYPE_GRID) then
-        call ESMF_FieldGet(lfield, grid=lgrid, staggerloc=staggerloc, rc=rc)
-        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-        if (dbug_flag > 5) then
-           call ESMF_LogWrite(trim(subname)//":"//trim(lname)//" use grid", ESMF_LOGMSG_INFO, rc=rc)
-        end if
-      elseif (geomtype == ESMF_GEOMTYPE_MESH) then
-        call ESMF_FieldGet(lfield, mesh=lmesh, meshloc=meshloc, rc=rc)
-        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-        if (dbug_flag > 5) then
-           call ESMF_LogWrite(trim(subname)//":"//trim(lname)//" use mesh", ESMF_LOGMSG_INFO, rc=rc)
-        end if
-      else  ! geomtype
-        call ESMF_LogWrite(trim(subname)//": ERROR geomtype not supported ", ESMF_LOGMSG_INFO, rc=rc)
-        rc = ESMF_FAILURE
-        return
-      endif ! geomtype
+      if (dbug_flag > 5) then
+         call ESMF_LogWrite(trim(subname)//":"//trim(lname)//" use mesh", ESMF_LOGMSG_INFO)
+      end if
 
     endif  ! fieldcount > 0
 
@@ -419,32 +547,73 @@ module shr_nuopc_methods_mod
 
     if (fieldcountgeom > 0) then
 
-      ! Now loop over all the fields in either FBgeom or STgeom
-      do n = 1, fieldCount
+       ! Now loop over all the fields in the field name list
+       do n = 1, fieldCount
 
-         ! Create the field on either lgrid or lmesh
-        if (geomtype == ESMF_GEOMTYPE_GRID) then
-          field = ESMF_FieldCreate(lgrid, ESMF_TYPEKIND_R8, staggerloc=staggerloc, name=lfieldNameList(n), rc=rc)
+          ! Note that input fields come from ONE of FBFlds, STflds, or fieldNamelist input argument
+          if (present(FBFlds) .or. present(STflds)) then 
+
+             ! ungridded dimensions might be present in the input states or field bundles
+             if (present(FBflds)) then
+                call shr_nuopc_methods_FB_getFieldN(FBflds, n, lfield, rc=rc)
+                if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+             elseif (present(STflds)) then
+                call shr_nuopc_methods_State_getFieldN(STflds, n, lfield, rc=rc)
+                if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+             end if
+
+             ! Determine ungridded lower and upper bounds for lfield
+             ungriddedCount=0  ! initialize in case it was not set
+             call ESMF_AttributeGet(lfield, name="UngriddedLBound", convention="NUOPC", &
+                  purpose="Instance", itemCount=ungriddedCount,  isPresent=isPresent, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+             ! Create the field on a lmesh
+             if (ungriddedCount > 0) then
+                ! ungridded dimensions in field
+                allocate(ungriddedLBound(ungriddedCount), ungriddedUBound(ungriddedCount))
+                call ESMF_AttributeGet(lfield, name="UngriddedLBound", convention="NUOPC", &
+                     purpose="Instance", valueList=ungriddedLBound, rc=rc)
+                call ESMF_AttributeGet(lfield, name="UngriddedUBound", convention="NUOPC", &
+                     purpose="Instance", valueList=ungriddedUBound, rc=rc)
+
+                call ESMF_AttributeGet(lfield, name="GridToFieldMap", convention="NUOPC", &
+                     purpose="Instance", itemCount=gridToFieldMapCount, rc=rc)
+                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                allocate(gridToFieldMap(gridToFieldMapCount))
+                call ESMF_AttributeGet(lfield, name="GridToFieldMap", convention="NUOPC", &
+                     purpose="Instance", valueList=gridToFieldMap, rc=rc)
+                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+                field = ESMF_FieldCreate(lmesh, ESMF_TYPEKIND_R8, meshloc=meshloc, name=lfieldNameList(n), &
+                     ungriddedLbound=ungriddedLbound, ungriddedUbound=ungriddedUbound, &
+                     gridToFieldMap=gridToFieldMap)
+                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+                deallocate( ungriddedLbound, ungriddedUbound, gridToFieldMap)
+             else
+                ! No ungridded dimensions in field
+                field = ESMF_FieldCreate(lmesh, ESMF_TYPEKIND_R8, meshloc=meshloc, name=lfieldNameList(n), rc=rc)
+                if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             end if
+
+          else if (present(fieldNameList)) then 
+             
+             ! Assume no ungridded dimensions if just the field name list is give
+             field = ESMF_FieldCreate(lmesh, ESMF_TYPEKIND_R8, meshloc=meshloc, name=lfieldNameList(n), rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             
+          end if
+             
+          ! Add the created field bundle FBout
+          if (dbug_flag > 1) then
+             call ESMF_LogWrite(trim(subname)//":"//trim(lname)//" adding field "//trim(lfieldNameList(n)), &
+                  ESMF_LOGMSG_INFO)
+          end if
+          call ESMF_FieldBundleAdd(FBout, (/field/), rc=rc)
           if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-        elseif (geomtype == ESMF_GEOMTYPE_MESH) then
-          field = ESMF_FieldCreate(lmesh, ESMF_TYPEKIND_R8, meshloc=meshloc, name=lfieldNameList(n), rc=rc)
-          if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-        else  ! geomtype
-          call ESMF_LogWrite(trim(subname)//": ERROR no grid/mesh for field ", ESMF_LOGMSG_INFO, rc=rc)
-          rc = ESMF_FAILURE
-          return
-        endif
-
-        ! Add the created field bundle FBout
-        call ESMF_FieldBundleAdd(FBout, (/field/), rc=rc)
-        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-        if (dbug_flag > 1) then
-          call ESMF_LogWrite(trim(subname)//":"//trim(lname)//" adding field "//trim(lfieldNameList(n)), &
-               ESMF_LOGMSG_INFO, rc=dbrc)
-        endif
-
-      enddo  ! fieldCount
-
+          
+       enddo  ! fieldCount
     endif  ! fieldcountgeom
 
     deallocate(lfieldNameList)
@@ -453,7 +622,7 @@ module shr_nuopc_methods_mod
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_FB_init
@@ -461,10 +630,14 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_FB_getNameN(FB, fieldnum, fieldname, rc)
+
+    ! ----------------------------------------------
+    ! Get name of field number fieldnum in input field bundle FB
+    ! ----------------------------------------------
+
     use ESMF, only : ESMF_FieldBundle, ESMF_FieldBundleGet
-    ! ----------------------------------------------
-    ! Get name of field number fieldnum in FB
-    ! ----------------------------------------------
+
+    ! input/output variables
     type(ESMF_FieldBundle), intent(in)    :: FB
     integer               , intent(in)    :: fieldnum
     character(len=*)      , intent(out)   :: fieldname
@@ -473,12 +646,11 @@ module shr_nuopc_methods_mod
     ! local variables
     integer                         :: fieldCount
     character(ESMF_MAXSTR) ,pointer :: lfieldnamelist(:)
-    integer                         :: dbrc
     character(len=*),parameter      :: subname='(shr_nuopc_methods_FB_getNameN)'
     ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
@@ -488,7 +660,7 @@ module shr_nuopc_methods_mod
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (fieldnum > fieldCount) then
-      call ESMF_LogWrite(trim(subname)//": ERROR fieldnum > fieldCount ", ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": ERROR fieldnum > fieldCount ", ESMF_LOGMSG_ERROR)
       rc = ESMF_FAILURE
       return
     endif
@@ -502,7 +674,7 @@ module shr_nuopc_methods_mod
     deallocate(lfieldnamelist)
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_FB_getNameN
@@ -510,11 +682,14 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_FB_getFieldN(FB, fieldnum, field, rc)
-    use ESMF, only : ESMF_Field, ESMF_FieldBundle, ESMF_FieldBundleGet
 
     ! ----------------------------------------------
-    ! Get field number fieldnum out of FB
+    ! Get field with number fieldnum in input field bundle FB
     ! ----------------------------------------------
+
+    use ESMF, only : ESMF_Field, ESMF_FieldBundle, ESMF_FieldBundleGet
+
+    ! input/output variables
     type(ESMF_FieldBundle), intent(in)    :: FB
     integer               , intent(in)    :: fieldnum
     type(ESMF_Field)      , intent(inout) :: field
@@ -522,12 +697,11 @@ module shr_nuopc_methods_mod
 
     ! local variables
     character(len=ESMF_MAXSTR) :: name
-    integer                    :: dbrc
     character(len=*),parameter :: subname='(shr_nuopc_methods_FB_getFieldN)'
     ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
@@ -538,7 +712,7 @@ module shr_nuopc_methods_mod
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_FB_getFieldN
@@ -546,22 +720,25 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_FB_getFieldByName(FB, fieldname, field, rc)
-    use ESMF, only : ESMF_Field, ESMF_FieldBundle, ESMF_FieldBundleGet
+
     ! ----------------------------------------------
     ! Get field associated with fieldname out of FB
     ! ----------------------------------------------
+
+    use ESMF, only : ESMF_Field, ESMF_FieldBundle, ESMF_FieldBundleGet
+
+    ! input/output variables
     type(ESMF_FieldBundle), intent(in)    :: FB
     character(len=*)      , intent(in)    :: fieldname
     type(ESMF_Field)      , intent(inout) :: field
     integer               , intent(out)   :: rc
 
     ! local variables
-    integer :: dbrc
     character(len=*),parameter :: subname='(shr_nuopc_methods_FB_getFieldByName)'
     ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
@@ -569,7 +746,7 @@ module shr_nuopc_methods_mod
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_FB_getFieldByName
@@ -589,12 +766,11 @@ module shr_nuopc_methods_mod
     ! local variables
     integer                         :: fieldCount
     character(ESMF_MAXSTR) ,pointer :: lfieldnamelist(:)
-    integer                         :: dbrc
     character(len=*),parameter      :: subname='(shr_nuopc_methods_State_getNameN)'
     ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
@@ -604,7 +780,7 @@ module shr_nuopc_methods_mod
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (fieldnum > fieldCount) then
-      call ESMF_LogWrite(trim(subname)//": ERROR fieldnum > fieldCount ", ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": ERROR fieldnum > fieldCount ", ESMF_LOGMSG_ERROR)
       rc = ESMF_FAILURE
       return
     endif
@@ -618,7 +794,7 @@ module shr_nuopc_methods_mod
     deallocate(lfieldnamelist)
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_State_getNameN
@@ -641,12 +817,11 @@ module shr_nuopc_methods_mod
     type(ESMF_Field), pointer          :: fieldList(:)
     type(ESMF_StateItem_Flag), pointer :: itemTypeList(:)
     logical, parameter                 :: use_NUOPC_method = .true.
-    integer                            :: dbrc
     character(len=*),parameter         :: subname='(shr_nuopc_methods_State_getNumFields)'
     ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
@@ -681,7 +856,7 @@ module shr_nuopc_methods_mod
     endif
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_State_getNumFields
@@ -700,12 +875,11 @@ module shr_nuopc_methods_mod
 
     ! local variables
     character(len=ESMF_MAXSTR) :: name
-    integer :: dbrc
     character(len=*),parameter :: subname='(shr_nuopc_methods_State_getFieldN)'
     ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
@@ -714,9 +888,8 @@ module shr_nuopc_methods_mod
 
     call ESMF_StateGet(State, itemName=name, field=field, rc=rc)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_State_getFieldN
@@ -735,12 +908,11 @@ module shr_nuopc_methods_mod
     integer         , intent(out)   :: rc
 
     ! local variables
-    integer :: dbrc
     character(len=*),parameter :: subname='(shr_nuopc_methods_State_getFieldByName)'
     ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
@@ -748,7 +920,7 @@ module shr_nuopc_methods_mod
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_State_getFieldByName
@@ -771,11 +943,10 @@ module shr_nuopc_methods_mod
     integer                         :: fieldCount
     character(ESMF_MAXSTR) ,pointer :: lfieldnamelist(:)
     type(ESMF_Field)                :: field
-    integer :: dbrc
     character(len=*),parameter      :: subname='(shr_nuopc_methods_FB_clean)'
     ! ----------------------------------------------
 
-    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     rc = ESMF_SUCCESS
 
     call ESMF_FieldBundleGet(FB, fieldCount=fieldCount, rc=rc)
@@ -794,7 +965,7 @@ module shr_nuopc_methods_mod
     call ESMF_FieldBundleDestroy(FB, rc=rc, noGarbage=.true.)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
     deallocate(lfieldnamelist)
-    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
 
   end subroutine shr_nuopc_methods_FB_clean
 
@@ -818,12 +989,11 @@ module shr_nuopc_methods_mod
     integer                         :: fieldCount
     character(ESMF_MAXSTR) ,pointer :: lfieldnamelist(:)
     real(R8)              :: lvalue
-    integer :: dbrc
     character(len=*),parameter      :: subname='(shr_nuopc_methods_FB_reset)'
     ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
@@ -846,695 +1016,79 @@ module shr_nuopc_methods_mod
     deallocate(lfieldnamelist)
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_FB_reset
 
   !-----------------------------------------------------------------------------
 
-  subroutine shr_nuopc_methods_FB_FieldCopy(FBin,fldin,FBout,fldout,rc)
-    use med_constants_mod, only : R8
-    use ESMF, only : ESMF_FieldBundle, ESMF_FAILURE, ESMF_LOGMSG_ERROR
-    ! ----------------------------------------------
-    ! Copy a field in a field bundle to another field in a field bundle
-    ! ----------------------------------------------
-    type(ESMF_FieldBundle), intent(inout) :: FBin
-    character(len=*)      , intent(in)    :: fldin
-    type(ESMF_FieldBundle), intent(inout) :: FBout
-    character(len=*)      , intent(in)    :: fldout
-    integer               , intent(out)   :: rc
-
-    ! local
-    real(R8), pointer :: dataPtrIn1(:)
-    real(R8), pointer :: dataPtrOut1(:)
-    real(R8), pointer :: dataPtrIn2(:,:)
-    real(R8), pointer :: dataPtrOut2(:,:)
-    integer                     :: lrankIn, lrankOut
-    integer :: dbrc
-    character(len=*), parameter :: subname='(shr_nuopc_methods_FB_FieldCopy)'
-    ! ----------------------------------------------
-
-    rc = ESMF_SUCCESS
-    if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
-
-    if (shr_nuopc_methods_FB_FldChk(FBin , trim(fldin) , rc=rc) .and. &
-        shr_nuopc_methods_FB_FldChk(FBout, trim(fldout), rc=rc)) then
-
-      call shr_nuopc_methods_FB_GetFldPtr(FBin, trim(fldin), dataPtrIn1, dataPtrIn2, lrankIn, rc=rc)
-      if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-      call shr_nuopc_methods_FB_GetFldPtr(FBout, trim(fldout), dataPtrOut1, dataPtrOut2, lrankOut, rc=rc)
-      if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-      if (lrankIn /= lrankOut) then
-        call ESMF_LogWrite(trim(subname)//": ERROR FBin and FBout different rank", ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-        rc = ESMF_FAILURE
-        return
-      endif
-
-      if (lrankIn == 1 .and. lrankOut == 1) then
-        if (.not.shr_nuopc_methods_FieldPtr_Compare(dataPtrIn1, dataPtrOut1, subname, rc)) then
-          call ESMF_LogWrite(trim(subname)//": ERROR data1d different sizes", ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-          rc = ESMF_FAILURE
-          return
-        endif
-
-        dataPtrOut1 = dataPtrIn1
-
-      elseif (lrankIn == 2 .and. lrankOut == 2) then
-        if (.not.shr_nuopc_methods_FieldPtr_Compare(dataPtrIn2, dataPtrOut2, subname, rc)) then
-          call ESMF_LogWrite(trim(subname)//": ERROR data2d different sizes", ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-          rc = ESMF_FAILURE
-          return
-        endif
-
-        dataPtrOut2 = dataPtrIn2
-
-      elseif (lrankIn == 2 .and. lrankOut == 2) then
-        call ESMF_LogWrite(trim(subname)//": ERROR raskIn and rankOut invalid", ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-        rc = ESMF_FAILURE
-        return
-
-      endif
-
-    else
-
-       if (dbug_flag > 1) then
-         call ESMF_LogWrite(trim(subname)//" field not found: "//trim(fldin)//","//trim(fldout), ESMF_LOGMSG_INFO, rc=dbrc)
-       endif
-
-    endif
-
-    if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
-
-  end subroutine shr_nuopc_methods_FB_FieldCopy
-
-  !-----------------------------------------------------------------------------
-
-  subroutine shr_nuopc_methods_FB_Regrid(shortnames, flds_scalar_name, mappings, &
-       FBin, FBout, &
-       consfmap, consdmap, bilnrmap, patchmap, &
-       fcopymap, string, rc)
-
-    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_FAILURE
-    use ESMF, only : ESMF_FieldBundle, ESMF_RouteHandle, ESMF_RouteHandleIsCreated
-
-    character(len=*)       , intent(in)               :: shortnames(:)
-    character(len=*)       , intent(in)               :: mappings(:)
-    character(len=*)       , intent(in)               :: flds_scalar_name
-    type(ESMF_FieldBundle) , intent(inout)            :: FBin
-    type(ESMF_FieldBundle) , intent(inout)            :: FBout
-    type(ESMF_Routehandle) , intent(inout) , optional :: consfmap
-    type(ESMF_Routehandle) , intent(inout) , optional :: consdmap
-    type(ESMF_Routehandle) , intent(inout) , optional :: bilnrmap
-    type(ESMF_Routehandle) , intent(inout) , optional :: patchmap
-    type(ESMF_Routehandle) , intent(inout) , optional :: fcopymap
-    character(len=*)       , intent(in)    , optional :: string
-    integer                , intent(out)   , optional :: rc
-
-    ! local variables
-    integer           :: n
-    character(len=64) :: lstring
-    logical           :: okconsf, okconsd, okbilnr, okpatch, okfcopy
-    integer :: dbrc
-    character(len=*),parameter :: subname='(shr_nuopc_methods_FB_Regrid)'
-    ! ----------------------------------------------
-
-    if (present(string)) then
-      lstring = trim(string)
-    else
-      lstring = " "
-    endif
-
-    if (.not.present(rc)) then
-      call ESMF_LogWrite(trim(subname)//trim(lstring)//": ERROR rc expected", ESMF_LOGMSG_INFO, rc=rc)
-      rc = ESMF_FAILURE
-      return
-    endif
-
-    rc = ESMF_SUCCESS
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//trim(lstring)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
-
-    okconsf = .false.
-    if (present(consfmap)) then
-      if (ESMF_RouteHandleIsCreated(consfmap, rc=rc)) okconsf = .true.
-    endif
-
-    okconsd = .false.
-    if (present(consdmap)) then
-      if (ESMF_RouteHandleIsCreated(consdmap, rc=rc)) okconsd = .true.
-    endif
-
-    okbilnr = .false.
-    if (present(bilnrmap)) then
-      if (ESMF_RouteHandleIsCreated(bilnrmap, rc=rc)) okbilnr = .true.
-    endif
-
-    okpatch = .false.
-    if (present(patchmap)) then
-      if (ESMF_RouteHandleIsCreated(patchmap, rc=rc)) okpatch = .true.
-    endif
-
-    okfcopy = .false.
-    if (present(fcopymap)) then
-      if (ESMF_RouteHandleIsCreated(fcopymap, rc=rc)) okfcopy = .true.
-    endif
-
-    ! Loop over all fields in the field bundle - determine the mapping for the target field from
-    ! the mappings setting and apply it
-    do n = 1,size(shortnames)
-
-      if (shortnames(n) == trim(flds_scalar_name)) then
-        if (dbug_flag > 1) then
-           call ESMF_LogWrite(trim(subname)//trim(lstring)//": skip : fld="//trim(shortnames(n)), &
-                ESMF_LOGMSG_INFO, rc=dbrc)
-        endif
-
-      elseif (shr_nuopc_methods_FB_FldChk(FBin , shortnames(n), rc=rc) .and. &
-              shr_nuopc_methods_FB_FldChk(FBout, shortnames(n), rc=rc)) then
-
-        if (dbug_flag > 1) then
-          call ESMF_LogWrite(trim(subname)//trim(lstring)//": map="//trim(mappings(n))// &
-            ": fld="//trim(shortnames(n)), ESMF_LOGMSG_INFO, rc=dbrc)
-        endif
-
-        if (mappings(n) == 'bilinear') then
-          if (.not. okbilnr) then
-            call ESMF_LogWrite(trim(subname)//trim(lstring)//": ERROR RH not available for "//trim(mappings(n))// &
-              ": fld="//trim(shortnames(n)), ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-            rc = ESMF_FAILURE
-            return
-          endif
-          call shr_nuopc_methods_FB_FieldRegrid(FBin, shortnames(n), FBout, shortnames(n), bilnrmap,rc)
-          if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-        elseif (mappings(n) == "conservefrac") then
-          if (.not. okconsf) then
-            call ESMF_LogWrite(trim(subname)//trim(lstring)//": ERROR RH not available for "//trim(mappings(n))// &
-              ": fld="//trim(shortnames(n)), ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-            rc = ESMF_FAILURE
-            return
-          endif
-          call shr_nuopc_methods_FB_FieldRegrid(FBin, shortnames(n), FBout,shortnames(n), consfmap, rc)
-          if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-        elseif (mappings(n) == "conservedst") then
-          if (.not. okconsd) then
-            call ESMF_LogWrite(trim(subname)//trim(lstring)//": ERROR RH not available for "//trim(mappings(n))// &
-              ": fld="//trim(shortnames(n)), ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-            rc = ESMF_FAILURE
-            return
-          endif
-          call shr_nuopc_methods_FB_FieldRegrid(FBin, shortnames(n), FBout,shortnames(n), consdmap, rc)
-          if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-        elseif (mappings(n) == 'patch') then
-          if (.not. okpatch) then
-            call ESMF_LogWrite(trim(subname)//trim(lstring)//": ERROR RH not available for "//trim(mappings(n))// &
-              ": fld="//trim(shortnames(n)), ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-            rc = ESMF_FAILURE
-            return
-          endif
-          call shr_nuopc_methods_FB_FieldRegrid(FBin, shortnames(n), FBout,shortnames(n), patchmap,rc)
-          if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-        elseif (mappings(n) == 'copy') then
-          !-------------------------------------------
-          ! copy will not exist for some grid combinations
-          ! so fall back to conservative frac as a secondary option
-          !-------------------------------------------
-          if (.not. okfcopy) then
-            if (.not. okconsf) then
-              call ESMF_LogWrite(trim(subname)//trim(lstring)//": ERROR RH not available for "//trim(mappings(n))// &
-                ": fld="//trim(shortnames(n)), ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-              rc = ESMF_FAILURE
-              return
-            else
-              if (dbug_flag > 1) then
-                 call ESMF_LogWrite(trim(subname)//trim(lstring)//": NOTE using conservative instead of copy for"// &
-                      " fld="//trim(shortnames(n)), ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-              end if
-              call shr_nuopc_methods_FB_FieldRegrid(FBin ,shortnames(n), FBout, shortnames(n), consfmap,rc)
-              if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-            endif
-          else
-            call shr_nuopc_methods_FB_FieldRegrid(FBin ,shortnames(n), FBout,shortnames(n), fcopymap,rc)
-            if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-          endif
-
-        else
-          call ESMF_LogWrite(trim(subname)//trim(lstring)//": ERROR unrecognized mapping "//trim(mappings(n))// &
-            ": fld="//trim(shortnames(n)), ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-          rc = ESMF_FAILURE
-          return
-        endif
-
-      else
-        if (dbug_flag > 1) then
-          call ESMF_LogWrite(trim(subname)//" field not found in FB: "//trim(shortnames(n)), ESMF_LOGMSG_INFO, rc=dbrc)
-        endif
-      endif
-    enddo
-
-    if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//trim(lstring)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
-
-  end subroutine shr_nuopc_methods_FB_Regrid
-
-  !-----------------------------------------------------------------------------
-
-  subroutine shr_nuopc_methods_FB_FieldRegrid(FBin,fldin,FBout,fldout,RH,rc,debug)
+  subroutine shr_nuopc_methods_FB_FieldRegrid(FBin,fldin,FBout,fldout,RH,rc,zeroregion)
 
     ! ----------------------------------------------
     ! Regrid a field in a field bundle to another field in a field bundle
     ! ----------------------------------------------
-    use ESMF, only : ESMF_FieldBundle, ESMF_RouteHandle, ESMF_FieldRegrid, ESMF_Field
-    use ESMF, only : ESMF_TERMORDER_SRCSEQ, ESMF_FieldRegridStore, ESMF_SparseMatrixWrite
-    use med_constants_mod, only : R8
-    use perf_mod, only : t_startf, t_stopf
 
-    type(ESMF_FieldBundle), intent(in) :: FBin
-    character(len=*)      , intent(in)    :: fldin
-    type(ESMF_FieldBundle), intent(inout) :: FBout
-    character(len=*)      , intent(in)    :: fldout
-    type(ESMF_RouteHandle), intent(inout) :: RH
-    integer               , intent(out)   :: rc
-    logical, intent(in), optional :: debug
+    use ESMF              , only : ESMF_FieldBundle, ESMF_RouteHandle, ESMF_FieldRegrid, ESMF_Field
+    use ESMF              , only : ESMF_TERMORDER_SRCSEQ, ESMF_FieldRegridStore, ESMF_SparseMatrixWrite
+    use ESMF              , only : ESMF_Region_Flag, ESMF_REGION_TOTAL
+    use med_constants_mod , only : R8
+    use perf_mod          , only : t_startf, t_stopf
+
+    type(ESMF_FieldBundle), intent(in)           :: FBin
+    character(len=*)      , intent(in)           :: fldin
+    type(ESMF_FieldBundle), intent(inout)        :: FBout
+    character(len=*)      , intent(in)           :: fldout
+    type(ESMF_RouteHandle), intent(inout)        :: RH
+    integer               , intent(out)          :: rc
+    type(ESMF_Region_Flag), intent(in), optional :: zeroregion
+    ! ----------------------------------------------
+
     ! local
-    real(R8),             pointer :: factorList(:)
-    integer,          pointer :: factorIndexList(:,:)
-    type(ESMF_Field) :: field1, field2
-    integer :: dbrc
+    real(R8), pointer      :: factorList(:)
+    integer,  pointer      :: factorIndexList(:,:)
+    type(ESMF_Field)       :: field1, field2
+    integer                :: rank
+    logical                :: checkflag = .false.
+    character(len=8)       :: filename
+    type(ESMF_Region_Flag) :: localzr
     character(len=*),parameter :: subname='(shr_nuopc_methods_FB_FieldRegrid)'
-    integer :: rank
-    logical :: checkflag = .false.
-    character(len=8) :: filename
     ! ----------------------------------------------
 #ifdef DEBUG
     checkflag = .true.
 #endif
     call t_startf(subname)
     rc = ESMF_SUCCESS
-    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+
+    localzr = ESMF_REGION_TOTAL
+    if (present(zeroregion)) then
+       localzr = zeroregion
+    endif
+
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
 
     if (shr_nuopc_methods_FB_FldChk(FBin , trim(fldin) , rc=rc) .and. &
-        shr_nuopc_methods_FB_FldChk(FBout, trim(fldout), rc=rc)) then
+         shr_nuopc_methods_FB_FldChk(FBout, trim(fldout), rc=rc)) then
 
-      call shr_nuopc_methods_FB_getFieldByName(FBin, trim(fldin), field1, rc=rc)
-      if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-      call shr_nuopc_methods_FB_getFieldByName(FBout, trim(fldout), field2, rc=rc)
-      if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-      call ESMF_FieldRegrid(field1, field2, routehandle=RH, &
-        termorderflag=ESMF_TERMORDER_SRCSEQ, checkflag=checkflag, rc=rc)
-      if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-   else
-      if (dbug_flag > 1) then
-        call ESMF_LogWrite(trim(subname)//" field not found: "//trim(fldin)//","//trim(fldout), ESMF_LOGMSG_INFO, rc=dbrc)
-      endif
+       call shr_nuopc_methods_FB_getFieldByName(FBin, trim(fldin), field1, rc=rc)
+       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       call shr_nuopc_methods_FB_getFieldByName(FBout, trim(fldout), field2, rc=rc)
+       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       call ESMF_FieldRegrid(field1, field2, routehandle=RH, &
+            termorderflag=ESMF_TERMORDER_SRCSEQ, checkflag=checkflag, & 
+            zeroregion=localzr, rc=rc)
+       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    else
+       call ESMF_LogWrite(trim(subname)//" field not found: "//&
+            trim(fldin)//","//trim(fldout), ESMF_LOGMSG_INFO)
     endif
-    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+
+    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     call t_stopf(subname)
-  end subroutine shr_nuopc_methods_FB_FieldRegrid
 
-  !-----------------------------------------------------------------------------
-
-  subroutine shr_nuopc_methods_FB_FieldMerge_2D(FBout, fnameout, &
-                                    FBinA, fnameA, wgtA, &
-                                    FBinB, fnameB, wgtB, &
-                                    FBinC, fnameC, wgtC, &
-                                    FBinD, fnameD, wgtD, &
-                                    FBinE, fnameE, wgtE, rc)
-
-    ! ----------------------------------------------
-    ! Supports up to a five way merge
-    ! ----------------------------------------------
-    use med_constants_mod , only : R8
-    use ESMF              , only : ESMF_FieldBundle
-    use med_constants_mod , only : czero => med_constants_czero
-
-    type(ESMF_FieldBundle), intent(inout)        :: FBout
-    character(len=*)      , intent(in)           :: fnameout
-    type(ESMF_FieldBundle), intent(in), optional :: FBinA
-    character(len=*)      , intent(in), optional :: fnameA
-    real(R8)    , intent(in), optional, pointer  :: wgtA(:,:)
-    type(ESMF_FieldBundle), intent(in), optional :: FBinB
-    character(len=*)      , intent(in), optional :: fnameB
-    real(R8)    , intent(in), optional, pointer  :: wgtB(:,:)
-    type(ESMF_FieldBundle), intent(in), optional :: FBinC
-    character(len=*)      , intent(in), optional :: fnameC
-    real(R8)    , intent(in), optional, pointer  :: wgtC(:,:)
-    type(ESMF_FieldBundle), intent(in), optional :: FBinD
-    character(len=*)      , intent(in), optional :: fnameD
-    real(R8)    , intent(in), optional, pointer  :: wgtD(:,:)
-    type(ESMF_FieldBundle), intent(in), optional :: FBinE
-    character(len=*)      , intent(in), optional :: fnameE
-    real(R8)    , intent(in), optional, pointer  :: wgtE(:,:)
-    integer               , intent(out)          :: rc
-
-    ! local variables
-    real(R8), pointer          :: dataOut(:,:)
-    real(R8), pointer          :: dataPtr(:,:)
-    real(R8), pointer          :: wgt(:,:)
-    integer                    :: lb1,ub1,lb2,ub2,i,j,n
-    logical                    :: wgtfound, FBinfound
-    integer                    :: dbrc
-    character(len=*),parameter :: subname='(shr_nuopc_methods_FB_FieldMerge_2D)'
-    ! ----------------------------------------------
-
-    if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
-    rc=ESMF_SUCCESS
-
-    if (.not. shr_nuopc_methods_FB_FldChk(FBout, trim(fnameout), rc=rc)) then
-      call ESMF_LogWrite(trim(subname)//": WARNING field not in FBout, skipping merge "//&
-           trim(fnameout), ESMF_LOGMSG_WARNING, line=__LINE__, file=u_FILE_u, rc=dbrc)
-      return
-    endif
-
-    call shr_nuopc_methods_FB_GetFldPtr(FBout, trim(fnameout), fldptr2=dataOut, rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-    lb1 = lbound(dataOut,1)
-    ub1 = ubound(dataOut,1)
-    lb2 = lbound(dataOut,2)
-    ub2 = ubound(dataOut,2)
-    allocate(wgt(lb1:ub1,lb2:ub2))
-
-    dataOut = czero
-
-    ! check each field has a fieldname passed in
-    if ((present(FBinA) .and. .not.present(fnameA)) .or. &
-        (present(FBinB) .and. .not.present(fnameB)) .or. &
-        (present(FBinC) .and. .not.present(fnameC)) .or. &
-        (present(FBinD) .and. .not.present(fnameD)) .or. &
-        (present(FBinE) .and. .not.present(fnameE))) then
-      call ESMF_LogWrite(trim(subname)//": ERROR fname not present with FBin", &
-           ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-      rc = ESMF_FAILURE
-      return
-    endif
-
-    ! check that each field passed in actually exists, if not DO NOT do any merge
-    FBinfound = .true.
-    if (present(FBinA)) then
-      if (.not. shr_nuopc_methods_FB_FldChk(FBinA, trim(fnameA), rc=rc)) FBinfound = .false.
-    endif
-    if (present(FBinB)) then
-      if (.not. shr_nuopc_methods_FB_FldChk(FBinB, trim(fnameB), rc=rc)) FBinfound = .false.
-    endif
-    if (present(FBinC)) then
-      if (.not. shr_nuopc_methods_FB_FldChk(FBinC, trim(fnameC), rc=rc)) FBinfound = .false.
-    endif
-    if (present(FBinD)) then
-      if (.not. shr_nuopc_methods_FB_FldChk(FBinD, trim(fnameD), rc=rc)) FBinfound = .false.
-    endif
-    if (present(FBinE)) then
-      if (.not. shr_nuopc_methods_FB_FldChk(FBinE, trim(fnameE), rc=rc)) FBinfound = .false.
-    endif
-    if (.not. FBinfound) then
-      call ESMF_LogWrite(trim(subname)//": WARNING field not found in FBin, skipping merge "//trim(fnameout), &
-           ESMF_LOGMSG_WARNING, line=__LINE__, file=u_FILE_u, rc=dbrc)
-      return
-    endif
-
-    ! n=1,5 represents adding A to E inputs if they exist
-    do n = 1,5
-      FBinfound = .false.
-      wgtfound = .false.
-
-      if (n == 1 .and. present(FBinA)) then
-        FBinfound = .true.
-        call shr_nuopc_methods_FB_GetFldPtr(FBinA, trim(fnameA), fldptr2=dataPtr, rc=rc)
-        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-        if (present(wgtA)) then
-          wgtfound = .true.
-          wgt => wgtA
-        endif
-
-      elseif (n == 2 .and. present(FBinB)) then
-        FBinfound = .true.
-        call shr_nuopc_methods_FB_GetFldPtr(FBinB, trim(fnameB), fldptr2=dataPtr, rc=rc)
-        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-        if (present(wgtB)) then
-          wgtfound = .true.
-          wgt => wgtB
-        endif
-
-      elseif (n == 3 .and. present(FBinC)) then
-        FBinfound = .true.
-        call shr_nuopc_methods_FB_GetFldPtr(FBinC, trim(fnameC), fldptr2=dataPtr, rc=rc)
-        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-        if (present(wgtC)) then
-          wgtfound = .true.
-          wgt => wgtC
-        endif
-
-      elseif (n == 4 .and. present(FBinD)) then
-        FBinfound = .true.
-        call shr_nuopc_methods_FB_GetFldPtr(FBinD, trim(fnameD), fldptr2=dataPtr, rc=rc)
-        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-        if (present(wgtD)) then
-          wgtfound = .true.
-          wgt => wgtD
-        endif
-
-      elseif (n == 5 .and. present(FBinE)) then
-        FBinfound = .true.
-        call shr_nuopc_methods_FB_GetFldPtr(FBinE, trim(fnameE), fldptr2=dataPtr, rc=rc)
-        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-        if (present(wgtE)) then
-          wgtfound = .true.
-          wgt => wgtE
-        endif
-
-      endif
-
-      if (FBinfound) then
-        if (.not.shr_nuopc_methods_FieldPtr_Compare(dataPtr, dataOut, subname, rc)) then
-          call ESMF_LogWrite(trim(subname)//": ERROR FBin wrong size", &
-               ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-          rc = ESMF_FAILURE
-          return
-        endif
-
-        if (wgtfound) then
-          if (.not.shr_nuopc_methods_FieldPtr_Compare(dataPtr, wgt, subname, rc)) then
-            call ESMF_LogWrite(trim(subname)//": ERROR wgt wrong size", &
-                 ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-            rc = ESMF_FAILURE
-            return
-          endif
-          do j = lb2,ub2
-          do i = lb1,ub1
-            dataOut(i,j) = dataOut(i,j) + dataPtr(i,j) * wgt(i,j)
-          enddo
-          enddo
-        else
-          do j = lb2,ub2
-          do i = lb1,ub1
-            dataOut(i,j) = dataOut(i,j) + dataPtr(i,j)
-          enddo
-          enddo
-        endif  ! wgtfound
-
-      endif  ! FBin found
-    enddo  ! n
-
-    if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
-
-  end subroutine shr_nuopc_methods_FB_FieldMerge_2D
-
-  !-----------------------------------------------------------------------------
-
-  subroutine shr_nuopc_methods_FB_FieldMerge_1D(FBout, fnameout, &
-                                    FBinA, fnameA, wgtA, &
-                                    FBinB, fnameB, wgtB, &
-                                    FBinC, fnameC, wgtC, &
-                                    FBinD, fnameD, wgtD, &
-                                    FBinE, fnameE, wgtE, rc)
-    ! ----------------------------------------------
-    ! Supports up to a five way merge
-    ! ----------------------------------------------
-    use med_constants_mod , only : R8
-    use med_constants_mod , only : czero => med_constants_czero
-    use ESMF              , only : ESMF_FieldBundle
-
-    type(ESMF_FieldBundle), intent(inout)                 :: FBout
-    character(len=*)      , intent(in)                    :: fnameout
-    type(ESMF_FieldBundle), intent(in), optional          :: FBinA
-    character(len=*)      , intent(in), optional          :: fnameA
-    real(R8)    , intent(in), optional, pointer :: wgtA(:)
-    type(ESMF_FieldBundle), intent(in), optional          :: FBinB
-    character(len=*)      , intent(in), optional          :: fnameB
-    real(R8)    , intent(in), optional, pointer :: wgtB(:)
-    type(ESMF_FieldBundle), intent(in), optional          :: FBinC
-    character(len=*)      , intent(in), optional          :: fnameC
-    real(R8)    , intent(in), optional, pointer :: wgtC(:)
-    type(ESMF_FieldBundle), intent(in), optional          :: FBinD
-    character(len=*)      , intent(in), optional          :: fnameD
-    real(R8)    , intent(in), optional, pointer :: wgtD(:)
-    type(ESMF_FieldBundle), intent(in), optional          :: FBinE
-    character(len=*)      , intent(in), optional          :: fnameE
-    real(R8)    , intent(in), optional, pointer :: wgtE(:)
-    integer               , intent(out)                   :: rc
-
-    ! local variables
-    real(R8), pointer :: dataOut(:)
-    real(R8), pointer :: dataPtr(:)
-    real(R8), pointer :: wgt(:)
-    integer                     :: lb1,ub1,i,j,n
-    logical                     :: wgtfound, FBinfound
-    integer :: dbrc
-    character(len=*),parameter  :: subname='(shr_nuopc_methods_FB_FieldMerge_1D)'
-    ! ----------------------------------------------
-
-    if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
-    rc=ESMF_SUCCESS
-
-    if (.not. shr_nuopc_methods_FB_FldChk(FBout, trim(fnameout), rc=rc)) then
-       call ESMF_LogWrite(trim(subname)//": WARNING field not in FBout, skipping merge "//trim(fnameout), &
-            ESMF_LOGMSG_WARNING, line=__LINE__, file=u_FILE_u, rc=dbrc)
-      return
-    endif
-
-    call shr_nuopc_methods_FB_GetFldPtr(FBout, trim(fnameout), fldptr1=dataOut, rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-    lb1 = lbound(dataOut,1)
-    ub1 = ubound(dataOut,1)
-    allocate(wgt(lb1:ub1))
-
-    dataOut = czero
-
-    ! check each field has a fieldname passed in
-    if ((present(FBinA) .and. .not.present(fnameA)) .or. &
-        (present(FBinB) .and. .not.present(fnameB)) .or. &
-        (present(FBinC) .and. .not.present(fnameC)) .or. &
-        (present(FBinD) .and. .not.present(fnameD)) .or. &
-        (present(FBinE) .and. .not.present(fnameE))) then
-       call ESMF_LogWrite(trim(subname)//": ERROR fname not present with FBin", &
-            ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-      rc = ESMF_FAILURE
-      return
-    endif
-
-    ! check that each field passed in actually exists, if not DO NOT do any merge
-    FBinfound = .true.
-    if (present(FBinA)) then
-      if (.not. shr_nuopc_methods_FB_FldChk(FBinA, trim(fnameA), rc=rc)) FBinfound = .false.
-    endif
-    if (present(FBinB)) then
-      if (.not. shr_nuopc_methods_FB_FldChk(FBinB, trim(fnameB), rc=rc)) FBinfound = .false.
-    endif
-    if (present(FBinC)) then
-      if (.not. shr_nuopc_methods_FB_FldChk(FBinC, trim(fnameC), rc=rc)) FBinfound = .false.
-    endif
-    if (present(FBinD)) then
-      if (.not. shr_nuopc_methods_FB_FldChk(FBinD, trim(fnameD), rc=rc)) FBinfound = .false.
-    endif
-    if (present(FBinE)) then
-      if (.not. shr_nuopc_methods_FB_FldChk(FBinE, trim(fnameE), rc=rc)) FBinfound = .false.
-    endif
-    if (.not. FBinfound) then
-      call ESMF_LogWrite(trim(subname)//": WARNING field not found in FBin, skipping merge "//trim(fnameout), &
-           ESMF_LOGMSG_WARNING, line=__LINE__, file=u_FILE_u, rc=dbrc)
-      return
-    endif
-
-    ! n=1,5 represents adding A to E inputs if they exist
-    do n = 1,5
-      FBinfound = .false.
-      wgtfound = .false.
-
-      if (n == 1 .and. present(FBinA)) then
-        FBinfound = .true.
-        call shr_nuopc_methods_FB_GetFldPtr(FBinA, trim(fnameA), fldptr1=dataPtr, rc=rc)
-        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-        if (present(wgtA)) then
-          wgtfound = .true.
-          wgt => wgtA
-        endif
-
-      elseif (n == 2 .and. present(FBinB)) then
-        FBinfound = .true.
-        call shr_nuopc_methods_FB_GetFldPtr(FBinB, trim(fnameB), fldptr1=dataPtr, rc=rc)
-        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-        if (present(wgtB)) then
-          wgtfound = .true.
-          wgt => wgtB
-        endif
-
-      elseif (n == 3 .and. present(FBinC)) then
-        FBinfound = .true.
-        call shr_nuopc_methods_FB_GetFldPtr(FBinC, trim(fnameC), fldptr1=dataPtr, rc=rc)
-        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-        if (present(wgtC)) then
-          wgtfound = .true.
-          wgt => wgtC
-        endif
-
-      elseif (n == 4 .and. present(FBinD)) then
-        FBinfound = .true.
-        call shr_nuopc_methods_FB_GetFldPtr(FBinD, trim(fnameD), fldptr1=dataPtr, rc=rc)
-        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-        if (present(wgtD)) then
-          wgtfound = .true.
-          wgt => wgtD
-        endif
-
-      elseif (n == 5 .and. present(FBinE)) then
-        FBinfound = .true.
-        call shr_nuopc_methods_FB_GetFldPtr(FBinE, trim(fnameE), fldptr1=dataPtr, rc=rc)
-        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-        if (present(wgtE)) then
-          wgtfound = .true.
-          wgt => wgtE
-        endif
-
-      endif
-
-      if (FBinfound) then
-        if (.not.shr_nuopc_methods_FieldPtr_Compare(dataPtr, dataOut, subname, rc)) then
-          call ESMF_LogWrite(trim(subname)//": ERROR FBin wrong size", &
-               ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-          rc = ESMF_FAILURE
-          return
-        endif
-
-        if (wgtfound) then
-          if (.not.shr_nuopc_methods_FieldPtr_Compare(dataPtr, wgt, subname, rc)) then
-            call ESMF_LogWrite(trim(subname)//": ERROR wgt wrong size", &
-                 ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
-            rc = ESMF_FAILURE
-            return
-          endif
-          do i = lb1,ub1
-            dataOut(i) = dataOut(i) + dataPtr(i) * wgt(i)
-          enddo
-        else
-          do i = lb1,ub1
-            dataOut(i) = dataOut(i) + dataPtr(i)
-          enddo
-        endif  ! wgtfound
-
-      endif  ! FBin found
-    enddo  ! n
-
-    if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
-
-  end subroutine shr_nuopc_methods_FB_FieldMerge_1D
+   end subroutine shr_nuopc_methods_FB_FieldRegrid
 
   !-----------------------------------------------------------------------------
 
@@ -1557,12 +1111,11 @@ module shr_nuopc_methods_mod
     integer                         :: fieldCount
     character(ESMF_MAXSTR) ,pointer :: lfieldnamelist(:)
     real(R8)              :: lvalue
-    integer :: dbrc
     character(len=*),parameter      :: subname='(shr_nuopc_methods_State_reset)'
     ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
@@ -1585,7 +1138,7 @@ module shr_nuopc_methods_mod
     deallocate(lfieldnamelist)
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_State_reset
@@ -1593,12 +1146,15 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_FB_average(FB, count, rc)
+
     ! ----------------------------------------------
     ! Set all fields to zero in FB
     ! ----------------------------------------------
+
     use med_constants_mod , only : R8
     use ESMF              , only : ESMF_FieldBundle, ESMF_FieldBundleGet
 
+    ! input/output variables
     type(ESMF_FieldBundle), intent(inout) :: FB
     integer               , intent(in)    :: count
     integer               , intent(out)   :: rc
@@ -1609,21 +1165,20 @@ module shr_nuopc_methods_mod
     character(ESMF_MAXSTR) ,pointer :: lfieldnamelist(:)
     real(R8), pointer               :: dataPtr1(:)
     real(R8), pointer               :: dataPtr2(:,:)
-    integer                         :: dbrc
     character(len=*),parameter      :: subname='(shr_nuopc_methods_FB_average)'
     ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
     if (count == 0) then
 
        if (dbug_flag > 10) then
-          call ESMF_LogWrite(trim(subname)//": WARNING count is 0", ESMF_LOGMSG_INFO, rc=dbrc)
+          call ESMF_LogWrite(trim(subname)//": WARNING count is 0", ESMF_LOGMSG_INFO)
        end if
-       !call ESMF_LogWrite(trim(subname)//": WARNING count is 0 set avg to spval", ESMF_LOGMSG_INFO, rc=dbrc)
+       !call ESMF_LogWrite(trim(subname)//": WARNING count is 0 set avg to spval", ESMF_LOGMSG_INFO)
        !call shr_nuopc_methods_FB_reset(FB, value=spval, rc=rc)
        !if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -1651,8 +1206,7 @@ module shr_nuopc_methods_mod
           enddo
           enddo
         else
-          call ESMF_LogWrite(trim(subname)//": ERROR rank not supported ", &
-               ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+          call ESMF_LogWrite(trim(subname)//": ERROR rank not supported ", ESMF_LOGMSG_ERROR)
           rc = ESMF_FAILURE
           return
         endif
@@ -1662,7 +1216,7 @@ module shr_nuopc_methods_mod
     endif
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_FB_average
@@ -1673,7 +1227,8 @@ module shr_nuopc_methods_mod
     ! ----------------------------------------------
     ! Diagnose status of FB
     ! ----------------------------------------------
-    use med_constants_mod , only : R8
+
+    use med_constants_mod , only : R8, CL
     use ESMF              , only : ESMF_FieldBundle, ESMF_FieldBundleGet
 
     type(ESMF_FieldBundle) , intent(inout)        :: FB
@@ -1684,14 +1239,13 @@ module shr_nuopc_methods_mod
     integer                         :: i,j,n
     integer                         :: fieldCount, lrank
     character(ESMF_MAXSTR), pointer :: lfieldnamelist(:)
-    character(len=64)               :: lstring
+    character(len=CL)               :: lstring
     real(R8), pointer               :: dataPtr1d(:)
     real(R8), pointer               :: dataPtr2d(:,:)
-    integer                         :: dbrc
     character(len=*), parameter     :: subname='(shr_nuopc_methods_FB_diagnose)'
     ! ----------------------------------------------
 
-    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     rc = ESMF_SUCCESS
 
     lstring = ''
@@ -1719,16 +1273,15 @@ module shr_nuopc_methods_mod
 
        elseif (lrank == 1) then
           if (size(dataPtr1d) > 0) then
-             write(msgString,'(A,3g14.7,i8)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
+             write(msgString,'(A,3g14.7,i8)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n))//' ', &
                   minval(dataPtr1d), maxval(dataPtr1d), sum(dataPtr1d), size(dataPtr1d)
           else
-             write(msgString,'(A,a)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
-                  " no data"
+             write(msgString,'(A,a)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), " no data"
           endif
 
        elseif (lrank == 2) then
           if (size(dataPtr2d) > 0) then
-             write(msgString,'(A,3g14.7,i8)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
+             write(msgString,'(A,3g14.7,i8)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n))//' ', &
                   minval(dataPtr2d), maxval(dataPtr2d), sum(dataPtr2d), size(dataPtr2d)
           else
              write(msgString,'(A,a)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
@@ -1736,43 +1289,44 @@ module shr_nuopc_methods_mod
           endif
 
        else
-          call ESMF_LogWrite(trim(subname)//": ERROR rank not supported ", ESMF_LOGMSG_ERROR, &
-               line=__LINE__, file=u_FILE_u, rc=dbrc)
+          call ESMF_LogWrite(trim(subname)//": ERROR rank not supported ", ESMF_LOGMSG_ERROR)
           rc = ESMF_FAILURE
           return
        endif
-       call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO)
     enddo
 
     ! Deallocate memory
     deallocate(lfieldnamelist)
 
-    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
 
   end subroutine shr_nuopc_methods_FB_diagnose
 
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_Array_diagnose(array, string, rc)
+
     ! ----------------------------------------------
     ! Diagnose status of Array
     ! ----------------------------------------------
-    use med_constants_mod, only : R8
+
+    use med_constants_mod, only : R8, CS
     use ESMF, only : ESMF_Array, ESMF_ArrayGet
 
+    ! input/output variables
     type(ESMF_Array), intent(inout)        :: array
     character(len=*), intent(in), optional :: string
     integer         , intent(out)          :: rc
 
     ! local variables
-    character(len=64)           :: lstring
+    character(len=CS) :: lstring
     real(R8), pointer :: dataPtr3d(:,:,:)
-    integer :: dbrc
     character(len=*),parameter  :: subname='(shr_nuopc_methods_Array_diagnose)'
     ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
@@ -1791,11 +1345,11 @@ module shr_nuopc_methods_mod
         minval(dataPtr3d), maxval(dataPtr3d), sum(dataPtr3d)
 
     if (dbug_flag > 1) then
-       call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO)
     end if
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_Array_diagnose
@@ -1806,7 +1360,7 @@ module shr_nuopc_methods_mod
     ! ----------------------------------------------
     ! Diagnose status of State
     ! ----------------------------------------------
-    use med_constants_mod, only : R8
+    use med_constants_mod, only : R8, CS
     use ESMF, only : ESMF_State, ESMF_StateGet
 
     type(ESMF_State), intent(in)           :: State
@@ -1817,15 +1371,14 @@ module shr_nuopc_methods_mod
     integer                         :: i,j,n
     integer                         :: fieldCount, lrank
     character(ESMF_MAXSTR) ,pointer :: lfieldnamelist(:)
-    character(len=64)               :: lstring
-    real(R8), pointer     :: dataPtr1d(:)
-    real(R8), pointer     :: dataPtr2d(:,:)
-    integer :: dbrc
+    character(len=CS)               :: lstring
+    real(R8), pointer               :: dataPtr1d(:)
+    real(R8), pointer               :: dataPtr2d(:,:)
     character(len=*),parameter      :: subname='(shr_nuopc_methods_State_diagnose)'
     ! ----------------------------------------------
 
     if (dbug_flag > 5) then
-       call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+       call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO)
     endif
 
     lstring = ''
@@ -1841,46 +1394,46 @@ module shr_nuopc_methods_mod
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     do n = 1, fieldCount
+
        call shr_nuopc_methods_State_GetFldPtr(State, lfieldnamelist(n), &
             fldptr1=dataPtr1d, fldptr2=dataPtr2d, rank=lrank, rc=rc)
        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-       if (dbug_flag > 1) then
-          if (lrank == 0) then
-             ! no local data
 
-          elseif (lrank == 1) then
-             if (size(dataPtr1d) > 0) then
-                write(msgString,'(A,3g14.7,i8)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
-                     minval(dataPtr1d), maxval(dataPtr1d), sum(dataPtr1d), size(dataPtr1d)
-             else
-                write(msgString,'(A,a)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
-                     " no data"
-             endif
+       if (lrank == 0) then
+          ! no local data
 
-          elseif (lrank == 2) then
-             if (size(dataPtr2d) > 0) then
-                write(msgString,'(A,3g14.7,i8)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
-                     minval(dataPtr2d), maxval(dataPtr2d), sum(dataPtr2d), size(dataPtr2d)
-             else
-                write(msgString,'(A,a)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
-                     " no data"
-             endif
-
+       elseif (lrank == 1) then
+          if (size(dataPtr1d) > 0) then
+             write(msgString,'(A,3g14.7,i8)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
+                  minval(dataPtr1d), maxval(dataPtr1d), sum(dataPtr1d), size(dataPtr1d)
           else
-             call ESMF_LogWrite(trim(subname)//": ERROR rank not supported ", ESMF_LOGMSG_ERROR, line=__LINE__, &
-                  file=u_FILE_u, rc=dbrc)
-             rc = ESMF_FAILURE
-             return
+             write(msgString,'(A,a)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
+                  " no data"
           endif
 
-          call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
-       end if
+       elseif (lrank == 2) then
+          if (size(dataPtr2d) > 0) then
+             write(msgString,'(A,3g14.7,i8)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
+                  minval(dataPtr2d), maxval(dataPtr2d), sum(dataPtr2d), size(dataPtr2d)
+          else
+             write(msgString,'(A,a)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
+                  " no data"
+          endif
+
+       else
+          call ESMF_LogWrite(trim(subname)//": ERROR rank not supported ", ESMF_LOGMSG_ERROR)
+          rc = ESMF_FAILURE
+          return
+       endif
+
+       call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO)
+
     enddo
 
     deallocate(lfieldnamelist)
 
     if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
    endif
 
   end subroutine shr_nuopc_methods_State_diagnose
@@ -1888,28 +1441,30 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_FB_Field_diagnose(FB, fieldname, string, rc)
+
     ! ----------------------------------------------
     ! Diagnose status of State
     ! ----------------------------------------------
-    use med_constants_mod, only : R8
+
+    use med_constants_mod, only : R8, CS
     use ESMF, only : ESMF_FieldBundle
 
+    ! input/output variables
     type(ESMF_FieldBundle), intent(inout)  :: FB
     character(len=*), intent(in)           :: fieldname
     character(len=*), intent(in), optional :: string
     integer         , intent(out)          :: rc
 
     ! local variables
-    integer                         :: lrank
-    character(len=64)               :: lstring
-    real(R8), pointer     :: dataPtr1d(:)
-    real(R8), pointer     :: dataPtr2d(:,:)
-    integer :: dbrc
+    integer           :: lrank
+    character(len=CS) :: lstring
+    real(R8), pointer :: dataPtr1d(:)
+    real(R8), pointer :: dataPtr2d(:,:)
     character(len=*),parameter      :: subname='(shr_nuopc_methods_FB_FieldDiagnose)'
     ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
@@ -1928,55 +1483,123 @@ module shr_nuopc_methods_mod
           write(msgString,'(A,3g14.7,i8)') trim(subname)//' '//trim(lstring)//': '//trim(fieldname), &
                minval(dataPtr1d), maxval(dataPtr1d), sum(dataPtr1d), size(dataPtr1d)
        else
-          write(msgString,'(A,a)') trim(subname)//' '//trim(lstring)//': '//trim(fieldname), &
-               " no data"
+          write(msgString,'(A,a)') trim(subname)//' '//trim(lstring)//': '//trim(fieldname)," no data"
        endif
     elseif (lrank == 2) then
        if (size(dataPtr2d) > 0) then
           write(msgString,'(A,3g14.7,i8)') trim(subname)//' '//trim(lstring)//': '//trim(fieldname), &
                minval(dataPtr2d), maxval(dataPtr2d), sum(dataPtr2d), size(dataPtr2d)
        else
-          write(msgString,'(A,a)') trim(subname)//' '//trim(lstring)//': '//trim(fieldname), &
-               " no data"
+          write(msgString,'(A,a)') trim(subname)//' '//trim(lstring)//': '//trim(fieldname)," no data"
        endif
     else
-       call ESMF_LogWrite(trim(subname)//": ERROR rank not supported ", ESMF_LOGMSG_ERROR, line=__LINE__, &
-            file=u_FILE_u, rc=dbrc)
+       call ESMF_LogWrite(trim(subname)//": ERROR rank not supported ", ESMF_LOGMSG_ERROR)
        rc = ESMF_FAILURE
        return
     endif
-    if (dbug_flag > 1) then
-       call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
-    end if
+    call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO)
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_FB_Field_diagnose
 
   !-----------------------------------------------------------------------------
 
+  subroutine shr_nuopc_methods_Field_diagnose(field, fieldname, string, rc)
+
+    ! ----------------------------------------------
+    ! Diagnose Field
+    ! ----------------------------------------------
+
+    use med_constants_mod, only : R8, CS
+    use ESMF             , only : ESMF_Field, ESMF_FieldGet
+
+    ! input/output variables
+    type(ESMF_Field) , intent(inout)        :: field
+    character(len=*) , intent(in)           :: fieldname
+    character(len=*) , intent(in), optional :: string
+    integer          , intent(out)          :: rc
+
+    ! local variables
+    integer                    :: lrank
+    character(len=CS)          :: lstring
+    real(R8), pointer          :: dataPtr1d(:)
+    real(R8), pointer          :: dataPtr2d(:,:)
+    character(len=*),parameter :: subname='(shr_nuopc_methods_FB_FieldDiagnose)'
+    ! ----------------------------------------------
+
+    if (dbug_flag > 10) then
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
+    endif
+    rc = ESMF_SUCCESS
+
+    lstring = ''
+    if (present(string)) then
+       lstring = trim(string)
+    endif
+
+    call ESMF_FieldGet(field, rank=lrank, rc=rc)
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    if (lrank == 0) then
+       ! no local data
+    elseif (lrank == 1) then
+       call ESMF_FieldGet(field, farrayPtr=dataPtr1d, rc=rc)
+       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (size(dataPtr1d) > 0) then
+          write(msgString,'(A,3g14.7,i8)') trim(subname)//' '//trim(lstring)//': '//trim(fieldname), &
+               minval(dataPtr1d), maxval(dataPtr1d), sum(dataPtr1d), size(dataPtr1d)
+       else
+          write(msgString,'(A,a)') trim(subname)//' '//trim(lstring)//': '//trim(fieldname)," no data"
+       endif
+    elseif (lrank == 2) then
+       call ESMF_FieldGet(field, farrayPtr=dataPtr2d, rc=rc)
+       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (size(dataPtr2d) > 0) then
+          write(msgString,'(A,3g14.7,i8)') trim(subname)//' '//trim(lstring)//': '//trim(fieldname), &
+               minval(dataPtr2d), maxval(dataPtr2d), sum(dataPtr2d), size(dataPtr2d)
+       else
+          write(msgString,'(A,a)') trim(subname)//' '//trim(lstring)//': '//trim(fieldname)," no data"
+       endif
+    else
+       call ESMF_LogWrite(trim(subname)//": ERROR rank not supported ", ESMF_LOGMSG_ERROR)
+       rc = ESMF_FAILURE
+       return
+    endif
+    call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO)
+
+    if (dbug_flag > 10) then
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
+    endif
+
+  end subroutine shr_nuopc_methods_Field_diagnose
+
+  !-----------------------------------------------------------------------------
+
   subroutine shr_nuopc_methods_FB_copyFB2FB(FBout, FBin, rc)
+
     ! ----------------------------------------------
     ! Copy common field names from FBin to FBout
     ! ----------------------------------------------
+
     use ESMF, only : ESMF_FieldBundle
+
     type(ESMF_FieldBundle), intent(inout) :: FBout
     type(ESMF_FieldBundle), intent(in)    :: FBin
     integer               , intent(out)   :: rc
-
-    integer :: dbrc
     character(len=*), parameter :: subname='(shr_nuopc_methods_FB_copyFB2FB)'
+    ! ----------------------------------------------
 
-    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     rc = ESMF_SUCCESS
 
     call shr_nuopc_methods_FB_accum(FBout, FBin, copy=.true., rc=rc)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_FB_copyFB2FB
@@ -1992,12 +1615,10 @@ module shr_nuopc_methods_mod
     type(ESMF_State)      , intent(inout) :: STout
     type(ESMF_FieldBundle), intent(in)    :: FBin
     integer               , intent(out)   :: rc
-
-    integer :: dbrc
     character(len=*), parameter :: subname='(shr_nuopc_methods_FB_copyFB2ST)'
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
@@ -2005,7 +1626,7 @@ module shr_nuopc_methods_mod
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_FB_copyFB2ST
@@ -2021,11 +1642,11 @@ module shr_nuopc_methods_mod
     type(ESMF_FieldBundle), intent(inout) :: FBout
     type(ESMF_State)      , intent(in)    :: STin
     integer               , intent(out)   :: rc
-    integer :: dbrc
     character(len=*),parameter :: subname='(shr_nuopc_methods_FB_copyST2FB)'
+    ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
@@ -2033,7 +1654,7 @@ module shr_nuopc_methods_mod
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_FB_copyST2FB
@@ -2062,11 +1683,11 @@ module shr_nuopc_methods_mod
     logical                         :: lcopy
     real(R8), pointer               :: dataPtri1(:)  , dataPtro1(:)
     real(R8), pointer               :: dataPtri2(:,:), dataPtro2(:,:)
-    integer                         :: dbrc
     character(len=*), parameter     :: subname='(shr_nuopc_methods_FB_accumFB2FB)'
+    ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
@@ -2093,8 +1714,7 @@ module shr_nuopc_methods_mod
         if (lranki == 1 .and. lranko == 1) then
 
           if (.not.shr_nuopc_methods_FieldPtr_Compare(dataPtro1, dataPtri1, subname, rc)) then
-            call ESMF_LogWrite(trim(subname)//": ERROR in dataPtr1 size ", &
-                 ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=rc)
+            call ESMF_LogWrite(trim(subname)//": ERROR in dataPtr1 size ", ESMF_LOGMSG_ERROR)
             rc = ESMF_FAILURE
             return
           endif
@@ -2112,8 +1732,7 @@ module shr_nuopc_methods_mod
         elseif (lranki == 2 .and. lranko == 2) then
 
           if (.not.shr_nuopc_methods_FieldPtr_Compare(dataPtro2, dataPtri2, subname, rc)) then
-            call ESMF_LogWrite(trim(subname)//": ERROR in dataPtr2 size ", &
-                 ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=rc)
+            call ESMF_LogWrite(trim(subname)//": ERROR in dataPtr2 size ", ESMF_LOGMSG_ERROR)
             rc = ESMF_FAILURE
             return
           endif
@@ -2135,9 +1754,9 @@ module shr_nuopc_methods_mod
         else
 
           write(msgString,'(a,2i8)') trim(subname)//": ranki, ranko = ",lranki,lranko
-          call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
+          call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO)
           call ESMF_LogWrite(trim(subname)//": ERROR ranki ranko not supported "//trim(lfieldnamelist(n)), &
-               ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+               ESMF_LOGMSG_ERROR)
           rc = ESMF_FAILURE
           return
 
@@ -2149,40 +1768,43 @@ module shr_nuopc_methods_mod
     deallocate(lfieldnamelist)
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_FB_accumFB2FB
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_FB_accumST2FB(FBout, STin, copy, rc)
+
     ! ----------------------------------------------
     ! Accumulate common field names from State to FB
     ! If copy is passed in and true, the this is a copy
     ! ----------------------------------------------
-    use med_constants_mod, only : R8
-    use ESMF, only : ESMF_State, ESMF_FieldBundle
-    use ESMF, only : ESMF_StateGet, ESMF_FieldBundleGet
-    use ESMF, only : ESMF_STATEITEM_NOTFOUND, ESMF_StateItem_Flag
 
+    use med_constants_mod , only : R8
+    use ESMF              , only : ESMF_State, ESMF_FieldBundle
+    use ESMF              , only : ESMF_StateGet, ESMF_FieldBundleGet
+    use ESMF              , only : ESMF_STATEITEM_NOTFOUND, ESMF_StateItem_Flag
+
+    ! input/output variables
     type(ESMF_FieldBundle), intent(inout) :: FBout
     type(ESMF_State)      , intent(in)    :: STin
     logical, optional     , intent(in)    :: copy
     integer               , intent(out)   :: rc
 
     ! local variables
-    integer                     :: i,j,n
-    integer                     :: fieldCount, lrankS, lrankB
-    logical                     :: lcopy
-    character(ESMF_MAXSTR) ,pointer  :: lfieldnamelist(:)
-    type(ESMF_StateItem_Flag)   :: itemType
-    real(R8), pointer :: dataPtrS1(:)  , dataPtrB1(:)
-    real(R8), pointer :: dataPtrS2(:,:), dataPtrB2(:,:)
-    integer :: dbrc
+    integer                         :: i,j,n
+    integer                         :: fieldCount, lrankS, lrankB
+    logical                         :: lcopy
+    character(ESMF_MAXSTR) ,pointer :: lfieldnamelist(:)
+    type(ESMF_StateItem_Flag)       :: itemType
+    real(R8), pointer               :: dataPtrS1(:)  , dataPtrB1(:)
+    real(R8), pointer               :: dataPtrS2(:,:), dataPtrB2(:,:)
     character(len=*), parameter :: subname='(shr_nuopc_methods_FB_accumST2FB)'
+    ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
@@ -2201,6 +1823,7 @@ module shr_nuopc_methods_mod
 
         call shr_nuopc_methods_State_GetFldPtr(STin, lfieldnamelist(n), dataPtrS1, dataPtrS2, lrankS, rc=rc)
         if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
         call shr_nuopc_methods_FB_GetFldPtr(FBout, lfieldnamelist(n), dataPtrB1, dataPtrB2, lrankB, rc=rc)
         if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -2211,8 +1834,7 @@ module shr_nuopc_methods_mod
         elseif (lrankS == 1 .and. lrankB == 1) then
 
           if (.not.shr_nuopc_methods_FieldPtr_Compare(dataPtrS1, dataPtrB1, subname, rc)) then
-            call ESMF_LogWrite(trim(subname)//": ERROR in dataPtr1 size ", &
-                 ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=rc)
+            call ESMF_LogWrite(trim(subname)//": ERROR in dataPtr1 size ", ESMF_LOGMSG_ERROR)
             rc = ESMF_FAILURE
             return
           endif
@@ -2230,8 +1852,7 @@ module shr_nuopc_methods_mod
         elseif (lrankS == 2 .and. lrankB == 2) then
 
           if (.not.shr_nuopc_methods_FieldPtr_Compare(dataPtrS2, dataPtrB2, subname, rc)) then
-            call ESMF_LogWrite(trim(subname)//": ERROR in dataPtr2 size ", &
-                 ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=rc)
+            call ESMF_LogWrite(trim(subname)//": ERROR in dataPtr2 size ", ESMF_LOGMSG_ERROR)
             rc = ESMF_FAILURE
             return
           endif
@@ -2253,9 +1874,9 @@ module shr_nuopc_methods_mod
         else
 
           write(msgString,'(a,2i8)') trim(subname)//": rankB, ranks = ",lrankB,lrankS
-          call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
+          call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO)
           call ESMF_LogWrite(trim(subname)//": ERROR rankB rankS not supported "//trim(lfieldnamelist(n)), &
-               ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+               ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u)
           rc = ESMF_FAILURE
           return
 
@@ -2267,7 +1888,7 @@ module shr_nuopc_methods_mod
     deallocate(lfieldnamelist)
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_FB_accumST2FB
@@ -2290,18 +1911,18 @@ module shr_nuopc_methods_mod
     integer               , intent(out)   :: rc
 
     ! local variables
-    integer                     :: i,j,n
-    integer                     :: fieldCount, lrankS, lrankB
-    logical                     :: lcopy
-    character(ESMF_MAXSTR) ,pointer  :: lfieldnamelist(:)
-    type(ESMF_StateItem_Flag)   :: itemType
-    real(R8), pointer :: dataPtrS1(:), dataPtrB1(:)
-    real(R8), pointer :: dataPtrS2(:,:), dataPtrB2(:,:)
-    integer :: dbrc
+    integer                         :: i,j,n
+    integer                         :: fieldCount, lrankS, lrankB
+    logical                         :: lcopy
+    character(ESMF_MAXSTR) ,pointer :: lfieldnamelist(:)
+    type(ESMF_StateItem_Flag)       :: itemType
+    real(R8), pointer               :: dataPtrS1(:), dataPtrB1(:)
+    real(R8), pointer               :: dataPtrS2(:,:), dataPtrB2(:,:)
     character(len=*), parameter :: subname='(shr_nuopc_methods_FB_accumFB2ST)'
+    ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
@@ -2372,9 +1993,9 @@ module shr_nuopc_methods_mod
         else
 
           write(msgString,'(a,2i8)') trim(subname)//": rankB, ranks = ",lrankB,lrankS
-          call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
+          call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO)
           call ESMF_LogWrite(trim(subname)//": ERROR rankB rankS not supported "//trim(lfieldnamelist(n)), &
-               ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+               ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u)
           rc = ESMF_FAILURE
           return
 
@@ -2386,7 +2007,7 @@ module shr_nuopc_methods_mod
     deallocate(lfieldnamelist)
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_FB_accumFB2ST
@@ -2394,31 +2015,48 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   logical function shr_nuopc_methods_FB_FldChk(FB, fldname, rc)
-    use ESMF, only : ESMF_FieldBundle, ESMF_FieldBundleGet
+    ! ----------------------------------------------
+    ! Determine if field with fldname is in input field bundle
+    ! ----------------------------------------------
 
+    use ESMF, only : ESMF_FieldBundle, ESMF_FieldBundleGet
+    use ESMF, only : ESMF_FieldBundleIsCreated
+
+    ! input/output variables
     type(ESMF_FieldBundle), intent(in)  :: FB
     character(len=*)      , intent(in)  :: fldname
     integer               , intent(out) :: rc
 
     ! local variables
-    integer :: dbrc
     character(len=*), parameter :: subname='(shr_nuopc_methods_FB_FldChk)'
+    ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
+    ! If field bundle is not created then set return to .false.
+    if (.not. ESMF_FieldBundleIsCreated(FB)) then
+       shr_nuopc_methods_FB_FldChk = .false.
+       return
+    end if
+
+    ! If field bundle is created determine if fldname is present in field bundle
     shr_nuopc_methods_FB_FldChk = .false.
 
     call ESMF_FieldBundleGet(FB, fieldName=trim(fldname), isPresent=isPresent, rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) then
+       call ESMF_LogWrite(trim(subname)//" Error checking field: "//trim(fldname), & 
+            ESMF_LOGMSG_ERROR)
+       return
+    endif
     if (isPresent) then
        shr_nuopc_methods_FB_FldChk = .true.
     endif
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end function shr_nuopc_methods_FB_FldChk
@@ -2426,15 +2064,18 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_Field_GetFldPtr(field, fldptr1, fldptr2, rank, abort, rc)
+
     ! ----------------------------------------------
     ! for a field, determine rank and return fldptr1 or fldptr2
     ! abort is true by default and will abort if fldptr is not yet allocated in field
     ! rank returns 0, 1, or 2.  0 means fldptr not allocated and abort=false
     ! ----------------------------------------------
+
     use med_constants_mod , only : R8
     use ESMF              , only : ESMF_Field,ESMF_Mesh, ESMF_FieldGet, ESMF_MeshGet
     use ESMF              , only : ESMF_GEOMTYPE_MESH, ESMF_GEOMTYPE_GRID, ESMF_FIELDSTATUS_COMPLETE
 
+    ! input/output variables
     type(ESMF_Field)  , intent(in)              :: field
     real(R8), pointer , intent(inout), optional :: fldptr1(:)
     real(R8), pointer , intent(inout), optional :: fldptr2(:,:)
@@ -2446,17 +2087,16 @@ module shr_nuopc_methods_mod
     type(ESMF_Mesh) :: lmesh
     integer         :: lrank, nnodes, nelements
     logical         :: labort
-    integer         :: dbrc
     character(len=*), parameter :: subname='(shr_nuopc_methods_Field_GetFldPtr)'
     ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
 
     if (.not.present(rc)) then
        call ESMF_LogWrite(trim(subname)//": ERROR rc not present ", &
-            ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+            ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u)
       rc = ESMF_FAILURE
       return
     endif
@@ -2489,14 +2129,17 @@ module shr_nuopc_methods_mod
       if (geomtype == ESMF_GEOMTYPE_GRID) then
         call ESMF_FieldGet(field, rank=lrank, rc=rc)
         if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
       elseif (geomtype == ESMF_GEOMTYPE_MESH) then
-        lrank = 1
+        call ESMF_FieldGet(field, rank=lrank, rc=rc)
+        if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
         call ESMF_FieldGet(field, mesh=lmesh, rc=rc)
         if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
         call ESMF_MeshGet(lmesh, numOwnedNodes=nnodes, numOwnedElements=nelements, rc=rc)
         if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
         if (nnodes == 0 .and. nelements == 0) lrank = 0
-      else  ! geomtype
+
+      else  
          call ESMF_LogWrite(trim(subname)//": ERROR geomtype not supported ", &
               ESMF_LOGMSG_INFO, rc=rc)
         rc = ESMF_FAILURE
@@ -2505,28 +2148,31 @@ module shr_nuopc_methods_mod
 
       if (lrank == 0) then
          call ESMF_LogWrite(trim(subname)//": no local nodes or elements ", &
-              ESMF_LOGMSG_INFO, rc=dbrc)
+              ESMF_LOGMSG_INFO)
+
       elseif (lrank == 1) then
         if (.not.present(fldptr1)) then
            call ESMF_LogWrite(trim(subname)//": ERROR missing rank=1 array ", &
-                ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+                ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u)
           rc = ESMF_FAILURE
           return
         endif
         call ESMF_FieldGet(field, farrayPtr=fldptr1, rc=rc)
         if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
       elseif (lrank == 2) then
         if (.not.present(fldptr2)) then
            call ESMF_LogWrite(trim(subname)//": ERROR missing rank=2 array ", &
-                ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+                ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u)
           rc = ESMF_FAILURE
           return
         endif
         call ESMF_FieldGet(field, farrayPtr=fldptr2, rc=rc)
         if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+
       else
          call ESMF_LogWrite(trim(subname)//": ERROR in rank ", &
-              ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+              ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u)
         rc = ESMF_FAILURE
         return
       endif
@@ -2538,7 +2184,7 @@ module shr_nuopc_methods_mod
     endif
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_Field_GetFldPtr
@@ -2546,12 +2192,14 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_FB_GetFldPtr(FB, fldname, fldptr1, fldptr2, rank, field, rc)
+
     use med_constants_mod , only : R8
     use ESMF              , only : ESMF_FieldBundle, ESMF_FieldBundleGet, ESMF_Field
 
     ! ----------------------------------------------
     ! Get pointer to a field bundle field
     ! ----------------------------------------------
+
     type(ESMF_FieldBundle) , intent(in)              :: FB
     character(len=*)       , intent(in)              :: fldname
     real(R8), pointer      , intent(inout), optional :: fldptr1(:)
@@ -2563,17 +2211,16 @@ module shr_nuopc_methods_mod
     ! local variables
     type(ESMF_Field) :: lfield
     integer          :: lrank
-    integer          :: dbrc
     character(len=*), parameter :: subname='(shr_nuopc_methods_FB_GetFldPtr)'
     ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
 
     if (.not.present(rc)) then
        call ESMF_LogWrite(trim(subname)//": ERROR rc not present "//trim(fldname), &
-            ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+            ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u)
       rc = ESMF_FAILURE
       return
     endif
@@ -2582,7 +2229,7 @@ module shr_nuopc_methods_mod
 
     if (.not. shr_nuopc_methods_FB_FldChk(FB, trim(fldname), rc=rc)) then
        call ESMF_LogWrite(trim(subname)//": ERROR field "//trim(fldname)//" not in FB ", &
-            ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+            ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u)
       rc = ESMF_FAILURE
       return
     endif
@@ -2601,7 +2248,7 @@ module shr_nuopc_methods_mod
        field = lfield
     endif
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_FB_GetFldPtr
@@ -2622,11 +2269,11 @@ module shr_nuopc_methods_mod
     integer          :: lrank
     real(R8), pointer :: fldptr1(:)
     real(R8), pointer :: fldptr2(:,:)
-    integer :: dbrc
     character(len=*), parameter :: subname='(shr_nuopc_methods_FB_SetFldPtr)'
+    ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
@@ -2641,13 +2288,13 @@ module shr_nuopc_methods_mod
       fldptr2 = val
     else
        call ESMF_LogWrite(trim(subname)//": ERROR in rank "//trim(fldname), &
-            ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+            ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u)
       rc = ESMF_FAILURE
       return
     endif
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_FB_SetFldPtr
@@ -2671,17 +2318,16 @@ module shr_nuopc_methods_mod
     ! local variables
     type(ESMF_Field)           :: lfield
     integer                    :: lrank
-    integer :: dbrc
     character(len=*), parameter :: subname='(shr_nuopc_methods_State_GetFldPtr)'
     ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
 
     if (.not.present(rc)) then
        call ESMF_LogWrite(trim(subname)//": ERROR rc not present "//trim(fldname), &
-            ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+            ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u)
       rc = ESMF_FAILURE
       return
     endif
@@ -2700,7 +2346,7 @@ module shr_nuopc_methods_mod
     endif
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_State_GetFldPtr
@@ -2721,11 +2367,11 @@ module shr_nuopc_methods_mod
     integer          :: lrank
     real(R8), pointer :: fldptr1(:)
     real(R8), pointer :: fldptr2(:,:)
-    integer :: dbrc
     character(len=*), parameter :: subname='(shr_nuopc_methods_State_SetFldPtr)'
+    ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
@@ -2740,13 +2386,13 @@ module shr_nuopc_methods_mod
       fldptr2 = val
     else
        call ESMF_LogWrite(trim(subname)//": ERROR in rank "//trim(fldname), &
-            ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+            ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u)
       rc = ESMF_FAILURE
       return
     endif
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_State_SetFldPtr
@@ -2754,18 +2400,20 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   logical function shr_nuopc_methods_FieldPtr_Compare1(fldptr1, fldptr2, cstring, rc)
+
     use med_constants_mod, only : R8
+
     real(R8), pointer, intent(in)  :: fldptr1(:)
     real(R8), pointer, intent(in)  :: fldptr2(:)
     character(len=*)           , intent(in)  :: cstring
     integer                    , intent(out) :: rc
 
     ! local variables
-    integer :: dbrc
     character(len=*), parameter :: subname='(shr_nuopc_methods_FieldPtr_Compare1)'
+    ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
@@ -2775,15 +2423,15 @@ module shr_nuopc_methods_mod
       call ESMF_LogWrite(trim(subname)//": ERROR in data size "//trim(cstring), ESMF_LOGMSG_ERROR, rc=rc)
       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
       write(msgString,*) trim(subname)//': fldptr1 ',lbound(fldptr1),ubound(fldptr1)
-      call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO)
       write(msgString,*) trim(subname)//': fldptr2 ',lbound(fldptr2),ubound(fldptr2)
-      call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO)
     else
       shr_nuopc_methods_FieldPtr_Compare1 = .true.
     endif
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end function shr_nuopc_methods_FieldPtr_Compare1
@@ -2798,11 +2446,11 @@ module shr_nuopc_methods_mod
     integer                    , intent(out) :: rc
 
     ! local variables
-    integer :: dbrc
     character(len=*), parameter :: subname='(shr_nuopc_methods_FieldPtr_Compare2)'
+    ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
@@ -2814,15 +2462,15 @@ module shr_nuopc_methods_mod
       call ESMF_LogWrite(trim(subname)//": ERROR in data size "//trim(cstring), ESMF_LOGMSG_ERROR, rc=rc)
       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
       write(msgString,*) trim(subname)//': fldptr2 ',lbound(fldptr2),ubound(fldptr2)
-      call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO)
       write(msgString,*) trim(subname)//': fldptr1 ',lbound(fldptr1),ubound(fldptr1)
-      call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO)
     else
       shr_nuopc_methods_FieldPtr_Compare2 = .true.
     endif
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end function shr_nuopc_methods_FieldPtr_Compare2
@@ -2837,11 +2485,11 @@ module shr_nuopc_methods_mod
 
     type(ESMF_Field)  :: lfield
     integer           :: fieldcount
-    integer :: dbrc
     character(len=*),parameter  :: subname='(shr_nuopc_methods_State_GeomPrint)'
+    ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
@@ -2854,11 +2502,11 @@ module shr_nuopc_methods_mod
       call shr_nuopc_methods_Field_GeomPrint(lfield, string, rc)
       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
     else
-      call ESMF_LogWrite(trim(subname)//":"//trim(string)//": no fields", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//":"//trim(string)//": no fields", ESMF_LOGMSG_INFO)
     endif  ! fieldCount > 0
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_State_GeomPrint
@@ -2874,11 +2522,11 @@ module shr_nuopc_methods_mod
 
     type(ESMF_Field)  :: lfield
     integer           :: fieldcount
-    integer :: dbrc
     character(len=*),parameter  :: subname='(shr_nuopc_methods_FB_GeomPrint)'
+    ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
@@ -2890,11 +2538,11 @@ module shr_nuopc_methods_mod
       call shr_nuopc_methods_Field_GeomPrint(lfield, string, rc)
       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
     else
-      call ESMF_LogWrite(trim(subname)//":"//trim(string)//": no fields", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//":"//trim(string)//": no fields", ESMF_LOGMSG_INFO)
     endif  ! fieldCount > 0
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_FB_GeomPrint
@@ -2902,24 +2550,27 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_Field_GeomPrint(field, string, rc)
+
     use med_constants_mod, only : R8
     use ESMF, only : ESMF_Field, ESMF_Grid, ESMF_Mesh
     use ESMF, only : ESMF_FieldGet, ESMF_GEOMTYPE_MESH, ESMF_GEOMTYPE_GRID, ESMF_FIELDSTATUS_EMPTY
 
+    ! input/output variables
     type(ESMF_Field), intent(in)  :: field
     character(len=*), intent(in)  :: string
     integer         , intent(out) :: rc
 
-    type(ESMF_Grid)     :: lgrid
-    type(ESMF_Mesh)     :: lmesh
-    integer             :: lrank
+    ! local variables
+    type(ESMF_Grid)   :: lgrid
+    type(ESMF_Mesh)   :: lmesh
+    integer           :: lrank
     real(R8), pointer :: dataPtr1(:)
     real(R8), pointer :: dataPtr2(:,:)
-    integer :: dbrc
     character(len=*),parameter  :: subname='(shr_nuopc_methods_Field_GeomPrint)'
+    ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
@@ -2927,7 +2578,7 @@ module shr_nuopc_methods_mod
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
     if (status == ESMF_FIELDSTATUS_EMPTY) then
        call ESMF_LogWrite(trim(subname)//":"//trim(string)//": ERROR field does not have a geom yet ", &
-            ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+            ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u)
       rc = ESMF_FAILURE
       return
     endif
@@ -2969,13 +2620,13 @@ module shr_nuopc_methods_mod
       continue
     else
        call ESMF_LogWrite(trim(subname)//": ERROR rank not supported ", &
-            ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+            ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u)
       rc = ESMF_FAILURE
       return
     endif
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_Field_GeomPrint
@@ -2999,11 +2650,11 @@ module shr_nuopc_methods_mod
     integer, allocatable        :: minIndexPTile(:,:), maxIndexPTile(:,:)
     type(ESMF_MeshStatus_Flag)  :: meshStatus
     logical                     :: elemDGPresent, nodeDGPresent
-    integer :: dbrc
     character(len=*),parameter  :: subname='(shr_nuopc_methods_Mesh_Print)'
+    ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
@@ -3144,7 +2795,7 @@ module shr_nuopc_methods_mod
     endif
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_Mesh_Print
@@ -3152,10 +2803,12 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_Grid_Print(grid, string, rc)
+
     use med_constants_mod, only : R8
     use ESMF, only : ESMF_Grid, ESMF_DistGrid, ESMF_StaggerLoc
     use ESMF, only : ESMF_GridGet, ESMF_DistGridGet, ESMF_GridGetCoord
     use ESMF, only : ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER
+
     type(ESMF_Grid) , intent(in)  :: grid
     character(len=*), intent(in)  :: string
     integer         , intent(out) :: rc
@@ -3171,11 +2824,11 @@ module shr_nuopc_methods_mod
     real(R8), pointer :: fldptr1(:)
     real(R8), pointer :: fldptr2(:,:)
     integer                     :: n1,n2,n3
-    integer :: dbrc
     character(len=*),parameter  :: subname='(shr_nuopc_methods_Grid_Print)'
+    ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
@@ -3283,31 +2936,35 @@ module shr_nuopc_methods_mod
     enddo
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_Grid_Print
 
 !-----------------------------------------------------------------------------
   subroutine shr_nuopc_methods_Clock_TimePrint(clock,string,rc)
-    use ESMF, only : ESMF_Clock, ESMF_Time, ESMF_TimeInterval
-    use ESMF, only : ESMF_ClockGet, ESMF_TimeGet, ESMF_TimeIntervalGet
 
-    type(ESMF_Clock),intent(in) :: clock
-    character(len=*),intent(in),optional :: string
-    integer, intent(out) :: rc
+    use med_constants_mod , only : CS, CL
+    use ESMF              , only : ESMF_Clock, ESMF_Time, ESMF_TimeInterval
+    use ESMF              , only : ESMF_ClockGet, ESMF_TimeGet, ESMF_TimeIntervalGet
 
-    type(ESMF_Time)      :: time
+    ! input/output variables
+    type(ESMF_Clock) , intent(in)          :: clock
+    character(len=*) , intent(in),optional :: string
+    integer          , intent(out)         :: rc
+
+    ! local variables
+    type(ESMF_Time)         :: time
     type(ESMF_TimeInterval) :: timeStep
-    character(len=64)    :: timestr
-    character(len=512)   :: lstring
-    integer :: dbrc
+    character(len=CS)       :: timestr
+    character(len=CL)       :: lstring
     character(len=*), parameter :: subname='(shr_nuopc_methods_Clock_TimePrint)'
+    ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
 
     if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
 
     if (present(string)) then
@@ -3320,28 +2977,28 @@ module shr_nuopc_methods_mod
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
     call ESMF_TimeGet(time,timestring=timestr,rc=rc)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_LogWrite(trim(lstring)//": currtime = "//trim(timestr), ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(trim(lstring)//": currtime = "//trim(timestr), ESMF_LOGMSG_INFO)
 
     call ESMF_ClockGet(clock,starttime=time,rc=rc)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
     call ESMF_TimeGet(time,timestring=timestr,rc=rc)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_LogWrite(trim(lstring)//": startime = "//trim(timestr), ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(trim(lstring)//": startime = "//trim(timestr), ESMF_LOGMSG_INFO)
 
     call ESMF_ClockGet(clock,stoptime=time,rc=rc)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
     call ESMF_TimeGet(time,timestring=timestr,rc=rc)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_LogWrite(trim(lstring)//": stoptime = "//trim(timestr), ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(trim(lstring)//": stoptime = "//trim(timestr), ESMF_LOGMSG_INFO)
 
     call ESMF_ClockGet(clock,timestep=timestep,rc=rc)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
     call ESMF_TimeIntervalGet(timestep,timestring=timestr,rc=rc)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_LogWrite(trim(lstring)//": timestep = "//trim(timestr), ESMF_LOGMSG_INFO, rc=dbrc)
+    call ESMF_LogWrite(trim(lstring)//": timestep = "//trim(timestr), ESMF_LOGMSG_INFO)
 
     if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_Clock_TimePrint
@@ -3349,7 +3006,8 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_Mesh_Write(mesh, string, rc)
-    use med_constants_mod, only : R8
+
+    use med_constants_mod, only : R8, CS
     use ESMF, only : ESMF_Mesh, ESMF_MeshGet, ESMF_Array, ESMF_ArrayWrite, ESMF_DistGrid
 
     type(ESMF_Mesh) ,intent(in)  :: mesh
@@ -3357,18 +3015,18 @@ module shr_nuopc_methods_mod
     integer         ,intent(out) :: rc
 
     ! local
-    integer  :: n,l,i,lsize,ndims
-    character(len=64) :: name
-    type(ESMF_DISTGRID)         :: distgrid
-    type(ESMF_Array)            :: array
-    real(R8), pointer :: rawdata(:)
-    real(R8), pointer :: coord(:)
-    integer :: dbrc
+    integer             :: n,l,i,lsize,ndims
+    character(len=CS)   :: name
+    type(ESMF_DISTGRID) :: distgrid
+    type(ESMF_Array)    :: array
+    real(R8), pointer   :: rawdata(:)
+    real(R8), pointer   :: coord(:)
     character(len=*),parameter  :: subname='(shr_nuopc_methods_Mesh_Write)'
+    ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
 
 #if (1 == 0)
@@ -3432,11 +3090,11 @@ module shr_nuopc_methods_mod
 
     deallocate(rawdata,coord)
 #else
-      call ESMF_LogWrite(trim(subname)//": turned off right now", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": turned off right now", ESMF_LOGMSG_INFO)
 #endif
 
     if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_Mesh_Write
@@ -3451,11 +3109,11 @@ module shr_nuopc_methods_mod
 
     type(ESMF_Field)  :: lfield
     integer           :: fieldcount
-    integer :: dbrc
     character(len=*),parameter  :: subname='(shr_nuopc_methods_State_GeomWrite)'
+    ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
@@ -3468,11 +3126,11 @@ module shr_nuopc_methods_mod
       call shr_nuopc_methods_Field_GeomWrite(lfield, string, rc)
       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
     else
-      call ESMF_LogWrite(trim(subname)//":"//trim(string)//": no fields", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//":"//trim(string)//": no fields", ESMF_LOGMSG_INFO)
     endif  ! fieldCount > 0
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_State_GeomWrite
@@ -3488,11 +3146,11 @@ module shr_nuopc_methods_mod
 
     type(ESMF_Field)  :: lfield
     integer           :: fieldcount
-    integer :: dbrc
     character(len=*),parameter  :: subname='(shr_nuopc_methods_FB_GeomWrite)'
+    ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
@@ -3505,11 +3163,11 @@ module shr_nuopc_methods_mod
       call shr_nuopc_methods_Field_GeomWrite(lfield, string, rc)
       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
     else
-      call ESMF_LogWrite(trim(subname)//":"//trim(string)//": no fields", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//":"//trim(string)//": no fields", ESMF_LOGMSG_INFO)
     endif  ! fieldCount > 0
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_FB_GeomWrite
@@ -3517,27 +3175,30 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_Field_GeomWrite(field, string, rc)
+
     use ESMF, only : ESMF_Field, ESMF_Grid, ESMF_Mesh, ESMF_FIeldGet, ESMF_FIELDSTATUS_EMPTY
     use ESMF, only : ESMF_GEOMTYPE_MESH, ESMF_GEOMTYPE_GRID
 
+    ! input/output variables
     type(ESMF_Field), intent(in)  :: field
     character(len=*), intent(in)  :: string
     integer         , intent(out) :: rc
 
+    ! local variables
     type(ESMF_Grid)     :: lgrid
     type(ESMF_Mesh)     :: lmesh
-    integer :: dbrc
     character(len=*),parameter  :: subname='(shr_nuopc_methods_Field_GeomWrite)'
+    ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
 
     call ESMF_FieldGet(field, status=status, rc=rc)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
     if (status == ESMF_FIELDSTATUS_EMPTY) then
-      call ESMF_LogWrite(trim(subname)//":"//trim(string)//": ERROR field does not have a geom yet ", ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//":"//trim(string)//": ERROR field does not have a geom yet ")
       rc = ESMF_FAILURE
       return
     endif
@@ -3558,7 +3219,7 @@ module shr_nuopc_methods_mod
     endif
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_Field_GeomWrite
@@ -3566,25 +3227,27 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_Grid_Write(grid, string, rc)
-    use ESMF, only : ESMF_Grid, ESMF_Array, ESMF_GridGetCoord, ESMF_ArraySet
-    use ESMF, only : ESMF_ArrayWrite, ESMF_GridGetItem, ESMF_GridGetCoord
 
-    use ESMF, only : ESMF_GRIDITEM_AREA, ESMF_GRIDITEM_MASK
-    use ESMF, only : ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER
+    use med_constants_mod , only : CS
+    use ESMF              , only : ESMF_Grid, ESMF_Array, ESMF_GridGetCoord, ESMF_ArraySet
+    use ESMF              , only : ESMF_ArrayWrite, ESMF_GridGetItem, ESMF_GridGetCoord
+    use ESMF              , only : ESMF_GRIDITEM_AREA, ESMF_GRIDITEM_MASK
+    use ESMF              , only : ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER
 
+    ! input/output variables
     type(ESMF_Grid) ,intent(in)  :: grid
     character(len=*),intent(in)  :: string
     integer         ,intent(out) :: rc
 
     ! local
-    type(ESMF_Array)            :: array
-    character(len=64)           :: name
-    integer :: dbrc
+    type(ESMF_Array)  :: array
+    character(len=CS) :: name
     character(len=*),parameter  :: subname='(shr_nuopc_methods_Grid_Write)'
+    ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
 
     ! -- centers --
@@ -3690,7 +3353,7 @@ module shr_nuopc_methods_mod
     endif
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
 
   end subroutine shr_nuopc_methods_Grid_Write
@@ -3710,11 +3373,11 @@ module shr_nuopc_methods_mod
     integer, allocatable            :: minIndexPTile1(:,:), minIndexPTile2(:,:)
     integer, allocatable            :: maxIndexPTile1(:,:), maxIndexPTile2(:,:)
     integer, allocatable            :: elementCountPTile1(:), elementCountPTile2(:)
-    integer :: dbrc
     character(len=*), parameter :: subname='(shr_nuopc_methods_Distgrid_Match)'
+    ! ----------------------------------------------
 
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(subname//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(subname//": called", ESMF_LOGMSG_INFO)
     endif
 
     if(present(rc)) rc = ESMF_SUCCESS
@@ -3732,7 +3395,7 @@ module shr_nuopc_methods_mod
       shr_nuopc_methods_Distgrid_Match = .false.
       if (dbug_flag > 1) then
         call ESMF_LogWrite(trim(subname)//": Grid dimCount MISMATCH ", &
-          ESMF_LOGMSG_INFO, rc=dbrc)
+          ESMF_LOGMSG_INFO)
       endif
     endif
 
@@ -3740,7 +3403,7 @@ module shr_nuopc_methods_mod
       shr_nuopc_methods_Distgrid_Match = .false.
       if (dbug_flag > 1) then
         call ESMF_LogWrite(trim(subname)//": Grid tileCount MISMATCH ", &
-          ESMF_LOGMSG_INFO, rc=dbrc)
+          ESMF_LOGMSG_INFO)
       endif
     endif
 
@@ -3767,7 +3430,7 @@ module shr_nuopc_methods_mod
       shr_nuopc_methods_Distgrid_Match = .false.
       if (dbug_flag > 1) then
         call ESMF_LogWrite(trim(subname)//": Grid elementCountPTile MISMATCH ", &
-          ESMF_LOGMSG_INFO, rc=dbrc)
+          ESMF_LOGMSG_INFO)
       endif
     endif
 
@@ -3775,7 +3438,7 @@ module shr_nuopc_methods_mod
       shr_nuopc_methods_Distgrid_Match = .false.
       if (dbug_flag > 1) then
         call ESMF_LogWrite(trim(subname)//": Grid minIndexPTile MISMATCH ", &
-          ESMF_LOGMSG_INFO, rc=dbrc)
+          ESMF_LOGMSG_INFO)
       endif
     endif
 
@@ -3783,7 +3446,7 @@ module shr_nuopc_methods_mod
       shr_nuopc_methods_Distgrid_Match = .false.
       if (dbug_flag > 1) then
         call ESMF_LogWrite(trim(subname)//": Grid maxIndexPTile MISMATCH ", &
-          ESMF_LOGMSG_INFO, rc=dbrc)
+          ESMF_LOGMSG_INFO)
       endif
     endif
 
@@ -3796,28 +3459,30 @@ module shr_nuopc_methods_mod
 
     ! TODO: Optionally Check Coordinates
 
-
     if (dbug_flag > 10) then
-      call ESMF_LogWrite(subname//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(subname//": done", ESMF_LOGMSG_INFO)
     endif
 
   end function shr_nuopc_methods_Distgrid_Match
 
 !================================================================================
 
-  subroutine shr_nuopc_methods_State_GetScalar(State, scalar_id, value, flds_scalar_name, flds_scalar_num, rc)
+  subroutine shr_nuopc_methods_State_GetScalar(state, scalar_id, scalar_value, flds_scalar_name, flds_scalar_num, rc)
+
+    ! ----------------------------------------------
+    ! Get scalar data from State for a particular name and broadcast it to all other pets
+    ! ----------------------------------------------
+
     use med_constants_mod , only : R8
     use ESMF              , only : ESMF_SUCCESS, ESMF_State, ESMF_StateGet, ESMF_Field, ESMF_FieldGet
     use ESMF              , only : ESMF_FAILURE, ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU, ESMF_LogWrite
     use ESMF              , only : ESMF_LOGMSG_INFO, ESMF_VM, ESMF_VMBroadCast, ESMF_VMGetCurrent
     use ESMF              , only : ESMF_VMGet
-    ! ----------------------------------------------
-    ! Get scalar data from State for a particular name and broadcast it to all other pets
-    ! ----------------------------------------------
 
-    type(ESMF_State), intent(in)     :: State
+    ! input/output variables
+    type(ESMF_State), intent(in)     :: state
     integer,          intent(in)     :: scalar_id
-    real(R8),         intent(out)    :: value
+    real(R8),         intent(out)    :: scalar_value
     character(len=*), intent(in)     :: flds_scalar_name
     integer,          intent(in)     :: flds_scalar_num
     integer,          intent(inout)  :: rc
@@ -3828,8 +3493,8 @@ module shr_nuopc_methods_mod
     type(ESMF_Field)  :: field
     real(R8), pointer :: farrayptr(:,:)
     real(r8)          :: tmp(1)
-    integer           :: dbrc
     character(len=*), parameter :: subname='(shr_nuopc_methods_State_GetScalar)'
+    ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
 
@@ -3846,29 +3511,32 @@ module shr_nuopc_methods_mod
       call ESMF_FieldGet(field, farrayPtr = farrayptr, rc=rc)
       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
       if (scalar_id < 0 .or. scalar_id > flds_scalar_num) then
-        call ESMF_LogWrite(trim(subname)//": ERROR in scalar_id", ESMF_LOGMSG_INFO, line=__LINE__, file=u_FILE_u, rc=dbrc)
+        call ESMF_LogWrite(trim(subname)//": ERROR in scalar_id", ESMF_LOGMSG_INFO, line=__LINE__, file=u_FILE_u)
         rc = ESMF_FAILURE
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
       endif
-      tmp(:) = farrayptr(:,scalar_id)
+      tmp(:) = farrayptr(scalar_id,:)
     endif
     call ESMF_VMBroadCast(vm, tmp, 1, 0, rc=rc)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-    value = tmp(1)
-
+    scalar_value = tmp(1)
 
   end subroutine shr_nuopc_methods_State_GetScalar
 
 !================================================================================
 
-  subroutine shr_nuopc_methods_State_SetScalar(value, scalar_id, State, flds_scalar_name, flds_scalar_num,  rc)
+  subroutine shr_nuopc_methods_State_SetScalar(scalar_value, scalar_id, State, flds_scalar_name, flds_scalar_num,  rc)
+
     ! ----------------------------------------------
     ! Set scalar data from State for a particular name
     ! ----------------------------------------------
+
     use med_constants_mod , only : R8
     use ESMF              , only : ESMF_Field, ESMF_State, ESMF_StateGet, ESMF_FieldGet
     use ESMF              , only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VMGet
-    real(R8),         intent(in)     :: value
+
+    ! input/output arguments
+    real(R8),         intent(in)     :: scalar_value
     integer,          intent(in)     :: scalar_id
     type(ESMF_State), intent(inout)  :: State
     character(len=*), intent(in)     :: flds_scalar_name
@@ -3880,8 +3548,8 @@ module shr_nuopc_methods_mod
     type(ESMF_Field)  :: field
     type(ESMF_VM)     :: vm
     real(R8), pointer :: farrayptr(:,:)
-    integer           :: dbrc
     character(len=*), parameter :: subname='(shr_nuopc_methods_State_SetScalar)'
+    ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
 
@@ -3898,11 +3566,11 @@ module shr_nuopc_methods_mod
       call ESMF_FieldGet(field, farrayPtr = farrayptr, rc=rc)
       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
       if (scalar_id < 0 .or. scalar_id > flds_scalar_num) then
-        call ESMF_LogWrite(trim(subname)//": ERROR in scalar_id", ESMF_LOGMSG_INFO, line=__LINE__, file=u_FILE_u, rc=dbrc)
+        call ESMF_LogWrite(trim(subname)//": ERROR in scalar_id", ESMF_LOGMSG_INFO)
         rc = ESMF_FAILURE
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+        return
       endif
-      farrayptr(1,scalar_id) = value
+      farrayptr(scalar_id,1) = scalar_value
     endif
 
   end subroutine shr_nuopc_methods_State_SetScalar
@@ -3910,9 +3578,11 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_State_UpdateTimestamp(state, time, rc)
+
     use NUOPC , only : NUOPC_GetStateMemberLists
     use ESMF  , only : ESMF_State, ESMF_Time, ESMF_Field, ESMF_SUCCESS
 
+    ! input/output variables
     type(ESMF_State) , intent(inout) :: state
     type(ESMF_Time)  , intent(in)    :: time
     integer          , intent(out)   :: rc
@@ -3920,8 +3590,8 @@ module shr_nuopc_methods_mod
     ! local variables
     integer                  :: i
     type(ESMF_Field),pointer :: fieldList(:)
-    integer                  :: dbrc
     character(len=*), parameter :: subname='(shr_nuopc_methods_State_UpdateTimestamp)'
+    ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
 
@@ -3938,16 +3608,18 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_Field_UpdateTimestamp(field, time, rc)
+
     use ESMF, only : ESMF_Field, ESMF_Time, ESMF_TimeGet, ESMF_AttributeSet, ESMF_ATTNEST_ON, ESMF_SUCCESS
 
+    ! input/output variables
     type(ESMF_Field) , intent(inout) :: field
     type(ESMF_Time)  , intent(in)    :: time
     integer          , intent(out)   :: rc
 
     ! local variables
     integer :: yy, mm, dd, h, m, s, ms, us, ns
-    integer :: dbrc
     character(len=*), parameter :: subname='(shr_nuopc_methods_Field_UpdateTimestamp)'
+    ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
 
@@ -3965,19 +3637,20 @@ module shr_nuopc_methods_mod
   !-----------------------------------------------------------------------------
 
   subroutine shr_nuopc_methods_Print_FieldExchInfo(flag, values, logunit, fldlist, nflds, istr)
-    use shr_nuopc_utils_mod , only : shr_nuopc_string_listGetName
-    use med_constants_mod   , only : R8
-    use ESMF                , only : ESMF_MAXSTR
 
-    ! !DESCRIPTION:
+    ! ---------------------------------------------- 
     ! Print out information about values to stdount
     ! - flag sets the level of information:
     ! - print out names of fields in values 2d array
     ! - also print out local max and min of data in values 2d array
     ! If optional argument istr is present, it will be output before any of the information.
+    ! ---------------------------------------------- 
 
+    use shr_nuopc_utils_mod , only : shr_nuopc_string_listGetName
+    use med_constants_mod   , only : R8
+    use ESMF                , only : ESMF_MAXSTR
 
-    ! !INPUT/OUTPUT PARAMETERS:
+    ! input/output variables
     integer          , intent(in)          :: flag  ! info level flag
     real(R8)         , intent(in)          :: values(:,:) ! arrays sent to/recieved from mediator
     integer          , intent(in)          :: logunit
@@ -3985,19 +3658,17 @@ module shr_nuopc_methods_mod
     integer          , intent(in)          :: nflds
     character(*)     , intent(in),optional :: istr  ! string for print
 
-    !--- local ---
+    ! local variables
     integer                    :: n           ! generic indicies
     integer                    :: nsize       ! grid point in values array
     real(R8)                   :: minl(nflds) ! local min
     real(R8)                   :: maxl(nflds) ! local max
     character(len=ESMF_MAXSTR) :: name
-
-    !--- formats ---
-    character(*),parameter :: subName = '(shr_nuopc_methods_Print_FieldExchInfo) '
-    character(*),parameter :: F00 = "('(shr_nuopc_methods_Print_FieldExchInfo) ',8a)"
-    character(*),parameter :: F01 = "('(shr_nuopc_methods_Print_FieldExchInfo) ',a,i9)"
-    character(*),parameter :: F02 = "('(shr_nuopc_methods_Print_FieldExchInfo) ',240a)"
-    character(*),parameter :: F03 = "('(shr_nuopc_methods_Print_FieldExchInfo) ',a,2es11.3,i4,2x,a)"
+    character(*),parameter     :: subName = '(shr_nuopc_methods_Print_FieldExchInfo) '
+    character(*),parameter     :: F00 = "('(shr_nuopc_methods_Print_FieldExchInfo) ',8a)"
+    character(*),parameter     :: F01 = "('(shr_nuopc_methods_Print_FieldExchInfo) ',a,i9)"
+    character(*),parameter     :: F02 = "('(shr_nuopc_methods_Print_FieldExchInfo) ',240a)"
+    character(*),parameter     :: F03 = "('(shr_nuopc_methods_Print_FieldExchInfo) ',a,2es11.3,i4,2x,a)"
     !-------------------------------------------------------------------------------
 
     if (flag >= 1) then
@@ -4037,12 +3708,13 @@ module shr_nuopc_methods_mod
     integer          , intent(out) :: rc
 
     ! local variables
-    integer                                  :: n, nfld, nlev
+    integer                                  :: n, nfld, ungridded_index
     integer                                  :: lsize
     real(R8), pointer                        :: dataPtr1d(:)
     real(R8), pointer                        :: dataPtr2d(:,:)
     integer                                  :: fieldCount
     integer                                  :: ungriddedUBound(1)
+    integer                                  :: gridToFieldMap(1)
     character(len=ESMF_MAXSTR)               :: string
     type(ESMF_Field)           , allocatable :: lfields(:)
     integer                    , allocatable :: dimCounts(:)
@@ -4052,11 +3724,14 @@ module shr_nuopc_methods_mod
     ! Determine the list of fields and the dimension count for each field
     call ESMF_StateGet(state, itemCount=fieldCount, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
     allocate(fieldNameList(fieldCount))
     allocate(lfields(fieldCount))
     allocate(dimCounts(fieldCount))
+
     call ESMF_StateGet(state, itemNameList=fieldNameList, rc=rc)
     if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
     do nfld=1, fieldCount
        call ESMF_StateGet(state, itemName=trim(fieldNameList(nfld)), field=lfields(nfld), rc=rc)
        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -4083,23 +3758,31 @@ module shr_nuopc_methods_mod
              if (trim(fieldNameList(nfld)) /= flds_scalar_name .and. dataPtr1d(n) /= 0.) then
                 string = trim(prefix) // ' ymd, tod, index, '// trim(fieldNameList(nfld)) //' = '
                 write(logunit,100) trim(string), ymd, tod, n, dataPtr1d(n)
-100             format(a60,3(i8,2x),d21.14)
              end if
           else if (dimCounts(nfld) == 2) then
+             call ESMF_FieldGet(lfields(nfld), ungriddedUBound=ungriddedUBound, gridtoFieldMap=gridToFieldMap, rc=rc)
+             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
              call ESMF_FieldGet(lfields(nfld), farrayPtr=dataPtr2d, rc=rc)
              if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-             call ESMF_FieldGet(lfields(nfld), ungriddedUBound=ungriddedUBound, rc=rc)
-             call ESMF_FieldGet(lfields(nfld), farrayPtr=dataPtr2d, rc=rc)
-             do nlev = 1,ungriddedUBound(1)
-                if (trim(fieldNameList(nfld)) /= flds_scalar_name .and. dataPtr2d(n,nlev) /= 0.) then
+             do ungridded_index = 1,ungriddedUBound(1)
+                if (trim(fieldNameList(nfld)) /= flds_scalar_name) then
                    string = trim(prefix) // ' ymd, tod, lev, index, '// trim(fieldNameList(nfld)) //' = '
-                   write(logunit,101) trim(string), ymd, tod, nlev, n, dataPtr2d(n,nlev)
-101                format(a60,4(i8,2x),d21.14)
+                   if (gridToFieldMap(1) == 1) then
+                      if (dataPtr2d(n,ungridded_index) /= 0.) then
+                         write(logunit,101) trim(string), ymd, tod, ungridded_index, n, dataPtr2d(n,ungridded_index)
+                      end if
+                   else if (gridToFieldMap(1) == 2) then
+                      if (dataPtr2d(ungridded_index,n) /= 0.) then
+                         write(logunit,101) trim(string), ymd, tod, ungridded_index, n, dataPtr2d(ungridded_index,n)
+                      end if
+                   end if
                 end if
              end do
           end if
        end do
     end do
+100 format(a60,3(i8,2x),d21.14)
+101 format(a60,4(i8,2x),d21.14)
 
     deallocate(fieldNameList)
     deallocate(lfields)
@@ -4107,4 +3790,110 @@ module shr_nuopc_methods_mod
 
   end subroutine shr_nuopc_methods_State_FldDebug
 
+  !-----------------------------------------------------------------------------
+
+  subroutine shr_nuopc_methods_FB_getNumFlds(FB, string, nflds, rc)
+
+    ! ---------------------------------------------- 
+    ! Determine if fieldbundle is created and if so, the number of non-scalar
+    ! fields in the field bundle
+    ! ----------------------------------------------
+
+    use ESMF, only : ESMF_FieldBundle, ESMF_FieldBundleGet, ESMF_FieldBundleIsCreated
+
+    ! input/output variables
+    type(ESMF_FieldBundle) , intent(in)    :: FB
+    character(len=*)       , intent(in)    :: string
+    integer                , intent(out)   :: nflds
+    integer                , intent(inout) :: rc
+    ! ----------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    if (.not. ESMF_FieldBundleIsCreated(FB)) then
+       call ESMF_LogWrite(trim(string)//": has not been created, returning", ESMF_LOGMSG_INFO)
+       nflds = 0 
+    else
+       ! Note - the scalar field has been removed from all mediator
+       ! field bundles - so this is why we check if the fieldCount is 0 and not 1 here
+
+       call ESMF_FieldBundleGet(FB, fieldCount=nflds, rc=rc)
+       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (nflds == 0) then
+          call ESMF_LogWrite(trim(string)//": only has scalar data, returning", ESMF_LOGMSG_INFO)
+       end if
+    end if
+
+  end subroutine shr_nuopc_methods_FB_getNumFlds
+
+  !-----------------------------------------------------------------------------
+
+  subroutine shr_nuopc_methods_States_GetSharedFlds(State1, State2, flds_scalar_name, fldnames_shared, rc)
+
+    ! ---------------------------------------------- 
+    ! Get shared Fld names between State1 and State2 and
+    ! allocate the return array fldnames_shared
+    ! ----------------------------------------------
+
+    use ESMF, only : ESMF_State, ESMF_StateGet, ESMF_MAXSTR
+
+    ! input/output variables
+    type(ESMF_State)           , intent(in)    :: State1
+    type(ESMF_State)           , intent(in)    :: State2
+    character(len=*)           , intent(in)    :: flds_scalar_name
+    character(len=ESMF_MAXSTR) , pointer       :: fldnames_shared(:)
+    integer                    , intent(inout) :: rc
+
+    ! local variables
+    integer                                 :: ncnt1, ncnt2
+    integer                                 :: n1, n2, nshr
+    character(len=ESMF_MAXSTR), allocatable :: fldnames1(:)
+    character(len=ESMF_MAXSTR), allocatable :: fldnames2(:)
+    character(len=*), parameter :: subname='(shr_nuopc_methods_States_GetSharedFlds)'
+    ! ----------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    if (associated(fldnames_shared)) then
+       call ESMF_LogWrite(trim(subname)//": ERROR fldnames_shared must not be associated ", ESMF_LOGMSG_INFO, rc=rc)
+       rc = ESMF_FAILURE
+       RETURN
+    end if
+
+    call ESMF_StateGet(State1, itemCount=ncnt1, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    allocate(fldnames1(ncnt1))
+    call ESMF_StateGet(State1, itemNameList=fldnames1, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_StateGet(State2, itemCount=ncnt2, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    allocate(fldnames2(ncnt2))
+    call ESMF_StateGet(State2, itemNameList=fldnames2, rc=rc)
+    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    nshr = 0
+    do n1 = 1,ncnt1
+       do n2 = 1,ncnt2
+          if (trim(fldnames1(n1)) == trim(fldnames2(n2)) .and. trim(fldnames1(n1)) /= flds_scalar_name) then
+             nshr = nshr + 1
+          end if
+       end do
+    end do
+    allocate(fldnames_shared(nshr))
+
+    nshr = 0
+    do n1 = 1,ncnt1
+       do n2 = 1,ncnt2
+          if (trim(fldnames1(n1)) == trim(fldnames2(n2)) .and. trim(fldnames1(n1)) /= flds_scalar_name) then
+             nshr = nshr + 1
+             fldnames_shared(nshr) = trim(fldnames1(n1))
+             exit
+          end if
+       end do
+    end do
+
+  end subroutine shr_nuopc_methods_States_GetSharedFlds
+
 end module shr_nuopc_methods_mod
+

@@ -554,13 +554,8 @@ if ($phys eq 'adiabatic') { add_default($nl, 'atm_adiabatic',  'val'=>'.true.');
 if ($phys eq 'ideal')     { add_default($nl, 'atm_ideal_phys', 'val'=>'.true.'); }
 
 # Aqua planet 
-
-my $aqua_flag = $cfg->get('ocn');
+my $aqua_mode = $cfg->get('aquaplanet');
 my $nl_aqua_flag = $nl->get_value('aqua_planet');
-
-if ($aqua_flag  eq 'aquaplanet') {
-    $aqua_mode = 1;
-}
 
 # Consistency check between configuration and namelist variables used for aquaplanet.
 if ($aqua_mode and defined $nl_aqua_flag  and ($nl_aqua_flag  =~ m/$FALSE/io)) {

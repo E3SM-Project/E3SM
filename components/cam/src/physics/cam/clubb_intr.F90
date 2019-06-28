@@ -923,7 +923,7 @@ end subroutine clubb_init_cnst
 
    use physics_types,  only: physics_state, physics_ptend, &
                              physics_state_copy, physics_ptend_init, &
-                             physics_ptend_sum
+                             physics_ptend_sum, set_dry_to_wet
 
    use physics_update_mod, only: physics_update
 
@@ -931,7 +931,7 @@ end subroutine clubb_init_cnst
                              pbuf_set_field, physics_buffer_desc
 
    use ppgrid,         only: pver, pverp, pcols
-   use constituents,   only: cnst_get_ind
+   use constituents,   only: cnst_get_ind, cnst_type
    use camsrfexch,     only: cam_in_t
    use ref_pres,       only: top_lev => trop_cloud_top_lev  
    use time_manager,   only: is_first_step   
@@ -1300,6 +1300,9 @@ end subroutine clubb_init_cnst
    endif
 
    call physics_state_copy(state,state1)
+
+   ! constituents are all treated as wet mmr by clubb
+   call set_dry_to_wet(state1)
 
    if (micro_do_icesupersat) then
      naai_idx      = pbuf_get_index('NAAI')
@@ -2252,6 +2255,18 @@ end subroutine clubb_init_cnst
    call physics_ptend_sum(ptend_loc,ptend_all,ncol)
    call physics_update(state1,ptend_loc,hdtime)
 
+   ! ptend_all now has all accumulated tendencies.  Convert the tendencies for the
+   ! dry constituents to dry air basis.
+   do ixind = 1, pcnst
+      if (lq(ixind) .and. cnst_type(ixind).eq.'dry') then
+         do k = 1, pver
+            do i = 1, ncol
+               ptend_all%q(i,k,ixind) = ptend_all%q(i,k,ixind)*state1%pdel(i,k)/state1%pdeldry(i,k)
+            end do
+         end do
+      end if
+   end do
+
    ! ------------------------------------------------- !
    ! Diagnose relative cloud water variance            !
    ! ------------------------------------------------- !
@@ -2500,36 +2515,37 @@ end subroutine clubb_init_cnst
 
 !PMA adds gustiness and tpert
 
-    vmag_gust(:)    = 1._r8
+    vmag_gust(:)    = 0._r8
     vmag_gust_dp(:) = 0._r8
     vmag_gust_cl(:) = 0._r8
     ktopi(:)        = pver
 
     if (use_sgv) then
        do i=1,ncol
-          up2b(i)          = up2(i,pver)
-          vp2b(i)          = vp2(i,pver)
-          umb(i)           = abs(state1%u(i,pver))
-          vmb(i)           = abs(state1%v(i,pver))
-          prec_gust(i)     = max(0._r8,prec_dp(i)-snow_dp(i))*1.e3_r8
-          if (cam_in%landfrac(i).gt.0.95_r8) then
+           up2b(i)          = up2(i,pver)
+           vp2b(i)          = vp2(i,pver)
+           umb(i)           = state1%u(i,pver)
+           vmb(i)           = state1%v(i,pver)
+           prec_gust(i)     = max(0._r8,prec_dp(i)-snow_dp(i))*1.e3_r8
+           if (cam_in%landfrac(i).gt.0.95_r8) then
              gust_fac(i)   = gust_facl
-          else
+           else
              gust_fac(i)   = gust_faco
-          endif
-          vmag(i)         = max(1.e-5_r8,sqrt( umb(i)**2._r8 + vmb(i)**2._r8))
-          vmag_gust_dp(i) = ugust(min(prec_gust(i),6.94444e-4_r8),gust_fac(i)) ! Limit for the ZM gustiness equation set in Redelsperger et al. (2000) 
-          vmag_gust_dp(i) = max(0._r8, vmag_gust_dp(i) / vmag(i))
-          vmag_gust_cl(i) = gust_facc*(sqrt(max(0._r8,up2b(i)+vp2b(i))+vmag(i)**2._r8)-vmag(i))
-          vmag_gust_cl(i) = max(0._r8, vmag_gust_cl(i) / vmag(i))
-          vmag_gust(i)    = 1._r8 + vmag_gust_cl(i) + vmag_gust_dp(i)
+           endif
+           vmag(i)         = max(1.e-5_r8,sqrt( umb(i)**2._r8 + vmb(i)**2._r8))
+           vmag_gust_dp(i) = ugust(min(prec_gust(i),6.94444e-4_r8),gust_fac(i)) ! Limit for the ZM gustiness equation set in Redelsperger et al. (2000) 
+           vmag_gust_dp(i) = max(0._r8, vmag_gust_dp(i) )!/ vmag(i))
+           vmag_gust_cl(i) = gust_facc*(sqrt(max(0._r8,up2b(i)+vp2b(i))+vmag(i)**2._r8)-vmag(i))
+           vmag_gust_cl(i) = max(0._r8, vmag_gust_cl(i) )!/ vmag(i))
+           vmag_gust(i)    = vmag_gust_cl(i) + vmag_gust_dp(i)
           do k=1,pver
              if (state1%zi(i,k)>pblh(i).and.state1%zi(i,k+1)<=pblh(i)) then
                 ktopi(i) = k
                 exit
              end if
           end do
-          tpert(i) = min(2._r8,sqrt(thlp2(i,ktopi(i))/max(state1%exner(i,ktopi(i)),1.e-3_r8)))
+          tpert(i) = min(2._r8,(sqrt(thlp2(i,ktopi(i)))+(latvap/cpair)*state1%q(i,ktopi(i),ixcldliq)) &
+                    /max(state1%exner(i,ktopi(i)),1.e-3_r8)) !proxy for tpert
        end do
     end if
     
@@ -2643,10 +2659,12 @@ end subroutine clubb_init_cnst
 !   None
 !-------------------------------------------------------------------------------
 
-    use physics_types,          only: physics_state, physics_ptend, physics_ptend_init
+    use physics_types,          only: physics_state, physics_ptend, &
+                                      physics_ptend_init, &
+                                      set_dry_to_wet, set_wet_to_dry
     use physconst,              only: gravit, zvir, latvap
     use ppgrid,                 only: pver, pcols
-    use constituents,           only: pcnst, cnst_get_ind
+    use constituents,           only: pcnst, cnst_get_ind, cnst_type
     use camsrfexch,             only: cam_in_t
     
     implicit none
@@ -2655,7 +2673,7 @@ end subroutine clubb_init_cnst
     ! Input Auguments !
     ! --------------- !
 
-    type(physics_state), intent(in)     :: state                ! Physics state variables
+    type(physics_state), intent(inout)  :: state                ! Physics state variables
     type(cam_in_t),      intent(in)     :: cam_in
     
     real(r8),            intent(in)     :: ztodt                ! 2 delta-t        [ s ] 
@@ -2699,6 +2717,8 @@ end subroutine clubb_init_cnst
     ! Main Computation Begins !
     ! ----------------------- !
 
+    ! Assume 'wet' mixing ratios in surface diffusion code.
+    call set_dry_to_wet(state)
 
     call cnst_get_ind('Q',ixq)
     if (use_sgv) then
@@ -2738,6 +2758,15 @@ end subroutine clubb_init_cnst
     enddo
     
     ptend%q(:ncol,:pver,:) = (ptend%q(:ncol,:pver,:) - state%q(:ncol,:pver,:)) * rztodt
+
+    ! Convert tendencies of dry constituents to dry basis.
+    do m = 1,pcnst
+       if (cnst_type(m).eq.'dry') then
+          ptend%q(:ncol,:pver,m) = ptend%q(:ncol,:pver,m)*state%pdel(:ncol,:pver)/state%pdeldry(:ncol,:pver)
+       endif
+    end do
+    ! convert wet mmr back to dry before conservation check
+    call set_wet_to_dry(state)
     
     return
 

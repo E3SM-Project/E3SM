@@ -1,35 +1,27 @@
-
 module dead_nuopc_mod
 
-  use ESMF                  , only : ESMF_Gridcomp, ESMF_State, ESMF_StateGet
-  use ESMF                  , only : ESMF_Clock, ESMF_Time, ESMF_TimeInterval, ESMF_Alarm
-  use ESMF                  , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_ClockSet, ESMF_ClockAdvance, ESMF_AlarmSet
-  use ESMF                  , only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_METHOD_INITIALIZE
-  use ESMF                  , only : ESMF_STATEITEM_NOTFOUND, ESMF_StateItem_Flag
-  use ESMF                  , only : ESMF_FIELDSTATUS_COMPLETE, ESMF_FAILURE
-  use ESMF                  , only : operator(/=), operator(==), operator(+)
-  use med_constants_mod, only : IN, R8, CS, CL
-  use shr_file_mod          , only : shr_file_getunit, shr_file_freeunit
-  use shr_sys_mod           , only : shr_sys_abort
-  use shr_nuopc_utils_mod , only : shr_nuopc_utils_ChkErr
+  use ESMF              , only : ESMF_Gridcomp, ESMF_State, ESMF_StateGet
+  use ESMF              , only : ESMF_Clock, ESMF_Time, ESMF_TimeInterval, ESMF_Alarm
+  use ESMF              , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_ClockSet, ESMF_ClockAdvance, ESMF_AlarmSet
+  use ESMF              , only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_METHOD_INITIALIZE
+  use ESMF              , only : ESMF_FAILURE, ESMF_LOGMSG_ERROR
+  use ESMF              , only : ESMF_VMGetCurrent, ESMF_VM, ESMF_VMBroadcast, ESMF_VMGet
+  use ESMF              , only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VmGet
+  use ESMF              , only : operator(/=), operator(==), operator(+)
+  use shr_kind_mod      , only : r8=>shr_kind_r8, i8=>shr_kind_i8, cl=>shr_kind_cl, cs=>shr_kind_cs
+  use shr_sys_mod       , only : shr_sys_abort
+  use dead_methods_mod  , only : chkerr, alarmInit
 
   implicit none
   private
 
-!  public :: dead_setNewGrid
-!  public :: dead_read_inparms
   public :: dead_init_nuopc
-  public :: dead_run_nuopc
   public :: dead_final_nuopc
+  public :: dead_meshinit
   public :: ModelInitPhase
   public :: ModelSetRunClock
   public :: fld_list_add
   public :: fld_list_realize
-  public :: state_getimport
-  public :: state_setexport
-  public :: Print_FieldExchInfo
-
-  private :: state_getfldptr
 
   ! !PUBLIC DATA MEMBERS:
   integer, public :: dead_grid_lat    = 1   ! lat from component
@@ -37,13 +29,13 @@ module dead_nuopc_mod
   integer, public :: dead_grid_area   = 3   ! area from component
   integer, public :: dead_grid_mask   = 4   ! mask, 0 = inactive cell
   integer, public :: dead_grid_frac   = 5   ! fractional area coverage
-  integer, public :: dead_grid_aream  = 6   ! area from mapping file
-  integer, public :: dead_grid_index  = 7   ! global index
-  integer, public :: dead_grid_pid    = 8   ! proc id number
-  integer, public :: dead_grid_total  = 8
+  integer, public :: dead_grid_index  = 6   ! global index
+  integer, public :: dead_grid_total  = 6
 
   type fld_list_type
     character(len=128) :: stdname
+     integer :: ungridded_lbound = 0
+     integer :: ungridded_ubound = 0
   end type fld_list_type
   public :: fld_list_type
 
@@ -57,29 +49,26 @@ contains
 !===============================================================================
 
   subroutine dead_read_inparms(model,  inst_suffix, logunit, &
-       nxg, nyg, decomp_type, nproc_x, seg_len, flood)
-    use ESMF, only : ESMF_VMGetCurrent, ESMF_VM, ESMF_VMBroadcast, ESMF_VMGet
-    ! !INPUT/OUTPUT PARAMETERS:
-    character(len=*)       , intent(in)    :: model
-    character(len=*)      , intent(in)    :: inst_suffix ! char string associated with instance
-    integer(IN)            , intent(in)    :: logunit     ! logging unit number
-    integer(IN)		   , intent(out)   :: nproc_x
-    integer(IN)            , intent(out)   :: seg_len
-    integer(IN)            , intent(out)   :: nxg         ! global dim i-direction
-    integer(IN)            , intent(out)   :: nyg         ! global dim j-direction
-    integer(IN)            , intent(out)   :: decomp_type ! decomposition type
-    logical                , intent(out)   :: flood       ! rof flood flag
+       nxg, nyg, decomp_type, nproc_x, seg_len)
 
-    !--- local variables ---
-    type(ESMF_VM) :: vm
-    character(CL) :: fileName    ! generic file name
-    integer(IN)   :: nunit       ! unit number
-    integer(IN)   :: ierr        ! error code
-    integer(IN)   :: unitn       ! Unit for namelist file
-    integer(IN) :: tmp(6)     ! array for broadcast
-    integer(IN) :: localPet   ! mpi id of current task in current context
-    integer :: rc                  ! EMSF return code
-    !--- formats ---
+    ! input/output variables
+    character(len=*) , intent(in)    :: model
+    character(len=*) , intent(in)    :: inst_suffix ! char string associated with instance
+    integer          , intent(in)    :: logunit     ! logging unit number
+    integer    	     , intent(out)   :: nproc_x
+    integer          , intent(out)   :: seg_len
+    integer          , intent(out)   :: nxg         ! global dim i-direction
+    integer          , intent(out)   :: nyg         ! global dim j-direction
+    integer          , intent(out)   :: decomp_type ! decomposition type
+
+    ! local variables
+    type(ESMF_VM)           :: vm
+    character(CL)           :: fileName ! generic file name
+    integer                 :: nunit    ! unit number
+    integer                 :: unitn    ! Unit for namelist file
+    integer                 :: tmp(5)   ! array for broadcast
+    integer                 :: localPet ! mpi id of current task in current context
+    integer                 :: rc       ! return code
     character(*), parameter :: F00   = "('(dead_read_inparms) ',8a)"
     character(*), parameter :: F01   = "('(dead_read_inparms) ',a,a,4i8)"
     character(*), parameter :: F03   = "('(dead_read_inparms) ',a,a,i8,a)"
@@ -92,27 +81,20 @@ contains
     nproc_x        =  -9999
     seg_len        =  -9999
     decomp_type    =  -9999
-    flood = .false.
 
     call ESMF_VMGetCurrent(vm, rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     call ESMF_VMGet(vm, localPet=localPet, rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     if (localPet==0) then
-       unitn = shr_file_getUnit()
-       open(unitn, file='x'//model//'_in'//trim(inst_suffix), status='old' )
+       open(newunit=unitn, file='x'//model//'_in'//trim(inst_suffix), status='old' )
        read(unitn,*) nxg
        read(unitn,*) nyg
        read(unitn,*) decomp_type
        read(unitn,*) nproc_x
        read(unitn,*) seg_len
-       if (model.eq.'rof') then
-          read(unitn,*) flood
-       end if
        close (unitn)
-       call shr_file_freeunit(unitn)
     endif
 
     tmp(1) = nxg
@@ -120,20 +102,14 @@ contains
     tmp(3) = decomp_type
     tmp(4) = nproc_x
     tmp(5) = seg_len
-    if (model.eq.'rof' .and. flood) then
-       tmp(6) = 1
-    else
-       tmp(6) = 0
-    endif
+
     call ESMF_VMBroadcast(vm, tmp, 6, 0, rc=rc)
-    nxg = tmp(1)
-    nyg = tmp(2)
+
+    nxg         = tmp(1)
+    nyg         = tmp(2)
     decomp_type = tmp(3)
-    nproc_x = tmp(4)
-    seg_len = tmp(5)
-    if(tmp(6) == 1) then
-       flood = .true.
-    endif
+    nproc_x     = tmp(4)
+    seg_len     = tmp(5)
 
     if (localPet==0) then
        write(logunit,*)' Read in X'//model//' input from file= x'//model//'_in'
@@ -145,67 +121,58 @@ contains
        write(logunit,F03) model,' Num pes in X   :  ',nproc_x,'  (type 3 only)'
        write(logunit,F03) model,' Segment Length :  ',seg_len,'  (type 11 only)'
        write(logunit,F00) model,'    inst_suffix :  ',trim(inst_suffix)
-       if (model.eq.'rof') then
-          write(logunit,F01) ' Flood mode     :  ',flood
-       endif
        write(logunit,F00) model
     end if
+
   end subroutine dead_read_inparms
 
   !===============================================================================
-  subroutine dead_setNewGrid(decomp_type, nxg, nyg, logunit, lsize,  &
-                             gbuf, seg_len, nproc_x)
-    use ESMF, only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VmGet
-    use shr_const_mod, only : shr_const_pi, shr_const_rearth
 
-    ! DESCRIPTION:
+  subroutine dead_setNewGrid(decomp_type, nxg, nyg, logunit, lsize, gbuf, seg_len, nproc_x)
+
     ! This sets up some defaults.  The user may want to overwrite some
     ! of these fields in the main program after initialization in complete.
 
+    use shr_const_mod , only : shr_const_pi, shr_const_rearth
+
     ! input/output parameters:
-    integer(IN) ,intent(in)          :: decomp_type !
-    integer(IN) ,intent(in)          :: nxg,nyg     ! global grid sizes
-    integer(IN) ,intent(in)          :: logunit     ! output logunit
-    integer(IN) ,intent(out)         :: lsize       ! local grid sizes
-    real(R8)    ,pointer             :: gbuf(:,:)   ! output data
-    integer(IN) ,intent(in),optional :: seg_len     ! seg len decomp setting
-    integer(IN) ,intent(in),optional :: nproc_x     ! 2d decomp setting
+    integer , intent(in)          :: decomp_type !
+    integer , intent(in)          :: nxg,nyg     ! global grid sizes
+    integer , intent(in)          :: logunit     ! output logunit
+    integer , intent(out)         :: lsize       ! local grid sizes
+    real(R8), pointer             :: gbuf(:,:)   ! output data
+    integer , intent(in),optional :: seg_len     ! seg len decomp setting
+    integer , intent(in),optional :: nproc_x     ! 2d decomp setting
 
-    !--- local ---
-    type(ESMF_VM) :: vm
-    integer(IN)   :: rc
-    integer(IN) ::  mype
-    integer(IN) :: totpe       ! total number of pes
-    integer(IN)             :: ierr            ! error code
+    ! local
+    type(ESMF_VM)           :: vm
+    integer                 :: rc
+    integer                 :: mype
+    integer                 :: totpe ! total number of pes
     logical                 :: found
-    integer(IN)             :: i,j,ig,jg
-    integer(IN)             :: n,ng,is,ie,js,je,nx,ny      ! indices
-    integer(IN)             :: npesx,npesy,mypex,mypey,nxp,nyp
-    real   (R8)             :: hscore,bscore
-    real   (R8)             :: dx,dy,deg2rad,ys,yc,yn,area,re
-    integer(IN),allocatable :: gindex(:)
-
-    !--- formats ---
+    integer                 :: i,j,ig,jg
+    integer                 :: n,ng,is,ie,js,je,nx,ny
+    integer                 :: npesx,npesy,mypex,mypey,nxp,nyp
+    real(R8)                :: hscore,bscore
+    real(R8)                :: dx,dy,deg2rad,ys,yc,yn,area,re
+    integer, allocatable    :: gindex(:)
     character(*), parameter :: F00   = "('(dead_setNewGrid) ',8a)"
     character(*), parameter :: F01   = "('(dead_setNewGrid) ',a,4i8)"
     character(*), parameter :: subName = "(dead_setNewGrid) "
     !-------------------------------------------------------------------------------
 
     call ESMF_VMGetCurrent(vm, rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     call ESMF_VMGet(vm, localPet=mype, peCount=totpe, rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    if (decomp_type == 1 .or. &
+    if ( decomp_type == 1 .or. &
          decomp_type == 2 .or. &
          decomp_type == 3 .or. &
          decomp_type == 4 .or. &
          decomp_type == 11) then
-       ! valid
     else
-       !-------------------------------------------------------------------------
        ! invalid decomposition type
-       !-------------------------------------------------------------------------
        if (mype == 0) then
           write(logunit,F01) 'ERROR: invalid decomp_type = ',decomp_type
        end if
@@ -215,7 +182,6 @@ contains
     if (nxg*nyg == 0) then
        lsize = 0
        allocate(gbuf(lsize,dead_grid_total))
-       !      gbuf = -888.0_R8
        if (mype == 0) then
           write(logunit,*) subname,' grid size is zero, lsize = ',lsize
        end if
@@ -381,7 +347,7 @@ contains
        gbuf(n,dead_grid_lat  ) = yc
        gbuf(n,dead_grid_index) = gindex(n)
        gbuf(n,dead_grid_area ) = area
-       gbuf(n,dead_grid_mask ) = 1
+       gbuf(n,dead_grid_mask ) = 0
        gbuf(n,dead_grid_frac ) = 1.0_R8
     enddo
 
@@ -390,6 +356,7 @@ contains
   end subroutine dead_setNewGrid
 
   !===============================================================================
+
   subroutine dead_init_nuopc(model, inst_suffix, logunit, lsize, gbuf, nxg, nyg)
 
     ! input/output parameters:
@@ -403,177 +370,44 @@ contains
     integer          , intent(out)   :: nyg         ! global dim j-direction
 
     !--- local variables ---
-    integer                  :: ierr          ! error code
     integer                  :: local_comm    ! local communicator
-    integer                  :: mype          ! pe info
-    integer                  :: totpe         ! total number of pes
     integer                  :: nproc_x
     integer                  :: seg_len
     integer                  :: decomp_type
-    logical                  :: flood=.false. ! rof flood flag
     character(*), parameter  :: subName = "(dead_init_nuopc) "
     !-------------------------------------------------------------------------------
 
     ! Read input parms
-
-    call dead_read_inparms(model, inst_suffix, logunit, &
-         nxg, nyg, decomp_type, nproc_x, seg_len, flood)
+    call dead_read_inparms(model, inst_suffix, logunit, nxg, nyg, decomp_type, nproc_x, seg_len)
 
     ! Initialize grid
-
-    call dead_setNewGrid(decomp_type, nxg, nyg, logunit, &
-         lsize, gbuf, seg_len, nproc_x)
+    call dead_setNewGrid(decomp_type, nxg, nyg, logunit, lsize, gbuf, seg_len, nproc_x)
 
   end subroutine dead_init_nuopc
 
   !===============================================================================
-  subroutine dead_run_nuopc(model, d2x, gbuf, flds_d2x)
 
-    use shr_const_mod  , only : shr_const_pi
-    use shr_string_mod , only : shr_string_listGetIndexF
-
-    ! DESCRIPTION: run method for dead model
-
-    ! input/output parameters:
-    character(len=*) , intent(in)    :: model
-    real(r8)         , intent(inout) :: d2x(:,:)    ! dead   -> driver
-    real(r8)         , pointer       :: gbuf(:,:)   ! model grid
-    character(len=*) , intent(in)    :: flds_d2x    ! list of fields to dead -> driver
-
-    !--- local ---
-    integer                 :: n                 ! index
-    integer                 :: nf                ! fields loop index
-    integer                 :: ki                ! index
-    integer                 :: lsize             ! size of AttrVect
-    real(R8)                :: lat               ! latitude
-    real(R8)                :: lon               ! longitude
-    integer                 :: nflds_d2x
-    integer                 :: ncomp
-    character(*), parameter :: F04   = "('(',a,'_run_nuopc) ',2a,2i8,'s')"
-    character(*), parameter :: subName = "(dead_run_nuopc) "
-    !-------------------------------------------------------------------------------
-
-    nflds_d2x = size(d2x, dim=1)
-
-    ! PACK (currently no unpacking)
-
-    selectcase(model)
-    case('atm')
-       ncomp = 1
-    case('lnd')
-       ncomp = 2
-    case('ice')
-       ncomp = 3
-    case('ocn')
-       ncomp = 4
-    case('glc')
-       ncomp = 5
-    case('rof')
-       ncomp = 6
-    case('wav')
-       ncomp = 7
-    end select
-
-    nflds_d2x = size(d2x, dim=1)
-    lsize = size(d2x, dim=2)
-
-    if (model.eq.'rof') then
-
-       do nf=1,nflds_d2x
-          do n=1,lsize
-             d2x(nf,n) = (nf+1) * 1.0_r8
-          enddo
-       enddo
-
-    else if (model.eq.'glc') then
-
-       do nf=1,nflds_d2x
-          do n=1,lsize
-             lon = gbuf(n,dead_grid_lon)
-             lat = gbuf(n,dead_grid_lat)
-             d2x(nf,n) = (nf*100)                          &
-                  *  cos (SHR_CONST_PI*lat/180.0_R8)       &
-                  *  cos (SHR_CONST_PI*lat/180.0_R8)       &
-                  *  sin (SHR_CONST_PI*lon/180.0_R8)       &
-                  *  sin (SHR_CONST_PI*lon/180.0_R8)       &
-                  + (ncomp*10.0_R8)
-          enddo
-       enddo
-
-    else
-
-       do nf=1,nflds_d2x
-          do n=1,lsize
-             lon = gbuf(n,dead_grid_lon)
-             lat = gbuf(n,dead_grid_lat)
-             d2x(nf,n) = (nf*100)                          &
-                  *  cos (SHR_CONST_PI*lat/180.0_R8)       &
-                  *  sin((SHR_CONST_PI*lon/180.0_R8)       &
-                  -      (ncomp-1)*(SHR_CONST_PI/3.0_R8) ) &
-                  + (ncomp*10.0_R8)
-          enddo
-       enddo
-
-    endif
-
-    selectcase(model)
-    case('ice')
-
-       ki = shr_string_listGetIndexF(flds_d2x, "Si_ifrac")
-       d2x(ki,:) = min(1.0_R8,max(0.0_R8,d2x(ki,:)))
-
-       ki = shr_string_listGetIndexF(flds_d2x, "Si_imask")
-       d2x(ki,:) = float(nint(min(1.0_R8,max(0.0_R8,d2x(ki,:)))))
-
-    case('ocn')
-
-       ki = shr_string_listGetIndexF(flds_d2x, "So_omask")
-       d2x(ki,:) = float(nint(min(1.0_R8,max(0.0_R8,d2x(ki,:)))))
-
-    case('lnd')
-
-       ki = shr_string_listGetIndexF(flds_d2x, "Sl_lfrin")
-       d2x(ki,:) = 1.0_R8
-
-    case('glc')
-
-       ki = shr_string_listGetIndexF(flds_d2x, "Sg_icemask")
-       d2x(ki,:) = 1.0_R8
-
-       ki = shr_string_listGetIndexF(flds_d2x, "Sg_icemask_coupled_fluxes")
-       d2x(ki,:) = 1.0_R8
-
-       ki = shr_string_listGetIndexF(flds_d2x, "Sg_ice_covered")
-       d2x(ki,:) = 1.0_R8
-
-    end select
-
-  end subroutine dead_run_nuopc
-
-  !===============================================================================
   subroutine dead_final_nuopc(model, logunit)
-    use ESMF, only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VMGet
-    ! DESCRIPTION: finalize method for datm model
+
+    ! finalize method for xcpl component
 
     ! input/output parameters:
     character(len=*) , intent(in) :: model
     integer          , intent(in) :: logunit     ! logging unit number
 
-    !-- local --
+    ! local variables
     type(ESMF_VM) :: vm
-    integer :: rc
-    integer :: localPet
-
-    !--- formats ---
+    integer       :: rc
+    integer       :: localPet
     character(*), parameter :: F00   = "('(dead_comp_final) ',8a)"
     character(*), parameter :: F91   = "('(dead_comp_final) ',73('-'))"
     character(*), parameter :: subName = "(dead_comp_final) "
     !-------------------------------------------------------------------------------
 
     call ESMF_VMGetCurrent(vm, rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     call ESMF_VMGet(vm, localPet=localPet, rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     if (localPet==0) then
        write(logunit,F91)
@@ -584,46 +418,38 @@ contains
   end subroutine dead_final_nuopc
 
   !===============================================================================
-  subroutine fld_list_add(num, fldlist, stdname, flds_concat)
 
-    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_ERROR
+  subroutine fld_list_add(num, fldlist, stdname, ungridded_lbound, ungridded_ubound)
 
-    integer,                    intent(inout) :: num
-    type(fld_list_type),        intent(inout) :: fldlist(:)
-    character(len=*),           intent(in)    :: stdname
-    character(len=*), optional, intent(inout) :: flds_concat
+    ! input/output variables
+    integer                    , intent(inout) :: num
+    type(fld_list_type)        , intent(inout) :: fldlist(:)
+    character(len=*)           , intent(in)    :: stdname
+    integer,          optional , intent(in)    :: ungridded_lbound
+    integer,          optional , intent(in)    :: ungridded_ubound
 
     ! local variables
-    integer :: rc
-    integer :: dbrc
-    character(len=*), parameter :: subname='(dshr_nuopc_mod:fld_list_add)'
+    character(len=*), parameter :: subname='(dead_nuopc_mod:fld_list_add)'
     !-------------------------------------------------------------------------------
 
     ! Set up a list of field information
-
     num = num + 1
     if (num > fldsMax) then
        call ESMF_LogWrite(trim(subname)//": ERROR num > fldsMax "//trim(stdname), &
-            ESMF_LOGMSG_ERROR, line=__LINE__, file=__FILE__, rc=dbrc)
+            ESMF_LOGMSG_ERROR, line=__LINE__, file=__FILE__)
        return
     endif
     fldlist(num)%stdname = trim(stdname)
 
-    if (present(flds_concat)) then
-       if (len_trim(flds_concat) + len_trim(stdname) + 1 >= len(flds_concat)) then
-          call ESMF_LogWrite(subname//': ERROR: max len of flds_concat has been exceeded', &
-               ESMF_LOGMSG_ERROR, line=__LINE__, file= u_FILE_u, rc=dbrc)
-       end if
-       if (trim(flds_concat) == '') then
-          flds_concat = trim(stdname)
-       else
-          flds_concat = trim(flds_concat)//':'//trim(stdname)
-       end if
+    if (present(ungridded_lbound) .and. present(ungridded_ubound)) then
+       fldlist(num)%ungridded_lbound = ungridded_lbound
+       fldlist(num)%ungridded_ubound = ungridded_ubound
     end if
 
   end subroutine fld_list_add
 
   !===============================================================================
+
   subroutine fld_list_realize(state, fldList, numflds, flds_scalar_name, flds_scalar_num, mesh, tag, rc)
 
     use NUOPC , only : NUOPC_IsConnected, NUOPC_Realize
@@ -642,11 +468,11 @@ contains
     integer             , intent(inout) :: rc
 
     ! local variables
-    integer                :: dbrc
-    integer                :: n
-    type(ESMF_Field)       :: field
-    character(len=80)      :: stdname
-    character(len=*),parameter  :: subname='(dshr_nuopc_mod:fld_list_realize)'
+    integer           :: n
+    type(ESMF_Field)  :: field
+    character(len=80) :: stdname
+    integer           :: gridtoFieldMap=2
+    character(len=*),parameter  :: subname='(dead_nuopc_mod:fld_list_realize)'
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -656,16 +482,24 @@ contains
        if (NUOPC_IsConnected(state, fieldName=stdname)) then
           if (stdname == trim(flds_scalar_name)) then
              call ESMF_LogWrite(trim(subname)//trim(tag)//" Field = "//trim(stdname)//" is connected on root pe", &
-                  ESMF_LOGMSG_INFO, rc=dbrc)
+                  ESMF_LOGMSG_INFO)
              ! Create the scalar field
              call SetScalarField(field, flds_scalar_name, flds_scalar_num, rc=rc)
              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
           else
              call ESMF_LogWrite(trim(subname)//trim(tag)//" Field = "//trim(stdname)//" is connected using mesh", &
-                  ESMF_LOGMSG_INFO, rc=dbrc)
+                  ESMF_LOGMSG_INFO)
              ! Create the field
-             field = ESMF_FieldCreate(mesh, ESMF_TYPEKIND_R8, name=stdname, meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
-             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+             if (fldlist(n)%ungridded_lbound > 0 .and. fldlist(n)%ungridded_ubound > 0) then
+                field = ESMF_FieldCreate(mesh, ESMF_TYPEKIND_R8, name=stdname, meshloc=ESMF_MESHLOC_ELEMENT, &
+                     ungriddedLbound=(/fldlist(n)%ungridded_lbound/), &
+                     ungriddedUbound=(/fldlist(n)%ungridded_ubound/), &
+                     gridToFieldMap=(/gridToFieldMap/), rc=rc)
+                if (chkerr(rc,__LINE__,u_FILE_u)) return
+             else
+                field = ESMF_FieldCreate(mesh, ESMF_TYPEKIND_R8, name=stdname, meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
+                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
+             end if
           endif
 
           ! NOW call NUOPC_Realize
@@ -674,7 +508,7 @@ contains
        else
           if (stdname /= trim(flds_scalar_name)) then
              call ESMF_LogWrite(subname // trim(tag) // " Field = "// trim(stdname) // " is not connected.", &
-                  ESMF_LOGMSG_INFO, rc=dbrc)
+                  ESMF_LOGMSG_INFO)
              call ESMF_StateRemove(state, (/stdname/), rc=rc)
              if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
           end if
@@ -687,6 +521,7 @@ contains
       ! ----------------------------------------------
       ! create a field with scalar data on the root pe
       ! ----------------------------------------------
+
       use ESMF, only : ESMF_Field, ESMF_DistGrid, ESMF_Grid
       use ESMF, only : ESMF_DistGridCreate, ESMF_GridCreate, ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU
       use ESMF, only : ESMF_FieldCreate, ESMF_GridCreate, ESMF_TYPEKIND_R8
@@ -699,7 +534,7 @@ contains
       ! local variables
       type(ESMF_Distgrid) :: distgrid
       type(ESMF_Grid)     :: grid
-      character(len=*), parameter :: subname='(dshr_nuopc_mod:SetScalarField)'
+      character(len=*), parameter :: subname='(dead_nuopc_mod:SetScalarField)'
       ! ----------------------------------------------
 
       rc = ESMF_SUCCESS
@@ -712,7 +547,7 @@ contains
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
 
       field = ESMF_FieldCreate(name=trim(flds_scalar_name), grid=grid, typekind=ESMF_TYPEKIND_R8, &
-           ungriddedLBound=(/1/), ungriddedUBound=(/flds_scalar_num/), rc=rc)
+           ungriddedLBound=(/1/), ungriddedUBound=(/flds_scalar_num/), gridToFieldMap=(/2/), rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
 
     end subroutine SetScalarField
@@ -720,6 +555,7 @@ contains
   end subroutine fld_list_realize
 
   !===============================================================================
+
   subroutine ModelInitPhase(gcomp, importState, exportState, clock, rc)
 
     use NUOPC, only : NUOPC_CompFilterPhaseMap
@@ -734,18 +570,19 @@ contains
 
     ! Switch to IPDv01 by filtering all other phaseMap entries
     call NUOPC_CompFilterPhaseMap(gcomp, ESMF_METHOD_INITIALIZE, acceptStringList=(/"IPDv01p"/), rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine ModelInitPhase
 
   !===============================================================================
+
   subroutine ModelSetRunClock(gcomp, rc)
 
-    use shr_nuopc_time_mod , only : shr_nuopc_time_alarmInit
     use ESMF               , only : ESMF_ClockGetAlarmList, ESMF_ALARMLIST_ALL
     use NUOPC_Model        , only : NUOPC_ModelGet
     use NUOPC              , only : NUOPC_CompAttributeGet
 
+    ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
 
@@ -759,24 +596,23 @@ contains
     integer                  :: restart_n            ! Number until restart interval
     integer                  :: restart_ymd          ! Restart date (YYYYMMDD)
     type(ESMF_ALARM)         :: restart_alarm
-    integer                  :: dbrc
     character(len=128)       :: name
     integer                  :: alarmcount
-    character(len=*),parameter :: subname='dshr_nuopc_mod:(ModelSetRunClock) '
+    character(len=*),parameter :: subname='dead_nuopc_mod:(ModelSetRunClock) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    if (dbug_flag > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+    if (dbug_flag > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO)
 
     ! query the Component for its clocks
     call NUOPC_ModelGet(gcomp, driverClock=dclock, modelClock=mclock, rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_ClockGet(dclock, currTime=dcurrtime, timeStep=dtimestep, rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_ClockGet(mclock, currTime=mcurrtime, timeStep=mtimestep, rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
     ! force model clock currtime and timestep to match driver and set stoptime
@@ -784,41 +620,41 @@ contains
 
     mstoptime = mcurrtime + dtimestep
     call ESMF_ClockSet(mclock, currTime=dcurrtime, timeStep=dtimestep, stopTime=mstoptime, rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
     ! set restart alarm
     !--------------------------------
 
     call ESMF_ClockGetAlarmList(mclock, alarmlistflag=ESMF_ALARMLIST_ALL, alarmCount=alarmCount, rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     if (alarmCount == 0) then
 
        call ESMF_GridCompGet(gcomp, name=name, rc=rc)
-       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-       call ESMF_LogWrite(subname//'setting alarms for' // trim(name), ESMF_LOGMSG_INFO, rc=dbrc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_LogWrite(subname//'setting alarms for' // trim(name), ESMF_LOGMSG_INFO)
 
        call NUOPC_CompAttributeGet(gcomp, name="restart_option", value=restart_option, rc=rc)
-       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        call NUOPC_CompAttributeGet(gcomp, name="restart_n", value=cvalue, rc=rc)
-       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
        read(cvalue,*) restart_n
 
        call NUOPC_CompAttributeGet(gcomp, name="restart_ymd", value=cvalue, rc=rc)
-       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
        read(cvalue,*) restart_ymd
 
-       call shr_nuopc_time_alarmInit(mclock, restart_alarm, restart_option, &
+       call alarmInit(mclock, restart_alarm, restart_option, &
             opt_n   = restart_n,           &
             opt_ymd = restart_ymd,         &
             RefTime = mcurrTime,           &
             alarmname = 'alarm_restart', rc=rc)
-       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        call ESMF_AlarmSet(restart_alarm, clock=mclock, rc=rc)
-       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     end if
 
@@ -827,207 +663,245 @@ contains
     !--------------------------------
 
     call ESMF_ClockAdvance(mclock,rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_ClockSet(mclock, currTime=dcurrtime, timeStep=dtimestep, stopTime=mstoptime, rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    if (dbug_flag > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO, rc=dbrc)
+    if (dbug_flag > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO)
 
   end subroutine ModelSetRunClock
 
   !===============================================================================
-  subroutine state_getimport(state, fldname, output, rc)
+  
+  subroutine dead_meshinit(gcomp, nx_global, ny_global, gindex, lon, lat, Emesh, rc)
 
-    ! ----------------------------------------------
-    ! Map import state field to output array
-    ! ----------------------------------------------
+    !-----------------------------------------
+    ! create an Emesh object for Fields
+    !-----------------------------------------
 
-    ! input/output variables
-    type(ESMF_State)    , intent(in)    :: state
-    character(len=*)    , intent(in)    :: fldname
-    real(r8)            , intent(out)   :: output(:)
-    integer             , intent(out)   :: rc
+    use ESMF , only : ESMF_GridComp, ESMF_VM, ESMF_Mesh
+    use ESMF , only : ESMF_VMGet, ESMF_GridCompGet, ESMF_VMBroadCast, ESMF_VMAllGatherV
+    use ESMF , only : ESMF_SUCCESS, ESMF_LOGMSG_INFO, ESMF_LogWrite
+    use ESMF , only : ESMF_VMGather, ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU
+    use ESMF , only : ESMF_MeshCreate, ESMF_COORDSYS_SPH_DEG, ESMF_REDUCE_SUM
+    use ESMF , only : ESMF_VMAllReduce, ESMF_MESHELEMTYPE_QUAD
+
+    ! input/output arguments
+    type(ESMF_GridComp)               :: gcomp
+    integer           , intent(in)    :: nx_global
+    integer           , intent(in)    :: ny_global
+    integer           , intent(in)    :: gindex(:)
+    real(r8), pointer , intent(in)    :: lon(:)
+    real(r8), pointer , intent(in)    :: lat(:)
+    type(ESMF_Mesh)   , intent(inout) :: Emesh
+    integer           , intent(inout) :: rc
 
     ! local variables
-    integer                     :: g, i
-    real(R8), pointer           :: fldptr(:)
-    type(ESMF_StateItem_Flag)   :: itemFlag
-    integer                     :: dbrc
-    character(len=*), parameter :: subname='(lnd_import_export:state_getimport)'
-    ! ----------------------------------------------
+    integer          :: n,n1,n2,de
+    integer          :: iam
+    integer          :: lsize
+    integer          :: numTotElems, numNodes, numConn, nodeindx
+    integer          :: iur,iul,ill,ilr
+    integer          :: xid, yid, xid0, yid0
+    real(r8)         :: lonur, lonul, lonll, lonlr
+    integer, pointer :: iurpts(:)
+    integer, pointer :: elemIds(:)
+    integer, pointer :: elemTypes(:)
+    integer, pointer :: elemConn(:)
+    real(r8),pointer :: elemCoords(:)
+    integer, pointer :: nodeIds(:)
+    integer, pointer :: nodeOwners(:)
+    real(r8),pointer :: nodeCoords(:)
+    real(r8),pointer :: latG(:)
+    real(r8),pointer :: lonG(:)
+    integer ,pointer :: pes_local(:)
+    integer ,pointer :: pes_global(:)
+    integer, pointer :: recvOffsets(:)
+    integer, pointer :: recvCounts(:)
+    integer          :: sendData(1)
+    type(ESMF_VM)    :: vm
+    integer          :: petCount
+    character(len=*),parameter :: subname='(dead_MeshInit)'
+    !--------------------------------------------------------------
 
     rc = ESMF_SUCCESS
 
-    ! Determine if field with name fldname exists in state
-    call ESMF_StateGet(state, trim(fldname), itemFlag, rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_LogWrite(subname, ESMF_LOGMSG_INFO, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    ! if field exists then create output array - else do nothing
-    if (itemflag /= ESMF_STATEITEM_NOTFOUND) then
+    lsize = size(gindex)
 
-       ! get field pointer
-       call state_getfldptr(state, trim(fldname), fldptr, rc)
-       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-       ! determine output array
-       do g = 1,size(fldptr)
-          output(g) = fldptr(g)
-       end do
-    end if
+    call ESMF_VMGet(vm, petCount=petCount, localpet=iam, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-  end subroutine state_getimport
+    allocate(latG(nx_global*ny_global))
+    allocate(lonG(nx_global*ny_global))
 
-  !===============================================================================
+    allocate(recvoffsets(petCount))
+    allocate(recvCounts(petCount))
 
-  subroutine state_setexport(state, fldname, input,  rc)
-    ! ----------------------------------------------
-    ! Map input array to export state field
-    ! ----------------------------------------------
+    sendData(1) = lsize
+    call ESMF_VMGather(vm, sendData=sendData, recvData=recvCounts, count=1, rootPet=0, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    ! input/output variables
-    type(ESMF_State)    , intent(inout) :: state
-    character(len=*)    , intent(in)    :: fldname
-    real(r8)            , intent(in)    :: input(:)
-    integer             , intent(out)   :: rc
+    call ESMF_VMBroadCast(vm, bcstData=recvCounts, count=petCount, rootPet=0, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    ! local variables
-    integer                     :: g, i
-    real(R8), pointer           :: fldptr(:)
-    type(ESMF_StateItem_Flag)   :: itemFlag
-    integer                     :: dbrc
-    character(len=*), parameter :: subname='(lnd_import_export:state_setexport)'
-    ! ----------------------------------------------
+    recvoffsets(1) = 0
+    do n = 2,petCount
+       recvoffsets(n) = recvoffsets(n-1) + recvCounts(n-1)
+    end do
 
-    rc = ESMF_SUCCESS
+    call ESMF_VMAllGatherV(vm, lat, lsize, latG, recvCounts, recvOffsets, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    ! Determine if field with name fldname exists in state
-    call ESMF_StateGet(state, trim(fldname), itemFlag, rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_VMAllGatherV(vm, lon, lsize, lonG, recvCounts, recvOffsets, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    ! if field exists then create output array - else do nothing
-    if (itemflag /= ESMF_STATEITEM_NOTFOUND) then
+    deallocate(recvoffsets)
+    deallocate(recvCounts)
 
-       ! get field pointer
-       call state_getfldptr(state, trim(fldname), fldptr,  rc)
-       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
+    ! assumes quadrilaterals for each gridcell (element)
+    ! element index matches gsmap index value
+    ! nodeid at lower left of each gridcell matches gsmap index value
+    ! assumes wrap around in x direction but no wrap in y direction
+    ! node ids need to be described in counter clockwise direction
+    ! node id associated with lower left cell is assigned to local PET
+    ! node ids at top of y boundary assigned to the element to the right
 
-       ! set fldptr values to input array
-       do g = 1,size(fldptr)
-          fldptr(g) = input(g)
-       end do
-    end if
+    numTotElems = lsize
 
-  end subroutine state_setexport
+    allocate(elemIds(numTotElems))
+    allocate(elemTypes(numTotElems))
+    elemTypes=(/ESMF_MESHELEMTYPE_QUAD/)
+    allocate(elemConn(4*numTotElems))
+    allocate(elemCoords(2*numTotElems))
 
-  !===============================================================================
+    allocate(nodeIds(numTotElems*4))
+    nodeIds = -99
 
-  subroutine state_getfldptr(State, fldname, fldptr, rc)
-    ! ----------------------------------------------
-    ! Get pointer to a state field
-    ! ----------------------------------------------
-    use ESMF , only : ESMF_State, ESMF_Field, ESMF_Mesh, ESMF_FieldStatus_Flag
-    use ESMF , only : ESMF_StateGet, ESMF_FieldGet, ESMF_MeshGet
-    use ESMF , only : ESMF_FIELDSTATUS_COMPLETE, ESMF_FAILURE
+    elemIds(:) = gindex(:)
+    numNodes = 0
+    numConn = 0
 
-    type(ESMF_State),  intent(in)    :: State
-    character(len=*),  intent(in)    :: fldname
-    real(R8), pointer, intent(out)   :: fldptr(:)
-    integer,           intent(out)   :: rc
+    do n = 1,numTotElems
+       elemTypes(n) = ESMF_MESHELEMTYPE_QUAD
+       elemCoords(2*n-1) = lon(n)
+       elemCoords(2*n)   = lat(n)
 
-    ! local variables
-    type(ESMF_FieldStatus_Flag) :: status
-    type(ESMF_Field)            :: lfield
-    type(ESMF_Mesh)             :: lmesh
-    integer                     :: dbrc
-    integer                     :: nnodes, nelements
-    character(len=*), parameter :: subname='(lnd_import_export:state_getfldptr)'
-    ! ----------------------------------------------
+       do n1 = 1,4
 
-    rc = ESMF_SUCCESS
+          numNodes = numNodes + 1
+          nodeindx = numNodes
+          if (n1 == 1 .or. n1 == 3) xid = mod(elemIds(n)-1,nx_global) + 1
+          if (n1 == 2 .or. n1 == 4) xid = mod(elemIds(n)  ,nx_global) + 1
+          if (n1 == 1 .or. n1 == 2) yid = (elemIds(n)-1)/nx_global + 1
+          if (n1 == 3 .or. n1 == 4) yid = (elemIds(n)-1)/nx_global + 2
+          nodeIds(numNodes) = (yid-1) * nx_global + xid
+          n2 = 0
+          do while (n2 < numNodes - 1 .and. nodeindx == numNodes)
+             n2 = n2 + 1
+             if (nodeIds(numNodes) == nodeIds(n2)) nodeindx = n2
+          enddo
+          if (nodeindx /= numNodes) then
+             numNodes = numNodes - 1
+          endif
 
-    if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
-
-    call ESMF_StateGet(State, itemName=trim(fldname), field=lfield, rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_FieldGet(lfield, status=status, rc=rc)
-    if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (status /= ESMF_FIELDSTATUS_COMPLETE) then
-       call ESMF_LogWrite(trim(subname)//": ERROR data not allocated ", ESMF_LOGMSG_INFO, rc=rc)
-       rc = ESMF_FAILURE
-       return
-    else
-       call ESMF_FieldGet(lfield, mesh=lmesh, rc=rc)
-       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       call ESMF_MeshGet(lmesh, numOwnedNodes=nnodes, numOwnedElements=nelements, rc=rc)
-       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       if (nnodes == 0 .and. nelements == 0) then
-          call ESMF_LogWrite(trim(subname)//": no local nodes or elements ", ESMF_LOGMSG_INFO, rc=dbrc)
-          rc = ESMF_FAILURE
-          return
-       end if
-
-       call ESMF_FieldGet(lfield, farrayPtr=fldptr, rc=rc)
-       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-    endif  ! status
-
-    if (dbug_flag > 10) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
-
-  end subroutine state_getfldptr
-
-  !===============================================================================
-
-  subroutine Print_FieldExchInfo(values, logunit, fldlist, nflds, istr)
-
-    use med_constants_mod   , only : R8
-    use ESMF                , only : ESMF_MAXSTR
-
-    ! !DESCRIPTION:
-    ! Print out information about values to stdount
-    ! - flag sets the level of information:
-    ! - print out names of fields in values 2d array
-    ! - also print out local max and min of data in values 2d array
-    ! If optional argument istr is present, it will be output before any of the information.
-
-
-    ! input/output parameters:
-    real(R8)            , intent(in)          :: values(:,:) ! arrays sent to/recieved from mediator
-    integer             , intent(in)          :: logunit
-    type(fld_list_type) , intent(in)          :: fldlist(:)
-    integer             , intent(in)          :: nflds
-    character(*)        , intent(in),optional :: istr  ! string for print
-
-    !--- local ---
-    integer                    :: n           ! generic indicies
-    integer                    :: nsize       ! grid point in values array
-    real(R8)                   :: minl(nflds) ! local min
-    real(R8)                   :: maxl(nflds) ! local max
-    character(len=ESMF_MAXSTR) :: name
-
-    !--- formats ---
-    character(*),parameter :: subName = '(print_FieldExchInfo) '
-    character(*),parameter :: F00 = "('(print_FieldExchInfo) ',8a)"
-    character(*),parameter :: F01 = "('(print_FieldExchInfo) ',a,i9)"
-    character(*),parameter :: F02 = "('(print_FieldExchInfo) ',a,2es11.3,i4,2x,a)"
-    !-------------------------------------------------------------------------------
-
-    if (present(istr)) write(logunit,*) trim(istr)
-    nsize = size(values, dim=2)
-    write(logunit,F01) "local size =",nsize
-    do n = 1, nflds
-       minl(n) = minval(values(n,:))
-       maxl(n) = maxval(values(n,:))
-       write(logunit,F02) 'l min/max ',minl(n),maxl(n),n,fldlist(n)%stdname
+          numConn = numConn + 1
+          elemConn(numConn) = nodeindx
+       enddo
     enddo
 
-  end subroutine Print_FieldExchInfo
+
+    allocate(nodeCoords(2*numNodes))
+    allocate(nodeOwners(numNodes))
+    allocate(iurpts(numNodes))
+
+    do n = 1,numNodes
+
+       xid0 = mod(nodeIds(n)-1, nx_global) + 1
+       yid0 = (nodeIds(n)-1) / nx_global + 1
+
+       xid = xid0
+       yid = max(min(yid0,ny_global),1)
+       iur = (yid-1) * nx_global + xid
+       iurpts(n) = iur
+
+       xid = mod(xid0 - 2 + nx_global, nx_global) + 1
+       yid = max(min(yid0,ny_global),1)
+       iul = (yid-1) * nx_global + xid
+
+       xid = mod(xid0 - 2 + nx_global, nx_global) + 1
+       yid = max(min(yid0-1,ny_global),1)
+       ill = (yid-1) * nx_global + xid
+
+       xid = xid0
+       yid = max(min(yid0-1,ny_global),1)
+       ilr = (yid-1) * nx_global + xid
+
+       ! write(tmpstr,'(2a,8i6)') subname,' nodecoord = ',n,nodeIds(n),xid0,yid0,iur,iul,ill,ilr
+       ! call ESMF_LogWrite(trim(tmpstr), ESMF_LOGMSG_INFO)
+
+       ! need to normalize lon values to same 360 degree setting, use lonur as reference value
+       lonur = lonG(iur)
+       lonul = lonG(iul)
+       lonll = lonG(ill)
+       lonlr = lonG(ilr)
+
+       if (abs(lonul + 360._r8 - lonur) < abs(lonul - lonur)) lonul = lonul + 360._r8
+       if (abs(lonul - 360._r8 - lonur) < abs(lonul - lonur)) lonul = lonul - 360._r8
+       if (abs(lonll + 360._r8 - lonur) < abs(lonll - lonur)) lonll = lonll + 360._r8
+       if (abs(lonll - 360._r8 - lonur) < abs(lonll - lonur)) lonll = lonll - 360._r8
+       if (abs(lonlr + 360._r8 - lonur) < abs(lonlr - lonur)) lonlr = lonlr + 360._r8
+       if (abs(lonlr - 360._r8 - lonur) < abs(lonlr - lonur)) lonlr = lonlr - 360._r8
+
+       nodeCoords(2*n-1) = 0.25_r8 * (lonur + lonul + lonll + lonlr)
+       nodeCoords(2*n)   = 0.25_r8 * (latG(iur) + latG(iul) + latG(ill) + latG(ilr))
+    enddo
+
+    deallocate(lonG)
+    deallocate(latG)
+
+    ! Determine the pes that own each index of iurpts (nodeOwners)
+
+    allocate(pes_local(nx_global*ny_global))
+    allocate(pes_global(nx_global*ny_global))
+    pes_local(:) = 0
+    do n = 1,lsize
+       pes_local(gindex(n)) = iam
+    end do
+
+    call ESMF_VMAllReduce(vm, sendData=pes_local, recvData=pes_global, count=nx_global*ny_global, &
+         reduceflag=ESMF_REDUCE_SUM, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+    do n = 1,numNodes
+       nodeOwners(n) = pes_global(iurpts(n))
+    end do
+    deallocate(pes_local)
+    deallocate(pes_global)
+
+    Emesh = ESMF_MeshCreate(parametricDim=2, &
+         spatialDim=2, &
+         coordSys=ESMF_COORDSYS_SPH_DEG, &
+         nodeIds=nodeIds(1:numNodes), &
+         nodeCoords=nodeCoords, &
+         nodeOwners=nodeOwners, &
+         elementIds=elemIds,&
+         elementTypes=elemTypes, &
+         elementConn=elemConn, &
+         elementCoords=elemCoords, &
+         rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+    deallocate(iurpts)
+    deallocate(nodeIds, nodeCoords, nodeOwners)
+    deallocate(elemIds, elemTypes, elemConn, elemCoords)
+
+  end subroutine dead_meshinit
 
 end module dead_nuopc_mod

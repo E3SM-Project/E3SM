@@ -14,16 +14,19 @@ module NitrogenDynamicsMod
   use clm_varctl          , only : use_nitrif_denitrif, use_vertsoilc
   use subgridAveMod       , only : p2c
   use atm2lndType         , only : atm2lnd_type
-  use CNCarbonFluxType    , only : carbonflux_type, nfix_timeconst
+  use CNCarbonFluxType    , only : carbonflux_type
   use CNNitrogenFluxType  , only : nitrogenflux_type
   use CNNitrogenStateType , only : nitrogenstate_type
   use CNStateType         , only : cnstate_type
   use WaterStateType      , only : waterstate_type
   use WaterFluxType       , only : waterflux_type
   use CropType            , only : crop_type
-  use ColumnType          , only : col_pp                
-  use VegetationType           , only : veg_pp
-  use VegetationPropertiesType      , only : veg_vp
+  use ColumnType          , only : col_pp
+  use ColumnDataType      , only : col_es, col_ws, col_wf, col_cf, col_ns, col_nf 
+  use ColumnDataType      , only : nfix_timeconst  
+  use VegetationType      , only : veg_pp
+  use VegetationDataType  , only : veg_cs, veg_ns, veg_nf  
+  use VegetationPropertiesType  , only : veg_vp
   use CNCarbonStateType   , only : carbonstate_type
   use TemperatureType     , only : temperature_type
   use PhosphorusStateType , only : phosphorusstate_type
@@ -135,7 +138,7 @@ contains
     
     associate(& 
          forc_ndep     =>  atm2lnd_vars%forc_ndep_grc           , & ! Input:  [real(r8) (:)]  nitrogen deposition rate (gN/m2/s)                
-         ndep_to_sminn =>  nitrogenflux_vars%ndep_to_sminn_col   & ! Output: [real(r8) (:)]                                                    
+         ndep_to_sminn =>  col_nf%ndep_to_sminn   & ! Output: [real(r8) (:)]                                                    
          )
       
       ! Loop through columns
@@ -178,13 +181,13 @@ contains
     !-----------------------------------------------------------------------
 
     associate(& 
-         cannsum_npp    => carbonflux_vars%annsum_npp_col      , & ! Input:  [real(r8) (:)]  nitrogen deposition rate (gN/m2/s)                
-         col_lag_npp    => carbonflux_vars%lag_npp_col         , & ! Input: [real(r8) (:)]  (gC/m2/s) lagged net primary production           
+         cannsum_npp    => col_cf%annsum_npp      , & ! Input:  [real(r8) (:)]  nitrogen deposition rate (gN/m2/s)                
+         col_lag_npp    => col_cf%lag_npp         , & ! Input: [real(r8) (:)]  (gC/m2/s) lagged net primary production           
 
-         qflx_tran_veg  => waterflux_vars%qflx_tran_veg_col    , & ! col vegetation transpiration (mm H2O/s) (+ = to atm)
+         qflx_tran_veg  => col_wf%qflx_tran_veg    , & ! col vegetation transpiration (mm H2O/s) (+ = to atm)
          
-         qflx_evap_veg  => waterflux_vars%qflx_evap_veg_col    , & ! col vegetation evaporation (mm H2O/s) (+ = to atm)
-         nfix_to_sminn  => nitrogenflux_vars%nfix_to_sminn_col   & ! Output: [real(r8) (:)]  symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s)
+         qflx_evap_veg  => col_wf%qflx_evap_veg    , & ! col vegetation evaporation (mm H2O/s) (+ = to atm)
+         nfix_to_sminn  => col_nf%nfix_to_sminn   & ! Output: [real(r8) (:)]  symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s)
          )
 
       dayspyr = get_days_per_year()
@@ -261,16 +264,16 @@ contains
     !-----------------------------------------------------------------------
 
     associate(& 
-         h2osoi_liq          => waterstate_vars%h2osoi_liq_col            , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
+         h2osoi_liq          => col_ws%h2osoi_liq            , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
 
-         qflx_drain          => waterflux_vars%qflx_drain_col             , & ! Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)                    
-         qflx_surf           => waterflux_vars%qflx_surf_col              , & ! Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)                        
+         qflx_drain          => col_wf%qflx_drain             , & ! Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)                    
+         qflx_surf           => col_wf%qflx_surf              , & ! Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)                        
          
-         sminn_vr            => nitrogenstate_vars%sminn_vr_col           , & ! Input:  [real(r8) (:,:) ]  (gN/m3) soil mineral N                          
-         smin_no3_vr         => nitrogenstate_vars%smin_no3_vr_col        , & ! Input:  [real(r8) (:,:) ]                                                  
-         sminn_leached_vr    => nitrogenflux_vars%sminn_leached_vr_col    , & ! Output: [real(r8) (:,:) ]  rate of mineral N leaching (gN/m3/s)            
-         smin_no3_leached_vr => nitrogenflux_vars%smin_no3_leached_vr_col , & ! Output: [real(r8) (:,:) ]  rate of mineral NO3 leaching (gN/m3/s)          
-         smin_no3_runoff_vr  => nitrogenflux_vars%smin_no3_runoff_vr_col    & ! Output: [real(r8) (:,:) ]  rate of mineral NO3 loss with runoff (gN/m3/s)  
+         sminn_vr            => col_ns%sminn_vr           , & ! Input:  [real(r8) (:,:) ]  (gN/m3) soil mineral N                          
+         smin_no3_vr         => col_ns%smin_no3_vr        , & ! Input:  [real(r8) (:,:) ]                                                  
+         sminn_leached_vr    => col_nf%sminn_leached_vr    , & ! Output: [real(r8) (:,:) ]  rate of mineral N leaching (gN/m3/s)            
+         smin_no3_leached_vr => col_nf%smin_no3_leached_vr , & ! Output: [real(r8) (:,:) ]  rate of mineral NO3 leaching (gN/m3/s)          
+         smin_no3_runoff_vr  => col_nf%smin_no3_runoff_vr    & ! Output: [real(r8) (:,:) ]  rate of mineral NO3 loss with runoff (gN/m3/s)  
          )
 
       ! set time steps
@@ -460,8 +463,8 @@ contains
     !-----------------------------------------------------------------------
 
     associate(&   
-         fert          =>    nitrogenflux_vars%fert_patch          , & ! Input:  [real(r8) (:)]  nitrogen fertilizer rate (gN/m2/s)                
-         fert_to_sminn =>    nitrogenflux_vars%fert_to_sminn_col   & ! Output: [real(r8) (:)]                                                    
+         fert          =>    veg_nf%fert          , & ! Input:  [real(r8) (:)]  nitrogen fertilizer rate (gN/m2/s)                
+         fert_to_sminn =>    col_nf%fert_to_sminn   & ! Output: [real(r8) (:)]                                                    
          )
       
       call p2c(bounds, num_soilc, filter_soilc, &
@@ -508,7 +511,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                         & 
-         wf               =>  waterstate_vars%wf_col                 , & ! Input:  [real(r8) (:) ]  soil water as frac. of whc for top 0.5 m          
+         wf               =>  col_ws%wf                 , & ! Input:  [real(r8) (:) ]  soil water as frac. of whc for top 0.5 m          
 
          hui              =>  crop_vars%gddplant_patch               , & ! Input:  [real(r8) (:) ]  gdd since planting (gddplant)                    
 
@@ -516,11 +519,11 @@ contains
          gddmaturity      =>  cnstate_vars%gddmaturity_patch         , & ! Input:  [real(r8) (:) ]  gdd needed to harvest                             
          croplive         =>  crop_vars%croplive_patch            , & ! Input:  [logical  (:) ]  true if planted and not harvested                  
 
-         sminn            =>  nitrogenstate_vars%sminn_col           , & ! Input:  [real(r8) (:) ]  (kgN/m2) soil mineral N                           
-         plant_ndemand    =>  nitrogenflux_vars%plant_ndemand_patch  , & ! Input:  [real(r8) (:) ]  N flux required to support initial GPP (gN/m2/s)  
+         sminn            =>  col_ns%sminn           , & ! Input:  [real(r8) (:) ]  (kgN/m2) soil mineral N                           
+         plant_ndemand    =>  veg_nf%plant_ndemand  , & ! Input:  [real(r8) (:) ]  N flux required to support initial GPP (gN/m2/s)  
          
-         soyfixn          =>  nitrogenflux_vars%soyfixn_patch        , & ! Output: [real(r8) (:) ]  nitrogen fixed to each soybean crop               
-         soyfixn_to_sminn =>  nitrogenflux_vars%soyfixn_to_sminn_col   & ! Output: [real(r8) (:) ]                                                    
+         soyfixn          =>  veg_nf%soyfixn        , & ! Output: [real(r8) (:) ]  nitrogen fixed to each soybean crop               
+         soyfixn_to_sminn =>  col_nf%soyfixn_to_sminn   & ! Output: [real(r8) (:) ]                                                    
          )
 
       sminnthreshold1 = 30._r8
@@ -654,15 +657,15 @@ contains
          cp_scalar             => cnstate_vars%cp_scalar               , &
          vmax_nfix             => veg_vp%vmax_nfix                 , &
          km_nfix               => veg_vp%km_nfix                   , &
-         frootc                => carbonstate_vars%frootc_patch        , &
-         nfix_to_sminn         => nitrogenflux_vars%nfix_to_sminn_col  , & ! output: [real(r8) (:)]  symbiotic/asymbiotic n fixation to soil mineral n (gn/m2/s)
-         nfix_to_plantn        => nitrogenflux_vars%nfix_to_plantn_patch , &
-         nfix_to_ecosysn       => nitrogenflux_vars%nfix_to_ecosysn_col, &
-         pnup_pfrootc          => nitrogenstate_vars%pnup_pfrootc_patch, &
-         benefit_pgpp_pleafc   => nitrogenstate_vars%benefit_pgpp_pleafc_patch , &
-         t_soi10cm_col         => temperature_vars%t_soi10cm_col       , &
-         h2osoi_vol            => waterstate_vars%h2osoi_vol_col       , &
-         t_scalar              => carbonflux_vars%t_scalar_col           &
+         frootc                => veg_cs%frootc        , &
+         nfix_to_sminn         => col_nf%nfix_to_sminn  , & ! output: [real(r8) (:)]  symbiotic/asymbiotic n fixation to soil mineral n (gn/m2/s)
+         nfix_to_plantn        => veg_nf%nfix_to_plantn , &
+         nfix_to_ecosysn       => col_nf%nfix_to_ecosysn, &
+         pnup_pfrootc          => veg_ns%pnup_pfrootc, &
+         benefit_pgpp_pleafc   => veg_ns%benefit_pgpp_pleafc , &
+         t_soi10cm_col         => col_es%t_soi10cm       , &
+         h2osoi_vol            => col_ws%h2osoi_vol       , &
+         t_scalar              => col_cf%t_scalar           &
          )
 
       do fc=1,num_soilc

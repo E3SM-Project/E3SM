@@ -6,8 +6,11 @@ module Ensemble_driver
   ! length of stop_time - start_time.  It's purpose is to instantiate NINST copies of the
   ! esm driver and its components layed out concurently across mpi tasks.
   !-----------------------------------------------------------------------------
-  use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag, CL
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+
+  use shr_kind_mod          , only : cl=>shr_kind_cl
+  use shr_nuopc_utils_mod   , only : chkerr => shr_nuopc_utils_ChkErr
+  use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag
+  use med_internalstate_mod , only : mastertask
 
   implicit none
   private
@@ -22,12 +25,14 @@ module Ensemble_driver
 !================================================================================
 
   subroutine SetServices(ensemble_driver, rc)
+
     use NUOPC        , only : NUOPC_CompDerive, NUOPC_CompSpecialize
     use NUOPC_Driver , only : driver_routine_SS             => SetServices
     use NUOPC_Driver , only : ensemble_label_SetModelServices => label_SetModelServices
     use ESMF         , only : ESMF_GridComp, ESMF_Config, ESMF_GridCompSet, ESMF_ConfigLoadFile
     use ESMF         , only : ESMF_ConfigCreate
     use ESMF         , only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO
+
     type(ESMF_GridComp)  :: ensemble_driver
     integer, intent(out) :: rc
 
@@ -44,22 +49,22 @@ module Ensemble_driver
 
     ! NUOPC_Driver registers the generic methods
     call NUOPC_CompDerive(ensemble_driver, driver_routine_SS, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! attach specializing method(s)
     call NUOPC_CompSpecialize(ensemble_driver, specLabel=ensemble_label_SetModelServices, &
          specRoutine=SetModelServices, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Create, open and set the config
     config = ESMF_ConfigCreate(rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_ConfigLoadFile(config, "nuopc.runconfig", rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_GridCompSet(ensemble_driver, config=config, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     if (dbug_flag > 5) then
       call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
@@ -78,6 +83,7 @@ module Ensemble_driver
     use NUOPC                 , only : NUOPC_CompAttributeGet, NUOPC_CompAttributeSet, NUOPC_CompAttributeAdd
     use NUOPC_Driver          , only : NUOPC_DriverAddComp
     use esm, only : ESMSetServices => SetServices, ReadAttributes
+!    use pio_interface, only : PIOSetServices => SetServices
     use shr_nuopc_time_mod    , only : shr_nuopc_time_clockInit
     use med_internalstate_mod , only : logunit  ! initialized here
     use shr_log_mod           , only : shrloglev=>shr_log_level, shrlogunit=> shr_log_unit
@@ -101,6 +107,7 @@ module Ensemble_driver
     character(len=512)     :: diro
     character(len=512)     :: logfile
     integer                :: global_comm
+    integer                :: cpl_rootpe
     logical                :: iamroot_med ! mediator masterproc
     logical                :: read_restart
     integer                :: dbrc
@@ -125,26 +132,30 @@ module Ensemble_driver
     endif
 
     call ESMF_GridCompGet(ensemble_driver, config=config, vm=vm, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_VMGet(vm, localPet=localPet, PetCount=PetCount, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     !-------------------------------------------
     ! Initialize clocks
     !-------------------------------------------
     call ReadAttributes(ensemble_driver, config, "ALLCOMP_attributes::", rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call ReadAttributes(ensemble_driver, config, "CLOCK_attributes::", rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     call ReadAttributes(ensemble_driver, config, "PELAYOUT_attributes::", rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+    call NUOPC_CompAttributeGet(ensemble_driver, name="cpl_rootpe", value=cvalue, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) cpl_rootpe
 
     ! Check valid values of start type
     call NUOPC_CompAttributeGet(ensemble_driver, name="start_type", value=start_type, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     if ((trim(start_type) /= start_type_start) .and.  &
         (trim(start_type) /= start_type_cont ) .and.  &
@@ -155,18 +166,17 @@ module Ensemble_driver
     end if
 
     call InitRestart(ensemble_driver, read_restart, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! Need to get number of ensemble members here
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     call NUOPC_CompAttributeGet(ensemble_driver, name="ninst", value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     read(cvalue, *) number_of_members
     !-------------------------------------------
     ! Extract the config object from the ensemble_driver
     !-------------------------------------------
     ntasks_per_member = PetCount/number_of_members
-    if(ntasks_per_member*number_of_members /= PetCount) then
-       write (msgstr, *) "PetCount must be evenly divisable by number of members "
+    if(ntasks_per_member*number_of_members .ne. PetCount) then
+       write (msgstr,'(a,i5,a,i3,a,i3,a)') "PetCount (",PetCount,&
+            ") must be evenly divisable by number of members (",number_of_members,")"
        call ESMF_LogSetError(ESMF_RC_ARG_BAD, msg=msgstr, line=__LINE__, file=__FILE__, rcToReturn=rc)
        return
     endif
@@ -174,7 +184,7 @@ module Ensemble_driver
     allocate(petList(ntasks_per_member))
 
     call NUOPC_CompAttributeGet(ensemble_driver, name='cpl_rootpe', value=cvalue, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
     read(cvalue, *) rootpe_med
 
     do inst=1,number_of_members
@@ -185,42 +195,44 @@ module Ensemble_driver
        enddo
        write(drvrinst,'(a,i4.4)') "ESM",inst
        call NUOPC_DriverAddComp(ensemble_driver, drvrinst, ESMSetServices, petList=petList, comp=gridcomptmp, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
        if (localpet >= petlist(1) .and. localpet <= petlist(ntasks_per_member)) then
           driver = gridcomptmp
           if(number_of_members > 1) then
              call NUOPC_CompAttributeAdd(driver, attrList=(/'inst_suffix'/), rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             if (chkerr(rc,__LINE__,u_FILE_u)) return
              write(inst_suffix,'(a,i4.4)') '_',inst
              call NUOPC_CompAttributeSet(driver, name='inst_suffix', value=inst_suffix, rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             if (chkerr(rc,__LINE__,u_FILE_u)) return
           else
              inst_suffix = ''
           endif
           write(cvalue,*) read_restart
           call NUOPC_CompAttributeAdd(driver, attrList=(/'read_restart'/), rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
           call NUOPC_CompAttributeSet(driver, name='read_restart', value=trim(cvalue), rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
 
           call ReadAttributes(driver, config, "MED_attributes::", rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
 
           call ReadAttributes(driver, config, "CLOCK_attributes::", rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
 
           call ReadAttributes(driver, config, "MED_modelio"//trim(inst_suffix)//"::", rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-          if (mod(localPet, ntasks_per_member) == rootpe_med) then
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+          ! Set the mediator log to the MED task 0
+          if (mod(localPet,ntasks_per_member)==cpl_rootpe) then
              call NUOPC_CompAttributeGet(driver, name="diro", value=diro, rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             if (chkerr(rc,__LINE__,u_FILE_u)) return
              call NUOPC_CompAttributeGet(driver, name="logfile", value=logfile, rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             if (chkerr(rc,__LINE__,u_FILE_u)) return
              logunit = shr_file_getUnit()
              open(logunit,file=trim(diro)//"/"//trim(logfile))
+             mastertask = .true.
           else
              logUnit = shrlogunit
+             mastertask = .false.
           endif
           call shr_file_getLogLevel(shrloglev)
           call shr_file_setLogLevel(max(shrloglev,1))
@@ -228,7 +240,7 @@ module Ensemble_driver
        endif
     enddo
     call shr_nuopc_time_clockInit(ensemble_driver, driver, logunit, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     deallocate(petList)
 
@@ -251,7 +263,6 @@ module Ensemble_driver
     ! local variables
     character(len=CL)       :: cvalue         ! temporary
     integer                 :: ierr           ! error return
-    integer                 :: unitn          ! Namelist unit number to read
 
     character(len=CL)       :: restart_file   ! Full archive path to restart file
     character(len=CL)       :: restart_pfile  ! Restart pointer file
@@ -277,7 +288,7 @@ module Ensemble_driver
 
     ! First Determine if restart is read
     call NUOPC_CompAttributeGet(ensemble_driver, name='start_type', value=start_type, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Check valid values of start type
 
@@ -297,15 +308,15 @@ module Ensemble_driver
 
     ! Add rest_case_name and read_restart to ensemble_driver attributes
     call NUOPC_CompAttributeAdd(ensemble_driver, attrList=(/'rest_case_name','read_restart'/), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     rest_case_name = ' '
     call NUOPC_CompAttributeSet(ensemble_driver, name='rest_case_name', value=rest_case_name, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     write(cvalue,*) read_restart
     call NUOPC_CompAttributeSet(ensemble_driver, name='read_restart', value=trim(cvalue), rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine InitRestart
 

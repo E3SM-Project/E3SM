@@ -12,7 +12,8 @@ module CNNStateUpdate2BeTRMod
   use clm_varctl          , only : iulog
   use CNNitrogenStateType , only : nitrogenstate_type
   use CNNitrogenFLuxType  , only : nitrogenflux_type
-  use VegetationType                , only : veg_pp
+  use VegetationType      , only : veg_pp
+  use VegetationDataType  , only : veg_ns, veg_nf
   use pftvarcon           , only : npcropmin
   !! bgc interface & pflotran:
   use clm_varctl          , only : use_pflotran, pf_cmode
@@ -67,29 +68,29 @@ contains
          p = filter_soilp(fp)
 
          ! displayed pools
-         ns%leafn_patch(p)              =  ns%leafn_patch(p)      - nf%m_leafn_to_litter_patch(p)      * dt
-         ns%frootn_patch(p)             =  ns%frootn_patch(p)     - nf%m_frootn_to_litter_patch(p)     * dt
-         ns%livestemn_patch(p)          =  ns%livestemn_patch(p)  - nf%m_livestemn_to_litter_patch(p)  * dt
-         ns%deadstemn_patch(p)          =  ns%deadstemn_patch(p)  - nf%m_deadstemn_to_litter_patch(p)  * dt
-         ns%livecrootn_patch(p)         =  ns%livecrootn_patch(p) - nf%m_livecrootn_to_litter_patch(p) * dt
-         ns%deadcrootn_patch(p)         =  ns%deadcrootn_patch(p) - nf%m_deadcrootn_to_litter_patch(p) * dt
-         ns%retransn_patch(p)           =  ns%retransn_patch(p)   - nf%m_retransn_to_litter_patch(p)   * dt
+         veg_ns%leafn(p)              =  veg_ns%leafn(p)      - veg_nf%m_leafn_to_litter(p)      * dt
+         veg_ns%frootn(p)             =  veg_ns%frootn(p)     - veg_nf%m_frootn_to_litter(p)     * dt
+         veg_ns%livestemn(p)          =  veg_ns%livestemn(p)  - veg_nf%m_livestemn_to_litter(p)  * dt
+         veg_ns%deadstemn(p)          =  veg_ns%deadstemn(p)  - veg_nf%m_deadstemn_to_litter(p)  * dt
+         veg_ns%livecrootn(p)         =  veg_ns%livecrootn(p) - veg_nf%m_livecrootn_to_litter(p) * dt
+         veg_ns%deadcrootn(p)         =  veg_ns%deadcrootn(p) - veg_nf%m_deadcrootn_to_litter(p) * dt
+         veg_ns%retransn(p)           =  veg_ns%retransn(p)   - veg_nf%m_retransn_to_litter(p)   * dt
 
          ! storage pools
-         ns%leafn_storage_patch(p)      =  ns%leafn_storage_patch(p)      - nf%m_leafn_storage_to_litter_patch(p)      * dt
-         ns%frootn_storage_patch(p)     =  ns%frootn_storage_patch(p)     - nf%m_frootn_storage_to_litter_patch(p)     * dt
-         ns%livestemn_storage_patch(p)  =  ns%livestemn_storage_patch(p)  - nf%m_livestemn_storage_to_litter_patch(p)  * dt
-         ns%deadstemn_storage_patch(p)  =  ns%deadstemn_storage_patch(p)  - nf%m_deadstemn_storage_to_litter_patch(p)  * dt
-         ns%livecrootn_storage_patch(p) =  ns%livecrootn_storage_patch(p) - nf%m_livecrootn_storage_to_litter_patch(p) * dt
-         ns%deadcrootn_storage_patch(p) =  ns%deadcrootn_storage_patch(p) - nf%m_deadcrootn_storage_to_litter_patch(p) * dt
+         veg_ns%leafn_storage(p)      =  veg_ns%leafn_storage(p)      - veg_nf%m_leafn_storage_to_litter(p)      * dt
+         veg_ns%frootn_storage(p)     =  veg_ns%frootn_storage(p)     - veg_nf%m_frootn_storage_to_litter(p)     * dt
+         veg_ns%livestemn_storage(p)  =  veg_ns%livestemn_storage(p)  - veg_nf%m_livestemn_storage_to_litter(p)  * dt
+         veg_ns%deadstemn_storage(p)  =  veg_ns%deadstemn_storage(p)  - veg_nf%m_deadstemn_storage_to_litter(p)  * dt
+         veg_ns%livecrootn_storage(p) =  veg_ns%livecrootn_storage(p) - veg_nf%m_livecrootn_storage_to_litter(p) * dt
+         veg_ns%deadcrootn_storage(p) =  veg_ns%deadcrootn_storage(p) - veg_nf%m_deadcrootn_storage_to_litter(p) * dt
 
          ! transfer pools
-         ns%leafn_xfer_patch(p)         =  ns%leafn_xfer_patch(p)      - nf%m_leafn_xfer_to_litter_patch(p)      * dt
-         ns%frootn_xfer_patch(p)        =  ns%frootn_xfer_patch(p)     - nf%m_frootn_xfer_to_litter_patch(p)     * dt
-         ns%livestemn_xfer_patch(p)     =  ns%livestemn_xfer_patch(p)  - nf%m_livestemn_xfer_to_litter_patch(p)  * dt
-         ns%deadstemn_xfer_patch(p)     =  ns%deadstemn_xfer_patch(p)  - nf%m_deadstemn_xfer_to_litter_patch(p)  * dt
-         ns%livecrootn_xfer_patch(p)    =  ns%livecrootn_xfer_patch(p) - nf%m_livecrootn_xfer_to_litter_patch(p) * dt
-         ns%deadcrootn_xfer_patch(p)    =  ns%deadcrootn_xfer_patch(p) - nf%m_deadcrootn_xfer_to_litter_patch(p) * dt
+         veg_ns%leafn_xfer(p)         =  veg_ns%leafn_xfer(p)      - veg_nf%m_leafn_xfer_to_litter(p)      * dt
+         veg_ns%frootn_xfer(p)        =  veg_ns%frootn_xfer(p)     - veg_nf%m_frootn_xfer_to_litter(p)     * dt
+         veg_ns%livestemn_xfer(p)     =  veg_ns%livestemn_xfer(p)  - veg_nf%m_livestemn_xfer_to_litter(p)  * dt
+         veg_ns%deadstemn_xfer(p)     =  veg_ns%deadstemn_xfer(p)  - veg_nf%m_deadstemn_xfer_to_litter(p)  * dt
+         veg_ns%livecrootn_xfer(p)    =  veg_ns%livecrootn_xfer(p) - veg_nf%m_livecrootn_xfer_to_litter(p) * dt
+         veg_ns%deadcrootn_xfer(p)    =  veg_ns%deadcrootn_xfer(p) - veg_nf%m_deadcrootn_xfer_to_litter(p) * dt
 
       end do
 
@@ -137,36 +138,36 @@ contains
          p = filter_soilp(fp)
 
          ! displayed pools
-         ns%leafn_patch(p)      = ns%leafn_patch(p)      - nf%hrv_leafn_to_litter_patch(p)      * dt
-         ns%frootn_patch(p)     = ns%frootn_patch(p)     - nf%hrv_frootn_to_litter_patch(p)     * dt
-         ns%livestemn_patch(p)  = ns%livestemn_patch(p)  - nf%hrv_livestemn_to_litter_patch(p)  * dt
-         ns%deadstemn_patch(p)  = ns%deadstemn_patch(p)  - nf%hrv_deadstemn_to_prod10n_patch(p) * dt
-         ns%deadstemn_patch(p)  = ns%deadstemn_patch(p)  - nf%hrv_deadstemn_to_prod100n_patch(p)* dt
-         ns%livecrootn_patch(p) = ns%livecrootn_patch(p) - nf%hrv_livecrootn_to_litter_patch(p) * dt
-         ns%deadcrootn_patch(p) = ns%deadcrootn_patch(p) - nf%hrv_deadcrootn_to_litter_patch(p) * dt
-         ns%retransn_patch(p)   = ns%retransn_patch(p)   - nf%hrv_retransn_to_litter_patch(p)   * dt
+         veg_ns%leafn(p)      = veg_ns%leafn(p)      - veg_nf%hrv_leafn_to_litter(p)      * dt
+         veg_ns%frootn(p)     = veg_ns%frootn(p)     - veg_nf%hrv_frootn_to_litter(p)     * dt
+         veg_ns%livestemn(p)  = veg_ns%livestemn(p)  - veg_nf%hrv_livestemn_to_litter(p)  * dt
+         veg_ns%deadstemn(p)  = veg_ns%deadstemn(p)  - veg_nf%hrv_deadstemn_to_prod10n(p) * dt
+         veg_ns%deadstemn(p)  = veg_ns%deadstemn(p)  - veg_nf%hrv_deadstemn_to_prod100n(p)* dt
+         veg_ns%livecrootn(p) = veg_ns%livecrootn(p) - veg_nf%hrv_livecrootn_to_litter(p) * dt
+         veg_ns%deadcrootn(p) = veg_ns%deadcrootn(p) - veg_nf%hrv_deadcrootn_to_litter(p) * dt
+         veg_ns%retransn(p)   = veg_ns%retransn(p)   - veg_nf%hrv_retransn_to_litter(p)   * dt
 
        if (ivt(p) >= npcropmin) then ! skip 2 generic crops
-           ns%livestemn_patch(p)= ns%livestemn_patch(p)  - nf%hrv_livestemn_to_prod1n_patch(p)  * dt
-           ns%leafn_patch(p)    = ns%leafn_patch(p)      - nf%hrv_leafn_to_prod1n_patch(p)      * dt
-           ns%grainn_patch(p)   = ns%grainn_patch(p)     - nf%hrv_grainn_to_prod1n_patch(p)     * dt
+           veg_ns%livestemn(p)= veg_ns%livestemn(p)  - veg_nf%hrv_livestemn_to_prod1n(p)  * dt
+           veg_ns%leafn(p)    = veg_ns%leafn(p)      - veg_nf%hrv_leafn_to_prod1n(p)      * dt
+           veg_ns%grainn(p)   = veg_ns%grainn(p)     - veg_nf%hrv_grainn_to_prod1n(p)     * dt
        end if
 
          ! storage pools
-         ns%leafn_storage_patch(p)      = ns%leafn_storage_patch(p)      - nf%hrv_leafn_storage_to_litter_patch(p)      * dt
-         ns%frootn_storage_patch(p)     = ns%frootn_storage_patch(p)     - nf%hrv_frootn_storage_to_litter_patch(p)     * dt
-         ns%livestemn_storage_patch(p)  = ns%livestemn_storage_patch(p)  - nf%hrv_livestemn_storage_to_litter_patch(p)  * dt
-         ns%deadstemn_storage_patch(p)  = ns%deadstemn_storage_patch(p)  - nf%hrv_deadstemn_storage_to_litter_patch(p)  * dt
-         ns%livecrootn_storage_patch(p) = ns%livecrootn_storage_patch(p) - nf%hrv_livecrootn_storage_to_litter_patch(p) * dt
-         ns%deadcrootn_storage_patch(p) = ns%deadcrootn_storage_patch(p) - nf%hrv_deadcrootn_storage_to_litter_patch(p) * dt
+         veg_ns%leafn_storage(p)      = veg_ns%leafn_storage(p)      - veg_nf%hrv_leafn_storage_to_litter(p)      * dt
+         veg_ns%frootn_storage(p)     = veg_ns%frootn_storage(p)     - veg_nf%hrv_frootn_storage_to_litter(p)     * dt
+         veg_ns%livestemn_storage(p)  = veg_ns%livestemn_storage(p)  - veg_nf%hrv_livestemn_storage_to_litter(p)  * dt
+         veg_ns%deadstemn_storage(p)  = veg_ns%deadstemn_storage(p)  - veg_nf%hrv_deadstemn_storage_to_litter(p)  * dt
+         veg_ns%livecrootn_storage(p) = veg_ns%livecrootn_storage(p) - veg_nf%hrv_livecrootn_storage_to_litter(p) * dt
+         veg_ns%deadcrootn_storage(p) = veg_ns%deadcrootn_storage(p) - veg_nf%hrv_deadcrootn_storage_to_litter(p) * dt
 
          ! transfer pools
-         ns%leafn_xfer_patch(p)      = ns%leafn_xfer_patch(p)      - nf%hrv_leafn_xfer_to_litter_patch(p)      *dt
-         ns%frootn_xfer_patch(p)     = ns%frootn_xfer_patch(p)     - nf%hrv_frootn_xfer_to_litter_patch(p)     *dt
-         ns%livestemn_xfer_patch(p)  = ns%livestemn_xfer_patch(p)  - nf%hrv_livestemn_xfer_to_litter_patch(p)  *dt
-         ns%deadstemn_xfer_patch(p)  = ns%deadstemn_xfer_patch(p)  - nf%hrv_deadstemn_xfer_to_litter_patch(p)  *dt
-         ns%livecrootn_xfer_patch(p) = ns%livecrootn_xfer_patch(p) - nf%hrv_livecrootn_xfer_to_litter_patch(p) *dt
-         ns%deadcrootn_xfer_patch(p) = ns%deadcrootn_xfer_patch(p) - nf%hrv_deadcrootn_xfer_to_litter_patch(p) *dt
+         veg_ns%leafn_xfer(p)      = veg_ns%leafn_xfer(p)      - veg_nf%hrv_leafn_xfer_to_litter(p)      *dt
+         veg_ns%frootn_xfer(p)     = veg_ns%frootn_xfer(p)     - veg_nf%hrv_frootn_xfer_to_litter(p)     *dt
+         veg_ns%livestemn_xfer(p)  = veg_ns%livestemn_xfer(p)  - veg_nf%hrv_livestemn_xfer_to_litter(p)  *dt
+         veg_ns%deadstemn_xfer(p)  = veg_ns%deadstemn_xfer(p)  - veg_nf%hrv_deadstemn_xfer_to_litter(p)  *dt
+         veg_ns%livecrootn_xfer(p) = veg_ns%livecrootn_xfer(p) - veg_nf%hrv_livecrootn_xfer_to_litter(p) *dt
+         veg_ns%deadcrootn_xfer(p) = veg_ns%deadcrootn_xfer(p) - veg_nf%hrv_deadcrootn_xfer_to_litter(p) *dt
 
       end do
 

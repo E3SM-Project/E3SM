@@ -26,6 +26,8 @@ subroutine scm_setinitial(elem)
 
   type(element_t), intent(inout) :: elem(:)
 
+#ifndef MODEL_THETA_L
+
   integer i, j, k, ie, thelev
   integer inumliq, inumice, icldliq, icldice
 
@@ -84,6 +86,8 @@ subroutine scm_setinitial(elem)
     enddo
   endif
 
+#endif
+
 end subroutine scm_setinitial
 
 subroutine scm_setfield(elem)
@@ -91,6 +95,8 @@ subroutine scm_setfield(elem)
   implicit none
 
   type(element_t), intent(inout) :: elem(:)
+
+#ifndef MODEL_THETA_L
 
   integer i, j, k, ie
 
@@ -100,6 +106,8 @@ subroutine scm_setfield(elem)
       if (have_omega) elem(ie)%derived%omega_p(:,:,i)=wfld(i)  !     set t to tobs at first
     end do
   end do
+
+#endif
 
 end subroutine scm_setfield
 
@@ -123,6 +131,9 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     type (TimeLevel_t), intent(in)       :: tl
     logical :: t_before_advance, do_column_scm
     real(kind=real_kind), parameter :: rad2deg = 180.0_real_kind / SHR_CONST_PI
+
+
+#ifndef MODEL_THETA_L
 
     integer :: ie,k,i,j,t,nm_f
     real (kind=real_kind), dimension(np,np,nlev)  :: dpt1,dpt2   ! delta pressure
@@ -193,6 +204,8 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     elem(ie)%state%v(i,j,1,:,t1) = forecast_u(:)
     elem(ie)%state%v(i,j,2,:,t1) = forecast_v(:)
     elem(ie)%state%Q(i,j,:,:) = forecast_q(:,:)
+
+#endif
 
     end subroutine apply_SC_forcing
 

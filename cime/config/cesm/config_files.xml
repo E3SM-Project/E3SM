@@ -2,7 +2,7 @@
 
 <?xml-stylesheet type="text/xsl" ?>
 
-<entry_id>
+<entry_id version="2.0">
 
   <entry id="MODEL">
     <type>char</type>
@@ -30,7 +30,7 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of all supported model grids, domains and mapping files (for documentation only - DO NOT EDIT)</desc>
-    <schema>$CIMEROOT/config/xml_schemas/config_grids_v2.xsd</schema>
+    <schema>$CIMEROOT/config/xml_schemas/config_grids_v2.1.xsd</schema>
   </entry>
 
   <entry id="MACHINES_SPEC_FILE">
@@ -112,8 +112,8 @@
   <entry id="COMP_ROOT_DIR_CPL">
     <type>char</type>
     <values>
-      <value>$CIMEROOT/src/drivers/$COMP_INTERFACE</value>  -->
-    </values> -->
+      <value>$CIMEROOT/src/drivers/$COMP_INTERFACE</value>
+    </values>
     <group>case_comps</group>
     <file>env_case.xml</file>
     <desc>Root directory of the case driver/coupler component  </desc>
@@ -212,6 +212,19 @@
     <schema>$CIMEROOT/config/xml_schemas/config_compsets.xsd</schema>
   </entry>
 
+  <entry id="COMP_ROOT_DIR_IAC">
+    <type>char</type>
+    <default_value>unset</default_value>
+    <values>
+      <value component="siac"      >$CIMEROOT/src/components/stub_comps/siac</value>
+      <value component="xiac"      >$CIMEROOT/src/components/xcpl_comps/xiac</value>
+    </values>
+    <group>case_comps</group>
+    <file>env_case.xml</file>
+    <desc>Root directory of the case integrated assessment component  </desc>
+    <schema>$CIMEROOT/config/xml_schemas/config_compsets.xsd</schema>
+  </entry>
+
   <entry id="COMP_ROOT_DIR_ESP">
     <type>char</type>
     <default_value>unset</default_value>
@@ -229,7 +242,7 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="allactive">$SRCROOT/cime_config/config_compsets.xml</value> 
+      <value component="allactive">$SRCROOT/cime_config/config_compsets.xml</value>
       <value component="drv"      >$COMP_ROOT_DIR_CPL/cime_config/config_compsets.xml</value>
       <value component="cam"      >$COMP_ROOT_DIR_ATM/cime_config/config_compsets.xml</value>
       <value component="fv3gfs"   >$COMP_ROOT_DIR_ATM/cime_config/config_compsets.xml</value>
@@ -494,6 +507,19 @@
     <type>char</type>
     <values>
       <value>$COMP_ROOT_DIR_GLC/cime_config/config_component.xml</value>
+    </values>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
+    <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
+    <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
+  </entry>
+
+  <entry id="CONFIG_IAC_FILE">
+    <type>char</type>
+    <default_value>unset</default_value>
+    <values>
+      <value>$COMP_ROOT_DIR_IAC/cime_config/config_component.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>

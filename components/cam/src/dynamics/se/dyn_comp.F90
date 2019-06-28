@@ -79,7 +79,7 @@ CONTAINS
   ! Initialize the dynamical core
 
     use pio,                 only: file_desc_t
-    use hycoef,              only: hycoef_init
+    use hycoef,              only: hycoef_init, hyam, hybm, hyai, hybi, ps0
     use ref_pres,            only: ref_pres_init
 
     use pmgrid,              only: dyndecomp_set
@@ -210,41 +210,41 @@ CONTAINS
     ! Physics-grid will be defined later by phys_grid_init
     call define_cam_grids()
 
+    hvcoord%hyam=hyam
+    hvcoord%hyai=hyai
+    hvcoord%hybm=hybm
+    hvcoord%hybi=hybi
+    hvcoord%ps0=ps0
+        
+    call set_layer_locations(hvcoord,.false.,par%masterproc)
+        
   end subroutine dyn_init1
 
 
   subroutine dyn_init2(dyn_in)
-    use dimensions_mod,   only: nlev, nelemd
+    use dimensions_mod,   only: nlev, nelemd, np
     use prim_driver_mod,  only: prim_init2
     use prim_si_mod,  only: prim_set_mass
     use hybrid_mod,       only: hybrid_create
-    use hycoef,           only: hyam, hybm, hyai, hybi, ps0
+    use hycoef,           only: ps0
     use parallel_mod,     only: par
     use time_mod,         only: time_at
     use control_mod,      only: moisture, runtype
     use cam_control_mod,  only: aqua_planet, ideal_phys, adiabatic
     use comsrf,           only: landm, sgh, sgh30
     use cam_instance,     only: inst_index
+    use element_ops,      only: set_thermostate
 
     type (dyn_import_t), intent(inout) :: dyn_in
 
     type(element_t),    pointer :: elem(:)
 
-    integer :: ithr, nets, nete, ie, k
+    integer :: ithr, nets, nete, ie, k, tlev
     real(r8), parameter :: Tinit=300.0_r8
-    real(r8) :: dyn_ps0
     type(hybrid_t) :: hybrid
+    real(r8) :: temperature(np,np,nlev)
 
     elem  => dyn_in%elem
-
-    dyn_ps0=ps0
-    hvcoord%hyam=hyam
-    hvcoord%hyai=hyai
-    hvcoord%hybm=hybm
-    hvcoord%hybi=hybi
-    hvcoord%ps0=dyn_ps0  
-
-    call set_layer_locations(hvcoord,.false.,par%masterproc)
 
     if(par%dynproc) then
 
@@ -275,15 +275,16 @@ CONTAINS
           moisture='dry'
           if(runtype == 0) then
              do ie=nets,nete
-                elem(ie)%state%ps_v(:,:,:) =dyn_ps0
+                elem(ie)%state%ps_v(:,:,:) =ps0
 
                 elem(ie)%state%phis(:,:)=0.0_r8
-
-                elem(ie)%state%T(:,:,:,:) =Tinit
 
                 elem(ie)%state%v(:,:,:,:,:) =0.0_r8
 
                 elem(ie)%state%q(:,:,:,:)=0.0_r8
+
+                temperature(:,:,:)=0.0_r8
+                call set_thermostate(elem(ie),temperature,hvcoord)
 
              end do
           end if
@@ -300,6 +301,10 @@ CONTAINS
           elem(ie)%derived%FM=0.0_r8
           elem(ie)%derived%FT=0.0_r8
           elem(ie)%derived%FQ=0.0_r8
+#ifdef MODEL_THETA_L
+          elem(ie)%derived%FPHI=0.0_r8
+          elem(ie)%derived%FVTheta=0.0_r8
+#endif
        end do
 
        ! scale PS to achieve prescribed dry mass
@@ -412,40 +417,40 @@ CONTAINS
 
     ! Create a CS grid mapping file for postprocessing tools
 
-       ! write meta data for physics on GLL nodes
-       call cam_pio_createfile(nc, 'SEMapping.nc', 0)
-   
-       ierr = pio_def_dim(nc, 'ncenters', npm12*nelem, dim1)
-       ierr = pio_def_dim(nc, 'ncorners', 4, dim2)
-       ierr = pio_def_var(nc, 'element_corners', PIO_INT, (/dim1,dim2/),vid)
-    
-       ierr = pio_enddef(nc)
-       if (par%dynproc) then
-          call createmetadata(par, elem, subelement_corners)
-       end if
+    ! write meta data for physics on GLL nodes
+    call cam_pio_createfile(nc, 'SEMapping.nc')
 
-       jj=0
-       do cc=0,3
-          do ie=1,nelemd
-             base = ((elem(ie)%globalid-1)+cc*nelem)*npm12
-             ii=0
-             do j=1,np-1
-                do i=1,np-1
-                   ii=ii+1
-                   jj=jj+1
-                   dof(jj) = base+ii
-                end do
+    ierr = pio_def_dim(nc, 'ncenters', npm12*nelem, dim1)
+    ierr = pio_def_dim(nc, 'ncorners', 4, dim2)
+    ierr = pio_def_var(nc, 'element_corners', PIO_INT, (/dim1,dim2/),vid)
+
+    ierr = pio_enddef(nc)
+    if (par%dynproc) then
+       call createmetadata(par, elem, subelement_corners)
+    end if
+
+    jj=0
+    do cc=0,3
+       do ie=1,nelemd
+          base = ((elem(ie)%globalid-1)+cc*nelem)*npm12
+          ii=0
+          do j=1,np-1
+             do i=1,np-1
+                ii=ii+1
+                jj=jj+1
+                dof(jj) = base+ii
              end do
           end do
        end do
+    end do
 
-       call pio_initdecomp(pio_subsystem, pio_int, (/nelem*npm12,4/), dof, iodesc)
+    call pio_initdecomp(pio_subsystem, pio_int, (/nelem*npm12,4/), dof, iodesc)
 
-       call pio_write_darray(nc, vid, iodesc, reshape(subelement_corners,(/nelemd*npm12*4/)), ierr)
-       
-       call pio_freedecomp(nc, iodesc)
-       
-       call pio_closefile(nc)
+    call pio_write_darray(nc, vid, iodesc, reshape(subelement_corners,(/nelemd*npm12*4/)), ierr)
+
+    call pio_freedecomp(nc, iodesc)
+
+    call pio_closefile(nc)
 
   end subroutine write_grid_mapping
 

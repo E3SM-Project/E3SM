@@ -26,7 +26,7 @@ module prim_advance_mod
   private
   save
   public :: prim_advance_exp, prim_advance_init1, &
-            applyCAMforcing_dynamics, applyCAMforcing_dynamics_dp, convert_thermo_forcing
+            applyCAMforcing_dynamics
 
   real (kind=real_kind), allocatable :: ur_weights(:)
 
@@ -637,46 +637,6 @@ contains
      elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,:,:)
   enddo
   end subroutine applyCAMforcing_dynamics
-
-
-!applies dynamic tendencies for ftype3. in CAM, tendencies were scaled by dp_forcing 
-!( at the end of physics/beginning of homme timestep) 
-!and now need to be scaled back to the current dp3d.
-  subroutine applyCAMforcing_dynamics_dp(elem,hvcoord,np1,dt,nets,nete)
-
-  use hybvcoord_mod,  only: hvcoord_t
-
-  implicit none
-  type (element_t)     ,  intent(inout) :: elem(:)
-  real (kind=real_kind),  intent(in)    :: dt
-  type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: np1,nets,nete
-
-  integer :: i,j,k,ie,q
-  real (kind=real_kind) :: v1,dp
-
-  do ie=nets,nete
-     elem(ie)%state%T(:,:,:,np1)  = elem(ie)%state%T(:,:,:,np1) + & 
-                                    dt*elem(ie)%derived%FT(:,:,:)/elem(ie)%state%dp3d(:,:,:,np1)
-     do k=1,nlev
-       elem(ie)%state%v(:,:,1,k,np1) = elem(ie)%state%v(:,:,1,k,np1) + &
-                                       dt*elem(ie)%derived%FM(:,:,1,k)/elem(ie)%state%dp3d(:,:,k,np1)
-       elem(ie)%state%v(:,:,2,k,np1) = elem(ie)%state%v(:,:,2,k,np1) + &
-                                       dt*elem(ie)%derived%FM(:,:,2,k)/elem(ie)%state%dp3d(:,:,k,np1)
-     enddo
-  enddo
-  end subroutine applyCAMforcing_dynamics_dp
-
-
-!for preqx model this routine does nothing
-  subroutine convert_thermo_forcing(elem,hvcoord,n0,n0qdp,dt,nets,nete)
-  implicit none
-  type (element_t),       intent(inout) :: elem(:)
-  type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: nets,nete
-  integer,                intent(in)    :: n0,n0qdp
-  real (kind=real_kind),  intent(in)    :: dt
-  end subroutine convert_thermo_forcing
 
 
 

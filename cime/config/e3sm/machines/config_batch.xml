@@ -265,7 +265,6 @@
     </directives>
   </batch_system>
 
-    <!-- blues is PBS -->
     <batch_system MACH="blues" type="pbs" >
       <directives>
         <directive>-A {{ PROJECT }}</directive>
@@ -277,14 +276,9 @@
       </queues>
     </batch_system>
 
-    <!-- anvil is PBS -->
-    <batch_system MACH="anvil" type="pbs" >
-      <directives>
-        <directive>-A {{ PROJECT }}</directive>
-        <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-      </directives>
+    <batch_system MACH="anvil" type="slurm" >
       <queues>
-	<queue walltimemax="01:00:00" default="true">acme</queue>
+	<queue walltimemax="01:00:00" default="true">acme-centos6</queue>
       </queues>
     </batch_system>
 
@@ -296,7 +290,6 @@
       </queues>
     </batch_system>
 
-    <!-- eos is PBS -->
     <batch_system MACH="eos" type="pbs" >
     <directives>
       <directive>-A {{ project }}</directive>
@@ -393,6 +386,12 @@
     </queues>
    </batch_system>
 
+   <batch_system MACH="compy" type="slurm">
+    <queues>
+      <queue walltimemax="00:59:00" default="true">slurm</queue>
+    </queues>
+   </batch_system>
+
    <batch_system MACH="sooty" type="slurm" >
      <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
@@ -406,14 +405,14 @@
 
   <batch_system MACH="sandiatoss3" type="slurm" >
     <queues>
-      <queue nodemax="12" walltimemax="04:00:00" strict="true" default="true">short</queue>
+      <queue nodemax="12" walltimemax="04:00:00" strict="true" default="true">short,batch</queue>
       <queue walltimemax="24:00:00">batch</queue>
     </queues>
   </batch_system>
 
   <batch_system MACH="ghost" type="slurm" >
     <queues>
-      <queue nodemax="12" walltimemax="04:00:00" strict="true" default="true">short</queue>
+      <queue nodemax="12" walltimemax="04:00:00" strict="true" default="true">short,batch</queue>
       <queue walltimemax="24:00:00">batch</queue>
     </queues>
   </batch_system>

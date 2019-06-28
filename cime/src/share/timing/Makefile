@@ -26,6 +26,11 @@ ifdef COMP_INTERFACE
     FFLAGS += $(ESMF_F90COMPILEPATHS)
   endif
 endif
+ifdef DEBUG
+  ifeq ("$(DEBUG)", "TRUE")
+    CPPDEFS+=-DDEBUG
+  endif
+endif
 ifdef GPTL_CPPDEFS
   CPPDEFS+=$(GPTL_CPPDEFS) -D$(OS) -DCPR$(shell echo $(COMPILER) | tr a-z A-z)
 endif
@@ -53,9 +58,11 @@ endif
 OBJS = gptl.o GPTLutil.o GPTLget_memusage.o GPTLprint_memusage.o \
        gptl_papi.o f_wrappers.o perf_mod.o perf_utils.o
 
+AR ?= ar
+ARFLAGS ?= ruv
 
 libgptl.a: $(OBJS)
-	$(AR) ruv $@ $(OBJS)
+	$(AR) $(ARFLAGS) $@ $(OBJS)
 
 
 

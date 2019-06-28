@@ -582,7 +582,6 @@ int test_darray_fill_unlim(int iosysid, int ioid, int pio_type, int num_flavors,
         /* Read the data. We don't have to set the record number for
          * the unlimited dimension. If we don't set it, PIO will
          * assume a value of 0. */
-
         if ((ret = PIOc_read_darray(ncid, varid, ioid, arraylen, test_data_in)))
             ERR(ret);
 
@@ -866,7 +865,7 @@ int main(int argc, char **argv)
             }
 
             /* Finalize PIO system. */
-            if ((ret = PIOc_finalize(iosysid)))
+            if ((ret = PIOc_free_iosystem(iosysid)))
                 return ret;
         } /* next rearranger */
 

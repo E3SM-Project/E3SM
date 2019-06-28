@@ -13,7 +13,7 @@ module surfrdMod
   use landunit_varcon , only : numurbl
   use clm_varcon      , only : grlnd
   use clm_varctl      , only : iulog, scmlat, scmlon, single_column
-  use clm_varctl      , only : create_glacier_mec_landunit, use_cndv
+  use clm_varctl      , only : create_glacier_mec_landunit
   use surfrdUtilsMod  , only : check_sums_equal_1
   use ncdio_pio       , only : file_desc_t, var_desc_t, ncd_pio_openfile, ncd_pio_closefile
   use ncdio_pio       , only : ncd_io, check_var, ncd_inqfdims, check_dim, ncd_inqdid, ncd_inqdlen
@@ -34,7 +34,6 @@ module surfrdMod
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: surfrd_special             ! Read the special landunits
   private :: surfrd_veg_all             ! Read all of the vegetated landunits
-  private :: surfrd_veg_dgvm            ! Read vegetated landunits for DGVM mode
   private :: surfrd_pftformat           ! Read crop pfts in file format where they are part of the vegetated land unit
   private :: surfrd_cftformat           ! Read crop pfts in file format where they are on their own landunit
   !
@@ -658,10 +657,6 @@ contains
 
     call surfrd_veg_all(begg, endg, ncid, ldomain%ns)
 
-    if (use_cndv) then
-       call surfrd_veg_dgvm(begg, endg)
-    end if
-
     call ncd_pio_closefile(ncid)
 
     call check_sums_equal_1(wt_lunit, begg, 'wt_lunit', subname)
@@ -1082,31 +1077,6 @@ contains
     end if
 
   end subroutine surfrd_veg_all
-
-  !-----------------------------------------------------------------------
-  subroutine surfrd_veg_dgvm(begg, endg)
-    !
-    ! !DESCRIPTION:
-    ! Determine weights for CNDV mode.
-    !
-    ! !USES:
-    use pftvarcon , only : noveg
-    use clm_varsur, only : wt_nat_patch
-    !
-    ! !ARGUMENTS:
-    integer, intent(in) :: begg, endg  
-    !
-    ! !LOCAL VARIABLES:
-    character(len=*), parameter :: subname = 'surfrd_veg_dgvm'
-    !-----------------------------------------------------------------------
-
-    ! Bare ground gets 100% weight; all other natural PFTs are zeroed out
-    wt_nat_patch(begg:endg, :)     = 0._r8
-    wt_nat_patch(begg:endg, noveg) = 1._r8
-
-    call check_sums_equal_1(wt_nat_patch, begg, 'wt_nat_patch', subname)
-
-  end subroutine surfrd_veg_dgvm
 
   !-----------------------------------------------------------------------
   subroutine surfrd_get_grid_conn(filename, cellsOnCell, edgesOnCell, &

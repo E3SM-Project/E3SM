@@ -49,14 +49,14 @@ module element_ops
 
   use dimensions_mod, only: np, nlev, nlevp, nelemd
   use element_mod,    only: element_t
-  use element_state,  only: elem_state_t
+  use element_state,  only: elem_state_t, timelevels
   use hybvcoord_mod,  only: hvcoord_t
   use kinds,          only: real_kind, iulog
   use perf_mod,       only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
   use parallel_mod,   only: abortmp
-  use physical_constants, only : p0, Cp, Rgas, Rwater_vapor, Cpwater_vapor, kappa, g, dd_pi
+  use physical_constants, only : p0, Cp, Rgas, Rwater_vapor, Cpwater_vapor, kappa, g, dd_pi, TREF
   use control_mod,    only: use_moisture, theta_hydrostatic_mode
-  use eos,            only: get_pnh_and_exner, get_phinh
+  use eos,            only: pnh_and_exner_from_eos, phi_from_eos
   implicit none
   private
 
@@ -188,7 +188,7 @@ contains
   enddo
   call get_R_star(Rstar,elem%state%Q(:,:,:,1))
 
-  call get_pnh_and_exner(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
+  call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
           dp,elem%state%phinh_i(:,:,:,nt),pnh,exner,dpnh_dp_i)
 
   do k=1,nlev
@@ -222,7 +222,7 @@ contains
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
   enddo
 
-  call get_pnh_and_exner(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
+  call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
        dp,elem%state%phinh_i(:,:,:,nt),pnh,exner,dpnh_dp_i)
 
   do k=1,nlev
@@ -250,13 +250,13 @@ contains
       (hvcoord%hybi(k+1)-hvcoord%hybi(k))*elem%state%ps_v(:,:,nt)
     enddo
 
-    call get_pnh_and_exner(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
+    call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
          dp,elem%state%phinh_i(:,:,:,nt),pnh,exner,dpnh_dp_i)
 
   end subroutine
 
 
-
+!why is it called get, not set?
   subroutine get_phi(elem,phi,phi_i,hvcoord,nt,ntQ)
     implicit none
     
@@ -274,15 +274,14 @@ contains
     real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
     integer :: k
 
-    phi_i = elem%state%phinh_i(:,:,:,nt)
 
     if(theta_hydrostatic_mode) then
        do k=1,nlev
           dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                (hvcoord%hybi(k+1)-hvcoord%hybi(k))*elem%state%ps_v(:,:,nt)
        enddo
-       
-       call get_pnh_and_exner(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
+#if 0       
+       call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
             dp,elem%state%phinh_i(:,:,:,nt),pnh,exner,dpnh_dp_i)
 
        ! traditional Hydrostatic integral
@@ -290,6 +289,10 @@ contains
           temp(:,:,k) = Rgas*elem%state%vtheta_dp(:,:,k,nt)*exner(:,:,k)/pnh(:,:,k)
           phi_i(:,:,k)=phi_i(:,:,k+1)+temp(:,:,k)
        enddo
+#endif
+       call phi_from_eos(hvcoord,elem%state%phis,elem%state%vtheta_dp,dp,phi_i)
+    else
+       phi_i = elem%state%phinh_i(:,:,:,nt)
     endif
 
     do k=1,nlev
@@ -319,7 +322,7 @@ contains
 
 
   !_____________________________________________________________________
-  subroutine set_thermostate(elem,temperature,hvcoord,nt,ntQ)
+  subroutine set_thermostate(elem,temperature,hvcoord)
   !
   ! Assuming a hydrostatic intital state and given surface pressure,
   ! and no moisture, compute theta and phi 
@@ -336,20 +339,23 @@ contains
   !   local
   real (kind=real_kind) :: p(np,np,nlev)
   real (kind=real_kind) :: dp(np,np,nlev)
-  integer :: k,nt,ntQ
+  integer :: k, nt
 
+  nt = 1
   do k=1,nlev
      p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
      dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
   enddo
 
+!set vtheta
   do k=1,nlev
      elem%state%vtheta_dp(:,:,k,nt)=dp(:,:,k)*temperature(:,:,k)* &
           (p(:,:,k)/p0)**(-kappa)
   enddo
 
-  call tests_finalize(elem,hvcoord,nt,ntQ)
+!set phi, copy from 1st timelevel to all
+  call tests_finalize(elem,hvcoord)
 
   end subroutine set_thermostate
 
@@ -460,7 +466,7 @@ contains
     end do
 
     call get_R_star(Rstar,elem%state%Q(:,:,:,1))
-    call get_pnh_and_exner(hvcoord,elem%state%vtheta_dp(:,:,:,nt),dp,phi_i,&
+    call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),dp,phi_i,&
          pnh,exner,dpnh_dp_i)
 
     ! first compute virtual temperature Tv needed for rho
@@ -542,7 +548,7 @@ contains
   end subroutine 
 
   !_____________________________________________________________________
-  subroutine tests_finalize(elem, hvcoord,ns,ne,ie)
+  subroutine tests_finalize(elem,hvcoord,ie)
 
   ! Now that all variables have been initialized, set phi to be in hydrostatic balance
 
@@ -550,28 +556,28 @@ contains
 
   type(hvcoord_t),     intent(in)   :: hvcoord
   type(element_t),     intent(inout):: elem
-  integer,             intent(in)   :: ns,ne
   integer, optional,   intent(in)   :: ie ! optional element index, to save initial state
 
-  integer :: k,tl, ntQ
+  integer :: k,tl
   real(real_kind), dimension(np,np,nlev) :: dp, pi
 
   real(real_kind), dimension(np,np,nlev) :: pnh,exner
   real(real_kind), dimension(np,np,nlevp) :: dpnh_dp_i,phi_i
 
+  tl=1
   do k=1,nlev
-    pi(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,ns)
+    pi(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,tl)
     dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,ns)
+                ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,tl)
   enddo
 
-  ntQ=1
-  call get_phinh(hvcoord,elem%state%phis,elem%state%vtheta_dp(:,:,:,ns),dp,&
-       elem%state%phinh_i(:,:,:,ns))
+
+  call phi_from_eos(hvcoord,elem%state%phis,elem%state%vtheta_dp(:,:,:,tl),dp,&
+       elem%state%phinh_i(:,:,:,tl))
 
   ! verify discrete hydrostatic balance
-  call get_pnh_and_exner(hvcoord,elem%state%vtheta_dp(:,:,:,ns),dp,&
-       elem%state%phinh_i(:,:,:,ns),pnh,exner,dpnh_dp_i)
+  call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,tl),dp,&
+       elem%state%phinh_i(:,:,:,tl),pnh,exner,dpnh_dp_i)
   do k=1,nlev
      if (maxval(abs(1-dpnh_dp_i(:,:,k))) > 1e-10) then
         write(iulog,*)'WARNING: hydrostatic inverse FAILED!'
@@ -580,9 +586,8 @@ contains
      endif
   enddo
   
-
-  do tl = ns+1,ne
-    call copy_state(elem,ns,tl)
+  do tl = 2,timelevels
+    call copy_state(elem,1,tl)
   enddo
 
   if(present(ie)) call save_initial_state(elem%state,ie)
@@ -602,9 +607,6 @@ contains
 
   integer :: k
   if (use_moisture) then
-#if (defined COLUMN_OPENMP)
-  !$omp parallel do default(shared), private(k)
-#endif
      do k=1,nlev
         cp_star(:,:,k) = (Cp + (Cpwater_vapor-Cp)*Q(:,:,k) )
      enddo
@@ -658,16 +660,13 @@ contains
   ! reference T = 288K.  reference lapse rate = 6.5K/km   = .0065 K/m
   ! Tref = T0+T1*exner
   ! Thetaref = T0/exner + T1
-  T1 = .0065*288d0*Cp/g ! = 191
-  T0 = 288d0-T1         ! = 97
+  T1 = .0065*TREF*Cp/g ! = 191
+  T0 = TREF-T1         ! = 97
 
   p_i(:,:,1) =  hvcoord%hyai(1)*hvcoord%ps0   
   do k=1,nlev
      p_i(:,:,k+1) = p_i(:,:,k) + dp(:,:,k)
   enddo
-#if (defined COLUMN_OPENMP)
-  !$omp parallel do default(shared), private(k)
-#endif
   do k=1,nlev
      exner(:,:,k) = ( (p_i(:,:,k) + p_i(:,:,k+1))/(2*p0)) **kappa
      !theta_ref(:,:,k,ie) = (T0/exner(:,:,k) + T1)*Cp*dp_ref(:,:,k,ie)

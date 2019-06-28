@@ -302,7 +302,6 @@ module clm_varctl
   logical, public :: use_vichydro        = .false.
   logical, public :: use_century_decomp  = .false.
   logical, public :: use_cn              = .false.
-  logical, public :: use_cndv            = .false.
   logical, public :: use_crop            = .false.
   logical, public :: use_snicar_frc      = .false.
   logical, public :: use_vancouver       = .false.
@@ -323,6 +322,11 @@ module clm_varctl
   ! PETSc-based thermal model switches
   !----------------------------------------------------------
   logical, public :: use_petsc_thermal_model = .false.
+
+  !----------------------------------------------------------
+  ! Stub EM switches
+  !----------------------------------------------------------
+  logical          , public :: use_em_stub = .false.
 
   !----------------------------------------------------------
   ! To retrieve namelist
@@ -354,6 +358,10 @@ module clm_varctl
   !-----------------------------------------------------------------------
   logical, public            :: lateral_connectivity  = .false.
   character(len=256), public :: domain_decomp_type    = 'round_robin'
+
+  !-----------------------------------------------------------------------
+  ! flux limiter for phenology flux calculation
+  logical, public :: use_pheno_flux_limiter = .false.
 
   !-----------------------------------------------------------------------
   ! bgc & pflotran interface

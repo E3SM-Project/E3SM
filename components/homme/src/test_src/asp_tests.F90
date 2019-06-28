@@ -1063,9 +1063,7 @@ subroutine asp_baroclinic(elem,hybrid,hvcoord,nets,nete)
           elem(ie)%state%ps_v(i,j,:) = p0
        enddo
        enddo
-       do idex=1,timelevels
-          call set_thermostate(elem(ie),temp,hvcoord,idex,1)
-       enddo
+       call set_thermostate(elem(ie),temp,hvcoord)
     enddo
 
 
@@ -1147,7 +1145,7 @@ endif
 
 
 if (qsize>=5) then
-   idex=5
+   do idex = 5, qsize
 
    perturb_lon = perturbation_longitude*deg2rad
    perturb_lat = perturbation_latitude*deg2rad
@@ -1199,6 +1197,7 @@ if (qsize>=5) then
       enddo
    enddo
 
+end do
 endif
 
 end subroutine
@@ -1281,9 +1280,7 @@ subroutine asp_tracer(elem,hybrid,hvcoord,nets,nete)
           enddo
        enddo
        enddo
-       do idex=1,timelevels
-          call set_thermostate(elem(ie),temperature,hvcoord,idex,1)
-       enddo
+       call set_thermostate(elem(ie),temperature,hvcoord)
     enddo
 
     ! now compute PHI, needed to init tracers:	
@@ -1397,9 +1394,7 @@ subroutine asp_rossby(elem,hybrid,hvcoord,nets,nete)
           enddo
        enddo
        enddo
-       do idex=1,timelevels
-          call set_thermostate(elem(ie),temperature,hvcoord,idex,1)
-       enddo
+       call set_thermostate(elem(ie),temperature,hvcoord)
     enddo
 
 
@@ -1446,9 +1441,7 @@ subroutine asp_mountain(elem,hybrid,hvcoord,nets,nete)
           enddo
        enddo
        enddo
-       do idex=1,timelevels
-          call set_thermostate(elem(ie),temperature,hvcoord,idex,1)
-       enddo
+       call set_thermostate(elem(ie),temperature,hvcoord)
     enddo
 
 
@@ -1502,9 +1495,7 @@ subroutine asp_gravity_wave(elem,hybrid,hvcoord,nets,nete,choice)
 
        enddo
        enddo
-       do idex=1,timelevels
-          call set_thermostate(elem(ie),temperature,hvcoord,idex,1)
-       enddo
+       call set_thermostate(elem(ie),temperature,hvcoord)
     enddo
 
 

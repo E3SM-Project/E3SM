@@ -22,8 +22,9 @@ module DecompCascadeCNMod
   use SoilStateType          , only : soilstate_type
   use CanopyStateType        , only : canopystate_type
   use TemperatureType        , only : temperature_type 
-  use CH4Mod                 , only : ch4_type
-  use ColumnType             , only : col_pp                
+  use ch4Mod                 , only : ch4_type
+  use ColumnType             , only : col_pp   
+  use ColumnDataType         , only : col_es, col_cf  
   !
   implicit none
   save
@@ -685,16 +686,16 @@ contains
 
           alt_indx       => canopystate_vars%alt_indx_col , & ! Input:  [integer  (:)     ]  current depth of thaw                                     
 
-          t_soisno       => temperature_vars%t_soisno_col , & ! Input:  [real(r8) (:,:)   ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)       
+          t_soisno       => col_es%t_soisno , & ! Input:  [real(r8) (:,:)   ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)       
 
           o2stress_sat   => ch4_vars%o2stress_sat_col     , & ! Input:  [real(r8) (:,:)   ]  Ratio of oxygen available to that demanded by roots, aerobes, & methanotrophs (nlevsoi)
           o2stress_unsat => ch4_vars%o2stress_unsat_col   , & ! Input:  [real(r8) (:,:)   ]  Ratio of oxygen available to that demanded by roots, aerobes, & methanotrophs (nlevsoi)
           finundated     => ch4_vars%finundated_col       , & ! Input:  [real(r8) (:)     ]  fractional inundated area (excluding dedicated wetland columns)
           
-          t_scalar       => carbonflux_vars%t_scalar_col  , & ! Output: [real(r8) (:,:)   ]  soil temperature scalar for decomp                     
-          w_scalar       => carbonflux_vars%w_scalar_col  , & ! Output: [real(r8) (:,:)   ]  soil water scalar for decomp                           
-          o_scalar       => carbonflux_vars%o_scalar_col  , & ! Output: [real(r8) (:,:)   ]  fraction by which decomposition is limited by anoxia   
-          decomp_k       => carbonflux_vars%decomp_k_col  , & ! Output: [real(r8) (:,:,:) ]  rate constant for decomposition (1./sec) 
+          t_scalar       => col_cf%t_scalar  , & ! Output: [real(r8) (:,:)   ]  soil temperature scalar for decomp                     
+          w_scalar       => col_cf%w_scalar  , & ! Output: [real(r8) (:,:)   ]  soil water scalar for decomp                           
+          o_scalar       => col_cf%o_scalar  , & ! Output: [real(r8) (:,:)   ]  fraction by which decomposition is limited by anoxia   
+          decomp_k       => col_cf%decomp_k  , & ! Output: [real(r8) (:,:,:) ]  rate constant for decomposition (1./sec) 
           decomp_k_pools => decomp_cascade_con%decomp_k_pools  & !(0: ndecomp_pools)    ! pflotran (0 for atm. co2)
           )
 

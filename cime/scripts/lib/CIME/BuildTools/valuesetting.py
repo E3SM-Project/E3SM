@@ -116,7 +116,7 @@ class ValueSetting(object):
 
         >>> a = ValueSetting('foo', False, {"DEBUG": "TRUE"}, [], [])
         >>> b = ValueSetting('bar', False, {"DEBUG": "TRUE", "MPILIB": "mpich2"}, [], [])
-        >>> c = ValueSetting('bar', False, {"DEBUG": "TRUE", "compile_threaded": "false"}, [], [])
+        >>> c = ValueSetting('bar', False, {"DEBUG": "TRUE", "compile_threaded": "FALSE"}, [], [])
         >>> d = ValueSetting('foo', False, {"DEBUG": "FALSE"}, [], [])
         >>> a.has_special_case(b)
         True

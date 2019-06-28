@@ -5,16 +5,14 @@
 !  NonHydrostatic Equation of State and inverse EOS routines
 !  Note: these routines should all be discrete inverses of each other
 !
-!  get_pnh_and_exner()       Compute nonhydrostatic pressure as a function of 
+!  pnh_and_exner_from_eos()  Compute nonhydrostatic pressure as a function of 
 !                            potential temperature and geopotential
 !
-!  get_dry_phinh()           Compute geopotential as a function of potential temperature
-!                            and pressure (neglicting water vapor)
+!  phi_from_eos()            Compute geopotential as a function of potential temperature
+!                            and pressure. use virtual potential temperature for wet phi
 !
-!  get_wet_phinh()           Compute geopotential as a function of potential temperature
-!                            and pressure, including water vapor
-!  
 !  Original version: Mark Taylor 2017/1
+!  
 !
 module eos
 
@@ -31,8 +29,8 @@ module eos
 
 contains
 
-subroutine get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_i,pnh,exner,&
-     dpnh_dp_i,pnh_i_out)
+subroutine pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_i,pnh,exner,&
+     dpnh_dp_i,pnh_i_out,caller)
 implicit none
 !
 ! Use Equation of State to compute exner pressure, nh presure
@@ -56,6 +54,7 @@ implicit none
   real (kind=real_kind), intent(out) :: dpnh_dp_i(np,np,nlevp) ! d(pnh) / d(pi)
   real (kind=real_kind), intent(out) :: exner(np,np,nlev)      ! exner nh pressure
   real (kind=real_kind), intent(out), optional :: pnh_i_out(np,np,nlevp)  ! pnh on interfaces
+  character(len=*),      intent(in), optional  :: caller       ! name for error
 
   !   local
   real (kind=real_kind) :: p_over_exner(np,np,nlev)
@@ -65,6 +64,42 @@ implicit none
   real (kind=real_kind) :: dp3d_i(np,np,nlevp)
   real (kind=real_kind) :: pi_i(np,np,nlevp) 
   integer :: i,j,k,k2
+  logical :: ierr
+
+
+  ! check for bad state that will crash exponential function below
+  if (theta_hydrostatic_mode) then
+    ierr= any(vtheta_dp(:,:,:) < 0 )  .or. &
+          any(dp3d(:,:,:) < 0 )
+  else
+    ierr= any(vtheta_dp(:,:,:) < 0 )  .or. &
+          any(dp3d(:,:,:) < 0 ) .or. &
+          any(phi_i(:,:,1:nlev) <= phi_i(:,:,2:nlevp))
+  endif
+
+  if (ierr) then
+     if (present(caller)) then
+        print *,'bad state in EOS, called from: ',caller
+     else
+        print *,'bad state in EOS, calling function not specified'
+     endif
+     do j=1,np
+     do i=1,np
+     do k=1,nlev
+        if ( (vtheta_dp(i,j,k) < 0) .or. (dp3d(i,j,k)<0)  .or. &
+             (phi_i(i,j,k) <= phi_i(i,j,k+1))  ) then
+           print *,'bad i,j,k=',i,j,k
+           print *,'vertical column: phi_i,dp3d,vtheta_dp'
+           do k2=1,nlev
+              write(*,'(i3,4f14.4)') k2,phi_i(i,j,k2),dp3d(i,j,k2),vtheta_dp(i,j,k2)
+           enddo
+           write(*,'(i3,4f14.4)') nlevp,phi_i(i,j,nlevp)
+           call abortmp('EOS bad state: d(phi), dp3d or vtheta_dp < 0')
+        endif
+     enddo
+     enddo
+     enddo
+  endif
 
   ! hydrostatic pressure
   pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
@@ -89,34 +124,8 @@ implicit none
 !==============================================================
 !  non-hydrostatic EOS
 !==============================================================
-#if (defined COLUMN_OPENMP)
-  !$omp parallel do default(shared), private(k)
-#endif
   do k=1,nlev
      p_over_exner(:,:,k) = Rgas*vtheta_dp(:,:,k)/(phi_i(:,:,k)-phi_i(:,:,k+1)) 
-
-     if (minval(p_over_exner(:,:,k))<0) then
-        do i=1,np
-           do j=1,np
-              if ( p_over_exner(i,j,k)<0 ) then
-                 print *,'i,j,k, p/exner = ',i,j,k,p_over_exner(i,j,k)
-                 print *,'k,phi_i(k),phi_i(k+1):',k,(phi_i(i,j,k)),(phi_i(i,j,k+1))
-              endif
-           enddo
-        enddo
-        do i=1,np
-           do j=1,np
-              if ( p_over_exner(i,j,k)<0 ) then
-                 print *,'vertical column phi_i,dp3d,vtheta_dp:'
-                 do k2=1,nlev
-                    write(*,'(i3,4f14.4)') k2,phi_i(i,j,k2+1),dp3d(i,j,k2),vtheta_dp(i,j,k2)
-                 enddo
-                 call abortmp('error: rho<0')
-              endif
-           enddo
-        enddo
-     endif
-    
      pnh(:,:,k) = p0 * (p_over_exner(:,:,k)/p0)**(1/(1-kappa))
      exner(:,:,k) =  pnh(:,:,k)/ p_over_exner(:,:,k)
   enddo
@@ -157,12 +166,12 @@ implicit none
    endif
    
   endif ! hydrostatic/nonhydrostatic version
-  end subroutine get_pnh_and_exner
+  end subroutine 
 
 
 
   !_____________________________________________________________________
-  subroutine get_phinh(hvcoord,phis,vtheta_dp,dp,phi_i)
+  subroutine phi_from_eos(hvcoord,phis,vtheta_dp,dp,phi_i)
 !
 ! Use Equation of State to compute geopotential
 !
@@ -173,7 +182,7 @@ implicit none
 ! used to compute background phi for reference state
 !
 ! NOTE1: dp is pressure layer thickness.  If pnh is used to compute thickness, this
-! routine should be the discrete inverse of get_pnh_and_exner().
+! routine should be the discrete inverse of pnh_and_exner_from_eos().
 ! This routine is usually called with hydrostatic layer thickness (dp3d), 
 ! in which case it returns a hydrostatic PHI
 !
@@ -305,7 +314,7 @@ implicit none
         if (theta_hydrostatic_mode) then
           dpnh_dp_i_epsie(:,:,:)=1.d0
         else
-         call get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_i_temp,pnh,exner,dpnh_dp_i_epsie)
+         call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_i_temp,pnh,exner,dpnh_dp_i_epsie)
         end if
         if (k.eq.1) then
           JacL(k,:,:) = (g*dt2)**2 * (dpnh_dp_i(:,:,k+1)-dpnh_dp_i_epsie(:,:,k+1))/epsie
