@@ -52,7 +52,7 @@ module ocn_tendency
    use ocn_thick_vadv
    use ocn_thick_surface_flux
 
-   use ocn_vel_coriolis
+   use ocn_vel_hadv_coriolis
    use ocn_vel_pressure_grad
    use ocn_vel_vadv
    use ocn_vel_hmix
@@ -317,7 +317,7 @@ contains
       !
       ! velocity tendency: nonlinear Coriolis term and grad of kinetic energy
       !
-      call ocn_vel_coriolis_tend(meshPool, normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, layerThicknessEdge, &
+      call ocn_vel_hadv_coriolis_tend(meshPool, normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, layerThicknessEdge, &
          normalVelocity, kineticEnergyCell, tend_normalVelocity, err)
 
       !

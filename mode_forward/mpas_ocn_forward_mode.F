@@ -49,7 +49,7 @@ module ocn_forward_mode
    use ocn_vel_vadv
    use ocn_vel_hmix
    use ocn_vel_forcing
-   use ocn_vel_coriolis
+   use ocn_vel_hadv_coriolis
    use ocn_vel_forcing_surface_stress
    use ocn_surface_bulk_forcing
    use ocn_surface_land_ice_fluxes
@@ -201,7 +201,7 @@ module ocn_forward_mode
       call ocn_thick_ale_init(err_tmp)
       ierr = ior(ierr,err_tmp)
 
-      call ocn_vel_coriolis_init(err_tmp)
+      call ocn_vel_hadv_coriolis_init(err_tmp)
       ierr = ior(ierr, err_tmp)
       call ocn_vel_pressure_grad_init(err_tmp)
       ierr = ior(ierr, err_tmp)
