@@ -21,9 +21,9 @@ module stepon
    use time_manager,   only: get_step_size
 ! from SE
    use derivative_mod, only: derivinit, derivative_t
+   use viscosity_mod, only : compute_zeta_C0, compute_div_C0
    use quadrature_mod, only: gauss, gausslobatto, quadrature_t
-   use edgetype_mod,       only: EdgeBuffer_t
-   use edge_mod,       only: initEdgeBuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
+   use edge_mod,       only: edge_g, edgeVpack_nlyr, edgeVunpack_nlyr
    use parallel_mod,   only : par
    use scamMod,        only: use_iop, doiopupdate, single_column, &
                              setiopupdate, readiopdata
@@ -62,7 +62,6 @@ module stepon
 
   type (derivative_t)   :: deriv           ! derivative struct
   type (quadrature_t)   :: gv,gp           ! quadratures on velocity and pressure grids
-  type (EdgeBuffer_t) :: edgebuf              ! edge buffer
 !-----------------------------------------------------------------------
 
 
@@ -111,7 +110,6 @@ subroutine stepon_init(dyn_in, dyn_out )
 #else
       num_FM_vars = 2
 #endif
-      call initEdgeBuffer(par, edgebuf, dyn_in%elem, (1+num_FM_vars+pcnst)*nlev)
      if (use_gw_front)  call gws_init(dyn_in%elem)
   end if
 
@@ -120,19 +118,12 @@ subroutine stepon_init(dyn_in, dyn_out )
   ! is not initialized at that point if making a restart runs
   !
   ! Forcing from physics
-  ! FU, FV, other dycores, doc, says "m/s" but I think that is m/s^2
   call addfld ('FU',  (/ 'lev' /), 'A', 'm/s2', 'Zonal wind forcing term',     gridname='GLL')
   call addfld ('FV',  (/ 'lev' /), 'A', 'm/s2', 'Meridional wind forcing term',gridname='GLL')
   call register_vector_field('FU', 'FV')
   call addfld ('VOR', (/ 'lev' /), 'A', '1/s',  'Vorticity',                   gridname='GLL')
   call addfld ('DIV', (/ 'lev' /), 'A', '1/s',  'Divergence',                  gridname='GLL')
 
-  call addfld ('CONVU   ', (/ 'ilev' /),'A', 'm/s2    ','Zonal component IE->KE conversion term',      gridname='physgrid')
-  call addfld ('CONVV   ', (/ 'ilev' /),'A', 'm/s2    ','Meridional component IE->KE conversion term', gridname='physgrid')
-  call register_vector_field('CONVU', 'CONVV')
-  call addfld ('DIFFU   ', (/ 'ilev' /),'A', 'm/s2    ','U horizontal diffusion',                      gridname='physgrid')
-  call addfld ('DIFFV   ', (/ 'ilev' /),'A', 'm/s2    ','V horizontal diffusion',                      gridname='physgrid')
-  call register_vector_field('DIFFU', 'DIFFV')
   call addfld ('ETADOT', (/ 'ilev' /), 'A', '1/s', 'Vertical (eta) velocity', gridname='physgrid')
 
   if (fv_nphys > 0) then
@@ -251,8 +242,13 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    integer :: kptr, ie, ic, m, i, j, k, tl_f, tl_fQdp, velcomp
    real(r8) :: rec2dt, dyn_ps0
    real(r8) :: dp(np,np,nlev),dp_tmp,fq,fq0,qn0, ftmp(npsq,nlev,2)
+   real(r8) :: tmp_dyn(np,np,nlev,nelemd)
+   real(r8) :: fmtmp(np,np,nlev)
    real(r8) :: dtime
    integer  :: num_FM_vars
+   integer :: nlev_tot
+   nlev_tot=(3+pcnst)*nlev
+
 
    dtime = get_step_size()
 
@@ -273,6 +269,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    call t_startf('stepon_bndry_exch')
    ! do boundary exchange
    if (.not. single_column) then 
+<<<<<<< dabe086f6094a68fcc704387aa64b03658adb75e
       do ie=1,nelemd
 
          if (fv_nphys>0) then
@@ -289,30 +286,48 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
          end if ! fv_nphys>0
 
          kptr=0
-         call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),num_FM_vars*nlev,kptr,ie)
-         kptr=kptr+num_FM_vars*nlev
-         call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
+         ! fmtmp can be removed if theta and preqx model had the same size FM array
+         fmtmp=dyn_in%elem(ie)%derived%FM(:,:,1,:)
+         call edgeVpack_nlyr(edge_g,dyn_in%elem(ie)%desc,fmtmp,nlev,kptr,nlev_tot)
          kptr=kptr+nlev
-         call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
+         
+         fmtmp=dyn_in%elem(ie)%derived%FM(:,:,2,:)
+         call edgeVpack_nlyr(edge_g,dyn_in%elem(ie)%desc,fmtmp,nlev,kptr,nlev_tot)
+         kptr=kptr+nlev
+         
+         call edgeVpack_nlyr(edge_g,dyn_in%elem(ie)%desc,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,nlev_tot)
+         kptr=kptr+nlev
+         call edgeVpack_nlyr(edge_g,dyn_in%elem(ie)%desc,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,nlev_tot)
 
       end do ! ie
    endif ! .not. single_column
 
-   call bndry_exchangeV(par, edgebuf)
+   call bndry_exchangeV(par, edge_g)
 
    ! NOTE: rec2dt MUST be 1/dtime_out as computed above
 
    rec2dt = 1._r8/dtime
 
    do ie=1,nelemd
+<<<<<<< dabe086f6094a68fcc704387aa64b03658adb75e
       if (.not. single_column) then
 
          kptr=0
-         call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),num_FM_vars*nlev,kptr,ie)
-         kptr=kptr+num_FM_vars*nlev
-         call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
+
+         fmtmp=dyn_in%elem(ie)%derived%FM(:,:,1,:)
+         call edgeVunpack_nlyr(edge_g,dyn_in%elem(ie)%desc,fmtmp,nlev,kptr,nlev_tot)
+         dyn_in%elem(ie)%derived%FM(:,:,1,:)=fmtmp
          kptr=kptr+nlev
-         call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
+         
+         fmtmp=dyn_in%elem(ie)%derived%FM(:,:,2,:)
+         call edgeVunpack_nlyr(edge_g,dyn_in%elem(ie)%desc,fmtmp,nlev,kptr,nlev_tot)
+         dyn_in%elem(ie)%derived%FM(:,:,2,:)=fmtmp
+         kptr=kptr+nlev
+         
+         call edgeVunpack_nlyr(edge_g,dyn_in%elem(ie)%desc,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,nlev_tot)
+         kptr=kptr+nlev
+         
+         call edgeVunpack_nlyr(edge_g,dyn_in%elem(ie)%desc,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,nlev_tot)
 
          if (fv_nphys>0) then
             ! We need to apply inverse mass matrix weighting when FV physics grid is used
@@ -417,44 +432,42 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    ! at timelevel "tl_f".  
    ! we will output dycore variables here to ensure they are always at the same
    ! time as what the physics is writing.  
-#if 0
+   if (.not. single_column) then ! MT: ask pete why we need this???
    if (hist_fld_active('VOR')) then
-      call compute_zeta_C0(tmp_dyn,elem,hybrid,1,nelemd,tl_f,k)
+      call compute_zeta_C0(tmp_dyn,dyn_in%elem,par,tl_f)
       do ie=1,nelemd
-         do j=1,np
-            do i=1,np
-               ftmp(i+(j-1)*np,1:pver,1) = tmp_dyn(i,j,1:pver)
-            end do
-         end do
-         if (.not. single_column) call outfld('VOR',ftmp(:,:,1),npsq,ie)
+         !do j=1,np
+         !   do i=1,np
+         !      ftmp(i+(j-1)*np,:,1) = tmp_dyn(i,j,:,ie)
+         !   end do
+         !end do
+         !call outfld('VOR',ftmp(:,:,1),npsq,ie)
+         call outfld('VOR',tmp_dyn(1,1,1,ie),npsq,ie)
       enddo
    endif
    if (hist_fld_active('DIV')) then
-      call compute_div_C0(tmp_dyn,elem,hybrid,1,nelemd,tl_f,k)
+      call compute_div_C0(tmp_dyn,dyn_in%elem,par,tl_f)
       do ie=1,nelemd
          do j=1,np
             do i=1,np
-               ftmp(i+(j-1)*np,1:pver,1) = tmp_dyn(i,j,1:pver)
+               ftmp(i+(j-1)*np,:,1) = tmp_dyn(i,j,:,ie)
             end do
          end do
-         if (.not. single_column) call outfld('DIV',ftmp(:,:,1),npsq,ie)
+         call outfld('DIV',ftmp(:,:,1),npsq,ie)
       enddo
    endif
-#endif
-   if (hist_fld_active('FU') .or. hist_fld_active('FV') .and. .not. single_column) then
+   if (hist_fld_active('FU') .or. hist_fld_active('FV') ) then
       do ie=1,nelemd
-         do k=1,nlev
-            do j=1,np
-               do i=1,np
-                  ftmp(i+(j-1)*np,k,1) = dyn_in%elem(ie)%derived%FM(i,j,1,k)
-                  ftmp(i+(j-1)*np,k,2) = dyn_in%elem(ie)%derived%FM(i,j,2,k)
-               end do
+         do j=1,np
+            do i=1,np
+               ftmp(i+(j-1)*np,:,1) = dyn_in%elem(ie)%derived%FM(i,j,1,:)
+               ftmp(i+(j-1)*np,:,2) = dyn_in%elem(ie)%derived%FM(i,j,2,:)
             end do
          end do
-         
          call outfld('FU',ftmp(:,:,1),npsq,ie)
          call outfld('FV',ftmp(:,:,2),npsq,ie)
       end do
+   endif
    endif
    
    do ie = 1,nelemd

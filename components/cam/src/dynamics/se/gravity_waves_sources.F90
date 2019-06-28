@@ -21,14 +21,11 @@ module gravity_waves_sources
   public  :: gws_init
   private :: compute_frontogenesis
   
-  type (EdgeBuffer_t) :: edge3
-  type (derivative_t), allocatable   :: deriv(:)
   real(r8) :: psurf_ref
 
 CONTAINS
   !-------------------------------------------------------------------------------------------------
   subroutine gws_init(elem)
-    use edge_mod, only       : initEdgeBuffer
     use hycoef, only         : hypi
     use pmgrid, only         : plev
     use parallel_mod, only    : par
@@ -36,15 +33,12 @@ CONTAINS
     type (element_t), intent(inout), dimension(:) :: elem
     !---------------------------------------------------------------------------
     ! Set up variables similar to dyn_comp and prim_driver_mod initializations
-    call initEdgeBuffer(par,edge3,elem,3*nlev)
-    allocate(deriv(0:hthreads-1))
     
     psurf_ref = hypi(plev+1)
 
   end subroutine gws_init
   !-------------------------------------------------------------------------------------------------
   subroutine gws_src_fnct(elem, tl, nphys, frontgf, frontga)
-    use derivative_mod, only  : derivinit
     use dimensions_mod, only  : npsq, nelemd
     use dof_mod, only         : UniquePoints
     use dyn_comp, only        : dom_mt
@@ -71,10 +65,9 @@ CONTAINS
     nets = dom_mt(ithr)%start
     nete = dom_mt(ithr)%end
     hybrid = hybrid_create(par,ithr,hthreads)
-    call derivinit(deriv(hybrid%ithr))
     allocate(frontgf_thr(nphys,nphys,nlev,nets:nete))
     allocate(frontga_thr(nphys,nphys,nlev,nets:nete))
-    call compute_frontogenesis(frontgf_thr,frontga_thr,tl,elem,deriv(hybrid%ithr),hybrid,nets,nete,nphys)
+    call compute_frontogenesis(frontgf_thr,frontga_thr,tl,elem,hybrid,nets,nete,nphys)
     if (fv_nphys>0) then
       do ie = nets,nete
         do k = 1,nlev
@@ -95,7 +88,7 @@ CONTAINS
 
   end subroutine gws_src_fnct
   !-------------------------------------------------------------------------------------------------
-  subroutine compute_frontogenesis(frontgf,frontga,tl,elem,ederiv,hybrid,nets,nete,nphys)
+  subroutine compute_frontogenesis(frontgf,frontga,tl,elem,hybrid,nets,nete,nphys)
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! compute frontogenesis function F
   !   F =  -gradth dot C
@@ -113,20 +106,22 @@ CONTAINS
   !   with dynamics when dyn_npes<npes
   ! 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+<<<<<<< dabe086f6094a68fcc704387aa64b03658adb75e
     use physical_constants, only: kappa
     use derivative_mod,     only: gradient_sphere, ugradv_sphere
-    use edge_mod,           only: edgevpack, edgevunpack
+    use edge_mod,           only : edge_g, edgevpack_nlyr, edgevunpack_nlyr
     use bndry_mod,          only: bndry_exchangev
     use dyn_comp,           only: hvcoord
     use spmd_utils,         only: iam 
     use parallel_mod,       only: par 
+    use element_ops,        only : get_temperature
     use dyn_grid,           only: fv_nphys
     use derivative_mod,     only: subcell_integration
+    use prim_driver_mod, only     : deriv1
     use element_ops,        only : get_temperature
     implicit none
     type(hybrid_t),        intent(in   ) :: hybrid
     type(element_t),target,intent(inout) :: elem(:)
-    type(derivative_t),    intent(in   ) :: ederiv
     integer,               intent(in   ) :: nets,nete,nphys
     integer,               intent(in   ) :: tl ! timelevel to use
     real(kind=real_kind),  intent(out  ) :: frontgf(nphys,nphys,nlev,nets:nete)
@@ -150,6 +145,7 @@ CONTAINS
         ! pressure at mid points
         p(:,:) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,tl)
         ! potential temperature: theta = T (p/p0)^kappa
+<<<<<<< dabe086f6094a68fcc704387aa64b03658adb75e
         call get_temperature(elem(ie),temperature,hvcoord,tl)
         theta(:,:) = temperature(:,:,k)*(psurf_ref / p(:,:))**kappa
         gradth_gll(:,:,:,k,ie) = gradient_sphere(theta,ederiv,elem(ie)%Dinv)
@@ -163,8 +159,9 @@ CONTAINS
         frontgf_gll(:,:,k,ie)  = frontgf_gll(:,:,k,ie)*elem(ie)%spheremp(:,:)
       end do ! k
       ! pack
-      call edgeVpack(edge3, frontgf_gll(:,:,:,ie),nlev,0,ie)
-      call edgeVpack(edge3, gradth_gll(:,:,:,:,ie),2*nlev,nlev,ie)
+       call edgeVpack_nlyr(edge_g, elem(ie)%desc, frontgf_gll(:,:,:,ie),nlev,0,3*nlev)
+       call edgeVpack_nlyr(edge_g, elem(ie)%desc, gradth_gll(:,:,:,:,ie),2*nlev,nlev,3*nlev)
+
     end do ! ie
 
     ! Boundary exchange
@@ -177,8 +174,8 @@ CONTAINS
         inv_area(:,:) = 1.0_r8/subcell_integration(tmp_area,np,fv_nphys,elem(ie)%metdet(:,:))
       end if
       ! unpack
-      call edgeVunpack(edge3, frontgf_gll(:,:,:,ie),nlev,0,ie)
-      call edgeVunpack(edge3, gradth_gll(:,:,:,:,ie),2*nlev,nlev,ie)
+     call edgeVunpack_nlyr(edge_g, elem(ie)%desc,frontgf_gll(:,:,:,ie),nlev,0,3*nlev)
+     call edgeVunpack_nlyr(edge_g, elem(ie)%desc,gradth_gll(:,:,:,:,ie),2*nlev,nlev,3*nlev)
       ! apply inverse mass matrix
       do k = 1,nlev
         gradth_gll(:,:,1,k,ie) = gradth_gll(:,:,1,k,ie)*elem(ie)%rspheremp(:,:)
