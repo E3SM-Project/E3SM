@@ -50,6 +50,7 @@ module stepon
 ! !REVISION HISTORY:
 !
 ! 2006.05.31  JPE    Created
+! 2019.06.28  MT     Updated to output vorticity/divergence, new DSS interface
 !
 !EOP
 !----------------------------------------------------------------------
@@ -432,7 +433,9 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    ! at timelevel "tl_f".  
    ! we will output dycore variables here to ensure they are always at the same
    ! time as what the physics is writing.  
-   if (.not. single_column) then ! MT: ask pete why we need this???
+   ! in single_column mode, dycore is not fully initialized so dont use
+   ! outfld() on dycore decompositions
+   if (.not. single_column) then 
    if (hist_fld_active('VOR')) then
       call compute_zeta_C0(tmp_dyn,dyn_in%elem,par,tl_f)
       do ie=1,nelemd
