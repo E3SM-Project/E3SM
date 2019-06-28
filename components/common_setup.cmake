@@ -1,8 +1,12 @@
 # This file contains configuration that is independent of the library being
 # built.
 
-# Set module path
+# Set global cmake settings
 set(CMAKE_MODULE_PATH ${CIMEROOT}/src/CMake)
+set(CMAKE_VERBOSE_MAKEFILE TRUE)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../../lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../../lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../..)
 
 # Add INCROOT to path for Depends and Include
 set(MINCROOT "")
@@ -316,9 +320,9 @@ endif()
 # User-specified INCLDIR
 #===============================================================================
 
-set(INCLDIR "-I.")
+set(INCLDIR ".")
 if (USER_INCLDIR)
-  set(INCLDIR "${INCLDIR} -I${USER_INCLDIR}")
+  list(APPEND INCLDIR "${USER_INCLDIR}")
 endif()
 
 #===============================================================================
@@ -346,17 +350,17 @@ set(CSM_SHR_INCLUDE ${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_V
 #===============================================================================
 # Set include paths (needed after override for any model specific builds below)
 #===============================================================================
-set(INCLDIR "${INCLDIR} -I${INSTALL_SHAREDPATH}/include -I${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/include")
+list(APPEND INCLDIR "${INSTALL_SHAREDPATH}/include" "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/include")
 
 if (NOT NETCDF_SEPARATE)
-  set(INCLDIR "${INCLDIR} -I${INC_NETCDF}")
+  list(APPEND INCLDIR "${INC_NETCDF}")
 else()
-  set(INCLDIR "${INCLDIR} -I${INC_NETCDF_C} -I${INC_NETCDF_FORTRAN}")
+  list(APPEND INCLDIR "${INC_NETCDF_C}" "${INC_NETCDF_FORTRAN}")
 endif()
 
 foreach(ITEM MOD_NETCDF INC_MPI INC_PNETCDF INC_PETSC INC_TRILINOS INC_ALBANY) # INC_MOAB)
   if (${ITEM})
-    set(INCLDIR "${INCLDIR} -I${${ITEM}}")
+    list(APPEND INCLDIR "${${ITEM}}")
   endif()
 endforeach()
 
@@ -366,7 +370,7 @@ endif()
 
 if (PIO_LIBDIR)
   if (PIO_VERSION STREQUAL ${PIO_VERSION_MAJOR})
-    set(INCLDIR "${INCLDIR} -I${PIO_INCDIR}")
+    list(APPEND INCLDIR "${PIO_INCDIR}")
     set(SLIBS "${SLIBS} -L${PIO_LIBDIR}")
   else()
     # If PIO_VERSION_MAJOR doesnt match, build from source
@@ -394,7 +398,7 @@ if (NOT GLCROOT)
   set(GLCROOT "${CIMEROOT}/../components/cism")
 endif()
 
-set(INCLDIR "${INCLDIR} -I${INSTALL_SHAREDPATH}/include")
+list(APPEND INCLDIR "${INSTALL_SHAREDPATH}/include")
 
 string(FIND "${CAM_CONFIG_OPTS}" "-cosp" HAS_COSP)
 if (NOT HAS_COSP EQUAL -1)
@@ -479,3 +483,18 @@ endif()
 set(MCTLIBS "${MCT_LIBDIR}/libmct.a ${MCT_LIBDIR}/libmpeu.a")
 
 set(GPTLLIB "${GPTL_LIBDIR}/libgptl.a")
+
+add_custom_target(genf90
+  DEPENDS ${CIMEROOT}/src/externals/genf90/genf90.pl)
+
+#------------------------------------------------------------------------------
+# Set key cmake vars
+#------------------------------------------------------------------------------
+set(CMAKE_C_COMPILER ${CC})
+set(CMAKE_CXX_COMPILER ${CXX})
+set(CMAKE_Fortran_COMPILER ${FC})
+
+set(CMAKE_Fortran_FLAGS "${FFLAGS}")
+set(CMAKE_C_FLAGS "${CFLAGS}")
+set(CMAKE_CXX_FLAGS "${CXXFLAGS}")
+set(CMAKE_EXE_LINKER_FLAGS "${LDFLAGS}")

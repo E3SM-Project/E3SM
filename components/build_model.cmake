@@ -1,11 +1,11 @@
-function(build_model MODEL_ARG MODELCONF_ARG FILEPATH_ARG)
+function(build_model MODEL_ARG MODELCONF_DIR_ARG ALL_MODELS_ARG)
   # Load dependency search path.
-  file(STRINGS ${FILEPATH_ARG} FILEPATH_DIRS)
+  file(STRINGS ${MODELCONF_DIR_ARG}/Filepath FILEPATH_DIRS)
   set(CPP_DIRS ${FILEPATH_DIRS})
   list(APPEND CPP_DIRS ".")
 
   # Load cppdefs
-  set(CCSM_CPPDEFS_FILE "${MODELCONF_ARG}/CCSM_cppdefs")
+  set(CCSM_CPPDEFS_FILE "${MODELCONF_DIR_ARG}/CCSM_cppdefs")
   if (EXISTS ${CCSM_CPPDEFS_FILE})
     file(READ ${CCSM_CPPDEFS_FILE} CCSM_CPPDEFS)
     string(STRIP "${CCSM_CPPDEFS}" CCSM_CPPDEFS)
@@ -13,7 +13,7 @@ function(build_model MODEL_ARG MODELCONF_ARG FILEPATH_ARG)
   endif()
 
   if (MODEL_ARG STREQUAL "cpl")
-    set(INCLDIR "${INCLDIR} -I${EXEROOT}/atm/obj -I${EXEROOT}/ice/obj -I${EXEROOT}/ocn/obj -I${EXEROOT}/glc/obj -I${EXEROOT}/rof/obj -I${EXEROOT}/wav/obj -I${EXEROOT}/esp/obj -I${EXEROOT}/iac/obj")
+    list(APPEND INCLDIR "${EXEROOT}/atm/obj" "${EXEROOT}/ice/obj" "${EXEROOT}/ocn/obj" "${EXEROOT}/glc/obj" "${EXEROOT}/rof/obj" "${EXEROOT}/wav/obj" "${EXEROOT}/esp/obj" "${EXEROOT}/iac/obj")
   endif()
 
   if (MODEL_ARG STREQUAL "cam")
@@ -60,7 +60,7 @@ function(build_model MODEL_ARG MODELCONF_ARG FILEPATH_ARG)
   endforeach()
 
   foreach(SOURCE_FILE IN LISTS SOURCES)
-i    get_filename_component(SOURCE_EXT ${SOURCE_FILE} EXT)
+    get_filename_component(SOURCE_EXT ${SOURCE_FILE} EXT)
     if (SOURCE_EXT STREQUAL ".F90.in")
       string(REPLACE ".in" "" SOURCE_NO_IN ${SOURCE_FILE})
       list(APPEND GEN_F90_SOURCES ${SOURCE_NO_IN})
@@ -71,7 +71,7 @@ i    get_filename_component(SOURCE_EXT ${SOURCE_FILE} EXT)
 
   foreach(ITEM IN LISTS CPP_DIRS)
     if (EXISTS ${ITEM})
-      set(INCLDIR "${INCLDIR} -I${ITEM}")
+      list(APPEND INCLDIR "${ITEM}")
     endif()
   endforeach()
 
@@ -97,12 +97,12 @@ i    get_filename_component(SOURCE_EXT ${SOURCE_FILE} EXT)
     else()
       set(LNDLIB "liblnd.a")
     endif()
-    set(INCLDIR "${INCLDIR} -I${LNDOBJDIR}")
+    list(APPEND INCLDIR "${LNDOBJDIR}")
   else()
     set(LNDLIB "libclm.a")
     set(LNDOBJDIR "${SHAREDLIBROOT}/${SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/clm/obj")
     set(LNDLIBDIR "${EXEROOT}/${SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/lib")
-    set(INCLDIR "${INCLDIR} -I${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/include")
+    list(APPEND INCLDIR "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/include")
     if (MODEL_ARG STREQUAL "clm")
       set(INCLUDE_DIR "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/include")
     endif()
@@ -110,18 +110,7 @@ i    get_filename_component(SOURCE_EXT ${SOURCE_FILE} EXT)
 
   if (NOT ULIBDEP)
     if (LIBROOT)
-      set(ULIBDEP "${LIBROOT}/libatm.a")
-      set(ULIBDEP "${ULIBDEP} ${LIBROOT}/libice.a")
-      set(ULIBDEP "${ULIBDEP} ${LNDLIBDIR}/${LNDLIB}")
-      set(INCLDIR "${INCLDIR} -I${LNDOBJDIR}")
-      set(ULIBDEP "${ULIBDEP} ${LIBROOT}/libocn.a")
-      set(ULIBDEP "${ULIBDEP} ${LIBROOT}/librof.a")
-      set(ULIBDEP "${ULIBDEP} ${LIBROOT}/libglc.a")
-      set(ULIBDEP "${ULIBDEP} ${LIBROOT}/libwav.a")
-      if (NOT COMP_INTERFACE STREQUAL "nuopc")
-        set(ULIBDEP "${ULIBDEP} ${LIBROOT}/libiac.a")
-      endif()
-      set(ULIBDEP "${ULIBDEP} ${LIBROOT}/libesp.a")
+      list(APPEND INCLDIR "${LNDOBJDIR}")
     endif()
   endif()
 
@@ -138,26 +127,7 @@ i    get_filename_component(SOURCE_EXT ${SOURCE_FILE} EXT)
   set(CSMSHARELIB "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/lib/libcsm_share.a")
   set(ULIBDEP "${ULIBDEP} ${CSMSHARELIB}")
 
-  #------------------------------------------------------------------------------
-  # Set key cmake vars
-  #------------------------------------------------------------------------------
-
-  set(CMAKE_Fortran_FLAGS "${FFLAGS} ${INCLDIR}")
-  set(CMAKE_C_FLAGS "${CFLAGS} ${INCLDIR}")
-  set(CMAKE_CXX_FLAGS "${CXXFLAGS} ${INCLDIR}")
-  set(CMAKE_VERBOSE_MAKEFILE TRUE)
-  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../../lib)
-  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../../lib)
-  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../..)
-
-  set(CMAKE_C_COMPILER ${CC})
-  set(CMAKE_CXX_COMPILER ${CXX})
-  set(CMAKE_Fortran_COMPILER ${FC})
-  set(CMAKE_EXE_LINKER_FLAGS "${LDFLAGS}")
-
   # do the necessary genf90s
-  add_custom_target(genf90
-    DEPENDS ${CIMEROOT}/src/externals/genf90/genf90.pl)
   foreach (SRC_FILE IN LISTS GEN_F90_SOURCES)
     get_filename_component(BASENAME ${SRC_FILE} NAME)
     add_custom_command (
@@ -209,8 +179,22 @@ i    get_filename_component(SOURCE_EXT ${SOURCE_FILE} EXT)
     set(MLIBS "${MLIBS} ${MPISERIAL}")
   endif()
 
-  add_library(${MODEL_ARG})
-  target_sources(${MODEL_ARG} PRIVATE ${SOURCES})
+  if (MODEL_ARG STREQUAL "cpl")
+    set(MODEL_ARG "${CIME_MODEL}.exe")
+    add_executable(${MODEL_ARG})
+    target_sources(${MODEL_ARG} PRIVATE ${SOURCES})
+    set(ALL_LIBS "${ULIBDEP} ${MCTLIBS} ${PIOLIB} ${GPTLLIB} ${SLIBS} ${MLIBS} ${F90_LDFLAGS}")
+    separate_arguments(ALL_LIBS_LIST UNIX_COMMAND "${ALL_LIBS}")
+    foreach(ITEM IN LISTS ALL_MODELS_ARG)
+      target_link_libraries(${MODEL_ARG} ${ITEM})
+    endforeach()
+    foreach(ITEM IN LISTS ALL_LIBS_LIST)
+      target_link_libraries(${MODEL_ARG} ${ITEM})
+    endforeach()
+  else()
+    add_library(${MODEL_ARG})
+    target_sources(${MODEL_ARG} PRIVATE ${SOURCES})
+  endif()
 
   # Subtle: In order for fortran dependency scanning to work, our CPPFPP/DEFS must be registered
   # as COMPILE_DEFINITIONS, not simple added via CMAKE_Fortran_Flags. Also, CPPDEFS *must*
@@ -218,5 +202,8 @@ i    get_filename_component(SOURCE_EXT ${SOURCE_FILE} EXT)
   separate_arguments(CPPDEFS_LIST UNIX_COMMAND "${CPPDEFS}")
   target_compile_definitions(${MODEL_ARG} PRIVATE ${CPPDEFS_LIST})
   add_dependencies(${MODEL_ARG} genf90)
+
+  # Set flags for target
+  target_include_directories(${MODEL_ARG} PRIVATE ${INCLDIR})
 
 endfunction(build_model)

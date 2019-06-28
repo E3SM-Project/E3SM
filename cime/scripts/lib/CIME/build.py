@@ -172,13 +172,18 @@ def _build_model_cmake(build_threaded, exeroot, incroot, complist,
 
     # Call CMake
     cmake_args = get_standard_cmake_args(case)
-    cmake_cmd = "cmake {} {}/components &> {}".format(cmake_args, srcroot, bldlog)
-    logger.info("Configuring with cmake cmd: {}".format(cmake_cmd))
+    cmake_cmd = "cmake {} {}/components >> {} 2>&1".format(cmake_args, srcroot, bldlog)
+    with open(bldlog, "w") as fd:
+        fd.write("Configuring with cmake cmd:\n{}\n\n".format(cmake_cmd))
     stat = run_cmd(cmake_cmd, from_dir=bldroot)[0]
 
     # Call Make
     if stat == 0:
-        stat = run_cmd("{} -j {} >> {} 2>&1".format(gmake, gmake_j, bldlog), from_dir=bldroot)[0]
+        make_cmd = "{} -j {} >> {} 2>&1".format(gmake, gmake_j, bldlog)
+        with open(bldlog, "a") as fd:
+            fd.write("\n\nBuilding with make cmd:\n{}\n\n".format(make_cmd))
+
+        stat = run_cmd(make_cmd, from_dir=bldroot)[0]
 
     expect(stat == 0, "BUILD FAIL: build {} failed, cat {}".format(model, bldlog))
 
