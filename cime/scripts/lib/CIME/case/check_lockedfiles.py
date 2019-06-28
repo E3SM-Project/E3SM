@@ -75,8 +75,8 @@ def check_lockedfile(self, filebase):
             toggle_build_status = False
             for key in diffs.keys():
                 if key != "BUILD_COMPLETE":
-                    print("  found difference in {} : case {} locked {}"
-                          .format(key, repr(diffs[key][0]), repr(diffs[key][1])))
+                    logging.warning("  found difference in {} : case {} locked {}"
+                                    .format(key, repr(diffs[key][0]), repr(diffs[key][1])))
                     toggle_build_status = True
             if objname == "env_mach_pes":
                 expect(False, "Invoke case.setup --reset ")
