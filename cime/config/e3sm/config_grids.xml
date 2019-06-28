@@ -814,10 +814,10 @@
       <mask>tx0.1v2</mask>
     </model_grid>
 
-    <model_grid alias="northamericax4v1_360x720cru" compset="(DOCN|XOCN|SOCN|AQP1)">
+    <model_grid alias="northamericax4v1_360x720cru_oRRS15to5" compset="(DOCN|XOCN|SOCN|AQP1)">
       <grid name="atm">ne0np4_northamerica_x4v1_lowcon</grid>
       <grid name="lnd">360x720cru</grid>
-      <grid name="ocnice">ne0np4_northamerica_x4v1_lowcon</grid>
+      <grid name="ocnice">oRRS15to5</grid>
       <grid name="rof">null</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
