@@ -4,6 +4,8 @@ Script to plot time-series from globalStats file for AIS 20km spinup.
 For MALI description paper.
 '''
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import sys
 import numpy as np
 import numpy.ma as ma
@@ -14,7 +16,7 @@ from matplotlib.ticker import FormatStrFormatter
 
 rhoi = 910.0
 
-print "** Gathering information.  (Invoke with --help for more details. All arguments are optional)"
+print("** Gathering information.  (Invoke with --help for more details. All arguments are optional)")
 parser = OptionParser(description=__doc__)
 parser.add_option("-1", dest="file1inName", help="input filename", default="globalStats.nc", metavar="FILENAME")
 parser.add_option("-2", dest="file2inName", help="input filename", metavar="FILENAME")
@@ -64,7 +66,7 @@ plt.grid()
 
 
 def plotStat(fname):
-    print "Reading and plotting file: " + fname
+    print("Reading and plotting file: " + fname)
 
     name = fname
 
@@ -112,7 +114,7 @@ if(options.file3inName):
 
 
 
-print "Generating plot."
+print("Generating plot.")
 
 fig.tight_layout()
 plt.show()

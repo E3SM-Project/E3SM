@@ -4,6 +4,8 @@ Generate initial conditions for hydro-SHMIP land ice test case B
 Details here: http://shmip.bitbucket.org/
 '''
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 from netCDF4 import Dataset as NetCDFFile
 import netCDF4
 import numpy as np
@@ -19,7 +21,7 @@ parser.add_option("-n", "--number", dest="number", type='int', help="test varian
 options, args = parser.parse_args()
 if not options.filename:
    options.filename = 'landice_grid.nc'
-   print 'No file specified.  Attempting to use landice_grid.nc'
+   print('No file specified.  Attempting to use landice_grid.nc')
 
 if not options.afile:
    sys.exit("Error: A restart file from test A1 is required to set up this test.  Specify with -a")
@@ -244,12 +246,12 @@ for m in b_moulin[options.number]:
     # Find cell for this location
     dist = ((x-xCell)**2 + (y-yCell)**2)**0.5
     ind = np.argmin(dist)
-    print 'Moulin {}: x={}, y={}; xCell={}; yCell={}       dist={}'.format(n, x, y, xCell[ind], yCell[ind], dist[ind])
+    print('Moulin {}: x={}, y={}; xCell={}; yCell={}       dist={}'.format(n, x, y, xCell[ind], yCell[ind], dist[ind]))
     moulin[ind] = moulin[ind] + Q * 1000.0 / areaCell[ind]  # convert from m3/s to kg/m2/s
 
 
 gridfile.variables['externalWaterInput'][0,:] = moulin
 gridfile.close()
 
-print 'Successfully added initial conditions to: ', options.filename
+print('Successfully added initial conditions to: ' + options.filename)
 

@@ -3,6 +3,8 @@
 Script to compare some scalar values from different runs of Thwaites melt variability experiment.
 '''
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import sys
 import os
 import netCDF4
@@ -14,7 +16,7 @@ from matplotlib import cm
 
 outfname = 'globalStats.nc'
 runs=[ adir for adir in sorted(os.listdir('.')) if (os.path.isdir(adir) and os.path.isfile(os.path.join(adir, outfname)))]
-print "Original run list:", runs
+print("Original run list: {}".format(runs))
 
 
 # get just the 0 phase for each amp/per
@@ -33,7 +35,7 @@ for r in special_runs:
 # optionally exclude some subset
 #runs[:] = [r for r in runs if not 'amp300_per02' in r]
 
-print "Will process the following directories: ", runs
+print("Will process the following directories: {}".format(runs))
 
 # --- Define some needed parameters
 rhoi = 910.0  # ice density
@@ -142,7 +144,7 @@ class modelRun:
 runData = {}  # init empty dictionary
 groups = {} # groups are a dictionary of dictionaries.  May want to changes this to a dictionary of custom objects that can include metadata about the group alongside the group's data children.  KISS for now.
 for run in runs:
-   print "Processing run: " + run
+   print("Processing run: " + run)
 
    # Build a list that contains all run data objects
    runData[run] = modelRun(run)
@@ -157,14 +159,14 @@ for run in runs:
          groups[groupName] = {} # init an empty dict to add group members
       groups[groupName][phase] = runData[run]  # stick the run object into this group
 
-print "Processing complete.\n"
+print("Processing complete.\n")
 
 #print groups
 
 
 # --- set up figure axes ---
 
-print "Setting up figure axes."
+print("Setting up figure axes.")
 
 fig = plt.figure(1, facecolor='w')
 
@@ -256,7 +258,7 @@ axTimesYlabels = []
 
 
 # =========
-print "Done setting up figure axes."
+print("Done setting up figure axes.")
 # =========
 
 # --- Define colors for lines ---
@@ -273,7 +275,7 @@ color_index = 0
 # ================
 runNumber = 0
 for run in runs:
-   print "Plotting run: " + run
+   print("Plotting run: " + run)
 
    thisRun = runData[run]
    # Pull needed data for plotting from this run
@@ -438,7 +440,7 @@ if 'steady' in runData:
 
 groupNumber = 0
 for groupName in sorted(groups):  # sorted puts them in alpha order
-   print "Plotting group: " + groupName
+   print("Plotting group: " + groupName)
    group = groups[groupName] # gets the actual dictionary that this group is made of
    nMembers = len(group)
 

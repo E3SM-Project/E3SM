@@ -7,18 +7,15 @@ for the year specified along with the previous year (assumed to be
 in files each one year long).
 It also plots the difference in the time series between the two years.
 '''
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import sys
 import numpy as np
 import netCDF4
-#import datetime
-# import math
-# from pylab import *
 from optparse import OptionParser
 import matplotlib.pyplot as plt
 from matplotlib import cm
-# from matplotlib.contour import QuadContourSet
-# import time
-import random
 
 secInYr = 3600.0 * 24.0 * 365.0  # Note: this may be slightly wrong for some calendar types!
 
@@ -31,11 +28,11 @@ parser.add_option("-n", "--nodisp", action="store_true", dest="hidefigs", help="
 options, args = parser.parse_args()
 
 if not options.filename:
-	print "No filename provided. Using 'output2'."
+	print("No filename provided. Using 'output2'.")
         options.filename = "output2"
 
 if not options.year:
-	print "No year provided. Using year 0001."
+	print("No year provided. Using year 0001.")
         options.year = 1
 
 class AnnualData:
@@ -45,7 +42,7 @@ class AnnualData:
         self.yearStr = '{:04d}'.format(year)
         self.color = 'b'
         self.filename = options.filename + "." + self.yearStr + ".nc"
-        f = netCDF4.Dataset(self.filename, 'r')   
+        f = netCDF4.Dataset(self.filename, 'r')
         nCells = len(f.dimensions['nCells'])
         nEdges = len(f.dimensions['nEdges'])
         nTime = len(f.dimensions['Time'])
@@ -174,22 +171,22 @@ if 1: #(thisYearData.days == lastYearData.days).all():
    plt.xlabel('DOY')
 
 else:
-   print "Time indices for the two years do not match. Skipping difference plot."
-   print "This year times:", thisYearData.days
-   print "Last year times:", lastYearData.days
+   print("Time indices for the two years do not match. Skipping difference plot.")
+   print("This year times: {}".format(thisYearData.days))
+   print("Last year times: {}".format(lastYearData.days))
 
 
 
 plt.draw()
 
-print "plotting complete"
+print("plotting complete")
 
 if options.saveimages:
-        print "Saving figures to files."
+        print("Saving figures to files.")
         plt.savefig('GL-position.png')
 
 if options.hidefigs:
-     print "Plot display disabled with -n argument."
+     print("Plot display disabled with -n argument.")
 else:
      plt.show()
 

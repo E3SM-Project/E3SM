@@ -5,7 +5,6 @@
         <add_link source="../setup_mesh/culled_graph.info" dest="graph.info"/>
         <add_link source_path="script_configuration_dir" source="albany_input.yaml" dest="."/>
         <add_executable source="model" dest="landice_model"/>
-        <add_executable source="metis" dest="metis"/>
         <!-- link in scripts that a user might want -->
         <add_link source_path="script_configuration_dir" source="setup_initial_conditions_EISMINT1-MovingMargin-1.py" dest="."/>
         <add_link source_path="script_configuration_dir" source="check_output_eismint-mm1.py" dest="."/>
@@ -21,7 +20,7 @@
         <run_script name="run_model.py">
 
                 <!-- Set up needed graph file -->
-                <step executable="./metis" pre_message="\n\n### Creating graph.info.part file\n\n" post_message="\n\n### graph.info.part file creation complete\n\n">
+                <step executable="gpmetis" pre_message="\n\n### Creating graph.info.part file\n\n" post_message="\n\n### graph.info.part file creation complete\n\n">
                         <argument flag="graph.info">4</argument>
                 </step>
 

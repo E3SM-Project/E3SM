@@ -1,6 +1,10 @@
 #!/usr/bin/env python
-# This script sets up a "Confined Shelf Experiment".
-# see http://homepages.vub.ac.be/~phuybrec/eismint/shelf-descr.pdf
+"""
+This script sets up a "Confined Shelf Experiment".
+see http://homepages.vub.ac.be/~phuybrec/eismint/shelf-descr.pdf
+"""
+
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import sys
 from netCDF4 import Dataset
@@ -15,7 +19,7 @@ parser.add_option("-f", "--file", dest="filename", type='string', help="file in 
 options, args = parser.parse_args()
 if not options.filename:
    options.filename = 'landice_grid.nc'
-   print 'No file specified.  Attempting to use landice_grid.nc'
+   print('No file specified.  Attempting to use landice_grid.nc')
 
 
 # Open the file, get needed dimensions
@@ -25,7 +29,7 @@ try:
     nVertLevels = len(gridfile.dimensions['nVertLevels'])
     maxEdges = len(gridfile.dimensions['maxEdges'])
     if nVertLevels != 5:
-         print 'nVerLevels in the supplied file was ', nVertLevels, '.  5 levels are typically used with this test case.'
+         print('nVerLevels in the supplied file was '+ str(nVertLevels)+ '.  5 levels are typically used with this test case.')
     # Get variables
     xCell = gridfile.variables['xCell'][:]
     yCell = gridfile.variables['yCell'][:]
@@ -42,17 +46,17 @@ except:
 # put the domain origin in the center of the center cell in the x-direction and in the 2nd row on the y-direction
 # Only do this if it appears this has not already been done:
 if xVertex[:].min() == 0.0:
-   print 'Shifting domain origin to center of shelf front, because it appears that this has not yet been done.'
+   print('Shifting domain origin to center of shelf front, because it appears that this has not yet been done.')
    unique_xs=np.array(sorted(list(set(xCell[:]))))
    targetx = (unique_xs.max() - unique_xs.min()) / 2.0 + unique_xs.min()  # center of domain range
    best_x=unique_xs[ np.absolute((unique_xs - targetx)) == np.min(np.absolute(unique_xs - (targetx))) ][0]
-   print 'Found a best x value to use of:' + str(best_x)
-   
+   print('Found a best x value to use of:' + str(best_x))
+
    unique_ys=np.array(sorted(list(set(yCell[:]))))
 #   print unique_ys
    best_y = unique_ys[5]  # get 6th value
-   print 'Found a best y value to use of:' + str(best_y)
-   
+   print('Found a best y value to use of:' + str(best_y))
+
    xShift = -1.0 * best_x
    yShift = -1.0 * best_y
    xCell[:] = xCell[:] + xShift
@@ -140,7 +144,7 @@ del SMB
 
 gridfile.close()
 
-print 'Successfully added confined-shelf initial conditions to: ', options.filename
+print('Successfully added confined-shelf initial conditions to: ' + options.filename)
 
 
 

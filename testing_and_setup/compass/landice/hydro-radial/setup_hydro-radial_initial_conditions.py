@@ -1,5 +1,9 @@
 #!/usr/bin/env python
-# Generate initial conditions for hydro-margin land ice test case
+"""
+Generate initial conditions for hydro-margin land ice test case
+"""
+
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import sys
 from netCDF4 import Dataset as NetCDFFile
@@ -12,7 +16,7 @@ parser.add_option("-f", "--file", dest="filename", type='string', help="file to 
 options, args = parser.parse_args()
 if not options.filename:
    options.filename = 'landice_grid.nc'
-   print 'No file specified.  Attempting to use landice_grid.nc'
+   print('No file specified.  Attempting to use landice_grid.nc')
 
 
 # Open the file, get needed dimensions
@@ -101,5 +105,5 @@ gridfile.variables['waterPressure'][0,:] = 0.0
 
 gridfile.close()
 
-print 'Successfully added initial conditions to: ', options.filename
+print('Successfully added initial conditions to: '+options.filename)
 

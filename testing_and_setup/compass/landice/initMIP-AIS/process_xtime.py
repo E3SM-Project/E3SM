@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+from __future__ import absolute_import, division, print_function, unicode_literals
 from netCDF4 import Dataset
 import numpy as np
 
@@ -11,7 +11,7 @@ for i in range(100):
 
     time_string[0:4] = np.array(list(str(i+1).zfill(4)))
 
-    print time_string
+    print(time_string)
 
     data.variables['xtime'][i,:] = time_string
 

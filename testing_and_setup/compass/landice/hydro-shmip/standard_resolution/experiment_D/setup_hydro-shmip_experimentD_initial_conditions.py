@@ -4,6 +4,8 @@ Generate initial conditions for hydro-SHMIP land ice test case D
 Details here: http://shmip.bitbucket.org/
 '''
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 from netCDF4 import Dataset as NetCDFFile
 import netCDF4
 import numpy as np
@@ -19,7 +21,7 @@ parser.add_option("-a", dest="afile", type='string', help="restart file from tes
 options, args = parser.parse_args()
 if not options.filename:
    options.filename = 'landice_grid.nc'
-   print 'No file specified.  Attempting to use landice_grid.nc'
+   print('No file specified.  Attempting to use landice_grid.nc')
 
 if not options.afile:
    sys.exit("Error: A restart file from test A1 is required to set up this test.  Specify with -a")
@@ -37,5 +39,5 @@ gridfile.variables['simulationStartTime'][:] = netCDF4.stringtoarr('0000-01-01_0
 gridfile.variables['basalMeltInput'][0,:] = 7.93e-11 * 1000.0  # Put background input here
 gridfile.close()
 
-print 'Successfully added initial conditions to: ', options.filename
+print('Successfully added initial conditions to: ' + options.filename)
 

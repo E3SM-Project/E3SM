@@ -3,6 +3,9 @@
 Convert MPAS hydro output to the SHMIP format regquired by SHMIP
 Details here: http://shmip.bitbucket.org/technical-instructions.html
 '''
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import netCDF4
 import numpy as np
 import sys
@@ -18,19 +21,19 @@ parser.add_option("-v", "--version", dest="hash", type='string', help="version o
 options, args = parser.parse_args()
 if not options.filename:
    options.filename = 'output.nc'
-   print 'No file specified.  Attempting to use output.nc'
+   print('No file specified.  Attempting to use output.nc')
 if not options.icfilename:
    options.icfilename = 'landice_grid.nc'
-   print 'No file specified.  Attempting to use '+options.icfilename
+   print('No file specified.  Attempting to use '+options.icfilename)
 if not options.scenario:
-   print 'ERROR: Scenario has not been specified.  Please include this with the -s option.'
+   print('ERROR: Scenario has not been specified.  Please include this with the -s option.')
    sys.exit()
 if not options.title:
    options.title = 'hoffman_mpas_'+options.scenario
-   print 'No title specified.  Using: '+options.title
+   print('No title specified.  Using: '+options.title)
 if not options.hash:
    options.hash = 'NA'
-   print 'Not version specified.  Using: '+options.hash
+   print('Not version specified.  Using: '+options.hash)
 
 # Open the file, get needed dimensions
 infile = netCDF4.Dataset(options.filename,'r')
@@ -67,7 +70,7 @@ angleEdge = infile.variables['angleEdge'][:]
 #outfile.createDimension('index2', len(infile.dimensions['nEdges']))
 indNSEdges = np.nonzero(np.logical_or(angleEdge<0.1, angleEdge>3.0))[0]
 nNSEdges = indNSEdges.shape[0]
-print nNSEdges, len(infile.dimensions['nEdges'])
+#print nNSEdges, len(infile.dimensions['nEdges'])
 outfile.createDimension('index2', nNSEdges)
 outfile.createDimension('index_ch', len(infile.dimensions['nEdges']))
 
@@ -88,7 +91,7 @@ elif options.scenario[0] == 'C':
 else:
    times = np.array([ntIn-1,])  # only index of final time
 
-print "Using time indices:", times
+print("Using time indices: {}".format(times))
 
 
 
@@ -180,4 +183,4 @@ setattr(thevar, 'units', 'm^3/s')
 
 outfile.close()
 
-print '\nConversion complete.  Written to: '+outfilename
+print('\nConversion complete.  Written to: '+outfilename)

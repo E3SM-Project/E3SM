@@ -2,6 +2,9 @@
 '''
 Script to plot regionalStats figure used in MALI description paper.
 '''
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 from netCDF4 import Dataset
 import matplotlib.pyplot as plt
 import numpy as np

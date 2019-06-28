@@ -2,14 +2,7 @@
 <config case="2km_varres_jigsaw">
 
         <!-- Set up needed files and executables -->
-        <add_executable source="mesh_converter" dest="MpasMeshConverter.x"/>
-        <add_executable source="cell_culler" dest="MpasCellCuller.x"/>
         <add_executable source="jigsaw_converter" dest="triangle_jigsaw_to_netcdf.py"/>
-        <add_executable source="grid_to_li_grid" dest="create_landice_grid_from_generic_MPAS_grid.py"/>
-        <add_executable source="metis" dest="metis"/>
-        <add_executable source="interpolate_to_mpasli_grid" dest="interpolate_to_mpasli_grid.py"/>
-        <add_executable source="define_cull_mask" dest="define_cullMask.py"/>
-        <add_executable source="set_lat_lon_fields_in_planar_grid" dest="set_lat_lon_fields_in_planar_grid.py"/>
         <!--        <add_link source_path="script_configuration_dir" source="albany_input.yaml" dest="."/> -->
         <add_link source_path="script_test_dir" source="Antarctica-1km.BISICLES.CISM-style.nc" dest="ais_input_data.nc"/>
         <add_link source_path="script_test_dir" source="ais2km-MESH.msh" dest="."/>
@@ -36,32 +29,32 @@
                 </step>
 
                 <!-- convert basic netcdf format to MPAS format -->
-                <step executable="./MpasMeshConverter.x"  pre_message="\n\n### Converting to MPAS format\n\n" post_message="\n\n### Converting to MPAS format complete\n\n">
+                <step executable="MpasMeshConverter.x"  pre_message="\n\n### Converting to MPAS format\n\n" post_message="\n\n### Converting to MPAS format complete\n\n">
                         <argument flag="">ais2km_jigsaw_netcdf.nc</argument>
                         <argument flag="">mpas_uncleaned.nc</argument>
                 </step>
 
                 <!-- cull cells to remove negative area cells -->
-                <step executable="./MpasCellCuller.x"  pre_message="\n\n### Cleaning MPAS mesh\n\n" post_message="\n\n### Cleaning MPAS mesh complete\n\n">
+                <step executable="MpasCellCuller.x"  pre_message="\n\n### Cleaning MPAS mesh\n\n" post_message="\n\n### Cleaning MPAS mesh complete\n\n">
                         <argument flag="">mpas_uncleaned.nc</argument>
                         <argument flag="">mpas.nc</argument>
                 </step>
 
                 <!-- Add lat/lon  -->
-                <step executable="./set_lat_lon_fields_in_planar_grid.py" pre_message="\n\n### Setting lat/lon\n\n" post_message="\n\n### Setting lat/lon complete\n\n">
+                <step executable="set_lat_lon_fields_in_planar_grid.py" pre_message="\n\n### Setting lat/lon\n\n" post_message="\n\n### Setting lat/lon complete\n\n">
                         <argument flag="-f">mpas.nc</argument>
                         <argument flag="-p">ais-bedmap2</argument>
                 </step>
 
                 <!-- Convert from basic MPAS mesh to MPASLI mesh -->
-                <step executable="./create_landice_grid_from_generic_MPAS_grid.py" pre_message="\n\n### Creating LI mesh\n\n" post_message="\n\n### LI mesh creation complete\n\n">
+                <step executable="create_landice_grid_from_generic_MPAS_grid.py" pre_message="\n\n### Creating LI mesh\n\n" post_message="\n\n### LI mesh creation complete\n\n">
                         <argument flag="-i">mpas.nc</argument>
                         <argument flag="-o">li_full.nc</argument>
                         <argument flag="-l">1</argument>
                 </step>
 
                 <!-- Add thickness to landice mesh -->
-                <step executable="./interpolate_to_mpasli_grid.py" pre_message="\n\n### Setting up initial condition\n\n" post_message="\n\n### Initial condition setup complete\n\n">
+                <step executable="interpolate_to_mpasli_grid.py" pre_message="\n\n### Setting up initial condition\n\n" post_message="\n\n### Initial condition setup complete\n\n">
                         <argument flag="-s">ais_input_data.nc</argument>
                         <argument flag="-d">li_full.nc</argument>
                         <argument flag="-m">b</argument>
@@ -69,26 +62,26 @@
                 </step>
 
                 <!-- define cull mask -->
-                <step executable="./define_cullMask.py" >
+                <step executable="define_cullMask.py" >
                         <argument flag="-f">li_full.nc</argument>
                         <argument flag="-m">distance</argument>
                         <argument flag="-d">200.0</argument>
                 </step>
 
                 <!-- cull cells -->
-                <step executable="./MpasCellCuller.x" >
+                <step executable="MpasCellCuller.x" >
                         <argument flag="">li_full.nc</argument>
                         <argument flag="">culled_grid.nc</argument>
                 </step>
 
                 <!-- run through mesh converter again to get quality stats, etc.  -->
-                <step executable="./MpasMeshConverter.x" >
+                <step executable="MpasMeshConverter.x" >
                         <argument flag="">culled_grid.nc</argument>
                         <argument flag="">culled_grid_converted.nc</argument>
                 </step>
 
                 <!-- Convert from basic MPAS mesh to MPASLI mesh -->
-                <step executable="./create_landice_grid_from_generic_MPAS_grid.py" pre_message="\n\n### Creating LI mesh\n\n" post_message="\n\n### LI mesh creation complete\n\n">
+                <step executable="create_landice_grid_from_generic_MPAS_grid.py" pre_message="\n\n### Creating LI mesh\n\n" post_message="\n\n### LI mesh creation complete\n\n">
                         <argument flag="-i">culled_grid_converted.nc</argument>
                         <argument flag="-o">ais_2_to_20_km.nc</argument>
                         <argument flag="-l">10</argument>
@@ -98,7 +91,7 @@
                 </step>
 
                 <!-- Set up initial condition on to landice mesh -->
-                <step executable="./interpolate_to_mpasli_grid.py" pre_message="\n\n### Setting up initial condition\n\n" post_message="\n\n### Initial condition setup complete\n\n">
+                <step executable="interpolate_to_mpasli_grid.py" pre_message="\n\n### Setting up initial condition\n\n" post_message="\n\n### Initial condition setup complete\n\n">
                         <argument flag="-s">ais_input_data.nc</argument>
                         <argument flag="-d">ais_2_to_20_km.nc</argument>
                         <argument flag="-m">b</argument>
@@ -106,7 +99,7 @@
 
 
                 <!-- Set up a graph file
-                <step executable="./metis" pre_message="\n\n### Creating graph.info.part file\n\n" post_message="\n\n### graph.info.part file creation complete\n\n">
+                <step executable="gpmetis" pre_message="\n\n### Creating graph.info.part file\n\n" post_message="\n\n### graph.info.part file creation complete\n\n">
                         <argument flag="graph.info">16</argument>
                 </step> -->
 

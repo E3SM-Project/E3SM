@@ -1,13 +1,16 @@
 #!/usr/bin/env python
+"""
+Set up subdirectories for the various MISMIP+ experiments:
+Ice0, Ice1r, Ice1ra, Ice1rr, Ice1rax, Ice1rrx, Ice2r, Ice2ra, Ice2r, Ice2rax, Ice2rrx
+Note: Ice1rax is the optional extension of Ice1ra from year 200 to 1000,
+      and similarly for the other Ice*x experiments.
 
-# Set up subdirectories for the various MISMIP+ experiments:
-# Ice0, Ice1r, Ice1ra, Ice1rr, Ice1rax, Ice1rrx, Ice2r, Ice2ra, Ice2r, Ice2rax, Ice2rrx
-# Note: Ice1rax is the optional extension of Ice1ra from year 200 to 1000,
-#       and similarly for the other Ice*x experiments.
+The namelist and streams files for each experiment should already
+have been created in the directory from which this script is launched;
+the script simply moves them to the subdirectories.
+"""
 
-# The namelist and streams files for each experiment should already
-# have been created in the directory from which this script is launched;
-# the script simply moves them to the subdirectories.
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import sys, os
 import shutil
@@ -28,14 +31,14 @@ else:
     sys.exit('Error: No experiment specified.  Please specify experiment(s) with the -x option')
 
 
-print 'Experiments:', experiments
+print('Experiments: {}'.format(experiments))
 
 # Loop through experiments
 for expt in experiments:
-    print 'Setting up directory for experiment', expt
+    print('Setting up directory for experiment'+expt)
 
     # Make the subdirectory if it does not exist already
-    try: 
+    try:
         os.mkdir(expt)
     except:
         pass
@@ -92,7 +95,7 @@ for expt in experiments:
         #       while removing the xtime variable
         gridfile = 'landice_grid.nc'
         griddir = '../Spinup/'
-        os.symlink(griddir + gridfile, gridfile)    
+        os.symlink(griddir + gridfile, gridfile)
     else:
         # Start from the appropriate restart file
         if expt=='Ice1ra' or expt=='Ice1rr':

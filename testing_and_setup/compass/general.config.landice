@@ -25,11 +25,9 @@ forward = FULL_PATH_TO_FORWARD_TEMPLATE_STREAMS
 # anywhere on the machine.
 [executables]
 model = FULL_PATH_TO_MODEL
-mesh_converter = FULL_PATH_TO_MESH_CONVERTER
-cell_culler = FULL_PATH_TO_CELL_CULLER
-metis = FULL_PATH_TO_METIS
-grid_to_li_grid = FULL_PATH_TO_create_landice_grid_from_generic_MPAS_grid.py
-periodic_hex = FULL_PATH_TO_PERIODIC_HEX
+grid_to_li_grid = FULL_PATH_TO/MPAS-Tools/landice/mesh_tools_li/create_landice_grid_from_generic_MPAS_grid.py
+define_cull_mask = FULL_PATH_TO/MPAS-Tools/landice/mesh_tools_li/define_cullMask.py
+interpolate_to_mpasli_grid = FULL_PATH_TO/MPAS-Tools/landice/mesh_tools_li/interpolate_to_mpasli_grid.py
 
 
 # The paths section describes paths that are used within the landice core test

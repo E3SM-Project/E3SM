@@ -4,6 +4,8 @@ Generate initial conditions for hydro-SHMIP land ice test case E
 Details here: http://shmip.bitbucket.org/
 '''
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 from netCDF4 import Dataset as NetCDFFile
 import numpy as np
 import sys
@@ -16,7 +18,7 @@ parser.add_option("-n", "--number", dest="number", type='int', help="test varian
 options, args = parser.parse_args()
 if not options.filename:
    options.filename = 'landice_grid.nc'
-   print 'No file specified.  Attempting to use landice_grid.nc'
+   print('No file specified.  Attempting to use landice_grid.nc')
 
 # Setup dictionaries of parameter values for each experiment
 e_params = {1:0.05,  2:0.0, 3:-0.1, 4:-0.5, 5:-0.7}
@@ -49,7 +51,7 @@ if yCell[:].min() >= 0.0:
    yVertex[:] = yVertex[:] - yShift
 
    gridfile.sync()
-   print "Shifted domain origin by (x,y):", xShift, yShift
+   print("Shifted domain origin by (x,y): {}, {}".format(xShift, yShift))
 
 xCell = gridfile.variables['xCell'][:]
 yCell = gridfile.variables['yCell'][:]
@@ -59,8 +61,8 @@ yEdge = gridfile.variables['yEdge'][:]
 
 # Geometry
 para = e_params[options.number]
-print "Setting up test number:", options.number
-print "Using overdeepening parameter of:", para
+print("Setting up test number: {}".format(options.number))
+print("Using overdeepening parameter of: {}".format(para))
 
 # prescribed functions:
 para_bench = 0.05
@@ -130,5 +132,5 @@ gridfile.variables['waterPressure'][0,:] = 0.05 * 9.81 * 910.0 * thickness[:]  #
 
 gridfile.close()
 
-print 'Successfully added initial conditions to: ', options.filename
+print('Successfully added initial conditions to: ' + options.filename)
 
