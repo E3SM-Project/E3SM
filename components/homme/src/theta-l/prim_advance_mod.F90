@@ -102,6 +102,8 @@ contains
     np1   = tl%np1
     nstep = tl%nstep
 
+    print *, "dt2 is ", dt2
+
     ! get timelevel for accessing tracer mass Qdp() to compute virtual temperature
     call TimeLevel_Qdp(tl, qsplit, qn0)  ! compute current Qdp() timelevel
 
@@ -468,6 +470,8 @@ contains
       ahat2 = 1d0
       alphahat = 2d0
       betahat = -1d0
+
+      print* , "dt is", dt
 
       ! copy un0 to unm1       
       call copy_state(statesave1,statesave1,elem,3,1d0,1d0,nm1,n0,n0,nets,nete)
@@ -1647,6 +1651,8 @@ contains
 
   call t_startf('compute_andor_apply_rhs')
 
+  print*, "dt2 is", dt2
+
   if ((scale1.eq.(0d0)).and.(scale2.eq.(1d0)).and.(scale3.eq.(0d0))) then
      do ie=nets,nete
 
@@ -1674,7 +1680,7 @@ contains
 
   else
 
-
+  
   if (theta_hydrostatic_mode) then
      nlyr_tot=4*nlev        ! dont bother to dss w_i and phinh_i
   else
