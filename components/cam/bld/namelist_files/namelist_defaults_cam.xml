@@ -1306,6 +1306,7 @@
 <zmconv_ke                       hgrid="512x1024"                     > 1.0E-6 </zmconv_ke>
 
 <zmconv_trigmem                                                       >.false. </zmconv_trigmem>
+<zmconv_trigdcape_ull                                                 >.false. </zmconv_trigdcape_ull>
 <zmconv_tiedke_add                                                    >0.5D0   </zmconv_tiedke_add>
 <zmconv_cape_cin                                                      >5       </zmconv_cape_cin>
 <zmconv_mx_bot_lyr_adj                                                >0       </zmconv_mx_bot_lyr_adj>
