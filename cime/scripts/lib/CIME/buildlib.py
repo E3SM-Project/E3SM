@@ -69,11 +69,11 @@ def build_cime_component_lib(case, compname, libroot, bldroot):
     with open(os.path.join(confdir, "CCSM_cppdefs"), "w") as out:
         out.write("")
 
-    safe_copy(os.path.join(confdir, "Filepath"), bldroot)
-    safe_copy(os.path.join(confdir, "CCSM_cppdefs"), bldroot)
-
     # Build the component
     if get_model() != "e3sm":
+        safe_copy(os.path.join(confdir, "Filepath"), bldroot)
+        safe_copy(os.path.join(confdir, "CCSM_cppdefs"), bldroot)
+
         run_gmake(case, compclass, libroot, bldroot)
 
 ###############################################################################
