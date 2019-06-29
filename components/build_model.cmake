@@ -13,7 +13,7 @@ function(build_model MODEL_ARG MODELCONF_DIR_ARG ALL_MODELS_ARG)
   endif()
 
   if (MODEL_ARG STREQUAL "cpl")
-    list(APPEND INCLDIR "${EXEROOT}/atm/obj" "${EXEROOT}/ice/obj" "${EXEROOT}/ocn/obj" "${EXEROOT}/glc/obj" "${EXEROOT}/rof/obj" "${EXEROOT}/wav/obj" "${EXEROOT}/esp/obj" "${EXEROOT}/iac/obj")
+    list(APPEND INCLDIR "${EXEROOT}/atm/obj" "${EXEROOT}/ice/obj" "${EXEROOT}/ocn/obj" "${EXEROOT}/glc/obj" "${EXEROOT}/rof/obj" "${EXEROOT}/wav/obj" "${EXEROOT}/esp/obj" "${EXEROOT}/iac/obj" "${EXEROOT}/bld/mpas-source/src")
   endif()
 
   if (MODEL_ARG STREQUAL "cam")

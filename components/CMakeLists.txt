@@ -18,14 +18,29 @@ cmake_policy(SET CMP0057 NEW)
 
 project(E3SM C CXX Fortran)
 
+include(${CMAKE_CURRENT_SOURCE_DIR}/build_mpas_model.cmake)
+
+set(BUILDCONF ${CMAKE_BINARY_DIR}/../../Buildconf)
+
+# Do any MPAS builds first since they manage their own flags
+file(GLOB MPASCONFS "${BUILDCONF}/mpas*conf")
+foreach(ITEM IN LISTS MPASCONFS)
+  message("JGF INFO ${ITEM}")
+  get_filename_component(MPASCONF ${ITEM} NAME)
+  string(REPLACE "conf" "" MODEL "${MPASCONF}")
+
+  message("Found component model ${MODEL}")
+  build_mpas_model(${MODEL})
+
+  list(APPEND MODELS ${MPAS_COMPNAME})
+endforeach()
+
 include(${CMAKE_CURRENT_SOURCE_DIR}/common_setup.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/build_model.cmake)
 
 # For each component that has registered itself to be built, read in Filepath and
 # CCSM_cppdefs and build it. We identify the components by looking for Buildconf/*/Filepath
 # files.
-
-set(BUILDCONF ${CMAKE_BINARY_DIR}/../../Buildconf)
 file(GLOB FILEPATHS "${BUILDCONF}/*/Filepath")
 foreach(ITEM IN LISTS FILEPATHS)
   get_filename_component(FILEPATH_DIR ${ITEM} DIRECTORY)
