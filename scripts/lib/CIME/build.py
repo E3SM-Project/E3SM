@@ -27,13 +27,15 @@ def get_standard_makefile_args(case, shared_lib=False):
 
     return make_args
 
-def get_standard_cmake_args(case, shared_lib=False):
+def get_standard_cmake_args(case, sharedpath, shared_lib=False):
     cmake_args = "-DCIME_MODEL={} ".format(case.get_value("MODEL"))
 
     ocn_model = case.get_value("COMP_OCN")
     atm_model = case.get_value("COMP_ATM")
     if ocn_model == 'mom' or atm_model == "fv3gfs":
         cmake_args += " -DUSE_FMS=TRUE"
+
+    cmake_args += " -DINSTALL_SHAREDPATH={}".format(os.path.join(case.get_value("EXEROOT"), sharedpath))
 
     if not shared_lib:
         cmake_args += " -DUSE_KOKKOS={} ".format(stringify_bool(uses_kokkos(case)))
@@ -145,12 +147,12 @@ def _build_model(build_threaded, exeroot, incroot, complist,
 
 ###############################################################################
 def _build_model_cmake(build_threaded, exeroot, incroot, complist,
-                       lid, caseroot, cimeroot, compiler, buildlist, comp_interface, case):
+                       lid, caseroot, cimeroot, compiler, buildlist, comp_interface, sharedpath, case):
 ###############################################################################
-    model      = get_model()
+    cime_model = get_model()
     bldroot    = os.path.join(exeroot, "bld")
     libroot    = os.path.join(exeroot, "lib")
-    bldlog     = os.path.join(exeroot, "{}.bldlog.{}".format(model, lid))
+    bldlog     = os.path.join(exeroot, "{}.bldlog.{}".format(cime_model, lid))
     srcroot    = case.get_value("SRCROOT")
     gmake_j    = case.get_value("GMAKE_J")
     gmake      = case.get_value("GMAKE")
@@ -171,7 +173,7 @@ def _build_model_cmake(build_threaded, exeroot, incroot, complist,
         _create_build_metadata_for_component(config_dir, libroot, bldroot, case)
 
     # Call CMake
-    cmake_args = get_standard_cmake_args(case)
+    cmake_args = get_standard_cmake_args(case, sharedpath)
     cmake_cmd = "cmake {} {}/components >> {} 2>&1".format(cmake_args, srcroot, bldlog)
     with open(bldlog, "w") as fd:
         fd.write("Configuring with cmake cmd:\n{}\n\n".format(cmake_cmd))
@@ -185,10 +187,10 @@ def _build_model_cmake(build_threaded, exeroot, incroot, complist,
 
         stat = run_cmd(make_cmd, from_dir=bldroot)[0]
 
-    expect(stat == 0, "BUILD FAIL: build {} failed, cat {}".format(model, bldlog))
+    expect(stat == 0, "BUILD FAIL: build {} failed, cat {}".format(cime_model, bldlog))
 
     # Copy the just-built ${MODEL}.exe to ${MODEL}.exe.$LID
-    safe_copy("{}/{}.exe".format(exeroot, model), "{}/{}.exe.{}".format(exeroot, model, lid))
+    safe_copy("{}/{}.exe".format(exeroot, cime_model), "{}/{}.exe.{}".format(exeroot, cime_model, lid))
 
     return [bldlog]
 
@@ -571,11 +573,9 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
                                 cimeroot, libroot, lid, compiler, buildlist, comp_interface)
 
     if not sharedlib_only:
-        os.environ["INSTALL_SHAREDPATH"] = os.path.join(exeroot, sharedpath) # for MPAS makefile generators
-
         if get_model() == "e3sm":
             logs.extend(_build_model_cmake(build_threaded, exeroot, incroot, complist,
-                                           lid, caseroot, cimeroot, compiler, buildlist, comp_interface, case))
+                                           lid, caseroot, cimeroot, compiler, buildlist, comp_interface, sharedpath, case))
         else:
             logs.extend(_build_model(build_threaded, exeroot, incroot, complist,
                                      lid, caseroot, cimeroot, compiler, buildlist, comp_interface, case))
