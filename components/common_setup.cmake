@@ -4,9 +4,9 @@
 # Set global cmake settings
 set(CMAKE_MODULE_PATH ${CIMEROOT}/src/CMake)
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../../lib)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../../lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../..)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/..)
 
 # Add INCROOT to path for Depends and Include
 set(MINCROOT "")
@@ -17,26 +17,6 @@ endif ()
 
 # JGF: I think SHAREDLIB paths shoudl come from build.py and not have to
 # be recomputed here
-
-# JGF: Find unused/unneeded variables
-
-# Determine whether to compile threaded or not
-# Set the THREADDIR for the shared build
-# based on the threaded build status
-if (SMP_PRESENT)
-  set(THREADDIR "threads")
-  set(compile_threaded TRUE)
-else()
-  set(THREADDIR "nothreads")
-  set(compile_threaded FALSE)
-endif()
-
-# set the debug directory based on the debug status
-if (DEBUG)
-  set(DEBUGDIR "debug")
-else()
-  set(DEBUGDIR "nodebug")
-endif()
 
 if (USE_ESMF_LIB)
   set(ESMFDIR "esmf")
@@ -101,11 +81,6 @@ if (PIO_VERSION STREQUAL "1")
   set(CPPDEFS "${CPPDEFS} -DPIO1")
 else()
   set(USE_CXX TRUE)
-endif()
-
-if (NOT SHAREDPATH)
-  set(SHAREDPATH ${COMPILER}/${MPILIB}/${DEBUGDIR}/${THREADDIR}/${COMP_INTERFACE})
-  set(INSTALL_SHAREDPATH ${EXEROOT}/${SHAREDPATH})
 endif()
 
 # Decide whether to use a C++ or Fortran linker, based on whether we
