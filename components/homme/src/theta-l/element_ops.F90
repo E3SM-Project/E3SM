@@ -4,42 +4,42 @@
 !
 !  getter and setter functions that must be provided by each model
 !  
-!  !!IMPORTANT NOTE!!:  These routines assume we are on REFERENCE levels
-!  For vertically lagrangian models, they should only be used outside the dynamics
-!  timestep after the vertical remap.  
-
+!  Note: all routines require dp3d() to be valid, with the exception of 
+!  the initial condition routines which assume reference levels and will initialize dp3d based 
+!  on their 'ps' input argument
+!  
+!
+!
 ! ROUTINES REQUIRED FOR ALL MODELS:
-!  get_field() 
-!     returns temperature, potential temperature, phi, etc..
-!  copy_state()
-!     copy state variables from one timelevel to another timelevel 
+! Initial condition routines
 !  set_thermostate()    
 !     initial condition interface used by DCMIP 2008 tests, old HOMME tests
 !  set_state(), set_state_i()
 !     initial condition interface used by DCMIP 2012 tests
 !  set_elem_state()
 !     initial condition interface used by DCMIP 2016 tests
+!  tests_finalize()
+!     initialize geopotential to be in hydrostatic balance
+!     used by DCMIP2012, 2016 tests
+! Other routines:
+!  get_field() 
+!     returns temperature, potential temperature, phi, etc..
+!  copy_state()
+!     copy state variables from one timelevel to another timelevel 
 !  get_state()
 !     return state variables used by some DCMIP forcing functions
 !  save_initial_state()
 !     save t=0 in "state0", used by some DCMIP forcing functions       
 !  set_forcing_rayleigh_friction()
 !     used by dcmip2012 test cases
-!  tests_finalize()
-!     initialize geopotential to be in hydrostatic balance
-!     used by DCMIP2012, 2016 tests
 !  set_forcing_rayleigh_friction()
 !     apply rayleigh friction to prognostic variables, used by some DCMIP2016 tests
 !
-!  Accessory routines used by the above:
+! Accessory routines used by the above:
 !  get_pottemp()
 !  get_temperature()
 !  get_dpnh_dp()
 !  get_nonhydro_pressure()
-!
-!
-!  Additional routines that work for both reference levels and Lagrangian levels:
-!  (because they accept dp as an input argument)
 !  get_cp_star()
 !  get_R_star()
 !  set_theta_ref()
@@ -322,7 +322,7 @@ contains
 
 
   !_____________________________________________________________________
-  subroutine set_thermostate(elem,temperature,hvcoord)
+  subroutine set_thermostate(elem,ps,temperature,hvcoord)
   !
   ! Assuming a hydrostatic intital state and given surface pressure,
   ! and no moisture, compute theta and phi 
@@ -335,6 +335,7 @@ contains
   type (element_t), intent(inout)   :: elem
   real (kind=real_kind), intent(in) :: temperature(np,np,nlev)
   type (hvcoord_t),     intent(in)  :: hvcoord                      ! hybrid vertical coordinate struct
+  real (kind=real_kind), intent(in) :: ps(np,np)
   
   !   local
   real (kind=real_kind) :: p(np,np,nlev)
@@ -343,7 +344,7 @@ contains
 
   nt = 1
   do k=1,nlev
-     p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
+     p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*ps(:,:)
      dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
   enddo
@@ -352,7 +353,9 @@ contains
   do k=1,nlev
      elem%state%vtheta_dp(:,:,k,nt)=dp(:,:,k)*temperature(:,:,k)* &
           (p(:,:,k)/p0)**(-kappa)
+     elem%state%dp3d(:,:,k,nt)=dp(:,:,k)
   enddo
+  elem%state%ps_v(:,:,nt)=ps
 
 !set phi, copy from 1st timelevel to all
   call tests_finalize(elem,hvcoord)
@@ -559,30 +562,25 @@ contains
   integer, optional,   intent(in)   :: ie ! optional element index, to save initial state
 
   integer :: k,tl
-  real(real_kind), dimension(np,np,nlev) :: dp, pi
+  real(real_kind), dimension(np,np,nlev) :: pi
 
   real(real_kind), dimension(np,np,nlev) :: pnh,exner
   real(real_kind), dimension(np,np,nlevp) :: dpnh_dp_i,phi_i
 
   tl=1
-  do k=1,nlev
-    pi(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,tl)
-    dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,tl)
-  enddo
 
-
-  call phi_from_eos(hvcoord,elem%state%phis,elem%state%vtheta_dp(:,:,:,tl),dp,&
-       elem%state%phinh_i(:,:,:,tl))
+  call phi_from_eos(hvcoord,elem%state%phis,elem%state%vtheta_dp(:,:,:,tl),&
+       elem%state%dp3d(:,:,:,tl),elem%state%phinh_i(:,:,:,tl))
 
   ! verify discrete hydrostatic balance
-  call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,tl),dp,&
-       elem%state%phinh_i(:,:,:,tl),pnh,exner,dpnh_dp_i)
+  call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,tl),&
+       elem%state%dp3d(:,:,:,tl),elem%state%phinh_i(:,:,:,tl),pnh,exner,dpnh_dp_i)
   do k=1,nlev
+     pi(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,tl)
      if (maxval(abs(1-dpnh_dp_i(:,:,k))) > 1e-10) then
         write(iulog,*)'WARNING: hydrostatic inverse FAILED!'
         write(iulog,*)k,minval(dpnh_dp_i(:,:,k)),maxval(dpnh_dp_i(:,:,k))
-        write(iulog,*) 'pi,pnh',pi(1,1,k),pnh(1,1,k)
+        write(iulog,*) 'pnh',pi(1,1,k),pnh(1,1,k)
      endif
   enddo
   
