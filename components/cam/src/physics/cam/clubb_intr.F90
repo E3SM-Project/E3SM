@@ -761,7 +761,11 @@ end subroutine clubb_init_cnst
     call addfld ('RELVAR', (/ 'lev' /),  'A',        '-', 'Relative cloud water variance')
     call addfld ('RELVARC', (/ 'lev' /),  'A',        '-', 'Relative cloud water variance', flag_xyfill=.true.,fill_value=fillvalue)
     call addfld ('CONCLD', (/ 'lev' /),  'A',        'fraction', 'Convective cloud cover')
-    call addfld ('CMELIQ', (/ 'lev' /),  'A',        'kg/kg/s', 'Rate of cond-evap of liq within the cloud')
+    call addfld ('CMELIQ', (/ 'lev' /),  'A',        'kg/kg', 'Rate of cond-evap of liq within the cloud')
+    call addfld ('FICE_q', (/ 'lev' /),  'A',        'kg/kg', 'Water vapor mixing ratio for ice cloud fraction calculation')
+    call addfld ('FICE_qice', (/ 'lev' /),  'A',     'kg/kg', 'Ice water mixing ratio for ice cloud fraction calculation')
+    call addfld ('FICE_T', (/ 'lev' /),  'A',        'K', 'Temperature for ice cloud fraction calculation')
+    call addfld ('FICE_f', (/ 'lev' /),  'A',        'fraction', 'Ice cloud cover')
 
     !  Initialize statistics, below are dummy variables
     dum1 = 300._r8
@@ -802,7 +806,10 @@ end subroutine clubb_init_cnst
        if (clubb_do_deep) then
           call add_default('MU_CLUBB',         1, ' ')
        endif 
-
+       call add_default('FICE_q',           1, ' ')
+       call add_default('FICE_qice',        1, ' ')
+       call add_default('FICE_T',           1, ' ')
+       call add_default('FICE_f',             1, ' ')
        call add_default('RELVAR',           1, ' ')
        call add_default('RHO_CLUBB',        1, ' ')
        call add_default('UPWP_CLUBB',       1, ' ')
@@ -2386,13 +2393,19 @@ end subroutine clubb_init_cnst
    !  use the aist_vector function to compute the ice cloud fraction                   !
    ! --------------------------------------------------------------------------------- !  
 
+   call outfld( 'FICE_q',       state1%q(:,:,ixq),       pcols,  lchnk )
+   call outfld( 'FICE_qice',    state1%q(:,:,ixcldice),  pcols,  lchnk )
+   call outfld( 'FICE_T',       state1%t(:,:),           pcols,  lchnk )
+
    call t_startf('ice_cloud_frac_diag')
    do k=1,pver
       call aist_vector(state1%q(:,k,ixq),state1%t(:,k),state1%pmid(:,k),state1%q(:,k,ixcldice), &
            state1%q(:,k,ixnumice),cam_in%landfrac(:),cam_in%snowhland(:),aist(:,k),ncol)
    enddo
    call t_stopf('ice_cloud_frac_diag')
-  
+     
+   call outfld( 'FICE_f',         aist,                    pcols,  lchnk )
+
    ! --------------------------------------------------------------------------------- !  
    !  THIS PART COMPUTES THE LIQUID STRATUS FRACTION                                   !
    !                                                                                   !

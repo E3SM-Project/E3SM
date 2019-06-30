@@ -201,11 +201,11 @@ contains
        case('t')
           prg_var(1:pcols,1:pver) = state%t(1:pcols,1:pver)
        case('u')
-          prg_var(1:pcols,1:pver) = state%t(1:pcols,1:pver)
+          prg_var(1:pcols,1:pver) = state%u(1:pcols,1:pver)
        case('v')
           prg_var(1:pcols,1:pver) = state%v(1:pcols,1:pver)
        case('omega')
-          prg_var(1:pcols,1:pver) = state%v(1:pcols,1:pver)
+          prg_var(1:pcols,1:pver) = state%omega(1:pcols,1:pver)
        case default
           call endrun('physics_update_mod.F90 - func get_var, unrecognized variable: '// trim(adjustl(hist_var)))
        end select
