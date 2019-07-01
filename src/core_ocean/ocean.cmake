@@ -38,6 +38,7 @@ list(APPEND RAW_SOURCES
   core_ocean/shared/mpas_ocn_equation_of_state.F
   core_ocean/shared/mpas_ocn_equation_of_state_jm.F
   core_ocean/shared/mpas_ocn_equation_of_state_linear.F
+  core_ocean/shared/mpas_ocn_equation_of_state_wright.F
   core_ocean/shared/mpas_ocn_thick_hadv.F
   core_ocean/shared/mpas_ocn_thick_vadv.F
   core_ocean/shared/mpas_ocn_thick_surface_flux.F
