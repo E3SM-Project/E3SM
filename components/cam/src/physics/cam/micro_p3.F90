@@ -439,7 +439,6 @@ contains
     !  (all Q process rates in kg kg-1 s-1)
     !  (all N process rates in # kg-1)
 
-    real(rtype) :: qrcon   ! rain condensation   (Not in paper?)
     real(rtype) :: qcacc   ! cloud droplet accretion by rain
     real(rtype) :: qcaut   ! cloud droplet autoconversion to rain
     real(rtype) :: ncacc   ! change in cloud droplet number from accretion by rain
@@ -447,12 +446,16 @@ contains
     real(rtype) :: ncslf   ! change in cloud droplet number from self-collection  (Not in paper?)
     real(rtype) :: nrslf   ! change in rain number from self-collection  (Not in paper?)
     real(rtype) :: ncnuc   ! change in cloud droplet number from activation of CCN
-    real(rtype) :: qccon   ! cloud droplet condensation
     real(rtype) :: qcnuc   ! activation of cloud droplets from CCN
     real(rtype) :: qrevp   ! rain evaporation
-    real(rtype) :: qcevp   ! cloud droplet evaporation
     real(rtype) :: nrevp   ! change in rain number from evaporation
     real(rtype) :: ncautr  ! change in rain number from autoconversion of cloud water
+! Is is assumed that macrophysics handles condensation/evaporation of qc and
+! that there is no condensation of rain. Thus qccon, qrcon and qcevp have
+! been removed from the original P3-WRF for P3-SCREAM.
+!    real(rtype) :: qrcon   ! rain condensation   (Not in paper?)
+!    real(rtype) :: qccon   ! cloud droplet condensation   
+!    real(rtype) :: qcevp   ! cloud droplet evaporation 
 
     ! ice-phase microphysical process rates:
     !  (all Q process rates in kg kg-1 s-1)
@@ -522,21 +525,24 @@ contains
 
 
     ! quantities related to process rates/parameters, interpolated from lookup tables:
+    ! For a more in depth reference to where these came from consult the file
+    ! "create_p3_lookupTable_1.F90-v4.1".  All line numbers below reference this
+    ! file.
 
-    real(rtype)    :: f1pr01   ! number-weighted fallspeed
-    real(rtype)    :: f1pr02   ! mass-weighted fallspeed
-    real(rtype)    :: f1pr03   ! ice collection within a category
-    real(rtype)    :: f1pr04   ! collection of cloud water by ice
-    real(rtype)    :: f1pr05   ! melting
-    real(rtype)    :: f1pr06   ! effective radius
-    real(rtype)    :: f1pr07   ! collection of rain number by ice
-    real(rtype)    :: f1pr08   ! collection of rain mass by ice
-    real(rtype)    :: f1pr09   ! minimum ice number (lambda limiter)
-    real(rtype)    :: f1pr10   ! maximum ice number (lambda limiter)
-    real(rtype)    :: f1pr13   ! reflectivity
-    real(rtype)    :: f1pr14   ! melting (ventilation term)
-    real(rtype)    :: f1pr15   ! mass-weighted mean diameter
-    real(rtype)    :: f1pr16   ! mass-weighted mean particle density
+    real(rtype)    :: f1pr01   ! number-weighted fallspeed            See lines  731 -  808  uns
+    real(rtype)    :: f1pr02   ! mass-weighted fallspeed              See lines  731 -  808  ums
+    real(rtype)    :: f1pr03   ! ice collection within a category     See lines  809 -  928  nagg 
+    real(rtype)    :: f1pr04   ! collection of cloud water by ice     See lines  929 - 1009  nrwat
+    real(rtype)    :: f1pr05   ! melting                              See lines 1212 - 1279  vdep
+    real(rtype)    :: f1pr06   ! effective radius                     See lines 1281 - 1356  eff
+    real(rtype)    :: f1pr07   ! collection of rain number by ice     See lines 1010 - 1209  nrrain
+    real(rtype)    :: f1pr08   ! collection of rain mass by ice       See lines 1010 - 1209  qrrain
+    real(rtype)    :: f1pr09   ! minimum ice number (lambda limiter)  See lines  704 -  705  nlarge
+    real(rtype)    :: f1pr10   ! maximum ice number (lambda limiter)  See lines  704 -  705  nsmall
+    real(rtype)    :: f1pr13   ! reflectivity                         See lines  731 -  808  refl
+    real(rtype)    :: f1pr14   ! melting (ventilation term)           See lines 1212 - 1279  vdep1
+    real(rtype)    :: f1pr15   ! mass-weighted mean diameter          See lines 1212 - 1279  dmm 
+    real(rtype)    :: f1pr16   ! mass-weighted mean particle density  See lines 1212 - 1279  rhomm
 
 
     !--These will be added as namelist parameters in the future
@@ -742,8 +748,7 @@ contains
           ! All microphysics tendencies will be computed as IN-CLOUD, they will be mapped back to cell-average later.
 
           ! initialize warm-phase process rates
-          qcacc   = 0._rtype;     qrevp   = 0._rtype;     qccon   = 0._rtype
-          qcaut   = 0._rtype;     qcevp   = 0._rtype;     qrcon   = 0._rtype
+          qcacc   = 0._rtype;     qrevp   = 0._rtype;     qcaut   = 0._rtype;
           ncacc   = 0._rtype;     ncnuc   = 0._rtype;     ncslf   = 0._rtype
           ncautc  = 0._rtype;     qcnuc   = 0._rtype;     nrslf   = 0._rtype
           nrevp   = 0._rtype;     ncautr  = 0._rtype
@@ -959,12 +964,12 @@ contains
           dt,dqsdt,qvs(i,k),qvi(i,k),xxls(i,k),abi,epsi_tot,epsc,epsr, &
           aaa,xx,dumqvi)
 
-          call evaporate_sublimate_precip(qc_incld(i,k),qr_incld(i,k),nr_incld(i,k),qitot_incld(i,k), &
-          t(i,k),pres(i,k),lcldm(i,k),rcldm(i,k),qvs(i,k),aaa,xx,dt,ab,epsr,epsc,qv(i,k),sup(i,k),ssat(i,k),xxlv(i,k), &
-          qccon,qrcon,qcevp,qrevp,nrevp)
+          call evaporate_sublimate_precip(qr_incld(i,k),qc_incld(i,k),nr_incld(i,k),qitot_incld(i,k), &
+          lcldm(i,k),rcldm(i,k),qvs(i,k),ab,epsr,qv(i,k), &
+          qrevp,nrevp)
 
           call ice_deposition_sublimation(qitot_incld(i,k), nitot_incld(i,k), t(i,k), &
-          aaa,xx,dt,qvs(i,k),dumqvi,ssat(i,k),epsi,abi,supi(i,k),qv(i,k), &
+          qvs(i,k),dumqvi,epsi,abi,qv(i,k), &
           qidep,qisub,nisub,qiberg)
 
 444       continue
@@ -1018,22 +1023,6 @@ contains
             dum   = min(dum,(qv(i,k)-dumqvs)/ab)  ! limit overdepletion of supersaturation
             qcnuc = dum*odt
          endif
-
-          !................................................................
-          ! saturation adjustment to get initial cloud water
-
-          ! This is only called once at the beginning of the simulation
-          ! to remove any supersaturation in the intial conditions
-
-          if (it.eq.1) then
-             dumt   = th(i,k)*inv_exner(i,k) !(pres(i,k)*1.e-5)**(rd*inv_cp)
-             dumqv  = qv(i,k)
-             dumqvs = qv_sat(dumt,pres(i,k),0)
-             dums   = dumqv-dumqvs
-             qccon  = dums/(1._rtype+xxlv(i,k)**2*dumqvs/(cp*rv*dumt**2))*odt
-             qccon  = max(0._rtype,qccon)
-             if (qccon.le.1.e-7_rtype) qccon = 0._rtype
-          endif
 
           !................
 
@@ -1175,10 +1164,7 @@ contains
           ! map warm-phase process rates to cell-avg
           qcacc   = qcacc*lr_cldm     ! Accretion of liquid to rain
           qrevp   = qrevp*rcldm(i,k)  ! Evaporation of rain
-          qccon   = qccon*lcldm(i,k)  ! Condensation of liquid
           qcaut   = qcaut*lcldm(i,k)  ! Autoconversion of liquid
-          qcevp   = qcevp*lcldm(i,k)  ! Evaporation of liquid, AaronDonahue: there is no equivalent ncevp, this should be investigated
-          qrcon   = qrcon*rcldm(i,k)  ! Condensation of rain
           ncacc   = ncacc*lr_cldm     ! Number change due to accretion
           ncslf   = ncslf*lcldm(i,k)  ! Self collection occurs locally in liq. cloud
           ncautc  = ncautc*lcldm(i,k) ! Impact of autoconversion on number
@@ -1224,34 +1210,32 @@ contains
           !          cannot possibly overdeplete qv
 
           ! cloud
-          sinks   = (qcaut+qcacc+qccol+qcevp+qcheti+qcshd+qiberg)*dt
-          sources = qc(i,k) + (qccon+qcnuc)*dt
-          ratio = 0.0 ! Initialize ratio in order to only limit qidep and qisub when needed.  See below.
+          sinks   = (qcaut+qcacc+qccol+qcheti+qcshd+qiberg)*dt
+          sources = qc(i,k) + (qcnuc)*dt
           if (sinks.gt.sources .and. sinks.ge.1.e-20_rtype) then
              ratio  = sources/sinks
              qcaut  = qcaut*ratio
              qcacc  = qcacc*ratio
-             qcevp  = qcevp*ratio
              qccol  = qccol*ratio
              qcheti = qcheti*ratio
              qcshd  = qcshd*ratio
              qiberg = qiberg*ratio
           else
-             ratio = 1.0 ! If not limiting qiberg then must not have run out of qc
+             ratio = 1.0 ! If not limiting sinks on qc then most likely did not run out of qc
           endif
 
           !PMC: ratio is also frac of step w/ liq. thus we apply qiberg for
           !"ratio" of timestep and vapor deposition and sublimation  for the 
           !remaining frac of the timestep.  Only limit if there will be cloud
           !water to begin with.
-          if ((qc(i,k)+sources).gt.1.e-20_rtype) then
+          if (sources.gt.1.e-20_rtype) then
              qidep  = qidep*(1._rtype-ratio)
              qisub  = qisub*(1._rtype-ratio)
           end if
 
           ! rain
           sinks   = (qrevp+qrcol+qrheti)*dt
-          sources = qr(i,k) + (qrcon+qcaut+qcacc+qimlt+qcshd)*dt
+          sources = qr(i,k) + (qcaut+qcacc+qimlt+qcshd)*dt
           if (sinks.gt.sources .and. sinks.ge.1.e-20_rtype) then
              ratio  = sources/sinks
              qrevp  = qrevp*ratio
@@ -1344,8 +1328,8 @@ contains
           !==
 
           !-- warm-phase only processes:
-          qc(i,k) = qc(i,k) + (-qcacc-qcaut+qcnuc+qccon-qcevp)*dt
-          qr(i,k) = qr(i,k) + (qcacc+qcaut+qrcon-qrevp)*dt
+          qc(i,k) = qc(i,k) + (-qcacc-qcaut+qcnuc)*dt
+          qr(i,k) = qr(i,k) + (qcacc+qcaut-qrevp)*dt
 
           if (log_predictNc) then
              nc(i,k) = nc(i,k) + (-ncacc-ncautc+ncslf)*dt
@@ -1358,13 +1342,13 @@ contains
              nr(i,k) = nr(i,k) + (ncautr-nrslf-nrevp)*dt
           endif
 
-          qv(i,k) = qv(i,k) + (-qcnuc-qccon-qrcon+qcevp+qrevp)*dt
-          th(i,k) = th(i,k) + exner(i,k)*((qcnuc+qccon+qrcon-qcevp-qrevp)*xxlv(i,k)*    &
+          qv(i,k) = qv(i,k) + (-qcnuc+qrevp)*dt
+          th(i,k) = th(i,k) + exner(i,k)*((qcnuc-qrevp)*xxlv(i,k)*    &
                inv_cp)*dt
           !==
           ! AaronDonahue - Add extra variables needed from microphysics by E3SM:
           cmeiout(i,k) = qidep - qisub + qinuc 
-          prain(i,k)   = ( qcacc + qcaut + qcshd + qccol ) + qrcon 
+          prain(i,k)   = ( qcacc + qcaut + qcshd + qccol )
           nevapr(i,k)  = qisub + qrevp
           prer_evap(i,k) = qrevp
 
@@ -1402,7 +1386,6 @@ contains
 
           ! Record microphysics tendencies for output:
           ! warm-phase process rates
-          p3_tend_out(i,k, 1) = qrcon   ! rain condensation   (Not in paper?)
           p3_tend_out(i,k, 2) = qcacc   ! cloud droplet accretion by rain
           p3_tend_out(i,k, 3) = qcaut   ! cloud droplet autoconversion to rain
           p3_tend_out(i,k, 4) = ncacc   ! change in cloud droplet number from accretion by rain
@@ -1410,10 +1393,8 @@ contains
           p3_tend_out(i,k, 6) = ncslf   ! change in cloud droplet number from self-collection  (Not in paper?)
           p3_tend_out(i,k, 7) = nrslf   ! change in rain number from self-collection  (Not in paper?)
           p3_tend_out(i,k, 8) = ncnuc   ! change in cloud droplet number from activation of CCN
-          p3_tend_out(i,k, 9) = qccon   ! cloud droplet condensation
           p3_tend_out(i,k,10) = qcnuc   ! activation of cloud droplets from CCN
           p3_tend_out(i,k,11) = qrevp   ! rain evaporation
-          p3_tend_out(i,k,12) = qcevp   ! cloud droplet evaporation
           p3_tend_out(i,k,13) = nrevp   ! change in rain number from evaporation
           p3_tend_out(i,k,14) = ncautr  ! change in rain number from autoconversion of cloud water
           ! ice-phase  process rates
@@ -3264,7 +3245,7 @@ end subroutine rain_immersion_freezing
 
 
 subroutine ice_deposition_sublimation(qitot_incld, nitot_incld, t, &
-aaa,xx,dt,qvs,dumqvi,ssat,epsi,abi,supi,qv, &
+qvs,dumqvi,epsi,abi,qv, &
 qidep,qisub,nisub,qiberg)
 
    implicit none
@@ -3272,15 +3253,10 @@ qidep,qisub,nisub,qiberg)
    real(rtype), intent(in)  :: qitot_incld
    real(rtype), intent(in)  :: nitot_incld
    real(rtype), intent(in)  :: t
-   real(rtype), intent(in)  :: aaa
-   real(rtype), intent(in)  :: xx
-   real(rtype), intent(in)  :: dt
    real(rtype), intent(in)  :: qvs
    real(rtype), intent(in)  :: dumqvi
-   real(rtype), intent(in)  :: ssat
    real(rtype), intent(in)  :: epsi
    real(rtype), intent(in)  :: abi
-   real(rtype), intent(in)  :: supi
    real(rtype), intent(in)  :: qv
    real(rtype), intent(out) :: qidep
    real(rtype), intent(out) :: qisub
@@ -3288,73 +3264,32 @@ qidep,qisub,nisub,qiberg)
    real(rtype), intent(out) :: qiberg
 
    real(rtype) :: oxx, odt, oabi
-   logical :: orig_version = .true.  ! AaronDonahue: I will delete this and the code associated 
-                                     ! with it being true when we commit to the new derivation of 
-                                     ! qiberg, qidep, qisub and nisub.  Just
-                                     ! have it here so we can go back and forth
-                                     ! between old and new approach.
 
    oabi = 1._rtype/abi
-   if (orig_version) then   
-      oxx  = 1._rtype/xx
-      odt  = 1._rtype/dt   ! inverse model time step
-      if (qitot_incld.ge.qsmall.and.t.lt.zerodegc) then
-         qidep = (aaa*epsi*oxx+(ssat-aaa*oxx)*odt*epsi*oxx*   &
-              (1._rtype-dexp(-dble(xx*dt))))*oabi+(qvs-dumqvi)*epsi*oabi
-      endif
-      !for very small ice contents in dry air, sublimate all ice instantly
-      if (supi.lt.-0.001_rtype .and. qitot_incld.lt.1.e-12_rtype) &
-           qidep = -qitot_incld*odt
-   
-      if (qidep.lt.0._rtype) then
-         !note: limit to saturation adjustment (for dep and subl) is applied later
-         qisub = -qidep
-         qisub = qisub*clbfact_sub
-         qisub = min(qisub, qitot_incld*dt)
-         nisub = qisub*(nitot_incld/qitot_incld)
-         qidep = 0._rtype
+   if (qitot_incld>=qsmall) then
+      !Compute deposition/sublimation
+      qidep = epsi * oabi * (qv - dumqvi)
+      !Split into deposition or sublimation.
+      if (t < zerodegc .and. qidep>0._rtype) then
+         qisub=0._rtype
       else
-         qidep = qidep*clbfact_dep
-         qisub = 0._rtype
-         nisub = 0._rtype
-      endif
-      qiberg = 0._rtype
-   else  ! AaronDonahue, below is the new code for handling these tendencies.
-         ! Once approved it will become the only code in this subroutine.
-   ! AaronDonahue: Some thoughts here.  
-   ! 1) Above there is a reliance on dt, below
-   ! there is no normalizing by dt.  Is this intentional? Or should we be using
-   ! odt to reduce the tendency?
-   ! 2) Above there is a check to force qidep to be proportional to qitot_incld
-   ! if supi is small.  Do we need something like this below?
-   ! 3) Not sure if this is a bug or just sloppy, but in the original code nisub
-   ! and qisub are only assigned a value if qidep < 0.  I guess in the original
-   ! code nisub and qisub were initialized to zero right away so it was needed.
-      if (qitot_incld>=qsmall) then
-         !Compute deposition/sublimation
-         qidep = epsi * oabi * (qv - dumqvi)
-         !Split into deposition or sublimation.
-         if (t < zerodegc .and. qidep>0._rtype) then
-            qisub=0._rtype
-         else
-         ! make qisub positive for consistency with other evap/sub processes
-            qisub=-min(qidep,0._rtype)
-            qidep=0._rtype
-         end if
-         !sublimation occurs @ any T. Not so for berg.
-         if (t < zerodegc) then
-            !Compute bergeron rate assuming cloud for whole step.
-            qiberg = max(epsi*oabi*(qvs - dumqvi), 0._rtype)
-         else !T>frz
-            qiberg=0._rtype
-         end if !T<frz
-         nisub = qisub*(nitot_incld/qitot_incld)
-      else
-         qiberg = 0._rtype
-         qidep  = 0._rtype
-         qisub  = 0._rtype
-         nisub  = 0._rtype
+      ! make qisub positive for consistency with other evap/sub processes
+         qisub=-min(qidep,0._rtype)
+         qidep=0._rtype
       end if
+      !sublimation occurs @ any T. Not so for berg.
+      if (t < zerodegc) then
+         !Compute bergeron rate assuming cloud for whole step.
+         qiberg = max(epsi*oabi*(qvs - dumqvi), 0._rtype)
+      else !T>frz
+         qiberg=0._rtype
+      end if !T<frz
+      nisub = qisub*(nitot_incld/qitot_incld)
+   else
+      qiberg = 0._rtype
+      qidep  = 0._rtype
+      qisub  = 0._rtype
+      nisub  = 0._rtype
    end if
 
    return
@@ -3362,88 +3297,30 @@ qidep,qisub,nisub,qiberg)
 end subroutine ice_deposition_sublimation
 
 
-subroutine evaporate_sublimate_precip(qc_incld,qr_incld,nr_incld,qitot_incld,t,pres, &
-lcldm,rcldm,qvs,aaa,xx,dt,ab,epsr,epsc,qv,sup,ssat,xxlv, &
-qccon,qrcon,qcevp,qrevp,nrevp)
+subroutine evaporate_sublimate_precip(qr_incld,qc_incld,nr_incld,qitot_incld, &
+lcldm,rcldm,qvs,ab,epsr,qv, &
+qrevp,nrevp)
 
    implicit none
 
-   real(rtype), intent(in)  :: qc_incld
    real(rtype), intent(in)  :: qr_incld
+   real(rtype), intent(in)  :: qc_incld
    real(rtype), intent(in)  :: nr_incld
    real(rtype), intent(in)  :: qitot_incld
-   real(rtype), intent(in)  :: t
-   real(rtype), intent(in)  :: pres
    real(rtype), intent(in)  :: lcldm
    real(rtype), intent(in)  :: rcldm
    real(rtype), intent(in)  :: qvs
-   real(rtype), intent(in)  :: aaa
-   real(rtype), intent(in)  :: xx
-   real(rtype), intent(in)  :: dt
    real(rtype), intent(in)  :: ab
    real(rtype), intent(in)  :: epsr
-   real(rtype), intent(in)  :: epsc
    real(rtype), intent(in)  :: qv
-   real(rtype), intent(in)  :: sup
-   real(rtype), intent(in)  :: ssat
-   real(rtype), intent(in)  :: xxlv
-   real(rtype), intent(out) :: qccon
-   real(rtype), intent(out) :: qrcon
-   real(rtype), intent(out) :: qcevp
    real(rtype), intent(out) :: qrevp
    real(rtype), intent(out) :: nrevp
 
-   real(rtype) :: odt, oxx
-   real(rtype) :: dumqvs, qcon_satadj, ratio
    real(rtype) :: qclr, cld
 
-   logical :: orig_version = .true.  ! AaronDonahue: I will delete this and the code associated 
-                                     ! with it being true when we commit to the new derivation of 
-                                     ! qccon, qrcon, qcevp, qrevp and nrevp.  Just
-                                     ! have it here so we can go back and forth
-                                     ! between old and new approach.
-
-   oxx = 1._rtype/xx
-   odt = 1._rtype/dt   ! inverse model time step
-
-   if (orig_version) then
-   if (qc_incld.ge.qsmall) &
-        qccon = (aaa*epsc*oxx+(ssat-aaa*oxx)*odt*epsc*oxx*(1.-dexp(-dble(xx*dt))))/ab
-   if (qr_incld.ge.qsmall) &
-        qrcon = (aaa*epsr*oxx+(ssat-aaa*oxx)*odt*epsr*oxx*(1.-dexp(-dble(xx*dt))))/ab
-
-   !for very small water contents, evaporate instantly
-   if (sup.lt.-0.001_rtype .and. qc_incld.lt.1.e-12_rtype)  qccon = -qc_incld*odt
-   if (sup.lt.-0.001_rtype .and. qr_incld.lt.1.e-12_rtype)  qrcon = -qr_incld*odt
-
-   if (qccon.lt.0._rtype) then
-      qcevp = -qccon
-      qccon = 0._rtype
-   endif
-
-   if (qrcon.lt.0._rtype) then
-      qrevp = -qrcon
-      nrevp = qrevp*(nr_incld/qr_incld)
-      !nrevp = nrevp*exp(-0.2*mu_r)  !add mu dependence [Seifert (2008), neglecting size dependence]
-      qrcon = 0._rtype
-   endif
-
-   !limit total condensation/evaporation to saturation adjustment
-   dumqvs = qv_sat(t,pres,0)
-   qcon_satadj  = (qv-dumqvs)/(1._rtype+xxlv**2*dumqvs/(cp*rv*t**2))*odt
-   if (qccon+qrcon.gt.0._rtype) then
-      ratio = max(0._rtype,qcon_satadj)/(qccon+qrcon)
-      ratio = min(1._rtype,ratio)
-      qccon = qccon*ratio
-      qrcon = qrcon*ratio
-   elseif (qcevp+qrevp.gt.0._rtype) then
-      ratio = max(0._rtype,-qcon_satadj)/(qcevp+qrevp)
-      ratio = min(1._rtype,ratio)
-      qcevp = qcevp*ratio
-      qrevp = qrevp*ratio
-   endif
-
-   else  ! orig_version
+   ! Is is assumed that macrophysics handles condensation/evaporation of qc and
+   ! that there is no condensation of rain. Thus qccon, qrcon and qcevp have
+   ! been removed from the original P3-WRF.  
 
    ! Determine temporary cloud fraction, set to zero if cloud water + ice is
    ! very small.  This will ensure that evap/subl of precip occurs over entire
@@ -3469,12 +3346,7 @@ qccon,qrcon,qcevp,qrevp,nrevp)
       qrevp = -min(qrevp*(rcldm-cld),0._rtype)
       qrevp = qrevp/rcldm
    end if ! rcld>cld
-   if (qr_incld(i,k).gt.qsmall)  nrevp = qrevp*(nr_incld(i,k)/qr_incld(i,k))
-   ! No condensation, or evaporation of liquid
-   qccon = 0._rtype
-   qcevp = 0._rtype
-   qrcon = 0._rtype
-   end if ! orig_verstion
+   if (qr_incld.gt.qsmall)  nrevp = qrevp*(nr_incld/qr_incld)
 
    return
 
