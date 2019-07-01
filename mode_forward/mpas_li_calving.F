@@ -901,6 +901,7 @@ module li_calving
       type (mpas_pool_type), pointer, intent(in) :: meshPool !< Input: Mesh pool
       type (mpas_pool_type), pointer, intent(inout) :: geometryPool !< Input: Geometry pool
 
+      logical, pointer :: config_remove_small_islands
       real(kind=RKIND), pointer :: config_sea_level
       real (kind=RKIND), dimension(:), pointer :: calvingThickness    ! thickness of ice that calves (computed in this subroutine)
       real (kind=RKIND), dimension(:), pointer :: thickness
@@ -911,6 +912,11 @@ module li_calving
       integer, pointer :: nCellsSolve
       integer :: iCell, jCell, n, nIceNeighbors, nIceNeighbors2, neighborWithIce
       integer :: nOpenOceanNeighbors, nOpenOceanNeighbors2
+
+      call mpas_pool_get_config(liConfigs, 'config_remove_small_islands', config_remove_small_islands)
+      if (.not. config_remove_small_islands) then
+         return  ! skip this entire routine if disabled
+      endif
 
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
