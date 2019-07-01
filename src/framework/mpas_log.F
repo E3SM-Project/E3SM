@@ -41,6 +41,7 @@ module mpas_log
 
    use mpas_derived_types
    use mpas_abort, only : mpas_dmpar_global_abort
+   use mpas_io_units, only : mpas_new_unit, mpas_release_unit
 
    implicit none
    private
@@ -96,8 +97,6 @@ module mpas_log
 !-----------------------------------------------------------------------
 
    subroutine mpas_log_init(coreLogInfo, domain, unitNumbers, err)
-
-      use mpas_io_units
 
       !-----------------------------------------------------------------
       ! input variables
@@ -694,6 +693,7 @@ module mpas_log
       !   2) the log mgr opened the file (otherwise the driver that opened it should close it)
       if (mpas_log_info % outputLog % isActive .and. mpas_log_info % outputLog % openedByLogModule) then
          close(mpas_log_info % outputLog % unitNum, iostat = err)
+         call mpas_release_unit(mpas_log_info % outputLog % unitNum)
       endif
 
       ! Note: should not need to close an err file.  If these are open, they are intended to quickly lead to abort
@@ -823,6 +823,7 @@ module mpas_log
 
       ! Close the err log to be clean
       close(mpas_log_info % errorLog % unitNum)
+      call mpas_release_unit(mpas_log_info % errorLog % unitNum)
 
       deallocate(mpas_log_info % errorLog)
       deallocate(mpas_log_info % outputLog)
