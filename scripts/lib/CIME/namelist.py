@@ -1575,7 +1575,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> _NamelistParser('abc ')._parse_variable_name()
         'abc'
         >>> _NamelistParser('ABC ')._parse_variable_name()
-        'abc'
+        'ABC'
         >>> _NamelistParser('abc\n')._parse_variable_name()
         'abc'
         >>> _NamelistParser('abc%fred\n')._parse_variable_name()
@@ -1584,8 +1584,8 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         'abc(2)@fred'
         >>> _NamelistParser('abc(1:2:3)\n')._parse_variable_name()
         'abc(1:2:3)'
-        >>> _NamelistParser('abc=')._parse_variable_name()
-        'abc'
+        >>> _NamelistParser('aBc=')._parse_variable_name()
+        'aBc'
         >>> try:
         ...     _NamelistParser('abc(1,2) ')._parse_variable_name()
         ...     raise AssertionError("_NamelistParseError not raised")
@@ -1630,9 +1630,9 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
             else:
                 err_str = "{!r} is not a valid variable name".format(str(text))
             raise _NamelistParseError(err_str)
-        name = text.lower()
-
-        return name
+        return text
+#        name = text.lower()
+#        return name
 
     def _parse_character_literal(self):
         """Parse and return a character literal (a string).
