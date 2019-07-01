@@ -1025,7 +1025,7 @@ contains
     call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
 #endif
 
-    call applyCAMforcing_ps(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
+    call applyCAMforcing_remap(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
 
     if (compute_diagnostics) then
     ! E(1) Energy after CAM forcing
@@ -1246,17 +1246,17 @@ contains
   end subroutine prim_step
 
 
-!----------------------------- APPLYCAMFORCING-PS ----------------------------
-
-!Ftype logic: This routine should be called with dt_remap, on 'eulerian' levels, 
-!only before homme remap timestep.
+!---------------------------------------------------------------------------
+!
+! Apply all forcing terms that are applied with frequency dt_remap 
+!
 ! Note on ftypes:
-!   ftype= 4: Q was adjusted by physics, but apply u,T forcing here
+!   ftype= 4: Q was adjusted by physics, dynamics tendencies applied elsewhere
 !   ftype= 2: Q was adjusted by physics, but apply u,T forcing here
 !   ftype= 1: forcing was applied time-split in CAM coupling layer
 !   ftype= 0: apply all forcing here
 !   ftype=-1: do not apply forcing
-  subroutine applyCAMforcing_ps(elem,hvcoord,n0,n0qdp,dt_remap,nets,nete)
+  subroutine applyCAMforcing_remap(elem,hvcoord,n0,n0qdp,dt_remap,nets,nete)
   use control_mod,        only : ftype
   use hybvcoord_mod,      only : hvcoord_t
   use prim_advance_mod,   only : applycamforcing_dynamics
@@ -1267,8 +1267,7 @@ contains
   integer,                intent(in)    :: n0,n0qdp,nets,nete
   integer                               :: ie
 
-!in the next pr we will reorder calling _dyn and _tr versions
-  call t_startf("ApplyCAMForcing")
+  call t_startf("ApplyCAMForcing_remap")
   if (ftype==-1) then
     !do nothing
   elseif (ftype==0) then
@@ -1294,8 +1293,8 @@ contains
     enddo
 #endif
   endif
-  call t_stopf("ApplyCAMForcing")
-  end subroutine applyCAMforcing_ps
+  call t_stopf("ApplyCAMForcing_remap")
+  end subroutine applyCAMforcing_remap
 
 
 
@@ -1333,7 +1332,10 @@ contains
   ! local
   integer :: i,j,k,ie,q,ic
   real (kind=real_kind)  :: v1
-  real (kind=real_kind)  :: dp(np,np,nlev), fq
+  real (kind=real_kind)  :: dp(np,np,nlev), fq, ps(np,np), dp_adj(np,np,nlev)
+  real (kind=real_kind)  :: pi(np,np,nlev)  ! hydrostatic pressure
+  real (kind=real_kind)  :: pi_i(np,np,nlevp)  ! hydrostatic pressure, interfaces
+  logical :: adjust_ps = .true.  ! adjust PS or DP3D to conserve dry mass
 #ifdef MODEL_THETA_L
   real (kind=real_kind)  :: pprime(np,np,nlev)
   real (kind=real_kind)  :: vthn1(np,np,nlev)
@@ -1346,22 +1348,21 @@ contains
 #endif
 
   dp=elem%state%dp3d(:,:,:,np1)
+  dp_adj=dp
+  ps=elem%state%ps_v(:,:,np1)
 
 #ifdef MODEL_THETA_L
    !compute temperatue and NH perturbation pressure before Q tendency
-#if 0
    do k=1,nlev
-      dp(:,:,k)=( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-          ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,np1)
+      pi(:,:,k)=hvcoord%ps0*hvcoord%hyam(k) + ps(:,:)*hvcoord%hybm(k)
    enddo
-#endif
+
    !one can set pprime=0 to hydro regime but it is not done in master
    !compute pnh, here only pnh is needed
    call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,np1),dp,&
         elem%state%phinh_i(:,:,:,np1),pnh,exner,dpnh_dp_i)
    do k=1,nlev
-      pprime(:,:,k) = pnh(:,:,k) - &
-       ( hvcoord%ps0*hvcoord%hyam(k) + elem%state%ps_v(:,:,np1)*hvcoord%hybm(k))
+      pprime(:,:,k) = pnh(:,:,k)-pi(:,:,k)
    enddo
    call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
    tn1=exner* elem%state%vtheta_dp(:,:,:,np1)*(Rgas/rstarn1) / dp
@@ -1369,12 +1370,6 @@ contains
 
    if (adjustment) then 
       ! hard adjust Q from physics.  negativity check done in physics
-#if 0
-      do k=1,nlev
-         dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-         ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,np1)
-      enddo
-#endif
       do k=1,nlev
          do j=1,np
             do i=1,np
@@ -1383,111 +1378,126 @@ contains
                   ! dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) = &
                   !        dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) + fq 
                   elem%state%Qdp(i,j,k,ic,np1_qdp) = &
-                  dp(i,j,k)*elem%derived%FQ(i,j,k,ic)
-
+                       dp(i,j,k)*elem%derived%FQ(i,j,k,ic)
+                  
                   if (ic==1) then
                      fq = dp(i,j,k)*( elem%derived%FQ(i,j,k,ic) -&
                           elem%state%Q(i,j,k,ic))
-                        ! force ps_v to conserve mass:  
-                     elem%state%ps_v(i,j,np1)= &
-                          elem%state%ps_v(i,j,np1) + fq
+                     ! force ps_v to conserve mass:  
+                     ps(i,j)=ps(i,j) + fq
+                     dp_adj(i,j,k)=dp_adj(i,j,k) + fq   !  ps_v =  ps0+sum(dp(k))
                   endif
                enddo
             end do
          end do
       end do
-#if 0
+   else ! end of adjustment
+      ! apply forcing to Qdp
+      elem%derived%FQps(:,:)=0
+      do q=1,qsize
+         do k=1,nlev
+            do j=1,np
+               do i=1,np
+                  v1 = dt*elem%derived%FQ(i,j,k,q)
+                  if (elem%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
+                     if (elem%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
+                        v1=0  ! Q already negative, dont make it more so
+                     else
+                        v1 = -elem%state%Qdp(i,j,k,q,np1_qdp)
+                     endif
+                  endif
+                  elem%state%Qdp(i,j,k,q,np1_qdp) = elem%state%Qdp(i,j,k,q,np1_qdp)+v1
+                  if (q==1) then
+                     elem%derived%FQps(i,j)=elem%derived%FQps(i,j)+v1/dt
+                     dp_adj(i,j,k)=dp_adj(i,j,k) + v1/dt
+                  endif
+               enddo
+            enddo
+         enddo
+      enddo
+
+      if (use_moisture) then
+         ! to conserve dry mass in the precese of Q1 forcing:
+         ps(:,:) = ps(:,:) + dt*elem%derived%FQps(:,:)
+      endif
+   endif ! if adjustment
+
+
+   if (adjust_ps) then
+      ! stay on Eulerian reference levels.  use ps() that was adjusted to conserve mass
+      ! recompute dp3d:
       do k=1,nlev
-         dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-              ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,np1)
-         do ic=1,qsize
-            ! make Q consistent now that we have updated ps_v above
-            ! recompute dp, since ps_v was changed above
-            elem%state%Q(:,:,k,ic)= &
-                       elem%state%Qdp(:,:,k,ic,np1_qdp)/dp(:,:,k)
-         end do
-      end do
-#endif
-     else ! end of adjustment
-        ! apply forcing to Qdp
-        elem%derived%FQps(:,:)=0
-        do q=1,qsize
-           do k=1,nlev
-              do j=1,np
-                 do i=1,np
-                    v1 = dt*elem%derived%FQ(i,j,k,q)
-                    if (elem%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
-                       if (elem%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
-                          v1=0  ! Q already negative, dont make it more so
-                       else
-                          v1 = -elem%state%Qdp(i,j,k,q,np1_qdp)
-                       endif
-                    endif
-                    elem%state%Qdp(i,j,k,q,np1_qdp) = elem%state%Qdp(i,j,k,q,np1_qdp)+v1
-                    if (q==1) then
-                       elem%derived%FQps(i,j)=elem%derived%FQps(i,j)+v1/dt
-                    endif
-                 enddo
-              enddo
-           enddo
-        enddo
+         dp_adj(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+              ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps(:,:)
+      enddo
+      elem%state%ps_v(:,:,np1)=ps
+   else
+      ! Use adjusted dp from above.  no longer on reference levels.  ps no longer valid
+      ! set to invalid value to detect any inadvertant use
+      elem%state%ps_v(:,:,np1)=0
+   endif
+   
+   elem%state%dp3d(:,:,:,np1)=dp_adj(:,:,:)
 
-        if (use_moisture) then
-           ! to conserve dry mass in the precese of Q1 forcing:
-           elem%state%ps_v(:,:,np1) = elem%state%ps_v(:,:,np1) + &
-             dt*elem%derived%FQps(:,:)
-        endif
-     endif ! if adjustment
-
-     ! Qdp(np1) and ps_v(np1) were updated by forcing - update Q(np1)
-     do k=1,nlev
-        dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-             ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,np1)
-     enddo
-     do q=1,qsize
-        do k=1,nlev
-           elem%state%Q(:,:,k,q) = elem%state%Qdp(:,:,k,q,np1_qdp)/dp(:,:,k)
-        enddo
-     enddo
-     ! recompute dp3d since ps may have been updated.
-     elem%state%dp3d(:,:,:,np1)=dp(:,:,:)
-
+   ! Qdp(np1) and ps_v(np1) were updated by forcing - update Q(np1)
+   do q=1,qsize
+      elem%state%Q(:,:,:,q) = elem%state%Qdp(:,:,:,q,np1_qdp)/dp_adj(:,:,:)
+   enddo
+   
 
 #ifdef MODEL_THETA_L
-     !update temperature
+   if (adjust_ps) then
+      do k=1,nlev  
+         pi(:,:,k)=hvcoord%ps0*hvcoord%hyam(k) + ps(:,:)*hvcoord%hybm(k)
+      enddo
+   else
+      ! recompute hydrostatic pressure
+      pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
+      do k=1,nlev  ! SCAN
+         pi_i(:,:,k+1)=pi_i(:,:,k) + dp_adj(:,:,k)
+      enddo
+      do k=1,nlev
+         pi(:,:,k)=pi_i(:,:,k) + dp_adj(:,:,k)/2
+      enddo
+   endif
+   
+   
+   !update temperature
      !continue conversion using pprime from above
-     call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
-     tn1(:,:,:) = tn1(:,:,:) + dt*elem%derived%FT(:,:,:)
-
-     ! update H pressure based on Qdp forcing
-     ! add in NH pressure pertubration 
-     do k=1,nlev
-        ! constant PHI.  FPHI will be zero. cant be used Hydrostatic
-        !pnh(:,:,k) = rstarn1(:,:,k)*tn1(:,:,k)*dp(:,:,k) / &
-        !     (
-        !     elem(ie)%state%phinh_i(:,:,k,n0)-elem(ie)%state%phinh_i(:,:,k+1,n0))
-        ! constant NH perturbation pressure
-        pnh(:,:,k)=hvcoord%ps0*hvcoord%hyam(k) + elem%state%ps_v(:,:,np1)*hvcoord%hybm(k) + pprime(:,:,k)
-        exner(:,:,k)=(pnh(:,:,k)/p0)**(Rgas/Cp)
-     enddo
-
-     ! now we have tn1,dp,pnh - compute corresponding theta and phi:
-     vthn1 =  (rstarn1(:,:,:)/Rgas)*tn1(:,:,:)*dp(:,:,:)/exner(:,:,:)
-
-     phi_n1(:,:,nlevp)=elem%state%phinh_i(:,:,nlevp,np1)
-     do k=nlev,1,-1
-        phi_n1(:,:,k)=phi_n1(:,:,k+1) + Rgas*vthn1(:,:,k)*exner(:,:,k)/pnh(:,:,k)
-     enddo
-
-     !finally, compute difference for FVTheta
-     ! this method is using new dp, new exner, new-new r*, new t
-     elem%derived%FVTheta(:,:,:) = &
-         (vthn1 - elem%state%vtheta_dp(:,:,:,np1))/dt
-
-     elem%derived%FPHI(:,:,:) = &
-         (phi_n1 - elem%state%phinh_i(:,:,:,np1))/dt
-
+   call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
+   tn1(:,:,:) = tn1(:,:,:) + dt*elem%derived%FT(:,:,:)
+   
+   ! update H pressure based on Qdp forcing
+   ! add in NH pressure pertubration 
+   do k=1,nlev
+      ! constant PHI.  FPHI will be zero. cant be used Hydrostatic
+      !pnh(:,:,k) = rstarn1(:,:,k)*tn1(:,:,k)*dp_adj(:,:,k) / &
+      !     (
+      !     elem(ie)%state%phinh_i(:,:,k,n0)-elem(ie)%state%phinh_i(:,:,k+1,n0))
+      ! constant NH perturbation pressure
+      pnh(:,:,k)=pi(:,:,k) + pprime(:,:,k)
+      exner(:,:,k)=(pnh(:,:,k)/p0)**(Rgas/Cp)
+   enddo
+   
+   ! now we have tn1,dp,pnh - compute corresponding theta and phi:
+   vthn1 =  (rstarn1(:,:,:)/Rgas)*tn1(:,:,:)*dp_adj(:,:,:)/exner(:,:,:)
+     
+   phi_n1(:,:,nlevp)=elem%state%phinh_i(:,:,nlevp,np1)
+   do k=nlev,1,-1
+      phi_n1(:,:,k)=phi_n1(:,:,k+1) + Rgas*vthn1(:,:,k)*exner(:,:,k)/pnh(:,:,k)
+   enddo
+   
+   !finally, compute difference for FVTheta
+   ! this method is using new dp, new exner, new-new r*, new t
+   elem%derived%FVTheta(:,:,:) = &
+        (vthn1 - elem%state%vtheta_dp(:,:,:,np1))/dt
+   
+   elem%derived%FPHI(:,:,:) = &
+        (phi_n1 - elem%state%phinh_i(:,:,:,np1))/dt
+   
 #endif
+     
+
 
   end subroutine applyCAMforcing_tracers
   
