@@ -168,8 +168,7 @@ contains
     time1 = time - dt
 
 
-    ! npts = np
-    npts=SIZE(elem(1)%state%ps_v(:,:,n0),1)
+    npts=np
 
     do q=1,qsize
        do ie=nets,nete
@@ -192,8 +191,8 @@ contains
     !
     do ie=nets,nete
 
-       tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0)
-
+       !tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0)
+       tmp(:,:,ie)=hvcoord%hyai(1)*hvcoord%ps0 + sum(elem(ie)%state%dp3d(:,:,:,n0),3) 
 
        !======================================================  
        umax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,1,:,n0))
@@ -319,7 +318,8 @@ contains
 
     !   mass = integral( ps-p(top) )
     do ie=nets,nete
-       tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0) 
+       !tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0) 
+       tmp(:,:,ie)=hvcoord%hyai(1)*hvcoord%ps0 + sum(elem(ie)%state%dp3d(:,:,:,n0),3) 
     enddo
     Mass2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
 
@@ -731,6 +731,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     !        [Cp + (Cpv-Cp) Q(n)] *dpdn(n)*T(n+1) 
     do ie=nets,nete
 
+#if 0
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
@@ -738,7 +739,8 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
           dpt1(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,t1)
        enddo
-
+#endif
+       dpt1=elem(ie)%state%dp3d(:,:,:,t1)
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,cp_star1,qval_t1)
 #endif

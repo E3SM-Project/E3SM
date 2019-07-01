@@ -63,7 +63,7 @@ module element_ops
   type(elem_state_t), dimension(:), allocatable :: state0 ! storage for save_initial_state routine
 
   public get_field, get_state
-  public get_temperature, get_phi, get_R_star
+  public get_temperature, get_phi, get_R_star, get_pi
   public set_thermostate, set_state, set_state_i, set_elem_state
   public set_forcing_rayleigh_friction, set_theta_ref
   public copy_state, tests_finalize
@@ -82,7 +82,7 @@ contains
 
   integer :: k
   real(kind=real_kind), dimension(np,np,nlev) :: tmp, p, pnh, dp, omega, rho, T, cp_star, Rstar
-  real(kind=real_kind), dimension(np,np,nlevp) :: phi_i
+  real(kind=real_kind), dimension(np,np,nlevp) :: phi_i,pi_i
   
 
   select case(name)
@@ -94,14 +94,16 @@ contains
     case ('exner');           call get_nonhydro_pressure(elem,tmp  ,field,hvcoord,nt,ntQ)
 
     case ('p');
+#if 0
       do k=1,nlev
         field(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
       enddo
+#endif
+      call get_pi(field,elem%state%dp3d(:,:,:,nt),hvcoord)
 
     case ('dp');
-      do k=1,nlev
-        field(:,:,k)=(hvcoord%hyai(k+1)-hvcoord%hyai(k))*hvcoord%ps0 +(hvcoord%hybi(k+1)-hvcoord%hybi(k))*elem%state%ps_v(:,:,nt)
-      enddo
+       field(:,:,:)=elem%state%dp3d(:,:,:,nt)
+
 
     case ('omega');
       field = elem%derived%omega_p
@@ -135,8 +137,6 @@ contains
   !_____________________________________________________________________
   subroutine get_pottemp(elem,pottemp,hvcoord,nt,ntQ)
   !
-  ! Should only be called outside timestep loop, state variables on reference levels
-  !
   implicit none
     
   type (element_t), intent(in)        :: elem
@@ -150,15 +150,35 @@ contains
   real (kind=real_kind) :: Rstar(np,np,nlev)
   integer :: k
 
-  do k=1,nlev
-     dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
-  enddo
   call get_R_star(Rstar,elem%state%Q(:,:,:,1))
   
-  pottemp(:,:,:) = Rgas*elem%state%vtheta_dp(:,:,:,nt)/(Rstar(:,:,:)*dp(:,:,:))
+  pottemp(:,:,:) = Rgas*elem%state%vtheta_dp(:,:,:,nt)/(Rstar(:,:,:)*elem%state%dp3d(:,:,:,nt))
   
   end subroutine get_pottemp
+  
+
+  !_____________________________________________________________________
+  subroutine get_pi(pi,dp,hvcoord)
+  !
+  implicit none
+    
+  real (kind=real_kind), intent(out)  :: pi(np,np,nlev)
+  real (kind=real_kind), intent(in)   :: dp(np,np,nlev)
+  type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
+  
+  integer :: k
+  real(kind=real_kind), dimension(np,np,nlevp) :: pi_i
+
+  pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
+  do k=1,nlev  ! SCAN
+     pi_i(:,:,k+1)=pi_i(:,:,k) + dp(:,:,k)
+  enddo
+  do k=1,nlev
+     pi(:,:,k)=pi_i(:,:,k) + dp(:,:,k)/2
+  enddo
+  
+  
+  end subroutine get_pi
   
 
   !_____________________________________________________________________
@@ -182,10 +202,7 @@ contains
   integer :: k
   
   
-  do k=1,nlev
-     dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
-  enddo
+  dp=elem%state%dp3d(:,:,:,nt)
   call get_R_star(Rstar,elem%state%Q(:,:,:,1))
 
   call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
@@ -217,11 +234,7 @@ contains
   integer :: k
   
   
-  do k=1,nlev
-     dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
-  enddo
-
+  dp=elem%state%dp3d(:,:,:,nt)
   call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
        dp,elem%state%phinh_i(:,:,:,nt),pnh,exner,dpnh_dp_i)
 
@@ -245,11 +258,7 @@ contains
     real (kind=real_kind), dimension(np,np,nlevp) :: dpnh_dp_i
     integer :: k
 
-    do k=1,nlev
-      dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-      (hvcoord%hybi(k+1)-hvcoord%hybi(k))*elem%state%ps_v(:,:,nt)
-    enddo
-
+    dp=elem%state%dp3d(:,:,:,nt)
     call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
          dp,elem%state%phinh_i(:,:,:,nt),pnh,exner,dpnh_dp_i)
 
@@ -276,20 +285,7 @@ contains
 
 
     if(theta_hydrostatic_mode) then
-       do k=1,nlev
-          dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-               (hvcoord%hybi(k+1)-hvcoord%hybi(k))*elem%state%ps_v(:,:,nt)
-       enddo
-#if 0       
-       call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
-            dp,elem%state%phinh_i(:,:,:,nt),pnh,exner,dpnh_dp_i)
-
-       ! traditional Hydrostatic integral
-       do k=nlev,1,-1
-          temp(:,:,k) = Rgas*elem%state%vtheta_dp(:,:,k,nt)*exner(:,:,k)/pnh(:,:,k)
-          phi_i(:,:,k)=phi_i(:,:,k+1)+temp(:,:,k)
-       enddo
-#endif
+       dp=elem%state%dp3d(:,:,:,nt)
        call phi_from_eos(hvcoord,elem%state%phis,elem%state%vtheta_dp,dp,phi_i)
     else
        phi_i = elem%state%phinh_i(:,:,:,nt)

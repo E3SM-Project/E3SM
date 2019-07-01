@@ -1314,12 +1314,24 @@ contains
   ! phi/density being diagnostic.  theta model NH could do the conversion constant 
   ! density which would simplify this routine
   !
+  ! NOTE about ps_v/dp3d
+  ! init:
+  !   (both ps_v and dp3d are valid)
+  ! do: 
+  !    physics  (uses ps_v to compute pressure levels. doesn't change ps_v)
+  !    applyCAMforcing_tracers  use ps_v for initial pressure.  
+  !                             may adjust dp3d for mass conservation (if adjust_ps=.false.)
+  !                             ps_v no longer valid
+  !    dynamaics                should only use dp3d
+  !    remap                    remap back to ref levels.  ps_v now valid
+  !    write restart files      ps_v ok for restart
+  !
   use control_mod,        only : use_moisture
   use hybvcoord_mod,      only : hvcoord_t
 #ifdef MODEL_THETA_L
   use control_mod,        only : theta_hydrostatic_mode
   use physical_constants, only : cp, g, kappa, Rgas, p0
-  use element_ops,        only : get_temperature, get_r_star
+  use element_ops,        only : get_temperature, get_r_star, get_pi
   use eos,                only : pnh_and_exner_from_eos
 #endif
   implicit none
@@ -1334,7 +1346,6 @@ contains
   real (kind=real_kind)  :: v1
   real (kind=real_kind)  :: dp(np,np,nlev), fq, ps(np,np), dp_adj(np,np,nlev)
   real (kind=real_kind)  :: pi(np,np,nlev)  ! hydrostatic pressure
-  real (kind=real_kind)  :: pi_i(np,np,nlevp)  ! hydrostatic pressure, interfaces
   logical :: adjust_ps = .true.  ! adjust PS or DP3D to conserve dry mass
 #ifdef MODEL_THETA_L
   real (kind=real_kind)  :: pprime(np,np,nlev)
@@ -1350,6 +1361,11 @@ contains
   dp=elem%state%dp3d(:,:,:,np1)
   dp_adj=dp
   ps=elem%state%ps_v(:,:,np1)
+  !ps=hvcoord%hyai(1)*hvcoord%ps0 + sum(dp(:,:,:),3) ! introduces roundoff
+
+  ! after calling this routine, ps_v may not be valid and should not be used
+  elem%state%ps_v(:,:,np1)=0
+
 
 #ifdef MODEL_THETA_L
    !compute temperatue and NH perturbation pressure before Q tendency
@@ -1383,9 +1399,9 @@ contains
                   if (ic==1) then
                      fq = dp(i,j,k)*( elem%derived%FQ(i,j,k,ic) -&
                           elem%state%Q(i,j,k,ic))
-                     ! force ps_v to conserve mass:  
+                     ! force ps to conserve mass:  
                      ps(i,j)=ps(i,j) + fq
-                     dp_adj(i,j,k)=dp_adj(i,j,k) + fq   !  ps_v =  ps0+sum(dp(k))
+                     dp_adj(i,j,k)=dp_adj(i,j,k) + fq   !  ps =  ps0+sum(dp(k))
                   endif
                enddo
             end do
@@ -1430,16 +1446,10 @@ contains
          dp_adj(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
               ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps(:,:)
       enddo
-      elem%state%ps_v(:,:,np1)=ps
-   else
-      ! Use adjusted dp from above.  no longer on reference levels.  ps no longer valid
-      ! set to invalid value to detect any inadvertant use
-      elem%state%ps_v(:,:,np1)=0
    endif
-   
    elem%state%dp3d(:,:,:,np1)=dp_adj(:,:,:)
 
-   ! Qdp(np1) and ps_v(np1) were updated by forcing - update Q(np1)
+   ! Qdp(np1) was updated by forcing - update Q(np1)
    do q=1,qsize
       elem%state%Q(:,:,:,q) = elem%state%Qdp(:,:,:,q,np1_qdp)/dp_adj(:,:,:)
    enddo
@@ -1452,13 +1462,7 @@ contains
       enddo
    else
       ! recompute hydrostatic pressure
-      pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
-      do k=1,nlev  ! SCAN
-         pi_i(:,:,k+1)=pi_i(:,:,k) + dp_adj(:,:,k)
-      enddo
-      do k=1,nlev
-         pi(:,:,k)=pi_i(:,:,k) + dp_adj(:,:,k)/2
-      enddo
+      call get_pi(pi,dp_adj,hvcoord)
    endif
    
    
