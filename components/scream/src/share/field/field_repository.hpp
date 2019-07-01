@@ -16,7 +16,21 @@ namespace scream
  /*
   *  A database for all the persistent fields needed in an atm time step
   *  We template a field repository over the field value type and over
-  *  the memory space of the views.
+  *  the device type. These two are enough to fully deduce the type of
+  *  the stored views.
+  *
+  *  The fields are internally organized by name. Within each name,
+  *  there can be multiple fields, which differ by their layout.
+  *  For instance, we could have two version of 'temperature',
+  *  one on the "physics" grid (tags: Column, Level), and one on
+  *  the "dynamics" grid (tags: Element, GaussPoint, GaussPoint, Level).
+  *
+  *  When you query the repo for its 'size', you get the number
+  *  of different *names*. So if the repo is storing the two
+  *  versions of 'temperature' above and nothing else, its size
+  *  will be 1. To get the number of different Field objects
+  *  stored, you need to use the 'internal_size' method.
+  *
   */
 
 template<typename ScalarType, typename Device>
@@ -30,8 +44,8 @@ public:
   using header_type     = typename field_type::header_type;
   using identifier_type = typename header_type::identifier_type;
   using ci_string       = typename identifier_type::ci_string;
-  using map_type        = std::map<identifier_type,field_type>;
-  using repo_type       = std::map<ci_string,map_type>;
+  using alias_map_type  = std::map<identifier_type,field_type>;
+  using repo_type       = std::map<ci_string,alias_map_type>;
   using groups_map_type = std::map<ci_string,std::set<ci_string>>;
 
   // Constructor(s)
@@ -57,14 +71,17 @@ public:
   template<typename RequestedValueType = scalar_type>
   void register_field (const identifier_type& identifier);
 
-  // Methods to query the database
+  // Get information about the state of the repo
   int size () const { return m_fields.size(); }
+  int internal_size () const;
+  RepoState repository_state () const { return m_state; }
+
+  // Query for a particular field or group of fields
   bool has_field (const identifier_type& identifier) const;
   const field_type& get_field (const identifier_type& identifier) const;
   const groups_map_type& get_field_groups () const { return m_field_groups; }
 
-  RepoState repository_state () const { return m_state; }
-
+  // Iterators, to allow range for loops over the repo.
   typename repo_type::const_iterator begin() const { return m_fields.begin(); }
   typename repo_type::const_iterator end()   const { return m_fields.begin(); }
 
@@ -155,6 +172,16 @@ register_field (const identifier_type& id, const std::set<std::string>& groups_n
     // Add the field name to the set of fields belonging to this group
     m_field_groups[group_name].insert(id.name());
   }
+}
+
+template<typename ScalarType, typename Device>
+int FieldRepository<ScalarType,Device>::
+internal_size () const {
+  int s = 0;
+  for (auto x : m_fields) {
+    s+= x.second.size();
+  }
+  return s;
 }
 
 template<typename ScalarType, typename Device>

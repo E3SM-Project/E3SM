@@ -116,10 +116,11 @@ inline int FieldAllocProp::get_alloc_size () const {
 
 template<typename ValueType>
 bool FieldAllocProp::is_allocation_compatible_with_value_type () const {
-  constexpr int sts = sizeof(typename util::ScalarProperties<ValueType>::scalar_type);
-  constexpr int vts = sizeof(ValueType);
+  constexpr int  sts = sizeof(typename util::ScalarProperties<ValueType>::scalar_type);
+  constexpr int  vts = sizeof(ValueType);
+  const auto stn = util::TypeName<typename util::ScalarProperties<ValueType>::scalar_type>::name();
 
-  return util::TypeName<typename util::ScalarProperties<ValueType>::scalar_type>::name()==m_scalar_type_name
+  return stn==m_scalar_type_name
       && sts==m_scalar_type_size && (m_last_dim_alloc_size%vts==0);
 }
 

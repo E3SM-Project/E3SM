@@ -117,6 +117,9 @@ TEST_CASE("field", "") {
     REQUIRE(2*v3d_1.size()==v3d_2.size());
     REQUIRE(8*v3d_1.size()==v3d_3.size());
     REQUIRE(8*v3d_1.size()==v3d_4.size());
+
+    // Trying to reshape into something that the allocation cannot accommodate should throw
+    REQUIRE_THROWS (f1.get_reshaped_view<Pack<Real,32>***>());
   }
 }
 
@@ -154,7 +157,8 @@ TEST_CASE("field_repo", "") {
 
   // Check registration is indeed closed
   REQUIRE (repo.repository_state()==RepoState::Closed);
-  REQUIRE (repo.size()==2);
+  REQUIRE (repo.size()==1);
+  REQUIRE (repo.internal_size()==2);
 
   auto f1 = repo.get_field(fid1);
   auto f2 = repo.get_field(fid2);
