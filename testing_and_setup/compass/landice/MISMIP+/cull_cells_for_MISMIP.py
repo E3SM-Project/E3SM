@@ -63,7 +63,7 @@ cullCell_local[np.nonzero(yCell == unique_ys[-1])] = 1
 
 # For a periodidic hex the leftmost and rightmost *TWO* columns need to be marked
 unique_Xs=np.array(sorted(list(set(xCell[:]))))
-print("Found {} unique x values".format(unique_Xs))
+print("Found {} unique x values".format(len(unique_Xs)))
 cullCell_local[np.nonzero(xCell == unique_Xs[0])] = 1
 cullCell_local[np.nonzero(xCell == unique_Xs[1])] = 1
 cullCell_local[np.nonzero(xCell == unique_Xs[-1])] = 1
