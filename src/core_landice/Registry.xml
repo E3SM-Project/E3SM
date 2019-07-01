@@ -89,6 +89,10 @@
 		            description="If true, then multiply beta by effective pressure before passing to Albany.  This allows, e.g., a Weertman basal friction law with an effective pressure term.  Note that basal friction still needs to be selected in Albany xml file."
 		            possible_values=".true. or .false."
 		/>
+        <nml_option name="config_unrealistic_velocity" type="real" default_value="0.01592356685" units="m s^{-1}"
+		            description="Ice is removed at any locations with surface speed faster than this value and sent to the calving flux. The presence of icebergs can lead to unrealistically large velocities.  A simple method to remove icebergs is to remove ice where the velocity is faster than an arbitrarily large value."
+		            possible_values="Any positive, real number."
+		/>
 	</nml_record>
 
 
@@ -141,6 +145,14 @@
 		<nml_option name="config_restore_calving_front" type="logical" default_value=".false." units="unitless"
                         description="If true, then restore the calving front to its initial position.  If ice grows beyond the initial extent, it is removed.  If ice shrinks to an extent behind the initial extent, those locations are filled with thin ice (defined as 1/10th the value of config_dynamic_thickness).  Note that this violates conservation of mass and energy."
 		            possible_values=".true. or .false."
+                />
+                <nml_option name="config_remove_icebergs" type="logical" default_value=".false." units="unitless"
+                        description="If true, then a flood fill will be applied to remove icebergs.  The ice removed is added to the calvingThickness field."
+	                possible_values=".true. or .false."
+		/>
+                <nml_option name="config_remove_small_islands" type="logical" default_value=".false." units="unitless"
+                        description="If true, then ice from small grounded islands is removed.  Specifically, this finds one- and two-cell masses of ice that are surrounded by open ocean and eliminates them by sending them to the calving flux.  Grounded such ice masses would be islands, floating would be icebergs.  The ice removed is added to the calvingThickness field."
+	                possible_values=".true. or .false."
 		/>
 	</nml_record>
 
@@ -881,6 +893,14 @@ is the value of that variable from the *previous* time level!
                 />
                 <var name="restoreThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
                      description="thickness of ice added when the config_restore_calving_front option is set to .true. (in order to maintain the calving front at its initial position)"
+                />
+                <var name="contiguousDynamicIce" type="integer" dimensions="nCells Time" units="none" time_levs="1"
+                        description="mask of contiguous dynamic ice determined from flood fill.  Used for finding icebergs."
+                        persistence="persistent"
+                />
+                <var name="contiguousDynamicIceOld" type="integer" dimensions="nCells Time" units="none" time_levs="1"
+                        description="mask from the previous iteration of contiguous dynamic ice as the algorithm advances"
+                        persistence="persistent"
                 />
                 <!-- Variables only needed for calculating diffusivity at cell centers - this is always done now so no package is attached here -->
                 <var name="normalSlopeEdge"            type="real"     dimensions="nEdges Time"
