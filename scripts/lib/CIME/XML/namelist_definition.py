@@ -27,7 +27,8 @@ _array_size_re = re.compile(r'^(?P<type>[^(]+)\((?P<size>[^)]+)\)$')
 
 class CaseInsensitiveDict(dict):
 
-    """Basic case insensitive dict with strings only keys."""
+    """Basic case insensitive dict with strings only keys.
+        From https://stackoverflow.com/a/27890005 """
 
     proxy = {}
 
