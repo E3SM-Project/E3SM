@@ -12,7 +12,6 @@ AtmosphereProcessGroup (const Comm& comm, const ParameterList& params)
   m_group_size = params.get<int>("Number of Entries");
 
   // Create the individual atmosphere processes
-  using Factory = AtmosphereProcessFactory;
   for (int i=0; i<m_group_size; ++i) {
     // The comm to be passed to the processes construction is
     //  - the same as the input comm if num_entries=1 or sched_type=Sequential
@@ -35,7 +34,18 @@ AtmosphereProcessGroup (const Comm& comm, const ParameterList& params)
 
     const auto& params_i = params.sublist(util::strint("Process",i));
     const std::string& process_name = params_i.get<std::string>("Process Name");
-    m_atm_processes.emplace_back(Factory::instance().create(process_name,proc_comm,params_i));
+    m_atm_processes.emplace_back(AtmosphereProcessFactory::instance().create(process_name,proc_comm,params_i));
+
+    // NOTE: the shared_ptr of the new atmosphere process *MUST* have been created correctly. Namely, the creation
+    //       process must have set up enable_shared_from_this's status correctly. This is done by the library-provided
+    //       templated function 'create_atm_process<T>. However, if the user has decided to roll his/her own creator
+    //       function to be registered in the AtmosphereProcessFactory, he/she may have forgot to set the self pointer
+    //       in the process. To make sure this is not the case, we check that the weak_ptr in the newly created
+    //       atmosphere process (which comes through inheritance from enable_shared_from_this) is valid.
+    scream_require_msg(!m_atm_processes.back()->weak_from_this().expired(),
+                       "Error! The newly created std::shared_ptr<AtmosphereProcess> does not correctly setup the 'enable_shared_from_this' interface.\n"
+                       "       Did you by change register your own creator function in the AtmosphereProccessFactory class?\n"
+                       "       If so, don't. Instead, use the instantiation of create_atmosphere_process<T>, with T = YourAtmProcessClassName.\n");
 
     // Update the grid types of the group, given the needs of the newly created process
     for (const auto& name : m_atm_processes.back()->get_required_grids()) {

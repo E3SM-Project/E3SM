@@ -35,9 +35,9 @@ protected:
   AbstractGrid::dofs_map_type m_dyn_dofs;
 };
 
-inline GridsManager*
+inline std::shared_ptr<GridsManager>
 create_dynamics_driven_grids_manager (const Comm& comm, const ParameterList& p) {
-  return new DynamicsDrivenGridsManager(comm,p);
+  return std::make_shared<DynamicsDrivenGridsManager>(comm,p);
 }
 
 } // namespace scream

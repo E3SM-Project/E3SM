@@ -20,7 +20,10 @@ void AtmosphereDriver::initialize (const Comm& atm_comm, const ParameterList& pa
   // Create the grids manager
   auto& gm_params = m_atm_params.sublist("Grids Manager");
   const std::string& gm_type = gm_params.get<std::string>("Type");
-  m_grids_manager.reset(GridsManagerFactory::instance().create(gm_type,m_atm_comm,gm_params));
+  m_grids_manager = GridsManagerFactory::instance().create(gm_type,m_atm_comm,gm_params);
+
+  // Tell the grid manager to build all the grids required by the atm processes
+  m_grids_manager->build_grids(m_atm_process_group->get_required_grids());
 
   // Initialize the processes
   m_atm_process_group->set_grid(m_grids_manager);

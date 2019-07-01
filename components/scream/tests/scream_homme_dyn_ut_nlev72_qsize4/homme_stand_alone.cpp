@@ -32,7 +32,7 @@ TEST_CASE("scream_homme_stand_alone", "scream_homme_stand_alone") {
   // which rely on factory for process creation. The initialize method of the AD does that.
   // While we're at it, check that the case insensitive key of the factory works.
   auto& proc_factory = AtmosphereProcessFactory::instance();
-  proc_factory.register_product("dynamics",&create_atmosphere_dynamics);
+  proc_factory.register_product("dynamics",&create_atmosphere_process<HommeDynamics>);
 
   // Need to register grids managers before we create the driver
   auto& gm_factory = GridsManagerFactory::instance();

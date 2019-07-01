@@ -40,9 +40,9 @@ protected:
   static repo_type  m_provided_grids;
 };
 
-inline GridsManager*
+inline std::shared_ptr<GridsManager>
 create_user_provided_grids_manager (const Comm& /* comm */, const ParameterList& /* p */) {
-  return new UserProvidedGridsManager();
+  return std::make_shared<UserProvidedGridsManager>();
 }
 
 GridsManager::repo_type UserProvidedGridsManager::m_provided_grids;

@@ -13,7 +13,7 @@
 #include "share/util/factory.hpp"
 #include "share/util/string_utils.hpp"
 #include "share/grid/grids_manager.hpp"
-#include "share/parameter_list.hpp"
+#include "share/util/scream_std_enable_shared_from_this.hpp"
 
 namespace scream
 {
@@ -30,7 +30,7 @@ namespace scream
  *  are computed.
  */
 
-class AtmosphereProcess
+class AtmosphereProcess : public util::enable_shared_from_this<AtmosphereProcess>
 {
 public:
   using device_type      = DefaultDevice; // may need to template class on this
@@ -106,8 +106,30 @@ protected:
   virtual void set_computed_field_impl (const Field<      Real, device_type>& f) = 0;
 };
 
+// Forward declarations
+class ParameterList;
+
 // A short name for the factory for atmosphere processes
-using AtmosphereProcessFactory = util::Factory<AtmosphereProcess,util::CaseInsensitiveString,const Comm&,const ParameterList&>;
+// WARNING: you do not need to write your own creator function to register your atmosphere process in the factory.
+//          You could, but there's no need. You can simply register the common one right below, using your
+//          atmosphere process class name as templated argument. If you roll your own creator function, you
+//          *MUST* ensure that it correctly sets up the self pointer after creating the shared_ptr.
+//          This is *necessary* until we can safely switch to std::enable_shared_from_this.
+//          For more details, see the comments at the top of util/scream_std_enable_shared_from_this.hpp.
+using AtmosphereProcessFactory =
+    util::Factory<AtmosphereProcess,
+                  util::CaseInsensitiveString,
+                  std::shared_ptr<AtmosphereProcess>,
+                  const Comm&,const ParameterList&>;
+
+// Create an atmosphere process, and correctly set up the (weak) pointer to self.
+template <typename AtmProcType>
+inline std::shared_ptr<AtmosphereProcess>
+create_atmosphere_process (const Comm& comm, const ParameterList& p) {
+  auto ptr = std::make_shared<AtmProcType>(comm,p);
+  ptr->setSelfPointer(ptr);
+  return ptr;
+}
 
 } // namespace scream
 

@@ -50,7 +50,7 @@ const T* upper_bound_impl(const T* first, const T* last, const T& value)
 
 #ifdef KOKKOS_ENABLE_CUDA
 template<class T>
-KOKKOS_FORCE_INLINE_FUNCTION
+KOKKOS_FORCEINLINE_FUNCTION
 const T* upper_bound(const T* first, const T* last, const T& value)
 {
   return upper_bound_impl(first, last, value);

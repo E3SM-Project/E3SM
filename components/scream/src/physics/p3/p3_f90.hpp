@@ -22,8 +22,7 @@ struct FortranData {
   using Array2 = Kokkos::View<Scalar**, Layout, ExeSpace>;
   using Array3 = Kokkos::View<Scalar***, Layout, ExeSpace>;
 
-  static constexpr bool log_predictnc = true;
-
+  bool log_predictNc;
   const Int ncol, nlev;
 
   // In

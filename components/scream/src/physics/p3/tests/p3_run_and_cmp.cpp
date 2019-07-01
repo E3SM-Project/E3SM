@@ -23,6 +23,11 @@ static Int compare (const std::string& label, const Scalar* a,
     den = std::max(den, std::abs(a[i]));
   Real worst = 0;
   for (Int i = 0; i < n; ++i) {
+    if (std::isnan(a[i]) || std::isinf(a[i]) ||
+        std::isnan(b[i]) || std::isinf(b[i])) {
+      ++nerr;
+      continue;
+    }
     const auto num = std::abs(a[i] - b[i]);
     if (num > tol*den) {
       ++nerr;
@@ -52,7 +57,9 @@ Int compare (const std::string& label, const double& tol,
 
 struct Baseline {
   Baseline () {
-    params_.push_back({ic::Factory::mixed, 1800});
+    for (const bool log_predictNc : {true, false})
+      for (const int it : {1, 2})
+        params_.push_back({ic::Factory::mixed, 1800, it, log_predictNc});
   }
 
   Int generate_baseline (const std::string& filename) {
@@ -62,7 +69,7 @@ struct Baseline {
     for (auto ps : params_) {
       // Run reference p3 on this set of parameters.
       const auto d = ic::Factory::create(ps.ic);
-      d->dt = ps.dt;
+      set_params(ps, *d);
       p3_init();
       p3_main(*d);
       // Save the fields to the baseline file.
@@ -78,12 +85,13 @@ struct Baseline {
     for (auto ps : params_) {
       // Read the reference impl's data from the baseline file.
       const auto d_ref = ic::Factory::create(ps.ic);
-      d_ref->dt = ps.dt;
+      set_params(ps, *d_ref);
       read(fid, d_ref);
       // Now run a sequence of other impls. This includes the reference
       // implementation b/c it's likely we'll want to change it as we go.
       {
         const auto d = ic::Factory::create(ps.ic);
+        set_params(ps, *d);
         p3_init();
         p3_main(*d);
         ne = compare("ref", tol, d_ref, d);
@@ -98,7 +106,15 @@ private:
   struct ParamSet {
     ic::Factory::IC ic;
     Real dt;
+    Int it;
+    bool log_predictNc;
   };
+
+  static void set_params (const ParamSet& ps, FortranData& d) {
+    d.dt = ps.dt;
+    d.it = ps.it;
+    d.log_predictNc = ps.log_predictNc;
+  }
 
   std::vector<ParamSet> params_;
 
