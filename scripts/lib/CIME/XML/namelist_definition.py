@@ -96,7 +96,6 @@ class NamelistDefinition(EntryID):
         default_nodes = []
         for node in self.get_children("entry"):
             name = self.get(node, "id")
-#            expect(name == name.lower(),"ERROR id field in this file must be lowercase, id={}".format(name))
             skip_default_entry = self.get(node, "skip_default_entry") == "true"
             per_stream_entry = self.get(node, "per_stream_entry") == "true"
             set_node_values = False
@@ -339,7 +338,7 @@ class NamelistDefinition(EntryID):
         """Used to get a better error message for an unexpected variable.
              case insensitve match"""
 
-        expect(name.lower() in (en.lower() for en in self._entry_ids),
+        expect(name in self._entry_ids,
                (variable_template + " is not in the namelist definition.").format(str(name)))
 
     def _user_modifiable_in_variable_definition(self, name):

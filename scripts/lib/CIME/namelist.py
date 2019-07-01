@@ -1631,8 +1631,6 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
                 err_str = "{!r} is not a valid variable name".format(str(text))
             raise _NamelistParseError(err_str)
         return text
-#        name = text.lower()
-#        return name
 
     def _parse_character_literal(self):
         """Parse and return a character literal (a string).
