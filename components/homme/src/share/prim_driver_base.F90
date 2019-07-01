@@ -1086,6 +1086,16 @@ contains
     call t_stopf("copy_qdp_h2d")
 #endif
 
+    if (compute_diagnostics) then
+      call t_startf("prim_diag_scalars")
+      call prim_diag_scalars(elem,hvcoord,tl,4,.false.,nets,nete)
+      call t_stopf("prim_diag_scalars")
+
+      call t_startf("prim_energy_halftimes")
+      call prim_energy_halftimes(elem,hvcoord,tl,4,.false.,nets,nete)
+      call t_stopf("prim_energy_halftimes")
+    endif
+
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !  apply vertical remap
     !  always for tracers

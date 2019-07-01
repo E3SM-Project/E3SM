@@ -739,6 +739,10 @@ contains
           write(iulog,'(a,i3,a,E22.14,a,2E15.7)') "Q",q,",Q diss, dQ^2/dt:",Qmass(q,2)," kg/m^2",&
                (Qmass(q,2)-Qmass(q,1))/dt,(Qvar(q,2)-Qvar(q,1))/dt
        enddo
+       write(iulog,'(a)') 'Changes due to remap:'
+       write(iulog,'(a,2e15.7)') 'dKE/dt(W/m^2): ',(KEner(2)-KEner(4))/dt
+       write(iulog,'(a,2e15.7)') 'dIE/dt(W/m^2): ',(IEner(2)-IEner(4))/dt
+       write(iulog,'(a,2e15.7)') 'dPE/dt(W/m^2): ',(PEner(2)-PEner(4))/dt
        write(iulog,'(a)') 'Physics tendencies applied by dycore:'
        write(iulog,'(a,2e15.7)') 'dKE/dt(W/m^2): ',(KEner(1)-KEner(3))/dt
        write(iulog,'(a,2e15.7)') 'dIE/dt(W/m^2): ',(IEner(1)-IEner(3))/dt

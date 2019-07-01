@@ -94,11 +94,6 @@ contains
     case ('exner');           call get_nonhydro_pressure(elem,tmp  ,field,hvcoord,nt,ntQ)
 
     case ('p');
-#if 0
-      do k=1,nlev
-        field(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
-      enddo
-#endif
       call get_pi(field,elem%state%dp3d(:,:,:,nt),hvcoord)
 
     case ('dp');
