@@ -102,7 +102,7 @@ ANONYMOUS:
                       Block Size: 1
                       Num Blocks: 200
                       Flexible Gmres: false
-              Preconditioner Type: ML
+              Preconditioner Type: Ifpack
               Preconditioner Types: 
                 Ifpack: 
                   Overlap: 2

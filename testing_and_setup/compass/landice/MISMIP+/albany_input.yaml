@@ -105,7 +105,7 @@ ANONYMOUS:
                       Num Blocks: 200
                       Flexible Gmres: false
                       Verbosity: 33
-              Preconditioner Type: ML
+              Preconditioner Type: Ifpack
               Preconditioner Types: 
                 Ifpack: 
                   Overlap: 1
