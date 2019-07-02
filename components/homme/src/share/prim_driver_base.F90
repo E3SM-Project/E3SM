@@ -1464,22 +1464,22 @@ contains
          enddo
       enddo
 
-      if (use_moisture) then
-         ! to conserve dry mass in the precese of Q1 forcing:
-         ps(:,:) = ps(:,:) + dt*elem%derived%FQps(:,:)
-      endif
+      ! to conserve dry mass in the precese of Q1 forcing:
+      ps(:,:) = ps(:,:) + dt*elem%derived%FQps(:,:)
    endif ! if adjustment
 
 
-   if (adjust_ps) then
-      ! stay on Eulerian reference levels.  use ps() that was adjusted to conserve mass
-      ! recompute dp3d:
-      do k=1,nlev
-         dp_adj(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-              ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps(:,:)
-      enddo
+   if (use_moisture) then
+      ! compute water vapor adjusted dp3d:
+      if (adjust_ps) then
+         ! compute new dp3d from adjusted ps()
+         do k=1,nlev
+            dp_adj(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps(:,:)
+         enddo
+      endif
+      elem%state%dp3d(:,:,:,np1)=dp_adj(:,:,:)
    endif
-   elem%state%dp3d(:,:,:,np1)=dp_adj(:,:,:)
 
    ! Qdp(np1) was updated by forcing - update Q(np1)
    do q=1,qsize
@@ -1489,22 +1489,21 @@ contains
 
 #ifdef MODEL_THETA_L
    if (adjust_ps) then
+      ! recompute hydrostatic pressure from ps
       do k=1,nlev  
          pi(:,:,k)=hvcoord%ps0*hvcoord%hyam(k) + ps(:,:)*hvcoord%hybm(k)
       enddo
    else
-      ! recompute hydrostatic pressure
+      ! recompute hydrostatic pressure from dp3d
       call get_pi(pi,dp_adj,hvcoord)
    endif
    
    
    !update temperature
-     !continue conversion using pprime from above
    call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
    tn1(:,:,:) = tn1(:,:,:) + dt*elem%derived%FT(:,:,:)
    
-   ! update H pressure based on Qdp forcing
-   ! add in NH pressure pertubration 
+   ! compute NH pressure based on updated hydrostatic pressure
    do k=1,nlev
       ! constant PHI.  FPHI will be zero. cant be used Hydrostatic
       !pnh(:,:,k) = rstarn1(:,:,k)*tn1(:,:,k)*dp_adj(:,:,k) / &
