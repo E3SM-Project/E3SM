@@ -7,19 +7,19 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_vel_coriolis
+!  ocn_vel_hadv_coriolis
 !
 !> \brief MPAS ocean horizontal momentum mixing driver
 !> \author Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date   September 2011
 !> \details
 !>  This module contains the routine for computing
-!>  tendencies from the coriolis force.
+!>  tendencies from the horizontal advection and coriolis force.
 !>
 !
 !-----------------------------------------------------------------------
 
-module ocn_vel_coriolis
+module ocn_vel_hadv_coriolis
 
    use mpas_timer
    use mpas_derived_types
@@ -42,8 +42,8 @@ module ocn_vel_coriolis
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_vel_coriolis_tend, &
-             ocn_vel_coriolis_init
+   public :: ocn_vel_hadv_coriolis_tend, &
+             ocn_vel_hadv_coriolis_init
 
    !--------------------------------------------------------------------
    !
@@ -51,7 +51,7 @@ module ocn_vel_coriolis
    !
    !--------------------------------------------------------------------
 
-   logical :: coriolisOn
+   logical :: hadvAndCoriolisOn
    integer :: RK4On
 
 !***********************************************************************
@@ -60,18 +60,20 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_vel_coriolis_tend
+!  routine ocn_vel_hadv_coriolis_tend
 !
-!> \brief   Computes tendency term for coriolis force
+!> \brief   Computes tendency term for horizontal advection and coriolis force
 !> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date    September 2011
 !> \details
-!>  This routine computes the coriolis tendency for momentum
-!>  based on current state.
+
+!>  This routine computes the horizontal advection and coriolis and
+!>  advection tendencies for momentum based on current state.
+
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_coriolis_tend(meshPool, normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, &
+   subroutine ocn_vel_hadv_coriolis_tend(meshPool, normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, &
                                     layerThicknessEdge, normalVelocity, kineticEnergyCell, tend, err)!{{{
 
       !-----------------------------------------------------------------
@@ -127,7 +129,7 @@ contains
 
       err = 0
 
-      if ( .not. coriolisOn ) return
+      if ( .not. hadvAndCoriolisOn ) return
 
       call mpas_timer_start("coriolis")
 
@@ -184,24 +186,20 @@ contains
 
    !--------------------------------------------------------------------
 
-   end subroutine ocn_vel_coriolis_tend!}}}
+   end subroutine ocn_vel_hadv_coriolis_tend!}}}
 
 !***********************************************************************
 !
-!  routine ocn_vel_coriolis_init
+!  routine ocn_vel_hadv_coriolis_init
 !
-!> \brief   Initializes ocean momentum horizontal mixing quantities
+!> \brief   Initializes ocean momentum horizontal advection and
+!>  coriolis tendencies
 !> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date    September 2011
-!> \details
-!>  This routine initializes a variety of quantities related to
-!>  horizontal velocity mixing in the ocean. Since a variety of
-!>  parameterizations are available, this routine primarily calls the
-!>  individual init routines for each parameterization.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_coriolis_init(err)!{{{
+   subroutine ocn_vel_hadv_coriolis_init(err)!{{{
 
    !--------------------------------------------------------------------
 
@@ -221,9 +219,9 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_disable_vel_coriolis', config_disable_vel_coriolis)
       call mpas_pool_get_config(ocnConfigs, 'config_time_integrator', config_time_integrator)
 
-      coriolisOn = .true.
+      hadvAndCoriolisOn = .true.
 
-      if ( config_disable_vel_coriolis ) coriolisOn = .false.
+      if ( config_disable_vel_coriolis ) hadvAndCoriolisOn = .false.
 
       if ( trim( config_time_integrator ) == 'RK4') then
          ! For RK4, coriolis tendency term includes f: (eta+f)/h.
@@ -238,11 +236,11 @@ contains
 
    !--------------------------------------------------------------------
 
-   end subroutine ocn_vel_coriolis_init!}}}
+   end subroutine ocn_vel_hadv_coriolis_init!}}}
 
 !***********************************************************************
 
-end module ocn_vel_coriolis
+end module ocn_vel_hadv_coriolis
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 ! vim: foldmethod=marker

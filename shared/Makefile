@@ -15,7 +15,7 @@ OBJS = mpas_ocn_init_routines.o \
 	   mpas_ocn_thick_hadv.o \
 	   mpas_ocn_thick_vadv.o \
 	   mpas_ocn_thick_surface_flux.o \
-	   mpas_ocn_vel_coriolis.o \
+	   mpas_ocn_vel_hadv_coriolis.o \
 	   mpas_ocn_vel_vadv.o \
 	   mpas_ocn_vel_hmix.o \
 	   mpas_ocn_vel_hmix_del2.o \
@@ -108,7 +108,7 @@ mpas_ocn_vel_forcing_surface_stress.o: mpas_ocn_forcing.o mpas_ocn_constants.o
 
 mpas_ocn_vel_forcing_explicit_bottom_drag.o: mpas_ocn_constants.o
 
-mpas_ocn_vel_coriolis.o: mpas_ocn_constants.o
+mpas_ocn_vel_hadv_coriolis.o: mpas_ocn_constants.o
 
 mpas_ocn_tracer_hmix.o: mpas_ocn_tracer_hmix_del2.o mpas_ocn_tracer_hmix_del4.o mpas_ocn_tracer_hmix_redi.o
 
