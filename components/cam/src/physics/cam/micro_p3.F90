@@ -1184,31 +1184,19 @@ contains
 
           !-- ice-phase dependent processes:
           call update_prognostic_ice(qcheti, qccol, qcshd, & 
-          nccol, ncheti, ncshdc, & 
-          qrcol, nrcol,  qrheti, nrheti, nrshdr, & 
-          qimlt, nimlt, qisub, qidep, qinuc, ninuc, nislf, nisub, & 
-          exner(i,k), xxls(i,k), xlf(i,k), & 
-          log_predictNc, log_wetgrowth, dt, nmltratio, rhorime_c, &
-          th(i,k), qv(i,k), qitot(i,k), nitot(i,k), qirim(i,k), birim(i,k), qc(i,k), nc(i,k), qr(i,k), nr(i,k) )
+            nccol, ncheti, ncshdc, & 
+            qrcol, nrcol,  qrheti, nrheti, nrshdr, & 
+            qimlt, nimlt, qisub, qidep, qinuc, ninuc, nislf, nisub, & 
+            exner(i,k), xxls(i,k), xlf(i,k), & 
+            log_predictNc, log_wetgrowth, dt, nmltratio, rhorime_c, &
+            th(i,k), qv(i,k), qitot(i,k), nitot(i,k), qirim(i,k), birim(i,k), qc(i,k), nc(i,k), qr(i,k), nr(i,k) )
 
           !-- warm-phase only processes:
-          qc(i,k) = qc(i,k) + (-qcacc-qcaut+qcnuc+qccon-qcevp)*dt
-          qr(i,k) = qr(i,k) + (qcacc+qcaut+qrcon-qrevp)*dt
+          call update_prognostic_liquid(qcacc, ncacc, qcaut, ncautc, qcnuc, ncautr, qccon, qcevp, ncslf, &
+          qrcon, qrevp, nrevp, nrslf,  &
+          log_predictNc, inv_rho(i,k), exner(i,k), xxlv(i,k), dt, &
+          th(i,k), qv(i,k), qc(i,k), nc(i,k), qr(i,k), nr(i,k))
 
-          if (log_predictNc) then
-             nc(i,k) = nc(i,k) + (-ncacc-ncautc+ncslf)*dt
-          else
-             nc(i,k) = nccnst*inv_rho(i,k)
-          endif
-          if (iparam.eq.1 .or. iparam.eq.2) then
-             nr(i,k) = nr(i,k) + (0.5_rtype*ncautc-nrslf-nrevp)*dt
-          else
-             nr(i,k) = nr(i,k) + (ncautr-nrslf-nrevp)*dt
-          endif
-
-          qv(i,k) = qv(i,k) + (-qcnuc-qccon-qrcon+qcevp+qrevp)*dt
-          th(i,k) = th(i,k) + exner(i,k)*((qcnuc+qccon+qrcon-qcevp-qrevp)*xxlv(i,k)*    &
-               inv_cp)*dt
           !==
           ! AaronDonahue - Add extra variables needed from microphysics by E3SM:
           cmeiout(i,k) = qidep - qisub + qinuc 
@@ -3614,6 +3602,63 @@ subroutine update_prognostic_ice(qcheti, qccol, qcshd, &
 
 
 end subroutine update_prognostic_ice
+
+subroutine update_prognostic_liquid(qcacc, ncacc, qcaut, ncautc, qcnuc, ncautr, qccon, qcevp, ncslf, &
+    qrcon, qrevp, nrevp, nrslf, &
+    log_predictNc, inv_rho, exner, xxlv, dt, &
+    th, qv, qc, nc, qr, nr)
+   !-- warm-phase only processes:
+   implicit none 
+
+   real(rtype), intent(in) :: qcacc
+   real(rtype), intent(in) :: ncacc 
+   real(rtype), intent(in) :: qcaut
+   real(rtype), intent(in) :: ncautc
+   real(rtype), intent(in) :: qcnuc
+   real(rtype), intent(in) :: ncautr 
+   real(rtype), intent(in) :: qccon
+   real(rtype), intent(in) :: qcevp
+   real(rtype), intent(in) :: ncslf 
+   real(rtype), intent(in) :: qrcon
+   real(rtype), intent(in) :: qrevp
+   real(rtype), intent(in) :: nrevp 
+   real(rtype), intent(in) :: nrslf 
+
+
+   logical, intent(in) :: log_predictNc
+   real(rtype), intent(in) :: inv_rho
+   real(rtype), intent(in) :: exner 
+   real(rtype), intent(in) :: xxlv 
+   real(rtype), intent(in) :: dt
+
+   real(rtype), intent(inout) :: th 
+   real(rtype), intent(inout) :: qv 
+   real(rtype), intent(inout) :: qc
+   real(rtype), intent(inout) :: nc 
+   real(rtype), intent(inout) :: qr 
+   real(rtype), intent(inout) :: nr 
+
+   qc = qc + (-qcacc-qcaut+qcnuc+qccon-qcevp)*dt
+   qr = qr + (qcacc+qcaut+qrcon-qrevp)*dt
+
+   if (log_predictNc) then
+      nc = nc + (-ncacc-ncautc+ncslf)*dt
+   else
+      nc = nccnst*inv_rho
+   endif
+
+   if (iparam.eq.1 .or. iparam.eq.2) then
+      nr = nr + (0.5_rtype*ncautc-nrslf-nrevp)*dt
+   else
+      nr = nr + (ncautr-nrslf-nrevp)*dt
+   endif
+
+   qv = qv + (-qcnuc-qccon-qrcon+qcevp+qrevp)*dt
+   th = th + exner*((qcnuc+qccon+qrcon-qcevp-qrevp)*xxlv*    &
+        inv_cp)*dt
+
+
+end subroutine update_prognostic_liquid
 
 
 end module micro_p3
