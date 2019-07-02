@@ -6,8 +6,9 @@ To set up and run ocean test cases from COMPASS, you will need a conda
 environment.  First, install Miniconda3 (if miniconda is not already
 installed), then create a new conda environment as follows:
 ``` bash
-conda create -n compass_py3.7 -c conda-forge python=3.7 geometric_features
-    mpas_tools jigsaw metis pyflann scikit-image basemap pyamg ffmpeg
+conda create -n compass_py3.7 -c conda-forge python=3.7 \
+    geometric_features=0.1.1 mpas_tools=0.0.3 jigsaw=0.9.10 jigsawpy=0.0.2 \
+    metis pyflann scikit-image basemap pyamg ffmpeg
 ```
 Each time you want to work with COMPASS, you will need to run:
 ```
@@ -26,9 +27,9 @@ conda activate compass_py3.7
 The file `general.config.ocean` is a template containing a set of config
 options that the COMPASS user must set in order to set up ocean test cases.
 Make a copy of this file (e.g. `config.ocean`) and set the options as follows.
-Replace `FULL_PATH_TO_MPAS_MODEL_REPO` with the path where you have checked
-out (and built) the branch of MPAS-Model you are planning to use.  Five other
-paths are required, as explained below.
+In six places, replace `FULL_PATH_TO_MPAS_MODEL_REPO` with the path where you
+have checked out (and built) the branch of MPAS-Model you are planning to use.
+Five other paths are required, as explained below.
 
 ### geometric_data
 
@@ -54,22 +55,6 @@ On LANL IC, a full checkout is already available at:
 ```
 geometric_data = /usr/projects/regionalclimate/COMMON_MPAS/ocean/grids/geometric_data_v0.1
 ```
-
-### jigsaw-geo-matlab
-
-For any test cases using the `JIGSAW` tool to generate meshes, you will need
-a local checkout fo the repository of Matlab routines for `JIGSAW` check out
-a local copy of the repo with:
-```
-git clone git@github.com:dengwirda/jigsaw-geo-matlab.git
-```
-Then, point `jigsaw-geo-matlab` in your config file to the path to the local
-check-out of the repo.
-
-If you have already checked out `jigsaw-geo-matlab` previously, be sure to
-update to the latest master.  Changes made in early May 2019 are required in
-order for these scripts to be able to use the version of `jigsaw` from the
-conda package, rather than requiring a local build.
 
 ### mesh_database and initial_condition_database
 
