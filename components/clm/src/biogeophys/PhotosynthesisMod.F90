@@ -1898,6 +1898,7 @@ contains
          bsw           => soilstate_inst%bsw_col                , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"
          sucsat        => soilstate_inst%sucsat_col             ,  & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)
          ivt           => veg_pp%itype                             & ! Input:  [integer  (:)   ]  patch vegetation type
+      )
       an_sun        =>    photosyns_inst%an_sun_patch         ! Output: [real(r8) (:,:) ]  net sunlit leaf photosynthesis (umol CO2/m**2/s)
       an_sha        =>    photosyns_inst%an_sha_patch         ! Output: [real(r8) (:,:) ]  net shaded leaf photosynthesis (umol CO2/m**2/s)
       par_z_sun     =>    solarabs_inst%parsun_z_patch        ! Input:  [real(r8) (:,:) ]  par absorbed per unit lai for canopy layer (w/m**2)
