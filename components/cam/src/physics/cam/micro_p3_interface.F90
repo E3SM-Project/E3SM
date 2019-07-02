@@ -1291,11 +1291,11 @@ end subroutine micro_p3_readnl
     !   dei = rei*diag_rhopo(i,k,iice)/rhows*2._rtype
     !where rhopo is bulk ice density from table lookup (taken from f1pr16, here written as diag_rhoi) and rhows=917.0 is a constant parameter.
    !! Effective radius for cloud liquid
-   rel(:ngrdcol,top_lev:) = rel(:ngrdcol,top_lev:) * 1e6_rtype  ! Rescale rel to be in microns
+   rel = rel * 1e6_rtype  ! Rescale rel to be in microns
    !! Effective radius for cloud ice
-   rei(:ngrdcol,top_lev:) = rei(:ngrdcol,top_lev:) * 1e6_rtype  ! Rescale rei to be in microns
+   rei = rei * 1e6_rtype  ! Rescale rei to be in microns
    !! Effective diameter for cloud ice
-   dei(:ngrdcol,top_lev:) = rei(:ngrdcol,top_lev:) * diag_rhoi(:ngrdcol,top_lev:)/rhows * 2._rtype
+   dei = rei * diag_rhoi/rhows * 2._rtype
 
    !!
    !! Limiters for low cloud fraction
