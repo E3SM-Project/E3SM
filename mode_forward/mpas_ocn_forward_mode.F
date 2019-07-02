@@ -489,6 +489,7 @@ module ocn_forward_mode
       logical, pointer :: config_use_activeTracers_surface_restoring
       logical, pointer :: config_use_surface_salinity_monthly_restoring
       logical, pointer :: config_use_time_varying_atmospheric_forcing
+      logical, pointer :: config_use_time_varying_land_ice_forcing
 
       ierr = 0
 
@@ -502,6 +503,8 @@ module ocn_forward_mode
                                                    config_use_surface_salinity_monthly_restoring)
       call MPAS_pool_get_config(domain % configs, 'config_use_time_varying_atmospheric_forcing', &
                                                    config_use_time_varying_atmospheric_forcing)
+      call MPAS_pool_get_config(domain % configs, 'config_use_time_varying_land_ice_forcing', &
+                                                   config_use_time_varying_land_ice_forcing)
 
       ! Eventually, dt should be domain specific
       timeStep = mpas_get_clock_timestep(domain % clock, ierr=ierr)
@@ -644,7 +647,8 @@ module ocn_forward_mode
             if (trim(config_sw_absorption_type)=='ohlmann00' .or. &
                 config_use_ecosysTracers .or. &
                 (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring) .or. &
-                config_use_time_varying_atmospheric_forcing) then
+                config_use_time_varying_atmospheric_forcing .or. &
+                config_use_time_varying_land_ice_forcing) then
 
                 call ocn_time_varying_forcing_write_restart_times(domain)
             end if
