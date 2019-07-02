@@ -877,6 +877,19 @@ contains
 !$OMP END MASTER
 !$OMP BARRIER
 
+#ifdef CAM
+    ! initialize dp3d from ps_v.  CAM IC/restart code reads ps_v, doesn't
+    ! have access to hvcoord to compute dp3d:
+    do ie=1,nelemd
+       do k=1,nlev
+          elem(ie)%state%dp3d(:,:,k,tl%n0)=&
+               ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
+       enddo
+    end do
+#endif
+
+
     ! For new runs, and branch runs, convert state variable Q to (Qdp)
     ! because initial conditon reads in Q, not Qdp
     ! restart runs will read dpQ from restart file
@@ -891,7 +904,6 @@ contains
           enddo
        enddo
     endif
-
 
     if (runtype==1) then
        call TimeLevel_Qdp( tl, qsplit, n0_qdp)
@@ -1336,7 +1348,7 @@ contains
   !    remap                    remap back to ref levels.  ps_v now valid
   !    write restart files      ps_v ok for restart
   !
-  use control_mod,        only : use_moisture
+  use control_mod,        only : use_moisture,rsplit
   use hybvcoord_mod,      only : hvcoord_t
 #ifdef MODEL_THETA_L
   use control_mod,        only : theta_hydrostatic_mode
@@ -1356,7 +1368,7 @@ contains
   real (kind=real_kind)  :: v1
   real (kind=real_kind)  :: dp(np,np,nlev), fq, ps(np,np), dp_adj(np,np,nlev)
   real (kind=real_kind)  :: pi(np,np,nlev)  ! hydrostatic pressure
-  logical :: adjust_ps = .true.  ! adjust PS or DP3D to conserve dry mass
+  logical :: adjust_ps   ! adjust PS or DP3D to conserve dry mass
 #ifdef MODEL_THETA_L
   real (kind=real_kind)  :: pprime(np,np,nlev)
   real (kind=real_kind)  :: vthn1(np,np,nlev)
@@ -1366,6 +1378,16 @@ contains
   real (kind=real_kind)  :: rstarn1(np,np,nlev)
   real (kind=real_kind)  :: exner(np,np,nlev)
   real (kind=real_kind)  :: dpnh_dp_i(np,np,nlevp)
+#endif
+
+#ifdef MODEL_THETA_L
+  if (rsplit==0) then
+     adjust_ps=.true.   ! we are always on ref levels
+  else
+     adjust_ps=.true.   ! eventually change this to false
+  endif
+#else
+  adjust_ps=.true.      ! preqx doesn't use 
 #endif
 
   dp=elem%state%dp3d(:,:,:,np1)
@@ -1435,7 +1457,7 @@ contains
                   elem%state%Qdp(i,j,k,q,np1_qdp) = elem%state%Qdp(i,j,k,q,np1_qdp)+v1
                   if (q==1) then
                      elem%derived%FQps(i,j)=elem%derived%FQps(i,j)+v1/dt
-                     dp_adj(i,j,k)=dp_adj(i,j,k) + v1/dt
+                     dp_adj(i,j,k)=dp_adj(i,j,k) + v1
                   endif
                enddo
             enddo

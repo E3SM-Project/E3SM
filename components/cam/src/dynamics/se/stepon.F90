@@ -238,7 +238,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    use dyn_comp,        only: TimeLevel, hvcoord
    use time_mod,        only: tstep, TimeLevel_Qdp   !  dynamics typestep
    use control_mod,     only: ftype, qsplit
-   use hycoef,          only: hyai, hybi, ps0
+   use hycoef,          only: hyai, hybi
    use cam_history,     only: outfld, hist_fld_active
    use prim_driver_base,only: applyCAMforcing_tracers
    use element_ops,     only: get_temperature
@@ -249,8 +249,8 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
    real(r8) :: temperature(np,np,nlev)   ! Temperature from dynamics
    integer :: kptr, ie, ic, m, i, j, k, tl_f, tl_fQdp, velcomp
-   real(r8) :: rec2dt, dyn_ps0
-   real(r8) :: dp(np,np,nlev),dp_tmp,fq,fq0,qn0, ftmp(npsq,nlev,2)
+   real(r8) :: rec2dt
+   real(r8) :: dp(np,np,nlev),fq,fq0,qn0, ftmp(npsq,nlev,2)
    real(r8) :: dtime
    integer  :: num_FM_vars
 
@@ -333,8 +333,6 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
       call TimeLevel_Qdp(TimeLevel, qsplit, tl_fQdp)
 
-      dyn_ps0=ps0
-
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! ftype=2,4:  apply forcing to Q,ps.  Return dynamics tendencies
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -389,20 +387,15 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
             ! Q  =  data used for forcing, at timelevel nm1   t
             ! FQ =  adjusted Q returned by forcing,  at time  t+dt
             ! tendency = (FQ*dp - Q*dp) / dt 
-            ! Convert this to a tendency on Qdp:  CAM physics does not change ps
-            ! so use ps_v at t.  (or, if physics worked with Qdp
-            ! and returned FQdp, tendency = (FQdp-Qdp)/2dt and since physics
-            ! did not change dp, dp would be the same in both terms)
-!$omp parallel do private(k, j, i, dp_tmp)
+            ! Convert this to a tendency on Qdp:  CAM physics did not change dp3d
+!$omp parallel do private(k, j, i)
             do k=1,nlev
                do j=1,np
                   do i=1,np
-                     dp_tmp = ( hyai(k+1) - hyai(k) )*dyn_ps0 + &
-                          ( hybi(k+1) - hybi(k) )*dyn_in%elem(ie)%state%ps_v(i,j,tl_f)
-                     
                      dyn_in%elem(ie)%derived%FQ(i,j,k,ic)=&
                           (  dyn_in%elem(ie)%derived%FQ(i,j,k,ic) - &
-                          dyn_in%elem(ie)%state%Q(i,j,k,ic))*rec2dt*dp_tmp
+                          dyn_in%elem(ie)%state%Q(i,j,k,ic))*rec2dt* &  
+                          dyn_in%elem(ie)%state%dp3d(i,j,k,tl_f) 
                   end do
                end do
             end do
