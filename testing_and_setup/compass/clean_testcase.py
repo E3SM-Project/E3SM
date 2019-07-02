@@ -84,7 +84,7 @@ if __name__ == "__main__":
 
         regex = re.compile('(\d):')
         core_configuration = subprocess.check_output(['./list_testcases.py'])
-        for line in core_configuration.split('\n'):
+        for line in core_configuration.decode('utf-8').split('\n'):
             if regex.search(line) is not None:
                 conf_arr = line.replace(":", " ").split()
                 case_num = int(conf_arr[0])
@@ -103,7 +103,7 @@ if __name__ == "__main__":
     os.chdir(os.path.dirname(os.path.realpath(__file__)))
     git_version = subprocess.check_output(['git', 'describe', '--tags',
                                            '--dirty'])
-    git_version = git_version.strip('\n')
+    git_version = git_version.decode('utf-8').strip('\n')
     os.chdir(old_dir)
     calling_command = ""
     write_history = False
@@ -119,7 +119,7 @@ if __name__ == "__main__":
             core_configuration = subprocess.check_output(
                     ['./list_testcases.py', '-n',
                      '{:d}'.format(int(case_num))])
-            config_options = core_configuration.strip('\n').split(' ')
+            config_options = core_configuration.decode('utf-8').strip('\n').split(' ')
             args.core = config_options[1]
             args.configuration = config_options[3]
             args.resolution = config_options[5]
@@ -194,7 +194,7 @@ if __name__ == "__main__":
                 core_configuration = subprocess.check_output(
                         ['./list_testcases.py', '-n',
                          '{:d}'.format(int(case_num))])
-                config_options = core_configuration.strip('\n').split(' ')
+                config_options = core_configuration.decode('utf-8').strip('\n').split(' ')
                 history_file.write('\n')
                 history_file.write('    core: {}\n'.format(config_options[1]))
                 history_file.write('    configuration: {}\n'.format(

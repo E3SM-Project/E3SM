@@ -50,8 +50,9 @@ module soundings
     !-----------------------------------------------------------------------
     subroutine soundings_setup(configs, all_pools, simulation_clock, dminfo)
 
-        use mpas_derived_types, only : MPAS_pool_type, MPAS_clock_type, dm_info
-        use mpas_pool_routines, only : mpas_pool_get_subpool, mpas_pool_get_dimension, mpas_pool_get_array, mpas_pool_get_config
+        use mpas_derived_types, only : MPAS_pool_type, MPAS_clock_type, dm_info, MPAS_POOL_SILENT
+        use mpas_pool_routines, only : mpas_pool_get_subpool, mpas_pool_get_dimension, mpas_pool_get_array, mpas_pool_get_config, &
+                                       mpas_pool_get_error_level, mpas_pool_set_error_level
         use mpas_io_units, only :  mpas_new_unit, mpas_release_unit
         use mpas_timekeeping, only : MPAS_timeInterval_type, MPAS_time_type, MPAS_set_timeInterval, &
                                      MPAS_get_clock_time, MPAS_add_clock_alarm, MPAS_NOW
@@ -67,6 +68,7 @@ module soundings
         character(len=StrKIND), pointer :: soundingInterval
 
         integer :: i, ierr
+        integer :: err_level
         integer :: sndUnit
         real (kind=RKIND) :: station_lat, station_lon
         character (len=StrKIND) :: tempstr
@@ -87,8 +89,30 @@ module soundings
         call mpas_pool_get_subpool(all_pools, 'state', state)
         call mpas_pool_get_subpool(all_pools, 'diag', diag)
 
+        !
+        ! Query the config_sounding_interval namelist option without triggering
+        ! warning messages if no such option exists
+        !
+        nullify(soundingInterval)
+        err_level = mpas_pool_get_error_level()
+        call mpas_pool_set_error_level(MPAS_POOL_SILENT)
         call mpas_pool_get_config(configs, 'config_sounding_interval', soundingInterval)
+        call mpas_pool_set_error_level(err_level)
 
+        !
+        ! If the config_sounding_interval namelist option was not found, just return
+        ! This may happen if MPAS-A is built within another system where, e.g., only
+        ! dynamics namelist options are available
+        !
+        if (.not. associated(soundingInterval)) then
+            call mpas_log_write('config_sounding_interval is not a namelist option...')
+            return
+        end if
+
+        !
+        ! If the config_sounding_interval namelist option is 'none', no soundings
+        ! will to be produced
+        !
         if (trim(soundingInterval) == 'none') then
             return
         end if
