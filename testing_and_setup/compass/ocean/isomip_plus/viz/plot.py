@@ -25,7 +25,7 @@ class TimeSeriesPlotter(object):
         The folder with simulation results
 
     outFolder : str
-        The folder where images (and optionally movies) will be written
+        The folder where images will be written
 
     expt : int
         The number of the experiment (0 for Ocean0, 1 for Ocean1, etc.)
@@ -41,7 +41,7 @@ class TimeSeriesPlotter(object):
             The folder with simulation results
 
         outFolder : str, optional
-            The folder where images (and optionally movies) will be written
+            The folder where images will be written
 
         expt : int, optional
             The number of the experiment (0 for Ocean0, 1 for Ocean1, etc.)
@@ -103,10 +103,10 @@ class TimeSeriesPlotter(object):
                               'meanFrictionVelocity', 'm/s')
 
     def plot_time_series(self, da, nameInTitle, prefix, units=None,
-                         figsize=[12, 6], color=None):
+                         figsize=[12, 6], color=None, overwrite=True):
 
         fileName = '{}/{}.png'.format(self.outFolder, prefix)
-        if(os.path.exists(fileName)):
+        if(not overwrite and os.path.exists(fileName)):
             return
 
         nTime = da.sizes['Time']
@@ -138,7 +138,7 @@ class MoviePlotter(object):
         The folder with simulation results
 
     outFolder : str
-        The folder where images (and optionally movies) will be written
+        The folder where images will be written
 
     expt : int
         The number of the experiment (0 for Ocean0, 1 for Ocean1, etc.)
@@ -187,7 +187,7 @@ class MoviePlotter(object):
             The folder with simulation results
 
         outFolder : str, optional
-            The folder where images (and optionally movies) will be written
+            The folder where images will be written
 
         expt : int, optional
             The number of the experiment (0 for Ocean0, 1 for Ocean1, etc.)
@@ -397,6 +397,19 @@ class MoviePlotter(object):
                                            prefix='PotRho', units='kg/m^3',
                                            vmin=1027., vmax=1028.)
 
+    def plot_haney_number(self):
+        '''
+        Plot a series of images of the Haney number rx1 at the sea surface or
+        ice-ocean interface, sea floor and in an x-z section
+        '''
+
+        ds = xarray.open_dataset('{}/haney.nc'.format(self.inFolder))
+
+        self.plot_3d_field_top_bot_section(ds.haneyCell,
+                                           nameInTitle='Haney Number (rx1)',
+                                           prefix='Haney', units=None,
+                                           vmin=0., vmax=8.)
+
     def plot_horiz_series(self, da, nameInTitle, prefix, oceanDomain,
                           units=None, vmin=None, vmax=None):
         '''
@@ -530,7 +543,8 @@ class MoviePlotter(object):
             bar.update(tIndex+1)
         bar.finish()
 
-    def images_to_movies(self, outFolder, framesPerSecond=30, extension='mp4'):
+    def images_to_movies(self, outFolder, framesPerSecond=30, extension='mp4',
+                         overwrite=True):
         '''
         Convert all the image sequences into movies with ffmpeg
         '''
@@ -545,7 +559,7 @@ class MoviePlotter(object):
                 '{}/*/*0001.png'.format(self.outFolder))):
             prefix = os.path.basename(fileName)[:-9]
             outFileName = '{}/{}.{}'.format(outFolder, prefix, extension)
-            if os.path.exists(outFileName):
+            if not overwrite and os.path.exists(outFileName):
                 continue
 
             imageFileTemplate = '{}/{}/{}_%04d.png'.format(self.outFolder,
@@ -564,7 +578,7 @@ class MoviePlotter(object):
         xtime = ''.join(str(xtime.astype('U'))).strip()
         year = xtime[0:4]
         month = xtime[5:7]
-        self.date = '{}-{}'.format(month, year)
+        self.date = '{}-{}'.format(year, month)
 
     def _plot_horiz_field(self, field, title, outFileName, oceanDomain=True,
                           vmin=None, vmax=None, figsize=[9, 3]):

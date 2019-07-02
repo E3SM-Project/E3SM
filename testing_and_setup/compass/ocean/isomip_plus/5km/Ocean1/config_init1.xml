@@ -30,10 +30,10 @@
 
 	<run_script name="run.py">
 		<step executable="./processInputGeometry.py">
-			<argument flag="">input_geometry.nc</argument>
-			<argument flag="">input_geometry_processed.nc</argument>
-			<argument flag="">5.0</argument>
-			<argument flag="">100.0</argument>
+			<argument flag="-i">input_geometry.nc</argument>
+			<argument flag="-o">input_geometry_processed.nc</argument>
+			<argument flag="-s">2.0</argument>
+			<argument flag="-m">100.0</argument>
 		</step>
 
 		<step executable="MpasMeshConverter.x">

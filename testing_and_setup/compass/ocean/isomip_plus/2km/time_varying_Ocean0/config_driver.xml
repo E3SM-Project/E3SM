@@ -1,0 +1,22 @@
+<driver_script name="run_test.py">
+	<case name="init_step1">
+		<step executable="./run.py" quiet="true" pre_message=" * Running init_step1" post_message="     Complete"/>
+	</case>
+	<case name="init_step2">
+		<step executable="./run.py" quiet="true" pre_message=" * Running init_step2" post_message="     Complete"/>
+	</case>
+	<case name="adjust_ssh">
+		<step executable="./run.py" quiet="true" pre_message=" * Running adjust_ssh" post_message="     Complete"/>
+	</case>
+	<case name="forward_short">
+		<step executable="./run.py" quiet="true" pre_message=" * Running forward_short" post_message="     Complete"/>
+	</case>
+	<validation>
+		<compare_fields file1="forward_short/output.nc">
+			<template file="prognostic_comparison.xml" path_base="script_core_dir" path="templates/validations"/>
+		</compare_fields>
+		<compare_fields file1="forward_short/land_ice_fluxes.nc">
+			<template file="land_ice_flux_comparison.xml" path_base="script_core_dir" path="templates/validations"/>
+		</compare_fields>
+	</validation>
+</driver_script>
