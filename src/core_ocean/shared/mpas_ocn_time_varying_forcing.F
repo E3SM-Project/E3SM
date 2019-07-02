@@ -3,8 +3,8 @@
 !  ocn_time_varying_forcing
 !
 !> \brief Module to handle time-varying forcing for the ocean core
-!> \author Steven Brus, LANL
-!> \date 1/8/2019
+!> \author Steven Brus, Xylar Asay-Davis, LANL
+!> \date 2/3/2019 
 !> \details
 !>  Manages the wind and pressure forcing for the ocean.
 !>  Based very closely on the seaice forcing module and
@@ -42,8 +42,8 @@ contains
 !  ocn_time_varying_forcing_init
 !
 !> \brief Driver for ocean core forcing initialization
-!> \author Steven Brus, LANL
-!> \date 1/8/2019
+!> \author Steven Brus, Xylar Asay-Davis, LANL
+!> \date 2/3/2019
 !> \details
 !>
 !
@@ -54,13 +54,21 @@ contains
     type (domain_type) :: domain
 
     logical, pointer :: &
-         config_use_time_varying_atmospheric_forcing
+         config_use_time_varying_atmospheric_forcing, &
+         config_use_time_varying_land_ice_forcing
 
     call MPAS_pool_get_config(domain % configs, "config_use_time_varying_atmospheric_forcing", config_use_time_varying_atmospheric_forcing)
 
     ! init the atmospheric forcing
     if (config_use_time_varying_atmospheric_forcing) then
        call init_atmospheric_forcing(domain)
+    endif
+
+    call MPAS_pool_get_config(domain % configs, "config_use_time_varying_land_ice_forcing", config_use_time_varying_land_ice_forcing)
+
+    ! init other forcings, to be added later as needed
+    if (config_use_time_varying_land_ice_forcing) then
+      call init_land_ice_forcing(domain)
     endif
 
     ! init other forcings, to be added later as needed
@@ -229,8 +237,8 @@ contains
 !  ocn_time_varying_forcing_get
 !
 !> \brief Retrieve forcing data during time stepping
-!> \author Steven Brus, LANL
-!> \date 1/8/2019
+!> \author Steven Brus, Xylar Asay-Davis, LANL
+!> \date 2/3/2019
 !> \details
 !>  This routine calls the MPAS_forcing routine that will perform the
 !>  forcing data aquisition and interpolation during timestepping
@@ -246,13 +254,26 @@ contains
     type (MPAS_clock_type) :: simulationClock
 
     logical, pointer :: &
-         config_use_time_varying_atmospheric_forcing
+         config_use_time_varying_atmospheric_forcing, &
+         config_use_time_varying_land_ice_forcing
 
     call MPAS_pool_get_config(domain % configs, "config_use_time_varying_atmospheric_forcing", config_use_time_varying_atmospheric_forcing)
 
     if (config_use_time_varying_atmospheric_forcing) then
 
         call atmospheric_forcing(&
+             streamManager, &
+             domain, &
+             simulationClock)
+
+    endif
+
+    call MPAS_pool_get_config(domain % configs, "config_use_time_varying_land_ice_forcing", &
+                              config_use_time_varying_land_ice_forcing)
+
+    if (config_use_time_varying_land_ice_forcing) then
+
+        call land_ice_forcing(&
              streamManager, &
              domain, &
              simulationClock)
@@ -459,6 +480,169 @@ contains
   end subroutine ocn_time_varying_forcing_write_restart_times!}}}
 
 !-----------------------------------------------------------------------
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_land_ice_forcing
+!
+!> \brief
+!> \author Xylar Asay-Davis, LANL
+!> \date 2/3/2019
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_land_ice_forcing(domain)!{{{
+
+    type (domain_type) :: domain
+
+    character(len=strKIND), pointer :: &
+         config_forcing_start_time, &
+         config_forcing_cycle_start, &
+         config_forcing_cycle_duration, &
+         forcingInterval, &
+         forcingReferenceTime
+
+    logical, pointer :: &
+         config_do_restart
+
+
+    ! get land-ice forcing configuration options
+    call mpas_pool_get_config(domain % configs, "config_time_varying_land_ice_forcing_start_time", &
+         config_forcing_start_time)
+
+    call mpas_pool_get_config(domain % configs, "config_time_varying_land_ice_forcing_cycle_start", &
+         config_forcing_cycle_start)
+
+    call mpas_pool_get_config(domain % configs, "config_time_varying_land_ice_forcing_cycle_duration", &
+         config_forcing_cycle_duration)
+
+    call mpas_pool_get_config(domain % configs, "config_time_varying_land_ice_forcing_interval", &
+         forcingInterval)
+
+    call mpas_pool_get_config(domain % configs, "config_time_varying_land_ice_forcing_reference_time", &
+         forcingReferenceTime)
+
+    call mpas_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
+
+    ! create the land-ice forcing group
+    call mpas_forcing_init_group(forcingGroupHead, "ocn_land_ice_forcing", domain, config_forcing_start_time, &
+         config_forcing_cycle_start, config_forcing_cycle_duration, config_do_restart)
+
+    call mpas_forcing_init_field(domain % streamManager, forcingGroupHead, "ocn_land_ice_forcing", &
+         "landIcePressure", "land_ice_forcing", "timeVaryingForcing", "landIcePressureForcing", "linear", &
+         forcingReferenceTime, forcingInterval)
+
+    call mpas_forcing_init_field(domain % streamManager, forcingGroupHead, "ocn_land_ice_forcing", &
+         "landIceFraction", "land_ice_forcing", "timeVaryingForcing", "landIceFractionForcing", "linear", &
+         forcingReferenceTime, forcingInterval)
+
+    call mpas_forcing_init_field(domain % streamManager, forcingGroupHead, "ocn_land_ice_forcing", &
+         "landIceDraft", "land_ice_forcing", "timeVaryingForcing", "landIceDraftForcing", "linear", &
+         forcingReferenceTime, forcingInterval)
+
+    call mpas_forcing_init_field_data(&
+         forcingGroupHead, &                     ! forcingGroupHead
+         "ocn_land_ice_forcing", &               ! forcingGroupName
+         domain % streamManager, &               ! streamManager
+         config_do_restart, &                    ! restart
+         .true.)                                 ! interpolateAtInit
+
+  end subroutine init_land_ice_forcing!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  land_ice_forcing
+!
+!> \brief Compute land-ice pressure
+!> \author Xylar Asay-Davis, LANL
+!> \date 2/3/2019
+!> \details Interpolate the pressure from overlying land ice
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine land_ice_forcing(streamManager, domain, simulationClock)!{{{
+
+    type (MPAS_streamManager_type), intent(inout) :: streamManager
+
+    type (domain_type) :: domain
+
+    type (MPAS_clock_type) :: simulationClock
+
+    type (MPAS_time_type) :: currentForcingTime
+
+    type (block_type), pointer :: block
+
+    character(len=StrKIND), pointer :: config_dt
+
+    type (MPAS_timeInterval_type) :: timeStepESMF
+
+    character(len=StrKIND) :: timeStamp
+
+    real (kind=RKIND) :: dtSim
+
+    integer :: err
+
+    type (mpas_pool_type), pointer :: &
+         mesh, &
+         forcingPool, &
+         timeVaryingForcingPool
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         landIceFractionForcing, &
+         landIceFraction, &
+         landIcePressureForcing, &
+         landIcePressure, &
+         landIceDraftForcing, &
+         landIceDraft
+
+    integer, pointer :: &
+         nCells
+
+    integer :: &
+         iCell
+
+    ! configurations
+    call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
+
+    ! convert config_dt to real
+    call mpas_set_timeInterval(timeStepESMF, timeString=config_dt,ierr=err)
+    call mpas_get_timeInterval(timeStepESMF, dt=dtSim)
+
+    ! use the forcing layer to get data
+    call mpas_forcing_get_forcing(forcingGroupHead, "ocn_land_ice_forcing", streamManager, dtSim)
+
+    call mpas_forcing_get_forcing_time(forcingGroupHead, "ocn_land_ice_forcing", currentForcingTime)
+
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+       call MPAS_pool_get_subpool(block % structs, "forcing", forcingPool)
+       call MPAS_pool_get_subpool(block % structs, "timeVaryingForcing", timeVaryingForcingPool)
+   
+       call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+   
+       call MPAS_pool_get_array(timeVaryingForcingPool, "landIceFractionForcing", landIceFractionForcing)
+       call MPAS_pool_get_array(timeVaryingForcingPool, "landIcePressureForcing", landIcePressureForcing)
+       call MPAS_pool_get_array(timeVaryingForcingPool, "landIceDraftForcing", landIceDraftForcing)
+       call MPAS_pool_get_array(forcingPool, "landIceFraction", landIceFraction)
+       call MPAS_pool_get_array(forcingPool, "landIcePressure", landIcePressure)
+       call MPAS_pool_get_array(forcingPool, "landIceDraft", landIceDraft)
+   
+       do iCell = 1, nCells
+   
+          landIceFraction(iCell) = landIceFractionForcing(iCell)
+          landIcePressure(iCell) = landIcePressureForcing(iCell)
+          landIceDraft(iCell) = landIceDraftForcing(iCell)
+   
+       enddo
+       block => block % next
+    end do
+
+  end subroutine land_ice_forcing!}}}
 
 end module ocn_time_varying_forcing
 ! vim: foldmethod=marker
