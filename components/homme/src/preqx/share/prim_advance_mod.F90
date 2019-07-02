@@ -756,13 +756,7 @@ contains
                  ! normalize so as to conserve IE
                  ! scale by 1/rho (normalized to be O(1))
                  ! dp/dn = O(ps0)*O(delta_eta) = O(ps0)/O(nlev)
-#if 0
-                 dpdn(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                      ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,nt)
-                 ttens(:,:,k,ie) = ttens(:,:,k,ie) * hvcoord%dp0(k)/dpdn(:,:)
-#else
                  ttens(:,:,k,ie) = ttens(:,:,k,ie) * hvcoord%dp0(k)/elem(ie)%state%dp3d(:,:,k,nt)
-#endif
                  dptens(:,:,k,ie) = 0
               endif
               

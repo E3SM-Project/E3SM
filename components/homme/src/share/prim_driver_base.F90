@@ -1344,7 +1344,7 @@ contains
   !    applyCAMforcing_tracers  use ps_v for initial pressure.  
   !                             may adjust dp3d for mass conservation (if adjust_ps=.false.)
   !                             ps_v no longer valid
-  !    dynamaics                should only use dp3d
+  !    dynamics                 should only use dp3d
   !    remap                    remap back to ref levels.  ps_v now valid
   !    write restart files      ps_v ok for restart
   !
@@ -1364,9 +1364,9 @@ contains
   logical,                intent(in)    :: adjustment
 
   ! local
-  integer :: i,j,k,ie,q,ic
-  real (kind=real_kind)  :: v1
-  real (kind=real_kind)  :: dp(np,np,nlev), fq, ps(np,np), dp_adj(np,np,nlev)
+  integer :: i,j,k,ie,q
+  real (kind=real_kind)  :: fq
+  real (kind=real_kind)  :: dp(np,np,nlev), ps(np,np), dp_adj(np,np,nlev)
   real (kind=real_kind)  :: pi(np,np,nlev)  ! hydrostatic pressure
   logical :: adjust_ps   ! adjust PS or DP3D to conserve dry mass
 #ifdef MODEL_THETA_L
@@ -1382,12 +1382,12 @@ contains
 
 #ifdef MODEL_THETA_L
   if (rsplit==0) then
-     adjust_ps=.true.   ! we are always on ref levels
+     adjust_ps=.true.   ! stay on reference levels for Eulerian case
   else
-     adjust_ps=.true.   ! eventually change this to false
+     adjust_ps=.true.   ! Lagrangian case can support adjusting dp3d or ps
   endif
 #else
-  adjust_ps=.true.      ! preqx doesn't use 
+  adjust_ps=.true.      ! preqx requires forcing to stay on reference levels
 #endif
 
   dp=elem%state%dp3d(:,:,:,np1)
@@ -1421,16 +1421,16 @@ contains
       do k=1,nlev
          do j=1,np
             do i=1,np
-               do ic=1,qsize
+               do q=1,qsize
                   ! apply forcing to Qdp
-                  ! dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) = &
-                  !        dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) + fq 
-                  elem%state%Qdp(i,j,k,ic,np1_qdp) = &
-                       dp(i,j,k)*elem%derived%FQ(i,j,k,ic)
+                  ! dyn_in%elem(ie)%state%Qdp(i,j,k,q,tl_fQdp) = &
+                  !        dyn_in%elem(ie)%state%Qdp(i,j,k,q,tl_fQdp) + fq 
+                  elem%state%Qdp(i,j,k,q,np1_qdp) = &
+                       dp(i,j,k)*elem%derived%FQ(i,j,k,q)
                   
-                  if (ic==1) then
-                     fq = dp(i,j,k)*( elem%derived%FQ(i,j,k,ic) -&
-                          elem%state%Q(i,j,k,ic))
+                  if (q==1) then
+                     fq = dp(i,j,k)*( elem%derived%FQ(i,j,k,q) -&
+                          elem%state%Q(i,j,k,q))
                      ! force ps to conserve mass:  
                      ps(i,j)=ps(i,j) + fq
                      dp_adj(i,j,k)=dp_adj(i,j,k) + fq   !  ps =  ps0+sum(dp(k))
@@ -1446,18 +1446,18 @@ contains
          do k=1,nlev
             do j=1,np
                do i=1,np
-                  v1 = dt*elem%derived%FQ(i,j,k,q)
-                  if (elem%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
+                  fq = dt*elem%derived%FQ(i,j,k,q)
+                  if (elem%state%Qdp(i,j,k,q,np1_qdp) + fq < 0 .and. fq<0) then
                      if (elem%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
-                        v1=0  ! Q already negative, dont make it more so
+                        fq=0  ! Q already negative, dont make it more so
                      else
-                        v1 = -elem%state%Qdp(i,j,k,q,np1_qdp)
+                        fq = -elem%state%Qdp(i,j,k,q,np1_qdp)
                      endif
                   endif
-                  elem%state%Qdp(i,j,k,q,np1_qdp) = elem%state%Qdp(i,j,k,q,np1_qdp)+v1
+                  elem%state%Qdp(i,j,k,q,np1_qdp) = elem%state%Qdp(i,j,k,q,np1_qdp)+fq
                   if (q==1) then
-                     elem%derived%FQps(i,j)=elem%derived%FQps(i,j)+v1/dt
-                     dp_adj(i,j,k)=dp_adj(i,j,k) + v1
+                     elem%derived%FQps(i,j)=elem%derived%FQps(i,j)+fq/dt
+                     dp_adj(i,j,k)=dp_adj(i,j,k) + fq
                   endif
                enddo
             enddo
