@@ -7,6 +7,9 @@ module namelist_mod
   use kinds,      only: real_kind, iulog
   use params_mod, only: recursive, sfcurve, SPHERE_COORDS, Z2_NO_TASK_MAPPING
   use cube_mod,   only: rotate_grid
+#ifdef CAM
+  use dyn_grid,   only: fv_nphys
+#endif
   use physical_constants, only: rearth, rrearth, omega
 #if (defined MODEL_THETA_L && defined ARKODE)
   use arkode_mod, only: rel_tol, abs_tol, calc_nonlinear_stats, use_column_solver
@@ -838,6 +841,9 @@ module namelist_mod
        cubed_sphere_map=0  ! default is equi-angle gnomonic
 #endif
        if (ne.eq.0) cubed_sphere_map=2  ! must use element_local for var-res grids
+#ifdef CAM
+       if (fv_nphys.gt.0) cubed_sphere_map=2  ! must use element_local for FV physics grid
+#endif
     endif
     if (par%masterproc) write (iulog,*) "Reference element projection: cubed_sphere_map=",cubed_sphere_map
 

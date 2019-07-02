@@ -77,11 +77,13 @@ CONTAINS
 ! !INTERFACE:
 subroutine stepon_init(dyn_in, dyn_out )
 ! !USES:
-  use dimensions_mod, only: nlev, nelemd, npsq
-  use cam_history,    only: addfld, add_default, horiz_only
-  use cam_history,    only: register_vector_field
-  use gravity_waves_sources, only: gws_init
-  use phys_control,   only: use_gw_front
+  use dimensions_mod,         only: nlev, nelemd, npsq
+  use dyn_grid,               only: fv_nphys
+  use cam_history,            only: addfld, add_default, horiz_only
+  use cam_history,            only: register_vector_field
+  use gravity_waves_sources,  only: gws_init
+  use phys_control,           only: use_gw_front
+  use cam_history_support,    only: max_fieldname_len
 
 ! !OUTPUT PARAMETERS
 !
@@ -89,6 +91,8 @@ subroutine stepon_init(dyn_in, dyn_out )
   type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
 
   integer :: m
+  integer :: num_FM_vars
+  character(len=max_fieldname_len) :: grid_name
 ! !DESCRIPTION:
 !
 ! Allocate data, initialize values, setup grid locations and other
@@ -102,11 +106,12 @@ subroutine stepon_init(dyn_in, dyn_out )
   ! This is not done in dyn_init due to a circular dependency issue.
   if(par%dynproc) then
 #ifdef MODEL_THETA_L
-     !buffer to comm forcings, theta-l needs 1 more
-     call initEdgeBuffer(par, edgebuf, dyn_in%elem, (4+pcnst)*nlev)
+      !buffer to comm forcings, theta-l needs 1 more
+      num_FM_vars = 3
 #else
-     call initEdgeBuffer(par, edgebuf, dyn_in%elem, (3+pcnst)*nlev)
+      num_FM_vars = 2
 #endif
+      call initEdgeBuffer(par, edgebuf, dyn_in%elem, (1+num_FM_vars+pcnst)*nlev)
      if (use_gw_front)  call gws_init(dyn_in%elem)
   end if
 
@@ -128,26 +133,36 @@ subroutine stepon_init(dyn_in, dyn_out )
   call addfld ('DIFFU   ', (/ 'ilev' /),'A', 'm/s2    ','U horizontal diffusion',                      gridname='physgrid')
   call addfld ('DIFFV   ', (/ 'ilev' /),'A', 'm/s2    ','V horizontal diffusion',                      gridname='physgrid')
   call register_vector_field('DIFFU', 'DIFFV')
-  
   call addfld ('ETADOT', (/ 'ilev' /), 'A', '1/s', 'Vertical (eta) velocity', gridname='physgrid')
-  call addfld ('U&IC',   (/ 'lev' /),  'I', 'm/s', 'Zonal wind',              gridname='physgrid' )
-  call addfld ('V&IC',   (/ 'lev' /),  'I', 'm/s', 'Meridional wind',         gridname='physgrid' )
-  ! Don't need to register U&IC V&IC since we don't interpolate IC files
+
+  if (fv_nphys > 0) then
+    grid_name = 'GLL'
+  else
+    grid_name = 'physgrid'
+  end if 
+
+  call addfld ('PS&IC',horiz_only,'I','Pa', 'Surface pressure',gridname=grid_name)
+  call addfld ('U&IC', (/'lev'/), 'I','m/s','Zonal wind',      gridname=grid_name)
+  call addfld ('V&IC', (/'lev'/), 'I','m/s','Meridional wind', gridname=grid_name)
+  call addfld ('T&IC', (/'lev'/), 'I','K',  'Temperature',     gridname=grid_name)
+  do m = 1,pcnst
+    call addfld (trim(cnst_name(m))//'&IC',(/'lev'/),'I','kg/kg',cnst_longname(m),gridname=grid_name)
+  end do
+  
   call add_default ('U&IC',0, 'I')
   call add_default ('V&IC',0, 'I')
-
-  call addfld ('PS&IC', horiz_only,  'I', 'Pa', 'Surface pressure',gridname='physgrid')
-  call addfld ('T&IC',  (/ 'lev' /), 'I', 'K',  'Temperature',     gridname='physgrid')
-
   call add_default ('PS&IC      ',0, 'I')
   call add_default ('T&IC       ',0, 'I')
   do m = 1,pcnst
-     call addfld (trim(cnst_name(m))//'&IC', (/ 'lev' /), 'I', 'kg/kg', cnst_longname(m), gridname='physgrid')
-  end do
-  do m = 1,pcnst
-     call add_default(trim(cnst_name(m))//'&IC',0, 'I')
+    call add_default(trim(cnst_name(m))//'&IC',0, 'I')
   end do
 
+  call addfld('DYN_T'    ,(/ 'lev' /), 'A', 'K',    'Temperature (dyn grid)', gridname='GLL')
+  call addfld('DYN_Q'    ,(/ 'lev' /), 'A', 'kg/kg','Water Vapor (dyn grid',  gridname='GLL' )
+  call addfld('DYN_U'    ,(/ 'lev' /), 'A', 'm/s',  'Zonal Velocity',         gridname='GLL')
+  call addfld('DYN_V'    ,(/ 'lev' /), 'A', 'm/s',  'Meridional Velocity',    gridname='GLL')
+  call addfld('DYN_OMEGA',(/ 'lev' /), 'A', 'Pa/s', 'Vertical Velocity',      gridname='GLL' )
+  call addfld('DYN_PS'   ,horiz_only,  'A', 'Pa',   'Surface pressure',       gridname='GLL')
 
 end subroutine stepon_init
 
@@ -215,12 +230,12 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
 end subroutine stepon_run1
 
 subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
-   use bndry_mod,      only: bndry_exchangeV
-   use dimensions_mod, only: nlev, nelemd, np, npsq
-   use dp_coupling,    only: p_d_coupling
-   use parallel_mod,   only: par
-   use dyn_comp,       only: TimeLevel, hvcoord
-   
+   use bndry_mod,       only: bndry_exchangeV
+   use dimensions_mod,  only: nlev, nelemd, np, npsq
+   use dyn_grid,        only: fv_nphys
+   use dp_coupling,     only: p_d_coupling
+   use parallel_mod,    only: par
+   use dyn_comp,        only: TimeLevel, hvcoord
    use time_mod,        only: tstep, TimeLevel_Qdp   !  dynamics typestep
    use control_mod,     only: ftype, qsplit
    use hycoef,          only: hyai, hybi, ps0
@@ -228,15 +243,22 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    use prim_driver_base,only: applyCAMforcing_tracers
 
    type(physics_state), intent(inout) :: phys_state(begchunk:endchunk)
-   type(physics_tend), intent(inout) :: phys_tend(begchunk:endchunk)
+   type(physics_tend),  intent(inout) :: phys_tend(begchunk:endchunk)
    type (dyn_import_t), intent(inout) :: dyn_in  ! Dynamics import container
    type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
-   integer :: kptr, ie, ic, i, j, k, tl_f, tl_fQdp, velcomp
+   integer :: kptr, ie, ic, m, i, j, k, tl_f, tl_fQdp, velcomp
    real(r8) :: rec2dt, dyn_ps0
    real(r8) :: dp(np,np,nlev),dp_tmp,fq,fq0,qn0, ftmp(npsq,nlev,2)
    real(r8) :: dtime
+   integer  :: num_FM_vars
 
    dtime = get_step_size()
+
+#ifdef MODEL_THETA_L
+   num_FM_vars = 3
+#else
+   num_FM_vars = 2
+#endif
 
    ! copy from phys structures -> dynamics structures
    call t_barrierf('sync_p_d_coupling', mpicom)
@@ -249,20 +271,30 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    call t_startf('stepon_bndry_exch')
    ! do boundary exchange
    if (.not. single_column) then 
-     do ie=1,nelemd
-       kptr=0
-#ifdef MODEL_THETA_L
-       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),3*nlev,kptr,ie)
-       kptr=kptr+3*nlev
-#else
-       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),2*nlev,kptr,ie)
-       kptr=kptr+2*nlev
-#endif
-       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
-       kptr=kptr+nlev
-       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
-     end do
-   endif
+      do ie=1,nelemd
+
+         if (fv_nphys>0) then
+            ! We need to apply mass matrix weighting when FV physics grid is used
+            do k = 1,nlev
+               dyn_in%elem(ie)%derived%FT(:,:,k)   = dyn_in%elem(ie)%derived%FT(:,:,k)   * dyn_in%elem(ie)%spheremp(:,:)
+               do m = 1,num_FM_vars
+                  dyn_in%elem(ie)%derived%FM(:,:,m,k) = dyn_in%elem(ie)%derived%FM(:,:,m,k) * dyn_in%elem(ie)%spheremp(:,:)
+               end do
+               do ic = 1,pcnst
+                  dyn_in%elem(ie)%derived%FQ(:,:,k,ic) = dyn_in%elem(ie)%derived%FQ(:,:,k,ic) * dyn_in%elem(ie)%spheremp(:,:)
+               end do
+            end do ! k = 1, nlev
+         end if ! fv_nphys>0
+
+         kptr=0
+         call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),num_FM_vars*nlev,kptr,ie)
+         kptr=kptr+num_FM_vars*nlev
+         call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
+         kptr=kptr+nlev
+         call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
+
+      end do ! ie
+   endif ! .not. single_column
 
    call bndry_exchangeV(par, edgebuf)
 
@@ -271,20 +303,29 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    rec2dt = 1._r8/dtime
 
    do ie=1,nelemd
-     if (.not. single_column) then
-       kptr=0
-#ifdef MODEL_THETA_L
-       call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),3*nlev,kptr,ie)
-       kptr=kptr+3*nlev
-#else
-       call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),2*nlev,kptr,ie)
-       kptr=kptr+2*nlev
-#endif
-       call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
-       kptr=kptr+nlev
+      if (.not. single_column) then
 
-       call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
-     endif
+         kptr=0
+         call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),num_FM_vars*nlev,kptr,ie)
+         kptr=kptr+num_FM_vars*nlev
+         call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
+         kptr=kptr+nlev
+         call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
+
+         if (fv_nphys>0) then
+            ! We need to apply inverse mass matrix weighting when FV physics grid is used
+            do k = 1,nlev
+               dyn_in%elem(ie)%derived%FT(:,:,k)   = dyn_in%elem(ie)%derived%FT(:,:,k)   * dyn_in%elem(ie)%rspheremp(:,:)
+               do m = 1,num_FM_vars
+                  dyn_in%elem(ie)%derived%FM(:,:,m,k) = dyn_in%elem(ie)%derived%FM(:,:,m,k) * dyn_in%elem(ie)%rspheremp(:,:)
+               end do
+               do ic = 1,pcnst
+                  dyn_in%elem(ie)%derived%FQ(:,:,k,ic) = dyn_in%elem(ie)%derived%FQ(:,:,k,ic) * dyn_in%elem(ie)%rspheremp(:,:)
+               end do
+            end do ! k = 1, nlev
+         end if ! fv_nphys>0
+         
+      endif ! .not. single_column
 
       tl_f = TimeLevel%n0   ! timelevel which was adjusted by physics
 
@@ -414,6 +455,14 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       end do
    endif
    
+   do ie = 1,nelemd
+      call outfld('DYN_T'     ,dyn_in%elem(ie)%state%T(:,:,:,tl_f)    ,npsq,ie)
+      call outfld('DYN_Q'     ,dyn_in%elem(ie)%state%Q(:,:,:,1)       ,npsq,ie)
+      call outfld('DYN_U'     ,dyn_in%elem(ie)%state%V(:,:,1,:,tl_f)  ,npsq,ie)
+      call outfld('DYN_V'     ,dyn_in%elem(ie)%state%V(:,:,2,:,tl_f)  ,npsq,ie)
+      call outfld('DYN_OMEGA' ,dyn_in%elem(ie)%derived%omega_p(:,:,:) ,npsq,ie)
+      call outfld('DYN_PS'    ,dyn_in%elem(ie)%state%ps_v(:,:,tl_f)   ,npsq,ie)
+   end do
    
    
    
@@ -527,7 +576,7 @@ end subroutine stepon_run3
 !
 ! !INTERFACE:
 subroutine stepon_final(dyn_in, dyn_out)
-
+   use dyn_grid,         only: fv_physgrid_final, fv_nphys
 ! !PARAMETERS:
   ! WARNING: intent(out) here means that pointers in dyn_in and dyn_out
   ! are nullified. Unless this memory is released in some other routine,
@@ -545,6 +594,10 @@ subroutine stepon_final(dyn_in, dyn_out)
 !-----------------------------------------------------------------------
 !BOC
 
+   ! Deallocate variables needed for the FV physics grid
+   if (fv_nphys > 0) then
+      call fv_physgrid_final()
+   end if ! fv_nphys > 0
 
 !EOC
 end subroutine stepon_final

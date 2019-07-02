@@ -84,7 +84,8 @@ CONTAINS
 
     use pmgrid,              only: dyndecomp_set
     use dyn_grid,            only: dyn_grid_init, elem, get_dyn_grid_parm,&
-                                   set_horiz_grid_cnt_d, define_cam_grids
+                                   set_horiz_grid_cnt_d, define_cam_grids,&
+                                   fv_physgrid_init, fv_nphys
     use rgrid,               only: fullgrid
     use spmd_utils,          only: mpi_integer, mpicom, mpi_logical
     use spmd_dyn,            only: spmd_readnl
@@ -121,7 +122,7 @@ CONTAINS
             frontga_idx)
     end if
 
-    ! Initialize dynamics grid
+    ! Initialize dynamics grid variables
     call dyn_grid_init()
 
     ! Read in the number of tasks to be assigned to SE (needed by initmp)
@@ -181,7 +182,6 @@ CONTAINS
        endif
     endif
 
-
     !
     ! This subroutine creates mapping files using SE basis functions if requested
     !
@@ -206,6 +206,11 @@ CONTAINS
        TimeLevel%nstep = get_nstep()*se_nsplit*qsplit*rsplit
     endif
 
+    ! Initialize FV physics grid variables
+    if (fv_nphys > 0) then
+      call fv_physgrid_init()
+    end if
+
     ! Define the CAM grids (this has to be after dycore spinup).
     ! Physics-grid will be defined later by phys_grid_init
     call define_cam_grids()
@@ -223,8 +228,9 @@ CONTAINS
 
   subroutine dyn_init2(dyn_in)
     use dimensions_mod,   only: nlev, nelemd, np
+    use dyn_grid,         only: fv_nphys
     use prim_driver_mod,  only: prim_init2
-    use prim_si_mod,  only: prim_set_mass
+    use prim_si_mod,      only: prim_set_mass
     use hybrid_mod,       only: hybrid_create
     use hycoef,           only: ps0
     use parallel_mod,     only: par
