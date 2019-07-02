@@ -230,7 +230,6 @@ contains
   type (hvcoord_t),     intent(in)  :: hvcoord                      ! hybrid vertical coordinate struct
   integer :: tl,k
 
-  real (kind=real_kind)  :: temp(np,np)
   tl = 1
   elem%state%T(:,:,:,tl)=temperature(:,:,:)
 
