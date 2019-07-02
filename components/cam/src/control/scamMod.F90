@@ -1268,7 +1268,8 @@ endif !scm_observed_aero
        have_srf = .true.
      endif
 
-     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'vertdivT', &
+! use vertdivs instead of vertdivT for vertical advection to include the adiabatic compression term
+     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'vertdivs', &
        have_srf, srf(1), fill_ends, scm_crm_mode, &
        dplevs, nlev,psobs, hyam, hybm, vertdivt, status )
      if ( status .ne. nf90_noerr ) then
