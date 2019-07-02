@@ -1278,6 +1278,10 @@ end function radiation_nextsw_cday
 
                   call aer_rad_props_sw( icall, state, pbuf, nnite, idxnite, is_cmip6_volc, &
                                          aer_tau, aer_tau_w, aer_tau_w_g, aer_tau_w_f)
+                  call check_optics_sw(aer_tau(1:ncol,:,:), aer_tau_w(1:ncol,:,:), &
+                                       aer_tau_w_g(1:ncol,:,:), aer_tau_w_f(1:ncol,:,:), &
+                                       message="SW aersosol optics")
+                 
 
                   call t_startf ('rad_rrtmg_sw')
                   call rad_rrtmg_sw( &
@@ -1635,6 +1639,57 @@ end function radiation_nextsw_cday
     endif
 
  end subroutine radiation_tend
+
+
+subroutine check_optics_sw(tau, tau_w, tau_w_g, tau_w_f, message)
+
+   use cam_abortutils, only: endrun
+
+   ! Input arrays containing optical depth tau, tau * ssa, tau * ssa * asm, and 
+   ! tau * ssa * fsf where ssa is single scattering albedo, asm is asymmetry
+   ! parameter, and fsf is forward scattering fraction
+   real(r8), intent(in), dimension(:,:,:) :: tau, tau_w, tau_w_g, tau_w_f
+
+   ! Optional message to display upon error
+   character(len=*), intent(in), optional :: message
+
+   ! Single-scattering albedo, asymmetry parameter, forward scattering fraction
+   real(r8), dimension(size(tau,1),size(tau,2),size(tau,3)) :: ssa, asm, fsf
+
+   ! Error message
+   character(len=128) :: err
+
+   ! Subroutine name to prepend to error message
+   character(len=15) :: subname = "check_optics_sw"
+
+   ! Initialize optical properties
+   ssa = 0
+   asm = 0
+   fsf = 0
+
+   ! Infer optical properties
+   where (tau > 0) ssa = tau_w / tau
+   where (tau_w > 0) asm = tau_w_g / tau_w
+   where (tau_w > 0) fsf = tau_w_f / tau_w
+
+   ! Check optical properties
+   if (any(tau < 0)) then
+      err = trim(subname) // ': tau < 0'
+      if (present(message)) err = message // ': ' // err
+      call endrun(trim(err))
+   end if 
+   if (any(ssa < 0) .or. any(ssa > 1)) then
+      err = trim(subname) // ': ssa outside range [0, 1]'
+      if (present(message)) err = message // ': ' // err
+      call endrun(trim(err))
+   end if
+   if (any(asm < -1) .or. any(asm > 1)) then
+      err = trim(subname) // ': asm outside range [-1, 1]'
+      if (present(message)) err = message // ': ' // err
+      call endrun(trim(err))
+   end if
+
+end subroutine check_optics_sw
 
 !===============================================================================
 
