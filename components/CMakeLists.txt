@@ -23,17 +23,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/build_mpas_model.cmake)
 set(BUILDCONF ${CMAKE_BINARY_DIR}/../../Buildconf)
 
 # Do any MPAS builds first since they manage their own flags
-file(GLOB MPASCONFS "${BUILDCONF}/mpas*conf")
-foreach(ITEM IN LISTS MPASCONFS)
-  message("JGF INFO ${ITEM}")
-  get_filename_component(MPASCONF ${ITEM} NAME)
-  string(REPLACE "conf" "" MODEL "${MPASCONF}")
-
-  message("Found component model ${MODEL}")
-  build_mpas_model(${MODEL})
-
-  list(APPEND MODELS ${MPAS_COMPNAME})
-endforeach()
+build_mpas_models()
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/common_setup.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/build_model.cmake)
@@ -55,6 +45,6 @@ foreach(ITEM IN LISTS FILEPATHS)
   endif()
 endforeach()
 
-message("Configuring exe with cpl")
+message("Configuring exe with cpl and models ${MODELS}")
 build_model("cpl" "${BUILDCONF}/cplconf" "${MODELS}")
 
