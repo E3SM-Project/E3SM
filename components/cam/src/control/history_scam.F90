@@ -72,8 +72,8 @@ CONTAINS
       call addfld ('DIVU',(/ 'lev' /),    'A','m/s2','U advection tendency (horizontal)',gridname=trim(dyngrid))
       call addfld ('DIVT',(/ 'lev' /),    'A','K/s','T advection tendency (horizontal)',gridname=trim(dyngrid))
       call addfld ('DIVT3D',(/ 'lev' /),    'A','K/s','T advection tendency (horiz/vert combined)',gridname=trim(dyngrid))
-      call addfld ('TVADV',(/ 'lev' /),    'A','K/s','T advection tendency (vertical) calculated from model',gridname=trim(dyngrid))
-      call addfld ('QVADV',(/ 'lev' /),    'A','kg/kg/s','Q advection tendency (vertical) calculated from model',gridname=trim(dyngrid))
+      call addfld ('TVADV',(/ 'lev' /),    'A','K/s','T advection tendency (vertical)',gridname=trim(dyngrid))
+      call addfld ('QVADV',(/ 'lev' /),    'A','kg/kg/s','Q advection tendency (vertical)',gridname=trim(dyngrid))
 
       call addfld ('SHFLXOBS',horiz_only,    'A','W/m2','Obs Surface sensible heat flux',gridname=trim(dyngrid))
       call addfld ('LHFLXOBS',horiz_only,    'A','W/m2','Obs Surface latent heat flux',gridname=trim(dyngrid))
