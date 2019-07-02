@@ -456,6 +456,10 @@
 					description="Inverse-time coefficient for the Rayleigh damping term, $c_R$, applied at every depth level."
 					possible_values="Any positive real value."
 		/>
+		<nml_option name="config_Rayleigh_damping_depth_variable" type="logical" default_value=".false." units="unitless"
+					description="If true applies r h^-1 instead of just r."
+					possible_values=".true. or .false."
+		/>
 		<nml_option name="config_Rayleigh_bottom_friction" type="logical" default_value=".false." units="unitless"
 					description="If true, Rayleigh friction is only applied to the bottom"
 					possible_values=".true. or .false."
