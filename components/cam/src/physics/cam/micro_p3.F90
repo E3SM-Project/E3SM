@@ -1183,73 +1183,13 @@ contains
           !---------------------------------------------------------------------------------
 
           !-- ice-phase dependent processes:
-
-          qc(i,k) = qc(i,k) + (-qcheti-qccol-qcshd)*dt
-          if (log_predictNc) then
-             nc(i,k) = nc(i,k) + (-nccol-ncheti)*dt
-          endif
-
-          qr(i,k) = qr(i,k) + (-qrcol+qimlt-qrheti+            &
-               qcshd)*dt
-          ! apply factor to source for rain number from melting of ice, (ad-hoc
-          ! but accounts for rapid evaporation of small melting ice particles)
-          nr(i,k) = nr(i,k) + (-nrcol-nrheti+nmltratio*nimlt+  &
-               nrshdr+ncshdc)*dt
-
-          if (qitot(i,k).ge.qsmall) then
-             ! add sink terms, assume density stays constant for sink terms
-             birim(i,k) = birim(i,k) - ((qisub+qimlt)/qitot(i,k))* &
-                  dt*birim(i,k)
-             qirim(i,k) = qirim(i,k) - ((qisub+qimlt)*qirim(i,k)/  &
-                  qitot(i,k))*dt
-             qitot(i,k) = qitot(i,k) - (qisub+qimlt)*dt
-          endif
-
-          dum             = (qrcol+qccol+qrheti+          &
-               qcheti)*dt
-          qitot(i,k) = qitot(i,k) + (qidep+qinuc)*dt + dum
-          qirim(i,k) = qirim(i,k) + dum
-         
-
-          birim(i,k) = birim(i,k) + (qrcol*inv_rho_rimeMax+qccol/  &
-               rhorime_c+(qrheti+     &
-               qcheti)*inv_rho_rimeMax)*dt
-
-          nitot(i,k) = nitot(i,k) + (ninuc-nimlt-nisub-      &
-               nislf+nrheti+          &
-               ncheti)*dt
-
-          !PMC nCat deleted interactions_loop
-
-
-          if (qirim(i,k).lt.0._rtype) then
-             qirim(i,k) = 0._rtype
-             birim(i,k) = 0._rtype
-          endif
-
-          ! densify under wet growth
-          ! -- to be removed post-v2.1.  Densification automatically happens
-          !    during wet growth due to parameterized rime density --
-          if (log_wetgrowth) then
-             qirim(i,k) = qitot(i,k)
-             birim(i,k) = qirim(i,k)*inv_rho_rimeMax
-          endif
-           
-          ! densify in above freezing conditions and melting
-          ! -- future work --
-          !   Ideally, this will be treated with the predicted liquid fraction in ice.
-          !   Alternatively, it can be simplified by tending qirim -- qitot
-          !   and birim such that rho_rim (qirim/birim) --> rho_liq during melting.
-          ! ==
-
-          qv(i,k) = qv(i,k) + (-qidep+qisub-qinuc)*dt
-
-          th(i,k) = th(i,k) + exner(i,k)*((qidep-qisub+qinuc)*     &
-               xxls(i,k)*inv_cp +(qrcol+qccol+   &
-               qcheti+qrheti-qimlt)*       &  
-               xlf(i,k)*inv_cp)*dt
-
-          !==
+          call update_prognostic_ice(qcheti, qccol, qcshd, & 
+          nccol, ncheti, ncshdc, & 
+          qrcol, nrcol,  qrheti, nrheti, nrshdr, & 
+          qimlt, nimlt, qisub, qidep, qinuc, ninuc, nislf, nisub, & 
+          exner(i,k), xxls(i,k), xlf(i,k), & 
+          log_predictNc, log_wetgrowth, dt, nmltratio, rhorime_c, &
+          th(i,k), qv(i,k), qitot(i,k), nitot(i,k), qirim(i,k), birim(i,k), qc(i,k), nc(i,k), qr(i,k), nr(i,k) )
 
           !-- warm-phase only processes:
           qc(i,k) = qc(i,k) + (-qcacc-qcaut+qcnuc+qccon-qcevp)*dt
@@ -3535,21 +3475,145 @@ end subroutine rain_water_conservation
 
 subroutine ice_water_conservation(qitot, qidep, qinuc, qrcol, qccol, qrheti, qcheti, dt, qisub, qimlt) 
 
-implicit none 
+   implicit none 
 
-real(rtype), intent(in) :: qitot, qidep, qinuc, qrcol, qccol, qrheti, qcheti, dt
-real(rtype), intent(inout) :: qisub, qimlt 
-real(rtype) :: sinks, sources, ratio 
+   real(rtype), intent(in) :: qitot, qidep, qinuc, qrcol, qccol, qrheti, qcheti, dt
+   real(rtype), intent(inout) :: qisub, qimlt 
+   real(rtype) :: sinks, sources, ratio 
 
-sinks   = (qisub+qimlt)*dt
-sources = qitot + (qidep+qinuc+qrcol+qccol+  &
-     qrheti+qcheti)*dt
-if (sinks.gt.sources .and. sinks.ge.1.e-20_rtype) then
-   ratio = sources/sinks
-   qisub = qisub*ratio
-   qimlt = qimlt*ratio
-endif
+   sinks   = (qisub+qimlt)*dt
+   sources = qitot + (qidep+qinuc+qrcol+qccol+  &
+      qrheti+qcheti)*dt
+   if (sinks.gt.sources .and. sinks.ge.1.e-20_rtype) then
+      ratio = sources/sinks
+      qisub = qisub*ratio
+      qimlt = qimlt*ratio
+   endif
 
 end subroutine ice_water_conservation 
+
+
+subroutine update_prognostic_ice(qcheti, qccol, qcshd, & 
+   nccol, ncheti, ncshdc, & 
+   qrcol, nrcol,  qrheti, nrheti, nrshdr, & 
+   qimlt, nimlt, qisub, qidep, qinuc, ninuc, nislf, nisub, & 
+   exner, xxls, xlf, & 
+   log_predictNc, log_wetgrowth, dt, nmltratio, rhorime_c, &
+   th, qv, qitot, nitot, qirim, birim, qc, nc, qr, nr )
+
+   !-- ice-phase dependent processes:
+   implicit none 
+
+   real(rtype), intent(in) :: qcheti
+   real(rtype), intent(in) :: qccol
+   real(rtype), intent(in) :: qcshd
+   real(rtype), intent(in) :: nccol 
+   real(rtype), intent(in) :: ncheti
+   real(rtype), intent(in) :: ncshdc  
+
+   real(rtype), intent(in) :: qrcol 
+   real(rtype), intent(in) :: nrcol 
+   real(rtype), intent(in) :: qrheti 
+   real(rtype), intent(in) :: nrheti 
+   real(rtype), intent(in) :: nrshdr 
+
+   real(rtype), intent(in) :: qimlt 
+   real(rtype), intent(in) :: nimlt 
+   real(rtype), intent(in) :: qisub
+   real(rtype), intent(in) :: qidep 
+   real(rtype), intent(in) :: qinuc 
+   real(rtype), intent(in) :: ninuc 
+   real(rtype), intent(in) :: nislf 
+   real(rtype), intent(in) :: nisub 
+   real(rtype), intent(in) :: exner 
+   real(rtype), intent(in) :: xlf 
+   real(rtype), intent(in) :: xxls 
+
+   logical, intent(in) :: log_predictNc
+   logical, intent(in) :: log_wetgrowth
+   real(rtype), intent(in) :: dt 
+   real(rtype), intent(in) :: nmltratio 
+   real(rtype), intent(in) :: rhorime_c 
+
+   real(rtype), intent(inout) :: th 
+   real(rtype), intent(inout) :: qv 
+   real(rtype), intent(inout) :: qc
+   real(rtype), intent(inout) :: nc 
+   real(rtype), intent(inout) :: qr 
+   real(rtype), intent(inout) :: nr 
+   real(rtype), intent(inout) :: qitot 
+   real(rtype), intent(inout) :: nitot 
+   real(rtype), intent(inout) :: qirim 
+   real(rtype), intent(inout) :: birim 
+
+   real(rtype) :: dum 
+
+   qc = qc + (-qcheti-qccol-qcshd)*dt
+   if (log_predictNc) then
+      nc = nc + (-nccol-ncheti)*dt
+   endif
+
+   qr = qr + (-qrcol+qimlt-qrheti+            &
+   qcshd)*dt
+
+   !apply factor to source for rain number from melting of ice, (ad-hoc
+   ! but accounts for rapid evaporation of small melting ice particles)
+   nr = nr + (-nrcol-nrheti+nmltratio*nimlt+  &
+      nrshdr+ncshdc)*dt
+
+   if (qitot.ge.qsmall) then
+      ! add sink terms, assume density stays constant for sink terms
+      birim = birim - ((qisub+qimlt)/qitot)* &
+        dt*birim
+      qirim = qirim - ((qisub+qimlt)*qirim/  &
+           qitot)*dt 
+      qitot = qitot - (qisub+qimlt)*dt
+   endif
+
+   dum             = (qrcol+qccol+qrheti+          &
+   qcheti)*dt
+
+   qitot = qitot + (qidep+qinuc)*dt + dum
+   qirim = qirim + dum
+
+   birim = birim + (qrcol*inv_rho_rimeMax+qccol/  &
+   rhorime_c+(qrheti+     &
+   qcheti)*inv_rho_rimeMax)*dt
+
+   nitot = nitot + (ninuc-nimlt-nisub-      &
+   nislf+nrheti+          &
+   ncheti)*dt
+
+   !PMC nCat deleted interactions_loop
+   if (qirim.lt.0._rtype) then
+      qirim = 0._rtype
+      birim = 0._rtype
+   endif
+
+   ! densify under wet growth
+   ! -- to be removed post-v2.1.  Densification automatically happens
+   !    during wet growth due to parameterized rime density --
+   if (log_wetgrowth) then
+      qirim = qitot
+      birim = qirim*inv_rho_rimeMax
+   endif
+
+   ! densify in above freezing conditions and melting
+   ! -- future work --
+   !   Ideally, this will be treated with the predicted liquid fraction in ice.
+   !   Alternatively, it can be simplified by tending qirim -- qitot
+   !   and birim such that rho_rim (qirim/birim) --> rho_liq during melting.
+   ! ==
+   
+   qv = qv + (-qidep+qisub-qinuc)*dt
+
+   th = th + exner*((qidep-qisub+qinuc)*     &
+   xxls*inv_cp +(qrcol+qccol+   &
+   qcheti+qrheti-qimlt)*       &  
+   xlf*inv_cp)*dt
+
+
+end subroutine update_prognostic_ice
+
 
 end module micro_p3
