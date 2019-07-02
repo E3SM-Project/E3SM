@@ -49,6 +49,66 @@ This allows using a different mpirun command to launch unit tests
 -->
 
 <config_machines version="2.0">
+  <machine MACH="aleph">
+    <DESC>XC50 SkyLake, os is CNL, 40 pes/node, batch system is PBSPro</DESC>
+    <NODENAME_REGEX>.*eth\d</NODENAME_REGEX>
+    <OS>CNL</OS>
+    <COMPILERS>intel,gnu,cray</COMPILERS>
+    <MPILIBS>mpt,mpi-serial</MPILIBS>
+    <CIME_OUTPUT_ROOT>$ENV{BASEDIR}</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>$ENV{DIN_LOC_ROOT}</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$DIN_LOC_ROOT</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>${CIME_OUTPUT_ROOT}/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>${CIME_OUTPUT_ROOT}/cesm_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>/home/jedwards/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>8</GMAKE_J>
+    <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
+    <SUPPORTED_BY> @ pusan.ac.kr</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>40</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>40</MAX_MPITASKS_PER_NODE>
+    <mpirun mpilib="default">
+      <executable>aprun</executable>
+      <arguments>
+        <arg name="hyperthreading" default="1"> -j {{ hyperthreading }}</arg>
+        <arg name="num_tasks"> -n {{ total_tasks }}</arg>
+        <arg name="tasks_per_node"> -N $MAX_MPITASKS_PER_NODE</arg>
+        <arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
+        <arg name="thread_count"> -d $ENV{OMP_NUM_THREADS}</arg>
+        <arg name="env_thread_count">--mpmd-env OMP_NUM_THREADS=$OMP_NUM_THREADS</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="perl">/opt/modules/default/init/perl.pm</init_path>
+      <init_path lang="python">/opt/modules/default/init/python.py</init_path>
+      <init_path lang="sh">/opt/modules/default/init/sh</init_path>
+      <init_path lang="csh">/opt/modules/default/init/csh</init_path>
+      <cmd_path lang="perl">/opt/modules/default/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="python">/opt/modules/default/bin/modulecmd python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+        <command name="rm">craype-x86-skylake</command>
+        <command name="rm">PrgEnv-pgi</command>
+        <command name="rm">PrgEnv-intel</command>
+        <command name="rm">PrgEnv-cray</command>
+        <command name="rm">PrgEnv-gnu</command>
+        <command name="rm">cray-netcdf</command>
+        <command name="rm">cray-hdf5</command>
+        <command name="rm">cray-parallel-netcdf</command>
+        <command name="rm">papi</command>
+      </modules>
+      <modules compiler="intel">
+        <command name="load">PrgEnv-intel</command>
+        <command name="load">craype-x86-skylake</command>
+        <command name="load">craype-hugepages2M</command>
+        <command name="rm">perftools-base/7.0.4</command>
+        <command name="load">cray-netcdf/4.6.1.3</command>
+        <command name="load">cray-hdf5/1.10.2.0</command>
+        <command name="load">cray-parallel-netcdf/1.8.1.3</command>
+        <command name="load">papi/5.6.0.4</command>
+      </modules>
+    </module_system>
+  </machine>
 
   <machine MACH="athena">
     <DESC> CMCC IBM iDataPlex, os is Linux, 16 pes/node, batch system is LSFd mpich</DESC>
