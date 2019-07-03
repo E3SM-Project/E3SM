@@ -63,7 +63,7 @@ module element_ops
   type(elem_state_t), dimension(:), allocatable :: state0 ! storage for save_initial_state routine
 
   public get_field, get_state
-  public get_temperature, get_phi, get_R_star, get_pi
+  public get_temperature, get_phi, get_R_star, get_hydro_pressure
   public set_thermostate, set_state, set_state_i, set_elem_state
   public set_forcing_rayleigh_friction, set_theta_ref
   public copy_state, tests_finalize
@@ -94,7 +94,7 @@ contains
     case ('exner');           call get_nonhydro_pressure(elem,tmp  ,field,hvcoord,nt,ntQ)
 
     case ('p');
-      call get_pi(field,elem%state%dp3d(:,:,:,nt),hvcoord)
+      call get_hydro_pressure(field,elem%state%dp3d(:,:,:,nt),hvcoord)
 
     case ('dp');
        field(:,:,:)=elem%state%dp3d(:,:,:,nt)
@@ -153,27 +153,27 @@ contains
   
 
   !_____________________________________________________________________
-  subroutine get_pi(pi,dp,hvcoord)
+  subroutine get_hydro_pressure(pi,dp,hvcoord)
   !
   implicit none
     
-  real (kind=real_kind), intent(out)  :: pi(np,np,nlev)
+  real (kind=real_kind), intent(out)  :: p(np,np,nlev)
   real (kind=real_kind), intent(in)   :: dp(np,np,nlev)
   type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
   
   integer :: k
-  real(kind=real_kind), dimension(np,np,nlevp) :: pi_i
+  real(kind=real_kind), dimension(np,np,nlevp) :: p_i
 
-  pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
+  p_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
   do k=1,nlev  ! SCAN
-     pi_i(:,:,k+1)=pi_i(:,:,k) + dp(:,:,k)
+     p_i(:,:,k+1)=p_i(:,:,k) + dp(:,:,k)
   enddo
   do k=1,nlev
-     pi(:,:,k)=pi_i(:,:,k) + dp(:,:,k)/2
+     p(:,:,k)=p_i(:,:,k) + dp(:,:,k)/2
   enddo
   
   
-  end subroutine get_pi
+  end subroutine get_hydro_pressure
   
 
   !_____________________________________________________________________
