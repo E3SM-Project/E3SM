@@ -98,6 +98,10 @@ module pftvarcon
   real(r8), allocatable :: livewdcp(:)    !live wood (phloem and ray parenchyma) C:P (gC/gP)
   real(r8), allocatable :: deadwdcp(:)    !dead wood (xylem and heartwood) C:P (gC/gP)
 
+  ! Add user-defined N fixation parameters - B. Sulman
+  real(r8), allocatable :: Nfix_NPP_c1(:) ! Pre-exponential parameter in NPP-Nfix eqn
+  real(r8), allocatable :: Nfix_NPP_c2(:) ! Exponential parameter in NPP-Nfix eqn
+
   ! for crop
 
   ! These arrays give information about the merge of unused crop types to the types CLM
@@ -397,6 +401,9 @@ contains
     allocate( livewdcp      (0:mxpft) )     
     allocate( deadwdcp      (0:mxpft) )     
 
+    allocate( Nfix_NPP_c1   (0:mxpft) )
+    allocate( Nfix_NPP_c2   (0:mxpft) )
+
     allocate( grperc        (0:mxpft) )       
     allocate( grpnow        (0:mxpft) )       
     allocate( rootprof_beta (0:mxpft) )
@@ -630,6 +637,10 @@ contains
     call ncd_io('deadwdcp',deadwdcp(0:npft-1), 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
 
+    call ncd_io('Nfix_NPP_c1',Nfix_NPP_c1(0:npft-1), 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv ) Nfix_NPP_c1(:) = 1.8_r8 ! Default value in equation, previously hard-coded
+    call ncd_io('Nfix_NPP_c2',Nfix_NPP_c2(0:npft-1), 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv ) Nfix_NPP_c2(:) = 0.003_r8 ! Default value in equation, previously hard-coded
 
     call ncd_io('grperc',grperc(0:npft-1), 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
