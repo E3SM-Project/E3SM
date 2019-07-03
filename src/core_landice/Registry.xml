@@ -192,8 +192,17 @@
 		<nml_option name="config_basal_heat_flux_value" type="real" default_value="0.0" units="W m^{-2}"
 		            description="Constant value of the basal heat flux (positive upward)."
 		            possible_values="Any positive real value"
+                />
+                <nml_option name="config_temp_diffusive_factor" type="real" default_value="1.0e-5" units="unitless"
+		            description="the factor to estimate diffusivity (kt) in temperate ice from that in cold ice (kc), kt = f * kc"
+		            possible_values="any positive number within a likely range of [1e-6, 1e-2]"
+		/>
+		<nml_option name="config_max_water_fraction" type="real" default_value="1.0e-2" units="unitless"
+		            description="the maximum water fraction allowed"
+		            possible_values="theoretically the range is (0, 1), but more realistically about 0.01"
 		/>
 	</nml_record>
+
 
         <nml_record name="iceshelf_melt" in_defaults="true">
                 <nml_option name="config_basal_mass_bal_float" type="character" default_value="none" units="unitless"
@@ -523,6 +532,7 @@
 
 			<stream name="basicmesh"/>
 			<var name="thickness"/>
+			<var name="basalWaterThickness"/>
 			<var name="bedTopography"/>
 			<var name="temperature"/>
 			<var name="sfcMassBal"/>
@@ -588,6 +598,7 @@
                         <var name="xtime"/>
                         <var name="simulationStartTime"/>
 			<var name="thickness"/>
+			<var name="basalWaterThickness"/>
 			<var name="temperature"/>
                         <var name="surfaceAirTemperature"/>
                         <var name="basalHeatFlux"/>

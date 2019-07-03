@@ -51,6 +51,7 @@ module li_thermal
    public :: li_thermal_init, li_thermal_solver, &
              li_init_linear_temperature_in_column,  &
              li_temperature_to_enthalpy, li_enthalpy_to_temperature, &
+             li_temperature_to_enthalpy_kelvin, li_enthalpy_to_temperature_kelvin, &
              li_compute_pressure_melting_point_fields
 
    !--------------------------------------------------------------------
@@ -149,7 +150,8 @@ module li_thermal
 
       real (kind=RKIND), dimension(:), pointer :: &
            thickness, &                ! ice thickness
-           upperSurface                ! ice upper surface
+           upperSurface, &               ! ice upper surface
+           basalWaterThickness
 
       real (kind=RKIND), dimension(:,:), pointer :: &
            temperature,              & ! interior ice temperature (K)
@@ -236,6 +238,7 @@ module li_thermal
          ! get arrays from the geometry pool
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
          call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
+         call mpas_pool_get_array(geometryPool, 'basalWaterThickness', basalWaterThickness)
 
          ! get arrays from the thermal pool
          call mpas_pool_get_array(thermalPool, 'temperature', temperature)
@@ -1078,6 +1081,14 @@ module li_thermal
                           basalEnthalpy,             &
                           basalTemperature(iCell))
 
+                     basalConductiveFlux(iCell) = -iceConductivity/thickness(iCell) * &
+                        (basalTemperature(iCell)-temperature(nVertLevels,iCell))/(1.0_RKIND - layerCenterSigma(nVertLevels))
+                    ! TZ: The basal conductive flux should be calculated using temperature, not
+                    ! enthalpy. If we use enthalpy, basalConductiveFlux will always equals to basal heat flux, causing problem
+                    ! At ice surface, it is unlikely there will be temperate ice. In addition, we can't know exactly the water fraction
+                    ! if the ice is temperate at surface. So in this case we will just use enthalpy and don't consider the latent heat of water
+
+
                      if (verboseColumn) then
                         call mpas_log_write(' ')
                         call mpas_log_write('After prognostic enthalpy, iCell = $i', intArgs=(/indexToCellID(iCell)/))
@@ -1776,6 +1787,73 @@ module li_thermal
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
+!  !  routine li_temperature_to_enthalpy_kelvin
+!
+!> \brief MPAS convert temperature to enthalpy
+!> \author William Lipscomb, Tong Zhang
+!> \date   April 2018
+!> \details
+!>  This routine computes the enthalpy in each layer of an ice column,
+!>  given the temperature (K) and water fraction.
+!-----------------------------------------------------------------------
+
+    subroutine li_temperature_to_enthalpy_kelvin(&
+         layerCenterSigma,  &
+         thickness,         &
+         temperature,       &
+         waterfrac,         &
+         enthalpy)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:), intent(in) :: &
+           layerCenterSigma      !< Input: sigma coordinate at midpoint of each layer
+
+      real (kind=RKIND), intent(in) ::  &
+           thickness             !< Input: ice thickness
+
+      real (kind=RKIND), dimension(:), intent(in) :: &
+           temperature,        & !< Input: interior ice temperature
+           waterfrac             !< Input: interior water fraction
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:), intent(out) :: &
+           enthalpy              !< Output:  interior ice enthalpy
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(size(layerCenterSigma)) :: &
+           pmpTemperature         ! pressure melting point temperature
+
+      integer :: k, nVertLevels
+
+      nVertLevels = size(layerCenterSigma)
+
+      ! Find pressure melting point temperature in column
+
+      call pressure_melting_point_column(&
+           layerCenterSigma,  &
+           thickness,         &
+           pmpTemperature)
+
+      ! Solve for enthalpy
+
+      do k = 1, nVertLevels
+         enthalpy(k) = (1.0_RKIND - waterfrac(k)) * rhoi * cp_ice * temperature(k)   &
+                      + waterfrac(k) * rhoi * (cp_ice * (pmpTemperature(k)+kelvin_to_celsius) + latent_heat_ice)
+      end do
+
+    end subroutine li_temperature_to_enthalpy_kelvin
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
 !  !  routine li_temperature_to_enthalpy
 !
 !> \brief MPAS convert temperature to enthalpy
@@ -1836,8 +1914,35 @@ module li_thermal
 
       do k = 1, nVertLevels
          enthalpy(k) = (1.0_RKIND - waterfrac(k)) * rhoi * cp_ice * temperature(k)   &
-                      + waterfrac(k) * rho_water * (cp_ice * pmpTemperature(k) + latent_heat_ice)
+                      + waterfrac(k) * rhoi * (cp_ice * pmpTemperature(k) + latent_heat_ice)
       end do
+
+      ! TZ: we should use rhoi instead of rho_water in the second term here.
+
+
+      ! TZ: Here is the reason: from Eqn (6) in the Aschwanden et
+      ! al. (2012) paper "An enthalpy formulation for glaciers and ice sheets",
+
+      ! rho * H = rho_i * H_i + rho_w * H_w,
+
+      ! where rho_i and rho_w are not the ice and water density, but the partial
+      ! density, i.e., rho_i = mass_ice/volume, rho_w = mass_water/volume.
+      ! Because water fraction is very small in general, rho_i approximates to
+      ! rhoi (ice density), rho_w is close to 0.
+      ! Also note that in MALI the enthalpy is equal to the enthalpy density
+      ! (rho*H) in Aschwanden's paper (they don't have density in their
+      ! enthaly definition, but we do). Thus, Let's denote MALI's enthalpy as
+      ! E, and denote W as the water content, then
+
+      ! E = rho * H = rho_i * H_i + rho_w * H_w = (1-W) * H_i + W * H_w
+      ! E = (1-W) * rho * cp * T + W * (rho * cp * T_pmp + rho*L)
+
+      ! As rho approximates to rhoi, we have
+
+      ! E = (1-W) * rhoi * cp * T + W * rhoi * (cp*T_pmp + L)
+
+      ! This is what we get in the code. We can easily do the derivation
+      ! according to Eqns (1-11) in Aschwanden's paper.
 
     end subroutine li_temperature_to_enthalpy
 
@@ -1936,7 +2041,7 @@ module li_thermal
          if (enthalpy(k) >= pmpEnthalpy(k)) then   ! temperate ice
             temperature(k) = pmpTemperature(k)
             waterfrac(k) = (enthalpy(k) - pmpenthalpy(k)) /        &
-                          ((rho_water-rhoi)*cp_ice*pmpTemperature(k) + rho_water*latent_heat_ice)
+                          ((rho_water-rhoi)*cp_ice*pmpTemperature(k) + rhoi *latent_heat_ice)
          else   ! cold ice
             temperature(k) = enthalpy(k) / (rhoi*cp_ice)
             waterfrac(k) = 0.0_RKIND
@@ -1978,6 +2083,142 @@ module li_thermal
 
     end subroutine li_enthalpy_to_temperature
 
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  !  routine li_enthalpy_to_temperature_kelvin
+!
+!> \brief MPAS convert enthalpy to temperature
+!> \author William Lipscomb, Tong Zhang
+!> \date   April 2018
+!> \details
+!>  This routine computes the temperature (K) and water fraction in each layer
+!>  of an ice column, given the enthalpy.
+!-----------------------------------------------------------------------
+
+    subroutine li_enthalpy_to_temperature_kelvin(&
+         layerCenterSigma,   &
+         thickness,          &
+         enthalpy,           &
+         temperature,        &
+         waterfrac,          &
+         surfaceEnthalpy,    &
+         surfaceTemperature, &
+         basalEnthalpy,      &
+         basalTemperature)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:), intent(in) :: &
+           layerCenterSigma      !< Input: sigma coordinate at midpoint of each layer
+
+      real (kind=RKIND), intent(in) ::  &
+           thickness             !< Input: ice thickness
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:), intent(inout) :: &
+           enthalpy              !< Input/output: interior ice enthalpy
+
+      real (kind=RKIND), intent(inout) , optional :: &
+           surfaceEnthalpy,    & !< Input/output: surface ice enthalpy
+           basalEnthalpy         !< Input/output: basal ice enthalpy
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:), intent(out) :: &
+           temperature           !< Output: interior ice temperature
+
+      real (kind=RKIND), dimension(:), intent(out) :: &
+           waterfrac             !< Output: interior water fraction
+
+      real (kind=RKIND), intent(out), optional :: &
+           surfaceTemperature, & !< Output: surface ice temperature
+           basalTemperature      !< Output: basal ice temperature
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(size(layerCenterSigma)) :: pmpTemperature
+      real (kind=RKIND), dimension(size(layerCenterSigma)) :: pmpEnthalpy
+
+      real (kind=RKIND) :: pmpTemperatureBed
+      real (kind=RKIND) :: pmpEnthalpyBed
+
+      integer :: k, nVertLevels
+
+      nVertLevels = size(layerCenterSigma)
+
+      ! Find pressure melting point temperature in ice interior
+      call pressure_melting_point_column(&
+           layerCenterSigma,  &
+           thickness,         &
+           pmpTemperature)
+
+      ! find pressure melting point temperature at bed
+      call pressure_melting_point(&
+           thickness, &
+           pmpTemperatureBed)
+
+      ! Find pressure melting point enthalpy
+      pmpEnthalpy(:) = (pmpTemperature(:)+kelvin_to_celsius) * rhoi*cp_ice
+      pmpEnthalpyBed = (pmpTemperatureBed+kelvin_to_celsius) * rhoi*cp_ice
+
+      ! Solve for temperature and waterfrac in ice interior
+
+      ! ice interior
+
+      do k = 1, nVertLevels
+         if (enthalpy(k) >= pmpEnthalpy(k)) then   ! temperate ice
+            temperature(k) = (pmpTemperature(k)+kelvin_to_celsius)
+            waterfrac(k) = (enthalpy(k) - pmpEnthalpy(k)) /        &
+                          ((rho_water-rhoi)*cp_ice*(pmpTemperature(k)+kelvin_to_celsius) + rhoi *latent_heat_ice)
+         else   ! cold ice
+            temperature(k) = enthalpy(k) / (rhoi*cp_ice)
+            waterfrac(k) = 0.0_RKIND
+         endif
+      enddo   ! k
+
+      ! surface temperature (optional)
+
+      if (present(surfaceEnthalpy) .and. present(surfaceTemperature)) then
+
+         if (surfaceEnthalpy >= (kelvin_to_celsius*rhoi*cp_ice)) then   ! temperate ice
+            surfaceTemperature = kelvin_to_celsius
+            ! Reset surfaceEnthalpy to agree with the surface temperature.
+            ! This is consistent with energy conservation because the top surface
+            !  is infinitesimally thin.
+            surfaceEnthalpy = kelvin_to_celsius*rhoi*cp_ice
+         else   ! cold ice
+            surfaceTemperature = surfaceEnthalpy / (rhoi*cp_ice)
+         endif
+
+      endif
+
+      ! basal temperature (optional)
+
+      if (present(basalEnthalpy) .and. present(basalTemperature)) then
+
+         k = nVertLevels + 1
+         if (basalEnthalpy >= pmpEnthalpyBed) then   ! temperate ice
+            basalTemperature = (pmpTemperatureBed+kelvin_to_celsius)
+            ! Reset basalEnthalpy to agree with the surface temperature.
+            ! This is consistent with energy conservation because the lower surface
+            !  is infinitesimally thin.
+            basalEnthalpy = pmpEnthalpyBed
+         else   ! cold ice
+            basalTemperature = basalEnthalpy / (rhoi*cp_ice)
+         endif
+
+      endif
+
+    end subroutine li_enthalpy_to_temperature_kelvin
 !***********************************************************************
 !***********************************************************************
 ! Private subroutines:
@@ -2251,6 +2492,7 @@ module li_thermal
       real(kind=RKIND) :: dEnthalpy             ! enthalpy difference between adjacent layers
       real(kind=RKIND) :: dEnthalpyTemp         ! difference in temperature component of enthalpy between adjacent layers
       real(kind=RKIND) :: avgFactor             ! factor for averaging diffusivity, 0 <= avgFactor <= 1
+      real(kind=RKIND) :: tempDiffusivityFactor ! factor for estimating the diffusivity in temperate ice, normally it should < 1
 
       integer  :: k
 
@@ -2258,8 +2500,18 @@ module li_thermal
            harmonic_avg  = .false.  ! if true, take the harmonic average of diffusivity in adjacent layers
                                     ! if false, take the arithmetic average
 
+      real(kind=RKIND), pointer :: &
+           config_temp_diffusive_factor ! option for basal mass balance of floating ice
+
+      call mpas_pool_get_config(liConfigs, 'config_temp_diffusive_factor', config_temp_diffusive_factor)
+
+      tempDiffusivityFactor = config_temp_diffusive_factor
+      ! TZ: this value is somehow empirical, and the default value (1.0e-5) is picked according to Kleiner's benchemark B. 
+      ! In Greve and Blatter (2016) 'Comparison of thermodynamics solvers in the polythermal ice sheet model SICOPOLIS', it was 1.0e-3 [] (p14, section 4)
+      ! i.e., kt = 1.0e-3 * kc
+
       diffusivityCold = iceConductivity / (rhoi*cp_ice)
-      diffusivityTemperate = diffusivityCold / 100.0_RKIND
+      diffusivityTemperate = diffusivityCold * tempDiffusivityFactor
 
       ! set enthalpy at surface and bed
       surfaceEnthalpy = surfaceTemperature * rhoi*cp_ice
@@ -2334,6 +2586,7 @@ module li_thermal
          if (abs(dEnthalpy) > 1.e-20_RKIND * rho_water * latent_heat_ice) then
             avgFactor = max(0.0_RKIND, dEnthalpyTemp/dEnthalpy)
             avgFactor = min(1.0_RKIND, avgFactor)
+            ! TZ: Here temperature is in Celsius. dEnthalpyTemp <= 0 in temperate ice as waterfrac (temperature) increases (decreases) with depth
          else
             avgFactor = 0.0_RKIND
          endif
@@ -2349,6 +2602,7 @@ module li_thermal
 
       end do
 
+
       ! Compute subdiagonal, diagonal, and superdiagonal matrix elements
       ! Assume backward Euler time stepping
 
@@ -2362,10 +2616,12 @@ module li_thermal
 
       factor = deltat / thickness**2
 
-      subd(2:nVertLevels+1) = -factor * diffusivity(1:nVertLevels)   * dsigmaTerm(1:nVertLevels,1)
+      subd(2:nVertLevels+1) = -factor * diffusivity(1:nVertLevels) * dsigmaTerm(1:nVertLevels,1)
       supd(2:nVertLevels+1) = -factor * diffusivity(2:nVertLevels+1) * dsigmaTerm(1:nVertLevels,2)
       diag(2:nVertLevels+1) = 1.0_RKIND - subd(2:nVertLevels+1) - supd(2:nVertLevels+1)
       rhs(2:nVertLevels+1)  = enthalpy(1:nVertLevels) + heatDissipation(1:nVertLevels) * deltat * rhoi * cp_ice
+      !TZ: Make sure the heat advection is using the upwind scheme, or the solution will not be stable
+      
 
       ! Note: heatDissipation has units of phi/rhoi/cp_ice, where phi has units of W m^-3..
       ! For an enthalpy calculation, we want just phi, hence heatDissipation * rhoi * cp_ice
@@ -2386,10 +2642,12 @@ module li_thermal
 
       else    ! grounded ice
 
+
          if (abs(temperature(nVertLevels) - pmpTemperature(nVertLevels)) < 0.001_RKIND) then
 
             ! Positive-thickness basal temperate boundary Layer
             !WHL - Not sure whether this condition is ideal. It implies that basalEnthalpy = enthalpy(nVertLevels).
+            !TZ: This condition means the base is temperate AND there is temperate layer above it. It's physical
 
             subd(nVertLevels+2) = -1.0_RKIND
             diag(nVertLevels+2) =  1.0_RKIND
@@ -2495,8 +2753,7 @@ module li_thermal
            thickness,             & !< Input: ice thickness (m)
            basalFrictionFlux,     & !< Input: basal frictional heating flux (W m-2), >= 0
            basalHeatFlux,         & !< Input: geothermal heating flux (W m-2), positive up
-           basalConductiveFlux,   & !< Input: heat conducted from ice interior to bed (W m-2), positive down
-           basalWaterThickness      !< Input: thickness of basal water layer (m)
+           basalConductiveFlux    !< Input: heat conducted from ice interior to bed (W m-2), positive down
 
       integer, dimension(:), intent(in) :: &
            iceMask,               & !< Input: = 1 where ice exists (thickness > config_thermal_thickness), else = 0
@@ -2510,7 +2767,8 @@ module li_thermal
            temperature              !< Input/output: temperature (deg C)
 
       real(kind=RKIND), dimension(:), intent(inout) :: &
-           basalTemperature         !< Input/output: basal temperature (deg C)
+           basalTemperature,        & !< Input/output: basal temperature (deg C)
+           basalWaterThickness      !< Input: thickness of basal water layer (m)
 
       real(kind=RKIND), dimension(:,:), intent(inout) :: &
            waterfrac                !< Input/output: water fraction
@@ -2539,12 +2797,15 @@ module li_thermal
       real(kind=RKIND) :: internalMeltRate      ! internal melt rate, transferred to bed (m/s)
       real(kind=RKIND) :: excessWater           ! thickness of excess meltwater (m)
 
-      real(kind=RKIND), parameter :: &
-           maxWaterfrac = 0.01_RKIND       ! maximum allowed water fraction; excess drains to bed
-
+      real(kind=RKIND) :: maxWaterfrac          ! maximum allowed water fraction; excess drains to bed
+      real(kind=RKIND), pointer :: &
+           config_max_water_fraction ! maximum allowable water fraction before additional melt drains
       real(kind=RKIND), parameter :: &
            eps11 = 1.0e-11_RKIND           ! small number
 
+      call mpas_pool_get_config(liConfigs, 'config_max_water_fraction', config_max_water_fraction)
+
+      maxWaterfrac = config_max_water_fraction
 
       ! Compute melt rate for grounded ice
 
@@ -2570,6 +2831,7 @@ module li_thermal
             !       and overlying layers with a different enthalpy also melt.
 
             netBasalFlux = basalFrictionFlux(iCell) + basalHeatFlux(iCell) + basalConductiveFlux(iCell)  ! W/m^2
+            !call mpas_log_write("netBasalFlux G condFlux $r $r $r", realArgs=(/netBasalFlux, basalHeatFlux(iCell),basalConductiveFlux(iCell)/))
 
             if (abs(netBasalFlux) < eps11) then  ! netBasalFlux might be slightly different from zero
                                                  ! because of rounding errors; if so, then zero out
@@ -2577,10 +2839,22 @@ module li_thermal
             endif
 
             if (trim(config_thermal_solver) == 'enthalpy') then
-               groundedBasalMassBal(iCell) = -netBasalFlux / (latent_heat_ice * rhoi - enthalpy(nVertLevels,iCell))
+               !groundedBasalMassBal(iCell) = -netBasalFlux / (latent_heat_ice * rhoi - enthalpy(nVertLevels,iCell))
+               groundedBasalMassBal(iCell) = -netBasalFlux / (latent_heat_ice * rhoi) / (1-waterfrac(nVertLevels,iCell))
+               ! TZ: Don't understand yet why WHL added enthalpy(nVertLevels,iCell) here
+               ! TZ: After a long discussion with Matt Hoffman, we decide to revise it
+               ! to the form as Eqn (66) in Aschwanden and others (2012) "An
+               ! enthalpy formulation for glaciers and ice sheets". An extra
+               ! term (1-w) would be more accurate.
+                basalWaterThickness(iCell) = basalWaterThickness(iCell) - deltat*groundedBasalMassBal(iCell)
+                ! TZ: allow basalWaterThickness freely accumulate here. Change it to something else for difference cases
+                if (basalWaterThickness(iCell) < 0.0_RKIND) then
+                    basalWaterThickness(iCell) = 0.0_RKIND
+                endif
             else   ! temperature solver
                groundedBasalMassBal(iCell) = -netBasalFlux / (latent_heat_ice * rhoi)   ! m/s
             endif
+
 
          endif   ! ice is present and grounded
 
