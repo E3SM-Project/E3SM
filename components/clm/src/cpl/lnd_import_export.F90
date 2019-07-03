@@ -1394,8 +1394,7 @@ contains
                                     + lnd2atm_vars%qflx_rofliq_qsurp_grc(g)   !  surface ponding
        l2x(index_l2x_Flrl_rofsub,i) = lnd2atm_vars%qflx_rofliq_qsub_grc(g) &
                                     + lnd2atm_vars%qflx_rofliq_qsubp_grc(g)   !  perched drainiage
-       l2x(index_l2x_Flrl_rofgwl,i) = lnd2atm_vars%qflx_rofliq_qgwl_grc(g)
-  
+       l2x(index_l2x_Flrl_rofgwl,i) = lnd2atm_vars%qflx_rofliq_qgwl_grc(g) 
        l2x(index_l2x_Flrl_demand,i) =  lnd2atm_vars%qflx_irr_demand_grc(g)   ! needs to be filled in
        if (l2x(index_l2x_Flrl_demand,i) > 0.0_r8) then
            write(iulog,*)'lnd2atm_vars%qflx_irr_demand_grc is',lnd2atm_vars%qflx_irr_demand_grc(g)
@@ -1404,6 +1403,7 @@ contains
        endif
        l2x(index_l2x_Flrl_Tqsur,i)  = lnd2atm_vars%Tqsur_grc(g)
        l2x(index_l2x_Flrl_Tqsub,i)  = lnd2atm_vars%Tqsub_grc(g)
+       l2x(index_l2x_Flrl_rofmud,i) = lnd2atm_vars%qflx_rofmud_grc(g)
 
        ! glc coupling
 

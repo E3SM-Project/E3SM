@@ -113,7 +113,6 @@ module clm_driver
   use clm_instMod            , only : soilstate_vars
   use clm_instMod            , only : soilhydrology_vars
   use clm_instMod            , only : solarabs_vars
-  use clm_instMod            , only : soilhydrology_vars
   use clm_instMod            , only : surfalb_vars
   use clm_instMod            , only : surfrad_vars
   use clm_instMod            , only : temperature_vars
@@ -128,6 +127,7 @@ module clm_driver
   use clm_instMod            , only : chemstate_vars
   use clm_instMod            , only : alm_fates
   use clm_instMod            , only : PlantMicKinetics_vars
+  use clm_instMod            , only : sedflux_vars
   use tracer_varcon          , only : is_active_betr_bgc
   use CNEcosystemDynBetrMod  , only : CNEcosystemDynBetr, CNFluxStateBetrSummary
   use UrbanParamsType        , only : urbanparams_vars
@@ -1345,7 +1345,8 @@ contains
          atm2lnd_vars, surfalb_vars, frictionvel_vars, &
          waterstate_vars, waterflux_vars, energyflux_vars,               &
          solarabs_vars, carbonflux_vars, drydepvel_vars,                 &
-         vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, lnd2atm_vars) 
+         vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, sedflux_vars, lnd2atm_vars)
+
     call t_stopf('lnd2atm')
 
     ! ============================================================================

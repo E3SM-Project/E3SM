@@ -28,7 +28,7 @@ module rof_comp_esmf
   use RunoffMod        , only : rtmCTL, TRunoff, THeat
   use RtmVar           , only : rtmlon, rtmlat, ice_runoff, iulog, &
                                 nsrStartup, nsrContinue, nsrBranch, & 
-                                inst_index, inst_suffix, inst_name, RtmVarSet, heatflag
+                                inst_index, inst_suffix, inst_name, RtmVarSet, heatflag, sediflag
   use RtmSpmd          , only : masterproc, iam, npes, RtmSpmdInit, ROFID
   use RtmMod           , only : Rtmini, Rtmrun
   use RtmTimeManager   , only : timemgr_setup, get_curr_date, get_step_size!, advance_timestep 
@@ -47,6 +47,7 @@ module rof_comp_esmf
                                 index_x2r_Faxa_swvdr, index_x2r_Faxa_swvdf, &
                                 index_x2r_Faxa_swndr, index_x2r_Faxa_swndf, &
                                 index_r2x_Forr_rofl, index_r2x_Forr_rofi, &
+                                index_x2r_Flrl_rofmud, &
                                 index_r2x_Flrr_flood, &
                                 index_r2x_Flrr_volr, index_r2x_Flrr_volrmch, &
                                 index_r2x_Flrr_supply, index_x2r_Flrl_demand
@@ -664,7 +665,7 @@ contains
     !
     ! LOCAL VARIABLES
     real(R8), pointer :: fptr(:, :)
-    integer :: n2, n, nt, begr, endr, nliq, nfrz
+    integer :: n2, n, nt, begr, endr, nliq, nfrz, nmud, nsan
     real(R8) :: tmp1, tmp2
     character(len=32), parameter :: sub = 'rof_import_mct'
     !---------------------------------------------------------------------------
@@ -673,6 +674,8 @@ contains
 
     nliq = 0
     nfrz = 0
+    nmud = 0
+    nsan = 0
     do nt = 1,nt_rtm
        if (trim(rtm_tracers(nt)) == 'LIQ') then
           nliq = nt
@@ -680,9 +683,15 @@ contains
        if (trim(rtm_tracers(nt)) == 'ICE') then
           nfrz = nt
        endif
+       if (trim(rtm_tracers(nt)) == 'MUD') then
+          nmud = nt
+       endif
+       if (trim(rtm_tracers(nt)) == 'SAN') then
+          nmud = nt
+       endif
     enddo
-    if (nliq == 0 .or. nfrz == 0) then
-       write(iulog,*) sub,': ERROR in rtm_tracers LIQ ICE ',nliq,nfrz,rtm_tracers
+    if (nliq == 0 .or. nfrz == 0 .or. nmud == 0 .or. nsan == 0) then
+       write(iulog,*) trim(sub),': ERROR in rtm_tracers LIQ ICE MUD SAN',nliq,nfrz,nmud,nsan, rtm_tracers
        call shr_sys_abort()
     endif
 
@@ -708,6 +717,8 @@ contains
        rtmCTL%qsub(n,nfrz) = 0.0_r8
        rtmCTL%qgwl(n,nfrz) = 0.0_r8
        rtmCTL%qdto(n,nfrz) = 0.0_r8
+       rtmCTL%qsur(n,nmud) = 0.0_r8
+       rtmCTL%qsur(n,nsan) = 0.0_r8       
        rtmCTL%qdem(n,nfrz) = 0.0_r8
        
        if(heatflag) then
@@ -725,8 +736,15 @@ contains
           THeat%forc_solar(n)= fptr(index_x2r_Faxa_swvdr,n2) + fptr(index_x2r_Faxa_swvdf,n2) + &
                                fptr(index_x2r_Faxa_swndr,n2) + fptr(index_x2r_Faxa_swndf,n2)
        end if                 
-
     enddo
+
+    if(sediflag) then
+	do n = begr,endr
+       n2 = n - begr + 1
+       rtmCTL%qsur(n,nmud) =  fptr(index_x2r_Flrl_rofmud,n2) * (rtmCTL%area(n)) ! kg/m2/s --> kg/s for sediment
+       rtmCTL%qsur(n,nsan) = 0.0_r8
+    enddo
+	end if
 
   end subroutine rof_import_esmf
 

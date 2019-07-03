@@ -41,14 +41,16 @@ module rof_cpl_indices
   integer, public :: index_x2r_Faxa_swvdf = 0   ! atm->rof shorwave visible diffus flux
   integer, public :: index_x2r_Faxa_swndr = 0   ! atm->rof shorwave near-ir direct flux
   integer, public :: index_x2r_Faxa_swndf = 0   ! atm->rof shorwave near-ir diffus flux
-
+  integer, public :: index_x2r_Flrl_rofmud = 0  ! lnd->rof input suspended sediment flux from soil erosion
   integer, public :: nflds_x2r = 0
 
   !TODO - nt_rtm and rtm_tracers need to be removed and set by access to the index array
-  integer, parameter, public :: nt_rtm = 2    ! number of tracers
-  character(len=3), parameter, public :: rtm_tracers(nt_rtm) =  (/'LIQ','ICE'/)
+  integer, parameter, public :: nt_rtm = 4    ! number of tracers
+  character(len=3), parameter, public :: rtm_tracers(nt_rtm) =  (/'LIQ','ICE','MUD','SAN'/)
   integer, parameter, public :: nt_nliq = 1    ! number of tracers
   integer, parameter, public :: nt_nice = 2    ! number of tracers
+  integer, parameter, public :: nt_nmud = 3    ! number of tracers
+  integer, parameter, public :: nt_nsan = 4    ! number of tracers
 
   ! roff to driver (part of land for now) (optional if ROF is off)
 
@@ -112,7 +114,7 @@ contains
     index_x2r_Faxa_swvdf  = mct_avect_indexra(avtmp,'Faxa_swvdf')
     index_x2r_Faxa_swndr  = mct_avect_indexra(avtmp,'Faxa_swndr')
     index_x2r_Faxa_swndf  = mct_avect_indexra(avtmp,'Faxa_swndf')
-
+    index_x2r_Flrl_rofmud = mct_avect_indexra(avtmp,'Flrl_rofmud')
     nflds_x2r = mct_avect_nRattr(avtmp)
 
     call mct_aVect_clean(avtmp)
