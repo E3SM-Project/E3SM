@@ -392,7 +392,8 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       type (block_type), pointer :: block
 
       integer :: iTracer, cell, cell1, cell2
-      real (kind=RKIND) :: normalThicknessFluxSum, thicknessSum, hEdge1, zMidPBC
+      real (kind=RKIND) :: normalThicknessFluxSum, thicknessSum, hEdge1, zMidPBC, &
+         depth1, depth2
 
       integer, dimension(:), pointer :: maxLevelCell, landIceMask
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth, &
@@ -458,6 +459,37 @@ end subroutine ocn_init_routines_compute_max_level!}}}
          elseif (config_vert_coord_movement.eq.'uniform_stretching') then
 
             vertCoordMovementWeights = 1.0_RKIND
+
+         ! Set weight tapering:
+         !  1.0 shallower than depth1
+         !  linear in between
+         !  0.0 deeper than depth2
+         elseif (config_vert_coord_movement.eq.'tapered_250m') then
+
+            depth1 = 250.0
+            depth2 = 500.0
+            do k = 1, nVertLevels
+               vertCoordMovementWeights(k) = 1.0_RKIND + (refZMid(k) + depth1)/(depth2 - depth1)
+               vertCoordMovementWeights(k) = max( 0.0_RKIND, min( 1.0_RKIND, vertCoordMovementWeights(k) ) )
+            end do
+
+         elseif (config_vert_coord_movement.eq.'tapered_500m') then
+
+            depth1 = 500.0
+            depth2 = 1000.0
+            do k = 1, nVertLevels
+               vertCoordMovementWeights(k) = 1.0_RKIND + (refZMid(k) + depth1)/(depth2 - depth1)
+               vertCoordMovementWeights(k) = max( 0.0_RKIND, min( 1.0_RKIND, vertCoordMovementWeights(k) ) )
+            end do
+
+         elseif (config_vert_coord_movement.eq.'tapered_1000m') then
+
+            depth1 = 1000.0
+            depth2 = 1500.0
+            do k = 1, nVertLevels
+               vertCoordMovementWeights(k) = 1.0_RKIND + (refZMid(k) + depth1)/(depth2 - depth1)
+               vertCoordMovementWeights(k) = max( 0.0_RKIND, min( 1.0_RKIND, vertCoordMovementWeights(k) ) )
+            end do
 
          endif
 
