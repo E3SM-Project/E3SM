@@ -682,6 +682,8 @@ contains
              birim(i,k) = 0._rtype
           endif
 
+          t(i,k) = th(i,k) * inv_exner
+
 
          !Activaiton of cloud droplets 
           if (log_predictNc) then 
