@@ -338,7 +338,7 @@ contains
 
   !==========================================================================================!
 
-  SUBROUTINE p3_main(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,   &
+  SUBROUTINE p3_main(qc,nc,qr,nr,th,qv,dt,qitot,qirim,nitot,birim,   &
        pres,dzq,npccn,naai,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
        diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc, &
        pdel,exner,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm,  &
@@ -371,12 +371,9 @@ contains
     real(rtype), intent(inout), dimension(its:ite,kts:kte)      :: qirim      ! ice, rime mass mixing ratio      kg kg-1
     real(rtype), intent(inout), dimension(its:ite,kts:kte)      :: nitot      ! ice, total number mixing ratio   #  kg-1
     real(rtype), intent(inout), dimension(its:ite,kts:kte)      :: birim      ! ice, rime volume mixing ratio    m3 kg-1
-    real(rtype), intent(inout), dimension(its:ite,kts:kte)      :: ssat       ! supersaturation (i.e., qv-qvs)   kg kg-1
 
     real(rtype), intent(inout), dimension(its:ite,kts:kte)      :: qv         ! water vapor mixing ratio         kg kg-1
     real(rtype), intent(inout), dimension(its:ite,kts:kte)      :: th         ! potential temperature            K
-    real(rtype), intent(inout), dimension(its:ite,kts:kte)      :: th_old     ! beginning of time step value of theta K
-    real(rtype), intent(inout), dimension(its:ite,kts:kte)      :: qv_old     ! beginning of time step value of qv    kg kg-1
     real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: pres       ! pressure                         Pa
     real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: dzq        ! vertical grid spacing            m
     real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: npccn      ! IN ccn activated number tendency kg-1 s-1
@@ -423,7 +420,6 @@ contains
 
     real(rtype), dimension(its:ite,kts:kte) :: mu_r  ! shape parameter of rain
     real(rtype), dimension(its:ite,kts:kte) :: t     ! temperature at the beginning of the microhpysics step [K]
-    real(rtype), dimension(its:ite,kts:kte) :: t_old ! temperature at the beginning of the model time step [K]
 
     ! 2D size distribution and fallspeed parameters:
 
@@ -507,7 +503,7 @@ contains
          dum,dum1,dum2,    &
          dumqv,dumqvs,dums,ratio,dum3,dum4,dum5,dum6,rdumii, &
          rdumjj,dqsidt,abi,dumqvi,rhop,tmp1,  &
-         tmp2,inv_dum3,odt,oxx,oabi,     &
+         tmp2,inv_dum3,odt,     &
          fluxdiv_qit,fluxdiv_nit,fluxdiv_qir,fluxdiv_bir,prt_accum, &
          fluxdiv_qx,fluxdiv_nx,Co_max,dt_sub,      &
          Q_nuc,N_nuc,         &
@@ -519,7 +515,7 @@ contains
          tmpint1,ktop,kbot,kdir,  &
          k_qxbot,k_qxtop,k_temp
 
-    logical :: log_nucleationPossible,log_hydrometeorsPresent,log_predictSsat,     &
+    logical :: log_nucleationPossible,log_hydrometeorsPresent,     &
          log_exitlevel,       &
          log_qxpresent
 
@@ -563,10 +559,6 @@ contains
 
     deltaD_init = 999._rtype    !not used if n_iceCat=1 (but should be defined)
 
-    ! Note:  Code for prediction of supersaturation is available in current version.
-    !        In the future 'log_predictSsat' will be a user-defined namelist key.
-    log_predictSsat = .false.
-
     inv_dzq    = 1._rtype/dzq  ! inverse of thickness of layers
     odt        = 1._rtype/dt   ! inverse model time step
 
@@ -605,7 +597,6 @@ contains
     ! causing energy conservation errors.
     inv_exner = 1._rtype/exner        !inverse of Exner expression, used when converting potential temp to temp
     t       = th    *inv_exner    !compute temperature from theta (value at beginning of microphysics step)
-    t_old   = th_old*inv_exner    !compute temperature from theta (value at beginning of model time step)
     qv      = max(qv,0._rtype)        !clip water vapor to prevent negative values passed in (beginning of microphysics)
     ! AaronDonahue added this load of latent heat to be consistent with E3SM, since the inconsistentcy was causing water conservation errors.
     call get_latent_heat(its,ite,kts,kte,xxlv,xxls,xlf)
@@ -621,13 +612,6 @@ contains
 
        k_loop_1: do k = kbot,ktop,kdir
 
-          !-- To be deleted (moved to above)
-          ! !      !calculate old temperature from old value of theta
-          ! !        t_old(i,k) = th_old(i,k)*(pres(i,k)*1.e-5)**(rd*inv_cp)
-          ! !      !calculate current temperature from current theta
-          ! !        t(i,k) = th(i,k)*(pres(i,k)*1.e-5)**(rd*inv_cp)
-          !==
-
           !calculate some time-varying atmospheric variables
             !AaronDonahue - changed "rho" to be defined on nonhydrostatic
             !assumption, consistent with pressure based coordinate system
@@ -636,19 +620,11 @@ contains
             !can be made consistent with E3SM definition of latent heat
           rho(i,k)     = pdel(i,k)/dzq(i,k)/g  ! pres(i,k)/(rd*t(i,k))
           inv_rho(i,k) = 1._rtype/rho(i,k)
-          qvs(i,k)     = qv_sat(t_old(i,k),pres(i,k),0)
-          qvi(i,k)     = qv_sat(t_old(i,k),pres(i,k),1)
+          qvs(i,k)     = qv_sat(t(i,k),pres(i,k),0)
+          qvi(i,k)     = qv_sat(t(i,k),pres(i,k),1)
 
-          ! if supersaturation is not predicted or during the first time step, then diagnose from qv and T (qvs)
-          if (.not.(log_predictSsat).or.it.eq.1) then
-             ssat(i,k)    = qv_old(i,k)-qvs(i,k)
-             sup(i,k)     = qv_old(i,k)/qvs(i,k)-1._rtype
-             supi(i,k)    = qv_old(i,k)/qvi(i,k)-1._rtype
-             ! if supersaturation is predicted then diagnose sup and supi from ssat
-          else if ((log_predictSsat).and.it.gt.1) then
-             sup(i,k)     = ssat(i,k)/qvs(i,k)
-             supi(i,k)    = (ssat(i,k)+qvs(i,k)-qvi(i,k))/qvi(i,k)
-          endif
+          sup(i,k)     = qv(i,k)/qvs(i,k)-1._rtype
+          supi(i,k)    = qv(i,k)/qvi(i,k)-1._rtype
 
           rhofacr(i,k) = (rhosur*inv_rho(i,k))**0.54_rtype
           rhofaci(i,k) = (rhosui*inv_rho(i,k))**0.54_rtype
@@ -774,42 +750,6 @@ contains
           p3_tend_out(i,k,49) = th(i,k)    ! Pot. Temp. microphysics tendency, initialize 
 
           log_wetgrowth = .false.
-
-          !----------------------------------------------------------------------
-          predict_supersaturation: if (log_predictSsat) then
-
-             ! Adjust cloud water and thermodynamics to prognostic supersaturation
-             ! following the method in Grabowski and Morrison (2008).
-             ! Note that the effects of vertical motion are assumed to dominate the
-             ! production term for supersaturation, and the effects are sub-grid
-             ! scale mixing and radiation are not explicitly included.
-
-             dqsdt   = xxlv(i,k)*qvs(i,k)/(rv*t(i,k)*t(i,k))
-             ab      = 1._rtype + dqsdt*xxlv(i,k)*inv_cp
-             epsilon = (qv(i,k)-qvs(i,k)-ssat(i,k))/ab
-             epsilon = max(epsilon,-qc(i,k))   ! limit adjustment to available water
-             ! don't adjust upward if subsaturated
-             ! otherwise this could result in positive adjustment
-             ! (spurious generation ofcloud water) in subsaturated conditions
-             if (ssat(i,k).lt.0._rtype) epsilon = min(0._rtype,epsilon)
-
-             ! now do the adjustment
-             if (abs(epsilon).ge.1.e-15_rtype) then
-                qc(i,k)   = qc(i,k)+epsilon
-                qc_incld(i,k)   = qc(i,k)*inv_lcldm(i,k)
-                qv(i,k)   = qv(i,k)-epsilon
-                th(i,k)   = th(i,k)+epsilon*exner(i,k)*xxlv(i,k)*inv_cp
-                ! recalculate variables if there was adjustment
-                t(i,k)    = th(i,k)*inv_exner(i,k) !*(1.e-5*pres(i,k))**(rd*inv_cp)
-                qvs(i,k)  = qv_sat(t(i,k),pres(i,k),0)
-                qvi(i,k)  = qv_sat(t(i,k),pres(i,k),1)
-                sup(i,k)  = qv(i,k)/qvs(i,k)-1._rtype
-                supi(i,k) = qv(i,k)/qvi(i,k)-1._rtype
-                ssat(i,k) = qv(i,k)-qvs(i,k)
-             endif
-
-          endif predict_supersaturation
-          !----------------------------------------------------------------------
 
           ! skip micro process calculations except nucleation/acvtivation if there no hydrometeors are present
           log_exitlevel = .true.
@@ -960,16 +900,17 @@ contains
           dv,mu,sc,mu_r(i,k),lamr(i,k),cdistr(i,k),cdist(i,k),qr_incld(i,k),qc_incld(i,k), &
           epsr,epsc) 
  
-          call calc_xx_aaa(t(i,k),t_old(i,k),qv(i,k),qv_old(i,k), &
-          dt,dqsdt,qvs(i,k),qvi(i,k),xxls(i,k),abi,epsi_tot,epsc,epsr, &
-          aaa,xx,dumqvi)
+! AaronDonahue: calc_xx_aaa is no longer needed. Delete? 
+!          call calc_xx_aaa(t(i,k),t_old(i,k),qv(i,k),qv_old(i,k), &
+!          dt,dqsdt,qvs(i,k),qvi(i,k),xxls(i,k),abi,epsi_tot,epsc,epsr, &
+!          aaa,xx,dumqvi)
 
           call evaporate_sublimate_precip(qr_incld(i,k),qc_incld(i,k),nr_incld(i,k),qitot_incld(i,k), &
           lcldm(i,k),rcldm(i,k),qvs(i,k),ab,epsr,qv(i,k), &
           qrevp,nrevp)
 
           call ice_deposition_sublimation(qitot_incld(i,k), nitot_incld(i,k), t(i,k), &
-          qvs(i,k),dumqvi,epsi,abi,qv(i,k), &
+          qvs(i,k),qvi(i,k),epsi,abi,qv(i,k), &
           qidep,qisub,nisub,qiberg)
 
 444       continue
@@ -2066,15 +2007,6 @@ contains
        !.....................................................
 
 333    continue
-
-       if (log_predictSsat) then
-          ! recalculate supersaturation from T and qv
-          do k = kbot,ktop,kdir
-             t(i,k) = th(i,k)*inv_exner(i,k) !(1.e-5*pres(i,k))**(rd*inv_cp)
-             dum    = qv_sat(t(i,k),pres(i,k),0)
-             ssat(i,k) = qv(i,k)-dum
-          enddo
-       endif
 
        if (debug_ON) then
           tmparr1(i,:) = th(i,:)*inv_exner(i,:)!(pres(i,:)*1.e-5)**(rd*inv_cp)
@@ -3264,7 +3196,7 @@ end subroutine rain_immersion_freezing
 
 
 subroutine ice_deposition_sublimation(qitot_incld, nitot_incld, t, &
-qvs,dumqvi,epsi,abi,qv, &
+qvs,qvi,epsi,abi,qv, &
 qidep,qisub,nisub,qiberg)
 
    implicit none
@@ -3273,7 +3205,7 @@ qidep,qisub,nisub,qiberg)
    real(rtype), intent(in)  :: nitot_incld
    real(rtype), intent(in)  :: t
    real(rtype), intent(in)  :: qvs
-   real(rtype), intent(in)  :: dumqvi
+   real(rtype), intent(in)  :: qvi
    real(rtype), intent(in)  :: epsi
    real(rtype), intent(in)  :: abi
    real(rtype), intent(in)  :: qv
@@ -3282,12 +3214,12 @@ qidep,qisub,nisub,qiberg)
    real(rtype), intent(out) :: nisub
    real(rtype), intent(out) :: qiberg
 
-   real(rtype) :: oxx, odt, oabi
+   real(rtype) :: oabi
 
    oabi = 1._rtype/abi
    if (qitot_incld>=qsmall) then
       !Compute deposition/sublimation
-      qidep = epsi * oabi * (qv - dumqvi)
+      qidep = epsi * oabi * (qv - qvi)
       !Split into deposition or sublimation.
       if (t < zerodegc .and. qidep>0._rtype) then
          qisub=0._rtype
@@ -3299,7 +3231,7 @@ qidep,qisub,nisub,qiberg)
       !sublimation occurs @ any T. Not so for berg.
       if (t < zerodegc) then
          !Compute bergeron rate assuming cloud for whole step.
-         qiberg = max(epsi*oabi*(qvs - dumqvi), 0._rtype)
+         qiberg = max(epsi*oabi*(qvs - qvi), 0._rtype)
       else !T>frz
          qiberg=0._rtype
       end if !T<frz
@@ -3372,81 +3304,85 @@ qrevp,nrevp)
 end subroutine evaporate_sublimate_precip
 
 
-subroutine calc_xx_aaa(t,t_old,qv,qv_old, &
-dt,dqsdt,qvs,qvi,xxls,abi,epsi_tot,epsc,epsr, &
-aaa,xx,dumqvi)
+! AaronDonahue: This is now no longer used.  Should we go ahead and delete this
+! routine?  Or keep it in case in the future we want a reference to how P3-WRF
+! calculated these values?
 
-   implicit none
-
-   real(rtype), intent(in)  :: t
-   real(rtype), intent(in)  :: t_old
-   real(rtype), intent(in)  :: qv
-   real(rtype), intent(in)  :: qv_old
-   real(rtype), intent(in)  :: dt
-   real(rtype), intent(in)  :: dqsdt
-   real(rtype), intent(in)  :: qvs
-   real(rtype), intent(in)  :: qvi
-   real(rtype), intent(in)  :: xxls
-   real(rtype), intent(in)  :: abi
-   real(rtype), intent(in)  :: epsi_tot
-   real(rtype), intent(in)  :: epsc
-   real(rtype), intent(in)  :: epsr
-   real(rtype), intent(out) :: aaa
-   real(rtype), intent(out) :: xx
-   real(rtype), intent(out) :: dumqvi
-
-   real(rtype) :: oabi, dum, odt 
-
-   oabi = 1._rtype/abi
-   odt  = 1._rtype/dt
-   
-   if (t.lt.zerodegc) then
-      xx   = epsc + epsr + epsi_tot*(1._rtype+xxls*inv_cp*dqsdt)*oabi
-   else
-      xx   = epsc + epsr
-   endif
-
-   dumqvi = qvi   !no modification due to latent heating
-   !----
-   ! !      ! modify due to latent heating from riming rate
-   ! !      !   - currently this is done by simple linear interpolation
-   ! !      !     between conditions for dry and wet growth --> in wet growth it is assumed
-   ! !      !     that particle surface temperature is at 0 C and saturation vapor pressure
-   ! !      !     is that with respect to liquid. This simple treatment could be improved in the future.
-   ! !        if (qwgrth.ge.1.e-20) then
-   ! !           dum = (qccol+qrcol)/qwgrth
-   ! !        else
-   ! !           dum = 0.
-   ! !        endif
-   ! !        dumqvi = qvi + dum*(qvs-qvi)
-   ! !        dumqvi = min(qvs,dumqvi)
-   !====
-
-
-   ! 'A' term including ice (Bergeron process)
-   ! note: qv and T tendencies due to mixing and radiation are
-   ! currently neglected --> assumed to be much smaller than cooling
-   ! due to vertical motion which IS included
-
-   ! The equivalent vertical velocity is set to be consistent with dT/dt
-   ! since -g/cp*dum = dT/dt therefore dum = -cp/g*dT/dt
-   ! note this formulation for dT/dt is not exact since pressure
-   ! may change and t and t_old were both diagnosed using the current pressure
-   ! errors from this assumption are small
-   dum = -cp/g*(t-t_old)*odt
-
-   if (t.lt.zerodegc) then
-      aaa = (qv-qv_old)*odt - dqsdt*(-dum*g*inv_cp)-(qvs-dumqvi)*     &
-           (1._rtype+xxls*inv_cp*dqsdt)*oabi*epsi_tot
-   else
-      aaa = (qv-qv_old)*odt - dqsdt*(-dum*g*inv_cp)
-   endif
-
-   xx  = max(1.e-20_rtype,xx)   ! set lower bound on xx to prevent division by zero
-
-   return
-
-end subroutine calc_xx_aaa
+!subroutine calc_xx_aaa(t,t_old,qv,qv_old, &
+!dt,dqsdt,qvs,qvi,xxls,abi,epsi_tot,epsc,epsr, &
+!aaa,xx,dumqvi)
+!
+!   implicit none
+!
+!   real(rtype), intent(in)  :: t
+!   real(rtype), intent(in)  :: t_old
+!   real(rtype), intent(in)  :: qv
+!   real(rtype), intent(in)  :: qv_old
+!   real(rtype), intent(in)  :: dt
+!   real(rtype), intent(in)  :: dqsdt
+!   real(rtype), intent(in)  :: qvs
+!   real(rtype), intent(in)  :: qvi
+!   real(rtype), intent(in)  :: xxls
+!   real(rtype), intent(in)  :: abi
+!   real(rtype), intent(in)  :: epsi_tot
+!   real(rtype), intent(in)  :: epsc
+!   real(rtype), intent(in)  :: epsr
+!   real(rtype), intent(out) :: aaa
+!   real(rtype), intent(out) :: xx
+!   real(rtype), intent(out) :: dumqvi
+!
+!   real(rtype) :: oabi, dum, odt 
+!
+!   oabi = 1._rtype/abi
+!   odt  = 1._rtype/dt
+!   
+!   if (t.lt.zerodegc) then
+!      xx   = epsc + epsr + epsi_tot*(1._rtype+xxls*inv_cp*dqsdt)*oabi
+!   else
+!      xx   = epsc + epsr
+!   endif
+!
+!   dumqvi = qvi   !no modification due to latent heating
+!   !----
+!   ! !      ! modify due to latent heating from riming rate
+!   ! !      !   - currently this is done by simple linear interpolation
+!   ! !      !     between conditions for dry and wet growth --> in wet growth it is assumed
+!   ! !      !     that particle surface temperature is at 0 C and saturation vapor pressure
+!   ! !      !     is that with respect to liquid. This simple treatment could be improved in the future.
+!   ! !        if (qwgrth.ge.1.e-20) then
+!   ! !           dum = (qccol+qrcol)/qwgrth
+!   ! !        else
+!   ! !           dum = 0.
+!   ! !        endif
+!   ! !        dumqvi = qvi + dum*(qvs-qvi)
+!   ! !        dumqvi = min(qvs,dumqvi)
+!   !====
+!
+!
+!   ! 'A' term including ice (Bergeron process)
+!   ! note: qv and T tendencies due to mixing and radiation are
+!   ! currently neglected --> assumed to be much smaller than cooling
+!   ! due to vertical motion which IS included
+!
+!   ! The equivalent vertical velocity is set to be consistent with dT/dt
+!   ! since -g/cp*dum = dT/dt therefore dum = -cp/g*dT/dt
+!   ! note this formulation for dT/dt is not exact since pressure
+!   ! may change and t and t_old were both diagnosed using the current pressure
+!   ! errors from this assumption are small
+!   dum = -cp/g*(t-t_old)*odt
+!
+!   if (t.lt.zerodegc) then
+!      aaa = (qv-qv_old)*odt - dqsdt*(-dum*g*inv_cp)-(qvs-dumqvi)*     &
+!           (1._rtype+xxls*inv_cp*dqsdt)*oabi*epsi_tot
+!   else
+!      aaa = (qv-qv_old)*odt - dqsdt*(-dum*g*inv_cp)
+!   endif
+!
+!   xx  = max(1.e-20_rtype,xx)   ! set lower bound on xx to prevent division by zero
+!
+!   return
+!
+!end subroutine calc_xx_aaa
 
 
 subroutine get_time_space_phys_variables( &
