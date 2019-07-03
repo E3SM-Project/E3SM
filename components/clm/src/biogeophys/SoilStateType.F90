@@ -663,14 +663,6 @@ contains
                 this%bsw_col(c,lev)       = (1._r8-om_frac) * (2.91_r8 + 0.159_r8*clay) + om_frac*om_b   
                 this%sucsat_col(c,lev)    = (1._r8-om_frac) * this%sucsat_col(c,lev) + om_sucsat*om_frac  
                 this%hksat_min_col(c,lev) = xksat
-!Fang test
-        this%bsw_col(c,lev) = 6.0_r8
-        if(lev <= nlevsoi) then
-          this%watsat_col(c,lev) = 0.42
-        else
-          this%watsat_col(c,lev) = 0.28
-        endif
-        this%sucsat_col(c,lev) = 47.0
 
                 ! perc_frac is zero unless perf_frac greater than percolation threshold
                 if (om_frac > pcalpha) then
@@ -691,8 +683,6 @@ contains
                    uncon_hksat = 0._r8
                 end if
                 this%hksat_col(c,lev)  = uncon_frac*uncon_hksat + (perc_frac*om_frac)*om_hksat
-!Fang test
-      this%hksat_col(c,lev)  = 3.5e-2
 
                 this%tkmg_col(c,lev)   = tkm ** (1._r8- this%watsat_col(c,lev))           
 
