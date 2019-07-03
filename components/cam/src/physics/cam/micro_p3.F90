@@ -1205,7 +1205,26 @@ contains
           ! The microphysical process rates are computed above, based on the environmental conditions.
           ! The rates are adjusted here (where necessary) such that the sum of the sinks of mass cannot
           ! be greater than the sum of the sources, thereby resulting in overdepletion.
-
+          !-- Limit ice process rates to prevent overdepletion of sources such that
+          !   the subsequent adjustments are done with maximum possible rates for the
+          !   time step.  (note: most ice rates are adjusted here since they must be done
+          !   simultaneously (outside of iice-loops) to distribute reduction proportionally
+          !   amongst categories.
+          !PMC - might need to rethink above statement since only one category now.
+          ! AaronDonahue: Do we need the below checks for the new definition of
+          ! how qidep and qisub are derived?
+          ! AaronDonahue: UPDATE, if we are following the implementation of MG
+          ! then the answer appears to be YES.  There is a similar check in MG
+          ! microphysics which limits qidep and qinuc, but does not limit qisub.
+          ! So similar but slightly different.  The overall answer would be that
+          ! qidep does need some limit.  The next questions are, 
+          !   1) Should we be taking qinuc into consideration too? 
+          !   2) Is MG correct in NOT limiting qisub?
+          dumqvi = qv_sat(t(i,k),pres(i,k),1)
+          qdep_satadj = (qv(i,k)-dumqvi)/(1._rtype+xxls(i,k)**2*dumqvi/(cp*rv*t(i,k)**2))*odt
+          qidep  = qidep*min(1._rtype,max(0._rtype, qdep_satadj)/max(qidep,1.e-20_rtype))
+          qisub  = qisub*min(1._rtype,max(0._rtype,-qdep_satadj)/max(qisub,1.e-20_rtype))
+          !==
           ! vapor -- not needed, since all sinks already have limits imposed and the sum, therefore,
           !          cannot possibly overdeplete qv
 
