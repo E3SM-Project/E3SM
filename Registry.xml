@@ -239,7 +239,15 @@
 	<nml_record name="ALE_vertical_grid" mode="forward">
 		<nml_option name="config_vert_coord_movement" type="character" default_value="uniform_stretching" units="unitless"
 					description="Determines the vertical coordinate movement type. 'uniform_stretching' distributes SSH perturbations through all vertical levels (z-star vertical coordinate); 'fixed' places them all in the top level (z-level vertical coordinate); 'user_specified' allows the input file to determine the distribution using the variable vertCoordMovementWeights (weighted z-star vertical coordinate); and 'impermeable_interfaces' makes the vertical transport between layers zero, i.e. $w^t=0$ (idealized isopycnal)."
-					possible_values="'uniform_stretching', 'fixed', 'user_specified', 'impermeable_interfaces', 'tapered_250m', 'tapered_500m', tapered_1000m'"
+					possible_values="'uniform_stretching', 'fixed', 'user_specified', 'impermeable_interfaces', 'tapered'"
+		/>
+		<nml_option name="config_vert_taper_weight_depth_1" type="real" default_value="250.0" units="m"
+					description="Vertical coordinate taper weight is one above this depth, linearly decreases to zero below."
+					possible_values="any positive real value, but typically 100 to 1000 m."
+		/>
+		<nml_option name="config_vert_taper_weight_depth_2" type="real" default_value="500.0" units="m"
+					description="Vertical coordinate taper weight is zero below this depth, linearly increases to one above."
+					possible_values="any positive real value, but typically 100 to 1000 m and greater than config_vert_taper_weight_depth_1."
 		/>
 		<nml_option name="config_use_min_max_thickness" type="logical" default_value=".false." units="unitless"
 					description="If true, a minimum and maximum thicknesses are enforced to prevent massless and very thick layers."
