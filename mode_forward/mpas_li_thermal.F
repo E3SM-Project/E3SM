@@ -3000,7 +3000,7 @@ module li_thermal
 
       real(kind=RKIND) :: maxWaterfrac          ! maximum allowed water fraction; excess drains to bed
       real(kind=RKIND), pointer :: &
-           config_max_water_fraction ! option for basal mass balance of floating ice
+           config_max_water_fraction ! maximum allowable water fraction before additional melt drains
       real(kind=RKIND), parameter :: &
            eps11 = 1.0e-11_RKIND           ! small number
 
