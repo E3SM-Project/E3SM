@@ -928,7 +928,7 @@ module li_thermal
             allocate(superdiagonal(nVertLevels+2))
             allocate(rhs(nVertLevels+2))
             allocate(solution(nVertLevels+2))
-            allocate(diffusivity(nVertLevels+2))
+            allocate(diffusivity(nVertLevels+1))
 
             if (config_print_thermal_info) then
                call mpas_log_write(' ')
