@@ -2118,6 +2118,33 @@ module li_thermal
                       + waterfrac(k) * rhoi * (cp_ice * pmpTemperature(k) + latent_heat_ice)
       end do
 
+      ! TZ: we should use rhoi instead of rho_water in the second term here.
+
+
+      ! TZ: Here is the reason: from Eqn (6) in the Aschwanden et
+      ! al. (2012) paper "An enthalpy formulation for glaciers and ice sheets",
+
+      ! rho * H = rho_i * H_i + rho_w * H_w,
+
+      ! where rho_i and rho_w are not the ice and water density, but the partial
+      ! density, i.e., rho_i = mass_ice/volume, rho_w = mass_water/volume.
+      ! Because water fraction is very small in general, rho_i approximates to
+      ! rhoi (ice density), rho_w is close to 0.
+      ! Also note that in MALI the enthalpy is equal to the enthalpy density
+      ! (rho*H) in Aschwanden's paper (they don't have density in their
+      ! enthaly definition, but we do). Thus, Let's denote MALI's enthalpy as
+      ! E, and denote W as the water content, then
+
+      ! E = rho * H = rho_i * H_i + rho_w * H_w = (1-W) * H_i + W * H_w
+      ! E = (1-W) * rho * cp * T + W * (rho * cp * T_pmp + rho*L)
+
+      ! As rho approximates to rhoi, we have
+
+      ! E = (1-W) * rhoi * cp * T + W * rhoi * (cp*T_pmp + L)
+
+      ! This is what we get in the code. We can easily do the derivation
+      ! according to Eqns (1-11) in Aschwanden's paper.
+
     end subroutine li_temperature_to_enthalpy
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -2674,7 +2701,7 @@ module li_thermal
            harmonic_avg  = .false.  ! if true, take the harmonic average of diffusivity in adjacent layers
                                     ! if false, take the arithmetic average
 
-      character(len=RKIND), pointer :: &
+      real(kind=RKIND), pointer :: &
            config_temp_diffusive_factor ! option for basal mass balance of floating ice
 
       call mpas_pool_get_config(liConfigs, 'config_temp_diffusive_factor', config_temp_diffusive_factor)
@@ -2971,12 +2998,15 @@ module li_thermal
       real(kind=RKIND) :: internalMeltRate      ! internal melt rate, transferred to bed (m/s)
       real(kind=RKIND) :: excessWater           ! thickness of excess meltwater (m)
 
-      real(kind=RKIND), parameter :: &
-           maxWaterfrac = 0.10_RKIND       ! maximum allowed water fraction; excess drains to bed
-
+      real(kind=RKIND) :: maxWaterfrac          ! maximum allowed water fraction; excess drains to bed
+      real(kind=RKIND), pointer :: &
+           config_max_water_fraction ! option for basal mass balance of floating ice
       real(kind=RKIND), parameter :: &
            eps11 = 1.0e-11_RKIND           ! small number
 
+      call mpas_pool_get_config(liConfigs, 'config_max_water_fraction', config_max_water_fraction)
+
+      maxWaterfrac = config_max_water_fraction
 
       ! Compute melt rate for grounded ice
 
@@ -3011,8 +3041,12 @@ module li_thermal
 
             if (trim(config_thermal_solver) == 'enthalpy') then
                !groundedBasalMassBal(iCell) = -netBasalFlux / (latent_heat_ice * rhoi - enthalpy(nVertLevels,iCell))
-               groundedBasalMassBal(iCell) = -netBasalFlux / (latent_heat_ice * rhoi)
+               groundedBasalMassBal(iCell) = -netBasalFlux / (latent_heat_ice * rhoi) / (1-waterfrac(nVertLevels,iCell))
                ! TZ: Don't understand yet why WHL added enthalpy(nVertLevels,iCell) here
+               ! TZ: After a long discussion with Matt Hoffman, we decide to revise it
+               ! to the form as Eqn (66) in Aschwanden and others (2012) "An
+               ! enthalpy formulation for glaciers and ice sheets". An extra
+               ! term (1-w) would be more accurate.
                 basalWaterThickness(iCell) = basalWaterThickness(iCell) - deltat*groundedBasalMassBal(iCell)
                 ! TZ: allow basalWaterThickness freely accumulate here. Change it to something else for difference cases
                 if (basalWaterThickness(iCell) < 0.0_RKIND) then
