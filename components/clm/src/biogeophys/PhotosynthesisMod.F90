@@ -3974,7 +3974,7 @@ contains
     select case (plc_method)
        !possible to add other methods later
     case (vegetation_weibull)
-       if( x >= 0.d0 ) then
+       if( x >= 0.0_r8 ) then
          plc = 1._r8
        else
          plc=2._r8**(-(x/params_inst%psi50(veg_pp%itype(p),level))**params_inst%ck(veg_pp%itype(p),level))
