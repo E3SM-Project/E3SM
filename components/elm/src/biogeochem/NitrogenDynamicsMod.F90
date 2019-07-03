@@ -163,6 +163,7 @@ contains
     ! !USES:
     use elm_varcon       , only : secspday, spval
     use elm_instMod      , only : alm_fates
+    use pftvarcon        , only : noveg
     !
     ! !ARGUMENTS:
     type(bounds_type)       , intent(in)    :: bounds
@@ -172,11 +173,12 @@ contains
     
     !
     ! !LOCAL VARIABLES:
-    integer  :: c,fc                  ! indices
+    integer  :: c,fc,p                ! indices
     integer  :: ic                    ! clump index
     integer  :: s                     ! site index (fates only)
     real(r8) :: t                     ! temporary
     real(r8) :: secspyr               ! seconds per yr
+    real(r8) :: total_weight
     logical  :: do_et_bnf = .false.
 
     ! Test mutliplier of fixation rate, leave as 1 to use base rates
@@ -189,7 +191,10 @@ contains
          col_lag_npp    => col_cf%lag_npp         , & ! Input: [real(r8) (:)]  (gC/m2/s) lagged net primary production
          qflx_tran_veg  => col_wf%qflx_tran_veg    , & ! col vegetation transpiration (mm H2O/s) (+ = to atm)
          qflx_evap_veg  => col_wf%qflx_evap_veg    , & ! col vegetation evaporation (mm H2O/s) (+ = to atm)
-         nfix_to_sminn  => col_nf%nfix_to_sminn   & ! Output: [real(r8) (:)]  symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s)
+         nfix_to_sminn  => col_nf%nfix_to_sminn    , & ! Output: [real(r8) (:)]  symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s)
+
+         Nfix_NPP_c1    => veg_vp%Nfix_NPP_c1     , & ! Pre-exponential parameter for NPP_based N fixation
+         Nfix_NPP_c2    => veg_vp%Nfix_NPP_c2       & ! Exponential parameter for NPP_based N fixation
          )
 
 
@@ -221,23 +226,48 @@ contains
             ! use exponential relaxation with time constant nfix_timeconst for NPP - NFIX relation
             ! Loop through columns
             do fc = 1,num_soilc
-               c = filter_soilc(fc)
-
+               c = filter_soilc(fc)         
+               ! B. Sulman: Loop through patches. Nfix is weighted average of value for each PFT's parameters
+               t = 0.0_r8
                if (col_lag_npp(c) /= spval) then
-                  ! need to put npp in units of gC/m^2/year here first
-                  t = test_mult*(1.8_r8 * (1._r8 - exp(-0.003_r8 * col_lag_npp(c)*(secspday * dayspyr))))/(secspday * dayspyr)
-                  nfix_to_sminn(c) = max(0._r8,t)
+                  total_weight = 0.0_r8  ! To correct for inactive and unveg cells
+                  do p = col_pp%pfti(c), col_pp%pftf(c)
+                      ! need to put npp in units of gC/m^2/year here first
+                      ! B. Sulman: calculate Nfix value for each patch's parameters, and add to weighted average
+                      if (veg_pp%active(p) .and. (veg_pp%itype(p) .ne. noveg)) then
+                          t = t + max(0._r8,veg_pp%wtcol(p)*(Nfix_NPP_c1(veg_pp%itype(p)) * &
+                                 (1._r8 - exp(-Nfix_NPP_c2(veg_pp%itype(p)) * col_lag_npp(c)*(secspday * dayspyr))))/(secspday * dayspyr))  
+                          total_weight = total_weight + veg_pp%wtcol(p)
+                      endif
+                   enddo
+                   if(total_weight>0) then
+                       nfix_to_sminn(c) = max(0._r8,t/total_weight)
+                   else
+                       nfix_to_sminn(c) = 0._r8
+                   endif
                else
-                  nfix_to_sminn(c) = 0._r8
+                   nfix_to_sminn(c) = 0._r8
                endif
             end do
          else
             ! use annual-mean values for NPP-NFIX relation
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-
-               t = test_mult*(1.8_r8 * (1._r8 - exp(-0.003_r8 * cannsum_npp(c))))/(secspday * dayspyr)
-               nfix_to_sminn(c) = max(0._r8,t)
+               ! B. Sulman: Loop through patches. Nfix is weighted average of value for each PFT's parameters
+               t = 0.0_r8
+               total_weight = 0.0_r8
+               do p = col_pp%pfti(c), col_pp%pftf(c)
+                  if (veg_pp%active(p) .and. (veg_pp%itype(p) .ne. noveg)) then
+                       t = t + max(0._r8,veg_pp%wtcol(p)*(Nfix_NPP_c1(veg_pp%itype(p)) * &
+                             (1._r8 - exp(-Nfix_NPP_c2(veg_pp%itype(p)) * cannsum_npp(c))))/(secspday * dayspyr))
+                       total_weight = total_weight + veg_pp%wtcol(p)
+                  endif
+               enddo
+               if (total_weight>0) then
+                   nfix_to_sminn(c) = max(0._r8,t/total_weight)
+               else
+                   nfix_to_sminn(c) = 0.0_r8
+               endif
             end do
          endif
          end if
