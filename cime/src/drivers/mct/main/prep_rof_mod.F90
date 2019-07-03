@@ -288,12 +288,14 @@ contains
     integer, save :: index_l2x_Flrl_rofdto
     integer, save :: index_l2x_Flrl_rofi
     integer, save :: index_l2x_Flrl_irrig
+    integer, save :: index_l2x_Flrl_rofmud
     integer, save :: index_x2r_Flrl_rofsur
     integer, save :: index_x2r_Flrl_rofgwl
     integer, save :: index_x2r_Flrl_rofsub
     integer, save :: index_x2r_Flrl_rofdto
     integer, save :: index_x2r_Flrl_rofi
     integer, save :: index_x2r_Flrl_irrig
+    integer, save :: index_x2r_Flrl_rofmud
     integer, save :: index_l2x_Flrl_rofl_16O
     integer, save :: index_l2x_Flrl_rofi_16O
     integer, save :: index_x2r_Flrl_rofl_16O
@@ -338,6 +340,7 @@ contains
           index_l2x_Flrl_irrig  = mct_aVect_indexRA(l2x_r,'Flrl_irrig' )
        end if
        index_l2x_Flrl_rofi   = mct_aVect_indexRA(l2x_r,'Flrl_rofi' )
+       index_l2x_Flrl_rofmud = mct_aVect_indexRA(l2x_r,'Flrl_rofmud' )
        index_x2r_Flrl_rofsur = mct_aVect_indexRA(x2r_r,'Flrl_rofsur' )
        index_x2r_Flrl_rofgwl = mct_aVect_indexRA(x2r_r,'Flrl_rofgwl' )
        index_x2r_Flrl_rofsub = mct_aVect_indexRA(x2r_r,'Flrl_rofsub' )
@@ -346,7 +349,9 @@ contains
        if (have_irrig_field) then
           index_x2r_Flrl_irrig  = mct_aVect_indexRA(x2r_r,'Flrl_irrig' )
        end if
-       index_l2x_Flrl_rofl_16O = mct_aVect_indexRA(l2x_r,'Flrl_rofl_16O', perrWith='quiet' )
+       index_x2r_Flrl_rofmud = mct_aVect_indexRA(x2r_r,'Flrl_rofmud' )
+       
+	   index_l2x_Flrl_rofl_16O = mct_aVect_indexRA(l2x_r,'Flrl_rofl_16O', perrWith='quiet' )
 
        if ( index_l2x_Flrl_rofl_16O /= 0 ) flds_wiso_rof = .true.
        if ( flds_wiso_rof ) then
@@ -382,6 +387,8 @@ contains
           mrgstr(index_x2r_Flrl_irrig) = trim(mrgstr(index_x2r_Flrl_irrig))//' = '// &
                'lfrac*l2x%Flrl_irrig'
        end if
+       mrgstr(index_x2r_Flrl_rofmud) = trim(mrgstr(index_x2r_Flrl_rofmud))//' = '// &
+          'lfrac*l2x%Flrl_rofmud'
        if ( flds_wiso_rof ) then
           mrgstr(index_x2r_Flrl_rofl_16O) = trim(mrgstr(index_x2r_Flrl_rofl_16O))//' = '// &
                'lfrac*l2x%Flrl_rofl_16O'
@@ -408,6 +415,7 @@ contains
        if (have_irrig_field) then
           x2r_r%rAttr(index_x2r_Flrl_irrig,i) = l2x_r%rAttr(index_l2x_Flrl_irrig,i) * lfrac
        end if
+       x2r_r%rAttr(index_x2r_Flrl_rofmud,i) = l2x_r%rAttr(index_l2x_Flrl_rofmud,i) * lfrac
        if ( flds_wiso_rof ) then
           x2r_r%rAttr(index_x2r_Flrl_rofl_16O,i) = l2x_r%rAttr(index_l2x_Flrl_rofl_16O,i) * lfrac
           x2r_r%rAttr(index_x2r_Flrl_rofi_16O,i) = l2x_r%rAttr(index_l2x_Flrl_rofi_16O,i) * lfrac

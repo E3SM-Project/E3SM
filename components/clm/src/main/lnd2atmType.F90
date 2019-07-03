@@ -62,6 +62,8 @@ module lnd2atmType
      real(r8), pointer :: qflx_rofliq_qsur_dic_grc(:) => null()
      real(r8), pointer :: qflx_rofliq_qsub_doc_grc(:) => null()
      real(r8), pointer :: qflx_rofliq_qsub_dic_grc(:) => null()
+	 
+     real(r8), pointer :: qflx_rofmud_grc(:) => null()             ! grc sediment yield
    contains
 
      procedure, public  :: Init
@@ -134,6 +136,8 @@ contains
     allocate(this%qflx_rofliq_qsur_dic_grc(begg:endg))          ; this%qflx_rofliq_qsur_dic_grc(:) = ival
     allocate(this%qflx_rofliq_qsub_doc_grc(begg:endg))          ; this%qflx_rofliq_qsub_doc_grc(:) = ival
     allocate(this%qflx_rofliq_qsub_dic_grc(begg:endg))          ; this%qflx_rofliq_qsub_dic_grc(:) = ival 
+
+    allocate(this%qflx_rofmud_grc      (begg:endg))            ; this%qflx_rofmud_grc            (:) =ival
 
     if (shr_megan_mechcomps_n>0) then
        allocate(this%flxvoc_grc(begg:endg,1:shr_megan_mechcomps_n));  this%flxvoc_grc(:,:)=ival
