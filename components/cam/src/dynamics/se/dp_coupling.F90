@@ -206,7 +206,7 @@ CONTAINS
 
       if (par%dynproc) then
 
-        !$omp parallel do private (ie, bpter, icol, ilyr, m)
+        !$omp parallel do private (ie, bpter, icol, ilyr, m, ncols)
         do ie = 1,nelemd
           call block_to_chunk_send_pters(elem(ie)%GlobalID,nphys_sq,pver+1,tsize,bpter(1:nphys_sq,:))
           if (fv_nphys > 0) then
@@ -437,7 +437,7 @@ CONTAINS
       call t_stopf  ('chunk_to_block')
 
       if (par%dynproc) then
-        !$omp parallel do private (ie, bpter, icol, ilyr, m)
+        !$omp parallel do private (ie, bpter, icol, ilyr, m, ncols)
         do ie = 1,nelemd
           if (fv_nphys > 0) then
             ncols = nphys_sq
