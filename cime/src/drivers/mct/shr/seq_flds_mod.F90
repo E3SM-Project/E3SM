@@ -2029,6 +2029,14 @@ contains
     call metadata_set(attname, longname, stdname, units)
     endif
 
+    call seq_flds_add(l2x_fluxes,'Flrl_rofmud')
+    call seq_flds_add(x2r_fluxes,'Flrl_rofmud')
+    longname = 'Sediment flux from land (mud)'
+    stdname  = 'mud_flux_into_runoff_surface'
+    units    = 'kg m-2 s-1'
+    attname  = 'Flrl_rofmud'
+    call metadata_set(attname, longname, stdname, units)
+
     ! Currently only the CESM land and runoff models treat irrigation as a separate
     ! field: in E3SM, this field is folded in to the other runoff fields. Eventually,
     ! E3SM may want to update its land and runoff models to map irrigation specially, as

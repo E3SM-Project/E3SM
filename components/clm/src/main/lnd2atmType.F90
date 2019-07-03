@@ -69,7 +69,8 @@ module lnd2atmType
      real(r8), pointer :: t_soisno_grc(:,:) => null()        ! grc soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd) 
      real(r8), pointer :: Tqsur_grc(:) => null()             ! grc Temperature of surface runoff
      real(r8), pointer :: Tqsub_grc(:) => null()             ! grc Temperature of subsurface runoff
-     
+     real(r8), pointer :: qflx_rofmud_grc(:) => null()             ! grc sediment yield    
+
    contains
 
      procedure, public  :: Init
@@ -144,12 +145,14 @@ contains
     allocate(this%qflx_rofliq_qsub_doc_grc(begg:endg))          ; this%qflx_rofliq_qsub_doc_grc(:) = ival
     allocate(this%qflx_rofliq_qsub_dic_grc(begg:endg))          ; this%qflx_rofliq_qsub_dic_grc(:) = ival 
 
+
     allocate(this%zwt_grc              (begg:endg))            ; this%zwt_grc              (:) =ival
     allocate(this%t_grnd_grc           (begg:endg))            ; this%t_grnd_grc           (:) =ival
     allocate(this%t_soisno_grc (begg:endg,-nlevsno+1:nlevgrnd)) ; this%t_soisno_grc        (:,:) =ival
     allocate(this%Tqsur_grc            (begg:endg))            ; this%Tqsur_grc            (:) =ival
     allocate(this%Tqsub_grc            (begg:endg))            ; this%Tqsub_grc            (:) =ival
-    
+    allocate(this%qflx_rofmud_grc      (begg:endg))            ; this%qflx_rofmud_grc            (:) =ival
+
     if (shr_megan_mechcomps_n>0) then
        allocate(this%flxvoc_grc(begg:endg,1:shr_megan_mechcomps_n));  this%flxvoc_grc(:,:)=ival
     endif
