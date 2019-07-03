@@ -78,14 +78,18 @@ def build_cime_component_lib(case, compname, libroot, bldroot, use_old=True):
         run_gmake(case, compclass, libroot, bldroot)
 
 ###############################################################################
-def run_gmake(case, compclass, _, bldroot, libname="", user_cppdefs=""):
+def run_gmake(case, compclass, libroot, bldroot, libname="", user_cppdefs=""):
 ###############################################################################
     gmake_args = get_standard_makefile_args(case)
 
     gmake_j   = case.get_value("GMAKE_J")
     gmake     = case.get_value("GMAKE")
 
-    complib = libname if libname else compclass
+    complib = ""
+    if libname:
+        complib  = os.path.join(libroot, "lib{}.a".format(libname))
+    else:
+        complib  = os.path.join(libroot, "lib{}.a".format(compclass))
 
     makefile = os.path.join(case.get_value("CASETOOLS"), "Makefile")
 
