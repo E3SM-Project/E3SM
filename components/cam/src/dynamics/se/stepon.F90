@@ -490,21 +490,18 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
 	 
            ! Note that this calculation will not provide b4b results with 
 	   !  an E3SM because the dynamics tendency is not computed in the exact
-	   !  same way as an E3SM run.
+	   !  same way as an E3SM run, introducing error with roundoff 
 	   forcing_temp(i+(j-1)*np,k) = (dyn_in%elem(ie)%state%T(i,j,k,tl_f) - &
-	        ftmp_temp(i,j,k,ie))/dtime - dyn_in%elem(ie)%derived%FT(i,j,k)
-		
+	        ftmp_temp(i,j,k,ie))/dtime - dyn_in%elem(ie)%derived%FT(i,j,k)	
            out_temp(i+(j-1)*np,k) = dyn_in%elem(ie)%state%T(i,j,k,tl_f)
 	   out_u(i+(j-1)*np,k) = dyn_in%elem(ie)%state%v(i,j,1,k,tl_f)
 	   out_v(i+(j-1)*np,k) = dyn_in%elem(ie)%state%v(i,j,2,k,tl_f)
 	   out_q(i+(j-1)*np,k) = dyn_in%elem(ie)%state%Q(i,j,k,1)
 	   out_psv(i+(j-1)*np) = dyn_in%elem(ie)%state%ps_v(i,j,tl_f)
 
-	   do p=1,pcnst	 
-             ! If B4B results are not desired in the SCM, then we simply need
-	     !  to compute the tendency in r8		
+	   do p=1,pcnst	 	
 	     forcing_q(i+(j-1)*np,k,p) = (dyn_in%elem(ie)%state%Q(i,j,k,p) - &
-	        ftmp_q(i,j,k,p,ie))/dtime	
+	        ftmp_q(i,j,k,p,ie))/dtime
 	   enddo
 	   
 	 enddo
@@ -516,7 +513,6 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
      call outfld('q',out_q,npsq,ie)
      call outfld('u',out_u,npsq,ie)
      call outfld('v',out_v,npsq,ie)
-
      call outfld('divT3d',forcing_temp,npsq,ie)
      do p=1,pcnst
        call outfld(trim(cnst_name(p))//'_dten',forcing_q(:,:,p),npsq,ie)   
