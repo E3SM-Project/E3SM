@@ -1353,7 +1353,7 @@ contains
 #ifdef MODEL_THETA_L
   use control_mod,        only : theta_hydrostatic_mode
   use physical_constants, only : cp, g, kappa, Rgas, p0
-  use element_ops,        only : get_temperature, get_r_star, get_pi
+  use element_ops,        only : get_temperature, get_r_star, get_hydro_pressure
   use eos,                only : pnh_and_exner_from_eos
 #endif
   implicit none
@@ -1367,7 +1367,7 @@ contains
   integer :: i,j,k,ie,q
   real (kind=real_kind)  :: fq
   real (kind=real_kind)  :: dp(np,np,nlev), ps(np,np), dp_adj(np,np,nlev)
-  real (kind=real_kind)  :: pi(np,np,nlev)  ! hydrostatic pressure
+  real (kind=real_kind)  :: phydro(np,np,nlev)  ! hydrostatic pressure
   logical :: adjust_ps   ! adjust PS or DP3D to conserve dry mass
 #ifdef MODEL_THETA_L
   real (kind=real_kind)  :: pprime(np,np,nlev)
@@ -1402,7 +1402,7 @@ contains
 #ifdef MODEL_THETA_L
    !compute temperatue and NH perturbation pressure before Q tendency
    do k=1,nlev
-      pi(:,:,k)=hvcoord%ps0*hvcoord%hyam(k) + ps(:,:)*hvcoord%hybm(k)
+      phydro(:,:,k)=hvcoord%ps0*hvcoord%hyam(k) + ps(:,:)*hvcoord%hybm(k)
    enddo
 
    !one can set pprime=0 to hydro regime but it is not done in master
@@ -1410,7 +1410,7 @@ contains
    call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,np1),dp,&
         elem%state%phinh_i(:,:,:,np1),pnh,exner,dpnh_dp_i)
    do k=1,nlev
-      pprime(:,:,k) = pnh(:,:,k)-pi(:,:,k)
+      pprime(:,:,k) = pnh(:,:,k)-phydro(:,:,k)
    enddo
    call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
    tn1=exner* elem%state%vtheta_dp(:,:,:,np1)*(Rgas/rstarn1) / dp
@@ -1491,11 +1491,11 @@ contains
    if (adjust_ps) then
       ! recompute hydrostatic pressure from ps
       do k=1,nlev  
-         pi(:,:,k)=hvcoord%ps0*hvcoord%hyam(k) + ps(:,:)*hvcoord%hybm(k)
+         phydro(:,:,k)=hvcoord%ps0*hvcoord%hyam(k) + ps(:,:)*hvcoord%hybm(k)
       enddo
    else
       ! recompute hydrostatic pressure from dp3d
-      call get_pi(pi,dp_adj,hvcoord)
+      call get_hydro_pressure(phydro,dp_adj,hvcoord)
    endif
    
    
@@ -1510,7 +1510,7 @@ contains
       !     (
       !     elem(ie)%state%phinh_i(:,:,k,n0)-elem(ie)%state%phinh_i(:,:,k+1,n0))
       ! constant NH perturbation pressure
-      pnh(:,:,k)=pi(:,:,k) + pprime(:,:,k)
+      pnh(:,:,k)=phydro(:,:,k) + pprime(:,:,k)
       exner(:,:,k)=(pnh(:,:,k)/p0)**(Rgas/Cp)
    enddo
    
