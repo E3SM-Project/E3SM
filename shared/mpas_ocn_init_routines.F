@@ -408,6 +408,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       logical, pointer :: config_do_restart, config_check_ssh_consistency
       logical, pointer :: config_check_zlevel_consistency
       character (len=StrKIND), pointer :: config_vert_coord_movement
+      real (kind=RKIND), pointer :: config_vert_taper_weight_depth_1, config_vert_taper_weight_depth_2
 
       type (mpas_pool_iterator_type) :: groupItr
 
@@ -415,6 +416,8 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
       call mpas_pool_get_config(domain % configs, 'config_check_ssh_consistency', config_check_ssh_consistency)
       call mpas_pool_get_config(domain % configs, 'config_check_zlevel_consistency', config_check_zlevel_consistency)
+      call mpas_pool_get_config(domain % configs, 'config_vert_taper_weight_depth_1', config_vert_taper_weight_depth_1)
+      call mpas_pool_get_config(domain % configs, 'config_vert_taper_weight_depth_2', config_vert_taper_weight_depth_2)
 
       ! Initialize z-level mesh variables from h, read in from input file.
       block => domain % blocklist
@@ -460,34 +463,16 @@ end subroutine ocn_init_routines_compute_max_level!}}}
 
             vertCoordMovementWeights = 1.0_RKIND
 
-         ! Set weight tapering:
-         !  1.0 shallower than depth1
-         !  linear in between
-         !  0.0 deeper than depth2
-         elseif (config_vert_coord_movement.eq.'tapered_250m') then
+         elseif (config_vert_coord_movement.eq.'tapered') then
 
-            depth1 = 250.0
-            depth2 = 500.0
+            ! Set weight tapering:
+            !  1.0 shallower than config_vert_taper_weight_depth_1
+            !  linear in between
+            !  0.0 deeper than config_vert_taper_weight_depth_2
             do k = 1, nVertLevels
-               vertCoordMovementWeights(k) = 1.0_RKIND + (refZMid(k) + depth1)/(depth2 - depth1)
-               vertCoordMovementWeights(k) = max( 0.0_RKIND, min( 1.0_RKIND, vertCoordMovementWeights(k) ) )
-            end do
-
-         elseif (config_vert_coord_movement.eq.'tapered_500m') then
-
-            depth1 = 500.0
-            depth2 = 1000.0
-            do k = 1, nVertLevels
-               vertCoordMovementWeights(k) = 1.0_RKIND + (refZMid(k) + depth1)/(depth2 - depth1)
-               vertCoordMovementWeights(k) = max( 0.0_RKIND, min( 1.0_RKIND, vertCoordMovementWeights(k) ) )
-            end do
-
-         elseif (config_vert_coord_movement.eq.'tapered_1000m') then
-
-            depth1 = 1000.0
-            depth2 = 1500.0
-            do k = 1, nVertLevels
-               vertCoordMovementWeights(k) = 1.0_RKIND + (refZMid(k) + depth1)/(depth2 - depth1)
+               vertCoordMovementWeights(k) = 1.0_RKIND + &
+                 (refZMid(k) + config_vert_taper_weight_depth_1) / &
+                 (config_vert_taper_weight_depth_2 - config_vert_taper_weight_depth_1)
                vertCoordMovementWeights(k) = max( 0.0_RKIND, min( 1.0_RKIND, vertCoordMovementWeights(k) ) )
             end do
 
