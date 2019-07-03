@@ -1336,6 +1336,48 @@ end subroutine clubb_init_cnst
    else
      apply_const = 0._r8  ! Never want this if CLUBB's moments are not advected
    endif
+   
+   !  Define forcings from CAM to CLUBB as zero for momentum and thermo,
+   !  forcings already applied through CAM
+   thlm_forcing(1:pverp) = 0._r8
+   rtm_forcing(1:pverp)  = 0._r8
+   um_forcing(1:pverp)   = 0._r8
+   vm_forcing(1:pverp)   = 0._r8
+
+   wprtp_forcing(1:pverp)   = 0._r8
+   wpthlp_forcing(1:pverp)  = 0._r8
+   rtp2_forcing(1:pverp)    = 0._r8
+   thlp2_forcing(1:pverp)   = 0._r8
+   rtpthlp_forcing(1:pverp) = 0._r8
+   
+   ! rtp3_in and thlp3_in are not currently used in CLUBB's default code.
+   rtp3_in(:)  = 0.0_r8
+   thlp3_in(:) = 0.0_r8
+   
+   !  Define surface sources for transported variables for diffusion, will 
+   !  be zero as these tendencies are done in clubb_surface
+   do ixind=1,edsclr_dim
+      wpedsclrp_sfc(ixind) = 0._r8
+   enddo 
+
+   ice_supersat_frac(1:pverp) = 0._r8
+   
+   !  Higher order scalar inputs, set to zero
+   wpsclrp_sfc(:)      = 0._r8
+   hydromet(:,:)       = 0._r8
+   wphydrometp(:,:)    = 0._r8
+   wp2hmp(:,:)         = 0._r8
+   rtphmp_zt(:,:)      = 0._r8
+   thlphmp_zt(:,:)     = 0._r8
+   
+   !  Initialize forcings for transported scalars to zero
+   sclrm_forcing(:,:)   = 0._r8
+   edsclrm_forcing(:,:) = 0._r8
+   
+   !  Determine Coriolis force at given latitude.  This is never used
+   !  when CLUBB is implemented in a host model, therefore just set
+   !  to zero.
+   fcor = 0._r8
 
  !  Get indicees for cloud and ice mass and cloud and ice number
 
@@ -1513,12 +1555,6 @@ end subroutine clubb_init_cnst
    !  determine number of timesteps CLUBB core should be advanced, 
    !  host time step divided by CLUBB time step  
    nadv = max(hdtime/dtime,1._r8)
-  
-   !  Initialize forcings for transported scalars to zero
-   
-   sclrm_forcing(:,:)   = 0._r8
-   edsclrm_forcing(:,:) = 0._r8
-   sclrm(:,:)           = 0._r8
    
    minqn = 0._r8
    newfice(:,:) = 0._r8
@@ -1650,11 +1686,6 @@ end subroutine clubb_init_cnst
       !  CLUBB's budget stats
       time_elapsed = hdtime
 
-      !  Determine Coriolis force at given latitude.  This is never used
-      !  when CLUBB is implemented in a host model, therefore just set
-      !  to zero.
-      fcor = 0._r8 
-
       !  Define the CLUBB momentum grid (in height, units of m)
       do k=1,pverp
          zi_g(k) = state1%zi(i,pverp-k+1)-state1%zi(i,pver+1)
@@ -1756,27 +1787,6 @@ end subroutine clubb_init_cnst
         vpwp_sfc = -vm(i,pver)*ustar**2/ubar
     
       endif   
-
-      !  Define surface sources for transported variables for diffusion, will 
-      !  be zero as these tendencies are done in clubb_surface
-      do ixind=1,edsclr_dim
-         wpedsclrp_sfc(ixind) = 0._r8
-      enddo 
-
-      !  Define forcings from CAM to CLUBB as zero for momentum and thermo,
-      !  forcings already applied through CAM
-      thlm_forcing(1:pverp) = 0._r8
-      rtm_forcing(1:pverp)  = 0._r8
-      um_forcing(1:pverp)   = 0._r8
-      vm_forcing(1:pverp)   = 0._r8
- 
-      wprtp_forcing(1:pverp)   = 0._r8
-      wpthlp_forcing(1:pverp)  = 0._r8
-      rtp2_forcing(1:pverp)    = 0._r8
-      thlp2_forcing(1:pverp)   = 0._r8
-      rtpthlp_forcing(1:pverp) = 0._r8
- 
-      ice_supersat_frac(1:pverp) = 0._r8
  
       !  Set stats output and increment equal to CLUBB and host dt
       stats_tsamp = dtime
@@ -1847,32 +1857,22 @@ end subroutine clubb_init_cnst
          if (k .ne. 1) then
             pre_in(k)    = prer_evap(i,pverp-k+1)
          endif
-
-         !  Initialize these to prevent crashing behavior
-         wprcp_out(k)        = 0._r8
-         rcm_in_layer_out(k) = 0._r8
-         cloud_cover_out(k)  = 0._r8
-         edsclr_in(k,:)      = 0._r8
-         edsclr_out(k,:)     = 0._r8
-         khzm_out(k)         = 0._r8
-         khzt_out(k)         = 0._r8
-
-         !  higher order scalar stuff, put to zero
-         sclrm(k,:)          = 0._r8
-         wpsclrp(k,:)        = 0._r8
-         sclrp2(k,:)         = 0._r8
-         sclrprtp(k,:)       = 0._r8
-         sclrpthlp(k,:)      = 0._r8
-         wpsclrp_sfc(:)      = 0._r8
-         hydromet(k,:)       = 0._r8
-         wphydrometp(k,:)    = 0._r8
-         wp2hmp(k,:)         = 0._r8
-         rtphmp_zt(k,:)      = 0._r8
-         thlphmp_zt(k,:)     = 0._r8
  
       enddo
      
       pre_in(1) = pre_in(2)
+      
+      !  Initialize these to prevent crashing behavior
+      edsclr_in(:,:)      = 0._r8
+      edsclr_out(:,:)     = 0._r8
+
+      !  Higher order scalar inouts, set to zero
+      sclrm(:,:)          = 0._r8
+      wpsclrp(:,:)        = 0._r8
+      sclrp2(:,:)         = 0._r8
+      sclrprtp(:,:)       = 0._r8
+      sclrpthlp(:,:)      = 0._r8
+      
      
       if (clubb_do_adv) then
         if (macmic_it .eq. 1) then
@@ -1894,10 +1894,6 @@ end subroutine clubb_init_cnst
           enddo
         endif
       endif
-      
-      ! rtp3_in and thlp3_in are not currently used in CLUBB's default code.
-      rtp3_in(:)  = 0.0_r8
-      thlp3_in(:) = 0.0_r8
   
       !  Do the same for tracers 
       icnt=0
