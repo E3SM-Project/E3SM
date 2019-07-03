@@ -682,7 +682,7 @@ contains
              birim(i,k) = 0._rtype
           endif
 
-          t(i,k) = th(i,k) * inv_exner
+          t(i,k) = th(i,k) * inv_exner(i,k)
 
 
          !Activaiton of cloud droplets 
