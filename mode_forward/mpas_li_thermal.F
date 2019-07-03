@@ -2818,7 +2818,7 @@ module li_thermal
       factor = deltat / thickness**2
 
       subd(2:nVertLevels+1) = -factor * diffusivity(1:nVertLevels) * dsigmaTerm(1:nVertLevels,1)
-      supd(2:nVertLevels+1) = -factor * diffusivity(2:nVertLevels+1)   * dsigmaTerm(1:nVertLevels,2)
+      supd(2:nVertLevels+1) = -factor * diffusivity(2:nVertLevels+1) * dsigmaTerm(1:nVertLevels,2)
       diag(2:nVertLevels+1) = 1.0_RKIND - subd(2:nVertLevels+1) - supd(2:nVertLevels+1)
       rhs(2:nVertLevels+1)  = enthalpy(1:nVertLevels) + heatDissipation(1:nVertLevels) * deltat * rhoi * cp_ice
       !TZ: Make sure the heat advection is using the upwind scheme, or the solution will not be stable
