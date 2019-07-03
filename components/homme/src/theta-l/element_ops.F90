@@ -35,11 +35,14 @@
 !  set_forcing_rayleigh_friction()
 !     apply rayleigh friction to prognostic variables, used by some DCMIP2016 tests
 !
-! Accessory routines used by the above:
+!  get_temperature()   used in CAM dp_coupling layer
+!
+! UTILITY ROUTINES USED BY THETA-L MODEL
 !  get_pottemp()
-!  get_temperature()
 !  get_dpnh_dp()
+!  get_hydro_pressure()
 !  get_nonhydro_pressure()
+!  get_phi()
 !  get_cp_star()
 !  get_R_star()
 !  set_theta_ref()
@@ -153,30 +156,6 @@ contains
   
 
   !_____________________________________________________________________
-  subroutine get_hydro_pressure(pi,dp,hvcoord)
-  !
-  implicit none
-    
-  real (kind=real_kind), intent(out)  :: p(np,np,nlev)
-  real (kind=real_kind), intent(in)   :: dp(np,np,nlev)
-  type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
-  
-  integer :: k
-  real(kind=real_kind), dimension(np,np,nlevp) :: p_i
-
-  p_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
-  do k=1,nlev  ! SCAN
-     p_i(:,:,k+1)=p_i(:,:,k) + dp(:,:,k)
-  enddo
-  do k=1,nlev
-     p(:,:,k)=p_i(:,:,k) + dp(:,:,k)/2
-  enddo
-  
-  
-  end subroutine get_hydro_pressure
-  
-
-  !_____________________________________________________________________
   subroutine get_temperature(elem,temperature,hvcoord,nt)
   !
   ! Should only be called outside timestep loop, state variables on reference levels
@@ -238,6 +217,31 @@ contains
   enddo
   end subroutine 
 
+
+  !_____________________________________________________________________
+  subroutine get_hydro_pressure(p,dp,hvcoord)
+  !
+  implicit none
+    
+  real (kind=real_kind), intent(out)  :: p(np,np,nlev)
+  real (kind=real_kind), intent(in)   :: dp(np,np,nlev)
+  type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
+  
+  integer :: k
+  real(kind=real_kind), dimension(np,np,nlevp) :: p_i
+
+  p_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
+  do k=1,nlev  ! SCAN
+     p_i(:,:,k+1)=p_i(:,:,k) + dp(:,:,k)
+  enddo
+  do k=1,nlev
+     p(:,:,k)=p_i(:,:,k) + dp(:,:,k)/2
+  enddo
+  
+  
+  end subroutine get_hydro_pressure
+  
+
   !_____________________________________________________________________
   subroutine get_nonhydro_pressure(elem,pnh,exner,hvcoord,nt,ntQ)
     implicit none
@@ -249,18 +253,15 @@ contains
     integer,                intent(in)  :: nt
     integer,                intent(in)  :: ntQ
     
-    real (kind=real_kind), dimension(np,np,nlev) :: dp
     real (kind=real_kind), dimension(np,np,nlevp) :: dpnh_dp_i
-    integer :: k
 
-    dp=elem%state%dp3d(:,:,:,nt)
     call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
-         dp,elem%state%phinh_i(:,:,:,nt),pnh,exner,dpnh_dp_i)
+         elem%state%dp3d(:,:,:,nt),elem%state%phinh_i(:,:,:,nt),&
+         pnh,exner,dpnh_dp_i)
 
   end subroutine
 
 
-!why is it called get, not set?
   subroutine get_phi(elem,phi,phi_i,hvcoord,nt,ntQ)
     implicit none
     
@@ -292,8 +293,42 @@ contains
     
   end subroutine
 
-       
 
+  !_____________________________________________________________________
+  subroutine get_cp_star(cp_star,Q)
+  !
+  !
+  implicit none
+  real (kind=real_kind), intent(out):: cp_star(np,np,nlev)
+  real (kind=real_kind), intent(in) :: Q(np,np,nlev)
+
+  integer :: k
+  if (use_moisture) then
+     do k=1,nlev
+        cp_star(:,:,k) = (Cp + (Cpwater_vapor-Cp)*Q(:,:,k) )
+     enddo
+  else
+     cp_star(:,:,:)=Cp
+  endif
+  end subroutine
+
+
+  !_____________________________________________________________________
+  subroutine get_R_star(R_star,Q)
+  !
+  implicit none
+  real (kind=real_kind), intent(out):: R_star(np,np,nlev)
+  real (kind=real_kind), intent(in) :: Q(np,np,nlev)
+
+  integer :: k
+  if (use_moisture) then
+     do k=1,nlev
+        R_star(:,:,k) =(Rgas + (Rwater_vapor - Rgas)*Q(:,:,k))
+     enddo
+  else
+     R_star(:,:,:)=Rgas
+  endif
+  end subroutine
 
 
   !_____________________________________________________________________
@@ -448,7 +483,6 @@ contains
 
     integer :: k
 
-    ! set prognostic state variables at level midpoints (and interfaces)????
     u   = elem%state%v   (:,:,1,:,nt)
     v   = elem%state%v   (:,:,2,:,nt)
     ps  = elem%state%ps_v(:,:,  nt)
@@ -583,47 +617,6 @@ contains
 
 
   end subroutine tests_finalize
-
-
-
-  !_____________________________________________________________________
-  subroutine get_cp_star(cp_star,Q)
-  !
-  !
-  implicit none
-  real (kind=real_kind), intent(out):: cp_star(np,np,nlev)
-  real (kind=real_kind), intent(in) :: Q(np,np,nlev)
-
-  integer :: k
-  if (use_moisture) then
-     do k=1,nlev
-        cp_star(:,:,k) = (Cp + (Cpwater_vapor-Cp)*Q(:,:,k) )
-     enddo
-  else
-     cp_star(:,:,:)=Cp
-  endif
-  end subroutine
-
-
-
-
-  !_____________________________________________________________________
-  subroutine get_R_star(R_star,Q)
-  !
-  implicit none
-  real (kind=real_kind), intent(out):: R_star(np,np,nlev)
-  real (kind=real_kind), intent(in) :: Q(np,np,nlev)
-
-  integer :: k
-  if (use_moisture) then
-     do k=1,nlev
-        R_star(:,:,k) =(Rgas + (Rwater_vapor - Rgas)*Q(:,:,k))
-     enddo
-  else
-     R_star(:,:,:)=Rgas
-  endif
-  end subroutine
-
 
 
 
