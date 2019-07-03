@@ -357,14 +357,12 @@ def rescale_for_shell(f_init, x, y, z): #{{{
 #}}}
 
 
-def get_particle_coords(f_init, seed_center=True, seed_vertex=False, add_noise=False): #{{{
+def get_particle_coords(f_init, seed_center=True, seed_vertex=False, add_noise=False,
+                        CFLmin=None): #{{{
     xCell = f_init.variables['xCell'][:]
     yCell = f_init.variables['yCell'][:]
     zCell = f_init.variables['zCell'][:]
     
-    # assumes particle moves more than 1/100 of a cell scale per time step
-    # 10000 m cell, 0.1m/s flow, 2 hr time step is CFL=0.07
-    CFLmin = 0.005
     # Case of only cell-center seeding a single particle.
     if seed_center and not add_noise:
         cells_center = (xCell, yCell, zCell)
@@ -454,11 +452,11 @@ def expand_nlevels(x, n): #{{{
     return np.tile(x, (n)) #}}}
 
 
-def particle_coords(f_init, downsample, seed_center, seed_vertex, add_noise): #{{{
+def particle_coords(f_init, downsample, seed_center, seed_vertex, add_noise, CFLmin): #{{{
 
     f_init = netCDF4.Dataset(f_init,'r')
     nparticles = len(f_init.dimensions['nCells'])
-    cells, cpts = get_particle_coords(f_init, seed_center, seed_vertex, add_noise)
+    cells, cpts = get_particle_coords(f_init, seed_center, seed_vertex, add_noise, CFLmin)
     xCell, yCell, zCell = cells
     if downsample:
         tri = f_init.variables['cellsOnVertex'][:,:] - 1
@@ -533,9 +531,10 @@ def build_surface_floats(cpts, xCell, yCell, zCell, afilter): #{{{
 
 def build_particle_file(f_init, f_name, f_decomp, types, spatialfilter, buoySurf, 
                         nVertLevels, downsample, vertseedtype, seed_center, seed_vertex, 
-                        add_noise): #{{{
+                        add_noise, CFLmin): #{{{
 
-    cpts, xCell, yCell, zCell = particle_coords(f_init, downsample, seed_center, seed_vertex, add_noise)
+    cpts, xCell, yCell, zCell = particle_coords(f_init, downsample, seed_center, seed_vertex, 
+                                                add_noise, CFLmin)
 
     # build particles
     particlelist = []
@@ -617,9 +616,11 @@ if __name__ == "__main__":
             help="Seed three particles by a fixed epsilon off each cell vertex.")
     parser.add_argument("-n", "--add_noise", dest="add_noise", action="store_true",
             help="Add gaussian noise to generate three particles around the cell center.")
-
+    parser.add_argument("--cfl_min", dest="CFLmin", type=float, default=0.005,
+            help="Minimum assumed CFL, which is used in perturbing particles if -v " +
+                 "or -n is called.")
     args = parser.parse_args()
-
+    
     if not '.info.part.' in args.graph:
         OSError('Graph file processor count is inconsistent with processors specified!')
     if not ('.' + str(args.procs)) in args.graph:
@@ -644,7 +645,8 @@ if __name__ == "__main__":
         print('Building particle file...')
         build_particle_file(args.init, args.particles, args.graph, args.types, args.spatialfilter,
                 np.linspace(float(args.potdensmin), float(args.potdensmax), int(args.nbuoysurf)), int(args.nvertlevels),
-                int(args.downsample), args.vertseedtype, args.loc)
+                int(args.downsample), args.vertseedtype, args.seed_center, args.seed_vertex, args.add_noise,
+                args.CFLmin)
         print('Done building particle file')
     else:
         print('Remapping particles...')
