@@ -1579,6 +1579,7 @@ subroutine diag_surf (cam_in, cam_out, ps, trefmxav, trefmnav )
     call outfld('lhflx   ',cam_in%lhf,   pcols,   lchnk)
     call outfld('trefht  ',cam_in%tref,  pcols,   lchnk)
     call outfld('Tg', cam_in%ts, pcols, lchnk)
+    call outfld('Tsair',cam_in%ts, pcols, lchnk)
 #endif
 !
 ! Ouput ocn and ice fractions
