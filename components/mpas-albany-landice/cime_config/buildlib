@@ -1,38 +1,86 @@
-#!/usr/bin/env python
+#! /usr/bin/env perl
+use strict;
+use File::Compare;
 
-"""
-build mpas land ice library
-"""
+my $component = "mpas-albany-landice";
+my $component_dir = "glc";
+my $component_driver = "glc_cesm_driver";
+my $core = "landice";
+my $esm = "E3SM";
 
-import sys, os
+if ($#ARGV == -1) {
+    die " ERROR $component buildlib: must specify a caseroot input argument";
+}
 
-_CIMEROOT = os.environ.get("CIMEROOT")
-if _CIMEROOT is None:
-    raise SystemExit("ERROR: must set CIMEROOT environment variable")
+my ($CASEROOT) = @ARGV;
+chdir "${CASEROOT}";
 
-_LIBDIR = os.path.join(_CIMEROOT, "scripts", "Tools")
-sys.path.append(_LIBDIR)
+my $SRCROOT      = `./xmlquery SRCROOT      -value`;
+my $OBJROOT      = `./xmlquery OBJROOT      -value`;
+my $CASEBUILD    = `./xmlquery CASEBUILD    -value`;
+my $CASETOOLS    = `./xmlquery CASETOOLS    -value`;
+my $OBJROOT      = `./xmlquery OBJROOT	    -value`;
+my $LIBROOT      = `./xmlquery LIBROOT	    -value`;
+my $GMAKE_J      = `./xmlquery GMAKE_J	    -value`;
+my $GMAKE        = `./xmlquery GMAKE	    -value`;
+my $MACH         = `./xmlquery MACH         -value`;
+my $MALI_USE_ALBANY = `./xmlquery MALI_USE_ALBANY -value`;
+my $MAKE_ARGS    = `./Tools/get_standard_makefile_args`;
+chomp($MAKE_ARGS);
 
-from standard_script_setup import *
-from CIME.buildlib         import parse_input
-from CIME.case             import Case
-from CIME.utils            import expect, run_bld_cmd_ensure_logging, safe_copy
+#---------------------------------------------------------------------------
+# Copy MALI source
+#---------------------------------------------------------------------------
 
-logger = logging.getLogger(__name__)
+mkdir "$OBJROOT/$component_dir";
+mkdir "$OBJROOT/$component_dir/source";
+my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/Makefile* $OBJROOT/$component_dir/source/.";
+system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
+my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/core_landice $OBJROOT/$component_dir/source/.";
+system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
+my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/external $OBJROOT/$component_dir/source/.";
+system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
+my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/operators $OBJROOT/$component_dir/source/.";
+system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
+my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/framework $OBJROOT/$component_dir/source/.";
+system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
+my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/tools $OBJROOT/$component_dir/source/.";
+system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
 
-###############################################################################
-def buildlib(bldroot, installpath, case):
-###############################################################################
-    pass
+my $drvcpy = "cp -fpR $SRCROOT/components/$component/driver ${OBJROOT}/$component_dir/source/$component_driver";
+system($drvcpy) == 0 or die "ERROR: $component buildlib $drvcpy failed: $?\n";
 
-###############################################################################
-def _main_func():
-###############################################################################
-    caseroot, libroot, bldroot = parse_input(sys.argv)
-    with Case(caseroot, read_only=False) as case:
-        buildlib(bldroot, libroot, case)
+my $root_path = "$OBJROOT/$component_dir/source";
 
-###############################################################################
+my $bldcmd = "cd $root_path; ${GMAKE} all ${MAKE_ARGS} CORE=$core ESM=$esm DRIVER=$component_driver GEN_F90=true";
+$bldcmd .= ' ROOT_DIR="';
+$bldcmd .= "$root_path";
+$bldcmd .= '"';
 
-if __name__ == "__main__":
-    _main_func()
+if ( $MACH eq "edison" ) {
+	$bldcmd .= ' TOOL_TARGET_ARCH="-target-cpu=sandybridge"';
+} elsif ( $MACH eq "titan" ) {
+	$bldcmd .= ' TOOL_TARGET_ARCH="-target-cpu=istanbul"';
+}
+if (defined $ENV{MPAS_TOOL_DIR}) {
+	$bldcmd .= " MPAS_TOOL_DIR=$ENV{MPAS_TOOL_DIR}";
+}
+
+# Check for Albany build
+if ( $MALI_USE_ALBANY eq "TRUE" ) {
+        print "Building MALI with Albany support.\n";
+        $bldcmd .= ' ALBANY=true';
+        # Note MPAS_EXTERNAL_LIBS is not needed since E3SM is doing the linking!
+}
+
+print "Compiling MALI with this command: $bldcmd \n";
+
+system($bldcmd) == 0 or die "ERROR: $component buildlib $bldcmd failed: $?\n";
+
+my $cpyobjs = "find $root_path -name *.mod -exec cp -p {} $OBJROOT/$component_dir/obj/. \\\;";
+
+system($cpyobjs) == 0 or die "ERROR: $component buildlib $cpyobjs failed: $?\n";
+
+my $cpylib = "cp -p $root_path/lib$component_dir.a ${LIBROOT}/lib$component_dir.a";
+
+system($cpylib) == 0 or die "ERROR: $component buildlib $cpylib failed: $?\n";

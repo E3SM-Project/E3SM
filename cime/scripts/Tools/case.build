@@ -62,6 +62,9 @@ def parse_command_line(args, description):
                         help="Case directory to build.\n"
                         "Default is current directory.")
 
+    parser.add_argument("--use-old", action="store_true",
+                        help="Use old Makefile build system (not cmake)")
+
     mutex_group = parser.add_mutually_exclusive_group()
 
     # TODO mvertens: the following is hard-wired - otherwise it does not work with nuopc
@@ -106,12 +109,12 @@ def parse_command_line(args, description):
     cleanlist = args.clean if args.clean is None or len(args.clean) else comps
     buildlist = None if args.build is None or len(args.build) == 0 else args.build
 
-    return args.caseroot, args.sharedlib_only, args.model_only, cleanlist, args.clean_all, buildlist, clean_depends, not args.skip_provenance_check
+    return args.caseroot, args.sharedlib_only, args.model_only, cleanlist, args.clean_all, buildlist, clean_depends, not args.skip_provenance_check, args.use_old
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    caseroot, sharedlib_only, model_only, cleanlist, clean_all, buildlist,clean_depends, save_build_provenance = parse_command_line(sys.argv, description)
+    caseroot, sharedlib_only, model_only, cleanlist, clean_all, buildlist,clean_depends, save_build_provenance, use_old = parse_command_line(sys.argv, description)
 
     success = True
     with Case(caseroot, read_only=False) as case:
@@ -135,11 +138,12 @@ def _main_func(description):
                 raise
 
             expect(buildlist is None, "Build lists don't work with tests")
-            success = test.build(sharedlib_only=sharedlib_only, model_only=model_only)
+            success = test.build(sharedlib_only=sharedlib_only, model_only=model_only, old_build=use_old)
         else:
             success = build.case_build(caseroot, case=case, sharedlib_only=sharedlib_only,
                                        model_only=model_only, buildlist=buildlist,
-                                       save_build_provenance=save_build_provenance)
+                                       save_build_provenance=save_build_provenance,
+                                       use_old=use_old)
 
     sys.exit(0 if success else 1)
 
