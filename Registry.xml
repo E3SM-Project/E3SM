@@ -2206,7 +2206,7 @@
 			 description="Reference depth of ocean for each vertical interface. Used in 'z-level' type runs."
 		/>
 		<var name="vertCoordMovementWeights" type="real" dimensions="nVertLevels" units="unitless"
-			 description="Weights used for distribution of sea surface heigh purturbations through multiple vertical levels."
+			 description="Weights used for distribution of sea surface height perturbations through multiple vertical levels."
 		/>
 		<var name="boundaryEdge" type="integer" dimensions="nVertLevels nEdges" units="unitless"
 			 description="Mask for determining boundary edges. A boundary edge has only one active ocean cell neighboring it."
@@ -2218,13 +2218,13 @@
 			 description="Mask for determining boundary cells. A boundary cell has at least one inactive cell neighboring it."
 		/>
 		<var name="edgeMask" type="integer" dimensions="nVertLevels nEdges" units="unitless"
-			 description="Mask on edges that determines if computations should be done on edge."
+			 description="Mask on edges that determines if computations should be done on edges."
 		/>
 		<var name="vertexMask" type="integer" dimensions="nVertLevels nVertices" units="unitless"
-			 description="Mask on vertices that determines if computations should be done on vertice."
+			 description="Mask on vertices that determines if computations should be done on vertices."
 		/>
 		<var name="cellMask" type="integer" dimensions="nVertLevels nCells" units="unitless"
-			 description="Mask on cells that determines if computations should be done on cell."
+			 description="Mask on cells that determines if computations should be done on cells."
 		/>
 		<var name="edgeSignOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
 			 description="Sign of edge contributions to a cell for each edge on cell. Used for bit-reproducible loops. Represents directionality of vector connecting cells."
