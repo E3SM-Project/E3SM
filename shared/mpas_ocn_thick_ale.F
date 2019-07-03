@@ -110,7 +110,7 @@ contains
       integer, pointer :: nCells, nVertLevels
       integer, dimension(:), pointer :: maxLevelCell
 
-      real (kind=RKIND) :: thicknessSum, remainder, newThickness, thicknessWithRemainder
+      real (kind=RKIND) :: weightSum, remainder, newThickness, thicknessWithRemainder
       real (kind=RKIND), dimension(:), pointer :: vertCoordMovementWeights
       real (kind=RKIND), dimension(:), allocatable :: &
          SSH_ALE_thickness,      & !> ALE thickness alteration due to SSH (z-star)
@@ -151,16 +151,19 @@ contains
       do iCell = 1, nCells
          kMax = maxLevelCell(iCell)
 
-         thicknessSum = 1e-14_RKIND
+         weightSum = 1e-14_RKIND
          do k = 1, kMax
-            SSH_ALE_Thickness(k) = SSH(iCell) * vertCoordMovementWeights(k) * restingThickness(k, iCell)
-            thicknessSum = thicknessSum + vertCoordMovementWeights(k) * restingThickness(k, iCell)
+            weightSum = weightSum + vertCoordMovementWeights(k) 
          end do
 
-         ! Note that restingThickness is nonzero, and remaining terms are perturbations about zero.
          do k = 1, kMax
-            SSH_ALE_Thickness(k) = SSH_ALE_Thickness(k) / thicknessSum
-            ALE_Thickness(k, iCell) = restingThickness(k, iCell) + SSH_ALE_Thickness(k)
+            ! Using this, we must require that sum(restingThickness(k, iCell))
+            ! summed over k is equal to bottomDepth.
+            ! This is equation 4 and 6 in Petersen et al 2015, but with eqn 6
+            ! altered so only the W_k weights are used. The resting
+            ! thickness shown in eqn 6 is not included here.
+            ALE_Thickness(k, iCell) = restingThickness(k, iCell) + ssh(iCell) * vertCoordMovementWeights(k) / weightSum
+
          end do
       enddo
       !$omp end do
