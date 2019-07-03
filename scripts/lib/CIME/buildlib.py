@@ -40,7 +40,7 @@ def parse_input(argv):
     return args.caseroot, args.libroot, args.bldroot
 
 ###############################################################################
-def build_cime_component_lib(case, compname, libroot, bldroot):
+def build_cime_component_lib(case, compname, libroot, bldroot, use_old=True):
 ###############################################################################
 
     cimeroot  = case.get_value("CIMEROOT")
@@ -71,7 +71,7 @@ def build_cime_component_lib(case, compname, libroot, bldroot):
         out.write("")
 
     # Build the component
-    if get_model() != "e3sm":
+    if get_model() != "e3sm" or use_old:
         safe_copy(os.path.join(confdir, "Filepath"), bldroot)
         safe_copy(os.path.join(confdir, "CCSM_cppdefs"), bldroot)
 

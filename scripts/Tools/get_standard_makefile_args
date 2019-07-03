@@ -30,7 +30,7 @@ def parse_command_line(args, description):
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    caseroot, cmake = parse_command_line(sys.argv, description)
+    caseroot = parse_command_line(sys.argv, description)
 
     success = True
     with Case(caseroot) as case:

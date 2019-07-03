@@ -402,7 +402,7 @@ def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldr
 ###############################################################################
 def _create_build_metadata_for_component(config_dir, libroot, bldroot, case):
 ###############################################################################
-    buildlib = imp.load_source("buildlib", os.path.join(config_dir, "buildlib"))
+    buildlib = imp.load_source("buildlib_cmake", os.path.join(config_dir, "buildlib_cmake"))
     buildlib.buildlib(bldroot, libroot, case)
 
 ###############################################################################
@@ -452,7 +452,7 @@ def _clean_impl(case, cleanlist, clean_all, clean_depends):
 
 ###############################################################################
 def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
-                     save_build_provenance):
+                     save_build_provenance, use_old):
 ###############################################################################
 
     t1 = time.time()
@@ -573,10 +573,11 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
                                 cimeroot, libroot, lid, compiler, buildlist, comp_interface)
 
     if not sharedlib_only:
-        if get_model() == "e3sm":
+        if get_model() == "e3sm" and not use_old:
             logs.extend(_build_model_cmake(build_threaded, exeroot, incroot, complist,
                                            lid, caseroot, cimeroot, compiler, buildlist, comp_interface, sharedpath, case))
         else:
+            os.environ["INSTALL_SHAREDPATH"] = os.path.join(exeroot, sharedpath) # for MPAS makefile generators
             logs.extend(_build_model(build_threaded, exeroot, incroot, complist,
                                      lid, caseroot, cimeroot, compiler, buildlist, comp_interface, case))
 
@@ -619,10 +620,10 @@ def post_build(case, logs, build_complete=False, save_build_provenance=True):
         lock_file("env_build.xml", caseroot=case.get_value("CASEROOT"))
 
 ###############################################################################
-def case_build(caseroot, case, sharedlib_only=False, model_only=False, buildlist=None, save_build_provenance=True):
+def case_build(caseroot, case, sharedlib_only=False, model_only=False, buildlist=None, save_build_provenance=True, use_old=False):
 ###############################################################################
     functor = lambda: _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
-                                       save_build_provenance)
+                                       save_build_provenance, use_old)
     return run_and_log_case_status(functor, "case.build", caseroot=caseroot)
 
 ###############################################################################
