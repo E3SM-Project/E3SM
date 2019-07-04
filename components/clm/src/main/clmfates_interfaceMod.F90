@@ -693,7 +693,7 @@ contains
       
       ! call subroutine to aggregate ED litter output fluxes and 
       ! package them for handing across interface
-      call call FluxIntoLitterPools(this%fates(nc)%nsites, &
+      call FluxIntoLitterPools(this%fates(nc)%nsites, &
             this%fates(nc)%sites,  &
             this%fates(nc)%bc_in,  &
             this%fates(nc)%bc_out)
@@ -2446,10 +2446,10 @@ contains
    fates%elpft_end   = num_elements * numpft_fates
 
    fates%elcwd_begin = 1
-   fates%elcwd_end   = num_elements * ncwd
+   fates%elcwd_end   = num_elements * ncwd_fates
 
    fates%elage_begin = 1
-   fates%elage_end   = num_elements * nlevage
+   fates%elage_end   = num_elements * nlevage_fates
 
    
  end subroutine hlm_bounds_to_fates_bounds

@@ -1906,8 +1906,8 @@ contains
        call ncd_defdim(lnfid, 'fates_levheight', nlevheight_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levelem', nelements_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levelpft', nelements_fates * numpft_fates, dimid)
-       call ncd_defdim(lnfid, 'fates_levelcwd', nelements_fates * ncwd, dimid)
-       call ncd_defdim(lnfid, 'fates_levelage', nelements_fates * nlevage, dimid)
+       call ncd_defdim(lnfid, 'fates_levelcwd', nelements_fates * ncwd_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levelage', nelements_fates * nlevage_fates, dimid)
     end if
 
     if ( .not. lhistrest )then
