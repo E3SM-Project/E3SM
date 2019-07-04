@@ -1483,39 +1483,35 @@ contains
 
    ! Qdp(np1) was updated by forcing - update Q(np1)
    do q=1,qsize
-      elem%state%Q(:,:,:,q) = elem%state%Qdp(:,:,:,q,np1_qdp)/dp_adj(:,:,:)
+      elem%state%Q(:,:,:,q) = elem%state%Qdp(:,:,:,q,np1_qdp)/elem%state%dp3d(:,:,:,np1)
    enddo
    
 
 #ifdef MODEL_THETA_L
-   if (adjust_ps) then
-      ! recompute hydrostatic pressure from ps
-      do k=1,nlev  
-         phydro(:,:,k)=hvcoord%ps0*hvcoord%hyam(k) + ps(:,:)*hvcoord%hybm(k)
+   if (use_moisture) then
+      ! compute updated pnh and exner
+      if (adjust_ps) then
+         ! recompute hydrostatic pressure from ps
+         do k=1,nlev  
+            phydro(:,:,k)=hvcoord%ps0*hvcoord%hyam(k) + ps(:,:)*hvcoord%hybm(k)
+         enddo
+      else
+         ! recompute hydrostatic pressure from dp3d
+         call get_hydro_pressure(phydro,elem%state%dp3d(:,:,:,np1),hvcoord)
+      endif
+      do k=1,nlev
+         pnh(:,:,k)=phydro(:,:,k) + pprime(:,:,k)
+         exner(:,:,k)=(pnh(:,:,k)/p0)**(Rgas/Cp)
       enddo
-   else
-      ! recompute hydrostatic pressure from dp3d
-      call get_hydro_pressure(phydro,dp_adj,hvcoord)
    endif
-   
    
    !update temperature
    call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
    tn1(:,:,:) = tn1(:,:,:) + dt*elem%derived%FT(:,:,:)
    
-   ! compute NH pressure based on updated hydrostatic pressure
-   do k=1,nlev
-      ! constant PHI.  FPHI will be zero. cant be used Hydrostatic
-      !pnh(:,:,k) = rstarn1(:,:,k)*tn1(:,:,k)*dp_adj(:,:,k) / &
-      !     (
-      !     elem(ie)%state%phinh_i(:,:,k,n0)-elem(ie)%state%phinh_i(:,:,k+1,n0))
-      ! constant NH perturbation pressure
-      pnh(:,:,k)=phydro(:,:,k) + pprime(:,:,k)
-      exner(:,:,k)=(pnh(:,:,k)/p0)**(Rgas/Cp)
-   enddo
    
    ! now we have tn1,dp,pnh - compute corresponding theta and phi:
-   vthn1 =  (rstarn1(:,:,:)/Rgas)*tn1(:,:,:)*dp_adj(:,:,:)/exner(:,:,:)
+   vthn1 =  (rstarn1(:,:,:)/Rgas)*tn1(:,:,:)*elem%state%dp3d(:,:,:,np1)/exner(:,:,:)
      
    phi_n1(:,:,nlevp)=elem%state%phinh_i(:,:,nlevp,np1)
    do k=nlev,1,-1
