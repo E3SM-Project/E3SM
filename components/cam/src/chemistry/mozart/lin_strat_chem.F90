@@ -25,10 +25,12 @@ module lin_strat_chem
   !
   ! define public components of module
   !
-  public :: lin_strat_chem_inti, lin_strat_chem_solve
+  public :: lin_strat_chem_inti, lin_strat_chem_solve, lin_strat_sfcsink
   public :: do_lin_strat_chem
 
   integer :: index_o3
+!  integer :: index_o3l
+
   logical :: do_lin_strat_chem
 
 
@@ -58,9 +60,12 @@ contains
     !
     ! find index of ozone
     !
-    index_o3 = get_spc_ndx('O3')
+    index_o3  =  get_spc_ndx('O3')
+!    index_o3l =  get_spc_ndx('O3L') ! introduce O3L that couples to parameterized surface sink
+
     do_lin_strat_chem = has_linoz_data
-    if ( index_o3 <= 0 ) then
+!    if ( index_o3 <= 0 .and. index_o3l <=0 ) then !added index_o3l
+     if ( index_o3 <= 0 ) then !added index_o3l
        write(iulog,*) ' No ozone in the chemical mechanism, skipping lin_strat_chem'
        do_lin_strat_chem = .false.
        return
@@ -83,7 +88,8 @@ contains
     call addfld( 'LINOZ_SSO3'   , (/ 'lev' /), 'A', 'kg'     , 'steady state ozone in LINOZ'                        )
     call addfld( 'LINOZ_O3COL'  , (/ 'lev' /), 'A', 'DU'     , 'ozone column above'                                 )
     call addfld( 'LINOZ_O3CLIM' , (/ 'lev' /), 'A', 'mol/mol', 'climatology of ozone in LINOZ'                      )
-    call addfld( 'LINOZ_SZA'    ,    horiz_only, 'A', 'degrees', 'solar zenith angle in LINOZ'                        )
+    call addfld( 'LINOZ_SZA'    ,    horiz_only, 'A', 'degrees', 'solar zenith angle in LINOZ'                      )
+    call addfld( 'LINOZ_SFCSINK', horiz_only, 'A', 'Tg/yr/m2'   , 'surface o3 sink in LINOZ with an e-fold to a fixed concentration  ' )
 
     call add_default( 'LINOZ_DO3'    , 1, ' ' )
     call add_default( 'LINOZ_DO3_PSC', 1, ' ' )
@@ -91,7 +97,7 @@ contains
     call add_default( 'LINOZ_O3COL'  , 1, ' ' )
     call add_default( 'LINOZ_O3CLIM' , 1, ' ' )
     call add_default( 'LINOZ_SZA'    , 1, ' ' )
-
+    call add_default( 'LINOZ_SFCSINK', 1, ' ' )
     return
   end subroutine lin_strat_chem_inti
 
@@ -106,7 +112,6 @@ contains
     ! this subroutine updates the ozone mixing ratio in the stratosphere
     ! using linearized chemistry 
     !
-
     use ppgrid,        only : pcols, pver
     use physconst,     only : pi, &
                               grav => gravit, &
@@ -156,6 +161,7 @@ contains
     real(r8), parameter :: chlorine_loading_1987    = 2.5977_r8     ! EESC value (ppbv)
     real(r8), parameter :: chlorine_loading_bgnd    = 0.0000_r8     ! EESC value (ppbv) for background conditions
     real(r8), parameter :: pressure_threshold       = 210.e+2_r8    ! {PJC} for diagnostics only
+
 
     !
     ! skip if no ozone field available
@@ -255,7 +261,7 @@ contains
                    !
                    max_sza = (90._r8 + sqrt( max( 16._r8*log10(100000._r8/pmid(i,k)),0._r8)))
 #ifdef DEBUG
-                   write(iulog,*)sza(i),max_sza
+                   write(iulog,'(A, 2f8.1)')'sza/max_saz', sza(i),max_sza
 #endif
                    if ( (sza(i)*radians_to_degrees) <= max_sza ) then
 
@@ -289,8 +295,82 @@ contains
     call outfld( 'LINOZ_O3COL'  , o3col_du_diag          , ncol, lchnk )
     call outfld( 'LINOZ_O3CLIM' , o3clim_linoz_diag      , ncol, lchnk )
     call outfld( 'LINOZ_SZA'    ,(sza*radians_to_degrees), ncol, lchnk )
-
+    
     return
   end subroutine lin_strat_chem_solve
+
+  subroutine lin_strat_sfcsink( ncol, lchnk, o3l_vmr, delta_t, pdel)
+
+    use ppgrid,        only : pcols, pver
+
+    use physconst,     only : mw_air => mwdry, &
+                              mw_o3  => mwo3   !in grams
+
+    use mo_constants, only : pi, rgrav, rearth
+
+    use phys_grid,    only : get_area_all_p
+
+    use cam_history,   only : outfld
+
+    implicit none 
+
+    integer,  intent(in)                           :: ncol                ! number of columns in chunk
+    integer,  intent(in)                           :: lchnk               ! chunk index    
+    real(r8), intent(inout), dimension(ncol ,pver) :: o3l_vmr             ! ozone volume mixing ratio
+    real(r8), intent(in)                           :: delta_t             ! timestep size (secs)    
+    real(r8), intent(in)                           :: pdel(ncol,pver)     ! pressure delta about midpoints (Pa)  
+    
+! three parameters are applied to Linoz O3 for surface sink, O3l is not coupled to real O3
+    real(r8), parameter :: o3_sfc                   = 30.0e-9_r8       ! surface linoz o3 e-fold to 30 ppbv
+    integer,  parameter :: lblo3                    = 4                ! apply model layer from surface to lblo3
+    real(r8), parameter :: o3tau                    = 172800.0_r8      ! e-fold tome scale in seconds (= 2 days)
+    real(r8), parameter :: KgtoTg                   = 1.0e-9_r8
+    real(r8), parameter :: peryear                  = 86400._r8* 365.0_r8 ! to multiply to convert per second to per year
+    
+    real(r8) :: area(ncol), mass(ncol,pver)
+    real(r8) :: o3l_old, o3l_new, efactor, do3
+    real(r8), dimension(ncol)  :: do3mass, o3l_sfcsink
+    integer i, k
+
+    if ( .not. do_lin_strat_chem ) return
+ !
+ !   initializing array
+ !
+
+    o3l_sfcsink =0._r8
+
+    do k = 1,pver
+       mass(:ncol,k) = pdel(:ncol,k) * rgrav  ! air mass in kg/m2
+    enddo
+    
+    efactor  = (1.d0 - exp(-delta_t/o3tau))
+    LOOP_COL: do i=1,ncol
+
+       do3mass(i) =0._r8
+
+       LOOP_SFC: do k= pver, pver - lblo3 +1, -1  ! need to check if pver is indeed  the lowest model layer
+  
+          o3l_old = o3l_vmr(i,k)  !vmr
+   
+          do3 =  (o3_sfc - o3l_old)* efactor !vmr
+
+          o3l_new  = o3l_old + do3     
+
+          do3mass(i) = do3mass(i) + do3* mass(i,k) * mw_o3/mw_air  ! loss in kg/m2 summed over boundary layers within one time step   
+
+          o3l_vmr(i,k) = o3l_new
+
+       end do  LOOP_SFC
+    End do  Loop_COL
+       
+    o3l_sfcsink(:ncol) = do3mass(:ncol)/delta_t * KgtoTg * peryear ! saved in Tg/yr/m2 unit
+    
+    call outfld('LINOZ_SFCSINK', o3l_sfcsink, ncol, lchnk)    
+
+    return     
+
+  end subroutine lin_strat_sfcsink
+
+
 
 end module lin_strat_chem
