@@ -11,6 +11,9 @@ Example usage is
 Phillip J. Wolfram
 Last Modified: 08/03/2018
 """
+import argparse
+import os
+
 import netCDF4
 import numpy as np
 from pyamg.classical import interpolate as amginterp
@@ -26,6 +29,8 @@ VERTICAL_TREATMENTS = {
 }
 DEFAULTS = {"dt": 300, "resettime": 1.0 * 24.0 * 60.0 * 60.0}
 TYPELIST = ["buoyancy", "passive", "surface", "all"]
+VERTSEEDTYPE = ["linear", "denseCenter", "log"]
+SPATIAL_FILTER = ["SouthernOceanPlanar", "SouthernOceanXYZ"]
 
 
 def use_defaults(name, val):  # {{{
@@ -572,7 +577,7 @@ def build_passive_floats(
     else:
         raise ValueError(
             "Must designate `vertseedtype` as one of the following: "
-            + "['linear', 'log', 'denseCenter']"
+            + f"{VERTSEEDTYPE}"
         )
     zlevel = -np.kron(wgts, f_init.variables["bottomDepth"][cpts])
     cellindices = np.tile(cpts, (nvertlevels))
@@ -674,9 +679,6 @@ def build_particle_file(
 
 
 if __name__ == "__main__":
-    import argparse
-    import os
-
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter
     )
@@ -685,28 +687,37 @@ if __name__ == "__main__":
         "-i",
         "--init",
         dest="init",
-        help="Name of netCDF init file",
-        default="init.nc",
+        required=True,
+        help="Name of netCDF init/mesh file.",
         metavar="PATH/INIT_NAME.nc",
+        type=str,
     )
     parser.add_argument(
         "-g",
         "--graph",
         dest="graph",
-        default="graph.info.part.",
+        required=True,
         help="Path / name of graph file of form */*.info.part.",
         metavar="PATH/graph.info.part.",
+        type=str,
     )
     parser.add_argument(
         "-o",
         "--particlefile",
         dest="particles",
-        default="particles.nc",
-        help="Path / name of netCDF particle file",
-        metavar="PATH/particles.nc",
+        required=True,
+        help="Path / name of output netCDF particle file",
+        metavar="PATH/OUTPUT_NAME.nc",
+        type=str,
     )
     parser.add_argument(
-        "-p", "--procs", dest="procs", help="Number of processors", metavar="INT"
+        "-p",
+        "--procs",
+        dest="procs",
+        required=True,
+        type=int,
+        help="Number of processors",
+        metavar="INT",
     )
     parser.add_argument(
         "-t",
@@ -714,7 +725,7 @@ if __name__ == "__main__":
         dest="types",
         help="Types of particles",
         default="all",
-        metavar="One or more of " + "".join(TYPELIST),
+        metavar=f"One or more of {TYPELIST}",
     )
     parser.add_argument(
         "--nvertlevels",
@@ -722,13 +733,15 @@ if __name__ == "__main__":
         default=10,
         help="Number of vertical levels for passive, 3D floats",
         metavar="INT",
+        type=int,
     )
     parser.add_argument(
         "--vertseedtype",
         dest="vertseedtype",
         default="linear",
         help="Method for seeding in the vertical",
-        metavar="One of ['linear', 'log', 'denseCenter']",
+        metavar=f"One of {VERTSEEDTYPE}",
+        type=str,
     )
     parser.add_argument(
         "--nbuoysurf",
@@ -736,6 +749,7 @@ if __name__ == "__main__":
         default=11,
         help="Number of buoyancy surfaces for isopycnally-constrained particles",
         metavar="INT",
+        type=int,
     )
     parser.add_argument(
         "--potdensmin",
@@ -744,6 +758,7 @@ if __name__ == "__main__":
         help="Minimum value of potential density surface for isopycnally-constrained"
         + " particles",
         metavar="INT",
+        type=float,
     )
     parser.add_argument(
         "--potdensmax",
@@ -752,16 +767,15 @@ if __name__ == "__main__":
         help="Maximum value of potential density surface for isopycnally-constrained"
         + " particles",
         metavar="INT",
+        type=float,
     )
     parser.add_argument(
         "--spatialfilter",
         dest="spatialfilter",
         default=None,
-        help=(
-            "Apply a certain type of spatial filter, e.g., "
-            + "['SouthernOceanPlanar', 'SouthernOceanXYZ']"
-        ),
+        help=("Apply a certain type of spatial filter, e.g., " + f"{SPATIAL_FILTER}"),
         metavar="STRING",
+        type=str,
     )
     parser.add_argument(
         "--remap",
@@ -776,6 +790,7 @@ if __name__ == "__main__":
         metavar="INT",
         default=0,
         help="Downsample particle positions using AMG a number of times.",
+        type=int,
     )
     parser.add_argument(
         "-c",
@@ -840,11 +855,9 @@ if __name__ == "__main__":
             args.graph,
             args.types,
             args.spatialfilter,
-            np.linspace(
-                float(args.potdensmin), float(args.potdensmax), int(args.nbuoysurf)
-            ),
-            int(args.nvertlevels),
-            int(args.downsample),
+            np.linspace(args.potdensmin, args.potdensmax, args.nbuoysurf),
+            args.nvertlevels,
+            args.downsample,
             args.vertseedtype,
             args.seed_center,
             args.seed_vertex,
