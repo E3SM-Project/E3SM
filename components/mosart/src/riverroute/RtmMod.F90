@@ -359,6 +359,8 @@ contains
     call mpi_bcast (ice_runoff,     1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (wrmflag,        1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (inundflag,      1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (sediflag,       1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (heatflag,       1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (barrier_timers, 1, MPI_LOGICAL, 0, mpicom_rof, ier)
 
     call mpi_bcast (rtmhist_nhtfrq, size(rtmhist_nhtfrq), MPI_INTEGER,   0, mpicom_rof, ier)
@@ -435,6 +437,8 @@ contains
        write(iulog,*) '   smat_option           = ',trim(smat_option)
        write(iulog,*) '   wrmflag               = ',wrmflag
        write(iulog,*) '   inundflag             = ',inundflag
+       write(iulog,*) '   sediflag              = ',inundflag
+       write(iulog,*) '   heatflag              = ',inundflag
        write(iulog,*) '   barrier_timers        = ',barrier_timers
        write(iulog,*) '   RoutingMethod         = ',Tctl%RoutingMethod
        write(iulog,*) '   DLevelH2R             = ',Tctl%DLevelH2R
@@ -1592,9 +1596,9 @@ contains
     call t_stopf('mosarti_mosart_init')
 
     call t_startf('mosarti_sediment_init')
-	if(sediflag) then
+    if(sediflag) then
     call MOSART_sediment_init(rtmCTL%begr, rtmCTL%endr, rtmCTL%numr)
-	end if
+    end if
     call t_stopf('mosarti_sediment_init')
     
 !#ifdef INCLUDE_WRM

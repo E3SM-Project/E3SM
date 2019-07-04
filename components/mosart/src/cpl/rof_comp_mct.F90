@@ -608,12 +608,20 @@ contains
        rtmCTL%qsub(n,nfrz) = 0.0_r8
        rtmCTL%qgwl(n,nfrz) = 0.0_r8
        rtmCTL%qdto(n,nfrz) = 0.0_r8
+
+       rtmCTL%qsur(n,nmud) = 0.0_r8
+       rtmCTL%qsur(n,nsan) = 0.0_r8
        
-	   if(sediflag) then
+    enddo
+
+    if(sediflag) then
+	do n = begr,endr
+       n2 = n - begr + 1
        rtmCTL%qsur(n,nmud) = x2r_r%rAttr(index_x2r_Flrl_rofmud,n2) * (rtmCTL%area(n)) ! kg/m2/s --> kg/s for sediment
        rtmCTL%qsur(n,nsan) = 0.0_r8
-       end if
     enddo
+	end if
+
 
   end subroutine rof_import_mct
 

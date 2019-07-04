@@ -149,6 +149,7 @@ MODULE MOSART_physics_mod
     TRunoff%etexch_avg = 0._r8
     TRunoff%erexch_avg = 0._r8
     negchan = 9999.0_r8
+
     do m=1,Tctl%DLevelH2R
 
        !------------------
@@ -469,7 +470,7 @@ MODULE MOSART_physics_mod
           endif
           
 !#ifdef INCLUDE_WRM
-          if (wrmflag) then
+          if (sediflag .and. wrmflag) then
              localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R
              do nt=nt_nmud,nt_nsan
                 TRunoff%erowm_regi(iunit,nt) = TRunoff%erowm_regi(iunit,nt) - TRunoff%erout(iunit,nt)
