@@ -1,15 +1,49 @@
 #!/usr/bin/env python
 """
-File writes a particle input dataset for use in MPAS-O / E3SM.
+Creates a particle input dataset for use of LIGHT in MPAS-O.
 
-Example usage is
+Base usage (required fields):
 
-    python make_particle_file.py -i init.nc -g graph.info.part.6 \
-            -o particles.nc -p 6 --spatialfilter SouthernOceanXYZ \
-            --downsample=1
+    ./make_particle_file.py -i init.nc -g graph.info.part.6 \
+            -o particles.nc -p 6
 
-Phillip J. Wolfram
-Last Modified: 08/03/2018
+By default, surface, isopycnal, and passive floats are all seeded. One can select
+particle modes by passing a list:
+
+    ./make_particle_file.py -i init.nc -g graph.info.part.6 \
+            -o particles.nc -p 6 -t surface,passive
+
+If passive floats are being used, the default seeding mode is 10 vertical particles
+linearly distributed through depth at each grid cell. The number of layers can be
+modified with `--nvertlevels INT`. Current seeding modes supported are 'linear',
+'log', and 'denseCenter'. One of the three can be passed using `--vertseedtype`.
+
+If isopycnally constrained floats are being used ("buoyancy"), the default number of
+buoyancy surfaces is 11. This can be adjusted with `--nbuoyusurf INT`. They are seeded
+linearly between two potential density surfaces, defaulting to [1028.5, 1030]. These
+bounds can be adjusted through `--potdensmin FLOAT` and `--potdensmax FLOAT`.
+
+To only seed a subset of the globe, use `--spatialfilter STR`. The supported filters
+are currently ['SouthernOceanXYZ', 'SouthernOceanPlanar'].
+
+To remap a particle file to a new input mesh/decomposition, pass the same main argument
+with `--remap` added.
+
+To coarsen particles horizontally (i.e., downsample), use the flag `--downsample INT`.
+This uses the Algebraic Multigrid Solver (AMG) to coarsen by N levels.
+
+The default horizontal seeding mode is to place one particle at each cell center (unless
+`--downsample` is called). To add particles at each hexagonal vertex, use `-v`. Using
+`-v -c` together will seed both the cell-centers and vertices. For scaling purposes,
+it's also helpful to balance the off-vertex seeding with multiple particles at the cell
+center. Call `-n` in combination with `-c` to generate three cell-center particles
+separated by Gaussian noise. The epsilon distance separating these particles and vertex
+particles from the vertex itself is controlled by `--cfl_min FLOAT`, which defaults to
+0.005.
+
+
+Phillip J. Wolfram and Riley X. Brady
+Last Modified: 07/03/2019
 """
 import argparse
 import os
