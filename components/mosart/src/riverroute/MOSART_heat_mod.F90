@@ -34,10 +34,10 @@ MODULE MOSART_heat_mod
             ! adjust surface runoff temperature estimated based on the top-layer soil temperature, i.e., no less than freezing point
             if(THeat%Tqsur(iunit) < 273.15_r8-TINYVALUE1) then
                 !write(unit=1821,fmt=*)  'Tqsub error at hillslopeHeat, ', iunit, THeat%Tqsur(iunit), THeat%Tqsub(iunit)
-				THeat%Tqsur(iunit) = 273.15_r8
+                THeat%Tqsur(iunit) = 273.15_r8
             !else
                 !write(unit=1822,fmt=*)  'Tqsur good at hillslopeHeat, ', iunit, THeat%Tqsur(iunit), THeat%Tqsub(iunit)
-			end if
+            end if
             
             THeat%Tqsub(iunit) = THeat%Tqsub(iunit)
             if(THeat%Tqsub(iunit) < 273.15_r8-TINYVALUE1) then
@@ -239,7 +239,7 @@ MODULE MOSART_heat_mod
             !  write(unit=1111,fmt="(i10, 6(f10.4), 2(e20.11))") iunit, THeat%Tr(iunit), THeat%forc_t(iunit), THeat%Tqsur(iunit), THeat%Tqsub(iunit), THeat%forc_lwrad(iunit), THeat%forc_solar(iunit), TRunoff%qsur(iunit,nt_nliq), TRunoff%qsub(iunit,nt_nliq)
             !  write(unit=1112,fmt="(i10, 4(f10.4), 2(e20.11))") iunit, THeat%Tr(iunit), THeat%forc_t(iunit), THeat%forc_lwrad(iunit), THeat%forc_solar(iunit), THeat%deltaH_r(iunit), THeat%deltaM_r(iunit)
             !end if
-			!if(THeat%Tr(iunit) < 200._r8) then
+            !if(THeat%Tr(iunit) < 200._r8) then
             !if(iunit == 98784) then
             !  write(unit=1113,fmt="(i10, 3(f10.4))") iunit, THeat%Tr(iunit), THeat%forc_lwrad(iunit), THeat%forc_solar(iunit)
             !  write(unit=1112,fmt="(i10, 3(e20.11))") iunit, Mr, THeat%deltaH_r(iunit), THeat%deltaM_r(iunit)
@@ -259,30 +259,30 @@ MODULE MOSART_heat_mod
         THeat%Tr(iunit) = THeat%Tt(iunit)
     end subroutine mainchannelTemp_simple
 
-	subroutine reservoirHeat(iunit, theDeltaT)
-	! !DESCRIPTION: calculate the net heat balance of reservoir. invoked after the regulation subroutine
-	! simplified version as of 09/2014, now assuming the flow regulation won't modify the release water temperature directly
-	! to be extended later, e.g., incorporating the stratification processes
-		implicit none
-		integer, intent(in) :: iunit
+    subroutine reservoirHeat(iunit, theDeltaT)
+    ! !DESCRIPTION: calculate the net heat balance of reservoir. invoked after the regulation subroutine
+    ! simplified version as of 09/2014, now assuming the flow regulation won't modify the release water temperature directly
+    ! to be extended later, e.g., incorporating the stratification processes
+        implicit none
+        integer, intent(in) :: iunit
         real(r8), intent(in) :: theDeltaT
-		!if(TUnit%indexDown(iunit) > 0) then
-			THeat%Ha_rout(iunit) = -cr_advectheat(abs(TRunoff%erout(iunit,nt_nliq)+TRunoff%erout(iunit,nt_nice)), THeat%Tr(iunit))
-			!THeat%Ha_rout(iunit) = THeat%Ha_rout(iunit) - cr_advectheat(abs(TRunoff%erout(iunit,nt_nliq)+TRunoff%erout(iunit,nt_nice)), THeat%Tr(iunit))
-		!else
-		!	THeat%Ha_rout(iunit) = 0._r8
-		!end if
-    end subroutine reservoirHeat	
+        !if(TUnit%indexDown(iunit) > 0) then
+            THeat%Ha_rout(iunit) = -cr_advectheat(abs(TRunoff%erout(iunit,nt_nliq)+TRunoff%erout(iunit,nt_nice)), THeat%Tr(iunit))
+            !THeat%Ha_rout(iunit) = THeat%Ha_rout(iunit) - cr_advectheat(abs(TRunoff%erout(iunit,nt_nliq)+TRunoff%erout(iunit,nt_nice)), THeat%Tr(iunit))
+        !else
+        !    THeat%Ha_rout(iunit) = 0._r8
+        !end if
+    end subroutine reservoirHeat    
 
-	subroutine reservoirTemp(iunit)
-	! !DESCRIPTION: calculate the water temperature of reservoir.
-	! simplified version as of 09/2014, to be extended later
-		implicit none
-		integer, intent(in) :: iunit
+    subroutine reservoirTemp(iunit)
+    ! !DESCRIPTION: calculate the water temperature of reservoir.
+    ! simplified version as of 09/2014, to be extended later
+        implicit none
+        integer, intent(in) :: iunit
         
-        		
-    end subroutine reservoirTemp		
-	
+                
+    end subroutine reservoirTemp        
+    
     function cr_swrad(Hswin_, Aw_) result(Hsw_)
     ! closure relationship for net short-wave solar radiation
         implicit none

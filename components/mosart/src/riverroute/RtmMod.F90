@@ -352,6 +352,8 @@ endif
     call mpi_bcast (do_rtmflood,    1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (ice_runoff,     1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (wrmflag,        1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (sediflag,       1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (heatflag,       1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (inundflag,      1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (barrier_timers, 1, MPI_LOGICAL, 0, mpicom_rof, ier)
 
@@ -429,6 +431,8 @@ endif
        write(iulog,*) '   smat_option           = ',trim(smat_option)
        write(iulog,*) '   wrmflag               = ',wrmflag
        write(iulog,*) '   inundflag             = ',inundflag
+       write(iulog,*) '   sediflag              = ',inundflag
+       write(iulog,*) '   heatflag              = ',inundflag
        write(iulog,*) '   barrier_timers        = ',barrier_timers
        write(iulog,*) '   RoutingMethod         = ',Tctl%RoutingMethod
        write(iulog,*) '   DLevelH2R             = ',Tctl%DLevelH2R
@@ -1993,6 +1997,7 @@ endif
  end if
 !#endif
 
+    if(heatflag) then
     rtmCTL%templand_Tqsur = spval
     rtmCTL%templand_Tqsub = spval
     rtmCTL%templand_Ttrib = spval
@@ -2005,7 +2010,8 @@ endif
             rtmCTL%templand_Tchanr(n) = 0._r8
         end if
     end do
-    
+    end if
+	
     if (budget_check) then
        call t_startf('mosartr_budget')
        do nt = 1,nt_rtm
@@ -3900,7 +3906,8 @@ endif
         endif
      end if
 !#endif
-
+     
+	 if(heatflag) then
         ! initialize heat states and fluxes
         allocate (THeat%forc_t(begr:endr))
         THeat%forc_t = 273.15_r8
@@ -3978,26 +3985,27 @@ endif
         THeat%Tt_avg = 273.15_r8
         allocate (THeat%Tr_avg(begr:endr))
         THeat%Tr_avg = 273.15_r8
-     
-    ! read the parameters for mosart-heat
-     if(endr >= begr) then
-         !call check_ret(nf_open(frivinp_rtm, 0, ncid), 'Reading file: ' // frivinp_rtm)
-         allocate(TPara%t_alpha(begr:endr))    
-        TPara%t_alpha = 27.19_r8
-         !call MOSART_read_dbl(ncid, 'alpha', TPara%t_alpha)
-         allocate(TPara%t_beta(begr:endr))
-        TPara%t_beta = 13.63_r8
-         !call MOSART_read_dbl(ncid, 'beta', TPara%t_beta)
-         allocate(TPara%t_gamma(begr:endr))
-        TPara%t_gamma = 0.1576_r8
-         !call MOSART_read_dbl(ncid, 'gamma', TPara%t_gamma)
-          allocate(TPara%t_mu(begr:endr))
-        TPara%t_mu = 0.5278_r8
-         !call MOSART_read_dbl(ncid, 'mu', TPara%t_mu)
-        
-         !call check_ret(nf_close(ncid), subname)
-     end if
-
+		
+       ! read the parameters for mosart-heat
+        if(endr >= begr) then
+            !call check_ret(nf_open(frivinp_rtm, 0, ncid), 'Reading file: ' // frivinp_rtm)
+            allocate(TPara%t_alpha(begr:endr))    
+           TPara%t_alpha = 27.19_r8
+            !call MOSART_read_dbl(ncid, 'alpha', TPara%t_alpha)
+            allocate(TPara%t_beta(begr:endr))
+           TPara%t_beta = 13.63_r8
+            !call MOSART_read_dbl(ncid, 'beta', TPara%t_beta)
+            allocate(TPara%t_gamma(begr:endr))
+           TPara%t_gamma = 0.1576_r8
+            !call MOSART_read_dbl(ncid, 'gamma', TPara%t_gamma)
+             allocate(TPara%t_mu(begr:endr))
+           TPara%t_mu = 0.5278_r8
+            !call MOSART_read_dbl(ncid, 'mu', TPara%t_mu)
+           
+            !call check_ret(nf_close(ncid), subname)
+        end if
+    end if
+	
      call pio_freedecomp(ncid, iodesc_dbl)
      call pio_freedecomp(ncid, iodesc_int)
      call pio_closefile(ncid)
