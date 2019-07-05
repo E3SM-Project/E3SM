@@ -275,7 +275,8 @@ contains
     if(gblocks_need_initialized) call gblocks_init()
     if (fv_nphys > 0) then
 
-      blockid(1) = 1 + ( (gcol-1) / (fv_nphys*fv_nphys) )
+      ! Note: the max() is to fool the compiler debug mode when fv_nphys=0
+      blockid(1) = 1 + ( (gcol-1) / max(1,fv_nphys*fv_nphys) )
       bcid(1) = 1 + mod(gcol-1, fv_nphys*fv_nphys)
 
       if (present(localblockid)) then
@@ -1557,10 +1558,11 @@ contains
           ! The code below is a reduction of a general formula to define
           ! midpoints m of n cells over a range [a,b]:
           ! m(i) = a + (b-a)/n * ( i - 0.5 )      where i = 1,n
+          ! Note: the max() is to fool the compiler debug mode when fv_nphys=0
           !---------------------------------------------------------------------
-          ref_i = -1._lng_dbl + 2._lng_dbl/real(fv_nphys,lng_dbl) & 
+          ref_i = -1._lng_dbl + 2._lng_dbl/real(max(1,fv_nphys),lng_dbl) & 
                                 * ( real(i,lng_dbl) - 0.5_lng_dbl )
-          ref_j = -1._lng_dbl + 2._lng_dbl/real(fv_nphys,lng_dbl) & 
+          ref_j = -1._lng_dbl + 2._lng_dbl/real(max(1,fv_nphys),lng_dbl) & 
                                 * ( real(j,lng_dbl) - 0.5_lng_dbl )
           !---------------------------------------------------------------------
           ! Although this is a simpler method of defining cell centers, 
@@ -1579,8 +1581,8 @@ contains
           center_tmp%y = 0.0_lng_dbl
           center_tmp%z = 0.0_lng_dbl
           do c = 1,4
-            ref_corner_i = ref_i + corner_offset_i(c)/real(fv_nphys,lng_dbl)
-            ref_corner_j = ref_j + corner_offset_j(c)/real(fv_nphys,lng_dbl)
+            ref_corner_i = ref_i + corner_offset_i(c)/real(max(1,fv_nphys),lng_dbl)
+            ref_corner_j = ref_j + corner_offset_j(c)/real(max(1,fv_nphys),lng_dbl)
 
             ! change element local reference coordinate to spherical
             sphere_coord = ref2sphere(ref_corner_i, ref_corner_j,           &
