@@ -513,15 +513,15 @@
     <COMPILERS>pgi,intel,gnu</COMPILERS>
     <MPILIBS>mpt,impi</MPILIBS>
     <PROJECT>acme</PROJECT>
-    <SAVE_TIMING_DIR>/lus/scratch/p02618</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR>/lus/scratch/$USER</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>acme,m2830,m2833</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>/lus/scratch/$USER/acme_scratch/swan</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/lus/scratch/p02618/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/lus/scratch/p02618/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/lus/scratch/$USER/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/lus/scratch/$USER/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/lus/scratch/p02618/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/lus/scratch/p02618/tools/cprnc.cori/cprnc</CCSM_CPRNC>
-    <GMAKE_J>10</GMAKE_J>
+    <BASELINE_ROOT>/lus/scratch/$USER/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/lus/scratch/$USER/tools/cprnc.cori/cprnc</CCSM_CPRNC>
+    <GMAKE_J>8</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <!--NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS-->
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
