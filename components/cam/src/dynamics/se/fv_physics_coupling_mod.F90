@@ -209,6 +209,7 @@ contains
     ! Purpose: average dynamics state over subcells and assign to physics state
     use derivative_mod,     only: subcell_integration
     use dyn_comp,           only: TimeLevel, hvcoord
+    use element_ops,        only: get_temperature
     implicit none
     !---------------------------------------------------------------------------
     ! interface arguments
@@ -223,10 +224,11 @@ contains
     integer(kind=int_kind) :: ie, m, icol, ilyr             ! loop iterators
     integer                :: tl_f                          ! time level
     integer                :: ncol
-    real(r8), dimension(np,np)             :: tmp_area
-    real(r8), dimension(fv_nphys,fv_nphys) :: inv_area
-    real(r8), dimension(np,np)             :: dp_gll
-    real(r8), dimension(fv_nphys,fv_nphys) :: inv_dp_fvm
+    real(r8), dimension(np,np,nlev)        :: temperature   ! Temperature from dynamics
+    real(r8), dimension(np,np)             :: tmp_area      ! area for weighting
+    real(r8), dimension(fv_nphys,fv_nphys) :: inv_area      ! inverse area for weighting
+    real(r8), dimension(np,np)             :: dp_gll        ! pressure thickness on GLL grid
+    real(r8), dimension(fv_nphys,fv_nphys) :: inv_dp_fvm    ! inverted pressure thickness on FV grid
     !---------------------------------------------------------------------------
     ! Integrate dynamics field with appropriate weighting 
     ! to get average state in each physics cell
@@ -248,6 +250,8 @@ contains
                      np, fv_nphys, elem(ie)%metdet(:,:) )           &
                      *inv_area , (/ncol/) )
 
+      call get_temperature(elem(ie),temperature,hvcoord,tl_f)
+
       do ilyr = 1,pver
 
         dp_gll(:,:) = ( hvcoord%hyai(ilyr+1)-hvcoord%hyai(ilyr) )*hvcoord%ps0 + &
@@ -255,8 +259,9 @@ contains
       
         inv_dp_fvm = 1.0 / subcell_integration(dp_gll,np,fv_nphys,elem(ie)%metdet(:,:))
 
+        
         T_tmp(:ncol,ilyr,ie)      = RESHAPE( subcell_integration(             &
-                                    elem(ie)%state%T(:,:,ilyr,tl_f)*dp_gll,   &
+                                    temperature(:,:,ilyr)*dp_gll,             &
                                     np, fv_nphys, elem(ie)%metdet(:,:) )      &
                                     *inv_dp_fvm, (/ncol/) )
 
