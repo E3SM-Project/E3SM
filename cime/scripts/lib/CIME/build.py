@@ -29,6 +29,7 @@ def get_standard_makefile_args(case, shared_lib=False):
 
 def get_standard_cmake_args(case, sharedpath, shared_lib=False):
     cmake_args = "-DCIME_MODEL={} ".format(case.get_value("MODEL"))
+    cmake_args += " -Dcompile_threaded={} ".format(stringify_bool(case.get_build_threaded()))
 
     ocn_model = case.get_value("COMP_OCN")
     atm_model = case.get_value("COMP_ATM")

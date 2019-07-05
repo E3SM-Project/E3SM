@@ -20,7 +20,7 @@ project(E3SM C CXX Fortran)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/build_mpas_model.cmake)
 
-set(BUILDCONF ${CMAKE_BINARY_DIR}/../../Buildconf)
+set(BUILDCONF ${CASEROOT}/Buildconf)
 
 # Do any MPAS builds first since they manage their own flags
 build_mpas_models()
