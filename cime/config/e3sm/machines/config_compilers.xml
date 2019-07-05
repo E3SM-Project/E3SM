@@ -750,6 +750,56 @@ for mct, etc.
   </SLIBS>
 </compiler>
 
+
+<compiler MACH="swan" OS="LINUX" COMPILER="pgi">
+  <MPICC> cc </MPICC>
+  <MPICXX> CC </MPICXX>
+  <MPIFC> ftn </MPIFC>
+  <SCC> pgcc </SCC>
+  <SCXX> pgc++ </SCXX>
+  <SFC> pgf90 </SFC>
+  <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PARALLEL_NETCDF_DIR}</PNETCDF_PATH>
+  <FFLAGS>
+    <!--append DEBUG="FALSE"> -O2 </append-->
+    <append DEBUG="FALSE"> -O2 </append>
+  </FFLAGS>
+  <SLIBS>
+    <append> -llapack -lblas </append>
+    <append> -L$ENV{NETCDF_DIR} -lnetcdff -Wl,--as-needed,-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf </append>
+  </SLIBS>
+</compiler>
+
+
+
+<compiler MACH="swan" OS="CNL" COMPILER="intel">
+  <MPICC> cc </MPICC>
+  <MPICXX> CC </MPICXX>
+  <MPIFC> ftn </MPIFC>
+  <SCC> cc </SCC>
+  <SCXX> CC </SCXX>
+  <SFC> ftn </SFC>
+  <SLIBS>
+    <append> -mkl </append>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="swan" OS="CNL" COMPILER="pgi">
+  <MPICC> cc </MPICC>
+  <MPICXX> CC </MPICXX>
+  <MPIFC> ftn </MPIFC>
+  <SCC> pgcc </SCC>
+  <SCXX> pgc++ </SCXX>
+  <SFC> pgf90 </SFC>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <SLIBS>
+    <append> -llapack -lblas </append>
+    <append> -L$ENV{NETCDF_DIR} -lnetcdff -Wl,--as-needed,-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf </append>
+  </SLIBS>
+</compiler>
+
 <compiler MACH="anvil" COMPILER="pgi">
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
   <SLIBS>

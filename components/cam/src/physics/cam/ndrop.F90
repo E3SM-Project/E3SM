@@ -1937,7 +1937,8 @@ subroutine loadaer( &
 
    if (ddd == 0) then
       ddd = 1
-      print *, "AAA size of ", size(naerosol), sizeof(naerosol)
+      !ndk print *, "AAA size of ", size(naerosol), sizeof(naerosol)
+      print *, "AAA size of ", size(naerosol)
 
    endif 
    lchnk = state%lchnk

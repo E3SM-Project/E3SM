@@ -265,6 +265,28 @@
     </directives>
   </batch_system>
 
+  <batch_system MACH="swan" type="pbs" >
+    <directives>
+      <!--directive>-A {{ PROJECT }}</directive-->
+      <!--directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive-->
+      <directive>-l place=scatter,select={{ num_nodes }} </directive>
+    </directives>
+    <queues>
+	<queue walltimemax="00:30:00" default="true">sk40</queue>
+	<queue walltimemax="00:30:00" nodemax="9" strict="true">sk56-sm</queue>
+	<queue walltimemax="00:30:00" nodemax="65" strict="true">sk56-lg</queue>
+	<queue walltimemax="00:30:00" nodemax="9" strict="true">sk40-sm</queue>
+	<queue walltimemax="00:30:00" nodemax="65" strict="true">sk40-lg</queue>
+	<queue walltimemax="00:30:00" nodemax="9" strict="true">bw44-sm</queue>
+	<queue walltimemax="00:30:00" nodemax="87" strict="true">bw44-lg</queue>
+	<queue walltimemax="00:30:00" nodemax="86" strict="true">small</queue>
+	<queue walltimemax="00:30:00" nodemax="86" strict="true">large</queue>
+	<queue walltimemax="00:30:00" nodemax="4" strict="true">p100</queue>
+	<queue walltimemax="00:30:00" nodemax="5" strict="true">gpu_pascal</queue>
+	<queue walltimemax="00:30:00" nodemax="7" strict="true">gpu_kepler</queue>
+    </queues>
+  </batch_system>
+
     <!-- blues is PBS -->
     <batch_system MACH="blues" type="pbs" >
       <directives>
