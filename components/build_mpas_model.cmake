@@ -26,6 +26,8 @@ function(build_mpas_models)
 
   set(MODELS ${MODELS} PARENT_SCOPE)
 
-  add_subdirectory("mpas-source/src")
+  if (CORES)
+    add_subdirectory("mpas-source/src")
+  endif()
 
 endfunction(build_mpas_models)
