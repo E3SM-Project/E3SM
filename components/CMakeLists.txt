@@ -18,6 +18,7 @@ cmake_policy(SET CMP0057 NEW)
 
 project(E3SM C CXX Fortran)
 
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake_util.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/build_mpas_model.cmake)
 
 set(BUILDCONF ${CASEROOT}/Buildconf)

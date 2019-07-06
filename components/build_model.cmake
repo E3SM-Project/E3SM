@@ -13,7 +13,7 @@ function(build_model MODEL_ARG MODELCONF_DIR_ARG ALL_MODELS_ARG)
   endif()
 
   if (MODEL_ARG STREQUAL "cpl")
-    list(APPEND INCLDIR "${EXEROOT}/atm/obj" "${EXEROOT}/ice/obj" "${EXEROOT}/ocn/obj" "${EXEROOT}/glc/obj" "${EXEROOT}/rof/obj" "${EXEROOT}/wav/obj" "${EXEROOT}/esp/obj" "${EXEROOT}/iac/obj" "${EXEROOT}/bld/mpas-source/src")
+    list(APPEND INCLDIR "${EXEROOT}/bld/mpas-source/src")
   endif()
 
   if (MODEL_ARG STREQUAL "cam")
@@ -40,40 +40,30 @@ function(build_model MODEL_ARG MODELCONF_DIR_ARG ALL_MODELS_ARG)
   # One additional subtley is that, when mkSrcfiles found multiple files with the same basename,
   # only the one found first gets compiled.
 
-  set(SRCROOT_REL "${CIMEROOT}/..")
-  set(BASENAME_SET)
-  file(TO_CMAKE_PATH ${SRCROOT_REL} SRCROOT_ABS)
-  foreach(DIRSEARCH ${FILEPATH_DIRS})
-    file(GLOB MATCHES RELATIVE "${SRCROOT_ABS}/components" "${DIRSEARCH}/*.[Ffc]" "${DIRSEARCH}/*.[Ff]90" "${DIRSEARCH}/*.cpp" "${DIRSEARCH}/*.F90.in")
-    if (MATCHES)
-      foreach (MATCH IN LISTS MATCHES)
-        get_filename_component(BASENAME ${MATCH} NAME)
-        list(FIND BASENAME_SET ${BASENAME} BASENAME_WAS_FOUND)
-        if (BASENAME_WAS_FOUND EQUAL -1)
-          list(APPEND SOURCES ${MATCH})
-          list(APPEND BASENAME_SET ${BASENAME})
-        else()
-          message(WARNING "Skipping repeated base filename ${BASENAME} for ${MATCH}")
-        endif()
-      endforeach()
-    endif()
-  endforeach()
-
-  foreach(SOURCE_FILE IN LISTS SOURCES)
-    get_filename_component(SOURCE_EXT ${SOURCE_FILE} EXT)
-    if (SOURCE_EXT STREQUAL ".F90.in")
-      string(REPLACE ".in" "" SOURCE_NO_IN ${SOURCE_FILE})
-      list(APPEND GEN_F90_SOURCES ${SOURCE_NO_IN})
-      list(APPEND SOURCES ${SOURCE_NO_IN})
-      list(REMOVE_ITEM SOURCES ${SOURCE_FILE})
-    endif()
-  endforeach()
+  gather_sources("${FILEPATH_DIRS}" "${CIMEROOT}")
+  set(SOURCES ${SOURCES_RESULT})
+  set(GEN_F90_SOURCES ${GEN_F90_SOURCES_RESULT})
 
   foreach(ITEM IN LISTS CPP_DIRS)
     if (EXISTS ${ITEM})
       list(APPEND INCLDIR "${ITEM}")
     endif()
   endforeach()
+
+  #-------------------------------------------------------------------------------
+  # x components need special handling due to xshare
+  #-------------------------------------------------------------------------------
+  if (MODEL_ARG MATCHES "x.*")
+    set(XCOMP True)
+  endif()
+
+  if (XCOMP AND NOT TARGET xshare)
+    gather_sources("${CIMEROOT}/src/components/xcpl_comps/xshare;${CIMEROOT}/src/components/xcpl_comps/xshare/${COMP_INTERFACE}" "${CIMEROOT}")
+    set(XSHARE_SOURCES ${SOURCES_RESULT})
+    if (GEN_F90_SOURCES_RESULT)
+      message(FATAL_ERROR "genf90 files not allows in xshare")
+    endif()
+  endif()
 
   #-------------------------------------------------------------------------------
   # create list of component libraries - hard-wired for current ccsm components
@@ -140,7 +130,7 @@ function(build_model MODEL_ARG MODELCONF_DIR_ARG ALL_MODELS_ARG)
   endforeach ()
 
   # Flags are slightly different for different fortran extensions
-  foreach (SOURCE_FILE IN LISTS SOURCES)
+  foreach (SOURCE_FILE IN LISTS SOURCES XSHARE_SOURCES)
     # Cosp manages its own flags
     if (NOT SOURCE_FILE IN_LIST COSP_SOURCES)
       get_filename_component(SOURCE_EXT ${SOURCE_FILE} EXT)
@@ -179,6 +169,14 @@ function(build_model MODEL_ARG MODELCONF_DIR_ARG ALL_MODELS_ARG)
     set(MLIBS "${MLIBS} ${MPISERIAL}")
   endif()
 
+  separate_arguments(CPPDEFS_LIST UNIX_COMMAND "${CPPDEFS}")
+
+  if (XCOMP AND NOT TARGET xshare)
+    add_library(xshare OBJECT ${XSHARE_SOURCES})
+    target_compile_definitions(xshare PRIVATE ${CPPDEFS_LIST})
+    target_include_directories(xshare PRIVATE ${INCLDIR})
+  endif()
+
   if (MODEL_ARG STREQUAL "cpl")
     set(MODEL_ARG "${CIME_MODEL}.exe")
     add_executable(${MODEL_ARG})
@@ -194,13 +192,16 @@ function(build_model MODEL_ARG MODELCONF_DIR_ARG ALL_MODELS_ARG)
     set_target_properties(${MODEL_ARG} PROPERTIES LINKER_LANGUAGE ${LD})
   else()
     add_library(${MODEL_ARG})
-    target_sources(${MODEL_ARG} PRIVATE ${SOURCES})
+    if (XCOMP)
+      target_sources(${MODEL_ARG} PRIVATE ${SOURCES} $<TARGET_OBJECTS:xshare>)
+    else()
+      target_sources(${MODEL_ARG} PRIVATE ${SOURCES})
+    endif()
   endif()
 
   # Subtle: In order for fortran dependency scanning to work, our CPPFPP/DEFS must be registered
   # as COMPILE_DEFINITIONS, not simple added via CMAKE_Fortran_Flags. Also, CPPDEFS *must*
   # be provided as a list, not a whitespace-separated string; otherwise, things get wonky.
-  separate_arguments(CPPDEFS_LIST UNIX_COMMAND "${CPPDEFS}")
   target_compile_definitions(${MODEL_ARG} PRIVATE ${CPPDEFS_LIST})
   add_dependencies(${MODEL_ARG} genf90)
 
