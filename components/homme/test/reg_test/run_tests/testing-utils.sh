@@ -253,6 +253,7 @@ runTestsStd() {
       echo "failed with message:"
       cat $THIS_STDERR
       else
+      echo "Test failed."
 	  echo "$THIS_STDERR file not found. Check ${subJobName} directory for details."
       fi
 #      exit -7
