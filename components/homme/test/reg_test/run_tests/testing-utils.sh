@@ -175,7 +175,7 @@ submitTestsToQueue() {
   SUBMIT_TEST=()
   SUBMIT_JOB_ID=()
   SUBMIT_TEST=()
-
+  let FAIL_COUNT=0
   # Loop through all of the tests
   for subNum in $(seq 1 ${num_submissions})
   do
@@ -203,11 +203,20 @@ submitTestsToQueue() {
       SUBMIT_TEST+=( "${subJobName}" )
       SUBMIT_JOB_ID+=( "$SUB_ID" )
     else 
-      echo "failed with message:"
-      cat $THIS_STDERR
-      exit -6
+      ((FAIL_COUNT++))
+      if [ -f $THIS_STDERR ]; then
+        echo "failed with message:"
+        cat $THIS_STDERR
+      else
+        echo "Test failed. $THIS_STDERR file not found.  See ${subJobName} run directory for details."  
+      fi
     fi
   done
+
+  if [[ $FAIL_COUNT -gt 0 ]]; then
+      echo "$FAIL_COUNT of ${num_submissions} tests failed."
+      exit -6
+  fi
 }
 
 runTestsStd() {
@@ -217,11 +226,10 @@ runTestsStd() {
   SUBMIT_TEST=()
   SUBMIT_JOB_ID=()
   SUBMIT_TEST=()
-
+  let FAIL_COUNT=0
   # Loop through all of the tests
   for subNum in $(seq 1 ${num_submissions})
   do
-
     subFile=subFile${subNum}
     subFile=${!subFile}
     #echo "subFile=${subFile}"
@@ -249,16 +257,21 @@ runTestsStd() {
       SUBMIT_TEST+=( "${subJobName}" )
       SUBMIT_JOB_ID+=( "${RUN_PID}" )
     else 
+      ((FAIL_COUNT++))
       if [ -f $THIS_STDERR ]; then
       echo "failed with message:"
       cat $THIS_STDERR
       else
-      echo "Test failed."
-	  echo "$THIS_STDERR file not found. Check ${subJobName} directory for details."
+      echo "Test failed. $THIS_STDERR file not found. Check ${subJobName} directory for details."
       fi
-#      exit -7
     fi
   done
+
+if [[ $FAIL_COUNT -gt 0 ]]; then
+    echo "$FAIL_COUNT of $num_submissions tests failed."
+    exit -7
+fi
+
 }
 
 createAllRunScripts() {
