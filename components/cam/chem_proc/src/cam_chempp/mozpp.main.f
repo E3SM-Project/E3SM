@@ -173,7 +173,8 @@
       sim_dat_filename = 'sim.dat'
       sim_dat_filespec = trim(sim_dat_path) // 'sim.dat'
       cpp_dir  = ' '
-      cpp_opts = '-P -C -I.'
+!     cpp_opts = '-P -C -I.'  ! -C causes problems on Cori
+      cpp_opts = '-P -I.'
 
 !-----------------------------------------------------------------------
 !        ... Assign default input, output units
