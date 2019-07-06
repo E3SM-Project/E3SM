@@ -61,8 +61,9 @@ def build_cime_component_lib(case, compname, libroot, bldroot, use_old=True):
             out.write(os.path.join(cimeroot, "src", "components", "data_comps", compname, comp_interface) + "\n")
             out.write(os.path.join(cimeroot, "src", "components", "data_comps", compname) + "\n")
         elif compname.startswith('x'):
-            out.write(os.path.join(cimeroot, "src", "components", "xcpl_comps", "xshare") + "\n")
-            out.write(os.path.join(cimeroot, "src", "components", "xcpl_comps", "xshare", comp_interface) + "\n")
+            if use_old:
+                out.write(os.path.join(cimeroot, "src", "components", "xcpl_comps", "xshare") + "\n")
+                out.write(os.path.join(cimeroot, "src", "components", "xcpl_comps", "xshare", comp_interface) + "\n")
             out.write(os.path.join(cimeroot, "src", "components", "xcpl_comps", compname, comp_interface) + "\n")
         elif compname.startswith('s'):
             out.write(os.path.join(cimeroot, "src", "components", "stub_comps", compname, comp_interface) + "\n")
