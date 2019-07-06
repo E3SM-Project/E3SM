@@ -7,6 +7,7 @@
 ! modified by
 !     24 Oct 2008 -- Francis Vitt
 !      9 Dec 2008 -- Philip Cameron-Smith, LLNL, -- added ltrop
+!      4 Jul 2019 -- Qi Tang (LLNL), Juno Hsu (UCI), -- added sfcsink
 !--------------------------------------------------------------------
 module lin_strat_chem
 
@@ -27,14 +28,78 @@ module lin_strat_chem
   !
   public :: lin_strat_chem_inti, lin_strat_chem_solve, lin_strat_sfcsink
   public :: do_lin_strat_chem
+  public :: linoz_readnl   ! read linoz_nl namelist
 
   integer :: index_o3
 !  integer :: index_o3l
 
   logical :: do_lin_strat_chem
 
+  real(r8), parameter :: unset_r8   = huge(1.0_r8)
+  integer , parameter :: unset_int  = huge(1)
+  integer  :: linoz_lbl = unset_int ! number of layers with ozone decay from the surface
+  real(r8) :: linoz_sfc = unset_r8  ! boundary layer concentration (ppb) to which Linoz ozone e-fold
+  real(r8) :: linoz_tau = unset_r8  ! Linoz e-fold time scale (in seconds) in the boundary layer
+
+  integer  :: o3_lbl ! set from namelist input linoz_lbl
+  real(r8) :: o3_sfc ! set from namelist input linoz_sfc
+  real(r8) :: o3_tau ! set from namelist input linoz_tau
 
 contains
+
+subroutine linoz_readnl(nlfile)
+
+   use namelist_utils,  only: find_group_name
+   use units,           only: getunit, freeunit
+   use mpishorthand
+
+   character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
+
+   ! Local variables
+   integer :: unitn, ierr
+   character(len=*), parameter :: subname = 'linoz_readnl'
+
+   namelist /linoz_nl/ linoz_lbl, linoz_sfc, linoz_tau
+   !-----------------------------------------------------------------------------
+
+   ! Set default values
+   linoz_lbl = 4
+   linoz_sfc = 30.0e-9_r8
+   linoz_tau = 172800.0_r8
+
+   if (masterproc) then
+      unitn = getunit()
+      open( unitn, file=trim(nlfile), status='old' )
+      call find_group_name(unitn, 'linoz_nl', status=ierr)
+      if (ierr == 0) then
+         read(unitn, linoz_nl, iostat=ierr)
+         if (ierr /= 0) then
+            call endrun(subname // ':: ERROR reading namelist')
+         end if
+      end if
+      close(unitn)
+      call freeunit(unitn)
+
+      ! set local variables
+      o3_lbl = linoz_lbl
+      o3_sfc = linoz_sfc
+      o3_tau = linoz_tau
+
+      ! check
+      write(iulog,*) subname // ', linoz_lbl:', o3_lbl
+      write(iulog,*) subname // ', linoz_sfc:', o3_sfc
+      write(iulog,*) subname // ', linoz_tau:', o3_tau
+
+   end if
+
+#ifdef SPMD
+   ! Broadcast namelist variables
+   call mpibcast(o3_lbl,            1, mpiint, 0, mpicom)
+   call mpibcast(o3_sfc,            1, mpir8,  0, mpicom)
+   call mpibcast(o3_tau,            1, mpir8,  0, mpicom)
+#endif
+
+end subroutine linoz_readnl
 
 !--------------------------------------------------------------------
 !--------------------------------------------------------------------
@@ -321,9 +386,6 @@ contains
     real(r8), intent(in)                           :: pdel(ncol,pver)     ! pressure delta about midpoints (Pa)  
     
 ! three parameters are applied to Linoz O3 for surface sink, O3l is not coupled to real O3
-    real(r8), parameter :: o3_sfc                   = 30.0e-9_r8       ! surface linoz o3 e-fold to 30 ppbv
-    integer,  parameter :: lblo3                    = 4                ! apply model layer from surface to lblo3
-    real(r8), parameter :: o3tau                    = 172800.0_r8      ! e-fold tome scale in seconds (= 2 days)
     real(r8), parameter :: KgtoTg                   = 1.0e-9_r8
     real(r8), parameter :: peryear                  = 86400._r8* 365.0_r8 ! to multiply to convert per second to per year
     
@@ -343,12 +405,12 @@ contains
        mass(:ncol,k) = pdel(:ncol,k) * rgrav  ! air mass in kg/m2
     enddo
     
-    efactor  = (1.d0 - exp(-delta_t/o3tau))
+    efactor  = (1.d0 - exp(-delta_t/o3_tau))
     LOOP_COL: do i=1,ncol
 
        do3mass(i) =0._r8
 
-       LOOP_SFC: do k= pver, pver - lblo3 +1, -1  ! need to check if pver is indeed  the lowest model layer
+       LOOP_SFC: do k= pver, pver-o3_lbl+1, -1
   
           o3l_old = o3l_vmr(i,k)  !vmr
    
