@@ -249,9 +249,13 @@ runTestsStd() {
       SUBMIT_TEST+=( "${subJobName}" )
       SUBMIT_JOB_ID+=( "${RUN_PID}" )
     else 
+      if [ -f $THIS_STDERR ]; then
       echo "failed with message:"
       cat $THIS_STDERR
-      exit -7
+      else
+	  echo "$THIS_STDERR file not found. Check ${subJobName} directory for details."
+      fi
+#      exit -7
     fi
   done
 }
