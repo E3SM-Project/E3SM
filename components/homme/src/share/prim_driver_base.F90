@@ -1041,13 +1041,10 @@ contains
 
     if (compute_diagnostics) then
     ! E(1) Energy after CAM forcing
-      call t_startf("prim_energy_halftimes")
+      call t_startf("prim_diag")
       call prim_energy_halftimes(elem,hvcoord,tl,1,.true.,nets,nete)
-      call t_stopf("prim_energy_halftimes")
-    ! qmass and variance, using Q(n0),Qdp(n0)
-      call t_startf("prim_diag_scalars")
       call prim_diag_scalars(elem,hvcoord,tl,1,.true.,nets,nete)
-      call t_stopf("prim_diag_scalars")
+      call t_stopf("prim_diag")
     endif
 
 
@@ -1061,29 +1058,21 @@ contains
     if (.not. single_column) then 
 
       ! Loop over rsplit vertically lagrangian timesiteps
-      call t_startf("prim_step_rX")
       call prim_step(elem, hybrid, nets, nete, dt, tl, hvcoord, compute_diagnostics)
-      call t_stopf("prim_step_rX")
 
       do r=2,rsplit
         call TimeLevel_update(tl,"leapfrog")
-        call t_startf("prim_step_rX")
         call prim_step(elem, hybrid, nets, nete, dt, tl, hvcoord, .false.)
-        call t_stopf("prim_step_rX")
       enddo
 
     else 
 
       ! Single Column Case
       ! Loop over rsplit vertically lagrangian timesiteps
-      call t_startf("prim_step_rX")    
       call prim_step_scm(elem, nets, nete, dt, tl, hvcoord)
-      call t_stopf("prim_step_rX")
       do r=2,rsplit
         call TimeLevel_update(tl,"leapfrog")
-        call t_startf("prim_step_rX")
         call prim_step_scm(elem, nets, nete, dt, tl, hvcoord)
-        call t_stopf("prim_step_rX")
       enddo
 
     endif
@@ -1099,13 +1088,10 @@ contains
 #endif
 
     if (compute_diagnostics) then
-      call t_startf("prim_diag_scalars")
+      call t_startf("prim_diag")
       call prim_diag_scalars(elem,hvcoord,tl,4,.false.,nets,nete)
-      call t_stopf("prim_diag_scalars")
-
-      call t_startf("prim_energy_halftimes")
       call prim_energy_halftimes(elem,hvcoord,tl,4,.false.,nets,nete)
-      call t_stopf("prim_energy_halftimes")
+      call t_stopf("prim_diag")
     endif
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1134,13 +1120,10 @@ contains
     !
     !   Q(1)   Q at t+dt_remap
     if (compute_diagnostics) then
-      call t_startf("prim_diag_scalars")
+      call t_startf("prim_diag")
       call prim_diag_scalars(elem,hvcoord,tl,2,.false.,nets,nete)
-      call t_stopf("prim_diag_scalars")
-
-      call t_startf("prim_energy_halftimes")
       call prim_energy_halftimes(elem,hvcoord,tl,2,.false.,nets,nete)
-      call t_stopf("prim_energy_halftimes")
+      call t_stopf("prim_diag")
     endif
     
     ! =================================
@@ -1229,7 +1212,18 @@ contains
     ! for ftype==4, also apply dynamics tendencies from forcing
     ! for ftype==4, energy diagnostics will be incorrect
     ! ===============
-    if (ftype==4) call ApplyCAMforcing_dynamics(elem,hvcoord,tl%n0,dt,nets,nete)
+    if (ftype==4) then
+       call ApplyCAMforcing_dynamics(elem,hvcoord,tl%n0,dt,nets,nete)
+       if (compute_diagnostics) then
+          ! E(1) Energy after CAM forcing applied
+          ! with ftype==4, need (E(1)-E(3))/dt_dyn instead (E(1)-E(3))/dt_tracer
+          call t_startf("prim_diag")
+          call prim_energy_halftimes(elem,hvcoord,tl,1,.true.,nets,nete)
+          call prim_diag_scalars(elem,hvcoord,tl,1,.true.,nets,nete)
+          call t_stopf("prim_diag")
+       endif
+    endif
+       
     call prim_advance_exp(elem,deriv1,hvcoord,hybrid,dt,tl,nets,nete,compute_diagnostics)
     do n=2,qsplit
        call TimeLevel_update(tl,"leapfrog")
