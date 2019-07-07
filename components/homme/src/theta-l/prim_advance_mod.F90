@@ -10,6 +10,7 @@
 !  09/2018: O. Guba  code for new ftypes
 !  2018/12: M. Taylor apply forcing assuming nearly constant p 
 !  2019/5:  M. Taylor time-split TOM dissipation and hyperviscsity
+!  2019/7:  M. Taylor add dp3d limiter to prevent zero thickness layers
 !
 module prim_advance_mod
 
@@ -2433,7 +2434,11 @@ contains
   subroutine limiter_dp3d_k(Q,spheremp,dp0)
   ! mass conserving column limiter (1D only)
   !
-  ! if dp3d < dp3d_thresh*hvcoord%dp0 the apply vertical mixing 
+  ! if dp3d < dp3d_thresh*hvcoord%dp0 then apply vertical mixing 
+  ! to prevent layer from getting too thin
+  !
+  ! This is rarely triggered and is mostly for safety when using 
+  ! long remap timesteps
   !
   implicit none
   real (kind=real_kind), intent(inout) :: Q(np,np,nlev)
@@ -2443,7 +2448,7 @@ contains
   ! local
   real (kind=real_kind) :: Qcol(nlev)
   real (kind=real_kind) :: mass,mass_new
-  real (kind=real_kind) :: dp3d_thresh=.10
+  real (kind=real_kind) :: dp3d_thresh=.125
   logical :: warn
   integer i,j,k
 
