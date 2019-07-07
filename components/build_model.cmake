@@ -16,18 +16,6 @@ function(build_model MODEL_ARG MODELCONF_DIR_ARG ALL_MODELS_ARG)
     list(APPEND INCLDIR "${EXEROOT}/bld/mpas-source/src")
   endif()
 
-  if (MODEL_ARG STREQUAL "cam")
-    # These RRTMG files take an extraordinarily long time to compile with optimization.
-    # Until mods are made to read the data from files, just remove optimization from
-    # their compilation.
-    set(NOOPT_FILES "cam/src/physics/rrtmg/ext/rrtmg_lw/rrtmg_lw_k_g.f90;cam/src/physics/rrtmg/ext/rrtmg_sw/rrtmg_sw_k_g.f90")
-
-    if (COSP_LIBDIR)
-      include(${CMAKE_CURRENT_SOURCE_DIR}/cam/src/physics/cosp/Cosp.cmake)
-    endif()
-
-  endif()
-
   #-------------------------------------------------------------------------------
   # Build & include dependency files
   #-------------------------------------------------------------------------------
@@ -49,6 +37,22 @@ function(build_model MODEL_ARG MODELCONF_DIR_ARG ALL_MODELS_ARG)
       list(APPEND INCLDIR "${ITEM}")
     endif()
   endforeach()
+
+  #-------------------------------------------------------------------------------
+  # Cam needs some special handling for cosp and turning off opts for some files
+  #-------------------------------------------------------------------------------
+
+  if (MODEL_ARG STREQUAL "cam")
+    # These RRTMG files take an extraordinarily long time to compile with optimization.
+    # Until mods are made to read the data from files, just remove optimization from
+    # their compilation.
+    set(NOOPT_FILES "cam/src/physics/rrtmg/ext/rrtmg_lw/rrtmg_lw_k_g.f90;cam/src/physics/rrtmg/ext/rrtmg_sw/rrtmg_sw_k_g.f90")
+
+    if (COSP_LIBDIR)
+      include(${CMAKE_CURRENT_SOURCE_DIR}/cam/src/physics/cosp/Cosp.cmake)
+    endif()
+
+  endif()
 
   #-------------------------------------------------------------------------------
   # x components need special handling due to xshare
