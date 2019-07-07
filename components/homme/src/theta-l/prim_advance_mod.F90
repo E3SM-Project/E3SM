@@ -2232,7 +2232,7 @@ contains
         enddo
 #endif
      endif
-
+     call limiter_dp3d_k(elem(ie)%state%dp3d(:,:,:,np1),elem(ie)%spheremp,hvcoord%dp0)
   end do
   call t_stopf('compute_andor_apply_rhs')
 
@@ -2430,5 +2430,64 @@ contains
 
 
 
+  subroutine limiter_dp3d_k(Q,spheremp,dp0)
+  ! mass conserving column limiter (1D only)
+  !
+  ! if dp3d < dp3d_thresh*hvcoord%dp0 the apply vertical mixing 
+  !
+  implicit none
+  real (kind=real_kind), intent(inout) :: Q(np,np,nlev)
+  real (kind=real_kind), intent(in) :: dp0(nlev)
+  real (kind=real_kind), intent(in) :: spheremp(np,np)  !  density
+
+  ! local
+  real (kind=real_kind) :: Qcol(nlev)
+  real (kind=real_kind) :: mass,mass_new
+  real (kind=real_kind) :: dp3d_thresh=.10
+  logical :: warn
+  integer i,j,k
+
+  ! first check if limter is needed, and print warning
+  warn=.false. 
+  do k=1,nlev
+     if ( minval(Q(:,:,k)) < dp3d_thresh*dp0(k)) then
+        write(iulog,*) 'WARNING:CAAR: dp3d too small. dt_remap may be too large'
+        write(iulog,*) 'k,dp3d(k), dp0: ',k,minval(Q(:,:,k)),dp0(k)
+        warn=.true.
+     endif
+  enddo
+
+  if (warn) then
+  do j = 1 , np
+     do i = 1 , np
+        if ( minval(Q(i,j,:) - dp3d_thresh*dp0(:)) < 0 ) then
+           ! subtract min, multiply in by weights
+           Qcol(:) = (Q(i,j,:) - dp3d_thresh*dp0(:))*spheremp(i,j)
+           mass = 0
+           do k = 1,nlev 
+              mass = mass + Qcol(k)
+           enddo
+
+           ! negative mass.  so reduce all postive values to zero
+           ! then increase negative values as much as possible
+           if ( mass < 0 ) Qcol = -Qcol
+           mass_new = 0
+           do k=1,nlev
+              if ( Qcol(k) < 0 ) then
+                 Qcol(k) = 0
+              else
+                 mass_new = mass_new + Qcol(k)
+              endif
+           enddo
+           ! now scale the all positive values to restore mass
+           if ( mass_new > 0 ) Qcol(:) = Qcol(:) * abs(mass) / mass_new
+           if ( mass     < 0 ) Qcol(:) = -Qcol(:)
+           ! 
+           Q(i,j,:) = Qcol(:)/spheremp(i,j) + dp3d_thresh*dp0(:)
+        endif
+     enddo
+  enddo
+  endif
+  end subroutine limiter_dp3d_k
 
 end module prim_advance_mod
