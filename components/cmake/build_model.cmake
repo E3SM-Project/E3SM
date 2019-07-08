@@ -60,21 +60,6 @@ function(build_model COMP_CLASS_ARG MODEL_ARG)
   endif()
 
   #-------------------------------------------------------------------------------
-  # x components need special handling due to xshare
-  #-------------------------------------------------------------------------------
-  if (MODEL_ARG MATCHES "x.*")
-    set(XCOMP True)
-  endif()
-
-  if (XCOMP AND NOT TARGET xshare)
-    gather_sources("${CIMEROOT}/src/components/xcpl_comps/xshare;${CIMEROOT}/src/components/xcpl_comps/xshare/${COMP_INTERFACE}" "${CIMEROOT}")
-    set(XSHARE_SOURCES ${SOURCES_RESULT})
-    if (GEN_F90_SOURCES_RESULT)
-      message(FATAL_ERROR "genf90 files not allows in xshare")
-    endif()
-  endif()
-
-  #-------------------------------------------------------------------------------
   # create list of component libraries - hard-wired for current ccsm components
   #-------------------------------------------------------------------------------
 
@@ -139,7 +124,7 @@ function(build_model COMP_CLASS_ARG MODEL_ARG)
   endforeach ()
 
   # Flags are slightly different for different fortran extensions
-  foreach (SOURCE_FILE IN LISTS SOURCES XSHARE_SOURCES)
+  foreach (SOURCE_FILE IN LISTS SOURCES)
     # Cosp manages its own flags
     if (NOT SOURCE_FILE IN_LIST COSP_SOURCES)
       get_filename_component(SOURCE_EXT ${SOURCE_FILE} EXT)
@@ -178,14 +163,6 @@ function(build_model COMP_CLASS_ARG MODEL_ARG)
     set(MLIBS "${MLIBS} ${MPISERIAL}")
   endif()
 
-  separate_arguments(CPPDEFS_LIST UNIX_COMMAND "${CPPDEFS}")
-
-  if (XCOMP AND NOT TARGET xshare)
-    add_library(xshare OBJECT ${XSHARE_SOURCES})
-    target_compile_definitions(xshare PRIVATE ${CPPDEFS_LIST})
-    target_include_directories(xshare PRIVATE ${INCLDIR})
-  endif()
-
   if (MODEL_ARG STREQUAL "cpl")
     set(TARGET_NAME "${CIME_MODEL}.exe")
     add_executable(${TARGET_NAME})
@@ -204,16 +181,13 @@ function(build_model COMP_CLASS_ARG MODEL_ARG)
   else()
     set(TARGET_NAME ${COMP_CLASS_ARG})
     add_library(${TARGET_NAME})
-    if (XCOMP)
-      target_sources(${TARGET_NAME} PRIVATE ${SOURCES} $<TARGET_OBJECTS:xshare>)
-    else()
-      target_sources(${TARGET_NAME} PRIVATE ${SOURCES})
-    endif()
+    target_sources(${TARGET_NAME} PRIVATE ${SOURCES})
   endif()
 
   # Subtle: In order for fortran dependency scanning to work, our CPPFPP/DEFS must be registered
   # as COMPILE_DEFINITIONS, not simple added via CMAKE_Fortran_Flags. Also, CPPDEFS *must*
   # be provided as a list, not a whitespace-separated string; otherwise, things get wonky.
+  separate_arguments(CPPDEFS_LIST UNIX_COMMAND "${CPPDEFS}")
   target_compile_definitions(${TARGET_NAME} PRIVATE ${CPPDEFS_LIST})
   add_dependencies(${TARGET_NAME} genf90)
 
