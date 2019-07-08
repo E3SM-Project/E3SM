@@ -614,18 +614,7 @@ contains
 
              call MPAS_pool_get_array(tracers, "snowGrainRadius", snowGrainRadius, 1)
 
-             snowGrainRadius(:,:,:) = 0.0_RKIND
-
-             do iCell = 1, nCellsSolve
-
-                do iCategory = 1, nCategories
-                   if (snowVolumeCategory(1,iCategory,iCell) .gt. 0.0_RKIND) then
-                      do iSnowLayer = 1, nSnowLayers
-                         snowGrainRadius(iSnowLayer,iCategory,iCell) = config_fallen_snow_radius
-                      enddo
-                   endif
-                enddo
-             enddo
+             snowGrainRadius(:,:,:) = config_fallen_snow_radius
 
           endif ! config_do_restart_snow_grain_radius
        endif ! config_use_snow_grain_radius
@@ -2534,10 +2523,6 @@ contains
           abortFlag = .false.
           abortMessage = ""
 
-          ! set the category tracer array
-          call set_cice_tracer_array_category(block, ciceTracerObject, &
-                 tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
-
           call colpkg_clear_warnings()
           call colpkg_step_snow (&
                config_dt, &
@@ -2580,10 +2565,6 @@ contains
                abortMessage)
 
           call column_write_warnings(abortFlag)
-
-          ! get category tracer array
-          call get_cice_tracer_array_category(block, ciceTracerObject, &
-                 tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
        enddo !iCell
 

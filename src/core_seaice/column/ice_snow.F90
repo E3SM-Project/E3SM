@@ -21,7 +21,7 @@
 
       real (kind=dbl_kind), parameter, public :: &
          S_r  = 0.033_dbl_kind, & ! irreducible saturation (Anderson 1976)
-         S_wet= 4.22e-5_dbl_kind  ! (um^3/s) wet metamorphism parameters
+         S_wet= 0.422_dbl_kind  ! (um^3/s) wet metamorphism parameters
 
 !=======================================================================
 
@@ -843,7 +843,7 @@
 
       subroutine snow_wet_metamorph (dt, dr_wet, rsnw, smice, smliq)
 
-    use ice_constants_colpkg, only: c0, c1, c4, pi
+    use ice_constants_colpkg, only: c0, c1, c4, pi, p1, c100
     !
     ! Liquid water redistribution: Apply the grain growth function from:
     !   Brun, E. (1989), Investigation of wet-snow metamorphism in respect of
@@ -872,7 +872,7 @@
        dr_wet = c0
        fliq = c1
        if (smice + smliq > c0 .and. rsnw > c0) then
-         fliq = smliq/(smice + smliq)
+         fliq = min(smliq/(smice + smliq),p1)*c100
          dr_wet = S_wet * fliq**3*dt/(c4*pi*rsnw**2)
        endif
 
