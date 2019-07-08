@@ -387,10 +387,10 @@ implicit none
 !-----------------------------------------------------------------------
  
 
-      real(8), parameter :: fcld_locutoff = 1.0e-5_r8
+      real(r8), parameter :: fcld_locutoff = 1.0e-5_r8
 ! cloud chemistry is only on when cld(i,k) >= 1.0e-5_r8
 ! it may be that the macrophysics has a higher threshold that this
-      real(8), parameter :: fcld_hicutoff = 0.999_r8
+      real(r8), parameter :: fcld_hicutoff = 0.999_r8
 
       real(r8) :: afracsub(maxsubarea)
       real(r8) :: dgn_a(max_mode), dgn_awet(max_mode)
@@ -2793,10 +2793,10 @@ do_newnuc_if_block50: &
         !    then the dust hygroscopicity may vary spatially and temporally,
         !    and the kappa values cannot be constants
         kappa_nonelectro(:) = 0.0_r8
-        kappa_nonelectro(ibc_a  ) = 0.0001  ! previously kappa_poa = 0.0001
-        kappa_nonelectro(ioc_a  ) = 0.0001  ! previously kappa_bc  = 0.0001
-        kappa_nonelectro(ilim2_a) = 0.1     ! previously kappa_soa = 0.1
-        kappa_nonelectro(ioin_a ) = 0.06    ! previously kappa_oin = 0.06
+        kappa_nonelectro(ibc_a  ) = 0.0001_r8  ! previously kappa_poa = 0.0001
+        kappa_nonelectro(ioc_a  ) = 0.0001_r8  ! previously kappa_bc  = 0.0001
+        kappa_nonelectro(ilim2_a) = 0.1_r8     ! previously kappa_soa = 0.1
+        kappa_nonelectro(ioin_a ) = 0.06_r8    ! previously kappa_oin = 0.06
 
 
         !Call MOSAIC parameterization
@@ -3137,8 +3137,8 @@ do_newnuc_if_block50: &
 
       do igas = 1, ngas
          ! use cam5.1.00 uptake rates
-         if (igas <= nsoa    ) uptkaer(igas,1:ntot_amode) = uptkaer(igas_h2so4,1:ntot_amode)*0.81
-         if (igas == igas_nh3) uptkaer(igas,1:ntot_amode) = uptkaer(igas_h2so4,1:ntot_amode)*2.08
+         if (igas <= nsoa    ) uptkaer(igas,1:ntot_amode) = uptkaer(igas_h2so4,1:ntot_amode)*0.81_r8
+         if (igas == igas_nh3) uptkaer(igas,1:ntot_amode) = uptkaer(igas_h2so4,1:ntot_amode)*2.08_r8
       end do ! igas
       uptkrate_h2so4 = sum( uptkaer(igas_h2so4,1:ntot_amode) )
 
@@ -3386,27 +3386,27 @@ do_newnuc_if_block50: &
          if (npca > 0) opoa_frac(:,npca) = 0.0_r8
       end if
 
-      delh_vap_soa = 156.0e3
+      delh_vap_soa = 156.0e3_r8
 !     delh_vap_soa =  30.0e3  ! 11-jun-2012
-      p0_soa_298 = 1.0e-10
+      p0_soa_298 = 1.0e-10_r8
 
 ! calc ambient equilibrium soa gas
       do ll = 1, ntot_soaspec
          p0_soa(ll) = p0_soa_298(ll) * &
-                  exp( -(delh_vap_soa(ll)/rgas)*((1.0/temp)-(1.0/298.0)) )
-         g0_soa(ll) = 1.01325e5*p0_soa(ll)/pmid
+                  exp( -(delh_vap_soa(ll)/rgas)*((1.0_r8/temp)-(1.0_r8/298.0_r8)) )
+         g0_soa(ll) = 1.01325e5_r8*p0_soa(ll)/pmid
       end do
 
       niter_max = 1000
       niter = 0
       dtfull = dtsubstep
-      tcur = 0.0
-      dtcur = 0.0
-      phi(:,:) = 0.0
-      g_star(:,:) = 0.0
-      g_soa(:) = 0.0
-      a_opoa(:) = 0.0
-      a_soa(:,:) = 0.0
+      tcur = 0.0_r8
+      dtcur = 0.0_r8
+      phi(:,:) = 0.0_r8
+      g_star(:,:) = 0.0_r8
+      g_soa(:) = 0.0_r8
+      a_opoa(:) = 0.0_r8
+      a_soa(:,:) = 0.0_r8
 
 !
 ! main integration loop -- does multiple substeps to reach dtfull
@@ -3537,8 +3537,8 @@ time_loop: &
 ! step 2 - implicit in g_soa and semi-implicit in a_soa,
 !    with g_star(ll,n) calculated semi-implicitly
       do ll = 1, ntot_soaspec
-         tmpa = 0.0
-         tmpb = 0.0
+         tmpa = 0.0_r8
+         tmpb = 0.0_r8
          do n = 1, ntot_soamode
             if ( skip_soamode(n) ) cycle
             tmpa = tmpa + a_soa(ll,n)/(1.0_r8 + beta(ll,n)*sat(ll,n))
@@ -3689,26 +3689,26 @@ time_loop: &
 
          npair = npair + 1
          mfrm = n
-         factoraa(mfrm) = (pi/6.)*exp(4.5*(alnsg_aer(mfrm)**2))
-         factoraa(mtoo) = (pi/6.)*exp(4.5*(alnsg_aer(mtoo)**2))
+         factoraa(mfrm) = (pi/6._r8)*exp(4.5_r8*(alnsg_aer(mfrm)**2))
+         factoraa(mtoo) = (pi/6._r8)*exp(4.5_r8*(alnsg_aer(mtoo)**2))
          factoryy(mfrm) = sqrt( 0.5 )/alnsg_aer(mfrm)
 ! dryvol_smallest is a very small volume mixing ratio (m3-AP/kmol-air)
 ! used for avoiding overflow.  it corresponds to dp = 1 nm
 ! and number = 1e-5 #/mg-air ~= 1e-5 #/cm3-air
-         dryvol_smallest(mfrm) = 1.0e-25
+         dryvol_smallest(mfrm) = 1.0e-25_r8
 !        v2nlorlx(mfrm) = voltonumblo_amode(mfrm)*frelax
 !        v2nhirlx(mfrm) = voltonumbhi_amode(mfrm)/frelax
          v2nlorlx(mfrm) = ( 1._r8 / ( (pi/6._r8)* &
-            (dgnumlo_aer(mfrm)**3._r8)*exp(4.5_r8*alnsg_aer(mfrm)**2._r8) ) ) * frelax
+            (dgnumlo_aer(mfrm)**3)*exp(4.5_r8*alnsg_aer(mfrm)**2) ) ) * frelax
          v2nhirlx(mfrm) = ( 1._r8 / ( (pi/6._r8)* &
-            (dgnumhi_aer(mfrm)**3._r8)*exp(4.5_r8*alnsg_aer(mfrm)**2._r8) ) ) / frelax
+            (dgnumhi_aer(mfrm)**3)*exp(4.5_r8*alnsg_aer(mfrm)**2) ) ) / frelax
 
-         tmp_alnsg2(mfrm) = 3.0 * (alnsg_aer(mfrm)**2)
+         tmp_alnsg2(mfrm) = 3.0_r8 * (alnsg_aer(mfrm)**2)
          dp_cut(mfrm) = sqrt(   &
-            dgnum_aer(mfrm)*exp(1.5*(alnsg_aer(mfrm)**2)) *   &
-            dgnum_aer(mtoo)*exp(1.5*(alnsg_aer(mtoo)**2)) )
+            dgnum_aer(mfrm)*exp(1.5_r8*(alnsg_aer(mfrm)**2)) *   &
+            dgnum_aer(mtoo)*exp(1.5_r8*(alnsg_aer(mtoo)**2)) )
          lndp_cut(mfrm) = log( dp_cut(mfrm) )
-         dp_belowcut(mfrm) = 0.99*dp_cut(mfrm)
+         dp_belowcut(mfrm) = 0.99_r8*dp_cut(mfrm)
       end do
       if (npair <= 0) return
 
@@ -4196,7 +4196,7 @@ mainloop1_ipair:  do n = 1, ntot_amode
       tmpch1 = ' '
       tmpch2 = ' '
 
-      if (dndt_ait < 1.0e2) then
+      if (dndt_ait < 1.0e2_r8) then
 !   ignore newnuc if number rate < 100 #/kmol-air/s ~= 0.3 #/mg-air/d
          dndt_ait = 0.0
          dmdt_ait = 0.0
@@ -4302,7 +4302,7 @@ mainloop1_ipair:  do n = 1, ntot_amode
  
        dpnuc = 0.0
        if (dndt_aitsv1 > 1.0e-5) dpnuc = (6.0*dmdt_aitsv1/   &
-                   (pi*dens_so4a_host*dndt_aitsv1))**0.3333333
+                   (pi*dens_so4a_host*dndt_aitsv1))**0.3333333_r8
        if (dpnuc > 0.0) then
        write(lund,97020) 'dpnuc,      dp_aitlo, _aithi ',   &
                     dpnuc, dplom_mode(1), dphim_mode(1)
@@ -4868,7 +4868,7 @@ agepair_loop1: &
       end if
       tmp4 = 1.0_r8 - tmp3
 
-      vol_core = 0.0
+      vol_core = 0.0_r8
       do iaer = 1, naer
          ! for core volume, only include the mapped species 
          !    which are primary and low hygroscopicity
@@ -4886,7 +4886,7 @@ agepair_loop1: &
 !   Define xferfrac_pcage = min( 1.0, ratio1/ratio2)
 !   But ratio1/ratio2 == tmp1/tmp2, and coding below avoids possible overflow 
 !
-      fac_volsfc = exp( 2.5*(alnsg_aer(nfrm)**2) )
+      fac_volsfc = exp( 2.5_r8*(alnsg_aer(nfrm)**2) )
       xferfrac_max = 1.0_r8 - 10.0_r8*epsilon(1.0_r8)   ! 1-eps
 
       tmp1 = vol_shell*dgn_a(nfrm)*fac_volsfc
@@ -4898,7 +4898,7 @@ agepair_loop1: &
       end if
 
       do iaer = 1, naer
-         if (lmap_aer(iaer,nfrm) > 0) then
+         if (lmap_aer(iaer,nfrm) > 0._r8) then
             ! species is pom or bc
             ! transfer the aged fraction to accum mode
             ! include this transfer change in the cond and/or coag change (for mass budget)
@@ -4945,10 +4945,10 @@ agepair_loop1: &
 !--------------------------------------------------------------------------------
       function mean_molecular_speed( temp, rmw )
       implicit none
-      real(8) :: mean_molecular_speed  ! (m/s)
-      real(8) :: temp                  ! temperature (K)
-      real(8) :: rmw                   ! molec. weight (g/mol)
-      mean_molecular_speed = 145.5_8 * sqrt(temp/rmw)
+      real(r8) :: mean_molecular_speed  ! (m/s)
+      real(r8) :: temp                  ! temperature (K)
+      real(r8) :: rmw                   ! molec. weight (g/mol)
+      mean_molecular_speed = 145.5_r8 * sqrt(temp/rmw)
       return
       end function mean_molecular_speed
 
@@ -4957,17 +4957,17 @@ agepair_loop1: &
 !--------------------------------------------------------------------------------
       function gas_diffusivity( t_k, p_atm, rmw, vm )
       implicit none
-      real(8) :: gas_diffusivity       ! (m2/s)
-      real(8) :: t_k                   ! temperature (K)
-      real(8) :: p_atm                 ! pressure (atmospheres)
-      real(8) :: rmw                   ! molec. weight (g/mol)
-      real(8) :: vm                    ! molar volume (units = ??)
+      real(r8) :: gas_diffusivity       ! (m2/s)
+      real(r8) :: t_k                   ! temperature (K)
+      real(r8) :: p_atm                 ! pressure (atmospheres)
+      real(r8) :: rmw                   ! molec. weight (g/mol)
+      real(r8) :: vm                    ! molar volume (units = ??)
 
-      real(8) :: dgas
+      real(r8) :: dgas
 
-      dgas = (1.0e-3_8 * t_k**1.75_8 * sqrt(1./rmw + 0.035_8))/   &
-             (p_atm * (vm**0.3333333333333333_8 + 2.7189_8)**2)
-      gas_diffusivity = dgas*1.0e-4_8
+      dgas = (1.0e-3_r8 * t_k**1.75_r8 * sqrt(1._r8/rmw + 0.035_r8))/   &
+             (p_atm * (vm**0.3333333333333333_r8 + 2.7189_r8)**2)
+      gas_diffusivity = dgas*1.0e-4_r8
       return
       end function gas_diffusivity
 
@@ -5030,9 +5030,8 @@ agepair_loop1: &
       real(r8) :: tmpa
       real(r8), save :: xghq(nghq), wghq(nghq) ! quadrature abscissae and weights
 
-      data xghq / 0.70710678, -0.70710678 /
-      data wghq / 0.88622693,  0.88622693 /
-
+      data xghq / 0.70710678_r8, -0.70710678_r8 /
+      data wghq / 0.88622693_r8,  0.88622693_r8 /
 
       accomxp283 = accom * 0.283_r8
       accomxp75  = accom * 0.75_r8
@@ -5061,7 +5060,7 @@ agepair_loop1: &
          const  = tworootpi * exp( beta*lndpgn + 0.5_r8*(beta*lnsg(n))**2 )
          
 !   sum over gauss-hermite quadrature points
-         sumghq = 0.0
+         sumghq = 0.0_r8
          do iq = 1, nghq
             lndp = lndpgn + beta*lnsg(n)**2 + root2*lnsg(n)*xghq(iq)
             dp = exp(lndp)
