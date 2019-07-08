@@ -148,7 +148,7 @@ def _build_model(build_threaded, exeroot, incroot, complist,
 
 ###############################################################################
 def _build_model_cmake(build_threaded, exeroot, incroot, complist,
-                       lid, caseroot, cimeroot, compiler, buildlist, comp_interface, sharedpath, case):
+                       lid, caseroot, cimeroot, compiler, buildlist, comp_interface, sharedpath, ninja, case):
 ###############################################################################
     cime_model = get_model()
     bldroot    = os.path.join(exeroot, "bld")
@@ -175,6 +175,8 @@ def _build_model_cmake(build_threaded, exeroot, incroot, complist,
 
     # Call CMake
     cmake_args = get_standard_cmake_args(case, sharedpath)
+    if ninja:
+        cmake_args += " -GNinja "
     cmake_cmd = "cmake {} {}/components >> {} 2>&1".format(cmake_args, srcroot, bldlog)
     with open(bldlog, "w") as fd:
         fd.write("Configuring with cmake cmd:\n{}\n\n".format(cmake_cmd))
@@ -182,7 +184,7 @@ def _build_model_cmake(build_threaded, exeroot, incroot, complist,
 
     # Call Make
     if stat == 0:
-        make_cmd = "{} -j {} >> {} 2>&1".format(gmake, gmake_j, bldlog)
+        make_cmd = "{} -j {} >> {} 2>&1".format("ninja" if ninja else gmake, gmake_j, bldlog)
         with open(bldlog, "a") as fd:
             fd.write("\n\nBuilding with make cmd:\n{}\n\n".format(make_cmd))
 
@@ -453,7 +455,7 @@ def _clean_impl(case, cleanlist, clean_all, clean_depends):
 
 ###############################################################################
 def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
-                     save_build_provenance, use_old):
+                     save_build_provenance, use_old, ninja):
 ###############################################################################
 
     t1 = time.time()
@@ -464,6 +466,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
     logger.info("sharedlib_only is {}".format(sharedlib_only))
     logger.info("model_only is {}".format(model_only))
 
+    expect(not (use_old and ninja), "Ninja backend not supported for classic build system")
     expect(os.path.isdir(caseroot), "'{}' is not a valid directory".format(caseroot))
     os.chdir(caseroot)
 
@@ -576,7 +579,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
     if not sharedlib_only:
         if get_model() == "e3sm" and not use_old:
             logs.extend(_build_model_cmake(build_threaded, exeroot, incroot, complist,
-                                           lid, caseroot, cimeroot, compiler, buildlist, comp_interface, sharedpath, case))
+                                           lid, caseroot, cimeroot, compiler, buildlist, comp_interface, sharedpath, ninja, case))
         else:
             os.environ["INSTALL_SHAREDPATH"] = os.path.join(exeroot, sharedpath) # for MPAS makefile generators
             logs.extend(_build_model(build_threaded, exeroot, incroot, complist,
@@ -621,10 +624,10 @@ def post_build(case, logs, build_complete=False, save_build_provenance=True):
         lock_file("env_build.xml", caseroot=case.get_value("CASEROOT"))
 
 ###############################################################################
-def case_build(caseroot, case, sharedlib_only=False, model_only=False, buildlist=None, save_build_provenance=True, use_old=False):
+def case_build(caseroot, case, sharedlib_only=False, model_only=False, buildlist=None, save_build_provenance=True, use_old=False, ninja=False):
 ###############################################################################
     functor = lambda: _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
-                                       save_build_provenance, use_old)
+                                       save_build_provenance, use_old, ninja)
     return run_and_log_case_status(functor, "case.build", caseroot=caseroot)
 
 ###############################################################################
