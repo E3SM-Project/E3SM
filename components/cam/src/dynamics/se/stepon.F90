@@ -241,11 +241,13 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    use hycoef,          only: hyai, hybi, ps0
    use cam_history,     only: outfld, hist_fld_active
    use prim_driver_base,only: applyCAMforcing_tracers
+   use element_ops,     only: get_temperature
 
    type(physics_state), intent(inout) :: phys_state(begchunk:endchunk)
    type(physics_tend),  intent(inout) :: phys_tend(begchunk:endchunk)
    type (dyn_import_t), intent(inout) :: dyn_in  ! Dynamics import container
    type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
+   real(r8) :: temperature(np,np,nlev)   ! Temperature from dynamics
    integer :: kptr, ie, ic, m, i, j, k, tl_f, tl_fQdp, velcomp
    real(r8) :: rec2dt, dyn_ps0
    real(r8) :: dp(np,np,nlev),dp_tmp,fq,fq0,qn0, ftmp(npsq,nlev,2)
@@ -456,7 +458,8 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    endif
    
    do ie = 1,nelemd
-      call outfld('DYN_T'     ,dyn_in%elem(ie)%state%T(:,:,:,tl_f)    ,npsq,ie)
+      call get_temperature(dyn_in%elem(ie),temperature,hvcoord,tl_f)
+      call outfld('DYN_T'     ,temperature                            ,npsq,ie)
       call outfld('DYN_Q'     ,dyn_in%elem(ie)%state%Q(:,:,:,1)       ,npsq,ie)
       call outfld('DYN_U'     ,dyn_in%elem(ie)%state%V(:,:,1,:,tl_f)  ,npsq,ie)
       call outfld('DYN_V'     ,dyn_in%elem(ie)%state%V(:,:,2,:,tl_f)  ,npsq,ie)
