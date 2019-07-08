@@ -18,16 +18,21 @@ cmake_policy(SET CMP0057 NEW)
 
 project(E3SM C CXX Fortran)
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake_util.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/build_mpas_model.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_util.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_mpas_model.cmake)
 
 set(BUILDCONF ${CASEROOT}/Buildconf)
+
+# set(COMP_CLASSES CPL ATM LND ICE OCN ROF GLC WAV IAC ESP)
+# foreach(ITEM IN LISTS COMP_NAMES)
+#   message("JGF ITEM IS ${ITEM}")
+# endforeach()
 
 # Do any MPAS builds first since they manage their own flags
 build_mpas_models()
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/common_setup.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/build_model.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/common_setup.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_model.cmake)
 
 # For each component that has registered itself to be built, read in Filepath and
 # CCSM_cppdefs and build it. We identify the components by looking for Buildconf/*/Filepath
