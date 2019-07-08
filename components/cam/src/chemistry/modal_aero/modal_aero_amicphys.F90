@@ -5030,8 +5030,13 @@ agepair_loop1: &
       real(r8) :: tmpa
       real(r8), save :: xghq(nghq), wghq(nghq) ! quadrature abscissae and weights
 
-      data xghq / 0.70710678_r8, -0.70710678_r8 /
-      data wghq / 0.88622693_r8,  0.88622693_r8 /
+! Dick Easter's version
+!      data xghq / 0.70710678_r8, -0.70710678_r8 /
+!      data wghq / 0.88622693_r8,  0.88622693_r8 /
+
+! JS updates on 07/08/2019: ghq with more digits
+      data xghq / 7.0710678118654746e-01_r8, -7.0710678118654746e-01_r8 /
+      data wghq / 8.8622692545275794e-01_r8,  8.8622692545275794e-01_r8 /
 
       accomxp283 = accom * 0.283_r8
       accomxp75  = accom * 0.75_r8
