@@ -306,7 +306,8 @@ CONTAINS
           call outfld('PS&IC',elem(ie)%state%ps_v(:,:,tl_f),  ncol_d,ie)
           call outfld('U&IC', elem(ie)%state%V(:,:,1,:,tl_f), ncol_d,ie)
           call outfld('V&IC', elem(ie)%state%V(:,:,2,:,tl_f), ncol_d,ie)
-          call outfld('T&IC', elem(ie)%state%T(:,:,:,tl_f),   ncol_d,ie)
+          call get_temperature(elem(ie),temperature,hvcoord,tl_f)
+          call outfld('T&IC',temperature,ncol_d,ie)
           do m = 1,pcnst
             call outfld(trim(cnst_name(m))//'&IC',elem(ie)%state%Q(:,:,:,m), ncol_d,ie)
           end do ! m
