@@ -12,7 +12,7 @@ module physconst
                             shr_const_rwv,    shr_const_zvir,   shr_const_pi,     &
                             shr_const_rearth, shr_const_sday,   shr_const_cday,   &
                             shr_const_spval,  shr_const_omega,  shr_const_cpvir,  &
-                            shr_const_tktrip
+                            shr_const_tktrip, shr_const_vmdair
    use ppgrid,        only: pcols, pver, pverp, begchunk, endchunk   ! Dimensions and chunk bounds
 
    implicit none
@@ -74,6 +74,7 @@ module physconst
    real(r8), public           :: mwdry        = shr_const_mwdair! molecular weight dry air
    real(r8), public           :: rearth       = shr_const_rearth! radius of earth (m)
    real(r8), public           :: tmelt        = shr_const_tkfrz ! Freezing point of water (K)
+   real(r8), public           :: vmdry        = shr_const_vmdair! molecular diffusion volume of dry air (unitless)
 
 !---------------  Variables below here are derived from those above -----------------------
 

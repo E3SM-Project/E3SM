@@ -3107,9 +3107,9 @@ do_newnuc_if_block50: &
       if (jtsubstep == 1) then
 
 ! Dick Easter's version
-      tmpa = pmid/pstd
+!      tmpa = pmid/pstd
 ! JS updates on July 05, 2019 to use pstd
-!      tmpa = pmid/1.013e5_r8
+      tmpa = pmid/1.013e5_r8
 
       do igas = 1, ngas
          gas_diffus(igas) = gas_diffusivity( &
@@ -4953,10 +4953,10 @@ agepair_loop1: &
       real(r8) :: temp                  ! temperature (K)
       real(r8) :: rmw                   ! molec. weight (g/mol)
 ! Dick Easter's version 
-      mean_molecular_speed = 145.5_r8 * sqrt(temp/rmw)
+!      mean_molecular_speed = 145.5_r8 * sqrt(temp/rmw)
 
 ! JS updates on July 05, 2019, use formula sqrt(8RT/(pi*mw))
-!      mean_molecular_speed = sqrt(8._r8*r_universal*temp/(pi*rmw))
+      mean_molecular_speed = sqrt(8._r8*r_universal*temp/(pi*rmw))
 
       return
       end function mean_molecular_speed
@@ -4975,14 +4975,14 @@ agepair_loop1: &
       real(r8), parameter :: onethird = 1._r8/3._r8
 
 ! Dick Easter's version
-      dgas = (1.0e-3_r8 * t_k**1.75_r8 * sqrt(1._r8/rmw + 0.035_r8))/   &
-             (p_atm * (vm**onethird + 2.7189_r8)**2._r8)
-      gas_diffusivity = dgas*1.0e-4_r8
+!      dgas = (1.0e-3_r8 * t_k**1.75_r8 * sqrt(1._r8/rmw + 0.035_r8))/   &
+!             (p_atm * (vm**onethird + 2.7189_r8)**2._r8)
+!      gas_diffusivity = dgas*1.0e-4_r8
 
 ! JS updates on July 05, 2019, use formula of dgas based on Fuller et al., 1996
-!      dgas = (1.0e-3_r8 * t_k**1.75_r8 * sqrt(1._r8/rmw + 1._r8/mwdry))/   &
-!             (p_atm * (vm**onethird + vmdry**onethird)**2)
-!      gas_diffusivity = dgas*1.0e-4_r8  
+      dgas = (1.0e-3_r8 * t_k**1.75_r8 * sqrt(1._r8/rmw + 1._r8/mwdry))/   &
+             (p_atm * (vm**onethird + vmdry**onethird)**2)
+      gas_diffusivity = dgas*1.0e-4_r8  
 
       return
       end function gas_diffusivity
