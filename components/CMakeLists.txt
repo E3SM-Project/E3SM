@@ -23,34 +23,24 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_mpas_model.cmake)
 
 set(BUILDCONF ${CASEROOT}/Buildconf)
 
-# set(COMP_CLASSES CPL ATM LND ICE OCN ROF GLC WAV IAC ESP)
-# foreach(ITEM IN LISTS COMP_NAMES)
-#   message("JGF ITEM IS ${ITEM}")
-# endforeach()
-
 # Do any MPAS builds first since they manage their own flags
 build_mpas_models()
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/common_setup.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_model.cmake)
 
-# For each component that has registered itself to be built, read in Filepath and
-# CCSM_cppdefs and build it. We identify the components by looking for Buildconf/*/Filepath
-# files.
-file(GLOB FILEPATHS "${BUILDCONF}/*/Filepath")
-foreach(ITEM IN LISTS FILEPATHS)
-  get_filename_component(FILEPATH_DIR ${ITEM} DIRECTORY)
-  get_filename_component(MODELCONF ${FILEPATH_DIR} NAME)
-  string(REPLACE "conf" "" MODEL "${MODELCONF}")
-
-  if (NOT MODEL STREQUAL "cpl")
-    message("Found component model ${MODEL}")
-    list(APPEND MODELS ${MODEL})
-
-    build_model(${MODEL} ${FILEPATH_DIR} "")
+# Build E3SM components
+set(IDX 0)
+set(COMP_CLASSES cpl atm lnd ice ocn rof glc wav iac esp)
+set(MPAS_COMPS "mpaso" "mpassi" "mali")
+foreach(COMP_NAME IN LISTS COMP_NAMES)
+  list(GET COMP_CLASSES ${IDX} COMP_CLASS)
+  if (NOT COMP_CLASS STREQUAL "cpl" AND NOT COMP_NAME IN_LIST MPAS_COMPS)
+    message("Found component ${COMP_CLASS} model '${COMP_NAME}'")
+    add_subdirectory(cmake/${COMP_CLASS})
   endif()
+
+  math(EXPR IDX "${IDX} + 1")
 endforeach()
 
-message("Configuring exe with cpl and models ${MODELS}")
-build_model("cpl" "${BUILDCONF}/cplconf" "${MODELS}")
-
+add_subdirectory(cmake/cpl)

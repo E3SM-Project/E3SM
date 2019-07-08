@@ -1,11 +1,13 @@
-function(build_model MODEL_ARG MODELCONF_DIR_ARG ALL_MODELS_ARG)
+function(build_model COMP_CLASS_ARG MODEL_ARG)
+  set(MODELCONF_DIR "${BUILDCONF}/${MODEL_ARG}conf")
+
   # Load dependency search path.
-  file(STRINGS ${MODELCONF_DIR_ARG}/Filepath FILEPATH_DIRS)
+  file(STRINGS ${MODELCONF_DIR}/Filepath FILEPATH_DIRS)
   set(CPP_DIRS ${FILEPATH_DIRS})
   list(APPEND CPP_DIRS ".")
 
   # Load cppdefs
-  set(CCSM_CPPDEFS_FILE "${MODELCONF_DIR_ARG}/CCSM_cppdefs")
+  set(CCSM_CPPDEFS_FILE "${MODELCONF_DIR}/CCSM_cppdefs")
   if (EXISTS ${CCSM_CPPDEFS_FILE})
     file(READ ${CCSM_CPPDEFS_FILE} CCSM_CPPDEFS)
     string(STRIP "${CCSM_CPPDEFS}" CCSM_CPPDEFS)
@@ -14,6 +16,9 @@ function(build_model MODEL_ARG MODELCONF_DIR_ARG ALL_MODELS_ARG)
 
   if (MODEL_ARG STREQUAL "cpl")
     list(APPEND INCLDIR "${EXEROOT}/bld/mpas-source/src")
+    foreach(ITEM IN LISTS COMP_CLASSES)
+      list(APPEND INCLDIR "${EXEROOT}/bld/cmake/${ITEM}")
+    endforeach()
   endif()
 
   #-------------------------------------------------------------------------------
@@ -182,34 +187,37 @@ function(build_model MODEL_ARG MODELCONF_DIR_ARG ALL_MODELS_ARG)
   endif()
 
   if (MODEL_ARG STREQUAL "cpl")
-    set(MODEL_ARG "${CIME_MODEL}.exe")
-    add_executable(${MODEL_ARG})
-    target_sources(${MODEL_ARG} PRIVATE ${SOURCES})
+    set(TARGET_NAME "${CIME_MODEL}.exe")
+    add_executable(${TARGET_NAME})
+    target_sources(${TARGET_NAME} PRIVATE ${SOURCES})
     set(ALL_LIBS "${ULIBDEP} ${MCTLIBS} ${PIOLIB} ${GPTLLIB} ${SLIBS} ${MLIBS} ${F90_LDFLAGS}")
     separate_arguments(ALL_LIBS_LIST UNIX_COMMAND "${ALL_LIBS}")
-    foreach(ITEM IN LISTS ALL_MODELS_ARG)
-      target_link_libraries(${MODEL_ARG} ${ITEM})
+    foreach(ITEM IN LISTS COMP_CLASSES)
+      if (NOT ITEM STREQUAL "cpl")
+        target_link_libraries(${TARGET_NAME} ${ITEM})
+      endif()
     endforeach()
     foreach(ITEM IN LISTS ALL_LIBS_LIST)
-      target_link_libraries(${MODEL_ARG} ${ITEM})
+      target_link_libraries(${TARGET_NAME} ${ITEM})
     endforeach()
-    set_target_properties(${MODEL_ARG} PROPERTIES LINKER_LANGUAGE ${LD})
+    set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE ${LD})
   else()
-    add_library(${MODEL_ARG})
+    set(TARGET_NAME ${COMP_CLASS_ARG})
+    add_library(${TARGET_NAME})
     if (XCOMP)
-      target_sources(${MODEL_ARG} PRIVATE ${SOURCES} $<TARGET_OBJECTS:xshare>)
+      target_sources(${TARGET_NAME} PRIVATE ${SOURCES} $<TARGET_OBJECTS:xshare>)
     else()
-      target_sources(${MODEL_ARG} PRIVATE ${SOURCES})
+      target_sources(${TARGET_NAME} PRIVATE ${SOURCES})
     endif()
   endif()
 
   # Subtle: In order for fortran dependency scanning to work, our CPPFPP/DEFS must be registered
   # as COMPILE_DEFINITIONS, not simple added via CMAKE_Fortran_Flags. Also, CPPDEFS *must*
   # be provided as a list, not a whitespace-separated string; otherwise, things get wonky.
-  target_compile_definitions(${MODEL_ARG} PRIVATE ${CPPDEFS_LIST})
-  add_dependencies(${MODEL_ARG} genf90)
+  target_compile_definitions(${TARGET_NAME} PRIVATE ${CPPDEFS_LIST})
+  add_dependencies(${TARGET_NAME} genf90)
 
   # Set flags for target
-  target_include_directories(${MODEL_ARG} PRIVATE ${INCLDIR})
+  target_include_directories(${TARGET_NAME} PRIVATE ${INCLDIR})
 
 endfunction(build_model)
