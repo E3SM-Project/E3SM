@@ -40,6 +40,9 @@ def get_standard_cmake_args(case, sharedpath, shared_lib=False):
 
     if not shared_lib:
         cmake_args += " -DUSE_KOKKOS={} ".format(stringify_bool(uses_kokkos(case)))
+        comps = [case.get_value("COMP_{}".format(comp_class)) for comp_class in case.get_values("COMP_CLASSES")]
+        cmake_args += " -DCOMP_NAMES='{}' ".format(";".join(comps))
+
     for var in _CMD_ARGS_FOR_BUILD:
         cmake_args += xml_to_make_variable(case, var, cmake=True)
 
