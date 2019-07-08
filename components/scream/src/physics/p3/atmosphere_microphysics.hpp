@@ -18,7 +18,7 @@ namespace scream
  *  Note: for now, scream is only going to accommodate P3 as microphysics 
 */
 
-class P3Microphysics : public AtmosphereProcess
+class P3Microphysics : public scream::AtmosphereProcess
 {
 public:
   using field_type       = Field<      Real,device_type>;
@@ -46,17 +46,17 @@ public:
   // Set the grid
   void set_grid (const std::shared_ptr<const GridsManager> grids_manager);
 
+  // The three main interfaces for the subcomponent
+  void initialize ();
+  void run ();
+  void finalize();
+
   // Register all fields in the given repo
   void register_fields (FieldRepository<Real, device_type>& field_repo) const;
 
   // Get the set of required/computed fields
   const std::set<FieldIdentifier>& get_required_fields () const { return m_required_fields; }
   const std::set<FieldIdentifier>& get_computed_fields () const { return m_computed_fields; }
-
-  // The three main interfaces for the subcomponent
-  void initialize ();
-  void run ();
-  void finalize();
 
 protected:
 
