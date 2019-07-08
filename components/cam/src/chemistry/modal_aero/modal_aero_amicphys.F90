@@ -15,7 +15,7 @@
   use cam_abortutils,  only:  endrun
   use cam_logfile,     only:  iulog
   use chem_mods,       only:  gas_pcnst
-  use physconst,       only:  pi
+  use physconst,       only:  pi, mwdry, r_universal, vmdry, pstd
   use ppgrid,          only:  pcols, pver
   use modal_aero_data, only:  ntot_aspectype, ntot_amode, nsoa, npoa, nbc
 ! use ref_pres,        only:  top_lev => clim_modal_aero_top_lev  ! this is for gg02a
@@ -2496,7 +2496,7 @@ do_newnuc_if_block50: &
         integer  :: unitn
 
         !BALLI -  Following should be in the modules as parameter
-        real(r8), parameter ::  oneatminv = 1.0_r8/1.01325e5_r8  
+        real(r8), parameter ::  oneatminv = 1.0_r8/pstd
         !BALLI -  Following should be in the modules as parameter -  ENDS
 
         !BSINGH - For converting CAM units to Mosaic units
@@ -3106,7 +3106,10 @@ do_newnuc_if_block50: &
 ! calc gas uptake (mass transfer) rates
       if (jtsubstep == 1) then
 
-      tmpa = pmid/1.013e5_r8
+! Dick Easter's version                                                                                      
+!      tmpa = pmid/1.013e5_r8
+! JS updates on 07/08/2019 to use pstd 
+      tmpa = pmid/pstd
       do igas = 1, ngas
          gas_diffus(igas) = gas_diffusivity( &
                                temp, tmpa, mw_gas(igas), vol_molar_gas(igas) )
@@ -3394,7 +3397,11 @@ do_newnuc_if_block50: &
       do ll = 1, ntot_soaspec
          p0_soa(ll) = p0_soa_298(ll) * &
                   exp( -(delh_vap_soa(ll)/rgas)*((1.0_r8/temp)-(1.0_r8/298.0_r8)) )
-         g0_soa(ll) = 1.01325e5_r8*p0_soa(ll)/pmid
+! Dick Easter's version:
+!         g0_soa(ll) = 1.01325e5_r8*p0_soa(ll)/pmid
+
+! JS updates on 07/08/2019 to use pstd
+         g0_soa(ll) = pstd*p0_soa(ll)/pmid
       end do
 
       niter_max = 1000
@@ -4948,7 +4955,13 @@ agepair_loop1: &
       real(r8) :: mean_molecular_speed  ! (m/s)
       real(r8) :: temp                  ! temperature (K)
       real(r8) :: rmw                   ! molec. weight (g/mol)
-      mean_molecular_speed = 145.5_r8 * sqrt(temp/rmw)
+
+! Dick Easter's version 
+!      mean_molecular_speed = 145.5_r8 * sqrt(temp/rmw)
+                     
+! JS updates on 07/08/20199, use formula sqrt(8RT/(pi*mw))
+      mean_molecular_speed = sqrt(8._r8*r_universal*temp/(pi*rmw))
+
       return
       end function mean_molecular_speed
 
@@ -4964,10 +4977,18 @@ agepair_loop1: &
       real(r8) :: vm                    ! molar volume (units = ??)
 
       real(r8) :: dgas
+      real(r8), parameter :: onethird = 1._r8/3._r8
 
-      dgas = (1.0e-3_r8 * t_k**1.75_r8 * sqrt(1._r8/rmw + 0.035_r8))/   &
-             (p_atm * (vm**0.3333333333333333_r8 + 2.7189_r8)**2)
+! Dick Easter's version
+!      dgas = (1.0e-3_r8 * t_k**1.75_r8 * sqrt(1._r8/rmw + 0.035_r8))/   &
+!             (p_atm * (vm**onethird + 2.7189_r8)**2._r8)
+!      gas_diffusivity = dgas*1.0e-4_r8
+
+! JS updates on July 05, 2019, use formula of dgas based on Fuller et al., 1996
+      dgas = (1.0e-3_r8 * t_k**1.75_r8 * sqrt(1._r8/rmw + 1._r8/mwdry))/   &
+             (p_atm * (vm**onethird + vmdry**onethird)**2)
       gas_diffusivity = dgas*1.0e-4_r8
+
       return
       end function gas_diffusivity
 
