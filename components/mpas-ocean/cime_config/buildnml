@@ -678,6 +678,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '    <var name="kineticEnergyAtSurface"/>' . "\n";
 	print $stream_file '    <var name="kineticEnergyAt250m"/>' . "\n";
 	print $stream_file '    <var name="relativeVorticityAt250m"/>' . "\n";
+	print $stream_file '    <var name="BruntVaisalaFreqTopAt250m"/>' . "\n";
 	print $stream_file '    <var name="ssh"/>' . "\n";
 	print $stream_file '    <var name="pressureAdjustedSSH"/>' . "\n";
 	print $stream_file '    <var name="boundaryLayerDepth"/>' . "\n";
@@ -813,6 +814,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '    <var name="volumeCellGlobal"/>' . "\n";
 	print $stream_file '    <var name="volumeEdgeGlobal"/>' . "\n";
 	print $stream_file '    <var name="CFLNumberGlobal"/>' . "\n";
+	print $stream_file '    <var name="BruntVaisalaFreqTop"/>' . "\n";
 	print $stream_file '    <var name="vertDiffTopOfCell"/>' . "\n";
 	print $stream_file '    <var name="vertViscTopOfCell"/>' . "\n";
 	print $stream_file '    <var name="bulkRichardsonNumber"/>' . "\n";
