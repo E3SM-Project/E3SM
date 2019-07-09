@@ -189,8 +189,7 @@ contains
     time1 = time - dt
 
 
-    ! npts = np
-    npts=SIZE(elem(1)%state%ps_v(:,:,n0),1)
+    npts = np
     do q=1,qsize
        do ie=nets,nete
           tmp1(ie) = MINVAL(elem(ie)%state%Q(:,:,:,q))
@@ -229,7 +228,8 @@ contains
        enddo
 
        ! surface pressure
-       tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0)
+       !tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0)
+       tmp(:,:,ie)=hvcoord%hyai(1)*hvcoord%ps0 + sum(elem(ie)%state%dp3d(:,:,:,n0),3) 
 
        !======================================================  
        umax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,1,:,n0))
@@ -374,7 +374,8 @@ contains
 
     !   mass = integral( ps-p(top) )
     do ie=nets,nete
-       tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0) 
+       !tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0) 
+       tmp(:,:,ie)=hvcoord%hyai(1)*hvcoord%ps0 + sum(elem(ie)%state%dp3d(:,:,:,n0),3) 
     enddo
     Mass2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
 
@@ -738,6 +739,10 @@ contains
           write(iulog,'(a,i3,a,E22.14,a,2E15.7)') "Q",q,",Q diss, dQ^2/dt:",Qmass(q,2)," kg/m^2",&
                (Qmass(q,2)-Qmass(q,1))/dt,(Qvar(q,2)-Qvar(q,1))/dt
        enddo
+       write(iulog,'(a)') 'Changes due to remap:'
+       write(iulog,'(a,2e15.7)') 'dKE/dt(W/m^2): ',(KEner(2)-KEner(4))/dt
+       write(iulog,'(a,2e15.7)') 'dIE/dt(W/m^2): ',(IEner(2)-IEner(4))/dt
+       write(iulog,'(a,2e15.7)') 'dPE/dt(W/m^2): ',(PEner(2)-PEner(4))/dt
        write(iulog,'(a)') 'Physics tendencies applied by dycore:'
        write(iulog,'(a,2e15.7)') 'dKE/dt(W/m^2): ',(KEner(1)-KEner(3))/dt
        write(iulog,'(a,2e15.7)') 'dIE/dt(W/m^2): ',(IEner(1)-IEner(3))/dt
@@ -857,10 +862,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        call TimeLevel_Qdp(tl, qsplit, tmp, t1_qdp) !get np1 into t2_qdp
     endif
     do ie=nets,nete
-       do k=1,nlev
-          dpt1(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,t1)
-       enddo
+       dpt1=elem(ie)%state%dp3d(:,:,:,t1)
        call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,t1),dpt1,&
             elem(ie)%state%phinh_i(:,:,:,t1),pnh,exner,dpnh_dp_i,pnh_i,'prim_state_mod')
        call get_phi(elem(ie),phi,phi_i,hvcoord,t1,t1_qdp)

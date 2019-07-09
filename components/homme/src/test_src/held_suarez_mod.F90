@@ -232,7 +232,7 @@ contains
     integer :: n0 
     integer :: np1
     real (kind=real_kind) :: lat_mtn,lon_mtn,r_mtn,h_mtn,rsq,lat,lon
-    real (kind=real_kind) :: temperature(np,np,nlev),p(np,np),exner(np,np)
+    real (kind=real_kind) :: temperature(np,np,nlev),p(np,np),exner(np,np),ps(np,np)
 
     if (hybrid%masterthread) write(iulog,*) 'initializing Held-Suarez primitive equations test'
 
@@ -299,8 +299,8 @@ contains
           elem(ie)%state%Q(:,:,:,q) =temperature(:,:,:)/400
        enddo
        endif
-
-       call set_thermostate(elem(ie),temperature,hvcoord)
+       ps=elem(ie)%state%ps_v(:,:,n0)
+       call set_thermostate(elem(ie),ps,temperature,hvcoord)
     end do
 
   end subroutine hs0_init_state

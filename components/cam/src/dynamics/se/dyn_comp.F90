@@ -248,7 +248,7 @@ CONTAINS
     integer :: ithr, nets, nete, ie, k, tlev
     real(r8), parameter :: Tinit=300.0_r8
     type(hybrid_t) :: hybrid
-    real(r8) :: temperature(np,np,nlev)
+    real(r8) :: temperature(np,np,nlev),ps(np,np)
 
     elem  => dyn_in%elem
 
@@ -290,7 +290,8 @@ CONTAINS
                 elem(ie)%state%q(:,:,:,:)=0.0_r8
 
                 temperature(:,:,:)=0.0_r8
-                call set_thermostate(elem(ie),temperature,hvcoord)
+                ps=ps0
+                call set_thermostate(elem(ie),ps,temperature,hvcoord)
 
              end do
           end if
