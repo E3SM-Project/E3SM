@@ -169,6 +169,15 @@
     </directives>
   </batch_system>
 
+  <batch_system MACH="aleph" type="pbs" >
+    <directives>
+      <directive>-l nodes={{ num_nodes }}</directive>
+    </directives>
+    <queues>
+      <queue default="true" >iccp</queue>
+    </queues>
+  </batch_system>
+
   <!-- athena is lsf -->
   <batch_system MACH="athena" type="lsf">
     <submit_args>
