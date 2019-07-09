@@ -106,7 +106,6 @@ CONTAINS
   !   with dynamics when dyn_npes<npes
   ! 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-<<<<<<< dabe086f6094a68fcc704387aa64b03658adb75e
     use physical_constants, only: kappa
     use derivative_mod,     only: gradient_sphere, ugradv_sphere
     use edge_mod,           only : edge_g, edgevpack_nlyr, edgevunpack_nlyr
@@ -145,7 +144,6 @@ CONTAINS
         ! pressure at mid points
         p(:,:) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,tl)
         ! potential temperature: theta = T (p/p0)^kappa
-<<<<<<< dabe086f6094a68fcc704387aa64b03658adb75e
         call get_temperature(elem(ie),temperature,hvcoord,tl)
         theta(:,:) = temperature(:,:,k)*(psurf_ref / p(:,:))**kappa
         gradth_gll(:,:,:,k,ie) = gradient_sphere(theta,ederiv,elem(ie)%Dinv)

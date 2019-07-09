@@ -28,7 +28,6 @@ module inidat
 contains
 
   subroutine read_inidat( ncid_ini, ncid_topo, dyn_in)
-<<<<<<< dabe086f6094a68fcc704387aa64b03658adb75e
     use dyn_comp,                only: dyn_import_t, hvcoord
     use parallel_mod,            only: par
     use bndry_mod,               only: bndry_exchangev

@@ -270,7 +270,6 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    call t_startf('stepon_bndry_exch')
    ! do boundary exchange
    if (.not. single_column) then 
-<<<<<<< dabe086f6094a68fcc704387aa64b03658adb75e
       do ie=1,nelemd
 
          if (fv_nphys>0) then
@@ -310,7 +309,6 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    rec2dt = 1._r8/dtime
 
    do ie=1,nelemd
-<<<<<<< dabe086f6094a68fcc704387aa64b03658adb75e
       if (.not. single_column) then
 
          kptr=0
