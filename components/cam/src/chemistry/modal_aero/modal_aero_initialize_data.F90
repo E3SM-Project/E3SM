@@ -28,7 +28,11 @@ contains
 
     integer, intent(inout) :: species_class(:) 
     !local variables
-    character(len=8)  :: &
+!LXu@08/2019
+!    character(len=8)  :: &
+!         xname_massptr(maxd_aspectype,ntot_amode), &
+!         xname_massptrcw(maxd_aspectype,ntot_amode)
+    character(len=10)  :: &
          xname_massptr(maxd_aspectype,ntot_amode), &
          xname_massptrcw(maxd_aspectype,ntot_amode)
     character(len=10) :: xname_spectype(maxd_aspectype,ntot_amode)
@@ -47,7 +51,10 @@ contains
     character(len=*), parameter ::     xname_numptrcw(ntot_amode) = (/ 'num_c1  ', 'num_c2  ', 'num_c3  ', &
          'num_c4  ', 'num_c5  ', 'num_c6  ', 'num_c7  ', &
          'num_c8  ', 'num_c9  ' /)
-#elif ( defined MODAL_AERO_4MODE || defined MODAL_AERO_4MODE_MOM )
+!LXu@08/2018
+!#elif ( defined MODAL_AERO_4MODE || defined MODAL_AERO_4MODE_MOM )
+!#elif ( defined MODAL_AERO_4MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE )
+#elif ( defined MODAL_AERO_4MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP)
     character(len=*), parameter ::     xname_numptr(ntot_amode)   = (/ 'num_a1  ', 'num_a2  ', &
          'num_a3  ', 'num_a4  ' /)
     character(len=*), parameter ::     xname_numptrcw(ntot_amode) = (/ 'num_c1  ', 'num_c2  ', &
@@ -89,6 +96,33 @@ contains
        xname_spectype(:nspec_amode(1),1)  = (/ 'sulfate   ', 'ammonium  ', &
             'p-organic ', 's-organic ', 'black-c   ', 'seasalt   ', &
             'm-poly    ', 'm-prot    ', 'm-lip     ' /)
+!LXu@08/2018+++
+#elif ( defined MODAL_AERO_4MODE_MOM_PFIRE )
+       xname_massptr(:nspec_amode(1),1)   = (/ 'so4_a1  ', &
+            'pom_a1  ', 'soa_a1  ', 'bc_a1   ', &
+            'dst_a1  ', 'ncl_a1  ', 'mom_a1  ', 'pbb_a1  ' /)
+       xname_massptrcw(:nspec_amode(1),1) = (/ 'so4_c1  ', &
+            'pom_c1  ', 'soa_c1  ', 'bc_c1   ', &
+            'dst_c1  ', 'ncl_c1  ', 'mom_c1  ', 'pbb_c1  ' /)
+       xname_spectype(:nspec_amode(1),1)  = (/ 'sulfate   ', &
+            'p-organic ', 's-organic ', 'black-c   ', &
+            'dust      ', 'seasalt   ', 'm-organic ', 'p-fire ' /)
+!LXu@08/2018---
+!LXu@06/2019+++
+#elif ( defined MODAL_AERO_4MODE_MOM_BIOP )
+       xname_massptr(:nspec_amode(1),1)   = (/ 'so4_a1  ', &
+            'pom_a1  ', 'soa_a1  ', 'bc_a1   ', &
+            'dst_a1  ', 'ncl_a1  ', 'mom_a1  ', &
+	    'sp_a1  ', 'isp_a1  '/)
+       xname_massptrcw(:nspec_amode(1),1) = (/ 'so4_c1  ', &
+            'pom_c1  ', 'soa_c1  ', 'bc_c1   ', &
+            'dst_c1  ', 'ncl_c1  ', 'mom_c1  ', &
+	    'sp_c1 ', 'isp_c1  '/)
+       xname_spectype(:nspec_amode(1),1)  = (/ 'sulfate   ', &
+            'p-organic ', 's-organic ', 'black-c   ', &
+            'dust      ', 'seasalt   ', 'm-organic ', &
+	    'p-bio     ', 'p-unbio   ' /)
+!LXu@06/2019---
 #elif ( defined MODAL_AERO_4MODE_MOM )
        xname_massptr(:nspec_amode(1),1)   = (/ 'so4_a1  ', &
             'pom_a1  ', 'soa_a1  ', 'bc_a1   ', &
@@ -129,7 +163,10 @@ contains
        xname_spectype(:nspec_amode(2),2)  = (/ 'sulfate   ', 'ammonium  ', &
             's-organic ', 'seasalt   ', &
             'm-poly    ', 'm-prot    ', 'm-lip     ' /)
-#elif ( defined MODAL_AERO_4MODE_MOM )
+!LXu@08/2018
+!#elif ( defined MODAL_AERO_4MODE_MOM )
+!#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE )
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP)
        xname_massptr(:nspec_amode(2),2)   = (/ 'so4_a2  ', &
             'soa_a2  ', 'ncl_a2  ', 'mom_a2  ' /)
        xname_massptrcw(:nspec_amode(2),2) = (/ 'so4_c2  ', &
@@ -170,6 +207,38 @@ contains
           xname_massptrcw(:nspec_amode(3),3) = (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ' /)
           xname_spectype(:nspec_amode(3),3)  = (/ 'dust      ', 'seasalt   ', 'sulfate   ' /)
 #endif
+!LXu@08/2018+++
+#elif ( defined MODAL_AERO_4MODE_MOM_PFIRE )
+       ! mode 3 (coarse dust & seasalt) species
+#if (defined RAIN_EVAP_TO_COARSE_AERO)
+          xname_massptr(:nspec_amode(3),3)   = &
+          (/ 'dst_a3  ', 'ncl_a3  ', 'so4_a3  ', 'bc_a3   ','pom_a3  ','soa_a3  ', 'mom_a3  ' , 'pbb_a3  '/)
+          xname_massptrcw(:nspec_amode(3),3) = &
+          (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ', 'bc_c3   ','pom_c3  ','soa_c3  ', 'mom_c3  ', 'pbb_c3  ' /)
+          xname_spectype(:nspec_amode(3),3)  = (/ 'dust      ', 'seasalt   ', 'sulfate   ', 'black-c   ','p-organic ', &
+               's-organic ', 'm-organic ', 'p-fire ' /)
+#else
+          xname_massptr(:nspec_amode(3),3)   = (/ 'dst_a3  ', 'ncl_a3  ', 'so4_a3  ' /)
+          xname_massptrcw(:nspec_amode(3),3) = (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ' /)
+          xname_spectype(:nspec_amode(3),3)  = (/ 'dust      ', 'seasalt   ', 'sulfate   ' /)
+#endif
+!LXu@08/2018---
+!LXu@06/2019+++
+#elif ( defined MODAL_AERO_4MODE_MOM_BIOP )
+       ! mode 3 (coarse dust & seasalt) species
+#if (defined RAIN_EVAP_TO_COARSE_AERO)
+          xname_massptr(:nspec_amode(3),3)   = &
+          (/ 'dst_a3  ', 'ncl_a3  ', 'so4_a3  ', 'bc_a3   ','pom_a3  ','soa_a3  ', 'mom_a3  ' , 'sp_a3  ', 'isp_a3  '/)
+          xname_massptrcw(:nspec_amode(3),3) = &
+          (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ', 'bc_c3   ','pom_c3  ','soa_c3  ', 'mom_c3  ', 'sp_c3  ', 'isp_c3  ' /)
+          xname_spectype(:nspec_amode(3),3)  = (/ 'dust      ', 'seasalt   ', 'sulfate   ', 'black-c   ','p-organic ', &
+               's-organic ', 'm-organic ', 'p-bio ' , 'p-unbio '/)
+#else
+          xname_massptr(:nspec_amode(3),3)   = (/ 'dst_a3  ', 'ncl_a3  ', 'so4_a3  ' /)
+          xname_massptrcw(:nspec_amode(3),3) = (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ' /)
+          xname_spectype(:nspec_amode(3),3)  = (/ 'dust      ', 'seasalt   ', 'sulfate   ' /)
+#endif
+!LXu@06/2019---
 #elif ( defined MODAL_AERO_4MODE_MOM )
        ! mode 3 (coarse dust & seasalt) species
 #if (defined RAIN_EVAP_TO_COARSE_AERO)
@@ -191,6 +260,20 @@ contains
        xname_massptr(:nspec_amode(4),4)   = (/ 'pom_a4  ', 'bc_a4   ', 'mom_a4  ' /)
        xname_massptrcw(:nspec_amode(4),4) = (/ 'pom_c4  ', 'bc_c4   ', 'mom_c4  ' /)
        xname_spectype(:nspec_amode(4),4)  = (/ 'p-organic ', 'black-c   ', 'm-organic ' /)
+!LXu@08/2018+++
+#elif ( defined MODAL_AERO_4MODE_MOM_PFIRE )
+       ! mode 4 (primary carbon) species
+       xname_massptr(:nspec_amode(4),4)   = (/ 'pom_a4  ', 'bc_a4   ', 'mom_a4  ', 'pbb_a4  ' /)
+       xname_massptrcw(:nspec_amode(4),4) = (/ 'pom_c4  ', 'bc_c4   ', 'mom_c4  ', 'pbb_c4  ' /)
+       xname_spectype(:nspec_amode(4),4)  = (/ 'p-organic ', 'black-c   ', 'm-organic ', 'p-fire ' /)
+!LXu@08/2018---
+!LXu@06/2019+++
+#elif ( defined MODAL_AERO_4MODE_MOM_BIOP )
+       ! mode 4 (primary carbon) species
+       xname_massptr(:nspec_amode(4),4)   = (/ 'pom_a4  ', 'bc_a4   ', 'mom_a4  ', 'sp_a4  ', 'isp_a4  ' /)
+       xname_massptrcw(:nspec_amode(4),4) = (/ 'pom_c4  ', 'bc_c4   ', 'mom_c4  ', 'sp_c4  ', 'isp_c4  ' /)
+       xname_spectype(:nspec_amode(4),4)  = (/ 'p-organic ', 'black-c   ', 'm-organic ', 'p-bio ', 'p-unbio ' /)
+!LXu@06/2019---
 #elif ( defined MODAL_AERO_4MODE )
        ! mode 4 (primary carbon) species
        xname_massptr(:nspec_amode(4),4)   = (/ 'pom_a4  ', 'bc_a4   ' /)
@@ -665,7 +748,9 @@ contains
 
        !   local variables
        integer l, l2, m
-       character*8 dumname
+!LXu@06/2019
+!       character*8 dumname
+       character*10 dumname
        integer, parameter :: init_val=-999888777
 
        !   all processes set the pointers
@@ -734,6 +819,16 @@ contains
           lptr_mom_cw_amode(m) = init_val
           lptr_dust_a_amode(m)  = init_val
           lptr_dust_cw_amode(m) = init_val
+!LXu@08/2018+++
+          lptr_pbb_a_amode(m)  = init_val
+          lptr_pbb_cw_amode(m) = init_val
+!LXu@08/2018---
+!LXu@06/2019+++
+          lptr_sp_a_amode(m)  = init_val
+          lptr_sp_cw_amode(m) = init_val
+          lptr_isp_a_amode(m)  = init_val
+          lptr_isp_cw_amode(m) = init_val
+!LXu@06/2019---
           do l = 1, nspec_amode(m)
              l2 = lspectype_amode(l,m)
              if ( (specname_amode(l2) .eq. 'sulfate') .and.  &
@@ -801,6 +896,25 @@ contains
                 lptr_dust_a_amode(m)  = lmassptr_amode(l,m)
                 lptr_dust_cw_amode(m) = lmassptrcw_amode(l,m)
              end if
+!LXu@08/2018+++
+             if ( (specname_amode(l2) .eq. 'p-fire') .and.  &
+                  (lptr_pbb_a_amode(m) .le. 0) ) then
+                lptr_pbb_a_amode(m)  = lmassptr_amode(l,m)
+                lptr_pbb_cw_amode(m) = lmassptrcw_amode(l,m)
+             end if
+!LXu@08/2018---
+!LXu@06/2019+++
+             if ( (specname_amode(l2) .eq. 'p-bio') .and.  &
+                  (lptr_sp_a_amode(m) .le. 0) ) then
+                lptr_sp_a_amode(m)  = lmassptr_amode(l,m)
+                lptr_sp_cw_amode(m) = lmassptrcw_amode(l,m)
+             end if
+             if ( (specname_amode(l2) .eq. 'p-unbio') .and.  &
+                  (lptr_isp_a_amode(m) .le. 0) ) then
+                lptr_isp_a_amode(m)  = lmassptr_amode(l,m)
+                lptr_isp_cw_amode(m) = lmassptrcw_amode(l,m)
+             end if
+!LXu@06/2019---
           end do
        end do
 
@@ -829,6 +943,15 @@ contains
        specmw_dust_amode = 1.0_r8
        specmw_seasalt_amode = 1.0_r8
        specmw_mom_amode = 1.0_r8
+!LXu@08/2018+++
+       specdens_pbb_amode = 2.0_r8
+       specmw_pbb_amode = 1.0_r8
+!LXu@08/2018+++
+       specdens_sp_amode = 2.0_r8
+       specdens_isp_amode = 2.0_r8
+       specmw_sp_amode = 1.0_r8
+       specmw_isp_amode = 1.0_r8
+       
        do m = 1, ntot_aspectype
           if      (specname_amode(m).eq.'sulfate   ') then
              specdens_so4_amode = specdens_amode(m)
@@ -866,6 +989,17 @@ contains
           else if (specname_amode(m).eq.'m-organic ') then
              specdens_mom_amode = specdens_amode(m)
              specmw_mom_amode = specmw_amode(m)
+!LXu@08/2018
+          else if (specname_amode(m).eq.'p-fire ') then
+             specdens_pbb_amode = specdens_amode(m)
+             specmw_pbb_amode = specmw_amode(m)
+!LXu@06/2019
+          else if (specname_amode(m).eq.'p-bio ') then
+             specdens_sp_amode = specdens_amode(m)
+             specmw_sp_amode = specmw_amode(m)
+          else if (specname_amode(m).eq.'p-unbio ') then
+             specdens_isp_amode = specdens_amode(m)
+             specmw_isp_amode = specmw_amode(m)
           end if
        enddo
 
@@ -940,6 +1074,27 @@ contains
           call initaermodes_setspecptrs_write2( m,                    &
                lptr_mom_a_amode(m), lptr_mom_cw_amode(m),  'mom' )
        end do
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE )
+       write(iulog,9000) 'p-fire '
+       do m = 1, ntot_amode
+          call initaermodes_setspecptrs_write2( m,                    &
+               lptr_pbb_a_amode(m), lptr_pbb_cw_amode(m),  'pbb' )
+       end do
+#endif
+!LXu@06/2019
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP )
+       write(iulog,9000) 'p-bio '
+       do m = 1, ntot_amode
+          call initaermodes_setspecptrs_write2( m,                    &
+               lptr_sp_a_amode(m), lptr_sp_cw_amode(m),  'sp' )
+       end do
+       write(iulog,9000) 'p-unbio '
+       do m = 1, ntot_amode
+          call initaermodes_setspecptrs_write2( m,                    &
+               lptr_isp_a_amode(m), lptr_isp_cw_amode(m),  'isp' )
+       end do
+#endif
 
        write(iulog,9000) 'dust       '
        do m = 1, ntot_amode
@@ -989,7 +1144,9 @@ contains
        character*(*) txtdum
 
        !   local variables
-       character*8 dumnamea, dumnamec
+!LXu@08/2019
+!       character*8 dumnamea, dumnamec
+       character*10 dumnamea, dumnamec
 
        dumnamea = 'none'
        dumnamec = 'none'

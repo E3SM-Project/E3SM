@@ -51,6 +51,12 @@ integer :: idx_dst5 = -1
 integer :: idx_dst7 = -1
 !mgf--
 
+!LXu@08/2018 +++
+!integer :: idx_pbb1  = -1
+!integer :: idx_pbb3  = -1
+!integer :: idx_pbb4  = -1
+!LXu@08/2018 ---
+
 logical :: bin_fluxes = .false.
 
 logical :: initialized = .false.
@@ -59,9 +65,10 @@ logical :: initialized = .false.
 contains
 !==============================================================================
 
+!subroutine modal_aero_deposition_init(bc1_ndx,pom1_ndx,soa1_ndx,soa2_ndx,dst1_ndx, &
+!                            dst3_ndx,ncl3_ndx,so43_ndx,num3_ndx,bc4_ndx,pom4_ndx)
 subroutine modal_aero_deposition_init(bc1_ndx,pom1_ndx,soa1_ndx,soa2_ndx,dst1_ndx, &
                             dst3_ndx,ncl3_ndx,so43_ndx,num3_ndx,bc4_ndx,pom4_ndx)
-
 ! set aerosol indices for re-mapping surface deposition fluxes:
 ! *_a1 = accumulation mode
 ! *_a2 = aitken mode
@@ -72,6 +79,8 @@ subroutine modal_aero_deposition_init(bc1_ndx,pom1_ndx,soa1_ndx,soa2_ndx,dst1_nd
 
    integer, optional, intent(in) :: bc1_ndx,pom1_ndx,soa1_ndx,soa2_ndx,dst1_ndx,dst3_ndx,ncl3_ndx,so43_ndx,num3_ndx
    integer, optional, intent(in) :: bc4_ndx,pom4_ndx
+!LXu@08/2018
+!   integer :: pbb1_ndx,pbb4_ndx
 
    ! if already initialized abort the run
    if (initialized) then
@@ -128,6 +137,15 @@ subroutine modal_aero_deposition_init(bc1_ndx,pom1_ndx,soa1_ndx,soa2_ndx,dst1_nd
    else
       call cnst_get_ind('pom_a4', idx_pom4,abort=.false.)   
    endif
+!LXu@08/2018+++
+!#if ( defined MODAL_AERO_4MODE_MOM_PFIRE )
+!   call cnst_get_ind('pbb_a1', idx_pbb1)
+!   call cnst_get_ind('pbb_a4', idx_pbb4)   
+!#ifdef RAIN_EVAP_TO_COARSE_AERO
+!      call cnst_get_ind('pbb_a3',  idx_pbb3)
+!#endif
+!#endif
+!LXu@08/2018---
 
 #ifdef MODAL_AER
 !mgf++ incorporate MAM7 fluxes
@@ -226,8 +244,9 @@ subroutine set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
                              0.289_r8*(aerdepwetis(i,idx_dst3)+aerdepwetcw(i,idx_dst3)))
 
 #endif
-
-#if( (defined MODAL_AERO_4MODE) || (defined MODAL_AERO_4MODE_MOM) )
+!LXu@08/2018
+!#if( (defined MODAL_AERO_4MODE) || (defined MODAL_AERO_4MODE_MOM) )
+#if( (defined MODAL_AERO_4MODE) || (defined MODAL_AERO_4MODE_MOM) || (defined MODAL_AERO_4MODE_MOM_PFIRE)|| (defined MODAL_AERO_4MODE_MOM_BIOP) )
       ! MAM4
 
       ! in SNICAR+MAM, bcphiwet represents BC mixed internally within
@@ -244,7 +263,6 @@ subroutine set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
       ! ocphidry represents OC mixed externally to hydrometeors
       cam_out%ocphidry(i) = -(aerdepwetis(i,idx_pom1)+aerdepwetis(i,idx_pom4)+ &
                               aerdepwetis(i,idx_soa1)+aerdepwetis(i,idx_soa2))
-
 #ifdef RAIN_EVAP_TO_COARSE_AERO
        ! add resuspended coarse-mode BC and OC
          cam_out%bcphiwet(i) = cam_out%bcphiwet(i) -aerdepwetcw(i,idx_bc3)
@@ -252,7 +270,6 @@ subroutine set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
          cam_out%ocphiwet(i) = cam_out%ocphiwet(i) -aerdepwetcw(i,idx_pom3)
          cam_out%ocphidry(i) = cam_out%ocphidry(i) -aerdepwetis(i,idx_pom3)
 #endif
-
       ! Four dust bins in SNICAR represent dust with dry diameters of
       ! 0.1-1.0um, 1.0-2.5um, 2.5-5.0um, 5.0-10um, respectively.  Dust
       ! mass is partitioned into these bins based on global-mean size
@@ -270,8 +287,64 @@ subroutine set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
 
       cam_out%dstwet4(i) = -(0.001_r8*(aerdepwetis(i,idx_dst1)+aerdepwetcw(i,idx_dst1))+ &
                              0.289_r8*(aerdepwetis(i,idx_dst3)+aerdepwetcw(i,idx_dst3)))
-
 #endif
+!LXu@08/2018+++
+!#if ( defined MODAL_AERO_4MODE_MOM_PFIRE )
+
+      ! in SNICAR+MAM, bcphiwet represents BC mixed internally within
+      ! hydrometeors
+!      cam_out%bcphiwet(i) = -(aerdepwetcw(i,idx_bc1)+aerdepwetcw(i,idx_bc4))
+
+      ! bcphidry represents BC mixed externally to hydrometeors
+!      cam_out%bcphidry(i) = -(aerdepwetis(i,idx_bc1)+aerdepwetis(i,idx_bc4))
+
+      ! ocphiwet represents OC mixed internally within hydrometeors
+!      cam_out%ocphiwet(i) = -(aerdepwetcw(i,idx_pom1)+aerdepwetcw(i,idx_pom4)+ &
+!                              aerdepwetcw(i,idx_soa1)+aerdepwetcw(i,idx_soa2))
+
+      ! ocphidry represents OC mixed externally to hydrometeors
+!      cam_out%ocphidry(i) = -(aerdepwetis(i,idx_pom1)+aerdepwetis(i,idx_pom4)+ &
+!                              aerdepwetis(i,idx_soa1)+aerdepwetis(i,idx_soa2))
+      ! in SNICAR+MAM, bcphiwet represents BC mixed internally within
+      ! hydrometeors
+!      cam_out%pbbphiwet(i) = -(aerdepwetcw(i,idx_pbb1)+aerdepwetcw(i,idx_pbb4))
+
+      ! bcphidry represents BC mixed externally to hydrometeors
+!      cam_out%pbbphidry(i) = -(aerdepwetis(i,idx_pbb1)+aerdepwetis(i,idx_pbb4))
+
+
+!#ifdef RAIN_EVAP_TO_COARSE_AERO
+       ! add resuspended coarse-mode BC and OC
+!         cam_out%bcphiwet(i) = cam_out%bcphiwet(i) -aerdepwetcw(i,idx_bc3)
+!         cam_out%bcphidry(i) = cam_out%bcphidry(i) -aerdepwetis(i,idx_bc3)
+!         cam_out%ocphiwet(i) = cam_out%ocphiwet(i) -aerdepwetcw(i,idx_pom3)
+!         cam_out%ocphidry(i) = cam_out%ocphidry(i) -aerdepwetis(i,idx_pom3)
+!       ! add resuspended coarse-mode PBB
+!         cam_out%pbbphiwet(i) = cam_out%pbbphiwet(i) -aerdepwetcw(i,idx_pbb3)
+!         cam_out%pbbphidry(i) = cam_out%pbbphidry(i) -aerdepwetis(i,idx_pbb3)
+!#endif
+
+      ! Four dust bins in SNICAR represent dust with dry diameters of
+      ! 0.1-1.0um, 1.0-2.5um, 2.5-5.0um, 5.0-10um, respectively.  Dust
+      ! mass is partitioned into these bins based on global-mean size
+      ! distributions of MAM7 fine dust and coarse dust shown in Table
+      ! 1 of Liu et al (2012, doi:10.5194/gmd-5-709-2012).  In MAM3,
+      ! accumulation-mode dust is assumed to resemble fine dust
+!      cam_out%dstwet1(i) = -(0.625_r8*(aerdepwetis(i,idx_dst1)+aerdepwetcw(i,idx_dst1))+ &
+!                             0.015_r8*(aerdepwetis(i,idx_dst3)+aerdepwetcw(i,idx_dst3)))
+
+!      cam_out%dstwet2(i) = -(0.345_r8*(aerdepwetis(i,idx_dst1)+aerdepwetcw(i,idx_dst1))+ &
+!                             0.252_r8*(aerdepwetis(i,idx_dst3)+aerdepwetcw(i,idx_dst3)))
+
+!      cam_out%dstwet3(i) = -(0.029_r8*(aerdepwetis(i,idx_dst1)+aerdepwetcw(i,idx_dst1))+ &
+!                             0.444_r8*(aerdepwetis(i,idx_dst3)+aerdepwetcw(i,idx_dst3)))
+
+!      cam_out%dstwet4(i) = -(0.001_r8*(aerdepwetis(i,idx_dst1)+aerdepwetcw(i,idx_dst1))+ &
+!                             0.289_r8*(aerdepwetis(i,idx_dst3)+aerdepwetcw(i,idx_dst3)))
+
+!#endif
+!LXu@08/2018---
+
 
 #if( (defined MODAL_AERO_7MODE) || (defined MODAL_AERO_9MODE) )
       ! MAM7
@@ -441,7 +514,9 @@ subroutine set_srf_drydep(aerdepdryis, aerdepdrycw, cam_out)
 
 #endif
 
-#if( (defined MODAL_AERO_4MODE) || (defined MODAL_AERO_4MODE_MOM) )
+!LXu@06/2019
+!#if( (defined MODAL_AERO_4MODE) || (defined MODAL_AERO_4MODE_MOM) )
+#if( (defined MODAL_AERO_4MODE) || (defined MODAL_AERO_4MODE_MOM)  || (defined MODAL_AERO_4MODE_MOM_PFIRE)|| (defined MODAL_AERO_4MODE_MOM_BIOP) )
       ! MAM4
 
       ! in SNICAR+MAM, bcphodry represents BC mixed external to hydrometeors
@@ -484,7 +559,56 @@ subroutine set_srf_drydep(aerdepdryis, aerdepdrycw, cam_out)
                             0.289_r8*(aerdepdryis(i,idx_dst3)+aerdepdrycw(i,idx_dst3)))
 
 #endif
+!LXu@08/2018+++
+!#if( defined MODAL_AERO_4MODE_MOM_PFIRE )
+      ! MAM4
 
+      ! in SNICAR+MAM, bcphodry represents BC mixed external to hydrometeors
+!      cam_out%bcphodry(i) = aerdepdryis(i,idx_bc1)+aerdepdryis(i,idx_bc4)+ &
+!                            aerdepdrycw(i,idx_bc1)+aerdepdrycw(i,idx_bc4)
+
+      ! ocphodry represents OC mixed external to hydrometeors
+!      cam_out%ocphodry(i) = aerdepdryis(i,idx_pom1)+aerdepdryis(i,idx_pom4)+aerdepdryis(i,idx_soa1)+aerdepdryis(i,idx_soa2)+ &
+!                            aerdepdrycw(i,idx_pom1)+aerdepdrycw(i,idx_pom4)+aerdepdrycw(i,idx_soa1)+aerdepdrycw(i,idx_soa2)
+
+      ! ocphodry represents OC mixed external to hydrometeors
+!      cam_out%pbbphodry(i) = aerdepdryis(i,idx_pbb1)+aerdepdryis(i,idx_pbb4)+ &
+!                            aerdepdrycw(i,idx_pbb1)+aerdepdrycw(i,idx_pbb4)
+
+!#ifdef RAIN_EVAP_TO_COARSE_AERO
+       ! add resuspended coarse-mode BC and OC
+!         cam_out%bcphodry(i) = cam_out%bcphodry(i) + (aerdepdryis(i,idx_bc3)+aerdepdrycw(i,idx_bc3))
+!         cam_out%ocphodry(i) = cam_out%ocphodry(i) + (aerdepdryis(i,idx_pom3)+aerdepdrycw(i,idx_pom3))
+!         cam_out%pbbphodry(i) = cam_out%pbbphodry(i) + (aerdepdryis(i,idx_pbb3)+aerdepdrycw(i,idx_pbb3))
+!#endif
+
+      ! NOTE: drycw fluxes shown above ideally would be included as
+      ! within-hydrometeor species, but this would require passing
+      ! additional species through the coupler.  drycw fluxes are
+      ! extremely small in the global-mean, so this will make little
+      ! difference.
+
+
+      ! Four dust bins in SNICAR represent dust with dry diameters of
+      ! 0.1-1.0um, 1.0-2.5um, 2.5-5.0um, 5.0-10um, respectively.  Dust
+      ! mass is partitioned into these bins based on global-mean size
+      ! distributions of MAM7 fine dust and coarse dust shown in Table
+      ! 1 of Liu et al (2012, doi:10.5194/gmd-5-709-2012).  In MAM3,
+      ! accumulation-mode dust is assumed to resemble fine dust
+!      cam_out%dstdry1(i) = (0.625_r8*(aerdepdryis(i,idx_dst1)+aerdepdrycw(i,idx_dst1))+ &
+!                            0.015_r8*(aerdepdryis(i,idx_dst3)+aerdepdrycw(i,idx_dst3)))
+
+!      cam_out%dstdry2(i) = (0.345_r8*(aerdepdryis(i,idx_dst1)+aerdepdrycw(i,idx_dst1))+ &
+!                            0.252_r8*(aerdepdryis(i,idx_dst3)+aerdepdrycw(i,idx_dst3)))
+
+!      cam_out%dstdry3(i) = (0.029_r8*(aerdepdryis(i,idx_dst1)+aerdepdrycw(i,idx_dst1))+ &
+!                            0.444_r8*(aerdepdryis(i,idx_dst3)+aerdepdrycw(i,idx_dst3)))
+
+!      cam_out%dstdry4(i) = (0.001_r8*(aerdepdryis(i,idx_dst1)+aerdepdrycw(i,idx_dst1))+ &
+!                            0.289_r8*(aerdepdryis(i,idx_dst3)+aerdepdrycw(i,idx_dst3)))
+
+!#endif
+!LXu@08/2018---
 
 #if( (defined MODAL_AERO_7MODE) || (defined MODAL_AERO_9MODE) )
       ! MAM7

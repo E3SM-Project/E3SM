@@ -52,7 +52,9 @@ module seasalt_model
        (/ 'ncl_a1', 'ncl_a2', 'ncl_a3', &
           'num_a1', 'num_a2', 'num_a3'/)
   integer, parameter :: om_num_ind = 0
-#elif( defined MODAL_AERO_4MODE_MOM )
+!LXu@08/2018
+!#elif( defined MODAL_AERO_4MODE_MOM )
+#elif( defined MODAL_AERO_4MODE_MOM  || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP )
   integer, parameter :: nslt_om = 3
   integer, parameter :: nnum_om = 1
   integer, parameter :: om_num_modes = 3
@@ -140,8 +142,11 @@ module seasalt_model
    integer             :: fmoa = 1
 
 ! TODO SMB: Implement better mechanism for setting this switch.
-#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM)
-   logical :: has_mam_mom = .true.
+!LXu@08/2018
+!#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM)
+#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP )
+!   logical :: has_mam_mom = .true.
+   logical :: has_mam_mom = .false.
 #else
    logical :: has_mam_mom = .false.
 #endif
@@ -178,7 +183,9 @@ module seasalt_model
          (/ 0.08e-6_r8,  0.02e-6_r8,  1.0e-6_r8 /)  ! accu, aitken, coarse
     real(r8), parameter :: sst_sz_range_hi (nslt+nslt_om) = &
          (/ 1.0e-6_r8,   0.08e-6_r8, 10.0e-6_r8 /)  ! accu, aitken, coarse
-#elif ( defined MODAL_AERO_4MODE_MOM )
+!LXu@08/2018	 
+!#elif ( defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP )
     real(r8), parameter :: sst_sz_range_lo (nslt+nslt_om) = &
          (/ 0.08e-6_r8,  0.02e-6_r8,  1.0e-6_r8, &  ! accu, aitken, coarse
             0.08e-6_r8,  0.02e-6_r8,  0.08e-6_r8 /) ! accu, aitken, POM accu
@@ -194,6 +201,9 @@ contains
   subroutine seasalt_init
     use sslt_sections, only: sslt_sections_init
     use constituents,  only: cnst_get_ind
+  
+!LXu@04/2019 turn off sea salt emissions
+    use spmd_utils,   only: masterproc
 
     integer :: m
 
@@ -204,7 +214,15 @@ contains
        call cnst_get_ind(seasalt_names(seasalt_nbin+m), seasalt_indices(seasalt_nbin+m),abort=.false.)
     enddo
 
+!LXu@04/2019 turn off sea salt emissions
     seasalt_active = any(seasalt_indices(:) > 0)
+!     if (masterproc) then
+!       write(iulog,*) 'seasalt_active = ', seasalt_active, seasalt_indices
+!    end if
+!   seasalt_active = .false.
+     if (masterproc) then
+       write(iulog,*) 'seasalt_active = ', seasalt_active
+    end if
 
     if (.not.seasalt_active) return
 
@@ -556,6 +574,8 @@ end subroutine ocean_data_readnl
           else
              if (Dg(i).ge.sst_sz_range_lo(ibin) .and. Dg(i).lt.sst_sz_range_hi(ibin)) then
                 cflx(:ncol,mn)=cflx(:ncol,mn)+fi(:ncol,i)*ocnfrc(:ncol)*emis_scale  !++ ag: scale sea-salt
+!LXu@04/2019 enforce sea salt flux as zeros
+!                cflx(:ncol,mn) = 0.0_r8
              endif
           end if
           enddo section_loop_ssa_num
@@ -592,13 +612,17 @@ end subroutine ocean_data_readnl
           if (Dg(i).ge.sst_sz_range_lo(ibin) .and. Dg(i).lt.sst_sz_range_hi(ibin)) then
              cflx(:ncol,mm)=cflx(:ncol,mm)+fi(:ncol,i)*ocnfrc(:ncol)*emis_scale  &   !++ ag: scale sea-salt
                   *4._r8/3._r8*pi*rdry(i)**3*dns_aer_sst  ! should use dry size, convert from number to mass flux (kg/m2/s)
+!LXu@04/2019 enforce sea salt flux as zeros
+!                cflx(:ncol,mm) = 0.0_r8
           endif
        endif
        enddo section_loop_sslt_mass
 
 enddo tracer_loop
 
-#if ( defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM )
+!LXu@08/2018
+!#if ( defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM )
+#if ( defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP )
 
 add_om_species: if ( has_mam_mom ) then
 ! Calculate emission of MOM mass.
@@ -630,7 +654,9 @@ add_om_species: if ( has_mam_mom ) then
     else
        call endrun("Error: Unknown mixing_state value in seasalt_model.F90")
     end if
-#elif ( defined MODAL_AERO_4MODE_MOM )
+!LXu@08/2018
+!#elif ( defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE  || defined MODAL_AERO_4MODE_MOM_BIOP )
     if ((mixing_state == 1) .or. (mixing_state == 0)) then
        emit_this_mode = (/ .false., .true., .true. /)
     else if ((mixing_state == 2) .or. (mixing_state == 3)) then
@@ -683,7 +709,9 @@ add_om_species: if ( has_mam_mom ) then
     om_mode_loop: do m_om=1,nslt_om
 #if ( defined MODAL_AERO_9MODE )
        mm = seasalt_indices(nslt+(n-1)*om_num_modes+m_om)
-#elif ( defined MODAL_AERO_4MODE_MOM )
+!LXu@08/2018
+!#elif ( defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP )
        mm = seasalt_indices(nslt+m_om)
 #endif
 
@@ -1217,7 +1245,9 @@ subroutine init_ocean_data()
        om_mode_loop: do m_om=1,nslt_om
 #if ( defined MODAL_AERO_9MODE )
           m = nslt+(n-1)*om_num_modes+m_om
-#elif ( defined MODAL_AERO_4MODE_MOM )
+!LXu@08/2018
+!#elif ( defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP)
           m = nslt+m_om
 #endif
           call addfld('cflx_'//trim(seasalt_names(m))//'_debug', horiz_only, 'A', ' ', 'accumulation organic mass emissions' ) 

@@ -20,7 +20,10 @@ module mo_extfrc
      character(len=265) :: filename
      real(r8), pointer     :: times(:)
      real(r8), pointer     :: levi(:)
-     character(len=8)  :: species
+!LXu@06/2019+++
+!org     character(len=8)  :: species
+     character(len=10)  :: species
+!LXu@06/2019---
      character(len=8)  :: units
      integer                   :: nsectors
      character(len=32),pointer :: sectors(:)

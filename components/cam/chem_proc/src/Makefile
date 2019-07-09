@@ -164,7 +164,7 @@ endif
 .SUFFIXES:
 .SUFFIXES: .f .F .c .o
 
-$(OBJ_DIR)/%.o : %.f
+$(OBJ_DIR)/%.o: %.f
 	$(FC) $(FFLAGS) -o $@ $<
 
 $(MODEL_EXEDIR)/$(EXENAME):	$(OBJS)

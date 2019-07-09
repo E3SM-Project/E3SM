@@ -78,6 +78,10 @@ module camsrfexch
      real(r8) :: dstdry3(pcols)      ! dry deposition of dust (bin3)
      real(r8) :: dstwet4(pcols)      ! wet deposition of dust (bin4)
      real(r8) :: dstdry4(pcols)      ! dry deposition of dust (bin4)
+!LXu@08/2018+++
+!     real(r8) :: pbbphiwet(pcols)      ! wet deposition of hydrophilic phosphorus
+!     real(r8) :: pbbphidry(pcols)      ! dry deposition of hydrophilic phosphorus
+!     real(r8) :: pbbphodry(pcols)      ! dry deposition of hydrophobic phosphorus
   end type cam_out_t 
 
 !---------------------------------------------------------------------------

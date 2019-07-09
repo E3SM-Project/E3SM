@@ -95,7 +95,18 @@ integer :: coarse_nacl_idx = -1  ! index of nacl in coarse mode
 
 integer :: coarse_so4_idx = -1  ! index of so4 in coarse mode
 
-#if (defined MODAL_AERO_4MODE_MOM)
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE )
+integer :: coarse_pbb_idx = -1  ! index of pbb in coarse mode
+#endif
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP )
+integer :: coarse_sp_idx = -1  ! index of biop in coarse mode
+integer :: coarse_isp_idx = -1  ! index of biop in coarse mode
+#endif
+!#if (defined MODAL_AERO_4MODE_MOM)
+!#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE )
+#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP)
 integer :: coarse_mom_idx = -1  ! index of mom in coarse mode
 #endif
 
@@ -360,8 +371,61 @@ subroutine nucleate_ice_cam_init(mincld_in, bulk_scale_in)
             coarse_so4_idx
          call endrun(routine//': ERROR required mode-species type not found')
       end if
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE )
+      call rad_cnst_get_info(0, mode_coarse_idx, nspec=nspec)
+      do n = 1, nspec
+         call rad_cnst_get_info(0, mode_coarse_idx, n, spec_type=str32)
+         select case (trim(str32))
+         case ('p-fire')
+            coarse_pbb_idx = n
+         end select
+      end do
 
-#if (defined MODAL_AERO_4MODE_MOM)
+      ! Check that required mode specie types were found
+      if ( coarse_pbb_idx == -1) then
+         write(iulog,*) routine//': ERROR required mode-species type not found - indicies:', &
+            coarse_pbb_idx
+         call endrun(routine//': ERROR required mode-species type not found')
+      end if
+#endif
+!LXu@06/2019
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP )
+      call rad_cnst_get_info(0, mode_coarse_idx, nspec=nspec)
+      do n = 1, nspec
+         call rad_cnst_get_info(0, mode_coarse_idx, n, spec_type=str32)
+         select case (trim(str32))
+         case ('p-bio')
+            coarse_sp_idx = n
+         end select
+      end do
+
+      ! Check that required mode specie types were found
+      if ( coarse_sp_idx == -1) then
+         write(iulog,*) routine//': ERROR required mode-species type not found - indicies:', &
+            coarse_sp_idx
+         call endrun(routine//': ERROR required mode-species type not found')
+      end if
+     
+      call rad_cnst_get_info(0, mode_coarse_idx, nspec=nspec)
+      do n = 1, nspec
+         call rad_cnst_get_info(0, mode_coarse_idx, n, spec_type=str32)
+         select case (trim(str32))
+         case ('p-unbio')
+            coarse_isp_idx = n
+         end select
+      end do
+
+      ! Check that required mode specie types were found
+      if ( coarse_isp_idx == -1) then
+         write(iulog,*) routine//': ERROR required mode-species type not found - indicies:', &
+            coarse_isp_idx
+         call endrun(routine//': ERROR required mode-species type not found')
+      end if
+#endif
+!#if (defined MODAL_AERO_4MODE_MOM)
+!#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE )
+#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP)
       call rad_cnst_get_info(0, mode_coarse_idx, nspec=nspec)
       do n = 1, nspec
          call rad_cnst_get_info(0, mode_coarse_idx, n, spec_type=str32)
@@ -490,7 +554,18 @@ subroutine nucleate_ice_cam_calc( &
 
    real(r8), pointer :: coarse_so4(:,:) ! mass m.r. of coarse so4
 
-#if (defined MODAL_AERO_4MODE_MOM)
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE )
+   real(r8), pointer :: coarse_pbb(:,:) ! mass m.r. of coarse soa 
+#endif
+!LXu@08/2019
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP )
+   real(r8), pointer :: coarse_sp(:,:) ! mass m.r. of coarse soa 
+   real(r8), pointer :: coarse_isp(:,:) ! mass m.r. of coarse soa 
+#endif
+!#if (defined MODAL_AERO_4MODE_MOM)
+!#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE )
+#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP)
    real(r8), pointer :: coarse_mom(:,:) ! mass m.r. of coarse mom
 #endif
 
@@ -531,6 +606,15 @@ subroutine nucleate_ice_cam_calc( &
    real(r8) :: bcmc
    real(r8) :: pommc
    real(r8) :: soamc
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE )
+   real(r8) :: pbbmc
+#endif
+!LXu@08/2019
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP )
+   real(r8) :: biopmc
+   real(r8) :: unbiopmc
+#endif
 
    ! For pre-existing ice
    real(r8) :: fhom(pcols,pver)    ! how much fraction of cloud can reach Shom
@@ -587,8 +671,18 @@ subroutine nucleate_ice_cam_calc( &
       if (use_nie_nucleate .or. use_dem_nucleate) then
          call rad_cnst_get_aer_mmr(0, mode_fine_dst_idx, fine_dust_idx, 'a', state, pbuf, fine_dust)
       end if
-
-#if (defined MODAL_AERO_4MODE_MOM)
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE )
+      call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_pbb_idx, 'a', state, pbuf, coarse_pbb)
+#endif
+!LXu@08/2019
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP )
+      call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_sp_idx, 'a', state, pbuf, coarse_sp)
+      call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_isp_idx, 'a', state, pbuf, coarse_isp)
+#endif
+!#if (defined MODAL_AERO_4MODE_MOM)
+!#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE )
+#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP )
       call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_mom_idx, 'a', state, pbuf, coarse_mom)
 #endif
 
@@ -706,8 +800,17 @@ subroutine nucleate_ice_cam_calc( &
                dmc  = coarse_dust(i,k)*rho(i,k)
                ssmc = coarse_nacl(i,k)*rho(i,k)
                so4mc  = coarse_so4(i,k)*rho(i,k)
-
-#if (defined MODAL_AERO_4MODE_MOM)
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE )
+               pbbmc  = coarse_pbb(i,k)*rho(i,k)
+#endif
+!LXu@08/2019
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP )
+               biopmc  = coarse_sp(i,k)*rho(i,k)
+               unbiopmc  = coarse_isp(i,k)*rho(i,k)
+#endif
+!#if (defined MODAL_AERO_4MODE_MOM)
+#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE  || defined MODAL_AERO_4MODE_MOM_BIOP )
                mommc  = coarse_mom(i,k)*rho(i,k)
 #endif
 
@@ -725,16 +828,35 @@ subroutine nucleate_ice_cam_calc( &
                   else
                      ! 3-mode -- needs weighting for dust since dust and seasalt
                      !           are combined in the "coarse" mode type
-#if (defined MODAL_AERO_4MODE_MOM && defined RAIN_EVAP_TO_COARSE_AERO )
-                     wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc + mommc)
-#elif (defined MODAL_AERO_4MODE_MOM)
-                     wght = dmc/(ssmc + dmc + so4mc + mommc)
+!LXu@08/2018+++
+!#if (defined MODAL_AERO_4MODE_MOM && defined RAIN_EVAP_TO_COARSE_AERO )
+!                     wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc + mommc)
+!#elif (defined MODAL_AERO_4MODE_MOM)
+!                     wght = dmc/(ssmc + dmc + so4mc + mommc)
+!#elif (defined RAIN_EVAP_TO_COARSE_AERO) 
+!                     wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc)
+!#else
+!                     wght = dmc/(ssmc + dmc) ! to keep FC5 binary identical 
+!#endif
+#if ( (defined MODAL_AERO_4MODE_MOM ) && defined RAIN_EVAP_TO_COARSE_AERO )
+                     wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc + mommc )
+#elif (defined MODAL_AERO_4MODE_MOM )
+                     wght = dmc/(ssmc + dmc + so4mc + mommc )
+#elif ( (defined MODAL_AERO_4MODE_MOM_PFIRE) && defined RAIN_EVAP_TO_COARSE_AERO )
+                     wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc + mommc + pbbmc)
+#elif (defined MODAL_AERO_4MODE_MOM_PFIRE)
+                     wght = dmc/(ssmc + dmc + so4mc + mommc )
+!LXu@08/2019+++
+#elif ( (defined MODAL_AERO_4MODE_MOM_BIOP) && defined RAIN_EVAP_TO_COARSE_AERO )
+                     wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc + mommc + biopmc + unbiopmc)
+#elif (defined MODAL_AERO_4MODE_MOM_BIOP )
+                     wght = dmc/(ssmc + dmc + so4mc + mommc )
 #elif (defined RAIN_EVAP_TO_COARSE_AERO) 
-                     wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc)
+                     wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc )
 #else
                      wght = dmc/(ssmc + dmc) ! to keep FC5 binary identical 
 #endif
-
+!LXu@08/2018---
                   endif
                   dst3_num = wght * num_coarse(i,k)*rho(i,k)*1.0e-6_r8
                else 

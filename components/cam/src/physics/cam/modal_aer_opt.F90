@@ -196,7 +196,18 @@ subroutine modal_aer_opt_init()
    call addfld ('AODBC',horiz_only,    'A','  ','Aerosol optical depth 550 nm from BC', flag_xyfill=.true.)
    call addfld ('AODSS',horiz_only,    'A','  ','Aerosol optical depth 550 nm from seasalt', flag_xyfill=.true.)
    call addfld ('AODABSBC',horiz_only, 'A','  ','Aerosol absorption optical depth 550 nm from BC', flag_xyfill=.true.)
-#if ( defined MODAL_AERO_4MODE_MOM )
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE )
+   call addfld ('AODPBB',horiz_only,    'A','  ','Aerosol optical depth 550 nm from biomass-burning phosphorus', flag_xyfill=.true.)
+#endif
+!LXu@06/2019
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP )
+   call addfld ('AODSP',horiz_only,    'A','  ','Aerosol optical depth 550 nm from bioavailable phosphorus', flag_xyfill=.true.)
+   call addfld ('AODISP',horiz_only,    'A','  ','Aerosol optical depth 550 nm from unbiovailable phosphorus', flag_xyfill=.true.)
+#endif
+!#if ( defined MODAL_AERO_4MODE_MOM )
+!#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP)
    call addfld ('AODMOM',horiz_only,    'A','  ','Aerosol optical depth 550 nm from marine organic', flag_xyfill=.true.)
 #elif ( defined MODAL_AERO_9MODE )
    call addfld ('AODPOLY',horiz_only,    'A','  ','Aerosol optical depth 550 nm from marine poly', flag_xyfill=.true.)
@@ -212,7 +223,19 @@ subroutine modal_aer_opt_init()
    call addfld ('BURDENSOA',horiz_only,  'A','kg/m2'    ,'SOA aerosol burden'         , flag_xyfill=.true.)
    call addfld ('BURDENBC',horiz_only,  'A','kg/m2'     ,'Black carbon aerosol burden', flag_xyfill=.true.)
    call addfld ('BURDENSEASALT',horiz_only,  'A','kg/m2','Seasalt aerosol burden'     , flag_xyfill=.true.)
-#if ( defined MODAL_AERO_4MODE_MOM )
+!LXu@08/2018+++
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE )
+   call addfld ('BURDENPBB',horiz_only,  'A','kg/m2'    ,'Biomass-burning phosphorus aerosol burden', flag_xyfill=.true.)
+#endif
+!LXu@06/2019+++
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP )
+   call addfld ('BURDENSP',horiz_only,  'A','kg/m2'    ,'Bioavailable phosphorus aerosol burden', flag_xyfill=.true.)
+   call addfld ('BURDENISP',horiz_only,  'A','kg/m2'    ,'Unbioavailable phosphorus aerosol burden', flag_xyfill=.true.)
+#endif
+!LXu@06/2019---
+!#if ( defined MODAL_AERO_4MODE_MOM )
+!#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP )
    call addfld ('BURDENMOM',horiz_only,  'A','kg/m2'    ,'Marine organic aerosol burden', flag_xyfill=.true.)
 #elif ( defined MODAL_AERO_9MODE )
    call addfld ('BURDENPOLY',horiz_only,  'A','kg/m2'   ,'Marine polysaccharide aerosol burden', flag_xyfill=.true.)
@@ -227,17 +250,24 @@ subroutine modal_aer_opt_init()
       call add_default ('AODDUST3'     , 1, ' ')
       call add_default ('AODVIS'       , 1, ' ')
       if ( history_verbose ) then
-      call add_default ('BURDEN1'      , 1, ' ')
-      call add_default ('BURDEN2'      , 1, ' ')
-      call add_default ('BURDEN3'      , 1, ' ')
-      call add_default ('BURDENDUST'   , 1, ' ')
-      call add_default ('BURDENSO4'    , 1, ' ')
-      call add_default ('BURDENPOM'    , 1, ' ')
-      call add_default ('BURDENSOA'    , 1, ' ')
-      call add_default ('BURDENBC'     , 1, ' ')
-      call add_default ('BURDENSEASALT', 1, ' ')
-#if ( defined MODAL_AERO_4MODE_MOM )
-      call add_default ('BURDENMOM', 1, ' ')
+!LXu@08/2018
+!      call add_default ('BURDEN1'      , 1, ' ')
+!      call add_default ('BURDEN2'      , 1, ' ')
+!      call add_default ('BURDEN3'      , 1, ' ')
+!      call add_default ('BURDENDUST'   , 1, ' ')
+!      call add_default ('BURDENSO4'    , 1, ' ')
+!      call add_default ('BURDENPOM'    , 1, ' ')
+ !     call add_default ('BURDENSOA'    , 1, ' ')
+ !     call add_default ('BURDENBC'     , 1, ' ')
+ !     call add_default ('BURDENSEASALT', 1, ' ')
+!LXu@08/2018
+!#if ( defined MODAL_AERO_4MODE_MOM_PFIRE )
+!      call add_default ('BURDENPBB', 1, ' ')
+!#endif
+!#if ( defined MODAL_AERO_4MODE_MOM )
+!#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP)
+!      call add_default ('BURDENMOM', 1, ' ')
 #elif ( defined MODAL_AERO_9MODE )
       call add_default ('BURDENPOLY', 1, ' ')
       call add_default ('BURDENPROT', 1, ' ')
@@ -263,7 +293,20 @@ subroutine modal_aer_opt_init()
       call add_default ('AODSOA'       , 1, ' ')
       call add_default ('AODBC'        , 1, ' ')
       call add_default ('AODSS'        , 1, ' ')
-      if (history_verbose) then
+!LXu@08/2018+++
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE )
+      call add_default ('BURDENPBB'    , 1, ' ')
+      call add_default ('AODPBB'       , 1, ' ')
+#endif
+!LXu@08/2018+++
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP )
+      call add_default ('BURDENSP'    , 1, ' ')
+      call add_default ('BURDENISP'    , 1, ' ')
+      call add_default ('AODSP'       , 1, ' ')
+      call add_default ('AODISP'       , 1, ' ')
+#endif
+!#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP )
       call add_default ('ABSORB'       , 1, ' ')
       call add_default ('BURDEN1'      , 1, ' ')
       call add_default ('BURDEN2'      , 1, ' ')
@@ -274,8 +317,29 @@ subroutine modal_aer_opt_init()
       call add_default ('BURDENSOA'    , 1, ' ')
       call add_default ('BURDENBC'     , 1, ' ')
       call add_default ('BURDENSEASALT', 1, ' ')
-#if ( defined MODAL_AERO_4MODE_MOM )
+!for MOM
       call add_default ('BURDENMOM'    , 1, ' ')
+      call add_default ('AODMOM'       , 1, ' ')
+#endif
+!LXu@08/2018---
+      if (history_verbose) then
+!LXu@08/2018+++
+!      call add_default ('ABSORB'       , 1, ' ')
+!      call add_default ('BURDEN1'      , 1, ' ')
+!      call add_default ('BURDEN2'      , 1, ' ')
+!      call add_default ('BURDEN3'      , 1, ' ')
+!      call add_default ('BURDENDUST'   , 1, ' ')
+!      call add_default ('BURDENSO4'    , 1, ' ')
+!      call add_default ('BURDENPOM'    , 1, ' ')
+!      call add_default ('BURDENSOA'    , 1, ' ')
+!      call add_default ('BURDENBC'     , 1, ' ')
+!      call add_default ('BURDENSEASALT', 1, ' ')
+!      call add_default ('BURDENMOM'    , 1, ' ')
+!#if ( defined MODAL_AERO_4MODE_MOM )
+!#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP )
+!LXu@08/2018
+!      call add_default ('BURDENMOM'    , 1, ' ')
 #elif ( defined MODAL_AERO_9MODE )
       call add_default ('BURDENPOLY'   , 1, ' ')
       call add_default ('BURDENPROT'   , 1, ' ')
@@ -285,13 +349,17 @@ subroutine modal_aer_opt_init()
       call add_default ('SSAVIS'       , 1, ' ')
       call add_default ('EXTINCT'      , 1, ' ')
   end if
+!LXu@08/2018
+!LXu@08/2019
   if (cam_chempkg_is('trop_mam4').or.cam_chempkg_is('trop_mam4_resus').or. &
        cam_chempkg_is('trop_mam4_mom').or.cam_chempkg_is('trop_mam4_resus_mom').or. &
        cam_chempkg_is('trop_mam4_resus_soag').or.cam_chempkg_is('trop_mam7').or. &
        cam_chempkg_is('trop_mam9').or.cam_chempkg_is('trop_strat_mam7').or. &
        cam_chempkg_is('linoz_mam4_resus').or.cam_chempkg_is('linoz_mam4_resus_soag').or.&
        cam_chempkg_is('linoz_mam4_resus_mom').or. &
-       cam_chempkg_is('linoz_mam4_resus_mom_soag')) then
+       cam_chempkg_is('linoz_mam4_resus_mom_soag').or. &
+       cam_chempkg_is('linoz_mam4_resus_mom_soag_pfire').or. &
+       cam_chempkg_is('linoz_mam4_resus_mom_soag_biop')) then
      call addfld ('AODDUST4',horiz_only,    'A','  ','Aerosol optical depth 550 nm model 4 from dust', flag_xyfill=.true.)     
      call addfld ('AODMODE4',horiz_only,    'A','  ','Aerosol optical depth 550 nm mode 4', flag_xyfill=.true.)
      call addfld ('BURDEN4',horiz_only,    'A','kg/m2','Aerosol burden mode 4', flag_xyfill=.true.)
@@ -300,7 +368,10 @@ subroutine modal_aer_opt_init()
      if (history_aero_optics) then
         call add_default ('AODDUST4', 1, ' ')
         call add_default ('AODMODE4', 1, ' ')
-        if (history_verbose) call add_default ('BURDEN4' , 1, ' ')
+!LXu@08/2018+++	
+        call add_default ('BURDEN4', 1, ' ')
+!        if (history_verbose) call add_default ('BURDEN4' , 1, ' ')
+!LXu@08/2018---	
      end if
   end if
    if (cam_chempkg_is('trop_mam7').or.cam_chempkg_is('trop_mam9').or.cam_chempkg_is('trop_strat_mam7')) then      
@@ -453,7 +524,19 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
    real(r8) :: burden(pcols)
    real(r8) :: burdendust(pcols), burdenso4(pcols), burdenbc(pcols), &
                burdenpom(pcols), burdensoa(pcols), burdenseasalt(pcols)
-#if ( defined MODAL_AERO_4MODE_MOM )
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE)
+   real(r8) :: burdenpbb(pcols)
+#endif
+!LXu@06/2019
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP)
+   real(r8) :: burdensp(pcols)
+   real(r8) :: burdenisp(pcols)
+#endif
+!#if ( defined MODAL_AERO_4MODE_MOM )
+!LXu@08/2018
+!#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE)
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP )
    real(r8) :: burdenmom(pcols)
 #elif ( defined MODAL_AERO_9MODE )
    real(r8) :: burdenpoly(pcols), burdenprot(pcols), burdenlip(pcols)
@@ -465,21 +548,54 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
    real(r8) :: specrefr, specrefi
    real(r8) :: scatdust(pcols), scatso4(pcols), scatbc(pcols), &
                scatpom(pcols), scatsoa(pcols), scatseasalt(pcols)
-#if ( defined MODAL_AERO_4MODE_MOM )
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE)
+   real(r8) :: scatpbb(pcols)
+#endif
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP)
+   real(r8) :: scatsp(pcols)
+   real(r8) :: scatisp(pcols)
+#endif
+!#if ( defined MODAL_AERO_4MODE_MOM )
+!#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE)
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP )
    real(r8) :: scatmom(pcols)
 #elif ( defined MODAL_AERO_9MODE )
    real(r8) :: scatpoly(pcols), scatprot(pcols), scatlip(pcols)
 #endif
    real(r8) :: absdust(pcols), absso4(pcols), absbc(pcols), &
                abspom(pcols), abssoa(pcols), absseasalt(pcols)
-#if ( defined MODAL_AERO_4MODE_MOM )
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE)
+   real(r8) :: abspbb(pcols)
+#endif
+!LXu@08/2019
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP)
+   real(r8) :: abssp(pcols)
+   real(r8) :: absisp(pcols)
+#endif
+!#if ( defined MODAL_AERO_4MODE_MOM )
+!#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE)
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP )
    real(r8) :: absmom(pcols)
 #elif ( defined MODAL_AERO_9MODE )
    real(r8) :: abspoly(pcols), absprot(pcols), abslip(pcols)
 #endif
    real(r8) :: hygrodust(pcols), hygroso4(pcols), hygrobc(pcols), &
                hygropom(pcols), hygrosoa(pcols), hygroseasalt(pcols)
-#if ( defined MODAL_AERO_4MODE_MOM )
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE)
+   real(r8) :: hygropbb(pcols)
+#endif
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP)
+   real(r8) :: hygrosp(pcols)
+   real(r8) :: hygroisp(pcols)
+#endif
+!#if ( defined MODAL_AERO_4MODE_MOM )
+!#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE)
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP)
    real(r8) :: hygromom(pcols)
 #elif ( defined MODAL_AERO_9MODE )
    real(r8) :: hygropoly(pcols), hygroprot(pcols), hygrolip(pcols)
@@ -491,7 +607,18 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
    ! total species AOD
    real(r8) :: dustaod(pcols), so4aod(pcols), bcaod(pcols), &
                pomaod(pcols), soaaod(pcols), seasaltaod(pcols)
-#if ( defined MODAL_AERO_4MODE_MOM )
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE)
+   real(r8) :: pbbaod(pcols)
+#endif
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP)
+   real(r8) :: spaod(pcols)
+   real(r8) :: ispaod(pcols)
+#endif
+!#if ( defined MODAL_AERO_4MODE_MOM )
+!#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE)
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP)
    real(r8) :: momaod(pcols)
 #elif ( defined MODAL_AERO_9MODE )
    real(r8) :: polyaod(pcols), protaod(pcols), lipaod(pcols)
@@ -545,7 +672,18 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
    burdensoa(:ncol)      = 0.0_r8
    burdenbc(:ncol)       = 0.0_r8
    burdenseasalt(:ncol)  = 0.0_r8
-#if ( defined MODAL_AERO_4MODE_MOM )
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE)
+    burdenpbb(:ncol)      = 0.0_r8
+#endif
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP)
+    burdensp(:ncol)      = 0.0_r8
+    burdenisp(:ncol)      = 0.0_r8
+#endif
+!#if ( defined MODAL_AERO_4MODE_MOM )
+!#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE)
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP)
    burdenmom(:ncol)      = 0.0_r8
 #elif ( defined MODAL_AERO_9MODE )
    burdenpoly(:ncol)     = 0.0_r8
@@ -561,12 +699,22 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
    soaaod(:ncol)         = 0.0_r8
    bcaod(:ncol)          = 0.0_r8
    seasaltaod(:ncol)     = 0.0_r8
-#if ( defined MODAL_AERO_4MODE_MOM )
-   burdenmom(:ncol)      = 0.0_r8
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE)
+    pbbaod(:ncol)      = 0.0_r8
+#endif
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP)
+    spaod(:ncol)      = 0.0_r8
+    ispaod(:ncol)      = 0.0_r8
+#endif
+!#if ( defined MODAL_AERO_4MODE_MOM )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP)
+   momaod(:ncol)      = 0.0_r8
 #elif ( defined MODAL_AERO_9MODE )
-   burdenpoly(:ncol)     = 0.0_r8
-   burdenprot(:ncol)     = 0.0_r8
-   burdenlip(:ncol)      = 0.0_r8
+   polyaod(:ncol)     = 0.0_r8
+   protaod(:ncol)     = 0.0_r8
+   lipaod(:ncol)      = 0.0_r8
 #endif
 
    ! diags for other bands
@@ -643,7 +791,25 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
             scatseasalt(:ncol)  = 0._r8
             absseasalt(:ncol)   = 0._r8
             hygroseasalt(:ncol) = 0._r8
-#if ( defined MODAL_AERO_4MODE_MOM )
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE)
+            scatpbb(:ncol)  = 0._r8
+            abspbb(:ncol)   = 0._r8
+            hygropbb(:ncol) = 0._r8
+#endif
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP)
+            scatsp(:ncol)  = 0._r8
+            abssp(:ncol)   = 0._r8
+            hygrosp(:ncol) = 0._r8
+
+            scatisp(:ncol)  = 0._r8
+            absisp(:ncol)   = 0._r8
+            hygroisp(:ncol) = 0._r8
+#endif
+!#if ( defined MODAL_AERO_4MODE_MOM )
+!#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE)
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP)
             scatmom(:ncol)  = 0._r8
             absmom(:ncol)   = 0._r8
             hygromom(:ncol) = 0._r8
@@ -732,7 +898,41 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
                         hygroseasalt(i)  = vol(i)*hygro_aer
                       end do
                   end if
-#if ( defined MODAL_AERO_4MODE_MOM )
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE)
+                  if (trim(spectype) == 'p-fire') then
+                     do i = 1, ncol
+                        burdenpbb(i) = burdenpbb(i) + specmmr(i,k)*mass(i,k)
+                        scatpbb(i)   = vol(i)*specrefr
+                        abspbb(i)    = -vol(i)*specrefi
+                        hygropbb(i)  = vol(i)*hygro_aer
+                     end do
+                  end if
+#endif
+!LXu@06/2019+++
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP)
+                  if (trim(spectype) == 'p-bio') then
+                     do i = 1, ncol
+                        burdensp(i) = burdensp(i) + specmmr(i,k)*mass(i,k)
+                        scatsp(i)   = vol(i)*specrefr
+                        abssp(i)    = -vol(i)*specrefi
+                        hygrosp(i)  = vol(i)*hygro_aer
+                     end do
+                  end if
+
+                  if (trim(spectype) == 'p-unbio') then
+                     do i = 1, ncol
+                        burdenisp(i) = burdenisp(i) + specmmr(i,k)*mass(i,k)
+                        scatisp(i)   = vol(i)*specrefr
+                        absisp(i)    = -vol(i)*specrefi
+                        hygroisp(i)  = vol(i)*hygro_aer
+                     end do
+                  end if
+#endif
+!LXu@06/2019---
+!#if ( defined MODAL_AERO_4MODE_MOM )
+!#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE)
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP )
                   if (trim(spectype) == 'm-organic') then
                      do i = 1, ncol
                         burdenmom(i) = burdenmom(i) + specmmr(i,k)*mass(i,k)
@@ -871,6 +1071,7 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
 
                      scath2o        = watervol(i)*real(crefwsw(isw))
 		     absh2o         = -watervol(i)*aimag(crefwsw(isw))
+
 #if ( defined MODAL_AERO_4MODE_MOM )
 		     sumscat        = scatso4(i) + scatpom(i) + scatsoa(i) + scatbc(i) + &
                                       scatdust(i) + scatseasalt(i) + scath2o + &
@@ -881,6 +1082,30 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
                      sumhygro       = hygroso4(i) + hygropom(i) + hygrosoa(i) + hygrobc(i) + &
                                       hygrodust(i) + hygroseasalt(i) + &
                                       hygromom(i)
+!LXu@08/2018+++
+#elif ( defined MODAL_AERO_4MODE_MOM_PFIRE )
+		     sumscat        = scatso4(i) + scatpom(i) + scatsoa(i) + scatbc(i) + &
+                                      scatdust(i) + scatseasalt(i) + scath2o + &
+                                      scatmom(i) + scatpbb(i)
+		     sumabs         = absso4(i) + abspom(i) + abssoa(i) + absbc(i) + &
+                                      absdust(i) + absseasalt(i) + absh2o + &
+                                      absmom(i) + abspbb(i)
+                     sumhygro       = hygroso4(i) + hygropom(i) + hygrosoa(i) + hygrobc(i) + &
+                                      hygrodust(i) + hygroseasalt(i) + &
+                                      hygromom(i) + hygropbb(i)
+!LXu@08/2018---
+!LXu@06/2019+++
+#elif ( defined MODAL_AERO_4MODE_MOM_BIOP )
+		     sumscat        = scatso4(i) + scatpom(i) + scatsoa(i) + scatbc(i) + &
+                                      scatdust(i) + scatseasalt(i) + scath2o + &
+                                      scatmom(i) + scatsp(i) + scatisp(i)
+		     sumabs         = absso4(i) + abspom(i) + abssoa(i) + absbc(i) + &
+                                      absdust(i) + absseasalt(i) + absh2o + &
+                                      absmom(i) + abssp(i) + absisp(i)
+                     sumhygro       = hygroso4(i) + hygropom(i) + hygrosoa(i) + hygrobc(i) + &
+                                      hygrodust(i) + hygroseasalt(i) + &
+                                      hygromom(i) + hygrosp(i) + hygroisp(i)
+!LXu@06/2019---
 #elif ( defined MODAL_AERO_9MODE )
 		     sumscat        = scatso4(i) + scatpom(i) + scatsoa(i) + scatbc(i) + &
                                       scatdust(i) + scatseasalt(i) + scath2o + &
@@ -917,8 +1142,22 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
 
                      scatseasalt(i) = (scatseasalt(i) + scath2o*hygroseasalt(i)/sumhygro)/sumscat
                      absseasalt(i)  = (absseasalt(i) + absh2o*hygroseasalt(i)/sumhygro)/sumabs
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE )
+                     scatpbb(i) = (scatpbb(i) + scath2o*hygropbb(i)/sumhygro)/sumscat
+                     abspbb(i)  = (abspbb(i) + absh2o*hygropbb(i)/sumhygro)/sumabs                     
+#endif
+!LXu@06/2019
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP )
+                     scatsp(i) = (scatsp(i) + scath2o*hygrosp(i)/sumhygro)/sumscat
+                     abssp(i)  = (abssp(i) + absh2o*hygrosp(i)/sumhygro)/sumabs                     
 
-#if ( defined MODAL_AERO_4MODE_MOM )
+                     scatisp(i) = (scatisp(i) + scath2o*hygroisp(i)/sumhygro)/sumscat
+                     absisp(i)  = (absisp(i) + absh2o*hygroisp(i)/sumhygro)/sumabs                     
+#endif
+!#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE  || defined MODAL_AERO_4MODE_MOM_BIOP )
+!#if ( defined MODAL_AERO_4MODE_MOM )
                      scatmom(i) = (scatmom(i) + scath2o*hygromom(i)/sumhygro)/sumscat
                      absmom(i)  = (absmom(i) + absh2o*hygromom(i)/sumhygro)/sumabs                     
 
@@ -953,7 +1192,22 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
                      aodc           = (absseasalt(i)*(1.0_r8 - palb(i)) + palb(i)*scatseasalt(i))*dopaer(i)
                      seasaltaod(i)  = seasaltaod(i) + aodc
 
-#if ( defined MODAL_AERO_4MODE_MOM )
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE )
+                     aodc           = (abspbb(i)*(1.0_r8 - palb(i)) + palb(i)*scatpbb(i))*dopaer(i)
+                     pbbaod(i)  = pbbaod(i) + aodc
+#endif
+!LXu@06/2019
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP )
+                     aodc           = (abssp(i)*(1.0_r8 - palb(i)) + palb(i)*scatsp(i))*dopaer(i)
+                     spaod(i)  = spaod(i) + aodc
+
+                     aodc           = (absisp(i)*(1.0_r8 - palb(i)) + palb(i)*scatisp(i))*dopaer(i)
+                     ispaod(i)  = ispaod(i) + aodc
+#endif
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE  || defined MODAL_AERO_4MODE_MOM_BIOP )
+!#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE )
+!#if ( defined MODAL_AERO_4MODE_MOM )
                      aodc           = (absmom(i)*(1.0_r8 - palb(i)) + palb(i)*scatmom(i))*dopaer(i)
                      momaod(i)  = momaod(i) + aodc
 
@@ -1113,7 +1367,18 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
          burdensoa(idxnite(i))  = fillvalue
          burdenbc(idxnite(i))   = fillvalue
          burdenseasalt(idxnite(i)) = fillvalue
-#if ( defined MODAL_AERO_4MODE_MOM )
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE )
+         burdenpbb(idxnite(i)) = fillvalue
+#endif
+!LXu@06/2019
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP )
+         burdensp(idxnite(i)) = fillvalue
+         burdenisp(idxnite(i)) = fillvalue
+#endif
+!#if ( defined MODAL_AERO_4MODE_MOM )
+!#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP )
          burdenmom(idxnite(i)) = fillvalue
 #elif ( defined MODAL_AERO_9MODE )
          burdenpoly(idxnite(i)) = fillvalue
@@ -1128,7 +1393,18 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
          pomaod(idxnite(i))     = fillvalue
          soaaod(idxnite(i))     = fillvalue
          bcaod(idxnite(i))      = fillvalue
-#if ( defined MODAL_AERO_4MODE_MOM )
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE )
+         pbbaod(idxnite(i)) = fillvalue
+#endif
+!LXu@06/2019
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP )
+         spaod(idxnite(i)) = fillvalue
+         ispaod(idxnite(i)) = fillvalue
+#endif
+!#if ( defined MODAL_AERO_4MODE_MOM )
+!#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE  || defined MODAL_AERO_4MODE_MOM_BIOP )
          momaod(idxnite(i)) = fillvalue
 #elif ( defined MODAL_AERO_9MODE )
          polyaod(idxnite(i)) = fillvalue
@@ -1149,7 +1425,18 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
       call outfld('BURDENBC'  ,    burdenbc,      pcols, lchnk)
       call outfld('BURDENSEASALT', burdenseasalt, pcols, lchnk)
 
-#if ( defined MODAL_AERO_4MODE_MOM )
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE )
+      call outfld('BURDENPBB', burdenpbb, pcols, lchnk)
+#endif
+!LXu@06/2019
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP )
+      call outfld('BURDENSP', burdensp, pcols, lchnk)
+      call outfld('BURDENISP', burdenisp, pcols, lchnk)
+#endif
+!#if ( defined MODAL_AERO_4MODE_MOM )
+!#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP )
       call outfld('BURDENMOM', burdenmom, pcols, lchnk)
 #elif ( defined MODAL_AERO_9MODE )
       call outfld('BURDENPOLY', burdenpoly, pcols, lchnk)
@@ -1166,7 +1453,18 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
       call outfld('AODBC',         bcaod,         pcols, lchnk)
       call outfld('AODSS',         seasaltaod,    pcols, lchnk)
 
-#if ( defined MODAL_AERO_4MODE_MOM )
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE )
+      call outfld('AODPBB',         pbbaod,    pcols, lchnk)
+#endif
+!LXu@06/2019
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP )
+      call outfld('AODSP',         spaod,    pcols, lchnk)
+      call outfld('AODISP',     ispaod,    pcols, lchnk)
+#endif
+!#if ( defined MODAL_AERO_4MODE_MOM )
+!#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE  || defined MODAL_AERO_4MODE_MOM_BIOP )
       call outfld('AODMOM',         momaod,    pcols, lchnk)
 #elif ( defined MODAL_AERO_9MODE )
       call outfld('AODPOLY',         polyaod,    pcols, lchnk)

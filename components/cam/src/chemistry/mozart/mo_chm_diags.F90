@@ -305,6 +305,24 @@ contains
        call addfld( 'Mass_mom',   (/ 'lev' /), 'A', 'kg/kg ', &
             'sum of mom mass concentration mom_a1+mom_c1+mom_a2+mom_c2+mom_a3+mom_c3+mom_a4+mom_c4')
        call add_default( 'Mass_mom', 1, ' ' )
+
+!LXu@08/2018+++
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE)
+       call addfld( 'Mass_pbb',   (/ 'lev' /), 'A', 'kg/kg ', &
+            'sum of pbb mass concentration pbb_a1+pbb_c1+pbb_a3+pbb_c3+pbb_a4+pbb_c4')
+       call add_default( 'Mass_pbb', 1, ' ' )
+#endif
+!LXu@08/2018---
+!LXu@08/2019+++
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP)
+       call addfld( 'Mass_sp',   (/ 'lev' /), 'A', 'kg/kg ', &
+            'sum of sp mass concentration sp_a1+sp_c1+sp_a3+sp_c3+sp_a4+sp_c4')
+       call add_default( 'Mass_sp', 1, ' ' )
+       call addfld( 'Mass_isp',   (/ 'lev' /), 'A', 'kg/kg ', &
+            'sum of isp mass concentration isp_a1+isp_c1+isp_a3+isp_c3+isp_a4+isp_c4')
+       call add_default( 'Mass_isp', 1, ' ' )
+#endif
+!LXu@08/2019---
        call addfld( 'Mass_ncl',   (/ 'lev' /), 'A', 'kg/kg ', &
             'sum of ncl mass concentration ncl_a1+ncl_c1+ncl_a2+ncl_c2+ncl_a3+ncl_c3')
        call add_default( 'Mass_ncl', 1, ' ' )
@@ -390,6 +408,17 @@ contains
     real(r8), pointer :: fldcw(:,:)  !working pointer to extract data from pbuf for sum of mass for aerosol classes
     real(r8), dimension(ncol,pver) :: mass_bc, mass_dst, mass_mom, mass_ncl, mass_pom, mass_so4, mass_soa
 
+!LXu@08/2018+++
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE)
+    real(r8), dimension(ncol,pver) :: mass_pbb
+#endif
+!LXu@08/2018---
+!LXu@08/2019+++
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP)
+    real(r8), dimension(ncol,pver) :: mass_sp
+    real(r8), dimension(ncol,pver) :: mass_isp
+#endif
+!LXu@08/2019---
     logical :: history_aerosol      ! output aerosol variables
     logical :: history_verbose      ! produce verbose history output
 
@@ -435,6 +464,15 @@ contains
        mass_pom(:ncol,:) = 0._r8
        mass_so4(:ncol,:) = 0._r8
        mass_soa(:ncol,:) = 0._r8
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE)
+       mass_pbb(:ncol,:) = 0._r8
+#endif
+!LXu@08/2019
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP)
+       mass_sp(:ncol,:) = 0._r8
+       mass_isp(:ncol,:) = 0._r8
+#endif
     endif
 
     call get_area_all_p(lchnk, ncol, area)
@@ -502,6 +540,8 @@ contains
           call outfld( trim(solsym(m))//'_SRF', mmr(:ncol,pver,m), ncol ,lchnk )
 #ifdef MODAL_AERO
           if (history_aerosol .and. .not. history_verbose) then
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE)
              select case (trim(solsym(m)))
              case ('bc_a1','bc_a3','bc_a4')
                   mass_bc(:ncol,:) = mass_bc(:ncol,:) + mmr(:ncol,:,m)
@@ -517,7 +557,48 @@ contains
                   mass_so4(:ncol,:) = mass_so4(:ncol,:) + mmr(:ncol,:,m)
              case ('soa_a1','soa_a2','soa_a3')
                   mass_soa(:ncol,:) = mass_soa(:ncol,:) + mmr(:ncol,:,m)
+             case ('pbb_a1','pbb_a3','pbb_a4')
+                  mass_pbb(:ncol,:) = mass_pbb(:ncol,:) + mmr(:ncol,:,m)
              end select
+#elif ( defined MODAL_AERO_4MODE_MOM_BIOP)
+             select case (trim(solsym(m)))
+             case ('bc_a1','bc_a3','bc_a4')
+                  mass_bc(:ncol,:) = mass_bc(:ncol,:) + mmr(:ncol,:,m)
+             case ('dst_a1','dst_a3')
+                  mass_dst(:ncol,:) = mass_dst(:ncol,:) + mmr(:ncol,:,m)
+             case ('mom_a1','mom_a2','mom_a3','mom_a4')
+                  mass_mom(:ncol,:) = mass_mom(:ncol,:) + mmr(:ncol,:,m)
+             case ('ncl_a1','ncl_a2','ncl_a3')
+                  mass_ncl(:ncol,:) = mass_ncl(:ncol,:) + mmr(:ncol,:,m)
+             case ('pom_a1','pom_a3','pom_a4')
+                  mass_pom(:ncol,:) = mass_pom(:ncol,:) + mmr(:ncol,:,m)
+             case ('so4_a1','so4_a2','so4_a3')
+                  mass_so4(:ncol,:) = mass_so4(:ncol,:) + mmr(:ncol,:,m)
+             case ('soa_a1','soa_a2','soa_a3')
+                  mass_soa(:ncol,:) = mass_soa(:ncol,:) + mmr(:ncol,:,m)
+             case ('sp_a1','sp_a3','sp_a4')
+                  mass_sp(:ncol,:) = mass_sp(:ncol,:) + mmr(:ncol,:,m)
+             case ('isp_a1','isp_a3','isp_a4')
+                  mass_isp(:ncol,:) = mass_isp(:ncol,:) + mmr(:ncol,:,m)
+             end select
+#else
+            select case (trim(solsym(m)))
+             case ('bc_a1','bc_a3','bc_a4')
+                  mass_bc(:ncol,:) = mass_bc(:ncol,:) + mmr(:ncol,:,m)
+             case ('dst_a1','dst_a3')
+                  mass_dst(:ncol,:) = mass_dst(:ncol,:) + mmr(:ncol,:,m)
+             case ('mom_a1','mom_a2','mom_a3','mom_a4')
+                  mass_mom(:ncol,:) = mass_mom(:ncol,:) + mmr(:ncol,:,m)
+             case ('ncl_a1','ncl_a2','ncl_a3')
+                  mass_ncl(:ncol,:) = mass_ncl(:ncol,:) + mmr(:ncol,:,m)
+             case ('pom_a1','pom_a3','pom_a4')
+                  mass_pom(:ncol,:) = mass_pom(:ncol,:) + mmr(:ncol,:,m)
+             case ('so4_a1','so4_a2','so4_a3')
+                  mass_so4(:ncol,:) = mass_so4(:ncol,:) + mmr(:ncol,:,m)
+             case ('soa_a1','soa_a2','soa_a3')
+                  mass_soa(:ncol,:) = mass_soa(:ncol,:) + mmr(:ncol,:,m)
+             end select
+#endif	     
           endif
 #endif
        else
@@ -555,6 +636,48 @@ contains
        do n = 1,pcnst
           fldcw => qqcw_get_field(pbuf,n,lchnk,errorhandle=.true.)
           if(associated(fldcw)) then
+!LXu@08/2018+++
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE )
+             select case (trim(cnst_name_cw(n)))
+                case ('bc_c1','bc_c3','bc_c4')
+                     mass_bc(:ncol,:) = mass_bc(:ncol,:) + fldcw(:ncol,:)
+                case ('dst_c1','dst_c3')
+                     mass_dst(:ncol,:) = mass_dst(:ncol,:) + fldcw(:ncol,:)
+                case ('mom_c1','mom_c2','mom_c3','mom_c4')
+                     mass_mom(:ncol,:) = mass_mom(:ncol,:) + fldcw(:ncol,:)
+                case ('ncl_c1','ncl_c2','ncl_c3')
+                     mass_ncl(:ncol,:) = mass_ncl(:ncol,:) + fldcw(:ncol,:)
+                case ('pom_c1','pom_c3','pom_c4')
+                     mass_pom(:ncol,:) = mass_pom(:ncol,:) + fldcw(:ncol,:)
+                case ('so4_c1','so4_c2','so4_c3')
+                     mass_so4(:ncol,:) = mass_so4(:ncol,:) + fldcw(:ncol,:)
+                case ('soa_c1','soa_c2','soa_c3')
+                     mass_soa(:ncol,:) = mass_soa(:ncol,:) + fldcw(:ncol,:)
+                case ('pbb_c1','pbb_c3','pbb_c4')
+                     mass_pbb(:ncol,:) = mass_pbb(:ncol,:) + fldcw(:ncol,:)
+             end select
+#elif ( defined MODAL_AERO_4MODE_MOM_BIOP )
+             select case (trim(cnst_name_cw(n)))
+                case ('bc_c1','bc_c3','bc_c4')
+                     mass_bc(:ncol,:) = mass_bc(:ncol,:) + fldcw(:ncol,:)
+                case ('dst_c1','dst_c3')
+                     mass_dst(:ncol,:) = mass_dst(:ncol,:) + fldcw(:ncol,:)
+                case ('mom_c1','mom_c2','mom_c3','mom_c4')
+                     mass_mom(:ncol,:) = mass_mom(:ncol,:) + fldcw(:ncol,:)
+                case ('ncl_c1','ncl_c2','ncl_c3')
+                     mass_ncl(:ncol,:) = mass_ncl(:ncol,:) + fldcw(:ncol,:)
+                case ('pom_c1','pom_c3','pom_c4')
+                     mass_pom(:ncol,:) = mass_pom(:ncol,:) + fldcw(:ncol,:)
+                case ('so4_c1','so4_c2','so4_c3')
+                     mass_so4(:ncol,:) = mass_so4(:ncol,:) + fldcw(:ncol,:)
+                case ('soa_c1','soa_c2','soa_c3')
+                     mass_soa(:ncol,:) = mass_soa(:ncol,:) + fldcw(:ncol,:)
+                case ('sp_c1','sp_c3','sp_c4')
+                     mass_sp(:ncol,:) = mass_sp(:ncol,:) + fldcw(:ncol,:)
+                case ('isp_c1','isp_c3','isp_c4')
+                     mass_isp(:ncol,:) = mass_isp(:ncol,:) + fldcw(:ncol,:)
+             end select
+#else
              select case (trim(cnst_name_cw(n)))
                 case ('bc_c1','bc_c3','bc_c4')
                      mass_bc(:ncol,:) = mass_bc(:ncol,:) + fldcw(:ncol,:)
@@ -571,6 +694,7 @@ contains
                 case ('soa_c1','soa_c2','soa_c3')
                      mass_soa(:ncol,:) = mass_soa(:ncol,:) + fldcw(:ncol,:)
              end select
+#endif
           endif
        end do
        call outfld( 'Mass_bc', mass_bc(:ncol,:),ncol,lchnk)
@@ -580,6 +704,15 @@ contains
        call outfld( 'Mass_pom', mass_pom(:ncol,:),ncol,lchnk)
        call outfld( 'Mass_so4', mass_so4(:ncol,:),ncol,lchnk)
        call outfld( 'Mass_soa', mass_soa(:ncol,:),ncol,lchnk)
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE )
+       call outfld( 'Mass_pbb', mass_pbb(:ncol,:),ncol,lchnk)
+#endif
+!LXu@08/2019
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP )
+       call outfld( 'Mass_sp', mass_sp(:ncol,:),ncol,lchnk)
+       call outfld( 'Mass_isp', mass_isp(:ncol,:),ncol,lchnk)
+#endif
     endif
 #endif
 

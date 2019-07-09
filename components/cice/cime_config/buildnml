@@ -62,6 +62,8 @@ def buildnml(case, caseroot, compname):
     # this will trigger whether an automatic build is set upon the job resubmission
     if cice_auto_decomp:
         ntasks = ntasks_ice / ninst_ice
+#LXu@05/2019
+#        ntasks = int(ntasks_ice / ninst_ice)
         hgrid  = ice_grid
         if ice_grid == 'ar9v2': hgrid = 'ar9v1'
         if ice_grid == 'ar9v4': hgrid = 'ar9v3'
