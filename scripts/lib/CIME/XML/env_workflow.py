@@ -5,7 +5,7 @@ Interface to the env_workflow.xml file.  This class inherits from EnvBase
 from CIME.XML.standard_module_setup import *
 from CIME.XML.env_base import EnvBase
 from CIME.utils import get_cime_root
-import re
+import re, math
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +76,20 @@ class EnvWorkflow(EnvBase):
                     expect( type_info == new_type_info,
                             "Inconsistent type_info for entry id={} {} {}".format(vid, new_type_info, type_info))
         return type_info
+
+    def get_job_specs(self, job):
+        task_count = self.get_value("task_count", subgroup=job)
+        tasks_per_node = self.get_value("tasks_per_node", subgroup=job)
+        thread_count = self.get_value("thread_count", subgroup=job)
+        num_nodes = None
+        if task_count is not None:
+            task_count = int(task_count)
+            num_nodes   = int(math.ceil(float(task_count)/float(tasks_per_node)))
+            tasks_per_node =  task_count//num_nodes
+        if not thread_count:
+            thread_count = 1
+
+        return task_count, num_nodes, tasks_per_node, thread_count
 
     # pylint: disable=arguments-differ
     def get_value(self, item, attribute=None, resolved=True, subgroup="PRIMARY"):
