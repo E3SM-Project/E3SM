@@ -179,25 +179,25 @@ class EnvBatch(EnvBase):
             total_tasks = case.get_value("TOTALPES")*int(case.thread_count)
             thread_count = case.thread_count
         if int(total_tasks)*int(thread_count) < case.get_value("MAX_TASKS_PER_NODE"):
-            overrides["max_tasks_per_node"] = int(total_tasks)        
-            
+            overrides["max_tasks_per_node"] = int(total_tasks)
+
         overrides["mpirun"] = case.get_mpirun_cmd(job=job, overrides=overrides)
         return overrides
-        
+
     def make_batch_script(self, input_template, job, case, outfile=None):
         expect(os.path.exists(input_template), "input file '{}' does not exist".format(input_template))
         overrides = self.get_job_overrides(job, case)
-        overrides["batchdirectives"] = self.get_batch_directives(case, job, overrides=overrides)
 
         ext = os.path.splitext(job)[-1]
         if len(ext) == 0:
             ext = job
         if ext.startswith('.'):
             ext = ext[1:]
-        overrides["job_id"] = ext + '.' + case.get_value("CASE") 
+        overrides["job_id"] = ext + '.' + case.get_value("CASE")
         if "pleiades" in case.get_value("MACH"):
             # pleiades jobname needs to be limited to 15 chars
             overrides["job_id"] = overrides["job_id"][:15]
+        overrides["batchdirectives"] = self.get_batch_directives(case, job, overrides=overrides)
 
 
         output_text = transform_vars(open(input_template,"r").read(), case=case, subgroup=job, overrides=overrides)
