@@ -53,6 +53,7 @@ contains
   subroutine p3_main_f90 () bind(c)
     use micro_p3,       only: p3_main
 
+    real :: dtime ! Timestep, should eventually be an input
     !INTERNAL VARIABLES
     real :: th_old(pcols,pver)     !potential temperature from last step   K
     real :: th(pcols,pver)         !potential temperature  K
@@ -100,13 +101,74 @@ contains
     real :: mu(pcols,pver)         !Size distribution shape parameter for radiation
     real :: lambdac(pcols,pver)    !Size distribution slope parameter for radiation
 
-    real :: dtime
+    ! For rrtmg optics. specified distribution.
+    real, parameter :: dcon   = 25.e-6      ! Convective size distribution effective radius (um)
+    real, parameter :: mucon  = 5.3         ! Convective size distribution shape parameter
+    real, parameter :: deicon = 50.         ! Convective ice effective diameter (um)
+
+    integer :: icol, k, ncol
+
     integer :: it, its, ite, kts, kte
     logical :: log_predictNc = .true.
-    logical :: stand_alone = .true.
 
+    ncol = pcols
     dtime = 600.0
+
+    ! DEAL WITH SSAT
+    !==============
+    !ssat (supersaturated mixing ratio measured in kg/kg) can be prognosed
+    !or diagnosed in p3 depending on p3's hardcoded log_predictSsat parameter.
+    !ssat is an intent inout variable, but when log_predictSsat is false 
+    !(as we will set it initially), ssat is overwritten rather than used by p3.
+    !Thus it shouldn't matter what ssat is, so we give it -999.
+
+    ssat(:,:) = -999.0
+
+    ! COMPUTE GEOMETRIC THICKNESS OF GRID
+    !==============
+    exner(:ncol,:pver) = 1.0!1._rtype/((state%pmid(:ncol,:pver)*1.e-5_rtype)**(rair*inv_cp))
+    do icol = 1,ncol
+       do k = 1,pver
+! Note: dzq is calculated in the opposite direction that pdel is calculated,
+! thus when considering any dp/dz calculation we must also change the sign.
+          dzq(icol,k) = 1.0   !state%zi(icol,k) - state%zi(icol,k+1)
+          th(icol,k)  = 270.0 !state%t(icol,k)*exner(icol,k) !/(state%pmid(icol,k)*1.e-5)**(rd*inv_cp) 
+          pdel(icol,k)  = 100.0 ! should be changed to come from model state.
+       end do
+    end do
+
+    ! MAKE LOCAL COPIES OF VARS MODIFIED BY P3
+    !==============
+    !local copies are needed because state is passed into this routine as intent=in
+    !while P3 seeks to modify state variables in-place. Also, we need a copy of 
+    !old values in order to back out ptend values later. Traditionally, a local copy 
+    !is created by copying the whole state. It is much cheaper to just copy the 
+    !variables we need. 
     
+    cldliq  = 1.0e-6!state%q(:,:,ixcldliq)
+    numliq  = 1.0e6!state%q(:,:,ixnumliq)
+    rain    = 1.0e-5!state%q(:,:,ixrain)
+    numrain = 1.0e5!state%q(:,:,ixnumrain)
+    qv      = 1.0e-4!state%q(:,:,1)
+    ice     = 1.0e-7!state%q(:,:,ixcldice)
+    qirim   = 1.0e-8!state%q(:,:,ixcldrim) !Aaron, changed ixqirim to ixcldrim to match Kai's code
+    numice  = 1.0e5!state%q(:,:,ixnumice)
+    rimvol  = 1.0e4!state%q(:,:,ixrimvol)
+    its     = 1
+    ite     = ncol
+    kts     = 1
+    kte     = pver
+    pres    = 1.0!state%pmid(:,:)
+    ! Initialize the raidation dependent variables.
+    mu      = mucon
+    lambdac = (mucon + 1.)/dcon
+    dei     = deicon
+    ! Determine the cloud fraction and precip cover
+    icldm(:,:) = 1.0
+    lcldm(:,:) = 1.0
+    rcldm(:,:) = 1.0
+    ! CALL P3
+    !==============
     call p3_main( &
          cldliq(its:ite,kts:kte),     & ! INOUT  cloud, mass mixing ratio         kg kg-1
          numliq(its:ite,kts:kte),     & ! INOUT  cloud, number mixing ratio       #  kg-1
@@ -156,8 +218,7 @@ contains
          prctot(its:ite,kts:kte),     & ! OUT autoconversion of cloud by rain
          tend_out(its:ite,kts:kte,:), & ! OUT p3 microphysics tendencies
          mu(its:ite,kts:kte),         & ! OUT Size distribution shape parameter for radiation
-         lambdac(its:ite,kts:kte),    & ! OUT Size distribution slope parameter for radiation
-         stand_alone=stand_alone      & ! IN optional arg for running in stand alone mode
+         lambdac(its:ite,kts:kte)     & ! OUT Size distribution slope parameter for radiation
          )
 
     test = test + 1
