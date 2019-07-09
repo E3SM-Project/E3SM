@@ -6035,6 +6035,17 @@ nearest point in the halo to the departure point, when necessary.
 Default: 0
 </entry>
 
+<!-- Physics grid -->
+
+<entry id="se_fv_nphys" type="integer" category="se"
+       group="dyn_se_inparm" valid_values="" >
+Number of equally-spaced horizontal physics points per spectral
+element. A number greater than zero will define [se_fv_nphys] equally
+spaced physics points in each direction (e.g., se_fv_nphys = 2 will
+result in 4 equally-spaced physics points per element).
+Default: 0 = feature disabled, use dynamics GLL points.
+</entry>
+
 <entry id="semi_lagrange_hv_q" type="integer" category="se"
        group="ctl_nl" valid_values="">
 Number of tracers, starting from 1, to which to apply hyperviscosity. For
