@@ -1178,32 +1178,34 @@ class Namelist(object):
         for group_name in group_names:
             if format_ == 'nml':
                 out_file.write("&{}\n".format(group_name))
-            group = self._groups[group_name]
-            for name in sorted(group.keys()):
-                values = group[name]
+            # allow empty group
+            if group_name in self._groups:
+                group = self._groups[group_name]
+                for name in sorted(group.keys()):
+                    values = group[name]
 
-                # @ is used in a namelist to put the same namelist variable in multiple groups
-                # in the write phase, all characters in the namelist variable name after
-                # the @ and including the @ should be removed
-                if "@" in name:
-                    name = re.sub('@.+$', "", name)
+                    # @ is used in a namelist to put the same namelist variable in multiple groups
+                    # in the write phase, all characters in the namelist variable name after
+                    # the @ and including the @ should be removed
+                    if "@" in name:
+                        name = re.sub('@.+$', "", name)
 
-                # To prettify things for long lists of values, build strings
-                # line-by-line.
-                if values[0] == "True" or values[0] == "False":
-                    values[0] = values[0].replace("True",".true.").replace("False",".false.")
-                lines = ["  {}{} {}".format(name, equals, values[0])]
-                for value in values[1:]:
-                    if value == "True" or value == "False":
-                        value = value.replace("True",".true.").replace("False",".false.")
-                    if len(lines[-1]) + len(value) <= 77:
-                        lines[-1] += ", " + value
-                    else:
-                        lines[-1] += ",\n"
-                        lines.append("      " + value)
-                lines[-1] += "\n"
-                for line in lines:
-                    out_file.write(line)
+                    # To prettify things for long lists of values, build strings
+                    # line-by-line.
+                    if values[0] == "True" or values[0] == "False":
+                        values[0] = values[0].replace("True",".true.").replace("False",".false.")
+                    lines = ["  {}{} {}".format(name, equals, values[0])]
+                    for value in values[1:]:
+                        if value == "True" or value == "False":
+                            value = value.replace("True",".true.").replace("False",".false.")
+                        if len(lines[-1]) + len(value) <= 77:
+                            lines[-1] += ", " + value
+                        else:
+                            lines[-1] += ",\n"
+                            lines.append("      " + value)
+                    lines[-1] += "\n"
+                    for line in lines:
+                        out_file.write(line)
             if format_ == 'nml':
                 out_file.write("/\n")
             if format_ == 'nmlcontents':
@@ -1220,7 +1222,7 @@ class Namelist(object):
             group_names = groups
 
         for group_name in group_names:
-            if "_attributes" not in group_name and "nuopc_" not in group_name:
+            if "_attributes" not in group_name and "nuopc_" not in group_name and "_no_group" not in group_name:
                 continue
             if "_attributes" in group_name:
                 out_file.write("{}::\n".format(group_name))

@@ -1145,7 +1145,7 @@ endif
 
 
 if (qsize>=5) then
-   idex=5
+   do idex = 5, qsize
 
    perturb_lon = perturbation_longitude*deg2rad
    perturb_lat = perturbation_latitude*deg2rad
@@ -1197,6 +1197,7 @@ if (qsize>=5) then
       enddo
    enddo
 
+end do
 endif
 
 end subroutine

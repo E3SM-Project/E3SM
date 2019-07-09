@@ -3,6 +3,7 @@
 #endif
 
 module pio_io_mod
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   use kinds, only : int_kind, real_kind
   use pio, nfsizekind=>PIO_OFFSET_KIND ! _EXTERNAL
   use pio_types ! _EXTERNAL
@@ -784,4 +785,5 @@ contains
     end if
     ncFileID=fileid%fh
   end subroutine nf_open_file
+#endif
 end module pio_io_mod

@@ -16,7 +16,9 @@ module held_suarez_mod
   use physical_constants,     only: p0, kappa,g, dd_pi, Rgas
   use physics_mod,            only: prim_condense
   use time_mod,               only: secpday
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   use common_io_mod,          only: infilenames
+#endif
 
 implicit none
 private
@@ -252,9 +254,11 @@ contains
 
        ! if topo file was given in the namelist, PHIS was initilized in prim_main
        ! otherwise assume 0
+#ifndef HOMME_WITHOUT_PIOLIBRARY
        if (infilenames(1)=='') then
           elem(ie)%state%phis(:,:)=0.0D0
        endif
+#endif
 
 #undef HS_TOPO1
 #ifdef HS_TOPO1

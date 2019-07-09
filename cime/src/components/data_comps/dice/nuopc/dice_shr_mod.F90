@@ -1,7 +1,5 @@
 module dice_shr_mod
 
-  ! !USES:
-
   use shr_kind_mod   , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8
   use shr_kind_mod   , only : CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
   use shr_file_mod   , only : shr_file_getunit, shr_file_freeunit

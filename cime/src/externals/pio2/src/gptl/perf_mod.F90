@@ -913,12 +913,12 @@ contains
    unitn = shr_file_getUnit()
 
    ! determine what the current output mode is (append or write)
-   if (GPTLpr_query_write() == 1) then
-     pr_write = .true.
-     ierr = GPTLpr_set_append()
-   else 
-     pr_write=.false.
-   endif
+   ! if (GPTLpr_query_write() == 1) then
+   !   pr_write = .true.
+   !   ierr = GPTLpr_set_append()
+   ! else
+   pr_write=.false.
+   ! endif
 
    ! Determine whether to write all data to a single fie
    if (present(single_file)) then
@@ -1100,9 +1100,9 @@ contains
    call shr_file_freeUnit( unitn )
 
    ! reset GPTL output mode
-   if (pr_write) then
-     ierr = GPTLpr_set_write()
-   endif
+   ! if (pr_write) then
+   !   ierr = GPTLpr_set_write()
+   ! endif
 
 !$OMP END MASTER
    call t_stopf("t_prf")

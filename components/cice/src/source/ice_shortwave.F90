@@ -56,6 +56,15 @@
       use ice_constants
       use ice_blocks
       use ice_diagnostics
+      use ice_meltpond
+      use ice_calendar
+      use ice_domain
+      use ice_flux
+      use ice_grid
+      use ice_itd
+      use ice_orbital
+      use ice_state
+      use ice_therm_vertical, only: heat_capacity
       use ice_communicate, only: my_task
       use perf_mod, only: t_startf, t_stopf, t_barrierf
 !
@@ -222,15 +231,6 @@
 !
 ! !USES:
 !
-      use ice_domain_size
-      use ice_blocks
-      use ice_calendar
-      use ice_domain
-      use ice_flux
-      use ice_grid
-      use ice_itd
-      use ice_orbital
-      use ice_state
 !
 ! !INPUT/OUTPUT PARAMETERS:
 !
@@ -966,7 +966,6 @@
 !
 ! !USES:
 !
-	use ice_therm_vertical, only: heat_capacity
 !
 ! !INPUT/OUTPUT PARAMETERS:
 !
@@ -1188,16 +1187,6 @@
 !
 ! !USES:
 !
-      use ice_domain_size
-      use ice_blocks
-      use ice_calendar
-      use ice_domain
-      use ice_flux
-      use ice_grid
-      use ice_itd
-      use ice_meltpond
-      use ice_orbital
-      use ice_state
 !
 ! !INPUT/OUTPUT PARAMETERS:
 !
@@ -1522,8 +1511,6 @@
 !
 ! !USES:
 !
-      use ice_calendar
-      use ice_state, only: nt_aero, tr_aero
 !
 ! !INPUT/OUTPUT PARAMETERS:
 !
@@ -1966,7 +1953,6 @@
 !
 ! !USES:
 !
-      use ice_therm_vertical, only: heat_capacity
 !
 ! !INPUT/OUTPUT PARAMETERS:
 !

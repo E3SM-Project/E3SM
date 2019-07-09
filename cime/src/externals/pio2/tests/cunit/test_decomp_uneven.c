@@ -17,7 +17,7 @@
 #define MIN_NTASKS 4
 
 /* The name of this test. */
-#define TEST_NAME "test_darray_uneven"
+#define TEST_NAME "test_decomp_uneven"
 
 /* Number of processors that will do IO. */
 #define NUM_IO_PROCS 1
@@ -122,18 +122,19 @@ int test_decomp_read_write(int iosysid, int ioid, int num_flavors, int *flavor, 
     char title_in[PIO_MAX_NAME + 1];
     char history_in[PIO_MAX_NAME + 1];
     int fortran_order_in; /* Indicates fortran vs. c order. */
-    int ret;              /* Return code. */
 
     /* Use PIO to create the decomp file in one of the four
      * available ways. */
     for (int fmt = 0; fmt < 1; fmt++)
     {
+        int ret;              /* Return code. */
+      
         /* Create the filename. */
-        sprintf(filename, "decomp_%s_pio_type_%d_dims_%d_x_%d_x_%d.nc", TEST_NAME, pio_type,
-                dim_len[0], dim_len[1], dim_len[2]);
+        snprintf(filename, PIO_MAX_NAME, "decomp_%s_pio_type_%d_dims_%d_x_%d_x_%d.nc",
+		 TEST_NAME, pio_type, dim_len[0], dim_len[1], dim_len[2]);
 
         /* Create history string. */
-        strncat(history, filename, NC_MAX_NAME - strlen(TEST_DECOMP_HISTORY));
+        strncat(history, filename, PIO_MAX_NAME - strlen(TEST_DECOMP_HISTORY));
 
         if ((ret = PIOc_write_nc_decomp(iosysid, filename, 0, ioid, title, history, 0)))
             return ret;
@@ -264,11 +265,8 @@ int main(int argc, char **argv)
 /* #define NUM_TYPES_TO_TEST 3 */
 /*     int test_type[NUM_TYPES_TO_TEST] = {PIO_INT, PIO_FLOAT, PIO_DOUBLE}; */
 #define NUM_TYPES_TO_TEST 1
-    int test_type[NUM_TYPES_TO_TEST] = {PIO_INT};
     int my_rank;
     int ntasks;
-    int num_flavors; /* Number of PIO netCDF flavors in this build. */
-    int flavor[NUM_FLAVORS]; /* iotypes for the supported netCDF IO flavors. */
     MPI_Comm test_comm; /* A communicator for this test. */
     int ret;         /* Return code. */
 
@@ -307,6 +305,8 @@ int main(int argc, char **argv)
                                                                       {3, 2, 2, 2},
                                                                       {2, 2, 1, 1}};
         int *expected_map[NUM_DIM_COMBOS_TO_TEST] = {map_1x4x4, map_2x4x4, map_3x4x4, map_1x3x3, map_1x2x3};
+	int num_flavors; /* Number of PIO netCDF flavors in this build. */
+	int flavor[NUM_FLAVORS]; /* iotypes for the supported netCDF IO flavors. */
         int ret;      /* Return code. */
 
         /* Figure out iotypes. */
@@ -328,6 +328,8 @@ int main(int argc, char **argv)
             {
                 for (int dc = 0; dc < NUM_DIM_COMBOS_TO_TEST; dc++)
                 {
+		    int test_type[NUM_TYPES_TO_TEST] = {PIO_INT};
+		    
                     /* What is length of map for this combo? */
                     int full_maplen = 1;
                     for (int d = 0; d < NDIM3; d++)
@@ -352,7 +354,7 @@ int main(int argc, char **argv)
             }
 
             /* Finalize PIO system. */
-            if ((ret = PIOc_finalize(iosysid)))
+            if ((ret = PIOc_free_iosystem(iosysid)))
                 return ret;
 
         } /* next rearranger */

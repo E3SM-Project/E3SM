@@ -18,8 +18,8 @@ module model_init_mod
   use hybvcoord_mod, 	  only: hvcoord_t
   use hybrid_mod,         only: hybrid_t
   use dimensions_mod,     only: np,nlev,nlevp
-  use eos          ,      only: get_pnh_and_exner,get_dirk_jacobian
-  use element_state,      only: timelevels, nu_scale_top
+  use eos          ,      only: pnh_and_exner_from_eos,get_dirk_jacobian
+  use element_state,      only: timelevels, nu_scale_top, nlev_tom
   use viscosity_mod,      only: make_c0_vector
   use kinds,              only: real_kind,iulog
   use control_mod,        only: qsplit,theta_hydrostatic_mode
@@ -75,29 +75,45 @@ contains
     ! compute scaling of sponge layer damping 
     !
     if (hybrid%masterthread) write(iulog,*) "sponge layer nu_top viscosity scaling factor"
+    nlev_tom=0
     do k=1,nlev
        !press = (hvcoord%hyam(k)+hvcoord%hybm(k))*hvcoord%ps0
        !ptop  = hvcoord%hyai(1)*hvcoord%ps0
        ! sponge layer starts at p=4*ptop 
        ! 
        ! some test cases have ptop=200mb
-       ptop_over_press = hvcoord%etai(1) / hvcoord%etam(k)  ! pure sigma coordinates has etai(1)=0
+       if (hvcoord%etai(1)==0) then
+          ! pure sigma coordinates could have etai(1)=0
+          ptop_over_press = hvcoord%etam(1) / hvcoord%etam(k)  
+       else
+          ptop_over_press = hvcoord%etai(1) / hvcoord%etam(k)  
+       endif
 
-       ! active for p<4*ptop (following cd_core.F90 in CAM-FV)
-       ! CAM 26L and 30L:  top 2 levels
-       ! E3SM 72L:  top 4 levels
+       ! active for p<10*ptop (following cd_core.F90 in CAM-FV)
+       ! CAM 26L and 30L:  top 3 levels 
+       ! E3SM 72L:  top 6 levels
        nu_scale_top(k) = 8*(1+tanh(log(ptop_over_press))) ! active for p<4*ptop
+       if (nu_scale_top(k)<0.15d0) nu_scale_top(k)=0
 
-       ! active for p<7*ptop 
-       ! CAM 26L and 30L:  top 3 levels
-       ! E3SM 72L:  top 5 levels
        !nu_scale_top(k) = 8*(1+.911*tanh(log(ptop_over_press))) ! active for p<6.5*ptop
+       !if (nu_scale_top(k)<1d0) nu_scale_top(k)=0
+
+       ! original CAM3/preqx formula
+       !if (k==1) nu_scale_top(k)=4
+       !if (k==2) nu_scale_top(k)=2
+       !if (k==3) nu_scale_top(k)=1
+       !if (k>3) nu_scale_top(k)=0
+
+       if (nu_scale_top(k)>0) nlev_tom=k
 
        if (hybrid%masterthread) then
-          if (nu_scale_top(k)>1) write(iulog,*) "  nu_scale_top ",k,nu_scale_top(k)
+          if (nu_scale_top(k)>0) write(iulog,*) "  nu_scale_top ",k,nu_scale_top(k)
        end if
     end do
-    
+    if (hybrid%masterthread) then
+       write(iulog,*) "  nlev_tom ",nlev_tom
+    end if
+
   end subroutine 
 
 
@@ -151,7 +167,7 @@ contains
      phi_i(:,:,:)         = elem(ie)%state%phinh_i(:,:,:,tl%n0)
      phis(:,:)          = elem(ie)%state%phis(:,:)
      call TimeLevel_Qdp(tl, qsplit, qn0)
-     call get_pnh_and_exner(hvcoord,vtheta_dp,dp3d,phi_i,&
+     call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_i,&
              pnh,exner,dpnh_dp_i,pnh_i_out=pnh_i)
          
      dt=100.0
