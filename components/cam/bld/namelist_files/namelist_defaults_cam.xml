@@ -185,7 +185,8 @@
 <ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_conusx4v1np4_L30_c141106.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="30" ocn="aquaplanet"    >atm/cam/inic/homme/cami_0003-01-01_conusx4v1np4_L30_ape_c000000.nc</ncdata>
 
-<ncdata dyn="se" hgrid="ne0np4_northamericax4v1" nlev="72"    >/global/cscratch1/sd/wlin/northamericax4v1/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_northamericax4v1_topoadj_L72.nc</ncdata>
+<!-- Worked, and used to generate the inic below for northamerica:  ncdata dyn="se" hgrid="ne0np4_northamericax4v1" nlev="72"    >/global/cscratch1/sd/wlin/northamericax4v1/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_northamericax4v1_topoadj_L72.nc</ncdata-->
+<ncdata dyn="se" hgrid="ne0np4_northamericax4v1" nlev="72"    >atm/cam/inic/homme/cami_0001-01-01_northamericax4v1_c190709.nc</ncdata>
 
 <!--Initial file from interpic utility:  ncdata dyn="se" hgrid="ne0np4_svalbard_x8v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_svalbardx8v1np4_L30_c100618.nc</ncdata-->
 <!-- New file from 1 month spin-up, the renamed $CASE.cam.i* file. -->
@@ -1436,14 +1437,8 @@
 <nu hgrid="ne0np4_svalbard_x8v1_lowcon"  > 8.0e-8</nu>
 <nu hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 8.0e-8</nu>
 <nu hgrid="ne0np4_enax4v1">8.0e-8</nu>
-
-
-<nu hgrid="ne0np4_arm_x8v3_lowcon"  > 8.0e-8</nu>
-<nu hgrid="ne0np4_conus_x4v1_lowcon"  > 8.0e-8</nu>
-<nu hgrid="ne0np4_northamericax4v1"  > 8.0e-8</nu>
-<nu hgrid="ne0np4_svalbard_x8v1_lowcon"  > 8.0e-8</nu>
-<nu hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 8.0e-8</nu>
 <nu hgrid="ne0np4_twpx4v1" >8.0e-8</nu>
+
 
 <!-- This will set nu_q to nu internally. -->
 <nu_q> -1.0 </nu_q>
@@ -1742,7 +1737,7 @@
 <fatmlndfrc hgrid="ne120np4"  >share/domains/domain.lnd.ne120np4_gx1v6.111226.nc</fatmlndfrc>
 <fatmlndfrc hgrid="ne240np4"  >share/domains/domain.lnd.ne240np4_gx1v6.120125.nc</fatmlndfrc>
 
-<fatmlndfrc hgrid="ne0np4_northamericax4v1">share/domains/domain.lnd.northamericax4v1_oRRS15to5.190614.nc</fatmlndfrc>
+<!--fatmlndfrc hgrid="ne0np4_northamericax4v1">share/domains/domain.lnd.northamericax4v1_oRRS15to5.190614.nc</fatmlndfrc-->
 <fatmlndfrc hgrid="ne0np4_enax4v1">share/domains/domain.lnd.enax4v1_oRRS18to6.170621.nc</fatmlndfrc>
 
 <!-- SNICAR (SNow, ICe, and Aerosol Radiative model) datasets -->
@@ -1835,7 +1830,7 @@
 <focndomain hgrid="ne120np4"  >share/domains/domain.ocn.ne120np4_gx1v6.111226.nc</focndomain>
 <focndomain hgrid="ne240np4"  >share/domains/domain.ocn.ne240np4_gx1v6.111226.nc</focndomain>
 
-<focndomain hgrid="ne0np4_northamericax4v1">share/domains/domain.ocn.northamericax4v1_oRRS15to5.190614.nc</focndomain>
+<!--focndomain hgrid="ne0np4_northamericax4v1">share/domains/domain.ocn.northamericax4v1_oRRS15to5.190614.nc</focndomain-->
 <focndomain hgrid="ne0np4_enax4v1">share/domains/domain.ocn.enax4v1_oRRS18to6.170621.nc</focndomain>
 
 </namelist_defaults>
