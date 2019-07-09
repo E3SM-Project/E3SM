@@ -42,6 +42,7 @@ _TESTS = {
             "SMS.ne4_ne4.FC5AV1C-L.cam-cosplite",
             "SMS_R_Ld5.ne4_ne4.FSCM5A97",
             "SMS_D_Ln5.ne4_ne4.FC5AV1C-L",
+            "SMS_Ln5_P96.ne4pg2_ne4pg2.FC5AV1C-L",
             )
         },
 
