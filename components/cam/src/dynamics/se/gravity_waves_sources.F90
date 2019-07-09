@@ -146,9 +146,9 @@ CONTAINS
         ! potential temperature: theta = T (p/p0)^kappa
         call get_temperature(elem(ie),temperature,hvcoord,tl)
         theta(:,:) = temperature(:,:,k)*(psurf_ref / p(:,:))**kappa
-        gradth_gll(:,:,:,k,ie) = gradient_sphere(theta,ederiv,elem(ie)%Dinv)
+        gradth_gll(:,:,:,k,ie) = gradient_sphere(theta,deriv1,elem(ie)%Dinv)
         ! compute C = (grad(theta) dot grad ) u
-        C(:,:,:) = ugradv_sphere(gradth_gll(:,:,:,k,ie), elem(ie)%state%v(:,:,:,k,tl),ederiv,elem(ie))
+        C(:,:,:) = ugradv_sphere(gradth_gll(:,:,:,k,ie), elem(ie)%state%v(:,:,:,k,tl),deriv1,elem(ie))
         ! gradth_gll dot C
         frontgf_gll(:,:,k,ie) = -( C(:,:,1)*gradth_gll(:,:,1,k,ie) + C(:,:,2)*gradth_gll(:,:,2,k,ie)  )
         ! apply mass matrix
@@ -163,7 +163,7 @@ CONTAINS
     end do ! ie
 
     ! Boundary exchange
-    if (par%dynproc) call bndry_exchangeV(hybrid,edge3)
+    if (par%dynproc) call bndry_exchangeV(hybrid,edge_g)
 
     do ie = nets,nete
       ! Prepare weights for area averaging
