@@ -88,6 +88,12 @@ def _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids,
                 if compiler == "intel":
                     aprun_args += " -cc numa_node"
 
+            #ndk: not working on broadwell 18-way nodes with -S9
+            #if machine == "swan" and tasks_per_node > 1:
+            #    aprun_args += " -S {:d}".format(task_per_numa)
+            #    if compiler == "intel":
+            #        aprun_args += " -cc numa_node"
+
             aprun_args += " -n {:d} -N {:d} -d {:d} {} {}".format(task_count, tasks_per_node, thread_count, run_exe, "" if c1 is None else ":")
 
             node_count = int(math.ceil(float(task_count) / tasks_per_node))
