@@ -10,10 +10,13 @@
 # and path to netcdf home directory
 #-------------------------------------
 
-FC := ifort
+ifeq ($(FC),$(null))
+   FC := ifort
+endif
+
 NETCDF_PATH := $(NETCDF_HOME)
 
-EXE := exe_mkatmsrffile
+EXE := mkatmsrffile
 
 #---------------------------
 # USER INPUT ENDS HERE
@@ -23,7 +26,7 @@ EXE := exe_mkatmsrffile
 INC = -I$(INC_NETCDF)
 LIB = -L$(LIB_NETCDF) -lnetcdf -lnetcdff
 
-FFLAGS = -O2
+FFLAGS += -O2
 
 $(EXE): mkatmsrffile.F90 
 	$(FC) $(FFLAGS) $(INC)  $< -o $@  $(LIB)

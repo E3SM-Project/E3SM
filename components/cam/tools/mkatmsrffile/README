@@ -1,21 +1,31 @@
-Atmospheric drydeposition at the surface depends on certain surface properties including soil and land use properties.  In most cases, these calculations can be handled in the land model and passed to the atmosphere through the coupler.  This method is the default namelist setting drydep_method='xactive_lnd'. 
+Atmospheric drydeposition at the surface depends on certain surface 
+properties including soil and land use properties.  In most cases, 
+these calculations can be handled in the land model and passed to 
+the atmosphere through the coupler.  This method is the default 
+namelist setting drydep_method='xactive_lnd'. 
 
-However with modal areosols, this method is not adequate, and we must recalculate these fields in the atmosphere (see subroutine interp_map in mo_drydep.F90).  
+However with modal areosols, this method is not adequate, and we 
+must recalculate these fields in the atmosphere (see subroutine 
+interp_map in mo_drydep.F90).  
 
-For unstructured grids, it was determined to create this offline interpolation tool rather than generalize the subroutine interp_map.  
+For unstructured grids, it was determined to create this offline 
+interpolation tool rather than generalize the subroutine interp_map.  
 
 
-1. Locate or create scrip mapping files for the 1x1 degree input grids and the desired model output grid.
+1. Locate or create scrip mapping files for the 1x1 degree input grids
+   and the desired model output grid.
 
-2. Run the script scrip_makemaps.csh 
-https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/makemaps/trunk/scrip_makemaps.csh
-   The script will create 4 mapping files, you need only the 1x1 -> model grid area average file.
+2. Generate mapping weights from 1x1 grid to target grid. This can be done using 
+   ESMF with the following command (assuming an ESMF build is in your PATH):
+   
+   ESMF_RegridWeightGen --source <path to 1x1 scrip file> \
+                     --destination <path to target scrip file> \
+                     --weight <name of output mapping file> \
+                     --method conserve
 
-   Alternatively, if you have the ESMF binaries, then you can run:
-   ESMF_RegridWeightGen --source <1x1 scrip file> --destination <original scrip file> --weight <map_1x1_to_original_method_date.nc> --method conserve
-
-3. Edit nml_atmsrf and put the name of this file made in Step 2 in the srf2atmFmapname field with full paths.  Edit other fields as appropriate.
+3. Edit nml_atmsrf and put the name of this file made in Step 2 in the srf2atmFmapname 
+   field with full paths.  Edit other fields as appropriate.
 
 4. Load the compiler and netcdf library in your environment and update Makefile accordingly.
 
-5. Compile using "make" command and run exe_mkatmsrffile file.
+5. Compile using "make" command and run mkatmsrffile executable.
