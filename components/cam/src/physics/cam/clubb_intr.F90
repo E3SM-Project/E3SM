@@ -1746,7 +1746,7 @@ end subroutine clubb_init_cnst
       !  Compute mean w wind on thermo grid, convert from omega to w 
       wm_zt(1) = 0._r8
       do k=1,pver
-         wm_zt(k+1) = -1._r8*state1%omega(i,pver-k+1)*invrs_rho_ds_zt(i,k+1)*invrs_gravit
+         wm_zt(k+1) = -1._r8*state1%omega(i,pver-k+1)*invrs_rho_ds_zt(k+1)*invrs_gravit
       enddo
     
       ! ------------------------------------------------- !
