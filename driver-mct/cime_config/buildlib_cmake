@@ -12,12 +12,12 @@ sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
 from standard_script_setup import *
 from CIME.buildlib         import parse_input
 from CIME.case             import Case
-from CIME.utils            import expect, run_bld_cmd_ensure_logging
+from CIME.utils            import expect
 
 logger = logging.getLogger(__name__)
 
 ###############################################################################
-def buildlib(bldroot, installpath, case):
+def buildlib(bldroot, installpath, case): # pylint: disable=unused-argument
 ###############################################################################
     casebuild = case.get_value("CASEBUILD")
     caseroot  = case.get_value("CASEROOT")
