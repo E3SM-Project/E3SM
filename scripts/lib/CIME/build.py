@@ -64,7 +64,7 @@ def uses_kokkos(case):
 
 ###############################################################################
 def _build_model(build_threaded, exeroot, incroot, complist,
-                 lid, caseroot, cimeroot, compiler, buildlist, comp_interface, case):
+                 lid, caseroot, cimeroot, compiler, buildlist, comp_interface):
 ###############################################################################
     logs = []
 
@@ -150,8 +150,8 @@ def _build_model(build_threaded, exeroot, incroot, complist,
     return logs
 
 ###############################################################################
-def _build_model_cmake(build_threaded, exeroot, incroot, complist,
-                       lid, caseroot, cimeroot, compiler, buildlist, comp_interface, sharedpath, ninja, case):
+def _build_model_cmake(exeroot, complist, lid, cimeroot, buildlist,
+                       comp_interface, sharedpath, ninja, case):
 ###############################################################################
     cime_model = get_model()
     bldroot    = os.path.join(exeroot, "bld")
@@ -166,7 +166,7 @@ def _build_model_cmake(build_threaded, exeroot, incroot, complist,
         if not os.path.exists(build_dir):
             os.makedirs(build_dir)
 
-    for model, _, nthrds, _, config_dir in complist:
+    for model, _, _, _, config_dir in complist:
         if buildlist is not None and model.lower() not in buildlist:
             continue
 
@@ -581,12 +581,12 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
 
     if not sharedlib_only:
         if get_model() == "e3sm" and not use_old:
-            logs.extend(_build_model_cmake(build_threaded, exeroot, incroot, complist,
-                                           lid, caseroot, cimeroot, compiler, buildlist, comp_interface, sharedpath, ninja, case))
+            logs.extend(_build_model_cmake(exeroot, complist, lid, cimeroot, buildlist,
+                                           comp_interface, sharedpath, ninja, case))
         else:
             os.environ["INSTALL_SHAREDPATH"] = os.path.join(exeroot, sharedpath) # for MPAS makefile generators
             logs.extend(_build_model(build_threaded, exeroot, incroot, complist,
-                                     lid, caseroot, cimeroot, compiler, buildlist, comp_interface, case))
+                                     lid, caseroot, cimeroot, compiler, buildlist, comp_interface))
 
         if not buildlist:
             # in case component build scripts updated the xml files, update the case object

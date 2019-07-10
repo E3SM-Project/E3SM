@@ -4,7 +4,7 @@ common utilities for buildlib
 
 from CIME.XML.standard_module_setup import *
 from CIME.case import Case
-from CIME.utils import parse_args_and_handle_standard_logging_options, setup_standard_logging_options, get_model, run_bld_cmd_ensure_logging, safe_copy
+from CIME.utils import parse_args_and_handle_standard_logging_options, setup_standard_logging_options, get_model, safe_copy
 from CIME.build import get_standard_makefile_args
 
 import sys, os, argparse
