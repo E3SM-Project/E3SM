@@ -498,8 +498,6 @@ module lapack_wrap
     case( :-1 )
         write(fstderr,*) "in band_solvex for ", trim( solve_type ), &
             ": illegal value for argument", -info
-        write(fstderr,*) "lhs = ", lhs, new_line('c')
-        write(fstderr,*) "rhs = ", rhs, new_line('c')
         err_code = clubb_fatal_error
 
     case( 0 )
@@ -519,8 +517,6 @@ module lapack_wrap
       else
         write(fstderr,*) "in band_solvex for", trim( solve_type ), &
           ": singular matrix, solution not computed"    
-        write(fstderr,*) "lhs = ", lhs, new_line('c')
-        write(fstderr,*) "rhs = ", rhs, new_line('c')
         err_code = clubb_fatal_error
       end if
 
@@ -754,8 +750,6 @@ module lapack_wrap
     case( :-1 )
           write(fstderr,*) "in band_solve for ", trim( solve_type ), &
             ": illegal value for argument", -info
-          write(fstderr,*) "lhs = ", lhs, new_line('c')
-          write(fstderr,*) "rhs = ", rhs, new_line('c')
           err_code = clubb_fatal_error
     case( 0 )
           ! Success!
@@ -770,8 +764,6 @@ module lapack_wrap
     case( 1: )
         write(fstderr,*) "in band_solve for ", trim( solve_type ), &
                        ": singular matrix, solution not computed"
-        write(fstderr,*) "lhs = ", lhs, new_line('c')
-        write(fstderr,*) "rhs = ", rhs, new_line('c')
         err_code = clubb_fatal_error
     end select
 

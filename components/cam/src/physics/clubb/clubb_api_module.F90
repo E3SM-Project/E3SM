@@ -148,7 +148,8 @@ module clubb_api_module
 
   use parameters_tunable, only : &
     l_prescribed_avg_deltaz, & ! used in adj_low_res_nu. If .true., avg_deltaz = deltaz
-    mu
+    mu, &
+    params_list
 
   use parameter_indices, only:  &
     nparams, & ! Variable(s)
@@ -358,7 +359,8 @@ module clubb_api_module
     stats_tout
 
   public :: &
-    calculate_thlp2_rad_api, mu, update_xp2_mc_api, sat_mixrat_liq_api
+    calculate_thlp2_rad_api, mu, params_list, &
+    update_xp2_mc_api, sat_mixrat_liq_api
 
   public :: &
     ! To Convert Between Common CLUBB-related quantities:
@@ -377,6 +379,7 @@ module clubb_api_module
     clubb_no_error, &
     fill_holes_driver_api, & ! OR
     fill_holes_vertical_api, &
+    fill_holes_hydromet_api, &
     set_clubb_debug_level_api, &
     vertical_integral_api
 
@@ -430,6 +433,7 @@ module clubb_api_module
 !#ifdef CLUBB_CAM /* Code for storing pdf_parameter structs in pbuf as array */
     pack_pdf_params_api, &
     unpack_pdf_params_api, &
+    init_pdf_params_api, &
     num_pdf_params, &
 !#endif
     adj_low_res_nu_api, &
@@ -670,7 +674,7 @@ contains
     real( kind = core_rknd ), intent(inout), dimension(gr%nz,sclr_dim) :: &
       sclrpthvp    ! < sclr' th_v' > (momentum levels)   [units vary]
 
-    type(pdf_parameter), dimension(gr%nz), intent(inout) :: &
+    type(pdf_parameter), intent(inout) :: &
       pdf_params,    & ! PDF parameters (thermodynamic levels)    [units vary]
       pdf_params_zm    ! PDF parameters on momentum levels        [units vary]
 
@@ -1158,6 +1162,37 @@ contains
       field )
   end subroutine fill_holes_vertical_api
 
+  !=============================================================================
+  ! fill_holes_hydromet - fills holes in a hydrometeor using mass from another
+  ! hydrometeor that has the same phase.
+  !=============================================================================
+  subroutine fill_holes_hydromet_api( nz, hydromet_dim, hydromet, & ! Intent(in)
+                                      hydromet_filled ) ! Intent(out)
+
+    use fill_holes, only: &
+        fill_holes_hydromet ! Procedure
+
+    implicit none
+
+    ! Input Variables
+    integer, intent(in) :: &
+      hydromet_dim, & ! Number of hydrometeor fields
+      nz              ! Number of vertical grid levels
+
+    real( kind = core_rknd ), dimension(nz,hydromet_dim), intent(in) :: &
+      hydromet    ! Mean of hydrometeor fields    [units vary] 
+
+    ! Output Variables
+    real( kind = core_rknd ), dimension(nz,hydromet_dim), intent(out) :: &
+      hydromet_filled ! Mean of hydrometeor fields after hole filling [un. vary]
+
+
+    call fill_holes_hydromet( nz, hydromet_dim, hydromet, & ! Intent(in)
+                              hydromet_filled ) ! Intent(out)
+
+
+  end subroutine fill_holes_hydromet_api
+
   !================================================================================================
   ! vertical_integral - Computes the vertical integral.
   !================================================================================================
@@ -1457,8 +1492,8 @@ contains
   ! pack_pdf_params - Returns a two dimensional real array with all values.
   !================================================================================================
 
-  subroutine pack_pdf_params_api( &
-    pdf_params, nz, r_param_array)
+  subroutine pack_pdf_params_api( pdf_params, nz, r_param_array, &
+                                  k_start, k_end )
 
     use pdf_parameter_module, only : pack_pdf_params
 
@@ -1466,16 +1501,23 @@ contains
 
     implicit none
 
-    ! Input a pdf_parameter array with nz instances of pdf_parameter
     integer, intent(in) :: nz ! Num Vert Model Levs
-    type (pdf_parameter), dimension(nz), intent(in) :: pdf_params
+    
+    ! Input a pdf_parameter array with nz instances of pdf_parameter
+    type (pdf_parameter), intent(inout) :: pdf_params
 
     ! Output a two dimensional real array with all values
-    real (kind = core_rknd), dimension(nz,num_pdf_params), intent(out) :: &
+    real (kind = core_rknd), dimension(nz,num_pdf_params), intent(inout) :: &
       r_param_array
-
-    call pack_pdf_params( &
-      pdf_params, nz, r_param_array)
+      
+    integer, optional, intent(in) :: k_start, k_end
+      
+    if( present( k_start ) .and. present( k_end ) ) then
+        call pack_pdf_params( pdf_params, nz, r_param_array, &
+                              k_start, k_end )
+    else 
+        call pack_pdf_params( pdf_params, nz, r_param_array )
+    end if
 
   end subroutine pack_pdf_params_api
 
@@ -1483,24 +1525,56 @@ contains
   ! unpack_pdf_params - Returns a pdf_parameter array with nz instances of pdf_parameter.
   !================================================================================================
 
-  subroutine unpack_pdf_params_api( &
-    r_param_array, nz, pdf_params)
+  subroutine unpack_pdf_params_api( r_param_array, nz, pdf_params, &
+                                    k_start, k_end )
 
     use pdf_parameter_module, only : unpack_pdf_params
 
     implicit none
-
-    ! Input a two dimensional real array with pdf values
+    
     integer, intent(in) :: nz ! Num Vert Model Levs
+    
+    ! Input a two dimensional real array with pdf values
     real (kind = core_rknd), dimension(nz,num_pdf_params), intent(in) :: &
       r_param_array
 
     ! Output a pdf_parameter array with nz instances of pdf_parameter
-    type (pdf_parameter), dimension(nz), intent(out) :: pdf_params
+    type (pdf_parameter), intent(inout) :: pdf_params
+    
+    integer, optional, intent(in) :: k_start, k_end
 
-    call unpack_pdf_params( &
-      r_param_array, nz, pdf_params)
+    if( present( k_start ) .and. present( k_end ) ) then
+        call unpack_pdf_params( r_param_array, nz, pdf_params, &
+                                k_start, k_end )
+    else 
+        call unpack_pdf_params( r_param_array, nz, pdf_params )
+    end if
+    
+    
   end subroutine unpack_pdf_params_api
+  
+  !================================================================================================
+  ! init_pdf_params - allocates arrays for pdf_params
+  !================================================================================================
+  subroutine init_pdf_params_api( nz, pdf_params )
+  
+    use pdf_parameter_module, only : init_pdf_params
+    
+    implicit none
+
+    ! Input Variable(s)
+    integer, intent(in) :: &
+      nz    ! Number of vertical grid levels    [-]
+
+    ! Output Variable(s)
+    type(pdf_parameter), intent(out) :: &
+      pdf_params    ! PDF parameters            [units vary]
+    
+    call init_pdf_params( nz, pdf_params )
+    
+  end subroutine init_pdf_params_api
+  
+  
 !#endif
 
   !================================================================================================
@@ -1554,7 +1628,7 @@ contains
       corr_array_n_cloud, & ! Prescribed norm. space corr. array in cloud    [-]
       corr_array_n_below    ! Prescribed norm. space corr. array below cloud [-]
 
-    type(pdf_parameter), dimension(nz), intent(in) :: &
+    type(pdf_parameter), intent(in) :: &
       pdf_params    ! PDF parameters                               [units vary]
 
     logical, intent(in) :: &
@@ -2102,7 +2176,7 @@ contains
                           !It is expected that this variable is negative, as
                           !that is the convention in Morrison microphysics
 
-    type(pdf_parameter), dimension(nz), intent(in) :: &
+    type(pdf_parameter), intent(in) :: &
       pdf_params ! PDF parameters
 
     !input/output variables

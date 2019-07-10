@@ -14,7 +14,7 @@ module Skx_module
   contains
 
   !-----------------------------------------------------------------------------
-  elemental function Skx_func( xp2, xp3, x_tol )  &
+  function Skx_func( xp2, xp3, x_tol )  &
   result( Skx )
 
     ! Description:
@@ -34,6 +34,9 @@ module Skx_module
     use clubb_precision, only: &
         core_rknd         ! Variable(s)
 
+    use grid_class, only: &
+        gr                ! Variable Type
+
     implicit none
 
     ! External
@@ -41,25 +44,33 @@ module Skx_module
 
     ! Parameter Constants
     ! Whether to apply clipping to the final result
-    logical, parameter ::  & 
+    logical, parameter ::  &
       l_clipping_kluge = .false.
 
     ! Input Variables
-    real( kind = core_rknd ), intent(in) :: & 
-      xp2,   & ! <x'^2>               [(x units)^2]
-      xp3,   & ! <x'^3>               [(x units)^3]
+    real( kind = core_rknd ), intent(in) :: &
       x_tol    ! x tolerance value    [(x units)]
 
+    real( kind = core_rknd ), dimension(gr%nz), intent(in) :: &
+      xp2,   & ! <x'^2>               [(x units)^2]
+      xp3      ! <x'^3>               [(x units)^3]
+
     ! Output Variable
-    real( kind = core_rknd ) :: & 
+    real( kind = core_rknd ), dimension(gr%nz) :: &
       Skx      ! Skewness of x        [-]
 
+    ! Local Variable
+    real( kind = core_rknd ) :: &
+      Skx_denom_tol
+
     ! ---- Begin Code ----
+
+    Skx_denom_tol = Skw_denom_coef * x_tol**2
 
     !Skx = xp3 / ( max( xp2, x_tol**two ) )**three_halves
     ! Calculation of skewness to help reduce the sensitivity of this value to
     ! small values of xp2.
-    Skx = xp3 / ( xp2 + Skw_denom_coef * x_tol**2 )**three_halves
+    Skx = xp3 / ( ( xp2 + Skx_denom_tol ) * sqrt( xp2 + Skx_denom_tol ) )
 
     ! This is no longer needed since clipping is already
     ! imposed on wp2 and wp3 elsewhere in the code
@@ -125,12 +136,10 @@ module Skx_module
 
     ! Larson and Golaz (2005) eq. 16
     nrmlzd_corr_wx &
-    = ( wpxp / ( sqrt( max( wp2, w_tol_sqd ) ) &
-                 * sqrt( max( xp2, x_tol**2 ) ) ) ) &
-      / sqrt( one - sigma_sqd_w )
+    = wpxp / sqrt( max( wp2, w_tol_sqd ) * max( xp2, x_tol**2 ) * ( one - sigma_sqd_w ) )
 
     ! Larson and Golaz (2005) eq. 11
-    nrmlzd_Skw = Skw * ( one - sigma_sqd_w)**(-three_halves)
+    nrmlzd_Skw = Skw / ( ( one - sigma_sqd_w) * sqrt( one - sigma_sqd_w ) )
 
     ! Larson and Golaz (2005) eq. 33
     Skx = nrmlzd_Skw * nrmlzd_corr_wx &
@@ -188,8 +197,12 @@ module Skx_module
 
     ! Local Variable
     real( kind = core_rknd ), dimension(gr%nz) :: &
-      Skx_zt    ! Skewness of x on thermodynamic levels    [-]
+      Skx_zt, &    ! Skewness of x on thermodynamic levels    [-]
+      Skx_denom_tol
 
+    ! ---- Begin Code ----
+
+    Skx_denom_tol = Skw_denom_coef * x_tol**2
 
     ! Calculate skewness of x using the ansatz of LG05.
     Skx_zt(1:gr%nz) &
@@ -198,7 +211,7 @@ module Skx_module
 
     ! Calculate <x'^3> using the reverse of the special sensitivity reduction
     ! formula in function Skx_func above.
-    xp3 = Skx_zt * ( xp2_zt + Skw_denom_coef * x_tol**2 )**three_halves
+    xp3 = Skx_zt * ( xp2_zt + Skx_denom_tol ) * sqrt( xp2_zt + Skx_denom_tol )
 
 
     return

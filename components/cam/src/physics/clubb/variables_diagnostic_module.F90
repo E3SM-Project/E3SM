@@ -55,7 +55,7 @@ module variables_diagnostic_module
 
 !$omp threadprivate(rsat)
 
-  type(pdf_parameter), allocatable, dimension(:), target, public :: &
+  type(pdf_parameter), allocatable, public, save :: &
     pdf_params_zm, & ! pdf_params on momentum levels  [units vary]
     pdf_params_zm_frz !used when l_use_ice_latent = .true.
 
@@ -282,8 +282,10 @@ module variables_diagnostic_module
     allocate( radht(1:nz) )     ! SW + LW heating rate
 
     ! pdf_params on momentum levels
-    allocate( pdf_params_zm(1:nz) )
-    allocate( pdf_params_zm_frz(1:nz) )
+    allocate( pdf_params_zm )
+    allocate( pdf_params_zm_frz )
+    call init_pdf_params( nz, pdf_params_zm )
+    call init_pdf_params( nz, pdf_params_zm_frz )
 
     ! Second order moments
 
@@ -410,11 +412,6 @@ module variables_diagnostic_module
     Frad_LW_up = 0.0_core_rknd
     Frad_SW_down = 0.0_core_rknd
     Frad_LW_down = 0.0_core_rknd
-
-
-    ! pdf_params on momentum levels
-    call init_pdf_params( nz, pdf_params_zm )
-    call init_pdf_params( nz, pdf_params_zm_frz )
 
     ! Second order moments
     thlprcp = 0.0_core_rknd

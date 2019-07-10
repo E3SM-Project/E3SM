@@ -639,7 +639,8 @@ module advance_wp2_wp3_module
       lhs ! Implicit contributions to wp2/wp3 (band diag. matrix)
 
     real( kind = core_rknd ), dimension(2*gr%nz) ::  & 
-      rhs   ! RHS of band matrix
+      rhs,      & ! RHS of band matrix
+      rhs_save    ! Saved RHS of band matrix
 
 !        real, target, dimension(2*gr%nz) ::
     real( kind = core_rknd ), dimension(2*gr%nz) ::  & 
@@ -735,6 +736,10 @@ module advance_wp2_wp3_module
                    l_crank_nich_diff, &                                        ! intent(in)
                    rhs )                                                       ! intent(out)
 
+    ! Save the value of rhs, which will be overwritten with the solution as
+    ! part of the solving routine.
+    rhs_save = rhs
+
     if (l_gmres) then
 
        call wp23_gmres( dt, wp2, wm_zm, wm_zt, a1, a1_zt, a3, a3_zt, &
@@ -766,11 +771,26 @@ module advance_wp2_wp3_module
                               lhs, rhs, solut, rcond )
             
             if ( clubb_at_least_debug_level( 0 ) ) then
-                if ( err_code == clubb_fatal_error ) then
-                    write(fstderr,*) "in wp23_solve calling band_solvex for wp2_wp3"
-                    return
-                end if
-            end if
+               if ( err_code == clubb_fatal_error ) then
+                  write(fstderr,*) "Error in wp23_solve calling band_solvex for wp2_wp3"
+                  write(fstderr,*) "wp2 & wp3 LU decomp. failed"
+                  write(fstderr,*) "wp2 and wp3 LHS"
+                  do k = 1, gr%nz
+                     write(fstderr,*) "zt level = ", k, "height [m] = ", &
+                                      gr%zt(k), "LHS = ", lhs(1:5,2*k-1)
+                     write(fstderr,*) "zm level = ", k, "height [m] = ", &
+                                      gr%zm(k), "LHS = ", lhs(1:5,2*k)
+                  enddo ! k = 1, gr%nz
+                  write(fstderr,*) "wp2 and wp3 RHS"
+                  do k = 1, gr%nz
+                     write(fstderr,*) "zt level = ", k, "height [m] = ", &
+                                      gr%zt(k), "RHS = ", rhs_save(2*k-1)
+                     write(fstderr,*) "zm level = ", k, "height [m] = ", &
+                                      gr%zm(k), "RHS = ", rhs_save(2*k)
+                  enddo ! k = 1, gr%nz
+                  return
+               endif
+            endif
 
           ! Est. of the condition number of the w'^2/w^3 LHS matrix
           call stat_update_var_pt( iwp23_matrix_condt_num, 1, one / rcond, stats_sfc )
@@ -779,14 +799,29 @@ module advance_wp2_wp3_module
 
             ! Perform LU decomp and solve system (LAPACK)
             call band_solve( "wp2_wp3", 2, 2, 2*gr%nz, nrhs, & 
-                           lhs, rhs, solut )
+                             lhs, rhs, solut )
 
             if ( clubb_at_least_debug_level( 0 ) ) then
-                if ( err_code == clubb_fatal_error ) then
-                    write(fstderr,*) "in wp23_solve calling band_solve for wp2_wp3"
-                    return
-                end if
-            end if
+               if ( err_code == clubb_fatal_error ) then
+                  write(fstderr,*) "Error in wp23_solve calling band_solve for wp2_wp3"
+                  write(fstderr,*) "wp2 & wp3 LU decomp. failed"
+                  write(fstderr,*) "wp2 and wp3 LHS"
+                  do k = 1, gr%nz
+                     write(fstderr,*) "zt level = ", k, "height [m] = ", &
+                                      gr%zt(k), "LHS = ", lhs(1:5,2*k-1)
+                     write(fstderr,*) "zm level = ", k, "height [m] = ", &
+                                      gr%zm(k), "LHS = ", lhs(1:5,2*k)
+                  enddo ! k = 1, gr%nz
+                  write(fstderr,*) "wp2 and wp3 RHS"
+                  do k = 1, gr%nz
+                     write(fstderr,*) "zt level = ", k, "height [m] = ", &
+                                      gr%zt(k), "RHS = ", rhs_save(2*k-1)
+                     write(fstderr,*) "zm level = ", k, "height [m] = ", &
+                                      gr%zm(k), "RHS = ", rhs_save(2*k)
+                  enddo ! k = 1, gr%nz
+                  return
+               endif
+            endif
 
        endif
 

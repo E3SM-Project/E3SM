@@ -24,7 +24,7 @@ module pdf_parameter_module
   ! CLUBB's PDF parameters.
   type pdf_parameter
 
-    real( kind = core_rknd ) :: &
+    real( kind = core_rknd ), dimension(:), allocatable :: &
       w_1,             & ! Mean of w (1st PDF component)                   [m/s]
       w_2,             & ! Mean of w (2nd PDF component)                   [m/s]
       varnce_w_1,      & ! Variance of w (1st PDF component)           [m^2/s^2]
@@ -69,14 +69,12 @@ module pdf_parameter_module
       rc_2,            & ! Mean of r_c (2nd PDF component)               [kg/kg]
       cloud_frac_1,    & ! Cloud fraction (1st PDF component)                [-]
       cloud_frac_2,    & ! Cloud fraction (2nd PDF component)                [-]
-      mixt_frac          ! Weight of 1st PDF component (Sk_w dependent)      [-]
-
-    real( kind = core_rknd ) :: &
+      mixt_frac,       & ! Weight of 1st PDF component (Sk_w dependent)      [-]
       ice_supersat_frac_1, & ! Ice supersaturation fraction (1st PDF comp.)  [-]
       ice_supersat_frac_2    ! Ice supersaturation fraction (2nd PDF comp.)  [-]
 
   end type pdf_parameter
-
+  
   ! The implicit coefficients, semi-implicit coefficients and terms, and
   ! explicit terms for turbulent advection of turbulent fields are calculated
   ! from the PDF and the resulting PDF parameters.
@@ -115,7 +113,7 @@ module pdf_parameter_module
 !#endif /* CLUBB_CAM */
 
   contains
-
+  
   !=============================================================================
   subroutine init_pdf_params( nz, pdf_params )
 
@@ -135,348 +133,265 @@ module pdf_parameter_module
       nz    ! Number of vertical grid levels    [-]
 
     ! Output Variable(s)
-    type(pdf_parameter), dimension(nz), intent(out) :: &
+    type(pdf_parameter), intent(out) :: &
       pdf_params    ! PDF parameters            [units vary]
 
-    integer :: k
+    allocate( pdf_params%w_1(nz), &
+              pdf_params%w_2(nz), &
+              pdf_params%varnce_w_1(nz), &
+              pdf_params%varnce_w_2(nz), &
+              pdf_params%rt_1(nz), &
+              pdf_params%rt_2(nz), &
+              pdf_params%varnce_rt_1(nz), &
+              pdf_params%varnce_rt_2(nz), &
+              pdf_params%thl_1(nz), &
+              pdf_params%thl_2(nz), &
+              pdf_params%varnce_thl_1(nz), &
+              pdf_params%varnce_thl_2(nz), &
+              pdf_params%corr_w_rt_1(nz), &
+              pdf_params%corr_w_rt_2(nz), &
+              pdf_params%corr_w_thl_1(nz), &
+              pdf_params%corr_w_thl_2(nz), &
+              pdf_params%corr_rt_thl_1(nz), &
+              pdf_params%corr_rt_thl_2(nz), &
+              pdf_params%alpha_thl(nz), &
+              pdf_params%alpha_rt(nz), &
+              pdf_params%crt_1(nz), &
+              pdf_params%crt_2(nz), &
+              pdf_params%cthl_1(nz), &
+              pdf_params%cthl_2(nz), &
+              pdf_params%chi_1(nz), &
+              pdf_params%chi_2(nz), &
+              pdf_params%stdev_chi_1(nz), &
+              pdf_params%stdev_chi_2(nz), &
+              pdf_params%stdev_eta_1(nz), &
+              pdf_params%stdev_eta_2(nz), &
+              pdf_params%covar_chi_eta_1(nz), &
+              pdf_params%covar_chi_eta_2(nz), &
+              pdf_params%corr_w_chi_1(nz), & 
+              pdf_params%corr_w_chi_2(nz), &
+              pdf_params%corr_w_eta_1(nz), & 
+              pdf_params%corr_w_eta_2(nz), & 
+              pdf_params%corr_chi_eta_1(nz), & 
+              pdf_params%corr_chi_eta_2(nz), &
+              pdf_params%rsatl_1(nz), &
+              pdf_params%rsatl_2(nz), &
+              pdf_params%rc_1(nz), &
+              pdf_params%rc_2(nz), &
+              pdf_params%cloud_frac_1(nz), &
+              pdf_params%cloud_frac_2(nz), &
+              pdf_params%mixt_frac(nz), &
+              pdf_params%ice_supersat_frac_1(nz), &
+              pdf_params%ice_supersat_frac_2(nz) )
 
-
-    ! Initialize all PDF parameters in variable type pdf_parameter.
-    do k = 1, nz
-
-        pdf_params(k)%w_1 = zero
-        pdf_params(k)%w_2 = zero
-        pdf_params(k)%varnce_w_1 = zero
-        pdf_params(k)%varnce_w_2 = zero
-        pdf_params(k)%rt_1 = zero
-        pdf_params(k)%rt_2 = zero
-        pdf_params(k)%varnce_rt_1 = zero
-        pdf_params(k)%varnce_rt_2 = zero
-        pdf_params(k)%thl_1 = zero
-        pdf_params(k)%thl_2 = zero
-        pdf_params(k)%varnce_thl_1 = zero
-        pdf_params(k)%varnce_thl_2 = zero
-        pdf_params(k)%corr_w_rt_1 = zero
-        pdf_params(k)%corr_w_rt_2 = zero
-        pdf_params(k)%corr_w_thl_1 = zero
-        pdf_params(k)%corr_w_thl_2 = zero
-        pdf_params(k)%corr_rt_thl_1 = zero
-        pdf_params(k)%corr_rt_thl_2 = zero
-        pdf_params(k)%alpha_thl = zero
-        pdf_params(k)%alpha_rt = zero
-        pdf_params(k)%crt_1 = zero
-        pdf_params(k)%crt_2 = zero
-        pdf_params(k)%cthl_1 = zero
-        pdf_params(k)%cthl_2 = zero
-        pdf_params(k)%chi_1 = zero
-        pdf_params(k)%chi_2 = zero
-        pdf_params(k)%stdev_chi_1 = zero
-        pdf_params(k)%stdev_chi_2 = zero
-        pdf_params(k)%stdev_eta_1 = zero
-        pdf_params(k)%stdev_eta_2 = zero
-        pdf_params(k)%covar_chi_eta_1 = zero
-        pdf_params(k)%covar_chi_eta_2 = zero
-        pdf_params(k)%corr_w_chi_1 = zero 
-        pdf_params(k)%corr_w_chi_2 = zero 
-        pdf_params(k)%corr_w_eta_1 = zero 
-        pdf_params(k)%corr_w_eta_2 = zero 
-        pdf_params(k)%corr_chi_eta_1 = zero 
-        pdf_params(k)%corr_chi_eta_2 = zero 
-        pdf_params(k)%rsatl_1 = zero
-        pdf_params(k)%rsatl_2 = zero
-        pdf_params(k)%rc_1 = zero
-        pdf_params(k)%rc_2 = zero
-        pdf_params(k)%cloud_frac_1 = zero
-        pdf_params(k)%cloud_frac_2 = zero
-        pdf_params(k)%mixt_frac = zero
-        pdf_params(k)%ice_supersat_frac_1 = zero
-        pdf_params(k)%ice_supersat_frac_2 = zero
-
-    end do
+    pdf_params%w_1 = zero
+    pdf_params%w_2 = zero
+    pdf_params%varnce_w_1 = zero
+    pdf_params%varnce_w_2 = zero
+    pdf_params%rt_1 = zero
+    pdf_params%rt_2 = zero
+    pdf_params%varnce_rt_1 = zero
+    pdf_params%varnce_rt_2 = zero
+    pdf_params%thl_1 = zero
+    pdf_params%thl_2 = zero
+    pdf_params%varnce_thl_1 = zero
+    pdf_params%varnce_thl_2 = zero
+    pdf_params%corr_w_rt_1 = zero
+    pdf_params%corr_w_rt_2 = zero
+    pdf_params%corr_w_thl_1 = zero
+    pdf_params%corr_w_thl_2 = zero
+    pdf_params%corr_rt_thl_1 = zero
+    pdf_params%corr_rt_thl_2 = zero
+    pdf_params%alpha_thl = zero
+    pdf_params%alpha_rt = zero
+    pdf_params%crt_1 = zero
+    pdf_params%crt_2 = zero
+    pdf_params%cthl_1 = zero
+    pdf_params%cthl_2 = zero
+    pdf_params%chi_1 = zero
+    pdf_params%chi_2 = zero
+    pdf_params%stdev_chi_1 = zero
+    pdf_params%stdev_chi_2 = zero
+    pdf_params%stdev_eta_1 = zero
+    pdf_params%stdev_eta_2 = zero
+    pdf_params%covar_chi_eta_1 = zero
+    pdf_params%covar_chi_eta_2 = zero
+    pdf_params%corr_w_chi_1 = zero 
+    pdf_params%corr_w_chi_2 = zero 
+    pdf_params%corr_w_eta_1 = zero 
+    pdf_params%corr_w_eta_2 = zero 
+    pdf_params%corr_chi_eta_1 = zero 
+    pdf_params%corr_chi_eta_2 = zero 
+    pdf_params%rsatl_1 = zero
+    pdf_params%rsatl_2 = zero
+    pdf_params%rc_1 = zero
+    pdf_params%rc_2 = zero
+    pdf_params%cloud_frac_1 = zero
+    pdf_params%cloud_frac_2 = zero
+    pdf_params%mixt_frac = zero
+    pdf_params%ice_supersat_frac_1 = zero
+    pdf_params%ice_supersat_frac_2 = zero
 
 
     return
 
   end subroutine init_pdf_params
-
+  
   !=============================================================================
 
 ! The CLUBB_CAM preprocessor directives are being commented out because this
 ! code is now also used for WRF-CLUBB.
 !#ifdef CLUBB_CAM /* Code for storing pdf_parameter structs in pbuf as array */
 
-  subroutine pack_pdf_params(pdf_params, nz, r_param_array)
+  subroutine pack_pdf_params(pdf_params, nz, r_param_array, &
+                             k_start_in, k_end_in )
     implicit none
-    ! Input a pdf_parameter array with nz instances of pdf_parameter
+    
     integer, intent(in) :: nz ! Num Vert Model Levs
-    type (pdf_parameter), dimension(nz), intent(in) :: pdf_params
+    
+    ! Input a pdf_parameter array with nz instances of pdf_parameter
+    type (pdf_parameter), intent(in) :: pdf_params
 
     ! Output a two dimensional real array with all values
     real (kind = core_rknd), dimension(nz,num_pdf_params), intent(out) :: &
        r_param_array  
 
-    ! Local Loop vars
-    integer :: k, p    
+    integer, optional, intent(in) :: k_start_in, k_end_in
+    
+    integer :: k_start, k_end
+    
+    if( present( k_start_in ) .and. present( k_end_in ) ) then
+        k_start = k_start_in
+        k_end = k_end_in
+    else
+        k_start = 1
+        k_end = nz
+    end if
 
-    do k = 1,nz
-       do p = 1,num_pdf_params
- 
-          r_param_array(k,p) = get_param_at_ind(pdf_params(k), p)
-       
-       end do ! p
-    end do ! k
+    r_param_array(:,1) = pdf_params%w_1(k_start:k_end)
+    r_param_array(:,2) = pdf_params%w_2(k_start:k_end)
+    r_param_array(:,3) = pdf_params%varnce_w_1(k_start:k_end)
+    r_param_array(:,4) = pdf_params%varnce_w_2(k_start:k_end)
+    r_param_array(:,5) = pdf_params%rt_1(k_start:k_end)
+    r_param_array(:,6) = pdf_params%rt_2(k_start:k_end)
+    r_param_array(:,7) = pdf_params%varnce_rt_1(k_start:k_end)
+    r_param_array(:,8) = pdf_params%varnce_rt_2(k_start:k_end)
+    r_param_array(:,9) = pdf_params%thl_1(k_start:k_end)
+    r_param_array(:,10) = pdf_params%thl_2(k_start:k_end)
+    r_param_array(:,11) = pdf_params%varnce_thl_1(k_start:k_end)
+    r_param_array(:,12) = pdf_params%varnce_thl_2(k_start:k_end)
+    r_param_array(:,13) = pdf_params%corr_w_rt_1(k_start:k_end)
+    r_param_array(:,14) = pdf_params%corr_w_rt_2(k_start:k_end)
+    r_param_array(:,15) = pdf_params%corr_w_thl_1(k_start:k_end)
+    r_param_array(:,16) = pdf_params%corr_w_thl_2(k_start:k_end)
+    r_param_array(:,17) = pdf_params%corr_rt_thl_1(k_start:k_end)
+    r_param_array(:,18) = pdf_params%corr_rt_thl_2(k_start:k_end)
+    r_param_array(:,19) = pdf_params%alpha_thl(k_start:k_end)
+    r_param_array(:,20) = pdf_params%alpha_rt(k_start:k_end)
+    r_param_array(:,21) = pdf_params%crt_1(k_start:k_end)
+    r_param_array(:,22) = pdf_params%crt_2(k_start:k_end)
+    r_param_array(:,23) = pdf_params%cthl_1(k_start:k_end)
+    r_param_array(:,24) = pdf_params%cthl_2(k_start:k_end)
+    r_param_array(:,25) = pdf_params%chi_1(k_start:k_end)
+    r_param_array(:,26) = pdf_params%chi_2(k_start:k_end)
+    r_param_array(:,27) = pdf_params%stdev_chi_1(k_start:k_end)
+    r_param_array(:,28) = pdf_params%stdev_chi_2(k_start:k_end)
+    r_param_array(:,29) = pdf_params%stdev_eta_1(k_start:k_end)
+    r_param_array(:,30) = pdf_params%stdev_eta_2(k_start:k_end)
+    r_param_array(:,31) = pdf_params%covar_chi_eta_1(k_start:k_end)
+    r_param_array(:,32) = pdf_params%covar_chi_eta_2(k_start:k_end)
+    r_param_array(:,33) = pdf_params%corr_w_chi_1(k_start:k_end) 
+    r_param_array(:,34) = pdf_params%corr_w_chi_2(k_start:k_end) 
+    r_param_array(:,35) = pdf_params%corr_w_eta_1(k_start:k_end) 
+    r_param_array(:,36) = pdf_params%corr_w_eta_2(k_start:k_end) 
+    r_param_array(:,37) = pdf_params%corr_chi_eta_1(k_start:k_end) 
+    r_param_array(:,38) = pdf_params%corr_chi_eta_2(k_start:k_end) 
+    r_param_array(:,39) = pdf_params%rsatl_1(k_start:k_end)
+    r_param_array(:,40) = pdf_params%rsatl_2(k_start:k_end)
+    r_param_array(:,41) = pdf_params%rc_1(k_start:k_end)
+    r_param_array(:,42) = pdf_params%rc_2(k_start:k_end)
+    r_param_array(:,43) = pdf_params%cloud_frac_1(k_start:k_end)
+    r_param_array(:,44) = pdf_params%cloud_frac_2(k_start:k_end)
+    r_param_array(:,45) = pdf_params%mixt_frac(k_start:k_end)
+    r_param_array(:,46) = pdf_params%ice_supersat_frac_1(k_start:k_end)
+    r_param_array(:,47) = pdf_params%ice_supersat_frac_2(k_start:k_end)
 
   end subroutine pack_pdf_params
 
-  subroutine unpack_pdf_params(r_param_array, nz, pdf_params)
+  subroutine unpack_pdf_params(r_param_array, nz, pdf_params, &
+                               k_start_in, k_end_in )
     implicit none
-    ! Input a two dimensional real array with pdf values
+    
     integer, intent(in) :: nz ! Num Vert Model Levs
+    
+    ! Input a two dimensional real array with pdf values
     real (kind = core_rknd), dimension(nz,num_pdf_params), intent(in) :: &
        r_param_array 
 
     ! Output a pdf_parameter array with nz instances of pdf_parameter
-    type (pdf_parameter), dimension(nz), intent(out) :: pdf_params
-
-    ! Local Loop vars
-    integer :: k, p
-    ! temp var
-    real (kind = core_rknd) :: value
+    type (pdf_parameter), intent(inout) :: pdf_params
     
-    do k = 1,nz
-       do p = 1,num_pdf_params
-
-          value = r_param_array(k,p)
-          call set_param_at_ind(pdf_params(k), p, value)       
-
-       end do ! p
-    end do ! k
+    integer, optional, intent(in) :: k_start_in, k_end_in
+    
+    integer :: k_start, k_end
+    
+    if( present( k_start_in ) .and. present( k_end_in ) ) then
+        k_start = k_start_in
+        k_end = k_end_in
+    else
+        k_start = 1
+        k_end = nz
+    end if
+    
+    pdf_params%w_1(k_start:k_end) = r_param_array(:,1)
+    pdf_params%w_2(k_start:k_end) = r_param_array(:,2)
+    pdf_params%varnce_w_1(k_start:k_end) = r_param_array(:,3)
+    pdf_params%varnce_w_2(k_start:k_end) = r_param_array(:,4)
+    pdf_params%rt_1(k_start:k_end) = r_param_array(:,5)
+    pdf_params%rt_2(k_start:k_end) = r_param_array(:,6)
+    pdf_params%varnce_rt_1(k_start:k_end) = r_param_array(:,7)
+    pdf_params%varnce_rt_2(k_start:k_end)= r_param_array(:,8)
+    pdf_params%thl_1(k_start:k_end) = r_param_array(:,9)
+    pdf_params%thl_2(k_start:k_end) = r_param_array(:,10)
+    pdf_params%varnce_thl_1(k_start:k_end) = r_param_array(:,11)
+    pdf_params%varnce_thl_2(k_start:k_end) = r_param_array(:,12)
+    pdf_params%corr_w_rt_1(k_start:k_end) = r_param_array(:,13)
+    pdf_params%corr_w_rt_2(k_start:k_end) = r_param_array(:,14)
+    pdf_params%corr_w_thl_1(k_start:k_end) = r_param_array(:,15)
+    pdf_params%corr_w_thl_2(k_start:k_end) = r_param_array(:,16)
+    pdf_params%corr_rt_thl_1(k_start:k_end) = r_param_array(:,17)
+    pdf_params%corr_rt_thl_2(k_start:k_end) = r_param_array(:,18)
+    pdf_params%alpha_thl(k_start:k_end) = r_param_array(:,19)
+    pdf_params%alpha_rt(k_start:k_end) = r_param_array(:,20)
+    pdf_params%crt_1(k_start:k_end) = r_param_array(:,21)
+    pdf_params%crt_2(k_start:k_end) = r_param_array(:,22)
+    pdf_params%cthl_1(k_start:k_end) = r_param_array(:,23)
+    pdf_params%cthl_2(k_start:k_end) = r_param_array(:,24)
+    pdf_params%chi_1(k_start:k_end) = r_param_array(:,25)
+    pdf_params%chi_2(k_start:k_end) = r_param_array(:,26)
+    pdf_params%stdev_chi_1(k_start:k_end) = r_param_array(:,27)
+    pdf_params%stdev_chi_2(k_start:k_end) = r_param_array(:,28)
+    pdf_params%stdev_eta_1(k_start:k_end) = r_param_array(:,29)
+    pdf_params%stdev_eta_2(k_start:k_end) = r_param_array(:,30)
+    pdf_params%covar_chi_eta_1(k_start:k_end) = r_param_array(:,31)
+    pdf_params%covar_chi_eta_2(k_start:k_end) = r_param_array(:,32)
+    pdf_params%corr_w_chi_1(k_start:k_end) = r_param_array(:,33)
+    pdf_params%corr_w_chi_2(k_start:k_end) = r_param_array(:,34)
+    pdf_params%corr_w_eta_1(k_start:k_end) = r_param_array(:,35)
+    pdf_params%corr_w_eta_2(k_start:k_end) = r_param_array(:,36)
+    pdf_params%corr_chi_eta_1(k_start:k_end) = r_param_array(:,37)
+    pdf_params%corr_chi_eta_2(k_start:k_end) = r_param_array(:,38)
+    pdf_params%rsatl_1(k_start:k_end) = r_param_array(:,39)
+    pdf_params%rsatl_2(k_start:k_end) = r_param_array(:,40)
+    pdf_params%rc_1(k_start:k_end) = r_param_array(:,41)
+    pdf_params%rc_2(k_start:k_end) = r_param_array(:,42)
+    pdf_params%cloud_frac_1(k_start:k_end) = r_param_array(:,43)
+    pdf_params%cloud_frac_2(k_start:k_end) = r_param_array(:,44)
+    pdf_params%mixt_frac(k_start:k_end) = r_param_array(:,45)
+    pdf_params%ice_supersat_frac_1(k_start:k_end) = r_param_array(:,46)
+    pdf_params%ice_supersat_frac_2(k_start:k_end) = r_param_array(:,47)
 
   end subroutine unpack_pdf_params
-
-  real( kind = core_rknd ) function get_param_at_ind(pp_struct, ind)
-
-    use constants_clubb, only: &
-        fstderr             ! File I/O Constant
-
-    use error_code, only : &
-        err_code, &         ! Error Indicator 
-        clubb_fatal_error   ! Constant
-
-    implicit none
-    type (pdf_parameter), intent(in) :: pp_struct
-    integer, intent(in) :: ind
-
-    SELECT CASE (ind)
-      CASE (1)
-          get_param_at_ind = pp_struct%w_1
-      CASE (2)
-          get_param_at_ind = pp_struct%w_2
-      CASE (3)
-          get_param_at_ind = pp_struct%varnce_w_1
-      CASE (4)
-          get_param_at_ind = pp_struct%varnce_w_2
-      CASE (5)
-          get_param_at_ind = pp_struct%rt_1
-      CASE (6)
-          get_param_at_ind = pp_struct%rt_2
-      CASE (7)
-          get_param_at_ind = pp_struct%varnce_rt_1
-      CASE (8)
-          get_param_at_ind = pp_struct%varnce_rt_2
-      CASE (9)
-          get_param_at_ind = pp_struct%thl_1
-      CASE (10)
-          get_param_at_ind = pp_struct%thl_2
-      CASE (11)
-          get_param_at_ind = pp_struct%varnce_thl_1
-      CASE (12)
-          get_param_at_ind = pp_struct%varnce_thl_2
-      CASE (13)
-          get_param_at_ind = pp_struct%corr_w_rt_1
-      CASE (14)
-          get_param_at_ind = pp_struct%corr_w_rt_2
-      CASE (15)
-          get_param_at_ind = pp_struct%corr_w_thl_1
-      CASE (16)
-          get_param_at_ind = pp_struct%corr_w_thl_2
-      CASE (17)
-          get_param_at_ind = pp_struct%corr_rt_thl_1
-      CASE (18)
-          get_param_at_ind = pp_struct%corr_rt_thl_2
-      CASE (19)
-          get_param_at_ind = pp_struct%alpha_thl
-      CASE (20)
-          get_param_at_ind = pp_struct%alpha_rt
-      CASE (21)
-          get_param_at_ind = pp_struct%crt_1
-      CASE (22)
-          get_param_at_ind = pp_struct%crt_2
-      CASE (23)
-          get_param_at_ind = pp_struct%cthl_1
-      CASE (24)
-          get_param_at_ind = pp_struct%cthl_2
-      CASE (25)
-          get_param_at_ind = pp_struct%chi_1
-      CASE (26)
-          get_param_at_ind = pp_struct%chi_2
-      CASE (27)
-          get_param_at_ind = pp_struct%stdev_chi_1
-      CASE (28)
-          get_param_at_ind = pp_struct%stdev_chi_2
-      CASE (29)
-          get_param_at_ind = pp_struct%stdev_eta_1
-      CASE (30)
-          get_param_at_ind = pp_struct%stdev_eta_2
-      CASE (31)
-          get_param_at_ind = pp_struct%covar_chi_eta_1
-      CASE (32)
-          get_param_at_ind = pp_struct%covar_chi_eta_2
-      CASE (33)
-          get_param_at_ind = pp_struct%corr_w_chi_1
-      CASE (34)
-          get_param_at_ind = pp_struct%corr_w_chi_2
-      CASE (35)
-          get_param_at_ind = pp_struct%corr_w_eta_1
-      CASE (36)
-          get_param_at_ind = pp_struct%corr_w_eta_2
-      CASE (37)
-          get_param_at_ind = pp_struct%corr_chi_eta_1
-      CASE (38)
-          get_param_at_ind = pp_struct%corr_chi_eta_2
-      CASE (39)
-          get_param_at_ind = pp_struct%rsatl_1
-      CASE (40)
-          get_param_at_ind = pp_struct%rsatl_2
-      CASE (41)
-          get_param_at_ind = pp_struct%rc_1
-      CASE (42)
-          get_param_at_ind = pp_struct%rc_2
-      CASE (43)
-          get_param_at_ind = pp_struct%cloud_frac_1
-      CASE (44)
-          get_param_at_ind = pp_struct%cloud_frac_2
-      CASE (45)
-          get_param_at_ind = pp_struct%mixt_frac
-      CASE (46)
-          get_param_at_ind = pp_struct%ice_supersat_frac_1
-      CASE (47)
-          get_param_at_ind = pp_struct%ice_supersat_frac_2
-      CASE DEFAULT
-          write(fstderr,*) "Invalid index in get_param_at_ind"
-          err_code = clubb_fatal_error
-          return
-    END SELECT
-
-    RETURN
-  end function get_param_at_ind
-
-  subroutine set_param_at_ind(pp_struct, ind, val)
-    implicit none
-    type (pdf_parameter), intent(inout) :: pp_struct
-    integer, intent(in) :: ind
-    real (kind = core_rknd), intent(in) :: val
-
-    SELECT CASE (ind)
-      CASE (1)
-          pp_struct%w_1 = val
-      CASE (2)
-          pp_struct%w_2 = val
-      CASE (3)
-          pp_struct%varnce_w_1 = val
-      CASE (4)
-          pp_struct%varnce_w_2 = val
-      CASE (5)
-          pp_struct%rt_1 = val
-      CASE (6)
-          pp_struct%rt_2 = val
-      CASE (7)
-          pp_struct%varnce_rt_1 = val
-      CASE (8)
-          pp_struct%varnce_rt_2 = val
-      CASE (9)
-          pp_struct%thl_1 = val
-      CASE (10)
-          pp_struct%thl_2 = val
-      CASE (11)
-          pp_struct%varnce_thl_1 = val
-      CASE (12)
-          pp_struct%varnce_thl_2 = val
-      CASE (13)
-          pp_struct%corr_w_rt_1 = val
-      CASE (14)
-          pp_struct%corr_w_rt_2 = val
-      CASE (15)
-          pp_struct%corr_w_thl_1 = val
-      CASE (16)
-          pp_struct%corr_w_thl_2 = val
-      CASE (17)
-          pp_struct%corr_rt_thl_1 = val
-      CASE (18)
-          pp_struct%corr_rt_thl_2 = val
-      CASE (19)
-          pp_struct%alpha_thl = val
-      CASE (20)
-          pp_struct%alpha_rt = val
-      CASE (21)
-          pp_struct%crt_1 = val
-      CASE (22)
-          pp_struct%crt_2 = val
-      CASE (23)
-          pp_struct%cthl_1 = val
-      CASE (24)
-          pp_struct%cthl_2 = val
-      CASE (25)
-          pp_struct%chi_1 = val
-      CASE (26)
-          pp_struct%chi_2 = val
-      CASE (27)
-          pp_struct%stdev_chi_1 = val
-      CASE (28)
-          pp_struct%stdev_chi_2 = val
-      CASE (29)
-          pp_struct%stdev_eta_1 = val
-      CASE (30)
-          pp_struct%stdev_eta_2 = val
-      CASE (31)
-          pp_struct%covar_chi_eta_1 = val
-      CASE (32)
-          pp_struct%covar_chi_eta_2 = val
-      CASE (33)
-          pp_struct%corr_w_chi_1 = val
-      CASE (34)
-          pp_struct%corr_w_chi_2 = val
-      CASE (35)
-          pp_struct%corr_w_eta_1 = val
-      CASE (36)
-          pp_struct%corr_w_eta_2 = val
-      CASE (37)
-          pp_struct%corr_chi_eta_1 = val
-      CASE (38)
-          pp_struct%corr_chi_eta_2 = val
-      CASE (39)
-          pp_struct%rsatl_1 = val
-      CASE (40)
-          pp_struct%rsatl_2 = val
-      CASE (41)
-          pp_struct%rc_1 = val
-      CASE (42)
-          pp_struct%rc_2 = val
-      CASE (43)
-          pp_struct%cloud_frac_1 = val
-      CASE (44)
-          pp_struct%cloud_frac_2 = val
-      CASE (45)
-          pp_struct%mixt_frac = val
-      CASE (46)
-          pp_struct%ice_supersat_frac_1 = val
-      CASE (47)
-          pp_struct%ice_supersat_frac_2 = val
-      CASE DEFAULT
-          ! do nothing !
-    END SELECT
-
-  end subroutine set_param_at_ind
 
 !#endif /* CLUBB_CAM */
 
