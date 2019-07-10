@@ -25,11 +25,11 @@ module mpas_io_units
 
    private
 
-   integer, parameter :: maxUnits = 99
+   integer, parameter :: maxUnits = 200
    logical, dimension(0:maxUnits), save :: unitsInUse
 
    ! Units reserved for unformatted I/O
-   integer, parameter :: unformatted_min = 95
+   integer, parameter :: unformatted_min = 101
    integer, parameter :: unformatted_max = maxUnits
 
    public :: mpas_new_unit, &
