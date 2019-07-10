@@ -478,6 +478,14 @@
        Default: none
        </entry>
 
+<!-- JS ADD -->
+<entry id="Nudge_Method" type="char*80" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Method to perform Nudging analyses.
+       Default: none
+       </entry>
+<!-- JS END -->
+
 <!-- Aerosols: Data (CAM version) -->
 
 <entry id="bndtvaer" type="char*256" input_pathname="abs" category="aero_data_cam"
