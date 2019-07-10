@@ -9,11 +9,6 @@ module nudging
 !              file is opened and remove the oldest time slice in the
 !              array. It may only work appropriately when the nudge 
 !              time step is evenly divided by the model time step.
-! 2018/08/24 - Spline interpolation added. Currently it requires four
-!              points to generate the spline explicitly. Only work
-!              with the input nudge file that has either single time
-!              slice or four time slices per file
-! 2018/08/26 - Add the Nudge_Method option in the namelist 
 ! 2018/08/28 - Bug fix for scatter_field_to_chunk, should be called
 !              by all the MPI processes. Now the result is binary
 !              identical to the corrected E3SM nudging code
@@ -24,7 +19,6 @@ module nudging
 ! 2019/01/17 - Bug fix for reading and interpolating the variables 
 !              that are nudged only, controlled by nudge_prof in 
 !              read_and_scatter and linear_intepolation functions
-! 2019/01/17 - Spline interpolation deleted.
 ! 2019/04/05 - Reset the nudging tendency to zero if Update_Model is 
 !              false.
 ! 2019/04/08 - Nudge the model data to the same time slice of nudging 
@@ -238,7 +232,6 @@ module nudging
   private::nudging_set_profile
 !!==> JS ADD
   private::linear_interpolation
-  private::spline_interpolation
   private:: read_and_scatter
   private:: open_netcdf
 !!==> JS END
