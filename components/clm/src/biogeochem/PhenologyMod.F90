@@ -29,7 +29,6 @@ module PhenologyMod
   use atm2lndType         , only : atm2lnd_type
   use TemperatureType     , only : temperature_type
   use WaterstateType      , only : waterstate_type
-  use EnergyFluxType      , only : energyflux_type
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
   use clm_varctl          , only : nu_com 
@@ -207,8 +206,7 @@ contains
        num_pcropp, filter_pcropp, doalb, atm2lnd_vars, &
        waterstate_vars, temperature_vars, crop_vars, canopystate_vars, soilstate_vars, &
        cnstate_vars, carbonstate_vars, carbonflux_vars, &
-       nitrogenstate_vars,nitrogenflux_vars,phosphorusstate_vars,phosphorusflux_vars, &
-       energyflux_vars)
+       nitrogenstate_vars,nitrogenflux_vars,phosphorusstate_vars,phosphorusflux_vars)
     !
     ! !DESCRIPTION:
     ! Dynamic phenology routine for coupled carbon-nitrogen code (CN)
@@ -228,7 +226,6 @@ contains
     type(crop_type)          , intent(inout) :: crop_vars
     type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(soilstate_type)     , intent(in)    :: soilstate_vars
-    type(energyflux_type)    , intent(in)    :: energyflux_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
     type(carbonstate_type)   , intent(inout) :: carbonstate_vars
     type(carbonflux_type)    , intent(inout) :: carbonflux_vars
@@ -260,7 +257,7 @@ contains
 
    if (num_pcropp > 0 ) then
        call CropPlantDate(num_soilp, filter_soilp, num_pcropp, filter_pcropp,&
-            temperature_vars, cnstate_vars, crop_vars, energyflux_vars)
+            temperature_vars, cnstate_vars, crop_vars)
    end if
 
     if (doalb .and. num_pcropp > 0 ) then
@@ -2112,7 +2109,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CropPlantDate (num_soilp, filter_soilp, num_pcropp, filter_pcropp, &
-        temperature_vars, cnstate_vars, crop_vars, energyflux_vars)
+        temperature_vars, cnstate_vars, crop_vars)
     !
     ! !DESCRIPTION:
     ! For determining the plant month for crops, plant day is established in
@@ -2135,7 +2132,6 @@ contains
     type(temperature_type) , intent(in)    :: temperature_vars
     type(cnstate_type)     , intent(inout) :: cnstate_vars
     type(crop_type)        , intent(inout) :: crop_vars
-    type(energyflux_type)  , intent(in)    :: energyflux_vars
 
     !
     ! !LOCAL VARIABLES:

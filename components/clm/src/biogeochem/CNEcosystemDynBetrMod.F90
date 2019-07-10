@@ -267,7 +267,7 @@ module CNEcosystemDynBetrMod
             waterstate_vars, temperature_vars, crop_vars, canopystate_vars, soilstate_vars, &
             cnstate_vars, carbonstate_vars, carbonflux_vars, &
             nitrogenstate_vars, nitrogenflux_vars,&
-            phosphorusstate_vars,phosphorusflux_vars, energyflux_vars)
+            phosphorusstate_vars,phosphorusflux_vars)
        call t_stopf('CNPhenology')
 
 
