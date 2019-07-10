@@ -1500,9 +1500,8 @@ contains
        nonLocalSurfaceTracerFlux(indexTempFlux, iCell) = activeTracersSurfaceFlux(indexTempFlux,iCell) &
                + penetrativeTemperatureFlux(iCell) - penetrativeTemperatureFluxOBL(iCell)  &
                - fracAbsorbed * (rainFlux(iCell) + evaporationFlux(iCell)) * activeTracers(indexTempFlux,1,iCell)/rho_sw  &
-               - fracAbsorbedRunoff * surfaceThicknessFluxRunoff(iCell) * (  &
-                   max(activeTracers(indexTempFlux,1,iCell),0.0_RKIND) &
-                 + min(activeTracers(indexTempFlux,1,iCell),0.0_RKIND)    )/rho_sw
+               - fracAbsorbedRunoff * surfaceThicknessFluxRunoff(iCell) &
+                * min(activeTracers(indexTempFlux,1,iCell),0.0_RKIND)/rho_sw
 
        nonLocalSurfaceTracerFlux(indexSaltFlux,iCell) = activeTracersSurfaceFlux(indexSaltFlux,iCell) &
                - fracAbsorbed * surfaceThicknessFlux(iCell) * activeTracers(indexSaltFlux,1,iCell) &
