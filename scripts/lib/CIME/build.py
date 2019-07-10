@@ -154,7 +154,7 @@ def _build_model_cmake(exeroot, complist, lid, cimeroot, buildlist,
                        comp_interface, sharedpath, ninja, case):
 ###############################################################################
     cime_model = get_model()
-    bldroot    = os.path.join(exeroot, "bld")
+    bldroot    = os.path.join(exeroot, "cmake-bld")
     libroot    = os.path.join(exeroot, "lib")
     bldlog     = os.path.join(exeroot, "{}.bldlog.{}".format(cime_model, lid))
     srcroot    = case.get_value("SRCROOT")
