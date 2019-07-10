@@ -308,12 +308,10 @@ contains
        global_shared_buf(ie,12)=thetasum_local(ie)
     end do
 
-    if ( .not. theta_hydrostatic_mode ) then
-       call findExtremumWithLevel(elem,wmax_local,'w_i','max',n0,nets,nete)
-       call ParallelMaxWithIndex(wmax_local, hybrid)
-       call findExtremumWithLevel(elem,wmin_local,'w_i','min',n0,nets,nete)
-       call ParallelMinWithIndex(wmin_local, hybrid)
-    endif
+    call findExtremumWithLevel(elem,wmax_local,'w_i','max',n0,nets,nete)
+    call ParallelMaxWithIndex(wmax_local, hybrid)
+    call findExtremumWithLevel(elem,wmin_local,'w_i','min',n0,nets,nete)
+    call ParallelMinWithIndex(wmin_local, hybrid)
 
     !JMD This is a Thread Safe Reduction 
     umin_p = ParallelMin(umin_local,hybrid)
