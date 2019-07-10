@@ -564,7 +564,7 @@ end subroutine clubb_init_cnst
     character(len=128) :: errstring             ! error status for CLUBB init
 
     integer :: err_code, iunit                  ! Code for when CLUBB fails
-    integer :: i, j, k, l                       ! Indices
+    integer :: i, j, k, l, idx_chunk, idx_pcols ! Indices
     integer :: read_status                      ! Length of a string
     integer :: ntop_eddy                        ! Top    interface level to which eddy vertical diffusion is applied ( = 1 )
     integer :: nbot_eddy                        ! Bottom interface level to which eddy vertical diffusion is applied ( = pver )
@@ -583,10 +583,10 @@ end subroutine clubb_init_cnst
        pdf_params_chnk(pcols,begchunk:endchunk),   &
        pdf_params_zm_chnk(pcols,begchunk:endchunk) )
 
-    do i = begchunk, endchunk
-        do j = 1, pcols
-            call init_pdf_params_api( pverp, pdf_params_chnk(i,j) )
-            call init_pdf_params_api( pverp, pdf_params_zm_chnk(i,j) )
+    do idx_chunk = begchunk, endchunk
+        do idx_pcols = 1, pcols
+            call init_pdf_params_api( pverp, pdf_params_chnk(idx_pcols,idx_chunk) )
+            call init_pdf_params_api( pverp, pdf_params_zm_chnk(idx_pcols,idx_chunk) )
         end do
     end do
 
