@@ -107,7 +107,7 @@ contains
     real (kind=real_kind)  :: tdiag(np,np,nlev)
     !    real (kind=real_kind)  :: E(np,np)
 
-    real (kind=real_kind) :: umin_local(nets:nete), umax_local(nets:nete), usum_local(nets:nete), &
+    real (kind=real_kind) :: usum_local(nets:nete), &
          vmin_local(nets:nete), vmax_local(nets:nete), vsum_local(nets:nete), &
          tmin_local(nets:nete), tmax_local(nets:nete), tsum_local(nets:nete), &
          thetamin_local(nets:nete), thetamax_local(nets:nete), thetasum_local(nets:nete), &
@@ -129,15 +129,18 @@ contains
          psmax_p, dpmax_p, thetamax_p
 
     real (kind=real_kind) :: usum_p, vsum_p, tsum_p, qvsum_p(qsize_d),&
-         pssum_p, dpsum_p, thetasum_p
+         pssum_p, dpsum_p, thetasum_p, wsum_p
 
     real (kind=real_kind) :: fusum_p, fvsum_p, ftsum_p, fqsum_p
     real (kind=real_kind) :: fumin_p, fvmin_p, ftmin_p, fqmin_p
     real (kind=real_kind) :: fumax_p, fvmax_p, ftmax_p, fqmax_p
-    real (kind=real_kind) :: wsum_p,  wmax_local(2), wmin_local(2)
     real (kind=real_kind) :: phimax_p, phimin_p, phisum_p
 
-
+    real (kind=real_kind), pointer :: tlocal(:)
+    real (kind=real_kind), target  :: wmax_local(2), wmin_local(2)
+    real (kind=real_kind), target  :: umax_local(2), umin_local(2)
+    character(len=3)      :: which
+ 
     real(kind=real_kind) :: relvort
     real(kind=real_kind) :: v1, v2, vco(np,np,2,nlev)
 
@@ -232,7 +235,7 @@ contains
        tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0)
 
        !======================================================  
-       umax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,1,:,n0))
+!       umax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,1,:,n0))
        vmax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,2,:,n0))
        phimax_local(ie)  = MAXVAL(dphi(:,:,:))
        w_over_dz_local(ie)  = MAXVAL(w_over_dz)
@@ -251,7 +254,7 @@ contains
        fqmax_local(ie)    = MAXVAL(elem(ie)%derived%FQ(:,:,:,1))
        !======================================================
 
-       umin_local(ie)    = MINVAL(elem(ie)%state%v(:,:,1,:,n0))
+!       umin_local(ie)    = MINVAL(elem(ie)%state%v(:,:,1,:,n0))
        vmin_local(ie)    = MINVAL(elem(ie)%state%v(:,:,2,:,n0))
        thetamin_local(ie) = MINVAL(elem(ie)%state%vtheta_dp(:,:,:,n0))
        phimin_local(ie)  = MINVAL(dphi)
@@ -308,10 +311,16 @@ contains
        global_shared_buf(ie,12)=thetasum_local(ie)
     end do
 
-    call findExtremumWithLevel(elem,wmax_local,'w_i','max',n0,nets,nete)
-    call ParallelMaxWithIndex(wmax_local, hybrid)
-    call findExtremumWithLevel(elem,wmin_local,'w_i','min',n0,nets,nete)
-    call ParallelMinWithIndex(wmin_local, hybrid)
+    which = 'u'
+    !make a function for 2 lines below?
+    call findExtremumWithLevel(elem,umax_local,which,'max',n0,nets,nete); call ParallelMaxWithIndex(umax_local, hybrid)
+    call findExtremumWithLevel(elem,umin_local,which,'min',n0,nets,nete); call ParallelMinWithIndex(umin_local, hybrid)
+
+    which = 'w_i'
+!    call findExtremumWithLevel(elem,wmax_local,which,'max',n0,nets,nete); call ParallelMaxWithIndex(wmax_local, hybrid)
+!    call findExtremumWithLevel(elem,wmin_local,which,'min',n0,nets,nete); call ParallelMinWithIndex(wmin_local, hybrid)
+
+
 
     !JMD This is a Thread Safe Reduction 
     umin_p = ParallelMin(umin_local,hybrid)
@@ -387,7 +396,9 @@ contains
     Mass = Mass2*scale
 
     if(hybrid%masterthread) then
-       write(iulog,108) "u     = ",umin_p,"      ",umax_p,"     ",usum_p
+!       write(iulog,108) "u     = ",umin_p,"      ",umax_p,"     ",usum_p
+       write(iulog,109) "u     = ",umin_local(1)," (",nint(umin_local(2)),")",&
+                                   umax_local(1)," (",nint(umax_local(2)),")",usum_p
        write(iulog,108) "v     = ",vmin_p,"      ",vmax_p,"     ",vsum_p
        write(iulog,109) "w     = ",wmin_local(1)," (",nint(wmin_local(2)),")",&
                                    wmax_local(1)," (",nint(wmax_local(2)),")",wsum_p
@@ -1009,26 +1020,32 @@ subroutine findExtremumWithLevel(elem,res,which,operation,n0,nets,nete)
           
     !decide size of the column
     ksize=-1
+    if( which == 'u' .or.  which == 'v'  ) ksize=nlev
     if( which == 'w_i' ) ksize=nlevp
 
     if( ksize < 1) call abortmp('unset ksize in routine findExtremumWithLevel()')
    
     ! find max or min
     do ie=nets,nete
-       if( which == 'w_i' )then
+       if( which == 'u' )then
+          field(1:np,1:np,1:ksize) = elem(ie)%state%v(1:np,1:np,1,1:ksize,n0)
+!print *, 'field', field
+       elseif( which == 'v' )then
+          field(1:np,1:np,1:ksize) = elem(ie)%state%v(1:np,1:np,2,1:ksize,n0)
+       elseif( which == 'w_i' )then
           field(1:np,1:np,1:ksize) = elem(ie)%state%w_i(1:np,1:np,1:ksize,n0)
        endif
        if( operation == 'min' )then
-          val = MINVAL(field)
+          val = MINVAL(field(:,:,1:ksize))
           if( val < res(1) ) then
-             location = MINLOC(field)
+             location = MINLOC(field(:,:,1:ksize))
              res(2)   = location(3)
              res(1)   = val
           endif 
        elseif ( operation == 'max' )then
-          val = MAXVAL(field)
+          val = MAXVAL(field(:,:,1:ksize))
           if( val > res(1) ) then
-             location = MAXLOC(field)
+             location = MAXLOC(field(:,:,1:ksize))
              res(2)   = location(3)
              res(1)   = val          
           endif
