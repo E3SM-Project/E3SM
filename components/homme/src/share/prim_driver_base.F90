@@ -880,7 +880,7 @@ contains
 #ifdef CAM
     ! initialize dp3d from ps_v.  CAM IC/restart code reads ps_v, doesn't
     ! have access to hvcoord to compute dp3d:
-    do ie=1,nelemd
+    do ie=nets,nete
        do k=1,nlev
           elem(ie)%state%dp3d(:,:,k,tl%n0)=&
                ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &

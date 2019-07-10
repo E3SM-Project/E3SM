@@ -559,7 +559,7 @@ contains
 #endif    
     endif
 
-!$omp parallel do private(ie, t, m_cnst)
+!$omp parallel do private(ie, ps, t, m_cnst)
     do ie=1,nelemd
        ps=elem(ie)%state%ps_v(:,:,tl)
 #ifdef MODEL_THETA_L
