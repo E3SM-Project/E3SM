@@ -6,7 +6,7 @@ for the same component
 """
 
 from standard_script_setup import *
-from CIME.utils import expect, run_cmd_no_fail
+from CIME.utils import run_cmd_no_fail
 
 import argparse, sys, os, gzip
 
