@@ -1698,6 +1698,7 @@ module stats_clubb_utilities
         end if
         call write_grads( stats_sfc%file  )
       else ! l_netcdf
+
 #ifdef NETCDF
         call write_netcdf( stats_zt%file  )
         call write_netcdf( stats_zm%file  )
@@ -2123,7 +2124,7 @@ module stats_clubb_utilities
     real( kind = core_rknd ), intent(in), dimension(gr%nz) :: &
       sigma_sqd_w    ! PDF width parameter (momentum levels)    [-]
 
-    type(pdf_parameter), dimension(gr%nz), intent(in) :: & 
+    type(pdf_parameter), intent(in) :: & 
       pdf_params,    & ! PDF parameters (thermodynamic levels)    [units vary]
       pdf_params_zm    ! PDF parameters on momentum levels        [units vary]
 

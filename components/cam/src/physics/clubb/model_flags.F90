@@ -142,6 +142,8 @@ module model_flags
   logical, public :: &
     l_high_accuracy_parab_cyl_fnc = .false. 
 
+!$omp threadprivate(l_high_accuracy_parab_cyl_fnc)
+
   ! These flags determine whether we want to use an upwind differencing approximation 
   ! rather than a centered differencing for turbulent or mean advection terms.
   ! wpxp_ta affects wprtp, wpthlp, & wpsclrp

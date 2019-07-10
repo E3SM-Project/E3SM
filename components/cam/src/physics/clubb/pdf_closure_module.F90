@@ -261,7 +261,7 @@ module pdf_closure_module
       uprcp,              & ! u' r_c'               [(m kg)/(s kg)]
       vprcp                 ! v' r_c'               [(m kg)/(s kg)]
 
-    type(pdf_parameter), dimension(gr%nz), intent(out) :: & 
+    type(pdf_parameter), intent(inout) :: & 
       pdf_params     ! pdf paramters         [units vary]
 
     type(implicit_coefs_terms), dimension(gr%nz), intent(out) :: &
@@ -908,6 +908,7 @@ module pdf_closure_module
     ! https://arxiv.org/pdf/1711.03675v1.pdf#nameddest=url:anl_int_cloud_terms
     cloud_frac = mixt_frac * cloud_frac_1 + ( one - mixt_frac ) * cloud_frac_2
     rcm = mixt_frac * rc_1 + ( one - mixt_frac ) * rc_2
+    rcm = max( zero_threshold, rcm )
 
     if ( iiPDF_type == iiPDF_ADG1 .or. iiPDF_type == iiPDF_ADG2 ) then
 
@@ -1088,58 +1089,54 @@ module pdf_closure_module
 
 
     ! Save PDF parameters
-    do k = 1, gr%nz
+    pdf_params%w_1             = w_1
+    pdf_params%w_2             = w_2
+    pdf_params%varnce_w_1      = varnce_w_1
+    pdf_params%varnce_w_2      = varnce_w_2
+    pdf_params%rt_1            = rt_1
+    pdf_params%rt_2            = rt_2
+    pdf_params%varnce_rt_1     = varnce_rt_1
+    pdf_params%varnce_rt_2     = varnce_rt_2
+    pdf_params%thl_1           = thl_1
+    pdf_params%thl_2           = thl_2
+    pdf_params%varnce_thl_1    = varnce_thl_1
+    pdf_params%varnce_thl_2    = varnce_thl_2
+    pdf_params%corr_w_rt_1     = corr_w_rt_1
+    pdf_params%corr_w_rt_2     = corr_w_rt_2
+    pdf_params%corr_w_thl_1    = corr_w_thl_1
+    pdf_params%corr_w_thl_2    = corr_w_thl_2
+    pdf_params%corr_rt_thl_1   = corr_rt_thl_1
+    pdf_params%corr_rt_thl_2   = corr_rt_thl_2
+    pdf_params%alpha_thl       = alpha_thl
+    pdf_params%alpha_rt        = alpha_rt
+    pdf_params%crt_1           = crt_1
+    pdf_params%crt_2           = crt_2
+    pdf_params%cthl_1          = cthl_1
+    pdf_params%cthl_2          = cthl_2
+    pdf_params%chi_1           = chi_1
+    pdf_params%chi_2           = chi_2
+    pdf_params%stdev_chi_1     = stdev_chi_1
+    pdf_params%stdev_chi_2     = stdev_chi_2
+    pdf_params%stdev_eta_1     = stdev_eta_1
+    pdf_params%stdev_eta_2     = stdev_eta_2
+    pdf_params%covar_chi_eta_1 = covar_chi_eta_1
+    pdf_params%covar_chi_eta_2 = covar_chi_eta_2
+    pdf_params%corr_w_chi_1    = corr_w_chi_1
+    pdf_params%corr_w_chi_2    = corr_w_chi_2
+    pdf_params%corr_w_eta_1    = corr_w_eta_1
+    pdf_params%corr_w_eta_2    = corr_w_eta_2
+    pdf_params%corr_chi_eta_1  = corr_chi_eta_1
+    pdf_params%corr_chi_eta_2  = corr_chi_eta_2
+    pdf_params%rsatl_1         = rsatl_1
+    pdf_params%rsatl_2         = rsatl_2
+    pdf_params%rc_1            = rc_1
+    pdf_params%rc_2            = rc_2
+    pdf_params%cloud_frac_1    = cloud_frac_1
+    pdf_params%cloud_frac_2    = cloud_frac_2
+    pdf_params%mixt_frac       = mixt_frac
+    pdf_params%ice_supersat_frac_1 = ice_supersat_frac_1
+    pdf_params%ice_supersat_frac_2 = ice_supersat_frac_2
 
-        pdf_params(k)%w_1             = w_1(k)
-        pdf_params(k)%w_2             = w_2(k)
-        pdf_params(k)%varnce_w_1      = varnce_w_1(k)
-        pdf_params(k)%varnce_w_2      = varnce_w_2(k)
-        pdf_params(k)%rt_1            = rt_1(k)
-        pdf_params(k)%rt_2            = rt_2(k)
-        pdf_params(k)%varnce_rt_1     = varnce_rt_1(k)
-        pdf_params(k)%varnce_rt_2     = varnce_rt_2(k)
-        pdf_params(k)%thl_1           = thl_1(k)
-        pdf_params(k)%thl_2           = thl_2(k)
-        pdf_params(k)%varnce_thl_1    = varnce_thl_1(k)
-        pdf_params(k)%varnce_thl_2    = varnce_thl_2(k)
-        pdf_params(k)%corr_w_rt_1     = corr_w_rt_1(k)
-        pdf_params(k)%corr_w_rt_2     = corr_w_rt_2(k)
-        pdf_params(k)%corr_w_thl_1    = corr_w_thl_1(k)
-        pdf_params(k)%corr_w_thl_2    = corr_w_thl_2(k)
-        pdf_params(k)%corr_rt_thl_1   = corr_rt_thl_1(k)
-        pdf_params(k)%corr_rt_thl_2   = corr_rt_thl_2(k)
-        pdf_params(k)%alpha_thl       = alpha_thl(k)
-        pdf_params(k)%alpha_rt        = alpha_rt(k)
-        pdf_params(k)%crt_1           = crt_1(k)
-        pdf_params(k)%crt_2           = crt_2(k)
-        pdf_params(k)%cthl_1          = cthl_1(k)
-        pdf_params(k)%cthl_2          = cthl_2(k)
-        pdf_params(k)%chi_1           = chi_1(k)
-        pdf_params(k)%chi_2           = chi_2(k)
-        pdf_params(k)%stdev_chi_1     = stdev_chi_1(k)
-        pdf_params(k)%stdev_chi_2     = stdev_chi_2(k)
-        pdf_params(k)%stdev_eta_1     = stdev_eta_1(k)
-        pdf_params(k)%stdev_eta_2     = stdev_eta_2(k)
-        pdf_params(k)%covar_chi_eta_1 = covar_chi_eta_1(k)
-        pdf_params(k)%covar_chi_eta_2 = covar_chi_eta_2(k)
-        pdf_params(k)%corr_w_chi_1    = corr_w_chi_1(k)
-        pdf_params(k)%corr_w_chi_2    = corr_w_chi_2(k)
-        pdf_params(k)%corr_w_eta_1    = corr_w_eta_1(k)
-        pdf_params(k)%corr_w_eta_2    = corr_w_eta_2(k)
-        pdf_params(k)%corr_chi_eta_1  = corr_chi_eta_1(k)
-        pdf_params(k)%corr_chi_eta_2  = corr_chi_eta_2(k)
-        pdf_params(k)%rsatl_1         = rsatl_1(k)
-        pdf_params(k)%rsatl_2         = rsatl_2(k)
-        pdf_params(k)%rc_1            = rc_1(k)
-        pdf_params(k)%rc_2            = rc_2(k)
-        pdf_params(k)%cloud_frac_1    = cloud_frac_1(k)
-        pdf_params(k)%cloud_frac_2    = cloud_frac_2(k)
-        pdf_params(k)%mixt_frac       = mixt_frac(k)
-
-        pdf_params(k)%ice_supersat_frac_1 = ice_supersat_frac_1(k)
-        pdf_params(k)%ice_supersat_frac_2 = ice_supersat_frac_2(k)
-
-    end do
 
     if ( clubb_at_least_debug_level( 2 ) ) then
 

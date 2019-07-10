@@ -45,7 +45,7 @@ module gmres_cache
                           ! for the non-interlaced matrices (gr%nz grid
                           ! levels)
 
-!$omp threadprivate( gmres_tmp_intlc, gmres_temp_norm )
+!$omp threadprivate( gmres_temp_intlc, gmres_temp_norm )
 
   integer, public :: &
     gmres_tempsize_norm, &     ! Size of the temporary array for

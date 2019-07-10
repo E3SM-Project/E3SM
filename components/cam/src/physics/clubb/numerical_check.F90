@@ -137,7 +137,7 @@ module numerical_check
       crt_1, crt_2,  & 
       cthl_1, cthl_2
 
-    type(pdf_parameter), dimension(gr%nz), intent(in) ::  & 
+    type(pdf_parameter), intent(in) ::  & 
       pdf_params        ! PDF parameters          [units vary]
 
     ! Input (Optional passive scalar variables)

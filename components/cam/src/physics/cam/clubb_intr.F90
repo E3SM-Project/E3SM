@@ -208,8 +208,8 @@ module clubb_intr
   logical            :: do_cnst=.false.
   
 #ifdef CLUBB_SGS
-  type(pdf_parameter), target, allocatable :: pdf_params_chnk(:,:,:)    ! PDF parameters (thermo. levs.) [units vary]
-  type(pdf_parameter), target, allocatable :: pdf_params_zm_chnk(:,:,:) ! PDF parameters on momentum levs. [units vary]
+  type(pdf_parameter), target, allocatable :: pdf_params_chnk(:,:)    ! PDF parameters (thermo. levs.) [units vary]
+  type(pdf_parameter), target, allocatable :: pdf_params_zm_chnk(:,:) ! PDF parameters on momentum levs. [units vary]
 #endif
 
   logical :: liqcf_fix = .FALSE.  ! HW for liquid cloud fraction fix
@@ -525,7 +525,8 @@ end subroutine clubb_init_cnst
          stats_rad_zm, &
          w_tol_sqd, &
          rt_tol, &
-         l_do_expldiff_rtm_thlm 
+         l_do_expldiff_rtm_thlm, &
+         init_pdf_params_api
     use stats_variables,           only: l_output_rad_files
                                       
     use units,                     only: getunit, freeunit
@@ -579,8 +580,15 @@ end subroutine clubb_init_cnst
     l_do_expldiff_rtm_thlm = do_expldiff
     
     allocate( &
-       pdf_params_chnk(pverp,pcols,begchunk:endchunk),   &
-       pdf_params_zm_chnk(pverp,pcols,begchunk:endchunk) )
+       pdf_params_chnk(pcols,begchunk:endchunk),   &
+       pdf_params_zm_chnk(pcols,begchunk:endchunk) )
+
+    do i = begchunk, endchunk
+        do j = 1, pcols
+            call init_pdf_params_api( pverp, pdf_params_chnk(i,j) )
+            call init_pdf_params_api( pverp, pdf_params_zm_chnk(i,j) )
+        end do
+    end do
 
     ! ----------------------------------------------------------------- !
     ! Determine how many constituents CLUBB will transport.  Note that  
@@ -1274,8 +1282,8 @@ end subroutine clubb_init_cnst
    real(r8), pointer, dimension(:,:) :: cmeliq 
    real(r8), pointer, dimension(:,:) :: cmfmc_sh ! Shallow convective mass flux--m subc (pcols,pverp) [kg/m2/s/]
    
-   type(pdf_parameter), pointer :: pdf_params(:)    ! PDF parameters (thermo. levs.) [units vary]
-   type(pdf_parameter), pointer :: pdf_params_zm(:) ! PDF parameters on momentum levs. [units vary]
+   type(pdf_parameter), pointer :: pdf_params    ! PDF parameters (thermo. levs.) [units vary]
+   type(pdf_parameter), pointer :: pdf_params_zm ! PDF parameters on momentum levs. [units vary]
    
    real(r8), pointer, dimension(:,:) :: naai
    real(r8), pointer, dimension(:,:) :: prer_evap
@@ -1955,8 +1963,8 @@ end subroutine clubb_init_cnst
       ! End cloud-top radiative cooling contribution to CLUBB     !
       ! --------------------------------------------------------- !  
 
-      pdf_params    => pdf_params_chnk(:,i,lchnk)
-      pdf_params_zm => pdf_params_zm_chnk(:,i,lchnk)
+      pdf_params    => pdf_params_chnk(i,lchnk)
+      pdf_params_zm => pdf_params_zm_chnk(i,lchnk)
 
       call t_startf('adv_clubb_core_ts_loop')
       do t=1,nadv    ! do needed number of "sub" timesteps for each CAM step

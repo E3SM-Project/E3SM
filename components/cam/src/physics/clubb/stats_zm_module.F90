@@ -46,6 +46,7 @@ module stats_zm_module
         irtpthvp, & 
         ithlpthvp, & 
         itau_zm, & 
+        itau_zm_simp, &
         iKh_zm, & 
         iK_hm, & 
         iwprcp, & 
@@ -64,6 +65,10 @@ module stats_zm_module
         iuprtp, &
         ivpthlp, &
         ivprtp, &
+        iupthvp, &
+        iuprcp, &
+        ivpthvp, &
+        ivprcp, &
         irho_zm, & 
         isigma_sqd_w, &
         irho_ds_zm, &
@@ -645,6 +650,15 @@ module stats_zm_module
              l_silhs=.false., grid_kind=stats_zm )
         k = k + 1
 
+      case ('tau_zm_simp')
+        itau_zm_simp = k
+
+        call stat_assign( var_index=itau_zm_simp, var_name="tau_zm_simp", &
+             var_description="simple tau on momentum levels [s]", var_units="s", &
+             l_silhs=.false., grid_kind=stats_zm )
+        k = k + 1
+
+
       case ('Kh_zm')
         iKh_zm = k
 
@@ -744,6 +758,30 @@ module stats_zm_module
         ivprtp = k
         call stat_assign( var_index=ivprtp, var_name="vprtp", &
              var_description="v'rt', Northward total water flux [(m/s)(kg/kg)]", &
+             var_units="(m/s)(kg/kg)", l_silhs=.false., grid_kind=stats_zm )
+        k = k + 1
+      case ('upthvp')
+        iupthvp = k
+        call stat_assign( var_index=iupthvp, var_name="upthvp", &
+             var_description="u'thv', Eastward theta_v flux [(m/s)K]", &
+             var_units="(m/s)K", l_silhs=.false., grid_kind=stats_zm )
+        k = k + 1
+      case ('uprcp')
+        iuprcp = k
+        call stat_assign( var_index=iuprcp, var_name="uprcp", &
+             var_description="u'rc', Eastward liquid water flux [(m/s)(kg/kg)]", &
+             var_units="(m/s)(kg/kg)", l_silhs=.false., grid_kind=stats_zm )
+        k = k + 1
+      case ('vpthvp')
+        ivpthvp = k
+        call stat_assign( var_index=ivpthvp, var_name="vpthvp", &
+             var_description="v'thv', Northward theta_v flux [(m/s)K]", &
+             var_units="(m/s)K", l_silhs=.false., grid_kind=stats_zm )
+        k = k + 1
+      case ('vprcp')
+        ivprcp = k
+        call stat_assign( var_index=ivprcp, var_name="vprcp", &
+             var_description="v'rc', Northward liquid water flux [(m/s)(kg/kg)]", &
              var_units="(m/s)(kg/kg)", l_silhs=.false., grid_kind=stats_zm )
         k = k + 1
       case ('rho_zm')

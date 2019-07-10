@@ -118,6 +118,11 @@ module stats_variables
 !$omp   itau_zt, iKh_zt, iwp2thvp, iwp2rcp, iwprtpthlp, irc_coef, &
 !$omp   isigma_sqd_w_zt, irho )
 
+  integer, public :: &
+     itau_zm_simp = 0
+!$omp threadprivate( itau_zm_simp )
+
+
   integer, dimension(:), allocatable, public :: & 
      ihm_1, &
      ihm_2
@@ -214,7 +219,7 @@ module stats_variables
     isilhs_variance_category, &
     ilh_samp_frac_category
 
-!$omp threadprivate( isilhs_variance_category )
+!$omp threadprivate( isilhs_variance_category, ilh_samp_frac_category )
 
   integer, public :: & 
      iNcm = 0,             & ! Brian
@@ -435,7 +440,7 @@ module stats_variables
 !$omp   threadprivate(irrm_bt, irrm_ma, irrm_ta, irrm_sd)
 !$omp   threadprivate(irrm_ts, irrm_sd_morr)
 !$omp   threadprivate(irrm_cond, irrm_auto, irrm_accr)
-!$omp   threadprivate(irrm_cond_adj, irrm_src_adj )
+!$omp   threadprivate(irrm_cond_adj, irrm_src_adj, irrm_mc_nonadj)
 !$omp   threadprivate(irrm_mc, irrm_hf, irrm_wvhf, irrm_cl)
 
   integer, public :: &
@@ -995,6 +1000,10 @@ module stats_variables
      iuprtp = 0, &
      ivpthlp = 0, &
      ivprtp = 0, &
+     iupthvp = 0, &
+     iuprcp = 0, &
+     ivpthvp = 0, &
+     ivprcp = 0, &
      iSkw_zm = 0, &
      iSkthl_zm = 0, &
      iSkrt_zm = 0
@@ -1028,6 +1037,7 @@ module stats_variables
 !$omp   threadprivate(iwprcp, irc_coef_zm, ithlprcp, irtprcp, ircp2)
 !$omp   threadprivate(iupwp, ivpwp)
 !$omp   threadprivate(iupthlp, iuprtp, ivpthlp, ivprtp)
+!$omp   threadprivate(iupthvp, iuprcp, ivpthvp, ivprcp)
 !$omp   threadprivate(iSkw_zm, iSkthl_zm, iSkrt_zm)
 !$omp   threadprivate(irho_zm, isigma_sqd_w, irho_ds_zm, ithv_ds_zm, iem, ishear)
 !$omp   threadprivate(imean_w_up, imean_w_down)
@@ -1051,6 +1061,7 @@ module stats_variables
 
 !$omp   threadprivate(igamma_Skw_fnc, iC6rt_Skw_fnc, iC6thl_Skw_fnc)
 !$omp   threadprivate(iC7_Skw_fnc, iC1_Skw_fnc)
+!$omp   threadprivate(ibrunt_vaisala_freq_sqd, iRichardson_num, ishear_sqd)
 
   integer, public :: &
     icoef_wp4_implicit = 0
