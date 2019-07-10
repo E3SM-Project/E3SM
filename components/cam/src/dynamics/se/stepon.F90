@@ -91,7 +91,6 @@ subroutine stepon_init(dyn_in, dyn_out )
   type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
 
   integer :: m
-  integer :: num_FM_vars
   character(len=max_fieldname_len) :: grid_name
 ! !DESCRIPTION:
 !
@@ -105,12 +104,6 @@ subroutine stepon_init(dyn_in, dyn_out )
 
   ! This is not done in dyn_init due to a circular dependency issue.
   if(par%dynproc) then
-#ifdef MODEL_THETA_L
-      !buffer to comm forcings, theta-l needs 1 more
-      num_FM_vars = 3
-#else
-      num_FM_vars = 2
-#endif
      if (use_gw_front)  call gws_init(dyn_in%elem)
   end if
 
@@ -122,8 +115,8 @@ subroutine stepon_init(dyn_in, dyn_out )
   call addfld ('FU',  (/ 'lev' /), 'A', 'm/s2', 'Zonal wind forcing term',     gridname='GLL')
   call addfld ('FV',  (/ 'lev' /), 'A', 'm/s2', 'Meridional wind forcing term',gridname='GLL')
   call register_vector_field('FU', 'FV')
-  call addfld ('VOR', (/ 'lev' /), 'A', '1/s',  'Vorticity',                   gridname='GLL')
-  call addfld ('DIV', (/ 'lev' /), 'A', '1/s',  'Divergence',                  gridname='GLL')
+  call addfld ('VOR', (/ 'lev' /), 'A', '1/s',  'Relative Vorticity (2D)',     gridname='GLL')
+  call addfld ('DIV', (/ 'lev' /), 'A', '1/s',  'Divergence (2D)',             gridname='GLL')
 
   call addfld ('ETADOT', (/ 'ilev' /), 'A', '1/s', 'Vertical (eta) velocity', gridname='physgrid')
 
@@ -246,18 +239,12 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    real(r8) :: tmp_dyn(np,np,nlev,nelemd)
    real(r8) :: fmtmp(np,np,nlev)
    real(r8) :: dtime
-   integer  :: num_FM_vars
    integer :: nlev_tot
    nlev_tot=(3+pcnst)*nlev
 
 
    dtime = get_step_size()
 
-#ifdef MODEL_THETA_L
-   num_FM_vars = 3
-#else
-   num_FM_vars = 2
-#endif
 
    ! copy from phys structures -> dynamics structures
    call t_barrierf('sync_p_d_coupling', mpicom)
@@ -276,7 +263,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
             ! We need to apply mass matrix weighting when FV physics grid is used
             do k = 1,nlev
                dyn_in%elem(ie)%derived%FT(:,:,k)   = dyn_in%elem(ie)%derived%FT(:,:,k)   * dyn_in%elem(ie)%spheremp(:,:)
-               do m = 1,num_FM_vars
+               do m = 1,2
                   dyn_in%elem(ie)%derived%FM(:,:,m,k) = dyn_in%elem(ie)%derived%FM(:,:,m,k) * dyn_in%elem(ie)%spheremp(:,:)
                end do
                do ic = 1,pcnst
@@ -332,7 +319,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
             ! We need to apply inverse mass matrix weighting when FV physics grid is used
             do k = 1,nlev
                dyn_in%elem(ie)%derived%FT(:,:,k)   = dyn_in%elem(ie)%derived%FT(:,:,k)   * dyn_in%elem(ie)%rspheremp(:,:)
-               do m = 1,num_FM_vars
+               do m = 1,2
                   dyn_in%elem(ie)%derived%FM(:,:,m,k) = dyn_in%elem(ie)%derived%FM(:,:,m,k) * dyn_in%elem(ie)%rspheremp(:,:)
                end do
                do ic = 1,pcnst
