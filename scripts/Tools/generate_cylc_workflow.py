@@ -32,14 +32,14 @@ def parse_command_line(args, description):
 
     return args.caseroot, args.cycles
 
-def cylc_batch_job_template(job, caseroot, batch_system_type):
+def cylc_batch_job_template(job, jobname, caseroot, batch_system_type):
     return """
-  [[{job}]]
+  [[{jobname}]]
     script = cd {caseroot}; ./case.submit --job {job}
     [[[job]]]
-      batch_system = {batch_system_type}
+      batch system = {batch_system_type}
     [[[directives]]]
-""".format(job=job, caseroot=caseroot, batch_system_type=batch_system_type) + "{{ batchdirectives }}\n"
+""".format(jobname=jobname, job=job, caseroot=caseroot, batch_system_type=batch_system_type) + "{{ batchdirectives }}\n"
 
 
 def cylc_script_job_template(job, caseroot):
@@ -75,7 +75,7 @@ def _main_func(description):
                 jobname = 'run'
                 overrides.update(env_batch.get_job_overrides(job, case))
                 overrides.update({'job_id':'run.'+casename})
-                input_text = input_text + cylc_batch_job_template(jobname, caseroot, batch_system_type)
+                input_text = input_text + cylc_batch_job_template(job, jobname, caseroot, batch_system_type)
             else:
                 depends_on = env_workflow.get_value('dependency', subgroup=job)
                 if depends_on.startswith('case.'):
@@ -86,7 +86,7 @@ def _main_func(description):
                 overrides.update(env_batch.get_job_overrides(job, case))
                 overrides.update({'job_id':job+'.'+casename})
                 if 'total_tasks' in overrides and overrides['total_tasks'] > 1:
-                    input_text = input_text + cylc_batch_job_template(jobname, caseroot, batch_system_type)
+                    input_text = input_text + cylc_batch_job_template(job, jobname, caseroot, batch_system_type)
                 else:
                     input_text = input_text + cylc_script_job_template(jobname, caseroot)
 
@@ -96,8 +96,8 @@ def _main_func(description):
 
 
             input_text = transform_vars(input_text, case=case, subgroup=job, overrides=overrides)
-        with open("cylc_suite.rc", "w") as f:
-                    f.write(input_text)
+        with open("suite.rc", "w") as f:
+                    f.write(case.get_resolved_value(input_text))
                 
 
 

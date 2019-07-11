@@ -31,7 +31,10 @@ def _pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
         safe_copy(env_mach_pes,"{}.{}".format(env_mach_pes, lid))
 
     # check for locked files.
-    case.check_lockedfiles()
+    skip = None
+    if case.get_value("EXTERNAL_WORKFLOW"):
+        skip = "env_batch"
+    case.check_lockedfiles(skip=skip)
     logger.debug("check_lockedfiles OK")
 
     # check that build is done
