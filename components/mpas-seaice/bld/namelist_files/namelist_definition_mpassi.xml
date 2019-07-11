@@ -1966,9 +1966,9 @@ Valid values: 'ccsm3' or 'constant'
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_use_snicar" type="logical"
+<entry id="config_use_snicar_ad" type="logical"
 	category="shortwave" group="shortwave">
-If true turn on snicar 5-band snow system
+If true turn on snicar_ad 5-band snow system
 
 Valid values: true or false
 Default: Defined in namelist_defaults.xml
@@ -2413,7 +2413,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_ocean_surface_type" type="char*1024"
 	category="ocean" group="ocean">
-Type of coupled ocean surface: (MPASO:'free'), (SOM:'non-free')
+Type of coupled ocean surface: (MPAS-O:'free'), (SOM:'non-free')
 
 Valid values: 'free' or 'non-free'
 Default: Defined in namelist_defaults.xml
