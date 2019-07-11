@@ -108,6 +108,10 @@ This allows using a different mpirun command to launch unit tests
         <command name="load">papi/5.6.0.4</command>
       </modules>
     </module_system>
+    <environment_variables>
+      <env name="OMP_STACKSIZE">256M</env>
+      <env name="POSTPROCESS_PATH">/home/jedwards/workflow/CESM_postprocessing</env>
+    </environment_variables>
   </machine>
 
   <machine MACH="athena">

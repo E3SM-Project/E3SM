@@ -307,10 +307,12 @@ def case_run(self, skip_pnl=False, set_continue_run=False, submit_resubmits=Fals
         self.set_value("CONTINUE_RUN",
                        self.get_value("RESUBMIT_SETS_CONTINUE_RUN"))
 
-    logger.warning("check for resubmit")
+    external_workflow = self.get_value("EXTERNAL_WORKFLOW")
+    if not external_workflow:
+        logger.warning("check for resubmit")
     
-    logger.debug("submit_resubmits is {}".format(submit_resubmits))
-    if submit_resubmits:
-        _resubmit_check(self)
-
+        logger.debug("submit_resubmits is {}".format(submit_resubmits))
+        if submit_resubmits:
+            _resubmit_check(self)
+        
     return True

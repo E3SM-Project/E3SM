@@ -187,7 +187,6 @@ class EnvBatch(EnvBase):
     def make_batch_script(self, input_template, job, case, outfile=None):
         expect(os.path.exists(input_template), "input file '{}' does not exist".format(input_template))
         overrides = self.get_job_overrides(job, case)
-
         ext = os.path.splitext(job)[-1]
         if len(ext) == 0:
             ext = job
@@ -198,8 +197,6 @@ class EnvBatch(EnvBase):
             # pleiades jobname needs to be limited to 15 chars
             overrides["job_id"] = overrides["job_id"][:15]
         overrides["batchdirectives"] = self.get_batch_directives(case, job, overrides=overrides)
-
-
         output_text = transform_vars(open(input_template,"r").read(), case=case, subgroup=job, overrides=overrides)
         output_name = get_batch_script_for_job(job) if outfile is None else outfile
         logger.info("Creating file {}".format(output_name))
@@ -311,7 +308,7 @@ class EnvBatch(EnvBase):
         logger.debug("(env_mach_specific) _match {} {} {}".format(my_value, xml_value, result))
         return result
 
-    def get_batch_directives(self, case, job, overrides=None):
+    def get_batch_directives(self, case, job, overrides=None, output_format='default'):
         """
         """
         result = []
@@ -329,8 +326,10 @@ class EnvBatch(EnvBase):
         for root in roots:
             if root is not None:
                 if directive_prefix is None:
-                    directive_prefix = self.get_element_text("batch_directive", root=root)
-
+                    if output_format == 'default':
+                        directive_prefix = self.get_element_text("batch_directive", root=root)
+                    elif output_format == 'cylc':
+                        directive_prefix = "     "
                 if unknown_queue:
                     unknown_queue_directives = self.get_element_text("unknown_queue_directives",
                                                                      root=root)
@@ -345,6 +344,14 @@ class EnvBatch(EnvBase):
                     if self._match_attribs(self.attrib(dnode), case, queue):
                         for node in nodes:
                             directive = self.get_resolved_value("" if self.text(node) is None else self.text(node))
+                            if output_format == 'cylc':
+                                if self._batchtype == 'pbs':
+                                    m = re.match(r'\s*(-[^l])', directive)
+                                    if m:
+                                        directive = re.sub(r'(-[^l]) ','{} = '.format(m.group(1)), directive)
+                                    else:
+                                        directive = re.sub(r':',r'\n      -l ',directive)
+
                             default = self.get(node, "default")
                             if default is None:
                                 directive = transform_vars(directive, case=case, subgroup=job, default=default, overrides=overrides)
@@ -422,6 +429,7 @@ class EnvBatch(EnvBase):
                     allow_fail=False, resubmit_immediate=False, mail_user=None, mail_type=None,
                     batch_args=None, dry_run=False):
         env_workflow = case.get_env('workflow')
+        external_workflow = case.get_value("EXTERNAL_WORKFLOW")
         alljobs = env_workflow.get_jobs()
         alljobs = [j for j in alljobs
                    if os.path.isfile(os.path.join(self._caseroot,get_batch_script_for_job(j)))]
@@ -437,7 +445,7 @@ class EnvBatch(EnvBase):
                 continue
             try:
                 prereq = env_workflow.get_value('prereq', subgroup=job, resolved=False)
-                if prereq is None or job == firstjob or (dry_run and prereq == "$BUILD_COMPLETE"):
+                if external_workflow or prereq is None or job == firstjob or (dry_run and prereq == "$BUILD_COMPLETE"):
                     prereq = True
                 else:
                     prereq = case.get_resolved_value(prereq)
@@ -491,10 +499,12 @@ class EnvBatch(EnvBase):
                 batch_job_id = str(alljobs.index(job)) if dry_run else result
                 depid[job] = batch_job_id
                 jobcmds.append( (job, result) )
-                if self._batchtype == "cobalt":
+                
+                if self._batchtype == "cobalt" or external_workflow:
                     break
-            expect(batch_job_id, "No result from jobs {}".format(jobs))
-            prev_job = batch_job_id
+            if not external_workflow:
+                expect(batch_job_id, "No result from jobs {}".format(jobs))
+                prev_job = batch_job_id
 
 
         if dry_run:
@@ -572,11 +582,15 @@ class EnvBatch(EnvBase):
         if batch_system is None or batch_system == "none" or no_batch:
             logger.info("Starting job script {}".format(job))
             function_name = job.replace(".", "_")
+            job_name = "."+job
             if not dry_run:
                 args = self._build_run_args(job, True, skip_pnl=skip_pnl, set_continue_run=resubmit_immediate,
                                             submit_resubmits=not resubmit_immediate)
-                getattr(case, function_name)(**{k: v for k, (v, _) in args.items()})
-
+                if hasattr(case, function_name):
+                    getattr(case, function_name)(**{k: v for k, (v, _) in args.items()})
+                else:
+                    expect(os.path.isfile(job_name),"Could not find file {}".format(job_name))
+                    run_cmd_no_fail(os.path.join(self._caseroot,job_name), combine_output=True, verbose=True, from_dir=self._caseroot)                  
             return
 
         submitargs = self.get_submit_args(case, job)
@@ -872,8 +886,7 @@ class EnvBatch(EnvBase):
         logger.info("Creating batch scripts")
         jobs = env_workflow.get_jobs()
         for job in jobs:
-            template = env_workflow.get_value('template', subgroup=job)
-            template = template.replace('$CASEROOT', self._caseroot)
+            template = case.get_resolved_value(env_workflow.get_value('template', subgroup=job))
 
             if os.path.isabs(template):
                 input_batch_script = template
