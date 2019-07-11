@@ -113,11 +113,6 @@ module micro_p3_interface
       frzcnt_idx = -1, &
       frzdep_idx = -1
 
-! pbuf P3 specific
-   integer :: &
-      p3_qv_idx, &
-      p3_th_idx
-
    real(rtype) :: &
       micro_mg_accre_enhan_fac = huge(1.0_rtype), & !Accretion enhancement factor from namelist
       prc_coef1_in             = huge(1.0_rtype), &
@@ -129,24 +124,16 @@ module micro_p3_interface
 
    integer :: ncnst
 
-  !Define th (potential temperature) and (water vapor mixing 
-  !ratio) qv at module level so "_old" values can easily be 
-  !assigned at the beginning of each step from the value at the end 
-  !of the step before.
+   character(len=8), parameter :: &      ! Constituent names
+      cnst_names(8) = (/'CLDLIQ', 'CLDICE','NUMLIQ','NUMICE', &
+                      'RAINQM', 'CLDRIM','NUMRAI','BVRIM '/)
 
-  real(rtype) :: th(pcols,pver)
-  real(rtype) :: qv(pcols,pver)
-
-  character(len=8), parameter :: &      ! Constituent names
-     cnst_names(8) = (/'CLDLIQ', 'CLDICE','NUMLIQ','NUMICE', &
-                     'RAINQM', 'CLDRIM','NUMRAI','BVRIM '/)
-
-  character(len=128) :: micro_p3_lookup_dir     = unset_str ! location of p3 input files
-  character(len=16)  :: micro_p3_tableversion   = unset_str ! P3 table version
-  logical            :: micro_aerosolactivation = .false.   ! Use aerosol activation
-  logical            :: micro_subgrid_cloud     = .false.   ! Use subgrid cloudiness
-  logical            :: micro_tend_output       = .false.   ! Default microphysics tendencies to output file
-  contains
+   character(len=128) :: micro_p3_lookup_dir     = unset_str ! location of p3 input files
+   character(len=16)  :: micro_p3_tableversion   = unset_str ! P3 table version
+   logical            :: micro_aerosolactivation = .false.   ! Use aerosol activation
+   logical            :: micro_subgrid_cloud     = .false.   ! Use subgrid cloudiness
+   logical            :: micro_tend_output       = .false.   ! Default microphysics tendencies to output file
+   contains
 !===============================================================================
 subroutine micro_p3_readnl(nlfile)
 
@@ -275,10 +262,6 @@ end subroutine micro_p3_readnl
 
     ! Add Variables to Pbuf
     !================
-   !! P3 specific PBUF variables
-   call pbuf_add_field('P3_qv','global', dtype_r8,(/pcols,pver/),p3_qv_idx)
-   call pbuf_add_field('P3_th','global', dtype_r8,(/pcols,pver/),p3_th_idx)
-   
    !! module microp_aero
    call pbuf_add_field('CLDO','global', dtype_r8,(/pcols,pver,dyn_time_lvls/),cldo_idx) 
 
@@ -397,10 +380,6 @@ end subroutine micro_p3_readnl
     ! Initialize physics buffer grid fields for accumulating precip and
     ! condensation
     if (is_first_step()) then
-
-
-       call pbuf_set_field(pbuf2d, p3_qv_idx, 0._rtype)
-       call pbuf_set_field(pbuf2d, p3_th_idx, 0._rtype)
 
        call pbuf_set_field(pbuf2d, cldo_idx,   0._rtype)
        call pbuf_set_field(pbuf2d, relvar_idx, 2._rtype)
@@ -811,9 +790,6 @@ end subroutine micro_p3_readnl
     logical :: lq(pcnst)   !list of what constituents to update
 
     !INTERNAL VARIABLES
-    real(rtype), pointer :: th_old(:,:)     !potential temperature from last step   K
-    real(rtype), pointer :: qv_old(:,:)     !water vapor from last step             kg/kg
-    real(rtype) :: ssat(pcols,pver)       !supersaturated mixing ratio            kg/kg
     real(rtype) :: dzq(pcols,pver)        !geometric layer thickness              m
     real(rtype) :: cldliq(pcols,pver)     !cloud liquid water mixing ratio        kg/kg
     real(rtype) :: numliq(pcols,pver)     !cloud liquid water drop concentraiton  #/kg
@@ -824,7 +800,8 @@ end subroutine micro_p3_readnl
     real(rtype) :: qirim(pcols,pver)      !rime ice mixing ratio                  kg/kg
     real(rtype) :: numice(pcols,pver)     !total ice crystal number concentration #/kg
     real(rtype) :: rimvol(pcols,pver)     !rime volume mixing ratio               m3/kg
-    real(rtype) :: temp(pcols,pver)       !potential temperature                  K
+    real(rtype) :: temp(pcols,pver)       !temperature copy needed for tendency   K
+    real(rtype) :: th(pcols,pver)         !potential temperature                  K
     real(rtype) :: rim(pcols,pver)        !rime mixing ratio                      kg/kg
     real(rtype) :: prt_liq(pcols)         !precipitation rate, liquid             m s-1
     real(rtype) :: prt_sol(pcols)         !precipitation rate, solid              m s-1
@@ -989,9 +966,6 @@ end subroutine micro_p3_readnl
     ! INPUTS
     call pbuf_get_field(pbuf, relvar_idx,      relvar,      col_type=col_type, copy_if_needed=use_subcol_microp) ! Not used in this ver of P3
     call pbuf_get_field(pbuf, accre_enhan_idx, accre_enhan, col_type=col_type, copy_if_needed=use_subcol_microp) ! Not used in this ver of P3
-    ! P3 SPECIFIC
-    call pbuf_get_field(pbuf, p3_qv_idx, qv_old) 
-    call pbuf_get_field(pbuf, p3_th_idx, th_old) 
     ! OUTPUTS
     call pbuf_get_field(pbuf,        cldo_idx,      cldo,     start=(/1,1,itim_old/), kount=(/psetcols,pver,1/), col_type=col_type)
     call pbuf_get_field(pbuf,         qme_idx,       qme,    col_type=col_type)
@@ -1048,23 +1022,9 @@ end subroutine micro_p3_readnl
     !==============
     log_predictNc = micro_aerosolactivation 
 
-    ! GET "OLD" VALUES
+    ! COMPUTE GEOMETRIC THICKNESS OF GRID & CONVERT T TO POTENTIAL TEMPERATURE
     !==============
-    ! Note: state%exner is currently defined in a way different than the
-    ! traditional definition of exner, so we calculate here.
     exner(:ncol,:pver) = 1._rtype/((state%pmid(:ncol,:pver)*1.e-5_rtype)**(rair*inv_cp))
-    if ( is_first_step() ) then
-       th_old(:ncol,:pver)=state%t(:ncol,:pver)*exner(:ncol,:pver)
-       qv_old(:ncol,:pver)=state%q(:ncol,:pver,1)
-    end if
-
-    ! CONVERT T TO POTENTIAL TEMPERATURE
-    !==============
-    ! Someday we may want to make P3 take in T rather than theta... it uses both.
-
-
-    ! COMPUTE GEOMETRIC THICKNESS OF GRID
-    !==============
     do icol = 1,ncol
        do k = 1,pver
 ! Note: dzq is calculated in the opposite direction that pdel is calculated,
@@ -1083,16 +1043,6 @@ end subroutine micro_p3_readnl
 
     kts=top_lev
     kte=pver 
-
-    ! DEAL WITH SSAT
-    !==============
-    !ssat (supersaturated mixing ratio measured in kg/kg) can be prognosed
-    !or diagnosed in p3 depending on p3's hardcoded log_predictSsat parameter.
-    !ssat is an intent inout variable, but when log_predictSsat is false 
-    !(as we will set it initially), ssat is overwritten rather than used by p3.
-    !Thus it shouldn't matter what ssat is, so we give it -999.
-
-    ssat(:,:) = -999._rtype
 
     ! HANDLE TIMESTEP COUNTER
     !==============
@@ -1144,25 +1094,22 @@ end subroutine micro_p3_readnl
                 rain(its:ite,kts:kte),ice(its:ite,kts:kte),precip_frac_method, &
                 icldm(its:ite,kts:kte),lcldm(its:ite,kts:kte),rcldm(its:ite,kts:kte))
     call t_stopf('micro_p3_tend_init')
-    call t_startf('micro_p3_tend_loop')
     ! CALL P3
     !==============
     ! TODO: get proper value for 'it' from time module
+    call t_startf('micro_p3_tend_loop')
     call p3_main( &
          cldliq(its:ite,kts:kte),     & ! INOUT  cloud, mass mixing ratio         kg kg-1
          numliq(its:ite,kts:kte),     & ! INOUT  cloud, number mixing ratio       #  kg-1
          rain(its:ite,kts:kte),       & ! INOUT  rain, mass mixing ratio          kg kg-1
          numrain(its:ite,kts:kte),    & ! INOUT  rain, number mixing ratio        #  kg-1
-         th_old(its:ite,kts:kte),     & ! INOUT  beginning of time step theta     K
          th(its:ite,kts:kte),         & ! INOUT  potential temperature            K
-         qv_old(its:ite,kts:kte),     & ! INOUT  beginning of time step qv        kg kg-1
          qv(its:ite,kts:kte),         & ! INOUT  water vapor mixing ratio         kg kg-1
          dtime,                       & ! IN     model time step                  s
          ice(its:ite,kts:kte),        & ! INOUT  ice, total mass mixing ratio     kg kg-1
          qirim(its:ite,kts:kte),      & ! INOUT  ice, rime mass mixing ratio      kg kg-1
          numice(its:ite,kts:kte),     & ! INOUT  ice, total number mixing ratio   #  kg-1
          rimvol(its:ite,kts:kte),     & ! INOUT  ice, rime volume mixing ratio    m3 kg-1
-         ssat(its:ite,kts:kte),       & ! INOUT  supersaturation (i.e., qv-qvs)   kg kg-1
          pres(its:ite,kts:kte),       & ! IN     pressure at cell midpoints       Pa
          dzq(its:ite,kts:kte),        & ! IN     vertical grid spacing            m
          npccn(its:ite,kts:kte),      & ! IN ccn activation number tendency kg-1 s-1
@@ -1199,10 +1146,6 @@ end subroutine micro_p3_readnl
          mu(its:ite,kts:kte),         & ! OUT Size distribution shape parameter for radiation
          lambdac(its:ite,kts:kte)     & ! OUT Size distribution slope parameter for radiation
          )
-
-    ! UPDATE TH AND QV OLD FOR NEXT P3 STEP
-    th_old(:,:) = th(:,:) 
-    qv_old(:,:) = qv(:,:) 
 
     !MASSAGE OUTPUT TO FIT E3SM EXPECTATIONS
     !============= 
@@ -1291,11 +1234,11 @@ end subroutine micro_p3_readnl
     !   dei = rei*diag_rhopo(i,k,iice)/rhows*2._rtype
     !where rhopo is bulk ice density from table lookup (taken from f1pr16, here written as diag_rhoi) and rhows=917.0 is a constant parameter.
    !! Effective radius for cloud liquid
-   rel = rel * 1e6_rtype  ! Rescale rel to be in microns
+   rel(:ngrdcol,top_lev:) = rel(:ngrdcol,top_lev:) * 1e6_rtype  ! Rescale rel to be in microns
    !! Effective radius for cloud ice
-   rei = rei * 1e6_rtype  ! Rescale rei to be in microns
+   rei(:ngrdcol,top_lev:) = rei(:ngrdcol,top_lev:) * 1e6_rtype  ! Rescale rei to be in microns
    !! Effective diameter for cloud ice
-   dei = rei * diag_rhoi/rhows * 2._rtype
+   dei(:ngrdcol,top_lev:) = rei(:ngrdcol,top_lev:) * diag_rhoi(:ngrdcol,top_lev:)/rhows * 2._rtype
 
    !!
    !! Limiters for low cloud fraction
