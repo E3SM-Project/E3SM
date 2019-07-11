@@ -1685,21 +1685,6 @@ end subroutine interpolate_ce
        call abortmp("Error in interpolate_vector3d(): wrong interpolation type")
     endif
 
-
-    do i=1,interpdata%n_interp
-       ! compute D(:,:) at the point elem%interp_cube(i)
-       call dmap(D,interpdata%interp_xy(i)%x,interpdata%interp_xy(i)%y,&
-            elem%corners3D,cubed_sphere_map,elem%cartp,elem%facenum)
-       do k=1,nlev
-          ! convert fld from contra->latlon
-          v1 = fld(i,k,1)
-          v2 = fld(i,k,2)
-
-          fld(i,k,1)=D(1,1)*v1 + D(1,2)*v2
-          fld(i,k,2)=D(2,1)*v1 + D(2,2)*v2
-       end do
-    end do
-    
     do i=1,interpdata%n_interp
        ! convert from cart to lonlat: we need to recover matrix K, for that we
        ! need lon,lat at the interp. point.

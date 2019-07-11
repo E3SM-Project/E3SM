@@ -164,6 +164,7 @@ contains
     if (color == 0) par%dynproc = .TRUE.
 #else
     par%comm     = MPI_COMM_WORLD
+    par%dynproc  = .TRUE.
 #endif
     call MPI_comm_rank(par%comm,par%rank,ierr)
     call MPI_comm_size(par%comm,par%nprocs,ierr)
