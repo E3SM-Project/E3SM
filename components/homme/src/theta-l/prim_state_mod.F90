@@ -109,23 +109,13 @@ contains
     !    real (kind=real_kind)  :: E(np,np)
     integer                :: location(3)
 
-    real (kind=real_kind) :: usum_local(nets:nete), &
-         vsum_local(nets:nete), &
-         tsum_local(nets:nete), &
-         thetasum_local(nets:nete), &
-         psmin_local(nets:nete),psmax_local(nets:nete),pssum_local(nets:nete), &
-         fusum_local(nets:nete), &
-         fvsum_local(nets:nete), &
-         ftsum_local(nets:nete), &
-         fqsum_local(nets:nete), &
-         wsum_local(nets:nete),&
-         phisum_local(nets:nete),&
-         dpsum_local(nets:nete)
-
+    real (kind=real_kind) :: usum_local(nets:nete), vsum_local(nets:nete), tsum_local(nets:nete), thetasum_local(nets:nete),&
+                             psmin_local(nets:nete),psmax_local(nets:nete),pssum_local(nets:nete), &
+                             fusum_local(nets:nete), fvsum_local(nets:nete), ftsum_local(nets:nete), fqsum_local(nets:nete), &
+                             wsum_local(nets:nete), phisum_local(nets:nete), dpsum_local(nets:nete)
 
     real (kind=real_kind) :: umin_p, vmin_p, tmin_p, qvmin_p(qsize_d),&
          psmin_p, dpmin_p, thetamin_p
-
 
     real (kind=real_kind) :: umax_p, vmax_p, tmax_p, qvmax_p(qsize_d),&
          psmax_p, dpmax_p, thetamax_p
@@ -264,13 +254,7 @@ contains
        Fvsum_local(ie)   = SUM(elem(ie)%derived%FM(:,:,2,:))
        tsum_local(ie)    = SUM(tdiag)
 
-       if (rsplit>0) then
-          dpsum_local(ie)    = SUM(elem(ie)%state%dp3d(:,:,:,n0))
-       else
-          ! Make sure to initialize this to prevent possible
-          ! floating point exceptions.
-          dpsum_local(ie)    = 0.0D0
-       end if
+       dpsum_local(ie)    = SUM(elem(ie)%state%dp3d(:,:,:,n0))
 
        Ftsum_local(ie)    = SUM(elem(ie)%derived%FT(:,:,:))
        FQsum_local(ie) = SUM(elem(ie)%derived%FQ(:,:,:,1))
@@ -308,11 +292,9 @@ contains
     call findExtremumWithLevel(elem,tmax_local,which,'max',n0,hybrid,hvcoord,nets,nete,.true.)
     call findExtremumWithLevel(elem,tmin_local,which,'min',n0,hybrid,hvcoord,nets,nete,.true.)
 
-    if ( rsplit > 0 ) then
-      which = 'dp'
-      call findExtremumWithLevel(elem,dpmax_local,which,'max',n0,hybrid,hvcoord,nets,nete,.false.)
-      call findExtremumWithLevel(elem,dpmin_local,which,'min',n0,hybrid,hvcoord,nets,nete,.false.)
-    endif
+    which = 'dp'
+    call findExtremumWithLevel(elem,dpmax_local,which,'max',n0,hybrid,hvcoord,nets,nete,.false.)
+    call findExtremumWithLevel(elem,dpmin_local,which,'min',n0,hybrid,hvcoord,nets,nete,.false.)
 
     which = 'dg'
     call findExtremumWithLevel(elem,phimax_local,which,'max',n0,hybrid,hvcoord,nets,nete,.true.)
@@ -401,9 +383,8 @@ contains
        write(iulog,109) "dz(m) = ",phimin_local(1)/g," (",nint(phimin_local(2)),")",&
                                    phimax_local(1)/g," (",nint(phimax_local(2)),")",phisum_p/g
 
-       if (rsplit>0) &
-          write(iulog,109) "dp    = ",dpmin_local(1)," (",nint(dpmin_local(2)),")",&
-                                      dpmax_local(1)," (",nint(dpmax_local(2)),")",dpsum_p
+       write(iulog,109) "dp    = ",dpmin_local(1)," (",nint(dpmin_local(2)),")",&
+                                   dpmax_local(1)," (",nint(dpmax_local(2)),")",dpsum_p
 
        write(iulog,109) "fu  = ",fumin_local(1)," (",nint(fumin_local(2)),")",&
                                  fumax_local(1)," (",nint(fumax_local(2)),")",fusum_p
@@ -415,7 +396,6 @@ contains
                                  fqmax_local(1)," (",nint(fqmax_local(2)),")",fqsum_p
 
        if (.not.theta_hydrostatic_mode) then
-!          write(iulog,'(a,1f10.2)')'min .5*dz/w (CFL condition)',.5/(w_over_dz_p)
           write(iulog,110) "   min .5*dz/w (CFL condition) = ",.5/w_over_dz_max_local(1)," (",nint(w_over_dz_max_local(2)),")"
        endif
 
@@ -1003,7 +983,7 @@ subroutine extremumLevelHelper(res,field,operation,first)
    use kinds, only : real_kind
    use dimensions_mod, only : np, np, nlev
    implicit none
-   real (kind=real_kind), intent(inout) :: res(1:2) ! extrema and level where it happened
+   real (kind=real_kind), intent(inout) :: res(1:2) ! extremum and level where it happened
    character(len=*),      intent(in)    :: operation
    logical,               intent(in)    :: first
    real (kind=real_kind), intent(in)    :: field(np,np,nlev)
@@ -1051,7 +1031,7 @@ subroutine findExtremumWithLevel(elem,res,which,operation,n0,hybrid,hvcoord,nets
     use kinds, only : real_kind
     use dimensions_mod, only : np, np, nlev, nlevp
     implicit none
-    real (kind=real_kind), intent(inout) :: res(1:2) ! extrema and level where it happened
+    real (kind=real_kind), intent(inout) :: res(1:2) ! extremum and level where it happened
     character(len=*),      intent(in)    :: which, operation
     integer,               intent(in)    :: nets,nete,n0
     type (element_t),      intent(in), target :: elem(:)
