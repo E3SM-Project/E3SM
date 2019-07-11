@@ -171,7 +171,7 @@ contains
     call emid_dim_list%Init()
 
   end subroutine EMI_Determine_Active_EMs
-  
+
   !-----------------------------------------------------------------------
   subroutine EMI_Init_EM(em_id)
     !
@@ -254,6 +254,7 @@ contains
        enddo
        !$OMP END PARALLEL DO
 
+       !do a bunch of things just like that for vsfm
     case (EM_ID_FATES)
 
        ! -------------------------------------------------------------
@@ -1063,7 +1064,7 @@ contains
     endif
 
   end subroutine EMI_Driver
-  
+
 !-----------------------------------------------------------------------
   subroutine EMID_Reset_Data_for_EM(data_list, em_stage)
     !

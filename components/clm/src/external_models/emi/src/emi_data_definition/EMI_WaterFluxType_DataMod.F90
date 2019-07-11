@@ -7,7 +7,7 @@ module EMI_WaterFluxType_DataMod
   public :: EMI_WaterFluxType_DataInfoByID
 
 contains
-  
+
 !-----------------------------------------------------------------------
   subroutine EMI_WaterFluxType_DataInfoByID(data_id, id_val, name_val, long_name_val,&
         units_val, is_int_type, is_real_type, ndim, &
@@ -18,7 +18,7 @@ contains
     ! !DESCRIPTION:
     ! Defines information of data exchanged between ELM and EM
     !
-    ! !USES: 
+    ! !USES:
     use EMI_DataDimensionMod
     implicit none
     !
@@ -330,7 +330,7 @@ contains
        dim1_end_name  =  dimname_endc
        data_found   =  .true.
     end select
-    
+
   end subroutine EMI_WaterFluxType_DataInfoByID
-    
+
 end module EMI_WaterFluxType_DataMod

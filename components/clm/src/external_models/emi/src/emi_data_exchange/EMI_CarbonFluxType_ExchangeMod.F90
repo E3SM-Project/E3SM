@@ -1,4 +1,4 @@
-module EMI_CNCarbonStateType_ExchangeMod
+module EMI_CarbonFluxType_ExchangeMod
   !
   use shr_kind_mod                          , only : r8 => shr_kind_r8
   use shr_log_mod                           , only : errMsg => shr_log_errMsg
@@ -10,7 +10,7 @@ module EMI_CNCarbonStateType_ExchangeMod
   use EMI_Atm2LndType_Constants
   use EMI_CanopyStateType_Constants
   use EMI_ChemStateType_Constants
-  use EMI_CNCarbonStateType_Constants
+  use EMI_CarbonFluxType_Constants
   use EMI_EnergyFluxType_Constants
   use EMI_SoilHydrologyType_Constants
   use EMI_SoilStateType_Constants
@@ -24,17 +24,17 @@ module EMI_CNCarbonStateType_ExchangeMod
   implicit none
   !
   !
-  public :: EMI_Pack_CNCarbonStateType_at_Column_Level_for_EM
-  public :: EMI_Unpack_CNCarbonStateType_at_Column_Level_from_EM
+  public :: EMI_Pack_CarbonFluxType_at_Column_Level_for_EM
+  public :: EMI_Unpack_CarbonFluxType_at_Column_Level_from_EM
 
 contains
 
 !-----------------------------------------------------------------------
-  subroutine EMI_Pack_CNCarbonStateType_at_Column_Level_for_EM(data_list, em_stage, &
-        num_filter, filter, col_carbonstate_vars)
+  subroutine EMI_Pack_CarbonFluxType_at_Column_Level_for_EM(data_list, em_stage, &
+        num_filter, filter, carbonflux_vars)
     !
     ! !DESCRIPTION:
-    ! Pack data from ALM col_carbonstate_vars for EM
+    ! Pack data from ALM carbonstate_vars for EM
     !
     ! !USES:
     use clm_varpar             , only : nlevdecomp_full
@@ -47,18 +47,19 @@ contains
     integer                , intent(in) :: em_stage
     integer                , intent(in) :: num_filter
     integer                , intent(in) :: filter(:)
-    type(column_carbon_state) , intent(in) :: col_carbonstate_vars
-    character(len=3), optional, intent(in):: cisotope
+    type(column_carbon_state), intent(in):: carbonflux_vars
     !
     ! !LOCAL_VARIABLES:
     integer                             :: fc,c,j,k
     class(emi_data), pointer            :: cur_data
     logical                             :: need_to_pack
     integer                             :: istage
-
+    integer                             :: count
 
     associate(&
-         decomp_cpools_vr => col_carbonstate_vars%decomp_cpools_vr_col   &
+         t_scalar  => carbonflux_vars%t_scalar,    &
+         w_scalar  => carbonflux_vars%w_scalar,    &
+         decomp_k  => carbonflux_vars%decomp_k     &
          )
 
     count = 0
@@ -79,9 +80,7 @@ contains
 
           select case (cur_data%id)
 
-          case (L2E_STATE_C12_CARBON_POOLS_VERTICALLY_RESOLVED , &
-                L2E_STATE_C13_CARBON_POOLS_VERTICALLY_RESOLVED , &
-                L2E_STATE_C14_CARBON_POOLS_VERTICALLY_RESOLVED)
+          case (L2E_STATE_CARBON_POOLS_VERTICALLY_RESOLVED)
              do fc = 1, num_filter
                 c = filter(fc)
                 do j = 1, nlevdecomp_full
@@ -101,14 +100,14 @@ contains
 
     end associate
 
-  end subroutine EMI_Pack_CNCarbonStateType_at_Column_Level_for_EM
+  end subroutine EMI_Pack_CarbonFluxType_at_Column_Level_for_EM
 
 !-----------------------------------------------------------------------
-  subroutine EMI_Unpack_CNCarbonStateType_at_Column_Level_from_EM(data_list, em_stage, &
-        num_filter, filter, col_carbonstate_vars)
+  subroutine EMI_Unpack_CarbonFluxType_at_Column_Level_from_EM(data_list, em_stage, &
+        num_filter, filter, carbonstate_vars)
     !
     ! !DESCRIPTION:
-    ! Unpack data for ALM col_carbonstate_vars from EM
+    ! Unpack data for ALM carbonstate_vars from EM
     !
     ! !USES:
     use clm_varpar             , only : nlevdecomp_full
@@ -121,7 +120,7 @@ contains
     integer                , intent(in) :: em_stage
     integer                , intent(in) :: num_filter
     integer                , intent(in) :: filter(:)
-    type(carbonstate_type) , intent(in) :: col_carbonstate_vars
+    type(carbonstate_type) , intent(in) :: carbonstate_vars
     !
     ! !LOCAL_VARIABLES:
     integer                             :: fc,c,j,k
@@ -131,7 +130,7 @@ contains
     integer                             :: count
 
     associate(&
-         decomp_cpools_vr => col_carbonstate_vars%decomp_cpools_vr   &
+         decomp_cpools_vr => carbonstate_vars%decomp_cpools_vr_col   &
          )
 
     count = 0
@@ -152,9 +151,7 @@ contains
 
           select case (cur_data%id)
 
-          case (E2L_STATE_C12_CARBON_POOLS_VERTICALLY_RESOLVED, &
-                E2L_STATE_C13_CARBON_POOLS_VERTICALLY_RESOLVED, &
-                E2L_STATE_C14_CARBON_POOLS_VERTICALLY_RESOLVED )
+          case (E2L_STATE_CARBON_POOLS_VERTICALLY_RESOLVED)
              do fc = 1, num_filter
                 c = filter(fc)
                 do j = 1, nlevdecomp_full
@@ -174,7 +171,7 @@ contains
 
     end associate
 
-  end subroutine EMI_Unpack_CNCarbonStateType_at_Column_Level_from_EM
+  end subroutine EMI_Unpack_CarbonFluxType_at_Column_Level_from_EM
 
 
-end module EMI_CNCarbonStateType_ExchangeMod
+end module EMI_CarbonFluxType_ExchangeMod

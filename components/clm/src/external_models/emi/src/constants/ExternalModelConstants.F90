@@ -12,6 +12,12 @@ module ExternalModelConstants
   integer, public, parameter :: EM_ID_BETR                                       = 001
   integer, parameter, public :: EM_BETR_BEGIN_MASS_BALANCE_STAGE                 = 002
   integer, parameter, public :: EM_BETR_PRE_DIAG_WATER_FLUX_STAGE                = 003
+  integer, parameter, public :: EM_BETR_END_MASS_BALANCE_STAGE                   = 004
+  integer, parameter, public :: EM_BETR_STEP_WITHOUT_DRAINAGE_STAGE              = 005
+  integer, parameter, public :: EM_BETR_STEP_WITH_DRAINAGE_STAGE                 = 006
+  integer, parameter, public :: EM_BETR_OUTLOOP_SOILBGC_STAGE                    = 007
+  integer, parameter, public :: EM_BETR_CALC_DEWSUB_FLUX_STAGE                   = 008  
+  ! EM_BeTR_CalcSmpL
 
   integer, public, parameter :: EM_ID_FATES                                      = 101
   integer, parameter, public :: EM_FATES_SUNFRAC_STAGE                           = 102

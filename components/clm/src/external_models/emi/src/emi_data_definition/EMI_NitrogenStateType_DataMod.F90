@@ -1,15 +1,15 @@
-module EMI_CNCarbonStateType_DataMod
+module EMI_NitrogenStateType_DataMod
   !
-  use EMI_CNCarbonStateType_Constants
+  use EMI_NitrogenStateType_Constants
   !
   implicit none
   !
-  public :: EMI_CNCarbonStateType_DataInfoByID
+  public :: EMI_NitrogenStateType_DataInfoByID
 
 contains
 
 !-----------------------------------------------------------------------
-  subroutine EMI_CNCarbonStateType_DataInfoByID(data_id, id_val, name_val, long_name_val,&
+  subroutine EMI_NitrogenStateType_DataInfoByID(data_id, id_val, name_val, long_name_val,&
         units_val, is_int_type, is_real_type, ndim, &
         dim1_beg_name, dim1_end_name, dim2_beg_name, dim2_end_name, &
         dim3_beg_name, dim3_end_name, dim4_beg_name, dim4_end_name, &
@@ -54,10 +54,10 @@ contains
 
     select case(data_id)
 
-    case(L2E_STATE_C12_CARBON_POOLS_VERTICALLY_RESOLVED)
-       id_val         =  L2E_STATE_C12_CARBON_POOLS_VERTICALLY_RESOLVED
-       name_val       =  'c12 decomp cpools vr'
-       long_name_val  =  'c12 decomp cpools vr: ELM to EM'
+    case(L2E_STATE_NITROGEN_POOLS_VERTICALLY_RESOLVED)
+       id_val         =  L2E_STATE_NITROGEN_POOLS_VERTICALLY_RESOLVED
+       name_val       =  'decomp npools vr'
+       long_name_val  =  'decomp npools vr: ELM to EM'
        units_val      =  '[kg/m2]'
        is_real_type   =  .true.
        ndim           =  3
@@ -69,24 +69,10 @@ contains
        dim3_end_name  =  dimname_ndecomp_pools
        data_found   =  .true.
 
-    case(E2L_STATE_C12_CARBON_POOLS_VERTICALLY_RESOLVED)
-       id_val         =  E2L_STATE_C12_CARBON_POOLS_VERTICALLY_RESOLVED
-       name_val       =  'c12 decomp cpools vr'
-       long_name_val  =  'c12 decomp cpools vr: EM to ELM'
-       units_val      =  '[kg/m2]'
-       is_real_type   =  .true.
-       ndim           =  3
-       dim1_beg_name  =  dimname_begc
-       dim1_end_name  =  dimname_endc
-       dim2_beg_name  =  dimname_one
-       dim2_end_name  =  dimname_nlevdecomp_full
-       dim3_beg_name  =  dimname_one
-       dim3_end_name  =  dimname_ndecomp_pools
-       data_found   =  .true.
-    case(L2E_STATE_C13_CARBON_POOLS_VERTICALLY_RESOLVED)
-       id_val         =  L2E_STATE_C13_CARBON_POOLS_VERTICALLY_RESOLVED
-       name_val       =  'c13 decomp cpools vr'
-       long_name_val  =  'c13 decomp cpools vr: ELM to EM'
+    case(E2L_STATE_NITROGEN_POOLS_VERTICALLY_RESOLVED)
+       id_val         =  E2L_STATE_NITROGEN_POOLS_VERTICALLY_RESOLVED
+       name_val       =  'decomp npools vr'
+       long_name_val  =  'decomp npools vr: EM to ELM'
        units_val      =  '[kg/m2]'
        is_real_type   =  .true.
        ndim           =  3
@@ -98,52 +84,59 @@ contains
        dim3_end_name  =  dimname_ndecomp_pools
        data_found   =  .true.
 
-    case(E2L_STATE_C13_CARBON_POOLS_VERTICALLY_RESOLVED)
-       id_val         =  E2L_STATE_C12_CARBON_POOLS_VERTICALLY_RESOLVED
-       name_val       =  'c13 decomp cpools vr'
-       long_name_val  =  'c13 decomp cpools vr: EM to ELM'
+    case(L2E_STATE_SOIL_NH4_VERTICALLY_RESOLVED)
+       id_val         =  L2E_STATE_SOIL_NH4_VERTICALLY_RESOLVED
+       name_val       =  'smin nh4  vr'
+       long_name_val  =  'smin nh4  vr: ELM to EM'
        units_val      =  '[kg/m2]'
        is_real_type   =  .true.
-       ndim           =  3
+       ndim           =  2
        dim1_beg_name  =  dimname_begc
        dim1_end_name  =  dimname_endc
        dim2_beg_name  =  dimname_one
        dim2_end_name  =  dimname_nlevdecomp_full
-       dim3_beg_name  =  dimname_one
-       dim3_end_name  =  dimname_ndecomp_pools
        data_found   =  .true.
 
-    case(L2E_STATE_C14_CARBON_POOLS_VERTICALLY_RESOLVED)
-       id_val         =  L2E_STATE_C14_CARBON_POOLS_VERTICALLY_RESOLVED
-       name_val       =  'c14 decomp cpools vr'
-       long_name_val  =  'c14 decomp cpools vr: ELM to EM'
+    case(E2L_STATE_SOIL_NH4_VERTICALLY_RESOLVED)
+       id_val         =  E2L_STATE_SOIL_NH4_VERTICALLY_RESOLVED
+       name_val       =  'smin nh4  vr'
+       long_name_val  =  'smin nh4 vr: EM to ELM'
        units_val      =  '[kg/m2]'
        is_real_type   =  .true.
-       ndim           =  3
+       ndim           =  2
        dim1_beg_name  =  dimname_begc
        dim1_end_name  =  dimname_endc
        dim2_beg_name  =  dimname_one
        dim2_end_name  =  dimname_nlevdecomp_full
-       dim3_beg_name  =  dimname_one
-       dim3_end_name  =  dimname_ndecomp_pools
        data_found   =  .true.
 
-    case(E2L_STATE_C14_CARBON_POOLS_VERTICALLY_RESOLVED)
-       id_val         =  E2L_STATE_C14_CARBON_POOLS_VERTICALLY_RESOLVED
-       name_val       =  'c14 decomp cpools vr'
-       long_name_val  =  'c14 decomp cpools vr: EM to ELM'
+    case(L2E_STATE_SOIL_NO3_VERTICALLY_RESOLVED)
+       id_val         =  L2E_STATE_SOIL_NO3_VERTICALLY_RESOLVED
+       name_val       =  'smin no3  vr'
+       long_name_val  =  'smin no3  vr: ELM to EM'
        units_val      =  '[kg/m2]'
        is_real_type   =  .true.
-       ndim           =  3
+       ndim           =  2
        dim1_beg_name  =  dimname_begc
        dim1_end_name  =  dimname_endc
        dim2_beg_name  =  dimname_one
        dim2_end_name  =  dimname_nlevdecomp_full
-       dim3_beg_name  =  dimname_one
-       dim3_end_name  =  dimname_ndecomp_pools
+       data_found   =  .true.
+
+    case(E2L_STATE_SOIL_NO3_VERTICALLY_RESOLVED)
+       id_val         =  E2L_STATE_SOIL_NO3_VERTICALLY_RESOLVED
+       name_val       =  'smin no3  vr'
+       long_name_val  =  'smin no3 vr: EM to ELM'
+       units_val      =  '[kg/m2]'
+       is_real_type   =  .true.
+       ndim           =  2
+       dim1_beg_name  =  dimname_begc
+       dim1_end_name  =  dimname_endc
+       dim2_beg_name  =  dimname_one
+       dim2_end_name  =  dimname_nlevdecomp_full
        data_found   =  .true.
     end select
 
-  end subroutine EMI_CNCarbonStateType_DataInfoByID
+  end subroutine EMI_NitrogenStateType_DataInfoByID
 
-end module EMI_CNCarbonStateType_DataMod
+end module EMI_NitrogenStateType_DataMod
