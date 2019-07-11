@@ -1147,6 +1147,16 @@
       <mask>oRRS15to5</mask>
     </model_grid>
 
+    <model_grid alias="ne1024np4_360x720cru_oRRS15to5" compset="(DOCN|XOCN|SOCN|AQP1)">
+      <grid name="atm">ne1024np4</grid>
+      <grid name="lnd">360x720cru</grid>
+      <grid name="ocnice">oRRS15to5</grid>
+      <grid name="rof">null</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oRRS15to5</mask>
+    </model_grid>
+
     <!--- mali grids -->
 
     <model_grid alias="ne30_oECv3_aisgis" compset="_MALI">
@@ -2232,7 +2242,8 @@
     <domain name="oRRS15to5">
       <nx>5778136</nx>
       <ny>1</ny>
-      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.oRRS15to5.160207.nc</file>
+      <!--file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.oRRS15to5.160207.nc</file-->
+      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.oRRS15to5.190514.nc</file>
       <desc>oRRS15to5 is an MPAS ocean grid with a mesh density function that is roughly proportional to the Rossby radius of deformation, with 15 km gridcells at low and 5 km gridcells at high latitudes:</desc>
     </domain>
 
@@ -2519,9 +2530,9 @@
     </gridmap>
 
     <gridmap atm_grid="ne1024np4" ocn_grid="oRRS15to5">
-      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne1024np4/map_ne1024np4_to_oRRS15to5_mono.190508.nc</map>
-      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne1024np4/map_ne1024np4_to_oRRS15to5_mono.190508.nc</map>
-      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne1024np4/map_ne1024np4_to_oRRS15to5_mono.190508.nc</map>
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne1024np4/map_ne1024np4_to_oRRS15to5_mono.190509.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne1024np4/map_ne1024np4_to_oRRS15to5_mono.190509.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne1024np4/map_ne1024np4_to_oRRS15to5_mono.190509.nc</map>
       <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/oRRS15to5/map_oRRS15to5_to_ne1024np4_monotr.190509.nc</map>
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/oRRS15to5/map_oRRS15to5_to_ne1024np4_monotr.190509.nc</map>
     </gridmap>
