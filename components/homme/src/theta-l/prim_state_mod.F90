@@ -235,47 +235,19 @@ contains
        tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0)
 
        !======================================================  
+
        phimax_local(ie)  = MAXVAL(dphi(:,:,:))
        w_over_dz_local(ie)  = MAXVAL(w_over_dz)
-
-!       tmax_local(ie)    = MAXVAL(tdiag)
-
        psmax_local(ie) = MAXVAL(tmp(:,:,ie))
 
-       if ( ie == nets ) then
-          tmax_local(1) = MAXVAL(tdiag)
-          location = MAXLOC(tdiag)
-          tmax_local(2) = location(3)
-       else
-          tempext = MAXVAL(tdiag)
-          if ( tempext > tmax_local(1) ) then
-             tmax_local(1) = tempext
-             location = MAXLOC(tdiag)
-             tmax_local(2) = location(3)
-          endif
-       endif
-
+       call extremumLevelHelper(tmax_local,tdiag,'max',logical(ie == nets))
 
        !======================================================
 
        phimin_local(ie)  = MINVAL(dphi)
-
-!       tmin_local(ie)    = MINVAL(tdiag)
-
        psmin_local(ie) = MINVAL(tmp(:,:,ie))
 
-       if ( ie == nets ) then
-          tmin_local(1) = MINVAL(tdiag)
-          location = MINLOC(tdiag)
-          tmin_local(2) = location(3)
-       else
-          tempext = MINVAL(tdiag)
-          if ( tempext < tmin_local(1) ) then
-             tmin_local(1) = tempext
-             location = MINLOC(tdiag)
-             tmin_local(2) = location(3)
-          endif
-       endif
+       call extremumLevelHelper(tmin_local,tdiag,'min',logical(ie == nets))
 
        !======================================================
 
@@ -1019,6 +991,53 @@ subroutine prim_diag_scalars(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 
 end subroutine prim_diag_scalars
 
+
+!helper routine to compute min/max for derived quantities
+subroutine extremumLevelHelper(res,field,operation,first)
+   use kinds, only : real_kind
+   use dimensions_mod, only : np, np, nlev
+   implicit none
+   real (kind=real_kind), intent(inout) :: res(1:2) ! extrema and level where it happened
+   character(len=*),      intent(in)    :: operation
+   logical,               intent(in)    :: first
+   real (kind=real_kind), intent(in)    :: field(np,np,nlev)
+
+   real (kind=real_kind)                :: val
+   integer                              :: location(3)
+
+   if((operation /= 'max').and.(operation /= 'min')) call abortmp('unknown operation in extremumLevelHelper()')
+
+   if ( first ) then
+      if( operation == 'max' ) then
+         res(1) = MAXVAL(field)
+         location = MAXLOC(field)
+         res(2) = location(3)
+      else
+         res(1) = MINVAL(field)
+         location = MINLOC(field)
+         res(2) = location(3)
+      endif
+   else
+      if( operation == 'max' ) then
+         val = MAXVAL(field)
+         if ( val > res(1) ) then
+            res(1) = val
+            location = MAXLOC(field)
+            res(2) = location(3)
+         endif
+      else
+         val = MINVAL(field)
+         if ( val < res(1) ) then
+            res(1) = val
+            location = MINLOC(field)
+            res(2) = location(3)
+         endif
+      endif
+   endif
+end subroutine extremumLevelHelper
+
+
+
 !doing extrema with level for all elems
 !if processed, res already contains each thread's min/max value with level
 !if not processed, compute min/max and level
@@ -1043,65 +1062,65 @@ subroutine findExtremumWithLevel(elem,res,which,operation,n0,hybrid,hvcoord,nets
 
     if ( .not. processed ) then
 
-    res(2) = -1
-    if( operation == 'min' ) res(1) =  BIGVAL
-    if( operation == 'max' ) res(1) = -BIGVAL
+       res(2) = -1
+       if( operation == 'min' ) res(1) =  BIGVAL
+       if( operation == 'max' ) res(1) = -BIGVAL
           
-    !decide size of the column
-    ksize=-1
-    if( which == 'u' .or.  which == 'v' .or. which == 'vth' .or. which == 'dp' ) ksize=nlev
-    if( which == 'fu' .or.  which == 'fv' .or. which == 'ft' .or. which == 'fq1' ) ksize=nlev
-    if( which == 'w_i' ) ksize=nlevp
+       !decide size of the column
+       ksize=-1
+       if( which == 'u' .or.  which == 'v' .or. which == 'vth' .or. which == 'dp' ) ksize=nlev
+       if( which == 'fu' .or.  which == 'fv' .or. which == 'ft' .or. which == 'fq1' ) ksize=nlev
+       if( which == 'w_i' ) ksize=nlevp
 
-    if( ksize < 1) call abortmp('unset ksize in routine findExtremumWithLevel()')
+       if( ksize < 1) call abortmp('unset ksize in routine findExtremumWithLevel()')
    
-    ! find max or min
-    do ie=nets,nete
+       ! find max or min
+       do ie=nets,nete
 
-       if( which == 'u' )then
-          field(1:np,1:np,1:ksize) = elem(ie)%state%v(1:np,1:np,1,1:ksize,n0)
-       elseif( which == 'v' )then
-          field(1:np,1:np,1:ksize) = elem(ie)%state%v(1:np,1:np,2,1:ksize,n0)
-       elseif( which == 'vth' )then
-          field(1:np,1:np,1:ksize) = elem(ie)%state%vtheta_dp(1:np,1:np,1:ksize,n0)
-       elseif( which == 'w_i' )then
-          field(1:np,1:np,1:ksize) = elem(ie)%state%w_i(1:np,1:np,1:ksize,n0)
-       elseif( which == 'dp' )then
-          field(1:np,1:np,1:ksize) = elem(ie)%state%dp3d(1:np,1:np,1:ksize,n0)
-       elseif( which == 'fu' )then
-          field(1:np,1:np,1:ksize) = elem(ie)%derived%FM(1:np,1:np,1,1:ksize)
-       elseif( which == 'fv' )then
-          field(1:np,1:np,1:ksize) = elem(ie)%derived%FM(1:np,1:np,2,1:ksize)
-       elseif( which == 'ft' )then
-          field(1:np,1:np,1:ksize) = elem(ie)%derived%FT(1:np,1:np,1:ksize)
-       elseif( which == 'fq1' )then
-          field(1:np,1:np,1:ksize) = elem(ie)%derived%FQ(1:np,1:np,1:ksize,1)
-       endif
-
-       if( operation == 'min' )then
-          val = MINVAL(field(:,:,1:ksize))
-          if( val < res(1) ) then
-             location = MINLOC(field(:,:,1:ksize))
-             res(2)   = location(3)
-             res(1)   = val
-          endif 
-       elseif ( operation == 'max' )then
-          val = MAXVAL(field(:,:,1:ksize))
-          if( val > res(1) ) then
-             location = MAXLOC(field(:,:,1:ksize))
-             res(2)   = location(3)
-             res(1)   = val          
+          if( which == 'u' )then
+             field(1:np,1:np,1:ksize) = elem(ie)%state%v(1:np,1:np,1,1:ksize,n0)
+          elseif( which == 'v' )then
+             field(1:np,1:np,1:ksize) = elem(ie)%state%v(1:np,1:np,2,1:ksize,n0)
+          elseif( which == 'vth' )then
+             field(1:np,1:np,1:ksize) = elem(ie)%state%vtheta_dp(1:np,1:np,1:ksize,n0)
+          elseif( which == 'w_i' )then
+             field(1:np,1:np,1:ksize) = elem(ie)%state%w_i(1:np,1:np,1:ksize,n0)
+          elseif( which == 'dp' )then
+             field(1:np,1:np,1:ksize) = elem(ie)%state%dp3d(1:np,1:np,1:ksize,n0)
+          elseif( which == 'fu' )then
+             field(1:np,1:np,1:ksize) = elem(ie)%derived%FM(1:np,1:np,1,1:ksize)
+          elseif( which == 'fv' )then
+             field(1:np,1:np,1:ksize) = elem(ie)%derived%FM(1:np,1:np,2,1:ksize)
+          elseif( which == 'ft' )then
+             field(1:np,1:np,1:ksize) = elem(ie)%derived%FT(1:np,1:np,1:ksize)
+          elseif( which == 'fq1' )then
+             field(1:np,1:np,1:ksize) = elem(ie)%derived%FQ(1:np,1:np,1:ksize,1)
           endif
-       endif
-    enddo !ie 
 
-   endif ! processed
+          if( operation == 'min' )then
+             val = MINVAL(field(:,:,1:ksize))
+             if( val < res(1) ) then
+                location = MINLOC(field(:,:,1:ksize))
+                res(2)   = location(3)
+                res(1)   = val
+             endif 
+          elseif ( operation == 'max' )then
+             val = MAXVAL(field(:,:,1:ksize))
+             if( val > res(1) ) then
+                location = MAXLOC(field(:,:,1:ksize))
+                res(2)   = location(3)
+                res(1)   = val          
+             endif
+          endif
+       enddo !ie 
 
-   if( operation == 'max' )then
-      call ParallelMaxWithIndex(res, hybrid)
-   else
-      call ParallelMinWithIndex(res, hybrid)
-   endif
+    endif ! processed
+
+    if( operation == 'max' )then
+       call ParallelMaxWithIndex(res, hybrid)
+    else
+       call ParallelMinWithIndex(res, hybrid)
+    endif
 
 end subroutine findExtremumWithLevel
 
