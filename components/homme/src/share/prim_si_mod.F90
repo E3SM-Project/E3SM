@@ -572,7 +572,7 @@ subroutine geopotential_t(                                 &
   use time_mod, only : timelevel_t 
   use hybvcoord_mod, only : hvcoord_t 
   use hybrid_mod, only : hybrid_t
-  use dimensions_mod, only : np
+  use dimensions_mod, only : np,nlev
   use global_norms_mod, only : global_integral 
 
   type (element_t), intent(inout) :: elem(:)
@@ -584,7 +584,7 @@ subroutine geopotential_t(                                 &
   ! local 
   real (kind=real_kind)  :: tmp(np,np,nets:nete)
   real (kind=real_kind)  :: scale,mass0
-  integer :: n0,nm1,np1,ie
+  integer :: n0,nm1,np1,ie,k
 
   if (initial_total_mass == 0) return;
   
@@ -606,7 +606,16 @@ subroutine geopotential_t(                                 &
      elem(ie)%state%ps_v(:,:,n0)=elem(ie)%state%ps_v(:,:,n0)*(initial_total_mass/mass0)
      elem(ie)%state%ps_v(:,:,np1)=elem(ie)%state%ps_v(:,:,n0)
      elem(ie)%state%ps_v(:,:,nm1)=elem(ie)%state%ps_v(:,:,n0)
+
+     do k=1,nlev
+        elem(ie)%state%dp3d(:,:,k,n0) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+             ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,n0)
+     enddo
+     elem(ie)%state%dp3d(:,:,:,np1)=elem(ie)%state%dp3d(:,:,:,n0)
+     elem(ie)%state%dp3d(:,:,:,nm1)=elem(ie)%state%dp3d(:,:,:,n0)
+     
   enddo
+
   if(hybrid%par%masterproc .and. hybrid%ithr==0) then 
      write (*,'(a,e24.15)') "Initializing Total Mass (kg/m^2) = ",initial_total_mass
   endif

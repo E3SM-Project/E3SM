@@ -18,7 +18,7 @@ module prim_state_mod
   use global_norms_mod, only: global_integral, linf_snorm, l1_snorm, l2_snorm
   use element_mod,      only: element_t
   use element_ops,      only: get_field, get_phi
-  use element_state,    only: max_itercnt_perstep,max_itererr_perstep,avg_itercnt
+  use element_state,    only: max_itercnt_perstep,max_itererr_perstep,avg_itercnt,diagtimes
   use eos,              only: pnh_and_exner_from_eos
   use viscosity_mod,    only: compute_zeta_C0
   use reduction_mod,    only: parallelmax,parallelmin
@@ -89,8 +89,8 @@ contains
     integer,parameter  :: type=ORDERED
 
     real (kind=real_kind)  :: Mass2,Mass
-    real (kind=real_kind)  :: TOTE(4),KEner(4),PEner(4),IEner(4)
-    real (kind=real_kind)  :: Qvar(qsize_d,4),Qmass(qsize_d,4),Q1mass(qsize_d)
+    real (kind=real_kind)  :: TOTE(diagtimes),KEner(diagtimes),PEner(diagtimes),IEner(diagtimes)
+    real (kind=real_kind)  :: Qvar(qsize_d,diagtimes),Qmass(qsize_d,diagtimes),Q1mass(qsize_d)
     real (kind=real_kind),save  :: time0
     real (kind=real_kind),save  :: TOTE0=0,Qmass0(qsize_d)=0
     real (kind=real_kind)  :: I_div(nlev)
@@ -141,7 +141,7 @@ contains
     real(kind=real_kind) :: relvort
     real(kind=real_kind) :: v1, v2, vco(np,np,2,nlev)
 
-    real (kind=real_kind) :: time, time2,time1, scale, dt, dt_split
+    real (kind=real_kind) :: time, time2,time1, scale, dt, dt_f
     real (kind=real_kind) :: IEvert1,IEvert2,PEvert1,PEvert2
     real (kind=real_kind) :: T1,T2,S1,S2,P1,P2
     real (kind=real_kind) :: PEhorz1,PEhorz2
@@ -172,6 +172,9 @@ contains
 
     dt=tstep*qsplit
     if (rsplit>0) dt = tstep*qsplit*rsplit  ! vertical REMAP timestep 
+    dt_f=dt
+    if (ftype==4) dt_f=tstep
+
     !
     !   dynamics variables in n0 are at time =  'time' 
     !
@@ -189,8 +192,7 @@ contains
     time1 = time - dt
 
 
-    ! npts = np
-    npts=SIZE(elem(1)%state%ps_v(:,:,n0),1)
+    npts = np
     do q=1,qsize
        do ie=nets,nete
           tmp1(ie) = MINVAL(elem(ie)%state%Q(:,:,:,q))
@@ -229,7 +231,8 @@ contains
        enddo
 
        ! surface pressure
-       tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0)
+       !tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0)
+       tmp(:,:,ie)=hvcoord%hyai(1)*hvcoord%ps0 + sum(elem(ie)%state%dp3d(:,:,:,n0),3) 
 
        !======================================================  
        umax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,1,:,n0))
@@ -374,7 +377,8 @@ contains
 
     !   mass = integral( ps-p(top) )
     do ie=nets,nete
-       tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0) 
+       !tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0) 
+       tmp(:,:,ie)=hvcoord%hyai(1)*hvcoord%ps0 + sum(elem(ie)%state%dp3d(:,:,:,n0),3) 
     enddo
     Mass2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
 
@@ -459,8 +463,7 @@ contains
     ! ====================================================================
 
 !   Compute Energies at time1 and time2 (half levels between leapfrog steps)
-    do n=1,4
-       
+    do n=1,diagtimes
        do ie=nets,nete
           tmp(:,:,ie)=elem(ie)%accum%IEner(:,:,n)
        enddo
@@ -664,7 +667,6 @@ contains
     KEH1=0; KEH2=0;  KEV1=0; KEV2=0;  KEwH1=0; KEwH2=0; KEwH3=0;  KEwV1=0; KEwV2=0; 
 #endif
 
-
     if(hybrid%masterthread) then 
        if(use_moisture)then
           if (qsize>=1) then
@@ -673,6 +675,8 @@ contains
        endif
        
        write(iulog,'(3a25)') "**DYNAMICS**        J/m^2","   W/m^2","W/m^2    "
+       if (ftype==4) &
+            write(iulog,*) "NOTE:ftype=4 so d/dt and diss diagnostics include effects of forcing"
 #ifdef ENERGY_DIAGNOSTICS
        ! terms computed during prim_advance, if ENERGY_DIAGNOSTICS is enabled
        if (theta_hydrostatic_mode) then
@@ -738,10 +742,17 @@ contains
           write(iulog,'(a,i3,a,E22.14,a,2E15.7)') "Q",q,",Q diss, dQ^2/dt:",Qmass(q,2)," kg/m^2",&
                (Qmass(q,2)-Qmass(q,1))/dt,(Qvar(q,2)-Qvar(q,1))/dt
        enddo
-       write(iulog,'(a)') 'Physics tendencies applied by dycore:'
-       write(iulog,'(a,2e15.7)') 'dKE/dt(W/m^2): ',(KEner(1)-KEner(3))/dt
-       write(iulog,'(a,2e15.7)') 'dIE/dt(W/m^2): ',(IEner(1)-IEner(3))/dt
-       write(iulog,'(a,2e15.7)') 'dPE/dt(W/m^2): ',(PEner(1)-PEner(3))/dt
+
+
+       ! changes due to viscosity were with tstep
+       ! changes due to forcing depend on ftype
+       write(iulog,'(a)') 'Change from dribbled phys tendencies, viscosity, remap:'
+       write(iulog,'(a,3e15.7)') 'dKE/dt(W/m^2): ',(KEner(1)-KEner(3))/dt_f,&
+            (KEner(6)-KEner(5))/tstep,(KEner(2)-KEner(4))/dt
+       write(iulog,'(a,3e15.7)') 'dIE/dt(W/m^2): ',(IEner(1)-IEner(3))/dt_f,&
+            (IEner(6)-IEner(5))/tstep,(IEner(2)-IEner(4))/dt
+       write(iulog,'(a,3e15.7)') 'dPE/dt(W/m^2): ',(PEner(1)-PEner(3))/dt_f,&
+            (PEner(6)-PEner(5))/tstep,(PEner(2)-PEner(4))/dt
        q=1
        if (qsize>0) write(iulog,'(a,2e15.7)') 'dQ1/dt(kg/sm^2)',(Qmass(q,1)-Qmass(q,3))/dt
 
@@ -857,10 +868,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        call TimeLevel_Qdp(tl, qsplit, tmp, t1_qdp) !get np1 into t2_qdp
     endif
     do ie=nets,nete
-       do k=1,nlev
-          dpt1(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,t1)
-       enddo
+       dpt1=elem(ie)%state%dp3d(:,:,:,t1)
        call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,t1),dpt1,&
             elem(ie)%state%phinh_i(:,:,:,t1),pnh,exner,dpnh_dp_i,pnh_i,'prim_state_mod')
        call get_phi(elem(ie),phi,phi_i,hvcoord,t1,t1_qdp)

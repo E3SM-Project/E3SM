@@ -5,20 +5,11 @@
 !
 !  getter & setter functions that must be provided by each model
 !  
-!  IMPORTANT NOTE:  For vertically lagrangian models, these
-!  routines should ONLY be used outside the timestepping loop
-!  on reference levels.  To compute these fields on floating levels
-!  the model should do that directly (or we need to modify the interface)
+!  Note: all routines require dp3d() to be valid, with the exception of 
+!  the initial condition routines which assume reference levels and will initialize dp3d based 
+!  on their 'ps' input argument
 !
-!  get_field() 
-!     returns temperature, potential temperature, phi, etc..
-!
-! These should be unified to a single interface:
-!  set_thermostate()    
-!     initial condition interface used by DCMIP 2008 tests
-!     
-!  set_state()
-!     initial condition interface used by DCMIP 2012 tests
+!  see full documentation of interface in src/theta-l/element_ops.F90
 !
 !
 module element_ops
@@ -231,18 +222,24 @@ contains
 
 
   !_____________________________________________________________________
-  subroutine set_thermostate(elem,temperature,hvcoord)
+  subroutine set_thermostate(elem,ps,temperature,hvcoord)
   implicit none
   
   type (element_t), intent(inout)   :: elem
-  real (kind=real_kind), intent(in) :: temperature(np,np,nlev)
+  real (kind=real_kind), intent(in) :: temperature(np,np,nlev),ps(np,np)
   type (hvcoord_t),     intent(in)  :: hvcoord                      ! hybrid vertical coordinate struct
-  integer :: tl
+  integer :: tl,k
 
   tl = 1
   elem%state%T(:,:,:,tl)=temperature(:,:,:)
-  
-  do tl = 2,3
+
+  do k=1,nlev
+     elem%state%dp3d(:,:,k,tl)=( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*ps ! elem%state%ps_v(:,:,tl)
+  enddo
+  elem%state%ps_v(:,:,tl)=ps
+
+  do tl = 2,timelevels
     call copy_state(elem,1,tl)
   enddo
 
@@ -261,6 +258,7 @@ contains
     elem%state%v   (i,j,1,k,n0:n1) = u
     elem%state%v   (i,j,2,k,n0:n1) = v
     elem%state%T   (i,j,k,n0:n1)   = T
+    elem%state%dp3d(i,j,k,n0:n1)   = dp
     elem%state%ps_v(i,j,n0:n1)     = ps
     elem%state%phis(i,j)           = phis
 
@@ -299,6 +297,7 @@ contains
       elem%state%v    (:,:,2,:,n) = v
       elem%state%T    (:,:,:,  n) = T
       elem%state%ps_v (:,:,    n) = ps
+      elem%state%dp3d (:,:,:,  n) = dp
       elem%state%phis (:,:)       = phis
     end do
 
