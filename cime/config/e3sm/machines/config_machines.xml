@@ -510,7 +510,7 @@
     <NODENAME_REGEX>swan</NODENAME_REGEX>
     <!--OS>CNL</OS-->
     <OS>LINUX</OS>
-    <COMPILERS>pgi,intel,gnu</COMPILERS>
+    <COMPILERS>pgi,pgiacc,intel,gnu</COMPILERS>
     <MPILIBS>mpt,impi</MPILIBS>
     <PROJECT>acme</PROJECT>
     <SAVE_TIMING_DIR>/lus/scratch/$USER</SAVE_TIMING_DIR>
@@ -603,6 +603,16 @@
         <!--command name="load">cray-libsci/18.12.1</command-->
       </modules>
 
+      <modules compiler="pgiacc">
+        <command name="rm">PrgEnv-intel</command>
+        <command name="load">PrgEnv-pgi/6.0.5</command>
+        <command name="rm">pgi</command>
+        <command name="load">pgi/19.4.0</command>
+        <command name="load">craype-accel-nvidia60</command>
+        <command name="load">cudatoolkit</command>
+        <command name="load">nodehealth</command>
+      </modules>
+
       <modules compiler="gnu">
         <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.5</command>
         <command name="rm">gcc</command>
@@ -657,6 +667,13 @@
     <environment_variables mpilib="mpt">
       <env name="MPICH_GNI_DYNAMIC_CONN">disabled</env>
     </environment_variables>
+
+    <environment_variables compiler="pgiacc">
+      <env name="PGI_ACC_NOTIFY">1</env>
+      <env name="PGI_ACC_TIME">1</env>
+      <env name="CRAY_ACC_DEBUG">1</env>
+    </environment_variables>
+
   </machine>
 
   <!-- Skylake nodes of Stampede2 at TACC -->
