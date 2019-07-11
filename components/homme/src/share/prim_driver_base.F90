@@ -644,10 +644,10 @@ contains
     type (parallel_t),  intent(in)  :: par
 
     ! single global edge buffer for all models:
-    ! hydrostatic 4*nlev      NH:  6*nlev+1
-    ! SL tracers: (qsize+1)*nlev
+    ! hydrostatic 4*nlev      NH:  6*nlev+1  
+    ! SL tracers: (qsize+1)*nlev   e3sm:  (qsize+3)*nlev+2
     ! if this is too small, code will abort with an error message
-    call initEdgeBuffer(par,edge_g,elem,max((qsize+1)*nlev,6*nlev+1))
+    call initEdgeBuffer(par,edge_g,elem,max((qsize+3)*nlev+2,6*nlev+1))
 
     call prim_advance_init1(par,elem,integration)
 #ifdef TRILINOS
