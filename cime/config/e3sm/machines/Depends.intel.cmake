@@ -32,19 +32,19 @@ set(SHR_RANDNUM_C_OBJS
 
 if (NOT DEBUG)
   foreach(ITEM IN LISTS PERFOBJS)
-    set_property(SOURCE ${ITEM} APPEND_STRING PROPERTY COMPILE_FLAGS " -O3 -fp-model fast -no-prec-div ")
+    e3sm_add_flags("${ITEM}" "-O3 -fp-model fast -no-prec-div")
   endforeach()
 
   foreach(ITEM IN LISTS REDUCED_PRECISION_OBJS)
-    set_property(SOURCE ${ITEM} APPEND_STRING PROPERTY COMPILE_FLAGS " -fimf-precision=low -fp-model fast ")
+    e3sm_add_flags("${ITEM}" "-fimf-precision=low -fp-model fast")
   endforeach()
 
   foreach(ITEM IN LISTS SHR_RANDNUM_FORT_OBJS)
-    set_property(SOURCE ${ITEM} APPEND_STRING PROPERTY COMPILE_FLAGS " -O3 -fp-model fast -no-prec-div -no-prec-sqrt -qoverride-limits ")
+    e3sm_add_flags("${ITEM}" "-O3 -fp-model fast -no-prec-div -no-prec-sqrt -qoverride-limits")
   endforeach()
 
   foreach(ITEM IN LISTS SHR_RANDNUM_C_OBJS)
-    set_property(SOURCE ${ITEM} APPEND_STRING PROPERTY COMPILE_FLAGS " -O3 -fp-model fast ")
+    e3sm_add_flags("${ITEM}" "-O3 -fp-model fast")
   endforeach()
 
 endif()

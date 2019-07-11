@@ -25,14 +25,6 @@ function(build_model COMP_CLASS_ARG MODEL_ARG)
   # Build & include dependency files
   #-------------------------------------------------------------------------------
 
-  # Get src files
-  # JGF: Cmake does not have a VPATH concept, so we need relative/absolute paths to source files
-  # Note: Using absolute paths seems to wreck CMake's ability to do a dep analysis on fortran
-  # sources and compile them in the right order.
-  #
-  # One additional subtley is that, when mkSrcfiles found multiple files with the same basename,
-  # only the one found first gets compiled.
-
   gather_sources("${FILEPATH_DIRS}" "${CIMEROOT}")
   set(SOURCES ${SOURCES_RESULT})
   set(GEN_F90_SOURCES ${GEN_F90_SOURCES_RESULT})
@@ -54,7 +46,7 @@ function(build_model COMP_CLASS_ARG MODEL_ARG)
     set(NOOPT_FILES "cam/src/physics/rrtmg/ext/rrtmg_lw/rrtmg_lw_k_g.f90;cam/src/physics/rrtmg/ext/rrtmg_sw/rrtmg_sw_k_g.f90")
 
     if (COSP_LIBDIR)
-      include(${CMAKE_CURRENT_SOURCE_DIR}/cam/src/physics/cosp/Cosp.cmake)
+      include(${PROJECT_SOURCE_DIR}/cam/src/physics/cosp/Cosp.cmake)
     endif()
 
   endif()
@@ -115,12 +107,12 @@ function(build_model COMP_CLASS_ARG MODEL_ARG)
   foreach (SRC_FILE IN LISTS GEN_F90_SOURCES)
     get_filename_component(BASENAME ${SRC_FILE} NAME)
     add_custom_command (
-      OUTPUT ${CMAKE_BINARY_DIR}/${BASENAME}
+      OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${BASENAME}
       COMMAND ${CIMEROOT}/src/externals/genf90/genf90.pl
-      ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}.in > ${CMAKE_BINARY_DIR}/${BASENAME}
-      DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}.in genf90)
+      ${PROJECT_SOURCE_DIR}/${SRC_FILE}.in > ${CMAKE_CURRENT_BINARY_DIR}/${BASENAME}
+      DEPENDS ${PROJECT_SOURCE_DIR}/${SRC_FILE}.in genf90)
     list(REMOVE_ITEM SOURCES ${SRC_FILE})
-    list(APPEND SOURCES ${CMAKE_BINARY_DIR}/${BASENAME})
+    list(APPEND SOURCES ${CMAKE_CURRENT_BINARY_DIR}/${BASENAME})
   endforeach ()
 
   # Flags are slightly different for different fortran extensions
@@ -129,11 +121,11 @@ function(build_model COMP_CLASS_ARG MODEL_ARG)
     if (NOT SOURCE_FILE IN_LIST COSP_SOURCES)
       get_filename_component(SOURCE_EXT ${SOURCE_FILE} EXT)
       if (SOURCE_EXT STREQUAL ".F" OR SOURCE_EXT STREQUAL ".f")
-        set_property(SOURCE ${SOURCE_FILE} APPEND_STRING PROPERTY COMPILE_FLAGS " ${FIXEDFLAGS}")
+        e3sm_add_flags("${SOURCE_FILE}" "${FIXEDFLAGS}")
       elseif(SOURCE_EXT STREQUAL ".f90")
-        set_property(SOURCE ${SOURCE_FILE} APPEND_STRING PROPERTY COMPILE_FLAGS " ${FREEFLAGS}")
+        e3sm_add_flags("${SOURCE_FILE}" "${FREEFLAGS}")
       elseif(SOURCE_EXT STREQUAL ".F90")
-        set_property(SOURCE ${SOURCE_FILE} APPEND_STRING PROPERTY COMPILE_FLAGS " ${FREEFLAGS} ${CONTIGUOUS_FLAG}")
+        e3sm_add_flags("${SOURCE_FILE}" "${FREEFLAGS} ${CONTIGUOUS_FLAG}")
       endif()
     endif()
   endforeach()
@@ -151,7 +143,7 @@ function(build_model COMP_CLASS_ARG MODEL_ARG)
 
   # Disable optimizations on some files that would take too long to compile, expect these to all be fortran files
   foreach (SOURCE_FILE IN LISTS NOOPT_FILES)
-    set_property(SOURCE ${SOURCE_FILE} APPEND_STRING PROPERTY COMPILE_FLAGS " ${FFLAGS_NOOPT}")
+    e3sm_add_flags("${SOURCE_FILE}" "${FFLAGS_NOOPT}")
   endforeach()
 
   #-------------------------------------------------------------------------------
@@ -163,10 +155,18 @@ function(build_model COMP_CLASS_ARG MODEL_ARG)
     set(MLIBS "${MLIBS} ${MPISERIAL}")
   endif()
 
+  foreach(ITEM IN LISTS SOURCES)
+    if (ITEM MATCHES "${CMAKE_BINARY_DIR}/.*") # is generated
+      list(APPEND REAL_SOURCES ${ITEM})
+    else()
+      list(APPEND REAL_SOURCES "../../${ITEM}")
+    endif()
+  endforeach()
+
   if (MODEL_ARG STREQUAL "cpl")
     set(TARGET_NAME "${CIME_MODEL}.exe")
     add_executable(${TARGET_NAME})
-    target_sources(${TARGET_NAME} PRIVATE ${SOURCES})
+    target_sources(${TARGET_NAME} PRIVATE ${REAL_SOURCES})
     set(ALL_LIBS "${ULIBDEP} ${MCTLIBS} ${PIOLIB} ${GPTLLIB} ${SLIBS} ${MLIBS} ${F90_LDFLAGS}")
     separate_arguments(ALL_LIBS_LIST UNIX_COMMAND "${ALL_LIBS}")
     foreach(ITEM IN LISTS COMP_CLASSES)
@@ -181,7 +181,7 @@ function(build_model COMP_CLASS_ARG MODEL_ARG)
   else()
     set(TARGET_NAME ${COMP_CLASS_ARG})
     add_library(${TARGET_NAME})
-    target_sources(${TARGET_NAME} PRIVATE ${SOURCES})
+    target_sources(${TARGET_NAME} PRIVATE ${REAL_SOURCES})
   endif()
 
   # Subtle: In order for fortran dependency scanning to work, our CPPFPP/DEFS must be registered
