@@ -1,6 +1,7 @@
 import os
 import collections
 import cdms2
+import cdtime
 import cdutil
 import acme_diags
 from acme_diags.driver import utils
@@ -59,6 +60,22 @@ def run_diag(parameter):
             test_data = utils.dataset.Dataset(parameter, test=True)
             test = test_data.get_timeseries_variable(var)
             
+            # Redefine time to be in the middle of the time interval
+            # And rewrite the time axis
+            #These steps are important for data where the absolute time doesn't full in the middle, such as E3SM, the time was recorded at the end of each time Bounds.
+            var_time = test.getTime()
+            tbounds = var_time.getBounds()
+            var_time[:] = 0.5*(tbounds[:,0]+tbounds[:,1])
+            var_time_absolute = var_time.asComponentTime()
+            time2 = cdms2.createAxis(var_time)
+            time2.designateTime()
+            #.designateTime() needs to be set before attributes changes.
+            time2.units = var_time.units
+            time2.calendar = var_time.calendar
+            #time2.calendar = cdtime.NoLeapCalendar
+            time2.id = 'time'
+            test.setAxis(0,time2)
+            
             # Make sure data have correct montly Bounds
             cdutil.setTimeBoundsMonthly(test)
             print('test shape',test.shape, test.units)
@@ -84,6 +101,7 @@ def run_diag(parameter):
                 # but land_frac and ocean_frac are climo'ed.
                 test_domain, ref_domain = utils.general.select_region(
                     region, test, ref, land_frac, ocean_frac, parameter)
+                print(test_domain.getTime().asComponentTime())
 
                 # Average over selected region, and average
                 # over months to get the yearly mean.
