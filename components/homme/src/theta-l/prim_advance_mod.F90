@@ -25,7 +25,7 @@ module prim_advance_mod
   use edgetype_mod,       only: EdgeBuffer_t,  EdgeDescriptor_t, edgedescriptor_t
   use element_mod,        only: element_t
   use element_state,      only: max_itercnt_perstep,avg_itercnt,max_itererr_perstep, nu_scale_top, nlev_tom
-  use element_ops,        only: get_temperature, set_theta_ref, state0, get_R_star
+  use element_ops,        only: set_theta_ref, state0, get_R_star
   use eos,                only: pnh_and_exner_from_eos,phi_from_eos,get_dirk_jacobian
   use hybrid_mod,         only: hybrid_t
   use hybvcoord_mod,      only: hvcoord_t

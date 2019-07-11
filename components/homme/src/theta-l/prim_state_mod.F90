@@ -201,9 +201,7 @@ contains
        do ie=nets,nete
           tmp1(ie) = MAXVAL(elem(ie)%state%Q(:,:,:,q))
        enddo
-
        qvmax_p(q) = ParallelMax(tmp1,hybrid)
-
        do ie=nets,nete
           global_shared_buf(ie,1) = SUM(elem(ie)%state%Q(:,:,:,q))
        enddo
@@ -222,7 +220,7 @@ contains
        endif
 
        ! layer thickness
-       call get_phi(elem(ie),dphi,phi_i,hvcoord,n0,n0q)
+       call get_phi(elem(ie),dphi,phi_i,hvcoord,n0)
        do k=1,nlev
           dphi(:,:,k)=-(phi_i(:,:,k+1)-phi_i(:,:,k))
           w_over_dz(:,:,k)=&
@@ -234,40 +232,34 @@ contains
        tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0)
 
        !======================================================  
-!       umax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,1,:,n0))
-!       vmax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,2,:,n0))
        phimax_local(ie)  = MAXVAL(dphi(:,:,:))
        w_over_dz_local(ie)  = MAXVAL(w_over_dz)
-!       thetamax_local(ie) = MAXVAL(elem(ie)%state%vtheta_dp(:,:,:,n0)) 
 
-       fumax_local(ie)    = MAXVAL(elem(ie)%derived%FM(:,:,1,:))
-       fvmax_local(ie)    = MAXVAL(elem(ie)%derived%FM(:,:,2,:))
+!       fumax_local(ie)    = MAXVAL(elem(ie)%derived%FM(:,:,1,:))
+!       fvmax_local(ie)    = MAXVAL(elem(ie)%derived%FM(:,:,2,:))
 
        tmax_local(ie)    = MAXVAL(tdiag)
 
-       if (rsplit>0) &
-            dpmax_local(ie)    = MAXVAL(elem(ie)%state%dp3d(:,:,:,n0))
+!       if (rsplit>0) &
+!            dpmax_local(ie)    = MAXVAL(elem(ie)%state%dp3d(:,:,:,n0))
 
        psmax_local(ie) = MAXVAL(tmp(:,:,ie))
-       ftmax_local(ie)    = MAXVAL(elem(ie)%derived%FT(:,:,:))
-       fqmax_local(ie)    = MAXVAL(elem(ie)%derived%FQ(:,:,:,1))
+!       ftmax_local(ie)    = MAXVAL(elem(ie)%derived%FT(:,:,:))
+!       fqmax_local(ie)    = MAXVAL(elem(ie)%derived%FQ(:,:,:,1))
        !======================================================
 
-!       umin_local(ie)    = MINVAL(elem(ie)%state%v(:,:,1,:,n0))
-!       vmin_local(ie)    = MINVAL(elem(ie)%state%v(:,:,2,:,n0))
- !      thetamin_local(ie) = MINVAL(elem(ie)%state%vtheta_dp(:,:,:,n0))
        phimin_local(ie)  = MINVAL(dphi)
 
-       Fumin_local(ie)    = MINVAL(elem(ie)%derived%FM(:,:,1,:))
-       Fvmin_local(ie)    = MINVAL(elem(ie)%derived%FM(:,:,2,:))
+!       Fumin_local(ie)    = MINVAL(elem(ie)%derived%FM(:,:,1,:))
+!       Fvmin_local(ie)    = MINVAL(elem(ie)%derived%FM(:,:,2,:))
 
        tmin_local(ie)    = MINVAL(tdiag)
 
-       if (rsplit>0) &
-            dpmin_local(ie)    = MINVAL(elem(ie)%state%dp3d(:,:,:,n0))
+!       if (rsplit>0) &
+!            dpmin_local(ie)    = MINVAL(elem(ie)%state%dp3d(:,:,:,n0))
 
-       Ftmin_local(ie)    = MINVAL(elem(ie)%derived%FT(:,:,:))
-       Fqmin_local(ie) = MINVAL(elem(ie)%derived%FQ(:,:,:,1))
+!       Ftmin_local(ie)    = MINVAL(elem(ie)%derived%FT(:,:,:))
+!       Fqmin_local(ie) = MINVAL(elem(ie)%derived%FQ(:,:,:,1))
 
 
        psmin_local(ie) = MINVAL(tmp(:,:,ie))
@@ -322,6 +314,28 @@ contains
     call findExtremumWithLevel(elem,thetamax_local,which,'max',n0,hybrid,nets,nete)
     call findExtremumWithLevel(elem,thetamin_local,which,'min',n0,hybrid,nets,nete)
 
+    if ( rsplit > 0 ) then
+      which = 'dp'
+      call findExtremumWithLevel(elem,dpmax_local,which,'max',n0,hybrid,nets,nete)
+      call findExtremumWithLevel(elem,dpmin_local,which,'min',n0,hybrid,nets,nete)
+    endif
+
+    which = 'fu'
+    call findExtremumWithLevel(elem,fumax_local,which,'max',n0,hybrid,nets,nete)
+    call findExtremumWithLevel(elem,fumin_local,which,'min',n0,hybrid,nets,nete)
+
+    which = 'fv'
+    call findExtremumWithLevel(elem,fvmax_local,which,'max',n0,hybrid,nets,nete)
+    call findExtremumWithLevel(elem,fvmin_local,which,'min',n0,hybrid,nets,nete)
+
+    which = 'ft'
+    call findExtremumWithLevel(elem,ftmax_local,which,'max',n0,hybrid,nets,nete)
+    call findExtremumWithLevel(elem,ftmin_local,which,'min',n0,hybrid,nets,nete)
+
+    which = 'fq1'
+    call findExtremumWithLevel(elem,fqmax_local,which,'max',n0,hybrid,nets,nete)
+    call findExtremumWithLevel(elem,fqmin_local,which,'min',n0,hybrid,nets,nete)
+
     which = 'w_i'
     call findExtremumWithLevel(elem,wmax_local,which,'max',n0,hybrid,nets,nete)
     call findExtremumWithLevel(elem,wmin_local,which,'min',n0,hybrid,nets,nete)
@@ -338,28 +352,28 @@ contains
     tmin_p = ParallelMin(tmin_local,hybrid)
     tmax_p = ParallelMax(tmax_local,hybrid)
 
-    thetamin_p = ParallelMin(thetamin_local,hybrid)
-    thetamax_p = ParallelMax(thetamax_local,hybrid)
+!    thetamin_p = ParallelMin(thetamin_local,hybrid)
+!    thetamax_p = ParallelMax(thetamax_local,hybrid)
     
-    if (rsplit>0)then
-       dpmin_p = ParallelMin(dpmin_local,hybrid)
-       dpmax_p = ParallelMax(dpmax_local,hybrid)
-    endif
+!    if (rsplit>0)then
+!       dpmin_p = ParallelMin(dpmin_local,hybrid)
+!       dpmax_p = ParallelMax(dpmax_local,hybrid)
+!    endif
 
     psmin_p = ParallelMin(psmin_local,hybrid)
     psmax_p = ParallelMax(psmax_local,hybrid)
 
-    FUmin_p = ParallelMin(FUmin_local,hybrid)
-    FUmax_p = ParallelMax(FUmax_local,hybrid)
+!    FUmin_p = ParallelMin(FUmin_local,hybrid)
+!    FUmax_p = ParallelMax(FUmax_local,hybrid)
 
-    FVmin_p = ParallelMin(FVmin_local,hybrid)
-    FVmax_p = ParallelMax(FVmax_local,hybrid)
+!    FVmin_p = ParallelMin(FVmin_local,hybrid)
+!    FVmax_p = ParallelMax(FVmax_local,hybrid)
 
-    FTmin_p = ParallelMin(FTmin_local,hybrid)
-    FTmax_p = ParallelMax(FTmax_local,hybrid)
+!    FTmin_p = ParallelMin(FTmin_local,hybrid)
+!    FTmax_p = ParallelMax(FTmax_local,hybrid)
 
-    FQmin_p = ParallelMin(FQmin_local,hybrid)
-    FQmax_p = ParallelMax(FQmax_local,hybrid)
+!    FQmin_p = ParallelMin(FQmin_local,hybrid)
+!    FQmax_p = ParallelMax(FQmax_local,hybrid)
 
     phimin_p = ParallelMin(phimin_local,hybrid)
     phimax_p = ParallelMax(phimax_local,hybrid)
@@ -404,7 +418,7 @@ contains
     if(hybrid%masterthread) then
        write(iulog,109) "u     = ",umin_local(1)," (",nint(umin_local(2)),")",&
                                    umax_local(1)," (",nint(umax_local(2)),")",usum_p
-       write(iulog,109) "u     = ",vmin_local(1)," (",nint(vmin_local(2)),")",&
+       write(iulog,109) "v     = ",vmin_local(1)," (",nint(vmin_local(2)),")",&
                                    vmax_local(1)," (",nint(vmax_local(2)),")",vsum_p
        write(iulog,109) "w     = ",wmin_local(1)," (",nint(wmin_local(2)),")",&
                                    wmax_local(1)," (",nint(wmax_local(2)),")",wsum_p
@@ -421,7 +435,8 @@ contains
        write(iulog,100) "dz(m) = ",phimin_p/g,phimax_p/g,phisum_p/g
 
        if (rsplit>0) &
-            write(iulog,100) "dp    = ",dpmin_p,dpmax_p,dpsum_p
+          write(iulog,109) "dp    = ",dpmin_local(1)," (",nint(dpmin_local(2)),")",&
+                                      dpmax_local(1)," (",nint(dpmax_local(2)),")",dpsum_p
 
        do q=1,qsize
           write(iulog,100) "qv= ",qvmin_p(q), qvmax_p(q), qvsum_p(q)
@@ -429,10 +444,20 @@ contains
        write(iulog,100) "ps= ",psmin_p,psmax_p,pssum_p
        write(iulog,'(a,E23.15,a,E23.15,a)') "      M = ",Mass,' kg/m^2',Mass2,' mb     '
 
-       if(fumin_p.ne.fumax_p) write(iulog,100) "fu = ",fumin_p,fumax_p,fusum_p
-       if(fvmin_p.ne.fvmax_p) write(iulog,100) "fv = ",fvmin_p,fvmax_p,fvsum_p
-       if(ftmin_p.ne.ftmax_p) write(iulog,100) "ft = ",ftmin_p,ftmax_p,ftsum_p
-       if(fqmin_p.ne.fqmax_p) write(iulog,100) "fq = ",fqmin_p, fqmax_p, fqsum_p
+       write(iulog,109) "fu  = ",fumin_local(1)," (",nint(fumin_local(2)),")",&
+                                 fumax_local(1)," (",nint(fumax_local(2)),")",fusum_p
+       write(iulog,109) "fv  = ",fvmin_local(1)," (",nint(fvmin_local(2)),")",&
+                                 fvmax_local(1)," (",nint(fvmax_local(2)),")",fvsum_p
+       write(iulog,109) "ft  = ",ftmin_local(1)," (",nint(ftmin_local(2)),")",&
+                                 ftmax_local(1)," (",nint(ftmax_local(2)),")",ftsum_p
+       write(iulog,109) "fq1 = ",fqmin_local(1)," (",nint(fqmin_local(2)),")",&
+                                 fqmax_local(1)," (",nint(fqmax_local(2)),")",fqsum_p
+
+!       if(fumin_p.ne.fumax_p) write(iulog,100) "fu = ",fumin_p,fumax_p,fusum_p
+!       if(fvmin_p.ne.fvmax_p) write(iulog,100) "fv = ",fvmin_p,fvmax_p,fvsum_p
+!       if(ftmin_p.ne.ftmax_p) write(iulog,100) "ft = ",ftmin_p,ftmax_p,ftsum_p
+!       if(fqmin_p.ne.fqmax_p) write(iulog,100) "fq = ",fqmin_p, fqmax_p, fqsum_p
+
        if (.not.theta_hydrostatic_mode) then
           write(iulog,'(a,1f10.2)')'min .5*dz/w (CFL condition)',.5/(w_over_dz_p)
        endif
@@ -889,7 +914,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        enddo
        call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,t1),dpt1,&
             elem(ie)%state%phinh_i(:,:,:,t1),pnh,exner,dpnh_dp_i,pnh_i,'prim_state_mod')
-       call get_phi(elem(ie),phi,phi_i,hvcoord,t1,t1_qdp)
+       call get_phi(elem(ie),phi,phi_i,hvcoord,t1)
 
    
        !   KE   .5 dp/dn U^2
@@ -1032,13 +1057,15 @@ subroutine findExtremumWithLevel(elem,res,which,operation,n0,hybrid,nets,nete)
           
     !decide size of the column
     ksize=-1
-    if( which == 'u' .or.  which == 'v' .or. 'vth' ) ksize=nlev
+    if( which == 'u' .or.  which == 'v' .or. which == 'vth' .or. which == 'dp' ) ksize=nlev
+    if( which == 'fu' .or.  which == 'fv' .or. which == 'ft' .or. which == 'fq1' ) ksize=nlev
     if( which == 'w_i' ) ksize=nlevp
 
     if( ksize < 1) call abortmp('unset ksize in routine findExtremumWithLevel()')
    
     ! find max or min
     do ie=nets,nete
+
        if( which == 'u' )then
           field(1:np,1:np,1:ksize) = elem(ie)%state%v(1:np,1:np,1,1:ksize,n0)
        elseif( which == 'v' )then
@@ -1047,7 +1074,18 @@ subroutine findExtremumWithLevel(elem,res,which,operation,n0,hybrid,nets,nete)
           field(1:np,1:np,1:ksize) = elem(ie)%state%vtheta_dp(1:np,1:np,1:ksize,n0)
        elseif( which == 'w_i' )then
           field(1:np,1:np,1:ksize) = elem(ie)%state%w_i(1:np,1:np,1:ksize,n0)
+       elseif( which == 'dp' )then
+          field(1:np,1:np,1:ksize) = elem(ie)%state%dp3d(1:np,1:np,1:ksize,n0)
+       elseif( which == 'fu' )then
+          field(1:np,1:np,1:ksize) = elem(ie)%derived%FM(1:np,1:np,1,1:ksize)
+       elseif( which == 'fv' )then
+          field(1:np,1:np,1:ksize) = elem(ie)%derived%FM(1:np,1:np,2,1:ksize)
+       elseif( which == 'ft' )then
+          field(1:np,1:np,1:ksize) = elem(ie)%derived%FT(1:np,1:np,1:ksize)
+       elseif( which == 'fq1' )then
+          field(1:np,1:np,1:ksize) = elem(ie)%derived%FQ(1:np,1:np,1:ksize,1)
        endif
+
        if( operation == 'min' )then
           val = MINVAL(field(:,:,1:ksize))
           if( val < res(1) ) then
