@@ -104,7 +104,7 @@ contains
     real (kind=real_kind)  :: dp(np,np)
     real (kind=real_kind)  :: phi_i(np,np,nlevp)
     real (kind=real_kind)  :: dphi(np,np,nlev)
-    real (kind=real_kind)  :: w_over_dz(np,np,nlev),w_over_dz_local(nets:nete),w_over_dz_p
+    real (kind=real_kind)  :: w_over_dz(np,np,nlev),w_over_dz_p
     real (kind=real_kind)  :: tdiag(np,np,nlev), tempext
     !    real (kind=real_kind)  :: E(np,np)
     integer                :: location(3)
@@ -114,13 +114,13 @@ contains
          tsum_local(nets:nete), &
          thetasum_local(nets:nete), &
          psmin_local(nets:nete),psmax_local(nets:nete),pssum_local(nets:nete), &
-         fumin_local(nets:nete),fumax_local(nets:nete),fusum_local(nets:nete), &
-         fvmin_local(nets:nete),fvmax_local(nets:nete),fvsum_local(nets:nete), &
-         ftmin_local(nets:nete),ftmax_local(nets:nete),ftsum_local(nets:nete), &
-         fqmin_local(nets:nete),fqmax_local(nets:nete),fqsum_local(nets:nete), &
+         fusum_local(nets:nete), &
+         fvsum_local(nets:nete), &
+         ftsum_local(nets:nete), &
+         fqsum_local(nets:nete), &
          wsum_local(nets:nete),&
-         phimin_local(nets:nete),phimax_local(nets:nete),phisum_local(nets:nete),&
-         dpmin_local(nets:nete), dpmax_local(nets:nete), dpsum_local(nets:nete)
+         phisum_local(nets:nete),&
+         dpsum_local(nets:nete)
 
 
     real (kind=real_kind) :: umin_p, vmin_p, tmin_p, qvmin_p(qsize_d),&
@@ -140,7 +140,11 @@ contains
 
     real (kind=real_kind) :: umax_local(2), umin_local(2), vmax_local(2), vmin_local(2),&
                              wmax_local(2), wmin_local(2), thetamin_local(2), thetamax_local(2),&
-                             tmin_local(2), tmax_local(2)
+                             tmin_local(2), tmax_local(2), phimin_local(2), phimax_local(2), &
+                             fumin_local(2), fumax_local(2), fvmin_local(2), fvmax_local(2), &
+                             ftmin_local(2), ftmax_local(2), fqmin_local(2), fqmax_local(2), &
+                             dpmin_local(2), dpmax_local(2), &
+                             w_over_dz_max_local(2)
     character(len=3)      :: which
  
     real(kind=real_kind) :: relvort
@@ -236,18 +240,18 @@ contains
 
        !======================================================  
 
-       phimax_local(ie)  = MAXVAL(dphi(:,:,:))
-       w_over_dz_local(ie)  = MAXVAL(w_over_dz)
        psmax_local(ie) = MAXVAL(tmp(:,:,ie))
 
        call extremumLevelHelper(tmax_local,tdiag,'max',logical(ie == nets))
+       call extremumLevelHelper(phimax_local,dphi,'max',logical(ie == nets))
+       call extremumLevelHelper(w_over_dz_max_local,w_over_dz,'max',logical(ie == nets))
 
        !======================================================
 
-       phimin_local(ie)  = MINVAL(dphi)
        psmin_local(ie) = MINVAL(tmp(:,:,ie))
 
        call extremumLevelHelper(tmin_local,tdiag,'min',logical(ie == nets))
+       call extremumLevelHelper(phimin_local,dphi,'min',logical(ie == nets))
 
        !======================================================
 
@@ -258,8 +262,8 @@ contains
        phisum_local(ie)  = SUM(dphi)
        Fusum_local(ie)   = SUM(elem(ie)%derived%FM(:,:,1,:))
        Fvsum_local(ie)   = SUM(elem(ie)%derived%FM(:,:,2,:))
-
        tsum_local(ie)    = SUM(tdiag)
+
        if (rsplit>0) then
           dpsum_local(ie)    = SUM(elem(ie)%state%dp3d(:,:,:,n0))
        else
@@ -310,6 +314,13 @@ contains
       call findExtremumWithLevel(elem,dpmin_local,which,'min',n0,hybrid,hvcoord,nets,nete,.false.)
     endif
 
+    which = 'dg'
+    call findExtremumWithLevel(elem,phimax_local,which,'max',n0,hybrid,hvcoord,nets,nete,.true.)
+    call findExtremumWithLevel(elem,phimin_local,which,'min',n0,hybrid,hvcoord,nets,nete,.true.)
+
+    which = 'cfl'
+    call findExtremumWithLevel(elem,w_over_dz_max_local,which,'max',n0,hybrid,hvcoord,nets,nete,.true.)
+
     which = 'fu'
     call findExtremumWithLevel(elem,fumax_local,which,'max',n0,hybrid,hvcoord,nets,nete,.false.)
     call findExtremumWithLevel(elem,fumin_local,which,'min',n0,hybrid,hvcoord,nets,nete,.false.)
@@ -332,11 +343,6 @@ contains
 
     psmin_p = ParallelMin(psmin_local,hybrid)
     psmax_p = ParallelMax(psmax_local,hybrid)
-
-    phimin_p = ParallelMin(phimin_local,hybrid)
-    phimax_p = ParallelMax(phimax_local,hybrid)
-
-    w_over_dz_p = ParallelMax(w_over_dz_local,hybrid)
 
     call wrap_repro_sum(nvars=12, comm=hybrid%par%comm)
     usum_p = global_shared_sum(1)
@@ -385,23 +391,19 @@ contains
           write(iulog,109) "T     = ",tmin_local(1)," (",nint(tmin_local(2)),")",&
                                       tmax_local(1)," (",nint(tmax_local(2)),")",tsum_p
        else
-          write(iulog,100) "dpnh/dp=",tmin_p,tmax_p,tsum_p
+          write(iulog,109) "mu    = ",tmin_local(1)," (",nint(tmin_local(2)),")",&
+                                      tmax_local(1)," (",nint(tmax_local(2)),")",tsum_p
        endif
 
        write(iulog,109) "vTh_dp= ",thetamin_local(1)," (",nint(thetamin_local(2)),")",&
                                    thetamax_local(1)," (",nint(thetamax_local(2)),")",thetasum_p
 
-       write(iulog,100) "dz(m) = ",phimin_p/g,phimax_p/g,phisum_p/g
+       write(iulog,109) "dz(m) = ",phimin_local(1)/g," (",nint(phimin_local(2)),")",&
+                                   phimax_local(1)/g," (",nint(phimax_local(2)),")",phisum_p/g
 
        if (rsplit>0) &
           write(iulog,109) "dp    = ",dpmin_local(1)," (",nint(dpmin_local(2)),")",&
                                       dpmax_local(1)," (",nint(dpmax_local(2)),")",dpsum_p
-
-       do q=1,qsize
-          write(iulog,100) "qv= ",qvmin_p(q), qvmax_p(q), qvsum_p(q)
-       enddo
-       write(iulog,100) "ps= ",psmin_p,psmax_p,pssum_p
-       write(iulog,'(a,E23.15,a,E23.15,a)') "      M = ",Mass,' kg/m^2',Mass2,' mb     '
 
        write(iulog,109) "fu  = ",fumin_local(1)," (",nint(fumin_local(2)),")",&
                                  fumax_local(1)," (",nint(fumax_local(2)),")",fusum_p
@@ -412,19 +414,23 @@ contains
        write(iulog,109) "fq1 = ",fqmin_local(1)," (",nint(fqmin_local(2)),")",&
                                  fqmax_local(1)," (",nint(fqmax_local(2)),")",fqsum_p
 
-!       if(fumin_p.ne.fumax_p) write(iulog,100) "fu = ",fumin_p,fumax_p,fusum_p
-!       if(fvmin_p.ne.fvmax_p) write(iulog,100) "fv = ",fvmin_p,fvmax_p,fvsum_p
-!       if(ftmin_p.ne.ftmax_p) write(iulog,100) "ft = ",ftmin_p,ftmax_p,ftsum_p
-!       if(fqmin_p.ne.fqmax_p) write(iulog,100) "fq = ",fqmin_p, fqmax_p, fqsum_p
-
        if (.not.theta_hydrostatic_mode) then
-          write(iulog,'(a,1f10.2)')'min .5*dz/w (CFL condition)',.5/(w_over_dz_p)
+!          write(iulog,'(a,1f10.2)')'min .5*dz/w (CFL condition)',.5/(w_over_dz_p)
+          write(iulog,110) "   min .5*dz/w (CFL condition) = ",.5/w_over_dz_max_local(1)," (",nint(w_over_dz_max_local(2)),")"
        endif
+
+       do q=1,qsize
+          write(iulog,100) "qv= ",qvmin_p(q), qvmax_p(q), qvsum_p(q)
+       enddo
+       write(iulog,100) "ps= ",psmin_p,psmax_p,pssum_p
+       write(iulog,'(a,E23.15,a,E23.15,a)') "      M = ",Mass,' kg/m^2',Mass2,'mb     '
+
     end if
  
 100 format (A10,3(E23.15))
 108 format (A10,E23.15,A6,E23.15,A6,E23.15)
 109 format (A10,E23.15,A2,I3,A1,E23.15,A2,I3,A1,E23.15)
+110 format (A33,E23.15,A2,I3,A1)
 
     if ( test_case(1:10) == "baroclinic" ) then
        ! zeta does not need to be made continious, but we  
