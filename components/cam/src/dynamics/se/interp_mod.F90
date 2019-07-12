@@ -69,6 +69,11 @@ CONTAINS
     type(horiz_coord_t), pointer       :: lon_coord
     character(len=max_hcoordname_len)  :: gridname
 
+    if(any(interp_output)) then
+       if (.not. par%dynproc) &
+       call endrun('setup_history_interpolation: interpolated output not supported if atm_ntasks>dyn_npes')
+    endif
+
     if (associated(cam_interpolate)) then
       do i = 1, size(cam_interpolate)
         if (associated(interpdata_set(ithr)%interpdata)) then
