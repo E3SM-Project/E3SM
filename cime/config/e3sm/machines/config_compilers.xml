@@ -2086,4 +2086,78 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <TRILINOS_PATH>$ENV{TRILINOS_PATH}</TRILINOS_PATH>
 </compiler>
 
+<compiler COMPILER="intel" MACH="cascade">
+  <NETCDF_PATH> $(NETCDF_HOME)</NETCDF_PATH>
+  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <CONFIG_ARGS> --host=Linux --enable-filesystem-hints=lustre</CONFIG_ARGS>
+  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
+  <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </ADD_FFLAGS>
+  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi -L$(MKL_PATH)/lib/intel64 -lmkl_rt </SLIBS>
+  <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
+</compiler>
+
+<compiler COMPILER="nag" MACH="cascade">
+ <NETCDF_PATH>$(NETCDF_ROOT)</NETCDF_PATH >
+ <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+ <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+ <MPI_PATH MPILIB="mvapich2"> $(MPI_LIB)</MPI_PATH >
+ <ADD_CPPDEFS> -DnoI8 </ADD_CPPDEFS>
+ <ADD_LDFLAGS compile_threaded="true">  </ADD_LDFLAGS>
+ <!--  -C=Undefined flag doesn't work as it requires MPI and NETCDF to be
+      compiled with this flag, which is not available now. NAG has the following debug flags
+      <ADD_FFLAGS DEBUG="TRUE">  -gline  -C=all  -g  -C=undefined -C=recursion -nan -O0 -v  </ADD_FFLAGS>
+      "-nan" is an important flag. currently, it doesn't work for pio, it is only used for "cam" model.
+ -->
+ <ADD_FFLAGS DEBUG="TRUE" >  -C=all  -g  -O0 -v  </ADD_FFLAGS>
+ <ADD_FFLAGS DEBUG="TRUE" MODEL="cam">  -C=all  -g  -nan -O0 -v  </ADD_FFLAGS>
+ <ADD_SLIBS> -L$(NETCDF_ROOT)/lib -lnetcdf -lnetcdff -L$(MKL_PATH) -lmkl_rt</ADD_SLIBS>
+</compiler>
+
+<compiler COMPILER="pgi" MACH="constance">
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </ADD_FFLAGS>
+  <NETCDF_PATH> $(NETCDF_HOME)</NETCDF_PATH>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
+  <ADD_FFLAGS DEBUG="TRUE">-C -Mbounds -traceback -Mchkfpstk -Mchkstk -Mdalign  -Mdepchk  -Mextend -Miomutex -Mrecursive  -Ktrap=fp -O0 -g -byteswapio -Meh_frame</ADD_FFLAGS>
+  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi -L$(MPI_LIB) -lmpich</SLIBS>
+</compiler>
+
+<compiler COMPILER="intel" MACH="constance">
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <NETCDF_PATH> $(NETCDF_HOME)</NETCDF_PATH>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
+  <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </ADD_FFLAGS>
+  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi -L$(MKL_PATH) -lmkl_rt</SLIBS>
+</compiler>
+
+<compiler COMPILER="nag" MACH="constance">
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 -kind=byte </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 -kind=byte </ADD_FFLAGS>
+  <NETCDF_PATH> $(NETCDF_HOME)</NETCDF_PATH>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
+  <ADD_FFLAGS DEBUG="TRUE"> -C=all  -g  -O0 -v </ADD_FFLAGS>
+  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi -L$(MKL_PATH) -lmkl_rt</SLIBS>
+</compiler>
+
+<compiler COMPILER="pgi" MACH="compy">
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="TRUE"> -C -Mbounds -traceback -Mchkfpstk -Mchkstk -Mdalign  -Mdepchk  -Mextend -Miomutex -Mrecursive  -Ktrap=fp -O0 -g -byteswapio -Meh_frame </ADD_FFLAGS>
+  <NETCDF_PATH> $(NETCDF_HOME)</NETCDF_PATH>
+  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
+  <SFC>pgfortran</SFC>
+
 </config_compilers>
