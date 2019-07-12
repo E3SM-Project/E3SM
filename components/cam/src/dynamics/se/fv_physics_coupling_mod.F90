@@ -140,7 +140,7 @@ contains
     ! Purpose: topo is initially defined on phys grid, 
     !          so this routine copys it to the dynamics grid
     use parallel_mod,   only: par
-    use edge_mod,       only: edgeVpack_nlyr, edgeVunpack_nlry,edge_g
+    use edge_mod,       only: edgeVpack_nlyr, edgeVunpack_nlyr,edge_g
     use bndry_mod,      only: bndry_exchangeV
     implicit none
     !---------------------------------------------------------------------------
