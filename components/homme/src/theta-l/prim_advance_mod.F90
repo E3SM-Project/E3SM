@@ -1284,7 +1284,7 @@ contains
              pnh,exner,temp_i,caller='advance_hypervis')
         
         do k=1,nlev
-           k2=max(k,nlev)
+           k2=min(k+1,nlev)
            if (theta_hydrostatic_mode) then
               heating(:,:,k)= (elem(ie)%state%v(:,:,1,k,nt)*vtens(:,:,1,k,ie) + &
                    elem(ie)%state%v(:,:,2,k,nt)*vtens(:,:,2,k,ie) ) / &
