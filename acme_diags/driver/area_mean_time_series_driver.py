@@ -1,7 +1,6 @@
 import os
 import collections
 import cdms2
-import cdtime
 import cdutil
 import acme_diags
 from acme_diags.driver import utils
