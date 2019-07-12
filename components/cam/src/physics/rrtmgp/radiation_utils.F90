@@ -302,7 +302,9 @@ contains
       ! nothing and return silently.
       if (len(trim(error_message)) > 0) then
          if (stop_on_error_local) then
-            call endrun(module_name // ': ' // error_message)
+           write(*,*) 'TEMPORARY_WARNING ', error_message
+!          Temporary "fix" until a threshold is implemented
+!            call endrun(module_name // ': ' // error_message)
          end if
       end if
    end subroutine handle_error
