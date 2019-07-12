@@ -62,7 +62,7 @@ def parse_command_line(args):
         expect(False,
                "Must specify -clone as an input argument")
 
-    startval = 1
+    startval = '1'
     if int(args.ensemble) > 1:
         m = re.search(r'(\d+)$', args.case)
         expect(m, " case name must end in an integer to use this feature")
@@ -88,7 +88,8 @@ def _main_func():
     nint = len(startval)
 
     for i in range(int(startval), int(startval)+ensemble):
-        case = case[:-nint] + '{{0:0{0:d}d}}'.format(nint).format(i)
+        if ensemble > 1:
+            case = case[:-nint] + '{{0:0{0:d}d}}'.format(nint).format(i)
         with Case(cloneroot, read_only=False) as clone:
             clone.create_clone(case, keepexe=keepexe, mach_dir=mach_dir,
                                project=project,
