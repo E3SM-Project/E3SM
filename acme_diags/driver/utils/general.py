@@ -11,6 +11,28 @@ import cdms2
 from acme_diags import container
 from acme_diags.derivations.default_regions import regions_specs
 
+def adjust_time_from_time_bounds(var):
+    """
+    Redefine time to be in the middle of the time interval, and rewrite 
+    the time axis. This is important for data where the absolute time doesn't fall in the middle of the time interval, such as E3SM, the time was recorded at the end of each time Bounds.
+    """
+    var_time = var.getTime()
+    tbounds = var_time.getBounds()
+    var_time[:] = 0.5*(tbounds[:,0]+tbounds[:,1])
+    var_time_absolute = var_time.asComponentTime()
+    time2 = cdms2.createAxis(var_time)
+    time2.designateTime()
+    #.designateTime() needs to be set before attributes changes.
+    time2.units = var_time.units
+    time2.calendar = var_time.calendar
+    time2.setBounds(tbounds)
+    #time2.calendar = cdtime.NoLeapCalendar
+    time2.id = 'time'
+    var.setAxis(0,time2)
+#    cdutil.setTimeBoundsMonthly(var)
+ 
+    return var
+
 
 def get_name_and_yrs(parameters, dataset, season=''):
     """

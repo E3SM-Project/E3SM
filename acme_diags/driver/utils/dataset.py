@@ -10,6 +10,7 @@ import collections
 import traceback
 import cdms2
 import acme_diags.derivations.acme
+from acme_diags.driver import utils
 from . import climo
 
 
@@ -94,6 +95,8 @@ class Dataset():
         #   v1 = Dataset.get_variable('v1', season)
         # and also:
         #   v1, v2, v3 = Dataset.get_variable('v1', season, extra_vars=['v2', 'v3'])
+        for variable in variables:
+            variable = utils.general.adjust_time_from_time_bounds(variable)
         return variables[0] if len(variables) == 1 else variables
 
 

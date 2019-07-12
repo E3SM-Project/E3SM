@@ -44,7 +44,7 @@ def plot(var, regions_to_data, parameter):
         refs = data_set_for_region.refs
         test = data_set_for_region.test
         ax1 = fig.add_axes(panel[i_region])
-        ax1.plot(test.asma()[:-1], 'k', linewidth=2,label = 'model' +' ({0:.1f})'.format(np.mean(test.asma()[:-1])))
+        ax1.plot(test.asma(), 'k', linewidth=2,label = 'model' +' ({0:.1f})'.format(np.mean(test.asma())))
         for i_ref, ref in enumerate(refs):
             ax1.plot(ref.asma(), line_color[i_ref], linewidth=2,label = ref.ref_name +' ({0:.1f})'.format(np.mean(ref.asma())))
 

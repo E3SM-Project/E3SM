@@ -58,9 +58,8 @@ def run_diag(parameter):
             print("Selected region: {}".format(region))
             test_data = utils.dataset.Dataset(parameter, test=True)
             test = test_data.get_timeseries_variable(var)
+            print('Start and end time for selected time slices for test data: ', test.getTime().asComponentTime()[0],test.getTime().asComponentTime()[-1])
             
-            # Make sure data have correct montly Bounds
-            cdutil.setTimeBoundsMonthly(test)
             print('test shape',test.shape, test.units)
 
             parameter.viewer_descr[var] = getattr(test, 'long_name', var)
@@ -76,9 +75,8 @@ def run_diag(parameter):
                 parameter.ref_name_yrs = utils.general.get_name_and_yrs(parameter, ref_data)
 
                 ref = ref_data.get_timeseries_variable(var)
+                print('Start and end time for selected time slices for ref data: ', ref.getTime().asComponentTime()[0],ref.getTime().asComponentTime()[-1])
 
-                cdutil.setTimeBoundsMonthly(ref)
- 
                 
                 # TODO: Will this work if ref and test are timeseries data,
                 # but land_frac and ocean_frac are climo'ed.
