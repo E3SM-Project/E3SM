@@ -346,11 +346,9 @@ class EnvBatch(EnvBase):
                             directive = self.get_resolved_value("" if self.text(node) is None else self.text(node))
                             if output_format == 'cylc':
                                 if self._batchtype == 'pbs':
-                                    m = re.match(r'\s*(-[^l])', directive)
+                                    m = re.match(r'\s*(-[\w])', directive)
                                     if m:
-                                        directive = re.sub(r'(-[^l]) ','{} = '.format(m.group(1)), directive)
-                                    else:
-                                        directive = re.sub(r':',r'\n      -l ',directive)
+                                        directive = re.sub(r'(-[\w]) ','{} = '.format(m.group(1)), directive)
 
                             default = self.get(node, "default")
                             if default is None:
@@ -499,7 +497,7 @@ class EnvBatch(EnvBase):
                 batch_job_id = str(alljobs.index(job)) if dry_run else result
                 depid[job] = batch_job_id
                 jobcmds.append( (job, result) )
-                
+
                 if self._batchtype == "cobalt" or external_workflow:
                     break
             if not external_workflow:
@@ -590,7 +588,7 @@ class EnvBatch(EnvBase):
                     getattr(case, function_name)(**{k: v for k, (v, _) in args.items()})
                 else:
                     expect(os.path.isfile(job_name),"Could not find file {}".format(job_name))
-                    run_cmd_no_fail(os.path.join(self._caseroot,job_name), combine_output=True, verbose=True, from_dir=self._caseroot)                  
+                    run_cmd_no_fail(os.path.join(self._caseroot,job_name), combine_output=True, verbose=True, from_dir=self._caseroot)
             return
 
         submitargs = self.get_submit_args(case, job)
