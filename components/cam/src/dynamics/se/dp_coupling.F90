@@ -114,8 +114,8 @@ CONTAINS
         ! Map dynamics state to FV physics grid
         !-----------------------------------------------------------------------
         call t_startf('dyn_to_fv_phys')
-        call dyn_to_fv_phys(elem,ps_tmp(1:nphys_sq,:),zs_tmp(1:nphys_sq,:),     \
-                                 T_tmp(1:nphys_sq,:,:),uv_tmp(1:nphys_sq,:,:,:),  \
+        call dyn_to_fv_phys(elem,ps_tmp(1:nphys_sq,:),zs_tmp(1:nphys_sq,:),     &
+                                 T_tmp(1:nphys_sq,:,:),uv_tmp(1:nphys_sq,:,:,:),&
                                  om_tmp(1:nphys_sq,:,:),q_tmp(1:nphys_sq,:,:,:))
         call t_stopf('dyn_to_fv_phys')
 
@@ -289,7 +289,7 @@ CONTAINS
       do ilyr = 1,pver
         do icol = 1,ncols
           if (.not.single_column) then
-            phys_state(lchnk)%omega(icol,ilyr) = phys_state(lchnk)%omega(icol,ilyr) \
+            phys_state(lchnk)%omega(icol,ilyr) = phys_state(lchnk)%omega(icol,ilyr) &
                                                 *phys_state(lchnk)%pmid(icol,ilyr)
           end if
         end do ! icol
@@ -469,8 +469,8 @@ CONTAINS
       if (fv_nphys > 0) then
 
         ! Map FV physics state to dynamics grid
-        call fv_phys_to_dyn(elem,T_tmp(1:nphys_sq,:,:),   \
-                                 uv_tmp(1:nphys_sq,:,:,:),\
+        call fv_phys_to_dyn(elem,T_tmp(1:nphys_sq,:,:),   &
+                                 uv_tmp(1:nphys_sq,:,:,:),&
                                  q_tmp(1:nphys_sq,:,:,:))
 
       else ! physics is on GLL nodes
