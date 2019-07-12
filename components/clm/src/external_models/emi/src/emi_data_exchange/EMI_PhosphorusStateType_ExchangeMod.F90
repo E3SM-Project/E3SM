@@ -48,14 +48,13 @@ contains
     integer                , intent(in) :: num_filter
     integer                , intent(in) :: filter(:)
     type(column_phosphorus_state) , intent(in) :: col_phosphorusstate_vars
-    character(len=3), optional, intent(in):: cisotope
     !
     ! !LOCAL_VARIABLES:
     integer                             :: fc,c,j,k
     class(emi_data), pointer            :: cur_data
     logical                             :: need_to_pack
     integer                             :: istage
-
+    integer                             :: count
 
     associate(&
          decomp_ppools_vr => col_phosphorusstate_vars%decomp_ppools_vr  , &
@@ -128,7 +127,7 @@ contains
     integer                , intent(in) :: em_stage
     integer                , intent(in) :: num_filter
     integer                , intent(in) :: filter(:)
-    type(carbonstate_type) , intent(in) :: col_phosphorusstate_vars
+    type(column_phosphorus_state) , intent(in) :: col_phosphorusstate_vars
     !
     ! !LOCAL_VARIABLES:
     integer                             :: fc,c,j,k
@@ -173,7 +172,7 @@ contains
              do fc = 1, num_filter
                 c = filter(fc)
                 do j = 1, nlevdecomp_full
-                    solutionp_vr(c,j) = cur_data%data_real_2d(c,j)
+!                    solutionp_vr(c,j) = cur_data%data_real_2d(c,j)
                 enddo
              enddo
              cur_data%is_set = .true.

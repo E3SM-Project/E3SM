@@ -26,6 +26,8 @@ module ExternalModelBETRMod
   use EMI_WaterFluxType_Constants
   use EMI_WaterStateType_Constants
   use EMI_KineticParType_Constants
+  use ExternalModelBaseType        , only : em_base_type
+  use BeTRSimulationALM            , only : betr_simulation_alm_type
   !
   implicit none
   private
@@ -261,8 +263,21 @@ module ExternalModelBETRMod
 
 contains
 
+    subroutine EM_BETR_Init(this, l2e_init_list, e2l_init_list, iam, bounds_clump)
+
+    implicit none
+    !
+    ! !ARGUMENTS:
+    class(em_betr_type)                  :: this
+    class(emi_data_list) , intent(in)    :: l2e_init_list
+    class(emi_data_list) , intent(inout) :: e2l_init_list
+    integer              , intent(in)    :: iam
+    type(bounds_type)    , intent(in)    :: bounds_clump
+
+
+    end subroutine EM_BETR_Init
     !------------------------------------------------------------------------
-  subroutine EM_BETR_Solve(this, em_stage, dt, nstep, bounds, l2e_list, e2l_list, &
+  subroutine EM_BETR_Solve(this, em_stage, dt, nstep, clump_rank, l2e_list, e2l_list, &
        bounds_clump)
     !
     ! !DESCRIPTION:
@@ -281,7 +296,7 @@ contains
     integer              , intent(in)    :: em_stage
     real(r8)             , intent(in)    :: dt
     integer              , intent(in)    :: nstep
-    type(bounds_type)    , intent(in)    :: bounds
+    integer              , intent(in)    :: clump_rank
     class(emi_data_list) , intent(in)    :: l2e_list
     class(emi_data_list) , intent(inout) :: e2l_list
     type(bounds_type)    , intent (in)   :: bounds_clump
@@ -315,6 +330,30 @@ contains
     end select
 
   end subroutine EM_BETR_Solve
+
+  !------------------------------------------------------------------------
+  subroutine EM_BETR_Populate_L2E_Init_List(this, l2e_init_list)
+    !
+    ! !DESCRIPTION:
+    ! Create a list of all variables needed by BeTR from ALM
+    !
+    ! !USES:
+    !
+    implicit none
+    !
+    ! !ARGUMENTS:
+    class(em_betr_type)                 :: this
+    class(emi_data_list), intent(inout) :: l2e_init_list
+    !
+    ! !LOCAL VARIABLES:
+    class(emi_data), pointer :: data
+    integer        , pointer :: em_stages(:)
+    integer                  :: number_em_stages
+    integer                  :: id
+    integer                  :: index
+
+
+  end subroutine EM_BETR_Populate_L2E_Init_List
   !------------------------------------------------------------------------
   subroutine EM_BETR_Populate_L2E_List(this, l2e_list)
     !

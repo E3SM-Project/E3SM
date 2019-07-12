@@ -48,17 +48,16 @@ contains
     integer                , intent(in) :: num_filter
     integer                , intent(in) :: filter(:)
     type(column_carbon_state) , intent(in) :: col_carbonstate_vars
-    character(len=3), optional, intent(in):: cisotope
     !
     ! !LOCAL_VARIABLES:
     integer                             :: fc,c,j,k
     class(emi_data), pointer            :: cur_data
     logical                             :: need_to_pack
     integer                             :: istage
-
+    integer                             :: count
 
     associate(&
-         decomp_cpools_vr => col_carbonstate_vars%decomp_cpools_vr_col   &
+         decomp_cpools_vr => col_carbonstate_vars%decomp_cpools_vr   &
          )
 
     count = 0
@@ -121,7 +120,7 @@ contains
     integer                , intent(in) :: em_stage
     integer                , intent(in) :: num_filter
     integer                , intent(in) :: filter(:)
-    type(carbonstate_type) , intent(in) :: col_carbonstate_vars
+    type(column_carbon_state) , intent(in) :: col_carbonstate_vars
     !
     ! !LOCAL_VARIABLES:
     integer                             :: fc,c,j,k

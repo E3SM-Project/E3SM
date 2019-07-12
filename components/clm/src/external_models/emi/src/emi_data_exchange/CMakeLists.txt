@@ -3,6 +3,9 @@ set(EMI_EMI_DATA_EXCHANGE_SOURCES
   EMI_CanopyStateType_ExchangeMod.F90
   EMI_ChemStateType_ExchangeMod.F90
   EMI_CNCarbonStateType_ExchangeMod.F90
+  EMI_CarbonFluxType_ExchangeMod.F90
+  EMI_NitrogenStateType_ExchangeMod.F90
+  EMI_PhosphorusStateType_ExchangeMod.F90
   EMI_ColumnType_ExchangeMod.F90
   EMI_EnergyFluxType_ExchangeMod.F90
   EMI_Filter_ExchangeMod.F90

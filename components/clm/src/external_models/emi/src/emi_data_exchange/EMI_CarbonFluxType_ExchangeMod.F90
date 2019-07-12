@@ -6,7 +6,7 @@ module EMI_CarbonFluxType_ExchangeMod
   use clm_varctl                            , only : iulog
   use EMI_DataMod                           , only : emi_data_list, emi_data
   use EMI_DataDimensionMod                  , only : emi_data_dimension_list_type
-  use ColumnDataType                        , only : column_carbon_state
+  use ColumnDataType                        , only : column_carbon_state, column_carbon_flux
   use EMI_Atm2LndType_Constants
   use EMI_CanopyStateType_Constants
   use EMI_ChemStateType_Constants
@@ -47,7 +47,7 @@ contains
     integer                , intent(in) :: em_stage
     integer                , intent(in) :: num_filter
     integer                , intent(in) :: filter(:)
-    type(column_carbon_state), intent(in):: carbonflux_vars
+    type(column_carbon_flux), intent(in):: carbonflux_vars
     !
     ! !LOCAL_VARIABLES:
     integer                             :: fc,c,j,k
@@ -85,7 +85,7 @@ contains
                 c = filter(fc)
                 do j = 1, nlevdecomp_full
                    do k = 1, ndecomp_pools
-                      cur_data%data_real_3d(c,j,k) = decomp_cpools_vr(c,j,k)
+!                      cur_data%data_real_3d(c,j,k) = decomp_cpools_vr(c,j,k)
                    enddo
                 enddo
              enddo
@@ -120,7 +120,7 @@ contains
     integer                , intent(in) :: em_stage
     integer                , intent(in) :: num_filter
     integer                , intent(in) :: filter(:)
-    type(carbonstate_type) , intent(in) :: carbonstate_vars
+    type(column_carbon_state) , intent(in) :: carbonstate_vars
     !
     ! !LOCAL_VARIABLES:
     integer                             :: fc,c,j,k
@@ -130,7 +130,7 @@ contains
     integer                             :: count
 
     associate(&
-         decomp_cpools_vr => carbonstate_vars%decomp_cpools_vr_col   &
+         decomp_cpools_vr => carbonstate_vars%decomp_cpools_vr   &
          )
 
     count = 0

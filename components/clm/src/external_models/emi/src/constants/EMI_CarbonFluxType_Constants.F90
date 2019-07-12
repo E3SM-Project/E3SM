@@ -1,4 +1,4 @@
-module EMI_CNCarbonStateType_Constants
+module EMI_CarbonFluxType_Constants
   !
   implicit none
   private
@@ -67,4 +67,9 @@ module EMI_CNCarbonStateType_Constants
 
   integer, parameter, public :: E2L_FLUX_CARBON_C14_DIC_RUNOFF_INTEGRATED  = 2532
 
-end module EMI_CNCarbonStateType_Constants
+  integer, parameter, public :: L2E_BGC_COEFF_DECOMPK_VERTICALLY_RESOLVED = 2533
+
+  integer, parameter, public :: L2E_BGC_COEFF_T_SCALAR_VERTICALLY_RESOLVED = 2534
+
+  integer, parameter, public :: L2E_BGC_COEFF_W_SCALAR_VERTICALLY_RESOLVED = 2535
+end module EMI_CarbonFluxType_Constants

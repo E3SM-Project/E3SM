@@ -48,14 +48,13 @@ contains
     integer                , intent(in) :: num_filter
     integer                , intent(in) :: filter(:)
     type(column_nitrogen_state) , intent(in) :: col_nitrogenstate_vars
-    character(len=3), optional, intent(in):: cisotope
     !
     ! !LOCAL_VARIABLES:
     integer                             :: fc,c,j,k
     class(emi_data), pointer            :: cur_data
     logical                             :: need_to_pack
     integer                             :: istage
-
+    integer                             :: count
 
     associate(&
          decomp_npools_vr => col_nitrogenstate_vars%decomp_npools_vr  , &
@@ -81,9 +80,7 @@ contains
 
           select case (cur_data%id)
 
-          case (L2E_STATE_NITROGEN_POOLS_VERTICALLY_RESOLVED , &
-                L2E_STATE_C13_CARBON_POOLS_VERTICALLY_RESOLVED , &
-                L2E_STATE_C14_CARBON_POOLS_VERTICALLY_RESOLVED)
+          case (L2E_STATE_NITROGEN_POOLS_VERTICALLY_RESOLVED)
              do fc = 1, num_filter
                 c = filter(fc)
                 do j = 1, nlevdecomp_full
@@ -142,7 +139,7 @@ contains
     integer                , intent(in) :: em_stage
     integer                , intent(in) :: num_filter
     integer                , intent(in) :: filter(:)
-    type(carbonstate_type) , intent(in) :: col_nitrogenstate_vars
+    type(column_nitrogen_state) , intent(in) :: col_nitrogenstate_vars
     !
     ! !LOCAL_VARIABLES:
     integer                             :: fc,c,j,k
@@ -189,7 +186,7 @@ contains
              do fc = 1, num_filter
                 c = filter(fc)
                 do j = 1, nlevdecomp_full
-                    smin_nh4_vr(c,j) = cur_data%data_real_2d(c,j)
+!                    smin_nh4_vr(c,j) = cur_data%data_real_2d(c,j)
                 enddo
              enddo
              cur_data%is_set = .true.
@@ -199,7 +196,7 @@ contains
              do fc = 1, num_filter
                 c = filter(fc)
                 do j = 1, nlevdecomp_full
-                    smin_no3_vr(c,j) = cur_data%data_real_2d(c,j)
+!                    smin_no3_vr(c,j) = cur_data%data_real_2d(c,j)
                 enddo
              enddo
              cur_data%is_set = .true.

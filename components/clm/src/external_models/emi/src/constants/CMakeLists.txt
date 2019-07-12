@@ -3,6 +3,7 @@ set(EMI_CONSTANTS_SOURCES
   EMI_CanopyStateType_Constants.F90
   EMI_ChemStateType_Constants.F90
   EMI_CNCarbonStateType_Constants.F90
+  EMI_CarbonFluxType_Constants.F90
   EMI_ColumnType_Constants.F90
   EMI_EnergyFluxType_Constants.F90
   EMI_Filter_Constants.F90
@@ -12,6 +13,11 @@ set(EMI_CONSTANTS_SOURCES
   EMI_TemperatureType_Constants.F90
   EMI_WaterFluxType_Constants.F90
   EMI_WaterStateType_Constants.F90
+  EMI_KineticParType_Constants.F90
+  EMI_NitrogenStateType_Constants.F90
+  EMI_NitrogenFluxType_Constants.F90
+  EMI_PhosphorusStateType_Constants.F90
+  EMI_PhosphorusFluxType_Constants.F90
   ExternalModelConstants.F90 )
 
 include(add_emi_library)
