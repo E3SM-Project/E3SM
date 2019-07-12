@@ -440,7 +440,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    if(trigdcape_ull)then
      call pbuf_get_field(pbuf, t_star_idx,     t_star)
      call pbuf_get_field(pbuf, q_star_idx,     q_star)
-     if ( is_first_step() .or. is_first_restart_step() ) then
+     if ( is_first_step()) then
        q_star(:ncol,:pver) = state%q(:ncol,:pver,1)
        t_star(:ncol,:pver) = state%t(:ncol,:pver)
      end if

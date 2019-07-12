@@ -373,8 +373,6 @@ subroutine zm_convr(lchnk   ,ncol    , &
 !>songxl 2014-05-20------------------
 
 !DCAPE-ULL
-!  real(r8), intent(in) :: t_star(pcols,pver)     ! grid slice of temperature at mid-layer.
-!  real(r8), intent(in) :: q_star(pcols,pver)     ! grid slice of specific humidity
    real(r8), intent(in), pointer, dimension(:,:) :: t_star ! intermediate T between n and n-1 time step
    real(r8), intent(in), pointer, dimension(:,:) :: q_star ! intermediate q between n and n-1 time step
 
@@ -676,7 +674,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
       endif
 
       !DCAPE-ULL
-      if (.not. is_first_step() .and. (.not. is_first_restart_step()) .and. trigdcape_ull) then
+      if (.not. is_first_step() .and. trigdcape_ull) then
          iclosure = .false.
          call buoyan_dilute(lchnk   ,ncol    , &
                  q_star  ,t_star     ,p       ,z       ,pf       , &
@@ -696,7 +694,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
 !
    capelmt_wk = capelmt   ! capelmt_wk default to capelmt for default trigger
 
-   if (trigdcape_ull .and. (.not. is_first_step()) .and. (.not. is_first_restart_step()))  &
+   if (trigdcape_ull .and. (.not. is_first_step()) )  &
       capelmt_wk = 0.0_r8
 
    lengath = 0
@@ -716,7 +714,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
       end if
      else if (trigdcape_ull) then
      ! DCAPE-ULL
-      if (is_first_step() .or. is_first_restart_step()) then
+      if (is_first_step()) then
          !Will this cause restart to be non-BFB
            if (cape(i) > capelmt) then
               lengath = lengath + 1
