@@ -219,9 +219,9 @@ subroutine shoc_main ( &
   real(r8) :: wqw_sec(shcol,nlevi) 
   ! vertical tke flux [m3/s3]
   real(r8) :: wtke_sec(shcol,nlevi)
-  ! vertical zonal momentum flux [m3/s3] 
+  ! vertical zonal momentum flux [m2/s2] 
   real(r8) :: uw_sec(shcol,nlevi) 
-  ! vertical meridional momentum flux [m3/s3]
+  ! vertical meridional momentum flux [m2/s2]
   real(r8) :: vw_sec(shcol,nlevi)
   ! third moment vertical velocity [m3/s3] 
   real(r8) :: w3(shcol,nlevi) 
@@ -448,9 +448,9 @@ subroutine update_prognostics( &
   real(r8), intent(in) :: wqw_sec(shcol,nlevi)
   ! vertical flux of tracers [varies]
   real(r8), intent(in) :: wtracer_sec(shcol,nlevi,num_tracer)
-  ! vertical zonal momentum flux [m3/s3]
+  ! vertical zonal momentum flux [m2/s2]
   real(r8), intent(in) :: uw_sec(shcol,nlevi)
-  ! vertical meridional momentum flux [m3/s3]
+  ! vertical meridional momentum flux [m2/s2]
   real(r8), intent(in) :: vw_sec(shcol,nlevi)
   ! vertical flux of TKE [m3/s3]
   real(r8), intent(in) :: wtke_sec(shcol,nlevi)
@@ -767,9 +767,9 @@ subroutine diag_second_shoc_moments(&
   real(r8), intent(out) :: wthl_sec(shcol,nlevi)
   ! vertical flux of total water [kg/kg m/s] 
   real(r8), intent(out) :: wqw_sec(shcol,nlevi)
-  ! vertical flux of zonal wind [m3/s3] 
+  ! vertical flux of zonal wind [m2/s2] 
   real(r8), intent(out) :: uw_sec(shcol,nlevi) 
-  ! vertical flux of meridional wind [m3/s3]
+  ! vertical flux of meridional wind [m2/s2]
   real(r8), intent(out) :: vw_sec(shcol,nlevi) 
   ! vertical flux of tke [m3/s3]
   real(r8), intent(out) :: wtke_sec(shcol,nlevi) 
@@ -1547,7 +1547,7 @@ subroutine shoc_tke(&
   real(r8) :: grd,betdz,Ck,Ckh,Ckm,Ce,Ces,Ce1,Ce2,smix,Cee,Cs
   real(r8) :: buoy_sgs,ratio,a_prod_sh,a_prod_bu,a_diss
   real(r8) :: lstarn, lstarp, bbb, omn, omp, ustar
-  real(r8) :: qsatt,dqsat,tk_in, uw_sec, vw_sec
+  real(r8) :: qsatt,dqsat,tk_in, u_grad, v_grad
   real(r8) :: tscale1,lambda,buoy_sgs_save,grid_dzw,grw1,grid_dz
   real(r8) :: lambda_low,lambda_high,lambda_slope, brunt_low
   real(r8) :: brunt_int(shcol)
@@ -1592,9 +1592,10 @@ subroutine shoc_tke(&
       grid_dz = 1._r8/dz_zi(i,k)
   
       tk_in=tk_zi(i,k)
-      uw_sec=grid_dz*(u_wind(i,k)-u_wind(i,kb))
-      vw_sec=grid_dz*(v_wind(i,k)-v_wind(i,kb))  
-      shear_prod(i,k)=tk_in*(uw_sec**2+vw_sec**2) 
+      ! calculate vertical gradient of u&v wind
+      u_grad=grid_dz*(u_wind(i,k)-u_wind(i,kb))
+      v_grad=grid_dz*(v_wind(i,k)-v_wind(i,kb))  
+      shear_prod(i,k)=tk_in*(u_grad**2+v_grad**2) 
     enddo
   enddo
   
