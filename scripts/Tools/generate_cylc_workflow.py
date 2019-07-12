@@ -7,9 +7,9 @@ Generates a cylc workflow file for the case.  See https://cylc.github.io for det
 from standard_script_setup import *
 
 from CIME.case              import Case
-from CIME.utils             import expect, transform_vars, safe_copy
+from CIME.utils             import expect, transform_vars
 
-import argparse, re
+import argparse
 logger = logging.getLogger(__name__)
 
 ###############################################################################
@@ -105,7 +105,7 @@ def _main_func(description):
 
             input_text = transform_vars(input_text, case=case, subgroup=job, overrides=overrides)
         with open("suite.rc", "w") as f:
-                    f.write(case.get_resolved_value(input_text))
+            f.write(case.get_resolved_value(input_text))
 
 
 
