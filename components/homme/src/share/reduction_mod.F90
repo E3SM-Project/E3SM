@@ -343,7 +343,8 @@ contains
 
 
 !max with location index
-!at the end result is in redp thread local array
+!at the end result is in 
+!redp thread local array in hybrid%ithr=0 only
   subroutine ParallelMaxWithIndex(redp,hybrid)
     use hybrid_mod, only : hybrid_t
 #ifdef _MPI
@@ -387,6 +388,7 @@ contains
 
 !max with location index
 !result is in redp thread local array
+!in hybrid%ithr=0 only
   subroutine ParallelMinWithIndex(redp,hybrid)
     use hybrid_mod, only : hybrid_t
 #ifdef _MPI
