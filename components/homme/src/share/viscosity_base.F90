@@ -21,7 +21,7 @@ use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk, 
 use edgetype_mod, only : EdgeBuffer_t, EdgeDescriptor_t
 use edge_mod, only : edgevpack, edgevunpack, edgevunpackmin, &
     edgevunpackmax, initEdgeBuffer, FreeEdgeBuffer, edgeSunpackmax, edgeSunpackmin,edgeSpack, &
-    edgevpack_nlyr, edgevunpack_nlyr
+    edgevpack_nlyr, edgevunpack_nlyr, edge_g
 
 use bndry_mod, only : bndry_exchangev, bndry_exchangeS, bndry_exchangeS_start,bndry_exchangeS_finish
 use control_mod, only : hypervis_scaling, nu, nu_div
@@ -193,25 +193,22 @@ integer :: nets,nete,klev
 real (kind=real_kind), dimension(np,np,klev,nets:nete) :: zeta
 
 ! local
-integer :: k,i,j,ie,ic,kptr
+integer :: k,i,j,ie,ic
 
-call initEdgeBuffer(hybrid%par,edge1,elem,klev)
 do ie=nets,nete
    do k=1,klev
       zeta(:,:,k,ie)=zeta(:,:,k,ie)*elem(ie)%spheremp(:,:)
    enddo
-   kptr=0
-   call edgeVpack(edge1, zeta(1,1,1,ie),klev,kptr,ie)
+   call edgeVpack_nlyr(edge_g,elem(ie)%desc,zeta(1,1,1,ie),klev,0,klev)
 enddo
-call bndry_exchangeV(hybrid,edge1)
+call bndry_exchangeV(hybrid,edge_g)
 do ie=nets,nete
-   kptr=0
-   call edgeVunpack(edge1, zeta(1,1,1,ie),klev,kptr, ie)
+   call edgeVunpack_nlyr(edge_g,elem(ie)%desc,zeta(1,1,1,ie),klev,0,klev)
+
    do k=1,klev
       zeta(:,:,k,ie)=zeta(:,:,k,ie)*elem(ie)%rspheremp(:,:)
    enddo
 enddo
-call FreeEdgeBuffer(edge1) 
 end subroutine
 
 
