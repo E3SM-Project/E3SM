@@ -272,7 +272,7 @@
       <directive>-l place=scatter,select={{ num_nodes }} </directive>
     </directives>
     <queues>
-	<queue walltimemax="00:30:00" default="true">sk40</queue>
+	<queue walltimemax="00:30:00" default="true">gpu_pascal</queue>
 	<queue walltimemax="00:30:00" nodemax="9" strict="true">sk56-sm</queue>
 	<queue walltimemax="00:30:00" nodemax="65" strict="true">sk56-lg</queue>
 	<queue walltimemax="00:30:00" nodemax="9" strict="true">sk40-sm</queue>

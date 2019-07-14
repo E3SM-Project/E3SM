@@ -579,6 +579,7 @@
         <command name="load">PrgEnv-pgi</command>
         <command name="load">cray-mpich</command>
         <command name="load">craype-broadwell</command>
+
       </modules>
 
       <modules mpilib="mpt">
@@ -611,6 +612,9 @@
         <command name="load">craype-accel-nvidia60</command>
         <command name="load">cudatoolkit</command>
         <command name="load">nodehealth</command>
+        <command name="rm">cray-libsci_acc</command>
+        <command name="rm">cray-libsci</command>
+
       </modules>
 
       <modules compiler="gnu">
@@ -672,6 +676,13 @@
       <env name="PGI_ACC_NOTIFY">1</env>
       <env name="PGI_ACC_TIME">1</env>
       <env name="CRAY_ACC_DEBUG">1</env>
+      <env name="CRAY_CUDA_MPS">1</env>
+      <env name="MPICH_RDMA_ENABLED_CUDA">1</env>
+      <env name="APRUN_XFER_LIMITS">1</env>
+      <env name="ATP_ENABLED">1</env>
+      <env name="MALLOC_MMAP_MAX_">0</env>
+      <env name="MPICH_CPUMASK_DISPLAY">1</env>
+
     </environment_variables>
 
   </machine>
