@@ -1,0 +1,17 @@
+ref_pres.o: ref_pres.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -acc -ta=tesla,cc60,ptxinfo,host -Minfo=accel $(FREEFLAGS) $<
+cam_logfile.o: cam_logfile.F90 
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -acc -ta=tesla,cc60,ptxinfo,host -Minfo=accel $(FREEFLAGS) $<
+physconst.o: physconst.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -acc -ta=tesla,cc60,ptxinfo,host -Minfo=accel $(FREEFLAGS) $<
+microp_aero.o: microp_aero.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -acc -ta=tesla,cc60,ptxinfo,host -Minfo=accel $(FREEFLAGS) $<
+wv_saturation.o: wv_saturation.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -acc -ta=tesla,cc60,ptxinfo,host -Minfo=accel $(FREEFLAGS) $<
+wv_sat_methods.o: wv_sat_methods.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -acc -ta=tesla,cc60,ptxinfo,host -Minfo=accel $(FREEFLAGS) $<
+
+
+
+
+
