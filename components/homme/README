@@ -29,7 +29,6 @@ src/preqx        original hydrostatic primitive equation model
 src/preqx_acc    preqx with openACC acceleration
 src/prim         Fully implicit version of preqx
 src/theta-l      nonhydrostatic model with SB81 vertical discretization
-src/theta        nonhydrostatic model with collocated vertical (not maintained)
 src/pese         primitive equation model with veritcal SE discretization (not maintained)
 
 For instructions on building and configuring, see README.cmake
