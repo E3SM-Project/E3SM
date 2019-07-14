@@ -510,7 +510,7 @@
     <NODENAME_REGEX>swan</NODENAME_REGEX>
     <!--OS>CNL</OS-->
     <OS>LINUX</OS>
-    <COMPILERS>pgi,intel,gnu</COMPILERS>
+    <COMPILERS>pgi,pgiacc,intel,gnu</COMPILERS>
     <MPILIBS>mpt,impi</MPILIBS>
     <PROJECT>acme</PROJECT>
     <SAVE_TIMING_DIR>/lus/scratch/$USER</SAVE_TIMING_DIR>
@@ -527,12 +527,15 @@
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>40</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>aprun</executable>
       <arguments>
-        <arg name="num_tasks"> -n {{ total_tasks }} </arg>
+        <arg name="num_tasks"> -n {{ total_tasks }}</arg>
+        <arg name="tasks_per_numa"> -S {{ tasks_per_numa }}</arg>
+        <arg name="tasks_per_node"> -N $MAX_MPITASKS_PER_NODE</arg>
+        <arg name="thread_count"> -d $ENV{OMP_NUM_THREADS}</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -600,6 +603,16 @@
         <!--command name="load">cray-libsci/18.12.1</command-->
       </modules>
 
+      <modules compiler="pgiacc">
+        <command name="rm">PrgEnv-intel</command>
+        <command name="load">PrgEnv-pgi/6.0.5</command>
+        <command name="rm">pgi</command>
+        <command name="load">pgi/19.4.0</command>
+        <command name="load">craype-accel-nvidia60</command>
+        <command name="load">cudatoolkit</command>
+        <command name="load">nodehealth</command>
+      </modules>
+
       <modules compiler="gnu">
         <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.5</command>
         <command name="rm">gcc</command>
@@ -654,6 +667,13 @@
     <environment_variables mpilib="mpt">
       <env name="MPICH_GNI_DYNAMIC_CONN">disabled</env>
     </environment_variables>
+
+    <environment_variables compiler="pgiacc">
+      <env name="PGI_ACC_NOTIFY">1</env>
+      <env name="PGI_ACC_TIME">1</env>
+      <env name="CRAY_ACC_DEBUG">1</env>
+    </environment_variables>
+
   </machine>
 
   <!-- Skylake nodes of Stampede2 at TACC -->

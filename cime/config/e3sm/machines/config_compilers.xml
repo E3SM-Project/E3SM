@@ -761,7 +761,6 @@ for mct, etc.
   <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
   <PNETCDF_PATH>$ENV{PARALLEL_NETCDF_DIR}</PNETCDF_PATH>
   <FFLAGS>
-    <!--append DEBUG="FALSE"> -O2 </append-->
     <append DEBUG="FALSE"> -O2 </append>
   </FFLAGS>
   <SLIBS>
@@ -770,7 +769,24 @@ for mct, etc.
   </SLIBS>
 </compiler>
 
-
+<compiler MACH="swan" OS="LINUX" COMPILER="pgiacc">
+  <MPICC> cc </MPICC>
+  <MPICXX> CC </MPICXX>
+  <MPIFC> ftn </MPIFC>
+  <SCC> pgcc </SCC>
+  <SCXX> pgc++ </SCXX>
+  <SFC> pgf90 </SFC>
+  <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PARALLEL_NETCDF_DIR}</PNETCDF_PATH>
+  <FFLAGS>
+    <append DEBUG="TRUE"> -acc -Minfo=accel </append>
+    <append DEBUG="FALSE"> -O2 -acc </append>
+  </FFLAGS>
+  <SLIBS>
+    <append> -llapack -lblas </append>
+    <append> -L$ENV{NETCDF_DIR} -lnetcdff -Wl,--as-needed,-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf </append>
+  </SLIBS>
+</compiler>
 
 <compiler MACH="swan" OS="CNL" COMPILER="intel">
   <MPICC> cc </MPICC>
