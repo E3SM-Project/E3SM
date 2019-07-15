@@ -116,7 +116,7 @@
 	<nml_record name="calving" in_defaults="true">
 		<nml_option name="config_calving" type="character" default_value="none" units="unitless"
 		            description="Selection of the method for calving ice (as defined further below)."
-		            possible_values="'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving' "
+		            possible_values="'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving', 'mask'"
 		/>
 		<nml_option name="config_calving_topography" type="real" default_value="-500.0" units="m"
 		            description="Defines the topographic height below which ice calves (for topographic_threshold option)."
@@ -541,6 +541,7 @@
                         <var name="basalHeatFlux"/>
                         <var name="eigencalvingParameter"/>
                         <var name="stiffnessFactor"/>
+                        <var name="calvingMask"/>
 <!-- The following variables are used by HO only, and only enabled by the higherOrderVelocity package. -->
 <!-- They do not need to be in the input file for the SIA dycore, and will be ignored if they are. -->
 			<var name="beta" packages="higherOrderVelocity"/>
@@ -608,6 +609,7 @@
                         <var name="floatingBasalMassBal"/>
                         <var name="eigencalvingParameter"/>
                         <var name="stiffnessFactor"/>
+                        <var name="calvingMask"/>
 			<!-- normalVelocity is needed for advection on the next timestep -->
 			<var name="normalVelocity"/>
 			<!-- uReconstructX/Y are only needed for exact restarts of HO iterative solvers -->
@@ -935,6 +937,9 @@ is the value of that variable from the *previous* time level!
                 />
                 <var name="floatingBasalMassBal" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
                      description="Basal mass balance on floating regions"
+                />
+                <var name="calvingMask" type="real" dimensions="nCells Time" units="m" time_levs="1"
+                        description="mask of grid cells that should be calved.  0=no calving, 1=should be calved"
                 />
                 <var name="calvingThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
                         description="thickness of ice that calves on a given timestep (less than or equal to ice thickness)"

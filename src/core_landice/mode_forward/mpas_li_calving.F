@@ -213,6 +213,11 @@ module li_calving
          call eigencalving(domain, err_tmp)
          err = ior(err, err_tmp)
 
+      elseif (trim(config_calving) == 'mask') then
+
+         call mask_calving(domain, err_tmp)
+         err = ior(err, err_tmp)
+
       else
 
          call mpas_log_write("Invalid option for config_calving specified: " // trim(config_calving), MPAS_LOG_ERR)
@@ -1435,6 +1440,83 @@ module li_calving
       call mpas_deallocate_scratch_field(cellVolumeField, .true.)
 
    end subroutine distribute_calving_flux
+
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!    routine mask_calving
+!
+!> \brief Calve ice based on a mask that is input
+!> \author Matthew Hoffman
+!> \date   July 2019
+!> \details  This routine uses the field calvingMask to eliminate floating
+!> ice.  Locations marked with 0 will not be calved.  Locations with all
+!> all other values will be calved.  Note that time-varying values
+!> can be input.
+!-----------------------------------------------------------------------
+   subroutine mask_calving(domain, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: &
+         domain          !< Input/Output: domain object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: velocityPool
+      real (kind=RKIND), dimension(:), pointer :: thickness
+      real (kind=RKIND), dimension(:), pointer :: calvingThickness
+      integer, dimension(:), pointer :: calvingMask
+      integer, dimension(:), pointer :: cellMask
+      integer :: err_tmp
+
+      err = 0
+
+      ! block loop
+      block => domain % blocklist
+      do while (associated(block))
+
+         ! get pools
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+
+         ! get fields
+         call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
+         call mpas_pool_get_array(geometryPool, 'calvingMask', calvingMask)
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+
+         ! === apply calving ===
+         where (li_mask_is_floating_ice(cellMask) .and. (calvingMask /= 0))
+            calvingThickness = thickness
+            thickness = 0.0_RKIND
+         end where
+
+         ! update mask
+         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         err = ior(err, err_tmp)
+
+         call remove_small_islands(meshPool, geometryPool)
+
+         block => block % next
+      enddo
+
+   end subroutine mask_calving
 
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
