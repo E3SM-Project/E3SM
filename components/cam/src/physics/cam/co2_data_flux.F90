@@ -40,7 +40,7 @@ module co2_data_flux
   private
 !  integer,  parameter :: totsz=2000           ! number greater than data time sample
   real(r8), parameter :: daysperyear = 365.0_r8  ! Number of days in a year         
-  integer :: lonsiz  ! size of longitude dimension, dataset is 2d(lat,lon), in CAM grid
+  integer :: lonsiz,colsiz  ! size of longitude dimension, dataset is 2d(lat,lon), in CAM grid
   integer :: latsiz  ! size of latitude dimension
 
   !Following state data type is declared so that we can send state as an argument 
@@ -108,6 +108,7 @@ subroutine read_data_flux (input_file, xin, state, pbuf2d)
   integer dateid                ! netcdf id for date variable
   integer secid                 ! netcdf id for seconds variable
   integer londimid              ! netcdf id for longitude variable
+  integer coldimid              ! netcdf id for longitude variable
   integer latdimid              ! netcdf id for latitude variable
  
   integer dtime                 ! timestep size [seconds]
@@ -194,17 +195,23 @@ subroutine read_data_flux (input_file, xin, state, pbuf2d)
  
 ! Get and check dimension info
  
-     call handle_ncerr( nf90_inq_dimid( xin%ncid_f, 'lon', londimid ),&
-       'co2_data_flux.F90:160')
-     call handle_ncerr( nf90_inq_dimid( xin%ncid_f, 'lat', latdimid ),&
-       'co2_data_flux.F90:162')
+     !call handle_ncerr( nf90_inq_dimid( xin%ncid_f, 'lon', londimid ),&
+     !  'co2_data_flux.F90:160')
+     !call handle_ncerr( nf90_inq_dimid( xin%ncid_f, 'lat', latdimid ),&
+     !  'co2_data_flux.F90:162')
+     call handle_ncerr( nf90_inq_dimid( xin%ncid_f, 'ncol', coldimid ),&
+          'co2_data_flux.F90:160')
      call handle_ncerr( nf90_inq_dimid( xin%ncid_f, 'time',  timeid ),&
        'co2_data_flux.F90:164')
 
-     call handle_ncerr( nf90_inquire_dimension( xin%ncid_f, londimid, len=lonsiz     ),&
-       'co2_data_flux.F90:167')
-     call handle_ncerr( nf90_inquire_dimension( xin%ncid_f, latdimid, len=latsiz     ),&
-       'co2_data_flux.F90:169')
+     !call handle_ncerr( nf90_inquire_dimension( xin%ncid_f, londimid, len=lonsiz     ),&
+     !  'co2_data_flux.F90:167')
+     !call handle_ncerr( nf90_inquire_dimension( xin%ncid_f, latdimid, len=latsiz     ),&
+     !  'co2_data_flux.F90:169')
+
+     call handle_ncerr( nf90_inquire_dimension( xin%ncid_f, coldimid, len=colsiz     ),&
+          'co2_data_flux.F90:167')
+
      call handle_ncerr( nf90_inquire_dimension( xin%ncid_f, timeid,   len=xin%timesz ),&
        'co2_data_flux.F90:171')
 
@@ -230,8 +237,10 @@ subroutine read_data_flux (input_file, xin, state, pbuf2d)
      strt3(1) = 1
      strt3(2) = 1
      strt3(3) = 1
-     cnt3(1)  = lonsiz
-     cnt3(2)  = latsiz
+     !cnt3(1)  = lonsiz
+     cnt3(1)  = colsiz
+     !cnt3(2)  = latsiz
+     cnt3(2)  = 1
      cnt3(3)  = 1
 
   endif
