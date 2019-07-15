@@ -39,6 +39,9 @@
 		<dim name="nVertInterfaces" definition="nVertLevels+1" units="unitless"
 		     description="The number of interfaces in the vertical direction."
 		/>
+		<dim name="nISMIP6OceanLayers" units="unitless"
+		     description="The number of layers in the ISMIP6 ocean temperature dataset."
+		/>
 		<dim name="maxTracersAdvect" definition="1" units="unitless"
 		     description="The maximum number of tracers to be advected."
 		/>
@@ -206,8 +209,8 @@
 
         <nml_record name="iceshelf_melt" in_defaults="true">
                 <nml_option name="config_basal_mass_bal_float" type="character" default_value="none" units="unitless"
-                            description="Selection of the method for computing the basal mass balance of floating ice.  'none' sets the basalMassBal field to 0 everywhere.  'file' uses without modification whatever value was read in through an input or forcing file or the value set by an ESM coupler.  'constant', 'mismip', 'seroussi' use hardcoded fields defined in the code applicable to Thwaites Glacier. 'temperature_profile' generates a depth-melt relation based on an ocean temperature profile and sill depth."
-                            possible_values="'none', 'file', 'constant', 'mismip', 'seroussi', 'temperature_profile'"
+                            description="Selection of the method for computing the basal mass balance of floating ice.  'none' sets the basalMassBal field to 0 everywhere.  'file' uses without modification whatever value was read in through an input or forcing file or the value set by an ESM coupler.  'constant', 'mismip', 'seroussi' use hardcoded fields defined in the code applicable to Thwaites Glacier. 'temperature_profile' generates a depth-melt relation based on an ocean temperature profile and sill depth. ISMIP6 is the method prescribed by ISMIP6."
+                            possible_values="'none', 'file', 'constant', 'mismip', 'seroussi', 'temperature_profile', 'ismip6'"
                 />
                 <nml_option name="config_bmlt_float_flux" type="real" default_value="0.0" units="W m^{-2}"
 		            description="Value of the constant heat flux applied to the base of floating ice (positive upward)."
@@ -564,6 +567,10 @@
                         <var name="sfcMassBalUncertainty" packages="observations"/>
                         <var name="thicknessUncertainty" packages="observations"/>
                         <var name="floatingBasalMassBalUncertainty" packages="observations"/>
+                        <!-- these variables just for ISMIP6 forcing -->
+                        <var name="ismip6shelfMelt_basin"/>
+                        <var name="ismip6shelfMelt_Kbasin"/>
+                        <var name="ismip6shelfMelt_3dThermalForcing"/>
 		</stream>
 
 <!-- An alternate way to allow the HO variables to exist in a separate file.
@@ -990,6 +997,22 @@ is the value of that variable from the *previous* time level!
                 <var name="slopeEdge"            type="real"     dimensions="nEdges Time"
                      units="m m^{-1}"  description="surface slope magnitude on edges" packages="SIAvelocity"
                />
+                <!-- Variables only needed by ISMIP6 calving method -->
+                <var name="ismip6shelfMelt_basin" type="integer" dimensions="nCells" units="" default_value="1"
+                     description=""
+                />
+                <var name="ismip6shelfMelt_Kbasin" type="real" dimensions="nCells" units="m yr^{-1}" default_value="10.0"
+                     description="K_{basin} value prescribed for ISMIP6 ice-shelf melting method"
+                />
+                <var name="ismip6shelfMelt_TFdraft" type="real" dimensions="nCells Time" units="deg. C"
+                     description="thermal forcing at ice shelf draft used for ISMIP6 ice-shelf melting method"
+                />
+                <var name="ismip6shelfMelt_3dThermalForcing" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="deg. C" default_value="2.0"
+                     description="thermal forcing at ice shelf draft used for ISMIP6 ice-shelf melting method"
+                />
+                <var name="ismip6shelfMelt_zOcean" type="real" dimensions="nISMIP6OceanLayers" units="m"
+                     description="depth coordinate associated with ismip6shelfMelt_3dThermalForcing field"
+                />
                <!-- Scratch variables related to geometry -->
 	       <var name="cellMaskTemporary" type="integer" dimensions="nCells" units="none"
 	       description="temporary copy of cellMask"
