@@ -79,14 +79,14 @@ contains
 
   end subroutine p3_init_c
 
-  subroutine p3_main_c(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,   &
+  subroutine p3_main_c(qc,nc,qr,nr,th,qv,dt,qitot,qirim,nitot,birim,   &
        pres,dzq,npccn,naai,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
        diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc_in, &
        pdel,exner,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm, &
        pratot,prctot,p3_tend_out,mu_c,lamc) bind(C)
     use micro_p3, only : p3_main
 
-    real(kind=c_real), intent(inout), dimension(its:ite,kts:kte) :: qc, nc, qr, nr, ssat, qv, th, th_old, qv_old
+    real(kind=c_real), intent(inout), dimension(its:ite,kts:kte) :: qc, nc, qr, nr, qv, th
     real(kind=c_real), intent(inout), dimension(its:ite,kts:kte) :: qitot, qirim, nitot, birim
     real(kind=c_real), intent(in), dimension(its:ite,kts:kte) :: pres, dzq
     real(kind=c_real), intent(in), dimension(its:ite,kts:kte) :: npccn,naai
@@ -114,7 +114,7 @@ contains
 
     log_predictNc = log_predictNc_in
 
-    call p3_main(qc,nc,qr,nr,th_old,th,qv_old,qv,dt,qitot,qirim,nitot,birim,ssat,   &
+    call p3_main(qc,nc,qr,nr,th,qv,dt,qitot,qirim,nitot,birim,   &
          pres,dzq,npccn,naai,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
          diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc, &
          pdel,exner,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm, &
