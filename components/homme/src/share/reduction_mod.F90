@@ -267,6 +267,7 @@ contains
 
     if (len>red%len) call abortmp('ERROR: threadsafe reduction buffer too small')
 
+    !$OMP BARRIER
     ! the first and fastest thread performs initializing copy
     !$OMP SINGLE
     red%buf(1:len) = redp(1:len)
@@ -313,6 +314,7 @@ contains
 
     if (len>red%len) call abortmp('ERROR: threadsafe reduction buffer too small')
 
+    !$OMP BARRIER
     ! the first and fastest thread performs initializing copy
     !$OMP SINGLE
     red%buf(1:len) = redp(1:len)
@@ -357,6 +359,7 @@ contains
     ! Local variables
     integer ierr, k
 
+    !$OMP BARRIER
     ! the first and fastest thread performs initializing copy
     !$OMP SINGLE
     red_max_index%buf(1:2) = redp(1:2)
@@ -401,6 +404,7 @@ contains
     ! Local variables
     integer ierr, k
 
+    !$OMP BARRIER
     ! the first and fastest thread performs initializing copy
     !$OMP SINGLE
     red_min_index%buf(1:2) = redp(1:2)
@@ -454,6 +458,7 @@ contains
 
     if (len>red%len) call abortmp('ERROR: threadsafe reduction buffer too small')
 
+    !$OMP BARRIER
     ! the first and fastest thread performs initializing copy
     !$OMP SINGLE
     red%buf(1:len) = redp(1:len)
