@@ -1994,6 +1994,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
   <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.2-intel-18.0.1/</MPI_PATH>
   <NETCDF_PATH>/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</NETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
     <append>$SHELL{/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/bin/nf-config --flibs}</append>
   </SLIBS>
@@ -2019,6 +2020,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
   <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.2-intel-18.0.1/</MPI_PATH>
   <NETCDF_PATH>/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</NETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
     <append>$SHELL{/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/bin/nf-config --flibs}</append>
   </SLIBS>
