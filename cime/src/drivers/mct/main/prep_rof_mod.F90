@@ -37,7 +37,7 @@ module prep_rof_mod
   public :: prep_rof_accum_avg
 
   public :: prep_rof_calc_l2r_rx
-
+  
   public :: prep_rof_get_l2racc_lx
   public :: prep_rof_get_l2racc_lx_cnt
   public :: prep_rof_get_mapper_Fl2r
@@ -287,12 +287,14 @@ contains
     integer, save :: index_l2x_Flrl_rofsub
     integer, save :: index_l2x_Flrl_rofdto
     integer, save :: index_l2x_Flrl_rofi
+    integer, save :: index_l2x_Flrl_demand
     integer, save :: index_l2x_Flrl_irrig
     integer, save :: index_x2r_Flrl_rofsur
     integer, save :: index_x2r_Flrl_rofgwl
     integer, save :: index_x2r_Flrl_rofsub
     integer, save :: index_x2r_Flrl_rofdto
     integer, save :: index_x2r_Flrl_rofi
+    integer, save :: index_x2r_Flrl_demand
     integer, save :: index_x2r_Flrl_irrig
     integer, save :: index_l2x_Flrl_rofl_16O
     integer, save :: index_l2x_Flrl_rofi_16O
@@ -338,11 +340,13 @@ contains
           index_l2x_Flrl_irrig  = mct_aVect_indexRA(l2x_r,'Flrl_irrig' )
        end if
        index_l2x_Flrl_rofi   = mct_aVect_indexRA(l2x_r,'Flrl_rofi' )
+       index_l2x_Flrl_demand = mct_aVect_indexRA(l2x_r,'Flrl_demand' )
        index_x2r_Flrl_rofsur = mct_aVect_indexRA(x2r_r,'Flrl_rofsur' )
        index_x2r_Flrl_rofgwl = mct_aVect_indexRA(x2r_r,'Flrl_rofgwl' )
        index_x2r_Flrl_rofsub = mct_aVect_indexRA(x2r_r,'Flrl_rofsub' )
        index_x2r_Flrl_rofdto = mct_aVect_indexRA(x2r_r,'Flrl_rofdto' )
        index_x2r_Flrl_rofi   = mct_aVect_indexRA(x2r_r,'Flrl_rofi' )
+       index_x2r_Flrl_demand = mct_aVect_indexRA(x2r_r,'Flrl_demand' )
        if (have_irrig_field) then
           index_x2r_Flrl_irrig  = mct_aVect_indexRA(x2r_r,'Flrl_irrig' )
        end if
@@ -378,6 +382,8 @@ contains
             'lfrac*l2x%Flrl_rofdto'
        mrgstr(index_x2r_Flrl_rofi) = trim(mrgstr(index_x2r_Flrl_rofi))//' = '// &
             'lfrac*l2x%Flrl_rofi'
+       mrgstr(index_x2r_Flrl_demand) = trim(mrgstr(index_x2r_Flrl_demand))//' = '// &
+             'lfrac*l2x%Flrl_demand'
        if (have_irrig_field) then
           mrgstr(index_x2r_Flrl_irrig) = trim(mrgstr(index_x2r_Flrl_irrig))//' = '// &
                'lfrac*l2x%Flrl_irrig'
@@ -405,6 +411,7 @@ contains
        x2r_r%rAttr(index_x2r_Flrl_rofsub,i) = l2x_r%rAttr(index_l2x_Flrl_rofsub,i) * lfrac
        x2r_r%rAttr(index_x2r_Flrl_rofdto,i) = l2x_r%rAttr(index_l2x_Flrl_rofdto,i) * lfrac
        x2r_r%rAttr(index_x2r_Flrl_rofi,i) = l2x_r%rAttr(index_l2x_Flrl_rofi,i) * lfrac
+       x2r_r%rAttr(index_x2r_Flrl_demand,i) = l2x_r%rAttr(index_l2x_Flrl_demand,i) * lfrac
        if (have_irrig_field) then
           x2r_r%rAttr(index_x2r_Flrl_irrig,i) = l2x_r%rAttr(index_l2x_Flrl_irrig,i) * lfrac
        end if

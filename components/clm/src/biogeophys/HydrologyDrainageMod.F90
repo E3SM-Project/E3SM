@@ -16,6 +16,7 @@ module HydrologyDrainageMod
   use TemperatureType   , only : temperature_type
   use WaterfluxType     , only : waterflux_type
   use WaterstateType    , only : waterstate_type
+  use SoilHydrologyMod  , only : WaterTable
   use TopounitDataType  , only : top_af ! atmospheric flux variables
   use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp
@@ -49,6 +50,8 @@ contains
     use column_varcon    , only : icol_roof, icol_road_imperv, icol_road_perv, icol_sunwall, icol_shadewall
     use clm_varcon       , only : denh2o, denice, secspday
     use clm_varctl       , only : glc_snow_persistence_max_days, use_vichydro, use_betr
+	use domainMod        , only : ldomain
+    use atm2lndType      , only : atm2lnd_type
     use clm_varpar       , only : nlevgrnd, nlevurb, nlevsoi    
     use clm_time_manager , only : get_step_size, get_nstep
     use SoilHydrologyMod , only : CLMVICMap, Drainage
@@ -104,7 +107,8 @@ contains
          snow_persistence       => col_ws%snow_persistence       , & ! Output: [real(r8) (:)   ]  counter for length of time snow-covered
          total_plant_stored_h2o => col_ws%total_plant_stored_h2o , & ! Input [real(r8) (:) dynamic water stored in plants]
          qflx_evap_tot          => col_wf%qflx_evap_tot           , & ! Input:  [real(r8) (:)   ]  qflx_evap_soi + qflx_evap_can + qflx_tran_veg     
-         qflx_irrig             => col_wf%qflx_irrig              , & ! Input:  [real(r8) (:)   ]  irrigation flux (mm H2O /s)                       
+         qflx_irrig             => col_wf%qflx_irrig              , & ! Input:  [real(r8) (:)   ]  irrigation flux (mm H2O /s)
+         qflx_irr_demand        => col_wf%qflx_irr_demand         , & ! Input:  [real(r8) (:)   ]  irrigation demand sent to MOSART/WM (mm H2O /s)                       		 
          qflx_glcice_melt       => col_wf%qflx_glcice_melt        , & ! Input:  [real(r8) (:)]  ice melt (positive definite) (mm H2O/s)      
          qflx_h2osfc_surf       => col_wf%qflx_h2osfc_surf        , & ! Output: [real(r8) (:)   ]  surface water runoff (mm/s)                        
          qflx_drain_perched     => col_wf%qflx_drain_perched      , & ! Output: [real(r8) (:)   ]  sub-surface runoff from perched zwt (mm H2O /s)   
@@ -148,6 +152,9 @@ contains
         call ep_betr%DiagDrainWaterFlux(num_hydrologyc, filter_hydrologyc)
         call ep_betr%RetrieveBiogeoFlux(bounds, 1, nlevsoi, waterflux_vars=waterflux_vars)
       endif
+	  
+!      call WaterTable(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
+!           soilhydrology_vars, soilstate_vars, temperature_vars, waterstate_vars, waterflux_vars)
 
       do j = 1, nlevgrnd
          do fc = 1, num_nolakec
