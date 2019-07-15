@@ -980,6 +980,7 @@ my $clubb_do_adv = $cfg_ref->get('clubb_do_adv');
 if ($print>=2) { print "clubb_do_deep=',$clubb_do_deep,$eol"; }
 if ($print>=2) { print "clubb_do_adv=',$clubb_do_adv,$eol"; }
 
+#-----------------------------------------------------------------------------------------------
 # SHOC
 
 if (defined $opts{'shoc_sgs'}) {
