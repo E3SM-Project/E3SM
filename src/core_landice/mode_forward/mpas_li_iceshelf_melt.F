@@ -219,6 +219,13 @@ module li_iceshelf_melt
          endif
       endif
 
+      if (trim(config_basal_mass_bal_float) == 'ismip6') then
+         call iceshelf_melt_ismip6(domain, err_tmp)
+         err = ior(err, err_tmp)
+
+         return ! do not enter block loop below - we are done here
+      endif
+
       ! block loop
       block => domain % blocklist
       do while (associated(block))
@@ -930,6 +937,163 @@ module li_iceshelf_melt
       endif
 
     end subroutine calc_iceshelf_draft_info
+!-----------------------------------------------------------------------
+
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  !  routine iceshelf_melt_ismip6
+!
+!> \brief Calculate ice shelf melt rate using parameterization from ISMIP6
+!> \author Matthew Hoffman
+!> \date   July 2019
+!> \details
+!> http://www.climate-cryosphere.org/wiki/index.php?title=ISMIP6-Projections-Antarctica
+!> It is a quadratic method of the form:
+!> melt = gamma * physicalconstant * (TF(x,z,y_draft) + deltaT_basin) * |<TF> + deltatT_basin|
+!> where TF is local thermal forcing at each grid cell and <TF> is the mean
+!> thermal forcing for all of the ice shelf grid cells in an entire basin
+!-----------------------------------------------------------------------
+
+    subroutine iceshelf_melt_ismip6(domain, err)
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: &
+         domain          !< Input/Output: domain object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err
+
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      integer :: iCell
+      integer, pointer :: nOceanLayers
+      integer :: ksup, kk, kinf
+      integer, pointer :: nCellsSolve
+      real(kind=RKIND), pointer :: rhoi, rhosw
+      real(kind=RKIND) :: cste
+      type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: geometryPool, meshPool
+      real (kind=RKIND), dimension(:,:), pointer :: TFocean
+      real (kind=RKIND), dimension(:), pointer :: zOcean
+      real (kind=RKIND), dimension(:), pointer :: TFdraft
+      integer, dimension(:), pointer :: basinNumber
+      real (kind=RKIND), dimension(:), pointer :: lowerSurface
+      real (kind=RKIND), dimension(:), pointer :: areaCell
+      real (kind=RKIND), dimension(:), allocatable :: mean_TF, IS_area
+      integer, parameter :: nBasins = 32
+      integer, dimension(:), pointer :: cellMask
+      real(kind=RKIND), dimension(nBasins*2) :: localSums, globalSums
+      real (kind=RKIND), dimension(:), pointer :: Kbasin
+      real (kind=RKIND), dimension(:), pointer :: floatingBasalMassBal
+
+      err = 0
+
+      call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
+      call mpas_pool_get_config(liConfigs, 'config_ocean_density', rhosw)
+      cste = (rhosw*cp_seawater/(rhoi*latent_heat_ice))**2  ! in K^(-2)
+
+      allocate(mean_TF(nBasins))
+      allocate(IS_area(nBasins))
+
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+
+         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_dimension(meshPool, 'nISMIP6OceanLayers', nOceanLayers)
+
+         ! Get 3d thermal forcing (had to be read-in)
+         call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', TFocean)
+
+         ! Get z-coords for ocean data
+         call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zOcean', zOcean)
+
+         ! Get basin numbers
+         call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_basin', basinNumber)
+         if (maxval(basinNumber)+1 > nBasins) then
+            call mpas_log_write("Field ismip6shelfMelt_basin contains a value greater than the hard-coded value" // &
+               "for nBasins in iceshelf_melt_ismip6.  Please adjust nBasins and recompile or correct input data.", MPAS_LOG_ERR)
+         end if
+
+         ! Get shelf draft and mask
+         call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+
+         ! Get TFdraft field that we will calculate
+         call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_TFdraft', TFdraft)
+
+         mean_TF(:) = 0.d0
+         IS_area(:) = 0.d0
+
+         do iCell = 1, nCellsSolve
+
+            if ( li_mask_is_floating_ice(cellMask(iCell)) ) then
+               ! 1 -  Linear interpolation of the thermal forcing on the ice draft depth :
+               ksup=1
+               do kk=2,nOceanLayers-1
+                  if ( zOcean(kk) >= lowerSurface(iCell) )  ksup = kk
+               enddo
+               kinf = ksup + 1
+               TFdraft(iCell) = ( (zOcean(ksup)-lowerSurface(iCell)) * TFocean(kinf, iCell) &
+                  + (lowerSurface(iCell)-zOcean(kinf)) * TFocean(ksup, iCell) ) / (zOcean(ksup)-zOcean(kinf))
+
+               ! 2 -  Mean Thermal forcing in individual basins (NB: fortran norm while basins start at zero):
+               mean_TF(basinNumber(iCell)+1) = mean_TF(basinNumber(iCell)+1) + areaCell(iCell) * TFdraft(iCell)
+               IS_area(basinNumber(iCell)+1) = IS_area(basinNumber(iCell)+1) + areaCell(iCell)
+
+            else
+               TFdraft(iCell) = 0.d0
+            endif
+         enddo
+
+         block => block % next
+      enddo   ! associated(block)
+
+      ! global sum mean_TF and IS_area
+      localSums(1:nBasins) = mean_TF
+      localSums(nBasins+1:2*nBasins) = IS_area
+      call mpas_dmpar_sum_real_array(domain % dminfo, 2*nBasins, localSums(:), globalSums(:))
+      mean_TF = globalSums(1:nBasins)
+      IS_area = globalSums(nBasins+1:2*nBasins)
+      mean_TF = mean_TF / IS_area ! actual mean TF per basin
+
+      ! Now calculate melt rate
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+
+         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+         call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_Kbasin', Kbasin)
+         call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_basin', basinNumber)
+         call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_TFdraft', TFdraft)
+         call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+
+         floatingBasalMassBal(:) = 0.0_RKIND
+         do iCell = 1, nCellsSolve
+            if ( li_mask_is_floating_ice(cellMask(iCell)) ) then
+               floatingBasalMassBal(iCell) = Kbasin(iCell) * cste * TFdraft(iCell) * mean_TF(basinNumber(iCell)+1)
+            endif
+         enddo
+
+         block => block % next
+      enddo   ! associated(block)
+
+      deallocate(mean_TF)
+      deallocate(IS_area)
+
+    end subroutine iceshelf_melt_ismip6
 !-----------------------------------------------------------------------
 
   !***********************************************************************
