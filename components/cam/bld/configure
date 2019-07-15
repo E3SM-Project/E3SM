@@ -128,6 +128,7 @@ OPTIONS
 			  linoz_mam4_resus_mom | linoz_mam4_resus_mom_soag |
                           trop_strat_soa | trop_strat_mam3 | trop_strat_mam7 | none ].  Default: trop_mam3.
      -clubb_sgs         Turns on CLUBB_SGS
+     -shoc_sgs          Turns on SHOC_SGS
      -clubb_opts <list> Comma separated list of CLUBB options to turn on/off.  By default they are all off.  Current
                         options are: clubb_do_adv(Advect CLUBB moments), clubb_do_deep(CLUBB does the deep convection) 
      -co2_cycle         This option is meant to be used with the -ccsm_seq option.  It modifies the
@@ -143,7 +144,7 @@ OPTIONS
                         se grids.
      -max_n_rad_cnst <n> Maximum number of constituents that are either radiatively
                         active, or in any single diagnostic list for the radiation.    
-     -microphys <name>  Specify the microphysics option [mg1 | mg1.5 | mg2 | rk].
+     -microphys <name>  Specify the microphysics option [mg1 | mg1.5 | mg2 | rk | p3].
      -nadv <n>          Set total number of advected species to <n>.
      -nadv_tt <n>       Set number of advected test tracers <n>.
      -nlev <n>          Set number of levels to <n>.
@@ -319,6 +320,7 @@ GetOptions(
     "cice_maxblocks=s"          => \$opts{'cice_maxblocks'},
     "cice_decomptype=s"         => \$opts{'cice_decomptype'},
     "clubb_sgs"                 => \$opts{'clubb_sgs'},
+    "shoc_sgs"                  => \$opts{'shoc_sgs'},
     "clubb_opts=s"              => \$opts{'clubb_opts'},
     "co2_cycle"                 => \$opts{'co2_cycle'},
     "comp_intf=s"               => \$opts{'comp_intf'},
@@ -896,11 +898,16 @@ if (defined $opts{'clubb_sgs'}) {
     $microphys_pkg = 'mg2';
 }
 
+#Set the default microphysics package for CLUBB to mg2
+if (defined $opts{'shoc_sgs'}) {
+    $microphys_pkg = 'mg2';
+}
+
 # But if the physics package is adiabatic, ideal, cam3, cam4, change the default
 if ($phys_pkg =~ m/^ideal$|^adiabatic$|^cam[34]$/) {
     $microphys_pkg = 'rk';
 }
-elsif ($phys_pkg eq 'cam5' and !defined $opts{'clubb_sgs'}) {
+elsif ($phys_pkg eq 'cam5' and !defined $opts{'clubb_sgs'} and !defined $opts{'shoc_sgs'}) {
     $microphys_pkg = 'mg1';
 }
 
@@ -951,11 +958,11 @@ my $clubb_sgs = $cfg_ref->get('clubb_sgs');
 
 # consistency checks...
 
-# CLUBB_SGS only works with mg microphysics
-if ($clubb_sgs and $microphys_pkg !~ m/^mg/) {
+# CLUBB_SGS only works with mg or p3 microphysics
+if ($clubb_sgs and $microphys_pkg !~ m/^mg/ and $microphys_pkg !~ m/^p3/) {
     die <<"EOF";
 **    ERROR: microphysics package set to: $microphys_pkg
-**    CLUBB_SGS only works with MG microphysics.
+**    CLUBB_SGS only works with MG or P3 microphysics.
 EOF
 }
 
@@ -973,6 +980,23 @@ my $clubb_do_adv = $cfg_ref->get('clubb_do_adv');
 if ($print>=2) { print "clubb_do_deep=',$clubb_do_deep,$eol"; }
 if ($print>=2) { print "clubb_do_adv=',$clubb_do_adv,$eol"; }
 
+# SHOC
+
+if (defined $opts{'shoc_sgs'}) {
+    $cfg_ref->set('shoc_sgs', $opts{'shoc_sgs'});
+}
+my $shoc_sgs = $cfg_ref->get('shoc_sgs');
+
+# consistency checks...
+
+# SHOC_SGS only works with mg or p3 microphysics
+if ($shoc_sgs and $microphys_pkg !~ m/^mg/ and $microphys_pkg !~ m/^p3/) {
+    die <<"EOF";
+**    ERROR: microphysics package set to: $microphys_pkg
+**    SHOC_SGS only works with MG or P3 microphysics.
+EOF
+}
+
 #-----------------------------------------------------------------------------------------------
 # Macro-physics package
 
@@ -983,11 +1007,12 @@ elsif ($phys_pkg =~ /ideal|adiabatic/) {$macrophys_pkg = 'none';}
 if ($clubb_sgs == 1) {
   $macrophys_pkg = 'clubb_sgs';
 }
-
+if ($shoc_sgs == 1) {
+    $macrophys_pkg = 'shoc_sgs';
+}
 $cfg_ref->set('macrophys', $macrophys_pkg);
 
 if ($print>=2) { print "Macrophysics package: $macrophys_pkg$eol"; }
-
 
 #-----------------------------------------------------------------------------------------------
 # PBL package
@@ -999,6 +1024,9 @@ if ($phys_pkg =~ m/ideal|adiabatic|cam3|cam4/) {
 }
 if ($clubb_sgs == 1) {
   $pbl_pkg = 'clubb_sgs';
+}
+if ($shoc_sgs == 1){
+    $pbl_pkg = 'shoc_sgs';
 }
 
 # Allow the user to override the default via the commandline.
@@ -1496,11 +1524,20 @@ else {
             $nadv += 8;
             if ($print>=2) { print "Advected constituents added by $microphys_pkg microphysics: 8$eol"; }
         }
+        elsif ($microphys_pkg =~/^p3/) {
+            $nadv += 8;
+            if ($print>=2) { print "Advected constituents added by $microphys_pkg microphysics: 8$eol"; }
+        }
 
 	if ($clubb_do_adv) {
 	    $nadv += 9;
             if ($print>=2) { print "Advected constituents added by $microphys_pkg microphysics: 8$eol"; }
 	}
+
+        if ($shoc_sgs){
+            $nadv += 1;
+            if ($print>=2) { print "Advected constituents added by SHOC: 1$eol";}
+        }
 
         # co2_cycle
         if ($co2_cycle) {
@@ -1871,6 +1908,11 @@ if ($clubb_sgs == 1) {
     $cfg_cppdefs .= ' -DCLUBB_CAM';
     $cfg_cppdefs .= ' -DNO_LAPACK_ISNAN';
     $cfg_cppdefs .= " -DCLUBB_REAL_TYPE=dp";
+}
+
+# SHOC
+if ($shoc_sgs == 1){
+    $cfg_cppdefs .= ' -DSHOC_SGS';
 }
 
 # UNICON
