@@ -2607,6 +2607,15 @@
     <desc>External script to be run after model completion</desc>
   </entry>
 
+ <entry id="EXTERNAL_WORKFLOW">
+   <type>logical</type>
+   <valid_values>TRUE,FALSE</valid_values>
+   <default_value>FALSE</default_value>
+   <group>external_tools</group>
+   <file>env_run.xml</file>
+   <desc>whether the case uses an external workflow driver </desc>
+ </entry>
+
  <!-- Job Submission stuff -->
  <entry id="USER_REQUESTED_QUEUE">
    <type>char</type>
@@ -2681,6 +2690,7 @@
    <file>env_batch.xml</file>
    <desc>whether the PROJECT value is required on this machine</desc>
  </entry>
+
 
  <help>
     =========================================
