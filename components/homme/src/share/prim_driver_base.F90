@@ -24,7 +24,8 @@ module prim_driver_base
   use perf_mod,         only: t_startf, t_stopf
   use quadrature_mod,   only: quadrature_t, gausslobatto
   use reduction_mod,    only: reductionbuffer_ordered_1d_t, red_min, red_max, red_max_int, &
-                              red_sum, red_sum_int, red_flops, initreductionbuffer
+                              red_sum, red_sum_int, red_flops, initreductionbuffer, &
+                              red_max_index, red_min_index
 #ifndef CAM
   use prim_restart_mod, only : initrestartfile
   use restart_io_mod ,  only : readrestart
@@ -470,6 +471,8 @@ contains
     call InitReductionBuffer(red_max_int,1)
     call InitReductionBuffer(red_min,1)
     call initReductionBuffer(red_flops,1)
+    call initReductionBuffer(red_min_index,2)
+    call initReductionBuffer(red_max_index,2)
 
     gp=gausslobatto(np)  ! GLL points
 
