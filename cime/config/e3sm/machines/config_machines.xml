@@ -589,6 +589,7 @@
       </modules>
 
       <modules compiler="intel">
+        <command name="rm">PrgEnv-pgi</command>
         <command name="load">PrgEnv-intel/6.0.5</command>
         <command name="rm">intel</command>
         <command name="load">intel/19.0.3.199</command>
@@ -618,6 +619,7 @@
       </modules>
 
       <modules compiler="gnu">
+        <command name="rm">PrgEnv-pgi</command>
         <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.5</command>
         <command name="rm">gcc</command>
         <command name="load">gcc/7.3.0</command>
@@ -673,9 +675,9 @@
     </environment_variables>
 
     <environment_variables compiler="pgiacc">
-      <env name="PGI_ACC_NOTIFY">1</env>
+      <!--env name="PGI_ACC_NOTIFY">1</env-->
       <env name="PGI_ACC_TIME">1</env>
-      <env name="CRAY_ACC_DEBUG">1</env>
+      <!--env name="CRAY_ACC_DEBUG">1</env-->
       <env name="CRAY_CUDA_MPS">1</env>
       <env name="MPICH_RDMA_ENABLED_CUDA">1</env>
       <env name="APRUN_XFER_LIMITS">1</env>
