@@ -835,6 +835,8 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '    <var name="velocityMeridionalSquared"/>' . "\n";
 	print $stream_file '    <var name="velocityZonalTimesTemperature"/>' . "\n";
 	print $stream_file '    <var name="velocityMeridionalTimesTemperature"/>' . "\n";
+	print $stream_file '    <var_array name="activeTracerVerticalAdvectionTopFlux"/>' . "\n";
+	print $stream_file '    <var_array name="activeTracerHorizontalAdvectionEdgeFlux"/>' . "\n";
         if ( $OCN_BGC eq 'eco_only' || $OCN_BGC eq 'eco_and_dms' || $OCN_BGC eq 'eco_and_macromolecules' || $OCN_BGC eq 'eco_and_dms_and_macromolecules') {
         	print $stream_file '    <var_struct name="ecosysDiagFieldsLevel1"/>' . "\n";
         	print $stream_file '    <var_struct name="ecosysAuxiliary"/>' . "\n";
