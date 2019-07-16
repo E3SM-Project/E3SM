@@ -38,7 +38,9 @@ def plot(var, regions_to_data, parameter):
     figsize = [17.0, 10]
     dpi = 150
     fig = plt.figure(figsize=figsize, dpi=dpi)
-    num_year = int(parameter.test_end_yr) - int(parameter.test_start_yr) +1
+    start_time = int(parameter.test_start_yr)
+    end_time = int(parameter.test_end_yr)
+    num_year = end_time - start_time+1
 
     for i_region, data_set_for_region in enumerate(regions_to_data.values()):
         refs = data_set_for_region.refs
@@ -49,9 +51,14 @@ def plot(var, regions_to_data, parameter):
             ax1.plot(ref.asma(), line_color[i_ref], linewidth=2,label = ref.ref_name +' ({0:.1f})'.format(np.mean(ref.asma())))
 
         x = np.arange(num_year)
-        ax1.set_xticks(x)
-        x_ticks_labels = [str(x) for x in range(int(parameter.test_start_yr),int(parameter.test_end_yr)+1)]
-        ax1.set_xticklabels(x_ticks_labels, rotation='45', fontsize=6)
+        #do Truncation Division to accommodating long time records
+        if num_year > 10:
+            stepsize = (num_year - 1)//10
+        else:
+            stepsize = 1
+        ax1.set_xticks(x[::stepsize])
+        x_ticks_labels = np.arange(start_time, end_time + 1, stepsize)
+        ax1.set_xticklabels(x_ticks_labels, rotation='45', fontsize=10)
 
         #if i_region % 3 == 0 :
         #    ax1.set_ylabel(var + ' (' + test.units + ')')
