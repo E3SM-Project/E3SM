@@ -346,6 +346,10 @@ class EnvBatch(EnvBase):
                             directive = self.get_resolved_value("" if self.text(node) is None else self.text(node))
                             if output_format == 'cylc':
                                 if self._batchtype == 'pbs':
+                                    # cylc includes the -N itself, no need to add
+                                    if directive.startswith("-N"):
+                                        directive=''
+                                        continue
                                     m = re.match(r'\s*(-[\w])', directive)
                                     if m:
                                         directive = re.sub(r'(-[\w]) ','{} = '.format(m.group(1)), directive)
