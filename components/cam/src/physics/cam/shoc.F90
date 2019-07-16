@@ -599,7 +599,7 @@ subroutine update_prognostics_implicit( &
   real(r8) :: flux_dummy(shcol)
   real(r8) :: ws(shcol)
   real(r8) :: tau(shcol), taux(shcol), tauy(shcol)
-  real(r8) :: ksrf(shcol)
+  real(r8) :: ksrf(shcol), ustar, wtke_flux(shcol)
   
   real(r8) :: ca(shcol,nlev) ! superdiagonal for solver
   real(r8) :: cc(shcol,nlev) ! subdiagonal for solver
@@ -641,11 +641,14 @@ subroutine update_prognostics_implicit( &
     ws(i) = max(sqrt(u_wind(i,1)**2._r8 + v_wind(i,1)**2._r8),wsmin)
     tau(i) = sqrt( taux(i)**2._r8 + tauy(i)**2._r8 )
     ksrf(i) = max(tau(i) / ws(i), ksrfmin)
+    ustar=max(sqrt(sqrt(uw_sfc(i)**2 + vw_sfc(i)**2)),0.01_r8)
+    wtke_flux(i) = ustar**3
   enddo
 
   ! Apply the surface fluxes explicitly for temperature and moisture
   thetal(:,1) = thetal(:,1) + dtime * (ggr * rho_zi(:,1) * rdp_zt(:,1)) * wthl_sfc(:)  
   qw(:,1) = qw(:,1) + dtime * (ggr * rho_zi(:,1) * rdp_zt(:,1)) * wqw_sfc(:)
+  tke(:,1) = tke(:,1) + dtime * (ggr * rho_zi(:,1) * rdp_zt(:,1)) * wtke_flux(:)
 
   ! Call decomp for momentum variables
   call vd_shoc_decomp(shcol,nlev,nlevi,tk_zi,tmpi,rdp_zt,dtime,&
@@ -1601,10 +1604,11 @@ subroutine shoc_tke(&
   
   ! Set lower boundary condition for shear production
   do i=1,shcol
-    grid_dz = 0.5_r8*dz_zi(i,1)
+!    grid_dz = 0.5_r8*dz_zi(i,1)
 
-    ustar=max(sqrt(sqrt(uw_sfc(i)**2 + vw_sfc(i)**2)),0.01_r8)
-    shear_prod(i,1) = ustar**3/(0.4_r8*grid_dz) 
+!    ustar=max(sqrt(sqrt(uw_sfc(i)**2 + vw_sfc(i)**2)),0.01_r8)
+!    shear_prod(i,1) = ustar**3/(0.4_r8*grid_dz)
+    shear_prod(i,1) = 0._r8 
   enddo
   
   ! Set upper boundary for shear production
