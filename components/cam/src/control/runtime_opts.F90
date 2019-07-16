@@ -164,6 +164,7 @@ logical  :: scm_observed_aero
 logical  :: swrad_off
 logical  :: lwrad_off
 logical  :: precip_off
+logical  :: do_small_planet
 
 contains
 
@@ -313,7 +314,8 @@ contains
    namelist /cam_inparm/ iopfile,scm_iop_srf_prop,scm_relaxation, &
                          scm_relaxation_low, scm_relaxation_high, &
                          scm_diurnal_avg,scm_crm_mode,scm_clubb_iop_name, &
-                         scm_observed_aero,swrad_off,lwrad_off, precip_off
+                         scm_observed_aero,swrad_off,lwrad_off, precip_off, &
+			 do_small_planet
 
 !-----------------------------------------------------------------------
 
@@ -357,6 +359,7 @@ contains
         swrad_off_out=swrad_off, &
         lwrad_off_out=lwrad_off, &
         precip_off_out=precip_off, &
+	do_small_planet_out=do_small_planet, &
         scm_clubb_iop_name_out=scm_clubb_iop_name)
    end if
 
@@ -416,6 +419,7 @@ contains
       print_energy_errors_in = print_energy_errors )
 
    ! Set runtime options for single column mode
+!   if (masterproc) then 
    if (present(single_column_in) .and. present(scmlon_in) .and. present(scmlat_in)) then 
       if (single_column_in) then
          single_column = single_column_in
@@ -433,9 +437,11 @@ contains
                             swrad_off_in=swrad_off, &
                             lwrad_off_in=lwrad_off, &
                             precip_off_in=precip_off, &
+			    do_small_planet_in=do_small_planet,&
                             scm_clubb_iop_name_in=scm_clubb_iop_name)
       end if
    endif
+!   endif
 
    ! Call subroutines for modules to read their own namelist.
    ! In some cases namelist default values may depend on settings from

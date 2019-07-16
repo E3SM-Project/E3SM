@@ -1109,8 +1109,10 @@ contains
     !  if rsplit>0:  also remap dynamics and compute reference level ps_v
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     if (single_column) then
-      nets_in=1
-      nete_in=1
+      !nets_in=1
+      !nete_in=1
+      nets_in=nets
+      nete_in=nete
     else
       nets_in=nets
       nete_in=nete
@@ -1708,20 +1710,24 @@ end subroutine applyCAMforcing_tracers
 
     call TimeLevel_Qdp(tl, qsplit, n0_qdp, np1_qdp)
     
-    do k=1,nlev
-      eta_dot_dpdn(:,:,k)=elem(1)%derived%omega_p(1,1,k)   
-    enddo  
-    eta_dot_dpdn(:,:,nlev+1) = eta_dot_dpdn(:,:,nlev) 
+    do ie=1,nelemd
     
-    do k=1,nlev
-      elem(1)%state%dp3d(:,:,k,np1) = elem(1)%state%dp3d(:,:,k,n0) &
-        + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k))    
-    enddo       
-
-    do p=1,qsize
       do k=1,nlev
-        elem(1)%state%Qdp(:,:,k,p,np1_qdp)=elem(1)%state%Q(:,:,k,p)*elem(1)%state%dp3d(:,:,k,np1)
+        eta_dot_dpdn(:,:,k)=elem(ie)%derived%omega_p(1,1,k)   
+      enddo  
+      eta_dot_dpdn(:,:,nlev+1) = eta_dot_dpdn(:,:,nlev) 
+    
+      do k=1,nlev
+        elem(ie)%state%dp3d(:,:,k,np1) = elem(ie)%state%dp3d(:,:,k,n0) &
+          + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k))    
+      enddo       
+
+      do p=1,qsize
+        do k=1,nlev
+          elem(ie)%state%Qdp(:,:,k,p,np1_qdp)=elem(ie)%state%Q(:,:,k,p)*elem(ie)%state%dp3d(:,:,k,np1)
+        enddo
       enddo
+    
     enddo
     
   end subroutine set_prescribed_scm        

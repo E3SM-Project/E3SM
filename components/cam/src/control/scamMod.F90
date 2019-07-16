@@ -23,6 +23,7 @@ module scamMod
   use cam_abortutils,   only: endrun
   use phys_control, only: phys_getopts
   use dycore, only: dycore_is
+  use spmd_utils,   only: masterproc
 !
   implicit none
 
@@ -327,7 +328,8 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   endif
 
   if( single_column) then
-     
+
+  if (masterproc) then     
      if (plon /= 1 .or. plat /=1 ) then 
         call endrun('SCAM_SETOPTS: must compile model for SCAM mode when namelist parameter single_column is .true.')
      endif
@@ -407,6 +409,8 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
 !!jt   else
 !!jt      iyear_AD_out     = 1950
 !!jt   end if
+
+  endif
 
   else
      if (plon ==1 .and. plat ==1) then 

@@ -869,6 +869,10 @@ end function radiation_nextsw_cday
     type(cam_in_t),      intent(in)         :: cam_in
 
     ! Local variables
+    real(r8) :: asdir(pcols)
+    real(r8) :: asdif(pcols)
+    real(r8) :: aldir(pcols)
+    real(r8) :: aldif(pcols)
 
     logical :: dosw, dolw
     integer nstep                       ! current timestep number
@@ -1009,7 +1013,7 @@ end function radiation_nextsw_cday
     real(r8) :: aer_tau_w  (pcols,0:pver,nbndsw) ! aerosol single scattering albedo * tau
     real(r8) :: aer_tau_w_g(pcols,0:pver,nbndsw) ! aerosol assymetry parameter * w * tau
     real(r8) :: aer_tau_w_f(pcols,0:pver,nbndsw) ! aerosol forward scattered fraction * w * tau
-    real(r8) :: aer_lw_abs (pcols,pver,nbndlw)   ! aerosol absorption optics depth (LW)
+    real(r8) :: aer_lw_abs (pcols,pver,nbndlw)   ! aerosol absorption optics depth (LW) 
 
     ! Gathered indicies of day and night columns 
     !  chunk_column_index = IdxDay(daylight_column_index)
@@ -1088,6 +1092,23 @@ end function radiation_nextsw_cday
     call get_rlat_all_p(lchnk, ncol, clat)
     call get_rlon_all_p(lchnk, ncol, clon)
     call zenith (calday, clat, clon, coszrs, ncol, dt_avg)
+    
+    do i = 1,ncol
+      if (coszrs(i) > 0.0_r8)  then
+        asdir(i) = (.026_r8/(coszrs(i)**1.7_r8 + 0.065_r8)) +   &
+                     (.150_r8*(coszrs(i)         - 0.100_r8 ) *   &
+                     (coszrs(i)         - 0.500_r8 ) *   &
+                     (coszrs(i)         - 1.000_r8 )  )
+	asdif(i) = asdir(i)
+	aldir(i) = asdir(i)
+	aldif(i) = asdir(i)
+      else
+        asdir(i) = 1.0_r8
+        asdif(i) = 1.0_r8
+        aldir(i) = 1.0_r8
+        aldif(i) = 1.0_r8
+      endif
+    enddo    
     
     if (swrad_off) then
        coszrs(:)=0._r8 ! coszrs is only output for zenith
@@ -1279,13 +1300,15 @@ end function radiation_nextsw_cday
                   call aer_rad_props_sw( icall, state, pbuf, nnite, idxnite, is_cmip6_volc, &
                                          aer_tau, aer_tau_w, aer_tau_w_g, aer_tau_w_f)
 
+!                  write(*,*) 'ASDIR ', cam_in%asdir(:)
+
                   call t_startf ('rad_rrtmg_sw')
                   call rad_rrtmg_sw( &
                        lchnk,        ncol,         num_rrtmg_levs, r_state,                    &
                        state%pmid,   cldfprime,                                                &
                        aer_tau,      aer_tau_w,    aer_tau_w_g,  aer_tau_w_f,                  &
                        eccf,         coszrs,       solin,        sfac,                         &
-                       cam_in%asdir, cam_in%asdif, cam_in%aldir, cam_in%aldif,                 &
+                       asdir, asdif, aldir, aldif,                 &
                        qrs,          qrsc,         fsnt,         fsntc,        fsntoa, fsutoa, &
                        fsntoac,      fsnirt,       fsnrtc,       fsnirtsq,     fsns,           &
                        fsnsc,        fsdsc,        fsds,         cam_out%sols, cam_out%soll,   &
@@ -1598,7 +1621,7 @@ end function radiation_nextsw_cday
     call t_startf ('radheat_tend')
     ! Compute net radiative heating tendency
     call radheat_tend(state, pbuf,  ptend, qrl, qrs, fsns, &
-                      fsnt, flns, flnt, cam_in%asdir, net_flx)
+                      fsnt, flns, flnt, asdir, net_flx)
     call t_stopf ('radheat_tend')
 
     ! Compute heating rate for dtheta/dt 

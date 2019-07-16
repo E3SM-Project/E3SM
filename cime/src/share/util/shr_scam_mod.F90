@@ -20,6 +20,7 @@ module shr_scam_mod
 
 ! !USES:
 
+   use spmd_utils,   only: masterproc
    use shr_kind_mod  ! defines kinds
    use shr_sys_mod   ! system calls
    use shr_file_mod  ! file utilities
@@ -141,6 +142,8 @@ subroutine shr_scam_getCloseLatLonNC(ncid, targetLat,  targetLon, closeLat, clos
    end if
 
    !--- Get variable info for search ---
+
+   if (masterproc) then
 
    rcode = nf90_inquire(ncid, nVariables=nvars)
    if (rcode /= nf90_noerr) then
@@ -278,6 +281,8 @@ subroutine shr_scam_getCloseLatLonNC(ncid, targetLat,  targetLon, closeLat, clos
    if ( allocated(latdimnames) ) deallocate(latdimnames)
    if ( allocated(londimnames) ) deallocate(londimnames)
    if ( allocated(vars)        ) deallocate( vars )
+
+   endif
 
    return
 

@@ -465,8 +465,8 @@ contains
     
     if (single_column) then
       iop_update_surface = .false.
-      call setiopupdate()
-      call readiopdata(iop_update_surface,hyam,hybm)
+      if (masterproc) call setiopupdate()
+      if (masterproc) call readiopdata(iop_update_surface,hyam,hybm)
       call scm_setinitial(elem)
     endif
 

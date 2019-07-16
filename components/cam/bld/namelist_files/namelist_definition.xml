@@ -4388,6 +4388,12 @@ Turn off microphysics computation.
 Default: FALSE
 </entry>
 
+<entry id="do_small_planet" type="logical" category="scam"
+       group="cam_inparm" valid_values="">
+Set to TRUE to turn on small planet mode.
+Default: FALSE
+</entry>
+
 <!-- Solar Parameters -->
 
 <entry id="solar_const" type="real" category="solar"
@@ -6709,12 +6715,6 @@ Default: none.
 <entry id="single_column" type="logical" category="scam"
        group="seq_infodata_inparm" valid_values="">
 Set to TRUE to turn on single column mode.
-Default: FALSE
-</entry>
-
-<entry id="do_small_column" type="logical" category="scam"
-       group="seq_infodata_inparm" valid_values="">
-Set to TRUE to turn on small planet mode.
 Default: FALSE
 </entry>
 

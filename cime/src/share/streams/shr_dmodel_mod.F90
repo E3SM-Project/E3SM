@@ -246,6 +246,7 @@ CONTAINS
     real(R8)      :: dist,mind   ! scmmode point search
     integer(IN)   :: ni,nj       ! scmmode point search
     real(R8)      :: lscmlon     ! local copy of scmlon
+    integer(IN)   :: i_scm, j_scm
 
     real   (R8),allocatable ::  lon(:,:) ! temp array for domain lon  info
     real   (R8),allocatable ::  lat(:,:) ! temp array for domain lat  info
@@ -285,10 +286,10 @@ CONTAINS
              write(logunit,*) subname,' ERROR: scmmode must supply scmlon and scmlat'
              call shr_sys_abort(subname//' ERROR: scmmode1 lon lat')
           endif
-          if (my_task > 0) then
-             write(logunit,*) subname,' ERROR: scmmode must be run on one pe'
-             call shr_sys_abort(subname//' ERROR: scmmode2 tasks')
-          endif
+!          if (my_task > 0) then
+!             write(logunit,*) subname,' ERROR: scmmode must be run on one pe'
+!             call shr_sys_abort(subname//' ERROR: scmmode2 tasks')
+!          endif
        endif
     endif
 
@@ -352,18 +353,18 @@ CONTAINS
     call shr_mpi_bcast(nxg,mpicom)
     call shr_mpi_bcast(nyg,mpicom)
     call shr_mpi_bcast(nzg,mpicom)
-    if (lscmmode) then
-       nxgo = 1
-       nygo = 1
-       nzgo = -1
-       gsize = 1
-    else
+!    if (lscmmode) then
+!       nxgo = 1
+!       nygo = 1
+!       nzgo = -1
+!       gsize = 1
+!    else
        nxgo = nxg
        nygo = nyg
        nzgo = nzg
        gsize = abs(nxg*nyg*nzg)
        if (gsize < 1) return
-    endif
+!    endif
 
     ! Create gsmap if input gsmap is not given
 
@@ -452,6 +453,8 @@ CONTAINS
 
           !--- determine whether dealing with 2D input files (typical of Eulerian 
           !--- dynamical core) or 1D files (typical of Spectral Element)
+	  	  
+	  
           if (nyg .ne. 1) then
             ni = 1
             mind = abs(lscmlon - (lon(1,1)+360.0_r8))
@@ -473,7 +476,7 @@ CONTAINS
               endif
             enddo
 
-            j = nj
+            j_scm = nj
 
           else ! lat and lon are on 1D arrays
 
@@ -487,19 +490,34 @@ CONTAINS
               endif
             enddo
 
-            j = 1
+            j_scm = 1
 
           endif
 
-          n = 1
-          i = ni
+!          n = 1
+          i_scm = ni
+	  
+          n=0
+          do k=1,abs(nzg)
+             do j=1,nyg
+                do i=1,nxg
+                   n=n+1
+                   gGridRoot%data%rAttr(nlat ,n) = lat(i_scm,j_scm)
+                   gGridRoot%data%rAttr(nlon ,n) = lon(i_scm,j_scm)
+                   gGridRoot%data%rAttr(narea,n) = area(i_scm,j_scm)
+                   gGridRoot%data%rAttr(nmask,n) = real(mask(i_scm,j_scm),R8)
+                   gGridRoot%data%rAttr(nfrac,n) = frac(i_scm,j_scm)
+                   gGridRoot%data%rAttr(nhgt ,n) = hgt(k)
+                enddo
+             enddo
+          enddo	  
 
-          gGridRoot%data%rAttr(nlat ,n) = lat(i,j)
-          gGridRoot%data%rAttr(nlon ,n) = lon(i,j)
-          gGridRoot%data%rAttr(narea,n) = area(i,j)
-          gGridRoot%data%rAttr(nmask,n) = real(mask(i,j),R8)
-          gGridRoot%data%rAttr(nfrac,n) = frac(i,j)
-          gGridRoot%data%rAttr(nhgt, n) = 1
+!          gGridRoot%data%rAttr(nlat ,n) = lat(i,j)
+!          gGridRoot%data%rAttr(nlon ,n) = lon(i,j)
+!          gGridRoot%data%rAttr(narea,n) = area(i,j)
+!          gGridRoot%data%rAttr(nmask,n) = real(mask(i,j),R8)
+!          gGridRoot%data%rAttr(nfrac,n) = frac(i,j)
+!          gGridRoot%data%rAttr(nhgt, n) = 1
        else
           n=0
           do k=1,abs(nzg)

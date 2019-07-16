@@ -147,7 +147,7 @@ supported for the Eulerian dycore.
 </entry>
 <entry id="small_planet" valid_values="0,1" value="0">
 Configure SCREAM for small planet mode: 0=off, 1=on.  This option only
-supported for the Eulerian dycore.
+supported for the SE dycore.
 </entry>
 <entry id="camiop" valid_values="0,1" value="0">
 Configure CAM to generate an IOP file that can be used to drive SCAM: 0=no, 1=yes.

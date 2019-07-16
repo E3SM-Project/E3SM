@@ -164,46 +164,51 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     !        Cp*dpdn(n)*T(n+1) + (Cpv-Cp) Qdpdn(n)*T(n+1)
     !        [Cp + (Cpv-Cp) Q(n)] *dpdn(n)*T(n+1) 
 
-    ie=1
-
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
 
-    do k=1,nlev
-      p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,t1)
-    end do
+    do ie=1,nelemd
 
-    dt=dtime
+      do k=1,nlev
+        p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,t1)
+      end do
 
-    i=1
-    j=1
+      dt=dtime
 
-    stateQin_qfcst(:,:) = elem(ie)%state%Q(i,j,:,:)
-    stateQin1(:,:) = stateQin_qfcst(:,:)
-    stateQin2(:,:) = stateQin_qfcst(:,:)        
+      do j=1,np
+        do i=1,np
 
-    if (.not. use_3dfrc) then
-      dummy1(:) = 0.0_real_kind
-    else
-      dummy1(:) = elem(ie)%derived%fT(i,j,:)
-    endif
-    dummy2(:) = 0.0_real_kind
-    forecast_ps = elem(ie)%state%ps_v(i,j,t1)
+          stateQin_qfcst(:,:) = elem(ie)%state%Q(i,j,:,:)
+          stateQin1(:,:) = stateQin_qfcst(:,:)
+          stateQin2(:,:) = stateQin_qfcst(:,:)        
 
-    call forecast(begchunk,elem(ie)%state%ps_v(i,j,t1),&
-           elem(ie)%state%ps_v(i,j,t1),forecast_ps,forecast_u,&
-           elem(ie)%state%v(i,j,1,:,t1),elem(ie)%state%v(i,j,1,:,t1),&
-           forecast_v,elem(ie)%state%v(i,j,2,:,t1),&
-           elem(ie)%state%v(i,j,2,:,t1),forecast_t,&
-           elem(ie)%state%T(i,j,:,t1),elem(ie)%state%T(i,j,:,t1),&
-           forecast_q,stateQin2,stateQin1,dt,dummy1,dummy2,dummy2,&
-           stateQin_qfcst,p(i,j,:),stateQin1,1)         
+          if (.not. use_3dfrc) then
+            dummy1(:) = 0.0_real_kind
+          else
+            dummy1(:) = elem(ie)%derived%fT(i,j,:)
+          endif
+          dummy2(:) = 0.0_real_kind
+          forecast_ps = elem(ie)%state%ps_v(i,j,t1)
 
-    elem(ie)%state%T(i,j,:,t1) = forecast_t(:)
-    elem(ie)%state%v(i,j,1,:,t1) = forecast_u(:)
-    elem(ie)%state%v(i,j,2,:,t1) = forecast_v(:)
-    elem(ie)%state%Q(i,j,:,:) = forecast_q(:,:)
+          call forecast(begchunk,elem(ie)%state%ps_v(i,j,t1),&
+            elem(ie)%state%ps_v(i,j,t1),forecast_ps,forecast_u,&
+            elem(ie)%state%v(i,j,1,:,t1),elem(ie)%state%v(i,j,1,:,t1),&
+            forecast_v,elem(ie)%state%v(i,j,2,:,t1),&
+            elem(ie)%state%v(i,j,2,:,t1),forecast_t,&
+            elem(ie)%state%T(i,j,:,t1),elem(ie)%state%T(i,j,:,t1),&
+            forecast_q,stateQin2,stateQin1,dt,dummy1,dummy2,dummy2,&
+            stateQin_qfcst,p(i,j,:),stateQin1,1)         
+
+          elem(ie)%state%T(i,j,:,t1) = forecast_t(:)
+          elem(ie)%state%v(i,j,1,:,t1) = forecast_u(:)
+          elem(ie)%state%v(i,j,2,:,t1) = forecast_v(:)
+          elem(ie)%state%Q(i,j,:,:) = forecast_q(:,:)
+	  
+	enddo
+      enddo
+      
+    enddo
 
 #endif
 
