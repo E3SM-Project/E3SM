@@ -2392,8 +2392,7 @@ logical function phys_grid_initialized ()
 #if ( defined SPMD )
    real(r8) gfield_p(fdim,mdim,ldim,ngcols) 
                                          ! vector to be scattered
-   real(r8) :: lfield_p(fdim,mdim,ldim,nlcols) 
-   integer :: max_h1,max_h2,min_h1,min_h2,h1_arr(hdim1_d),h2_arr(hdim2_d)
+   real(r8) lfield_p(fdim,mdim,ldim,nlcols) 
                                          ! local component of scattered
                                          !  vector
    integer :: displs(0:npes-1)           ! scatter displacements
@@ -2430,35 +2429,12 @@ logical function phys_grid_initialized ()
 !DIR$ PREFERVECTOR
 !DIR$ PREFERSTREAM
 !DIR$ CONCURRENT
-         max_h1 = -1*huge(1)
-         max_h2 = -1*huge(1)
-         min_h1 = huge(1)
-         min_h2 = huge(1)
-         h1_arr(:) = -1
-         h2_arr(:) = -1
-
          do i=1,ngcols_p
             cid  = pgcols(i)%chunk
             lid  = pgcols(i)%ccol
             gcol = chunks(cid)%gcol(lid)
             h2   = (gcol-1)/hdim1_d + 1
             h1   = mod((gcol-1),hdim1_d) + 1
-            max_h1 = max(max_h1,h1)
-            max_h2 = max(max_h2,h2)
-            min_h1 = min(min_h1,h1)
-            min_h2 = min(min_h2,h2)
-            if(h1_arr(h1) == -1) then
-               h1_arr(h1) = 0
-            else
-               h1_arr(h1) = h1_arr(h1) + 1
-            endif
-
-            if(h2_arr(h2) == -1) then
-               h2_arr(h2) = 0
-            else
-               h2_arr(h2) = h2_arr(h2) + 1
-            endif
-
             do m=1,mdim
                do f=1,fdim
                   gfield_p(f,m,l,i) = &

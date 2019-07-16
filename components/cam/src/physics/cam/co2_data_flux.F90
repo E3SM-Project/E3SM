@@ -5,15 +5,19 @@ module co2_data_flux
 ! for data reading and interpolation                                           
 !------------------------------------------------------------------------------------------------
 
-  use shr_kind_mod,   only : r8 => shr_kind_r8
+  use shr_kind_mod,   only : r8 => shr_kind_r8,shr_kind_cx,shr_kind_cl
   use spmd_utils,     only : masterproc
   use ppgrid,         only : begchunk, endchunk, pcols
   use phys_grid,      only : scatter_field_to_chunk, get_ncols_p
   use error_messages, only : alloc_err, handle_ncerr, handle_err
   use cam_abortutils,     only : endrun
-  use netcdf,         only : nf90_inq_dimid, nf90_inquire_dimension, nf90_inq_varid, nf90_get_var, nf90_open
+  use netcdf,         only : nf90_inq_dimid, nf90_inquire_dimension, nf90_inq_varid, nf90_get_var, nf90_open, &
+       nf90_noerr
   use cam_logfile,    only : iulog
   use physics_types,  only: physics_state, physics_state_copy
+  use dycore,         only: dycore_is
+  use shr_log_mod ,   only: errMsg => shr_log_errMsg
+
 #ifdef CO2_BILIN_REGRID
   use tracer_data,    only : trfld, trfile, trcdata_init, advance_trcdata
 #endif
@@ -40,8 +44,10 @@ module co2_data_flux
   private
 !  integer,  parameter :: totsz=2000           ! number greater than data time sample
   real(r8), parameter :: daysperyear = 365.0_r8  ! Number of days in a year         
-  integer :: lonsiz,colsiz  ! size of longitude dimension, dataset is 2d(lat,lon), in CAM grid
+  integer :: lonsiz  ! size of longitude dimension, if dataset is 2d(lat,lon), in CAM grid
   integer :: latsiz  ! size of latitude dimension
+
+  integer :: ncolsiz ! size of number of columns (if SE grid)
 
   !Following state data type is declared so that we can send state as an argument 
   !in advance_trcdata call. Only "pint" (or pmid) is used from state variable
@@ -64,7 +70,7 @@ TYPE :: read_interp
   integer :: timesz    ! size of time dimension on dataset
   integer, pointer :: date_f(:)      ! Date on dataset (YYYYMMDD)
   integer, pointer :: sec_f(:)       ! seconds of date on dataset (0-86399) 
-  character(len=256) :: locfn   ! dataset name
+  character(len=shr_kind_cl) :: locfn   ! dataset name
   integer :: ncid_f             ! netcdf id for dataset       
   integer :: fluxid             ! netcdf id for dataset flux      
   real(r8), pointer :: xvar(:,:,:) ! work space for dataset  
@@ -92,6 +98,7 @@ subroutine read_data_flux (input_file, xin, state, pbuf2d)
   use ioFileMod,    only : getfil
   
   use physics_buffer, only: physics_buffer_desc
+  use dyn_grid,     only: get_horiz_grid_dim_d
 
   implicit none
  
@@ -102,14 +109,16 @@ subroutine read_data_flux (input_file, xin, state, pbuf2d)
   type(physics_state),       pointer :: state(:)
   type(physics_buffer_desc), pointer :: pbuf2d(:,:)
  
+  character(len = shr_kind_cx) :: msg
   integer lonid                 ! netcdf id for longitude variable
   integer latid                 ! netcdf id for latitude variable
   integer timeid                ! netcdf id for time variable
   integer dateid                ! netcdf id for date variable
   integer secid                 ! netcdf id for seconds variable
   integer londimid              ! netcdf id for longitude variable
-  integer coldimid              ! netcdf id for longitude variable
   integer latdimid              ! netcdf id for latitude variable
+  integer ncoldimid             ! netcdf id for columns variable
+  integer :: hdim1_d,hdim2_d    ! model grid size
  
   integer dtime                 ! timestep size [seconds]
   integer cnt3(3)               ! array of counts for each dimension
@@ -189,59 +198,68 @@ subroutine read_data_flux (input_file, xin, state, pbuf2d)
 ! Open NetCDF File
  
      call getfil(input_file, xin%locfn)
-     call handle_ncerr( nf90_open(xin%locfn, 0, xin%ncid_f),&
-       'co2_data_flux.F90:154')
+     call handle_ncerr( nf90_open(xin%locfn, 0, xin%ncid_f),__FILE__,__LINE__)
      write(iulog,*)'CO2FLUX_READ: NCOPN returns id ',xin%ncid_f,' for file ',trim(xin%locfn)
  
 ! Get and check dimension info
- 
-     !call handle_ncerr( nf90_inq_dimid( xin%ncid_f, 'lon', londimid ),&
-     !  'co2_data_flux.F90:160')
-     !call handle_ncerr( nf90_inq_dimid( xin%ncid_f, 'lat', latdimid ),&
-     !  'co2_data_flux.F90:162')
-     call handle_ncerr( nf90_inq_dimid( xin%ncid_f, 'ncol', coldimid ),&
-          'co2_data_flux.F90:160')
-     call handle_ncerr( nf90_inq_dimid( xin%ncid_f, 'time',  timeid ),&
-       'co2_data_flux.F90:164')
-
-     !call handle_ncerr( nf90_inquire_dimension( xin%ncid_f, londimid, len=lonsiz     ),&
-     !  'co2_data_flux.F90:167')
-     !call handle_ncerr( nf90_inquire_dimension( xin%ncid_f, latdimid, len=latsiz     ),&
-     !  'co2_data_flux.F90:169')
-
-     call handle_ncerr( nf90_inquire_dimension( xin%ncid_f, coldimid, len=colsiz     ),&
-          'co2_data_flux.F90:167')
-
-     call handle_ncerr( nf90_inquire_dimension( xin%ncid_f, timeid,   len=xin%timesz ),&
-       'co2_data_flux.F90:171')
-
-     allocate(xin%date_f(xin%timesz), xin%sec_f(xin%timesz))
-! Get data id
-        
-     call handle_ncerr( nf90_inq_varid( xin%ncid_f, 'date',     dateid     ),&
-       'co2_data_flux.F90:192')
-     call handle_ncerr( nf90_inq_varid( xin%ncid_f, 'datesec',  secid      ),&
-       'co2_data_flux.F90:194')
-     call handle_ncerr( nf90_inq_varid( xin%ncid_f, 'CO2_flux', xin%fluxid ),&
-       'co2_data_flux.F90:196')
- 
-! Retrieve entire date and sec variables.
- 
-     call handle_ncerr( nf90_get_var ( xin%ncid_f, dateid, xin%date_f ),&
-       'co2_data_flux.F90:201')
-     call handle_ncerr( nf90_get_var ( xin%ncid_f, secid,  xin%sec_f  ),&
-       'co2_data_flux.F90:203')
-
 ! initialize
  
      strt3(1) = 1
      strt3(2) = 1
      strt3(3) = 1
-     !cnt3(1)  = lonsiz
-     cnt3(1)  = colsiz
-     !cnt3(2)  = latsiz
+
      cnt3(2)  = 1
      cnt3(3)  = 1
+
+     call get_horiz_grid_dim_d(hdim1_d,hdim2_d)
+     if( dycore_is('SE') )  then
+        istat = nf90_inq_dimid( xin%ncid_f, 'ncol', ncoldimid )
+        if(istat /= nf90_noerr) then
+           write(msg,*)'Input file:', trim(adjustl(xin%locfn)), '  should be on the same grid as the model (SE):',__FILE__,__LINE__
+           call endrun(msg)
+        endif
+        call handle_ncerr( nf90_inquire_dimension( xin%ncid_f, ncoldimid, len=ncolsiz),__FILE__,__LINE__)
+        if(hdim1_d .ne. ncolsiz) then
+           write(msg,*)'Input file grid size(',ncolsiz,') should be same as model grid size (',hdim1_d,'):',__FILE__,__LINE__
+           call endrun(msg)
+        endif
+        cnt3(1)  = ncolsiz
+     elseif( dycore_is('LR')) then
+        istat = nf90_inq_dimid( xin%ncid_f, 'lon', londimid )
+        if(istat /= nf90_noerr) then
+           write(msg,*)'Input file:', trim(adjustl(xin%locfn)), '  should be on the same grid as the model (LR or FV):'&
+                ,__FILE__,__LINE__
+           call endrun(msg)
+        endif
+        call handle_ncerr( nf90_inq_dimid( xin%ncid_f, 'lat', latdimid ),__FILE__,__LINE__)
+        call handle_ncerr( nf90_inquire_dimension( xin%ncid_f, londimid, len=lonsiz),__FILE__,__LINE__)
+        call handle_ncerr( nf90_inquire_dimension( xin%ncid_f, latdimid, len=latsiz),__FILE__,__LINE__)
+        if(hdim1_d .ne. lonsiz .or. hdim2_d .ne. latsiz) then
+           write(msg,*)'Input file grid size(',lonsiz,'x',latsiz,') should be same as model grid size (',hdim1_d,'x',hdim2_d,'):'&
+                ,__FILE__,__LINE__
+           call endrun(msg)
+        endif
+
+        cnt3(1)  = lonsiz
+        cnt3(2)  = latsiz
+     else
+        call endrun('Only SE or LR grids are supported currently:'//errmsg(__FILE__,__LINE__))
+     endif
+
+     call handle_ncerr( nf90_inq_dimid( xin%ncid_f, 'time',  timeid ),__FILE__,__LINE__)
+     call handle_ncerr( nf90_inquire_dimension( xin%ncid_f, timeid,   len=xin%timesz ),__FILE__,__LINE__)
+
+     allocate(xin%date_f(xin%timesz), xin%sec_f(xin%timesz))
+
+! Get data id
+     call handle_ncerr( nf90_inq_varid( xin%ncid_f, 'date',     dateid     ),__FILE__,__LINE__)
+     call handle_ncerr( nf90_inq_varid( xin%ncid_f, 'datesec',  secid      ),__FILE__,__LINE__)
+     call handle_ncerr( nf90_inq_varid( xin%ncid_f, 'CO2_flux', xin%fluxid ),__FILE__,__LINE__)
+ 
+! Retrieve entire date and sec variables.
+ 
+     call handle_ncerr( nf90_get_var ( xin%ncid_f, dateid, xin%date_f ),__FILE__,__LINE__)
+     call handle_ncerr( nf90_get_var ( xin%ncid_f, secid,  xin%sec_f  ),__FILE__,__LINE__)
 
   endif
 
@@ -270,11 +288,9 @@ subroutine read_data_flux (input_file, xin, state, pbuf2d)
         if ( caldayloc > xin%cdayfm .and. caldayloc <= xin%cdayfp ) then
  
            strt3(3) = n
-           call handle_ncerr( nf90_get_var ( xin%ncid_f, xin%fluxid, xin%xvar(:,:,xin%nm_f), strt3, cnt3), &
-             'co2_data_flux.F90:235')
+           call handle_ncerr( nf90_get_var ( xin%ncid_f, xin%fluxid, xin%xvar(:,:,xin%nm_f), strt3, cnt3),__FILE__,__LINE__)
            strt3(3) = xin%np1_f                                      
-           call handle_ncerr( nf90_get_var ( xin%ncid_f, xin%fluxid, xin%xvar(:,:,xin%np_f), strt3, cnt3),&
-             'co2_data_flux.F90:238')
+           call handle_ncerr( nf90_get_var ( xin%ncid_f, xin%fluxid, xin%xvar(:,:,xin%np_f), strt3, cnt3),__FILE__,__LINE__)
 
            goto 10
 
@@ -404,8 +420,13 @@ subroutine interp_time_flux (xin, prev_timestep)
         strt3(1) = 1
         strt3(2) = 1
         strt3(3) = 1
-        cnt3(1)  = lonsiz
-        cnt3(2)  = latsiz
+        
+        if( dycore_is('SE') )  then
+           cnt3(1)  = ncolsiz
+        elseif( dycore_is('LR')) then
+           cnt3(1)  = lonsiz
+           cnt3(2)  = latsiz
+        endif
         cnt3(3)  = 1
 
      endif
@@ -447,8 +468,7 @@ subroutine interp_time_flux (xin, prev_timestep)
  
         if (masterproc) then
            strt3(3) = xin%np1_f
-           call handle_ncerr( nf90_get_var ( xin%ncid_f, xin%fluxid, xin%xvar(:,:,xin%np_f), strt3, cnt3 ),&
-             'co2_data_flux.F90:391')
+           call handle_ncerr( nf90_get_var ( xin%ncid_f, xin%fluxid, xin%xvar(:,:,xin%np_f), strt3, cnt3 ),__FILE__,__LINE__)
            write(iulog,*)'CO2FLUX_INTERP: Read ', trim(xin%locfn),' for date (yyyymmdd) ', xin%date_f(xin%np1_f), &
                      ' sec ', xin%sec_f(xin%np1_f)
         endif
