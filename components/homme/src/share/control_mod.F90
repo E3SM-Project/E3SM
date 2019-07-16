@@ -14,8 +14,30 @@ module control_mod
   character(len=MAX_STRING_LEN)    , public :: integration    ! time integration (explicit, or full imp)
 
 ! experimental option for preqx model:
-  logical, public  :: use_semi_lagrange_transport   = .false.
-  logical, public  :: use_semi_lagrange_transport_local_conservation   = .false.
+  ! Tracer transport algorithm type:
+  !     0  spectral-element Eulerian
+  !    12 interpolation semi-Lagrangian
+  integer, public  :: transport_alg = 0
+  ! Constrained density reconstructor for SL property preservation; not used if
+  ! transport_alg = 0:
+  !     0  none
+  !     2  QLT
+  !     3  CAAS
+  !    20  QLT  with superlevels
+  !    30  CAAS with superlevels
+  integer, public  :: semi_lagrange_cdr_alg = 20
+  ! If true, check mass conservation and shape preservation. The second
+  ! implicitly checks tracer consistency.
+  logical, public  :: semi_lagrange_cdr_check = .false.
+  ! If > 0 and nu_q > 0, apply hyperviscosity to tracers 1 through this value,
+  ! rather than just those that couple to the dynamics at the dynamical time
+  ! step. These latter are 'active' tracers, in contrast to 'passive' tracers
+  ! that directly couple only to the physics.
+  integer, public  :: semi_lagrange_hv_q = 0
+  ! If >= 1, then the SL algorithm may choose a nearby point inside the element
+  ! halo available to it if the actual point is outside the halo. This is done
+  ! in levels <= this parameter.
+  integer, public :: semi_lagrange_nearest_point_lev = 0
 
 ! flag used by preqx, theta-l and theta-c models
 ! should be renamed to "hydrostatic_mode"
@@ -114,6 +136,9 @@ module control_mod
   real (kind=real_kind), public :: nu_top  = 0.0D5            ! top-of-the-model viscosity
 
   integer, public :: hypervis_subcycle=1                      ! number of subcycles for hyper viscsosity timestep
+  integer, public :: hypervis_subcycle_tom=0                  ! number of subcycles for TOM diffusion
+                                                              !   0   apply together with hyperviscosity
+                                                              !   >1  apply timesplit from hyperviscosity
   integer, public :: hypervis_subcycle_q=1                    ! number of subcycles for hyper viscsosity timestep on TRACERS
   integer, public :: hypervis_order=0                         ! laplace**hypervis_order.  0=not used  1=regular viscosity, 2=grad**4
   integer, public :: psurf_vis = 0                            ! 0 = use laplace on eta surfaces
@@ -200,6 +225,7 @@ module control_mod
 
   ! for dcmip 2016 test 3
   real (kind=real_kind), public :: dcmip16_mu      = 0        ! additional uniform viscosity (momentum)
-  real (kind=real_kind), public :: dcmip16_mu_s    = 0        ! additional uniform viscosity (scalars)
+  real (kind=real_kind), public :: dcmip16_mu_s    = 0        ! additional uniform viscosity (scalar dynamical variables)
+  real (kind=real_kind), public :: dcmip16_mu_q    = -1       ! additional uniform viscosity (scalar tracers); -1 implies it defaults to dcmip16_mu_s value
   real (kind=real_kind), public :: interp_lon0     = 0.0d0
 end module control_mod

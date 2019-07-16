@@ -18,6 +18,8 @@ SET(HOMME_TESTS
   thetah-TC-ftype4.cmake
   thetah-TC.cmake
   thetanh-TC.cmake
+  thetanh-TC-nudiv.cmake
+  thetanh-TC-nutop.cmake
   thetanhwet-TC.cmake
   templates.cmake
 )
