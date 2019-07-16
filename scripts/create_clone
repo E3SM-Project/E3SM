@@ -97,7 +97,7 @@ def _main_func():
                                project=project,
                                cime_output_root=cime_output_root,
                                user_mods_dir=user_mods_dir)
-        
+
 ###############################################################################
 
 if __name__ == "__main__":

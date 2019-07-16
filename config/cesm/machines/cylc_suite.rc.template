@@ -1,6 +1,9 @@
 [meta]
-  title = CESM CYLC workflow for case {{ casename }}
-  
+  title = CESM CYLC workflow for {{ workflow_description }}
+[cylc]
+  [[parameters]]
+    member = {{ members }}
+
 [scheduling]
   cycling mode = integer
   initial cycle point = 1
@@ -8,15 +11,14 @@
 
   [[dependencies]]
     [[[R1]]]
-      graph = "set_external_workflow => run => st_archive "
+      graph = "set_external_workflow<member> => run<member> => st_archive<member> "
     [[[R/P1]]] # Integer Cycling
       graph = """
-	     st_archive[-P1] => run
-             run => st_archive 
+	     st_archive<member>[-P1] => run<member>
+             run<member> => st_archive<member>
 	     """
 [runtime]
-  [[set_external_workflow]]
-    script = cd {{ caseroot }}; ./xmlchange EXTERNAL_WORKFLOW=TRUE
-  [[st_archive]]
-    script = cd {{ caseroot }}; ./case.submit --job case.st_archive; ./xmlchange CONTINUE_RUN=TRUE
-
+  [[set_external_workflow<member>]]
+    script = cd {{ case_path_string }} ./xmlchange EXTERNAL_WORKFLOW=TRUE
+  [[st_archive<member>]]
+    script = cd {{ case_path_string }} ./case.submit --job case.st_archive; ./xmlchange CONTINUE_RUN=TRUE

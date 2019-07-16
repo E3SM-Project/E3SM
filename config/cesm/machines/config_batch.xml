@@ -140,7 +140,7 @@
       <arg flag="-A" name="$PROJECT"/>
     </submit_args>
     <directives>
-      <directive> -N {{ job_id }}</directive>
+      <directive>-N {{ job_id }}</directive>
       <directive default="n"> -r {{ rerunnable }} </directive>
       <!-- <directive> -j oe {{ job_id }} </directive> -->
       <directive> -j oe </directive>

@@ -48,10 +48,11 @@ def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resub
     case.set_value("BATCH_SYSTEM", batch_system)
 
     env_batch_has_changed = False
-    try:
-        case.check_lockedfile(os.path.basename(env_batch.filename))
-    except:
-        env_batch_has_changed = True
+    if not external_workflow:
+        try:
+            case.check_lockedfile(os.path.basename(env_batch.filename))
+        except:
+            env_batch_has_changed = True
 
     if batch_system != "none" and env_batch_has_changed and not external_workflow:
         # May need to regen batch files if user made batch setting changes (e.g. walltime, queue, etc)
