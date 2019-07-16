@@ -1,6 +1,76 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 7-16-2019
+Tag: cime5.8.6
+Answer Changes: None
+Tests: scripts_regression_tests, SMS_Ld1.f19_f19_mg17.FXSD.cheyenne_intel.cam-outfrq1d 
+Dependencies:
+
+Brief Summary:
+    - Add back ESMF modules on cheyenne.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+07f0945e6 Merge pull request #3172 from ESMCI/fischer/fix_esmfmodules
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/config_machines.xml
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 7-12-2019
+Tag: cime5.8.5
+Answer Changes: bit for bit
+Tests: scripts_regression_tests on izumi, SMS_Ln9.ne0CONUSne30x8_ne0CONUSne30x8_mg17.F2000climo 
+Dependencies:
+
+Brief Summary:
+    - Add support to run SE CONUS grid with mt12 mask.
+    - ne120 SE grid updates.
+    - Changes needed for nuopc/mct mom6 validation.
+    - Case insensitive user_nl.
+    - ACME merge 2019-06-25.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+ba5ce7f68 Merge pull request #3167 from ESMCI/fischer/SE_conusmt12
+0463588af Merge pull request #3165 from ESMCI/fischer/SE_grids
+910960cfe Merge pull request #3166 from ESMCI/mvertens/mom6_validation
+603fcc6be Merge pull request #3157 from jedwards4b/caseinsensitive_usernl
+53527bce7 Merge pull request #3154 from ESMCI/jgfouca/branch-for-acme-split-2019-06-25
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/config_grids.xml
+M       config/cesm/config_grids_common.xml
+M       config/cesm/config_grids_mct.xml
+M       config/cesm/config_grids_nuopc.xml
+M       config/e3sm/allactive/config_pesall.xml
+M       config/e3sm/machines/config_batch.xml
+M       config/e3sm/machines/config_compilers.xml
+M       config/e3sm/machines/config_machines.xml
+M       scripts/lib/CIME/XML/namelist_definition.py
+M       scripts/lib/CIME/namelist.py
+M       src/drivers/mct/cime_config/namelist_definition_drv.xml
+M       src/drivers/mct/main/cime_comp_mod.F90
+M       src/drivers/mct/main/seq_flux_mct.F90
+M       src/drivers/mct/shr/seq_infodata_mod.F90
+M       src/share/util/shr_flux_mod.F90
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 6-24-2019
 Tag: cime5.8.4
 Answer Changes: None
