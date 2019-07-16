@@ -672,8 +672,8 @@ contains
 !
 !========================================================================
 !
-  subroutine get_horiz_grid_d(nxy,clat_d_out,clon_d_out, &
-       area_d_out, wght_d_out, lat_d_out, lon_d_out,cost_d_out)
+  subroutine get_horiz_grid_d(size,clat_d_out,clon_d_out, &
+       area_d_out, wght_d_out, lat_d_out, lon_d_out)
 
 !----------------------------------------------------------------------- 
 ! 
@@ -693,18 +693,17 @@ contains
 
     implicit none
 !------------------------------Arguments--------------------------------
-    integer, intent(in)   :: nxy             ! array sizes
+    integer, intent(in)   :: size             ! array sizes
 
-    real(r8), intent(out), optional :: clat_d_out(nxy) ! column latitudes
-    real(r8), intent(out), optional :: clon_d_out(nxy) ! column longitudes
+    real(r8), intent(out), optional :: clat_d_out(size) ! column latitudes
+    real(r8), intent(out), optional :: clon_d_out(size) ! column longitudes
 
-    real(r8), intent(out), optional :: area_d_out(nxy) ! column surface 
+    real(r8), intent(out), optional :: area_d_out(size) ! column surface 
                                                         !  area
-    real(r8), intent(out), optional :: wght_d_out(nxy) ! column integration
+    real(r8), intent(out), optional :: wght_d_out(size) ! column integration
                                                         !  weight
-    real(r8), intent(out), optional :: lat_d_out(nxy)  ! column deg latitudes
-    real(r8), intent(out), optional :: lon_d_out(nxy)  ! column deg longitudes
-    real(r8), intent(out), optional :: cost_d_out(:) ! column cost
+    real(r8), intent(out), optional :: lat_d_out(size)  ! column deg latitudes
+    real(r8), intent(out), optional :: lon_d_out(size)  ! column deg longitudes
 !---------------------------Local workspace-----------------------------
 !
     integer i,j                 ! loop indices
@@ -717,13 +716,13 @@ contains
     character(len=128) :: errormsg
 
 !-----------------------------------------------------------------------
-!   if (nxy < ngcols_d) then
+!   if (size < ngcols_d) then
 !      write(iulog,*)'GET_HORIZ_GRID_D: arrays not large enough (', &
-!                          nxy,' < ',ngcols_d,' ) '
+!                          size,' < ',ngcols_d,' ) '
 !      call endrun
 !   else
     if(present(clon_d_out)) then
-      if(nxy == ngcols_d) then
+      if(size == ngcols_d) then
         n = 0
         do j = 1,plat
           do i = 1,plon
@@ -731,16 +730,16 @@ contains
             clon_d_out(n) = clon(i,j)
           end do
         enddo
-      else if(nxy == plon) then
+      else if(size == plon) then
         clon_d_out(:) = clon(:,1)
       else
         write(errormsg, '(a,4(i0,a))')'clon_d_out array size incorrect (',    &
-             nxy, ' /= ', ngcols_d, ' .and. ', nxy, ' /= ', plon,') '
+             size, ' /= ', ngcols_d, ' .and. ', size, ' /= ', plon,') '
         call endrun('GET_HORIZ_GRID_D: '//errormsg)
       end if
     end if
     if(present(clat_d_out)) then
-      if(nxy == ngcols_d) then
+      if(size == ngcols_d) then
         n = 0
         do j = 1,plat
           do i = 1,plon
@@ -748,27 +747,27 @@ contains
             clat_d_out(n) = clat(j)
           end do
         end do
-      else if(nxy == plat) then
+      else if(size == plat) then
         clat_d_out(:) = clat(:)
       else
         write(errormsg, '(a,4(i0,a))')'clat_d_out array size incorrect (',    &
-             nxy, ' /= ', ngcols_d, ' .and. ', nxy, ' /= ', plat,') '
+             size, ' /= ', ngcols_d, ' .and. ', size, ' /= ', plat,') '
         call endrun('GET_HORIZ_GRID_D: '//errormsg)
       end if
     end if
-    if(nxy==plat .and. present(wght_d_out)) then
+    if(size==plat .and. present(wght_d_out)) then
       wght_d_out(:) = w(:)
       return
     end if
 
     if ( ( present(area_d_out) ) .or. ( present(wght_d_out) ) ) then
-      if ((nxy < ngcols_d) .and. present(area_d_out)) then
+      if ((size < ngcols_d) .and. present(area_d_out)) then
         write(errormsg, '(a,2(i0,a))')'area_d_out array size incorrect (',  &
-             nxy, ' /= ', ngcols_d, ') '
+             size, ' /= ', ngcols_d, ') '
         call endrun('GET_HORIZ_GRID_D: '//errormsg)
-      else if ((nxy < ngcols_d) .and. present(area_d_out)) then
+      else if ((size < ngcols_d) .and. present(area_d_out)) then
         write(errormsg, '(a,2(i0,a))')'wght_d_out array size incorrect (',  &
-             nxy, ' /= ', ngcols_d, ') '
+             size, ' /= ', ngcols_d, ') '
         call endrun('GET_HORIZ_GRID_D: '//errormsg)
       end if
       n = 0
@@ -822,7 +821,7 @@ contains
     end if
 
     if(present(lon_d_out)) then
-      if(nxy == ngcols_d) then
+      if(size == ngcols_d) then
         n = 0
         do j = 1, plat
           do i = 1, plon
@@ -830,16 +829,16 @@ contains
             lon_d_out(n) = londeg(i,j)
           end do
         end do
-      else if(nxy == plon) then
+      else if(size == plon) then
         lon_d_out(:) = londeg(:,1)
       else
         write(errormsg, '(a,4(i0,a))')'lon_d_out array size incorrect (',    &
-             nxy, ' /= ', ngcols_d, ' .and. ', nxy, ' /= ', plon,') '
+             size, ' /= ', ngcols_d, ' .and. ', size, ' /= ', plon,') '
         call endrun('GET_HORIZ_GRID_D: '//errormsg)
       end if
     end if
     if(present(lat_d_out)) then
-      if(nxy == ngcols_d) then
+      if(size == ngcols_d) then
         n = 0
         do j = 1, plat
           do i = 1, plon
@@ -847,25 +846,14 @@ contains
             lat_d_out(n) = latdeg(j)
           end do
         end do
-      else if(nxy == plat) then
+      else if(size == plat) then
         lat_d_out(:) = latdeg(:)
       else
         write(errormsg, '(a,4(i0,a))')'lat_d_out array size incorrect (',    &
-             nxy, ' /= ', ngcols_d, ' .and. ', nxy, ' /= ', plat,') '
+             size, ' /= ', ngcols_d, ' .and. ', size, ' /= ', plat,') '
         call endrun('GET_HORIZ_GRID_D: '//errormsg)
       end if
     end if
-
-    ! just a placeholder for now, until a mechanism for setting cost_d_out
-    ! is designed and implemented
-    if (present(cost_d_out)) then
-      if (size(cost_d_out) .ne. nxy) then
-        call endrun('bad cost_d_out array size in dyn_grid')
-      else
-        cost_d_out(:) = 1.0_r8
-      end if
-    end if
-
 
     return
   end subroutine get_horiz_grid_d
