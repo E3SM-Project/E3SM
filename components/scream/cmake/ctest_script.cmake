@@ -22,9 +22,16 @@ ctest_configure()
 ctest_build(FLAGS "-j8")
 
 if (NOT BUILD_ONLY)
-  ctest_test(PARALLEL_LEVEL ${PARALLEL_LEVEL})
+  ctest_test(RETURN_VALUE TEST_RESULTS PARALLEL_LEVEL ${PARALLEL_LEVEL})
+  if (NOT TEST_RESULTS EQUAL 0)
+    set(TEST_FAILS True)
+  endif()
 endif()
 
 if (NOT NO_SUBMIT)
   ctest_submit(RETRY_COUNT 10 RETRY_DELAY 60)
+endif()
+
+if (TEST_FAILS)
+  message(FATAL_ERROR "Test had fails")
 endif()
