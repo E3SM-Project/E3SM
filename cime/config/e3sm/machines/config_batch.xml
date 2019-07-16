@@ -145,6 +145,7 @@
       <arg flag="-q" name="$JOB_QUEUE"/>
       <arg flag="-l walltime=" name="$JOB_WALLCLOCK_TIME"/>
       <arg flag="-A" name="$CHARGE_ACCOUNT"/>
+      <arg flag="-W umask=022"/>
     </submit_args>
     <directives>
       <directive> -N {{ job_id }}</directive>
