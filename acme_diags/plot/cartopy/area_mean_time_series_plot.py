@@ -35,7 +35,7 @@ def plot(var, regions_to_data, parameter):
              ]
 
     # Create the figure.
-    figsize = [11.0, 8.5]
+    figsize = [17.0, 10]
     dpi = 150
     fig = plt.figure(figsize=figsize, dpi=dpi)
     num_year = int(parameter.test_end_yr) - int(parameter.test_start_yr) +1
@@ -53,10 +53,10 @@ def plot(var, regions_to_data, parameter):
         x_ticks_labels = [str(x) for x in range(int(parameter.test_start_yr),int(parameter.test_end_yr)+1)]
         ax1.set_xticklabels(x_ticks_labels, rotation='45', fontsize=6)
 
-        if i_region % 3 == 0 :
-            ax1.set_ylabel('variable name (units)')
-            #ax1.set_ylabel(test.long_name + ' (' + test.units + ')')
-        ax1.legend(loc=1, prop={'size': 6})
+        #if i_region % 3 == 0 :
+        #    ax1.set_ylabel(var + ' (' + test.units + ')')
+        ax1.set_ylabel(var + ' (' + test.units + ')')
+        ax1.legend(loc='best', prop={'size': 7})
         fig.text(panel[i_region][0]+0.12, panel[i_region][1]+panel[i_region][3]-0.015, parameter.regions[i_region],ha='center', color='black')
     # Figure title.
     fig.suptitle('Annual mean ' + var + ' over regions ' + parameter.test_name_yrs, x=0.5, y=0.97, fontsize=15)

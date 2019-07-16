@@ -60,7 +60,7 @@ def run_diag(parameter):
             test = test_data.get_timeseries_variable(var)
             print('Start and end time for selected time slices for test data: ', test.getTime().asComponentTime()[0],test.getTime().asComponentTime()[-1])
             
-            print('test shape',test.shape, test.units)
+            print('test shape',test.shape, test.long_name, test.units)
 
             parameter.viewer_descr[var] = getattr(test, 'long_name', var)
             # Get the name of the data, appended with the years averaged.
@@ -87,6 +87,9 @@ def run_diag(parameter):
                 # over months to get the yearly mean.
                 test_domain = cdutil.averager(test_domain,axis = 'xy')
                 test_domain_year = cdutil.YEAR(test_domain)
+                #add back attributes since they got lost after applying cdutil.YEAR
+                test_domain_year.long_name = test.long_name
+                test_domain_year.units = test.units
                 ref_domain = cdutil.averager(ref_domain,axis = 'xy')
                 ref_domain_year = cdutil.YEAR(ref_domain)
                 ref_domain_year.ref_name = ref_name
