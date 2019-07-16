@@ -1,9 +1,9 @@
 [meta]
-  title = CESM CYLC workflow for case {{ casename }}
+  title = CESM CYLC workflow for {{ workflow_description }}
 [cylc]
   [[parameters]]
-    member = 1
-  
+    member = {{ members }}
+
 [scheduling]
   cycling mode = integer
   initial cycle point = 1
@@ -19,7 +19,6 @@
 	     """
 [runtime]
   [[set_external_workflow<member>]]
-    script = cd {{ caseroot }}; ./xmlchange EXTERNAL_WORKFLOW=TRUE
+    script = cd {{ case_path_string }} ./xmlchange EXTERNAL_WORKFLOW=TRUE
   [[st_archive<member>]]
-    script = cd {{ caseroot }}; ./case.submit --job case.st_archive; ./xmlchange CONTINUE_RUN=TRUE
-
+    script = cd {{ case_path_string }} ./case.submit --job case.st_archive; ./xmlchange CONTINUE_RUN=TRUE
