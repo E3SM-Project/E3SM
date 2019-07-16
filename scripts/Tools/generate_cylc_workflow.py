@@ -40,7 +40,7 @@ def parse_command_line(args, description):
 
 def cylc_get_ensemble_first_and_last(case, ensemble):
     if ensemble == 1:
-        return 1,None;
+        return 1,None
     casename = case.get_value("CASE")
     m = re.search(r"(.*[^\d])(\d+)$", casename)
     minval = int(m.group(2))
