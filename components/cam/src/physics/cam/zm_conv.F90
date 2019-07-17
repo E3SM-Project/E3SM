@@ -3401,7 +3401,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
 
          !DCAPE-ULL
          if (trigdcape_ull) then
-           if (k >= nint(pblt00(i)) .and. k <= lon(i) .and. rhd > -1.e-4_r8) then
+           if (k >= nint(pblt600(i)) .and. k <= lon(i) .and. rhd > -1.e-4_r8) then
               hmax(i) = hmn(i)
               mx(i) = k
            end if
