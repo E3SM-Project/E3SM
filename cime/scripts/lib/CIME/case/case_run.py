@@ -23,15 +23,15 @@ def _pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
     caseroot = case.get_value("CASEROOT")
     din_loc_root = case.get_value("DIN_LOC_ROOT")
     rundir = case.get_value("RUNDIR")
-    build_complete = case.get_value("BUILD_COMPLETE")
 
     if case.get_value("TESTCASE") == "PFS":
         env_mach_pes = os.path.join(caseroot,"env_mach_pes.xml")
         safe_copy(env_mach_pes,"{}.{}".format(env_mach_pes, lid))
 
-    # check for locked files.
+    # check for locked files, may impact BUILD_COMPLETE
     case.check_lockedfiles()
     logger.debug("check_lockedfiles OK")
+    build_complete = case.get_value("BUILD_COMPLETE")
 
     # check that build is done
     expect(build_complete,

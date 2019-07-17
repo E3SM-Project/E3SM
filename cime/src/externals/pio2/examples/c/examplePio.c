@@ -442,7 +442,7 @@ struct examplePioClass* epc_closeFile( struct examplePioClass* this )
 
     This function frees the memory used in this example. It calls the
     ParallelIO library function PIOc_freedecomp() to free
-    decomposition resources. Then calles PIOc_finalize() and
+    decomposition resources. Then calles PIOc_free_iosystem() and
     MPI_finalize() to free library resources.
     
     @param [in] this  Pointer to self.
@@ -457,7 +457,7 @@ struct examplePioClass* epc_cleanUp( struct examplePioClass* this )
     free(this->compdof);
     
     PIOc_freedecomp(this->pioIoSystem, this->iodescNCells);
-    PIOc_finalize(this->pioIoSystem);
+    PIOc_free_iosystem(this->pioIoSystem);
     MPI_Finalize();
     
     return this;

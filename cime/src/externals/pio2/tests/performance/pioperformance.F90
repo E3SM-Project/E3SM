@@ -103,7 +103,7 @@ program pioperformance
     rearrangers(1)=1
     rearrangers(2)=2
   endif
-!  i = pio_set_log_level(2)
+
   do i=1,max_decomp_files
      if(len_trim(decompfile(i))==0) exit
      if(mype == 0) print *, ' Testing decomp: ',trim(decompfile(i))
@@ -240,9 +240,9 @@ contains
              print *,'iotype=',piotypes(k)
           endif
 !          if(iotype==PIO_IOTYPE_PNETCDF) then
-!             mode = PIO_64BIT_DATA
+             mode = PIO_64BIT_DATA
 !          else
-             mode = 0
+!             mode = 0
 !          endif
           do rearrtype=1,2
              rearr = rearrangers(rearrtype)
@@ -295,10 +295,9 @@ contains
                       call PIO_InitDecomp(iosystem, PIO_DOUBLE, gdims, compmap, iodesc_r8, rearr=rearr)
 #endif
                    endif
-                   if(mype==0) print *,__FILE__,__LINE__,'Frame: ',recnum
+                   !if(mype==0) print *,__FILE__,__LINE__,'Frame: ',recnum
 
                    do nv=1,nvars
-                      if(mype==0) print *,__FILE__,__LINE__,'var: ',nv
 #ifdef VARINT
                       call PIO_setframe(File, vari(nv), recnum)
                       call pio_write_darray(File, vari(nv), iodesc_i4, ifld(:,nv)    , ierr, fillval= PIO_FILL_INT)

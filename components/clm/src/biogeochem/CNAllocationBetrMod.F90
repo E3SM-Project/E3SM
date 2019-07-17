@@ -570,7 +570,7 @@ contains
       col_plant_ndemand_vr         => col_nf%col_plant_ndemand_vr
       col_plant_nh4demand_vr       => col_nf%col_plant_nh4demand_vr
       col_plant_no3demand_vr       => col_nf%col_plant_no3demand_vr
-      col_plant_pdemand_vr         => col_nf%col_plant_pdemand_vr
+      col_plant_pdemand_vr         => col_pf%col_plant_pdemand_vr
       plant_nh4demand_vr_patch     => veg_nf%plant_nh4demand_vr
       plant_no3demand_vr_patch     => veg_nf%plant_no3demand_vr
       plant_ndemand_vr_patch       => veg_nf%plant_ndemand_vr

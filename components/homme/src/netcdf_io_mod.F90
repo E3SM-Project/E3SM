@@ -2,6 +2,7 @@
 #include "config.h"
 #endif
 module netcdf_io_mod
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   use kinds, only : int_kind, real_kind
   !HOMME Specific: abortmp, mpireal_t,mpiinteger_t
   use parallel_mod, only : abortmp, mpireal_t, mpiinteger_t
@@ -675,6 +676,7 @@ contains
 
       if(masterproc) print *, 'netcdf_io_mod opening file ',trim(filename), fileid%fh, output_type
     end subroutine nf_open_file
+#endif
   end module netcdf_io_mod
 
 

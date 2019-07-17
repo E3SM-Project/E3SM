@@ -44,13 +44,12 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
 def buildlib(bldroot, installpath, case):
 ###############################################################################
-    gmake_args = get_standard_makefile_args(case)
+    gmake_args = get_standard_makefile_args(case, shared_lib=True)
     comp_interface = case.get_value("COMP_INTERFACE")
     cimeroot = case.get_value("CIMEROOT")
     caseroot = case.get_value("CASEROOT")
 
     filepath = [os.path.join(caseroot,"SourceMods","src.share"),
-                os.path.join(cimeroot,"src","drivers",comp_interface,"shr"),
                 os.path.join(cimeroot,"src","share","streams"),
                 os.path.join(cimeroot,"src","share","util"),
                 os.path.join(cimeroot,"src","share","RandNum","src"),
@@ -63,8 +62,7 @@ def buildlib(bldroot, installpath, case):
     if comp_interface == "mct":
         filepath.append(os.path.join(cimeroot,"src","drivers","mct","shr"))
     elif comp_interface == "nuopc":
-        filepath.append(os.path.join(cimeroot,"src","drivers","nuopc","shr"))
-        filepath.append(os.path.join(cimeroot,"src","drivers","nuopc","cime_flds_shr"))
+        filepath.append(os.path.join(cimeroot,"src","share","nuopc"))
     else:
         expect(False, "driver value of {} not supported".format(comp_interface))
 

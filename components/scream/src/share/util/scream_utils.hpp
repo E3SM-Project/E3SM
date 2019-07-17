@@ -120,6 +120,43 @@ void transpose(const Scalar* sv, Scalar* dv, Int ni, Int nk) {
         dv[nk*i + k] = sv[ni*k + i];
 };
 
+namespace check_overloads
+{
+// Note: the trick used here is taken from Alexandrescu's 'Modern C++ Design' book.
+//       We do not need implementations for the dummy functions below, since
+//       sizeof is guaranteed to not actually evaluate any expression.
+
+// We are *guaranteed* that the sizes of Yes and No are different
+using Yes = char;
+struct No
+{
+  char b[2];
+};
+
+bool Check (bool);
+bool Check (std::ostream&);
+No& Check (...);
+
+// Equality operator
+template<typename T, typename Arg>
+Yes operator== (const T&, const Arg&);
+
+template <typename T, typename Arg = T>
+struct EqualExists {
+  enum : int { value = (sizeof(Check(*(T*)(0) == *(Arg*)(0))) == sizeof(Yes)) };
+};
+
+// Streaming operator
+template<typename T>
+Yes operator<< (const std::ostream&, const T&);
+
+template<typename T>
+struct StreamExists {
+  enum : int { value = (sizeof(std::declval<std::ostream>() << std::declval<T>()) == sizeof(Yes)) };
+};
+
+} // namespace check_overloads
+
 } // namespace util
 } // namespace scream
 

@@ -696,7 +696,22 @@
      <values>
       <value>.false.</value>
      </values>
-   </entry>
+  </entry>
+
+  <entry id="ocn_surface_flux_scheme">
+     <type>integer</type>
+     <category>control</category>
+     <group>seq_infodata_inparm</group>
+     <desc>
+      0: standard surface flux calculation as in E3SMv1 
+      1: COAREv3.0 flux computation (Fairall et al., 2003)
+      2: University of Arizona algorithm (Zeng et al., 1998)
+      default: 0
+     </desc>
+     <values>
+      <value>0</value>
+     </values>
+  </entry>
 
   <entry id="flux_convergence">
     <type>real</type>
@@ -3895,6 +3910,66 @@
     </values>
   </entry>
 
+  <entry id="glc2ocn_fmapname"    modify_via_xml="GLC2OCN_FMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      glc to ocn flux mapping file for fluxes
+    </desc>
+    <values>
+      <value>$GLC2OCN_FMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="glc2ocn_fmaptype"    modify_via_xml="GLC2OCN_FMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$GLC2OCN_FMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="glc2ocn_smapname"    modify_via_xml="GLC2OCN_SMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      glc to ocn state mapping file for states
+    </desc>
+    <values>
+      <value>$GLC2OCN_SMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="glc2ocn_smaptype"    modify_via_xml="GLC2OCN_SMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$GLC2OCN_SMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
   <entry id="glc2ocn_liq_rmapname"    modify_via_xml="GLC2OCN_LIQ_RMAPNAME">
     <type>char</type>
     <category>mapping</category>
@@ -3951,6 +4026,66 @@
     </desc>
     <values>
       <value>$GLC2OCN_ICE_RMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="ocn2glc_fmapname"    modify_via_xml="OCN2GLC_FMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      ocn to glc flux mapping file for fluxes
+    </desc>
+    <values>
+      <value>$OCN2GLC_FMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="ocn2glc_fmaptype"    modify_via_xml="OCN2GLC_FMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$OCN2GLC_FMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="ocn2glc_smapname"    modify_via_xml="OCN2GLC_SMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      ocn to glc state mapping file for states
+    </desc>
+    <values>
+      <value>$OCN2GLC_SMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="ocn2glc_smaptype"    modify_via_xml="OCN2GLC_SMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$OCN2GLC_SMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
@@ -4162,6 +4297,66 @@
     </desc>
     <values>
       <value>$GLC2LND_SMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="glc2ice_fmapname"    modify_via_xml="GLC2ICE_FMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      glc to ice flux mapping file for fluxes
+    </desc>
+    <values>
+      <value>$GLC2ICE_FMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="glc2ice_fmaptype"    modify_via_xml="GLC2ICE_FMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$GLC2ICE_FMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="glc2ice_smapname"    modify_via_xml="GLC2ICE_SMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      glc to ice state mapping file for states
+    </desc>
+    <values>
+      <value>$GLC2ICE_SMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="glc2ice_smaptype"    modify_via_xml="GLC2ICE_SMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$GLC2ICE_SMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>

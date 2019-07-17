@@ -672,11 +672,12 @@ contains
           diff = abs(data1(n)-data2(n))
           max_diff = max(max_diff,diff)
           if (diff > eps) then
-      !debug            write(logunit,*)'n= ',n,' data1= ',data1(n),' data2= ',data2(n),' diff= ',diff, ' eps= ',eps
+             write(logunit,150) n,data1(n),data2(n),diff,eps
              ndiff = ndiff + 1
           endif
        end if
     end do
+150 format('seq_domain_check_grid - n:',I3,' d1:',F12.6,' d2:',F12.6,' diff:',F18.14,' eps:',F18.14)
 
     call mpi_reduce(max_diff,tot_diff,1,MPI_REAL8,MPI_MAX,0,mpicom,ier)
     if (iamroot) then
