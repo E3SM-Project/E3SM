@@ -1837,6 +1837,8 @@ class K_TestCimeCase(TestCreateTestCommon):
 
         run_cmd_assert_result(self, "{}/create_newcase {}".format(SCRIPT_DIR, args),
                               from_dir=SCRIPT_DIR)
+        run_cmd_assert_result(self, "./case.setup", from_dir=testdir)
+
         return testdir
 
     ###########################################################################

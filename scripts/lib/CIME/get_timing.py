@@ -450,15 +450,16 @@ class _TimingParser:
         self.write("\n")
 
         self.write("  Overall Metrics: \n")
-        self.write("    Model Cost:         {:10.2f}   pe-hrs/simulated_year ".format((tmax*365.0*pecost)/(3600.0*adays)))
-        if inst_label:
-            self.write("      (Model Cost is for entire ensemble)")
-        self.write("\n")
-        self.write("    Model Throughput:   {:10.2f}   simulated_years/day \n".format((86400.0*adays)/(tmax*365.0)) )
+        if adays > 0:
+            self.write("    Model Cost:         {:10.2f}   pe-hrs/simulated_year \n".format((tmax*365.0*pecost)/(3600.0*adays)))
+        if tmax > 0:
+            self.write("    Model Throughput:   {:10.2f}   simulated_years/day \n".format((86400.0*adays)/(tmax*365.0)) )
+
         self.write("\n")
 
         self.write("    Init Time   :  {:10.3f} seconds \n".format(nmax))
-        self.write("    Run Time    :  {:10.3f} seconds   {:10.3f} seconds/day \n".format(tmax, tmax/adays))
+        if adays > 0:
+            self.write("    Run Time    :  {:10.3f} seconds   {:10.3f} seconds/day \n".format(tmax, tmax/adays))
         self.write("    Final Time  :  {:10.3f} seconds \n".format(fmax))
 
         self.write("\n")
@@ -477,14 +478,13 @@ class _TimingParser:
                    "with other components \n")
         self.write("\n")
 
-        self.write("    TOT Run Time:  {:10.3f} seconds   {:10.3f} seconds/mday   {:10.2f} myears/wday \n".format(tmax, tmax/adays, tmaxr))
-        for k in self.case.get_values("COMP_CLASSES"):
-            m = self.models[k]
-            self.write("    {} Run Time:  {:10.3f} seconds   {:10.3f} seconds/mday   {:10.2f} myears/wday \n".format(k, m.tmax, m.tmax/adays, m.tmaxr))
-        self.write("    CPL COMM Time: {:10.3f} seconds   {:10.3f} seconds/mday   {:10.2f} myears/wday \n".format(xmax, xmax/adays, xmaxr))
-        if self._driver == "mct":
-            self.write("\n\n---------------- DRIVER TIMING FLOWCHART "
-                       "--------------------- \n\n")
+
+        if adays > 0:
+            self.write("    TOT Run Time:  {:10.3f} seconds   {:10.3f} seconds/mday   {:10.2f} myears/wday \n".format(tmax, tmax/adays, tmaxr))
+            for k in self.case.get_values("COMP_CLASSES"):
+                m = self.models[k]
+                self.write("    {} Run Time:  {:10.3f} seconds   {:10.3f} seconds/mday   {:10.2f} myears/wday \n".format(k, m.tmax, m.tmax/adays, m.tmaxr))
+                self.write("    CPL COMM Time: {:10.3f} seconds   {:10.3f} seconds/mday   {:10.2f} myears/wday \n".format(xmax, xmax/adays, xmaxr))
 
             pstrlen = 25
             hoffset = 1
