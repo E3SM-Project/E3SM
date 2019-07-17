@@ -354,8 +354,8 @@ def verify_chksum(input_data_root, rundir, filename, isdirectory):
     For file in filename perform a chksum and compare the result to that stored in
     the local checksumfile, if isdirectory chksum all files in the directory of form *.*
     """
+    hashfile = os.path.join(rundir, local_chksum_file)
     if not chksum_hash:
-        hashfile = os.path.join(rundir, local_chksum_file)
         if not os.path.isfile(hashfile):
             expect(False, "Failed to find or download file {}".format(hashfile))
 
