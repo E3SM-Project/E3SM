@@ -65,6 +65,15 @@ def run_diag(parameter):
             parameter.viewer_descr[var] = getattr(test, 'long_name', var)
             # Get the name of the data, appended with the years averaged.
             parameter.test_name_yrs = utils.general.get_name_and_yrs(parameter, test_data)
+            test_domain = utils.general.select_region(
+                    region, test, land_frac, ocean_frac)
+            # Average over selected region, and average
+            # over months to get the yearly mean.
+            test_domain = cdutil.averager(test_domain,axis = 'xy')
+            test_domain_year = cdutil.YEAR(test_domain)
+            #add back attributes since they got lost after applying cdutil.YEAR
+            test_domain_year.long_name = test.long_name
+            test_domain_year.units = test.units
 
             refs = []
 
@@ -80,16 +89,11 @@ def run_diag(parameter):
                 
                 # TODO: Will this work if ref and test are timeseries data,
                 # but land_frac and ocean_frac are climo'ed.
-                test_domain, ref_domain = utils.general.select_region(
-                    region, test, ref, land_frac, ocean_frac, parameter)
+                #test_domain, ref_domain = utils.general.select_region(
+                #     region, test, ref, land_frac, ocean_frac, parameter)
+                ref_domain = utils.general.select_region(
+                    region, ref, land_frac, ocean_frac)
 
-                # Average over selected region, and average
-                # over months to get the yearly mean.
-                test_domain = cdutil.averager(test_domain,axis = 'xy')
-                test_domain_year = cdutil.YEAR(test_domain)
-                #add back attributes since they got lost after applying cdutil.YEAR
-                test_domain_year.long_name = test.long_name
-                test_domain_year.units = test.units
                 ref_domain = cdutil.averager(ref_domain,axis = 'xy')
                 ref_domain_year = cdutil.YEAR(ref_domain)
                 ref_domain_year.ref_name = ref_name
@@ -97,7 +101,8 @@ def run_diag(parameter):
                 refs.append(ref_domain_year)
 
             # metrics_dict = create_metrics(ref_domain)
-            metrics_dict = ref_domain_year.mean()
+            #metrics_dict = ref_domain_year.mean()
+            metrics_dict = []
             # print(test_domain_year.getTime().asComponentTime())
             # print(test.getTime().asComponentTime())
 

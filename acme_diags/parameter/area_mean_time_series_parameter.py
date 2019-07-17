@@ -13,5 +13,7 @@ class AreaMeanTimeSeriesParameter(CoreParameter):
 
     def check_values(self):
         if not self.ref_names:
-            msg = 'You must have a value for ref_names.'
-            raise RuntimeError(msg)
+            msg = 'You have no value for ref_names. Caculate test data only'
+            print(msg)
+
+            #raise RuntimeError(msg)
