@@ -91,10 +91,10 @@ contains
   select case(name)
     case ('temperature','T'); call get_temperature(elem,field,hvcoord,nt)
     case ('pottemp','Th');    call get_pottemp(elem,field,hvcoord,nt,ntQ)
-    case ('phi','geo');       call get_phi(elem,field,phi_i,hvcoord,nt,ntQ)
-    case ('dpnh_dp');         call get_dpnh_dp(elem,field,hvcoord,nt,ntQ)
-    case ('pnh');             call get_nonhydro_pressure(elem,field,tmp  ,hvcoord,nt,ntQ)
-    case ('exner');           call get_nonhydro_pressure(elem,tmp  ,field,hvcoord,nt,ntQ)
+    case ('phi','geo');       call get_phi(elem,field,phi_i,hvcoord,nt)
+    case ('dpnh_dp');         call get_dpnh_dp(elem,field,hvcoord,nt)
+    case ('pnh');             call get_nonhydro_pressure(elem,field,tmp  ,hvcoord,nt)
+    case ('exner');           call get_nonhydro_pressure(elem,tmp  ,field,hvcoord,nt)
 
     case ('p');
       call get_hydro_pressure(field,elem%state%dp3d(:,:,:,nt),hvcoord)
@@ -108,7 +108,7 @@ contains
 
     case('rho')
        
-      call get_nonhydro_pressure(elem,pnh,tmp,hvcoord,nt,ntQ)
+      call get_nonhydro_pressure(elem,pnh,tmp,hvcoord,nt)
       call get_R_star(Rstar,elem%state%Q(:,:,:,1))
       call get_temperature(elem,T,hvcoord,nt)
       field = pnh/(Rstar*T)
@@ -191,14 +191,13 @@ contains
 
 
   !_____________________________________________________________________
-  subroutine get_dpnh_dp(elem,dpnh_dp,hvcoord,nt,ntQ)
+  subroutine get_dpnh_dp(elem,dpnh_dp,hvcoord,nt)
   implicit none
   
   type (element_t), intent(in)        :: elem
   real (kind=real_kind), intent(out)  :: dpnh_dp(np,np,nlev)
   type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
   integer, intent(in) :: nt
-  integer, intent(in) :: ntQ
   
   !   local
   real (kind=real_kind) :: dp(np,np,nlev)
@@ -243,7 +242,7 @@ contains
   
 
   !_____________________________________________________________________
-  subroutine get_nonhydro_pressure(elem,pnh,exner,hvcoord,nt,ntQ)
+  subroutine get_nonhydro_pressure(elem,pnh,exner,hvcoord,nt)
     implicit none
     
     type (element_t),       intent(in)  :: elem
@@ -251,7 +250,6 @@ contains
     real (kind=real_kind),  intent(out) :: exner(np,np,nlev)
     type (hvcoord_t),       intent(in)  :: hvcoord
     integer,                intent(in)  :: nt
-    integer,                intent(in)  :: ntQ
     
     real (kind=real_kind), dimension(np,np,nlevp) :: dpnh_dp_i
 
@@ -262,7 +260,7 @@ contains
   end subroutine
 
 
-  subroutine get_phi(elem,phi,phi_i,hvcoord,nt,ntQ)
+  subroutine get_phi(elem,phi,phi_i,hvcoord,nt)
     implicit none
     
     type (element_t),       intent(in)  :: elem
@@ -270,7 +268,6 @@ contains
     real (kind=real_kind),  intent(out) :: phi(np,np,nlev)
     real (kind=real_kind),  intent(out) :: phi_i(np,np,nlevp)
     integer,                intent(in)  :: nt
-    integer,                intent(in)  :: ntQ
     
     real (kind=real_kind), dimension(np,np,nlev) :: dp
     real (kind=real_kind) :: pnh(np,np,nlev)
