@@ -834,7 +834,7 @@ subroutine micro_mg_tend ( &
 
   ! number of sub-steps for loops over "n" (for sedimentation)
   integer nstep
-  integer, save :: printinfo = .true.
+  logical, save :: printinfo = .true.
 
   !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 

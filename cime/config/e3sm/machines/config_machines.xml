@@ -510,7 +510,7 @@
     <NODENAME_REGEX>swan</NODENAME_REGEX>
     <!--OS>CNL</OS-->
     <OS>LINUX</OS>
-    <COMPILERS>pgi,pgiacc,intel,gnu</COMPILERS>
+    <COMPILERS>pgi,pgiacc,pgiaccm,intel,gnu,gnuacc</COMPILERS>
     <MPILIBS>mpt,impi</MPILIBS>
     <PROJECT>acme</PROJECT>
     <SAVE_TIMING_DIR>/lus/scratch/$USER</SAVE_TIMING_DIR>
@@ -615,16 +615,50 @@
         <command name="load">nodehealth</command>
         <command name="rm">cray-libsci_acc</command>
         <command name="rm">cray-libsci</command>
+      </modules>
 
+      <modules compiler="pgiaccm">
+        <command name="rm">PrgEnv-intel</command>
+        <command name="load">PrgEnv-pgi/6.0.5</command>
+        <command name="rm">pgi</command>
+        <command name="load">pgi/19.4.0</command>
+        <command name="load">craype-accel-nvidia60</command>
+        <command name="load">cudatoolkit</command>
+        <command name="load">nodehealth</command>
+        <command name="rm">cray-libsci_acc</command>
+        <command name="rm">cray-libsci</command>
       </modules>
 
       <modules compiler="gnu">
         <command name="rm">PrgEnv-pgi</command>
-        <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.5</command>
+        <command name="rm">PrgEnv-intel</command>
+        <command name="rm">PrgEnv-cray</command>
+        <command name="load">PrgEnv-gnu/6.0.5</command>
         <command name="rm">gcc</command>
         <command name="load">gcc/7.3.0</command>
+        <command name="rm">cray-libsci_acc</command>
         <command name="rm">cray-libsci</command>
         <command name="load">cray-libsci/18.03.1</command>
+        <!--command name="load">cray-libsci_acc/18.12.1</command-->
+        <!--command name="load">cray-libsci/19.06.1</command-->
+      </modules>
+
+      <modules compiler="gnuacc">
+        <command name="rm">PrgEnv-pgi</command>
+        <command name="rm">PrgEnv-intel</command>
+        <command name="rm">PrgEnv-cray</command>
+        <command name="load">PrgEnv-gnu/6.0.5</command>
+        <command name="rm">gcc</command>
+        <!--command name="load">gcc/7.3.0</command-->
+        <command name="load">gcc/8.3.0</command>
+        <command name="load">craype-accel-nvidia60</command>
+        <command name="load">cudatoolkit</command>
+        <command name="load">nodehealth</command>
+        <command name="rm">cray-libsci_acc</command>
+        <command name="rm">cray-libsci</command>
+        <!--command name="load">cray-libsci/18.03.1</command-->
+        <command name="load">cray-libsci_acc/18.12.1</command>
+        <!--command name="load">cray-libsci/19.06.1</command-->
       </modules>
 
       <modules>
@@ -674,6 +708,13 @@
       <env name="MPICH_GNI_DYNAMIC_CONN">disabled</env>
     </environment_variables>
 
+    <environment_variables compiler="pgi">
+      <env name="APRUN_XFER_LIMITS">1</env>
+      <env name="ATP_ENABLED">1</env>
+      <env name="MALLOC_MMAP_MAX_">0</env>
+      <env name="MPICH_CPUMASK_DISPLAY">1</env>
+    </environment_variables>
+
     <environment_variables compiler="pgiacc">
       <!--env name="PGI_ACC_NOTIFY">1</env-->
       <env name="PGI_ACC_TIME">1</env>
@@ -684,7 +725,27 @@
       <env name="ATP_ENABLED">1</env>
       <env name="MALLOC_MMAP_MAX_">0</env>
       <env name="MPICH_CPUMASK_DISPLAY">1</env>
+    </environment_variables>
 
+    <environment_variables compiler="pgiaccm">
+      <!--env name="PGI_ACC_NOTIFY">1</env-->
+      <env name="PGI_ACC_TIME">1</env>
+      <!--env name="CRAY_ACC_DEBUG">1</env-->
+      <env name="CRAY_CUDA_MPS">1</env>
+      <env name="MPICH_RDMA_ENABLED_CUDA">1</env>
+      <env name="APRUN_XFER_LIMITS">1</env>
+      <env name="ATP_ENABLED">1</env>
+      <env name="MALLOC_MMAP_MAX_">0</env>
+      <env name="MPICH_CPUMASK_DISPLAY">1</env>
+    </environment_variables>
+
+    <environment_variables compiler="gnuacc">
+      <env name="CRAY_CUDA_MPS">1</env>
+      <env name="MPICH_RDMA_ENABLED_CUDA">1</env>
+      <env name="APRUN_XFER_LIMITS">1</env>
+      <env name="ATP_ENABLED">1</env>
+      <env name="MALLOC_MMAP_MAX_">0</env>
+      <env name="MPICH_CPUMASK_DISPLAY">1</env>
     </environment_variables>
 
   </machine>

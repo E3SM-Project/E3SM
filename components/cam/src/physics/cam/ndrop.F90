@@ -1234,14 +1234,15 @@ subroutine dropmixnuc( &
       fluxn,      &
       fluxm       )
 
-if (masterproc == 100000) then
-   print *, "BBB ntot_amode, ncnst_tot: ", ntot_amode,ncnst_tot
-   print *, "BBB nspec_amode: ", nspec_amode
-   print *, "BBB mam_idx : ", mam_idx
-   print *, "BBB do_aerocom_ind3, regen_fix: ", do_aerocom_ind3, regen_fix
-   print *, "BBB prog_modal_aero, nsubmix: ", prog_modal_aero, nsubmix
-   print *, "BBB loop_up_bnd: ", loop_up_bnd
-endif
+!ndkif (masterproc == 100000) then
+!if (masterproc) then
+!   print *, "BBB ntot_amode, ncnst_tot: ", ntot_amode,ncnst_tot
+!   print *, "BBB nspec_amode: ", nspec_amode
+!   print *, "BBB mam_idx : ", mam_idx
+!   print *, "BBB do_aerocom_ind3, regen_fix: ", do_aerocom_ind3, regen_fix
+!   print *, "BBB prog_modal_aero, nsubmix: ", prog_modal_aero, nsubmix
+!   print *, "BBB loop_up_bnd: ", loop_up_bnd
+!endif
 end subroutine dropmixnuc
 
 !===============================================================================

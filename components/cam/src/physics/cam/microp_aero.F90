@@ -491,12 +491,13 @@ subroutine microp_aero_run ( &
       omega => state%omega,             &
       pmid  => state%pmid               )
 
-if (masterproc == 10000) then
-   print *, "AAA liqcf_fix : ", liqcf_fix
-   print *, "AAA clim_modal_aero : ", clim_modal_aero
-   print *, "AAA dem_in: ", dem_in
-   print *, "AAA icenul_wsub_scheme: ", icenul_wsub_scheme
-endif
+!ndkif (masterproc == 10000) then
+!if (masterproc) then
+!   print *, "AAA liqcf_fix : ", liqcf_fix
+!   print *, "AAA clim_modal_aero : ", clim_modal_aero
+!   print *, "AAA dem_in: ", dem_in
+!   print *, "AAA icenul_wsub_scheme: ", icenul_wsub_scheme
+!endif
 
    call t_startf('microp_aero_run_init')
 
