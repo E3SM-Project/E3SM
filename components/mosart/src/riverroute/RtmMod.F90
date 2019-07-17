@@ -437,8 +437,8 @@ contains
        write(iulog,*) '   smat_option           = ',trim(smat_option)
        write(iulog,*) '   wrmflag               = ',wrmflag
        write(iulog,*) '   inundflag             = ',inundflag
-       write(iulog,*) '   sediflag              = ',inundflag
-       write(iulog,*) '   heatflag              = ',inundflag
+       write(iulog,*) '   sediflag              = ',sediflag
+       write(iulog,*) '   heatflag              = ',heatflag
        write(iulog,*) '   barrier_timers        = ',barrier_timers
        write(iulog,*) '   RoutingMethod         = ',Tctl%RoutingMethod
        write(iulog,*) '   DLevelH2R             = ',Tctl%DLevelH2R
@@ -1597,7 +1597,7 @@ contains
 
     call t_startf('mosarti_sediment_init')
     if(sediflag) then
-    call MOSART_sediment_init(rtmCTL%begr, rtmCTL%endr, rtmCTL%numr)
+        call MOSART_sediment_init(rtmCTL%begr, rtmCTL%endr, rtmCTL%numr)
     end if
     call t_stopf('mosarti_sediment_init')
     
@@ -1792,17 +1792,21 @@ contains
        endif
 !#endif
     else
-
-    do nt = 1,nt_rtm
-    do nr = rtmCTL%begr,rtmCTL%endr
-       call UpdateState_hillslope(nr,nt)
-       call UpdateState_subnetwork(nr,nt)
-       call UpdateState_mainchannel(nr,nt)
-       rtmCTL%volr(nr,nt) = (TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + &
-                             TRunoff%wh(nr,nt)*rtmCTL%area(nr)+ &
-                             TRunoff%wt_al(nr,nt) + TRunoff%wr_al(nr,nt))
-    enddo
-    enddo
+       do nt = 1,nt_rtm
+       do nr = rtmCTL%begr,rtmCTL%endr
+          call UpdateState_hillslope(nr,nt)
+          call UpdateState_subnetwork(nr,nt)
+          call UpdateState_mainchannel(nr,nt)
+		  if(sediflag) then
+             rtmCTL%volr(nr,nt) = (TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + &
+                                   TRunoff%wh(nr,nt)*rtmCTL%area(nr)+ &
+                                   TRunoff%wt_al(nr,nt) + TRunoff%wr_al(nr,nt))
+		  else
+             rtmCTL%volr(nr,nt) = (TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + &
+                                   TRunoff%wh(nr,nt)*rtmCTL%area(nr)
+          end if		  
+       enddo
+       enddo
     endif
 
     call t_stopf('mosarti_restart')
@@ -2512,9 +2516,14 @@ endif
     do nt = 1,nt_rtm
     do nr = rtmCTL%begr,rtmCTL%endr
        volr_init = rtmCTL%volr(nr,nt)
-       rtmCTL%volr(nr,nt) = (TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + &
-                             TRunoff%wh(nr,nt)*rtmCTL%area(nr) * TUnit%frac(nr) + &
-                             TRunoff%wt_al(nr,nt) + TRunoff%wr_al(nr,nt))
+       if(sediflag) then
+          rtmCTL%volr(nr,nt) = (TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + &
+                                TRunoff%wh(nr,nt)*rtmCTL%area(nr) * TUnit%frac(nr) + &
+                                TRunoff%wt_al(nr,nt) + TRunoff%wr_al(nr,nt))
+       else
+          rtmCTL%volr(nr,nt) = (TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + &
+                                TRunoff%wh(nr,nt)*rtmCTL%area(nr) * TUnit%frac(nr)
+	   end if                  
 !#ifdef INCLUDE_INUND
        if (inundflag .and. Tctl%OPT_inund == 1 .and. nt == 1) then
           rtmCTL%volr(nr,nt) = rtmCTL%volr(nr,nt) + TRunoff%wf_ini(nr)

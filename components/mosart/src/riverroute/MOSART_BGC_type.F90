@@ -134,60 +134,6 @@ module MOSART_BGC_type
     character(len=*),parameter :: FORMR = '(2A,2g15.7)'
     character(len=*),parameter :: subname='(MOSART_sediment_para)'
 
-    TSedi_para%paraFile = '/pic/projects/acme_l/liho745/Datasets/Sediment/Global_soil_erosion_para.nc'
-    TSedi_para%inputPath = '/pic/projects/acme_l/liho745/Datasets/Sediment/Soil_erosion_para_annual/ALM45/'
-
-    begr = rtmCTL%begr
-    endr = rtmCTL%endr
-    if(endr >= begr) then
-        ! reservoir parameters
-        fname = trim(TSedi_para%paraFile)
-        call ncd_pio_openfile (ncid, fname, 0)
-        call pio_seterrorhandling(ncid, PIO_INTERNAL_ERROR)
-        allocate(compdof(rtmCTL%lnumr))
-        cnt = 0
-        do n = rtmCTL%begr,rtmCTL%endr
-           cnt = cnt + 1
-           compDOF(cnt) = rtmCTL%gindex(n)
-        enddo
-    
-        ! setup iodesc based on CLYPPT dids
-        ier = pio_inq_varid(ncid, name='CLYPPT', vardesc=vardesc)
-        ier = pio_inq_vardimid(ncid, vardesc, dids)
-        ier = pio_inq_dimlen(ncid, dids(1),dsizes(1))
-        ier = pio_inq_dimlen(ncid, dids(2),dsizes(2))
-        call pio_initdecomp(pio_subsystem, pio_double, dsizes, compDOF, iodesc_dbl)
-        call pio_initdecomp(pio_subsystem, pio_int   , dsizes, compDOF, iodesc_int)
-        deallocate(compdof)
-        call pio_seterrorhandling(ncid, PIO_BCAST_ERROR)
-        
-        allocate(TSedi_para%clay_content(begr:endr))
-        ier = pio_inq_varid (ncid, name='CLYPPT', vardesc=vardesc)
-        call pio_read_darray(ncid, vardesc, iodesc_dbl, TSedi_para%clay_content, ier)
-        if (masterproc) write(iulog,FORMR) trim(subname),' read clay_content ',minval(TSedi_para%clay_content),maxval(TSedi_para%clay_content)
-        call shr_sys_flush(iulog)
-     
-        allocate(TSedi_para%silt_content(begr:endr))
-        ier = pio_inq_varid (ncid, name='SLTPPT', vardesc=vardesc)
-        call pio_read_darray(ncid, vardesc, iodesc_dbl, TSedi_para%silt_content, ier)
-        if (masterproc) write(iulog,FORMR) trim(subname),' read silt_content ',minval(TSedi_para%silt_content),maxval(TSedi_para%silt_content)
-        call shr_sys_flush(iulog)
-
-        allocate(TSedi_para%rock_frac(begr:endr))
-        ier = pio_inq_varid (ncid, name='CRFVOL', vardesc=vardesc)
-        call pio_read_darray(ncid, vardesc, iodesc_dbl, TSedi_para%rock_frac, ier)
-        if (masterproc) write(iulog,FORMR) trim(subname),' read rock_frac ',minval(TSedi_para%rock_frac),maxval(TSedi_para%rock_frac)
-        call shr_sys_flush(iulog)
-
-        allocate(TSedi_para%crop_frac(begr:endr))
-        ier = pio_inq_varid (ncid, name='CropCover', vardesc=vardesc)
-        call pio_read_darray(ncid, vardesc, iodesc_dbl, TSedi_para%crop_frac, ier)
-        if (masterproc) write(iulog,FORMR) trim(subname),' read crop_frac ',minval(TSedi_para%crop_frac),maxval(TSedi_para%crop_frac)
-        call shr_sys_flush(iulog)
-
-        call ncd_pio_closefile(ncid)
-    end if
-
     allocate(TSedi%Tau_ch(begr:endr),       &
              TSedi%Ssal_t(begr:endr),       &
              TSedi%Smal_t(begr:endr),       &
