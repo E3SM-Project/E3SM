@@ -372,8 +372,8 @@ module VegetationDataType
     real(r8), pointer :: qflx_rootsoi_frac  (:,:) => null() !  
    ! real(r8), pointer :: qflx_irrig         (:)   => null() ! irrigation flux (mm H2O/s)
     real(r8), pointer :: irrig_rate         (:)   => null() ! current irrigation rate [mm/s]
-	real(r8), pointer :: qflx_irrig_patch         (:)   => null()   ! patch irrigation flux (mm H2O/s)
-	real(r8), pointer :: qflx_real_irrig_patch    (:)   => null()   ! patch real irrigation flux (mm H2O/s) 
+    real(r8), pointer :: qflx_irrig_patch         (:)   => null()   ! patch irrigation flux (mm H2O/s)
+    real(r8), pointer :: qflx_real_irrig_patch    (:)   => null()   ! patch real irrigation flux (mm H2O/s) 
     real(r8), pointer :: qflx_grnd_irrig_patch    (:)   => null()   ! groundwater irrigation (mm H2O/s) 
     real(r8), pointer :: qflx_surf_irrig_patch    (:)   => null()   ! surface water irrigation(mm H2O/s) 
     real(r8), pointer :: qflx_supply_patch        (:)   => null()   ! patch supply flux (mm H2O/s) 
@@ -5358,7 +5358,7 @@ module VegetationDataType
     !allocate(this%qflx_irrig             (begp:endp))             ; this%qflx_irrig           (:)   = nan
     allocate(this%irrig_rate             (begp:endp))             ; this%irrig_rate           (:)   = nan
 	
-	allocate(this%qflx_irrig_patch         (begp:endp))              ; this%qflx_irrig_patch         (:)   = nan
+    allocate(this%qflx_irrig_patch         (begp:endp))              ; this%qflx_irrig_patch         (:)   = nan
     allocate(this%qflx_real_irrig_patch    (begp:endp))              ; this%qflx_real_irrig_patch    (:)   = nan
     allocate(this%qflx_grnd_irrig_patch    (begp:endp))              ; this%qflx_grnd_irrig_patch    (:)   = nan
     allocate(this%qflx_surf_irrig_patch    (begp:endp))              ; this%qflx_surf_irrig_patch    (:)   = nan

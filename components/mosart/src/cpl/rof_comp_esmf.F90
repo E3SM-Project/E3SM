@@ -803,11 +803,11 @@ contains
        fptr(index_r2x_Flrr_volr,ni)    = (Trunoff%wr(n,nliq) + Trunoff%wt(n,nliq)) / rtmCTL%area(n)
        fptr(index_r2x_Flrr_volrmch,ni) = Trunoff%wr(n,nliq) / rtmCTL%area(n)
        fptr(index_r2x_Flrr_supply,ni)  = 0._r8  ! tcxcpl
-#ifdef INCLUDE_WRM
+
        if (wrmflag) then
           fptr(index_r2x_Flrr_supply,ni)  = StorWater%Supply(n) / (rtmCTL%area(n)*0.001_r8)    ! convert m3/s to mm/s
        endif
-#endif
+
     end do
 
   end subroutine rof_export_esmf

@@ -50,7 +50,7 @@ contains
     use column_varcon    , only : icol_roof, icol_road_imperv, icol_road_perv, icol_sunwall, icol_shadewall
     use clm_varcon       , only : denh2o, denice, secspday
     use clm_varctl       , only : glc_snow_persistence_max_days, use_vichydro, use_betr
-	use domainMod        , only : ldomain
+    use domainMod        , only : ldomain
     use atm2lndType      , only : atm2lnd_type
     use clm_varpar       , only : nlevgrnd, nlevurb, nlevsoi    
     use clm_time_manager , only : get_step_size, get_nstep
@@ -282,7 +282,8 @@ contains
          qflx_runoff(c) = qflx_drain(c) + qflx_surf(c)  + qflx_h2osfc_surf(c) + qflx_qrgwl(c) + qflx_drain_perched(c)
 
          if ((lun_pp%itype(l)==istsoil .or. lun_pp%itype(l)==istcrop) .and. col_pp%active(c)) then
-            qflx_runoff(c) = qflx_runoff(c) - qflx_irrig(c)
+            !qflx_runoff(c) = qflx_runoff(c) - qflx_irrig(c)
+            qflx_irr_demand(c) = -1.0_r8 * ldomain%f_surf(g)*qflx_irrig(c) !should keep this, not the above one because this is the max qdem send to MOSART																																		 
          end if
          if (lun_pp%urbpoi(l)) then
             qflx_runoff_u(c) = qflx_runoff(c)
@@ -292,6 +293,8 @@ contains
 
       end do
 
+      !call WaterTable(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
+      !     soilhydrology_vars, soilstate_vars, temperature_vars, waterstate_vars, waterflux_vars)																							  
     end associate
 
   end subroutine HydrologyDrainage

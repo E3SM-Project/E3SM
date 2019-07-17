@@ -31,7 +31,7 @@ module domainMod
      real(r8),pointer :: topo(:)    ! topography
      real(r8),pointer :: latc(:)    ! latitude of grid cell (deg)
      real(r8),pointer :: lonc(:)    ! longitude of grid cell (deg)
-	 real(r8),pointer :: firrig(:)
+     real(r8),pointer :: firrig(:)
      real(r8),pointer :: f_surf(:)  ! fraction of water withdraws from surfacewater
      real(r8),pointer :: f_grd(:)   ! fraction of water withdraws from groundwater
      real(r8),pointer :: xCell(:)   ! x-position of grid cell (m)
@@ -163,7 +163,7 @@ contains
     domain%xCell    = nan
     domain%yCell    = nan
     domain%area     = nan
-	domain%firrig   = 0.7_r8    
+    domain%firrig   = 0.7_r8    
     domain%f_surf   = 1.0_r8
     domain%f_grd    = 0.0_r8
 
@@ -286,7 +286,7 @@ end subroutine domain_clean
     write(iulog,*) '  domain_check mask      = ',minval(domain%mask),maxval(domain%mask)
     write(iulog,*) '  domain_check frac      = ',minval(domain%frac),maxval(domain%frac)
     write(iulog,*) '  domain_check topo      = ',minval(domain%topo),maxval(domain%topo)
-	write(iulog,*) '  domain_check firrig    = ',minval(domain%firrig),maxval(domain%firrig)
+    write(iulog,*) '  domain_check firrig    = ',minval(domain%firrig),maxval(domain%firrig)
     write(iulog,*) '  domain_check f_surf    = ',minval(domain%f_surf),maxval(domain%f_surf)
     write(iulog,*) '  domain_check f_grd     = ',minval(domain%f_grd),maxval(domain%f_grd)
     write(iulog,*) '  domain_check area      = ',minval(domain%area),maxval(domain%area)

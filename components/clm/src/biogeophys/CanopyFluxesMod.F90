@@ -109,7 +109,7 @@ contains
     use pftvarcon          , only : irrigated
     use clm_varcon         , only : c14ratio
     use perf_mod           , only : t_startf, t_stopf
-	use domainMod          , only : ldomain
+    use domainMod          , only : ldomain
     use QSatMod            , only : QSat
     use FrictionVelocityMod, only : FrictionVelocity, MoninObukIni
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
@@ -632,7 +632,7 @@ contains
          do f = 1, fn
             p = filterp(f)
             c = veg_pp%column(p)
-			g = veg_pp%gridcell(p)
+            g = veg_pp%gridcell(p)
             if (check_for_irrig(p) .and. .not. frozen_soil(p)) then
                ! if level L was frozen, then we don't look at any levels below L
                if (t_soisno(c,j) <= SHR_CONST_TKFRZ) then
