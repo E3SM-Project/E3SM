@@ -33,7 +33,10 @@ def create_dirs(self):
                 logger.debug("Making dir '{}'".format(dir_to_make))
                 os.makedirs(dir_to_make)
             except OSError as e:
-                expect(False, "Could not make directory '{}', error: {}".format(dir_to_make, e))
+                # In a multithreaded situation, we may have lost a race to create this dir.
+                # We do not want to crash if that's the case.
+                if not os.path.isdir(dir_to_make):
+                    expect(False, "Could not make directory '{}', error: {}".format(dir_to_make, e))
 
     # As a convenience write the location of the case directory in the bld and run directories
     for dir_ in (exeroot, rundir):
