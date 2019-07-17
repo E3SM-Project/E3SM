@@ -42,11 +42,17 @@ def plot(var, regions_to_data, parameter):
     end_time = int(parameter.test_end_yr)
     num_year = end_time - start_time+1
 
+    s = parameter.test_name_yrs
+    years = s[s.find("(")+1:s.find(")")]
+    test_name = s.split('(')[0]
+    if not test_name:
+        test_name = 'test model'
+
     for i_region, data_set_for_region in enumerate(regions_to_data.values()):
         refs = data_set_for_region.refs
         test = data_set_for_region.test
         ax1 = fig.add_axes(panel[i_region])
-        ax1.plot(test.asma(), 'k', linewidth=2,label = 'model' +' ({0:.1f})'.format(np.mean(test.asma())))
+        ax1.plot(test.asma(), 'k', linewidth=2,label = test_name +' ({0:.1f})'.format(np.mean(test.asma())))
         for i_ref, ref in enumerate(refs):
             ax1.plot(ref.asma(), line_color[i_ref], linewidth=2,label = ref.ref_name +' ({0:.1f})'.format(np.mean(ref.asma())))
 
@@ -66,7 +72,7 @@ def plot(var, regions_to_data, parameter):
         ax1.legend(loc='best', prop={'size': 7})
         fig.text(panel[i_region][0]+0.12, panel[i_region][1]+panel[i_region][3]-0.015, parameter.regions[i_region],ha='center', color='black')
     # Figure title.
-    fig.suptitle('Annual mean ' + var + ' over regions ' + parameter.test_name_yrs, x=0.5, y=0.97, fontsize=15)
+    fig.suptitle('Annual mean ' + var + ' over regions: ' + parameter.test_name_yrs, x=0.5, y=0.97, fontsize=15)
 
     # Save the figure.
     output_file_name = var
