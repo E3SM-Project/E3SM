@@ -54,8 +54,8 @@ contains
 
     select case(data_id)
 
-    case(L2E_STATE_C12_CARBON_POOLS_VERTICALLY_RESOLVED)
-       id_val         =  L2E_STATE_C12_CARBON_POOLS_VERTICALLY_RESOLVED
+    case(L2E_STATE_C12_CARBON_POOLS_Z_RESOLVED)
+       id_val         =  L2E_STATE_C12_CARBON_POOLS_Z_RESOLVED
        name_val       =  'c12 decomp cpools vr'
        long_name_val  =  'c12 decomp cpools vr: ELM to EM'
        units_val      =  '[kg/m2]'
@@ -69,8 +69,8 @@ contains
        dim3_end_name  =  dimname_ndecomp_pools
        data_found   =  .true.
 
-    case(E2L_STATE_C12_CARBON_POOLS_VERTICALLY_RESOLVED)
-       id_val         =  E2L_STATE_C12_CARBON_POOLS_VERTICALLY_RESOLVED
+    case(E2L_STATE_C12_CARBON_POOLS_Z_RESOLVED)
+       id_val         =  E2L_STATE_C12_CARBON_POOLS_Z_RESOLVED
        name_val       =  'c12 decomp cpools vr'
        long_name_val  =  'c12 decomp cpools vr: EM to ELM'
        units_val      =  '[kg/m2]'
@@ -83,8 +83,8 @@ contains
        dim3_beg_name  =  dimname_one
        dim3_end_name  =  dimname_ndecomp_pools
        data_found   =  .true.
-    case(L2E_STATE_C13_CARBON_POOLS_VERTICALLY_RESOLVED)
-       id_val         =  L2E_STATE_C13_CARBON_POOLS_VERTICALLY_RESOLVED
+    case(L2E_STATE_C13_CARBON_POOLS_Z_RESOLVED)
+       id_val         =  L2E_STATE_C13_CARBON_POOLS_Z_RESOLVED
        name_val       =  'c13 decomp cpools vr'
        long_name_val  =  'c13 decomp cpools vr: ELM to EM'
        units_val      =  '[kg/m2]'
@@ -98,8 +98,8 @@ contains
        dim3_end_name  =  dimname_ndecomp_pools
        data_found   =  .true.
 
-    case(E2L_STATE_C13_CARBON_POOLS_VERTICALLY_RESOLVED)
-       id_val         =  E2L_STATE_C12_CARBON_POOLS_VERTICALLY_RESOLVED
+    case(E2L_STATE_C13_CARBON_POOLS_Z_RESOLVED)
+       id_val         =  E2L_STATE_C12_CARBON_POOLS_Z_RESOLVED
        name_val       =  'c13 decomp cpools vr'
        long_name_val  =  'c13 decomp cpools vr: EM to ELM'
        units_val      =  '[kg/m2]'
@@ -113,8 +113,8 @@ contains
        dim3_end_name  =  dimname_ndecomp_pools
        data_found   =  .true.
 
-    case(L2E_STATE_C14_CARBON_POOLS_VERTICALLY_RESOLVED)
-       id_val         =  L2E_STATE_C14_CARBON_POOLS_VERTICALLY_RESOLVED
+    case(L2E_STATE_C14_CARBON_POOLS_Z_RESOLVED)
+       id_val         =  L2E_STATE_C14_CARBON_POOLS_Z_RESOLVED
        name_val       =  'c14 decomp cpools vr'
        long_name_val  =  'c14 decomp cpools vr: ELM to EM'
        units_val      =  '[kg/m2]'
@@ -128,8 +128,8 @@ contains
        dim3_end_name  =  dimname_ndecomp_pools
        data_found   =  .true.
 
-    case(E2L_STATE_C14_CARBON_POOLS_VERTICALLY_RESOLVED)
-       id_val         =  E2L_STATE_C14_CARBON_POOLS_VERTICALLY_RESOLVED
+    case(E2L_STATE_C14_CARBON_POOLS_Z_RESOLVED)
+       id_val         =  E2L_STATE_C14_CARBON_POOLS_Z_RESOLVED
        name_val       =  'c14 decomp cpools vr'
        long_name_val  =  'c14 decomp cpools vr: EM to ELM'
        units_val      =  '[kg/m2]'

@@ -589,7 +589,11 @@ module ColumnDataType
     real(r8), pointer :: externalc_to_decomp_delta             (:)     => null() ! col (gC/m2) summarized net change of whole column C i/o to decomposing pool bwtn time-step
     real(r8), pointer :: f_co2_soil_vr                         (:,:)   => null() ! total vertically-resolved soil-atm. CO2 exchange (gC/m3/s)
     real(r8), pointer :: f_co2_soil                            (:)     => null() ! total soil-atm. CO2 exchange (gC/m2/s)
-
+    ! lumped litter fluxes
+    real(r8), pointer :: cflx_input_litr_met_vr                (:,:)     => null()
+    real(r8), pointer :: cflx_input_litr_cel_vr                (:,:)     => null()
+    real(r8), pointer :: cflx_input_litr_lig_vr                (:,:)     => null()
+    real(r8), pointer :: cflx_input_litr_cwd_vr                (:,:)     => null()    
   contains
     procedure, public :: Init       => col_cf_init
     procedure, public :: Restart    => col_cf_restart
@@ -626,6 +630,8 @@ module ColumnDataType
     ! summary (diagnostic) flux variables, not involved in mass balance
     real(r8), pointer :: wood_harvestn                         (:)     => null() ! total N losses to wood product pools (gN/m2/s) (p2c)
     ! deposition fluxes
+    real(r8), pointer :: ndep_to_sminn_nh3                     (:)     => null()
+    real(r8), pointer :: ndep_to_sminn_no3                     (:)     => null()
     real(r8), pointer :: ndep_to_sminn                         (:)     => null() ! atmospheric N deposition to soil mineral N (gN/m2/s)
     real(r8), pointer :: nfix_to_sminn                         (:)     => null() ! symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s) 
     real(r8), pointer :: nfix_to_ecosysn                       (:)     => null() ! total nitrogen fixation
@@ -773,6 +779,13 @@ module ColumnDataType
     real(r8), pointer :: soil_n_grossmin_flux                  (:)     => null() ! for the purpose of mass balance check
     real(r8), pointer :: plant_to_litter_nflux                 (:)     => null() ! for the purpose of mass balance check
     real(r8), pointer :: plant_to_cwd_nflux                    (:)     => null() ! for the purpose of mass balance check
+    !lumped litter fluxes
+    real(r8), pointer :: nflx_input_litr_met_vr                (:,:)     => null()
+    real(r8), pointer :: nflx_input_litr_cel_vr                (:,:)     => null()
+    real(r8), pointer :: nflx_input_litr_lig_vr                (:,:)     => null()
+    real(r8), pointer :: nflx_input_litr_cwd_vr                (:,:)     => null()  
+    real(r8), pointer :: nflx_minn_input_nh4_vr                (:,:)     => null()
+    real(r8), pointer :: nflx_minn_input_no3_vr                (:,:)     => null()
   contains
     procedure, public :: Init       => col_nf_init
     procedure, public :: Restart    => col_nf_restart
@@ -881,6 +894,11 @@ module ColumnDataType
     real(r8), pointer :: smin_p_to_plant                       (:)     ! for the purpose of mass balance check
     real(r8), pointer :: plant_to_litter_pflux                 (:)     ! for the purpose of mass balance check
     real(r8), pointer :: plant_to_cwd_pflux                    (:)     ! for the purpose of mass balance check
+    !lumped litter fluxes
+    real(r8), pointer :: pflx_input_litr_met_vr                (:,:)     => null()
+    real(r8), pointer :: pflx_input_litr_cel_vr                (:,:)     => null()
+    real(r8), pointer :: pflx_input_litr_lig_vr                (:,:)     => null()
+    real(r8), pointer :: pflx_input_litr_cwd_vr                (:,:)     => null()  
   contains
     procedure, public :: Init       => col_pf_init
     procedure, public :: Restart    => col_pf_restart
@@ -5450,7 +5468,12 @@ contains
     allocate(this%externalc_to_decomp_delta         (begc:endc))                  ; this%externalc_to_decomp_delta    (:)   = spval    
     allocate(this%f_co2_soil_vr                     (begc:endc,1:nlevdecomp_full)); this%f_co2_soil_vr                (:,:) = nan  
     allocate(this%f_co2_soil                        (begc:endc))                  ; this%f_co2_soil                   (:)   = nan    
-    
+   
+    allocate(this%cflx_input_litr_met_vr            (begc:endc,1:nlevdecomp_full)); this%cflx_input_litr_met_vr       (:,:) = nan
+    allocate(this%cflx_input_litr_cel_vr            (begc:endc,1:nlevdecomp_full)); this%cflx_input_litr_cel_vr       (:,:) = nan
+    allocate(this%cflx_input_litr_lig_vr            (begc:endc,1:nlevdecomp_full)); this%cflx_input_litr_lig_vr       (:,:) = nan
+    allocate(this%cflx_input_litr_cwd_vr            (begc:endc,1:nlevdecomp_full)); this%cflx_input_litr_cwd_vr       (:,:) = nan
+ 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_cf
     !-----------------------------------------------------------------------
@@ -7297,6 +7320,8 @@ contains
     !-----------------------------------------------------------------------
     ! allocate for each member of col_nf
     !-----------------------------------------------------------------------
+    allocate(this%ndep_to_sminn_nh3                   (begc:endc))               ; this%ndep_to_sminn_nh3                 (:)   = nan
+    allocate(this%ndep_to_sminn_no3                   (begc:endc))               ; this%ndep_to_sminn_no3                 (:)   = nan
     allocate(this%ndep_to_sminn                   (begc:endc))                   ; this%ndep_to_sminn	                 (:)   = nan
     allocate(this%nfix_to_sminn                   (begc:endc))                   ; this%nfix_to_sminn	                 (:)   = nan
     allocate(this%nfix_to_ecosysn                 (begc:endc))                   ; this%nfix_to_ecosysn                (:)   = nan
@@ -7448,7 +7473,13 @@ contains
     allocate(this%decomp_npools_sourcesink        (begc:endc,1:nlevdecomp_full,1:ndecomp_pools              )) ; this%decomp_npools_sourcesink         (:,:,:) = nan
     allocate(this%externaln_to_decomp_npools      (begc:endc,1:nlevdecomp_full, 1:ndecomp_pools             )) ; this%externaln_to_decomp_npools       (:,:,:) = spval
     allocate(this%pmnf_decomp_cascade             (begc:endc,1:nlevdecomp,1:ndecomp_cascade_transitions     )) ; this%pmnf_decomp_cascade              (:,:,:) = nan
-    
+
+    allocate(this%nflx_input_litr_met_vr            (begc:endc,1:nlevdecomp_full)); this%nflx_input_litr_met_vr       (:,:) = nan
+    allocate(this%nflx_input_litr_cel_vr            (begc:endc,1:nlevdecomp_full)); this%nflx_input_litr_cel_vr       (:,:) = nan
+    allocate(this%nflx_input_litr_lig_vr            (begc:endc,1:nlevdecomp_full)); this%nflx_input_litr_lig_vr       (:,:) = nan
+    allocate(this%nflx_input_litr_cwd_vr            (begc:endc,1:nlevdecomp_full)); this%nflx_input_litr_cwd_vr       (:,:) = nan    
+    allocate(this%nflx_minn_input_nh4_vr            (begc:endc,1:nlevdecomp_full)); this%nflx_minn_input_nh4_vr       (:,:) = nan
+    allocate(this%nflx_minn_input_no3_vr            (begc:endc,1:nlevdecomp_full)); this%nflx_minn_input_no3_vr       (:,:) = nan
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_nf
     !-----------------------------------------------------------------------
@@ -9202,7 +9233,11 @@ contains
     allocate(this%externalp_to_decomp_delta        (begc:endc))                   ; this%externalp_to_decomp_delta     (:)   = spval
     allocate(this%sminp_net_transport_vr           (begc:endc,1:nlevdecomp_full)) ; this%sminp_net_transport_vr        (:,:) = spval
     allocate(this%sminp_net_transport_delta        (begc:endc))                   ; this%sminp_net_transport_delta     (:)   = spval
-   
+  
+    allocate(this%pflx_input_litr_met_vr            (begc:endc,1:nlevdecomp_full)); this%pflx_input_litr_met_vr       (:,:) = nan
+    allocate(this%pflx_input_litr_cel_vr            (begc:endc,1:nlevdecomp_full)); this%pflx_input_litr_cel_vr       (:,:) = nan
+    allocate(this%pflx_input_litr_lig_vr            (begc:endc,1:nlevdecomp_full)); this%pflx_input_litr_lig_vr       (:,:) = nan
+    allocate(this%pflx_input_litr_cwd_vr            (begc:endc,1:nlevdecomp_full)); this%pflx_input_litr_cwd_vr       (:,:) = nan 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_pf
     !-----------------------------------------------------------------------

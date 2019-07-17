@@ -53,8 +53,8 @@ contains
     dim4_end_name  = ''
 
     select case(data_id)
-    case (L2E_BGC_COEFF_DECOMPK_VERTICALLY_RESOLVED)
-       id_val         =  L2E_BGC_COEFF_DECOMPK_VERTICALLY_RESOLVED
+    case (L2E_BGC_COEFF_DECOMPK_Z_RESOLVED)
+       id_val         =  L2E_BGC_COEFF_DECOMPK_Z_RESOLVED
        name_val       =  'decompk vr'
        long_name_val  =  'decompk vr: ELM to EM'
        units_val      =  '[1/s]'
@@ -68,8 +68,8 @@ contains
        dim3_end_name  =  dimname_ndecomp_pools
        data_found   =  .true.
 
-    case(L2E_BGC_COEFF_T_SCALAR_VERTICALLY_RESOLVED)
-       id_val         =  L2E_BGC_COEFF_T_SCALAR_VERTICALLY_RESOLVED
+    case(L2E_BGC_COEFF_T_SCALAR_Z_RESOLVED)
+       id_val         =  L2E_BGC_COEFF_T_SCALAR_Z_RESOLVED
        name_val       =  'temperature scalar vr'
        long_name_val  =  'temperature scalar vr: EM to ELM'
        units_val      =  '[-]'
@@ -81,8 +81,8 @@ contains
        dim2_end_name  =  dimname_nlevdecomp_full
        data_found   =  .true.
 
-    case(L2E_BGC_COEFF_W_SCALAR_VERTICALLY_RESOLVED)
-       id_val         =  L2E_BGC_COEFF_W_SCALAR_VERTICALLY_RESOLVED
+    case(L2E_BGC_COEFF_W_SCALAR_Z_RESOLVED)
+       id_val         =  L2E_BGC_COEFF_W_SCALAR_Z_RESOLVED
        name_val       =  'moisture scalar vr'
        long_name_val  =  'moisture scalar vr: EM to ELM'
        units_val      =  '[-]'

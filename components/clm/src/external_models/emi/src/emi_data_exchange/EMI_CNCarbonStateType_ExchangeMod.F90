@@ -78,9 +78,9 @@ contains
 
           select case (cur_data%id)
 
-          case (L2E_STATE_C12_CARBON_POOLS_VERTICALLY_RESOLVED , &
-                L2E_STATE_C13_CARBON_POOLS_VERTICALLY_RESOLVED , &
-                L2E_STATE_C14_CARBON_POOLS_VERTICALLY_RESOLVED)
+          case (L2E_STATE_C12_CARBON_POOLS_Z_RESOLVED , &
+                L2E_STATE_C13_CARBON_POOLS_Z_RESOLVED , &
+                L2E_STATE_C14_CARBON_POOLS_Z_RESOLVED)
              do fc = 1, num_filter
                 c = filter(fc)
                 do j = 1, nlevdecomp_full
@@ -151,9 +151,9 @@ contains
 
           select case (cur_data%id)
 
-          case (E2L_STATE_C12_CARBON_POOLS_VERTICALLY_RESOLVED, &
-                E2L_STATE_C13_CARBON_POOLS_VERTICALLY_RESOLVED, &
-                E2L_STATE_C14_CARBON_POOLS_VERTICALLY_RESOLVED )
+          case (E2L_STATE_C12_CARBON_POOLS_Z_RESOLVED, &
+                E2L_STATE_C13_CARBON_POOLS_Z_RESOLVED, &
+                E2L_STATE_C14_CARBON_POOLS_Z_RESOLVED )
              do fc = 1, num_filter
                 c = filter(fc)
                 do j = 1, nlevdecomp_full

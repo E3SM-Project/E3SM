@@ -3,13 +3,13 @@ module EMI_PhosphorusStateType_Constants
   implicit none
   private
   !
-  integer, parameter, public :: L2E_STATE_PHOSPHORUS_POOLS_VERTICALLY_RESOLVED  = 2401
+  integer, parameter, public :: L2E_STATE_PHOSPHORUS_POOLS_Z_RESOLVED  = 2401
 
-  integer, parameter, public :: E2L_STATE_PHOSPHORUS_POOLS_VERTICALLY_RESOLVED  = 2402
+  integer, parameter, public :: E2L_STATE_PHOSPHORUS_POOLS_Z_RESOLVED  = 2402
 
-  integer, parameter, public :: L2E_STATE_PHOSPHORUS_SOLUTION_VERTICALLY_RESOLVED  = 2403
+  integer, parameter, public :: L2E_STATE_PHOSPHORUS_SOLUTION_Z_RESOLVED  = 2403
 
-  integer, parameter, public :: E2L_STATE_PHOSPHORUS_SOLUTION_VERTICALLY_RESOLVED  = 2404
+  integer, parameter, public :: E2L_STATE_PHOSPHORUS_SOLUTION_Z_RESOLVED  = 2404
 
   integer, parameter, public :: E2L_STATE_PHOSPHORUS_CWD_VERTICALLY_INTEGRATED  = 2407
 

@@ -3,17 +3,17 @@ module EMI_CNCarbonStateType_Constants
   implicit none
   private
   !
-  integer, parameter, public :: L2E_STATE_C12_CARBON_POOLS_VERTICALLY_RESOLVED  = 2001
+  integer, parameter, public :: L2E_STATE_C12_CARBON_POOLS_Z_RESOLVED  = 2001
 
-  integer, parameter, public :: E2L_STATE_C12_CARBON_POOLS_VERTICALLY_RESOLVED  = 2002
+  integer, parameter, public :: E2L_STATE_C12_CARBON_POOLS_Z_RESOLVED  = 2002
 
-  integer, parameter, public :: L2E_STATE_C13_CARBON_POOLS_VERTICALLY_RESOLVED  = 2003
+  integer, parameter, public :: L2E_STATE_C13_CARBON_POOLS_Z_RESOLVED  = 2003
 
-  integer, parameter, public :: E2L_STATE_C13_CARBON_POOLS_VERTICALLY_RESOLVED  = 2004
+  integer, parameter, public :: E2L_STATE_C13_CARBON_POOLS_Z_RESOLVED  = 2004
 
-  integer, parameter, public :: L2E_STATE_C14_CARBON_POOLS_VERTICALLY_RESOLVED  = 2005
+  integer, parameter, public :: L2E_STATE_C14_CARBON_POOLS_Z_RESOLVED  = 2005
 
-  integer, parameter, public :: E2L_STATE_C14_CARBON_POOLS_VERTICALLY_RESOLVED  = 2006
+  integer, parameter, public :: E2L_STATE_C14_CARBON_POOLS_Z_RESOLVED  = 2006
 
   integer, parameter, public :: E2L_STATE_C12_CARBON_CWD_VERTICALLY_INTEGRATED  = 2007
 

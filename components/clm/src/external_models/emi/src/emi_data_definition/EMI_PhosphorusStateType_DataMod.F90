@@ -54,8 +54,8 @@ contains
 
     select case(data_id)
 
-    case(L2E_STATE_PHOSPHORUS_POOLS_VERTICALLY_RESOLVED)
-       id_val         =  L2E_STATE_PHOSPHORUS_POOLS_VERTICALLY_RESOLVED
+    case(L2E_STATE_PHOSPHORUS_POOLS_Z_RESOLVED)
+       id_val         =  L2E_STATE_PHOSPHORUS_POOLS_Z_RESOLVED
        name_val       =  'decomp npools vr'
        long_name_val  =  'decomp npools vr: ELM to EM'
        units_val      =  '[kg/m2]'
@@ -69,8 +69,8 @@ contains
        dim3_end_name  =  dimname_ndecomp_pools
        data_found   =  .true.
 
-    case(E2L_STATE_PHOSPHORUS_POOLS_VERTICALLY_RESOLVED)
-       id_val         =  E2L_STATE_PHOSPHORUS_POOLS_VERTICALLY_RESOLVED
+    case(E2L_STATE_PHOSPHORUS_POOLS_Z_RESOLVED)
+       id_val         =  E2L_STATE_PHOSPHORUS_POOLS_Z_RESOLVED
        name_val       =  'decomp npools vr'
        long_name_val  =  'decomp npools vr: EM to ELM'
        units_val      =  '[kg/m2]'
@@ -84,8 +84,8 @@ contains
        dim3_end_name  =  dimname_ndecomp_pools
        data_found   =  .true.
 
-    case(L2E_STATE_PHOSPHORUS_SOLUTION_VERTICALLY_RESOLVED)
-       id_val         =  L2E_STATE_PHOSPHORUS_SOLUTION_VERTICALLY_RESOLVED
+    case(L2E_STATE_PHOSPHORUS_SOLUTION_Z_RESOLVED)
+       id_val         =  L2E_STATE_PHOSPHORUS_SOLUTION_Z_RESOLVED
        name_val       =  'solutionp vr'
        long_name_val  =  'solutionp vr: ELM to EM'
        units_val      =  '[kg/m2]'
@@ -97,8 +97,8 @@ contains
        dim2_end_name  =  dimname_nlevdecomp_full
        data_found   =  .true.
 
-    case(E2L_STATE_PHOSPHORUS_SOLUTION_VERTICALLY_RESOLVED)
-       id_val         =  E2L_STATE_PHOSPHORUS_SOLUTION_VERTICALLY_RESOLVED
+    case(E2L_STATE_PHOSPHORUS_SOLUTION_Z_RESOLVED)
+       id_val         =  E2L_STATE_PHOSPHORUS_SOLUTION_Z_RESOLVED
        name_val       =  'solutionp vr'
        long_name_val  =  'solutionp vr: EM to ELM'
        units_val      =  '[kg/m2]'

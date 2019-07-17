@@ -26,8 +26,16 @@ module ExternalModelBETRMod
   use EMI_WaterFluxType_Constants
   use EMI_WaterStateType_Constants
   use EMI_KineticParType_Constants
+  use EMI_ChemStateType_Constants
+  use EMI_CNCarbonStateType_Constants
+  use EMI_CarbonFluxType_Constants
+  use EMI_NitrogenFluxType_Constants
+  use EMI_NitrogenStateType_Constants
+  use EMI_PhosphorusFluxType_Constants
+  use EMI_PhosphorusStateType_Constants
   use ExternalModelBaseType        , only : em_base_type
-  use BeTRSimulationALM            , only : betr_simulation_alm_type
+  use EMIBeTRSimulation            , only : emi_betr_simulation_type
+  
   !
   implicit none
   private
@@ -250,7 +258,7 @@ module ExternalModelBETRMod
 
     integer :: index_l2e_filter_nolakec
     integer :: index_l2e_filter_num_nolakec
-    class(betr_simulation_alm_type), pointer :: ep_betr
+    class(emi_betr_simulation_type), pointer :: ep_betr
   contains
      procedure, public :: Populate_L2E_Init_List  => EM_BETR_Populate_L2E_Init_List
      procedure, public :: Populate_L2E_List       => EM_BETR_Populate_L2E_List
@@ -304,25 +312,25 @@ contains
     select case(em_stage)
 
     case (EM_BETR_BEGIN_MASS_BALANCE_STAGE)
-       call EM_BETR_BeginMassBalance_Solve(dt, nstep, bounds)
+!       call EM_BETR_BeginMassBalance_Solve(dt, nstep, bounds)
 
     case (EM_BETR_END_MASS_BALANCE_STAGE)
-       call EM_BETR_EndMassBalance_Solve(bounds)
+!       call EM_BETR_EndMassBalance_Solve(bounds)
 
     case (EM_BETR_PRE_DIAG_WATER_FLUX_STAGE)
-       call EM_BETR_PreDiagSoilColWaterFlux_Solve(bounds, l2e_list, e2l_list)
+!       call EM_BETR_PreDiagSoilColWaterFlux_Solve(bounds, l2e_list, e2l_list)
 
     case (EM_BETR_STEP_WITHOUT_DRAINAGE_STAGE)
-       call EM_BETR_StepWithoutDraiange(bounds, l2e_list, e2l_list)
+!       call EM_BETR_StepWithoutDraiange(bounds, l2e_list, e2l_list)
 
     case (EM_BETR_STEP_WITH_DRAINAGE_STAGE)
-       call EM_BETR_StepWithDraiange(bounds, l2e_list, e2l_list)
+!       call EM_BETR_StepWithDraiange(bounds, l2e_list, e2l_list)
 
     case (EM_BETR_OUTLOOP_SOILBGC_STAGE)
-       call EM_BeTR_OutLoopSoilBGC()
+!       call EM_BeTR_OutLoopSoilBGC()
 
     case (EM_BETR_CALC_DEWSUB_FLUX_STAGE)
-       call EM_BeTR_CalcDewSubFLux()
+!       call EM_BeTR_CalcDewSubFLux()
 
     case default
        write(iulog,*)'EM_BETR_Solve: Unknown em_stage.'
@@ -646,35 +654,35 @@ contains
     this%index_e2l_flux_drain_2d = index
 
     !carbon states
-    id                            = L2E_STATE_C12_CARBON_POOLS_VERTICALLY_RESOLVED
+    id                            = L2E_STATE_C12_CARBON_POOLS_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_state_c12_decomp_pools_3d = index
 
     if(use_c13)then
-      id                            = L2E_STATE_C13_CARBON_POOLS_VERTICALLY_RESOLVED
+      id                            = L2E_STATE_C13_CARBON_POOLS_Z_RESOLVED
       call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
       this%index_l2e_bgc_state_c13_decomp_pools_3d = index
 
     endif
 
     if(use_c14)then
-      id                            = L2E_STATE_C14_CARBON_POOLS_VERTICALLY_RESOLVED
+      id                            = L2E_STATE_C14_CARBON_POOLS_Z_RESOLVED
       call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
       this%index_l2e_bgc_state_c14_decomp_pools_3d = index
      endif
 
-    id                            = E2L_STATE_C12_CARBON_POOLS_VERTICALLY_RESOLVED
+    id                            = E2L_STATE_C12_CARBON_POOLS_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_e2l_bgc_state_c12_decomp_pools_3d = index
 
     if(use_c13)then
-      id                            = E2L_STATE_C13_CARBON_POOLS_VERTICALLY_RESOLVED
+      id                            = E2L_STATE_C13_CARBON_POOLS_Z_RESOLVED
       call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
       this%index_e2l_bgc_state_c13_decomp_pools_3d = index
     endif
 
     if(use_c14)then
-      id                            = E2L_STATE_C14_CARBON_POOLS_VERTICALLY_RESOLVED
+      id                            = E2L_STATE_C14_CARBON_POOLS_Z_RESOLVED
       call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
       this%index_e2l_bgc_state_c14_decomp_pools_3d = index
     endif
@@ -740,51 +748,51 @@ contains
     this%index_e2l_bgc_state_c14_totsom_1m_1d = index
 
     !carbon fluxes
-    id                            = L2E_FLUX_CARBON_C12_LITR_MET_VERTICALLY_RESOLVED
+    id                            = L2E_FLUX_CARBON_C12_LITR_MET_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_flux_c12_litr_met_2d = index
 
-    id                            = L2E_FLUX_CARBON_C12_LITR_CEL_VERTICALLY_RESOLVED
+    id                            = L2E_FLUX_CARBON_C12_LITR_CEL_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_flux_c12_litr_cel_2d = index
 
-    id                            = L2E_FLUX_CARBON_C12_LITR_LIG_VERTICALLY_RESOLVED
+    id                            = L2E_FLUX_CARBON_C12_LITR_LIG_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_flux_c12_litr_lig_2d = index
 
-    id                            = L2E_FLUX_CARBON_C12_LITR_CWD_VERTICALLY_RESOLVED
+    id                            = L2E_FLUX_CARBON_C12_LITR_CWD_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_flux_c12_litr_cwd_2d = index
 
-    id                            = L2E_FLUX_CARBON_C13_LITR_MET_VERTICALLY_RESOLVED
+    id                            = L2E_FLUX_CARBON_C13_LITR_MET_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_flux_c13_litr_met_2d = index
 
-    id                            = L2E_FLUX_CARBON_C13_LITR_CEL_VERTICALLY_RESOLVED
+    id                            = L2E_FLUX_CARBON_C13_LITR_CEL_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_flux_c13_litr_cel_2d = index
 
-    id                            = L2E_FLUX_CARBON_C13_LITR_LIG_VERTICALLY_RESOLVED
+    id                            = L2E_FLUX_CARBON_C13_LITR_LIG_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_flux_c13_litr_lig_2d = index
 
-    id                            = L2E_FLUX_CARBON_C13_LITR_CWD_VERTICALLY_RESOLVED
+    id                            = L2E_FLUX_CARBON_C13_LITR_CWD_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_flux_c13_litr_cwd_2d = index
 
-    id                            = L2E_FLUX_CARBON_C14_LITR_MET_VERTICALLY_RESOLVED
+    id                            = L2E_FLUX_CARBON_C14_LITR_MET_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_flux_c14_litr_met_2d = index
 
-    id                            = L2E_FLUX_CARBON_C14_LITR_CEL_VERTICALLY_RESOLVED
+    id                            = L2E_FLUX_CARBON_C14_LITR_CEL_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_flux_c14_litr_cel_2d = index
 
-    id                            = L2E_FLUX_CARBON_C14_LITR_LIG_VERTICALLY_RESOLVED
+    id                            = L2E_FLUX_CARBON_C14_LITR_LIG_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_flux_c14_litr_lig_2d = index
 
-    id                            = L2E_FLUX_CARBON_C14_LITR_CWD_VERTICALLY_RESOLVED
+    id                            = L2E_FLUX_CARBON_C14_LITR_CWD_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_flux_c14_litr_cwd_2d = index
 
@@ -829,29 +837,29 @@ contains
     this%index_e2l_bgc_flux_c12_dic_runoff_1d = index
 
     !nitrogen states
-    id                            = L2E_STATE_NITROGEN_POOLS_VERTICALLY_RESOLVED
+    id                            = L2E_STATE_NITROGEN_POOLS_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_state_n14_decomp_pools_3d = index
 
-    id                            = E2L_STATE_NITROGEN_POOLS_VERTICALLY_RESOLVED
+    id                            = E2L_STATE_NITROGEN_POOLS_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_e2l_bgc_state_n14_decomp_pools_3d = index
 
-    id                            = L2E_STATE_SOIL_NH4_VERTICALLY_RESOLVED
+    id                            = L2E_STATE_SOIL_NH4_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_state_n14_nh4_soil_2d = index
 
-    id                            = L2E_STATE_SOIL_NO3_VERTICALLY_RESOLVED
+    id                            = L2E_STATE_SOIL_NO3_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_state_n14_no3_soil_2d = index
 
-    id                            = E2L_STATE_SOIL_NH4_VERTICALLY_RESOLVED
-    call e2l_list%AddDataByID(id, number_em_stages, em_stages, index)
-    this%index_e2l_bgc_state_n14_nh4_soil_2d = index
+!    id                            = E2L_STATE_SOIL_NH4_Z_RESOLVED
+!    call e2l_list%AddDataByID(id, number_em_stages, em_stages, index)
+!    this%index_e2l_bgc_state_n14_nh4_soil_2d = index
 
-    id                            = E2L_STATE_SOIL_NO3_VERTICALLY_RESOLVED
-    call e2l_list%AddDataByID(id, number_em_stages, em_stages, index)
-    this%index_e2l_bgc_state_n14_no3_soil_2d = index
+!    id                            = E2L_STATE_SOIL_NO3_Z_RESOLVED
+!    call e2l_list%AddDataByID(id, number_em_stages, em_stages, index)
+!    this%index_e2l_bgc_state_n14_no3_soil_2d = index
 
     id                            = E2L_STATE_NITROGEN_CWD_VERTICALLY_INTEGRATED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
@@ -874,39 +882,39 @@ contains
     this%index_e2l_bgc_state_n14_totsom_1m_1d = index
 
     !nitrogen fluxes
-    id                            =  L2E_FLUX_NITROGEN_LITR_MET_VERTICALLY_RESOLVED
+    id                            =  L2E_FLUX_NITROGEN_LITR_MET_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_flux_n14_litr_met_2d = index
 
-    id                            = L2E_FLUX_NITROGEN_LITR_CEL_VERTICALLY_RESOLVED
+    id                            = L2E_FLUX_NITROGEN_LITR_CEL_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_flux_n14_litr_cel_2d = index
 
-    id                            = L2E_FLUX_NITROGEN_LITR_LIG_VERTICALLY_RESOLVED
+    id                            = L2E_FLUX_NITROGEN_LITR_LIG_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_flux_n14_litr_lig_2d = index
 
-    id                            = L2E_FLUX_NITROGEN_LITR_CWD_VERTICALLY_RESOLVED
+    id                            = L2E_FLUX_NITROGEN_LITR_CWD_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_flux_n14_litr_cwd_2d = index
 
-    id                            = L2E_FLUX_NITROGEN_NH4_FIX_SOIL_VERTICALLY_RESOLVED
+    id                            = L2E_FLUX_NITROGEN_NH4_FIX_SOIL_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_flux_n14_nh4_fix_soil_2d = index
 
-    id                            = L2E_FLUX_NITROGEN_NH4_ATMDEP_SOIL_VERTICALLY_RESOLVED
+    id                            = L2E_FLUX_NITROGEN_NH4_ATMDEP_SOIL_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_flux_n14_nh4_atmdep_soil_2d = index
 
-    id                            = L2E_FLUX_NITROGEN_NO3_ATMDEP_SOIL_VERTICALLY_RESOLVED
+    id                            = L2E_FLUX_NITROGEN_NO3_ATMDEP_SOIL_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_flux_n14_no3_atmdep_soil_2d = index
 
-    id                            = L2E_FLUX_NITROGEN_NH4_FERT_SOIL_VERTICALLY_RESOLVED
+    id                            = L2E_FLUX_NITROGEN_NH4_FERT_SOIL_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_flux_n14_nh4_fert_soil_2d = index
 
-    id                            = L2E_FLUX_NITROGEN_NO3_FERT_SOIL_VERTICALLY_RESOLVED
+    id                            = L2E_FLUX_NITROGEN_NO3_FERT_SOIL_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_flux_n14_no3_fert_soil_2d = index
 
@@ -983,19 +991,19 @@ contains
     this%index_e2l_bgc_flux_n14_sminn_to_plant_veg_1d = index
 
     !phosphorus states
-    id                            = L2E_STATE_PHOSPHORUS_POOLS_VERTICALLY_RESOLVED
+    id                            = L2E_STATE_PHOSPHORUS_POOLS_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_state_p31_decomp_pools_3d = index
 
-    id                            = E2L_STATE_PHOSPHORUS_POOLS_VERTICALLY_RESOLVED
+    id                            = E2L_STATE_PHOSPHORUS_POOLS_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_e2l_bgc_state_p31_decomp_pools_3d = index
 
-    id                            = L2E_STATE_PHOSPHORUS_SOLUTION_VERTICALLY_RESOLVED
+    id                            = L2E_STATE_PHOSPHORUS_SOLUTION_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_state_p31_solutionp_soil_2d = index
 
-    id                            = E2L_STATE_PHOSPHORUS_SOLUTION_VERTICALLY_RESOLVED
+    id                            = E2L_STATE_PHOSPHORUS_SOLUTION_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_e2l_bgc_state_p31_solutionp_soil_2d = index
 
@@ -1023,36 +1031,36 @@ contains
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_e2l_bgc_flux_p31_sminp_to_plant_veg_1d = index
 
-    id                            = E2L_FLUX_Phosphorus_SMINP_PLANT_DEMAND_VERTICALLY_RESOLVED
+    id                            = E2L_FLUX_Phosphorus_SMINP_PLANT_DEMAND_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_e2l_bgc_flux_p31_col_plant_demand_2d = index
 
-    id                            = E2L_FLUX_Phosphorus_SMINP_ADSORB_TO_LABILE_VERTICALLY_RESOLVED
+    id                            = E2L_FLUX_Phosphorus_SMINP_ADSORB_TO_LABILE_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_e2l_bgc_flux_p31_adsorb_to_labile_2d = index
 
     !phosphorus fluxes
-    id                            = L2E_FLUX_Phosphorus_LITR_MET_VERTICALLY_RESOLVED
+    id                            = L2E_FLUX_Phosphorus_LITR_MET_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_flux_p31_litr_met_2d = index
 
-    id                            = L2E_FLUX_Phosphorus_LITR_CEL_VERTICALLY_RESOLVED
+    id                            = L2E_FLUX_Phosphorus_LITR_CEL_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_flux_p31_litr_cel_2d = index
 
-    id                            = L2E_FLUX_Phosphorus_LITR_LIG_VERTICALLY_RESOLVED
+    id                            = L2E_FLUX_Phosphorus_LITR_LIG_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_flux_p31_litr_lig_2d = index
 
-    id                            = L2E_FLUX_Phosphorus_LITR_CWD_VERTICALLY_RESOLVED
+    id                            = L2E_FLUX_Phosphorus_LITR_CWD_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_flux_p31_litr_cwd_2d = index
 
-    id                            = L2E_FLUX_Phosphorus_SMINP_FERT_SOIL_VERTICALLY_RESOLVED
+    id                            = L2E_FLUX_Phosphorus_SMINP_FERT_SOIL_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_flux_p31_sminp_fert_soil_2d = index
 
-    id                            = L2E_FLUX_Phosphorus_SMINP_ATMDEP_SOIL_VERTICALLY_RESOLVED
+    id                            = L2E_FLUX_Phosphorus_SMINP_ATMDEP_SOIL_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_flux_p31_sminp_atmdep_soil_2d = index
 
@@ -1081,91 +1089,91 @@ contains
     this%index_e2l_bgc_flux_p31_supplement_sminp_1d = index
 
     !kinetic parameters for nutrient coupling
-    id                            = L2E_parameter_plant_nh4_vmax_VERTICALLY_RESOLVED
+    id                            = L2E_parameter_plant_nh4_vmax_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_par_plant_nh4_vmax_2d = index
 
-    id                            = L2E_parameter_plant_no3_vmax_VERTICALLY_RESOLVED
+    id                            = L2E_parameter_plant_no3_vmax_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_par_plant_no3_vmax_2d = index
 
-    id                            = L2E_parameter_plant_p_vmax_VERTICALLY_RESOLVED
+    id                            = L2E_parameter_plant_p_vmax_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_par_plant_p_vmax_2d = index
 
-    id                            = L2E_parameter_plant_nh4_km_VERTICALLY_RESOLVED
+    id                            = L2E_parameter_plant_nh4_km_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_par_plant_nh4_km_2d = index
 
-    id                            = L2E_parameter_plant_no3_km_VERTICALLY_RESOLVED
+    id                            = L2E_parameter_plant_no3_km_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_par_plant_no3_km_2d = index
 
-    id                            = L2E_parameter_plant_km_p_VERTICALLY_RESOLVED
+    id                            = L2E_parameter_plant_km_p_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_par_plant_p_km_2d = index
 
-    id                            = L2E_parameter_plant_eff_ncompet_b_VERTICALLY_RESOLVED
+    id                            = L2E_parameter_plant_eff_ncompet_b_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_par_plant_eff_ncompetb_2d = index
 
-    id                            = L2E_parameter_plant_eff_pcompet_b_VERTICALLY_RESOLVED
+    id                            = L2E_parameter_plant_eff_pcompet_b_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_par_plant_eff_pcompetb_2d = index
 
-    id                            = L2E_parameter_plant_eff_frootc_VERTICALLY_RESOLVED
+    id                            = L2E_parameter_plant_eff_frootc_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_par_plant_eff_frootc_2d = index
 
-    id                            = L2E_parameter_minsurf_pcompet_VERTICALLY_RESOLVED
+    id                            = L2E_parameter_minsurf_pcompet_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_par_minsurf_p_compet_2d = index
 
-    id                            = L2E_parameter_nminsuf_nh4compet_VERTICALLY_RESOLVED
+    id                            = L2E_parameter_nminsuf_nh4compet_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_par_minsurf_nh4_compet_2d = index
 
-    id                            = L2E_parameter_km_minsurf_nh4_VERTICALLY_RESOLVED
+    id                            = L2E_parameter_km_minsurf_nh4_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_par_km_minsurf_nh4_2d = index
 
-    id                            = L2E_parameter_km_minsurf_p_VERTICALLY_RESOLVED
+    id                            = L2E_parameter_km_minsurf_p_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_par_km_minsurf_p_2d = index
 
-    id                            = L2E_parameter_decomp_eff_ncompet_VERTICALLY_RESOLVED
+    id                            = L2E_parameter_decomp_eff_ncompet_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_par_decomp_eff_ncompetb_2d = index
 
-    id                            = L2E_parameter_decomp_eff_pcompet_VERTICALLY_RESOLVED
+    id                            = L2E_parameter_decomp_eff_pcompet_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_par_decomp_eff_pcompetb_2d = index
 
-    id                            = L2E_parameter_nit_eff_ncompet_VERTICALLY_RESOLVED
+    id                            = L2E_parameter_nit_eff_ncompet_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_par_nitrif_eff_ncompetb_2d = index
 
-    id                            = L2E_parameter_den_eff_ncompet_VERTICALLY_RESOLVED
+    id                            = L2E_parameter_den_eff_ncompet_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_par_denitrif_eff_ncompetb_2d = index
 
-    id                            = L2E_parameter_km_nit_nh4_VERTICALLY_RESOLVED
+    id                            = L2E_parameter_km_nit_nh4_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_par_km_nitrif_2d = index
 
-    id                            = L2E_parameter_km_den_no3_VERTICALLY_RESOLVED
+    id                            = L2E_parameter_km_den_no3_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_par_km_denitrif_2d = index
 
-    id                            = L2E_parameter_dsolutionp_dt_VERTICALLY_RESOLVED
+    id                            = L2E_parameter_dsolutionp_dt_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_par_dsolutionp_dt_2d = index
 
-    id                            = L2E_parameter_vmax_minsurf_p_VERTICALLY_RESOLVED
+    id                            = L2E_parameter_vmax_minsurf_p_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_par_vmax_minsurf_p_2d = index
 
-    id                            = L2E_parameter_dlabp_dt_VERTICALLY_RESOLVED
+    id                            = L2E_parameter_dlabp_dt_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_par_dlabp_dt_2d = index
     deallocate(em_stages)
@@ -1216,9 +1224,9 @@ contains
     integer              , intent(in)    :: nstep
     type(bounds_type)    , intent(in)    :: bounds_clump
 
-    call ep_betr%SetClock(dtime = dt, nelapstep = nstep)
+    call this%ep_betr%SetClock(dtime = dt, nelapstep = nstep)
 
-    call ep_betr%BeginMassBalanceCheck(bounds_clump)
+    call this%ep_betr%BeginMassBalanceCheck(bounds_clump)
 
 
   end subroutine EM_BETR_BeginMassBalance_Solve
@@ -1240,7 +1248,7 @@ contains
     class(em_betr_type)                  :: this
     type(bounds_type)    , intent(in)    :: bounds_clump
 
-    call ep_betr%MassBalanceCheck(bounds_clump)
+    call this%ep_betr%MassBalanceCheck(bounds_clump)
 
   end subroutine EM_BETR_EndMassBalance_Solve
     !------------------------------------------------------------------------
@@ -1260,6 +1268,7 @@ contains
     implicit none
     !
     ! !ARGUMENTS:
+    class(em_betr_type)                  :: this
     type(bounds_type)    , intent(in)    :: bounds
     class(emi_data_list) , intent(in)    :: l2e_list
     class(emi_data_list) , intent(inout) :: e2l_list
@@ -1302,32 +1311,33 @@ contains
     ubj = nlevsoi
 
     do c = bounds%begc, bounds%endc
-      if (.not. ep_betr%active_col(c)) cycle
+      if (.not. this%ep_betr%active_col(c)) cycle
 
       !assign waterstate
-      ep_betr%biophys_forc(c)%finundated_col    (cc)         = l2e_finundated   (c)
-      ep_betr%biophys_forc(c)%frac_h2osfc_col   (cc)         = l2e_frac_h2osfc  (c)
-      ep_betr%biophys_forc(c)%h2osoi_liq_col    (cc,lbj:ubj) = l2e_h2osoi_liq   (c,lbj:ubj)
-      ep_betr%biophys_forc(c)%h2osoi_ice_col    (cc,lbj:ubj) = l2e_h2osoi_ice   (c,lbj:ubj)
-      ep_betr%biophys_forc(c)%h2osoi_liqvol_col (cc,lbj:ubj) = l2e_h2osoi_liqvol(c,lbj:ubj)
-      ep_betr%biophys_forc(c)%h2osoi_icevol_col (cc,lbj:ubj) = l2e_h2osoi_icevol(c,lbj:ubj)
-      ep_betr%biophys_forc(c)%h2osoi_vol_col    (cc,lbj:ubj) = l2e_h2osoi_vol   (c,lbj:ubj)
-      ep_betr%biophys_forc(c)%air_vol_col       (cc,lbj:ubj) = l2e_air_vol      (c,lbj:ubj)
-      ep_betr%biophys_forc(c)%rho_vap           (cc,lbj:ubj) = l2e_rho_vap      (c,lbj:ubj)
-      ep_betr%biophys_forc(c)%rhvap_soi         (cc,lbj:ubj) = l2e_rhvap_soi    (c,lbj:ubj)
-      ep_betr%biophys_forc(c)%smp_l_col         (cc,lbj:ubj) = l2e_smp_l        (c,lbj:ubj)
+      this%ep_betr%biophys_forc(c)%finundated_col    (cc)         = l2e_finundated   (c)
+      this%ep_betr%biophys_forc(c)%frac_h2osfc_col   (cc)         = l2e_frac_h2osfc  (c)
+      this%ep_betr%biophys_forc(c)%h2osoi_liq_col    (cc,lbj:ubj) = l2e_h2osoi_liq   (c,lbj:ubj)
+      this%ep_betr%biophys_forc(c)%h2osoi_ice_col    (cc,lbj:ubj) = l2e_h2osoi_ice   (c,lbj:ubj)
+      this%ep_betr%biophys_forc(c)%h2osoi_liqvol_col (cc,lbj:ubj) = l2e_h2osoi_liqvol(c,lbj:ubj)
+      this%ep_betr%biophys_forc(c)%h2osoi_icevol_col (cc,lbj:ubj) = l2e_h2osoi_icevol(c,lbj:ubj)
+      this%ep_betr%biophys_forc(c)%h2osoi_vol_col    (cc,lbj:ubj) = l2e_h2osoi_vol   (c,lbj:ubj)
+      this%ep_betr%biophys_forc(c)%air_vol_col       (cc,lbj:ubj) = l2e_air_vol      (c,lbj:ubj)
+      this%ep_betr%biophys_forc(c)%rho_vap           (cc,lbj:ubj) = l2e_rho_vap      (c,lbj:ubj)
+      this%ep_betr%biophys_forc(c)%rhvap_soi         (cc,lbj:ubj) = l2e_rhvap_soi    (c,lbj:ubj)
+      this%ep_betr%biophys_forc(c)%smp_l_col         (cc,lbj:ubj) = l2e_smp_l        (c,lbj:ubj)
 
     enddo
 
-    call ep_betr%PreDiagSoilColWaterFlux(l2e_num_nolakec , l2e_filter_nolakec)
+    call this%ep_betr%PreDiagSoilColWaterFlux(l2e_num_nolakec , l2e_filter_nolakec)
 
   end subroutine EM_BETR_PreDiagSoilColWaterFlux_Solve
 
     !------------------------------------------------------------------------
-  subroutine EM_BETR_StepWithoutDraiange(bounds, l2e_list, e2l_list)
+  subroutine EM_BETR_StepWithoutDraiange(this, bounds, l2e_list, e2l_list)
 
     !
     implicit none
+    class(em_betr_type)                  :: this
     !
     ! !ARGUMENTS:
     type(bounds_type)    , intent(in)    :: bounds
@@ -1335,12 +1345,12 @@ contains
     class(emi_data_list) , intent(inout) :: e2l_list
 
 
-  call ep_betr%StepWithoutDrainage(bounds,  col_pp, veg_pp)
+  call this%ep_betr%StepWithoutDrainage(bounds,  col_pp, veg_pp)
 
   end subroutine EM_BETR_StepWithoutDraiange
 
     !------------------------------------------------------------------------
-  subroutine EM_BETR_StepWithDraiange(bounds, l2e_list, e2l_list)
+  subroutine EM_BETR_StepWithDraiange(this, bounds, l2e_list, e2l_list)
   implicit none
 
     ! !ARGUMENTS:
@@ -1350,14 +1360,15 @@ contains
     class(emi_data_list) , intent(inout) :: e2l_list
 
 
-    call ep_betr%StepWithDrainage(bounds,  col_pp)
+    call this%ep_betr%StepWithDrainage(bounds,  col_pp)
   end subroutine EM_BETR_StepWithDraiange
 
     !------------------------------------------------------------------------
-  subroutine EM_BeTR_OutLoopSoilBGC(bounds, l2e_list, e2l_list )
+  subroutine EM_BeTR_OutLoopSoilBGC(this, bounds, l2e_list, e2l_list )
   implicit none
 
     ! !ARGUMENTS:
+    class(em_betr_type)                  :: this
     type(bounds_type)    , intent(in)    :: bounds
     class(emi_data_list) , intent(in)    :: l2e_list
     class(emi_data_list) , intent(inout) :: e2l_list
@@ -1371,35 +1382,35 @@ contains
     integer :: c_l, j, fc
 
 
-    call l2e_list%GetPointerToInt1D(this%index_l2e_filter_nolakec      , l2e_filter_nolakec )
-    call l2e_list%GetIntValue(this%index_l2e_filter_num_nolakec        , l2e_num_nolakec    )
-    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_coeff_t_scalar_2d       , t_scalar )
-    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_coeff_w_scalar_2d       , w_scalar )
-    call l2e_list%GetPointerToReal3D(this%index_l2e_bgc_state_c12_decomp_pools_3d , c12_decomp_cpools_vr_col )
-    call l2e_list%GetPointerToReal3D(this%index_l2e_bgc_state_n14_decomp_pools_3d , decomp_npools_vr_col )
-    call l2e_list%GetPointerToReal3D(this%index_l2e_bgc_state_p31_decomp_pools_3d , decomp_ppools_vr_col )
-    call l2e_list%GetPointerToReal3D(this%index_l2e_bgc_coeff_decompk_3d      , decomp_k )
+!    call l2e_list%GetPointerToInt1D(this%index_l2e_filter_nolakec      , l2e_filter_nolakec )
+!    call l2e_list%GetIntValue(this%index_l2e_filter_num_nolakec        , l2e_num_nolakec    )
+!    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_coeff_t_scalar_2d       , t_scalar )
+!    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_coeff_w_scalar_2d       , w_scalar )
+!    call l2e_list%GetPointerToReal3D(this%index_l2e_bgc_state_c12_decomp_pools_3d , c12_decomp_cpools_vr_col )
+!    call l2e_list%GetPointerToReal3D(this%index_l2e_bgc_state_n14_decomp_pools_3d , decomp_npools_vr_col )
+!    call l2e_list%GetPointerToReal3D(this%index_l2e_bgc_state_p31_decomp_pools_3d , decomp_ppools_vr_col )
+!    call l2e_list%GetPointerToReal3D(this%index_l2e_bgc_coeff_decompk_3d      , decomp_k )
 
-    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_nh4_vmax_2d, plant_nh4_vmax_vr_patch )
-    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_no3_vmax_2d, plant_no3_vmax_vr_patch )
-    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_p_vmax_2d, plant_p_vmax_vr_patch )
-    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_nh4_km_2d, plant_nh4_km_vr_patch )
-    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_no3_km_2d, plant_no3_km_vr_patch )
-    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_p_km_2d, plant_p_km_vr_patch )
-    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_eff_ncompetb_2d, plant_eff_ncompet_b_vr_patch )
-    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_eff_pcompetb_2d, plant_eff_pcompet_b_vr_patch )
-    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_eff_frootc_2d, plant_eff_frootc_vr_patch )
+!    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_nh4_vmax_2d, plant_nh4_vmax_vr_patch )
+!    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_no3_vmax_2d, plant_no3_vmax_vr_patch )
+!    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_p_vmax_2d, plant_p_vmax_vr_patch )
+!    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_nh4_km_2d, plant_nh4_km_vr_patch )
+!    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_no3_km_2d, plant_no3_km_vr_patch )
+!    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_p_km_2d, plant_p_km_vr_patch )
+!    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_eff_ncompetb_2d, plant_eff_ncompet_b_vr_patch )
+!    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_eff_pcompetb_2d, plant_eff_pcompet_b_vr_patch )
+!    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_eff_frootc_2d, plant_eff_frootc_vr_patch )
 
     c_l=1
-    call this%BeTRSetBounds(betr_bounds)
+    call this%ep_betr%BeTRSetBounds(betr_bounds)
     do j = 1,nlevtrc_soil
       do fc = 1, num_soilc
         c = filter_soilc(fc)
-        ep_betr%biophys_forc(c)%c12flx%in_t_scalar(c_l,j) = t_scalar(c,j)
-        ep_betr%biophys_forc(c)%c12flx%in_w_scalar(c_l,j) = w_scalar(c,j)
-        ep_betr%biophys_forc(c)%n14flx%in_sminn_no3_vr_col(c_l,j) = smin_no3_vr(c,j)
-        ep_betr%biophys_forc(c)%n14flx%in_sminn_nh4_vr_col(c_l,j) = smin_nh4_vr(c,j)
-        ep_betr%biophys_forc(c)%p31flx%in_sminp_vr_col(c_l,j) = solutionp_vr(c,j)
+        this%ep_betr%biophys_forc(c)%c12flx%in_t_scalar(c_l,j) = t_scalar(c,j)
+        this%ep_betr%biophys_forc(c)%c12flx%in_w_scalar(c_l,j) = w_scalar(c,j)
+        this%ep_betr%biophys_forc(c)%n14flx%in_sminn_no3_vr_col(c_l,j) = smin_no3_vr(c,j)
+        this%ep_betr%biophys_forc(c)%n14flx%in_sminn_nh4_vr_col(c_l,j) = smin_nh4_vr(c,j)
+        this%ep_betr%biophys_forc(c)%p31flx%in_sminp_vr_col(c_l,j) = solutionp_vr(c,j)
       enddo
     enddo
 
@@ -1407,10 +1418,10 @@ contains
       do j = 1,nlevtrc_soil
         do fc = 1, num_soilc
           c = filter_soilc(fc)
-          ep_betr%biophys_forc(c)%c12flx%in_decomp_cpools_vr_col(c_l,j,kk)=c12_decomp_cpools_vr_col(c,j,kk)
-          ep_betr%biophys_forc(c)%n14flx%in_decomp_npools_vr_col(c_l,j,kk)=decomp_npools_vr_col(c,j,kk)
-          ep_betr%biophys_forc(c)%p31flx%in_decomp_ppools_vr_col(c_l,j,kk)=decomp_ppools_vr_col(c,j,kk)
-          ep_betr%biogeo_flux(c)%c12flux_vars%decomp_k(c_l,j,kk)=decomp_k(c,j,kk)
+          this%ep_betr%biophys_forc(c)%c12flx%in_decomp_cpools_vr_col(c_l,j,kk)=c12_decomp_cpools_vr_col(c,j,kk)
+          this%ep_betr%biophys_forc(c)%n14flx%in_decomp_npools_vr_col(c_l,j,kk)=decomp_npools_vr_col(c,j,kk)
+          this%ep_betr%biophys_forc(c)%p31flx%in_decomp_ppools_vr_col(c_l,j,kk)=decomp_ppools_vr_col(c,j,kk)
+          this%ep_betr%biogeo_flux(c)%c12flux_vars%decomp_k(c_l,j,kk)=decomp_k(c,j,kk)
         enddo
       enddo
     enddo
@@ -1429,23 +1440,23 @@ contains
           if (pft%active(p) .and. (pft%itype(p) .ne. noveg)) then
             pp = pp + 1
             do j =1, betr_bounds%ubj
-              ep_betr%betr(c)%plantNutkinetics%plant_nh4_vmax_vr_patch(pp,j) = plant_nh4_vmax_vr_patch(p,j)
-              ep_betr%betr(c)%plantNutkinetics%plant_no3_vmax_vr_patch(pp,j) = plant_no3_vmax_vr_patch(p,j)
-              ep_betr%betr(c)%plantNutkinetics%plant_p_vmax_vr_patch(pp,j) = plant_p_vmax_vr_patch(p,j)
-              ep_betr%betr(c)%plantNutkinetics%plant_nh4_km_vr_patch(pp,j) = plant_nh4_km_vr_patch(p,j)/natomw
-              ep_betr%betr(c)%plantNutkinetics%plant_no3_km_vr_patch(pp,j) = plant_no3_km_vr_patch(p,j)/natomw
-              ep_betr%betr(c)%plantNutkinetics%plant_p_km_vr_patch(pp,j) = plant_p_km_vr_patch(p,j)/patomw
-              ep_betr%betr(c)%plantNutkinetics%plant_eff_ncompet_b_vr_patch(pp,j)=plant_eff_ncompet_b_vr_patch(p,j)/natomw
-              ep_betr%betr(c)%plantNutkinetics%plant_eff_pcompet_b_vr_patch(pp,j)=plant_eff_pcompet_b_vr_patch(p,j)/patomw
-              ep_betr%betr(c)%plantNutkinetics%plant_eff_frootc_vr_patch(pp,j) = plant_eff_frootc_vr_patch(p,j)
+              this%ep_betr%betr(c)%plantNutkinetics%plant_nh4_vmax_vr_patch(pp,j) = plant_nh4_vmax_vr_patch(p,j)
+              this%ep_betr%betr(c)%plantNutkinetics%plant_no3_vmax_vr_patch(pp,j) = plant_no3_vmax_vr_patch(p,j)
+              this%ep_betr%betr(c)%plantNutkinetics%plant_p_vmax_vr_patch(pp,j) = plant_p_vmax_vr_patch(p,j)
+              this%ep_betr%betr(c)%plantNutkinetics%plant_nh4_km_vr_patch(pp,j) = plant_nh4_km_vr_patch(p,j)/natomw
+              this%ep_betr%betr(c)%plantNutkinetics%plant_no3_km_vr_patch(pp,j) = plant_no3_km_vr_patch(p,j)/natomw
+              this%ep_betr%betr(c)%plantNutkinetics%plant_p_km_vr_patch(pp,j) = plant_p_km_vr_patch(p,j)/patomw
+              this%ep_betr%betr(c)%plantNutkinetics%plant_eff_ncompet_b_vr_patch(pp,j)=plant_eff_ncompet_b_vr_patch(p,j)/natomw
+              this%ep_betr%betr(c)%plantNutkinetics%plant_eff_pcompet_b_vr_patch(pp,j)=plant_eff_pcompet_b_vr_patch(p,j)/patomw
+              this%ep_betr%betr(c)%plantNutkinetics%plant_eff_frootc_vr_patch(pp,j) = plant_eff_frootc_vr_patch(p,j)
             enddo
           endif
         endif
       enddo
-      ep_betr%betr(c)%nactpft = pp
+      this%ep_betr%betr(c)%nactpft = pp
       do j = 1, betr_bounds%ubj
-        ep_betr%betr(c)%plantNutkinetics%minsurf_p_compet_vr_col(c_l,j) = minsurf_p_compet_vr_col(c,j)/patomw
-        ep_betr%betr(c)%plantNutkinetics%minsurf_nh4_compet_vr_col(c_l,j) = minsurf_nh4_compet_vr_col(c,j)/natomw
+        this%ep_betr%betr(c)%plantNutkinetics%minsurf_p_compet_vr_col(c_l,j) = minsurf_p_compet_vr_col(c,j)/patomw
+        this%ep_betr%betr(c)%plantNutkinetics%minsurf_nh4_compet_vr_col(c_l,j) = minsurf_nh4_compet_vr_col(c,j)/natomw
       enddo
     enddo
 
@@ -1456,19 +1467,19 @@ contains
       do j =1, betr_bounds%ubj
         do fc = 1, num_soilc
           c = filter_soilc(fc)
-          ep_betr%betr(c)%plantNutkinetics%km_minsurf_p_vr_col(c_l,j)  = km_minsurf_p_vr_col(c,j)/patomw
-          ep_betr%betr(c)%plantNutkinetics%km_minsurf_nh4_vr_col(c_l,j)= km_minsurf_nh4_vr_col(c,j)/natomw
+          this%ep_betr%betr(c)%plantNutkinetics%km_minsurf_p_vr_col(c_l,j)  = km_minsurf_p_vr_col(c,j)/patomw
+          this%ep_betr%betr(c)%plantNutkinetics%km_minsurf_nh4_vr_col(c_l,j)= km_minsurf_nh4_vr_col(c,j)/natomw
         enddo
       enddo
       if(lbcalib)then
         do j =1, betr_bounds%ubj
           do fc = 1, num_soilc
             c = filter_soilc(fc)
-            ep_betr%betr(c)%plantNutkinetics%km_decomp_p_vr_col(c_l,j) = PlantMicKinetics_vars%km_decomp_p_vr_col(c,j)/patomw
-            ep_betr%betr(c)%plantNutkinetics%km_decomp_nh4_vr_col(c_l,j)=PlantMicKinetics_vars%km_decomp_nh4_vr_col(c,j)/natomw
-            ep_betr%betr(c)%plantNutkinetics%km_decomp_no3_vr_col(c_l,j)=PlantMicKinetics_vars%km_decomp_no3_vr_col(c,j)/natomw
-            ep_betr%betr(c)%plantNutkinetics%km_nit_nh4_vr_col(c_l,j) = PlantMicKinetics_vars%km_nit_nh4_vr_col(c,j)/natomw
-            ep_betr%betr(c)%plantNutkinetics%km_den_no3_vr_col(c_l,j) = PlantMicKinetics_vars%km_den_no3_vr_col(c,j)/natomw
+            this%ep_betr%betr(c)%plantNutkinetics%km_decomp_p_vr_col(c_l,j) = PlantMicKinetics_vars%km_decomp_p_vr_col(c,j)/patomw
+            this%ep_betr%betr(c)%plantNutkinetics%km_decomp_nh4_vr_col(c_l,j)=PlantMicKinetics_vars%km_decomp_nh4_vr_col(c,j)/natomw
+            this%ep_betr%betr(c)%plantNutkinetics%km_decomp_no3_vr_col(c_l,j)=PlantMicKinetics_vars%km_decomp_no3_vr_col(c,j)/natomw
+            this%ep_betr%betr(c)%plantNutkinetics%km_nit_nh4_vr_col(c_l,j) = PlantMicKinetics_vars%km_nit_nh4_vr_col(c,j)/natomw
+            this%ep_betr%betr(c)%plantNutkinetics%km_den_no3_vr_col(c_l,j) = PlantMicKinetics_vars%km_den_no3_vr_col(c,j)/natomw
           enddo
         enddo
       endif
@@ -1478,21 +1489,21 @@ contains
       do j =1, betr_bounds%ubj
         do fc = 1, num_soilc
           c = filter_soilc(fc)
-          ep_betr%betr(c)%plantNutkinetics%decomp_eff_ncompet_b_vr_col(c_l,j)= decomp_eff_ncompet_b_vr_col(c,j)/natomw
-          ep_betr%betr(c)%plantNutkinetics%decomp_eff_pcompet_b_vr_col(c_l,j)= decomp_eff_pcompet_b_vr_col(c,j)/patomw
-          ep_betr%betr(c)%plantNutkinetics%nit_eff_ncompet_b_vr_col(c_l,j)   = nit_eff_ncompet_b_vr_col(c,j)/natomw
-          ep_betr%betr(c)%plantNutkinetics%den_eff_ncompet_b_vr_col(c_l,j)   = den_eff_ncompet_b_vr_col(c,j)/natomw
-          ep_betr%betr(c)%plantNutkinetics%km_nit_nh4_vr_col(c_l,j) = PlantMicKinetics_vars%km_nit_nh4_vr_col(c,j)/natomw
-          ep_betr%betr(c)%plantNutkinetics%km_den_no3_vr_col(c_l,j) = PlantMicKinetics_vars%km_den_no3_vr_col(c,j)/natomw
-          ep_betr%betr(c)%plantNutkinetics%dsolutionp_dt_vr_col(c_l,j)       = dsolutionp_dt_vr_col(c,j)/patomw   ! g/m2/s
-          ep_betr%betr(c)%plantNutkinetics%vmax_minsurf_p_vr_col(c_l,j)      = vmax_minsurf_p_vr_col(c,j)/patomw   ! g/m3
-          ep_betr%betr(c)%plantNutkinetics%dlabp_dt_vr_col(c_l,j)            = dlabp_dt_vr_col(c,j)/patomw
+          this%ep_betr%betr(c)%plantNutkinetics%decomp_eff_ncompet_b_vr_col(c_l,j)= decomp_eff_ncompet_b_vr_col(c,j)/natomw
+          this%ep_betr%betr(c)%plantNutkinetics%decomp_eff_pcompet_b_vr_col(c_l,j)= decomp_eff_pcompet_b_vr_col(c,j)/patomw
+          this%ep_betr%betr(c)%plantNutkinetics%nit_eff_ncompet_b_vr_col(c_l,j)   = nit_eff_ncompet_b_vr_col(c,j)/natomw
+          this%ep_betr%betr(c)%plantNutkinetics%den_eff_ncompet_b_vr_col(c_l,j)   = den_eff_ncompet_b_vr_col(c,j)/natomw
+          this%ep_betr%betr(c)%plantNutkinetics%km_nit_nh4_vr_col(c_l,j) = PlantMicKinetics_vars%km_nit_nh4_vr_col(c,j)/natomw
+          this%ep_betr%betr(c)%plantNutkinetics%km_den_no3_vr_col(c_l,j) = PlantMicKinetics_vars%km_den_no3_vr_col(c,j)/natomw
+          this%ep_betr%betr(c)%plantNutkinetics%dsolutionp_dt_vr_col(c_l,j)       = dsolutionp_dt_vr_col(c,j)/patomw   ! g/m2/s
+          this%ep_betr%betr(c)%plantNutkinetics%vmax_minsurf_p_vr_col(c_l,j)      = vmax_minsurf_p_vr_col(c,j)/patomw   ! g/m3
+          this%ep_betr%betr(c)%plantNutkinetics%dlabp_dt_vr_col(c_l,j)            = dlabp_dt_vr_col(c,j)/patomw
         enddo
       enddo
     endif
 
     !execute betr calculations
-    call ep_betr%OutLoopSoilBGC(bounds,  col_pp, veg_pp)
+    call this%ep_betr%OutLoopSoilBGC(bounds,  col_pp, veg_pp)
 
     !output variables after executation of betr
 
@@ -1502,10 +1513,10 @@ contains
       do c = bounds%begc, bounds%endc
         if(.not. this%active_col(c))cycle
 
-        decomp_k(c,j,kk) = this%biogeo_flux(c)%c12flux_vars%decomp_k(c_l,j,kk)
-        c12_decomp_cpools_vr_col(c,j,kk)=this%biogeo_state(c)%c12state_vars%decomp_cpools_vr(c_l,j,kk)
-        decomp_npools_vr_col(c,j,kk) = this%biogeo_state(c)%n14state_vars%decomp_npools_vr(c_l,j,kk)
-        decomp_ppools_vr_col(c,j,kk) = this%biogeo_state(c)%p31state_vars%decomp_ppools_vr(c_l,j,kk)
+!        decomp_k(c,j,kk) = this%biogeo_flux(c)%c12flux_vars%decomp_k(c_l,j,kk)
+!        c12_decomp_cpools_vr_col(c,j,kk)=this%biogeo_state(c)%c12state_vars%decomp_cpools_vr(c_l,j,kk)
+!        decomp_npools_vr_col(c,j,kk) = this%biogeo_state(c)%n14state_vars%decomp_npools_vr(c_l,j,kk)
+!        decomp_ppools_vr_col(c,j,kk) = this%biogeo_state(c)%p31state_vars%decomp_ppools_vr(c_l,j,kk)
       enddo
     enddo
   enddo
@@ -1517,47 +1528,47 @@ contains
     do p = col%pfti(c), col%pftf(c)
       if (pft%active(p) .and. (pft%itype(p) .ne. noveg)) then
         pi = pi + 1
-        nitrogenflux_vars%smin_nh4_to_plant_patch(p) = this%biogeo_flux(c)%n14flux_vars%smin_nh4_to_plant_patch(pi)
-        nitrogenflux_vars%smin_no3_to_plant_patch(p) = this%biogeo_flux(c)%n14flux_vars%smin_no3_to_plant_patch(pi)
-        nitrogenflux_vars%sminn_to_plant_patch(p) = nitrogenflux_vars%smin_nh4_to_plant_patch(p) + nitrogenflux_vars%smin_no3_to_plant_patch(p)
-        phosphorusflux_vars%sminp_to_plant_patch(p)  = this%biogeo_flux(c)%p31flux_vars%sminp_to_plant_patch(pi)
+ !       nitrogenflux_vars%smin_nh4_to_plant_patch(p) = this%biogeo_flux(c)%n14flux_vars%smin_nh4_to_plant_patch(pi)
+ !       nitrogenflux_vars%smin_no3_to_plant_patch(p) = this%biogeo_flux(c)%n14flux_vars%smin_no3_to_plant_patch(pi)
+ !       nitrogenflux_vars%sminn_to_plant_patch(p) = nitrogenflux_vars%smin_nh4_to_plant_patch(p) + nitrogenflux_vars%smin_no3_to_plant_patch(p)
+ !       phosphorusflux_vars%sminp_to_plant_patch(p)  = this%biogeo_flux(c)%p31flux_vars%sminp_to_plant_patch(pi)
       else
-        nitrogenflux_vars%smin_nh4_to_plant_patch(p) = 0._r8
-        nitrogenflux_vars%smin_no3_to_plant_patch(p) = 0._r8
-        phosphorusflux_vars%sminp_to_plant_patch(p) = 0._r8
-        nitrogenflux_vars%sminn_to_plant_patch(p) = 0._r8
+ !       nitrogenflux_vars%smin_nh4_to_plant_patch(p) = 0._r8
+ !       nitrogenflux_vars%smin_no3_to_plant_patch(p) = 0._r8
+ !       phosphorusflux_vars%sminp_to_plant_patch(p) = 0._r8
+ !       nitrogenflux_vars%sminn_to_plant_patch(p) = 0._r8
       endif
     enddo
-    nitrogenflux_vars%actual_immob_col(c)=0._r8
+ !   nitrogenflux_vars%actual_immob_col(c)=0._r8
 !    print*,'immob',nitrogenflux_vars%actual_immob_col(c)
   enddo
 
   do j = 1,nlevtrc_soil
     do c = bounds%begc, bounds%endc
       if(.not. this%active_col(c))cycle
-      nitrogenflux_vars%col_plant_pdemand_vr(c,j)  = this%biogeo_flux(c)%p31flux_vars%col_plant_pdemand_vr(c_l,j)
-      nitrogenflux_vars%f_denit_vr_col(c,j)        = this%biogeo_flux(c)%n14flux_vars%f_denit_vr_col(c_l,j)
-      nitrogenflux_vars%f_n2o_denit_vr_col(c,j)    = this%biogeo_flux(c)%n14flux_vars%f_n2o_denit_vr_col(c_l,j)
-      nitrogenflux_vars%f_nit_vr_col(c,j)          = this%biogeo_flux(c)%n14flux_vars%f_nit_vr_col(c_l,j)
-      nitrogenflux_vars%f_n2o_nit_vr_col(c,j)      = this%biogeo_flux(c)%n14flux_vars%f_n2o_nit_vr_col(c_l,j)
-      phosphorusflux_vars%adsorb_to_labilep_vr(c,j)= this%biogeo_flux(c)%p31flux_vars%adsorb_to_labilep_vr_col(c_l,j)
-      c12_cflx_vars%hr_vr_col(c,j)                 = this%biogeo_flux(c)%c12flux_vars%hr_vr_col(c_l,j)
-      c12_cflx_vars%phr_vr_col(c,j)                = this%biogeo_flux(c)%c12flux_vars%phr_vr_col(c_l,j)
-      c12_cflx_vars%o_scalar_col(c,j)              = this%biogeo_flux(c)%c12flux_vars%o_scalar_col(c_l,j)
-      nitrogenstate_vars%smin_nh4_vr_col(c,j)      = this%biogeo_state(c)%n14state_vars%sminn_nh4_vr_col(c_l,j)
-      nitrogenstate_vars%smin_no3_vr_col(c,j)      = this%biogeo_state(c)%n14state_vars%sminn_no3_vr_col(c_l,j)
-      nitrogenflux_vars%supplement_to_sminn_vr_col(c,j) = this%biogeo_flux(c)%n14flux_vars%supplement_to_sminn_vr_col(c_l,j)
-      nitrogenflux_vars%smin_nh4_to_plant_vr_col(c,j) = this%biogeo_flux(c)%n14flux_vars%smin_nh4_to_plant_vr_col(c_l,j)
-      nitrogenflux_vars%smin_no3_to_plant_vr_col(c,j) = this%biogeo_flux(c)%n14flux_vars%smin_no3_to_plant_vr_col(c_l,j)
-      phosphorusflux_vars%sminp_to_plant_vr_col(c,j) = this%biogeo_flux(c)%p31flux_vars%sminp_to_plant_vr_col(c_l,j)
-      phosphorusflux_vars%supplement_to_sminp_vr_col(c,j) =this%biogeo_flux(c)%p31flux_vars%supplement_to_sminp_vr_col(c_l,j)
-      phosphorusflux_vars%net_mineralization_p_vr_col(c,j) = this%biogeo_flux(c)%p31flux_vars%net_mineralization_p_vr_col(c_l,j)
-      nitrogenflux_vars%actual_immob_col(c)= nitrogenflux_vars%actual_immob_col(c) + col%dz(c,j)*&
-         (this%biogeo_flux(c)%n14flux_vars%smin_nh4_immob_vr_col(c_l,j) + this%biogeo_flux(c)%n14flux_vars%smin_no3_immob_vr_col(c_l,j))
-      c12_cflx_vars%somhr_col(c) = c12_cflx_vars%somhr_col(c)  + col%dz(c,j)*&
-         this%biogeo_flux(c)%c12flux_vars%somhr_vr_col(c_l,j)
-      c12_cflx_vars%lithr_col(c) = c12_cflx_vars%lithr_col(c)  + col%dz(c,j)*&
-         this%biogeo_flux(c)%c12flux_vars%lithr_vr_col(c_l,j)
+!      nitrogenflux_vars%col_plant_pdemand_vr(c,j)  = this%biogeo_flux(c)%p31flux_vars%col_plant_pdemand_vr(c_l,j)
+!      nitrogenflux_vars%f_denit_vr_col(c,j)        = this%biogeo_flux(c)%n14flux_vars%f_denit_vr_col(c_l,j)
+!      nitrogenflux_vars%f_n2o_denit_vr_col(c,j)    = this%biogeo_flux(c)%n14flux_vars%f_n2o_denit_vr_col(c_l,j)
+!      nitrogenflux_vars%f_nit_vr_col(c,j)          = this%biogeo_flux(c)%n14flux_vars%f_nit_vr_col(c_l,j)
+!      nitrogenflux_vars%f_n2o_nit_vr_col(c,j)      = this%biogeo_flux(c)%n14flux_vars%f_n2o_nit_vr_col(c_l,j)
+!      phosphorusflux_vars%adsorb_to_labilep_vr(c,j)= this%biogeo_flux(c)%p31flux_vars%adsorb_to_labilep_vr_col(c_l,j)
+!      c12_cflx_vars%hr_vr_col(c,j)                 = this%biogeo_flux(c)%c12flux_vars%hr_vr_col(c_l,j)
+!      c12_cflx_vars%phr_vr_col(c,j)                = this%biogeo_flux(c)%c12flux_vars%phr_vr_col(c_l,j)
+!      c12_cflx_vars%o_scalar_col(c,j)              = this%biogeo_flux(c)%c12flux_vars%o_scalar_col(c_l,j)
+!      nitrogenstate_vars%smin_nh4_vr_col(c,j)      = this%biogeo_state(c)%n14state_vars%sminn_nh4_vr_col(c_l,j)
+!      nitrogenstate_vars%smin_no3_vr_col(c,j)      = this%biogeo_state(c)%n14state_vars%sminn_no3_vr_col(c_l,j)
+!      nitrogenflux_vars%supplement_to_sminn_vr_col(c,j) = this%biogeo_flux(c)%n14flux_vars%supplement_to_sminn_vr_col(c_l,j)
+!      nitrogenflux_vars%smin_nh4_to_plant_vr_col(c,j) = this%biogeo_flux(c)%n14flux_vars%smin_nh4_to_plant_vr_col(c_l,j)
+!      nitrogenflux_vars%smin_no3_to_plant_vr_col(c,j) = this%biogeo_flux(c)%n14flux_vars%smin_no3_to_plant_vr_col(c_l,j)
+!      phosphorusflux_vars%sminp_to_plant_vr_col(c,j) = this%biogeo_flux(c)%p31flux_vars%sminp_to_plant_vr_col(c_l,j)
+!      phosphorusflux_vars%supplement_to_sminp_vr_col(c,j) =this%biogeo_flux(c)%p31flux_vars%supplement_to_sminp_vr_col(c_l,j)
+!      phosphorusflux_vars%net_mineralization_p_vr_col(c,j) = this%biogeo_flux(c)%p31flux_vars%net_mineralization_p_vr_col(c_l,j)
+!      nitrogenflux_vars%actual_immob_col(c)= nitrogenflux_vars%actual_immob_col(c) + col%dz(c,j)*&
+!         (this%biogeo_flux(c)%n14flux_vars%smin_nh4_immob_vr_col(c_l,j) + this%biogeo_flux(c)%n14flux_vars%smin_no3_immob_vr_col(c_l,j))
+!      c12_cflx_vars%somhr_col(c) = c12_cflx_vars%somhr_col(c)  + col%dz(c,j)*&
+!         this%biogeo_flux(c)%c12flux_vars%somhr_vr_col(c_l,j)
+!      c12_cflx_vars%lithr_col(c) = c12_cflx_vars%lithr_col(c)  + col%dz(c,j)*&
+!         this%biogeo_flux(c)%c12flux_vars%lithr_vr_col(c_l,j)
     enddo
   enddo
 

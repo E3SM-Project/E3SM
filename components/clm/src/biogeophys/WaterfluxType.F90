@@ -93,7 +93,7 @@ module WaterfluxType
      real(r8), pointer :: qflx_drain_vr_col        (:,:) ! col liquid water losted as drainage (m /time step)
      real(r8), pointer :: qflx_h2osfc2topsoi_col   (:)   ! col liquid water coming from surface standing water top soil (mm H2O/s)
      real(r8), pointer :: qflx_snow2topsoi_col     (:)   ! col liquid water coming from residual snow to topsoil (mm H2O/s)
-
+     real(r8), pointer :: qflx_runoff_betr_col     (:)   ! col runoff flux used by betr
      real(r8), pointer :: qflx_lateral_col         (:)   ! col lateral subsurface flux (mm H2O /s)
 
      real(r8), pointer :: snow_sources_col         (:)   ! col snow sources (mm H2O/s)
@@ -266,7 +266,7 @@ contains
     allocate(this%qflx_h2osfc2topsoi_col   (begc:endc))              ; this%qflx_h2osfc2topsoi_col   (:)   = nan
     
     allocate(this%qflx_lateral_col         (begc:endc))              ; this%qflx_lateral_col         (:)   = 0._r8
-
+    allocate(this%qflx_runoff_betr_col     (begc:endc))              ; this%qflx_runoff_betr_col     (:)   = 0._r8
     ncells = endc - begc + 1
     allocate(this%mflx_infl_col_1d(            ncells))              ; this%mflx_infl_col_1d         (:)   = nan
     allocate(this%mflx_dew_col_1d(             ncells))              ; this%mflx_dew_col_1d          (:)   = nan

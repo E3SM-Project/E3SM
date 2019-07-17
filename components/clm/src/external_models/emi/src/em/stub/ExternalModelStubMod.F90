@@ -206,7 +206,7 @@ contains
 
     number_em_stages = 1
     em_stages(1) = EM_STUB_SOIL_THERMAL_STAGE
-    id                                             = L2E_STATE_C12_CARBON_POOLS_VERTICALLY_RESOLVED
+    id                                             = L2E_STATE_C12_CARBON_POOLS_Z_RESOLVED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_state_decomp_cpools              = index
 
@@ -258,7 +258,7 @@ contains
 
     number_em_stages = 1
     em_stages(1) = EM_STUB_SOIL_THERMAL_STAGE
-    id                                             = E2L_STATE_C12_CARBON_POOLS_VERTICALLY_RESOLVED
+    id                                             = E2L_STATE_C12_CARBON_POOLS_Z_RESOLVED
     call e2l_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_e2l_state_decomp_cpools              = index
 

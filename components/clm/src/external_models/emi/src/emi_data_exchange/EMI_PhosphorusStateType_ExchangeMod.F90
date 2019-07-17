@@ -24,13 +24,13 @@ module EMI_phosphorusStateType_ExchangeMod
   implicit none
   !
   !
-  public :: EMI_Pack_phosphorusStateType_at_Column_Level_for_EM
-  public :: EMI_Unpack_phosphorusStateType_at_Column_Level_from_EM
+  public :: EMI_Pack_phospStateType_at_Column_Level_for_EM
+  public :: EMI_Unpack_phospStateType_at_Column_Level_from_EM
 
 contains
 
 !-----------------------------------------------------------------------
-  subroutine EMI_Pack_phosphorusStateType_at_Column_Level_for_EM(data_list, em_stage, &
+  subroutine EMI_Pack_phospStateType_at_Column_Level_for_EM(data_list, em_stage, &
         num_filter, filter, col_phosphorusstate_vars)
     !
     ! !DESCRIPTION:
@@ -79,7 +79,7 @@ contains
 
           select case (cur_data%id)
 
-          case (L2E_STATE_PHOSPHORUS_POOLS_VERTICALLY_RESOLVED)
+          case (L2E_STATE_PHOSPHORUS_POOLS_Z_RESOLVED)
              do fc = 1, num_filter
                 c = filter(fc)
                 do j = 1, nlevdecomp_full
@@ -90,7 +90,7 @@ contains
              enddo
              cur_data%is_set = .true.
 
-          case (L2E_STATE_PHOSPHORUS_SOLUTION_VERTICALLY_RESOLVED)
+          case (L2E_STATE_PHOSPHORUS_SOLUTION_Z_RESOLVED)
              do fc = 1, num_filter
                 c = filter(fc)
                 do j = 1, nlevdecomp_full
@@ -107,10 +107,10 @@ contains
 
     end associate
 
-  end subroutine EMI_Pack_phosphorusStateType_at_Column_Level_for_EM
+  end subroutine EMI_Pack_phospStateType_at_Column_Level_for_EM
 
 !-----------------------------------------------------------------------
-  subroutine EMI_Unpack_phosphorusStateType_at_Column_Level_from_EM(data_list, em_stage, &
+  subroutine EMI_Unpack_phospStateType_at_Column_Level_from_EM(data_list, em_stage, &
         num_filter, filter, col_phosphorusstate_vars)
     !
     ! !DESCRIPTION:
@@ -158,7 +158,7 @@ contains
 
           select case (cur_data%id)
 
-          case (E2L_STATE_PHOSPHORUS_POOLS_VERTICALLY_RESOLVED)
+          case (E2L_STATE_PHOSPHORUS_POOLS_Z_RESOLVED)
              do fc = 1, num_filter
                 c = filter(fc)
                 do j = 1, nlevdecomp_full
@@ -168,7 +168,7 @@ contains
                 enddo
              enddo
              cur_data%is_set = .true.
-          case (E2L_STATE_PHOSPHORUS_SOLUTION_VERTICALLY_RESOLVED)
+          case (E2L_STATE_PHOSPHORUS_SOLUTION_Z_RESOLVED)
              do fc = 1, num_filter
                 c = filter(fc)
                 do j = 1, nlevdecomp_full
@@ -185,7 +185,7 @@ contains
 
     end associate
 
-  end subroutine EMI_Unpack_phosphorusStateType_at_Column_Level_from_EM
+  end subroutine EMI_Unpack_phospStateType_at_Column_Level_from_EM
 
 
 end module EMI_phosphorusStateType_ExchangeMod

@@ -54,8 +54,8 @@ contains
 
     select case(data_id)
 
-    case(L2E_STATE_NITROGEN_POOLS_VERTICALLY_RESOLVED)
-       id_val         =  L2E_STATE_NITROGEN_POOLS_VERTICALLY_RESOLVED
+    case(L2E_STATE_NITROGEN_POOLS_Z_RESOLVED)
+       id_val         =  L2E_STATE_NITROGEN_POOLS_Z_RESOLVED
        name_val       =  'decomp npools vr'
        long_name_val  =  'decomp npools vr: ELM to EM'
        units_val      =  '[kg/m2]'
@@ -69,8 +69,8 @@ contains
        dim3_end_name  =  dimname_ndecomp_pools
        data_found   =  .true.
 
-    case(E2L_STATE_NITROGEN_POOLS_VERTICALLY_RESOLVED)
-       id_val         =  E2L_STATE_NITROGEN_POOLS_VERTICALLY_RESOLVED
+    case(E2L_STATE_NITROGEN_POOLS_Z_RESOLVED)
+       id_val         =  E2L_STATE_NITROGEN_POOLS_Z_RESOLVED
        name_val       =  'decomp npools vr'
        long_name_val  =  'decomp npools vr: EM to ELM'
        units_val      =  '[kg/m2]'
@@ -84,8 +84,8 @@ contains
        dim3_end_name  =  dimname_ndecomp_pools
        data_found   =  .true.
 
-    case(L2E_STATE_SOIL_NH4_VERTICALLY_RESOLVED)
-       id_val         =  L2E_STATE_SOIL_NH4_VERTICALLY_RESOLVED
+    case(L2E_STATE_SOIL_NH4_Z_RESOLVED)
+       id_val         =  L2E_STATE_SOIL_NH4_Z_RESOLVED
        name_val       =  'smin nh4  vr'
        long_name_val  =  'smin nh4  vr: ELM to EM'
        units_val      =  '[kg/m2]'
@@ -97,8 +97,8 @@ contains
        dim2_end_name  =  dimname_nlevdecomp_full
        data_found   =  .true.
 
-    case(E2L_STATE_SOIL_NH4_VERTICALLY_RESOLVED)
-       id_val         =  E2L_STATE_SOIL_NH4_VERTICALLY_RESOLVED
+    case(E2L_STATE_SOIL_NH4_Z_RESOLVED)
+       id_val         =  E2L_STATE_SOIL_NH4_Z_RESOLVED
        name_val       =  'smin nh4  vr'
        long_name_val  =  'smin nh4 vr: EM to ELM'
        units_val      =  '[kg/m2]'
@@ -110,8 +110,8 @@ contains
        dim2_end_name  =  dimname_nlevdecomp_full
        data_found   =  .true.
 
-    case(L2E_STATE_SOIL_NO3_VERTICALLY_RESOLVED)
-       id_val         =  L2E_STATE_SOIL_NO3_VERTICALLY_RESOLVED
+    case(L2E_STATE_SOIL_NO3_Z_RESOLVED)
+       id_val         =  L2E_STATE_SOIL_NO3_Z_RESOLVED
        name_val       =  'smin no3  vr'
        long_name_val  =  'smin no3  vr: ELM to EM'
        units_val      =  '[kg/m2]'
@@ -123,8 +123,8 @@ contains
        dim2_end_name  =  dimname_nlevdecomp_full
        data_found   =  .true.
 
-    case(E2L_STATE_SOIL_NO3_VERTICALLY_RESOLVED)
-       id_val         =  E2L_STATE_SOIL_NO3_VERTICALLY_RESOLVED
+    case(E2L_STATE_SOIL_NO3_Z_RESOLVED)
+       id_val         =  E2L_STATE_SOIL_NO3_Z_RESOLVED
        name_val       =  'smin no3  vr'
        long_name_val  =  'smin no3 vr: EM to ELM'
        units_val      =  '[kg/m2]'

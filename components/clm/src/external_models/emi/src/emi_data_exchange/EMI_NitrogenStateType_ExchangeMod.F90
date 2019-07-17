@@ -80,7 +80,7 @@ contains
 
           select case (cur_data%id)
 
-          case (L2E_STATE_NITROGEN_POOLS_VERTICALLY_RESOLVED)
+          case (L2E_STATE_NITROGEN_POOLS_Z_RESOLVED)
              do fc = 1, num_filter
                 c = filter(fc)
                 do j = 1, nlevdecomp_full
@@ -91,7 +91,7 @@ contains
              enddo
              cur_data%is_set = .true.
 
-          case (L2E_STATE_SOIL_NH4_VERTICALLY_RESOLVED)
+          case (L2E_STATE_SOIL_NH4_Z_RESOLVED)
 
              do fc = 1, num_filter
                 c = filter(fc)
@@ -101,7 +101,7 @@ contains
              enddo
              cur_data%is_set = .true.
 
-          case (L2E_STATE_SOIL_NO3_VERTICALLY_RESOLVED)
+          case (L2E_STATE_SOIL_NO3_Z_RESOLVED)
 
              do fc = 1, num_filter
                 c = filter(fc)
@@ -170,7 +170,7 @@ contains
 
           select case (cur_data%id)
 
-          case (E2L_STATE_NITROGEN_POOLS_VERTICALLY_RESOLVED)
+          case (E2L_STATE_NITROGEN_POOLS_Z_RESOLVED)
              do fc = 1, num_filter
                 c = filter(fc)
                 do j = 1, nlevdecomp_full
@@ -181,7 +181,7 @@ contains
              enddo
              cur_data%is_set = .true.
 
-          case (E2L_STATE_SOIL_NH4_VERTICALLY_RESOLVED)
+          case (E2L_STATE_SOIL_NH4_Z_RESOLVED)
 
              do fc = 1, num_filter
                 c = filter(fc)
@@ -191,7 +191,7 @@ contains
              enddo
              cur_data%is_set = .true.
 
-          case (E2L_STATE_SOIL_NO3_VERTICALLY_RESOLVED)
+          case (E2L_STATE_SOIL_NO3_Z_RESOLVED)
 
              do fc = 1, num_filter
                 c = filter(fc)

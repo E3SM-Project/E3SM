@@ -3,33 +3,33 @@ module EMI_CarbonFluxType_Constants
   implicit none
   private
   !
-  integer, parameter, public :: L2E_STATE_CARBON_POOLS_VERTICALLY_RESOLVED  = 2501
+  integer, parameter, public :: L2E_STATE_CARBON_POOLS_Z_RESOLVED  = 2501
 
-  integer, parameter, public :: E2L_STATE_CARBON_POOLS_VERTICALLY_RESOLVED  = 2502
+  integer, parameter, public :: E2L_STATE_CARBON_POOLS_Z_RESOLVED  = 2502
 
-  integer, parameter, public :: L2E_FLUX_CARBON_C12_LITR_MET_VERTICALLY_RESOLVED = 2503
+  integer, parameter, public :: L2E_FLUX_CARBON_C12_LITR_MET_Z_RESOLVED = 2503
 
-  integer, parameter, public :: L2E_FLUX_CARBON_C12_LITR_CEL_VERTICALLY_RESOLVED = 2504
+  integer, parameter, public :: L2E_FLUX_CARBON_C12_LITR_CEL_Z_RESOLVED = 2504
 
-  integer, parameter, public :: L2E_FLUX_CARBON_C12_LITR_LIG_VERTICALLY_RESOLVED = 2505
+  integer, parameter, public :: L2E_FLUX_CARBON_C12_LITR_LIG_Z_RESOLVED = 2505
 
-  integer, parameter, public :: L2E_FLUX_CARBON_C12_LITR_CWD_VERTICALLY_RESOLVED = 2506
+  integer, parameter, public :: L2E_FLUX_CARBON_C12_LITR_CWD_Z_RESOLVED = 2506
 
-  integer, parameter, public :: L2E_FLUX_CARBON_C13_LITR_MET_VERTICALLY_RESOLVED = 2507
+  integer, parameter, public :: L2E_FLUX_CARBON_C13_LITR_MET_Z_RESOLVED = 2507
 
-  integer, parameter, public :: L2E_FLUX_CARBON_C13_LITR_CEL_VERTICALLY_RESOLVED = 2508
+  integer, parameter, public :: L2E_FLUX_CARBON_C13_LITR_CEL_Z_RESOLVED = 2508
 
-  integer, parameter, public :: L2E_FLUX_CARBON_C13_LITR_LIG_VERTICALLY_RESOLVED = 2509
+  integer, parameter, public :: L2E_FLUX_CARBON_C13_LITR_LIG_Z_RESOLVED = 2509
 
-  integer, parameter, public :: L2E_FLUX_CARBON_C13_LITR_CWD_VERTICALLY_RESOLVED = 2510
+  integer, parameter, public :: L2E_FLUX_CARBON_C13_LITR_CWD_Z_RESOLVED = 2510
 
-  integer, parameter, public :: L2E_FLUX_CARBON_C14_LITR_MET_VERTICALLY_RESOLVED = 2511
+  integer, parameter, public :: L2E_FLUX_CARBON_C14_LITR_MET_Z_RESOLVED = 2511
 
-  integer, parameter, public :: L2E_FLUX_CARBON_C14_LITR_CEL_VERTICALLY_RESOLVED = 2512
+  integer, parameter, public :: L2E_FLUX_CARBON_C14_LITR_CEL_Z_RESOLVED = 2512
 
-  integer, parameter, public :: L2E_FLUX_CARBON_C14_LITR_LIG_VERTICALLY_RESOLVED = 2513
+  integer, parameter, public :: L2E_FLUX_CARBON_C14_LITR_LIG_Z_RESOLVED = 2513
 
-  integer, parameter, public :: L2E_FLUX_CARBON_C14_LITR_CWD_VERTICALLY_RESOLVED = 2514
+  integer, parameter, public :: L2E_FLUX_CARBON_C14_LITR_CWD_Z_RESOLVED = 2514
 
   integer, parameter, public :: E2L_FLUX_CARBON_C12_HR_INTEGRATED  = 2515
 
@@ -67,9 +67,9 @@ module EMI_CarbonFluxType_Constants
 
   integer, parameter, public :: E2L_FLUX_CARBON_C14_DIC_RUNOFF_INTEGRATED  = 2532
 
-  integer, parameter, public :: L2E_BGC_COEFF_DECOMPK_VERTICALLY_RESOLVED = 2533
+  integer, parameter, public :: L2E_BGC_COEFF_DECOMPK_Z_RESOLVED = 2533
 
-  integer, parameter, public :: L2E_BGC_COEFF_T_SCALAR_VERTICALLY_RESOLVED = 2534
+  integer, parameter, public :: L2E_BGC_COEFF_T_SCALAR_Z_RESOLVED = 2534
 
-  integer, parameter, public :: L2E_BGC_COEFF_W_SCALAR_VERTICALLY_RESOLVED = 2535
+  integer, parameter, public :: L2E_BGC_COEFF_W_SCALAR_Z_RESOLVED = 2535
 end module EMI_CarbonFluxType_Constants
