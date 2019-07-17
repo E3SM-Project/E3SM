@@ -108,15 +108,14 @@ module WaterfluxType
      real(r8), pointer :: qflx_real_irrig_patch    (:)   ! patch real irrigation flux (mm H2O/s) 
      real(r8), pointer :: qflx_surf_irrig_col      (:)   ! col real surface irrigation flux (mm H2O/s) 
      real(r8), pointer :: qflx_grnd_irrig_col      (:)   ! col real groundwater irrigation flux (mm H2O/s) 
-	 real(r8), pointer :: qflx_grnd_irrig_patch    (:)   ! groundwater irrigation (mm H2O/s) 
+     real(r8), pointer :: qflx_grnd_irrig_patch    (:)   ! groundwater irrigation (mm H2O/s) 
      real(r8), pointer :: qflx_surf_irrig_patch    (:)   ! surface water irrigation(mm H2O/s) 
      real(r8), pointer :: qflx_supply_patch        (:)   ! patch supply flux (mm H2O/s) 
      real(r8), pointer :: qflx_irrig_col           (:)   ! col irrigation flux (mm H2O/s)
      real(r8), pointer :: qflx_irr_demand_col      (:)   ! col surface irrigation demand (mm H2O /s)
      real(r8), pointer :: irrig_rate_patch         (:)   ! current irrigation rate [mm/s]
-	 real(r8), pointer :: qflx_over_supply_patch   (:)   ! over supplied irrigation !added by Tian July 2018
-     real(r8), pointer :: qflx_over_supply_col     (:)   ! col over supplied irrigation !added by Tian July 2018
-
+     real(r8), pointer :: qflx_over_supply_patch   (:)   ! over supplied irrigation 
+     real(r8), pointer :: qflx_over_supply_col     (:)   ! col over supplied irrigation 
      integer , pointer :: n_irrig_steps_left_patch (:)   ! number of time steps for which we still need to irrigate today (if 0, ignore)
 
      ! For VSFM
@@ -380,7 +379,7 @@ contains
        if (lun_pp%itype(l)==istsoil) then
           this%n_irrig_steps_left_patch(p) = 0
           this%irrig_rate_patch(p)         = 0.0_r8
-		  this%qflx_irr_demand_col(c)  = 0._r8
+          this%qflx_irr_demand_col(c)  = 0._r8
        end if
     end do
 

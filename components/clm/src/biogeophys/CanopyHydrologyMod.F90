@@ -15,7 +15,7 @@ module CanopyHydrologyMod
   use shr_sys_mod       , only : shr_sys_flush
   use decompMod         , only : bounds_type
   use abortutils        , only : endrun
-  use clm_varctl        , only : iulog, twowayirrigation
+  use clm_varctl        , only : iulog, tw_irr
   use LandunitType      , only : lun_pp                
   use atm2lndType       , only : atm2lnd_type
   use AerosolType       , only : aerosol_type
@@ -117,7 +117,7 @@ contains
      use landunit_varcon    , only : istcrop, istice, istwet, istsoil, istice_mec 
      use clm_varctl         , only : subgridflag
      use clm_varpar         , only : nlevsoi,nlevsno
-	 use atm2lndType        , only : atm2lnd_type
+     use atm2lndType        , only : atm2lnd_type
      use domainMod          , only : ldomain
      use clm_time_manager   , only : get_step_size
      use subgridAveMod      , only : p2c,p2g
@@ -190,7 +190,7 @@ contains
           plandunit            => veg_pp%landunit                             , & ! Input:  [integer  (:)   ]  pft's landunit                           
           pcolumn              => veg_pp%column                               , & ! Input:  [integer  (:)   ]  pft's column                             
           pgwgt                => veg_pp%wtgcell                              , & ! Input:  [integer  (:)   ]  pft's weight in gridcell
-		  ltype                => lun_pp%itype                                , & ! Input:  [integer  (:)   ]  landunit type                            
+          ltype                => lun_pp%itype                                , & ! Input:  [integer  (:)   ]  landunit type                            
           urbpoi               => lun_pp%urbpoi                               , & ! Input:  [logical  (:)   ]  true => landunit is an urban point       
           cgridcell            => col_pp%gridcell                             , & ! Input:  [integer  (:)   ]  columns's gridcell                       
           clandunit            => col_pp%landunit                             , & ! Input:  [integer  (:)   ]  columns's landunit                       
@@ -274,37 +274,42 @@ contains
          p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity') 
 		 
 		! initialize the qflx_irrig_grid 
-		 do gg = bounds%begg,bounds%endg
-		   qflx_irrig_grid(gg) = 0
-		 end do
+         do gg = bounds%begg,bounds%endg
+            qflx_irrig_grid(gg) = 0
+         end do
         
         ! loop the pft and assign irrig_rate to qflx_irrig based on n_irrig_steps_left(p), which will be zero if current pft doesn't need irrigation or the current time is out of irrigation schedule
-		do f = 1, num_nolakep
+         do f = 1, num_nolakep
           p = filter_nolakep(f)
           g = pgridcell(p)
 		  
-		   if (n_irrig_steps_left(p) > 0) then
+           if (n_irrig_steps_left(p) > 0) then
              qflx_irrig(p)         = irrig_rate(p)
              qflx_irrig_grid(g) = irrig_rate_grid(g) ! 
-		   end if
-		 end do
+           end if
+         end do
 		 		   
         !initialize the total supply for all grids over the processer and total supply for grids that need irrigation 
         total_sup_irrigrid = 0._r8
         total_sup = 0._r8
         
-		currentg = bounds%begg
-		do gg = 1, gridnum
-		  g = currentg + gg - 1
-		  if (atm2lnd_vars%supply_grc(g)/=atm2lnd_vars%supply_grc(g)) then !change NAN (if any) to zero
-		     atm2lnd_vars%supply_grc(g)=0._r8
-		  end if
+        currentg = bounds%begg
+        do gg = 1, gridnum
+          g = currentg + gg - 1
 		  
-		  total_sup = total_sup+atm2lnd_vars%supply_grc(g)*ldomain%area(g) !total supply across all the grids
-		   if (qflx_irrig_grid(g)*ldomain%f_surf(g) > 0._r8 ) then  ! total supply in grids that need water
-		     total_sup_irrigrid = total_sup_irrigrid + atm2lnd_vars%supply_grc(g)*ldomain%area(g)  
+		  !if (atm2lnd_vars%supply_grc(g)>0) then
+          !       write(iulog,*)'ttt1',atm2lnd_vars%supply_grc(g)
+          !end if
+				
+          if (atm2lnd_vars%supply_grc(g)/=atm2lnd_vars%supply_grc(g)) then !change NAN (if any) to zero
+            atm2lnd_vars%supply_grc(g)=0._r8
+          end if
+		  
+         total_sup = total_sup+atm2lnd_vars%supply_grc(g)*ldomain%area(g) !total volumetric supply across all the grids
+           if (qflx_irrig_grid(g)*ldomain%f_surf(g) > 0._r8 ) then  ! total supply in grids that need water
+             total_sup_irrigrid = total_sup_irrigrid + atm2lnd_vars%supply_grc(g)*ldomain%area(g)  !total volumetric supply across grids that need water
            end if
-		end do
+        end do
 		  
         if (total_sup .eq. 0._r8) then ! no surface water supply at all, no need to adjust
           adjust_f = 1
@@ -315,10 +320,14 @@ contains
         end if
         
         if (total_sup_irrigrid .gt. 0._r8) then
-		    !This is the ratio between supply over gridcells need water and supply over all gridcells
-			!This value should be ranging from 0 to 1 and will be used to concentrate the water supply into gridcells that need irrigation
-            adjust_f = total_sup_irrigrid/total_sup 
-        end if		
+            !This is the ratio between supply over gridcells need water and supply over all gridcells
+            !This value should be ranging from 0 to 1 and will be used to concentrate the water supply into gridcells that need irrigation
+          adjust_f = total_sup_irrigrid/total_sup 
+        end if	
+
+        if (adjust_f < 1.0e-3_r8) then
+            adjust_f = 1 ! if irrigated area is too small, don't adjust because it would generate huge irrigation rate in a very small area
+        end if            
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!       
 
        ! Start pft loop
@@ -329,8 +338,8 @@ contains
           t = ptopounit(p)
           l = plandunit(p)
           c = pcolumn(p)
-		  
-		  irrig_rate_grid(g) = irrig_rate(p)/pgwgt(p) ! grid level irrigation rate projected by patch irrigation rate
+
+          irrig_rate_grid(g) = irrig_rate(p)/pgwgt(p) ! grid level irrigation rate projected by patch irrigation rate
 
           ! Canopy interception and precipitation onto ground surface
           ! Add precipitation to leaf water
@@ -428,7 +437,7 @@ contains
           ! Determine whether we're irrigating here; set qflx_irrig appropriately
           if (n_irrig_steps_left(p) > 0) then
              qflx_irrig(p)         = irrig_rate(p)
-			 qflx_irrig_grid(g) = irrig_rate_grid(g)
+             qflx_irrig_grid(g) = irrig_rate_grid(g)
              n_irrig_steps_left(p) = n_irrig_steps_left(p) - 1
           else
              qflx_irrig(p) = 0._r8
@@ -437,18 +446,26 @@ contains
 
           ! Add irrigation water directly onto ground (bypassing canopy interception)
           ! Note that it's still possible that (some of) this irrigation water will runoff (as runoff is computed later)
-              if (twowayirrigation) then ! else one way  
+              if (tw_irr) then ! else one way  
                 qflx_supply(p) = atm2lnd_vars%supply_grc(g) !!! original supply from WM, need to be updated based on the demand after interpolation              
-		 
+ 
                if (qflx_irrig(p) > 0._r8) then	!this pft needs water	   
                qflx_surf_irrig(p) = atm2lnd_vars%supply_grc(g)/adjust_f/pgwgt(p)    ! original supply at grid level (mm/s) concentrate
                                                                                     ! to grid cells that need water  and then project 
-																		            ! to pft level             
+																		            ! to pft level     
+               if (pgwgt(p) < 1.0e-16_r8) then ! avoid super small fraction of irrigated land 
+                   qflx_surf_irrig(p) = atm2lnd_vars%supply_grc(g)/adjust_f
+               end if      
+               
                !!!!!!!!!!!!!! use supply_frac to calculate surf_irrg
                !qflx_surf_irrig(p) = qflx_irrig(p) * supply_frac(g)			
                !qflx_over_supply(p) = 0
-               !!!!!!!!!!!!!!!!!!!!!!!!               
-           
+               !!!!!!!!!!!!!!!!!!!!!!!!    
+               
+                !if (g .eq. 3761) then       ! debug
+                !  write(iulog,*)'ttt1',g,p,qflx_irrig(p),atm2lnd_vars%supply_grc(g), adjust_f, pgwgt(p), qflx_surf_irrig(p),qflx_over_supply(p),qflx_real_irrig(p)
+                !end if
+                
                if (qflx_surf_irrig(p) > qflx_irrig(p)) then  !projected surface water supply is more than total demand, spill the excessive water on the ground
                   qflx_over_supply(p) = qflx_surf_irrig(p) - qflx_irrig(p)
                   qflx_surf_irrig(p) = qflx_irrig(p)
@@ -476,19 +493,15 @@ contains
                !  write(iulog,*)'Tian warning warning irrigp>0 but irrigg is not',qflx_irrig(p),qflx_irrig_grid(g)
                !end if 
              end if		
-             
-                !if (g .eq. 14621) then
-                !  write(iulog,*)'ttt1',g,p,qflx_irrig(p),atm2lnd_vars%supply_grc(g),qflx_surf_irrig(p),qflx_over_supply(p),qflx_real_irrig(p)
-                !end if
                 
           else  ! one way coupling
              qflx_prec_grnd_rain(p) = qflx_prec_grnd_rain(p) + ldomain%f_surf(g)*qflx_irrig(p) + ldomain%f_grd(g)*qflx_irrig(p) 
-             qflx_real_irrig(p) = ldomain%f_surf(g)*qflx_irrig(p) + ldomain%f_grd(g)*qflx_irrig(p) ! added by Tian 2/27/2018
+             qflx_real_irrig(p) = ldomain%f_surf(g)*qflx_irrig(p) + ldomain%f_grd(g)*qflx_irrig(p)
                
                qflx_surf_irrig(p) = ldomain%f_surf(g)*qflx_irrig(p)
                qflx_grnd_irrig(p) = ldomain%f_grd(g)*qflx_irrig(p)
-               qflx_over_supply(p) = 0
-			   qflx_supply(p) = 0._r8 !assuming the irrigation demand is always met 
+               qflx_over_supply(p) = 0._r8
+               qflx_supply(p) = 0._r8 !assuming the irrigation demand is always met 
           end if
           
           !no coupling

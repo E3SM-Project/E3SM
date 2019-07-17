@@ -129,7 +129,7 @@ module clm_varctl
   !----------------------------------------------------------
 
   ! True is 2way, false is 1way
-  logical, public :: twowayirrigation = .false.  
+  logical, public :: tw_irr = .false.  
 
   !----------------------------------------------------------
   ! Landunit logic

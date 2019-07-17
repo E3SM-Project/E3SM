@@ -169,7 +169,7 @@ contains
     index_l2x_Flrl_rofgwl   = mct_avect_indexra(l2x,'Flrl_rofgwl')
     index_l2x_Flrl_rofsub   = mct_avect_indexra(l2x,'Flrl_rofsub')
     index_l2x_Flrl_rofi     = mct_avect_indexra(l2x,'Flrl_rofi')
-	index_l2x_Flrl_demand   = mct_avect_indexra(l2x,'Flrl_demand')
+    index_l2x_Flrl_demand   = mct_avect_indexra(l2x,'Flrl_demand')
 
     index_l2x_Sl_t          = mct_avect_indexra(l2x,'Sl_t')
     index_l2x_Sl_snowh      = mct_avect_indexra(l2x,'Sl_snowh')

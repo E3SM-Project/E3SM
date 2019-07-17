@@ -546,7 +546,7 @@ contains
      use clm_varpar       , only : nlevsoi, nlevgrnd
      use column_varcon    , only : icol_roof, icol_road_imperv
      use clm_varctl       , only : use_vsfm, use_var_soil_thick
-	 use domainMod        , only : ldomain
+     use domainMod        , only : ldomain
      use SoilWaterMovementMod, only : zengdecker_2009_with_var_soil_thick
      !
      ! !ARGUMENTS:
@@ -626,9 +626,8 @@ contains
           watsat             =>    soilstate_vars%watsat_col             , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)  
           eff_porosity       =>    soilstate_vars%eff_porosity_col       , & ! Input:  [real(r8) (:,:) ]  effective porosity = porosity - vol_ice   
           
-		  qflx_irrig         =>    col_wf%qflx_irrig         , & ! Input:  [real(r8) (:)   ]  irrigation flux (mm H2O /s)
-          qflx_grnd_irrig_col=>    col_wf%qflx_grnd_irrig    , & ! Output: [real(r8) (:)   ]  col real groundwater irrigation flux (mm H2O /s)                                                                                                                                                             
-		  
+          qflx_irrig         =>    col_wf%qflx_irrig         , & ! Input:  [real(r8) (:)   ]  irrigation flux (mm H2O /s)
+          qflx_grnd_irrig_col=>    col_wf%qflx_grnd_irrig    , & ! Output: [real(r8) (:)   ]  col real groundwater irrigation flux (mm H2O /s)                                                                                                                                                               
 
           zwt                =>    soilhydrology_vars%zwt_col            , & ! Output: [real(r8) (:)   ]  water table depth (m)                             
           zwt_perched        =>    soilhydrology_vars%zwt_perched_col    , & ! Output: [real(r8) (:)   ]  perched water table depth (m)                     
@@ -775,7 +774,7 @@ contains
                 end if
              enddo
           endif
-		  qcharge(c) = qcharge_temp
+          qcharge(c) = qcharge_temp
        enddo
 
 
