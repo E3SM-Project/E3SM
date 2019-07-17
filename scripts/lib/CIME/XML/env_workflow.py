@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class EnvWorkflow(EnvBase):
 
-    def __init__(self, case_root=None, infile="env_workflow.xml"):
+    def __init__(self, case_root=None, infile="env_workflow.xml", read_only=False):
         """
         initialize an object interface to file env_workflow.xml in the case directory
         """
@@ -21,7 +21,7 @@ class EnvWorkflow(EnvBase):
         #        schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_workflow.xsd")
         # TODO: define schema for this file
         schema = None
-        super(EnvWorkflow,self).__init__(case_root, infile, schema=schema)
+        super(EnvWorkflow,self).__init__(case_root, infile, schema=schema, read_only=read_only)
 
     def create_job_groups(self, batch_jobs, is_test):
         # Subtle: in order to support dynamic batch jobs, we need to remove the

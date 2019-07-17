@@ -206,7 +206,7 @@ class Case(object):
         self._env_entryid_files.append(EnvBuild(self._caseroot, components=components, read_only=self._force_read_only))
         self._env_entryid_files.append(EnvMachPes(self._caseroot, components=components, read_only=self._force_read_only))
         self._env_entryid_files.append(EnvBatch(self._caseroot, read_only=self._force_read_only))
-        self._env_entryid_files.append(EnvWorkflow(self._caseroot), read_only=self._force_read_only)
+        self._env_entryid_files.append(EnvWorkflow(self._caseroot, read_only=self._force_read_only))
 
         if os.path.isfile(os.path.join(self._caseroot,"env_test.xml")):
             self._env_entryid_files.append(EnvTest(self._caseroot, components=components, read_only=self._force_read_only))
@@ -881,7 +881,8 @@ class Case(object):
                   multi_driver=False, ninst=1, test=False,
                   walltime=None, queue=None, output_root=None,
                   run_unsupported=False, answer=None,
-                  input_dir=None, driver=None, workflow_case="default"):
+                  input_dir=None, driver=None, workflow_case="default",
+                  non_local=False):
 
         expect(check_name(compset_name, additional_chars='.'), "Invalid compset name {}".format(compset_name))
 
@@ -1463,11 +1464,9 @@ directory, NOT in this subdirectory."""
             #   called if run_unsupported is False.
             tests = Testlist(tests_spec_file, files)
             testlist = tests.get_tests(compset=compset_alias, grid=grid_name, supported_only=True)
-            test_categories = ["prealpha", "prebeta", "test_release"]
+            test_categories = ["prealpha", "prebeta", "test_release", "aux_"]
             for test in testlist:
-                if test["category"] == "prealpha" \
-                   or test["category"] == "prebeta" \
-                   or "aux_" in test["category"] \
+                if test["category"] in test_categories \
                    or get_cime_default_driver() in test["category"]:
                     testcnt += 1
         if testcnt > 0:
