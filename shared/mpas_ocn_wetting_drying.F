@@ -196,7 +196,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_prevent_drying_rk4(block, dt, rk_substep_weight, config_zero_drying_velocity, err) !{{{
+   subroutine ocn_prevent_drying_rk4(block, dt, rkSubstepWeight, config_zero_drying_velocity, err) !{{{
 
      !-----------------------------------------------------------------
      !
@@ -206,7 +206,7 @@ contains
 
      type (block_type), intent(in) :: block
      real (kind=RKIND), intent(in) :: dt
-     real (kind=RKIND), intent(in) :: rk_substep_weight
+     real (kind=RKIND), intent(in) :: rkSubstepWeight
      logical, pointer :: config_zero_drying_velocity
 
      !-----------------------------------------------------------------
@@ -279,7 +279,7 @@ contains
      ! ensure cells stay wet by selectively damping cells with a damping tendency to make sure tendency doesn't dry cells
 
      call ocn_wetting_drying_wettingVelocity(meshPool, layerThicknessEdge, layerThicknessCur, layerThicknessProvis, &
-                                             normalTransportVelocity, rk_substep_weight, wettingVelocity, err)
+                                             normalTransportVelocity, rkSubstepWeight, wettingVelocity, err)
 
      ! prevent drying from happening with selective wettingVelocity
      !$omp do schedule(runtime)
