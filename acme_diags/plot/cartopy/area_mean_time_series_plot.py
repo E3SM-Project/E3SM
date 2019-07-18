@@ -44,17 +44,17 @@ def plot(var, regions_to_data, parameter):
 
     s = parameter.test_name_yrs
     years = s[s.find("(")+1:s.find(")")]
-    test_name = s.split('(')[0]
-    if not test_name:
-        test_name = 'test model'
+    test_name = s.split('(')[0].replace(' ', '')
+    if test_name is '':
+        test_name = 'test data'
 
     for i_region, data_set_for_region in enumerate(regions_to_data.values()):
         refs = data_set_for_region.refs
         test = data_set_for_region.test
         ax1 = fig.add_axes(panel[i_region])
-        ax1.plot(test.asma(), 'k', linewidth=2,label = test_name +' ({0:.1f})'.format(np.mean(test.asma())))
+        ax1.plot(test.asma(), 'k', linewidth=2,label = test_name +'(mean: {0:.2f}, std: {1:.3f})'.format(np.mean(test.asma()), np.std(test.asma())))
         for i_ref, ref in enumerate(refs):
-            ax1.plot(ref.asma(), line_color[i_ref], linewidth=2,label = ref.ref_name +' ({0:.1f})'.format(np.mean(ref.asma())))
+            ax1.plot(ref.asma(), line_color[i_ref], linewidth=2,label = ref.ref_name +'(mean: {0:.1f}, std: {1:.2f})'.format(np.mean(ref.asma()), np.std(ref.asma())))
 
         x = np.arange(num_year)
         #do Truncation Division to accommodating long time records

@@ -113,7 +113,6 @@ def run_diag(parameter):
             # print(test.getTime().asComponentTime())
 
             metrics_dict = []
-            print(save_data)
             
             #save_data = RefsTestMetrics(test=[test_domain_year.asma().tolist()], refs=[x.asma().tolist() for x in refs], metrics=metrics_dict)
 
