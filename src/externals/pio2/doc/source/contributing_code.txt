@@ -1,19 +1,4 @@
-/******************************************************************************
- *
- * 
- *
- * Copyright (C) 2016
- *
- * Permission to use, copy, modify, and distribute this software and its
- * documentation under the terms of the GNU General Public License is hereby 
- * granted. No representations are made about the suitability of this software 
- * for any purpose. It is provided "as is" without express or implied warranty.
- * See the GNU General Public License for more details.
- *
- * Documents produced by Doxygen are derivative works derived from the
- * input used in their production; they are not affected by this license.
- *
- */ /*! \page contributing_code Guide for Contributors
+/*! @page contributing_code Guide for Contributors
 
 # Introduction #
 
@@ -50,7 +35,7 @@ add to it, carefully.
 <li>Use spaces not tabs.
 <li>4 spaces is the unit of intendation.
 <li>Indentation as defined by the "linux" style in emacs (see below).
-<li>Use spaces around most operators (=+-*/) not pointer or prefix/postfile (*++--)
+<li>Use spaces around most operators (= + - * /) not pointer or prefix/postfile (* ++ --)
 <li>Spaces after most keywords (if, for, while, etc.)
 <li>No spaces after function name.
 </ul>
@@ -133,140 +118,20 @@ all issues have been resolved.
 <ul>
 
 <li>Programmers begin work on a feature or fix by branching from
-develop.
+master.
 
-<li>When a branch is ready, it is submitted to code review.
+<li>When a branch is ready, it is submitted to code review via pull
+request. Travis CI testing is automatically run on the PR.
 
 <li>When code review is complete, and the changes are approved, the PR
-is merged into the develop branch.
+is merged into the master branch.
 
-<li>Mutliple merges into the develop branch may take place between
-test cycles. (???)
-
-<li>The develop branch is tested automatically by Jenkins.
-
-<li>The develop branch is tested periodically by CDash (every ~6
-hours).
-
-<li>After all jenkins and Cdash builds complete successfully, with all
-tests passing, and no warnings, the PR is merged into master by the
-integrator.
-
-<li>Multiple PRs may be merged to master between test cycles. (???)
+<li>The master branch is tested periodically by CDash (every ~6
+hours). Any test failures and the merge to master may be rolled back.
 
 <li>The branch is then deleted by whomever merged it to master.
 
-<li>The master branch is then tested on Jenkins.
-
-<li>The master branch is tested on CDash. Any test failures and the
-merge to master will be rolled back.
-
 </ul>
 
-## Formatting Example ##
 
-<pre>
-/** 
- * \@ingroup PIOc_inq_attname
- * The PIO-C interface for the NetCDF function nc_inq_attname.
- *
- * This routine is called collectively by all tasks in the communicator 
- * ios.union_comm. For more information on the underlying NetCDF commmand
- * please read about this function in the NetCDF documentation at: 
- * http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
- *
- * \@param ncid the ncid of the open file, obtained from
- * PIOc_openfile() or PIOc_createfile().
- * \@param varid the variable ID.
- * \@param attnum the attribute ID.
- * \@return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
- */
-int PIOc_inq_attname(int ncid, int varid, int attnum, char *name) 
-{
-    iosystem_desc_t *ios;  /* Pointer to io system information. */
-    file_desc_t *file;     /* Pointer to file information. */
-    int ierr = PIO_NOERR;  /* Return code from function calls. */
-    int mpierr = MPI_SUCCESS, mpierr2;  /* Return code from MPI function codes. */
-
-    LOG((1, "PIOc_inq_attname ncid = %d varid = %d attnum = %d", ncid, varid,
-         attnum));
-
-    /* Find the info about this file. */
-    if (!(file = pio_get_file_from_id(ncid)))
-        return PIO_EBADID;
-    ios = file->iosystem;
-
-    /* If async is in use, and this is not an IO task, bcast the parameters. */
-    if (ios->async_interface)
-    {
-        if (!ios->ioproc)
-        {
-            int msg = PIO_MSG_INQ_ATTNAME;
-            char name_present = name ? true : false;
-
-            if(ios->compmaster) 
-                mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-            
-            if (!mpierr)
-                mpierr = MPI_Bcast(&ncid, 1, MPI_INT, ios->compmaster, ios->intercomm);
-            if (!mpierr)
-                mpierr = MPI_Bcast(&varid, 1, MPI_INT, ios->compmaster, ios->intercomm);
-            if (!mpierr)
-                mpierr = MPI_Bcast(&attnum, 1, MPI_INT, ios->compmaster, ios->intercomm);
-            if (!mpierr)
-                mpierr = MPI_Bcast(&name_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
-        }
-
-        /* Handle MPI errors. */
-        if ((mpierr2 = MPI_Bcast(&mpierr, 1, MPI_INT, ios->comproot, ios->my_comm)))
-            check_mpi(file, mpierr2, __FILE__, __LINE__);
-        if (mpierr)
-            return check_mpi(file, mpierr, __FILE__, __LINE__);
-    }
-
-    /* If this is an IO task, then call the netCDF function. */
-    if (ios->ioproc)
-    {
-#ifdef _PNETCDF
-        if (file->iotype == PIO_IOTYPE_PNETCDF)
-            ierr = ncmpi_inq_attname(file->fh, varid, attnum, name);
-#endif /* _PNETCDF */
-#ifdef _NETCDF
-        if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
-            ierr = nc_inq_attname(file->fh, varid, attnum, name);
-#endif /* _NETCDF */
-        LOG((2, "PIOc_inq_attname netcdf call returned %d", ierr));
-    }
-
-    /* Broadcast and check the return code. */
-    if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
-    {
-        check_mpi(file, mpierr, __FILE__, __LINE__);            
-        return PIO_EIO;
-    }
-    check_netcdf(file, ierr, __FILE__, __LINE__);
-    
-    /* Broadcast results to all tasks. Ignore NULL parameters. */
-    if (!ierr)
-        if (name)
-        {
-            int namelen = strlen(name);
-            if ((mpierr = MPI_Bcast(&namelen, 1, MPI_INT, ios->ioroot, ios->my_comm)))
-                check_mpi(file, mpierr, __FILE__, __LINE__);
-            if ((mpierr = MPI_Bcast((void *)name, namelen + 1, MPI_CHAR, ios->ioroot,
-                                    ios->my_comm)))
-                check_mpi(file, mpierr, __FILE__, __LINE__);
-        }
-
-    return ierr;
-}
-</pre>
-
-## Further Information ##
-
-<p>For style issues not already covered in this document, see this <a
-href="https://www.kernel.org/doc/Documentation/CodingStyle">style
-guide</a>.
-
-_Last updated: 05-16-2016_
 */

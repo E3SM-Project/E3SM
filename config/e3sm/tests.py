@@ -36,7 +36,7 @@ _TESTS = {
         },
 
     "e3sm_atm_developer" : {
-        "tests" : (
+        "tests"   : (
             "ERP_Ln9.ne4_ne4.FC5AV1C-L",
             "SMS_Ln9.ne4_ne4.FC5AV1C-L.cam-outfrq9s",
             "SMS.ne4_ne4.FC5AV1C-L.cam-cosplite",
@@ -47,9 +47,10 @@ _TESTS = {
         },
 
     "e3sm_atm_integration" : {
+        "inherit" : ("eam_preqx", "eam_theta"),
         "tests" : (
-            "ERP_Ln9.ne4_ne4.FC5AV1C-L-AQUAP",
-            "SMS_Ld1.ne4_ne4.FC5AV1C-L-AQUAP.cam-clubb_only",
+            "ERP_Ln9.ne4_ne4.F-EAMv1-AQP1",
+            "SMS_Ld1.ne4_ne4.F-EAMv1-AQP1.cam-clubb_only",
             "PET_Ln5.ne4_ne4.FC5AV1C-L.allactive-mach-pet",
             "PEM_Ln5.ne4_ne4.FC5AV1C-L",
             "SMS_D_Ln5.ne4_ne4.FC5AV1C-L.cam-cosplite_nhtfrq5",
@@ -113,7 +114,7 @@ _TESTS = {
             "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
             "SMS.f09_g16_a.IGCLM45_MLI",
             "SMS_P12x2.ne4_oQU240.A_WCYCL1850.allactive-mach_mods",
-            "SMS_B.ne4_ne4.FC5AV1C-L-AQUAP.cam-hommexx",
+            "SMS_B.ne4_ne4.F-EAMv1-AQP1.cam-hommexx",
             )
         },
 
@@ -178,5 +179,45 @@ _TESTS = {
             "SMS_D_Lm6.1x1_brazil.ICLM45ED",
             )
         },
+
+
+    #atmopheric tests for ftypes with 2 builds only
+    #ftype2 is a default and tested in other suites for preqx
+    # preqx ftype0
+    # preqx ftype1
+    # preqx ftype4
+    # theta-l hy ftype0
+    # theta-l hy ftype1
+    # theta-l hy ftype2
+    # theta-l hy ftype4
+    # theta-l nh ftype0
+    # theta-l nh ftype1
+    # theta-l nh ftype2
+    # theta-l nh ftype4
+    # theta-l hy SL
+    "eam_preqx" : {
+        "share"    : True,
+        "time"     : "01:00:00",
+        "tests"    : (
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-preqx_ftype0",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-preqx_ftype1",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-preqx_ftype4",
+                 )
+    },
+    "eam_theta" : {
+        "share"    : True,
+        "time"     : "02:00:00",
+        "tests"    : (
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetahy_ftype0",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetahy_ftype1",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetahy_ftype2",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetahy_ftype4",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetanh_ftype0",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetanh_ftype1",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetanh_ftype2",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetanh_ftype4",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetahy_sl",
+                 )
+    },
 
 }

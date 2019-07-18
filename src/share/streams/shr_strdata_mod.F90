@@ -381,7 +381,7 @@ contains
 
        if (present(reset_domain_mask)) then
           if (reset_domain_mask) then
-             write(logunit,F00) ' Resetting the component domain mask and frac to 1'
+             if (my_task == master_task) write(logunit,F00) ' Resetting the component domain mask and frac to 1'
              kmask = mct_aVect_indexRA(SDAT%grid%data,'mask')
              SDAT%grid%data%rattr(kmask,:) = 1
 

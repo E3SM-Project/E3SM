@@ -9,33 +9,50 @@ from CIME.locked_files          import lock_file, unlock_file
 
 logger = logging.getLogger(__name__)
 
-def get_standard_makefile_args(case):
-    variables = ["CASEROOT", "CASETOOLS", "CIMEROOT", "COMP_INTERFACE",
-                 "COMPILER", "DEBUG", "EXEROOT", "INCROOT", "LIBROOT",
-                 "MACH", "MPILIB", "NINST_VALUE", "OS", "PIO_VERSION",
-                 "SHAREDLIBROOT", "SMP_PRESENT", "USE_ESMF_LIB", "USE_MOAB",
-                 "CAM_CONFIG_OPTS", "COMPARE_TO_NUOPC", "HOMME_TARGET",
-                 "OCN_SUBMODEL", "CISM_USE_TRILINOS", "USE_ALBANY", "USE_PETSC"]
+_CMD_ARGS_FOR_BUILD = \
+    ("CASEROOT", "CASETOOLS", "CIMEROOT", "COMP_INTERFACE",
+     "COMPILER", "DEBUG", "EXEROOT", "INCROOT", "LIBROOT",
+     "MACH", "MPILIB", "NINST_VALUE", "OS", "PIO_VERSION",
+     "SHAREDLIBROOT", "SMP_PRESENT", "USE_ESMF_LIB", "USE_MOAB",
+     "CAM_CONFIG_OPTS", "COMPARE_TO_NUOPC", "HOMME_TARGET",
+     "OCN_SUBMODEL", "CISM_USE_TRILINOS", "USE_ALBANY", "USE_PETSC")
 
+def get_standard_makefile_args(case, shared_lib=False):
     make_args = "CIME_MODEL={} ".format(case.get_value("MODEL"))
     make_args += " compile_threaded={} ".format(stringify_bool(case.get_build_threaded()))
-    for var in variables:
-        make_args+=xml_to_make_variable(case, var)
+    if not shared_lib:
+        make_args += " USE_KOKKOS={} ".format(stringify_bool(uses_kokkos(case)))
+    for var in _CMD_ARGS_FOR_BUILD:
+        make_args += xml_to_make_variable(case, var)
 
     return make_args
 
-def xml_to_make_variable(case, varname):
+def get_standard_cmake_args(case, shared_lib=False):
+    cmake_args = "-DCIME_MODEL={} ".format(case.get_value("MODEL"))
+    if not shared_lib:
+        cmake_args += " -DUSE_KOKKOS={} ".format(stringify_bool(uses_kokkos(case)))
+    for var in _CMD_ARGS_FOR_BUILD:
+        cmake_args += xml_to_make_variable(case, var, cmake=True)
+
+    return cmake_args
+
+def xml_to_make_variable(case, varname, cmake=False):
     varvalue = case.get_value(varname)
     if varvalue is None:
         return ""
     if type(varvalue) == type(True):
         varvalue = stringify_bool(varvalue)
-    return "{}=\"{}\" ".format(varname, varvalue)
+    return "{}{}=\"{}\" ".format("-D" if cmake else "", varname, varvalue)
 
+###############################################################################
+def uses_kokkos(case):
+###############################################################################
+    cam_target = case.get_value("CAM_TARGET")
+    return get_model() == "e3sm" and cam_target in ("preqx_kokkos", "theta-l")
 
 ###############################################################################
 def _build_model(build_threaded, exeroot, incroot, complist,
-                 lid, caseroot, cimeroot, compiler, buildlist, comp_interface):
+                 lid, caseroot, cimeroot, compiler, buildlist, comp_interface, case):
 ###############################################################################
     logs = []
 
@@ -79,7 +96,7 @@ def _build_model(build_threaded, exeroot, incroot, complist,
         # logs is a list of log files to be compressed and added to the case logs/bld directory
         t = threading.Thread(target=_build_model_thread,
             args=(config_dir, model, comp, caseroot, libroot, bldroot, incroot, file_build,
-                  thread_bad_results, smp, compiler))
+                  thread_bad_results, smp, compiler, case))
         t.start()
 
         logs.append(file_build)
@@ -228,12 +245,11 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
             os.makedirs(shared_item)
 
     mpilib = case.get_value("MPILIB")
-    cam_target = case.get_value("CAM_TARGET")
     libs = ["gptl", "mct", "pio", "csm_share"]
     if mpilib == "mpi-serial":
         libs.insert(0, mpilib)
 
-    if cam_target == "preqx_kokkos":
+    if uses_kokkos(case):
         libs.append("kokkos")
 
     logs = []
@@ -289,7 +305,7 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
             # logs is a list of log files to be compressed and added to the case logs/bld directory
             thread_bad_results = []
             _build_model_thread(config_lnd_dir, "lnd", comp_lnd, caseroot, libroot, bldroot, incroot,
-                                file_build, thread_bad_results, smp, compiler)
+                                file_build, thread_bad_results, smp, compiler, case)
             logs.append(file_build)
             expect(not thread_bad_results, "\n".join(thread_bad_results))
 
@@ -298,7 +314,7 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
 
 ###############################################################################
 def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldroot, incroot, file_build,
-                        thread_bad_results, smp, compiler):
+                        thread_bad_results, smp, compiler, _): # (case not used yet)
 ###############################################################################
     logger.info("Building {} with output to {}".format(compclass, file_build))
     t1 = time.time()
@@ -314,9 +330,13 @@ def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldr
                        .format(compclass, stringify_bool(smp), cmd, caseroot, libroot, bldroot),
                        from_dir=bldroot,  arg_stdout=fd,
                        arg_stderr=subprocess.STDOUT)[0]
+
     analyze_build_log(compclass, file_build, compiler)
-    if (stat != 0):
+
+    if stat != 0:
         thread_bad_results.append("BUILD FAIL: {}.buildlib failed, cat {}".format(compname, file_build))
+
+    analyze_build_log(compclass, file_build, compiler)
 
     for mod_file in glob.glob(os.path.join(bldroot, "*_[Cc][Oo][Mm][Pp]_*.mod")):
         safe_copy(mod_file, incroot)
@@ -444,8 +464,6 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
     if get_model() == "e3sm" and mach == "titan" and compiler == "pgiacc":
         case.set_value("CAM_TARGET", "preqx_acc")
 
-    cam_target = case.get_value("CAM_TARGET")
-
     # This is a timestamp for the build , not the same as the testid,
     # and this case may not be a test anyway. For a production
     # experiment there may be many builds of the same case.
@@ -495,12 +513,9 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
 
     if not sharedlib_only:
         os.environ["INSTALL_SHAREDPATH"] = os.path.join(exeroot, sharedpath) # for MPAS makefile generators
-        # Set USE_KOKKOS to true if cam is preqx_kokkos
-        if cam_target == "preqx_kokkos":
-            os.environ["USE_KOKKOS"] = "TRUE"
 
         logs.extend(_build_model(build_threaded, exeroot, incroot, complist,
-                                lid, caseroot, cimeroot, compiler, buildlist, comp_interface))
+                                 lid, caseroot, cimeroot, compiler, buildlist, comp_interface, case))
 
         if not buildlist:
             # in case component build scripts updated the xml files, update the case object

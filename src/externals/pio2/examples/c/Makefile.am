@@ -10,8 +10,10 @@ AM_CPPFLAGS = -I$(top_srcdir)/src/clib
 # Build the tests for make check.
 check_PROGRAMS = example1 examplePio darray_no_async
 
+if RUN_TESTS
 # Tests will run from a bash script.
 TESTS = run_tests.sh
+endif # RUN_TESTS
 
 # Distribute the test script.
 EXTRA_DIST = run_tests.sh

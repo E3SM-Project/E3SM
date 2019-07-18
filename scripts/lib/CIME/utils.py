@@ -373,6 +373,7 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None, from
         try:
             mod = imp.load_source(subname, cmd)
             logger.info("   Calling {}".format(cmd))
+            # Careful: logfile code is not thread safe!
             if logfile:
                 with open(logfile,"w") as log_fd:
                     with redirect_logger(log_fd, subname):
