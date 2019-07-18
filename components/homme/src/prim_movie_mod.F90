@@ -418,7 +418,7 @@ contains
     use pio, only : pio_syncfile !_EXTERNAL
     use perf_mod, only : t_startf, t_stopf !_EXTERNAL
     use viscosity_mod, only : compute_zeta_C0
-    use element_ops, only : get_field
+    use element_ops, only : get_field, get_w
     use dcmip16_wrapper, only: precl
 
 
@@ -433,14 +433,15 @@ contains
     integer :: ie,ios, i, j, k,jj
     real (kind=real_kind) :: pfull, pr0
     real(kind=real_kind),parameter :: dayspersec=1d0/(3600.*24.)
-    real (kind=real_kind) :: vartmp(np,np,nlev),arealocal(np,np)
-    real (kind=real_kind) :: var2d(nxyp), var3d(nxyp,nlev), ke(np,np,nlev)
+    real (kind=real_kind) :: vartmp(np,np,nlev), vartmp1(np,np,nlevp), arealocal(np,np)
+    real (kind=real_kind) :: var2d(nxyp), var3d(nxyp,nlev), var3dp1(nxyp,nlevp), ke(np,np,nlev)
     real (kind=real_kind) :: temp3d(np,np,nlev,nelemd)
 
     integer :: st, en, kmax, qindex, n0, n0_Q
     character(len=2) :: vname
 
-    integer(kind=nfsizekind) :: start(3), count(3), start2d(2),count2d(2)
+    integer(kind=nfsizekind) :: start(3), count(3), start2d(2),count2d(2), &
+                                startp1(3), countp1(3)
     integer :: ncnt
     call t_startf('prim_movie_output:pio')
 
@@ -462,6 +463,11 @@ contains
              start(1:2)=piostart3d
              start(3)=nf_get_frame(ncdf(ios))
              count(3)=1
+
+             countp1(1:2)=0 !piocount3dp1
+             startp1(1:2)=0 !piostart3dp1
+             startp1(3)=start(3)
+             countp1(3)=1
 
              if(nf_selectedvar('ps', output_varnames)) then
                 if (par%masterproc) print *,'writing ps...'
@@ -526,6 +532,7 @@ contains
                    call UniquePoints(elem(ie)%idxp,nlev,temp3d(:,:,:,ie),var3d(st:en,:))
                    st=en+1
                 enddo
+print *, 'zeta',start,count
                 call nf_put_var(ncdf(ios),var3d,start, count, name='zeta')
              end if
 
@@ -539,6 +546,7 @@ contains
                    call UniquePoints(elem(ie)%idxP,nlev,vartmp,var3d(st:en,:))
                    st=en+1
                 enddo
+print *, 'T',start,count
                 call nf_put_var(ncdf(ios),var3d,start, count, name='T')
              end if
 
@@ -637,8 +645,8 @@ contains
              end if
 
 
-             if(nf_selectedvar('w', output_varnames)) then
-                if (par%masterproc) print *,'writing w...'
+             if(nf_selectedvar('w_nlev', output_varnames)) then
+                if (par%masterproc) print *,'writing w_nlev...'
                 st=1
                 do ie=1,nelemd
                    en=st+elem(ie)%idxp%NumUniquePts-1
@@ -646,9 +654,22 @@ contains
                    call UniquePoints(elem(ie)%idxP,nlev,vartmp,var3d(st:en,:))
                    st=en+1
                 enddo
-                call nf_put_var(ncdf(ios),var3d,start, count, name='w')
+                call nf_put_var(ncdf(ios),var3d,start, count, name='w_nlev')
              end if
 
+#if 1
+             if(nf_selectedvar('w_nlevp', output_varnames)) then
+                if (par%masterproc) print *,'writing w_nlevp...'
+                st=1
+                do ie=1,nelemd
+                   en=st+elem(ie)%idxp%NumUniquePts-1
+                   call get_w(elem(ie),vartmp1,n0)
+                   call UniquePoints(elem(ie)%idxP,nlevp,vartmp1,var3dp1(st:en,:))
+                   st=en+1
+                enddo
+                call nf_put_var(ncdf(ios),var3dp1,startp1, countp1, name='w_nlevp')
+             end if
+#endif
 
              if(nf_selectedvar('omega', output_varnames)) then
                 st=1
