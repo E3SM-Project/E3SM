@@ -382,8 +382,10 @@
     <default_value>FALSE</default_value>
     <values match="last">
       <value compset="DATM.+POP\d">TRUE</value>
+      <value compset="DATM.+MOM\d">TRUE</value>
       <value compset="DATM.+DOCN%IAF">TRUE</value>
       <value compset="DATM%CPLHIST.+POP\d">FALSE</value>
+      <value compset="DATM%CPLHIST.+MOM\d">FALSE</value>
     </values>
     <group>run_component_cpl</group>
     <file>env_run.xml</file>
