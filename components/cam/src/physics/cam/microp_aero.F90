@@ -907,50 +907,40 @@ subroutine subgrid_mean_updraft(ncol, w0, wsig, ww)
    real(r8) :: xx, yy 
    real(r8) :: zz(nbin) 
    real(r8) :: wa(nbin) 
-   integer  :: kp(nbin) 
    integer  :: i, k
    integer  :: ibin
 
    !! program begins 
 
-!$acc parallel loop collapse(2) create(kp,wa,zz) copyin(wsig, w0, nbin) copyout(ww) 
+!$acc parallel loop collapse(2) copyin(wsig,w0) copyout(ww) private(zz,wa)
    do k = 1, pver
-   do i = 1, ncol
+      do i = 1, ncol
+         sigma  = max(0.001_r8, wsig(i,k))
+         wlarge = w0(i,k)
+         xx = 6._r8 * sigma / nbin
 
-      sigma  = max(0.001_r8, wsig(i,k))
-      wlarge = w0(i,k)
+         do ibin = 1, nbin
+            yy = wlarge - 3._r8*sigma + 0.5_r8*xx
+            yy = yy + (ibin-1)*xx
+            !! wbar = integrator < w * f(w) * dw >
+            zz(ibin) = yy * exp(-1._r8*(yy-wlarge)**2/(2._r8*sigma**2))/(sigma*sqrt(2._r8*pi))*xx
+            if ( zz(ibin) .gt. 0._r8 ) then
+               wa(ibin) = zz(ibin)
+            else
+               wa(ibin) = 0._r8
+            end if
+         end do
 
-      xx = 6._r8 * sigma / nbin
-
-      do ibin = 1, nbin
-         yy = wlarge - 3._r8*sigma + 0.5*xx
-         yy = yy + (ibin-1)*xx
-         !! wbar = integrator < w * f(w) * dw > 
-         zz(ibin) = yy * exp(-1.*(yy-wlarge)**2/(2*sigma**2))/(sigma*sqrt(2*pi))*xx
-      end do 
-
-      kp(:) = 0 
-      wa(:) = 0._r8 
- 
-      where(zz.gt.0._r8) 
-         kp = 1 
-         wa = zz
-      elsewhere 
-         kp = 0 
-         wa = 0._r8 
-      end where 
-
-      if(sum(kp).gt.0) then 
-         !! wbar = integrator < w * f(w) * dw > 
-         ww(i,k) = sum(wa)
-      else 
-         ww(i,k) = 0.001_r8
-      end if 
-
-      !!write(6,*) 'i, k, w0, wsig, ww : ', i, k, w0(i,k), wsig(i,k), ww(i,k) 
-
-  end do
-  end do
+         sum_wa = sum( wa(:) )
+         if ( sum_wa .gt. 0._r8 ) then
+         !! wbar = integrator < w * f(w) * dw >
+            ww(i,k) = sum_wa
+         else
+            ww(i,k) = 0.001_r8
+         end if
+         !!write(6,*) 'i, k, w0, wsig, ww : ', i, k, w0(i,k), wsig(i,k), ww(i,k)
+      end do ! i 
+   end do ! k 
 
 end subroutine subgrid_mean_updraft
 !================================================================================================
