@@ -1966,7 +1966,7 @@
 
   <entry id="EPS_OGRID">
     <type>real</type>
-    <default_value>1.0e-02</default_value>
+    <default_value>1.0e-01</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>Error tolerance for differences in ocean/ice lon/lat in domain checking</desc>
