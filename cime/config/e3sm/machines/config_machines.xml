@@ -635,12 +635,13 @@
         <command name="rm">PrgEnv-cray</command>
         <command name="load">PrgEnv-gnu/6.0.5</command>
         <command name="rm">gcc</command>
-        <command name="load">gcc/7.3.0</command>
+        <!--command name="load">gcc/7.3.0</command-->
+        <command name="load">gcc/8.3.0</command>
         <command name="rm">cray-libsci_acc</command>
         <command name="rm">cray-libsci</command>
-        <command name="load">cray-libsci/18.03.1</command>
+        <!--command name="load">cray-libsci/18.03.1</command-->
         <!--command name="load">cray-libsci_acc/18.12.1</command-->
-        <!--command name="load">cray-libsci/19.06.1</command-->
+        <command name="load">cray-libsci/19.06.1</command>
       </modules>
 
       <modules compiler="gnuacc">
@@ -710,8 +711,25 @@
 
     <environment_variables compiler="pgi">
       <env name="APRUN_XFER_LIMITS">1</env>
-      <env name="ATP_ENABLED">1</env>
-      <env name="MALLOC_MMAP_MAX_">0</env>
+      <!--env name="ATP_ENABLED">1</env-->
+      <!--env name="MALLOC_MMAP_MAX_">0</env-->
+      <env name="MALLOC_TRIM_THRESHOLD_">134217728</env>
+      <env name="MPICH_CPUMASK_DISPLAY">1</env>
+    </environment_variables>
+
+    <environment_variables compiler="gnu">
+      <env name="APRUN_XFER_LIMITS">1</env>
+      <!--env name="ATP_ENABLED">1</env-->
+      <!--env name="MALLOC_MMAP_MAX_">0</env-->
+      <env name="MALLOC_TRIM_THRESHOLD_">134217728</env>
+      <env name="MPICH_CPUMASK_DISPLAY">1</env>
+    </environment_variables>
+
+    <environment_variables compiler="intel">
+      <env name="APRUN_XFER_LIMITS">1</env>
+      <!--env name="ATP_ENABLED">1</env-->
+      <!--env name="MALLOC_MMAP_MAX_">0</env-->
+      <env name="MALLOC_TRIM_THRESHOLD_">134217728</env>
       <env name="MPICH_CPUMASK_DISPLAY">1</env>
     </environment_variables>
 
@@ -722,8 +740,9 @@
       <env name="CRAY_CUDA_MPS">1</env>
       <env name="MPICH_RDMA_ENABLED_CUDA">1</env>
       <env name="APRUN_XFER_LIMITS">1</env>
-      <env name="ATP_ENABLED">1</env>
-      <env name="MALLOC_MMAP_MAX_">0</env>
+      <!--env name="ATP_ENABLED">1</env-->
+      <!--env name="MALLOC_MMAP_MAX_">0</env-->
+      <env name="MALLOC_TRIM_THRESHOLD_">134217728</env>
       <env name="MPICH_CPUMASK_DISPLAY">1</env>
     </environment_variables>
 
@@ -734,8 +753,7 @@
       <env name="CRAY_CUDA_MPS">1</env>
       <env name="MPICH_RDMA_ENABLED_CUDA">1</env>
       <env name="APRUN_XFER_LIMITS">1</env>
-      <env name="ATP_ENABLED">1</env>
-      <env name="MALLOC_MMAP_MAX_">0</env>
+      <env name="MALLOC_TRIM_THRESHOLD_">134217728</env>
       <env name="MPICH_CPUMASK_DISPLAY">1</env>
     </environment_variables>
 
@@ -743,8 +761,6 @@
       <env name="CRAY_CUDA_MPS">1</env>
       <env name="MPICH_RDMA_ENABLED_CUDA">1</env>
       <env name="APRUN_XFER_LIMITS">1</env>
-      <env name="ATP_ENABLED">1</env>
-      <env name="MALLOC_MMAP_MAX_">0</env>
       <env name="MPICH_CPUMASK_DISPLAY">1</env>
     </environment_variables>
 

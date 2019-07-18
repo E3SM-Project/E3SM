@@ -438,7 +438,7 @@ for mct, etc.
 
 <compiler COMPILER="pgi">
   <CFLAGS>
-    <base> -gopt -time </base>
+    <!--base> -gopt -time </base-->
     <append compile_threaded="false"> </append>
     <append compile_threaded="true"> -mp </append>
   </CFLAGS>
@@ -474,7 +474,7 @@ for mct, etc.
     <base> -r8 </base>
   </FC_AUTO_R8>
   <FFLAGS>
-    <base>  -i4 -gopt  -time -Mstack_arrays  -Mextend -byteswapio -Mflushz -Kieee -Mallocatable=03 </base>
+    <base>  -i4  -Mstack_arrays  -Mextend -byteswapio -Mflushz -Kieee -Mallocatable=03 </base>
     <append compile_threaded="false"> </append>
     <append compile_threaded="true"> -mp </append>
     <append DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </append>
@@ -503,7 +503,7 @@ for mct, etc.
        the "contiguous" attribute is incompatible with "intent".-->
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
   <LDFLAGS>
-    <base> -acc -time -Wl,--allow-multiple-definition </base>
+    <base> -time -Wl,--allow-multiple-definition </base>
     <append compile_threaded="false"> </append>
     <append compile_threaded="true"> -mp </append>
   </LDFLAGS>
@@ -553,7 +553,8 @@ for mct, etc.
     <base> -r8 </base>
   </FC_AUTO_R8>
   <FFLAGS>
-    <base>  -i4 -time -Mstack_arrays -Mextend -byteswapio -Mflushz -Kieee  </base>
+    <!--base>  -i4 -time -Mstack_arrays -Mextend -byteswapio -Mflushz -Kieee  </base-->
+    <base>  -i4 -Mstack_arrays  -Mextend -byteswapio -Mflushz -Kieee -Mallocatable=03 </base>
     <append compile_threaded="false"> </append>
     <append compile_threaded="true"> -mp </append>
     <append MODEL="cam"> </append>
