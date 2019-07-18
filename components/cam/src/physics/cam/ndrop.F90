@@ -1064,14 +1064,15 @@ subroutine dropmixnuc( &
                  tmpa = nact(k,m)*raercol(kp1,mm,nsav)
                  if (k == pver) then 
                     tmpa = tmpa + raercol_cw(pver,mm,nsav)*(nact(pver,m) - taumix_internal_pver_inv)
+                    tmpa = max(0.0_r8, tmpa)
                  endif
               else 
                  tmpa = mact(k,m)*raercol(kp1,mm,nsav)
                  if (k == pver) then
                     tmpa = tmpa + raercol_cw(pver,mm,nsav)*(mact(pver,m) - taumix_internal_pver_inv)
+                    tmpa = max(0.0_r8, tmpa)
                  endif
               endif
-              tmpa = max(0.0_r8, tmpa)
 
               raercol_cw(k,mm,nnew) = raercol_cw(k,mm,nsav) + dtmix*(tmpa + & 
                   ekkp(k)*(overlapp(k)*raercol_cw(kp1,mm,nsav)-raercol_cw(k,mm,nsav)) +      &    
