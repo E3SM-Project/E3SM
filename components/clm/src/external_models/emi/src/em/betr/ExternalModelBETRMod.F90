@@ -35,7 +35,10 @@ module ExternalModelBETRMod
   use EMI_PhosphorusStateType_Constants
   use ExternalModelBaseType        , only : em_base_type
   use EMIBeTRSimulation            , only : emi_betr_simulation_type
-  
+  use tracer_varcon      , only : reaction_method,natomw,patomw
+  use betr_varcon         , only : betr_maxpatch_pft
+  use clm_varpar      , only : nlevtrc_soil
+  use pftvarcon           , only : noveg, nc4_grass, nc3_arctic_grass, nc3_nonarctic_grass
   !
   implicit none
   private
@@ -533,33 +536,33 @@ contains
     this%index_l2e_state_rootfr_veg_2d = index
 
     !biophysical flux variables
-!    id                            = L2E_FLUX_ANNUAL_SUM_NPP_PATCH
-!    call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
-!    this%index_l2e_flux_annsum_npp_1d = index
+    id                            = L2E_FLUX_ANNUAL_SUM_NPP_PATCH
+    call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
+    this%index_l2e_flux_annsum_npp_1d = index
 
-!    id                            =
-!    call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
-!    this%index_l2e_flux_agnpp_1d = index
+    id                            = L2E_FLUX_AGNPP_PATCH
+    call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
+    this%index_l2e_flux_agnpp_1d = index
 
-!    id                            =
-!    call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
-!    this%index_l2e_flux_bgnpp_1d = index
+    id                            = L2E_FLUX_BGNPP_PATCH
+    call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
+    this%index_l2e_flux_bgnpp_1d = index
 
-!    id                            =
-!    call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
-!    this%index_l2e_flux_tempavg_agnpp_1d = index
+    id                            = L2E_FLUX_TEMPAVG_AGNPP_PATCH
+    call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
+    this%index_l2e_flux_tempavg_agnpp_1d = index
 
-!    id                            =
-!    call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
-!    this%index_l2e_flux_tempavg_bgnpp_1d = index
+    id                            = L2E_FLUX_TEMPAVG_BGNPP_PATCH
+    call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
+    this%index_l2e_flux_tempavg_bgnpp_1d = index
 
-!    id                            =
-!    call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
-!    this%index_l2e_flux_annavg_agnpp_1d = index
+    id                            = L2E_FLUX_ANNAVG_AGNPP_PATCH
+    call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
+    this%index_l2e_flux_annavg_agnpp_1d = index
 
-!    id                            =
-!    call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
-!    this%index_l2e_flux_annavg_bgnpp_1d = index
+    id                            = L2E_FLUX_ANNAVG_BGNPP_PATCH
+    call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
+    this%index_l2e_flux_annavg_bgnpp_1d = index
 
     id                            = L2E_FLUX_INFL
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
@@ -853,13 +856,6 @@ contains
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
     this%index_l2e_bgc_state_n14_no3_soil_2d = index
 
-!    id                            = E2L_STATE_SOIL_NH4_Z_RESOLVED
-!    call e2l_list%AddDataByID(id, number_em_stages, em_stages, index)
-!    this%index_e2l_bgc_state_n14_nh4_soil_2d = index
-
-!    id                            = E2L_STATE_SOIL_NO3_Z_RESOLVED
-!    call e2l_list%AddDataByID(id, number_em_stages, em_stages, index)
-!    this%index_e2l_bgc_state_n14_no3_soil_2d = index
 
     id                            = E2L_STATE_NITROGEN_CWD_VERTICALLY_INTEGRATED
     call l2e_list%AddDataByID(id, number_em_stages, em_stages, index)
@@ -1199,6 +1195,17 @@ contains
     integer        , pointer :: em_stages(:)
     integer                  :: number_em_stages
 
+    integer :: id, index
+
+
+    id                            = E2L_STATE_SOIL_NH4_Z_RESOLVED
+    call e2l_list%AddDataByID(id, number_em_stages, em_stages, index)
+    this%index_e2l_bgc_state_n14_nh4_soil_2d = index
+
+    id                            = E2L_STATE_SOIL_NO3_Z_RESOLVED
+    call e2l_list%AddDataByID(id, number_em_stages, em_stages, index)
+    this%index_e2l_bgc_state_n14_no3_soil_2d = index
+
 
   end subroutine EM_BETR_Populate_E2L_List
 
@@ -1365,6 +1372,8 @@ contains
 
     !------------------------------------------------------------------------
   subroutine EM_BeTR_OutLoopSoilBGC(this, bounds, l2e_list, e2l_list )
+
+    use BeTR_decompMod            , only : betr_bounds_type
   implicit none
 
     ! !ARGUMENTS:
@@ -1378,34 +1387,62 @@ contains
     real(r8), pointer :: smin_no3_vr(:,:)
     real(r8), pointer :: smin_nh4_vr(:,:)
     real(r8), pointer :: solutionp_vr(:,:)
+    real(r8), pointer :: c12_decomp_cpools_vr_col(:,:,:)
+    real(r8), pointer :: decomp_npools_vr_col(:,:,:)
+    real(r8), pointer :: decomp_ppools_vr_col(:,:,:)
+    real(r8), pointer :: decomp_k(:,:,:)
+    real(r8), pointer :: plant_nh4_vmax_vr_patch(:,:)
+    real(r8), pointer :: plant_no3_vmax_vr_patch(:,:)
+    real(r8), pointer :: plant_p_vmax_vr_patch(:,:)
+    real(r8), pointer :: plant_nh4_km_vr_patch(:,:)
+    real(r8), pointer :: plant_no3_km_vr_patch(:,:)
+    real(r8), pointer :: plant_p_km_vr_patch(:,:)
+    real(r8), pointer :: plant_eff_ncompet_b_vr_patch(:,:)
+    real(r8), pointer :: plant_eff_pcompet_b_vr_patch(:,:)
+    real(r8), pointer :: plant_eff_frootc_vr_patch(:,:)
+    real(r8), pointer :: km_den_no3_vr_col(:,:)
+    real(r8), pointer :: km_nit_nh4_vr_col(:,:)
+    real(r8), pointer :: km_minsurf_p_vr_col(:,:)
+    real(r8), pointer :: km_minsurf_nh4_vr_col(:,:)
+    real(r8), pointer :: decomp_eff_ncompet_b_vr_col(:,:)
+    real(r8), pointer :: decomp_eff_pcompet_b_vr_col(:,:)
+    real(r8), pointer :: nit_eff_ncompet_b_vr_col(:,:)
+    real(r8), pointer :: den_eff_ncompet_b_vr_col(:,:)
+    real(r8), pointer :: dsolutionp_dt_vr_col(:,:)
+    real(r8), pointer :: vmax_minsurf_p_vr_col(:,:)
+    real(r8), pointer :: dlabp_dt_vr_col(:,:)
+    real(r8), pointer :: minsurf_p_compet_vr_col(:,:)
+    real(r8), pointer :: minsurf_nh4_compet_vr_col(:,:)
+    integer, pointer       :: l2e_filter_nolakec(:)
+    integer                :: l2e_num_nolakec
+    integer :: c_l, j, fc, cc, kk,pi, pp, c, p
+    real(r8) :: val
+    type(betr_bounds_type) :: betr_bounds
 
-    integer :: c_l, j, fc
+    call l2e_list%GetPointerToInt1D(this%index_l2e_filter_nolakec      , l2e_filter_nolakec )
+    call l2e_list%GetIntValue(this%index_l2e_filter_num_nolakec        , l2e_num_nolakec    )
+    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_coeff_t_scalar_2d       , t_scalar )
+    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_coeff_w_scalar_2d       , w_scalar )
+    call l2e_list%GetPointerToReal3D(this%index_l2e_bgc_state_c12_decomp_pools_3d , c12_decomp_cpools_vr_col )
+    call l2e_list%GetPointerToReal3D(this%index_l2e_bgc_state_n14_decomp_pools_3d , decomp_npools_vr_col )
+    call l2e_list%GetPointerToReal3D(this%index_l2e_bgc_state_p31_decomp_pools_3d , decomp_ppools_vr_col )
+    call l2e_list%GetPointerToReal3D(this%index_l2e_bgc_coeff_decompk_3d      , decomp_k )
 
-
-!    call l2e_list%GetPointerToInt1D(this%index_l2e_filter_nolakec      , l2e_filter_nolakec )
-!    call l2e_list%GetIntValue(this%index_l2e_filter_num_nolakec        , l2e_num_nolakec    )
-!    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_coeff_t_scalar_2d       , t_scalar )
-!    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_coeff_w_scalar_2d       , w_scalar )
-!    call l2e_list%GetPointerToReal3D(this%index_l2e_bgc_state_c12_decomp_pools_3d , c12_decomp_cpools_vr_col )
-!    call l2e_list%GetPointerToReal3D(this%index_l2e_bgc_state_n14_decomp_pools_3d , decomp_npools_vr_col )
-!    call l2e_list%GetPointerToReal3D(this%index_l2e_bgc_state_p31_decomp_pools_3d , decomp_ppools_vr_col )
-!    call l2e_list%GetPointerToReal3D(this%index_l2e_bgc_coeff_decompk_3d      , decomp_k )
-
-!    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_nh4_vmax_2d, plant_nh4_vmax_vr_patch )
-!    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_no3_vmax_2d, plant_no3_vmax_vr_patch )
-!    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_p_vmax_2d, plant_p_vmax_vr_patch )
-!    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_nh4_km_2d, plant_nh4_km_vr_patch )
-!    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_no3_km_2d, plant_no3_km_vr_patch )
-!    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_p_km_2d, plant_p_km_vr_patch )
-!    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_eff_ncompetb_2d, plant_eff_ncompet_b_vr_patch )
-!    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_eff_pcompetb_2d, plant_eff_pcompet_b_vr_patch )
-!    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_eff_frootc_2d, plant_eff_frootc_vr_patch )
+    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_nh4_vmax_2d, plant_nh4_vmax_vr_patch )
+    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_no3_vmax_2d, plant_no3_vmax_vr_patch )
+    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_p_vmax_2d, plant_p_vmax_vr_patch )
+    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_nh4_km_2d, plant_nh4_km_vr_patch )
+    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_no3_km_2d, plant_no3_km_vr_patch )
+    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_p_km_2d, plant_p_km_vr_patch )
+    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_eff_ncompetb_2d, plant_eff_ncompet_b_vr_patch )
+    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_eff_pcompetb_2d, plant_eff_pcompet_b_vr_patch )
+    call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_eff_frootc_2d, plant_eff_frootc_vr_patch )
 
     c_l=1
     call this%ep_betr%BeTRSetBounds(betr_bounds)
     do j = 1,nlevtrc_soil
-      do fc = 1, num_soilc
-        c = filter_soilc(fc)
+      do fc = 1, l2e_num_nolakec
+        c = l2e_filter_nolakec(fc)
         this%ep_betr%biophys_forc(c)%c12flx%in_t_scalar(c_l,j) = t_scalar(c,j)
         this%ep_betr%biophys_forc(c)%c12flx%in_w_scalar(c_l,j) = w_scalar(c,j)
         this%ep_betr%biophys_forc(c)%n14flx%in_sminn_no3_vr_col(c_l,j) = smin_no3_vr(c,j)
@@ -1416,8 +1453,8 @@ contains
 
     do kk = 1, 7
       do j = 1,nlevtrc_soil
-        do fc = 1, num_soilc
-          c = filter_soilc(fc)
+        do fc = 1, l2e_num_nolakec
+          c = l2e_filter_nolakec(fc)
           this%ep_betr%biophys_forc(c)%c12flx%in_decomp_cpools_vr_col(c_l,j,kk)=c12_decomp_cpools_vr_col(c,j,kk)
           this%ep_betr%biophys_forc(c)%n14flx%in_decomp_npools_vr_col(c_l,j,kk)=decomp_npools_vr_col(c,j,kk)
           this%ep_betr%biophys_forc(c)%p31flx%in_decomp_ppools_vr_col(c_l,j,kk)=decomp_ppools_vr_col(c,j,kk)
@@ -1429,15 +1466,15 @@ contains
     !set autotrophic respiration
 
     !set kinetic parameters
-    do fc = 1, num_soilc
-      c = filter_soilc(fc)
+    do fc = 1, l2e_num_nolakec
+      c = l2e_filter_nolakec(fc)
       pp = 0
       val=1._r8
 
       do pi = 1, betr_maxpatch_pft
-        if (pi <= col%npfts(c)) then
-          p = col%pfti(c) + pi - 1
-          if (pft%active(p) .and. (pft%itype(p) .ne. noveg)) then
+        if (pi <= col_pp%npfts(c)) then
+          p = col_pp%pfti(c) + pi - 1
+          if (veg_pp%active(p) .and. (veg_pp%itype(p) .ne. noveg)) then
             pp = pp + 1
             do j =1, betr_bounds%ubj
               this%ep_betr%betr(c)%plantNutkinetics%plant_nh4_vmax_vr_patch(pp,j) = plant_nh4_vmax_vr_patch(p,j)
@@ -1453,6 +1490,7 @@ contains
           endif
         endif
       enddo
+
       this%ep_betr%betr(c)%nactpft = pp
       do j = 1, betr_bounds%ubj
         this%ep_betr%betr(c)%plantNutkinetics%minsurf_p_compet_vr_col(c_l,j) = minsurf_p_compet_vr_col(c,j)/patomw
@@ -1465,36 +1503,25 @@ contains
     if(index(reaction_method,'ecacnp')/=0 .or. index(reaction_method, 'ch4soil')/=0 &
        .or. index(reaction_method, 'v1eca')/=0)then
       do j =1, betr_bounds%ubj
-        do fc = 1, num_soilc
-          c = filter_soilc(fc)
+        do fc = 1, l2e_num_nolakec
+          c = l2e_filter_nolakec(fc)
           this%ep_betr%betr(c)%plantNutkinetics%km_minsurf_p_vr_col(c_l,j)  = km_minsurf_p_vr_col(c,j)/patomw
           this%ep_betr%betr(c)%plantNutkinetics%km_minsurf_nh4_vr_col(c_l,j)= km_minsurf_nh4_vr_col(c,j)/natomw
         enddo
       enddo
-      if(lbcalib)then
-        do j =1, betr_bounds%ubj
-          do fc = 1, num_soilc
-            c = filter_soilc(fc)
-            this%ep_betr%betr(c)%plantNutkinetics%km_decomp_p_vr_col(c_l,j) = PlantMicKinetics_vars%km_decomp_p_vr_col(c,j)/patomw
-            this%ep_betr%betr(c)%plantNutkinetics%km_decomp_nh4_vr_col(c_l,j)=PlantMicKinetics_vars%km_decomp_nh4_vr_col(c,j)/natomw
-            this%ep_betr%betr(c)%plantNutkinetics%km_decomp_no3_vr_col(c_l,j)=PlantMicKinetics_vars%km_decomp_no3_vr_col(c,j)/natomw
-            this%ep_betr%betr(c)%plantNutkinetics%km_nit_nh4_vr_col(c_l,j) = PlantMicKinetics_vars%km_nit_nh4_vr_col(c,j)/natomw
-            this%ep_betr%betr(c)%plantNutkinetics%km_den_no3_vr_col(c_l,j) = PlantMicKinetics_vars%km_den_no3_vr_col(c,j)/natomw
-          enddo
-        enddo
-      endif
+
     endif
 
     if(index(reaction_method,'v1eca')/=0)then
       do j =1, betr_bounds%ubj
-        do fc = 1, num_soilc
-          c = filter_soilc(fc)
+        do fc = 1, l2e_num_nolakec
+          c = l2e_filter_nolakec(fc)
           this%ep_betr%betr(c)%plantNutkinetics%decomp_eff_ncompet_b_vr_col(c_l,j)= decomp_eff_ncompet_b_vr_col(c,j)/natomw
           this%ep_betr%betr(c)%plantNutkinetics%decomp_eff_pcompet_b_vr_col(c_l,j)= decomp_eff_pcompet_b_vr_col(c,j)/patomw
           this%ep_betr%betr(c)%plantNutkinetics%nit_eff_ncompet_b_vr_col(c_l,j)   = nit_eff_ncompet_b_vr_col(c,j)/natomw
           this%ep_betr%betr(c)%plantNutkinetics%den_eff_ncompet_b_vr_col(c_l,j)   = den_eff_ncompet_b_vr_col(c,j)/natomw
-          this%ep_betr%betr(c)%plantNutkinetics%km_nit_nh4_vr_col(c_l,j) = PlantMicKinetics_vars%km_nit_nh4_vr_col(c,j)/natomw
-          this%ep_betr%betr(c)%plantNutkinetics%km_den_no3_vr_col(c_l,j) = PlantMicKinetics_vars%km_den_no3_vr_col(c,j)/natomw
+          this%ep_betr%betr(c)%plantNutkinetics%km_nit_nh4_vr_col(c_l,j) = km_nit_nh4_vr_col(c,j)/natomw
+          this%ep_betr%betr(c)%plantNutkinetics%km_den_no3_vr_col(c_l,j) = km_den_no3_vr_col(c,j)/natomw
           this%ep_betr%betr(c)%plantNutkinetics%dsolutionp_dt_vr_col(c_l,j)       = dsolutionp_dt_vr_col(c,j)/patomw   ! g/m2/s
           this%ep_betr%betr(c)%plantNutkinetics%vmax_minsurf_p_vr_col(c_l,j)      = vmax_minsurf_p_vr_col(c,j)/patomw   ! g/m3
           this%ep_betr%betr(c)%plantNutkinetics%dlabp_dt_vr_col(c_l,j)            = dlabp_dt_vr_col(c,j)/patomw
@@ -1503,7 +1530,7 @@ contains
     endif
 
     !execute betr calculations
-    call this%ep_betr%OutLoopSoilBGC(bounds,  col_pp, veg_pp)
+!    call this%ep_betr%OutLoopSoilBGC(bounds,  col_pp, veg_pp)
 
     !output variables after executation of betr
 
@@ -1511,7 +1538,7 @@ contains
   do kk = 1, 7
     do j = 1,nlevtrc_soil
       do c = bounds%begc, bounds%endc
-        if(.not. this%active_col(c))cycle
+        if(.not. this%ep_betr%active_col(c))cycle
 
 !        decomp_k(c,j,kk) = this%biogeo_flux(c)%c12flux_vars%decomp_k(c_l,j,kk)
 !        c12_decomp_cpools_vr_col(c,j,kk)=this%biogeo_state(c)%c12state_vars%decomp_cpools_vr(c_l,j,kk)
@@ -1523,10 +1550,10 @@ contains
   !extract plant nutrient uptake fluxes, soil respiration, denitrification, nitrification
   !
   do c = bounds%begc, bounds%endc
-    if(.not. this%active_col(c))cycle
+    if(.not. this%ep_betr%active_col(c))cycle
     pi = 0
-    do p = col%pfti(c), col%pftf(c)
-      if (pft%active(p) .and. (pft%itype(p) .ne. noveg)) then
+    do p = col_pp%pfti(c), col_pp%pftf(c)
+      if (veg_pp%active(p) .and. (veg_pp%itype(p) .ne. noveg)) then
         pi = pi + 1
  !       nitrogenflux_vars%smin_nh4_to_plant_patch(p) = this%biogeo_flux(c)%n14flux_vars%smin_nh4_to_plant_patch(pi)
  !       nitrogenflux_vars%smin_no3_to_plant_patch(p) = this%biogeo_flux(c)%n14flux_vars%smin_no3_to_plant_patch(pi)
@@ -1545,7 +1572,7 @@ contains
 
   do j = 1,nlevtrc_soil
     do c = bounds%begc, bounds%endc
-      if(.not. this%active_col(c))cycle
+      if(.not. this%ep_betr%active_col(c))cycle
 !      nitrogenflux_vars%col_plant_pdemand_vr(c,j)  = this%biogeo_flux(c)%p31flux_vars%col_plant_pdemand_vr(c_l,j)
 !      nitrogenflux_vars%f_denit_vr_col(c,j)        = this%biogeo_flux(c)%n14flux_vars%f_denit_vr_col(c_l,j)
 !      nitrogenflux_vars%f_n2o_denit_vr_col(c,j)    = this%biogeo_flux(c)%n14flux_vars%f_n2o_denit_vr_col(c_l,j)
@@ -1563,11 +1590,11 @@ contains
 !      phosphorusflux_vars%sminp_to_plant_vr_col(c,j) = this%biogeo_flux(c)%p31flux_vars%sminp_to_plant_vr_col(c_l,j)
 !      phosphorusflux_vars%supplement_to_sminp_vr_col(c,j) =this%biogeo_flux(c)%p31flux_vars%supplement_to_sminp_vr_col(c_l,j)
 !      phosphorusflux_vars%net_mineralization_p_vr_col(c,j) = this%biogeo_flux(c)%p31flux_vars%net_mineralization_p_vr_col(c_l,j)
-!      nitrogenflux_vars%actual_immob_col(c)= nitrogenflux_vars%actual_immob_col(c) + col%dz(c,j)*&
+!      nitrogenflux_vars%actual_immob_col(c)= nitrogenflux_vars%actual_immob_col(c) + col_pp%dz(c,j)*&
 !         (this%biogeo_flux(c)%n14flux_vars%smin_nh4_immob_vr_col(c_l,j) + this%biogeo_flux(c)%n14flux_vars%smin_no3_immob_vr_col(c_l,j))
-!      c12_cflx_vars%somhr_col(c) = c12_cflx_vars%somhr_col(c)  + col%dz(c,j)*&
+!      c12_cflx_vars%somhr_col(c) = c12_cflx_vars%somhr_col(c)  + col_pp%dz(c,j)*&
 !         this%biogeo_flux(c)%c12flux_vars%somhr_vr_col(c_l,j)
-!      c12_cflx_vars%lithr_col(c) = c12_cflx_vars%lithr_col(c)  + col%dz(c,j)*&
+!      c12_cflx_vars%lithr_col(c) = c12_cflx_vars%lithr_col(c)  + col_pp%dz(c,j)*&
 !         this%biogeo_flux(c)%c12flux_vars%lithr_vr_col(c_l,j)
     enddo
   enddo

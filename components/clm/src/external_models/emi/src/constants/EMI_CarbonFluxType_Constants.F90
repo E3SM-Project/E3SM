@@ -72,4 +72,12 @@ module EMI_CarbonFluxType_Constants
   integer, parameter, public :: L2E_BGC_COEFF_T_SCALAR_Z_RESOLVED = 2534
 
   integer, parameter, public :: L2E_BGC_COEFF_W_SCALAR_Z_RESOLVED = 2535
+
+  integer, parameter, public :: L2E_FLUX_ANNUAL_SUM_NPP_PATCH = 2536
+  integer, parameter, public :: L2E_FLUX_AGNPP_PATCH = 2537
+  integer, parameter, public :: L2E_FLUX_BGNPP_PATCH = 2538
+  integer, parameter, public :: L2E_FLUX_TEMPAVG_AGNPP_PATCH = 2539
+  integer, parameter, public :: L2E_FLUX_TEMPAVG_BGNPP_PATCH = 2540
+  integer, parameter, public :: L2E_FLUX_ANNAVG_AGNPP_PATCH = 2541
+  integer, parameter, public :: L2E_FLUX_ANNAVG_BGNPP_PATCH = 2542
 end module EMI_CarbonFluxType_Constants
