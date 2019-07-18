@@ -2,6 +2,7 @@ import os
 import collections
 import cdms2
 import cdutil
+import json
 import acme_diags
 from acme_diags.driver import utils
 from acme_diags.metrics import mean
@@ -42,6 +43,7 @@ def run_diag(parameter):
         # [ 6 ]   [ 7 ]
         # [   ]   [   ]
         regions_to_data = collections.OrderedDict()
+        save_data = {}
         print('Variable: {}'.format(var))
 
         # Get land/ocean fraction for masking.
@@ -75,6 +77,8 @@ def run_diag(parameter):
             test_domain_year.long_name = test.long_name
             test_domain_year.units = test.units
 
+            save_data[parameter.test_name_yrs] = test_domain_year.asma().tolist()
+
             refs = []
 
             for ref_name in ref_names:    
@@ -97,17 +101,34 @@ def run_diag(parameter):
                 ref_domain = cdutil.averager(ref_domain,axis = 'xy')
                 ref_domain_year = cdutil.YEAR(ref_domain)
                 ref_domain_year.ref_name = ref_name
+                save_data[ref_name] = ref_domain_year.asma().tolist()
 
                 refs.append(ref_domain_year)
 
             # metrics_dict = create_metrics(ref_domain)
-            #metrics_dict = ref_domain_year.mean()
-            metrics_dict = []
+            #save_data = []
+            #save_data.append(parameter.test_name_yrs)
+            #save_data.append(test_domain_year.asma())
             # print(test_domain_year.getTime().asComponentTime())
             # print(test.getTime().asComponentTime())
 
-            result = RefsTestMetrics(test=test_domain_year, refs=refs, metrics=metrics_dict)
-            regions_to_data[region] = result
+            metrics_dict = []
+            print(save_data)
+            
+            #save_data = RefsTestMetrics(test=[test_domain_year.asma().tolist()], refs=[x.asma().tolist() for x in refs], metrics=metrics_dict)
+
+            #save data for potential later use
+            parameter.output_file = '-'.join(
+                [var, region])
+            fnm = os.path.join(utils.general.get_output_dir(
+                            parameter.current_set, parameter), parameter.output_file + '.json') 
+            print('Data saved in: ' + fnm)
+
+            with open(fnm, 'w') as outfile:
+                #json.dump(result, outfile, cls=utils.general.NumpyEncoder)
+                json.dump(save_data, outfile)
+
+            regions_to_data[region] = RefsTestMetrics(test=test_domain_year, refs=refs, metrics=metrics_dict)
  
         area_mean_time_series_plot.plot(var, regions_to_data, parameter)
         # TODO: How will this work when there are a bunch of plots for each image?
