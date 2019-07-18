@@ -904,7 +904,7 @@ subroutine subgrid_mean_updraft(ncol, w0, wsig, ww)
    integer, parameter :: nbin = 50
 
    real(r8) :: wlarge,sigma
-   real(r8) :: xx, yy 
+   real(r8) :: xx, yy, sum_wa
    real(r8) :: zz(nbin) 
    real(r8) :: wa(nbin) 
    integer  :: i, k
