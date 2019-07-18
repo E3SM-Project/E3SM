@@ -597,6 +597,20 @@
     </queues>
    </batch_system>
 
+  <batch_system MACH="cori-gpu" type="nersc_slurm">
+    <directives>
+      <directive> -C gpu</directive>
+      <directive> --gres=gpu:1</directive>
+      <directive> --gres-flags=enforce-binding</directive>
+      <directive> -A m1759</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
+      <queue walltimemax="04:00:00" default="true">regular</queue>
+    </queues>
+  </batch_system>
+
+
   <batch_jobs>
     <!-- order matters, with no-batch jobs will be run in the order listed here -->
     <job name="case.run">

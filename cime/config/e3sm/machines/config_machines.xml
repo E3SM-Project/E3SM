@@ -3354,6 +3354,115 @@
     </environment_variables>
   </machine>
 
+  <machine MACH="cori-gpu">
+    <DESC>Perlmutter test system at NERSC</DESC>
+    <NODENAME_REGEX>cori-gpu</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>pgi,pgiacc,intel,gnu</COMPILERS>
+    <MPILIBS>mvapich2,impi</MPILIBS>
+    <PROJECT>acme</PROJECT>
+    <SAVE_TIMING_DIR>$ENV{HOME}</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>acme,m2830,m2833</SAVE_TIMING_DIR_PROJECTS>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/acme_scratch/cori-gpu</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/project/projectdirs/acme/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$DIN_LOC_ROOT/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/project/projectdirs/acme/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.cori/cprnc</CCSM_CPRNC>
+    <GMAKE_J>8</GMAKE_J>
+    <TESTS>e3sm_developer</TESTS>
+    <!--NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS-->
+    <BATCH_SYSTEM>nersc_slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>e3sm</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>80</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>80</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
+    <mpirun mpilib="mvapich2">
+      <executable>srun</executable>
+      <arguments>
+        <arg name="num_tasks"> -n {{ total_tasks }}</arg>
+        <arg name="thread_count"> -c $ENV{OMP_NUM_THREADS}</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="perl">/opt/cray/pe/modules/default/init/perl</init_path>
+      <init_path lang="python">/opt/cray/pe/modules/default/init/python</init_path>
+      <init_path lang="sh">/opt/cray/pe/modules/default/init/sh</init_path>
+      <init_path lang="csh">/opt/cray/pe/modules/default/init/csh</init_path>
+      <cmd_path lang="perl">/opt/cray/pe/modules/default/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="python">/opt/cray/pe/modules/default/bin/modulecmd python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+
+        <!-- first load basic defaults, then remove/swap/load as necessary -->
+      <modules>
+        <command name="rm">altd</command>
+        <command name="rm">darshan</command>
+        <command name="rm">gcc/7.3.0</command>
+        <command name="load">esslurm</command>
+        <command name="load">modules</command>
+      </modules>
+
+      <modules compiler="pgiacc">
+        <command name="rm">pgi</command>
+        <command name="load">pgi/19.5</command>
+        <command name="load">cuda</command>
+      </modules>
+
+      <modules compiler="intel">
+        <command name="rm">intel</command>
+        <command name="load">intel/19.0.3.199</command>
+      </modules>
+
+      <modules compiler="pgi">
+        <command name="rm">pgi</command>
+        <command name="load">pgi/19.5</command>
+      </modules>
+
+      <modules mpilib="mvapich2">
+        <command name="rm">mvapich2</command>
+        <command name="load">mvapich2/2.3.1-test</command>
+      </modules>
+
+      <modules>
+        <command name="load">git</command>
+        <command name="load">cmake/3.3.2</command>
+      </modules>
+
+    </module_system>
+
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+
+    <!-- Default -->
+    <environment_variables>
+      <env name="NETCDF_C_PATH">/global/common/sw/misc/netcdf/4.4.1/cgpu/pgi</env>
+      <env name="NETCDF_FORTRAN_PATH">/global/common/sw/misc/netcdf/4.4.1/cgpu/pgi</env>
+      <env name="PNETCDF_PATH">/global/common/sw/misc/netcdf/4.4.1/cgpu/pgi</env>
+      <env name="HDF5_PATH">/global/common/sw/misc/hdf5/1.8.11/cgpu/pgi</env>
+      <!--<env name="MKLROOT">/opt/intel/compilers_and_libraries_2019.3.199/linux/mkl</env>-->
+      <env name="MKLROOT">/global/common/cori/software/intel/compilers_and_libraries_2019.3.199/linux/mkl</env>
+    </environment_variables>
+
+    <environment_variables mpilib="!mpi-serial">
+      <env name="MVAPICH_PATH">/global/common/cori/software/mvapich2/2.3.1/pgi/19.5/cuda/10.1.168</env>
+    </environment_variables>
+
+    <environment_variables compiler="pgiacc">
+      <env name="PGI_ACC_NOTIFY">1</env>
+      <env name="PGI_ACC_TIME">1</env>
+      <env name="CRAY_ACC_DEBUG">1</env>
+<!--
+      <env name="CRAY_CUDA_MPS">1</env>
+      <env name="MPICH_RDMA_ENABLED_CUDA">1</env>
+      <env name="MALLOC_MMAP_MAX_">0</env>
+      <env name="MPICH_CPUMASK_DISPLAY">1</env>
+-->
+    </environment_variables>
+
+  </machine>
+
   <default_run_suffix>
     <default_run_exe>${EXEROOT}/e3sm.exe </default_run_exe>
     <default_run_misc_suffix> &gt;&gt; e3sm.log.$LID 2&gt;&amp;1 </default_run_misc_suffix>
