@@ -403,7 +403,8 @@ derived_variables = {
         (('toa_net_sw_all_mon', 'toa_net_sw_clr_mon'),
          lambda net_all, net_clr: swcf(net_all, net_clr)),
         (('toa_cre_sw_mon',), rename),
-        (('FSNTOA', 'FSNTOAC'), lambda fsntoa, fsntoac: swcf(fsntoa, fsntoac))
+        (('FSNTOA', 'FSNTOAC'), lambda fsntoa, fsntoac: swcf(fsntoa, fsntoac)),
+        (('rsut', 'rsutcs'), lambda rsutcs, rsut: swcf(rsut, rsutcs)) 
     ]),
     'SWCFSRF': OrderedDict([
         (('SWCFSRF',), rename),
@@ -417,7 +418,8 @@ derived_variables = {
         (('toa_net_lw_all_mon', 'toa_net_lw_clr_mon'),
          lambda net_all, net_clr: lwcf(net_clr, net_all)),
         (('toa_cre_lw_mon',), rename),
-        (('FLNTOA', 'FLNTOAC'), lambda flntoa, flntoac: lwcf(flntoa, flntoac))
+        (('FLNTOA', 'FLNTOAC'), lambda flntoa, flntoac: lwcf(flntoa, flntoac)),
+        (('rlut', 'rlutcs'), lambda rlutcs, rlut: lwcf(rlut, rlutcs)) 
     ]),
     'LWCFSRF': OrderedDict([
         (('LWCFSRF',), rename),
@@ -497,12 +499,14 @@ derived_variables = {
     'RESTOM': OrderedDict([
         (('RESTOA',), rename),
         (('toa_net_all_mon',), rename),
-        (('FSNT', 'FLNT'), lambda fsnt, flnt: restom(fsnt, flnt))
+        (('FSNT', 'FLNT'), lambda fsnt, flnt: restom(fsnt, flnt)),
+        (('rtmt',), rename)
     ]),
     'RESTOA': OrderedDict([
         (('RESTOM',), rename),
         (('toa_net_all_mon',), rename),
-        (('FSNT', 'FLNT'), lambda fsnt, flnt: restoa(fsnt, flnt))
+        (('FSNT', 'FLNT'), lambda fsnt, flnt: restoa(fsnt, flnt)),
+        (('rtmt',), rename)
     ]),
 #    'TREFHT_LAND': OrderedDict([
 #        (('TREFHT_LAND',), rename),
