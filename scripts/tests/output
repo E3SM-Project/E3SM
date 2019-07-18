@@ -1,0 +1,118 @@
+Submitting command to PBS using account P93300606:
+    ./scripts_regression_tests.py
+
+Requested custom PBS options:
+    -l walltime=06:00:00 
+
+Waiting for job 7204116.chadmin1.ib0.cheyenne.ucar.edu to start ... 
+
+
+
+Testing commit 764ef08a019b80908d1bf321d131699c5a116a23
+Using cime_model = cesm
+Testing machine = cheyenne
+Test root: /glade/scratch/fischer/scripts_regression_test.20190718_114112
+Test driver: mct
+
+test_lib_doctests (__main__.A_RunUnitTests) ... ok
+test_resolve_variable_name (__main__.A_RunUnitTests) ... ok
+test_unittests (__main__.A_RunUnitTests) ... .....................................................
+----------------------------------------------------------------------
+Ran 53 tests in 0.095s
+
+OK
+ok
+test_script_is_callable (__main__.G_TestMacrosBasic)
+The test script can be called on valid output without dying. ... ok
+test_script_rejects_bad_build_system (__main__.G_TestMacrosBasic)
+The macro writer rejects a bad build system string. ... ok
+test_script_rejects_bad_xml (__main__.G_TestMacrosBasic)
+The macro writer rejects input that's not valid XML. ... ok
+test_append_flags (__main__.H_TestMakeMacros)
+Test appending flags to a list. ... ok
+test_append_flags_without_base (__main__.H_TestMakeMacros)
+Test appending flags to a value set before Macros is included. ... ok
+test_appends_not_overriden (__main__.H_TestMakeMacros)
+Test that machine-specific base value changes don't interfere with appends. ... ok
+test_base_flags (__main__.H_TestMakeMacros)
+Test that we get "base" compiler flags. ... ok
+test_build_time_append_flags (__main__.H_TestMakeMacros)
+Test build_time selection of compiler flags. ... ok
+test_build_time_attribute (__main__.H_TestMakeMacros)
+The macro writer writes conditionals for build-time choices. ... ok
+test_build_time_base_flags (__main__.H_TestMakeMacros)
+Test selection of base flags based on build-time attributes. ... ok
+test_build_time_base_flags_same_parent (__main__.H_TestMakeMacros)
+Test selection of base flags in the same parent element. ... ok
+test_compiler_changeable_at_build_time (__main__.H_TestMakeMacros)
+The macro writer writes information for multiple compilers. ... ok
+test_config_reject_cyclical_references (__main__.H_TestMakeMacros)
+Test that cyclical $VAR references are rejected. ... ok
+test_config_reject_self_references (__main__.H_TestMakeMacros)
+Test that $VAR self-references are rejected. ... ok
+test_config_variable_insertion (__main__.H_TestMakeMacros)
+Test that $VAR insert variables from config_compilers. ... ok
+test_env_and_shell_command (__main__.H_TestMakeMacros)
+Test that $ENV works inside $SHELL elements. ... ok
+test_environment_variable_insertion (__main__.H_TestMakeMacros)
+Test that ENV{..} inserts environment variables. ... ok
+test_generic_item (__main__.H_TestMakeMacros)
+The macro writer can write out a single generic item. ... ok
+test_ignore_non_match (__main__.H_TestMakeMacros)
+The macro writer ignores an entry with the wrong machine name. ... ok
+test_mach_and_os_beats_mach (__main__.H_TestMakeMacros)
+The macro writer chooses the most-specific match possible. ... ok
+test_mach_beats_os (__main__.H_TestMakeMacros)
+The macro writer chooses machine-specific over os-specific matches. ... ok
+test_mach_other_compiler (__main__.H_TestMakeMacros)
+The macro writer compiler-specific logic works as expected. ... ok
+test_machine_specific_append_flags (__main__.H_TestMakeMacros)
+Test appending flags that are either more or less machine-specific. ... ok
+test_machine_specific_base_and_append_flags (__main__.H_TestMakeMacros)
+Test that machine-specific base flags coexist with machine-specific append flags. ... ok
+test_machine_specific_base_flags (__main__.H_TestMakeMacros)
+Test selection among base compiler flag sets based on machine. ... ok
+test_machine_specific_base_keeps_append_flags (__main__.H_TestMakeMacros)
+Test that machine-specific base flags don't override default append flags. ... ok
+test_machine_specific_item (__main__.H_TestMakeMacros)
+The macro writer can pick out a machine-specific item. ... ok
+test_multilevel_specificity (__main__.H_TestMakeMacros)
+Check that settings with multiple levels of machine-specificity can be resolved. ... ok
+test_multiple_shell_commands (__main__.H_TestMakeMacros)
+Test that more than one $SHELL element can be used. ... ok
+test_os_specific_item (__main__.H_TestMakeMacros)
+The macro writer can pick out an OS-specific item. ... ok
+test_override_with_machine_and_new_attributes (__main__.H_TestMakeMacros)
+Test that overrides with machine-specific settings with added attributes work correctly. ... ok
+test_override_with_machine_and_same_attributes (__main__.H_TestMakeMacros)
+Test that machine-specific conditional overrides with the same attribute work correctly. ... ok
+test_reject_ambiguous (__main__.H_TestMakeMacros)
+The macro writer dies if given an ambiguous set of matches. ... ok
+test_reject_duplicate_defaults (__main__.H_TestMakeMacros)
+The macro writer dies if given many defaults. ... ok
+test_reject_duplicates (__main__.H_TestMakeMacros)
+The macro writer dies if given many matches for a given configuration. ... ok
+test_remove_dependency_issues (__main__.H_TestMakeMacros)
+Check that overridden settings don't cause inter-variable dependencies. ... ok
+test_shell_command_insertion (__main__.H_TestMakeMacros)
+Test that $SHELL insert shell command output. ... ok
+test_variable_insertion_with_machine_specific_setting (__main__.H_TestMakeMacros)
+Test that machine-specific $VAR dependencies are correct. ... ok
+test_append_flags (__main__.I_TestCMakeMacros)
+Test appending flags to a list. ... ok
+test_append_flags_without_base (__main__.I_TestCMakeMacros)
+Test appending flags to a value set before Macros is included. ... ok
+test_appends_not_overriden (__main__.I_TestCMakeMacros)
+Test that machine-specific base value changes don't interfere with appends. ... ok
+test_base_flags (__main__.I_TestCMakeMacros)
+Test that we get "base" compiler flags. ... ok
+test_build_time_append_flags (__main__.I_TestCMakeMacros)
+Test build_time selection of compiler flags. ... ok
+test_build_time_attribute (__main__.I_TestCMakeMacros)
+The macro writer writes conditionals for build-time choices. ... ok
+test_build_time_base_flags (__main__.I_TestCMakeMacros)
+Test selection of base flags based on build-time attributes. ... ok
+test_build_time_base_flags_same_parent (__main__.I_TestCMakeMacros)
+Test selection of base flags in the same parent element. ... ok
+test_compiler_changeable_at_build_time (__main__.I_TestCMakeMacros)
+The macro writer writes information for multiple compilers. ... 
