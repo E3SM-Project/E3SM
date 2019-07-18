@@ -2416,7 +2416,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <SLIBS>
     <append>-L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{NETCDF_C_PATH}/lib -lnetcdf</append>
     <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 </append>
-    <append> -Wl,--start-group -L/$ENV{MKLROOT}/lib/intel64 -lmkl_core -lmkl_lapack95_lp64 -lmkl_blas95_lp64 -lmkl_pgi_thread -lmkl_rt -Wl,--end-group -pgf90libs -mp -lpthread -lm -ldl</append-->
+    <append> -Wl,--start-group -L/$ENV{MKLROOT}/lib/intel64 -lmkl_core -lmkl_lapack95_lp64 -lmkl_blas95_lp64 -lmkl_pgi_thread -lmkl_rt -Wl,--end-group -pgf90libs -mp -lpthread -lm -ldl</append>
     <append MPILIB="!mpi-serial"> -L$ENV{MVAPICH_PATH}/lib -lmpifort -lmpi </append>
   </SLIBS>
 </compiler>
@@ -2435,7 +2435,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <SLIBS>
     <append>-L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{NETCDF_C_PATH}/lib -lnetcdf</append>
     <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 </append>
-    <append> -Wl,--start-group -L/$ENV{MKLROOT}/lib/intel64 -lmkl_core -lmkl_lapack95_lp64 -lmkl_blas95_lp64 -lmkl_pgi_thread -lmkl_rt -Wl,--end-group -pgf90libs -mp -lpthread -lm -ldl</append-->
+    <append> -Wl,--start-group -L/$ENV{MKLROOT}/lib/intel64 -lmkl_core -lmkl_lapack95_lp64 -lmkl_blas95_lp64 -lmkl_pgi_thread -lmkl_rt -Wl,--end-group -pgf90libs -mp -lpthread -lm -ldl</append>
     <append MPILIB="!mpi-serial"> -L$ENV{MVAPICH_PATH}/lib -lmpifort -lmpi </append>
   </SLIBS>
 </compiler>

@@ -1016,10 +1016,11 @@ subroutine dropmixnuc( &
 
       ! old_cloud_nsubmix_loop
 !!!$acc update device(raercol(:,:,nnew), raercol_cw(:,:,nnew), ekkm, overlapp, overlapm, nnew, nsav) 
+!$acc update device( ekkm, ekkp, mact, nact, overlapm, overlapp )
       do n = 1, nsubmix
          qncld(:) = qcld(:)
-         nnew = mod(nnew, 2) + 1
-         nsav = mod(nsav, 2) + 1
+         nnew = 3 - nnew
+         nsav = 3 - nsav
 
          do k = top_lev, pver
             kp1=min(k+1,pver)
@@ -1049,11 +1050,11 @@ subroutine dropmixnuc( &
          !    source terms involve clear air (from below) moving into cloudy air (above).
          !    in theory, the clear-portion mixratio should be used when calculating 
          !    source terms
-!!         call t_startf('shan14')
-!!!$acc update device(nsav, nnew)
-!!!$acc parallel loop vector 
-         do k = top_lev, pver
-            do mm = 1, ncnst_tot
+         call t_startf('shan14')
+!$acc update device(raercol(:,:,nsav), raercol_cw(:,:,nsav))
+!$acc parallel loop collapse(2)
+         do mm = 1, ncnst_tot
+            do k = top_lev, pver
               m   = mam_idx_1d(1, mm)
               l   = mam_idx_1d(2, mm)
               kp1 = min(k+1,pver)
@@ -1063,15 +1064,14 @@ subroutine dropmixnuc( &
                  tmpa = nact(k,m)*raercol(kp1,mm,nsav)
                  if (k == pver) then 
                     tmpa = tmpa + raercol_cw(pver,mm,nsav)*(nact(pver,m) - taumix_internal_pver_inv)
-                    tmpa = max(0.0_r8, tmpa)
                  endif
               else 
                  tmpa = mact(k,m)*raercol(kp1,mm,nsav)
                  if (k == pver) then
                     tmpa = tmpa + raercol_cw(pver,mm,nsav)*(mact(pver,m) - taumix_internal_pver_inv)
-                    tmpa = max(0.0_r8, tmpa)
                  endif
               endif
+              tmpa = max(0.0_r8, tmpa)
 
               raercol_cw(k,mm,nnew) = raercol_cw(k,mm,nsav) + dtmix*(tmpa + & 
                   ekkp(k)*(overlapp(k)*raercol_cw(kp1,mm,nsav)-raercol_cw(k,mm,nsav)) +      &    
@@ -1087,10 +1087,9 @@ subroutine dropmixnuc( &
 
            end do
          end do
-!!!$acc end parallel loop
-!!!$acc update host(raercol(:,:,nnew), raercol_cw(:,:,nnew))
-
-!!!         call t_stopf('shan14')
+!$acc end parallel loop
+!$acc update host(raercol(:,:,nnew), raercol_cw(:,:,nnew))
+         call t_stopf('shan14')
       end do ! old_cloud_nsubmix_loop
 
       ! evaporate particles again if no cloud
