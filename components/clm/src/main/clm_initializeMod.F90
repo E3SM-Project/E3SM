@@ -11,7 +11,7 @@ module clm_initializeMod
   use abortutils       , only : endrun
   use clm_varctl       , only : nsrest, nsrStartup, nsrContinue, nsrBranch
   use clm_varctl       , only : create_glacier_mec_landunit, iulog
-  use clm_varctl       , only : use_lch4, use_cn, use_voc, use_c13, use_c14, use_fates, use_betr  
+  use clm_varctl       , only : use_lch4, use_cn, use_voc, use_c13, use_c14, use_fates, use_betr
   use clm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec
   use clm_varsur       , only : fert_cft
   use perf_mod         , only : t_startf, t_stopf
@@ -19,19 +19,19 @@ module clm_initializeMod
   use readParamsMod    , only : readSharedParameters, readPrivateParameters
   use ncdio_pio        , only : file_desc_t
   use FatesInterfaceMod, only : set_fates_global_elements
-  use BeTRSimulationALM, only : create_betr_simulation_alm
-  ! 
+  use EMIBeTRSimulation, only : create_betr_simulation_emi
+  !
   !-----------------------------------------
   ! Definition of component types
   !-----------------------------------------
   use GridcellType           , only : grc_pp
   use TopounitType           , only : top_pp
   use TopounitDataType       , only : top_as, top_af, top_es
-  use LandunitType           , only : lun_pp                
+  use LandunitType           , only : lun_pp
   use ColumnType             , only : col_pp
-  use ColumnDataType         , only : col_es  
+  use ColumnDataType         , only : col_es
   use VegetationType         , only : veg_pp
-  use VegetationDataType     , only : veg_es  
+  use VegetationDataType     , only : veg_es
 
   use clm_instMod
   use WaterBudgetMod         , only : WaterBudget_Reset
@@ -50,14 +50,14 @@ contains
   subroutine initialize1( )
     !
     ! !DESCRIPTION:
-    ! CLM initialization first phase 
+    ! CLM initialization first phase
     !
     ! !USES:
     use clm_varpar                , only: clm_varpar_init, natpft_lb, natpft_ub, cft_lb, cft_ub, maxpatch_glcmec
     use clm_varcon                , only: clm_varcon_init
     use landunit_varcon           , only: landunit_varcon_init, max_lunit, istice_mec
     use column_varcon             , only: col_itype_to_icemec_class
-    use clm_varctl                , only: fsurdat, fatmlndfrc, flndtopo, fglcmask, noland, version  
+    use clm_varctl                , only: fsurdat, fatmlndfrc, flndtopo, fglcmask, noland, version
     use pftvarcon                 , only: pftconrd
     use soilorder_varcon          , only: soilorder_conrd
     use decompInitMod             , only: decompInit_lnd, decompInit_clumps, decompInit_gtlcp
@@ -86,7 +86,7 @@ contains
     integer           :: ns, ni, nj              ! global grid sizes
     integer           :: begg, endg              ! processor bounds
     integer           :: icemec_class            ! current icemec class (1..maxpatch_glcmec)
-    type(bounds_type) :: bounds_proc             
+    type(bounds_type) :: bounds_proc
     type(bounds_type) :: bounds_clump            ! clump bounds
     integer ,pointer  :: amask(:)                ! global land mask
     integer ,pointer  :: cellsOnCell(:,:)        ! grid cell level connectivity
@@ -185,7 +185,7 @@ contains
     endif
 
     ! *** Get JUST gridcell processor bounds ***
-    ! Remaining bounds (landunits, columns, patches) will be determined 
+    ! Remaining bounds (landunits, columns, patches) will be determined
     ! after the call to decompInit_glcp - so get_proc_bounds is called
     ! twice and the gridcell information is just filled in twice
 
@@ -216,7 +216,7 @@ contains
           write(iulog,*) 'Attempting to read atm topo from ',trim(flndtopo)
           call shr_sys_flush(iulog)
        endif
-       call surfrd_get_topo(ldomain, flndtopo)  
+       call surfrd_get_topo(ldomain, flndtopo)
     endif
 
     ! Initialize urban model input (initialize urbinp data structure)
@@ -266,12 +266,12 @@ contains
     ! Sets:
     ! fates_maxElementsPerPatch
     ! fates_maxElementsPerSite (where a site is roughly equivalent to a column)
-    ! 
+    !
     ! (Note: fates_maxELementsPerSite is the critical variable used by CLM
     ! to allocate space)
     ! ------------------------------------------------------------------------
     call set_fates_global_elements(use_fates)
-    
+
 
     ! ------------------------------------------------------------------------
     ! Determine decomposition of subgrid scale landunits, topounits, columns, patches
@@ -288,7 +288,7 @@ contains
     ! *** Get ALL processor bounds - for gridcells, landunit, columns and patches ***
 
     call get_proc_bounds(bounds_proc)
-    
+
     ! Allocate memory for subgrid data structures
     ! This is needed here BEFORE the following call to initGridcells
     ! Note that the assumption is made that none of the subgrid initialization
@@ -296,22 +296,22 @@ contains
 
     ! Initialize the gridcell data types
     call grc_pp%Init (bounds_proc%begg_all, bounds_proc%endg_all)
-    
+
     ! Initialize the topographic unit data types
     call top_pp%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! topology and physical properties
     call top_as%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! atmospheric state variables (forcings)
     call top_af%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! atmospheric flux variables (forcings)
     call top_es%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! energy state
-    
+
     ! Initialize the landunit data types
     call lun_pp%Init (bounds_proc%begl_all, bounds_proc%endl_all)
-    
+
     ! Initialize the column data types
     call col_pp%Init (bounds_proc%begc_all, bounds_proc%endc_all)
-    
+
     ! Initialize the vegetation (PFT) data types
     call veg_pp%Init (bounds_proc%begp_all, bounds_proc%endp_all)
-    
+
     ! Initialize the cohort data types (nothing here yet)
     ! ...to be added later...
 
@@ -351,7 +351,7 @@ contains
     ! ------------------------------------------------------------------------
 
     ! Set CH4 Model Parameters from namelist.
-    ! Need to do before initTimeConst so that it knows whether to 
+    ! Need to do before initTimeConst so that it knows whether to
     ! look for several optional parameters on surfdata file.
 
     if (use_lch4) then
@@ -405,7 +405,7 @@ contains
     use clm_varctl            , only : use_century_decomp, single_column, scmlat, scmlon, use_cn, use_fates
     use clm_varorb            , only : eccen, mvelpp, lambm0, obliqr
     use clm_time_manager      , only : get_step_size, get_curr_calday
-    use clm_time_manager      , only : get_curr_date, get_nstep, advance_timestep 
+    use clm_time_manager      , only : get_curr_date, get_nstep, advance_timestep
     use clm_time_manager      , only : timemgr_init, timemgr_restart_io, timemgr_restart
     use controlMod            , only : nlfilename
     use decompMod             , only : get_proc_clumps, get_proc_bounds, get_clump_bounds, bounds_type
@@ -420,31 +420,31 @@ contains
     use histFileMod           , only : hist_htapes_build, htapes_fieldlist
     use histFileMod           , only : hist_addfld1d, hist_addfld2d, no_snow_normal
     use restFileMod           , only : restFile_getfile, restFile_open, restFile_close
-    use restFileMod           , only : restFile_read, restFile_write 
-    use accumulMod            , only : print_accum_fields 
+    use restFileMod           , only : restFile_read, restFile_write
+    use accumulMod            , only : print_accum_fields
     use ndepStreamMod         , only : ndep_init, ndep_interp
     use EcosystemDynMod     , only : EcosystemDynInit
     use pdepStreamMod         , only : pdep_init, pdep_interp
     use DecompCascadeBGCMod , only : init_decompcascade_bgc
     use DecompCascadeCNMod  , only : init_decompcascade_cn
     use CNDecompCascadeContype, only : init_decomp_cascade_constants
-    use VegetationPropertiesType        , only : veg_vp 
-    use SoilorderConType      , only : soilorderconInit 
-    use LakeCon               , only : LakeConInit 
+    use VegetationPropertiesType        , only : veg_vp
+    use SoilorderConType      , only : soilorderconInit
+    use LakeCon               , only : LakeConInit
     use SatellitePhenologyMod , only : SatellitePhenologyInit, readAnnualVegetation, interpMonthlyVeg
     use SnowSnicarMod         , only : SnowAge_init, SnowOptics_init
     use initVerticalMod       , only : initVertical
     use lnd2atmMod            , only : lnd2atm_minimal
     use glc2lndMod            , only : glc2lnd_type
-    use lnd2glcMod            , only : lnd2glc_type 
+    use lnd2glcMod            , only : lnd2glc_type
     use SoilWaterRetentionCurveFactoryMod   , only : create_soil_water_retention_curve
     use clm_varctl                          , only : use_clm_interface, use_pflotran
     use clm_interface_pflotranMod           , only : clm_pf_interface_init !, clm_pf_set_restart_stamp
-    use tracer_varcon         , only : is_active_betr_bgc    
+    use tracer_varcon         , only : is_active_betr_bgc
     use clm_time_manager      , only : is_restart
     use ALMbetrNLMod          , only : betr_namelist_buffer
     !
-    ! !ARGUMENTS    
+    ! !ARGUMENTS
     implicit none
     !
     ! !LOCAL VARIABLES:
@@ -455,7 +455,7 @@ contains
     integer               :: ncsec        ! current time of day [seconds]
     integer               :: nc           ! clump index
     integer               :: nclumps      ! number of clumps on this processor
-    character(len=256)    :: fnamer       ! name of netcdf restart file 
+    character(len=256)    :: fnamer       ! name of netcdf restart file
     character(len=256)    :: pnamer       ! full pathname of netcdf restart file
     character(len=256)    :: locfn        ! local file name
     type(file_desc_t)     :: ncid         ! netcdf id
@@ -478,7 +478,7 @@ contains
     integer               :: begc, endc
     integer               :: begl, endl
     real(r8), pointer     :: data2dptr(:,:) ! temp. pointers for slicing larger arrays
-    character(len=32)     :: subname = 'initialize2' 
+    character(len=32)     :: subname = 'initialize2'
     !----------------------------------------------------------------------
 
     call t_startf('clm_init2')
@@ -502,7 +502,7 @@ contains
     ! Initialize time manager
     ! ------------------------------------------------------------------------
 
-    if (nsrest == nsrStartup) then  
+    if (nsrest == nsrStartup) then
        call timemgr_init()
     else
        call restFile_getfile(file=fnamer, path=pnamer)
@@ -526,11 +526,11 @@ contains
     call shr_orb_decl( caldaym1, eccen, mvelpp, lambm0, obliqr, declinm1, eccf )
 
     call t_stopf('init_orbd')
-    
+
     call InitDaylength(bounds_proc, declin=declin, declinm1=declinm1)
-             
+
     ! Initialize maximum daylength, based on latitude and maximum declination
-    ! maximum declination hardwired for present-day orbital parameters, 
+    ! maximum declination hardwired for present-day orbital parameters,
     ! +/- 23.4667 degrees = +/- 0.409571 radians, use negative value for S. Hem
 
     do g = bounds_proc%begg,bounds_proc%endg
@@ -552,7 +552,7 @@ contains
     end if
 
     ! ------------------------------------------------------------------------
-    ! Initialize component data structures 
+    ! Initialize component data structures
     ! ------------------------------------------------------------------------
 
     ! Note: new logic is in place that sets all the history fields to spval so
@@ -560,7 +560,7 @@ contains
 
     ! First put in history calls for subgrid data structures - these cannot appear in the
     ! module for the subgrid data definition due to circular dependencies that are introduced
-    
+
     data2dptr => col_pp%dz(:,-nlevsno+1:0)
     col_pp%dz(bounds_proc%begc:bounds_proc%endc,:) = spval
     call hist_addfld2d (fname='SNO_Z', units='m', type2d='levsno',  &
@@ -576,15 +576,15 @@ contains
 
     if(use_betr)then
       !allocate memory for betr simulator
-      allocate(ep_betr, source=create_betr_simulation_alm())
+      allocate(ep_betr, source=create_betr_simulation_emi())
       !set internal filters for betr
-      call ep_betr%BeTRSetFilter(maxpft_per_col=max_patch_per_col, boffline=.false.)
-      call ep_betr%InitOnline(bounds_proc, lun_pp, col_pp, veg_pp, waterstate_vars, betr_namelist_buffer, masterproc)
-      is_active_betr_bgc = ep_betr%do_soibgc()
+      !call ep_betr%BeTRSetFilter(maxpft_per_col=max_patch_per_col, boffline=.false.)
+      !call ep_betr%InitOnline(bounds_proc, lun_pp, col_pp, veg_pp, waterstate_vars, betr_namelist_buffer, masterproc)
+      !is_active_betr_bgc = ep_betr%do_soibgc()
     else
-      allocate(ep_betr, source=create_betr_simulation_alm())
+      allocate(ep_betr, source=create_betr_simulation_emi())
     endif
-    
+
     call SnowOptics_init( ) ! SNICAR optical parameters:
 
     call SnowAge_init( )    ! SNICAR aging   parameters:
@@ -604,7 +604,7 @@ contains
           if (use_century_decomp) then
            ! Note that init_decompcascade_bgc needs cnstate_vars to be initialized
              call init_decompcascade_bgc(bounds_proc, cnstate_vars, soilstate_vars)
-          else 
+          else
            ! Note that init_decompcascade_cn needs cnstate_vars to be initialized
              call init_decompcascade_cn(bounds_proc, cnstate_vars)
           end if
@@ -619,14 +619,14 @@ contains
     ! ------------------------------------------------------------------------
 
     ! The time manager needs to be initialized before thes called is made, since
-    ! the step size is needed. 
+    ! the step size is needed.
 
     call t_startf('init_accflds')
 
     call atm2lnd_vars%initAccBuffer(bounds_proc)
-    
+
     call top_as%InitAccBuffer(bounds_proc)
-    
+
     call top_af%InitAccBuffer(bounds_proc)
 
     call veg_es%InitAccBuffer(bounds_proc)
@@ -644,7 +644,7 @@ contains
     call t_stopf('init_accflds')
 
     ! ------------------------------------------------------------------------
-    ! Initializate dynamic subgrid weights (for prescribed transient Patches, 
+    ! Initializate dynamic subgrid weights (for prescribed transient Patches,
     ! and/or dynamic landunits); note that these will be overwritten in a
     ! restart run
     ! ------------------------------------------------------------------------
@@ -665,13 +665,13 @@ contains
     end if
 
     if (use_cn .and. n_drydep > 0 .and. drydep_method == DD_XLND) then
-       ! Must do this also when drydeposition is used so that estimates of monthly 
+       ! Must do this also when drydeposition is used so that estimates of monthly
        ! differences in LAI can be computed
        call SatellitePhenologyInit(bounds_proc)
     end if
 
     ! ------------------------------------------------------------------------
-    ! On restart only - process the history namelist. 
+    ! On restart only - process the history namelist.
     ! ------------------------------------------------------------------------
 
     ! Later the namelist from the restart file will be used.  This allows basic
@@ -682,7 +682,7 @@ contains
     end if
 
     ! ------------------------------------------------------------------------
-    ! Read restart/initial info 
+    ! Read restart/initial info
     ! ------------------------------------------------------------------------
 
     if (nsrest == nsrStartup) then
@@ -692,13 +692,13 @@ contains
              if (masterproc) then
                 write(iulog,*)'Using cold start initial conditions '
              end if
-          else 
+          else
              if (masterproc) then
                 write(iulog,*)'Interpolating initial conditions from ',trim(finidat_interp_source),&
                      ' and creating new initial conditions ', trim(finidat_interp_dest)
              end if
           end if
-       else 
+       else
           if (masterproc) then
              write(iulog,*)'Reading initial conditions from ',trim(finidat)
           end if
@@ -731,7 +731,7 @@ contains
             alm_fates, glc2lnd_vars, crop_vars)
 
     end if
-       
+
     ! ------------------------------------------------------------------------
     ! If appropriate, create interpolated initial conditions
     ! ------------------------------------------------------------------------
@@ -752,7 +752,7 @@ contains
        end do
        !$OMP END PARALLEL DO
        if(use_betr)then
-         call ep_betr%set_active(bounds_proc, col_pp)
+    !     call ep_betr%set_active(bounds_proc, col_pp)
        endif
        ! Create new template file using cold start
        call restFile_write(bounds_proc, finidat_interp_dest,                               &
@@ -782,7 +782,7 @@ contains
             ep_betr,                                                                       &
             alm_fates, glc2lnd_vars, crop_vars)
 
-       ! Reset finidat to now be finidat_interp_dest 
+       ! Reset finidat to now be finidat_interp_dest
        ! (to be compatible with routines still using finidat)
        finidat = trim(finidat_interp_dest)
 
@@ -797,8 +797,8 @@ contains
     !$OMP END PARALLEL DO
 
     if(use_betr)then
-      call ep_betr%set_active(bounds_proc, col_pp)
-    endif 
+      !call ep_betr%set_active(bounds_proc, col_pp)
+    endif
     ! ------------------------------------------------------------------------
     ! Initialize nitrogen deposition
     ! ------------------------------------------------------------------------
@@ -809,7 +809,7 @@ contains
        call ndep_interp(bounds_proc, atm2lnd_vars)
        call t_stopf('init_ndep')
     end if
-    
+
     ! ------------------------------------------------------------------------
     ! Initialize phosphorus deposition
     ! ------------------------------------------------------------------------
@@ -820,14 +820,14 @@ contains
        call pdep_interp(bounds_proc, atm2lnd_vars)
        call t_stopf('init_pdep')
     end if
- 
+
 
     ! ------------------------------------------------------------------------
-    ! Initialize active history fields. 
+    ! Initialize active history fields.
     ! ------------------------------------------------------------------------
 
-    ! This is only done if not a restart run. If a restart run, then this 
-    ! information has already been obtained from the restart data read above. 
+    ! This is only done if not a restart run. If a restart run, then this
+    ! information has already been obtained from the restart data read above.
     ! Note that routine hist_htapes_build needs time manager information,
     ! so this call must be made after the restart information has been read.
 
@@ -840,7 +840,7 @@ contains
     ! ------------------------------------------------------------------------
 
     ! The following is called for both initial and restart runs and must
-    ! must be called after the restart file is read 
+    ! must be called after the restart file is read
 
     call atm2lnd_vars%initAccVars(bounds_proc)
     call top_as%InitAccVars(bounds_proc)
@@ -852,11 +852,11 @@ contains
     end if
     call cnstate_vars%initAccVars(bounds_proc)
 
-    !------------------------------------------------------------       
+    !------------------------------------------------------------
     ! Read monthly vegetation
-    !------------------------------------------------------------       
+    !------------------------------------------------------------
 
-    ! Even if CN is on, and dry-deposition is active, read CLMSP annual vegetation 
+    ! Even if CN is on, and dry-deposition is active, read CLMSP annual vegetation
     ! to get estimates of monthly LAI
 
     if ( n_drydep > 0 .and. drydep_method == DD_XLND )then
@@ -868,9 +868,9 @@ contains
        end if
     end if
 
-    !------------------------------------------------------------       
+    !------------------------------------------------------------
     ! Determine gridcell averaged properties to send to atm
-    !------------------------------------------------------------       
+    !------------------------------------------------------------
 
     if (nsrest == nsrStartup) then
        call t_startf('init_map2gc')
@@ -879,11 +879,11 @@ contains
        call t_stopf('init_map2gc')
     end if
 
-    !------------------------------------------------------------       
+    !------------------------------------------------------------
     ! Initialize sno export state to send to glc
-    !------------------------------------------------------------       
+    !------------------------------------------------------------
 
-    if (create_glacier_mec_landunit) then  
+    if (create_glacier_mec_landunit) then
        !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
        do nc = 1,nclumps
           call get_clump_bounds(nc, bounds_clump)
@@ -898,9 +898,9 @@ contains
        !$OMP END PARALLEL DO
     end if
 
-    !------------------------------------------------------------       
+    !------------------------------------------------------------
     ! Deallocate wt_nat_patch
-    !------------------------------------------------------------       
+    !------------------------------------------------------------
 
     ! wt_nat_patch was allocated in initialize1, but needed to be kept around through
     ! initialize2 for some consistency checking; now it can be deallocated
@@ -910,7 +910,7 @@ contains
     ! --------------------------------------------------------------
     ! Initialise the FATES model state structure cold-start
     ! --------------------------------------------------------------
-   
+
     if ( use_fates .and. .not.is_restart() .and. finidat == ' ') then
        call alm_fates%init_coldstart(waterstate_vars,canopystate_vars, &
                                      soilstate_vars, frictionvel_vars)
@@ -919,7 +919,7 @@ contains
     ! topo_glc_mec was allocated in initialize1, but needed to be kept around through
     ! initialize2 because it is used to initialize other variables; now it can be
     ! deallocated
-    
+
 
 
     ! topo_glc_mec was allocated in initialize1, but needed to be kept around through
@@ -941,9 +941,9 @@ contains
     call t_stopf('init_clm_interface_data & pflotran')
     !------------------------------------------------------------
 
-    !------------------------------------------------------------       
+    !------------------------------------------------------------
     ! Write log output for end of initialization
-    !------------------------------------------------------------       
+    !------------------------------------------------------------
 
     call t_startf('init_wlog')
     if (masterproc) then

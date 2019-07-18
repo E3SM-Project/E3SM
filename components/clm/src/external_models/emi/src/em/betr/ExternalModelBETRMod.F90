@@ -34,7 +34,7 @@ module ExternalModelBETRMod
   use EMI_PhosphorusFluxType_Constants
   use EMI_PhosphorusStateType_Constants
   use ExternalModelBaseType        , only : em_base_type
-  use EMIBeTRSimulation            , only : emi_betr_simulation_type
+  use clm_instMod, only : ep_betr
   use tracer_varcon      , only : reaction_method,natomw,patomw
   use betr_varcon         , only : betr_maxpatch_pft
   use clm_varpar      , only : nlevtrc_soil
@@ -1231,9 +1231,9 @@ contains
     integer              , intent(in)    :: nstep
     type(bounds_type)    , intent(in)    :: bounds_clump
 
-    call this%ep_betr%SetClock(dtime = dt, nelapstep = nstep)
+    call ep_betr%SetClock(dtime = dt, nelapstep = nstep)
 
-    call this%ep_betr%BeginMassBalanceCheck(bounds_clump)
+    call ep_betr%BeginMassBalanceCheck(bounds_clump)
 
 
   end subroutine EM_BETR_BeginMassBalance_Solve
@@ -1255,7 +1255,7 @@ contains
     class(em_betr_type)                  :: this
     type(bounds_type)    , intent(in)    :: bounds_clump
 
-    call this%ep_betr%MassBalanceCheck(bounds_clump)
+    call ep_betr%MassBalanceCheck(bounds_clump)
 
   end subroutine EM_BETR_EndMassBalance_Solve
     !------------------------------------------------------------------------
@@ -1318,24 +1318,24 @@ contains
     ubj = nlevsoi
 
     do c = bounds%begc, bounds%endc
-      if (.not. this%ep_betr%active_col(c)) cycle
+      if (.not. ep_betr%active_col(c)) cycle
 
       !assign waterstate
-      this%ep_betr%biophys_forc(c)%finundated_col    (cc)         = l2e_finundated   (c)
-      this%ep_betr%biophys_forc(c)%frac_h2osfc_col   (cc)         = l2e_frac_h2osfc  (c)
-      this%ep_betr%biophys_forc(c)%h2osoi_liq_col    (cc,lbj:ubj) = l2e_h2osoi_liq   (c,lbj:ubj)
-      this%ep_betr%biophys_forc(c)%h2osoi_ice_col    (cc,lbj:ubj) = l2e_h2osoi_ice   (c,lbj:ubj)
-      this%ep_betr%biophys_forc(c)%h2osoi_liqvol_col (cc,lbj:ubj) = l2e_h2osoi_liqvol(c,lbj:ubj)
-      this%ep_betr%biophys_forc(c)%h2osoi_icevol_col (cc,lbj:ubj) = l2e_h2osoi_icevol(c,lbj:ubj)
-      this%ep_betr%biophys_forc(c)%h2osoi_vol_col    (cc,lbj:ubj) = l2e_h2osoi_vol   (c,lbj:ubj)
-      this%ep_betr%biophys_forc(c)%air_vol_col       (cc,lbj:ubj) = l2e_air_vol      (c,lbj:ubj)
-      this%ep_betr%biophys_forc(c)%rho_vap           (cc,lbj:ubj) = l2e_rho_vap      (c,lbj:ubj)
-      this%ep_betr%biophys_forc(c)%rhvap_soi         (cc,lbj:ubj) = l2e_rhvap_soi    (c,lbj:ubj)
-      this%ep_betr%biophys_forc(c)%smp_l_col         (cc,lbj:ubj) = l2e_smp_l        (c,lbj:ubj)
+      ep_betr%biophys_forc(c)%finundated_col    (cc)         = l2e_finundated   (c)
+      ep_betr%biophys_forc(c)%frac_h2osfc_col   (cc)         = l2e_frac_h2osfc  (c)
+      ep_betr%biophys_forc(c)%h2osoi_liq_col    (cc,lbj:ubj) = l2e_h2osoi_liq   (c,lbj:ubj)
+      ep_betr%biophys_forc(c)%h2osoi_ice_col    (cc,lbj:ubj) = l2e_h2osoi_ice   (c,lbj:ubj)
+      ep_betr%biophys_forc(c)%h2osoi_liqvol_col (cc,lbj:ubj) = l2e_h2osoi_liqvol(c,lbj:ubj)
+      ep_betr%biophys_forc(c)%h2osoi_icevol_col (cc,lbj:ubj) = l2e_h2osoi_icevol(c,lbj:ubj)
+      ep_betr%biophys_forc(c)%h2osoi_vol_col    (cc,lbj:ubj) = l2e_h2osoi_vol   (c,lbj:ubj)
+      ep_betr%biophys_forc(c)%air_vol_col       (cc,lbj:ubj) = l2e_air_vol      (c,lbj:ubj)
+      ep_betr%biophys_forc(c)%rho_vap           (cc,lbj:ubj) = l2e_rho_vap      (c,lbj:ubj)
+      ep_betr%biophys_forc(c)%rhvap_soi         (cc,lbj:ubj) = l2e_rhvap_soi    (c,lbj:ubj)
+      ep_betr%biophys_forc(c)%smp_l_col         (cc,lbj:ubj) = l2e_smp_l        (c,lbj:ubj)
 
     enddo
 
-    call this%ep_betr%PreDiagSoilColWaterFlux(l2e_num_nolakec , l2e_filter_nolakec)
+    call ep_betr%PreDiagSoilColWaterFlux(l2e_num_nolakec , l2e_filter_nolakec)
 
   end subroutine EM_BETR_PreDiagSoilColWaterFlux_Solve
 
@@ -1352,7 +1352,7 @@ contains
     class(emi_data_list) , intent(inout) :: e2l_list
 
 
-  call this%ep_betr%StepWithoutDrainage(bounds,  col_pp, veg_pp)
+  call ep_betr%StepWithoutDrainage(bounds,  col_pp, veg_pp)
 
   end subroutine EM_BETR_StepWithoutDraiange
 
@@ -1367,7 +1367,7 @@ contains
     class(emi_data_list) , intent(inout) :: e2l_list
 
 
-    call this%ep_betr%StepWithDrainage(bounds,  col_pp)
+    call ep_betr%StepWithDrainage(bounds,  col_pp)
   end subroutine EM_BETR_StepWithDraiange
 
     !------------------------------------------------------------------------
@@ -1439,15 +1439,15 @@ contains
     call l2e_list%GetPointerToReal2D(this%index_l2e_bgc_par_plant_eff_frootc_2d, plant_eff_frootc_vr_patch )
 
     c_l=1
-    call this%ep_betr%BeTRSetBounds(betr_bounds)
+    call ep_betr%BeTRSetBounds(betr_bounds)
     do j = 1,nlevtrc_soil
       do fc = 1, l2e_num_nolakec
         c = l2e_filter_nolakec(fc)
-        this%ep_betr%biophys_forc(c)%c12flx%in_t_scalar(c_l,j) = t_scalar(c,j)
-        this%ep_betr%biophys_forc(c)%c12flx%in_w_scalar(c_l,j) = w_scalar(c,j)
-        this%ep_betr%biophys_forc(c)%n14flx%in_sminn_no3_vr_col(c_l,j) = smin_no3_vr(c,j)
-        this%ep_betr%biophys_forc(c)%n14flx%in_sminn_nh4_vr_col(c_l,j) = smin_nh4_vr(c,j)
-        this%ep_betr%biophys_forc(c)%p31flx%in_sminp_vr_col(c_l,j) = solutionp_vr(c,j)
+        ep_betr%biophys_forc(c)%c12flx%in_t_scalar(c_l,j) = t_scalar(c,j)
+        ep_betr%biophys_forc(c)%c12flx%in_w_scalar(c_l,j) = w_scalar(c,j)
+        ep_betr%biophys_forc(c)%n14flx%in_sminn_no3_vr_col(c_l,j) = smin_no3_vr(c,j)
+        ep_betr%biophys_forc(c)%n14flx%in_sminn_nh4_vr_col(c_l,j) = smin_nh4_vr(c,j)
+        ep_betr%biophys_forc(c)%p31flx%in_sminp_vr_col(c_l,j) = solutionp_vr(c,j)
       enddo
     enddo
 
@@ -1455,10 +1455,10 @@ contains
       do j = 1,nlevtrc_soil
         do fc = 1, l2e_num_nolakec
           c = l2e_filter_nolakec(fc)
-          this%ep_betr%biophys_forc(c)%c12flx%in_decomp_cpools_vr_col(c_l,j,kk)=c12_decomp_cpools_vr_col(c,j,kk)
-          this%ep_betr%biophys_forc(c)%n14flx%in_decomp_npools_vr_col(c_l,j,kk)=decomp_npools_vr_col(c,j,kk)
-          this%ep_betr%biophys_forc(c)%p31flx%in_decomp_ppools_vr_col(c_l,j,kk)=decomp_ppools_vr_col(c,j,kk)
-          this%ep_betr%biogeo_flux(c)%c12flux_vars%decomp_k(c_l,j,kk)=decomp_k(c,j,kk)
+          ep_betr%biophys_forc(c)%c12flx%in_decomp_cpools_vr_col(c_l,j,kk)=c12_decomp_cpools_vr_col(c,j,kk)
+          ep_betr%biophys_forc(c)%n14flx%in_decomp_npools_vr_col(c_l,j,kk)=decomp_npools_vr_col(c,j,kk)
+          ep_betr%biophys_forc(c)%p31flx%in_decomp_ppools_vr_col(c_l,j,kk)=decomp_ppools_vr_col(c,j,kk)
+          ep_betr%biogeo_flux(c)%c12flux_vars%decomp_k(c_l,j,kk)=decomp_k(c,j,kk)
         enddo
       enddo
     enddo
@@ -1477,24 +1477,24 @@ contains
           if (veg_pp%active(p) .and. (veg_pp%itype(p) .ne. noveg)) then
             pp = pp + 1
             do j =1, betr_bounds%ubj
-              this%ep_betr%betr(c)%plantNutkinetics%plant_nh4_vmax_vr_patch(pp,j) = plant_nh4_vmax_vr_patch(p,j)
-              this%ep_betr%betr(c)%plantNutkinetics%plant_no3_vmax_vr_patch(pp,j) = plant_no3_vmax_vr_patch(p,j)
-              this%ep_betr%betr(c)%plantNutkinetics%plant_p_vmax_vr_patch(pp,j) = plant_p_vmax_vr_patch(p,j)
-              this%ep_betr%betr(c)%plantNutkinetics%plant_nh4_km_vr_patch(pp,j) = plant_nh4_km_vr_patch(p,j)/natomw
-              this%ep_betr%betr(c)%plantNutkinetics%plant_no3_km_vr_patch(pp,j) = plant_no3_km_vr_patch(p,j)/natomw
-              this%ep_betr%betr(c)%plantNutkinetics%plant_p_km_vr_patch(pp,j) = plant_p_km_vr_patch(p,j)/patomw
-              this%ep_betr%betr(c)%plantNutkinetics%plant_eff_ncompet_b_vr_patch(pp,j)=plant_eff_ncompet_b_vr_patch(p,j)/natomw
-              this%ep_betr%betr(c)%plantNutkinetics%plant_eff_pcompet_b_vr_patch(pp,j)=plant_eff_pcompet_b_vr_patch(p,j)/patomw
-              this%ep_betr%betr(c)%plantNutkinetics%plant_eff_frootc_vr_patch(pp,j) = plant_eff_frootc_vr_patch(p,j)
+              ep_betr%betr(c)%plantNutkinetics%plant_nh4_vmax_vr_patch(pp,j) = plant_nh4_vmax_vr_patch(p,j)
+              ep_betr%betr(c)%plantNutkinetics%plant_no3_vmax_vr_patch(pp,j) = plant_no3_vmax_vr_patch(p,j)
+              ep_betr%betr(c)%plantNutkinetics%plant_p_vmax_vr_patch(pp,j) = plant_p_vmax_vr_patch(p,j)
+              ep_betr%betr(c)%plantNutkinetics%plant_nh4_km_vr_patch(pp,j) = plant_nh4_km_vr_patch(p,j)/natomw
+              ep_betr%betr(c)%plantNutkinetics%plant_no3_km_vr_patch(pp,j) = plant_no3_km_vr_patch(p,j)/natomw
+              ep_betr%betr(c)%plantNutkinetics%plant_p_km_vr_patch(pp,j) = plant_p_km_vr_patch(p,j)/patomw
+              ep_betr%betr(c)%plantNutkinetics%plant_eff_ncompet_b_vr_patch(pp,j)=plant_eff_ncompet_b_vr_patch(p,j)/natomw
+              ep_betr%betr(c)%plantNutkinetics%plant_eff_pcompet_b_vr_patch(pp,j)=plant_eff_pcompet_b_vr_patch(p,j)/patomw
+              ep_betr%betr(c)%plantNutkinetics%plant_eff_frootc_vr_patch(pp,j) = plant_eff_frootc_vr_patch(p,j)
             enddo
           endif
         endif
       enddo
 
-      this%ep_betr%betr(c)%nactpft = pp
+      ep_betr%betr(c)%nactpft = pp
       do j = 1, betr_bounds%ubj
-        this%ep_betr%betr(c)%plantNutkinetics%minsurf_p_compet_vr_col(c_l,j) = minsurf_p_compet_vr_col(c,j)/patomw
-        this%ep_betr%betr(c)%plantNutkinetics%minsurf_nh4_compet_vr_col(c_l,j) = minsurf_nh4_compet_vr_col(c,j)/natomw
+        ep_betr%betr(c)%plantNutkinetics%minsurf_p_compet_vr_col(c_l,j) = minsurf_p_compet_vr_col(c,j)/patomw
+        ep_betr%betr(c)%plantNutkinetics%minsurf_nh4_compet_vr_col(c_l,j) = minsurf_nh4_compet_vr_col(c,j)/natomw
       enddo
     enddo
 
@@ -1505,8 +1505,8 @@ contains
       do j =1, betr_bounds%ubj
         do fc = 1, l2e_num_nolakec
           c = l2e_filter_nolakec(fc)
-          this%ep_betr%betr(c)%plantNutkinetics%km_minsurf_p_vr_col(c_l,j)  = km_minsurf_p_vr_col(c,j)/patomw
-          this%ep_betr%betr(c)%plantNutkinetics%km_minsurf_nh4_vr_col(c_l,j)= km_minsurf_nh4_vr_col(c,j)/natomw
+          ep_betr%betr(c)%plantNutkinetics%km_minsurf_p_vr_col(c_l,j)  = km_minsurf_p_vr_col(c,j)/patomw
+          ep_betr%betr(c)%plantNutkinetics%km_minsurf_nh4_vr_col(c_l,j)= km_minsurf_nh4_vr_col(c,j)/natomw
         enddo
       enddo
 
@@ -1516,21 +1516,21 @@ contains
       do j =1, betr_bounds%ubj
         do fc = 1, l2e_num_nolakec
           c = l2e_filter_nolakec(fc)
-          this%ep_betr%betr(c)%plantNutkinetics%decomp_eff_ncompet_b_vr_col(c_l,j)= decomp_eff_ncompet_b_vr_col(c,j)/natomw
-          this%ep_betr%betr(c)%plantNutkinetics%decomp_eff_pcompet_b_vr_col(c_l,j)= decomp_eff_pcompet_b_vr_col(c,j)/patomw
-          this%ep_betr%betr(c)%plantNutkinetics%nit_eff_ncompet_b_vr_col(c_l,j)   = nit_eff_ncompet_b_vr_col(c,j)/natomw
-          this%ep_betr%betr(c)%plantNutkinetics%den_eff_ncompet_b_vr_col(c_l,j)   = den_eff_ncompet_b_vr_col(c,j)/natomw
-          this%ep_betr%betr(c)%plantNutkinetics%km_nit_nh4_vr_col(c_l,j) = km_nit_nh4_vr_col(c,j)/natomw
-          this%ep_betr%betr(c)%plantNutkinetics%km_den_no3_vr_col(c_l,j) = km_den_no3_vr_col(c,j)/natomw
-          this%ep_betr%betr(c)%plantNutkinetics%dsolutionp_dt_vr_col(c_l,j)       = dsolutionp_dt_vr_col(c,j)/patomw   ! g/m2/s
-          this%ep_betr%betr(c)%plantNutkinetics%vmax_minsurf_p_vr_col(c_l,j)      = vmax_minsurf_p_vr_col(c,j)/patomw   ! g/m3
-          this%ep_betr%betr(c)%plantNutkinetics%dlabp_dt_vr_col(c_l,j)            = dlabp_dt_vr_col(c,j)/patomw
+          ep_betr%betr(c)%plantNutkinetics%decomp_eff_ncompet_b_vr_col(c_l,j)= decomp_eff_ncompet_b_vr_col(c,j)/natomw
+          ep_betr%betr(c)%plantNutkinetics%decomp_eff_pcompet_b_vr_col(c_l,j)= decomp_eff_pcompet_b_vr_col(c,j)/patomw
+          ep_betr%betr(c)%plantNutkinetics%nit_eff_ncompet_b_vr_col(c_l,j)   = nit_eff_ncompet_b_vr_col(c,j)/natomw
+          ep_betr%betr(c)%plantNutkinetics%den_eff_ncompet_b_vr_col(c_l,j)   = den_eff_ncompet_b_vr_col(c,j)/natomw
+          ep_betr%betr(c)%plantNutkinetics%km_nit_nh4_vr_col(c_l,j) = km_nit_nh4_vr_col(c,j)/natomw
+          ep_betr%betr(c)%plantNutkinetics%km_den_no3_vr_col(c_l,j) = km_den_no3_vr_col(c,j)/natomw
+          ep_betr%betr(c)%plantNutkinetics%dsolutionp_dt_vr_col(c_l,j)       = dsolutionp_dt_vr_col(c,j)/patomw   ! g/m2/s
+          ep_betr%betr(c)%plantNutkinetics%vmax_minsurf_p_vr_col(c_l,j)      = vmax_minsurf_p_vr_col(c,j)/patomw   ! g/m3
+          ep_betr%betr(c)%plantNutkinetics%dlabp_dt_vr_col(c_l,j)            = dlabp_dt_vr_col(c,j)/patomw
         enddo
       enddo
     endif
 
     !execute betr calculations
-!    call this%ep_betr%OutLoopSoilBGC(bounds,  col_pp, veg_pp)
+!    call ep_betr%OutLoopSoilBGC(bounds,  col_pp, veg_pp)
 
     !output variables after executation of betr
 
@@ -1538,7 +1538,7 @@ contains
   do kk = 1, 7
     do j = 1,nlevtrc_soil
       do c = bounds%begc, bounds%endc
-        if(.not. this%ep_betr%active_col(c))cycle
+        if(.not. ep_betr%active_col(c))cycle
 
 !        decomp_k(c,j,kk) = this%biogeo_flux(c)%c12flux_vars%decomp_k(c_l,j,kk)
 !        c12_decomp_cpools_vr_col(c,j,kk)=this%biogeo_state(c)%c12state_vars%decomp_cpools_vr(c_l,j,kk)
@@ -1550,7 +1550,7 @@ contains
   !extract plant nutrient uptake fluxes, soil respiration, denitrification, nitrification
   !
   do c = bounds%begc, bounds%endc
-    if(.not. this%ep_betr%active_col(c))cycle
+    if(.not. ep_betr%active_col(c))cycle
     pi = 0
     do p = col_pp%pfti(c), col_pp%pftf(c)
       if (veg_pp%active(p) .and. (veg_pp%itype(p) .ne. noveg)) then
@@ -1572,7 +1572,7 @@ contains
 
   do j = 1,nlevtrc_soil
     do c = bounds%begc, bounds%endc
-      if(.not. this%ep_betr%active_col(c))cycle
+      if(.not. ep_betr%active_col(c))cycle
 !      nitrogenflux_vars%col_plant_pdemand_vr(c,j)  = this%biogeo_flux(c)%p31flux_vars%col_plant_pdemand_vr(c_l,j)
 !      nitrogenflux_vars%f_denit_vr_col(c,j)        = this%biogeo_flux(c)%n14flux_vars%f_denit_vr_col(c_l,j)
 !      nitrogenflux_vars%f_n2o_denit_vr_col(c,j)    = this%biogeo_flux(c)%n14flux_vars%f_n2o_denit_vr_col(c_l,j)

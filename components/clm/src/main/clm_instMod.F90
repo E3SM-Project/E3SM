@@ -69,7 +69,7 @@ module clm_instMod
 
   use clm_interface_dataType     , only : clm_interface_data_type
   use ChemStateType              , only : chemstate_type     ! structure for chemical indices of the soil, such as pH and Eh
-  use BeTRSimulationALM          , only : betr_simulation_alm_type
+  use EMIBeTRSimulation            , only : emi_betr_simulation_type
   use PlantMicKineticsMod        , only : PlantMicKinetics_type
   use CLMFatesInterfaceMod       , only : hlm_fates_interface_type
 
@@ -126,7 +126,8 @@ module clm_instMod
   type(clm_interface_data_type)                       :: clm_interface_data
   type(chemstate_type)                                :: chemstate_vars
   type(hlm_fates_interface_type)                      :: alm_fates
-  class(betr_simulation_alm_type), pointer            :: ep_betr
+
+  class(emi_betr_simulation_type), pointer            :: ep_betr
   type(PlantMicKinetics_type)                         :: PlantMicKinetics_vars
   public :: clm_inst_biogeochem
   public :: clm_inst_biogeophys
@@ -205,7 +206,7 @@ contains
        call grc_ns%Init(begg, endg)
        call col_ns%Init(begc, endc, col_cs)
        call veg_ns%Init(begp, endp, veg_cs)
-       
+
        call grc_nf%Init(begg, endg)
        call col_nf%Init(begc, endc)
        call veg_nf%Init(begp, endp)
@@ -224,12 +225,12 @@ contains
          call PlantMicKinetics_vars%Init(bounds_proc)
        endif
     end if
-    
+
     ! Initialize the Functionaly Assembled Terrestrial Ecosystem Simulator (FATES)
     if (use_fates) then
        call alm_fates%Init(bounds_proc)
     end if
-       
+
     call hist_printflds()
 
   end subroutine clm_inst_biogeochem
@@ -354,7 +355,7 @@ contains
     call lun_es%Init(bounds_proc%begl_all, bounds_proc%endl_all)
     call col_es%Init(bounds_proc%begc_all, bounds_proc%endc_all)
     call veg_es%Init(bounds_proc%begp_all, bounds_proc%endp_all)
-    
+
     call canopystate_vars%init(bounds_proc)
 
     call soilstate_vars%init(bounds_proc)
@@ -433,4 +434,3 @@ contains
 
 
 end module clm_instMod
-
