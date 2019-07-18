@@ -88,7 +88,11 @@
     <default_value>12</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>
-    <desc>timer detail FIXME - add documentation</desc>
+    <desc>Sets maximum number of run loop timing data checkpoints.
+    This sets values for tprof_option and tprof_n that determine
+    the timing output file frequency. If less than one, uses
+    defaults for tprof_option and tprof_n and also allows them
+    to be set in user_nl_cpl.</desc>
   </entry>
 
   <entry id="DOUT_S_SAVE_INTERIM_RESTART_FILES">
@@ -168,7 +172,7 @@
       <value compset="_XATM.*_XLND.*_XICE.*_XOCN">CESM1_MOD</value>
       <value compset="_SOCN"                     >CESM1_MOD</value>
       <value compset="_MPASO"                    >CESM1_MOD</value>
-      <value compset="_MPASCICE.*_MPASO"           >RASM_OPTION1</value>
+      <value compset="_MPASSI.*_MPASO"           >RASM_OPTION1</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -202,16 +206,16 @@
       <value compset="20TR.*_DATM%(QIA|CRU|GSW)">CO2A</value>
       <value compset="RCP.*_DATM%(QIA|CRU|GSW)" >CO2A</value>
       <value compset="_DATM%IAF.*_MPASO%OECO" >CO2A</value>
-      <value compset="_MPASCICE%BGC.*_MPASO%OIECO" >CO2A_OI</value>
-      <value compset="_MPASCICE%BGC.*_MPASO%TOIECO_" >CO2A_OI</value>
-      <value compset="_MPASCICE_MPASO_.*_BGC%BCRC" >CO2C</value>
-      <value compset="_MPASCICE_MPASO_.*_BGC%BCRD" >CO2C</value>
-      <value compset="_MPASCICE_MPASO_.*_BGC%BDRC" >CO2C</value>
-      <value compset="_MPASCICE_MPASO_.*_BGC%BDRD" >CO2C</value>
-      <value compset="_MPASCICE%BGC.*_MPASO%OIECO.*_BGC%BCRC" >CO2C_OI</value>
-      <value compset="_MPASCICE%BGC.*_MPASO%OIECO.*_BGC%BCRD" >CO2C_OI</value>
-      <value compset="_MPASCICE%BGC.*_MPASO%OIECO.*_BGC%BDRC" >CO2C_OI</value>
-      <value compset="_MPASCICE%BGC.*_MPASO%OIECO.*_BGC%BDRD" >CO2C_OI</value>
+      <value compset="_MPASSI%BGC.*_MPASO%OIECO" >CO2A_OI</value>
+      <value compset="_MPASSI%BGC.*_MPASO%TOIECO_" >CO2A_OI</value>
+      <value compset="_MPASSI_MPASO_.*_BGC%BCRC" >CO2C</value>
+      <value compset="_MPASSI_MPASO_.*_BGC%BCRD" >CO2C</value>
+      <value compset="_MPASSI_MPASO_.*_BGC%BDRC" >CO2C</value>
+      <value compset="_MPASSI_MPASO_.*_BGC%BDRD" >CO2C</value>
+      <value compset="_MPASSI%BGC.*_MPASO%OIECO.*_BGC%BCRC" >CO2C_OI</value>
+      <value compset="_MPASSI%BGC.*_MPASO%OIECO.*_BGC%BCRD" >CO2C_OI</value>
+      <value compset="_MPASSI%BGC.*_MPASO%OIECO.*_BGC%BDRC" >CO2C_OI</value>
+      <value compset="_MPASSI%BGC.*_MPASO%OIECO.*_BGC%BDRD" >CO2C_OI</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -352,7 +356,7 @@
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
-      <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
+      <value compset="_DATM.*_SLND.*MPASO.*_MALI">$ATM_NCPL</value>
       <value compset="_CAM.*_CLM.*MPASO">48</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne4np4">$ATM_NCPL</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</value>
@@ -372,7 +376,7 @@
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
-      <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
+      <value compset="_DATM.*_SLND.*MPASO.*_MALI">$ATM_NCPL</value>
       <value compset="_CAM.*_CLM.*MPASO">$ATM_NCPL</value>
     </values>
     <group>run_coupling</group>
@@ -720,74 +724,6 @@
       Note that this is set to TRUE by default for TG compsets - even though there are
       no feedbacks for TG compsets, this enables extra coupler diagnostics for these
       compsets.</desc>
-  </entry>
-
-  <entry id="OCN2GLC_FMAPNAME">
-    <type>char</type>
-    <default_value>idmap</default_value>
-    <group>run_domain</group>
-    <file>env_run.xml</file>
-    <desc>ocn2glc flux mapping file</desc>
-  </entry>
-
-  <entry id="OCN2GLC_FMAPTYPE">
-    <type>char</type>
-    <valid_values>X,Y</valid_values>
-    <default_value>Y</default_value>
-    <group>run_domain</group>
-    <file>env_run.xml</file>
-    <desc>ocn2glc flux mapping file decomp type</desc>
-  </entry>
-
-  <entry id="OCN2GLC_SMAPNAME">
-    <type>char</type>
-    <default_value>idmap</default_value>
-    <group>run_domain</group>
-    <file>env_run.xml</file>
-    <desc>ocn2glc state mapping file</desc>
-  </entry>
-
-  <entry id="OCN2GLC_SMAPTYPE">
-    <type>char</type>
-    <valid_values>X,Y</valid_values>
-    <default_value>Y</default_value>
-    <group>run_domain</group>
-    <file>env_run.xml</file>
-    <desc>ocn2glc state mapping file decomp type</desc>
-  </entry>
-
-  <entry id="GLC2OCN_FMAPNAME">
-    <type>char</type>
-    <default_value>idmap</default_value>
-    <group>run_domain</group>
-    <file>env_run.xml</file>
-    <desc>glc2ocn flux mapping file</desc>
-  </entry>
-
-  <entry id="GLC2OCN_FMAPTYPE">
-    <type>char</type>
-    <valid_values>X,Y</valid_values>
-    <default_value>Y</default_value>
-    <group>run_domain</group>
-    <file>env_run.xml</file>
-    <desc>glc2ocn flux mapping file decomp type</desc>
-  </entry>
-
-  <entry id="GLC2OCN_SMAPNAME">
-    <type>char</type>
-    <default_value>idmap</default_value>
-    <group>run_domain</group>
-    <file>env_run.xml</file>
-    <desc>glc2ocn state mapping file</desc>
-  </entry>
-
-  <entry id="GLC2OCN_SMAPTYPE">
-    <type>char</type>
-    <valid_values>X,Y</valid_values>
-    <default_value>Y</default_value>
-    <group>run_domain</group>
-    <file>env_run.xml</file>
-    <desc>glc2ocn state mapping file decomp type</desc>
   </entry>
 
   <entry id="CCSM_GCOST">
