@@ -6,6 +6,7 @@ from CIME.XML.standard_module_setup import *
 from CIME.Servers.generic_server import GenericServer
 from ftplib import FTP as FTPpy
 from ftplib import all_errors as all_ftp_errors
+import shutil
 
 logger = logging.getLogger(__name__)
 # I think that multiple inheritence would be useful here, but I couldnt make it work
