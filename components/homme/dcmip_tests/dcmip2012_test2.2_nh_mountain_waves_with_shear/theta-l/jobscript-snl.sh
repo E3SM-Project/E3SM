@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#SBATCH --job-name d21-theta
+#SBATCH --job-name d22-theta
 #SNL:
 #SBATCH --account=FY150001
 #SBATCH -p ec
