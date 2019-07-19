@@ -268,6 +268,11 @@
   <lname>2000_DATM%NYF_SLND_MPASCICE_MPASO_DROF%NYF_MALI%SIA_SWAV</lname>
 </compset>
 
+<compset>
+  <alias>MPAS_LISIO_BISICLES_TEST</alias>
+  <lname>2000_DATM%NYF_SLND_MPASCICE_MPASO_DROF%NYF_BISICLES%SIA_SWAV</lname>
+</compset>
+
 <!-- Slab ocean cases -->
 <compset>
   <alias>ETEST</alias>

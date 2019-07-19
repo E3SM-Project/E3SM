@@ -1231,6 +1231,16 @@
       <mask>oQU120</mask>
     </model_grid>
 
+    <model_grid alias="T62_oQU120_ais20" compset="MPASO.*_BISICLES">
+      <grid name="atm">T62</grid>
+      <grid name="lnd">T62</grid>
+      <grid name="ocnice">oQU120</grid>
+      <grid name="rof">rx1</grid>
+      <grid name="glc">mpas.ais20km</grid>
+      <grid name="wav">null</grid>
+      <mask>oQU120</mask>
+    </model_grid>
+
     <!-- The following grid is only used for ADWAV testing -->
     <model_grid alias="ww3a" compset="_WW3|DWAV">
       <grid name="wav">ww3a</grid>
