@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 ###############################################################################
 def buildnml(case, caseroot, compname):
 ###############################################################################
-    expect(compname == "mali", compname)
+    expect(compname == "bisicles", compname)
 
     os.chdir(caseroot)
 
