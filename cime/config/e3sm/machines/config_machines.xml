@@ -1168,6 +1168,7 @@
       </modules>
       <modules compiler="intel">
         <command name="add">+intel-17.0.0</command>
+        <command name="add">+mkl</command>
         <command name="add">+netcdf-c-4.4.1-f77-4.4.4-intel-17.0.0-serial</command>
       </modules>
       <modules compiler="intel" mpilib="mvapich">
