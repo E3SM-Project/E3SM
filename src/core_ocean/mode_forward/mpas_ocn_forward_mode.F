@@ -281,6 +281,7 @@ module ocn_forward_mode
       if (config_vert_coord_movement.ne.'fixed'.and. &
           config_vert_coord_movement.ne.'uniform_stretching'.and. &
           config_vert_coord_movement.ne.'impermeable_interfaces'.and. &
+          config_vert_coord_movement.ne.'tapered'.and. &
           config_vert_coord_movement.ne.'user_specified') then
          call mpas_log_write(' Incorrect choice of config_vert_coord_movement.')
          call mpas_log_write('Incorrect choice of config_vert_coord_movement.', MPAS_LOG_CRIT)
