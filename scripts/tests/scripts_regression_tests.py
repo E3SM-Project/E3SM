@@ -1120,8 +1120,6 @@ class TestCreateTestCommon(unittest.TestCase):
         else:
             expected_stat = 0 if not pre_run_errors and not run_errors else CIME.utils.TESTS_FAILED_ERR_CODE
 
-
-
         run_cmd_assert_result(self, "{} {}/create_test {}".format(env_changes, SCRIPT_DIR, " ".join(extra_args)),
                               expected_stat=expected_stat)
 
