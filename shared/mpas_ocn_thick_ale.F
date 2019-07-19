@@ -51,6 +51,8 @@ module ocn_thick_ale
    !
    !--------------------------------------------------------------------
 
+   integer :: configALEthicknessProportionality
+
 !***********************************************************************
 
 contains
@@ -110,7 +112,7 @@ contains
       integer, pointer :: nCells, nVertLevels
       integer, dimension(:), pointer :: maxLevelCell
 
-      real (kind=RKIND) :: weightSum, remainder, newThickness, thicknessWithRemainder
+      real (kind=RKIND) :: weightSum, thicknessSum, remainder, newThickness, thicknessWithRemainder
       real (kind=RKIND), dimension(:), pointer :: vertCoordMovementWeights
       real (kind=RKIND), dimension(:), allocatable :: &
          SSH_ALE_thickness,      & !> ALE thickness alteration due to SSH (z-star)
@@ -147,26 +149,49 @@ contains
       !
       ! ALE thickness alteration due to SSH (z-star)
       !
-      !$omp do schedule(runtime)
-      do iCell = 1, nCells
-         kMax = maxLevelCell(iCell)
+      if (configALEthicknessProportionality==1) then ! restingThickness_times_weights
 
-         weightSum = 1e-14_RKIND
-         do k = 1, kMax
-            weightSum = weightSum + vertCoordMovementWeights(k) 
-         end do
-
-         do k = 1, kMax
-            ! Using this, we must require that sum(restingThickness(k, iCell))
-            ! summed over k is equal to bottomDepth.
+         !$omp do schedule(runtime)
+         do iCell = 1, nCells
+            kMax = maxLevelCell(iCell)
+   
+            thicknessSum = 1e-14_RKIND
+            do k = 1, kMax
+               SSH_ALE_Thickness(k) = SSH(iCell) * vertCoordMovementWeights(k) * restingThickness(k, iCell)
+               thicknessSum = thicknessSum + vertCoordMovementWeights(k) * restingThickness(k, iCell)
+            end do
+   
+            ! Note that restingThickness is nonzero, and remaining terms are perturbations about zero.
             ! This is equation 4 and 6 in Petersen et al 2015, but with eqn 6
-            ! altered so only the W_k weights are used. The resting
-            ! thickness shown in eqn 6 is not included here.
-            ALE_Thickness(k, iCell) = restingThickness(k, iCell) + ssh(iCell) * vertCoordMovementWeights(k) / weightSum
-
-         end do
-      enddo
-      !$omp end do
+            do k = 1, kMax
+               SSH_ALE_Thickness(k) = SSH_ALE_Thickness(k) / thicknessSum
+               ALE_Thickness(k, iCell) = restingThickness(k, iCell) + SSH_ALE_Thickness(k)
+            end do
+         enddo
+         !$omp end do
+   
+         elseif (configALEthicknessProportionality==2) then ! weights_only
+         !$omp do schedule(runtime)
+         do iCell = 1, nCells
+            kMax = maxLevelCell(iCell)
+   
+            weightSum = 1e-14_RKIND
+            do k = 1, kMax
+               weightSum = weightSum + vertCoordMovementWeights(k) 
+            end do
+   
+            do k = 1, kMax
+               ! Using this, we must require that sum(restingThickness(k, iCell))
+               ! summed over k is equal to bottomDepth.
+               ! This is equation 4 and 6 in Petersen et al 2015, but with eqn 6
+               ! altered so only the W_k weights are used. The resting
+               ! thickness shown in eqn 6 is not included here.
+               ALE_Thickness(k, iCell) = restingThickness(k, iCell) + ssh(iCell) * vertCoordMovementWeights(k) / weightSum
+   
+            end do
+         enddo
+         !$omp end do
+      endif
 
       if (thicknessFilterActive) then
          !$omp do schedule(runtime) private(kMax)
@@ -238,6 +263,19 @@ contains
 !-----------------------------------------------------------------------
    subroutine ocn_thick_ale_init(err)!{{{
       integer, intent(out) :: err !< Output: Error flag
+      character (len=StrKIND), pointer :: config_ALE_thickness_proportionality
+
+      call mpas_pool_get_config(ocnConfigs,'config_ALE_thickness_proportionality',config_ALE_thickness_proportionality)
+
+      if (config_ALE_thickness_proportionality=='restingThickness_times_weights') then
+          configALEthicknessProportionality = 1
+      elseif (config_ALE_thickness_proportionality=='weights_only') then
+          configALEthicknessProportionality = 2
+      else
+          call mpas_log_write( &
+             ' Warning: config_ALE_thickness_proportionality is not valid', &
+             MPAS_LOG_CRIT)
+      endif
 
       err = 0
 
