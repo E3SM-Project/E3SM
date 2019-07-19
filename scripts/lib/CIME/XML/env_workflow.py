@@ -65,6 +65,7 @@ class EnvWorkflow(EnvBase):
 
     def get_type_info(self, vid):
         gnodes = self.get_children("group")
+        type_info = None
         for gnode in gnodes:
             nodes = self.get_children("entry",{"id":vid}, root=gnode)
             type_info = None

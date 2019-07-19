@@ -1097,6 +1097,11 @@ class TestCreateTestCommon(unittest.TestCase):
     ###########################################################################
     def _create_test(self, extra_args, test_id=None, pre_run_errors=False, run_errors=False, env_changes=""):
     ###########################################################################
+        # All stub model not supported in nuopc driver
+        driver = CIME.utils.get_cime_default_driver()
+        if driver == 'nuopc':
+            extra_args.append(" ^SMS.T42_T42.S")
+
         test_id = CIME.utils.get_timestamp() if test_id is None else test_id
         extra_args.append("-t {}".format(test_id))
         extra_args.append("--baseline-root {}".format(self._baseline_area))
