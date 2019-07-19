@@ -1016,7 +1016,7 @@ subroutine dropmixnuc( &
 
       ! old_cloud_nsubmix_loop
 !!!$acc update device(raercol(:,:,nnew), raercol_cw(:,:,nnew), ekkm, overlapp, overlapm, nnew, nsav) 
-!$acc update device( ekkm, ekkp, mact, nact, overlapm, overlapp )
+!ndk !$acc update device( ekkm, ekkp, mact, nact, overlapm, overlapp )
       do n = 1, nsubmix
          qncld(:) = qcld(:)
          nnew = 3 - nnew
@@ -1050,9 +1050,9 @@ subroutine dropmixnuc( &
          !    source terms involve clear air (from below) moving into cloudy air (above).
          !    in theory, the clear-portion mixratio should be used when calculating 
          !    source terms
-         call t_startf('shan14')
-!$acc update device(raercol(:,:,nsav), raercol_cw(:,:,nsav))
-!$acc parallel loop collapse(2)
+         !call t_startf('shan14')
+!ndk !$acc update device(raercol(:,:,nsav), raercol_cw(:,:,nsav), nnew, nsav)
+!ndk !$acc parallel loop collapse(2)
          do mm = 1, ncnst_tot
             do k = top_lev, pver
               m   = mam_idx_1d(1, mm)
@@ -1088,9 +1088,9 @@ subroutine dropmixnuc( &
 
            end do
          end do
-!$acc end parallel loop
-!$acc update host(raercol(:,:,nnew), raercol_cw(:,:,nnew))
-         call t_stopf('shan14')
+!ndk !$acc end parallel loop
+!ndk !$acc update host(raercol(:,:,nnew), raercol_cw(:,:,nnew))
+         !call t_stopf('shan14')
       end do ! old_cloud_nsubmix_loop
 
       ! evaporate particles again if no cloud
