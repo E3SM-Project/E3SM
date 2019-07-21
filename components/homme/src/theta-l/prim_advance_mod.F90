@@ -94,8 +94,9 @@ contains
     real (kind=real_kind) ::  gamma,delta
 
     integer :: ie,nm1,n0,np1,nstep,qsplit_stage,k, qn0
-    integer :: n,i,j,maxiter
+    integer :: n,i,j,maxiter,mi
  
+    mi=10
 
     call t_startf('prim_advance_exp')
     nm1   = tl%nm1
@@ -223,7 +224,7 @@ contains
         deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
   
 
-      maxiter=10
+      maxiter=mi
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
@@ -233,7 +234,7 @@ contains
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a2,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat2/a2,1d0)
 
-      maxiter=10
+      maxiter=mi
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol) 
@@ -244,7 +245,7 @@ contains
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a3,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat3/a3,1d0)
 
-      maxiter=10
+      maxiter=mi
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
@@ -285,7 +286,7 @@ contains
 
       call compute_andor_apply_rhs(np1,n0,n0,qn0,a1*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
-      maxiter=10
+      maxiter=mi
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
@@ -294,7 +295,7 @@ contains
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat2/a2,1d0)
-      maxiter=10
+      maxiter=mi
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
@@ -303,7 +304,7 @@ contains
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat3/a3,1d0)
-      maxiter=10
+      maxiter=mi
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
@@ -312,7 +313,7 @@ contains
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a4*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat4/a4,1d0)
-      maxiter=10
+      maxiter=mi
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat4*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
@@ -1282,7 +1283,8 @@ contains
         temp(:,:,:)=elem(ie)%state%vtheta_dp(:,:,:,nt)*elem(ie)%state%dp3d(:,:,:,nt)
         call pnh_and_exner_from_eos(hvcoord,temp,&
              elem(ie)%state%dp3d(:,:,:,nt),elem(ie)%state%phinh_i(:,:,:,nt),&
-             pnh,exner,temp_i,caller='advance_hypervis')
+             pnh,exner,temp_i,caller='advance_hypervis', &
+             spherep=elem(ie)%spherep)
         
         do k=1,nlev
            k2=min(k+1,nlev)
@@ -1693,7 +1695,8 @@ contains
      endif
 #endif
 
-     call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_i,pnh,exner,dpnh_dp_i,caller='CAAR')
+     call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_i,pnh,exner,dpnh_dp_i,caller='CAAR',&
+                                 spherep=elem(ie)%spherep)
 
      dp3d_i(:,:,1) = dp3d(:,:,1)
      dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
@@ -2200,7 +2203,7 @@ contains
              elem(ie)%state%w_i(:,:,nlevp,np1)) / &
              (g + ( elem(ie)%derived%gradphis(:,:,1)**2 + &
              elem(ie)%derived%gradphis(:,:,2)**2)/(2*g))   )  / dt2
-        
+       
         ! update solution with new dpnh_dp_i value:
         elem(ie)%state%w_i(:,:,nlevp,np1) = elem(ie)%state%w_i(:,:,nlevp,np1) +&
              scale1*dt2*g*(dpnh_dp_i(:,:,nlevp)-1)
@@ -2327,7 +2330,8 @@ contains
     phi_np1 => elem(ie)%state%phinh_i(:,:,:,np1)
     phis => elem(ie)%state%phis(:,:)
 
-    call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk1')
+    call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk1',&
+    spherep=elem(ie)%spherep)
 
     dp3d_i(:,:,1) = dp3d(:,:,1)
     dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
@@ -2347,6 +2351,8 @@ contains
 !     call get_dirk_jacobian(Jac2L,Jac2D,Jac2U,dt2,dp3d,phi_np1,pnh,0,&
 !       1d-6,hvcoord,dpnh_dp_i,vtheta_dp)
       ! here's the call to the exact Jacobian
+
+!with 1 does not use pnh_...
      call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,phi_np1,pnh,1)
 
     ! compute dp3d-weighted infinity norms of the initial Jacobian and residual
@@ -2401,7 +2407,8 @@ contains
         ! if nsafe>8, code will crash in next call to pnh_and_exner_from_eos
       end do
       end do
-      call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk2')
+      call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk2',&
+      spherep=elem(ie)%spherep)
 
       ! update approximate solution of w
       elem(ie)%state%w_i(:,:,1:nlev,np1) = w_n0(:,:,1:nlev) - g*dt2 * &
@@ -2428,6 +2435,12 @@ contains
     end do ! end do for the do while loop
 
     if (itercount >= maxiter) then
+do j=1,np
+do i=1,np
+      print *, 'elem coords lon',i,j,elem(ie)%spherep(i,j)%lon
+      print *, 'elem coords lat',i,j,elem(ie)%spherep(i,j)%lat
+enddo
+enddo
       call abortmp('Error: nonlinear solver failed b/c max iteration count was met')
     end if
     itercountmax=max(itercount,itercountmax)

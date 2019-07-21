@@ -74,7 +74,78 @@ module element_ops
   
 contains
 
+
+#if 0
   recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
+  implicit none
+  type (element_t),       intent(in) :: elem
+  character(len=*),       intent(in) :: name
+  real (kind=real_kind),  intent(out):: field(np,np,*)
+  type (hvcoord_t),       intent(in) :: hvcoord
+  integer,                intent(in) :: nt
+  integer,                intent(in) :: ntQ
+
+  integer :: k, lastdim
+  real(kind=real_kind), dimension(np,np,nlev) :: tmp, p, pnh, dp, omega, rho, T, cp_star, Rstar
+  real(kind=real_kind), dimension(np,np,nlevp) :: phi_i,pi_i
+  
+  !check that field has correct num of levels
+  lastdim = size(field, DIM = 3)
+!  if( name == 'w_i' .and. lastdim /= nlevp ) abortmp('In get_field w_i output needs nlevp levels.')
+!  if( name /= 'w_i' .and. lastdim /= nlev )  abortmp('In get_field this output needs nlev levels.')
+
+  select case(name)
+    case ('temperature','T'); call get_temperature(elem,field,hvcoord,nt)
+    case ('pottemp','Th');    call get_pottemp(elem,field,hvcoord,nt,ntQ)
+    case ('phi','geo');       call get_phi(elem,field,phi_i,hvcoord,nt)
+    case ('dpnh_dp');         call get_dpnh_dp(elem,field,hvcoord,nt)
+    case ('pnh');             call get_nonhydro_pressure(elem,field,tmp  ,hvcoord,nt)
+    case ('exner');           call get_nonhydro_pressure(elem,tmp  ,field,hvcoord,nt)
+
+    case ('p');
+      call get_hydro_pressure(field(1:np,1:np,1:nlev),elem%state%dp3d(:,:,:,nt),hvcoord)
+
+    case ('dp');
+       field(1:np,1:np,1:nlev)=elem%state%dp3d(1:np,1:np,1:nlev,nt)
+
+
+    case ('omega')
+      field(1:np,1:np,1:nlev) = elem%derived%omega_p(1:np,1:np,1:nlev)
+
+    case('rho')
+       
+      call get_nonhydro_pressure(elem,pnh,tmp,hvcoord,nt)
+      call get_R_star(Rstar,elem%state%Q(:,:,:,1))
+      call get_temperature(elem,T,hvcoord,nt)
+      field(1:np,1:np,1:nlev) = pnh(1:np,1:np,1:nlev)/(Rstar(1:np,1:np,1:nlev)*T(1:np,1:np,1:nlev))
+
+    case ('w')
+
+      if(theta_hydrostatic_mode) then
+        call get_field(elem,'omega',omega(1:np,1:np,1:nlev),hvcoord,nt,ntQ)
+        call get_field(elem,'rho'  ,rho(1:np,1:np,1:nlev)  ,hvcoord,nt,ntQ)
+        field(1:np,1:np,1:nlev) = -omega(1:np,1:np,1:nlev)/(rho(1:np,1:np,1:nlev) *g)
+      else
+        field(1:np,1:np,1:nlev) =(elem%state%w_i(1:np,1:np,1:nlev,nt) + elem%state%w_i(1:np,1:np,2:nlevp,nt))/2.0
+      endif
+   
+    case ('w_i')
+
+      field(1:np,1:np,1:nlevp) = elem%state%w_i(1:np,1:np,1:nlevp,nt)
+
+    case default
+       print *,'name = ',trim(name)
+       call abortmp('ERROR: get_field name not supported in this model')
+
+  end select
+
+  end subroutine
+#endif
+
+
+
+
+recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   implicit none
   type (element_t),       intent(in) :: elem
   character(len=*),       intent(in) :: name
@@ -86,15 +157,15 @@ contains
   integer :: k
   real(kind=real_kind), dimension(np,np,nlev) :: tmp, p, pnh, dp, omega, rho, T, cp_star, Rstar
   real(kind=real_kind), dimension(np,np,nlevp) :: phi_i,pi_i
-  
+
 
   select case(name)
     case ('temperature','T'); call get_temperature(elem,field,hvcoord,nt)
     case ('pottemp','Th');    call get_pottemp(elem,field,hvcoord,nt,ntQ)
     case ('phi','geo');       call get_phi(elem,field,phi_i,hvcoord,nt)
     case ('dpnh_dp');         call get_dpnh_dp(elem,field,hvcoord,nt)
-    case ('pnh');             call get_nonhydro_pressure(elem,field,tmp  ,hvcoord,nt)
-    case ('exner');           call get_nonhydro_pressure(elem,tmp  ,field,hvcoord,nt)
+    case ('pnh');             call get_nonhydro_pressure(elem,field,tmp ,hvcoord,nt)
+    case ('exner');           call get_nonhydro_pressure(elem,tmp ,field,hvcoord,nt)
 
     case ('p');
       call get_hydro_pressure(field,elem%state%dp3d(:,:,:,nt),hvcoord)
@@ -107,7 +178,7 @@ contains
       field = elem%derived%omega_p
 
     case('rho')
-       
+
       call get_nonhydro_pressure(elem,pnh,tmp,hvcoord,nt)
       call get_R_star(Rstar,elem%state%Q(:,:,:,1))
       call get_temperature(elem,T,hvcoord,nt)
@@ -133,6 +204,7 @@ contains
   end subroutine
 
 
+#if 1
 !returns w from 1 to nlevp levels
   subroutine get_w(elem,field,nt)
   implicit none
@@ -143,7 +215,7 @@ contains
   field =elem%state%w_i(:,:,1:nlevp,nt)
  
   end subroutine get_w
-
+#endif
 
 
   !_____________________________________________________________________

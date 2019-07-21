@@ -24,13 +24,16 @@ module eos
   use parallel_mod,   only: abortmp
   use physical_constants, only : p0, kappa, g, Rgas
   use control_mod,    only: theta_hydrostatic_mode
+
+  use coordinate_systems_mod, only: spherical_polar_t
+
   implicit none
 
 
 contains
 
 subroutine pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_i,pnh,exner,&
-     dpnh_dp_i,pnh_i_out,caller)
+     dpnh_dp_i,pnh_i_out,caller,spherep)
 implicit none
 !
 ! Use Equation of State to compute exner pressure, nh presure
@@ -55,6 +58,7 @@ implicit none
   real (kind=real_kind), intent(out) :: exner(np,np,nlev)      ! exner nh pressure
   real (kind=real_kind), intent(out), optional :: pnh_i_out(np,np,nlevp)  ! pnh on interfaces
   character(len=*),      intent(in), optional  :: caller       ! name for error
+  type (spherical_polar_t), intent(in), optional  :: spherep(np,np)
 
   !   local
   real (kind=real_kind) :: p_over_exner(np,np,nlev)
@@ -89,6 +93,12 @@ implicit none
         if ( (vtheta_dp(i,j,k) < 0) .or. (dp3d(i,j,k)<0)  .or. &
              (phi_i(i,j,k) <= phi_i(i,j,k+1))  ) then
            print *,'bad i,j,k=',i,j,k
+
+           if(present(spherep))then
+              print *,'latlon coordinates for this point', &
+                               spherep(i,j)%lon,spherep(i,j)%lat
+           endif
+
            print *,'vertical column: phi_i,dp3d,vtheta_dp'
            do k2=1,nlev
               write(*,'(i3,4f14.4)') k2,phi_i(i,j,k2),dp3d(i,j,k2),vtheta_dp(i,j,k2)
