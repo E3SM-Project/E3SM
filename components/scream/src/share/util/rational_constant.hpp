@@ -71,6 +71,10 @@ public:
   constexpr RationalConstant (const RationalConstant&) = default;
   RationalConstant& operator= (const RationalConstant&) = default;
 
+  constexpr RationalConstant operator- () const {
+    return RationalConstant(-m_num,m_den,m_fmt);
+  }
+
   constexpr long long num () const { return m_num; }
   constexpr long long den () const { return m_den; }
 
@@ -88,17 +92,13 @@ private:
 
   // These two are used to help reduce a/b to lowest terms
   static constexpr long long fix_num(const long long n, const long long d) {
-    return n==0
-            ? (d==0 ? throw std::logic_error("Error! 0/0 encountered.\n") : n)
-            : n / gcd(abs(n),abs(d));
+    return CONSTEXPR_ASSERT(d!=0),
+             n==0 ? n : n / gcd(abs(n),abs(d));
   }
 
   static constexpr long long fix_den(const long long n, const long long d) {
-    return d<0
-            ? fix_den(n,-d)
-            : (d!=0
-                ? d / gcd(abs(n),abs(d))
-                : throw std::logic_error("Null denominator"));
+    return CONSTEXPR_ASSERT(d!=0),
+            d<0 ? fix_den(n,-d) : d / gcd(abs(n),abs(d));
   }
 
   const long long m_num;
@@ -141,10 +141,6 @@ constexpr RationalConstant operator/ (const RationalConstant& lhs, const Rationa
                            lhs.get_format()&&rhs.get_format());
 }
 
-constexpr long long pow_zero (const long long base) {
-  return base==0 ? throw std::logic_error("Error! Cannot compute 0^0!\n") : 1;
-}
-
 // WARNING! If exp>>1, this generates a huge recursion. Use carefully!!
 template<typename IntType>
 inline constexpr RationalConstant pow (const typename std::enable_if<std::is_integral<IntType>::value,RationalConstant>::type& x, const IntType p) {
@@ -152,8 +148,9 @@ inline constexpr RationalConstant pow (const typename std::enable_if<std::is_int
   //  - p<0: compute the -p power of 1/x
   //  - p=0: base case, return 1 if x!=0, throw if x==0
   //  - recursion step: x^p = x * x^{p-1}
+  // Note: recall that expressions like "blah1, blah2" executes both blah1 and blah2 and return blah2.
   return p<0 ? pow(1/x,-p)
-             : (p==0 ? RationalConstant(pow_zero(x.num()),pow_zero(x.den()))
+             : (p==0 ? CONSTEXPR_ASSERT(x.num()!=0), RationalConstant::one()
                      : ( (p&1)!=0 ? x*pow(x*x,p>>1) : pow(x*x,p>>1)));
 }
 

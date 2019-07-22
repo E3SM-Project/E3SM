@@ -22,13 +22,27 @@ struct ScalingFactor {
   }
   constexpr ScalingFactor (const RationalConstant& b,
                            const RationalConstant& e)
-   : base(b)
-   , exp (e)
+   : base(check_and_adjust(b,e,true))
+   , exp (check_and_adjust(b,e,false))
   {
     // Nothing to do here
   }
+
   constexpr ScalingFactor (const ScalingFactor&) = default;
   ScalingFactor& operator= (const ScalingFactor&) = default;
+
+private:
+
+  static constexpr RationalConstant
+  check_and_adjust (const RationalConstant& b,
+                    const RationalConstant& e,
+                    const bool return_base) {
+    // Check that we are not doing 0^0 or taking even roots of negative numbers.
+    // If all good, adjust base and exp for x^0 case, and return what was requested.
+    return CONSTEXPR_ASSERT( !(b==RationalConstant::zero() && e==RationalConstant::zero()) ),
+           CONSTEXPR_ASSERT( !(b.num()<0 && e.den()%2==0) ),
+           e==RationalConstant::zero() ? RationalConstant::one(): (return_base ? b : e);
+  }
 };
 
 constexpr bool operator== (const ScalingFactor& lhs, const ScalingFactor& rhs) {
@@ -127,6 +141,11 @@ namespace prefixes {
 constexpr ScalingFactor nano  = ScalingFactor(10,-9);
 constexpr ScalingFactor micro = ScalingFactor(10,-6);
 constexpr ScalingFactor milli = ScalingFactor(10,-3);
+constexpr ScalingFactor centi = ScalingFactor(10,-2);
+constexpr ScalingFactor deci  = ScalingFactor(10,-1);
+
+constexpr ScalingFactor deca  = ScalingFactor(10, 1);
+constexpr ScalingFactor hecto = ScalingFactor(10, 2);
 constexpr ScalingFactor kilo  = ScalingFactor(10, 3);
 constexpr ScalingFactor mega  = ScalingFactor(10, 6);
 constexpr ScalingFactor giga  = ScalingFactor(10, 9);
