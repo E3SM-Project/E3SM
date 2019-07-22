@@ -1074,12 +1074,13 @@ class Case(object):
 
         env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
         env_workflow.create_job_groups(bjobs, test)
-        env_batch.set_job_defaults(bjobs, self)
 
         if walltime:
             self.set_value("USER_REQUESTED_WALLTIME", walltime, subgroup=self.get_primary_job())
         if queue:
             self.set_value("USER_REQUESTED_QUEUE", queue, subgroup=self.get_primary_job())
+
+        env_batch.set_job_defaults(bjobs, self)
 
         # Make sure that parallel IO is not specified if total_tasks==1
         if self.total_tasks == 1:
