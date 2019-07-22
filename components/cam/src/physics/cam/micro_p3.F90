@@ -2906,7 +2906,8 @@ qrheti, nrheti)
 end subroutine rain_immersion_freezing
 
 
-subroutine ice_nucleation(t,inv_rho,nitot,naai,supi,odt,log_predictNc,qinuc,ninuc)
+subroutine ice_nucleation(t,inv_rho,nitot,naai,supi,odt,log_predictNc,    &
+   qinuc,ninuc)
 
    !................................................................
    ! deposition/condensation-freezing nucleation
@@ -2949,7 +2950,8 @@ subroutine ice_nucleation(t,inv_rho,nitot,naai,supi,odt,log_predictNc,qinuc,ninu
 end subroutine 
 
 
-subroutine droplet_activation(t,pres,qv,qc,inv_rho,sup,xxlv,npccn,log_predictNc,odt,it,qcnuc,ncnuc)
+subroutine droplet_activation(t,pres,qv,qc,inv_rho,sup,xxlv,npccn,log_predictNc,odt,it,    &
+   qcnuc,ncnuc)
 
 
 implicit none 
@@ -3001,7 +3003,8 @@ real(rtype) :: dum, dumqvs, dqsdt, ab
 
 end subroutine droplet_activation 
 
-subroutine droplet_self_collection(rho,inv_rho,qc_incld,mu_c,nu,ncautc,ncslf)
+subroutine droplet_self_collection(rho,inv_rho,qc_incld,mu_c,nu,ncautc,    &
+   ncslf)
    !............................
    ! self-collection of droplets
 
@@ -3034,7 +3037,8 @@ subroutine droplet_self_collection(rho,inv_rho,qc_incld,mu_c,nu,ncautc,ncslf)
 
 end subroutine droplet_self_collection
 
-subroutine cloud_rain_accretion(rho,inv_rho,qc_incld,nc_incld,qr_incld,qcacc,ncacc)
+subroutine cloud_rain_accretion(rho,inv_rho,qc_incld,nc_incld,qr_incld,    &
+   qcacc,ncacc)
 
 !............................
 ! accretion of cloud by rain
@@ -3079,7 +3083,8 @@ endif
 
 end subroutine cloud_rain_accretion 
 
-subroutine rain_self_collection(rho,qr_incld,nr_incld,nrslf)
+subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
+   nrslf)
    
    !.....................................
    ! self-collection and breakup of rain
@@ -3123,7 +3128,8 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,nrslf)
 end subroutine rain_self_collection
 
 
-subroutine cloud_water_autoconversion(rho,inv_rho,qc_incld,nc_incld,qr_incld,mu_c,nu,qcaut,ncautc,ncautr)
+subroutine cloud_water_autoconversion(rho,inv_rho,qc_incld,nc_incld,qr_incld,mu_c,nu,    &
+   qcaut,ncautc,ncautr)
 
    implicit none 
 
@@ -3192,7 +3198,8 @@ subroutine cloud_water_autoconversion(rho,inv_rho,qc_incld,nc_incld,qr_incld,mu_
 
 end subroutine cloud_water_autoconversion
 
-subroutine back_to_cell_average(lcldm,rcldm,icldm,qcacc,qrevp,qcaut,& 
+subroutine back_to_cell_average(lcldm,rcldm,icldm,    &
+   qcacc,qrevp,qcaut,& 
    ncacc,ncslf,ncautc,nrslf,nrevp,ncautr,qcnuc,ncnuc,qisub,nrshdr,qcheti,& 
    qrcol,qcshd,qimlt,qccol,qrheti,nimlt,nccol,ncshdc,ncheti,nrcol,nislf,& 
    qidep,nrheti,nisub,qinuc,ninuc,qiberg)
@@ -3261,7 +3268,8 @@ subroutine back_to_cell_average(lcldm,rcldm,icldm,qcacc,qrevp,qcaut,&
 
 end subroutine back_to_cell_average 
 
-subroutine prevent_ice_overdepletion(pres,t,qv,xxls,odt,qidep,qisub)
+subroutine prevent_ice_overdepletion(pres,t,qv,xxls,odt,    &
+   qidep,qisub)
 
    !-- Limit ice process rates to prevent overdepletion of sources such that
    !   the subsequent adjustments are done with maximum possible rates for the
@@ -3291,7 +3299,8 @@ subroutine prevent_ice_overdepletion(pres,t,qv,xxls,odt,qidep,qisub)
 
 end subroutine prevent_ice_overdepletion
 
-subroutine cloud_water_conservation(qc,qcnuc,dt,qcaut,qcacc,qccol,qcheti,qcshd,qiberg,qisub,qidep)
+subroutine cloud_water_conservation(qc,qcnuc,dt,    &
+   qcaut,qcacc,qccol,qcheti,qcshd,qiberg,qisub,qidep)
    implicit none 
    
    real(rtype), intent(in) :: qc, qcnuc, dt 
@@ -3326,7 +3335,8 @@ subroutine cloud_water_conservation(qc,qcnuc,dt,qcaut,qcacc,qccol,qcheti,qcshd,q
 
 end subroutine cloud_water_conservation 
 
-subroutine rain_water_conservation(qr,qcaut,qcacc,qimlt,qcshd,dt,qrevp,qrcol,qrheti)
+subroutine rain_water_conservation(qr,qcaut,qcacc,qimlt,qcshd,dt,    &
+   qrevp,qrcol,qrheti)
 
    implicit none 
 
@@ -3346,7 +3356,8 @@ subroutine rain_water_conservation(qr,qcaut,qcacc,qimlt,qcshd,dt,qrevp,qrcol,qrh
 
 end subroutine rain_water_conservation 
 
-subroutine ice_water_conservation(qitot,qidep,qinuc,qiberg,qrcol,qccol,qrheti,qcheti,dt,qisub,qimlt) 
+subroutine ice_water_conservation(qitot,qidep,qinuc,qiberg,qrcol,qccol,qrheti,qcheti,dt,    &
+   qisub,qimlt) 
 
    implicit none 
 
@@ -3367,12 +3378,12 @@ subroutine ice_water_conservation(qitot,qidep,qinuc,qiberg,qrcol,qccol,qrheti,qc
 end subroutine ice_water_conservation 
 
 
-subroutine update_prognostic_ice(qcheti,qccol,qcshd, & 
-   nccol,ncheti,ncshdc, & 
-   qrcol,nrcol,qrheti,nrheti,nrshdr, & 
-   qimlt,nimlt,qisub,qidep,qinuc,ninuc,nislf,nisub,qiberg, & 
-   exner,xxls,xlf, & 
-   log_predictNc,log_wetgrowth,dt,nmltratio,rhorime_c, &
+subroutine update_prognostic_ice(qcheti,qccol,qcshd,    & 
+   nccol,ncheti,ncshdc,    & 
+   qrcol,nrcol,qrheti,nrheti,nrshdr,    & 
+   qimlt,nimlt,qisub,qidep,qinuc,ninuc,nislf,nisub,qiberg,    & 
+   exner,xxls,xlf,    & 
+   log_predictNc,log_wetgrowth,dt,nmltratio,rhorime_c,    &
    th,qv,qitot,nitot,qirim,birim,qc,nc,qr,nr)
 
    !-- ice-phase dependent processes:
@@ -3492,9 +3503,9 @@ subroutine update_prognostic_ice(qcheti,qccol,qcshd, &
 
 end subroutine update_prognostic_ice
 
-subroutine update_prognostic_liquid(qcacc,ncacc,qcaut,ncautc,qcnuc,ncautr,ncslf, &
-    qrevp,nrevp,nrslf, &
-    log_predictNc,inv_rho,exner,xxlv,dt, &
+subroutine update_prognostic_liquid(qcacc,ncacc,qcaut,ncautc,qcnuc,ncautr,ncslf,    &
+    qrevp,nrevp,nrslf,    &
+    log_predictNc,inv_rho,exner,xxlv,dt,    &
     th,qv,qc,nc,qr,nr)
    !-- warm-phase only processes:
    implicit none 
@@ -3546,8 +3557,8 @@ end subroutine update_prognostic_liquid
 
 
 
-subroutine ice_deposition_sublimation(qitot_incld,nitot_incld,t, &
-qvs,qvi,epsi,abi,qv, &
+subroutine ice_deposition_sublimation(qitot_incld,nitot_incld,t,    &
+qvs,qvi,epsi,abi,qv,    &
 qidep,qisub,nisub,qiberg)
 
    implicit none
@@ -3599,8 +3610,8 @@ qidep,qisub,nisub,qiberg)
 end subroutine ice_deposition_sublimation
 
 
-subroutine evaporate_sublimate_precip(qr_incld,qc_incld,nr_incld,qitot_incld, &
-lcldm,rcldm,qvs,ab,epsr,qv, &
+subroutine evaporate_sublimate_precip(qr_incld,qc_incld,nr_incld,qitot_incld,    &
+lcldm,rcldm,qvs,ab,epsr,qv,    &
 qrevp,nrevp)
 
    implicit none
