@@ -83,7 +83,7 @@ class EnvWorkflow(EnvBase):
         tasks_per_node = self.get_value("tasks_per_node", subgroup=job)
         thread_count = self.get_value("thread_count", subgroup=job)
         num_nodes = None
-        if task_count is not None:
+        if task_count is not None and tasks_per_node is not None:
             task_count = int(task_count)
             num_nodes   = int(math.ceil(float(task_count)/float(tasks_per_node)))
             tasks_per_node =  task_count//num_nodes

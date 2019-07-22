@@ -216,7 +216,6 @@ def check_case(self):
         # the ww3 buildnml has dependancies on inputdata so we must run it again
         self.create_namelists(component='WAV')
 
-
     expect(self.get_value("BUILD_COMPLETE"), "Build complete is "
            "not True please rebuild the model by calling case.build")
     logger.info("Check case OK")
