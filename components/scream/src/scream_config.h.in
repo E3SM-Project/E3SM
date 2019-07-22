@@ -22,6 +22,9 @@
 // Whether MPI errors should abort
 #cmakedefine SCREAM_MPI_ERRORS_ARE_FATAL
 
+// Whether we allow use of CONSTEXPR_ASSERT macro
+#cmakedefine SCREAM_CONSTEXPR_ASSERT
+
 // Mimic GPU to correctness-test inter-column parallelism on non-GPU platform
 #cmakedefine SCREAM_MIMIC_GPU
 
