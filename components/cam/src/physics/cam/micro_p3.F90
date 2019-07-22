@@ -64,7 +64,7 @@ module micro_p3
        ice_melting, ice_cldliq_wet_growth, calc_ice_relaxation_timescale, & 
        calc_rime_density, cldliq_immersion_freezing, rain_immersion_freezing
 
-
+ 
 
   real(rtype),private :: e0
 
@@ -482,7 +482,7 @@ contains
    
     logical   :: log_wetgrowth
 
-    real(rtype) :: Eii_fact,epsi
+    real(rtype) :: epsi
     real(rtype) :: eii ! temperature dependent aggregation efficiency
 
     ! Variables needed for in-cloud calculations
@@ -498,15 +498,15 @@ contains
          flux_qx,flux_nx,                     &
          flux_nit,flux_qir,flux_bir
 
-    real(rtype)    :: lammax,lammin,mu,dv,sc,dqsdt,ab,kap,epsr,epsc,xx,aaa,epsilon,epsi_tot, &
+    real(rtype)    :: lammax,lammin,mu,dv,sc,dqsdt,ab,kap,epsr,epsc,epsi_tot, &
          dum,dum1,dum2,    &
-         dumqvs,ratio,dum3,dum4,dum5,dum6,rdumii, &
-         rdumjj,dqsidt,abi,dumqvi,rhop,tmp1,  &
+         dum3,dum4,dum5,dum6,rdumii, &
+         rdumjj,dqsidt,abi,rhop,tmp1,  &
          tmp2,inv_dum3,odt,     &
          fluxdiv_qit,fluxdiv_nit,fluxdiv_qir,fluxdiv_bir,prt_accum, &
          fluxdiv_qx,fluxdiv_nx,Co_max,dt_sub,      &
          Q_nuc,N_nuc,         &
-         deltaD_init,qcon_satadj,    &
+         deltaD_init,    &
          timeScaleFactor,dt_left, vtrmi1
 
 
