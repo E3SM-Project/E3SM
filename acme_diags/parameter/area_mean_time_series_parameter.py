@@ -9,7 +9,11 @@ class AreaMeanTimeSeriesParameter(CoreParameter):
         # Granulating with regions doesn't make sense,
         # because we have multiple regions for each plot.
         # So keep all of the default values except regions. 
+        #self.seasons = ['ANN']
+        #print(dir(self))
         self.granulate.remove('regions')
+        self.granulate.remove('seasons')
+        
 
     def check_values(self):
         if not self.ref_names:
