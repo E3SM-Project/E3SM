@@ -64,15 +64,17 @@ def plot(var, regions_to_data, parameter):
             stepsize = 1
         ax1.set_xticks(x[::stepsize])
         x_ticks_labels = np.arange(start_time, end_time + 1, stepsize)
-        ax1.set_xticklabels(x_ticks_labels, rotation='45', fontsize=10)
+        ax1.set_xticklabels(x_ticks_labels, rotation='45', fontsize=8)
 
         #if i_region % 3 == 0 :
         #    ax1.set_ylabel(var + ' (' + test.units + ')')
         ax1.set_ylabel(var + ' (' + test.units + ')')
+        ax1.set_xlabel('Year')
         ax1.legend(loc='best', prop={'size': 7})
-        fig.text(panel[i_region][0]+0.12, panel[i_region][1]+panel[i_region][3]-0.015, parameter.regions[i_region],ha='center', color='black')
+        #fig.text(panel[i_region][0]+0.12, panel[i_region][1]+panel[i_region][3]-0.015, parameter.regions[i_region],ha='center', color='black')
     # Figure title.
-    fig.suptitle('Annual mean ' + var + ' over regions: ' + parameter.test_name_yrs, x=0.5, y=0.97, fontsize=15)
+        ax1.set_title(parameter.regions[i_region],fontsize = 10)
+    fig.suptitle('Annual mean ' + var + ' time series over regions ' + parameter.test_name_yrs, x=0.3, y=0.98, fontsize=15)
 
     # Save the figure.
     output_file_name = var

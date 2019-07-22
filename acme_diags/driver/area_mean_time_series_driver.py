@@ -31,7 +31,6 @@ def run_diag(parameter):
     #    msg += 'because both the test and ref data need to be time-series files.'
     #    raise RuntimeError(msg)
 
-    print('_____',variables)
     for var in variables:
         # The data that'll be sent to the plotting function.
         # There are eight tuples, each will be plotted like so:
