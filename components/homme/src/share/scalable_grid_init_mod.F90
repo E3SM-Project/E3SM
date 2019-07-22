@@ -221,6 +221,7 @@ contains
     deallocate(gm%ge)
     call destroyMetaGraph(gm%mv)
     call sfcmap_finalize(gm%sfcmap)
+    sgi_use = .false.
   end subroutine sgi_finalize
 
   ! Map structured (i,j,face) triple to global ID.

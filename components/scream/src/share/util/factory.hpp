@@ -2,9 +2,11 @@
 #define SCREAM_FACTORY_HPP
 
 #include <string>
+#include <sstream>
 #include <map>
 
 #include "share/scream_assert.hpp"
+#include "share/util/scream_utils.hpp"
 
 namespace scream
 {
@@ -36,11 +38,17 @@ public:
   {
     static factory_type factory;
 
+    // We rely on whatever the implementation can give us
+    factory.m_factory_name = typeid(factory_type).name();
+
     return factory;
   }
 
   // For debugging, inspect if the size of the register in the factory
   size_t register_size () const { return m_register.size(); }
+
+  // Return the name of the factory
+  static const std::string& name () { return m_factory_name; }
 
   // Register a creator and returns true if it was successfully registered
   bool register_product (const key_type& key,
@@ -51,7 +59,22 @@ public:
   obj_ptr_type create (const key_type& label, ConstructorArgs&& ...args);
 
 private:
-  std::string print_registered_products () const;
+  std::string print_registered_products () const {
+    return print_registered_products_impl<check_overloads::StreamExists<key_type>::value>();
+  }
+
+  template<int OpStreamExists>
+  typename std::enable_if<OpStreamExists==1,std::string>::type
+  print_registered_products_impl () const;
+
+  template<int OpStreamExists>
+  typename std::enable_if<OpStreamExists==0,std::string>::type
+  print_registered_products_impl () const {
+    // We cannot use << to print out the keys in this factory, so we just print a message.
+    return " Warning! Cannot print registered products in factory " + m_factory_name + ".\n"
+           "          The type " + std::string(typeid(key_type).name()) + " does not overload the '<<' operator.\n"
+           "          We have no idea how to print the registered products, so we just print this message. Sorry.\n";
+  }
 
   Factory () = default;
   Factory (const factory_type&) = delete;
@@ -59,8 +82,15 @@ private:
   Factory (factory_type&&) = delete;
   factory_type& operator= (factory_type&&) = delete;
 
-  register_type    m_register;
+  register_type         m_register;
+  static std::string    m_factory_name;
 };
+
+template<typename AbstractProduct,
+         typename KeyType,
+         typename PointerType,
+         typename... ConstructorArgs>
+std::string Factory<AbstractProduct,KeyType,PointerType,ConstructorArgs...>::m_factory_name;
 
 // ========================== IMPLEMENTATION ======================== //
 
@@ -95,16 +125,18 @@ create (const key_type& key,ConstructorArgs&& ...args)
   //       However, this check is symptomatic of a larger problem (not registering product)
   //       than simply not finding the requested one (perhaps because of spelling).
   scream_require_msg(m_register.size()>0,
-                     "[Factory] Error! There are no products registered in the factory.\n"
-                     "                 Did you forget to call 'register_product'?\n");
+                     "[" + m_factory_name + "] Error!\n"
+                     "        There are no products registered in the factory.\n"
+                     "        Did you forget to call 'register_product'?\n");
 
   auto it = m_register.find(key);
 
   // Check that the requested product is registered
   scream_require_msg(it!=m_register.end(),
-                     "[Factory] Error! The key '" + key + "' is not associated to any registered product.\n"
-                     "                 The list of registered product is: " + print_registered_products() + "\n"
-                     "                 Did you forget to register it?\n");
+                     "[" + m_factory_name + "] Error!\n"
+                     "        The key '" + key + "' is not associated to any registered product.\n"
+                     "        The list of registered product is: " + print_registered_products() + "\n"
+                     "        Did you forget to register it?\n");
 
   return (*it->second)(std::forward<ConstructorArgs>(args)...);
 }
@@ -113,21 +145,23 @@ template<typename AbstractProduct,
          typename KeyType,
          typename PointerType,
          typename... ConstructorArgs>
-std::string Factory<AbstractProduct,KeyType,PointerType,ConstructorArgs...>::
-print_registered_products () const {
+template<int OpStreamExists>
+typename std::enable_if<OpStreamExists==1,std::string>::type
+Factory<AbstractProduct,KeyType,PointerType,ConstructorArgs...>::
+print_registered_products_impl () const {
   // This routine simply puts the products name in a string, as "name1, name2, name3,..., name N"
-  std::string str;
-  if (m_register.size()==0) {
-    return str;
-  }
-  auto next = m_register.begin();
-  auto it = m_register.begin();
-  for (++next; next!=m_register.end(); ++it, ++next) {
-    str += it->first + ", ";
-  }
-  str += next->first;
+  std::stringstream ss;
 
-  return str;
+  if (m_register.size()==0) {
+    return ss.str();
+  }
+  auto it = m_register.begin();
+  ss << it->first;
+  for (++it; it!=m_register.end(); ++it) {
+    ss << ", " << it->first;
+  }
+
+  return ss.str();
 }
 
 } // namespace util

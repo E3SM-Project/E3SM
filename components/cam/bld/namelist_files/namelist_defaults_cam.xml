@@ -162,6 +162,7 @@
 
 <!-- E3SM Aquaplanet -->
 <ncdata dyn="se" hgrid="ne4np4"   nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne4np4_L72_c190218.nc</ncdata>
+<ncdata dyn="se" hgrid="ne16np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne16np4_L72_c190311.nc</ncdata>
 <ncdata dyn="se" hgrid="ne30np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne30np4_L72_c190215.nc</ncdata>
 
 
@@ -213,13 +214,15 @@
 <bnd_topo hgrid="4x5"       >atm/cam/topo/USGS-gtopo30_4x5_remap_c050520.nc</bnd_topo>
 <bnd_topo hgrid="10x15"     >atm/cam/topo/USGS-gtopo30_10x15_remap_c050520.nc</bnd_topo>
 
-<bnd_topo hgrid="ne4np4"    >atm/cam/topo/USGS-gtopo30_ne4np4_16x.c20160612.nc</bnd_topo>
-<bnd_topo hgrid="ne11np4"   >atm/cam/topo/USGS-gtopo30_ne11np4_16xconsistentSGH.c20160612.nc</bnd_topo>
-<bnd_topo hgrid="ne16np4"   >atm/cam/topo/USGS-gtopo30_ne16np4_16xconsistentSGH.c20160612.nc</bnd_topo>
-<bnd_topo hgrid="ne30np4"   >atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc</bnd_topo>
-<bnd_topo hgrid="ne60np4"   >atm/cam/topo/USGS-gtopo30_ne60np4_16xconsistentSGH.c20140517.nc</bnd_topo>
-<bnd_topo hgrid="ne120np4"  >atm/cam/topo/USGS-gtopo30_ne120np4_16xdel2-PFC-consistentSGH.nc</bnd_topo>
-<bnd_topo hgrid="ne240np4"  >atm/cam/topo/USGS-gtopo30_ne240np4_16xconsistentSGH.c20130724.nc</bnd_topo>
+<bnd_topo hgrid="ne4np4"   npg="0">atm/cam/topo/USGS-gtopo30_ne4np4_16x.c20160612.nc</bnd_topo>
+<bnd_topo hgrid="ne4np4"   npg="2">atm/cam/topo/USGS-gtopo30_ne4pg2_16xdel2-PFC-consistentSGH.c20190618.nc</bnd_topo>
+<bnd_topo hgrid="ne11np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne11np4_16xconsistentSGH.c20160612.nc</bnd_topo>
+<bnd_topo hgrid="ne16np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne16np4_16xconsistentSGH.c20160612.nc</bnd_topo>
+<bnd_topo hgrid="ne30np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc</bnd_topo>
+<bnd_topo hgrid="ne30np4"  npg="2">atm/cam/topo/USGS-gtopo30_ne30pg2_16xdel2-PFC-consistentSGH.c20190417.nc</bnd_topo>
+<bnd_topo hgrid="ne60np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne60np4_16xconsistentSGH.c20140517.nc</bnd_topo>
+<bnd_topo hgrid="ne120np4" npg="0">atm/cam/topo/USGS-gtopo30_ne120np4_16xdel2-PFC-consistentSGH.nc</bnd_topo>
+<bnd_topo hgrid="ne240np4" npg="0">atm/cam/topo/USGS-gtopo30_ne240np4_16xconsistentSGH.c20130724.nc</bnd_topo>
 
 <bnd_topo hgrid="ne0np4_arm_x8v3_lowcon"  >atm/cam/inic/homme/USGS-gtopo30_arm_x8v3_lowcon_tensor12xconsistentSGH.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_conus_x4v1_lowcon"  >atm/cam/topo/USGS_conusx4v1-tensor12x_consistentSGH_c150924.nc</bnd_topo>
@@ -1573,6 +1576,11 @@
 <interp_type> 1 </interp_type>
 <interp_gridtype> 1 </interp_gridtype>
 <vthreads> 1 </vthreads>
+
+<transport_alg> 0 </transport_alg>
+<semi_lagrange_cdr_alg> 20 </semi_lagrange_cdr_alg>
+<semi_lagrange_cdr_check> .false. </semi_lagrange_cdr_check>
+<semi_lagrange_nearest_point_lev> 0 </semi_lagrange_nearest_point_lev>
 
 <!-- ================================================================== -->
 <!-- Defaults for driver namelist seq_infodata_inparm                   -->

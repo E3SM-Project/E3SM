@@ -2,4 +2,15 @@
 
 # Ed Hartnett
 
-SUBDIRS = clib
+# Does the user want to build fortran?
+if BUILD_FORTRAN
+FLIB = flib
+endif
+
+if USE_GPTL
+GPTL = gptl
+endif
+
+SUBDIRS = clib ${GPTL} $(FLIB)
+
+EXTRA_DIST = CMakeLists.txt

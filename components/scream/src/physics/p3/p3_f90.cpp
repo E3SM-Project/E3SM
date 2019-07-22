@@ -12,9 +12,9 @@ extern "C" {
                  Real MWH2O, Real MWdry, Real gravit, Real LatVap, Real LatIce, 
                  Real CpLiq, Real Tmelt, Real Pi, Int iulog, bool masterproc);
   void p3_init_c(const char** lookup_file_dir, int* info);
-  void p3_main_c(Real* qc, Real* nc, Real* qr, Real* nr, Real* th_old, Real* th,
-                 Real* qv_old, Real* qv, Real dt, Real* qitot, Real* qirim,
-                 Real* nitot, Real* birim, Real* ssat, Real* pres,
+  void p3_main_c(Real* qc, Real* nc, Real* qr, Real* nr, Real* th,
+                 Real* qv, Real dt, Real* qitot, Real* qirim,
+                 Real* nitot, Real* birim, Real* pres,
                  Real* dzq, Real* npccn, Real* naai, Int it, Real* prt_liq, Real* prt_sol, Int its,
                  Int ite, Int kts, Int kte, Real* diag_ze,
                  Real* diag_effc, Real* diag_effi, Real* diag_vmi,
@@ -45,11 +45,8 @@ FortranData::FortranData (Int ncol_, Int nlev_)
   nitot = Array2("total ice number, #/kg", ncol, nlev);
   qirim = Array2("rime ice mass mixing ratio, kg/kg", ncol, nlev);
   birim = Array2("rime ice volume mixing ratio, m3/kg", ncol, nlev);
-  ssat = Array2("supersaturation (qv - qs), kg/kg", ncol, nlev);
   qv = Array2("water vapor mixing ratio, kg/kg", ncol, nlev);
   th = Array2("potential temperature, K", ncol, nlev);
-  qv_old = Array2("qv at beginning of timestep, kg/kg", ncol, nlev);
-  th_old = Array2("theta at beginning of timestep, K", ncol, nlev);
   pres = Array2("pressure, Pa", ncol, nlev);
   dzq = Array2("vertical grid spacing, m", ncol, nlev);
   npccn = Array2("ccn activated number tendency, kg-1 s-1", ncol, nlev);
@@ -93,9 +90,9 @@ void FortranDataIterator::init (const FortranData::Ptr& dp) {
         {d_->name.extent_int(0), d_->name.extent_int(1), d_->name.extent_int(2)}, \
         d_->name.data(),                                                \
         d_->name.size()})
-  fdipb(qv); fdipb(th); fdipb(qv_old); fdipb(th_old); fdipb(pres);
+  fdipb(qv); fdipb(th); fdipb(pres);
   fdipb(dzq); fdipb(npccn); fdipb(naai); fdipb(qc); fdipb(nc); fdipb(qr); fdipb(nr);
-  fdipb(ssat); fdipb(qitot); fdipb(nitot);
+  fdipb(qitot); fdipb(nitot);
   fdipb(qirim); fdipb(birim); fdipb(prt_liq); fdipb(prt_sol);
   fdipb(diag_ze); fdipb(diag_effc); fdipb(diag_effi);
   fdipb(diag_vmi); fdipb(diag_di); fdipb(diag_rhoi);
@@ -130,9 +127,9 @@ void p3_init () {
 }
 
 void p3_main (const FortranData& d) {
-  p3_main_c(d.qc.data(), d.nc.data(), d.qr.data(), d.nr.data(), d.th_old.data(),
-            d.th.data(), d.qv_old.data(), d.qv.data(), d.dt, d.qitot.data(),
-            d.qirim.data(), d.nitot.data(), d.birim.data(), d.ssat.data(),
+  p3_main_c(d.qc.data(), d.nc.data(), d.qr.data(), d.nr.data(),
+            d.th.data(), d.qv.data(), d.dt, d.qitot.data(),
+            d.qirim.data(), d.nitot.data(), d.birim.data(),
             d.pres.data(), d.dzq.data(), d.npccn.data(), d.naai.data(), d.it, d.prt_liq.data(),
             d.prt_sol.data(), 1, d.ncol, 1, d.nlev, d.diag_ze.data(),
             d.diag_effc.data(), d.diag_effi.data(), d.diag_vmi.data(),

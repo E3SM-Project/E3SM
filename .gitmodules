@@ -18,4 +18,4 @@
 [submodule "components/cam/src/physics/rrtmgp/external"]
 	path = components/cam/src/physics/rrtmgp/external
 	url = git@github.com:RobertPincus/rte-rrtmgp.git
-	branch = master
+	branch = develop

@@ -29,6 +29,8 @@
       use ice_blocks
       use ice_domain_size
       use ice_constants
+      use ice_state, only: aice, vice
+
 !
 !EOP
 !
@@ -661,7 +663,6 @@
 !
 !EOP
 !
-      use ice_state, only: aice, vice
 
       fsurf  (:,:,:) = c0
       fcondtop(:,:,:)= c0

@@ -102,7 +102,10 @@ int test_decomp1(int iosysid, int use_io, int my_rank, MPI_Comm test_comm)
         if (!(iostart = calloc(NDIM2, sizeof(PIO_Offset))))
             return ERR_AWFUL;
         if (!(iocount = calloc(NDIM2, sizeof(PIO_Offset))))
+        {
+            free(iostart);
             return ERR_AWFUL;
+        }
         if (my_rank == 0)
             for (int i = 0; i < NDIM2; i++)
                 iocount[i] = 4;
@@ -111,15 +114,20 @@ int test_decomp1(int iosysid, int use_io, int my_rank, MPI_Comm test_comm)
     /* Create the PIO decomposition for this test. */
     if ((ret = PIOc_InitDecomp(iosysid, PIO_FLOAT, 2, slice_dimlen, (PIO_Offset)elements_per_pe,
                                compdof, &ioid, NULL, iostart, iocount)))
+    {
+        if (iostart)
+            free(iostart);
+        if (iocount)
+            free(iocount);
         return ret;
+    }
 
     /* Free resources. */
     free(compdof);
-    if (use_io)
-    {
+    if (iostart)
         free(iostart);
+    if (iocount)
         free(iocount);
-    }
 
     /* These should not work. */
     if (PIOc_write_decomp(DECOMP_FILE, iosysid + TEST_VAL_42, ioid, test_comm) != PIO_EBADID)
@@ -412,7 +420,7 @@ int main(int argc, char **argv)
                     ERR(ret);
 
                 /* Finalize PIO systems. */
-                if ((ret = PIOc_finalize(iosysid)))
+                if ((ret = PIOc_free_iosystem(iosysid)))
                     ERR(ret);
             } /* next io test */
         } /* next rearranger */

@@ -9,7 +9,7 @@
 #  define vector_simd _Pragma("simd")
 # endif
 # define vector_novec _Pragma("novector")
-#elif defined __GNUG__
+#elif defined(__GNUG__) && !defined(__clang__)
 # define vector_ivdep _Pragma("GCC ivdep")
 # define vector_simd _Pragma("GCC ivdep")
 # define vector_novec

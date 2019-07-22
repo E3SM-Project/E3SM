@@ -1,0 +1,3 @@
+#!/bin/bash
+./xmlchange CAM_TARGET=theta-l
+./xmlchange ATM_NCPL=24

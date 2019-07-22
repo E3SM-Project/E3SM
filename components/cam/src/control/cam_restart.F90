@@ -214,7 +214,7 @@ end subroutine restart_printopts
          fname = interpret_filename_spec( rfilename_spec )
       end if
 
-      call cam_pio_createfile(File, trim(fname), 0)
+      call cam_pio_createfile(File, trim(fname))
       call timemgr_init_restart(File)
 
       call init_restart_dynamics(File, dyn_out)

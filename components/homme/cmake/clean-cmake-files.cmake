@@ -1,8 +1,8 @@
 # Remove CMake cache 
-SET(CMAKE_GENERATED ${CMAKE_BINARY_DIR}/CMakeCache.txt
-                    ${CMAKE_BINARY_DIR}/cmake_install.cmake  
-                    ${CMAKE_BINARY_DIR}/Makefile
-                    ${CMAKE_BINARY_DIR}/CMakeFiles
+SET(CMAKE_GENERATED ${HOMME_BINARY_DIR}/CMakeCache.txt
+                    ${HOMME_BINARY_DIR}/cmake_install.cmake  
+                    ${HOMME_BINARY_DIR}/Makefile
+                    ${HOMME_BINARY_DIR}/CMakeFiles
 )
 
 FOREACH(genFile ${CMAKE_GENERATED})

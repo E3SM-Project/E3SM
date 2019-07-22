@@ -281,16 +281,14 @@ contains
      type (element_t) :: elem(:)
      integer, intent(out) :: GlobalUniqueColsP
 
-     integer(kind=int_kind), allocatable :: numElem2P(:)
-     integer(kind=int_kind), allocatable :: gOffset(:)
+     integer(kind=int_kind) :: numElem2P(nelem)
+     integer(kind=int_kind) :: gOffset(nelem)
     
      integer(kind=int_kind) :: ie,ig,nprocs,ierr
 
      logical,parameter :: Debug = .FALSE.
 
      nprocs = par%nprocs
-     allocate(numElem2P(nelem))
-     allocate(gOffset(nelem))
      gOffset=0
 
      do ie=1,nelemd
@@ -314,9 +312,6 @@ contains
      GlobalUniqueColsP = gOffset(nelem)+numElem2P(nelem)-1
      if (GlobalUniqueColsP<0) stop 'ERROR: GlobalUniqueColsP integer overflow'
 
-
-     deallocate(numElem2P)
-     deallocate(gOffset)
   end subroutine SetElemOffset
 
   subroutine CreateUniqueIndex(ig,gdof,idx)

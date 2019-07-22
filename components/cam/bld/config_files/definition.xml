@@ -165,6 +165,9 @@ Number of elements along one edge of a cubed sphere grid.
 <entry id="csnp" value="1">
 Number of points on each edge of the elements in a cubed sphere grid.
 </entry>
+<entry id="npg" value="0">
+Number of physics grid cells on each edge of the elements in a cubed sphere grid.
+</entry>
 <entry id="nlev" value="30">
 Number of vertical levels.
 </entry>
