@@ -209,7 +209,7 @@
     <MPILIBS>mpt</MPILIBS>
     <PROJECT>acme</PROJECT>
     <SAVE_TIMING_DIR>/project/projectdirs/acme</SAVE_TIMING_DIR>
-    <SAVE_TIMING_DIR_PROJECTS>acme,m2830,m2833</SAVE_TIMING_DIR_PROJECTS>
+    <SAVE_TIMING_DIR_PROJECTS>acme,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch/cori-haswell</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/project/projectdirs/acme/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
@@ -252,7 +252,7 @@
         <command name="rm">cce</command>
         <command name="rm">gcc</command>
         <command name="rm">cray-parallel-netcdf</command>
-        <command name="rm">cray-parallel-hdf5</command>
+        <command name="rm">cray-hdf5-parallel</command>
         <command name="rm">pmi</command>
         <command name="rm">cray-libsci</command>
         <command name="rm">cray-mpich2</command>
@@ -348,7 +348,7 @@
     <MPILIBS>mpt,impi</MPILIBS>
     <PROJECT>acme</PROJECT>
     <SAVE_TIMING_DIR>/project/projectdirs/acme</SAVE_TIMING_DIR>
-    <SAVE_TIMING_DIR_PROJECTS>acme,m2830,m2833</SAVE_TIMING_DIR_PROJECTS>
+    <SAVE_TIMING_DIR_PROJECTS>acme,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch/cori-knl</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/project/projectdirs/acme/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
@@ -393,7 +393,7 @@
         <command name="rm">cce</command>
         <command name="rm">gcc</command>
         <command name="rm">cray-parallel-netcdf</command>
-        <command name="rm">cray-parallel-hdf5</command>
+        <command name="rm">cray-hdf5-parallel</command>
         <command name="rm">pmi</command>
         <command name="rm">cray-mpich2</command>
         <command name="rm">cray-mpich</command>
@@ -420,7 +420,7 @@
       </modules>
 
       <modules mpilib="impi">
-        <command name="swap">cray-mpich impi/2018.up2</command>
+        <command name="swap">cray-mpich impi/2019.up3</command>
       </modules>
 
       <modules compiler="intel">
@@ -432,7 +432,7 @@
       <modules compiler="intel19">
         <command name="load">PrgEnv-intel/6.0.4</command>
         <command name="rm">intel</command>
-        <command name="load">intel/19.0.0.117</command>
+        <command name="load">intel/19.0.3.199</command>
       </modules>
 
       <modules compiler="gnu">
@@ -492,13 +492,6 @@
 
     <environment_variables mpilib="mpt">
       <env name="MPICH_GNI_DYNAMIC_CONN">disabled</env>
-    </environment_variables>
-    <environment_variables mpilib="impi">
-      <env name="I_MPI_FABRICS">ofi</env>
-      <env name="I_MPI_OFI_PROVIDER">gni</env>
-      <env name="I_MPI_PRINT_VERSION">yes</env>
-      <env name="I_MPI_OFI_LIBRARY">/global/common/cori/software/libfabric/1.6.1/gnu/lib/libfabric.so</env>
-      <env name="I_MPI_PMI_LIBRARY">/usr/lib64/slurmpmi/libpmi.so</env>
     </environment_variables>
     <environment_variables compiler="intel">
       <env name="FORT_BUFFERED">yes</env>
@@ -1174,6 +1167,7 @@
         <command name="add">+python-2.7</command>
       </modules>
       <modules compiler="intel">
+	<command name="add">+gcc-5.3.0</command>
         <command name="add">+intel-17.0.0</command>
         <command name="add">+netcdf-c-4.4.1-f77-4.4.4-intel-17.0.0-serial</command>
       </modules>

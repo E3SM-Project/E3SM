@@ -503,10 +503,10 @@ class EnvBatch(EnvBase):
 
                 if self._batchtype == "cobalt" or external_workflow:
                     break
-            if not external_workflow:
+
+            if not external_workflow and not no_batch:
                 expect(batch_job_id, "No result from jobs {}".format(jobs))
                 prev_job = batch_job_id
-
 
         if dry_run:
             return jobcmds
