@@ -17,18 +17,18 @@ set(PERFOBJS
   homme/src/theta/hevi_mod.F90
   cam/src/physics/cam/uwshcu.F90)
 
-set(REDUCED_PRECISION_OBJS share/util/shr_wv_sat_mod.F90)
+set(REDUCED_PRECISION_OBJS ../cime/src/share/util/shr_wv_sat_mod.F90)
 
 set(SHR_RANDNUM_FORT_OBJS
-  share/RandNum/src/kissvec/kissvec_mod.F90
-  share/RandNum/src/mt19937/mersennetwister_mod.F90
-  share/RandNum/src/dsfmt_f03/dSFMT_interface.F90
-  share/RandNum/src/shr_RandNum_mod.F90)
+  ../cime/src/share/RandNum/src/kissvec/kissvec_mod.F90
+  ../cime/src/share/RandNum/src/mt19937/mersennetwister_mod.F90
+  ../cime/src/share/RandNum/src/dsfmt_f03/dSFMT_interface.F90
+  ../cime/src/share/RandNum/src/shr_RandNum_mod.F90)
 
 set(SHR_RANDNUM_C_OBJS
-  share/RandNum/src/dsfmt_f03/dSFMT.c
-  share/RandNum/src/dsfmt_f03/dSFMT_utils.c
-  share/RandNum/src/kissvec/kissvec.c)
+  ../cime/src/share/RandNum/src/dsfmt_f03/dSFMT.c
+  ../cime/src/share/RandNum/src/dsfmt_f03/dSFMT_utils.c
+  ../cime/src/share/RandNum/src/kissvec/kissvec.c)
 
 if (NOT DEBUG)
   foreach(ITEM IN LISTS PERFOBJS)
