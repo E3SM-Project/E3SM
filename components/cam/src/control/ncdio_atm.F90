@@ -202,7 +202,7 @@ contains
         ! Specifically, this condition is for when the single column model 
         !  is run in the Spectral Element dycore
         cnt(1) = 1 
-        call shr_scam_getCloseLatLon(ncid%fh,scmlat,scmlon,closelat,closelon,latidx,lonidx)
+        if (masterproc) call shr_scam_getCloseLatLon(ncid%fh,scmlat,scmlon,closelat,closelon,latidx,lonidx)
         strt(1) = lonidx
         ierr = pio_get_var(ncid, varid, strt, cnt, field)
 

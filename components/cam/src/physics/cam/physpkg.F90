@@ -397,7 +397,9 @@ subroutine phys_inidat( cam_out, pbuf2d )
     else
        if (masterproc) write(iulog,*) 'NOT AN AQUA_PLANET simulation, initialize &
                                        sgh, sgh30, land m using data from file.'
+!       if (masterproc) then
        fh_topo=>topo_file_get_id()
+       write(*,*) 'FHTOPO ', dim1name, dim2name
        call infld('SGH', fh_topo, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
             sgh, found, gridname='physgrid')
        if(.not. found) call endrun('ERROR: SGH not found on topo file')
@@ -414,6 +416,8 @@ subroutine phys_inidat( cam_out, pbuf2d )
             landm, found, gridname='physgrid')
 
        if(.not.found) call endrun(' ERROR: LANDM_COSLAT not found on topo dataset.')
+
+!       endif
     end if
 
     allocate(tptr(1:pcols,begchunk:endchunk))
