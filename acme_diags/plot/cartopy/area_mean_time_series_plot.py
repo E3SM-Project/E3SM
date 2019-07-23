@@ -17,21 +17,21 @@ def plot(var, regions_to_data, parameter):
 
     # Position and sizes of subplot axes in page coordinates (0 to 1)
     # The dimensions [left, bottom, width, height] of the new axes. All quantities are in fractions of figure width and height.
-    line_color = ['r', 'b', 'g', 'm']
+    line_color = ['r', 'b', 'g', 'm', 'c', 'y']
 
     panel = [(0.1500, 0.5500, 0.7500, 0.3000),
              (0.1500, 0.1300, 0.7500, 0.3000),
              ]
 
-    panel = [(0.1, 0.68, 0.25, 0.25),
-             (0.4, 0.68, 0.25, 0.25),
-             (0.7, 0.68, 0.25, 0.25),
-             (0.1, 0.38, 0.25, 0.25),
-             (0.4, 0.38, 0.25, 0.25),
-             (0.7, 0.38, 0.25, 0.25),
-             (0.1, 0.08, 0.25, 0.25),
-             (0.4, 0.08, 0.25, 0.25),
-             (0.7, 0.08, 0.25, 0.25),
+    panel = [(0.1, 0.70, 0.25, 0.225),
+             (0.4, 0.70, 0.25, 0.225),
+             (0.7, 0.70, 0.25, 0.225),
+             (0.1, 0.38, 0.25, 0.225),
+             (0.4, 0.38, 0.25, 0.225),
+             (0.7, 0.38, 0.25, 0.225),
+             (0.1, 0.06, 0.25, 0.225),
+             (0.4, 0.06, 0.25, 0.225),
+             (0.7, 0.06, 0.25, 0.225),
              ]
 
     # Create the figure.
@@ -54,12 +54,12 @@ def plot(var, regions_to_data, parameter):
         ax1 = fig.add_axes(panel[i_region])
         ax1.plot(test.asma(), 'k', linewidth=2,label = test_name +'(mean: {0:.2f}, std: {1:.3f})'.format(np.mean(test.asma()), np.std(test.asma())))
         for i_ref, ref in enumerate(refs):
-            ax1.plot(ref.asma(), line_color[i_ref], linewidth=2,label = ref.ref_name +'(mean: {0:.1f}, std: {1:.2f})'.format(np.mean(ref.asma()), np.std(ref.asma())))
+            ax1.plot(ref.asma(), line_color[i_ref], linewidth=2,label = ref.ref_name +'(mean: {0:.2f}, std: {1:.3f})'.format(np.mean(ref.asma()), np.std(ref.asma())))
 
         x = np.arange(num_year)
         #do Truncation Division to accommodating long time records
-        if num_year > 10:
-            stepsize = (num_year - 1)//10
+        if num_year > 19:
+            stepsize = num_year //10
         else:
             stepsize = 1
         ax1.set_xticks(x[::stepsize])
