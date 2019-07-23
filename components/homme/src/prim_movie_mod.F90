@@ -99,7 +99,7 @@ contains
     use hybvcoord_mod, only : hvcoord_t
     use parallel_mod, only : abortmp
     use pio, only : PIO_InitDecomp, pio_setdebuglevel, pio_int, pio_double, pio_closefile !_EXTERNAL
-    use netcdf_io_mod, only : iodesc2d, iodesc3d, iodesc3d_subelem, iodesct, pio_subsystem 
+    use netcdf_io_mod, only : iodesc2d, iodesc3d, iodesc3d_subelem, iodesct, pio_subsystem, iodesc3dp1 
     use common_io_mod, only : num_io_procs, num_agg, io_stride
     use reduction_mod, only : parallelmax
     type (element_t), intent(in) :: elem(:)
@@ -116,6 +116,7 @@ contains
     integer*8 :: ii,jj,base
     integer(kind=nfsizekind) :: start(2), count(2)
     integer*8, allocatable :: compDOF(:)
+    integer*8, allocatable :: compDOFp1(:)
     type(io_desc_t) :: iodescv, iodescvp1
     integer,allocatable  :: subelement_corners(:,:)
     real(kind=real_kind),allocatable  :: var1(:,:),var2(:,:)
@@ -147,6 +148,7 @@ contains
 
 
     allocate(compdof(nxyp*nlev), latp(nxyp),lonp(nxyp))
+    allocate(compdofp1(nxyp*nlevp))
     
     ! Create the DOF arrays for GLL points
     iorank=pio_iotask_rank(pio_subsystem)
@@ -161,8 +163,10 @@ contains
     call PIO_initDecomp(pio_subsystem, pio_double,(/GlobalUniqueCols,nlev/),&
          compDOF,IOdesc3D)
 
-    
-
+    if (par%masterproc) print *,'compDOFp1 for 3d'
+    call getDOF(elem, GlobalUniqueCols, nlevp, compdofp1)
+    call PIO_initDecomp(pio_subsystem,pio_double,(/GlobalUniqueCols,nlevp/),&
+         compDOFp1,iodesc3dp1)
 
 ! trivial case for vertical variables
     if(par%masterproc) then
@@ -188,6 +192,7 @@ contains
          compDOF(1:1),IOdescT)
 
     deallocate(compdof)
+    deallocate(compdofp1)
 
 
 ! the GLL based element subgrid
@@ -222,6 +227,8 @@ contains
     call nf_variable_attributes(ncdf, 'u', 'longitudinal wind component','meters/second')
     call nf_variable_attributes(ncdf, 'v', 'latitudinal wind component','meters/second')
     call nf_variable_attributes(ncdf, 'T', 'Temperature','degrees kelvin')
+    call nf_variable_attributes(ncdf, 'w_nlev', 'vertical wind component','meters/second')
+    call nf_variable_attributes(ncdf, 'w_nlevp', 'vertical wind component','meters/second')
 #ifdef _PRIM
     call nf_variable_attributes(ncdf, 'geos', 'surface geopotential','m^2/s^2')
     call nf_variable_attributes(ncdf, 'precl','Precipitation rate','meters of water/s')
@@ -420,7 +427,7 @@ contains
     use viscosity_mod, only : compute_zeta_C0
     use element_ops, only : get_field, get_w
     use dcmip16_wrapper, only: precl
-
+    use netcdf_io_mod, only : iodesc3dp1 
 
     type (element_t)    :: elem(:)
 
@@ -459,8 +466,8 @@ contains
              count2d(1)=piocount2d
              count2d(2)=1
 
-             count(1:2)=piocount3d
-             start(1:2)=piostart3d
+             count(1:2)=0 !piocount3d
+             start(1:2)=0 !piostart3d
              start(3)=nf_get_frame(ncdf(ios))
              count(3)=1
 
@@ -657,7 +664,7 @@ print *, 'T',start,count
                 call nf_put_var(ncdf(ios),var3d,start, count, name='w_nlev')
              end if
 
-#if 1
+
              if(nf_selectedvar('w_nlevp', output_varnames)) then
                 if (par%masterproc) print *,'writing w_nlevp...'
                 st=1
@@ -667,9 +674,9 @@ print *, 'T',start,count
                    call UniquePoints(elem(ie)%idxP,nlevp,vartmp1,var3dp1(st:en,:))
                    st=en+1
                 enddo
-                call nf_put_var(ncdf(ios),var3dp1,startp1, countp1, name='w_nlevp')
+                call nf_put_var(ncdf(ios),var3dp1,startp1, countp1, name='w_nlevp',iodescin=iodesc3dp1)
              end if
-#endif
+
 
              if(nf_selectedvar('omega', output_varnames)) then
                 st=1
