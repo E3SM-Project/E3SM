@@ -977,7 +977,11 @@ contains
 
 
 
-  subroutine prim_run_subcycle(elem, hybrid,nets,nete, dt, single_column, tl, hvcoord,nsubstep)
+  subroutine prim_run_subcycle(elem, hybrid,nets,nete, dt, single_column, tl, hvcoord,nsubstep &
+#ifdef FIVE
+             ,t_five, q_five, u_five, v_five &
+#endif
+              )
 
     !   advance dynamic variables and tracers (u,v,T,ps,Q,C) from time t to t + dt_q
     !
@@ -1003,6 +1007,10 @@ contains
 #if USE_OPENACC
     use openacc_utils_mod,  only: copy_qdp_h2d, copy_qdp_d2h
 #endif
+#ifdef FIVE
+    use constituents,       only: pcnst
+    use five_intr,          only: pver_five
+#endif
 
     implicit none
 
@@ -1016,6 +1024,12 @@ contains
     type (TimeLevel_t),   intent(inout) :: tl
     integer,              intent(in)    :: nsubstep                     ! nsubstep = 1 .. nsplit
 
+#ifdef FIVE
+    real(kind=real_kind), intent(in) :: t_five(np,np,pver_five,nelemd)
+    real(kind=real_kind), intent(in) :: u_five(np,np,pver_five,nelemd)
+    real(kind=real_kind), intent(in) :: v_five(np,np,pver_five,nelemd)
+    real(kind=real_kind), intent(in) :: q_five(np,np,pver_five,pcnst,nelemd)
+#endif
     real(kind=real_kind) :: dp, dt_q, dt_remap
     real(kind=real_kind) :: dp_np1(np,np)
     integer :: ie,i,j,k,n,q,t,scm_dum
@@ -1141,8 +1155,12 @@ contains
       nete_in=nete
     endif
 
-    call vertical_remap(hybrid,elem,hvcoord,dt_remap,tl%np1,np1_qdp,nets_in,nete_in)
-
+#ifdef FIVE
+    call vertical_remap(hybrid,elem,hvcoord,dt_remap,tl%np1,np1_qdp,nets_in,nete_in,single_column, &
+          t_five, q_five, u_five, v_five)
+#else
+    call vertical_remap(hybrid,elem,hvcoord,dt_remap,tl%np1,np1_qdp,nets_in,nete_in,single_column)
+#endif
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! time step is complete.  update some diagnostic variables:

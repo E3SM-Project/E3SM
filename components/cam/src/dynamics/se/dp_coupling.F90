@@ -366,7 +366,7 @@ CONTAINS
              call get_gcol_block_d(pgcols(icol),1,idmb1,idmb2,idmb3)
              ie = idmb3(1)
              ioff=idmb2(1)
-
+             
              do ilyr=1,pver
                 T_tmp(ioff,ilyr,ie)      = phys_tend(lchnk)%dtdt(icol,ilyr)
                 uv_tmp(ioff,1,ilyr,ie)   = phys_tend(lchnk)%dudt(icol,ilyr)

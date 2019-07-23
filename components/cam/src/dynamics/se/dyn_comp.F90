@@ -341,22 +341,36 @@ CONTAINS
   ! !ROUTINE:  RUN --- Driver for the 
   !
   ! !INTERFACE:
-  subroutine dyn_run( dyn_state, rc )
+  subroutine dyn_run( dyn_state, rc &
+#ifdef FIVE
+             ,t_five, q_five, u_five, v_five & 
+#endif
+              )
 
     ! !USES:
     use scamMod,          only: single_column, use_3dfrc
     use se_single_column_mod, only: apply_SC_forcing
     use parallel_mod,     only : par
     use prim_driver_mod,  only: prim_run_subcycle
-    use dimensions_mod,   only : nlev
+    use dimensions_mod,   only : np, nelemd, nlev
     use time_mod,         only: tstep
     use hybrid_mod,       only: hybrid_create
+#ifdef FIVE
+    use constituents,     only: pcnst
+    use five_intr,        only: pver_five
+#endif
 !    use perf_mod, only : t_startf, t_stopf
     implicit none
 
 
     type (dyn_export_t), intent(inout)       :: dyn_state   !  container
     type(hybrid_t) :: hybrid
+#ifdef FIVE
+    real(r8), intent(in) :: t_five(np,np,pver_five,nelemd)
+    real(r8), intent(in) :: u_five(np,np,pver_five,nelemd)
+    real(r8), intent(in) :: v_five(np,np,pver_five,nelemd)
+    real(r8), intent(in) :: q_five(np,np,pver_five,pcnst,nelemd)
+#endif
 
     integer, intent(out)               :: rc      ! Return code
     integer ::  n
@@ -384,8 +398,14 @@ CONTAINS
          do n=1,se_nsplit
            ! forward-in-time RK, with subcycling
            call t_startf("prim_run_sybcycle")
+#ifdef FIVE
+           call prim_run_subcycle(dyn_state%elem,hybrid,nets,nete,&
+               tstep, single_column, TimeLevel, hvcoord, n, &
+               t_five, q_five, u_five, v_five)
+#else
            call prim_run_subcycle(dyn_state%elem,hybrid,nets,nete,&
                tstep, single_column, TimeLevel, hvcoord, n)
+#endif
            call t_stopf("prim_run_sybcycle")
          end do
        endif

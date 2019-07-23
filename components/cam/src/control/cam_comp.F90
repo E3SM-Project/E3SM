@@ -326,8 +326,11 @@ subroutine cam_run3( cam_out )
    !
    call t_barrierf ('sync_stepon_run3', mpicom)
    call t_startf ('stepon_run3')
+#ifdef FIVE
+   call stepon_run3( dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out )
+#else
    call stepon_run3( dtime, cam_out, phys_state, dyn_in, dyn_out )
-
+#endif
    call t_stopf  ('stepon_run3')
 
    if (is_first_step() .or. is_first_restart_step()) then

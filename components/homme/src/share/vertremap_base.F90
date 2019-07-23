@@ -75,7 +75,7 @@ end subroutine remap_calc_grids
 
 
 
-subroutine remap1(Qdp,nx,qsize,dp1,dp2)
+subroutine remap1(Qdp,nx,nlev,qsize,dp1,dp2)
   ! remap 1 field
   ! input:  Qdp   field to be remapped (NOTE: MASS, not MIXING RATIO)
   !         dp1   layer thickness (source)
@@ -84,7 +84,7 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
   ! output: remaped Qdp, conserving mass, monotone on Q=Qdp/dp
   !
   implicit none
-  integer, intent(in) :: nx,qsize
+  integer, intent(in) :: nx,nlev,qsize
   real (kind=real_kind), intent(inout) :: Qdp(nx,nx,nlev,qsize)
   real (kind=real_kind), intent(in) :: dp1(nx,nx,nlev),dp2(nx,nx,nlev)
   ! ========================
@@ -101,11 +101,11 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
   logical :: abort=.false.
 
   if (vert_remap_q_alg == -1) then
-     call remap1_nofilter(qdp,nx,qsize,dp1,dp2)
+     call remap1_nofilter(qdp,nx,nlev,qsize,dp1,dp2)
      return
   endif
   if (vert_remap_q_alg == 1 .or. vert_remap_q_alg == 2 .or. vert_remap_q_alg == 3) then
-     call remap_Q_ppm(qdp,nx,qsize,dp1,dp2)
+     call remap_Q_ppm(qdp,nx,nlev,qsize,dp1,dp2)
      return
   endif
 
@@ -354,7 +354,7 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
 
 end subroutine remap1
 
-subroutine remap1_nofilter(Qdp,nx,qsize,dp1,dp2)
+subroutine remap1_nofilter(Qdp,nx,nlev,qsize,dp1,dp2)
   ! remap 1 field
   ! input:  Qdp   field to be remapped (NOTE: MASS, not MIXING RATIO)
   !         dp1   layer thickness (source)
@@ -363,7 +363,7 @@ subroutine remap1_nofilter(Qdp,nx,qsize,dp1,dp2)
   ! output: remaped Qdp, conserving mass
   !
   implicit none
-  integer, intent(in) :: nx,qsize
+  integer, intent(in) :: nx,qsize,nlev
   real (kind=real_kind), intent(inout) :: Qdp(nx,nx,nlev,qsize)
   real (kind=real_kind), intent(in) :: dp1(nx,nx,nlev),dp2(nx,nx,nlev)
   ! ========================
@@ -510,7 +510,7 @@ end subroutine remap1_nofilter
 !! vert_remap_q_alg == 2  means piecewise constant in 2 cells near boundaries (don't use ghost cells)
 !! vert_remap_q_alg == 3  means UKMO splines ghost cells (copy last value into all ghost cells)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
+subroutine remap_Q_ppm(Qdp,nx,nlev,qsize,dp1,dp2)
   ! remap 1 field
   ! input:  Qdp   field to be remapped (NOTE: MASS, not MIXING RATIO)
   !         dp1   layer thickness (source)
@@ -520,7 +520,7 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
   !
   use control_mod, only        : vert_remap_q_alg
   implicit none
-  integer,intent(in) :: nx,qsize
+  integer,intent(in) :: nx,qsize,nlev
   real (kind=real_kind), intent(inout) :: Qdp(nx,nx,nlev,qsize)
   real (kind=real_kind), intent(in) :: dp1(nx,nx,nlev),dp2(nx,nx,nlev)
   ! Local Variables
@@ -591,7 +591,7 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
 
       !This turned out a big optimization, remembering that only parts of the PPM algorithm depends on the data, namely the
       !limiting. So anything that depends only on the grid is pre-computed outside the tracer loop.
-      ppmdx(:,:) = compute_ppm_grids( dpo )
+      ppmdx(:,:) = compute_ppm_grids( nlev,dpo )
 
       !From here, we loop over tracers for only those portions which depend on tracer data, which includes PPM limiting and
       !mass accumulation
@@ -617,7 +617,7 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
           endif
         enddo
         !Compute monotonic and conservative PPM reconstruction over every cell
-        coefs(:,:) = compute_ppm( ao , ppmdx )
+        coefs(:,:) = compute_ppm( nlev, ao , ppmdx )
         !Compute tracer values on the new grid by integrating from the old cell bottom to the new
         !cell interface to form a new grid mass accumulation. Taking the difference between
         !accumulation at successive interfaces gives the mass inside each cell. Since Qdp is
@@ -637,11 +637,11 @@ end subroutine remap_Q_ppm
 
 
 !THis compute grid-based coefficients from Collela & Woodward 1984.
-function compute_ppm_grids( dx )   result(rslt)
+function compute_ppm_grids( nlev, dx )   result(rslt)
   implicit none
+  integer :: j,nlev
   real(kind=real_kind), intent(in) :: dx(-1:nlev+2)  !grid spacings
   real(kind=real_kind)             :: rslt(10,0:nlev+1)  !grid spacings
-  integer :: j
   integer :: indB, indE
 
   !Calculate grid-based coefficients for stage 1 of compute_ppm
@@ -668,9 +668,10 @@ end function compute_ppm_grids
 
 
 !This computes a limited parabolic interpolant using a net 5-cell stencil, but the stages of computation are broken up into 3 stages
-function compute_ppm( a , dx )    result(coefs)
+function compute_ppm( nlev, a , dx )    result(coefs)
   use control_mod, only: vert_remap_q_alg
   implicit none
+  integer :: j, nlev
   real(kind=real_kind), intent(in) :: a    (    -1:nlev+2)  !Cell-mean values
   real(kind=real_kind), intent(in) :: dx   (10,  0:nlev+1)  !grid spacings
   real(kind=real_kind) ::             coefs(0:2,   nlev  )  !PPM coefficients (for parabola)
@@ -680,9 +681,7 @@ function compute_ppm( a , dx )    result(coefs)
   ! Hold expressions based on the grid (which are cumbersome).
   real(kind=real_kind) :: dx1, dx2, dx3, dx4, dx5, dx6, dx7, dx8, dx9, dx10
   real(kind=real_kind) :: al, ar                            !Left and right interface values for cell-local limiting
-  integer :: j
   integer :: indB, indE
-
   ! Stage 1: Compute dma for each cell, allowing a 1-cell ghost stencil below and above the domain
   do j = 0 , nlev+1
     da = dx(1,j) * ( dx(2,j) * ( a(j+1) - a(j) ) + dx(3,j) * ( a(j) - a(j-1) ) )
