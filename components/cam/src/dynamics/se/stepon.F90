@@ -556,16 +556,13 @@ goto 9999
     allocate( bbuffer(tsize*block_buf_nrecs/(pver+1)*(pver_five+1)) )
     allocate( cbuffer(tsize*chunk_buf_nrecs/(pver+1)*(pver_five+1)) )
 
-    !print *, 'check1', tsize, chunk_buf_nrecs, pver, pver_five
 !$omp parallel do private (lchnk, ncols, cpter, i, icol, ilyr, m)
     do lchnk = begchunk,endchunk
        ncols = get_ncols_p(lchnk)
 
        call chunk_to_block_send_pters_five(lchnk,pcols,pver_five+1,tsize,cpter)
 
-       !print *, 'check2', lchnk, ncols
        do i=1,ncols
-          !print *, 'check3', i, cpter(i,0), cpter(i,0)+2+pcnst
           cbuffer(cpter(i,0):cpter(i,0)+2+pcnst) = 0.0_r8
        end do
 
