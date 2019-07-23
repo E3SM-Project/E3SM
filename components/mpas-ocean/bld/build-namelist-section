@@ -76,6 +76,9 @@ add_default($nl, 'config_time_integrator');
 #####################################
 
 add_default($nl, 'config_vert_coord_movement');
+add_default($nl, 'config_ALE_thickness_proportionality');
+add_default($nl, 'config_vert_taper_weight_depth_1');
+add_default($nl, 'config_vert_taper_weight_depth_2');
 add_default($nl, 'config_use_min_max_thickness');
 add_default($nl, 'config_min_thickness');
 add_default($nl, 'config_max_thickness_factor');

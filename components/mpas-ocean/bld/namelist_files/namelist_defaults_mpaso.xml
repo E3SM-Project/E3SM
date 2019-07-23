@@ -65,6 +65,9 @@
 
 <!-- ALE_vertical_grid -->
 <config_vert_coord_movement>'uniform_stretching'</config_vert_coord_movement>
+<config_ALE_thickness_proportionality>'restingThickness_times_weights'</config_ALE_thickness_proportionality>
+<config_vert_taper_weight_depth_1>250.0</config_vert_taper_weight_depth_1>
+<config_vert_taper_weight_depth_2>500.0</config_vert_taper_weight_depth_2>
 <config_use_min_max_thickness>.false.</config_use_min_max_thickness>
 <config_min_thickness>1.0</config_min_thickness>
 <config_max_thickness_factor>6.0</config_max_thickness_factor>
