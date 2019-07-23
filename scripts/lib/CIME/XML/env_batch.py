@@ -594,11 +594,15 @@ class EnvBatch(EnvBase):
             if not dry_run:
                 args = self._build_run_args(job, True, skip_pnl=skip_pnl, set_continue_run=resubmit_immediate,
                                             submit_resubmits=not resubmit_immediate)
-                if hasattr(case, function_name):
-                    getattr(case, function_name)(**{k: v for k, (v, _) in args.items()})
-                else:
-                    expect(os.path.isfile(job_name),"Could not find file {}".format(job_name))
-                    run_cmd_no_fail(os.path.join(self._caseroot,job_name), combine_output=True, verbose=True, from_dir=self._caseroot)
+                try:
+                    if hasattr(case, function_name):
+                        getattr(case, function_name)(**{k: v for k, (v, _) in args.items()})
+                    else:
+                        expect(os.path.isfile(job_name),"Could not find file {}".format(job_name))
+                        run_cmd_no_fail(os.path.join(self._caseroot,job_name), combine_output=True, verbose=True, from_dir=self._caseroot)
+                except Exception as e:
+                    # We don't want exception from the run phases getting into submit phase
+                    logger.warning("Exception from {}: {}".format(function_name, str(e)))
 
             return
 
