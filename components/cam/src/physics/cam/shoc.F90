@@ -831,7 +831,7 @@ subroutine diag_second_shoc_moments(&
     wqw_sec(i,1) = wqw_sfc(i)
     uw_sec(i,1) = uw_sfc(i)
     vw_sec(i,1) = vw_sfc(i)
-    wtke_sec(i,1) = 0._r8
+    wtke_sec(i,1) = max(sqrt(ustar2),0.01_r8)**3
     do p=1,num_tracer
       wtracer_sec(i,1,p) = wtracer_sfc(i,p)
     enddo
@@ -1606,16 +1606,11 @@ subroutine shoc_tke(&
     enddo
   enddo
   
-  ! Set lower boundary condition for shear production
-  do i=1,shcol
-!    grid_dz = 0.5_r8*dz_zi(i,1)
-
-!    ustar=max(sqrt(sqrt(uw_sfc(i)**2 + vw_sfc(i)**2)),0.01_r8)
-!    shear_prod(i,1) = ustar**3/(0.4_r8*grid_dz)
-    shear_prod(i,1) = 0._r8 
-  enddo
-  
-  ! Set upper boundary for shear production
+  ! Set lower and upper boundary for shear production
+  ! Note that the lower bound for shear production has already 
+  !  been taken into account for the TKE boundary condition, 
+  !  thus zero out here
+  shear_prod(:,1) = 0._r8
   shear_prod(:,nlevi) = 0._r8
   
   ! Interpolate shear production from interface to thermo grid
