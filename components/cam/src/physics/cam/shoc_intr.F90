@@ -739,8 +739,8 @@ end function shoc_implements_cnst
  
    minqn = 0._r8
    newfice(:,:) = 0._r8
-   where(state1%q(:ncol,:pver,3) .gt. minqn) &
-       newfice(:ncol,:pver) = state1%q(:ncol,:pver,3)/(state1%q(:ncol,:pver,2)+state1%q(:ncol,:pver,3))  
+   where(state1%q(:ncol,:pver,ixcldice) .gt. minqn) &
+       newfice(:ncol,:pver) = state1%q(:ncol,:pver,ixcldice)/(state1%q(:ncol,:pver,ixcldliq)+state1%q(:ncol,:pver,ixcldice))  
        
    do k=1,pver
      do i=1,ncol
