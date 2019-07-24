@@ -695,8 +695,6 @@ contains
   ! maps quads on the sphere directly to the reference element
   ! ========================================================
   subroutine dmap_elementlocal(D, a,b, corners3D)
-    use element_mod, only : element_t
-
     real (kind=real_kind), intent(out)    :: D(2,2)
     real (kind=real_kind), intent(in)     :: a,b
     type (cartesian3d_t)               ::  corners3D(4)   

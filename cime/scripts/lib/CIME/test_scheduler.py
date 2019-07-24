@@ -13,7 +13,7 @@ from collections import OrderedDict
 
 from CIME.XML.standard_module_setup import *
 import six
-from get_tests import get_recommended_test_time
+from get_tests import get_recommended_test_time, get_build_groups
 from CIME.utils import append_status, append_testlog, TESTS_FAILED_ERR_CODE, parse_test_name, get_full_test_name, get_model, \
     convert_to_seconds, get_cime_root, get_project, get_timestamp, get_python_libs_root
 from CIME.test_status import *
@@ -138,8 +138,7 @@ class TestScheduler(object):
         self._allow_baseline_overwrite = allow_baseline_overwrite
         self._allow_pnl       = allow_pnl
         self._non_local       = non_local
-        self._single_exe      = single_exe
-        self._single_exe_root = None
+        self._build_groups    = []
 
         self._mail_user = mail_user
         self._mail_type = mail_type
@@ -192,8 +191,10 @@ class TestScheduler(object):
         self._walltime = walltime
 
         if parallel_jobs is None:
-            self._parallel_jobs = min(len(test_names),
-                                      self._machobj.get_value("MAX_MPITASKS_PER_NODE"))
+            mach_parallel_jobs = self._machobj.get_value("NTEST_PARALLEL_JOBS")
+            if mach_parallel_jobs is None:
+                mach_parallel_jobs = self._machobj.get_value("MAX_MPITASKS_PER_NODE")
+            self._parallel_jobs = min(len(test_names), mach_parallel_jobs)
         else:
             self._parallel_jobs = parallel_jobs
 
@@ -289,6 +290,25 @@ class TestScheduler(object):
                        "Cannot create new case in directory '{}', it already exists."
                        " Pick a different test-id".format(self._get_test_dir(test)))
                 logger.info("Creating test directory {}".format(self._get_test_dir(test)))
+
+        # Setup build groups
+        if single_exe:
+            self._build_groups = [self._tests]
+        elif self._cime_model == "e3sm":
+            # Any test that's in a shared-enabled suite with other tests should share exes
+            self._build_groups = get_build_groups(self._tests)
+        else:
+            self._build_groups = [ (item,) for item in self._tests ]
+
+        # Build group to exeroot map
+        self._build_group_exeroots = {}
+        for build_group in self._build_groups:
+            self._build_group_exeroots[build_group] = None
+
+        logger.debug("Build groups are:")
+        for build_group in self._build_groups:
+            for test_name in build_group:
+                logger.debug("{}{}".format("  " if test_name == build_group[0] else "    ", test_name))
 
         # By the end of this constructor, this program should never hard abort,
         # instead, errors will be placed in the TestStatus files for the various
@@ -617,6 +637,7 @@ class TestScheduler(object):
                     for comp in comps:
                         envtest.set_test_parameter("NTASKS_"+comp, "1")
                         envtest.set_test_parameter("NTHRDS_"+comp, "1")
+                        envtest.set_test_parameter("ROOTPE_"+comp, "0")
 
                 elif (opt.startswith('I') or # Marker to distinguish tests with same name - ignored
                       opt.startswith('M') or # handled in create_newcase
@@ -648,14 +669,15 @@ class TestScheduler(object):
             case.set_value("SAVE_TIMING", self._save_timing)
 
             # handle single-exe here, all cases will use the EXEROOT from
-            # the first case.
-            first_test = self._first_test()
-            if self._single_exe:
-                if test == first_test:
-                    self._single_exe_root = case.get_value("EXEROOT")
-                else:
-                    expect(self._single_exe_root is not None, "Programming error for single_exe, missing root")
-                    case.set_value("EXEROOT", self._single_exe_root)
+            # the first case in the build group
+            is_first_test, _, my_build_group = self._get_build_group(test)
+            if is_first_test:
+                expect(self._build_group_exeroots[my_build_group] is None, "Should not already have exeroot")
+                self._build_group_exeroots[my_build_group] = case.get_value("EXEROOT")
+            else:
+                build_group_exeroot = self._build_group_exeroots[my_build_group]
+                expect(build_group_exeroot is not None, "Should already have exeroot")
+                case.set_value("EXEROOT", build_group_exeroot)
 
             # Scale back build parallelism on systems with few cores
             if self._model_build_cost > self._proc_pool:
@@ -680,8 +702,8 @@ class TestScheduler(object):
     ###########################################################################
     def _sharedlib_build_phase(self, test):
     ###########################################################################
-        first_test = self._first_test()
-        if self._single_exe and test != first_test:
+        is_first_test, first_test, _ = self._get_build_group(test)
+        if not is_first_test:
             if self._get_test_status(first_test, phase=SHAREDLIB_BUILD_PHASE) == TEST_PASS_STATUS:
                 return True, ""
             else:
@@ -691,17 +713,22 @@ class TestScheduler(object):
         return self._shell_cmd_for_phase(test, "./case.build --sharedlib-only", SHAREDLIB_BUILD_PHASE, from_dir=test_dir)
 
     ###########################################################################
-    def _first_test(self):
+    def _get_build_group(self, test):
     ###########################################################################
-        return list(self._tests.keys())[0]
+        for build_group in self._build_groups:
+            if test in build_group:
+                return test == build_group[0], build_group[0], build_group
+
+        expect(False, "No build group for test '{}'".format(test))
 
     ###########################################################################
     def _model_build_phase(self, test):
     ###########################################################################
+        is_first_test, first_test, _ = self._get_build_group(test)
+
         test_dir = self._get_test_dir(test)
 
-        first_test = self._first_test()
-        if self._single_exe and test != first_test:
+        if not is_first_test:
             if self._get_test_status(first_test, phase=MODEL_BUILD_PHASE) == TEST_PASS_STATUS:
                 with Case(test_dir, read_only=False) as case:
                     post_build(case, [], build_complete=True, save_build_provenance=False)
@@ -752,12 +779,17 @@ class TestScheduler(object):
     ###########################################################################
     def _get_procs_needed(self, test, phase, threads_in_flight=None, no_batch=False):
     ###########################################################################
-        # If in single_exe mode, we must wait for the first case to complete building
-        # before starting other cases.
-        first_test = self._first_test()
-        if self._single_exe and test != first_test and \
-           self._get_test_status(first_test, phase=MODEL_BUILD_PHASE) == TEST_PEND_STATUS:
-            return self._proc_pool + 1
+        # For build pools, we must wait for the first case to complete XML, SHAREDLIB,
+        # and MODEL_BUILD phases before the other cases can do those phases
+        is_first_test, first_test, _ = self._get_build_group(test)
+
+        if not is_first_test:
+            build_group_dep_phases = [XML_PHASE, SHAREDLIB_BUILD_PHASE, MODEL_BUILD_PHASE]
+            if phase in build_group_dep_phases:
+                if self._get_test_status(first_test, phase=phase) == TEST_PEND_STATUS:
+                    return self._proc_pool + 1
+                else:
+                    return 1
 
         if phase == RUN_PHASE and (self._no_batch or no_batch):
             test_dir = self._get_test_dir(test)
@@ -833,8 +865,10 @@ class TestScheduler(object):
 
         logger.info(status_str)
 
+        is_first_test = self._get_build_group(test)[0]
+
         if test_phase in [CREATE_NEWCASE_PHASE, XML_PHASE] or \
-           (self._single_exe and test != self._first_test() and test_phase in [SHAREDLIB_BUILD_PHASE, MODEL_BUILD_PHASE]):
+           (not is_first_test and test_phase in [SHAREDLIB_BUILD_PHASE, MODEL_BUILD_PHASE]):
             # These are the phases for which TestScheduler is reponsible for
             # updating the TestStatus file
             self._update_test_status_file(test, test_phase, status)

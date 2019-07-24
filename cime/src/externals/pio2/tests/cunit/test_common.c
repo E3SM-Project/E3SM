@@ -1,4 +1,4 @@
-/*
+ /*
  * Common test code for PIO C tests.
  *
  * Ed Hartnett
@@ -160,13 +160,13 @@ get_iotypes(int *num_flavors, int *flavors)
  *
  * @param iotype the IO type
  * @param name pointer that will get name of IO type. Must have enough
- * memory allocated (NC_MAX_NAME + 1 works.)
+ * memory allocated (PIO_MAX_NAME + 1 works.)
  * @returns 0 for success, error code otherwise.
  * @internal
  */
 int get_iotype_name(int iotype, char *name)
 {
-    char flavor_name[NUM_FLAVORS][NC_MAX_NAME + 1] = {"pnetcdf", "classic",
+    char flavor_name[NUM_FLAVORS][PIO_MAX_NAME + 1] = {"pnetcdf", "classic",
                                                       "serial4", "parallel4"};
 
     /* Check inputs. */
@@ -186,7 +186,9 @@ int get_iotype_name(int iotype, char *name)
  * @param my_rank pointer that gets this tasks rank.
  * @param ntasks pointer that gets the number of tasks in WORLD
  * communicator.
- * @param target_ntasks the number of tasks this test needs to run.
+ * @param min_ntasks the min number of tasks this test needs to run.
+ * @param max_ntasks the max number of tasks this test needs to run. 0
+ * means no max.
  * @param log_level PIOc_set_log_level() will be called with this value.
  * @param comm a pointer to an MPI communicator that will be created
  * for this test and contain target_ntasks tasks from WORLD.
@@ -220,7 +222,7 @@ int pio_test_init2(int argc, char **argv, int *my_rank, int *ntasks,
                 min_ntasks);
         return ERR_AWFUL;
     }
-    else if (*ntasks > max_ntasks)
+    else if (max_ntasks && *ntasks > max_ntasks)
     {
         /* If more tasks are available than we need for this test,
          * create a communicator with exactly the number of tasks we
@@ -311,7 +313,7 @@ int
 test_inq_type(int ncid, int format)
 {
 #define NUM_TYPES 11
-    char type_name[NC_MAX_NAME + 1];
+    char type_name[PIO_MAX_NAME + 1];
     PIO_Offset type_size;
     nc_type xtype[NUM_TYPES] = {NC_CHAR, NC_BYTE, NC_SHORT, NC_INT, NC_FLOAT, NC_DOUBLE,
                                 NC_UBYTE, NC_USHORT, NC_UINT, NC_INT64, NC_UINT64};
@@ -538,9 +540,9 @@ check_nc_sample_1(int iosysid, int format, char *filename, int my_rank, int *nci
     int ret;
     int ndims, nvars, ngatts, unlimdimid;
     int ndims2, nvars2, ngatts2, unlimdimid2;
-    char dimname[NC_MAX_NAME + 1];
+    char dimname[PIO_MAX_NAME + 1];
     PIO_Offset dimlen;
-    char varname[NC_MAX_NAME + 1];
+    char varname[PIO_MAX_NAME + 1];
     nc_type vartype;
     int varndims, vardimids, varnatts;
 
@@ -634,7 +636,7 @@ create_nc_sample_2(int iosysid, int format, char *filename, int my_rank, int *nc
         return ret;
 
     /* Define a dimension. */
-    char dimname2[NC_MAX_NAME + 1];
+    char dimname2[PIO_MAX_NAME + 1];
     if ((ret = PIOc_def_dim(ncid, FIRST_DIM_NAME_S2, DIM_LEN_S2, &dimid)))
         return ret;
     if ((ret = PIOc_inq_dimname(ncid, 0, dimname2)))
@@ -645,7 +647,7 @@ create_nc_sample_2(int iosysid, int format, char *filename, int my_rank, int *nc
         return ret;
 
     /* Define a 1-D variable. */
-    char varname2[NC_MAX_NAME + 1];
+    char varname2[PIO_MAX_NAME + 1];
     if ((ret = PIOc_def_var(ncid, FIRST_VAR_NAME_S2, NC_INT, NDIM_S2, &dimid, &varid)))
         return ret;
     if ((ret = PIOc_inq_varname(ncid, 0, varname2)))
@@ -660,7 +662,7 @@ create_nc_sample_2(int iosysid, int format, char *filename, int my_rank, int *nc
     short short_att_data = ATT_VALUE_S2;
     float float_att_data = ATT_VALUE_S2;
     double double_att_data = ATT_VALUE_S2;
-    char attname2[NC_MAX_NAME + 1];
+    char attname2[PIO_MAX_NAME + 1];
     /* Write an att and rename it. */
     if ((ret = PIOc_put_att_int(ncid, NC_GLOBAL, FIRST_ATT_NAME_S2, NC_INT, 1, &att_data)))
         return ret;
@@ -730,14 +732,14 @@ check_nc_sample_2(int iosysid, int format, char *filename, int my_rank, int *nci
     int ndims, nvars, ngatts, unlimdimid;
     int ndims2, nvars2, ngatts2, unlimdimid2;
     int dimid2;
-    char dimname[NC_MAX_NAME + 1];
+    char dimname[PIO_MAX_NAME + 1];
     PIO_Offset dimlen;
-    char dimname2[NC_MAX_NAME + 1];
+    char dimname2[PIO_MAX_NAME + 1];
     PIO_Offset dimlen2;
-    char varname[NC_MAX_NAME + 1];
+    char varname[PIO_MAX_NAME + 1];
     nc_type vartype;
     int varndims, vardimids, varnatts;
-    char varname2[NC_MAX_NAME + 1];
+    char varname2[PIO_MAX_NAME + 1];
     nc_type vartype2;
     int varndims2, vardimids2, varnatts2;
     int varid2;
@@ -747,7 +749,7 @@ check_nc_sample_2(int iosysid, int format, char *filename, int my_rank, int *nci
     double double_att_data;
     nc_type atttype;
     PIO_Offset attlen;
-    char myattname[NC_MAX_NAME + 1];
+    char myattname[PIO_MAX_NAME + 1];
     int myid;
     PIO_Offset start[NDIM_S2] = {0}, count[NDIM_S2] = {DIM_LEN_S2};
     int data_in[DIM_LEN_S2];
@@ -967,7 +969,7 @@ int create_nc_sample_3(int iosysid, int iotype, int my_rank, int my_comp_idx,
                        char *filename, char *test_name, int verbose, int use_darray,
                        int ioid)
 {
-    char iotype_name[NC_MAX_NAME + 1];
+    char iotype_name[PIO_MAX_NAME + 1];
     int ncid;
     signed char my_char_comp_idx = my_comp_idx;
     int varid[NVAR];
@@ -1223,7 +1225,7 @@ int check_nc_sample_3(int iosysid, int iotype, int my_rank, int my_comp_idx,
 int create_nc_sample_4(int iosysid, int iotype, int my_rank, int my_comp_idx,
                        char *filename, char *test_name, int verbose, int num_types)
 {
-    char iotype_name[NC_MAX_NAME + 1];
+    char iotype_name[PIO_MAX_NAME + 1];
     int ncid;
     int scalar_varid[num_types];
     int varid[num_types];

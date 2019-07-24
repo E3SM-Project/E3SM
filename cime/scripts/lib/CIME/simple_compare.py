@@ -231,6 +231,6 @@ def findDiff(d1, d2, path="", case=None):
                     pass
                 elif d1[k] != d2[k]:
                     comment += path+":\n"
-                    comment += " - "+ k +" : "+ d1[k] + "\n"
-                    comment += " + "+ k +" : "+ d2[k] + "\n"
+                    comment += " - {} : {}\n".format(k,d1[k])
+                    comment += " + {} : {}\n".format(k,d2[k])
     return comment

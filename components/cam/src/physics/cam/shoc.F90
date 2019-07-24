@@ -811,7 +811,11 @@ subroutine diag_second_shoc_moments(&
     
     ! Parameterize thermodyanmics variances via Andre et al. 1978
     ustar2 = sqrt(uw_sfc(i) * uw_sfc(i) + vw_sfc(i) * vw_sfc(i)) 
-    wstar = (1._r8/basetemp * ggr * wthl_sfc(i) * z_const)**(1._r8/3._r8)
+    if (wthl_sfc(i) > 0._r8) then
+      wstar = (1._r8/basetemp * ggr * wthl_sfc(i) * z_const)**(1._r8/3._r8)
+    else
+      wstar = 0._r8
+    endif
     uf = sqrt(ustar2 + 0.3_r8 * wstar * wstar)
     uf = max(ufmin,uf)
     

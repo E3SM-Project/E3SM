@@ -3,6 +3,7 @@
 #endif
 
 module interp_movie_mod
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   use kinds, only : real_kind
   use dimensions_mod, only :  nlev, nelemd, np, ne, qsize
   use interpolate_mod, only : interpolate_t, setup_latlon_interp, interpdata_t, &
@@ -210,18 +211,20 @@ module interp_movie_mod
   integer(kind=nfsizekind) :: start2d(3), count2d(3), start3d(4), count3d(4)
   type(nf_handle), save :: ncdf(max_output_streams)
 
+#endif
 
 contains
   subroutine interp_movie_init(elem,par,hvcoord,tl)
     use time_mod, only : timelevel_t
     use element_mod, only: element_t
-    use pio, only : pio_setdebuglevel, PIO_Put_att, pio_put_var, pio_global ! _EXTERNAL
     use parallel_mod, only : parallel_t, haltmp, syncmp
-    use interpolate_mod, only : get_interp_lat, get_interp_lon, get_interp_gweight
 #if defined(_PRIM)
     use hybvcoord_mod, only : hvcoord_t
 #endif
-
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    use pio, only : pio_setdebuglevel, PIO_Put_att, pio_put_var, pio_global ! _EXTERNAL
+    use interpolate_mod, only : get_interp_lat, get_interp_lon, get_interp_gweight
+#endif
     type (TimeLevel_t), intent(in)         :: tl     ! time level struct
     type(element_t) :: elem(:)
     type(parallel_t), intent(in) :: par
@@ -232,6 +235,7 @@ contains
     ! ignored
     integer, optional :: hvcoord
 #endif
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     integer :: dimsize(maxdims)   
     integer, pointer :: ldof2d(:),ldof3d(:), iodof2d(:), iodof3d(:)
     integer, pointer :: latdof(:), londof(:), iodoflon(:), iodoflat(:)
@@ -403,12 +407,15 @@ contains
     deallocate(lat,lon,gw)
     deallocate(lev,ilev)
     call syncmp(par)
+#endif
   end subroutine interp_movie_init
 
 
 
   subroutine interp_movie_finish
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     call nf_close_all(ncdf)
+#endif
   end subroutine interp_movie_finish
 
 
@@ -426,8 +433,9 @@ contains
 #endif
     use derivative_mod, only : derivinit, derivative_t, laplace_sphere_wk
     use hybrid_mod, only : hybrid_t
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     use pio, only : pio_setdebuglevel, pio_syncfile ! _EXTERNAL
-
+#endif
     use viscosity_mod, only : compute_zeta_C0, make_c0, compute_zeta_c0_contra,&
                               compute_div_c0,compute_div_c0_contra
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
@@ -443,7 +451,7 @@ contains
     integer,optional    :: hvcoord
 #endif
     real (kind=real_kind), intent(in) :: phimean
-
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     character(len=varname_len), pointer :: output_varnames(:)
     integer :: ie,ios, i, j, k
     real (kind=real_kind) :: pfull, pr0
@@ -596,15 +604,16 @@ contains
                 deallocate(var3d)
              end if
 
+#ifdef _PRIM
+! PRIM codes output 'geo', not 'geop'. why?
+#else
              if(nf_selectedvar('geop', output_varnames)) then
+                if (par%masterproc) print *,'writing geop...'
                 allocate(datall(ncnt,nlev),var3d(np,np,nlev,1))
                 st=1
                 do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    do k=1,nlev
-#ifdef _PRIM
-                      var3d(:,:,k,1) = 0  ! need to compute PHI from hydrostatic relation
-#else
                       if(test_case.eq.'vortex') then
                          var3d(:,:,k,1) = elem(ie)%state%p(:,:,k,n0)
                       elseif(test_case.eq.'swirl') then
@@ -618,8 +627,6 @@ contains
                          if(k.ne.kmass) &
                               var3d(:,:,k,1)=var3d(:,:,k,1)/elem(ie)%state%p(:,:,kmass,n0)
                       endif
-
-#endif
                       call interpolate_scalar(interpdata(ie), var3d(:,:,k,1), &
                            np, datall(st:en,k))
                    end do
@@ -628,7 +635,7 @@ contains
                 call nf_put_var(ncdf(ios),datall,start3d, count3d, name='geop')
                 deallocate(datall,var3d)
              end if
-
+#endif
 
 
 #if 0
@@ -1012,12 +1019,13 @@ contains
        end if ! output stream is enabled
     end do  ! do ios=1,max_output_streams
     call t_stopf('interp_movie_output')
+#endif
   end subroutine interp_movie_output
 
 
 
 
-
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   subroutine GetIODOF(ndims, gdims, iorank, iodof, start, count)
     integer, intent(in) :: ndims
     integer, intent(in) :: gdims(ndims)
@@ -1114,9 +1122,7 @@ contains
 
   end subroutine GetIODOF
 
-
-
-
+#endif
 
 
 end module interp_movie_mod

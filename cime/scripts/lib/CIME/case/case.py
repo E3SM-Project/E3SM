@@ -224,6 +224,14 @@ class Case(object):
             return None
         expect(False,"Could not find object for {} in case".format(full_name))
 
+    def check_timestamps(self, short_name=None):
+        if short_name is not None:
+            env_file = self.get_env(short_name)
+            env_file.check_timestamp()
+        else:
+            for env_file in self._files:
+                env_file.check_timestamp()
+
     def copy(self, newcasename, newcaseroot, newcimeroot=None, newsrcroot=None):
         newcase = deepcopy(self)
         for env_file in newcase._files: # pylint: disable=protected-access
@@ -1364,7 +1372,6 @@ directory, NOT in this subdirectory."""
         run_exe = env_mach_specific.get_value("run_exe")
         run_misc_suffix = env_mach_specific.get_value("run_misc_suffix")
         run_misc_suffix = "" if run_misc_suffix is None else run_misc_suffix
-        run_suffix = run_exe + run_misc_suffix
 
         mpirun_cmd_override = self.get_value("MPI_RUN_COMMAND")
         if mpirun_cmd_override not in ["", None, "UNSET"]:
@@ -1379,7 +1386,14 @@ directory, NOT in this subdirectory."""
             "unit_testing" : False
             }
 
-        executable, mpi_arg_list = env_mach_specific.get_mpirun(self, mpi_attribs, job)
+        executable, mpi_arg_list, custom_run_exe, custom_run_misc_suffix = env_mach_specific.get_mpirun(self, mpi_attribs, job)
+        if custom_run_exe:
+            logger.info('Using a custom run_exe {}'.format(custom_run_exe))
+            run_exe = custom_run_exe
+        if custom_run_misc_suffix:
+            logger.info('Using a custom run_misc_suffix {}'.format(custom_run_misc_suffix))
+            run_misc_suffix = custom_run_misc_suffix
+
 
         # special case for aprun
         if executable is not None and "aprun" in executable and not "theta" in self.get_value("MACH"):
@@ -1393,7 +1407,7 @@ directory, NOT in this subdirectory."""
         if self.get_value("BATCH_SYSTEM") == "cobalt":
             mpi_arg_string += " : "
 
-        return self.get_resolved_value("{} {} {}".format(executable if executable is not None else "", mpi_arg_string, run_suffix), allow_unresolved_envvars=allow_unresolved_envvars)
+        return self.get_resolved_value("{} {} {} {}".format(executable if executable is not None else "", mpi_arg_string, run_exe, run_misc_suffix), allow_unresolved_envvars=allow_unresolved_envvars)
 
     def set_model_version(self, model):
         version = "unknown"

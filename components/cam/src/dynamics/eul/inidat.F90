@@ -346,7 +346,6 @@ contains
     use tracers     , only: tracers_implements_cnst, tracers_init_cnst
     use aoa_tracers , only: aoa_tracers_implements_cnst, aoa_tracers_init_cnst
     use clubb_intr  , only: clubb_implements_cnst, clubb_init_cnst
-    use shoc_intr   , only: shoc_implements_cnst, shoc_init_cnst
     use stratiform  , only: stratiform_implements_cnst, stratiform_init_cnst
     use microp_driver,only: microp_driver_implements_cnst, microp_driver_init_cnst
     use phys_control, only: phys_getopts
@@ -525,10 +524,6 @@ contains
               call clubb_init_cnst(cnst_name(m_cnst), arr3d_a(:,:,j), gcid)
               if (masterproc .and. j==1) write(iulog,*) '   ', trim(cnst_name(m_cnst)),&
                                          ' initialized by "clubb_init_cnst"'
-           else if (shoc_implements_cnst(cnst_name(m_cnst))) then
-              call shoc_init_cnst(cnst_name(m_cnst), arr3d_a(:,:,j), gcid)
-              if (masterproc .and. j==1) write(iulog,*) '   ', trim(cnst_name(m_cnst)),&
-                                         ' initialized by "shoc_init_cnst"'
            else if (stratiform_implements_cnst(cnst_name(m_cnst))) then
               call stratiform_init_cnst(cnst_name(m_cnst), arr3d_a(:,:,j), gcid)
               if (masterproc .and. j==1) write(iulog,*) '   ', trim(cnst_name(m_cnst)),&

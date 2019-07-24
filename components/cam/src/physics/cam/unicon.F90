@@ -26,7 +26,9 @@ module unicon
 
 use shr_kind_mod,    only : r8 => shr_kind_r8, i4 => shr_kind_i4
 use cam_history,     only : outfld
+#ifndef HAVE_ERF_INTRINSICS
 use shr_spfn_mod,    only : erfc => shr_spfn_erfc
+#endif
 use time_manager,    only : get_nstep
 use cam_abortutils,  only : endrun
 use cam_logfile,     only : iulog

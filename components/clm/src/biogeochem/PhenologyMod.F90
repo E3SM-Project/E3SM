@@ -49,6 +49,7 @@ module PhenologyMod
   public :: PhenologyInit      ! Initialization
   public :: Phenology          ! Update
   public :: readPhenolParams   ! 
+  public :: CNLitterToColumn
   !
   ! !PRIVATE DATA MEMBERS:
   type, private :: PnenolParamsType
@@ -290,9 +291,6 @@ contains
          phosphorusstate_vars,phosphorusflux_vars)
 
     ! gather all patch-level litterfall fluxes to the column for litter C and N inputs
-
-    call CNLitterToColumn(num_soilc, filter_soilc, &
-         cnstate_vars, carbonflux_vars, nitrogenflux_vars,phosphorusflux_vars)
 
   end subroutine Phenology
 

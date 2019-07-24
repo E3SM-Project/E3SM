@@ -18,21 +18,21 @@ contains
 
   subroutine med_phases_prep_lnd(gcomp, rc)
 
+    use ESMF                  , only : operator(/=)
     use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
     use ESMF                  , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet, ESMF_ClockPrint
     use ESMF                  , only : ESMF_FieldBundleGet
+    use ESMF                  , only : ESMF_StateGet, ESMF_StateItem_Flag, ESMF_STATEITEM_NOTFOUND
     use esmFlds               , only : complnd, compatm, ncomps, compname 
     use esmFlds               , only : fldListFr, fldListTo
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getNumFlds
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_GetScalar
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_State_SetScalar
-    use shr_nuopc_scalars_mod , only : flds_scalar_name, flds_scalar_num
-    use shr_nuopc_scalars_mod , only : flds_scalar_index_nextsw_cday
-    use med_constants_mod     , only : R8, dbug_flag=>med_constants_dbug_flag
+    use shr_nuopc_utils_mod   , only : chkerr          => shr_nuopc_utils_ChkErr
+    use shr_nuopc_methods_mod , only : FB_init         => shr_nuopc_methods_FB_init
+    use shr_nuopc_methods_mod , only : FB_diagnose     => shr_nuopc_methods_FB_diagnose
+    use shr_nuopc_methods_mod , only : FB_getNumFlds   => shr_nuopc_methods_FB_getNumFlds
+    use shr_nuopc_methods_mod , only : State_GetScalar => shr_nuopc_methods_State_GetScalar
+    use shr_nuopc_methods_mod , only : State_SetScalar => shr_nuopc_methods_State_SetScalar
+    use med_constants_mod     , only : R8, dbug_flag   => med_constants_dbug_flag
     use med_merge_mod         , only : med_merge_auto
     use med_map_mod           , only : med_map_FB_Regrid_Norm
     use med_internalstate_mod , only : InternalState
@@ -43,9 +43,10 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    type(InternalState) :: is_local
-    integer             :: n1,ncnt
-    real(r8)            :: nextsw_cday
+    type(ESMF_StateItem_Flag) :: itemType
+    type(InternalState)       :: is_local
+    integer                   :: n1,ncnt
+    real(r8)                  :: nextsw_cday
     character(len=*), parameter :: subname='(med_phases_prep_lnd)'
     !---------------------------------------
 
@@ -62,7 +63,7 @@ contains
 
     nullify(is_local%wrap)
     call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !---------------------------------------
     !--- Count the number of fields outside of scalar data, if zero, then return
@@ -71,8 +72,8 @@ contains
     ! Note - the scalar field has been removed from all mediator field bundles - so this is why we check if the
     ! fieldCount is 0 and not 1 here
 
-    call shr_nuopc_methods_FB_getNumFlds(is_local%wrap%FBExp(complnd), trim(subname)//"FBexp(complnd)", ncnt, rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    call FB_getNumFlds(is_local%wrap%FBExp(complnd), trim(subname)//"FBexp(complnd)", ncnt, rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (ncnt > 0) then
 
@@ -91,7 +92,7 @@ contains
                   is_local%wrap%FBNormOne(n1,complnd,:), &
                   is_local%wrap%RH(n1,complnd,:), &
                   string=trim(compname(n1))//'2'//trim(compname(complnd)), rc=rc)
-             if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+             if (ChkErr(rc,__LINE__,u_FILE_u)) return
           endif
        enddo
 
@@ -104,12 +105,12 @@ contains
             is_local%wrap%FBFrac(complnd), &
             is_local%wrap%FBImp(:,complnd), &
             fldListTo(complnd), rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
        if (dbug_flag > 1) then
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(complnd), &
+          call FB_diagnose(is_local%wrap%FBExp(complnd), &
                string=trim(subname)//' FBexp(complnd) ', rc=rc)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
 
        !---------------------------------------
@@ -120,17 +121,25 @@ contains
        !--- update scalar data
        !---------------------------------------
 
-       ! send nextsw_cday to land - first obtain it from atm import 
-       call shr_nuopc_methods_State_GetScalar(&
-            scalar_value=nextsw_cday, scalar_id=flds_scalar_index_nextsw_cday, &
-            state=is_local%wrap%NstateImp(compatm), flds_scalar_name=flds_scalar_name, &
-            flds_scalar_num=flds_scalar_num, rc=rc)
-       if (shr_nuopc_methods_chkerr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_State_SetScalar(&
-            scalar_value=nextsw_cday, scalar_id=flds_scalar_index_nextsw_cday, &
-            state=is_local%wrap%NstateExp(complnd), flds_scalar_name=flds_scalar_name, &
-            flds_scalar_num=flds_scalar_num, rc=rc)
-       if (shr_nuopc_methods_chkerr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_StateGet(is_local%wrap%NStateImp(compatm), trim(is_local%wrap%flds_scalar_name), itemType, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       if (itemType /= ESMF_STATEITEM_NOTFOUND) then
+          ! send nextsw_cday to land - first obtain it from atm import 
+          call State_GetScalar(&
+               scalar_value=nextsw_cday, &
+               scalar_id=is_local%wrap%flds_scalar_index_nextsw_cday, &
+               state=is_local%wrap%NstateImp(compatm), &
+               flds_scalar_name=is_local%wrap%flds_scalar_name, &
+               flds_scalar_num=is_local%wrap%flds_scalar_num, rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+          call State_SetScalar(&
+               scalar_value=nextsw_cday, &
+               scalar_id=is_local%wrap%flds_scalar_index_nextsw_cday, &
+               state=is_local%wrap%NstateExp(complnd), &
+               flds_scalar_name=is_local%wrap%flds_scalar_name, &
+               flds_scalar_num=is_local%wrap%flds_scalar_num, rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+       end if
 
        !---------------------------------------
        !--- clean up

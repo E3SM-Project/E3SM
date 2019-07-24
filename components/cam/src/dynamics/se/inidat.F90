@@ -27,42 +27,40 @@ module inidat
 
 contains
 
-
-
   subroutine read_inidat( ncid_ini, ncid_topo, dyn_in)
-    use dyn_comp,      only: dyn_import_t, hvcoord
-    use parallel_mod,     only: par
-    use bndry_mod,     only: bndry_exchangev
-    use constituents, only: cnst_name, cnst_read_iv, qmin
-    use dimensions_mod,     only: nelemd, nlev, np, npsq
-    use dof_mod, only           : putUniquePoints
-    use edge_mod, only : edgevpack, edgevunpack, InitEdgeBuffer, FreeEdgeBuffer
-    use edgetype_mod, only : EdgeBuffer_t
-    use ncdio_atm, only : infld
-    use shr_vmath_mod, only: shr_vmath_log
-    use hycoef,           only: ps0, hyam, hybm
-    use cam_abortutils,     only: endrun
-    use pio, only : file_desc_t, io_desc_t, pio_double, pio_get_local_array_size, pio_freedecomp
-    use dyn_grid, only : get_horiz_grid_dim_d, dyn_decomp
-    use chemistry   , only: chem_implements_cnst, chem_init_cnst
-    use carma_intr,   only: carma_implements_cnst, carma_init_cnst
-    use tracers     , only: tracers_implements_cnst, tracers_init_cnst
-    use aoa_tracers , only: aoa_tracers_implements_cnst, aoa_tracers_init_cnst
-    use clubb_intr,         only: clubb_implements_cnst, clubb_init_cnst
-    use shoc_intr,          only: shoc_implements_cnst, shoc_init_cnst
-    use stratiform,   only: stratiform_implements_cnst, stratiform_init_cnst
-    use microp_driver, only: microp_driver_implements_cnst, microp_driver_init_cnst
-    use phys_control,  only: phys_getopts
-    use co2_cycle   , only: co2_implements_cnst, co2_init_cnst
-    use unicon_cam,          only: unicon_implements_cnst, unicon_init_cnst
-    use cam_history_support, only: max_fieldname_len
-    use cam_grid_support,    only: cam_grid_get_local_size, cam_grid_get_gcid
-    use cam_map_utils,       only: iMap
-    use shr_const_mod,       only: SHR_CONST_PI
-    use scamMod,             only: setiopupdate, readiopdata
-    use se_single_column_mod, only: scm_setinitial
-    use element_ops,         only: set_thermostate
-
+    use dyn_comp,                only: dyn_import_t, hvcoord
+    use parallel_mod,            only: par
+    use bndry_mod,               only: bndry_exchangev
+    use constituents,            only: cnst_name, cnst_read_iv, qmin
+    use dimensions_mod,          only: nelemd, nlev, np, npsq
+    use dof_mod,                 only: putUniquePoints
+    use edge_mod,                only: edgevpack, edgevunpack, InitEdgeBuffer, FreeEdgeBuffer
+    use edgetype_mod,            only: EdgeBuffer_t
+    use ncdio_atm,               only: infld
+    use shr_vmath_mod,           only: shr_vmath_log
+    use hycoef,                  only: ps0, hyam, hybm
+    use cam_abortutils,          only: endrun
+    use pio,                     only: file_desc_t, io_desc_t, pio_double, &
+                                       pio_get_local_array_size, pio_freedecomp
+    use dyn_grid,                only: get_horiz_grid_dim_d, dyn_decomp, fv_nphys
+    use chemistry,               only: chem_implements_cnst, chem_init_cnst
+    use carma_intr,              only: carma_implements_cnst, carma_init_cnst
+    use tracers,                 only: tracers_implements_cnst, tracers_init_cnst
+    use aoa_tracers,             only: aoa_tracers_implements_cnst, aoa_tracers_init_cnst
+    use clubb_intr,              only: clubb_implements_cnst, clubb_init_cnst
+    use stratiform,              only: stratiform_implements_cnst, stratiform_init_cnst
+    use microp_driver,           only: microp_driver_implements_cnst, microp_driver_init_cnst
+    use phys_control,            only: phys_getopts
+    use co2_cycle,               only: co2_implements_cnst, co2_init_cnst
+    use unicon_cam,              only: unicon_implements_cnst, unicon_init_cnst
+    use cam_history_support,     only: max_fieldname_len
+    use cam_grid_support,        only: cam_grid_get_local_size, cam_grid_get_gcid
+    use cam_map_utils,           only: iMap
+    use shr_const_mod,           only: SHR_CONST_PI
+    use scamMod,                 only: setiopupdate, readiopdata
+    use se_single_column_mod,    only: scm_setinitial
+    use element_ops,             only: set_thermostate
+    use fv_physics_coupling_mod, only: fv_phys_to_dyn_topo
     implicit none
     type(file_desc_t),intent(inout) :: ncid_ini, ncid_topo
     type (dyn_import_t), target, intent(inout) :: dyn_in   ! dynamics import
@@ -72,6 +70,8 @@ contains
     real(r8), allocatable :: tmp(:,:,:)    ! (npsp,nlev,nelemd)
     real(r8), allocatable :: qtmp(:,:)     ! (npsp*nelemd,nlev)
     logical,  allocatable :: tmpmask(:,:)  ! (npsp,nlev,nelemd) unique grid val
+    real(r8), allocatable :: phys_tmp(:,:) ! (nphys_sq,nelemd)
+    integer :: nphys_sq                    ! # of fv physics columns per element
     integer :: ie, k, t
     integer :: indx_scm, ie_scm, i_scm, j_scm
     character(len=max_fieldname_len) :: fieldname
@@ -84,6 +84,8 @@ contains
     integer(iMap), pointer :: ldof(:) => NULL() ! Basic (2D) grid dof
     integer,       pointer :: gcid(:) => NULL() ! ID based on ldof with no holes
 
+    character(len=max_fieldname_len) :: ncol_name
+    character(len=max_fieldname_len) :: grid_name
     integer :: rndm_seed_sz
     integer, allocatable :: rndm_seed(:)
     real(r8) :: pertval
@@ -122,6 +124,11 @@ contains
     allocate(tmp(npsq,nlev,nelemd))
     tmp = 0.0_r8
     allocate(qtmp(npsq*nelemd,nlev))
+
+    if (fv_nphys>0) then
+      nphys_sq = fv_nphys*fv_nphys
+      allocate(phys_tmp(nphys_sq,nelemd))
+    end if
 
     if (par%dynproc) then
       if(elem(1)%idxP%NumUniquePts <=0 .or. elem(1)%idxP%NumUniquePts > np*np) then
@@ -166,12 +173,19 @@ contains
         call endrun('Could not find closest SCM point on input datafile')
       endif
 
+    endif ! single_column
+
+    grid_name = 'GLL'
+    if (fv_nphys > 0) then
+      ncol_name = 'ncol_d'
+    else
+      ncol_name = 'ncol'
     endif
 
     fieldname = 'U'
     tmp = 0.0_r8
-    call infld(fieldname, ncid_ini, 'ncol', 'lev', 1, npsq,          &
-         1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+    call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
+         1, nlev, 1, nelemd, tmp, found, gridname=grid_name)
     if(.not. found) then
        call endrun('Could not find U field on input datafile')
     end if
@@ -190,8 +204,8 @@ contains
 
     fieldname = 'V'
     tmp = 0.0_r8
-    call infld(fieldname, ncid_ini, 'ncol', 'lev', 1, npsq,          &
-         1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+    call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
+         1, nlev, 1, nelemd, tmp, found, gridname=grid_name)
     if(.not. found) then
        call endrun('Could not find V field on input datafile')
     end if
@@ -209,8 +223,8 @@ contains
 
     fieldname = 'T'
     tmp = 0.0_r8
-    call infld(fieldname, ncid_ini, 'ncol', 'lev', 1, npsq,          &
-         1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+    call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
+         1, nlev, 1, nelemd, tmp, found, gridname=grid_name)
     if(.not. found) then
        call endrun('Could not find T field on input datafile')
     end if
@@ -313,8 +327,8 @@ contains
 	  else
 	    
 	    tmp = 0.0_r8
-            call infld(cnst_name(m_cnst), ncid_ini, 'ncol', 'lev',      &
-                 1, npsq, 1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+            call infld(cnst_name(m_cnst), ncid_ini, ncol_name, 'lev',      &
+                 1, npsq, 1, nlev, 1, nelemd, tmp, found, gridname=grid_name)
 	    
 	  endif
        end if
@@ -329,10 +343,6 @@ contains
              call clubb_init_cnst(cnst_name(m_cnst), qtmp, gcid)
               if(par%masterproc) write(iulog,*) '          ', cnst_name(m_cnst), &
                    ' initialized by "clubb_init_cnst"'
-          else if (shoc_implements_cnst(cnst_name(m_cnst))) then
-             call shoc_init_cnst(cnst_name(m_cnst), qtmp, gcid)
-              if(par%masterproc) write(iulog,*) '          ', cnst_name(m_cnst), &
-                   ' initialized by "shoc_init_cnst"'
           else if (stratiform_implements_cnst(cnst_name(m_cnst))) then
              call stratiform_init_cnst(cnst_name(m_cnst), qtmp, gcid)
               if(par%masterproc) write(iulog,*) '          ', cnst_name(m_cnst), &
@@ -412,8 +422,8 @@ contains
 
     fieldname = 'PS'
     tmp(:,1,:) = 0.0_r8
-    call infld(fieldname, ncid_ini, 'ncol',      &
-         1, npsq, 1, nelemd, tmp(:,1,:), found, gridname='GLL')
+    call infld(fieldname, ncid_ini, ncol_name,      &
+         1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
     if(.not. found) then
        call endrun('Could not find PS field on input datafile')
     end if
@@ -442,26 +452,35 @@ contains
     if ( (ideal_phys .or. aqua_planet)) then
        tmp(:,1,:) = 0._r8
     else    
-       fieldname = 'PHIS'
-       tmp(:,1,:) = 0.0_r8
-       call infld(fieldname, ncid_topo, 'ncol',      &
-            1, npsq, 1, nelemd, tmp(:,1,:), found, gridname='GLL')
-       if(.not. found) then
-          call endrun('Could not find PHIS field on input datafile')
-       end if
+      fieldname = 'PHIS'
+      tmp(:,1,:) = 0.0_r8
+      if (fv_nphys > 0) then
+         call infld(fieldname, ncid_topo, 'ncol', 1, nphys_sq, &
+                    1, nelemd, phys_tmp, found, gridname='physgrid_d')
+         ! Copy phis field to GLL grid
+         call fv_phys_to_dyn_topo(elem,phys_tmp)
+      else
+         call infld(fieldname, ncid_topo, ncol_name,      &
+            1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
+      endif
+      if(.not. found) then
+         call endrun('Could not find PHIS field on input datafile')
+      end if
     end if
 
-    do ie=1,nelemd
-       elem(ie)%state%phis=0.0_r8
-       indx = 1
-       do j = 1, np
-          do i = 1, np
-             elem(ie)%state%phis(i,j) = tmp(indx,1,ie)
-             if (single_column) elem(ie)%state%phis(i,j) = tmp(indx_scm,1,ie_scm)
-             indx = indx + 1
-          end do
-       end do
-    end do
+    if (fv_nphys == 0) then
+      do ie=1,nelemd
+         elem(ie)%state%phis=0.0_r8
+         indx = 1
+         do j = 1, np
+            do i = 1, np
+               elem(ie)%state%phis(i,j) = tmp(indx,1,ie)
+               if (single_column) elem(ie)%state%phis(i,j) = tmp(indx_scm,1,ie_scm)
+               indx = indx + 1
+            end do
+         end do
+      end do
+    end if ! fv_nphys == 0
     
     if (single_column) then
       iop_update_surface = .false.

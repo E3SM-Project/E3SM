@@ -117,7 +117,7 @@ int resultlen;
 /*     nc_type xtype;    /\* NetCDF data type of this variable. *\/ */
 /*     int ret;          /\* Return code for function calls. *\/ */
 /*     int dimids[NDIM3]; /\* Dimension ids for this variable. *\/ */
-/*     char var_name[NC_MAX_NAME];   /\* Name of the variable. *\/ */
+/*     char var_name[PIO_MAX_NAME];   /\* Name of the variable. *\/ */
 /*     /\* size_t start[NDIM3];           /\\* Zero-based index to start read. *\\/ *\/ */
 /*     /\* size_t count[NDIM3];           /\\* Number of elements to read. *\\/ *\/ */
 /*     /\* int buffer[DIM_LEN_X];          /\\* Buffer to read in data. *\\/ *\/ */
@@ -137,7 +137,7 @@ int resultlen;
 /*         return ERR_BAD; */
 /*     for (int d = 0; d < NDIM3; d++) */
 /*     { */
-/*         char my_dim_name[NC_MAX_NAME]; */
+/*         char my_dim_name[PIO_MAX_NAME]; */
 /*         PIO_Offset dimlen;  */
         
 /*         if ((ret = PIOc_inq_dim(ncid, d, my_dim_name, &dimlen))) */
@@ -222,7 +222,7 @@ int main(int argc, char* argv[])
     /* int ncid;     /\* The ncid of the netCDF file. *\/ */
     /* int dimid[NDIM3];    /\* The dimension ID. *\/ */
     /* int varid;    /\* The ID of the netCDF varable. *\/ */
-    /* char filename[NC_MAX_NAME + 1]; /\* Test filename. *\/ */
+    /* char filename[PIO_MAX_NAME + 1]; /\* Test filename. *\/ */
     /* int num_flavors = 0;            /\* Number of iotypes available in this build. *\/ */
     /* int format[NUM_NETCDF_FLAVORS]; /\* Different output flavors. *\/ */
     int ret;                        /* Return value. */
@@ -374,7 +374,7 @@ int main(int argc, char* argv[])
 
         /* Finalize the IO system. Only call this from the computation tasks. */
         printf("%d %s Freeing PIO resources\n", my_rank, TEST_NAME);
-        if ((ret = PIOc_finalize(iosysid)))
+        if ((ret = PIOc_free_iosystem(iosysid)))
             ERR(ret);
     } /* endif comp_task */
 

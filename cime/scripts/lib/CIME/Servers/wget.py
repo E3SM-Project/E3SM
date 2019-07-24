@@ -21,7 +21,7 @@ class WGET(GenericServer):
 
     def fileexists(self, rel_path):
         full_url = os.path.join(self._server_loc, rel_path)
-        stat, out, err = run_cmd("wget {} --spider {}".format(self._args, full_url))
+        stat, out, err = run_cmd("wget {} --no-check-certificate --spider {}".format(self._args, full_url))
         if (stat != 0):
             logging.warning("FAIL: Repo '{}' does not have file '{}'\nReason:{}\n{}\n".format(self._server_loc, full_url, out.encode('utf-8'), err.encode('utf-8')))
             return False

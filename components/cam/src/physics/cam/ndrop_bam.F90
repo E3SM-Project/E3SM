@@ -14,9 +14,10 @@ use physconst,        only: gravit, rair, tmelt, cpair, rh2o, &
      r_universal, mwh2o, rhoh2o, latvap
 
 use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_aer_props
-
+#ifndef HAVE_ERF_INTRINSICS
 use shr_spfn_mod,     only: erf => shr_spfn_erf, &
                             erfc => shr_spfn_erfc
+#endif
 use wv_saturation,    only: qsat
 use cam_history,      only: addfld, add_default, outfld 
 use cam_logfile,      only: iulog

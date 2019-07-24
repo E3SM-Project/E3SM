@@ -61,7 +61,7 @@ int run_spmd_tests(MPI_Comm test_comm)
 
     /* Get the size of the int type for MPI. (Should always be 4.) */
     if ((mpierr = MPI_Type_size(MPI_INT, &type_size)))
-        return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+        MPIERR(mpierr);
     assert(type_size == sizeof(int));
 
     /* Initialize the arrays. */
@@ -222,13 +222,13 @@ int test_determine_procs()
 #define TWO_COMPONENTS 2
 #define THREE_PROCS 3
     int ret;
-    
+
     {
         int num_io_procs = 1;
         int component_count = ONE_COMPONENT;
         int num_procs_per_comp[ONE_COMPONENT] = {1};
         int *my_proc_list[ONE_COMPONENT];
-        
+
         if ((ret = determine_procs(num_io_procs, component_count, num_procs_per_comp, NULL,
                                    my_proc_list)))
             return ret;
@@ -241,17 +241,17 @@ int test_determine_procs()
             free(my_proc_list[c]);
         }
     }
-    
+
     {
         int num_io_procs = 3;
         int component_count = TWO_COMPONENTS;
         int num_procs_per_comp[TWO_COMPONENTS] = {1, 1};
         int *my_proc_list[TWO_COMPONENTS];
-        
+
         if ((ret = determine_procs(num_io_procs, component_count, num_procs_per_comp, NULL,
                                    my_proc_list)))
             return ret;
-        
+
         /* Check results and free resources. */
         for (int c = 0; c < TWO_COMPONENTS; c++)
         {
@@ -260,17 +260,17 @@ int test_determine_procs()
             free(my_proc_list[c]);
         }
     }
-    
+
     {
         int num_io_procs = 3;
         int component_count = TWO_COMPONENTS;
         int num_procs_per_comp[TWO_COMPONENTS] = {THREE_PROCS, THREE_PROCS};
         int *my_proc_list[TWO_COMPONENTS];
-        
+
         if ((ret = determine_procs(num_io_procs, component_count, num_procs_per_comp, NULL,
                                    my_proc_list)))
             return ret;
-        
+
         /* Check results and free resources. */
         for (int c = 0; c < TWO_COMPONENTS; c++)
         {
@@ -280,7 +280,7 @@ int test_determine_procs()
             free(my_proc_list[c]);
         }
     }
-    
+
     {
         int num_io_procs = 3;
         int component_count = TWO_COMPONENTS;
@@ -289,11 +289,11 @@ int test_determine_procs()
         int proc_list_2[THREE_PROCS] = {11, 12, 13};
         int *proc_list[TWO_COMPONENTS] = {proc_list_1, proc_list_2};
         int *my_proc_list[TWO_COMPONENTS];
-        
+
         if ((ret = determine_procs(num_io_procs, component_count, num_procs_per_comp,
                                    (int **)proc_list, my_proc_list)))
             return ret;
-        
+
         /* Check results and free resources. */
         for (int c = 0; c < TWO_COMPONENTS; c++)
         {
@@ -303,7 +303,7 @@ int test_determine_procs()
             free(my_proc_list[c]);
         }
     }
-    
+
     return PIO_NOERR;
 }
 
@@ -483,7 +483,7 @@ int test_varlists3()
         return ERR_WRONG;
     if (get_var_desc(3, &varlist, &var_desc) != PIO_ENOTVAR)
         return ERR_WRONG;
-    
+
     return 0;
 }
 
@@ -664,9 +664,10 @@ int test_CalcStartandCount()
     return 0;
 }
 
-/* Test the GDCblocksize() function. */
-int run_GDCblocksize_tests(MPI_Comm test_comm)
+/* Test the GCDblocksize() function. */
+int run_GCDblocksize_tests(MPI_Comm test_comm)
 {
+
     {
         int arrlen = 1;
         PIO_Offset arr_in[1] = {0};
@@ -703,7 +704,7 @@ int run_GDCblocksize_tests(MPI_Comm test_comm)
         PIO_Offset blocksize;
 
         blocksize = GCDblocksize(arrlen, arr_in);
-        if (blocksize != 1)
+        if (blocksize != 2)
             return ERR_WRONG;
     }
 
@@ -732,7 +733,6 @@ int main(int argc, char **argv)
     if ((ret = pio_test_init2(argc, argv, &my_rank, &ntasks, MIN_NTASKS,
                               TARGET_NTASKS, -1, &test_comm)))
         ERR(ERR_INIT);
-
     /* Test code runs on TARGET_NTASKS tasks. The left over tasks do
      * nothing. */
     if (my_rank < TARGET_NTASKS)
@@ -746,7 +746,7 @@ int main(int argc, char **argv)
         if ((ret = run_sc_tests(test_comm)))
             return ret;
 
-        if ((ret = run_GDCblocksize_tests(test_comm)))
+        if ((ret = run_GCDblocksize_tests(test_comm)))
             return ret;
 
         if ((ret = run_spmd_tests(test_comm)))
@@ -780,7 +780,7 @@ int main(int argc, char **argv)
             return ret;
 
         /* Finalize PIO system. */
-        if ((ret = PIOc_finalize(iosysid)))
+        if ((ret = PIOc_free_iosystem(iosysid)))
             return ret;
 
     } /* endif my_rank < TARGET_NTASKS */

@@ -1,24 +1,69 @@
 #define __PIO_FILE__ "piolib_mod.f90"
-#define debug_rearr 0
-
 !>
 !! @file
-!! @brief Initialization Routines for PIO
+!! Initialization Routines for PIO.
 !!
 !<
+
+!>
+!! @defgroup PIO_openfile Open a File
+!! Open an existing netCDF file with PIO in Fortran.
+!!
+!! @defgroup PIO_syncfile Sync File
+!! Sync a file to disk, flushing all buffers in Fortran.
+!!
+!! @defgroup PIO_createfile Create a File
+!! Create a new netCDF file in Fortran.
+!!
+!! @defgroup PIO_setframe Set Record Number
+!! Set the record number for distributed array reads/writes in
+!! Fortran.
+!!
+!! @defgroup PIO_closefile Close a File
+!! Close a netCDF file in Fortran.
+!!
+!! @defgroup PIO_freedecomp Free a Decomposition
+!! Free a decomposition, releasing all resources in Fortran.
+!!
+!! @defgroup PIO_init Initialize an IOSystem
+!! Create a new IO System, designating numbers of I/O and computation
+!! tasks in Fortran.
+!!
+!! @defgroup PIO_finalize Free an IOSystem
+!! Free an IO System, releasing all resources in Fortran.
+!!
+!! @defgroup PIO_initdecomp Define a Decomposition
+!! Define a new decomposition of variables to distributed arrays in
+!! Fortran.
+!!
+!! @defgroup PIO_getnumiotasks Get Number IO Tasks
+!! Get the number of IO tasks in Fortran.
+!!
+!! @defgroup PIO_setdebuglevel Internal Debug Settings for Fortran
+!! Set the debug level in Fortran.
+!!
+!! @defgroup PIO_seterrorhandling Error Handling for Fortran
+!! Set the behavior if an error is encountered in Fortran.
+!!
+!! @defgroup PIO_get_local_array_size Get Local Array Size
+!! Get the local size of the distributed array in a decomposition in
+!! Fortran.
+!!
+!! @defgroup PIO_set_hint Set MPI Hint
+!! Set the MPI hint in Fortran.
+
 module piolib_mod
   use iso_c_binding
   !--------------
   use pio_kinds
   !--------------
   use pio_types, only : file_desc_t, iosystem_desc_t, var_desc_t, io_desc_t, &
-        pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c, &
-        pio_noerr, pio_rearr_subset, pio_rearr_opt_t
+       pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c, &
+       pio_noerr, pio_rearr_subset, pio_rearr_opt_t
   !--------------
   use pio_support, only : piodie, debug, debugio, debugasync, checkmpireturn
   use pio_nf, only : pio_set_log_level
   !
-
 
 #ifdef TIMING
   use perf_mod, only : t_startf, t_stopf     ! _EXTERNAL
@@ -54,99 +99,85 @@ module piolib_mod
        PIO_iotype_available, &
        PIO_set_rearr_opts
 
-#ifdef MEMCHK
-!> this is an internal variable for memory leak debugging
-!! it is used when macro memchk is defined and it causes each task to print the
-!! memory resident set size anytime it changes within pio.
-!<
-  integer :: lastrss=0
-#endif
-
-  !eop
-  !boc
   !-----------------------------------------------------------------------
   !
   !  module variables
   !
   !-----------------------------------------------------------------------
-!>
-!! @defgroup PIO_openfile PIO_openfile
-!<
+  !>
+  !! Open an existing netCDF file.
+  !<
   interface PIO_openfile
      module procedure PIO_openfile
-  end interface
+  end interface PIO_openfile
 
-!>
-!! @defgroup PIO_syncfile PIO_syncfile
-!<
+  !>
+  !! Sync the file to disk, flushing all buffers.
+  !<
   interface PIO_syncfile
      module procedure syncfile
-  end interface
+  end interface PIO_syncfile
 
-!>
-!! @defgroup PIO_createfile PIO_createfile
-!<
+  !>
+  !! Create a new netCDF file with PIO.
+  !<
   interface PIO_createfile
      module procedure createfile
-  end interface
+  end interface PIO_createfile
 
-!>
-!! @defgroup PIO_setframe PIO_setframe
-!! @brief sets the unlimited dimension for netcdf file
-!<
+  !>
+  !! Sets the record number for a future read/write of distributed
+  !! arrays (see @ref PIO_write_darray, @ref PIO_read_darray).
+  !<
   interface PIO_setframe
      module procedure setframe
-  end interface
+  end interface PIO_setframe
 
-!>
-!! @defgroup PIO_advanceframe PIO_advanceframe
-!<
+  !>
+  !! Increment the record number for a future read/write of distributed
+  !! arrays (see @ref PIO_write_darray, @ref PIO_read_darray).
+  !<
   interface PIO_advanceframe
      module procedure advanceframe
-  end interface
+  end interface PIO_advanceframe
 
-!>
-!! @defgroup PIO_closefile PIO_closefile
-!<
+  !>
+  !! Close an open file.
+  !<
   interface PIO_closefile
      module procedure closefile
-  end interface
+  end interface PIO_closefile
 
-
-!>
-!! @defgroup PIO_freedecomp PIO_freedecomp
-!! free memory associated with a io descriptor
-!<
+  !>
+  !! Free memory associated with a decomposition.
+  !<
   interface PIO_freedecomp
      module procedure freedecomp_ios
      module procedure freedecomp_file
-  end interface
+  end interface PIO_freedecomp
 
-!>
-!! @defgroup PIO_init PIO_init
-!! initializes the pio subsystem
-!<
+  !>
+  !! Initializes the PIO subsystem, creating a new IOSystem.
+  !<
   interface PIO_init
      module procedure init_intracom
      module procedure init_intercom
 
-  end interface
+  end interface PIO_init
 
-!>
-!! @defgroup PIO_finalize PIO_finalize
-!! Shuts down and cleans up any memory associated with the pio library.
-!<
+  !>
+  !! Shuts down an IOSystem and associated resources.
+  !<
   interface PIO_finalize
      module procedure finalize
-  end interface
+  end interface PIO_finalize
 
-!>
-!! @defgroup PIO_initdecomp PIO_initdecomp
-!! @brief PIO_initdecomp is an overload interface the models decomposition to pio.
-!! @details initdecomp_1dof_bin_i8, initdecomp_1dof_nf_i4, initdecomp_2dof_bin_i4,
-!! and initdecomp_2dof_nf_i4 are all depreciated, but supported for backwards
-!! compatibility.
-!<
+  !>
+  !! PIO_initdecomp is an overload interface the models decomposition to pio.
+  !! initdecomp_1dof_bin_i8, initdecomp_1dof_nf_i4, initdecomp_2dof_bin_i4,
+  !! and initdecomp_2dof_nf_i4 are all depreciated, but supported for backwards
+  !! compatibility.
+  !<
   interface PIO_initdecomp
      module procedure PIO_initdecomp_dof_i4  ! previous name: initdecomop_1dof_nf_box
      module procedure PIO_initdecomp_dof_i8  ! previous name: initdecomop_1dof_nf_box
@@ -159,56 +190,47 @@ module piolib_mod
      module procedure initdecomp_2dof_bin_i4
      module procedure initdecomp_2dof_bin_i8
      module procedure PIO_initdecomp_bc
-!     module procedure PIO_initdecomp_dof_dof
-  end interface
+     !     module procedure PIO_initdecomp_dof_dof
+  end interface PIO_initdecomp
 
-!>
-
-!>
-!! @defgroup PIO_getnumiotasks PIO_getnumiotasks
-!!  returns the actual number of IO-tasks used.  PIO
-!!  will reset the total number of IO-tasks if certain
-!!  conditions are meet
-!<
+  !>
+  !! Return the actual number of IO-tasks used. PIO will reset the
+  !! total number of IO-tasks if certain conditions are meet.
+  !<
   interface PIO_get_numiotasks
      module procedure getnumiotasks
-  end interface
+  end interface PIO_get_numiotasks
   interface PIO_getnumiotasks
      module procedure getnumiotasks
-  end interface
+  end interface PIO_getnumiotasks
 
-!>
-!!  @defgroup PIO_setdebuglevel PIO_setdebuglevel
-!!  sets the level of debug information that pio will generate.
-!<
+  !>
+  !! Set the level of debug information that PIO will generate.
+  !<
   interface PIO_setdebuglevel
      module procedure setdebuglevel
-  end interface
+  end interface PIO_setdebuglevel
 
-!>
-!!  @defgroup PIO_seterrorhandling PIO_seterrorhandling
-!!  sets the form of error handling for pio.
-!!
-!! By default pio handles errors internally by printing a string
-!! describing the error and calling mpi_abort.  Application
-!! developers can change this behavior for calls to the underlying netcdf
-!! libraries with a call to PIO_seterrorhandling. For example if a
-!! developer wanted to see if an input netcdf format file contained the variable
-!! 'u' they might write the following
-!! @verbinclude errorhandle
-!<
+  !>
+  !! Set the form of error handling for PIO.
+  !!
+  !! By default pio handles errors internally by printing a string
+  !! describing the error and calling mpi_abort. Application
+  !! developers can change this behavior for calls to the underlying
+  !! netcdf libraries with a call to PIO_seterrorhandling. For example
+  !! if a developer wanted to see if an input netcdf format file
+  !! contained the variable 'u' they might write the following
+  !! @verbinclude errorhandle
+  !<
   interface PIO_seterrorhandling
      module procedure seterrorhandlingfile
      module procedure seterrorhandlingiosystem
      module procedure seterrorhandlingiosysid
-  end interface
+  end interface PIO_seterrorhandling
 
-!>
-!! @defgroup PIO_get_local_array_size PIO_get_local_array_size
-!<
-
-  !eoc
-  !***********************************************************************
+  !>
+  !! Get the local size of a distributed array.
+  !<
 
 contains
 
@@ -224,13 +246,12 @@ contains
 #define fptr(arg) arg
 !!$#endif
 
-!>
-!! @public
-!! @ingroup PIO_file_is_open
-!! @brief This logical function indicates if a file is open.
-!! @details
-!! @param File @copydoc file_desc_t
-!<
+  !>
+  !! @ingroup PIO_file_is_open
+  !! This logical function indicates if a file is open.
+  !! @param File @copydoc file_desc_t
+  !! @author Jim Edwards
+  !<
   logical function PIO_FILE_IS_OPEN(File)
     type(file_desc_t), intent(in) :: file
     interface
@@ -243,21 +264,22 @@ contains
     end interface
     PIO_FILE_IS_OPEN = .false.
     if(associated(file%iosystem)) then
-      if(PIOc_File_is_Open(file%fh)==1) then
-        PIO_FILE_IS_OPEN = .true.
-      endif
+       if(PIOc_File_is_Open(file%fh)==1) then
+          PIO_FILE_IS_OPEN = .true.
+       endif
     endif
 
   end function PIO_FILE_IS_OPEN
 
-!>
-!! @public
-!! @ingroup PIO_get_local_array_size
-!! @brief This function returns the expected local size of an array associated with iodesc
-!! @details
-!! @param iodesc
-!! @copydoc io_desc_t
-!<
+  !>
+  !! @public
+  !! @ingroup PIO_get_local_array_size
+  !! Return the expected local size of an array associated with a
+  !! decomposition.
+  !! @param iodesc the decomposition.
+  !! @copydoc io_desc_t
+  !! @author Jim Edwards
+  !<
   integer function PIO_get_local_array_size(iodesc)
     type(io_desc_t), intent(in) :: iodesc
     interface
@@ -271,14 +293,16 @@ contains
     PIO_get_local_array_size = PIOc_get_local_array_size(iodesc%ioid)
   end function PIO_get_local_array_size
 
-!>
-!! @public
-!! @ingroup PIO_advanceframe
-!! @brief advances the record dimension of a variable in a netcdf format file
-!!  or the block address in a binary file
-!! @details
-!! @param[in,out] vardesc @copybrief var_desc_t
-!<
+  !>
+  !! @public
+  !! @ingroup PIO_setframe
+  !! Advance the record dimension of a variable in a netcdf format
+  !! file.
+  !!
+  !! @param File @copydoc file_desc_t
+  !! @param vardesc @copybrief var_desc_t
+  !! @author Jim Edwards
+  !<
   subroutine advanceframe(file, vardesc)
     type(file_desc_t), intent(in) :: file
     type(var_desc_t), intent(inout) :: vardesc
@@ -295,15 +319,17 @@ contains
     ierr = PIOc_advanceframe(file%fh, vardesc%varid-1)
   end subroutine advanceframe
 
-!>
-!! @public
-!! @ingroup PIO_setframe
-!! @brief sets the record dimension of a variable in a netcdf format file
-!! or the block address in a binary file
-!! @details
-!! @param vardesc @copydoc var_desc_t
-!! @param frame   : frame number to set
-!<
+  !>
+  !! @public
+  !! @ingroup PIO_setframe
+  !! Set the record dimension of a variable in a netcdf format file
+  !! or the block address in a binary file.
+  !!
+  !! @param File @copydoc file_desc_t
+  !! @param vardesc @copydoc var_desc_t
+  !! @param frame record number
+  !! @author Jim Edwards
+  !<
   subroutine setframe(file, vardesc,frame)
     type(file_desc_t) :: file
     type(var_desc_t), intent(inout) :: vardesc
@@ -323,13 +349,15 @@ contains
     ierr = PIOc_setframe(file%fh, vardesc%varid-1, iframe)
   end subroutine setframe
 
-!>
-!! @public
-!! @ingroup PIO_setdebuglevel
-!! @brief sets the level of debug information output to stdout by pio
-!! @details
-!! @param level : default value is 0, allowed values 0-6
-!<
+  !>
+  !! @public
+  !! @public
+  !! @ingroup PIO_setdebuglevel
+  !! Set the level of debug information output to stdout by PIO.
+  !!
+  !! @param level default value is 0, allowed values 0-6
+  !! @author Jim Edwards
+  !<
   subroutine setdebuglevel(level)
     integer(i4), intent(in) :: level
     integer :: ierr
@@ -364,20 +392,22 @@ contains
     end if
     ierr = PIO_set_log_level(level)
     if(ierr /= PIO_NOERR) then
-      ! This is not a fatal error
-      print *, __PIO_FILE__, __LINE__, "Setting log level failed, ierr =",ierr
+       ! This is not a fatal error
+       print *, __PIO_FILE__, __LINE__, "Setting log level failed, ierr =",ierr
     end if
   end subroutine setdebuglevel
 
-!>
-!! @ingroup PIO_seterrorhandling
-!! @public
-!! @brief set the pio error handling method for a file
-!!
-!! @param file @copydoc file_desc_t
-!! @param method :
-!! @copydoc PIO_error_method
-!<
+  !>
+  !! @public
+  !! @ingroup PIO_seterrorhandling
+  !! Set the pio error handling method for a file.
+  !!
+  !! @param file @copydoc file_desc_t
+  !! @param method error handling method
+  !! @param oldmethod old error handling method
+  !! @copydoc PIO_error_method
+  !! @author Jim Edwards
+  !<
   subroutine seterrorhandlingfile(file, method, oldmethod)
     type(file_desc_t), intent(inout) :: file
     integer, intent(in) :: method
@@ -385,14 +415,16 @@ contains
     call seterrorhandlingiosysid(file%iosystem%iosysid, method, oldmethod)
   end subroutine seterrorhandlingfile
 
-!>
-!! @ingroup PIO_seterrorhandling
-!! @public
-!! @brief set the pio error handling method for a pio system
-!! @param iosystem : a defined pio system descriptor, see PIO_types
-!! @param method :
-!! @copydoc PIO_error_method
-!<
+  !>
+  !! @public
+  !! @ingroup PIO_seterrorhandling
+  !! Set the pio error handling method for a pio system.
+  !! @param iosystem a defined pio system descriptor, see PIO_types
+  !! @param method
+  !! @copydoc PIO_error_method
+  !! @param oldmethod old error handling method
+  !! @author Jim Edwards
+  !<
   subroutine seterrorhandlingiosystem(iosystem, method, oldmethod)
     type(iosystem_desc_t), intent(inout) :: iosystem
     integer, intent(in) :: method
@@ -400,14 +432,18 @@ contains
     call seterrorhandlingiosysid(iosystem%iosysid, method, oldmethod)
   end subroutine seterrorhandlingiosystem
 
-!>
-!! @ingroup PIO_seterrorhandling
-!! @public
-!! @brief set the pio error handling method for a pio system or globally
-!! @param iosysid : a pio system ID (pass PIO_DEFAULT to change the global default error handling)
-!! @param method :
-!! @copydoc PIO_error_method
-!<
+  !>
+  !! @public
+  !! @ingroup PIO_seterrorhandling
+  !! Set the pio error handling method for a pio system or globally.
+  !!
+  !! @param iosysid a pio system ID (pass PIO_DEFAULT to change the
+  !! global default error handling)
+  !! @param method
+  !! @copydoc PIO_error_method
+  !! @param oldmethod old error handling method
+  !! @author Jim Edwards
+  !<
   subroutine seterrorhandlingiosysid(iosysid, method, oldmethod)
     integer, intent(in) :: iosysid
     integer, intent(in) :: method
@@ -428,25 +464,30 @@ contains
 
   end subroutine seterrorhandlingiosysid
 
-
-!>
-!! @public
-!! @ingroup PIO_initdecomp
-!! @brief Implements the @ref decomp_bc for PIO_initdecomp
-!! @details  This provides the ability to describe a computational
-!! decomposition in PIO that has a block-cyclic form.  That is
-!! something that can be described using start and count arrays.
-!! Optional parameters for this subroutine allows for the specification
-!! of io decomposition using iostart and iocount arrays.  If iostart
-!! and iocount arrays are not specified by the user, and rearrangement
-!! is turned on then PIO will calculate a suitable IO decomposition
-!! @param iosystem @copydoc iosystem_desc_t
-!! @param basepiotype @copydoc use_PIO_kinds
-!! @param dims An array of the global length of each dimesion of the variable(s)
-!! @param compstart The start index into the block-cyclic computational decomposition
-!! @param compcount The count for the block-cyclic computational decomposition
-!! @param iodesc @copydoc iodesc_generate
-!<
+  !>
+  !! @public
+  !! @ingroup PIO_initdecomp
+  !! Implements the block-cyclic decomposition for PIO_initdecomp.
+  !! This provides the ability to describe a computational
+  !! decomposition in PIO that has a block-cyclic form. That is
+  !! something that can be described using start and count arrays.
+  !! Optional parameters for this subroutine allows for the
+  !! specification of io decomposition using iostart and iocount
+  !! arrays. If iostart and iocount arrays are not specified by the
+  !! user, and rearrangement is turned on then PIO will calculate a
+  !! suitable IO decomposition
+  !!
+  !! @param iosystem @copydoc iosystem_desc_t
+  !! @param basepiotype @copydoc use_PIO_kinds
+  !! @param dims An array of the global length of each dimesion of the
+  !! variable(s)
+  !! @param compstart The start index into the block-cyclic
+  !! computational decomposition
+  !! @param compcount The count for the block-cyclic computational
+  !! decomposition
+  !! @param iodesc @copydoc iodesc_generate
+  !! @author Jim Edwards
+  !<
   subroutine PIO_initdecomp_bc(iosystem,basepiotype,dims,compstart,compcount,iodesc)
     type (iosystem_desc_t), intent(inout) :: iosystem
     integer(i4), intent(in)               :: basepiotype
@@ -492,26 +533,23 @@ contains
 
   end subroutine PIO_initdecomp_bc
 
-
-
-
-
-!>
-!! @public
-!! @ingroup PIO_initdecomp
-!! @brief A deprecated interface to the PIO_initdecomp method.
-!! @details
-!! @deprecated
-!! @param iosystem : a defined pio system descriptor, see PIO_types
-!! @param basepiotype : the type of variable(s) associated with this iodesc.
-!! @copydoc PIO_kinds
-!! @param dims : an array of the global length of each dimesion of the variable(s)
-!! @param lenblocks :
-!! @param compdof : mapping of the storage order of the variable to its memory order
-!! @param iodofr :
-!! @param iodofw :
-!! @param iodesc @copydoc iodesc_generate
-!<
+  !>
+  !! @public
+  !! @ingroup PIO_initdecomp
+  !! A deprecated interface to the PIO_initdecomp method.
+  !!
+  !! @param iosystem a defined pio system descriptor, see PIO_types
+  !! @param basepiotype the type of variable(s) associated with this iodesc.
+  !! @copydoc PIO_kinds
+  !! @param dims an array of the global length of each dimesion of the variable(s)
+  !! @param lenblocks
+  !! @param compdof mapping of the storage order of the variable to its memory order
+  !! @param iodofr
+  !! @param iodofw
+  !! @param iodesc @copydoc iodesc_generate
+  !! @deprecated
+  !! @author Jim Edwards
+  !<
   subroutine initdecomp_2dof_bin_i4(iosystem,basepiotype,dims,lenblocks,compdof,iodofr,iodofw,iodesc)
     type (iosystem_desc_t), intent(in) :: iosystem
     integer(i4), intent(in)           :: basepiotype
@@ -527,10 +565,27 @@ contains
     call initdecomp_2dof_bin_i8(iosystem,basepiotype,dims,lenblocks,int(compdof,PIO_OFFSET_KIND),int(iodofr,PIO_OFFSET_KIND), &
          int(iodofw,PIO_OFFSET_KIND),iodesc)
 
-
   end subroutine initdecomp_2dof_bin_i4
+
+  !>
+  !! @public
+  !! @ingroup PIO_initdecomp
+  !! A deprecated interface to the PIO_initdecomp method.
+  !!
+  !! @param iosystem a defined pio system descriptor, see PIO_types
+  !! @param basepiotype the type of variable(s) associated with this iodesc.
+  !! @copydoc PIO_kinds
+  !! @param dims an array of the global length of each dimesion of the variable(s)
+  !! @param lenblocks
+  !! @param compdof mapping of the storage order of the variable to its memory order
+  !! @param iodofr
+  !! @param iodofw
+  !! @param iodesc @copydoc iodesc_generate
+  !! @deprecated
+  !! @author Jim Edwards
+  !<
   subroutine initdecomp_2dof_bin_i8(iosystem,basepiotype,dims,lenblocks,compdof,iodofr,iodofw,iodesc)
-!    use calcdisplace_mod, only : calcdisplace
+    !    use calcdisplace_mod, only : calcdisplace
     type (iosystem_desc_t), intent(in) :: iosystem
     integer(i4), intent(in)           :: basepiotype
     integer(i4), intent(in)           :: dims(:)
@@ -540,27 +595,26 @@ contains
     integer (PIO_OFFSET_KIND), intent(in)          :: iodofw(:)     !> global degrees of freedom for io decomposition
     type (io_desc_t), intent(inout)     :: iodesc
 
-
-
-
   end subroutine initdecomp_2dof_bin_i8
 
-
-!>
-!! @public
-!! @ingroup PIO_initdecomp
-!! @brief A deprecated interface to the PIO_initdecomp method.
-!! @details
-!! @deprecated
-!! @param iosystem : a defined pio system descriptor, see PIO_types
-!! @param basepiotype : the type of variable(s) associated with this iodesc.
-!! @copydoc PIO_kinds
-!! @param dims : an array of the global length of each dimesion of the variable(s)
-!! @param lenblocks :
-!! @param compdof : mapping of the storage order of the variable to its memory order
-!! @param iodofr :
-!! @param iodesc @copydoc iodesc_generate
-!<
+  !>
+  !! @public
+  !! @ingroup PIO_initdecomp
+  !! A deprecated interface to the PIO_initdecomp method.
+  !!
+  !! @param iosystem a defined pio system descriptor, see PIO_types
+  !! @param basepiotype the type of variable(s) associated with this
+  !! iodesc.  @copydoc PIO_kinds
+  !! @param dims an array of the global length of each dimesion of the
+  !! variable(s)
+  !! @param lenblocks
+  !! @param compdof mapping of the storage order of the variable to
+  !! its memory order
+  !! @param iodofr
+  !! @param iodesc @copydoc iodesc_generate
+  !! @deprecated
+  !! @author Jim Edwards
+  !<
   subroutine initdecomp_1dof_bin_i8(iosystem,basepiotype,dims,lenblocks,compdof,iodofr,iodesc)
     type (iosystem_desc_t), intent(in) :: iosystem
     integer(i4), intent(in)           :: basepiotype
@@ -578,6 +632,24 @@ contains
     call initdecomp_1dof_nf_i8(iosystem,basepiotype,dims,lenblocks,compdof,iodofr,start, count, iodesc)
   end subroutine initdecomp_1dof_bin_i8
 
+  !>
+  !! @public
+  !! @ingroup PIO_initdecomp
+  !! A deprecated interface to the PIO_initdecomp method.
+  !!
+  !! @param iosystem a defined pio system descriptor, see PIO_types
+  !! @param basepiotype the type of variable(s) associated with this
+  !! iodesc.  @copydoc PIO_kinds
+  !! @param dims an array of the global length of each dimesion of the
+  !! variable(s)
+  !! @param lenblocks
+  !! @param compdof mapping of the storage order of the variable to
+  !! its memory order
+  !! @param iodofr
+  !! @param iodesc @copydoc iodesc_generate
+  !! @deprecated
+  !! @author Jim Edwards
+  !<
   subroutine initdecomp_1dof_bin_i4(iosystem,basepiotype,dims,lenblocks,compdof,iodofr,iodesc)
     type (iosystem_desc_t), intent(in) :: iosystem
     integer(i4), intent(in)           :: basepiotype
@@ -596,24 +668,28 @@ contains
          int(compdof,PIO_OFFSET_KIND),int(iodofr,PIO_OFFSET_KIND),start, count, iodesc)
   end subroutine initdecomp_1dof_bin_i4
 
-!>
-!! @public
-!! @ingroup PIO_initdecomp
-!! @brief A deprecated interface to the PIO_initdecomp method.
-!! @details
-!! @deprecated
-!! @param iosystem : a defined pio system descriptor, see PIO_types
-!! @param basepiotype : the type of variable(s) associated with this iodesc.
-!! @copydoc PIO_kinds
-!! @param dims : an array of the global length of each dimesion of the variable(s)
-!! @param lenblocks :
-!! @param compdof : mapping of the storage order of the variable to its memory order
-!! @param iodofr :
-!! @param iodofw :
-!! @param start : used with count to give a block description of the shape of the data
-!! @param count :
-!! @param iodesc @copydoc iodesc_generate
-!<
+  !>
+  !! @public
+  !! @ingroup PIO_initdecomp
+  !! A deprecated interface to the PIO_initdecomp method.
+  !!
+  !! @param iosystem a defined pio system descriptor, see PIO_types
+  !! @param basepiotype the type of variable(s) associated with this
+  !! iodesc.  @copydoc PIO_kinds
+  !! @param dims: an array of the global length of each dimesion of
+  !! the variable(s)
+  !! @param lenblocks
+  !! @param compdof mapping of the storage order of the variable to
+  !! its memory order
+  !! @param iodofr
+  !! @param iodofw
+  !! @param start used with count to give a block description of the
+  !! shape of the data
+  !! @param count
+  !! @param iodesc @copydoc iodesc_generate
+  !! @deprecated
+  !! @author Jim Edwards
+  !<
   subroutine initdecomp_2dof_nf_i4(iosystem,basepiotype,dims,lenblocks,compdof,iodofr,iodofw,start, count, iodesc)
     type (iosystem_desc_t), intent(in) :: iosystem
     integer(i4), intent(in)           :: basepiotype
@@ -634,6 +710,28 @@ contains
 
   end subroutine initdecomp_2dof_nf_i4
 
+  !>
+  !! @public
+  !! @ingroup PIO_initdecomp
+  !! A deprecated interface to the PIO_initdecomp method.
+  !!
+  !! @param iosystem a defined pio system descriptor, see PIO_types
+  !! @param basepiotype the type of variable(s) associated with this
+  !! iodesc.  @copydoc PIO_kinds
+  !! @param dims: an array of the global length of each dimesion of
+  !! the variable(s)
+  !! @param lenblocks
+  !! @param compdof mapping of the storage order of the variable to
+  !! its memory order
+  !! @param iodofr
+  !! @param iodofw
+  !! @param start used with count to give a block description of the
+  !! shape of the data
+  !! @param count
+  !! @param iodesc @copydoc iodesc_generate
+  !! @deprecated
+  !! @author Jim Edwards
+  !<
   subroutine initdecomp_2dof_nf_i8(iosystem,basepiotype,dims,lenblocks,compdof,iodofr,iodofw,start, count, iodesc)
     type (iosystem_desc_t), intent(in) :: iosystem
     integer(i4), intent(in)           :: basepiotype
@@ -656,23 +754,24 @@ contains
 
   end subroutine initdecomp_2dof_nf_i8
 
-!>
-!! @public
-!! @ingroup PIO_initdecomp
-!! @brief A deprecated interface to the PIO_initdecomp method.
-!! @details
-!! @deprecated
-!! @param iosystem : a defined PIO system descriptor, see pio_types
-!! @param basepiotype : The type of variable(s) associated with this iodesc.
-!! @copydoc PIO_kinds
-!! @param dims : an array of the global length of each dimesion of the variable(s)
-!! @param lenblocks :
-!! @param compdof : mapping of the storage order of the variable to its memory order
-!! @param iodof :
-!! @param start :
-!! @param count :
-!! @param iodesc @copydoc iodesc_generate
-!<
+  !>
+  !! @public
+  !! @ingroup PIO_initdecomp
+  !! A deprecated interface to the PIO_initdecomp method.
+  !!
+  !! @param iosystem a defined PIO system descriptor, see pio_types
+  !! @param basepiotype The type of variable(s) associated with this iodesc.
+  !! @copydoc PIO_kinds
+  !! @param dims an array of the global length of each dimesion of the variable(s)
+  !! @param lenblocks
+  !! @param compdof mapping of the storage order of the variable to its memory order
+  !! @param iodof
+  !! @param start
+  !! @param count
+  !! @param iodesc @copydoc iodesc_generate
+  !! @deprecated
+  !! @author Jim Edwards
+  !<
   subroutine initdecomp_1dof_nf_i4(iosystem,basepiotype,dims,lenblocks,compdof,iodof,start, count, iodesc)
     type (iosystem_desc_t), intent(in) :: iosystem
     integer(i4), intent(in)           :: basepiotype
@@ -689,6 +788,24 @@ contains
 
   end subroutine initdecomp_1dof_nf_i4
 
+  !>
+  !! @public
+  !! @ingroup PIO_initdecomp
+  !! A deprecated interface to the PIO_initdecomp method.
+  !!
+  !! @param iosystem a defined PIO system descriptor, see pio_types
+  !! @param basepiotype The type of variable(s) associated with this iodesc.
+  !! @copydoc PIO_kinds
+  !! @param dims an array of the global length of each dimesion of the variable(s)
+  !! @param lenblocks
+  !! @param compdof mapping of the storage order of the variable to its memory order
+  !! @param iodof
+  !! @param start
+  !! @param count
+  !! @param iodesc @copydoc iodesc_generate
+  !! @deprecated
+  !! @author Jim Edwards
+  !<
   subroutine initdecomp_1dof_nf_i8(iosystem,basepiotype,dims,lenblocks,compdof,iodof,start, count, iodesc)
     type (iosystem_desc_t), intent(in) :: iosystem
     integer(i4), intent(in)           :: basepiotype
@@ -700,9 +817,6 @@ contains
     integer :: piotype
     integer(PIO_OFFSET_KIND), intent(in) :: start(:), count(:)
 
-
-
-
     if(any(iodof/=compdof)) then
        call piodie( __PIO_FILE__,__LINE__, &
             'Not sure what to do here')
@@ -710,31 +824,40 @@ contains
        call PIO_initdecomp_dof_i8(iosystem,basepiotype,dims,compdof, iodesc,PIO_REARR_SUBSET, start,count)
     endif
 
-
   end subroutine initdecomp_1dof_nf_i8
 
-!>
-!! @public
-!! @ingroup PIO_initdecomp
-!! @brief Implements the @ref decomp_dof for PIO_initdecomp (previous name: \b initdecomp_1dof_nf_box)
-!! @details  This provides the ability to describe a computational
-!! decomposition in PIO using degrees of freedom method. This is
-!! a decomposition that can not be easily described using a start
-!! and count method (see @ref decomp_dof).
-!! Optional parameters for this subroutine allows for the specififcation of
-!! io decomposition using iostart and iocount arrays.  If iostart
-!! and iocount arrays are not specified by the user, and rearrangement
-!! is turned on then PIO will calculate an suitable IO decomposition.
-!! Note that this subroutine was previously called \em initdecomp_1dof_nf_box
-!! @param iosystem @copydoc iosystem_desc_t
-!! @param basepiotype @copydoc use_PIO_kinds
-!! @param dims An array of the global length of each dimesion of the variable(s)
-!! @param compdof Mapping of the storage order for the computational decomposition to its memory order
-!! @param iodesc @copydoc iodesc_generate
-!! @param iostart   The start index for the block-cyclic io decomposition
-!! @param iocount   The count for the block-cyclic io decomposition
-!<
-  subroutine PIO_initdecomp_dof_i4(iosystem,basepiotype,dims,compdof, iodesc, rearr, iostart, iocount)
+  !>
+  !! @public
+  !! @ingroup PIO_initdecomp
+  !! Implements the degrees of freedom decomposition for
+  !! PIO_initdecomp(). This provides the ability to describe a
+  !! computational decomposition in PIO using degrees of freedom
+  !! method. This is a decomposition that can not be easily described
+  !! using a start and count method.
+  !!
+  !! Optional parameters for this subroutine allows for the
+  !! specififcation of io decomposition using iostart and iocount
+  !! arrays. If iostart and iocount arrays are not specified by the
+  !! user, and rearrangement is turned on then PIO will calculate an
+  !! suitable IO decomposition.
+  !!
+  !! @note This subroutine was previously called \em
+  !! initdecomp_1dof_nf_box.
+  !!
+  !! @param iosystem @copydoc iosystem_desc_t
+  !! @param basepiotype @copydoc use_PIO_kinds
+  !! @param dims An array of the global length of each dimesion of the
+  !! variable(s)
+  !! @param compdof Mapping of the storage order for the computational
+  !! decomposition to its memory order
+  !! @param iodesc @copydoc iodesc_generate
+  !! @param rearr rearranger
+  !! @param iostart The start index for the block-cyclic io
+  !! decomposition
+  !! @param iocount The count for the block-cyclic io decomposition
+  !! @author Jim Edwards
+  !<
+  subroutine PIO_initdecomp_dof_i4(iosystem, basepiotype, dims, compdof, iodesc, rearr, iostart, iocount)
     type (iosystem_desc_t), intent(inout) :: iosystem
     integer(i4), intent(in)           :: basepiotype
     integer(i4), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
@@ -756,7 +879,6 @@ contains
     deallocate(internal_compdof)
 
   end subroutine PIO_initdecomp_dof_i4
-
 
   subroutine PIO_initdecomp_internal(iosystem,basepiotype,dims,maplen, compdof, iodesc, rearr, iostart, iocount)
     type (iosystem_desc_t), intent(in) :: iosystem
@@ -815,16 +937,19 @@ contains
             maplen, compdof, iodesc%ioid, crearr, C_LOC(cstart), C_LOC(ccount))
        deallocate(cstart, ccount)
     else
-        ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
+       ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
             maplen, compdof, iodesc%ioid, crearr, C_NULL_PTR, C_NULL_PTR)
     end if
 
     deallocate(cdims)
 
-
   end subroutine PIO_initdecomp_internal
 
-
+  !>
+  !! @public
+  !! @ingroup PIO_initdecomp
+  !! I8 version of PIO_initdecomp_dof_i4.
+  !! @author Jim Edwards
   subroutine PIO_initdecomp_dof_i8(iosystem,basepiotype,dims,compdof, iodesc, rearr, iostart, iocount)
     type (iosystem_desc_t), intent(in) :: iosystem
     integer(i4), intent(in)           :: basepiotype
@@ -843,29 +968,34 @@ contains
 
     call PIO_initdecomp_internal(iosystem, basepiotype, dims, maplen, compdof, iodesc, rearr, iostart,iocount)
 
-
 #ifdef TIMING
     call t_stopf("PIO:initdecomp_dof")
 #endif
 
   end subroutine PIO_initdecomp_dof_i8
 
-!>
-!! @public
-!! @ingroup PIO_init
-!! @brief initialize the pio subsystem.
-!! @details  This is a collective call.  Input parameters are read on comp_rank=0
-!!   values on other tasks are ignored.  This variation of PIO_init locates the IO tasks on a subset
-!!   of the compute tasks.
-!! @param comp_rank mpi rank of each participating task,
-!! @param comp_comm the mpi communicator which defines the collective.
-!! @param num_iotasks the number of iotasks to define.
-!! @param num_aggregator the mpi aggregator count
-!! @param stride the stride in the mpi rank between io tasks.
-!! @param rearr @copydoc PIO_rearr_method
-!! @param iosystem a derived type which can be used in subsequent pio operations (defined in PIO_types).
-!! @param base @em optional argument can be used to offset the first io task - default base is task 1.
-!<
+  !>
+  !! @public
+  !! @ingroup PIO_init
+  !! Initialize the pio subsystem. This is a collective call. Input
+  !! parameters are read on comp_rank=0 values on other tasks are
+  !! ignored. This variation of PIO_init locates the IO tasks on a
+  !! subset of the compute tasks.
+  !!
+  !! @param comp_rank mpi rank of each participating task,
+  !! @param comp_comm the mpi communicator which defines the
+  !! collective.
+  !! @param num_iotasks the number of iotasks to define.
+  !! @param num_aggregator the mpi aggregator count
+  !! @param stride the stride in the mpi rank between io tasks.
+  !! @param rearr @copydoc PIO_rearr_method
+  !! @param iosystem a derived type which can be used in subsequent
+  !! pio operations (defined in PIO_types).
+  !! @param base @em optional argument can be used to offset the first
+  !! io task - default base is task 1.
+  !! @param rearr_opts the rearranger options.
+  !! @author Jim Edwards
+  !<
   subroutine init_intracom(comp_rank, comp_comm, num_iotasks, num_aggregator, stride,  rearr, iosystem,base, rearr_opts)
     use pio_types, only : pio_internal_error, pio_rearr_opt_t
     use iso_c_binding
@@ -892,7 +1022,7 @@ contains
          integer(C_INT), value :: stride
          integer(C_INT), value :: base
          integer(C_INT), value :: rearr
-          type(pio_rearr_opt_t) :: rearr_opts
+         type(pio_rearr_opt_t) :: rearr_opts
          integer(C_INT) :: iosysidp
        end function PIOc_Init_Intracomm_from_F90
     end interface
@@ -910,21 +1040,27 @@ contains
 #endif
   end subroutine init_intracom
 
-
-!>
-!! @public
-!! @ingroup PIO_init
-!! @brief Initialize the pio subsystem.
-!! @details  This is a collective call.  Input parameters are read on comp_rank=0
-!!   values on other tasks are ignored.  This variation of PIO_init sets up a distinct set of tasks
-!!   to handle IO, these tasks do not return from this call.  Instead they go to an internal loop
-!!   and wait to receive further instructions from the computational tasks
-!! @param component_count The number of computational components to associate with this IO component
-!! @param peer_comm  The communicator from which all other communicator arguments are derived
-!! @param comp_comms The computational communicator for each of the computational components
-!! @param io_comm    The io communicator
-!! @param iosystem a derived type which can be used in subsequent pio operations (defined in PIO_types).
-!<
+  !>
+  !! @public
+  !! @ingroup PIO_init
+  !! Initialize the pio subsystem. This is a collective call. Input
+  !! parameters are read on comp_rank=0 values on other tasks are
+  !! ignored. This variation of PIO_init sets up a distinct set of
+  !! tasks to handle IO, these tasks do not return from this
+  !! call. Instead they go to an internal loop and wait to receive
+  !! further instructions from the computational tasks.
+  !!
+  !! @param component_count The number of computational components to
+  !! associate with this IO component.
+  !! @param peer_comm The communicator from which all other
+  !! communicator arguments are derived.
+  !! @param comp_comms The computational communicator for each of the
+  !! computational components.
+  !! @param io_comm The io communicator.
+  !! @param iosystem a derived type which can be used in subsequent
+  !! pio operations (defined in PIO_types).
+  !! @author Jim Edwards
+  !<
   subroutine init_intercom(component_count, peer_comm, comp_comms, io_comm, iosystem)
     use pio_types, only : pio_internal_error, pio_rearr_box
     integer, intent(in) :: component_count
@@ -948,7 +1084,7 @@ contains
 #endif
 #if defined(NO_MPI2) || defined(_MPISERIAL)
     call piodie( __PIO_FILE__,__LINE__, &
-     'The PIO async interface requires an MPI2 complient MPI library')
+         'The PIO async interface requires an MPI2 complient MPI library')
 #else
     do i=1,component_count
        iosystem(i)%error_handling = PIO_internal_error
@@ -1102,16 +1238,16 @@ contains
        call mpi_info_create(iosystem(i)%info,ierr)
        ! turn on mpi-io aggregation
        !DBG    print *,'PIO_init: before call to setnumagg'
-!       itmp = num_aggregator
-!       call mpi_bcast(itmp, 1, mpi_integer, 0, iosystem%union_comm, ierr)
-!       if(itmp .gt. 0) then
-!          write(cb_nodes,('(i5)')) itmp
-!#ifdef BGQ
-!          call PIO_set_hint(iosystem(i),"bgl_nodes_pset",trim(adjustl(cb_nodes)))
-!#else
-!          call PIO_set_hint(iosystem(i),"cb_nodes",trim(adjustl(cb_nodes)))
-!#endif
-!       endif
+       !       itmp = num_aggregator
+       !       call mpi_bcast(itmp, 1, mpi_integer, 0, iosystem%union_comm, ierr)
+       !       if(itmp .gt. 0) then
+       !          write(cb_nodes,('(i5)')) itmp
+       !#ifdef BGQ
+       !          call PIO_set_hint(iosystem(i),"bgl_nodes_pset",trim(adjustl(cb_nodes)))
+       !#else
+       !          call PIO_set_hint(iosystem(i),"cb_nodes",trim(adjustl(cb_nodes)))
+       !#endif
+       !       endif
 
 #ifdef PIO_GPFS_HINTS
        call PIO_set_hint(iosystem(i),"ibm_largeblock_io","true")
@@ -1140,17 +1276,17 @@ contains
 #endif
   end subroutine init_intercom
 
-
-!>
-!! @public
-!! @defgroup PIO_set_hint  PIO_set_hint
-!! @brief set file system hints using mpi_info_set
-!! @details This is a collective call which expects the following parameters:
-!! @param iosystem @copydoc io_desc_t
-!! @param hint  the string name of the hint to define
-!! @param hintval  the string value to set the hint to
-!! @retval ierr @copydoc  error_return
-!<
+  !>
+  !! @public
+  !! @ingroup PIO_set_hint
+  !! Set file system hints using mpi_info_set. This is a collective
+  !! call.
+  !!
+  !! @param iosystem @copydoc io_desc_t
+  !! @param hint the string name of the hint to define
+  !! @param hintval the string value to set the hint to
+  !! @retval ierr @copydoc error_return
+  !! @author Jim Edwards
   subroutine PIO_set_hint(iosystem, hint, hintval)
     type (iosystem_desc_t), intent(inout)  :: iosystem  ! io descriptor to initalize
     character(len=*), intent(in) :: hint, hintval
@@ -1166,24 +1302,22 @@ contains
        end function PIOc_set_hint
     end interface
 
-
     ierr = PIOc_set_hint(iosystem%iosysid, hint, hintval)
-
 
   end subroutine PIO_set_hint
 
-
-!>
-!! @public
-!! @ingroup PIO_finalize
-!! @brief finalizes the pio subsystem.
-!! @details This is a collective call which expects the following parameters
-!! @param iosystem : @copydoc io_desc_t
-!! @retval ierr @copydoc  error_return
-!<
+  !>
+  !! @public
+  !! @ingroup PIO_finalize
+  !! Finalizes an IO System. This is a collective call.
+  !!
+  !! @param iosystem @copydoc io_desc_t
+  !! @retval ierr @copydoc error_return
+  !! @author Jim Edwards
+  !<
   subroutine finalize(iosystem,ierr)
-     type (iosystem_desc_t), intent(inout) :: iosystem
-     integer(i4), intent(out) :: ierr
+    type (iosystem_desc_t), intent(inout) :: iosystem
+    integer(i4), intent(out) :: ierr
     interface
        integer(C_INT) function PIOc_finalize(iosysid) &
             bind(C,name="PIOc_finalize")
@@ -1196,60 +1330,61 @@ contains
     endif
   end subroutine finalize
 
+  !>
+  !! @public
+  !! @ingroup PIO_getnumiotasks
+  !! Return the number of IO-tasks that PIO is using.
+  !!
+  !! @param iosystem a defined pio system descriptor, see PIO_types
+  !! @param numiotasks the number of IO-tasks
+  !! @author Jim Edwards
+  !<
+  subroutine getnumiotasks(iosystem,numiotasks)
+    type (iosystem_desc_t), intent(in) :: iosystem
+    integer(i4), intent(out) :: numiotasks
+    integer :: ierr
+    interface
+       integer(C_INT) function PIOc_get_numiotasks(iosysid,numiotasks) &
+            bind(C,name="PIOc_get_numiotasks")
+         use iso_c_binding
+         integer(C_INT), intent(in), value :: iosysid
+         integer(C_INT), intent(out) :: numiotasks
+       end function PIOc_get_numiotasks
+    end interface
+    ierr = PIOc_get_numiotasks(iosystem%iosysid, numiotasks)
 
-!>
-!! @public
-!! @ingroup PIO_getnumiotasks
-!! @brief This returns the number of IO-tasks that PIO is using
-!! @param iosystem : a defined pio system descriptor, see PIO_types
-!! @param numiotasks : the number of IO-tasks
-!<
-   subroutine getnumiotasks(iosystem,numiotasks)
-       type (iosystem_desc_t), intent(in) :: iosystem
-       integer(i4), intent(out) :: numiotasks
-       integer :: ierr
-       interface
-          integer(C_INT) function PIOc_get_numiotasks(iosysid,numiotasks) &
-               bind(C,name="PIOc_get_numiotasks")
-            use iso_c_binding
-            integer(C_INT), intent(in), value :: iosysid
-            integer(C_INT), intent(out) :: numiotasks
-          end function PIOc_get_numiotasks
-       end interface
-       ierr = PIOc_get_numiotasks(iosystem%iosysid, numiotasks)
+  end subroutine getnumiotasks
 
-   end subroutine getnumiotasks
+  !> Is an iotype available?
+  logical function pio_iotype_available( iotype) result(available)
+    integer, intent(in) :: iotype
+    interface
+       integer(C_INT) function PIOc_iotype_available(iotype) &
+            bind(C,name="PIOc_iotype_available")
+         use iso_c_binding
+         integer(C_INT), intent(in), value :: iotype
+       end function PIOc_iotype_available
+    end interface
+    available= (PIOc_iotype_available(iotype) == 1)
 
-   logical function pio_iotype_available( iotype) result(available)
-     integer, intent(in) :: iotype
-     interface
-        integer(C_INT) function PIOc_iotype_available(iotype) &
-             bind(C,name="PIOc_iotype_available")
-          use iso_c_binding
-          integer(C_INT), intent(in), value :: iotype
-        end function PIOc_iotype_available
-     end interface
-     available= (PIOc_iotype_available(iotype) == 1)
+  end function pio_iotype_available
 
-   end function pio_iotype_available
-
-
-!>
-!! @public
-!! @ingroup PIO_createfile
-!! @brief  Create a NetCDF or PNetCDF file using PIO.
-!! @details  Input parameters are read on comp task 0 and ignored elsewhere
-!! @param iosystem : A defined pio system descriptor created by a call to @ref PIO_init (see PIO_types)
-!! @param file  :  The returned file descriptor
-!! @param iotype : @copydoc PIO_iotype
-!! @param fname : The name of the file to open
-!! @param amode_in : The NetCDF creation mode flag. the following flags are available:
-!! (1) zero value or NC_NOWRITE is default and opens the file with read-only access.
-!! (2) NC_WRITE for read-write access.
-!! (3) NC_SHARE is used for NetCDF classic, and dangerous with this application.
-!! (4) NC_WRITE|NC_SHARE
-!! @retval ierr @copydoc error_return
-!<
+  !>
+  !! @public
+  !! @ingroup PIO_createfile
+  !! Create a NetCDF file using PIO. Input parameters are read on
+  !! comp task 0 and ignored elsewhere.
+  !!
+  !! @param iosystem A defined PIO system descriptor created by a
+  !! call to @ref PIO_init (see PIO_init)
+  !! @param file The returned file descriptor
+  !! @param iotype @copydoc PIO_iotype
+  !! @param fname The name of the file to open
+  !! @param amode_in The NetCDF creation mode flag - NC_NOWRITE for
+  !! read-only access or NC_WRITE for read-write access.
+  !! @retval ierr @copydoc error_return
+  !! @author Jim Edwards
+  !<
   integer function createfile(iosystem, file,iotype, fname, amode_in) result(ierr)
     type (iosystem_desc_t), intent(inout), target :: iosystem
     type (file_desc_t), intent(out) :: file
@@ -1259,7 +1394,7 @@ contains
     integer :: mode
     interface
        integer(C_INT) function PIOc_createfile(iosysid, fh, iotype, fname,mode) &
-         bind(C,NAME='PIOc_createfile')
+            bind(C,NAME='PIOc_createfile')
          use iso_c_binding
          implicit none
          integer(c_int), value :: iosysid
@@ -1289,27 +1424,25 @@ contains
     call t_stopf("PIO:createfile")
 #endif
   end function createfile
-!>
-!! @public
-!! @ingroup PIO_openfile
-!! @brief open an existing file using pio
-!! @details  Input parameters are read on comp task 0 and ignored elsewhere.
-!! @param iosystem : a defined pio system descriptor created by a call to @ref PIO_init (see PIO_types)
-!! @param file  :  the returned file descriptor
-!! @param iotype : @copybrief PIO_iotype
-!! @param fname : the name of the file to open
-!! @param mode : a zero value (or PIO_nowrite) specifies the default
-!! behavior: open the dataset with read-only access, buffering and
-!! caching accesses for efficiency otherwise, the creation mode is
-!! PIO_write. setting the PIO_write flag opens the dataset with
-!! read-write access. ("writing" means any kind of change to the dataset,
-!! including appending or changing data, adding or renaming dimensions,
-!! variables, and attributes, or deleting attributes.)
-!! @retval ierr @copydoc error_return
-!<
+
+  !>
+  !! @public
+  !! @ingroup PIO_openfile
+  !! Open an existing file using PIO. Input parameters are read on
+  !! comp task 0 and ignored elsewhere.
+  !!
+  !! @param iosystem a defined PIO system descriptor created by a call
+  !! to @ref PIO_init (see PIO_int)
+  !! @param file the returned file descriptor
+  !! @param iotype @copybrief PIO_iotype
+  !! @param fname the name of the file to open
+  !! @param mode PIO_nowrite or PIO_write.
+  !! @retval ierr @copydoc error_return
+  !! @author Jim Edwards
+  !<
   integer function PIO_openfile(iosystem, file, iotype, fname,mode) result(ierr)
 
-!    use ifcore, only: tracebackqq
+    !    use ifcore, only: tracebackqq
     type (iosystem_desc_t), intent(inout), target :: iosystem
     type (file_desc_t), intent(out) :: file
     integer, intent(in) :: iotype
@@ -1318,7 +1451,7 @@ contains
     integer :: iorank
     interface
        integer(C_INT) function PIOc_openfile(iosysid, fh, iotype, fname,mode) &
-         bind(C,NAME='PIOc_openfile')
+            bind(C,NAME='PIOc_openfile')
          use iso_c_binding
          implicit none
          integer(c_int), value :: iosysid
@@ -1349,13 +1482,16 @@ contains
 #endif
   end function PIO_openfile
 
-!>
-!! @public
-!! @ingroup PIO_syncfile
-!! @brief synchronizing a file forces all writes to complete before the subroutine returns.
-!!
-!! @param file @copydoc file_desc_t
-!<
+
+  !>
+  !! @public
+  !! @ingroup PIO_syncfile
+  !! Synchronizing a file, forcing all writes to complete before the
+  !! subroutine returns.
+  !!
+  !! @param file @copydoc file_desc_t
+  !! @author Jim Edwards
+  !<
   subroutine syncfile(file)
     implicit none
     type (file_desc_t), target :: file
@@ -1371,14 +1507,17 @@ contains
     ierr = PIOc_sync(file%fh)
 
   end subroutine syncfile
-!>
-!! @public
-!! @ingroup PIO_freedecomp
-!! @brief free all allocated storage associated with this decomposition
-!! @details
-!! @param ios :  a defined pio system descriptor created by call to @ref PIO_init (see PIO_types)
-!! @param iodesc @copydoc io_desc_t
-!<
+
+
+  !>
+  !! @public
+  !! @ingroup PIO_freedecomp
+  !! @brief free all allocated storage associated with this decomposition
+  !! @details
+  !! @param ios :  a defined pio system descriptor created by call to @ref PIO_init (see PIO_types)
+  !! @param iodesc @copydoc io_desc_t
+  !! @author Jim Edwards
+  !<
   subroutine freedecomp_ios(ios,iodesc)
     implicit none
     type (iosystem_desc_t) :: ios
@@ -1395,15 +1534,18 @@ contains
     ierr = PIOc_freedecomp(ios%iosysid, iodesc%ioid)
 
   end subroutine freedecomp_ios
-!>
-!! @public
-!! @ingroup PIO_freedecomp
-!! @brief free all allocated storage associated with this decomposition
-!! @details
-!! @param file @copydoc file_desc_t
-!! @param iodesc : @copydoc io_desc_t
-!! @retval ierr @copydoc error_return
-!<
+
+
+  !>
+  !! @public
+  !! @ingroup PIO_freedecomp
+  !! Free all allocated storage associated with this decomposition.
+  !!
+  !! @param file @copydoc file_desc_t
+  !! @param iodesc : @copydoc io_desc_t
+  !! @retval ierr @copydoc error_return
+  !! @author Jim Edwards
+  !<
   subroutine freedecomp_file(file,iodesc)
     implicit none
     type (file_desc_t) :: file
@@ -1415,13 +1557,15 @@ contains
 
   end subroutine freedecomp_file
 
-!>
-!! @public
-!! @ingroup PIO_closefile
-!! @brief close a disk file
-!! @details
-!! @param file @copydoc file_desc_t
-!<
+
+  !>
+  !! @public
+  !! @ingroup PIO_closefile
+  !! Close a disk file.
+  !!
+  !! @param file @copydoc file_desc_t
+  !! @author Jim Edwards
+  !<
   subroutine closefile(file)
     type(file_desc_t) :: file
     integer :: ierr
@@ -1444,55 +1588,15 @@ contains
   end subroutine closefile
 
 
-  !******************************
-  ! read_ascii
-  !
-
-  subroutine read_ascii(rank,iobuf,size)
-
-    integer, intent(in) :: rank
-    real (r8), dimension(:) :: iobuf
-    integer, intent(in) :: size
-
-    character(len=80) filename
-    integer lun
-    integer ios
-    integer i
-
-    lun=10+rank
-    write(filename,"('fort.',i2)" ) lun
-    write(6,*) 'filename is:', filename
-
-    open(lun,file=filename,status='old',iostat=ios)
-    if (ios /= 0) then
-       write(6,*) rank,': could not open ascii file: ',filename
-    endif
-
-    do i=1,size
-       read(unit=lun,fmt=*,iostat=ios) iobuf(i)
-       if (ios /= 0) then
-          write (6,*) rank,': error reading item ',i,' of ',size
-#ifndef CPRNAG
-          call abort
-#else
-          stop
-#endif
-       endif
-
-    end do
-
-    close(lun)
-
-  end subroutine read_ascii
-
-!>
-!! @public
-!! @ingroup PIO_deletefile
-!! @brief Delete a file
-!! @details
-!! @param ios : a pio system handle
-!! @param fname : a filename
-!<
+  !>
+  !! @public
+  !! @ingroup PIO_deletefile
+  !! Delete a file.
+  !!
+  !! @param ios a pio system handle
+  !! @param fname a filename
+  !! @author Jim Edwards
+  !<
   subroutine pio_deletefile(ios, fname)
     type(iosystem_desc_t) :: ios
     character(len=*) :: fname
@@ -1510,27 +1614,30 @@ contains
 
   end subroutine pio_deletefile
 
-!>
-!! @public
-!! @ingroup PIO_set_rearr_opts
-!! @brief Set the rerranger options
-!! @details
-!! @param ios : handle to pio iosystem
-!! @param comm_type : @copydoc PIO_rearr_comm_t
-!! @param fcd : @copydoc PIO_rearr_comm_dir
-!! @param enable_hs_c2i : Enable handshake (compute procs to io procs)
-!! @param enable_isend_c2i : Enable isends (compute procs to io procs)
-!! @param max_pend_req_c2i: Maximum pending requests (compute procs to io procs)
-!! @param enable_hs_i2c : Enable handshake (io procs to compute procs)
-!! @param enable_isend_i2c : Enable isends (io procs to compute procs)
-!! @param max_pend_req_i2c: Maximum pending requests (io procs to compute procs)
-!! @copydoc PIO_rearr_comm_fc_options
-!<
+  !>
+  !! @public
+  !! @ingroup PIO_set_rearr_opts
+  !! Set the rerranger options.
+  !!
+  !! @param ios handle to pio iosystem
+  !! @param comm_type @copydoc PIO_rearr_comm_t
+  !! @param fcd : @copydoc PIO_rearr_comm_dir
+  !! @param enable_hs_c2i Enable handshake (compute procs to io procs)
+  !! @param enable_isend_c2i Enable isends (compute procs to io procs)
+  !! @param max_pend_req_c2i Maximum pending requests (compute procs
+  !! to io procs)
+  !! @param enable_hs_i2c Enable handshake (io procs to compute procs)
+  !! @param enable_isend_i2c Enable isends (io procs to compute procs)
+  !! @param max_pend_req_i2c Maximum pending requests (io procs to
+  !! compute procs)
+  !! @copydoc PIO_rearr_comm_fc_options
+  !! @author Jim Edwards
+  !<
   function pio_set_rearr_opts(ios, comm_type, fcd,&
-                              enable_hs_c2i, enable_isend_c2i,&
-                              max_pend_req_c2i,&
-                              enable_hs_i2c, enable_isend_i2c,&
-                              max_pend_req_i2c) result(ierr)
+       enable_hs_c2i, enable_isend_c2i,&
+       max_pend_req_c2i,&
+       enable_hs_i2c, enable_isend_i2c,&
+       max_pend_req_i2c) result(ierr)
 
     type(iosystem_desc_t), intent(inout) :: ios
     integer, intent(in) :: comm_type, fcd
@@ -1539,36 +1646,33 @@ contains
     integer, intent(in) :: max_pend_req_c2i, max_pend_req_i2c
     integer :: ierr
     interface
-      integer(c_int) function PIOc_set_rearr_opts(iosysid, comm_type, fcd,&
-                                                  enable_hs_c2i, enable_isend_c2i,&
-                                                  max_pend_req_c2i,&
-                                                  enable_hs_i2c, enable_isend_i2c,&
-                                                  max_pend_req_i2c)&
-        bind(C,name="PIOc_set_rearr_opts")
-        use iso_c_binding
-        integer(C_INT), intent(in), value :: iosysid
-        integer(C_INT), intent(in), value :: comm_type
-        integer(C_INT), intent(in), value :: fcd
-        logical(C_BOOL), intent(in), value :: enable_hs_c2i
-        logical(C_BOOL), intent(in), value :: enable_isend_c2i
-        integer(C_INT), intent(in), value :: max_pend_req_c2i
-        logical(C_BOOL), intent(in), value :: enable_hs_i2c
-        logical(C_BOOL), intent(in), value :: enable_isend_i2c
-        integer(C_INT), intent(in), value :: max_pend_req_i2c
-      end function PIOc_set_rearr_opts
+       integer(c_int) function PIOc_set_rearr_opts(iosysid, comm_type, fcd,&
+            enable_hs_c2i, enable_isend_c2i,&
+            max_pend_req_c2i,&
+            enable_hs_i2c, enable_isend_i2c,&
+            max_pend_req_i2c)&
+            bind(C,name="PIOc_set_rearr_opts")
+         use iso_c_binding
+         integer(C_INT), intent(in), value :: iosysid
+         integer(C_INT), intent(in), value :: comm_type
+         integer(C_INT), intent(in), value :: fcd
+         logical(C_BOOL), intent(in), value :: enable_hs_c2i
+         logical(C_BOOL), intent(in), value :: enable_isend_c2i
+         integer(C_INT), intent(in), value :: max_pend_req_c2i
+         logical(C_BOOL), intent(in), value :: enable_hs_i2c
+         logical(C_BOOL), intent(in), value :: enable_isend_i2c
+         integer(C_INT), intent(in), value :: max_pend_req_i2c
+       end function PIOc_set_rearr_opts
     end interface
 
     ierr = PIOc_set_rearr_opts(ios%iosysid, comm_type, fcd,&
-                                logical(enable_hs_c2i, kind=c_bool),&
-                                logical(enable_isend_c2i, kind=c_bool),&
-                                max_pend_req_c2i,&
-                                logical(enable_hs_i2c, kind=c_bool),&
-                                logical(enable_isend_i2c, kind=c_bool),&
-                                max_pend_req_i2c)
+         logical(enable_hs_c2i, kind=c_bool),&
+         logical(enable_isend_c2i, kind=c_bool),&
+         max_pend_req_c2i,&
+         logical(enable_hs_i2c, kind=c_bool),&
+         logical(enable_isend_i2c, kind=c_bool),&
+         max_pend_req_i2c)
 
   end function pio_set_rearr_opts
 
-
 end module piolib_mod
-
-  !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||

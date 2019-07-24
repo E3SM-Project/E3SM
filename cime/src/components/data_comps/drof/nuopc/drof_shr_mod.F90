@@ -23,6 +23,9 @@ module drof_shr_mod
   ! Public data
   !--------------------------------------------------------------------------
 
+  ! stream data type
+  type(shr_strdata_type), public :: SDROF
+
   ! input namelist variables
   character(CL) , public :: restfilm              ! model restart file namelist
   character(CL) , public :: restfils              ! stream restart file namelist
@@ -39,7 +42,7 @@ CONTAINS
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   subroutine drof_shr_read_namelists(filename, mpicom, my_task, master_task, &
-       logunit, SDROF, rof_present, rof_prognostic, rofice_present, flood_present)
+       logunit, rof_present, rof_prognostic)
 
     ! !DESCRIPTION: Read in drof namelists
     implicit none
@@ -50,11 +53,8 @@ CONTAINS
     integer(IN)            , intent(in)    :: my_task           ! my task in mpi communicator mpicom
     integer(IN)            , intent(in)    :: master_task       ! task number of master task
     integer(IN)            , intent(in)    :: logunit           ! logging unit number
-    type(shr_strdata_type) , intent(inout) :: SDROF
     logical                , intent(out)   :: rof_present       ! flag
     logical                , intent(out)   :: rof_prognostic    ! flag
-    logical, optional      , intent(out)   :: rofice_present    ! flag
-    logical, optional      , intent(out)   :: flood_present     ! flag
 
     !--- local variables ---
     integer(IN)   :: nunit       ! unit number
@@ -134,17 +134,6 @@ CONTAINS
     rof_prognostic = .false.
     if (force_prognostic_true) then
        rof_prognostic = .true.
-    end if
-
-    if (present(rofice_present)) then
-       rofice_present = .false.
-       if (trim(datamode) /= 'NULL') then
-          rofice_present = .true.
-       end if
-    end if
-
-    if (present(flood_present)) then 
-       flood_present  = .false.
     end if
 
   end subroutine drof_shr_read_namelists

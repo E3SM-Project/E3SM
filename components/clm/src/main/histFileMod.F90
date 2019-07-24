@@ -66,7 +66,7 @@ module histFileMod
   integer, public :: &
        hist_ndens(max_tapes) = 2         ! namelist: output density of netcdf history files
   integer, public :: &
-       hist_mfilt(max_tapes) = 30        ! namelist: number of time samples per tape
+       hist_mfilt(max_tapes) = (/ 1, (30, ni=2, max_tapes)/)        ! namelist: number of time samples per tape
   logical, public :: &
        hist_dov2xy(max_tapes) = (/.true.,(.true.,ni=2,max_tapes)/) ! namelist: true=> do grid averaging
   integer, public :: &

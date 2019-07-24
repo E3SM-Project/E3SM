@@ -38,7 +38,7 @@ MODULE supercell
 !
 !=======================================================================
 
-  use physical_constants, only: g,p0,kappa,Rgas,Cp,Rwater_vapor,rearth0,omega0, dd_pi
+  use physical_constants, only: g,p0,kappa,Rgas,Cp,Rwater_vapor,rearth,omega0, dd_pi
 
   IMPLICIT NONE
 
@@ -61,7 +61,7 @@ MODULE supercell
 !       deg2rad  = pi/180.d0             ! Conversion factor of degrees to radians
 
 REAL(8), PARAMETER ::                 &
-       a     = rearth0,               & ! Reference Earth's Radius (m)
+!       a     = rearth0,               & ! Reference Earth's Radius (m)
        Rd    = Rgas,                  & ! Ideal gas const dry air (J kg^-1 K^1)
        Lvap  = 2.5d6,                 & ! Latent heat of vaporization of water
        Rvap  = Rwater_vapor,          & ! Ideal gas constnat for water vapor
@@ -82,7 +82,8 @@ REAL(8), PARAMETER ::                 &
        z2         = 50000.0d0           ! upper sample altitude
 
   REAL(8), PARAMETER ::               &
-       X          = 120.d0     ,      & ! Earth reduction factor
+!       X          = 120.d0     ,      & ! Earth reduction factor, use of a=Earth's radius
+       X          = 1d0     ,         & ! use X=1 if a = small planet radius
        theta0     = 300.d0     ,      & ! theta at the equatorial surface
        theta_tr   = 343.d0     ,      & ! theta at the tropopause
        z_tr       = 12000.d0   ,      & ! altitude at the tropopause
@@ -596,7 +597,7 @@ CONTAINS
     ! Approximately spherical radius from the perturbation centerpoint
     REAL(8) :: Rtheta
 
-    gr = a*acos(sin(pert_latc*deg2rad)*sin(lat) + &
+    gr = rearth*acos(sin(pert_latc*deg2rad)*sin(lat) + &
          (cos(pert_latc*deg2rad)*cos(lat)*cos(lon-pert_lonc*deg2rad)))
 
     Rtheta = sqrt((gr/pert_rh)**2 + ((z - pert_zc) / pert_rz)**2)

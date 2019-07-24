@@ -82,10 +82,6 @@ FortranData::Ptr make_mixed () {
   // deposition/condensation-freezing needs t<258.15 and >5% supersat.
   d.qv(0,33) = 1e-4;
 
-  // only now that qv is finalized can we define old values of it.
-  for (k = 0; k < nk; ++k) d.th_old(0,k) = d.th(0,k);
-  for (k = 0; k < nk; ++k) d.qv_old(0,k) = d.qv(0,k);
-
   // input variables.
   d.dt = 1800;
 
