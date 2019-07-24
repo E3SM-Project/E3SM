@@ -477,7 +477,8 @@ end function shoc_implements_cnst
     use hb_diff,                   only: pblintd
     use trb_mtn_stress,            only: compute_tms
     use shoc,           only: shoc_main
-    use cam_history,    only: outfld   
+    use cam_history,    only: outfld
+    use scamMod,        only: single_column   
  
     implicit none
     
@@ -733,8 +734,12 @@ end function shoc_implements_cnst
 
    ! Set grid space, in meters.  Note this should be changed to a more
    !  dynamic calcuation to allow for regional grids etc
-   host_dx_in(:) = host_dx
-   host_dy_in(:) = host_dy
+   if (single_column) then
+     host_dx_in(:) = 100000._r8
+     host_dy_in(:) = 100000._r8
+   else
+     call grid_size(state1, host_dx_in, host_dy_in)
+   endif
  
    minqn = 0._r8
    newfice(:,:) = 0._r8
@@ -1276,6 +1281,39 @@ end function shoc_implements_cnst
 
 #endif    
     return         
-  end subroutine shoc_tend_e3sm      
+  end subroutine shoc_tend_e3sm   
+  
+  subroutine grid_size(state, grid_dx, grid_dy)
+  ! Determine the size of the grid for each of the columns in state
+
+  use phys_grid,       only: get_area_p
+  use shr_const_mod,   only: shr_const_pi
+  use physics_types,   only: physics_state
+  use ppgrid,          only: pver, pverp, pcols
+ 
+  type(physics_state), intent(in) :: state
+  real(r8), intent(out)           :: grid_dx(pcols), grid_dy(pcols)   ! E3SM grid [m]
+
+  real(r8), parameter :: earth_ellipsoid1 = 111132.92_r8 ! first coefficient, meters per degree longitude at equator
+  real(r8), parameter :: earth_ellipsoid2 = 559.82_r8 ! second expansion coefficient for WGS84 ellipsoid
+  real(r8), parameter :: earth_ellipsoid3 = 1.175_r8 ! third expansion coefficient for WGS84 ellipsoid
+
+  real(r8) :: mpdeglat, column_area, degree
+  integer  :: i
+
+  ! determine the column area in radians
+  do i=1,state%ncol
+      column_area = get_area_p(state%lchnk,i)
+      degree = sqrt(column_area)*(180._r8/shr_const_pi)
+       
+      ! Now find meters per degree latitude
+      ! Below equation finds distance between two points on an ellipsoid, derived from expansion
+      !  taking into account ellipsoid using World Geodetic System (WGS84) reference 
+      mpdeglat = earth_ellipsoid1 - earth_ellipsoid2 * cos(2._r8*state%lat(i)) + earth_ellipsoid3 * cos(4._r8*state%lat(i))
+      grid_dx(i) = mpdeglat * degree
+      grid_dy(i) = grid_dx(i) ! Assume these are the same
+  enddo   
+
+  end subroutine grid_size      
 
 end module shoc_intr
