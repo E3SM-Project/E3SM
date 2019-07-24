@@ -69,10 +69,6 @@ module shoc_intr
   real(r8), parameter :: tke_tol = 0.0004_r8
 
   real(r8), parameter :: &
-      host_dx = 100000._r8, &           ! Host model deltax [m]
-      host_dy = 100000._r8              ! Host model deltay [m]
-  
-  real(r8), parameter :: &
       theta0   = 300._r8, &             ! Reference temperature                     [K]
       ts_nudge = 86400._r8, &           ! Time scale for u/v nudging (not used)     [s]
       p0_shoc = 100000._r8, &
@@ -732,8 +728,8 @@ end function shoc_implements_cnst
    !  host time step divided by SHOC time step  
    nadv = max(hdtime/dtime,1._r8)
 
-   ! Set grid space, in meters.  Note this should be changed to a more
-   !  dynamic calcuation to allow for regional grids etc
+   ! Set grid space, in meters. If SCM, set to a grid size representative
+   !  of a typical GCM.  Otherwise, compute locally.    
    if (single_column) then
      host_dx_in(:) = 100000._r8
      host_dy_in(:) = 100000._r8
