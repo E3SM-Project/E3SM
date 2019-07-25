@@ -13,9 +13,6 @@ if (INCROOT)
   set(MINCROOT ${INCROOT})
 endif ()
 
-# JGF: I think SHAREDLIB paths shoudl come from build.py and not have to
-# be recomputed here
-
 if (USE_ESMF_LIB)
   set(ESMFDIR "esmf")
 else()
