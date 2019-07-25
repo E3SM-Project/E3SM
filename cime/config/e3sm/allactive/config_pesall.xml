@@ -8446,7 +8446,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%T62.+oi%oARRM60to10">
+  <grid name="a%T62.+oi%oARRM60to10|a%TL319.+oi%oARRM60to10">
     <mach name="any">
       <pes compset=".*MPASCICE.+MPASO.+" pesize="any">
         <comment>none</comment>
@@ -8483,7 +8483,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%T62.+oi%oARRM60to6">
+  <grid name="a%T62.+oi%oARRM60to6|a%TL319.+oi%oARRM60to6">
     <mach name="any">
       <pes compset=".*MPASCICE.+MPASO.+" pesize="any">
         <comment>none</comment>
