@@ -64,7 +64,10 @@ def buildlib(bldroot, installpath, case):
         logger.warning("Failed to find custom kokkos options, using default: {:s}.".
                        format(kokkos_options))
 
-    cxx = run_cmd_no_fail("make -f Macros.make {} -p | grep SCXX".format(make_args)).split(":=")[-1].strip()
+    if "--with-cuda" in kokkos_options:
+        cxx = os.path.join(kokkos_dir, "bin/nvcc_wrapper")
+    else:
+        cxx = run_cmd_no_fail("make -f Macros.make {} -p | grep SCXX".format(make_args)).split(":=")[-1].strip()
 
     gmake_cmd = case.get_value("GMAKE")
     gmake_j = case.get_value("GMAKE_J")
