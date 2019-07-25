@@ -67,8 +67,8 @@ def run_diag(parameter):
             parameter.viewer_descr[var] = getattr(test, 'long_name', var)
             # Get the name of the data, appended with the years averaged.
             parameter.test_name_yrs = utils.general.get_name_and_yrs(parameter, test_data)
-            test_domain = utils.general.select_region(
-                    region, test, land_frac, ocean_frac)
+            test_domain = utils.general.select_region(region, test, land_frac, ocean_frac, parameter)
+
             # Average over selected region, and average
             # over months to get the yearly mean.
             test_domain = cdutil.averager(test_domain,axis = 'xy')
@@ -93,10 +93,7 @@ def run_diag(parameter):
                 
                 # TODO: Will this work if ref and test are timeseries data,
                 # but land_frac and ocean_frac are climo'ed.
-                #test_domain, ref_domain = utils.general.select_region(
-                #     region, test, ref, land_frac, ocean_frac, parameter)
-                ref_domain = utils.general.select_region(
-                    region, ref, land_frac, ocean_frac)
+                ref_domain = utils.general.select_region(region, ref, land_frac, ocean_frac, parameter)
 
                 ref_domain = cdutil.averager(ref_domain,axis = 'xy')
                 ref_domain_year = cdutil.YEAR(ref_domain)

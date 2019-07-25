@@ -73,8 +73,9 @@ def run_diag(parameter):
             for region in regions:
                 print("Selected region: {}".format(region))
 
-                mv1_domain, mv2_domain = utils.general.select_region(
-                    region, mv1, mv2, land_frac, ocean_frac, parameter)
+                mv1_domain = utils.general.select_region(region, mv1, land_frac, ocean_frac, parameter)
+                mv2_domain = utils.general.select_region(region, mv2, land_frac, ocean_frac, parameter)
+
 
                 parameter.output_file = '-'.join(
                     [ref_name, var, season, region])
