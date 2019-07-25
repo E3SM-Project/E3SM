@@ -2312,6 +2312,7 @@ contains
 
   integer :: i,j,k,l,ie,itercount,info(np,np),itercountmax
   integer :: nsafe
+  integer :: location(2)
 
 
 
@@ -2441,6 +2442,16 @@ do i=1,np
       print *, 'elem coords lat',i,j,elem(ie)%spherep(i,j)%lat
 enddo
 enddo
+
+do j=1,np
+do i=1,np
+      print *, 'itererrtemp',i,j,itererrtemp(i,j)
+enddo
+enddo
+      location=maxloc(itererrtemp)
+print *, 'point where max error is ', elem(ie)%spherep(location(1),location(2))%lon,&
+elem(ie)%spherep(location(1),location(2))%lat
+
       call abortmp('Error: nonlinear solver failed b/c max iteration count was met')
     end if
     itercountmax=max(itercount,itercountmax)
