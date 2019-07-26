@@ -262,7 +262,7 @@ CONTAINS
     if(decomp_type==phys_decomp) then
        fld_dyn = -999_R8
        if(local_dp_map) then
-          !$omp parallel do private (lchnk, ncols, pgcols, icol, idmb1, idmb2, idmb3, ie, ioff)
+          !$omp parallel do private (lchnk, ncols, pgcols, icol, k, idmb1, idmb2, idmb3, ie, ioff)
           do lchnk=begchunk,endchunk
              ncols=get_ncols_p(lchnk)
              call get_gcol_all_p(lchnk,pcols,pgcols)
@@ -281,7 +281,7 @@ CONTAINS
           allocate( bbuffer(block_buf_nrecs*numlev) )
           allocate( cbuffer(chunk_buf_nrecs*numlev) )
 
-          !$omp parallel do private (lchnk, ncols, cpter, i, icol)
+          !$omp parallel do private (lchnk, ncols, cpter, i,k, icol)
           do lchnk = begchunk,endchunk
              ncols = get_ncols_p(lchnk)
 
@@ -301,7 +301,7 @@ CONTAINS
 
           call transpose_chunk_to_block(1, cbuffer, bbuffer)
           if(par%dynproc) then
-             !$omp parallel do private (ie, bpter, icol)
+             !$omp parallel do private (ie, bpter, icol, ncols, k)
              do ie=1,nelemd
 
                 call chunk_to_block_recv_pters(elem(ie)%GlobalID,npsq,pverp,1,bpter)
@@ -455,7 +455,7 @@ CONTAINS
     if(decomp_type==phys_decomp) then
        allocate(dest(np,np,2,numlev,nelemd))
        if(local_dp_map) then
-          !$omp parallel do private (lchnk, ncols, pgcols, icol, idmb1, idmb2, idmb3, ie, ioff)
+          !$omp parallel do private (lchnk, ncols, pgcols, icol, k, idmb1, idmb2, idmb3, ie, ioff)
           do lchnk=begchunk,endchunk
              ncols=get_ncols_p(lchnk)
              call get_gcol_all_p(lchnk,pcols,pgcols)
@@ -497,7 +497,7 @@ CONTAINS
 
           call transpose_chunk_to_block(2, cbuffer, bbuffer)
           if(par%dynproc) then
-             !$omp parallel do private (ie, bpter, icol)
+             !$omp parallel do private (ie, bpter, icol, ncols, k)
              do ie=1,nelemd
                 
                 call chunk_to_block_recv_pters(elem(ie)%GlobalID,npsq,pverp,2,bpter)
