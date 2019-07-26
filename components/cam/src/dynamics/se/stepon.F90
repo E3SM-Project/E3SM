@@ -481,7 +481,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out)
    			      pbuf_get_index
    use ppgrid, only : pver, pverp, pcols
    use phys_grid, only: get_ncols_p, chunk_to_block_send_pters, &
-                  transpose_chunk_to_block
+                  transpose_chunk_to_block_five
    real(r8), intent(in) :: dtime   ! Time-step
    real(r8) :: ftmp_temp(np,np,nlev,nelemd), ftmp_q(np,np,nlev,pcnst,nelemd)
    real(r8) :: forcing_temp(npsq,nlev), forcing_q(npsq,nlev,pcnst)
@@ -560,7 +560,8 @@ subroutine stepon_run3(dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out)
 	
    enddo
    
-!   call transpose_chunk_to_block(tsize_five,cbuffer_five,bbuffer_five)
+   call transpose_chunk_to_block_five(tsize_five,chunk_buf_nrecs_five,&
+        block_buf_nrecs_five,cbuffer_five,bbuffer_five)
    
    write(*,*) 'OUTPUTS ', block_buf_nrecs, block_buf_nrecs_five
    

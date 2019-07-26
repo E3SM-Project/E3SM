@@ -72,6 +72,10 @@ module phys_grid
 !                          transpose buffer containing decomposed
 !                          chunk data structures to buffer
 !                          containing decomposed fields
+!      transpose_chunk_to_block_five
+!                          transpose buffer containing decomposed
+!                          chunk data structures to buffer
+!                          containing decomposed fields
 !
 !      chunk_index         identify whether index is for a latitude or
 !                          a chunk
@@ -3949,7 +3953,236 @@ logical function phys_grid_initialized ()
 #endif
 
    return
-   end subroutine transpose_chunk_to_block
+   end subroutine transpose_chunk_to_block   
+!
+!========================================================================   
+   
+   subroutine transpose_chunk_to_block_five(record_size, & 
+                                       chunk_buf_nrecs_five,block_buf_nrecs_five,& 
+                                       chunk_buffer,block_buffer, window)
+!----------------------------------------------------------------------- 
+! 
+! Purpose: Transpose buffer containing decomposed 
+!          chunk data structures to buffer
+!          containing decomposed fields 
+! 
+! Method: 
+! 
+! Author: Patrick Worley
+! 
+!-----------------------------------------------------------------------
+#if ( defined SPMD )
+# if defined(MODCM_DP_TRANSPOSE)
+   use mod_comm, only: blockdescriptor, mp_sendirr, mp_recvirr,  &
+                       get_partneroffset, max_nparcels
+   use mpishorthand,  only : mpicom
+# endif
+   use spmd_utils,    only: altalltoallv
+#endif
+!------------------------------Parameters-------------------------------
+!
+  integer, parameter :: msgtag  = 7000
+!------------------------------Arguments--------------------------------
+   integer, intent(in) :: record_size  ! per column amount of data 
+   integer, intent(in) :: chunk_buf_nrecs_five
+   integer, intent(in) :: block_buf_nrecs_five
+   real(r8), intent(in):: chunk_buffer(record_size*chunk_buf_nrecs_five)
+                                       ! buffer of chunk data to be
+                                       ! transposed
+   real(r8), intent(out) :: block_buffer(record_size*block_buf_nrecs_five)
+                                       ! buffer of block data to
+                                       ! transpose into
+   integer, intent(in), optional :: window
+                                       ! MPI-2 window id for
+                                       ! chunk_buffer
+
+!---------------------------Local workspace-----------------------------
+#if ( defined SPMD )
+   integer :: p                        ! loop indices
+   integer :: bbuf_siz                 ! size of block_buffer
+   integer :: cbuf_siz                 ! size of chunk_buffer
+   integer :: lwindow                  ! placeholder for missing window
+   integer :: lopt                     ! local copy of phys_alltoall
+!
+   logical, save :: first = .true.
+   integer, allocatable, save :: sndcnts(:), sdispls(:)
+   integer, allocatable, save :: rcvcnts(:), rdispls(:)
+   integer, allocatable, save :: pdispls(:)
+   integer, save :: prev_record_size = 0
+# if defined(MODCM_DP_TRANSPOSE)
+   type (blockdescriptor), allocatable, save :: sendbl(:), recvbl(:)
+   integer ione, ierror, mod_method
+# endif
+!-----------------------------------------------------------------------
+   if (first) then
+! Compute send/recv/put counts and displacements
+      allocate(sndcnts(0:npes-1))
+      allocate(sdispls(0:npes-1))
+      allocate(rcvcnts(0:npes-1))
+      allocate(rdispls(0:npes-1))
+      allocate(pdispls(0:npes-1))
+!
+# if defined(MODCM_DP_TRANSPOSE)
+! This branch uses mod_comm. Admissable values of phys_alltoall are 
+! 11,12 and 13. Each value corresponds to a differerent option 
+! within mod_comm of implementing the communication. That option is expressed
+! internally to mod_comm using the variable mod_method defined below; 
+! mod_method will have values 0,1 or 2 and is defined as 
+! phys_alltoall - modmin_alltoall, where modmin_alltoall equals 11.
+! Also, sendbl and recvbl must have exactly npes elements, to match
+! this size of the communicator, or the transpose will fail.
+!
+      if (phys_alltoall .ge. modmin_alltoall) then
+         mod_method = phys_alltoall - modmin_alltoall
+         ione = 1
+         allocate( sendbl(0:npes-1) )
+         allocate( recvbl(0:npes-1) )
+
+         do p = 0,npes-1
+
+            sendbl(p)%method = mod_method
+            recvbl(p)%method = mod_method
+
+            allocate( sendbl(p)%blocksizes(1) )
+            allocate( sendbl(p)%displacements(1) )
+            allocate( recvbl(p)%blocksizes(1) )
+            allocate( recvbl(p)%displacements(1) )
+
+         enddo
+
+      endif
+# endif
+!
+      first = .false.
+   endif
+!
+   if (record_size .ne. prev_record_size) then
+!
+! Compute send/recv/put counts and displacements
+      sdispls(0) = 0
+      sndcnts(0) = record_size*btofc_chk_num(0)
+      do p=1,npes-1
+        sdispls(p) = sdispls(p-1) + sndcnts(p-1)
+        sndcnts(p) = record_size*btofc_chk_num(p)
+      enddo
+!
+      rdispls(0) = 0
+      rcvcnts(0) = record_size*btofc_blk_num(0)
+      do p=1,npes-1
+         rdispls(p) = rdispls(p-1) + rcvcnts(p-1)
+         rcvcnts(p) = record_size*btofc_blk_num(p)
+      enddo
+!
+      call mpialltoallint(rdispls, 1, pdispls, 1, mpicom)
+!
+# if defined(MODCM_DP_TRANSPOSE)
+      if (phys_alltoall .ge. modmin_alltoall) then
+         do p = 0,npes-1
+
+            sendbl(p)%type = MPI_DATATYPE_NULL
+            if ( sndcnts(p) .ne. 0 ) then
+
+               if (phys_alltoall .gt. modmin_alltoall) then
+                  call MPI_TYPE_INDEXED(ione, sndcnts(p),   &
+                       sdispls(p), mpir8, &
+                       sendbl(p)%type, ierror)
+                  call MPI_TYPE_COMMIT(sendbl(p)%type, ierror)
+               endif
+
+               sendbl(p)%blocksizes(1) = sndcnts(p)
+               sendbl(p)%displacements(1) = sdispls(p)
+               sendbl(p)%partneroffset = 0
+
+            else
+
+               sendbl(p)%blocksizes(1) = 0
+               sendbl(p)%displacements(1) = 0
+               sendbl(p)%partneroffset = 0
+
+            endif
+            sendbl(p)%nparcels = size(sendbl(p)%displacements)
+            sendbl(p)%tot_size = sum(sendbl(p)%blocksizes)
+            max_nparcels = max(max_nparcels, sendbl(p)%nparcels)
+
+            recvbl(p)%type = MPI_DATATYPE_NULL
+            if ( rcvcnts(p) .ne. 0) then
+
+               if (phys_alltoall .gt. modmin_alltoall) then
+                  call MPI_TYPE_INDEXED(ione, rcvcnts(p),   &
+                       rdispls(p), mpir8, &
+                       recvbl(p)%type, ierror)
+                  call MPI_TYPE_COMMIT(recvbl(p)%type, ierror)
+               endif
+
+               recvbl(p)%blocksizes(1) = rcvcnts(p)
+               recvbl(p)%displacements(1) = rdispls(p)
+               recvbl(p)%partneroffset = 0 ! not properly initialized - do not use Mpi2
+            else
+
+               recvbl(p)%blocksizes(1) = 0
+               recvbl(p)%displacements(1) = 0
+               recvbl(p)%partneroffset = 0
+
+            endif
+            recvbl(p)%nparcels = size(recvbl(p)%displacements)
+            recvbl(p)%tot_size = sum(recvbl(p)%blocksizes)
+            max_nparcels = max(max_nparcels, recvbl(p)%nparcels)
+
+         enddo
+
+         call get_partneroffset(mpicom, sendbl, recvbl)
+
+      endif
+# endif
+!
+      prev_record_size = record_size
+   endif
+!
+   call t_barrierf('sync_tran_ctob', mpicom)
+   if (phys_alltoall < 0) then
+      if ((max_nproc_smpx > npes/2) .and. (nproc_busy_d > npes/2)) then
+         lopt = 0
+      else
+         lopt = 1
+      endif
+   else
+      lopt = phys_alltoall
+      if ((lopt .eq. 2) .and. ( .not. present(window) )) lopt = 1
+   endif
+   if (lopt < 4) then
+!
+      bbuf_siz = record_size*block_buf_nrecs_five
+      cbuf_siz = record_size*chunk_buf_nrecs_five
+      if ( present(window) ) then
+         call altalltoallv(lopt, iam, npes,    &
+                           dp_coup_steps, dp_coup_proc, &
+                           chunk_buffer, cbuf_siz, sndcnts, sdispls, mpir8, &
+                           block_buffer, bbuf_siz, rcvcnts, rdispls, mpir8, &
+                           msgtag, pdispls, mpir8, window, mpicom)
+      else
+         call altalltoallv(lopt, iam, npes,    &
+                           dp_coup_steps, dp_coup_proc, &
+                           chunk_buffer, cbuf_siz, sndcnts, sdispls, mpir8, &
+                           block_buffer, bbuf_siz, rcvcnts, rdispls, mpir8, &
+                           msgtag, pdispls, mpir8, lwindow, mpicom)
+      endif
+!
+   else
+# if defined(MODCM_DP_TRANSPOSE)
+      call mp_sendirr(mpicom, sendbl, recvbl, block_buffer, chunk_buffer)
+      call mp_recvirr(mpicom, sendbl, recvbl, block_buffer, chunk_buffer)
+# else
+      call mpialltoallv(chunk_buffer, sndcnts, sdispls, mpir8, &
+                        block_buffer, rcvcnts, rdispls, mpir8, &
+                        mpicom)
+# endif
+!
+   endif
+!
+#endif
+
+   return
+   end subroutine transpose_chunk_to_block   
 !
 !========================================================================
 
