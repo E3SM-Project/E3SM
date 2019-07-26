@@ -480,6 +480,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out)
    use physics_buffer, only : physics_buffer_desc, pbuf_get_chunk, pbuf_get_field, &
    			      pbuf_get_index
    use ppgrid, only : pver, pverp, pcols
+   use phys_grid, only: get_ncols_p, chunk_to_block_send_pters
    real(r8), intent(in) :: dtime   ! Time-step
    real(r8) :: ftmp_temp(np,np,nlev,nelemd), ftmp_q(np,np,nlev,pcnst,nelemd)
    real(r8) :: forcing_temp(npsq,nlev), forcing_q(npsq,nlev,pcnst)
@@ -497,6 +498,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out)
    type(physics_buffer_desc),pointer :: pbuf_chnk(:)     ! temporary pbuf pointer
    type (element_t), pointer :: elem(:)
    integer :: rc, i, j, k, p, ie, tl_f, lchnk, ncols, thlm_idx
+   integer :: icol, ilyr
 
    integer :: cpter_five(pcols,0:pverp)
    integer :: bpter_five(npsq,0:pverp)
@@ -536,11 +538,23 @@ subroutine stepon_run3(dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out)
 
    thlm_idx = pbuf_get_index('THLM')
    do lchnk=begchunk,endchunk
-     ncols = phys_state(lchnk)%ncol
+!     ncols = phys_state(lchnk)%ncol
+     ncols = get_ncols_p(lchnk)
      pbuf_chnk => pbuf_get_chunk(pbuf2d,lchnk)
      
      call pbuf_get_field(pbuf_chnk, thlm_idx, pbuf_thlm)
      
+     call chunk_to_block_send_pters(lchnk,pcols,pverp+1,tsize_five,cpter_five)
+     do i=1,ncols
+       cbuffer_five(cpter_five(i,0):cpter_five(i,0)) = 0.0_r8
+     end do     
+     
+     do icol=1,ncols
+       do ilyr=1,pverp
+         cbuffer_five(cpter_five(icol,ilyr))=pbuf_thlm(icol,ilyr)
+       enddo
+     enddo
+	
    enddo
    
    write(*,*) 'OUTPUTS ', block_buf_nrecs, block_buf_nrecs_five
