@@ -1,3 +1,4 @@
+!BALLI: take care of the units of CO2!!
 
 module co2_data_flux
 
@@ -234,11 +235,11 @@ subroutine read_data_flux (input_file, xin, state, pbuf2d)
         call handle_ncerr( nf90_inq_dimid( xin%ncid_f, 'lat', latdimid ),__FILE__,__LINE__)
         call handle_ncerr( nf90_inquire_dimension( xin%ncid_f, londimid, len=lonsiz),__FILE__,__LINE__)
         call handle_ncerr( nf90_inquire_dimension( xin%ncid_f, latdimid, len=latsiz),__FILE__,__LINE__)
-        if(hdim1_d .ne. lonsiz .or. hdim2_d .ne. latsiz) then
-           write(msg,*)'Input file grid size(',lonsiz,'x',latsiz,') should be same as model grid size (',hdim1_d,'x',hdim2_d,'):'&
-                ,__FILE__,__LINE__
-           call endrun(msg)
-        endif
+        !if(hdim1_d .ne. lonsiz .or. hdim2_d .ne. latsiz) then
+        !   write(msg,*)'Input file grid size(',lonsiz,'x',latsiz,') should be same as model grid size (',hdim1_d,'x',hdim2_d,'):'&
+        !        ,__FILE__,__LINE__
+        !   call endrun(msg)
+        !endif
 
         cnt3(1)  = lonsiz
         cnt3(2)  = latsiz
