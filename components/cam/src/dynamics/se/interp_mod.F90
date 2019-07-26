@@ -1,12 +1,12 @@
 module interp_mod
   use cam_logfile,         only: iulog
   use shr_kind_mod,        only: r8 => shr_kind_r8
-  use dimensions_mod,      only: nelemd, np, ne
+  use dimensions_mod,      only: nelem,nelemd, np, ne
   use interpolate_mod,     only: interpdata_t
   use interpolate_mod,     only: interp_lat => lat, interp_lon => lon
   use interpolate_mod,     only: interp_gweight => gweight
   use dyn_grid,            only: elem
-  use spmd_utils,          only: masterproc, iam
+  use spmd_utils,          only: masterproc, iam, npes
   use cam_history_support, only: fillvalue
   use hybrid_mod,          only: hybrid_t, hybrid_create
   use cam_abortutils,      only: endrun
@@ -70,8 +70,11 @@ CONTAINS
     character(len=max_hcoordname_len)  :: gridname
 
     if(any(interp_output)) then
-       if (.not. par%dynproc) &
-       call endrun('setup_history_interpolation: interpolated output not supported if atm_ntasks>dyn_npes')
+       if (par%nprocs /= npes ) then
+          write(iulog,*) 'Atmopshere MPI tasks:  atm_ntasks=',npes
+          write(iulog,*) 'SE dycore MPI tasks, number of elements:',par%nprocs,nelem
+          call endrun('setup_history_interpolation: interpolated output not supported if atm_ntasks>dyn_npes')
+       endif
     endif
 
     if (associated(cam_interpolate)) then
