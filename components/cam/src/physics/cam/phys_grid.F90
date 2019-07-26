@@ -3641,9 +3641,12 @@ logical function phys_grid_initialized ()
    integer, intent(out) :: pter(fdim,ldim)  ! buffer offsets
 !---------------------------Local workspace-----------------------------
    integer :: i, k                     ! loop indices
+   integer :: nlev_var
 !-----------------------------------------------------------------------
+   nlev_var = ldim-1
+   write(*,*) 'STUFFHERE ', btofc_blk_offset(blockid)%nlvls, ldim, nlev_var
    if ((btofc_blk_offset(blockid)%ncols > fdim) .or. &
-       (btofc_blk_offset(blockid)%nlvls > ldim)) then
+       (nlev_var > ldim)) then
       write(iulog,*) "BLOCK_TO_CHUNK_SEND_PTERS: pter array dimensions ", &
                  "not large enough: (",fdim,",",ldim,") not >= (", &
                   btofc_blk_offset(blockid)%ncols,",", &
@@ -3651,7 +3654,7 @@ logical function phys_grid_initialized ()
       call endrun()
    endif
 !
-   do k=1,btofc_blk_offset(blockid)%nlvls
+   do k=1,nlev_var
       do i=1,btofc_blk_offset(blockid)%ncols
          pter(i,k) = 1 + record_size* &
                      (btofc_blk_offset(blockid)%pter(i,k))
@@ -3661,7 +3664,7 @@ logical function phys_grid_initialized ()
       enddo
    enddo
 !
-   do k=btofc_blk_offset(blockid)%nlvls+1,ldim
+   do k=nlev_var+1,ldim
       do i=1,fdim
          pter(i,k) = -1
       enddo

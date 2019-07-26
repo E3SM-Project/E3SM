@@ -466,7 +466,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    end subroutine stepon_run2
    
 
-subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
+subroutine stepon_run3(dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out)
    use camsrfexch,  only: cam_out_t     
    use dyn_comp,    only: dyn_run
    use time_mod,    only: tstep
@@ -476,11 +476,16 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    use dyn_comp, only: TimeLevel
    use cam_history,     only: outfld   
    use cam_logfile, only: iulog
+   use spmd_dyn,       only: block_buf_nrecs, chunk_buf_nrecs
+   use physics_buffer, only : physics_buffer_desc, pbuf_get_chunk, pbuf_get_field, &
+   			      pbuf_get_index
+   use ppgrid, only : pver, pverp, pcols
    real(r8), intent(in) :: dtime   ! Time-step
    real(r8) :: ftmp_temp(np,np,nlev,nelemd), ftmp_q(np,np,nlev,pcnst,nelemd)
    real(r8) :: forcing_temp(npsq,nlev), forcing_q(npsq,nlev,pcnst)
    real(r8) :: out_temp(npsq,nlev), out_q(npsq,nlev), out_u(npsq,nlev), &
                out_v(npsq,nlev), out_psv(npsq)  
+   real(r8) :: thlm_tmp(npsq,nlev+1,nelemd)
    real(r8), parameter :: rad2deg = 180.0 / SHR_CONST_PI
    real(r8), parameter :: fac = 1000._r8	
    real(r8) :: term1, term2        
@@ -488,8 +493,21 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    type(physics_state), intent(inout) :: phys_state(begchunk:endchunk)
    type (dyn_import_t), intent(inout) :: dyn_in  ! Dynamics import container
    type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
+   type (physics_buffer_desc), pointer :: pbuf2d(:,:)
+   type(physics_buffer_desc),pointer :: pbuf_chnk(:)     ! temporary pbuf pointer
    type (element_t), pointer :: elem(:)
-   integer :: rc, i, j, k, p, ie, tl_f
+   integer :: rc, i, j, k, p, ie, tl_f, lchnk, ncols, thlm_idx
+
+   integer :: cpter_five(pcols,0:pverp)
+   integer :: bpter_five(npsq,0:pverp)
+   integer :: block_buf_nrecs_five, chunk_buf_nrecs_five
+   integer :: tsize_five
+   
+   real(r8), allocatable, dimension(:) :: bbuffer_five, cbuffer_five
+   
+   real(r8), pointer :: pbuf_thlm(:,:)
+   
+   nullify(pbuf_thlm)
    
    elem => dyn_out%elem
    
@@ -504,6 +522,31 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    enddo
 
 #endif   
+
+   tsize_five = 1 ! number of FIVE variables
+
+   block_buf_nrecs_five = block_buf_nrecs/(pver+1)
+   block_buf_nrecs_five = block_buf_nrecs_five * (pverp + 1)
+   
+   chunk_buf_nrecs_five = chunk_buf_nrecs/(pver+1)
+   chunk_buf_nrecs_five = chunk_buf_nrecs_five * (pverp + 1)
+   
+   allocate( bbuffer_five(tsize_five*block_buf_nrecs_five) )
+   allocate( cbuffer_five(tsize_five*chunk_buf_nrecs_five) )
+
+   thlm_idx = pbuf_get_index('THLM')
+   do lchnk=begchunk,endchunk
+     ncols = phys_state(lchnk)%ncol
+     pbuf_chnk => pbuf_get_chunk(pbuf2d,lchnk)
+     
+     call pbuf_get_field(pbuf_chnk, thlm_idx, pbuf_thlm)
+     
+   enddo
+   
+   write(*,*) 'OUTPUTS ', block_buf_nrecs, block_buf_nrecs_five
+   
+   deallocate(bbuffer_five)
+   deallocate(cbuffer_five)
    
    if (single_column) then
      

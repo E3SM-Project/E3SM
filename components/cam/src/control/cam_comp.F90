@@ -326,7 +326,7 @@ subroutine cam_run3( cam_out )
    !
    call t_barrierf ('sync_stepon_run3', mpicom)
    call t_startf ('stepon_run3')
-   call stepon_run3( dtime, cam_out, phys_state, dyn_in, dyn_out )
+   call stepon_run3( dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out )
 
    call t_stopf  ('stepon_run3')
 
