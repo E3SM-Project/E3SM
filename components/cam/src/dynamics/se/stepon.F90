@@ -481,7 +481,10 @@ subroutine stepon_run3(dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out)
    			      pbuf_get_index
    use ppgrid, only : pver, pverp, pcols
    use phys_grid, only: get_ncols_p, chunk_to_block_send_pters, &
-                  transpose_chunk_to_block_five
+                  transpose_chunk_to_block_five, &
+                  chunk_to_block_recv_pters
+   use parallel_mod,   only: par
+   		  
    real(r8), intent(in) :: dtime   ! Time-step
    real(r8) :: ftmp_temp(np,np,nlev,nelemd), ftmp_q(np,np,nlev,pcnst,nelemd)
    real(r8) :: forcing_temp(npsq,nlev), forcing_q(npsq,nlev,pcnst)
@@ -499,7 +502,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out)
    type(physics_buffer_desc),pointer :: pbuf_chnk(:)     ! temporary pbuf pointer
    type (element_t), pointer :: elem(:)
    integer :: rc, i, j, k, p, ie, tl_f, lchnk, ncols, thlm_idx
-   integer :: icol, ilyr
+   integer :: icol, ilyr, nphys_sq
 
    integer :: cpter_five(pcols,0:pverp)
    integer :: bpter_five(npsq,0:pverp)
@@ -526,6 +529,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out)
 
 #endif   
 
+   nphys_sq = np*np
    tsize_five = 1 ! number of FIVE variables
 
    block_buf_nrecs_five = block_buf_nrecs/(pver+1)
@@ -563,7 +567,20 @@ subroutine stepon_run3(dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out)
    call transpose_chunk_to_block_five(tsize_five,chunk_buf_nrecs_five,&
         block_buf_nrecs_five,cbuffer_five,bbuffer_five)
    
-   write(*,*) 'OUTPUTS ', block_buf_nrecs, block_buf_nrecs_five
+!   write(*,*) 'OUTPUTS ', block_buf_nrecs, block_buf_nrecs_five
+  
+   if (par%dynproc) then
+     !$omp parallel do private (ie, bpter_five, icol, ilyr, m, ncols) 
+     do ie = 1,nelemd
+       ncols = elem(ie)%idxP%NumUniquePts
+       call chunk_to_block_recv_pters(elem(ie)%GlobalID,nphys_sq,pverp+1,tsize_five,bpter_five(1:nphys_sq,:))  
+       do icol = 1,ncols
+         do ilyr = 1,pverp
+	   thlm_tmp(icol,ilyr,ie) = bbuffer_five(bpter_five(icol,ilyr))
+	 enddo
+       enddo
+     enddo
+   endif
    
    deallocate(bbuffer_five)
    deallocate(cbuffer_five)
