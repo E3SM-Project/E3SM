@@ -1698,6 +1698,8 @@ contains
      call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_i,pnh,exner,dpnh_dp_i,caller='CAAR',&
                                  spherep=elem(ie)%spherep)
 
+     elem(ie)%derived%mu(:,:,1:nlev) = dpnh_dp_i(:,:,1:nlev)
+
      dp3d_i(:,:,1) = dp3d(:,:,1)
      dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
      do k=2,nlev
@@ -2203,7 +2205,10 @@ contains
              elem(ie)%state%w_i(:,:,nlevp,np1)) / &
              (g + ( elem(ie)%derived%gradphis(:,:,1)**2 + &
              elem(ie)%derived%gradphis(:,:,2)**2)/(2*g))   )  / dt2
-       
+      
+        !save mu field at the bottom
+        elem(ie)%derived%mu(:,:,nlevp) = dpnh_dp_i(:,:,nlevp)
+ 
         ! update solution with new dpnh_dp_i value:
         elem(ie)%state%w_i(:,:,nlevp,np1) = elem(ie)%state%w_i(:,:,nlevp,np1) +&
              scale1*dt2*g*(dpnh_dp_i(:,:,nlevp)-1)

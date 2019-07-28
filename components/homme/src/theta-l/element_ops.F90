@@ -65,7 +65,7 @@ module element_ops
 
   type(elem_state_t), dimension(:), allocatable :: state0 ! storage for save_initial_state routine
 
-  public get_field, get_state, get_w
+  public get_field, get_field_i, get_state, get_w
   public get_temperature, get_phi, get_R_star, get_hydro_pressure
   public set_thermostate, set_state, set_state_i, set_elem_state
   public set_forcing_rayleigh_friction, set_theta_ref
@@ -204,19 +204,41 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   end subroutine
 
 
-#if 1
-!returns w from 1 to nlevp levels
   subroutine get_w(elem,field,nt)
   implicit none
   type (element_t),       intent(in) :: elem
   real (kind=real_kind),  intent(out):: field(np,np,nlevp)
   integer,                intent(in) :: nt
-
-  field =elem%state%w_i(:,:,1:nlevp,nt)
- 
+         field = elem%state%w_i(:,:,1:nlevp,nt)
   end subroutine get_w
-#endif
 
+
+#if 1
+  subroutine get_field_i(elem,name,field,nt)
+  implicit none
+  type (element_t),       intent(in) :: elem
+  character(len=*),       intent(in) :: name
+  real (kind=real_kind),  intent(out):: field(np,np,nlevp)
+  integer,                intent(in) :: nt
+
+  select case(name)
+    case('w');
+      if(theta_hydrostatic_mode) then
+         call abortmp('ERROR: get_field_i is not supported for w in theta HY')
+      else
+         field = elem%state%w_i(:,:,1:nlevp,nt)
+      endif
+    case('geopotential');
+      field = elem%state%phinh_i(:,:,1:nlevp,nt)
+    case('mu');
+      field = elem%derived%mu(:,:,1:nlevp)
+    case default
+      print *,'name = ',trim(name)
+      call abortmp('ERROR: get_field_i name not supported in this model')
+  end select
+ 
+  end subroutine get_field_i
+#endif
 
   !_____________________________________________________________________
   subroutine get_pottemp(elem,pottemp,hvcoord,nt,ntQ)

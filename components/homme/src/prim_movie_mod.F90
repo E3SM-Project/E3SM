@@ -425,7 +425,7 @@ contains
     use pio, only : pio_syncfile !_EXTERNAL
     use perf_mod, only : t_startf, t_stopf !_EXTERNAL
     use viscosity_mod, only : compute_zeta_C0
-    use element_ops, only : get_field, get_w
+    use element_ops, only : get_field, get_field_i, get_w
     use dcmip16_wrapper, only: precl
     use netcdf_io_mod, only : iodesc3dp1 
 
@@ -670,13 +670,38 @@ print *, 'T',start,count
                 st=1
                 do ie=1,nelemd
                    en=st+elem(ie)%idxp%NumUniquePts-1
-                   call get_w(elem(ie),vartmp1,n0)
+                   call get_field_i(elem(ie),'w',vartmp1,n0)
                    call UniquePoints(elem(ie)%idxP,nlevp,vartmp1,var3dp1(st:en,:))
                    st=en+1
                 enddo
                 call nf_put_var(ncdf(ios),var3dp1,startp1, countp1, name='w_nlevp',iodescin=iodesc3dp1)
              end if
 
+
+             if(nf_selectedvar('mu', output_varnames)) then
+                if (par%masterproc) print *,'writing mu ...'
+                st=1
+                do ie=1,nelemd
+                   en=st+elem(ie)%idxp%NumUniquePts-1
+                   call get_field_i(elem(ie),'mu',vartmp1,n0)
+                   call UniquePoints(elem(ie)%idxP,nlevp,vartmp1,var3dp1(st:en,:))
+                   st=en+1
+                enddo
+                call nf_put_var(ncdf(ios),var3dp1,startp1, countp1, name='mu',iodescin=iodesc3dp1)
+             end if
+
+
+             if(nf_selectedvar('geo_nlevp', output_varnames)) then
+                if (par%masterproc) print *,'writing geo_nlevp...'
+                st=1
+                do ie=1,nelemd
+                   en=st+elem(ie)%idxp%NumUniquePts-1
+                   call get_field_i(elem(ie),'geopotential',vartmp1,n0)
+                   call UniquePoints(elem(ie)%idxP,nlevp,vartmp1,var3dp1(st:en,:))
+                   st=en+1
+                enddo
+                call nf_put_var(ncdf(ios),var3dp1,startp1, countp1, name='geo_nlevp',iodescin=iodesc3dp1)
+             end if
 
              if(nf_selectedvar('omega', output_varnames)) then
                 st=1
