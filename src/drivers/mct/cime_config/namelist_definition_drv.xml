@@ -4241,4 +4241,29 @@
     </values>
   </entry>
 
+  <entry id="shr_flux_mct_albdif">
+    <type>real</type>
+    <category>shr_flux_mct</category>
+    <group>shr_flux_mct_inparm</group>
+    <desc>
+       Surface albedo for direct radiation
+    </desc>
+    <values>
+      <value>0.07</value>
+      <value aqua_planet_sst="11">0.07</value>
+    </values>
+  </entry>
+
+  <entry id="shr_flux_mct_albdir">
+    <type>real</type>
+    <category>shr_flux_mct</category>
+    <group>shr_flux_mct_inparm</group>
+    <desc>
+       Surface albedo for diffuse radiation
+    </desc>
+    <values>
+      <value>0.07</value>
+    </values>
+  </entry>
+
 </entry_id>
