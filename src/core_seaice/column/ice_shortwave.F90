@@ -47,7 +47,8 @@
           albocn, Timelt, snowpatch, awtvdr, awtidr, awtvdf, awtidf, &
           kappav, hs_min, rhofresh, rhos, nspint, nspint_5bd, snwlvlfac
       use ice_colpkg_shared, only: hi_ssl, hs_ssl, modal_aero, max_aero
-      use ice_colpkg_shared, only: hi_ssl, hs_ssl, modal_aero, rsnw_fall
+      use ice_colpkg_shared, only: hi_ssl, hs_ssl, modal_aero, rsnw_fall, &
+          rsnw_tmax
       use ice_warnings, only: add_warning
 
       implicit none
@@ -3687,6 +3688,7 @@
 
           do ks = 1, nslyr
             rsnw(ks)   = max(rsnw_fall,rsnow(ks))
+            rsnw(ks)   = min(rsnw_tmax,rsnw(ks))
             rhosnw(ks) = rhos
           enddo
 

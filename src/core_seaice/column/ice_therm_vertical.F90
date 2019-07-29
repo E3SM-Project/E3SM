@@ -1213,8 +1213,8 @@
                dhs = cp_ice*Ts*dzs(k) / Lfresh  ! melt
                smice_precs = c0
                if (abs(dzs(k)) > puny) smice_precs = smicetot(k)/dzs(k) * dhs
-               smicetot(k) = smicetot(k) - smice_precs ! dhs << dzs
-               smliqtot(k) = smliqtot(k) + smice_precs 
+               smicetot(k) = max(c0,smicetot(k) - smice_precs) ! dhs << dzs
+               smliqtot(k) = max(c0,smliqtot(k) + smice_precs)
                dzs (k) = dzs(k) - dhs
                zqsn(k) = -rhos*Lfresh
             endif
@@ -1342,8 +1342,8 @@
                 -((zqsn(k) + rhos*Lfresh) / (rhos*Lfresh)) * dzs(k)) ! dhs < 0 
             smice_precs = c0
             if (abs(dzs(k)) > puny) smice_precs = smicetot(k)/dzs(k) * dhs
-            smicetot(k) = smicetot(k) + smice_precs ! -dhs <= dzs
-            smliqtot(k) = smliqtot(k) - smice_precs 
+            smicetot(k) = max(c0,smicetot(k) + smice_precs) ! -dhs <= dzs
+            smliqtot(k) = max(c0,smliqtot(k) - smice_precs)
             dzs (k) = dzs(k) + dhs
             zqsn(k) = -rhos * Lfresh
             melts = melts - dhs
@@ -1359,7 +1359,7 @@
          dhs  = max (-dzs(k), esub/qsub)  ! esub > 0, dhs < 0
          smice_precs = c0
          if (abs(dzs(k)) > puny) smice_precs = dhs * smicetot(k)/dzs(k)
-         smicetot(k) = smicetot(k) + smice_precs
+         smicetot(k) = max(c0,smicetot(k) + smice_precs)
          dzs(k) = dzs(k) + dhs
          esub = esub - dhs*qsub
          esub = max(esub, c0)   ! in case of roundoff error
@@ -1372,8 +1372,8 @@
          dhs = max(-dzs(k), etop_mlt/zqsn(k))
          smice_precs = c0
          if (abs(dzs(k)) > puny) smice_precs = smicetot(k)/dzs(k) * dhs
-         smicetot(k) = smicetot(k) + smice_precs
-         smliqtot(k) = smliqtot(k) - smice_precs 
+         smicetot(k) = max(c0,smicetot(k) + smice_precs)
+         smliqtot(k) = max(c0,smliqtot(k) - smice_precs)
          dzs(k) = dzs(k) + dhs         ! zqsn < 0, dhs < 0
          etop_mlt = etop_mlt - dhs*zqsn(k)
          etop_mlt = max(etop_mlt, c0) ! in case of roundoff error
@@ -1815,8 +1815,8 @@
       do k = nslyr, 1, -1
          if (dhin > puny) then
             dhs = min(dhsn, dzs(k)) ! snow to remove from layer
-            smicetot(k) = smicetot(k) - dhs * smicetot(k) / dzs(k) !smice(k)
-            smliqtot(k) = smliqtot(k) - dhs * smliqtot(k) / dzs(k) !smliq(k)
+            smicetot(k) = max(c0,smicetot(k) - dhs * smicetot(k) / dzs(k)) !smice(k)
+            smliqtot(k) = max(c0,smliqtot(k) - dhs * smliqtot(k) / dzs(k)) !smliq(k)
             hsn = hsn - dhs
             dsnow = dsnow -dhs   !new snow addition term 
             dzs(k) = dzs(k) - dhs
