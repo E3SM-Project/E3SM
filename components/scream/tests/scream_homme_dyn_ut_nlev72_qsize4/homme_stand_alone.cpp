@@ -27,6 +27,7 @@ TEST_CASE("scream_homme_stand_alone", "scream_homme_stand_alone") {
 
   auto& gm_params = ad_params.sublist("Grids Manager");
   gm_params.set<std::string>("Type","Dynamics Driven");
+  gm_params.set<std::string>("Reference Grid","Dynamics");
 
   // Need to register products in the factory *before* we create any AtmosphereProcessGroup,
   // which rely on factory for process creation. The initialize method of the AD does that.

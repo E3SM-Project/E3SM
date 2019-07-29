@@ -177,6 +177,7 @@ TEST_CASE("ping-pong", "") {
   // we set here, will be reflected in the GM built by the factory.
   UserProvidedGridsManager upgm;
   upgm.set_grid(std::make_shared<DummyPhysicsGrid>(num_cols));
+  upgm.set_reference_grid("Physics");
 
   // Create a comm
   Comm atm_comm (MPI_COMM_WORLD);
