@@ -90,6 +90,7 @@ module dyn_grid
   public :: dyn_grid_init, define_cam_grids
   public :: get_block_owner_d, get_gcol_block_d, get_gcol_block_cnt_d
   public :: get_block_gcol_cnt_d, get_horiz_grid_dim_d, get_block_levels_d
+  public :: get_block_levels_d_five, get_block_lvl_cnt_d_five
   public :: get_block_gcol_d, get_block_bounds_d, get_horiz_grid_d
   public :: get_block_lvl_cnt_d, set_horiz_grid_cnt_d, get_dyn_grid_parm
   public :: get_dyn_grid_parm_real2d, get_dyn_grid_parm_real1d
@@ -208,6 +209,24 @@ contains
     get_block_lvl_cnt_d = plevp
     return
   end function get_block_lvl_cnt_d
+  
+  integer function get_block_lvl_cnt_d_five(blockid,bcid)
+    use pmgrid, only: plevp
+    !---------------------------------------------------------------------------
+    ! Purpose: Return number of levels in indicated column. If column
+    !          includes surface fields, then it is defined to also
+    !          include level 0.
+    !
+    ! Author: Patrick Worley
+    !---------------------------------------------------------------------------
+    implicit none
+    !------------------------------Arguments------------------------------------
+    integer, intent(in) :: blockid  ! global block id
+    integer, intent(in) :: bcid    ! column index within block
+    !---------------------------------------------------------------------------
+    get_block_lvl_cnt_d_five = plevp+1 ! replace with plev_five
+    return
+  end function get_block_lvl_cnt_d_five
   !
   !=================================================================================================
   !
@@ -246,6 +265,42 @@ contains
 
     return
   end subroutine get_block_levels_d
+  
+    subroutine get_block_levels_d_five(blockid, bcid, lvlsiz, levels)
+    use pmgrid,         only: plevp
+    use cam_abortutils, only: endrun
+    !---------------------------------------------------------------------------
+    ! Purpose: Return level indices in indicated column. If column
+    !          includes surface fields, then it is defined to also
+    !          include level 0.
+    !
+    ! Author: Patrick Worley
+    !---------------------------------------------------------------------------
+    implicit none
+    !------------------------------Arguments------------------------------------
+    integer, intent(in ) :: blockid         ! global block id
+    integer, intent(in ) :: bcid            ! column index within block
+    integer, intent(in ) :: lvlsiz          ! dimension of levels array
+    integer, intent(out) :: levels(lvlsiz)  ! levels indices for block
+    !----------------------------Local-Variables--------------------------------
+    integer k                        ! loop index
+    !---------------------------------------------------------------------------
+    !  latitude slice block
+    if (lvlsiz < plevp + 1) then
+       write(iulog,*)'GET_BLOCK_LEVELS_D: levels array not large enough (', &
+            lvlsiz,' < ',plevp + 1,' ) '
+       call endrun
+    else
+       do k=0,plevp
+          levels(k+1) = k
+       end do
+       do k=plevp+2,lvlsiz
+          levels(k) = -1
+       end do
+    end if
+
+    return
+  end subroutine get_block_levels_d_five
   !
   !=================================================================================================
   !

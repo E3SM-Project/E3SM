@@ -95,7 +95,7 @@ module phys_grid
 !-----------------------------------------------------------------------
    use shr_kind_mod,     only: r8 => shr_kind_r8, r4 => shr_kind_r4
    use physconst,        only: pi
-   use ppgrid,           only: pcols, pver, begchunk, endchunk
+   use ppgrid,           only: pcols, pver, pverp, begchunk, endchunk
 #if ( defined SPMD )
    use spmd_dyn,         only: block_buf_nrecs, chunk_buf_nrecs, &
                                local_dp_map
@@ -255,6 +255,14 @@ module phys_grid
                                        ! (blockid, bcid, k) column should be unpacked in
                                        ! chunk_to_block alltoallv
 
+   type (btofc_pters), dimension(:), allocatable, private :: btofc_blk_offset_five
+                                       ! offset in btoc send array (-1) where 
+                                       ! (blockid, bcid, k) column should be packed in
+                                       ! block_to_chunk alltoallv, AND
+                                       ! offset in ctob receive array (-1) from which
+                                       ! (blockid, bcid, k) column should be unpacked in
+                                       ! chunk_to_block alltoallv				       
+
    type (btofc_pters), dimension(:), allocatable, private :: btofc_chk_offset
                                        ! offset in btoc receive array (-1) from which
                                        ! (lcid, i, k) data should be unpacked in
@@ -262,6 +270,14 @@ module phys_grid
                                        ! offset in ctob send array (-1) where
                                        ! (lcid, i, k) data should be packed in
                                        ! chunk_to_block alltoallv
+				       
+   type (btofc_pters), dimension(:), allocatable, private :: btofc_chk_offset_five
+                                       ! offset in btoc receive array (-1) from which
+                                       ! (lcid, i, k) data should be unpacked in
+                                       ! block_to_chunk alltoallv, AND
+                                       ! offset in ctob send array (-1) where
+                                       ! (lcid, i, k) data should be packed in
+                                       ! chunk_to_block alltoallv				       
 
 ! miscellaneous phys_grid data
    integer, private :: dp_coup_steps   ! number of swaps in transpose algorithm
@@ -353,11 +369,13 @@ contains
     ! Author: John Drake and Patrick Worley
     ! 
     !-----------------------------------------------------------------------
-    use pmgrid,           only: plev
+    use pmgrid,           only: plev,plevp
     use dycore,           only: dycore_is
     use dyn_grid,         only: get_block_bounds_d, get_block_gcol_d,     &
                                 get_block_gcol_cnt_d, get_block_levels_d, &
-                                get_block_lvl_cnt_d, get_block_owner_d,   &
+				get_block_levels_d_five, &
+                                get_block_lvl_cnt_d, get_block_lvl_cnt_d_five, &
+				get_block_owner_d,   &
                                 get_gcol_block_d, get_gcol_block_cnt_d,   &
                                 get_horiz_grid_dim_d, get_horiz_grid_d,   &
                                 physgrid_copy_attributes_d
@@ -389,6 +407,7 @@ contains
     ! for a given vertical column
     integer :: numlvl                     ! number of vertical levels in block 
     integer :: levels(plev+1)             ! vertical level indices
+    integer :: levels_five(plevp+1)
     integer :: owner_d                    ! process owning given block column
     integer :: owner_p                    ! process owning given chunk column
     integer :: blockids(plev+1)           ! block indices
@@ -961,6 +980,47 @@ contains
           enddo
        enddo
        
+!       allocate( btofc_blk_num(0:npes-1) )
+       btofc_blk_num = 0
+       allocate( btofc_blk_offset_five(firstblock:lastblock) )
+       do jb = firstblock,lastblock
+          nullify( btofc_blk_offset_five(jb)%pter )
+       enddo       
+       !
+       glbcnt = 0
+       curcnt = 0
+       curp = 0
+       do curgcol=1,ngcols_p
+          cid = pgcols(curgcol)%chunk
+          i   = pgcols(curgcol)%ccol
+          owner_p   = chunks(cid)%owner
+          do while (curp < owner_p)
+             btofc_blk_num(curp) = curcnt
+             curcnt = 0
+             curp = curp + 1
+          enddo
+          curgcol_d = chunks(cid)%gcol(i)
+          block_cnt = get_gcol_block_cnt_d(curgcol_d)
+          call get_gcol_block_d(curgcol_d,block_cnt,blockids,bcids)
+          do jb = 1,block_cnt
+             owner_d = get_block_owner_d(blockids(jb))
+             if (iam == owner_d) then
+                if (.not. associated(btofc_blk_offset_five(blockids(jb))%pter)) then
+                   blksiz = get_block_gcol_cnt_d(blockids(jb))
+                   numlvl = get_block_lvl_cnt_d_five(blockids(jb),bcids(jb))
+                   btofc_blk_offset_five(blockids(jb))%ncols = blksiz
+                   btofc_blk_offset_five(blockids(jb))%nlvls = numlvl
+                   allocate( btofc_blk_offset_five(blockids(jb))%pter(blksiz,numlvl) )
+                endif
+                do k=1,btofc_blk_offset_five(blockids(jb))%nlvls
+                   btofc_blk_offset_five(blockids(jb))%pter(bcids(jb),k) = glbcnt
+                   curcnt = curcnt + 1
+                   glbcnt = glbcnt + 1
+                enddo
+             endif
+          enddo
+       enddo       
+       
        btofc_blk_num(curp) = curcnt
        block_buf_nrecs = glbcnt
        !  
@@ -973,6 +1033,14 @@ contains
           btofc_chk_offset(lcid)%nlvls = pver+1
           allocate( btofc_chk_offset(lcid)%pter(ncols,pver+1) )
        enddo
+       
+       allocate( btofc_chk_offset_five(begchunk:endchunk) )
+       do lcid=begchunk,endchunk
+          ncols = lchunks(lcid)%ncols
+          btofc_chk_offset_five(lcid)%ncols = ncols
+          btofc_chk_offset_five(lcid)%nlvls = pverp+1
+          allocate( btofc_chk_offset_five(lcid)%pter(ncols,pverp+1) )
+       enddo       
        !
        curcnt = 0
        glbcnt = 0
@@ -1004,6 +1072,37 @@ contains
           curcnt = 0
        enddo
        chunk_buf_nrecs = glbcnt
+       
+       curcnt = 0
+       glbcnt = 0
+       do p=0,npes-1
+          do curgcol=gs_col_offset(iam),gs_col_offset(iam+1)-1
+             cid  = pgcols(curgcol)%chunk
+             owner_p  = chunks(cid)%owner
+             if (iam == owner_p) then
+                i    = pgcols(curgcol)%ccol
+                lcid = chunks(cid)%lcid
+                curgcol_d = chunks(cid)%gcol(i)
+                block_cnt = get_gcol_block_cnt_d(curgcol_d)
+                call get_gcol_block_d(curgcol_d,block_cnt,blockids,bcids)
+                do jb = 1,block_cnt
+                   owner_d = get_block_owner_d(blockids(jb))
+                   if (p == owner_d) then
+                      numlvl = get_block_lvl_cnt_d_five(blockids(jb),bcids(jb))
+                      call get_block_levels_d_five(blockids(jb),bcids(jb),numlvl,levels_five)
+                      do k=1,numlvl
+                         btofc_chk_offset_five(lcid)%pter(i,levels_five(k)+1) = glbcnt
+                         curcnt = curcnt + 1
+                         glbcnt = glbcnt + 1
+                      enddo
+                   endif
+                enddo
+             endif
+          enddo
+          btofc_chk_num(p) = curcnt
+          curcnt = 0
+       enddo
+       chunk_buf_nrecs = glbcnt       
        !
        ! Precompute swap partners and number of steps in point-to-point
        ! implementations of alltoall algorithm.
@@ -4186,6 +4285,58 @@ logical function phys_grid_initialized ()
 !
 !========================================================================
 
+   subroutine chunk_to_block_send_pters_five(lcid, fdim, ldim, &
+                                        record_size, pter)
+!----------------------------------------------------------------------- 
+! 
+! Purpose: Return pointers into send buffer where data for
+!          decomposed chunk data structures should be copied to
+! 
+! Method: 
+! 
+! Author: Patrick Worley
+! 
+!-----------------------------------------------------------------------
+!------------------------------Arguments--------------------------------
+   integer, intent(in) :: lcid         ! local chunk id
+   integer, intent(in) :: fdim         ! first dimension of pter array
+   integer, intent(in) :: ldim         ! last dimension of pter array
+   integer, intent(in) :: record_size  ! per coordinate amount of data 
+
+   integer, intent(out) :: pter(fdim,ldim)  ! buffer offset
+!---------------------------Local workspace-----------------------------
+   integer :: i, k                     ! loop indices
+!-----------------------------------------------------------------------
+   if ((btofc_chk_offset_five(lcid)%ncols > fdim) .or. &
+       (btofc_chk_offset_five(lcid)%nlvls > ldim)) then
+      write(iulog,*) "CHUNK_TO_BLOCK_SEND_PTERS: pter array dimensions ", &
+                 "not large enough: (",fdim,",",ldim,") not >= (", &
+                  btofc_chk_offset_five(lcid)%ncols,",", &
+                  btofc_chk_offset_five(lcid)%nlvls,")"
+      call endrun()
+   endif
+!
+   do k=1,btofc_chk_offset_five(lcid)%nlvls
+      do i=1,btofc_chk_offset_five(lcid)%ncols
+         pter(i,k) = 1 + record_size* &
+                     (btofc_chk_offset_five(lcid)%pter(i,k))
+      enddo
+      do i=btofc_chk_offset_five(lcid)%ncols+1,fdim
+         pter(i,k) = -1
+      enddo
+   enddo
+!
+   do k=btofc_chk_offset_five(lcid)%nlvls+1,ldim
+      do i=1,fdim
+         pter(i,k) = -1
+      enddo
+   enddo
+!
+   return
+   end subroutine chunk_to_block_send_pters_five
+   
+!========================================================================
+
    subroutine chunk_to_block_send_pters(lcid, fdim, ldim, &
                                         record_size, pter)
 !----------------------------------------------------------------------- 
@@ -4206,11 +4357,10 @@ logical function phys_grid_initialized ()
 
    integer, intent(out) :: pter(fdim,ldim)  ! buffer offset
 !---------------------------Local workspace-----------------------------
-   integer :: i, k, nlevs                     ! loop indices
+   integer :: i, k                     ! loop indices
 !-----------------------------------------------------------------------
-   nlevs = ldim
    if ((btofc_chk_offset(lcid)%ncols > fdim) .or. &
-       (nlevs > ldim)) then
+       (btofc_chk_offset(lcid)%nlvls > ldim)) then
       write(iulog,*) "CHUNK_TO_BLOCK_SEND_PTERS: pter array dimensions ", &
                  "not large enough: (",fdim,",",ldim,") not >= (", &
                   btofc_chk_offset(lcid)%ncols,",", &
@@ -4218,7 +4368,7 @@ logical function phys_grid_initialized ()
       call endrun()
    endif
 !
-   do k=1,nlevs
+   do k=1,btofc_chk_offset(lcid)%nlvls
       do i=1,btofc_chk_offset(lcid)%ncols
          pter(i,k) = 1 + record_size* &
                      (btofc_chk_offset(lcid)%pter(i,k))
@@ -4228,14 +4378,14 @@ logical function phys_grid_initialized ()
       enddo
    enddo
 !
-   do k=nlevs+1,ldim
+   do k=btofc_chk_offset(lcid)%nlvls+1,ldim
       do i=1,fdim
          pter(i,k) = -1
       enddo
    enddo
 !
    return
-   end subroutine chunk_to_block_send_pters
+   end subroutine chunk_to_block_send_pters   
 !
 !========================================================================
 
@@ -4259,11 +4409,10 @@ logical function phys_grid_initialized ()
 
    integer, intent(out) :: pter(fdim,ldim)  ! buffer offsets
 !---------------------------Local workspace-----------------------------
-   integer :: i, k, nlevs                     ! loop indices
+   integer :: i, k                     ! loop indices
 !-----------------------------------------------------------------------
-   nlevs=ldim
    if ((btofc_blk_offset(blockid)%ncols > fdim) .or. &
-       (nlevs > ldim)) then
+       (btofc_blk_offset(blockid)%nlvls > ldim)) then
       write(iulog,*) "CHUNK_TO_BLOCK_RECV_PTERS: pter array dimensions ", &
                  "not large enough: (",fdim,",",ldim,") not >= (", &
                   btofc_blk_offset(blockid)%ncols,",", &
@@ -4271,7 +4420,7 @@ logical function phys_grid_initialized ()
       call endrun()
    endif
 !
-   do k=1,nlevs
+   do k=1,btofc_blk_offset(blockid)%nlvls
       do i=1,btofc_blk_offset(blockid)%ncols
          pter(i,k) = 1 + record_size* &
                      (btofc_blk_offset(blockid)%pter(i,k))
@@ -4281,7 +4430,7 @@ logical function phys_grid_initialized ()
       enddo
    enddo
 !
-   do k=nlevs+1,ldim
+   do k=btofc_blk_offset(blockid)%nlvls+1,ldim
       do i=1,fdim
          pter(i,k) = -1
       enddo
@@ -4289,6 +4438,58 @@ logical function phys_grid_initialized ()
 !
    return
    end subroutine chunk_to_block_recv_pters
+   
+!========================================================================
+
+   subroutine chunk_to_block_recv_pters_five(blockid, fdim, ldim, &
+                                        record_size, pter)
+!----------------------------------------------------------------------- 
+! 
+! Purpose: Return pointers into receive buffer where column from decomposed 
+!          fields should be copied from
+! 
+! Method: 
+! 
+! Author: Patrick Worley
+! 
+!-----------------------------------------------------------------------
+!------------------------------Arguments--------------------------------
+   integer, intent(in) :: blockid      ! block index
+   integer, intent(in) :: fdim         ! first dimension of pter array
+   integer, intent(in) :: ldim         ! last dimension of pter array
+   integer, intent(in) :: record_size  ! per coordinate amount of data 
+
+   integer, intent(out) :: pter(fdim,ldim)  ! buffer offsets
+!---------------------------Local workspace-----------------------------
+   integer :: i, k                     ! loop indices
+!-----------------------------------------------------------------------
+   if ((btofc_blk_offset_five(blockid)%ncols > fdim) .or. &
+       (btofc_blk_offset_five(blockid)%nlvls > ldim)) then
+      write(iulog,*) "CHUNK_TO_BLOCK_RECV_PTERS: pter array dimensions ", &
+                 "not large enough: (",fdim,",",ldim,") not >= (", &
+                  btofc_blk_offset_five(blockid)%ncols,",", &
+                  btofc_blk_offset_five(blockid)%nlvls,")"
+      call endrun()
+   endif
+!
+   do k=1,btofc_blk_offset_five(blockid)%nlvls
+      do i=1,btofc_blk_offset_five(blockid)%ncols
+         pter(i,k) = 1 + record_size* &
+                     (btofc_blk_offset_five(blockid)%pter(i,k))
+      enddo
+      do i=btofc_blk_offset_five(blockid)%ncols+1,fdim
+         pter(i,k) = -1
+      enddo
+   enddo
+!
+   do k=btofc_blk_offset_five(blockid)%nlvls+1,ldim
+      do i=1,fdim
+         pter(i,k) = -1
+      enddo
+   enddo
+!
+   return
+   end subroutine chunk_to_block_recv_pters_five
 !
 !========================================================================
 

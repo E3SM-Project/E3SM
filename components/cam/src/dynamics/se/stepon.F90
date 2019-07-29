@@ -480,9 +480,9 @@ subroutine stepon_run3(dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out)
    use physics_buffer, only : physics_buffer_desc, pbuf_get_chunk, pbuf_get_field, &
    			      pbuf_get_index
    use ppgrid, only : pver, pverp, pcols
-   use phys_grid, only: get_ncols_p, chunk_to_block_send_pters, &
+   use phys_grid, only: get_ncols_p, chunk_to_block_send_pters_five, &
                   transpose_chunk_to_block_five, &
-                  chunk_to_block_recv_pters
+                  chunk_to_block_recv_pters_five
    use parallel_mod,   only: par
    		  
    real(r8), intent(in) :: dtime   ! Time-step
@@ -551,7 +551,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out)
      
      call pbuf_get_field(pbuf_chnk, thlm_idx, pbuf_thlm)
      
-     call chunk_to_block_send_pters(lchnk,pcols,pverp+1,tsize_five,cpter_five)
+     call chunk_to_block_send_pters_five(lchnk,pcols,pverp+1,tsize_five,cpter_five)
      do i=1,ncols
        cbuffer_five(cpter_five(i,0):cpter_five(i,0)) = 0.0_r8
      end do     
@@ -573,7 +573,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out)
      !$omp parallel do private (ie, bpter_five, icol, ilyr, m, ncols) 
      do ie = 1,nelemd
        ncols = elem(ie)%idxP%NumUniquePts
-       call chunk_to_block_recv_pters(elem(ie)%GlobalID,nphys_sq,pverp+1,tsize_five,bpter_five(1:nphys_sq,:))  
+       call chunk_to_block_recv_pters_five(elem(ie)%GlobalID,nphys_sq,pverp+1,tsize_five,bpter_five(1:nphys_sq,:))  
        do icol = 1,ncols
          do ilyr = 1,pverp
 	   thlm_tmp(icol,ilyr,ie) = bbuffer_five(bpter_five(icol,ilyr))
