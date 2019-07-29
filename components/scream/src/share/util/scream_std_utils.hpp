@@ -13,9 +13,20 @@ auto find (const ContainerType& c, T&& value) -> decltype(c.begin()) {
   return std::find(c.begin(),c.end(),value);
 }
 
+// Note: in C++20, both std::set and std::map will have the 'contains' method.
 template<typename ContainerType, typename T>
 bool contains (const ContainerType& c, T&& value) {
   return std::find(c.begin(),c.end(),value) != c.end();
+}
+
+template<typename ContainerType, typename T>
+bool erase (ContainerType& c, const T& value) {
+  auto it = std::find(c.begin(),c.end(),value);
+  if (it!=c.end()) {
+    c.erase(it);
+    return true;
+  }
+  return false;
 }
 
 } // namespace util

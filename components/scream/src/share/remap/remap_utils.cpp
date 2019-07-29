@@ -1,3 +1,4 @@
+#include "share/util/scream_std_utils.hpp"
 #include "share/remap/remap_utils.hpp"
 #include "share/mpi/scream_comm.hpp"
 
@@ -12,19 +13,11 @@ int count (const std::vector<T>& vector, const T& value) {
   return std::count(vector.begin(), vector.end(), value);
 }
 
-template<typename T>
-bool erase (std::vector<T>& vector, const T& value) {
-  auto it = std::find(vector.begin(),vector.end(),value);
-  if (it!=vector.end()) {
-    vector.erase(it);
-    return true;
-  }
-  return false;
-}
-
 // =================== Remap utilities ================== //
 
 LayoutType get_layout_type (const FieldLayout& layout) {
+  using util::erase;
+
   auto tags = layout.tags();
 
   const int n_element = count(tags,FieldTag::Element);
