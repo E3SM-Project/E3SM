@@ -42,7 +42,20 @@ inline bool caseInsensitiveEqualString (const std::string& s1, const std::string
 }
 
 inline bool caseInsensitiveLessString (const std::string& s1, const std::string& s2) {
-  return !caseInsensitiveEqualString(s2,s1);
+  auto charCompLess = [](const char c1, const char c2)->bool{
+    return std::toupper(c1)<std::toupper(c2);
+  };
+  auto charCompEq = [](const char c1, const char c2)->bool{
+    return std::toupper(c1)==std::toupper(c2);
+  };
+  for (auto it1=s1.begin(),it2=s2.begin(); it1!=s1.end() && it2!=s2.end(); ++it1,++it2) {
+    if (charCompLess(*it1,*it2)) {
+      return true;
+    } else if (!charCompEq(*it1,*it2)) {
+      return false;
+    }
+  }
+  return s1.size()<s2.size();
 }
 
 inline bool caseInsensitiveLessEqualString (const std::string& s1, const std::string& s2) {
