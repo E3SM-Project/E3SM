@@ -1,6 +1,73 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 7-19-209
+Tag: cime5.8.7
+Answer Changes: Climate changing for CAM ne120, ne120pg3, ne0CONUS grids
+Tests: scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+    - Fix SE to gx1v7 domain and mapping files.
+    - Updates and fixes for MOM6 in cime.
+    - Maint 5.6 merge.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+6efe21745 Merge pull request #3177 from ESMCI/fischer/SE_gx1v7MaskFix
+764ef08a0 Merge pull request #3156 from ESMCI/nuopc-cmeps-os
+7a5d60356 Merge pull request #3174 from jedwards4b/maint-5.6-merge
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/config_files.xml
+M	config/cesm/config_grids.xml
+M	config/cesm/config_grids_mct.xml
+M	config/cesm/machines/config_batch.xml
+M	config/cesm/machines/config_compilers.xml
+M	config/cesm/machines/config_machines.xml
+A	config/cesm/machines/config_workflow.xml
+A	config/cesm/machines/cylc_suite.rc.template
+M	config/config_headers.xml
+M	config/e3sm/config_files.xml
+M	config/e3sm/machines/config_batch.xml
+A	config/e3sm/machines/config_workflow.xml
+M	config/xml_schemas/config_batch.xsd
+A	config/xml_schemas/config_workflow.xsd
+M	scripts/Tools/Makefile
+M	scripts/Tools/archive_metadata
+A	scripts/Tools/generate_cylc_workflow.py
+M	scripts/Tools/mkDepends
+M	scripts/Tools/preview_run
+M	scripts/create_clone
+M	scripts/create_newcase
+M	scripts/lib/CIME/Servers/wget.py
+M	scripts/lib/CIME/XML/batch.py
+M	scripts/lib/CIME/XML/env_base.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/env_mach_specific.py
+A	scripts/lib/CIME/XML/env_workflow.py
+M	scripts/lib/CIME/XML/generic_xml.py
+A	scripts/lib/CIME/XML/workflow.py
+M	scripts/lib/CIME/aprun.py
+M	scripts/lib/CIME/case/case.py
+M	scripts/lib/CIME/case/case_clone.py
+M	scripts/lib/CIME/case/case_run.py
+M	scripts/lib/CIME/case/case_setup.py
+M	scripts/lib/CIME/case/case_st_archive.py
+M	scripts/lib/CIME/case/case_submit.py
+M	scripts/lib/CIME/get_timing.py
+M	scripts/tests/scripts_regression_tests.py
+M	src/build_scripts/buildlib.csm_share
+M	src/components/data_comps/datm/cime_config/namelist_definition_datm.xml
+M	src/components/data_comps/dice/nuopc/dice_comp_mod.F90
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_component_cesm.xml
+M	src/share/util/shr_file_mod.F90
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 7-16-2019
 Tag: cime5.8.6
 Answer Changes: None
