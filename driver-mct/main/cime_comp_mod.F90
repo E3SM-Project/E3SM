@@ -123,7 +123,7 @@ module cime_comp_mod
 
   ! flux calc routines
   use seq_flux_mct, only: seq_flux_init_mct, seq_flux_initexch_mct, seq_flux_ocnalb_mct
-  use seq_flux_mct, only: seq_flux_atmocn_mct, seq_flux_atmocnexch_mct
+  use seq_flux_mct, only: seq_flux_atmocn_mct, seq_flux_atmocnexch_mct, seq_flux_readnl_mct
 
   ! domain fraction routines
   use seq_frac_mct, only : seq_frac_init, seq_frac_set
@@ -800,6 +800,7 @@ contains
     !----------------------------------------------------------
     call esmf_readnl(NLFileName, mpicom_GLOID, esmf_log_option)
 
+ 
     !
     !  When using io servers (pio_async_interface=.true.) the server tasks do not return from
     !  shr_pio_init2
@@ -906,6 +907,12 @@ contains
     else
        call seq_infodata_init(infodata,nlfilename, GLOID, pioid)
     end if
+
+    !----------------------------------------------------------
+    ! Read shr_flux  namelist settings
+    !----------------------------------------------------------
+    write(55,*) ' Is root right before calling seq_flux_readnl_mct, CPLID=',CPLID
+    call seq_flux_readnl_mct(nlfilename, CPLID, infodata)
 
     !----------------------------------------------------------
     ! Print Model heading and copyright message
@@ -1891,6 +1898,7 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing atm/ocn flux component'
           endif
+
 
           if (trim(aoflux_grid) == 'ocn') then
 
