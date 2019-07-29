@@ -932,6 +932,7 @@ end subroutine clubb_init_cnst
 
    use ppgrid,         only: pver, pverp, pcols
    use constituents,   only: cnst_get_ind, cnst_type
+   use co2_cycle,      only: co2_cycle_set_cnst_type
    use camsrfexch,     only: cam_in_t
    use ref_pres,       only: top_lev => trop_cloud_top_lev  
    use time_manager,   only: is_first_step   
@@ -1181,6 +1182,7 @@ end subroutine clubb_init_cnst
    type(pdf_parameter), dimension(pverp) :: pdf_params                  ! PDF parameters                    [units vary]
    character(len=200)                    :: temp1, sub                  ! Strings needed for CLUBB output
    logical                               :: l_Lscale_plume_centered, l_use_ice_latent
+   character(len=3), dimension(pcnst)    :: cnst_type_loc               ! local override option for constituents cnst_type
 
 
    ! --------------- !
@@ -1302,7 +1304,10 @@ end subroutine clubb_init_cnst
    call physics_state_copy(state,state1)
 
    ! constituents are all treated as wet mmr by clubb
-   call set_dry_to_wet(state1)
+   ! don't convert co2 tracers to wet mixing ratios
+   cnst_type_loc(:) = cnst_type(:)
+   call co2_cycle_set_cnst_type(cnst_type_loc, 'wet')
+   call set_dry_to_wet(state1, cnst_type_loc)
 
    if (micro_do_icesupersat) then
      naai_idx      = pbuf_get_index('NAAI')
@@ -2665,6 +2670,7 @@ end subroutine clubb_init_cnst
     use physconst,              only: gravit, zvir, latvap
     use ppgrid,                 only: pver, pcols
     use constituents,           only: pcnst, cnst_get_ind, cnst_type
+    use co2_cycle,              only: co2_cycle_set_cnst_type
     use camsrfexch,             only: cam_in_t
     
     implicit none
@@ -2708,6 +2714,8 @@ end subroutine clubb_init_cnst
     
     logical  :: lq(pcnst)
 
+    character(len=3), dimension(pcnst) :: cnst_type_loc         ! local override option for constituents cnst_type
+
 #endif
     obklen(pcols) = 0.0_r8
     ustar(pcols)  = 0.0_r8
@@ -2718,7 +2726,10 @@ end subroutine clubb_init_cnst
     ! ----------------------- !
 
     ! Assume 'wet' mixing ratios in surface diffusion code.
-    call set_dry_to_wet(state)
+    ! don't convert co2 tracers to wet mixing ratios
+    cnst_type_loc(:) = cnst_type(:)
+    call co2_cycle_set_cnst_type(cnst_type_loc, 'wet')
+    call set_dry_to_wet(state, cnst_type_loc)
 
     call cnst_get_ind('Q',ixq)
     if (use_sgv) then
@@ -2766,7 +2777,10 @@ end subroutine clubb_init_cnst
        endif
     end do
     ! convert wet mmr back to dry before conservation check
-    call set_wet_to_dry(state)
+    ! avoid converting co2 tracers again
+    cnst_type_loc(:) = cnst_type(:)
+    call co2_cycle_set_cnst_type(cnst_type_loc, 'wet')
+    call set_wet_to_dry(state, cnst_type_loc)
     
     return
 
