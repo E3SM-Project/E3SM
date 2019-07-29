@@ -484,6 +484,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out)
                   transpose_chunk_to_block_five, &
                   chunk_to_block_recv_pters_five
    use parallel_mod,   only: par
+   use dof_mod, only: PutUniquePoints
    		  
    real(r8), intent(in) :: dtime   ! Time-step
    real(r8) :: ftmp_temp(np,np,nlev,nelemd), ftmp_q(np,np,nlev,pcnst,nelemd)
@@ -491,6 +492,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out)
    real(r8) :: out_temp(npsq,nlev), out_q(npsq,nlev), out_u(npsq,nlev), &
                out_v(npsq,nlev), out_psv(npsq)  
    real(r8) :: thlm_tmp(npsq,nlev+1,nelemd)
+   real(r8) :: thlm_final(np,np,nlev+1,nelemd)
    real(r8), parameter :: rad2deg = 180.0 / SHR_CONST_PI
    real(r8), parameter :: fac = 1000._r8	
    real(r8) :: term1, term2        
@@ -529,7 +531,6 @@ subroutine stepon_run3(dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out)
 
 #endif   
 
-   write(*,*) 'CHECKPOINT1 '
    nphys_sq = np*np
    tsize_five = 1 ! number of FIVE variables
 
@@ -564,7 +565,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out)
      enddo
 	
    enddo
-   
+
    call transpose_chunk_to_block_five(tsize_five,chunk_buf_nrecs_five,&
         block_buf_nrecs_five,cbuffer_five,bbuffer_five)
    
@@ -585,6 +586,20 @@ subroutine stepon_run3(dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out)
    
    deallocate(bbuffer_five)
    deallocate(cbuffer_five)
+   
+   if (par%dynproc) then
+     do ie = 1,nelemd
+       ncols = elem(ie)%idxP%NumUniquePts
+       call putUniquePoints(elem(ie)%idxP,    nlev+1,       thlm_tmp(1:ncols,:,ie),   &
+                               thlm_final(:,:,:,ie))
+     enddo
+   endif
+   
+   ! Verify results. Look at lowest model level
+   do ie=1,nelemd
+     tl_f = TimeLevel%n0
+     write(*,*) 'THETA_COMPARE ', ie, thlm_final(1,1,nlev,ie), dyn_in%elem(ie)%state%T(1,1,nlev,tl_f)
+   enddo
    
    if (single_column) then
      

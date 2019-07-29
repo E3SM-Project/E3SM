@@ -236,11 +236,21 @@ module phys_grid
                                        ! number of grid points scattered to each process in
                                        ! block_to_chunk alltoallv, and gathered from each
                                        ! process in chunk_to_block alltoallv
+				       
+   integer, dimension(:), allocatable, private :: btofc_blk_num_five
+                                       ! number of grid points scattered to each process in
+                                       ! block_to_chunk alltoallv, and gathered from each
+                                       ! process in chunk_to_block alltoallv				       
 
    integer, dimension(:), allocatable, private :: btofc_chk_num
                                        ! number of grid points gathered from each process in
                                        ! block_to_chunk alltoallv, and scattered to each
                                        ! process in chunk_to_block alltoallv
+				       
+   integer, dimension(:), allocatable, private :: btofc_chk_num_five
+                                       ! number of grid points gathered from each process in
+                                       ! block_to_chunk alltoallv, and scattered to each
+                                       ! process in chunk_to_block alltoallv				       
 
    type btofc_pters
      integer :: ncols                  ! number of columns in block
@@ -284,6 +294,11 @@ module phys_grid
    integer, dimension(:), private, allocatable :: dp_coup_proc
                                        ! swap partner in each step of 
                                        !  transpose algorithm
+   integer, private :: dp_coup_steps_five   ! number of swaps in transpose algorithm
+   integer, dimension(:), private, allocatable :: dp_coup_proc_five
+                                       ! swap partner in each step of 
+                                       !  transpose algorithm				       
+				       
    logical :: physgrid_set = .false.   ! flag indicates physics grid has been set
    integer, private :: max_nproc_smpx  ! maximum number of processes assigned to a
                                        !  single virtual SMP used to define physics 
@@ -980,8 +995,12 @@ contains
           enddo
        enddo
        
-!       allocate( btofc_blk_num(0:npes-1) )
-       btofc_blk_num = 0
+       btofc_blk_num(curp) = curcnt
+       block_buf_nrecs = glbcnt
+       
+       write(*,*) 'CHECKPOINT0a'
+       allocate( btofc_blk_num_five(0:npes-1) )
+       btofc_blk_num_five = 0
        allocate( btofc_blk_offset_five(firstblock:lastblock) )
        do jb = firstblock,lastblock
           nullify( btofc_blk_offset_five(jb)%pter )
@@ -995,7 +1014,7 @@ contains
           i   = pgcols(curgcol)%ccol
           owner_p   = chunks(cid)%owner
           do while (curp < owner_p)
-             btofc_blk_num(curp) = curcnt
+             btofc_blk_num_five(curp) = curcnt
              curcnt = 0
              curp = curp + 1
           enddo
@@ -1019,10 +1038,9 @@ contains
                 enddo
              endif
           enddo
-       enddo       
-       
-       btofc_blk_num(curp) = curcnt
-       block_buf_nrecs = glbcnt
+       enddo   
+       btofc_blk_num_five(curp) = curcnt    
+       write(*,*) 'CHECKPOINT0b'
        !  
        allocate( btofc_chk_num(0:npes-1) )
        btofc_chk_num = 0
@@ -1033,7 +1051,9 @@ contains
           btofc_chk_offset(lcid)%nlvls = pver+1
           allocate( btofc_chk_offset(lcid)%pter(ncols,pver+1) )
        enddo
-       
+
+       allocate( btofc_chk_num_five(0:npes-1) )
+       btofc_chk_num_five = 0       
        allocate( btofc_chk_offset_five(begchunk:endchunk) )
        do lcid=begchunk,endchunk
           ncols = lchunks(lcid)%ncols
@@ -1072,7 +1092,7 @@ contains
           curcnt = 0
        enddo
        chunk_buf_nrecs = glbcnt
-       
+       write(*,*) 'CHECKPOINT0c'
        curcnt = 0
        glbcnt = 0
        do p=0,npes-1
@@ -1099,7 +1119,7 @@ contains
                 enddo
              endif
           enddo
-!          btofc_chk_num(p) = curcnt
+          btofc_chk_num_five(p) = curcnt
           curcnt = 0
        enddo
 !       chunk_buf_nrecs = glbcnt       
@@ -1132,6 +1152,33 @@ contains
              end if
           end if
        end do
+       
+       ! Repeat above for FIVE
+       dp_coup_steps_five = 0
+       do i=1,ceil2(npes)-1
+          p = pair(npes,i,iam)
+          if (p >= 0) then
+             if ((btofc_blk_num_five(p) > 0 .or. btofc_chk_num_five(p) > 0)) then
+                dp_coup_steps_five = dp_coup_steps_five + 1
+             end if
+          end if
+       end do
+       !
+       ! Second, determine swap partners.
+       !
+
+       allocate( dp_coup_proc_five(dp_coup_steps_five) )
+       dp_coup_steps_five = 0
+       do i=1,ceil2(npes)-1
+          p = pair(npes,i,iam)
+          if (p >= 0) then
+             if ((btofc_blk_num_five(p) > 0 .or. btofc_chk_num_five(p) > 0)) then
+                dp_coup_steps_five = dp_coup_steps_five + 1
+                dp_coup_proc_five(dp_coup_steps_five) = p
+             end if
+          end if
+       end do       
+       
        !
     endif
 
@@ -3744,12 +3791,9 @@ logical function phys_grid_initialized ()
    integer, intent(out) :: pter(fdim,ldim)  ! buffer offsets
 !---------------------------Local workspace-----------------------------
    integer :: i, k                     ! loop indices
-   integer :: nlev_var
 !-----------------------------------------------------------------------
-   nlev_var = ldim
-!   write(*,*) 'STUFFHERE ', btofc_blk_offset(blockid)%nlvls, ldim, nlev_var
    if ((btofc_blk_offset(blockid)%ncols > fdim) .or. &
-       (nlev_var > ldim)) then
+       (btofc_blk_offset(blockid)%nlvls > ldim)) then
       write(iulog,*) "BLOCK_TO_CHUNK_SEND_PTERS: pter array dimensions ", &
                  "not large enough: (",fdim,",",ldim,") not >= (", &
                   btofc_blk_offset(blockid)%ncols,",", &
@@ -3757,7 +3801,7 @@ logical function phys_grid_initialized ()
       call endrun()
    endif
 !
-   do k=1,nlev_var
+   do k=1,btofc_blk_offset(blockid)%nlvls
       do i=1,btofc_blk_offset(blockid)%ncols
          pter(i,k) = 1 + record_size* &
                      (btofc_blk_offset(blockid)%pter(i,k))
@@ -3767,7 +3811,7 @@ logical function phys_grid_initialized ()
       enddo
    enddo
 !
-   do k=nlev_var+1,ldim
+   do k=btofc_blk_offset(blockid)%nlvls+1,ldim
       do i=1,fdim
          pter(i,k) = -1
       enddo
@@ -4159,17 +4203,17 @@ logical function phys_grid_initialized ()
 !
 ! Compute send/recv/put counts and displacements
       sdispls(0) = 0
-      sndcnts(0) = record_size*btofc_chk_num(0)
+      sndcnts(0) = record_size*btofc_chk_num_five(0)
       do p=1,npes-1
         sdispls(p) = sdispls(p-1) + sndcnts(p-1)
-        sndcnts(p) = record_size*btofc_chk_num(p)
+        sndcnts(p) = record_size*btofc_chk_num_five(p)
       enddo
 !
       rdispls(0) = 0
-      rcvcnts(0) = record_size*btofc_blk_num(0)
+      rcvcnts(0) = record_size*btofc_blk_num_five(0)
       do p=1,npes-1
          rdispls(p) = rdispls(p-1) + rcvcnts(p-1)
-         rcvcnts(p) = record_size*btofc_blk_num(p)
+         rcvcnts(p) = record_size*btofc_blk_num_five(p)
       enddo
 !
       call mpialltoallint(rdispls, 1, pdispls, 1, mpicom)
@@ -4254,13 +4298,13 @@ logical function phys_grid_initialized ()
       cbuf_siz = record_size*chunk_buf_nrecs_five
       if ( present(window) ) then
          call altalltoallv(lopt, iam, npes,    &
-                           dp_coup_steps, dp_coup_proc, &
+                           dp_coup_steps_five, dp_coup_proc_five, &
                            chunk_buffer, cbuf_siz, sndcnts, sdispls, mpir8, &
                            block_buffer, bbuf_siz, rcvcnts, rdispls, mpir8, &
                            msgtag, pdispls, mpir8, window, mpicom)
       else
          call altalltoallv(lopt, iam, npes,    &
-                           dp_coup_steps, dp_coup_proc, &
+                           dp_coup_steps_five, dp_coup_proc_five, &
                            chunk_buffer, cbuf_siz, sndcnts, sdispls, mpir8, &
                            block_buffer, bbuf_siz, rcvcnts, rdispls, mpir8, &
                            msgtag, pdispls, mpir8, lwindow, mpicom)

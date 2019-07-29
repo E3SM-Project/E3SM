@@ -441,7 +441,6 @@ CONTAINS
         do ie = 1,nelemd
           if (fv_nphys > 0) then
             ncols = nphys_sq
-	    write(*,*) 'WARNINGWENTTOFV'
           else
             ncols = elem(ie)%idxP%NumUniquePts
           end if
