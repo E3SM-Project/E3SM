@@ -696,7 +696,8 @@ else ifeq ($(NETCDF_SEPARATE), TRUE)
   # NETCDF_Fortran_DIR points to the separate
   # installation of Fortran NetCDF for PIO
   CMAKE_OPTS += -D NetCDF_C_PATH:PATH=$(NETCDF_C_PATH) \
-                -D NetCDF_Fortran_PATH:PATH=$(NETCDF_FORTRAN_PATH)
+                -D NetCDF_Fortran_PATH:PATH=$(NETCDF_FORTRAN_PATH) \
+								-D NetCDF_PATH:PATH=$(NETCDF_PATH)
 endif
 
 ifdef HDF5_PATH

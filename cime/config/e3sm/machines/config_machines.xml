@@ -3158,13 +3158,13 @@
       <!-- mpi lib settings -->
       <!-- Sometimes,same versions of libraries are not available for different compilers, hence the split below -->
       <modules compiler="ibm" mpilib="!mpi-serial">
-	    <command name="load">spectrum-mpi/10.3.0.0-20190419</command>
+        <command name="load">spectrum-mpi/10.3.0.1-20190611</command>
       </modules>
       <modules compiler="pgi.*" mpilib="!mpi-serial">
-	    <command name="load">spectrum-mpi/10.3.0.0-20190419</command>
+        <command name="load">spectrum-mpi/10.3.0.1-20190611</command>
       </modules>
       <modules compiler="gnu" mpilib="!mpi-serial">
-	    <command name="load">spectrum-mpi/10.3.0.0-20190419</command>
+        <command name="load">spectrum-mpi/10.3.0.1-20190611</command>
       </modules>
 
       <modules>
