@@ -26,11 +26,13 @@ void AtmosphereDriver::initialize (const Comm& atm_comm,
   const std::string& gm_type = gm_params.get<std::string>("Type");
   m_grids_manager = GridsManagerFactory::instance().create(gm_type,m_atm_comm,gm_params);
 
-  // Tell the grid manager to build all the grids required by the atm processes
+  // Tell the grid manager to build all the grids required
+  // by the atm processes, as well as the reference grid
   m_grids_manager->build_grids(m_atm_process_group->get_required_grids());
 
-  // Initialize the processes
-  m_atm_process_group->set_grid(m_grids_manager);
+  // Set the grids in the processes. Do this by passing the grids manager.
+  // Each process will grab what they need
+  m_atm_process_group->set_grids(m_grids_manager);
 
   // By now, the processes should have fully built the ids of their
   // required/computed fields. Let them register them in the repo
@@ -40,6 +42,11 @@ void AtmosphereDriver::initialize (const Comm& atm_comm,
 
   // TODO: this is a good place where we can insert a DAG analysis, to make sure all
   //       processes have their dependency met.
+
+  // Note: remappers can be setup anytime after the field repo has allocated
+  //       the fields. We put it here, but there's no dependency with the
+  //       other atm process setup stages
+  m_atm_process_group->setup_remappers(m_device_field_repo);
 
   // Set all the fields in the processes needing them (before, they only had ids)
   // Input fields will be handed to the processes as const
@@ -62,6 +69,31 @@ void AtmosphereDriver::initialize (const Comm& atm_comm,
       f_it.second.get_header().get_tracking().update_time_stamp(t0);
     }
   }
+
+  // ===  Fields remapping structures === //
+  //
+  // Fields that are used by more than one process may need to
+  // be remapped. Here remap could mean a change in the layout
+  // (e.g., swapping dimensions), a change in the MPI distribution
+  // (e.g., going from a 2 ranks distribution to a 4 ranks distribution),
+  // or a change in grid (e.g. going from physics to dynamics).
+  // In any case, a field with one layout has to be copied/interpolated
+  // to a field with different layout.
+  // The driver does this by using a 'default grid'. All fields are
+  // kept up to date on the default grid, and remapped on the particular
+  // process grid on a per-need basis. In other words, the AD makes sure
+  // that upon return from an atm process run call, all its outputs
+  // are up to date on the default grid; viceversa, before passing
+  // the control to the process, it makes sure that its inputs are
+  // up to date on the atm process grid. These two checks involve
+  // a remap procedure in case the atm process does not use the
+  // default grid. In particular, outputs are copied from the process
+  // grid to the default grid, while inputs are copied from the
+  // default grid to the process grid.
+
+  // For fields that need to be used by more than one process,
+  // we need to make sure that one copy is stored on the so-called
+  // "default grid". The driver will use the 
 }
 
 void AtmosphereDriver::run (const double dt) {
@@ -81,7 +113,7 @@ void AtmosphereDriver::run (const double dt) {
     const auto& f = m_device_field_repo.get_field(id);
     const auto& ts = f.get_header().get_tracking().get_time_stamp();
     scream_require_msg(ts==m_current_ts,
-                       "Error! The time stamp of field '" + id.get_identifier() + "' has not been updated.\n"
+                       "Error! The time stamp of field '" + id.get_id_string() + "' has not been updated.\n"
                        "       Expected time stamp : " + m_current_ts.to_string() + "\n"
                        "       Field time stamp    : " + ts.to_string() + "\n");
 

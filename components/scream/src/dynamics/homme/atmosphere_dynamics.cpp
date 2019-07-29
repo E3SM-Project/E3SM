@@ -38,7 +38,7 @@ HommeDynamics::HommeDynamics (const Comm& comm,const ParameterList& /* params */
   Homme::Session::m_throw_instead_of_abort = true;
 }
 
-void HommeDynamics::set_grid(const std::shared_ptr<const GridsManager> grids_manager)
+void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_manager)
 {
   constexpr int NGP  = HOMMEXX_NP;
   constexpr int QSZ  = HOMMEXX_QSIZE_D;

@@ -30,7 +30,7 @@ public:
   // The communicator associated with this atm process
   const Comm& get_comm () const { return m_comm; }
 
-  void set_grid (const std::shared_ptr<const GridsManager> /* grids_manager */) {
+  void set_grids (const std::shared_ptr<const GridsManager> /* grids_manager */) {
     // Do nothing
   }
 
@@ -110,7 +110,7 @@ TEST_CASE("process_factory", "") {
   REQUIRE (group->get_process(1)->type()==AtmosphereProcessType::Group);
 
   // 3) The group must store two physics
-  auto group_2 = std::dynamic_pointer_cast<AtmosphereProcessGroup>(group->get_process(1));
+  auto group_2 = std::dynamic_pointer_cast<const AtmosphereProcessGroup>(group->get_process(1));
   REQUIRE (static_cast<bool>(group_2));
   REQUIRE (group_2->get_num_processes()==2);
   REQUIRE (group_2->get_process(0)->type()==AtmosphereProcessType::Physics);

@@ -44,7 +44,7 @@ public:
   const Comm& get_comm () const { return m_dynamics_comm; }
 
   // Set the grid
-  void set_grid (const std::shared_ptr<const GridsManager> grids_manager);
+  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
   // These are the three main interfaces:
   void initialize (const util::TimeStamp& t0);

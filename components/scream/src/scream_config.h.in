@@ -34,4 +34,7 @@
 // Whether fp model is strict
 #cmakedefine SCREAM_STRICT_FP
 
+// Whether SCREAM should perform sanity checks
+#cmakedefine SCREAM_DEBUG
+
 #endif // SCREAM_CONFIG_H

@@ -11,6 +11,8 @@ namespace scream {
 // E3SM, via the mct coupler.
 class SurfaceCoupling : public AtmosphereProcess {
 public:
+  using host_device_type = HostDevice;
+
   template<typename MS>
   using field_repo_type = FieldRepository<Real,MS>;
 
@@ -33,7 +35,7 @@ public:
   const Comm& get_comm () const { return m_comm; }
 
   // Get the grid from the grids manager
-  void set_grid (const std::shared_ptr<const GridsManager> grids_manager);
+  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
   // The initialization method should prepare all stuff needed to import/export from/to
   // f90 structures.

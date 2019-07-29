@@ -39,7 +39,7 @@ public:
   // The communicator associated with this atm process
   const Comm& get_comm () const { return m_comm; }
 
-  void set_grid (const std::shared_ptr<const GridsManager> grids_manager) {
+  void set_grids (const std::shared_ptr<const GridsManager> grids_manager) {
     m_grid = grids_manager->get_grid("Physics");
 
     auto num_cols = m_grid->num_dofs();

@@ -9,7 +9,7 @@ SurfaceCoupling (const Comm& comm, const ParameterList& /*params*/)
   // Grab what you need from the parameter list
 }
 
-void SurfaceCoupling::set_grid (const std::shared_ptr<const GridsManager> /* grids_manager */) {
+void SurfaceCoupling::set_grids (const std::shared_ptr<const GridsManager> /* grids_manager */) {
   // Get the grid from the grids manager.
 }
 

@@ -35,7 +35,6 @@ class AtmosphereProcess : public util::enable_shared_from_this<AtmosphereProcess
 {
 public:
   using device_type      = DefaultDevice; // may need to template class on this
-  using host_device_type = HostDevice;
 
   virtual ~AtmosphereProcess () = default;
 
@@ -54,7 +53,7 @@ public:
   // Give the grids manager to the process, so it can grab its grid
   // IMPORTANT: the process is *expected* to have valid field ids for
   //            required/computed fields once this method returns
-  virtual void set_grid (const std::shared_ptr<const GridsManager> grids_manager) = 0;
+  virtual void set_grids (const std::shared_ptr<const GridsManager> grids_manager) = 0;
 
   // These are the three main interfaces:
   //   - the initialize method sets up all the stuff the process needs to run,
