@@ -1099,10 +1099,10 @@ contains
                 enddo
              endif
           enddo
-          btofc_chk_num(p) = curcnt
+!          btofc_chk_num(p) = curcnt
           curcnt = 0
        enddo
-       chunk_buf_nrecs = glbcnt       
+!       chunk_buf_nrecs = glbcnt       
        !
        ! Precompute swap partners and number of steps in point-to-point
        ! implementations of alltoall algorithm.

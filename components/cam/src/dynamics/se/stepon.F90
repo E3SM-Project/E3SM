@@ -529,6 +529,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out)
 
 #endif   
 
+   write(*,*) 'CHECKPOINT1 '
    nphys_sq = np*np
    tsize_five = 1 ! number of FIVE variables
 
