@@ -2106,6 +2106,9 @@ contains
     if (rof_present) then
       call expose_mct_grid_moab(rof(1))
     endif
+    if (glc_present) then
+      call expose_mct_grid_moab(glc(1))
+    endif
 
 #endif
 
