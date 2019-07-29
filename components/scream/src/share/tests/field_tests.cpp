@@ -129,16 +129,19 @@ TEST_CASE("field_repo", "") {
   using Device = DefaultDevice;
 
   std::vector<FieldTag> tags1 = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::GaussPoint};
-  std::vector<FieldTag> tags2 = {FieldTag::Element, FieldTag::Component, FieldTag::VerticalLevel};
+  std::vector<FieldTag> tags2 = {FieldTag::Column};
 
   FieldIdentifier fid1("field_1", tags1);
   FieldIdentifier fid2("field_2", tags1);
+  FieldIdentifier fid3("field_2", tags2);
 
   std::vector<int> dims1 = {2, 3, 4};
   std::vector<int> dims2 = {2, 3, 3};
+  std::vector<int> dims3 = {13};
 
   fid1.set_dimensions(dims1);
   fid2.set_dimensions(dims2);
+  fid3.set_dimensions(dims3);
 
   FieldRepository<Real,Device>  repo;
 
@@ -148,6 +151,7 @@ TEST_CASE("field_repo", "") {
   repo.registration_begins();
   repo.register_field(fid1,"group_1");
   repo.register_field(fid2,"group_2");
+  repo.register_field(fid3,"group_2");
   // Should not be able to register fields to the 'state' group (it's reserved)
   REQUIRE_THROWS(repo.register_field(fid2,"state"));
   repo.registration_ends();
@@ -157,8 +161,8 @@ TEST_CASE("field_repo", "") {
 
   // Check registration is indeed closed
   REQUIRE (repo.repository_state()==RepoState::Closed);
-  REQUIRE (repo.size()==1);
-  REQUIRE (repo.internal_size()==2);
+  REQUIRE (repo.size()==2);
+  REQUIRE (repo.internal_size()==3);
 
   auto f1 = repo.get_field(fid1);
   auto f2 = repo.get_field(fid2);

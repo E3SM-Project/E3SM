@@ -47,7 +47,7 @@ public:
   const std::string&  get_grid_name () const { return m_grid_name; }
 
   // The identifier string
-  const std::string& get_identifier () const { return m_identifier; }
+  const std::string& get_id_string () const { return m_identifier; }
 
   // ----- Setters ----- //
 

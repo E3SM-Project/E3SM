@@ -139,7 +139,7 @@ template<typename RequestedValueType>
 void FieldRepository<ScalarType,Device>::
 register_field (const identifier_type& id, const std::set<std::string>& groups_names) {
 
-  // Check that ScalarOrPackType is indeed ScalarType or Pack<ScalarType,N>, for some N>0.
+  // Check that the requested value type is either ScalarType or Pack<ScalarType,N>, for some N>0.
   static_assert(std::is_same<ScalarType,RequestedValueType>::value ||
                 std::is_same<ScalarType,typename util::ScalarProperties<RequestedValueType>::scalar_type>::value,
                 "Error! The template argument 'RequestedValueType' of this function must either match "

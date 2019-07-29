@@ -28,20 +28,23 @@ template<typename ScalarType, typename Device>
 class Field {
 public:
 
+  using value_type           = ScalarType;
   using device_type          = Device;
-  using view_type            = typename KokkosTypes<device_type>::template view<ScalarType*>;
-  using value_type           = typename view_type::traits::value_type;
-  using const_value_type     = typename view_type::traits::const_value_type;
-  using non_const_value_type = typename view_type::traits::non_const_value_type;
-  using const_field_type     = Field<const_value_type, device_type>;
   using header_type          = FieldHeader;
   using identifier_type      = header_type::identifier_type;
+  using view_type            = typename KokkosTypes<device_type>::template view<value_type*>;
+  using const_value_type     = typename std::add_const<value_type>::type;
+  using non_const_value_type = typename std::remove_const<value_type>::type;
+
+  using field_type           = Field<value_type, device_type>;
+  using const_field_type     = Field<const_value_type, device_type>;
+  using nonconst_field_type  = Field<non_const_value_type, device_type>;
 
   // Statically check that ScalarType is not an array.
   static_assert(view_type::Rank==1, "Error! ScalarType should not be an array type.\n");
 
   // Constructor(s)
-  Field () = delete;
+  Field () = default;
   explicit Field (const identifier_type& id);
 
   // This constructor allows const->const, nonconst->nonconst, and nonconst->const copies
@@ -124,7 +127,7 @@ Field<ScalarType,Device>&
 Field<ScalarType,Device>::
 operator= (const Field<SrcScalarType,Device>& src) {
 
-  using src_field_type = decltype(src);
+  using src_field_type = typename std::remove_reference<decltype(src)>::type;
 #ifndef CUDA_BUILD // TODO Figure out why nvcc isn't like this bit of code.
   // Check that underlying value type
   static_assert(std::is_same<non_const_value_type,
@@ -136,7 +139,20 @@ operator= (const Field<SrcScalarType,Device>& src) {
                 std::is_same<typename src_field_type::value_type,non_const_value_type>::value,
                 "Error! Cannot create a nonconst field from a const field.\n");
 #endif
-  if (&src!=*this) {
+
+  // If the field has a valid header, we only allow assignment of fields with
+  // the *same* identifier.
+  scream_require_msg(m_header->get_identifier().get_id_string()=="" ||
+                     m_header->get_identifier()==src.get_header().get_identifier(),
+                     "Error! Assignment of fields with different (and non-null) identifiers is prohibited.\n");
+
+  // Since the type of *this and src may be different, we cannot do the usual
+  // `if (this!=&src)`, cause the compiler cannot compare those pointers.
+  // Therefore, we compare the stored pointers. Note that we don't compare
+  // the 'm_allocated' member, cause its superfluous.
+  // If either header or view are different, we copy everything
+  if (m_header!=src.get_header_ptr() ||
+      m_view!=src.get_view()) {
     m_header    = src.get_header_ptr();
     m_view      = src.get_view();
     m_allocated = src.is_allocated();

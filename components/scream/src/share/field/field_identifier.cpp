@@ -73,12 +73,12 @@ void FieldIdentifier::update_identifier () {
 // Free functions for identifiers comparison
 bool operator== (const FieldIdentifier& fid1, const FieldIdentifier& fid2) {
   // Simply compare the identifiers
-  return (fid1.get_identifier()==fid2.get_identifier());
+  return (fid1.get_id_string()==fid2.get_id_string());
 }
 
 bool operator< (const FieldIdentifier& fid1, const FieldIdentifier& fid2) {
   // Simply compare the identifiers
-  return (fid1.get_identifier()<fid2.get_identifier());
+  return (fid1.get_id_string()<fid2.get_id_string());
 }
 
 } // namespace scream
