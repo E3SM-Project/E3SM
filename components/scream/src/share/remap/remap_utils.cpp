@@ -111,4 +111,21 @@ LayoutType get_layout_type (const FieldLayout& layout) {
   return result;
 }
 
+GridType get_grid_type (const FieldLayout& layout) {
+  const int n_element = count(layout.tags(),FieldTag::Element);
+  const int n_column  = count(layout.tags(),FieldTag::Column);
+  const int ngp = count(layout.tags(),FieldTag::GaussPoint);
+
+  if (n_element>0 && ngp==2 && n_column==0) {
+    // A Dynamics layout
+    return GridType::Dynamics;
+  }
+  if (n_element==0 && ngp==0 && n_column>0) {
+    // A Physics layout
+    return GridType::Physics;
+  }
+  // Not a supported layout.
+  return GridType::Undefined;
+}
+
 } // namespace scream

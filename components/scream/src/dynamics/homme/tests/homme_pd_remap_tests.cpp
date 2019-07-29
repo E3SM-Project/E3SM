@@ -324,7 +324,7 @@ TEST_CASE("remap", "") {
 
     // Build the remapper, and register the fields
     std::unique_ptr<Remapper> remapper(new Remapper(phys_grid,dyn_grid));
-    remapper->set_num_fields(4);  // scalar and vector, 2d and 3d.
+    remapper->registration_begins();
     remapper->register_field(scalar_2d_field_in, scalar_2d_field_out);
     remapper->register_field(vector_2d_field_in, vector_2d_field_out);
     remapper->register_field(scalar_3d_field_in, scalar_3d_field_out);
@@ -477,7 +477,7 @@ TEST_CASE("remap", "") {
 
     // Build the remapper, and register the fields
     std::unique_ptr<Remapper> remapper(new Remapper(phys_grid,dyn_grid));
-    remapper->set_num_fields(4);  // scalar and vector, 2d and 3d.
+    remapper->registration_begins();
     remapper->register_field(scalar_2d_field_out, scalar_2d_field_in);
     remapper->register_field(vector_2d_field_out, vector_2d_field_in);
     remapper->register_field(scalar_3d_field_out, scalar_3d_field_in);

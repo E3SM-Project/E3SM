@@ -2,11 +2,10 @@
 #define SCREAM_REMAP_UTILS_HPP
 
 #include "share/field/field_layout.hpp"
+#include "share/grid/grid_utils.hpp"
 
 namespace scream
 {
-
-class Comm;
 
 // The type of the layout, that is, the kind of field it represent.
 // Note: the following example of layouts are only indicative. The actual tags
@@ -25,6 +24,8 @@ enum class LayoutType {
 };
 
 LayoutType get_layout_type (const FieldLayout& layout);
+
+GridType get_grid_type (const FieldLayout& layout);
 
 } // namespace scream
 

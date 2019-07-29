@@ -69,17 +69,21 @@ public:
 
   ~PhysicsDynamicsRemapper () = default;
 
+  FieldLayout create_src_layout (const FieldLayout& tgt_layout) const override;
+  FieldLayout create_tgt_layout (const FieldLayout& src_layout) const override;
+
 protected:
 
-  const layout_type& do_get_src_layout (const int ifield) const {
-    return m_phys[ifield].get_header().get_identifier().get_layout();
+  const identifier_type& do_get_src_field_id (const int ifield) const override {
+    return m_phys[ifield].get_header().get_identifier();
   }
-  const layout_type& do_get_tgt_layout (const int ifield) const {
-    return m_dyn[ifield].get_header().get_identifier().get_layout();
+  const identifier_type& do_get_tgt_field_id (const int ifield) const override {
+    return m_dyn[ifield].get_header().get_identifier();
   }
 
-  void do_registration_start () override;
-  void do_register_field (const field_type& src, const field_type& tgt) override;
+  void do_registration_begins () override;
+  void do_register_field (const identifier_type& src, const identifier_type& tgt) override;
+  void do_bind_field (const int ifield, const field_type& src, const field_type& tgt) override;
   void do_registration_complete () override;
 
   void do_remap_fwd () const override;
@@ -107,35 +111,103 @@ public:
 // ================= IMPLEMENTATION ================= //
 
 template<typename ScalarType, typename DeviceType>
-void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
-do_registration_start ()
-{
-  m_phys.reserve(this->get_num_fields());
-  m_dyn.reserve(this->get_num_fields());
+FieldLayout PhysicsDynamicsRemapper<ScalarType,DeviceType>::
+create_src_layout (const FieldLayout& tgt_layout) const {
+  scream_require_msg (get_grid_type(tgt_layout)==GridType::Dynamics,
+                      "Error! Input field identifier has a layout that does not seem to be of a Dynamics grid.\n");
+  auto tags = tgt_layout.tags();
+  auto dims = tgt_layout.dims();
+
+  // Element is the first tag. Replace it with 'Column'.
+  // Set extent to the number of columns
+  tags[0] = FieldTag::Column;
+  dims[0] = this->m_src_grid->num_dofs();
+
+  // Find the position of the 1st GaussPoint tag. Delete it.
+  auto it = util::find(tags,FieldTag::GaussPoint);
+  auto pos = std::distance(tags.cbegin(),it);
+  tags.erase(it);
+  dims.erase(dims.begin()+pos);
+
+  // Find the position of the 2nd GaussPoint tag. Delete it.
+  it = util::find(tags,FieldTag::GaussPoint);
+  pos = std::distance(tags.cbegin(),it);
+  tags.erase(it);
+  dims.erase(dims.begin()+pos);
+
+  return FieldLayout(tags,dims);
+}
+
+template<typename ScalarType, typename DeviceType>
+FieldLayout PhysicsDynamicsRemapper<ScalarType,DeviceType>::
+create_tgt_layout (const FieldLayout& src_layout) const {
+  // This is a bit more complicated, since the position of the GP is different for 2d and 3d
+
+  scream_require_msg (get_grid_type(src_layout)==GridType::Dynamics,
+                      "Error! Input field identifier has a layout that does not seem to be of a Dynamics grid.\n");
+  auto lt = get_layout_type(src_layout);
+  auto tags_in = src_layout.tags();
+  auto dims_in = src_layout.dims();
+
+  int size_in = tags_in.size();
+  std::vector<FieldTag> tags_out(size_in+2);
+  std::vector<int>      dims_out(size_in+2);
+
+  // The first tag is 'Column'. Replace with 'Element'.
+  // Set the extent to the number of elements
+  tags_out[0] = FieldTag::Element;
+  dims_out[0] = this->m_tgt_grid->num_dofs() / (NP*NP);
+  switch (lt) {
+    case LayoutType::Scalar2D: // Fallthrough
+    case LayoutType::Vector2D: // Fallthrough
+    case LayoutType::Tensor2D:
+      // On input, we have [Column,...], on output we have [Element,...,GP,GP]
+      for (int i=0; i<size_in-1; ++i) {
+        tags_out[i+1] = tags_in[i+1];
+        dims_out[i+1] = dims_in[i+1];
+      }
+      tags_out[size_in] = tags_out[size_in+1] = FieldTag::GaussPoint;
+      dims_out[size_in] = dims_out[size_in+1] = NP;
+    case LayoutType::Scalar3D: // Fallthrough
+    case LayoutType::Vector3D: // Fallthrough
+    case LayoutType::Tensor3D:
+      // On input, we have [Column,...,VerticalLevel], on output we have [Element,...,GP,GP,VerticalLevel]
+      for (int i=0; i<size_in-2; ++i) {
+        tags_out[i+1] = tags_in[i+1];
+        dims_out[i+1] = dims_in[i+1];
+      }
+      tags_out[size_in-1] = tags_out[size_in] = FieldTag::GaussPoint;
+      dims_out[size_in-1] = dims_out[size_in] = NP;
+      tags_out[size_in+1] = FieldTag::VerticalLevel;
+      dims_out[size_in+1] = dims_in[size_in-1];
+    default:
+      scream_require_msg(false, "Error! This un-handled case is unexpected. Please, contact developers.\n");
+  }
+  return FieldLayout(tags_out,dims_out);
 }
 
 template<typename ScalarType, typename DeviceType>
 void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
-do_register_field (const field_type& src, const field_type& tgt)
+do_registration_begins ()
 {
-  error::runtime_check(static_cast<int>(m_phys.size())<this->get_num_fields(),
-                       "Error! You already registered " + std::to_string(m_phys.size()) + " fields. \n"
-                       "       Did you call 'set_num_fields' with the wrong input (" + std::to_string(this->get_num_fields()) + ")?\n");
-  error::runtime_check(src.is_allocated(), "Error! Physics field is not yet allocated.\n");
-  error::runtime_check(tgt.is_allocated(), "Error! Dynamics field is not yet allocated.\n");
+  m_phys.reserve(this->m_num_fields);
+  m_dyn.reserve(this->m_num_fields);
+}
 
+template<typename ScalarType, typename DeviceType>
+void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
+do_register_field (const identifier_type& src, const identifier_type& tgt)
+{
+  m_phys.push_back(field_type(src));
+  m_dyn.push_back(field_type(tgt));
+}
 
-  const auto phys_grid_name = src.get_header().get_identifier().get_grid_name();
-  const auto dyn_grid_name  = tgt.get_header().get_identifier().get_grid_name();
-  const auto plt = get_layout_type(src.get_header().get_identifier().get_layout());
-  const auto dlt = get_layout_type(tgt.get_header().get_identifier().get_layout());
-
-  error::runtime_check(phys_grid_name==this->m_src_grid->name(), "Error! Source field does not have a Physics grid.\n");
-  error::runtime_check(dyn_grid_name==this->m_tgt_grid->name(), "Error! Target field does not have a Dynamics grid.\n");
-  error::runtime_check(dlt==plt, "Error! Source and target layouts do not match.\n");
-
-  m_phys.push_back(src);
-  m_dyn.push_back(tgt);
+template<typename ScalarType, typename DeviceType>
+void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
+do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
+{
+  m_phys[ifield] = src;
+  m_dyn[ifield] = tgt;
 }
 
 template<typename ScalarType, typename DeviceType>
@@ -150,7 +222,7 @@ do_registration_complete ()
 
   int num_2d = 0;
   int num_3d = 0;
-  for (int i=0; i<this->get_num_fields(); ++i) {
+  for (int i=0; i<this->m_num_registered_fields; ++i) {
     const auto& layout = m_dyn[i].get_header().get_identifier().get_layout();
     const auto lt = get_layout_type(layout);
     switch (lt) {
@@ -178,7 +250,7 @@ do_registration_complete ()
   }
 
   m_be->set_num_fields(0,num_2d,num_3d);
-  for (int i=0; i<this->get_num_fields(); ++i) {
+  for (int i=0; i<this->m_num_registered_fields; ++i) {
     const auto& layout = m_dyn[i].get_header().get_identifier().get_layout();
     const auto& dims = layout.dims();
     const auto lt = get_layout_type(layout);
