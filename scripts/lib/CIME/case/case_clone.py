@@ -126,6 +126,14 @@ def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None,
                         os.path.join(newcaseroot, casesub),
                         symlinks=True)
 
+    # copy the postprocessing directory if it exists
+    if os.path.isdir(os.path.join(cloneroot, "postprocess")):
+        shutil.copytree(os.path.join(cloneroot, "postprocess"),
+                        os.path.join(newcaseroot, "postprocess"),
+                        symlinks=True)
+
+
+
     # lock env_case.xml in new case
     lock_file("env_case.xml", newcaseroot)
 

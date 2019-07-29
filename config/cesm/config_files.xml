@@ -51,6 +51,15 @@
     <schema>$CIMEROOT/config/xml_schemas/config_batch.xsd</schema>
   </entry>
 
+  <entry id="WORKFLOW_SPEC_FILE">
+    <type>char</type>
+    <default_value>$CIMEROOT/config/$MODEL/machines/config_workflow.xml</default_value>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>file containing workflow (for documentation only - DO NOT EDIT)</desc>
+    <schema>$CIMEROOT/config/xml_schemas/config_workflow.xsd</schema>
+  </entry>
+
   <entry id="INPUTDATA_SPEC_FILE">
     <type>char</type>
     <default_value>$CIMEROOT/config/$MODEL/config_inputdata.xml</default_value>
@@ -125,6 +134,7 @@
     <default_value>unset</default_value>
     <values>
       <value component="pop"      >$SRCROOT/components/pop/</value>
+      <value component="nemo"    >$SRCROOT/components/nemo/</value>
       <value component="docn"      >$CIMEROOT/src/components/data_comps/docn</value>
       <value component="socn"      >$CIMEROOT/src/components/stub_comps/socn</value>
       <value component="xocn"      >$CIMEROOT/src/components/xcpl_comps/xocn</value>
@@ -235,6 +245,7 @@
       <value component="clm"      >$COMP_ROOT_DIR_LND/cime_config/config_compsets.xml</value>
       <value component="cice"     >$COMP_ROOT_DIR_ICE/cime_config/config_compsets.xml</value>
       <value component="pop"      >$COMP_ROOT_DIR_OCN/cime_config/config_compsets.xml</value>
+      <value component="nemo"   >$COMP_ROOT_DIR_OCN/cime_config/config_compsets.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -253,6 +264,7 @@
       <value component="clm"      >$COMP_ROOT_DIR_LND/cime_config/config_pes.xml</value>
       <value component="cice"     >$COMP_ROOT_DIR_ICE/cime_config/config_pes.xml</value>
       <value component="pop"      >$COMP_ROOT_DIR_OCN/cime_config/config_pes.xml</value>
+      <value component="nemo"   >$COMP_ROOT_DIR_OCN/cime_config/config_pes.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -278,6 +290,7 @@
       <value component="clm"      >$COMP_ROOT_DIR_LND/cime_config/config_archive.xml</value>
       <value component="cice"     >$COMP_ROOT_DIR_ICE/cime_config/config_archive.xml</value>
       <value component="pop"      >$COMP_ROOT_DIR_OCN/cime_config/config_archive.xml</value>
+      <value component="nemo"   >$COMP_ROOT_DIR_OCN/cime_config/config_archive.xml</value>
       <value component="rtm"      >$COMP_ROOT_DIR_ROF/cime_config/config_archive.xml</value>
       <value component="mosart"   >$COMP_ROOT_DIR_ROF/cime_config/config_archive.xml</value>
     </values>
@@ -294,6 +307,7 @@
       <value component="clm">$COMP_ROOT_DIR_LND/cime_config/SystemTests</value>
       <value component="cam">$COMP_ROOT_DIR_ATM/cime_config/SystemTests</value>
       <value component="pop">$COMP_ROOT_DIR_OCN/cime_config/SystemTests</value>
+      <value component="nemo">$COMP_ROOT_DIR_OCN/cime_config/SystemTests</value>
       <value component="cice">$COMP_ROOT_DIR_ICE/cime_config/SystemTests</value>
       <value component="cism">$COMP_ROOT_DIR_GLC/cime_config/SystemTests</value>
       <value component="rtm">$COMP_ROOT_DIR_ROF/cime_config/SystemTests</value>
@@ -315,6 +329,7 @@
       <value component="clm"      >$COMP_ROOT_DIR_LND/cime_config/testdefs/testlist_clm.xml</value>
       <value component="cice"     >$COMP_ROOT_DIR_ICE/cime_config/testdefs/testlist_cice.xml</value>
       <value component="pop"      >$COMP_ROOT_DIR_OCN/cime_config/testdefs/testlist_pop.xml</value>
+      <value component="nemo"   >$COMP_ROOT_DIR_OCN/cime_config/testdefs/testlist_nemo.xml</value>
       <value component="rtm"      >$COMP_ROOT_DIR_ROF/cime_config/testdefs/testlist_rtm.xml</value>
       <value component="mosart"   >$COMP_ROOT_DIR_ROF/cime_config/testdefs/testlist_mosart.xml</value>
     </values>
@@ -337,6 +352,7 @@
       <value component="rtm"      >$COMP_ROOT_DIR_ROF/cime_config/testdefs/testmods_dirs</value>
       <value component="mosart"   >$COMP_ROOT_DIR_ROF/cime_config/testdefs/testmods_dirs</value>
       <value component="pop"      >$COMP_ROOT_DIR_OCN/cime_config/testdefs/testmods_dirs</value>
+      <value component="nemo"   >$COMP_ROOT_DIR_OCN/cime_config/testdefs/testmods_dirs</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -356,6 +372,7 @@
       <value component="rtm"      >$COMP_ROOT_DIR_ROF/cime_config/usermods_dirs</value>
       <value component="mosart"   >$COMP_ROOT_DIR_ROF/cime_config/usermods_dirs</value>
       <value component="pop"      >$COMP_ROOT_DIR_OCN/cime_config/usermods_dirs</value>
+      <value component="nemo"   >$COMP_ROOT_DIR_OCN/cime_config/usermods_dirs</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -383,6 +400,7 @@
       <value component="clm"      >$COMP_ROOT_DIR_LND/bld/namelist_files/namelist_definition_clm4_5.xml</value>
       <value component="clm"      >$COMP_ROOT_DIR_LND/bld/namelist_files/namelist_definition_clm4_0.xml</value>
       <value component="pop"      >$COMP_ROOT_DIR_OCN/bld/namelist_files/namelist_definition_pop.xml</value>
+      <value component="nemo"   >$COMP_ROOT_DIR_OCN/bld/namelist_files/namelist_definition_nemo.xml</value>
       -->
     </values>
     <group>case_last</group>

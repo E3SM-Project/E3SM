@@ -22,6 +22,7 @@ from CIME.XML.component             import Component
 from CIME.XML.compsets              import Compsets
 from CIME.XML.grids                 import Grids
 from CIME.XML.batch                 import Batch
+from CIME.XML.workflow              import Workflow
 from CIME.XML.pio                   import PIO
 from CIME.XML.archive               import Archive
 from CIME.XML.env_test              import EnvTest
@@ -32,6 +33,7 @@ from CIME.XML.env_build             import EnvBuild
 from CIME.XML.env_run               import EnvRun
 from CIME.XML.env_archive           import EnvArchive
 from CIME.XML.env_batch             import EnvBatch
+from CIME.XML.env_workflow          import EnvWorkflow
 from CIME.XML.generic_xml           import GenericXML
 from CIME.user_mod_support          import apply_user_mods
 from CIME.aprun import get_aprun_cmd_for_case
@@ -201,6 +203,7 @@ class Case(object):
         self._env_entryid_files.append(EnvBuild(self._caseroot, components=components))
         self._env_entryid_files.append(EnvMachPes(self._caseroot, components=components))
         self._env_entryid_files.append(EnvBatch(self._caseroot))
+        self._env_entryid_files.append(EnvWorkflow(self._caseroot))
         if os.path.isfile(os.path.join(self._caseroot,"env_test.xml")):
             self._env_entryid_files.append(EnvTest(self._caseroot, components=components))
         self._env_generic_files = []
@@ -758,7 +761,7 @@ class Case(object):
                   multi_driver=False, ninst=1, test=False,
                   walltime=None, queue=None, output_root=None,
                   run_unsupported=False, answer=None,
-                  input_dir=None, driver=None):
+                  input_dir=None, driver=None, workflow_case="default"):
 
         expect(check_name(compset_name, additional_chars='.'), "Invalid compset name {}".format(compset_name))
 
@@ -939,18 +942,19 @@ class Case(object):
 
         batch_system_type = machobj.get_value("BATCH_SYSTEM")
         logger.info("Batch_system_type is {}".format(batch_system_type))
-        batch = Batch(batch_system=batch_system_type, machine=machine_name)
-        bjobs = batch.get_batch_jobs()
+        batch = Batch(batch_system=batch_system_type, machine=machine_name, files=files)
+        workflow = Workflow(files=files)
+        bjobs = workflow.get_workflow_jobs(machine=machine_name, workflow_case=workflow_case)
+        env_workflow = self.get_env("workflow")
 
         env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
-        env_batch.create_job_groups(bjobs, test)
+        env_workflow.create_job_groups(bjobs, test)
+        env_batch.set_job_defaults(bjobs, self)
 
         if walltime:
             self.set_value("USER_REQUESTED_WALLTIME", walltime, subgroup=self.get_primary_job())
         if queue:
             self.set_value("USER_REQUESTED_QUEUE", queue, subgroup=self.get_primary_job())
-
-        env_batch.set_job_defaults(bjobs, self)
 
         # Make sure that parallel IO is not specified if total_tasks==1
         if self.total_tasks == 1:
@@ -1016,7 +1020,6 @@ class Case(object):
         except Exception as e:
             logger.warning("FAILED to set up exefiles: {}".format(str(e)))
 
-        # set up utility files in caseroot/Tools/
         toolfiles = [os.path.join(toolsdir, "check_lockedfiles"),
                      os.path.join(toolsdir, "getTiming"),
                      os.path.join(toolsdir, "save_provenance"),
@@ -1235,7 +1238,7 @@ directory, NOT in this subdirectory."""
             if not success:
                 logger.warning("Failed to kill {}".format(jobid))
 
-    def get_mpirun_cmd(self, job=None, allow_unresolved_envvars=True):
+    def get_mpirun_cmd(self, job=None, allow_unresolved_envvars=True, overrides=None):
         if job is None:
             job = self.get_primary_job()
 
@@ -1257,13 +1260,12 @@ directory, NOT in this subdirectory."""
             "queue" : self.get_value("JOB_QUEUE", subgroup=job),
             "unit_testing" : False
             }
-
-        executable, mpi_arg_list = env_mach_specific.get_mpirun(self, mpi_attribs, job)
-
+        executable, mpi_arg_list = env_mach_specific.get_mpirun(self, mpi_attribs, job, overrides=overrides)
         # special case for aprun
         if executable is not None and "aprun" in executable and not "theta" in self.get_value("MACH"):
-            aprun_args, num_nodes = get_aprun_cmd_for_case(self, run_exe)[0:2]
-            expect( (num_nodes + self.spare_nodes) == self.num_nodes, "Not using optimized num nodes")
+            aprun_args, num_nodes = get_aprun_cmd_for_case(self, run_exe, overrides=overrides)[0:2]
+            if job in ("case.run","case.test"):
+                expect( (num_nodes + self.spare_nodes) == self.num_nodes, "Not using optimized num nodes")
             return self.get_resolved_value(executable + aprun_args + " " + run_misc_suffix, allow_unresolved_envvars=allow_unresolved_envvars)
 
         else:
@@ -1324,8 +1326,9 @@ directory, NOT in this subdirectory."""
             #   called if run_unsupported is False.
             tests = Testlist(tests_spec_file, files)
             testlist = tests.get_tests(compset=compset_alias, grid=grid_name, supported_only=True)
+            test_categories = ["prealpha", "prebeta", "test_release"]
             for test in testlist:
-                if test["category"] == "prealpha" or test["category"] == "prebeta" or "aux_" in test["category"]:
+                if test["category"] in test_categories or "aux_" in test["category"]:
                     testcnt += 1
         if testcnt > 0:
             logger.warning("\n*********************************************************************************************************************************")
@@ -1363,6 +1366,8 @@ directory, NOT in this subdirectory."""
                     new_env_file = EnvMachPes(infile=xmlfile, components=components)
                 elif ftype == "env_batch.xml":
                     new_env_file = EnvBatch(infile=xmlfile)
+                elif ftype == "env_workflow.xml":
+                    new_env_file = EnvWorkflow(infile=xmlfile)
                 elif ftype == "env_test.xml":
                     new_env_file = EnvTest(infile=xmlfile)
             if new_env_file is not None:
@@ -1424,7 +1429,7 @@ directory, NOT in this subdirectory."""
                multi_driver=False, ninst=1, test=False,
                walltime=None, queue=None, output_root=None,
                run_unsupported=False, answer=None,
-               input_dir=None, driver=None):
+               input_dir=None, driver=None, workflow_case="default"):
         try:
             # Set values for env_case.xml
             self.set_lookup_value("CASE", os.path.basename(casename))
@@ -1440,7 +1445,7 @@ directory, NOT in this subdirectory."""
                            walltime=walltime, queue=queue,
                            output_root=output_root,
                            run_unsupported=run_unsupported, answer=answer,
-                           input_dir=input_dir, driver=driver)
+                           input_dir=input_dir, driver=driver, workflow_case=workflow_case)
 
             self.create_caseroot()
 

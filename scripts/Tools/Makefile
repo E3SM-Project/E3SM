@@ -161,9 +161,8 @@ ifdef CPRE
   CONTIGUOUS_FLAG := $(patsubst -D%,$(CPRE)%,$(CONTIGUOUS_FLAG))
 endif
 
-ifndef AR
-   AR := ar
-endif
+AR ?= ar
+ARFLAGS ?= -r
 
 ifdef NETCDF_C_PATH
   ifndef NETCDF_FORTRAN_PATH
@@ -543,6 +542,10 @@ ifdef LIB_MPI
    endif
 endif
 
+ifdef XIOS_PATH
+  SLIBS += -L$(XIOS_PATH)/lib -lxios -lstdc++
+endif
+
 # For compiling and linking with external ESMF.
 # If linking to external ESMF library then include esmf.mk
 # ESMF_F90COMPILEPATHS
@@ -871,7 +874,7 @@ $(EXEC_SE): $(OBJS) $(ULIBDEP) $(CSMSHARELIB) $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
 	$(LD) -o $(EXEC_SE) $(OBJS) $(CLIBS) $(ULIBS) $(SLIBS) $(MLIBS) $(LDFLAGS)
 
 $(COMPLIB): $(OBJS)
-	$(AR) -r $(COMPLIB) $(OBJS)
+	$(AR) $(ARFLAGS) $(COMPLIB) $(OBJS)
 
 .c.o:
 	$(CC) -c $(INCLDIR) $(INCS) $(CFLAGS)  $<

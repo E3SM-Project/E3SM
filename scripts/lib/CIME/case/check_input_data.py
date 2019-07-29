@@ -6,7 +6,7 @@ from CIME.utils import SharedArea, find_files, safe_copy, expect
 from CIME.XML.inputdata import Inputdata
 import CIME.Servers
 
-import glob, hashlib
+import glob, hashlib, shutil
 
 logger = logging.getLogger(__name__)
 # The inputdata_checksum.dat file will be read into this hash if it's available
@@ -132,7 +132,10 @@ def _download_if_in_repo(server, input_data_root, rel_path, isdirectory=False):
             # this is intended to prevent a race condition in which
             # one case attempts to use a refdir before another one has
             # completed the download
-            os.rename(full_path+".tmp",full_path)
+            if success:
+                os.rename(full_path+".tmp",full_path)
+            else:
+                shutil.rmtree(full_path+".tmp")
         else:
             success = server.getfile(rel_path, full_path)
     return success
@@ -208,6 +211,8 @@ def stage_refcase(self, input_data_root=None, data_list_dir=None):
 
         if os.path.isabs(run_refdir):
             refdir = run_refdir
+            expect(os.path.isdir(refdir), "Reference case directory {} does not exist or is not readable".format(refdir))
+
         else:
             refdir = os.path.join(din_loc_root, run_refdir, run_refcase, run_refdate)
             if not os.path.isdir(refdir):
@@ -228,12 +233,12 @@ def stage_refcase(self, input_data_root=None, data_list_dir=None):
         if (not os.path.exists(rundir)):
             logger.debug("Creating run directory: {}".format(rundir))
             os.makedirs(rundir)
-
+        rpointerfile = None
         # copy the refcases' rpointer files to the run directory
         for rpointerfile in glob.iglob(os.path.join("{}","*rpointer*").format(refdir)):
             logger.info("Copy rpointer {}".format(rpointerfile))
             safe_copy(rpointerfile, rundir)
-
+        expect(rpointerfile,"Reference case directory {} does not contain any rpointer files".format(refdir))
         # link everything else
 
         for rcfile in glob.iglob(os.path.join(refdir,"*")):
@@ -352,8 +357,8 @@ def verify_chksum(input_data_root, rundir, filename, isdirectory):
     For file in filename perform a chksum and compare the result to that stored in
     the local checksumfile, if isdirectory chksum all files in the directory of form *.*
     """
+    hashfile = os.path.join(rundir, local_chksum_file)
     if not chksum_hash:
-        hashfile = os.path.join(rundir, local_chksum_file)
         if not os.path.isfile(hashfile):
             expect(False, "Failed to find or download file {}".format(hashfile))
 

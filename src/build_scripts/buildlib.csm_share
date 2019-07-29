@@ -89,6 +89,9 @@ def buildlib(bldroot, installpath, caseroot):
                 ninst_comp = case.get_value("NINST_{}".format(comp))
             multiinst_cppdefs += " -DNUM_COMP_INST_{}={}".format(comp, ninst_comp)
 
+        if case.get_value("COMP_OCN") == "nemo":
+            multiinst_cppdefs += " -DNEMO_IN_CCSM "
+
         installdir = os.path.join(installpath, comp_interface,
                                   use_esmf, ninst_value)
         for ndir in ("lib", "include"):
