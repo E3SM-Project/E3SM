@@ -289,7 +289,7 @@ contains
       maxiter=mi
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
+        deriv,nets,nete,maxiter,itertol,tl)
       max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
@@ -298,7 +298,7 @@ contains
       maxiter=mi
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
+        deriv,nets,nete,maxiter,itertol,tl)
       max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
@@ -307,7 +307,7 @@ contains
       maxiter=mi
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
+        deriv,nets,nete,maxiter,itertol,tl)
       max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
@@ -316,7 +316,7 @@ contains
       maxiter=mi
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat4*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
+        deriv,nets,nete,maxiter,itertol,tl)
       max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
@@ -1700,6 +1700,12 @@ contains
 
      elem(ie)%derived%mu(:,:,1:nlev) = dpnh_dp_i(:,:,1:nlev)
 
+!#define LASTMU
+#undef LASTMU
+#ifdef LASTMU
+     dpnh_dp_i(:,:,nlevp) = dpnh_dp_i(:,:,nlev)
+#endif
+
      dp3d_i(:,:,1) = dp3d(:,:,1)
      dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
      do k=2,nlev
@@ -2198,6 +2204,8 @@ contains
 
      ! now we can compute the correct dphn_dp_i() at the surface:
      if (.not. theta_hydrostatic_mode) then
+
+#ifndef LASTMU
         ! solve for (dpnh_dp_i-1)
         dpnh_dp_i(:,:,nlevp) = 1 + (  &
              ((elem(ie)%state%v(:,:,1,nlev,np1)*elem(ie)%derived%gradphis(:,:,1) + &
@@ -2205,10 +2213,12 @@ contains
              elem(ie)%state%w_i(:,:,nlevp,np1)) / &
              (g + ( elem(ie)%derived%gradphis(:,:,1)**2 + &
              elem(ie)%derived%gradphis(:,:,2)**2)/(2*g))   )  / dt2
+#endif
       
         !save mu field at the bottom
         elem(ie)%derived%mu(:,:,nlevp) = dpnh_dp_i(:,:,nlevp)
- 
+
+#ifndef LASTMU 
         ! update solution with new dpnh_dp_i value:
         elem(ie)%state%w_i(:,:,nlevp,np1) = elem(ie)%state%w_i(:,:,nlevp,np1) +&
              scale1*dt2*g*(dpnh_dp_i(:,:,nlevp)-1)
@@ -2216,6 +2226,10 @@ contains
              scale1*dt2*(dpnh_dp_i(:,:,nlevp)-1)*elem(ie)%derived%gradphis(:,:,1)/2
         elem(ie)%state%v(:,:,2,nlev,np1) =  elem(ie)%state%v(:,:,2,nlev,np1) -&
              scale1*dt2*(dpnh_dp_i(:,:,nlevp)-1)*elem(ie)%derived%gradphis(:,:,2)/2
+#else
+        elem(ie)%state%w_i(:,:,nlevp,np1) = (elem(ie)%state%v(:,:,1,nlev,np1)*elem(ie)%derived%gradphis(:,:,1) + &
+             elem(ie)%state%v(:,:,2,nlev,np1)*elem(ie)%derived%gradphis(:,:,2))/g
+#endif
 
 #ifdef ENERGY_DIAGNOSTICS
         ! add in boundary term to T2 and S2 diagnostics:
@@ -2269,7 +2283,7 @@ contains
 !===========================================================================================================
 !===========================================================================================================
   subroutine compute_stage_value_dirk(np1,qn0,dt2,elem,hvcoord,hybrid,&
-       deriv,nets,nete,maxiter,itertol)
+       deriv,nets,nete,maxiter,itertol,tl)
   !===================================================================================
   ! this subroutine solves a stage value equation for a DIRK method which takes the form
   !
@@ -2287,7 +2301,7 @@ contains
   type (hybrid_t)      , intent(in) :: hybrid
   type (element_t)     , intent(inout), target :: elem(:)
   type (derivative_t)  , intent(in) :: deriv
-
+  type (TimeLevel_t)   , intent(in), optional            :: tl
 
   ! local
   real (kind=real_kind), pointer, dimension(:,:,:)   :: phi_np1
@@ -2438,24 +2452,76 @@ contains
 
       ! update iteration count and error measure
       itercount=itercount+1
+
+#if 1
+if((elem(ie)%globalid == 1721).and.(tl%nstep == 209810))then
+print *,'-------------------- ITERATION OF W'
+do j=1,np
+do i=1,np
+do k=1,nlev
+!print *,'witer(',itercount,',',i,',',j,',',k,')=',elem(ie)%state%w_i(i,j,k,np1),';'
+write(*,109) 'witer(',itercount,',',i,',',j,',',k,')=',elem(ie)%state%w_i(i,j,k,np1),';'
+enddo
+!print *, 'witer(',itercount,',',i,',',j,',',nlevp,')=',&
+write(*,109) 'witer(',itercount,',',i,',',j,',',nlevp,')=',&
+(elem(ie)%state%v(i,j,1,nlev,np1)*elem(ie)%derived%gradphis(i,j,1)+ &
+             elem(ie)%state%v(i,j,2,nlev,np1)*elem(ie)%derived%gradphis(i,j,2))/g,';'
+enddo
+enddo
+endif
+#endif
+109 format (A6,I2,A1,I1,A1,I1,A1,I2,A2,E23.15,A1)  !         E23.15,A2,I3,A1,E23.15,A2,I3,A1,E23.15)
+
     end do ! end do for the do while loop
 
     if (itercount >= maxiter) then
-do j=1,np
-do i=1,np
-      print *, 'elem coords lon',i,j,elem(ie)%spherep(i,j)%lon
-      print *, 'elem coords lat',i,j,elem(ie)%spherep(i,j)%lat
-enddo
-enddo
 
+!print *, 'my GID', elem(ie)%GlobalID
+!do j=1,np
+!do i=1,np
+!      print *, 'elem coords lon',i,j,elem(ie)%spherep(i,j)%lon
+!      print *, 'elem coords lat',i,j,elem(ie)%spherep(i,j)%lat
+!enddo
+!enddo
+
+!do j=1,np
+!do i=1,np
+!      print *, 'itererrtemp',i,j,itererrtemp(i,j)
+!enddo
+!enddo
+      location=maxloc(itererrtemp)
+      i=location(1); j=location(2)
+print *, 'point where max error is ', elem(ie)%spherep(i,j)%lon,elem(ie)%spherep(i,j)%lat
+
+#if 0
+!matlab friendly output
+do k=1,nlev
+      print *, 'dp(',k,')=',elem(ie)%state%dp3d(i,j,k,np1),';'
+      print *, 'tt(',k,')=',elem(ie)%state%vtheta_dp(i,j,k,np1),';'
+      print *, 'w(',k,')=',w_n0(i,j,k),';'
+enddo
+      print *,'w(',nlevp,')=',(elem(ie)%state%v(i,j,1,nlev,np1)*elem(ie)%derived%gradphis(i,j,1)+ &
+             elem(ie)%state%v(i,j,2,nlev,np1)*elem(ie)%derived%gradphis(i,j,2))/g
+do k=1,nlevp
+      print *, 'phi(',k,')=',phi_n0(i,j,k),';'
+enddo
+#endif
+
+#if 0
+print *,'-------------------- INITIAL STATE W'
 do j=1,np
 do i=1,np
-      print *, 'itererrtemp',i,j,itererrtemp(i,j)
+do k=1,nlev
+print *, 'winit(',i,',',j,',',k,')=',w_n0(i,j,k),';'
+enddo
+print *, 'winit(',i,',',j,',',nlevp,')=',&
+(elem(ie)%state%v(i,j,1,nlev,np1)*elem(ie)%derived%gradphis(i,j,1)+ &
+             elem(ie)%state%v(i,j,2,nlev,np1)*elem(ie)%derived%gradphis(i,j,2))/g,';'
 enddo
 enddo
-      location=maxloc(itererrtemp)
-print *, 'point where max error is ', elem(ie)%spherep(location(1),location(2))%lon,&
-elem(ie)%spherep(location(1),location(2))%lat
+#endif
+
+print *, 'nstep here is', tl%nstep
 
       call abortmp('Error: nonlinear solver failed b/c max iteration count was met')
     end if
