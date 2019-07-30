@@ -1,0 +1,35 @@
+#!/bin/make
+
+# Load the following modules
+#
+#  module swap PrgEnv-cray PrgEnv-pgi
+#  module load cray-netcdf cray-hdf5
+#  module load craype-accel-nvidia60
+#  module unload cray-libsci_acc
+#
+#
+# Fortran compiler command
+FC = ftn
+NCHOME =
+
+# Fortran compiler flags
+#FCFLAGS = -g -Minfo -Mbounds -Mchkptr -Mstandard -Kieee -Mchkstk -Mipa=fast,inline -acc -ta=tesla:6.5
+FCFLAGS = -g -ta=tesla:cc60,cuda9.1 -Minfo -Mbounds -Mchkptr -Mstandard -Kieee -Mchkstk                   -Mallocatable=03
+
+# Fortran .mod files, e.g. -I<include dir> if you have headers in a nonstandard directory <include dir>
+FCINCLUDE =
+
+# linker flags, e.g. -L<lib dir> if you have libraries in a nonstandard directory <lib dir>
+#LDFLAGS = -L/opt/nvidia/cudatoolkit6.5/6.5.14-1.0502.9836.8.1/lib64 -ta=tesla6.5 -lcudart_static -Bdynamic
+#LDFLAGS = -ta=tesla
+LDFLAGS =
+
+# -L/sw/squeeze-x64/netcdf_fortran-4.2.0-static-pgi15/lib -lnetcdff -L/sw/squeeze-x64/szip-2.1-static/lib -L/sw/squeeze-x64/hdf5-1.8.12-static/lib -L/sw/squeeze-x64/netcdf-4.3.1.1-static/lib -lnetcdf -lnetcdf -lhdf5_hl -lhdf5 -lsz -lz -lm -ldl
+# libraries to pass to the linker, e.g. -l<library>
+LIBS =
+
+# build directory
+BUILDDIR = build
+
+# these files will not be compiled
+#BLACKLIST = mo_gas_desc.F90
