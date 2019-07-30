@@ -66,7 +66,7 @@ char err_buffer[MPI_MAX_ERROR_STRING];
 int resultlen;
 
 /** The dimension names. */
-char dim_name[NDIM][NC_MAX_NAME + 1] = {"timestep", "x", "y"};
+char dim_name[NDIM][PIO_MAX_NAME + 1] = {"timestep", "x", "y"};
 
 /** Length of the dimensions in the sample data. */
 int dim_len[NDIM] = {NC_UNLIMITED, X_DIM_LEN, Y_DIM_LEN};
@@ -109,10 +109,10 @@ main(int argc, char **argv)
      * (serial4 and parallel4) will be in netCDF-4/HDF5
      * format. All four can be read by the netCDF library, and all
      * will contain the same contents. */
-    char filename[NUM_NETCDF_FLAVORS][NC_MAX_NAME + 1] = {"test_nc4_pnetcdf.nc",
-							  "test_nc4_classic.nc",
-							  "test_nc4_serial4.nc",
-							  "test_nc4_parallel4.nc"};
+    char filename[NUM_NETCDF_FLAVORS][PIO_MAX_NAME + 1] = {"test_nc4_pnetcdf.nc",
+                                                           "test_nc4_classic.nc",
+                                                           "test_nc4_serial4.nc",
+                                                           "test_nc4_parallel4.nc"};
 
     /** Number of processors that will do IO. In this example we
      * will do IO from all processors. */
@@ -121,9 +121,6 @@ main(int argc, char **argv)
     /** Stride in the mpi rank between io tasks. Always 1 in this
      * example. */
     int ioproc_stride = 1;
-
-    /** Number of the aggregator? Always 0 in this example. */
-    int numAggregator = 0;
 
     /** Zero based rank of first processor to be used for I/O. */
     int ioproc_start = 0;
