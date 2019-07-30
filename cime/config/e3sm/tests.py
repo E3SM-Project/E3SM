@@ -217,15 +217,9 @@ _TESTS = {
                  "SMS.ne4_ne4.FC5AV1C-L.cam-thetanh_ftype2",
                  "SMS.ne4_ne4.FC5AV1C-L.cam-thetanh_ftype4",
                  "SMS.ne4_ne4.FC5AV1C-L.cam-thetahy_sl",
-                 )
-    },
-    "eam_theta_restart" : {
-        "share"    : False,
-        "time"     : "02:00:00",
-        "tests"    : (
                  "ERS.ne4_ne4.FC5AV1C-L.cam-thetahy_ftype2",
                  "ERS.ne4_ne4.FC5AV1C-L.cam-thetanh_ftype2",
-                 )    
+                 )
     },
 
 }
