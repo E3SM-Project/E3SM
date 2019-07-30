@@ -56,7 +56,7 @@ module parallel_mod
 !    integer :: node_rank                  ! local rank in node_comm
 !    integer :: node_nprocs                ! local rank in node_comm
     logical :: masterproc                
-    logical :: dynproc                    ! Designation of a dynamics processor
+    logical :: dynproc                    ! Designation of a dynamics processor - AaronDonahue
   end type
 
 #ifdef CAM
@@ -77,6 +77,8 @@ module parallel_mod
 
 
   public :: initmp
+  public :: initmp_from_par
+  public :: init_par
   public :: haltmp
   public :: abortmp
   public :: syncmp
@@ -109,28 +111,20 @@ contains
 !  Initializes the parallel (message passing)
 !  environment, returns a parallel_t structure..
 ! ================================================
-     
-  function initmp(npes_in,npes_stride) result(par)
+
+  subroutine init_par(par,npes_in,npes_stride)
 #ifdef CAM
     use spmd_utils, only : mpicom
 #endif      
     integer, intent(in), optional ::  npes_in
     integer, intent(in), optional ::  npes_stride
-    type (parallel_t) par
+    type(parallel_t), intent(out) ::  par
 
 #ifdef _MPI
-
 #include <mpif.h>
 
-    integer(kind=int_kind)                              :: ierr,tmp_min,tmp_max
-    integer(kind=int_kind)                              :: FrameNumber
+    integer(kind=int_kind)                              :: ierr
     logical :: running   ! state of MPI at beginning of initmp call
-    character(len=MPI_MAX_PROCESSOR_NAME)               :: my_name
-    character(len=MPI_MAX_PROCESSOR_NAME), allocatable  :: the_names(:)
-
-    integer(kind=int_kind),allocatable                  :: tarray(:)
-    integer(kind=int_kind)                              :: namelen,i
-    integer :: node_color
 #ifdef CAM
     integer :: color = 1
     integer :: iam_cam, npes_cam
@@ -176,7 +170,26 @@ contains
     if(par%rank .eq. par%root) par%masterproc = .TRUE.
     if (par%masterproc) write(iulog,*)'number of MPI processes: ',par%nprocs
     if (par%masterproc) write(iulog,*)'MPI processors stride: ',npes_cam_stride
+#else
+    par%root          =  0
+    par%rank          =  0
+    par%nprocs        =  1
+    par%comm          = -1
+    par%masterproc    = .TRUE.
+#endif
+  end subroutine init_par
+
+  subroutine initmp_from_par(par)
+    type (parallel_t),intent(in):: par
+    character(len=MPI_MAX_PROCESSOR_NAME)               :: my_name
+    character(len=MPI_MAX_PROCESSOR_NAME), allocatable  :: the_names(:)
+    integer(kind=int_kind),allocatable                  :: tarray(:)
+    integer(kind=int_kind)                              :: namelen,i
+    integer(kind=int_kind)                              :: ierr,tmp_min,tmp_max
+    integer :: node_color
            
+#ifdef _MPI
+#include <mpif.h>
     if (MPI_DOUBLE_PRECISION==20 .and. MPI_REAL8==18) then
        ! LAM MPI defined MPI_REAL8 differently from MPI_DOUBLE_PRECISION
        ! and LAM MPI's allreduce does not accept on MPI_REAL8
@@ -184,12 +197,6 @@ contains
     else
        MPIreal_t    = MPI_REAL8
     endif
-
-    ! this type is only to use mpi_minloc and mpi_maxloc in print_state()
-    ! on a machine where MPIreal_t != MPI_DOUBLE_PRECISION there will be
-    ! truncation in calls with maxloc, minloc and loss of reproducibility
-    MPI2real_t   = MPI_2DOUBLE_PRECISION
-
     MPIinteger_t = MPI_INTEGER
     MPIchar_t    = MPI_CHARACTER 
     MPILogical_t = MPI_LOGICAL
@@ -252,11 +259,6 @@ contains
     deallocate(the_names)
  
 #else
-    par%root          =  0 
-    par%rank          =  0
-    par%nprocs        =  1
-    par%comm          = -1
-    par%masterproc    = .TRUE.
     nmpi_per_node     =  2
     PartitionForNodes = .TRUE.
 #endif
@@ -264,6 +266,17 @@ contains
     !  Kind of lame but set this variable to be 1 based 
     !===================================================
     iam = par%rank+1
+
+  end subroutine initmp_from_par
+
+  function initmp(npes_in,npes_stride) result(par)
+    integer, intent(in), optional ::  npes_in
+    integer, intent(in), optional ::  npes_stride
+    type (parallel_t) par
+
+    call init_par(par,npes_in,npes_stride)
+
+    call initmp_from_par(par)
 
   end function initmp
 
