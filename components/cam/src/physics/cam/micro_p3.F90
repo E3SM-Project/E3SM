@@ -901,11 +901,6 @@ contains
           dv,mu,sc,mu_r(i,k),lamr(i,k),cdistr(i,k),cdist(i,k),qr_incld(i,k),qc_incld(i,k), &
           epsr,epsc) 
  
-! AaronDonahue: calc_xx_aaa is no longer needed. Delete? 
-!          call calc_xx_aaa(t(i,k),t_old(i,k),qv(i,k),qv_old(i,k), &
-!          dt,dqsdt,qvs(i,k),qvi(i,k),xxls(i,k),abi,epsi_tot,epsc,epsr, &
-!          aaa,xx,dumqvi)
-
           call evaporate_sublimate_precip(qr_incld(i,k),qc_incld(i,k),nr_incld(i,k),qitot_incld(i,k), &
           lcldm(i,k),rcldm(i,k),qvs(i,k),ab,epsr,qv(i,k), &
           qrevp,nrevp)
@@ -915,7 +910,6 @@ contains
           qidep,qisub,nisub,qiberg)
 
 444       continue
-
 
           !................................................................
           ! deposition/condensation-freezing nucleation
