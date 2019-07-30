@@ -5,6 +5,7 @@
 module scream_p3_interface_mod
 
   use iso_c_binding, only: c_ptr, c_f_pointer, c_int, c_double, c_bool,C_NULL_CHAR
+  use micro_p3_utils, only: rtype
 
   public :: p3_init_f90
   public :: p3_main_f90
@@ -100,9 +101,9 @@ contains
     real :: lambdac(pcols,pver)    !Size distribution slope parameter for radiation
 
     ! For rrtmg optics. specified distribution.
-    real, parameter :: dcon   = 25.e-6      ! Convective size distribution effective radius (um)
-    real, parameter :: mucon  = 5.3         ! Convective size distribution shape parameter
-    real, parameter :: deicon = 50.         ! Convective ice effective diameter (um)
+    real, parameter :: dcon   = 25.e-6_rtype      ! Convective size distribution effective radius (um)
+    real, parameter :: mucon  = 5.3_rtype         ! Convective size distribution shape parameter
+    real, parameter :: deicon = 50._rtype         ! Convective ice effective diameter (um)
 
     integer :: icol, k, ncol
 
@@ -110,7 +111,7 @@ contains
     logical :: log_predictNc = .true.
 
     ncol = pcols
-    dtime = 600.0
+    dtime = 600.0_rtype
 
     ! DEAL WITH SSAT
     !==============
@@ -120,18 +121,18 @@ contains
     !(as we will set it initially), ssat is overwritten rather than used by p3.
     !Thus it shouldn't matter what ssat is, so we give it -999.
 
-    ssat(:,:) = -999.0
+    ssat(:,:) = -999.0_rtype
 
     ! COMPUTE GEOMETRIC THICKNESS OF GRID
     !==============
-    exner(:ncol,:pver) = 1.0!1._rtype/((state%pmid(:ncol,:pver)*1.e-5_rtype)**(rair*inv_cp))
+    exner(:ncol,:pver) = 1.0_rtype!1._rtype/((state%pmid(:ncol,:pver)*1.e-5_rtype)**(rair*inv_cp))
     do icol = 1,ncol
        do k = 1,pver
 ! Note: dzq is calculated in the opposite direction that pdel is calculated,
 ! thus when considering any dp/dz calculation we must also change the sign.
-          dzq(icol,k) = 1.0   !state%zi(icol,k) - state%zi(icol,k+1)
-          th(icol,k)  = 270.0 !state%t(icol,k)*exner(icol,k) !/(state%pmid(icol,k)*1.e-5)**(rd*inv_cp) 
-          pdel(icol,k)  = 100.0 ! should be changed to come from model state.
+          dzq(icol,k) = 1.0_rtype   !state%zi(icol,k) - state%zi(icol,k+1)
+          th(icol,k)  = 270.0_rtype !state%t(icol,k)*exner(icol,k) !/(state%pmid(icol,k)*1.e-5)**(rd*inv_cp) 
+          pdel(icol,k)  = 100.0_rtype ! should be changed to come from model state.
        end do
     end do
 
@@ -143,28 +144,28 @@ contains
     !is created by copying the whole state. It is much cheaper to just copy the 
     !variables we need. 
     
-    cldliq  = 1.0e-6!state%q(:,:,ixcldliq)
-    numliq  = 1.0e6!state%q(:,:,ixnumliq)
-    rain    = 1.0e-5!state%q(:,:,ixrain)
-    numrain = 1.0e5!state%q(:,:,ixnumrain)
-    qv      = 1.0e-4!state%q(:,:,1)
-    ice     = 1.0e-7!state%q(:,:,ixcldice)
-    qirim   = 1.0e-8!state%q(:,:,ixcldrim) !Aaron, changed ixqirim to ixcldrim to match Kai's code
-    numice  = 1.0e5!state%q(:,:,ixnumice)
-    rimvol  = 1.0e4!state%q(:,:,ixrimvol)
+    cldliq  = 1.0e-6_rtype!state%q(:,:,ixcldliq)
+    numliq  = 1.0e6_rtype!state%q(:,:,ixnumliq)
+    rain    = 1.0e-5_rtype!state%q(:,:,ixrain)
+    numrain = 1.0e5_rtype!state%q(:,:,ixnumrain)
+    qv      = 1.0e-4_rtype!state%q(:,:,1)
+    ice     = 1.0e-7_rtype!state%q(:,:,ixcldice)
+    qirim   = 1.0e-8_rtype!state%q(:,:,ixcldrim) !Aaron, changed ixqirim to ixcldrim to match Kai's code
+    numice  = 1.0e5_rtype!state%q(:,:,ixnumice)
+    rimvol  = 1.0e4_rtype!state%q(:,:,ixrimvol)
     its     = 1
     ite     = ncol
     kts     = 1
     kte     = pver
-    pres    = 1.0!state%pmid(:,:)
+    pres    = 1.0_rtype!state%pmid(:,:)
     ! Initialize the raidation dependent variables.
     mu      = mucon
-    lambdac = (mucon + 1.)/dcon
+    lambdac = (mucon + 1._rtype)/dcon
     dei     = deicon
     ! Determine the cloud fraction and precip cover
-    icldm(:,:) = 1.0
-    lcldm(:,:) = 1.0
-    rcldm(:,:) = 1.0
+    icldm(:,:) = 1.0_rtype
+    lcldm(:,:) = 1.0_rtype
+    rcldm(:,:) = 1.0_rtype
     ! CALL P3
     !==============
     call p3_main( &

@@ -19,6 +19,7 @@ void P3Microphysics::set_grid(const std::shared_ptr<const GridsManager> grids_ma
 {
 
   constexpr int NVL = 72;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
+  constexpr int QSZ =  9;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
 
   auto grid = grids_manager->get_grid("Physics");
   const int num_dofs = grid->num_dofs();
@@ -26,13 +27,16 @@ void P3Microphysics::set_grid(const std::shared_ptr<const GridsManager> grids_ma
 
   auto VL = FieldTag::VerticalLevel;
   auto CO = FieldTag::Column;
+  auto VR = FieldTag::Variable;
 
-  FieldLayout scalar3d_layout { {CO,VL}, {nc,NVL} };
+  FieldLayout scalar2d_layout { {CO,VL}, {nc,NVL} };
+  FieldLayout scalar3d_layout { {CO,VL,VR}, {nc,NVL,QSZ} };
 
   // set requirements
-  m_required_fields.emplace("P3_req_test",  scalar3d_layout, "Physics");
+  m_required_fields.emplace("P3_req_test",  scalar2d_layout, "Physics");
+  m_required_fields.emplace("q",            scalar3d_layout, "Physics");
   // set computed
-  m_computed_fields.emplace("P3_comq_test", scalar3d_layout, "Physics");
+  m_computed_fields.emplace("P3_comq_test", scalar2d_layout, "Physics");
 
 }
 // =========================================================================================
