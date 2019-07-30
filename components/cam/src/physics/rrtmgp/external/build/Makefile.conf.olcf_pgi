@@ -1,0 +1,19 @@
+#
+# PGI Fortran on Ascent/Summit
+#
+# Fortran compiler command
+export FC = mpif90
+
+# Fortran compiler flags
+#
+# NOTE: There is a bug in the PGI OpenACC implementation related to optimization
+# and C-compatible logical types (c_bool). The temporary workaround (until the
+# compiler bug is fixed) is to compile without optimization. Alternatively, we
+# can change all variables of type logical(wl) or logical(kind=c_bool) with
+# intent(in) to intent(inout), which access memory differently. Requiring
+# building without optimization seemed like the less intrusive approach for the
+# time being though. This allows the tests to build and run, and gives the right
+# answers against baselines, but will need to be fixed before running big
+# expensive jobs probably.
+#
+export FCFLAGS = -O0 -g -ta=nvidia,cc70,ptxinfo -Minfo=accel

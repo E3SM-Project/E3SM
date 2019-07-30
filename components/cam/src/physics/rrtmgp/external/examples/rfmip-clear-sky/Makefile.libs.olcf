@@ -1,0 +1,10 @@
+# Location of RTE+RRTMGP libraries, module files.
+export RRTMGP_DIR = ../../build
+# Sets macros FC, FCFLAGS consistent with RTE+RRTMGP
+
+# NetCDF C and Fortran libraries, module files
+NCHOME = $(OLCF_NETCDF_ROOT)
+NFHOME = $(OLCF_NETCDF_FORTRAN_ROOT)
+
+# GPTL libraries and module files if desired (https://jmrosinski.github.io/GPTL/)
+# export TIME_DIR 

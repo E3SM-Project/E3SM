@@ -1,0 +1,120 @@
+sudo: required
+dist: xenial
+language: cpp
+# Could run both sets of kernels in parallel but setup is the majority of the time
+#env:
+#  - RTE_KERNELS=""
+#  - RTE_KERNELS="openacc"
+matrix:
+  include:
+  - compiler: gcc # Using
+    env:
+    - FC=pgfortran
+    - FCFLAGS="-Mallocatable=03 -Mstandard"
+    - TEST_PGI=yes
+    addons:
+      apt:
+        sources:
+          - ubuntu-toolchain-r-test
+        packages:
+          - gcc-8
+          - gfortran-8
+          - libnetcdf-dev
+  - compiler: gcc
+    env:
+    - FC=gfortran-9
+    - FCFLAGS="-ffree-line-length-none -m64 -std=f2003 -march=native -DUSE_CBOOL"
+    - TEST_PGI=no
+    - NCHOME=/usr/
+    addons:
+      apt:
+        sources:
+          - ubuntu-toolchain-r-test
+        packages:
+          - gcc-9
+          - gfortran-9
+          - libnetcdf-dev
+  - compiler: gcc
+    env:
+    - FC=gfortran-8
+    - FCFLAGS="-ffree-line-length-none -m64 -std=f2003 -march=native -DUSE_CBOOL"
+    - TEST_PGI=no
+    - NCHOME=/usr/
+    addons:
+      apt:
+        sources:
+          - ubuntu-toolchain-r-test
+        packages:
+          - gcc-8
+          - gfortran-8
+          - libnetcdf-dev
+# cache:
+#   timeout: 1000
+#   directories:
+#     - "$HOME/pgi/"
+before_install:
+# Install PGI Community edition if not present in cache
+- if [[ "${TEST_PGI}" == "yes" ]]; then
+  wget -q 'https://raw.githubusercontent.com/nemequ/pgi-travis/master/install-pgi.sh';
+  chmod +x install-pgi.sh;
+  ./install-pgi.sh --nvidia;
+  pgfortran --version;
+  echo "switch -pthread is" > .userrc;
+  echo "append(LDLIB1=-lpthread);" >> .userrc;
+  fi
+
+# Install netcdf-fortran for PGI
+- git clone https://github.com/Unidata/netcdf-fortran.git --branch v4.4.4
+- cd netcdf-fortran
+- FC=$FC ./configure --prefix=${HOME}/netcdff
+- make
+- make install
+- cd .. || exit 1
+
+# Install CONDA
+- wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+- chmod +x miniconda.sh
+- ./miniconda.sh -b
+- export PATH=/home/travis/miniconda3/bin:$PATH
+- conda update --yes conda
+
+install:
+- conda create --yes -n test python=$TRAVIS_PYTHON_VERSION
+- source activate test
+- conda install --yes urllib3 netcdf4 xarray dask
+
+before_script:
+- cd examples/rfmip-clear-sky
+- python3 ./stage_files.py
+- cd ../..
+- export RRTMGP_DIR=$PWD/build
+- export NFHOME=${HOME}/netcdff
+- export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$NFHOME/lib
+script:
+# Build library - default kernels
+- cd build || exit 1
+- make || exit 1
+- cd .. || exit 1
+# Build drivers
+- cd examples/rfmip-clear-sky
+- make
+# Run drivers
+- python3 ./run-rfmip-examples.py
+- python3 ./compare-to-reference.py
+- cd ../..
+# Build library - Open-acc kernels
+- export RTE_KERNELS="openacc"
+- cd build
+- make clean
+- make || exit 1
+- cd ../examples/rfmip-clear-sky
+- make clean
+- make || exit 1
+# Run drivers
+- python3 ./run-rfmip-examples.py
+- python3 ./compare-to-reference.py
+- cd ../..
+notifications:
+  email:
+    on_success: never
+    on_failure: never

@@ -1,0 +1,17 @@
+# Load the following modules
+#
+#  module swap PrgEnv-cray PrgEnv-pgi
+#  module load cray-netcdf cray-hdf5
+#  module unload cray-libsci_acc
+
+export FC = ftn
+export FCFLAGS = -g -Minfo -Mbounds -Mchkptr -Mstandard -Kieee -Mchkstk -Mipa=fast,inline -Mallocatable=03
+
+# Where to find Fortran .mod files
+export FCINCLUDE =
+
+# Libraries including netCDF and Fortran interface to netCDF
+export LDFLAGS =
+
+#export LIBS = -lnetcdff -lnetcdf   # Not necessary if ftn wrapper is used
+export LIBS =

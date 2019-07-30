@@ -1,0 +1,10 @@
+# Location of RTE+RRTMGP libraries, module files.
+export RRTMGP_DIR = ../../build
+# Sets macros FC, FCFLAGS consistent with RTE+RRTMGP
+
+# NetCDF C and Fortran libraries, module files
+export NCHOME = /opt/local
+export NFHOME = $(HOME)/Applications/$(FC)
+
+# GPTL libraries and module files if desired (https://jmrosinski.github.io/GPTL/)
+export TIME_DIR = $(HOME)/Codes/GPTL/gptl-v5.5.3/macos
