@@ -10,14 +10,15 @@ namespace {
 
 TEST_CASE("field_identifier", "") {
   using namespace scream;
+  using namespace units;
 
   std::vector<FieldTag> tags1 = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::GaussPoint};
   std::vector<FieldTag> tags2 = {FieldTag::Element, FieldTag::Component, FieldTag::VerticalLevel};
 
-  FieldIdentifier fid1 ("field_1", tags1);
-  FieldIdentifier fid2 ("field_1", tags1);
-  FieldIdentifier fid3 ("field_1", tags2);
-  FieldIdentifier fid4 ("field_2", tags2);
+  FieldIdentifier fid1 ("field_1", tags1, m/s);
+  FieldIdentifier fid2 ("field_1", tags1, m/s);
+  FieldIdentifier fid3 ("field_1", tags2, m/s);
+  FieldIdentifier fid4 ("field_2", tags2, m/s);
 
   REQUIRE (fid1==fid2);
   REQUIRE (fid2!=fid3);
@@ -57,13 +58,14 @@ TEST_CASE("field_tracking", "") {
 TEST_CASE("field", "") {
   using namespace scream;
   using namespace scream::pack;
+  using namespace units;
 
   using Device = DefaultDevice;
 
   std::vector<FieldTag> tags = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::VerticalLevel};
   std::vector<int> dims = {2, 3, 12};
 
-  FieldIdentifier fid ("field_1", tags);
+  FieldIdentifier fid ("field_1", tags, m/s);
   fid.set_dimensions(dims);
 
   // Check copy constructor
@@ -125,15 +127,19 @@ TEST_CASE("field", "") {
 
 TEST_CASE("field_repo", "") {
   using namespace scream;
+  using namespace units;
 
   using Device = DefaultDevice;
 
   std::vector<FieldTag> tags1 = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::GaussPoint};
   std::vector<FieldTag> tags2 = {FieldTag::Column};
 
-  FieldIdentifier fid1("field_1", tags1);
-  FieldIdentifier fid2("field_2", tags1);
-  FieldIdentifier fid3("field_2", tags2);
+  const auto km = 1000*m;
+
+  FieldIdentifier fid1("field_1", tags1, m/s);
+  FieldIdentifier fid2("field_2", tags1, m/s);
+  FieldIdentifier fid3("field_2", tags2, m/s);
+  FieldIdentifier fid4("field_2", tags2, km/s);
 
   std::vector<int> dims1 = {2, 3, 4};
   std::vector<int> dims2 = {2, 3, 3};
@@ -142,6 +148,7 @@ TEST_CASE("field_repo", "") {
   fid1.set_dimensions(dims1);
   fid2.set_dimensions(dims2);
   fid3.set_dimensions(dims3);
+  fid4.set_dimensions(dims3);
 
   FieldRepository<Real,Device>  repo;
 
@@ -154,6 +161,8 @@ TEST_CASE("field_repo", "") {
   repo.register_field(fid3,"group_2");
   // Should not be able to register fields to the 'state' group (it's reserved)
   REQUIRE_THROWS(repo.register_field(fid2,"state"));
+  // Should not be able to register the same field name with two different units
+  REQUIRE_THROWS(repo.register_field(fid4));
   repo.registration_ends();
 
   // Should not be able to register fields anymore

@@ -341,6 +341,7 @@ contains
 
   function get_homme_int_param_value_f90 (param_name_c) result(param_value) bind(c)
     use dimensions_mod, only: nelemd
+    use control_mod,    only: ftype
     use time_mod,       only: nmax
     !
     ! Input(s)
@@ -361,6 +362,8 @@ contains
     call c_f_pointer(param_name_c,param_name)
     len = index(param_name, C_NULL_CHAR) -1
     select case(param_name(1:len))
+      case("ftype")
+        param_value = ftype
       case("nelemd")
         param_value = nelemd
       case("nmax")

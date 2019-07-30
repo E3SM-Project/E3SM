@@ -15,9 +15,7 @@ public:
   using device_type = DeviceType;
 
   DummyProcess (const Comm& comm, const ParameterList& params)
-   : m_input(FieldIdentifier("INVALID",{FieldTag::Invalid}))
-   , m_output(FieldIdentifier("INVALID",{FieldTag::Invalid}))
-   , m_comm(comm)
+   : m_comm(comm)
   {
     m_params = params;
     m_id = comm.rank();
@@ -59,8 +57,8 @@ public:
       out_name += std::to_string( (m_id + size - 1) % size );
     }
 
-    m_input_fids.emplace(in_name,layout,"Physics");
-    m_output_fids.emplace(out_name,layout,"Physics");
+    m_input_fids.emplace(in_name,layout,units::one,"Physics");
+    m_output_fids.emplace(out_name,layout,units::one,"Physics");
   }
 
   void initialize (const util::TimeStamp& t0) {
@@ -208,7 +206,7 @@ TEST_CASE("ping-pong", "") {
   std::vector<FieldTag> tags = {FieldTag::Column,FieldTag::Component};
   std::vector<int> dims = {num_cols, 2};
   FieldLayout layout (tags,dims);
-  FieldIdentifier final_fid("field_" + std::to_string(atm_comm.size()-1),layout,"Physics");
+  FieldIdentifier final_fid("field_" + std::to_string(atm_comm.size()-1),layout,units::one,"Physics");
   const auto& final_field = repo.get_field(final_fid);
 
   auto h_view = Kokkos::create_mirror_view(final_field.get_view());

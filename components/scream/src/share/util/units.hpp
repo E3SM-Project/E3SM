@@ -31,13 +31,22 @@ constexpr const char* BASIC_UNITS_SYMBOLS[7] = {"m", "s", "kg", "K", "A", "mol",
  *    - the exponents [ -1, -2, 1, 0, 0, 0, 0 ]
  *  
  *  since kPa = 1000 kg m^-1 s ^-2.
+ *
+ *  A few arithmetic operators as well as pow/sqrt functions are overloaded,
+ *  to allow easy construction of derived units from fundamental/common ones.
+ *
+ *  Note: we do *not* overload operator^. Although it would be nice to write
+ *            auto my_units = m^2 / s^2;
+ *        it would be very bug prone, since ^ has lower precedence than + - * /.
+ *        Sure, using parentheses makes it safe, but then you may as well write
+ *            auto my_units = pow(m,2) / pow(s,2);
  */
 
 class Units {
 public:
 
   // No default
-  constexpr Units () = delete;
+  Units () = delete;
 
   // Construct a non-dimensional quantity
   Units (const ScalingFactor& scaling)
@@ -82,6 +91,16 @@ public:
     return m_string;
   }
 
+  bool is_dimensionless () const {
+    return m_units[0]==0 &&
+           m_units[1]==0 &&
+           m_units[2]==0 &&
+           m_units[3]==0 &&
+           m_units[4]==0 &&
+           m_units[5]==0 &&
+           m_units[6]==0;
+  }
+
 private:
 
   void reset_string (const std::string& str) {
@@ -117,7 +136,7 @@ private:
 
 // --- Comparison --- //
 
-bool operator==(const Units& lhs, const Units& rhs) {
+inline bool operator==(const Units& lhs, const Units& rhs) {
   return lhs.m_scaling==rhs.m_scaling &&
          lhs.m_units[0]==rhs.m_units[0] &&
          lhs.m_units[1]==rhs.m_units[1] &&
@@ -128,12 +147,12 @@ bool operator==(const Units& lhs, const Units& rhs) {
          lhs.m_units[6]==rhs.m_units[6];
 }
 
-bool operator!=(const Units& lhs, const Units& rhs) {
+inline bool operator!=(const Units& lhs, const Units& rhs) {
   return !(lhs==rhs);
 }
 
 // --- Multiplicaiton --- //
-Units operator*(const Units& lhs, const Units& rhs) {
+inline Units operator*(const Units& lhs, const Units& rhs) {
   return Units(lhs.m_units[0]+rhs.m_units[0],
                lhs.m_units[1]+rhs.m_units[1],
                lhs.m_units[2]+rhs.m_units[2],
@@ -143,7 +162,7 @@ Units operator*(const Units& lhs, const Units& rhs) {
                lhs.m_units[6]+rhs.m_units[6],
                lhs.m_scaling*rhs.m_scaling);
 }
-Units operator*(const ScalingFactor& lhs, const Units& rhs) {
+inline Units operator*(const ScalingFactor& lhs, const Units& rhs) {
   return Units(rhs.m_units[0],
                rhs.m_units[1],
                rhs.m_units[2],
@@ -153,18 +172,18 @@ Units operator*(const ScalingFactor& lhs, const Units& rhs) {
                rhs.m_units[6],
                lhs*rhs.m_scaling);
 }
-Units operator*(const Units& lhs, const ScalingFactor& rhs) {
+inline Units operator*(const Units& lhs, const ScalingFactor& rhs) {
   return rhs*lhs;
 }
-Units operator*(const RationalConstant& lhs, const Units& rhs) {
+inline Units operator*(const RationalConstant& lhs, const Units& rhs) {
   return ScalingFactor(lhs)*rhs;
 }
-Units operator*(const Units& lhs, const RationalConstant& rhs) {
+inline Units operator*(const Units& lhs, const RationalConstant& rhs) {
   return lhs*ScalingFactor(rhs);
 }
 
 // --- Division --- //
-Units operator/(const Units& lhs, const Units& rhs) {
+inline Units operator/(const Units& lhs, const Units& rhs) {
   return Units(lhs.m_units[0]-rhs.m_units[0],
                lhs.m_units[1]-rhs.m_units[1],
                lhs.m_units[2]-rhs.m_units[2],
@@ -174,7 +193,7 @@ Units operator/(const Units& lhs, const Units& rhs) {
                lhs.m_units[6]-rhs.m_units[6],
                lhs.m_scaling/rhs.m_scaling);
 }
-Units operator/(const Units& lhs, const ScalingFactor& rhs) {
+inline Units operator/(const Units& lhs, const ScalingFactor& rhs) {
   return Units(lhs.m_units[0],
                lhs.m_units[1],
                lhs.m_units[2],
@@ -184,7 +203,7 @@ Units operator/(const Units& lhs, const ScalingFactor& rhs) {
                lhs.m_units[6],
                lhs.m_scaling/rhs);
 }
-Units operator/(const ScalingFactor& lhs, const Units& rhs) {
+inline Units operator/(const ScalingFactor& lhs, const Units& rhs) {
   return Units(1-rhs.m_units[0],
                1-rhs.m_units[1],
                1-rhs.m_units[2],
@@ -194,16 +213,16 @@ Units operator/(const ScalingFactor& lhs, const Units& rhs) {
                1-rhs.m_units[6],
                lhs/rhs.m_scaling);
 }
-Units operator/(const RationalConstant& lhs, const Units& rhs) {
+inline Units operator/(const RationalConstant& lhs, const Units& rhs) {
   return ScalingFactor(lhs)/rhs;
 }
-Units operator/(const Units& lhs, const RationalConstant& rhs) {
+inline Units operator/(const Units& lhs, const RationalConstant& rhs) {
   return lhs/ScalingFactor(rhs);
 }
 
 // --- Powers and roots --- //
 
-Units pow(const Units& x, const RationalConstant& p) {
+inline Units pow(const Units& x, const RationalConstant& p) {
   return Units(x.m_units[0]*p,
                x.m_units[1]*p,
                x.m_units[2]*p,
@@ -214,7 +233,7 @@ Units pow(const Units& x, const RationalConstant& p) {
                pow(x.m_scaling,p));
 }
 
-Units sqrt(const Units& x) {
+inline Units sqrt(const Units& x) {
   return Units(x.m_units[0] / 2,
                x.m_units[1] / 2,
                x.m_units[2] / 2,
@@ -261,6 +280,7 @@ inline std::ostream& operator<< (std::ostream& out, const Units& x) {
 
 // === FUNDAMENTAL === //
 
+const Units one = Units(0,0,0,0,0,0,0);
 const Units m   = Units(1,0,0,0,0,0,0);
 const Units s   = Units(0,1,0,0,0,0,0);
 const Units kg  = Units(0,0,1,0,0,0,0);

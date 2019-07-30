@@ -151,6 +151,20 @@ register_field (const identifier_type& id, const std::set<std::string>& groups_n
   // Get the map of all fields with this name
   auto& map = m_fields[id.name()];
 
+  if (map.size()>0) {
+    using units::to_string;
+    // Make sure the new field id stores the same units as all the other ones.
+    // TODO: this is the easiest way to ensure everyone uses the same units.
+    //       However, in the future, we *may* allow different units, providing
+    //       the users with conversion routines perhaps.
+    scream_require_msg(id.get_units()==map.begin()->first.get_units(),
+                       "Error! Request to register field '" + id.name() + "' with units '" +
+                       to_string(id.get_units()) + "',\n"
+                       "       but there is already a request for the same field with units '" +
+                       to_string(map.begin()->first.get_units()) + "'\n"
+                       "       Please, check and make sure all atmosphere processes use the same units.\n");
+  }
+
   // Try to create the field. Allow case where it is already existing.
   auto it_bool = map.emplace(id,field_type(id));
 

@@ -401,17 +401,17 @@ AtmosphereProcessGroup::create_ref_fid (const FieldIdentifier& fid,
   const auto& grid_name = fid.get_grid_name();
   if (remapper->get_src_grid()->name()==grid_name) {
     const FieldLayout ref_layout = remapper->create_tgt_layout(fid_layout);
-    return FieldIdentifier (fid.name(),ref_layout,remapper->get_tgt_grid()->name());
+    return FieldIdentifier (fid.name(),ref_layout,fid.get_units(),remapper->get_tgt_grid()->name());
   } else if (remapper->get_tgt_grid()->name()==grid_name) {
     const FieldLayout ref_layout = remapper->create_src_layout(fid_layout);
-    return FieldIdentifier (fid.name(),ref_layout,remapper->get_src_grid()->name());
+    return FieldIdentifier (fid.name(),ref_layout,fid.get_units(),remapper->get_src_grid()->name());
   } else {
     // Something went wrong
     scream_require_msg(false,"Error! Input FieldIdentifier's grid name is neither the source nor the target grid of the input remapper.\n");
   }
 
   // Silence compiler warning
-  return FieldIdentifier("__INVALID__",FieldLayout({}));
+  return FieldIdentifier("__INVALID__",FieldLayout({}),units::ScalingFactor(0));
 }
 
 } // namespace scream
