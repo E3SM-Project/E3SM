@@ -1211,10 +1211,10 @@ if (defined $opts{'scam'}) {
 }
 my $scam = $cfg_ref->get('scam') ? "ON" : "OFF";
 
-# Currently only Eulerian and Spectral Element dycores support SCM
-if ($scam eq 'ON' and $dyn_pkg ne 'eul' and $dyn_pkg ne 'se') {
+# Currently only Spectral Element dycore supports SCM
+if ($scam eq 'ON' and $dyn_pkg ne 'se') {
     die <<"EOF";
-**  ERROR: SCAM mode only works with Eulerian dycore or Spectral Element dycore.
+**  ERROR: The Single Column Model only works with Spectral Element dycore.
 **         Requested dycore is: $dyn_pkg
 EOF
 }
@@ -1812,6 +1812,9 @@ if ($dyn_pkg eq 'se') {
     if ($smp eq 'ON') {
       $cfg_cppdefs .= " -DHORIZ_OPENMP"
     }
+    # use FV physics grid if npg>0
+    my $npg = $cfg_ref->get('npg');
+    $cfg_cppdefs .= " -DNPG=$npg "
 }
 
 # Resolution parameters for vertical grid, number of constituents, chunk size
@@ -2935,10 +2938,19 @@ sub set_horiz_grid
     elsif ( $dyn_pkg eq 'se' ) {
 	$cfg_ref->set('csne', $a{'csne'});
 	$cfg_ref->set('csnp', $a{'csnp'});
+        $cfg_ref->set('npg',  $a{'npg'});
 	# needed for cice configure script.  sets nlat=1 and nlon=ncol
 	$cfg_ref->set('nlat', 1);
 	$cfg_ref->set('nlon', $a{'ncol'});
+        # To allow more flexibility when matching grid attributes in the namelist
+        # defaults file, split the dynamics (GLL) and physics grid specifiers in 
+        # the hgrid argument to configure, and just store the dynamics (GLL) part 
+        # in the hgrid parameter of the config_cache file.  The physics grid 
+        # specifier is stored separately in the npg parameter.
+        $hgrid =~ s/\.pg\d//;   # strip the '.pgN' extension
+        $cfg_ref->set('hgrid', $hgrid);
     }
+
 
     # Override resolution settings to configure for SCAM mode.  The override is needed
     # because in SCAM mode the -hgrid option is used to specify the resolution of default

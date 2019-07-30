@@ -349,19 +349,19 @@ contains
     ! Author: John Drake and Patrick Worley
     ! 
     !-----------------------------------------------------------------------
-    use pmgrid, only: plev
-    use dycore, only: dycore_is
-    use dyn_grid, only: get_block_bounds_d, &
-         get_block_gcol_d, get_block_gcol_cnt_d, &
-         get_block_levels_d, get_block_lvl_cnt_d, &
-         get_block_owner_d, &
-         get_gcol_block_d, get_gcol_block_cnt_d, &
-         get_horiz_grid_dim_d, get_horiz_grid_d, physgrid_copy_attributes_d
-    use spmd_utils, only: pair, ceil2
-    use cam_grid_support, only: cam_grid_register, iMap, max_hcoordname_len
+    use pmgrid,           only: plev
+    use dycore,           only: dycore_is
+    use dyn_grid,         only: get_block_bounds_d, get_block_gcol_d,     &
+                                get_block_gcol_cnt_d, get_block_levels_d, &
+                                get_block_lvl_cnt_d, get_block_owner_d,   &
+                                get_gcol_block_d, get_gcol_block_cnt_d,   &
+                                get_horiz_grid_dim_d, get_horiz_grid_d,   &
+                                physgrid_copy_attributes_d
+    use spmd_utils,       only: pair, ceil2
+    use cam_grid_support, only: cam_grid_register, iMap
+    use cam_grid_support, only: hcoord_len => max_hcoordname_len
     use cam_grid_support, only: horiz_coord_t, horiz_coord_create
     use cam_grid_support, only: cam_grid_attribute_copy
-
     !
     !------------------------------Arguments--------------------------------
     !
@@ -384,55 +384,45 @@ contains
     integer :: block_cnt                  ! number of blocks containing data
     ! for a given vertical column
     integer :: numlvl                     ! number of vertical levels in block 
-    ! column
     integer :: levels(plev+1)             ! vertical level indices
     integer :: owner_d                    ! process owning given block column
     integer :: owner_p                    ! process owning given chunk column
     integer :: blockids(plev+1)           ! block indices
     integer :: bcids(plev+1)              ! block column indices
     real(r8), parameter :: deg2rad = SHR_CONST_PI/180.0
-
-
-    ! column surface area (from dynamics)
-    real(r8), dimension(:), allocatable :: area_d
-
-    ! column integration weight (from dynamics)
-    real(r8), dimension(:), allocatable :: wght_d
-
-    ! chunk global ordering
-    integer, dimension(:), allocatable :: pchunkid
+    real(r8), dimension(:), allocatable :: area_d     ! column surface area (from dynamics)
+    real(r8), dimension(:), allocatable :: wght_d     ! column integration weight (from dynamics)
+    integer,  dimension(:), allocatable :: pchunkid   ! chunk global ordering
 
     ! permutation array used in physics column sorting;
     ! reused later as work space in (lbal_opt == -1) logic
     integer, dimension(:), allocatable :: cdex
 
-    ! latitudes and longitudes and column area for dynamics columns
-    real(r8), dimension(:), allocatable :: clat_d
-    real(r8), dimension(:), allocatable :: clon_d
-    real(r8), dimension(:), allocatable :: lat_d
-    real(r8), dimension(:), allocatable :: lon_d
+    real(r8), dimension(:), allocatable :: clat_d   ! lat (radians) from dynamics columns
+    real(r8), dimension(:), allocatable :: clon_d   ! lon (radians) from dynamics columns
+    real(r8), dimension(:), allocatable :: lat_d    ! lat from dynamics columns
+    real(r8), dimension(:), allocatable :: lon_d    ! lon from dynamics columns
     real(r8) :: clat_p_tmp
     real(r8) :: clon_p_tmp
 
     ! Maps and values for physics grid
-    real(r8),       pointer             :: lonvals(:)
-    real(r8),       pointer             :: latvals(:)
+    real(r8),                   pointer :: lonvals(:)
+    real(r8),                   pointer :: latvals(:)
     real(r8),               allocatable :: latdeg_p(:)
     real(r8),               allocatable :: londeg_p(:)
-    integer(iMap),  pointer             :: grid_map(:,:)
-    integer(iMap),  pointer             :: coord_map(:)
-    type(horiz_coord_t), pointer        :: lat_coord
-    type(horiz_coord_t), pointer        :: lon_coord
+    integer(iMap),              pointer :: grid_map(:,:)
+    integer(iMap),          allocatable :: coord_map(:)
+    type(horiz_coord_t),        pointer :: lat_coord
+    type(horiz_coord_t),        pointer :: lon_coord
     integer                             :: gcols(pcols)
-    character(len=max_hcoordname_len), pointer :: copy_attributes(:)
-    character(len=max_hcoordname_len)   :: copy_gridname
+    character(len=hcoord_len),  pointer :: copy_attributes(:)
+    character(len=hcoord_len)           :: copy_gridname
     logical                             :: unstructured
     real(r8)                            :: lonmin, latmin
 
     nullify(lonvals)
     nullify(latvals)
     nullify(grid_map)
-    nullify(coord_map)
     nullify(lat_coord)
     nullify(lon_coord)
 
@@ -1104,14 +1094,17 @@ contains
     !      However, these will be in the dynamics decomposition
 
     if (unstructured) then
-      coord_map => grid_map(3,:)
-      lon_coord => horiz_coord_create('lon', 'ncol', ngcols_p, 'longitude',   &
-           'degrees_east', 1, size(lonvals), lonvals, map=coord_map)
-      lat_coord => horiz_coord_create('lat', 'ncol', ngcols_p, 'latitude',    &
-           'degrees_north', 1, size(latvals), latvals, map=coord_map)
+      lon_coord => horiz_coord_create('lon', 'ncol', ngcols_p,                 &
+                                      'longitude', 'degrees_east', 1,          &
+                                      size(lonvals), lonvals, map=grid_map(3,:))
+      lat_coord => horiz_coord_create('lat', 'ncol', ngcols_p,                 &
+                                      'latitude', 'degrees_north', 1,          &
+                                      size(latvals), latvals, map=grid_map(3,:))
     else
-      ! Create a lon coord map which only writes from one of each unique lon
+
       allocate(coord_map(size(grid_map, 2)))
+
+      ! Create a lon coord map which only writes from one of each unique lon
       where(latvals == latmin)
         coord_map(:) = grid_map(3, :)
       elsewhere
@@ -1119,9 +1112,8 @@ contains
       end where
       lon_coord => horiz_coord_create('lon', 'lon', hdim1_d, 'longitude',     &
            'degrees_east', 1, size(lonvals), lonvals, map=coord_map)
-      nullify(coord_map)
+
       ! Create a lat coord map which only writes from one of each unique lat
-      allocate(coord_map(size(grid_map, 2)))
       where(lonvals == lonmin)
         coord_map(:) = grid_map(4, :)
       elsewhere
@@ -1129,8 +1121,11 @@ contains
       end where
       lat_coord => horiz_coord_create('lat', 'lat', hdim2_d, 'latitude',      &
            'degrees_north', 1, size(latvals), latvals, map=coord_map)
-    end if
-    nullify(coord_map)
+
+      deallocate(coord_map)
+
+    end if ! unstructured
+    
     call cam_grid_register('physgrid', phys_decomp, lat_coord, lon_coord,     &
          grid_map, unstruct=unstructured, block_indexed=.true.)
     ! Copy required attributes from the dynamics array

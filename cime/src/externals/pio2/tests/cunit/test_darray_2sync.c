@@ -512,7 +512,7 @@ int run_async_tests(MPI_Comm test_comm, int my_rank, int num_iotypes, int *iotyp
             ERR(ret);
 
         /* Finalize PIO system. */
-        if ((ret = PIOc_finalize(iosysid)))
+        if ((ret = PIOc_free_iosystem(iosysid)))
             return ret;
 
         /* Free the computation conomponent communicator. */
@@ -548,7 +548,7 @@ int run_noasync_tests(MPI_Comm test_comm, int my_rank, int num_iotypes, int *iot
         ERR(ret);
 
     /* Finalize PIO system. */
-    if ((ret = PIOc_finalize(iosysid)))
+    if ((ret = PIOc_free_iosystem(iosysid)))
         return ret;
 
     return PIO_NOERR;

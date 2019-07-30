@@ -1614,8 +1614,11 @@ contains
        if (glcocn_present .and. ocn_prognostic) glc_c2_ocn = .true.
        ! For now, glcshelf->ocn only activated if the ocean has activated ocn->glcshelf
        if (ocn_c2_glcshelf .and. glcocn_present .and. ocn_prognostic) glcshelf_c2_ocn = .true.
+       ! For now, glacshelf->ice also controlled by ocean's ocn_c2_glcshelf flag
+       !    Note that ice also has to be prognostic for glcshelf_c2_ice to be true.
+       !    It is not expected that glc and ice would ever be run without ocn prognostic.
+       if (ocn_c2_glcshelf .and. glcice_present .and. ice_prognostic) glcshelf_c2_ice = .true.
        if (glcice_present .and. iceberg_prognostic) glc_c2_ice = .true.
-       if (glcocn_present .and. ice_prognostic) glcshelf_c2_ice = .true.
     endif
     if (wav_present) then
        if (ocn_prognostic) wav_c2_ocn = .true.
@@ -1636,11 +1639,7 @@ contains
     ! set skip_ocean_run flag, used primarily for ocn run on first timestep
     ! use reading a restart as a surrogate from whether this is a startup run
 
-#ifdef COMPARE_TO_NUOPC
-    skip_ocean_run = .false.
-#else
     skip_ocean_run = .true.
-#endif
     if ( read_restart) skip_ocean_run = .false.
     ocnrun_count = 0
     cpl2ocn_first = .true.
@@ -3869,12 +3868,24 @@ contains
 
        ! ocn prep-merge (cesm1_mod or cesm1_mod_tight)
        if (ocn_prognostic) then
+#if COMPARE_TO_NUOPC          
+          !This is need to compare to nuopc
+          if (.not. skip_ocean_run) then
+             ! ocn prep-merge
+             xao_ox => prep_aoflux_get_xao_ox()
+             call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
+
+             ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn)
+             call prep_ocn_accum(timer='CPL:atmocnp_accum')
+          end if
+#else 
           ! ocn prep-merge
           xao_ox => prep_aoflux_get_xao_ox()
           call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
 
           ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn)
           call prep_ocn_accum(timer='CPL:atmocnp_accum')
+#endif
        end if
 
        !----------------------------------------------------------
@@ -3922,6 +3933,10 @@ contains
                                         !Map g2x_gx shelf fields that were updated above, to g2x_ox.
                                         !Do this at intrinsic coupling
                                         !frequency
+          call prep_glc_accum_ocn(timer='CPL:glcprep_accum_ocn') !accum x2g_g fields here into x2g_gacc
+       endif
+
+       if (glcshelf_c2_ice) then
           call prep_ice_shelf_calc_g2x_ix(timer='CPL:glcpost_glcshelf2ice')
                                         !Map g2x_gx shelf fields to g2x_ix.
                                         !Do this at intrinsic coupling
@@ -3931,9 +3946,6 @@ contains
                                         !changing on the intrinsic
                                         !timestep.  But I don't think it's
                                         !unsafe to do it here.
-
-          call prep_glc_accum_ocn(timer='CPL:glcprep_accum_ocn') !accum x2g_g fields here into x2g_gacc
-
        endif
 
     endif

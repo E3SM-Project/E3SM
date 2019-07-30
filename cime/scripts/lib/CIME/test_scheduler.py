@@ -298,7 +298,7 @@ class TestScheduler(object):
             # Any test that's in a shared-enabled suite with other tests should share exes
             self._build_groups = get_build_groups(self._tests)
         else:
-            self._build_groups = [ [item] for item in self._tests ]
+            self._build_groups = [ (item,) for item in self._tests ]
 
         # Build group to exeroot map
         self._build_group_exeroots = {}
@@ -637,6 +637,7 @@ class TestScheduler(object):
                     for comp in comps:
                         envtest.set_test_parameter("NTASKS_"+comp, "1")
                         envtest.set_test_parameter("NTHRDS_"+comp, "1")
+                        envtest.set_test_parameter("ROOTPE_"+comp, "0")
 
                 elif (opt.startswith('I') or # Marker to distinguish tests with same name - ignored
                       opt.startswith('M') or # handled in create_newcase

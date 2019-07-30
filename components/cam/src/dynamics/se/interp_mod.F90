@@ -214,8 +214,7 @@ CONTAINS
     use dof_mod,          only: PutUniquePoints
     use interpolate_mod,  only: get_interp_parameter
     use shr_pio_mod,      only: shr_pio_getiosys
-    use edgetype_mod,     only : edgebuffer_t
-    use edge_mod,         only: edgevpack, edgevunpack, initedgebuffer, freeedgebuffer
+    use edge_mod,         only: edgevpack_nlyr, edgevunpack_nlyr, edge_g
     use bndry_mod,        only: bndry_exchangeV
     use parallel_mod,     only: par
     use cam_grid_support, only: cam_grid_id
@@ -242,7 +241,6 @@ CONTAINS
     integer :: nlon, nlat, ncol
     logical :: usefillvalues
     type(iosystem_desc_t), pointer :: pio_subsystem
-    type (EdgeBuffer_t) :: edgebuf              ! edge buffer
 
     usefillvalues=.false.
     phys_decomp = cam_grid_id('physgrid')
@@ -311,20 +309,18 @@ CONTAINS
 
        end if
        allocate(dest(np,np,numlev,nelemd))
-       call initEdgeBuffer(hybrid%par,edgebuf, elem,numlev)
 
        do ie=1,nelemd
           ncols = elem(ie)%idxp%NumUniquePts
           call putUniquePoints(elem(ie)%idxP, numlev, fld_dyn(1:ncols,:,ie), dest(:,:,:,ie))
-          call edgeVpack(edgebuf, dest(:,:,:,ie), numlev, 0, ie)
+          call edgeVpack_nlyr(edge_g, elem(ie)%desc, dest(:,:,:,ie), numlev, 0, numlev)
        enddo
        if(par%dynproc) then
-          call bndry_exchangeV(par, edgebuf)
+          call bndry_exchangeV(par, edge_g)
        end if
        do ie=1,nelemd
-          call edgeVunpack(edgebuf, dest(:,:,:,ie), numlev, 0, ie)
+          call edgeVunpack_nlyr(edge_g, elem(ie)%desc, dest(:,:,:,ie), numlev, 0, numlev)
        end do
-       call freeEdgeBuffer(edgebuf)
        usefillvalues = any(dest == fillvalue)
     else
       usefillvalues=any(fld==fillvalue)
@@ -407,8 +403,7 @@ CONTAINS
     use dof_mod,          only : PutUniquePoints
     use interpolate_mod,  only : get_interp_parameter
     use shr_pio_mod,      only : shr_pio_getiosys
-    use edgetype_mod,     only : edgebuffer_t
-    use edge_mod,         only : edgevpack, edgevunpack, initedgebuffer, freeedgebuffer
+    use edge_mod,         only : edge_g,edgevpack_nlyr, edgevunpack_nlyr
     use bndry_mod,        only : bndry_exchangeV
     use parallel_mod,     only: par
     use cam_grid_support, only: cam_grid_id
@@ -435,7 +430,6 @@ CONTAINS
     logical :: usefillvalues
 
     type(iosystem_desc_t), pointer :: pio_subsystem
-    type (EdgeBuffer_t) :: edgebuf              ! edge buffer
 
     usefillvalues=.false.
     phys_decomp = cam_grid_id('physgrid')
@@ -507,23 +501,20 @@ CONTAINS
           deallocate( cbuffer )
 
        end if
-       call initEdgeBuffer(hybrid%par,edgebuf,elem, 2*numlev)
 
        do ie=1,nelemd
           ncols = elem(ie)%idxp%NumUniquePts
           call putUniquePoints(elem(ie)%idxP, 2, numlev, fld_dyn(1:ncols,:,1:numlev,ie), dest(:,:,:,1:numlev,ie))
           
-          call edgeVpack(edgebuf, dest(:,:,:,:,ie), 2*numlev, 0, ie)
+          call edgeVpack_nlyr(edge_g, elem(ie)%desc, dest(:,:,:,:,ie), 2*numlev, 0, 2*numlev)
        enddo
        if(par%dynproc) then
-          call bndry_exchangeV(par, edgebuf)
+          call bndry_exchangeV(par, edge_g)
        end if
 
        do ie=1,nelemd
-          call edgeVunpack(edgebuf, dest(:,:,:,:,ie), 2*numlev, 0, ie)
+          call edgeVunpack_nlyr(edge_g, elem(ie)%desc, dest(:,:,:,:,ie), 2*numlev, 0, 2*numlev)
        enddo
-       call freeEdgeBuffer(edgebuf)
-       usefillvalues = any(dest==fillvalue)
     else
        usefillvalues = (any(fldu==fillvalue) .or. any(fldv==fillvalue))
        allocate(dest(np,np,2,numlev,1))
