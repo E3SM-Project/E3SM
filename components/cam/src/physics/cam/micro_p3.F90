@@ -3432,35 +3432,28 @@ subroutine update_prognostic_ice(qcheti,qccol,qcshd,    &
       nc = nc + (-nccol-ncheti)*dt
    endif
 
-   qr = qr + (-qrcol+qimlt-qrheti+            &
-        qcshd)*dt
+   qr = qr + (-qrcol+qimlt-qrheti+qcshd)*dt
+
    ! apply factor to source for rain number from melting of ice, (ad-hoc
    ! but accounts for rapid evaporation of small melting ice particles)
-   nr = nr + (-nrcol-nrheti+nmltratio*nimlt+  &
-        nrshdr+ncshdc)*dt
+   nr = nr + (-nrcol-nrheti+nmltratio*nimlt+nrshdr+ncshdc)*dt
 
    if (qitot.ge.qsmall) then
       ! add sink terms, assume density stays constant for sink terms
-      birim = birim - ((qisub+qimlt)/qitot)* &
-           dt*birim
-      qirim = qirim - ((qisub+qimlt)*qirim/  &
-           qitot)*dt
+      birim = birim - ((qisub+qimlt)/qitot)*dt*birim
+      qirim = qirim - ((qisub+qimlt)*qirim/qitot)*dt
       qitot = qitot - (qisub+qimlt)*dt
    endif
 
-   dum             = (qrcol+qccol+qrheti+          &
-        qcheti)*dt
+   dum = (qrcol+qccol+qrheti+qcheti)*dt
    qitot = qitot + (qidep+qinuc+qiberg)*dt + dum
    qirim = qirim + dum
   
 
-   birim = birim + (qrcol*inv_rho_rimeMax+qccol/  &
-        rhorime_c+(qrheti+     &
+   birim = birim + (qrcol*inv_rho_rimeMax+qccol/rhorime_c+(qrheti+ &
         qcheti)*inv_rho_rimeMax)*dt
 
-   nitot = nitot + (ninuc-nimlt-nisub-      &
-        nislf+nrheti+          &
-        ncheti)*dt
+   nitot = nitot + (ninuc-nimlt-nisub-nislf+nrheti+ncheti)*dt
 
    !PMC nCat deleted interactions_loop
 
@@ -3487,12 +3480,8 @@ subroutine update_prognostic_ice(qcheti,qccol,qcshd,    &
 
    qv = qv + (-qidep+qisub-qinuc)*dt
 
-   th = th + exner*((qidep-qisub+qinuc)*     &
-        xxls*inv_cp +(qrcol+qccol+   &
-        qcheti+qrheti-qimlt+qiberg)*       &  
-        xlf*inv_cp)*dt
-
-
+   th = th + exner*((qidep-qisub+qinuc)*xxls*inv_cp +(qrcol+qccol+   &
+        qcheti+qrheti-qimlt+qiberg)* xlf*inv_cp)*dt
 
 end subroutine update_prognostic_ice
 
