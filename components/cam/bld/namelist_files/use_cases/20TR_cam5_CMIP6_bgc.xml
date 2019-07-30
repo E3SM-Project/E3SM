@@ -144,6 +144,7 @@
 <linoz_data_path            >atm/cam/chem/trop_mozart/ub</linoz_data_path>
 <linoz_data_type            >INTERP_MISSING_MONTHS</linoz_data_type>
 
+
 <!-- sim_year used for CLM datasets and SSTs forcings -->
 <sim_year>1850-2000</sim_year>
 

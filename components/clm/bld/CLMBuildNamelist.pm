@@ -3681,6 +3681,7 @@ sub check_use_case_name {
                   "in namelist_files/use_cases/README\n";
   my $desc = "[a-zA-Z0-9]*";
   my $rcp  = "rcp[0-9\.]+";
+  my $rcp  = "(rcp|SSP)[0-9\.]+"; 
   if (      $use_case =~ /^[0-9]+-[0-9]+([a-zA-Z0-9_\.]*)_transient$/ ) {
     my $string = $1;
     if (      $string =~ /^_($rcp)_*($desc)$/ ) {
