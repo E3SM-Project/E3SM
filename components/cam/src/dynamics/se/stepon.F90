@@ -534,29 +534,60 @@ subroutine stepon_run3(dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out)
 
 #endif   
 
+   ! This example I am bringing a variable with pverp dimensions 
+   !   to dynamics space.  All dynamics routines are hardwired so that
+   !   they only work with variables in pver dimensions.  So this is
+   !   a nice test case.  
+   
+   ! NOTE a number of routines were added in dyn_grid.F90.
+   ! phys_grid.F90 has also been heavily modified.  Most of these modifications
+   ! can be followed but will have to be updated so that "pver_five" is the 
+   ! high resolution coordinate. 
+   
    nlevp=nlev+1
    nphys_sq = np*np
    tsize_five = 1 ! number of FIVE variables
 
+   ! Need to determine the number of points in a block for our 
+   !   hig res variables.  Easy way to do this is to back out the
+   !   native grid levels (since horizontal will be the same), then 
+   !   multiply back by points in the high vertical resolution grid.  
+   !   NOTE: in the physics to dynamics transfer process the transfer arrays
+   !   always have +1 more grid points than the actual levels, for some
+   !   sort of boundary transfer.  
    block_buf_nrecs_five = block_buf_nrecs/(pver+1)
    block_buf_nrecs_five = block_buf_nrecs_five * (pverp + 1)
+   !  for FIVE the above would like 
+   !  block_buf_nrecs_five = block_buf_nrecs_five * (pver_five + 1)
+   !  Analogous for rest of code that most places you see pverp, in FIVE
+   !  case it will be pver_five
    
+   ! Do the same for number of chunks
    chunk_buf_nrecs_five = chunk_buf_nrecs/(pver+1)
    chunk_buf_nrecs_five = chunk_buf_nrecs_five * (pverp + 1)
    
+   !  Allocate our high resolution buffer arrays
    allocate( bbuffer_five(tsize_five*block_buf_nrecs_five) )
    allocate( cbuffer_five(tsize_five*chunk_buf_nrecs_five) )
 
+   ! Get index for my test variable (again, this variable is on the pverp grid)
+   ! This is liquid water potential temperature from CLUBB
    thlm_idx = pbuf_get_index('THLM')
    
    !$omp parallel do private (lchnk, ncols, cpter_five, i, icol, ilyr, m)   
    do lchnk=begchunk,endchunk
-!     ncols = phys_state(lchnk)%ncol
      ncols = get_ncols_p(lchnk)
+
      pbuf_chnk => pbuf_get_chunk(pbuf2d,lchnk)
      
      call pbuf_get_field(pbuf_chnk, thlm_idx, pbuf_thlm)
      
+     ! NOTE: see example in p_d_coupling for how to handle if there are more than
+     !   one FIVE variables.  I only tested on one.  Mostly the same, but there 
+     !   will be some minor indexing differences for most of the code!
+     
+     ! Note this is a new routine I had to make for high res, you need to modify
+     !  this routine so that it has pver_five coordinates
      call chunk_to_block_send_pters_five(lchnk,pcols,pverp+1,tsize_five,cpter_five)
      do i=1,ncols
        cbuffer_five(cpter_five(i,0):cpter_five(i,0)) = 0.0_r8
@@ -570,6 +601,8 @@ subroutine stepon_run3(dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out)
 	
    enddo
 
+   ! AGain a new routine that will have to be modified slightly so that
+   !   it has pver_five dimensions
    call transpose_chunk_to_block_five(tsize_five,chunk_buf_nrecs_five,&
         block_buf_nrecs_five,cbuffer_five,bbuffer_five)
   
@@ -577,6 +610,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out)
      !$omp parallel do private (ie, bpter_five, icol, ilyr, m, ncols) 
      do ie = 1,nelemd
        ncols = elem(ie)%idxP%NumUniquePts
+       ! Also a new routine below
        call chunk_to_block_recv_pters_five(elem(ie)%GlobalID,nphys_sq,pverp+1,tsize_five,bpter_five(1:nphys_sq,:))  
        do icol = 1,ncols
          do ilyr = 1,pverp
@@ -589,17 +623,21 @@ subroutine stepon_run3(dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out)
    deallocate(bbuffer_five)
    deallocate(cbuffer_five)
    
+   ! Now transfer to proper dynamics space
    if (par%dynproc) then
      do ie = 1,nelemd
        ncols = elem(ie)%idxP%NumUniquePts
        call putUniquePoints(elem(ie)%idxP,    nlevp,       thlm_tmp(1:ncols,1:nlevp,ie),   &
                                thlm_final(:,:,1:nlevp,ie))
+       ! Necessary for boundary points
        call edgeVpack_nlyr(edge_g, elem(ie)%desc, thlm_final(:,:,:,ie), nlevp, 0, nlevp)
 
      enddo
      
+     ! Necessary for boundary points
      call bndry_exchangeV(par, edge_g)
-     
+
+     ! Necessary for boundary points     
      do ie=1,nelemd
        call edgeVunpack_nlyr(edge_g, elem(ie)%desc, thlm_final(:,:,:,ie), nlevp, 0, nlevp)
      end do
@@ -612,6 +650,8 @@ subroutine stepon_run3(dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out)
      tl_f = TimeLevel%n0
      write(*,*) 'THETA_COMPARE ', ie, thlm_final(1,1,nlev,ie), dyn_in%elem(ie)%state%T(1,1,nlev,tl_f)
    enddo
+   
+   ! Viola.  As far as I can tell, this works for my one variable test case   
    
    if (single_column) then
      
