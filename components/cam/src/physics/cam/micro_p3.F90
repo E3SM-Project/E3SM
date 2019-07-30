@@ -3139,7 +3139,6 @@ subroutine cloud_water_autoconversion(rho,inv_rho,qc_incld,nc_incld,qr_incld,mu_
    real(rtype), intent(out) :: ncautc 
    real(rtype), intent(out) :: ncautr
 
-   logical :: qc_not_small 
    real(rtype) :: dum, dum1 
 
    qc_not_small: if (qc_incld.ge.1.e-8_rtype) then
