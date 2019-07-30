@@ -10,110 +10,6 @@
 
 namespace scream {
 
-// === A dummy atm process, on Physics grid === //
-
-template<typename DeviceType, int PackSize>
-class DummyProcess : public scream::AtmosphereProcess {
-public:
-  using device_type = DeviceType;
-
-  DummyProcess (const Comm& comm, const ParameterList& params)
-   : m_input(FieldIdentifier("INVALID",{FieldTag::Invalid}))
-   , m_output(FieldIdentifier("INVALID",{FieldTag::Invalid}))
-   , m_comm(comm)
-  {
-    m_params = params;
-    m_id = comm.rank();
-  }
-
-  // The type of the block (dynamics or physics)
-  AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
-
-  std::set<std::string> get_required_grids () const {
-    // TODO: define what grid the coupling runs on. Check with MOAB folks.
-    static std::set<std::string> s;
-    s.insert("Physics");
-    return s;
-  }
-
-  // Return some sort of name, linked to PType
-  std::string name () const { return "Dummy process"; }
-
-  // The communicator associated with this atm process
-  const Comm& get_comm () const { return m_comm; }
-
-  void set_grid (const std::shared_ptr<const GridsManager> grids_manager) {
-    m_grid = grids_manager->get_grid("Physics");
-
-    auto num_cols = m_grid->num_dofs();
-
-    std::vector<FieldTag> tags = {FieldTag::Column,FieldTag::Component};
-    std::vector<int> dims = {num_cols, m_params.get<int>("Number of vector components")};
-    FieldLayout layout (tags,dims);
-
-    std::string in_name = "field_";
-    std::string out_name = "field_";
-    auto size = m_comm.size();
-    if (size==1) {
-      in_name  += "0";
-      out_name += "1";
-    } else {
-      in_name  += std::to_string(m_id);
-      out_name += std::to_string( (m_id + size - 1) % size );
-    }
-
-    m_input_fids.emplace(in_name,layout,"Physics");
-    m_output_fids.emplace(out_name,layout,"Physics");
-  }
-
-  void initialize () {
-  p3_init_f90 ();
-  }
-
-  void run () {
-  p3_main_f90 ();
-  }
-
-  // Clean up
-  void finalize ( ) {
-  p3_finalize_f90 ();
-  }
-
-  // Register all fields in the given repo
-  void register_fields (FieldRepository<Real, device_type>& field_repo) const {
-    using pack_type = pack::Pack<Real,PackSize>;
-    field_repo.template register_field<pack_type>(*m_input_fids.begin());
-    field_repo.template register_field<pack_type>(*m_output_fids.begin());
-  }
-
-  // Providing a list of required and computed fields
-  const std::set<FieldIdentifier>&  get_required_fields () const { return m_input_fids; }
-  const std::set<FieldIdentifier>&  get_computed_fields () const { return m_output_fids; }
-
-protected:
-
-  // Setting the field in the atmosphere process
-  void set_required_field_impl (const Field<const Real, device_type>& f) {
-    m_input = f;
-  }
-  void set_computed_field_impl (const Field<      Real, device_type>& f) {
-    m_output = f;
-  }
-
-  std::set<FieldIdentifier> m_input_fids;
-  std::set<FieldIdentifier> m_output_fids;
-
-  Field<const Real,device_type> m_input;
-  Field<Real,device_type>       m_output;
-
-  std::shared_ptr<AbstractGrid> m_grid;
-
-  ParameterList m_params;
-  int     m_id;
-
-  Comm    m_comm;
-};
-
 // === A dummy physics grids for this test === //
 
 class DummyPhysicsGrid : public DefaultGrid<GridType::Physics>
@@ -133,8 +29,6 @@ TEST_CASE("ping-pong", "") {
   using namespace scream;
   using namespace scream::control;
 
-  using device_type = AtmosphereDriver::device_type;
-
   constexpr int num_iters = 10;
   constexpr int num_cols  = 32;
 
@@ -142,16 +36,11 @@ TEST_CASE("ping-pong", "") {
   ParameterList ad_params("Atmosphere Driver");
   auto& proc_params = ad_params.sublist("Atmosphere Processes");
 
-  proc_params.set("Number of Entries",2);
+  proc_params.set("Number of Entries",1);
   proc_params.set<std::string>("Schedule Type","Sequential");
 
   auto& p0 = proc_params.sublist("Process 0");
-  p0.set<std::string>("Process Name", "Dummy");
-  p0.set<int>("Number of vector components",2);
-
-  auto& p1 = proc_params.sublist("Process 1");
-  p1.set<std::string>("Process Name", "Dummy");
-  p1.set<int>("Number of vector components",2);
+  p0.set<std::string>("Process Name", "P3");
 
   auto& gm_params = ad_params.sublist("Grids Manager");
   gm_params.set<std::string>("Type","User Provided");
@@ -160,7 +49,7 @@ TEST_CASE("ping-pong", "") {
   // which rely on factory for process creation. The initialize method of the AD does that.
   // While we're at it, check that the case insensitive key of the factory works.
   auto& proc_factory = AtmosphereProcessFactory::instance();
-  proc_factory.register_product("duMmy",&create_atmosphere_process<DummyProcess<device_type,SCREAM_PACK_SIZE>>);
+  proc_factory.register_product("p3",&create_atmosphere_process<P3Microphysics>);
 
   // Need to register grids managers before we create the driver
   auto& gm_factory = GridsManagerFactory::instance();
@@ -184,27 +73,8 @@ TEST_CASE("ping-pong", "") {
     ad.run();
   }
 
-  // Every atm proc does out(:) = sin(in(:)+rank)
-  Real answer = 0;
-  for (int i=0; i<num_iters; ++i) {
-    for (int pid=0; pid<atm_comm.size(); ++pid) {
-      answer = std::sin(answer+pid);
-    }
-  }
-
-  // Get the field repo, and check the answer
-  const auto& repo = ad.get_field_repo();
-
-  std::vector<FieldTag> tags = {FieldTag::Column,FieldTag::Component};
-  std::vector<int> dims = {num_cols, 2};
-  FieldLayout layout (tags,dims);
-  FieldIdentifier final_fid("field_" + std::to_string(atm_comm.size()-1),layout,"Physics");
-  const auto& final_field = repo.get_field(final_fid);
-
-  auto h_view = Kokkos::create_mirror_view(final_field.get_view());
-  for (int i=0; i<h_view.extent_int(0); ++i) {
-    REQUIRE (h_view(i) == answer);
-  }
+  // TODO: get the field repo from the driver, and go get (one of)
+  //       the output(s) of P3, to check its numerical value (if possible)
 
   // Finalize 
   ad.finalize();

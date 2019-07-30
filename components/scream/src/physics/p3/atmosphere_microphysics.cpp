@@ -54,6 +54,15 @@ void P3Microphysics::finalize()
 }
 // =========================================================================================
 
+void P3Microphysics::register_fields (FieldRepository<Real, device_type>& field_repo) const {
+  for (auto& fid : m_required_fields) {
+    field_repo.register_field(fid);
+  }
+  for (auto& fid : m_computed_fields) {
+    field_repo.register_field(fid);
+  }
+}
+
 void P3Microphysics::set_required_field_impl (const Field<const Real, device_type>& f) {
   // Store a copy of the field. We need this in order to do some tracking checks
   // at the beginning of the run call. Other than that, there would be really

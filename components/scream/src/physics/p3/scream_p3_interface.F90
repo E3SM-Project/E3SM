@@ -5,8 +5,6 @@
 module scream_p3_interface_mod
 
   use iso_c_binding, only: c_ptr, c_f_pointer, c_int, c_double, c_bool,C_NULL_CHAR
-  use spmd_utils,     only: masterproc
-  use cam_logfile,    only: iulog
 
   public :: p3_init_f90
   public :: p3_main_f90
