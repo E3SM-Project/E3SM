@@ -485,6 +485,8 @@ subroutine stepon_run3(dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out)
                   chunk_to_block_recv_pters_five
    use parallel_mod,   only: par
    use dof_mod, only: PutUniquePoints
+   use edge_mod, only : edge_g,edgevpack_nlyr
+   use bndry_mod,        only : bndry_exchangeV
    		  
    real(r8), intent(in) :: dtime   ! Time-step
    real(r8) :: ftmp_temp(np,np,nlev,nelemd), ftmp_q(np,np,nlev,pcnst,nelemd)
@@ -510,6 +512,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out)
    integer :: bpter_five(npsq,0:pverp)
    integer :: block_buf_nrecs_five, chunk_buf_nrecs_five
    integer :: tsize_five
+   integer :: nlevp, ii
    
    real(r8), allocatable, dimension(:) :: bbuffer_five, cbuffer_five
    
@@ -531,6 +534,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out)
 
 #endif   
 
+   nlevp=nlev+1
    nphys_sq = np*np
    tsize_five = 1 ! number of FIVE variables
 
@@ -568,8 +572,6 @@ subroutine stepon_run3(dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out)
 
    call transpose_chunk_to_block_five(tsize_five,chunk_buf_nrecs_five,&
         block_buf_nrecs_five,cbuffer_five,bbuffer_five)
-   
-!   write(*,*) 'OUTPUTS ', block_buf_nrecs, block_buf_nrecs_five
   
    if (par%dynproc) then
      !$omp parallel do private (ie, bpter_five, icol, ilyr, m, ncols) 
@@ -590,12 +592,22 @@ subroutine stepon_run3(dtime, cam_out, phys_state, pbuf2d, dyn_in, dyn_out)
    if (par%dynproc) then
      do ie = 1,nelemd
        ncols = elem(ie)%idxP%NumUniquePts
-       call putUniquePoints(elem(ie)%idxP,    nlev+1,       thlm_tmp(1:ncols,:,ie),   &
-                               thlm_final(:,:,:,ie))
+       call putUniquePoints(elem(ie)%idxP,    nlevp,       thlm_tmp(1:ncols,1:nlevp,ie),   &
+                               thlm_final(:,:,1:nlevp,ie))
+       call edgeVpack_nlyr(edge_g, elem(ie)%desc, thlm_final(:,:,:,ie), nlevp, 0, nlevp)
+
      enddo
+     
+     call bndry_exchangeV(par, edge_g)
+     
+     do ie=1,nelemd
+       call edgeVunpack_nlyr(edge_g, elem(ie)%desc, thlm_final(:,:,:,ie), nlevp, 0, nlevp)
+     end do
+     
    endif
    
-   ! Verify results. Look at lowest model level
+   ! Verify results. Look at lowest model level.  Comparing thetal versus T, but since we 
+   !   are at lowest model level, they should generally be comparable.  and they are :) 
    do ie=1,nelemd
      tl_f = TimeLevel%n0
      write(*,*) 'THETA_COMPARE ', ie, thlm_final(1,1,nlev,ie), dyn_in%elem(ie)%state%T(1,1,nlev,tl_f)
