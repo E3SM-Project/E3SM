@@ -174,16 +174,13 @@ contains
          numliq(its:ite,kts:kte),     & ! INOUT  cloud, number mixing ratio       #  kg-1
          rain(its:ite,kts:kte),       & ! INOUT  rain, mass mixing ratio          kg kg-1
          numrain(its:ite,kts:kte),    & ! INOUT  rain, number mixing ratio        #  kg-1
-         th_old(its:ite,kts:kte),     & ! INOUT  beginning of time step theta     K
          th(its:ite,kts:kte),         & ! INOUT  potential temperature            K
-         qv_old(its:ite,kts:kte),     & ! INOUT  beginning of time step qv        kg kg-1
          qv(its:ite,kts:kte),         & ! INOUT  water vapor mixing ratio         kg kg-1
          dtime,                       & ! IN     model time step                  s
          ice(its:ite,kts:kte),        & ! INOUT  ice, total mass mixing ratio     kg kg-1
          qirim(its:ite,kts:kte),      & ! INOUT  ice, rime mass mixing ratio      kg kg-1
          numice(its:ite,kts:kte),     & ! INOUT  ice, total number mixing ratio   #  kg-1
          rimvol(its:ite,kts:kte),     & ! INOUT  ice, rime volume mixing ratio    m3 kg-1
-         ssat(its:ite,kts:kte),       & ! INOUT  supersaturation (i.e., qv-qvs)   kg kg-1
          pres(its:ite,kts:kte),       & ! IN     pressure at cell midpoints       Pa
          dzq(its:ite,kts:kte),        & ! IN     vertical grid spacing            m
          npccn(its:ite,kts:kte),      & ! IN ccn activation number tendency kg-1 s-1
