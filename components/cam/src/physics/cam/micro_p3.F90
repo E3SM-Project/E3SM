@@ -925,6 +925,7 @@ contains
 
           !................
           ! cloud water autoconversion 
+          ! NOTE: cloud_water_autoconversion must be called before droplet_self_collection
           call cloud_water_autoconversion(rho(i,k), inv_rho(i,k),qc_incld(i,k),& 
             nc_incld(i,k),qr_incld(i,k),mu_c(i,k),nu(i,k),& 
             qcaut,ncautc,ncautr)
@@ -3148,10 +3149,6 @@ subroutine cloud_water_autoconversion(rho,inv_rho,qc_incld,nc_incld,qr_incld,mu_
          !Seifert and Beheng (2001)
          dum   = 1._rtype-qc_incld/(qc_incld+qr_incld)
          dum1  = 600._rtype*dum**0.68_rtype*(1.-dum**0.68_rtype)**3
-         ! qcaut = kc/(20.*2.6e-7)*(nu(i,k)+2.)*(nu(i,k)+4.)/(nu(i,k)+1.)**2*         &
-         !         (rho(i,k)*qc_incld(i,k)/1000.)**4/(rho(i,k)*nc_incld(i,k)/1.e+6)**2*(1.+       &
-         !         dum1/(1.-dum)**2)*1000.*inv_rho(i,k)
-         ! ncautc = qcaut*2./2.6e-7*1000.
          qcaut =  kc*1.9230769e-5_rtype*(nu+2._rtype)*(nu+4._rtype)/(nu+1.)**2*        &
               (rho*qc_incld*1.e-3_rtype)**4/(rho*nc_incld*1.e-6_rtype)**2*(1._rtype+      &
               dum1/(1._rtype-dum)**2)*1000._rtype*inv_rho
