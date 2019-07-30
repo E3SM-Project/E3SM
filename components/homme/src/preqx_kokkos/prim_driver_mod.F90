@@ -30,15 +30,15 @@ module prim_driver_mod
   subroutine prim_init1(elem, par, dom_mt, tl)
     use iso_c_binding,    only : c_int, c_loc
     use derivative_mod,   only : derivinit
-    use dimensions_mod,   only : nelemd, np
+    use dimensions_mod,   only : nelemd, nlev, np
     use domain_mod,       only : domain1d_t
     use element_mod,      only : element_t
+    use edge_mod,         only : initEdgeBuffer, edge_g
     use kinds,            only : iulog, real_kind
     use parallel_mod,     only : parallel_t
     use time_mod,         only : TimeLevel_t, TimeLevel_init
     use prim_driver_base, only : prim_init1_geometry, prim_init1_elem_arrays, &
-                                 prim_init1_buffers, prim_init1_cleanup, &
-                                 MetaVertex, GridEdge, deriv1
+                                 prim_init1_cleanup, MetaVertex, GridEdge, deriv1
 #ifndef CAM
     use prim_driver_base, only : prim_init1_no_cam
 #endif
@@ -104,7 +104,10 @@ module prim_driver_mod
     ! ==================================
     ! Initialize the buffers for exchanges
     ! ==================================
-    call prim_init1_buffers(elem,par)
+    ! Note: we don't really need edge buffers in the kokkos target,
+    !       since we handle MPI in C++. However, we do need an edge
+    !       buffer for tests initialization
+    call initEdgeBuffer(par,edge_g,elem,nlev)
 
     ! Initialize the time levels
     call TimeLevel_init(tl)
