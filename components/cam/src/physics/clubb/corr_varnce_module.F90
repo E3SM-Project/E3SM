@@ -1,138 +1,111 @@
 !-----------------------------------------------------------------------
-!$Id$
+!$Id: corr_varnce_module.F90 7130 2014-07-29 23:29:54Z raut@uwm.edu $
 !-------------------------------------------------------------------------------
 module corr_varnce_module
 
   use clubb_precision, only: &
       core_rknd
 
-  use array_index, only: &
-      iiPDF_chi, &
-      iiPDF_eta, &
-      iiPDF_w, &
-      iiPDF_rr, &
-      iiPDF_rs, &
-      iiPDF_ri, &
-      iiPDF_rg, &
-      iiPDF_Nr, &
-      iiPDF_Ns, &
-      iiPDF_Ni, &
-      iiPDF_Ng, &
-      iiPDF_Ncn
-
-  use error_code, only: &
-        clubb_at_least_debug_level, &   ! Procedure
-        clubb_fatal_error, &            ! Constant
-        err_code                        ! Error indicator
-
   implicit none
 
-  type hmp2_ip_on_hmm2_ip_ratios_type
+  type sigma2_on_mu2_ratios_type
 
-    ! Prescribed parameters for hydrometeor values of <hm|_ip'^2> / <hm|_ip>^2,
-    ! where  <hm|_ip'^2>  is the in-precip. variance of the hydrometeor and
-    !        <hm|_ip>     is the in-precip. mean of the hydrometeor
-    ! 
-    ! These values are dependent on the horizontal grid spacing of the run, and are calculated
-    ! using a slope and intercept corresponding to each hydrometer.
+    ! In CLUBB standalone, these parameters can be set based on the value for a
+    ! given case in the CASE_model.in file.
+
+    ! Prescribed parameters for hydrometeor in-precip values of
+    ! sigma_hm_i^2 / mu_hm_i^2 at grid levels that have some cloud.
+    ! They can be set based on values for a given case in the CASE_model.in file.
     real( kind = core_rknd ) :: &
-      rr = 1.0_core_rknd, & ! For rain water mixing ratio [-]
-      Nr = 1.0_core_rknd, & ! For rain drop concentration [-]
-      ri = 1.0_core_rknd, & ! For ice mixing ratio        [-]
-      Ni = 1.0_core_rknd, & ! For ice concentration       [-]
-      rs = 1.0_core_rknd, & ! For snow mixing ratio       [-]
-      Ns = 1.0_core_rknd, & ! For snow concentration      [-]
-      rg = 1.0_core_rknd, & ! For graupel mixing ratio    [-]
-      Ng = 1.0_core_rknd    ! For graupel concentration   [-]
+      rr_sigma2_on_mu2_ip_cloud = 1.0_core_rknd, & ! sigma_rr_i^2/mu_rr_i^2  [-]
+      Nr_sigma2_on_mu2_ip_cloud = 1.0_core_rknd    ! sigma_Nr_i^2/mu_Nr_i^2  [-]
 
-  end type hmp2_ip_on_hmm2_ip_ratios_type
-
-  ! These slopes and intercepts below are used to calculate the hmp2_ip_on_hmm2_ip_ratios_type
-  ! values that are defined above. This functionality is described by equations 8, 10, & 11
-  ! in ``Parameterization of the Spatial Variability of Rain for Large-Scale Models and 
-  ! Remote Sensing`` Lebo, et al, October 2015
-  ! https://journals.ametsoc.org/doi/pdf/10.1175/JAMC-D-15-0066.1
-  ! see clubb:ticket:830 for more detail
-  ! 
-  ! hmp2_ip_on_hmm2_ip(iirr) = hmp2_ip_on_hmm2_ip_intrcpt%rr + &
-  !                            hmp2_ip_on_hmm2_ip_slope%rr * max( host_dx, host_dy )
-  ! 
-  ! In Lebo et al. the suggested values were
-  !     slope = 2.12e-5 [1/m]
-  !     intercept = 0.54 [-]
-  ! 
-  ! In CLUBB standalone, these parameters can be set based on the value for a
-  ! given case in the CASE_model.in file.
-  type hmp2_ip_on_hmm2_ip_slope_type
-
+    ! Prescribed parameters for hydrometeor in-precip values of
+    ! sigma_hm_i^2 / mu_hm_i^2 at grid levels that are entirely clear.
+    ! They can be set based on values for a given case in the CASE_model.in file.
     real( kind = core_rknd ) :: &
-      rr = 2.12e-5_core_rknd, & ! For rain water mixing ratio [1/m]
-      Nr = 2.12e-5_core_rknd, & ! For rain drop concentration [1/m]
-      ri = 2.12e-5_core_rknd, & ! For ice mixing ratio        [1/m]
-      Ni = 2.12e-5_core_rknd, & ! For ice concentration       [1/m]
-      rs = 2.12e-5_core_rknd, & ! For snow mixing ratio       [1/m]
-      Ns = 2.12e-5_core_rknd, & ! For snow concentration      [1/m]
-      rg = 2.12e-5_core_rknd, & ! For graupel mixing ratio    [1/m]
-      Ng = 2.12e-5_core_rknd    ! For graupel concentration   [1/m]
+      rr_sigma2_on_mu2_ip_below = 1.0_core_rknd, & ! sigma_rr_i^2/mu_rr_i^2  [-]
+      Nr_sigma2_on_mu2_ip_below = 1.0_core_rknd    ! sigma_Nr_i^2/mu_Nr_i^2  [-]
 
-  end type hmp2_ip_on_hmm2_ip_slope_type
-
-  type hmp2_ip_on_hmm2_ip_intrcpt_type
-
+    ! Parameters added for ice microphysics and latin hypercube sampling
     real( kind = core_rknd ) :: &
-      rr = 0.54_core_rknd, & ! For rain water mixing ratio [-]
-      Nr = 0.54_core_rknd, & ! For rain drop concentration [-]
-      ri = 0.54_core_rknd, & ! For ice mixing ratio        [-]
-      Ni = 0.54_core_rknd, & ! For ice concentration       [-]
-      rs = 0.54_core_rknd, & ! For snow mixing ratio       [-]
-      Ns = 0.54_core_rknd, & ! For snow concentration      [-]
-      rg = 0.54_core_rknd, & ! For graupel mixing ratio    [-]
-      Ng = 0.54_core_rknd    ! For graupel concentration   [-]
+      rs_sigma2_on_mu2_ip_cloud = 1.0_core_rknd, & ! sigma_rs_i^2/mu_rs_i^2  [-]
+      Ns_sigma2_on_mu2_ip_cloud = 1.0_core_rknd, & ! sigma_Ns_i^2/mu_Ns_i^2  [-]
+      ri_sigma2_on_mu2_ip_cloud = 1.0_core_rknd, & ! sigma_ri_i^2/mu_ri_i^2  [-]
+      Ni_sigma2_on_mu2_ip_cloud = 1.0_core_rknd, & ! sigma_Ni_i^2/mu_Ni_i^2  [-]
+      rg_sigma2_on_mu2_ip_cloud = 1.0_core_rknd, & ! sigma_rg_i^2/mu_rg_i^2  [-]
+      Ng_sigma2_on_mu2_ip_cloud = 1.0_core_rknd    ! sigma_Ng_i^2/mu_Ng_i^2  [-]
 
-  end type hmp2_ip_on_hmm2_ip_intrcpt_type
+    ! Parameters added for ice microphysics and latin hypercube sampling
+    real( kind = core_rknd ) :: &
+      rs_sigma2_on_mu2_ip_below = 1.0_core_rknd, & ! sigma_rs_i^2/mu_rs_i^2  [-]
+      Ns_sigma2_on_mu2_ip_below = 1.0_core_rknd, & ! sigma_Ns_i^2/mu_Ns_i^2  [-]
+      ri_sigma2_on_mu2_ip_below = 1.0_core_rknd, & ! sigma_ri_i^2/mu_ri_i^2  [-]
+      Ni_sigma2_on_mu2_ip_below = 1.0_core_rknd, & ! sigma_Ni_i^2/mu_Ni_i^2  [-]
+      rg_sigma2_on_mu2_ip_below = 1.0_core_rknd, & ! sigma_rg_i^2/mu_rg_i^2  [-]
+      Ng_sigma2_on_mu2_ip_below = 1.0_core_rknd    ! sigma_Ng_i^2/mu_Ng_i^2  [-]
 
+    ! Prescribed parameter for <N_cn'^2> / <N_cn>^2 at any grid level.
+    ! NOTE: In the case that l_const_Nc_in_cloud is true, Ncn is constant
+    !       throughout the entire grid box, so the parameter below should be
+    !       ignored.
+    real( kind = core_rknd ) :: &
+      Ncnp2_on_Ncnm2 = 1.0_core_rknd   ! Prescribed ratio <N_cn'^2>/<N_cn>^2 [-]
 
-  ! Prescribed parameter for <N_cn'^2> / <N_cn>^2.
-  ! NOTE: In the case that l_const_Nc_in_cloud is true, Ncn is constant
-  !       throughout the entire grid box, so the parameter below should be
-  !       ignored.
-  real( kind = core_rknd ), public :: &
-    Ncnp2_on_Ncnm2 = 1.0_core_rknd   ! Prescribed ratio <N_cn'^2> / <N_cn>^2 [-]
+  end type sigma2_on_mu2_ratios_type
 
-!$omp threadprivate(Ncnp2_on_Ncnm2)
+  ! Latin hypercube indices / Correlation array indices
+  integer, public :: &
+    iiPDF_chi = -1, &
+    iiPDF_eta = -1, &
+    iiPDF_w   = -1
+!$omp threadprivate(iiPDF_chi, iiPDF_eta, iiPDF_w)
+
+  integer, public :: &
+   iiPDF_rr = -1, &
+   iiPDF_rs = -1, &
+   iiPDF_ri = -1, &
+   iiPDF_rg = -1
+!$omp threadprivate(iiPDF_rr, iiPDF_rs, iiPDF_ri, iiPDF_rg)
+
+  integer, public :: &
+   iiPDF_Nr  = -1, &
+   iiPDF_Ns  = -1, &
+   iiPDF_Ni  = -1, &
+   iiPDF_Ng  = -1, &
+   iiPDF_Ncn = -1
+!$omp threadprivate(iiPDF_Nr, iiPDF_Ns, iiPDF_Ni, iiPDF_Ng, iiPDF_Ncn)
 
   integer, parameter, public :: &
     d_var_total = 12 ! Size of the default correlation arrays
 
   integer, public :: &
-    pdf_dim
-!$omp threadprivate(pdf_dim)
+    d_variables
+!$omp threadprivate(d_variables)
 
-  real( kind = core_rknd ), dimension(:), allocatable, public :: &
-     hmp2_ip_on_hmm2_ip
-
-!$omp threadprivate(hmp2_ip_on_hmm2_ip)
-
-  real( kind = core_rknd ), public, dimension(:,:), allocatable :: &
-    corr_array_n_cloud, &
-    corr_array_n_below
-!$omp threadprivate(corr_array_n_cloud, corr_array_n_below)
+  real( kind = core_rknd ), public, dimension(:), allocatable :: &
+    sigma2_on_mu2_ip_array_cloud, &
+    sigma2_on_mu2_ip_array_below
 
   real( kind = core_rknd ), public, dimension(:,:), allocatable :: &
-      corr_array_n_cloud_def, &
-      corr_array_n_below_def
-!$omp threadprivate( corr_array_n_cloud_def, corr_array_n_below_def )
+    corr_array_cloud, &
+    corr_array_below
+!$omp threadprivate(sigma2_on_mu2_ip_array_cloud, sigma2_on_mu2_ip_array_below, &
+!$omp   corr_array_cloud, corr_array_below)
+
+  real( kind = core_rknd ), public, dimension(:,:), allocatable :: &
+      corr_array_cloud_def, &
+      corr_array_below_def
+!$omp threadprivate( corr_array_cloud_def, corr_array_below_def )
+
 
   private
 
-  public :: hmp2_ip_on_hmm2_ip_ratios_type, &
-            hmp2_ip_on_hmm2_ip_slope_type, &
-            hmp2_ip_on_hmm2_ip_intrcpt_type, &
-            read_correlation_matrix, init_pdf_indices, &
+  public :: sigma2_on_mu2_ratios_type, read_correlation_matrix, setup_pdf_indices, &
             setup_corr_varnce_array, cleanup_corr_matrix_arrays, &
-            assert_corr_symmetric, print_corr_matrix, init_hydromet_arrays
+            assert_corr_symmetric, print_corr_matrix
 
-  private :: get_corr_var_index, def_corr_idx
+  private :: get_corr_var_index, return_pdf_index, def_corr_idx
 
 
   contains
@@ -158,65 +131,64 @@ module corr_varnce_module
     ! ---- Begin Code ----
  
     ! Allocate Arrays.
-    allocate( corr_array_n_cloud_def(d_var_total,d_var_total) )
-    allocate( corr_array_n_below_def(d_var_total,d_var_total) )
+    allocate( corr_array_cloud_def(d_var_total,d_var_total) )
+    allocate( corr_array_below_def(d_var_total,d_var_total) )
 
     ! Initialize all values to 0.
-    corr_array_n_cloud_def = zero
-    corr_array_n_below_def = zero
+    corr_array_cloud_def = zero
+    corr_array_below_def = zero
 
     ! Set the correlation of any variable with itself to 1.
     do indx = 1, d_var_total, 1
-       corr_array_n_cloud_def(indx,indx) = one
-       corr_array_n_below_def(indx,indx) = one
+       corr_array_cloud_def(indx,indx) = one
+       corr_array_below_def(indx,indx) = one
     enddo
 
-    ! Set up default normal space correlation arrays.
-    ! The default normal space correlation arrays used here are the normal space
-    ! correlation arrays used for the ARM 97 case.  Any changes should be made
-    ! concurrently here and in
+    ! Set up default correlation arrays.
+    ! The default correlation arrays used here are the correlation arrays used
+    ! for the ARM 97 case.  Any changes should be made concurrently here and in
     ! ../../input/case_setups/arm_97_corr_array_cloud.in (for "in-cloud") and
     ! in ../../input/case_setups/arm_97_corr_array_cloud.in (for "below-cloud").
-    corr_array_n_cloud_def = reshape( &
+    corr_array_cloud_def = reshape( &
 
-(/1._c,-.6_c, .09_c , .09_c , .788_c, .675_c, .240_c, .222_c, .240_c, .222_c, .240_c, .222_c, &! chi
-  0._c, 1._c, .027_c, .027_c, .114_c, .115_c,-.029_c, .093_c, .022_c, .013_c, 0._c  , 0._c  , &! eta
-  0._c, 0._c, 1._c  , .34_c , .315_c, .270_c, .120_c, .167_c, 0._c  , 0._c  , 0._c  , 0._c  , &! w
-  0._c, 0._c, 0._c  , 1._c  , 0._c  , 0._c  , .464_c, .320_c, .168_c, .232_c, 0._c  , 0._c  , &! Ncn
-  0._c, 0._c, 0._c  , 0._c  , 1._c  , .821_c, 0._c  , 0._c  , .173_c, .164_c, .319_c, .308_c, &! rr
-  0._c, 0._c, 0._c  , 0._c  , 0._c  , 1._c  , .152_c, .143_c, 0._c  , 0._c  , .285_c, .273_c, &! Nr
-  0._c, 0._c, 0._c  , 0._c  , 0._c  , 0._c  , 1._c  , .758_c, .585_c, .571_c, .379_c, .363_c, &! ri
-  0._c, 0._c, 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 1._c  , .571_c, .550_c, .363_c, .345_c, &! Ni
-  0._c, 0._c, 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 1._c  , .758_c, .485_c, .470_c, &! rs
-  0._c, 0._c, 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 1._c  , .470_c, .450_c, &! Ns
-  0._c, 0._c, 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 1._c  , .758_c, &! rg
-  0._c, 0._c, 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 1._c/), &! Ng
+(/1._c, -.6_c, .09_c , .09_c , .5_c   , .5_c   , .2_c   , .2_c  , .2_c  , .2_c  , .2_c, .2_c, &! chi
+  0._c, 1._c , .027_c, .027_c, .0726_c, .0855_c, -.024_c, .084_c, .018_c, .012_c, 0._c, 0._c, &! eta
+  0._c, 0._c , 1._c  , .34_c , 0.2_c  , 0.2_c  ,  .1_c  , .15_c , 0._c  , 0._c  , 0._c, 0._c, &! w
+  0._c, 0._c , 0._c  , 1._c  , 0._c   , 0._c   ,  .39_c , .29_c , .14_c , .21_c , 0._c, 0._c, &! Ncn
+  0._c, 0._c , 0._c  , 0._c  , 1._c   , .7_c   ,  0._c  , 0._c  , .1_c  , .1_c  , .2_c, .2_c, &! rr
+  0._c, 0._c , 0._c  , 0._c  , 0._c   , 1._c   ,  .1_c  , .1_c  , 0._c  , 0._c  , .2_c, .2_c, &! Nr
+  0._c, 0._c , 0._c  , 0._c  , 0._c   , 0._c   ,  1._c  , .7_c  , .5_c  , .5_c  , .3_c, .3_c, &! ri
+  0._c, 0._c , 0._c  , 0._c  , 0._c   , 0._c   ,  0._c  , 1._c  , .5_c  , .5_c  , .3_c, .3_c, &! Ni
+  0._c, 0._c , 0._c  , 0._c  , 0._c   , 0._c   ,  0._c  , 0._c  , 1._c  , .7_c  , .4_c, .4_c, &! rs
+  0._c, 0._c , 0._c  , 0._c  , 0._c   , 0._c   ,  0._c  , 0._c  , 0._c  , 1._c  , .4_c, .4_c, &! Ns
+  0._c, 0._c , 0._c  , 0._c  , 0._c   , 0._c   ,  0._c  , 0._c  , 0._c  , 0._c  , 1._c, .7_c, &! rg
+  0._c, 0._c , 0._c  , 0._c  , 0._c   , 0._c   ,  0._c  , 0._c  , 0._c  , 0._c  , 0._c, 1._c/),&!Ng
 
-    shape(corr_array_n_cloud_def) )
-!  chi   eta    w      Ncn     rr      Nr      ri      Ni      rs      Ns      rg      Ng
+    shape(corr_array_cloud_def) )
+!  chi   eta     w      Ncn      rr       Nr        ri      Ni      rs      Ns      rg    Ng
 
-    corr_array_n_cloud_def = transpose( corr_array_n_cloud_def )
+    corr_array_cloud_def = transpose( corr_array_cloud_def )
 
 
-    corr_array_n_below_def = reshape( &
+    corr_array_below_def = reshape( &
 
-(/1._c, .3_c, .09_c , .09_c , .788_c, .675_c, .240_c, .222_c, .240_c, .222_c, .240_c, .222_c, &! chi
-  0._c, 1._c, .027_c, .027_c, .114_c, .115_c,-.029_c, .093_c, .022_c, .013_c, 0._c  , 0._c  , &! eta
-  0._c, 0._c, 1._c  , .34_c , .315_c, .270_c, .120_c, .167_c, 0._c  , 0._c  , 0._c  , 0._c  , &! w
-  0._c, 0._c, 0._c  , 1._c  , 0._c  , 0._c  , .464_c, .320_c, .168_c, .232_c, 0._c  , 0._c  , &! Ncn
-  0._c, 0._c, 0._c  , 0._c  , 1._c  , .821_c, 0._c  , 0._c  , .173_c, .164_c, .319_c, .308_c, &! rr
-  0._c, 0._c, 0._c  , 0._c  , 0._c  , 1._c  , .152_c, .143_c, 0._c  , 0._c  , .285_c, .273_c, &! Nr
-  0._c, 0._c, 0._c  , 0._c  , 0._c  , 0._c  , 1._c  , .758_c, .585_c, .571_c, .379_c, .363_c, &! ri
-  0._c, 0._c, 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 1._c  , .571_c, .550_c, .363_c, .345_c, &! Ni
-  0._c, 0._c, 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 1._c  , .758_c, .485_c, .470_c, &! rs
-  0._c, 0._c, 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 1._c  , .470_c, .450_c, &! Ns
-  0._c, 0._c, 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 1._c  , .758_c, &! rg
-  0._c, 0._c, 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 0._c  , 1._c/), &! Ng
+(/1._c, .3_c , .09_c , .09_c , .5_c   , .5_c   , .2_c   , .2_c  , .2_c  , .2_c  , .2_c, .2_c, &! chi
+  0._c, 1._c , .027_c, .027_c, .0726_c, .0855_c, -.024_c, .084_c, .018_c, .012_c, 0._c, 0._c, &! eta
+  0._c, 0._c , 1._c  , .34_c , 0.2_c  , 0.2_c  ,  .1_c  , .15_c , 0._c  , 0._c  , 0._c, 0._c, &! w
+  0._c, 0._c , 0._c  , 1._c  , 0._c   , 0._c   ,  .39_c , .29_c , .14_c , .21_c , 0._c, 0._c, &! Ncn
+  0._c, 0._c , 0._c  , 0._c  , 1._c   , .7_c   ,  0._c  , 0._c  , .1_c  , .1_c  , .2_c, .2_c, &! rr
+  0._c, 0._c , 0._c  , 0._c  , 0._c   , 1._c   ,  .1_c  , .1_c  , 0._c  , 0._c  , .2_c, .2_c, &! Nr
+  0._c, 0._c , 0._c  , 0._c  , 0._c   , 0._c   ,  1._c  , .7_c  , .5_c  , .5_c  , .3_c, .3_c, &! ri
+  0._c, 0._c , 0._c  , 0._c  , 0._c   , 0._c   ,  0._c  , 1._c  , .5_c  , .5_c  , .3_c, .3_c, &! Ni
+  0._c, 0._c , 0._c  , 0._c  , 0._c   , 0._c   ,  0._c  , 0._c  , 1._c  , .7_c  , .4_c, .4_c, &! rs
+  0._c, 0._c , 0._c  , 0._c  , 0._c   , 0._c   ,  0._c  , 0._c  , 0._c  , 1._c  , .4_c, .4_c, &! Ns
+  0._c, 0._c , 0._c  , 0._c  , 0._c   , 0._c   ,  0._c  , 0._c  , 0._c  , 0._c  , 1._c, .7_c, &! rg
+  0._c, 0._c , 0._c  , 0._c  , 0._c   , 0._c   ,  0._c  , 0._c  , 0._c  , 0._c  , 0._c, 1._c/),&!Ng
 
-    shape(corr_array_n_below_def) )
-!  chi   eta    w      Ncn     rr      Nr      ri      Ni      rs      Ns      rg      Ng
+    shape(corr_array_below_def) )
+!  chi   eta     w      Ncn      rr       Nr        ri      Ni      rs      Ns      rg    Ng
 
-    corr_array_n_below_def = transpose( corr_array_n_below_def )
+    corr_array_below_def = transpose( corr_array_below_def )
 
 
     return
@@ -322,22 +294,22 @@ module corr_varnce_module
 
     ! ---- Begin Code ----
 
-    corr_array_n_cloud = zero
-    corr_array_n_below = zero
+    corr_array_cloud = zero
+    corr_array_below = zero
 
-    do i = 1, pdf_dim
-       corr_array_n_cloud(i,i) = one
-       corr_array_n_below(i,i) = one
+    do i = 1, d_variables
+       corr_array_cloud(i,i) = one
+       corr_array_below(i,i) = one
     enddo
 
-    do i = 1, pdf_dim-1
-       do j = i+1, pdf_dim
+    do i = 1, d_variables-1
+       do j = i+1, d_variables
           if ( def_corr_idx(i) > def_corr_idx(j) ) then
-             corr_array_n_cloud(j, i) = corr_array_n_cloud_def(def_corr_idx(j), def_corr_idx(i))
-             corr_array_n_below(j, i) = corr_array_n_below_def(def_corr_idx(j), def_corr_idx(i))
+             corr_array_cloud(j, i) = corr_array_cloud_def(def_corr_idx(j), def_corr_idx(i))
+             corr_array_below(j, i) = corr_array_below_def(def_corr_idx(j), def_corr_idx(i))
           else
-             corr_array_n_cloud(j, i) = corr_array_n_cloud_def(def_corr_idx(i), def_corr_idx(j))
-             corr_array_n_below(j, i) = corr_array_n_below_def(def_corr_idx(i), def_corr_idx(j))
+             corr_array_cloud(j, i) = corr_array_cloud_def(def_corr_idx(i), def_corr_idx(j))
+             corr_array_below(j, i) = corr_array_below_def(def_corr_idx(i), def_corr_idx(j))
           endif
        enddo
     enddo
@@ -346,8 +318,8 @@ module corr_varnce_module
 
 
   !-----------------------------------------------------------------------------
-  subroutine read_correlation_matrix( iunit, input_file, pdf_dim, &
-                                      corr_array_n )
+  subroutine read_correlation_matrix( iunit, input_file, d_variables, &
+                                      corr_array )
 
     ! Description:
     !   Reads a correlation variance array from a file and stores it in an array.
@@ -369,13 +341,13 @@ module corr_varnce_module
     ! Input Variable(s)
     integer, intent(in) :: &
       iunit, &    ! File I/O unit
-      pdf_dim! number of variables in the array
+      d_variables ! number of variables in the array
 
     character(len=*), intent(in) :: input_file ! Path to the file
 
     ! Input/Output Variable(s)
-    real( kind = core_rknd ), dimension(pdf_dim,pdf_dim), intent(inout) :: &
-      corr_array_n ! Normal space correlation array
+    real( kind = core_rknd ), dimension(d_variables,d_variables), intent(inout) :: &
+      corr_array ! Correlation variance array
 
     ! Local Variable(s)
 
@@ -393,15 +365,15 @@ module corr_varnce_module
 
     nCols = count_columns( iunit, input_file )
 
-    ! Allocate all arrays based on pdf_dim
+    ! Allocate all arrays based on d_variables
     allocate( retVars(1:nCols) )
 
     ! Initializing to zero means that correlations we don't have are assumed to be 0.
-    corr_array_n(:,:) = 0.0_core_rknd
+    corr_array(:,:) = 0.0_core_rknd
 
     ! Set main diagonal to 1
-    do i=1, pdf_dim
-      corr_array_n(i,i) = 1.0_core_rknd
+    do i=1, d_variables
+      corr_array(i,i) = 1.0_core_rknd
     end do
 
     ! Read the values from the specified file
@@ -422,8 +394,8 @@ module corr_varnce_module
           var_index2 = get_corr_var_index( retVars(j)%name )
           if( var_index2 > -1 ) then
             call set_lower_triangular_matrix &
-                 ( pdf_dim, var_index1, var_index2, retVars(i)%values(j), &
-                   corr_array_n )
+                 ( d_variables, var_index1, var_index2, retVars(i)%values(j), &
+                   corr_array )
           end if
         end do
       end if
@@ -495,41 +467,43 @@ module corr_varnce_module
 
   end function get_corr_var_index
 
-  !===============================================================================
-  subroutine init_pdf_indices( hydromet_dim, iirr, iiNr,    & ! intent(in)
-                               iiri, iiNi, iirs, iiNs,      & ! intent(in)
-                               iirg, iiNg                   ) ! intent(in)
+  !-----------------------------------------------------------------------
+  subroutine setup_pdf_indices( hydromet_dim, iirrm, iiNrm, &
+                                iirim, iiNim, iirsm, iiNsm, &
+                                iirgm, iiNgm )
 
-  ! Description:
-  ! 
-  ! Setup for the iiPDF indices. These indices are used to address 
-  ! chi(s), eta(t), w and the hydrometeors in the mean/stdev/corr arrays
-  ! 
-  ! References:
-  !-------------------------------------------------------------------------------
-
-    
+    ! Description:
+    !
+    ! Setup for the iiPDF indices. These indices are used to address chi(s), eta(t), w
+    ! and the hydrometeors in the mean/stdev/corr arrays
+    !
+    ! References:
+    !-----------------------------------------------------------------------
 
     implicit none
 
     ! Input Variables
     integer, intent(in) :: &
-      hydromet_dim, & ! Total number of hydrometeor species.
-      iirr,         & ! Index of rain water mixing ratio
-      iiNr,         & ! Index of rain drop concentration
-      iiri,         & ! Index of ice mixing ratio
-      iiNi,         & ! Index of ice crystal concentration
-      iirs,         & ! Index of snow mixing ratio
-      iiNs,         & ! Index of snow flake concentration
-      iirg,         & ! Index of graupel mixing ratio
-      iiNg            ! Index of graupel concentration
+      hydromet_dim    ! Total number of hydrometeor species.
+
+    integer, intent(in) :: &
+      iirrm, & ! Index of rain water mixing ratio
+      iiNrm, & ! Index of rain drop concentration
+      iirim, & ! Index of ice mixing ratio
+      iiNim, & ! Index of ice crystal concentration
+      iirsm, & ! Index of snow mixing ratio
+      iiNsm, & ! Index of snow flake concentration
+      iirgm, & ! Index of graupel mixing ratio
+      iiNgm    ! Index of graupel concentration
 
     ! Local Variables
     integer :: &
       pdf_count, & ! Count number of PDF variables
       i            ! Hydrometeor loop index
 
-  !--------------------- Begin Code --------------------------------
+  !-----------------------------------------------------------------------
+
+    !----- Begin Code -----
 
     iiPDF_chi = 1 ! Extended liquid water mixing ratio, chi
     iiPDF_eta = 2 ! 'eta' orthogonal to 'chi'
@@ -545,42 +519,42 @@ module corr_varnce_module
 
        do i = 1, hydromet_dim, 1
 
-          if ( i == iirr ) then
+          if ( i == iirrm ) then
              pdf_count = pdf_count + 1
              iiPDF_rr = pdf_count
           endif
 
-          if ( i == iiNr ) then
+          if ( i == iiNrm ) then
              pdf_count = pdf_count + 1
              iiPDF_Nr = pdf_count
           endif
 
-          if ( i == iiri ) then
+          if ( i == iirim ) then
              pdf_count = pdf_count + 1
              iiPDF_ri = pdf_count
           endif
 
-          if ( i == iiNi ) then
+          if ( i == iiNim ) then
              pdf_count = pdf_count + 1
              iiPDF_Ni = pdf_count
           endif
 
-          if ( i == iirs ) then
+          if ( i == iirsm ) then
              pdf_count = pdf_count + 1
              iiPDF_rs = pdf_count
           endif
 
-          if ( i == iiNs ) then
+          if ( i == iiNsm ) then
              pdf_count = pdf_count + 1
              iiPDF_Ns = pdf_count
           endif
 
-          if ( i == iirg ) then
+          if ( i == iirgm ) then
              pdf_count = pdf_count + 1
              iiPDF_rg = pdf_count
           endif
         
-          if ( i == iiNg ) then
+          if ( i == iiNgm ) then
              pdf_count = pdf_count + 1
              iiPDF_Ng = pdf_count
           endif   
@@ -589,134 +563,52 @@ module corr_varnce_module
 
     endif ! hydromet_dim > 0
 
-    pdf_dim = pdf_count
+    d_variables = pdf_count
 
 
     return
 
-  end subroutine init_pdf_indices
+  end subroutine setup_pdf_indices
+  !-----------------------------------------------------------------------
 
-  !===============================================================================
-  subroutine init_hydromet_arrays( hydromet_dim, iirr, iiNr,    & ! intent(in)
-                                   iiri, iiNi, iirs, iiNs,      & ! intent(in)
-                                   iirg, iiNg                   ) ! intent(in)
-  ! Description:
-  ! 
-  ! Initialization for the hydromet arrays. How the arrays are initialized is
-  ! determined by how the hydromet indicies (iirr, iiNr, etc.) have been set,
-  ! which are determined by the microphysics scheme.
   !-------------------------------------------------------------------------------
+  subroutine return_pdf_index( hydromet_index, pdf_count, pdf_index )
 
-    use constants_clubb, only: &
-        rr_tol, &   ! Constants, tolerances for each hydrometeor
-        ri_tol, &
-        rs_tol, &
-        rg_tol, &
-        Nr_tol, &
-        Ni_tol, &
-        Ns_tol, &
-        Ng_tol
-
-    use array_index, only: &
-        hydromet_list,  & ! Names of the hydrometeor species
-        hydromet_tol,   & ! List of tolerances for each enabled hydrometeor
-        l_frozen_hm,    & ! True means hydrometeor is frozen
-        l_mix_rat_hm      ! True means hydrometeor is a mixing ratio
+  ! Description:
+  !   Set the Latin hypercube variable index if the hydrometeor exists
+  ! References:
+  !   None
+  !-------------------------------------------------------------------------
 
     implicit none
 
     ! Input Variables
     integer, intent(in) :: &
-      hydromet_dim, & ! Total number of hydrometeor species.
-      iirr,         & ! Index of rain water mixing ratio
-      iiNr,         & ! Index of rain drop concentration
-      iiri,         & ! Index of ice mixing ratio
-      iiNi,         & ! Index of ice crystal concentration
-      iirs,         & ! Index of snow mixing ratio
-      iiNs,         & ! Index of snow flake concentration
-      iirg,         & ! Index of graupel mixing ratio
-      iiNg            ! Index of graupel concentration
-    
-    !--------------------- Begin Code --------------------------------
+      hydromet_index
 
+    ! Input/Output Variables
+    integer, intent(inout) :: &
+      pdf_count
 
-    ! Set up predictive precipitating hydrometeor arrays.
-    allocate( hydromet_list(hydromet_dim) )
-    allocate( hydromet_tol(hydromet_dim) )
-    allocate( l_mix_rat_hm(hydromet_dim) )
-    allocate( l_frozen_hm(hydromet_dim) )
+    ! Output Variables
+    integer, intent(out) :: &
+      pdf_index
 
-    if ( iirr > 0 ) then
-       ! The microphysics scheme predicts rain water mixing ratio, rr.
-       hydromet_list(iirr)      = "rrm"
-       l_mix_rat_hm(iirr)       = .true.
-       l_frozen_hm(iirr)        = .false.
-       hydromet_tol(iirr)       = rr_tol
-    endif
+    ! ---- Begin Code ----
 
-    if ( iiri > 0 ) then
-       ! The microphysics scheme predicts ice mixing ratio, ri.
-       hydromet_list(iiri)      = "rim"
-       l_mix_rat_hm(iiri)       = .true.
-       l_frozen_hm(iiri)        = .true.
-       hydromet_tol(iiri)       = ri_tol
-    endif
-
-    if ( iirs > 0 ) then
-       ! The microphysics scheme predicts snow mixing ratio, rs.
-       hydromet_list(iirs)      = "rsm"
-       l_mix_rat_hm(iirs)       = .true.
-       l_frozen_hm(iirs)        = .true.
-       hydromet_tol(iirs)       = rs_tol
-    endif
-
-    if ( iirg > 0 ) then
-       ! The microphysics scheme predicts graupel mixing ratio, rg.
-       hydromet_list(iirg)      = "rgm"
-       l_mix_rat_hm(iirg)       = .true.
-       l_frozen_hm(iirg)        = .true.
-       hydromet_tol(iirg)       = rg_tol
-    endif
-
-    if ( iiNr > 0 ) then
-       ! The microphysics scheme predicts rain drop concentration, Nr.
-       hydromet_list(iiNr)      = "Nrm"
-       l_frozen_hm(iiNr)        = .false.
-       l_mix_rat_hm(iiNr)       = .false.
-       hydromet_tol(iiNr)       = Nr_tol
-    endif
-
-    if ( iiNi > 0 ) then
-       ! The microphysics scheme predicts ice concentration, Ni.
-       hydromet_list(iiNi)      = "Nim"
-       l_mix_rat_hm(iiNi)       = .false.
-       l_frozen_hm(iiNi)        = .true.
-       hydromet_tol(iiNi)       = Ni_tol
-    endif
-
-    if ( iiNs > 0 ) then
-       ! The microphysics scheme predicts snowflake concentration, Ns.
-       hydromet_list(iiNs)      = "Nsm"
-       l_mix_rat_hm(iiNs)       = .false.
-       l_frozen_hm(iiNs)        = .true.
-       hydromet_tol(iiNs)       = Ns_tol
-    endif
-
-    if ( iiNg > 0 ) then
-       ! The microphysics scheme predicts graupel concentration, Ng.
-       hydromet_list(iiNg)      = "Ngm"
-       l_mix_rat_hm(iiNg)       = .false.
-       l_frozen_hm(iiNg)        = .true.
-       hydromet_tol(iiNg)       = Ng_tol
-    endif
+    if ( hydromet_index > 0 ) then
+      pdf_count = pdf_count + 1
+      pdf_index = pdf_count
+    else
+      pdf_index = -1
+    end if
 
     return
-
-  end subroutine init_hydromet_arrays
+  end subroutine return_pdf_index
 
 !===============================================================================
   subroutine setup_corr_varnce_array( input_file_cloud, input_file_below, &
-                                      iunit )
+                                      iunit, sigma2_on_mu2_ratios )
 
 ! Description:
 !   Setup an array with the x'^2/xm^2 variables on the diagonal and the other
@@ -727,13 +619,18 @@ module corr_varnce_module
 !-------------------------------------------------------------------------------
 
     use model_flags, only: &
-      l_fix_w_chi_eta_correlations    ! Variable(s)
+      l_fix_chi_eta_correlations, & ! Variable(s)
+      l_const_Nc_in_cloud
 
     use matrix_operations, only: mirror_lower_triangular_matrix ! Procedure
 
     use constants_clubb, only: &
       fstderr, &  ! Constant(s)
       zero
+
+    use error_code, only: &
+      clubb_debug, & ! Procedure(s)
+      clubb_at_least_debug_level
 
     implicit none
 
@@ -748,32 +645,41 @@ module corr_varnce_module
     integer, intent(in) :: &
       iunit ! The file unit
 
+    type(sigma2_on_mu2_ratios_type), intent(in) :: &
+      sigma2_on_mu2_ratios   ! Prescribed sigma^2 / mu^2 terms
+
     ! Local variables
-    logical :: l_warning, l_corr_file_1_exist, l_corr_file_2_exist
+    logical :: l_warning, corr_file_exist
     integer :: i
 
     ! ---- Begin Code ----
 
-    allocate( corr_array_n_cloud(pdf_dim,pdf_dim) )
-    allocate( corr_array_n_below(pdf_dim,pdf_dim) )
+    allocate( corr_array_cloud(d_variables,d_variables) )
+    allocate( corr_array_below(d_variables,d_variables) )
 
-    inquire( file = input_file_cloud, exist = l_corr_file_1_exist )
-    inquire( file = input_file_below, exist = l_corr_file_2_exist )
+    allocate( sigma2_on_mu2_ip_array_cloud(d_variables) )
+    allocate( sigma2_on_mu2_ip_array_below(d_variables) )
 
-    if ( l_corr_file_1_exist .and. l_corr_file_2_exist ) then
+    sigma2_on_mu2_ip_array_cloud(:) = zero
+    sigma2_on_mu2_ip_array_below(:) = zero
 
-       call read_correlation_matrix( iunit, trim( input_file_cloud ), pdf_dim, & ! In
-                                     corr_array_n_cloud ) ! Out
+    ! corr_file_exist is true if the *_corr_array_cloud.in file exists
+    ! Note: It is assumed that if the *_corr_array_cloud.in file exists
+    !       then *_corr_array_below.in also exists
+    inquire( file = input_file_cloud, exist = corr_file_exist )
 
-       call read_correlation_matrix( iunit, trim( input_file_below ), pdf_dim, & ! In
-                                     corr_array_n_below ) ! Out
+    if ( corr_file_exist ) then
+
+       call read_correlation_matrix( iunit, trim( input_file_cloud ), d_variables, & ! In
+                                     corr_array_cloud ) ! Out
+
+       call read_correlation_matrix( iunit, trim( input_file_below ), d_variables, & ! In
+                                     corr_array_below ) ! Out
 
     else ! Read in default correlation matrices
-        
-        if ( clubb_at_least_debug_level( 1 ) ) then
-            write(fstderr,*) "Warning: "//trim( input_file_cloud )//" was not found! " // &
-                             "The default correlation arrays will be used." 
-        end if
+
+       call clubb_debug( 1, "Warning: "//trim( input_file_cloud )//" was not found! " // &
+                        "The default correlation arrays will be used." )
 
        call init_default_corr_arrays( )
 
@@ -782,34 +688,128 @@ module corr_varnce_module
     endif
 
     ! Mirror the correlation matrices
-    call mirror_lower_triangular_matrix( pdf_dim, corr_array_n_cloud )
-    call mirror_lower_triangular_matrix( pdf_dim, corr_array_n_below )
+    call mirror_lower_triangular_matrix( d_variables, corr_array_cloud )
+    call mirror_lower_triangular_matrix( d_variables, corr_array_below )
 
     ! Sanity check to avoid confusing non-convergence results.
     if ( clubb_at_least_debug_level( 2 ) ) then
 
-      if ( .not. l_fix_w_chi_eta_correlations .and. iiPDF_Ncn > 0 ) then
+      if ( .not. l_fix_chi_eta_correlations .and. iiPDF_Ncn > 0 ) then
         l_warning = .false.
-        do i = 1, pdf_dim
-          if ( ( corr_array_n_cloud(i,iiPDF_Ncn) /= zero .or.  &
-                 corr_array_n_below(i,iiPDF_Ncn) /= zero ) .and. &
+        do i = 1, d_variables
+          if ( ( corr_array_cloud(i,iiPDF_Ncn) /= zero .or.  &
+                 corr_array_below(i,iiPDF_Ncn) /= zero ) .and. &
                i /= iiPDF_Ncn ) then
             l_warning = .true.
           end if
-        end do ! 1..pdf_dim
+        end do ! 1..d_variables
         if ( l_warning ) then
           write(fstderr,*) "Warning: the specified correlations for chi" &
                            // " (old s) and Ncn are non-zero."
           write(fstderr,*) "The latin hypercube code will not converge to" &
                            // " the analytic solution using these settings."
         end if
-       end if ! l_fix_w_chi_eta_correlations .and. iiPDF_Ncn > 0
+       end if ! l_fix_chi_eta_correlations .and. iiPDF_Ncn > 0
 
     end if ! clubb_at_least_debug_level( 2 )
 
+    if ( iiPDF_Ncn > 0 ) then
+
+      if ( l_const_Nc_in_cloud ) then
+        ! Ncn is constant throughout every grid box!
+        sigma2_on_mu2_ip_array_cloud(iiPDF_Ncn) = zero
+        sigma2_on_mu2_ip_array_below(iiPDF_Ncn) = zero
+      else
+        sigma2_on_mu2_ip_array_cloud(iiPDF_Ncn) = sigma2_on_mu2_ratios%Ncnp2_on_Ncnm2
+        sigma2_on_mu2_ip_array_below(iiPDF_Ncn) = sigma2_on_mu2_ratios%Ncnp2_on_Ncnm2
+      end if
+
+    end if
+
+    if ( iiPDF_rr > 0 ) then
+      sigma2_on_mu2_ip_array_cloud(iiPDF_rr) = sigma2_on_mu2_ratios%rr_sigma2_on_mu2_ip_cloud
+      if ( iiPDF_Nr > 0 ) then
+        sigma2_on_mu2_ip_array_cloud(iiPDF_Nr) = sigma2_on_mu2_ratios%Nr_sigma2_on_mu2_ip_cloud
+      end if ! iiPDF_Nr > 0
+    end if ! iiPDF_rr > 0
+
+    if ( iiPDF_rs > 0 ) then
+      sigma2_on_mu2_ip_array_cloud(iiPDF_rs) = sigma2_on_mu2_ratios%rs_sigma2_on_mu2_ip_cloud
+
+
+      if ( iiPDF_Ns > 0 ) then
+        sigma2_on_mu2_ip_array_cloud(iiPDF_Ns) = sigma2_on_mu2_ratios%Ns_sigma2_on_mu2_ip_cloud
+
+
+      end if ! iiPDF_Ns > 0
+    end if ! iiPDF_rs > 0
+
+    if ( iiPDF_ri > 0 ) then
+      sigma2_on_mu2_ip_array_cloud(iiPDF_ri) = sigma2_on_mu2_ratios%ri_sigma2_on_mu2_ip_cloud
+
+
+      if ( iiPDF_Ni > 0 ) then
+        sigma2_on_mu2_ip_array_cloud(iiPDF_Ni) = sigma2_on_mu2_ratios%Ni_sigma2_on_mu2_ip_cloud
+
+      end if ! iiPDF_Ni > 0
+    end if ! iiPDF_ri > 0
+
+    ! Sampling for graupel (disabled)
+    if ( iiPDF_rg > 0 ) then
+      sigma2_on_mu2_ip_array_cloud(iiPDF_rg) = sigma2_on_mu2_ratios%rg_sigma2_on_mu2_ip_cloud
+
+
+      if ( iiPDF_Ng > 0 ) then
+        sigma2_on_mu2_ip_array_cloud(iiPDF_Ng) = sigma2_on_mu2_ratios%Ng_sigma2_on_mu2_ip_cloud
+
+
+      end if ! iiPDF_Ng > 0
+    end if ! iiPDF_rg > 0
+
+    if ( iiPDF_rr > 0 ) then
+      sigma2_on_mu2_ip_array_below(iiPDF_rr) = sigma2_on_mu2_ratios%rr_sigma2_on_mu2_ip_below
+
+
+
+      if ( iiPDF_Nr > 0 ) then
+        sigma2_on_mu2_ip_array_below(iiPDF_Nr) = sigma2_on_mu2_ratios%Nr_sigma2_on_mu2_ip_below
+
+
+      end if ! iiPDF_Nr > 0
+    end if ! iiPDF_rr > 0
+
+    if ( iiPDF_rs > 0 ) then
+      sigma2_on_mu2_ip_array_below(iiPDF_rs) = sigma2_on_mu2_ratios%rs_sigma2_on_mu2_ip_below
+
+
+      if ( iiPDF_Ns > 0 ) then
+        sigma2_on_mu2_ip_array_below(iiPDF_Ns) = sigma2_on_mu2_ratios%Ns_sigma2_on_mu2_ip_below
+
+      end if ! iiPDF_Ns > 0
+    end if ! iiPDF_rs > 0
+
+    if ( iiPDF_ri > 0 ) then
+      sigma2_on_mu2_ip_array_below(iiPDF_ri) = sigma2_on_mu2_ratios%ri_sigma2_on_mu2_ip_below
+
+
+      if ( iiPDF_Ni > 0 ) then
+        sigma2_on_mu2_ip_array_below(iiPDF_Ni) =  sigma2_on_mu2_ratios%Ni_sigma2_on_mu2_ip_below
+      end if ! iiPDF_Ni > 0
+
+    end if ! iiPDF_ri > 0
+
+    if ( iiPDF_rg > 0 ) then
+      sigma2_on_mu2_ip_array_below(iiPDF_rg) = sigma2_on_mu2_ratios%rg_sigma2_on_mu2_ip_below
+
+
+      if ( iiPDF_Ng > 0 ) then
+        sigma2_on_mu2_ip_array_below(iiPDF_Ng) = sigma2_on_mu2_ratios%Ng_sigma2_on_mu2_ip_below
+
+
+      end if ! iiPDF_Ng > 0
+    end if ! iiPDF_rg > 0
 
     return
-
   end subroutine setup_corr_varnce_array
 
   !-----------------------------------------------------------------------------
@@ -827,30 +827,36 @@ module corr_varnce_module
 
     ! ---- Begin Code ----
 
-    if ( allocated( corr_array_n_cloud ) ) then
-      deallocate( corr_array_n_cloud )
+    if ( allocated( corr_array_cloud ) ) then
+      deallocate( corr_array_cloud )
     end if
 
-    if ( allocated( corr_array_n_below ) ) then
-      deallocate( corr_array_n_below )
+    if ( allocated( corr_array_below ) ) then
+      deallocate( corr_array_below )
     end if
 
-    if ( allocated( corr_array_n_cloud_def ) ) then
-      deallocate( corr_array_n_cloud_def )
+    if ( allocated( sigma2_on_mu2_ip_array_cloud ) ) then
+      deallocate( sigma2_on_mu2_ip_array_cloud )
     end if
 
-    if ( allocated( corr_array_n_below_def ) ) then
-      deallocate( corr_array_n_below_def )
+    if ( allocated( sigma2_on_mu2_ip_array_below ) ) then
+      deallocate( sigma2_on_mu2_ip_array_below )
     end if
 
+    if ( allocated( corr_array_cloud_def ) ) then
+      deallocate( corr_array_cloud_def )
+    end if
+
+    if ( allocated( corr_array_below_def ) ) then
+      deallocate( corr_array_below_def )
+    end if
 
     return
-
   end subroutine cleanup_corr_matrix_arrays
 
   !-----------------------------------------------------------------------------
-  subroutine assert_corr_symmetric( corr_array_n, & ! intent(in)
-                                    pdf_dim)        ! intent(in)
+  subroutine assert_corr_symmetric( corr_array, & ! intent(in)
+                                    d_variables ) ! intent(in)
 
     ! Description:
     !   Asserts that corr_matrix(i,j) == corr_matrix(j,i) for all indeces
@@ -859,53 +865,54 @@ module corr_varnce_module
     !   None
     !---------------------------------------------------------------------------
 
-    use constants_clubb, only: fstderr, eps, one ! Constant(s)
+    use constants_clubb, only: fstderr ! Constant(s)
 
     implicit none
 
     ! Input Variables
     integer, intent(in) :: &
-      pdf_dim   ! Number of variables in the correlation array
+      d_variables    ! Number of variables in the correlation array
 
-    real( kind = core_rknd ), dimension(pdf_dim, pdf_dim), &
-      intent(in) :: corr_array_n ! Normal space correlation array to be checked
+    real( kind = core_rknd ), dimension(d_variables, d_variables), &
+      intent(in) :: corr_array ! Correlation array to be checked
 
     ! Local Variables
 
     ! tolerance used for real precision testing
     real( kind = core_rknd ), parameter :: tol = 1.0e-6_core_rknd
 
-    integer :: n_row, n_col ! Indices
+    integer :: n_row, n_col !indeces
+
+    logical :: l_error !error found between the two arrays
 
     !----- Begin Code -----
 
+    l_error = .false.
+
     !Do the check
-    do n_col = 1, pdf_dim
-      do n_row = 1, pdf_dim
-
-        if ( abs(corr_array_n(n_col, n_row) - corr_array_n(n_row, n_col)) > tol ) then
-            err_code = clubb_fatal_error
-            write(fstderr,*) "in subroutine assert_corr_symmetric: ", &
-                             "Correlation array is non symmetric."
-            write(fstderr,*) corr_array_n
-            return
+    do n_col = 1, d_variables
+      do n_row = 1, d_variables
+        if (abs(corr_array(n_col, n_row) - corr_array(n_row, n_col)) > tol) then
+          l_error = .true.
         end if
-
-        if ( n_col == n_row .and. abs(corr_array_n(n_col, n_row)-one) > eps ) then
-            err_code = clubb_fatal_error
-            write(fstderr,*) "in subroutine assert_corr_symmetric: ", &
-                             "Correlation array is formatted incorrectly."
-            write(fstderr,*) corr_array_n
-            return
+        if (n_col == n_row .and. corr_array(n_col, n_row) /= 1.0_core_rknd) then
+          l_error = .true.
         end if
       end do
     end do
 
+    !Report if any errors are found
+    if (l_error) then
+      write(fstderr,*) "Error: Correlation array is non symmetric or formatted incorrectly."
+      write(fstderr,*) corr_array
+      stop
+    end if
+
   end subroutine assert_corr_symmetric
 
   !-----------------------------------------------------------------------------
-  subroutine print_corr_matrix( pdf_dim, & ! intent(in)
-                                corr_array_n ) ! intent(in)
+  subroutine print_corr_matrix( d_variables, & ! intent(in)
+                                corr_array ) ! intent(in)
 
     ! Description:
     !   Prints the correlation matrix to the console.
@@ -919,10 +926,10 @@ module corr_varnce_module
 
     ! Input Variables
     integer, intent(in) :: &
-      pdf_dim   ! Number of variables in the correlation array
+      d_variables    ! Number of variables in the correlation array
 
-    real( kind = core_rknd ), dimension(pdf_dim, pdf_dim), &
-      intent(in) :: corr_array_n ! Normal space correlation array to be printed
+    real( kind = core_rknd ), dimension(d_variables, d_variables), &
+      intent(in) :: corr_array ! Correlation array to be printed
 
     ! Local Variables
     integer :: n, & ! Loop indeces
@@ -936,9 +943,9 @@ module corr_varnce_module
 
     current_character_index = 0
 
-    do n = 1, pdf_dim
-      do m = 1, pdf_dim
-        write(str_array_value,'(F5.2)') corr_array_n(m,n)
+    do n = 1, d_variables
+      do m = 1, d_variables
+        write(str_array_value,'(F5.2)') corr_array(m,n)
         current_line = current_line(1:current_character_index)//str_array_value
         current_character_index = current_character_index + 6
       end do

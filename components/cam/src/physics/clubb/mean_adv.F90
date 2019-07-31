@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-! $Id$
+! $Id: mean_adv.F90 6805 2014-03-23 04:28:36Z bmg2@uwm.edu $
 !===============================================================================
 module mean_adv
 
@@ -22,9 +22,7 @@ module mean_adv
   private ! Default scope
 
   public :: term_ma_zt_lhs, & 
-            term_ma_zt_lhs_all, &
-            term_ma_zm_lhs, &
-            term_ma_zm_lhs_all
+            term_ma_zm_lhs
 
   contains
 
@@ -396,148 +394,6 @@ module mean_adv
 
   end function term_ma_zt_lhs
 
-
-
-    !=============================================================================================
-    pure subroutine term_ma_zt_lhs_all( wm_zt, invrs_dzt, invrs_dzm, & ! Intent(in)
-                                        lhs_ma                     ) ! Intent(out)
-    ! Description:
-    !   This subroutine is an optimized version of term_ma_zt_lhs. term_ma_zt_lhs
-    !   returns a single 3 dimensional array for any specified grid level. This subroutine returns
-    !   an array of 3 dimensional arrays, one for every grid level not including boundary values.
-    ! 
-    ! Notes:
-    !   This subroutine exists for performance concerns. It returns all lhs arrays at once
-    !   so that it can be properly vectorized, see clubb:ticket:834 for detail.
-    !   
-    !---------------------------------------------------------------------------------------------
-
-        use grid_class, only: & 
-            gr ! Variable(s)
-
-        use clubb_precision, only: &
-            core_rknd ! Variable(s)
-
-        use model_flags, only: &
-            l_upwind_xm_ma ! Variable(s)
-
-        implicit none
-
-        !------------------- Input Variables -------------------
-        real( kind = core_rknd ), dimension(gr%nz), intent(in) :: & 
-          wm_zt,     & ! wm_zt(k)                        [m/s]
-          invrs_dzt, & ! Inverse of grid spacing (k)     [1/m]
-          invrs_dzm
-
-        !------------------- Output Variables -------------------
-        real( kind = core_rknd ), dimension(3,gr%nz), intent(out) :: &
-            lhs_ma
-
-        !---------------- Local Variables -------------------
-        integer :: &
-            k             ! Loop variable for current grid level
-
-        logical, parameter ::  &
-            l_ub_const_deriv = .true.  ! Flag to use the "one-sided" upper boundary.
-
-        !---------------- Begin Code -------------------
-
-        ! Set lower boundary array to 0
-        lhs_ma(:,1) = 0.0_core_rknd
-
-
-        
-        if( .not. l_upwind_xm_ma ) then  ! Use "centered" differencing
-
-
-            ! Most of the interior model; normal conditions.
-            do k = 2, gr%nz-1
-
-                lhs_ma(1,k) = + wm_zt(k) * invrs_dzt(k) * gr%weights_zt2zm(1,k)
-
-                lhs_ma(2,k) = + wm_zt(k) * invrs_dzt(k) * (   gr%weights_zt2zm(2,k) & 
-                                                              - gr%weights_zt2zm(1,k-1)   )
-
-                lhs_ma(3,k) = - wm_zt(k) * invrs_dzt(k) * gr%weights_zt2zm(2,k-1)
-
-            end do
-
-            ! Upper Boundary
-            if ( l_ub_const_deriv ) then
-
-                lhs_ma(1,gr%nz) = 0.0_core_rknd
-
-                lhs_ma(2,gr%nz) = + wm_zt(k) * invrs_dzt(k) * (   gr%weights_zt2zm(1,k) &
-                                                                  - gr%weights_zt2zm(1,k-1)   )
-
-                lhs_ma(3,gr%nz) = + wm_zt(k) * invrs_dzt(k) * (   gr%weights_zt2zm(2,k) &
-                                                                  - gr%weights_zt2zm(2,k-1)   )
-
-            else
-
-                lhs_ma(1,gr%nz) = 0.0_core_rknd
-
-                lhs_ma(2,gr%nz) = + wm_zt(k) * invrs_dzt(k) &
-                                  * ( 1.0_core_rknd - gr%weights_zt2zm(1,k-1) )
-
-                lhs_ma(3,gr%nz) = - wm_zt(k) * invrs_dzt(k) * gr%weights_zt2zm(2,k-1)
-
-            endif ! l_ub_const_deriv
-
-
-        else ! l_upwind_xm_ma == .true.; use "upwind" differencing
-
-            do k = 2, gr%nz-1
-
-                if ( wm_zt(k) >= 0.0_core_rknd ) then  ! Mean wind is in upward direction
-
-                    lhs_ma(1,k) = 0.0_core_rknd
-
-                    lhs_ma(2,k) = + wm_zt(k) * invrs_dzm(k-1)
-
-                    lhs_ma(3,k) = - wm_zt(k) * invrs_dzm(k-1)
-
-
-                else  ! wm_zt < 0; Mean wind is in downward direction
-
-                    lhs_ma(1,k) = + wm_zt(k) * invrs_dzm(k)
-
-                    lhs_ma(2,k) = - wm_zt(k) * invrs_dzm(k)
-
-                    lhs_ma(3,k) = 0.0_core_rknd
-
-                endif ! wm_zt > 0
-
-            end do
-
-            ! Upper Boundary
-            if ( wm_zt(k) >= 0.0_core_rknd ) then  ! Mean wind is in upward direction
-
-                    lhs_ma(1,gr%nz) = 0.0_core_rknd
-
-                    lhs_ma(2,gr%nz) = + wm_zt(k) * invrs_dzm(k-1)
-
-                    lhs_ma(3,gr%nz) = - wm_zt(k) * invrs_dzm(k-1)
-
-
-            else  ! wm_zt < 0; Mean wind is in downward direction
-
-                    lhs_ma(1,gr%nz) = 0.0_core_rknd
-
-                    lhs_ma(2,gr%nz) = 0.0_core_rknd
-
-                    lhs_ma(3,gr%nz) = 0.0_core_rknd
-
-            endif ! wm_zt > 0
-
-        endif ! l_upwind_xm_ma
-
-        return
-
-    end subroutine term_ma_zt_lhs_all
-
-
-
   !=============================================================================
   pure function term_ma_zm_lhs( wm_zm, invrs_dzm, level ) & 
   result( lhs )
@@ -698,67 +554,6 @@ module mean_adv
 
   end function term_ma_zm_lhs
 
-    !=============================================================================================
-    pure subroutine term_ma_zm_lhs_all( wm_zm, invrs_dzm,     & ! Intent(in)
-                                        lhs_ma              ) ! Intent(out)
-    ! Description:
-    !   This subroutine is an optimized version of term_ma_zm_lhs. term_ma_zm_lhs
-    !   returns a single 3 dimensional array for any specified grid level. This subroutine returns
-    !   an array of 3 dimensional arrays, one for every grid level not including boundary values.
-    ! 
-    ! Notes:
-    !   This subroutine exists for performance concerns. It returns all lhs arrays at once
-    !   so that it can be properly vectorized, see clubb:ticket:834 for detail.
-    !   
-    !   THIS SUBROUTINE DOES NOT HANDLE BOUNDARY CONDITIONS AND SETS THEM TO 0
-    !---------------------------------------------------------------------------------------------
-
-        use grid_class, only: & 
-            gr ! Variable(s)
-
-        use clubb_precision, only: &
-            core_rknd ! Variable(s)
-
-        implicit none
-
-        !------------------- Input Variables -------------------
-        real( kind = core_rknd ), dimension(gr%nz), intent(in) :: & 
-          wm_zm,     & ! wm_zm(k)                        [m/s]
-          invrs_dzm    ! Inverse of grid spacing (k)     [1/m]
-
-        !------------------- Output Variables -------------------
-        real( kind = core_rknd ), dimension(3,gr%nz), intent(out) :: &
-            lhs_ma
-
-        !---------------- Local Variables -------------------
-        integer :: &
-            k             ! Loop variable for current grid level
-
-        !---------------- Begin Code -------------------
-
-        ! Set lower boundary array to 0
-        lhs_ma(:,1) = 0.0_core_rknd
-
-        ! Most of the interior model; normal conditions.
-        do k = 2, gr%nz-1
-
-           ! Momentum superdiagonal: [ x var_zm(k+1,<t+1>) ]
-           lhs_ma(1,k) = + wm_zm(k) * invrs_dzm(k) * gr%weights_zm2zt(1,k+1)
-
-           ! Momentum main diagonal: [ x var_zm(k,<t+1>) ]
-           lhs_ma(2,k) = + wm_zm(k) * invrs_dzm(k) * ( gr%weights_zm2zt(2,k+1) & 
-                                                        - gr%weights_zm2zt(1,k) )
-
-           ! Momentum subdiagonal: [ x var_zm(k-1,<t+1>) ]
-           lhs_ma(3,k) = - wm_zm(k) * invrs_dzm(k) * gr%weights_zm2zt(2,k)
-
-        end do
-
-        ! Set upper boundary array to 0
-        lhs_ma(:,gr%nz) = 0.0_core_rknd
-
-        return
-
-    end subroutine term_ma_zm_lhs_all
+!===============================================================================
 
 end module mean_adv

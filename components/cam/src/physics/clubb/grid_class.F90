@@ -1,5 +1,5 @@
 !------------------------------------------------------------------------
-! $Id$
+! $Id: grid_class.F90 7200 2014-08-13 15:15:12Z betlej@uwm.edu $
 !===============================================================================
 module grid_class
 
@@ -134,9 +134,7 @@ module grid_class
   ! schemena, modified 6/11/2014 - Restructered code to add cubic/linear flag
 
   !  References:
-  !
-  !  https://arxiv.org/pdf/1711.03675v1.pdf#nameddest=url:clubb_grid
-  !
+
   !  Section 3c, p. 3548 /Numerical discretization/ of:
   !   ``A PDF-Based Model for Boundary Layer Clouds. Part I:
   !     Method and Model Description'' Golaz, et al. (2002)
@@ -173,17 +171,21 @@ module grid_class
 
     integer :: nz ! Number of points in the grid
     !   Note: Fortran 90/95 prevents an allocatable array from appearing
-    !   within a derived type.  However, Fortran 2003 does not!!!!!!!!
-    real( kind = core_rknd ), allocatable, dimension(:) :: &
+    !   within a derived type.  However, a pointer can be used in the same
+    !   manner as an allocatable array, as we have done here (the grid
+    !   pointers are always allocated rather than assigned and nullified
+    !   like real pointers).  Note that these must be de-allocated to prevent
+    !   memory leaks.
+    real( kind = core_rknd ), pointer, dimension(:) :: &
       zm, & ! Momentum grid
       zt    ! Thermo grid
-    real( kind = core_rknd ), allocatable, dimension(:) :: &
+    real( kind = core_rknd ), pointer, dimension(:) :: &
       invrs_dzm, & ! The inverse spacing between thermodynamic grid
                    ! levels; centered over momentum grid levels.
       invrs_dzt    ! The inverse spacing between momentum grid levels;
                    ! centered over thermodynamic grid levels.
 
-    real( kind = core_rknd ), allocatable, dimension(:) :: &
+    real( kind = core_rknd ), pointer, dimension(:) :: &
       dzm, &  ! Spacing between thermodynamic grid levels; centered over
               ! momentum grid levels
       dzt     ! Spcaing between momentum grid levels; centered over
@@ -193,7 +195,7 @@ module grid_class
     ! where a momentum level variable is being
     ! solved for implicitly in an equation and
     ! needs to be interpolated to the thermodynamic grid levels.
-    real( kind = core_rknd ), allocatable, dimension(:,:) :: weights_zm2zt, & 
+    real( kind = core_rknd ), pointer, dimension(:,:) :: weights_zm2zt, & 
     ! These weights are normally used in situations where a
     ! thermodynamic level variable is being solved for implicitly in an equation
     ! and needs to be interpolated to the momentum grid levels.
@@ -204,10 +206,10 @@ module grid_class
   !   The grid is defined here so that it is common throughout the module.
   !   The implication is that only one grid can be defined !
 
-  type (grid), target :: gr
+  type (grid) gr
 
 !   Modification for using CLUBB in a host model (i.e. one grid per column)
-!$omp threadprivate(gr)
+!$omp   threadprivate(gr)
 
   ! Interfaces provided for function overloading
 
@@ -277,11 +279,8 @@ module grid_class
     use constants_clubb, only:  & 
         fstderr ! Variable(s)
 
-    use error_code, only: &
-        clubb_at_least_debug_level, &   ! Procedure
-        err_code, &                     ! Error indicator
-        clubb_fatal_error, &            ! Constant
-        err_header                      ! String
+    use error_code, only:  &
+        clubb_at_least_debug_level ! Procedure(s)
 
     use clubb_precision, only: &
         core_rknd ! Variable(s)
@@ -382,9 +381,7 @@ module grid_class
 
         if( thermodynamic_heights(i) >= zm_init ) then
 
-          write(fstderr,*) err_header, "Stretched zt grid cannot fulfill zm_init requirement"
-          err_code = clubb_fatal_error
-          return
+          stop "Stretched zt grid cannot fulfill zm_init requirement"
 
         else
 
@@ -404,9 +401,7 @@ module grid_class
 
         if( zm_top < thermodynamic_heights(i) ) then
 
-          write(fstderr,*) err_header, "Stretched zt grid cannot fulfill zm_top requirement"
-          err_code = clubb_fatal_error
-          return
+          stop "Stretched zt grid cannot fulfill zm_top requirement"
 
         else
 
@@ -430,9 +425,7 @@ module grid_class
 
         if( momentum_heights(i) < zm_init ) then
 
-          write(fstderr,*) err_header, "Stretched zm grid cannot fulfill zm_init requirement"
-          err_code = clubb_fatal_error
-          return
+          stop "Stretched zm grid cannot fulfill zm_init requirement"
 
         else
 
@@ -452,9 +445,7 @@ module grid_class
 
         if( momentum_heights(i) > zm_top ) then
 
-          write(fstderr,*) err_header, "Stretched zm grid cannot fulfill zm_top requirement"
-          err_code = clubb_fatal_error
-          return
+          stop "Stretched zm grid cannot fulfill zm_top requirement"
 
         else
 
@@ -479,9 +470,8 @@ module grid_class
               stat=ierr )
 
     if ( ierr /= 0 ) then
-      write(fstderr,*) err_header, "In setup_grid: allocation of grid variables failed."
-      err_code = clubb_fatal_error
-      return
+      write(fstderr,*) "In setup_grid: allocation of grid variables failed."
+      stop "Fatal error."
     end if
 
     ! Set the values for the derived types used for heights, derivatives, and
@@ -499,8 +489,7 @@ module grid_class
                        // "momentum level cannot be below the surface."
       write(fstderr,*) "Altitude of lowest momentum level =", gr%zm(1)
       write(fstderr,*) "Altitude of the surface =", sfc_elevation
-      err_code = clubb_fatal_error
-      return
+      stop "Fatal error."
     endif
 
     return
@@ -561,11 +550,6 @@ module grid_class
 
     use clubb_precision, only: &
         core_rknd  ! Variable(s)
-
-    use error_code, only: &
-        err_code, &                     ! Error indicator
-        clubb_fatal_error, &            ! Constant
-        err_header                      ! String
 
     implicit none
 
@@ -688,10 +672,9 @@ module grid_class
       else
 
         ! Invalid grid type.
-        write(fstderr,*) err_header, "Invalid grid type: ", grid_type, & 
+        write(fstderr,*) "Invalid grid type: ", grid_type, & 
                          ".  Valid options are 1, 2, or 3."
-        err_code = clubb_fatal_error
-        return
+        stop "Fatal error."
 
 
       endif
@@ -811,11 +794,6 @@ module grid_class
     use clubb_precision, only: &
         core_rknd ! Variable(s)
 
-    use error_code, only: &
-        err_code, &                     ! Error indicator
-        clubb_fatal_error, &            ! Constant
-        err_header                      ! String
-
     implicit none
 
     ! Input Variables.
@@ -890,18 +868,16 @@ module grid_class
       ! As a way of error checking, make sure that there isn't any file entry
       ! for either momentum level altitudes or thermodynamic level altitudes.
       if ( zm_grid_fname /= '' ) then
-        write(fstderr,*) err_header, & 
+        write(fstderr,*) & 
            "An evenly-spaced grid has been selected. " & 
            // " Please reset zm_grid_fname to ''."
-        err_code = clubb_fatal_error
-        return
-          endif
+        stop
+      endif
       if ( zt_grid_fname /= '' ) then
-        write(fstderr,*) err_header, & 
+        write(fstderr,*) & 
            "An evenly-spaced grid has been selected. " & 
            // " Please reset zt_grid_fname to ''."
-        err_code = clubb_fatal_error
-        return
+        stop
       endif
 
 
@@ -916,17 +892,15 @@ module grid_class
       ! As a way of error checking, make sure that there isn't any file entry
       ! for momentum level altitudes.
       if ( zm_grid_fname /= '' ) then
-        write(fstderr,*) err_header, & 
+        write(fstderr,*) & 
            "Thermodynamic level altitudes have been selected " & 
            // "for use in a stretched (unevenly-spaced) grid. " & 
            // " Please reset zm_grid_fname to ''."
-        err_code = clubb_fatal_error
-        return
+        stop
       endif
 
-!$omp critical
       ! Open the file zt_grid_fname.
-      open( unit=file_unit, file=zt_grid_fname,  &
+      open( unit=file_unit, file=zt_grid_fname,  & 
             status='old', action='read' )
 
       ! Find the number of thermodynamic level altitudes listed
@@ -936,20 +910,13 @@ module grid_class
         read( unit=file_unit, fmt=*, iostat=input_status )  & 
            generic_input_item
         if ( input_status < 0 ) exit   ! end of file indicator
-        if ( input_status > 0 ) then
-          write(fstderr,*) err_header, &  ! error reading input
+        if ( input_status > 0 ) stop    & ! error reading input
              "Error reading thermodynamic level input file."
-          err_code = clubb_fatal_error
-          exit
-        end if
         zt_level_count = zt_level_count + 1
       enddo
 
       ! Close the file zt_grid_fname.
       close( unit=file_unit )
-!$omp end critical
-      
-      if ( err_code == clubb_fatal_error ) return
 
       ! Check that the number of thermodynamic grid altitudes in the input file
       ! matches the declared number of CLUBB grid levels (nzmax).
@@ -964,8 +931,7 @@ module grid_class
            zt_level_count
         write(fstderr,*) & 
            "Number of CLUBB grid levels specified:  ", nzmax
-        err_code = clubb_fatal_error
-        return
+        stop
       endif
 
       ! Read the thermodynamic level altitudes from zt_grid_fname.
@@ -989,8 +955,7 @@ module grid_class
              "Grid index:  ", k, ";", & 
              "  Thermodynamic level altitude:  ", & 
              thermodynamic_heights(k)
-          err_code = clubb_fatal_error
-          return
+          stop
         endif
       enddo
 
@@ -1010,8 +975,7 @@ module grid_class
            "Momentum level altitudes have been selected " & 
            // "for use in a stretched (unevenly-spaced) grid. " & 
            // " Please reset zt_grid_fname to ''."
-        err_code = clubb_fatal_error
-        return
+        stop
       endif
 
       ! Open the file zm_grid_fname.
@@ -1025,13 +989,8 @@ module grid_class
         read( unit=file_unit, fmt=*, iostat=input_status ) & 
            generic_input_item
         if ( input_status < 0 ) exit   ! end of file indicator
-        if ( input_status > 0 ) then
-
-          write(fstderr,*) err_header, &! error reading input
-                           "Error reading momentum level input file."
-          err_code = clubb_fatal_error
-          return
-        end if
+        if ( input_status > 0 ) stop    & ! error reading input
+             "Error reading momentum level input file."
         zm_level_count = zm_level_count + 1
       enddo
 
@@ -1051,8 +1010,7 @@ module grid_class
            zm_level_count
         write(fstderr,*) & 
            "Number of CLUBB grid levels specified:  ", nzmax
-        err_code = clubb_fatal_error
-        return
+        stop
       endif
 
       ! Read the momentum level altitudes from zm_grid_fname.
@@ -1076,8 +1034,7 @@ module grid_class
              "Grid index:  ", k, ";", & 
              "  Momentum level altitude:  ", & 
              momentum_heights(k)
-          err_code = clubb_fatal_error
-          return
+          stop
         endif
       enddo
 
@@ -1343,8 +1300,10 @@ module grid_class
     ! momentum level, k, between two successive thermodynamic levels using
     ! linear interpolation.
     forall( k = 1 : gr%nz-1 : 1 )
-        linear_interpolated_azm(k) = gr%weights_zt2zm(1, k) * ( azt(k+1) - azt(k) ) + azt(k)
+       linear_interpolated_azm(k) &
+       = linear_interp_factor( gr%weights_zt2zm(1, k), azt(k+1), azt(k) )
     end forall ! k = 1 : gr%nz-1 : 1
+
 
     return
 
@@ -1774,9 +1733,11 @@ module grid_class
     ! Interpolate the value of a momentum-level variable to the central
     ! thermodynamic level, k, between two successive momentum levels using
     ! linear interpolation.
-    forall( k = 2 : gr%nz : 1 )
-        linear_interpolated_azt(k) = gr%weights_zm2zt(1, k) * ( azm(k) - azm(k-1) ) + azm(k-1)
+    forall( k = gr%nz : 2 : -1 )
+       linear_interpolated_azt(k) &
+       = linear_interp_factor( gr%weights_zm2zt(1, k), azm(k), azm(k-1) )
     end forall ! k = gr%nz : 2 : -1
+
 
     return
 
