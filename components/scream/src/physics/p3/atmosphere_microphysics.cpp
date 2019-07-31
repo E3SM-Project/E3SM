@@ -29,28 +29,37 @@ void P3Microphysics::set_grid(const std::shared_ptr<const GridsManager> grids_ma
   auto CO = FieldTag::Column;
   auto VR = FieldTag::Variable;
 
-  FieldLayout scalar2d_layout { {CO,VL}, {nc,NVL} };
-  FieldLayout scalar3d_layout { {CO,VL,VR}, {nc,NVL,QSZ} };
+  FieldLayout scalar2d_layout { {VL,CO}, {NVL,nc} }; // Note that C++ and Fortran read array dimensions in reverse
+  FieldLayout scalar3d_layout { {VR,VL,CO}, {QSZ,NVL,nc} };
 
   // set requirements
   m_required_fields.emplace("P3_req_test",  scalar2d_layout, "Physics");
-  m_required_fields.emplace("q",            scalar3d_layout, "Physics");
   // set computed
   m_computed_fields.emplace("P3_comq_test", scalar2d_layout, "Physics");
+  m_computed_fields.emplace("q",            scalar3d_layout, "Physics");
 
 }
 // =========================================================================================
 void P3Microphysics::initialize ()
 {
-  p3_init_f90 ();
+  auto q_ptr = m_p3_fields_out.at("q").get_view().data();
+  double mysum;
+  int i, k, j;
+
+  p3_init_f90 (q_ptr);
+
 }
 
 // =========================================================================================
 void P3Microphysics::run ()
 {
-  p3_main_f90 ();
-}
+  auto q_ptr = m_p3_fields_out.at("q").get_view().data();
+  double dtime;
 
+  dtime = 600.0;
+  p3_main_f90 (dtime,q_ptr);
+
+}
 // =========================================================================================
 void P3Microphysics::finalize()
 {
