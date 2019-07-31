@@ -24,7 +24,7 @@ public:
   std::string name () const { return "User Provided Grids Manager"; }
 
   void set_remapper (const remapper_ptr_type remapper) {
-    string_pair from_to = std::make_pair(remapper->get_src_grid()->name(),remapper->get_src_grid()->name());
+    string_pair from_to = std::make_pair(remapper->get_src_grid()->name(),remapper->get_tgt_grid()->name());
     scream_require_msg (supports_grid(remapper->get_src_grid()->name()),
                         "Error! The remapper's source grid '" + from_to.first + "' is not supported."
                         "       Set the grids before setting the remappers.\n");
@@ -51,19 +51,20 @@ public:
     m_provided_grids["Reference"] = get_grid(grid_name);
   }
 
+  void clean_up () {
+    m_provided_remappers.clear();
+    m_provided_grids.clear();
+  }
+
 protected:
 
   remapper_ptr_type
   do_create_remapper (const grid_ptr_type from_grid,
                       const grid_ptr_type to_grid) const {
     string_pair from_to = std::make_pair(from_grid->name(),to_grid->name());
-    string_pair to_from = std::make_pair(to_grid->name(),from_grid->name());
 
     if (m_provided_remappers.find(from_to)!=m_provided_remappers.end()) {
       return m_provided_remappers.at(from_to);
-    } else if (m_provided_remappers.find(to_from)!=m_provided_remappers.end()) {
-      using inverse_remapper_type = InverseRemapper<Real, grid_type::device_type>;
-      return std::make_shared<inverse_remapper_type>(m_provided_remappers.at(to_from));
     } else {
       scream_require_msg (false,
                           "Error! A remapper from grid '" + from_to.first + "' to grid '" +
@@ -82,7 +83,6 @@ protected:
         grid_repo_type& get_repo ()       { return m_provided_grids; }
 
   static grid_repo_type  m_provided_grids;
-  static grid_ptr_type   m_reference_grid;
 
   static remap_repo_type m_provided_remappers;
 };

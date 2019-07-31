@@ -63,7 +63,10 @@ public:
                        "       Did you forget to call 'registration_complete'?\n");
 
     scream_require_msg(m_all_fields_are_bound,
-                       "Error! Not all fields have been set in the remapper.\n");
+                       "Error! Not all fields have been set in the remapper.\n"
+                       "       In particular, field " +
+                       std::to_string(std::distance(m_fields_are_bound.begin(),std::find(m_fields_are_bound.begin(),m_fields_are_bound.end(),false))) +
+                       " has not been bound.\n");
 
     if (m_state!=RepoState::Clean) {
       if (forward) {
@@ -78,6 +81,8 @@ public:
   grid_ptr_type get_src_grid () const { return m_src_grid; }
   grid_ptr_type get_tgt_grid () const { return m_tgt_grid; }
 
+  bool field_is_bound (const int ifield) const { return m_fields_are_bound[ifield]; }
+
   const identifier_type& get_src_field_id (const int ifield) const {
     scream_require_msg(ifield>=0 && ifield<m_num_registered_fields,
                        "Error! Field index out of bounds.\n");
@@ -90,8 +95,24 @@ public:
     return do_get_tgt_field_id(ifield);
   }
 
+  const field_type& get_src_field (const int ifield) const {
+    scream_require_msg(m_state==RepoState::Closed,
+                       "Error! Cannot call 'get_src_field' until registration has ended.\n");
+    scream_require_msg(ifield>=0 && ifield<m_num_registered_fields,
+                       "Error! Field index out of bounds.\n");
+    return do_get_src_field(ifield);
+  }
+
+  const field_type& get_tgt_field (const int ifield) const {
+    scream_require_msg(m_state==RepoState::Closed,
+                       "Error! Cannot call 'get_tgt_field' until registration has ended.\n");
+    scream_require_msg(ifield>=0 && ifield<m_num_registered_fields,
+                       "Error! Field index out of bounds.\n");
+    return do_get_tgt_field(ifield);
+  }
+
   virtual FieldLayout create_src_layout (const FieldLayout& tgt_layout) const = 0;
-  virtual FieldLayout create_tgt_layout (const FieldLayout& src_fid) const = 0;
+  virtual FieldLayout create_tgt_layout (const FieldLayout& src_layout) const = 0;
 
   int get_num_fields () const {
     scream_require_msg(m_state==RepoState::Closed,
@@ -103,6 +124,8 @@ public:
 protected:
   virtual const identifier_type& do_get_src_field_id (const int ifield) const = 0;
   virtual const identifier_type& do_get_tgt_field_id (const int ifield) const = 0;
+  virtual const field_type& do_get_src_field (const int ifield) const = 0;
+  virtual const field_type& do_get_tgt_field (const int ifield) const = 0;
 
   virtual void do_registration_begins () = 0;
   virtual void do_register_field (const identifier_type& src, const identifier_type& tgt) = 0;
@@ -154,7 +177,7 @@ template<typename ScalarType, typename DeviceType>
 void AbstractRemapper<ScalarType,DeviceType>::
 set_num_fields (const int num_fields) {
   scream_require_msg(m_state==RepoState::Clean,
-                     "Error! Cannot re-set the number of fields after registration has begins.\n");
+                     "Error! Cannot re-set the number of fields after registration has beginned.\n");
   scream_require_msg(num_fields>0,
                      "Error! Invalid number of fields specified.\n");
 

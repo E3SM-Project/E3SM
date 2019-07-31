@@ -80,6 +80,12 @@ protected:
   const identifier_type& do_get_tgt_field_id (const int ifield) const override {
     return m_dyn[ifield].get_header().get_identifier();
   }
+  const field_type& do_get_src_field (const int ifield) const override {
+    return m_phys[ifield];
+  }
+  const field_type& do_get_tgt_field (const int ifield) const override {
+    return m_dyn[ifield];
+  }
 
   void do_registration_begins () override;
   void do_register_field (const identifier_type& src, const identifier_type& tgt) override;

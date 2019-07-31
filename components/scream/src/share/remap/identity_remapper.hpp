@@ -52,10 +52,16 @@ public:
 protected:
 
   const identifier_type& do_get_src_field_id (const int ifield) const override {
-    return m_field_ids[ifield].first;
+    return m_fields[ifield].first.get_header().get_identifier();
   }
   const identifier_type& do_get_tgt_field_id (const int ifield) const override {
-    return m_field_ids[ifield].second;
+    return m_fields[ifield].second.get_header().get_identifier();
+  }
+  const field_type& do_get_src_field (const int ifield) const override {
+    return m_fields[ifield].first;
+  }
+  const field_type& do_get_tgt_field (const int ifield) const override {
+    return m_fields[ifield].second;
   }
 
   void do_remap_fwd () const override {
@@ -67,21 +73,20 @@ protected:
 
   void do_registration_begins () override {
     // Reserve space for the m_fields_ids vector, in case the user set the number
-    m_field_ids.reserve(this->m_num_fields);
+    m_fields.reserve(this->m_num_fields);
   }
   void do_register_field (const identifier_type& src, const identifier_type& tgt) override {
-    m_field_ids.emplace_back(src,tgt);
+    m_fields.emplace_back(src,tgt);
   }
-  void do_bind_field (const int /* ifield */,
-                      const field_type& /* src */,
-                      const field_type& /* tgt */) override {
-    // Do nothing
+  void do_bind_field (const int ifield, const field_type& src, const field_type& tgt) override {
+    m_fields[ifield].first  = src;
+    m_fields[ifield].second = tgt;
   }
   void do_registration_complete () override {
     // Do nothing
   }
 
-  std::vector<std::pair<identifier_type,identifier_type>>   m_field_ids;
+  std::vector<std::pair<field_type,field_type>>   m_fields;
 };
 
 } // namespace scream

@@ -41,6 +41,12 @@ protected:
   const identifier_type& do_get_tgt_field_id (const int ifield) const override {
     return m_remapper->get_src_field_id(ifield);
   }
+  const field_type& do_get_src_field (const int ifield) const override {
+    return m_remapper->get_src_field(ifield);
+  }
+  const field_type& do_get_tgt_field (const int ifield) const override {
+    return m_remapper->get_src_field(ifield);
+  }
 
   void do_remap_fwd () const override {
     m_remapper->remap(false);
