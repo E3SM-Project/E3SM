@@ -376,7 +376,7 @@ module li_advection
 
             do iCell = 1, nCells
                if (indexToCellID(iCell) == config_stats_cell_ID) then
-                  call mpas_log_write('Before thickness advection, iCell (local=$i, global=$i), thickness=$r, layer 1 tracer:=$r', &
+                  call mpas_log_write('Before thickness advection, iCell (local=$i, global=$i), thickness=$r, layer 1 tracer:=$r',&
                        intArgs=(/iCell, indexToCellID(iCell)/), realArgs=(/thickness(iCell), advectedTracers(1,1,iCell)/))
                   do iEdgeOnCell = 1, nEdgesOnCell(iCell)
                      iEdge = edgesOnCell(iEdgeOnCell,iCell)
@@ -429,7 +429,7 @@ module li_advection
          thickness = sum(layerThickness, 1)
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
 
-     
+
 
          !-----------------------------------------------------------------
          ! Add the surface and basal mass balance to the layer thickness
@@ -483,11 +483,12 @@ module li_advection
             do iCell = 1, nCells
                if (indexToCellID(iCell) == config_stats_cell_ID) then
                   call mpas_log_write(' ')
-                  call mpas_log_write('After apply_mass_balance, iCell=$i, thickness=$r', intArgs=(/iCell/), realArgs=(/thickness(iCell)/) )
+                  call mpas_log_write('After apply_mass_balance, iCell=$i, thickness=$r', intArgs=(/iCell/), &
+                          realArgs=(/thickness(iCell)/) )
                   call mpas_log_write('cellMask=$i, is ice=$l, is grounded=$l, is floating=$l', &
-                       intArgs=(/cellMask(iCell)/), logicArgs=(/li_mask_is_ice(cellMask(iCell)), li_mask_is_grounded_ice(cellMask(iCell)), &
-                         li_mask_is_floating_ice(cellMask(iCell)) /) ) 
-                  call mpas_log_write('basalMassBal=$r, grounded=$r, floating=$r', realArgs=(/ basalMassBal(iCell)*31536000./917., &
+                       intArgs=(/cellMask(iCell)/), logicArgs=(/li_mask_is_ice(cellMask(iCell)), &
+                       li_mask_is_grounded_ice(cellMask(iCell)), li_mask_is_floating_ice(cellMask(iCell)) /) )
+                  call mpas_log_write('basalMassBal=$r, grounded=$r, floating=$r', realArgs=(/ basalMassBal(iCell)*31536000./917.,&
                           groundedBasalMassBal(iCell)*31536000./917., floatingBasalMassBal(iCell)*31536000./917. /) )
                endif
             enddo
@@ -533,7 +534,8 @@ module li_advection
                   call mpas_log_write(' ')
                   call mpas_log_write('After vertical remap, iCell, new layer thickness, tracer 1:')
                   do k = 1, nVertLevels
-                     call mpas_log_write("$i $r $r", intArgs=(/iCell/), realArgs=(/layerThickness(k,iCell), advectedTracers(1,k,iCell)/))
+                     call mpas_log_write("$i $r $r", intArgs=(/iCell/), realArgs=(/layerThickness(k,iCell), &
+                             advectedTracers(1,k,iCell)/))
                   enddo
                endif
             enddo
@@ -558,7 +560,8 @@ module li_advection
 
       case default
 
-         call mpas_log_write(trim(config_thickness_advection) // ' is not a valid option for thickness/tracer advection.', MPAS_LOG_ERR)
+         call mpas_log_write(trim(config_thickness_advection) // ' is not a valid option for thickness/tracer advection.', &
+                 MPAS_LOG_ERR)
          err_tmp = 1
 
       end select

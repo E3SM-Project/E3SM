@@ -333,7 +333,7 @@ contains
             ! BMB (kg yr-1)
             blockSumBasalMassBal = blockSumBasalMassBal + real(li_mask_is_ice_int(cellMask(iCell)),RKIND) &
                 * areaCell(iCell) * basalMassBal(iCell) * scyr
-            blockSumGroundedBasalMassBal = blockSumGroundedBasalMassBal + real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) &
+            blockSumGroundedBasalMassBal = blockSumGroundedBasalMassBal + real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND)&
                 * areaCell(iCell) * groundedBasalMassBal(iCell) * scyr
             blockSumFloatingBasalMassBal = blockSumFloatingBasalMassBal + real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND)&
                 * areaCell(iCell) * floatingBasalMassBal(iCell) * scyr
