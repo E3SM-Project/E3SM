@@ -1085,8 +1085,9 @@ module li_thermal
                         (basalTemperature(iCell)-temperature(nVertLevels,iCell))/(1.0_RKIND - layerCenterSigma(nVertLevels))
                     ! TZ: The basal conductive flux should be calculated using temperature, not
                     ! enthalpy. If we use enthalpy, basalConductiveFlux will always equals to basal heat flux, causing problem
-                    ! At ice surface, it is unlikely there will be temperate ice. In addition, we can't know exactly the water fraction
-                    ! if the ice is temperate at surface. So in this case we will just use enthalpy and don't consider the latent heat of water
+                    ! At ice surface, it is unlikely there will be temperate ice. In addition, we can't know exactly the water
+                    ! fraction if the ice is temperate at surface. So in this case we will just use enthalpy and don't consider
+                    ! the latent heat of water.
 
 
                      if (verboseColumn) then
@@ -1256,7 +1257,7 @@ module li_thermal
                      endif   ! verboseColumn
 
                      call mpas_log_write('li_thermal, energy conservation error: iCell=$i, imbalance=$r (W/m2):', MPAS_LOG_WARN, &
-                                         intArgs=(/indexToCellID(iCell)/), realArgs=(/(finalEnergy - initialEnergy - deltaEnergy)/deltat/))
+                             intArgs=(/indexToCellID(iCell)/), realArgs=(/(finalEnergy - initialEnergy - deltaEnergy)/deltat/))
                      err = 0
 
                   endif  ! energy conservation error
@@ -2506,8 +2507,9 @@ module li_thermal
       call mpas_pool_get_config(liConfigs, 'config_temp_diffusive_factor', config_temp_diffusive_factor)
 
       tempDiffusivityFactor = config_temp_diffusive_factor
-      ! TZ: this value is somehow empirical, and the default value (1.0e-5) is picked according to Kleiner's benchemark B. 
-      ! In Greve and Blatter (2016) 'Comparison of thermodynamics solvers in the polythermal ice sheet model SICOPOLIS', it was 1.0e-3 [] (p14, section 4)
+      ! TZ: this value is somehow empirical, and the default value (1.0e-5) is picked according to Kleiner's benchemark B.
+      ! In Greve and Blatter (2016) 'Comparison of thermodynamics solvers in the polythermal ice sheet model SICOPOLIS',
+      ! it was 1.0e-3 [] (p14, section 4)
       ! i.e., kt = 1.0e-3 * kc
 
       diffusivityCold = iceConductivity / (rhoi*cp_ice)
@@ -2586,7 +2588,8 @@ module li_thermal
          if (abs(dEnthalpy) > 1.e-20_RKIND * rho_water * latent_heat_ice) then
             avgFactor = max(0.0_RKIND, dEnthalpyTemp/dEnthalpy)
             avgFactor = min(1.0_RKIND, avgFactor)
-            ! TZ: Here temperature is in Celsius. dEnthalpyTemp <= 0 in temperate ice as waterfrac (temperature) increases (decreases) with depth
+            ! TZ: Here temperature is in Celsius. dEnthalpyTemp <= 0 in temperate ice as waterfrac increases
+            ! (or temperature decreases) with depth
          else
             avgFactor = 0.0_RKIND
          endif
@@ -2621,7 +2624,7 @@ module li_thermal
       diag(2:nVertLevels+1) = 1.0_RKIND - subd(2:nVertLevels+1) - supd(2:nVertLevels+1)
       rhs(2:nVertLevels+1)  = enthalpy(1:nVertLevels) + heatDissipation(1:nVertLevels) * deltat * rhoi * cp_ice
       !TZ: Make sure the heat advection is using the upwind scheme, or the solution will not be stable
-      
+
 
       ! Note: heatDissipation has units of phi/rhoi/cp_ice, where phi has units of W m^-3..
       ! For an enthalpy calculation, we want just phi, hence heatDissipation * rhoi * cp_ice
@@ -2831,7 +2834,8 @@ module li_thermal
             !       and overlying layers with a different enthalpy also melt.
 
             netBasalFlux = basalFrictionFlux(iCell) + basalHeatFlux(iCell) + basalConductiveFlux(iCell)  ! W/m^2
-            !call mpas_log_write("netBasalFlux G condFlux $r $r $r", realArgs=(/netBasalFlux, basalHeatFlux(iCell),basalConductiveFlux(iCell)/))
+            !call mpas_log_write("netBasalFlux G condFlux $r $r $r", realArgs=(/netBasalFlux, basalHeatFlux(iCell), &
+            !basalConductiveFlux(iCell)/))
 
             if (abs(netBasalFlux) < eps11) then  ! netBasalFlux might be slightly different from zero
                                                  ! because of rounding errors; if so, then zero out
