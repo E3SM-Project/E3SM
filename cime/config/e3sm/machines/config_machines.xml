@@ -172,6 +172,8 @@
       </modules>
 
       <modules>
+        <command name="rm">git</command>
+        <command name="load">git</command>
         <command name="rm">cmake</command>
         <command name="load">cmake/3.14.4</command>
       </modules>
@@ -323,6 +325,8 @@
       </modules>
 
       <modules>
+        <command name="rm">git</command>
+        <command name="load">git</command>
         <command name="rm">cmake</command>
         <command name="load">cmake/3.14.4</command>
       </modules>
