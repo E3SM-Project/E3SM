@@ -494,28 +494,21 @@ contains
          rhofacr,rhofaci,acn,xxls,xxlv,xlf,qvs,qvi,sup,supi,       &
          tmparr1,inv_exner
 
-    real(rtype), dimension(kts:kte) ::  V_qit,V_nit,flux_qit,        &
-         flux_nit,flux_qir,flux_bir
-
     real(rtype)    :: lammax,lammin,mu,dv,sc,dqsdt,ab,kap,epsr,epsc,epsi_tot, &
          dum,dum1,    &
          dum3,dum4,dum5,dum6, &
          dqsidt,abi,rhop,tmp1,  &
          tmp2,odt,     &
-         fluxdiv_qit,fluxdiv_nit,fluxdiv_qir,fluxdiv_bir,prt_accum, &
-         Co_max,dt_sub,      &
          Q_nuc,N_nuc,         &
          deltaD_init,    &
-         timeScaleFactor,dt_left, vtrmi1
+         timeScaleFactor, vtrmi1
 
 
     integer :: dumi,i,k,dumj,dumii,dumjj,dumzz,      &
-         tmpint1,ktop,kbot,kdir,  &
-         k_qxbot,k_qxtop,k_temp
+         ktop,kbot,kdir
 
     logical :: log_nucleationPossible,log_hydrometeorsPresent,     &
-         log_exitlevel,       &
-         log_qxpresent
+         log_exitlevel
 
 
     ! quantities related to process rates/parameters, interpolated from lookup tables:
@@ -523,7 +516,6 @@ contains
     ! "create_p3_lookupTable_1.F90-v4.1".  All line numbers below reference this
     ! file.
 
-    real(rtype)    :: f1pr01   ! number-weighted fallspeed            See lines  731 -  808  uns
     real(rtype)    :: f1pr02   ! mass-weighted fallspeed              See lines  731 -  808  ums
     real(rtype)    :: f1pr03   ! ice collection within a category     See lines  809 -  928  nagg 
     real(rtype)    :: f1pr04   ! collection of cloud water by ice     See lines  929 - 1009  nrwat
@@ -1145,140 +1137,147 @@ contains
        qr_incld(i,:), qr(i,:), nr(i,:), rho(i,:), inv_rho(i,:), rhofacr(i,:), rcldm(i,:), inv_dzq(i,:),&
        dt, odt, & 
        nr_incld(i,:), mu_r(i,:), lamr(i,:), prt_liq(i), rflx(i,:), p3_tend_out(i,:,38), p3_tend_out(i,:,39)) 
-       
+
        !------------------------------------------------------------------------------------------!
        ! Ice sedimentation:  (adaptive substepping)
        p3_tend_out(i,:,40) = qitot(i,:) ! Ice sedimentation tendency, initialize
        p3_tend_out(i,:,41) = nitot(i,:) ! Ice # sedimentation tendency, initialize
 
-
-       log_qxpresent = .false.  !note: this applies to ice category 'iice' only
-       k_qxtop       = kbot
-
-       !find top, determine qxpresent
-       do k = ktop,kbot,-kdir
-          if (qitot(i,k).ge.qsmall) then
-             log_qxpresent = .true.
-             k_qxtop = k
-             exit
-          endif !
-       enddo  !k-loop
-
-       qi_present: if (log_qxpresent) then
-
-          dt_left   = dt  !time remaining for sedi over full model (mp) time step
-          prt_accum = 0._rtype  !precip rate for individual category
-
-          !find bottom
-          do k = kbot,k_qxtop,kdir
-             if (qitot(i,k).ge.qsmall) then
-                k_qxbot = k
-                exit
-             endif
-          enddo
-
-          substep_sedi_i: do while (dt_left.gt.1.e-4_rtype)
-
-             Co_max = 0._rtype
-             V_qit = 0._rtype
-             V_nit = 0._rtype
-
-             kloop_sedi_i1: do k = k_qxtop,k_qxbot,-kdir
-
-                !-- compute Vq, Vn (get values from lookup table)
-                qi_notsmall_i1: if (qitot_incld(i,k)>qsmall) then
-
-                   !--Compute Vq, Vn:
-                   nitot_incld(i,k) = max(nitot_incld(i,k),nsmall) !impose lower limits to prevent log(<0)
-                   call calc_bulkRhoRime(qitot_incld(i,k),qirim_incld(i,k),birim_incld(i,k),rhop)
-                   !if (.not. tripleMoment_on) zitot(i,k) = diag_mom6(qitot(i,k),nitot(i,k),rho(i,k))
-                   call find_lookupTable_indices_1a(dumi,dumjj,dumii,dumzz,dum1,dum4,    &
-                        dum5,dum6,isize,rimsize,densize,          &
-                        qitot_incld(i,k),nitot_incld(i,k),qirim_incld(i,k),&
-                        rhop)
-                   call access_lookup_table(dumjj,dumii,dumi, 1,dum1,dum4,dum5,f1pr01)
-                   call access_lookup_table(dumjj,dumii,dumi, 2,dum1,dum4,dum5,f1pr02)
-                   call access_lookup_table(dumjj,dumii,dumi, 7,dum1,dum4,dum5,f1pr09)
-                   call access_lookup_table(dumjj,dumii,dumi, 8,dum1,dum4,dum5,f1pr10)
-                   !-impose mean ice size bounds (i.e. apply lambda limiters)
-                   ! note that the Nmax and Nmin are normalized and thus need to be multiplied by existing N
-                   nitot_incld(i,k) = min(nitot_incld(i,k),f1pr09*nitot_incld(i,k))
-                   nitot_incld(i,k) = max(nitot_incld(i,k),f1pr10*nitot_incld(i,k))
-                   nitot(i,k) = nitot_incld(i,k)*icldm(i,k)
-                   !zitot(i,k) = min(zitot(i,k),f1pr020)  !adjust Zi if needed to make sure mu_i is in bounds
-                   !zitot(i,k) = max(zitot(i,k),f1pr021)
-                   V_qit(k) = f1pr02*rhofaci(i,k)     !mass-weighted  fall speed (with density factor)
-                   V_nit(k) = f1pr01*rhofaci(i,k)     !number-weighted    fall speed (with density factor)
-                   !==
-
-                endif qi_notsmall_i1
-
-                Co_max = max(Co_max, V_qit(k)*dt_left*inv_dzq(i,k))
-
-             enddo kloop_sedi_i1
-
-             !-- compute dt_sub
-             tmpint1 = int(Co_max+1._rtype)    !number of substeps remaining if dt_sub were constant
-             dt_sub  = min(dt_left, dt_left/float(tmpint1))
-
-             if (k_qxbot.eq.kbot) then
-                k_temp = k_qxbot
-             else
-                k_temp = k_qxbot-kdir
-             endif
-
-             !-- calculate fluxes
-             do k = k_temp,k_qxtop,kdir
-                flux_qit(k) = V_qit(k)*qitot(i,k)*rho(i,k)
-                flux_nit(k) = V_nit(k)*nitot(i,k)*rho(i,k)
-                flux_qir(k) = V_qit(k)*qirim(i,k)*rho(i,k)
-                flux_bir(k) = V_qit(k)*birim(i,k)*rho(i,k)
-             enddo
-
-             !accumulated precip during time step
-             if (k_qxbot.eq.kbot) prt_accum = prt_accum + flux_qit(kbot)*dt_sub
-             !or, optimized: prt_accum = prt_accum - (k_qxbot.eq.kbot)*dt_sub
-
-             !--- for top level only (since flux is 0 above)
-             k = k_qxtop
-             !-- compute flux divergence
-             fluxdiv_qit = -flux_qit(k)*inv_dzq(i,k)
-             fluxdiv_qir = -flux_qir(k)*inv_dzq(i,k)
-             fluxdiv_bir = -flux_bir(k)*inv_dzq(i,k)
-             fluxdiv_nit = -flux_nit(k)*inv_dzq(i,k)
-             !-- update prognostic variables
-             qitot(i,k) = qitot(i,k) + fluxdiv_qit*dt_sub*inv_rho(i,k)
-             qirim(i,k) = qirim(i,k) + fluxdiv_qir*dt_sub*inv_rho(i,k)
-             birim(i,k) = birim(i,k) + fluxdiv_bir*dt_sub*inv_rho(i,k)
-             nitot(i,k) = nitot(i,k) + fluxdiv_nit*dt_sub*inv_rho(i,k)
-             !zitot(i,k) = zitot(i,k) + fluxdiv_nit*dt_sub*inv_rho(i,k)
+       call ice_sedimentation(kts, kte,    &
+       qitot_incld(i,:), qitot(i,:), nitot(i,:), qirim(i,:), qirim_incld(i,:), birim(i,:), &
+       rho(i,:), inv_rho(i,:), rhofaci(i,:), icldm(i,:), inv_dzq(i,:),&
+       dt, odt,  & 
+       birim_incld(i,:), nitot_incld(i,:), prt_sol(i), p3_tend_out(i,:,40), p3_tend_out(i,:,41))     
 
 
-             do k = k_qxtop-kdir,k_temp,-kdir
-                !-- compute flux divergence
-                fluxdiv_qit = (flux_qit(k+kdir) - flux_qit(k))*inv_dzq(i,k)
-                fluxdiv_qir = (flux_qir(k+kdir) - flux_qir(k))*inv_dzq(i,k)
-                fluxdiv_bir = (flux_bir(k+kdir) - flux_bir(k))*inv_dzq(i,k)
-                fluxdiv_nit = (flux_nit(k+kdir) - flux_nit(k))*inv_dzq(i,k)
-                !-- update prognostic variables
-                qitot(i,k) = qitot(i,k) + fluxdiv_qit*dt_sub*inv_rho(i,k)
-                qirim(i,k) = qirim(i,k) + fluxdiv_qir*dt_sub*inv_rho(i,k)
-                birim(i,k) = birim(i,k) + fluxdiv_bir*dt_sub*inv_rho(i,k)
-                nitot(i,k) = nitot(i,k) + fluxdiv_nit*dt_sub*inv_rho(i,k)
-                !zitot(i,k) = zitot(i,k) + fluxdiv_nit*dt_sub*inv_rho(i,k)
-             enddo
 
-             dt_left = dt_left - dt_sub  !update time remaining for sedimentation
-             if (k_qxbot.ne.kbot) k_qxbot = k_qxbot - kdir
-             !or, optimzed: k_qxbot = k_qxbot +(k_qxbot.eq.kbot)*kdir
+      !  log_qxpresent = .false.  !note: this applies to ice category 'iice' only
+      !  k_qxtop       = kbot
 
-          enddo substep_sedi_i
+      !  !find top, determine qxpresent
+      !  do k = ktop,kbot,-kdir
+      !     if (qitot(i,k).ge.qsmall) then
+      !        log_qxpresent = .true.
+      !        k_qxtop = k
+      !        exit
+      !     endif !
+      !  enddo  !k-loop
 
-          prt_sol(i) = prt_sol(i) + prt_accum*inv_rhow*odt
+      !  qi_present: if (log_qxpresent) then
 
-       endif qi_present
-       p3_tend_out(i,:,40) = ( qitot(i,:) - p3_tend_out(i,:,40) ) * odt ! Ice sedimentation tendency, measure
-       p3_tend_out(i,:,41) = ( nitot(i,:) - p3_tend_out(i,:,41) ) * odt ! Ice # sedimentation tendency, measure
+      !     dt_left   = dt  !time remaining for sedi over full model (mp) time step
+      !     prt_accum = 0._rtype  !precip rate for individual category
+
+      !     !find bottom
+      !     do k = kbot,k_qxtop,kdir
+      !        if (qitot(i,k).ge.qsmall) then
+      !           k_qxbot = k
+      !           exit
+      !        endif
+      !     enddo
+
+      !     substep_sedi_i: do while (dt_left.gt.1.e-4_rtype)
+
+      !        Co_max = 0._rtype
+      !        V_qit = 0._rtype
+      !        V_nit = 0._rtype
+
+      !        kloop_sedi_i1: do k = k_qxtop,k_qxbot,-kdir
+
+      !           !-- compute Vq, Vn (get values from lookup table)
+      !           qi_notsmall_i1: if (qitot_incld(i,k)>qsmall) then
+
+      !              !--Compute Vq, Vn:
+      !              nitot_incld(i,k) = max(nitot_incld(i,k),nsmall) !impose lower limits to prevent log(<0)
+      !              call calc_bulkRhoRime(qitot_incld(i,k),qirim_incld(i,k),birim_incld(i,k),rhop)
+      !              !if (.not. tripleMoment_on) zitot(i,k) = diag_mom6(qitot(i,k),nitot(i,k),rho(i,k))
+      !              call find_lookupTable_indices_1a(dumi,dumjj,dumii,dumzz,dum1,dum4,    &
+      !                   dum5,dum6,isize,rimsize,densize,          &
+      !                   qitot_incld(i,k),nitot_incld(i,k),qirim_incld(i,k),&
+      !                   rhop)
+      !              call access_lookup_table(dumjj,dumii,dumi, 1,dum1,dum4,dum5,f1pr01)
+      !              call access_lookup_table(dumjj,dumii,dumi, 2,dum1,dum4,dum5,f1pr02)
+      !              call access_lookup_table(dumjj,dumii,dumi, 7,dum1,dum4,dum5,f1pr09)
+      !              call access_lookup_table(dumjj,dumii,dumi, 8,dum1,dum4,dum5,f1pr10)
+      !              !-impose mean ice size bounds (i.e. apply lambda limiters)
+      !              ! note that the Nmax and Nmin are normalized and thus need to be multiplied by existing N
+      !              nitot_incld(i,k) = min(nitot_incld(i,k),f1pr09*nitot_incld(i,k))
+      !              nitot_incld(i,k) = max(nitot_incld(i,k),f1pr10*nitot_incld(i,k))
+      !              nitot(i,k) = nitot_incld(i,k)*icldm(i,k)
+      !              !zitot(i,k) = min(zitot(i,k),f1pr020)  !adjust Zi if needed to make sure mu_i is in bounds
+      !              !zitot(i,k) = max(zitot(i,k),f1pr021)
+      !              V_qit(k) = f1pr02*rhofaci(i,k)     !mass-weighted  fall speed (with density factor)
+      !              V_nit(k) = f1pr01*rhofaci(i,k)     !number-weighted    fall speed (with density factor)
+      !              !==
+
+      !           endif qi_notsmall_i1
+
+      !           Co_max = max(Co_max, V_qit(k)*dt_left*inv_dzq(i,k))
+
+      !        enddo kloop_sedi_i1
+
+      !        !-- compute dt_sub
+      !        tmpint1 = int(Co_max+1._rtype)    !number of substeps remaining if dt_sub were constant
+      !        dt_sub  = min(dt_left, dt_left/float(tmpint1))
+
+      !        if (k_qxbot.eq.kbot) then
+      !           k_temp = k_qxbot
+      !        else
+      !           k_temp = k_qxbot-kdir
+      !        endif
+
+      !        !-- calculate fluxes
+      !        do k = k_temp,k_qxtop,kdir
+      !           flux_qit(k) = V_qit(k)*qitot(i,k)*rho(i,k)
+      !           flux_nit(k) = V_nit(k)*nitot(i,k)*rho(i,k)
+      !           flux_qir(k) = V_qit(k)*qirim(i,k)*rho(i,k)
+      !           flux_bir(k) = V_qit(k)*birim(i,k)*rho(i,k)
+      !        enddo
+
+      !        !accumulated precip during time step
+      !        if (k_qxbot.eq.kbot) prt_accum = prt_accum + flux_qit(kbot)*dt_sub
+      !        !or, optimized: prt_accum = prt_accum - (k_qxbot.eq.kbot)*dt_sub
+
+      !        !--- for top level only (since flux is 0 above)
+      !        k = k_qxtop
+      !        !-- compute flux divergence
+      !        fluxdiv_qit = -flux_qit(k)*inv_dzq(i,k)
+      !        fluxdiv_qir = -flux_qir(k)*inv_dzq(i,k)
+      !        fluxdiv_bir = -flux_bir(k)*inv_dzq(i,k)
+      !        fluxdiv_nit = -flux_nit(k)*inv_dzq(i,k)
+      !        !-- update prognostic variables
+      !        qitot(i,k) = qitot(i,k) + fluxdiv_qit*dt_sub*inv_rho(i,k)
+      !        qirim(i,k) = qirim(i,k) + fluxdiv_qir*dt_sub*inv_rho(i,k)
+      !        birim(i,k) = birim(i,k) + fluxdiv_bir*dt_sub*inv_rho(i,k)
+      !        nitot(i,k) = nitot(i,k) + fluxdiv_nit*dt_sub*inv_rho(i,k)
+      !        !zitot(i,k) = zitot(i,k) + fluxdiv_nit*dt_sub*inv_rho(i,k)
+
+
+      !        do k = k_qxtop-kdir,k_temp,-kdir
+      !           !-- compute flux divergence
+      !           fluxdiv_qit = (flux_qit(k+kdir) - flux_qit(k))*inv_dzq(i,k)
+      !           fluxdiv_qir = (flux_qir(k+kdir) - flux_qir(k))*inv_dzq(i,k)
+      !           fluxdiv_bir = (flux_bir(k+kdir) - flux_bir(k))*inv_dzq(i,k)
+      !           fluxdiv_nit = (flux_nit(k+kdir) - flux_nit(k))*inv_dzq(i,k)
+      !           !-- update prognostic variables
+      !           qitot(i,k) = qitot(i,k) + fluxdiv_qit*dt_sub*inv_rho(i,k)
+      !           qirim(i,k) = qirim(i,k) + fluxdiv_qir*dt_sub*inv_rho(i,k)
+      !           birim(i,k) = birim(i,k) + fluxdiv_bir*dt_sub*inv_rho(i,k)
+      !           nitot(i,k) = nitot(i,k) + fluxdiv_nit*dt_sub*inv_rho(i,k)
+      !           !zitot(i,k) = zitot(i,k) + fluxdiv_nit*dt_sub*inv_rho(i,k)
+      !        enddo
+
+      !        dt_left = dt_left - dt_sub  !update time remaining for sedimentation
+      !        if (k_qxbot.ne.kbot) k_qxbot = k_qxbot - kdir
+      !        !or, optimzed: k_qxbot = k_qxbot +(k_qxbot.eq.kbot)*kdir
+
+      !     enddo substep_sedi_i
+
+      !     prt_sol(i) = prt_sol(i) + prt_accum*inv_rhow*odt
+
+      !  endif qi_present
+      !  p3_tend_out(i,:,40) = ( qitot(i,:) - p3_tend_out(i,:,40) ) * odt ! Ice sedimentation tendency, measure
+      !  p3_tend_out(i,:,41) = ( nitot(i,:) - p3_tend_out(i,:,41) ) * odt ! Ice # sedimentation tendency, measure
 
        !------------------------------------------------------------------------------------------!
 
@@ -3801,5 +3800,195 @@ subroutine rain_sedimentation(kts, kte,    &
 
 end subroutine rain_sedimentation
 
+subroutine ice_sedimentation(kts, kte,    &
+   qitot_incld, qitot, nitot, qirim, qirim_incld, birim, rho, inv_rho, rhofaci, icldm, inv_dzq,&
+   dt, odt,  & 
+   birim_incld, nitot_incld, prt_sol, qi_tend, ni_tend) 
+
+   implicit none 
+   integer, intent(in) :: kts, kte
+
+
+   real(rtype), intent(in), dimension(kts:kte) :: qitot_incld
+
+   real(rtype), intent(in), dimension(kts:kte) :: rho
+   real(rtype), intent(in), dimension(kts:kte) :: inv_rho
+   real(rtype), intent(in), dimension(kts:kte) :: rhofaci  
+   real(rtype), intent(in), dimension(kts:kte) :: icldm 
+   real(rtype), intent(in), dimension(kts:kte) :: inv_dzq
+   real(rtype), intent(in) :: dt 
+   real(rtype), intent(in) :: odt 
+
+   real(rtype), intent(inout), dimension(kts:kte) :: qitot 
+   real(rtype), intent(inout), dimension(kts:kte) :: nitot
+   real(rtype), intent(inout), dimension(kts:kte) :: qirim 
+   real(rtype), intent(inout), dimension(kts:kte) :: qirim_incld
+   real(rtype), intent(inout), dimension(kts:kte) :: birim 
+   real(rtype), intent(inout), dimension(kts:kte) :: birim_incld 
+   real(rtype), intent(inout), dimension(kts:kte) :: nitot_incld 
+
+   real(rtype), intent(inout) :: prt_sol
+   real(rtype), intent(inout), dimension(kts:kte) :: qi_tend 
+   real(rtype), intent(inout), dimension(kts:kte) :: ni_tend 
+   
+    
+   logical :: log_qxpresent
+   integer :: k 
+   integer :: kbot, ktop, kdir, k_qxtop, k_qxbot, k_temp 
+   integer :: tmpint1 
+
+   real(rtype) :: dt_left 
+   real(rtype) :: prt_accum 
+   real(rtype) :: Co_max 
+   real(rtype) :: dt_sub
+   real(rtype) :: rhop 
+   real(rtype), dimension(kts:kte) :: V_qit
+   real(rtype), dimension(kts:kte) :: V_nit 
+   real(rtype), dimension(kts:kte) :: flux_nit
+   real(rtype), dimension(kts:kte) :: flux_bir
+   real(rtype), dimension(kts:kte) :: flux_qir
+   real(rtype), dimension(kts:kte) :: flux_qit 
+   real(rtype) :: fluxdiv_bir, fluxdiv_qit, fluxdiv_nit, fluxdiv_qir
+   real(rtype) :: f1pr01 ! number-weighted fallspeed            See lines  731 -  808  uns
+   real(rtype) :: f1pr02 ! mass-weighted fallspeed              See lines  731 -  808  ums
+   real(rtype) :: f1pr09 ! minimum ice number (lambda limiter)  See lines  704 -  705  nlarge
+   real(rtype) :: f1pr10 ! maximum ice number (lambda limiter)  See lines  704 -  705  nsmall
+ 
+   real(rtype) :: dum1, dum4, dum5, dum6
+   integer dumi, dumii, dumjj, dumzz 
+
+   ktop = kts
+   kbot = kte
+   kdir = -1 
+   log_qxpresent = .false.  !note: this applies to ice category 'iice' only
+   k_qxtop       = kbot
+
+   !find top, determine qxpresent
+   do k = ktop,kbot,-kdir
+      if (qitot(k).ge.qsmall) then
+         log_qxpresent = .true.
+         k_qxtop = k
+         exit
+      endif !
+   enddo  !k-loop
+
+   qi_present: if (log_qxpresent) then
+
+      dt_left   = dt  !time remaining for sedi over full model (mp) time step
+      prt_accum = 0._rtype  !precip rate for individual category
+
+      !find bottom
+      do k = kbot,k_qxtop,kdir
+         if (qitot(k).ge.qsmall) then
+            k_qxbot = k
+            exit
+         endif
+      enddo
+
+      substep_sedi_i: do while (dt_left.gt.1.e-4_rtype)
+
+         Co_max = 0._rtype
+         V_qit = 0._rtype
+         V_nit = 0._rtype
+
+         kloop_sedi_i1: do k = k_qxtop,k_qxbot,-kdir
+
+            !-- compute Vq, Vn (get values from lookup table)
+            qi_notsmall_i1: if (qitot_incld(k)>qsmall) then
+
+               !--Compute Vq, Vn:
+               nitot_incld(k) = max(nitot_incld(k),nsmall) !impose lower limits to prevent log(<0)
+               call calc_bulkRhoRime(qitot_incld(k),qirim_incld(k),birim_incld(k),rhop)
+               !if (.not. tripleMoment_on) zitot(i,k) = diag_mom6(qitot(i,k),nitot(i,k),rho(i,k))
+               call find_lookupTable_indices_1a(dumi,dumjj,dumii,dumzz,dum1,dum4,    &
+                    dum5,dum6,isize,rimsize,densize,          &
+                    qitot_incld(k),nitot_incld(k),qirim_incld(k),&
+                    rhop)
+               call access_lookup_table(dumjj,dumii,dumi, 1,dum1,dum4,dum5,f1pr01)
+               call access_lookup_table(dumjj,dumii,dumi, 2,dum1,dum4,dum5,f1pr02)
+               call access_lookup_table(dumjj,dumii,dumi, 7,dum1,dum4,dum5,f1pr09)
+               call access_lookup_table(dumjj,dumii,dumi, 8,dum1,dum4,dum5,f1pr10)
+               !-impose mean ice size bounds (i.e. apply lambda limiters)
+               ! note that the Nmax and Nmin are normalized and thus need to be multiplied by existing N
+               nitot_incld(k) = min(nitot_incld(k),f1pr09*nitot_incld(k))
+               nitot_incld(k) = max(nitot_incld(k),f1pr10*nitot_incld(k))
+               nitot(k) = nitot_incld(k)*icldm(k)
+               !zitot(i,k) = min(zitot(i,k),f1pr020)  !adjust Zi if needed to make sure mu_i is in bounds
+               !zitot(i,k) = max(zitot(i,k),f1pr021)
+               V_qit(k) = f1pr02*rhofaci(k)     !mass-weighted  fall speed (with density factor)
+               V_nit(k) = f1pr01*rhofaci(k)     !number-weighted    fall speed (with density factor)
+               !==
+
+            endif qi_notsmall_i1
+
+            Co_max = max(Co_max, V_qit(k)*dt_left*inv_dzq(k))
+
+         enddo kloop_sedi_i1
+
+         !-- compute dt_sub
+         tmpint1 = int(Co_max+1._rtype)    !number of substeps remaining if dt_sub were constant
+         dt_sub  = min(dt_left, dt_left/float(tmpint1))
+
+         if (k_qxbot.eq.kbot) then
+            k_temp = k_qxbot
+         else
+            k_temp = k_qxbot-kdir
+         endif
+
+         !-- calculate fluxes
+         do k = k_temp,k_qxtop,kdir
+            flux_qit(k) = V_qit(k)*qitot(k)*rho(k)
+            flux_nit(k) = V_nit(k)*nitot(k)*rho(k)
+            flux_qir(k) = V_qit(k)*qirim(k)*rho(k)
+            flux_bir(k) = V_qit(k)*birim(k)*rho(k)
+         enddo
+
+         !accumulated precip during time step
+         if (k_qxbot.eq.kbot) prt_accum = prt_accum + flux_qit(kbot)*dt_sub
+         !or, optimized: prt_accum = prt_accum - (k_qxbot.eq.kbot)*dt_sub
+
+         !--- for top level only (since flux is 0 above)
+         k = k_qxtop
+         !-- compute flux divergence
+         fluxdiv_qit = -flux_qit(k)*inv_dzq(k)
+         fluxdiv_qir = -flux_qir(k)*inv_dzq(k)
+         fluxdiv_bir = -flux_bir(k)*inv_dzq(k)
+         fluxdiv_nit = -flux_nit(k)*inv_dzq(k)
+         !-- update prognostic variables
+         qitot(k) = qitot(k) + fluxdiv_qit*dt_sub*inv_rho(k)
+         qirim(k) = qirim(k) + fluxdiv_qir*dt_sub*inv_rho(k)
+         birim(k) = birim(k) + fluxdiv_bir*dt_sub*inv_rho(k)
+         nitot(k) = nitot(k) + fluxdiv_nit*dt_sub*inv_rho(k)
+         !zitot(i,k) = zitot(i,k) + fluxdiv_nit*dt_sub*inv_rho(i,k)
+
+
+         do k = k_qxtop-kdir,k_temp,-kdir
+            !-- compute flux divergence
+            fluxdiv_qit = (flux_qit(k+kdir) - flux_qit(k))*inv_dzq(k)
+            fluxdiv_qir = (flux_qir(k+kdir) - flux_qir(k))*inv_dzq(k)
+            fluxdiv_bir = (flux_bir(k+kdir) - flux_bir(k))*inv_dzq(k)
+            fluxdiv_nit = (flux_nit(k+kdir) - flux_nit(k))*inv_dzq(k)
+            !-- update prognostic variables
+            qitot(k) = qitot(k) + fluxdiv_qit*dt_sub*inv_rho(k)
+            qirim(k) = qirim(k) + fluxdiv_qir*dt_sub*inv_rho(k)
+            birim(k) = birim(k) + fluxdiv_bir*dt_sub*inv_rho(k)
+            nitot(k) = nitot(k) + fluxdiv_nit*dt_sub*inv_rho(k)
+            !zitot(i,k) = zitot(i,k) + fluxdiv_nit*dt_sub*inv_rho(i,k)
+         enddo
+
+         dt_left = dt_left - dt_sub  !update time remaining for sedimentation
+         if (k_qxbot.ne.kbot) k_qxbot = k_qxbot - kdir
+         !or, optimzed: k_qxbot = k_qxbot +(k_qxbot.eq.kbot)*kdir
+
+      enddo substep_sedi_i
+
+      prt_sol = prt_sol + prt_accum*inv_rhow*odt
+
+   endif qi_present
+
+   qi_tend(:) = ( qitot(:) - qi_tend(:) ) * odt ! Ice sedimentation tendency, measure
+   ni_tend(:) = ( nitot(:) - ni_tend(:) ) * odt ! Ice # sedimentation tendency, measure
+
+end subroutine
 
 end module micro_p3
