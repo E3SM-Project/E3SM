@@ -1,10 +1,10 @@
 ! A C-program for MT19937, with initialization improved 2002/1/26.
 ! Coded by Takuji Nishimura and Makoto Matsumoto.                 
 
-! Code converted to Fortran 95 by Jose Rui Faustino de Sousa
+! Code converted to Fortran 95 by José Rui Faustino de Sousa
 ! Date: 2002-02-01
 
-! Enhanced version by Jose Rui Faustino de Sousa
+! Enhanced version by José Rui Faustino de Sousa
 ! Date: 2003-04-30
 
 ! Interface:
@@ -128,8 +128,7 @@ module mt95
   end type genrand_srepr
 
   type(genrand_state), private, save  :: state
-  ! 23 Feb 2015: Threadprivate statement added by NCAR for CAM
-!$omp threadprivate( state )
+!$omp threadprivate(state)
 
   interface assignment( = )
     module procedure genrand_load_state
@@ -1312,7 +1311,7 @@ module mt95
 
   end subroutine genrand_res53_7d
   ! These real versions are due to Isaku Wada, 2002/01/09 added 
-  ! Altered by Jose Sousa genrand_real[1-3] will not return exactely
+  ! Altered by José Sousa genrand_real[1-3] will not return exactely
   ! the same values but should have the same properties and are faster
 
 end module mt95

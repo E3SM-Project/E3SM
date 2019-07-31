@@ -1,5 +1,5 @@
 !---------------------------------------------------------------------------
-! $Id$
+! $Id: array_index.F90 7118 2014-07-25 00:12:15Z raut@uwm.edu $
 !===============================================================================
 module array_index
 
@@ -20,19 +20,19 @@ module array_index
   ! Variables
   ! Microphysics mixing ratios
   integer, public :: &
-    iirr,   & ! Hydrometeor array index for rain water mixing ratio, rr
-    iirs,   & ! Hydrometeor array index for snow mixing ratio, rs
-    iiri,   & ! Hydrometeor array index for ice mixing ratio, ri
-    iirg      ! Hydrometeor array index for graupel mixing ratio, rg
-!$omp threadprivate(iirr, iirs, iiri, iirg)
+    iirrm,    & ! Hydrometeor array index for rain water mixing ratio, rr
+    iirsm,    & ! Hydrometeor array index for snow mixing ratio, rs
+    iirim,     & ! Hydrometeor array index for ice mixing ratio, ri
+    iirgm    ! Hydrometeor array index for graupel mixing ratio, rg
+!$omp threadprivate(iirrm, iirsm, iirim, iirgm)
 
   ! Microphysics concentrations
   integer, public :: &
-    iiNr,   & ! Hydrometeor array index for rain drop concentration, Nr
-    iiNs,   & ! Hydrometeor array index for snow concentration, Ns
-    iiNi,   & ! Hydrometeor array index for ice concentration, Ni
-    iiNg      ! Hydrometeor array index for graupel concentration, Ng
-!$omp threadprivate(iiNr, iiNs, iiNi, iiNg)
+    iiNrm,       & ! Hydrometeor array index for rain drop concentration, Nr
+    iiNsm,    & ! Hydrometeor array index for snow concentration, Ns
+    iiNim,       & ! Hydrometeor array index for ice concentration, Ni
+    iiNgm    ! Hydrometeor array index for graupel concentration, Ng
+!$omp threadprivate(iiNrm, iiNsm, iiNim, iiNgm)
 
   ! Scalar quantities
   integer, public :: & 
@@ -56,28 +56,6 @@ module array_index
     hydromet_tol    ! Tolerance values for all hydrometeors    [units vary]
 
 !$omp threadprivate( hydromet_tol )   
-
-  ! Latin hypercube indices / Correlation array indices
-  integer, public :: &
-    iiPDF_chi = -1, &
-    iiPDF_eta = -1, &
-    iiPDF_w   = -1
-!$omp threadprivate(iiPDF_chi, iiPDF_eta, iiPDF_w)
-
-  integer, public :: &
-   iiPDF_rr = -1, &
-   iiPDF_rs = -1, &
-   iiPDF_ri = -1, &
-   iiPDF_rg = -1
-!$omp threadprivate(iiPDF_rr, iiPDF_rs, iiPDF_ri, iiPDF_rg)
-
-  integer, public :: &
-   iiPDF_Nr  = -1, &
-   iiPDF_Ns  = -1, &
-   iiPDF_Ni  = -1, &
-   iiPDF_Ng  = -1, &
-   iiPDF_Ncn = -1
-!$omp threadprivate(iiPDF_Nr, iiPDF_Ns, iiPDF_Ni, iiPDF_Ng, iiPDF_Ncn)
 
   private ! Default Scope
 

@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-! $Id$
+! $Id: mono_flux_limiter.F90 7315 2014-09-30 20:49:54Z schemena@uwm.edu $
 !===============================================================================
 module mono_flux_limiter
 
@@ -20,9 +20,7 @@ module mono_flux_limiter
   ! and xm_wpxp_rtm given in advance_xm_wpxp_module!
   integer, parameter, private :: &
     mono_flux_thlm = 1, & ! Named constant for thlm mono_flux calls
-    mono_flux_rtm = 2,  & ! Named constant for rtm mono_flux calls
-    mono_flux_um = 4,   & ! Named constant for um mono_flux calls
-    mono_flux_vm = 5      ! Named constant for vm mono_flux calls
+    mono_flux_rtm = 2     ! Named constant for rtm mono_flux calls
 
   contains
 
@@ -33,7 +31,7 @@ module mono_flux_limiter
                                              invrs_rho_ds_zm, invrs_rho_ds_zt, &
                                              xp2_threshold, l_implemented, &
                                              low_lev_effect, high_lev_effect, &
-                                             xm, xm_tol, wpxp )
+                                             xm, xm_tol, wpxp, err_code )
 
     ! Description:
     ! Limits the value of w'x' and corrects the value of xm when the xm turbulent
@@ -290,13 +288,12 @@ module mono_flux_limiter
         eps, &
         fstderr
 
-    use error_code, only: &
-        clubb_at_least_debug_level,  & ! Procedure
-        err_code,                    & ! Error Indicator
-        clubb_fatal_error              ! Constant
-
     use clubb_precision, only:  & 
         core_rknd ! Variable(s)
+
+    use error_code, only:  &
+        fatal_error, &  ! Procedure(s)
+        clubb_no_error   ! Constant
         
     use fill_holes, only: &
         vertical_integral ! Procedure(s)
@@ -307,16 +304,12 @@ module mono_flux_limiter
         stat_update_var
 
     use stats_variables, only:  &
-        stats_zm, & ! Variable(s)
-        stats_zt, &
-        iwprtp_mfl, &
-        irtm_mfl, &
-        iwpthlp_mfl, &
-        ithlm_mfl, &
-        iupwp_mfl, &
-        ium_mfl, &
-        ivpwp_mfl, &
-        ivm_mfl, &
+        stats_zm,  & ! Variable(s)
+        stats_zt,  &
+        iwprtp_mfl,  &
+        irtm_mfl,  &
+        iwpthlp_mfl,  &
+        ithlm_mfl,  &
         ithlm_old, &
         ithlm_without_ta, &
         ithlm_mfl_min, &
@@ -380,6 +373,10 @@ module mono_flux_limiter
       xm,  &      ! xm at current time step (thermodynamic levels)  [units vary]
       wpxp        ! w'x' (momentum levels)                          [units vary]
 
+    ! Output Variable
+    integer, intent(out) ::  &
+      err_code  ! Returns an error code in the event of a singular matrix
+
     ! Local Variables
     real( kind = core_rknd ), dimension(gr%nz) :: &
       xp2_zt,          &      ! x'^2 interpolated to thermodynamic levels  [units vary]
@@ -428,6 +425,7 @@ module mono_flux_limiter
       ixm_mfl
 
     !--- Begin Code ---
+    err_code = clubb_no_error  ! Initialize to the value for no errors
 
     ! Default Initialization required due to G95 compiler warning
     max_xp2 = 0.0_core_rknd
@@ -442,14 +440,6 @@ module mono_flux_limiter
        iwpxp_mfl = iwpthlp_mfl
        ixm_mfl   = ithlm_mfl
        max_xp2   = 5.0_core_rknd
-    case ( mono_flux_um )  ! um/upwp
-       iwpxp_mfl = iupwp_mfl
-       ixm_mfl   = ium_mfl
-       max_xp2   = 10.0_core_rknd
-    case ( mono_flux_vm )  ! vm/vpwp
-       iwpxp_mfl = ivpwp_mfl
-       ixm_mfl   = ivm_mfl
-       max_xp2   = 10.0_core_rknd
     case default    ! passive scalars are involved
        iwpxp_mfl = 0
        ixm_mfl   = 0
@@ -531,19 +521,10 @@ module mono_flux_limiter
                           + dt*m_adv_term
 
        ! Find the minimum usuable value of variable x at each vertical level.
-       if ( solve_type /= mono_flux_um .and. solve_type /= mono_flux_vm ) then
-
-          ! Since variable x must be one of theta_l, r_t, or a scalar, all of
-          ! which are positive definite quantities, the value must be >= 0.
-          min_x_allowable_lev(k) &
-          = max( xm_without_ta(k) - max_dev, zero_threshold )
-
-       else ! solve_type == mono_flux_um .or. solve_type == mono_flux_vm
-
-          ! Variable x must be one of u or v.
-          min_x_allowable_lev(k) = xm_without_ta(k) - max_dev
-
-       endif ! solve_type /= mono_flux_um .and. solve_type /= mono_flux_vm
+       ! Since variable x must be one of theta_l, r_t, or a scalar, all of
+       ! which are positive definite quantities, the value must be >= 0.
+       min_x_allowable_lev(k)  &
+       = max( xm_without_ta(k) - max_dev, zero_threshold )
 
        ! Find the maximum usuable value of variable x at each vertical level.
        max_x_allowable_lev(k) = xm_without_ta(k) + max_dev
@@ -710,7 +691,7 @@ module mono_flux_limiter
     endif
 
 
-    if ( any( abs(wpxp_net_adjust(:)) > eps ) ) then
+    if ( any( wpxp_net_adjust(:) /= 0.0_core_rknd ) ) then
 
        ! Reset the value of xm to compensate for the change to w'x'.
 
@@ -730,12 +711,10 @@ module mono_flux_limiter
 
           ! Solve the tridiagonal matrix equation.
           call mfl_xm_solve( solve_type, lhs_mfl_xm, rhs_mfl_xm,  &
-                             xm )
+                             xm, err_code )
 
           ! Check for errors
-          if ( clubb_at_least_debug_level( 0 ) ) then
-              if ( err_code == clubb_fatal_error ) return
-          end if
+          if ( fatal_error( err_code ) ) return
 
        else  ! l_mfl_xm_imp_adj = .false.
 
@@ -784,7 +763,7 @@ module mono_flux_limiter
           xm_vert_integral &
           = vertical_integral  &
               ( ((gr%nz - 1) - 2 + 1), rho_ds_zt(2:gr%nz - 1), &
-                xm(2:gr%nz - 1), gr%dzt(2:gr%nz - 1) )
+                xm(2:gr%nz - 1), gr%invrs_dzt(2:gr%nz - 1) )
 
           !Check to ensure the vertical integral is not zero to avoid a divide
           !by zero error
@@ -1045,7 +1024,7 @@ module mono_flux_limiter
 
   !=============================================================================
   subroutine mfl_xm_solve( solve_type, lhs, rhs,  &
-                           xm )
+                           xm, err_code )
 
     ! Description:
     ! This subroutine is part of the process of re-solving for xm at timestep
@@ -1065,13 +1044,12 @@ module mono_flux_limiter
     use lapack_wrap, only:  & 
         tridag_solve  ! Procedure(s)
 
+    use error_code, only:  &
+        fatal_error, &  ! Procedure(s)
+        clubb_no_error   ! Constant
+
     use clubb_precision, only: &
         core_rknd
-
-    use error_code, only: &
-        clubb_at_least_debug_level,  & ! Procedure
-        err_code,                    & ! Error Indicator
-        clubb_fatal_error              ! Constant
 
     implicit none
 
@@ -1095,11 +1073,16 @@ module mono_flux_limiter
     real( kind = core_rknd ), dimension(gr%nz), intent(inout) :: &
       xm   ! Value of variable being solved for at timestep (t+1)   [units vary]
 
+    integer, intent(out) ::  &
+      err_code  ! Returns an error code in the event of a singular matrix
+
     ! Local variable
     character(len=10) :: &
       solve_type_str ! solve_type as a string for debug output purposes
 
     !-----------------------------------------------------------------------
+
+    err_code = clubb_no_error  ! Initialize to the value for no errors
 
     select case( solve_type )
     case ( mono_flux_rtm )
@@ -1113,13 +1096,11 @@ module mono_flux_limiter
     ! Solve for xm at timestep index (t+1) using the tridiagonal solver.
     call tridag_solve & 
          ( solve_type_str, gr%nz, 1, lhs(kp1_tdiag,:),  &  ! Intent(in)
-           lhs(k_tdiag,:), lhs(km1_tdiag,:), rhs,  &       ! Intent(inout)
-           xm )                                            ! Intent(out)
+           lhs(k_tdiag,:), lhs(km1_tdiag,:), rhs,  &         ! Intent(inout)
+           xm, err_code )                                    ! Intent(out)
 
     ! Check for errors
-    if ( clubb_at_least_debug_level( 0 ) ) then
-        if ( err_code == clubb_fatal_error ) return
-    end if
+    if ( fatal_error( err_code ) ) return
 
     ! Boundary condition on xm
     xm(1) = xm(2)
@@ -1670,6 +1651,10 @@ module mono_flux_limiter
     use constants_clubb, only: &
         sqrt_2pi, &
         sqrt_2
+
+    use anl_erf, only:  & 
+        erf ! Procedure(s)
+            ! The error function
 
     use stats_type_utilities, only:  &
         stat_update_var_pt  ! Procedure(s)

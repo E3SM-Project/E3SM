@@ -1,5 +1,5 @@
 !-------------------------------------------------------------------------------
-! $Id$
+! $Id: recl.inc 6938 2014-06-09 21:29:40Z bmg2@uwm.edu $
 ! Description:
 !   Preprocessing rules for determining how large an unformatted 
 !   data record is when using Fortran write.  This does not affect
