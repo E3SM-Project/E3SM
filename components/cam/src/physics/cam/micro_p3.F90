@@ -494,17 +494,16 @@ contains
          rhofacr,rhofaci,acn,xxls,xxlv,xlf,qvs,qvi,sup,supi,       &
          tmparr1,inv_exner
 
-    real(rtype), dimension(kts:kte) ::  V_qr,V_qit,V_nit,V_nr,V_qc,V_nc,flux_qit,        &
-         flux_qx,flux_nx,                     &
+    real(rtype), dimension(kts:kte) ::  V_qit,V_nit,flux_qit,        &
          flux_nit,flux_qir,flux_bir
 
     real(rtype)    :: lammax,lammin,mu,dv,sc,dqsdt,ab,kap,epsr,epsc,epsi_tot, &
-         dum,dum1,dum2,    &
-         dum3,dum4,dum5,dum6,rdumii, &
-         rdumjj,dqsidt,abi,rhop,tmp1,  &
-         tmp2,inv_dum3,odt,     &
+         dum,dum1,    &
+         dum3,dum4,dum5,dum6, &
+         dqsidt,abi,rhop,tmp1,  &
+         tmp2,odt,     &
          fluxdiv_qit,fluxdiv_nit,fluxdiv_qir,fluxdiv_bir,prt_accum, &
-         fluxdiv_qx,fluxdiv_nx,Co_max,dt_sub,      &
+         Co_max,dt_sub,      &
          Q_nuc,N_nuc,         &
          deltaD_init,    &
          timeScaleFactor,dt_left, vtrmi1
@@ -1142,135 +1141,11 @@ contains
        p3_tend_out(i,:,38) = qr(i,:) ! Rain sedimentation tendency, initialize
        p3_tend_out(i,:,39) = nr(i,:) ! Rain # sedimentation tendency, initialize
 
-       log_qxpresent = .false.
-       k_qxtop       = kbot
-
-       !find top, determine qxpresent
-       do k = ktop,kbot,-kdir
-          if (qr(i,k).ge.qsmall) then
-             log_qxpresent = .true.
-             k_qxtop = k
-             exit
-          endif !
-       enddo
-
-       qr_present: if (log_qxpresent) then
-
-          dt_left   = dt  !time remaining for sedi over full model (mp) time step
-          prt_accum = 0._rtype  !precip rate for individual category
-
-          !find bottom
-          do k = kbot,k_qxtop,kdir
-             if (qr(i,k).ge.qsmall) then
-                k_qxbot = k
-                exit
-             endif
-          enddo
-
-          substep_sedi_r: do while (dt_left.gt.1.e-4_rtype)
-
-             Co_max = 0._rtype
-             V_qr = 0._rtype
-             V_nr = 0._rtype
-
-             kloop_sedi_r1: do k = k_qxtop,k_qxbot,-kdir
-
-                qr_notsmall_r1: if (qr_incld(i,k)>qsmall) then
-
-                   !Compute Vq, Vn:
-                   nr(i,k)  = max(nr(i,k),nsmall)
-                   call get_rain_dsd2(qr_incld(i,k),nr_incld(i,k),mu_r(i,k),lamr(i,k),     &
-                        tmp1,tmp2,rcldm(i,k))
-                   call find_lookupTable_indices_3(dumii,dumjj,dum1,rdumii,rdumjj,inv_dum3, &
-                        mu_r(i,k),lamr(i,k))
-                   nr(i,k) = nr_incld(i,k)*rcldm(i,k)
-                   !mass-weighted fall speed:
-! bug fix 12/23/18
-!                   dum1 = vm_table(dumii,dumjj)+(rdumii-real(dumii))*inv_dum3*             &
-!                        (vm_table(dumii+1,dumjj)-vm_table(dumii,dumjj))         !at mu_r
-!                   dum2 = vm_table(dumii,dumjj+1)+(rdumii-real(dumii))*inv_dum3*           &
-!                        (vm_table(dumii+1,dumjj+1)-vm_table(dumii,dumjj+1))   !at mu_r+1
-                   dum1 = vm_table(dumii,dumjj)+(rdumii-real(dumii))*                       &
-                          (vm_table(dumii+1,dumjj)-vm_table(dumii,dumjj))       !at mu_r
-                   dum2 = vm_table(dumii,dumjj+1)+(rdumii-real(dumii))*                     &
-                          (vm_table(dumii+1,dumjj+1)-vm_table(dumii,dumjj+1))   !at mu_r+1
-                   V_qr(k) = dum1 + (rdumjj-real(dumjj))*(dum2-dum1)         !interpolated
-                   V_qr(k) = V_qr(k)*rhofacr(i,k)               !corrected for air density
-
-                   ! number-weighted fall speed:
-! bug fix 12/23/18
-!                   dum1 = vn_table(dumii,dumjj)+(rdumii-real(dumii))*inv_dum3*             &
-!                        (vn_table(dumii+1,dumjj)-vn_table(dumii,dumjj)         ) !at mu_r
-!
-!                   dum2 = vn_table(dumii,dumjj+1)+(rdumii-real(dumii))*inv_dum3*           &
-!                        (vn_table(dumii+1,dumjj+1)-vn_table(dumii,dumjj+1))    !at mu_r+1
-                   dum1 = vn_table(dumii,dumjj)+(rdumii-real(dumii))*                       &
-                          (vn_table(dumii+1,dumjj)-vn_table(dumii,dumjj))       !at mu_r
-                   dum2 = vn_table(dumii,dumjj+1)+(rdumii-real(dumii))*                     &
-                          (vn_table(dumii+1,dumjj+1)-vn_table(dumii,dumjj+1))   !at mu_r+1
-
-                   V_nr(k) = dum1+(rdumjj-real(dumjj))*(dum2-dum1)            !interpolated
-                   V_nr(k) = V_nr(k)*rhofacr(i,k)                !corrected for air density
-
-                endif qr_notsmall_r1
-
-                Co_max = max(Co_max, V_qr(k)*dt_left*inv_dzq(i,k))
-                !            Co_max = max(Co_max, max(V_nr(k),V_qr(k))*dt_left*inv_dzq(i,k))
-
-             enddo kloop_sedi_r1
-
-             !-- compute dt_sub
-             tmpint1 = int(Co_max+1._rtype)    !number of substeps remaining if dt_sub were constant
-             dt_sub  = min(dt_left, dt_left/float(tmpint1))
-
-             if (k_qxbot.eq.kbot) then
-                k_temp = k_qxbot
-             else
-                k_temp = k_qxbot-kdir
-             endif
-
-             !-- calculate fluxes ! AaronDonahue, including rflx output
-             do k = k_temp,k_qxtop,kdir
-                flux_qx(k) = V_qr(k)*qr(i,k)*rho(i,k)
-                flux_nx(k) = V_nr(k)*nr(i,k)*rho(i,k)
-                rflx(i,k+1) = rflx(i,k+1) + flux_qx(k) ! AaronDonahue
-             enddo
-
-             !accumulated precip during time step
-             if (k_qxbot.eq.kbot) prt_accum = prt_accum + flux_qx(kbot)*dt_sub
-             !or, optimized: prt_accum = prt_accum - (k_qxbot.eq.kbot)*dt_sub
-
-             !--- for top level only (since flux is 0 above)
-             k = k_qxtop
-             !- compute flux divergence
-             fluxdiv_qx = -flux_qx(k)*inv_dzq(i,k)
-             fluxdiv_nx = -flux_nx(k)*inv_dzq(i,k)
-             !- update prognostic variables
-             qr(i,k) = qr(i,k) + fluxdiv_qx*dt_sub*inv_rho(i,k)
-             nr(i,k) = nr(i,k) + fluxdiv_nx*dt_sub*inv_rho(i,k)
-
-             do k = k_qxtop-kdir,k_temp,-kdir
-                !-- compute flux divergence
-                fluxdiv_qx = (flux_qx(k+kdir) - flux_qx(k))*inv_dzq(i,k)
-                fluxdiv_nx = (flux_nx(k+kdir) - flux_nx(k))*inv_dzq(i,k)
-                !-- update prognostic variables
-                qr(i,k) = qr(i,k) + fluxdiv_qx*dt_sub*inv_rho(i,k)
-                nr(i,k) = nr(i,k) + fluxdiv_nx*dt_sub*inv_rho(i,k)
-             enddo
-
-             dt_left = dt_left - dt_sub  !update time remaining for sedimentation
-             if (k_qxbot.ne.kbot) k_qxbot = k_qxbot - kdir
-             !or, optimzed: k_qxbot = k_qxbot +(k_qxbot.eq.kbot)*kdir
-
-          enddo substep_sedi_r
-
-          prt_liq(i) = prt_liq(i) + prt_accum*inv_rhow*odt
-
-       endif qr_present
-       p3_tend_out(i,:,38) = ( qr(i,:) - p3_tend_out(i,:,38) ) * odt ! Rain sedimentation tendency, measure
-       p3_tend_out(i,:,39) = ( nr(i,:) - p3_tend_out(i,:,39) ) * odt ! Rain # sedimentation tendency, measure
-
-
+       call rain_sedimentation(kts, kte,    &
+       qr_incld(i,:), qr(i,:), nr(i,:), rho(i,:), inv_rho(i,:), rhofacr(i,:), rcldm(i,:), inv_dzq(i,:),&
+       dt, odt, & 
+       nr_incld(i,:), mu_r(i,:), lamr(i,:), prt_liq(i), rflx(i,:), p3_tend_out(i,:,38), p3_tend_out(i,:,39)) 
+       
        !------------------------------------------------------------------------------------------!
        ! Ice sedimentation:  (adaptive substepping)
        p3_tend_out(i,:,40) = qitot(i,:) ! Ice sedimentation tendency, initialize
@@ -3752,5 +3627,179 @@ subroutine cloud_sedimentation(kts, kte,    &
    nc_tend(:) = ( nc(:) - nc_tend(:) ) * odt ! Liq. # sedimentation tendency, measure
 
 end subroutine cloud_sedimentation 
+
+subroutine rain_sedimentation(kts, kte,    &
+   qr_incld, qr, nr, rho, inv_rho, rhofacr, rcldm, inv_dzq,&
+   dt, odt,  & 
+   nr_incld, mu_r, lamr, prt_liq, rflx, qr_tend, nr_tend) 
+
+   implicit none 
+   integer, intent(in) :: kts, kte
+
+
+   real(rtype), intent(in), dimension(kts:kte) :: qr_incld
+
+   real(rtype), intent(in), dimension(kts:kte) :: rho
+   real(rtype), intent(in), dimension(kts:kte) :: inv_rho
+   real(rtype), intent(in), dimension(kts:kte) :: rhofacr  
+   real(rtype), intent(in), dimension(kts:kte) :: rcldm 
+   real(rtype), intent(in), dimension(kts:kte) :: inv_dzq
+   real(rtype), intent(in) :: dt 
+   real(rtype), intent(in) :: odt 
+
+   real(rtype), intent(inout), dimension(kts:kte) :: qr 
+   real(rtype), intent(inout), dimension(kts:kte) :: nr 
+   real(rtype), intent(inout), dimension(kts:kte) :: nr_incld 
+   real(rtype), intent(inout), dimension(kts:kte) :: mu_r 
+   real(rtype), intent(inout), dimension(kts:kte) :: lamr
+   real(rtype), intent(inout) :: prt_liq
+   real(rtype), intent(inout), dimension(kts:kte) :: rflx 
+   real(rtype), intent(inout), dimension(kts:kte) :: qr_tend 
+   real(rtype), intent(inout), dimension(kts:kte) :: nr_tend 
+   
+    
+   logical :: log_qxpresent
+   integer :: k 
+   integer :: kbot, ktop, kdir, k_qxtop, k_qxbot, k_temp 
+   integer :: tmpint1 
+
+   real(rtype) :: dt_left 
+   real(rtype) :: prt_accum 
+   real(rtype) :: Co_max 
+   real(rtype) :: dt_sub
+   real(rtype), dimension(kts:kte) :: V_qr
+   real(rtype), dimension(kts:kte) :: V_nr 
+   real(rtype), dimension(kts:kte) :: flux_qx
+   real(rtype), dimension(kts:kte) :: flux_nx
+   real(rtype) :: fluxdiv_qx, fluxdiv_nx 
+ 
+   real(rtype) :: tmp1, tmp2, dum1, dum2, inv_dum3 , rdumii, rdumjj
+   integer dumii, dumjj 
+
+
+   ktop = kts
+   kbot = kte
+   kdir = -1 
+   k_qxtop = kbot 
+   log_qxpresent = .false. 
+
+   !find top, determine qxpresent
+   do k = ktop,kbot,-kdir
+      if (qr(k).ge.qsmall) then
+         log_qxpresent = .true.
+         k_qxtop = k
+         exit
+      endif !
+   enddo
+
+   qr_present: if (log_qxpresent) then
+
+      dt_left   = dt  !time remaining for sedi over full model (mp) time step
+      prt_accum = 0._rtype  !precip rate for individual category
+
+      !find bottom
+      do k = kbot,k_qxtop,kdir
+         if (qr(k).ge.qsmall) then
+            k_qxbot = k
+            exit
+         endif
+      enddo
+
+      substep_sedi_r: do while (dt_left.gt.1.e-4_rtype)
+
+         Co_max = 0._rtype
+         V_qr = 0._rtype
+         V_nr = 0._rtype
+
+         kloop_sedi_r1: do k = k_qxtop,k_qxbot,-kdir
+
+            qr_notsmall_r1: if (qr_incld(k)>qsmall) then
+
+               !Compute Vq, Vn:
+               nr(k)  = max(nr(k),nsmall)
+               call get_rain_dsd2(qr_incld(k),nr_incld(k),mu_r(k),lamr(k),     &
+                    tmp1,tmp2,rcldm(k))
+               call find_lookupTable_indices_3(dumii,dumjj,dum1,rdumii,rdumjj,inv_dum3, &
+                    mu_r(k),lamr(k))
+               nr(k) = nr_incld(k)*rcldm(k)
+               !mass-weighted fall speed:
+
+               dum1 = vm_table(dumii,dumjj)+(rdumii-real(dumii))*                       &
+                      (vm_table(dumii+1,dumjj)-vm_table(dumii,dumjj))       !at mu_r
+               dum2 = vm_table(dumii,dumjj+1)+(rdumii-real(dumii))*                     &
+                      (vm_table(dumii+1,dumjj+1)-vm_table(dumii,dumjj+1))   !at mu_r+1
+               V_qr(k) = dum1 + (rdumjj-real(dumjj))*(dum2-dum1)         !interpolated
+               V_qr(k) = V_qr(k)*rhofacr(k)               !corrected for air density
+
+               ! number-weighted fall speed:
+
+               dum1 = vn_table(dumii,dumjj)+(rdumii-real(dumii))*                       &
+                      (vn_table(dumii+1,dumjj)-vn_table(dumii,dumjj))       !at mu_r
+               dum2 = vn_table(dumii,dumjj+1)+(rdumii-real(dumii))*                     &
+                      (vn_table(dumii+1,dumjj+1)-vn_table(dumii,dumjj+1))   !at mu_r+1
+
+               V_nr(k) = dum1+(rdumjj-real(dumjj))*(dum2-dum1)            !interpolated
+               V_nr(k) = V_nr(k)*rhofacr(k)                !corrected for air density
+
+            endif qr_notsmall_r1
+
+            Co_max = max(Co_max, V_qr(k)*dt_left*inv_dzq(k))
+            !            Co_max = max(Co_max, max(V_nr(k),V_qr(k))*dt_left*inv_dzq(i,k))
+
+         enddo kloop_sedi_r1
+
+         !-- compute dt_sub
+         tmpint1 = int(Co_max+1._rtype)    !number of substeps remaining if dt_sub were constant
+         dt_sub  = min(dt_left, dt_left/float(tmpint1))
+
+         if (k_qxbot.eq.kbot) then
+            k_temp = k_qxbot
+         else
+            k_temp = k_qxbot-kdir
+         endif
+
+         !-- calculate fluxes ! AaronDonahue, including rflx output
+         do k = k_temp,k_qxtop,kdir
+            flux_qx(k) = V_qr(k)*qr(k)*rho(k)
+            flux_nx(k) = V_nr(k)*nr(k)*rho(k)
+            rflx(k+1) = rflx(k+1) + flux_qx(k) ! AaronDonahue
+         enddo
+
+         !accumulated precip during time step
+         if (k_qxbot.eq.kbot) prt_accum = prt_accum + flux_qx(kbot)*dt_sub
+         !or, optimized: prt_accum = prt_accum - (k_qxbot.eq.kbot)*dt_sub
+
+         !--- for top level only (since flux is 0 above)
+         k = k_qxtop
+         !- compute flux divergence
+         fluxdiv_qx = -flux_qx(k)*inv_dzq(k)
+         fluxdiv_nx = -flux_nx(k)*inv_dzq(k)
+         !- update prognostic variables
+         qr(k) = qr(k) + fluxdiv_qx*dt_sub*inv_rho(k)
+         nr(k) = nr(k) + fluxdiv_nx*dt_sub*inv_rho(k)
+
+         do k = k_qxtop-kdir,k_temp,-kdir
+            !-- compute flux divergence
+            fluxdiv_qx = (flux_qx(k+kdir) - flux_qx(k))*inv_dzq(k)
+            fluxdiv_nx = (flux_nx(k+kdir) - flux_nx(k))*inv_dzq(k)
+            !-- update prognostic variables
+            qr(k) = qr(k) + fluxdiv_qx*dt_sub*inv_rho(k)
+            nr(k) = nr(k) + fluxdiv_nx*dt_sub*inv_rho(k)
+         enddo
+
+         dt_left = dt_left - dt_sub  !update time remaining for sedimentation
+         if (k_qxbot.ne.kbot) k_qxbot = k_qxbot - kdir
+         !or, optimzed: k_qxbot = k_qxbot +(k_qxbot.eq.kbot)*kdir
+
+      enddo substep_sedi_r
+
+      prt_liq = prt_liq + prt_accum*inv_rhow*odt
+
+   endif qr_present
+   qr_tend(:) = ( qr(:) - qr_tend(:) ) * odt ! Rain sedimentation tendency, measure
+   nr_tend(:) = ( nr(:) - nr_tend(:) ) * odt ! Rain # sedimentation tendency, measure
+
+end subroutine rain_sedimentation
+
 
 end module micro_p3
