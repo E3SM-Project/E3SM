@@ -709,7 +709,7 @@ contains
                ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
                nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
                soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-               waterflux_vars, waterstate_vars,                                               &
+               waterflux_vars, waterstate_vars, sedflux_vars,                                 &
                phosphorusstate_vars,phosphorusflux_vars,                                      &
                ep_betr,                                                                       &
                alm_fates, glc2lnd_vars, crop_vars)
@@ -725,7 +725,7 @@ contains
             ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-            waterflux_vars, waterstate_vars,                                               &
+            waterflux_vars, waterstate_vars, sedflux_vars,                                 &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
             ep_betr,                                                                       &
             alm_fates, glc2lnd_vars, crop_vars)
@@ -761,7 +761,7 @@ contains
             ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-            waterflux_vars, waterstate_vars,                                               &
+            waterflux_vars, waterstate_vars, sedflux_vars,                                 &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
             ep_betr,                                                                       &
             alm_fates, crop_vars)
@@ -777,7 +777,7 @@ contains
             ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-            waterflux_vars, waterstate_vars,                                               &
+            waterflux_vars, waterstate_vars, sedflux_vars,                                 &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
             ep_betr,                                                                       &
             alm_fates, glc2lnd_vars, crop_vars)
