@@ -56,6 +56,9 @@ public:
   void finalize ( /* inputs */ );
 
   const FieldRepository<Real,device_type>& get_field_repo () const { return m_device_field_repo; }
+#ifdef SCREAM_DEBUG
+  const FieldRepository<Real,device_type>& get_bkp_field_repo () const { return m_bkp_device_field_repo; }
+#endif
 
   // Get atmosphere time stamp
   const util::TimeStamp& get_atm_time_stamp () const { return m_current_ts; }

@@ -1,138 +1,13 @@
 #include <catch2/catch.hpp>
-#include "share/atmosphere_process.hpp"
-#include "share/scream_pack.hpp"
 #include "share/grid/user_provided_grids_manager.hpp"
-#include "share/grid/default_grid.hpp"
 #include "control/atmosphere_driver.hpp"
 
+#include "dummy_grid.hpp"
+#include "dummy_atm_proc.hpp"
+
+#include <numeric>
+
 namespace scream {
-
-// === A dummy atm process, on Physics grid === //
-
-template<typename DeviceType, int PackSize>
-class DummyProcess : public scream::AtmosphereProcess {
-public:
-  using device_type = DeviceType;
-
-  DummyProcess (const Comm& comm, const ParameterList& params)
-   : m_comm(comm)
-  {
-    m_params = params;
-    m_id = comm.rank();
-  }
-
-  // The type of the block (dynamics or physics)
-  AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
-
-  std::set<std::string> get_required_grids () const {
-    // TODO: define what grid the coupling runs on. Check with MOAB folks.
-    static std::set<std::string> s;
-    s.insert("Physics");
-    return s;
-  }
-
-  // Return some sort of name, linked to PType
-  std::string name () const { return "Dummy process"; }
-
-  // The communicator associated with this atm process
-  const Comm& get_comm () const { return m_comm; }
-
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager) {
-    m_grid = grids_manager->get_grid("Physics");
-
-    auto num_cols = m_grid->num_dofs();
-
-    std::vector<FieldTag> tags = {FieldTag::Column,FieldTag::Component};
-    std::vector<int> dims = {num_cols, m_params.get<int>("Number of vector components")};
-    FieldLayout layout (tags,dims);
-
-    std::string in_name = "field_";
-    std::string out_name = "field_";
-    auto size = m_comm.size();
-    if (size==1) {
-      in_name  += "0";
-      out_name += "1";
-    } else {
-      in_name  += std::to_string(m_id);
-      out_name += std::to_string( (m_id + size - 1) % size );
-    }
-
-    m_input_fids.emplace(in_name,layout,units::one,"Physics");
-    m_output_fids.emplace(out_name,layout,units::one,"Physics");
-  }
-
-  void initialize (const util::TimeStamp& t0) {
-    m_time_stamp = t0;
-  }
-
-  void run (const double dt) {
-    auto in = m_input.get_view();
-    auto out = m_output.get_view();
-    auto id = m_id;
-    Kokkos::parallel_for(Kokkos::RangePolicy<>(0,16),
-      KOKKOS_LAMBDA(const int i) {
-        out(i) = sin(in(i)+id);
-    });
-    Kokkos::fence();
-
-    m_time_stamp += dt;
-    m_output.get_header().get_tracking().update_time_stamp(m_time_stamp);
-  }
-
-  // Clean up
-  void finalize ( ) {}
-
-  // Register all fields in the given repo
-  void register_fields (FieldRepository<Real, device_type>& field_repo) const {
-    using pack_type = pack::Pack<Real,PackSize>;
-    field_repo.template register_field<pack_type>(*m_input_fids.begin());
-    field_repo.template register_field<pack_type>(*m_output_fids.begin());
-  }
-
-  // Providing a list of required and computed fields
-  const std::set<FieldIdentifier>&  get_required_fields () const { return m_input_fids; }
-  const std::set<FieldIdentifier>&  get_computed_fields () const { return m_output_fids; }
-
-protected:
-
-  // Setting the field in the atmosphere process
-  void set_required_field_impl (const Field<const Real, device_type>& f) {
-    m_input = f;
-  }
-  void set_computed_field_impl (const Field<      Real, device_type>& f) {
-    m_output = f;
-  }
-
-  util::TimeStamp           m_time_stamp;
-
-  std::set<FieldIdentifier> m_input_fids;
-  std::set<FieldIdentifier> m_output_fids;
-
-  Field<const Real,device_type> m_input;
-  Field<Real,device_type>       m_output;
-
-  std::shared_ptr<AbstractGrid> m_grid;
-
-  ParameterList m_params;
-  int     m_id;
-
-  Comm    m_comm;
-};
-
-// === A dummy physics grids for this test === //
-
-class DummyPhysicsGrid : public DefaultGrid<GridType::Physics>
-{
-public:
-  DummyPhysicsGrid (const int num_cols)
-   : DefaultGrid<GridType::Physics>("Physics")
-  {
-    m_num_dofs = num_cols;
-  }
-  ~DummyPhysicsGrid () = default;
-
-protected:
-};
 
 TEST_CASE("ping-pong", "") {
   using namespace scream;
@@ -140,7 +15,8 @@ TEST_CASE("ping-pong", "") {
 
   using device_type = AtmosphereDriver::device_type;
 
-  constexpr int num_cols  = 32;
+  constexpr int num_cols   = 2;
+  constexpr int vec_length = 4;
 
   // Create a parameter list for inputs
   ParameterList ad_params("Atmosphere Driver");
@@ -150,12 +26,12 @@ TEST_CASE("ping-pong", "") {
   proc_params.set<std::string>("Schedule Type","Sequential");
 
   auto& p0 = proc_params.sublist("Process 0");
-  p0.set<std::string>("Process Name", "Dummy");
-  p0.set<int>("Number of vector components",2);
+  p0.set<std::string>("Process Name", "Physics_fwd");
+  p0.set<int>("Number of vector components",vec_length);
 
   auto& p1 = proc_params.sublist("Process 1");
-  p1.set<std::string>("Process Name", "Dummy");
-  p1.set<int>("Number of vector components",2);
+  p1.set<std::string>("Process Name", "Physics_bwd");
+  p1.set<int>("Number of vector components",vec_length);
 
   auto& gm_params = ad_params.sublist("Grids Manager");
   gm_params.set<std::string>("Type","User Provided");
@@ -164,7 +40,8 @@ TEST_CASE("ping-pong", "") {
   // which rely on factory for process creation. The initialize method of the AD does that.
   // While we're at it, check that the case insensitive key of the factory works.
   auto& proc_factory = AtmosphereProcessFactory::instance();
-  proc_factory.register_product("duMmy",&create_atmosphere_process<DummyProcess<device_type,SCREAM_PACK_SIZE>>);
+  proc_factory.register_product("physics_fwd",&create_atmosphere_process<DummyProcess<device_type,2,true>>);
+  proc_factory.register_product("physics_bwd",&create_atmosphere_process<DummyProcess<device_type,4,false>>);
 
   // Need to register grids managers before we create the driver
   auto& gm_factory = GridsManagerFactory::instance();
@@ -174,8 +51,15 @@ TEST_CASE("ping-pong", "") {
   // Recall that this class stores *static* members, so whatever
   // we set here, will be reflected in the GM built by the factory.
   UserProvidedGridsManager upgm;
-  upgm.set_grid(std::make_shared<DummyPhysicsGrid>(num_cols));
-  upgm.set_reference_grid("Physics");
+  auto dummy_grid_fwd = std::make_shared<DummyPhysicsGrid>(num_cols,true);
+  auto dummy_grid_bwd = std::make_shared<DummyPhysicsGrid>(num_cols,false);
+  
+  upgm.set_grid(dummy_grid_fwd);
+  upgm.set_grid(dummy_grid_bwd);
+  upgm.set_reference_grid("Physics_fwd");
+  using remapper_type = DummyPhysicsGridRemapper<Real,device_type>;
+  upgm.set_remapper(std::make_shared<remapper_type>(dummy_grid_fwd,dummy_grid_bwd));
+  upgm.set_remapper(std::make_shared<remapper_type>(dummy_grid_bwd,dummy_grid_fwd));
 
   // Create a comm
   Comm atm_comm (MPI_COMM_WORLD);
@@ -183,39 +67,66 @@ TEST_CASE("ping-pong", "") {
   // Create the driver
   AtmosphereDriver ad;
 
-  // Init and run (do not finalize, or you'll clear the field repo!)
+  // Init and run (to finalize, wait till checks are completed,
+  // or you'll clear the field repo!)
   util::TimeStamp init_time(2019,0,0);
   util::TimeStamp end_time (2019,1,0);
-  const double dt = 1200.0;
+  const double dt = 3500.0; // This should trigger an adjustment of the last time step
   ad.initialize(atm_comm,ad_params,init_time);
-  for (auto time=init_time+dt; time<end_time; time+=dt) {
-    ad.run(dt);
-  }
 
-  // Every atm proc does out(:) = sin(in(:)+rank)
-  Real answer = 0;
-  for (auto time=init_time+dt; time<end_time; time+=dt) {
-    for (int pid=0; pid<atm_comm.size(); ++pid) {
-      answer = std::sin(answer+pid);
+  // Fill the field with initial guess
+  std::vector<FieldTag> tags = {FieldTag::Column,FieldTag::Component};
+  std::vector<int> dims = {num_cols, vec_length};
+  FieldLayout layout (tags,dims);
+  FieldIdentifier fid("field_0",layout,units::one,"Physics_fwd");
+  const auto& repo = ad.get_field_repo();
+  const auto& field = repo.get_field(fid);
+  auto d_view = Kokkos::create_mirror_view(field.get_view());
+  auto h_view = Kokkos::create_mirror_view(d_view);
+  const int size = h_view.size();
+  decltype(h_view) answer("",size);
+  std::iota(answer.data(),answer.data()+size,1);
+  Kokkos::deep_copy(h_view,answer);
+  Kokkos::deep_copy(d_view,h_view);
+#ifdef SCREAM_DEBUG
+  Kokkos::deep_copy(ad.get_bkp_field_repo().get_field(fid).get_view(),d_view);
+#endif
+
+  // Run
+  for (auto time=init_time; time<end_time; time+=dt) {
+    const auto& ts = ad.get_atm_time_stamp();
+    std::cout << " -------------------------------------------------------\n";
+    std::cout << "   Start of atmosphere time step\n";
+    std::cout << "    - current time: " << ts.to_string() << "\n";
+    double dt_adj = dt;
+    bool adjusted = false;
+    if (end_time<(ts+dt)) {
+      dt_adj = (end_time-ts).get_seconds();
+      adjusted = true;
+    }
+    std::cout << "    - time step: " << dt_adj << (adjusted ? "s (adjusted to hit final time)\n" : "s\n");
+    std::cout << "    - end time: " << (ts+dt_adj).to_string() << "\n";
+    ad.run(dt_adj);
+
+    // Prepare the answer
+    // Every atm proc does out(:) = sin(in(:)). There are 2 atm process, with
+    // input and output swapped, that do this update, so at every
+    // time step we should get f(i) = sin(sin(f(i))).
+    for (int i=0; i<size; ++i) {
+      answer[i] = std::sin(answer[i]);
+      answer[i] = std::sin(answer[i]);
     }
   }
 
-  // Get the field repo, and check the answer
-  const auto& repo = ad.get_field_repo();
-
-  std::vector<FieldTag> tags = {FieldTag::Column,FieldTag::Component};
-  std::vector<int> dims = {num_cols, 2};
-  FieldLayout layout (tags,dims);
-  FieldIdentifier final_fid("field_" + std::to_string(atm_comm.size()-1),layout,units::one,"Physics");
-  const auto& final_field = repo.get_field(final_fid);
-
-  auto h_view = Kokkos::create_mirror_view(final_field.get_view());
+  // Check the answer
   for (int i=0; i<h_view.extent_int(0); ++i) {
-    REQUIRE (h_view(i) == answer);
+    REQUIRE (h_view(i) == answer[i]);
   }
 
-  // Finalize 
+  // Finalize and clean up
   ad.finalize();
+
+  upgm.clean_up();
 }
 
 } // empty namespace

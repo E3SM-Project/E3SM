@@ -4,9 +4,9 @@
 #include "share/scream_universal_constants.hpp"
 
 #include <numeric>
-#include <limits>
 #include <cmath>
 #include <vector>
+#include <algorithm>
 
 namespace scream {
 namespace util {
@@ -45,10 +45,10 @@ std::pair<int,int> get_month_and_day (const int year, const int day) {
   std::vector<int> offsets(1,0);
   std::partial_sum (months.begin(), months.end(), std::back_inserter(offsets));
 
-  auto it = std::lower_bound(offsets.begin(),offsets.end(), day);
+  auto it = std::upper_bound(offsets.begin(),offsets.end(), day);
   scream_require_msg (it!=offsets.end(), "Error! Something went wrong while retrieving month from day '" + std::to_string(day) + "'.\n");
 
-  int month = std::distance(offsets.begin(),it);
+  int month = std::distance(offsets.begin(),it) - 1;
   return std::make_pair(month,day-offsets[month]);
 }
 
@@ -68,7 +68,6 @@ TimeStamp::TimeStamp(const int yy, const int dd, const double ss)
  , m_ss(ss)
 {
   // Check the days and seconds numbers are non-negative.
-  scream_require_msg (yy>=0, "Error! Years are negative.\n");
   scream_require_msg (dd>=0, "Error! Days are negative.\n");
   scream_require_msg (ss>=0, "Error! Seconds are negative.\n");
 
@@ -86,7 +85,14 @@ TimeStamp::TimeStamp(const int yy, const int dd, const double ss)
 
 std::string TimeStamp::to_string () const {
   auto md = get_month_and_day (m_yy,m_dd);
-  return std::to_string(m_yy) + "-" + std::to_string(md.first) + "-" + std::to_string(md.second) + "." + std::to_string(m_ss);
+  const int ss = static_cast<int>(m_ss);
+  const int h =  ss / 3600;
+  const int m = (ss % 3600) / 60;
+  const int s = (ss % 3600) % 60;
+  const std::string zero = "00";
+  // For h:m:s, check if 0, and if so, use "00" rather than to_string, which returns "0"
+  return std::to_string(md.first+1) + "-" + std::to_string(md.second+1) + "-" + std::to_string(m_yy) + " " + 
+         (h==0 ? zero : std::to_string(h)) + ":" + (m==0 ? zero : std::to_string(m)) + ":" + (s==0 ? zero : std::to_string(s));
 }
 
 TimeStamp& TimeStamp::operator+=(const double seconds) {
@@ -130,6 +136,19 @@ bool operator< (const TimeStamp& ts1, const TimeStamp& ts2) {
       return false;
     } else if (ts1.get_days()==ts2.get_days()) {
       return ts1.get_seconds()<ts2.get_seconds();
+    }
+  }
+  return true;
+}
+
+bool operator<= (const TimeStamp& ts1, const TimeStamp& ts2) {
+  if (ts1.get_years()>ts2.get_years()) {
+    return false;
+  } else if (ts1.get_years()==ts2.get_years()) {
+    if (ts1.get_days()>ts2.get_days()) {
+      return false;
+    } else if (ts1.get_days()==ts2.get_days()) {
+      return ts1.get_seconds()<=ts2.get_seconds();
     }
   }
   return true;

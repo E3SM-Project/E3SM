@@ -42,6 +42,7 @@ protected:
 
 bool operator== (const TimeStamp& ts1, const TimeStamp& ts2);
 bool operator<  (const TimeStamp& ts1, const TimeStamp& ts2);
+bool operator<= (const TimeStamp& ts1, const TimeStamp& ts2);
 TimeStamp operator- (const TimeStamp& ts1, const TimeStamp& ts2);
 TimeStamp operator+ (const TimeStamp& ts, const TimeStamp& dt);
 TimeStamp operator+ (const TimeStamp& ts, const double dt);

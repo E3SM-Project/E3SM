@@ -81,6 +81,13 @@ public:
   grid_ptr_type get_src_grid () const { return m_src_grid; }
   grid_ptr_type get_tgt_grid () const { return m_tgt_grid; }
 
+  const std::set<identifier_type>& get_src_fields_ids () const {
+    return m_src_fields_ids;
+  }
+  const std::set<identifier_type>& get_tgt_fields_ids () const {
+    return m_tgt_fields_ids;
+  }
+
   bool field_is_bound (const int ifield) const { return m_fields_are_bound[ifield]; }
 
   const identifier_type& get_src_field_id (const int ifield) const {
@@ -156,6 +163,9 @@ protected:
   // at a later moment.
   std::vector<bool>   m_fields_are_bound;
   bool                m_all_fields_are_bound;
+
+  std::set<identifier_type>  m_src_fields_ids;
+  std::set<identifier_type>  m_tgt_fields_ids;
 };
 
 template<typename ScalarType, typename DeviceType>
@@ -168,7 +178,7 @@ AbstractRemapper (const grid_ptr_type src_grid,
  , m_num_fields            (0)
  , m_num_registered_fields (0)
  , m_fields_are_bound      (0)
- , m_all_fields_are_bound  (false)
+ , m_all_fields_are_bound  (true)
 {
   // Nothing to do here
 }
@@ -276,6 +286,13 @@ registration_complete () {
   m_num_fields = m_num_registered_fields;
 
   do_registration_complete();
+
+  for (int ifield=0; ifield<m_num_fields; ++ifield) {
+    auto it_bool = m_src_fields_ids.insert(get_src_field_id(ifield));
+    scream_require_msg(it_bool.second, "Error! The remapper has the same field registered twice.\n");
+    it_bool = m_tgt_fields_ids.insert(get_tgt_field_id(ifield));
+    scream_require_msg(it_bool.second, "Error! The remapper has the same field registered twice.\n");
+  }
 
   m_state = RepoState::Closed;
 }

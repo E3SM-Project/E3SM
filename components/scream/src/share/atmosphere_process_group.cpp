@@ -12,6 +12,21 @@ AtmosphereProcessGroup (const Comm& comm, const ParameterList& params)
 {
   // Get number of processes in the group and the scheduling type (Sequential vs Parallel)
   m_group_size = params.get<int>("Number of Entries");
+  scream_require_msg (m_group_size>0, "Error! Invalid group size.\n");
+
+  if (m_group_size>1) {
+    if (params.get<std::string>("Schedule Type") == "Sequential") {
+      m_group_schedule_type = GroupScheduleType::Sequential;
+    } else if (params.get<std::string>("Schedule Type") == "Parallel") {
+      m_group_schedule_type = GroupScheduleType::Parallel;
+      error::runtime_abort("Error! Parallel schedule not yet implemented.\n");
+    } else {
+      error::runtime_abort("Error! Invalid 'Schedule Type'. Available choices are 'Parallel' and 'Sequential'.\n");
+    }
+  } else {
+    // Pointless to handle this group as parallel, if only one process is in it
+    m_group_schedule_type = GroupScheduleType::Sequential;
+  }
 
   // Create the individual atmosphere processes
   for (int i=0; i<m_group_size; ++i) {
@@ -19,7 +34,7 @@ AtmosphereProcessGroup (const Comm& comm, const ParameterList& params)
     //  - the same as the input comm if num_entries=1 or sched_type=Sequential
     //  - a sub-comm of the input comm otherwise
     Comm proc_comm = m_comm;
-    if (m_group_size>1 && m_group_schedule_type==GroupScheduleType::Parallel) {
+    if (m_group_schedule_type==GroupScheduleType::Parallel) {
       // This is what's going to happen:
       //  - the processes in the group are going to be run in parallel
       //  - each rank is assigned ONE atm process
@@ -29,8 +44,9 @@ AtmosphereProcessGroup (const Comm& comm, const ParameterList& params)
       //  - the input parameter list should specify for each atm process the number
       //    of mpi ranks dedicated to it. Obviously, these numbers should add up
       //    to the size of the input communicator.
-      // We therefore construct entries_comm following the specs of the processs
-      // we have to handle on this rank,  and pass the same comm to all the processes.
+      //  - this class is then responsible of 'combining' the results togehter,
+      //    including remapping input/output fields to/from the sub-comm
+      //    distribution.
       error::runtime_abort("Error! Parallel schedule type not yet implemented.\n");
     }
 
@@ -53,15 +69,6 @@ AtmosphereProcessGroup (const Comm& comm, const ParameterList& params)
     for (const auto& name : m_atm_processes.back()->get_required_grids()) {
       m_required_grids.insert(name);
     }
-  }
-
-  if (params.get<std::string>("Schedule Type") == "Sequential") {
-    m_group_schedule_type = GroupScheduleType::Sequential;
-  } else if (params.get<std::string>("Schedule Type") == "Parallel") {
-    m_group_schedule_type = GroupScheduleType::Parallel;
-    error::runtime_abort("Error! Parallel schedule not yet implemented.\n");
-  } else {
-    error::runtime_abort("Error! Invalid 'Schedule Type'. Available choices are 'Parallel' and 'Sequential'.\n");
   }
 
 #ifdef SCREAM_DEBUG
@@ -205,7 +212,7 @@ void AtmosphereProcessGroup::
 setup_remappers (const FieldRepository<Real, device_type>& field_repo) {
   // Now that all fields have been set, we can set the fields in the remappers
   for (int iproc=0; iproc<m_group_size; ++iproc) {
-    for (auto it : m_inputs_remappers[iproc]) {
+    for (auto& it : m_inputs_remappers[iproc]) {
       const auto& remapper = it.second;
       const int num_fields = remapper->get_num_fields();
       for (int ifield=0; ifield<num_fields; ++ifield) {
@@ -219,7 +226,7 @@ setup_remappers (const FieldRepository<Real, device_type>& field_repo) {
       }
     }
 
-    for (auto it : m_outputs_remappers[iproc]) {
+    for (auto& it : m_outputs_remappers[iproc]) {
       const auto& remapper = it.second;
       const int num_fields = remapper->get_num_fields();
       for (int ifield=0; ifield<num_fields; ++ifield) {
@@ -236,7 +243,7 @@ setup_remappers (const FieldRepository<Real, device_type>& field_repo) {
 
   // If any of the stored atm procs is an AtmosphereProcessGroup,
   // propagate the call
-  for (auto atm_proc : m_atm_processes) {
+  for (const auto& atm_proc : m_atm_processes) {
     if (atm_proc->type()==AtmosphereProcessType::Group) {
       auto group = std::dynamic_pointer_cast<AtmosphereProcessGroup>(atm_proc);
       scream_require_msg(static_cast<bool>(group),
@@ -250,24 +257,50 @@ setup_remappers (const FieldRepository<Real, device_type>& field_repo) {
 }
 
 void AtmosphereProcessGroup::run (const double dt) {
-  for (auto atm_proc : m_atm_processes) {
-    atm_proc->run(dt);
+  m_current_ts += dt;
+  for (int iproc=0; iproc<m_group_size; ++iproc) {
+    // Reamp the inputs of this process
+    const auto& inputs_remappers = m_inputs_remappers[iproc];
+    for (const auto& it : inputs_remappers) {
+      const auto& remapper = it.second;
+      remapper->remap(true);
+      for (int ifield=0; ifield<remapper->get_num_fields(); ++ifield) {  
+        const auto& f = remapper->get_tgt_field(ifield);
+        f.get_header_ptr()->get_tracking().update_time_stamp(m_current_ts);
 #ifdef SCREAM_DEBUG
-    m_current_ts += dt;
+        // Update the remapped field in the bkp repo
+        auto bkp_f = m_bkp_field_repo->get_field(f.get_header().get_identifier());
+        bkp_f.get_header_ptr()->get_tracking().update_time_stamp(m_current_ts);
+        auto src = f.get_view();
+        auto dst = bkp_f.get_view();
+        Kokkos::deep_copy(dst,src);
+#endif
+      }
+    }
 
+    // Run the process
+    auto atm_proc = m_atm_processes[iproc];
+    atm_proc->run(dt);
+
+#ifdef SCREAM_DEBUG
     if (m_field_repo!=nullptr && m_bkp_field_repo!=nullptr) {
       // Check that this process did not update any field it should not have updated
       const auto& computed = atm_proc->get_computed_fields();
       for (const auto& it : (*m_field_repo)) {
         for (const auto& f : it.second) {
           const auto& fid = f.first;
+          const auto& gn = fid.get_grid_name();
 
           auto& f_old = m_bkp_field_repo->get_field(fid);
           bool field_is_unchanged = views_are_equal(f_old,f.second);
 
           // For non computed fields, make sure the field in m_repo matches
           // the copy in m_bkp_repo, and update the copy in m_bkp_repo.
-          scream_require_msg(util::contains(computed,fid) || field_is_unchanged,
+          // There are three ok scenarios: 1) field is unchanged, 2) field is computed,
+          // 3) field is a remapped input.
+          scream_require_msg(util::contains(computed,fid) || field_is_unchanged ||
+                             (inputs_remappers.find(gn)!=inputs_remappers.end() &&
+                              util::contains(inputs_remappers.at(gn)->get_tgt_fields_ids(),fid)),
                              "Error! Process '" + atm_proc->name() + "' updated field '" +
                               fid.get_id_string() + "', which it wasn't allowed to update.\n");
 
@@ -281,12 +314,30 @@ void AtmosphereProcessGroup::run (const double dt) {
       // Update the computed fields in the bkp field repo
       for (auto& fid : computed) {
         auto src = m_field_repo->get_field(fid).get_view();
-        auto tgt = m_bkp_field_repo->get_field(fid).get_view();
+        auto dst = m_bkp_field_repo->get_field(fid).get_view();
 
-        Kokkos::deep_copy(tgt,src);
+        Kokkos::deep_copy(dst,src);
       }
     }
 #endif
+
+    // Remap the outputs of this process
+    for (const auto& it : m_outputs_remappers[iproc]) {
+      const auto& remapper = it.second;
+      remapper->remap(true);
+      for (int ifield=0; ifield<remapper->get_num_fields(); ++ifield) {
+        const auto& f = remapper->get_tgt_field(ifield);
+        f.get_header_ptr()->get_tracking().update_time_stamp(m_current_ts);
+#ifdef SCREAM_DEBUG
+        // Update the remapped field in the bkp repo
+        auto bkp_f = m_bkp_field_repo->get_field(f.get_header().get_identifier());
+        bkp_f.get_header_ptr()->get_tracking().update_time_stamp(m_current_ts);
+        auto src = f.get_view();
+        auto dst = bkp_f.get_view();
+        Kokkos::deep_copy(dst,src);
+#endif
+      }
+    }
   }
 }
 
