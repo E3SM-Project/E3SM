@@ -74,7 +74,7 @@ public:
   // Get information about the state of the repo
   int size () const { return m_fields.size(); }
   int internal_size () const;
-  RepoState repository_state () const { return m_state; }
+  RepoState repository_state () const { return m_repo_state; }
 
   // Query for a particular field or group of fields
   bool has_field (const identifier_type& identifier) const;
@@ -83,15 +83,15 @@ public:
 
   // Iterators, to allow range for loops over the repo.
   typename repo_type::const_iterator begin() const { return m_fields.begin(); }
-  typename repo_type::const_iterator end()   const { return m_fields.begin(); }
+  typename repo_type::const_iterator end()   const { return m_fields.end(); }
 
   typename repo_type::iterator begin() { return m_fields.begin(); }
-  typename repo_type::iterator end()   { return m_fields.begin(); }
+  typename repo_type::iterator end()   { return m_fields.end(); }
 
 protected:
 
   // The state of the repository
-  RepoState           m_state;
+  RepoState           m_repo_state;
 
   // The actual repo.
   repo_type           m_fields;
@@ -107,7 +107,7 @@ protected:
 
 template<typename ScalarType, typename Device>
 FieldRepository<ScalarType,Device>::FieldRepository ()
- : m_state (RepoState::Clean)
+ : m_repo_state (RepoState::Clean)
 {
   m_reserved_groups.insert("state");
   m_reserved_groups.insert("old state");
@@ -146,7 +146,7 @@ register_field (const identifier_type& id, const std::set<std::string>& groups_n
                 "the template argument 'ScalarType' of this class or be a Pack type based on ScalarType.\n");
 
   // Sanity checks
-  scream_require_msg(m_state==RepoState::Open,"Error! Registration of new fields not started or no longer allowed.\n");
+  scream_require_msg(m_repo_state==RepoState::Open,"Error! Registration of new fields not started or no longer allowed.\n");
 
   // Get the map of all fields with this name
   auto& map = m_fields[id.name()];
@@ -208,7 +208,7 @@ has_field (const identifier_type& identifier) const {
 template<typename ScalarType, typename Device>
 const typename FieldRepository<ScalarType,Device>::field_type&
 FieldRepository<ScalarType,Device>::get_field (const identifier_type& id) const {
-  scream_require_msg(m_state==RepoState::Closed,"Error! You are not allowed to grab fields from the repo until after the registration phase is completed.\n");
+  scream_require_msg(m_repo_state==RepoState::Closed,"Error! You are not allowed to grab fields from the repo until after the registration phase is completed.\n");
 
   const auto& map = m_fields.find(id.name());
   scream_require_msg(map!=m_fields.end(), "Error! Field not found.\n");
@@ -220,7 +220,7 @@ FieldRepository<ScalarType,Device>::get_field (const identifier_type& id) const 
 template<typename ScalarType, typename Device>
 void FieldRepository<ScalarType,Device>::registration_begins () {
   // Update the state of the repo
-  m_state = RepoState::Open;
+  m_repo_state = RepoState::Open;
 }
 
 template<typename ScalarType, typename Device>
@@ -233,13 +233,13 @@ void FieldRepository<ScalarType,Device>::registration_ends () {
   }
 
   // Prohibit further registration of fields
-  m_state = RepoState::Closed;
+  m_repo_state = RepoState::Closed;
 }
 
 template<typename ScalarType, typename Device>
 void FieldRepository<ScalarType,Device>::clean_up() {
   m_fields.clear();
-  m_state = RepoState::Clean;
+  m_repo_state = RepoState::Clean;
 }
 
 } // namespace scream
