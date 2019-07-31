@@ -513,7 +513,8 @@ contains
            call mpas_pool_get_array(regionalStatsAMPool, 'regionalAvgSubshelfMelt', regionalAvgSubshelfMelt)
            call mpas_pool_get_array(regionalStatsAMPool, 'regionalSumCalvingFlux', regionalSumCalvingFlux)
            call mpas_pool_get_array(regionalStatsAMPool, 'regionalSumGroundingLineFlux', regionalSumGroundingLineFlux)
-           call mpas_pool_get_array(regionalStatsAMPool, 'regionalSumGroundingLineMigrationFlux', regionalSumGroundingLineMigrationFlux)
+           call mpas_pool_get_array(regionalStatsAMPool, 'regionalSumGroundingLineMigrationFlux', &
+                   regionalSumGroundingLineMigrationFlux)
 
            regionalIceArea(iRegion) = reductions(1)
            regionalIceVolume(iRegion) = reductions(2)

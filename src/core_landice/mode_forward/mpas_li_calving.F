@@ -891,9 +891,9 @@ module li_calving
 !> \brief Remove very small islands that lead to velocity solver problems
 !> \author Matthew Hoffman
 !> \date   Summer 2018
-!> \details This routine finds and eliminates very small islands that lead to 
-!> unrealistic velocities in the Albany velocity solver.  Specifically, this 
-!> finds one- and two-cell masses of ice that are surrounded by open ocean 
+!> \details This routine finds and eliminates very small islands that lead to
+!> unrealistic velocities in the Albany velocity solver.  Specifically, this
+!> finds one- and two-cell masses of ice that are surrounded by open ocean
 !> and eliminates them by sending them to the calving flux.
 !-----------------------------------------------------------------------
 
@@ -928,7 +928,7 @@ module li_calving
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
 
       do iCell = 1, nCellsSolve
-         if (li_mask_is_ice(cellMask(iCell))) then ! might as well do for both grounded or floating 
+         if (li_mask_is_ice(cellMask(iCell))) then ! might as well do for both grounded or floating
                                                    ! (1 or 2 cell floating masses are icebergs)
             nIceNeighbors = 0
             nOpenOceanNeighbors = 0
@@ -1520,7 +1520,7 @@ module li_calving
       !-----------------------------------------------------------------
       type (domain_type), intent(inout) :: domain !< Input/Output: domain object
 
- 
+
       ! Local variables
       logical, pointer :: config_remove_icebergs
       type (block_type), pointer :: block
@@ -1528,8 +1528,8 @@ module li_calving
       type (mpas_pool_type), pointer :: geometryPool
       type (mpas_pool_type), pointer :: velocityPool
 
-      type (field1dInteger), pointer :: contiguousDynamicIceField 
-      type (field1dInteger), pointer :: contiguousDynamicIceOldField 
+      type (field1dInteger), pointer :: contiguousDynamicIceField
+      type (field1dInteger), pointer :: contiguousDynamicIceOldField
 
       real (kind=RKIND), dimension(:), pointer :: calvingThickness    ! thickness of ice that calves (computed in this subroutine)
       real (kind=RKIND), dimension(:), pointer :: thickness
@@ -1614,7 +1614,7 @@ module li_calving
          call mpas_timer_start("halo updates")
          call mpas_dmpar_field_halo_exch(domain, 'contiguousDynamicIce')
          call mpas_timer_stop("halo updates")
-         
+
          ! initialize counter of cells locally updated during this outer loop
          newMaskCountLocalAccum = 0
 
@@ -1630,7 +1630,7 @@ module li_calving
             call mpas_pool_get_array(geometryPool, 'contiguousDynamicIceOld', contiguousDynamicIceOld)
             call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
             call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
-   
+
 
             ! initialize local loop
             localLoopCount = 0
@@ -1642,7 +1642,7 @@ module li_calving
                ! initialize
                newMaskCountLocal = 0
                contiguousDynamicIceOld(:) = contiguousDynamicIce(:)
-   
+
                do iCell = 1, nCellsArray(2) ! this gives owned cells plus 1-halo
                   if (contiguousDynamicIceOld(iCell) == 0 .and. &   ! this cell not yet marked
                      li_mask_is_dynamic_ice(cellMask(iCell))) then  ! and is dynamic
@@ -1709,7 +1709,7 @@ module li_calving
       call mpas_timer_start("halo updates")
       call mpas_dmpar_field_halo_exch(domain, 'thickness')
       call mpas_timer_stop("halo updates")
-         
+
       ! clean up
       call mpas_deallocate_scratch_field(contiguousDynamicIceField, single_block_in=.false.)
       call mpas_deallocate_scratch_field(contiguousDynamicIceOldField, single_block_in=.false.)

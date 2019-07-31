@@ -541,18 +541,18 @@ module li_iceshelf_melt
 
       ! All depths are written as elevation relative to sea level (negative values)
       ! variables describing regional profile
-      real(kind=RKIND), pointer :: zThermoclineTopBase 
+      real(kind=RKIND), pointer :: zThermoclineTopBase
          !< depth at top of thermocline (temp assumed constant above this), before variability adjustment
-      real(kind=RKIND), pointer :: zThermoclineBotBase 
+      real(kind=RKIND), pointer :: zThermoclineBotBase
          !< depth at bottom of thermocline (temp assumed constant below this), before variability adjustment
-      real(kind=RKIND) :: zThermoclineTop 
+      real(kind=RKIND) :: zThermoclineTop
          !< depth at top of thermocline (temp assumed constant above this), after variability adjustment
-      real(kind=RKIND) :: zThermoclineBot 
+      real(kind=RKIND) :: zThermoclineBot
          !< depth at bottom of thermocline (temp assumed constant below this), after variability adjustment
       real(kind=RKIND), pointer :: TThermoclineTop !< temperature at top of thermocline (constant shallow water mass temp.)
       real(kind=RKIND), pointer :: TThermoclineBot !< temperature at bottom of thermocline (constant deep water mass temp.)
 
-      real(kind=RKIND), pointer :: variabilityAmplitude !< amplitude in optional sinusoidal variability applied to thermocline depths
+      real(kind=RKIND), pointer :: variabilityAmplitude !< amplitude in optional sinusoidal variab. applied to thermocline depths
       real(kind=RKIND), pointer :: variabilityPeriod !< period in optional sinusoidal variability applied to thermocline depths
       real(kind=RKIND), pointer :: variabilityPhase !< phase in optional sinusoidal variability applied to thermocline depths
       real(kind=RKIND) :: depthOffset !< depth offset in thermocline depths due to variability
@@ -597,7 +597,8 @@ module li_iceshelf_melt
 
       ! Account for variability in thermocline depth
       if (variabilityPeriod <= 0.0_RKIND) then
-         call mpas_log_write("Value for config_temperature_profile_variability_period must be a positive real value.", MPAS_LOG_ERR)
+         call mpas_log_write("Value for config_temperature_profile_variability_period must be a positive real value.", &
+                 MPAS_LOG_ERR)
          err = ior(err, 1)
       endif
       depthOffset = variabilityAmplitude * sin( (2.0_RKIND * pii / variabilityPeriod) * (daysSinceStart/365.0_RKIND) &
@@ -618,7 +619,8 @@ module li_iceshelf_melt
                  (zSill - zThermoclineBot) / (zThermoclineTop - zThermoclineBot) + TThermoclineBot
       endif
       if (print_debug) then
-         call mpas_log_write("kappa=$r, plumeThickness=$r, slopeDraft=$r, zeta=$r", realArgs=(/kappa, plumeThickness, slopeDraft, zeta/))
+         call mpas_log_write("kappa=$r, plumeThickness=$r, slopeDraft=$r, zeta=$r", realArgs=(/kappa, plumeThickness, &
+                 slopeDraft, zeta/))
          call mpas_log_write("TSill=$r at zSill=$r", realArgs=(/TSill, zSill/))
       endif
 
@@ -795,7 +797,7 @@ module li_iceshelf_melt
 
       real(kind=RKIND), parameter :: binWidth = 10.0_RKIND !< width of depth bins in meters
       real(kind=RKIND), parameter :: binMinimum = -4000.0_RKIND !< depth of bottom of deepest bin in meters
-      integer, parameter :: nBinsMax = 500 !< Maximum possible number of bins - needs to be set to cover the range 
+      integer, parameter :: nBinsMax = 500 !< Maximum possible number of bins - needs to be set to cover the range
                                         !< defined by the previous two variables and sea level (which is run-time configurable)
       integer :: nBins !< number of bins - calculated below
       real(kind=RKIND), dimension(nBinsMax) :: binDepth !< depth in m at bottom of each bin
@@ -858,8 +860,9 @@ module li_iceshelf_melt
                   if (li_mask_is_grounded_ice(cellMask(cellsOnCell(jCell, iCell)))) then ! we found the first floating cell
                      ! check for reasonable values first
                      if (lowerSurface(iCell) < binMinimum) then
-                        call mpas_log_write("calc_iceshelf_draft_info found a grounding line depth below the minimum search depth of $r."&
-                                // "  Adjust binMinimum and related parameters and recompile.", MPAS_LOG_ERR, realArgs = (/binMinimum/))
+                        call mpas_log_write("calc_iceshelf_draft_info found a grounding line depth below the minimum search " // &
+                              "depth of $r.  Adjust binMinimum and related parameters and recompile.", &
+                              MPAS_LOG_ERR, realArgs = (/binMinimum/))
                         err = ior(err, 1)
                         return
                      elseif (lowerSurface(iCell) > config_sea_level) then
@@ -875,7 +878,8 @@ module li_iceshelf_melt
                      ! Use the sqrt of cell area as the weighting function (it should be a linear measure, not an area measure)
                      binWeightedDepthSum(indexBin) = binWeightedDepthSum(indexBin) + lowerSurface(iCell) * sqrt(areaCell(iCell))
                      binWeightSum(indexBin) = binWeightSum(indexBin) + sqrt(areaCell(iCell))
-                     !call mpas_log_write("GL cell: $i, $r, $r", intArgs=(/iCell/), realArgs=(/lowerSurface(iCell), areaCell(iCell)/))
+                     !call mpas_log_write("GL cell: $i, $r, $r", intArgs=(/iCell/), &
+                     !realArgs=(/lowerSurface(iCell), areaCell(iCell)/))
                      exit  ! skip the rest of the loop around neighbors
                   endif
                enddo
