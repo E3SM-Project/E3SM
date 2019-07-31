@@ -48,6 +48,8 @@ module element_state
     real (kind=real_kind) :: Q   (np,np,nlev,qsize_d)             ! Tracer concentration               
     real (kind=real_kind) :: Qdp (np,np,nlev,qsize_d,2)           ! Tracer mass                        
 
+    real (kind=real_kind) :: dpp(np,np,nlev)                   
+
   end type elem_state_t
 
   !___________________________________________________________________

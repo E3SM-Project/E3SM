@@ -258,6 +258,9 @@ contains
       avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
 
 !==============================================================================================
+
+!!!!!!!!!!!!!!!!!!! NOT ARK
+
     elseif (tstep_type == 7) then  ! imkg254, most robust of the methods
  
       max_itercnt_perstep = 0
@@ -292,6 +295,12 @@ contains
         deriv,nets,nete,maxiter,itertol,tl)
       max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
       max_itererr_perstep = max(itertol,max_itererr_perstep)
+
+print *, 'ahat2/a2', ahat2/a2
+print *, 'ahat3/a3', ahat3/a3
+print *, 'ahat4/a4', ahat4/a4
+print *, 'ahat5/a5', ahat5/a5
+stop
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat2/a2,1d0)
@@ -1635,6 +1644,9 @@ contains
   real (kind=real_kind) :: w_tens(np,np,nlevp)  ! need to update w at surface as well
   real (kind=real_kind) :: theta_tens(np,np,nlev)
   real (kind=real_kind) :: phi_tens(np,np,nlevp)
+
+
+  real (kind=real_kind) :: dpp_tens(np,np,nlevp)
                                                
 
   real (kind=real_kind) :: pi(np,np,nlev)                ! hydrostatic pressure
@@ -1660,6 +1672,10 @@ contains
      vtheta_dp  => elem(ie)%state%vtheta_dp(:,:,:,n0)
      vtheta(:,:,:) = vtheta_dp(:,:,:)/dp3d(:,:,:)
      phi_i => elem(ie)%state%phinh_i(:,:,:,n0)
+
+
+     elem(ie)%state%dpp(:,:,1:nlev) = phi_i(:,:,1:nlev) - phi_i(:,:,2:nlevp)
+
 
 #ifdef ENERGY_DIAGNOSTICS
      if (.not. theta_hydrostatic_mode) then
