@@ -96,7 +96,7 @@ contains
     integer :: ie,nm1,n0,np1,nstep,qsplit_stage,k, qn0
     integer :: n,i,j,maxiter,mi
  
-    mi=10
+    mi=50
 
     call t_startf('prim_advance_exp')
     nm1   = tl%nm1
@@ -2350,8 +2350,15 @@ contains
     phi_np1 => elem(ie)%state%phinh_i(:,:,:,np1)
     phis => elem(ie)%state%phis(:,:)
 
+
+!if((elem(ie)%globalid == 1721).and.(tl%nstep == 209810))then
+!    call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk1',&
+!    spherep=elem(ie)%spherep,doout=.true.)
+!stop
+!else
     call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk1',&
     spherep=elem(ie)%spherep)
+!endif
 
     dp3d_i(:,:,1) = dp3d(:,:,1)
     dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
@@ -2397,8 +2404,35 @@ contains
 
     maxnorminfJ0r0=max(maxval(norminfJ0(:,:)),maxval(norminfr0(:,:)))
     itererr=maxval(itererrtemp(:,:))/maxnorminfJ0r0
-    
+
+!mu after explicit, before iteration
+#if 0
+if((elem(ie)%globalid == 1721).and.(tl%nstep == 209810))then
+do i=1,np
+do j=1,np
+do k=1,nlev
+print *,i,j,'k=',k,'mu=',dpnh_dp_i(i,j,k)
+enddo;enddo; enddo
+stop
+endif
+#endif    
+
     do while ((itercount < maxiter).and.(itererr > itertol))
+
+!mu during iteration, TSTEP BEFORE CRASH!
+#if 0
+if((elem(ie)%globalid == 1721).and.(tl%nstep == 209809))then
+print *,'-------------------- ITERATION OF MU'
+!do j=1,np
+!do i=1,np
+i=1;j=1;
+do k=1,nlevp
+write(*,109)'   mu(',itercount+1,',',i,',',j,',',k,')=',dpnh_dp_i(i,j,k),';'
+enddo
+!enddo
+!enddo
+endif
+#endif
 
       info(:,:) = 0
       ! Here's how to call inexact Jacobian
@@ -2453,7 +2487,7 @@ contains
       ! update iteration count and error measure
       itercount=itercount+1
 
-#if 1
+#if 0
 if((elem(ie)%globalid == 1721).and.(tl%nstep == 209810))then
 print *,'-------------------- ITERATION OF W'
 do j=1,np
@@ -2474,6 +2508,24 @@ endif
 
     end do ! end do for the do while loop
 
+
+!mu during iteration, TSTEP BEFORE CRASH!
+#if 0
+if((elem(ie)%globalid == 1721).and.(tl%nstep == 209809))then
+print *,'-------------------- ITERATION OF MU'
+!do j=1,np
+!do i=1,np
+i=1;j=1;
+do k=1,nlevp
+write(*,109)'   mu(',itercount,',',i,',',j,',',k,')=',dpnh_dp_i(i,j,k),';'
+enddo
+!enddo
+!enddo
+stop
+endif
+#endif
+
+
     if (itercount >= maxiter) then
 
 !print *, 'my GID', elem(ie)%GlobalID
@@ -2483,7 +2535,6 @@ endif
 !      print *, 'elem coords lat',i,j,elem(ie)%spherep(i,j)%lat
 !enddo
 !enddo
-
 !do j=1,np
 !do i=1,np
 !      print *, 'itererrtemp',i,j,itererrtemp(i,j)
@@ -2492,36 +2543,29 @@ endif
       location=maxloc(itererrtemp)
       i=location(1); j=location(2)
 print *, 'point where max error is ', elem(ie)%spherep(i,j)%lon,elem(ie)%spherep(i,j)%lat
+print *, 'nstep here is', tl%nstep, 'dt2 here', dt2, 'g here', g
 
 #if 0
-!matlab friendly output
-do k=1,nlev
-      print *, 'dp(',k,')=',elem(ie)%state%dp3d(i,j,k,np1),';'
-      print *, 'tt(',k,')=',elem(ie)%state%vtheta_dp(i,j,k,np1),';'
-      print *, 'w(',k,')=',w_n0(i,j,k),';'
-enddo
-      print *,'w(',nlevp,')=',(elem(ie)%state%v(i,j,1,nlev,np1)*elem(ie)%derived%gradphis(i,j,1)+ &
-             elem(ie)%state%v(i,j,2,nlev,np1)*elem(ie)%derived%gradphis(i,j,2))/g
-do k=1,nlevp
-      print *, 'phi(',k,')=',phi_n0(i,j,k),';'
-enddo
-#endif
-
-#if 0
-print *,'-------------------- INITIAL STATE W'
+print *,'-------------------- INIT CONDITIONS'
 do j=1,np
 do i=1,np
 do k=1,nlev
-print *, 'winit(',i,',',j,',',k,')=',w_n0(i,j,k),';'
+write(*,110) '   dp(',i,',',j,',',k,')=',dp3d(i,j,k),';'
+write(*,110) '  vth(',i,',',j,',',k,')=',vtheta_dp(i,j,k),';'
+write(*,110) '  wn0(',i,',',j,',',k,')=',w_n0(i,j,k),';'
 enddo
-print *, 'winit(',i,',',j,',',nlevp,')=',&
+write(*,110) '  wn0(',i,',',j,',',nlevp,')=',&
 (elem(ie)%state%v(i,j,1,nlev,np1)*elem(ie)%derived%gradphis(i,j,1)+ &
              elem(ie)%state%v(i,j,2,nlev,np1)*elem(ie)%derived%gradphis(i,j,2))/g,';'
+do k=1,nlevp
+write(*,110) ' phi0(',i,',',j,',',k,')=',phi_n0(i,j,k),';'
+enddo
 enddo
 enddo
 #endif
 
-print *, 'nstep here is', tl%nstep
+110 format (A6,I1,A1,I1,A1,I2,A2,E23.15,A1)  !         E23.15,A2,I3,A1,E23.15,A2,I3,A1,E23.15)
+
 
       call abortmp('Error: nonlinear solver failed b/c max iteration count was met')
     end if

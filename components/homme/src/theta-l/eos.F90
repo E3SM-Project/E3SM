@@ -33,7 +33,7 @@ module eos
 contains
 
 subroutine pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_i,pnh,exner,&
-     dpnh_dp_i,pnh_i_out,caller,spherep)
+     dpnh_dp_i,pnh_i_out,caller,spherep,doout)
 implicit none
 !
 ! Use Equation of State to compute exner pressure, nh presure
@@ -59,6 +59,7 @@ implicit none
   real (kind=real_kind), intent(out), optional :: pnh_i_out(np,np,nlevp)  ! pnh on interfaces
   character(len=*),      intent(in), optional  :: caller       ! name for error
   type (spherical_polar_t), intent(in), optional  :: spherep(np,np)
+  logical, intent(in), optional :: doout
 
   !   local
   real (kind=real_kind) :: p_over_exner(np,np,nlev)
@@ -162,7 +163,11 @@ implicit none
    dpnh_dp_i(:,:,1)  = 2*(pnh(:,:,1)-pnh_i(:,:,1))/dp3d_i(:,:,1)
    dpnh_dp_i(:,:,nlevp)  = 2*(pnh_i(:,:,nlevp)-pnh(:,:,nlev))/dp3d_i(:,:,nlevp)
    do k=2,nlev
-      dpnh_dp_i(:,:,k) = (pnh(:,:,k)-pnh(:,:,k-1))/dp3d_i(:,:,k)        
+      dpnh_dp_i(:,:,k) = (pnh(:,:,k)-pnh(:,:,k-1))/dp3d_i(:,:,k)      
+if(present(doout).and.k>(nlev-3))then
+print *,'k=',k
+print *, 'everything at 1,1: ',pnh(1,1,k),pnh(1,1,k-1),dp3d_i(1,1,k)
+endif  
    end do
    
 
