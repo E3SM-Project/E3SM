@@ -198,6 +198,7 @@ void AtmosphereProcessGroup::initialize (const util::TimeStamp& t0) {
   for (int i=0; i<m_group_size; ++i) {
     m_atm_processes[i]->initialize(t0);
   }
+  m_current_ts = t0;
 }
 
 void AtmosphereProcessGroup::
@@ -252,21 +253,29 @@ void AtmosphereProcessGroup::run (const double dt) {
   for (auto atm_proc : m_atm_processes) {
     atm_proc->run(dt);
 #ifdef SCREAM_DEBUG
+    m_current_ts += dt;
+
     if (m_field_repo!=nullptr && m_bkp_field_repo!=nullptr) {
       // Check that this process did not update any field it should not have updated
       const auto& computed = atm_proc->get_computed_fields();
       for (const auto& it : (*m_field_repo)) {
         for (const auto& f : it.second) {
           const auto& fid = f.first;
-          if (!util::contains(computed,fid)) {
-            // Make sure the field in m_repo matches the copy in m_bkp_repo,
-            // Then update the copy in m_bkp_repo
 
-            auto& f_old = m_bkp_field_repo->get_field(fid);
-            scream_require_msg(views_are_equal(f_old,f.second),
-                               "Error! Process '" + atm_proc->name() + "' updated field '" +
-                                fid.get_id_string() + "', which it wasn't allowed to update.\n");
-          }
+          auto& f_old = m_bkp_field_repo->get_field(fid);
+          bool field_is_unchanged = views_are_equal(f_old,f.second);
+
+          // For non computed fields, make sure the field in m_repo matches
+          // the copy in m_bkp_repo, and update the copy in m_bkp_repo.
+          scream_require_msg(util::contains(computed,fid) || field_is_unchanged,
+                             "Error! Process '" + atm_proc->name() + "' updated field '" +
+                              fid.get_id_string() + "', which it wasn't allowed to update.\n");
+
+          // For fields that changed, make sure the time stamp has been updated
+          const auto& ts = f.second.get_header().get_tracking().get_time_stamp();
+          scream_require_msg(field_is_unchanged || ts==m_current_ts,
+                             "Error! Process '" + atm_proc->name() + "' updated field '" +
+                              fid.get_id_string() + "', but it did not update its time stamp.\n");
         }
       }
       // Update the computed fields in the bkp field repo
@@ -342,6 +351,13 @@ void AtmosphereProcessGroup::set_computed_field_impl (const Field<Real, device_t
     if (atm_proc->computes(fid)) {
       atm_proc->set_computed_field(f);
     }
+    // In sequential scheduling, some fields may be computed by
+    // a process and used by the next one. In this case, the field
+    // does not figure as 'input' for the group, but we still
+    // need to set it in the processes that need it.
+    if (atm_proc->requires(fid)) {
+      atm_proc->set_required_field(f);
+    }
   }
 }
 
@@ -368,7 +384,8 @@ bool AtmosphereProcessGroup::
 views_are_equal(const field_type& f1, const field_type& f2) {
   const auto& layout = f1.get_header().get_identifier().get_layout();
   const int size = layout.size();
-  const int last_alloc_dim = f1.get_header().get_alloc_properties().get_last_dim_alloc_size();
+  const int last_dim_alloc_size = f1.get_header().get_alloc_properties().get_last_dim_alloc_size();
+  const int last_alloc_dim = last_dim_alloc_size / sizeof(Real);
   const int last_dim = layout.dim(layout.rank()-1);
 
   const auto v1 = f1.get_view();

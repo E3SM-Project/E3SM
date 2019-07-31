@@ -27,10 +27,11 @@ public:
 
   // === Update method(s) === //
 
-  // This method will check that time shifts forward
+  TimeStamp& operator= (const TimeStamp&) = default;
+
+  // This methods will check that time shifts forward
   TimeStamp& operator+= (const double seconds);
   TimeStamp& operator+= (const TimeStamp& dt);
-  TimeStamp& operator= (const TimeStamp&) = default;
 
 protected:
 

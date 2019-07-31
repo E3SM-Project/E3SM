@@ -143,7 +143,10 @@ protected:
 
   const FieldRepository<Real, device_type>*   m_field_repo;
   const FieldRepository<Real, device_type>*   m_bkp_field_repo;
+
 #endif
+
+  util::TimeStamp                             m_current_ts;
 };
 
 } // namespace scream

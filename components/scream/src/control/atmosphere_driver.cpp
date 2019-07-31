@@ -70,30 +70,10 @@ void AtmosphereDriver::initialize (const Comm& atm_comm,
     }
   }
 
-  // ===  Fields remapping structures === //
-  //
-  // Fields that are used by more than one process may need to
-  // be remapped. Here remap could mean a change in the layout
-  // (e.g., swapping dimensions), a change in the MPI distribution
-  // (e.g., going from a 2 ranks distribution to a 4 ranks distribution),
-  // or a change in grid (e.g. going from physics to dynamics).
-  // In any case, a field with one layout has to be copied/interpolated
-  // to a field with different layout.
-  // The driver does this by using a 'default grid'. All fields are
-  // kept up to date on the default grid, and remapped on the particular
-  // process grid on a per-need basis. In other words, the AD makes sure
-  // that upon return from an atm process run call, all its outputs
-  // are up to date on the default grid; viceversa, before passing
-  // the control to the process, it makes sure that its inputs are
-  // up to date on the atm process grid. These two checks involve
-  // a remap procedure in case the atm process does not use the
-  // default grid. In particular, outputs are copied from the process
-  // grid to the default grid, while inputs are copied from the
-  // default grid to the process grid.
-
-  // For fields that need to be used by more than one process,
-  // we need to make sure that one copy is stored on the so-called
-  // "default grid". The driver will use the 
+#ifdef SCREAM_DEBUG
+  create_bkp_device_field_repo();
+  m_atm_process_group->set_field_repos(m_device_field_repo,m_bkp_device_field_repo);
+#endif
 }
 
 void AtmosphereDriver::run (const double dt) {
@@ -104,27 +84,51 @@ void AtmosphereDriver::run (const double dt) {
   // the individual processes, which will be called in the correct order.
   m_atm_process_group->run(dt);
 
-  // Update old and current time stamps
-  m_old_ts = m_current_ts;
+  // Update current time stamps
   m_current_ts += dt;
-
-  // Check that the computed fields have un updated time stamp
-  for (const auto& id : m_atm_process_group->get_computed_fields()) {
-    const auto& f = m_device_field_repo.get_field(id);
-    const auto& ts = f.get_header().get_tracking().get_time_stamp();
-    scream_require_msg(ts==m_current_ts,
-                       "Error! The time stamp of field '" + id.get_id_string() + "' has not been updated.\n"
-                       "       Expected time stamp : " + m_current_ts.to_string() + "\n"
-                       "       Field time stamp    : " + ts.to_string() + "\n");
-
-  }
 }
 
 void AtmosphereDriver::finalize ( /* inputs? */ ) {
   m_atm_process_group->finalize( /* inputs ? */ );
 
   m_device_field_repo.clean_up();
+#ifdef SCREAM_DEBUG
+  m_bkp_device_field_repo.clean_up();
+#endif
 }
+
+#ifdef SCREAM_DEBUG
+void AtmosphereDriver::create_bkp_device_field_repo () {
+  m_bkp_device_field_repo.registration_begins();
+  for (const auto& it : m_device_field_repo) {
+    for (const auto& id_field : it.second) {
+      const auto& id = id_field.first;
+      const auto& f = id_field.second;
+      const auto& groups = f.get_header().get_tracking().get_groups_names();
+      // Unfortunately, set<string> and set<CaseInsensitiveString>
+      // are unrelated types for the compiler
+      std::set<std::string> grps;
+      for (const auto& group : groups) {
+        grps.insert(group);
+      }
+      m_bkp_device_field_repo.register_field(id,grps);
+    }
+  }
+  m_bkp_device_field_repo.registration_ends();
+
+  // Deep copy the fields
+  for (const auto& it : m_device_field_repo) {
+    for (const auto& id_field : it.second) {
+      const auto& id = id_field.first;
+      const auto& f  = id_field.second;
+      auto src = f.get_view();
+      auto tgt = m_bkp_device_field_repo.get_field(id).get_view();
+
+      Kokkos::deep_copy(tgt,src);
+    }
+  }
+}
+#endif
 
 }  // namespace control
 }  // namespace scream

@@ -61,7 +61,12 @@ public:
   const util::TimeStamp& get_atm_time_stamp () const { return m_current_ts; }
 protected:
 
+  void create_bkp_device_field_repo ();
+
   FieldRepository<Real,device_type>           m_device_field_repo;
+#ifdef SCREAM_DEBUG
+  FieldRepository<Real,device_type>           m_bkp_device_field_repo;
+#endif
 
   std::shared_ptr<AtmosphereProcessGroup>     m_atm_process_group;
 
