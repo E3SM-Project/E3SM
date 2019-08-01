@@ -74,6 +74,8 @@ contains
                  Mpicom=par%comm, MasterTask=par%masterproc)
     call t_startf('Total')
 
+    if(par%masterproc) print *,"Entering prim_init1"
+
     call prim_init1(elem,par,dom_mt,tl)
 
     ! In c++ the threading is handled inside the c++ code.
@@ -90,6 +92,8 @@ contains
     is_half_inited = .true.
 
     if (infilenames(1)/='') call pio_read_phis(elem,hybrid%par)
+
+    if(par%masterproc) print *,"Entering prim_create_c_data_structures"
 
     call prim_create_c_data_structures (tl, hvcoord)
   end subroutine init_homme1_f90
@@ -112,6 +116,8 @@ contains
     ! Local(s)
     !
     integer :: ierr
+
+    if(par%masterproc) print *,"Entering init_homme2_f90"
 
     if (.not. is_half_inited) then
       call abortmp ("Error! init_homme1_f90 was not called yet.\n")
@@ -212,7 +218,7 @@ contains
     ! Set dt in the time mod
     tstep = dt
 
-    call prim_run_subcycle(elem,hybrid,nets,nete,tstep,.false.,tl,hvcoord,1)
+    call prim_run_subcycle(elem,hybrid,nets,nete,dt,.false.,tl,hvcoord,1)
 
     if (tl%nstep .ge. next_output_step) then
 #ifdef VERTICAL_INTERPOLATION
