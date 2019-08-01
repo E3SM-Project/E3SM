@@ -44,12 +44,12 @@ public:
   }
 
   // Set the grid
-  void set_grid (const std::shared_ptr<const GridsManager> grids_manager);
+  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
   // The three main interfaces for the subcomponent
-  void initialize ();
-  void run ();
-  void finalize();
+  void initialize (const util::TimeStamp& t0);
+  void run        (const double dt);
+  void finalize   ();
 
   // Register all fields in the given repo
   void register_fields (FieldRepository<Real, device_type>& field_repo) const;

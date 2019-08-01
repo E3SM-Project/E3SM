@@ -15,7 +15,7 @@ P3Microphysics::P3Microphysics (const Comm& comm,const ParameterList& /* params 
 }
 
 // =========================================================================================
-void P3Microphysics::set_grid(const std::shared_ptr<const GridsManager> grids_manager) 
+void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
 
   constexpr int NVL = 72;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
@@ -33,25 +33,25 @@ void P3Microphysics::set_grid(const std::shared_ptr<const GridsManager> grids_ma
   FieldLayout scalar3d_layout { {VR,VL,CO}, {QSZ,NVL,nc} };
 
   // set requirements
-  m_required_fields.emplace("P3_req_test",  scalar2d_layout, "Physics");
+  m_required_fields.emplace("P3_req_test",  scalar2d_layout, units::one, "Physics");
   // set computed
-  m_computed_fields.emplace("P3_comq_test", scalar2d_layout, "Physics");
-  m_computed_fields.emplace("q",            scalar3d_layout, "Physics");
+  m_computed_fields.emplace("P3_comq_test", scalar2d_layout, units::one, "Physics");
+  m_computed_fields.emplace("q",            scalar3d_layout, units::one, "Physics");
 
 }
 // =========================================================================================
-void P3Microphysics::initialize ()
+void P3Microphysics::initialize (const util::TimeStamp& /* t0 */)
 {
   auto q_ptr = m_p3_fields_out.at("q").get_view().data();
-  double mysum;
-  int i, k, j;
+  // double mysum;
+  // int i, k, j;
 
   p3_init_f90 (q_ptr);
 
 }
 
 // =========================================================================================
-void P3Microphysics::run ()
+void P3Microphysics::run (const double /* dt */)
 {
   auto q_ptr = m_p3_fields_out.at("q").get_view().data();
   double dtime;
