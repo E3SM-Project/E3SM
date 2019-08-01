@@ -1,3 +1,12 @@
+/*---------------
+README (August 1, 2019): This is a modified version of the original Land use Translator Code.
+To run this code to compute land cover changes associated with Land-Use Harmonization (LUH) data 
+you will need to run the Makefile and then pass the directory of input files to the 
+land_use_translator as a command-line argument.
+For example:
+>> make
+>> ./land_use_translator /global/project/projectdirs/acme/inputdata/lnd/clm2/rawdata/LUT_input_files/
+
 /*-------------------
 	Code Description:
 	
@@ -5039,7 +5048,7 @@ sethurttpotveg() {
 	-adv
 -----*/
 void
-updateannuallanduse_main(int inyear) {
+updateannuallanduse_main(int inyear, char *input_dir) {
     char filenamestr[250];
     long hurttyear;
     char fout[250];
@@ -5047,6 +5056,9 @@ updateannuallanduse_main(int inyear) {
     long modyear;	/* the actual cesm model year, which is the inyear - 1; this is the reference year - adv */
     long hurttbaseyear;	/* this is the initial year of the code run; it is extracted from the static initial hurtt pl surface file - adv */
     long pftbaseyear;	/* this is the initial year of the code run; it is extracted from the static initial pft pl surface file - adv */
+       
+    char buf1[250];
+    char buf2[250];
             
     outyear = inyear; 
     modyear = outyear - 1;
@@ -5074,7 +5086,10 @@ updateannuallanduse_main(int inyear) {
           sprintf(filenamestr,"iESM_Expt_rs_Ref_gfrac.nc");  // LUH2 data in LUH1 format (1850 - 2015) - use for historical simulations
        }
        else {
-          sprintf(filenamestr,"/global/project/projectdirs/acme/inputdata/lnd/clm2/rawdata/LUT_input_files/LUH2_SSP5_RCP85_LUH1_format.nc");  //LUH2 future scenario in LUH1 format - for future simulations
+          sprintf(buf1,input_dir);
+          sprintf(buf2,"LUH2_SSP5_RCP85_LUH1_format.nc");  //LUH2 future scenario in LUH1 format - for future simulations
+          strcat(buf1,buf2);
+          sprintf(filenamestr,buf1);
        // files are also available at https://web.lcrc.anl.gov/public/e3sm/inputdata/lnd/clm2/rawdata/LUT_input_files/
        }
      
@@ -5101,8 +5116,11 @@ updateannuallanduse_main(int inyear) {
            sprintf(filenamestr,"iESM_Expt_rs_Ref_harvest.nc"); // LUH2 wood harvest data in LUH1 format (1850 - 2015) - use for historical simulations
         }
         else {
-           sprintf(filenamestr,"/global/project/projectdirs/acme/inputdata/lnd/clm2/rawdata/LUT_input_files/LUH2_SSP5_RCP85_LUH1_format_harvest.nc");  //LUH2 future wood harvest scenario in LUH1 format - use for future simulations
-        // files are also available at https://web.lcrc.anl.gov/public/e3sm/inputdata/lnd/clm2/rawdata/LUT_input_files/
+          sprintf(buf1,input_dir);
+          sprintf(buf2,"LUH2_SSP5_RCP85_LUH1_format_harvest.nc");  //LUH2 future wood harvest scenario in LUH1 format - use for future simulations
+          strcat(buf1,buf2);
+          sprintf(filenamestr,buf1);
+           // files are also available at https://web.lcrc.anl.gov/public/e3sm/inputdata/lnd/clm2/rawdata/LUT_input_files/
         }
      
        if (opennetcdf(filenamestr) == 0) {
@@ -5160,8 +5178,11 @@ updateannuallanduse_main(int inyear) {
 			}
 		}
 		else {
-		  sprintf(filenamestr,"/global/project/projectdirs/acme/inputdata/lnd/clm2/rawdata/LUT_input_files/LUH2_historical_LUH1_format.nc");  //use this line for future simulations
-		  // files are also available at https://web.lcrc.anl.gov/public/e3sm/inputdata/lnd/clm2/rawdata/LUT_input_files/
+		  sprintf(buf1,input_dir);
+          sprintf(buf2,"LUH2_historical_LUH1_format.nc");  //use this line for future simulations
+          strcat(buf1,buf2);
+          sprintf(filenamestr,buf1);
+          // files are also available at https://web.lcrc.anl.gov/public/e3sm/inputdata/lnd/clm2/rawdata/LUT_input_files/
 		  if (opennetcdf(filenamestr) == 0) {
 		    	printf("Dynamic hurtt pl file %s has not been created; current modyear = %li\n", filenamestr, modyear);
 		    	exit(0);
@@ -5195,7 +5216,11 @@ updateannuallanduse_main(int inyear) {
 		 sprintf(filenamestr,"./surfdata_360x720_mcrop2000_c03062014.nc"); /*original file */
 		}
 	else {
-		 sprintf(filenamestr,"/global/project/projectdirs/acme/inputdata/lnd/clm2/rawdata/LUT_input_files/surfdata_360x720_PFTs_2015.nc");  // files are also available at https://web.lcrc.anl.gov/public/e3sm/inputdata/lnd/clm2/rawdata/LUT_input_files/
+		  sprintf(buf1,input_dir);
+          sprintf(buf2,"surfdata_360x720_PFTs_2015.nc"); 
+          strcat(buf1,buf2);
+          sprintf(filenamestr,buf1);
+          // files are also available at https://web.lcrc.anl.gov/public/e3sm/inputdata/lnd/clm2/rawdata/LUT_input_files/
 	}
 	
 		if (opennetcdf(filenamestr) == 0) {
@@ -5232,8 +5257,11 @@ updateannuallanduse_main(int inyear) {
 	normglmo(inhurttbasepasture);
 	
     /* get the clm potential vegetation pft data -adv */
-    sprintf(filenamestr,"/global/project/projectdirs/acme/inputdata/lnd/clm2/rawdata/LUT_input_files/surfdata_360x720_potveg.nc"); // files are also available at https://web.lcrc.anl.gov/public/e3sm/inputdata/lnd/clm2/rawdata/LUT_input_files/
-    
+    sprintf(buf1,input_dir);
+    sprintf(buf2,"surfdata_360x720_potveg.nc");  // files are also available at https://web.lcrc.anl.gov/public/e3sm/inputdata/lnd/clm2/rawdata/LUT_input_files/
+    strcat(buf1,buf2);
+    sprintf(filenamestr,buf1);
+     
     if (opennetcdf(filenamestr) == 0) {
         exit(0);
     }
@@ -5257,6 +5285,7 @@ updateannuallanduse_main(int inyear) {
 
     char buf[250];
     char msg[1000];
+    char buf3[250];
   
     if (modyear < 2015) {
         sprintf(buf, "./LUT_LUH2_historical_%d_04082019.nc", inyear);  // use this naming structure for historical simulations, but first change the creation date at the end of filename
@@ -5265,8 +5294,18 @@ updateannuallanduse_main(int inyear) {
        sprintf(buf, "./LUT_LUH2_SSP5_RCP85_%d_06242019.nc", inyear); // use this naming structure for future simulations, but first change the creation date at the end of filename
     }
     
-    strcpy(msg, "cp -f /global/project/projectdirs/acme/inputdata/lnd/clm2/rawdata/LUT_input_files/mksrf_landuse_template.nc "); // files are also available at https://web.lcrc.anl.gov/public/e3sm/inputdata/lnd/clm2/rawdata/LUT_input_files/
-    strcat(msg, buf);
+    sprintf(buf1,input_dir);
+    sprintf(buf2,"mksrf_landuse_template.nc\" ");  // files are also available at https://web.lcrc.anl.gov/public/e3sm/inputdata/lnd/clm2/rawdata/LUT_input_files/
+    
+    strcat(buf1,buf2);
+    
+    strcpy(buf3,"cp -f \"");
+    
+    strcat(buf3,buf1);
+    
+    strcat(buf3,buf);
+    strcpy(msg, buf3); // files are also available at https://web.lcrc.anl.gov/public/e3sm/inputdata/lnd/clm2/rawdata/LUT_input_files/
+    
     system(msg);
     sprintf(filenamestr, buf);  // !!!! This is the file to which data is outputted    
     if (opennetcdf(filenamestr) == 0) {
@@ -5292,9 +5331,20 @@ updateannuallanduse_main(int inyear) {
 
 }
 
-void main() {
+void main(int argc, char *argv[]) {
+    char input_dir[250];
+    
+   if ( argc != 2 ) /* argc should be 2 for correct execution */
+      {
+         printf( "correct usage requires path to input files to be passed as command line argument \n");
+      }
+   else
+      {
+         strcpy(input_dir,argv[1]);
+      }
+    
 //    for (int i = 1850; i < 2016; i++) { // use this line for historical simulation
  for (int i = 2016; i < 2101; i++) { // use this line for future simulation
-        updateannuallanduse_main(i);
+        updateannuallanduse_main(i,input_dir);
     }
 }
