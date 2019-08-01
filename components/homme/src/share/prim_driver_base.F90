@@ -917,6 +917,15 @@ contains
        enddo
     endif
 
+!this is hack, for restart runs won't be valid at 1st timestep in output
+!for other runs should be ok assuming we init from hydro state
+!CAAR will set it to 'correct' value right before exit
+#ifdef MODEL_THETA_L
+    do ie=nets,nete
+       elem(ie)%derived%mubottom(:,:)=1.0
+    enddo
+#endif
+
     call model_init2(elem(:), hybrid,deriv1,hvcoord,tl,nets,nete)
 
     ! advective and viscious CFL estimates

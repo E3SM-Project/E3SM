@@ -670,7 +670,7 @@ print *, 'T',start,count
                 st=1
                 do ie=1,nelemd
                    en=st+elem(ie)%idxp%NumUniquePts-1
-                   call get_field_i(elem(ie),'w',vartmp1,n0)
+                   call get_field_i(elem(ie),'w',vartmp1,hvcoord,n0)
                    call UniquePoints(elem(ie)%idxP,nlevp,vartmp1,var3dp1(st:en,:))
                    st=en+1
                 enddo
@@ -683,7 +683,7 @@ print *, 'T',start,count
                 st=1
                 do ie=1,nelemd
                    en=st+elem(ie)%idxp%NumUniquePts-1
-                   call get_field_i(elem(ie),'mu',vartmp1,n0)
+                   call get_field_i(elem(ie),'mu',vartmp1,hvcoord,n0)
                    call UniquePoints(elem(ie)%idxP,nlevp,vartmp1,var3dp1(st:en,:))
                    st=en+1
                 enddo
@@ -696,7 +696,7 @@ print *, 'T',start,count
                 st=1
                 do ie=1,nelemd
                    en=st+elem(ie)%idxp%NumUniquePts-1
-                   call get_field_i(elem(ie),'geopotential',vartmp1,n0)
+                   call get_field_i(elem(ie),'geopotential',vartmp1,hvcoord,n0)
                    call UniquePoints(elem(ie)%idxP,nlevp,vartmp1,var3dp1(st:en,:))
                    st=en+1
                 enddo

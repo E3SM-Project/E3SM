@@ -214,12 +214,13 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
 
 
 #if 1
-  subroutine get_field_i(elem,name,field,nt)
+  subroutine get_field_i(elem,name,field,hvcoord,nt)
   implicit none
   type (element_t),       intent(in) :: elem
   character(len=*),       intent(in) :: name
   real (kind=real_kind),  intent(out):: field(np,np,nlevp)
   integer,                intent(in) :: nt
+  type (hvcoord_t),       intent(in) :: hvcoord
 
   select case(name)
     case('w');
@@ -231,7 +232,11 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
     case('geopotential');
       field = elem%state%phinh_i(:,:,1:nlevp,nt)
     case('mu');
-      field = elem%derived%mu(:,:,1:nlevp)
+      !this call will return mu=1 at the bottom
+      call get_dpnh_dp_i(elem,field,hvcoord,nt)
+      !assuming call to this routine is after mu at the bottom is computed
+      !(most cases)
+      field(:,:,nlevp) = elem%derived%mubottom(:,:)
     case default
       print *,'name = ',trim(name)
       call abortmp('ERROR: get_field_i name not supported in this model')
@@ -239,6 +244,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
  
   end subroutine get_field_i
 #endif
+
 
   !_____________________________________________________________________
   subroutine get_pottemp(elem,pottemp,hvcoord,nt,ntQ)
@@ -323,6 +329,29 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
      dpnh_dp(:,:,k)=(dpnh_dp_i(:,:,k)+dpnh_dp_i(:,:,k+1))/2
   enddo
   end subroutine 
+
+
+  !_____________________________________________________________________
+  subroutine get_dpnh_dp_i(elem,dpnh_dp_i,hvcoord,nt)
+  implicit none
+
+  type (element_t), intent(in)        :: elem
+  real (kind=real_kind), intent(out)  :: dpnh_dp_i(np,np,nlevp)
+  type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
+  integer, intent(in) :: nt
+
+  !   local
+  real (kind=real_kind) :: dp(np,np,nlev)
+  real (kind=real_kind) :: exner(np,np,nlev)
+  real (kind=real_kind) :: pnh(np,np,nlev)
+  integer :: k
+
+  dp=elem%state%dp3d(:,:,:,nt)
+  call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
+       dp,elem%state%phinh_i(:,:,:,nt),pnh,exner,dpnh_dp_i)
+  
+  end subroutine get_dpnh_dp_i 
+
 
 
   !_____________________________________________________________________

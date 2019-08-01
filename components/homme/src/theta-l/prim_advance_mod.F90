@@ -96,7 +96,7 @@ contains
     integer :: ie,nm1,n0,np1,nstep,qsplit_stage,k, qn0
     integer :: n,i,j,maxiter,mi
  
-    mi=50
+    mi=10
 
     call t_startf('prim_advance_exp')
     nm1   = tl%nm1
@@ -296,11 +296,11 @@ contains
       max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
-print *, 'ahat2/a2', ahat2/a2
-print *, 'ahat3/a3', ahat3/a3
-print *, 'ahat4/a4', ahat4/a4
-print *, 'ahat5/a5', ahat5/a5
-stop
+!print *, 'ahat2/a2', ahat2/a2
+!print *, 'ahat3/a3', ahat3/a3
+!print *, 'ahat4/a4', ahat4/a4
+!print *, 'ahat5/a5', ahat5/a5
+!stop
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat2/a2,1d0)
@@ -1646,9 +1646,6 @@ stop
   real (kind=real_kind) :: phi_tens(np,np,nlevp)
 
 
-  real (kind=real_kind) :: dpp_tens(np,np,nlevp)
-                                               
-
   real (kind=real_kind) :: pi(np,np,nlev)                ! hydrostatic pressure
   real (kind=real_kind) :: pi_i(np,np,nlevp)             ! hydrostatic pressure interfaces
   real (kind=real_kind), dimension(np,np,nlev) :: vgrad_p
@@ -1672,9 +1669,6 @@ stop
      vtheta_dp  => elem(ie)%state%vtheta_dp(:,:,:,n0)
      vtheta(:,:,:) = vtheta_dp(:,:,:)/dp3d(:,:,:)
      phi_i => elem(ie)%state%phinh_i(:,:,:,n0)
-
-
-     elem(ie)%state%dpp(:,:,1:nlev) = phi_i(:,:,1:nlev) - phi_i(:,:,2:nlevp)
 
 
 #ifdef ENERGY_DIAGNOSTICS
@@ -1713,14 +1707,6 @@ stop
 
      call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_i,pnh,exner,dpnh_dp_i,caller='CAAR',&
                                  spherep=elem(ie)%spherep)
-
-     elem(ie)%derived%mu(:,:,1:nlev) = dpnh_dp_i(:,:,1:nlev)
-
-!#define LASTMU
-#undef LASTMU
-#ifdef LASTMU
-     dpnh_dp_i(:,:,nlevp) = dpnh_dp_i(:,:,nlev)
-#endif
 
      dp3d_i(:,:,1) = dp3d(:,:,1)
      dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
@@ -2221,7 +2207,6 @@ stop
      ! now we can compute the correct dphn_dp_i() at the surface:
      if (.not. theta_hydrostatic_mode) then
 
-#ifndef LASTMU
         ! solve for (dpnh_dp_i-1)
         dpnh_dp_i(:,:,nlevp) = 1 + (  &
              ((elem(ie)%state%v(:,:,1,nlev,np1)*elem(ie)%derived%gradphis(:,:,1) + &
@@ -2229,12 +2214,10 @@ stop
              elem(ie)%state%w_i(:,:,nlevp,np1)) / &
              (g + ( elem(ie)%derived%gradphis(:,:,1)**2 + &
              elem(ie)%derived%gradphis(:,:,2)**2)/(2*g))   )  / dt2
-#endif
-      
-        !save mu field at the bottom
-        elem(ie)%derived%mu(:,:,nlevp) = dpnh_dp_i(:,:,nlevp)
-
-#ifndef LASTMU 
+     
+!here is it safe to store nlevp value of mu, it is not touched by imex
+        elem(ie)%derived%mubottom(:,:) = dpnh_dp_i(:,:,nlevp)
+ 
         ! update solution with new dpnh_dp_i value:
         elem(ie)%state%w_i(:,:,nlevp,np1) = elem(ie)%state%w_i(:,:,nlevp,np1) +&
              scale1*dt2*g*(dpnh_dp_i(:,:,nlevp)-1)
@@ -2242,10 +2225,6 @@ stop
              scale1*dt2*(dpnh_dp_i(:,:,nlevp)-1)*elem(ie)%derived%gradphis(:,:,1)/2
         elem(ie)%state%v(:,:,2,nlev,np1) =  elem(ie)%state%v(:,:,2,nlev,np1) -&
              scale1*dt2*(dpnh_dp_i(:,:,nlevp)-1)*elem(ie)%derived%gradphis(:,:,2)/2
-#else
-        elem(ie)%state%w_i(:,:,nlevp,np1) = (elem(ie)%state%v(:,:,1,nlev,np1)*elem(ie)%derived%gradphis(:,:,1) + &
-             elem(ie)%state%v(:,:,2,nlev,np1)*elem(ie)%derived%gradphis(:,:,2))/g
-#endif
 
 #ifdef ENERGY_DIAGNOSTICS
         ! add in boundary term to T2 and S2 diagnostics:
@@ -2395,7 +2374,7 @@ stop
 !       1d-6,hvcoord,dpnh_dp_i,vtheta_dp)
       ! here's the call to the exact Jacobian
 
-!with 1 does not use pnh_...
+!with 1 this call does not use pnh_...
      call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,phi_np1,pnh,1)
 
     ! compute dp3d-weighted infinity norms of the initial Jacobian and residual
@@ -2407,7 +2386,9 @@ stop
         if (k.eq.1) then
           norminfJ0(i,j) = max(norminfJ0(i,j),(dp3d_i(i,j,k)*abs(JacD(k,i,j))+dp3d_i(i,j,k+1))*abs(JacU(k,i,j)))
         elseif (k.eq.nlev) then
-          norminfJ0(i,j) = max(norminfJ0(i,j),(dp3d_i(i,j,k-1)*abs(JacL(k,i,j))+abs(JacD(k,i,j))*dp3d(i,j,k)))
+!temp fix for membug
+!          norminfJ0(i,j) = max(norminfJ0(i,j),(dp3d_i(i,j,k-1)*abs(JacL(k,i,j))+abs(JacD(k,i,j))*dp3d(i,j,k)))
+          norminfJ0(i,j) = max(norminfJ0(i,j),( abs(JacD(k,i,j))*dp3d(i,j,k)))
         else
           norminfJ0(i,j) = max(norminfJ0(i,j),(dp3d_i(i,j,k-1)*abs(JacL(k,i,j))+dp3d_i(i,j,k)*abs(JacD(k,i,j))+ &
             dp3d_i(i,j,k+1)*abs(JacU(k,i,j))))
@@ -2439,14 +2420,12 @@ endif
 #if 0
 if((elem(ie)%globalid == 1721).and.(tl%nstep == 209809))then
 print *,'-------------------- ITERATION OF MU'
-!do j=1,np
-!do i=1,np
+!do j=1,np; do i=1,np
 i=1;j=1;
 do k=1,nlevp
 write(*,109)'   mu(',itercount+1,',',i,',',j,',',k,')=',dpnh_dp_i(i,j,k),';'
 enddo
-!enddo
-!enddo
+!enddo; enddo
 endif
 #endif
 
@@ -2488,6 +2467,7 @@ endif
          Fn(:,:,k) = phi_np1(:,:,k)-phi_n0(:,:,k) &
               - dt2*g*w_n0(:,:,k) + (dt2*g)**2 * (1.0-dpnh_dp_i(:,:,k))
       enddo
+
       ! compute relative errors
       itererrtemp=0.d0
       do i=1,np
@@ -2529,14 +2509,12 @@ endif
 #if 0
 if((elem(ie)%globalid == 1721).and.(tl%nstep == 209809))then
 print *,'-------------------- ITERATION OF MU'
-!do j=1,np
-!do i=1,np
+!do j=1,np; do i=1,np
 i=1;j=1;
 do k=1,nlevp
 write(*,109)'   mu(',itercount,',',i,',',j,',',k,')=',dpnh_dp_i(i,j,k),';'
 enddo
-!enddo
-!enddo
+!enddo; enddo
 stop
 endif
 #endif
@@ -2558,6 +2536,7 @@ endif
 !enddo
       location=maxloc(itererrtemp)
       i=location(1); j=location(2)
+
 print *, 'point where max error is ', elem(ie)%spherep(i,j)%lon,elem(ie)%spherep(i,j)%lat
 print *, 'nstep here is', tl%nstep, 'dt2 here', dt2, 'g here', g
 
