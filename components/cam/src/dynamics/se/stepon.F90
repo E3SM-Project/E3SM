@@ -29,6 +29,7 @@ module stepon
                              setiopupdate, readiopdata
    use element_mod,    only: element_t
    use shr_const_mod,       only: SHR_CONST_PI
+   use se_single_column_mod, only: scm_broadcast
 
    implicit none
    private
@@ -167,6 +168,7 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
   use physics_buffer, only : physics_buffer_desc
   use hycoef,      only: hyam, hybm
   use se_single_column_mod, only: scm_setfield, scm_setinitial
+  use mpishorthand
   implicit none
 !
 ! !OUTPUT PARAMETERS:
@@ -197,6 +199,7 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
    
   ! Determine whether it is time for an IOP update;
   ! doiopupdate set to true if model time step > next available IOP 
+  
   if (use_iop .and. .not. is_last_step()) then
     if (masterproc) call setiopupdate
   end if
@@ -204,6 +207,7 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
   if (single_column) then
     iop_update_surface = .true. 
     if (doiopupdate .and. masterproc) call readiopdata( iop_update_surface,hyam,hybm )
+    call scm_broadcast()
     call scm_setfield(elem)       
   endif 
   
@@ -430,6 +434,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    use dyn_comp, only: TimeLevel
    use cam_history,     only: outfld   
    use cam_logfile, only: iulog
+   use mpishorthand
    real(r8), intent(in) :: dtime   ! Time-step
    real(r8) :: ftmp_temp(np,np,nlev,nelemd), ftmp_q(np,np,nlev,pcnst,nelemd)
    real(r8) :: forcing_temp(npsq,nlev), forcing_q(npsq,nlev,pcnst)
@@ -445,8 +450,8 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    type (element_t), pointer :: elem(:)
    integer :: rc, i, j, k, p, ie, tl_f
    
-   elem => dyn_out%elem
-   
+   elem => dyn_out%elem 
+  
 #if (defined BFB_CAM_SCAM_IOP)   
 
    tl_f = TimeLevel%n0   ! timelevel which was adjusted by physics
@@ -463,10 +468,14 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
      
      ! Update IOP properties e.g. omega, divT, divQ
      
+#ifdef SPMD
+    call mpibcast(doiopupdate,1,mpilog,0,mpicom)
+#endif     
      iop_update_surface = .false. 
      if (doiopupdate) then
        call scm_setinitial(elem)
        if (masterproc) call readiopdata(iop_update_surface,hyam,hybm)
+       call scm_broadcast()
        call scm_setfield(elem)
      endif   
 

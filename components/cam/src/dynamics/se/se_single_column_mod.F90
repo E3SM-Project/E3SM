@@ -9,11 +9,13 @@ use constituents, only: cnst_get_ind
 use dimensions_mod, only: nelemd, np
 use time_manager, only: get_nstep, dtime
 use ppgrid, only: begchunk
+use pmgrid, only: plev
 
 implicit none
 
 public scm_setinitial
 public scm_setfield
+public scm_broadcast
 public apply_SC_forcing
 
 !=========================================================================
@@ -89,6 +91,46 @@ subroutine scm_setinitial(elem)
 #endif
 
 end subroutine scm_setinitial
+
+subroutine scm_broadcast()
+
+  use mpishorthand
+  
+#ifdef SPMD  
+
+  call mpibcast(have_ps,1,mpilog,0,mpicom)
+  call mpibcast(have_tg,1,mpilog,0,mpicom)
+  call mpibcast(have_lhflx,1,mpilog,0,mpicom)
+  call mpibcast(have_shflx,1,mpilog,0,mpicom)
+  call mpibcast(have_t,1,mpilog,0,mpicom)
+  call mpibcast(have_q,1,mpilog,0,mpicom)
+  call mpibcast(have_u,1,mpilog,0,mpicom)
+  call mpibcast(have_v,1,mpilog,0,mpicom)
+  call mpibcast(have_omega,1,mpilog,0,mpicom)
+  call mpibcast(have_divt,1,mpilog,0,mpicom)
+  call mpibcast(have_divq,1,mpilog,0,mpicom)
+  call mpibcast(have_divt3d,1,mpilog,0,mpicom)
+  call mpibcast(have_divq3d,1,mpilog,0,mpicom)
+
+  call mpibcast(psobs,1,mpir8,0,mpicom)
+  call mpibcast(tground,1,mpir8,0,mpicom)
+  call mpibcast(lhflxobs,1,mpir8,0,mpicom)
+  call mpibcast(shflxobs,1,mpir8,0,mpicom)
+!  
+  call mpibcast(tobs,plev,mpir8,0,mpicom)
+  call mpibcast(qobs,plev,mpir8,0,mpicom)
+  call mpibcast(uobs,plev,mpir8,0,mpicom)
+  call mpibcast(vobs,plev,mpir8,0,mpicom)
+  call mpibcast(wfld,plev,mpir8,0,mpicom) 
+  
+  call mpibcast(divt,plev,mpir8,0,mpicom)
+  call mpibcast(divq,plev,mpir8,0,mpicom)
+  call mpibcast(divt3d,plev,mpir8,0,mpicom)
+  call mpibcast(divq3d,plev,mpir8,0,mpicom)
+  
+#endif
+
+end subroutine scm_broadcast
 
 subroutine scm_setfield(elem)
 

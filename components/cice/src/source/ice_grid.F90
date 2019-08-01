@@ -991,8 +991,15 @@
          minpoint,&
          testpoint
 
+      real (dbl_kind), allocatable, dimension(:,:) :: &	 
+!      real (kind=dbl_kind), dimension(nx_global,ny_global) :: &
+!       real (kind=dbl_kind) :: &
+         temp_test1, temp_test2, temp_test3, temp_test4, temp_test5
+
       logical :: se_grid      ! determine whether file format is for 
                               !   SE dynamical core grid or not
+			      
+      logical :: do_this
 
       !-----------------------------------------------------------------
       ! - kmt file is actually clm fractional land file
@@ -1015,7 +1022,22 @@
       ! Determine start/count to read in for either single column or global lat-lon grid
       ! If single_column, then assume that only master_task is used since there is only one task
 
+      if (my_task == master_task) then
+        allocate(temp_test1(nx_global,ny_global))
+	allocate(temp_test2(nx_global,ny_global))
+	allocate(temp_test3(nx_global,ny_global))
+	allocate(temp_test4(nx_global,ny_global))
+	allocate(temp_test5(nx_global,ny_global))
+      else
+        allocate(temp_test1(1,1))
+	allocate(temp_test2(1,1))
+	allocate(temp_test3(1,1))
+	allocate(temp_test4(1,1))
+	allocate(temp_test5(1,1))      
+      endif
+      do_this = .true.
       if (single_column) then
+        if (my_task == master_task) then
          ! Check for consistency
 !         if (my_task == master_task) then
 !            if ((nx_global /= 1).or. (ny_global /= 1)) then
@@ -1096,19 +1118,21 @@
 
          call check_ret(nf90_inq_varid(ncid, 'xc' , varid), subname)
          call check_ret(nf90_get_var(ncid, varid, scamdata, start), subname)
-         TLON = scamdata
+         temp_test1(:,:) = scamdata
          call check_ret(nf90_inq_varid(ncid, 'yc' , varid), subname)
          call check_ret(nf90_get_var(ncid, varid, scamdata, start), subname)
-         TLAT = scamdata
+         temp_test2(:,:) = scamdata
          call check_ret(nf90_inq_varid(ncid, 'area' , varid), subname)
          call check_ret(nf90_get_var(ncid, varid, scamdata, start), subname)
-         tarea = scamdata
+         temp_test3(:,:) = scamdata
          call check_ret(nf90_inq_varid(ncid, 'mask' , varid), subname)
          call check_ret(nf90_get_var(ncid, varid, scamdata, start), subname)
-         hm = scamdata
+         temp_test4(:,:) = scamdata
          call check_ret(nf90_inq_varid(ncid, 'frac' , varid), subname)
          call check_ret(nf90_get_var(ncid, varid, scamdata, start), subname)
-         ocn_gridcell_frac = scamdata
+         temp_test5(:,:) = scamdata
+	 
+        endif	 
       else
          ! Check for consistency
          if (my_task == master_task) then
@@ -1129,6 +1153,25 @@
       if (my_task == master_task) then
          call ice_close_nc(ncid)
       end if
+      
+      if (single_column) then
+        call scatter_global(TLON,temp_test1,master_task,distrb_info, &
+	  field_loc_noupdate,field_type_noupdate)
+        call scatter_global(TLAT,temp_test2,master_task,distrb_info, &
+	  field_loc_noupdate,field_type_noupdate)
+        call scatter_global(tarea,temp_test3,master_task,distrb_info, &
+	  field_loc_center,field_type_scalar)	  	  
+        call scatter_global(hm,temp_test4,master_task,distrb_info, &
+	  field_loc_noupdate,field_type_noupdate)
+        call scatter_global(ocn_gridcell_frac,temp_test5,master_task,distrb_info, &
+	  field_loc_noupdate,field_type_noupdate)	  
+      endif
+      
+      deallocate(temp_test1)
+      deallocate(temp_test2)
+      deallocate(temp_test3)
+      deallocate(temp_test4)
+      deallocate(temp_test5)
 
      !$OMP PARALLEL DO PRIVATE(iblk,this_block,ilo,ihi,jlo,jhi,i,j)
       do iblk = 1,nblocks
@@ -1191,7 +1234,8 @@
             tinyarea(i,j,iblk) = puny*tarea(i,j,iblk)
 
             if (single_column) then
-               ULAT  (i,j,iblk) = TLAT(i,j,iblk)+(pi/nj)  
+!               ULAT  (i,j,iblk) = TLAT(i,j,iblk)+(pi/nj)  
+                ULAT  (i,j,iblk) = TLAT(i,j,iblk)
             else
                if (ny_global == 1) then
                   ULAT  (i,j,iblk) = TLAT(i,j,iblk)
@@ -1613,6 +1657,7 @@
       call ice_timer_start(timer_bound)
       call ice_HaloUpdate (hm,               halo_info, &
                            field_loc_center, field_type_scalar)
+
       call ice_HaloUpdate (bm,               halo_info, &
                            field_loc_center, field_type_scalar)
       call ice_timer_stop(timer_bound)

@@ -60,7 +60,7 @@ contains
     use cam_map_utils,       only: iMap
     use shr_const_mod,       only: SHR_CONST_PI
     use scamMod,             only: setiopupdate, readiopdata
-    use se_single_column_mod, only: scm_setinitial
+    use se_single_column_mod, only: scm_setinitial, scm_broadcast
     use element_ops,         only: set_thermostate
 
     implicit none
@@ -467,6 +467,7 @@ contains
       iop_update_surface = .false.
       if (masterproc) call setiopupdate()
       if (masterproc) call readiopdata(iop_update_surface,hyam,hybm)
+      call scm_broadcast()
       call scm_setinitial(elem)
     endif
 

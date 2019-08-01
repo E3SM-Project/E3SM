@@ -24,6 +24,7 @@ module scamMod
   use phys_control, only: phys_getopts
   use dycore, only: dycore_is
   use spmd_utils,   only: masterproc
+  use mpishorthand
 !
   implicit none
 
