@@ -29,7 +29,10 @@ def _pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
         safe_copy(env_mach_pes,"{}.{}".format(env_mach_pes, lid))
 
     # check for locked files, may impact BUILD_COMPLETE
-    case.check_lockedfiles()
+    skip = None
+    if case.get_value("EXTERNAL_WORKFLOW"):
+        skip = "env_batch"
+    case.check_lockedfiles(skip=skip)
     logger.debug("check_lockedfiles OK")
     build_complete = case.get_value("BUILD_COMPLETE")
 
@@ -241,6 +244,8 @@ def _resubmit_check(case):
 
         case.submit(job=job, resubmit=True)
 
+    logger.debug("resubmit after check is {}".format(resubmit))
+
 ###############################################################################
 def _do_external(script_name, caseroot, rundir, lid, prefix):
 ###############################################################################
@@ -328,10 +333,14 @@ def case_run(self, skip_pnl=False, set_continue_run=False, submit_resubmits=Fals
         self.set_value("CONTINUE_RUN",
                        self.get_value("RESUBMIT_SETS_CONTINUE_RUN"))
 
-    logger.warning("check for resubmit")
-    if submit_resubmits:
-        _resubmit_check(self)
+    external_workflow = self.get_value("EXTERNAL_WORKFLOW")
+    if not external_workflow:
+        logger.warning("check for resubmit")
+
+        logger.debug("submit_resubmits is {}".format(submit_resubmits))
+        if submit_resubmits:
+            _resubmit_check(self)
+
 
     model_log("e3sm", logger, "{} CASE.RUN HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
-
     return True

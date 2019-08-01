@@ -134,15 +134,16 @@ contains
        end do
 
        ! The following puts all of the elevation class fields as an
-       ! undidstributed dimension in the export state field
+       ! undidstributed dimension in the export state field - index1 is bare land - and the total number of 
+       ! elevation classes not equal to bare land go from index2 -> glc_nec+1 
 
        call dshr_fld_add(med_fld="Sl_lfrin", fldlist_num=fldsFrLnd_num, fldlist=fldsFrLnd)
        call dshr_fld_add(med_fld='Sl_tsrf_elev', fldlist_num=fldsFrLnd_num, fldlist=fldsFrLnd, &
-            ungridded_lbound=1, ungridded_ubound=glc_nec)
+            ungridded_lbound=1, ungridded_ubound=glc_nec+1)
        call dshr_fld_add(med_fld='Sl_topo_elev', fldlist_num=fldsFrLnd_num, fldlist=fldsFrLnd, &
-            ungridded_lbound=1, ungridded_ubound=glc_nec)
+            ungridded_lbound=1, ungridded_ubound=glc_nec+1)
        call dshr_fld_add(med_fld='Flgl_qice_elev', fldlist_num=fldsFrLnd_num, fldlist=fldsFrLnd, &
-            ungridded_lbound=1, ungridded_ubound=glc_nec)
+            ungridded_lbound=1, ungridded_ubound=glc_nec+1)
 
     end if
 
@@ -534,19 +535,19 @@ contains
     call dshr_export(l2x%rattr(k,:), exportState, "Sl_lfrin", rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    do n = 1,glc_nec
+    do n = 0,glc_nec
        nec_str = glc_elevclass_as_string(n)
 
        k = mct_aVect_indexRA(l2x, "Sl_tsrf" // nec_str)
-       call dshr_export(l2x%rattr(k,:), exportState, "Sl_tsrf_elev", ungridded_index=n, rc=rc)
+       call dshr_export(l2x%rattr(k,:), exportState, "Sl_tsrf_elev", ungridded_index=n+1, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
        k = mct_aVect_indexRA(l2x, "Sl_topo" // nec_str)
-       call dshr_export(l2x%rattr(k,:), exportState, "Sl_topo_elev", ungridded_index=n, rc=rc)
+       call dshr_export(l2x%rattr(k,:), exportState, "Sl_topo_elev", ungridded_index=n+1, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
        k = mct_aVect_indexRA(l2x, "Flgl_qice" // nec_str)
-       call dshr_export(l2x%rattr(k,:), exportState, "Flgl_qice_elev", ungridded_index=n, rc=rc)
+       call dshr_export(l2x%rattr(k,:), exportState, "Flgl_qice_elev", ungridded_index=n+1, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end do
 
