@@ -2506,6 +2506,7 @@ endif
 
 
 !mu during iteration, TSTEP BEFORE CRASH!
+!crash tstep is 209810
 #if 0
 if((elem(ie)%globalid == 1721).and.(tl%nstep == 209809))then
 print *,'-------------------- ITERATION OF MU'
@@ -2558,6 +2559,34 @@ enddo
 enddo
 enddo
 #endif
+
+!!!!!!!!!!!!!! init conditions for 3,1 point only
+#if 1
+print *,'-------------------- INIT CONDITIONS for the point that crashed'
+i=3;j=1;
+
+do k=1,nlev
+write(*,110) '   dp(',i,',',j,',',k,')=',dp3d(i,j,k),';'
+write(*,110) '  vth(',i,',',j,',',k,')=',vtheta_dp(i,j,k),';'
+write(*,110) '  wn0(',i,',',j,',',k,')=',w_n0(i,j,k),';'
+write(*,110) '    u(',i,',',j,',',k,')=',elem(ie)%state%v(i,j,1,k,np1),';'
+write(*,110) '    v(',i,',',j,',',k,')=',elem(ie)%state%v(i,j,2,k,np1),';'
+enddo
+
+write(*,110) '  wn0(',i,',',j,',',nlevp,')=',&
+(elem(ie)%state%v(i,j,1,nlev,np1)*elem(ie)%derived%gradphis(i,j,1)+ &
+             elem(ie)%state%v(i,j,2,nlev,np1)*elem(ie)%derived%gradphis(i,j,2))/g,';'
+do k=1,nlevp
+write(*,110) ' phi0(',i,',',j,',',k,')=',phi_n0(i,j,k),';'
+enddo
+
+write(*,110) '  gps(',i,',',j,',',1,')=',elem(ie)%derived%gradphis(i,j,1),';'
+write(*,110) '  gps(',i,',',j,',',2,')=',elem(ie)%derived%gradphis(i,j,2),';'
+
+#endif
+
+
+
 
 110 format (A6,I1,A1,I1,A1,I2,A2,E23.15,A1)  !         E23.15,A2,I3,A1,E23.15,A2,I3,A1,E23.15)
 
