@@ -1197,7 +1197,7 @@ contains
 
       if ( use_fates ) then
          call alm_fates%wrap_accumulatefluxes(bounds,fn,filterp(1:fn))
-         call alm_fates%wrap_hydraulics_drive(bounds,soilstate_vars, &
+         call alm_fates%wrap_hydraulics_drive(bounds,fn,filterp(1:fn),soilstate_vars, &
                waterstate_vars,waterflux_vars,solarabs_vars,energyflux_vars)
 
       else
