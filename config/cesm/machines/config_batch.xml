@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<config_batch version="2.0">
+<config_batch version="2.1">
   <!--
      File:    config_batch.xml
      Purpose: abstract out the parts of run scripts that are different, and use this configuration to
@@ -101,6 +101,7 @@
     <batch_submit>bsub</batch_submit>
     <batch_cancel>bkill</batch_cancel>
     <batch_redirect>&lt;</batch_redirect>
+    <batch_env> </batch_env>
     <batch_directive>#BSUB</batch_directive>
     <jobid_pattern>&lt;(\d+)&gt;</jobid_pattern>
     <depend_string> -w 'done(jobid)'</depend_string>
@@ -139,7 +140,7 @@
       <arg flag="-A" name="$PROJECT"/>
     </submit_args>
     <directives>
-      <directive> -N {{ job_id }}</directive>
+      <directive>-N {{ job_id }}</directive>
       <directive default="n"> -r {{ rerunnable }} </directive>
       <!-- <directive> -j oe {{ job_id }} </directive> -->
       <directive> -j oe </directive>
@@ -166,6 +167,16 @@
       <directive> --output={{ job_id }}   </directive>
       <directive> --exclusive                        </directive>
     </directives>
+  </batch_system>
+
+  <batch_system MACH="aleph" type="pbs" >
+    <directives>
+      <directive>-l nodes={{ num_nodes }}</directive>
+      <directive>-q {{ queue }}</directive>
+    </directives>
+    <queues>
+      <queue default="true" >iccp</queue>
+    </queues>
   </batch_system>
 
   <!-- athena is lsf -->
@@ -225,10 +236,10 @@
     <unknown_queue_directives>regular</unknown_queue_directives>
 
     <queues>
-      <queue walltimemax="12:00" nodemin="1" nodemax="4032">regular</queue>
-      <queue walltimemax="12:00" nodemin="1" nodemax="4032">premium</queue>
-      <queue default="true" walltimemax="06:00" jobmin="1" jobmax="18">share</queue>
-      <queue walltimemax="12:00" nodemin="1" nodemax="4032">economy</queue>
+      <queue walltimemax="12:00:00" nodemin="1" nodemax="4032">regular</queue>
+      <queue walltimemax="12:00:00" nodemin="1" nodemax="4032">premium</queue>
+      <queue default="true" walltimemax="06:00:00" jobmin="1" jobmax="18">share</queue>
+      <queue walltimemax="12:00:00" nodemin="1" nodemax="4032">economy</queue>
     </queues>
   </batch_system>
 
@@ -591,25 +602,4 @@
       <queue walltimemax="00:60:00" nodemin="1" nodemax="50" default="true">default</queue>
     </queues>
   </batch_system>
-
-  <batch_jobs>
-    <!-- order matters, with no-batch jobs will be run in the order listed here -->
-    <job name="case.run">
-      <template>template.case.run</template>
-      <prereq>$BUILD_COMPLETE and not $TEST</prereq>
-    </job>
-    <job name="case.test">
-      <template>template.case.test</template>
-      <prereq>$BUILD_COMPLETE and $TEST</prereq>
-    </job>
-    <job name="case.st_archive">
-      <template>template.st_archive</template>
-      <task_count>1</task_count>
-      <walltime>0:20:00</walltime>
-      <!-- If DOUT_S is true and case.run (or case.test) exits successfully then run st_archive-->
-      <dependency>case.run or case.test</dependency>
-      <prereq>$DOUT_S</prereq>
-    </job>
-  </batch_jobs>
-
 </config_batch>
