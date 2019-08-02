@@ -2077,6 +2077,9 @@
       <env name="MV2_ENABLE_AFFINITY">0</env>
       <env name="MV2_SHOW_CPU_BINDING">1</env>
     </environment_variables>
+    <environment_variables mpilib="impi">
+      <env name="I_MPI_ADJUST_ALLREDUCE">1</env>
+    </environment_variables>
     <environment_variables mpilib="impi" DEBUG="TRUE">
       <env name="I_MPI_DEBUG">10</env>
     </environment_variables>
