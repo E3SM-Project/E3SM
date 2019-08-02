@@ -941,9 +941,9 @@ contains
           ! Here we map the microphysics tendency rates back to CELL-AVERAGE quantities for updating
           ! cell-average quantities.
           call back_to_cell_average(lcldm(i,k), rcldm(i,k), icldm(i,k), qcacc, qrevp, qcaut,& 
-          ncacc, ncslf, ncautc, nrslf, nrevp, ncautr, qcnuc, ncnuc, qisub, nrshdr, qcheti,& 
-          qrcol, qcshd, qimlt, qccol, qrheti, nimlt, nccol, ncshdc, ncheti, nrcol, nislf,& 
-          qidep, nrheti, nisub, qinuc, ninuc, qiberg)
+            ncacc, ncslf, ncautc, nrslf, nrevp, ncautr, qcnuc, ncnuc, qisub, nrshdr, qcheti,& 
+            qrcol, qcshd, qimlt, qccol, qrheti, nimlt, nccol, ncshdc, ncheti, nrcol, nislf,& 
+            qidep, nrheti, nisub, qinuc, ninuc, qiberg)
           
 
           !.................................................................
@@ -998,9 +998,9 @@ contains
 
           !-- warm-phase only processes:
           call update_prognostic_liquid(qcacc, ncacc, qcaut, ncautc, qcnuc, ncautr, ncslf, &
-          qrevp, nrevp, nrslf,  &
-          log_predictNc, inv_rho(i,k), exner(i,k), xxlv(i,k), dt, &
-          th(i,k), qv(i,k), qc(i,k), nc(i,k), qr(i,k), nr(i,k))
+            qrevp, nrevp, nrslf,  &
+            log_predictNc, inv_rho(i,k), exner(i,k), xxlv(i,k), dt, &
+            th(i,k), qv(i,k), qc(i,k), nc(i,k), qr(i,k), nr(i,k))
 
           !==
           ! AaronDonahue - Add extra variables needed from microphysics by E3SM:
@@ -1124,9 +1124,9 @@ contains
        p3_tend_out(i,:,37) = nc(i,:) ! Liq. # sedimentation tendency, initialize 
 
        call cloud_sedimentation(kts,kte, & 
-       qc_incld(i,:),rho(i,:),inv_rho(i,:),lcldm(i,:),acn(i,:),inv_dzq(i,:), & 
-       dt,odt,dnu,lammin,lammax,log_predictNc, & 
-       qc(i,:),nc(i,:),nc_incld(i,:),mu_c(i,:),nu(i,:),lamc(i,:),prt_liq(i),p3_tend_out(i,:,36),p3_tend_out(i,:,37)) 
+         qc_incld(i,:),rho(i,:),inv_rho(i,:),lcldm(i,:),acn(i,:),inv_dzq(i,:), & 
+         dt,odt,dnu,lammin,lammax,log_predictNc, & 
+         qc(i,:),nc(i,:),nc_incld(i,:),mu_c(i,:),nu(i,:),lamc(i,:),prt_liq(i),p3_tend_out(i,:,36),p3_tend_out(i,:,37)) 
 
        !------------------------------------------------------------------------------------------!
        ! Rain sedimentation:  (adaptive substepping)
@@ -1134,8 +1134,8 @@ contains
        p3_tend_out(i,:,39) = nr(i,:) ! Rain # sedimentation tendency, initialize
 
        call rain_sedimentation(kts,kte, &
-       qr_incld(i,:),rho(i,:),inv_rho(i,:),rhofacr(i,:),rcldm(i,:),inv_dzq(i,:),dt,odt, & 
-       qr(i,:),nr(i,:),nr_incld(i,:),mu_r(i,:),lamr(i,:),prt_liq(i),rflx(i,:),p3_tend_out(i,:,38),p3_tend_out(i,:,39)) 
+         qr_incld(i,:),rho(i,:),inv_rho(i,:),rhofacr(i,:),rcldm(i,:),inv_dzq(i,:),dt,odt, & 
+         qr(i,:),nr(i,:),nr_incld(i,:),mu_r(i,:),lamr(i,:),prt_liq(i),rflx(i,:),p3_tend_out(i,:,38),p3_tend_out(i,:,39)) 
 
        !------------------------------------------------------------------------------------------!
        ! Ice sedimentation:  (adaptive substepping)
@@ -1143,9 +1143,9 @@ contains
        p3_tend_out(i,:,41) = nitot(i,:) ! Ice # sedimentation tendency, initialize
 
        call ice_sedimentation(kts,kte,    &
-       rho(i,:),inv_rho(i,:),rhofaci(i,:),icldm(i,:),inv_dzq(i,:),dt,odt,  & 
-       qitot(i,:),qitot_incld(i,:),nitot(i,:),qirim(i,:),qirim_incld(i,:),birim(i,:),birim_incld(i,:),nitot_incld(i,:), &
-       prt_sol(i),p3_tend_out(i,:,40),p3_tend_out(i,:,41))     
+         rho(i,:),inv_rho(i,:),rhofaci(i,:),icldm(i,:),inv_dzq(i,:),dt,odt,  & 
+         qitot(i,:),qitot_incld(i,:),nitot(i,:),qirim(i,:),qirim_incld(i,:),birim(i,:),birim_incld(i,:),nitot_incld(i,:), &
+         prt_sol(i),p3_tend_out(i,:,40),p3_tend_out(i,:,41))     
 
        !.......................................
        ! homogeneous freezing of cloud and rain
