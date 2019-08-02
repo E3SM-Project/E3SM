@@ -1011,7 +1011,7 @@
     <mpirun mpilib="default">
       <executable>srun</executable>
       <arguments>
-        <arg name="num_tasks"> -l -n {{ total_tasks }} </arg>
+        <arg name="num_tasks"> -l -N {{ num_nodes }} -n {{ total_tasks }} </arg>
         <arg name="binding">--cpu_bind=cores</arg>
         <arg name="thread_count">-c $SHELL{if [ FALSE = `./xmlquery --value SMP_PRESENT` ];then echo 1;else echo $OMP_NUM_THREADS;fi}</arg>
         <arg name="placement">-m plane=$SHELL{if [ FALSE = `./xmlquery --value SMP_PRESENT` ];then echo 36;else echo 36/$OMP_NUM_THREADS|bc;fi}</arg>
