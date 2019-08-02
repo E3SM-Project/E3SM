@@ -499,7 +499,6 @@ contains
          dum3,dum4,dum5,dum6, &
          dqsidt,abi,rhop,tmp1,  &
          tmp2,odt,     &
-         Q_nuc,N_nuc,         &
          deltaD_init,    &
          timeScaleFactor, vtrmi1
 
@@ -1149,38 +1148,8 @@ contains
 
        !.......................................
        ! homogeneous freezing of cloud and rain
-
-       k_loop_fz:  do k = kbot,ktop,kdir
-
-          if (qc(i,k).ge.qsmall .and. t(i,k).lt.homogfrze) then
-             Q_nuc = qc(i,k)
-             N_nuc = max(nc(i,k),nsmall)
-
-             qirim(i,k) = qirim(i,k) + Q_nuc
-             qitot(i,k) = qitot(i,k) + Q_nuc
-             birim(i,k) = birim(i,k) + Q_nuc*inv_rho_rimeMax
-             nitot(i,k) = nitot(i,k) + N_nuc
-             th(i,k) = th(i,k) + exner(i,k)*Q_nuc*xlf(i,k)*inv_cp
-             qc(i,k) = 0._rtype  != qc(i,k) - Q_nuc
-             nc(i,k) = 0._rtype  != nc(i,k) - N_nuc
-          endif
-
-          if (qr(i,k).ge.qsmall .and. t(i,k).lt.homogfrze) then
-             Q_nuc = qr(i,k)
-             N_nuc = max(nr(i,k),nsmall)
-
-             qirim(i,k) = qirim(i,k) + Q_nuc
-             qitot(i,k) = qitot(i,k) + Q_nuc
-             birim(i,k) = birim(i,k) + Q_nuc*inv_rho_rimeMax
-             nitot(i,k) = nitot(i,k) + N_nuc
-             th(i,k) = th(i,k) + exner(i,k)*Q_nuc*xlf(i,k)*inv_cp
-             qr(i,k) = 0._rtype  ! = qr(i,k) - Q_nuc
-             nr(i,k) = 0._rtype  ! = nr(i,k) - N_nuc
-          endif
-
-       enddo k_loop_fz
-
-       !  if (debug_ON) call check_values(qv,T,i,it,debug_ABORT,700)
+       call homogeneous_freezing(kts,kte,t,exner(i,:),xlf(i,:),  & 
+         qc(i,:),nc(i,:),qr(i,:),nr(i,:),qitot(i,:),nitot(i,:),qirim(i,:),birim(i,:),th(i,:)) 
 
        !...................................................
        ! final checks to ensure consistency of mass/number
@@ -3837,5 +3806,71 @@ subroutine ice_sedimentation(kts,kte,    &
    ni_tend(:) = ( nitot(:) - ni_tend(:) ) * odt ! Ice # sedimentation tendency, measure
 
 end subroutine
+
+subroutine homogeneous_freezing(kts,kte,t,exner,xlf,  & 
+   qc,nc,qr,nr,qitot,nitot,qirim,birim,th) 
+  
+   !.......................................
+   ! homogeneous freezing of cloud and rain
+
+   implicit none 
+   integer, intent(in) :: kts, kte
+   real(rtype), intent(in), dimension(kts:kte) :: t 
+   real(rtype), intent(in), dimension(kts:kte) :: exner
+   real(rtype), intent(in), dimension(kts:kte) :: xlf
+
+   real(rtype), intent(inout), dimension(kts:kte) :: qc
+   real(rtype), intent(inout), dimension(kts:kte) :: nc
+   real(rtype), intent(inout), dimension(kts:kte) :: qr
+   real(rtype), intent(inout), dimension(kts:kte) :: nr 
+
+   real(rtype), intent(inout), dimension(kts:kte) :: qitot
+   real(rtype), intent(inout), dimension(kts:kte) :: nitot
+   real(rtype), intent(inout), dimension(kts:kte) :: qirim 
+   real(rtype), intent(inout), dimension(kts:kte) :: birim
+   real(rtype), intent(inout), dimension(kts:kte) :: th
+   real(rtype) :: Q_nuc
+   real(rtype) :: N_nuc 
+   integer :: k, ktop, kbot, kdir
+
+   ktop = kts
+   kbot = kte
+   kdir = -1 
+
+   k_loop_fz:  do k = kbot,ktop,kdir
+      if (qc(k).ge.qsmall .and. t(k).lt.homogfrze) then
+         Q_nuc = qc(k)
+         N_nuc = max(nc(k),nsmall)
+
+         qirim(k) = qirim(k) + Q_nuc
+         qitot(k) = qitot(k) + Q_nuc
+         birim(k) = birim(k) + Q_nuc*inv_rho_rimeMax
+         nitot(k) = nitot(k) + N_nuc
+         th(k) = th(k) + exner(k)*Q_nuc*xlf(k)*inv_cp
+         qc(k) = 0._rtype  
+         nc(k) = 0._rtype         
+
+      endif 
+
+      if (qr(k).ge.qsmall .and. t(k).lt.homogfrze) then
+         Q_nuc = qr(k)
+         N_nuc = max(nr(k),nsmall)
+
+         qirim(k) = qirim(k) + Q_nuc
+         qitot(k) = qitot(k) + Q_nuc
+         birim(k) = birim(k) + Q_nuc*inv_rho_rimeMax
+         nitot(k) = nitot(k) + N_nuc
+         th(k) = th(k) + exner(k)*Q_nuc*xlf(k)*inv_cp
+         qr(k) = 0._rtype 
+         nr(k) = 0._rtype
+      endif 
+
+   enddo k_loop_fz
+
+
+
+
+
+end subroutine 
 
 end module micro_p3
