@@ -1123,32 +1123,29 @@ contains
        p3_tend_out(i,:,36) = qc(i,:) ! Liq. sedimentation tendency, initialize 
        p3_tend_out(i,:,37) = nc(i,:) ! Liq. # sedimentation tendency, initialize 
 
-       call cloud_sedimentation(kts, kte, & 
-       qc_incld(i,:), qc(i,:), nc(i,:), rho(i,:), inv_rho(i,:), lcldm(i,:), acn(i,:), inv_dzq(i,:), & 
-       dt, odt, dnu, lammin, lammax, log_predictNc, & 
-       nc_incld(i,:), mu_c(i,:), nu(i,:), lamc(i,:), prt_liq(i), p3_tend_out(i,:,36), p3_tend_out(i,:,37)) 
+       call cloud_sedimentation(kts,kte, & 
+       qc_incld(i,:),rho(i,:),inv_rho(i,:),lcldm(i,:),acn(i,:),inv_dzq(i,:), & 
+       dt,odt,dnu,lammin,lammax,log_predictNc, & 
+       qc(i,:),nc(i,:),nc_incld(i,:),mu_c(i,:),nu(i,:),lamc(i,:),prt_liq(i),p3_tend_out(i,:,36),p3_tend_out(i,:,37)) 
 
        !------------------------------------------------------------------------------------------!
        ! Rain sedimentation:  (adaptive substepping)
        p3_tend_out(i,:,38) = qr(i,:) ! Rain sedimentation tendency, initialize
        p3_tend_out(i,:,39) = nr(i,:) ! Rain # sedimentation tendency, initialize
 
-       call rain_sedimentation(kts, kte,    &
-       qr_incld(i,:), qr(i,:), nr(i,:), rho(i,:), inv_rho(i,:), rhofacr(i,:), rcldm(i,:), inv_dzq(i,:),&
-       dt, odt, & 
-       nr_incld(i,:), mu_r(i,:), lamr(i,:), prt_liq(i), rflx(i,:), p3_tend_out(i,:,38), p3_tend_out(i,:,39)) 
+       call rain_sedimentation(kts,kte, &
+       qr_incld(i,:),rho(i,:),inv_rho(i,:),rhofacr(i,:),rcldm(i,:),inv_dzq(i,:),dt,odt, & 
+       qr(i,:),nr(i,:),nr_incld(i,:),mu_r(i,:),lamr(i,:),prt_liq(i),rflx(i,:),p3_tend_out(i,:,38),p3_tend_out(i,:,39)) 
 
        !------------------------------------------------------------------------------------------!
        ! Ice sedimentation:  (adaptive substepping)
        p3_tend_out(i,:,40) = qitot(i,:) ! Ice sedimentation tendency, initialize
        p3_tend_out(i,:,41) = nitot(i,:) ! Ice # sedimentation tendency, initialize
 
-       call ice_sedimentation(kts, kte,    &
-       qitot_incld(i,:), qitot(i,:), nitot(i,:), qirim(i,:), qirim_incld(i,:), birim(i,:), &
-       rho(i,:), inv_rho(i,:), rhofaci(i,:), icldm(i,:), inv_dzq(i,:),&
-       dt, odt,  & 
-       birim_incld(i,:), nitot_incld(i,:), prt_sol(i), p3_tend_out(i,:,40), p3_tend_out(i,:,41))     
-
+       call ice_sedimentation(kts,kte,    &
+       rho(i,:),inv_rho(i,:),rhofaci(i,:),icldm(i,:),inv_dzq(i,:),dt,odt,  & 
+       qitot(i,:),qitot_incld(i,:),nitot(i,:),qirim(i,:),qirim_incld(i,:),birim(i,:),birim_incld(i,:),nitot_incld(i,:), &
+       prt_sol(i),p3_tend_out(i,:,40),p3_tend_out(i,:,41))     
 
        !.......................................
        ! homogeneous freezing of cloud and rain
@@ -3283,14 +3280,13 @@ mu,dv,sc,dqsdt,dqsidt,ab,abi,kap,eii)
 
 end subroutine get_time_space_phys_variables
 
-subroutine cloud_sedimentation(kts, kte,    &
-   qc_incld, qc, nc, rho, inv_rho, lcldm, acn, inv_dzq,&
-   dt, odt, dnu, lammin, lammax, log_predictNc, & 
-   nc_incld, mu_c, nu, lamc, prt_liq, qc_tend, nc_tend) 
+subroutine cloud_sedimentation(kts,kte,    &
+   qc_incld,rho,inv_rho,lcldm,acn,inv_dzq,&
+   dt,odt,dnu,lammin,lammax,log_predictNc, & 
+   qc, nc, nc_incld,mu_c,nu,lamc,prt_liq,qc_tend,nc_tend) 
    
    implicit none 
    integer, intent(in) :: kts, kte
-
 
    real(rtype), intent(in), dimension(kts:kte) :: qc_incld
 
@@ -3316,7 +3312,6 @@ subroutine cloud_sedimentation(kts, kte,    &
    real(rtype), intent(inout), dimension(kts:kte) :: qc_tend 
    real(rtype), intent(inout), dimension(kts:kte) :: nc_tend 
    
-    
    logical :: log_qxpresent, qc_present, two_moment
    integer :: k 
    integer :: kbot, ktop, kdir, k_qxtop, k_qxbot, k_temp 
@@ -3355,7 +3350,6 @@ subroutine cloud_sedimentation(kts, kte,    &
 
       dt_left   = dt  !time remaining for sedi over full model (mp) time step
       prt_accum = 0._rtype  !precip rate for individual category
-
 
       !find bottom
       do k = kbot,k_qxtop,kdir
@@ -3426,7 +3420,6 @@ subroutine cloud_sedimentation(kts, kte,    &
             dt_left = dt_left - dt_sub  !update time remaining for sedimentation
             if (k_qxbot.ne.kbot) k_qxbot = k_qxbot - kdir
 
-
          enddo substep_sedi_c2
       else 
          substep_sedi_c1: do while (dt_left.gt.1.e-4_rtype)
@@ -3488,14 +3481,12 @@ subroutine cloud_sedimentation(kts, kte,    &
 
 end subroutine cloud_sedimentation 
 
-subroutine rain_sedimentation(kts, kte,    &
-   qr_incld, qr, nr, rho, inv_rho, rhofacr, rcldm, inv_dzq,&
-   dt, odt,  & 
-   nr_incld, mu_r, lamr, prt_liq, rflx, qr_tend, nr_tend) 
+subroutine rain_sedimentation(kts,kte,    &
+   qr_incld,rho,inv_rho,rhofacr,rcldm,inv_dzq,dt,odt,  & 
+   qr,nr,nr_incld,mu_r,lamr,prt_liq,rflx,qr_tend,nr_tend) 
 
    implicit none 
    integer, intent(in) :: kts, kte
-
 
    real(rtype), intent(in), dimension(kts:kte) :: qr_incld
 
@@ -3516,7 +3507,6 @@ subroutine rain_sedimentation(kts, kte,    &
    real(rtype), intent(inout), dimension(kts:kte) :: rflx 
    real(rtype), intent(inout), dimension(kts:kte) :: qr_tend 
    real(rtype), intent(inout), dimension(kts:kte) :: nr_tend 
-   
     
    logical :: log_qxpresent
    integer :: k 
@@ -3535,7 +3525,6 @@ subroutine rain_sedimentation(kts, kte,    &
  
    real(rtype) :: tmp1, tmp2, dum1, dum2, inv_dum3 , rdumii, rdumjj
    integer dumii, dumjj 
-
 
    ktop = kts
    kbot = kte
@@ -3661,16 +3650,12 @@ subroutine rain_sedimentation(kts, kte,    &
 
 end subroutine rain_sedimentation
 
-subroutine ice_sedimentation(kts, kte,    &
-   qitot_incld, qitot, nitot, qirim, qirim_incld, birim, rho, inv_rho, rhofaci, icldm, inv_dzq,&
-   dt, odt,  & 
-   birim_incld, nitot_incld, prt_sol, qi_tend, ni_tend) 
+subroutine ice_sedimentation(kts,kte,    &
+   rho,inv_rho,rhofaci,icldm,inv_dzq,dt,odt,  & 
+   qitot,qitot_incld,nitot,qirim,qirim_incld,birim,birim_incld,nitot_incld,prt_sol,qi_tend,ni_tend) 
 
    implicit none 
    integer, intent(in) :: kts, kte
-
-
-   real(rtype), intent(in), dimension(kts:kte) :: qitot_incld
 
    real(rtype), intent(in), dimension(kts:kte) :: rho
    real(rtype), intent(in), dimension(kts:kte) :: inv_rho
@@ -3681,18 +3666,19 @@ subroutine ice_sedimentation(kts, kte,    &
    real(rtype), intent(in) :: odt 
 
    real(rtype), intent(inout), dimension(kts:kte) :: qitot 
+   real(rtype), intent(inout), dimension(kts:kte) :: qitot_incld
    real(rtype), intent(inout), dimension(kts:kte) :: nitot
+   real(rtype), intent(inout), dimension(kts:kte) :: nitot_incld 
    real(rtype), intent(inout), dimension(kts:kte) :: qirim 
    real(rtype), intent(inout), dimension(kts:kte) :: qirim_incld
    real(rtype), intent(inout), dimension(kts:kte) :: birim 
    real(rtype), intent(inout), dimension(kts:kte) :: birim_incld 
-   real(rtype), intent(inout), dimension(kts:kte) :: nitot_incld 
+
 
    real(rtype), intent(inout) :: prt_sol
    real(rtype), intent(inout), dimension(kts:kte) :: qi_tend 
    real(rtype), intent(inout), dimension(kts:kte) :: ni_tend 
    
-    
    logical :: log_qxpresent
    integer :: k 
    integer :: kbot, ktop, kdir, k_qxtop, k_qxbot, k_temp 
