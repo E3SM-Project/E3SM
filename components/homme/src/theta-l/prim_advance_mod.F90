@@ -2336,6 +2336,10 @@ contains
   call t_startf('compute_stage_value_dirk')
   do ie=nets,nete
     w_n0 = elem(ie)%state%w_i(:,:,:,np1)
+
+!    elem(ie)%state%phinh_i(:,:,1:nlev,np1)=elem(ie)%state%phinh_i(:,:,1:nlev,np1)&
+!                                           +g*dt2*elem(ie)%state%w_i(:,:,1:nlev,np1)
+
     phi_n0 = elem(ie)%state%phinh_i(:,:,:,np1)
     itercount=0
 

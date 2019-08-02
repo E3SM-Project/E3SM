@@ -238,7 +238,7 @@ contains
        if (theta_hydrostatic_mode) then
           call extremumLevelHelper(tmax_local,tdiag,'max',logical(ie == nets))
        else
-          call extremumLevelHelper(tmax_local,muvalue,'max',logical(ie == nets))
+          call extremumLevelHelper_i(tmax_local,muvalue,'max',logical(ie == nets))
        endif
        call extremumLevelHelper(phimax_local,dphi,'max',logical(ie == nets))
        call extremumLevelHelper(w_over_dz_max_local,w_over_dz,'max',logical(ie == nets))
@@ -250,7 +250,7 @@ contains
        if (theta_hydrostatic_mode) then
           call extremumLevelHelper(tmin_local,tdiag,'min',logical(ie == nets))
        else
-          call extremumLevelHelper(tmin_local,muvalue,'min',logical(ie == nets))
+          call extremumLevelHelper_i(tmin_local,muvalue,'min',logical(ie == nets))
        endif
        call extremumLevelHelper(phimin_local,dphi,'min',logical(ie == nets))
 
@@ -263,7 +263,11 @@ contains
        phisum_local(ie)  = SUM(dphi)
        Fusum_local(ie)   = SUM(elem(ie)%derived%FM(:,:,1,:))
        Fvsum_local(ie)   = SUM(elem(ie)%derived%FM(:,:,2,:))
-       tsum_local(ie)    = SUM(tdiag)
+       if (theta_hydrostatic_mode) then
+          tsum_local(ie)    = SUM(tdiag)
+       else
+          tsum_local(ie)    = SUM(muvalue)
+       endif
 
        dpsum_local(ie)    = SUM(elem(ie)%state%dp3d(:,:,:,n0))
 
