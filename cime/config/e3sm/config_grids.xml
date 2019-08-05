@@ -3170,12 +3170,11 @@
     <!-- ====================  -->
     <!-- GLC: mpas.aisgis20km  -->
     <!-- ====================  -->
-
     <gridmap glc_grid="mpas.aisgis20km" lnd_grid="ne30np4">
-      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_mpas.aisgis20km_aave.190403.nc</map>
-      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_mpas.aisgis20km_aave.190403.nc</map>
-      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.aisgis20km/map_mpas.aisgis20km_to_ne30np4_aave.190403.nc</map>
-      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.aisgis20km/map_mpas.aisgis20km_to_ne30np4_aave.190403.nc</map>
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_mpas.aisgis20km_mono.20190805.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_mpas.aisgis20km_intbilin.20190805.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.aisgis20km/map_mpas.aisgis20km_to_ne30np4_monotr.20190805.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.aisgis20km/map_mpas.aisgis20km_to_ne30np4_mono.20190805.nc</map>
     </gridmap>
 
     <gridmap glc_grid="mpas.aisgis20km" ocn_grid="oEC60to30v3">

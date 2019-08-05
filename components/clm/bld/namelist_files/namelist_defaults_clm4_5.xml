@@ -221,7 +221,7 @@ lnd/clm2/surfdata_map/surfdata_4x5_simyr2000_c130927.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_10x15_simyr2000_c130927.nc</fsurdat>
 
 <fsurdat hgrid="ne30np4"     sim_year="2000" >
-lnd/clm2/surfdata_map/surfdata_ne30np4_simyr2000_c171002.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_ne30np4_simyr2000_c190730.nc</fsurdat>
 <fsurdat hgrid="ne30np4.pg2" sim_year="2000" >
 lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr2000_c190408.nc</fsurdat>
 <fsurdat hgrid="ne120np4"     sim_year="2000" >
