@@ -3370,7 +3370,6 @@ subroutine cloud_sedimentation(kts,kte,    &
 
             !accumulated precip during time step
             if (k_qxbot.eq.kbot) prt_accum = prt_accum + flux_qx(kbot)*dt_sub
-            !or, optimized: prt_accum = prt_accum - (k_qxbot.eq.kbot)*dt_sub
 
             !-- for top level only (since flux is 0 above)
             k = k_qxtop
@@ -3585,7 +3584,6 @@ subroutine rain_sedimentation(kts,kte,    &
 
          !accumulated precip during time step
          if (k_qxbot.eq.kbot) prt_accum = prt_accum + flux_qx(kbot)*dt_sub
-         !or, optimized: prt_accum = prt_accum - (k_qxbot.eq.kbot)*dt_sub
 
          !--- for top level only (since flux is 0 above)
          k = k_qxtop
@@ -3607,7 +3605,6 @@ subroutine rain_sedimentation(kts,kte,    &
 
          dt_left = dt_left - dt_sub  !update time remaining for sedimentation
          if (k_qxbot.ne.kbot) k_qxbot = k_qxbot - kdir
-         !or, optimzed: k_qxbot = k_qxbot +(k_qxbot.eq.kbot)*kdir
 
       enddo substep_sedi_r
 
@@ -3761,7 +3758,6 @@ subroutine ice_sedimentation(kts,kte,    &
 
          !accumulated precip during time step
          if (k_qxbot.eq.kbot) prt_accum = prt_accum + flux_qit(kbot)*dt_sub
-         !or, optimized: prt_accum = prt_accum - (k_qxbot.eq.kbot)*dt_sub
 
          !--- for top level only (since flux is 0 above)
          k = k_qxtop
@@ -3794,7 +3790,6 @@ subroutine ice_sedimentation(kts,kte,    &
 
          dt_left = dt_left - dt_sub  !update time remaining for sedimentation
          if (k_qxbot.ne.kbot) k_qxbot = k_qxbot - kdir
-         !or, optimzed: k_qxbot = k_qxbot +(k_qxbot.eq.kbot)*kdir
 
       enddo substep_sedi_i
 
