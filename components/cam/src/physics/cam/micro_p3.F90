@@ -3335,7 +3335,7 @@ subroutine cloud_sedimentation(kts,kte,    &
             V_qc = 0._rtype
             V_nc = 0._rtype
 
-               kloop_sedi_c2: do k = k_qxtop,k_qxbot,-kdir
+            kloop_sedi_c2: do k = k_qxtop,k_qxbot,-kdir
 
                qc_notsmall_c2: if (qc_incld(k)>qsmall) then
                   !-- compute Vq, Vn
