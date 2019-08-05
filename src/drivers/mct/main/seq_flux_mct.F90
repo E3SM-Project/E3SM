@@ -216,8 +216,6 @@ contains
     integer                  :: ier
     real(r8), pointer        :: rmask(:)  ! ocn domain mask
     character(*),parameter   :: subName =   '(seq_flux_init_mct) '
-
-
     !-----------------------------------------------------------------------
 
     gsmap => component_get_gsmap_cx(comp)
@@ -486,9 +484,6 @@ contains
 
     call seq_comm_setptrs(ID,mpicom=mpicom)
 
-    write(56,*) 'mpicom=',mpicom
-!    call seq_infodata_GetData(infodata, cime_model=cime_model)
-
     !---------------------------------------------------------------------------
     ! Read in namelist 
     !---------------------------------------------------------------------------
@@ -511,7 +506,6 @@ contains
      close(unitn)
      call shr_file_freeUnit( unitn )
 
-     write(52,*) ' nmlfile outside if shr_flux_mct=',nmlfile, shr_flux_mct_albdif, shr_flux_mct_albdir
      call shr_mpi_bcast(shr_flux_mct_albdif, mpicom)
      call shr_mpi_bcast(shr_flux_mct_albdir, mpicom)
 
@@ -777,7 +771,6 @@ contains
     logical             :: update_alb           ! was albedo updated
     logical,save        :: first_call = .true.
     !
-
     character(*),parameter :: subName =   '(seq_flux_ocnalb_mct) '
     !
     !-----------------------------------------------------------------------
@@ -790,10 +783,6 @@ contains
     ! Determine indices
 
     update_alb = .false.
-!    ! CAC REMOVE **********************************************
-!    ! These are just here until the mpi_bast is working properly
-!    shr_flux_mct_albdir =0.7_r8
-!    shr_flux_mct_albdif =0.7_r8
 
     if (first_call) then
        index_xao_So_anidr  = mct_aVect_indexRA(xao_o,'So_anidr')
@@ -823,7 +812,6 @@ contains
     endif
 
     if (flux_albav) then
-       write(53,*) 'shr_flux_mct_albdir=',shr_flux_mct_albdir,' shr_flux_mct_albdif=',shr_flux_mct_albdif
 
        do n=1,nloc_o
           anidr = shr_flux_mct_albdir
