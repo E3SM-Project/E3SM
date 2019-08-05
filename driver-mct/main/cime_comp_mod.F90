@@ -800,7 +800,6 @@ contains
     !----------------------------------------------------------
     call esmf_readnl(NLFileName, mpicom_GLOID, esmf_log_option)
 
- 
     !
     !  When using io servers (pio_async_interface=.true.) the server tasks do not return from
     !  shr_pio_init2
@@ -911,7 +910,6 @@ contains
     !----------------------------------------------------------
     ! Read shr_flux  namelist settings
     !----------------------------------------------------------
-    write(55,*) ' Is root right before calling seq_flux_readnl_mct, CPLID=',CPLID
     call seq_flux_readnl_mct(nlfilename, CPLID, infodata)
 
     !----------------------------------------------------------
@@ -1898,7 +1896,6 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing atm/ocn flux component'
           endif
-
 
           if (trim(aoflux_grid) == 'ocn') then
 
