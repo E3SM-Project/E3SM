@@ -3281,7 +3281,7 @@ subroutine cloud_sedimentation(kts,kte,    &
    real(rtype), intent(inout), dimension(kts:kte) :: qc_tend 
    real(rtype), intent(inout), dimension(kts:kte) :: nc_tend 
    
-   logical :: log_qxpresent, qc_present, two_moment
+   logical :: log_qxpresent
    integer :: k 
    integer :: kbot, ktop, kdir, k_qxtop, k_qxbot, k_temp 
    integer :: tmpint1 
