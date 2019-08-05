@@ -2565,7 +2565,7 @@ enddo
 #endif
 
 !!!!!!!!!!!!!! init conditions for 3,1 point only
-#if 1
+#if 0
 print *,'-------------------- INIT CONDITIONS for the point that crashed'
 i=3;j=1;
 

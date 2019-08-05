@@ -5,7 +5,7 @@
 module interp_movie_mod
 #ifndef HOMME_WITHOUT_PIOLIBRARY
   use kinds, only : real_kind
-  use dimensions_mod, only :  nlev, nelemd, np, ne, qsize
+  use dimensions_mod, only :  nlev, nlevp, nelemd, np, ne, qsize
   use interpolate_mod, only : interpolate_t, setup_latlon_interp, interpdata_t, &
        get_interp_parameter, get_interp_lat, get_interp_lon, interpolate_scalar, interpolate_vector, &
        set_interp_parameter
@@ -216,7 +216,7 @@ module interp_movie_mod
   type(interpolate_t) :: interp
   type(interpdata_t), allocatable :: interpdata(:)
 
-  integer(kind=nfsizekind) :: start2d(3), count2d(3), start3d(4), count3d(4)
+  integer(kind=nfsizekind) :: start2d(3), count2d(3), start3d(4), start3dp1(4), count3d(4), count3dp1(4)
   type(nf_handle), save :: ncdf(max_output_streams)
 
 #endif
@@ -245,7 +245,7 @@ contains
 #endif
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     integer :: dimsize(maxdims)   
-    integer, pointer :: ldof2d(:),ldof3d(:), iodof2d(:), iodof3d(:)
+    integer, pointer :: ldof2d(:),ldof3d(:),ldof3dp1(:), iodof2d(:), iodof3d(:), iodof3dp1(:)
     integer, pointer :: latdof(:), londof(:), iodoflon(:), iodoflat(:)
 
     integer :: icnt, i, j, k, lcount, iorank, nlat, nlon, tdof(1), tiodof(1), ios, ie
@@ -367,6 +367,14 @@ contains
     call nf_variable_attributes(ncdf, 'hybm', 'hybrid B coefficiet at layer midpoints' ,'dimensionless')
     call nf_variable_attributes(ncdf, 'hyai', 'hybrid A coefficiet at layer interfaces' ,'dimensionless')
     call nf_variable_attributes(ncdf, 'hybi', 'hybrid B coefficiet at layer interfaces' ,'dimensionless')
+!how does it work if preqx wants to output w of phi?
+#ifdef MODEL_THETA_L
+    call nf_variable_attributes(ncdf, 'w_nlev', 'vertical wind component','meters/second')
+    call nf_variable_attributes(ncdf, 'w_nlevp', 'vertical wind component','meters/second')
+    call nf_variable_attributes(ncdf, 'Th', 'potential temperature \theta','...')
+    call nf_variable_attributes(ncdf, 'mu', 'mu=dp/d\pi','dimensionless')
+    call nf_variable_attributes(ncdf, 'geo_nlevp', 'geopotential','meters')
+#endif
 #endif
     call nf_variable_attributes(ncdf, 'gw',   'gauss weights','dimensionless')
     call nf_variable_attributes(ncdf, 'lat',  'column latitude','degrees_north')
@@ -956,12 +964,13 @@ contains
                 deallocate(datall)
              end if
 
-             if(nf_selectedvar('w', output_varnames)) then
-                if (par%masterproc) print *,'writing w...'
+             if(nf_selectedvar('w_nlev', output_varnames)) then
+                if (par%masterproc) print *,'writing w_nlev...'
                 allocate(datall(ncnt,nlev), var3d(np,np,nlev,nelemd))
                 do ie=1,nelemd
-                   call get_field(elem(ie),'w',var3d(:,:,:,ie),hvcoord,n0,n0_Q)
+                   call get_field(elem(ie),'w_nlev',var3d(:,:,:,ie),hvcoord,n0,n0_Q)
                 end do
+!why? something in preqx?
                 call make_C0(var3d,elem,par)
                 st=1
                 do ie=1,nelemd
@@ -970,9 +979,48 @@ contains
                         np, nlev, datall(st:en,:))
                    st=st+interpdata(ie)%n_interp
                 enddo
-                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='w')
+                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='w_nlev')
                 deallocate(datall,var3d)
              end if
+#if 0
+!finish
+             if(nf_selectedvar('w_nlevp', output_varnames)) then
+                if (par%masterproc) print *,'writing w_nlevp...'
+                allocate(datall(ncnt,nlevp), var3dp1(np,np,nlevp,nelemd))
+                do ie=1,nelemd
+                   call get_field_i(elem(ie),'w_nlevp',var3dp1(:,:,:,ie),hvcoord,n0)
+                end do
+!dont call it from hydro codes
+                !call make_C0(var3d,elem,par)
+                st=1
+                do ie=1,nelemd
+                   en=st+interpdata(ie)%n_interp-1
+                   call interpolate_scalar(interpdata(ie), var3dp1(:,:,:,ie), &
+                        np, nlev, datall(st:en,:))
+                   st=st+interpdata(ie)%n_interp
+                enddo
+                call nf_put_var(ncdf(ios),datall,start3dp1, count3dp1,name='w_nlevp')
+                deallocate(datall,var3dp1)
+             end if
+
+             if(nf_selectedvar('geo_nlevp', output_varnames)) then
+                if (par%masterproc) print *,'writing geo_nlevp...'
+                allocate(datall(ncnt,nlevp), var3dp1(np,np,nlevp,nelemd))
+                do ie=1,nelemd
+                   call get_field_i(elem(ie),'w_nlevp',var3dp1(:,:,:,ie),hvcoord,n0)
+                end do
+                st=1
+                do ie=1,nelemd
+                   en=st+interpdata(ie)%n_interp-1
+                   call interpolate_scalar(interpdata(ie), var3dp1(:,:,:,ie), &
+                        np, nlev, datall(st:en,:))
+                   st=st+interpdata(ie)%n_interp
+                enddo
+                call nf_put_var(ncdf(ios),datall,start3dp1, count3dp1,name='w_nlevp')
+                deallocate(datall,var3dp1)
+             end if
+
+#endif
 
              if(nf_selectedvar('omega', output_varnames)) then
                 if (par%masterproc) print *,'writing omega...'
