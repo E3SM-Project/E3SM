@@ -1,5 +1,55 @@
 ======================================================================
 
+Originator: brianpm, cacraig
+Date: 
+Tag: branch rce_n01, tag snap05
+Answer Changes: 
+Tests: 
+Dependencies:
+
+Brief Summary:
+
+User interface changes: 
+
+
+
+Modified files: git diff --name-status [previous_tag]
+M       src/components/data_comps/docn/cime_config/config_component.xml
+          - added AQP11 as valid option
+
+M       src/components/data_comps/docn/cime_config/namelist_definition_docn.xml
+          - added sst_aquap11 as valid value for streamslist
+          - add rce_sst namelist (sea surface temperature for RCE runs)
+
+M       src/components/data_comps/docn/docn_comp_mod.F90
+          - increased sst_option to go up to 11
+          - set sst to rce_sst namelist value
+
+M       src/components/data_comps/docn/docn_shr_mod.F90
+          - add rce_sst to the docn_nml namelist
+
+M       src/drivers/mct/cime_config/config_component_cesm.xml
+          - set CPL_ABLAV to true for AQP11
+
+M       src/drivers/mct/cime_config/namelist_definition_drv.xml
+          - add entries for shr_flux_mct_albdif and shr_flux_mct_albdir
+               **** NOTE SETTING albdif should be 0.06 for all runs except AQP11 -- BROKEN
+
+M       src/drivers/mct/main/cime_comp_mod.F90
+          - add call to seq_flux_readnl_mct (new namelist reader to read 
+
+M       src/drivers/mct/main/seq_flux_mct.F90
+          - add namelist reader (reads shr_flux_mct_albdif and shr_flux_mct_albdir)
+
+M       src/drivers/mct/shr/seq_infodata_mod.F90
+          - updated comments
+
+M       src/share/streams/shr_tInterp_mod.F90
+M       src/share/util/shr_orb_mod.F90
+          - REVERT BACK TO MASTER VERSION
+
+======================================================================
+
 Originator: Chris Fischer 
 Date: 3-13-2019
 Tag: cime5.6.13
