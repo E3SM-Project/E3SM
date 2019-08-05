@@ -37,7 +37,7 @@ void Functions<S,D>
   const auto dum1_gte = qr_gt_small && ! dum1_lt;
   if (dum1_gte.any()) {
     scream_masked_loop(dum1_gte, s) {
-      const auto inv_dum3 = Constants<Scalar>::THIRD*0.1;
+      const auto inv_dum3 = C::THIRD*0.1;
       auto rdumii = (dum1[s]*1.e+6-195.)*inv_dum3 + 20.;
       rdumii = util::max<Scalar>(rdumii, 20.);
       rdumii = util::min<Scalar>(rdumii,300.);
@@ -96,21 +96,21 @@ void Functions<S,D>
   const auto vm_table_h = Kokkos::create_mirror_view(vm_table_d);
   const auto mu_table_h = Kokkos::create_mirror_view(mu_r_table_d);
 
-  scream_require(Globals<Scalar>::VN_TABLE.size() == vn_table_h.extent(0) && Globals<Scalar>::VN_TABLE.size() > 0);
-  scream_require(Globals<Scalar>::VN_TABLE[0].size() == vn_table_h.extent(1));
-  scream_require(Globals<Scalar>::VM_TABLE.size() == vm_table_h.extent(0) && Globals<Scalar>::VM_TABLE.size() > 0);
-  scream_require(Globals<Scalar>::VM_TABLE[0].size() == vm_table_h.extent(1));
-  scream_require(Globals<Scalar>::MU_R_TABLE.size() == mu_table_h.extent(0));
+  scream_require(G::VN_TABLE.size()    == vn_table_h.extent(0) && G::VN_TABLE.size() > 0);
+  scream_require(G::VN_TABLE[0].size() == vn_table_h.extent(1));
+  scream_require(G::VM_TABLE.size()    == vm_table_h.extent(0) && G::VM_TABLE.size() > 0);
+  scream_require(G::VM_TABLE[0].size() == vm_table_h.extent(1));
+  scream_require(G::MU_R_TABLE.size()  == mu_table_h.extent(0));
 
   for (size_t i = 0; i < vn_table_h.extent(0); ++i) {
     for (size_t k = 0; k < vn_table_h.extent(1); ++k) {
-      vn_table_h(i, k) = Globals<Scalar>::VN_TABLE[i][k];
-      vm_table_h(i, k) = Globals<Scalar>::VM_TABLE[i][k];
+      vn_table_h(i, k) = G::VN_TABLE[i][k];
+      vm_table_h(i, k) = G::VM_TABLE[i][k];
     }
   }
 
   for (size_t i = 0; i < mu_table_h.extent(0); ++i) {
-    mu_table_h(i) = Globals<Scalar>::MU_R_TABLE[i];
+    mu_table_h(i) = G::MU_R_TABLE[i];
   }
 
   // deep copy to device
@@ -120,6 +120,171 @@ void Functions<S,D>
   vn_table = vn_table_d;
   vm_table = vm_table_d;
   mu_r_table = mu_r_table_d;
+}
+
+template <typename S, typename D>
+void Functions<S,D>
+::init_kokkos_ice_lookup_tables(view_itab_table& itab, view_itabcol_table& itabcol) {
+
+  using DeviceItab    = typename view_itab_table::non_const_type;
+  using DeviceItabcol = typename view_itabcol_table::non_const_type;
+
+  const auto itab_d    = DeviceItab("itab");
+  const auto itabcol_d = DeviceItabcol("itabcol");
+
+  const auto itab_h    = Kokkos::create_mirror_view(itab_d);
+  const auto itabcol_h = Kokkos::create_mirror_view(itabcol_d);
+
+  //
+  // read in ice microphysics table into host views
+  //
+
+  static const char* namebase = "p3_lookup_table_1.dat-v";
+  std::string filename = std::string(namebase) + std::string(C::P3_VERSION);
+
+  std::ifstream in(filename);
+
+  // read header
+  std::string version, version_val;
+  in >> version >> version_val;
+  scream_require_msg(version == "VERSION", "Bad " << filename << ", expected VERSION X.Y.Z header");
+  scream_require_msg(version_val == C::P3_VERSION, "Bad " << filename << ", expected version " << C::P3_VERSION << ", but got " << version_val);
+
+  // read tables
+  Scalar dum_s; int dum_i;
+  for (int jj = 0; jj < C::DENSIZE; ++jj) {
+    for (int ii = 0; ii < C::RIMSIZE; ++ii) {
+      for (int i = 0; i < C::ISIZE; ++i) {
+        in >> dum_i >> dum_i;
+        int j_idx = 0;
+        for (int j = 0; j < 15; ++j) {
+          in >> dum_s;
+          if (j > 2 && j != 10) {
+            itab_h(jj, ii, i, j_idx++) = dum_s;
+          }
+        }
+      }
+
+      for (int i = 0; i < C::ISIZE; ++i) {
+        for (int j = 0; j < C::RCOLLSIZE; ++j) {
+          in >> dum_i >> dum_i;
+          int k_idx = 0;
+          for (int k = 0; k < 6; ++k) {
+            in >> dum_s;
+            if (k == 3 || k == 4) {
+              itabcol_h(jj, ii, i, j, k_idx++) = std::log10(dum_s);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // deep copy to device
+  Kokkos::deep_copy(itab_d, itab_h);
+  Kokkos::deep_copy(itabcol_d, itabcol_h);
+  itab    = itab_d;
+  itabcol = itabcol_d;
+}
+
+template <typename S, typename D>
+KOKKOS_FUNCTION
+void Functions<S,D>
+::lookup_ice (const Smask& qiti_gt_small, const Spack& qitot, const Spack& nitot,
+              const Spack& qirim, const Spack& rhop, TableIce& t)
+{
+  // find index for qi (normalized ice mass mixing ratio = qitot/nitot)
+  //   dum1 = (log10(qitot)+16.)/0.70757  !orig
+  //   dum1 = (log10(qitot)+16.)*1.41328
+  // we are inverting this equation from the lookup table to solve for i:
+  // qitot/nitot=261.7**((i+10)*0.1)*1.e-18
+  // dum1 = (log10(qitot/nitot)+18.)/(0.1*log10(261.7))-10.
+
+  if (qiti_gt_small.any()) {
+    scream_masked_loop(qiti_gt_small, s) {
+      t.dum1[s] = (std::log10(qitot[s]/nitot[s])+18) * C::LOOKUP_TABLE_1A_DUM1_C-10; // For computational efficiency
+      t.dumi[s] = static_cast<int>(t.dum1[s]);
+
+      // set limits (to make sure the calculated index doesn't exceed range of lookup table)
+      t.dum1[s] = util::min<Scalar>(t.dum1[s], C::ISIZE);
+      t.dum1[s] = util::max(t.dum1[s], 1.0);
+      t.dumi[s] = util::max(1, t.dumi[s]);
+      t.dumi[s] = util::min(C::ISIZE, t.dumi[s]);
+
+      // find index for rime mass fraction
+      t.dum4[s]  = (qirim[s]/qitot[s])*3 + 1;
+      t.dumii[s] = static_cast<int>(t.dum4[s]);
+
+      // set limits
+      t.dum4[s]  = util::min<Scalar>(t.dum4[s], C::RIMSIZE);
+      t.dum4[s]  = util::max<Scalar>(t.dum4[s], 1);
+      t.dumii[s] = util::max(1, t.dumii[s]);
+      t.dumii[s] = util::min(C::RIMSIZE-1, t.dumii[s]);
+    }
+
+    // find index for bulk rime density
+    // (account for uneven spacing in lookup table for density)
+    const auto rhop_le_650 = qiti_gt_small && (rhop <= 650);
+    const auto rhop_gt_650 = qiti_gt_small && (rhop > 650);
+    scream_masked_loop(rhop_le_650, s) {
+      t.dum5[s] = (rhop[s]-50)*0.005 + 1;
+    }
+    scream_masked_loop(rhop_gt_650, s) {
+      t.dum5[s] = (rhop[s]-650)*0.004 + 4;
+    }
+
+    // set limits
+    scream_masked_loop(qiti_gt_small, s) {
+      t.dumjj[s] = static_cast<int>(t.dum5[s]);
+      t.dum5[s]  = util::min<Scalar>(t.dum5[s], C::DENSIZE);
+      t.dum5[s]  = util::max<Scalar>(t.dum5[s], 1);
+      t.dumjj[s] = util::max(1, t.dumjj[s]);
+      t.dumjj[s] = util::min(C::DENSIZE-1, t.dumjj[s]);
+
+      t.dum6[s]  = -99;
+      t.dumzz[s] = -99;
+    }
+  }
+}
+
+template <typename S, typename D>
+KOKKOS_FUNCTION
+typename Functions<S,D>::Spack Functions<S,D>
+::apply_table_ice(const Smask& qiti_gt_small, const int& index, const view_itab_table& itab,
+                  const TableIce& t)
+{
+  // get value at current density index
+
+  Spack proc;
+  scream_masked_loop(qiti_gt_small, s) {
+    // first interpolate for current rimed fraction index
+    Scalar iproc1 = itab(t.dumjj[s], t.dumii[s], t.dumi[s], index) + (t.dum1[s]-t.dumi[s]) *
+      (itab(t.dumjj[s], t.dumii[s], t.dumi[s]+1, index) - itab(t.dumjj[s], t.dumii[s], t.dumi[s], index));
+
+    // linearly interpolate to get process rates for rimed fraction index + 1
+    Scalar gproc1 = itab(t.dumjj[s], t.dumii[s]+1, t.dumi[s], index) + (t.dum1[s]-t.dumi[s]) *
+      (itab(t.dumjj[s], t.dumii[s]+1, t.dumi[s]+1, index) - itab(t.dumjj[s], t.dumii[s]+1, t.dumi[s], index));
+
+    Scalar tmp1   = iproc1 + (t.dum4[s]-t.dumii[s]) * (gproc1-iproc1);
+
+    // get value at density index + 1
+
+    // first interpolate for current rimed fraction index
+
+    iproc1 = itab(t.dumjj[s]+1, t.dumii[s], t.dumi[s], index) + (t.dum1[s]-t.dumi[s]) *
+      (itab(t.dumjj[s]+1, t.dumii[s], t.dumi[s]+1, index) - itab(t.dumjj[s]+1, t.dumii[s], t.dumi[s], index));
+
+    // linearly interpolate to get process rates for rimed fraction index + 1
+
+    gproc1 = itab(t.dumjj[s]+1, t.dumii[s]+1, t.dumi[s], index) + (t.dum1[s]-t.dumi[s]) *
+      (itab(t.dumjj[s]+1, t.dumii[s]+1, t.dumi[s]+1, index)-itab(t.dumjj[s]+1, t.dumii[s]+1, t.dumi[s], index));
+
+    Scalar tmp2 = iproc1+(t.dum4[s] - t.dumii[s]) * (gproc1-iproc1);
+
+    // get final process rate
+    proc[s] = tmp1 + (t.dum5[s] - t.dumjj[s]) * (tmp2-tmp1);
+  }
+  return proc;
 }
 
 } // namespace p3

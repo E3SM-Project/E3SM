@@ -56,19 +56,19 @@ struct KokkosTypes
   using view = Kokkos::View<DataType, Layout, Device>;
 
   template <typename Scalar>
-  using view_3d = view<Scalar***>;
+  using view_1d = view<Scalar*>;
 
   template <typename Scalar>
   using view_2d = view<Scalar**>;
 
   template <typename Scalar>
-  using view_1d = view<Scalar*>;
-
-  template <typename Scalar, int X, int Y>
-  using view_2d_table = view<const Scalar[X][Y]>;
+  using view_3d = view<Scalar***>;
 
   template <typename Scalar, int X>
   using view_1d_table = view<const Scalar[X]>;
+
+  template <typename Scalar, int X, int Y>
+  using view_2d_table = view<const Scalar[X][Y]>;
 
   // Our workspace implementation makes this a useful type
   template <typename Scalar, int N>

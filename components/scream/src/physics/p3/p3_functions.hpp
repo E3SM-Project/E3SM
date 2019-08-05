@@ -47,13 +47,19 @@ struct Functions
 
   using KT = KokkosTypes<Device>;
 
+  using G = Globals<Scalar>;
+  using C = Constants<Scalar>;
+
   template <typename S>
   using view_1d = typename KT::template view_1d<S>;
   template <typename S>
   using view_2d = typename KT::template view_2d<S>;
 
-  using view_1d_table = typename KT::template view_1d_table<Scalar, Globals<Scalar>::MU_R_TABLE_DIM>;
-  using view_2d_table = typename KT::template view_2d_table<Scalar, Globals<ScalarT>::VTABLE_DIM0, Globals<ScalarT>::VTABLE_DIM1>;
+  using view_1d_table = typename KT::template view_1d_table<Scalar, G::MU_R_TABLE_DIM>;
+  using view_2d_table = typename KT::template view_2d_table<Scalar, G::VTABLE_DIM0, G::VTABLE_DIM1>;
+
+  using view_itab_table    = typename KT::template view<const Scalar[C::DENSIZE][C::RIMSIZE][C::ISIZE][C::TABSIZE]>;
+  using view_itabcol_table = typename KT::template view<const Scalar[C::DENSIZE][C::RIMSIZE][C::ISIZE][C::RCOLLSIZE][C::COLTABSIZE]>;
 
   template <typename S, int N>
   using view_1d_ptr_array = typename KT::template view_1d_ptr_carray<S, N>;
@@ -71,14 +77,26 @@ struct Functions
     Spack rdumii, rdumjj;
   };
 
+  struct TableIce {
+    IntSmallPack dumi, dumjj, dumii, dumzz;
+    Spack dum1, dum4, dum5, dum6;
+  };
+
   // Call from host to initialize the static table entries.
   static void init_kokkos_tables(
     view_2d_table& vn_table, view_2d_table& vm_table, view_1d_table& mu_r_table);
+
+  static void init_kokkos_ice_lookup_tables(
+    view_itab_table& itab, view_itabcol_table& itabcol);
 
   // Map (mu_r, lamr) to Table3 data.
   KOKKOS_FUNCTION
   static void lookup(const Smask& qr_gt_small, const Spack& mu_r, const Spack& lamr,
                      Table3& t);
+
+  KOKKOS_FUNCTION
+  static void lookup_ice(const Smask& qiti_gt_small, const Spack& qitot, const Spack& nitot,
+                         const Spack& qirim, const Spack& rhop, TableIce& t);
 
   // Apply Table3 data to the table to return a value. This performs bilinear
   // interpolation within the quad given by {t.dumii, t.dumjj} x {t.dumii+1,
@@ -86,6 +104,10 @@ struct Functions
   KOKKOS_FUNCTION
   static Spack apply_table(const Smask& qr_gt_small, const view_2d_table& table,
                            const Table3& t);
+
+  KOKKOS_FUNCTION
+  static Spack apply_table_ice(const Smask& qiti_gt_small, const int& index, const view_itab_table& itab,
+                               const TableIce& t);
 
   // -- Sedimentation time step
 

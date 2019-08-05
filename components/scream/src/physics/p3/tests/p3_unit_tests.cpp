@@ -443,6 +443,32 @@ static void unittest_upwind () {
   }
 }
 
+static void test_ice_tables()
+{
+  using Functions          = scream::p3::Functions<Real, Device>;
+  using view_itab_table    = typename Functions::view_itab_table;
+  using view_itabcol_table = typename Functions::view_itabcol_table;
+  using Scalar             = typename Functions::Scalar;
+  using Spack              = typename Functions::Spack;
+  using IntSmallPack       = typename Functions::IntSmallPack;
+  using Smask              = typename Functions::Smask;
+  using TableIce           = typename Functions::TableIce;
+
+  view_itab_table itab;
+  view_itabcol_table itabcol;
+
+  Functions::init_kokkos_ice_lookup_tables(itab, itabcol);
+
+  Smask qiti_gt_small;
+  Spack qitot, nitot, qirim, rhop;
+  TableIce t;
+  Functions::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, t);
+
+  Spack proc = Functions::apply_table_ice(qiti_gt_small, 1, itab, t);
+
+  // TODO: how to test?
+}
+
 };
 };
 
@@ -472,6 +498,11 @@ TEST_CASE("p3_tables", "[p3_functions]")
 TEST_CASE("p3_upwind", "[p3_functions]")
 {
   UnitWrap::UnitTest<scream::DefaultDevice>::unittest_upwind();
+}
+
+TEST_CASE("p3_ice_tables", "[p3_functions]")
+{
+  UnitWrap::UnitTest<scream::DefaultDevice>::test_ice_tables();
 }
 
 } // namespace
