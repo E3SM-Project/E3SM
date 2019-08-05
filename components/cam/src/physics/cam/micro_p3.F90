@@ -3473,7 +3473,7 @@ subroutine rain_sedimentation(kts,kte,    &
    real(rtype), intent(inout), dimension(kts:kte) :: mu_r 
    real(rtype), intent(inout), dimension(kts:kte) :: lamr
    real(rtype), intent(inout) :: prt_liq
-   real(rtype), intent(inout), dimension(kts:kte) :: rflx 
+   real(rtype), intent(inout), dimension(kts:kte+1) :: rflx 
    real(rtype), intent(inout), dimension(kts:kte) :: qr_tend 
    real(rtype), intent(inout), dimension(kts:kte) :: nr_tend 
     
