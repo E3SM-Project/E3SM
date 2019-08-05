@@ -1,0 +1,106 @@
+<?xml version="1.0"?>
+
+<compsets version="2.0">
+
+  <help>
+    =========================================
+    compset naming convention
+    =========================================
+    The compset longname below has the specified order
+    atm, lnd, ice, ocn, river, glc wave esp cesm-options
+
+    The notation for the compset longname below is
+    TIME_ATM[%phys]_LND[%phys]_ICE[%phys]_OCN[%phys]_ROF[%phys]_GLC[%phys]_WAV[%phys][_ESP][_BGC%phys]
+
+    The following compsets are those that can be tested in CIME stand-alone configurations
+    without any prognostic components.
+    For the compsets below the following are the only allowable values of the components.
+
+    TIME = Time period (e.g. 2000, HIST, RCP8...)
+    ATM  = [DATM, SATM, XATM]
+    LND  = [DLND, SLND, XLND]
+    ICE  = [DICE, SICE, XICE]
+    OCN  = [DOCN, SOCN, XOCN]
+    ROF  = [DROF, SROF, XROF]
+    GLC  = [      SGLC      ]
+    WAV  = [DWAV, SWAV      ]
+    ESP  = [DESP, SESP      ]
+
+    The OPTIONAL %phys attributes specify submodes of the given system
+    For example DOCN%DOM is the data ocean model for DOCN
+    ALL data models must have a %phys option that corresponds to the data  model mode
+
+    Each compset node is associated with the following elements
+    - lname
+    - alias
+    - support  (optional description of the support level for this compset)
+    Each compset node can also have the following attributes
+    - grid  (optional regular expression match for grid to work with the compset)
+  </help>
+
+  <compset>
+    <alias>AA</alias>
+    <lname>2000_DATM%NYF_DLND%LCPL_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_DWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>A</alias>
+    <lname>2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>ADSOM</alias>
+    <lname>2000_DATM%NYF_SLND_DICE%SSMI_DOCN%SOM_DROF%NYF_SGLC_SWAV_TEST</lname>
+  </compset>
+
+  <compset>
+    <alias>ADSOMAQP</alias>
+    <lname>2000_DATM%NYF_SLND_SICE_DOCN%SOMAQP_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>ADAQP3</alias>
+    <lname>2000_DATM%NYF_SLND_SICE_DOCN%AQP3_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>ADAQPFILE</alias>
+    <lname>2000_DATM%NYF_SLND_SICE_DOCN%AQPFILE_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>A1850DLND</alias>
+    <lname>1850_SATM_DLND%SCPL_SICE_SOCN_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>ADWAV</alias>
+    <lname>2000_SATM_SLND_SICE_SOCN_SROF_SGLC_DWAV%CLIMO</lname>
+  </compset>
+
+  <compset>
+    <alias>ADESP</alias>
+    <lname>2000_DATM%NYF_SLND_SICE_DOCN%SOMAQP_SROF_SGLC_SWAV_DESP%NOOP</lname>
+  </compset>
+
+  <compset>
+    <alias>ADESP_TEST</alias>
+    <lname>2000_DATM%NYF_SLND_SICE_DOCN%SOMAQP_SROF_SGLC_SWAV_DESP%TEST</lname>
+  </compset>
+
+  <compset>
+    <alias>AIAF</alias>
+    <lname>2000_DATM%IAF_SLND_DICE%IAF_DOCN%IAF_DROF%IAF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>S</alias>
+    <lname>2000_SATM_SLND_SICE_SOCN_SROF_SGLC_SWAV_SESP</lname>
+  </compset>
+
+  <compset>
+    <alias>X</alias>
+    <lname>2000_XATM_XLND_XICE_XOCN_XROF_XGLC_XWAV</lname>
+  </compset>
+
+</compsets>

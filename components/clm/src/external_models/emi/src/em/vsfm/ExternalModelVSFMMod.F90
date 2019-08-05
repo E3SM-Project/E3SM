@@ -9,7 +9,7 @@ module ExternalModelVSFMMod
   use abortutils                   , only : endrun
   use shr_kind_mod                 , only : r8 => shr_kind_r8
   use shr_log_mod                  , only : errMsg => shr_log_errMsg
-  use ExternalModelInterfaceDataMod, only : emi_data_list, emi_data
+  use EMI_DataMod, only : emi_data_list, emi_data
   use mpp_varctl                   , only : iulog
   use ExternalModelBaseType        , only : em_base_type
   use MultiPhysicsProbVSFM         , only : mpp_vsfm_type
@@ -783,18 +783,18 @@ end subroutine EM_VSFM_Populate_E2L_List
     if (vsfm_lateral_model_type == 'none') then
        discretization_type = DISCRETIZATION_VERTICAL_ONLY
 
-       call this%vsfm_mpp%MeshSetConnectionSet(imesh, CONN_SET_INTERNAL, &
+       call this%vsfm_mpp%CreateAndAddConnectionSet(imesh, CONN_SET_INTERNAL, &
             vert_nconn,  vert_conn_id_up, vert_conn_id_dn, &
             vert_conn_dist_up, vert_conn_dist_dn,  vert_conn_area, vert_conn_type)
 
     else if (vsfm_lateral_model_type == 'source_sink') then
        discretization_type = DISCRETIZATION_VERTICAL_WITH_SS
 
-       call this%vsfm_mpp%MeshSetConnectionSet(imesh, CONN_SET_INTERNAL, &
+       call this%vsfm_mpp%CreateAndAddConnectionSet(imesh, CONN_SET_INTERNAL, &
             vert_nconn,  vert_conn_id_up, vert_conn_id_dn, &
             vert_conn_dist_up, vert_conn_dist_dn, vert_conn_area, vert_conn_type)
 
-       call this%vsfm_mpp%MeshSetConnectionSet(imesh, CONN_SET_LATERAL, &
+       call this%vsfm_mpp%CreateAndAddConnectionSet(imesh, CONN_SET_LATERAL, &
             horz_nconn,  horz_conn_id_up, horz_conn_id_dn, &
             horz_conn_dist_up, horz_conn_dist_dn, horz_conn_area, horz_conn_type)
 
@@ -824,7 +824,7 @@ end subroutine EM_VSFM_Populate_E2L_List
        comb_conn_area    (vert_nconn+1:comb_nconn) = horz_conn_area    (1:horz_nconn)
        comb_conn_type    (vert_nconn+1:comb_nconn) = horz_conn_type    (1:horz_nconn)
 
-       call this%vsfm_mpp%MeshSetConnectionSet(imesh, CONN_SET_INTERNAL, &
+       call this%vsfm_mpp%CreateAndAddConnectionSet(imesh, CONN_SET_INTERNAL, &
             comb_nconn,  comb_conn_id_up, comb_conn_id_dn, &
             comb_conn_dist_up, comb_conn_dist_dn, comb_conn_area, comb_conn_type)
 

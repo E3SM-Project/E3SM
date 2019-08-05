@@ -42,8 +42,10 @@ module VegetationType
   implicit none
   save
   private
-  !
-  type, public :: vegetation_physical_properties_type
+  !-----------------------------------------------------------------------
+  ! Define the data structure that holds physical property information at the vegetation level.
+  !-----------------------------------------------------------------------
+  type, public :: vegetation_physical_properties
      ! indices and weights for higher subgrid levels (column, landunit, topounit, gridcell)
      integer , pointer :: gridcell      (:) => null() ! index into gridcell level quantities
      real(r8), pointer :: wtgcell       (:) => null() ! weight (relative to gridcell) 
@@ -74,8 +76,13 @@ module VegetationType
      procedure, public :: Init => veg_pp_init
      procedure, public :: Clean => veg_pp_clean
      
-  end type vegetation_physical_properties_type
-  type(vegetation_physical_properties_type), public, target :: veg_pp  ! patch type data structure !***TODO*** - change the data instance to patch from pft
+  end type vegetation_physical_properties
+
+  !-----------------------------------------------------------------------
+  ! declare the public instance of vegetation physical property data types
+  !-----------------------------------------------------------------------
+  type(vegetation_physical_properties)   , public, target :: veg_pp    ! vegetation physical properties
+
   !------------------------------------------------------------------------
 
 contains
@@ -84,7 +91,7 @@ contains
   subroutine veg_pp_init(this, begp, endp)
     !
     ! !ARGUMENTS:
-    class(vegetation_physical_properties_type)   :: this
+    class(vegetation_physical_properties)   :: this
     integer, intent(in) :: begp,endp
     !
     ! LOCAL VARAIBLES:
@@ -116,7 +123,7 @@ contains
   subroutine veg_pp_clean(this)
     !
     ! !ARGUMENTS:
-    class(vegetation_physical_properties_type) :: this
+    class(vegetation_physical_properties) :: this
     !------------------------------------------------------------------------
 
     deallocate(this%gridcell  )
@@ -131,7 +138,7 @@ contains
     deallocate(this%mxy       )
     deallocate(this%active    )
 
-	deallocate(this%is_fates)
+	 deallocate(this%is_fates)
     if (use_fates) then
        deallocate(this%is_veg)
        deallocate(this%is_bareground)

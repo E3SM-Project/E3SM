@@ -10,7 +10,7 @@ module soilorder_varcon
   use shr_log_mod , only : errMsg => shr_log_errMsg
   use abortutils  , only : endrun
   use clm_varpar  , only : nsoilorder
-  use clm_varctl  , only : iulog, use_cndv, use_vertsoilc
+  use clm_varctl  , only : iulog, use_vertsoilc
   !
   ! !PUBLIC TYPES:
   implicit none

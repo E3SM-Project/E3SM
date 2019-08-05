@@ -37,11 +37,12 @@ contains
 !=======================================================================================================! 
 
 
-  subroutine prim_printstate_init(par)
+  subroutine prim_printstate_init(par, elem)
     type (parallel_t) :: par
+    type (element_t), pointer :: elem(:)
 
     real (kind=real_kind) :: time
-    integer               :: c0
+    integer               :: c0,ie
 
     if (par%masterproc) then
        time=0.0D0
@@ -56,6 +57,15 @@ contains
 #endif
     end if
 
+    do ie = 1,nelemd
+       elem(ie)%accum%Qvar=0
+       elem(ie)%accum%Qmass=0
+       elem(ie)%accum%Q1mass=0
+       elem(ie)%accum%KEner=0
+       elem(ie)%accum%IEner=0
+       elem(ie)%accum%PEner=0
+       elem(ie)%accum%IEner_wet=0
+    end do
   end subroutine prim_printstate_init
 !=======================================================================================================! 
 
@@ -147,8 +157,8 @@ contains
     !   Diagnostics computed a 4 different levels during one compute REMAP step
     ! in RK code:
     !   E(:,:,2)-E(:,:,1)   change due to dynamics step  from time-dt to time
-    !   E(:,:,3)-E(:,:,2)   change due to energy fixer   
-    !   E(:,:,1)-E(:,:,4)   impact of forcing
+    !   E(:,:,1)-E(:,:,3)   forcing applied in dycore
+    !   E(:,:,2)-E(:,:,4)   impact of remap
     !
     ! Dissipation rates were computed during the first dynamics timstep, and represent
     ! the change going from 'time-dt' to 'time-dt+tstep' (one dynamics step)
@@ -158,8 +168,7 @@ contains
     time1 = time - dt
 
 
-    ! npts = np
-    npts=SIZE(elem(1)%state%ps_v(:,:,n0),1)
+    npts=np
 
     do q=1,qsize
        do ie=nets,nete
@@ -182,8 +191,7 @@ contains
     !
     do ie=nets,nete
 
-       tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0)
-
+       tmp(:,:,ie)=hvcoord%hyai(1)*hvcoord%ps0 + sum(elem(ie)%state%dp3d(:,:,:,n0),3) 
 
        !======================================================  
        umax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,1,:,n0))
@@ -309,7 +317,7 @@ contains
 
     !   mass = integral( ps-p(top) )
     do ie=nets,nete
-       tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0) 
+       tmp(:,:,ie)=hvcoord%hyai(1)*hvcoord%ps0 + sum(elem(ie)%state%dp3d(:,:,:,n0),3) 
     enddo
     Mass2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
 
@@ -584,6 +592,10 @@ contains
                   (Qmass(q,2)-Qmass(q,1))/dt,(Qvar(q,2)-Qvar(q,1))/dt
           enddo
 
+          write(iulog,'(a)') 'Changes due to remap:'
+          write(iulog,'(a,2e15.7)') 'dKE/dt(W/m^2): ',(KEner(2)-KEner(4))/dt
+          write(iulog,'(a,2e15.7)') 'dIE/dt(W/m^2): ',(IEner(2)-IEner(4))/dt
+          write(iulog,'(a,2e15.7)') 'dPE/dt(W/m^2): ',(PEner(2)-PEner(4))/dt
           write(iulog,'(a)') 'Physics tendencies applied by dycore:'
           write(iulog,'(a,2e15.7)') 'dKE/dt(W/m^2): ',(KEner(1)-KEner(3))/dt
           write(iulog,'(a,2e15.7)') 'dIE/dt(W/m^2): ',(IEner(1)-IEner(3))/dt
@@ -623,10 +635,32 @@ contains
        time0=time1
     endif
 
+    call print_software_statistics(hybrid, nets, nete)
   call t_stopf('prim_printstate')
   end subroutine prim_printstate
    
-   
+  subroutine print_software_statistics(hybrid, nets, nete)
+    integer :: GPTLget_memusage
+
+    type(hybrid_t), intent(in) :: hybrid
+    integer, intent(in) :: nets, nete
+    integer :: ok, size, rss_int, share, text, datastack, ie
+    real(kind=real_kind) :: rss, rss_min, rss_max, rss_mean
+
+    ok = GPTLget_memusage(size, rss_int, share, text, datastack)
+    rss = rss_int
+    rss_min = ParallelMin(rss, hybrid)
+    rss_max = ParallelMax(rss, hybrid)
+    do ie = nets, nete
+       global_shared_buf(ie,1) = 0
+    end do
+    global_shared_buf(1,1) = rss ! write race allowed b/c all writes the same
+    call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
+    rss_mean = global_shared_sum(1) / hybrid%par%nprocs
+    if (hybrid%par%masterproc) then
+       write(iulog,'(a10,3(f14.2))') "rss   = ", rss_min, rss_max, rss_mean
+    end if
+  end subroutine print_software_statistics
 
 subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 ! 
@@ -699,14 +733,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     !        [Cp + (Cpv-Cp) Q(n)] *dpdn(n)*T(n+1) 
     do ie=nets,nete
 
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
-#endif
-       do k=1,nlev
-          dpt1(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,t1)
-       enddo
-
+       dpt1=elem(ie)%state%dp3d(:,:,:,t1)
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,cp_star1,qval_t1)
 #endif

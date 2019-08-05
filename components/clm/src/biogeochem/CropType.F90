@@ -14,12 +14,19 @@ module CropType
   use clm_varcon          , only : spval
   use clm_varpar          , only : crop_prog
   use clm_varctl          , only : iulog, use_crop
+  use ColumnDataType      , only : col_es
+  use VegetationDataType  , only : veg_es
   !
   ! !PUBLIC TYPES:
   implicit none
   private
   save
   !
+
+  real(r8), public, parameter :: tcvp = 0.4_r8
+  real(r8), public, parameter :: tcvt = 0.01_r8
+  real(r8), public, parameter :: cst  = 283._r8
+
   ! !PUBLIC DATA TYPES:
   !
   ! Crop state variables structure
@@ -44,12 +51,30 @@ module CropType
      real(r8)          :: baset_latvary_intercept
      real(r8)          :: baset_latvary_slope
 
+     real(r8), pointer :: cvt_patch               (:)   ! patch temperture coefficient of variance
+     real(r8), pointer :: cvp_patch               (:)   ! patch precipitation coefficient of variance
+     real(r8), pointer :: plantmonth_patch        (:)   ! month of planting
+     real(r8), pointer :: plantday_patch          (:)   ! day of planting
+     real(r8), pointer :: harvday_patch           (:)   ! day of harvest
+     real(r8), pointer :: xt_patch                (:,:)   ! monthly average temperature
+     real(r8), pointer :: xp_patch                (:,:)   ! monthly average precipitation
+     real(r8), pointer :: xt_bar_patch            (:,:)   ! exponential weighted moving average temperature
+     real(r8), pointer :: xp_bar_patch            (:,:)   ! exponential weighted moving average precipitation
+     real(r8), pointer :: prev_xt_bar_patch       (:,:)   ! previous 12-months ewma temperature
+     real(r8), pointer :: prev_xp_bar_patch       (:,:)   ! previous 12-months ewma precipitation
+     real(r8), pointer :: p2ETo_patch             (:,:)   ! precipitation:evapotranspiration ratio (mm)
+     real(r8), pointer :: p2ETo_bar_patch         (:,:)   ! ewma precipitation:evapotranspiration ratio (mm)
+     real(r8), pointer :: prev_p2ETo_bar_patch    (:,:)   ! previous 12-months ewma precipitation:evapotranspiration ratio (mm)
+     real(r8), pointer :: P2E_rm_patch            (:,:)   ! precipitation:evapotranspiration ratio 4-month sum (mm)
+     real(r8), pointer :: ETo_patch               (:,:)   ! evapotranspiration ratio (mm)
+
    contains
      procedure, public  :: Init
      procedure, public  :: InitAccBuffer
      procedure, public  :: InitAccVars
      procedure, public  :: Restart
      procedure, public  :: UpdateAccVars
+     procedure, public  :: CropIncrementYear
 
      procedure, private :: InitAllocate 
      procedure, private :: InitHistory
@@ -108,6 +133,22 @@ contains
     allocate(this%vf_patch               (begp:endp)) ; this%vf_patch               (:) = 0.0_r8
     allocate(this%cphase_patch           (begp:endp)) ; this%cphase_patch           (:) = 0.0_r8
     allocate(this%latbaset_patch         (begp:endp)) ; this%latbaset_patch         (:) = spval
+    allocate(this%cvt_patch              (begp:endp)) ; this%cvt_patch(:) = spval
+    allocate(this%cvp_patch              (begp:endp)) ; this%cvp_patch(:) = spval
+    allocate(this%plantmonth_patch       (begp:endp)) ; this%plantmonth_patch(:) = spval
+    allocate(this%plantday_patch         (begp:endp)) ; this%plantday_patch(:) = spval
+    allocate(this%harvday_patch          (begp:endp)) ; this%harvday_patch(:) = spval
+    allocate(this%xt_patch               (begp:endp,1:12)) ; this%xt_patch(:,:) = spval
+    allocate(this%xp_patch               (begp:endp,1:12)) ; this%xp_patch(:,:) = spval
+    allocate(this%xt_bar_patch           (begp:endp,1:12)) ; this%xt_bar_patch(:,:) = spval
+    allocate(this%xp_bar_patch           (begp:endp,1:12)) ; this%xp_bar_patch(:,:) = spval
+    allocate(this%prev_xt_bar_patch      (begp:endp,1:12)) ; this%prev_xt_bar_patch (:,:) = spval
+    allocate(this%prev_xp_bar_patch      (begp:endp,1:12)) ; this%prev_xp_bar_patch (:,:) = spval
+    allocate(this%p2ETo_patch            (begp:endp,1:12)) ; this%p2ETo_patch(:,:) = spval
+    allocate(this%p2ETo_bar_patch        (begp:endp,1:12)) ; this%p2ETo_bar_patch   (:,:) = spval
+    allocate(this%prev_p2ETo_bar_patch   (begp:endp,1:12)) ; this%prev_p2ETo_bar_patch (:,:) = spval
+    allocate(this%P2E_rm_patch           (begp:endp,1:12)) ; this%P2E_rm_patch(:,:) = spval
+    allocate(this%ETo_patch              (begp:endp,1:12)) ; this%ETo_patch(:,:) = spval
 
   end subroutine InitAllocate
 
@@ -115,7 +156,7 @@ contains
   subroutine InitHistory(this, bounds)
     !
     ! !USES:
-    use histFileMod    , only : hist_addfld1d
+    use histFileMod    , only : hist_addfld1d, hist_addfld2d
     !
     ! !ARGUMENTS:
     class(crop_type),  intent(inout) :: this
@@ -148,6 +189,86 @@ contains
     call hist_addfld1d (fname='DMYIELD', units='t/ha', &
          avgflag='X', long_name='Crop yield (t/ha)', &
          ptr_patch=this%dmyield_patch)
+
+    this%cvt_patch(begp:endp) = spval
+    call hist_addfld1d (fname='CVT', units='none', &
+         avgflag='X', long_name='Temperature Coefficient of Variance', &
+         ptr_patch=this%cvt_patch, default = 'inactive')
+
+    this%cvp_patch(begp:endp) = spval
+    call hist_addfld1d (fname='CVP', units='none', &
+         avgflag='X', long_name='Precipitation Coefficient of Variance', &
+         ptr_patch=this%cvp_patch, default = 'inactive')
+
+    this%plantmonth_patch(begp:endp) = spval
+    call hist_addfld1d (fname='PLANTMONTH', units='none', &
+         avgflag='X', long_name='Month of planting', &
+         ptr_patch=this%plantmonth_patch)
+
+    this%plantday_patch(begp:endp) = spval
+    call hist_addfld1d (fname='PLANTDAY', units='doy', &
+         avgflag='M', long_name='Date of planting', &
+         ptr_patch=this%plantday_patch)
+
+    this%harvday_patch(begp:endp) = spval
+    call hist_addfld1d (fname='HARVESTDAY', units='doy', &
+         avgflag='M', long_name='Date of harvest', &
+         ptr_patch=this%harvday_patch)
+
+    this%xt_patch(begp:endp,:) = spval
+    call hist_addfld2d (fname='XT', units='Degrees K', type2d='month', &
+         avgflag='A', long_name='Monthly average temperature', &
+         ptr_patch=this%xt_patch, default = 'inactive')
+
+    this%xp_patch(begp:endp,:) = spval
+    call hist_addfld2d (fname='XP', units='mm', type2d='month', &
+         avgflag='A', long_name='Monthly total precipitation', &
+         ptr_patch=this%xp_patch, default = 'inactive')
+
+    this%xt_bar_patch(begp:endp,:) = spval
+    call hist_addfld2d (fname='XT_BAR', units='Degrees K', type2d='month', &
+         avgflag='A', long_name='EWMA Temperature', &
+         ptr_patch=this%xt_bar_patch, default = 'inactive')
+
+    this%xp_bar_patch(begp:endp,:) = spval
+    call hist_addfld2d (fname='XP_bar', units='mm', type2d='month', &
+         avgflag='A', long_name='EMWA Precipitation', &
+         ptr_patch=this%xp_bar_patch, default = 'inactive')
+
+    this%prev_xt_bar_patch(begp:endp,:) = spval
+    call hist_addfld2d (fname='PREV_XT_BAR', units='Degrees K', type2d='month', &
+         avgflag='A', long_name='Previous EWMA Temperature', &
+         ptr_patch=this%prev_xt_bar_patch, default = 'inactive')
+
+    this%prev_xp_bar_patch(begp:endp,:) = spval
+    call hist_addfld2d (fname='PREV_XP_bar', units='mm', type2d='month', &
+         avgflag='A', long_name='Previous EMWA Precipitation', &
+         ptr_patch=this%prev_xp_bar_patch, default = 'inactive')
+
+    this%p2ETo_patch(begp:endp,:) = spval
+    call hist_addfld2d (fname='P2ETO', units='mm', type2d='month', &
+         avgflag='A', long_name='Precipitation:Evapotranspiration ratio', &
+         ptr_patch=this%p2ETo_patch)
+
+    this%p2ETo_bar_patch(begp:endp,:) = spval
+    call hist_addfld2d (fname='P2ETO_bar', units='mm', type2d='month', &
+         avgflag='A', long_name='EWMA Precipitation:Evapotranspiration ratio', &
+         ptr_patch=this%p2ETo_bar_patch)
+
+    this%prev_p2ETo_bar_patch(begp:endp,:) = spval
+    call hist_addfld2d (fname='PREV_P2ETO_bar', units='mm', type2d='month', &
+         avgflag='A', long_name='Previous EWMA Precipitation:Evapotranspirationratio', &
+         ptr_patch=this%prev_p2ETo_bar_patch)
+
+    this%P2E_rm_patch(begp:endp,:) = spval
+    call hist_addfld2d (fname='P2E_rm', units='mm', type2d='month', &
+         avgflag='A', long_name='Precipitation:Evapotranspiration ratio 4-month sum', &
+         ptr_patch=this%P2E_rm_patch)
+
+    this%ETo_patch(begp:endp,:) = spval
+    call hist_addfld2d (fname='ETO', units='mm', type2d='month', &
+         avgflag='A', long_name='Reference Evapotranspiration', &
+         ptr_patch=this%ETo_patch)
 
   end subroutine InitHistory
 
@@ -260,6 +381,8 @@ contains
     integer :: restyear
     integer :: p
     logical :: readvar   ! determine if variable is on initial file
+    real(r8), pointer :: ptr2d(:,:) ! temp. pointers for slicing larger arrays
+    real(r8), pointer :: ptr1d(:)   ! temp. pointers for slicing larger arrays
 
     character(len=*), parameter :: subname = 'Restart'
     !-----------------------------------------------------------------------
@@ -357,6 +480,87 @@ contains
                                    ! This is so that it properly goes through
                                    ! the crop phases
        end if
+       call restartvar(ncid=ncid, flag=flag, varname='cvt', xtype=ncd_double,  &
+            dim1name='pft', &
+            long_name='temperature coefficient of variance', units='unitless', &
+            interpinic_flag='interp', readvar=readvar, data=this%cvt_patch)
+
+       call restartvar(ncid=ncid, flag=flag, varname='cvp', xtype=ncd_double,  &
+            dim1name='pft', &
+            long_name='precipitation coefficient of variance', units='unitless', &
+            interpinic_flag='interp', readvar=readvar, data=this%cvp_patch)
+
+       call restartvar(ncid=ncid, flag=flag, varname='plantmonth', xtype=ncd_double,  &
+            dim1name='pft', &
+            long_name='Month of planting', units='unitless', &
+            interpinic_flag='interp', readvar=readvar, data=this%plantmonth_patch)
+
+       ptr2d => this%xt_patch(:,:)
+       call restartvar(ncid=ncid, flag=flag, varname='xt', xtype=ncd_double, &
+            dim1name='pft',dim2name='month', switchdim=.true., &
+            long_name='monthly average temperature', units='Kelvin', &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
+
+       ptr2d => this%xp_patch(:,:)
+       call restartvar(ncid=ncid, flag=flag, varname='xp', xtype=ncd_double, &
+            dim1name='pft',dim2name='month', switchdim=.true., &
+            long_name='monthly average precipitation', units='mm', &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
+
+       ptr2d => this%xt_bar_patch(:,:)
+       call restartvar(ncid=ncid, flag=flag, varname='xt_bar', xtype=ncd_double, &
+            dim1name='pft',dim2name='month', switchdim=.true., &
+            long_name='ewma temperature', units='Kelvin', &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
+
+       ptr2d => this%xp_bar_patch(:,:)
+       call restartvar(ncid=ncid, flag=flag, varname='xp_bar', xtype=ncd_double, &
+            dim1name='pft',dim2name='month', switchdim=.true., &
+            long_name='ewma precipitation', units='mm', &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
+
+       ptr2d => this%prev_xt_bar_patch(:,:)
+       call restartvar(ncid=ncid, flag=flag, varname='prev_xt_bar', xtype=ncd_double, &
+            dim1name='pft',dim2name='month', switchdim=.true., &
+            long_name='previous ewma temperature', units='Kelvin', &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
+
+       ptr2d => this%prev_xp_bar_patch(:,:)
+       call restartvar(ncid=ncid, flag=flag, varname='prev_xp_bar', xtype=ncd_double, &
+            dim1name='pft',dim2name='month', switchdim=.true., &
+            long_name='previous ewma precipitation', units='mm', &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
+
+       ptr2d => this%p2ETo_patch(:,:)
+       call restartvar(ncid=ncid, flag=flag, varname='p2ETo', xtype=ncd_double, &
+            dim1name='pft',dim2name='month', switchdim=.true., &
+            long_name='precipitation:evapotranspiration ratio', units='mm/s', &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
+
+       ptr2d => this%p2ETo_bar_patch(:,:)
+       call restartvar(ncid=ncid, flag=flag, varname='p2ETo_bar', xtype=ncd_double, &
+            dim1name='pft',dim2name='month', switchdim=.true., &
+            long_name='ewma P:PET', units='none', &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
+
+       ptr2d => this%prev_p2ETo_bar_patch(:,:)
+       call restartvar(ncid=ncid, flag=flag, varname='prev_p2ETo_bar', xtype=ncd_double, &
+            dim1name='pft',dim2name='month', switchdim=.true., &
+            long_name='previous ewma P:PET', units='none', &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
+
+       ptr2d => this%P2E_rm_patch(:,:)
+       call restartvar(ncid=ncid, flag=flag, varname='P2E_rm', xtype=ncd_double, &
+            dim1name='pft',dim2name='month', switchdim=.true., &
+            long_name='precipitation:evapotranspiration ratio 4-month sum', units='mm', &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
+
+       ptr2d => this%ETo_patch(:,:)
+       call restartvar(ncid=ncid, flag=flag, varname='ETo', xtype=ncd_double, &
+            dim1name='pft',dim2name='month', switchdim=.true., &
+            long_name='reference evapotranspiration', units='mm', &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
+
     end if
 
   end subroutine Restart
@@ -414,7 +618,7 @@ contains
        if (this%croplive_patch(p)) then ! relative to planting date
           ivt = veg_pp%itype(p)
           rbufslp(p) = max(0._r8, min(mxtmp(ivt), &
-               temperature_vars%t_ref2m_patch(p)-(SHR_CONST_TKFRZ + baset(ivt)))) &
+               veg_es%t_ref2m(p)-(SHR_CONST_TKFRZ + baset(ivt)))) &
                * dtime/SHR_CONST_CDAY
           if (ivt == nwcereal .or. ivt == nwcerealirrig) then
              rbufslp(p) = rbufslp(p)*this%vf_patch(p)
@@ -435,8 +639,8 @@ contains
           ivt = veg_pp%itype(p)
           c = veg_pp%column(p)
           rbufslp(p) = max(0._r8, min(mxtmp(ivt), &
-               ((temperature_vars%t_soisno_col(c,1)*col_pp%dz(c,1) + &
-               temperature_vars%t_soisno_col(c,2)*col_pp%dz(c,2))/(col_pp%dz(c,1)+col_pp%dz(c,2))) - &
+               ((col_es%t_soisno(c,1)*col_pp%dz(c,1) + &
+               col_es%t_soisno(c,2)*col_pp%dz(c,2))/(col_pp%dz(c,1)+col_pp%dz(c,2))) - &
                (SHR_CONST_TKFRZ + baset(ivt)))) * dtime/SHR_CONST_CDAY
           if (ivt == nwcereal .or. ivt == nwcerealirrig) then
              rbufslp(p) = rbufslp(p)*this%vf_patch(p)
@@ -453,6 +657,46 @@ contains
   end subroutine UpdateAccVars
 
   !-----------------------------------------------------------------------
+  subroutine CropIncrementYear (this, num_pcropp, filter_pcropp)
+    !
+    ! !DESCRIPTION:
+    ! Increment the crop year, if appropriate
+    !
+    ! This routine should be called every time step
+    !
+    ! !USES:
+    use clm_time_manager , only : get_curr_date, is_first_step
+    !
+    ! !ARGUMENTS:
+    class(crop_type) :: this
+    integer , intent(in) :: num_pcropp       ! number of prog. crop patches in filter
+    integer , intent(in) :: filter_pcropp(:) ! filter for prognostic crop patches
+    !
+    ! !LOCAL VARIABLES:
+    integer kyr   ! current year
+    integer kmo   ! month of year  (1, ..., 12)
+    integer kda   ! day of month   (1, ..., 31)
+    integer mcsec ! seconds of day (0, ..., seconds/day)
+    integer :: fp, p
+    !-----------------------------------------------------------------------
+
+    call get_curr_date (   kyr, kmo, kda, mcsec)
+    ! Update nyrs when it's the end of the year (unless it's the very start of
+    ! the
+    ! run). This assumes that, if this patch is active at the end of the year,
+    ! then it was
+    ! active for the whole year.
+    if ((kmo == 1 .and. kda == 1 .and. mcsec == 0) .and. .not. is_first_step()) then
+       do fp = 1, num_pcropp
+          p = filter_pcropp(fp)
+
+          this%nyrs_crop_active_patch(p) = this%nyrs_crop_active_patch(p) + 1
+       end do
+    end if
+
+  end subroutine CropIncrementYear
+
+ !-----------------------------------------------------------------------
   subroutine checkDates( )
     !
     ! !DESCRIPTION: 

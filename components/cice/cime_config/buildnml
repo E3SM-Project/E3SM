@@ -61,7 +61,7 @@ def buildnml(case, caseroot, compname):
     # update env_build.xml settings to reflect changes in the configuration
     # this will trigger whether an automatic build is set upon the job resubmission
     if cice_auto_decomp:
-        ntasks = ntasks_ice / ninst_ice
+        ntasks = int(ntasks_ice / ninst_ice)
         hgrid  = ice_grid
         if ice_grid == 'ar9v2': hgrid = 'ar9v1'
         if ice_grid == 'ar9v4': hgrid = 'ar9v3'
@@ -70,9 +70,10 @@ def buildnml(case, caseroot, compname):
                                  from_dir=os.path.join(srcroot, "components/cice/bld")).split()
 
         if int(config[0]) >= 0:
-            case.set_value("CICE_BLCKX",         config[2])
-            case.set_value("CICE_BLCKY",         config[3])
-            case.set_value("CICE_MXBLCKS",       config[4])
+            cice_blckx, cice_blcky, cice_mxblcks = config[2:5]
+            case.set_value("CICE_BLCKX",         cice_blckx)
+            case.set_value("CICE_BLCKY",         cice_blcky)
+            case.set_value("CICE_MXBLCKS",       cice_mxblcks)
             case.set_value("CICE_DECOMPTYPE",    config[5])
             case.set_value("CICE_DECOMPSETTING", config[6])
         else:
@@ -84,7 +85,7 @@ def buildnml(case, caseroot, compname):
 
     # determine the actual CPP definitions (these have been determined by the call to configure)
 
-    cppdefs = open(os.path.join(ciceconf_dir, "CICE_cppdefs"), "r").read().strip()
+    cppdefs = open(os.path.join(ciceconf_dir, "CCSM_cppdefs"), "r").read().strip()
     cppdefs += " -DBLCKX={} -DBLCKY={} -DMXBLCKS={}".format(cice_blckx, cice_blcky, cice_mxblcks)
 
     # write out cppdefs to env_build.xml

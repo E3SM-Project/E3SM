@@ -45,7 +45,7 @@ module prim_advance_mod
   private
   save
   public :: prim_advance_exp, prim_advance_init1, &
-       applyCAMforcing_dp3d, applyCAMforcing_ps
+            applyCAMforcing_dynamics, applyCAMforcing_dynamics_dp, convert_thermo_forcing
 
 !  type (EdgeBuffer_t) :: edge5
   type (EdgeBuffer_t) :: edge6
@@ -474,28 +474,99 @@ contains
   end subroutine prim_advance_exp
 
 
+  subroutine convert_thermo_forcing(elem,hvcoord,n0,n0q,dt,nets,nete)
+  use control_mod,        only : use_moisture
+  implicit none
+  type (element_t),       intent(inout) :: elem(:)
+  real (kind=real_kind),  intent(in)    :: dt ! should be dt_physics, so, dt_remap*se_nsplit
+  type (hvcoord_t),       intent(in)    :: hvcoord
+  integer,                intent(in)    :: nets,nete
+  integer,                intent(in)    :: n0,n0q
+  integer                               :: ie,i,j,k,q
+  real(kind=real_kind)                  :: exner(np,np,nlev), dp(np,np,nlev)
+  real (kind=real_kind)                 :: pnh(np,np,nlev)
+  real (kind=real_kind)                 :: dpnh(np,np,nlev)
+  real(kind=real_kind)                  :: kappa_star(np,np,nlev),cp_star(np,np,nlev)
+  real(kind=real_kind)                  :: qn1(np,np,nlev), tn1(np,np,nlev), v1
+  real(kind=real_kind)                  :: psn1(np,np)
 
-!placeholder
-  subroutine applyCAMforcing_dp3d(elem,hvcoord,np1,dt,nets,nete)
+!new forcing
+  do ie=nets,nete
+     call get_temperature(elem(ie),tn1,hvcoord,n0)
+     ! semi-epeated code from applycamforcing_tracers
+     psn1(:,:) = 0.0
+     q = 1
+     do k=1,nlev
+        do j=1,np
+           do i=1,np
+              v1 = dt*elem(ie)%derived%FQ(i,j,k,q)
+              if (elem(ie)%state%Qdp(i,j,k,q,n0q) + v1 < 0 .and. v1<0)then
+                 if (elem(ie)%state%Qdp(i,j,k,q,n0q) < 0 ) then
+                    v1=0  ! Q already negative, dont make it more so
+                 else
+                    v1 = -elem(ie)%state%Qdp(i,j,k,q,n0q)
+                 endif
+              endif
+              !new qdp
+              qn1(i,j,k) = elem(ie)%state%Qdp(i,j,k,q,n0q)+v1
+              psn1(i,j) = psn1(i,j) + v1/dt
+           enddo
+        enddo
+     enddo
+
+     if (use_moisture) then
+        psn1(:,:) = elem(ie)%state%ps_v(:,:,n0) + dt*psn1(:,:)
+     else
+        psn1(:,:) = elem(ie)%state%ps_v(:,:,n0)
+     endif
+
+     do k=1,nlev
+        dp(:,:,k)=&
+            ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+            ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*psn1(:,:)
+        !new q
+        qn1(:,:,k) = qn1(:,:,k)/dp(:,:,k)
+     enddo
+
+     tn1(:,:,:) = tn1(:,:,:) + dt*elem(ie)%derived%FT(:,:,:)
+
+     call get_kappa_star(kappa_star,qn1)
+     call get_cp_star(cp_star,qn1)
+     call get_pnh_and_exner(hvcoord,elem(ie)%state%theta_dp_cp(:,:,:,n0),dp,&
+          elem(ie)%state%phinh(:,:,:,n0),elem(ie)%state%phis(:,:),kappa_star,&
+          pnh,dpnh,exner)
+
+     !finally, compute difference for FT
+     ! this method is using new dp, new exner, new-new r*, new t
+     elem(ie)%derived%FT(:,:,:) = &
+         ( tn1(:,:,:)*cp_star(:,:,:)*dp(:,:,:)/exner(:,:,:) -&
+           elem(ie)%state%theta_dp_cp(:,:,:,n0)                  )/dt
+
+  enddo
+  end subroutine convert_thermo_forcing
+
+
+
+  subroutine applyCAMforcing_dynamics_dp(elem,hvcoord,np1,dt,nets,nete)
   implicit none
   type (element_t),       intent(inout) :: elem(:)
   real (kind=real_kind),  intent(in)    :: dt
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: np1,nets,nete
-  end subroutine applyCAMforcing_dp3d
 
-!temp solution for theta+ftype0
-  subroutine applyCAMforcing_ps(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
+  call abortmp('Error in __FILE__,__LINE__: theta model doesnt have ftype=3 option and cannot call applyCAMforcing_dynamics_dp')
 
-  implicit none
-  type (element_t),       intent(inout) :: elem(:)
+  end subroutine applyCAMforcing_dynamics_dp
+
+
+! this is not in sync with WHAT WAS DONE FOR THETA-L AND HAS BUGS
+! copied dyn lines from tracer call without thinking yet
+  subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,dt,nets,nete)
+
+  type (element_t)     ,  intent(inout) :: elem(:)
   real (kind=real_kind),  intent(in)    :: dt
   type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: np1,nets,nete,np1_qdp
-
-  ! local
-  integer :: i,j,k,ie,q
-  real (kind=real_kind) :: v1
+  integer,                intent(in)    :: np1,nets,nete
   real (kind=real_kind) :: temperature(np,np,nlev)
   real (kind=real_kind) :: kappa_star(np,np,nlev)
   real (kind=real_kind) :: cp_star(np,np,nlev)
@@ -503,101 +574,12 @@ contains
   real (kind=real_kind) :: dp(np,np,nlev)
   real (kind=real_kind) :: pnh(np,np,nlev)
   real (kind=real_kind) :: dpnh(np,np,nlev)
-
-  do ie=nets,nete
-     ! apply forcing to Qdp
-     elem(ie)%derived%FQps(:,:)=0
-
-     ! apply forcing to temperature
-     call get_temperature(elem(ie),temperature,hvcoord,np1)
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
-#endif
-     do k=1,nlev
-        temperature(:,:,k) = temperature(:,:,k) + dt*elem(ie)%derived%FT(:,:,k)
-     enddo
-
-     
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(q,k,i,j,v1)
-#endif
-     do q=1,qsize
-        do k=1,nlev
-           do j=1,np
-              do i=1,np
-                 v1 = dt*elem(ie)%derived%FQ(i,j,k,q)
-                 !if (elem(ie)%state%Qdp(i,j,k,q,np1) + v1 < 0 .and. v1<0) then
-                 if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
-                    !if (elem(ie)%state%Qdp(i,j,k,q,np1) < 0 ) then
-                    if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
-                       v1=0  ! Q already negative, dont make it more so
-                    else
-                       !v1 = -elem(ie)%state%Qdp(i,j,k,q,np1)
-                       v1 = -elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
-                    endif
-                 endif
-                 !elem(ie)%state%Qdp(i,j,k,q,np1) = elem(ie)%state%Qdp(i,j,k,q,np1)+v1
-                 elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)+v1
-                 if (q==1) then
-                    elem(ie)%derived%FQps(i,j)=elem(ie)%derived%FQps(i,j)+v1/dt
-                 endif
-              enddo
-           enddo
-        enddo
-     enddo
-
-     if (use_moisture) then
-        ! to conserve dry mass in the precese of Q1 forcing:
-        elem(ie)%state%ps_v(:,:,np1) = elem(ie)%state%ps_v(:,:,np1) + &
-             dt*elem(ie)%derived%FQps(:,:)
-     endif
-
-
-     ! Qdp(np1) and ps_v(np1) were updated by forcing - update Q(np1)
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(q,k)
-#endif
-     do k=1,nlev
-        dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-             ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
-     enddo
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(q,k)
-#endif
-     do q=1,qsize
-        do k=1,nlev
-           elem(ie)%state%Q(:,:,k,q) = elem(ie)%state%Qdp(:,:,k,q,np1_qdp)/dp(:,:,k)
-        enddo
-     enddo
-
-     ! now that we have updated Qdp and dp, compute theta_dp_cp from temperature
-     call get_kappa_star(kappa_star,elem(ie)%state%Q(:,:,:,1))
-     call get_cp_star(cp_star,elem(ie)%state%Q(:,:,:,1))
-     call get_pnh_and_exner(hvcoord,elem(ie)%state%theta_dp_cp(:,:,:,np1),dp,&
-          elem(ie)%state%phinh(:,:,:,np1),elem(ie)%state%phis(:,:),kappa_star,&
-          pnh,dpnh,exner)
-
-     elem(ie)%state%theta_dp_cp(:,:,:,np1) = temperature(:,:,:)*cp_star(:,:,:)&
-          *dp(:,:,:)/exner(:,:,:)
-
-    enddo
-    call applyCAMforcing_dynamics(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
-  end subroutine applyCAMforcing_ps
-
-
-
-
-
-  subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
-
-  type (element_t)     ,  intent(inout) :: elem(:)
-  real (kind=real_kind),  intent(in)    :: dt
-  type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: np1,nets,nete,np1_qdp
-
   integer :: k,ie
 
   do ie=nets,nete
+     elem(ie)%state%theta_dp_cp(:,:,:,np1) = elem(ie)%state%theta_dp_cp(:,:,:,np1) + &
+                                             dt*elem(ie)%derived%FT(:,:,:)
+
      elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,1:2,:)
      elem(ie)%state%w(:,:,:,np1) = elem(ie)%state%w(:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,3,:)
   enddo

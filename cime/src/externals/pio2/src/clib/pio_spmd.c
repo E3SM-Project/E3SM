@@ -97,9 +97,9 @@ int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendty
 
     /* Get my rank and size of communicator. */
     if ((mpierr = MPI_Comm_size(comm, &ntasks)))
-        return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+        return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__);
     if ((mpierr = MPI_Comm_rank(comm, &my_rank)))
-        return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+        return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__);
 
     LOG((2, "ntasks = %d my_rank = %d", ntasks, my_rank));
 
@@ -113,7 +113,7 @@ int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendty
 #if PIO_ENABLE_LOGGING
     {
         for (int p = 0; p < ntasks; p++)
-            LOG((3, "sendcounts[%d] = %d sdispls[%d] = %d sendtypes[%d] = %d recvcounts[%d] = %d "
+            LOG((4, "sendcounts[%d] = %d sdispls[%d] = %d sendtypes[%d] = %d recvcounts[%d] = %d "
                  "rdispls[%d] = %d recvtypes[%d] = %d", p, sendcounts[p], p, sdispls[p], p,
                  sendtypes[p], p, recvcounts[p], p, rdispls[p], p, recvtypes[p]));
     }
@@ -127,7 +127,7 @@ int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendty
         LOG((3, "Calling MPI_Alltoallw without flow control."));
         if ((mpierr = MPI_Alltoallw(sendbuf, sendcounts, sdispls, sendtypes, recvbuf,
                                     recvcounts, rdispls, recvtypes, comm)))
-            return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+            return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__);
         return PIO_NOERR;
     }
 
@@ -155,17 +155,17 @@ int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendty
         if ((mpierr = MPI_Sendrecv(sptr, sendcounts[my_rank],sendtypes[my_rank],
                                    my_rank, tag, rptr, recvcounts[my_rank], recvtypes[my_rank],
                                    my_rank, tag, comm, &status)))
-            return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+            return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__);
 #else
         if ((mpierr = MPI_Irecv(rptr, recvcounts[my_rank], recvtypes[my_rank],
                                 my_rank, tag, comm, rcvids)))
-            return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+            return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__);
         if ((mpierr = MPI_Send(sptr, sendcounts[my_rank], sendtypes[my_rank],
                                my_rank, tag, comm)))
-            return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+            return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__);
 
         if ((mpierr = MPI_Wait(rcvids, &status)))
-            return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+            return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__);
 #endif
     }
 
@@ -246,7 +246,7 @@ int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendty
             {
                 tag = my_rank + offset_t;
                 if ((mpierr = MPI_Irecv(&hs, 1, MPI_INT, p, tag, comm, hs_rcvids + istep)))
-                    return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+                    return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__);
             }
         }
     }
@@ -262,11 +262,11 @@ int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendty
 
             if ((mpierr = MPI_Irecv(ptr, recvcounts[p], recvtypes[p], p, tag, comm,
                                     rcvids + istep)))
-                return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+                return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__);
 
             if (fc->hs)
                 if ((mpierr = MPI_Send(&hs, 1, MPI_INT, p, tag, comm)))
-                    return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+                    return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__);
         }
     }
 
@@ -283,7 +283,7 @@ int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendty
             if (fc->hs)
             {
                 if ((mpierr = MPI_Wait(hs_rcvids + istep, &status)))
-                    return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+                    return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__);
                 hs_rcvids[istep] = MPI_REQUEST_NULL;
             }
             ptr = (char *)sendbuf + sdispls[p];
@@ -301,23 +301,23 @@ int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendty
 #ifdef USE_MPI_ISEND_FOR_FC
                 if ((mpierr = MPI_Isend(ptr, sendcounts[p], sendtypes[p], p, tag, comm,
                                         sndids + istep)))
-                    return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+                    return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__);
 #else
                 if ((mpierr = MPI_Irsend(ptr, sendcounts[p], sendtypes[p], p, tag, comm,
                                          sndids + istep)))
-                    return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+                    return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__);
 #endif
             }
             else if (fc->isend)
             {
                 if ((mpierr = MPI_Isend(ptr, sendcounts[p], sendtypes[p], p, tag, comm,
                                         sndids + istep)))
-                    return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+                    return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__);
             }
             else
             {
                 if ((mpierr = MPI_Send(ptr, sendcounts[p], sendtypes[p], p, tag, comm)))
-                    return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+                    return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__);
             }
         }
 
@@ -329,7 +329,7 @@ int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendty
             if (rcvids[p] != MPI_REQUEST_NULL)
             {
                 if ((mpierr = MPI_Wait(rcvids + p, &status)))
-                    return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+                    return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__);
                 rcvids[p] = MPI_REQUEST_NULL;
             }
             if (rstep < steps)
@@ -339,7 +339,7 @@ int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendty
                 {
                     tag = my_rank + offset_t;
                     if ((mpierr = MPI_Irecv(&hs, 1, MPI_INT, p, tag, comm, hs_rcvids+rstep)))
-                        return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+                        return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__);
                 }
                 if (recvcounts[p] > 0)
                 {
@@ -347,10 +347,10 @@ int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendty
 
                     ptr = (char *)recvbuf + rdispls[p];
                     if ((mpierr = MPI_Irecv(ptr, recvcounts[p], recvtypes[p], p, tag, comm, rcvids + rstep)))
-                        return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+                        return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__);
                     if (fc->hs)
                         if ((mpierr = MPI_Send(&hs, 1, MPI_INT, p, tag, comm)))
-                            return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+                            return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__);
                 }
                 rstep++;
             }
@@ -363,13 +363,31 @@ int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendty
     {
         LOG((2, "Waiting for outstanding msgs"));
         if ((mpierr = MPI_Waitall(steps, rcvids, MPI_STATUSES_IGNORE)))
-            return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+            return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__);
         if (fc->isend)
             if ((mpierr = MPI_Waitall(steps, sndids, MPI_STATUSES_IGNORE)))
-                return check_mpi(NULL, mpierr, __FILE__, __LINE__);
+                return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__);
     }
 
     return PIO_NOERR;
+}
+
+/**
+ * Clean up internal data structures, and free MPI resources,
+ * associated with an IOSystem. This is the old name for
+ * PIOc_free_iosystem(). This function is maintained for backward
+ * compatibility. Use PIOc_free_iosystem() for new code.
+ *
+ * @param iosysid: the io system ID provided by PIOc_Init_Intracomm()
+ * or PIOc_init_async().
+ * @returns 0 for success or non-zero for error.
+ * @ingroup PIO_finalize_c
+ * @author Jim Edwards, Ed Hartnett
+ */
+int
+PIOc_finalize(int iosysid)
+{
+    return PIOc_free_iosystem(iosysid);
 }
 
 /**
@@ -421,9 +439,9 @@ int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendty
 /*     if (fc_gather) */
 /*     { */
 /*         if ((mpierr = MPI_Comm_rank(comm, &mytask))) */
-/*             return check_mpi(NULL, mpierr, __FILE__, __LINE__); */
+/*             return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__); */
 /*         if ((mpierr = MPI_Comm_size(comm, &nprocs))) */
-/*             return check_mpi(NULL, mpierr, __FILE__, __LINE__); */
+/*             return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__); */
 
 /*         mtag = 2 * nprocs; */
 /*         hs = 1; */
@@ -437,7 +455,7 @@ int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendty
 /*             MPI_Request rcvid[gather_block_size]; */
 
 /*             if ((mpierr = MPI_Type_size(recvtype, &dsize))) */
-/*                 return check_mpi(NULL, mpierr, __FILE__, __LINE__); */
+/*                 return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__); */
 
 /*             for (int p = 0; p < nprocs; p++) */
 /*             { */
@@ -449,41 +467,41 @@ int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendty
 /*                         if (count > preposts) */
 /*                         { */
 /*                             if ((mpierr = MPI_Wait(rcvid + tail, &status))) */
-/*                                 return check_mpi(NULL, mpierr, __FILE__, __LINE__); */
+/*                                 return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__); */
 /*                             tail = (tail + 1) % preposts; */
 /*                         } */
 
 /*                         void *ptr = (void *)((char *)recvbuf + dsize * displs[p]); */
 
 /*                         if ((mpierr = MPI_Irecv(ptr, recvcnts[p], recvtype, p, mtag, comm, rcvid + head))) */
-/*                             return check_mpi(NULL, mpierr, __FILE__, __LINE__); */
+/*                             return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__); */
 /*                         head = (head + 1) % preposts; */
 /*                         if ((mpierr = MPI_Send(&hs, 1, MPI_INT, p, mtag, comm))) */
-/*                             return check_mpi(NULL, mpierr, __FILE__, __LINE__); */
+/*                             return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__); */
 /*                     } */
 /*                 } */
 /*             } */
 
 /*             /\* copy local data *\/ */
 /*             if ((mpierr = MPI_Type_size(sendtype, &dsize))) */
-/*                 return check_mpi(NULL, mpierr, __FILE__, __LINE__); */
+/*                 return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__); */
 /*             if ((mpierr = MPI_Sendrecv(sendbuf, sendcnt, sendtype, mytask, 102, recvbuf, recvcnts[mytask], */
 /*                                        recvtype, mytask, 102, comm, &status))) */
-/*                 return check_mpi(NULL, mpierr, __FILE__, __LINE__); */
+/*                 return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__); */
 
 /*             count = min(count, preposts); */
 /*             if (count > 0) */
 /*                 if ((mpierr = MPI_Waitall(count, rcvid, MPI_STATUSES_IGNORE))) */
-/*                     return check_mpi(NULL, mpierr, __FILE__, __LINE__); */
+/*                     return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__); */
 /*         } */
 /*         else */
 /*         { */
 /*             if (sendcnt > 0) */
 /*             { */
 /*                 if ((mpierr = MPI_Recv(&hs, 1, MPI_INT, root, mtag, comm, &status))) */
-/*                     return check_mpi(NULL, mpierr, __FILE__, __LINE__); */
+/*                     return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__); */
 /*                 if ((mpierr = MPI_Send(sendbuf, sendcnt, sendtype, root, mtag, comm))) */
-/*                     return check_mpi(NULL, mpierr, __FILE__, __LINE__); */
+/*                     return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__); */
 /*             } */
 /*         } */
 /*     } */
@@ -491,7 +509,7 @@ int pio_swapm(void *sendbuf, int *sendcounts, int *sdispls, MPI_Datatype *sendty
 /*     { */
 /*         if ((mpierr = MPI_Gatherv(sendbuf, sendcnt, sendtype, recvbuf, recvcnts, */
 /*                                   displs, recvtype, root, comm))) */
-/*             return check_mpi(NULL, mpierr, __FILE__, __LINE__); */
+/*             return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__); */
 /*     } */
 
 /*     return PIO_NOERR; */

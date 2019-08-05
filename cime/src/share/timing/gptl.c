@@ -14,6 +14,7 @@
 #include <string.h>        /* memset, strcmp (via STRMATCH), strncmp (via STRNMATCH) */
 #include <ctype.h>         /* isdigit */
 #include <sys/types.h>     /* u_int8_t, u_int16_t */
+#include <float.h>         /* FLT_MAX */
 #include <assert.h>
 
 #ifndef HAVE_C99_INLINE
@@ -2311,12 +2312,20 @@ static inline int update_stats (Timer *ptr,
 
     if (ptr->count == 1) {
       ptr->wall.max = delta;
+
+      ptr->wall.prev_min = FLT_MAX;
       ptr->wall.min = delta;
+      ptr->wall.latest_is_min = 1;
     } else {
       if (delta > ptr->wall.max)
 	ptr->wall.max = delta;
-      if (delta < ptr->wall.min)
+      if (delta < ptr->wall.min){
+        ptr->wall.prev_min = ptr->wall.min;
 	ptr->wall.min = delta;
+        ptr->wall.latest_is_min = 1;
+      } else {
+        ptr->wall.latest_is_min = 0;
+      }
     }
   }
 
@@ -4509,7 +4518,6 @@ int GPTLstartstop_vals (const char *timername, /* timer name */
   ** and assign the name pointer to the new string. 
   ** Otherwise assign the name pointer to the original string.
   */
-
   if ((prefix_len[t] > 0) || (prefix_len_nt > 0)){
     namelen = strlen(timername);
     numchars = add_prefix(new_name, timername, namelen, t);
@@ -4532,9 +4540,7 @@ int GPTLstartstop_vals (const char *timername, /* timer name */
       ptr->wall.last = (*ptr2wtimefunc) ();
     }
   } else {
-    /*
-    ** Need to call start/stop to set up linked list and hash table.
-    */
+    /* Need to call start/stop to set up linked list and hash table. */
     if (GPTLstart (timername) != 0)
       return GPTLerror ("%s: Error from GPTLstart\n", thisfunc);
 
@@ -4545,32 +4551,92 @@ int GPTLstartstop_vals (const char *timername, /* timer name */
     if ( ! (ptr = getentry (hashtable[t], name, &indx)))
       return GPTLerror ("%s: Unexpected error from getentry\n", thisfunc);
 
-    ptr->wall.min = add_time; /* Since this is the first call, set min to user input */
-
-    /* If add_count >= 0, then set count to desired value. */
-    /* Otherwise, assume add_count == 0 and set count to 0. */
+    /*
+    ** If add_count >= 0, then set count to desired value.
+    ** Otherwise, assume add_count == 0 and set count to 0. 
+    */
     if (add_count >= 0){
       ptr->count = add_count;
     } else {
       ptr->count = 0;
     }
 
+    /* Since this is the first call, set max and min to user input. */
+    ptr->wall.max = add_time;
+
+    ptr->wall.prev_min = FLT_MAX;
+    ptr->wall.min = add_time;
+    ptr->wall.latest_is_min = 1;
+
     /* 
     ** Minor mod: Subtract the overhead of the above start/stop call, before
     ** adding user input
     */
     ptr->wall.accum -= ptr->wall.latest;
+
+    /* Then set latest to zero, so that update below is correct */
+    ptr->wall.latest = 0.0;
+
   }
 
-  /* Update the values with user input */
+  /* Update accum with user input */
   ptr->wall.accum += add_time;
-  ptr->wall.latest = add_time;
-  if (add_time > ptr->wall.max)
-    ptr->wall.max = add_time;
 
-  /* On first call this setting is unnecessary but avoid an "if" test for efficiency */
-  if (add_time < ptr->wall.min)
-    ptr->wall.min = add_time;
+  /* 
+  ** Update latest with user input:
+  **  If add_count > 0 and old count > 0 (new count > add_count), 
+  **   assume new event time is the average (add_time/add_count).
+  **  If add_count > 0 and old count = 0 (new count == add_count), 
+  **   assume new event time is the augmented average 
+  **   ((latest value + add_time)/add_count).
+  **  If add_count == 0, new event time is latest value + add_time.
+  */
+  if (add_count > 0){
+    if (ptr->count > add_count)
+      ptr->wall.latest = add_time/add_count;
+    else
+      ptr->wall.latest = (ptr->wall.latest+add_time)/add_count;
+  } else {
+    ptr->wall.latest += add_time;
+  }
+
+  /* Update max with user input */
+  if (ptr->wall.latest > ptr->wall.max)
+    ptr->wall.max = ptr->wall.latest;
+
+  /* Update min with user input */
+  if ((ptr->count <= 1) || (add_count == ptr->count)) {
+    /* 
+    ** still recording walltime for first occurrence, 
+    ** so assign latest estimate to min and prev_min
+    */
+    ptr->wall.min = ptr->wall.latest;
+    ptr->wall.latest_is_min = 1;
+  } else {
+    if (add_count > 0){
+      /* check whether latest is the new min */
+      if (ptr->wall.latest < ptr->wall.min){
+        ptr->wall.prev_min = ptr->wall.min; 
+        ptr->wall.min = ptr->wall.latest;
+        ptr->wall.latest_is_min = 1;
+      } else {
+        ptr->wall.latest_is_min = 0;
+      }
+    } else {
+      /* 
+      ** still recording walltime for latest occurrence, 
+      ** so check whether updated latest is the new min.
+      */
+      if (ptr->wall.latest_is_min == 1){
+        if (ptr->wall.prev_min > ptr->wall.latest){
+          ptr->wall.min = ptr->wall.latest;
+        } else {
+          ptr->wall.min = ptr->wall.prev_min;
+          ptr->wall.latest_is_min = 0;
+        }
+      }
+    }
+  }
 
   return 0;
 }
@@ -4622,7 +4688,6 @@ int GPTLstartstop_valsf (const char *timername,  /* timer name */
   ** and assign the name pointer to the new string. 
   ** Otherwise assign the name pointer to the original string.
   */
-
   if ((prefix_len[t] > 0) || (prefix_len_nt > 0)){
     numchars = add_prefix(new_name, timername, namelen, t);
     name = new_name;
@@ -4645,9 +4710,7 @@ int GPTLstartstop_valsf (const char *timername,  /* timer name */
       ptr->wall.last = (*ptr2wtimefunc) ();
     }
   } else {
-    /*
-    ** Need to call start/stop to set up linked list and hash table.
-    */
+    /* Need to call start/stop to set up linked list and hash table. */
     if (GPTLstartf (timername, namelen) != 0)
       return GPTLerror ("%s: Error from GPTLstart\n", thisfunc);
 
@@ -4658,32 +4721,92 @@ int GPTLstartstop_valsf (const char *timername,  /* timer name */
     if ( ! (ptr = getentryf (hashtable[t], name, numchars, &indx)))
       return GPTLerror ("%s: Unexpected error from getentry\n", thisfunc);
 
-    ptr->wall.min = add_time; /* Since this is the first call, set min to user input */
-
-    /* If add_count >= 0, then set count to desired value. */
-    /* Otherwise, assume add_count == 0 and set count to 0. */
+    /*
+    ** If add_count >= 0, then set count to desired value.
+    ** Otherwise, assume add_count == 0 and set count to 0. 
+    */
     if (add_count >= 0){
       ptr->count = add_count;
     } else {
       ptr->count = 0;
     }
 
+    /* Since this is the first call, set max and min to user input. */
+    ptr->wall.max = add_time;
+
+    ptr->wall.prev_min = FLT_MAX;
+    ptr->wall.min = add_time;
+    ptr->wall.latest_is_min = 1;
+
     /* 
     ** Minor mod: Subtract the overhead of the above start/stop call, before
     ** adding user input
     */
     ptr->wall.accum -= ptr->wall.latest;
+
+    /* Then set latest to zero, so that update below is correct */
+    ptr->wall.latest = 0.0;
+
   }
 
-  /* Update the values with user input */
+  /* Update accum with user input */
   ptr->wall.accum += add_time;
-  ptr->wall.latest = add_time;
-  if (add_time > ptr->wall.max)
-    ptr->wall.max = add_time;
 
-  /* On first call this setting is unnecessary but avoid an "if" test for efficiency */
-  if (add_time < ptr->wall.min)
-    ptr->wall.min = add_time;
+  /* 
+  ** Update latest with user input:
+  **  If add_count > 0 and old count > 0 (new count > add_count), 
+  **   assume new event time is the average (add_time/add_count).
+  **  If add_count > 0 and old count = 0 (new count == add_count), 
+  **   assume new event time is the augmented average 
+  **   ((latest value + add_time)/add_count).
+  **  If add_count == 0, new event time is latest value + add_time.
+  */
+  if (add_count > 0){
+    if (ptr->count > add_count)
+      ptr->wall.latest = add_time/add_count;
+    else
+      ptr->wall.latest = (ptr->wall.latest+add_time)/add_count;
+  } else {
+    ptr->wall.latest += add_time;
+  }
+
+  /* Update max with user input */
+  if (ptr->wall.latest > ptr->wall.max)
+    ptr->wall.max = ptr->wall.latest;
+
+  /* Update min with user input */
+  if ((ptr->count <= 1) || (add_count == ptr->count)) {
+    /* 
+    ** still recording walltime for first occurrence, 
+    ** so assign latest estimate to min and prev_min
+    */
+    ptr->wall.min = ptr->wall.latest;
+    ptr->wall.latest_is_min = 1;
+  } else {
+    if (add_count > 0){
+      /* check whether latest is the new min */
+      if (ptr->wall.latest < ptr->wall.min){
+        ptr->wall.prev_min = ptr->wall.min; 
+        ptr->wall.min = ptr->wall.latest;
+        ptr->wall.latest_is_min = 1;
+      } else {
+        ptr->wall.latest_is_min = 0;
+      }
+    } else {
+      /* 
+      ** still recording walltime for latest occurrence, 
+      ** so check whether updated latest is the new min.
+      */
+      if (ptr->wall.latest_is_min == 1){
+        if (ptr->wall.prev_min > ptr->wall.latest){
+          ptr->wall.min = ptr->wall.latest;
+        } else {
+          ptr->wall.min = ptr->wall.prev_min;
+          ptr->wall.latest_is_min = 0;
+        }
+      }
+    }
+  }
 
   return 0;
 }

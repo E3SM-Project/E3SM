@@ -13,13 +13,14 @@
 
 
 module interpolate_driver_mod
-#ifdef PIO_INTERP
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   use pio, only : file_desc_t, var_desc_t , io_desc_t, & ! _EXTERNAL
    pio_get_att, pio_setdebuglevel, pio_closefile, &
    pio_put_att, pio_global, pio_put_var, pio_iotask_rank, &
    pio_read_darray, pio_setframe, pio_get_var, &
    PIO_OFFSET_KIND, pio_char, &
    pio_inq_varid, pio_inq_attname, pio_copy_att, pio_inq_varnatts,&
+   pio_inq_att,&
    PIO_MAX_NAME, pio_double
 
   use pio_nf_utils, only : copy_pio_var ! _EXTERNAL
@@ -30,9 +31,9 @@ module interpolate_driver_mod
   implicit none
   private
 !#include "pnetcdf.inc"
-
-  public :: interpolate_driver
-
+#endif
+  public :: interpolate_driver, pio_read_phis
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   integer :: nlat, nlon
 
   type dim_t
@@ -79,26 +80,31 @@ module interpolate_driver_mod
 !  type(io_desc_t), pointer :: iodesc3d, iodesc2d, iodesc3dp1
   type(io_desc_t) , save:: iodesc3d, iodesc2d, iodesc3dp1
 
+#endif
 
 contains
   subroutine interpolate_driver(elem,hybrid)
+    use hybrid_mod, only : hybrid_t
+    use element_mod, only : element_t
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     use dimensions_mod, only : ne, nelem, np, nlev
     use common_io_mod, only : varnames=>output_varnames1, nf_handle
-    use element_mod, only : element_t
     !  use interpolate_mod
     use dof_mod
-    use hybrid_mod, only : hybrid_t
     use interpolate_mod, only : interpdata_t
     !  use domain_mod, only : domain1d_t, decompose
     !  use thread_mod, only : omp_get_thread_num
     !  use reduction_mod, only : reductionbuffer_ordered_1d_t
+#endif
     implicit none
 
-    integer, parameter :: maxvars=30
     type(element_t) :: elem(:)
+    type(hybrid_t), intent(in) :: hybrid
+
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    integer, parameter :: maxvars=30
     type(file_t) :: infile
     !  type(element_t), allocatable :: elem(:)
-    type(hybrid_t), intent(in) :: hybrid
     !  type (domain1d_t), allocatable:: dom_mt(:)
     !  type (parallel_t) :: par
     !  type (ReductionBuffer_ordered_1d_t) :: red
@@ -117,7 +123,6 @@ contains
     do i=1,MAX_INFILES
        if(len(trim(infilenames(i)))>0) then
           infilename=>infilenames(i)
-          if (hybrid%par%masterproc) print *,'input file: ',trim(infilename)
           call infile_initialize(elem, hybrid%par,infilename, varnames, infile)
           call outfile_initialize(elem, hybrid, infile, outfile, interpdata, infilename)
           if (hybrid%par%masterproc) print *,'interpolating...'
@@ -128,8 +133,10 @@ contains
           deallocate(interpdata)
        end if
     end do
+#endif
   end subroutine interpolate_driver
 
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   subroutine free_infile(infile)
     type(file_t), intent(inout) :: infile
 
@@ -149,14 +156,13 @@ contains
 
   end subroutine free_infile
 
-
   subroutine infile_initialize(elem, par, infilename, varnames, infile)
     use pio ! _EXTERNAL
     use common_io_mod, only : io_stride, num_io_procs, num_agg
     use parallel_mod, only : parallel_t, mpireal_t
     use interp_movie_mod, only : getiodof
     use element_mod, only: element_t
-    use dimensions_mod, only : ne, np, nlev
+    use dimensions_mod, only : ne, np, nlev,nelem
     type(element_t) :: elem(:)
     type(parallel_t) :: par
     character(len=*), intent(in) :: infilename
@@ -172,6 +178,9 @@ contains
     integer, pointer :: ldof(:)
     integer(kind=PIO_OFFSET_KIND) :: start(3), count(3)
     integer :: iorank, dimcnt
+    character(len=80) :: name
+
+    if (par%masterproc) print *,'initailizing input file: ',trim(infilename)
 
     call PIO_Init(par%rank, par%comm, num_io_procs, num_agg, &
          io_stride, pio_rearr_box, PIOFS)
@@ -190,6 +199,7 @@ contains
 
     allocate(infile%dims(ndims))
 
+    nlev_file=-1
     do i=1,ndims
        ret = PIO_inq_dimname(Infile%fileid, i, infile%dims(i)%name)
        ret = PIO_inq_dimlen(Infile%fileid, i, infile%dims(i)%len)
@@ -207,25 +217,35 @@ contains
     end if
 
     if(is_ncolfile(infile%dims)) then
-       ret = PIO_get_att(infile%FileID, PIO_GLOBAL, 'np', np_file)
-       ret = PIO_get_att(infile%FileID, PIO_GLOBAL, 'ne', ne_file)
-       
-       nlev_file=get_dimlen(infile%dims,"lev")
-       
-       if(ne_file/=ne) then
+       np_file=-1
+       ne_file=-1
+       do i=1,infile%natts
+          ret = pio_inq_attname(infile%FileID, PIO_GLOBAL, i, name)
+          if (trim(name)=='np') ret=PIO_get_att(infile%FileID, PIO_GLOBAL, 'np', np_file)
+          if (trim(name)=='ne') ret=PIO_get_att(infile%FileID, PIO_GLOBAL, 'ne', ne_file)
+       enddo
+
+       ! abort if file attribute doesn't match model resolution
+       ! some files, like topo files, dont have these attributes.
+       if (ncols/=2+nelem*(np-1)**2) then
+          print *,'nelem,np,ncols',nelem,np,ncols
+          call abortmp('File resolution incoorect: ncols <> 2+nelem*(np-1)^2')
+       endif
+
+       if(ne_file/=ne .and. ne_file/=-1) then
           print *,'ne, ne_file',ne,ne_file
           call abortmp('The variable ne in the namelist must be the same as that of the file.')
        end if
-       if(nlev_file/=nlev) then
+       if(nlev_file/=nlev .and. nlev_file/=-1) then
           print *,'nlev, nlev_file',nlev,nlev_file
           call abortmp('The variable nlev in Params.inc must be the same as that of the file, you will need to recompile.')
        end if
-       if(np_file/=np) then
+       if(np_file/=np .and. np_file/=-1) then
           print *,'np, np_file',np,np_file
           call abortmp('The variable np in Params.inc must be the same as that of the file, you will need to recompile.')
        end if
     else
-       call abortmp('The input file is missing required dimensions')
+       call abortmp('The input file is missing required ncol dimensions')
     end if
 
 ! define the decompositions...
@@ -775,9 +795,82 @@ contains
     call freeedgebuffer(edge)
     
   end subroutine interpolate_vars
+#endif
+! read a variable from a file
+!
+! if we ever need to read something other than PHIS, this routine should
+! be replaced with a more general routine to read any field
+  subroutine pio_read_phis(elem, par)
+    use element_mod, only : element_t
+    use parallel_mod, only : parallel_t, syncmp
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    use dof_mod, only : putuniquepoints
+    use kinds, only : real_kind
+    use edge_mod, only : edgevpack, edgevunpack, initedgebuffer, freeedgebuffer
+    use edgetype_mod, only : edgebuffer_t
+    use dimensions_mod, only : nelemd, nlev, np
+    use bndry_mod, only : bndry_exchangeV
+    use common_io_mod, only : varname_len,infilenames
+#endif
+    type(element_t), intent(inout) :: elem(:)
+    type(parallel_t),intent(in) :: par
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    ! local
+    character(len=varname_len), dimension(1) :: varnames
+    type(file_t)     :: infile
+    type(edgeBuffer_t) :: edge    
+    real(kind=real_kind), allocatable :: farray(:)
+    real(kind=real_kind), allocatable :: ftmp(:,:)
+
+    integer :: ii,k,ie,ilev,iv, ierr,offset
+    integer :: ncnt_in
+
+    ilev=1
+    call initedgebuffer(par,edge,elem,ilev)
+    ncnt_in = sum(elem(1:nelemd)%idxp%numUniquePts)
+
+    varnames(1)="PHIS"
+    call infile_initialize(elem, par,infilenames(1), varnames, infile)
+
+
+    allocate(farray(ncnt_in))
+    farray = 1.0e-37
+    call pio_read_darray(infile%FileID, infile%vars%vardesc(1), iodesc2d, farray, ierr)
+    !call pio_read_darray(infile%FileID, infile%vars%vardesc(i), iodesc3d, farray, ierr)
+    !call pio_read_darray(infile%FileID, infile%vars%vardesc(i), iodesc3dp1, farray, ierr)
+
+    offset=0
+    do ie=1,nelemd
+       allocate(ftmp(elem(ie)%idxP%NumUniquePts, ilev))
+       do k=1,ilev
+          do ii=1,elem(ie)%idxP%NumUniquePts
+             iv=(offset+ii+(k-1)*ncnt_in)
+             ftmp(ii,k) = farray(iv)
+          end do
+       end do
+       offset = offset+elem(ie)%idxP%NumUniquePts
+       elem(ie)%state%phis(:,:)=0
+       call putUniquePoints(elem(ie)%idxP, ftmp(:,1), elem(ie)%state%phis(:,:))
+       call edgevpack(edge, elem(ie)%state%phis(:,:),ilev,0,ie)
+       deallocate(ftmp)
+    end do
+    call bndry_exchangeV(par, edge)
+    do ie=1,nelemd
+       call edgeVunpack(edge, elem(ie)%state%phis(:,:),ilev,0,ie)
+    end do
+
+
+    deallocate(farray)
+    call freeedgebuffer(edge)
+
+    call pio_closefile(infile%fileid)
+    call free_infile(infile)
+#endif
+  end subroutine pio_read_phis
 !
 ! Create the pio decomps for the output file.
 !
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   subroutine create_output_decomps(ncdf,interpdata,nlon,nlat)
     use pio_io_mod ! _EXTERNAL
     use dimensions_mod
@@ -1071,8 +1164,6 @@ contains
     end do
 	
   end subroutine getcompdof
-
-    
 #endif
 
 end module interpolate_driver_mod

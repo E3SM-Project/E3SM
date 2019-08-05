@@ -1,5 +1,5 @@
 """
-Solution reproducibility test based on time-step convergence 
+Solution reproducibility test based on time-step convergence
 The CESM/ACME model's
 multi-instance capability is used to conduct an ensemble
 of simulations starting from different initial conditions.
@@ -12,6 +12,7 @@ from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case.case_setup import case_setup
 from CIME.build import post_build
 from CIME.hist_utils import rename_all_hist_files
+from CIME.test_status import *
 #import CIME.utils
 #from CIME.check_lockedfiles import *
 
@@ -32,8 +33,8 @@ class TSC(SystemTestsCommon):
 
         ninst = 12
 
-        #BSINGH: For debugging only - Building the model can take 
-        #significant amount of time. Setting fake_bld to True can save 
+        #BSINGH: For debugging only - Building the model can take
+        #significant amount of time. Setting fake_bld to True can save
         #that time
         fake_bld = False
 
@@ -44,7 +45,7 @@ class TSC(SystemTestsCommon):
         # Only want this to happen once. It will impact the sharedlib build
         # so it has to happen there.
         if not model_only:
-            logging.warn("Starting to build multi-instance exe")
+            logging.warning("Starting to build multi-instance exe")
             for comp in ['ATM','OCN','WAV','GLC','ICE','ROF','LND']:
                 ntasks = self._case.get_value("NTASKS_%s"%comp)
                 self._case.set_value("ROOTPE_%s"%comp, 0)
@@ -60,7 +61,7 @@ class TSC(SystemTestsCommon):
         #BSINGH: Faking a bld can save the time code spend in building the model components
         if fake_bld:
             if (not sharedlib_only):
-                post_build(self._case, [])    
+                post_build(self._case, [])
         else:
             self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
 
@@ -84,53 +85,53 @@ class TSC(SystemTestsCommon):
 
         # Write output every 10 seconds
         nhtfrq = 10/dtime
-        
+
         # generate paths/file names for initial conditons
         csmdata_root = self._case.get_value("DIN_LOC_ROOT")
         csmdata_atm  = csmdata_root+"/atm/cam/inic/homme/ne4_v1_init/"
-        csmdata_lnd  = csmdata_root+"/lnd/clm2/initdata/ne4_v1_init/"  
+        csmdata_lnd  = csmdata_root+"/lnd/clm2/initdata/ne4_v1_init/b58d55680/"
         file_pref_atm = "SMS_Ly5.ne4_ne4.FC5AV1C-04P2.eos_intel.ne45y.cam.i.0002-"
         file_pref_lnd = "SMS_Ly5.ne4_ne4.FC5AV1C-04P2.eos_intel.ne45y.clm2.r.0002-"
-        
+
         file_suf_atm = "-01-00000.nc"
         file_suf_lnd = "-01-00000.nc"
 
         # user_nl_... files are modified for every instance.
-        # The number instances specified here has to be consistent with the 
+        # The number instances specified here has to be consistent with the
         # value set in build_phase.
-        ninst = 12  
+        ninst = 12
         for iinst in range(1, ninst+1):
 
             with open('user_nl_cam_'+str(iinst).zfill(4), 'w') as atmnlfile, \
-                 open('user_nl_clm_'+str(iinst).zfill(4), 'w') as lndnlfile: 
+                 open('user_nl_clm_'+str(iinst).zfill(4), 'w') as lndnlfile:
 
-                 # atm/lnd intitial conditions
+                # atm/lnd intitial conditions
 
-                 inst_label_2digits = str(iinst).zfill(2)
+                inst_label_2digits = str(iinst).zfill(2)
 
-                 atmnlfile.write("ncdata  = '"+ csmdata_atm + "/" + file_pref_atm + inst_label_2digits + file_suf_atm+"' \n")
-                 lndnlfile.write("finidat = '"+ csmdata_lnd + "/" + file_pref_lnd + inst_label_2digits + file_suf_lnd+"' \n")
+                atmnlfile.write("ncdata  = '"+ csmdata_atm + "/" + file_pref_atm + inst_label_2digits + file_suf_atm+"' \n")
+                lndnlfile.write("finidat = '"+ csmdata_lnd + "/" + file_pref_lnd + inst_label_2digits + file_suf_lnd+"' \n")
 
                 # for initial testing on constance@pnnl
-                 #atmnlfile.write("ncdata  = '"+ "/pic/projects/uq_climate/wanh895/acme_input/ne4_v1_init/" + file_pref_atm + inst_label_2digits + file_suf_atm+"' \n")
-                 #lndnlfile.write("finidat = '"+ "/pic/projects/uq_climate/wanh895/acme_input/ne4_v1_init/" + file_pref_lnd + inst_label_2digits + file_suf_lnd+"' \n")
+                #atmnlfile.write("ncdata  = '"+ "/pic/projects/uq_climate/wanh895/acme_input/ne4_v1_init/" + file_pref_atm + inst_label_2digits + file_suf_atm+"' \n")
+                #lndnlfile.write("finidat = '"+ "/pic/projects/uq_climate/wanh895/acme_input/ne4_v1_init/" + file_pref_lnd + inst_label_2digits + file_suf_lnd+"' \n")
 
-                 # time step sizes
+                # time step sizes
 
-                 atmnlfile.write("dtime = "+str(dtime)+" \n")
-                 atmnlfile.write("iradsw = 2 \n")
-                 atmnlfile.write("iradlw = 2 \n")
+                atmnlfile.write("dtime = "+str(dtime)+" \n")
+                atmnlfile.write("iradsw = 2 \n")
+                atmnlfile.write("iradlw = 2 \n")
 
-                 lndnlfile.write("dtime = "+str(dtime)+" \n")
+                lndnlfile.write("dtime = "+str(dtime)+" \n")
 
-                 # atm model output
+                # atm model output
 
-                 atmnlfile.write("avgflag_pertape = 'I' \n")
-                 atmnlfile.write("nhtfrq = "+str(nhtfrq)+" \n")
-                 atmnlfile.write("mfilt  = 1  \n")
-                 atmnlfile.write("ndens  = 1  \n")
-                 atmnlfile.write("empty_htapes = .true. \n")
-                 atmnlfile.write("fincl1 = 'PS','U','V','T','Q','CLDLIQ','CLDICE','NUMLIQ','NUMICE','num_a1','num_a2','num_a3','LANDFRAC' \n")
+                atmnlfile.write("avgflag_pertape = 'I' \n")
+                atmnlfile.write("nhtfrq = "+str(nhtfrq)+" \n")
+                atmnlfile.write("mfilt  = 1  \n")
+                atmnlfile.write("ndens  = 1  \n")
+                atmnlfile.write("empty_htapes = .true. \n")
+                atmnlfile.write("fincl1 = 'PS','U','V','T','Q','CLDLIQ','CLDICE','NUMLIQ','NUMICE','num_a1','num_a2','num_a3','LANDFRAC' \n")
 
         # Force rebuild namelists
         self._skip_pnl = False
@@ -138,7 +139,7 @@ class TSC(SystemTestsCommon):
         # Namelist settings done. Now run the model.
         self.run_indv()
 
-        # Append "DT000x" to the history file names 
+        # Append "DT000x" to the history file names
         rename_all_hist_files( self._case, suffix="DT"+str(dtime).zfill(4) )
 
 
@@ -153,4 +154,8 @@ class TSC(SystemTestsCommon):
         # Run simulations with 1-s time step. This is NOT needed
         # for testing new code or new computing environment.
         if self._case.get_value("GENERATE_BASELINE"):
-           self._run_with_specified_dtime(dtime=1)
+            self._run_with_specified_dtime(dtime=1)
+    def _compare_baseline(self):
+        #currently faking it as PENDING
+        with self._test_status as ts:
+            ts.set_status(BASELINE_PHASE, TEST_PEND_STATUS)

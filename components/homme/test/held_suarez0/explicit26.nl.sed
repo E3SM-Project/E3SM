@@ -6,38 +6,29 @@ test_case     = "held_suarez0"
 ne            = NE
 ndays         = 400
 statefreq     = SFREQ
-tstep_type    = 1
+theta_hydrostatic_mode = .true.
+tstep_type    = 5
+!theta_hydrostatic_mode = .false.
+!tstep_type    = 7
 qsize         = 1
-rsplit        = 0
-restartfreq   =  30
+theta_advect_form = 1
+limiter_option = 9
+rsplit        = 3
+restartfreq   =  1
 restartfile   = "restart/R0001"
 restartdir    = "./restart/"
-!restartdir    = "bglockless:./restart/"
 runtype       = RUNTYPE
 tstep         = TSTEP
-smooth        = 0
 integration   = "explicit"
 nu            = NU1
-nu_s          = NU2
-nu_p          = NUP
-hypervis_order = ORDER
-hypervis_subcycle = SUBCYCLE
-/
-&solver_nl
-precon_method = "block_jacobi"
-maxits        = 100
-tol           = 1.e-12
-debug_level   = 0
-/
-&filter_nl
-filter_type   = "taylor"
-transfer_type = "bv"
-filter_freq   = 0
-filter_mu     = 0.05D0
-p_bv          = 12.0D0
-s_bv          = .666666666666666666D0
-wght_fm       = 0.10D0
-kcut_fm       = 2
+nu_s          = NU1
+nu_p          = NU1
+nu_q          = NU1
+nu_div        = NU2
+nu_top = 2.5e5
+hypervis_order = 2
+hypervis_subcycle = 2
+se_ftype=0
 /
 &vert_nl
 vform         = "ccm"
@@ -45,13 +36,17 @@ vfile_mid     = "../vcoord/camm-26.ascii"
 vfile_int     = "../vcoord/cami-26.ascii"
 /
 &analysis_nl
-output_timeunits=1,1
-output_frequency=1,1
-output_start_time=600,600
-output_end_time=30000,30000
-output_varnames1='u','v','T','zeta','ps'
+infilenames=''
+output_timeunits=1,0,2    ! 1=days, 2=hours, 3=seconds
+output_frequency=1,0,0    ! 0 to disable
+output_start_time=600,0,0
+output_end_time=30000,999999999,0
+output_varnames1='u','v','T','zeta','div','ps','geos','omega'
 !output_varnames1='u','v','T','zeta','ps','Q','DIFFT'
-!output_varnames2='DIFFT','DIFFU','DIFFV','CONVU','CONVV','FU','FV'
+! debug output
+output_varnames2='u','v','T','zeta','div','ps','geo','dp3d','geos','Th'
+! output3: hourly data for 20 days  
+output_varnames3='geos','omega','zeta','ps','div'
 io_stride = 32
 /
 
@@ -59,11 +54,3 @@ io_stride = 32
 profile_outpe_num = 100
 profile_single_file		= .true.
 /
-
-
-
-
-
-
-
-

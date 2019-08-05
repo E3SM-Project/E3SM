@@ -13,7 +13,7 @@ module clm_interface_pflotranMod
 
 !----------------------------------------------------------------------------------------------
 ! NGEE-Arctic CLM-PFLOTRAN soil Thermal-Hydrology & bgC coupling interface
-! authors: Fengming YUAN1, Gautam Bishit1,2, and Guoping Tang1
+! authors: Fengming YUAN1, Gautam Bisht1,2, and Guoping Tang1
 !
 !          1.Climate Change Science Institute & Environmental Science Division
 !          Oak Ridge National Laboratory
@@ -3639,7 +3639,7 @@ contains
   !
   ! ! calculating BGC state variable changes over one time-step (rates)
   !   NOTE: Don't update the organic C/N state variables, which will be updated in those 'update' subroutines
-  !           and the 'CNSoilLittVertTranspMod.F90' after 'update1'.
+  !           and the 'SoilLittVertTranspMod.F90' after 'update1'.
   !
   subroutine update_soil_bgc_pf2clm(clm_interface_data, bounds, filters, ifilter)
 ! TODO: add phosphorus vars

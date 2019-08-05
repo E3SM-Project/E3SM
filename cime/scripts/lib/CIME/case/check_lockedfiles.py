@@ -9,8 +9,9 @@ from CIME.XML.env_build import EnvBuild
 from CIME.XML.env_case import EnvCase
 from CIME.XML.env_mach_pes import EnvMachPes
 from CIME.XML.env_batch import EnvBatch
-from CIME.utils import run_cmd_no_fail
 from CIME.locked_files import unlock_file, LOCKED_DIR
+from CIME.build import clean
+
 logger = logging.getLogger(__name__)
 
 import glob, six
@@ -39,7 +40,7 @@ def check_pelayouts_require_rebuild(self, models):
                 if old_tasks != new_tasks or old_threads != new_threads or old_inst != new_inst:
                     logging.warning("{} pe change requires clean build {} {}".format(comp, old_tasks, new_tasks))
                     cleanflag = comp.lower()
-                    run_cmd_no_fail("./case.build --clean {}".format(cleanflag))
+                    clean(self, cleanlist=[cleanflag])
 
         unlock_file("env_mach_pes.xml", self.get_value("CASEROOT"))
 
@@ -53,16 +54,16 @@ def check_lockedfile(self, filebase):
         objname = filebase.split('.')[0]
         if objname == "env_build":
             f1obj = self.get_env('build')
-            f2obj = EnvBuild(caseroot, lfile)
+            f2obj = EnvBuild(caseroot, lfile, read_only=True)
         elif objname == "env_mach_pes":
             f1obj = self.get_env('mach_pes')
-            f2obj = EnvMachPes(caseroot, lfile, components=components)
+            f2obj = EnvMachPes(caseroot, lfile, components=components, read_only=True)
         elif objname == "env_case":
             f1obj = self.get_env('case')
-            f2obj = EnvCase(caseroot, lfile)
+            f2obj = EnvCase(caseroot, lfile, read_only=True)
         elif objname == "env_batch":
             f1obj = self.get_env('batch')
-            f2obj = EnvBatch(caseroot, lfile)
+            f2obj = EnvBatch(caseroot, lfile, read_only=True)
         else:
             logging.warning("Locked XML file '{}' is not current being handled".format(filebase))
             return
@@ -74,8 +75,8 @@ def check_lockedfile(self, filebase):
             toggle_build_status = False
             for key in diffs.keys():
                 if key != "BUILD_COMPLETE":
-                    print("  found difference in {} : case {} locked {}"
-                          .format(key, repr(diffs[key][0]), repr(diffs[key][1])))
+                    logging.warning("  found difference in {} : case {} locked {}"
+                                    .format(key, repr(diffs[key][0]), repr(diffs[key][1])))
                     toggle_build_status = True
             if objname == "env_mach_pes":
                 expect(False, "Invoke case.setup --reset ")
@@ -92,7 +93,7 @@ def check_lockedfile(self, filebase):
                                          "case.build --clean-all and rebuilding")
                     else:
                         self.set_value("BUILD_STATUS", 1)
-                    f2obj.set_value("BUILD_COMPLETE", False)
+
             elif objname == "env_batch":
                 expect(False, "Batch configuration has changed, please run case.setup --reset")
             else:

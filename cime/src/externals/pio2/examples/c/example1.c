@@ -10,6 +10,7 @@
  * processors.
  */
 
+#include "config.h"
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -303,8 +304,15 @@ int check_file(int ntasks, char *filename) {
 		   my_rank, ntasks);
 
 	/* keep things simple - 1 iotask per MPI process */    
-	niotasks = ntasks; 
+	niotasks = ntasks;
 
+        /* Turn on logging if available. */
+        /* PIOc_set_log_level(4); */
+
+        /* Change error handling to return errors. */
+        if ((ret = PIOc_set_iosystem_error_handling(PIO_DEFAULT, PIO_RETURN_ERROR, NULL)))
+            return ret;
+        
 	/* Initialize the PIO IO system. This specifies how
 	 * many and which processors are involved in I/O. */
 	if ((ret = PIOc_Init_Intracomm(MPI_COMM_WORLD, niotasks, ioproc_stride,

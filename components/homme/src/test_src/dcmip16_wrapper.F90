@@ -23,7 +23,7 @@ use hybvcoord_mod,        only: hvcoord_t, set_layer_locations
 use kinds,                only: rl=>real_kind, iulog
 use parallel_mod,         only: abortmp,iam
 use element_ops,          only: set_state, set_state_i, set_elem_state, get_state, tests_finalize,&
-     set_forcing_rayleigh_friction, set_thermostate
+     set_forcing_rayleigh_friction
 use physical_constants,   only: p0, g, Rgas, kappa, Cp, Rwater_vapor, pi=>dd_pi
 use reduction_mod,        only: parallelmax, parallelmin
 use terminator,           only: initial_value_terminator, tendency_terminator
@@ -135,7 +135,7 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
     enddo; enddo; enddo
 
     call set_elem_state(u,v,w,w_i,T,ps,phis,p,dp,z,z_i,g,elem(ie),1,nt,ntQ=1)
-    call tests_finalize(elem(ie),hvcoord,1,nt)
+    call tests_finalize(elem(ie),hvcoord)
 
   enddo
   sample_period = 1800.0 ! sec
@@ -209,7 +209,7 @@ subroutine dcmip2016_test2(elem,hybrid,hvcoord,nets,nete)
      enddo; enddo; enddo;
 
     call set_elem_state(u,v,w,w_i,T,ps,phis,p,dp,z,z_i,g,elem(ie),1,nt,ntQ=1)
-    call tests_finalize(elem(ie),hvcoord,1,nt)
+    call tests_finalize(elem(ie),hvcoord)
   enddo
 
   sample_period = 1800.0 ! sec
@@ -229,7 +229,7 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
   integer,  parameter :: zcoords  = 0                                   ! 0 -> use p coords
   integer,  parameter :: pert     = 1                                   ! 1 -> add thermal perturbation
 
-  integer :: i,j,k,ie                                                   ! loop indices
+  integer :: i,j,k,ie,imod                                              ! loop indices
   real(rl):: lon,lat                                                    ! pointwise coordiantes
 
   real(rl), parameter :: ztop3  = 20000_rl                              ! top of model at 20km
@@ -261,7 +261,10 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 
   ! set initial conditions
   do ie = nets,nete
-  if (hybrid%masterthread) write(*,"(A,I5,A)",advance="NO") " ie=",ie,achar(13)
+     imod=max(1,(nete-nets)/50) ! limit output to 50 lines. 
+     !if (hybrid%masterthread) write(*,"(A,I5,A)",advance="NO") " ie=",ie,achar(13)
+     if (hybrid%masterthread .and. mod(ie,imod)==0) &
+          write(*,"(A,2I5)") " ie=",ie,nete
 
     do k=1,nlevp
 
@@ -313,7 +316,7 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
     call set_elem_state(u,v,w,w_i,T,ps,phis,p,dp,z,z_i,g,elem(ie),1,nt,ntQ=1)
 
     ! set density to ensure hydrostatic balance and save initial state
-    call tests_finalize(elem(ie),hvcoord,1,nt,ie)
+    call tests_finalize(elem(ie),hvcoord,ie)
 
   enddo
 
@@ -400,6 +403,7 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   real(rl), dimension(np,np,nlev) :: u0,v0,T0,qv0,qc0,qr0,cl,cl2,ddt_cl,ddt_cl2
   real(rl), dimension(np,np,nlev) :: rho_dry,rho_new,Rstar,p_pk
   real(rl), dimension(nlev)       :: u_c,v_c,p_c,qv_c,qc_c,qr_c,rho_c,z_c, th_c
+  real(rl), dimension(np,np)      :: delta_ps(np,np)
   real(rl) :: max_w, max_precl, min_ps
   real(rl) :: lat, lon, dz_top(np,np), zi(np,np,nlevp),zi_c(nlevp), ps(np,np)
 
@@ -470,7 +474,6 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       ! revert column
       u(i,j,:)  = u_c(nlev:1:-1)
       v(i,j,:)  = v_c(nlev:1:-1)
-      p(i,j,:)  = p_c(nlev:1:-1)
       qv(i,j,:) = qv_c(nlev:1:-1)
       qc(i,j,:) = qc_c(nlev:1:-1)
       qr(i,j,:) = qr_c(nlev:1:-1)
@@ -485,16 +488,14 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
     enddo; enddo;
 
-    if (theta_hydrostatic_mode) then
-       ! hydrostatic model assumes physics does not change pressure
-       ! so assume T,PHI change, with P held fixed
-       ! ps_v will be adjusted after physics to conserve dry mass
-    else
-       rho_new = rho_dry*(1+qv)
-       Rstar = (Rgas+(Rwater_vapor-Rgas)*qv*rho_dry/rho_new)
-       p_pk = rho_new*Rstar*theta_kess
-       exner_kess = ( p_pk / p0)**( (Rgas/Cp) / ( 1 - (Rgas/Cp)))
-    endif
+    ! convert from theta to T w.r.t. new model state
+    ! assume hydrostatic pressure pi changed by qv forcing
+    ! assume NH pressure perturbation unchanged
+    delta_ps = sum( (rho_dry/rho)*dp*(qv-qv0) , 3 )
+    do k=1,nlev
+       p(:,:,k) = p(:,:,k) + hvcoord%hybm(k)*delta_ps(:,:)
+    enddo
+    exner_kess = (p/p0)**(Rgas/Cp)
     T = exner_kess*theta_kess
 
     ! set dynamics forcing
@@ -503,6 +504,7 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     elem(ie)%derived%FT(:,:,:)   = (T - T0)/dt
 
     ! set tracer-mass forcing. conserve tracer mass
+    ! rho_dry*(qv-qv0)*dz = FQ deta, dz/deta = -dp/(g*rho)
     elem(ie)%derived%FQ(:,:,:,1) = (rho_dry/rho)*dp*(qv-qv0)/dt
     elem(ie)%derived%FQ(:,:,:,2) = (rho_dry/rho)*dp*(qc-qc0)/dt
     elem(ie)%derived%FQ(:,:,:,3) = (rho_dry/rho)*dp*(qr-qr0)/dt
@@ -537,6 +539,7 @@ subroutine dcmip2016_test2_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, t
   real(rl), dimension(np,np,nlev) :: u,v,w,T,exner_kess,theta_kess,p,dp,rho,z,qv,qc,qr
   real(rl), dimension(np,np,nlev) :: u0,v0,T0,qv0,qc0,qr0
   real(rl), dimension(np,np,nlev) :: rho_dry,rho_new,Rstar,p_pk
+  real(rl), dimension(np,np)      :: delta_ps(np,np)
   real(rl), dimension(nlev)       :: u_c,v_c,p_c,qv_c,qc_c,qr_c,rho_c,z_c, th_c
   real(rl) :: max_w, max_precl, min_ps
   real(rl) :: lat, dz_top(np,np), zi(np,np,nlevp),zi_c(nlevp), ps(np,np)
@@ -607,23 +610,20 @@ subroutine dcmip2016_test2_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, t
       ! revert column
       u(i,j,:)  = u_c(nlev:1:-1)
       v(i,j,:)  = v_c(nlev:1:-1)
-      p(i,j,:)  = p_c(nlev:1:-1)
       qv(i,j,:) = qv_c(nlev:1:-1)
       qc(i,j,:) = qc_c(nlev:1:-1)
       qr(i,j,:) = qr_c(nlev:1:-1)
       theta_kess(i,j,:) = th_c(nlev:1:-1)
 
     enddo; enddo;
-    if (theta_hydrostatic_mode) then
-       ! hydrostatic model assumes physics does not change pressure
-       ! so assume T,PHI change, with P held fixed
-       ! ps_v will be adjusted after physics to conserve dry mass
-    else
-       rho_new = rho_dry*(1+qv)
-       Rstar = (Rgas+(Rwater_vapor-Rgas)*qv*rho_dry/rho_new)
-       p_pk = rho_new*Rstar*theta_kess
-       exner_kess = ( p_pk / p0)**( (Rgas/Cp) / ( 1 - (Rgas/Cp)))
-    endif
+    ! convert from theta to T w.r.t. new model state
+    ! assume hydrostatic pressure pi changed by qv forcing
+    ! assume NH pressure perturbation unchanged
+    delta_ps = sum( (rho_dry/rho)*dp*(qv-qv0) , 3 )
+    do k=1,nlev
+       p(:,:,k) = p(:,:,k) + hvcoord%hybm(k)*delta_ps(:,:)
+    enddo
+    exner_kess = (p/p0)**(Rgas/Cp)
     T = exner_kess*theta_kess
 
 
@@ -634,6 +634,7 @@ subroutine dcmip2016_test2_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, t
 
 
     ! set tracer-mass forcing. conserve tracer mass
+    ! rho_dry*(qv-qv0)*dz = FQ deta, dz/deta = -dp/(g*rho)
     elem(ie)%derived%FQ(:,:,:,1) = (rho_dry/rho)*dp*(qv-qv0)/dt
     elem(ie)%derived%FQ(:,:,:,2) = (rho_dry/rho)*dp*(qc-qc0)/dt
     elem(ie)%derived%FQ(:,:,:,3) = (rho_dry/rho)*dp*(qr-qr0)/dt
@@ -668,7 +669,7 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   real(rl), dimension(np,np,nlev) :: rho_dry,rho_new,Rstar,p_pk
   real(rl), dimension(np,np,nlev) :: theta_inv,qv_inv,qc_inv,qr_inv,rho_inv,exner_inv,z_inv ! inverted columns
   real(rl), dimension(np,np,nlevp):: zi
-  real(rl), dimension(np,np)      :: ps
+  real(rl), dimension(np,np)      :: ps,delta_ps(np,np)
   real(rl) :: max_w, max_precl, min_ps
 
   max_w     = -huge(rl)
@@ -698,7 +699,6 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     qv  = qv*rho/rho_dry
     qc  = qc*rho/rho_dry
     qr  = qr*rho/rho_dry
-
 
     ! compute form of exner pressure expected by Kessler physics
     exner_kess = (p/p0)**(Rgas/Cp)
@@ -742,16 +742,14 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     qr    = qr_inv   (:,:,nlev:1:-1)
 
 
-    if (theta_hydrostatic_mode) then
-       ! hydrostatic model assumes physics does not change pressure
-       ! so assume T,PHI change, with P held fixed
-       ! ps_v will be adjusted after physics to conserve dry mass
-    else
-       rho_new = rho_dry*(1+qv)
-       Rstar = (Rgas+(Rwater_vapor-Rgas)*qv*rho_dry/rho_new)
-       p_pk = rho_new*Rstar*theta_kess
-       exner_kess = ( p_pk / p0)**( (Rgas/Cp) / ( 1 - (Rgas/Cp)))
-    endif
+    ! convert from theta to T w.r.t. new model state
+    ! assume hydrostatic pressure pi changed by qv forcing
+    ! assume NH pressure perturbation unchanged
+    delta_ps = sum( (rho_dry/rho)*dp*(qv-qv0) , 3 )
+    do k=1,nlev
+       p(:,:,k) = p(:,:,k) + hvcoord%hybm(k)*delta_ps(:,:)
+    enddo
+    exner_kess = (p/p0)**(Rgas/Cp)
     T = exner_kess*theta_kess
 
     ! set dynamics forcing
@@ -759,10 +757,14 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     elem(ie)%derived%FM(:,:,2,:) = 0
     elem(ie)%derived%FT(:,:,:)   = (T-T0)/dt
 
-    ! set tracer-mass forcing. conserve tracer mass
+    ! set tracer-mass forcing. conserve tracer mass.  
+    ! rho_dry*(qv-qv0)*dz = FQ deta, dz/deta = -dp/(g*rho)
     elem(ie)%derived%FQ(:,:,:,1) = (rho_dry/rho)*dp*(qv-qv0)/dt
     elem(ie)%derived%FQ(:,:,:,2) = (rho_dry/rho)*dp*(qc-qc0)/dt
     elem(ie)%derived%FQ(:,:,:,3) = (rho_dry/rho)*dp*(qr-qr0)/dt
+    ! after forcings above are applied:
+    ! Qdp_new = (rho_dry/rho)*dp*qv   
+
 
     ! perform measurements of max w, and max prect
     max_w     = max( max_w    , maxval(w    ) )

@@ -1,7 +1,7 @@
 import os, re, logging, six
 
 from collections import OrderedDict
-from CIME.utils  import expect
+from CIME.utils  import expect, CIMEError
 logger=logging.getLogger(__name__)
 
 # pragma pylint: disable=unsubscriptable-object
@@ -77,7 +77,7 @@ def _interpret_value(value_str, filename):
                     sub_tokens = [item.strip() for item in token.split("*")]
                     expect(len(sub_tokens) == 2, "Incorrect usage of multiplication in token '{}'".format(token))
                     new_tokens.extend([sub_tokens[1]] * int(sub_tokens[0]))
-                except:
+                except Exception:
                     # User probably did not intend to use the * operator as a namelist multiplier
                     new_tokens.append(token)
             else:
@@ -124,36 +124,36 @@ def _parse_namelists(namelist_lines, filename):
     >>> _parse_namelists(teststr.splitlines(), 'foo')
     OrderedDict([('fire_emis_nl', OrderedDict([('fire_emis_factors_file', "'fire_emis_factors_c140116.nc'"), ('fire_emis_specifier', ["'bc_a1 = BC'", "'pom_a1 = 1.4*OC'", "'pom_a2 = A*B*C'", "'SO2 = SO2'"])]))])
 
-    >>> _parse_namelists('blah', 'foo')
+    >>> _parse_namelists('blah', 'foo') # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
         ...
-    SystemExit: ERROR: File 'foo' does not appear to be a namelist file, skipping
+    CIMEError: ERROR: File 'foo' does not appear to be a namelist file, skipping
 
     >>> teststr = '''&nml
     ... val = 'one', 'two',
     ... val2 = 'three'
     ... /'''
-    >>> _parse_namelists(teststr.splitlines(), 'foo')
+    >>> _parse_namelists(teststr.splitlines(), 'foo') # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
         ...
-    SystemExit: ERROR: In file 'foo', Incomplete multiline variable: 'val'
+    CIMEError: ERROR: In file 'foo', Incomplete multiline variable: 'val'
 
     >>> teststr = '''&nml
     ... val = 'one', 'two',
     ... /'''
-    >>> _parse_namelists(teststr.splitlines(), 'foo')
+    >>> _parse_namelists(teststr.splitlines(), 'foo') # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
         ...
-    SystemExit: ERROR: In file 'foo', Incomplete multiline variable: 'val'
+    CIMEError: ERROR: In file 'foo', Incomplete multiline variable: 'val'
 
     >>> teststr = '''&nml
     ... val = 'one', 'two',
     ...       'three -> four'
     ... /'''
-    >>> _parse_namelists(teststr.splitlines(), 'foo')
+    >>> _parse_namelists(teststr.splitlines(), 'foo') # doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
         ...
-    SystemExit: ERROR: In file 'foo', multiline list variable 'val' had dict entries
+    CIMEError: ERROR: In file 'foo', multiline list variable 'val' had dict entries
 
     >>> teststr = '''&nml
     ... val = 2, 2*13
@@ -544,7 +544,7 @@ def is_namelist_file(file_path):
 ###############################################################################
     try:
         compare_namelist_files(file_path, file_path)
-    except SystemExit as e:
+    except CIMEError as e:
         assert "does not appear to be a namelist file" in str(e), str(e)
         return False
     return True

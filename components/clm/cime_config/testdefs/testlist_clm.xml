@@ -752,8 +752,6 @@
         <machine compiler="intel" testtype="acme_integration">sandiatoss3</machine>
         <machine compiler="intel" testtype="acme_integration">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
-        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
-        <machine compiler="intel" testtype="acme_integration">wolf</machine>
         <machine compiler="gnu" testtype="acme_integration">yellowstone</machine>
         <machine compiler="intel" testtype="acme_integration">yellowstone</machine>
         <machine compiler="pgi" testtype="acme_integration">yellowstone</machine>
@@ -903,8 +901,6 @@
         <machine compiler="intel" testtype="acme_integration">sandiatoss3</machine>
         <machine compiler="intel" testtype="acme_integration">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
-        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
-        <machine compiler="intel" testtype="acme_integration">wolf</machine>
         <machine compiler="gnu" testtype="acme_integration">yellowstone</machine>
         <machine compiler="intel" testtype="acme_integration">yellowstone</machine>
         <machine compiler="pgi" testtype="acme_integration">yellowstone</machine>

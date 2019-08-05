@@ -753,6 +753,7 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
   integer :: nvert
   if (abs(nvert) == 3 ) then
      area2=0
+     area3=0
      if (cv(1)%x==0) then
         call sphere_tri_area(cv(2),cv(3),cv(4),area1)
      else if (cv(2)%x==0) then
@@ -945,7 +946,7 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
        err = abs(diff1)+abs(diff2)+abs(diffp)
        if (err< tol_pentagon_iteration) exit
        !write(*,'(i5,3e18.5)') iter,diff1,diff2,diffp
-       if (mod(iter,1000).eq.0) write(*,'(i5,3e18.5)') iter,err
+       !if (mod(iter,1000).eq.0) write(*,'(i5,3e18.5)') iter,err
 
        ds1%x = diff1* ( sq1com%x - sq1(1)%x )
        ds1%y = diff1* ( sq1com%y - sq1(1)%y )
@@ -989,7 +990,7 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
     use hybrid_mod, only : hybrid_t
 
     use quadrature_mod, only : quadrature_t, gausslobatto
-    use dimensions_mod, only : nlev
+    use dimensions_mod, only : nlev,nelem
     use cube_mod, only : convert_gbl_index
 
     integer,              intent(in)    :: nets,nete
@@ -1021,7 +1022,6 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
     real (kind=real_kind)            :: xp1,xm1,yp1,ym1,sumdiff
     real (kind=real_kind)            :: tiny=1e-11,norm
     real (kind=real_kind)            :: tol=2e-11  ! convergece outer iteration
-    real (kind=real_kind)            :: tol_pentagons=1e-13  ! convergece pentagon iteration
 
     ! area difference to trigger pentagons.  
     ! if it is too small, we will have pentagons with 1 very short edges
@@ -1099,6 +1099,7 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
     call construct_cv_gll(elem,hybrid,nets,nete)
 
     iter_max=2000
+    if (nelem > 240*240*6) iter_max=500   
     if (iter_max>0) then
        ! areas computed from eleemnts on boundaries are from hexagons and pentagons
        ! compute new areas where all CVs are squares or triangles
@@ -1301,7 +1302,7 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
        d1_global = ParallelMax(dx,hybrid)
        dx=maxval(d1mid)
        d1_global_mid = ParallelMax(dx,hybrid)
-       if (mod(iter-1,250).eq.0) then
+       if (mod(iter-1,100).eq.0) then
           if (hybrid%masterthread) print *,iter,"max d1=",d1_global,d1_global_mid
        endif
        ! compute new global CV  (cvlist(ie)%vert from cvlist(ie)%cartp_dual).  

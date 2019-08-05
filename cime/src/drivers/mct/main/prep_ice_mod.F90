@@ -33,6 +33,7 @@ module prep_ice_mod
   public :: prep_ice_calc_o2x_ix
   public :: prep_ice_calc_r2x_ix
   public :: prep_ice_calc_g2x_ix
+  public :: prep_ice_shelf_calc_g2x_ix
 
   public :: prep_ice_get_a2x_ix
   public :: prep_ice_get_o2x_ix
@@ -41,6 +42,8 @@ module prep_ice_mod
 
   public :: prep_ice_get_mapper_SFo2i
   public :: prep_ice_get_mapper_Rg2i
+  public :: prep_ice_get_mapper_Sg2i
+  public :: prep_ice_get_mapper_Fg2i
 
   !--------------------------------------------------------------------------
   ! Private interfaces
@@ -55,6 +58,8 @@ module prep_ice_mod
   ! mappers
   type(seq_map), pointer :: mapper_SFo2i
   type(seq_map), pointer :: mapper_Rg2i
+  type(seq_map), pointer :: mapper_Sg2i
+  type(seq_map), pointer :: mapper_Fg2i
   type(seq_map), pointer :: mapper_Rr2i
 
   ! attribute vectors
@@ -71,7 +76,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_ice_init(infodata, ocn_c2_ice, glc_c2_ice, rof_c2_ice)
+  subroutine prep_ice_init(infodata, ocn_c2_ice, glc_c2_ice, glcshelf_c2_ice, rof_c2_ice)
 
     !---------------------------------------------------------------
     ! Description
@@ -82,6 +87,7 @@ contains
     type (seq_infodata_type) , intent(in)    :: infodata
     logical,                   intent(in)    :: ocn_c2_ice ! .true.  => ocn to ice coupling on
     logical,                   intent(in)    :: glc_c2_ice ! .true.  => glc to ice coupling on
+    logical,                   intent(in)    :: glcshelf_c2_ice ! .true.  => glc ice shelf to ice coupling on
     logical,                   intent(in)    :: rof_c2_ice ! .true.  => rof to ice coupling on
     !
     ! Local Variables
@@ -111,6 +117,8 @@ contains
 
     allocate(mapper_SFo2i)
     allocate(mapper_Rg2i)
+    allocate(mapper_Sg2i)
+    allocate(mapper_Fg2i)
     allocate(mapper_Rr2i)
 
     if (ice_present) then
@@ -163,6 +171,24 @@ contains
           call seq_map_init_rcfile(mapper_Rg2i, glc(1), ice(1), &
                'seq_maps.rc','glc2ice_rmapname:','glc2ice_rmaptype:',samegrid_ig, &
                'mapper_Rg2i initialization', esmf_map_flag)
+       endif
+
+       if (glcshelf_c2_ice) then
+         if (iamroot_CPLID) then
+               write(logunit,*) ' '
+               write(logunit,F00) 'Initializing mapper_Sg2i'
+         end if
+         call seq_map_init_rcfile(mapper_Sg2i, glc(1), ice(1), &
+              'seq_maps.rc','glc2ice_smapname:','glc2ice_smaptype:',samegrid_ig, &
+              'mapper_Sg2i initialization', esmf_map_flag)
+
+         if (iamroot_CPLID) then
+               write(logunit,*) ' '
+               write(logunit,F00) 'Initializing mapper_Fg2i'
+         end if
+         call seq_map_init_rcfile(mapper_Fg2i, glc(1), ice(1), &
+              'seq_maps.rc','glc2ice_fmapname:','glc2ice_fmaptype:',samegrid_ig, &
+              'mapper_Fg2i initialization', esmf_map_flag)
        endif
 
        if (rof_c2_ice) then
@@ -534,11 +560,38 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do egi = 1,num_inst_glc
        g2x_gx => component_get_c2x_cx(glc(egi))
-       call seq_map_map(mapper_Rg2i, g2x_gx, g2x_ix(egi), norm=.true.)
+       call seq_map_map(mapper_Rg2i, g2x_gx, g2x_ix(egi), &
+                        fldlist='Fixx_rofi', norm=.true.)
     enddo
     call t_drvstopf  (trim(timer))
 
   end subroutine prep_ice_calc_g2x_ix
+
+  !================================================================================================
+
+  subroutine prep_ice_shelf_calc_g2x_ix(timer)
+    !---------------------------------------------------------------
+    ! Description
+    ! Create g2x_ix (note that g2x_ix is a local module variable)
+    !
+    ! Arguments
+    character(len=*), intent(in) :: timer
+    !
+    ! Local Variables
+    integer :: egi
+    type(mct_aVect), pointer :: g2x_gx
+    character(*), parameter :: subname = '(prep_ice_calc_g2x_ix)'
+    !---------------------------------------------------------------
+
+    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
+    do egi = 1,num_inst_rof
+       g2x_gx => component_get_c2x_cx(glc(egi))
+       call seq_map_map(mapper_Sg2i, g2x_gx, g2x_ix(egi), &
+                        fldlist='Sg_icemask_coupled_fluxes', norm=.true.)
+    enddo
+    call t_drvstopf  (trim(timer))
+
+  end subroutine prep_ice_shelf_calc_g2x_ix
 
   !================================================================================================
 
@@ -571,5 +624,15 @@ contains
     type(seq_map), pointer :: prep_ice_get_mapper_Rg2i
     prep_ice_get_mapper_Rg2i => mapper_Rg2i
   end function prep_ice_get_mapper_Rg2i
+
+  function prep_ice_get_mapper_Sg2i()
+    type(seq_map), pointer :: prep_ice_get_mapper_Sg2i
+    prep_ice_get_mapper_Sg2i => mapper_Sg2i
+  end function prep_ice_get_mapper_Sg2i
+
+  function prep_ice_get_mapper_Fg2i()
+    type(seq_map), pointer :: prep_ice_get_mapper_Fg2i
+    prep_ice_get_mapper_Fg2i => mapper_Fg2i
+  end function prep_ice_get_mapper_Fg2i
 
 end module prep_ice_mod

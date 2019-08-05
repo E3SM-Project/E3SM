@@ -261,26 +261,71 @@
     <lname>AR97_CAM5%SCAM_CLM45%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
+  <!-- *********************************** -->
+  <!-- aqua-planet -->
+  <!-- *********************************** -->
+  <!-- The analytic SST patterns coincide with the       -->
+  <!-- from the aqua-planet experiment (APE) protocol.   -->
+  <!-- AQP1    = control symmetric SST pattern           -->
+  <!-- AQP2    = Flat                                    -->
+  <!-- AQP3    = Qobs = average of AQP1 and AQP2         -->
+  <!-- AQP4    = Peaked                                  -->
+  <!-- AQP5    = Control+5N                              -->
+  <!-- AQP6    = 1KEQ - small warm pool                  -->
+  <!-- AQP7    = 3KEQ - small warm pool                  -->
+  <!-- AQP8    = 3KW1 - large warm pool                  -->
+  <!-- AQP9    = Control+10N                             -->
+  <!-- AQP10   = Control+15N                             -->
+  <!-- AQPFILE = SST file set by 'aquapfile' in namelist -->
 
   <compset>
-    <alias>FC4AQUAP</alias>
-    <lname>2000_CAM4_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
+    <alias>F-EAMv1-AQP1</alias>
+    <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-EAMv1-AQP2</alias>
+    <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQP2_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-EAMv1-AQP3</alias>
+    <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQP3_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-EAMv1-AQP4</alias>
+    <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQP4_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-EAMv1-AQP5</alias>
+    <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQP5_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-EAMv1-AQP6</alias>
+    <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQP6_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-EAMv1-AQP7</alias>
+    <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQP7_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-EAMv1-AQP8</alias>
+    <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQP8_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-EAMv1-AQP9</alias>
+    <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQP9_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-EAMv1-AQP10</alias>
+    <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQP10_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-EAMv1-AQPFILE</alias>
+    <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQPFILE_SROF_SGLC_SWAV</lname>
   </compset>
 
-  <compset>
-    <alias>FC5AQUAP</alias>
-    <lname>2000_CAM5_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>FC5AV1C-04P2-AQUAP</alias>
-    <lname>2000_CAM5%AV1C-04P2_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>FC5AV1C-L-AQUAP</alias>
-    <lname>2000_CAM5%AV1C-L_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
-  </compset>
+  <!-- *********************************** -->
+  <!-- idealized / adiabatic -->
+  <!-- *********************************** -->
 
   <compset>
     <alias>FIDEAL</alias>

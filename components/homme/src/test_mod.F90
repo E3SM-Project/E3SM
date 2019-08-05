@@ -163,6 +163,10 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
     elem(ie)%derived%FT = 0
     elem(ie)%derived%FM = 0
     elem(ie)%derived%FQ = 0
+#ifdef MODEL_THETA_L
+    elem(ie)%derived%FVTheta = 0
+    elem(ie)%derived%FPHI = 0
+#endif
   enddo
 
   ! get forcing terms from test case

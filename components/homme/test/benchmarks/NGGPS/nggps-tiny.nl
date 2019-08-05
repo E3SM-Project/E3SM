@@ -12,6 +12,7 @@ nmax = 360
 statefreq=360
 restartfreq   = 43200
 restartfile   = "./R0001"
+theta_hydrostatic_mode=.true.
 runtype       = 0
 tstep=40
 rsplit=3

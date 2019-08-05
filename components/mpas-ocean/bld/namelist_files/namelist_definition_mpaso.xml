@@ -228,7 +228,7 @@ Default: Defined in namelist_defaults.xml
 	category="init_setup" group="init_setup">
 Name of vertical grid to use in configuration generation
 
-Valid values: 'uniform', '60layerPHC', '42layerWOCE', '100layerACMEv1', '1dCVTgenerator', ...
+Valid values: 'uniform', '60layerPHC', '42layerWOCE', '100layerE3SMv1', '1dCVTgenerator', ...
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -296,7 +296,31 @@ Default: Defined in namelist_defaults.xml
 	category="ALE_vertical_grid" group="ALE_vertical_grid">
 Determines the vertical coordinate movement type. 'uniform_stretching' distributes SSH perturbations through all vertical levels (z-star vertical coordinate); 'fixed' places them all in the top level (z-level vertical coordinate); 'user_specified' allows the input file to determine the distribution using the variable vertCoordMovementWeights (weighted z-star vertical coordinate); and 'impermeable_interfaces' makes the vertical transport between layers zero, i.e. $w^t=0$ (idealized isopycnal).
 
-Valid values: 'uniform_stretching', 'fixed', 'user_specified', 'impermeable_interfaces'
+Valid values: 'uniform_stretching', 'fixed', 'user_specified', 'impermeable_interfaces', 'tapered'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ALE_thickness_proportionality" type="char*1024"
+	category="ALE_vertical_grid" group="ALE_vertical_grid">
+When config_vert_coord_movement='uniform_stretching' (z-star type coordinate), determines whether ALE layer thickness is proportional to the resting thickness times weights, or just the weights. The first is standard for global runs and is what is specified in Petersen et al 2015 eqns 4 and 6. The second is useful for wetting/drying test cases where resting thickness may be zero at the coastlines.
+
+Valid values: 'restingThickness_times_weights' or 'weights_only'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_vert_taper_weight_depth_1" type="real"
+	category="ALE_vertical_grid" group="ALE_vertical_grid">
+Vertical coordinate taper weight is one above this depth, linearly decreases to zero below.
+
+Valid values: any positive real value, but typically 100 to 1000 m.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_vert_taper_weight_depth_2" type="real"
+	category="ALE_vertical_grid" group="ALE_vertical_grid">
+Vertical coordinate taper weight is zero below this depth, linearly increases to one above.
+
+Valid values: any positive real value, but typically 100 to 1000 m and greater than config_vert_taper_weight_depth_1.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -593,9 +617,49 @@ Valid values: Any positive real value, typically between 100 and 500 m.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_GM_Bolus_kappa_function" type="char*1024"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
+Control what type of function is used for GM Bolus $\kappa$
+
+Valid values: 'constant' and 'ramp'
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_standardGM_tracer_kappa" type="real"
 	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
-Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$
+Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$. Used when config_GM_Bolus_kappa_function is set to constant.
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_Bolus_kappa_min" type="real"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
+Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$, min value in ramp as a function of dcEdge. Used when config_GM_Bolus_kappa_function is set to ramp.
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_Bolus_kappa_max" type="real"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
+Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$, min value in ramp as a function of dcEdge. Used when config_GM_Bolus_kappa_function is set to ramp.
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_Bolus_cell_size_min" type="real"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
+Minimum value in grid cell size for GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_GM_Bolus_kappa_function is set to ramp.
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_Bolus_cell_size_max" type="real"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
+Maximum value in grid cell size for GM $\kappa$ ramp function.  Here cell size refers to dcEdge
 
 Valid values: Any positive real value.
 Default: Defined in namelist_defaults.xml
@@ -1263,7 +1327,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_frazil_heat_of_fusion" type="real"
 	category="frazil_ice" group="frazil_ice">
-Energy per kilogram released when sea water freezes. NOTE: test and make consistent with ACME.
+Energy per kilogram released when sea water freezes. NOTE: test and make consistent with E3SM.
 
 Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
@@ -1271,7 +1335,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_frazil_ice_density" type="real"
 	category="frazil_ice" group="frazil_ice">
-Assumed density of frazil. NOTE: test and make consistent with ACME.
+Assumed density of frazil. NOTE: test and make consistent with E3SM.
 
 Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
@@ -1287,7 +1351,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_specific_heat_sea_water" type="real"
 	category="frazil_ice" group="frazil_ice">
-Energy per kilogram per C needed to raise ocean temperature 1 C. NOTE: test and make consistent with ACME.
+Energy per kilogram per C needed to raise ocean temperature 1 C. NOTE: test and make consistent with E3SM.
 
 Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
@@ -1949,7 +2013,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_disable_vel_coriolis" type="logical"
 	category="debug" group="debug">
-Diables tendencies on the velocity field from the Coriolis force.
+Diables tendencies on the velocity field from the Coriolis force and momentum advection.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -3318,6 +3382,14 @@ Valid values: 0, 1, 2, ...
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_AM_lagrPartTrack_timeIntegration" type="integer"
+	category="AM_lagrPartTrack" group="AM_lagrPartTrack">
+type of temporal interpolation with possible_values='EE(1), RK2(2), RK4(4)' as ENUMs
+
+Valid values: 1, 2, 4,...
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_AM_lagrPartTrack_reset_criteria" type="char*1024"
 	category="AM_lagrPartTrack" group="AM_lagrPartTrack">
 Specify whether particles should not be reset ('none'), be reset on a timer for each particle ('particle_time'), be reset on config_AM_lagrPartTrack_reset_time_globally value ('global_time'), be reset based on regions ('region'), or be reset for all conditions ('all').
@@ -3355,6 +3427,94 @@ Default: Defined in namelist_defaults.xml
 Specify whether particles should be reset when they enter the resetInsideRegionMaskValue1 mask.
 
 Valid values: .false. or .true.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_lagrPartTrack_sample_horizontal_interp" type="logical"
+	category="AM_lagrPartTrack" group="AM_lagrPartTrack">
+If true, particles horizontally interpolate sample quantities.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_lagrPartTrack_sample_temperature" type="logical"
+	category="AM_lagrPartTrack" group="AM_lagrPartTrack">
+If true, particles sample temperature.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_lagrPartTrack_sample_salinity" type="logical"
+	category="AM_lagrPartTrack" group="AM_lagrPartTrack">
+If true, particles sample salinity.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_lagrPartTrack_sample_DIC" type="logical"
+	category="AM_lagrPartTrack" group="AM_lagrPartTrack">
+If true, particles sample DIC.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_lagrPartTrack_sample_ALK" type="logical"
+	category="AM_lagrPartTrack" group="AM_lagrPartTrack">
+If true, particles sample ALK.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_lagrPartTrack_sample_PO4" type="logical"
+	category="AM_lagrPartTrack" group="AM_lagrPartTrack">
+If true, particles sample PO4.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_lagrPartTrack_sample_NO3" type="logical"
+	category="AM_lagrPartTrack" group="AM_lagrPartTrack">
+If true, particles sample NO3.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_lagrPartTrack_sample_SiO3" type="logical"
+	category="AM_lagrPartTrack" group="AM_lagrPartTrack">
+If true, particles sample SiO3.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_lagrPartTrack_sample_NH4" type="logical"
+	category="AM_lagrPartTrack" group="AM_lagrPartTrack">
+If true, particles sample NH4.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_lagrPartTrack_sample_Fe" type="logical"
+	category="AM_lagrPartTrack" group="AM_lagrPartTrack">
+If true, particles sample Fe.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_lagrPartTrack_sample_O2" type="logical"
+	category="AM_lagrPartTrack" group="AM_lagrPartTrack">
+If true, particles sample O2.
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -4379,6 +4539,204 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_AM_timeSeriesStatsClimatology_backward_output_offset" type="char*1024"
 	category="AM_timeSeriesStatsClimatology" group="AM_timeSeriesStatsClimatology">
+Backward offset for filename timestamps when writing the output stream
+
+Valid values: A time interval in YYYY-MM-DD_hh:mm:ss.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_timeSeriesStatsMonthlyMax -->
+
+<entry id="config_AM_timeSeriesStatsMonthlyMax_enable" type="logical"
+	category="AM_timeSeriesStatsMonthlyMax" group="AM_timeSeriesStatsMonthlyMax">
+If true, ocean analysis member time series stats is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthlyMax_compute_on_startup" type="logical"
+	category="AM_timeSeriesStatsMonthlyMax" group="AM_timeSeriesStatsMonthlyMax">
+Logical flag determining if an analysis member computation occurs on start-up. You likely want this off for this (time series) analysis member because it will accumulate any state prior to time stepping (double counting the last time step).
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthlyMax_write_on_startup" type="logical"
+	category="AM_timeSeriesStatsMonthlyMax" group="AM_timeSeriesStatsMonthlyMax">
+Logical flag determining if an analysis member output occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthlyMax_compute_interval" type="char*1024"
+	category="AM_timeSeriesStatsMonthlyMax" group="AM_timeSeriesStatsMonthlyMax">
+Interval that determines frequency of computation for the time series stats analysis member.
+
+Valid values: Any valid time stamp or 'dt'. This must also be less than or equal to output_interval / 2 (i.e., requires at least two samples in a series).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthlyMax_output_stream" type="char*1024"
+	category="AM_timeSeriesStatsMonthlyMax" group="AM_timeSeriesStatsMonthlyMax">
+Name of stream the time series stats analysis member will operate on.
+
+Valid values: An existing stream that will be modified (existing real fields removed and new time series stats versions added) with time series stats outputs. Cannot be 'none', like other analysis members.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthlyMax_restart_stream" type="char*1024"
+	category="AM_timeSeriesStatsMonthlyMax" group="AM_timeSeriesStatsMonthlyMax">
+Name of the restart stream the time series stats analysis member will use to initialize itself if restart is enabled.
+
+Valid values: A restart stream with state of the time series stats.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthlyMax_operation" type="char*1024"
+	category="AM_timeSeriesStatsMonthlyMax" group="AM_timeSeriesStatsMonthlyMax">
+An operation describing the statistic to apply to the time series for all variables in the output stream, reducing the time dimension.
+
+Valid values: An operation, where it can be 'avg', 'min', or 'max', 'sum', or 'sos' (sum of squares).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthlyMax_reference_times" type="char*1024"
+	category="AM_timeSeriesStatsMonthlyMax" group="AM_timeSeriesStatsMonthlyMax">
+A list of absolute times describing when to start accumulating statistics. Each time indicates the start of one time window (time series statistic) per variable, in the output stream (i.e., provide four start times if you want quarterly climatologies, only one time is needed for monthly or daily averages, etc.)
+
+Valid values: A list of absolute times or 'initial_time's, separated by ;.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthlyMax_duration_intervals" type="char*1024"
+	category="AM_timeSeriesStatsMonthlyMax" group="AM_timeSeriesStatsMonthlyMax">
+A list of time durations in d_h:m:s describing how long to accumulate statistics in a time window for each repetition (repeat_interval). It has to match the number of start time tokens in reference_times.
+
+Valid values: A list of time durations in d_h:m:s or 'repeat_interval's, separated by ;. Each must be greater than or equal to compute_interval * 2 and less than or equal to repeat_interval. duration_intervals less than repeat_intervals allow for repeated statistics within the repeat_interval (i.e., for climatologies)
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthlyMax_repeat_intervals" type="char*1024"
+	category="AM_timeSeriesStatsMonthlyMax" group="AM_timeSeriesStatsMonthlyMax">
+A list of time durations in d_h:m:s describing the accumulation statistic temporal periodicity (time between beginning to accumulate again after it started - duration_interval describes when to stop after starting/restarting). It has to match the number of tokens in reference_times.
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthlyMax_reset_intervals" type="char*1024"
+	category="AM_timeSeriesStatsMonthlyMax" group="AM_timeSeriesStatsMonthlyMax">
+A list of time durations in d_h:m:s describing the statistic reset periodicity (how often to reset/clear/zero the accumulation). It has to match the number of tokens in reference_times.
+
+Valid values: A list of time durations in d_h:m:s, separated by ;. Ought to be greater than or equal to output_interval (not verified by the analysis member).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthlyMax_backward_output_offset" type="char*1024"
+	category="AM_timeSeriesStatsMonthlyMax" group="AM_timeSeriesStatsMonthlyMax">
+Backward offset for filename timestamps when writing the output stream
+
+Valid values: A time interval in YYYY-MM-DD_hh:mm:ss.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_timeSeriesStatsMonthlyMin -->
+
+<entry id="config_AM_timeSeriesStatsMonthlyMin_enable" type="logical"
+	category="AM_timeSeriesStatsMonthlyMin" group="AM_timeSeriesStatsMonthlyMin">
+If true, ocean analysis member time series stats is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthlyMin_compute_on_startup" type="logical"
+	category="AM_timeSeriesStatsMonthlyMin" group="AM_timeSeriesStatsMonthlyMin">
+Logical flag determining if an analysis member computation occurs on start-up. You likely want this off for this (time series) analysis member because it will accumulate any state prior to time stepping (double counting the last time step).
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthlyMin_write_on_startup" type="logical"
+	category="AM_timeSeriesStatsMonthlyMin" group="AM_timeSeriesStatsMonthlyMin">
+Logical flag determining if an analysis member output occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthlyMin_compute_interval" type="char*1024"
+	category="AM_timeSeriesStatsMonthlyMin" group="AM_timeSeriesStatsMonthlyMin">
+Interval that determines frequency of computation for the time series stats analysis member.
+
+Valid values: Any valid time stamp or 'dt'. This must also be less than or equal to output_interval / 2 (i.e., requires at least two samples in a series).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthlyMin_output_stream" type="char*1024"
+	category="AM_timeSeriesStatsMonthlyMin" group="AM_timeSeriesStatsMonthlyMin">
+Name of stream the time series stats analysis member will operate on.
+
+Valid values: An existing stream that will be modified (existing real fields removed and new time series stats versions added) with time series stats outputs. Cannot be 'none', like other analysis members.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthlyMin_restart_stream" type="char*1024"
+	category="AM_timeSeriesStatsMonthlyMin" group="AM_timeSeriesStatsMonthlyMin">
+Name of the restart stream the time series stats analysis member will use to initialize itself if restart is enabled.
+
+Valid values: A restart stream with state of the time series stats.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthlyMin_operation" type="char*1024"
+	category="AM_timeSeriesStatsMonthlyMin" group="AM_timeSeriesStatsMonthlyMin">
+An operation describing the statistic to apply to the time series for all variables in the output stream, reducing the time dimension.
+
+Valid values: An operation, where it can be 'avg', 'min', or 'max', 'sum', or 'sos' (sum of squares).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthlyMin_reference_times" type="char*1024"
+	category="AM_timeSeriesStatsMonthlyMin" group="AM_timeSeriesStatsMonthlyMin">
+A list of absolute times describing when to start accumulating statistics. Each time indicates the start of one time window (time series statistic) per variable, in the output stream (i.e., provide four start times if you want quarterly climatologies, only one time is needed for monthly or daily averages, etc.)
+
+Valid values: A list of absolute times or 'initial_time's, separated by ;.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthlyMin_duration_intervals" type="char*1024"
+	category="AM_timeSeriesStatsMonthlyMin" group="AM_timeSeriesStatsMonthlyMin">
+A list of time durations in d_h:m:s describing how long to accumulate statistics in a time window for each repetition (repeat_interval). It has to match the number of start time tokens in reference_times.
+
+Valid values: A list of time durations in d_h:m:s or 'repeat_interval's, separated by ;. Each must be greater than or equal to compute_interval * 2 and less than or equal to repeat_interval. duration_intervals less than repeat_intervals allow for repeated statistics within the repeat_interval (i.e., for climatologies)
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthlyMin_repeat_intervals" type="char*1024"
+	category="AM_timeSeriesStatsMonthlyMin" group="AM_timeSeriesStatsMonthlyMin">
+A list of time durations in d_h:m:s describing the accumulation statistic temporal periodicity (time between beginning to accumulate again after it started - duration_interval describes when to stop after starting/restarting). It has to match the number of tokens in reference_times.
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthlyMin_reset_intervals" type="char*1024"
+	category="AM_timeSeriesStatsMonthlyMin" group="AM_timeSeriesStatsMonthlyMin">
+A list of time durations in d_h:m:s describing the statistic reset periodicity (how often to reset/clear/zero the accumulation). It has to match the number of tokens in reference_times.
+
+Valid values: A list of time durations in d_h:m:s, separated by ;. Ought to be greater than or equal to output_interval (not verified by the analysis member).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthlyMin_backward_output_offset" type="char*1024"
+	category="AM_timeSeriesStatsMonthlyMin" group="AM_timeSeriesStatsMonthlyMin">
 Backward offset for filename timestamps when writing the output stream
 
 Valid values: A time interval in YYYY-MM-DD_hh:mm:ss.

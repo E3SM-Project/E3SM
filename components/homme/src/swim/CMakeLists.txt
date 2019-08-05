@@ -10,7 +10,7 @@ SET(UTILS_SHARE_DIR  ${HOMME_SOURCE_DIR}/utils/csm_share)
 SET(SRC_DIR          ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE_DIR    ${HOMME_SOURCE_DIR}/src/share)
 SET(UTILS_TRILINOS_DIR ${HOMME_SOURCE_DIR}/utils/trilinos)
-SET(UTILS_TIMING_DIR ${CMAKE_BINARY_DIR}/utils/timing)
+SET(UTILS_TIMING_DIR ${HOMME_BINARY_DIR}/utils/timing)
 
 
 SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
@@ -55,6 +55,7 @@ SET(SWIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
                ${SRC_SHARE_DIR}/ll_mod.F90
                ${SRC_SHARE_DIR}/mass_matrix_mod.F90
                ${SRC_SHARE_DIR}/mesh_mod.F90
+               ${SRC_SHARE_DIR}/sort_mod.F90
                ${SRC_SHARE_DIR}/metagraph_mod.F90
                ${SRC_SHARE_DIR}/metis_mod.F90
                ${SRC_SHARE_DIR}/namelist_mod.F90

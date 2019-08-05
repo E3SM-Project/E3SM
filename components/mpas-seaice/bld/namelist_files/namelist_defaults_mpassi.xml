@@ -21,6 +21,8 @@
 <config_dt ice_grid="oRRS18to6">900.0</config_dt>
 <config_dt ice_grid="oRRS18to6v3">900.0</config_dt>
 <config_dt ice_grid="oRRS15to5">900.0</config_dt>
+<config_dt ice_grid="oARRM60to10">900.0</config_dt>
+<config_dt ice_grid="oARRM60to6">900.0</config_dt>
 <config_calendar_type>'gregorian_noleap'</config_calendar_type>
 <config_start_time>'2000-01-01_00:00:00'</config_start_time>
 <config_stop_time>'none'</config_stop_time>
@@ -51,6 +53,8 @@
 <config_do_restart_hbrine>false</config_do_restart_hbrine>
 <config_do_restart_zsalinity>false</config_do_restart_zsalinity>
 <config_do_restart_bgc>false</config_do_restart_bgc>
+<config_do_restart_snow_density>false</config_do_restart_snow_density>
+<config_do_restart_snow_grain_radius>false</config_do_restart_snow_grain_radius>
 
 <!-- dimensions -->
 <config_nCategories>5</config_nCategories>
@@ -63,7 +67,11 @@
 <config_initial_ice_volume>1.0</config_initial_ice_volume>
 <config_initial_snow_volume>0.0</config_initial_snow_volume>
 <config_initial_latitude_north>70.0</config_initial_latitude_north>
+<config_initial_latitude_north ice_grid="oEC60to30v3wLI">75.0</config_initial_latitude_north>
+<config_initial_latitude_north ice_grid="oRRS30to10v3wLI">85.0</config_initial_latitude_north>
 <config_initial_latitude_south>-60.0</config_initial_latitude_south>
+<config_initial_latitude_south ice_grid="oEC60to30v3wLI">-75.0</config_initial_latitude_south>
+<config_initial_latitude_south ice_grid="oRRS30to10v3wLI">-85.0</config_initial_latitude_south>
 <config_initial_velocity_type>'uniform'</config_initial_velocity_type>
 <config_initial_uvelocity>0.0</config_initial_uvelocity>
 <config_initial_vvelocity>0.0</config_initial_vvelocity>
@@ -108,6 +116,8 @@
 <config_dynamics_subcycle_number ice_grid="oRRS18to6">2</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oRRS18to6v3">2</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oRRS15to5">2</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="oARRM60to10">1</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="oARRM60to6">2</config_dynamics_subcycle_number>
 <config_rotate_cartesian_grid>true</config_rotate_cartesian_grid>
 <config_include_metric_terms>true</config_include_metric_terms>
 <config_elastic_subcycle_number>120</config_elastic_subcycle_number>
@@ -134,6 +144,7 @@
 <config_use_column_biogeochemistry>false</config_use_column_biogeochemistry>
 <config_use_column_itd_thermodynamics>true</config_use_column_itd_thermodynamics>
 <config_use_column_ridging>true</config_use_column_ridging>
+<config_use_column_snow_tracers>false</config_use_column_snow_tracers>
 
 <!-- column_tracers -->
 <config_use_ice_age>true</config_use_ice_age>
@@ -143,6 +154,8 @@
 <config_use_level_meltponds>true</config_use_level_meltponds>
 <config_use_topo_meltponds>false</config_use_topo_meltponds>
 <config_use_aerosols>false</config_use_aerosols>
+<config_use_effective_snow_density>false</config_use_effective_snow_density>
+<config_use_snow_grain_radius>false</config_use_snow_grain_radius>
 
 <!-- biogeochemistry -->
 <config_use_brine>false</config_use_brine>
@@ -291,6 +304,7 @@
 <!-- shortwave -->
 <config_shortwave_type>'dEdd'</config_shortwave_type>
 <config_albedo_type>'ccsm3'</config_albedo_type>
+<config_use_snicar>false</config_use_snicar>
 <config_visible_ice_albedo>0.78</config_visible_ice_albedo>
 <config_infrared_ice_albedo>0.36</config_infrared_ice_albedo>
 <config_visible_snow_albedo>0.98</config_visible_snow_albedo>
@@ -302,6 +316,16 @@
 <config_temp_change_snow_grain_radius_change>1.5</config_temp_change_snow_grain_radius_change>
 <config_max_melting_snow_grain_radius>1500.0</config_max_melting_snow_grain_radius>
 <config_algae_absorption_coefficient>0.6</config_algae_absorption_coefficient>
+
+<!-- snow -->
+<config_snow_redistribution_scheme>'none'</config_snow_redistribution_scheme>
+<config_fallen_snow_radius>54.4</config_fallen_snow_radius>
+<config_use_snow_liquid_ponds>false</config_use_snow_liquid_ponds>
+<config_new_snow_density>100.0</config_new_snow_density>
+<config_max_snow_density>450.0</config_max_snow_density>
+<config_minimum_wind_compaction>10.0</config_minimum_wind_compaction>
+<config_wind_compaction_factor>27.3</config_wind_compaction_factor>
+<config_max_dry_snow_radius>2800.0</config_max_dry_snow_radius>
 
 <!-- meltponds -->
 <config_snow_to_ice_transition_depth>0.0</config_snow_to_ice_transition_depth>

@@ -15,14 +15,14 @@ module restFileMod
   use accumulMod           , only : accumulRest
   use histFileMod          , only : hist_restart_ncd
   use clm_varpar           , only : crop_prog
-  use clm_varctl           , only : use_cn, use_c13, use_c14, use_lch4, use_cndv, use_fates, use_betr
+  use clm_varctl           , only : use_cn, use_c13, use_c14, use_lch4, use_fates, use_betr
+  use clm_varctl           , only : use_erosion
   use clm_varctl           , only : create_glacier_mec_landunit, iulog 
   use clm_varcon           , only : c13ratio, c14ratio
   use clm_varcon           , only : nameg, namet, namel, namec, namep, nameCohort
-  use ch4Mod               , only : ch4_type
+  use CH4Mod               , only : ch4_type
   use CNCarbonFluxType     , only : carbonflux_type
   use CNCarbonStateType    , only : carbonstate_type
-  use CNDVType             , only : dgvs_type
   use CNStateType          , only : cnstate_type
   use CNNitrogenFluxType   , only : nitrogenflux_type
   use CNNitrogenStateType  , only : nitrogenstate_type
@@ -38,6 +38,7 @@ module restFileMod
   use FrictionVelocityType , only : frictionvel_type
   use LakeStateType        , only : lakestate_type
   use PhotosynthesisType   , only : photosyns_type
+  use SedFluxType          , only : sedflux_type
   use SoilHydrologyType    , only : soilhydrology_type  
   use SoilStateType        , only : soilstate_type
   use SolarAbsorbedType    , only : solarabs_type
@@ -58,6 +59,19 @@ module restFileMod
   use ncdio_pio            , only : check_att, ncd_getatt
   use BeTRSimulationALM    , only : betr_simulation_alm_type
   use CropType             , only : crop_type
+  use GridcellDataType     , only : grc_wf
+  use LandunitDataType     , only : lun_es, lun_ws
+  use ColumnDataType       , only : col_es, col_ef, col_ws, col_wf
+  use ColumnDataType       , only : col_cs, c13_col_cs, c14_col_cs
+  use ColumnDataType       , only : col_cf, c13_col_cf, c14_col_cf
+  use ColumnDataType       , only : col_ns, col_nf
+  use ColumnDataType       , only : col_ps, col_pf
+  use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
+  use VegetationDataType   , only : veg_cs, c13_veg_cs, c14_veg_cs
+  use VegetationDataType   , only : veg_cf, c13_veg_cf, c14_veg_cf
+  use VegetationDataType   , only : veg_ns, veg_nf
+  use VegetationDataType   , only : veg_ps, veg_pf
+  
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -96,10 +110,10 @@ contains
   subroutine restFile_write( bounds, file,                                            &
        atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
        carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-       ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
+       ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
        nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
        soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-       waterflux_vars, waterstate_vars,                                               &
+       waterflux_vars, waterstate_vars, sedflux_vars,                                 &
        phosphorusstate_vars, phosphorusflux_vars,                                     &
        ep_betr,                                                                       &
        alm_fates, crop_vars,                                                          &
@@ -107,6 +121,11 @@ contains
     !
     ! !DESCRIPTION:
     ! Define/write CLM restart file.
+    !
+    use WaterBudgetMod, only : WaterBudget_Restart
+    use clm_varctl    , only : do_budgets
+    !
+    implicit none
     !
     ! !ARGUMENTS:
     type(bounds_type)              , intent(in)    :: bounds          
@@ -120,15 +139,15 @@ contains
     type(carbonstate_type)         , intent(in)    :: c14_carbonstate_vars
     type(carbonflux_type)          , intent(inout) :: carbonflux_vars
     type(ch4_type)                 , intent(in)    :: ch4_vars
-    type(dgvs_type)                , intent(in)    :: dgvs_vars
     type(energyflux_type)          , intent(in)    :: energyflux_vars
     type(frictionvel_type)         , intent(inout) :: frictionvel_vars
     type(lakestate_type)           , intent(in)    :: lakestate_vars
     type(nitrogenstate_type)       , intent(inout) :: nitrogenstate_vars
     type(nitrogenflux_type)        , intent(in)    :: nitrogenflux_vars
     type(photosyns_type)           , intent(in)    :: photosyns_vars
+    type(sedflux_type)             , intent(in)    :: sedflux_vars
     type(soilhydrology_type)       , intent(in)    :: soilhydrology_vars
-    type(soilstate_type)           , intent(in)    :: soilstate_vars
+    type(soilstate_type)           , intent(inout) :: soilstate_vars
     type(solarabs_type)            , intent(in)    :: solarabs_vars
     type(surfalb_type)             , intent(in)    :: surfalb_vars
     type(temperature_type)         , intent(in)    :: temperature_vars
@@ -180,6 +199,10 @@ contains
 
     call energyflux_vars%restart (bounds, ncid, flag='define')
 
+    call col_ef%Restart (bounds, ncid, flag='define')
+
+    call veg_ef%Restart (bounds, ncid, flag='define')
+
     call frictionvel_vars% restart (bounds, ncid, flag='define')
 
     call lakestate_vars%restart (bounds, ncid, flag='define')
@@ -192,16 +215,37 @@ contains
 
     call solarabs_vars%restart (bounds, ncid, flag='define')
 
-    call temperature_vars%restart (bounds, ncid, flag='define')
-
     call waterflux_vars%restart (bounds, ncid, flag='define')
+    
+    call grc_wf%Restart (bounds, ncid, flag='define')
+
+    call col_wf%Restart (bounds, ncid, flag='define')
+    
+    call veg_wf%Restart (bounds, ncid, flag='define')
+    
+    call lun_es%Restart (bounds, ncid, flag='define')
+
+    call col_es%Restart (bounds, ncid, flag='define')
+
+    call veg_es%Restart (bounds, ncid, flag='define')
 
     call waterstate_vars%restart (bounds, ncid, flag='define', &
-         watsat_col=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:)) 
+         watsat_col=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:))
+    
+    call lun_ws%Restart (bounds, ncid, flag='define')
+
+    call col_ws%Restart (bounds, ncid, flag='define', &
+         watsat_input=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:))    
+
+    call veg_ws%Restart (bounds, ncid, flag='define')
+
+    if (use_erosion) then
+        call sedflux_vars%restart (bounds, ncid, flag='define')
+    end if
 
     call aerosol_vars%restart (bounds, ncid,  flag='define', &
-         h2osoi_ice_col=waterstate_vars%h2osoi_ice_col(bounds%begc:bounds%endc,:), &
-         h2osoi_liq_col=waterstate_vars%h2osoi_liq_col(bounds%begc:bounds%endc,:))
+         h2osoi_ice_col=col_ws%h2osoi_ice(bounds%begc:bounds%endc,:), &
+         h2osoi_liq_col=col_ws%h2osoi_liq(bounds%begc:bounds%endc,:))
 
     call surfalb_vars%restart (bounds, ncid, flag='define', &
          tlai_patch=canopystate_vars%tlai_patch(bounds%begp:bounds%endp), &
@@ -215,23 +259,37 @@ contains
 
        call cnstate_vars%Restart(bounds, ncid, flag='define')
 
-       call carbonstate_vars%restart(bounds, ncid, flag='define', carbon_type='c12', &
+       call col_cs%Restart(bounds, ncid, flag='define', carbon_type='c12', &
+               cnstate_vars=cnstate_vars)
+       call veg_cs%Restart(bounds, ncid, flag='define', carbon_type='c12', &
                cnstate_vars=cnstate_vars)
        if (use_c13) then
-          call c13_carbonstate_vars%restart(bounds, ncid, flag='define', carbon_type='c13', &
-               c12_carbonstate_vars=carbonstate_vars, cnstate_vars=cnstate_vars)
+          call c13_col_cs%Restart(bounds, ncid, flag='define', carbon_type='c13', &
+               c12_carbonstate_vars=col_cs, cnstate_vars=cnstate_vars)
+          call c13_veg_cs%Restart(bounds, ncid, flag='define', carbon_type='c13', &
+               c12_veg_cs=veg_cs, cnstate_vars=cnstate_vars)
        end if
        if (use_c14) then
-          call c14_carbonstate_vars%restart(bounds, ncid, flag='define', carbon_type='c14', &
-               c12_carbonstate_vars=carbonstate_vars, cnstate_vars=cnstate_vars)
+          call c14_col_cs%restart(bounds, ncid, flag='define', carbon_type='c14', &
+               c12_carbonstate_vars=col_cs, cnstate_vars=cnstate_vars)
+          call c14_veg_cs%restart(bounds, ncid, flag='define', carbon_type='c14', &
+               c12_veg_cs=veg_cs, cnstate_vars=cnstate_vars)
        end if
 
-       call carbonflux_vars%restart(bounds, ncid, flag='define')
-       call nitrogenflux_vars%Restart(bounds, ncid, flag='define')
-       call nitrogenstate_vars%Restart(bounds, ncid, flag='define', cnstate_vars=cnstate_vars)
+       call col_cf%Restart(bounds, ncid, flag='define')
+       call veg_cf%Restart(bounds, ncid, flag='define')
+       
+       call col_ns%Restart(bounds, ncid, flag='define', cnstate_vars=cnstate_vars)
+       call veg_ns%Restart(bounds, ncid, flag='define')
 
-       call phosphorusflux_vars%Restart(bounds, ncid, flag='define')
-       call phosphorusstate_vars%Restart(bounds, ncid, flag='define', cnstate_vars=cnstate_vars)
+       call col_nf%Restart(bounds, ncid, flag='define')
+       call veg_nf%Restart(bounds, ncid, flag='define')
+
+       call col_ps%Restart(bounds, ncid, flag='define', cnstate_vars=cnstate_vars)
+       call veg_ps%Restart(bounds, ncid, flag='define')
+
+       call col_pf%Restart(bounds, ncid, flag='define')
+       call veg_pf%Restart(bounds, ncid, flag='define')
 
        call crop_vars%Restart(bounds, ncid, flag='define')
 
@@ -239,28 +297,30 @@ contains
 
     if (use_fates) then
        call cnstate_vars%Restart(bounds, ncid, flag='define')
-       call carbonstate_vars%restart(bounds, ncid, flag='define', carbon_type='c12', &
+       call col_cs%restart(bounds, ncid, flag='define', carbon_type='c12', &
+               cnstate_vars=cnstate_vars)
+       call veg_cs%restart(bounds, ncid, flag='define', carbon_type='c12', &
                cnstate_vars=cnstate_vars)
        if (use_c13) then
-          call c13_carbonstate_vars%restart(bounds, ncid, flag='define', carbon_type='c13', &
-               c12_carbonstate_vars=carbonstate_vars, cnstate_vars=cnstate_vars)
+          call c13_col_cs%restart(bounds, ncid, flag='define', carbon_type='c13', &
+               c12_carbonstate_vars=col_cs, cnstate_vars=cnstate_vars)
+          call c13_veg_cs%restart(bounds, ncid, flag='define', carbon_type='c13', &
+               c12_veg_cs=veg_cs, cnstate_vars=cnstate_vars)
        end if
        if (use_c14) then
-          call c14_carbonstate_vars%restart(bounds, ncid, flag='define', carbon_type='c14', &
-               c12_carbonstate_vars=carbonstate_vars, cnstate_vars=cnstate_vars)
+          call c14_col_cs%restart(bounds, ncid, flag='define', carbon_type='c14', &
+               c12_carbonstate_vars=col_cs, cnstate_vars=cnstate_vars)
+          call c14_veg_cs%restart(bounds, ncid, flag='define', carbon_type='c14', &
+               c12_veg_cs=veg_cs, cnstate_vars=cnstate_vars)
        end if
-       call carbonflux_vars%restart(bounds, ncid, flag='define')
+       call col_cf%Restart(bounds, ncid, flag='define')
+       call veg_cf%Restart(bounds, ncid, flag='define')
 
        call alm_fates%restart(bounds, ncid, flag='define',  &
              waterstate_inst=waterstate_vars, &
              canopystate_inst=canopystate_vars, &
              frictionvel_inst=frictionvel_vars, &
-             soilstate_inst=soilstate_vars )
-    end if
-
-
-    if (use_cndv) then
-       call dgvs_vars%Restart(bounds, ncid, flag='define')
+             soilstate_inst=soilstate_vars)
     end if
 
     if (use_betr) then
@@ -269,6 +329,10 @@ contains
 
     if (present(rdate)) then 
        call hist_restart_ncd (bounds, ncid, flag='define', rdate=rdate )
+    end if
+
+    if (do_budgets) then
+       call WaterBudget_Restart(bounds, ncid, flag='define')
     end if
 
     call restFile_enddef( ncid )
@@ -289,6 +353,10 @@ contains
 
     call energyflux_vars%restart (bounds, ncid, flag='write')
 
+    call col_ef%Restart (bounds, ncid, flag='write')
+
+    call veg_ef%Restart (bounds, ncid, flag='write')
+
     call frictionvel_vars% restart (bounds, ncid, flag='write')
 
     call lakestate_vars%restart (bounds, ncid, flag='write')
@@ -301,16 +369,37 @@ contains
 
     call solarabs_vars%restart (bounds, ncid, flag='write')
 
-    call temperature_vars%restart (bounds, ncid, flag='write')
-
     call waterflux_vars%restart (bounds, ncid, flag='write')
+    
+    call grc_wf%Restart (bounds, ncid, flag='write')
+
+    call col_wf%Restart (bounds, ncid, flag='write')
+
+    call veg_wf%Restart (bounds, ncid, flag='write')
+
+    call lun_es%Restart (bounds, ncid, flag='write')
+
+    call col_es%Restart (bounds, ncid, flag='write')
+
+    call veg_es%Restart (bounds, ncid, flag='write')
 
     call waterstate_vars%restart (bounds, ncid, flag='write',  &
          watsat_col=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:) )
 
+    call lun_ws%Restart (bounds, ncid, flag='write')
+
+    call col_ws%Restart (bounds, ncid, flag='write', &
+         watsat_input=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:))
+    
+    call veg_ws%Restart (bounds, ncid, flag='write')
+
+    if (use_erosion) then
+        call sedflux_vars%restart (bounds, ncid, flag='write')
+    end if
+
     call aerosol_vars%restart (bounds, ncid,  flag='write', &
-         h2osoi_ice_col=waterstate_vars%h2osoi_ice_col(bounds%begc:bounds%endc,:), &
-         h2osoi_liq_col=waterstate_vars%h2osoi_liq_col(bounds%begc:bounds%endc,:) )
+         h2osoi_ice_col=col_ws%h2osoi_ice(bounds%begc:bounds%endc,:), &
+         h2osoi_liq_col=col_ws%h2osoi_liq(bounds%begc:bounds%endc,:) )
 
     call surfalb_vars%restart (bounds, ncid, flag='write',  &
          tlai_patch=canopystate_vars%tlai_patch(bounds%begp:bounds%endp), &
@@ -322,45 +411,69 @@ contains
 
     if (use_cn) then
        call cnstate_vars%Restart(bounds, ncid, flag='write')
-       call carbonstate_vars%restart(bounds, ncid, flag='write', &
+       call col_cs%restart(bounds, ncid, flag='write', &
+            carbon_type='c12', cnstate_vars=cnstate_vars)
+       call veg_cs%restart(bounds, ncid, flag='write', &
             carbon_type='c12', cnstate_vars=cnstate_vars)
        if (use_c13) then
-          call c13_carbonstate_vars%restart(bounds, ncid, flag='write', &
-               c12_carbonstate_vars=carbonstate_vars, carbon_type='c13', &
-	       cnstate_vars=cnstate_vars)
+          call c13_col_cs%restart(bounds, ncid, flag='write', &
+               c12_carbonstate_vars=col_cs, carbon_type='c13', &
+	            cnstate_vars=cnstate_vars)
+          call c13_veg_cs%restart(bounds, ncid, flag='write', &
+               c12_veg_cs=veg_cs, carbon_type='c13', &
+	            cnstate_vars=cnstate_vars)
        end if
        if (use_c14) then
-          call c14_carbonstate_vars%restart(bounds, ncid, flag='write', &
-               c12_carbonstate_vars=carbonstate_vars, carbon_type='c14', &
-	       cnstate_vars=cnstate_vars )
+          call c14_col_cs%restart(bounds, ncid, flag='write', &
+               c12_carbonstate_vars=col_cs, carbon_type='c14', &
+	            cnstate_vars=cnstate_vars )
+          call c14_veg_cs%restart(bounds, ncid, flag='write', &
+               c12_veg_cs=veg_cs, carbon_type='c14', &
+	            cnstate_vars=cnstate_vars )
        end if
 
-       call carbonflux_vars%restart(bounds, ncid, flag='write')
+       call col_cf%Restart(bounds, ncid, flag='write')
+       call veg_cf%Restart(bounds, ncid, flag='write')
 
-       call nitrogenflux_vars%Restart(bounds, ncid, flag='write')
-       call nitrogenstate_vars%Restart(bounds, ncid, flag='write', cnstate_vars=cnstate_vars)
+       call col_ns%Restart(bounds, ncid, flag='write', cnstate_vars=cnstate_vars)
+       call veg_ns%Restart(bounds, ncid, flag='write')
 
-       call phosphorusflux_vars%Restart(bounds, ncid, flag='write')
-       call phosphorusstate_vars%Restart(bounds, ncid, flag='write', cnstate_vars=cnstate_vars)
+       call col_nf%Restart(bounds, ncid, flag='write')
+       call veg_nf%Restart(bounds, ncid, flag='write')
+
+       call col_ps%Restart(bounds, ncid, flag='write', cnstate_vars=cnstate_vars)
+       call veg_ps%Restart(bounds, ncid, flag='write')
+
+       call col_pf%Restart(bounds, ncid, flag='write')
+       call veg_pf%Restart(bounds, ncid, flag='write')
 
        call crop_vars%Restart(bounds, ncid, flag='write')
     end if
 
     if (use_fates) then
        call cnstate_vars%Restart(bounds, ncid, flag='write')
-       call carbonstate_vars%restart(bounds, ncid, flag='write', &
+       call col_cs%restart(bounds, ncid, flag='write', &
+            carbon_type='c12', cnstate_vars=cnstate_vars)
+       call veg_cs%restart(bounds, ncid, flag='write', &
             carbon_type='c12', cnstate_vars=cnstate_vars)
        if (use_c13) then
-          call c13_carbonstate_vars%restart(bounds, ncid, flag='write', &
-               c12_carbonstate_vars=carbonstate_vars, carbon_type='c13', &
-	       cnstate_vars=cnstate_vars)
+          call c13_col_cs%restart(bounds, ncid, flag='write', &
+               c12_carbonstate_vars=col_cs, carbon_type='c13', &
+	            cnstate_vars=cnstate_vars)
+          call c13_veg_cs%restart(bounds, ncid, flag='write', &
+               c12_veg_cs=veg_cs, carbon_type='c13', &
+	            cnstate_vars=cnstate_vars)
        end if
        if (use_c14) then
-          call c14_carbonstate_vars%restart(bounds, ncid, flag='write', &
-               c12_carbonstate_vars=carbonstate_vars, carbon_type='c14', &
-	       cnstate_vars=cnstate_vars )
+          call col_cs%restart(bounds, ncid, flag='write', &
+               c12_carbonstate_vars=col_cs, carbon_type='c14', &
+	            cnstate_vars=cnstate_vars )
+          call veg_cs%restart(bounds, ncid, flag='write', &
+               c12_veg_cs=veg_cs, carbon_type='c14', &
+	            cnstate_vars=cnstate_vars )
        end if
-       call carbonflux_vars%restart(bounds, ncid, flag='write')
+       call col_cf%Restart(bounds, ncid, flag='write')
+       call veg_cf%Restart(bounds, ncid, flag='write')
 
        call alm_fates%restart(bounds, ncid, flag='write',  &
              waterstate_inst=waterstate_vars, &
@@ -370,15 +483,15 @@ contains
 
     end if
 
-    if (use_cndv) then
-       call dgvs_vars%Restart(bounds, ncid, flag='write')
-    end if
-
     if (use_betr) then
        call ep_betr%BeTRRestart(bounds, ncid, flag='write')
     endif
 
     call hist_restart_ncd (bounds, ncid, flag='write' )
+
+    if (do_budgets) then
+       call WaterBudget_Restart(bounds, ncid, flag='write')
+    end if
 
     ! --------------------------------------------
     ! Close restart file and write restart pointer file
@@ -404,10 +517,10 @@ contains
   subroutine restFile_read( bounds, file,                                             &
        atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
        carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-       ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
+       ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
        nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
        soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-       waterflux_vars, waterstate_vars,                                               &
+       waterflux_vars, waterstate_vars, sedflux_vars,                                 &
        phosphorusstate_vars,phosphorusflux_vars,                                      &
        ep_betr,                                                                       &
        alm_fates, glc2lnd_vars, crop_vars)
@@ -423,6 +536,7 @@ contains
     use decompMod        , only : get_proc_clumps, get_clump_bounds
     use decompMod        , only : bounds_type
     use reweightMod      , only : reweight_wrapup
+    use WaterBudgetMod   , only : WaterBudget_Restart
     !
     ! !ARGUMENTS:
     character(len=*)               , intent(in)    :: file  ! output netcdf restart file
@@ -436,13 +550,13 @@ contains
     type(carbonstate_type)         , intent(inout) :: c14_carbonstate_vars
     type(carbonflux_type)          , intent(inout) :: carbonflux_vars
     type(ch4_type)                 , intent(inout) :: ch4_vars
-    type(dgvs_type)                , intent(inout) :: dgvs_vars
     type(energyflux_type)          , intent(inout) :: energyflux_vars
     type(frictionvel_type)         , intent(inout) :: frictionvel_vars
     type(lakestate_type)           , intent(inout) :: lakestate_vars
     type(nitrogenstate_type)       , intent(inout) :: nitrogenstate_vars
     type(nitrogenflux_type)        , intent(inout) :: nitrogenflux_vars
     type(photosyns_type)           , intent(inout) :: photosyns_vars
+    type(sedflux_type)             , intent(inout) :: sedflux_vars
     type(soilhydrology_type)       , intent(inout) :: soilhydrology_vars
     type(soilstate_type)           , intent(inout) :: soilstate_vars
     type(solarabs_type)            , intent(inout) :: solarabs_vars
@@ -498,6 +612,10 @@ contains
 
     call energyflux_vars%restart (bounds, ncid, flag='read')
 
+    call col_ef%Restart (bounds, ncid, flag='read')
+
+    call veg_ef%Restart (bounds, ncid, flag='read')
+
     call frictionvel_vars% restart (bounds, ncid, flag='read')
 
     call lakestate_vars%restart (bounds, ncid, flag='read')
@@ -510,16 +628,37 @@ contains
 
     call solarabs_vars%restart (bounds, ncid, flag='read')
 
-    call temperature_vars%restart (bounds, ncid, flag='read')
-
     call waterflux_vars%restart (bounds, ncid, flag='read')
+    
+    call grc_wf%Restart (bounds, ncid, flag='read')
+
+    call col_wf%Restart (bounds, ncid, flag='read')
+
+    call veg_wf%Restart (bounds, ncid, flag='read')
+
+    call lun_es%Restart (bounds, ncid, flag='read')
+
+    call col_es%Restart (bounds, ncid, flag='read')
+
+    call veg_es%Restart (bounds, ncid, flag='read')
 
     call waterstate_vars%restart (bounds, ncid,  flag='read', &
          watsat_col=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:) )
 
+    call lun_ws%Restart (bounds, ncid, flag='read')
+
+    call col_ws%Restart (bounds, ncid, flag='read', &
+         watsat_input=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:))
+
+    call veg_ws%Restart (bounds, ncid, flag='read')
+
+    if (use_erosion) then
+        call sedflux_vars%restart (bounds, ncid, flag='read')
+    end if
+
     call aerosol_vars%restart (bounds, ncid, flag='read', &
-         h2osoi_ice_col=waterstate_vars%h2osoi_ice_col(bounds%begc:bounds%endc,:), &
-         h2osoi_liq_col=waterstate_vars%h2osoi_liq_col(bounds%begc:bounds%endc,:) ) 
+         h2osoi_ice_col=col_ws%h2osoi_ice(bounds%begc:bounds%endc,:), &
+         h2osoi_liq_col=col_ws%h2osoi_liq(bounds%begc:bounds%endc,:) ) 
 
     call surfalb_vars%restart (bounds, ncid,  flag='read', &
          tlai_patch=canopystate_vars%tlai_patch(bounds%begp:bounds%endp), &
@@ -531,45 +670,69 @@ contains
 
     if (use_cn) then
        call cnstate_vars%Restart(bounds, ncid, flag='read')
-       call carbonstate_vars%restart(bounds, ncid, flag='read', &
+       call col_cs%restart(bounds, ncid, flag='read', &
+            carbon_type='c12', cnstate_vars=cnstate_vars)
+       call veg_cs%restart(bounds, ncid, flag='read', &
             carbon_type='c12', cnstate_vars=cnstate_vars)
        if (use_c13) then
-          call c13_carbonstate_vars%restart(bounds, ncid, flag='read', &
-               c12_carbonstate_vars=carbonstate_vars, carbon_type='c13', &
-	       cnstate_vars=cnstate_vars)
+          call c13_col_cs%restart(bounds, ncid, flag='read', &
+               c12_carbonstate_vars=col_cs, carbon_type='c13', &
+	            cnstate_vars=cnstate_vars)
+          call c13_veg_cs%restart(bounds, ncid, flag='read', &
+               c12_veg_cs=veg_cs, carbon_type='c13', &
+	            cnstate_vars=cnstate_vars)
        end if
        if (use_c14) then
-          call c14_carbonstate_vars%restart(bounds, ncid, flag='read', &
-               c12_carbonstate_vars=carbonstate_vars, carbon_type='c14', &
-	       cnstate_vars=cnstate_vars)
+          call c14_col_cs%restart(bounds, ncid, flag='read', &
+               c12_carbonstate_vars=col_cs, carbon_type='c14', &
+	            cnstate_vars=cnstate_vars)
+          call c14_veg_cs%restart(bounds, ncid, flag='read', &
+               c12_veg_cs=veg_cs, carbon_type='c14', &
+	            cnstate_vars=cnstate_vars)
        end if
 
-       call carbonflux_vars%restart(bounds, ncid, flag='read')
+       call col_cf%Restart(bounds, ncid, flag='read')
+       call veg_cf%Restart(bounds, ncid, flag='read')
 
-       call nitrogenflux_vars%Restart(bounds, ncid, flag='read')
-       call nitrogenstate_vars%Restart(bounds, ncid, flag='read', cnstate_vars=cnstate_vars)
+       call col_ns%Restart(bounds, ncid, flag='read', cnstate_vars=cnstate_vars)
+       call veg_ns%Restart(bounds, ncid, flag='read')
 
-       call phosphorusflux_vars%Restart(bounds, ncid, flag='read')
-       call phosphorusstate_vars%Restart(bounds, ncid, flag='read', cnstate_vars=cnstate_vars)
+       call col_nf%Restart(bounds, ncid, flag='read')
+       call veg_nf%Restart(bounds, ncid, flag='read')
+
+       call col_ps%Restart(bounds, ncid, flag='read', cnstate_vars=cnstate_vars)
+       call veg_ps%Restart(bounds, ncid, flag='read')
+
+       call col_pf%Restart(bounds, ncid, flag='read')
+       call veg_pf%Restart(bounds, ncid, flag='read')
 
        call crop_vars%Restart(bounds, ncid, flag='read')
     end if
 
     if (use_fates) then
        call cnstate_vars%Restart(bounds, ncid, flag='read')
-       call carbonstate_vars%restart(bounds, ncid, flag='read', &
+       call col_cs%restart(bounds, ncid, flag='read', &
+             carbon_type='c12', cnstate_vars=cnstate_vars)
+       call veg_cs%restart(bounds, ncid, flag='read', &
              carbon_type='c12', cnstate_vars=cnstate_vars)
        if (use_c13) then
-          call c13_carbonstate_vars%restart(bounds, ncid, flag='read', &
-                c12_carbonstate_vars=carbonstate_vars, carbon_type='c13', &
+          call c13_col_cs%restart(bounds, ncid, flag='read', &
+                c12_carbonstate_vars=col_cs, carbon_type='c13', &
+                cnstate_vars=cnstate_vars)
+          call c13_veg_cs%restart(bounds, ncid, flag='read', &
+                c12_veg_cs=veg_cs, carbon_type='c13', &
                 cnstate_vars=cnstate_vars)
        end if
        if (use_c14) then
-          call c14_carbonstate_vars%restart(bounds, ncid, flag='read', &
-                c12_carbonstate_vars=carbonstate_vars, carbon_type='c14', &
-	       cnstate_vars=cnstate_vars)
+          call c14_col_cs%restart(bounds, ncid, flag='read', &
+               c12_carbonstate_vars=col_cs, carbon_type='c14', &
+	            cnstate_vars=cnstate_vars)
+          call c14_veg_cs%restart(bounds, ncid, flag='read', &
+               c12_veg_cs=veg_cs, carbon_type='c14', &
+	            cnstate_vars=cnstate_vars)
        end if
-       call carbonflux_vars%restart(bounds, ncid, flag='read')
+       call col_cf%Restart(bounds, ncid, flag='read')
+       call veg_cf%Restart(bounds, ncid, flag='read')
 
        call alm_fates%restart(bounds, ncid, flag='read',  &
              waterstate_inst=waterstate_vars, &
@@ -579,15 +742,13 @@ contains
     end if
 
 
-    if (use_cndv) then
-       call dgvs_vars%Restart(bounds, ncid, flag='read')
-    end if
-
     if (use_betr) then
        call ep_betr%BeTRRestart(bounds, ncid, flag='read')
     endif
         
     call hist_restart_ncd (bounds, ncid, flag='read')
+
+    call WaterBudget_Restart(bounds, ncid, flag='read')
 
     ! Do error checking on file
     
@@ -847,10 +1008,12 @@ contains
     use clm_time_manager     , only : get_nstep
     use clm_varctl           , only : caseid, ctitle, version, username, hostname, fsurdat
     use clm_varctl           , only : conventions, source
-    use clm_varpar           , only : numrad, nlevlak, nlevsno, nlevgrnd, nlevurb, nlevcan, nlevtrc_full
+    use clm_varpar           , only : numrad, nlevlak, nlevsno, nlevgrnd, nlevurb, nlevcan, nlevtrc_full, nmonth
     use clm_varpar           , only : cft_lb, cft_ub, maxpatch_glcmec
     use dynSubgridControlMod , only : get_flanduse_timeseries
     use decompMod            , only : get_proc_global
+    use clm_varctl           , only : do_budgets
+    use WaterBudgetMod       , only : f_size, s_size, p_size
     !
     ! !ARGUMENTS:
     type(file_desc_t), intent(inout) :: ncid
@@ -892,8 +1055,14 @@ contains
     call ncd_defdim(ncid , 'levcan'  , nlevcan        ,  dimid)
     call ncd_defdim(ncid , 'string_length', 64        ,  dimid)
     call ncd_defdim(ncid , 'levtrc'  , nlevtrc_full   ,  dimid)    
+    call ncd_defdim(ncid , 'month'   , nmonth         ,  dimid)
     if (create_glacier_mec_landunit) then
        call ncd_defdim(ncid , 'glc_nec', maxpatch_glcmec, dimid)
+    end if
+
+    if (do_budgets) then
+       call ncd_defdim(ncid , 'budg_flux' , f_size*p_size,  dimid)
+       call ncd_defdim(ncid , 'budg_state', s_size*p_size,  dimid)
     end if
 
     ! Define global attributes

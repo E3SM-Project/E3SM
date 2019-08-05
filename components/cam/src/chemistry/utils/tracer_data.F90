@@ -1186,8 +1186,9 @@ contains
       endif
     enddo
 
-    ! If single column do not interpolate aerosol data, just use the step function
-    if(single_column) then
+    ! If single column do not interpolate aerosol data, just use the step function. 
+    !   The exception is if we are trying to "replay" a column from the full model
+    if(single_column .and. .not. use_camiop) then
       file%stepTime = .true.
     endif
 

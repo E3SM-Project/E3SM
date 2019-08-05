@@ -5,7 +5,7 @@ Script to create a new CIME Case Control System (CSS) experimental case.
 """
 
 from Tools.standard_script_setup import *
-from CIME.utils         import expect, get_model, get_cime_config
+from CIME.utils         import expect, get_model, get_cime_config, get_cime_default_driver
 from CIME.case          import Case
 from argparse           import RawTextHelpFormatter
 
@@ -20,7 +20,7 @@ def parse_command_line(args, cimeroot, description):
     CIME.utils.setup_standard_logging_options(parser)
     try:
         cime_config = get_cime_config()
-    except:
+    except Exception:
         cime_config = None
 
     parser.add_argument("--case", "-case", required=True, metavar="CASENAME",
@@ -64,7 +64,10 @@ def parse_command_line(args, cimeroot, description):
                         "\nThe default is the first listing in MPILIBS in config_machines.xml.\n")
 
     parser.add_argument("--project", "-project",
-                        help="Specify a project id as used in batch system accounting.")
+                        help="Specify a project id for the case (optional)."
+                        "\nUsed for accounting and directory permissions when on a batch system."
+                        "\nThe default is user or machine specified by PROJECT."
+                        "\nAccounting (only) may be overridden by user or machine specified CHARGE_ACCOUNT.")
 
     parser.add_argument("--pecount", "-pecount",  default="M",
                         help="Specify a target size description for the number of cores. "
@@ -82,16 +85,18 @@ def parse_command_line(args, cimeroot, description):
                         help="Full pathname of an optional pes specification file. "
                         "\nThe file can follow either the config_pes.xml or the env_mach_pes.xml format.")
 
-    parser.add_argument("--user-grid", action="store_true",
-                        help="If set, then the --res argument is treated as a user specified grid, "
-                        "\nthe additional argument --gridfile must also be specified "
-                        "\nand all of the grid settings in the --res argument name (which must be a grid longname "
-                        "\nmust defined in the grid file pointed to by --gridfile.")
-
     parser.add_argument("--gridfile",
                         help="Full pathname of config grid file to use. "
-                        "\nThis should be a copy of config/config_grids.xml with the new user grid changes added to it. "
-                        "\nThis argument is required if --user-grid is an argument.")
+                        "\nThis should be a copy of config/config_grids.xml with the new user grid changes added to it. \n")
+
+    if cime_config and cime_config.has_option('main','workflow'):
+        workflow_default = cime_config.get('main', 'workflow')
+    else:
+        workflow_default = "default"
+
+    parser.add_argument("--workflow-case",default=workflow_default,
+                        help="A workflow from config_workflow.xml to apply to this case. ")
+
 
     if cime_config and cime_config.has_option('main','SRCROOT'):
         srcroot_default = cime_config.get('main', 'srcroot')
@@ -135,9 +140,9 @@ def parse_command_line(args, cimeroot, description):
 
     parser.add_argument("-i", "--input-dir",
                         help="Use a non-default location for input files. This will change the xml value of DIN_LOC_ROOT.")
-
-    # Select a driver. No selection implies mct driver
-    parser.add_argument("--driver", help=argparse.SUPPRESS)
+    parser.add_argument("--driver", default=get_cime_default_driver(),
+                        choices=('mct','nuopc', 'moab'),
+                        help=argparse.SUPPRESS)
 
     parser.add_argument("-n", "--non-local", action="store_true",
                         help="Use when you've requested a machine that you aren't on. "
@@ -158,10 +163,6 @@ def parse_command_line(args, cimeroot, description):
         expect(os.path.isfile(args.pesfile),
                "Pes specification file {} cannot be found ".format(args.pesfile))
 
-    if args.user_grid:
-        expect(args.gridfile is not None,
-               "User grid specification file must be set if the user grid is requested")
-
     run_unsupported = False
     if model == "cesm":
         run_unsupported = args.run_unsupported
@@ -177,9 +178,9 @@ def parse_command_line(args, cimeroot, description):
     return args.case, args.compset, args.res, args.machine, args.compiler,\
         args.mpilib, args.project, args.pecount, \
         args.user_mods_dir, args.pesfile, \
-        args.user_grid, args.gridfile, args.srcroot, args.test, args.multi_driver, \
+        args.gridfile, args.srcroot, args.test, args.multi_driver, \
         args.ninst, args.walltime, args.queue, args.output_root, args.script_root, \
-        run_unsupported, args.answer, args.input_dir, args.driver, args.non_local
+        run_unsupported, args.answer, args.input_dir, args.driver, args.workflow_case, args.non_local
 
 ###############################################################################
 def _main_func(description):
@@ -189,9 +190,11 @@ def _main_func(description):
     casename, compset, grid, machine, compiler, \
         mpilib, project, pecount,  \
         user_mods_dir, pesfile, \
-        user_grid, gridfile, srcroot, test, multi_driver, ninst, walltime, \
+        gridfile, srcroot, test, multi_driver, ninst, walltime, \
         queue, output_root, script_root, run_unsupported, \
-        answer, input_dir, driver, non_local = parse_command_line(sys.argv, cimeroot, description)
+        answer, input_dir, driver, \
+        workflow, non_local = parse_command_line(sys.argv, cimeroot, description)
+
 
     if script_root is None:
         caseroot = os.path.abspath(casename)
@@ -212,11 +215,11 @@ def _main_func(description):
         case.create(casename, srcroot, compset, grid, user_mods_dir=user_mods_dir,
                     machine_name=machine, project=project,
                     pecount=pecount, compiler=compiler, mpilib=mpilib,
-                    pesfile=pesfile,user_grid=user_grid, gridfile=gridfile,
+                    pesfile=pesfile,gridfile=gridfile,
                     multi_driver=multi_driver, ninst=ninst, test=test,
                     walltime=walltime, queue=queue, output_root=output_root,
                     run_unsupported=run_unsupported, answer=answer,
-                    input_dir=input_dir, driver=driver, non_local=non_local)
+                    input_dir=input_dir, driver=driver, workflow_case=workflow, non_local=non_local)
 
 ###############################################################################
 

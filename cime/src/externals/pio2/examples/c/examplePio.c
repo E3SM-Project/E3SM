@@ -10,6 +10,7 @@
  * processors.
  */
 
+#include "config.h"
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -441,7 +442,7 @@ struct examplePioClass* epc_closeFile( struct examplePioClass* this )
 
     This function frees the memory used in this example. It calls the
     ParallelIO library function PIOc_freedecomp() to free
-    decomposition resources. Then calles PIOc_finalize() and
+    decomposition resources. Then calles PIOc_free_iosystem() and
     MPI_finalize() to free library resources.
     
     @param [in] this  Pointer to self.
@@ -456,7 +457,7 @@ struct examplePioClass* epc_cleanUp( struct examplePioClass* this )
     free(this->compdof);
     
     PIOc_freedecomp(this->pioIoSystem, this->iodescNCells);
-    PIOc_finalize(this->pioIoSystem);
+    PIOc_free_iosystem(this->pioIoSystem);
     MPI_Finalize();
     
     return this;
@@ -563,6 +564,7 @@ int main(int argc, char* argv[])
 {
     /* Parse command line. */
     int c, verbose = 0;
+    int ret;
     while ((c = getopt(argc, argv, "v")) != -1)
 	switch (c)
 	{
@@ -573,11 +575,15 @@ int main(int argc, char* argv[])
             break;
 	}
 
+
+    /* Change error handling so we can test inval parameters. */
+    if ((ret = PIOc_set_iosystem_error_handling(PIO_DEFAULT, PIO_RETURN_ERROR, NULL)))
+        return ret;
+
     struct examplePioClass* pioExInst = epc_new(verbose);
     
 #ifdef TIMING    
     /* Initialize the GPTL timing library. */
-    int ret;
     if ((ret = GPTLinitialize ()))
       return ret;
 #endif    

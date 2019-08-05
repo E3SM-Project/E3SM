@@ -1,0 +1,82 @@
+#!/usr/bin/env python
+
+"""
+build model executable
+"""
+
+import sys, os
+
+_CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","..")
+sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
+
+from standard_script_setup import *
+from CIME.buildlib         import parse_input
+from CIME.build            import get_standard_makefile_args
+from CIME.case             import Case
+from CIME.utils            import expect, run_cmd
+
+logger = logging.getLogger(__name__)
+
+###############################################################################
+def _main_func():
+###############################################################################
+
+    caseroot, _, _ = parse_input(sys.argv)
+
+    logger.info("Building a single executable version of target coupled model")
+
+    with Case(caseroot) as case:
+        casetools = case.get_value("CASETOOLS")
+        cimeroot  = case.get_value("CIMEROOT")
+        exeroot   = case.get_value("EXEROOT")
+        gmake     = case.get_value("GMAKE")
+        gmake_j   = case.get_value("GMAKE_J")
+        cime_model     = case.get_value("MODEL")
+        num_esp   = case.get_value("NUM_COMP_INST_ESP")
+        ocn_model = case.get_value("COMP_OCN")
+        atm_model = case.get_value("COMP_ATM")
+        gmake_args = get_standard_makefile_args(case)
+
+    if ocn_model == 'mom' or atm_model == "fv3gfs":
+        gmake_args += "USE_FMS=TRUE"
+
+    comp_classes = case.get_values("COMP_CLASSES")
+    cppdefs = ""
+    ulibdep = ""
+    for comp in comp_classes:
+        model = case.get_value("COMP_{}".format(comp))
+        stubcomp = "s{}".format(comp.lower())
+        if model and model != stubcomp and comp != "CPL":
+            cppdefs += "-D{}_PRESENT ".format(comp)
+            if comp == "LND":
+                ulibdep += r"\$(LNDLIBDIR)/\$(LNDLIB) "
+            else:
+                ulibdep += r"\$(LIBROOT)/lib{}.a ".format(comp.lower())
+    gmake_args += " USER_CPPDEFS=\"{}\" ULIBDEP=\"{}\"".format(cppdefs,ulibdep)
+
+    expect((num_esp is None) or (int(num_esp) == 1), "ESP component restricted to one instance")
+
+    with open('Filepath', 'w') as out:
+        out.write(os.path.join(caseroot, "SourceMods", "src.drv") + "\n")
+        out.write(os.path.join(cimeroot, "src", "drivers", "nuopc", "cime_driver") + "\n")
+        out.write(os.path.join(cimeroot, "src", "drivers", "nuopc", "mediator") + "\n")  # mediator
+
+    # build model executable
+
+    makefile = os.path.join(casetools, "Makefile")
+    exename = os.path.join(exeroot, cime_model + ".exe")
+    # always relink
+    if os.path.isfile(exename):
+        os.remove(exename)
+
+    cmd = "{} exec_se -j {} EXEC_SE={} MODEL=driver {} -f {} "\
+        .format(gmake, gmake_j, exename, gmake_args, makefile)
+
+    rc, out, err = run_cmd(cmd)
+    expect(rc==0,"Command {} failed rc={}\nout={}\nerr={}".format(cmd,rc,out,err))
+    logger.info(out)
+
+###############################################################################
+
+if __name__ == "__main__":
+    _main_func()

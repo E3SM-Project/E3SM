@@ -1,0 +1,144 @@
+#!/bin/tcsh -f 
+#SBATCH -N 1
+#SBATCH --account=FY127788
+#SBATCH --time=0:10:00
+#PBS -l walltime=0:30:00
+#PBS -l nodes=10
+#PBS -q acme
+
+#
+# Mark Taylor 2018
+#
+# Run 1 timestep of HS, reading in topography from a file
+# apply smoothing, and then output the smoothed topography
+#   
+# NE=240 runs in a few minutes.  needs 24 nodes, io_stride=8
+#
+
+#
+#  machine and working directory
+#  output will be in $wdir/preqx/template
+#
+set HOMME = `cd ../.. ; pwd`  # path to HOMME code. assume we are running from homme/test/template
+set MACH = $HOMME/cmake/machineFiles/anvil.cmake
+#set MACH = $HOMME/cmake/machineFiles/edison.cmake
+set wdir = ~/scratch1
+
+#
+# grid information.  set ne for cubed-sphere grids, or ne=0 and meshfile
+# for RRM grids
+#
+set NPTS = 4
+set ne = 30  ; set meshfile=none
+#set ne=0 ; set meshfile=~/codes/mapping/grids/mountain_10_x2.g
+
+#
+# set the amount of smoothing.  Useful range 4-32
+# recommend value for PREQX model:  
+#    16 for uniform grids (with regular del2 smoothing)
+#    12 for RRM grids using tensor del2 smoothing
+#
+set smooth_phis_numcycle=7
+#
+# set the input and output file names:
+#
+set topo = '/lcrc/group/acme/taylorm/topodata/ne30/USGS-gtopo30_ne30np4.nc'
+#set topo = '/lcrc/group/acme/taylorm/topodata/ne120/ne120np4_x0.nc'
+set topoout = "USGS-gtopo30_ne${ne}np${NPTS}_${smooth_phis_numcycle}xdel2.nc"
+#
+#  end of user settings.  
+#
+
+
+set NCPU = 1
+if ( ${?PBS_NNODES} ) then
+  set NCPU = $PBS_NNODES
+endif
+if ( ${?PBS_NODEFILE} ) then
+    set NCPU = `wc $PBS_NODEFILE | awk '{print $1}' - `
+endif
+echo using NCPU = $NCPU
+
+mkdir -p $wdir/preqx/template/movies
+mkdir $wdir/preqx/vcoord
+set bld = $wdir/preqx/bldtopo
+mkdir -p $bld
+set wdir = $wdir/preqx/template
+mkdir -p $wdir
+
+set input = $HOMME/test/template
+
+set smooth_phis_nudt=0
+if ( $ne == 0 ) then
+    set hypervis_scaling=2      # turn on tensor viscosity
+    set smooth_phis_nudt=4e-16
+endif
+# CFL scaling:  smooth_phis_nudt = 28e7 * ( 30/NE)**2
+if ( $ne == 16) then
+   set hypervis_scaling = 0     # uniform viscosity
+   set smooth_phis_nudt = 98e7  # 50% max stable del2 value
+endif
+if ( $ne == 30) then
+   set hypervis_scaling = 0     # uniform viscosity
+   set smooth_phis_nudt = 28e7  # 50% max stable del2 value
+endif
+if ( $ne == 60) then
+   set hypervis_scaling = 0     # uniform viscosity
+   set smooth_phis_nudt = 7e7  # 50% max stable del2 value
+endif
+if ( $ne == 120) then
+   set hypervis_scaling = 0     # uniform viscosity
+   set smooth_phis_nudt = 18e6  # 50% max stable del2 value
+endif
+if ( $ne == 240) then
+   set hypervis_scaling = 0     # uniform viscosity
+   set smooth_phis_nudt = 44e5  # 50% max stable del2 value
+endif
+if ( $smooth_phis_nudt == 0 ) then
+   echo ERROR: smooth_phis_nudt was not set
+   exit 1
+endif
+
+set nlev=20
+set qsize = 0
+
+cd $bld
+if (!( -f CMakeCache.txt )) then
+    cmake -C $MACH -DPREQX_PLEV=$nlev -DPREQX_USE_PIO=TRUE  -DPREQX_NP=$NPTS  $HOMME 
+    make -j4 clean
+    make -j4 preqx
+    exit
+endif
+make -j4 preqx
+if ( $status ) exit
+
+
+cd $wdir
+rm -f $wdir/input.nl
+sed s/NE/$ne/ $input/smoothtopo.nl.sed  |\
+sed s:hypervis_scaling.\*:"hypervis_scaling = $hypervis_scaling":   |\
+sed s:smooth_phis_numcycle.\*:"smooth_phis_numcycle = $smooth_phis_numcycle": |\
+sed s:smooth_phis_nudt.\*:"smooth_phis_nudt = $smooth_phis_nudt": |\
+sed s:meshfile.\*:"mesh_file = '$meshfile'":   |\
+sed s:infilenames.\*:"infilenames='$topo'": \
+> $wdir/input.nl
+
+if ( $status ) exit
+
+rsync -a $HOMME/test/vcoord/*ascii $wdir/../vcoord
+
+rm -Rf $wdir/movies/held_suarez0*
+mpirun  $bld/src/preqx/preqx < $wdir/input.nl
+if ( $status ) exit
+
+
+
+
+
+# the GLL interpIC template (and paraview metadata)
+set echo
+ncks -O -v geos,lat,lon movies/held_suarez01.nc  $topoout   # extract goes
+#ncwa -O -v geos -a time temp.nc           # remove time dimension
+ncrename -v geos,PHIS $topoout                   # rename
+
+

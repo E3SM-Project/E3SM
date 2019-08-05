@@ -11,7 +11,7 @@ module clm_initializeMod
   use abortutils       , only : endrun
   use clm_varctl       , only : nsrest, nsrStartup, nsrContinue, nsrBranch
   use clm_varctl       , only : create_glacier_mec_landunit, iulog
-  use clm_varctl       , only : use_lch4, use_cn, use_cndv, use_voc, use_c13, use_c14, use_fates, use_betr  
+  use clm_varctl       , only : use_lch4, use_cn, use_voc, use_c13, use_c14, use_fates, use_betr  
   use clm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec
   use clm_varsur       , only : fert_cft
   use perf_mod         , only : t_startf, t_stopf
@@ -25,11 +25,17 @@ module clm_initializeMod
   ! Definition of component types
   !-----------------------------------------
   use GridcellType           , only : grc_pp
-  use TopounitType           , only : top_pp, top_as, top_af, top_es
+  use TopounitType           , only : top_pp
+  use TopounitDataType       , only : top_as, top_af, top_es
   use LandunitType           , only : lun_pp                
-  use ColumnType             , only : col_pp                
-  use VegetationType         , only : veg_pp                
+  use ColumnType             , only : col_pp
+  use ColumnDataType         , only : col_es  
+  use VegetationType         , only : veg_pp
+  use VegetationDataType     , only : veg_es  
+
   use clm_instMod
+  use WaterBudgetMod         , only : WaterBudget_Reset
+  use clm_varctl             , only : do_budgets
   !
   implicit none
   save
@@ -60,7 +66,7 @@ contains
     use controlMod                , only: control_init, control_print, NLFilename
     use ncdio_pio                 , only: ncd_pio_init
     use initGridCellsMod          , only: initGridCells, initGhostGridCells
-    use ch4varcon                 , only: ch4conrd
+    use CH4varcon                 , only: CH4conrd
     use UrbanParamsType           , only: UrbanInput
     use CLMFatesParamInterfaceMod , only: FatesReadPFTs
     use surfrdMod                 , only: surfrd_get_grid_conn
@@ -349,7 +355,7 @@ contains
     ! look for several optional parameters on surfdata file.
 
     if (use_lch4) then
-       call ch4conrd()
+       call CH4conrd()
     end if
 
     ! Deallocate surface grid dynamic memory for variables that aren't needed elsewhere.
@@ -417,10 +423,10 @@ contains
     use restFileMod           , only : restFile_read, restFile_write 
     use accumulMod            , only : print_accum_fields 
     use ndepStreamMod         , only : ndep_init, ndep_interp
-    use CNEcosystemDynMod     , only : CNEcosystemDynInit
+    use EcosystemDynMod     , only : EcosystemDynInit
     use pdepStreamMod         , only : pdep_init, pdep_interp
-    use CNDecompCascadeBGCMod , only : init_decompcascade_bgc
-    use CNDecompCascadeCNMod  , only : init_decompcascade_cn
+    use DecompCascadeBGCMod , only : init_decompcascade_bgc
+    use DecompCascadeCNMod  , only : init_decompcascade_cn
     use CNDecompCascadeContype, only : init_decomp_cascade_constants
     use VegetationPropertiesType        , only : veg_vp 
     use SoilorderConType      , only : soilorderconInit 
@@ -476,6 +482,8 @@ contains
     !----------------------------------------------------------------------
 
     call t_startf('clm_init2')
+
+    if (do_budgets) call WaterBudget_Reset('all')
 
     ! ------------------------------------------------------------------------
     ! Determine processor bounds and clumps for this processor
@@ -621,13 +629,9 @@ contains
     
     call top_af%InitAccBuffer(bounds_proc)
 
-    call temperature_vars%initAccBuffer(bounds_proc)
+    call veg_es%InitAccBuffer(bounds_proc)
 
     call canopystate_vars%initAccBuffer(bounds_proc)
-
-    if (use_cndv) then
-       call dgvs_vars%initAccBuffer(bounds_proc)
-    end if
 
     if (crop_prog) then
        call crop_vars%initAccBuffer(bounds_proc)
@@ -640,14 +644,14 @@ contains
     call t_stopf('init_accflds')
 
     ! ------------------------------------------------------------------------
-    ! Initializate dynamic subgrid weights (for prescribed transient Patches, CNDV
+    ! Initializate dynamic subgrid weights (for prescribed transient Patches, 
     ! and/or dynamic landunits); note that these will be overwritten in a
     ! restart run
     ! ------------------------------------------------------------------------
 
     call t_startf('init_dyn_subgrid')
     call init_subgrid_weights_mod(bounds_proc)
-    call dynSubgrid_init(bounds_proc, dgvs_vars, glc2lnd_vars, crop_vars)
+    call dynSubgrid_init(bounds_proc, glc2lnd_vars, crop_vars)
     call t_stopf('init_dyn_subgrid')
 
     ! ------------------------------------------------------------------------
@@ -655,7 +659,7 @@ contains
     ! ------------------------------------------------------------------------
 
     if (use_cn) then
-       call CNEcosystemDynInit(bounds_proc)
+       call EcosystemDynInit(bounds_proc)
     else
        call SatellitePhenologyInit(bounds_proc)
     end if
@@ -702,10 +706,10 @@ contains
           call restFile_read(bounds_proc, fnamer,                                             &
                atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
                carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-               ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
+               ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
                nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
                soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-               waterflux_vars, waterstate_vars,                                               &
+               waterflux_vars, waterstate_vars, sedflux_vars,                                 &
                phosphorusstate_vars,phosphorusflux_vars,                                      &
                ep_betr,                                                                       &
                alm_fates, glc2lnd_vars, crop_vars)
@@ -718,10 +722,10 @@ contains
        call restFile_read(bounds_proc, fnamer,                                             &
             atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-            ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
+            ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-            waterflux_vars, waterstate_vars,                                               &
+            waterflux_vars, waterstate_vars, sedflux_vars,                                 &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
             ep_betr,                                                                       &
             alm_fates, glc2lnd_vars, crop_vars)
@@ -754,10 +758,10 @@ contains
        call restFile_write(bounds_proc, finidat_interp_dest,                               &
             atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-            ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
+            ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-            waterflux_vars, waterstate_vars,                                               &
+            waterflux_vars, waterstate_vars, sedflux_vars,                                 &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
             ep_betr,                                                                       &
             alm_fates, crop_vars)
@@ -770,10 +774,10 @@ contains
        call restFile_read(bounds_proc, finidat_interp_dest,                                &
             atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-            ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
+            ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-            waterflux_vars, waterstate_vars,                                               &
+            waterflux_vars, waterstate_vars, sedflux_vars,                                 &
             phosphorusstate_vars,phosphorusflux_vars,                                      &
             ep_betr,                                                                       &
             alm_fates, glc2lnd_vars, crop_vars)
@@ -841,11 +845,8 @@ contains
     call atm2lnd_vars%initAccVars(bounds_proc)
     call top_as%InitAccVars(bounds_proc)
     call top_af%InitAccVars(bounds_proc)
-    call temperature_vars%initAccVars(bounds_proc)
+    call veg_es%InitAccVars(bounds_proc)
     call canopystate_vars%initAccVars(bounds_proc)
-    if (use_cndv) then
-       call dgvs_vars%initAccVars(bounds_proc)
-    end if
     if (crop_prog) then
        call crop_vars%initAccVars(bounds_proc)
     end if
@@ -862,7 +863,7 @@ contains
        call readAnnualVegetation(bounds_proc, canopystate_vars)
        if (nsrest == nsrStartup .and. finidat /= ' ') then
           ! Call interpMonthlyVeg for dry-deposition so that mlaidiff will be calculated
-          ! This needs to be done even if CN or CNDV is on!
+          ! This needs to be done even if CN is on!
           call interpMonthlyVeg(bounds_proc, canopystate_vars)
        end if
     end if

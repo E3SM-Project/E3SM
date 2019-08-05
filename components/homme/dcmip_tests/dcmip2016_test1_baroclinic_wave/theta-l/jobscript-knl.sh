@@ -90,6 +90,10 @@ prefix=r50    ; run $NMPI
 #      init time if run 16x8: 133s
 #      init time if run 64x2: 600s
 #
+#  ne=2048   512 nodes:  250s(init) + 2sec per timestep
+#  ne=3072  1024 nodes:  300s(init) + 3sec per timestep
+#  ne=4096  not yet tested.  can not run with 64 MPI per node due to non-scaling startup 
+#           in SetElemOffset() 
 #
 #
 

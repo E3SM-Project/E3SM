@@ -112,6 +112,10 @@ integer :: phys_twin_algorithm
 !                      phys_grid module.  
 integer :: phys_chnk_per_thd
 ! 
+! phys_chnk_cost_write Output option for evaluating physics chunk load balance.  See 
+!                      phys_grid module.  
+logical :: phys_chnk_cost_write
+! 
 ! tracers_flag = .F.    If true, implement tracer test code. Number of tracers determined
 !                      in tracers_suite.F90 must agree with PCNST
 !
@@ -297,7 +301,7 @@ contains
                      indirect, &
                      print_step_cost,  &
                      phys_alltoall, phys_loadbalance, phys_twin_algorithm, &
-                     phys_chnk_per_thd
+                     phys_chnk_per_thd, phys_chnk_cost_write
 
    ! physics buffer
    namelist /cam_inparm/ pbuf_global_allocate
@@ -332,7 +336,8 @@ contains
       phys_loadbalance_out    =phys_loadbalance,    &
       phys_twin_algorithm_out =phys_twin_algorithm, &
       phys_alltoall_out       =phys_alltoall,       &
-      phys_chnk_per_thd_out   =phys_chnk_per_thd    )
+      phys_chnk_per_thd_out   =phys_chnk_per_thd,   &
+      phys_chnk_cost_write_out=phys_chnk_cost_write )
 
    ! conservation
    call check_energy_defaultopts( &
@@ -403,7 +408,8 @@ contains
        phys_loadbalance_in    =phys_loadbalance,    &
        phys_twin_algorithm_in =phys_twin_algorithm, &
        phys_alltoall_in       =phys_alltoall,       &
-       phys_chnk_per_thd_in   =phys_chnk_per_thd    )
+       phys_chnk_per_thd_in   =phys_chnk_per_thd,   &
+       phys_chnk_cost_write_in=phys_chnk_cost_write )
 
    ! conservation
    call check_energy_setopts( &
@@ -622,6 +628,7 @@ subroutine distnl
    call mpibcast (phys_twin_algorithm,1,mpiint,0,mpicom)
    call mpibcast (phys_alltoall      ,1,mpiint,0,mpicom)
    call mpibcast (phys_chnk_per_thd  ,1,mpiint,0,mpicom)
+   call mpibcast (phys_chnk_cost_write,1,mpilog,0,mpicom)
 
    ! Physics buffer
    call mpibcast (pbuf_global_allocate, 1, mpilog, 0, mpicom)

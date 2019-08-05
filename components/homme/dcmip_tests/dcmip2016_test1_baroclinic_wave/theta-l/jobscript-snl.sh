@@ -1,13 +1,12 @@
 #!/bin/bash
 #
 #SBATCH --job-name d16-1-preqx 
-#SBATCH --account=FY150001
-#SBATCH -N 30
-#SBATCH --time=0:60:00
-#SBATCH -p ec
-#PBS -q acme
-#PBS -l walltime=30:00
-#PBS -l nodes=25
+#XXSBATCH --account=FY150001
+#XXSBATCH -p ec
+#SBATCH --account=condo
+#SBATCH -p acme-centos6
+#SBATCH -N 10
+#SBATCH --time=0:10:00
 #
 # 25 nodes, 30min sufficient for all 5 runs
 # 12 nodes, 10min for r400 an r100
@@ -17,15 +16,9 @@ export OMP_NUM_THREADS=1
 export OMP_STACKSIZE=16M     #  Cori has 96GB per node. had to lower to 8M on 3K nodes
 export MV2_ENABLE_AFFINITY=0
 NCPU=40
-if [ -n "$PBS_ENVIRONMENT" ]; then
-#  NCPU=$PBS_NNODES
-  [ "$PBS_ENVIRONMENT" = "PBS_BATCH" ] && cd $PBS_O_WORKDIR 
-  NCPU=$PBS_NNODES
-  let NCPU/=$OMP_NUM_THREADS
-fi
 if [ -n "$SLURM_NNODES" ]; then
     NCPU=$SLURM_NNODES
-    let NCPU*=16
+    let NCPU*=$SLURM_CPUS_ON_NODE
     let NCPU/=$OMP_NUM_THREADS
 fi
 let PPN=36/$OMP_NUM_THREADS

@@ -192,6 +192,7 @@ module pio_types
     type, public :: File_desc_t
        type(iosystem_desc_t), pointer :: iosystem => null()
        type(io_data_list), pointer :: data_list_top  => null()  ! used for non-blocking pnetcdf calls
+       type(io_data_list), pointer :: data_list_end  => null()  ! used for non-blocking pnetcdf calls
        integer :: buffsize=0
        integer(i4) :: fh
        integer(kind=PIO_OFFSET) :: offset             ! offset into file

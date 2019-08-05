@@ -218,7 +218,7 @@ contains
     !-----------------------------------------------------------------------
 
     ! Added 5/4/04, PET: initialize forc_hgt_u (gridcell-level),
-    ! since this is not initialized before first call to CNVegStructUpdate,
+    ! since this is not initialized before first call to VegStructUpdate,
     ! and it is required to set the upper bound for canopy top height.
     ! Changed 3/21/08, KO: still needed but don't have sufficient information 
     ! to set this properly (e.g., patch-level displacement height and roughness 

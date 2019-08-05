@@ -380,7 +380,7 @@ contains
 
 
   !_____________________________________________________________________
-  subroutine set_thermostate(elem,temperature,hvcoord,nt,ntQ)
+  subroutine set_thermostate(elem,temperature,hvcoord)
   !
   ! Assuming a hydrostatic intital state and given surface pressure,
   ! and no moisture, compute theta and phi 
@@ -394,6 +394,7 @@ contains
   real (kind=real_kind), intent(in) :: temperature(np,np,nlev)
   type (hvcoord_t),     intent(in)  :: hvcoord                      ! hybrid vertical coordinate struct
   
+#if 0
   !   local
   real (kind=real_kind) :: p(np,np,nlev)
   real (kind=real_kind) :: dp(np,np,nlev)
@@ -431,6 +432,8 @@ contains
      endif
   enddo
 
+#endif
+
   end subroutine set_thermostate
 
 
@@ -460,12 +463,12 @@ contains
 
 
 
-  subroutine set_state_i(u,v,w,T,ps,phis,p,dp,zm,g,i,j,k,elem,n0,n1)
+  subroutine set_state_i(u,v,w,T,ps,phis,p,zm,g,i,j,k,elem,n0,n1)
   !
   ! set state variables at node(i,j,k) at layer interfaces
   ! preqx model has no such variables, so do nothing
   !
-  real(real_kind),  intent(in)    :: u,v,w,T,ps,phis,p,dp,zm,g
+  real(real_kind),  intent(in)    :: u,v,w,T,ps,phis,p,zm,g
   integer,          intent(in)    :: i,j,k,n0,n1
   type(element_t),  intent(inout) :: elem
 
@@ -603,7 +606,7 @@ contains
   end subroutine 
 
   !_____________________________________________________________________
-  subroutine tests_finalize(elem, hvcoord,ns,ne,ie)
+  subroutine tests_finalize(elem, hvcoord,ie)
 
   ! Now that all variables have been initialized, set phi to be in hydrostatic balance
 
@@ -611,8 +614,9 @@ contains
 
   type(hvcoord_t),     intent(in)   :: hvcoord
   type(element_t),     intent(inout):: elem
-  integer,             intent(in)   :: ns,ne
   integer, optional,   intent(in)   :: ie ! optional element index, to save initial state
+#if 0
+  integer,             intent(in)   :: ns,ne
 
   integer :: k,tl, ntQ
   real(real_kind), dimension(np,np,nlev) :: dp, kappa_star
@@ -647,7 +651,7 @@ real(real_kind), dimension(np,np,nlev) :: pnh,dpnh,exner
   enddo
 
   if(present(ie)) call save_initial_state(elem%state,ie)
-
+#endif
 
   end subroutine tests_finalize
 
