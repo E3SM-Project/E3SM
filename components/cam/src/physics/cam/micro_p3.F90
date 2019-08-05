@@ -1148,7 +1148,7 @@ contains
 
        !.......................................
        ! homogeneous freezing of cloud and rain
-       call homogeneous_freezing(kts,kte,t,exner(i,:),xlf(i,:),  & 
+       call homogeneous_freezing(kts,kte,t(i,:),exner(i,:),xlf(i,:),  & 
          qc(i,:),nc(i,:),qr(i,:),nr(i,:),qitot(i,:),nitot(i,:),qirim(i,:),birim(i,:),th(i,:)) 
 
        !...................................................
