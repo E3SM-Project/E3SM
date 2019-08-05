@@ -227,8 +227,14 @@ contains
     call nf_variable_attributes(ncdf, 'u', 'longitudinal wind component','meters/second')
     call nf_variable_attributes(ncdf, 'v', 'latitudinal wind component','meters/second')
     call nf_variable_attributes(ncdf, 'T', 'Temperature','degrees kelvin')
+!how does it work if preqx wants to output w of phi?
+#ifdef MODEL_THETA_L
     call nf_variable_attributes(ncdf, 'w_nlev', 'vertical wind component','meters/second')
     call nf_variable_attributes(ncdf, 'w_nlevp', 'vertical wind component','meters/second')
+    call nf_variable_attributes(ncdf, 'Th', 'potential temperature \theta','...')
+    call nf_variable_attributes(ncdf, 'mu', 'mu=dp/d\pi','dimensionless')
+    call nf_variable_attributes(ncdf, 'geo_nlevp', 'geopotential','meters')
+#endif
 #ifdef _PRIM
     call nf_variable_attributes(ncdf, 'geos', 'surface geopotential','m^2/s^2')
     call nf_variable_attributes(ncdf, 'precl','Precipitation rate','meters of water/s')

@@ -49,7 +49,7 @@ module interp_movie_mod
 #undef V_IS_LATLON
 #if defined(_PRIM)
 #define V_IS_LATLON
-  integer, parameter :: varcnt = 42 !45
+  integer, parameter :: varcnt = 45 !45
   integer, parameter :: maxdims =  5
   character*(*), parameter :: varnames(varcnt)=(/'ps       ', &
                                                  'geos     ', &
@@ -64,7 +64,10 @@ module interp_movie_mod
                                                  'Th       ', &
                                                  'u        ', &
                                                  'v        ', &
-                                                 'w        ', &
+                                                 'w_nlev   ', &
+                                                 'w_nlevp  ', &
+                                                 'mu       ', &
+                                                 'geo_nlevp', &
                                                  'ke       ', &
                                                  'Q        ', &
                                                  'Q2       ', &
@@ -101,6 +104,7 @@ module interp_movie_mod
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
                                           PIO_double,&
                                           PIO_double,PIO_double,&
+                                          PIO_double,PIO_double,PIO_double,&
                                           PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
                                           PIO_double,PIO_double,PIO_double,&
@@ -113,6 +117,7 @@ module interp_movie_mod
                                               .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
+                                              .false.,.false.,.false.,&
                                               .false.,.true. ,.true. ,&
                                               .true.,.true. ,.true. ,&   ! gw,lev,ilev
                                               .true. ,.true. ,&   ! hy arrays
@@ -132,7 +137,10 @@ module interp_movie_mod
        1,2,3,5,0,  &   ! Th
        1,2,3,5,0,  &   ! u
        1,2,3,5,0,  &   ! v
-       1,2,3,5,0,  &   ! w
+       1,2,3,5,0,  &   ! w_nlev
+       1,2,4,5,0,  &   ! w_nlevp
+       1,2,4,5,0,  &   ! mu
+       1,2,4,5,0,  &   ! geo_nlevp
        1,2,3,5,0,  &   ! ke
        1,2,3,5,0,  &   ! Q
        1,2,3,5,0,  &   ! Q2
@@ -284,6 +292,7 @@ contains
     ! Create the DOF arrays
     allocate(ldof2d(lcount))
     allocate(ldof3d(lcount*nlev))
+    allocate(ldof3dp1(lcount*nlevp))
     icnt=0
     do ie=1,nelemd
        do i=1,interpdata(ie)%n_interp
@@ -300,6 +309,16 @@ contains
           end do
        end do
     end do
+    icnt=0
+    do k=1,nlevp
+       do ie=1,nelemd
+          do i=1,interpdata(ie)%n_interp
+             icnt=icnt+1
+             ldof3dp1(icnt)=interpdata(ie)%ilon(i)+(interpdata(ie)%ilat(i)-1)*nlon+(k-1)*nlat*nlon
+          end do
+       end do
+    end do
+
     call getiodof(2, (/nlon,nlat/), iorank, iodof2d, start2d(1:2), count2d(1:2))
 
     call nf_init_decomp(ncdf, (/1,2/), ldof2d, iodof2d,start2d(1:2),count2d(1:2))
@@ -308,7 +327,11 @@ contains
 
     call nf_init_decomp(ncdf, (/1,2,3/), ldof3d, iodof3d,start3d(1:3),count3d(1:3))
 
-    deallocate(iodof2d, iodof3d, ldof2d,ldof3d)
+    call getiodof(3, (/nlon,nlat,nlevp/), iorank, iodof3dp1, start3dp1(1:3), count3dp1(1:3))
+
+    call nf_init_decomp(ncdf, (/1,2,3/), ldof3dp1, iodof3dp1, start3dp1(1:3), count3dp1(1:3))
+
+    deallocate(iodof2d, iodof3d, iodof3dp1, ldof2d, ldof3d, ldof3dp1)
 
     call nf_output_register_variables(ncdf,varcnt,varnames,vardims,vartype,varrequired)
     do ios = 1, max_output_streams
