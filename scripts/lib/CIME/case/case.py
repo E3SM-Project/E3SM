@@ -1021,6 +1021,7 @@ class Case(object):
         # we don't want to resolve variables until we need them
         if output_root is None:
             output_root = self.get_value("CIME_OUTPUT_ROOT")
+        output_root = os.path.abspath(output_root)
         self.set_value("CIME_OUTPUT_ROOT", output_root)
         if non_local:
             self.set_value("EXEROOT", os.path.join(output_root, self.get_value("CASE"), "bld"))
