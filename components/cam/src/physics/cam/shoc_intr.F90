@@ -92,7 +92,7 @@ module shoc_intr
   
   real(r8), parameter :: unset_r8 = huge(1.0_r8)
   
-  real(r8) :: shoc_timestep = unset_r8  ! Default SHOC timestep, unless overwriten by namelist
+  real(r8) :: shoc_timestep = unset_r8  ! Default SHOC timestep set in namelist
   real(r8) :: dp1
   
   integer :: edsclr_dim
