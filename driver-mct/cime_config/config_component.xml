@@ -2607,18 +2607,27 @@
     <desc>External script to be run after model completion</desc>
   </entry>
 
+ <entry id="EXTERNAL_WORKFLOW">
+   <type>logical</type>
+   <valid_values>TRUE,FALSE</valid_values>
+   <default_value>FALSE</default_value>
+   <group>external_tools</group>
+   <file>env_run.xml</file>
+   <desc>whether the case uses an external workflow driver </desc>
+ </entry>
+
  <!-- Job Submission stuff -->
  <entry id="USER_REQUESTED_QUEUE">
    <type>char</type>
    <group>job_submission</group>
-   <file>env_batch.xml</file>
+   <file>env_workflow.xml</file>
    <desc>Store user override for queue</desc>
  </entry>
 
  <entry id="USER_REQUESTED_WALLTIME">
    <type>char</type>
    <group>job_submission</group>
-   <file>env_batch.xml</file>
+   <file>env_workflow.xml</file>
    <desc>Store user override for walltime</desc>
  </entry>
 
@@ -2627,7 +2636,7 @@
    <valid_values></valid_values>
    <default_value></default_value>
    <group>job_submission</group>
-   <file>env_batch.xml</file>
+   <file>env_workflow.xml</file>
    <desc>The machine queue in which to submit the job.  Default determined in config_machines.xml can be overwritten by testing</desc>
  </entry>
 
@@ -2636,7 +2645,7 @@
    <valid_values></valid_values>
    <default_value></default_value>
    <group>job_submission</group>
-   <file>env_batch.xml</file>
+   <file>env_workflow.xml</file>
    <desc>The machine wallclock setting.  Default determined in config_machines.xml can be overwritten by testing</desc>
  </entry>
 
@@ -2645,7 +2654,7 @@
     <valid_values></valid_values>
     <default_value></default_value>
     <group>job_submission</group>
-    <file>env_batch.xml</file>
+    <file>env_workflow.xml</file>
     <desc>Override the batch submit command this job. Do not include executable or dependencies</desc>
   </entry>
 
@@ -2653,7 +2662,7 @@
    <type>char</type>
    <default_value></default_value>
    <group>job_submission</group>
-   <file>env_batch.xml</file>
+   <file>env_workflow.xml</file>
    <desc>project for project-sensitive build and run paths, and job scripts</desc>
  </entry>
 
@@ -2661,7 +2670,7 @@
    <type>char</type>
    <default_value></default_value>
    <group>job_submission</group>
-   <file>env_batch.xml</file>
+   <file>env_workflow.xml</file>
    <desc>project to charge in scripts if different from PROJECT</desc>
  </entry>
 
@@ -2681,6 +2690,7 @@
    <file>env_batch.xml</file>
    <desc>whether the PROJECT value is required on this machine</desc>
  </entry>
+
 
  <help>
     =========================================

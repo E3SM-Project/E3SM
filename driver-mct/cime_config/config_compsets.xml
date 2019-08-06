@@ -16,7 +16,7 @@
     without any prognostic components.
     For the compsets below the following are the only allowable values of the components.
 
-    TIME = Time period (e.g. 2000, HIST, RCP8...)
+    TIME = Time period (e.g. 2000, HIST, SSP585...)
     ATM  = [DATM, SATM, XATM]
     LND  = [DLND, SLND, XLND]
     ICE  = [DICE, SICE, XICE]
