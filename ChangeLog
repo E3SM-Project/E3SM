@@ -1,5 +1,20 @@
 ======================================================================
 
+Originator: cacraig
+Date: 
+Tag: branch rce_release, tag snap07
+Answer Changes: Merge up to cime5.6.20
+Tests: 
+Dependencies:
+
+Brief Summary:
+
+User interface changes: 
+
+Modified files: git diff --name-status [previous_tag]
+
+======================================================================
+
 Originator: brianpm, cacraig
 Date: 
 Tag: branch rce_n01, tag snap05
