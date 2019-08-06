@@ -25,7 +25,7 @@ module prim_advance_mod
   use edge_mod,           only: edge_g, edgevpack_nlyr, edgevunpack_nlyr
   use edgetype_mod,       only: EdgeBuffer_t,  EdgeDescriptor_t, edgedescriptor_t
   use element_mod,        only: element_t
-  use element_state,      only: max_itercnt_perstep,avg_itercnt,max_itererr_perstep, nu_scale_top, nlev_tom
+  use element_state,      only: nu_scale_top, nlev_tom, max_itercnt, max_itererr
   use element_ops,        only: set_theta_ref, state0, get_R_star
   use eos,                only: pnh_and_exner_from_eos,phi_from_eos,get_dirk_jacobian
   use hybrid_mod,         only: hybrid_t
@@ -102,6 +102,11 @@ contains
     n0    = tl%n0
     np1   = tl%np1
     nstep = tl%nstep
+
+    ! dirk settings
+    maxiter=10
+    itertol=1e-12
+
 
     ! get timelevel for accessing tracer mass Qdp() to compute virtual temperature
     call TimeLevel_Qdp(tl, qsplit, qn0)  ! compute current Qdp() timelevel
@@ -210,8 +215,6 @@ contains
 
       ahat4 = 1d0
       ahat1 = 0d0
-      max_itercnt_perstep = 0
-      max_itererr_perstep = 0.0  
       ! IMEX-KGNO243
       dhat2 = (1.+sqrt(3.)/3.)/2.
       dhat3 = dhat2
@@ -223,45 +226,29 @@ contains
         deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
   
 
-      maxiter=10
-      itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
-      max_itererr_perstep = max(itertol,max_itererr_perstep)
  
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a2,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat2/a2,1d0)
 
-      maxiter=10
-      itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol) 
-      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
-      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a3,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat3/a3,1d0)
 
-      maxiter=10
-      itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
-      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a4,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,eta_ave_w,1d0,ahat4/a4,1d0)
 
-      avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
 
 !==============================================================================================
     elseif (tstep_type == 7) then  ! imkg254, most robust of the methods
  
-      max_itercnt_perstep = 0
-      max_itererr_perstep = 0.0
-
       a1 = 1/4d0
       a2 = 1/6d0
       a3 = 3/8d0
@@ -285,49 +272,29 @@ contains
 
       call compute_andor_apply_rhs(np1,n0,n0,qn0,a1*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
-      maxiter=10
-      itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
-      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat2/a2,1d0)
-      maxiter=10
-      itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
-      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat3/a3,1d0)
-      maxiter=10
-      itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
-      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a4*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat4/a4,1d0)
-      maxiter=10
-      itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat4*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
-      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,eta_ave_w,1d0,ahat5/a5,1d0)
 
-      avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
 !================================================================================
     elseif (tstep_type == 8) then ! IMKG253, might be more efficient than IMKG254, might be a teeny bit bad at coarse resolution
-
-      max_itercnt_perstep = 0
-      max_itererr_perstep = 0.0
 
       a1 = 1/4d0
       a2 = 1/6d0
@@ -347,41 +314,25 @@ contains
  
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,0d0,1d0)
-      maxiter=10
-      itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
-      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat3/a3,1d0)
-      maxiter=10
-      itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
-      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a4*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat4/a4,1d0)
-      maxiter=10
-      itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat4*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
-      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,eta_ave_w,1d0,ahat5/a5,1d0)
 
-      avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
 !================================================================================
     elseif (tstep_type == 9) then ! IMKG252, use if feeling lucky, might be bad at coarse resolution
  
-      max_itercnt_perstep = 0
-      max_itererr_perstep = 0.0
-
       a1 = 1/4d0
       a2 = 1/6d0
       a3 = 3/8d0
@@ -401,26 +352,17 @@ contains
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,0d0,1d0) 
-      maxiter=10
-      itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
-      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a4*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat4/a4,1d0)
-      maxiter=10
-      itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat4*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
-      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,eta_ave_w,1d0,ahat5/a5,1d0)
 
-      avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
 !================================================================================                                      
     elseif (tstep_type == 10) then ! IMKG232b
       a1 = 1d0/2d0
@@ -434,28 +376,17 @@ contains
       call compute_andor_apply_rhs(np1,n0,n0,qn0,dt*a1,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)  
 
-      maxiter=10
-      itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
-      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a2,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat2/a2,1d0)
 
-      maxiter=10
-      itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol) 
-      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
-      max_itererr_perstep = max(itertol,max_itererr_perstep)
-
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a3,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat3/a3,1d0)
-
-      avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
 
 !===================================================================================
     else
@@ -536,6 +467,10 @@ contains
     n0    = tl%n0
     np1   = tl%np1
     nstep = tl%nstep
+
+    ! dirk settings
+    maxiter=10
+    itertol=1e-12
 
     ! get timelevel for accessing tracer mass Qdp() to compute virtual temperature
     call TimeLevel_Qdp(tl, qsplit, qn0)  ! compute current Qdp() timelevel
@@ -643,8 +578,6 @@ contains
 
       ahat4 = 1.
       ahat1 = 0.
-      max_itercnt_perstep = 0
-      max_itererr_perstep = 0.0  
       ! IMEX-KGNO243
       dhat2 = (1.+sqrt(3.)/3.)/2.
       dhat3 = dhat2
@@ -655,8 +588,6 @@ contains
       call compute_andor_apply_rhs(np1,n0,n0,qn0,dt*a1,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,0d0,1d0)
   
-      maxiter=10
-      itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
       sumiter = maxiter 
@@ -665,8 +596,6 @@ contains
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a2,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat2/a2,1d0)
 
-      maxiter=10
-      itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol) 
       sumiter = sumiter + maxiter
@@ -674,8 +603,6 @@ contains
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a3,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat3/a3,1d0)
 
-      maxiter=10
-      itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
       sumiter = sumiter + maxiter
@@ -692,9 +619,6 @@ contains
 !==============================================================================================
     elseif (tstep_type == 7) then  ! imkg254, most robust of the methods
  
-      max_itercnt_perstep = 0
-      max_itererr_perstep = 0.0
-
       a1 = 1/4d0
       a2 = 1/6d0
       a3 = 3/8d0
@@ -718,49 +642,29 @@ contains
 
       call compute_andor_apply_rhs(np1,n0,n0,qn0,a1*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
-      maxiter=10
-      itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
-      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat2/a2,1d0)
-      maxiter=10
-      itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
-      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat3/a3,1d0)
-      maxiter=10
-      itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
-      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a4*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat4/a4,1d0)
-      maxiter=10
-      itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat4*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
-      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,eta_ave_w,1d0,ahat5/a5,1d0)
 
-      avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
 !================================================================================
     elseif (tstep_type == 8) then ! IMKG253, might be more efficient than IMKG254, might be a teeny bit bad at coarse resolution
-
-      max_itercnt_perstep = 0
-      max_itererr_perstep = 0.0
 
       a1 = 1/4d0
       a2 = 1/6d0
@@ -780,41 +684,25 @@ contains
  
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,0d0,1d0)
-      maxiter=10
-      itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
-      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat3/a3,1d0)
-      maxiter=10
-      itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
-      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a4*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat4/a4,1d0)
-      maxiter=10
-      itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat4*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
-      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,eta_ave_w,1d0,ahat5/a5,1d0)
 
-      avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
 !================================================================================
     elseif (tstep_type == 9) then ! IMKG252, use if feeling lucky, might be bad at coarse resolution
  
-      max_itercnt_perstep = 0
-      max_itererr_perstep = 0.0
-
       a1 = 1/4d0
       a2 = 1/6d0
       a3 = 3/8d0
@@ -834,26 +722,17 @@ contains
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,0d0,1d0) 
-      maxiter=10
-      itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
-      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a4*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat4/a4,1d0)
-      maxiter=10
-      itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat4*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
-      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,eta_ave_w,1d0,ahat5/a5,1d0)
 
-      avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
 ! ==================================================================================
     elseif (tstep_type == 10) then ! IMKG232b
       a1 = 1d0/2d0
@@ -867,28 +746,19 @@ contains
       call compute_andor_apply_rhs(np1,n0,n0,qn0,dt*a1,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)  
 
-      maxiter=10
-      itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
-      max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a2,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat2/a2,1d0)
 
-      maxiter=10
-      itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol) 
-      max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
-      max_itererr_perstep = max(itertol,max_itererr_perstep)
-
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a3,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat3/a3,1d0)
 
-      avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
+
 
 !=========================================================================================
     else if (tstep_type==20) then ! ARKode RK2
@@ -1667,7 +1537,7 @@ contains
         do j=1,np
         do i=1,np
            if ( abs(temp(i,j,1)-elem(ie)%state%w_i(i,j,nlevp,n0)) >1e-10) then
-              write(iulog,*) 'WARNING: w(n0) does not satisfy b.c.',ie,i,j,k
+              write(iulog,*) 'WARNING:CAAR w(n0) does not satisfy b.c.',ie,i,j,k
               write(iulog,*) 'val1 = ',temp(i,j,1)
               write(iulog,*) 'val2 = ',elem(ie)%state%w_i(i,j,nlevp,n0)
               write(iulog,*) 'diff: ',temp(i,j,1)-elem(ie)%state%w_i(i,j,nlevp,n0)
@@ -1683,7 +1553,7 @@ contains
         do j=1,np
         do i=1,np
            if ((phi_i(i,j,k)-phi_i(i,j,k+1)) < g) then
-              write(iulog,*) 'WARNING: before ADV, delta z < 1m. ie,i,j,k=',ie,i,j,k
+              write(iulog,*) 'WARNING:CAAR before ADV, delta z < 1m. ie,i,j,k=',ie,i,j,k
               write(iulog,*) 'phi(i,j,k)=  ',phi_i(i,j,k)
               write(iulog,*) 'phi(i,j,k+1)=',phi_i(i,j,k+1)
            endif
@@ -2223,7 +2093,7 @@ contains
         do j=1,np
         do i=1,np
            if ( abs(temp(i,j,1)-elem(ie)%state%w_i(i,j,nlevp,np1)) >1e-10) then
-              write(iulog,*) 'WARNING: w(np1) does not satisfy b.c.',ie,i,j,k
+              write(iulog,*) 'WARNING:CAAR w(np1) does not satisfy b.c.',ie,i,j,k
               write(iulog,*) 'val1 = ',temp(i,j,1)
               write(iulog,*) 'val2 = ',elem(ie)%state%w_i(i,j,nlevp,np1)
               write(iulog,*) 'diff: ',temp(i,j,1)-elem(ie)%state%w_i(i,j,nlevp,np1)
@@ -2236,7 +2106,7 @@ contains
         do j=1,np
         do i=1,np
            if ((elem(ie)%state%phinh_i(i,j,k,np1)-elem(ie)%state%phinh_i(i,j,k+1,np1)) < g) then
-              write(iulog,*) 'WARNING: after ADV, delta z < 1m. ie,i,j,k=',ie,i,j,k
+              write(iulog,*) 'WARNING:CAAR after ADV, delta z < 1m. ie,i,j,k=',ie,i,j,k
               write(iulog,*) 'phi(i,j,k)=  ',elem(ie)%state%phinh_i(i,j,k,np1)
               write(iulog,*) 'phi(i,j,k+1)=',elem(ie)%state%phinh_i(i,j,k+1,np1)
            endif
@@ -2327,6 +2197,9 @@ contains
     phi_np1 => elem(ie)%state%phinh_i(:,:,:,np1)
     phis => elem(ie)%state%phis(:,:)
 
+    ! add in w_explicit to initial guess:                                                                               
+    phi_np1(:,:,1:nlev) = phi_np1(:,:,1:nlev) + dt2*g*elem(ie)%state%w_i(:,:,1:nlev,np1)
+
     call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk1')
 
     dp3d_i(:,:,1) = dp3d(:,:,1)
@@ -2396,7 +2269,7 @@ contains
            ! remove the last netwon increment, try reduced increment
            phi_np1(i,j,1:nlev) = phi_np1(i,j,1:nlev) - x(1:nlev,i,j)/(2**nsafe)
         enddo
-        if (nsafe>1) print *,'WARNING: reducing newton increment, nsafe=',nsafe
+        if (nsafe>1) write(iulog,*) 'WARNING:IMEX reducing newton increment, nsafe=',nsafe
         ! if nsafe>1, code will probably crash soon
         ! if nsafe>8, code will crash in next call to pnh_and_exner_from_eos
       end do
@@ -2428,15 +2301,17 @@ contains
     end do ! end do for the do while loop
 
     if (itercount >= maxiter) then
-      call abortmp('Error: nonlinear solver failed b/c max iteration count was met')
+      write(iulog,*) 'WARNING:IMEX solver failed b/c max iteration count was met'
     end if
     itercountmax=max(itercount,itercountmax)
     itererrmax=max(itererrmax,itererr)
   end do ! end do for the ie=nets,nete loop
 
-  ! return max iteraitons and max error
-  maxiter=itercountmax
-  itertol=itererrmax
+  ! keep track of running  max iteraitons and max error (reset after each diagnostics output)
+  max_itercnt=max(itercountmax,max_itercnt)
+  max_itererr=max(itererrmax,max_itererr)
+
+
   call t_stopf('compute_stage_value_dirk')
 
   end subroutine compute_stage_value_dirk

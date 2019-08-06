@@ -18,7 +18,7 @@ module prim_state_mod
   use global_norms_mod, only: global_integral, linf_snorm, l1_snorm, l2_snorm
   use element_mod,      only: element_t
   use element_ops,      only: get_field, get_phi
-  use element_state,    only: max_itercnt_perstep,max_itererr_perstep,avg_itercnt,diagtimes
+  use element_state,    only: max_itercnt,max_itererr,diagtimes
   use eos,              only: pnh_and_exner_from_eos
   use viscosity_mod,    only: compute_zeta_C0
   use reduction_mod,    only: parallelmax,parallelmin,parallelmaxwithindex,parallelminwithindex
@@ -149,6 +149,9 @@ contains
     real (kind=real_kind) :: ddt_tot,ddt_diss, ddt_diss_adj
     integer               :: n0, n0q
     integer               :: npts,n,q
+    integer :: max_itercnt_g
+    real (kind=real_kind) :: max_itererr_g
+
 
     call t_startf('prim_printstate')
     if (hybrid%masterthread) then 
@@ -664,6 +667,13 @@ contains
     KEH1=0; KEH2=0;  KEV1=0; KEV2=0;  KEwH1=0; KEwH2=0; KEwH3=0;  KEwV1=0; KEwV2=0; 
 #endif
 
+    max_itercnt_g=parallelmax(max_itercnt,hybrid)
+    max_itererr_g=parallelmax(max_itererr,hybrid)
+    max_itercnt=0 ; max_itererr=0 ! reset max counters each statefreq output
+
+
+
+
     if(hybrid%masterthread) then 
        if(use_moisture)then
           if (qsize>=1) then
@@ -769,10 +779,7 @@ contains
        endif
 
       ! IMEX diagnostics
-      write(iulog,'(a)')        'IMEX diagnostics:                  '
-      write(iulog,'(a,I2)')     'Max iterations in last time-step   :', max_itercnt_perstep
-      write(iulog,'(a,F8.2)')   'Running average of max iterations  :', avg_itercnt
-      write(iulog,'(a,E23.15)') 'Max error in last time-step        :', max_itererr_perstep
+      write(iulog,'(a,I3,E23.15)') 'IMEX max iterations, error:',max_itercnt_g,max_itererr_g
     endif
     
     

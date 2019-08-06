@@ -17,11 +17,8 @@ module element_state
   integer, public, parameter :: diagtimes = 6
 
   ! maximum number of Newton iterations taken for an IMEX-RK stage per time-step
-  integer, public               :: max_itercnt_perstep
-  ! running average of max_itercnt_perstep
-  real (kind=real_kind), public :: avg_itercnt=0.0
-  ! maximum error of Newton iteration for an IMEX-RK stage per time-step
-  real (kind=real_kind), public :: max_itererr_perstep
+  integer, public               :: max_itercnt=0
+  real (kind=real_kind), public :: max_itererr=0
 
   ! pressure based TOM sponge layer
   real (kind=real_kind),public :: nu_scale_top(nlev)
