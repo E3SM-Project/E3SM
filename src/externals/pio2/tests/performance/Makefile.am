@@ -14,7 +14,7 @@ LDADD = $(top_builddir)/src/gptl/libperf_mod.la	\
 $(top_builddir)/src/gptl/libperf_utils.la	\
 ${top_builddir}/tests/general/libpio_tutil.la	\
 ${top_builddir}/src/flib/libpiof.la		\
-${top_builddir}/src/clib/libpio.la
+${top_builddir}/src/clib/libpioc.la
 
 # Find perf_mod and perf_util.
 AM_CPPFLAGS += -I$(top_builddir)/src/gptl

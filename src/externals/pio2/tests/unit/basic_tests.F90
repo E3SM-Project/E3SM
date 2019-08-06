@@ -33,7 +33,7 @@ module basic_tests
 
       ! Local Vars
       character(len=str_len) :: filename
-      integer                :: iotype, ret_val, ret_val2, pio_dim
+      integer                :: iotype, ret_val, ret_val2
 
       err_msg = "no_error"
 
@@ -146,12 +146,6 @@ module basic_tests
       integer                        :: pio_dim
       integer :: unlimdimid
       type(var_desc_t)               :: pio_var
-
-      ! These will be used to set chunk cache sizes in netCDF-4/HDF5
-      ! files.
-      integer(kind=PIO_OFFSET_KIND) :: chunk_cache_size
-      integer(kind=PIO_OFFSET_KIND) :: chunk_cache_nelems
-      real :: chunk_cache_preemption
 
       err_msg = "no_error"
       dims(1) = 3*ntasks

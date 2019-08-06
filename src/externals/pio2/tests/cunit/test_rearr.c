@@ -450,7 +450,8 @@ int test_find_region()
     PIO_Offset regionlen;
 
     /* Call the function we are testing. */
-    regionlen = find_region(ndims, gdimlen, maplen, map, start, count);
+    if (find_region(ndims, gdimlen, maplen, map, start, count, &regionlen))
+        return ERR_WRONG;
 
     /* Check results. */
     if (regionlen != 1 || start[0] != 0 || count[0] != 1)
@@ -511,11 +512,11 @@ int test_define_iodesc_datatypes(int my_rank)
         /* Allocate space for arrays in iodesc that will be filled in
          * define_iodesc_datatypes(). */
         if (!(iodesc.rcount = malloc(iodesc.nrecvs * sizeof(int))))
-            BAIL(PIO_ENOMEM);
+            PBAIL(PIO_ENOMEM);
         if (!(iodesc.rfrom = malloc(iodesc.nrecvs * sizeof(int))))
-            BAIL(PIO_ENOMEM);
+            PBAIL(PIO_ENOMEM);
         if (!(iodesc.rindex = malloc(1 * sizeof(PIO_Offset))))
-            BAIL(PIO_ENOMEM);
+            PBAIL(PIO_ENOMEM);
         iodesc.rindex[0] = 0;
         iodesc.rcount[0] = 1;
 
@@ -525,9 +526,9 @@ int test_define_iodesc_datatypes(int my_rank)
         int num_send_types = iodesc.rearranger == PIO_REARR_BOX ? ios.num_iotasks : 1;
 
         if (!(iodesc.sindex = malloc(num_send_types * sizeof(PIO_Offset))))
-            BAIL(PIO_ENOMEM);
+            PBAIL(PIO_ENOMEM);
         if (!(iodesc.scount = malloc(num_send_types * sizeof(int))))
-            BAIL(PIO_ENOMEM);
+            PBAIL(PIO_ENOMEM);
         for (int st = 0; st < num_send_types; st++)
         {
             iodesc.sindex[st] = 0;
@@ -975,17 +976,17 @@ int test_rearrange_comp2io(MPI_Comm test_comm, int my_rank)
 
     /* Allocate some space for data. */
     if (!(sbuf = calloc(4, sizeof(int))))
-        BAIL(PIO_ENOMEM);
+        PBAIL(PIO_ENOMEM);
     if (!(rbuf = calloc(4, sizeof(int))))
-        BAIL(PIO_ENOMEM);
+        PBAIL(PIO_ENOMEM);
 
     /* Allocate IO system info struct for this test. */
     if (!(ios = calloc(1, sizeof(iosystem_desc_t))))
-        BAIL(PIO_ENOMEM);
+        PBAIL(PIO_ENOMEM);
 
     /* Allocate IO desc struct for this test. */
     if (!(iodesc = calloc(1, sizeof(io_desc_t))))
-        BAIL(PIO_ENOMEM);
+        PBAIL(PIO_ENOMEM);
 
     ios->ioproc = 1;
     ios->compproc = 1;
@@ -1021,17 +1022,17 @@ int test_rearrange_comp2io(MPI_Comm test_comm, int my_rank)
     ios->union_rank = my_rank;
     ios->num_comptasks = 4;
     if (!(ios->ioranks = calloc(ios->num_iotasks, sizeof(int))))
-        BAIL(PIO_ENOMEM);
+        PBAIL(PIO_ENOMEM);
     for (int i = 0; i < TARGET_NTASKS; i++)
         ios->ioranks[i] = i;
     if (!(ios->compranks = calloc(ios->num_comptasks, sizeof(int))))
-        BAIL(PIO_ENOMEM);
+        PBAIL(PIO_ENOMEM);
     for (int i = 0; i < TARGET_NTASKS; i++)
         ios->compranks[i] = i;
 
     /* This is how we allocate a region. */
     if ((ret = alloc_region2(NULL, NDIM1, &ior1)))
-        BAIL(ret);
+        PBAIL(ret);
     ior1->next = NULL;
     if (my_rank == 0)
         ior1->count[0] = 8;
@@ -1040,11 +1041,11 @@ int test_rearrange_comp2io(MPI_Comm test_comm, int my_rank)
 
     /* Create the box rearranger. */
     if ((ret = box_rearrange_create(ios, maplen, compmap, gdimlen, ndims, iodesc)))
-        BAIL(ret);
+        PBAIL(ret);
 
     /* Run the function to test. */
     if ((ret = rearrange_comp2io(ios, iodesc, sbuf, rbuf, nvars)))
-        BAIL(ret);
+        PBAIL(ret);
 
     /* We created send types, so free them. */
     for (int st = 0; st < num_send_types; st++)
@@ -1116,17 +1117,17 @@ int test_rearrange_io2comp(MPI_Comm test_comm, int my_rank)
 
     /* Allocate some space for data. */
     if (!(sbuf = calloc(4, sizeof(int))))
-        BAIL(PIO_ENOMEM);
+        PBAIL(PIO_ENOMEM);
     if (!(rbuf = calloc(4, sizeof(int))))
-        BAIL(PIO_ENOMEM);
+        PBAIL(PIO_ENOMEM);
 
     /* Allocate IO system info struct for this test. */
     if (!(ios = calloc(1, sizeof(iosystem_desc_t))))
-        BAIL(PIO_ENOMEM);
+        PBAIL(PIO_ENOMEM);
 
     /* Allocate IO desc struct for this test. */
     if (!(iodesc = calloc(1, sizeof(io_desc_t))))
-        BAIL(PIO_ENOMEM);
+        PBAIL(PIO_ENOMEM);
 
     ios->ioproc = 1;
     ios->io_rank = my_rank;
@@ -1166,17 +1167,17 @@ int test_rearrange_io2comp(MPI_Comm test_comm, int my_rank)
     ios->num_comptasks = 4;
     ios->num_uniontasks = 4;
     if (!(ios->ioranks = calloc(ios->num_iotasks, sizeof(int))))
-        BAIL(PIO_ENOMEM);
+        PBAIL(PIO_ENOMEM);
     for (int i = 0; i < TARGET_NTASKS; i++)
         ios->ioranks[i] = i;
     if (!(ios->compranks = calloc(ios->num_comptasks, sizeof(int))))
-        BAIL(PIO_ENOMEM);
+        PBAIL(PIO_ENOMEM);
     for (int i = 0; i < TARGET_NTASKS; i++)
         ios->compranks[i] = i;
 
     /* This is how we allocate a region. */
     if ((ret = alloc_region2(NULL, NDIM1, &ior1)))
-        BAIL(ret);
+        PBAIL(ret);
     ior1->next = NULL;
     if (my_rank == 0)
         ior1->count[0] = 8;
@@ -1189,7 +1190,7 @@ int test_rearrange_io2comp(MPI_Comm test_comm, int my_rank)
 
     /* Run the function to test. */
     if ((ret = rearrange_io2comp(ios, iodesc, sbuf, rbuf)))
-        BAIL(ret);
+        PBAIL(ret);
 
     /* We created send types, so free them. */
     for (int st = 0; st < num_send_types; st++)
