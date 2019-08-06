@@ -1122,7 +1122,7 @@ contains
        p3_tend_out(i,:,36) = qc(i,:) ! Liq. sedimentation tendency, initialize 
        p3_tend_out(i,:,37) = nc(i,:) ! Liq. # sedimentation tendency, initialize 
 
-       call cloud_sedimentation(kts,kte, & 
+       call cloud_sedimentation(kts,kte,ktop,kbot,kdir, & 
          qc_incld(i,:),rho(i,:),inv_rho(i,:),lcldm(i,:),acn(i,:),inv_dzq(i,:), & 
          dt,odt,dnu,lammin,lammax,log_predictNc, & 
          qc(i,:),nc(i,:),nc_incld(i,:),mu_c(i,:),nu(i,:),lamc(i,:),prt_liq(i),p3_tend_out(i,:,36),p3_tend_out(i,:,37)) 
@@ -1132,7 +1132,7 @@ contains
        p3_tend_out(i,:,38) = qr(i,:) ! Rain sedimentation tendency, initialize
        p3_tend_out(i,:,39) = nr(i,:) ! Rain # sedimentation tendency, initialize
 
-       call rain_sedimentation(kts,kte, &
+       call rain_sedimentation(kts,kte,ktop,kbot,kdir, &
          qr_incld(i,:),rho(i,:),inv_rho(i,:),rhofacr(i,:),rcldm(i,:),inv_dzq(i,:),dt,odt, & 
          qr(i,:),nr(i,:),nr_incld(i,:),mu_r(i,:),lamr(i,:),prt_liq(i),rflx(i,:),p3_tend_out(i,:,38),p3_tend_out(i,:,39)) 
 
@@ -1141,14 +1141,14 @@ contains
        p3_tend_out(i,:,40) = qitot(i,:) ! Ice sedimentation tendency, initialize
        p3_tend_out(i,:,41) = nitot(i,:) ! Ice # sedimentation tendency, initialize
 
-       call ice_sedimentation(kts,kte,    &
-         rho(i,:),inv_rho(i,:),rhofaci(i,:),icldm(i,:),inv_dzq(i,:),dt,odt,  & 
+       call ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
+         rho(i,:),inv_rho(i,:),rhofaci(i,:),icldm(i,:),inv_dzq(i,:),dt,odt, & 
          qitot(i,:),qitot_incld(i,:),nitot(i,:),qirim(i,:),qirim_incld(i,:),birim(i,:),birim_incld(i,:),nitot_incld(i,:), &
          prt_sol(i),p3_tend_out(i,:,40),p3_tend_out(i,:,41))     
 
        !.......................................
        ! homogeneous freezing of cloud and rain
-       call homogeneous_freezing(kts,kte,t(i,:),exner(i,:),xlf(i,:),  & 
+       call homogeneous_freezing(kts,kte,kbot,ktop,kdir,t(i,:),exner(i,:),xlf(i,:),  & 
          qc(i,:),nc(i,:),qr(i,:),nr(i,:),qitot(i,:),nitot(i,:),qirim(i,:),birim(i,:),th(i,:)) 
 
        !...................................................
@@ -3249,13 +3249,14 @@ mu,dv,sc,dqsdt,dqsidt,ab,abi,kap,eii)
 
 end subroutine get_time_space_phys_variables
 
-subroutine cloud_sedimentation(kts,kte,    &
+subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
    qc_incld,rho,inv_rho,lcldm,acn,inv_dzq,&
    dt,odt,dnu,lammin,lammax,log_predictNc, & 
    qc, nc, nc_incld,mu_c,nu,lamc,prt_liq,qc_tend,nc_tend) 
    
    implicit none 
    integer, intent(in) :: kts, kte
+   integer, intent(in) :: ktop, kbot, kdir 
 
    real(rtype), intent(in), dimension(kts:kte) :: qc_incld
 
@@ -3283,7 +3284,7 @@ subroutine cloud_sedimentation(kts,kte,    &
    
    logical :: log_qxpresent
    integer :: k 
-   integer :: kbot, ktop, kdir, k_qxtop, k_qxbot, k_temp 
+   integer :: k_qxtop, k_qxbot, k_temp 
    integer :: tmpint1 
 
    real(rtype) :: dt_left 
@@ -3298,9 +3299,6 @@ subroutine cloud_sedimentation(kts,kte,    &
  
    real(rtype) :: tmp1, tmp2, dum 
 
-   ktop = kts
-   kbot = kte
-   kdir = -1 
    k_qxtop = kbot 
    log_qxpresent = .false. 
 
@@ -3449,12 +3447,13 @@ subroutine cloud_sedimentation(kts,kte,    &
 
 end subroutine cloud_sedimentation 
 
-subroutine rain_sedimentation(kts,kte,    &
+subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
    qr_incld,rho,inv_rho,rhofacr,rcldm,inv_dzq,dt,odt,  & 
    qr,nr,nr_incld,mu_r,lamr,prt_liq,rflx,qr_tend,nr_tend) 
 
    implicit none 
    integer, intent(in) :: kts, kte
+   integer, intent(in) :: ktop, kbot, kdir
 
    real(rtype), intent(in), dimension(kts:kte) :: qr_incld
 
@@ -3478,7 +3477,7 @@ subroutine rain_sedimentation(kts,kte,    &
     
    logical :: log_qxpresent
    integer :: k 
-   integer :: kbot, ktop, kdir, k_qxtop, k_qxbot, k_temp 
+   integer :: k_qxtop, k_qxbot, k_temp 
    integer :: tmpint1 
 
    real(rtype) :: dt_left 
@@ -3494,9 +3493,6 @@ subroutine rain_sedimentation(kts,kte,    &
    real(rtype) :: tmp1, tmp2, dum1, dum2, inv_dum3 , rdumii, rdumjj
    integer dumii, dumjj 
 
-   ktop = kts
-   kbot = kte
-   kdir = -1 
    k_qxtop = kbot 
    log_qxpresent = .false. 
 
@@ -3616,12 +3612,13 @@ subroutine rain_sedimentation(kts,kte,    &
 
 end subroutine rain_sedimentation
 
-subroutine ice_sedimentation(kts,kte,    &
+subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
    rho,inv_rho,rhofaci,icldm,inv_dzq,dt,odt,  & 
    qitot,qitot_incld,nitot,qirim,qirim_incld,birim,birim_incld,nitot_incld,prt_sol,qi_tend,ni_tend) 
 
    implicit none 
    integer, intent(in) :: kts, kte
+   integer, intent(in) :: ktop, kbot, kdir 
 
    real(rtype), intent(in), dimension(kts:kte) :: rho
    real(rtype), intent(in), dimension(kts:kte) :: inv_rho
@@ -3647,7 +3644,7 @@ subroutine ice_sedimentation(kts,kte,    &
    
    logical :: log_qxpresent
    integer :: k 
-   integer :: kbot, ktop, kdir, k_qxtop, k_qxbot, k_temp 
+   integer :: k_qxtop, k_qxbot, k_temp 
    integer :: tmpint1 
 
    real(rtype) :: dt_left 
@@ -3670,9 +3667,6 @@ subroutine ice_sedimentation(kts,kte,    &
    real(rtype) :: dum1, dum4, dum5, dum6
    integer dumi, dumii, dumjj, dumzz 
 
-   ktop = kts
-   kbot = kte
-   kdir = -1 
    log_qxpresent = .false.  !note: this applies to ice category 'iice' only
    k_qxtop       = kbot
 
@@ -3802,7 +3796,7 @@ subroutine ice_sedimentation(kts,kte,    &
 
 end subroutine
 
-subroutine homogeneous_freezing(kts,kte,t,exner,xlf,  & 
+subroutine homogeneous_freezing(kts,kte,kbot,ktop,kdir,t,exner,xlf,    &
    qc,nc,qr,nr,qitot,nitot,qirim,birim,th) 
   
    !.......................................
@@ -3810,6 +3804,7 @@ subroutine homogeneous_freezing(kts,kte,t,exner,xlf,  &
 
    implicit none 
    integer, intent(in) :: kts, kte
+   integer, intent(in) :: ktop, kbot, kdir 
    real(rtype), intent(in), dimension(kts:kte) :: t 
    real(rtype), intent(in), dimension(kts:kte) :: exner
    real(rtype), intent(in), dimension(kts:kte) :: xlf
@@ -3826,11 +3821,7 @@ subroutine homogeneous_freezing(kts,kte,t,exner,xlf,  &
    real(rtype), intent(inout), dimension(kts:kte) :: th
    real(rtype) :: Q_nuc
    real(rtype) :: N_nuc 
-   integer :: k, ktop, kbot, kdir
-
-   ktop = kts
-   kbot = kte
-   kdir = -1 
+   integer :: k
 
    k_loop_fz:  do k = kbot,ktop,kdir
       if (qc(k).ge.qsmall .and. t(k).lt.homogfrze) then
@@ -3861,10 +3852,6 @@ subroutine homogeneous_freezing(kts,kte,t,exner,xlf,  &
       endif 
 
    enddo k_loop_fz
-
-
-
-
 
 end subroutine 
 
