@@ -24,7 +24,7 @@
   <xs:element name="batch_mail_type_flag" type="xs:string"/>
   <xs:element name="batch_mail_type" type="xs:string"/>
   <xs:element name="batch_mail_default" type="xs:string"/>
-  <xs:element name="template" type="xs:NCName"/>
+  <xs:element name="template" type="xs:anyURI"/>
   <xs:element name="task_count" type="xs:integer"/>
   <xs:element name="walltime" type="xs:string"/>
   <xs:element name="dependency" type="xs:string"/>
@@ -37,7 +37,7 @@
     <xs:complexType>
       <xs:sequence>
         <xs:element ref="batch_system" maxOccurs="unbounded" />
-        <xs:element ref="batch_jobs"/>
+        <xs:element ref="batch_jobs" minOccurs="0" maxOccurs="1"/>
       </xs:sequence>
       <xs:attribute ref="version" use="required"/>
     </xs:complexType>

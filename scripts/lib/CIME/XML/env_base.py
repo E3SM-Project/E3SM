@@ -12,7 +12,7 @@ class EnvBase(EntryID):
     def __init__(self, case_root, infile, schema=None):
         if case_root is None:
             case_root = os.getcwd()
-
+        self._caseroot = case_root
         if os.path.isabs(infile):
             fullpath = infile
         else:

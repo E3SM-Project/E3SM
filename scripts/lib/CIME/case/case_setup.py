@@ -103,9 +103,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
         # Set tasks to 1 if mpi-serial library
         if mpilib == "mpi-serial":
-            for vid, value in case:
-                if vid.startswith("NTASKS") and value != 1:
-                    case.set_value(vid, 1)
+            case.set_value("NTASKS", 1)
 
         # Check ninst.
         # In CIME there can be multiple instances of each component model (an ensemble) NINST is the instance of that component.

@@ -274,7 +274,7 @@ class GenericXML(object):
         return None
 
     def to_string(self, node, method="xml", encoding="us-ascii"):
-        return ET.tostring(node, method=method, encoding=encoding)
+        return ET.tostring(node.xml_element, method=method, encoding=encoding)
 
     #
     # API for operations over the entire file
@@ -332,7 +332,7 @@ class GenericXML(object):
         """
         nodes = self.scan_children(nodename, attributes=attributes, root=root)
 
-        expect(len(nodes) <= 1, "Multiple matches for nodename '{}' and attrs '{}' in file '{}'".format(nodename, attributes, self.filename))
+        expect(len(nodes) <= 1, "Multiple matches for nodename '{}' and attrs '{}' in file '{}', found {} matches".format(nodename, attributes, self.filename, len(nodes)))
         return nodes[0] if nodes else None
 
     def scan_children(self, nodename, attributes=None, root=None):
