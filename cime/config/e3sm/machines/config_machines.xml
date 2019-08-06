@@ -1419,8 +1419,8 @@
         <command name="load">python</command>
         <command name="load">git</command>
         <command name="load">intel/19.0.4</command>
-        <command name="load">cmake/3.14.5</command>
         <command name="load">mvapich2/2.3</command>
+        <command name="load">cmake/3.14.5</command>
         <command name="load">netcdf-fortran/4.4.4</command>
         <command name="load">pnetcdf/1.9.0</command>
       </modules>
@@ -1471,8 +1471,8 @@
         <command name="load">python</command>
         <command name="load">git</command>
         <command name="load">intel/19.0.4</command>
-        <command name="load">cmake/3.14.5</command>
         <command name="load">mvapich2/2.3</command>
+        <command name="load">cmake/3.14.5</command>
         <command name="load">netcdf-fortran/4.4.4</command>
         <command name="load">pnetcdf/1.9.0</command>
       </modules>
