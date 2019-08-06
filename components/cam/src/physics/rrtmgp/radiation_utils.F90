@@ -285,9 +285,10 @@ contains
 
    subroutine handle_error(error_message, stop_on_error)
       use cam_abortutils, only: endrun
+      use cam_logfile, only: iulog
       character(len=*), intent(in) :: error_message
       logical, intent(in), optional :: stop_on_error
-      logical :: stop_on_error_local = .true.
+      logical :: stop_on_error_local = .false.
 
       ! Allow passing of an optional flag to not stop the run if an error is
       ! encountered. This allows this subroutine to be used when inquiring if a
@@ -302,10 +303,10 @@ contains
       ! nothing and return silently.
       if (len(trim(error_message)) > 0) then
          if (stop_on_error_local) then
-           write(*,*) 'TEMPORARY_WARNING ', error_message
-!          Temporary "fix" until a threshold is implemented
-!            call endrun(module_name // ': ' // error_message)
-         end if
+           call endrun(module_name // ': ' // error_message)
+         else
+	   write(iulog,*) 'WARNING THRESHOLD VIOLATED: ', error_message
+	 end if
       end if
    end subroutine handle_error
 
