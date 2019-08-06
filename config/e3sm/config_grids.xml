@@ -911,7 +911,7 @@
       <grid name="rof">r05</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
-      <mask>gx1v6</mask>
+      <mask>oEC60to30v3</mask>
     </model_grid>
 
     <model_grid alias="ne32_ne32" compset="(DOCN|XOCN|SOCN|AQP1)">
@@ -1831,8 +1831,8 @@
     <domain name="ne30np4.pg2">
       <nx>21600</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30pg2_oECv3.190806.nc</file>
-      <file grid="ice|ocn" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30pg2_oECv3.190806.nc</file>
+      <file grid="atm|lnd" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30pg2_oECv3.190806.nc</file>
+      <file grid="ice|ocn" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30pg2_oECv3.190806.nc</file>
       <desc>ne30np4.pg2 is Spectral Elem 1-deg grid w/ 2x2 FV physics grid per element:</desc>
     </domain>
 
