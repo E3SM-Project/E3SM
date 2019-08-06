@@ -1,383 +1,369 @@
 !===============================================================================
-! SVN $Id:  $
-! SVN $URL: $
 ! 12/06/2010  Jim Edwards jedwards@ucar.edu
+! 06/24/2018  Balwinder Singh (balwinder.singh -at- pnnl (dot) gov) removed pio, 
+!             mct, mpi and csm_share dependencies
+!
 ! Interpolate files needed for cam atmosphere dry deposition to model grid
 !===============================================================================
 
 program mkatmsrffile
-  use mpi
-  use pio
-  use mct_mod
-  use shr_mct_mod
-  use shr_kind_mod, only : r8=>shr_kind_r8, shr_kind_cl
-  implicit none
-  integer :: ierr, npes, iam, npft
-  integer, pointer :: sfcgindex(:), atmgindex(:)
 
+  use netcdf, only: nf90_open, nf90_inq_dimid, nf90_inquire_dimension,      &
+       nf90_inq_varid, nf90_get_var, nf90_close, NF90_NOWRITE, nf90_create, &
+       nf90_def_dim, nf90_def_var, nf90_enddef, nf90_put_var, NF90_NOERR,   &
+       nf90_strerror, NF90_DOUBLE, nf90_netcdf4
+
+  implicit none
+
+  !Define datatypes (from csm share library)
+  integer,parameter :: r8 = selected_real_kind(12) ! 8 byte real
+  integer,parameter :: shr_kind_cl = 256           ! long char
+  integer,parameter :: shr_kind_cx = 512           ! extra-long char
+
+  !Other parameters
+  real(r8),parameter :: huge_real = huge(1.0_r8)   ! used to initialize variables
+  
+  !Other variables and pointers
   type rptr
-     real(r8), pointer :: fld(:)
+     real(r8), allocatable :: fld(:)
   end type rptr
 
   type(rptr), pointer :: soilw(:), pft(:), apft(:), asoilw(:)
 
+  character(len=shr_kind_cl) :: srffilename, atmfilename
+  character(len=shr_kind_cl) :: soilwfilename, landfilename, outputfilename
 
-  type(iosystem_desc_t) :: iosystem
+  character(len=shr_kind_cx) :: srf2atmFmapname
 
-  type(mct_gsmap) :: gsMap_srf, gsMap_atm
-  type(mct_SMatP) :: sMatP
-  type(mct_aVect), target :: srf_av, atm_av
+  integer :: i_lp, j_lp, k_lp                       !loop indices
+  integer :: srfnx, atmnx, dimid, nlat, nlon, dim1, dim2, dim3,npft, ntime
+  integer :: ncid_map, ncid_land, ncid_soil, ncid_out
+  integer :: varid, varid1, varid2, n_a, n_b, num_elements
+  integer :: total_grd_pts, irow, icol, nclass
 
+  integer, pointer :: col(:),row(:)
 
+  real(r8) :: total_land, fraction_soilw, rwgt
 
-  integer, pointer :: comps(:) ! array with component ids
-  integer, pointer :: comms(:) ! array with mpicoms
-  type(io_desc_t) :: atm_iodesc, srf_iodesc
-
-  character(len=shr_kind_cl) :: srffilename
-  character(len=shr_kind_cl) :: atmfilename
-
-  character(len=shr_kind_cl) :: soilwfilename
-  character(len=shr_kind_cl) :: landfilename
-
-  character(len=shr_kind_cl) :: outputfilename
-  character(len=shr_kind_cx) :: mapname
-  character(len=shr_kind_cl) :: maptype
-  
-
-  type(file_desc_t) :: landfile, newfile
-  integer, pointer :: dof(:), dof2(:), dof3(:)
   real(r8), pointer :: landmask(:),lake(:), wetland(:), urban(:)
   real(r8), pointer :: alake(:), awetland(:), aurban(:), fraction_landuse(:,:)
-  integer :: srfnx, atmnx, srfnxg, atmnxg, dimid, nlat, nlon, i, j, clen, index, dim1, dim2
-  type(var_desc_t) :: vid, vid1, vid2
-  
-  character(len=*), parameter :: srffields(5) =(/"PCT_LAKE   ",&
-                                                 "PCT_WETLAND",&
-                                                 "PCT_URBAN  ", &
-                                                 "SOILW      ", & 
-                                                 "PCT_PFT    "/)
-  
-  
-  character(len=220) :: rList
-  character(len=6) :: str
-  real(r8) :: total_land, fraction_soilw
   real(r8), pointer :: total_soilw(:,:)
-  Character(len=*), parameter :: ConfigFileName="mkatmsrffile.rc"
+  real(r8), pointer :: tmp2d(:,:), tmp3d(:,:,:)
+  real(r8), pointer :: wgt(:)
 
-  call mpi_init(ierr)
 
-  call mpi_comm_size(MPI_COMM_WORLD, npes, ierr)
-  call mpi_comm_rank(MPI_COMM_WORLD, iam, ierr)
-  call pio_init(iam, MPI_COMM_WORLD, npes, 0, 1, pio_rearr_none, iosystem,base=0)
-  allocate(comps(2), comms(2))
-  comps(1)=1
-  comps(2)=2
-  call mpi_comm_dup(MPI_COMM_WORLD,comms(1),ierr)
-  call mpi_comm_dup(MPI_COMM_WORLD,comms(2),ierr)
-  call mct_world_init(2, MPI_COMM_WORLD, comms, comps)
+  !--------------------------------------------------
+  ! READ NAMELIST
+  !--------------------------------------------------
+
+  namelist /input/srfFileName,atmFileName,landFileName,soilwFileName,srf2atmFmapname,outputFileName 
   
+  open(101, file = 'nml_atmsrf', status = 'old')
+  read(101, nml=input)
+  close(101)
 
-  call I90_allLoadF(ConfigFileName,0,MPI_COMM_WORLD,ierr)
+  !--------------------------------------------------
+  ! READ GRID SIZES
+  !--------------------------------------------------
 
-  call I90_label('srfFileName:', ierr)
-  call i90_gtoken(srffilename, ierr)
-  call I90_label('atmFileName:', ierr)
-  call i90_gtoken(atmfilename, ierr)
-  call I90_label('landFileName:', ierr)
-  call i90_gtoken(landfilename, ierr)
-  call I90_label('soilwFileName:', ierr)
-  call i90_gtoken(soilwfilename, ierr)
-  call I90_label('outputFileName:', ierr)
-  call i90_gtoken(outputfilename, ierr)
-  call i90_release(ierr)
+  !Read grid sizes of srf and atm files
+  call openfile_and_initdecomp(srffilename, srfnx)
+  call openfile_and_initdecomp(atmfilename, atmnx)
 
+  !--------------------------------------------------
+  ! READ MAP FILE
+  !--------------------------------------------------
 
-  call openfile_and_initdecomp(iosystem, srffilename, npes, iam, gsmap_srf, srfnx, srfnxg)
-  call openfile_and_initdecomp(iosystem, atmfilename, npes, iam, gsmap_atm, atmnx, atmnxg)
+  !Read map file for weights and other parameters required for remapping
+  call nc_check(nf90_open(trim(srf2atmFmapname), NF90_NOWRITE, ncid_map), __LINE__)
+  call nc_check(nf90_inq_dimid(ncid_map,"n_a", dimid), __LINE__ )
+  call nc_check(nf90_inquire_dimension(ncid_map, dimid, len = n_a), __LINE__ )
 
- 
-  call shr_mct_queryConfigFile(MPI_COMM_WORLD, "mkatmsrffile.rc", &
-       "srf2atmFmapname:",mapname,"srf2atmFmaptype:",maptype)
-    
-  call shr_mct_sMatPInitnc(sMatP,gsmap_srf, gsmap_atm, &
-       mapname, maptype, MPI_COMM_WORLD)
+  !Sanity check
+  if(n_a .ne. srfnx) then
+     print*,'ERROR: Map dimension (n_a) is not equal to srf grid size dimension (grid_size)'
+     print*,'n_a=',n_a,' and srf grid_size=',srfnx
+     print*,'Exiting'
+     call exit(1)
+  endif
 
+  call nc_check(nf90_inq_dimid(ncid_map,"n_b", dimid), __LINE__ )
+  call nc_check(nf90_inquire_dimension(ncid_map, dimid, len = n_b), __LINE__ )
 
-  ierr = pio_openfile(iosystem, landFile, pio_iotype_netcdf, landfilename, pio_noclobber)
+  !Sanity check
+  if(n_b .ne. atmnx) then
+     print*,'ERROR: Map dimension (n_b) is not equal to atm grid size dimension (grid_size)'
+     print*,'n_b=',n_b,' and atm grid_size=',atmnx
+     print*,'Exiting'
+     call exit(1)
+  endif
 
-  ierr = pio_inq_dimid(landFile, 'lon', dimid)
-  ierr = pio_inq_dimlen(landfile, dimid, nlon)
-  ierr = pio_inq_dimid(landFile, 'lat', dimid)
-  ierr = pio_inq_dimlen(landfile, dimid, nlat)
-  ierr = pio_inq_dimid(landFile, 'pft', dimid)
-  ierr = pio_inq_dimlen(landfile, dimid, npft)
+  call nc_check(nf90_inq_dimid(ncid_map,"n_s", dimid), __LINE__ )
+  call nc_check(nf90_inquire_dimension(ncid_map, dimid, len = num_elements), __LINE__ )
 
-  call mct_gsmap_OrderedPoints(gsMap_srf, iam, Dof)
+  !allocate and read map file variables
+  allocate(col(num_elements))
+  call nc_check(nf90_inq_varid(ncid_map,'col',varid), __LINE__)
+  call nc_check(nf90_get_var(ncid_map,varid,col), __LINE__)
 
-  call pio_initdecomp(iosystem, pio_double, (/nlon,nlat/), dof, srf_iodesc)
+  allocate(row(num_elements))
+  call nc_check(nf90_inq_varid(ncid_map,'row',varid), __LINE__)
+  call nc_check(nf90_get_var(ncid_map,varid,row), __LINE__)
 
-  deallocate(dof)
+  allocate(wgt(num_elements))
+  call nc_check(nf90_inq_varid(ncid_map,'S',varid), __LINE__)
+  call nc_check(nf90_get_var(ncid_map,varid,wgt), __LINE__)
 
-  rlist = ' '
-  clen=1
-  do i=1,npft+15
-     if(i<=npft) then
-        write(str,'(A,i2.2,A)') 'pft',i,':'
-        rlist(clen:clen+5) = str
-        clen=clen+6
-     else if(i<=npft+12) then
-        write(str,'(A,i2.2,A)') 'slw',i-npft,':'
-        rlist(clen:clen+5) = str
-        clen=clen+6
-     else
-        if(i==npft+13) clen=clen-1
-        rlist(clen:clen+len_trim(srffields(i-12-npft))) = ':'//trim(srffields(i-12-npft))
-        clen = clen+len_trim(srffields(i))+1
-     end if
-  end do
+  !Close map file
+  call nc_check(nf90_close ( ncid_map ), __LINE__)
 
+  !--------------------------------------------------
+  ! READ LAND INPUT FILE
+  !--------------------------------------------------
 
-  call mct_aVect_init(srf_av, rlist=trim(rlist), lsize=srfnx)
-  call mct_aVect_zero(srf_av)
-  call mct_aVect_init(atm_av, rlist=rlist, lsize=atmnx)
-  call mct_aVect_zero(atm_av)
+  !Read Land file
+  call nc_check(nf90_open(landfilename, NF90_NOWRITE, ncid_land), __LINE__)
+  
+  call nc_check(nf90_inq_dimid(ncid_land, "lon", dimid), __LINE__ )
+  call nc_check(nf90_inquire_dimension(ncid_land, dimid, len = nlon), __LINE__ )
+  call nc_check(nf90_inq_dimid(ncid_land, "lat", dimid), __LINE__ )
+  call nc_check(nf90_inquire_dimension(ncid_land, dimid, len = nlat), __LINE__ )
 
+  !For reshaping arrays to 1d compute total # of grid points
+  total_grd_pts = nlon*nlat
 
-  index = mct_avect_indexra(srf_av,'PCT_LAKE')
-  lake => srf_av%rattr(index,:)
-  ierr = pio_inq_varid( landFile, 'PCT_LAKE', vid) 
-  call pio_read_darray(landFile, vid, srf_iodesc, lake, ierr)
+  !Sanity check
+  if(total_grd_pts .ne. srfnx) then
+     print*,'ERROR: Land file nlat*nlon is not equal to srf grid size dimension (grid_size)'
+     print*,'nlon*nlat=',total_grd_pts,' and srf grid_size=',srfnx
+     print*,'Exiting'
+     call exit(1)
+  endif
+
+  call nc_check(nf90_inq_dimid(ncid_land, "pft", dimid), __LINE__ )
+  call nc_check(nf90_inquire_dimension(ncid_land, dimid, len = npft), __LINE__ )
+
+  !Allocate temporary variables to read data from the netcdf file
+  allocate(tmp2d(nlon,nlat),tmp3d(nlon,nlat,npft))
+  tmp2d(:,:)   = huge_real
+  tmp3d(:,:,:) = huge_real
+
+  allocate(lake(total_grd_pts))
+  call nc_check(nf90_inq_varid(ncid_land,'PCT_LAKE',varid), __LINE__)
+  call nc_check(nf90_get_var(ncid_land,varid,tmp2d), __LINE__)
+  lake(:) = reshape(tmp2d,(/total_grd_pts/)) !reshape to 1d array
   lake = lake * 0.01_r8
 
-  ierr = pio_inq_varid( landFile, 'PCT_PFT', vid) 
-  allocate(pft(npft),apft(npft))
-  do i=1,npft
-     write(str,'(A,i2.2)') 'pft',i
 
-     pft(i)%fld => srf_av%rattr(mct_avect_indexra(srf_av,str(1:5)),:)
-     apft(i)%fld => atm_av%rattr(mct_avect_indexra(atm_av,str(1:5)),:)
+  call nc_check(nf90_inq_varid(ncid_land,'PCT_PFT',varid), __LINE__)
+  call nc_check(nf90_get_var(ncid_land,varid,tmp3d), __LINE__)
 
-     call pio_setframe(landFile, vid,int(i,kind=PIO_OFFSET_KIND))
-     call pio_read_darray(landFile, vid, srf_iodesc, pft(i)%fld, ierr)
-     pft(i)%fld = pft(i)%fld * 0.01_r8
+  allocate(pft(npft),apft(npft)) ! apft is allocated here for atm
+
+  !Storing in a data structure
+  do i_lp = 1, npft
+     !Allocate land data structure and store read in values
+     allocate(pft(i_lp)%fld(total_grd_pts))     
+     pft(i_lp)%fld = reshape(tmp3d(:,:,i_lp),(/total_grd_pts/)) * 0.01_r8
+
+     !Allocate and initialize corresponding atm data structure
+     allocate(apft(i_lp)%fld(atmnx))
+     apft(i_lp)%fld(:) = 0.0_r8
   end do
 
-
-  index = mct_avect_indexra(srf_av,'PCT_WETLAND')
-  wetland => srf_av%rattr(index,:)
-  ierr = pio_inq_varid( landFile, 'PCT_WETLAND', vid) 
-  call pio_read_darray(landFile, vid, srf_iodesc, wetland, ierr)
+  tmp2d(:,:)   = huge_real  !Reinitialize tmp2d to inf
+  allocate(wetland(total_grd_pts))
+  call nc_check(nf90_inq_varid(ncid_land,'PCT_WETLAND',varid), __LINE__)
+  call nc_check(nf90_get_var(ncid_land,varid,tmp2d), __LINE__)
+  wetland = reshape(tmp2d,(/total_grd_pts/))
   wetland = wetland * 0.01_r8
 
-  index = mct_avect_indexra(srf_av,'PCT_URBAN')
-  urban => srf_av%rattr(index,:)
-  ierr = pio_inq_varid( landFile, 'PCT_URBAN', vid) 
-  call pio_read_darray(landFile, vid, srf_iodesc, urban, ierr)
+  tmp2d(:,:)   = huge_real  !Reinitialize tmp2d to inf
+  allocate(urban(total_grd_pts))
+  call nc_check(nf90_inq_varid(ncid_land,'PCT_URBAN',varid), __LINE__)
+  call nc_check(nf90_get_var(ncid_land,varid,tmp2d), __LINE__)
+
+  urban = reshape(tmp2d,(/total_grd_pts/))
   urban = urban * 0.01_r8
 
+  tmp2d(:,:)   = huge_real    !Reinitialize tmp2d to inf
   allocate(landmask(srfnx))
-  ierr = pio_inq_varid( landFile, 'LANDMASK', vid) 
-  call pio_read_darray(landFile, vid, srf_iodesc, landmask, ierr)
+  call nc_check(nf90_inq_varid(ncid_land,'LANDMASK',varid), __LINE__)
+  call nc_check(nf90_get_var(ncid_land,varid,tmp2d), __LINE__)
+  landmask = reshape(tmp2d,(/total_grd_pts/))
 
-  call pio_closefile(landfile)
+  deallocate(tmp2d)
 
-!  call pio_freedecomp(iosystem, srf_iodesc)
+  !close land file
+  call nc_check(nf90_close ( ncid_land ), __LINE__)
 
-  ierr = pio_openfile(iosystem, landFile, pio_iotype_netcdf, soilwfilename, pio_noclobber)
+  !--------------------------------------------------
+  ! READ SOIL FILE
+  !--------------------------------------------------
 
-!  call pio_initdecomp(iosystem, pio_double, (/nlon,nlat,12/), vdof, srf_iodesc)
-  ierr = pio_inq_varid( landFile, 'SOILW', vid) 
-  allocate(soilw(12),asoilw(12))
-  do i=1,12
-     str = ' '
-     write(str,'(A,i2.2)') 'slw',i     
-     soilw(i)%fld => srf_av%rattr(mct_avect_indexra(srf_av,str(1:5)),:)
-     asoilw(i)%fld => atm_av%rattr(mct_avect_indexra(atm_av,str(1:5)),:)
+  !open soil file
+  call nc_check(nf90_open(soilwfilename, NF90_NOWRITE, ncid_soil), __LINE__)
+  call nc_check(nf90_inq_dimid(ncid_soil, "time", dimid), __LINE__ )
+  call nc_check(nf90_inquire_dimension(ncid_land, dimid, len = ntime), __LINE__ )
 
-     call pio_setframe(landFile, vid,int(i,kind=PIO_OFFSET_KIND))
-     call pio_read_darray(landFile, vid, srf_iodesc, soilw(i)%fld, ierr)
+  deallocate(tmp3d) !deallocate as shape of tmp3d will change for next read
+
+  allocate(tmp3d(nlon,nlat,ntime))
+  call nc_check(nf90_inq_varid(ncid_soil,'SOILW',varid), __LINE__)
+  call nc_check(nf90_get_var(ncid_soil,varid,tmp3d), __LINE__)
+
+  !close soil file
+  call nc_check(nf90_close ( ncid_soil ), __LINE__)
+
+  allocate(soilw(ntime),asoilw(ntime)) ! allocate corresponding atm var asoilw as well
+  do i_lp = 1, ntime
+     !Allocate land data structure and store read in values
+     allocate(soilw(i_lp)%fld(total_grd_pts))
+     soilw(i_lp)%fld = reshape(tmp3d(:,:,i_lp),(/total_grd_pts/))
+
+     !Allocate and initialize corresponding atm data structure
+     allocate(asoilw(i_lp)%fld(atmnx))
+     asoilw(i_lp)%fld(:) = 0.0_r8
   end do
-  call pio_closefile(landfile)
-  call pio_freedecomp(iosystem, srf_iodesc)
+  deallocate(tmp3d)
 
-  
-  do i=1,srfnx
-     if(nint(landmask(i)) == 0) then
-        lake(i) = 1.0
-        wetland(i) = 0.0
-        urban(i) = 0.0
-        do j=1,12
-           soilw(j)%fld(i) = 0.0
+  do i_lp = 1, srfnx
+     if(nint(landmask(i_lp)) == 0) then
+        lake(i_lp) = 1.0
+        wetland(i_lp) = 0.0
+        urban(i_lp) = 0.0
+        do j_lp=1,ntime
+           soilw(j_lp)%fld(i_lp) = 0.0
         end do
      end if
   end do
+
+  !Deallocate memory
   deallocate(landmask)
 
-  index = mct_avect_indexra(atm_av,'PCT_LAKE')
-  alake => atm_av%rattr(index,:)
+  !--------------------------------------------------
+  ! Remap to atm grid
+  !--------------------------------------------------
 
+  allocate(alake(atmnx), awetland(atmnx), aurban(atmnx))
+  alake(:)    = 0.0_r8
+  awetland(:) = 0.0_r8
+  aurban(:)   = 0.0_r8 
+  do i_lp = 1, num_elements 
+     irow = row(i_lp)
+     icol = col(i_lp)
+     rwgt = wgt(i_lp)
 
-  call mct_sMat_avMult( srf_av, smatP, atm_av)
+     !Following equation is obtained from : cime/src/externals/mct/mct/m_MatAttrVectMul.F90 (line 254, master hash:8f364f4b926)
+     alake(irow) =  alake(irow) + rwgt*lake(icol)
+     awetland(irow) =  awetland(irow) + rwgt*wetland(icol)
+     aurban(irow) =  aurban(irow) + rwgt*urban(icol)
 
-  index = mct_avect_indexra(atm_av,'PCT_LAKE')
-  alake => atm_av%rattr(index,:)
+     do j_lp = 1, npft
+        apft(j_lp)%fld(irow) = apft(j_lp)%fld(irow) + rwgt*pft(j_lp)%fld(icol)
+     enddo
 
+     do j_lp = 1, ntime 
+        asoilw(j_lp)%fld(irow) = asoilw(j_lp)%fld(irow) + rwgt*soilw(j_lp)%fld(icol)
+     enddo
+  enddo
 
-  index = mct_avect_indexra(atm_av,'PCT_WETLAND')
-  awetland => atm_av%rattr(index,:)
+  !Deallocate memory
+  deallocate(col, row, wgt, lake, pft, wetland, urban, soilw)
 
-  index = mct_avect_indexra(atm_av,'PCT_URBAN')
-  aurban => atm_av%rattr(index,:)
+  !--------------------------------------------------
+  ! Compute fields to output
+  !--------------------------------------------------
+  fraction_soilw = 0.0_r8
 
-
-
-  fraction_soilw=0.0
-
-  allocate(fraction_landuse(atmnx,11))
-  allocate(total_soilw(atmnx,12))
+  nclass = 11
+  allocate(fraction_landuse(atmnx,nclass)) 
+  allocate(total_soilw(atmnx,ntime))
 
   fraction_landuse = 0.0_r8
-  do i=1,atmnx
-     total_soilw(i,:)=0.0
-     total_land = (alake(i)+awetland(i)+aurban(i))
-     do j=1,npft
-        total_land=total_land+apft(j)%fld(i)
+  do i_lp=1,atmnx
+     total_soilw(i_lp,:)=0.0
+     total_land = (alake(i_lp)+awetland(i_lp)+aurban(i_lp))
+     do j_lp=1,npft
+        total_land=total_land+apft(j_lp)%fld(i_lp)
      end do
-     fraction_soilw = total_land - (alake(i)+awetland(i))
+     fraction_soilw = total_land - (alake(i_lp)+awetland(i_lp))
      if(total_land < 1.0_r8) then
-        alake(i) = alake(i) + (1.0_r8 - total_land)
+        alake(i_lp) = alake(i_lp) + (1.0_r8 - total_land)
      end if
      
-!     print *,i,fraction, fraction_soilw
-!     if(abs(fraction-1.0_r8) > 0.1_r8) then
-!        print *, i, fraction, alake(i), awetland(i), aurban(i), (apft(j)%fld(i), j=1,npft)
-!     end if
 
-     do j=1,12
-        total_soilw(i,j) = total_soilw(i,j) + asoilw(j)%fld(i) * fraction_soilw
+     do j_lp=1,ntime
+        total_soilw(i_lp,j_lp) = total_soilw(i_lp,j_lp) + asoilw(j_lp)%fld(i_lp) * fraction_soilw
      end do
 
-     fraction_landuse(i,1) = aurban(i)
-     fraction_landuse(i,2) = apft(16)%fld(i) + apft(17)%fld(i)
-     fraction_landuse(i,3) = apft(13)%fld(i) + apft(14)%fld(i) + apft(15)%fld(i)
-     fraction_landuse(i,4) = apft(5)%fld(i) + apft(6)%fld(i) + apft(7)%fld(i)+ apft(8)%fld(i) + apft(9)%fld(i)
-     fraction_landuse(i,5) = apft(2)%fld(i) + apft(3)%fld(i) + apft(4)%fld(i)
-     fraction_landuse(i,6) = awetland(i)
-     fraction_landuse(i,7) = alake(i)
-     fraction_landuse(i,8) = apft(1)%fld(i)
-     fraction_landuse(i,11) = apft(10)%fld(i) + apft(11)%fld(i) + apft(12)%fld(i)
+     fraction_landuse(i_lp,1 ) = aurban(i_lp)
+     fraction_landuse(i_lp,2 ) = apft(16)%fld(i_lp) + apft(17)%fld(i_lp)
+     fraction_landuse(i_lp,3 ) = apft(13)%fld(i_lp) + apft(14)%fld(i_lp) + apft(15)%fld(i_lp)
+     fraction_landuse(i_lp,4 ) = apft(5 )%fld(i_lp) + apft(6 )%fld(i_lp) + apft(7)%fld(i_lp )+ apft(8)%fld(i_lp) + apft(9)%fld(i_lp)
+     fraction_landuse(i_lp,5 ) = apft(2 )%fld(i_lp) + apft(3 )%fld(i_lp) + apft(4)%fld(i_lp )
+     fraction_landuse(i_lp,6 ) = awetland(i_lp)
+     fraction_landuse(i_lp,7 ) = alake(i_lp)
+     fraction_landuse(i_lp,8 ) = apft(1 )%fld(i_lp)
+     fraction_landuse(i_lp,11) = apft(10)%fld(i_lp) + apft(11)%fld(i_lp) + apft(12)%fld(i_lp)
 
-     if(abs(sum(fraction_landuse(i,:)-1._r8)) > 0.001_r8) then
-        fraction_landuse(i,:) = fraction_landuse(i,:)/sum(fraction_landuse(i,:))
-     end if
-     
-
+     if(abs(sum(fraction_landuse(i_lp,:)-1._r8)) > 0.001_r8) then
+        fraction_landuse(i_lp,:) = fraction_landuse(i_lp,:)/sum(fraction_landuse(i_lp,:))
+     end if     
   end do
 
-  ierr = pio_createfile(iosystem, newFile, pio_iotype_netcdf, trim(outputfilename), pio_clobber)
+  !Deallocate memory
+  deallocate(apft, awetland, aurban, asoilw, alake)
 
-  ierr = pio_def_dim(newFile, 'ncol', atmnxg, dim1)
-  ierr = pio_def_dim(newFile, 'class',11, dim2)
+  !--------------------------------------------------
+  ! Create output file and add fields
+  !--------------------------------------------------
 
-  ierr = pio_def_var(newFile, 'fraction_landuse', pio_double, (/dim1,dim2/), vid1) 
-  ierr = pio_def_dim(newFile, 'month',12, dim2)
+  call nc_check(nf90_create(trim(outputfilename), nf90_netcdf4, ncid = ncid_out), __LINE__ )   
 
-  ierr = pio_def_var(newFile, 'soilw', pio_double, (/dim1,dim2/), vid2) 
-
-  ierr = pio_enddef(newFile)
+  call nc_check(nf90_def_dim(ncid_out, 'ncol', atmnx, dim1), __LINE__ )
+  call nc_check(nf90_def_dim(ncid_out, 'class', nclass, dim2), __LINE__ )
+  call nc_check(nf90_def_dim(ncid_out, 'month', ntime, dim3), __LINE__)
+  call nc_check(nf90_def_var(ncid_out, 'soilw', NF90_DOUBLE, (/dim1,dim3/), varid2), __LINE__)
+  call nc_check(nf90_def_var(ncid_out, 'fraction_landuse', NF90_DOUBLE, (/dim1,dim2/), varid1),__LINE__ )
   
-  call mct_gsmap_OrderedPoints(gsMap_atm, iam, Dof)
+  call nc_check(nf90_enddef(ncid_out), __LINE__ )
 
+  call nc_check(nf90_put_var(ncid_out, varid1, fraction_landuse), __LINE__)
+  call nc_check(nf90_put_var(ncid_out, varid2, total_soilw ), __LINE__)
 
+  call nc_check(nf90_close(ncid_out), __LINE__ )
 
-  allocate(dof2(atmnx*12))
-  do j=1,12
-     do i=1,atmnx
-        dof2(i+(j-1)*atmnx) = dof(i)+(j-1)*atmnxg
-     end do
-  end do
-
-  call pio_initdecomp(iosystem, pio_double, (/atmnxg,11/), dof2(1:11*atmnx-1), atm_iodesc)
-
-  call pio_write_darray(newFile, vid1, atm_iodesc, fraction_landuse ,ierr)
-  call pio_freedecomp(newfile, atm_iodesc)
-
-  call pio_initdecomp(iosystem, pio_double, (/atmnxg,12/), dof2, atm_iodesc)
-
-  call pio_write_darray(newFile, vid2, atm_iodesc, total_soilw ,ierr)
-  call pio_freedecomp(newfile, atm_iodesc)
-
-
-  call pio_closefile(newFile)
-  call pio_finalize(iosystem, ierr)
-
-  deallocate(comps, comms)
-  call mpi_finalize(ierr)
-
+  !Deallocate memory
+  deallocate(fraction_landuse,total_soilw)
 
 contains
 
-  subroutine openfile_and_initdecomp(iosystem, filename, npes, iam, gsmap, nx, nxg)
-    type(iosystem_desc_t) :: iosystem
+  subroutine openfile_and_initdecomp(filename, nx)
     character(len=*), intent(in) :: filename
-    integer, intent(in) :: npes, iam
-    type(mct_gsmap), intent(out) :: gsmap
-    integer, intent(out) :: nx, nxg
-    integer, pointer :: gindex(:)
+    integer, intent(out) :: nx
 
+    call nc_check(nf90_open(filename, NF90_NOWRITE, ncid_out), __LINE__)
 
-
-    gindex => get_grid_index(iosystem, filename, npes, iam, nx, nxg)
-    call mct_gsMap_init( gsMap, gindex, MPI_COMM_WORLD,1 , nx, nxg)
-    deallocate(gindex)
-
-
-
+    call nc_check(nf90_inq_dimid(ncid_out, "grid_size", dimid), __LINE__ )
+    call nc_check(nf90_inquire_dimension(ncid_out, dimid, len = nx), __LINE__ )
+    call nc_check(nf90_close ( ncid_out ), __LINE__)
   end subroutine openfile_and_initdecomp
 
-
-  function get_grid_index(iosystem, filename, npes, iam, nx, nxg) result(gindex)
-    use pio
-    implicit none
-    character(len=*), intent(in) :: filename
-    type(iosystem_desc_t) :: iosystem
-    integer, intent(in) :: npes, iam
-    integer, intent(out) :: nx, nxg
-
-    type(file_desc_t) :: file
-    integer, pointer :: gindex(:)
-
-
-    integer :: dimid, ierr, add1=0, i, start_offset
-
-    ierr = pio_openfile(iosystem, File, PIO_IOTYPE_NETCDF, filename, PIO_NOCLOBBER)
-
-    ierr = pio_inq_dimid(File, 'grid_size', dimid)
-    ierr = pio_inq_dimlen(File, dimid, nxg)
-
-    nx = nxg/npes
-
-    if(nx*npes < nxg-(npes-iam-1)) then
-       start_offset = nxg-(npes-iam-1)-(nx*npes)-1
-       add1 = 1
-    else
-       add1 = 0
-       start_offset=0
+  subroutine nc_check(status, line_num)
+    integer, intent(in) :: status
+    integer, intent(in) :: line_num !line number on which error occured
+    
+    if(status /= nf90_noerr) then 
+      print *, trim(nf90_strerror(status))
+      print*,'Error at line ',line_num, ' of file ', __FILE__
+      print*,'Exiting'
+      call exit(1)
     end if
-    allocate(gindex(nx+add1))
-    do i=1,nx+add1
-       gindex(i)=i+iam*nx+start_offset
-    end do
-
-
-
-  call pio_closefile(FILE)
-
-  end function get_grid_index
+  end subroutine nc_check  
 
 end program mkatmsrffile
 
-
-
-
+!Q: Why total_soilw output field has huge values?
+!A: 12th month of soilw var in the input file clim_soilw.nc has huge values, which
+!   are then remapped to asoilw and then to total_soilw var

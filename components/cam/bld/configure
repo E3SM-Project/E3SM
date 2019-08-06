@@ -1240,10 +1240,10 @@ if (defined $opts{'scam'}) {
 }
 my $scam = $cfg_ref->get('scam') ? "ON" : "OFF";
 
-# Currently only Eulerian and Spectral Element dycores support SCM
-if ($scam eq 'ON' and $dyn_pkg ne 'eul' and $dyn_pkg ne 'se') {
+# Currently only Spectral Element dycore supports SCM
+if ($scam eq 'ON' and $dyn_pkg ne 'se') {
     die <<"EOF";
-**  ERROR: SCAM mode only works with Eulerian dycore or Spectral Element dycore.
+**  ERROR: The Single Column Model only works with Spectral Element dycore.
 **         Requested dycore is: $dyn_pkg
 EOF
 }

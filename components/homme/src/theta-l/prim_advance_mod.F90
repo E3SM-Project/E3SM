@@ -10,6 +10,7 @@
 !  09/2018: O. Guba  code for new ftypes
 !  2018/12: M. Taylor apply forcing assuming nearly constant p 
 !  2019/5:  M. Taylor time-split TOM dissipation and hyperviscsity
+!  2019/7:  M. Taylor add dp3d limiter to prevent zero thickness layers
 !
 module prim_advance_mod
 
@@ -25,7 +26,7 @@ module prim_advance_mod
   use edgetype_mod,       only: EdgeBuffer_t,  EdgeDescriptor_t, edgedescriptor_t
   use element_mod,        only: element_t
   use element_state,      only: max_itercnt_perstep,avg_itercnt,max_itererr_perstep, nu_scale_top, nlev_tom
-  use element_ops,        only: get_temperature, set_theta_ref, state0, get_R_star
+  use element_ops,        only: set_theta_ref, state0, get_R_star
   use eos,                only: pnh_and_exner_from_eos,phi_from_eos,get_dirk_jacobian
   use hybrid_mod,         only: hybrid_t
   use hybvcoord_mod,      only: hvcoord_t
@@ -37,6 +38,7 @@ module prim_advance_mod
   use prim_si_mod,        only: preq_vertadv_v1
   use reduction_mod,      only: parallelmax, reductionbuffer_ordered_1d_t
   use time_mod,           only: timelevel_qdp, timelevel_t
+  use prim_state_mod,     only: prim_diag_scalars, prim_energy_halftimes
 #ifndef CAM
   use test_mod,           only: set_prescribed_wind
 #endif
@@ -156,13 +158,13 @@ contains
       call compute_andor_apply_rhs(np1,n0,n0,qn0,dt/4,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,0d0,1.d0,1.d0,1.d0)
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt/6,elem,hvcoord,hybrid,&
-            deriv,nets,nete,compute_diagnostics,0d0,1.d0,1.d0,1.d0)
+            deriv,nets,nete,.false.,0d0,1.d0,1.d0,1.d0)
       call compute_andor_apply_rhs(np1,n0,np1,qn0,3*dt/8,elem,hvcoord,hybrid,&
-            deriv,nets,nete,compute_diagnostics,0d0,1.d0,1.d0,1.d0)
+            deriv,nets,nete,.false.,0d0,1.d0,1.d0,1.d0)
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt/2,elem,hvcoord,hybrid,&
-            deriv,nets,nete,compute_diagnostics,0d0,1.d0,1.d0,1.d0)
+            deriv,nets,nete,.false.,0d0,1.d0,1.d0,1.d0)
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
-            deriv,nets,nete,compute_diagnostics,eta_ave_w*1d0,1.d0,1.d0,1.d0)
+            deriv,nets,nete,.false.,eta_ave_w*1d0,1.d0,1.d0,1.d0)
 
 
 
@@ -229,7 +231,7 @@ contains
       max_itererr_perstep = max(itertol,max_itererr_perstep)
  
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a2,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat2/a2,1d0)
+        deriv,nets,nete,.false.,0d0,1d0,ahat2/a2,1d0)
 
       maxiter=10
       itertol=1e-12
@@ -240,7 +242,7 @@ contains
 
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a3,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat3/a3,1d0)
+        deriv,nets,nete,.false.,0d0,1d0,ahat3/a3,1d0)
 
       maxiter=10
       itertol=1e-12
@@ -250,7 +252,7 @@ contains
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a4,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w,1d0,ahat4/a4,1d0)
+        deriv,nets,nete,.false.,eta_ave_w,1d0,ahat4/a4,1d0)
 
       avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
 
@@ -291,7 +293,7 @@ contains
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a2*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat2/a2,1d0)
+        deriv,nets,nete,.false.,0d0,1d0,ahat2/a2,1d0)
       maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
@@ -300,7 +302,7 @@ contains
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a3*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat3/a3,1d0)
+        deriv,nets,nete,.false.,0d0,1d0,ahat3/a3,1d0)
       maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
@@ -309,7 +311,7 @@ contains
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a4*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat4/a4,1d0)
+        deriv,nets,nete,.false.,0d0,1d0,ahat4/a4,1d0)
       maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat4*dt,elem,hvcoord,hybrid,&
@@ -318,7 +320,7 @@ contains
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w,1d0,ahat5/a5,1d0)
+        deriv,nets,nete,.false.,eta_ave_w,1d0,ahat5/a5,1d0)
 
       avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
 !================================================================================
@@ -344,7 +346,7 @@ contains
         deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
  
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a2*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
+        deriv,nets,nete,.false.,0d0,1d0,0d0,1d0)
       maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
@@ -353,7 +355,7 @@ contains
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a3*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat3/a3,1d0)
+        deriv,nets,nete,.false.,0d0,1d0,ahat3/a3,1d0)
       maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
@@ -362,7 +364,7 @@ contains
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a4*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat4/a4,1d0)
+        deriv,nets,nete,.false.,0d0,1d0,ahat4/a4,1d0)
       maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat4*dt,elem,hvcoord,hybrid,&
@@ -371,7 +373,7 @@ contains
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w,1d0,ahat5/a5,1d0)
+        deriv,nets,nete,.false.,eta_ave_w,1d0,ahat5/a5,1d0)
 
       avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
 !================================================================================
@@ -395,10 +397,10 @@ contains
         deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a2*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
+        deriv,nets,nete,.false.,0d0,1d0,0d0,1d0)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a3*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0) 
+        deriv,nets,nete,.false.,0d0,1d0,0d0,1d0) 
       maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
@@ -407,7 +409,7 @@ contains
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a4*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat4/a4,1d0)
+        deriv,nets,nete,.false.,0d0,1d0,ahat4/a4,1d0)
       maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat4*dt,elem,hvcoord,hybrid,&
@@ -416,7 +418,7 @@ contains
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w,1d0,ahat5/a5,1d0)
+        deriv,nets,nete,.false.,eta_ave_w,1d0,ahat5/a5,1d0)
 
       avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
 !================================================================================                                      
@@ -440,7 +442,7 @@ contains
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a2,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat2/a2,1d0)
+        deriv,nets,nete,.false.,0d0,1d0,ahat2/a2,1d0)
 
       maxiter=10
       itertol=1e-12
@@ -451,7 +453,7 @@ contains
 
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a3,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat3/a3,1d0)
+        deriv,nets,nete,.false.,0d0,1d0,ahat3/a3,1d0)
 
       avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
 
@@ -468,15 +470,26 @@ contains
     ! note:time step computes u(t+1)= u(t*) + RHS.
     ! for consistency, dt_vis = t-1 - t*, so this is timestep method dependent
     ! forward-in-time, hypervis applied to dp3d
+    if (compute_diagnostics) then
+       call t_startf("prim_diag")
+       call prim_energy_halftimes(elem,hvcoord,tl,5,.false.,nets,nete)
+       call prim_diag_scalars(elem,hvcoord,tl,5,.false.,nets,nete)
+       call t_stopf("prim_diag")
+    endif
+
     if (hypervis_order == 2 .and. nu>0) &
          call advance_hypervis(elem,hvcoord,hybrid,deriv,np1,nets,nete,dt_vis,eta_ave_w)
-
-
 
 
     ! warning: advance_physical_vis currently requires levels that are equally spaced in z
     if (dcmip16_mu>0) call advance_physical_vis(elem,hvcoord,hybrid,deriv,np1,nets,nete,dt,dcmip16_mu_s,dcmip16_mu)
 
+    if (compute_diagnostics) then
+       call t_startf("prim_diag")
+       call prim_energy_halftimes(elem,hvcoord,tl,6,.false.,nets,nete)
+       call prim_diag_scalars(elem,hvcoord,tl,6,.false.,nets,nete)
+       call t_stopf("prim_diag")
+    endif
     call t_stopf('prim_advance_exp')
   end subroutine prim_advance_exp
 
@@ -578,13 +591,13 @@ contains
       call compute_andor_apply_rhs(np1,n0,n0,qn0,dt/4,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,0d0,1.d0,1.d0,1.d0)
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt/6,elem,hvcoord,hybrid,&
-            deriv,nets,nete,compute_diagnostics,0d0,1.d0,1.d0,1.d0)
+            deriv,nets,nete,.false.,0d0,1.d0,1.d0,1.d0)
       call compute_andor_apply_rhs(np1,n0,np1,qn0,3*dt/8,elem,hvcoord,hybrid,&
-            deriv,nets,nete,compute_diagnostics,0d0,1.d0,1.d0,1.d0)
+            deriv,nets,nete,.false.,0d0,1.d0,1.d0,1.d0)
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt/2,elem,hvcoord,hybrid,&
-            deriv,nets,nete,compute_diagnostics,0d0,1.d0,1.d0,1.d0)
+            deriv,nets,nete,.false.,0d0,1.d0,1.d0,1.d0)
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
-            deriv,nets,nete,compute_diagnostics,eta_ave_w*1d0,1.d0,1.d0,1.d0)
+            deriv,nets,nete,.false.,eta_ave_w*1d0,1.d0,1.d0,1.d0)
 
 
 
@@ -640,7 +653,7 @@ contains
       ahat2 = (dhat1-dhat1*dhat3-dhat1*dhat2+dhat1*dhat2*dhat3)/(1.-dhat3)
 
       call compute_andor_apply_rhs(np1,n0,n0,qn0,dt*a1,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
+        deriv,nets,nete,.false.,0d0,1d0,0d0,1d0)
   
       maxiter=10
       itertol=1e-12
@@ -650,7 +663,7 @@ contains
 
  
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a2,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat2/a2,1d0)
+        deriv,nets,nete,.false.,0d0,1d0,ahat2/a2,1d0)
 
       maxiter=10
       itertol=1e-12
@@ -659,7 +672,7 @@ contains
       sumiter = sumiter + maxiter
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a3,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat3/a3,1d0)
+        deriv,nets,nete,.false.,0d0,1d0,ahat3/a3,1d0)
 
       maxiter=10
       itertol=1e-12
@@ -669,7 +682,7 @@ contains
 
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a4,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w,1d0,ahat4/a4,1d0)
+        deriv,nets,nete,.false.,eta_ave_w,1d0,ahat4/a4,1d0)
       if (calc_nonlinear_stats) then
         call update_nonlinear_stats(1, sumiter)
       end if
@@ -713,7 +726,7 @@ contains
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a2*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat2/a2,1d0)
+        deriv,nets,nete,.false.,0d0,1d0,ahat2/a2,1d0)
       maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
@@ -722,7 +735,7 @@ contains
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a3*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat3/a3,1d0)
+        deriv,nets,nete,.false.,0d0,1d0,ahat3/a3,1d0)
       maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
@@ -731,7 +744,7 @@ contains
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a4*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat4/a4,1d0)
+        deriv,nets,nete,.false.,0d0,1d0,ahat4/a4,1d0)
       maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat4*dt,elem,hvcoord,hybrid,&
@@ -740,7 +753,7 @@ contains
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w,1d0,ahat5/a5,1d0)
+        deriv,nets,nete,.false.,eta_ave_w,1d0,ahat5/a5,1d0)
 
       avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
 !================================================================================
@@ -766,7 +779,7 @@ contains
         deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
  
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a2*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
+        deriv,nets,nete,.false.,0d0,1d0,0d0,1d0)
       maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
@@ -775,7 +788,7 @@ contains
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a3*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat3/a3,1d0)
+        deriv,nets,nete,.false.,0d0,1d0,ahat3/a3,1d0)
       maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
@@ -784,7 +797,7 @@ contains
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a4*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat4/a4,1d0)
+        deriv,nets,nete,.false.,0d0,1d0,ahat4/a4,1d0)
       maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat4*dt,elem,hvcoord,hybrid,&
@@ -793,7 +806,7 @@ contains
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w,1d0,ahat5/a5,1d0)
+        deriv,nets,nete,.false.,eta_ave_w,1d0,ahat5/a5,1d0)
 
       avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
 !================================================================================
@@ -817,10 +830,10 @@ contains
         deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a2*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
+        deriv,nets,nete,.false.,0d0,1d0,0d0,1d0)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a3*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0) 
+        deriv,nets,nete,.false.,0d0,1d0,0d0,1d0) 
       maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
@@ -829,7 +842,7 @@ contains
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a4*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat4/a4,1d0)
+        deriv,nets,nete,.false.,0d0,1d0,ahat4/a4,1d0)
       maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat4*dt,elem,hvcoord,hybrid,&
@@ -838,7 +851,7 @@ contains
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w,1d0,ahat5/a5,1d0)
+        deriv,nets,nete,.false.,eta_ave_w,1d0,ahat5/a5,1d0)
 
       avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
 ! ==================================================================================
@@ -862,7 +875,7 @@ contains
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a2,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat2/a2,1d0)
+        deriv,nets,nete,.false.,0d0,1d0,ahat2/a2,1d0)
 
       maxiter=10
       itertol=1e-12
@@ -873,7 +886,7 @@ contains
 
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a3,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat3/a3,1d0)
+        deriv,nets,nete,.false.,0d0,1d0,ahat3/a3,1d0)
 
       avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
 
@@ -1272,7 +1285,7 @@ contains
              pnh,exner,temp_i,caller='advance_hypervis')
         
         do k=1,nlev
-           k2=max(k,nlev)
+           k2=min(k+1,nlev)
            if (theta_hydrostatic_mode) then
               heating(:,:,k)= (elem(ie)%state%v(:,:,1,k,nt)*vtens(:,:,1,k,ie) + &
                    elem(ie)%state%v(:,:,2,k,nt)*vtens(:,:,2,k,ie) ) / &
@@ -2232,7 +2245,7 @@ contains
         enddo
 #endif
      endif
-
+     call limiter_dp3d_k(elem(ie)%state%dp3d(:,:,:,np1),elem(ie)%spheremp,hvcoord%dp0)
   end do
   call t_stopf('compute_andor_apply_rhs')
 
@@ -2430,5 +2443,68 @@ contains
 
 
 
+  subroutine limiter_dp3d_k(Q,spheremp,dp0)
+  ! mass conserving column limiter (1D only)
+  !
+  ! if dp3d < dp3d_thresh*hvcoord%dp0 then apply vertical mixing 
+  ! to prevent layer from getting too thin
+  !
+  ! This is rarely triggered and is mostly for safety when using 
+  ! long remap timesteps
+  !
+  implicit none
+  real (kind=real_kind), intent(inout) :: Q(np,np,nlev)
+  real (kind=real_kind), intent(in) :: dp0(nlev)
+  real (kind=real_kind), intent(in) :: spheremp(np,np)  !  density
+
+  ! local
+  real (kind=real_kind) :: Qcol(nlev)
+  real (kind=real_kind) :: mass,mass_new
+  real (kind=real_kind) :: dp3d_thresh=.125
+  logical :: warn
+  integer i,j,k
+
+  ! first check if limter is needed, and print warning
+  warn=.false. 
+  do k=1,nlev
+     if ( minval(Q(:,:,k)) < dp3d_thresh*dp0(k)) then
+        write(iulog,*) 'WARNING:CAAR: dp3d too small. dt_remap may be too large'
+        write(iulog,*) 'k,dp3d(k), dp0: ',k,minval(Q(:,:,k)),dp0(k)
+        warn=.true.
+     endif
+  enddo
+
+  if (warn) then
+  do j = 1 , np
+     do i = 1 , np
+        if ( minval(Q(i,j,:) - dp3d_thresh*dp0(:)) < 0 ) then
+           ! subtract min, multiply in by weights
+           Qcol(:) = (Q(i,j,:) - dp3d_thresh*dp0(:))*spheremp(i,j)
+           mass = 0
+           do k = 1,nlev 
+              mass = mass + Qcol(k)
+           enddo
+
+           ! negative mass.  so reduce all postive values to zero
+           ! then increase negative values as much as possible
+           if ( mass < 0 ) Qcol = -Qcol
+           mass_new = 0
+           do k=1,nlev
+              if ( Qcol(k) < 0 ) then
+                 Qcol(k) = 0
+              else
+                 mass_new = mass_new + Qcol(k)
+              endif
+           enddo
+           ! now scale the all positive values to restore mass
+           if ( mass_new > 0 ) Qcol(:) = Qcol(:) * abs(mass) / mass_new
+           if ( mass     < 0 ) Qcol(:) = -Qcol(:)
+           ! 
+           Q(i,j,:) = Qcol(:)/spheremp(i,j) + dp3d_thresh*dp0(:)
+        endif
+     enddo
+  enddo
+  endif
+  end subroutine limiter_dp3d_k
 
 end module prim_advance_mod

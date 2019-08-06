@@ -61,6 +61,9 @@ MODULE shr_file_mod
   public :: shr_file_setLogLevel  ! Reset the logging debug level
   public :: shr_file_getLogUnit   ! Get the log unit number
   public :: shr_file_getLogLevel  ! Get the logging debug level
+#if defined NEMO_IN_CCSM
+   public :: shr_file_maxUnit      ! Max unit number to give
+#endif
 
   ! !PUBLIC DATA MEMBERS:
 

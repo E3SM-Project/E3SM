@@ -12,6 +12,7 @@ module EcosystemDynMod
   use perf_mod            , only : t_startf, t_stopf
   use spmdMod             , only : masterproc
   use clm_varctl          , only : use_century_decomp
+  use clm_varctl          , only : use_erosion
   use CNStateType         , only : cnstate_type
   use CNCarbonFluxType    , only : carbonflux_type
   use CNCarbonStateType   , only : carbonstate_type
@@ -33,6 +34,7 @@ module EcosystemDynMod
   use FrictionVelocityType, only : frictionvel_type
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
+  use SedFluxType         , only : sedflux_type
   use ColumnDataType      , only : col_cs, c13_col_cs, c14_col_cs
   use ColumnDataType      , only : col_cf, c13_col_cf, c14_col_cf
   use ColumnDataType      , only : col_ns, col_nf
@@ -499,7 +501,7 @@ contains
        atm2lnd_vars, waterstate_vars, waterflux_vars,                           &
        canopystate_vars, soilstate_vars, temperature_vars, crop_vars, ch4_vars, &
        photosyns_vars, soilhydrology_vars, energyflux_vars,          &
-       phosphorusflux_vars,phosphorusstate_vars)
+       phosphorusflux_vars, phosphorusstate_vars, sedflux_vars)
     !-------------------------------------------------------------------
     ! bgc interface
     ! Phase-2 of EcosystemDynNoLeaching
@@ -526,6 +528,7 @@ contains
     use NitrogenStateUpdate2Mod     , only: NitrogenStateUpdate2, NitrogenStateUpdate2h
     use PhosphorusStateUpdate2Mod       , only: PhosphorusStateUpdate2, PhosphorusStateUpdate2h
     use FireMod              , only: FireArea, FireFluxes
+    use ErosionMod           , only: ErosionFluxes
     use CarbonStateUpdate3Mod     , only: CarbonStateUpdate3
     use CarbonIsoFluxMod          , only: CarbonIsoFlux1, CarbonIsoFlux2, CarbonIsoFlux2h, CarbonIsoFlux3
     use C14DecayMod          , only: C14Decay, C14BombSpike
@@ -575,6 +578,7 @@ contains
 !
     type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    type(sedflux_type)       , intent(in)    :: sedflux_vars
 
     !-----------------------------------------------------------------------
 
@@ -835,6 +839,12 @@ contains
        call FireFluxes(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             cnstate_vars, carbonstate_vars, nitrogenstate_vars, &
             carbonflux_vars,nitrogenflux_vars,phosphorusstate_vars,phosphorusflux_vars)
+
+       if ( use_erosion ) then
+            call ErosionFluxes(bounds, num_soilc, filter_soilc, soilstate_vars, sedflux_vars, &
+                 carbonstate_vars, nitrogenstate_vars, phosphorusstate_vars, carbonflux_vars, &
+                 nitrogenflux_vars, phosphorusflux_vars)
+       end if
 
        call t_stopf('CNUpdate2')
 

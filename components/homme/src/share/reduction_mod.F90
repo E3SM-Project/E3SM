@@ -33,10 +33,12 @@ module reduction_mod
   type (ReductionBuffer_r_1d_t),       public :: red_sum
   type (ReductionBuffer_r_1d_t),       public :: red_max,red_min
   type (ReductionBuffer_r_1d_t),       public :: red_flops,red_timer
+  type (ReductionBuffer_r_1d_t),       public :: red_max_index, red_min_index
 
   !JMD new addition
 #ifndef Darwin
-  SAVE red_sum,red_max,red_min,red_flops,red_timer,red_max_int,red_sum_int
+  SAVE red_sum,red_max,red_min,red_flops,red_timer,red_max_int,red_sum_int, &
+       red_max_index, red_min_index
 #endif
   interface ParallelMin
      module procedure ParallelMin1d
@@ -68,6 +70,9 @@ module reduction_mod
   public :: InitReductionBuffer
   public :: pmax_mt, pmin_mt
   public :: ElementSum_1d
+
+  public :: ParallelMaxWithIndex
+  public :: ParallelMinWithIndex
 
 contains
 
@@ -262,6 +267,7 @@ contains
 
     if (len>red%len) call abortmp('ERROR: threadsafe reduction buffer too small')
 
+    !$OMP BARRIER
     ! the first and fastest thread performs initializing copy
     !$OMP SINGLE
     red%buf(1:len) = redp(1:len)
@@ -308,6 +314,7 @@ contains
 
     if (len>red%len) call abortmp('ERROR: threadsafe reduction buffer too small')
 
+    !$OMP BARRIER
     ! the first and fastest thread performs initializing copy
     !$OMP SINGLE
     red%buf(1:len) = redp(1:len)
@@ -337,6 +344,95 @@ contains
   end subroutine pmax_mt_r_1d
 
 
+!max with location index
+!at the end result is in 
+!redp thread local array in hybrid%ithr=0 only
+  subroutine ParallelMaxWithIndex(redp,hybrid)
+    use hybrid_mod, only : hybrid_t
+#ifdef _MPI
+    use parallel_mod, only: mpi_maxloc, mpi2real_t
+#endif
+
+    real (kind=real_kind), intent(inout) :: redp(2) ! thread private vector of partial sum
+    type (hybrid_t),       intent(in)    :: hybrid  ! parallel handle
+
+    ! Local variables
+    integer ierr, k
+
+    !$OMP BARRIER
+    ! the first and fastest thread performs initializing copy
+    !$OMP SINGLE
+    red_max_index%buf(1:2) = redp(1:2)
+    red_max_index%ctr = hybrid%ithr
+    !$OMP END SINGLE
+
+    ! all threads now do the max_op wrt the first thread's data
+    !$OMP CRITICAL (CRITMAXIND)
+    if (hybrid%ithr /= red_max_index%ctr) then
+       if (red_max_index%buf(1) < redp(1)) then
+          red_max_index%buf(1:2) = redp(1:2)
+       endif
+    end if
+    !$OMP END CRITICAL (CRITMAXIND)
+
+    !$OMP BARRIER
+#ifdef _MPI
+    if (hybrid%ithr==0) then
+       call MPI_Allreduce(red_max_index%buf(1),redp,1,MPI2real_t, &
+            MPI_MAXLOC,hybrid%par%comm,ierr)
+    end if
+#else
+    redp(1:2) = red_max_index%buf(1:2)
+#endif
+    !$OMP BARRIER
+
+  end subroutine ParallelMaxWithIndex
+
+
+!max with location index
+!result is in redp thread local array
+!in hybrid%ithr=0 only
+  subroutine ParallelMinWithIndex(redp,hybrid)
+    use hybrid_mod, only : hybrid_t
+#ifdef _MPI
+    use parallel_mod, only: mpi_minloc, mpi2real_t
+#endif
+
+    real (kind=real_kind), intent(inout) :: redp(2) ! thread private vector of partial sum
+    type (hybrid_t),       intent(in)    :: hybrid  ! parallel handle
+
+    ! Local variables
+    integer ierr, k
+
+    !$OMP BARRIER
+    ! the first and fastest thread performs initializing copy
+    !$OMP SINGLE
+    red_min_index%buf(1:2) = redp(1:2)
+    red_min_index%ctr = hybrid%ithr
+    !$OMP END SINGLE
+
+    ! all threads now do the max_op wrt the first thread's data
+    !$OMP CRITICAL (CRITMAXIND)
+    if (hybrid%ithr /= red_min_index%ctr) then
+       if (red_min_index%buf(1) > redp(1)) then
+          red_min_index%buf(1:2) = redp(1:2)
+       endif
+    end if
+    !$OMP END CRITICAL (CRITMAXIND)
+
+    !$OMP BARRIER
+#ifdef _MPI
+    if (hybrid%ithr==0) then
+       call MPI_Allreduce(red_min_index%buf(1),redp,1,MPI2real_t, &
+            MPI_MINLOC,hybrid%par%comm,ierr)
+    end if
+#else
+    redp(1:2) = red_min_index%buf(1:2)
+#endif
+    !$OMP BARRIER
+
+  end subroutine ParallelMinWithIndex
+
 
   ! =======================================
   ! pmin_mt:
@@ -362,6 +458,7 @@ contains
 
     if (len>red%len) call abortmp('ERROR: threadsafe reduction buffer too small')
 
+    !$OMP BARRIER
     ! the first and fastest thread performs initializing copy
     !$OMP SINGLE
     red%buf(1:len) = redp(1:len)
@@ -441,7 +538,7 @@ contains
           call MPI_Gatherv(variable,nelemd,MPIreal_t,buffer, &
                recvcount,displs,MPIreal_t,hybrid%par%root, &
                hybrid%par%comm,ierr)
-          if(ierr .ne. MPI_SUCCESS) then 
+          if(ierr .ne. MPI_SUCCESS) then
              errorcode=ierr
              call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
              print *,'ElementSum_1d: Error after call to MPI_Gatherv: ',errorstring
