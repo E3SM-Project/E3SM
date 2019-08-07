@@ -100,12 +100,11 @@ subroutine convect_deep_register
   select case ( deep_scheme )
   case('ZM') !    Zhang-McFarlane (default)
      call zm_conv_register
-  case('off')
-     call pbuf_add_field('DP_CLDLIQ','global',dtype_r8,(/pcols,pver/), dp_cldliq_idx)    
-     call pbuf_add_field('DP_CLDICE','global',dtype_r8,(/pcols,pver/), dp_cldice_idx)
-     call pbuf_add_field('DP_FLXPRC','global',dtype_r8,(/pcols,pver/), dp_flxprc_idx)
-     call pbuf_add_field('DP_FLXSNW','global',dtype_r8,(/pcols,pver/), dp_flxsnw_idx)
   end select 
+
+! Add PBUF variables that are related to deep convection that 
+!  are expected by the E3SM code, no matter which deep convection scheme
+!  is used.
 
 ! Flux of precipitation from deep convection (kg/m2/s)
    call pbuf_add_field('DP_FLXPRC','global',dtype_r8,(/pcols,pverp/),dp_flxprc_idx) 
