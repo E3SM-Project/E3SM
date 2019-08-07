@@ -24,16 +24,16 @@ class Compilers(GenericXML):
             if files is None:
                 files = Files()
             infile = files.get_value("COMPILERS_SPEC_FILE")
-            schema = files.get_schema("COMPILERS_SPEC_FILE")
+        schema = files.get_schema("COMPILERS_SPEC_FILE")
 
         GenericXML.__init__(self, infile, schema)
-        self._machobj = machobj
         if version is not None:
             # this is used in scripts_regression_tests to force version 2, it should not be used otherwise
             self._version = version
         else:
             self._version = self.get_version()
 
+        self._machobj = machobj
         self.machine  = machobj.get_machine_name()
         self.os = machobj.get_value("OS")
         if compiler is None:
@@ -52,7 +52,7 @@ class Compilers(GenericXML):
         #This could cause problems if node matchs are repeated when only one is expected
         infile = os.path.join(os.environ.get("HOME"),".cime","config_compilers.xml")
         if os.path.exists(infile):
-            GenericXML.read(self, infile)
+            GenericXML.read(self, infile, schema=schema)
 
         if self.compiler is not None:
             self.set_compiler(compiler)
