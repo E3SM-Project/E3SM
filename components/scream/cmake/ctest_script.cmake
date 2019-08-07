@@ -20,7 +20,7 @@ ctest_start(${dashboard_model} TRACK ${dashboard_track})
 
 ctest_configure()
 if (DEFINED ENV{CTEST_PARALLEL_LEVEL})
-  ctest_build(FLAGS "-j${CTEST_PARALLEL_LEVEL}")
+  ctest_build(FLAGS "-jENV${CTEST_PARALLEL_LEVEL}")
 else()
   ctest_build(FLAGS "-j8")
 endif()
