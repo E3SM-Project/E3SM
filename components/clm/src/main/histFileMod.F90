@@ -162,7 +162,7 @@ module histFileMod
      character(len=max_chars)  :: units        ! units
      character(len=hist_dim_name_length) :: type1d                ! pointer to first dimension type from data type (nameg, etc)
      character(len=hist_dim_name_length) :: type1d_out            ! hbuf first dimension type from data type (nameg, etc)
-     character(len=hist_dim_name_length) :: type2d                ! hbuf second dimension type ["levgrnd","levlak","numrad","ltype","natpft","cft","glc_nec","elevclas","subname(n)"]
+     character(len=hist_dim_name_length) :: type2d                ! hbuf second dimension type ["levgrnd","levlak","numrad","ltype","natpft","cft","glc_nec","elevclas","subname(n)","month"]
      integer :: beg1d                          ! on-node 1d clm pointer start index
      integer :: end1d                          ! on-node 1d clm pointer end index
      integer :: num1d                          ! size of clm pointer first dimension (all nodes)
@@ -1713,7 +1713,7 @@ contains
     ! wrapper calls to define the history file contents.
     !
     ! !USES:
-    use clm_varpar      , only : nlevgrnd, nlevsno, nlevlak, nlevurb, numrad
+    use clm_varpar      , only : nlevgrnd, nlevsno, nlevlak, nlevurb, numrad, nmonth
     use clm_varpar      , only : natpft_size, cft_size, maxpatch_glcmec, nlevdecomp_full, nlevtrc_full
     use landunit_varcon , only : max_lunit
     use clm_varctl      , only : caseid, ctitle, fsurdat, finidat, paramfile
@@ -1859,6 +1859,7 @@ contains
     end if
     call ncd_defdim(lnfid, 'levlak' , nlevlak, dimid)
     call ncd_defdim(lnfid, 'numrad' , numrad , dimid)
+    call ncd_defdim(lnfid, 'month'  , nmonth,  dimid)
     call ncd_defdim(lnfid, 'levsno' , nlevsno , dimid)
     call ncd_defdim(lnfid, 'ltype', max_lunit, dimid)
     call htape_add_ltype_metadata(lnfid)
@@ -3312,7 +3313,7 @@ contains
     use clm_varctl      , only : nsrest, caseid, inst_suffix, nsrStartup, nsrBranch
     use fileutils       , only : getfil
     use domainMod       , only : ldomain
-    use clm_varpar      , only : nlevgrnd, nlevlak, numrad, nlevdecomp_full
+    use clm_varpar      , only : nlevgrnd, nlevlak, numrad, nlevdecomp_full, nmonth
     use clm_time_manager, only : is_restart
     use restUtilMod     , only : iflag_skip
     use pio
@@ -4445,7 +4446,7 @@ contains
     ! initial or branch run to initialize the actual history tapes.
     !
     ! !USES:
-    use clm_varpar      , only : nlevgrnd, nlevsno, nlevlak, numrad, nlevdecomp_full, nlevtrc_soil    
+    use clm_varpar      , only : nlevgrnd, nlevsno, nlevlak, numrad, nlevdecomp_full, nlevtrc_soil, nmonth    
     use clm_varpar      , only : natpft_size, cft_size, maxpatch_glcmec
     use landunit_varcon , only : max_lunit
     !
@@ -4525,6 +4526,8 @@ contains
        num2d = nlevlak
     case ('numrad')
        num2d = numrad
+    case ('month')
+       num2d = nmonth
     case ('levdcmp')
        num2d = nlevdecomp_full
     case ('levtrc')
@@ -4590,7 +4593,7 @@ contains
     case default
        write(iulog,*) trim(subname),' ERROR: unsupported 2d type ',type2d, &
           ' currently supported types for multi level fields are: ', &
-          '[levgrnd,levlak,numrad,levdcmp,levtrc,ltype,natpft,cft,glc_nec,elevclas,levsno]'
+          '[levgrnd,levlak,numrad,nmonthlevdcmp,levtrc,ltype,natpft,cft,glc_nec,elevclas,levsno]'
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end select
 

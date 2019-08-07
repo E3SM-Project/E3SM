@@ -34,6 +34,9 @@ def get_standard_cmake_args(case, shared_lib=False):
     for var in _CMD_ARGS_FOR_BUILD:
         cmake_args += xml_to_make_variable(case, var, cmake=True)
 
+    # Disable compiler checks
+    cmake_args += " -DCMAKE_C_COMPILER_WORKS=1 -DCMAKE_CXX_COMPILER_WORKS=1 -DCMAKE_Fortran_COMPILER_WORKS=1"
+
     return cmake_args
 
 def xml_to_make_variable(case, varname, cmake=False):

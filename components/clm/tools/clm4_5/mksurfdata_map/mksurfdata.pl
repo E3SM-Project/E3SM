@@ -421,7 +421,7 @@ EOF
       foreach my $typ ( "lak", "veg", "voc", "top", "tex", "col","ord", 
                         "fmx", "lai", "urb", "org", "glc", "utp", "wet",
 		        "gdp", "peat","abm", "topostats" , "vic", "ch4", 
-                        "pho") {
+                        "pho", "grvl", "slp10", "ero") {
          my $lmask = `$scrdir/../../../bld/queryDefaultNamelist.pl $mopts -options type=$typ,mergeGIS=$merge_gis,hirespft=$hirespft -var lmask`;
          $lmask = trim($lmask);
          my $hgrid = `$scrdir/../../../bld/queryDefaultNamelist.pl $mopts -options type=$typ,hirespft=$hirespft -var hgrid`;
@@ -534,6 +534,9 @@ EOF
  map_fvic          = '$map{'vic'}'
  map_fch4          = '$map{'ch4'}'
  map_fphosphorus   = '$map{'pho'}'
+ map_fgrvl         = '$map{'grvl'}'
+ map_fslp10        = '$map{'slp10'}'
+ map_fero          = '$map{'ero'}'
  mksrf_fsoitex     = '$datfil{'tex'}'
  mksrf_forganic    = '$datfil{'org'}'
  mksrf_flakwat     = '$datfil{'lak'}'
@@ -554,6 +557,9 @@ EOF
  no_inlandwet      = $no_inlandwet
  mksrf_furban      = '$datfil{'urb'}'
  mksrf_fphosphorus = '$datfil{'pho'}'
+ mksrf_fgrvl       = '$datfil{'grvl'}'
+ mksrf_fslp10      = '$datfil{'slp10'}'
+ mksrf_fero        = '$datfil{'ero'}'
 EOF
             my $urbdesc = "urb3den";
             my $rcp_option= "";

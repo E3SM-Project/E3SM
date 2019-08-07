@@ -414,7 +414,7 @@ contains
       use physics_types, only: physics_state
 
       ! RRTMGP modules
-      use mo_load_coefficients, only: rrtmgp_load_coefficients=>load_and_init
+      use rrtmgp_coefficients, only: rrtmgp_load_coefficients=>load_and_init
       use mo_gas_concentrations, only: ty_gas_concs
 
       ! For optics

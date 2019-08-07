@@ -22,16 +22,16 @@ module element_mod
   public :: setup_element_pointers
 
   type, public :: index_t
-     integer(kind=int_kind) :: ia(npsq),ja(npsq)
-     integer(kind=int_kind) :: is,ie
-     integer(kind=int_kind) :: NumUniquePts
-     integer(kind=int_kind) :: UniquePtOffset
+!    native grid "uniquepoints" output global id given by  UniquePtOffset + 0..NumUniquePts
+     integer(kind=int_kind) :: ia(npsq),ja(npsq)     ! GLL element index for uniquepoints
+     integer(kind=int_kind) :: NumUniquePts          ! number of unique points contributed by this element
+     integer(kind=int_kind) :: UniquePtOffset        ! starting offset of i=1..ncols uniquepts global id
   end type index_t
 
   !___________________________________________________________________
   type, public :: element_t
-     integer(kind=int_kind) :: LocalId
-     integer(kind=int_kind) :: GlobalId
+     integer(kind=int_kind) :: LocalId       ! element numbering on each MPI task
+     integer(kind=int_kind) :: GlobalId      ! global element numbering independent of MPI decomposition
 
      ! Coordinate values of element points
      type (spherical_polar_t) :: spherep(np,np)                       ! Spherical coords of GLL points

@@ -465,7 +465,7 @@ contains
     ! error check that mesh lats and lons correspond to those on the input domain file
     index_lon = mct_aVect_indexRA(SDICE%grid%data,'lon')
     do n = 1, lsize
-       if (abs( SDICE%grid%data%rattr(index_lon,n) - xc(n)) > 1.e-4) then
+       if (abs(mod(SDICE%grid%data%rattr(index_lon,n) - xc(n),360.0_R8)) > 1.e-4) then
           write(6,*)'ERROR: lon diff = ',abs(SDICE%grid%data%rattr(index_lon,n) -  xc(n)),' too large'
           call shr_sys_abort()
        end if

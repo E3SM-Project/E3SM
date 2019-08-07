@@ -27,7 +27,8 @@ nu_q          = NU1
 nu_div        = NU2
 nu_top = 2.5e5
 hypervis_order = 2
-hypervis_subcycle = 1
+hypervis_subcycle = 2
+se_ftype=0
 /
 &vert_nl
 vform         = "ccm"

@@ -570,6 +570,9 @@ macro(createTest testFile)
 
     ADD_DEPENDENCIES(${THIS_TEST_INDIV} ${EXEC_NAME})
 
+    # test execs
+    ADD_DEPENDENCIES(test-execs ${EXEC_NAME})
+
     # Check target
     ADD_DEPENDENCIES(check ${EXEC_NAME})
 

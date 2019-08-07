@@ -11,6 +11,8 @@ module NitrogenStateUpdate3Mod
   use clm_time_manager    , only : get_step_size
   use clm_varctl          , only : iulog, use_nitrif_denitrif
   use clm_varpar          , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
+  use clm_varctl          , only : use_erosion, ero_ccycle
+  use CNDecompCascadeConType , only : decomp_cascade_con
   use CNNitrogenStateType , only : nitrogenstate_type
   use CNNitrogenFLuxType  , only : nitrogenflux_type
   use ColumnDataType      , only : col_ns, col_nf
@@ -35,6 +37,7 @@ contains
     ! !DESCRIPTION:
     ! On the radiation time step, update all the prognostic nitrogen state
     ! variables affected by gap-phase mortality fluxes. Also the Sminn leaching flux.
+    ! Also include the erosion flux.
     ! NOTE - associate statements have been removed where there are
     ! no science equations. This increases readability and maintainability.
     !
@@ -110,6 +113,21 @@ contains
          end do
 
       endif
+
+      ! SOM N losses due to erosion
+      if ( ero_ccycle ) then
+         do l = 1, ndecomp_pools
+            if ( decomp_cascade_con%is_soil(l) ) then
+               do j = 1, nlevdecomp
+                  do fc = 1, num_soilc
+                     c = filter_soilc(fc)
+                     col_ns%decomp_npools_vr(c,j,l) = col_ns%decomp_npools_vr(c,j,l) - col_nf%decomp_npools_yield_vr(c,j,l) * dt
+                  end do
+               end do
+            end if
+         end do
+      end if
+
       ! patch-level nitrogen fluxes 
       
       do fp = 1,num_soilp
