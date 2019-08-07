@@ -3259,7 +3259,6 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
    integer, intent(in) :: ktop, kbot, kdir 
 
    real(rtype), intent(in), dimension(kts:kte) :: qc_incld
-
    real(rtype), intent(in), dimension(kts:kte) :: rho
    real(rtype), intent(in), dimension(kts:kte) :: inv_rho 
    real(rtype), intent(in), dimension(kts:kte) :: lcldm 
@@ -3295,7 +3294,6 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
    real(rtype), dimension(kts:kte) :: V_nc 
    real(rtype), dimension(kts:kte) :: flux_qx
    real(rtype), dimension(kts:kte) :: flux_nx
-   real(rtype) :: fluxdiv_qx, fluxdiv_nx 
  
    real(rtype) :: tmp1, tmp2, dum 
 
@@ -3470,7 +3468,6 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
    real(rtype), dimension(kts:kte) :: V_nr 
    real(rtype), dimension(kts:kte) :: flux_qx
    real(rtype), dimension(kts:kte) :: flux_nx
-   real(rtype) :: fluxdiv_qx, fluxdiv_nx 
  
    real(rtype) :: tmp1, tmp2, dum1, dum2, inv_dum3 , rdumii, rdumjj
    integer dumii, dumjj 
@@ -3625,7 +3622,6 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
    real(rtype), dimension(kts:kte) :: flux_bir
    real(rtype), dimension(kts:kte) :: flux_qir
    real(rtype), dimension(kts:kte) :: flux_qit 
-   real(rtype) :: fluxdiv_bir, fluxdiv_qit, fluxdiv_nit, fluxdiv_qir
    real(rtype) :: f1pr01 ! number-weighted fallspeed            See lines  731 -  808  uns
    real(rtype) :: f1pr02 ! mass-weighted fallspeed              See lines  731 -  808  ums
    real(rtype) :: f1pr09 ! minimum ice number (lambda limiter)  See lines  704 -  705  nlarge
