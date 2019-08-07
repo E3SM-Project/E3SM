@@ -1297,9 +1297,10 @@ end function shoc_implements_cnst
   real(r8) :: mpdeglat, column_area, degree
   integer  :: i
 
-  ! determine the column area in radians
   do i=1,state%ncol
+      ! determine the column area in radians
       column_area = get_area_p(state%lchnk,i)
+      ! convert to degrees
       degree = sqrt(column_area)*(180._r8/shr_const_pi)
        
       ! Now find meters per degree latitude
