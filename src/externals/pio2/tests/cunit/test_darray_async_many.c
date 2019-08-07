@@ -77,19 +77,19 @@ check_4d_vars(int my_rank, int ncid, int *varid_4d)
 
         /* Get the type of the 4d var. */
         if ((ret = PIOc_inq_vartype(ncid, varid_4d[v], &xtype)))
-            BAIL(ret);
+            PBAIL(ret);
 
         /* Get the size of this type. */
         if ((ret = PIOc_inq_type(ncid, xtype, NULL, &size)))
-            BAIL(ret);
+            PBAIL(ret);
 
         /* Allocate memory for data. */
         if (!(data_in2 = malloc(size * VERT_LEN * LAT_LEN * LON_LEN * NREC)))
-            BAIL(PIO_ENOMEM);
+            PBAIL(PIO_ENOMEM);
 
         /* Read the data. */
         if ((ret = PIOc_get_var(ncid, varid_4d[v], data_in2)))
-            BAIL(ret);
+            PBAIL(ret);
 
         /* Check each element of data. */
         for (int r = 0; r < LAT_LEN * LON_LEN * NREC; r++)
@@ -98,14 +98,14 @@ check_4d_vars(int my_rank, int ncid, int *varid_4d)
             {
             case PIO_INT:
                 if (((int *)data_in2)[r] != expected_int_4d[r % (VERT_LEN * LAT_LEN * LON_LEN)])
-                    BAIL(ERR_WRONG);
+                    PBAIL(ERR_WRONG);
                 break;
             case PIO_FLOAT:
                 if (((float *)data_in2)[r] != expected_float_4d[r % (VERT_LEN * LAT_LEN * LON_LEN)])
-                    BAIL(ERR_WRONG);
+                    PBAIL(ERR_WRONG);
                 break;
             default:
-                BAIL(ERR_WRONG);
+                PBAIL(ERR_WRONG);
             }
         }
         free(data_in2);
@@ -150,14 +150,14 @@ int check_darray_file(int iosysid, char *data_filename, int iotype, int my_rank,
 
     /* Reopen the file. */
     if ((ret = PIOc_openfile(iosysid, &ncid, &iotype, data_filename, NC_NOWRITE)))
-        BAIL(ret);
+        PBAIL(ret);
 
     /* Check metadata. */
     int ndims_in, nvars_in, ngatts_in, unlimdimid_in;
     if ((ret = PIOc_inq(ncid, &ndims_in, &nvars_in, &ngatts_in, &unlimdimid_in)))
-        BAIL(ret);
+        PBAIL(ret);
     if (ndims_in != NDIM4 || nvars_in != num_types * 2 + NUM_4D_VARS || ngatts_in != 0 || unlimdimid_in != 0)
-        BAIL(ERR_WRONG);
+        PBAIL(ERR_WRONG);
 
     /* Check the vars. */
     for (int t = 0; t < num_types; t++)
@@ -166,19 +166,19 @@ int check_darray_file(int iosysid, char *data_filename, int iotype, int my_rank,
 
         /* Find size of type. */
         if ((ret = PIOc_inq_type(ncid, my_type[t], NULL, &type_size)))
-            BAIL(ret);
+            PBAIL(ret);
 
         /* Allocate buffers to hold data. */
         if (!(data_in = malloc(LAT_LEN * LON_LEN * NREC * type_size)))
-            BAIL(PIO_ENOMEM);
+            PBAIL(PIO_ENOMEM);
         if (!(norec_data_in = malloc(LAT_LEN * LON_LEN * type_size)))
-            BAIL(PIO_ENOMEM);
+            PBAIL(PIO_ENOMEM);
 
         /* Read record and non-record vars for this type. */
         if ((ret = PIOc_get_var(ncid, rec_varid[t], data_in)))
-            BAIL(ret);
+            PBAIL(ret);
         if ((ret = PIOc_get_var(ncid, norec_varid[t], norec_data_in)))
-            BAIL(ret);
+            PBAIL(ret);
 
         /* Check each value of non-record data. */
         for (int r = 0; r < LAT_LEN * LON_LEN; r++)
@@ -187,52 +187,52 @@ int check_darray_file(int iosysid, char *data_filename, int iotype, int my_rank,
             {
             case PIO_BYTE:
                 if (((signed char *)norec_data_in)[r] != expected_byte[r])
-                    BAIL(ERR_WRONG);
+                    PBAIL(ERR_WRONG);
                 break;
             case PIO_CHAR:
                 if (((char *)norec_data_in)[r] != expected_char[r])
-                    BAIL(ERR_WRONG);
+                    PBAIL(ERR_WRONG);
                 break;
             case PIO_SHORT:
                 if (((short *)norec_data_in)[r] != expected_short[r])
-                    BAIL(ERR_WRONG);
+                    PBAIL(ERR_WRONG);
                 break;
             case PIO_INT:
                 if (((int *)norec_data_in)[r] != expected_int[r])
-                    BAIL(ERR_WRONG);
+                    PBAIL(ERR_WRONG);
                 break;
             case PIO_FLOAT:
                 if (((float *)norec_data_in)[r] != expected_float[r])
-                    BAIL(ERR_WRONG);
+                    PBAIL(ERR_WRONG);
                 break;
             case PIO_DOUBLE:
                 if (((double *)norec_data_in)[r] != expected_double[r])
-                    BAIL(ERR_WRONG);
+                    PBAIL(ERR_WRONG);
                 break;
 #ifdef _NETCDF4
             case PIO_UBYTE:
                 if (((unsigned char *)norec_data_in)[r] != expected_ubyte[r])
-                    BAIL(ERR_WRONG);
+                    PBAIL(ERR_WRONG);
                 break;
             case PIO_USHORT:
                 if (((unsigned short *)norec_data_in)[r] != expected_ushort[r])
-                    BAIL(ERR_WRONG);
+                    PBAIL(ERR_WRONG);
                 break;
             case PIO_UINT:
                 if (((unsigned int *)norec_data_in)[r] != expected_uint[r])
-                    BAIL(ERR_WRONG);
+                    PBAIL(ERR_WRONG);
                 break;
             case PIO_INT64:
                 if (((long long *)norec_data_in)[r] != expected_int64[r])
-                    BAIL(ERR_WRONG);
+                    PBAIL(ERR_WRONG);
                 break;
             case PIO_UINT64:
                 if (((unsigned long long *)norec_data_in)[r] != expected_uint64[r])
-                    BAIL(ERR_WRONG);
+                    PBAIL(ERR_WRONG);
                 break;
 #endif /* _NETCDF4 */
             default:
-                BAIL(ERR_WRONG);
+                PBAIL(ERR_WRONG);
             }
         }
 
@@ -243,52 +243,52 @@ int check_darray_file(int iosysid, char *data_filename, int iotype, int my_rank,
             {
             case PIO_BYTE:
                 if (((signed char *)data_in)[r] != expected_byte[r % (LAT_LEN * LON_LEN)])
-                    BAIL(ERR_WRONG);
+                    PBAIL(ERR_WRONG);
                 break;
             case PIO_CHAR:
                 if (((char *)data_in)[r] != expected_char[r % (LAT_LEN * LON_LEN)])
-                    BAIL(ERR_WRONG);
+                    PBAIL(ERR_WRONG);
                 break;
             case PIO_SHORT:
                 if (((short *)data_in)[r] != expected_short[r % (LAT_LEN * LON_LEN)])
-                    BAIL(ERR_WRONG);
+                    PBAIL(ERR_WRONG);
                 break;
             case PIO_INT:
                 if (((int *)data_in)[r] != expected_int[r % (LAT_LEN * LON_LEN)])
-                    BAIL(ERR_WRONG);
+                    PBAIL(ERR_WRONG);
                 break;
             case PIO_FLOAT:
                 if (((float *)data_in)[r] != expected_float[r % (LAT_LEN * LON_LEN)])
-                    BAIL(ERR_WRONG);
+                    PBAIL(ERR_WRONG);
                 break;
             case PIO_DOUBLE:
                 if (((double *)data_in)[r] != expected_double[r % (LAT_LEN * LON_LEN)])
-                    BAIL(ERR_WRONG);
+                    PBAIL(ERR_WRONG);
                 break;
 #ifdef _NETCDF4
             case PIO_UBYTE:
                 if (((unsigned char *)data_in)[r] != expected_ubyte[r % (LAT_LEN * LON_LEN)])
-                    BAIL(ERR_WRONG);
+                    PBAIL(ERR_WRONG);
                 break;
             case PIO_USHORT:
                 if (((unsigned short *)data_in)[r] != expected_ushort[r % (LAT_LEN * LON_LEN)])
-                    BAIL(ERR_WRONG);
+                    PBAIL(ERR_WRONG);
                 break;
             case PIO_UINT:
                 if (((unsigned int *)data_in)[r] != expected_uint[r % (LAT_LEN * LON_LEN)])
-                    BAIL(ERR_WRONG);
+                    PBAIL(ERR_WRONG);
                 break;
             case PIO_INT64:
                 if (((long long *)data_in)[r] != expected_int64[r % (LAT_LEN * LON_LEN)])
-                    BAIL(ERR_WRONG);
+                    PBAIL(ERR_WRONG);
                 break;
             case PIO_UINT64:
                 if (((unsigned long long *)data_in)[r] != expected_uint64[r % (LAT_LEN * LON_LEN)])
-                    BAIL(ERR_WRONG);
+                    PBAIL(ERR_WRONG);
                 break;
 #endif /* _NETCDF4 */
             default:
-                BAIL(ERR_WRONG);
+                PBAIL(ERR_WRONG);
             }
         }
 
@@ -300,7 +300,7 @@ int check_darray_file(int iosysid, char *data_filename, int iotype, int my_rank,
 
         /* Check the 4D vars. */
         if ((ret = check_4d_vars(my_rank, ncid, varid_4d)))
-            BAIL(ret);
+            PBAIL(ret);
     }
 
     /* Close the file. */

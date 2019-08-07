@@ -59,9 +59,9 @@ interface
         bind(C,name="PIOc_write_darray_multi")
      use iso_c_binding
      integer(C_INT), value :: ncid
+     integer(C_INT), value :: nvars
      integer(C_INT) :: vid(nvars)
      integer(C_INT), value :: ioid
-     integer(C_INT), value :: nvars
      integer(C_SIZE_T), value :: arraylen
      type(c_ptr), value :: array
      type(C_PTR), value :: fillvalue
