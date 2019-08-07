@@ -168,6 +168,7 @@ static void unittest_workspace()
     }
 
 #ifndef KOKKOS_ENABLE_CUDA
+#ifdef WS_EXPENSIVE_TEST
     // Test weird take/release permutations.
     for (int r = 0; r < 3; ++r) {
       int take_order[]    = {0, 1, 2, 3};
@@ -282,6 +283,7 @@ static void unittest_workspace()
       } while (std::next_permutation(actions, actions + 6));
     }
     ws.reset();
+#endif
 #endif
 
     total_errs += nerrs_local;

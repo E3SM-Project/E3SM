@@ -69,7 +69,8 @@ TEST_CASE("lin_interp", "soak") {
   const Real minthresh = 0.000001;
   const int ncol = 10;
 
-  for (int r = 0; r < 1000; ++r) {
+  // increase iterations for a more-thorough soak
+  for (int r = 0; r < 100; ++r) {
     const int km1 = k_dist(generator);
     const int km2 = k_dist(generator);
     vector_2d_t
