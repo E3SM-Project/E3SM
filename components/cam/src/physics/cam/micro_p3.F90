@@ -3756,34 +3756,40 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
          !accumulated precip during time step
          if (k_qxbot.eq.kbot) prt_accum = prt_accum + flux_qit(kbot)*dt_sub
 
-         !--- for top level only (since flux is 0 above)
-         k = k_qxtop
-         !-- compute flux divergence
-         fluxdiv_qit = -flux_qit(k)*inv_dzq(k)
-         fluxdiv_qir = -flux_qir(k)*inv_dzq(k)
-         fluxdiv_bir = -flux_bir(k)*inv_dzq(k)
-         fluxdiv_nit = -flux_nit(k)*inv_dzq(k)
-         !-- update prognostic variables
-         qitot(k) = qitot(k) + fluxdiv_qit*dt_sub*inv_rho(k)
-         qirim(k) = qirim(k) + fluxdiv_qir*dt_sub*inv_rho(k)
-         birim(k) = birim(k) + fluxdiv_bir*dt_sub*inv_rho(k)
-         nitot(k) = nitot(k) + fluxdiv_nit*dt_sub*inv_rho(k)
-         !zitot(i,k) = zitot(i,k) + fluxdiv_nit*dt_sub*inv_rho(i,k)
+
+         call generalized_sedimentation(kts, kte, kdir, k_temp, k_qxtop, dt_sub, inv_dzq, inv_rho, flux_qit, qitot)
+         call generalized_sedimentation(kts, kte, kdir, k_temp, k_qxtop, dt_sub, inv_dzq, inv_rho, flux_nit, nitot)
+         call generalized_sedimentation(kts, kte, kdir, k_temp, k_qxtop, dt_sub, inv_dzq, inv_rho, flux_qir, qirim)
+         call generalized_sedimentation(kts, kte, kdir, k_temp, k_qxtop, dt_sub, inv_dzq, inv_rho, flux_bir, birim)
+
+         ! !--- for top level only (since flux is 0 above)
+         ! k = k_qxtop
+         ! !-- compute flux divergence
+         ! fluxdiv_qit = -flux_qit(k)*inv_dzq(k)
+         ! fluxdiv_qir = -flux_qir(k)*inv_dzq(k)
+         ! fluxdiv_bir = -flux_bir(k)*inv_dzq(k)
+         ! fluxdiv_nit = -flux_nit(k)*inv_dzq(k)
+         ! !-- update prognostic variables
+         ! qitot(k) = qitot(k) + fluxdiv_qit*dt_sub*inv_rho(k)
+         ! qirim(k) = qirim(k) + fluxdiv_qir*dt_sub*inv_rho(k)
+         ! birim(k) = birim(k) + fluxdiv_bir*dt_sub*inv_rho(k)
+         ! nitot(k) = nitot(k) + fluxdiv_nit*dt_sub*inv_rho(k)
+         ! !zitot(i,k) = zitot(i,k) + fluxdiv_nit*dt_sub*inv_rho(i,k)
 
 
-         do k = k_qxtop-kdir,k_temp,-kdir
-            !-- compute flux divergence
-            fluxdiv_qit = (flux_qit(k+kdir) - flux_qit(k))*inv_dzq(k)
-            fluxdiv_qir = (flux_qir(k+kdir) - flux_qir(k))*inv_dzq(k)
-            fluxdiv_bir = (flux_bir(k+kdir) - flux_bir(k))*inv_dzq(k)
-            fluxdiv_nit = (flux_nit(k+kdir) - flux_nit(k))*inv_dzq(k)
-            !-- update prognostic variables
-            qitot(k) = qitot(k) + fluxdiv_qit*dt_sub*inv_rho(k)
-            qirim(k) = qirim(k) + fluxdiv_qir*dt_sub*inv_rho(k)
-            birim(k) = birim(k) + fluxdiv_bir*dt_sub*inv_rho(k)
-            nitot(k) = nitot(k) + fluxdiv_nit*dt_sub*inv_rho(k)
-            !zitot(i,k) = zitot(i,k) + fluxdiv_nit*dt_sub*inv_rho(i,k)
-         enddo
+         ! do k = k_qxtop-kdir,k_temp,-kdir
+         !    !-- compute flux divergence
+         !    fluxdiv_qit = (flux_qit(k+kdir) - flux_qit(k))*inv_dzq(k)
+         !    fluxdiv_qir = (flux_qir(k+kdir) - flux_qir(k))*inv_dzq(k)
+         !    fluxdiv_bir = (flux_bir(k+kdir) - flux_bir(k))*inv_dzq(k)
+         !    fluxdiv_nit = (flux_nit(k+kdir) - flux_nit(k))*inv_dzq(k)
+         !    !-- update prognostic variables
+         !    qitot(k) = qitot(k) + fluxdiv_qit*dt_sub*inv_rho(k)
+         !    qirim(k) = qirim(k) + fluxdiv_qir*dt_sub*inv_rho(k)
+         !    birim(k) = birim(k) + fluxdiv_bir*dt_sub*inv_rho(k)
+         !    nitot(k) = nitot(k) + fluxdiv_nit*dt_sub*inv_rho(k)
+         !    !zitot(i,k) = zitot(i,k) + fluxdiv_nit*dt_sub*inv_rho(i,k)
+         ! enddo
 
          dt_left = dt_left - dt_sub  !update time remaining for sedimentation
          if (k_qxbot.ne.kbot) k_qxbot = k_qxbot - kdir
