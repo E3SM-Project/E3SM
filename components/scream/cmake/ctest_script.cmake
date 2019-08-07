@@ -26,7 +26,7 @@ else()
 endif()
 
 if (NOT BUILD_ONLY)
-  ctest_test(RETURN_VALUE TEST_RESULTS PARALLEL_LEVEL ${PARALLEL_LEVEL})
+  ctest_test(RETURN_VALUE TEST_RESULTS)
   if (NOT TEST_RESULTS EQUAL 0)
     set(TEST_FAILS True)
   endif()
