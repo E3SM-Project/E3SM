@@ -3581,23 +3581,26 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
          !accumulated precip during time step
          if (k_qxbot.eq.kbot) prt_accum = prt_accum + flux_qx(kbot)*dt_sub
 
-         !--- for top level only (since flux is 0 above)
-         k = k_qxtop
-         !- compute flux divergence
-         fluxdiv_qx = -flux_qx(k)*inv_dzq(k)
-         fluxdiv_nx = -flux_nx(k)*inv_dzq(k)
-         !- update prognostic variables
-         qr(k) = qr(k) + fluxdiv_qx*dt_sub*inv_rho(k)
-         nr(k) = nr(k) + fluxdiv_nx*dt_sub*inv_rho(k)
+         call generalized_sedimentation(kts, kte, kdir, k_temp, k_qxtop, dt_sub, inv_dzq, inv_rho, flux_qx, qr)
+         call generalized_sedimentation(kts, kte, kdir, k_temp, k_qxtop, dt_sub, inv_dzq, inv_rho, flux_nx, nr)
 
-         do k = k_qxtop-kdir,k_temp,-kdir
-            !-- compute flux divergence
-            fluxdiv_qx = (flux_qx(k+kdir) - flux_qx(k))*inv_dzq(k)
-            fluxdiv_nx = (flux_nx(k+kdir) - flux_nx(k))*inv_dzq(k)
-            !-- update prognostic variables
-            qr(k) = qr(k) + fluxdiv_qx*dt_sub*inv_rho(k)
-            nr(k) = nr(k) + fluxdiv_nx*dt_sub*inv_rho(k)
-         enddo
+         ! !--- for top level only (since flux is 0 above)
+         ! k = k_qxtop
+         ! !- compute flux divergence
+         ! fluxdiv_qx = -flux_qx(k)*inv_dzq(k)
+         ! fluxdiv_nx = -flux_nx(k)*inv_dzq(k)
+         ! !- update prognostic variables
+         ! qr(k) = qr(k) + fluxdiv_qx*dt_sub*inv_rho(k)
+         ! nr(k) = nr(k) + fluxdiv_nx*dt_sub*inv_rho(k)
+
+         ! do k = k_qxtop-kdir,k_temp,-kdir
+         !    !-- compute flux divergence
+         !    fluxdiv_qx = (flux_qx(k+kdir) - flux_qx(k))*inv_dzq(k)
+         !    fluxdiv_nx = (flux_nx(k+kdir) - flux_nx(k))*inv_dzq(k)
+         !    !-- update prognostic variables
+         !    qr(k) = qr(k) + fluxdiv_qx*dt_sub*inv_rho(k)
+         !    nr(k) = nr(k) + fluxdiv_nx*dt_sub*inv_rho(k)
+         ! enddo
 
          dt_left = dt_left - dt_sub  !update time remaining for sedimentation
          if (k_qxbot.ne.kbot) k_qxbot = k_qxbot - kdir
@@ -3795,6 +3798,39 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
    ni_tend(:) = ( nitot(:) - ni_tend(:) ) * odt ! Ice # sedimentation tendency, measure
 
 end subroutine
+
+
+subroutine generalized_sedimentation(kts, kte, kdir, k_temp, k_qxtop, dt_sub, inv_dzq, inv_rho, flux_qx, qx) 
+
+   implicit none 
+
+   integer, intent(in) :: kts, kte, kdir, k_temp, k_qxtop 
+   real(rtype), intent(in) :: dt_sub 
+   real(rtype), dimension(kts:kte), intent(in) :: inv_dzq
+   real(rtype), dimension(kts:kte), intent(in) :: inv_rho 
+   real(rtype), dimension(kts:kte), intent(in) :: flux_qx 
+   real(rtype), dimension(kts:kte), intent(inout) :: qx
+
+   integer :: k 
+   real(rtype) :: fluxdiv_qx
+
+   !--- for top level only (since flux is 0 above)
+   k = k_qxtop
+   !- compute flux divergence
+   fluxdiv_qx = -flux_qx(k)*inv_dzq(k)
+   !- update prognostic variables
+   qx(k) = qx(k) + fluxdiv_qx*dt_sub*inv_rho(k)
+
+   do k = k_qxtop-kdir,k_temp,-kdir
+      !-- compute flux divergence
+      fluxdiv_qx = (flux_qx(k+kdir) - flux_qx(k))*inv_dzq(k)
+      !-- update prognostic variables
+      qx(k) = qx(k) + fluxdiv_qx*dt_sub*inv_rho(k)
+
+   end do
+
+
+end subroutine generalized_sedimentation
 
 subroutine homogeneous_freezing(kts,kte,kbot,ktop,kdir,t,exner,xlf,    &
    qc,nc,qr,nr,qitot,nitot,qirim,birim,th) 
