@@ -15,74 +15,33 @@ import json
 import shutil
 import logging
 
+import pandas as pd
+import numpy as np
 from collections import OrderedDict
 
 import CIME.test_status
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case.case_setup import case_setup
-from CIME.build import post_build
 from CIME.utils import expect
 
 import evv4esm  # pylint: disable=import-error
+from evv4esm.extensions import pg  # pylint: disable=import-error
 from evv4esm.__main__ import main as evv  # pylint: disable=import-error
 
 evv_lib_dir = os.path.abspath(os.path.dirname(evv4esm.__file__))
 
-# Logic for PGN ensemble runs:
-# ----------------------------
-# We need two inputs:
-# A. Number of inic cond files
-# B. perturbations (e.g. currently we have: without prt, pos prt and neg prt)
-
-# Based off the above, we compute number of instances to have (A * B)
-# Build phase               : Change the user_nl* files to add perturbations and
-#                             other flags
-# Run phase                 : Rename history files
-# Baselines generation phase: Compute cloud, store in netcdf file, copy netcdf
-#                             file to baseline folder
-# Baseline Comparison phase : Compare against baseline cloud to know pass/fail,
-#                             and plot (optional)
-
-
-# TODO:
-# 1. The loop to change user_nl* files is run twice as we call build again after
-#    changing ninst, which changes ntasks
-# 2. Do we want to remove user_nl_cam, user_nl_clm etc. files as they are not
-#    used in the simulation?
-# 3. change code so that pergro_ptend_names.txt is not generated if it is
-#    already there or only one instance writes this file...
-# 4. Plot generation is very basic at this point(no labels, legends etc.),
-#    improve it!
-# 5. Decision making about PASS/FAIL should have multiple criteria
-
 logger = logging.getLogger(__name__)
 
-# --------------------------------------------------------
-# Variables which needs global scope for various functions
-# --------------------------------------------------------
-# number of initial conditions
-NINIT_COND = 6  # 12
-# perturbations for runs
+NUMBER_INITIAL_CONDITIONS = 6
 PERTURBATIONS = OrderedDict([('woprt', 0.0),
                              ('posprt', 1.0e-14),
                              ('negprt', -1.0e-14),
                              ])
-# file name for file containing PGE cloud
 FCLD_NC = 'cam.h0.cloud.nc'
-# For preparing paths for namelist files for initial condition files
 INIT_COND_FILE_TEMPLATE = \
     "SMS_Ly5.ne4_ne4.FC5AV1C-04P2.eos_intel.ne45y.{}.{}.0002-{:02d}-01-00000.nc"
-# For finding the instance files
 # FIXME: should 'cam' be 'atm' now?
-INSTANCE_FILE_TEMPLATE = '{}.cam_{:04d}.h0.0001-01-01-00000.nc'
-# ------------------------------------------------------------
-# Some flags for debugging or invoking extra features
-# ------------------------------------------------------------
-# prints out max rmse diffs if set to True
-INDEX = False
-# Building the model can take a significant amount of time. Setting fake_bld to
-# True can save that time
-FAKE_BUILD = False
+INSTANCE_FILE_TEMPLATE = '{}cam_{:04d}.h0.0001-01-01-00000{}.nc'
 
 
 class PGN(SystemTestsCommon):
@@ -93,10 +52,8 @@ class PGN(SystemTestsCommon):
         """
         super(PGN, self).__init__(self, case)
 
-
     def build_phase(self, sharedlib_only=False, model_only=False):
-
-        ninst = NINIT_COND * len(PERTURBATIONS)
+        ninst = NUMBER_INITIAL_CONDITIONS * len(PERTURBATIONS)
         logger.debug('PGN_INFO: number of instance: '+str(ninst))
 
         # Find number of instance in the default setup
@@ -142,12 +99,7 @@ class PGN(SystemTestsCommon):
 
                 case_setup(self._case, test_mode=False, reset=True)
 
-        if FAKE_BUILD:
-            logger.debug("PGN_INFO: FAKE Build")
-            if not sharedlib_only:
-                post_build(self._case, [])
-        else:
-            self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
+        self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
 
         logger.debug("PGN_INFO: Updating user_nl_* files")
 
@@ -156,9 +108,9 @@ class PGN(SystemTestsCommon):
         csmdata_lnd = os.path.join(csmdata_root, "lnd/clm2/initdata/ne4_v1_init/b58d55680")
 
         iinst = 1
-        for icond in range(1, NINIT_COND+1):
+        for icond in range(1, NUMBER_INITIAL_CONDITIONS + 1):
             fatm_in = os.path.join(csmdata_atm, INIT_COND_FILE_TEMPLATE.format('atm', 'i', icond))
-            flnd_in =  os.path.join(csmdata_lnd, INIT_COND_FILE_TEMPLATE.format('clm2', 'r', icond))
+            flnd_in = os.path.join(csmdata_lnd, INIT_COND_FILE_TEMPLATE.format('clm2', 'r', icond))
             for iprt in PERTURBATIONS.values():
                 with open('user_nl_cam_{:04d}'.format(iinst), 'w') as atmnlfile, \
                         open('user_nl_clm_{:04d}'.format(iinst), 'w') as lndnlfile:
@@ -189,8 +141,6 @@ class PGN(SystemTestsCommon):
         self._case.set_value("STOP_N", "1")
         self._case.set_value("STOP_OPTION", "nsteps")
 
-
-    # FIXME: Can this be done during __init__? Only should be done once right?
     def get_var_list(self):
         """
         Get variable list for pergro specific output vars
@@ -204,8 +154,7 @@ class PGN(SystemTestsCommon):
         with open(var_file, 'r') as fvar:
             var_list = fvar.readlines()
 
-        return map(str.strip, var_list)
-
+        return list(map(str.strip, var_list))
 
     def _compare_baseline(self):
         """
@@ -225,7 +174,6 @@ class PGN(SystemTestsCommon):
                                     self._case.get_value("BASECMP_CASE"))
 
             var_list = self.get_var_list()
-            path_cld_nc = os.path.join(base_dir, FCLD_NC)
 
             test_name = "{}".format(case_name.split('.')[-1])
             evv_config = {
@@ -239,7 +187,7 @@ class PGN(SystemTestsCommon):
                     "variables": var_list,
                     "perturbations": PERTURBATIONS,
                     "pge-cld": FCLD_NC,
-                    "ninit": NINIT_COND,
+                    "ninit": NUMBER_INITIAL_CONDITIONS,
                     "init-file-template": INIT_COND_FILE_TEMPLATE,
                     "instance-file-template": INSTANCE_FILE_TEMPLATE,
 
@@ -257,15 +205,13 @@ class PGN(SystemTestsCommon):
                 evv_status = json.load(evv_f)
 
             for evv_elem in evv_status['Data']['Elements']:
-                # FIXME: TableTitle!
                 if evv_elem['Type'] == 'ValSummary' \
-                        and evv_elem['TableTitle'] == 'Peturbation-Growth':
-                    if evv_elem['Data'][test_name]['']['Ensembles'] == 'identical':
+                        and evv_elem['TableTitle'] == 'Perturbation growth test':
+                    if evv_elem['Data'][test_name]['']['Test status'].lower() == 'pass':
                         self._test_status.set_status(CIME.test_status.BASELINE_PHASE,
                                                      CIME.test_status.TEST_PASS_STATUS)
                         break
 
-    # FIXME: REFACTOR
     def run_phase(self):
         logger.debug("PGN_INFO: RUN PHASE")
 
@@ -277,43 +223,10 @@ class PGN(SystemTestsCommon):
         casename = self._case.get_value("CASE")
         logger.debug("PGN_INFO: Case name is:{}".format(casename))
 
-        for icond in range(NINIT_COND):
+        for icond in range(NUMBER_INITIAL_CONDITIONS):
             for iprt, (prt, prt_name) in enumerate(PERTURBATIONS.items()):
-
-                # ------------------------------------------------------
-                # SANITY CHECK - To confirm that history file extension
-                # ~~~~~~~~~~~~
-                # corresponds to the right perturbation
-                # ------------------------------------------------------
-                # find corresponding atm_in_*
-                iinst = _sub2instance(icond, iprt)
-                fatm_in = os.path.join(rundir, 'atm_in_{:04d}'.format(iinst))
-                # see if atm_in_* file has pertlim same as PRT[iprt] (sanity check)
-                found = False
-                prtval = 0.0
-                with open(fatm_in) as atmfile:
-                    for line in atmfile:
-                        if line.find('pertlim') > 0:
-                            found = True
-                            prtval = float(line.split('=')[1])
-                            expect(prtval == prt,
-                                   "ERROR: prtval doesn't match, "
-                                   "prtval:{}; prt[{}]:{}".format(
-                                           prtval, iprt, prt))
-                            logger.debug("PGN_INFO:prtval:{}; prt[{}]:{}".format(
-                                    prtval, iprt, prt))
-
-                if not found:
-                    expect(prtval == prt,
-                           "ERROR: default prtval doesn't match, "
-                           "prtval:{}; prt[{}]:{}".format(prtval, iprt, prt))
-                    logger.debug("PGN_INFO:def prtval:{}; prt[{}]:{}".format(
-                            prtval, iprt, prt))
-
-                # ---------------------------------------------------------
-                # Rename file
-                # ---------------------------------------------------------
-                fname = os.path.join(rundir, INSTANCE_FILE_TEMPLATE.format(casename, iinst))
+                iinst = pg._sub2instance(icond, iprt, len(PERTURBATIONS))
+                fname = os.path.join(rundir, INSTANCE_FILE_TEMPLATE.format(casename + '.', iinst, ''))
                 renamed_fname = re.sub(r'\.nc$', '_{}.nc'.format(prt_name), fname)
 
                 logger.debug("PGN_INFO: fname to rename:{}".format(fname))
@@ -326,108 +239,42 @@ class PGN(SystemTestsCommon):
                     logger.debug("PGN_INFO: Renamed file already exists:"
                                  "{}".format(renamed_fname))
 
-        # cloud generation
+        logger.debug("PGN_INFO: RUN PHASE ENDS")
 
-        logger.debug("PGN_INFO: cloud generation-gen base")
+    def _generate_baseline(self):
+        super(PGN, self)._generate_baseline()
+
+        base_root = self._case.get_value("BASELINE_ROOT")
+        base_gen = self._case.get_value("BASEGEN_CASE")
+        base_dir = os.path.join(base_root, base_gen)
+
+        rundir = self._case.get_value("RUNDIR")
+        casename = self._case.get_value("CASE")
 
         var_list = self.get_var_list()
-        len_var_list = len(var_list)
-        # nprt = len(PRT)
-
-        # for trusted cloud sims
-        logger.debug("PGN_INFO: Computing cloud")
-
-        # cld_res = np.empty([len_var_list])
-
-        # ---------------------------------------------
-        # Write netcdf file for cloud in rundir
-        # ---------------------------------------------
-        os.chdir(rundir)
-        fcld, cld_rmse_nc = self.nc_write_handle(FCLD_NC, 'cld_rmse')
-
-        iinst = 0
-        for icond in range(NINIT_COND):
-            iinst += 1
-            ifile_cntl = os.path.join(rundir, '{}_{}.nc'.format(
-                    self.get_fname_wo_ext('', casename, iinst), PERTURBATIONS))
-            expect(os.path.isfile(ifile_cntl),
-                   "ERROR: File {} does not exist".format(ifile_cntl))
-            logger.debug("PGN_INFO:CNTL_CLD:{}".format(ifile_cntl))
-
+        nvar = len(var_list)
+        nprt = len(PERTURBATIONS)
+        rmse_prototype = {}
+        for icond in range(NUMBER_INITIAL_CONDITIONS):
+            prt_rmse = {}
             for iprt, prt_name in enumerate(PERTURBATIONS):
                 if prt_name == 'woprt':
                     continue
-                iinst += 1
+                iinst_ctrl = pg._sub2instance(icond, 0, nprt)
+                ifile_ctrl = os.path.join(rundir,
+                                          INSTANCE_FILE_TEMPLATE.format(casename + '.', iinst_ctrl, '_woprt'))
 
-                ifile_test = os.path.join(rundir, '{}_{}.nc'.format(
-                        self.get_fname_wo_ext('', casename, iinst), prt_name))
-                expect(os.path.isfile(ifile_test),
-                       "ERROR: File {} does not exist".format(ifile_test))
-                # NOTE: iprt-1 as we will only get two curves for each inic
-                # (wo-pos and wo-neg)
-                cld_rmse_nc[icond, iprt-1, 0:len_var_list] = self.rmse_var(
-                        ifile_test, ifile_cntl,  var_list, 't_')
-                logger.debug("PGN_INFO:Compared to CLD:{}".format(ifile_test))
+                iinst_test = pg._sub2instance(icond, iprt, nprt)
+                ifile_test = os.path.join(rundir,
+                                          INSTANCE_FILE_TEMPLATE.format(casename + '.', iinst_test, '_' + prt_name))
 
-        fcld.close()
+                prt_rmse[prt_name] = pg.variables_rmse(ifile_test, ifile_ctrl, var_list, 't_')
+            rmse_prototype[icond] = pd.concat(prt_rmse)
+        rmse = pd.concat(rmse_prototype)
+        cld_rmse = np.reshape(rmse.RMSE.values, (NUMBER_INITIAL_CONDITIONS, nprt - 1, nvar))
 
-        if self._case.get_value("GENERATE_BASELINE"):
+        pg.rmse_writer(os.path.join(rundir, FCLD_NC),
+                       cld_rmse, PERTURBATIONS.keys(), var_list, INIT_COND_FILE_TEMPLATE)
 
-            # baseline directory names
-            base_root = self._case.get_value("BASELINE_ROOT")
-            base_gen = self._case.get_value("BASEGEN_CASE")
-
-            # baseline directory is:base_root/base_gen
-            base_dir = os.path.join(base_root, base_gen)
-
-            # first copy files to the baseline directory
-            self._generate_baseline()  # BALLI-CHECK IF THIS IS OKAY
-
-            # copy cloud.nc file to baseline directory
-            logger.debug("PGN_INFO:copy:{} to {}".format(FCLD_NC, base_dir))
-            shutil.copy(FCLD_NC, base_dir)
-
-        logger.debug("PGN_INFO: RUN PHASE ENDS")
-
-# =====================================================
-# Debugging:
-# =====================================================
-
-# -----------------------------------------------------
-# DEBUG type 1 (DB1): Ensure that model produces BFB instances
-# -----------------------------------------------------
-# Replace PERTURBATIONS dictionary at the top of the script with the following:
-# PERTURBATIONS = OrderedDict([('woprt', 0.0), ('posprt', 0.0)])
-
-# Comment out all namelist changes so that all instances have same namelist values
-# For testing effect of namelist changes, uncomment namelist changes such that
-# namelists are same for all instances
-
-# Comment out sanity checks as well if needed....
-
-
-def _instance2sub(instance_number):
-    """
-    Converts an instance number (ii) to initial condition index (ci) and
-    perturbation index (pi)  subscripts
-
-    instances use 1-based indexes and vary according to this function:
-        ii = ci * len(PERTURBATIONS) + pi + 1
-    where both pi and ci use 0-based indexes.
-    """
-    perturbation_index = (instance_number - 1) % len(PERTURBATIONS)
-    initial_condition = (instance_number - 1 - perturbation_index) // len(PERTURBATIONS)
-    return initial_condition, perturbation_index
-
-
-def _sub2instance(initial_condition, perturbation_index):
-    """
-    Converts initial condition index (ci) and perturbation index (pi) subscripts
-    to an instance number (ii)
-
-    instances use 1-based indexes and vary according to this function:
-        ii = ci * len(PERTURBATIONS) + pi + 1
-    where both pi and ci use 0-based indexes.
-    """
-    instance = initial_condition * len(PERTURBATIONS) + perturbation_index + 1
-    return instance
+        logger.debug("PGN_INFO:copy:{} to {}".format(FCLD_NC, base_dir))
+        shutil.copy(os.path.join(rundir, FCLD_NC), base_dir)
