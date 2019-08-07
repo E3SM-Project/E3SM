@@ -2350,6 +2350,10 @@ contains
     phis => elem(ie)%state%phis(:,:)
 
 
+    ! add in w_explicit to initial guess:                                                                               
+    phi_np1(:,:,1:nlev) = phi_np1(:,:,1:nlev) + dt2*g*elem(ie)%state%w_i(:,:,1:nlev,np1)
+
+
 !if((elem(ie)%globalid == 1721).and.(tl%nstep == 209810))then
 !    call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk1',&
 !    spherep=elem(ie)%spherep,doout=.true.)

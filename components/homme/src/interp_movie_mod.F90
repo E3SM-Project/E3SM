@@ -319,17 +319,17 @@ contains
        end do
     end do
 
-    call getiodof(2, (/nlon,nlat/), iorank, iodof2d, start2d(1:2), count2d(1:2))
+    call getiodof(2, (/nlon,nlat/),       iorank,   iodof2d,   start2d(1:2),   count2d(1:2))
 
-    call nf_init_decomp(ncdf, (/1,2/), ldof2d, iodof2d,start2d(1:2),count2d(1:2))
+    call nf_init_decomp(ncdf, (/1,2/),    ldof2d,   iodof2d,   start2d(1:2),   count2d(1:2))
 
-    call getiodof(3, (/nlon,nlat,nlev/), iorank, iodof3d, start3d(1:3), count3d(1:3))
+    call getiodof(3, (/nlon,nlat,nlev/),  iorank,   iodof3d,   start3d(1:3),   count3d(1:3))
 
-    call nf_init_decomp(ncdf, (/1,2,3/), ldof3d, iodof3d,start3d(1:3),count3d(1:3))
+    call nf_init_decomp(ncdf, (/1,2,3/),  ldof3d,   iodof3d,   start3d(1:3),   count3d(1:3))
 
-    call getiodof(3, (/nlon,nlat,nlevp/), iorank, iodof3dp1, start3dp1(1:3), count3dp1(1:3))
+    call getiodof(3, (/nlon,nlat,nlevp/), iorank,   iodof3dp1, start3dp1(1:3), count3dp1(1:3))
 
-    call nf_init_decomp(ncdf, (/1,2,3/), ldof3dp1, iodof3dp1, start3dp1(1:3), count3dp1(1:3))
+    call nf_init_decomp(ncdf, (/1,2,4/),  ldof3dp1, iodof3dp1, start3dp1(1:3), count3dp1(1:3))
 
     deallocate(iodof2d, iodof3d, iodof3dp1, ldof2d, ldof3d, ldof3dp1)
 
@@ -458,7 +458,7 @@ contains
     use time_mod, only : Timelevel_t, tstep, ndays, time_at, secpday, nendstep,nmax, Timelevel_Qdp
     use parallel_mod, only : parallel_t, abortmp
 #if defined(_PRIM) 
-    use element_ops, only : get_field
+    use element_ops, only : get_field, get_field_i
     use hybvcoord_mod, only :  hvcoord_t 
     use dcmip16_wrapper, only: precl
 #endif
@@ -487,7 +487,7 @@ contains
     integer :: ie,ios, i, j, k
     real (kind=real_kind) :: pfull, pr0
     real(kind=real_kind),parameter :: dayspersec=1d0/(3600.*24.)
-    real(kind=real_kind), allocatable :: datall(:,:), var3d(:,:,:,:)
+    real(kind=real_kind), allocatable :: datall(:,:), var3d(:,:,:,:), var3dp1(:,:,:,:)
     real(kind=real_kind), allocatable :: varvtmp(:,:,:,:), ulatlon(:,:,:,:,:)
     real(kind=real_kind)  :: temp3d(np,np,nlev)    
     integer :: st, en
@@ -523,6 +523,9 @@ contains
              count2d(3)=1
              start3d(4)=nf_get_frame(ncdf(ios))
              count3d(4)=1
+
+             start3dp1(4)=nf_get_frame(ncdf(ios))
+             count3dp1(4)=1
 
 
              if(nf_selectedvar('ps', output_varnames)) then
@@ -982,13 +985,12 @@ contains
                 call nf_put_var(ncdf(ios),datall,start3d, count3d, name='w_nlev')
                 deallocate(datall,var3d)
              end if
-#if 0
-!finish
+#if 1
              if(nf_selectedvar('w_nlevp', output_varnames)) then
                 if (par%masterproc) print *,'writing w_nlevp...'
                 allocate(datall(ncnt,nlevp), var3dp1(np,np,nlevp,nelemd))
                 do ie=1,nelemd
-                   call get_field_i(elem(ie),'w_nlevp',var3dp1(:,:,:,ie),hvcoord,n0)
+                   call get_field_i(elem(ie),'w',var3dp1(:,:,:,ie),hvcoord,n0)
                 end do
 !dont call it from hydro codes
                 !call make_C0(var3d,elem,par)
@@ -996,7 +998,7 @@ contains
                 do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    call interpolate_scalar(interpdata(ie), var3dp1(:,:,:,ie), &
-                        np, nlev, datall(st:en,:))
+                        np, nlevp, datall(st:en,:))
                    st=st+interpdata(ie)%n_interp
                 enddo
                 call nf_put_var(ncdf(ios),datall,start3dp1, count3dp1,name='w_nlevp')
@@ -1007,18 +1009,37 @@ contains
                 if (par%masterproc) print *,'writing geo_nlevp...'
                 allocate(datall(ncnt,nlevp), var3dp1(np,np,nlevp,nelemd))
                 do ie=1,nelemd
-                   call get_field_i(elem(ie),'w_nlevp',var3dp1(:,:,:,ie),hvcoord,n0)
+                   call get_field_i(elem(ie),'geopotential',var3dp1(:,:,:,ie),hvcoord,n0)
                 end do
                 st=1
                 do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    call interpolate_scalar(interpdata(ie), var3dp1(:,:,:,ie), &
-                        np, nlev, datall(st:en,:))
+                        np, nlevp, datall(st:en,:))
                    st=st+interpdata(ie)%n_interp
                 enddo
-                call nf_put_var(ncdf(ios),datall,start3dp1, count3dp1,name='w_nlevp')
+                call nf_put_var(ncdf(ios),datall,start3dp1, count3dp1,name='geo_nlevp')
                 deallocate(datall,var3dp1)
              end if
+
+             if(nf_selectedvar('mu', output_varnames)) then
+                if (par%masterproc) print *,'writing mu...'
+                allocate(datall(ncnt,nlevp), var3dp1(np,np,nlevp,nelemd))
+                do ie=1,nelemd
+                   call get_field_i(elem(ie),'mu',var3dp1(:,:,:,ie),hvcoord,n0)
+                end do
+                st=1
+                do ie=1,nelemd
+                   en=st+interpdata(ie)%n_interp-1
+                   call interpolate_scalar(interpdata(ie), var3dp1(:,:,:,ie), &
+                        np, nlevp, datall(st:en,:))
+                   st=st+interpdata(ie)%n_interp
+                enddo
+                call nf_put_var(ncdf(ios),datall,start3dp1, count3dp1,name='mu')
+                deallocate(datall,var3dp1)
+             end if
+
+!!! ADD PNH in native
 
 #endif
 
