@@ -916,6 +916,7 @@ if ($co2_cycle) {
 	# (user specification has higher precedence than the true value set above)
 	if ($nl->get_value('co2_readflux_fuel') =~ /$TRUE/io) {
 	    add_default($nl, 'co2flux_fuel_file', 'sim_year'=>$sim_year);
+	    add_default($nl, 'co2flux_fuel_vrt_emis_file', 'sim_year'=>$sim_year);
 	}
     }
 }
