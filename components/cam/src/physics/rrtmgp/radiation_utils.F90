@@ -288,7 +288,7 @@ contains
       use cam_logfile, only: iulog
       character(len=*), intent(in) :: error_message
       logical, intent(in), optional :: stop_on_error
-      logical :: stop_on_error_local = .false.
+      logical :: stop_on_error_local = .true.
 
       ! Allow passing of an optional flag to not stop the run if an error is
       ! encountered. This allows this subroutine to be used when inquiring if a
@@ -305,7 +305,7 @@ contains
          if (stop_on_error_local) then
            call endrun(module_name // ': ' // error_message)
          else
-	   write(iulog,*) 'WARNING THRESHOLD VIOLATED: ', error_message
+	   write(iulog,*) 'WARNING: ', error_message
 	 end if
       end if
    end subroutine handle_error
