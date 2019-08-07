@@ -3369,19 +3369,22 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
             !accumulated precip during time step
             if (k_qxbot.eq.kbot) prt_accum = prt_accum + flux_qx(kbot)*dt_sub
 
-            !-- for top level only (since flux is 0 above)
-            k = k_qxtop
-            fluxdiv_qx = -flux_qx(k)*inv_dzq(k)
-            fluxdiv_nx = -flux_nx(k)*inv_dzq(k)
-            qc(k) = qc(k) + fluxdiv_qx*dt_sub*inv_rho(k)
-            nc(k) = nc(k) + fluxdiv_nx*dt_sub*inv_rho(k)
 
-            do k = k_qxtop-kdir,k_temp,-kdir
-               fluxdiv_qx = (flux_qx(k+kdir) - flux_qx(k))*inv_dzq(k)
-               fluxdiv_nx = (flux_nx(k+kdir) - flux_nx(k))*inv_dzq(k)
-               qc(k) = qc(k) + fluxdiv_qx*dt_sub*inv_rho(k)
-               nc(k) = nc(k) + fluxdiv_nx*dt_sub*inv_rho(k)
-            enddo
+            call generalized_sedimentation(kts, kte, kdir, k_temp, k_qxtop, dt_sub, inv_dzq, inv_rho, flux_qx, qc)
+            call generalized_sedimentation(kts, kte, kdir, k_temp, k_qxtop, dt_sub, inv_dzq, inv_rho, flux_nx, nc)
+            ! !-- for top level only (since flux is 0 above)
+            ! k = k_qxtop
+            ! fluxdiv_qx = -flux_qx(k)*inv_dzq(k)
+            ! fluxdiv_nx = -flux_nx(k)*inv_dzq(k)
+            ! qc(k) = qc(k) + fluxdiv_qx*dt_sub*inv_rho(k)
+            ! nc(k) = nc(k) + fluxdiv_nx*dt_sub*inv_rho(k)
+
+            ! do k = k_qxtop-kdir,k_temp,-kdir
+            !    fluxdiv_qx = (flux_qx(k+kdir) - flux_qx(k))*inv_dzq(k)
+            !    fluxdiv_nx = (flux_nx(k+kdir) - flux_nx(k))*inv_dzq(k)
+            !    qc(k) = qc(k) + fluxdiv_qx*dt_sub*inv_rho(k)
+            !    nc(k) = nc(k) + fluxdiv_nx*dt_sub*inv_rho(k)
+            ! enddo
 
             dt_left = dt_left - dt_sub  !update time remaining for sedimentation
             if (k_qxbot.ne.kbot) k_qxbot = k_qxbot - kdir
@@ -3421,15 +3424,16 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
             !accumulated precip during time step
             if (k_qxbot.eq.kbot) prt_accum = prt_accum + flux_qx(kbot)*dt_sub
             
-            !-- for top level only (since flux is 0 above)
-            k = k_qxtop
-            fluxdiv_qx = -flux_qx(k)*inv_dzq(k)
-            qc(k) = qc(k) + fluxdiv_qx*dt_sub*inv_rho(k)
+            call generalized_sedimentation(kts, kte, kdir, k_temp, k_qxtop, dt_sub, inv_dzq, inv_rho, flux_qx, qc)
+            ! !-- for top level only (since flux is 0 above)
+            ! k = k_qxtop
+            ! fluxdiv_qx = -flux_qx(k)*inv_dzq(k)
+            ! qc(k) = qc(k) + fluxdiv_qx*dt_sub*inv_rho(k)
 
-            do k = k_qxtop-kdir,k_temp,-kdir
-               fluxdiv_qx = (flux_qx(k+kdir) - flux_qx(k))*inv_dzq(k)
-               qc(k) = qc(k) + fluxdiv_qx*dt_sub*inv_rho(k)
-            enddo
+            ! do k = k_qxtop-kdir,k_temp,-kdir
+            !    fluxdiv_qx = (flux_qx(k+kdir) - flux_qx(k))*inv_dzq(k)
+            !    qc(k) = qc(k) + fluxdiv_qx*dt_sub*inv_rho(k)
+            ! enddo
 
             dt_left = dt_left - dt_sub  !update time remaining for sedimentation
             if (k_qxbot.ne.kbot) k_qxbot = k_qxbot - kdir
