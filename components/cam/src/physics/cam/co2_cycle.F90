@@ -21,7 +21,7 @@ use physics_types,  only: physics_state, physics_ptend, physics_ptend_init
 use physconst,      only: mwdry, mwco2, gravit, cpair
 use constituents,   only: cnst_add, cnst_get_ind, cnst_name, cnst_longname, sflxnam
 use chem_surfvals,  only: chem_surfvals_get
-use co2_data_flux,  only: read_interp, read_data_flux, interp_time_flux
+use co2_data_flux,  only: co2_data_flux_type, read_data_flux, interp_time_flux,co2_data_flux_init,co2_data_flux_advance
 use cam_abortutils, only: endrun
 
 implicit none
@@ -44,8 +44,8 @@ public co2_cycle_set_cnst_type       ! set co2 tracers mixing type for local ver
 public data_flux_ocn                 ! data read in for co2 flux from ocn
 public data_flux_fuel                ! data read in for co2 flux from fuel
  
-TYPE(read_interp) :: data_flux_ocn                  
-TYPE(read_interp) :: data_flux_fuel
+TYPE(co2_data_flux_type) :: data_flux_ocn                  
+TYPE(co2_data_flux_type) :: data_flux_fuel
                          
 public c_i                           ! global index for new constituents
 public co2_readFlux_ocn              ! read co2 flux from data file 
@@ -208,6 +208,8 @@ subroutine co2_init (state, pbuf2d )
       
     if (.not. co2_flag) return
  
+    call addfld('BALLI_co2',     horiz_only, 'A', 'kg/kg', 'BALLI Bottom Layer')
+    call add_default('BALLI_co2', 1, ' ')
     ! Add constituents and fluxes to history file
     do m = 1, ncnst
        call cnst_get_ind(c_names(m), mm)
@@ -225,13 +227,25 @@ subroutine co2_init (state, pbuf2d )
     end do
  
     ! Read flux data
-    if (co2_readFlux_ocn) then
-       call read_data_flux ( co2flux_ocn_file,  data_flux_ocn, state, pbuf2d )
-    end if
+    !if (co2_readFlux_ocn) then
+    !   call read_data_flux ( co2flux_ocn_file,  data_flux_ocn, state, pbuf2d )
+    !end if
  
-    if (co2_readFlux_fuel) then
-       call read_data_flux ( co2flux_fuel_file, data_flux_fuel, state, pbuf2d )
+    !if (co2_readFlux_fuel) then
+    !   call read_data_flux ( co2flux_fuel_file, data_flux_fuel, state, pbuf2d )
+    !end if
+
+    ! Read flux data
+    if (co2_readFlux_ocn) then
+       call co2_data_flux_init ( co2flux_ocn_file,  'CO2_flux', data_flux_ocn )
     end if
+    
+    if (co2_readFlux_fuel) then
+       call co2_data_flux_init ( co2flux_fuel_file, 'CO2_flux', data_flux_fuel )
+    end if
+
+
+
  
   end subroutine co2_init
 
@@ -247,15 +261,14 @@ subroutine co2_init (state, pbuf2d )
 !-----------------------------------------------------------------------
 
    use time_manager,   only: is_first_step
+   use co2_data_flux,  only: co2_data_flux_advance
+
+   !----------------------------------------------------------------------------
 
    if (.not. co2_flag) return
- 
+
    if (co2_readFlux_ocn)  then
-      if (is_first_step()) then
-         call interp_time_flux ( data_flux_ocn,  prev_timestep=.true.  )
-      else
-         call interp_time_flux ( data_flux_ocn,  prev_timestep=.false. )
-      end if
+      call co2_data_flux_advance ( data_flux_ocn )
    endif
  
   end subroutine co2_time_interp_ocn
@@ -272,17 +285,16 @@ subroutine co2_init (state, pbuf2d )
 !-----------------------------------------------------------------------
 
    use time_manager,   only: is_first_step
+   use co2_data_flux,  only: co2_data_flux_advance
+
+   !----------------------------------------------------------------------------
 
    if (.not. co2_flag) return
- 
+
    if (co2_readFlux_fuel) then
-      if (is_first_step()) then
-         call interp_time_flux ( data_flux_fuel, prev_timestep=.true.  )
-      else
-         call interp_time_flux ( data_flux_fuel, prev_timestep=.false. )
-      endif
+      call co2_data_flux_advance ( data_flux_fuel )
    endif
- 
+
   end subroutine co2_time_interp_fuel
 
 !===========================================================================================
