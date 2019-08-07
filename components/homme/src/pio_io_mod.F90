@@ -239,8 +239,6 @@ contains
     type (io_desc_t), pointer :: iodesc
     integer :: id
 
-print *, 'in nf_put2d name is ', name
-
     !$OMP SINGLE
     if(ncdf%state /= readystate) then
        print *,__FILE__,__LINE__,ncdf%state, readystate       
@@ -249,9 +247,6 @@ print *, 'in nf_put2d name is ', name
     if(present(varid)) then
        varptr=>varid
     else if(present(name)) then
-
-print *, 'in nf_put2d in present name name is ', name
-
        vindex = get_varindex(name, ncdf%varlist)    
        varptr => ncdf%varlist(vindex)
     else
@@ -265,11 +260,6 @@ print *, 'in nf_put2d in present name name is ', name
     msize = size(var)
     nullify(iodesc)
     do id=1,size(ncdf%decomplist)
-
-print *, 'in nf_put2d in id loop, id is ', id
-print *, 'both sides of check:', varptr%dimsid, ncdf%decomplist(id)%dimsid
-
-
        if(varptr%dimsid==ncdf%decomplist(id)%dimsid) then
           iodesc=>ncdf%decomplist(id)%iodesc
           exit
@@ -336,8 +326,6 @@ print *, 'both sides of check:', varptr%dimsid, ncdf%decomplist(id)%dimsid
     dimsid=0
     do id=1,ndims
        dimsid=dimsid+ncdf%dimlist(dims(id))%dimID*10**(id-1)
-
-print *, 'in function decompdimsis',id,dimsid
     end do
 
   end function decompdimsid
@@ -367,19 +355,12 @@ print *, 'in function decompdimsis',id,dimsid
           do id=1,ndims
              dimsize(id)=ncdf%dimlist(dims(id))%dsize
           end do
-
-print *, 'in nf_init_decomp dimsize = ', dimsize
-
           ! special handling for data dependent only on time
           if(ndims==1.and.dimsize(1)==0) then
              dimsize(1)=1
           end if
 
-
           call PIO_initDecomp(piofs,pio_double,dimsize,ldof, decomp%iodesc)
-
-!print *, 'after pio_initdecomp ldof', ldof
-print *, 'after pio_initdecomp decomp iodesc ndof', decomp%iodesc%ndof
 
           olddecompcnt=0
           if(associated(ncdf%decomplist)) then
@@ -443,8 +424,6 @@ print *, 'after pio_initdecomp decomp iodesc ndof', decomp%iodesc%ndof
     logical :: time_dep_var
     integer :: maxdims
 
-print *, 'in regirter vars, variables are:', varname
-
     !$OMP SINGLE
     if(present(varrequired_in)) then
        varrequired=>varrequired_in
@@ -459,15 +438,11 @@ print *, 'in regirter vars, variables are:', varname
        vartype=PIO_double
     end if
 
-print *, 'in reg vars, max_ou_stream',max_output_streams
-
     do ios=1,max_output_streams
        ncdf=>ncdf_list(ios)
        if(ncdf%state == dimsstate .or. ncdf%state == varsstate) then
 
           output_varnames => get_current_varnames(ios)
-
-print *, 'in reg vars, output_varnames', output_varnames
 
           ncdf%state = varsstate
           maxdims = size(ncdf%dimlist)
@@ -520,8 +495,6 @@ print *, 'in reg vars, output_varnames', output_varnames
              ii=oldvarcnt+1
              do i=1,varcnt
 
-print *, 'in reg vars, i=',i,varname(i)
-
                 time_dep_var=.false.
                 vardims=unlim_dim
                 dimcnt=0
@@ -545,7 +518,6 @@ print *, 'in reg vars, i=',i,varname(i)
                    varptr%varname=varname(i)
                    varptr%required = varrequired(i)
 
-print *, 'before pio_def_var, varname is ', varname(i)
                    ierr = PIO_def_var(ncdf%FileID, varname(i), vartype(i), vardims(1:dimcnt), &
                         varptr%varDesc)
 	           varptr%ivarid=varptr%vardesc%varid
