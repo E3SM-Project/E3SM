@@ -4,9 +4,8 @@
 # Ed Hartnett 8/17/17
 
 # Link to our assembled library.
-AM_LDFLAGS = ${top_builddir}/src/clib/libpio.la
 AM_CPPFLAGS = -I$(top_srcdir)/src/clib
-LDADD = ${top_builddir}/src/clib/libpio.la
+LDADD = ${top_builddir}/src/clib/libpioc.la
 
 # Build the tests for make check.
 check_PROGRAMS = test_intercomm2 test_async_mpi test_spmd		\
@@ -70,4 +69,4 @@ test_darray_vard_SOURCES = test_darray_vard.c test_common.c pio_tests.h
 EXTRA_DIST = run_tests.sh
 
 # Clean up files produced during testing.
-CLEANFILES = *.nc *.log decomp*.txt
+CLEANFILES = *.nc *.log decomp*.txt *.clog2 *.slog2

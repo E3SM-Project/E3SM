@@ -199,7 +199,7 @@ contains
     clen = len_trim(values)
     allocate(cvar(clen+1))
     cvar = C_NULL_CHAR
-    do i=1,clen
+    do i=1,int(clen)
        cvar(i) = values(i:i)
     end do
     ierr = PIOc_put_att_text (ncid,varid-1,trim(name)//C_NULL_CHAR, clen, cvar(1))
@@ -240,7 +240,6 @@ contains
     character(len=*), intent(in) :: name
     integer, intent(in) :: arrlen
     character(len=*), intent(in) :: values(arrlen)
-    integer :: vallen
 
 
     ierr = PIOc_put_att_text (ncid,varid-1,trim(name)//C_NULL_CHAR, int(arrlen,C_SIZE_T),values(1))

@@ -100,7 +100,7 @@ PIOc_inq(int ncid, int *ndimsp, int *nvarsp, int *ngattsp, int *unlimdimidp)
     int ierr;              /* Return code from function calls. */
     int mpierr = MPI_SUCCESS, mpierr2;  /* Return code from MPI function calls. */
 
-    LOG((1, "PIOc_inq ncid = %d", ncid));
+    PLOG((1, "PIOc_inq ncid = %d", ncid));
 
     /* Find the info about this file. */
     if ((ierr = pio_get_file(ncid, &file)))
@@ -131,8 +131,8 @@ PIOc_inq(int ncid, int *ndimsp, int *nvarsp, int *ngattsp, int *unlimdimidp)
                 mpierr = MPI_Bcast(&ngatts_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
             if (!mpierr)
                 mpierr = MPI_Bcast(&unlimdimid_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
-            LOG((2, "PIOc_inq ncid = %d ndims_present = %d nvars_present = %d ngatts_present = %d unlimdimid_present = %d",
-                 ncid, ndims_present, nvars_present, ngatts_present, unlimdimid_present));
+            PLOG((2, "PIOc_inq ncid = %d ndims_present = %d nvars_present = %d ngatts_present = %d unlimdimid_present = %d",
+                  ncid, ndims_present, nvars_present, ngatts_present, unlimdimid_present));
         }
 
         /* Handle MPI errors. */
@@ -150,21 +150,21 @@ PIOc_inq(int ncid, int *ndimsp, int *nvarsp, int *ngattsp, int *unlimdimidp)
         {
             ierr = ncmpi_inq(file->fh, ndimsp, nvarsp, ngattsp, unlimdimidp);
             if (unlimdimidp)
-                LOG((2, "PIOc_inq returned from ncmpi_inq unlimdimid = %d", *unlimdimidp));
+                PLOG((2, "PIOc_inq returned from ncmpi_inq unlimdimid = %d", *unlimdimidp));
         }
 #endif /* _PNETCDF */
         if (file->iotype == PIO_IOTYPE_NETCDF && file->do_io)
         {
-            LOG((2, "PIOc_inq calling classic nc_inq"));
+            PLOG((2, "PIOc_inq calling classic nc_inq"));
             /* Should not be necessary to do this - nc_inq should
              * handle null pointers. This has been reported as a bug
              * to netCDF developers. */
             int tmp_ndims, tmp_nvars, tmp_ngatts, tmp_unlimdimid;
-            LOG((2, "PIOc_inq calling classic nc_inq"));
+            PLOG((2, "PIOc_inq calling classic nc_inq"));
             ierr = nc_inq(file->fh, &tmp_ndims, &tmp_nvars, &tmp_ngatts, &tmp_unlimdimid);
-            LOG((2, "PIOc_inq calling classic nc_inq"));
+            PLOG((2, "PIOc_inq calling classic nc_inq"));
             if (unlimdimidp)
-                LOG((2, "classic tmp_unlimdimid = %d", tmp_unlimdimid));
+                PLOG((2, "classic tmp_unlimdimid = %d", tmp_unlimdimid));
             if (ndimsp)
                 *ndimsp = tmp_ndims;
             if (nvarsp)
@@ -174,15 +174,15 @@ PIOc_inq(int ncid, int *ndimsp, int *nvarsp, int *ngattsp, int *unlimdimidp)
             if (unlimdimidp)
                 *unlimdimidp = tmp_unlimdimid;
             if (unlimdimidp)
-                LOG((2, "classic unlimdimid = %d", *unlimdimidp));
+                PLOG((2, "classic unlimdimid = %d", *unlimdimidp));
         }
         else if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
         {
-            LOG((2, "PIOc_inq calling netcdf-4 nc_inq"));
+            PLOG((2, "PIOc_inq calling netcdf-4 nc_inq"));
             ierr = nc_inq(file->fh, ndimsp, nvarsp, ngattsp, unlimdimidp);
         }
 
-        LOG((2, "PIOc_inq netcdf call returned %d", ierr));
+        PLOG((2, "PIOc_inq netcdf call returned %d", ierr));
     }
 
     /* Broadcast and check the return code. */
@@ -224,7 +224,7 @@ PIOc_inq(int ncid, int *ndimsp, int *nvarsp, int *ngattsp, int *unlimdimidp)
 int
 PIOc_inq_ndims(int ncid, int *ndimsp)
 {
-    LOG((1, "PIOc_inq_ndims"));
+    PLOG((1, "PIOc_inq_ndims"));
     return PIOc_inq(ncid, ndimsp, NULL, NULL, NULL);
 }
 
@@ -271,7 +271,7 @@ PIOc_inq_natts(int ncid, int *ngattsp)
 int
 PIOc_inq_unlimdim(int ncid, int *unlimdimidp)
 {
-    LOG((1, "PIOc_inq_unlimdim ncid = %d", ncid));
+    PLOG((1, "PIOc_inq_unlimdim ncid = %d", ncid));
     return PIOc_inq(ncid, NULL, NULL, NULL, unlimdimidp);
 }
 
@@ -297,7 +297,7 @@ PIOc_inq_unlimdims(int ncid, int *nunlimdimsp, int *unlimdimidsp)
     int ierr;              /* Return code from function calls. */
     int mpierr = MPI_SUCCESS, mpierr2;  /* Return code from MPI function calls. */
 
-    LOG((1, "PIOc_inq_unlimdims ncid = %d", ncid));
+    PLOG((1, "PIOc_inq_unlimdims ncid = %d", ncid));
 
     /* Find the info about this file. */
     if ((ierr = pio_get_file(ncid, &file)))
@@ -322,8 +322,8 @@ PIOc_inq_unlimdims(int ncid, int *nunlimdimsp, int *unlimdimidsp)
                 mpierr = MPI_Bcast(&nunlimdimsp_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
             if (!mpierr)
                 mpierr = MPI_Bcast(&unlimdimidsp_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
-            LOG((2, "PIOc_inq_unlimdims ncid = %d nunlimdimsp_present = %d unlimdimidsp_present = %d",
-                 ncid, nunlimdimsp_present, unlimdimidsp_present));
+            PLOG((2, "PIOc_inq_unlimdims ncid = %d nunlimdimsp_present = %d unlimdimidsp_present = %d",
+                  ncid, nunlimdimsp_present, unlimdimidsp_present));
         }
 
         /* Handle MPI errors. */
@@ -333,16 +333,16 @@ PIOc_inq_unlimdims(int ncid, int *nunlimdimsp, int *unlimdimidsp)
             return check_mpi(NULL, file, mpierr, __FILE__, __LINE__);
     }
 
-    LOG((2, "file->iotype = %d", file->iotype));
+    PLOG((2, "file->iotype = %d", file->iotype));
     /* If this is an IO task, then call the netCDF function. */
     if (ios->ioproc)
     {
         if (file->iotype == PIO_IOTYPE_NETCDF && file->do_io)
         {
-            LOG((2, "netcdf"));
+            PLOG((2, "netcdf"));
             int tmp_unlimdimid;
             ierr = nc_inq_unlimdim(file->fh, &tmp_unlimdimid);
-            LOG((2, "classic tmp_unlimdimid = %d", tmp_unlimdimid));
+            PLOG((2, "classic tmp_unlimdimid = %d", tmp_unlimdimid));
             tmp_nunlimdims = tmp_unlimdimid >= 0 ? 1 : 0;
             if (nunlimdimsp)
                 *nunlimdimsp = tmp_unlimdimid >= 0 ? 1 : 0;
@@ -352,10 +352,10 @@ PIOc_inq_unlimdims(int ncid, int *nunlimdimsp, int *unlimdimidsp)
 #ifdef _PNETCDF
         else if (file->iotype == PIO_IOTYPE_PNETCDF)
         {
-            LOG((2, "pnetcdf"));
+            PLOG((2, "pnetcdf"));
             int tmp_unlimdimid;
             ierr = ncmpi_inq_unlimdim(file->fh, &tmp_unlimdimid);
-            LOG((2, "pnetcdf tmp_unlimdimid = %d", tmp_unlimdimid));
+            PLOG((2, "pnetcdf tmp_unlimdimid = %d", tmp_unlimdimid));
             tmp_nunlimdims = tmp_unlimdimid >= 0 ? 1 : 0;
             if (nunlimdimsp)
                 *nunlimdimsp = tmp_nunlimdims;
@@ -367,14 +367,14 @@ PIOc_inq_unlimdims(int ncid, int *nunlimdimsp, int *unlimdimidsp)
         else if ((file->iotype == PIO_IOTYPE_NETCDF4C || file->iotype == PIO_IOTYPE_NETCDF4P) &&
                  file->do_io)
         {
-            LOG((2, "PIOc_inq calling netcdf-4 nc_inq_unlimdims"));
+            PLOG((2, "PIOc_inq calling netcdf-4 nc_inq_unlimdims"));
             int *tmp_unlimdimids;
             ierr = nc_inq_unlimdims(file->fh, &tmp_nunlimdims, NULL);
             if (!ierr)
             {
                 if (nunlimdimsp)
                     *nunlimdimsp = tmp_nunlimdims;
-                LOG((3, "tmp_nunlimdims = %d", tmp_nunlimdims));
+                PLOG((3, "tmp_nunlimdims = %d", tmp_nunlimdims));
                 if (!(tmp_unlimdimids = malloc(tmp_nunlimdims * sizeof(int))))
                     ierr = PIO_ENOMEM;
                 if (!ierr)
@@ -382,7 +382,7 @@ PIOc_inq_unlimdims(int ncid, int *nunlimdimsp, int *unlimdimidsp)
                 if (unlimdimidsp)
                     for (int d = 0; d < tmp_nunlimdims; d++)
                     {
-                        LOG((3, "tmp_unlimdimids[%d] = %d", d, tmp_unlimdimids[d]));
+                        PLOG((3, "tmp_unlimdimids[%d] = %d", d, tmp_unlimdimids[d]));
                         unlimdimidsp[d] = tmp_unlimdimids[d];
                     }
                 free(tmp_unlimdimids);
@@ -390,7 +390,7 @@ PIOc_inq_unlimdims(int ncid, int *nunlimdimsp, int *unlimdimidsp)
         }
 #endif /* _NETCDF4 */
 
-        LOG((2, "PIOc_inq_unlimdims netcdf call returned %d", ierr));
+        PLOG((2, "PIOc_inq_unlimdims netcdf call returned %d", ierr));
     }
 
     /* Broadcast and check the return code. */
@@ -433,7 +433,7 @@ PIOc_inq_type(int ncid, nc_type xtype, char *name, PIO_Offset *sizep)
     int ierr;              /* Return code from function calls. */
     int mpierr = MPI_SUCCESS, mpierr2;  /* Return code from MPI function codes. */
 
-    LOG((1, "PIOc_inq_type ncid = %d xtype = %d", ncid, xtype));
+    PLOG((1, "PIOc_inq_type ncid = %d xtype = %d", ncid, xtype));
 
     /* Find the info about this file. */
     if ((ierr = pio_get_file(ncid, &file)))
@@ -479,7 +479,7 @@ PIOc_inq_type(int ncid, nc_type xtype, char *name, PIO_Offset *sizep)
 
         if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
             ierr = nc_inq_type(file->fh, xtype, name, (size_t *)sizep);
-        LOG((2, "PIOc_inq_type netcdf call returned %d", ierr));
+        PLOG((2, "PIOc_inq_type netcdf call returned %d", ierr));
     }
 
     /* Broadcast and check the return code. */
@@ -524,7 +524,7 @@ PIOc_inq_format(int ncid, int *formatp)
     int ierr;              /* Return code from function calls. */
     int mpierr = MPI_SUCCESS, mpierr2;  /* Return code from MPI function codes. */
 
-    LOG((1, "PIOc_inq ncid = %d", ncid));
+    PLOG((1, "PIOc_inq ncid = %d", ncid));
 
     /* Find the info about this file. */
     if ((ierr = pio_get_file(ncid, &file)))
@@ -565,7 +565,7 @@ PIOc_inq_format(int ncid, int *formatp)
 
         if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
             ierr = nc_inq_format(file->fh, formatp);
-        LOG((2, "PIOc_inq netcdf call returned %d", ierr));
+        PLOG((2, "PIOc_inq netcdf call returned %d", ierr));
     }
 
     /* Broadcast and check the return code. */
@@ -609,7 +609,7 @@ PIOc_inq_dim(int ncid, int dimid, char *name, PIO_Offset *lenp)
     int ierr;              /* Return code from function calls. */
     int mpierr = MPI_SUCCESS, mpierr2;  /* Return code from MPI function codes. */
 
-    LOG((1, "PIOc_inq_dim ncid = %d dimid = %d", ncid, dimid));
+    PLOG((1, "PIOc_inq_dim ncid = %d dimid = %d", ncid, dimid));
 
     /* Get the file info, based on the ncid. */
     if ((ierr = pio_get_file(ncid, &file)))
@@ -634,10 +634,10 @@ PIOc_inq_dim(int ncid, int dimid, char *name, PIO_Offset *lenp)
                 mpierr = MPI_Bcast(&dimid, 1, MPI_INT, ios->compmaster, ios->intercomm);
             if (!mpierr)
                 mpierr = MPI_Bcast(&name_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
-            LOG((2, "PIOc_inq netcdf Bcast name_present = %d", name_present));
+            PLOG((2, "PIOc_inq netcdf Bcast name_present = %d", name_present));
             if (!mpierr)
                 mpierr = MPI_Bcast(&len_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
-            LOG((2, "PIOc_inq netcdf Bcast len_present = %d", len_present));
+            PLOG((2, "PIOc_inq netcdf Bcast len_present = %d", len_present));
         }
 
         /* Handle MPI errors. */
@@ -653,17 +653,17 @@ PIOc_inq_dim(int ncid, int dimid, char *name, PIO_Offset *lenp)
 #ifdef _PNETCDF
         if (file->iotype == PIO_IOTYPE_PNETCDF)
         {
-            LOG((2, "calling ncmpi_inq_dim"));
+            PLOG((2, "calling ncmpi_inq_dim"));
             ierr = ncmpi_inq_dim(file->fh, dimid, name, lenp);;
         }
 #endif /* _PNETCDF */
 
         if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
         {
-            LOG((2, "calling nc_inq_dim"));
+            PLOG((2, "calling nc_inq_dim"));
             ierr = nc_inq_dim(file->fh, dimid, name, (size_t *)lenp);;
         }
-        LOG((2, "ierr = %d", ierr));
+        PLOG((2, "ierr = %d", ierr));
     }
 
     /* Broadcast and check the return code. */
@@ -676,7 +676,7 @@ PIOc_inq_dim(int ncid, int dimid, char *name, PIO_Offset *lenp)
     if (name)
     {
         int slen;
-        LOG((2, "bcasting results my_comm = %d", ios->my_comm));
+        PLOG((2, "bcasting results my_comm = %d", ios->my_comm));
         if (ios->iomaster == MPI_ROOT)
             slen = strlen(name);
         if ((mpierr = MPI_Bcast(&slen, 1, MPI_INT, ios->ioroot, ios->my_comm)))
@@ -689,7 +689,7 @@ PIOc_inq_dim(int ncid, int dimid, char *name, PIO_Offset *lenp)
         if ((mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm)))
             return check_mpi(NULL, file, mpierr, __FILE__, __LINE__);
 
-    LOG((2, "done with PIOc_inq_dim"));
+    PLOG((2, "done with PIOc_inq_dim"));
     return PIO_NOERR;
 }
 
@@ -707,7 +707,7 @@ PIOc_inq_dim(int ncid, int dimid, char *name, PIO_Offset *lenp)
 int
 PIOc_inq_dimname(int ncid, int dimid, char *name)
 {
-    LOG((1, "PIOc_inq_dimname ncid = %d dimid = %d", ncid, dimid));
+    PLOG((1, "PIOc_inq_dimname ncid = %d dimid = %d", ncid, dimid));
     return PIOc_inq_dim(ncid, dimid, name, NULL);
 }
 
@@ -756,13 +756,13 @@ PIOc_inq_dimid(int ncid, const char *name, int *idp)
     if ((ierr = pio_get_file(ncid, &file)))
         return pio_err(NULL, NULL, ierr, __FILE__, __LINE__);
     ios = file->iosystem;
-    LOG((2, "iosysid = %d", ios->iosysid));
+    PLOG((2, "iosysid = %d", ios->iosysid));
 
     /* User must provide name shorter than NC_MAX_NAME +1. */
     if (!name || strlen(name) > NC_MAX_NAME)
         return pio_err(ios, file, PIO_EINVAL, __FILE__, __LINE__);
 
-    LOG((1, "PIOc_inq_dimid ncid = %d name = %s", ncid, name));
+    PLOG((1, "PIOc_inq_dimid ncid = %d name = %s", ncid, name));
 
     /* If using async, and not an IO task, then send parameters. */
     if (ios->async)
@@ -804,7 +804,7 @@ PIOc_inq_dimid(int ncid, const char *name, int *idp)
         if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
             ierr = nc_inq_dimid(file->fh, name, idp);
     }
-    LOG((3, "nc_inq_dimid call complete ierr = %d", ierr));
+    PLOG((3, "nc_inq_dimid call complete ierr = %d", ierr));
 
     /* Broadcast and check the return code. */
     if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
@@ -855,7 +855,7 @@ PIOc_inq_var(int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
     int ierr;
     int mpierr = MPI_SUCCESS, mpierr2;  /* Return code from MPI function codes. */
 
-    LOG((1, "PIOc_inq_var ncid = %d varid = %d", ncid, varid));
+    PLOG((1, "PIOc_inq_var ncid = %d varid = %d", ncid, varid));
 
     /* Get the file info, based on the ncid. */
     if ((ierr = pio_get_file(ncid, &file)))
@@ -891,9 +891,9 @@ PIOc_inq_var(int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
                 mpierr = MPI_Bcast(&dimids_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
             if (!mpierr)
                 mpierr = MPI_Bcast(&natts_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
-            LOG((2, "PIOc_inq_var name_present = %d xtype_present = %d ndims_present = %d "
-                 "dimids_present = %d, natts_present = %d nattsp = %d",
-                 name_present, xtype_present, ndims_present, dimids_present, natts_present, nattsp));
+            PLOG((2, "PIOc_inq_var name_present = %d xtype_present = %d ndims_present = %d "
+                  "dimids_present = %d, natts_present = %d nattsp = %d",
+                  name_present, xtype_present, ndims_present, dimids_present, natts_present, nattsp));
         }
 
         /* Handle MPI errors. */
@@ -906,12 +906,12 @@ PIOc_inq_var(int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
     /* Call the netCDF layer. */
     if (ios->ioproc)
     {
-        LOG((2, "Calling the netCDF layer"));
+        PLOG((2, "Calling the netCDF layer"));
 #ifdef _PNETCDF
         if (file->iotype == PIO_IOTYPE_PNETCDF)
         {
             ierr = ncmpi_inq_varndims(file->fh, varid, &ndims);
-            LOG((2, "from pnetcdf ndims = %d", ndims));
+            PLOG((2, "from pnetcdf ndims = %d", ndims));
             if (!ierr)
                 ierr = ncmpi_inq_var(file->fh, varid, name, xtypep, ndimsp, dimidsp, nattsp);
         }
@@ -920,14 +920,14 @@ PIOc_inq_var(int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
         if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
         {
             ierr = nc_inq_varndims(file->fh, varid, &ndims);
-            LOG((3, "nc_inq_varndims called ndims = %d", ndims));
+            PLOG((3, "nc_inq_varndims called ndims = %d", ndims));
             if (!ierr)
             {
                 char my_name[NC_MAX_NAME + 1];
                 nc_type my_xtype;
                 int my_ndims = 0, my_dimids[ndims], my_natts = 0;
                 ierr = nc_inq_var(file->fh, varid, my_name, &my_xtype, &my_ndims, my_dimids, &my_natts);
-                LOG((3, "my_name = %s my_xtype = %d my_ndims = %d my_natts = %d",  my_name, my_xtype, my_ndims, my_natts));
+                PLOG((3, "my_name = %s my_xtype = %d my_ndims = %d my_natts = %d",  my_name, my_xtype, my_ndims, my_natts));
                 if (!ierr)
                 {
                     if (name)
@@ -947,7 +947,7 @@ PIOc_inq_var(int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
             }
         }
         if (ndimsp)
-            LOG((2, "PIOc_inq_var ndims = %d ierr = %d", *ndimsp, ierr));
+            PLOG((2, "PIOc_inq_var ndims = %d ierr = %d", *ndimsp, ierr));
     }
 
     /* Broadcast and check the return code. */
@@ -973,11 +973,11 @@ PIOc_inq_var(int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
 
     if (ndimsp)
     {
-        LOG((2, "PIOc_inq_var about to Bcast ndims = %d ios->ioroot = %d ios->my_comm = %d",
-             *ndimsp, ios->ioroot, ios->my_comm));
+        PLOG((2, "PIOc_inq_var about to Bcast ndims = %d ios->ioroot = %d ios->my_comm = %d",
+              *ndimsp, ios->ioroot, ios->my_comm));
         if ((mpierr = MPI_Bcast(ndimsp, 1, MPI_INT, ios->ioroot, ios->my_comm)))
             return check_mpi(NULL, file, mpierr, __FILE__, __LINE__);
-        LOG((2, "PIOc_inq_var Bcast ndims = %d", *ndimsp));
+        PLOG((2, "PIOc_inq_var Bcast ndims = %d", *ndimsp));
     }
     if (dimidsp)
     {
@@ -1110,7 +1110,7 @@ PIOc_inq_varid(int ncid, const char *name, int *varidp)
     if (!name || strlen(name) > NC_MAX_NAME)
         return pio_err(ios, file, PIO_EINVAL, __FILE__, __LINE__);
 
-    LOG((1, "PIOc_inq_varid ncid = %d name = %s", ncid, name));
+    PLOG((1, "PIOc_inq_varid ncid = %d name = %s", ncid, name));
 
     if (ios->async)
     {
@@ -1203,7 +1203,7 @@ PIOc_inq_att_eh(int ncid, int varid, const char *name, int eh,
     if (!name || strlen(name) > NC_MAX_NAME)
         return pio_err(ios, file, PIO_EINVAL, __FILE__, __LINE__);
 
-    LOG((1, "PIOc_inq_att ncid = %d varid = %d", ncid, varid));
+    PLOG((1, "PIOc_inq_att ncid = %d varid = %d", ncid, varid));
 
     /* If async is in use, and this is not an IO task, bcast the parameters. */
     if (ios->async)
@@ -1248,7 +1248,7 @@ PIOc_inq_att_eh(int ncid, int varid, const char *name, int eh,
 
         if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
             ierr = nc_inq_att(file->fh, varid, name, xtypep, (size_t *)lenp);
-        LOG((2, "PIOc_inq netcdf call returned %d", ierr));
+        PLOG((2, "PIOc_inq netcdf call returned %d", ierr));
     }
 
     /* Broadcast and check the return code. */
@@ -1358,8 +1358,8 @@ PIOc_inq_attname(int ncid, int varid, int attnum, char *name)
     int ierr;              /* Return code from function calls. */
     int mpierr = MPI_SUCCESS, mpierr2;  /* Return code from MPI function codes. */
 
-    LOG((1, "PIOc_inq_attname ncid = %d varid = %d attnum = %d", ncid, varid,
-         attnum));
+    PLOG((1, "PIOc_inq_attname ncid = %d varid = %d attnum = %d", ncid, varid,
+          attnum));
 
     /* Find the info about this file. */
     if ((ierr = pio_get_file(ncid, &file)))
@@ -1404,7 +1404,7 @@ PIOc_inq_attname(int ncid, int varid, int attnum, char *name)
 
         if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
             ierr = nc_inq_attname(file->fh, varid, attnum, name);
-        LOG((2, "PIOc_inq_attname netcdf call returned %d", ierr));
+        PLOG((2, "PIOc_inq_attname netcdf call returned %d", ierr));
     }
 
     /* Broadcast and check the return code. */
@@ -1463,7 +1463,7 @@ PIOc_inq_attid(int ncid, int varid, const char *name, int *idp)
     if (!name || strlen(name) > NC_MAX_NAME)
         return pio_err(ios, file, PIO_EINVAL, __FILE__, __LINE__);
 
-    LOG((1, "PIOc_inq_attid ncid = %d varid = %d name = %s", ncid, varid, name));
+    PLOG((1, "PIOc_inq_attid ncid = %d varid = %d name = %s", ncid, varid, name));
 
     /* If async is in use, and this is not an IO task, bcast the parameters. */
     if (ios->async)
@@ -1506,7 +1506,7 @@ PIOc_inq_attid(int ncid, int varid, const char *name, int *idp)
 
         if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
             ierr = nc_inq_attid(file->fh, varid, name, idp);
-        LOG((2, "PIOc_inq_attname netcdf call returned %d", ierr));
+        PLOG((2, "PIOc_inq_attname netcdf call returned %d", ierr));
     }
 
     /* Broadcast and check the return code. */
@@ -1557,7 +1557,7 @@ PIOc_rename_dim(int ncid, int dimid, const char *name)
     if (!name || strlen(name) > NC_MAX_NAME)
         return pio_err(ios, file, PIO_EINVAL, __FILE__, __LINE__);
 
-    LOG((1, "PIOc_rename_dim ncid = %d dimid = %d name = %s", ncid, dimid, name));
+    PLOG((1, "PIOc_rename_dim ncid = %d dimid = %d name = %s", ncid, dimid, name));
 
     /* If async is in use, and this is not an IO task, bcast the parameters. */
     if (ios->async)
@@ -1578,8 +1578,8 @@ PIOc_rename_dim(int ncid, int dimid, const char *name)
                 mpierr = MPI_Bcast(&namelen, 1, MPI_INT,  ios->compmaster, ios->intercomm);
             if (!mpierr)
                 mpierr = MPI_Bcast((void *)name, namelen + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
-            LOG((2, "PIOc_rename_dim Bcast file->fh = %d dimid = %d namelen = %d name = %s",
-                 file->fh, dimid, namelen, name));
+            PLOG((2, "PIOc_rename_dim Bcast file->fh = %d dimid = %d namelen = %d name = %s",
+                  file->fh, dimid, namelen, name));
         }
 
         /* Handle MPI errors. */
@@ -1600,7 +1600,7 @@ PIOc_rename_dim(int ncid, int dimid, const char *name)
 
         if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
             ierr = nc_rename_dim(file->fh, dimid, name);
-        LOG((2, "PIOc_inq netcdf call returned %d", ierr));
+        PLOG((2, "PIOc_inq netcdf call returned %d", ierr));
     }
 
     /* Broadcast and check the return code. */
@@ -1646,7 +1646,7 @@ PIOc_rename_var(int ncid, int varid, const char *name)
     if (!name || strlen(name) > NC_MAX_NAME)
         return pio_err(ios, file, PIO_EINVAL, __FILE__, __LINE__);
 
-    LOG((1, "PIOc_rename_var ncid = %d varid = %d name = %s", ncid, varid, name));
+    PLOG((1, "PIOc_rename_var ncid = %d varid = %d name = %s", ncid, varid, name));
 
     /* If async is in use, and this is not an IO task, bcast the parameters. */
     if (ios->async)
@@ -1667,8 +1667,8 @@ PIOc_rename_var(int ncid, int varid, const char *name)
                 mpierr = MPI_Bcast(&namelen, 1, MPI_INT,  ios->compmaster, ios->intercomm);
             if (!mpierr)
                 mpierr = MPI_Bcast((void *)name, namelen + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
-            LOG((2, "PIOc_rename_var Bcast file->fh = %d varid = %d namelen = %d name = %s",
-                 file->fh, varid, namelen, name));
+            PLOG((2, "PIOc_rename_var Bcast file->fh = %d varid = %d namelen = %d name = %s",
+                  file->fh, varid, namelen, name));
         }
 
         /* Handle MPI errors. */
@@ -1689,7 +1689,7 @@ PIOc_rename_var(int ncid, int varid, const char *name)
 
         if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
             ierr = nc_rename_var(file->fh, varid, name);
-        LOG((2, "PIOc_inq netcdf call returned %d", ierr));
+        PLOG((2, "PIOc_inq netcdf call returned %d", ierr));
     }
 
     /* Broadcast and check the return code. */
@@ -1738,8 +1738,8 @@ PIOc_rename_att(int ncid, int varid, const char *name,
         !newname || strlen(newname) > NC_MAX_NAME)
         return pio_err(ios, file, PIO_EINVAL, __FILE__, __LINE__);
 
-    LOG((1, "PIOc_rename_att ncid = %d varid = %d name = %s newname = %s",
-         ncid, varid, name, newname));
+    PLOG((1, "PIOc_rename_att ncid = %d varid = %d name = %s newname = %s",
+          ncid, varid, name, newname));
 
     /* If async is in use, and this is not an IO task, bcast the parameters. */
     if (ios->async)
@@ -1792,7 +1792,7 @@ PIOc_rename_att(int ncid, int varid, const char *name,
     if (ierr)
         return check_netcdf(file, ierr, __FILE__, __LINE__);
 
-    LOG((2, "PIOc_rename_att succeeded"));
+    PLOG((2, "PIOc_rename_att succeeded"));
     return PIO_NOERR;
 }
 
@@ -1829,7 +1829,7 @@ PIOc_del_att(int ncid, int varid, const char *name)
     if (!name || strlen(name) > NC_MAX_NAME)
         return pio_err(ios, file, PIO_EINVAL, __FILE__, __LINE__);
 
-    LOG((1, "PIOc_del_att ncid = %d varid = %d name = %s", ncid, varid, name));
+    PLOG((1, "PIOc_del_att ncid = %d varid = %d name = %s", ncid, varid, name));
 
     /* If async is in use, and this is not an IO task, bcast the parameters. */
     if (ios->async)
@@ -1904,7 +1904,7 @@ PIOc_set_fill(int ncid, int fillmode, int *old_modep)
     int ierr;              /* Return code from function calls. */
     int mpierr = MPI_SUCCESS, mpierr2;  /* Return code from MPI functions. */
 
-    LOG((1, "PIOc_set_fill ncid = %d fillmode = %d", ncid, fillmode));
+    PLOG((1, "PIOc_set_fill ncid = %d fillmode = %d", ncid, fillmode));
 
     /* Find the info about this file. */
     if ((ierr = pio_get_file(ncid, &file)))
@@ -1919,7 +1919,7 @@ PIOc_set_fill(int ncid, int fillmode, int *old_modep)
             int msg = PIO_MSG_SET_FILL;
             int old_modep_present = old_modep ? 1 : 0;
 
-            LOG((3, "PIOc_set_fill about to send msg %d", msg));
+            PLOG((3, "PIOc_set_fill about to send msg %d", msg));
             if (ios->compmaster == MPI_ROOT)
                 mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
 
@@ -1929,8 +1929,8 @@ PIOc_set_fill(int ncid, int fillmode, int *old_modep)
                 mpierr = MPI_Bcast(&fillmode, 1, MPI_INT, ios->compmaster, ios->intercomm);
             if (!mpierr)
                 mpierr = MPI_Bcast(&old_modep_present, 1, MPI_INT, ios->compmaster, ios->intercomm);
-            LOG((2, "PIOc_set_fill sent ncid = %d fillmode = %d old_modep_present = %d", ncid, fillmode,
-                 old_modep_present));
+            PLOG((2, "PIOc_set_fill sent ncid = %d fillmode = %d old_modep_present = %d", ncid, fillmode,
+                  old_modep_present));
         }
 
         /* Handle MPI errors. */
@@ -1946,7 +1946,7 @@ PIOc_set_fill(int ncid, int fillmode, int *old_modep)
 #ifdef _PNETCDF
         if (file->iotype == PIO_IOTYPE_PNETCDF)
         {
-            LOG((3, "about to call ncmpi_set_fill() fillmode = %d", fillmode));
+            PLOG((3, "about to call ncmpi_set_fill() fillmode = %d", fillmode));
             ierr = ncmpi_set_fill(file->fh, fillmode, old_modep);
         }
 #endif /* _PNETCDF */
@@ -1964,12 +1964,12 @@ PIOc_set_fill(int ncid, int fillmode, int *old_modep)
     /* Broadcast results. */
     if (old_modep)
     {
-        LOG((2, "old_mode = %d", *old_modep));
+        PLOG((2, "old_mode = %d", *old_modep));
         if ((mpierr = MPI_Bcast(old_modep, 1, MPI_INT, ios->ioroot, ios->my_comm)))
             check_mpi(NULL, file, mpierr, __FILE__, __LINE__);
     }
 
-    LOG((2, "PIOc_set_fill succeeded"));
+    PLOG((2, "PIOc_set_fill succeeded"));
     return PIO_NOERR;
 }
 
@@ -2047,7 +2047,7 @@ PIOc_def_dim(int ncid, const char *name, PIO_Offset len, int *idp)
     if (!name || strlen(name) > NC_MAX_NAME)
         return pio_err(ios, file, PIO_EINVAL, __FILE__, __LINE__);
 
-    LOG((1, "PIOc_def_dim ncid = %d name = %s len = %d", ncid, name, len));
+    PLOG((1, "PIOc_def_dim ncid = %d name = %s len = %d", ncid, name, len));
 
     /* If async is in use, and this is not an IO task, bcast the parameters. */
     if (ios->async)
@@ -2102,7 +2102,7 @@ PIOc_def_dim(int ncid, const char *name, PIO_Offset len, int *idp)
         if ((mpierr = MPI_Bcast(idp , 1, MPI_INT, ios->ioroot, ios->my_comm)))
             check_mpi(NULL, file, mpierr, __FILE__, __LINE__);
 
-    LOG((2, "def_dim ierr = %d", ierr));
+    PLOG((2, "def_dim ierr = %d", ierr));
     return PIO_NOERR;
 }
 
@@ -2149,8 +2149,8 @@ PIOc_def_var(int ncid, const char *name, nc_type xtype, int ndims,
     if (!name || strlen(name) > NC_MAX_NAME)
         return pio_err(ios, file, PIO_EINVAL, __FILE__, __LINE__);
 
-    LOG((1, "PIOc_def_var ncid = %d name = %s xtype = %d ndims = %d", ncid, name,
-         xtype, ndims));
+    PLOG((1, "PIOc_def_var ncid = %d name = %s xtype = %d ndims = %d", ncid, name,
+          xtype, ndims));
 
     /* Run this on all tasks if async is not in use, but only on
      * non-IO tasks if async is in use. Learn whether each dimension
@@ -2273,7 +2273,7 @@ PIOc_def_var(int ncid, const char *name, nc_type xtype, int ndims,
 
         if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
             ierr = nc_def_var(file->fh, name, xtype, ndims, dimidsp, &varid);
-        LOG((3, "defined var ierr %d file->iotype %d", ierr, file->iotype));
+        PLOG((3, "defined var ierr %d file->iotype %d", ierr, file->iotype));
 
 #ifdef _NETCDF4
         /* For netCDF-4 serial files, turn on compression for this variable. */
@@ -2344,8 +2344,8 @@ PIOc_def_var_fill(int ncid, int varid, int fill_mode, const void *fill_valuep)
     int ierr;              /* Return code from function calls. */
     int mpierr = MPI_SUCCESS, mpierr2;  /* Return code from MPI function codes. */
 
-    LOG((1, "PIOc_def_var_fill ncid = %d varid = %d fill_mode = %d\n", ncid, varid,
-         fill_mode));
+    PLOG((1, "PIOc_def_var_fill ncid = %d varid = %d fill_mode = %d\n", ncid, varid,
+          fill_mode));
 
     /* Get the file info. */
     if ((ierr = pio_get_file(ncid, &file)))
@@ -2366,7 +2366,7 @@ PIOc_def_var_fill(int ncid, int varid, int fill_mode, const void *fill_valuep)
             return check_netcdf(file, ierr, __FILE__, __LINE__);
         if ((ierr = PIOc_inq_type(ncid, xtype, NULL, &type_size)))
             return check_netcdf(file, ierr, __FILE__, __LINE__);
-        LOG((2, "PIOc_def_var_fill type_size = %d", type_size));
+        PLOG((2, "PIOc_def_var_fill type_size = %d", type_size));
     }
 
     /* If async is in use, and this is not an IO task, bcast the parameters. */
@@ -2393,8 +2393,8 @@ PIOc_def_var_fill(int ncid, int varid, int fill_mode, const void *fill_valuep)
             if (!mpierr && fill_value_present)
                 mpierr = MPI_Bcast((PIO_Offset *)fill_valuep, type_size, MPI_CHAR, ios->compmaster,
                                    ios->intercomm);
-            LOG((2, "PIOc_def_var_fill ncid = %d varid = %d fill_mode = %d type_size = %d fill_value_present = %d",
-                 ncid, varid, fill_mode, type_size, fill_value_present));
+            PLOG((2, "PIOc_def_var_fill ncid = %d varid = %d fill_mode = %d type_size = %d fill_value_present = %d",
+                  ncid, varid, fill_mode, type_size, fill_value_present));
         }
 
         /* Handle MPI errors. */
@@ -2420,7 +2420,7 @@ PIOc_def_var_fill(int ncid, int varid, int fill_mode, const void *fill_valuep)
         }
         else if (file->iotype == PIO_IOTYPE_NETCDF)
         {
-            LOG((2, "defining fill value attribute for netCDF classic file"));
+            PLOG((2, "defining fill value attribute for netCDF classic file"));
             if (file->do_io)
             {
                 ierr = nc_set_fill(file->fh, NC_FILL, NULL);
@@ -2435,7 +2435,7 @@ PIOc_def_var_fill(int ncid, int varid, int fill_mode, const void *fill_valuep)
                 ierr = nc_def_var_fill(file->fh, varid, fill_mode, fill_valuep);
 #endif
         }
-        LOG((2, "after def_var_fill ierr = %d", ierr));
+        PLOG((2, "after def_var_fill ierr = %d", ierr));
     }
 
     /* Broadcast and check the return code. */
@@ -2477,13 +2477,13 @@ PIOc_inq_var_fill(int ncid, int varid, int *no_fill, void *fill_valuep)
     int mpierr = MPI_SUCCESS, mpierr2;  /* Return code from MPI function codes. */
     int ierr = PIO_NOERR;  /* Return code from function calls. */
 
-    LOG((1, "PIOc_inq_var_fill ncid = %d varid = %d", ncid, varid));
+    PLOG((1, "PIOc_inq_var_fill ncid = %d varid = %d", ncid, varid));
 
     /* Find the info about this file. */
     if ((ierr = pio_get_file(ncid, &file)))
         return pio_err(NULL, NULL, ierr, __FILE__, __LINE__);
     ios = file->iosystem;
-    LOG((2, "found file"));
+    PLOG((2, "found file"));
 
     /* Run this on all tasks if async is not in use, but only on
      * non-IO tasks if async is in use. Get the size of this vars
@@ -2494,7 +2494,7 @@ PIOc_inq_var_fill(int ncid, int varid, int *no_fill, void *fill_valuep)
             return check_netcdf(file, ierr, __FILE__, __LINE__);
         if ((ierr = PIOc_inq_type(ncid, xtype, NULL, &type_size)))
             return check_netcdf(file, ierr, __FILE__, __LINE__);
-        LOG((2, "PIOc_inq_var_fill type_size = %d", type_size));
+        PLOG((2, "PIOc_inq_var_fill type_size = %d", type_size));
     }
 
     /* If async is in use, and this is not an IO task, bcast the parameters. */
@@ -2506,7 +2506,7 @@ PIOc_inq_var_fill(int ncid, int varid, int *no_fill, void *fill_valuep)
             char no_fill_present = no_fill ? true : false;
             char fill_value_present = fill_valuep ? true : false;
 
-            LOG((2, "sending msg type_size = %d", type_size));
+            PLOG((2, "sending msg type_size = %d", type_size));
             if (ios->compmaster == MPI_ROOT)
                 mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
 
@@ -2520,8 +2520,8 @@ PIOc_inq_var_fill(int ncid, int varid, int *no_fill, void *fill_valuep)
                 mpierr = MPI_Bcast(&no_fill_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
             if (!mpierr)
                 mpierr = MPI_Bcast(&fill_value_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
-            LOG((2, "PIOc_inq_var_fill ncid = %d varid = %d type_size = %lld no_fill_present = %d fill_value_present = %d",
-                 ncid, varid, type_size, no_fill_present, fill_value_present));
+            PLOG((2, "PIOc_inq_var_fill ncid = %d varid = %d type_size = %lld no_fill_present = %d fill_value_present = %d",
+                  ncid, varid, type_size, no_fill_present, fill_value_present));
         }
 
         /* Handle MPI errors. */
@@ -2540,8 +2540,8 @@ PIOc_inq_var_fill(int ncid, int varid, int *no_fill, void *fill_valuep)
     /* If this is an IO task, then call the netCDF function. */
     if (ios->ioproc)
     {
-        LOG((2, "calling inq_var_fill file->iotype = %d file->fh = %d varid = %d",
-             file->iotype, file->fh, varid));
+        PLOG((2, "calling inq_var_fill file->iotype = %d file->fh = %d varid = %d",
+              file->iotype, file->fh, varid));
         if (file->iotype == PIO_IOTYPE_PNETCDF)
         {
 #ifdef _PNETCDF
@@ -2613,7 +2613,7 @@ PIOc_inq_var_fill(int ncid, int varid, int *no_fill, void *fill_valuep)
                 ierr = nc_inq_var_fill(file->fh, varid, no_fill, fill_valuep);
 #endif /* _NETCDF */
         }
-        LOG((2, "after call to inq_var_fill, ierr = %d", ierr));
+        PLOG((2, "after call to inq_var_fill, ierr = %d", ierr));
     }
 
     /* Broadcast and check the return code. */
@@ -2670,12 +2670,12 @@ PIOc_get_att(int ncid, int varid, const char *name, void *ip)
     if (!name || !ip || strlen(name) > NC_MAX_NAME)
         return pio_err(ios, file, PIO_EINVAL, __FILE__, __LINE__);
 
-    LOG((1, "PIOc_get_att ncid %d varid %d name %s", ncid, varid, name));
+    PLOG((1, "PIOc_get_att ncid %d varid %d name %s", ncid, varid, name));
 
     /* Get the type of the attribute. */
     if ((ierr = PIOc_inq_att(ncid, varid, name, &atttype, NULL)))
         return ierr;
-    LOG((2, "atttype = %d", atttype));
+    PLOG((2, "atttype = %d", atttype));
 
     return PIOc_get_att_tc(ncid, varid, name, atttype, ip);
 }
