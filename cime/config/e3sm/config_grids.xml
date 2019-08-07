@@ -3185,8 +3185,8 @@
     </gridmap>
 
     <gridmap glc_grid="mpas.aisgis20km" ocn_grid="oEC60to30v3wLI">
-      <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3wLI_to_mpas.aisgis20km_aave.190713.nc</map>
-      <map name="OCN2GLC_SMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3wLI_to_mpas.aisgis20km_bilin.190713.nc</map>
+      <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/oEC60to30v3wLI/map_oEC60to30v3wLI_to_mpas.aisgis20km_aave.190713.nc</map>
+      <map name="OCN2GLC_SMAPNAME">cpl/gridmaps/oEC60to30v3wLI/map_oEC60to30v3wLI_to_mpas.aisgis20km_bilin.190713.nc</map>
       <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/mpas.aisgis20km/map_mpas.aisgis20km_to_oEC60to30v3wLI_aave.190713.nc</map>
       <map name="GLC2OCN_SMAPNAME">cpl/gridmaps/mpas.aisgis20km/map_mpas.aisgis20km_to_oEC60to30v3wLI_bilin.190713.nc</map>
     </gridmap>
