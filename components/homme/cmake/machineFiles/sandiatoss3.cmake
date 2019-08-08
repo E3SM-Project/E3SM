@@ -49,8 +49,11 @@ SET (USE_MPI_OPTIONS " --map-by node:SPAN " CACHE FILEPATH "")
 # Openmpi 1.6
 #SET (USE_MPI_OPTIONS "-loadbalance" CACHE FILEPATH "")
 
-# this is ignored if we use FORCE_Fortran_FLAGS
-SET (ADD_Fortran_FLAGS "-traceback" CACHE STRING "")
+#turn on preqxx target and thus strict fpmodel for F vs CXX comparison
+SET (ADD_Fortran_FLAGS "-traceback -fp-model strict -qopenmp -O1" CACHE STRING "")
+SET (ADD_C_FLAGS "-traceback -fp-model strict -qopenmp -O3" CACHE STRING "")
+SET (ADD_CXX_FLAGS "-traceback -fp-model strict -qopenmp -O3" CACHE STRING "")
+SET (BUILD_HOMME_PREQX_KOKKOS TRUE CACHE BOOL "")
 
 # redsky upgrade 8/2017, need to load sems-netcdf module:
 SET (WITH_PNETCDF FALSE CACHE FILEPATH "")
