@@ -140,10 +140,13 @@ ifeq ($(COMPILER),xlf95)
   FFLAGS      := -g -c -qarch=auto -qnosave -qfree=f90 -qmoddir=$(OBJ_DIR) -I $(OBJ_DIR) -qstrict -O3
 endif
 ifeq ($(COMPILER),gfortran)
-  FFLAGS      := -g -c -ffree-form
+  FFLAGS      := -g -c -ffree-form -J $(OBJ_DIR)
 endif
 ifeq ($(COMPILER),g95)
   FFLAGS      := -g -c -ffree-form
+endif
+ifeq ($(COMPILER),ftn)
+  FFLAGS      := -f free
 endif
 
 #------------------------------------------------------------------------
