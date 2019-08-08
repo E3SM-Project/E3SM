@@ -6,8 +6,8 @@ To set up and run ocean test cases from COMPASS, you will need a conda
 environment.  First, install Miniconda3 (if miniconda is not already
 installed), then create a new conda environment as follows:
 ``` bash
-conda create -n compass_py3.7 -c conda-forge python=3.7 \
-    geometric_features=0.1.1 mpas_tools=0.0.3 jigsaw=0.9.10 jigsawpy=0.0.2 \
+conda create -n compass_py3.7 -c conda-forge -c xylar python=3.7 \
+    geometric_features=0.1.2 mpas_tools=0.0.3 jigsaw=0.9.10 jigsawpy=0.0.2 \
     metis pyflann scikit-image basemap pyamg ffmpeg
 ```
 Each time you want to work with COMPASS, you will need to run:
