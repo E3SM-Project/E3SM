@@ -52,10 +52,6 @@ CONTAINS
     !
     !----------------------------------------------------------------------------
 
-    !
-    ! +BPM Add another optional argument called uniform_angle. When present, uses the cos(value) for return. 
-    !
-
     real   (SHR_KIND_R8),intent(in) :: jday   ! Julian cal day (1.xx to 365.xx)
     real   (SHR_KIND_R8),intent(in) :: lat    ! Centered latitude (radians)
     real   (SHR_KIND_R8),intent(in) :: lon    ! Centered longitude (radians)
@@ -69,8 +65,7 @@ CONTAINS
     
     if (present(uniform_angle)) then
        shr_orb_cosz = cos(uniform_angle)
-    else
-       ! This is the usual calculation (+BPM)
+    else ! perform the calculation of shr_orb_cosz
        use_dt_avg = .false.
        if (present(dt_avg)) then
           if (dt_avg /= 0.0_shr_kind_r8) use_dt_avg = .true.

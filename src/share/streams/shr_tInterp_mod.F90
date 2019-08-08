@@ -391,7 +391,7 @@ contains
     call shr_cal_date2julian(ymd,tod,calday,calendar)
     call shr_orb_decl( calday, eccen, mvelpp, lambm0, obliqr, declin, eccf)
     do n = 1,lsize
-       cosz(n) = max(solZenMin, shr_orb_cosz( calday, latr(n), lonr(n), declin, uniform_angle=0.73391095_SHR_KIND_R8 )) ! +BPM Added uniform_angle opt-arg with value for RCEMIP
+       cosz(n) = max(solZenMin, shr_orb_cosz( calday, latr(n), lonr(n), declin))
     end do
 
   end subroutine shr_tInterp_getCosz
