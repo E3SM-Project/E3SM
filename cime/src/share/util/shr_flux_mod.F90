@@ -2329,7 +2329,7 @@ real(R8),intent(out):: tau,hsb,hlb,zo,zot,zoq,L,usr,tsr,qsr,Cd,Ch,Ce &
                     & ,trf,qrf,urf,vrf
 ! !EOP
 
-real ua,va,ta,q,rb,us,vs,ts,qs,zi,zu,zt,zq,zru,zrq,zrt ! internal vars
+real(R8) ua,va,ta,q,rb,us,vs,ts,qs,zi,zu,zt,zq,zru,zrq,zrt ! internal vars
 
 real(R8):: cpa,rgas,grav,pi,von,beta ! phys. params
 real(R8):: le,rhoa,cpv               ! derived phys. params
@@ -2362,67 +2362,67 @@ zrq=zrfq ! reference height for st.diagn.T,q
 zrt=zrft ! reference height for st.diagn.T,q
 
 !**** constants
-    Beta= 1.2 
-    von = 0.4 
-    pi  = 3.141593
+    Beta= 1.2_R8 
+    von = 0.4_R8
+    pi  = 3.141593_R8
     grav= SHR_CONST_G 
     Rgas= SHR_CONST_RGAS
     cpa = SHR_CONST_CPDAIR 
 
 !*** physical parameters
-    Le  = SHR_CONST_LATVAP -.00237e6*(ts-273.16)
+    Le  = SHR_CONST_LATVAP -.00237e6_R8*(ts-273.16_R8)
 !   cpv = shr_const_cpdair*(1.0_R8 + shr_const_cpvir*Qs) ! form in NCAR code
-    cpv = cpa*(1+0.84*Q) 
+    cpv = cpa*(1.0_R8+0.84_R8*Q) 
 !   rhoa= P/(Rgas*ta*(1+0.61*Q)) ! if input were pressure
     rhoa= rb
 
 ! parametrisation for air kinematic viscosity (Andreas 1989,p.31)
-    t   = ta-273.16
-    visa= 1.326e-5*(1+6.542e-3*t+8.301e-6*t*t-4.84e-9*t*t*t) 
+    t   = ta-273.16_R8
+    visa= 1.326e-5_R8*(1.0_R8+6.542e-3_R8*t+8.301e-6_R8*t*t-4.84e-9_R8*t*t*t) 
 
     du  = sqrt((ua-us)**2+(va-vs)**2)
-    dt  = ts-ta -.0098*zt 
+    dt  = ts-ta -.0098_R8*zt 
     dq  = Qs-Q 
 
 !*** don't use cool-skin params for now, but assign values to Ter and Qer
-jcool=0
-    dter=0.3  
-    wetc=0.622*Le*Qs/(Rgas*ts**2) 
+    jcool=0_IN
+    dter=0.3_R8  
+    wetc=0.622_R8*Le*Qs/(Rgas*ts**2) 
     dqer=wetc*dter 
 
 !***************** Begin bulk-model calculations ***************
      
 !*************** first guess 
-    ug=.5 
+    ug=0.5_R8 
 
     ut   = sqrt(du*du+ug*ug) 
-    u10  = ut*log(10/1e-4)/log(zu/1e-4) 
-    usr  = .035*u10 
-    zo10 = 0.011*usr*usr/grav+0.11*visa/usr 
-    Cd10 = (von/log(10/zo10))**2 
-    Ch10 = 0.00115 
+    u10  = ut*log(10.0_R8/1.0e-4_R8)/log(zu/1.0e-4_R8) 
+    usr  = .035_R8*u10 
+    zo10 = 0.011_R8*usr*usr/grav+0.11_R8*visa/usr 
+    Cd10 = (von/log(10.0_R8/zo10))**2 
+    Ch10 = 0.00115_R8 
     Ct10 = Ch10/sqrt(Cd10) 
-    zot10= 10/exp(von/Ct10) 
+    zot10= 10.0_R8/exp(von/Ct10) 
     Cd   =(von/log(zu/zo10))**2 
     Ct   = von/log(zt/zot10) 
     CC   = von*Ct/Cd 
 
 ! Bulk Richardson number
-    Ribu=-grav*zu/ta*((dt-dter*jcool)+.61*ta*dq)/ut**2 
+    Ribu=-grav*zu/ta*((dt-dter*jcool)+.61_R8*ta*dq)/ut**2 
 ! initial guess for stability parameter...
-    if (Ribu .LT. 0) then 
+    if (Ribu .LT. 0.0_R8) then 
     ! pbl-height dependent
-        zetu=CC*Ribu/( 1- (.004*Beta**3*zi/zu) * Ribu ) 
+        zetu=CC*Ribu/( 1.0_R8 - (.004_R8*Beta**3*zi/zu) * Ribu ) 
     else 
-        zetu=CC*Ribu*(1+27/9*Ribu/CC)
+        zetu=CC*Ribu*(1.0_R8 + 27.0_R8/9.0_R8*Ribu/CC)
     endif 
 ! ...and MO length
     L10=zu/zetu 
 
-    if (zetu .GT. 50) then 
-        nits=1 
+    if (zetu .GT. 50.0_R8) then 
+        nits=1_IN 
     else 
-        nits=3 
+        nits=3_IN 
     endif 
 
     usr =  ut*von/(log(zu/zo10)-psiuo(zu/L10))
@@ -2430,28 +2430,28 @@ jcool=0
     qsr = (dq-dqer*jcool)*von/(log(zq/zot10)-psit_30(zq/L10)) 
 
 ! parametrisation for Charney parameter (section 3c of Fairall et al. 2003)
-    charn=0.011 
-    if (ut .GT. 10) then
-      charn=0.011+(ut-10)/(18-10)*(0.018-0.011) 
+    charn=0.011_R8 
+    if (ut .GT. 10.0_R8) then
+      charn=0.011_R8+(ut-10.0_R8)/(18.0_R8-10.0_R8)*(0.018_R8-0.011_R8) 
     endif 
-    if (ut .GT. 18) then
-      charn=0.018 
+    if (ut .GT. 18.0_R8) then
+      charn=0.018_R8 
     endif 
         
 !***************  iteration loop ************
     do i=1, nits 
      
      ! stability parameter
-     zet=-von*grav*zu/ta*(tsr*(1+0.61*Q)+.61*ta*qsr)/(usr*usr)/(1+0.61*Q) 
+     zet=-von*grav*zu/ta*(tsr*(1.0_R8+0.61_R8*Q)+.61_R8*ta*qsr)/(usr*usr)/(1.0_R8+0.61_R8*Q) 
 
      ! momentum roughness length...
-     zo = charn*usr*usr/grav+0.11*visa/usr  
+     zo = charn*usr*usr/grav+0.11_R8*visa/usr  
      ! ...& MO length
      L  = zu/zet 
 
      ! tracer roughness length
      rr = zo*usr/visa 
-     zoq= min(1.15e-4,5.5e-5/rr**.6) 
+     zoq= min(1.15e-4_R8,5.5e-5_R8/rr**.6_R8) 
      zot= zoq ! N.B. same for vapour and heat
 
      ! new surface-layer scales
@@ -2460,11 +2460,11 @@ jcool=0
      qsr = (dq-dqer*jcool)*von/(log(zq/zoq)-psit_30(zq/L)) 
 
      ! gustiness parametrisation
-     Bf=-grav/ta*usr*(tsr+.61*ta*qsr) 
-     if (Bf .GT. 0) then
-       ug=Beta*(Bf*zi)**.333 
+     Bf=-grav/ta*usr*(tsr+.61_R8*ta*qsr) 
+     if (Bf .GT. 0.0_R8) then
+       ug=Beta*(Bf*zi)**.333_R8 
      else
-       ug=.2 
+       ug=.2_R8 
      endif
      ut=sqrt(du*du+ug*ug) 
 
@@ -2478,29 +2478,29 @@ jcool=0
    hlb=-rhoa*Le*usr*qsr                   !wv downwards
 
    !****** transfer coeffs relative to ut @meas. hts ******
-   Cd= tau/rhoa/ut/max(.1,du) 
+   Cd= tau/rhoa/ut/max(.1_R8,du) 
    if (tsr.ne.0._r8) then
     Ch= usr/ut*tsr/(dt-dter*jcool)
    else
     Ch= usr/ut* von/(log(zt/zot)-psit_30(zt/L))
    endif
-   if (qsr.ne.0) then
+   if (qsr.ne.0.0_R8) then
     Ce= usr/ut*qsr/(dq-dqer*jcool)
    else
     Ce= usr/ut* von/(log(zq/zoq)-psit_30(zq/L))
    endif
 
    !**********  10-m neutral coeff relative to ut *********
-   Cdn_10=von*von/log(10/zo)/log(10/zo) 
-   Chn_10=von*von/log(10/zo)/log(10/zot) 
-   Cen_10=von*von/log(10/zo)/log(10/zoq) 
+   Cdn_10=von*von/log(10.0_R8/zo)/log(10.0_R8/zo) 
+   Chn_10=von*von/log(10.0_R8/zo)/log(10.0_R8/zot) 
+   Cen_10=von*von/log(10.0_R8/zo)/log(10.0_R8/zoq) 
 
    !**********  reference-height values for u,q,T *********
    urf=us+(ua-us)*(log(zru/zo)-psiuo(zru/L))/(log(zu/zo)-psiuo(zu/L))
    vrf=vs+(va-vs)*(log(zru/zo)-psiuo(zru/L))/(log(zu/zo)-psiuo(zu/L))
    qrf=qs-dq*(log(zrq/zoq)-psit_30(zrq/L))/(log(zq/zoq)-psit_30(zq/L))
    trf=ts-dt*(log(zrt/zot)-psit_30(zrt/L))/(log(zt/zot)-psit_30(zt/L))
-   trf=trf+.0098*zrt
+   trf=trf+.0098_R8*zrt
 
 end subroutine cor30a
 
@@ -2527,20 +2527,20 @@ real(R8) ::c,x,psik,psic,f
 !-----------------------------------------------------------------
 ! N.B.: z0/L always neglected compared to z/L and to 1
 !-----------------------------------------------------------------
-    if(zet>0)then 
+    if(zet>0.0_R8)then 
 ! Beljaars & Holtslag (1991)
-     c=min(50.,.35*zet) 
-     psiuo=-((1+1.0*zet)**1.0+.667*(zet-14.28)/exp(c)+8.525)
+     c=min(50._R8,.35_R8*zet) 
+     psiuo=-((1.0_R8+1.0_R8*zet)**1.0_R8+.667_R8*(zet-14.28_R8)/exp(c)+8.525_R8)
     else 
 ! Dyer & Hicks (1974) for weak instability
-     x=(1.-15.*zet)**.25                   ! 15 instead of 16
-     psik=2.*log((1.+x)/2.)+log((1.+x*x)/2.)-2.*atan(x)+2.*atan(1.) 
+     x=(1.0_R8-15.0_R8*zet)**.25_R8                   ! 15 instead of 16
+     psik=2.0_R8*log((1.0_R8+x)/2.0_R8)+log((1.0_R8+x*x)/2.0_R8)-2.0_R8*atan(x)+2.0_R8*atan(1.0_R8) 
 ! Fairall et al. (1996) for strong instability (Eq.(13))
-     x=(1.-10.15*zet)**.3333 
-     psic= 1.5*log((1.+x+x*x)/3.)-sqrt(3.)*atan((1.+2.*x)/sqrt(3.)) &
-         & +4.*atan(1.)/sqrt(3.) 
-     f=zet*zet/(1+zet*zet) 
-     psiuo=(1-f)*psik+f*psic                                                
+     x=(1.0_R8-10.15_R8*zet)**.3333_R8 
+     psic= 1.5_R8*log((1.0_R8+x+x*x)/3.0_R8)-sqrt(3.0_R8)*atan((1.0_R8+2.0_R8*x)/sqrt(3.0_R8)) &
+         & +4.0_R8*atan(1.0_R8)/sqrt(3.0_R8) 
+     f=zet*zet/(1.0_R8+zet*zet) 
+     psiuo=(1.0_R8-f)*psik+f*psic                                                
     endif 
 END FUNCTION psiuo 
 
@@ -2568,20 +2568,20 @@ real(R8) ::c,x,psik,psic,f
 !-----------------------------------------------------------------
 ! N.B.: z0/L always neglected compared to z/L and to 1
 !-----------------------------------------------------------------
-    if(zet>0)then 
+    if(zet>0.0_R8)then 
 ! Beljaars & Holtslag (1991)
-     c=min(50.,.35*zet) 
-     psit_30=-((1.+2./3.*zet)**1.5+.667*(zet-14.28)/exp(c)+8.525)
+     c=min(50._R8,.35_R8*zet) 
+     psit_30=-((1.0_R8+2.0_R8/3.0_R8*zet)**1.5_R8+.667_R8*(zet-14.28_R8)/exp(c)+8.525_R8)
     else 
 ! Dyer & Hicks (1974) for weak instability
-     x=(1.-15.*zet)**.5                    ! 15 instead of 16
-     psik=2*log((1+x)/2) 
+     x=(1.0_R8-15.0_R8*zet)**.5_R8                    ! 15 instead of 16
+     psik=2.0_R8*log((1.0_R8+x)/2.0_R8) 
 ! Fairall et al. (1996) for strong instability
-     x=(1.-(34.15*zet))**.3333 
-     psic= 1.5*log((1.+x+x*x)/3.)-sqrt(3.)*atan((1.+2.*x)/sqrt(3.)) &
-         & +4.*atan(1.)/sqrt(3.) 
-     f=zet*zet/(1+zet*zet) 
-     psit_30=(1-f)*psik+f*psic
+     x=(1.0_R8-(34.15_R8*zet))**.3333_R8 
+     psic= 1.5_R8*log((1.0_R8+x+x*x)/3.0_R8)-sqrt(3.0_R8)*atan((1.0_R8+2.0_R8*x)/sqrt(3.0_R8)) &
+         & +4.0_R8*atan(1.0_R8)/sqrt(3.0_R8) 
+     f=zet*zet/(1.0_R8+zet*zet) 
+     psit_30=(1.0_R8-f)*psik+f*psic
    endif
 end FUNCTION psit_30
 
