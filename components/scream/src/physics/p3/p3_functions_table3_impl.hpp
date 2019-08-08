@@ -140,7 +140,7 @@ void Functions<S,D>
   //
 
   static const char* namebase = "p3_lookup_table_1.dat-v";
-  std::string filename = std::string(namebase) + std::string(C::P3_VERSION);
+  std::string filename = std::string(namebase) + std::string(P3_VERSION);
 
   std::ifstream in(filename);
 
@@ -148,13 +148,13 @@ void Functions<S,D>
   std::string version, version_val;
   in >> version >> version_val;
   scream_require_msg(version == "VERSION", "Bad " << filename << ", expected VERSION X.Y.Z header");
-  scream_require_msg(version_val == C::P3_VERSION, "Bad " << filename << ", expected version " << C::P3_VERSION << ", but got " << version_val);
+  scream_require_msg(version_val == P3_VERSION, "Bad " << filename << ", expected version " << P3_VERSION << ", but got " << version_val);
 
   // read tables
   Scalar dum_s; int dum_i;
-  for (int jj = 0; jj < C::DENSIZE; ++jj) {
-    for (int ii = 0; ii < C::RIMSIZE; ++ii) {
-      for (int i = 0; i < C::ISIZE; ++i) {
+  for (int jj = 0; jj < DENSIZE; ++jj) {
+    for (int ii = 0; ii < RIMSIZE; ++ii) {
+      for (int i = 0; i < ISIZE; ++i) {
         in >> dum_i >> dum_i;
         int j_idx = 0;
         for (int j = 0; j < 15; ++j) {
@@ -165,8 +165,8 @@ void Functions<S,D>
         }
       }
 
-      for (int i = 0; i < C::ISIZE; ++i) {
-        for (int j = 0; j < C::RCOLLSIZE; ++j) {
+      for (int i = 0; i < ISIZE; ++i) {
+        for (int j = 0; j < RCOLLSIZE; ++j) {
           in >> dum_i >> dum_i;
           int k_idx = 0;
           for (int k = 0; k < 6; ++k) {
@@ -202,24 +202,24 @@ void Functions<S,D>
 
   if (qiti_gt_small.any()) {
     scream_masked_loop(qiti_gt_small, s) {
-      t.dum1[s] = (std::log10(qitot[s]/nitot[s])+18) * C::LOOKUP_TABLE_1A_DUM1_C-10; // For computational efficiency
+      t.dum1[s] = (std::log10(qitot[s]/nitot[s])+18) * LOOKUP_TABLE_1A_DUM1_C-10; // For computational efficiency
       t.dumi[s] = static_cast<int>(t.dum1[s]);
 
       // set limits (to make sure the calculated index doesn't exceed range of lookup table)
-      t.dum1[s] = util::min<Scalar>(t.dum1[s], C::ISIZE);
+      t.dum1[s] = util::min<Scalar>(t.dum1[s], ISIZE);
       t.dum1[s] = util::max(t.dum1[s], 1.0);
       t.dumi[s] = util::max(1, t.dumi[s]);
-      t.dumi[s] = util::min(C::ISIZE, t.dumi[s]);
+      t.dumi[s] = util::min(ISIZE, t.dumi[s]);
 
       // find index for rime mass fraction
       t.dum4[s]  = (qirim[s]/qitot[s])*3 + 1;
       t.dumii[s] = static_cast<int>(t.dum4[s]);
 
       // set limits
-      t.dum4[s]  = util::min<Scalar>(t.dum4[s], C::RIMSIZE);
+      t.dum4[s]  = util::min<Scalar>(t.dum4[s], RIMSIZE);
       t.dum4[s]  = util::max<Scalar>(t.dum4[s], 1);
       t.dumii[s] = util::max(1, t.dumii[s]);
-      t.dumii[s] = util::min(C::RIMSIZE-1, t.dumii[s]);
+      t.dumii[s] = util::min(RIMSIZE-1, t.dumii[s]);
     }
 
     // find index for bulk rime density
@@ -236,10 +236,10 @@ void Functions<S,D>
     // set limits
     scream_masked_loop(qiti_gt_small, s) {
       t.dumjj[s] = static_cast<int>(t.dum5[s]);
-      t.dum5[s]  = util::min<Scalar>(t.dum5[s], C::DENSIZE);
+      t.dum5[s]  = util::min<Scalar>(t.dum5[s], DENSIZE);
       t.dum5[s]  = util::max<Scalar>(t.dum5[s], 1);
       t.dumjj[s] = util::max(1, t.dumjj[s]);
-      t.dumjj[s] = util::min(C::DENSIZE-1, t.dumjj[s]);
+      t.dumjj[s] = util::min(DENSIZE-1, t.dumjj[s]);
 
       t.dum6[s]  = -99;
       t.dumzz[s] = -99;

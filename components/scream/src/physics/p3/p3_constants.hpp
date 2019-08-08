@@ -42,25 +42,10 @@ struct Constants
   static constexpr Scalar RHOSUR      = P0/(RD*273.15);
   static constexpr Scalar CP          = Cpair;          // heat constant of air at constant pressure, J/kg
   static constexpr Scalar INV_CP      = 1.0/CP;
-
-  // Constants for ice lookup tables
-  static constexpr int    DENSIZE     = 5;
-  static constexpr int    RIMSIZE     = 4;
-  static constexpr int    ISIZE       = 50;
-  static constexpr int    TABSIZE     = 12; // number of quantities used from lookup table
-  static constexpr int    RCOLLSIZE   = 30;
-  static constexpr int    COLTABSIZE  = 2;  // number of ice-rain collection  quantities used from lookup table
-
-  static constexpr Scalar LOOKUP_TABLE_1A_DUM1_C = 1.0/(0.1*std::log10(261.7));
-
-  static constexpr const char* P3_VERSION = "2.8.2";
 };
 
 template <typename Scalar>
 constexpr Scalar Constants<Scalar>::NSMALL;
-
-template <typename Scalar>
-constexpr int Constants<Scalar>::ISIZE;
 
 template <typename Scalar>
 using vector_2d_t = std::vector<std::vector<Scalar> >;

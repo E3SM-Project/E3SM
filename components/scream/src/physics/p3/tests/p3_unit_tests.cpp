@@ -443,8 +443,7 @@ static void unittest_upwind () {
   }
 }
 
-static void test_ice_tables()
-{
+struct TestTableIce {
   using Functions          = scream::p3::Functions<Real, Device>;
   using view_itab_table    = typename Functions::view_itab_table;
   using view_itabcol_table = typename Functions::view_itabcol_table;
@@ -454,20 +453,34 @@ static void test_ice_tables()
   using Smask              = typename Functions::Smask;
   using TableIce           = typename Functions::TableIce;
 
-  view_itab_table itab;
-  view_itabcol_table itabcol;
+  static void run()
+  {
+    // Read in ice tables
+    view_itab_table itab;
+    view_itabcol_table itabcol;
+    Functions::init_kokkos_ice_lookup_tables(itab, itabcol);
 
-  Functions::init_kokkos_ice_lookup_tables(itab, itabcol);
+    int nerr = 0;
+    TeamPolicy policy(util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
+    Kokkos::parallel_reduce("TestTableIce::run", policy, KOKKOS_LAMBDA(const MemberType& team, int& errors) {
+      Smask qiti_gt_small(true);
 
-  Smask qiti_gt_small;
-  Spack qitot, nitot, qirim, rhop;
-  TableIce t;
-  Functions::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, t);
+      // Init packs to same value, TODO: how to pick use values?
+      Spack qitot(0.1), nitot(0.2), qirim(0.3), rhop(0.4);
 
-  Spack proc = Functions::apply_table_ice(qiti_gt_small, 1, itab, t);
+      TableIce t;
+      Functions::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, t);
 
-  // TODO: how to test?
-}
+      Spack proc = Functions::apply_table_ice(qiti_gt_small, 1, itab, t);
+
+      // TODO: how to test?
+      errors = 0;
+    }, nerr);
+
+    Kokkos::fence();
+    REQUIRE(nerr == 0);
+  }
+};
 
 };
 };
@@ -502,7 +515,7 @@ TEST_CASE("p3_upwind", "[p3_functions]")
 
 TEST_CASE("p3_ice_tables", "[p3_functions]")
 {
-  UnitWrap::UnitTest<scream::DefaultDevice>::test_ice_tables();
+  UnitWrap::UnitTest<scream::DefaultDevice>::TestTableIce::run();
 }
 
 } // namespace
