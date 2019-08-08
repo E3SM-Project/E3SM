@@ -355,6 +355,9 @@ contains
     nlend = seq_timemgr_StopAlarmIsOn( EClock )
     rstwr = seq_timemgr_RestartAlarmIsOn( EClock )
     !call advance_timestep()
+	write(iulog,*) 'wokao1, ', rstwr
+	write(iulog,*) 'wokao2, ', nlend
+	write(iulog,*) 'wokao3, ', rdate
     call Rtmrun(rstwr,nlend,rdate)
 
     ! Map roff data to MCT datatype (input is rtmCTL%runoff, output is r2x_r)

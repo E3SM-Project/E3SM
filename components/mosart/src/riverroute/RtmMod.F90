@@ -1998,18 +1998,18 @@ endif
 !#endif
 
     if(heatflag) then
-    rtmCTL%templand_Tqsur = spval
-    rtmCTL%templand_Tqsub = spval
-    rtmCTL%templand_Ttrib = spval
-    rtmCTL%templand_Tchanr = spval
-    do n = rtmCTL%begr,rtmCTL%endr
-        if (rtmCTL%mask(n) .eq. 1 .or. rtmCTL%mask(n) .eq. 3) then
-            rtmCTL%templand_Tqsur(n) = 0._r8
-            rtmCTL%templand_Tqsub(n) = 0._r8
-            rtmCTL%templand_Ttrib(n) = 0._r8
-            rtmCTL%templand_Tchanr(n) = 0._r8
-        end if
-    end do
+      rtmCTL%templand_Tqsur = spval
+      rtmCTL%templand_Tqsub = spval
+      rtmCTL%templand_Ttrib = spval
+      rtmCTL%templand_Tchanr = spval
+      do n = rtmCTL%begr,rtmCTL%endr
+          if (rtmCTL%mask(n) .eq. 1 .or. rtmCTL%mask(n) .eq. 3) then
+              rtmCTL%templand_Tqsur(n) = 0._r8
+              rtmCTL%templand_Tqsub(n) = 0._r8
+              rtmCTL%templand_Ttrib(n) = 0._r8
+              rtmCTL%templand_Tchanr(n) = 0._r8
+          end if
+      end do
     end if
 	
     if (budget_check) then
@@ -2408,15 +2408,16 @@ if (inundflag) then
        end if
 end if
 !#endif
-
-       do n = rtmCTL%begr,rtmCTL%endr
-           if (rtmCTL%mask(n) .eq. 1 .or. rtmCTL%mask(n) .eq. 3) then
-               rtmCTL%templand_Tqsur(n) = rtmCTL%templand_Tqsur(n) + THeat%Tqsur(n)
-               rtmCTL%templand_Tqsub(n) = rtmCTL%templand_Tqsub(n) + THeat%Tqsub(n)
-               rtmCTL%templand_Ttrib(n) = rtmCTL%templand_Ttrib(n) + THeat%Tt_avg(n)
-               rtmCTL%templand_Tchanr(n) = rtmCTL%templand_Tchanr(n) + THeat%Tr_avg(n)
-           end if
-       enddo
+       if(heatflag) then
+         do n = rtmCTL%begr,rtmCTL%endr
+             if (rtmCTL%mask(n) .eq. 1 .or. rtmCTL%mask(n) .eq. 3) then
+                 rtmCTL%templand_Tqsur(n) = rtmCTL%templand_Tqsur(n) + THeat%Tqsur(n)
+                 rtmCTL%templand_Tqsub(n) = rtmCTL%templand_Tqsub(n) + THeat%Tqsub(n)
+                 rtmCTL%templand_Ttrib(n) = rtmCTL%templand_Ttrib(n) + THeat%Tt_avg(n)
+                 rtmCTL%templand_Tchanr(n) = rtmCTL%templand_Tchanr(n) + THeat%Tr_avg(n)
+             end if
+         enddo
+	   end if
        
     enddo ! nsub
 
@@ -2461,25 +2462,27 @@ endif
 
 !#endif
 
-    rtmCTL%Tqsur   = THeat%Tqsur
-    rtmCTL%Tqsub   = THeat%Tqsub
-    rtmCTL%Tt      = THeat%Tt
-    rtmCTL%Tr      = THeat%Tr
-    rtmCTL%Ha_rout   = THeat%Ha_rout
-
-    do n = rtmCTL%begr,rtmCTL%endr
-       if(rtmCTL%mask(n) .eq. 1 .or. rtmCTL%mask(n) .eq. 3) then
-          rtmCTL%templand_Tqsur(n) = rtmCTL%templand_Tqsur(n) / float(nsub)
-          rtmCTL%templand_Tqsub(n) = rtmCTL%templand_Tqsub(n) / float(nsub)
-          rtmCTL%templand_Ttrib(n) = rtmCTL%templand_Ttrib(n) / float(nsub)
-          rtmCTL%templand_Tchanr(n) = rtmCTL%templand_Tchanr(n) / float(nsub)
-       else
-          rtmCTL%templand_Tqsur(n) = spval
-          rtmCTL%templand_Tqsub(n) = spval
-          rtmCTL%templand_Ttrib(n) = spval
-          rtmCTL%templand_Tchanr(n) = spval
-       end if
-    end do
+    if (heatflag) then
+      rtmCTL%Tqsur   = THeat%Tqsur
+      rtmCTL%Tqsub   = THeat%Tqsub
+      rtmCTL%Tt      = THeat%Tt
+      rtmCTL%Tr      = THeat%Tr
+      rtmCTL%Ha_rout   = THeat%Ha_rout
+    
+      do n = rtmCTL%begr,rtmCTL%endr
+         if(rtmCTL%mask(n) .eq. 1 .or. rtmCTL%mask(n) .eq. 3) then
+            rtmCTL%templand_Tqsur(n) = rtmCTL%templand_Tqsur(n) / float(nsub)
+            rtmCTL%templand_Tqsub(n) = rtmCTL%templand_Tqsub(n) / float(nsub)
+            rtmCTL%templand_Ttrib(n) = rtmCTL%templand_Ttrib(n) / float(nsub)
+            rtmCTL%templand_Tchanr(n) = rtmCTL%templand_Tchanr(n) / float(nsub)
+         else
+            rtmCTL%templand_Tqsur(n) = spval
+            rtmCTL%templand_Tqsub(n) = spval
+            rtmCTL%templand_Ttrib(n) = spval
+            rtmCTL%templand_Tchanr(n) = spval
+         end if
+      end do
+	end if
 
     do nt = 1,nt_rtm
     do nr = rtmCTL%begr,rtmCTL%endr

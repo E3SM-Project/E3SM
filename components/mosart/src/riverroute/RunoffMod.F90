@@ -11,7 +11,7 @@ module RunoffMod
 ! !USES:
   use shr_kind_mod, only : r8 => shr_kind_r8
   use mct_mod
-  use RtmVar         , only : iulog, spval
+  use RtmVar         , only : iulog, spval, heatflag
   use rof_cpl_indices, only : nt_rtm
 
 ! !PUBLIC TYPES:
@@ -549,23 +549,6 @@ contains
              rtmCTL%qgwl(begr:endr,nt_rtm),       &
              rtmCTL%qdto(begr:endr,nt_rtm),       &
              rtmCTL%qdem(begr:endr,nt_rtm),       & 
-             rtmCTL%Tqsur(begr:endr),                 &
-             rtmCTL%Tqsub(begr:endr),                 &
-             rtmCTL%Tt(begr:endr),                    &
-             rtmCTL%Tr(begr:endr),                    &
-             rtmCTL%Ha_rout(begr:endr),               &
-             rtmCTL%templand_Tqsur(begr:endr),        &
-             rtmCTL%templand_Tqsub(begr:endr),        &
-             rtmCTL%templand_Ttrib(begr:endr),        &
-             rtmCTL%templand_Tchanr(begr:endr),       &
-             rtmCTL%templand_Tqsur_nt1(begr:endr),    &
-             rtmCTL%templand_Tqsub_nt1(begr:endr),    &
-             rtmCTL%templand_Ttrib_nt1(begr:endr),    &
-             rtmCTL%templand_Tchanr_nt1(begr:endr),   &
-             rtmCTL%templand_Tqsur_nt2(begr:endr),    &
-             rtmCTL%templand_Tqsub_nt2(begr:endr),    &
-             rtmCTL%templand_Ttrib_nt2(begr:endr),    &
-             rtmCTL%templand_Tchanr_nt2(begr:endr),   &
              stat=ier)
     if (ier /= 0) then
        write(iulog,*)'Rtmini ERROR allocation of runoff local arrays'
@@ -586,16 +569,44 @@ contains
     rtmCTL%inundhf(:)      = 0._r8
     rtmCTL%inundff(:)      = 0._r8
     rtmCTL%inundffunit(:)  = 0._r8
-    rtmCTL%qsur(:,:)        = 0._r8
-    rtmCTL%qsub(:,:)        = 0._r8
-    rtmCTL%qgwl(:,:)        = 0._r8
-    rtmCTL%qdto(:,:)        = 0._r8
-    rtmCTL%qdem(:,:)        = 0._r8
-
-    rtmCTL%templand_Tqsur(:)  = spval
-    rtmCTL%templand_Tqsub(:)  = spval
-    rtmCTL%templand_Ttrib(:)  = spval
-    rtmCTL%templand_Tchanr(:) = spval
+    rtmCTL%qsur(:,:)       = 0._r8
+    rtmCTL%qsub(:,:)       = 0._r8
+    rtmCTL%qgwl(:,:)       = 0._r8
+    rtmCTL%qdto(:,:)       = 0._r8
+    rtmCTL%qdem(:,:)       = 0._r8
+    
+    if (heatflag) then
+      allocate(rtmCTL%Tqsur(begr:endr),                 &
+               rtmCTL%Tqsub(begr:endr),                 &
+               rtmCTL%Tt(begr:endr),                    &
+               rtmCTL%Tr(begr:endr),                    &
+               rtmCTL%Ha_rout(begr:endr),               &
+               rtmCTL%templand_Tqsur(begr:endr),        &
+               rtmCTL%templand_Tqsub(begr:endr),        &
+               rtmCTL%templand_Ttrib(begr:endr),        &
+               rtmCTL%templand_Tchanr(begr:endr),       &
+               rtmCTL%templand_Tqsur_nt1(begr:endr),    &
+               rtmCTL%templand_Tqsub_nt1(begr:endr),    &
+               rtmCTL%templand_Ttrib_nt1(begr:endr),    &
+               rtmCTL%templand_Tchanr_nt1(begr:endr),   &
+               rtmCTL%templand_Tqsur_nt2(begr:endr),    &
+               rtmCTL%templand_Tqsub_nt2(begr:endr),    &
+               rtmCTL%templand_Ttrib_nt2(begr:endr),    &
+               rtmCTL%templand_Tchanr_nt2(begr:endr),   &
+               stat=ier)
+      if (ier /= 0) then
+         write(iulog,*)'Rtmini ERROR allocation of runoff local arrays'
+         call shr_sys_abort
+      end if
+      
+      rtmCTL%Tqsur(:)        = 273.15_r8
+      rtmCTL%Tqsub(:)        = 273.15_r8
+      rtmCTL%templand_Tqsur(:)  = spval
+      rtmCTL%templand_Tqsub(:)  = spval
+      rtmCTL%templand_Ttrib(:)  = spval
+      rtmCTL%templand_Tchanr(:) = spval
+      
+    end if
 
   end subroutine RunoffInit
 
