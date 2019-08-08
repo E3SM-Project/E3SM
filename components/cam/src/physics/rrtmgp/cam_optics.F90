@@ -499,7 +499,7 @@ contains
       call handle_error(optics_out%delta_scale())
 
       ! Check cloud optics_sw
-      call handle_error(optics_out%validate())
+      call handle_error(optics_out%validate(), stop_on_error=.false.)
 
       call optics_cam%finalize()
 
