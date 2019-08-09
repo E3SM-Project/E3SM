@@ -63,8 +63,4 @@ def _main_func():
 ###############################################################################
 
 if __name__ == "__main__":
-<<<<<<< HEAD
     _main_func()
-=======
-    _main_func()
->>>>>>> tizhou/mosart/add-wm-inundation
