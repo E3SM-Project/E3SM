@@ -47,6 +47,7 @@ module CLMFatesInterfaceMod
    use clm_varctl        , only : use_fates_spitfire
    use clm_varctl        , only : fates_parteh_mode
    use clm_varctl        , only : use_fates_planthydro
+   use clm_varctl        , only : use_fates_alt_planthydro
    use clm_varctl        , only : use_fates_ed_st3
    use clm_varctl        , only : use_fates_ed_prescribed_phys
    use clm_varctl        , only : use_fates_logging
@@ -109,6 +110,7 @@ module CLMFatesInterfaceMod
    use FatesInterfaceMod     , only : SetFatesTime
    use FatesInterfaceMod     , only : set_fates_ctrlparms
    use FatesInterfaceMod     , only : InitPARTEHGlobals
+   use FatesInterfaceMod     , only : hlm_use_alt_planthydro
 
    use FatesHistoryInterfaceMod, only : fates_history_interface_type
    use FatesRestartInterfaceMod, only : fates_restart_interface_type
@@ -133,6 +135,7 @@ module CLMFatesInterfaceMod
    use FatesPlantHydraulicsMod, only : hydraulics_drive
    use FatesPlantHydraulicsMod, only : HydrSiteColdStart
    use FatesPlantHydraulicsMod, only : InitHydrSites
+   use FatesPlantHydraulicsMod, only : InitHydrSolver
    use FatesPlantHydraulicsMod, only : UpdateH2OVeg
    use FatesPlantHydraulicsMod, only : RestartHydrStates
    use FatesInterfaceMod      , only : bc_in_type, bc_out_type
@@ -349,6 +352,13 @@ contains
       end if
       call set_fates_ctrlparms('use_planthydro',ival=pass_planthydro)
 
+      if(use_fates_alt_planthydro) then
+         pass_planthydro = 1
+      else
+         pass_planthydro = 0
+      end if
+      call set_fates_ctrlparms('use_alt_planthydro',ival=pass_planthydro)
+
       if(use_fates_inventory_init) then
          pass_inventory_init = 1
       else
@@ -476,7 +486,7 @@ contains
 
          call this%init_soil_depths(nc)
          
-         if (use_fates_planthydro) then
+         if (use_fates_planthydro .or. use_fates_alt_planthydro) then
             call InitHydrSites(this%fates(nc)%sites,this%fates(nc)%bc_in,numpft_fates)
          end if
 
@@ -664,7 +674,7 @@ contains
          end do
 
          
-         if(use_fates_planthydro)then
+         if(use_fates_planthydro .or. use_fates_alt_planthydro)then
             this%fates(nc)%bc_in(s)%hksat_sisl(1:nlevsoil)  = soilstate_inst%hksat_col(c,1:nlevsoil)
             this%fates(nc)%bc_in(s)%watsat_sisl(1:nlevsoil) = soilstate_inst%watsat_col(c,1:nlevsoil)
             this%fates(nc)%bc_in(s)%watres_sisl(1:nlevsoil) = spval !soilstate_inst%watres_col(c,1:nlevsoil)
@@ -833,7 +843,7 @@ contains
        !       ! Diagnose water storage in canopy if hydraulics is on
        !       
        !       ! If hydraulics is off, it returns 0 storage
-       if ( use_fates_planthydro ) then
+       if ( use_fates_planthydro .or. use_fates_alt_planthydro) then
        ! This updates the internal value and the bc_out value.
        !          call UpdateH2OVeg(this%fates(nc)%nsites, &
        !                this%fates(nc)%sites,  &
@@ -1170,7 +1180,7 @@ contains
                ! Re-populate all the hydraulics variables that are dependent
                ! on the key hydro state variables and plant carbon/geometry
                ! ------------------------------------------------------------------------
-               if (use_fates_planthydro) then
+               if (use_fates_planthydro .or. use_fates_alt_planthydro) then
                   
                   do s = 1,this%fates(nc)%nsites
                      c = this%f2hmap(nc)%fcolumn(s)
@@ -1263,7 +1273,7 @@ contains
            ! Called prior to init_patches(). Site level rhizosphere shells must
            ! be set prior to cohort initialization.
            ! ----------------------------------------------------------------------------
-           if (use_fates_planthydro) then
+           if (use_fates_planthydro .or. use_fates_alt_planthydro) then
 
               do s = 1,this%fates(nc)%nsites
 
@@ -1303,6 +1313,8 @@ contains
 
            call init_patches(this%fates(nc)%nsites, this%fates(nc)%sites, &
                              this%fates(nc)%bc_in)
+
+           call initHydrSolver(this%fates(nc)%sites,this%fates(nc)%bc_in)
 
            do s = 1,this%fates(nc)%nsites
               call ed_update_site(this%fates(nc)%sites(s), &
@@ -2318,7 +2330,7 @@ contains
     integer :: nlevsoil
 
 
-    if( .not. use_fates_planthydro ) return
+    if( (.not. use_fates_planthydro) .and. (.not.use_fates_alt_planthydro) ) return
        
     nc = bounds_clump%clump_index
     
@@ -2403,7 +2415,7 @@ contains
    integer  :: nlevsoil
 
 
-   if ( .not.use_fates_planthydro ) return
+   if ( (.not.use_fates_planthydro) .and. (.not.use_fates_alt_planthydro)) return
 
    nc = bounds_clump%clump_index
    dtime = get_step_size()

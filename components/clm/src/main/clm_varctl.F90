@@ -191,6 +191,7 @@ module clm_varctl
   logical, public            :: use_fates_spitfire = .false.  ! true => use spitfire model
   logical, public            :: use_fates_logging = .false.            ! true => turn on logging module
   logical, public            :: use_fates_planthydro = .false.         ! true => turn on fates hydro
+  logical, public            :: use_fates_alt_planthydro = .false.         ! true => turn on fates hydro
   logical, public            :: use_fates_ed_st3   = .false.           ! true => static stand structure
   logical, public            :: use_fates_ed_prescribed_phys = .false. ! true => prescribed physiology
   logical, public            :: use_fates_inventory_init = .false.     ! true => initialize fates from inventory

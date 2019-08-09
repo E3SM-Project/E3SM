@@ -11,7 +11,8 @@ module clm_initializeMod
   use abortutils       , only : endrun
   use clm_varctl       , only : nsrest, nsrStartup, nsrContinue, nsrBranch
   use clm_varctl       , only : create_glacier_mec_landunit, iulog
-  use clm_varctl       , only : use_lch4, use_cn, use_voc, use_c13, use_c14, use_fates, use_betr  
+  use clm_varctl       , only : use_lch4, use_cn, use_voc, use_c13, use_c14, use_fates, use_betr 
+  use clm_varctl       , only : use_fates_alt_planthydro 
   use clm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec
   use clm_varsur       , only : fert_cft
   use perf_mod         , only : t_startf, t_stopf
@@ -1055,29 +1056,37 @@ contains
     ! !DESCRIPTION:
     ! Initialize PETSc
     !
-#ifdef USE_PETSC_LIB
+!#ifdef USE_PETSC_LIB
 #include <petsc/finclude/petsc.h>
-#endif
+!#endif
     ! !USES:
     use spmdMod    , only : mpicom
     use clm_varctl , only : use_vsfm
     use clm_varctl , only : lateral_connectivity
     use clm_varctl , only : use_petsc_thermal_model
-#ifdef USE_PETSC_LIB
+!#ifdef USE_PETSC_LIB
     use petscsys
-#endif
+!#endif
     !
     implicit none
     !
     ! !LOCAL VARIABLES:
-#ifdef USE_PETSC_LIB
+!#ifdef USE_PETSC_LIB
     PetscErrorCode        :: ierr                  ! get error code from PETSc
-#endif
+!#endif
 
     if ( (.not. use_vsfm)               .and. &
          (.not. lateral_connectivity)   .and. &
-         (.not. use_petsc_thermal_model) ) return
+         (.not. use_petsc_thermal_model) .and. &
+         (.not. use_fates_alt_planthydro) ) return
+    if( use_fates_alt_planthydro) then
+    ! Initialize PETSc
+      PETSC_COMM_WORLD = mpicom
+      call PetscInitialize(PETSC_NULL_CHARACTER, ierr);CHKERRQ(ierr)
 
+      PETSC_COMM_SELF  = MPI_COMM_SELF
+      PETSC_COMM_WORLD = mpicom
+    end if
 #ifdef USE_PETSC_LIB
     ! Initialize PETSc
     PETSC_COMM_WORLD = mpicom
@@ -1086,8 +1095,8 @@ contains
     PETSC_COMM_SELF  = MPI_COMM_SELF
     PETSC_COMM_WORLD = mpicom
 #else
-    call endrun(msg='ERROR clm_petsc_init: '//&
-         'PETSc required but the code was not compiled using -DUSE_PETSC_LIB')
+!    call endrun(msg='ERROR clm_petsc_init: '//&
+!         'PETSc required but the code was not compiled using -DUSE_PETSC_LIB')
 #endif
 
   end subroutine clm_petsc_init

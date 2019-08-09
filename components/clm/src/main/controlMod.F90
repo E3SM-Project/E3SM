@@ -225,7 +225,7 @@ contains
 
     namelist /clm_inparm/ fates_paramfile, use_fates,      &
           use_fates_spitfire, use_fates_logging,        &
-          use_fates_planthydro, use_fates_ed_st3,       &
+          use_fates_planthydro, use_fates_alt_planthydro,use_fates_ed_st3,       &
           use_fates_ed_prescribed_phys,                 &
           use_fates_inventory_init,                     &
           fates_inventory_ctrl_filename,                &
@@ -645,6 +645,7 @@ contains
     call mpi_bcast (fates_paramfile, len(fates_paramfile) , MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (use_fates_logging, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_planthydro, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_fates_alt_planthydro, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_ed_st3, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_ed_prescribed_phys,  1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_inventory_init, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -1000,6 +1001,7 @@ contains
        write(iulog, *) '    use_fates_logging = ', use_fates_logging
        write(iulog, *) '    fates_paramfile = ', fates_paramfile
        write(iulog, *) '    use_fates_planthydro = ', use_fates_planthydro
+       write(iulog, *) '    use_fates_alt_planthydro = ', use_fates_alt_planthydro
        write(iulog, *) '    fates_parteh_mode = ', fates_parteh_mode
        write(iulog, *) '    use_fates_ed_st3 = ',use_fates_ed_st3
        write(iulog, *) '    use_fates_ed_prescribed_phys = ',use_fates_ed_prescribed_phys
