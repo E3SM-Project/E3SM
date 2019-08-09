@@ -37,14 +37,13 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   // set computed
   m_computed_fields.emplace("P3_comq_test", scalar2d_layout, units::one, "Physics");
   m_computed_fields.emplace("q",            scalar3d_layout, units::one, "Physics");
+  m_computed_fields.emplace("dp",           scalar3d_layout, units::one, "Physics");
 
 }
 // =========================================================================================
 void P3Microphysics::initialize (const util::TimeStamp& /* t0 */)
 {
   auto q_ptr = m_p3_fields_out.at("q").get_view().data();
-  // double mysum;
-  // int i, k, j;
 
   p3_init_f90 (q_ptr);
 

@@ -19,24 +19,29 @@ TEST_CASE("scream_homme_p3_stand_alone", "scream_homme_p3_stand_alone") {
   using namespace scream;
   using namespace scream::control;
 
+  std::cout << "Start Test...\n";
+
   // Create a parameter list for inputs
+  std::cout << "Create parameter list...";
   ParameterList ad_params("Atmosphere Driver");
   auto& params = ad_params.sublist("Atmosphere Processes");
 
-  params.set("Number of Entries",1);
+  params.set("Number of Entries",2);
   params.set<std::string>("Schedule Type","Sequential");
 
   auto& p0 = params.sublist("Process 0");
   p0.set<std::string>("Process Name", "dynamics");
-  auto& p1 = params.sublist("Process 0");
+  auto& p1 = params.sublist("Process 1");
   p1.set<std::string>("Process Name", "p3");
 
   auto& gm_params = ad_params.sublist("Grids Manager");
   gm_params.set<std::string>("Type","Dynamics Driven");
+  std::cout << "Done\n";
 
   // Need to register products in the factory *before* we create any AtmosphereProcessGroup,
   // which rely on factory for process creation. The initialize method of the AD does that.
   // While we're at it, check that the case insensitive key of the factory works.
+  std::cout << "Create factory...";
   auto& proc_factory = AtmosphereProcessFactory::instance();
   proc_factory.register_product("dynamics",&create_atmosphere_process<HommeDynamics>);
   proc_factory.register_product("p3",&create_atmosphere_process<P3Microphysics>);
@@ -44,12 +49,17 @@ TEST_CASE("scream_homme_p3_stand_alone", "scream_homme_p3_stand_alone") {
   // Need to register grids managers before we create the driver
   auto& gm_factory = GridsManagerFactory::instance();
   gm_factory.register_product("Dynamics Driven",create_dynamics_driven_grids_manager);
+  std::cout << "Done\n";
 
   // Create a comm
+  std::cout << "Create comm...";
   Comm atm_comm (MPI_COMM_WORLD);
+  std::cout << "Done\n";
 
   // Create the driver
+  std::cout << "Create driver...";
   AtmosphereDriver ad;
+  std::cout << "Done\n";
 
   // Init, run, and finalize
   util::TimeStamp time (0,0,0);
