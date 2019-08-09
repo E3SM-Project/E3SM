@@ -992,7 +992,8 @@ contains
     !          to vertinterp to get rid of the need for two separate 
     !          subroutines.
     !          Simple tests were done for linear and logarithmic 
-    !          interpolation, and the results suggested linear is better.
+    !          interpolation, and the results suggested linear is better
+    !          for interpolation of low-level winds.
     !-----------------------------------------------------------------------
 
     implicit none
