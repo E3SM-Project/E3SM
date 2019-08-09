@@ -1,3 +1,7 @@
+#ifdef _OPENMP
+# include <omp.h>
+#endif
+
 #include <catch2/catch.hpp>
 
 #include "share/scream_workspace.hpp"
