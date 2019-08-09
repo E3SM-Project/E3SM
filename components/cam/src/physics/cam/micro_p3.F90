@@ -1017,7 +1017,10 @@ contains
           prain(i,k)   = ( qcacc + qcaut + qcshd + qccol )
           nevapr(i,k)  = qisub + qrevp
           prer_evap(i,k) = qrevp
-
+          vap_ice_exchange(i,k) = qidep - qisub + qinuc
+          vap_liq_exchange(i,k) = -qrevp + qcnuc       
+          liq_ice_exchange(i,k) = qcheti + qrheti - qimlt + qiberg + qccol + qrcol   
+          vap_cld_exchange(i,k) = qcnuc 
           ! clipping for small hydrometeor values
           if (qc(i,k).lt.qsmall) then
              qv(i,k) = qv(i,k) + qc(i,k)
@@ -1573,6 +1576,7 @@ contains
              birim(i,k) = birim(i,k) + Q_nuc*inv_rho_rimeMax
              nitot(i,k) = nitot(i,k) + N_nuc
              th(i,k) = th(i,k) + exner(i,k)*Q_nuc*xlf(i,k)*inv_cp
+             liq_ice_exchange(i,k) = liq_ice_exchange(i,k) + Q_nuc         
              qc(i,k) = 0._rtype  != qc(i,k) - Q_nuc
              nc(i,k) = 0._rtype  != nc(i,k) - N_nuc
           endif
@@ -1586,6 +1590,7 @@ contains
              birim(i,k) = birim(i,k) + Q_nuc*inv_rho_rimeMax
              nitot(i,k) = nitot(i,k) + N_nuc
              th(i,k) = th(i,k) + exner(i,k)*Q_nuc*xlf(i,k)*inv_cp
+             liq_ice_exchange(i,k) = liq_ice_exchange(i,k) + Q_nuc
              qr(i,k) = 0._rtype  ! = qr(i,k) - Q_nuc
              nr(i,k) = 0._rtype  ! = nr(i,k) - N_nuc
           endif
@@ -1608,6 +1613,8 @@ contains
           else
              qv(i,k) = qv(i,k)+qc(i,k)
              th(i,k) = th(i,k)-exner(i,k)*qc(i,k)*xxlv(i,k)*inv_cp
+             vap_liq_exchange(i,k) = vap_liq_exchange(i,k) - qc(i,k)
+             vap_cld_exchange(i,k) = vap_cld_exchange(i,k) - qc(i,k)
              qc(i,k) = 0._rtype
              nc(i,k) = 0._rtype
           endif
@@ -1625,6 +1632,7 @@ contains
           else
              qv(i,k) = qv(i,k)+qr(i,k)
              th(i,k) = th(i,k)-exner(i,k)*qr(i,k)*xxlv(i,k)*inv_cp
+             vap_liq_exchange(i,k) = vap_liq_exchange(i,k) - qr(i,k)
              qr(i,k) = 0._rtype
              nr(i,k) = 0._rtype
           endif

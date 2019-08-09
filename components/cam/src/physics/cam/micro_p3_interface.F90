@@ -542,6 +542,12 @@ end subroutine micro_p3_readnl
    call addfld('P3_mtend_NUMICE',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for ice cloud number due to micro processes')
    call addfld('P3_mtend_Q',       (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for water vapor due to micro processes')
    call addfld('P3_mtend_TH',      (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for potential temp. number due to micro processes')
+   ! phase change tendencies
+   call addfld('vap_liq_exchange',  (/ 'lev' /), 'A', 'kg/kg/s', 'Tendency for conversion from vapor phase to liquid phase')
+   call addfld('vap_ice_exchange',  (/ 'lev' /), 'A', 'kg/kg/s', 'Tendency for conversion from vapor phase to frozen phase')
+   call addfld('liq_ice_exchange',  (/ 'lev' /), 'A', 'kg/kg/s', 'Tendency for conversion from liquid phase to frozen phase')
+   call addfld('vap_cld_exchange',  (/ 'lev' /), 'A', 'kg/kg/s', 'Tendency for conversion from vapor phase to cloud category')
+
 
    ! determine the add_default fields
    call phys_getopts(history_amwg_out           = history_amwg         , &
@@ -576,6 +582,11 @@ end subroutine micro_p3_readnl
       call add_default ('CLOUDFRAC_LIQ_MICRO', 1, ' ')
       call add_default ('CLOUDFRAC_ICE_MICRO', 1, ' ')
       call add_default ('CLOUDFRAC_RAIN_MICRO', 1, ' ')
+      ! Phase change tendencies
+      call add_default('vap_liq_exchange',  1, ' ')
+      call add_default('vap_ice_exchange',  1, ' ')
+      call add_default('liq_ice_exchange',  1, ' ')
+      call add_default('vap_cld_exchange',  1, ' ')
       ! Microphysics tendencies
       ! warm-phase process rates
       if (micro_tend_output) then
@@ -1144,8 +1155,11 @@ end subroutine micro_p3_readnl
          prctot(its:ite,kts:kte),     & ! OUT autoconversion of cloud by rain
          tend_out(its:ite,kts:kte,:), & ! OUT p3 microphysics tendencies
          mu(its:ite,kts:kte),         & ! OUT Size distribution shape parameter for radiation
-         lambdac(its:ite,kts:kte)     & ! OUT Size distribution slope parameter for radiation
-         )
+         lambdac(its:ite,kts:kte),     & ! OUT Size distribution slope parameter for radiation
+         liq_ice_exchange(its:ite,kts:kte),& !OUT sum of liq-ice phase change tendenices   
+         vap_liq_exchange(its:ite,kts:kte),& !OUT sun of vap-liq phase change tendencies
+         vap_ice_exchange(its:ite,kts:kte),& !OUT sum of vap-ice phase change tendencies
+         vap_cld_exchange(its:ite,kts:kte) &)!OUT sum of vap-cld phase change tendencies
 
     !MASSAGE OUTPUT TO FIT E3SM EXPECTATIONS
     !============= 
@@ -1177,6 +1191,10 @@ end subroutine micro_p3_readnl
 
     ! Net micro_p3 condensation rate
     qme(:ncol,top_lev:pver) = cmeliq(:ncol,top_lev:pver) + cmeiout(:ncol,top_lev:pver)  ! cmeiout is output from p3 micro
+    ! Add cmeliq to  vap_liq_exchange and vap_cld_exchange
+    vap_liq_exchange(:ncol,top_lev:pver) = vap_liq_exchange(:ncol,top_lev:pver) + cmeliq(:ncol,top_lev:pver) 
+    vap_cld_exchange(:ncol,top_lev:pver) = vap_cld_exchange(:ncol,top_lev:pver) + cmeliq(:ncol,top_lev:pver)
+
 !====================== Export variables/Conservation START ======================!
      !For precip, accumulate only total precip in prec_pcw and snow_pcw variables.
     ! Other precip output variables are set to 0
@@ -1442,6 +1460,11 @@ end subroutine micro_p3_readnl
    call outfld('P3_mtend_NUMICE',  tend_out(:,:,47), pcols, lchnk)
    call outfld('P3_mtend_Q',       tend_out(:,:,48), pcols, lchnk)
    call outfld('P3_mtend_TH',      tend_out(:,:,49), pcols, lchnk)
+   ! Phase change tendencies 
+   call outfld('vap_ice_exchange',      vap_ice_exchange,      pcols, lchnk)
+   call outfld('vap_liq_exchange',      vap_ice_exchange,      pcols, lchnk)
+   call outfld('liq_ice_exchange',      vap_ice_exchange,      pcols, lchnk)
+   call outfld('vap_cld_exchange',      vap_ice_exchange,      pcols, lchnk)
 
    call t_stopf('micro_p3_tend_finish')
   end subroutine micro_p3_tend
