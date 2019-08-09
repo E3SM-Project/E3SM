@@ -97,6 +97,11 @@ struct Functions
     Spack dum1, dum4, dum5, dum6;
   };
 
+  struct TableRain {
+    IntSmallPack dumj;
+    Spack dum3;
+  };
+
   // Call from host to initialize the static table entries.
   static void init_kokkos_tables(
     view_2d_table& vn_table, view_2d_table& vm_table, view_1d_table& mu_r_table);
@@ -109,9 +114,18 @@ struct Functions
   static void lookup(const Smask& qr_gt_small, const Spack& mu_r, const Spack& lamr,
                      Table3& t);
 
+  //------------------------------------------------------------------------------------------!
+  // Finds indices in 3D ice (only) lookup table
+  // ------------------------------------------------------------------------------------------!
   KOKKOS_FUNCTION
   static void lookup_ice(const Smask& qiti_gt_small, const Spack& qitot, const Spack& nitot,
                          const Spack& qirim, const Spack& rhop, TableIce& t);
+
+  //------------------------------------------------------------------------------------------!
+  // Finds indices in 3D rain lookup table
+  //------------------------------------------------------------------------------------------!
+  KOKKOS_FUNCTION
+  static void lookup_rain(const Smask& qiti_gt_small, const Spack& qr, const Spack& nr, TableRain& t);
 
   // Apply Table3 data to the table to return a value. This performs bilinear
   // interpolation within the quad given by {t.dumii, t.dumjj} x {t.dumii+1,
@@ -123,6 +137,12 @@ struct Functions
   KOKKOS_FUNCTION
   static Spack apply_table_ice(const Smask& qiti_gt_small, const int& index, const view_itab_table& itab,
                                const TableIce& t);
+
+  // Interpolates lookup table values for rain/ice collection processes
+  KOKKOS_FUNCTION
+  static Spack apply_table_coll(const Smask& qiti_gt_small, const int& index, const view_itabcol_table& itabcoll
+,
+                                const TableIce& ti, const TableRain& tr);
 
   // -- Sedimentation time step
 

@@ -452,6 +452,7 @@ struct TestTableIce {
   using IntSmallPack       = typename Functions::IntSmallPack;
   using Smask              = typename Functions::Smask;
   using TableIce           = typename Functions::TableIce;
+  using TableRain          = typename Functions::TableRain;
 
   static void run()
   {
@@ -466,12 +467,15 @@ struct TestTableIce {
       Smask qiti_gt_small(true);
 
       // Init packs to same value, TODO: how to pick use values?
-      Spack qitot(0.1), nitot(0.2), qirim(0.3), rhop(0.4);
+      Spack qitot(0.1), nitot(0.2), qirim(0.3), rhop(0.4), qr(0.5), nr(0.6);
 
-      TableIce t;
-      Functions::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, t);
+      TableIce ti;
+      TableRain tr;
+      Functions::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, ti);
+      Functions::lookup_rain(qiti_gt_small, qr, nr, tr);
 
-      Spack proc = Functions::apply_table_ice(qiti_gt_small, 1, itab, t);
+      Spack proc1 = Functions::apply_table_ice(qiti_gt_small, 1, itab, ti);
+      Spack proc2 = Functions::apply_table_coll(qiti_gt_small, 1, itabcol, ti, tr);
 
       // TODO: how to test?
       errors = 0;

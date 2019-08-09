@@ -249,14 +249,42 @@ void Functions<S,D>
 
 template <typename S, typename D>
 KOKKOS_FUNCTION
+void Functions<S,D>
+::lookup_rain(const Smask& qiti_gt_small, const Spack& qr, const Spack& nr, TableRain& t)
+{
+  if (qiti_gt_small.any()) {
+    // find index for scaled mean rain size
+    // if no rain, then just choose dumj = 1 and do not calculate rain-ice collection processes
+    Smask gt_small = qr > C::QSMALL && nr > 0.0;
+    Smask gt_both = gt_small && qiti_gt_small;
+    scream_masked_loop(gt_both, s) {
+      // calculate scaled mean size for consistency with ice lookup table
+      Scalar dumlr = std::pow(qr[s]/(C::Pi * C::RHOW * nr[s]), C::THIRD);
+      t.dum3[s] = (std::log10(1.0*dumlr) + 5.0)*10.70415;
+      t.dumj[s] = static_cast<int>(t.dum3[s]);
+
+      // set limits
+      t.dum3[s] = util::min<Scalar>(t.dum3[s], RCOLLSIZE);
+      t.dum3[s] = util::max(t.dum3[s], 1.0);
+      t.dumj[s] = util::max(1, t.dumj[s]);
+      t.dumj[s] = util::min(RCOLLSIZE-1, t.dumj[s]);
+    }
+
+    t.dumj.set(qiti_gt_small && !gt_small, 1);
+    t.dum3.set(qiti_gt_small && !gt_small, 1.0);
+  }
+}
+
+template <typename S, typename D>
+KOKKOS_FUNCTION
 typename Functions<S,D>::Spack Functions<S,D>
 ::apply_table_ice(const Smask& qiti_gt_small, const int& index, const view_itab_table& itab,
                   const TableIce& t)
 {
-  // get value at current density index
-
   Spack proc;
   scream_masked_loop(qiti_gt_small, s) {
+    // get value at current density index
+
     // first interpolate for current rimed fraction index
     Scalar iproc1 = itab(t.dumjj[s], t.dumii[s], t.dumi[s], index) + (t.dum1[s]-t.dumi[s]) *
       (itab(t.dumjj[s], t.dumii[s], t.dumi[s]+1, index) - itab(t.dumjj[s], t.dumii[s], t.dumi[s], index));
@@ -283,6 +311,82 @@ typename Functions<S,D>::Spack Functions<S,D>
 
     // get final process rate
     proc[s] = tmp1 + (t.dum5[s] - t.dumjj[s]) * (tmp2-tmp1);
+  }
+  return proc;
+}
+
+template <typename S, typename D>
+KOKKOS_FUNCTION
+typename Functions<S,D>::Spack Functions<S,D>
+::apply_table_coll(const Smask& qiti_gt_small, const int& index, const view_itabcol_table& itabcoll,
+                   const TableIce& ti, const TableRain& tr)
+{
+  Spack proc;
+  scream_masked_loop(qiti_gt_small, s) {
+
+    // current density index
+
+    // current rime fraction index
+    Scalar dproc1  = itabcoll(ti.dumjj[s], ti.dumii[s], ti.dumi[s], tr.dumj[s], index) +
+      (ti.dum1[s] - ti.dumi[s]) *
+      (itabcoll(ti.dumjj[s], ti.dumii[s], ti.dumi[s]+1, tr.dumj[s], index) -
+       itabcoll(ti.dumjj[s], ti.dumii[s], ti.dumi[s], tr.dumj[s], index));
+
+    Scalar dproc2  = itabcoll(ti.dumjj[s], ti.dumii[s], ti.dumi[s], tr.dumj[s]+1, index) +
+      (ti.dum1[s] - ti.dumi[s])*
+      (itabcoll(ti.dumjj[s], ti.dumii[s], ti.dumi[s]+1, tr.dumj[s]+1, index) -
+       itabcoll(ti.dumjj[s], ti.dumii[s], ti.dumi[s], tr.dumj[s]+1, index));
+
+    Scalar iproc1  = dproc1+(tr.dum3[s] - tr.dumj[s]) * (dproc2 - dproc1);
+
+    // rime fraction index + 1
+
+    dproc1  = itabcoll(ti.dumjj[s], ti.dumii[s]+1, ti.dumi[s], tr.dumj[s], index) +
+      (ti.dum1[s] - ti.dumi[s]) *
+      (itabcoll(ti.dumjj[s], ti.dumii[s]+1, ti.dumi[s]+1, tr.dumj[s], index) -
+       itabcoll(ti.dumjj[s], ti.dumii[s]+1, ti.dumi[s], tr.dumj[s], index));
+
+    dproc2  = itabcoll(ti.dumjj[s], ti.dumii[s]+1, ti.dumi[s], tr.dumj[s]+1, index) +
+      (ti.dum1[s] - ti.dumi[s]) *
+      (itabcoll(ti.dumjj[s], ti.dumii[s]+1, ti.dumi[s]+1, tr.dumj[s]+1, index) -
+       itabcoll(ti.dumjj[s], ti.dumii[s]+1, ti.dumi[s], tr.dumj[s]+1, index));
+
+    Scalar gproc1  = dproc1+(tr.dum3[s] - tr.dumj[s]) * (dproc2-dproc1);
+    Scalar tmp1    = iproc1+(ti.dum4[s] - ti.dumii[s]) * (gproc1-iproc1);
+
+    // density index + 1
+
+    // current rime fraction index
+
+    dproc1  = itabcoll(ti.dumjj[s]+1, ti.dumii[s], ti.dumi[s], tr.dumj[s], index) +
+      (ti.dum1[s] - ti.dumi[s])*
+      (itabcoll(ti.dumjj[s]+1, ti.dumii[s], ti.dumi[s]+1, tr.dumj[s], index) -
+       itabcoll(ti.dumjj[s]+1, ti.dumii[s], ti.dumi[s], tr.dumj[s], index));
+
+    dproc2  = itabcoll(ti.dumjj[s]+1, ti.dumii[s], ti.dumi[s], tr.dumj[s]+1, index) +
+      (ti.dum1[s] - ti.dumi[s]) *
+      (itabcoll(ti.dumjj[s]+1, ti.dumii[s], ti.dumi[s]+1, tr.dumj[s]+1, index) -
+       itabcoll(ti.dumjj[s]+1, ti.dumii[s], ti.dumi[s], tr.dumj[s]+1,index));
+
+    iproc1  = dproc1 + (tr.dum3[s] - tr.dumj[s]) * (dproc2-dproc1);
+
+    // rime fraction index + 1
+
+    dproc1  = itabcoll(ti.dumjj[s]+1, ti.dumii[s]+1, ti.dumi[s], tr.dumj[s], index) +
+      (ti.dum1[s] - ti.dumi[s])*
+      (itabcoll(ti.dumjj[s]+1, ti.dumii[s]+1, ti.dumi[s]+1, tr.dumj[s], index) -
+       itabcoll(ti.dumjj[s]+1, ti.dumii[s]+1, ti.dumi[s], tr.dumj[s], index));
+
+    dproc2  = itabcoll(ti.dumjj[s]+1, ti.dumii[s]+1, ti.dumi[s], tr.dumj[s]+1, index) +
+      (ti.dum1[s] - ti.dumi[s]) *
+      (itabcoll(ti.dumjj[s]+1, ti.dumii[s]+1, ti.dumi[s]+1, tr.dumj[s]+1, index) -
+       itabcoll(ti.dumjj[s]+1, ti.dumii[s]+1, ti.dumi[s], tr.dumj[s]+1, index));
+
+    gproc1  = dproc1 + (tr.dum3[s] - tr.dumj[s]) * (dproc2-dproc1);
+    Scalar tmp2    = iproc1 + (ti.dum4[s] - ti.dumii[s]) * (gproc1-iproc1);
+
+    // interpolate over density to get final values
+    proc    = tmp1+(ti.dum5[s] - ti.dumjj[s]) * (tmp2-tmp1);
   }
   return proc;
 }

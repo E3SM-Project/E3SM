@@ -48,6 +48,9 @@ template <typename Scalar>
 constexpr Scalar Constants<Scalar>::NSMALL;
 
 template <typename Scalar>
+constexpr Scalar Constants<Scalar>::QSMALL;
+
+template <typename Scalar>
 using vector_2d_t = std::vector<std::vector<Scalar> >;
 
 template <typename Scalar>
