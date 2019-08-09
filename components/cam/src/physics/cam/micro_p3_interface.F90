@@ -831,6 +831,10 @@ end subroutine micro_p3_readnl
     real(rtype) :: lcldm(pcols,pver)      !liquid cloud fraction
     real(rtype) :: icldm(pcols,pver)      !ice cloud fraction
     real(rtype) :: tend_out(pcols,pver,49) !microphysical tendencies
+    real(rtype), dimension(pcols,pver) :: liq_ice_exchange ! sum of liq-ice phase change tendenices
+    real(rtype), dimension(pcols,pver) :: vap_liq_exchange ! sum of vap-liq phase change tendenices
+    real(rtype), dimension(pcols,pver) :: vap_ice_exchange ! sum of vap-ice phase change tendenices
+    real(rtype), dimension(pcols,pver) :: vap_cld_exchange ! sum of vap-cld phase change tendenices
 
     ! PBUF Variables
     real(rtype), pointer :: ast(:,:)      ! Relative humidity cloud fraction
@@ -1155,11 +1159,12 @@ end subroutine micro_p3_readnl
          prctot(its:ite,kts:kte),     & ! OUT autoconversion of cloud by rain
          tend_out(its:ite,kts:kte,:), & ! OUT p3 microphysics tendencies
          mu(its:ite,kts:kte),         & ! OUT Size distribution shape parameter for radiation
-         lambdac(its:ite,kts:kte),     & ! OUT Size distribution slope parameter for radiation
-         liq_ice_exchange(its:ite,kts:kte),& !OUT sum of liq-ice phase change tendenices   
-         vap_liq_exchange(its:ite,kts:kte),& !OUT sun of vap-liq phase change tendencies
-         vap_ice_exchange(its:ite,kts:kte),& !OUT sum of vap-ice phase change tendencies
-         vap_cld_exchange(its:ite,kts:kte) &)!OUT sum of vap-cld phase change tendencies
+         lambdac(its:ite,kts:kte),    & ! OUT Size distribution slope parameter for radiation
+         liq_ice_exchange(its:ite,kts:kte),& ! OUT sum of liq-ice phase change tendenices   
+         vap_liq_exchange(its:ite,kts:kte),& ! OUT sun of vap-liq phase change tendencies
+         vap_ice_exchange(its:ite,kts:kte),& ! OUT sum of vap-ice phase change tendencies
+         vap_cld_exchange(its:ite,kts:kte) & ! OUT sum of vap-cld phase change tendencies
+         )
 
     !MASSAGE OUTPUT TO FIT E3SM EXPECTATIONS
     !============= 
