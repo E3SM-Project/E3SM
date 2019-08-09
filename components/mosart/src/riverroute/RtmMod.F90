@@ -255,15 +255,11 @@ contains
          inundflag, smat_option, delt_mosart, barrier_timers, &
          RoutingMethod, DLevelH2R, DLevelR, sediflag, heatflag
 
-!#ifdef INCLUDE_INUND
-if (inundflag) then
     namelist /inund_inparm / opt_inund, &
          opt_truedw, opt_calcnr, nr_max, nr_min, &
          nr_uniform, rdepth_max, rdepth_min, rwidth_max, rwidth_min, &
          rslp_assume, minl_tribrouting, opt_elevprof, npt_elevprof, &
          threshold_slpratio
-endif
-!#endif
 
     ! Preset values
     do_rtm      = .true.
