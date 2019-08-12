@@ -314,7 +314,8 @@
                                fbio_snoice,  fbio_atmice,&
                                PP_net,       ice_bio_net,&
                                snow_bio_net, grow_alg,   &
-                               grow_net,     totalChla)
+                               grow_net,     totalChla,  &
+                               nslyr)
  
       if (write_flux_diag) then
          if (aicen > c0) then

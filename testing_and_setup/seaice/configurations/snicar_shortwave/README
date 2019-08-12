@@ -6,7 +6,7 @@ The namelist and streams file under directory  …/testing_and_setup/seaice/conf
 
 3. Correct for the under-estimated direct near-infrared snow-covered sea ice albedo using parameterization by Dang et al., 2018, in prep.
 
-4. To turn on SNICAR system, set  “config_use_snicar = true” in namelist.seaice.
+4. To turn on SNICAR system, set  “config_use_snicar_ad = true” in namelist.seaice.
 
 5. 5-band inherent optical properties of snow and aerosols are stored in file “snicar_optics_5bnd_snow_and_aerosols.nc”, as shown in streams.seaice:
 <immutable_stream name="SnicarInput"

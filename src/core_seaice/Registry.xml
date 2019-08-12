@@ -1437,8 +1437,8 @@
 			possible_values="'ccsm3' or 'constant'"
 			icepack_name="albedo_type"
 		/>
-		 <nml_option name="config_use_snicar" type="logical" default_value="false" units="unitless"
-			description="If true turn on snicar 5-band snow system"
+		 <nml_option name="config_use_snicar_ad" type="logical" default_value="false" units="unitless"
+			description="If true turn on snicar_ad 5-band snow system"
 			possible_values="true or false"
 		/>
 		<nml_option name="config_visible_ice_albedo" type="real" default_value="0.78" units="unitless"
@@ -3933,7 +3933,6 @@
 		<var name="totalChlorophyll"			type="real"	dimensions="nCells Time"				name_in_code="totalChlorophyll"
 			units="mg/m^2"
 			description="Ice integrated chlorophyll concentration per cell"
-			packages="pkgTracerVerticalAlgae;pkgTracerSkeletalAlgae"
 		/>
 		<var name="totalNitrate"			type="real"	dimensions="nCells Time"				name_in_code="totalNitrate"
 			units="mmol/m^3"
