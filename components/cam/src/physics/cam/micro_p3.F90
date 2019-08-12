@@ -3469,9 +3469,6 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
    real(rtype), dimension(kts:kte) :: flux_qx
    real(rtype), dimension(kts:kte) :: flux_nx
  
-   real(rtype) :: tmp1, tmp2, dum1, dum2, inv_dum3 , rdumii, rdumjj
-   integer dumii, dumjj 
-
    k_qxtop = kbot 
    log_qxpresent = .false. 
 
@@ -3507,31 +3504,35 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
             qr_notsmall_r1: if (qr_incld(k)>qsmall) then
 
-               !Compute Vq, Vn:
-               nr(k)  = max(nr(k),nsmall)
-               call get_rain_dsd2(qr_incld(k),nr_incld(k),mu_r(k),lamr(k),     &
-                    tmp1,tmp2,rcldm(k))
-               call find_lookupTable_indices_3(dumii,dumjj,dum1,rdumii,rdumjj,inv_dum3, &
-                    mu_r(k),lamr(k))
-               nr(k) = nr_incld(k)*rcldm(k)
-               !mass-weighted fall speed:
+               call compute_rain_fall_velocity(qr_incld(k), rcldm(k), &
+                  rhofacr(k), nr(k), nr_incld(k), &
+                  mu_r(k), lamr(k), V_qr(k), V_nr(k))
 
-               dum1 = vm_table(dumii,dumjj)+(rdumii-real(dumii))*                       &
-                      (vm_table(dumii+1,dumjj)-vm_table(dumii,dumjj))       !at mu_r
-               dum2 = vm_table(dumii,dumjj+1)+(rdumii-real(dumii))*                     &
-                      (vm_table(dumii+1,dumjj+1)-vm_table(dumii,dumjj+1))   !at mu_r+1
-               V_qr(k) = dum1 + (rdumjj-real(dumjj))*(dum2-dum1)         !interpolated
-               V_qr(k) = V_qr(k)*rhofacr(k)               !corrected for air density
+               ! !Compute Vq, Vn:
+               ! nr(k)  = max(nr(k),nsmall)
+               ! call get_rain_dsd2(qr_incld(k),nr_incld(k),mu_r(k),lamr(k),     &
+               !      tmp1,tmp2,rcldm(k))
+               ! call find_lookupTable_indices_3(dumii,dumjj,dum1,rdumii,rdumjj,inv_dum3, &
+               !      mu_r(k),lamr(k))
+               ! nr(k) = nr_incld(k)*rcldm(k)
+               ! !mass-weighted fall speed:
 
-               ! number-weighted fall speed:
+               ! dum1 = vm_table(dumii,dumjj)+(rdumii-real(dumii))*                       &
+               !        (vm_table(dumii+1,dumjj)-vm_table(dumii,dumjj))       !at mu_r
+               ! dum2 = vm_table(dumii,dumjj+1)+(rdumii-real(dumii))*                     &
+               !        (vm_table(dumii+1,dumjj+1)-vm_table(dumii,dumjj+1))   !at mu_r+1
+               ! V_qr(k) = dum1 + (rdumjj-real(dumjj))*(dum2-dum1)         !interpolated
+               ! V_qr(k) = V_qr(k)*rhofacr(k)               !corrected for air density
 
-               dum1 = vn_table(dumii,dumjj)+(rdumii-real(dumii))*                       &
-                      (vn_table(dumii+1,dumjj)-vn_table(dumii,dumjj))       !at mu_r
-               dum2 = vn_table(dumii,dumjj+1)+(rdumii-real(dumii))*                     &
-                      (vn_table(dumii+1,dumjj+1)-vn_table(dumii,dumjj+1))   !at mu_r+1
+               ! ! number-weighted fall speed:
 
-               V_nr(k) = dum1+(rdumjj-real(dumjj))*(dum2-dum1)            !interpolated
-               V_nr(k) = V_nr(k)*rhofacr(k)                !corrected for air density
+               ! dum1 = vn_table(dumii,dumjj)+(rdumii-real(dumii))*                       &
+               !        (vn_table(dumii+1,dumjj)-vn_table(dumii,dumjj))       !at mu_r
+               ! dum2 = vn_table(dumii,dumjj+1)+(rdumii-real(dumii))*                     &
+               !        (vn_table(dumii+1,dumjj+1)-vn_table(dumii,dumjj+1))   !at mu_r+1
+
+               ! V_nr(k) = dum1+(rdumjj-real(dumjj))*(dum2-dum1)            !interpolated
+               ! V_nr(k) = V_nr(k)*rhofacr(k)                !corrected for air density
 
             endif qr_notsmall_r1
 
@@ -3575,6 +3576,56 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
    nr_tend(:) = ( nr(:) - nr_tend(:) ) * odt ! Rain # sedimentation tendency, measure
 
 end subroutine rain_sedimentation
+
+subroutine compute_rain_fall_velocity(qr_incld, rcldm, rhofacr, &
+   nr, nr_incld, &
+   mu_r, lamr, V_qr, V_nr)
+
+   real(rtype), intent(in) :: qr_incld
+   real(rtype), intent(in) :: rcldm 
+   real(rtype), intent(in) :: rhofacr 
+   real(rtype), intent(inout) :: nr 
+   real(rtype), intent(inout) :: nr_incld 
+   real(rtype), intent(out) :: mu_r 
+   real(rtype), intent(out) :: lamr  
+   real(rtype), intent(out) :: V_qr 
+   real(rtype), intent(out) :: V_nr 
+
+   real(rtype) :: tmp1, tmp2, dum1, dum2, inv_dum3, rdumii, rdumjj
+   integer :: dumii, dumjj
+
+   !Compute Vq, Vn:
+
+   nr  = max(nr,nsmall)
+
+   call get_rain_dsd2(qr_incld,nr_incld,mu_r,lamr,     &
+   tmp1,tmp2,rcldm)
+
+   call find_lookupTable_indices_3(dumii,dumjj,dum1,rdumii,rdumjj,inv_dum3, &
+   mu_r,lamr)
+
+   nr = nr_incld*rcldm
+
+   !mass-weighted fall speed:
+
+   dum1 = vm_table(dumii,dumjj)+(rdumii-real(dumii))*                       &
+      (vm_table(dumii+1,dumjj)-vm_table(dumii,dumjj))       !at mu_r
+   dum2 = vm_table(dumii,dumjj+1)+(rdumii-real(dumii))*                     &
+      (vm_table(dumii+1,dumjj+1)-vm_table(dumii,dumjj+1))   !at mu_r+1
+
+   V_qr = dum1 + (rdumjj-real(dumjj))*(dum2-dum1)         !interpolated
+   V_qr = V_qr*rhofacr                                    !corrected for air density
+
+   ! number-weighted fall speed:
+   dum1 = vn_table(dumii,dumjj)+(rdumii-real(dumii))*                       &
+      (vn_table(dumii+1,dumjj)-vn_table(dumii,dumjj))       !at mu_r
+   dum2 = vn_table(dumii,dumjj+1)+(rdumii-real(dumii))*                     &
+      (vn_table(dumii+1,dumjj+1)-vn_table(dumii,dumjj+1))   !at mu_r+1
+
+   V_nr = dum1+(rdumjj-real(dumjj))*(dum2-dum1)            !interpolated
+   V_nr = V_nr*rhofacr               !corrected for air density
+
+end subroutine compute_rain_fall_velocity
 
 subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
    rho,inv_rho,rhofaci,icldm,inv_dzq,dt,odt,  & 
