@@ -9,6 +9,7 @@ from viz.streamfunction import compute_barotropic_streamfunction, \
 from viz.plot import MoviePlotter, TimeSeriesPlotter
 
 from viz.misomip import compute_misomip_interp_coeffs, interp_misomip
+from viz.haney import compute_haney_number
 
 
 def main():
@@ -21,6 +22,13 @@ def main():
     parser.add_argument("--misomip", dest="misomip", action="store_true",
                         help="Indicates that standard MISOMIP output files "
                              "should be created")
+    parser.add_argument("--streamfunctions", dest="streamfunctions", 
+                        action="store_true",
+                        help="Indicates that the barotropic and overturning "
+                             "streamfunctions should be computed and plotted")
+    parser.add_argument("--haney", dest="haney", action="store_true",
+                        help="Indicates that the Haney number rx1 should be "
+                             "computed and plotted")
     args = parser.parse_args()
 
     folder = args.folder
@@ -31,9 +39,13 @@ def main():
     ds = xarray.open_mfdataset('{}/timeSeriesStatsMonthly*.nc'.format(folder),
                                concat_dim='Time')
 
-    compute_barotropic_streamfunction(dsMesh, ds, folder)
+    if args.streamfunctions:
+        compute_barotropic_streamfunction(dsMesh, ds, folder)
 
-    compute_overturning_streamfunction(dsMesh, ds, folder, dx=2e3, dz=5.)
+        compute_overturning_streamfunction(dsMesh, ds, folder, dx=2e3, dz=5.)
+
+    if args.haney:
+        compute_haney_number(dsMesh, ds, folder)
 
     tsPlotter = TimeSeriesPlotter(inFolder=folder,
                                   outFolder='{}/plots'.format(folder),
@@ -48,8 +60,13 @@ def main():
                            outFolder='{}/plots'.format(folder),
                            expt=expt)
 
-    mPlotter.plot_barotropic_streamfunction()
-    mPlotter.plot_overturning_streamfunction()
+    if args.streamfunctions:
+        mPlotter.plot_barotropic_streamfunction()
+        mPlotter.plot_overturning_streamfunction()
+
+    if args.haney:
+        mPlotter.plot_haney_number()
+
     mPlotter.plot_melt_rates()
     mPlotter.plot_ice_shelf_boundary_variables()
     mPlotter.plot_temperature()

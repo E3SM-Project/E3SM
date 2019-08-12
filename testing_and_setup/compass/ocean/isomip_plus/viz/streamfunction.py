@@ -499,7 +499,7 @@ def _horizontally_bin_overturning_streamfunction(ds, dsMesh, x, osfFileName,
     for xIndex in range(nx):
         fileName = cacheFileName.replace('.nc', '_{}.nc'.format(xIndex))
         fileNames.append(fileName)
-        if os.path.exists(fileName):
+        if file_complete(ds, fileName):
             continue
 
         cellMask = dsMesh.xCell >= x[xIndex]
