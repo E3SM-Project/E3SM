@@ -614,18 +614,7 @@ contains
 
              call MPAS_pool_get_array(tracers, "snowGrainRadius", snowGrainRadius, 1)
 
-             snowGrainRadius(:,:,:) = 0.0_RKIND
-
-             do iCell = 1, nCellsSolve
-
-                do iCategory = 1, nCategories
-                   if (snowVolumeCategory(1,iCategory,iCell) .gt. 0.0_RKIND) then
-                      do iSnowLayer = 1, nSnowLayers
-                         snowGrainRadius(iSnowLayer,iCategory,iCell) = config_fallen_snow_radius
-                      enddo
-                   endif
-                enddo
-             enddo
+             snowGrainRadius(:,:,:) = config_fallen_snow_radius
 
           endif ! config_do_restart_snow_grain_radius
        endif ! config_use_snow_grain_radius
@@ -721,11 +710,11 @@ contains
 
     logical, pointer :: &
          config_do_restart, &
-         config_use_snicar
+         config_use_snicar_ad
 
     call MPAS_pool_get_config(domain % configs, "config_shortwave_type", config_shortwave_type)
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
-    call MPAS_pool_get_config(domain % configs, "config_use_snicar", config_use_snicar)
+    call MPAS_pool_get_config(domain % configs, "config_use_snicar_ad", config_use_snicar_ad)
 
     if (trim(config_shortwave_type) == "dEdd") then
 
@@ -2534,10 +2523,6 @@ contains
           abortFlag = .false.
           abortMessage = ""
 
-          ! set the category tracer array
-          call set_cice_tracer_array_category(block, ciceTracerObject, &
-                 tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
-
           call colpkg_clear_warnings()
           call colpkg_step_snow (&
                config_dt, &
@@ -2580,10 +2565,6 @@ contains
                abortMessage)
 
           call column_write_warnings(abortFlag)
-
-          ! get category tracer array
-          call get_cice_tracer_array_category(block, ciceTracerObject, &
-                 tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
        enddo !iCell
 
@@ -9577,7 +9558,7 @@ contains
          config_use_skeletal_biochemistry, &
          config_use_vertical_zsalinity, &
          config_use_modal_aerosols, &
-         config_use_snicar, &
+         config_use_snicar_ad, &
          config_use_snow_liquid_ponds
 
     real(kind=RKIND), pointer :: &
@@ -9752,7 +9733,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_slow_mode_critical_porosity", config_slow_mode_critical_porosity)
     call MPAS_pool_get_config(domain % configs, "config_congelation_ice_porosity", config_congelation_ice_porosity)
     call MPAS_pool_get_config(domain % configs, "config_shortwave_type", config_shortwave_type)
-    call MPAS_pool_get_config(domain % configs, "config_use_snicar", config_use_snicar)
+    call MPAS_pool_get_config(domain % configs, "config_use_snicar_ad", config_use_snicar_ad)
     call MPAS_pool_get_config(domain % configs, "config_albedo_type", config_albedo_type)
     call MPAS_pool_get_config(domain % configs, "config_visible_ice_albedo", config_visible_ice_albedo)
     call MPAS_pool_get_config(domain % configs, "config_infrared_ice_albedo", config_infrared_ice_albedo)
@@ -9952,7 +9933,7 @@ contains
          config_slow_mode_critical_porosity, &
          config_congelation_ice_porosity, &
          config_shortwave_type, &
-         config_use_snicar, &
+         config_use_snicar_ad, &
          config_albedo_type, &
          config_visible_ice_albedo, &
          config_infrared_ice_albedo, &
@@ -13342,40 +13323,54 @@ contains
     logical, pointer :: &
          config_use_column_biogeochemistry, &
          config_use_column_shortwave, &
-         config_use_column_package
+         config_use_column_package, &
+         config_use_vertical_biochemistry, &
+         config_use_vertical_zsalinity
 
     call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_package", config_use_column_package)
 
-    if (config_use_column_package) then
+     if (config_use_column_package) then
 
        block => domain % blocklist
        do while (associated(block))
 
           ! biogeochemistry
           call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+          call MPAS_pool_get_config(block % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
+          call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
 
           if (config_use_column_biogeochemistry) then
 
              call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistryPool)
 
-             call MPAS_pool_get_array(biogeochemistryPool, "primaryProduction", primaryProduction)
-             call MPAS_pool_get_array(biogeochemistryPool, "totalChlorophyll", totalChlorophyll)
-             call MPAS_pool_get_array(biogeochemistryPool, "netSpecificAlgalGrowthRate", netSpecificAlgalGrowthRate)
+             if (config_use_vertical_biochemistry) then
+                call MPAS_pool_get_array(biogeochemistryPool, "primaryProduction", primaryProduction)
+                call MPAS_pool_get_array(biogeochemistryPool, "totalChlorophyll", totalChlorophyll)
+                call MPAS_pool_get_array(biogeochemistryPool, "netSpecificAlgalGrowthRate", netSpecificAlgalGrowthRate)
+
+                primaryProduction          = 0.0_RKIND
+                totalChlorophyll           = 0.0_RKIND
+                netSpecificAlgalGrowthRate = 0.0_RKIND
+
+             end if
+
+             if (config_use_vertical_zsalinity) then
+                call MPAS_pool_get_array(biogeochemistryPool, "zSalinityFlux", zSalinityFlux)
+                call MPAS_pool_get_array(biogeochemistryPool, "zSalinityGDFlux", zSalinityGDFlux)
+
+                zSalinityFlux              = 0.0_RKIND
+                zSalinityGDFlux            = 0.0_RKIND
+
+             end if
+
              call MPAS_pool_get_array(biogeochemistryPool, "netBrineHeight", netBrineHeight)
-             call MPAS_pool_get_array(biogeochemistryPool, "zSalinityFlux", zSalinityFlux)
-             call MPAS_pool_get_array(biogeochemistryPool, "zSalinityGDFlux", zSalinityGDFlux)
              call MPAS_pool_get_array(biogeochemistryPool, "oceanBioFluxes", oceanBioFluxes)
              call MPAS_pool_get_array(biogeochemistryPool, "atmosIceBioFluxes", atmosIceBioFluxes)
              call MPAS_pool_get_array(biogeochemistryPool, "snowIceBioFluxes", snowIceBioFluxes)
              call MPAS_pool_get_array(biogeochemistryPool, "totalVerticalBiologyIce", totalVerticalBiologyIce)
              call MPAS_pool_get_array(biogeochemistryPool, "totalVerticalBiologySnow", totalVerticalBiologySnow)
 
-             primaryProduction          = 0.0_RKIND
-             totalChlorophyll           = 0.0_RKIND
-             netSpecificAlgalGrowthRate = 0.0_RKIND
              netBrineHeight             = 0.0_RKIND
-             zSalinityFlux              = 0.0_RKIND
-             zSalinityGDFlux            = 0.0_RKIND
              oceanBioFluxes             = 0.0_RKIND
              atmosIceBioFluxes          = 0.0_RKIND
              snowIceBioFluxes           = 0.0_RKIND

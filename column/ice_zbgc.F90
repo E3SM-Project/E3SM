@@ -538,7 +538,8 @@
                                zbgc_snow,    zbgc_atm,   &
                                PP_net,       ice_bio_net,&
                                snow_bio_net, grow_alg,   &
-                               grow_net,     totalChla)
+                               grow_net,     totalChla,  &
+                               nslyr)
  
       use ice_constants_colpkg, only: c1, c0, p5, secday, puny
       use ice_colpkg_shared, only: solve_zbgc, max_nbtrcr, hs_ssl, R_C2N, &
@@ -550,6 +551,7 @@
 
       integer (kind=int_kind), intent(in) :: &
          nblyr, &
+         nslyr, &       ! number of snow layers
          n_algae, &     !
          ntrcr, &       ! number of tracers
          nbtrcr         ! number of biology tracer tracers
@@ -625,7 +627,7 @@
       !-----------------------------------------------------------------
       ! Merge fluxes
       !-----------------------------------------------------------------
-         dvssl  = min(p5*vsnon, hs_ssl*aicen) ! snow surface layer
+         dvssl  = min(p5*vsnon/real(nslyr,kind=dbl_kind), hs_ssl*aicen) ! snow surface layer
          dvint  = vsnon - dvssl               ! snow interior
          snow_bio_net(mm) = snow_bio_net(mm) &
                           + trcrn(bio_index(mm)+nblyr+1)*dvssl &
