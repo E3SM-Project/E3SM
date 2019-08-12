@@ -1803,7 +1803,7 @@ contains
                                    TRunoff%wt_al(nr,nt) + TRunoff%wr_al(nr,nt))
 		  else
              rtmCTL%volr(nr,nt) = (TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + &
-                                   TRunoff%wh(nr,nt)*rtmCTL%area(nr)
+                                   TRunoff%wh(nr,nt)*rtmCTL%area(nr))
           end if		  
        enddo
        enddo
@@ -2522,7 +2522,7 @@ endif
                                 TRunoff%wt_al(nr,nt) + TRunoff%wr_al(nr,nt))
        else
           rtmCTL%volr(nr,nt) = (TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + &
-                                TRunoff%wh(nr,nt)*rtmCTL%area(nr) * TUnit%frac(nr)
+                                TRunoff%wh(nr,nt)*rtmCTL%area(nr) * TUnit%frac(nr))
 	   end if                  
 !#ifdef INCLUDE_INUND
        if (inundflag .and. Tctl%OPT_inund == 1 .and. nt == 1) then
