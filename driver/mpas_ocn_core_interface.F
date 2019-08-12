@@ -124,6 +124,7 @@ module ocn_core_interface
       logical, pointer :: variableShortwaveActive
       logical, pointer :: gmActive
       logical, pointer :: timeVaryingAtmosphericForcingPKGActive
+      logical, pointer :: timeVaryingLandIceForcingPKGActive
 
       type (mpas_pool_iterator_type) :: pkgItr
       logical, pointer :: packageActive
@@ -149,6 +150,7 @@ module ocn_core_interface
       logical, pointer :: config_use_tidal_forcing
       logical, pointer :: config_use_standardGM
       logical, pointer :: config_use_time_varying_atmospheric_forcing
+      logical, pointer :: config_use_time_varying_land_ice_forcing
 
       character (len=StrKIND), pointer :: config_time_integrator
       character (len=StrKIND), pointer :: config_ocean_run_mode
@@ -310,6 +312,12 @@ module ocn_core_interface
                                 config_use_time_varying_atmospheric_forcing)
       if (config_use_time_varying_atmospheric_forcing) then
          timeVaryingAtmosphericForcingPKGActive = .true.
+      endif
+
+      call mpas_pool_get_package(packagePool, 'timeVaryingLandIceForcingPKGActive', timeVaryingLandIceForcingPKGActive)
+      call mpas_pool_get_config(configPool, 'config_use_time_varying_land_ice_forcing', config_use_time_varying_land_ice_forcing)
+      if (config_use_time_varying_land_ice_forcing) then
+         timeVaryingLandIceForcingPKGActive = .true.
       endif
 
       !

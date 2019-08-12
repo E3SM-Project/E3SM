@@ -798,10 +798,12 @@ module ocn_time_integration_rk4
 
    end subroutine ocn_time_integrator_rk4!}}}
 
-   subroutine ocn_time_integrator_rk4_compute_vel_tends(block, dt, rkWeight, err)!{{{
+   subroutine ocn_time_integrator_rk4_compute_vel_tends(block, dt, &
+     rkSubstepWeight, err)!{{{
+
       type (block_type), intent(in) :: block
       real (kind=RKIND), intent(in) :: dt
-      real (kind=RKIND), intent(in) :: rkWeight
+      real (kind=RKIND), intent(in) :: rkSubstepWeight
       integer, intent(out) :: err
 
       type (mpas_pool_type), pointer :: meshPool, verticalMeshPool
@@ -847,12 +849,12 @@ module ocn_time_integration_rk4
       if (associated(highFreqThicknessProvis)) then
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, scratchPool, &
             layerThicknessCur,layerThicknessEdge, normalVelocityProvis, &
-            sshCur, rkWeight, &
+            sshCur, rkSubstepWeight, &
             vertAleTransportTop, err, highFreqThicknessProvis)
       else
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, scratchPool, &
             layerThicknessCur,layerThicknessEdge, normalVelocityProvis, &
-            sshCur, rkWeight, &
+            sshCur, rkSubstepWeight, &
             vertAleTransportTop, err)
       endif
       call mpas_threading_barrier()
@@ -862,10 +864,10 @@ module ocn_time_integration_rk4
 
    end subroutine ocn_time_integrator_rk4_compute_vel_tends!}}}
 
-   subroutine ocn_time_integrator_rk4_compute_thick_tends(block, dt, rkWeight, err)!{{{
+   subroutine ocn_time_integrator_rk4_compute_thick_tends(block, dt, rkSubstepWeight, err)!{{{
       type (block_type), intent(in) :: block
       real (kind=RKIND), intent(in) :: dt
-      real (kind=RKIND), intent(in) :: rkWeight
+      real (kind=RKIND), intent(in) :: rkSubstepWeight
       integer, intent(out) :: err
 
       type (mpas_pool_type), pointer :: meshPool, verticalMeshPool
@@ -911,12 +913,12 @@ module ocn_time_integration_rk4
       if (associated(highFreqThicknessProvis)) then
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, scratchPool, &
             layerThicknessCur, layerThicknessEdge, normalTransportVelocity, &
-            sshCur, rkWeight, &
+            sshCur, rkSubstepWeight, &
             vertAleTransportTop, err, highFreqThicknessProvis)
       else
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, scratchPool, &
             layerThicknessCur, layerThicknessEdge, normalTransportVelocity, &
-            sshCur, rkWeight, &
+            sshCur, rkSubstepWeight, &
             vertAleTransportTop, err)
       endif
       call mpas_threading_barrier()
@@ -927,10 +929,10 @@ module ocn_time_integration_rk4
 
    end subroutine ocn_time_integrator_rk4_compute_thick_tends!}}}
 
-   subroutine ocn_time_integrator_rk4_compute_tracer_tends(block, dt, rkWeight, err)!{{{
+   subroutine ocn_time_integrator_rk4_compute_tracer_tends(block, dt, rkSubstepWeight, err)!{{{
       type (block_type), intent(in) :: block
       real (kind=RKIND), intent(in) :: dt
-      real (kind=RKIND), intent(in) :: rkWeight
+      real (kind=RKIND), intent(in) :: rkSubstepWeight
       integer, intent(out) :: err
 
       type (mpas_pool_type), pointer :: meshPool, verticalMeshPool
@@ -977,12 +979,12 @@ module ocn_time_integration_rk4
       if (associated(highFreqThicknessProvis)) then
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, scratchPool, &
             layerThicknessCur, layerThicknessEdge, normalTransportVelocity, &
-            sshCur, rkWeight, &
+            sshCur, rkSubstepWeight, &
             vertAleTransportTop, err, highFreqThicknessProvis)
       else
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, scratchPool, &
             layerThicknessCur, layerThicknessEdge, normalTransportVelocity, &
-            sshCur, rkWeight, &
+            sshCur, rkSubstepWeight, &
             vertAleTransportTop, err)
       endif
       call mpas_threading_barrier()
@@ -1087,10 +1089,10 @@ module ocn_time_integration_rk4
 
    end subroutine ocn_time_integrator_rk4_compute_tends!}}}
 
-   subroutine ocn_time_integrator_rk4_diagnostic_update(block, dt, rkWeight, err)!{{{
+   subroutine ocn_time_integrator_rk4_diagnostic_update(block, dt, rkSubstepWeight, err)!{{{
       type (block_type), intent(in) :: block
       real (kind=RKIND), intent(in) :: dt
-      real (kind=RKIND), intent(in) :: rkWeight
+      real (kind=RKIND), intent(in) :: rkSubstepWeight
       integer, intent(out) :: err
 
       logical, pointer :: config_prescribe_velocity, config_prescribe_thickness, config_use_standardGM
@@ -1163,7 +1165,7 @@ module ocn_time_integration_rk4
       !$omp do schedule(runtime) private(k)
       do iEdge = 1, nEdges
          do k = 1, maxLevelEdgeTop(iEdge)
-            normalVelocityProvis(k, iEdge) = normalVelocityCur(k, iEdge) + rkWeight &
+            normalVelocityProvis(k, iEdge) = normalVelocityCur(k, iEdge) + rkSubstepWeight &
                                            * normalVelocityTend(k, iEdge)
             normalVelocityProvis(k, iEdge) = normalVelocityProvis(k, iEdge) * (1.0_RKIND - wettingVelocity(k, iEdge))
          end do
@@ -1174,7 +1176,7 @@ module ocn_time_integration_rk4
       !$omp do schedule(runtime) private(k)
       do iCell = 1, nCells
          do k = 1, maxLevelCell(iCell)
-            layerThicknessProvis(k, iCell) = layerThicknessCur(k, iCell) + rkWeight &
+            layerThicknessProvis(k, iCell) = layerThicknessCur(k, iCell) + rkSubstepWeight &
                                            * layerThicknessTend(k, iCell)
          end do
       end do
@@ -1197,7 +1199,7 @@ module ocn_time_integration_rk4
                   do iCell = 1, nCells
                      do k = 1, maxLevelCell(iCell)
                         tracersGroupProvis(:, k, iCell) = ( layerThicknessCur(k, iCell) * tracersGroupCur(:, k, iCell)  &
-                                                 + rkWeight * tracersGroupTend(:, k, iCell) &
+                                                 + rkSubstepWeight * tracersGroupTend(:, k, iCell) &
                                                    ) / layerThicknessProvis(k, iCell)
                      end do
 
@@ -1211,7 +1213,7 @@ module ocn_time_integration_rk4
       if (associated(lowFreqDivergenceCur)) then
          !$omp do schedule(runtime)
          do iCell = 1, nCells
-            lowFreqDivergenceProvis(:, iCell) = lowFreqDivergenceCur(:, iCell) + rkWeight &
+            lowFreqDivergenceProvis(:, iCell) = lowFreqDivergenceCur(:, iCell) + rkSubstepWeight &
                                               * lowFreqDivergenceTend(:, iCell)
          end do
          !$omp end do

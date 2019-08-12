@@ -239,7 +239,19 @@
 	<nml_record name="ALE_vertical_grid" mode="forward">
 		<nml_option name="config_vert_coord_movement" type="character" default_value="uniform_stretching" units="unitless"
 					description="Determines the vertical coordinate movement type. 'uniform_stretching' distributes SSH perturbations through all vertical levels (z-star vertical coordinate); 'fixed' places them all in the top level (z-level vertical coordinate); 'user_specified' allows the input file to determine the distribution using the variable vertCoordMovementWeights (weighted z-star vertical coordinate); and 'impermeable_interfaces' makes the vertical transport between layers zero, i.e. $w^t=0$ (idealized isopycnal)."
-					possible_values="'uniform_stretching', 'fixed', 'user_specified', 'impermeable_interfaces'"
+					possible_values="'uniform_stretching', 'fixed', 'user_specified', 'impermeable_interfaces', 'tapered'"
+		/>
+		<nml_option name="config_ALE_thickness_proportionality" type="character" default_value="restingThickness_times_weights" units="unitless"
+					description="When config_vert_coord_movement='uniform_stretching' (z-star type coordinate), determines whether ALE layer thickness is proportional to the resting thickness times weights, or just the weights. The first is standard for global runs and is what is specified in Petersen et al 2015 eqns 4 and 6. The second is useful for wetting/drying test cases where resting thickness may be zero at the coastlines."
+					possible_values="'restingThickness_times_weights' or 'weights_only'"
+		/>
+		<nml_option name="config_vert_taper_weight_depth_1" type="real" default_value="250.0" units="m"
+					description="Vertical coordinate taper weight is one above this depth, linearly decreases to zero below."
+					possible_values="any positive real value, but typically 100 to 1000 m."
+		/>
+		<nml_option name="config_vert_taper_weight_depth_2" type="real" default_value="500.0" units="m"
+					description="Vertical coordinate taper weight is zero below this depth, linearly increases to one above."
+					possible_values="any positive real value, but typically 100 to 1000 m and greater than config_vert_taper_weight_depth_1."
 		/>
 		<nml_option name="config_use_min_max_thickness" type="logical" default_value=".false." units="unitless"
 					description="If true, a minimum and maximum thicknesses are enforced to prevent massless and very thick layers."
@@ -761,6 +773,30 @@
 		<nml_option name="config_time_varying_atmospheric_forcing_ramp" type="real" default_value="10.0" units="days"
 			description="Number of days to ramp up time varying forcing"
 			possible_values="Any positive real number"
+		/>
+		<nml_option name="config_use_time_varying_land_ice_forcing" type="logical" default_value=".false." units="unitless"
+			description="If true calculate input forcing fields."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_time_varying_land_ice_forcing_start_time" type="character" default_value="0001-01-01_00:00:00" units="unitless"
+			description="Forcing time to use at the simulation start time"
+			possible_values="'YYYY-MM-DD_HH:MM:SS"
+		/>
+		<nml_option name="config_time_varying_land_ice_forcing_reference_time" type="character" default_value="0001-01-01_00:00:00" units="unitless"
+			description="Reference time for the forcing"
+			possible_values="'YYYY-MM-DD_HH:MM:SS"
+		/>
+		<nml_option name="config_time_varying_land_ice_forcing_cycle_start" type="character" default_value="0001-01-01_00:00:00" units="unitless"
+			description="Start time for the forcing cycle."
+			possible_values="'YYYY-MM-DD_HH:MM:SS"
+		/>
+		<nml_option name="config_time_varying_land_ice_forcing_cycle_duration" type="character" default_value="2-00-00_00:00:00" units="unitless"
+			description="Duration of the forcing cycle."
+			possible_values="'YYYY-MM-DD_HH:MM:SS"
+		/>
+		<nml_option name="config_time_varying_land_ice_forcing_interval" type="character" default_value="01:00:00" units="unitless"
+			description="Time between forcing inputs"
+			possible_values="'YYYY-MM-DD_HH:MM:SS"
 		/>
 	</nml_record>
 	<nml_record name="coupling" mode="init;forward">
@@ -1314,6 +1350,7 @@
 	</nml_record>
 	<packages>
 		<package name="timeVaryingAtmosphericForcingPKG" description="This package includes variables required for time varying atmospheric forcing"/>
+		<package name="timeVaryingLandIceForcingPKG" description="This package includes variavles required for time varying land-ice forcing"/>
 		<package name="variableShortwave" description="This package includes variables required to compute spatially variable shortwave extinction coefficients"/>
 
 		<package name="splitTimeIntegrator" description="This package includes variables required for either the split or unsplit explicit time integrators."/>
@@ -1720,6 +1757,17 @@
 			<var name="atmosPressure"/>
 			<var name="windSpeedU"/>
 			<var name="windSpeedV"/>
+		</stream>
+		<stream name="land_ice_forcing"
+				type="input"
+				filename_template="land_ice_forcing.nc"
+				filename_interval="none"
+				input_interval="none"
+				packages="timeVaryingLandIceForcingPKG"
+				immutable="true">
+			<var name="landIcePressureForcing"/>
+			<var name="landIceFractionForcing"/>
+			<var name="landIceDraftForcing"/>
 		</stream>
 
 		<!-- Diagnostics streams for forward mode -->
@@ -2178,7 +2226,7 @@
 			 description="Reference depth of ocean for each vertical interface. Used in 'z-level' type runs."
 		/>
 		<var name="vertCoordMovementWeights" type="real" dimensions="nVertLevels" units="unitless"
-			 description="Weights used for distribution of sea surface heigh purturbations through multiple vertical levels."
+			 description="Weights used for distribution of sea surface height perturbations through multiple vertical levels."
 		/>
 		<var name="boundaryEdge" type="integer" dimensions="nVertLevels nEdges" units="unitless"
 			 description="Mask for determining boundary edges. A boundary edge has only one active ocean cell neighboring it."
@@ -2190,13 +2238,13 @@
 			 description="Mask for determining boundary cells. A boundary cell has at least one inactive cell neighboring it."
 		/>
 		<var name="edgeMask" type="integer" dimensions="nVertLevels nEdges" units="unitless"
-			 description="Mask on edges that determines if computations should be done on edge."
+			 description="Mask on edges that determines if computations should be done on edges."
 		/>
 		<var name="vertexMask" type="integer" dimensions="nVertLevels nVertices" units="unitless"
-			 description="Mask on vertices that determines if computations should be done on vertice."
+			 description="Mask on vertices that determines if computations should be done on vertices."
 		/>
 		<var name="cellMask" type="integer" dimensions="nVertLevels nCells" units="unitless"
-			 description="Mask on cells that determines if computations should be done on cell."
+			 description="Mask on cells that determines if computations should be done on cells."
 		/>
 		<var name="edgeSignOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
 			 description="Sign of edge contributions to a cell for each edge on cell. Used for bit-reproducible loops. Represents directionality of vector connecting cells."
@@ -3136,6 +3184,18 @@
 		<var name="atmosPressure" type="real" dimensions="nCells Time" units="Pa"
 			description="Pressure at the sea surface due to the atmosphere."
 			packages="timeVaryingAtmosphericForcingPKG"
+		/>
+		<var name="landIceFractionForcing" type="real" dimensions="nCells Time" units="unitless"
+			description="The fraction of each cell covered by land ice"
+			packages="timeVaryingLandIceForcingPKG"
+		/>
+		<var name="landIcePressureForcing" type="real" dimensions="nCells Time" units="Pa"
+			description="Pressure defined at the sea surface due to land ice."
+			packages="timeVaryingLandIceForcingPKG"
+		/>
+		<var name="landIceDraftForcing" type="real" dimensions="nCells Time" units="m"
+			description="The elevation of the interface between land ice and the ocean."
+			packages="timeVaryingLandIceForcingPKG"
 		/>
 	</var_struct>
 	<var_struct name="scratch" time_levs="1">
