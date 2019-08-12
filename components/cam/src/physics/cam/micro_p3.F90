@@ -342,7 +342,8 @@ contains
        pres,dzq,npccn,naai,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
        diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc, &
        pdel,exner,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm,  &
-       pratot,prctot,p3_tend_out,mu_c,lamc)
+       pratot,prctot,p3_tend_out,mu_c,lamc,liq_ice_exchange,vap_liq_exchange, &
+       vap_ice_exchange,vap_cld_exchange)
 
     !----------------------------------------------------------------------------------------!
     !                                                                                        !
@@ -409,6 +410,10 @@ contains
     real(rtype), intent(out),   dimension(its:ite,kts:kte+1)    :: sflx       ! grid-box average ice/snow flux (kg m^-2 s^-1) pverp
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: pratot     ! accretion of cloud by rain
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: prctot     ! autoconversion of cloud to rain
+    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: liq_ice_exchange ! sum of liq-ice phase change tendenices
+    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: vap_liq_exchange ! sum of vap-liq phase change tendenices
+    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: vap_ice_exchange ! sum of vap-ice phase change tendenices
+    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: vap_cld_exchange ! sum of vap-cld phase change tendenices
     ! INPUT needed for PBUF variables used by other parameterizations
 
     real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: icldm, lcldm, rcldm ! Ice, Liquid and Rain cloud fraction
@@ -1007,7 +1012,10 @@ contains
           prain(i,k)   = ( qcacc + qcaut + qcshd + qccol )
           nevapr(i,k)  = qisub + qrevp
           prer_evap(i,k) = qrevp
-
+          vap_ice_exchange(i,k) = qidep - qisub + qinuc
+          vap_liq_exchange(i,k) = -qrevp + qcnuc       
+          liq_ice_exchange(i,k) = qcheti + qrheti - qimlt + qiberg + qccol + qrcol   
+          vap_cld_exchange(i,k) = qcnuc 
           ! clipping for small hydrometeor values
           if (qc(i,k).lt.qsmall) then
              qv(i,k) = qv(i,k) + qc(i,k)
@@ -1148,8 +1156,10 @@ contains
 
        !.......................................
        ! homogeneous freezing of cloud and rain
+
        call homogeneous_freezing(kts,kte,kbot,ktop,kdir,t(i,:),exner(i,:),xlf(i,:),  & 
          qc(i,:),nc(i,:),qr(i,:),nr(i,:),qitot(i,:),nitot(i,:),qirim(i,:),birim(i,:),th(i,:)) 
+
 
        !...................................................
        ! final checks to ensure consistency of mass/number
@@ -1165,6 +1175,8 @@ contains
           else
              qv(i,k) = qv(i,k)+qc(i,k)
              th(i,k) = th(i,k)-exner(i,k)*qc(i,k)*xxlv(i,k)*inv_cp
+             vap_liq_exchange(i,k) = vap_liq_exchange(i,k) - qc(i,k)
+             vap_cld_exchange(i,k) = vap_cld_exchange(i,k) - qc(i,k)
              qc(i,k) = 0._rtype
              nc(i,k) = 0._rtype
           endif
@@ -1182,6 +1194,7 @@ contains
           else
              qv(i,k) = qv(i,k)+qr(i,k)
              th(i,k) = th(i,k)-exner(i,k)*qr(i,k)*xxlv(i,k)*inv_cp
+             vap_liq_exchange(i,k) = vap_liq_exchange(i,k) - qr(i,k)
              qr(i,k) = 0._rtype
              nr(i,k) = 0._rtype
           endif

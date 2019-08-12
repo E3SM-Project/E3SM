@@ -24,7 +24,8 @@ extern "C" {
                  Real* nevapr, Real* prer_evap,
                  Real* rflx, Real* sflx, // 1 extra column size
                  Real* rcldm, Real* lcldm, Real* icldm, Real* pratot, Real* prctot, 
-                 Real* p3_tend_out, Real* mu_c, Real* lamc);
+                 Real* p3_tend_out, Real* mu_c, Real* lamc, Real* liq_ice_exchange,
+                 Real* vap_liq_exchange, Real* vap_ice_exchange, Real* vap_cld_exchange);
 }
 
 namespace scream {
@@ -76,6 +77,10 @@ FortranData::FortranData (Int ncol_, Int nlev_)
   p3_tend_out = Array3("Microphysics Tendencies", ncol, nlev, 49);
   mu_c = Array2("Size distribution shape paramter", ncol, nlev);
   lamc = Array2("Size distribution slope paramter", ncol, nlev);
+  liq_ice_exchange = Array2("sum of liq-ice phase change tendenices", ncol, nlev);
+  vap_liq_exchange = Array2("sum of vap-liq phase change tendenices", ncol, nlev);
+  vap_ice_exchange = Array2("sum of vap-ice phase change tendenices", ncol, nlev);
+  vap_cld_exchange = Array2("sum of vap-cld phase change tendenices", ncol, nlev);
 }
 
 FortranDataIterator::FortranDataIterator (const FortranData::Ptr& d) {
@@ -101,7 +106,8 @@ void FortranDataIterator::init (const FortranData::Ptr& dp) {
   fdipb(rflx); fdipb(sflx);
   fdipb(rcldm); fdipb(lcldm); fdipb(icldm); 
   fdipb(pratot); fdipb(prctot); fdipb(p3_tend_out);
-  fdipb(mu_c); fdipb(lamc);
+  fdipb(mu_c); fdipb(lamc); fdipb(liq_ice_exchange); fdipb(vap_liq_exchange);
+  fdipb(vap_ice_exchange); fdipb(vap_cld_exchange);
 #undef fdipb
 }
 
@@ -139,7 +145,8 @@ void p3_main (const FortranData& d) {
             d.nevapr.data(), d.prer_evap.data(),
             d.rflx.data(), d.sflx.data(),
             d.rcldm.data(), d.lcldm.data(), d.icldm.data(),d.pratot.data(),d.prctot.data(),
-            d.p3_tend_out.data(),d.mu_c.data(),d.lamc.data());
+            d.p3_tend_out.data(),d.mu_c.data(),d.lamc.data(),d.liq_ice_exchange.data(),
+            d.vap_liq_exchange.data(),d.vap_ice_exchange.data(),d.vap_cld_exchange.data());
 }
 
 int test_FortranData () {
