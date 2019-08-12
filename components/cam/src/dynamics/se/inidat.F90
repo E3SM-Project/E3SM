@@ -20,7 +20,8 @@ module inidat
   use spmd_utils,   only: iam, masterproc
   use cam_control_mod, only : ideal_phys, aqua_planet, pertlim, seed_custom, seed_clock, new_random
   use random_xgc, only: init_ranx, ranx
-  use scamMod, only: single_column, precip_off, scmlat, scmlon
+  use scamMod, only: single_column, precip_off, scmlat, scmlon, &
+     do_small_planet
   implicit none
   private
   public read_inidat
@@ -70,6 +71,7 @@ contains
     real(r8), parameter :: rad2deg = 180.0 / SHR_CONST_PI
     type(element_t), pointer :: elem(:)
     real(r8), allocatable :: tmp(:,:,:)    ! (npsp,nlev,nelemd)
+    real(r8), allocatable :: tmp_t(:,:)    ! (npsp,nlev)
     real(r8), allocatable :: qtmp(:,:)     ! (npsp*nelemd,nlev)
     logical,  allocatable :: tmpmask(:,:)  ! (npsp,nlev,nelemd) unique grid val
     integer :: ie, k, t
@@ -120,7 +122,9 @@ contains
       call endrun(trim(subname)//': mismatch in local input array size')
     end if
     allocate(tmp(npsq,nlev,nelemd))
+    allocate(tmp_t(npsq,nlev))
     tmp = 0.0_r8
+    tmp_t = 0.0_r8
     allocate(qtmp(npsq*nelemd,nlev))
 
     if (par%dynproc) then
@@ -162,6 +166,8 @@ contains
         enddo
       enddo
       
+      write(*,*) 'THESCMPOINTS ', ie_scm, i_scm, j_scm, indx_scm
+      
       if (ie_scm == 0 .or. i_scm == 0 .or. j_scm == 0 .or. indx_scm == 0) then
         call endrun('Could not find closest SCM point on input datafile')
       endif
@@ -170,8 +176,14 @@ contains
 
     fieldname = 'U'
     tmp = 0.0_r8
-    call infld(fieldname, ncid_ini, 'ncol', 'lev', 1, npsq,          &
-         1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+    if (.not. do_small_planet) then    
+      call infld(fieldname, ncid_ini, 'ncol', 'lev', 1, npsq,          &
+           1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+    else
+      tmp_t = 0.0_r8 
+      call infld(fieldname, ncid_ini, 'ncol', 'lev', 1, npsq,          &
+           1, nlev, tmp_t, found, gridname='GLL')
+    endif    
     if(.not. found) then
        call endrun('Could not find U field on input datafile')
     end if
@@ -183,6 +195,7 @@ contains
           do i = 1, np
              elem(ie)%state%v(i,j,1,:,tl) = tmp(indx,:,ie)
              if (single_column) elem(ie)%state%v(i,j,1,:,tl)=tmp(indx_scm,:,ie_scm)
+	     if (do_small_planet) elem(ie)%state%v(i,j,1,:,tl)=tmp_t(indx_scm,:)
              indx = indx + 1
           end do
        end do
@@ -190,8 +203,14 @@ contains
 
     fieldname = 'V'
     tmp = 0.0_r8
-    call infld(fieldname, ncid_ini, 'ncol', 'lev', 1, npsq,          &
-         1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+    if (.not. do_small_planet) then
+      call infld(fieldname, ncid_ini, 'ncol', 'lev', 1, npsq,          &
+           1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+    else
+      tmp_t = 0.0_r8 
+      call infld(fieldname, ncid_ini, 'ncol', 'lev', 1, npsq,          &
+           1, nlev, tmp_t, found, gridname='GLL')
+    endif     
     if(.not. found) then
        call endrun('Could not find V field on input datafile')
     end if
@@ -202,6 +221,7 @@ contains
           do i = 1, np
              elem(ie)%state%v(i,j,2,:,tl) = tmp(indx,:,ie)
              if (single_column) elem(ie)%state%v(i,j,2,:,tl) = tmp(indx_scm,:,ie_scm)
+	     if (do_small_planet) elem(ie)%state%v(i,j,1,:,tl)=tmp_t(indx_scm,:)
              indx = indx + 1
           end do
        end do
@@ -209,8 +229,14 @@ contains
 
     fieldname = 'T'
     tmp = 0.0_r8
-    call infld(fieldname, ncid_ini, 'ncol', 'lev', 1, npsq,          &
-         1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+    if (.not. do_small_planet) then 
+      call infld(fieldname, ncid_ini, 'ncol', 'lev', 1, npsq,          &
+           1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+    else
+      tmp_t = 0.0_r8 
+      call infld(fieldname, ncid_ini, 'ncol', 'lev', 1, npsq,          &
+           1, nlev, tmp_t, found, gridname='GLL')
+    endif
     if(.not. found) then
        call endrun('Could not find T field on input datafile')
     end if
@@ -229,12 +255,16 @@ contains
              !no scm in theta-l yet
 #else
              elem(ie)%state%T(i,j,:,tl) = tmp(indx,:,ie)
+
              if (single_column) elem(ie)%state%T(i,j,:,tl) = tmp(indx_scm,:,ie_scm)
+             if (do_small_planet) elem(ie)%state%T(i,j,:,tl) = tmp_t(indx_scm,:)
 #endif
              indx = indx + 1
           end do
        end do
     end do
+
+    write(*,*) 'INITTEMPERATURE ', elem(1)%state%T(1,1,nlev,tl)
 
     if (pertlim .ne. D0_0) then
       if(masterproc) then
@@ -312,9 +342,16 @@ contains
 	    
 	  else
 	    
-	    tmp = 0.0_r8
-            call infld(cnst_name(m_cnst), ncid_ini, 'ncol', 'lev',      &
-                 1, npsq, 1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+	    if (.not. do_small_planet) then
+	      tmp = 0.0_r8
+              call infld(cnst_name(m_cnst), ncid_ini, 'ncol', 'lev',      &
+                   1, npsq, 1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+	    else
+	      tmp_t = 0.0_r8 
+              call infld(cnst_name(m_cnst), ncid_ini, 'ncol', 'lev', 1, npsq,          &
+                1, nlev, tmp_t, found, gridname='GLL')
+	    endif
+	    
 	    
 	  endif
        end if
@@ -399,6 +436,7 @@ contains
              do i = 1, np
                 elem(ie)%state%Q(i,j,:,m_cnst) = tmp(indx,:,ie)
                 if (single_column) elem(ie)%state%Q(i,j,:,m_cnst) = tmp(indx_scm,:,ie_scm)
+		if (do_small_planet) elem(ie)%state%Q(i,j,:,m_cnst) = tmp_t(indx_scm,:) 
                 indx = indx + 1
              end do
           end do
