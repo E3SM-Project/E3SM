@@ -68,7 +68,7 @@ struct Baseline {
     Int nerr = 0;
     for (auto ps : params_) {
       // Run reference p3 on this set of parameters.
-      const auto d = ic::Factory::create(ps.ic);
+      const auto d = ic::Factory::create(ps.ic, ic_ncol);
       set_params(ps, *d);
       p3_init();
       p3_main(*d);
@@ -84,13 +84,13 @@ struct Baseline {
     Int nerr = 0, ne;
     for (auto ps : params_) {
       // Read the reference impl's data from the baseline file.
-      const auto d_ref = ic::Factory::create(ps.ic);
+      const auto d_ref = ic::Factory::create(ps.ic, ic_ncol);
       set_params(ps, *d_ref);
       read(fid, d_ref);
       // Now run a sequence of other impls. This includes the reference
       // implementation b/c it's likely we'll want to change it as we go.
       {
-        const auto d = ic::Factory::create(ps.ic);
+        const auto d = ic::Factory::create(ps.ic, ic_ncol);
         set_params(ps, *d);
         p3_init();
         p3_main(*d);
@@ -103,6 +103,8 @@ struct Baseline {
   }
 
 private:
+  static Int ic_ncol;
+
   struct ParamSet {
     ic::Factory::IC ic;
     Real dt;
@@ -148,6 +150,8 @@ private:
   }
 };
 
+Int Baseline::ic_ncol = 3;
+
 void expect_another_arg (int i, int argc) {
   scream_require_msg(i != argc-1, "Expected another cmd-line arg.");
 }
@@ -155,7 +159,6 @@ void expect_another_arg (int i, int argc) {
 } // namespace anon
 
 int main (int argc, char** argv) {
-
   int nerr = 0;
 
   if (argc == 1) {

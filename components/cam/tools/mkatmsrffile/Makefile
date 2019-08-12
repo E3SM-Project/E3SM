@@ -1,11 +1,36 @@
-include $(CASEROOT)/Macros.bluefire
+#-------------------------------------
+# Makefile for mkatmsrffile tool 
+#-------------------------------------
 
-LIBDIR=/ptmp/jedwards/SMS_D.f09_g16.B1850CN.bluefire.C.083815/lib
-LIBS = -L$(LIBDIR) -lcsm_share -lpio -lmct -lmpeu -L$(LIB_NETCDF) -lnetcdf -L$(LIB_PNETCDF) -lpnetcdf
-MODDIR=$(LIBDIR)/include
+#-------------------------------------
+#Instructions:
+# Load a compiler and the associated 
+# netcdf library. Update variables "FC"
+# and "NETCDF_PATH" to add the compiler
+# and path to netcdf home directory
+#-------------------------------------
 
+ifeq ($(FC),$(null))
+   FC := ifort
+endif
 
-mkatmsrffile: mkatmsrffile.F90 
-	$(FC) $(FFLAGS) -I$(MODDIR) $< -o $@  $(LIBS) $(LDFLAGS) 
+NETCDF_PATH := $(NETCDF_HOME)
 
+EXE := mkatmsrffile
+
+#---------------------------
+# USER INPUT ENDS HERE
+#---------------------------
+
+#include string
+INC = -I$(NETCDF_ROOT)/include
+LIB = -L$(NETCDF_ROOT)/lib -lnetcdf -lnetcdff
+
+FFLAGS += -O2
+
+$(EXE): mkatmsrffile.F90 
+	$(FC) $(FFLAGS) $(INC)  $< -o $@  $(LIB)
+
+clean:
+	/bin/rm $(EXE)
 

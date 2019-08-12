@@ -14,6 +14,7 @@ module element_state
 #else
   integer, public, parameter :: timelevels = 3
 #endif
+  integer, public, parameter :: diagtimes = 6
 
   ! maximum number of Newton iterations taken for an IMEX-RK stage per time-step
   integer, public               :: max_itercnt_perstep
@@ -122,11 +123,11 @@ module element_state
     !  4  t+.5   after Robert
     ! after calling TimeLevelUpdate, all times above decrease by 1.0
 
-    real (kind=real_kind) :: KEner(np,np,4)
-    real (kind=real_kind) :: PEner(np,np,4)
-    real (kind=real_kind) :: IEner(np,np,4)
-    real (kind=real_kind) :: Qvar(np,np,qsize_d,4)                    ! Q variance at half time levels
-    real (kind=real_kind) :: Qmass(np,np,qsize_d,4)                   ! Q mass at half time levels
+    real (kind=real_kind) :: KEner(np,np,diagtimes)
+    real (kind=real_kind) :: PEner(np,np,diagtimes)
+    real (kind=real_kind) :: IEner(np,np,diagtimes)
+    real (kind=real_kind) :: Qvar(np,np,qsize_d,diagtimes)                    ! Q variance at half time levels
+    real (kind=real_kind) :: Qmass(np,np,qsize_d,diagtimes)                   ! Q mass at half time levels
     real (kind=real_kind) :: Q1mass(np,np,qsize_d)                    ! Q mass at full time levels
 
   end type elem_accum_t

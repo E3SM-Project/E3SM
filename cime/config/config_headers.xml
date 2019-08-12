@@ -10,6 +10,13 @@
     </header>
   </file>
 
+  <file name="env_workflow.xml">
+    <header>
+      These variables may be changed anytime during a run, they
+      control jobs that will be submitted and their dependancies.
+    </header>
+  </file>
+
   <file name="env_case.xml">
     <header>
     These variables CANNOT BE CHANGED once a case has been created.

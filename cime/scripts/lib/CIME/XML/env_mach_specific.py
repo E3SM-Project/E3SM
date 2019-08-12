@@ -406,7 +406,7 @@ class EnvMachSpecific(EnvBase):
         cmd_nodes = self.get_optional_child("cmd_path", attributes={"lang":lang}, root=self.get_child("module_system"))
         return self.text(cmd_nodes) if cmd_nodes is not None else None
 
-    def get_mpirun(self, case, attribs, job, exe_only=False):
+    def get_mpirun(self, case, attribs, job, exe_only=False, overrides=None):
         """
         Find best match, return (executable, {arg_name : text})
         """
@@ -462,12 +462,12 @@ class EnvMachSpecific(EnvBase):
         # Now that we know the best match, compute the arguments
         if not exe_only:
             arg_node = self.get_optional_child("arguments", root=the_match)
-            if arg_node is not None:
+            if arg_node:
                 arg_nodes = self.get_children("arg", root=arg_node)
                 for arg_node in arg_nodes:
                     arg_value = transform_vars(self.text(arg_node),
                                                case=case,
-                                               subgroup=job,
+                                               subgroup=job,overrides=overrides,
                                                default=self.get(arg_node, "default"))
                     args.append(arg_value)
 

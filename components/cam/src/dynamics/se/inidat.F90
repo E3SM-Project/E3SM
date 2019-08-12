@@ -34,8 +34,7 @@ contains
     use constituents,            only: cnst_name, cnst_read_iv, qmin
     use dimensions_mod,          only: nelemd, nlev, np, npsq
     use dof_mod,                 only: putUniquePoints
-    use edge_mod,                only: edgevpack, edgevunpack, InitEdgeBuffer, FreeEdgeBuffer
-    use edgetype_mod,            only: EdgeBuffer_t
+    use edge_mod,                only : edgevpack_nlyr, edgevunpack_nlyr, edge_g
     use ncdio_atm,               only: infld
     use shr_vmath_mod,           only: shr_vmath_log
     use hycoef,                  only: ps0, hyam, hybm
@@ -69,6 +68,7 @@ contains
     type(element_t), pointer :: elem(:)
     real(r8), allocatable :: tmp(:,:,:)    ! (npsp,nlev,nelemd)
     real(r8), allocatable :: qtmp(:,:)     ! (npsp*nelemd,nlev)
+    real(r8) :: ps(np,np)     
     logical,  allocatable :: tmpmask(:,:)  ! (npsp,nlev,nelemd) unique grid val
     real(r8), allocatable :: phys_tmp(:,:) ! (nphys_sq,nelemd)
     integer :: nphys_sq                    ! # of fv physics columns per element
@@ -77,7 +77,6 @@ contains
     character(len=max_fieldname_len) :: fieldname
     logical :: found
     integer :: kptr, m_cnst
-    type(EdgeBuffer_t) :: edge
     integer :: lsize
 
     integer,parameter :: pcnst = PCNST
@@ -97,6 +96,7 @@ contains
     real(r8), parameter :: D2_0 = 2.0_r8
     real(r8) :: scmposlon, minpoint, testlat, testlon, testval 
     character*16 :: subname='READ_INIDAT'
+    integer :: nlev_tot
 
     logical :: iop_update_surface
 
@@ -493,89 +493,79 @@ contains
 
       ! once we've read all the fields we do a boundary exchange to 
       ! update the redundent columns in the dynamics
-      if(par%dynproc) then
-!for nonhydro change size of buf
-!other issues: not inited w_i, phi?
-        call initEdgeBuffer(par, edge, elem, (3+pcnst)*nlev+2)
-      end if
+      nlev_tot=(3+pcnst)*nlev+2
 
 #ifdef MODEL_THETA_L
       do ie=1,nelemd
         kptr=0
-        call edgeVpack(edge, elem(ie)%state%ps_v(:,:,tl),1,kptr,ie)
+        call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%ps_v(:,:,tl),1,kptr,nlev_tot)
         kptr=kptr+1
-        call edgeVpack(edge, elem(ie)%state%phis,1,kptr,ie)
+        call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%phis,1,kptr,nlev_tot)
         kptr=kptr+1
-        call edgeVpack(edge, elem(ie)%state%v(:,:,:,:,tl),2*nlev,kptr,ie)
+        call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%v(:,:,:,:,tl),2*nlev,kptr,nlev_tot)
         kptr=kptr+2*nlev
-        call edgeVpack(edge, elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
+        call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%FT(:,:,:),nlev,kptr,nlev_tot)
         kptr=kptr+nlev
-        call edgeVpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
+        call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,nlev_tot)
       end do
 #else
       do ie=1,nelemd
         kptr=0
-        call edgeVpack(edge, elem(ie)%state%ps_v(:,:,tl),1,kptr,ie)
+        call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%ps_v(:,:,tl),1,kptr,nlev_tot)
         kptr=kptr+1
-        call edgeVpack(edge, elem(ie)%state%phis,1,kptr,ie)
+        call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%phis,1,kptr,nlev_tot)
         kptr=kptr+1
-        call edgeVpack(edge, elem(ie)%state%v(:,:,:,:,tl),2*nlev,kptr,ie)
+        call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%v(:,:,:,:,tl),2*nlev,kptr,nlev_tot)
         kptr=kptr+2*nlev
-        call edgeVpack(edge, elem(ie)%state%T(:,:,:,tl),nlev,kptr,ie)
+        call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%T(:,:,:,tl),nlev,kptr,nlev_tot)
         kptr=kptr+nlev
-        call edgeVpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
+        call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,nlev_tot)
       end do
 #endif
       if(par%dynproc) then
-        call bndry_exchangeV(par,edge)
+        call bndry_exchangeV(par,edge_g)
       end if
 #ifdef MODEL_THETA_L
       do ie=1,nelemd
         kptr=0
-        call edgeVunpack(edge, elem(ie)%state%ps_v(:,:,tl),1,kptr,ie)
+        call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%ps_v(:,:,tl),1,kptr,nlev_tot)
         kptr=kptr+1
-        call edgeVunpack(edge, elem(ie)%state%phis,1,kptr,ie)
+        call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%phis,1,kptr,nlev_tot)
         kptr=kptr+1
-        call edgeVunpack(edge, elem(ie)%state%v(:,:,:,:,tl),2*nlev,kptr,ie)
+        call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%v(:,:,:,:,tl),2*nlev,kptr,nlev_tot)
         kptr=kptr+2*nlev
-        call edgeVunpack(edge, elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
+        call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%FT(:,:,:),nlev,kptr,nlev_tot)
         kptr=kptr+nlev
-        call edgeVunpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
+        call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,nlev_tot)
       end do
 #else
       do ie=1,nelemd
         kptr=0
-        call edgeVunpack(edge, elem(ie)%state%ps_v(:,:,tl),1,kptr,ie)
+        call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%ps_v(:,:,tl),1,kptr,nlev_tot)
         kptr=kptr+1
-        call edgeVunpack(edge, elem(ie)%state%phis,1,kptr,ie)
+        call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%phis,1,kptr,nlev_tot)
         kptr=kptr+1
-        call edgeVunpack(edge, elem(ie)%state%v(:,:,:,:,tl),2*nlev,kptr,ie)
+        call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%v(:,:,:,:,tl),2*nlev,kptr,nlev_tot)
         kptr=kptr+2*nlev
-        call edgeVunpack(edge, elem(ie)%state%T(:,:,:,tl),nlev,kptr,ie)
+        call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%T(:,:,:,tl),nlev,kptr,nlev_tot)
         kptr=kptr+nlev
-        call edgeVunpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
+        call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,nlev_tot)
       end do
 #endif    
     endif
 
-!$omp parallel do private(ie, t, m_cnst)
+!$omp parallel do private(ie, ps, t, m_cnst)
     do ie=1,nelemd
+       ps=elem(ie)%state%ps_v(:,:,tl)
 #ifdef MODEL_THETA_L
        elem(ie)%state%w_i = 0.0
-       !sets Theta and phi, not w
-       call set_thermostate(elem(ie),elem(ie)%derived%FT,hvcoord)
-       !reset FT?
+       call set_thermostate(elem(ie),ps,elem(ie)%derived%FT,hvcoord)
+       !FT used as tmp array - reset
        elem(ie)%derived%FT = 0.0
 #else
-       call set_thermostate(elem(ie),elem(ie)%state%T(:,:,:,tl),hvcoord)
+       call set_thermostate(elem(ie),ps,elem(ie)%state%T(:,:,:,tl),hvcoord)
 #endif
     end do
-
-    if (.not. single_column) then
-      if(par%dynproc) then
-        call FreeEdgeBuffer(edge)
-      end if
-    endif
 
     deallocate(tmp)
 
