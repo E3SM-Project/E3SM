@@ -1125,7 +1125,7 @@ contains
        call cloud_sedimentation(kts,kte,ktop,kbot,kdir, & 
          qc_incld(i,:),rho(i,:),inv_rho(i,:),lcldm(i,:),acn(i,:),inv_dzq(i,:), & 
          dt,odt,dnu,lammin,lammax,log_predictNc, & 
-         qc(i,:),nc(i,:),nc_incld(i,:),mu_c(i,:),nu(i,:),lamc(i,:),prt_liq(i),p3_tend_out(i,:,36),p3_tend_out(i,:,37)) 
+         qc(i,:),nc(i,:),nc_incld(i,:),mu_c(i,:),lamc(i,:),prt_liq(i),p3_tend_out(i,:,36),p3_tend_out(i,:,37)) 
 
        !------------------------------------------------------------------------------------------!
        ! Rain sedimentation:  (adaptive substepping)
@@ -3252,7 +3252,7 @@ end subroutine get_time_space_phys_variables
 subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
    qc_incld,rho,inv_rho,lcldm,acn,inv_dzq,&
    dt,odt,dnu,lammin,lammax,log_predictNc, & 
-   qc, nc, nc_incld,mu_c,nu,lamc,prt_liq,qc_tend,nc_tend) 
+   qc, nc, nc_incld,mu_c,lamc,prt_liq,qc_tend,nc_tend) 
    
    implicit none 
    integer, intent(in) :: kts, kte
@@ -3275,12 +3275,11 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
    real(rtype), intent(inout), dimension(kts:kte) :: nc 
    real(rtype), intent(inout), dimension(kts:kte) :: nc_incld 
    real(rtype), intent(inout), dimension(kts:kte) :: mu_c 
-   real(rtype), intent(inout), dimension(kts:kte) :: nu
    real(rtype), intent(inout), dimension(kts:kte) :: lamc
    real(rtype), intent(inout) :: prt_liq
    real(rtype), intent(inout), dimension(kts:kte) :: qc_tend 
    real(rtype), intent(inout), dimension(kts:kte) :: nc_tend 
-   
+
    logical :: log_qxpresent
    integer :: k 
    integer :: k_qxtop, k_qxbot, k_temp 
@@ -3290,6 +3289,7 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
    real(rtype) :: prt_accum 
    real(rtype) :: Co_max 
    real(rtype) :: dt_sub
+   real(rtype) :: nu 
    real(rtype), dimension(kts:kte) :: V_qc
    real(rtype), dimension(kts:kte) :: V_nc 
    real(rtype), dimension(kts:kte) :: flux_qx
@@ -3335,7 +3335,7 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
                qc_notsmall_c2: if (qc_incld(k)>qsmall) then
                   !-- compute Vq, Vn
-                  call get_cloud_dsd2(qc_incld(k),nc_incld(k),mu_c(k),rho(k),nu(k),dnu,   &
+                  call get_cloud_dsd2(qc_incld(k),nc_incld(k),mu_c(k),rho(k),nu,dnu,   &
                   lamc(k),lammin,lammax,tmp1,tmp2,lcldm(k))
 
                   nc(k) = nc_incld(k)*lcldm(k)
@@ -3383,7 +3383,7 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
             kloop_sedi_c1: do k = k_qxtop,k_qxbot,-kdir
                qc_notsmall_c1: if (qc_incld(k)>qsmall) then
-                  call get_cloud_dsd2(qc_incld(k),nc_incld(k),mu_c(k),rho(k),nu(k),dnu,   &
+                  call get_cloud_dsd2(qc_incld(k),nc_incld(k),mu_c(k),rho(k),nu,dnu,   &
                   lamc(k),lammin,lammax,tmp1,tmp2,lcldm(k))
                   nc(k) = nc_incld(k)*lcldm(k)
                   dum = 1._rtype/lamc(k)**bcn
@@ -3733,7 +3733,7 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
    qi_tend(:) = ( qitot(:) - qi_tend(:) ) * odt ! Ice sedimentation tendency, measure
    ni_tend(:) = ( nitot(:) - ni_tend(:) ) * odt ! Ice # sedimentation tendency, measure
 
-end subroutine
+end subroutine ice_sedimentation
 
 
 subroutine generalized_sedimentation(kts, kte, kdir, k_temp, k_qxtop, dt_sub, inv_dzq, inv_rho, flux_qx, qx) 
@@ -3825,6 +3825,6 @@ subroutine homogeneous_freezing(kts,kte,kbot,ktop,kdir,t,exner,xlf,    &
 
    enddo k_loop_fz
 
-end subroutine 
+end subroutine homogeneous_freezing
 
 end module micro_p3
