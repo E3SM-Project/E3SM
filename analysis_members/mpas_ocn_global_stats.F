@@ -1315,7 +1315,7 @@ contains
 
       ! landIceFreshwaterFlux
       variableIndex = variableIndex + 1
-      if (associated(landIceFreshwaterFlux)) then
+      if (associated(landIceFreshwaterFlux) .and. landIceFloatingAreaSum > 0.0_RKIND) then
          averages(variableIndex) = sums(variableIndex)/(landIceFloatingAreaSum)
          rms(variableIndex) = sqrt(sumSquares(variableIndex)/(landIceFloatingAreaSum))
       else
@@ -1328,7 +1328,7 @@ contains
 
       ! accumulatedLandIceMass
       variableIndex = variableIndex + 1
-      if (associated(accumulatedLandIceMass)) then
+      if (associated(accumulatedLandIceMass) .and. landIceFloatingAreaSum > 0.0_RKIND) then
          averages(variableIndex) = sums(variableIndex)/(landIceFloatingAreaSum)
          rms(variableIndex) = sqrt(sumSquares(variableIndex)/(landIceFloatingAreaSum))
       else
@@ -1338,7 +1338,7 @@ contains
 
       ! accumulatedLandIceHeat
       variableIndex = variableIndex + 1
-      if (associated(accumulatedLandIceHeat)) then
+      if (associated(accumulatedLandIceHeat) .and. landIceFloatingAreaSum > 0.0_RKIND) then
          averages(variableIndex) = sums(variableIndex)/(landIceFloatingAreaSum)
          rms(variableIndex) = sqrt(sumSquares(variableIndex)/(landIceFloatingAreaSum))
       else
@@ -1348,7 +1348,7 @@ contains
 
       ! accumulatedLandIceFrazilMass
       variableIndex = variableIndex + 1
-      if (landIceFluxesPkgActive .and. frazilIcePkgActive) then
+      if (landIceFluxesPkgActive .and. frazilIcePkgActive .and. landIceFloatingAreaSum > 0.0_RKIND) then
          averages(variableIndex) = sums(variableIndex)/(landIceFloatingAreaSum)
          rms(variableIndex) = sqrt(sumSquares(variableIndex)/(landIceFloatingAreaSum))
       else

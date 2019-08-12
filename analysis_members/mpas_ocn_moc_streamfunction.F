@@ -441,12 +441,13 @@ contains
       !!!! END TRANSECT INITIALIZATION
 
       if (transectsInAddGroup .ne. regionsInAddGroup) then
-         call mpas_log_write ('ocn_moc_streamfunction AM: transectsInGroup count does not ' &
-            // 'match regionsInGroup count: $i, $i', intArgs = (/ transectsInAddGroup, regionsInAddGroup /) )
+         ! This writes output every step, and is too verbose.
+         !call mpas_log_write ('ocn_moc_streamfunction AM: transectsInGroup count does not ' &
+         !   // 'match regionsInGroup count: $i, $i', intArgs = (/ transectsInAddGroup, regionsInAddGroup /) )
          i = min(transectsInAddGroup, regionsInAddGroup)
          transectsInAddGroup = i
          regionsInAddGroup = i
-         call mpas_log_write ('Setting both to min: $i, $i', intArgs = (/ transectsInAddGroup, regionsInAddGroup /) )
+         !call mpas_log_write ('Setting both to min: $i, $i', intArgs = (/ transectsInAddGroup, regionsInAddGroup /) )
       end if
 
       err = 0
