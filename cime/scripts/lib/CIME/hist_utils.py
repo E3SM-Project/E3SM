@@ -429,8 +429,10 @@ def compare_baseline(case, baseline_dir=None, outfile_suffix=""):
     if get_model() == "e3sm":
         bless_log = os.path.join(basecmp_dir, BLESS_LOG_NAME)
         if os.path.exists(bless_log):
-            last_line = open(bless_log, "r").readlines()[-1]
-            comments += "\n  Most recent bless: {}".format(last_line)
+            lines = open(bless_log, "r").readlines()
+            if lines:
+                last_line = lines[-1]
+                comments += "\n  Most recent bless: {}".format(last_line)
 
     return success, comments
 
