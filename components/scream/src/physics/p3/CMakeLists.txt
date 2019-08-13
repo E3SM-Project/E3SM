@@ -18,7 +18,7 @@ list(APPEND P3_SRCS ${share_sources})
 
 # Add ETI source files if not on CUDA
 if (NOT CUDA_BUILD)
-  list(APPEND P3_SRCS p3_functions_upwind.cpp p3_functions_table3.cpp p3_functions_find.cpp)
+  list(APPEND P3_SRCS p3_functions_upwind.cpp p3_functions_table3.cpp p3_functions_find.cpp p3_functions.cpp)
 endif()
 
 set(P3_HEADERS
@@ -29,6 +29,7 @@ set(P3_HEADERS
   p3_functions_table3_impl.hpp
   p3_functions.hpp
   p3_functions_find_impl.hpp
+  p3_functions_impl.hpp
 )
 
 # link_directories(${SCREAM_TPL_LIBRARY_DIRS} ${SCREAM_LIBRARY_DIRS})

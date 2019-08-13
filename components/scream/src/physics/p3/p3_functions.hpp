@@ -221,6 +221,20 @@ struct Functions
     const ko::Unmanaged<view_1d<const Scalar> >& v, const Scalar& small,
     const Int& kbot, const Int& ktop, const Int& kdir,
     bool& log_present);
+
+  //  compute saturation vapor pressure
+  //  polysvp1 returned in units of pa.
+  //  t is input in units of k.
+  //  ice refers to saturation with respect to liquid (false) or ice (true)
+  KOKKOS_FUNCTION
+  static Spack polysvp1(const Spack& t, const bool ice);
+
+  // Calls polysvp1 to obtain the saturation vapor pressure, and then computes
+  // and returns the saturation mixing ratio, with respect to either liquid or ice,
+  // depending on value of 'ice'
+  KOKKOS_INLINE_FUNCTION
+  static Spack qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice);
+
 };
 
 template <typename ScalarT, typename DeviceT>
@@ -232,6 +246,7 @@ constexpr int Functions<ScalarT, DeviceT>::ISIZE;
 // If a GPU build, make all code available to the translation unit; otherwise,
 // ETI is used.
 #ifdef KOKKOS_ENABLE_CUDA
+# include "p3_functions_impl.hpp"
 # include "p3_functions_table3_impl.hpp"
 # include "p3_functions_upwind_impl.hpp"
 # include "p3_functions_find_impl.hpp"

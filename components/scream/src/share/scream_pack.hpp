@@ -95,8 +95,20 @@ using OnlyMaskReturn = typename std::enable_if<Mask::masktag,Return>::type;
     return m;                                                 \
   }
 
+// Implementation detail for generating binary ops for mask op bool.
+#define scream_mask_gen_bin_op_mb(op, impl)                   \
+  template <typename Mask> KOKKOS_INLINE_FUNCTION             \
+  OnlyMask<Mask> operator op (const Mask& a, const bool b) {  \
+    Mask m(false);                                            \
+    vector_simd for (int i = 0; i < Mask::n; ++i)             \
+      if (a[i] impl b) m.set(i, true);                        \
+    return m;                                                 \
+  }
+
 scream_mask_gen_bin_op_mm(&&, &&)
 scream_mask_gen_bin_op_mm(||, ||)
+scream_mask_gen_bin_op_mb(&&, &&)
+scream_mask_gen_bin_op_mb(||, ||)
 
 // Negate the mask.
 template <typename Mask> KOKKOS_INLINE_FUNCTION
@@ -428,6 +440,8 @@ OnlyPack<Pack> range (const typename Pack::scalar& start) {
 #undef scream_mask_gen_bin_op_ps
 #undef scream_mask_gen_bin_op_sp
 #undef scream_mask_gen_bin_op_all
+#undef scream_mask_gen_bin_op_mm
+#undef scream_mask_gen_bin_op_mb
 
 } // namespace pack
 

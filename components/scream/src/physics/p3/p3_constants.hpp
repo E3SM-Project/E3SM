@@ -21,6 +21,7 @@ struct Constants
   static constexpr Scalar RhoH2O      = 1000.0;
   static constexpr Scalar MWH2O       = 18.016;
   static constexpr Scalar MWdry       = 28.966;
+  static constexpr Scalar ep_2        = MWH2O/MWdry;  // ratio of molecular mass of water to the molecular mass of dry air !0.622
   static constexpr Scalar gravit      = 9.80616;
   static constexpr Scalar LatVap      = 2501000.0;
   static constexpr Scalar LatIce      = 333700.0;
@@ -39,7 +40,7 @@ struct Constants
   static constexpr Scalar NSMALL      = 1.e-16;
   static constexpr Scalar P0          = 100000.0;        // reference pressure, Pa
   static constexpr Scalar RD          = 287.15;          // gas constant for dry air, J/kg/K
-  static constexpr Scalar RHOSUR      = P0/(RD*273.15);
+  static constexpr Scalar RHOSUR      = P0/(RD*Tmelt);
   static constexpr Scalar CP          = Cpair;          // heat constant of air at constant pressure, J/kg
   static constexpr Scalar INV_CP      = 1.0/CP;
 };
@@ -49,6 +50,9 @@ constexpr Scalar Constants<Scalar>::NSMALL;
 
 template <typename Scalar>
 constexpr Scalar Constants<Scalar>::QSMALL;
+
+template <typename Scalar>
+constexpr Scalar Constants<Scalar>::Tmelt;
 
 template <typename Scalar>
 using vector_2d_t = std::vector<std::vector<Scalar> >;

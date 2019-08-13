@@ -17,7 +17,7 @@ using namespace scream;
 using namespace scream::p3;
 
 /*
- * Unit-tests for important (going to be used in scream) things.
+ * Unit-tests for p3_functions.
  */
 
 struct UnitWrap {
@@ -25,10 +25,11 @@ struct UnitWrap {
 template <typename D=DefaultDevice>
 struct UnitTest : public KokkosTypes<D> {
 
-using Device     = D;
-using MemberType = typename KokkosTypes<Device>::MemberType;
-using TeamPolicy = typename KokkosTypes<Device>::TeamPolicy;
-using ExeSpace   = typename KokkosTypes<Device>::ExeSpace;
+using Device      = D;
+using MemberType  = typename KokkosTypes<Device>::MemberType;
+using TeamPolicy  = typename KokkosTypes<Device>::TeamPolicy;
+using RangePolicy = typename KokkosTypes<Device>::RangePolicy;
+using ExeSpace    = typename KokkosTypes<Device>::ExeSpace;
 
 template <typename S>
 using view_1d = typename KokkosTypes<Device>::template view_1d<S>;
@@ -37,12 +38,26 @@ using view_2d = typename KokkosTypes<Device>::template view_2d<S>;
 template <typename S>
 using view_3d = typename KokkosTypes<Device>::template view_3d<S>;
 
+using Functions          = scream::p3::Functions<Real, Device>;
+using view_itab_table    = typename Functions::view_itab_table;
+using view_itabcol_table = typename Functions::view_itabcol_table;
+using view_1d_table      = typename Functions::view_1d_table;
+using view_2d_table      = typename Functions::view_2d_table;
+using Scalar             = typename Functions::Scalar;
+using Spack              = typename Functions::Spack;
+using Pack               = typename Functions::Pack;
+using IntSmallPack       = typename Functions::IntSmallPack;
+using Smask              = typename Functions::Smask;
+using TableIce           = typename Functions::TableIce;
+using TableRain          = typename Functions::TableRain;
+using Table3             = typename Functions::Table3;
+using C                  = typename Functions::C;
+
 //
 // Test find_top and find_bottom
 //
 static void unittest_find_top_bottom()
 {
-  using Functions = scream::p3::Functions<Real, Device>;
   const int max_threads =
 #ifdef KOKKOS_ENABLE_OPENMP
     Kokkos::OpenMP::concurrency()
@@ -142,14 +157,6 @@ static void unittest_find_top_bottom()
 // refinement, where the mesh is a 1D mesh transecting the table domain.
 
 struct TestTable3 {
-  using Functions = scream::p3::Functions<Real, Device>;
-  using view_1d_table = typename Functions::view_1d_table;
-  using view_2d_table = typename Functions::view_2d_table;
-  using Scalar = typename Functions::Scalar;
-  using Smask = typename Functions::Smask;
-  using Spack = typename Functions::Spack;
-  using Table3 = typename Functions::Table3;
-  using RangePolicy = Kokkos::RangePolicy<typename Device::execution_space>;
 
   KOKKOS_FUNCTION static Scalar calc_lamr (const Scalar& mu_r, const Scalar& alpha) {
     // Parameters for lower and upper bounds, derived above, multiplied by
@@ -281,11 +288,6 @@ struct TestTable3 {
 // the upwind routine in the first time step.
 static void unittest_upwind () {
   static const Int nfield = 2;
-
-  using Functions = scream::p3::Functions<Real, Device>;
-  using Scalar = typename Functions::Scalar;
-  using Pack = typename Functions::Pack;
-  using Spack = typename Functions::Spack;
 
   const auto eps = std::numeric_limits<Scalar>::epsilon();
 
@@ -444,15 +446,6 @@ static void unittest_upwind () {
 }
 
 struct TestTableIce {
-  using Functions          = scream::p3::Functions<Real, Device>;
-  using view_itab_table    = typename Functions::view_itab_table;
-  using view_itabcol_table = typename Functions::view_itabcol_table;
-  using Scalar             = typename Functions::Scalar;
-  using Spack              = typename Functions::Spack;
-  using IntSmallPack       = typename Functions::IntSmallPack;
-  using Smask              = typename Functions::Smask;
-  using TableIce           = typename Functions::TableIce;
-  using TableRain          = typename Functions::TableRain;
 
   static void run()
   {
@@ -476,6 +469,31 @@ struct TestTableIce {
 
       Spack proc1 = Functions::apply_table_ice(qiti_gt_small, 1, itab, ti);
       Spack proc2 = Functions::apply_table_coll(qiti_gt_small, 1, itabcol, ti, tr);
+
+      // TODO: how to test?
+      errors = 0;
+    }, nerr);
+
+    Kokkos::fence();
+    REQUIRE(nerr == 0);
+  }
+};
+
+struct TestP3Func
+{
+  static void run()
+  {
+    int nerr = 0;
+    TeamPolicy policy(util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
+    Kokkos::parallel_reduce("TestTableIce::run", policy, KOKKOS_LAMBDA(const MemberType& team, int& errors) {
+      Spack temps(C::Tmelt);
+      Spack pressures(C::Tmelt);
+
+      Spack sat_ice_p = Functions::polysvp1(temps, true);
+      Spack sat_liq_p = Functions::polysvp1(temps, false);
+
+      Spack mix_ice_r = Functions::qv_sat(temps, pressures, true);
+      Spack mix_liq_r = Functions::qv_sat(temps, pressures, false);
 
       // TODO: how to test?
       errors = 0;
@@ -520,6 +538,11 @@ TEST_CASE("p3_upwind", "[p3_functions]")
 TEST_CASE("p3_ice_tables", "[p3_functions]")
 {
   UnitWrap::UnitTest<scream::DefaultDevice>::TestTableIce::run();
+}
+
+TEST_CASE("p3_functions", "[p3_functions]")
+{
+  UnitWrap::UnitTest<scream::DefaultDevice>::TestP3Func::run();
 }
 
 } // namespace
