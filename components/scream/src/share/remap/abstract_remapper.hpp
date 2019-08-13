@@ -188,7 +188,7 @@ void AbstractRemapper<ScalarType,DeviceType>::
 set_num_fields (const int num_fields) {
   scream_require_msg(m_state==RepoState::Clean,
                      "Error! Cannot re-set the number of fields after registration has beginned.\n");
-  scream_require_msg(num_fields>0,
+  scream_require_msg(num_fields>=0,
                      "Error! Invalid number of fields specified.\n");
 
   m_num_fields = num_fields;

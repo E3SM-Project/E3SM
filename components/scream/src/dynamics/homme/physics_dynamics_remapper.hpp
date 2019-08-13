@@ -149,8 +149,8 @@ FieldLayout PhysicsDynamicsRemapper<ScalarType,DeviceType>::
 create_tgt_layout (const FieldLayout& src_layout) const {
   // This is a bit more complicated, since the position of the GP is different for 2d and 3d
 
-  scream_require_msg (get_grid_type(src_layout)==GridType::Dynamics,
-                      "Error! Input field identifier has a layout that does not seem to be of a Dynamics grid.\n");
+  scream_require_msg (get_grid_type(src_layout)==GridType::Physics,
+                      "Error! Input field identifier has a layout that does not seem to be of a Physics grid.\n");
   auto lt = get_layout_type(src_layout);
   auto tags_in = src_layout.tags();
   auto dims_in = src_layout.dims();
@@ -214,84 +214,21 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
 {
   m_phys[ifield] = src;
   m_dyn[ifield] = tgt;
+
+  // If this was the last field to be bound, we can setup the BE
+  if (this->m_all_fields_are_bound) {
+    setup_boundary_exchange ();
+  }
 }
 
 template<typename ScalarType, typename DeviceType>
 void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
 do_registration_complete ()
 {
-  using Scalar = Homme::Scalar;
-
-  auto bm   = Homme::MpiContext::singleton().get_buffers_manager(Homme::MPI_EXCHANGE);
-  auto conn = Homme::MpiContext::singleton().get_connectivity();
-  m_be = std::make_shared<Homme::BoundaryExchange>(conn,bm);
-
-  int num_2d = 0;
-  int num_3d = 0;
-  for (int i=0; i<this->m_num_registered_fields; ++i) {
-    const auto& layout = m_dyn[i].get_header().get_identifier().get_layout();
-    const auto lt = get_layout_type(layout);
-    switch (lt) {
-      case LayoutType::Scalar2D:
-        ++num_2d;
-        break;
-      case LayoutType::Vector2D:
-        num_2d += layout.dim(1);
-        break;
-      case LayoutType::Tensor2D:
-        num_2d += layout.dim(1)*layout.dim(2);
-        break;
-      case LayoutType::Scalar3D:
-        ++num_3d;
-        break;
-      case LayoutType::Vector3D:
-        num_3d += layout.dim(1);
-        break;
-      case LayoutType::Tensor3D:
-        num_3d += layout.dim(1)*layout.dim(2);
-        break;
-    default:
-      error::runtime_abort("Error! Invalid layout. This is an internal error. Please, contact developers\n");
-    }
+  // If we have all fields allocated, we can setup the BE
+  if (this->m_all_fields_are_bound) {
+    setup_boundary_exchange ();
   }
-
-  m_be->set_num_fields(0,num_2d,num_3d);
-  for (int i=0; i<this->m_num_registered_fields; ++i) {
-    const auto& layout = m_dyn[i].get_header().get_identifier().get_layout();
-    const auto& dims = layout.dims();
-    const auto lt = get_layout_type(layout);
-    switch (lt) {
-      case LayoutType::Scalar2D:
-        m_be->register_field(getHommeView<Real*[NP][NP]>(m_dyn[i]));
-        break;
-      case LayoutType::Vector2D:
-        m_be->register_field(getHommeView<Real**[NP][NP]>(m_dyn[i]),dims[1],0);
-        break;
-      case LayoutType::Tensor2D:
-        for (int idim=0; idim<dims[1]; ++idim) {
-          // Homme::BoundaryExchange only exchange one slice of the outer dim at a time,
-          // so loop on the outer dim and register each slice individually.
-          m_be->register_field(getHommeView<Real***[NP][NP]>(m_dyn[i]),idim,dims[2],0);
-        }
-        break;
-      case LayoutType::Scalar3D:
-        m_be->register_field(getHommeView<Scalar*[NP][NP][HOMMEXX_NUM_LEV]>(m_dyn[i]));
-        break;
-      case LayoutType::Vector3D:
-        m_be->register_field(getHommeView<Scalar**[NP][NP][HOMMEXX_NUM_LEV]>(m_dyn[i]),dims[1],0);
-        break;
-      case LayoutType::Tensor3D:
-        for (int idim=0; idim<dims[1]; ++idim) {
-          // Homme::BoundaryExchange only exchange one slice of the outer dim at a time,
-          // so loop on the outer dim and register each slice individually.
-          m_be->register_field(getHommeView<Scalar***[NP][NP][HOMMEXX_NUM_LEV]>(m_dyn[i]),idim,dims[2],0);
-        }
-        break;
-    default:
-      error::runtime_abort("Error! Invalid layout. This is an internal error. Please, contact developers\n");
-    }
-  }
-  m_be->registration_completed();
 }
 
 template<typename ScalarType, typename DeviceType>
@@ -374,6 +311,92 @@ do_remap_bwd() const {
     }
   }
 }
+
+template<typename ScalarType, typename DeviceType>
+void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
+setup_boundary_exchange () {
+  // TODO: should we check that the BE was not already setup? I don't see this happening, but even if it does,
+  //       there should be no side effect if we re-build it. We waste some time, sure, but should yield a correct result.
+  using Scalar = Homme::Scalar;
+
+  auto bm   = Homme::MpiContext::singleton().get_buffers_manager(Homme::MPI_EXCHANGE);
+  auto conn = Homme::MpiContext::singleton().get_connectivity();
+  m_be = std::make_shared<Homme::BoundaryExchange>(conn,bm);
+
+  int num_2d = 0;
+  int num_3d = 0;
+  for (int i=0; i<this->get_num_fields(); ++i) {
+    const auto& layout = m_dyn[i].get_header().get_identifier().get_layout();
+    const auto lt = get_layout_type(layout);
+    switch (lt) {
+      case LayoutType::Scalar2D:
+        ++num_2d;
+        break;
+      case LayoutType::Vector2D:
+        num_2d += layout.dim(1);
+        break;
+      case LayoutType::Tensor2D:
+        num_2d += layout.dim(1)*layout.dim(2);
+        break;
+      case LayoutType::Scalar3D:
+        ++num_3d;
+        break;
+      case LayoutType::Vector3D:
+        num_3d += layout.dim(1);
+        break;
+      case LayoutType::Tensor3D:
+        num_3d += layout.dim(1)*layout.dim(2);
+        break;
+    default:
+      error::runtime_abort("Error! Invalid layout. This is an internal error. Please, contact developers\n");
+    }
+  }
+
+  m_be->set_num_fields(0,num_2d,num_3d);
+
+  // If some fields are already bound, set them in the bd exchange
+  for (int i=0; i<this->get_num_fields(); ++i) {
+    const auto& layout = m_dyn[i].get_header().get_identifier().get_layout();
+    const auto& dims = layout.dims();
+    const auto lt = get_layout_type(layout);
+    switch (lt) {
+      case LayoutType::Scalar2D:
+        m_be->register_field(getHommeView<Real*[NP][NP]>(m_dyn[i]));
+        break;
+      case LayoutType::Vector2D:
+        m_be->register_field(getHommeView<Real**[NP][NP]>(m_dyn[i]),dims[1],0);
+        break;
+      case LayoutType::Tensor2D:
+        for (int idim=0; idim<dims[1]; ++idim) {
+          // Homme::BoundaryExchange only exchange one slice of the outer dim at a time,
+          // so loop on the outer dim and register each slice individually.
+          m_be->register_field(getHommeView<Real***[NP][NP]>(m_dyn[i]),idim,dims[2],0);
+        }
+        break;
+      case LayoutType::Scalar3D:
+        m_be->register_field(getHommeView<Scalar*[NP][NP][HOMMEXX_NUM_LEV]>(m_dyn[i]));
+        break;
+      case LayoutType::Vector3D:
+        m_be->register_field(getHommeView<Scalar**[NP][NP][HOMMEXX_NUM_LEV]>(m_dyn[i]),dims[1],0);
+        break;
+      case LayoutType::Tensor3D:
+        for (int idim=0; idim<dims[1]; ++idim) {
+          // Homme::BoundaryExchange only exchange one slice of the outer dim at a time,
+          // so loop on the outer dim and register each slice individually.
+          m_be->register_field(getHommeView<Scalar***[NP][NP][HOMMEXX_NUM_LEV]>(m_dyn[i]),idim,dims[2],0);
+        }
+        break;
+    default:
+      error::runtime_abort("Error! Invalid layout. This is an internal error. Please, contact developers\n");
+    }
+  }
+
+  // If all fields were already bound, then we can complete the registration in the BE structure
+  if (this->m_all_fields_are_bound) {
+    m_be->registration_completed();
+  }
+}
+
 
 template<typename ScalarType, typename DeviceType>
 void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
