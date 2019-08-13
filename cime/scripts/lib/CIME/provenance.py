@@ -360,14 +360,11 @@ def _save_postrun_timing_e3sm(case, lid):
             globs_to_copy.append("%s*OU" % job_id)
         elif mach == "anvil":
             globs_to_copy.append("%s*run*%s" % (case.get_value("CASE"), job_id))
-        elif mach == "compy":
-            globs_to_copy.append("slurm.err")
-            globs_to_copy.append("slurm.out")
         elif mach in ["mira", "theta"]:
             globs_to_copy.append("%s*error" % job_id)
             globs_to_copy.append("%s*output" % job_id)
             globs_to_copy.append("%s*cobaltlog" % job_id)
-        elif mach in ["cori-haswell", "cori-knl"]:
+        elif mach in ["compy", "cori-haswell", "cori-knl"]:
             globs_to_copy.append("%s*run*%s" % (case.get_value("CASE"), job_id))
         elif mach == "summit":
             globs_to_copy.append("e3sm.stderr.%s" % job_id)
