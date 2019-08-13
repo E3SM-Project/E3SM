@@ -474,6 +474,8 @@
 
                 <package name="observations" description="This package includes variables required for observations in Albany."/>
 
+                <package name="ismip6Melt" description="This package includes variables required for the ISMIP6 melt parameterization."/>
+
 	</packages>
 
 
@@ -568,9 +570,9 @@
                         <var name="thicknessUncertainty" packages="observations"/>
                         <var name="floatingBasalMassBalUncertainty" packages="observations"/>
                         <!-- these variables just for ISMIP6 forcing -->
-                        <var name="ismip6shelfMelt_basin"/>
-                        <var name="ismip6shelfMelt_Kbasin"/>
-                        <var name="ismip6shelfMelt_3dThermalForcing"/>
+                        <var name="ismip6shelfMelt_basin" packages="ismip6Melt"/>
+                        <var name="ismip6shelfMelt_Kbasin" packages="ismip6Melt"/>
+                        <var name="ismip6shelfMelt_3dThermalForcing" packages="ismip6Melt"/>
 		</stream>
 
 <!-- An alternate way to allow the HO variables to exist in a separate file.
@@ -998,19 +1000,21 @@ is the value of that variable from the *previous* time level!
                      units="m m^{-1}"  description="surface slope magnitude on edges" packages="SIAvelocity"
                />
                 <!-- Variables only needed by ISMIP6 calving method -->
-                <var name="ismip6shelfMelt_basin" type="integer" dimensions="nCells" units="" default_value="1"
-                     description=""
+                <var name="ismip6shelfMelt_basin" type="integer" dimensions="nCells" units="" default_value="1" 
+                     packages="ismip6Melt" description="basin number mask for ISMIP6 melt forcing"
                 />
                 <var name="ismip6shelfMelt_Kbasin" type="real" dimensions="nCells" units="m yr^{-1}" default_value="10.0"
+                     packages="ismip6Melt"
                      description="K_{basin} value prescribed for ISMIP6 ice-shelf melting method"
                 />
-                <var name="ismip6shelfMelt_TFdraft" type="real" dimensions="nCells Time" units="deg. C"
+                <var name="ismip6shelfMelt_TFdraft" type="real" dimensions="nCells Time" units="deg. C" packages="ismip6Melt"
                      description="thermal forcing at ice shelf draft used for ISMIP6 ice-shelf melting method"
                 />
-                <var name="ismip6shelfMelt_3dThermalForcing" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="deg. C" default_value="2.0"
+                <var name="ismip6shelfMelt_3dThermalForcing" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="deg. C" 
+                     default_value="2.0" packages="ismip6Melt"
                      description="thermal forcing at ice shelf draft used for ISMIP6 ice-shelf melting method"
                 />
-                <var name="ismip6shelfMelt_zOcean" type="real" dimensions="nISMIP6OceanLayers" units="m"
+                <var name="ismip6shelfMelt_zOcean" type="real" dimensions="nISMIP6OceanLayers" units="m" packages="ismip6Melt"
                      description="depth coordinate associated with ismip6shelfMelt_3dThermalForcing field"
                 />
                <!-- Scratch variables related to geometry -->
