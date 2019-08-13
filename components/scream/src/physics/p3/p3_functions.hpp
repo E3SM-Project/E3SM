@@ -70,20 +70,10 @@ struct Functions
   template <typename S>
   using view_2d = typename KT::template view_2d<S>;
 
-  using view_1d_table = typename KT::template view_1d_table<Scalar, G::MU_R_TABLE_DIM>;
-  using view_2d_table = typename KT::template view_2d_table<Scalar, G::VTABLE_DIM0, G::VTABLE_DIM1>;
-
-  using view_itab_table    = typename KT::template view<const Scalar[DENSIZE][RIMSIZE][ISIZE][TABSIZE]>;
-  using view_itabcol_table = typename KT::template view<const Scalar[DENSIZE][RIMSIZE][ISIZE][RCOLLSIZE][COLTABSIZE]>;
-
   template <typename S, int N>
   using view_1d_ptr_array = typename KT::template view_1d_ptr_carray<S, N>;
 
   using MemberType = typename KT::MemberType;
-
-  //
-  // --------- Functions ---------
-  //
 
   // -- Table3
 
@@ -101,6 +91,22 @@ struct Functions
     IntSmallPack dumj;
     Spack dum3;
   };
+
+  // lookup table values for rain shape parameter mu_r
+  using view_1d_table = typename KT::template view_1d_table<Scalar, G::MU_R_TABLE_DIM>;
+
+  // lookup table values for rain number- and mass-weighted fallspeeds and ventilation parameters
+  using view_2d_table = typename KT::template view_2d_table<Scalar, G::VTABLE_DIM0, G::VTABLE_DIM1>;
+
+  // ice lookup table values
+  using view_itab_table    = typename KT::template view<const Scalar[DENSIZE][RIMSIZE][ISIZE][TABSIZE]>;
+
+  // ice lookup table values for ice-rain collision/collection
+  using view_itabcol_table = typename KT::template view<const Scalar[DENSIZE][RIMSIZE][ISIZE][RCOLLSIZE][COLTABSIZE]>;
+
+  //
+  // --------- Functions ---------
+  //
 
   // Call from host to initialize the static table entries.
   static void init_kokkos_tables(
