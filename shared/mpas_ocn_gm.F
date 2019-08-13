@@ -108,7 +108,7 @@ contains
          gmStreamFuncTopOfCell, dDensityDzTopOfEdge, dDensityDzTopOfCell, relativeSlopeTapering, relativeSlopeTaperingCell, &
          areaCellSum, kappaGM3D
 
-      real(kind=RKIND), dimension(:), pointer   :: boundaryLayerDepth, gmBolusKappa,  cGMphaseSpeed, bottomDepth
+      real(kind=RKIND), dimension(:), pointer   :: boundaryLayerDepth, gmBolusKappa,  cGMphaseSpeed, kappaGM2D, bottomDepth
       real(kind=RKIND), dimension(:), pointer   :: areaCell, dcEdge, dvEdge, tridiagA, tridiagB, tridiagC, rightHandSide
       integer, dimension(:), pointer   :: maxLevelEdgeTop, maxLevelCell, nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell
@@ -131,6 +131,7 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
 
       call mpas_pool_get_array(diagnosticsPool, 'cGMphaseSpeed', cGMphaseSpeed)
+      call mpas_pool_get_array(diagnosticsPool, 'kappaGM2D', kappaGM2D)
       call mpas_pool_get_array(diagnosticsPool, 'kappaGM3D', kappaGM3D)
       call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfEdge', relativeSlopeTopOfEdge)
@@ -526,33 +527,35 @@ contains
       !--------------------------------------------------------------------
 
 
-      cGMphaseSpeed(:) = config_gravWaveSpeed_trunc**2
+      cGMphaseSpeed(:) = config_gravWaveSpeed_trunc
       if (config_gm_lat_variable_c2) then
           nEdges = nEdgesArray( 3 )
-          sumN2 = 0.0
-          countN2 = 0
-          !$omp do schedule(runtime) private(cell1, cell2, k, BruntVaisalaFreqTopEdge, sumN2, countN2, bottomAv)
+          !$omp do schedule(runtime) private(cell1, cell2, k, ltSum, BruntVaisalaFreqTopEdge, sumN2, countN2, bottomAv)
           do iEdge = 1, nEdges
              cell1 = cellsOnEdge(1,iEdge)
              cell2 = cellsOnEdge(2,iEdge)
-             
+           sumN2 = 0.0
+          countN2 = 0
+          ltSum = 0.0
+            
              do k=2,maxLevelEdgeTop(iEdge)
 
                 BruntVaisalaFreqTopEdge = 0.5_RKIND * (BruntVaisalaFreqTop(k,cell1) + BruntVaisalaFreqTop(k,cell2))
                 BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
                 
-                sumN2 = sumN2 + BruntVaisalaFreqTopEdge
+                sumN2 = sumN2 + BruntVaisalaFreqTopEdge*layerThicknessEdge(k,iEdge)
+                ltSum = ltSum + layerThicknessEdge(k,iEdge)
                 countN2 = countN2 +1
 
              enddo
 
-             bottomAv = 0.5_RKIND*(bottomDepth(cell1)+bottomDepth(cell2))
-
-             if(countN2 > 0) cGMphaseSpeed(iEdge) = max(config_gm_min_phase_speed ,sqrt(sumN2/countN2)*bottomAv / pii)
+             if(countN2 > 0) cGMphaseSpeed(iEdge) = max(config_gm_min_phase_speed ,sqrt(sumN2/ltSum)*ltSum / 3.141592_RKIND)
 
           enddo
           !$omp end do
 
+      else
+          cGMphaseSpeed(:) = config_gravWaveSpeed_trunc
       endif
 
       !$omp do schedule(runtime)
@@ -574,6 +577,7 @@ contains
                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
 
                maxN = max(maxN,BruntVaisalaFreqTopEdge)
+
             enddo
 
             do k=2,maxLevelEdgeTop(iEdge)
@@ -582,11 +586,38 @@ contains
 
                kappaGM3D(k,iEdge) = gmBolusKappa(iEdge)*max(config_gm_min_stratification_ratio, &
                        BruntVaisalaFreqTopEdge / (maxN + 1.0E-10_RKIND))
+               if(kappaGM3D(k,iEdge) <= 0) then
+                     print *, 'val = ',kappaGM3D(k,iEdge),k,iEdge
+                     stop
+                   endif
             enddo
          enddo
          !$omp end do
 
+         if (config_gm_kappa_lat_variable) then
+           !$omp do schedule(runtime) private(cell1, cell2, k, kappaSum, ltSum)
+            do iEdge = 1, nEdges
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
+
+               kappaSum = 0.0_RKIND
+               ltSum = 0.0_RKIND
+               do k=1,maxLevelEdgeTop(iEdge)
+                  kappaSum = kappaSum + layerThicknessEdge(k,iEdge)*kappaGM3D(k,iEdge)
+                  ltSum = ltSum + layerThicknessEdge(k,iEdge)
+               enddo
+
+               kappaGM2D(iEdge) = kappaSum / ltSum 
+               !over write the kappa 3d variable
+               kappaGM3D(:,iEdge) = kappaGM2D(iEdge)
+
+            enddo
+            !$omp end do
+         endif
+
       endif
+
+      !next do the 2d bit, just average it for now
 
       nEdges = nEdgesArray( 3 )
 
