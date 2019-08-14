@@ -23,7 +23,7 @@ subroutine initial_conds(dyn_in)
 
    use comsrf,        only: initialize_comsrf
    use radae,         only: initialize_radbuffer
-#if (defined BFB_CAM_SCAM_IOP )
+#if (defined E3SM_SCM_REPLAY )
    use history_defaults, only: initialize_iop_history
 #endif
    
@@ -44,7 +44,7 @@ subroutine initial_conds(dyn_in)
    call initialize_comsrf
    call initialize_radbuffer
 
-#if (defined BFB_CAM_SCAM_IOP )
+#if (defined E3SM_SCM_REPLAY )
    call initialize_iop_history
 #endif
 

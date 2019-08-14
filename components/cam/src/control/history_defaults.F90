@@ -22,7 +22,7 @@ module history_defaults
 
   public :: bldfld
 
-#if ( defined BFB_CAM_SCAM_IOP )
+#if ( defined E3SM_SCM_REPLAY )
   public :: initialize_iop_history
 #endif
 
@@ -60,7 +60,7 @@ CONTAINS
   end subroutine bldfld
 
 !#######################################################################
-#if ( defined BFB_CAM_SCAM_IOP  )
+#if ( defined E3SM_SCM_REPLAY  )
   subroutine initialize_iop_history()
 !
 ! !DESCRIPTION: 
