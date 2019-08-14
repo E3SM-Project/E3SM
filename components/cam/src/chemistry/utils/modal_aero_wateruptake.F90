@@ -3,7 +3,7 @@ module modal_aero_wateruptake
 !   RCE 07.04.13:  Adapted from MIRAGE2 code
 
 use shr_kind_mod,     only: r8 => shr_kind_r8
-use physconst,        only: pi, rhoh2o
+use physconst,        only: pi, rhoh2o, mwh2o, r_universal
 use ppgrid,           only: pcols, pver
 use physics_types,    only: physics_state
 use physics_buffer,   only: physics_buffer_desc, pbuf_get_index, pbuf_old_tim_idx, pbuf_get_field
@@ -526,14 +526,14 @@ end subroutine modal_aero_wateruptake_sub
 
       complex(r8) :: cx4(4,imax),cx3(3,imax)
 
-      real(r8), parameter :: eps = 1.e-4_r8
-      real(r8), parameter :: mw = 18._r8
-      real(r8), parameter :: pi = 3.14159_r8
-      real(r8), parameter :: rhow = 1._r8
+      real(r8), parameter :: eps     = 1.e-4_r8
+      real(r8), parameter :: mw      = mwh2o               ! original MAM's value: 18._r8
+!      real(r8), parameter :: pi = 3.14159_r8
+      real(r8), parameter :: rhow    = rhoh2o / 1.E3_r8    ! original MAM's value: 1._r8
       real(r8), parameter :: surften = 76._r8
-      real(r8), parameter :: tair = 273._r8
-      real(r8), parameter :: third = 1._r8/3._r8
-      real(r8), parameter :: ugascon = 8.3e7_r8
+      real(r8), parameter :: tair    = 273._r8
+      real(r8), parameter :: third   = 1._r8/3._r8
+      real(r8), parameter :: ugascon = r_universal*1.E4    ! original MAM's value: 8.3e7_r8
 
 
 !     effect of organics on surface tension is neglected
