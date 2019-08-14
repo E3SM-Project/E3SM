@@ -1,8 +1,34 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 8-14-2019
+Tag: cime5.6.21
+Answer Changes: None
+Tests: 
+Dependencies:
+
+Brief Summary:
+    - Update config_machines to update pgi software stack on cheyenne
+    - If filename is abspath use for filepath.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+80ae90470 Merge pull request #3202 from ESMCI/fischer/cheyenne_pgi
+1c3da2440 Merge pull request #3200 from jedwards4b/aquap_fix
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/config_machines.xml
+M       scripts/lib/CIME/nmlgen.py
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 7-23-2019
-Tag: cime5.6.10
+Tag: cime5.6.20
 Answer Changes: None
 Tests: scripts_regression_tests 
 Dependencies:
