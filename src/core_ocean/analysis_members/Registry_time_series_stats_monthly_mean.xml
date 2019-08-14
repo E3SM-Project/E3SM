@@ -195,5 +195,9 @@
 			<var name="velocityMeridionalSquared"/>
 			<var name="velocityZonalTimesTemperature"/>
 			<var name="velocityMeridionalTimesTemperature"/>
+                        <var name="velocityZonalTimesTemperature_GM"/>
+                        <var name="velocityMeridionalTimesTemperature_GM"/>
+                        <var name="GMBolusVelocityZonal"/>
+                        <var name="GMBolusVelocityMeridional"/>
 		</stream>
 	</streams>
