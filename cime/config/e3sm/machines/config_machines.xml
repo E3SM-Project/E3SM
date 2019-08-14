@@ -122,7 +122,8 @@
         <command name="rm">cray-petsc</command>
         <command name="rm">esmf</command>
         <command name="rm">zlib</command>
-
+        <command name="rm">craype-hugepages2M</command>
+        
         <!-- first load basic defaults, then remove/swap/load as necessary -->
         <command name="load">craype</command>
         <command name="load">PrgEnv-intel</command>
@@ -193,7 +194,7 @@
       <env name="OMP_PLACES">threads</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
 
-      <env name="PERL5LIB">/project/projectdirs/acme/perl5/lib/perl5/x86_64-linux-thread-multi</env>
+      <!--env name="PERL5LIB">/project/projectdirs/acme/perl5/lib/perl5/x86_64-linux-thread-multi</env-->
     </environment_variables>
     <environment_variables compiler="intel">
       <env name="FORT_BUFFERED">yes</env>
@@ -267,6 +268,7 @@
         <command name="rm">cray-petsc</command>
         <command name="rm">esmf</command>
         <command name="rm">zlib</command>
+        <command name="rm">craype-hugepages2M</command>
 
         <!-- first load basic defaults, then remove/swap/load as necessary -->
         <command name="load">craype</command>
@@ -350,7 +352,7 @@
       <env name="OMP_PLACES">threads</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
 
-      <env name="PERL5LIB">/project/projectdirs/acme/perl5/lib/perl5/x86_64-linux-thread-multi</env>
+      <!--env name="PERL5LIB">/project/projectdirs/acme/perl5/lib/perl5/x86_64-linux-thread-multi</env-->
     </environment_variables>
 
     <environment_variables mpilib="mpt">
