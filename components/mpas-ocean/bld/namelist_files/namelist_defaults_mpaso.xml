@@ -194,6 +194,46 @@
 <config_Rayleigh_bottom_friction>.false.</config_Rayleigh_bottom_friction>
 <config_Rayleigh_bottom_damping_coeff>1.0e-4</config_Rayleigh_bottom_damping_coeff>
 
+<!-- cvmix2 -->
+<config_use_cvmix2>.false.</config_use_cvmix2>
+<config_cvmix2_kpp_criticalBulkRichardsonNumber>0.3</config_cvmix2_kpp_criticalBulkRichardsonNumber>
+<config_use_cvmix2_constant>.true.</config_use_cvmix2_constant>
+<config_cvmix2_background_mixing_scheme>'constant'</config_cvmix2_background_mixing_scheme>
+<config_cvmix2_background_diffusion>0.0</config_cvmix2_background_diffusion>
+<config_cvmix2_background_viscosity>1.0e-4</config_cvmix2_background_viscosity>
+<config_cvmix2_computeLangmuir>.false.</config_cvmix2_computeLangmuir>
+<config_cvmix2_addLFK17_langmuir>.false.</config_cvmix2_addLFK17_langmuir>
+<config_cvmix2_useParabolicNonLocal>.false.</config_cvmix2_useParabolicNonLocal>
+<config_cvmix2_cs_value>98.954535</config_cvmix2_cs_value>
+<config_cvmix2_as_value>-28.861739</config_cvmix2_as_value>
+<config_cvmix2_cm_value>8.38241</config_cvmix2_cm_value>
+<config_cvmix2_am_value>1.25736</config_cvmix2_am_value>
+<config_cvmix2_nonLocalTermStrength>10.0</config_cvmix2_nonLocalTermStrength>
+<config_use_cvmix2_convection>.true.</config_use_cvmix2_convection>
+<config_cvmix2_convective_diffusion>1.0</config_cvmix2_convective_diffusion>
+<config_cvmix2_convective_viscosity>1.0</config_cvmix2_convective_viscosity>
+<config_cvmix2_convective_basedOnBVF>.true.</config_cvmix2_convective_basedOnBVF>
+<config_cvmix2_convective_triggerBVF>0.0</config_cvmix2_convective_triggerBVF>
+<config_use_cvmix2_shear>.true.</config_use_cvmix2_shear>
+<config_cvmix2_num_ri_smooth_loops>2</config_cvmix2_num_ri_smooth_loops>
+<config_cvmix2_use_BLD_smoothing>.true.</config_cvmix2_use_BLD_smoothing>
+<config_cvmix2_shear_mixing_scheme>'KPP'</config_cvmix2_shear_mixing_scheme>
+<config_cvmix2_shear_PP_nu_zero>0.005</config_cvmix2_shear_PP_nu_zero>
+<config_cvmix2_shear_PP_alpha>5.0</config_cvmix2_shear_PP_alpha>
+<config_cvmix2_shear_PP_exp>2.0</config_cvmix2_shear_PP_exp>
+<config_cvmix2_shear_KPP_nu_zero>0.005</config_cvmix2_shear_KPP_nu_zero>
+<config_cvmix2_shear_KPP_Ri_zero>0.7</config_cvmix2_shear_KPP_Ri_zero>
+<config_cvmix2_shear_KPP_exp>3</config_cvmix2_shear_KPP_exp>
+<config_use_cvmix2_kpp>.true.</config_use_cvmix2_kpp>
+<config_cvmix2_kpp_criticalBulkRichardsonNumber>0.25</config_cvmix2_kpp_criticalBulkRichardsonNumber>
+<config_cvmix2_kpp_matching>'SimpleShapes'</config_cvmix2_kpp_matching>
+<config_cvmix2_kpp_EkmanOBL>.false.</config_cvmix2_kpp_EkmanOBL>
+<config_cvmix2_kpp_MonObOBL>.false.</config_cvmix2_kpp_MonObOBL>
+<config_cvmix2_kpp_surface_layer_extent>0.1</config_cvmix2_kpp_surface_layer_extent>
+<config_cvmix2_kpp_minimum_OBL_under_sea_ice>10.0</config_cvmix2_kpp_minimum_OBL_under_sea_ice>
+<config_cvmix2_kpp_nonlocal_with_implicit_mix>.false.</config_cvmix2_kpp_nonlocal_with_implicit_mix>
+<config_cvmix2_kpp_minimumVt2>1.0E-10</config_cvmix2_kpp_minimumVt2>
+
 <!-- cvmix -->
 <config_use_cvmix>.true.</config_use_cvmix>
 <config_cvmix_prandtl_number>1.0</config_cvmix_prandtl_number>

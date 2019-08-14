@@ -738,6 +738,311 @@ Valid values: Any positive real value.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<!-- cvmix2 -->
+
+<entry id="config_use_cvmix2" type="logical"
+	category="cvmix2" group="cvmix2">
+If true, use the Community Vertical MIXing routines to compute vertical diffusivity and viscosity
+
+Valid values: True or False
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_kpp_criticalBulkRichardsonNumber" type="real"
+  category="cvmix2" group="cvmix2">
+Critical bulk richardson number for KPP boundary layer depths
+
+Valid values: real b/w 0.25 and 1.0
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_cvmix2_constant" type="logical"
+  category="cvmix2" group="cvmix2">
+Flag to turn on background mixing schemes
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_cvmix2_background_mixing_scheme" type="char*1024"
+	category="cvmix2" group="cvmix2">
+Option to specify the form of background mixing, only two options exist until now.
+
+Valid values: 'constant' or 'BryanLewis'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_background_diffusion" type="real"
+	category="cvmix2" group="cvmix2">
+Background vertical diffusion applied to tracer quantities
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_background_viscosity" type="real"
+	category="cvmix2" group="cvmix2">
+Background vertical viscosity applied to horizontal velocity
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_computeLangmuir" type="logical"
+  category="cvmix2" group="cvmix2">
+Flag to include langmuir mixing enhancement from Li et al 2016
+
+Valid Values: True or False
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_addLFK17_langmuir" type="logical"
+  category="cvmix2" group="cvmix2">
+Flag to add entrainment enhancement from Li and FK 2017
+
+Valid values: True or False
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_cvmix2_convection" type="logical"
+	category="cvmix2" group="cvmix2">
+If true, convective diffusivity and viscosity is computed using CVMix
+
+Valid values: True or False
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_convective_diffusion" type="real"
+	category="cvmix2" group="cvmix2">
+Convective vertical diffusion applied to tracer quantities
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_convective_viscosity" type="real"
+	category="cvmix2" group="cvmix2">
+Convective vertical viscosity applied to horizontal velocity components
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_convective_basedOnBVF" type="logical"
+	category="cvmix2" group="cvmix2">
+If true, convection is triggered based on value of config_cvmix_convective_triggerBVF
+
+Valid values: True or False
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_convective_triggerBVF" type="real"
+	category="cvmix2" group="cvmix2">
+Value of Brunt Viasala frequency squared below which convective mixing is triggered
+
+Valid values: Any real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_useParabolicNonlocal" type="logical"
+  category="cvmix2" group="cvmix2">
+Flag to use the parabolic non local shape function in the non local transport
+
+Valid values: True or False
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_cs_value" type="real"
+  category="cvmix2" group="cvmix2">
+Value of cs in the stability function for KPP
+
+Valid values: ADVANCED USERS ONLY, NOT RECOMMENDED TO CHANGE FROM DEFAULT
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_as_value" type="real"
+  category="cvmix2" group="cvmix2">
+Value of as in the stability function for KPP
+
+Valid values: ADVANCED USERS ONLY, NOT RECOMMENDED TO CHANGE FROM DEFAULT
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_cm_value" type="real"
+  category="cvmix2" group="cvmix2">
+Value of cm in the stability function for KPP
+
+Valid values: ADVANCED USERS ONLY, NOT RECOMMENDED TO CHANGE FROM DEFAULT
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_am_value" type="real"
+  category="cvmix2" group="cvmix2">
+Value of am in the stability function for KPP
+
+Valid values: ADVANCED USERS ONLY, NOT RECOMMENDED TO CHANGE FROM DEFAULT
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_nonLocalTermStrength" type="real"
+  category="cvmix2" group="cvmix2">
+Strength of non-local transport
+
+Valid values: ADVANCED USERS ONLY, NOT RECOMMENDED TO CHANGE FROM DEFAULT
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_cvmix2_shear" type="logical"
+	category="cvmix2" group="cvmix2">
+If true, shear-based mixing is computed using CVMix
+
+Valid values: True or False
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_num_ri_smooth_loops" type="integer"
+	category="cvmix2" group="cvmix2">
+Number of smoothing passes over RiTopOfCell for LMD94 shear instability mixing
+
+Valid values: any integer
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_shear_mixing_scheme" type="char*1024"
+	category="cvmix2" group="cvmix2">
+Choose between Pacanowski/Philander or Large et al. shear mixing
+
+Valid values: PP or KPP
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_background_mixing_scheme" type="char*1024"
+	category="cvmix2" group="cvmix2">
+Choose between constant background mixing or Bryan and Lewis 1978 profile 
+
+Valid values: constant or bryanLewis
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_shear_PP_nu_zero" type="real"
+	category="cvmix2" group="cvmix2">
+Numerator of Pacanowski and Philander (1981) Eq (1)
+
+Valid values: Any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_shear_PP_alpha" type="real"
+	category="cvmix2" group="cvmix2">
+Alpha values used in Pacanowski and Philander (1981) Eqs (1) and (2)
+
+Valid values: Any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_shear_PP_exp" type="real"
+	category="cvmix2" group="cvmix2">
+Exponent used in denominator of Pacanowski and Philander (1981) Eqs (1)
+
+Valid values: Any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_shear_KPP_nu_zero" type="real"
+	category="cvmix2" group="cvmix2">
+Maximum diffusivity produced by shear-generated mixing
+
+Valid values: Any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_shear_KPP_Ri_zero" type="real"
+	category="cvmix2" group="cvmix2">
+Theshold gradient Richardson number to produced enhanced diffusivities, See Large et al. (1994) Eq (28a,b,c)
+
+Valid values: Any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_shear_KPP_exp" type="real"
+	category="cvmix2" group="cvmix2">
+Exponent relating diffusivities to $Ri_g$. Referred to as $p_1$ in Large et al. (1994) Eq (28b)
+
+Valid values: Any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_cvmix2_kpp" type="logical"
+	category="cvmix2" group="cvmix2">
+If true, diffusivity and viscosity is computed using CVMix2 KPP
+
+Valid values: True or False
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_kpp_criticalBulkRichardsonNumber" type="real"
+	category="cvmix2" group="cvmix2">
+Critical bulk Richardson number used to determine bottom of ocean mixed layer
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_kpp_matching" type="char*1024"
+	category="cvmix2" group="cvmix2">
+Determines how the KPP diffusivities are matched to values at base of boundary layer
+
+Valid values: MatchBoth, MatchGradient, SimpleShapes
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_kpp_EkmanOBL" type="logical"
+	category="cvmix2" group="cvmix2">
+If true, boundary layer depth is limited by Ekman layer depth
+
+Valid values: True or False
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_kpp_MonObOBL" type="logical"
+	category="cvmix2" group="cvmix2">
+If true, boundary layer depth is limited by Monin-Obukhov layer depth
+
+Valid values: True or False
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_kpp_surface_layer_extent" type="real"
+	category="cvmix2" group="cvmix2">
+The non-dimensional extent of the surface layer, measured as fraction of boundary layer depth
+
+Valid values: Any value between 0 and 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_kpp_minimum_OBL_under_sea_ice" type="real"
+	category="cvmix2" group="cvmix2">
+The minimum allowable boundary layer depth with sea-ice is present
+
+Valid values: Any positive real value, but typically should be between 1 and 20 meters
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_kpp_nonlocal_with_implicit_mix" type="logical"
+	category="cvmix2" group="cvmix2">
+flag that moves the non-local computation and application of tendency to after main timestep loop
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix2_kpp_minimumVt2" type="real"
+  category="cvmix2" group="cvmix2">
+The minimum value of Vt^2 allowed for KPP
+
+Valid values: very small, positive reals (.le. 1e-8)
+Default: Defined in namelist_defaults.xml
+</entry>
 
 <!-- cvmix -->
 

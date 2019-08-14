@@ -677,6 +677,47 @@ add_default($nl, 'config_zMid_tanh');
 add_default($nl, 'config_zWidth_tanh');
 
 #########################
+# Namelist group: cvmix2 #
+#########################
+
+add_default($nl, 'config_use_cvmix2');
+add_default($nl, 'config_use_cvmix2_constant');
+add_default($nl, 'config_use_cvmix2_convection');
+add_default($nl, 'config_cvmix2_kpp_criticalBulkRichardsonNumber');
+add_default($nl, 'config_cvmix2_background_mixing_scheme');
+add_default($nl, 'config_cvmix2_background_diffusion');
+add_default($nl, 'config_cvmix2_background_viscosity');
+add_default($nl, 'config_cvmix2_computeLangmuir');
+add_default($nl, 'config_cvmix2_addLFK17_langmuir');
+add_default($nl, 'config_cvmix2_useParabolicNonlocal');
+add_default($nl, 'config_cvmix2_cs_value');
+add_default($nl, 'config_cvmix2_as_value');
+add_default($nl, 'config_cvmix2_cm_value');
+add_default($nl, 'config_cvmix2_am_value');
+add_default($nl, 'config_cvmix2_nonLocalTermStrength');
+add_default($nl, 'config_cvmix2_convective_diffusion');
+add_default($nl, 'config_cvmix2_convective_viscosity');
+add_default($nl, 'config_cvmix2_convective_basedOnBVF');
+add_default($nl, 'config_cvmix2_convective_triggerBVF');
+add_default($nl, 'config_use_cvmix2_shear');
+add_default($nl, 'config_cvmix2_num_ri_smooth_loops');
+add_default($nl, 'config_cvmix2_shear_mixing_scheme');
+add_default($nl, 'config_cvmix2_shear_PP_nu_zero');
+add_default($nl, 'config_cvmix2_shear_PP_alpha');
+add_default($nl, 'config_cvmix2_shear_PP_exp');
+add_default($nl, 'config_cvmix2_shear_KPP_nu_zero');
+add_default($nl, 'config_cvmix2_shear_KPP_Ri_zero');
+add_default($nl, 'config_cvmix2_shear_KPP_exp');
+add_default($nl, 'config_use_cvmix2_kpp');
+add_default($nl, 'config_cvmix2_kpp_MonObOBL');
+add_default($nl, 'config_cvmix2_kpp_EkmanOBL');
+add_default($nl, 'config_cvmix2_kpp_minimum_OBL_under_sea_ice');
+add_default($nl, 'config_cvmix2_kpp_surface_layer_extent');
+add_default($nl, 'config_cvmix2_kpp_minimum_OBL_under_sea_ice');
+add_default($nl, 'config_cvmix2_kpp_minimumVt2');
+add_default($nl, 'config_cvmix2_kpp_nonlocal_with_implicit_mix');
+
+#########################
 # Namelist group: cvmix #
 #########################
 
@@ -1550,6 +1591,7 @@ my @groups = qw(run_modes
                 vmix_rich
                 vmix_tanh
                 cvmix
+                cvmix2
                 forcing
                 coupling
                 shortwaveradiation

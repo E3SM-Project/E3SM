@@ -28,8 +28,8 @@
 
   <entry id="MPASO_USE_KOKKOS">
         <type>logical</type>
-        <valid_values>false,true</valid_values>
-        <default_value>false</default_value>
+        <valid_values>FALSE,TRUE</valid_values>
+        <default_value>FALSE</default_value>
         <group>build_component_mpaso</group>
         <file>env_build.xml</file>
         <desc>Flag to use kokkos in MPASO build</desc>
