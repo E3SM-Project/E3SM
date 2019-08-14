@@ -186,6 +186,7 @@ contains
       ! Pool pointers
       integer, pointer :: nVertLevels ! Dimensions
       real (kind=RKIND), dimension(:), pointer :: layerThicknessFractions, layerCenterSigma, layerInterfaceSigma
+      real (kind=RKIND), dimension(:), pointer :: layerInterfaceFractions
       real (kind=RKIND), dimension(:), pointer :: thickness
       logical, pointer :: config_do_restart
       ! Truly locals
@@ -199,6 +200,7 @@ contains
       call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
       call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
       call mpas_pool_get_array(meshPool, 'layerInterfaceSigma', layerInterfaceSigma)
+      call mpas_pool_get_array(meshPool, 'layerInterfaceFractions', layerInterfaceFractions)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
 
       ! Check that layerThicknessFractions are valid
@@ -230,6 +232,13 @@ contains
          layerInterfaceSigma(k) = layerInterfaceSigma(k-1) + layerThicknessFractions(k-1)
       end do
       layerInterfaceSigma(nVertLevels+1) = 1.0_RKIND
+
+      ! layerInterfaceFractions are the fraction associated with each interface
+      layerInterfaceFractions(1) = 0.5_RKIND * layerThicknessFractions(1)
+      do k = 2, nVertLevels
+         layerInterfaceFractions(k) = 0.5_RKIND * (layerThicknessFractions(k-1) + layerThicknessFractions(k))
+      end do
+      layerInterfaceFractions(nVertLevels+1) = 0.5_RKIND * layerThicknessFractions(nVertLevels)
 
    !--------------------------------------------------------------------
    end subroutine li_setup_vertical_grid
