@@ -327,6 +327,19 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   if (present (iopfile_in)) then
      iopfile=trim(iopfile_in)
   endif
+  
+#ifdef SPMD
+  call mpibcast(scm_iop_srf_prop,1,mpilog,0,mpicom)
+  call mpibcast(scm_relaxation,1,mpilog,0,mpicom)
+  call mpibcast(scm_relaxation_high,1,mpir8,0,mpicom)
+  call mpibcast(scm_relaxation_low,1,mpir8,0,mpicom)
+  call mpibcast(scm_diurnal_avg,1,mpilog,0,mpicom)
+  call mpibcast(scm_crm_mode,1,mpilog,0,mpicom)
+  call mpibcast(scm_observed_aero,1,mpilog,0,mpicom)
+  call mpibcast(swrad_off,1,mpilog,0,mpicom)
+  call mpibcast(lwrad_off,1,mpilog,0,mpicom)
+  call mpibcast(precip_off,1,mpilog,0,mpicom)
+#endif
 
   if( single_column) then
 
@@ -418,6 +431,11 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
         call endrun('SCAM_SETOPTS: single_column namelist option must be set to true when running in single column mode')
      endif
   endif
+  
+#ifdef SPMD
+  call mpibcast(use_iop,1,mpilog,0,mpicom)
+  call mpibcast(use_camiop,1,mpilog,0,mpicom)
+#endif
 
 
 end subroutine scam_setopts

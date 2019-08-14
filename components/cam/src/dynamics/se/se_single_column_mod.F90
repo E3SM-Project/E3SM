@@ -111,6 +111,7 @@ subroutine scm_broadcast()
   call mpibcast(have_divq,1,mpilog,0,mpicom)
   call mpibcast(have_divt3d,1,mpilog,0,mpicom)
   call mpibcast(have_divq3d,1,mpilog,0,mpicom)
+  call mpibcast(use_3dfrc,1,mpilog,0,mpicom)
 
   call mpibcast(psobs,1,mpir8,0,mpicom)
   call mpibcast(tground,1,mpir8,0,mpicom)
