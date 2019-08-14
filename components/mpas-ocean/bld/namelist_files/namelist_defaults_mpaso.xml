@@ -65,6 +65,9 @@
 
 <!-- ALE_vertical_grid -->
 <config_vert_coord_movement>'uniform_stretching'</config_vert_coord_movement>
+<config_ALE_thickness_proportionality>'restingThickness_times_weights'</config_ALE_thickness_proportionality>
+<config_vert_taper_weight_depth_1>250.0</config_vert_taper_weight_depth_1>
+<config_vert_taper_weight_depth_2>500.0</config_vert_taper_weight_depth_2>
 <config_use_min_max_thickness>.false.</config_use_min_max_thickness>
 <config_min_thickness>1.0</config_min_thickness>
 <config_max_thickness_factor>6.0</config_max_thickness_factor>
@@ -612,6 +615,17 @@
 <config_AM_lagrPartTrack_region_stream>'lagrPartTrackRegions'</config_AM_lagrPartTrack_region_stream>
 <config_AM_lagrPartTrack_reset_if_outside_region>.false.</config_AM_lagrPartTrack_reset_if_outside_region>
 <config_AM_lagrPartTrack_reset_if_inside_region>.false.</config_AM_lagrPartTrack_reset_if_inside_region>
+<config_AM_lagrPartTrack_sample_horizontal_interp>.true.</config_AM_lagrPartTrack_sample_horizontal_interp>
+<config_AM_lagrPartTrack_sample_temperature>.true.</config_AM_lagrPartTrack_sample_temperature>
+<config_AM_lagrPartTrack_sample_salinity>.true.</config_AM_lagrPartTrack_sample_salinity>
+<config_AM_lagrPartTrack_sample_DIC>.false.</config_AM_lagrPartTrack_sample_DIC>
+<config_AM_lagrPartTrack_sample_ALK>.false.</config_AM_lagrPartTrack_sample_ALK>
+<config_AM_lagrPartTrack_sample_PO4>.false.</config_AM_lagrPartTrack_sample_PO4>
+<config_AM_lagrPartTrack_sample_NO3>.false.</config_AM_lagrPartTrack_sample_NO3>
+<config_AM_lagrPartTrack_sample_SiO3>.false.</config_AM_lagrPartTrack_sample_SiO3>
+<config_AM_lagrPartTrack_sample_NH4>.false.</config_AM_lagrPartTrack_sample_NH4>
+<config_AM_lagrPartTrack_sample_Fe>.false.</config_AM_lagrPartTrack_sample_Fe>
+<config_AM_lagrPartTrack_sample_O2>.false.</config_AM_lagrPartTrack_sample_O2>
 
 <!-- AM_eliassenPalm -->
 <config_AM_eliassenPalm_enable>.false.</config_AM_eliassenPalm_enable>
@@ -845,12 +859,7 @@
 <config_AM_transectTransport_transect_group>'all'</config_AM_transectTransport_transect_group>
 
 <!-- AM_eddyProductVariables -->
-<config_AM_eddyProductVariables_enable>.false.</config_AM_eddyProductVariables_enable>
-<config_AM_eddyProductVariables_enable ocn_grid="oEC60to30v3">.true.</config_AM_eddyProductVariables_enable>
-<config_AM_eddyProductVariables_enable ocn_grid="oEC60to30v3wLI">.true.</config_AM_eddyProductVariables_enable>
-<config_AM_eddyProductVariables_enable ocn_grid="oRRS30to10v3">.true.</config_AM_eddyProductVariables_enable>
-<config_AM_eddyProductVariables_enable ocn_grid="oRRS30to10v3wLI">.true.</config_AM_eddyProductVariables_enable>
-<config_AM_eddyProductVariables_enable ocn_grid="oRRS18to6v3">.true.</config_AM_eddyProductVariables_enable>
+<config_AM_eddyProductVariables_enable>.true.</config_AM_eddyProductVariables_enable>
 <config_AM_eddyProductVariables_compute_interval>'0000-00-00_01:00:00'</config_AM_eddyProductVariables_compute_interval>
 <config_AM_eddyProductVariables_output_stream>'eddyProductVariablesOutput'</config_AM_eddyProductVariables_output_stream>
 <config_AM_eddyProductVariables_compute_on_startup>.true.</config_AM_eddyProductVariables_compute_on_startup>

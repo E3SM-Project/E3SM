@@ -366,6 +366,8 @@ module VegetationDataType
     real(r8), pointer :: qflx_dew_snow      (:)   => null() ! surface dew added to snow pack (mm H2O /s) [+]
     real(r8), pointer :: qflx_dew_grnd      (:)   => null() ! ground surface dew formation (mm H2O /s) [+]
     real(r8), pointer :: qflx_prec_intr     (:)   => null() ! interception of precipitation [mm/s]
+    real(r8), pointer :: qflx_dirct_rain    (:)   => null() ! direct through rainfall [mm/s]
+    real(r8), pointer :: qflx_leafdrip      (:)   => null() ! leaf rain drip [mm/s]
     real(r8), pointer :: qflx_ev_snow       (:)   => null() ! evaporation heat flux from snow       (W/m**2) [+ to atm] ! NOTE: unit shall be mm H2O/s for water NOT heat
     real(r8), pointer :: qflx_ev_soil       (:)   => null() ! evaporation heat flux from soil       (W/m**2) [+ to atm] ! NOTE: unit shall be mm H2O/s for water NOT heat
     real(r8), pointer :: qflx_ev_h2osfc     (:)   => null() ! evaporation heat flux from soil       (W/m**2) [+ to atm] ! NOTE: unit shall be mm H2O/s for water NOT heat
@@ -5344,6 +5346,8 @@ module VegetationDataType
     allocate(this%qflx_dew_snow          (begp:endp))             ; this%qflx_dew_snow        (:)   = nan
     allocate(this%qflx_dew_grnd          (begp:endp))             ; this%qflx_dew_grnd        (:)   = nan
     allocate(this%qflx_prec_intr         (begp:endp))             ; this%qflx_prec_intr       (:)   = nan
+    allocate(this%qflx_dirct_rain        (begp:endp))             ; this%qflx_dirct_rain      (:)   = nan
+    allocate(this%qflx_leafdrip          (begp:endp))             ; this%qflx_leafdrip        (:)   = nan
     allocate(this%qflx_ev_snow           (begp:endp))             ; this%qflx_ev_snow         (:)   = nan
     allocate(this%qflx_ev_soil           (begp:endp))             ; this%qflx_ev_soil         (:)   = nan
     allocate(this%qflx_ev_h2osfc         (begp:endp))             ; this%qflx_ev_h2osfc       (:)   = nan
@@ -5364,6 +5368,16 @@ module VegetationDataType
     call hist_addfld1d (fname='QINTR', units='mm/s',  &
          avgflag='A', long_name='interception', &
          ptr_patch=this%qflx_prec_intr, set_lake=0._r8)
+
+    this%qflx_dirct_rain(begp:endp) = spval
+    call hist_addfld1d (fname='QWTRGH', units='mm/s',  &
+         avgflag='A', long_name='direct rain throughfall', &
+         ptr_patch=this%qflx_dirct_rain, c2l_scale_type='urbanf', default='inactive')
+
+    this%qflx_leafdrip(begp:endp) = spval
+    call hist_addfld1d (fname='QWDRIP', units='mm/s',  &
+         avgflag='A', long_name='leaf rain drip', &
+         ptr_patch=this%qflx_leafdrip, c2l_scale_type='urbanf', default='inactive')
 
     this%qflx_prec_grnd(begp:endp) = spval
     call hist_addfld1d (fname='QDRIP', units='mm/s',  &

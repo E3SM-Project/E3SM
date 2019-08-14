@@ -79,8 +79,9 @@ def parse_command_line(args, description):
     parser.add_argument("--single-exe", action="store_true",
                         default=False,
                         help="Use a single build for all cases. This can "
-                        "\ndrastically improve test throughput but is current use-at-your-own risk."
-                        "\nIt's up to the user to ensure that all cases are build-compatible")
+                        "\ndrastically improve test throughput but is currently use-at-your-own risk."
+                        "\nIt's up to the user to ensure that all cases are build-compatible."
+                        "\nE3SM tests belonging to a suite with share enabled will always share exes.")
 
     default = get_default_setting(config, "SINGLE_SUBMIT", False, check_main=False)
 
@@ -156,6 +157,9 @@ def parse_command_line(args, description):
 
         parser.add_argument("--xml-testlist",
                             help="Use this testlist to lookup tests.The default is specified in config_files.xml")
+
+        parser.add_argument("--xml-driver", choices=('mct', 'nuopc', 'moab'),
+                            help="Override driver specified in tests and use this one.")
 
         parser.add_argument("testargs", nargs="*",
                             help="Tests to run. Testname form is TEST.GRID.COMPSET[.MACHINE_COMPILER]")
@@ -388,9 +392,9 @@ def parse_command_line(args, description):
                    "At least one of --xml-machine, --xml-testlist, "
                    "--xml-compiler, --xml-category or a valid test name must be provided.")
 
-            test_data = get_tests_from_xml(args.xml_machine, args.xml_category,
-                                           args.xml_compiler, args.xml_testlist,
-                                           machine_name, args.compiler)
+            test_data = get_tests_from_xml(xml_machine=args.xml_machine, xml_category=args.xml_category,
+                                           xml_compiler=args.xml_compiler, xml_testlist=args.xml_testlist,
+                                           machine=machine_name, compiler=args.compiler, driver=args.xml_driver)
             test_names = [item["name"] for item in test_data]
             for test_datum in test_data:
                 test_extra_data[test_datum["name"]] = test_datum
@@ -404,19 +408,6 @@ def parse_command_line(args, description):
         args.compiler = mach_obj.get_default_compiler() if args.compiler is None else args.compiler
 
         test_names = get_tests.get_full_test_names(args.testargs, mach_obj.get_machine_name(), args.compiler)
-        if len(args.testargs) == 1 and \
-           args.testargs[0] in get_tests.get_test_suites() and \
-           get_tests.get_test_data(args.testargs[0])[2] and \
-           not args.single_exe:
-            logging.info("Suite supports shared executables, setting --single-exe to True")
-            args.single_exe = True
-
-        if len(args.testargs) == 1 and \
-           args.testargs[0] in get_tests.get_test_suites() and \
-           get_tests.get_test_data(args.testargs[0])[2] and \
-           not args.single_exe:
-            logging.info("Suite supports shared executables, setting --single-exe to True")
-            args.single_exe = True
 
     expect(mach_obj.is_valid_compiler(args.compiler),
            "Compiler %s not valid for machine %s" % (args.compiler, mach_obj.get_machine_name()))

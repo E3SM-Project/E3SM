@@ -76,6 +76,9 @@ add_default($nl, 'config_time_integrator');
 #####################################
 
 add_default($nl, 'config_vert_coord_movement');
+add_default($nl, 'config_ALE_thickness_proportionality');
+add_default($nl, 'config_vert_taper_weight_depth_1');
+add_default($nl, 'config_vert_taper_weight_depth_2');
 add_default($nl, 'config_use_min_max_thickness');
 add_default($nl, 'config_min_thickness');
 add_default($nl, 'config_max_thickness_factor');
@@ -677,6 +680,17 @@ add_default($nl, 'config_AM_lagrPartTrack_reset_global_timestamp');
 add_default($nl, 'config_AM_lagrPartTrack_region_stream');
 add_default($nl, 'config_AM_lagrPartTrack_reset_if_outside_region');
 add_default($nl, 'config_AM_lagrPartTrack_reset_if_inside_region');
+add_default($nl, 'config_AM_lagrPartTrack_sample_horizontal_interp');
+add_default($nl, 'config_AM_lagrPartTrack_sample_temperature');
+add_default($nl, 'config_AM_lagrPartTrack_sample_salinity');
+add_default($nl, 'config_AM_lagrPartTrack_sample_DIC');
+add_default($nl, 'config_AM_lagrPartTrack_sample_ALK');
+add_default($nl, 'config_AM_lagrPartTrack_sample_PO4');
+add_default($nl, 'config_AM_lagrPartTrack_sample_NO3');
+add_default($nl, 'config_AM_lagrPartTrack_sample_SiO3');
+add_default($nl, 'config_AM_lagrPartTrack_sample_NH4');
+add_default($nl, 'config_AM_lagrPartTrack_sample_Fe');
+add_default($nl, 'config_AM_lagrPartTrack_sample_O2');
 
 ###################################
 # Namelist group: AM_eliassenPalm #

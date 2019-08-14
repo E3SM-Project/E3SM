@@ -55,8 +55,8 @@ def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resub
     # if case.submit is called with the no_batch flag then we assume that this
     # flag will stay in effect for the duration of the RESUBMITs
     env_batch = case.get_env("batch")
-
-    if resubmit and env_batch.get_batch_system_type() == "none":
+    external_workflow = case.get_value("EXTERNAL_WORKFLOW")
+    if resubmit and env_batch.get_batch_system_type() == "none" or external_workflow:
         no_batch = True
     if no_batch:
         batch_system = "none"
@@ -66,12 +66,13 @@ def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resub
     case.set_value("BATCH_SYSTEM", batch_system)
 
     env_batch_has_changed = False
-    try:
-        case.check_lockedfile(os.path.basename(env_batch.filename))
-    except:
-        env_batch_has_changed = True
+    if not external_workflow:
+        try:
+            case.check_lockedfile(os.path.basename(env_batch.filename))
+        except:
+            env_batch_has_changed = True
 
-    if batch_system != "none" and env_batch_has_changed:
+    if batch_system != "none" and env_batch_has_changed and not external_workflow:
         # May need to regen batch files if user made batch setting changes (e.g. walltime, queue, etc)
         logger.warning(\
 """
@@ -177,7 +178,7 @@ def submit(self, job=None, no_batch=False, prereq=None, allow_fail=False, resubm
     # any submit options used on the original submit and use them again
     submit_options = os.path.join(caseroot, ".submit_options")
     if resubmit and os.path.exists(submit_options):
-        config = configparser.SafeConfigParser()
+        config = configparser.RawConfigParser()
         config.read(submit_options)
         if not skip_pnl and config.has_option('SubmitOptions','skip_pnl'):
             skip_pnl = config.getboolean('SubmitOptions', 'skip_pnl')
@@ -214,7 +215,6 @@ def check_case(self):
     if self.get_value('COMP_WAV') == 'ww':
         # the ww3 buildnml has dependancies on inputdata so we must run it again
         self.create_namelists(component='WAV')
-
 
     expect(self.get_value("BUILD_COMPLETE"), "Build complete is "
            "not True please rebuild the model by calling case.build")

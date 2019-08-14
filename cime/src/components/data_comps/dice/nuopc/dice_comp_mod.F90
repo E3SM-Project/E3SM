@@ -118,7 +118,8 @@ contains
 !===============================================================================
 
   subroutine dice_comp_advertise(importState, exportState, flds_scalar_name, &
-       ice_present, ice_prognostic, fldsFrIce_num, fldsFrIce, fldsToIce_num, fldsToIce, rc)
+       ice_present, ice_prognostic, flds_i2o_per_cat, &
+       fldsFrIce_num, fldsFrIce, fldsToIce_num, fldsToIce, rc)
 
     ! input/output arguments
     type(ESMF_State)     , intent(inout) :: importState
@@ -126,6 +127,7 @@ contains
     character(len=*)     , intent(in)    :: flds_scalar_name
     logical              , intent(in)    :: ice_present
     logical              , intent(in)    :: ice_prognostic
+    logical              , intent(in)    :: flds_i2o_per_cat
     integer              , intent(out)   :: fldsToIce_num
     integer              , intent(out)   :: fldsFrIce_num
     type (fld_list_type) , intent(out)   :: fldsToIce(:)
@@ -153,6 +155,15 @@ contains
 
     call dshr_fld_add(data_fld='ifrac', data_fld_array=avifld, model_fld='Si_ifrac', model_fld_array=avofld, &
          model_fld_concat=flds_i2x, model_fld_index=kiFrac, fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
+
+    if (flds_i2o_per_cat) then
+       call dshr_fld_add(model_fld='Si_ifrac_01'        , model_fld_concat=flds_i2x, model_fld_index=kiFrac_01)
+       call dshr_fld_add(model_fld='Fioi_swpen_ifrac_01', model_fld_concat=flds_i2x, model_fld_index=kswpen_iFrac_01)
+       call dshr_fld_add(med_fld='Si_ifrac_n', fldlist_num=fldsFrIce_num, fldlist=fldsFrIce, &
+            ungridded_lbound=1, ungridded_ubound=1)
+       call dshr_fld_add(med_fld='Fioi_swpen_ifrac_n', fldlist_num=fldsFrIce_num, fldlist=fldsFrIce, &
+            ungridded_lbound=1, ungridded_ubound=1)
+    end if
 
     ! export fields that have no corresponding stream field (computed internally)
 
@@ -454,7 +465,7 @@ contains
     ! error check that mesh lats and lons correspond to those on the input domain file
     index_lon = mct_aVect_indexRA(SDICE%grid%data,'lon')
     do n = 1, lsize
-       if (abs( SDICE%grid%data%rattr(index_lon,n) - xc(n)) > 1.e-4) then
+       if (abs(mod(SDICE%grid%data%rattr(index_lon,n) - xc(n),360.0_R8)) > 1.e-4) then
           write(6,*)'ERROR: lon diff = ',abs(SDICE%grid%data%rattr(index_lon,n) -  xc(n)),' too large'
           call shr_sys_abort()
        end if
@@ -500,7 +511,7 @@ contains
     ! optional per thickness category fields
     if (flds_i2o_per_cat) then
        kiFrac_01       = mct_aVect_indexRA(i2x,'Si_ifrac_01')
-       kswpen_iFrac_01 = mct_aVect_indexRA(i2x,'PFioi_swpen_ifrac_01')
+       kswpen_iFrac_01 = mct_aVect_indexRA(i2x,'Fioi_swpen_ifrac_01')
     end if
 
     call mct_aVect_init(x2i, rList=flds_x2i, lsize=lsize)
@@ -966,10 +977,11 @@ contains
 
   !===============================================================================
 
-  subroutine dice_comp_export(exportState, rc)
+  subroutine dice_comp_export(exportState, flds_i2o_per_cat, rc)
 
     ! input/output variables
     type(ESMF_State)     :: exportState
+    logical, intent(in)  :: flds_i2o_per_cat
     integer, intent(out) :: rc
 
     ! local variables
@@ -980,6 +992,13 @@ contains
 
     call dshr_export(i2x%rattr(kiFrac,:) , exportState, 'Si_ifrac', rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    if (flds_i2o_per_cat) then
+       call dshr_export(i2x%rattr(kiFrac_01,:), exportState, 'Si_ifrac_n', ungridded_index=1, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       call dshr_export(i2x%rattr(kswpen_iFrac_01,:), exportState, 'Fioi_swpen_ifrac_n', ungridded_index=1, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
 
     call dshr_export(i2x%rattr(km,:) , exportState, 'Si_imask', rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return

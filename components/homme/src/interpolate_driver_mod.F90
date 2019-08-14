@@ -13,6 +13,7 @@
 
 
 module interpolate_driver_mod
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   use pio, only : file_desc_t, var_desc_t , io_desc_t, & ! _EXTERNAL
    pio_get_att, pio_setdebuglevel, pio_closefile, &
    pio_put_att, pio_global, pio_put_var, pio_iotask_rank, &
@@ -30,9 +31,9 @@ module interpolate_driver_mod
   implicit none
   private
 !#include "pnetcdf.inc"
-
+#endif
   public :: interpolate_driver, pio_read_phis
-
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   integer :: nlat, nlon
 
   type dim_t
@@ -79,26 +80,31 @@ module interpolate_driver_mod
 !  type(io_desc_t), pointer :: iodesc3d, iodesc2d, iodesc3dp1
   type(io_desc_t) , save:: iodesc3d, iodesc2d, iodesc3dp1
 
+#endif
 
 contains
   subroutine interpolate_driver(elem,hybrid)
+    use hybrid_mod, only : hybrid_t
+    use element_mod, only : element_t
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     use dimensions_mod, only : ne, nelem, np, nlev
     use common_io_mod, only : varnames=>output_varnames1, nf_handle
-    use element_mod, only : element_t
     !  use interpolate_mod
     use dof_mod
-    use hybrid_mod, only : hybrid_t
     use interpolate_mod, only : interpdata_t
     !  use domain_mod, only : domain1d_t, decompose
     !  use thread_mod, only : omp_get_thread_num
     !  use reduction_mod, only : reductionbuffer_ordered_1d_t
+#endif
     implicit none
 
-    integer, parameter :: maxvars=30
     type(element_t) :: elem(:)
+    type(hybrid_t), intent(in) :: hybrid
+
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    integer, parameter :: maxvars=30
     type(file_t) :: infile
     !  type(element_t), allocatable :: elem(:)
-    type(hybrid_t), intent(in) :: hybrid
     !  type (domain1d_t), allocatable:: dom_mt(:)
     !  type (parallel_t) :: par
     !  type (ReductionBuffer_ordered_1d_t) :: red
@@ -127,8 +133,10 @@ contains
           deallocate(interpdata)
        end if
     end do
+#endif
   end subroutine interpolate_driver
 
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   subroutine free_infile(infile)
     type(file_t), intent(inout) :: infile
 
@@ -147,7 +155,6 @@ contains
     nullify(infile%vars%dimids)
 
   end subroutine free_infile
-
 
   subroutine infile_initialize(elem, par, infilename, varnames, infile)
     use pio ! _EXTERNAL
@@ -788,24 +795,26 @@ contains
     call freeedgebuffer(edge)
     
   end subroutine interpolate_vars
+#endif
 ! read a variable from a file
 !
 ! if we ever need to read something other than PHIS, this routine should
 ! be replaced with a more general routine to read any field
   subroutine pio_read_phis(elem, par)
+    use element_mod, only : element_t
+    use parallel_mod, only : parallel_t, syncmp
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     use dof_mod, only : putuniquepoints
     use kinds, only : real_kind
-    use element_mod, only : element_t
     use edge_mod, only : edgevpack, edgevunpack, initedgebuffer, freeedgebuffer
     use edgetype_mod, only : edgebuffer_t
     use dimensions_mod, only : nelemd, nlev, np
-    use parallel_mod, only : parallel_t, syncmp
     use bndry_mod, only : bndry_exchangeV
     use common_io_mod, only : varname_len,infilenames
-
+#endif
     type(element_t), intent(inout) :: elem(:)
     type(parallel_t),intent(in) :: par
-
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     ! local
     character(len=varname_len), dimension(1) :: varnames
     type(file_t)     :: infile
@@ -856,11 +865,12 @@ contains
 
     call pio_closefile(infile%fileid)
     call free_infile(infile)
-    
+#endif
   end subroutine pio_read_phis
 !
 ! Create the pio decomps for the output file.
 !
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   subroutine create_output_decomps(ncdf,interpdata,nlon,nlat)
     use pio_io_mod ! _EXTERNAL
     use dimensions_mod
@@ -1154,6 +1164,7 @@ contains
     end do
 	
   end subroutine getcompdof
+#endif
 
 end module interpolate_driver_mod
 

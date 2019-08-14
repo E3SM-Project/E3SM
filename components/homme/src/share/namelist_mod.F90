@@ -7,6 +7,9 @@ module namelist_mod
   use kinds,      only: real_kind, iulog
   use params_mod, only: recursive, sfcurve, SPHERE_COORDS, Z2_NO_TASK_MAPPING
   use cube_mod,   only: rotate_grid
+#ifdef CAM
+  use dyn_grid,   only: fv_nphys
+#endif
   use physical_constants, only: rearth, rrearth, omega
 #if (defined MODEL_THETA_L && defined ARKODE)
   use arkode_mod, only: rel_tol, abs_tol, calc_nonlinear_stats, use_column_solver
@@ -65,6 +68,7 @@ module namelist_mod
     hypervis_order,       &
     hypervis_power,       &
     hypervis_subcycle,    &
+    hypervis_subcycle_tom,&
     hypervis_subcycle_q,  &
     smooth_phis_numcycle, &
     smooth_phis_nudt,     &
@@ -130,7 +134,6 @@ module namelist_mod
        varname_len,         &
        infilenames,         &
        MAX_INFILES
-
   use physical_constants, only: omega
   use common_movie_mod,   only : setvarnames
 #endif
@@ -157,11 +160,15 @@ module namelist_mod
 #ifdef CAM
   subroutine readnl(par, NLFileName)
     use units, only : getunit, freeunit
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     use mesh_mod, only : MeshOpen
+#endif
     character(len=*), intent(in) :: NLFilename  ! namelist filename
 #else
   subroutine readnl(par)
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     use mesh_mod, only : MeshOpen
+#endif
 #endif
     type (parallel_t), intent(in) ::  par
     character(len=MAX_FILE_LEN) :: mesh_file
@@ -243,6 +250,7 @@ module namelist_mod
       hypervis_order,    &
       hypervis_power,    &
       hypervis_subcycle, &
+      hypervis_subcycle_tom, &
       hypervis_subcycle_q, &
       hypervis_scaling, &
       smooth_phis_numcycle, &
@@ -286,7 +294,6 @@ module namelist_mod
       vfile_int,          &
       vanalytic,          & ! use analytically generated vertical levels
       vtop                  ! top coordinate level. used when vanaltic=1
-
     namelist /analysis_nl/    &
       output_prefix,       &
       output_timeunits,    &
@@ -442,9 +449,9 @@ module namelist_mod
        if (tstep <= 0) then
           call abortmp('tstep must be > 0')
        end if
-       if (ndays .gt. 0) then
+       if (ndays>0) then
           nmax = ndays * (secpday/tstep)
-          restartfreq  = restartfreq*(secpday/tstep)
+          if (restartfreq>0) restartfreq=restartfreq*(secpday/tstep)
        end if
        nEndStep = nmax
 #endif
@@ -494,6 +501,7 @@ module namelist_mod
        end if
 #endif
 
+
 !      Default interpolation grid  (0 = auto compute based on ne,nv)  interpolation is off by default
 #ifdef PIO_INTERP
        interpolate_analysis=.true.
@@ -534,6 +542,8 @@ module namelist_mod
        output_type = 'netcdf' ! Change by MNL
 !     output_type = 'pnetcdf'
 
+
+#ifndef HOMME_WITHOUT_PIOLIBRARY
        write(iulog,*)"reading analysis namelist..."
 #if defined(OSF1) || defined(_NAMELIST_FROM_FILE)
        read(unit=7,nml=analysis_nl)
@@ -585,6 +595,7 @@ module namelist_mod
           if(output_end_time(i)<0) output_end_time(i)=nEndStep
           if ( output_start_time(i) > output_end_time(i) ) output_frequency(i)=0
        end do
+#endif
 
 #if (defined MODEL_THETA_L && defined ARKODE)
        write(iulog,*)"reading arkode namelist..."
@@ -691,6 +702,7 @@ module namelist_mod
     call MPI_bcast(hypervis_power,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_scaling,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_subcycle,1,MPIinteger_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(hypervis_subcycle_tom,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_subcycle_q,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(smooth_phis_numcycle,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(smooth_phis_nudt,1,MPIreal_t   ,par%root,par%comm,ierr)
@@ -698,7 +710,9 @@ module namelist_mod
     call MPI_bcast(u_perturb     ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(rotate_grid   ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(integration,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     call MPI_bcast(mesh_file,MAX_FILE_LEN,MPIChar_t ,par%root,par%comm,ierr)
+#endif
     call MPI_bcast(theta_hydrostatic_mode ,1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(transport_alg ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(semi_lagrange_cdr_alg ,1,MPIinteger_t,par%root,par%comm,ierr)
@@ -732,6 +746,7 @@ module namelist_mod
     call MPI_bcast(vtop     , 1,              MPIreal_t   , par%root, par%comm,ierr)
 
 #ifndef CAM
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     call MPI_bcast(output_prefix,MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
     call MPI_bcast(output_timeunits ,max_output_streams,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(output_start_time ,max_output_streams,MPIinteger_t,par%root,par%comm,ierr)
@@ -748,6 +763,7 @@ module namelist_mod
     call MPI_bcast(num_io_procs , 1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(output_type , 9,MPIChar_t,par%root,par%comm,ierr)
     call MPI_bcast(infilenames ,160*MAX_INFILES ,MPIChar_t,par%root,par%comm,ierr)
+#endif
 
 #if (defined MODEL_THETA_L && defined ARKODE)
     call MPI_bcast(rel_tol, 1, MPIreal_t, par%root, par%comm, ierr)
@@ -809,9 +825,13 @@ module namelist_mod
     end if
     if (par%masterproc) write (iulog,*) "Mesh File:", trim(mesh_file)
     if (ne.eq.0) then
+#ifndef HOMME_WITHOUT_PIOLIBRARY
        call set_mesh_dimensions()
        if (par%masterproc) write (iulog,*) "Opening Mesh File:", trim(mesh_file)
-      call MeshOpen(mesh_file, par)
+       call MeshOpen(mesh_file, par)
+#else
+       call abortmp("Build is without PIO library, mesh runs (ne=0) are not supported.")
+#endif
     end if
     ! set map
     if (cubed_sphere_map<0) then
@@ -821,6 +841,9 @@ module namelist_mod
        cubed_sphere_map=0  ! default is equi-angle gnomonic
 #endif
        if (ne.eq.0) cubed_sphere_map=2  ! must use element_local for var-res grids
+#ifdef CAM
+       if (fv_nphys.gt.0) cubed_sphere_map=2  ! must use element_local for FV physics grid
+#endif
     endif
     if (par%masterproc) write (iulog,*) "Reference element projection: cubed_sphere_map=",cubed_sphere_map
 
@@ -986,8 +1009,9 @@ module namelist_mod
           write(iulog,*)"Constant (hyper)viscosity used."
        endif
 
-       write(iulog,*)"hypervis_subcycle, hypervis_subcycle_q = ",&
-            hypervis_subcycle,hypervis_subcycle_q
+       write(iulog,*)"hypervis_subcycle     = ",hypervis_subcycle
+       write(iulog,*)"hypervis_subcycle_tom = ",hypervis_subcycle_tom
+       write(iulog,*)"hypervis_subcycle_q   = ",hypervis_subcycle_q
        !write(iulog,*)"psurf_vis: ",psurf_vis
        write(iulog,'(a,2e9.2)')"viscosity:  nu (vor/div) = ",nu,nu_div
        write(iulog,'(a,2e9.2)')"viscosity:  nu_s      = ",nu_s
@@ -1005,6 +1029,7 @@ module namelist_mod
        end if
 
 #ifndef CAM
+#ifndef HOMME_WITHOUT_PIOLIBRARY
        write(iulog,*)"  analysis: output_prefix = ",TRIM(output_prefix)
        write(iulog,*)"  analysis: io_stride = ",io_stride
        write(iulog,*)"  analysis: num_io_procs = ",num_io_procs
@@ -1029,6 +1054,7 @@ module namelist_mod
              end select
           end if
        end do
+#endif
 
 #if (defined MODEL_THETA_L && defined ARKODE)
        write(iulog,*)""

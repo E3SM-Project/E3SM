@@ -13,6 +13,7 @@ my @groups = qw(seaice_model
                 column_tracers
                 biogeochemistry
                 shortwave
+                snow
                 meltponds
                 thermodynamics
                 itd

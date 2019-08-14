@@ -3,7 +3,7 @@ Functions for actions pertaining to history files.
 """
 from CIME.XML.standard_module_setup import *
 from CIME.test_status import TEST_NO_BASELINES_COMMENT, TEST_STATUS_FILENAME
-from CIME.utils import get_current_commit, get_timestamp, get_model, safe_copy, SharedArea
+from CIME.utils import get_current_commit, get_timestamp, get_model, safe_copy, SharedArea, parse_test_name
 
 import logging, os, re, filecmp
 logger = logging.getLogger(__name__)
@@ -429,8 +429,10 @@ def compare_baseline(case, baseline_dir=None, outfile_suffix=""):
     if get_model() == "e3sm":
         bless_log = os.path.join(basecmp_dir, BLESS_LOG_NAME)
         if os.path.exists(bless_log):
-            last_line = open(bless_log, "r").readlines()[-1]
-            comments += "\n  Most recent bless: {}".format(last_line)
+            lines = open(bless_log, "r").readlines()
+            if lines:
+                last_line = lines[-1]
+                comments += "\n  Most recent bless: {}".format(last_line)
 
     return success, comments
 
@@ -572,7 +574,10 @@ def _generate_baseline_impl(case, baseline_dir=None, allow_baseline_overwrite=Fa
         safe_copy(newestcpllogfile, os.path.join(basegen_dir, "{}.log.gz".format(cplname)), preserve_meta=False)
 
     testname = case.get_value("TESTCASE")
-    expect(num_gen > 0 or testname == "PFS", "Could not generate any hist files for case '{}', something is seriously wrong".format(os.path.join(rundir, testcase)))
+    testopts = parse_test_name(case.get_value("CASEBASEID"))[1]
+    testopts = [] if testopts is None else testopts
+    expect(num_gen > 0 or (testname == "PFS" or "B" in testopts),
+           "Could not generate any hist files for case '{}', something is seriously wrong".format(os.path.join(rundir, testcase)))
 
     if get_model() == "e3sm":
         bless_log = os.path.join(basegen_dir, BLESS_LOG_NAME)

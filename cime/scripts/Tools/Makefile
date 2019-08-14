@@ -131,29 +131,6 @@ ifeq (,$(SHAREDPATH))
   INSTALL_SHAREDPATH = $(EXEROOT)/$(SHAREDPATH)
 endif
 
-# Decide whether to use a C++ or Fortran linker, based on whether we
-# are using any C++ code and the compiler-dependent CXX_LINKER variable
-ifeq ($(USE_CXX), TRUE)
-  # The following is essentially an "if... elseif... else", but gmake
-  # 3.80 and earlier doesn't support elseif
-  ifeq ($(CXX_LINKER), CXX)
-    LD := $(MPICXX)
-  endif
-  ifeq ($(CXX_LINKER), FORTRAN)
-    LD := $(MPIFC)
-  endif
-endif
-# Use this if LD has not already been defined.
-ifeq ($(origin LD), default)
-  ifeq ($(strip $(MPILIB)),mpi-serial)
-    LD := $(SFC)
-  else
-    LD := $(MPIFC)
-  endif
-endif
-
-
-
 ifeq ($(USE_CXX), TRUE)
   ifeq ($(SUPPORTS_CXX), FALSE)
     $(error Fatal attempt to include C++ code on a compiler/machine combo that has not been set up to support C++)
@@ -290,10 +267,6 @@ ifeq ($(strip $(USE_KOKKOS)), TRUE)
   CXX_LDFLAGS += $(KOKKOS_LDFLAGS)
 endif
 
-ifeq ($(strip $(USE_FMS)), TRUE)
-  SLIBS += -lfms
-endif
-
 # Set MOAB info if it is being used
 ifeq ($(strip $(USE_MOAB)), TRUE)
   ifdef MOAB_PATH
@@ -357,6 +330,57 @@ ifeq ($(USE_ESMF_LIB), TRUE)
   SLIBS  += $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) $(ESMF_F90ESMFLINKLIBS)
 endif
 
+# Stub libraries do not need to be built for nuopc driver
+# so it will override these settings on the command line
+ATM_PRESENT ?= TRUE
+ICE_PRESENT ?= TRUE
+LND_PRESENT ?= TRUE
+OCN_PRESENT ?= TRUE
+ROF_PRESENT ?= TRUE
+GLC_PRESENT ?= TRUE
+WAV_PRESENT ?= TRUE
+ESP_PRESENT ?= TRUE
+IAC_PRESENT ?= TRUE
+ifeq ($(ULIBDEP),$(null))
+  ifneq ($(LIBROOT),$(null))
+    ifeq ($(ATM_PRESENT),TRUE)
+      ULIBDEP += $(LIBROOT)/libatm.a
+      CPPDEFS += -DATM_PRESENT
+    endif
+    ifeq ($(ICE_PRESENT),TRUE)
+      ULIBDEP += $(LIBROOT)/libice.a
+      CPPDEFS += -DICE_PRESENT
+    endif
+    ifeq ($(LND_PRESENT),TRUE)
+      ULIBDEP += $(LNDLIBDIR)/$(LNDLIB)
+      CPPDEFS += -DLND_PRESENT
+    endif
+    ifeq ($(OCN_PRESENT),TRUE)
+      ULIBDEP += $(LIBROOT)/libocn.a
+      CPPDEFS += -DOCN_PRESENT
+    endif
+    ifeq ($(ROF_PRESENT),TRUE)
+      ULIBDEP += $(LIBROOT)/librof.a
+      CPPDEFS += -DROF_PRESENT
+    endif
+    ifeq ($(GLC_PRESENT),TRUE)
+      ULIBDEP += $(LIBROOT)/libglc.a
+      CPPDEFS += -DGLC_PRESENT
+    endif
+    ifeq ($(WAV_PRESENT),TRUE)
+      ULIBDEP += $(LIBROOT)/libwav.a
+      CPPDEFS += -DWAV_PRESENT
+    endif
+    ifeq ($(ESP_PRESENT),TRUE)
+      ULIBDEP += $(LIBROOT)/libesp.a
+      CPPDEFS += -DESP_PRESENT
+    endif
+    ifeq ($(IAC_PRESENT),TRUE)
+      ULIBDEP += $(LIBROOT)/libiac.a
+    endif
+  endif
+endif
+
 ifdef CPRE
   FPPDEFS := $(subst $(comma),\\$(comma),$(CPPDEFS))
   FPPDEFS := $(patsubst -D%,$(CPRE)%,$(FPPDEFS))
@@ -410,6 +434,20 @@ else
     LIB_MPI := $(MPI_PATH)/lib
   endif
 endif
+LD := $(MPIFC)
+# Decide whether to use a C++ or Fortran linker, based on whether we
+# are using any C++ code and the compiler-dependent CXX_LINKER variable
+ifeq ($(USE_CXX), TRUE)
+  # The following is essentially an "if... elseif... else", but gmake
+  # 3.80 and earlier doesn't support elseif
+  ifeq ($(CXX_LINKER), CXX)
+    LD := $(MPICXX)
+  endif
+  ifeq ($(CXX_LINKER), FORTRAN)
+    LD := $(MPIFC)
+  endif
+endif
+
 CSM_SHR_INCLUDE:=$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/include
 # This is needed so that dependancies are found
 VPATH+=$(CSM_SHR_INCLUDE)
@@ -515,10 +553,10 @@ ifeq ($(MODEL),cam)
   # Until mods are made to read the data from files, just remove optimization from
   # their compilation.
 rrtmg_lw_k_g.o: rrtmg_lw_k_g.f90
-	$(FC) -c $(FPPFLAGS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS_NOOPT) $<
+	$(FC) -c $(FPPFLAGS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS) $(FFLAGS_NOOPT) $<
 
 rrtmg_sw_k_g.o: rrtmg_sw_k_g.f90
-	$(FC) -c $(FPPFLAGS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS_NOOPT) $<
+	$(FC) -c $(FPPFLAGS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS) $(FFLAGS_NOOPT) $<
 
 
 ifdef COSP_LIBDIR
@@ -801,21 +839,8 @@ else
     INCLUDE_DIR = $(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/include
   endif
 endif
-ifeq ($(ULIBDEP),$(null))
-   ifneq ($(LIBROOT),$(null))
-     ULIBDEP += $(LIBROOT)/libatm.a
-     ULIBDEP += $(LIBROOT)/libice.a
-     ULIBDEP += $(LNDLIBDIR)/$(LNDLIB)
-     INCLDIR += -I$(LNDOBJDIR)
-     ULIBDEP += $(LIBROOT)/libocn.a
-     ULIBDEP += $(LIBROOT)/librof.a
-     ULIBDEP += $(LIBROOT)/libglc.a
-     ULIBDEP += $(LIBROOT)/libwav.a
-     ifneq ($(COMP_INTERFACE), nuopc)
-       ULIBDEP += $(LIBROOT)/libiac.a
-     endif
-     ULIBDEP += $(LIBROOT)/libesp.a
-   endif
+ifeq ($(LND_PRESENT),TRUE)
+  INCLDIR += -I$(LNDOBJDIR)
 endif
 ifeq ($(COMP_GLC), cism)
   ULIBDEP += $(CISM_LIBDIR)/libglimmercismfortran.a
@@ -828,7 +853,9 @@ ifeq ($(OCN_SUBMODEL),moby)
 endif
 
 ifdef COSP_LIBDIR
-  ULIBDEP += $(COSP_LIBDIR)/libcosp.a
+  ifeq ($(CIME_MODEL),cesm)
+    ULIBDEP += $(COSP_LIBDIR)/libcosp.a
+  endif
 endif
 
 

@@ -21,6 +21,7 @@
 # Ignore python bytecode files
 *.pyc
 buildnmlc
+buildlibc
 
 # Ignore emacs backup files
 *~

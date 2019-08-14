@@ -3,4 +3,16 @@
 
 # Ed Hartnett
 
-SUBDIRS = cunit
+# Does the user want to build fortran? If so, there are two additional
+# test directories.
+if BUILD_FORTRAN
+UNIT = unit
+GENERAL = general
+if USE_GPTL
+PERFORMANCE = performance
+endif
+endif
+
+SUBDIRS = cunit ${UNIT} ${GENERAL} ${PERFORMANCE}
+
+EXTRA_DIST = CMakeLists.txt

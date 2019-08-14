@@ -16,6 +16,7 @@ module prim_driver_mod
   public :: prim_init2
   public :: prim_run_subcycle
   public :: prim_finalize
+  public :: deriv1
 
   private :: generate_global_to_local
   private :: init_cxx_connectivity_internal

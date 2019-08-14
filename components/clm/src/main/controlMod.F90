@@ -46,6 +46,7 @@ module controlMod
   use clm_varctl              , only: forest_fert_exp
   use clm_varctl              , only: ECA_Pconst_RGspin
   use clm_varctl              , only: NFIX_PTASE_plant
+  use clm_varctl              , only : use_pheno_flux_limiter
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -172,6 +173,9 @@ contains
          ECA_Pconst_RGspin
     namelist /clm_inparm/ &
          NFIX_PTASE_plant
+
+    namelist /clm_inparm/ &
+         use_pheno_flux_limiter
          
     namelist /clm_inparm/  &
          suplnitro,suplphos
@@ -246,7 +250,7 @@ contains
     namelist /clm_inparm/ &
          use_nofire, use_lch4, use_nitrif_denitrif, use_vertsoilc, use_extralakelayers, &
          use_vichydro, use_century_decomp, use_cn, use_crop, use_snicar_frc, &
-         use_vancouver, use_mexicocity, use_noio
+         use_snicar_ad, use_vancouver, use_mexicocity, use_noio
 
     ! cpl_bypass variables
     namelist /clm_inparm/ metdata_type, metdata_bypass, metdata_biases, &
@@ -272,6 +276,9 @@ contains
     namelist /clm_inparm/ &
          do_budgets, budget_inst, budget_daily, budget_month, &
          budget_ann, budget_ltann, budget_ltend
+
+    namelist /clm_inparm/ &
+         use_erosion, ero_ccycle
 
     ! ----------------------------------------------------------------------
     ! Default values
@@ -334,9 +341,7 @@ contains
        ! History and restart files
 
        do i = 1, max_tapes
-          if (hist_nhtfrq(i) == 0) then
-             hist_mfilt(i) = 1
-          else if (hist_nhtfrq(i) < 0) then
+          if (hist_nhtfrq(i) < 0) then
              hist_nhtfrq(i) = nint(-hist_nhtfrq(i)*SHR_CONST_CDAY/(24._r8*dtime))
           endif
        end do
@@ -398,6 +403,11 @@ contains
        
        if (.not. use_crop .and. irrigate) then
           call endrun(msg=' ERROR: irrigate = .true. requires CROP model active.'//&
+            errMsg(__FILE__, __LINE__))
+       end if
+
+       if (.not. use_erosion .and. ero_ccycle) then
+          call endrun(msg=' ERROR: ero_ccycle = .true. requires erosion model active.'//&
             errMsg(__FILE__, __LINE__))
        end if
        
@@ -588,6 +598,7 @@ contains
     call mpi_bcast (use_crop, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_voc, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_snicar_frc, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_snicar_ad, 1, MPI_LOGICAL, 0, mpicom, ier)   
     call mpi_bcast (use_vancouver, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_mexicocity, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_noio, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -635,6 +646,7 @@ contains
     call mpi_bcast (forest_fert_exp, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (ECA_Pconst_RGspin, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (NFIX_PTASE_plant, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_pheno_flux_limiter, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! isotopes
     call mpi_bcast (use_c13, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -777,6 +789,10 @@ contains
     ! PETSc-based thermal model
     call mpi_bcast (use_petsc_thermal_model, 1, MPI_LOGICAL, 0, mpicom, ier)
 
+    ! soil erosion
+    call mpi_bcast (use_erosion, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (ero_ccycle , 1, MPI_LOGICAL, 0, mpicom, ier)
+
     ! Budget
     call mpi_bcast (do_budgets   , 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (budget_inst  , 1, MPI_INTEGER, 0, mpicom, ier)
@@ -826,6 +842,7 @@ contains
     write(iulog,*) '    use_cn = ', use_cn
     write(iulog,*) '    use_crop = ', use_crop
     write(iulog,*) '    use_snicar_frc = ', use_snicar_frc
+    write(iulog,*) '    use_snicar_ad = ', use_snicar_ad
     write(iulog,*) '    use_vancouver = ', use_vancouver
     write(iulog,*) '    use_mexicocity = ', use_mexicocity
     write(iulog,*) '    use_noio = ', use_noio

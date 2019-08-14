@@ -213,10 +213,6 @@ contains
        call cedr_sl_run_local(minq, maxq, nets, nete, scalar_q_bounds, limiter_option)
        if (barrier) call perf_barrier(hybrid)
        call t_stopf('CEDR_local')
-       call t_startf('SL_dss')
-       call dss_Qdp(elem, nets, nete, hybrid, np1_qdp)
-       if (barrier) call perf_barrier(hybrid)
-       call t_stopf('SL_dss')
     else
        do ie = nets, nete
           do k = 1, nlev
@@ -227,6 +223,16 @@ contains
           enddo
        end do
     end if
+    ! Technically, dss_Qdp is needed only if semi_lagrange_cdr_alg > 1;
+    ! otherwise, each Q(dp) field is already continuous. But SL transport would
+    ! be run without a CDR only by a specialist doing some debugging. Meanwhile,
+    ! dss_Qdp also DSSes derived%omega_p for diagnostics. It's important not to
+    ! forget to do that, and we don't need to optimize for the
+    ! semi_lagrange_cdr_alg <= 1 case, so just always call dss_Qdp.
+    call t_startf('SL_dss')
+    call dss_Qdp(elem, nets, nete, hybrid, np1_qdp)
+    if (barrier) call perf_barrier(hybrid)
+    call t_stopf('SL_dss')
     if (semi_lagrange_cdr_check) then
        call t_startf('CEDR_check')
        call cedr_sl_check(minq, maxq, nets, nete)
@@ -443,7 +449,15 @@ contains
              elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%state%Qdp(:,:,k,q,np1_qdp)*elem(ie)%spheremp(:,:)
           end do
        end do
-       call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%Qdp(:,:,:,:,np1_qdp), qsize*nlev, 0, qsize*nlev)
+       call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%Qdp(:,:,:,:,np1_qdp), &
+            qsize*nlev, 0, (qsize+1)*nlev)
+       ! Also DSS omega_p for diagnostics. This has nothing to do with tracer
+       ! transport; it's just a good place to do the DSS.
+       do k = 1, nlev
+          elem(ie)%derived%omega_p(:,:,k) = elem(ie)%spheremp(:,:) * elem(ie)%derived%omega_p(:,:,k)
+       end do
+       call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%omega_p(:,:,:), &
+            nlev, qsize*nlev, (qsize+1)*nlev)
     enddo
 
     call t_startf('SLMM_bexchV')
@@ -451,11 +465,17 @@ contains
     call t_stopf('SLMM_bexchV')
 
     do ie = nets, nete
-       call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%Qdp(:,:,:,:,np1_qdp), qsize*nlev, 0, qsize*nlev)
+       call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%Qdp(:,:,:,:,np1_qdp), &
+            qsize*nlev, 0, (qsize+1)*nlev)
        do q = 1, qsize
           do k = 1, nlev
              elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%state%Qdp(:,:,k,q,np1_qdp)*elem(ie)%rspheremp(:,:)
           end do
+       end do
+       call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%omega_p(:,:,:), &
+            nlev, qsize*nlev, (qsize+1)*nlev)
+       do k = 1, nlev
+          elem(ie)%derived%omega_p(:,:,k) = elem(ie)%rspheremp(:,:) * elem(ie)%derived%omega_p(:,:,k)
        end do
     end do
   end subroutine dss_Qdp

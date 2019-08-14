@@ -44,7 +44,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
 def buildlib(bldroot, installpath, case):
 ###############################################################################
-    gmake_args = get_standard_makefile_args(case)
+    gmake_args = get_standard_makefile_args(case, shared_lib=True)
     comp_interface = case.get_value("COMP_INTERFACE")
     cimeroot = case.get_value("CIMEROOT")
     caseroot = case.get_value("CASEROOT")
@@ -71,6 +71,8 @@ def buildlib(bldroot, installpath, case):
     else:
         use_esmf = "noesmf"
         filepath.append(os.path.join(cimeroot, "src", "share", "esmf_wrf_timemgr"))
+
+    comp_interface = case.get_value("COMP_INTERFACE")
     ninst_value = case.get_value("NINST_VALUE")
     libdir = os.path.join(bldroot,comp_interface,use_esmf, ninst_value,"csm_share")
     if not os.path.isdir(libdir):
@@ -98,6 +100,9 @@ def buildlib(bldroot, installpath, case):
         else:
             ninst_comp = case.get_value("NINST_{}".format(comp))
         multiinst_cppdefs += " -DNUM_COMP_INST_{}={}".format(comp, ninst_comp)
+
+    if case.get_value("COMP_OCN") == "nemo":
+        multiinst_cppdefs += " -DNEMO_IN_CCSM "
 
     installdir = os.path.join(installpath, comp_interface,
                               use_esmf, ninst_value)

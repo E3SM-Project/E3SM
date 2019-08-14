@@ -4,9 +4,9 @@ create_clone is a member of the Case class from file case.py
 import os, glob, shutil
 from CIME.XML.standard_module_setup import *
 from CIME.utils import expect, check_name, safe_copy
-from CIME.user_mod_support import apply_user_mods
-from CIME.locked_files         import lock_file
 from CIME.simple_compare            import compare_files
+from CIME.locked_files         import lock_file
+from CIME.user_mod_support import apply_user_mods
 
 logger = logging.getLogger(__name__)
 
@@ -122,6 +122,14 @@ def create_clone(self, newcaseroot, keepexe=False, mach_dir=None, project=None,
             shutil.copytree(os.path.join(cloneroot, casesub),
                             os.path.join(newcaseroot, casesub),
                             symlinks=True)
+
+        # copy the postprocessing directory if it exists
+        if os.path.isdir(os.path.join(cloneroot, "postprocess")):
+            shutil.copytree(os.path.join(cloneroot, "postprocess"),
+                            os.path.join(newcaseroot, "postprocess"),
+                            symlinks=True)
+
+
 
         # lock env_case.xml in new case
         lock_file("env_case.xml", newcaseroot)

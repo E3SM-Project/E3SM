@@ -494,7 +494,7 @@ contains
     else
        call ESMF_FieldGet(lfield, farrayPtr=data1d, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-       if (fldname == 'Sg_icemask' .or. 'fldname == Sg_icemask_coupled_fluxes' .or. fldname == 'Sg_ice_covered') then
+       if (fldname == 'Sg_icemask' .or.  fldname == 'Sg_icemask_coupled_fluxes' .or. fldname == 'Sg_ice_covered') then
           data1d(:) = 1._r8
        else
           do i = 1,size(data1d)

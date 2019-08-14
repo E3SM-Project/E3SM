@@ -5,6 +5,7 @@
 ! 08/2016: O. Guba Inserting code for "espilon bubble" reference element map
 ! 03/2018: M. Taylor  fix memory leak
 ! 06/2018: O. Guba  code for new ftypes
+! 06/2019: M. Taylor remove ps_v
 !
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -23,7 +24,8 @@ module prim_driver_base
   use perf_mod,         only: t_startf, t_stopf
   use quadrature_mod,   only: quadrature_t, gausslobatto
   use reduction_mod,    only: reductionbuffer_ordered_1d_t, red_min, red_max, red_max_int, &
-                              red_sum, red_sum_int, red_flops, initreductionbuffer
+                              red_sum, red_sum_int, red_flops, initreductionbuffer, &
+                              red_max_index, red_min_index
 #ifndef CAM
   use prim_restart_mod, only : initrestartfile
   use restart_io_mod ,  only : readrestart
@@ -469,6 +471,8 @@ contains
     call InitReductionBuffer(red_max_int,1)
     call InitReductionBuffer(red_min,1)
     call initReductionBuffer(red_flops,1)
+    call initReductionBuffer(red_min_index,2)
+    call initReductionBuffer(red_max_index,2)
 
     gp=gausslobatto(np)  ! GLL points
 
@@ -564,7 +568,6 @@ contains
        elem(ie)%derived%FT=0.0
 
        elem(ie)%derived%Omega_p=0
-       elem(ie)%state%dp3d=0
     enddo
 
     ! ==========================================================
@@ -644,10 +647,10 @@ contains
     type (parallel_t),  intent(in)  :: par
 
     ! single global edge buffer for all models:
-    ! hydrostatic 4*nlev      NH:  6*nlev+1
-    ! SL tracers: (qsize+1)*nlev
+    ! hydrostatic 4*nlev      NH:  6*nlev+1  
+    ! SL tracers: (qsize+1)*nlev   e3sm:  (qsize+3)*nlev+2
     ! if this is too small, code will abort with an error message
-    call initEdgeBuffer(par,edge_g,elem,max((qsize+1)*nlev,6*nlev+1))
+    call initEdgeBuffer(par,edge_g,elem,max((qsize+3)*nlev+2,6*nlev+1))
 
     call prim_advance_init1(par,elem,integration)
 #ifdef TRILINOS
@@ -669,7 +672,6 @@ contains
     use hybvcoord_mod,        only: hvcoord_t
     use parallel_mod,         only: parallel_t, haltmp, syncmp, abortmp
     use prim_state_mod,       only: prim_printstate, prim_diag_scalars
-    use prim_si_mod,          only: prim_set_mass
     use prim_advection_mod,   only: prim_advec_init2
     use model_init_mod,       only: model_init2, vertical_mesh_init2
     use time_mod,             only: timelevel_t, tstep, phys_tscale, timelevel_init, nendstep, smooth, nsplit, TimeLevel_Qdp
@@ -846,9 +848,6 @@ contains
 
        call ReadRestart(elem,hybrid%ithr,nets,nete,tl)
 
-       ! scale PS to achieve prescribed dry mass
-       if (runtype /= 1) call prim_set_mass(elem, tl,hybrid,hvcoord,nets,nete)
-
        if (runtype==2) then
           do ie=nets,nete
              call copy_state(elem(ie),tl%n0,tl%nm1)
@@ -861,9 +860,6 @@ contains
       if (hybrid%masterthread) write(iulog,*) ' runtype: initial run'
       call set_test_initial_conditions(elem,deriv1,hybrid,hvcoord,tl,nets,nete)
       if (hybrid%masterthread) write(iulog,*) '...done'
-
-      ! scale PS to achieve prescribed dry mass
-      call prim_set_mass(elem, tl,hybrid,hvcoord,nets,nete)
 
 !      do ie=nets,nete
 !        ! set perlim in ctl_nl namelist for temperature field initial perturbation
@@ -884,66 +880,53 @@ contains
 !$OMP END MASTER
 !$OMP BARRIER
 
+#ifdef CAM
+    ! initialize dp3d from ps_v.  CAM IC/restart code reads ps_v, doesn't
+    ! have access to hvcoord to compute dp3d:
+    do ie=nets,nete
+       do k=1,nlev
+          elem(ie)%state%dp3d(:,:,k,tl%n0)=&
+               ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
+       enddo
+    end do
+#endif
 
-    ! For new runs, and branch runs, convert state variable to (Qdp)
+
+    ! For new runs, and branch runs, convert state variable Q to (Qdp)
     ! because initial conditon reads in Q, not Qdp
     ! restart runs will read dpQ from restart file
-    ! need to check what CAM does on a branch run
     if (runtype==0 .or. runtype==2) then
        do ie=nets,nete
           elem(ie)%derived%omega_p(:,:,:) = 0D0
        end do
        do ie=nets,nete
-#if (defined COLUMN_OPENMP)
-!$omp parallel do default(shared), private(k, t, q, i, j, dp)
-#endif
-          do k=1,nlev    !  Loop inversion (AAM)
-             do q=1,qsize
-                do i=1,np
-                   do j=1,np
-                      dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,tl%n0)
-                      
-                      elem(ie)%state%Qdp(i,j,k,q,1)=elem(ie)%state%Q(i,j,k,q)*dp
-                      elem(ie)%state%Qdp(i,j,k,q,2)=elem(ie)%state%Q(i,j,k,q)*dp
-                      
-                   enddo
-                enddo
-             enddo
+          do q=1,qsize
+             elem(ie)%state%Qdp(:,:,:,q,1)=elem(ie)%state%Q(:,:,:,q)*elem(ie)%state%dp3d(:,:,:,tl%n0)
+             elem(ie)%state%Qdp(:,:,:,q,2)=elem(ie)%state%Q(:,:,:,q)*elem(ie)%state%dp3d(:,:,:,tl%n0)
           enddo
        enddo
     endif
-
 
     if (runtype==1) then
        call TimeLevel_Qdp( tl, qsplit, n0_qdp)
        do ie=nets,nete
-#if (defined COLUMN_OPENMP)
-!$omp parallel do default(shared), private(k, t, q, i, j, dp)
-#endif
-          do k=1,nlev    !  Loop inversion (AAM)
-             do t=tl%n0,tl%n0
-                do q=1,qsize
-                   do i=1,np
-                      do j=1,np
-                         dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                              ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,t)
-                         elem(ie)%state%Q(i,j,k,q)=elem(ie)%state%Qdp(i,j,k,q, n0_qdp)/dp
-                      enddo
-                   enddo
-                enddo
-             enddo
+          do q=1,qsize
+             elem(ie)%state%Q(:,:,:,q)=elem(ie)%state%Qdp(:,:,:,q,n0_qdp)/elem(ie)%state%dp3d(:,:,:,tl%n0)
           enddo
        enddo
     endif
+
+    call model_init2(elem(:), hybrid,deriv1,hvcoord,tl,nets,nete)
+
+    ! advective and viscious CFL estimates
+    ! may also adjust tensor coefficients based on CFL
+    call print_cfl(elem,hybrid,nets,nete,dtnu)
 
     ! smooth elem%phis if requested.
     if (smooth_phis_numcycle>0) &
           call smooth_topo_datasets(elem,hybrid,nets,nete)
 
-
-    ! timesteps to use for advective stability:  tstep*qsplit and tstep
-    call print_cfl(elem,hybrid,nets,nete,dtnu)
 
     if (hybrid%masterthread) then
        ! CAM has set tstep based on dtime before calling prim_init2(),
@@ -965,10 +948,8 @@ contains
 #endif
     end if
 
-
     if (hybrid%masterthread) write(iulog,*) "initial state:"
     call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete)
-    call model_init2(elem(:), hybrid,deriv1,hvcoord,tl,nets,nete)
     call Prim_Advec_Init2(elem(:), hvcoord, hybrid)
 
   end subroutine prim_init2
@@ -993,7 +974,7 @@ contains
     !       tl%nm1   tracers:  t    dynamics:  t+(qsplit-1)*dt
     !       tl%n0    time t + dt_q
 
-    use control_mod,        only: statefreq, ftype, qsplit, rsplit, disable_diagnostics
+    use control_mod,        only: statefreq, qsplit, rsplit, disable_diagnostics
     use hybvcoord_mod,      only: hvcoord_t
     use parallel_mod,       only: abortmp
     use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
@@ -1059,27 +1040,16 @@ contains
     call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
 #endif
 
-    call applyCAMforcing_ps(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
+    call applyCAMforcing_remap(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
 
     if (compute_diagnostics) then
     ! E(1) Energy after CAM forcing
-      call t_startf("prim_energy_halftimes")
+      call t_startf("prim_diag")
       call prim_energy_halftimes(elem,hvcoord,tl,1,.true.,nets,nete)
-      call t_stopf("prim_energy_halftimes")
-    ! qmass and variance, using Q(n0),Qdp(n0)
-      call t_startf("prim_diag_scalars")
       call prim_diag_scalars(elem,hvcoord,tl,1,.true.,nets,nete)
-      call t_stopf("prim_diag_scalars")
+      call t_stopf("prim_diag")
     endif
 
-    ! initialize dp3d from ps
-    do ie=nets,nete
-       do k=1,nlev
-          elem(ie)%state%dp3d(:,:,k,tl%n0)=&
-               ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
-       enddo
-    enddo
 
 #if (USE_OPENACC)
 !    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
@@ -1091,29 +1061,21 @@ contains
     if (.not. single_column) then 
 
       ! Loop over rsplit vertically lagrangian timesiteps
-      call t_startf("prim_step_rX")
       call prim_step(elem, hybrid, nets, nete, dt, tl, hvcoord, compute_diagnostics)
-      call t_stopf("prim_step_rX")
 
       do r=2,rsplit
         call TimeLevel_update(tl,"leapfrog")
-        call t_startf("prim_step_rX")
         call prim_step(elem, hybrid, nets, nete, dt, tl, hvcoord, .false.)
-        call t_stopf("prim_step_rX")
       enddo
 
     else 
 
       ! Single Column Case
       ! Loop over rsplit vertically lagrangian timesiteps
-      call t_startf("prim_step_rX")    
       call prim_step_scm(elem, nets, nete, dt, tl, hvcoord)
-      call t_stopf("prim_step_rX")
       do r=2,rsplit
         call TimeLevel_update(tl,"leapfrog")
-        call t_startf("prim_step_rX")
         call prim_step_scm(elem, nets, nete, dt, tl, hvcoord)
-        call t_stopf("prim_step_rX")
       enddo
 
     endif
@@ -1128,10 +1090,17 @@ contains
     call t_stopf("copy_qdp_h2d")
 #endif
 
+    if (compute_diagnostics) then
+      call t_startf("prim_diag")
+      call prim_diag_scalars(elem,hvcoord,tl,4,.false.,nets,nete)
+      call prim_energy_halftimes(elem,hvcoord,tl,4,.false.,nets,nete)
+      call t_stopf("prim_diag")
+    endif
+
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !  apply vertical remap
     !  always for tracers
-    !  if rsplit>0:  also remap dynamics and compute reference level ps_v
+    !  if rsplit>0:  also remap dynamics back to reference levels.
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     if (single_column) then
       nets_in=1
@@ -1143,28 +1112,10 @@ contains
 
     call vertical_remap(hybrid,elem,hvcoord,dt_remap,tl%np1,np1_qdp,nets_in,nete_in)
 
-
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! time step is complete.  update some diagnostic variables:
     ! Q    (mixing ratio)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    call t_startf("prim_run_subcyle_diags")
-    do ie=nets,nete
-#if (defined COLUMN_OPENMP)
-       !$omp parallel do default(shared), private(k,q,dp_np1)
-#endif
-       do k=1,nlev    !  Loop inversion (AAM)
-          dp_np1(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%np1)
-          !dir$ simd
-          do q=1,qsize
-             elem(ie)%state%Q(:,:,k,q)=elem(ie)%state%Qdp(:,:,k,q,np1_qdp)/dp_np1(:,:)
-          enddo
-       enddo
-    enddo
-
-    call t_stopf("prim_run_subcyle_diags")
-
     ! now we have:
     !   u(nm1)   dynamics at  t+dt_remap - 2*dt
     !   u(n0)    dynamics at  t+dt_remap - dt
@@ -1172,13 +1123,10 @@ contains
     !
     !   Q(1)   Q at t+dt_remap
     if (compute_diagnostics) then
-      call t_startf("prim_diag_scalars")
+      call t_startf("prim_diag")
       call prim_diag_scalars(elem,hvcoord,tl,2,.false.,nets,nete)
-      call t_stopf("prim_diag_scalars")
-
-      call t_startf("prim_energy_halftimes")
       call prim_energy_halftimes(elem,hvcoord,tl,2,.false.,nets,nete)
-      call t_stopf("prim_energy_halftimes")
+      call t_stopf("prim_diag")
     endif
     
     ! =================================
@@ -1222,7 +1170,7 @@ contains
     use control_mod,        only: transport_alg
     use hybvcoord_mod,      only : hvcoord_t
     use parallel_mod,       only: abortmp
-    use prim_advance_mod,   only: prim_advance_exp
+    use prim_advance_mod,   only: prim_advance_exp, applycamforcing_dynamics
     use prim_advection_mod, only: prim_advec_tracers_remap
     use reduction_mod,      only: parallelmax
     use time_mod,           only: time_at,TimeLevel_t, timelevel_update, nsplit
@@ -1262,24 +1210,31 @@ contains
       elem(ie)%derived%dp(:,:,:)=elem(ie)%state%dp3d(:,:,:,tl%n0)
     enddo
 
-!applyCAMforcing_dp3d should be glued to the call of prim_advance_exp
-!energy diagnostics is broken for ftype 3,4
-    call ApplyCAMforcing_dp3d(elem,hvcoord,tl%n0,dt,nets,nete)
     ! ===============
     ! Dynamical Step
+    ! for ftype==4, also apply dynamics tendencies from forcing
+    ! for ftype==4, energy diagnostics will be incorrect
     ! ===============
-    call t_startf("prim_step_dyn")
-    call prim_advance_exp(elem, deriv1, hvcoord,   &
-         hybrid, dt, tl, nets, nete, compute_diagnostics)
+    if (ftype==4) then
+       call ApplyCAMforcing_dynamics(elem,hvcoord,tl%n0,dt,nets,nete)
+       if (compute_diagnostics) then
+          ! E(1) Energy after CAM forcing applied
+          ! with ftype==4, need (E(1)-E(3))/dt_dyn instead (E(1)-E(3))/dt_tracer
+          call t_startf("prim_diag")
+          call prim_energy_halftimes(elem,hvcoord,tl,1,.true.,nets,nete)
+          call prim_diag_scalars(elem,hvcoord,tl,1,.true.,nets,nete)
+          call t_stopf("prim_diag")
+       endif
+    endif
+       
+    call prim_advance_exp(elem,deriv1,hvcoord,hybrid,dt,tl,nets,nete,compute_diagnostics)
     do n=2,qsplit
        call TimeLevel_update(tl,"leapfrog")
-!applyCAMforcing_dp3d should be glued to the call of prim_advance_exp
-!energy diagnostics is broken for ftype 3,4
-       call ApplyCAMforcing_dp3d(elem,hvcoord,tl%n0,dt,nets,nete)
+       if (ftype==4) call ApplyCAMforcing_dynamics(elem,hvcoord,tl%n0,dt,nets,nete)
        call prim_advance_exp(elem, deriv1, hvcoord,hybrid, dt, tl, nets, nete, .false.)
        ! defer final timelevel update until after Q update.
     enddo
-    call t_stopf("prim_step_dyn")
+
 
     ! current dynamics state variables:
     !    derived%dp              =  dp at start of timestep
@@ -1298,7 +1253,6 @@ contains
     ! Tracers are always vertically lagrangian.  
     ! For rsplit=0: 
     !   if tracer scheme needs v on lagrangian levels it has to vertically interpolate
-    !   if tracer scheme needs dp3d, it needs to derive it from ps_v
 
     call t_startf("prim_step_advec")
     if (qsize > 0) then
@@ -1311,42 +1265,17 @@ contains
   end subroutine prim_step
 
 
-!----------------------------- APPLYCAMFORCING-DP3D ----------------------------
-
-!ftype logic
-!should be called with dt_dynamics timestep. 
-!if called on eulerian levels (like at the very beginning, in first of qsplit
-!calls of prim_step), make sure that dp3d is updated before, based on ps_v.
-!if called within lagrangian step, it uses lagrangian dp3d
-  subroutine applyCAMforcing_dp3d(elem,hvcoord,n0,dt_dyn,nets,nete)
-  use control_mod,        only : ftype
-  use hybvcoord_mod,      only : hvcoord_t
-  use prim_advance_mod,   only : applycamforcing_dynamics
-  implicit none
-  type (element_t),       intent(inout) :: elem(:)
-  real (kind=real_kind),  intent(in)    :: dt_dyn
-  type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: n0,nets,nete
-
-  call t_startf("ApplyCAMForcing")
-  if (ftype == 4) then
-    call ApplyCAMForcing_dynamics   (elem,hvcoord,n0,dt_dyn,nets,nete)
-  endif
-  call t_stopf("ApplyCAMForcing")
-  end subroutine applyCAMforcing_dp3d
-
-
-!----------------------------- APPLYCAMFORCING-PS ----------------------------
-
-!Ftype logic: This routine should be called with dt_remap, on 'eulerian' levels, 
-!only before homme remap timestep.
+!---------------------------------------------------------------------------
+!
+! Apply all forcing terms that are applied with frequency dt_remap 
+!
 ! Note on ftypes:
-!   ftype= 4: Q was adjusted by physics, but apply u,T forcing here
+!   ftype= 4: Q was adjusted by physics, dynamics tendencies applied elsewhere
 !   ftype= 2: Q was adjusted by physics, but apply u,T forcing here
 !   ftype= 1: forcing was applied time-split in CAM coupling layer
 !   ftype= 0: apply all forcing here
 !   ftype=-1: do not apply forcing
-  subroutine applyCAMforcing_ps(elem,hvcoord,n0,n0qdp,dt_remap,nets,nete)
+  subroutine applyCAMforcing_remap(elem,hvcoord,n0,n0qdp,dt_remap,nets,nete)
   use control_mod,        only : ftype
   use hybvcoord_mod,      only : hvcoord_t
   use prim_advance_mod,   only : applycamforcing_dynamics
@@ -1357,8 +1286,7 @@ contains
   integer,                intent(in)    :: n0,n0qdp,nets,nete
   integer                               :: ie
 
-!in the next pr we will reorder calling _dyn and _tr versions
-  call t_startf("ApplyCAMForcing")
+  call t_startf("ApplyCAMForcing_remap")
   if (ftype==-1) then
     !do nothing
   elseif (ftype==0) then
@@ -1384,8 +1312,8 @@ contains
     enddo
 #endif
   endif
-  call t_stopf("ApplyCAMForcing")
-  end subroutine applyCAMforcing_ps
+  call t_stopf("ApplyCAMForcing_remap")
+  end subroutine applyCAMforcing_remap
 
 
 
@@ -1405,12 +1333,24 @@ contains
   ! phi/density being diagnostic.  theta model NH could do the conversion constant 
   ! density which would simplify this routine
   !
-  use control_mod,        only : use_moisture
+  ! NOTE about ps_v/dp3d
+  ! init:
+  !   (both ps_v and dp3d are valid)
+  ! do: 
+  !    physics  (uses ps_v to compute pressure levels. doesn't change ps_v)
+  !    applyCAMforcing_tracers  use ps_v for initial pressure.  
+  !                             may adjust dp3d for mass conservation (if adjust_ps=.false.)
+  !                             ps_v no longer valid
+  !    dynamics                 should only use dp3d
+  !    remap                    remap back to ref levels.  ps_v now valid
+  !    write restart files      ps_v ok for restart
+  !
+  use control_mod,        only : use_moisture,rsplit
   use hybvcoord_mod,      only : hvcoord_t
 #ifdef MODEL_THETA_L
   use control_mod,        only : theta_hydrostatic_mode
   use physical_constants, only : cp, g, kappa, Rgas, p0
-  use element_ops,        only : get_temperature, get_r_star
+  use element_ops,        only : get_temperature, get_r_star, get_hydro_pressure
   use eos,                only : pnh_and_exner_from_eos
 #endif
   implicit none
@@ -1421,9 +1361,11 @@ contains
   logical,                intent(in)    :: adjustment
 
   ! local
-  integer :: i,j,k,ie,q,ic
-  real (kind=real_kind)  :: v1
-  real (kind=real_kind)  :: dp(np,np,nlev), fq
+  integer :: i,j,k,ie,q
+  real (kind=real_kind)  :: fq
+  real (kind=real_kind)  :: dp(np,np,nlev), ps(np,np), dp_adj(np,np,nlev)
+  real (kind=real_kind)  :: phydro(np,np,nlev)  ! hydrostatic pressure
+  logical :: adjust_ps   ! adjust PS or DP3D to conserve dry mass
 #ifdef MODEL_THETA_L
   real (kind=real_kind)  :: pprime(np,np,nlev)
   real (kind=real_kind)  :: vthn1(np,np,nlev)
@@ -1436,18 +1378,36 @@ contains
 #endif
 
 #ifdef MODEL_THETA_L
+  if (rsplit==0) then
+     adjust_ps=.true.   ! stay on reference levels for Eulerian case
+  else
+     adjust_ps=.true.   ! Lagrangian case can support adjusting dp3d or ps
+  endif
+#else
+  adjust_ps=.true.      ! preqx requires forcing to stay on reference levels
+#endif
+
+  dp=elem%state%dp3d(:,:,:,np1)
+  dp_adj=dp
+  ps=elem%state%ps_v(:,:,np1)
+  !ps=hvcoord%hyai(1)*hvcoord%ps0 + sum(dp(:,:,:),3) ! introduces roundoff
+
+  ! after calling this routine, ps_v may not be valid and should not be used
+  elem%state%ps_v(:,:,np1)=0
+
+
+#ifdef MODEL_THETA_L
    !compute temperatue and NH perturbation pressure before Q tendency
    do k=1,nlev
-      dp(:,:,k)=( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-          ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,np1)
+      phydro(:,:,k)=hvcoord%ps0*hvcoord%hyam(k) + ps(:,:)*hvcoord%hybm(k)
    enddo
+
    !one can set pprime=0 to hydro regime but it is not done in master
    !compute pnh, here only pnh is needed
    call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,np1),dp,&
         elem%state%phinh_i(:,:,:,np1),pnh,exner,dpnh_dp_i)
    do k=1,nlev
-      pprime(:,:,k) = pnh(:,:,k) - &
-       ( hvcoord%ps0*hvcoord%hyam(k) + elem%state%ps_v(:,:,np1)*hvcoord%hybm(k))
+      pprime(:,:,k) = pnh(:,:,k)-phydro(:,:,k)
    enddo
    call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
    tn1=exner* elem%state%vtheta_dp(:,:,:,np1)*(Rgas/rstarn1) / dp
@@ -1456,124 +1416,116 @@ contains
    if (adjustment) then 
       ! hard adjust Q from physics.  negativity check done in physics
       do k=1,nlev
-         dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-         ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,np1)
-      enddo
-      do k=1,nlev
          do j=1,np
             do i=1,np
-               do ic=1,qsize
+               do q=1,qsize
                   ! apply forcing to Qdp
-                  ! dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) = &
-                  !        dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) + fq 
-                  elem%state%Qdp(i,j,k,ic,np1_qdp) = &
-                  dp(i,j,k)*elem%derived%FQ(i,j,k,ic)
-
-                  if (ic==1) then
-                     fq = dp(i,j,k)*( elem%derived%FQ(i,j,k,ic) -&
-                          elem%state%Q(i,j,k,ic))
-                        ! force ps_v to conserve mass:  
-                     elem%state%ps_v(i,j,np1)= &
-                          elem%state%ps_v(i,j,np1) + fq
+                  ! dyn_in%elem(ie)%state%Qdp(i,j,k,q,tl_fQdp) = &
+                  !        dyn_in%elem(ie)%state%Qdp(i,j,k,q,tl_fQdp) + fq 
+                  elem%state%Qdp(i,j,k,q,np1_qdp) = &
+                       dp(i,j,k)*elem%derived%FQ(i,j,k,q)
+                  
+                  if (q==1) then
+                     fq = dp(i,j,k)*( elem%derived%FQ(i,j,k,q) -&
+                          elem%state%Q(i,j,k,q))
+                     ! force ps to conserve mass:  
+                     ps(i,j)=ps(i,j) + fq
+                     dp_adj(i,j,k)=dp_adj(i,j,k) + fq   !  ps =  ps0+sum(dp(k))
                   endif
                enddo
             end do
          end do
       end do
-
-      do k=1,nlev
-         do ic=1,qsize
+   else ! end of adjustment
+      ! apply forcing to Qdp
+      elem%derived%FQps(:,:)=0
+      do q=1,qsize
+         do k=1,nlev
             do j=1,np
                do i=1,np
-                  ! make Q consistent now that we have updated ps_v above
-                  ! recompute dp, since ps_v was changed above
-                  dp(i,j,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                       ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(i,j,np1)
-                  elem%state%Q(i,j,k,ic)= &
-                       elem%state%Qdp(i,j,k,ic,np1_qdp)/dp(i,j,k)
-               end do
-            end do
-          end do
-        end do
+                  fq = dt*elem%derived%FQ(i,j,k,q)
+                  if (elem%state%Qdp(i,j,k,q,np1_qdp) + fq < 0 .and. fq<0) then
+                     if (elem%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
+                        fq=0  ! Q already negative, dont make it more so
+                     else
+                        fq = -elem%state%Qdp(i,j,k,q,np1_qdp)
+                     endif
+                  endif
+                  elem%state%Qdp(i,j,k,q,np1_qdp) = elem%state%Qdp(i,j,k,q,np1_qdp)+fq
+                  if (q==1) then
+                     elem%derived%FQps(i,j)=elem%derived%FQps(i,j)+fq/dt
+                     dp_adj(i,j,k)=dp_adj(i,j,k) + fq
+                  endif
+               enddo
+            enddo
+         enddo
+      enddo
 
-     else ! end of adjustment
-        ! apply forcing to Qdp
-        elem%derived%FQps(:,:)=0
-        do q=1,qsize
-           do k=1,nlev
-              do j=1,np
-                 do i=1,np
-                    v1 = dt*elem%derived%FQ(i,j,k,q)
-                    if (elem%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
-                       if (elem%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
-                          v1=0  ! Q already negative, dont make it more so
-                       else
-                          v1 = -elem%state%Qdp(i,j,k,q,np1_qdp)
-                       endif
-                    endif
-                    elem%state%Qdp(i,j,k,q,np1_qdp) = elem%state%Qdp(i,j,k,q,np1_qdp)+v1
-                    if (q==1) then
-                       elem%derived%FQps(i,j)=elem%derived%FQps(i,j)+v1/dt
-                    endif
-                 enddo
-              enddo
-           enddo
-        enddo
+      ! to conserve dry mass in the precese of Q1 forcing:
+      ps(:,:) = ps(:,:) + dt*elem%derived%FQps(:,:)
+   endif ! if adjustment
 
-        if (use_moisture) then
-           ! to conserve dry mass in the precese of Q1 forcing:
-           elem%state%ps_v(:,:,np1) = elem%state%ps_v(:,:,np1) + &
-             dt*elem%derived%FQps(:,:)
-        endif
 
-        ! Qdp(np1) and ps_v(np1) were updated by forcing - update Q(np1)
-        do k=1,nlev
-           dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,np1)
-        enddo
-        do q=1,qsize
-           do k=1,nlev
-              elem%state%Q(:,:,k,q) = elem%state%Qdp(:,:,k,q,np1_qdp)/dp(:,:,k)
-           enddo
-        enddo
+   if (use_moisture) then
+      ! compute water vapor adjusted dp3d:
+      if (adjust_ps) then
+         ! compute new dp3d from adjusted ps()
+         do k=1,nlev
+            dp_adj(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps(:,:)
+         enddo
+      endif
+      elem%state%dp3d(:,:,:,np1)=dp_adj(:,:,:)
+   endif
 
-     endif ! if adjustment
+   ! Qdp(np1) was updated by forcing - update Q(np1)
+   do q=1,qsize
+      elem%state%Q(:,:,:,q) = elem%state%Qdp(:,:,:,q,np1_qdp)/elem%state%dp3d(:,:,:,np1)
+   enddo
+   
 
 #ifdef MODEL_THETA_L
-     !update temperature
-     !continue conversion using pprime from above
-     call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
-     tn1(:,:,:) = tn1(:,:,:) + dt*elem%derived%FT(:,:,:)
-
-     ! update H pressure based on Qdp forcing
-     ! add in NH pressure pertubration 
-     do k=1,nlev
-        ! constant PHI.  FPHI will be zero. cant be used Hydrostatic
-        !pnh(:,:,k) = rstarn1(:,:,k)*tn1(:,:,k)*dp(:,:,k) / &
-        !     (
-        !     elem(ie)%state%phinh_i(:,:,k,n0)-elem(ie)%state%phinh_i(:,:,k+1,n0))
-        ! constant NH perturbation pressure
-        pnh(:,:,k)=hvcoord%ps0*hvcoord%hyam(k) + elem%state%ps_v(:,:,np1)*hvcoord%hybm(k) + pprime(:,:,k)
-        exner(:,:,k)=(pnh(:,:,k)/p0)**(Rgas/Cp)
-     enddo
-
-     ! now we have tn1,dp,pnh - compute corresponding theta and phi:
-     vthn1 =  (rstarn1(:,:,:)/Rgas)*tn1(:,:,:)*dp(:,:,:)/exner(:,:,:)
-
-     phi_n1(:,:,nlevp)=elem%state%phinh_i(:,:,nlevp,np1)
-     do k=nlev,1,-1
-        phi_n1(:,:,k)=phi_n1(:,:,k+1) + Rgas*vthn1(:,:,k)*exner(:,:,k)/pnh(:,:,k)
-     enddo
-
-     !finally, compute difference for FVTheta
-     ! this method is using new dp, new exner, new-new r*, new t
-     elem%derived%FVTheta(:,:,:) = &
-         (vthn1 - elem%state%vtheta_dp(:,:,:,np1))/dt
-
-     elem%derived%FPHI(:,:,:) = &
-         (phi_n1 - elem%state%phinh_i(:,:,:,np1))/dt
-
+   if (use_moisture) then
+      ! compute updated pnh and exner
+      if (adjust_ps) then
+         ! recompute hydrostatic pressure from ps
+         do k=1,nlev  
+            phydro(:,:,k)=hvcoord%ps0*hvcoord%hyam(k) + ps(:,:)*hvcoord%hybm(k)
+         enddo
+      else
+         ! recompute hydrostatic pressure from dp3d
+         call get_hydro_pressure(phydro,elem%state%dp3d(:,:,:,np1),hvcoord)
+      endif
+      do k=1,nlev
+         pnh(:,:,k)=phydro(:,:,k) + pprime(:,:,k)
+         exner(:,:,k)=(pnh(:,:,k)/p0)**(Rgas/Cp)
+      enddo
+   endif
+   
+   !update temperature
+   call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
+   tn1(:,:,:) = tn1(:,:,:) + dt*elem%derived%FT(:,:,:)
+   
+   
+   ! now we have tn1,dp,pnh - compute corresponding theta and phi:
+   vthn1 =  (rstarn1(:,:,:)/Rgas)*tn1(:,:,:)*elem%state%dp3d(:,:,:,np1)/exner(:,:,:)
+     
+   phi_n1(:,:,nlevp)=elem%state%phinh_i(:,:,nlevp,np1)
+   do k=nlev,1,-1
+      phi_n1(:,:,k)=phi_n1(:,:,k+1) + Rgas*vthn1(:,:,k)*exner(:,:,k)/pnh(:,:,k)
+   enddo
+   
+   !finally, compute difference for FVTheta
+   ! this method is using new dp, new exner, new-new r*, new t
+   elem%derived%FVTheta(:,:,:) = &
+        (vthn1 - elem%state%vtheta_dp(:,:,:,np1))/dt
+   
+   elem%derived%FPHI(:,:,:) = &
+        (phi_n1 - elem%state%phinh_i(:,:,:,np1))/dt
+   
 #endif
+     
+
 
   end subroutine applyCAMforcing_tracers
   
@@ -1603,7 +1555,7 @@ contains
     use control_mod,        only: transport_alg
     use hybvcoord_mod,      only : hvcoord_t
     use parallel_mod,       only: abortmp
-    use prim_advance_mod,   only: prim_advance_exp
+    use prim_advance_mod,   only: prim_advance_exp, applyCAMforcing_dynamics
     use reduction_mod,      only: parallelmax
     use time_mod,           only: time_at,TimeLevel_t, timelevel_update, timelevel_qdp, nsplit
     use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
@@ -1649,9 +1601,8 @@ contains
     do n=2,qsplit
  
       call TimeLevel_update(tl,"leapfrog")
-      !applyCAMforcing_dp3d should be glued to the call of prim_advance_exp
-      !energy diagnostics is broken for ftype 3,4
-      call ApplyCAMforcing_dp3d(elem,hvcoord,tl%n0,dt,nets,nete)       
+      if (ftype==4) call ApplyCAMforcing_dynamics(elem,hvcoord,tl%n0,dt,nets,nete)       
+
       ! get timelevel for accessing tracer mass Qdp() to compute virtual temperature      
       call TimeLevel_Qdp(tl, qsplit, qn0)  ! compute current Qdp() timelevel      
       

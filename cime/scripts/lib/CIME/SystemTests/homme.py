@@ -32,6 +32,7 @@ class HOMME(SystemTestsCommon):
             basecmp  = self._case.get_value("BASECMP_CASE")
             compare  = self._case.get_value("COMPARE_BASELINE")
             gmake    = self._case.get_value("GMAKE")
+            gmake_j  = self._case.get_value("GMAKE_J")
             cprnc    = self._case.get_value("CCSM_CPRNC")
 
             if compare:
@@ -44,7 +45,7 @@ class HOMME(SystemTestsCommon):
             cmake_cmd = "cmake -C {0}/components/homme/cmake/machineFiles/{1}.cmake -DUSE_NUM_PROCS={2} {0}/components/homme -DHOMME_BASELINE_DIR={3}/{4} -DCPRNC_DIR={5}/..".format(srcroot, mach, procs, baselinedir, basename, cprnc)
 
             run_cmd_no_fail(cmake_cmd, arg_stdout="homme.bldlog", combine_output=True, from_dir=exeroot)
-            run_cmd_no_fail("{} -j8".format(gmake), arg_stdout="homme.bldlog", combine_output=True, from_dir=exeroot)
+            run_cmd_no_fail("{} -j{} VERBOSE=1 test-execs".format(gmake, gmake_j), arg_stdout="homme.bldlog", combine_output=True, from_dir=exeroot)
 
             post_build(self._case, [os.path.join(exeroot, "homme.bldlog")], build_complete=True)
 

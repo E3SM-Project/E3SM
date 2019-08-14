@@ -249,8 +249,8 @@ program prim_main
      ! ============================================================
      ! Write restart files if required 
      ! ============================================================
-     if((restartfreq > 0) .and. (MODULO(tl%nstep,restartfreq) ==0)) then 
-        call WriteRestart(elem, ithr,1,nelemd,tl)
+     if(restartfreq > 0) then
+         if (MODULO(tl%nstep,restartfreq) ==0) call WriteRestart(elem,ithr,1,nelemd,tl)
      endif
   end do !end of while tl%nstep < nEndStep
   call t_stopf('prim_main_loop')
