@@ -227,6 +227,8 @@ register_field (const identifier_type& src, const identifier_type& tgt) {
 
   scream_require_msg(src_lt==tgt_lt, "Error! Source and target layouts do not match.\n");
 
+  m_fields_are_bound.push_back(false);
+
   do_register_field (src,tgt);
 
   ++m_num_registered_fields;
@@ -249,8 +251,7 @@ bind_field (const int ifield, const field_type& src, const field_type& tgt) {
                        "       Did you forget to call 'registration_begins' ?");
   scream_require_msg(ifield>=0 && ifield<m_num_registered_fields,
                      "Error! Field index (" + std::to_string(ifield) + ") out of bounds.\n");
-  scream_require_msg((m_num_fields==0 && m_fields_are_bound.size()<=static_cast<size_t>(ifield)) ||
-                     !m_fields_are_bound[ifield],
+  scream_require_msg(!m_fields_are_bound[ifield],
                      "Error! Fields already bound for index " + std::to_string(ifield) + ".\n");
 
   scream_require_msg(src.get_header().get_identifier()==get_src_field_id(ifield),
@@ -262,10 +263,6 @@ bind_field (const int ifield, const field_type& src, const field_type& tgt) {
   scream_require_msg(tgt.is_allocated(), "Error! Target field is not yet allocated.\n");
 
   do_bind_field(ifield,src,tgt);
-
-  if (m_fields_are_bound.size()<=static_cast<size_t>(ifield)) {
-    m_fields_are_bound.resize(ifield+1,false);
-  }
 
   m_fields_are_bound[ifield] = true;
 
