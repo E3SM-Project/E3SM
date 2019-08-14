@@ -54,8 +54,9 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
 
 }
 // =========================================================================================
-void P3Microphysics::initialize (const util::TimeStamp& /* t0 */)
+void P3Microphysics::initialize (const util::TimeStamp& t0)
 {
+  m_time = t0;
   auto q_ptr = m_p3_fields_out.at("q").get_view().data();
 
   p3_init_f90 (q_ptr);
@@ -63,16 +64,16 @@ void P3Microphysics::initialize (const util::TimeStamp& /* t0 */)
 }
 
 // =========================================================================================
-void P3Microphysics::run (const double /* dt */)
+void P3Microphysics::run (const double dt)
 {
   auto q_ptr = m_p3_fields_out.at("q").get_view().data();
   auto qdp_ptr = m_p3_fields_in.at("qdp").get_view().data();
-  auto dp_ptr = m_p3_fields_in.at("dpp").get_view().data();
-  double dtime;
+  auto dp_ptr = m_p3_fields_in.at("dp").get_view().data();
 
-  dtime = 600.0;
-  p3_main_f90 (dtime,q_ptr,qdp_ptr);
+  p3_main_f90 (dt,q_ptr,qdp_ptr);
 
+  m_time += dt;
+  m_p3_fields_out.at("q").get_header().get_tracking().update_time_stamp(m_time);
 }
 // =========================================================================================
 void P3Microphysics::finalize()

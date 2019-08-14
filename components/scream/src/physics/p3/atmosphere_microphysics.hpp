@@ -72,6 +72,7 @@ protected:
 
   Comm m_p3_comm;
 
+  util::TimeStamp                         m_time;
 }; // class P3Microphysics
 
 } // namespace scream
