@@ -36,6 +36,8 @@ TEST_CASE("scream_homme_p3_stand_alone", "scream_homme_p3_stand_alone") {
 
   auto& gm_params = ad_params.sublist("Grids Manager");
   gm_params.set<std::string>("Type","Dynamics Driven");
+  gm_params.set<std::string>("Reference Grid","Dynamics");
+  gm_params.set<std::string>("Grid","Physics");
   std::cout << "Done\n";
 
   // Need to register products in the factory *before* we create any AtmosphereProcessGroup,

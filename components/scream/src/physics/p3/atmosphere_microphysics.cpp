@@ -18,6 +18,7 @@ P3Microphysics::P3Microphysics (const Comm& comm,const ParameterList& /* params 
 void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
 
+  using namespace units;
   constexpr int NVL = 72;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
   constexpr int QSZ =  9;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
 
@@ -29,15 +30,14 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   auto CO = FieldTag::Column;
   auto VR = FieldTag::Variable;
 
-  FieldLayout scalar2d_layout { {VL,CO}, {NVL,nc} }; // Note that C++ and Fortran read array dimensions in reverse
-  FieldLayout scalar3d_layout { {VR,VL,CO}, {QSZ,NVL,nc} };
+  FieldLayout scalar3d_layout { {CO,VL}, {nc,NVL} }; // Note that C++ and Fortran read array dimensions in reverse
+  FieldLayout vector3d_layout { {CO,VR,VL}, {nc,QSZ,NVL} };
 
   // set requirements
-  m_required_fields.emplace("P3_req_test",  scalar2d_layout, units::one, "Physics");
+  m_required_fields.emplace("P3_req_test",  scalar3d_layout, units::one, "Physics");
   // set computed
-  m_computed_fields.emplace("P3_comq_test", scalar2d_layout, units::one, "Physics");
-  m_computed_fields.emplace("q",            scalar3d_layout, units::one, "Physics");
-  m_computed_fields.emplace("dp",           scalar3d_layout, units::one, "Physics");
+  m_computed_fields.emplace("P3_comq_test", scalar3d_layout, units::one, "Physics");
+  m_computed_fields.emplace("q",            vector3d_layout, units::one, "Physics");
 
 }
 // =========================================================================================

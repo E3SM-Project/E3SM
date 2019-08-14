@@ -76,7 +76,9 @@ protected:
     m_fields.reserve(this->m_num_fields);
   }
   void do_register_field (const identifier_type& src, const identifier_type& tgt) override {
-    m_fields.emplace_back(src,tgt);
+    field_type src_f(src);
+    field_type tgt_f(tgt);
+    m_fields.emplace_back(src_f,tgt_f);
   }
   void do_bind_field (const int ifield, const field_type& src, const field_type& tgt) override {
     m_fields[ifield].first  = src;

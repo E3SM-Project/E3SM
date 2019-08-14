@@ -25,7 +25,7 @@ public:
 protected:
 };
 
-TEST_CASE("ping-pong", "") {
+TEST_CASE("p3-stand-alone", "") {
   using namespace scream;
   using namespace scream::control;
 
@@ -44,6 +44,7 @@ TEST_CASE("ping-pong", "") {
 
   auto& gm_params = ad_params.sublist("Grids Manager");
   gm_params.set<std::string>("Type","User Provided");
+  gm_params.set<std::string>("Reference Grid","Physics");
 
   // Need to register products in the factory *before* we create any AtmosphereProcessGroup,
   // which rely on factory for process creation. The initialize method of the AD does that.
@@ -60,6 +61,7 @@ TEST_CASE("ping-pong", "") {
   // we set here, will be reflected in the GM built by the factory.
   UserProvidedGridsManager upgm;
   upgm.set_grid(std::make_shared<DummyPhysicsGrid>(num_cols));
+  upgm.set_reference_grid("Physics");
 
   // Create a comm
   Comm atm_comm (MPI_COMM_WORLD);
@@ -79,6 +81,9 @@ TEST_CASE("ping-pong", "") {
 
   // Finalize 
   ad.finalize();
-}
+  upgm.clean_up();
 
+  // If we got here, we were able to run p3
+  REQUIRE(true);
+}
 } // empty namespace
