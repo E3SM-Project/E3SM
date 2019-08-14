@@ -19,6 +19,13 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
 {
 
   using namespace units;
+  // The units of mixing ratio Q are technically non-dimensional.
+  // Nevertheless, for output reasons, we like to see 'kg/kg'.
+  auto Q = kg/kg;
+  auto Qdp = Q * Pa;
+  Q.set_string("kg/kg");
+  Qdp.set_string("kg/kg Pa");
+
   constexpr int NVL = 72;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
   constexpr int QSZ =  9;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
 
@@ -29,15 +36,21 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   auto VL = FieldTag::VerticalLevel;
   auto CO = FieldTag::Column;
   auto VR = FieldTag::Variable;
+  auto TL = FieldTag::TimeLevel;
 
   FieldLayout scalar3d_layout { {CO,VL}, {nc,NVL} }; // Note that C++ and Fortran read array dimensions in reverse
   FieldLayout vector3d_layout { {CO,VR,VL}, {nc,QSZ,NVL} };
+  FieldLayout tracers_state_layout { {CO,TL,VR,VL}, {nc,2,4,NVL} };
+  FieldLayout scalar_state_3d_mid_layout { {CO,TL,VL} , {nc,2,NVL}};
 
   // set requirements
-  m_required_fields.emplace("P3_req_test",  scalar3d_layout, units::one, "Physics");
+//  m_required_fields.emplace("P3_req_test",  scalar3d_layout,   units::one, "Physics");
+//  m_required_fields.emplace("ASD_req_test",  scalar3d_layout,   units::one, "Physics");
+  m_required_fields.emplace("dp"         , scalar_state_3d_mid_layout,      Pa, "Physics");
+  m_required_fields.emplace("qdp"        , tracers_state_layout,      Qdp, "Physics");
   // set computed
   m_computed_fields.emplace("P3_comq_test", scalar3d_layout, units::one, "Physics");
-  m_computed_fields.emplace("q",            vector3d_layout, units::one, "Physics");
+  m_computed_fields.emplace("q"           , vector3d_layout,          Q, "Physics");
 
 }
 // =========================================================================================
@@ -53,10 +66,12 @@ void P3Microphysics::initialize (const util::TimeStamp& /* t0 */)
 void P3Microphysics::run (const double /* dt */)
 {
   auto q_ptr = m_p3_fields_out.at("q").get_view().data();
+  auto qdp_ptr = m_p3_fields_in.at("qdp").get_view().data();
+  auto dp_ptr = m_p3_fields_in.at("dpp").get_view().data();
   double dtime;
 
   dtime = 600.0;
-  p3_main_f90 (dtime,q_ptr);
+  p3_main_f90 (dtime,q_ptr,qdp_ptr);
 
 }
 // =========================================================================================

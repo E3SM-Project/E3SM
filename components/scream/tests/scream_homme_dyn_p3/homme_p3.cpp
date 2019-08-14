@@ -15,7 +15,7 @@
 #include "physics/p3/atmosphere_microphysics.hpp"
 #include "physics/p3/scream_p3_interface.hpp"
 
-TEST_CASE("scream_homme_p3_stand_alone", "scream_homme_p3_stand_alone") {
+TEST_CASE("scream_homme_p3", "scream_homme_p3") {
   using namespace scream;
   using namespace scream::control;
 

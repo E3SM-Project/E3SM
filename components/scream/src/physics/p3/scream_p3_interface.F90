@@ -24,6 +24,7 @@ module scream_p3_interface_mod
 
   integer(kind=c_int) :: pcols = 32
   integer(kind=c_int) :: pver  = 72
+  integer(kind=c_int) :: qsize = 9
 
   character(len=16)   :: micro_p3_tableversion = "4"
   character(len=100)  :: micro_p3_lookup_dir = "/usr/gdata/climdat/ccsm3data/inputdata/atm/cam/physprops"
@@ -68,16 +69,17 @@ contains
      
 
     test = 0.0
-    print '(a15,f16.8,e16.8,i8,i8)', 'P3 init = ', test, sum(q(:,:,:3)), pcols, pver
+    print '(a15,f16.8,e16.8,i8,i8)', 'P3 init = ', test, sum(q(1,:,1)), pcols, pver
 
   end subroutine p3_init_f90
   !====================================================================!
-  subroutine p3_main_f90 (dtime,q) bind(c)
+  subroutine p3_main_f90 (dtime,q,qdp) bind(c)
     use micro_p3,       only: p3_main
 
 !    real, intent(in) :: q(pcols,pver,9) ! Tracer mass concentrations from SCREAM      kg/kg
     real(kind=c_real), intent(in)    :: dtime ! Timestep 
-    real(kind=c_real), intent(inout) :: q(pcols,pver,9) ! Tracer mass concentrations from SCREAM kg/kg
+    real(kind=c_real), intent(inout) :: q(pcols,pver,qsize) ! Tracer mass concentrations from SCREAM kg/kg
+    real(kind=c_real), intent(in)    :: qdp(pcols,2,4,pver) ! Tracer mass concentrations from SCREAM kg/kg
     !INTERNAL VARIABLES
     real(kind=c_real) :: th(pcols,pver)         !potential temperature  K
     real(kind=c_real) :: dzq(pcols,pver)        !geometric layer thickness              m
@@ -140,7 +142,7 @@ contains
 
     inv_cp = 1.0_rtype/cpair
 
-    qtest = sum(q(:,:,:3))
+    qtest = sum(q(1,:,:1))
     ncol = pcols
 
 
@@ -260,7 +262,7 @@ contains
     end do  
 
     test = test + dtime
-    print '(a15,f16.8,3e16.8)', 'P3 run = ', test, qtest, sum(q(:,:,:3)), sum(qv)
+    print '(a15,f16.8,4e16.8)', 'P3 run = ', test, qtest, sum(q(1,:,:1)), sum(qv), sum(qdp(:,:,:,:))
 
   end subroutine p3_main_f90
   !====================================================================!
