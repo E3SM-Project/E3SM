@@ -267,6 +267,7 @@ contains
       integer, pointer :: nEdgesSolve
       integer, pointer :: nEdges
       integer, pointer :: nVertInterfaces
+      integer, pointer :: nCells
       integer, dimension(:), pointer :: edgeMask, cellMask, vertexMask, vertexMaskOld
       integer, dimension(:,:), pointer :: dirichletVelocityMaskOld, dirichletVelocityMaskNew
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, normalVelocityInitial
@@ -275,8 +276,10 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors
       real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:), pointer :: surfaceSpeed, basalSpeed
+      real (kind=RKIND), dimension(:), pointer :: xvelmean, yvelmean
       real (kind=RKIND), dimension(:), pointer :: normalSlopeEdge
       real (kind=RKIND), dimension(:), pointer :: dcEdge
+      real (kind=RKIND), dimension(:), pointer :: layerInterfaceFractions
       integer, dimension(:), pointer :: floatingEdges
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, dimension(:,:), pointer :: cellsOnVertex
@@ -595,6 +598,8 @@ contains
          ! do this after velocity halo update in case velocities on the 1-halo edge are wrong (depends on velocity solver)
          ! Still do this even if we didn't calculate velocity because on a restart these will be defined at the initial time.
          call mpas_pool_get_dimension(meshPool, 'nVertInterfaces', nVertInterfaces)
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+         call mpas_pool_get_array(meshPool, 'layerInterfaceFractions', layerInterfaceFractions)
          call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
          call mpas_pool_get_array(velocityPool, 'uReconstructX', uReconstructX)
          call mpas_pool_get_array(velocityPool, 'uReconstructY', uReconstructY)
@@ -603,6 +608,8 @@ contains
          call mpas_pool_get_array(velocityPool, 'uReconstructMeridional', uReconstructMeridional)
          call mpas_pool_get_array(velocityPool, 'surfaceSpeed', surfaceSpeed)
          call mpas_pool_get_array(velocityPool, 'basalSpeed', basalSpeed)
+         call mpas_pool_get_array(velocityPool, 'xvelmean', xvelmean)
+         call mpas_pool_get_array(velocityPool, 'yvelmean', yvelmean)
 
          ! Velocities need to be reconstructed at cell centers for the native SIA dycore and for prescribed simple velocities.
          ! External dycores return their native velocities at cell center locations,
@@ -637,18 +644,23 @@ contains
          end if
 
          ! ---
+         ! --- Remove floating ice where velocity is unrealistically fast
+         ! --- (Removed ice is added to calving flux)
+         ! --- (TODO: make this a namelist option?)
+         ! ---
+         call remove_fast_ice(meshPool, uReconstructX, uReconstructY, normalVelocity, geometryPool)
+
+         ! ---
          ! --- Calculate diagnostic speed arrays
          ! ---
          surfaceSpeed = sqrt(uReconstructX(1,:)**2 + uReconstructY(1,:)**2)
          basalSpeed   = sqrt(uReconstructX(nVertInterfaces,:)**2 + uReconstructY(nVertInterfaces,:)**2)
 
-         ! ---
-         ! --- Remove floating ice where velocity is unrealistically fast
-         ! --- (Removed ice is added to calving flux)
-         ! --- (TODO: make this a namelist option?)
-         ! ---
-         call remove_fast_ice(meshPool, surfaceSpeed, basalSpeed, normalVelocity, geometryPool)
-
+         ! calculate vertical mean velocity
+         do iCell = 1, nCells
+            xvelmean(iCell) = sum(uReconstructX(:,iCell) * layerInterfaceFractions(:))
+            yvelmean(iCell) = sum(uReconstructY(:,iCell) * layerInterfaceFractions(:))
+         enddo
          ! ---
          ! --- Calculate strain rates on cell centers
          ! ---
@@ -949,7 +961,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine remove_fast_ice(meshPool, surfaceSpeed, basalSpeed, normalVelocity, geometryPool)
+   subroutine remove_fast_ice(meshPool, uReconstructX, uReconstructY, normalVelocity, geometryPool)
 
       use li_mask
 
@@ -961,10 +973,10 @@ contains
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
-      real(kind=RKIND), dimension(:), intent(inout) :: surfaceSpeed
-      type (mpas_pool_type), intent(inout) :: geometryPool
-      real(kind=RKIND), dimension(:), intent(inout) :: basalSpeed
+      real(kind=RKIND), dimension(:,:), intent(inout) :: uReconstructX
+      real(kind=RKIND), dimension(:,:), intent(inout) :: uReconstructY
       real(kind=RKIND), dimension(:,:), intent(inout) :: normalVelocity
+      type (mpas_pool_type), intent(inout) :: geometryPool
 
       !-----------------------------------------------------------------
       ! output variables
@@ -978,6 +990,7 @@ contains
       integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: edgesOnCell
       real(kind=RKIND), dimension(:), pointer :: thickness, calvingThickness
+      real(kind=RKIND), dimension(:), pointer :: upperSurface, lowerSurface
       integer, dimension(:), pointer :: cellMask
       integer :: iCell, iEdgeOnCell, iEdge
       integer :: cellCount
@@ -989,21 +1002,26 @@ contains
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
+      call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
+      call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
 
 
       cellCount = 0
       do iCell = 1, nCells
-         if (li_mask_is_ice(cellMask(iCell)) .and. (surfaceSpeed(iCell) > config_unrealistic_velocity)) then
+         if ((li_mask_is_ice(cellMask(iCell))) .and. &
+            (sqrt(uReconstructX(1,iCell)**2 + uReconstructY(1,iCell)**2) > config_unrealistic_velocity)) then
          ! "fast" ice that is removed is added to the calving flux
             calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)
             thickness(iCell) = 0.0_RKIND
-            surfaceSpeed(iCell) = 0.0_RKIND
-            basalSpeed(iCell) = 0.0_RKIND
+            uReconstructX(:,iCell) = 0.0_RKIND
+            uReconstructY(:,iCell) = 0.0_RKIND
             do iEdgeOnCell = 1, nEdgesOnCell(iCell)
                iEdge = edgesOnCell(iEdgeOnCell,iCell)
                normalVelocity(:,iEdge) = 0.0_RKIND
             enddo
-            ! TODO Should also zero temperature/tracers, upper/lowerSurface
+            upperSurface(iCell) = 0.0_RKIND
+            lowerSurface(iCell) = 0.0_RKIND
+            ! TODO Should also zero temperature/tracers
             cellCount = cellCount + 1
          endif
       end do

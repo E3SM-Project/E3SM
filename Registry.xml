@@ -842,6 +842,9 @@ is the value of that variable from the *previous* time level!
 		<var name="layerInterfaceSigma" type="real" dimensions="nVertInterfaces" units="none"
 		     description="Sigma (fractional) level at interface between each layer (including top and bottom)"
 		/>
+		<var name="layerInterfaceFractions" type="real" dimensions="nVertInterfaces" units="none"
+		     description="fraction of total thickness associated with the interface between each layer (including top and bottom)"
+		/>
 		<var name="edgeSignOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
 		     description="Sign of edge contributions to a cell for each edge on cell. Used for bit-reproducible loops. Represents directionality of vector connecting cells."
 		/>
@@ -1060,6 +1063,12 @@ is the value of that variable from the *previous* time level!
                 />
                 <var name="basalSpeed"                     type="real"     dimensions="nCells Time"
                      units="m s^{-1}"  description="ice basal speed reconstructed at cell centers"
+                />
+                <var name="xvelmean"                     type="real"     dimensions="nCells Time"
+                     units="m s^{-1}"  description="x-component of vertical mean ice velocity at cell centers"
+                />
+                <var name="yvelmean"                     type="real"     dimensions="nCells Time"
+                     units="m s^{-1}"  description="y-component of vertical mean ice velocity at cell centers"
                 />
                 <var name="beta" type="real" dimensions="nCells Time" units="Pa yr m^{-1}" default_value="1.0e8"
                      description="input value of basal traction parameter for sliding law used with first-order momentum balance solver (NOTE non-SI units)"
