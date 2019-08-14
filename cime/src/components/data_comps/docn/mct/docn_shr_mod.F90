@@ -144,6 +144,7 @@ CONTAINS
          trim(datamode) == 'SSTDATA'       .or. &
          trim(datamode) == 'SST_AQUAPANAL' .or. &
          trim(datamode) == 'SST_AQUAPFILE' .or. &
+         trim(datamode) == 'SST_CONSTANT'  .or. &
          trim(datamode) == 'COPYALL'       .or. &
          trim(datamode) == 'IAF'           .or. &
          trim(datamode) == 'SOM'           .or. &
