@@ -174,6 +174,7 @@ create_tgt_layout (const FieldLayout& src_layout) const {
       }
       tags_out[size_in] = tags_out[size_in+1] = FieldTag::GaussPoint;
       dims_out[size_in] = dims_out[size_in+1] = NP;
+      break;
     case LayoutType::Scalar3D: // Fallthrough
     case LayoutType::Vector3D: // Fallthrough
     case LayoutType::Tensor3D:
@@ -186,6 +187,7 @@ create_tgt_layout (const FieldLayout& src_layout) const {
       dims_out[size_in-1] = dims_out[size_in] = NP;
       tags_out[size_in+1] = FieldTag::VerticalLevel;
       dims_out[size_in+1] = dims_in[size_in-1];
+      break;
     default:
       scream_require_msg(false, "Error! This un-handled case is unexpected. Please, contact developers.\n");
   }
