@@ -803,7 +803,7 @@ end subroutine clubb_init_cnst
     !  at each time step, which is why dummy arrays are read in here for heights
     !  as they are immediately overwrote.     
 !$OMP PARALLEL
-    call setup_clubb_core     &
+    call setup_clubb_core_api     &
          ( pverp_clubb, theta0, ts_nudge, &                                 ! In
            hydromet_dim,  sclr_dim, &                                 ! In
            sclr_tol, edsclr_dim, clubb_params, &                      ! In
@@ -1232,10 +1232,10 @@ end subroutine clubb_init_cnst
    real(r8) :: wprtp_mc_out(pverp_clubb)
    real(r8) :: wpthlp_mc_out(pverp_clubb)
    real(r8) :: rtpthlp_mc_out(pverp_clubb)
-   real(r8) :: rcm_out(pverp_clubb)                   ! CLUBB output of liquid water mixing ratio     [kg/kg]
+   real(r8) :: rcm_inout(pverp_clubb)                   ! CLUBB output of liquid water mixing ratio     [kg/kg]
    real(r8) :: rcm_out_zm(pverp_clubb)
    real(r8) :: wprcp_out(pverp_clubb)                 ! CLUBB output of flux of liquid water          [kg/kg m/s]
-   real(r8) :: cloud_frac_out(pverp_clubb)            ! CLUBB output of cloud fraction                [fraction]
+   real(r8) :: cloud_frac_inout(pverp_clubb)            ! CLUBB output of cloud fraction                [fraction]
    real(r8) :: rcm_in_layer_out(pverp_clubb)          ! CLUBB output of in-cloud liq. wat. mix. ratio [kg/kg]
    real(r8) :: cloud_cover_out(pverp_clubb)           ! CLUBB output of in-cloud cloud fraction       [fraction]
    real(r8) :: thlprcp_out(pverp_clubb)
@@ -2281,7 +2281,7 @@ end subroutine clubb_init_cnst
       call setup_grid_heights_api(l_implemented, grid_type, &
         zi_g_in(2), zi_g_in(1), zi_g_in, zt_g_in)
  
-      call setup_parameters(zi_g_in(2), clubb_params, pverp_clubb, grid_type, &
+      call setup_parameters_api(zi_g_in(2), clubb_params, pverp_clubb, grid_type, &
         zi_g_in, zt_g_in, err_code)      
       
       !  Compute some inputs from the thermodynamic grid
@@ -2512,9 +2512,9 @@ end subroutine clubb_init_cnst
           rtp2(i,k)         = rtp2_in(pverp_clubb-k+1)
           thlp2(i,k)        = thlp2_in(pverp_clubb-k+1)
           rtpthlp(i,k)      = rtpthlp_in(pverp_clubb-k+1)
-          rcm_pre(k)          = rcm_out(pverp_clubb-k+1)
+          rcm_pre(k)          = rcm_inout(pverp_clubb-k+1)
           wprcp_pre(k)        = wprcp_out(pverp_clubb-k+1)
-          cloud_frac_pre(k)   = min(cloud_frac_out(pverp_clubb-k+1),1._r8)
+          cloud_frac_pre(k)   = min(cloud_frac_inout(pverp_clubb-k+1),1._r8)
           rcm_in_layer_pre(k) = rcm_in_layer_out(pverp_clubb-k+1)
           cloud_cover_pre(k)  = min(cloud_cover_out(pverp_clubb-k+1),1._r8)
           zt_out_pre(k)       = zt_g(pverp_clubb-k+1)
