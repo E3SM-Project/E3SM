@@ -344,6 +344,7 @@ contains
   end function put_var_0d_{TYPE}
 
 
+! TYPE int,real,double
   integer function put_vara_internal_{TYPE} (ncid,varid,start,count, ival) result(ierr)
     integer, intent(in) :: ncid
     integer, intent(in) :: varid
@@ -451,7 +452,19 @@ contains
     character(C_CHAR), intent(out) :: cstr(:)
     integer :: clen, sd({DIMS})
     integer :: cinc
-    integer :: i, j, k, m, n, q
+    integer :: i, j
+#if {DIMS} >= 2
+    integer :: k
+#endif
+#if {DIMS} >= 3
+    integer :: m
+#endif
+#if {DIMS} >= 4
+    integer :: n
+#endif
+#if {DIMS} == 5
+    integer :: q
+#endif
 
     cstr = C_NULL_CHAR
     do i=1,{DIMS}

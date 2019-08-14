@@ -21,6 +21,7 @@ AC_SUBST([VERSION_PATCH], [4])
 AC_CONFIG_MACRO_DIR([m4])
 
 # Libtool initialisation.
+LD=ld # Required for MPE to work.
 LT_INIT
 
 # Find and learn about the C compiler.
@@ -50,22 +51,6 @@ test "x$enable_logging" = xyes || enable_logging=no
 AC_MSG_RESULT([$enable_logging])
 if test "x$enable_logging" = xyes; then
    AC_DEFINE([PIO_ENABLE_LOGGING], 1, [If true, turn on logging.])
-fi
-
-# Does the user want to use MPE library?
-AC_MSG_CHECKING([whether use of MPE library is enabled])
-AC_ARG_ENABLE([mpe],
-              [AS_HELP_STRING([--enable-mpe],
-                              [enable use of MPE library for timing and diagnostic info (may negatively impact performance).])])
-test "x$enable_mpe" = xyes || enable_mpe=no
-AC_MSG_RESULT([$enable_mpe])
-if test "x$enable_mpe" = xyes; then
-   AC_SEARCH_LIBS([MPE_Log_get_event_number], [mpe], [HAVE_LIBMPE=yes], [HAVE_LIBMPE=no], [-lpthread -lm])
-   AC_CHECK_HEADERS([mpe.h], [HAVE_MPE=yes], [HAVE_MPE=no])
-   if test "x$HAVE_LIBMPE" = xno -o "x$HAVE_MPE" = xno; then
-      AC_MSG_ERROR([MPE not found but --enable-mpe used.])
-   fi
-   AC_DEFINE([USE_MPE], 1, [If true, use MPE timing library.])
 fi
 
 # Does the user want to enable timing?
@@ -103,6 +88,32 @@ AC_ARG_ENABLE([fortran],
 test "x$enable_fortran" = xyes || enable_fortran=no
 AC_MSG_RESULT([$enable_fortran])
 AM_CONDITIONAL(BUILD_FORTRAN, [test "x$enable_fortran" = xyes])
+
+# Does the user want to use MPE library?
+AC_MSG_CHECKING([whether use of MPE library is enabled])
+AC_ARG_ENABLE([mpe],
+              [AS_HELP_STRING([--enable-mpe],
+                              [enable use of MPE library for timing and diagnostic info (may negatively impact performance).])])
+test "x$enable_mpe" = xyes || enable_mpe=no
+AC_MSG_RESULT([$enable_mpe])
+if test "x$enable_mpe" = xyes; then
+
+   AC_SEARCH_LIBS([pthread_setspecific], [pthread], [], [], [])
+   dnl AC_SEARCH_LIBS([MPE_Log_get_event_number], [mpe], [HAVE_LIBMPE=yes], [HAVE_LIBMPE=no], [])
+   dnl AC_SEARCH_LIBS([MPE_Init_mpi_core], [lmpe], [HAVE_LIBLMPE=yes], [HAVE_LIBLMPE=no], [])
+   AC_CHECK_HEADERS([mpe.h], [HAVE_MPE=yes], [HAVE_MPE=no])
+   dnl if test "x$HAVE_LIBMPE" != xyes; then
+   dnl    AC_MSG_ERROR([-lmpe not found but --enable-mpe used.])
+   dnl fi
+   dnl if test "x$HAVE_LIBLMPE" != xyes; then
+   dnl    AC_MSG_ERROR([-llmpe not found but --enable-mpe used.])
+   dnl fi
+   if test $enable_fortran = yes; then
+      AC_MSG_ERROR([MPE not implemented in Fortran tests and examples. Build without --enable-fortran])
+   fi
+   AC_DEFINE([USE_MPE], 1, [If true, use MPE timing library.])
+
+fi
 
 # Does the user want to disable pnetcdf?
 AC_MSG_CHECKING([whether pnetcdf is to be used])
@@ -150,9 +161,9 @@ if test "x$enable_docs" = xyes; then
    fi
    AC_SUBST([FORTRAN_SRC_FILES], ["../src/flib/piodarray.f90  ../src/flib/pio.F90  ../src/flib/pio_kinds.F90  ../src/flib/piolib_mod.f90  ../src/flib/pionfatt_mod_2.f90  ../src/flib/pio_nf.F90  ../src/flib/pionfget_mod_2.f90  ../src/flib/pionfput_mod.f90  ../src/flib/pio_support.F90  ../src/flib/pio_types.F90"])
    if test "x$enable_developer_docs" = xyes; then
-      AC_SUBST([C_SRC_FILES], ["../src/clib"])
+      AC_SUBST([C_SRC_FILES], ["../src/clib ../src/ncint"])
    else
-      AC_SUBST([C_SRC_FILES], ["../src/clib/pio_nc.c ../src/clib/pio_nc4.c ../src/clib/pio_darray.c ../src/clib/pio_get_nc.c ../src/clib/pio_put_nc.c ../src/clib/pioc_support.c ../src/clib/pioc.c ../src/clib/pio_file.c ../src/clib/pio.h ../src/clib/pio_get_vard.c ../src/clib/pio_put_vard.c"])
+      AC_SUBST([C_SRC_FILES], ["../src/clib/pio_nc.c ../src/clib/pio_nc4.c ../src/clib/pio_darray.c ../src/clib/pio_get_nc.c ../src/clib/pio_put_nc.c ../src/clib/pioc_support.c ../src/clib/pioc.c ../src/clib/pio_file.c ../src/clib/pio.h ../src/clib/pio_get_vard.c ../src/clib/pio_put_vard.c ../src/ncint/ncint_pio.c ../src/ncint/nc_put_vard.c ../src/ncint/nc_get_vard.c"])
    fi
    AC_CONFIG_FILES([doc/Doxyfile])
 fi
@@ -251,6 +262,30 @@ if test "x$enable_timing" = xyes; then
 fi
 AM_CONDITIONAL([HAVE_PAPI], [test "x$have_papi" = xyes])
 
+# Does the user want to build netcdf-c integration layer?
+AC_MSG_CHECKING([whether netcdf-c integration layer should be build])
+AC_ARG_ENABLE([netcdf-integration],
+              [AS_HELP_STRING([--enable-netcdf-integration],
+                              [enable building of netCDF C API integration.])])
+test "x$enable_netcdf_integration" = xyes || enable_netcdf_integration=no
+AC_MSG_RESULT([$enable_netcdf_integration])
+if test "x$enable_netcdf_integration" = xyes -a "x$enable_timing" = xyes; then
+   AC_MSG_ERROR([Cannot use GPTL timing library with netCDF interation.])
+fi
+if test "x$enable_netcdf_integration" = xyes -a "x$have_netcdf_par" = xno; then
+   AC_MSG_ERROR([Cannot use netCDF integration unless netCDF library was built for parallel I/O.])
+fi
+# These are needed by ncdispatch.h. Only build with HDF5 parallel
+# versions of netCDF. */
+if test "x$enable_netcdf_integration" = xyes; then
+  AC_DEFINE([HDF5_PARALLEL],[1],[Does HDF5 library provide parallel access])
+  AC_DEFINE([USE_NETCDF4],[1],[Does HDF5 library provide parallel access])
+  AC_DEFINE([NETCDF_INTEGRATION],[1],[Are we building with netCDF integration])
+fi
+
+AM_CONDITIONAL(BUILD_NCINT, [test "x$enable_netcdf_integration" = xyes])
+AM_CONDITIONAL(NETCDF_INTEGRATION, [test "x$enable_netcdf_integration" = xyes])
+
 AC_CONFIG_FILES([tests/general/pio_tutil.F90:tests/general/util/pio_tutil.F90])
 
 AC_CONFIG_LINKS([tests/unit/input.nl:tests/unit/input.nl])
@@ -262,10 +297,13 @@ AC_CONFIG_HEADERS([config.h])
 AC_OUTPUT(Makefile
           src/Makefile
           src/clib/Makefile
+          src/ncint/Makefile
           src/flib/Makefile
           src/gptl/Makefile
           tests/Makefile
           tests/cunit/Makefile
+          tests/ncint/Makefile
+          tests/fncint/Makefile
           tests/unit/Makefile
           tests/general/Makefile
           tests/general/util/Makefile
@@ -275,4 +313,5 @@ AC_OUTPUT(Makefile
           doc/images/Makefile
           examples/Makefile
           examples/c/Makefile
+          examples/f03/Makefile
           scripts/Makefile)

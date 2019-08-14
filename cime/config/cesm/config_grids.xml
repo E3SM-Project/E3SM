@@ -926,11 +926,11 @@
       <mask>gx3v7</mask>
     </model_grid>
 
-    <model_grid alias="ne16pg3_ne16pg3_mg37" not_compset="_POP|_CLM">
+    <model_grid alias="ne16pg3_ne16pg3_mg17" not_compset="_POP|_CLM">
       <grid name="atm">ne16np4.pg3</grid>
       <grid name="lnd">ne16np4.pg3</grid>
       <grid name="ocnice">ne16np4.pg3</grid>
-      <mask>gx3v7</mask>
+      <mask>gx1v7</mask>
     </model_grid>
 
     <model_grid alias="ne30pg3_ne30pg3_mg17" not_compset="_POP">

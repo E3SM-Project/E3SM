@@ -184,8 +184,8 @@ module pio_nf
   end interface pio_inq_dimlen
   interface pio_inq_ndims
      module procedure &
-          inq_ndims_desc                                    , &
           inq_ndims_id
+!          inq_ndims_desc                                    , &
   end interface pio_inq_ndims
   interface pio_inq_dimid
      module procedure &
@@ -200,13 +200,13 @@ module pio_nf
 
   interface pio_inq_nvars
      module procedure &
-          inq_nvars_desc                                    , &
           inq_nvars_id
+!          inq_nvars_desc
   end interface pio_inq_nvars
   interface pio_inq_natts
      module procedure &
-          inq_natts_desc                                    , &
           inq_natts_id
+!          inq_natts_desc
   end interface pio_inq_natts
   interface pio_inq_unlimdim
      module procedure &
@@ -474,7 +474,6 @@ contains
 
   end function inq_dimname_id
 
-  !>
   !! @public
   !! @ingroup PIO_inquire
   !! Get information about the number of dimensions of a file or
@@ -485,11 +484,11 @@ contains
   !! @retval ierr @copydoc error_return
   !! @author Jim Edwards
   !<
-  integer function inq_ndims_desc(File                      , ndims) result(ierr)
-    type (File_desc_t)                                      , intent(inout) :: File
-    integer                                                 , intent(out) :: ndims
-    ierr = inq_ndims_id(file%fh                             , ndims)
-  end function inq_ndims_desc
+  ! integer function inq_ndims_desc(File, ndims) result(ierr)
+  !   type (File_desc_t), intent(inout) :: File
+  !   integer, intent(out) :: ndims
+  !   ierr = inq_ndims_id(file%fh, ndims)
+  ! end function inq_ndims_desc
 
   !>
   !! @public
@@ -512,7 +511,6 @@ contains
     ierr = PIOc_inq_ndims(ncid                              ,ndims)
   end function inq_ndims_id
 
-  !>
   !! @public
   !! @ingroup PIO_inquire
   !! Get information about the number of variables in a file or group.
@@ -522,11 +520,11 @@ contains
   !! @retval ierr @copydoc error_return
   !! @author Jim Edwards
   !<
-  integer function inq_nvars_desc(File                      , nvars) result(ierr)
-    type (File_desc_t)                                      , intent(inout) :: File
-    integer                                                 , intent(out) :: nvars
-    ierr = inq_nvars_id(file%fh                             , nvars)
-  end function inq_nvars_desc
+  ! integer function inq_nvars_desc(File, nvars) result(ierr)
+  !   type (File_desc_t), intent(inout) :: File
+  !   integer, intent(out) :: nvars
+  !   ierr = inq_nvars_id(file%fh, nvars)
+  ! end function inq_nvars_desc
 
   !>
   !! @public
@@ -548,7 +546,6 @@ contains
     ierr = PIOc_inq_nvars(ncid                              ,nvars)
   end function inq_nvars_id
 
-  !>
   !! @public
   !! @ingroup PIO_inquire
   !! Get information about the number of global attributes in a file
@@ -559,11 +556,11 @@ contains
   !! @retval ierr @copydoc error_return
   !! @author Jim Edwards
   !<
-  integer function inq_natts_desc(File                      , natts) result(ierr)
-    type (File_desc_t)                                      , intent(inout) :: File
-    integer                                                 , intent(out) :: natts
-    ierr = inq_natts_id(file%fh                             , natts)
-  end function inq_natts_desc
+  ! integer function inq_natts_desc(File, natts) result(ierr)
+  !   type (File_desc_t), intent(inout) :: File
+  !   integer, intent(out) :: natts
+  !   ierr = inq_natts_id(file%fh, natts)
+  ! end function inq_natts_desc
 
   !>
   !! @public
