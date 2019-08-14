@@ -15,7 +15,7 @@ use cam_history,      only: addfld, add_default, outfld
 use cam_logfile,      only: iulog
 use ref_pres,         only: top_lev => clim_modal_aero_top_lev
 use phys_control,     only: phys_getopts
-use cam_abortutils,       only: endrun
+use cam_abortutils,   only: endrun
 
 implicit none
 private
@@ -527,8 +527,6 @@ end subroutine modal_aero_wateruptake_sub
       complex(r8) :: cx4(4,imax),cx3(3,imax)
 
       real(r8), parameter :: eps     = 1.e-4_r8
-      real(r8), parameter :: mw      = mwh2o               ! original MAM's value: 18._r8
-!      real(r8), parameter :: pi = 3.14159_r8
       real(r8), parameter :: rhow    = rhoh2o / 1.E3_r8    ! original MAM's value: 1._r8
       real(r8), parameter :: surften = 76._r8
       real(r8), parameter :: tair    = 273._r8
@@ -537,7 +535,7 @@ end subroutine modal_aero_wateruptake_sub
 
 
 !     effect of organics on surface tension is neglected
-      a=2.e4_r8*mw*surften/(ugascon*tair*rhow)
+      a=2.e4_r8*mwh2o*surften/(ugascon*tair*rhow)            
 
       do i=1,im
            rdry(i) = rdry_in(i)*1.0e6_r8   ! convert (m) to (microns)
