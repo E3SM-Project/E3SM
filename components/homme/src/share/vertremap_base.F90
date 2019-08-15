@@ -578,7 +578,7 @@ subroutine remap_Q_ppm(Qdp,nx,nlev,qsize,dp1,dp2)
            enddo
            kk = kk - 1                   !kk is now the cell index we're integrating over.
         else
-           call binary_search(pio, pin(k+1), kk)
+           call binary_search(nlev, pio, pin(k+1), kk)
         end if
         if (kk == nlev+1) kk = nlev   !This is to keep the indices in bounds.
                                       !Top bounds match anyway, so doesn't matter what coefficients are used
@@ -741,7 +741,8 @@ end function integrate_parabola
 
   ! Find k such that pio(k) <= pivot < pio(k+1). Provide a reasonable input
   ! value for k.
-  subroutine binary_search(pio, pivot, k)
+  subroutine binary_search(nlev, pio, pivot, k)
+    integer, intent(in) :: nlev
     real(kind=real_kind), intent(in) :: pio(nlev+2), pivot
     integer, intent(inout) :: k
     integer :: lo, hi, mid

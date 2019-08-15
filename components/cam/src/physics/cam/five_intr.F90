@@ -805,7 +805,7 @@ module five_intr
     enddo   
     
     ! Define virtual temperature
-    do k=1,pver_five
+    do k=1,nlev
       tv(k) = t(k)*(1._r8+zvir*qv(k)-ql(k)) 
       thv(k) = exner(k)*tv(k)
     enddo 

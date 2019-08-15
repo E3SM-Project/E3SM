@@ -63,7 +63,7 @@ contains
   real (kind=real_kind)           :: dt
 
   integer :: ie,i,j,k,np1,nets,nete,np1_qdp
-  integer :: q
+  integer :: q, npt
 
   real (kind=real_kind), dimension(np,np,nlev)  :: dp,dp_star
   real (kind=real_kind), dimension(np,np,nlev,2)  :: ttmp
@@ -164,7 +164,7 @@ contains
   Qtmp_host = 0.
 #endif
  
-   do ie=nets,nete
+   do ie = nets, nete
      ! update final ps_v
      elem(ie)%state%ps_v(:,:,np1) = hvcoord%hyai(1)*hvcoord%ps0 + &
           sum(elem(ie)%state%dp3d(:,:,:,np1),3)
@@ -248,8 +248,14 @@ contains
      enddo
 
 ! ----- syncronize FIVE variables
-     rho_five(:,:,:) = pmid_five(:,:,:)/(rair*t_five(:,:,:,ie))
-     rho_host = pmid_host/(rair*elem(ie)%state%t(:,:,:,np1)/dp)
+     do i=1,np
+     do j=1,np
+        call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),elem(ie)%state%t(i,j,:,np1),ttmp_five(i,j,:),pver,pver_five)
+     enddo
+     enddo
+
+     rho_five = pmid_five/(rair*ttmp_five)
+     rho_host = pmid_host/(rair*elem(ie)%state%t(:,:,:,np1))
      dz_five = dp_five/(rho_five*gravit)
      dz_host = dp/(rho_host*gravit)
 
@@ -303,9 +309,10 @@ contains
     !   as documented in Yamaguchi et al. (2017) Appendix B
     do i=1,np
     do j=1,np
-      call compute_five_heights(pmid_host(i,j,:),pint_host(i,j,:),elem(ie)%state%t(i,j,:,np1),&
-             state_Q(i,j,:,1),state_Q(i,j,k,2),pdel_host(i,j,:),pver,hvcoord%ps0,&
-             zm_host(i,j,:),zi_host(i,j,:))
+      call compute_five_heights(pmid_host(i,j,1:pver),pint_host(i,j,1:pver+1), &
+             elem(ie)%state%t(i,j,1:pver,np1),&
+             state_Q(i,j,1:pver,1),state_Q(i,j,1:pver,2),pdel_host(i,j,1:pver),pver,hvcoord%ps0,&
+             zm_host(i,j,1:pver),zi_host(i,j,1:pver+1))
 
       call compute_five_heights(pmid_five(i,j,:),pint_five(i,j,:),t_five(i,j,:,ie),&
              q_five(i,j,:,1,ie),q_five(i,j,:,2,ie),pdel_five(i,j,:),pver_five,hvcoord%ps0,&
@@ -343,39 +350,55 @@ contains
         vtmp_five_old(i,j,k) = v_five(i,j,k,ie) + dt * v_five_tend(i,j,k,ie)
 
         do q=1,qsize
-          qtmp_five_old(i,j,k,q) = q_five(i,j,k,q,ie) + dt * q_five_tend(i,j,k,q,ie)
-          qtmp_five_old(i,j,k,q) = max(qtmp_five_old(i,j,k,q),0._r8)
+          Qtmp_five_old(i,j,k,q) = q_five(i,j,k,q,ie) + dt * q_five_tend(i,j,k,q,ie)
+          Qtmp_five_old(i,j,k,q) = max(Qtmp_five_old(i,j,k,q),0._r8)
         enddo
 
       enddo
       enddo
     enddo
 
-
 #endif
 
 #ifdef FIVE
      if (rsplit>0) then
-
-!     do i=1,np
-!     do j=1,np
+goto 9999
+     do i=1,np
+     do j=1,np
 ! get t, v, u, dp. In the future, they shoudl pass from pbuf, like T_five
-     !print *, 'HHLEE LS', i,j,ie,t_five(i,j,pver_five,ie), elem(ie)%state%t(i,j,pver,np1)
 
-!        call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),elem(ie)%state%t(i,j,:,np1),ttmp_five(i,j,:),pver,pver_five)
-!        call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),elem(ie)%state%v(i,j,1,:,np1),utmp_five(i,j,:),pver,pver_five)
-!        call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),elem(ie)%state%v(i,j,2,:,np1),vtmp_five(i,j,:),pver,pver_five)
-!       do q = 1, qsize
-!         state_Q(i,j,:,q) = elem(ie)%state%Qdp(i,j,:,q,np1_qdp) / dp_star(i,j,:) 
-!         call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),state_Q(i,j,:,q),Qtmp_five(i,j,:,q),pver,pver_five)
-!         Qtmp_five_old(i,j,:,q) = Qtmp_five(i,j,:,q)
-!         Qtmp_five(i,j,:,q) = Qtmp_five(i,j,:,q)*dp_star_five(i,j,:)
+        call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),elem(ie)%state%t(i,j,:,np1),ttmp_five(i,j,:),pver,pver_five)
+        call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),elem(ie)%state%v(i,j,1,:,np1),utmp_five(i,j,:),pver,pver_five)
+        call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),elem(ie)%state%v(i,j,2,:,np1),vtmp_five(i,j,:),pver,pver_five)
+       do q = 1, qsize
+         state_Q(i,j,:,q) = elem(ie)%state%Qdp(i,j,:,q,np1_qdp) / dp_star(i,j,:) 
+         call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),state_Q(i,j,:,q),Qtmp_five(i,j,:,q),pver,pver_five)
+         Qtmp_five_old(i,j,:,q) = Qtmp_five(i,j,:,q)
+         Qtmp_five(i,j,:,q) = Qtmp_five(i,j,:,q)*dp_star_five(i,j,:)
 
-!       enddo 
-!     enddo 
-!     enddo
+       enddo 
+     enddo 
+     enddo
+9999 continue
 
-!        ttmp_five_old(:,:,:) = t_five(:,:,:,ie) 
+     if (single_column) then
+     do i=1,np
+     do j=1,np
+        do k=1,pver_five
+          dp_star_five(i,j,k)  = dp_star_five(1,1,k)
+          ttmp_five_old(i,j,k) = ttmp_five_old(1,1,k)
+          utmp_five_old(i,j,k) = utmp_five_old(1,1,k)
+          vtmp_five_old(i,j,k) = vtmp_five_old(1,1,k)
+          do q = 1, qsize 
+             Qtmp_five_old(i,j,k,q) = Qtmp_five_old(1,1,k,q)
+          enddo
+        enddo
+     enddo 
+     enddo
+     endif
+
+!        ttmp_five_old = ttmp_five 
+!        ttmp_five = ttmp_five*dp_star_five
         ttmp_five = ttmp_five_old*dp_star_five
         call t_startf('vertical_remap1_FIVE_1')
         call remap1(ttmp_five,np,pver_five,1,dp_star_five,dp_five)
@@ -383,7 +406,8 @@ contains
         ttmp_five = ttmp_five/dp_five
         ttmp_five_tend = (ttmp_five - ttmp_five_old)/dt
 
-!        utmp_five_old(:,:,:) = u_five(:,:,:,ie)
+!        utmp_five_old = utmp_five
+!        utmp_five = utmp_five*dp_star_five
         utmp_five = utmp_five_old * dp_star_five
         call t_startf('vertical_remap1_FIVE_2')
         call remap1(utmp_five,np,pver_five,1,dp_star_five,dp_five)
@@ -391,7 +415,8 @@ contains
         utmp_five = utmp_five/dp_five
         utmp_five_tend = (utmp_five - utmp_five_old)/dt
 
-!        vtmp_five_old(:,:,:) = v_five(:,:,:,ie)
+!        vtmp_five_old = vtmp_five
+!        vtmp_five = vtmp_five*dp_star_five
         vtmp_five = vtmp_five_old * dp_star_five
         call t_startf('vertical_remap1_FIVE_3')
         call remap1(vtmp_five,np,pver_five,1,dp_star_five,dp_five)
@@ -402,7 +427,6 @@ contains
      if (qsize>0) then
        
        do q = 1, qsize
-!         Qtmp_five_old(:,:,:,q) = q_five(:,:,:,q,ie)
          Qtmp_five(:,:,:,q) = Qtmp_five_old(:,:,:,q)*dp_star_five(:,:,:)
        end do
        call t_startf('vertical_remap1_FIVE_4')
@@ -411,11 +435,12 @@ contains
 
      endif
 
-!-------------------
-     rho_five = pmid_five/(rair*ttmp_five) !update rho_five
-     !rho_host = pmid_host/(rair*elem(ie)%state%t(:,:,:,np1)/dp)
-     !dz_five = dp_five/(rho_five*gravit)
-     !dz_host = dp/(rho_host*gravit)
+
+! update to remap temperature 
+     rho_five = pmid_five/(rair*ttmp_five)
+     rho_host = pmid_host/(rair*elem(ie)%state%t(:,:,:,np1))
+     dz_five = dp_five/(rho_five*gravit)
+     dz_host = dp/(rho_host*gravit)
 
      do i=1,np
      do j=1,np
@@ -441,9 +466,12 @@ contains
                             pint_host(i,j,:),pmid_five(i,j,:),pmid_host(i,j,:),&
                             Qtmp_five_tend(i,j,:,q),Qtmp_host(i,j,:,q))
        enddo 
+
      enddo 
      enddo
+
 ! update t, u, v, qdp
+
      elem(ie)%state%t(:,:,:,np1)=elem(ie)%state%t(:,:,:,np1)+ttmp_host(:,:,:)*dt
      elem(ie)%state%v(:,:,1,:,np1)=elem(ie)%state%v(:,:,1,:,np1)+utmp_host(:,:,:)*dt
      elem(ie)%state%v(:,:,2,:,np1)=elem(ie)%state%v(:,:,2,:,np1)+vtmp_host(:,:,:)*dt
@@ -510,7 +538,7 @@ contains
 !     do k=1,pver
 !     do q =1, qsize
 !        if (state_Q(i,j,k,q) .ne. 0. .or. state_Qup(i,j,k,q) .ne. 0.) then
-!        print *, 'HHLEEQ',k,q,state_Q(i,j,k,q),state_Qup(i,j,k,q)
+!        print *, 'HHLEE LS', elem(ie)%state%t(i,j,1,np1)
 !        endif
 !     end do
 !     end do
