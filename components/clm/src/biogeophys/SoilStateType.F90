@@ -358,6 +358,7 @@ contains
     integer            :: begc, endc
     integer            :: begg, endg
     real(r8), parameter :: min_liquid_pressure = -10132500._r8 ! Minimum soil liquid water pressure [mm]
+    real(r8), parameter :: hksat_adj  = 2.0_r8          !saturated hydraulic conductivity ajust factor (>1 higher than original, <1.0 smaller)
     !-----------------------------------------------------------------------
 
     begc = bounds%begc; endc= bounds%endc
@@ -652,10 +653,13 @@ contains
                 om_hksat          = max(0.28_r8 - 0.2799_r8*(zsoi(lev)/zsapric), 0.0001_r8)
 
                 this%bd_col(c,lev)        = (1._r8 - this%watsat_col(c,lev))*2.7e3_r8 
-                this%watsat_col(c,lev)    = (1._r8 - om_frac) * this%watsat_col(c,lev) + om_watsat*om_frac
+                !this%watsat_col(c,lev)    = (1._r8 - om_frac) * this%watsat_col(c,lev) + om_watsat*om_frac
+		this%watsat_col(c,lev)    = 0.49_r8
                 tkm                       = (1._r8-om_frac) * (8.80_r8*sand+2.92_r8*clay)/(sand+clay)+om_tkm*om_frac ! W/(m K)
-                this%bsw_col(c,lev)       = (1._r8-om_frac) * (2.91_r8 + 0.159_r8*clay) + om_frac*om_b   
-                this%sucsat_col(c,lev)    = (1._r8-om_frac) * this%sucsat_col(c,lev) + om_sucsat*om_frac  
+                !this%bsw_col(c,lev)       = (1._r8-om_frac) * (2.91_r8 + 0.159_r8*clay) + om_frac*om_b
+		this%bsw_col(c,lev)       = 9_r8
+                !this%sucsat_col(c,lev)    = (1._r8-om_frac) * this%sucsat_col(c,lev) + om_sucsat*om_frac
+		this%sucsat_col(c,lev)    = 600.0_r8
                 this%hksat_min_col(c,lev) = xksat
 
                 ! perc_frac is zero unless perf_frac greater than percolation threshold
@@ -676,7 +680,7 @@ contains
                 else
                    uncon_hksat = 0._r8
                 end if
-                this%hksat_col(c,lev)  = uncon_frac*uncon_hksat + (perc_frac*om_frac)*om_hksat
+                this%hksat_col(c,lev)  = hksat_adj * (uncon_frac*uncon_hksat + (perc_frac*om_frac)*om_hksat)
 
                 this%tkmg_col(c,lev)   = tkm ** (1._r8- this%watsat_col(c,lev))           
 
