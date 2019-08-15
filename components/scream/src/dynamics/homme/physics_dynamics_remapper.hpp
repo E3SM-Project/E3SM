@@ -240,6 +240,11 @@ do_remap_fwd() const {
     const auto& phys = m_phys[i];
     const auto& dyn  = m_dyn[i];
 
+    // phys->dyn requires a halo-exchange. Since not all entries in dyn
+    // are overwritten before the exchange, to avoid leftover garbage,
+    // we need to set all entries of dyn to zero.
+    Kokkos::deep_copy(dyn.get_view(),0.0);
+
     const auto& layout = phys.get_header().get_identifier().get_layout();
     const auto lt = get_layout_type(layout);
     const auto& tgt_alloc_prop = dyn.get_header().get_alloc_properties();
