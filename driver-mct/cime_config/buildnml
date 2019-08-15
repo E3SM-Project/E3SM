@@ -56,7 +56,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     if 'aqua' in docn_mode:
         config['aqua_planet_sst_type'] = docn_mode
     else:
-        config['aqua_planet_sst_type'] = none
+        config['aqua_planet_sst_type'] = 'none'
         
     if case.get_value('RUN_TYPE') == 'startup':
         config['run_type'] = 'startup'
